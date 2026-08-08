@@ -5,7 +5,7 @@ from model import PokerNet
 
 def export_onnx():
     device = torch.device("cpu")
-    model = PokerNet(state_dim=100, num_actions=4, max_players=10).to(device)
+    model = PokerNet(state_dim=121, num_actions=4, max_players=10).to(device)
     
     checkpoint_path = os.path.join(os.path.dirname(__file__), "checkpoints", "model_latest.pt")
     if os.path.exists(checkpoint_path):
@@ -18,7 +18,7 @@ def export_onnx():
     model.eval()
     
     # Dummy inputs for 10-max ONNX export
-    dummy_state = torch.randn(1, 100)
+    dummy_state = torch.randn(1, 121)
     dummy_pos = torch.randint(0, 10, (1,))
     
     # Export to app/model.onnx so the HTTP server can serve it directly to the frontend

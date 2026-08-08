@@ -484,9 +484,8 @@ function cardMarkup(card) {
   if (!card) return '';
 
   const suit = getSuit(card);
-  
-  // Enhanced card markup with better visual hierarchy
-  return `<span class="rank s-${suit.id}">${card[0]}</span><span class="suit s-${suit.id}">${suit.symbol}</span><span class="corner-rank s-${suit.id}">${card[0]}</span>`;
+
+  return `<span class="rank s-${suit.id}">${card[0]}</span><span class="suit s-${suit.id}">${suit.symbol}</span>`;
 
 }
 
@@ -3188,7 +3187,7 @@ async function runOnnxInference(inputs) {
 
   try {
 
-    const inputTensor = new ort.Tensor('float32', new Float32Array(inputs), [1, 121]);
+    const inputTensor = new ort.Tensor('float32', new Float32Array(inputs), [1, 69]);
 
     const outputs = await app.onnxSession.run({ input: inputTensor });
 
@@ -3227,7 +3226,7 @@ async function generateStrategyWithOnnx(context) {
 
   const strategyMap = {};
   const handOrder = [];
-  const batchInputs = new Float32Array(169 * 121);
+  const batchInputs = new Float32Array(169 * 69);
   let handCount = 0;
 
   // Encode all 169 hand combinations into a single batch buffer for zero-lag 1-pass ONNX inference
@@ -3255,10 +3254,10 @@ async function generateStrategyWithOnnx(context) {
       }
 
       handOrder.push(hand);
-      const offset = handCount * 121;
+      const offset = handCount * 69;
       handCount++;
 
-      // Encode single hand features (121 dimensions)
+      // Encode single hand features (69 dimensions)
       // CRITICAL FIX: Model.onnx feature x[56] was trained with 0.0 for all unopened preflop spots.
       // UI facingSize (1.0 bb for blind) must be zeroed out for x[56] when lastAction === 'unopened'
       // to match exact model training distribution and prevent out-of-bounds neural fold artifacts!
@@ -3279,18 +3278,6 @@ async function generateStrategyWithOnnx(context) {
           batchInputs[offset + rankIdx * 4 + suitIdx] = 1.0;
         }
       }
-      // Encode board cards
-      if (context.board) {
-        for (const card of context.board) {
-          if (!card) continue;
-          const rankIdx = RANKS.indexOf(card[0]);
-          const suitIdx = ['s', 'h', 'd', 'c'].indexOf(card[1]);
-          if (rankIdx >= 0 && suitIdx >= 0) {
-            batchInputs[offset + 69 + rankIdx * 4 + suitIdx] = 1.0;
-          }
-        }
-      }
-
     }
   }
 
@@ -3299,8 +3286,8 @@ async function generateStrategyWithOnnx(context) {
     if (idx % 20 === 0) await new Promise(r => requestAnimationFrame(r));
     const hand = handOrder[idx];
     try {
-      const subBuffer = batchInputs.subarray(idx * 121, (idx + 1) * 121);
-      const inputTensor = new ort.Tensor('float32', subBuffer, [1, 121]);
+      const subBuffer = batchInputs.subarray(idx * 69, (idx + 1) * 69);
+      const inputTensor = new ort.Tensor('float32', subBuffer, [1, 69]);
       
       // Create position tensor as required by the model
       const posTensor = new ort.Tensor('int64', BigInt64Array.from([BigInt(posIdx)]), [1]);
@@ -4337,11 +4324,6 @@ function bindEvents() {
 
   document.addEventListener('keydown', (e) => {
 
-    // Ignore if typing in an input field
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
-      return;
-    }
-
     if (e.key === 'Escape') {
 
       app.gto.hero = [null, null];
@@ -4354,70 +4336,6 @@ function bindEvents() {
 
       renderAllCards();
 
-    }
-
-    // C - Clear current selection
-    if (e.key === 'c' || e.key === 'C') {
-      const heroSlot = document.querySelector('.card-slot[data-group="hero"][data-index="0"]');
-      if (heroSlot && app.gto.hero[0]) {
-        app.gto.hero = [null, null];
-        renderAllCards();
-        updateContext('Cleared hero cards');
-      }
-    }
-
-    // H - Open hero card picker
-    if (e.key === 'h' || e.key === 'H') {
-      const heroSlot = document.querySelector('.card-slot[data-group="hero"][data-index="0"]');
-      if (heroSlot) heroSlot.click();
-    }
-
-    // B - Open board card picker
-    if (e.key === 'b' || e.key === 'B') {
-      const boardSlot = document.querySelector('.card-slot[data-group="board"][data-index="0"]');
-      if (boardSlot) boardSlot.click();
-    }
-
-    // S - Calculate equity
-    if (e.key === 's' || e.key === 'S') {
-      const calcBtn = document.getElementById('calculate');
-      if (calcBtn) calcBtn.click();
-    }
-
-    // T - Toggle teacher
-    if (e.key === 't' || e.key === 'T') {
-      const teacherBtn = document.getElementById('toggleTeacher');
-      if (teacherBtn) teacherBtn.click();
-    }
-
-    // 1-5 - Navigate tabs
-    if (e.key >= '1' && e.key <= '5') {
-      const tabIndex = parseInt(e.key) - 1;
-      const tabs = document.querySelectorAll('.sub-tab');
-      if (tabs[tabIndex]) tabs[tabIndex].click();
-    }
-
-    // L - Toggle dark/light mode
-    if (e.key === 'l' || e.key === 'L') {
-      const currentTheme = document.documentElement.dataset.theme || 'discord';
-      const lightThemes = ['monochrome', 'felt', 'luxury'];
-      const darkThemes = ['discord', 'blue', 'green', 'purple', 'red', 'orange', 'midnight', 'cyberpunk'];
-      
-      // Check if current theme is light
-      const isLight = lightThemes.includes(currentTheme);
-      
-      // Toggle to a theme of opposite type
-      const targetThemes = isLight ? darkThemes : lightThemes;
-      const currentIndex = targetThemes.indexOf(currentTheme);
-      const nextIndex = (currentIndex + 1) % targetThemes.length;
-      const newTheme = targetThemes[nextIndex];
-      
-      document.documentElement.dataset.theme = newTheme;
-      localStorage.setItem('appTheme', newTheme);
-      
-      if ($('#themeColor')) $('#themeColor').value = newTheme;
-      
-      updateContext(`Switched to ${newTheme} theme`);
     }
 
   });
@@ -7322,11 +7240,17 @@ async function generateActionRecommendation(context) {
   if (app.useApi && app.onnxAvailable && typeof runOnnxInference !== 'undefined') {
     try {
       const onnxResult = await runOnnxInference(context);
-      if (onnxResult && onnxResult.confidence > 0.80) return onnxResult;
+      if (onnxResult && onnxResult.confidence > 0.80 && onnxResult.boardSupported) return onnxResult;
     } catch(e) {}
   }
 
-  
+  // Tier 2: Postflop deterministic math
+  if (context.board && context.board.filter(Boolean).length >= 3) {
+    if (typeof calculateUnifiedPostflopStrategy !== 'undefined') {
+      return calculateUnifiedPostflopStrategy(context, context.heroCards, context.deadCards);
+    }
+    return { 'Check': 100 };
+  }
 
   // Tier 3: Preflop fallback heuristic
   if (context.heroCards && context.heroCards.length >= 2) {
@@ -7343,22 +7267,3 @@ async function generateActionRecommendation(context) {
 
   return { 'Fold': 100 };
 }
-
-
-// Progress polling
-setInterval(async () => {
-    try {
-        const res = await fetch('progress.json');
-        const data = await res.json();
-        const pbar = document.getElementById('trainProgress');
-        const ptext = document.getElementById('trainProgressText');
-        if (pbar && ptext) {
-            const pct = Math.min(100, Math.max(0, (data.elapsed_hours / 9.0) * 100));
-            pbar.style.width = pct + '%';
-            ptext.textContent = `Training: ${data.elapsed_hours.toFixed(2)} / 9.0 hrs (Loss: ${data.loss.toFixed(4)}) - ${data.status}`;
-            if (data.status === 'done') {
-                ptext.style.color = '#00ff00';
-            }
-        }
-    } catch(e) {}
-}, 2000);

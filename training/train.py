@@ -44,9 +44,10 @@ def train(args):
     print(f"Using device: {device}")
     
     # 10-max model capacity
-    model = PokerNet(state_dim=100, num_actions=4, max_players=10).to(device)
+    model = PokerNet(state_dim=121, num_actions=4, max_players=10).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     scaler = GradScaler()
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2, factor=0.5)
     
     checkpoint_dir = os.path.join(os.path.dirname(__file__), "checkpoints")
     os.makedirs(checkpoint_dir, exist_ok=True)
@@ -108,7 +109,7 @@ def train(args):
         # Vectorized mock data generation for instant buffer filling
         needed = buffer.capacity - len(buffer.states)
         if needed > 0:
-            states_gpu = torch.randn(needed, 100, device=device)
+            states_gpu = torch.randn(needed, 121, device=device)
             pos_cpu = torch.randint(0, num_players, (needed,)).tolist()
             pol_gpu = torch.softmax(torch.randn(needed, 4, device=device), dim=-1)
             val_gpu = torch.randn(needed, 1, device=device)
@@ -147,6 +148,7 @@ def train(args):
 
             
             # EARLY STOPPING (Patience = 5)
+            scheduler.step(loss_val)
             if loss_val < best_loss - 0.001:
                 best_loss = loss_val
                 patience_counter = 0
@@ -232,7 +234,7 @@ def train(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--max_time_hours", type=float, default=30.0, help="Maximum hours to train before shutting down")
+    parser.add_argument("--max_time_hours", type=float, default=9.0, help="Maximum hours to train before shutting down")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
     args = parser.parse_args()
     

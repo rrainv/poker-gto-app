@@ -23,7 +23,14 @@ CustomHandler.extensions_map.update({
     '.html': 'text/html',
 })
 
-PORT = 8080
-with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
-    print(f"Serving web app on http://localhost:{PORT}")
-    httpd.serve_forever()
+PORT = 3000
+try:
+    with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
+        print(f"Serving web app on http://localhost:{PORT}")
+        httpd.serve_forever()
+except OSError as e:
+    print(f"Port {PORT} is in use, trying 8080...")
+    PORT = 8080
+    with socketserver.TCPServer(("", PORT), CustomHandler) as httpd:
+        print(f"Serving web app on http://localhost:{PORT}")
+        httpd.serve_forever()

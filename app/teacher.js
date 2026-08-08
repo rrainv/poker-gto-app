@@ -875,14 +875,45 @@ function generateTeacherText(profile) {
   let mathOddsText = '';
   const facingStr = $('#facingSize') ? $('#facingSize').value : '0';
   const potStr = $('#potSize') ? $('#potSize').value : '1.5';
+  const stackStr = $('#stack') ? $('#stack').value : '100';
   const isUnopened = (selectedValue('#lastAction') === 'unopened' && parseFloat(facingStr) === 0);
   
   if (isUnopened) {
     mathOddsText = t('Pot is unopened. Focus on positional range advantages and stealing dead money.');
   } else {
-    const odds = parseFloat(facingStr) / (parseFloat(potStr) + parseFloat(facingStr));
+    const facingSize = parseFloat(facingStr);
+    const potSize = parseFloat(potStr);
+    const stack = parseFloat(stackStr);
+    const odds = facingSize / (potSize + facingSize);
+    
     if (!isNaN(odds) && isFinite(odds) && odds > 0) {
-      mathOddsText = `${t('You are facing a raise of')} ${facingStr} bb. ${t('Your pot odds are roughly')} <strong>${(odds * 100).toFixed(1)}%</strong>, ${t('which sets your Minimum Defense Frequency (MDF).')}`;
+      const potOddsPct = (odds * 100).toFixed(1);
+      const mdf = (potSize / (potSize + facingSize) * 100).toFixed(1);
+      
+      // Calculate implied odds potential
+      const spr = stack / (potSize + facingSize);
+      let impliedOddsText = '';
+      
+      if (spr > 10) {
+        impliedOddsText = t(' With deep stacks (SPR: {SPR}), your implied odds are excellent - you can profitably call with draws that might not have immediate pot odds.').replace('{SPR}', spr.toFixed(1));
+      } else if (spr < 3) {
+        impliedOddsText = t(' With shallow stacks (SPR: {SPR}), implied odds are limited - focus on immediate pot odds and made hand strength.').replace('{SPR}', spr.toFixed(1));
+      } else {
+        impliedOddsText = t(' With medium stack depth (SPR: {SPR}), balance immediate pot odds with moderate implied odds potential.').replace('{SPR}', spr.toFixed(1));
+      }
+      
+      // Check if we have draws for implied odds context
+      if (board.length >= 3) {
+        const evalRes = evaluatePostflopHand(app.gto.hero, board);
+        if (evalRes && evalRes.draws && evalRes.draws.length > 0) {
+          const drawCount = evalRes.draws.length;
+          if (drawCount >= 1) {
+            impliedOddsText += t(' Your draws add significant implied odds value when you hit.');
+          }
+        }
+      }
+      
+      mathOddsText = `${t('You are facing a raise of')} ${facingSize} bb. ${t('Your pot odds are roughly')} <strong>${potOddsPct}%</strong>, ${t('requiring at least')} ${potOddsPct}% ${t('equity to break even. MDF is')} <strong>${mdf}%</strong>.${impliedOddsText}`;
     } else {
       mathOddsText = t('Calculate your Pot Odds and MDF against this bet size to determine your required equity.');
     }
@@ -910,29 +941,121 @@ function generateTeacherText(profile) {
   // Strategy
   const pickRandomTeacher = (arr) => arr[Math.floor(Math.random() * arr.length)];
   let strategy = '';
-  if (profile.best === 'FOLD') {
-    strategy = pickRandomTeacher([
-      t('Your hand is too weak on this board, especially facing this sizing.'),
-      t('Without a strong draw or blocker, floating here is mathematically losing EV.'),
-      t('GTO dictates folding here as your equity is insufficient to withstand aggression.')
-    ]);
-  } else if (profile.best === 'OPEN' || profile.best.includes('RAISE') || profile.best.includes('BET')) {
-    strategy = pickRandomTeacher([
-      t('This hand is strong enough to play aggressively. Take the betting lead and build the pot.'),
-      t('GTO heavily prefers an aggressive action here to capture dead money and extract value.'),
-      t('Raising establishes initiative and maximizes EV with a dominant value or high-frequency bluff.')
-    ]);
-  } else if (profile.best === 'CALL') {
-    strategy = pickRandomTeacher([
-      t('This hand has enough equity to see the next street, but is not strong enough to raise.'),
-      t('Calling realizes your equity smoothly without over-inflating the pot.'),
-      t('This holding fits well into a passive calling range, catching bluffs while controlling pot size.')
-    ]);
+  
+  // Enhanced contextual explanations for math fallback
+  if (profile.source === 'MONTE CARLO' || profile.source === 'MATH FALLBACK') {
+    const context = profile.context || {};
+    const tripsType = context.tripsType;
+    const spr = (context.spr && typeof context.spr === 'number') ? context.spr : 5; // Default SPR if not available
+    const boardTexture = context.boardTexture || {};
+    
+    // New board texture explanations
+    if (boardTexture.flushDrawCompletion && (profile.best === 'RAISE' || profile.best === 'CALL')) {
+      strategy = pickRandomTeacher([
+        t('Strong play. You have a flush draw with two cards of the same suit as the board, giving you excellent pot odds and implied odds.'),
+        t('Good decision. Your flush draw completion adds significant equity - roughly 19% to hit on the next street with strong implied odds.'),
+        t('Value in your draw. With two suited cards matching the board, you have a strong flush draw that can win big pots when it hits.')
+      ]);
+    } else if (boardTexture.isOESD && (profile.best === 'RAISE' || profile.best === 'CALL')) {
+      strategy = pickRandomTeacher([
+        t('Solid move. You have an open-ended straight draw (8 outs), giving you roughly 17% equity to hit on the next street.'),
+        t('Good position. Your OESD provides excellent pot odds and implied odds - you can win big pots when you complete your straight.'),
+        t('Strong draw. Open-ended straight draws are very valuable in position, giving you multiple ways to win the hand.')
+      ]);
+    } else if (boardTexture.isGutshot && (profile.best === 'CALL' || profile.best === 'FOLD')) {
+      strategy = pickRandomTeacher([
+        t('Cautious approach. You have a gutshot straight draw (4 outs), which has lower equity (~8.5%) and should be played carefully.'),
+        t('Pot odds matter. Your gutshot draw requires good pot odds to continue profitably - you need roughly 11:1 immediate odds to call.'),
+        t('Marginal draw. Gutshots are speculative - only continue if you have excellent pot odds or implied odds.')
+      ]);
+    } else if (boardTexture.monotone && profile.best === 'FOLD') {
+      strategy = pickRandomTeacher([
+        t('Smart fold. On a monotone board, your hand loses significant value as flush possibilities dominate the action.'),
+        t('Good discipline. Monotone boards require strong hands - without a flush or strong draw, you should usually fold to aggression.'),
+        t('Correct decision. When the board is all one suit, you need a flush or very strong draw to continue profitably.')
+      ]);
+    } else if (tripsType === 'set') {
+      strategy = pickRandomTeacher([
+        t('Raise. You hit a highly disguised Set on a dry board. With an SPR of {SPR}, we need to start building the pot now to get stacks in by the river.').replace('{SPR}', spr.toFixed(1)),
+        t('Bet/raise. Your set is extremely powerful and well-hidden. Most opponents will underestimate your hand strength, allowing you to extract maximum value.'),
+        t('Aggressive action. Sets are the ultimate money-makers in poker. Your hand is nearly invincible, so build the pot while your opponent still thinks they might be ahead.')
+      ]);
+    } else if (tripsType === 'trips' && context.tripsStrength < 1.0) {
+      if (spr > 10) {
+        strategy = pickRandomTeacher([
+          t('Check/Call. You have trips with a weak kicker in a deep-stack situation (SPR: {SPR}). Pot control is essential to avoid getting stacked by better trips or full houses.').replace('{SPR}', spr.toFixed(1)),
+          t('Passive line. Your trips are vulnerable to being out-kicked. With deep stacks, play pot control and let the villain make the mistakes.'),
+          t('Check/call. In deep-stack scenarios, weak trips become tricky. Avoid bloating the pot and focus on showdown value.')
+        ]);
+      } else {
+        strategy = pickRandomTeacher([
+          t('Proceed with caution. You have trips but with a weak kicker. Be selective about facing large raises, as you may be dominated.'),
+          t('Cautious aggression. Your trips have showdown value, but the weak kicker makes them vulnerable. Consider pot control.'),
+          t('Mixed strategy. Trips with a weak kicker requires careful play. Be willing to fold to significant aggression.')
+        ]);
+      }
+    } else if (context.isBoardPaired && gameState && gameState.madeHand && (gameState.madeHand.includes('Flush') || gameState.madeHand.includes('Straight'))) {
+      strategy = pickRandomTeacher([
+        t('Exercise caution. You have a strong hand, but the paired board creates full house possibilities. Large bets usually indicate boats, not flushes/straights.'),
+        t('Pot control recommended. On paired boards, your flush/straight loses significant value against aggression. Be wary of big raises.'),
+        t('Tighten up. The paired board texture means your \"strong\" hand may be second-best to a full house. Play smaller pots.')
+      ]);
+    } else if (context.isWetBoard && gameState && gameState.madeHand && gameState.madeHand.includes('Pair')) {
+      strategy = pickRandomTeacher([
+        t('Pot control. You have top pair on a highly coordinated board. Single pairs lose value when the board connects with calling ranges.'),
+        t('Check/call. On wet boards, top pair is vulnerable to draws and better made hands. Avoid building big pots without a strong kicker.'),
+        t('Cautious line. The board texture is too coordinated to over-commit with one pair. Let your opponent make the mistakes.')
+      ]);
+    } else if (profile.best === 'FOLD') {
+      strategy = pickRandomTeacher([
+        t('Your hand is too weak on this board, especially facing this sizing.'),
+        t('Without a strong draw or blocker, floating here is mathematically losing EV.'),
+        t('GTO dictates folding here as your equity is insufficient to withstand aggression.')
+      ]);
+    } else if (profile.best === 'OPEN' || profile.best.includes('RAISE') || profile.best.includes('BET')) {
+      strategy = pickRandomTeacher([
+        t('This hand is strong enough to play aggressively. Take the betting lead and build the pot.'),
+        t('GTO heavily prefers an aggressive action here to capture dead money and extract value.'),
+        t('Raising establishes initiative and maximizes EV with a dominant value or high-frequency bluff.')
+      ]);
+    } else if (profile.best === 'CALL') {
+      strategy = pickRandomTeacher([
+        t('This hand has enough equity to see the next street, but is not strong enough to raise.'),
+        t('Calling realizes your equity smoothly without over-inflating the pot.'),
+        t('This holding fits well into a passive calling range, catching bluffs while controlling pot size.')
+      ]);
+    } else {
+      strategy = pickRandomTeacher([
+        t('Your hand is part of a mixed strategy or passive line. Observe how opponents react.'),
+        t('This spot represents a mixed equilibrium frequency. Balance your range to remain unexploitable.')
+      ]);
+    }
   } else {
-    strategy = pickRandomTeacher([
-      t('Your hand is part of a mixed strategy or passive line. Observe how opponents react.'),
-      t('This spot represents a mixed equilibrium frequency. Balance your range to remain unexploitable.')
-    ]);
+    // Default fallback for non-math sources
+    if (profile.best === 'FOLD') {
+      strategy = pickRandomTeacher([
+        t('Your hand is too weak on this board, especially facing this sizing.'),
+        t('Without a strong draw or blocker, floating here is mathematically losing EV.'),
+        t('GTO dictates folding here as your equity is insufficient to withstand aggression.')
+      ]);
+    } else if (profile.best === 'OPEN' || profile.best.includes('RAISE') || profile.best.includes('BET')) {
+      strategy = pickRandomTeacher([
+        t('This hand is strong enough to play aggressively. Take the betting lead and build the pot.'),
+        t('GTO heavily prefers an aggressive action here to capture dead money and extract value.'),
+        t('Raising establishes initiative and maximizes EV with a dominant value or high-frequency bluff.')
+      ]);
+    } else if (profile.best === 'CALL') {
+      strategy = pickRandomTeacher([
+        t('This hand has enough equity to see the next street, but is not strong enough to raise.'),
+        t('Calling realizes your equity smoothly without over-inflating the pot.'),
+        t('This holding fits well into a passive calling range, catching bluffs while controlling pot size.')
+      ]);
+    } else {
+      strategy = pickRandomTeacher([
+        t('Your hand is part of a mixed strategy or passive line. Observe how opponents react.'),
+        t('This spot represents a mixed equilibrium frequency. Balance your range to remain unexploitable.')
+      ]);
+    }
   }
 
   let fallbackNote = '';
