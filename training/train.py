@@ -16,7 +16,7 @@ from engine import GameState
 # ---------------------------------------------------------------------------
 
 class ReplayBuffer:
-    def __init__(self, capacity=8192):
+    def __init__(self, capacity=65536):
         self.capacity = capacity
         self.states = []
         self.policies = []
@@ -68,7 +68,7 @@ def train(args):
                 print("Could not load scaler state dict (likely CPU->GPU transition). Starting fresh scaler.")
             
     trainer = CFRTrainer()
-    buffer = ReplayBuffer(capacity=8192)
+    buffer = ReplayBuffer(capacity=65536)
     
     start_time = time.time()
     if args.resume:
@@ -107,25 +107,16 @@ def train(args):
         # We simulate the CFR traversal generating data into the replay buffer
         # In actual implementation, trainer.cfr() would return trajectories
         # Vectorized mock data generation for instant buffer filling
-        needed = buffer.capacity - len(buffer.states)
-        if needed > 0:
-            states_gpu = torch.randn(needed, 121, device=device)
-            pos_cpu = torch.randint(0, num_players, (needed,)).tolist()
-            pol_gpu = torch.softmax(torch.randn(needed, 4, device=device), dim=-1)
-            val_gpu = torch.randn(needed, 1, device=device)
-            
-            for i in range(needed):
-                buffer.add(states_gpu[i], pol_gpu[i], val_gpu[i], pos_cpu[i])
-                iteration += 1
-            
-        # 4. NETWORK EPOCHS (Training on Buffer)
-        print(f"Buffer full (Iteration {iteration}). Training Network...")
+        # Vectorized mock data generation completely bypassing python loops
+        needed = 262144 # Massive 256k batch to max out GPU VRAM
+        states_t = torch.randn(needed, 121, device=device)
+        pos_t = torch.randint(0, num_players, (needed,), device=device, dtype=torch.long)
+        policies_t = torch.softmax(torch.randn(needed, 4, device=device), dim=-1)
+        values_t = torch.randn(needed, 1, device=device)
+        iteration += needed
         
-        # Convert buffer to tensors
-        states_t = torch.stack(buffer.states)
-        policies_t = torch.stack(buffer.policies)
-        values_t = torch.stack(buffer.values)
-        pos_t = torch.tensor(buffer.positions, dtype=torch.long).to(device)
+        # 4. NETWORK EPOCHS (Training on Buffer)
+        print(f"Batch Ready (Iteration {iteration}). Training Network...")
         
         best_loss = float('inf')
         patience = 5
@@ -186,7 +177,7 @@ def train(args):
             pass
             
         # Clear buffer for next CFR generation pass
-        buffer.clear()
+        # buffer.clear()
         
         # Incremental Save
         if current_time - last_save_time >= save_interval:

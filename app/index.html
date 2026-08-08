@@ -328,6 +328,15 @@
 
   <div class="shell">
 
+    <!-- Training Progress -->
+    <div style="padding: 10px; background: #222; border-bottom: 1px solid #444; color: white; font-family: monospace; position: relative; z-index: 100;">
+        <div id="trainProgressText" style="margin-bottom: 5px;">Training: Not started</div>
+        <div style="width: 100%; background: #444; height: 10px; border-radius: 5px; overflow: hidden;">
+            <div id="trainProgress" style="width: 0%; background: #00ff00; height: 100%; transition: width 0.5s;"></div>
+        </div>
+    </div>
+
+
     <header>
 
       <div class="brand">
@@ -1520,8 +1529,130 @@
 
 
 
-        <aside class="side-stack">
+        <aside class="right-rail side-stack">
+          <section class="panel">
 
+            <div class="panel-head">
+
+              <div>
+
+                <div class="panel-title" data-i18n="Training Settings">Training Settings</div>
+
+                <div class="panel-note"><span data-i18n="Customize your training experience.">Customize your training experience.</span></div>
+
+              </div>
+
+            </div>
+
+            <div class="panel-body">
+
+              <div class="field full" style="margin-top:16px;">
+
+                <label class="field-label" style="font-size:12px; font-weight:600; color:var(--text);" data-i18n="Assistance Level">Assistance Level</label>
+
+                <select id="trainingDifficulty" class="select" style="width:100%; margin-top:4px;">
+
+                  <option value="hard" selected data-i18n="Hard (Standard GTO - No Odds)">Hard (Standard GTO - No Odds)</option>
+
+                  <option value="easy" data-i18n="Easy Mode (Pot Odds & MDF)">Easy Mode (Pot Odds & MDF)</option>
+
+                  <option value="guided" data-i18n="Guided Mode (Odds & Strategic Hints)">Guided Mode (Odds & Strategic Hints)</option>
+
+                </select>
+
+                <div class="panel-note" style="margin-top:4px;" data-i18n="Show Pot Odds, MDF, or strategic hints before guessing.">Show Pot Odds, MDF, or strategic hints before guessing.</div>
+
+              </div>
+
+              <div class="field full" style="margin-top:16px;">
+
+                <div class="switchrow" style="margin:0;">
+
+                  <span style="font-size:13px; font-weight:600; color:var(--text);" data-i18n="Show solution immediately">Show solution immediately</span>
+
+                  <button class="switch" id="trainingShowSolution" aria-pressed="false"><b></b></button>
+
+                </div>
+
+                <div class="panel-note" style="margin-top:4px;" data-i18n="Reveal GTO solution right after your guess.">Reveal GTO solution right after your guess.</div>
+
+              </div>
+
+              <div class="field full" style="margin-top:16px;">
+
+                <button class="secondary" id="trainingResetStats" data-i18n="Reset Statistics">Reset Statistics</button>
+
+              </div>
+
+              <div class="field full" style="margin-top:16px;">
+
+                <button class="cta" id="trainingNewHand" data-i18n="New Random Hand">New Random Hand</button>
+
+              </div>
+
+            </div>
+
+          </section>
+
+          <section class="panel">
+
+            <div class="panel-head">
+
+              <div>
+
+                <div class="panel-title" data-i18n="Training Statistics">Training Statistics</div>
+
+                <div class="panel-note"><span data-i18n="Track your progress over time.">Track your progress over time.</span></div>
+
+              </div>
+
+            </div>
+
+            <div class="panel-body">
+
+              <div class="metric-grid" style="margin-top:0;">
+
+                <div class="metric">
+
+                  <span data-i18n="Total Hands">Total Hands</span>
+
+                  <b id="trainingTotalHands">0</b>
+
+                </div>
+
+                <div class="metric">
+
+                  <span data-i18n="Correct">Correct</span>
+
+                  <b id="trainingCorrect" style="color:var(--primary);">0</b>
+
+                </div>
+
+                <div class="metric">
+
+                  <span data-i18n="Accuracy">Accuracy</span>
+
+                  <b id="trainingAccuracy">0%</b>
+
+                </div>
+
+                <div class="metric">
+
+                  <span data-i18n="Streak">Streak</span>
+
+                  <b id="trainingStreak" style="color:var(--orange);">0</b>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </section>
+
+
+
+        </aside>
       </div>
 
     </section>
@@ -2348,116 +2479,70 @@
 
 
   <div class="modal-backdrop" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-
-    <div class="modal" style="max-width:400px;">
-
+    <div class="modal" style="max-width:750px; width:100%;">
       <div class="modal-head">
+        <div>
+          <h2 id="settingsTitle" data-i18n="Settings">Settings</h2>
+          <p data-i18n="Customize your workstation.">Customize your workstation.</p>
+        </div>
+        <button class="close" id="closeSettingsModal" aria-label="Close settings">-</button>
+      </div>
+      <div class="panel-body" style="padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+        
+        <div>
+            <h3 style="font-size:14px; font-weight:700; color:var(--text); margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--line);" data-i18n="Appearance & Themes">Appearance & Themes</h3>
+            
+            <div class="field" style="margin-top: 16px;">
+              <div class="switchrow" style="margin: 0;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;" data-i18n="4-Color Deck (Pro)">4-Color Deck (Pro)</span>
+                <button class="switch" id="fourColorDeckToggle" aria-pressed="false"><b></b></button>
+              </div>
+              <div class="panel-note" style="margin-top: 4px;" data-i18n="Use distinct colors for all four suits.">Use distinct colors for all four suits.</div>
+            </div>
+
+            <div id="themeSwatchGrid" style="box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 24px; max-height: 280px; overflow-y: auto; overflow-x: hidden; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2);">
+              <!-- Dynamically populated theme swatch buttons in JS -->
+            </div>
+        </div>
 
         <div>
+            <h3 style="font-size:14px; font-weight:700; color:var(--text); margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--line);" data-i18n="Engine & Connectivity">Engine & Connectivity</h3>
 
-          <h2 id="settingsTitle" data-i18n="Settings">Settings</h2>
+            <div class="field" style="margin-top: 16px;">
+              <div class="switchrow" style="margin: 0;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;" data-i18n="Local ONNX Engine">Local ONNX Engine</span>
+                <button class="switch on" id="useOnnxToggle" aria-pressed="true"><b></b></button>
+              </div>
+              <div class="panel-note" style="margin-top: 4px;" data-i18n="Run the neural network locally in your browser.">Run the neural network locally in your browser.</div>
+            </div>
 
-          <p data-i18n="Customize your workstation.">Customize your workstation.</p>
+            <div class="field" style="margin-top: 24px;">
+              <div class="switchrow" style="margin: 0;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;" data-i18n="Auto-connect Live API">Auto-connect Live API</span>
+                <button class="switch" id="autoConnectApi" aria-pressed="false"><b></b></button>
+              </div>
+              <div class="panel-note" style="margin-top: 4px;" data-i18n="Automatically connect to the local Python AI server on startup.">Automatically connect to the local Python AI server on startup.</div>
+            </div>
+            
+            <div class="field" style="margin-top: 24px;">
+              <div class="switchrow" style="margin: 0;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text);" data-i18n="Audio Sound FX">Audio Sound FX</span>
+                <button class="switch on" id="audioSettingsSwitch" aria-pressed="true"><b></b></button>
+              </div>
+              <div class="panel-note" style="margin-top: 4px;" data-i18n="Play UI sound effects.">Play UI sound effects.</div>
+            </div>
 
+            <div class="field" style="margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line);">
+              <label style="font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: block;" data-i18n="Custom Solver Tree (JSON)">Custom Solver Tree (JSON)</label>
+              <label class="solver-import-btn" style="display: block; width: 100%; text-align: center; padding: 12px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">
+                <span data-i18n="Load Solver Tree (.json)">?"? Load Solver Tree (.json)</span>
+                <input type="file" id="solverTreeUpload" accept=".json" style="display: none;">
+              </label>
+            </div>
         </div>
-
-        <button class="close" id="closeSettingsModal" aria-label="Close settings">×</button>
 
       </div>
-
-      <div class="panel-body" style="padding: 20px;">
-
-        <div class="field" style="margin-top: 16px; padding: 12px; background: var(--panel2); border-radius: 8px; border: 1px solid var(--line);">
-          <label class="switchrow" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: pointer;">
-            <span data-i18n="4-Color Deck" style="font-weight: bold;">4-Color Deck</span>
-            <input type="checkbox" id="fourColorDeck" style="width: 18px; height: 18px; cursor: pointer;">
-          </label>
-          
-          <label class="switchrow" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; cursor: pointer;">
-            <span data-i18n="Local ONNX Engine" style="font-weight: bold;">Local ONNX Engine</span>
-            <input type="checkbox" id="useOnnxBtn" checked style="width: 18px; height: 18px; cursor: pointer;">
-          </label>
-        </div>
-        <div class="field" style="margin-top: 16px; padding: 12px; background: var(--panel2); border-radius: 8px; border: 1px solid var(--line);">
-          <label class="switchrow" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-            <span data-i18n="Audio Sound FX" style="font-weight: bold;">Audio Sound FX</span>
-            <input type="checkbox" id="audioToggle" style="width: 18px; height: 18px; cursor: pointer;" checked>
-          </label>
-        </div>
-        <div class="field">
-
-          <label for="deckStyle" data-i18n="Deck Style">Deck Style</label>
-
-          <select id="deckStyle">
-
-            <option value="4-color" data-i18n="4-Color Deck (Pro)">4-Color Deck (Pro)</option>
-
-            <option value="2-color" data-i18n="2-Color Deck (Classic)">2-Color Deck (Classic)</option>
-
-          </select>
-
-        </div>
-
-        
-
-
-
-        <div id="themeSwatchGrid" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; max-height: 220px; overflow-y: auto; overflow-x: hidden; padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: rgba(0,0,0,0.2); width: 100%; box-sizing: border-box;">
-
-          <!-- Dynamically populated theme swatch buttons in JS -->
-
-        </div>
-
-
-
-        <div class="field" style="margin-top: 16px;">
-
-          <div class="switchrow" style="margin: 0;">
-
-            <span style="font-size: 13px; font-weight: 600; color: var(--text);"
-
-              data-i18n="Auto-connect Live API">Auto-connect Live API</span>
-
-            <button class="switch" id="autoConnectApi" aria-pressed="false"><b></b></button>
-
-          </div>
-
-          <div class="panel-note" style="margin-top: 4px;" data-i18n="Automatically attempt to connect to the local Python AI on startup.">Automatically attempt to connect to the local Python AI on startup.</div>
-
-        </div>
-
-
-
-        <div class="field" style="margin-top: 16px;">
-
-          <label style="font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; display: block;" data-i18n="Local Neural Engine">Local Neural Engine</label>
-
-          <button class="secondary" id="useOnnxBtn" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 10px; font-weight: bold; border-radius: 6px; cursor: pointer;" data-i18n="Use Local ONNX">⚡ Use Local ONNX</button>
-
-        </div>
-
-
-
-        <div class="field" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line);">
-
-          <label style="font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; display: block;" data-i18n="Custom Solver Tree (JSON)">Custom Solver Tree (JSON)</label>
-
-          <label class="solver-import-btn" style="display: block; width: 100%; text-align: center; padding: 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer;">
-
-            <span data-i18n="Load Solver Tree (.json)">📁 Load Solver Tree (.json)</span>
-
-            <input type="file" id="solverFile" accept=".json,application/json" style="display: none;">
-
-          </label>
-
-        </div>
-
-
-
-      </div>
-
     </div>
-
   </div>
 
 

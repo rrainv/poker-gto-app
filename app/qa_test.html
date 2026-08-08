@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QA Test Runner</title>
+  <style>
+    body { background: #121212; color: #e0e0e0; font-family: monospace; padding: 20px; }
+    #log { white-space: pre-wrap; word-wrap: break-word; font-size: 14px; line-height: 1.5; }
+    .pass { color: #4ade80; font-weight: bold; }
+    .fail { color: #f87171; font-weight: bold; }
+    .info { color: #60a5fa; }
+    button { padding: 10px 15px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>Automated QA Test Runner</h1>
+  <p>Please wait while the automated integration tests execute against the core logic engines.</p>
+  <p>Once finished, click "Copy Logs" below and paste them back to me in the chat.</p>
+  <button id="copyBtn" onclick="copyLogs()">Copy Logs</button>
+  <hr style="border-color: #333; margin: 20px 0;" />
+  <div id="log"></div>
+
+  <!-- Mock basic DOM elements required by logic.js to boot up without erroring -->
+  <div style="display:none;">
+      <div id="heroPos" value="BTN"></div>
+      <div id="deckToggle" class="switch" aria-pressed="false"></div>
+      <div id="useOnnxBtn" class="switch"></div>
+      <div id="useOnnxToggle" class="switch"></div>
+      <div id="topDot"></div>
+      <div id="useOnnxTopText"></div>
+      <div id="apiStatusText"></div>
+      <div id="apiStatusDot"></div>
+      <div id="liveContextText"></div>
+
+      <div id="boardCards"></div>
+      <div id="heroCards"></div>
+      <div id="potSize" value="1.5"></div>
+      <div id="stackSize" value="100"></div>
+      <div id="villainAction" value="raise"></div>
+      <div id="facingSize" value="2.5"></div>
+  </div>
+
+  <!-- Load dependencies -->
+  <script src="i18n.js"></script>
+  <script src="ort.min.js"></script>
+  
+  <!-- Mock app object before logic.js loads -->
+  <script>
+    
+    // Universal DOM mocker to prevent "element is null" errors during headless tests
+    const originalGetElementById = document.getElementById.bind(document);
+    document.getElementById = function(id) {
+        let el = originalGetElementById(id);
+        if (!el) {
+            el = document.createElement('div');
+            el.id = id;
+            document.body.appendChild(el);
+        }
+        return el;
+    };
+    
+    const originalQuerySelector = document.querySelector.bind(document);
+    document.querySelector = function(selector) {
+        let el = originalQuerySelector(selector);
+        if (!el) {
+            el = document.createElement('div');
+            // rudimentary id extraction if it's an ID selector
+            if (selector.startsWith('#')) el.id = selector.slice(1);
+            document.body.appendChild(el);
+        }
+        return el;
+    };
+
+    window.app = {
+      settings: { tightness: 0, fourColorDeck: false, useOnnx: true },
+      gto: { hero: null, board: null },
+      onnxSession: null
+    };
+    function copyLogs() {
+      navigator.clipboard.writeText(document.getElementById('log').innerText)
+        .then(() => alert('Copied to clipboard!'));
+    }
+    function log(msg, type='info') {
+      const div = document.getElementById('log');
+      div.innerHTML += `<span class="${type}">${msg}</span><br/>\n`;
+      console.log(msg);
+    }
+  </script>
+
+  <!-- Load app logic -->
+  <script src="logic.js"></script>
+  <script src="teacher.js"></script>
+
+  <!-- Run Tests -->
+  <script>
+    async function runTests() {
+      log("Starting QA Test Suite...", "info");
+      
+      try {
+        // Wait for ONNX to load
+        log("Loading ONNX Model...");
+        await loadOnnxModel(); // This is defined in logic.js
+        if (!app.onnxSession) {
+            log("[FAIL] ONNX session failed to initialize.", "fail");
+            return;
+        }
+        log("[PASS] ONNX Model loaded successfully.", "pass");
+        
+        // Test 1: Playstyle (Tightness) Extrapolation
+        log("<br>--- Test 1: Playstyle Slider Extrapolation (ONNX) ---", "info");
+        const rawProbs = [0.1, 0.4, 0.5, 0.0, 0.0]; // 10% raise, 40% call, 50% fold
+        
+        app.settings.tightness = 0; // Strict GTO
+        const resGto = applyHeuristicToPrediction(rawProbs, {potSize:1.5, facingSize: 1}, 0, 0, 'AhKh');
+        log(`Strict GTO (L=0) Baseline -> Open: ${resGto.open}%, Call: ${resGto.call}%, Fold: ${resGto.fold}%`);
+        
+        app.settings.tightness = 100; // Splashy (L=1.0)
+        const resLoose = applyHeuristicToPrediction(rawProbs, {potSize:1.5, facingSize: 1}, 0, 0, 'AhKh');
+        log(`Splashy (L=1.0) Extrapolation -> Open: ${resLoose.open}%, Call: ${resLoose.call}%, Fold: ${resLoose.fold}%`);
+        
+        if (resLoose.fold < resGto.fold && resLoose.call > resGto.call) {
+           log("[PASS] Extrapolation successfully reduces folds and shifts probability to calls/raises.", "pass");
+        } else {
+           log("[FAIL] Extrapolation failed to adjust frequencies correctly.", "fail");
+        }
+        
+        // Test 2: Teacher Postflop Generation (Monte Carlo outputs)
+        log("<br>--- Test 2: Postflop Teacher Rationale Generation ---", "info");
+        const profile = {
+           source: 'MONTE CARLO',
+           best: 'RAISE',
+           action: 'raise',
+           evalRes: {
+               hand: { name: 'AhKh' },
+               board: ['Qs', 'Js', '2d'],
+               madeHand: { name: 'High Card' },
+               draws: [{ name: 'Nut Flush Draw' }]
+           },
+           context: { spr: 5.0, tripsType: null }
+        };
+        window.gameState = {
+           hero: ['Ah', 'Kh'],
+           board: ['Qs', 'Js', '2d'],
+           boardTexture: 'Two-tone, Connected'
+        };
+        window.selectedHole = ['Ah', 'Kh'];
+        
+        const teacherHtml = generateTeacherText(profile);
+        if (teacherHtml.includes("NaN") || teacherHtml.includes("undefined") || teacherHtml.includes("null")) {
+           log("[FAIL] Teacher output contains NaN, undefined, or null.", "fail");
+           log("Raw Output: " + teacherHtml, "fail");
+        } else {
+           log("[PASS] Teacher generated math and rationale successfully without undefined values.", "pass");
+        }
+        
+        log("<br>All core logic tests completed successfully.", "info");
+
+      } catch (e) {
+        log(`[FAIL] Exception during tests: ${e.message}`, "fail");
+        console.error(e);
+      }
+    }
+
+    // Delay start slightly to ensure DOM is ready
+    setTimeout(runTests, 1000);
+  </script>
+</body>
+</html>

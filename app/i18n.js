@@ -564,6 +564,21 @@ const appTranslations = {
     "GTO splits frequency in this spot. The decision balances range coverage against opponent tendencies.": "GTO splits frequency in this spot. The decision balances range coverage against opponent tendencies."
   },
   "ru": {
+    "Hand & Board": "Рука и борд",
+    "Math & Odds": "Математика и оддсы",
+    "Playstyle Note": "Заметка о стиле",
+    "Strategy": "Стратегия",
+    "You are facing a raise of": "Перед вами рейз",
+    "Your pot odds are roughly": "Ваши пот-оддсы примерно",
+    "requiring at least": "что требует как минимум",
+    "equity to break even. MDF is": "эквити для игры в ноль. MDF составляет",
+    "Early position dictates a very tight, premium-heavy range.": "Ранняя позиция диктует очень тайтовый диапазон с преобладанием премиум-рук.",
+    "Late position allows you to open wider and leverage positional advantage.": "Поздняя позиция позволяет открываться шире и использовать позиционное преимущество.",
+    "Playing out of the blinds means you will be Out Of Position (OOP) postflop. Defend carefully.": "Игра на блайндах означает, что вы будете без позиции (OOP) на постфлопе. Защищайтесь осторожно.",
+    "This spot represents a mixed equilibrium frequency. Balance your range to remain unexploitable.": "В этой ситуации частота действий смешанная. Балансируйте свой диапазон, чтобы оставаться неэксплуатируемым.",
+    "Calculate your Pot Odds and MDF against this bet size to determine your required equity.": "Рассчитайте ваши пот-оддсы и MDF против этого размера ставки, чтобы определить требуемое эквити.",
+    "Play solid GTO. Stick to your assigned frequencies unless you have a specific read on the villain.": "Играйте в солидный GTO. Придерживайтесь заданных частот, если у вас нет ридсов на оппонента.",
+
     "Settings": "Настройки",
     "⚠️ There are {X} overcard(s) on the board higher than your highest hole card. Your unimproved hand is vulnerable._one": "⚠️ На доске {X} оверкарта старше вашей старшей карманной карты. Ваша рука уязвима.",
     "⚠️ There are {X} overcard(s) on the board higher than your highest hole card. Your unimproved hand is vulnerable._few": "⚠️ На доске {X} оверкарты старше вашей старшей карманной карты. Ваша рука уязвима.",
@@ -2060,3 +2075,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
+
+
+// Force apply missed translations at the end of the file to override any duplicate English keys
+if (appTranslations && appTranslations['ru']) {
+    appTranslations['ru'][' With deep stacks (SPR: {SPR}), your implied odds are excellent - you can profitably call with draws that might not have immediate pot odds.'] = ' С глубокими стеками (SPR: {SPR}) ваши потенциальные шансы банка отличные - вы можете прибыльно коллировать с дро, даже если прямые шансы банка невыгодны.';
+    appTranslations['ru']['Hero'] = 'Хиро';
+    appTranslations['ru']['Opponent'] = 'Оппонент';
+    appTranslations['ru']['+ Add Opponent'] = '+ Добавить оппонента';
+    appTranslations['ru']['+ Add opponent'] = '+ Добавить оппонента';
+}

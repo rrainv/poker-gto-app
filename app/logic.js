@@ -49,20 +49,26 @@ const SoundFX = (function() {
     });
   }
 
+  const btn = document.getElementById('audioToggleBtn');
   return {
     isEnabled: () => soundEnabled,
     toggle: function() {
       soundEnabled = !soundEnabled;
       localStorage.setItem('appSoundEnabled', soundEnabled);
-      const btn = document.getElementById('audioToggleBtn');
+      
       if (btn) {
         btn.textContent = soundEnabled ? '🔊' : '🔇';
         btn.classList.toggle('muted', !soundEnabled);
       }
+      const switchBtn = document.getElementById('audioSettingsSwitch');
+      if (switchBtn) {
+        switchBtn.classList.toggle('on', soundEnabled);
+        switchBtn.setAttribute('aria-pressed', soundEnabled);
+      }
       return soundEnabled;
     },
     initBtn: function() {
-      const btn = document.getElementById('audioToggleBtn');
+      
       if (btn) {
         btn.textContent = soundEnabled ? '🔊' : '🔇';
         btn.classList.toggle('muted', !soundEnabled);
@@ -3315,7 +3321,7 @@ async function generateStrategyWithOnnx(context) {
           // Try separate state_features and relative_position inputs
           output = await app.onnxSession.run({ 
             state_features: inputTensor,
-            relative_position: posTensor
+            relative_pos: posTensor
           });
         } catch (altErr) {
           // Try just state_features alone
@@ -3327,7 +3333,7 @@ async function generateStrategyWithOnnx(context) {
         }
       }
       
-      const p = output.output.data;
+      const p = output.policy ? output.policy.data : output.output.data;
       const actions = applyHeuristicToPrediction(p, context, posIdx, actionIdx, hand);
       strategyMap[hand] = { [context.hero_pos]: actions };
     } catch (innerErr) {
@@ -3400,6 +3406,20 @@ function applyHeuristicToPrediction(p, context, posIdx, actionIdx, hand) {
   let openPct = Math.round((raiseVal / total) * 100);
   let callPct = Math.round((passiveVal / total) * 100);
   let foldPct = 100 - openPct - callPct;
+
+    // Incorporate Playstyle (Tightness) Slider extrapolation
+    const L = (typeof app !== "undefined" && app.settings && app.settings.tightness !== undefined) ? app.settings.tightness / 100.0 : 0.0;
+    if (L > 0 && foldPct > 0) {
+      // Extrapolate outputs for "loose" playstyles by converting folds to calls/raises
+      const foldReduction = foldPct * (0.4 * L); // Max 40% reduction of folds
+      foldPct -= foldReduction;
+      callPct += foldReduction * 0.75; // Most goes to passive calling (typical loose behavior)
+      openPct += foldReduction * 0.25; 
+      
+      openPct = Math.round(openPct);
+      callPct = Math.round(callPct);
+      foldPct = 100 - openPct - callPct;
+    }
 
   // GTO Monotonicity & Rationality Guard
   if (hand) {
@@ -3961,16 +3981,18 @@ function loadSolverFile(file) {
 
 
 
-function applyDeckStyle(style) {
-
+function applyDeckStyle(is4Color) {
+  if (typeof is4Color === 'string') is4Color = (is4Color === '4-color');
+  app.settings.fourColorDeck = is4Color;
   document.documentElement.style.setProperty('--heart', '#ff0000');
-
   document.documentElement.style.setProperty('--spade', '#111827');
-
-  document.documentElement.style.setProperty('--diamond', style === '4-color' ? '#0044ff' : '#ff0000');
-
-  document.documentElement.style.setProperty('--club', style === '4-color' ? '#00b300' : '#111827');
-
+  document.documentElement.style.setProperty('--diamond', is4Color ? '#0044ff' : '#ff0000');
+  document.documentElement.style.setProperty('--club', is4Color ? '#00b300' : '#111827');
+  const toggle = document.getElementById('fourColorDeckToggle');
+  if (toggle) {
+    if (is4Color) { toggle.classList.add('on'); toggle.setAttribute('aria-pressed', 'true'); }
+    else { toggle.classList.remove('on'); toggle.setAttribute('aria-pressed', 'false'); }
+  }
 }
 
 
@@ -4239,7 +4261,7 @@ function bindEvents() {
 
   if ($('#connectApiBtn')) $('#connectApiBtn').addEventListener('click', toggleOnnxModel);
 
-  if ($('#useOnnxBtn')) $('#useOnnxBtn').addEventListener('click', toggleOnnxModel);
+  if ($('#useOnnxToggle')) $('#useOnnxToggle').addEventListener('click', toggleOnnxModel);
 
   
 
@@ -4259,7 +4281,7 @@ function bindEvents() {
 
   if ($('#settingsModal')) $('#settingsModal').addEventListener('click', (event) => { if (event.target === $('#settingsModal')) $('#settingsModal').classList.remove('show'); });
 
-  if ($('#deckStyle')) $('#deckStyle').addEventListener('change', (event) => applyDeckStyle(event.target.value));
+  if ($('#fourColorDeckToggle')) $('#fourColorDeckToggle').addEventListener('click', () => applyDeckStyle(!app.settings.fourColorDeck));
 
   if ($('#themeColor')) $('#themeColor').addEventListener('change', (event) => {
 
@@ -4508,7 +4530,7 @@ function initThemeSwatches() {
 
         <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; min-width: 0; flex: 1;">
 
-          <span style="display: inline-block; width: 8px; height: 8px; flex-shrink: 0; border-radius: ${tItem.sharp ? '0px' : '50%'}; background: ${tItem.color}; box-shadow: 0 0 6px ${tItem.color};"></span>
+          <span style="display: inline-block; margin-left: 4px; width: 8px; height: 8px; flex-shrink: 0; border-radius: ${tItem.sharp ? '0px' : '50%'}; background: ${tItem.color}; box-shadow: 0 0 6px ${tItem.color};"></span>
 
           <span style="color: ${tItem.color}; font-size: 11px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${t(tItem.name)}</span>
 
@@ -4794,7 +4816,7 @@ function init() {
 
     bindEvents();
 
-    if ($('#deckStyle')) applyDeckStyle($('#deckStyle').value);
+    
 
     updateContext('Ready');
 
@@ -7355,7 +7377,7 @@ setInterval(async () => {
         if (pbar && ptext) {
             const pct = Math.min(100, Math.max(0, (data.elapsed_hours / 9.0) * 100));
             pbar.style.width = pct + '%';
-            ptext.textContent = `Training: ${data.elapsed_hours.toFixed(2)} / 9.0 hrs (Loss: ${data.loss.toFixed(4)}) - ${data.status}`;
+            ptext.textContent = `STATUS: ${data.status.toUpperCase()} | TIME: ${data.elapsed_hours.toFixed(2)}h / 9.0h (ETA ${data.eta_hours.toFixed(1)}h) | LOSS: ${data.loss.toFixed(4)} | EPOCH: ${data.epoch} | BATCH: ${data.iteration.toLocaleString()}`;
             if (data.status === 'done') {
                 ptext.style.color = '#00ff00';
             }
