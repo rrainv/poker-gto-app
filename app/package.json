@@ -1,0 +1,63 @@
+{
+  "name": "riverline-poker-workstation",
+  "private": true,
+  "version": "1.0.0",
+  "description": "High-performance Desktop Poker GTO Workstation & Neural Solver",
+  "main": "main.js",
+  "author": "Riverline Development Team",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "electron": "electron .",
+    "electron-dev": "electron . --dev",
+    "dist": "electron-builder --win",
+    "dist-portable": "electron-builder --win --publish never"
+  },
+  "dependencies": {
+    "onnxruntime-node": "^1.27.0",
+    "onnxruntime-web": "^1.27.0"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.riverline.poker",
+    "productName": "Riverline Poker Workstation",
+    "asar": true,
+    "directories": {
+      "output": "dist-app"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "styles.css",
+      "logic.js",
+      "teacher.js",
+      "i18n.js",
+      "equity.worker.js",
+      "solver-model/**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,tests,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Riverline Poker Workstation"
+    }
+  }
+}

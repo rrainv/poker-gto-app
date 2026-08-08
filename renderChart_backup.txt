@@ -1,0 +1,357 @@
+function renderChart() {
+
+  const grid = $('#strategyGrid');
+
+  if (!grid) return;
+
+  const positions = selectedValue('#heroPos');
+
+  const context = treeContext();
+
+  grid.innerHTML = '';
+
+  const currentHeroClass = handClass(app.gto.hero);
+
+  
+
+  let previewHTML = '';
+
+  
+
+  const isPostFlop = currentStreet() !== 'preflop';
+
+  const boardCount = app.gto.board.filter(Boolean).length;
+
+  const useEquityFallback = !context.available && isPostFlop && boardCount >= 3;
+
+  const currentBoard = app.gto.board.filter(Boolean);
+
+  
+
+  RANKS.forEach((_, row) => RANKS.forEach((__, column) => {
+
+    const hand = handCode(row, column);
+
+    
+
+    let entry = null;
+
+    if (context.available && app.solver) {
+
+        if (app.solver.strategy) {
+
+            entry = (app.solver.strategy[hand] || {})[positions];
+
+        } else if (app.solver.positions) {
+
+            entry = (app.solver.positions[positions] || {})[hand];
+
+        }
+
+    }
+
+    
+
+    let actions = [];
+
+    if (entry) {
+
+        if (app.solver.strategy) {
+
+            // API Format
+
+            for (const [key, val] of Object.entries(entry)) {
+
+                let kind = 'unavailable';
+
+                const name = key.toLowerCase();
+
+                if (name.includes('fold') || name.includes('impossible')) kind = 'fold';
+
+                else if (name.includes('call') || name.includes('check')) kind = 'passive';
+
+                else kind = 'aggressive';
+
+                actions.push({ name: key, value: val || 0, kind: kind });
+
+            }
+
+            actions.sort((a, b) => b.value - a.value);
+
+        } else {
+
+            // Local Tree Format
+
+            actions = parseSolverEntry(entry);
+
+        }
+
+    } else if (isPostFlop && useEquityFallback) {
+
+        // Fast Postflop Heuristic Grid Fallback (0ms latency, zero main-thread lag)
+
+        const validCombo = getFirstValidCombo(hand, currentBoard);
+
+        if (validCombo) {
+
+            const hEval = evaluatePostflopHandStrength(validCombo, currentBoard);
+
+            if (hEval.category === 'monster' || hEval.category === 'two_pair' || hEval.category === 'top_pair' || hEval.category === 'overpair') {
+
+               actions = [{ name: 'Raise', value: 70, kind: 'aggressive' }, { name: 'Call', value: 30, kind: 'passive' }];
+
+            } else if (hEval.category === 'middle_pair' || hEval.category === 'flush_draw') {
+
+               actions = [{ name: 'Call', value: 70, kind: 'passive' }, { name: 'Fold', value: 30, kind: 'fold' }];
+
+            } else {
+
+               actions = [{ name: 'Fold', value: 85, kind: 'fold' }, { name: 'Call', value: 15, kind: 'passive' }];
+
+            }
+
+        }
+
+    } else if (!isPostFlop && !context.available) {
+        // Unified preflop mathematical fallback when no solver tree is loaded
+        const heroPos = positions;
+        const r1str = RANKS[row], r2str = RANKS[column];
+        const isPair = row === column;
+        const isSuited = hand.length === 3 && hand[2] === 's';
+        const facingSize = numericValue('#facingSize', 0);
+        const potSize = numericValue('#potSize', 1.5);
+        const stack = numericValue('#stack', 30);
+        const actionEl = $('#lastAction');
+        const lastAction = actionEl ? actionEl.value : 'unopened';
+
+        const fb = calculatePreflopFallbackStrategy(
+          r1str, r2str, isPair, isSuited,
+          heroPos, lastAction, facingSize, potSize, stack
+        );
+
+        const openVal = Math.round(fb.open * 100);
+        const callVal = Math.round(fb.call * 100);
+        const foldVal = Math.round(fb.fold * 100);
+
+        actions = [];
+        if (openVal > 0) actions.push({ name: facingSize === 0 ? 'Raise' : '3-Bet', value: openVal, kind: 'aggressive' });
+        if (callVal > 0) actions.push({ name: 'Call', value: callVal, kind: 'passive' });
+        if (foldVal > 0) actions.push({ name: 'Fold', value: foldVal, kind: 'fold' });
+        actions.sort((a, b) => b.value - a.value);
+
+    } else if (!isPostFlop && context.available) {
+
+        // Missing preflop hand in the solver file is implicitly folded
+
+        actions = [{ name: 'Fold', value: 100, kind: 'fold' }];
+
+    }
+
+    
+
+    const type = (actions[0] && actions[0].kind) || 'unavailable';
+
+    const detail = actions.length ? actions.map((action) => `${action.name} ${action.value}%`).join(' · ') : (useEquityFallback ? 'Blocked by Board' : context.reason);
+
+    const button = document.createElement('button');
+
+    const isSelected = app.selectedHand === hand || (!app.selectedHand && currentHeroClass === hand);
+
+    button.className = 'hand-cell ' + (isSelected ? 'selected ' : '') + type;
+
+    const chartMode = $('#chartAction')?.value || 'strategy';
+
+    let cellSubtext = '';
+
+    let cellBg = '';
+
+
+
+    if (chartMode === 'ev') {
+
+      const r1str = RANKS[row], r2str = RANKS[column];
+
+      const isPair = row === column;
+
+      const isSuited = hand.length === 3 && hand[2] === 's';
+
+      const facingSize = numericValue('#facingSize', 0);
+
+      const potSize = numericValue('#potSize', 1.5);
+
+      const stack = numericValue('#stack', 30);
+
+      const actionEl = $('#lastAction');
+
+      const lastAction = actionEl ? actionEl.value : 'unopened';
+
+
+
+      const fb = calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, positions, lastAction, facingSize, potSize, stack);
+
+      const openPct = (actions.find(a => a.kind === 'aggressive')?.value || (fb.open * 100)) / 100;
+
+      const callPct = (actions.find(a => a.kind === 'passive')?.value || (fb.call * 100)) / 100;
+
+      
+
+      const score = Math.max(RANK_VALUE[r1str] || 0, RANK_VALUE[r2str] || 0) + (isPair ? 6 : 0) + (isSuited ? 1.5 : 0);
+
+      const estEV = Math.max(0, (score - 4.0) * 0.22 * potSize * (openPct * 1.2 + callPct * 0.8));
+
+      cellSubtext = `+${estEV.toFixed(1)}bb`;
+
+      const intensity = Math.min(1.0, estEV / 3.5);
+
+      cellBg = `rgba(234, 179, 8, ${0.15 + intensity * 0.75})`;
+
+    } else if (chartMode === 'equity') {
+
+      const r1str = RANKS[row], r2str = RANKS[column];
+
+      const isPair = row === column;
+
+      const isSuited = hand.length === 3 && hand[2] === 's';
+
+      const score = Math.max(RANK_VALUE[r1str] || 0, RANK_VALUE[r2str] || 0) + (isPair ? 8 : 0) + (isSuited ? 2 : 0);
+
+      const estEq = Math.min(88, Math.max(25, Math.round(30 + score * 2.8)));
+
+      cellSubtext = `${estEq}%`;
+
+      const intensity = (estEq - 25) / 63;
+
+      cellBg = `rgba(16, 185, 129, ${0.15 + intensity * 0.75})`;
+
+    } else if (chartMode === 'raise') {
+
+      const val = Math.round(actions.find(a => a.kind === 'aggressive')?.value || 0);
+
+      cellSubtext = `${val}%`;
+
+      cellBg = `rgba(168, 85, 247, ${val / 100})`;
+
+    } else if (chartMode === 'call') {
+
+      const val = Math.round(actions.find(a => a.kind === 'passive')?.value || 0);
+
+      cellSubtext = `${val}%`;
+
+      cellBg = `rgba(236, 72, 153, ${val / 100})`;
+
+    } else if (chartMode === 'fold') {
+
+      const val = Math.round(actions.find(a => a.kind === 'fold')?.value || 0);
+
+      cellSubtext = `${val}%`;
+
+      cellBg = `rgba(88, 28, 135, ${val / 100})`;
+
+    }
+
+
+
+    if (cellSubtext) {
+
+      button.innerHTML = `<span>${hand}</span><div class="matrix-cell-subtext">${cellSubtext}</div>`;
+
+    } else {
+
+      button.textContent = hand;
+
+    }
+
+
+
+    button.dataset.hand = hand;
+
+    button.setAttribute('aria-label', hand + ': ' + detail);
+
+
+
+    if (cellBg) {
+
+      button.style.background = cellBg;
+
+    } else if (actions.length > 1) {
+
+      let progress = 0;
+
+      button.style.background = 'linear-gradient(135deg, ' + actions.map((action) => {
+
+        const start = progress;
+
+        progress += action.value;
+
+        return `${ACTION_COLORS[action.kind]} ${start}% ${progress}%`;
+
+      }).join(', ') + ')';
+
+    }
+
+
+
+    if (isSelected && actions.length > 0) {
+
+        previewHTML = `<span style="color:#fff;">${hand}</span> ` + actions.map(a => `<span style="color:${ACTION_COLORS[a.kind]}">${a.name.toUpperCase()} ${(a.value % 1 === 0 ? a.value : Number(a.value).toFixed(1))}%</span>`).join(' · ');
+
+        $('#selectedHand').textContent = hand;
+
+        $('#selectedMix').innerHTML = `<span>${detail}</span><div class="alloc">${actions.map((action) => `<i class="${action.kind}" style="width:${action.value}%; background:${ACTION_COLORS[action.kind] || 'var(--matrix-open)'}"></i>`).join('')}</div>`;
+
+    }
+
+
+
+    grid.appendChild(button);
+
+  }));
+
+  /**
+   * Performance Optimization: Event Delegation
+   * Instead of attaching 169 individual 'click' event listeners to each hand cell
+   * (which bloats memory and slows down rendering), we attach a single listener
+   * to the parent `#strategyGrid`. The `event.target.closest` method efficiently
+   * resolves the clicked child cell. This drastically reduces the DOM node memory footprint.
+   */
+  if (grid && !grid.dataset.delegated) {
+    grid.dataset.delegated = 'true';
+    grid.addEventListener('click', (event) => {
+      const cell = event.target.closest('.hand-cell');
+      if (!cell || !cell.dataset.hand) return;
+      if (window.SoundFX) SoundFX.playClick();
+      app.selectedHand = cell.dataset.hand;
+      const selHand = $('#selectedHand');
+      if (selHand) selHand.textContent = app.selectedHand;
+      renderChart();
+    });
+  }
+
+  
+
+  const previewContainer = $('#chartSelectionPreview');
+
+  if (previewContainer) {
+
+      previewContainer.innerHTML = previewHTML || `<span>${t('Select a hand')}</span>`;
+
+  }
+
+
+
+  const stackTag = (app.solver && app.solver.stack) ? app.solver.stack + 'bb tree' : t('no tree');
+
+  if (useEquityFallback) {
+
+      $('#chartSummary').textContent = `${positions} · ${numericValue('#stack')} bb · Postflop Monte Carlo Equity Fallback`;
+
+  } else {
+
+      $('#chartSummary').textContent = `${positions} · ${numericValue('#stack')} bb · ${stackTag} · ${context.available ? t('matched') : context.reason}`;
+
+  }
+
+}
+
+
+

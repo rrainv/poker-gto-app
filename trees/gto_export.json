@@ -1,0 +1,6437 @@
+{
+  "title": "DeepCFR PyTorch Model (model.pt)",
+  "source": "DeepCFR Neural Network",
+  "stack": 30,
+  "positions": [
+    "UTG",
+    "HJ",
+    "CO",
+    "BTN",
+    "SB",
+    "BB"
+  ],
+  "strategy": {
+    "AA": {
+      "UTG": {
+        "unopened": 12.3,
+        "fold": 68.0,
+        "call": 15.9,
+        "raise": 12.3
+      },
+      "HJ": {
+        "unopened": 33.3,
+        "fold": 53.1,
+        "call": 6.4,
+        "raise": 33.3
+      },
+      "CO": {
+        "unopened": 16.1,
+        "fold": 73.5,
+        "call": 9.5,
+        "raise": 16.1
+      },
+      "BTN": {
+        "unopened": 36.8,
+        "fold": 50.4,
+        "call": 1.7,
+        "raise": 36.8
+      },
+      "SB": {
+        "unopened": 23.7,
+        "fold": 65.8,
+        "call": 7.1,
+        "raise": 23.7
+      },
+      "BB": {
+        "unopened": 17.4,
+        "fold": 63.1,
+        "call": 13.7,
+        "raise": 17.4
+      }
+    },
+    "AKs": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.9,
+        "call": 15.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 6.2,
+        "fold": 73.9,
+        "call": 18.7,
+        "raise": 6.2
+      },
+      "CO": {
+        "unopened": 6.8,
+        "fold": 76.0,
+        "call": 17.0,
+        "raise": 6.8
+      },
+      "BTN": {
+        "unopened": 29.6,
+        "fold": 60.2,
+        "call": 5.2,
+        "raise": 29.6
+      },
+      "SB": {
+        "unopened": 1.7,
+        "fold": 78.9,
+        "call": 18.3,
+        "raise": 1.7
+      },
+      "BB": {
+        "unopened": 0.1,
+        "fold": 73.3,
+        "call": 16.7,
+        "raise": 0.1
+      }
+    },
+    "AQs": {
+      "UTG": {
+        "unopened": 0.1,
+        "fold": 76.6,
+        "call": 16.7,
+        "raise": 0.1
+      },
+      "HJ": {
+        "unopened": 9.6,
+        "fold": 72.5,
+        "call": 16.4,
+        "raise": 9.6
+      },
+      "CO": {
+        "unopened": 4.4,
+        "fold": 79.3,
+        "call": 16.2,
+        "raise": 4.4
+      },
+      "BTN": {
+        "unopened": 10.5,
+        "fold": 81.5,
+        "call": 7.0,
+        "raise": 10.5
+      },
+      "SB": {
+        "unopened": 4.6,
+        "fold": 77.0,
+        "call": 17.8,
+        "raise": 4.6
+      },
+      "BB": {
+        "unopened": 0.6,
+        "fold": 78.1,
+        "call": 18.9,
+        "raise": 0.6
+      }
+    },
+    "AJs": {
+      "UTG": {
+        "unopened": 3.7,
+        "fold": 76.7,
+        "call": 19.2,
+        "raise": 3.7
+      },
+      "HJ": {
+        "unopened": 14.7,
+        "fold": 72.6,
+        "call": 12.3,
+        "raise": 14.7
+      },
+      "CO": {
+        "unopened": 4.7,
+        "fold": 80.0,
+        "call": 15.3,
+        "raise": 4.7
+      },
+      "BTN": {
+        "unopened": 4.5,
+        "fold": 80.6,
+        "call": 14.8,
+        "raise": 4.5
+      },
+      "SB": {
+        "unopened": 8.3,
+        "fold": 77.4,
+        "call": 14.2,
+        "raise": 8.3
+      },
+      "BB": {
+        "unopened": 5.9,
+        "fold": 74.1,
+        "call": 19.7,
+        "raise": 5.9
+      }
+    },
+    "ATs": {
+      "UTG": {
+        "unopened": 0.3,
+        "fold": 78.5,
+        "call": 18.5,
+        "raise": 0.3
+      },
+      "HJ": {
+        "unopened": 7.8,
+        "fold": 73.1,
+        "call": 18.5,
+        "raise": 7.8
+      },
+      "CO": {
+        "unopened": 4.9,
+        "fold": 76.5,
+        "call": 18.6,
+        "raise": 4.9
+      },
+      "BTN": {
+        "unopened": 8.5,
+        "fold": 77.7,
+        "call": 13.6,
+        "raise": 8.5
+      },
+      "SB": {
+        "unopened": 4.8,
+        "fold": 76.6,
+        "call": 18.3,
+        "raise": 4.8
+      },
+      "BB": {
+        "unopened": 1.3,
+        "fold": 77.8,
+        "call": 19.7,
+        "raise": 1.3
+      }
+    },
+    "A9s": {
+      "UTG": {
+        "unopened": 0.5,
+        "fold": 79.1,
+        "call": 19.0,
+        "raise": 0.5
+      },
+      "HJ": {
+        "unopened": 8.5,
+        "fold": 72.8,
+        "call": 18.3,
+        "raise": 8.5
+      },
+      "CO": {
+        "unopened": 5.0,
+        "fold": 76.8,
+        "call": 18.2,
+        "raise": 5.0
+      },
+      "BTN": {
+        "unopened": 8.3,
+        "fold": 79.2,
+        "call": 12.5,
+        "raise": 8.3
+      },
+      "SB": {
+        "unopened": 4.8,
+        "fold": 76.7,
+        "call": 18.4,
+        "raise": 4.8
+      },
+      "BB": {
+        "unopened": 1.8,
+        "fold": 77.5,
+        "call": 20.0,
+        "raise": 1.8
+      }
+    },
+    "A8s": {
+      "UTG": {
+        "unopened": 0.1,
+        "fold": 80.1,
+        "call": 19.3,
+        "raise": 0.1
+      },
+      "HJ": {
+        "unopened": 5.2,
+        "fold": 75.5,
+        "call": 19.2,
+        "raise": 5.2
+      },
+      "CO": {
+        "unopened": 6.3,
+        "fold": 76.2,
+        "call": 17.5,
+        "raise": 6.3
+      },
+      "BTN": {
+        "unopened": 5.5,
+        "fold": 78.3,
+        "call": 16.1,
+        "raise": 5.5
+      },
+      "SB": {
+        "unopened": 3.6,
+        "fold": 78.6,
+        "call": 17.8,
+        "raise": 3.6
+      },
+      "BB": {
+        "unopened": 0.7,
+        "fold": 78.7,
+        "call": 20.3,
+        "raise": 0.7
+      }
+    },
+    "A7s": {
+      "UTG": {
+        "unopened": 0.9,
+        "fold": 79.1,
+        "call": 19.2,
+        "raise": 0.9
+      },
+      "HJ": {
+        "unopened": 11.0,
+        "fold": 72.9,
+        "call": 15.8,
+        "raise": 11.0
+      },
+      "CO": {
+        "unopened": 5.1,
+        "fold": 78.5,
+        "call": 16.4,
+        "raise": 5.1
+      },
+      "BTN": {
+        "unopened": 4.7,
+        "fold": 80.5,
+        "call": 14.9,
+        "raise": 4.7
+      },
+      "SB": {
+        "unopened": 5.1,
+        "fold": 76.5,
+        "call": 18.3,
+        "raise": 5.1
+      },
+      "BB": {
+        "unopened": 5.9,
+        "fold": 74.0,
+        "call": 19.8,
+        "raise": 5.9
+      }
+    },
+    "A6s": {
+      "UTG": {
+        "unopened": 4.3,
+        "fold": 75.1,
+        "call": 20.5,
+        "raise": 4.3
+      },
+      "HJ": {
+        "unopened": 8.2,
+        "fold": 71.4,
+        "call": 20.3,
+        "raise": 8.2
+      },
+      "CO": {
+        "unopened": 7.2,
+        "fold": 74.6,
+        "call": 18.3,
+        "raise": 7.2
+      },
+      "BTN": {
+        "unopened": 5.4,
+        "fold": 78.4,
+        "call": 16.2,
+        "raise": 5.4
+      },
+      "SB": {
+        "unopened": 5.9,
+        "fold": 74.2,
+        "call": 19.9,
+        "raise": 5.9
+      },
+      "BB": {
+        "unopened": 7.5,
+        "fold": 71.5,
+        "call": 21.0,
+        "raise": 7.5
+      }
+    },
+    "A5s": {
+      "UTG": {
+        "unopened": 6.6,
+        "fold": 72.6,
+        "call": 20.7,
+        "raise": 6.6
+      },
+      "HJ": {
+        "unopened": 8.6,
+        "fold": 71.5,
+        "call": 19.9,
+        "raise": 8.6
+      },
+      "CO": {
+        "unopened": 7.3,
+        "fold": 74.4,
+        "call": 18.4,
+        "raise": 7.3
+      },
+      "BTN": {
+        "unopened": 5.9,
+        "fold": 77.6,
+        "call": 16.5,
+        "raise": 5.9
+      },
+      "SB": {
+        "unopened": 6.3,
+        "fold": 73.2,
+        "call": 20.4,
+        "raise": 6.3
+      },
+      "BB": {
+        "unopened": 7.6,
+        "fold": 71.1,
+        "call": 21.3,
+        "raise": 7.6
+      }
+    },
+    "A4s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 78.3,
+        "call": 20.1,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 6.0,
+        "fold": 72.3,
+        "call": 21.6,
+        "raise": 6.0
+      },
+      "CO": {
+        "unopened": 6.9,
+        "fold": 74.3,
+        "call": 18.9,
+        "raise": 6.9
+      },
+      "BTN": {
+        "unopened": 6.2,
+        "fold": 74.8,
+        "call": 18.9,
+        "raise": 6.2
+      },
+      "SB": {
+        "unopened": 5.2,
+        "fold": 75.1,
+        "call": 19.6,
+        "raise": 5.2
+      },
+      "BB": {
+        "unopened": 0.8,
+        "fold": 76.6,
+        "call": 21.6,
+        "raise": 0.8
+      }
+    },
+    "A3s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 78.1,
+        "call": 19.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 6.4,
+        "fold": 72.7,
+        "call": 20.7,
+        "raise": 6.4
+      },
+      "CO": {
+        "unopened": 6.6,
+        "fold": 74.2,
+        "call": 19.1,
+        "raise": 6.6
+      },
+      "BTN": {
+        "unopened": 6.3,
+        "fold": 73.7,
+        "call": 20.0,
+        "raise": 6.3
+      },
+      "SB": {
+        "unopened": 3.6,
+        "fold": 76.7,
+        "call": 19.6,
+        "raise": 3.6
+      },
+      "BB": {
+        "unopened": 0.3,
+        "fold": 77.6,
+        "call": 20.7,
+        "raise": 0.3
+      }
+    },
+    "A2s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.8,
+        "call": 18.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 9.2,
+        "fold": 69.5,
+        "call": 19.9,
+        "raise": 9.2
+      },
+      "CO": {
+        "unopened": 5.4,
+        "fold": 74.1,
+        "call": 20.3,
+        "raise": 5.4
+      },
+      "BTN": {
+        "unopened": 12.8,
+        "fold": 72.1,
+        "call": 14.7,
+        "raise": 12.8
+      },
+      "SB": {
+        "unopened": 4.1,
+        "fold": 74.9,
+        "call": 20.1,
+        "raise": 4.1
+      },
+      "BB": {
+        "unopened": 0.6,
+        "fold": 73.4,
+        "call": 20.3,
+        "raise": 0.6
+      }
+    },
+    "AKo": {
+      "UTG": {
+        "unopened": 6.3,
+        "fold": 74.8,
+        "call": 18.6,
+        "raise": 6.3
+      },
+      "HJ": {
+        "unopened": 17.6,
+        "fold": 70.3,
+        "call": 11.3,
+        "raise": 17.6
+      },
+      "CO": {
+        "unopened": 4.7,
+        "fold": 82.2,
+        "call": 13.1,
+        "raise": 4.7
+      },
+      "BTN": {
+        "unopened": 7.3,
+        "fold": 86.8,
+        "call": 5.5,
+        "raise": 7.3
+      },
+      "SB": {
+        "unopened": 14.4,
+        "fold": 74.6,
+        "call": 10.6,
+        "raise": 14.4
+      },
+      "BB": {
+        "unopened": 10.3,
+        "fold": 70.6,
+        "call": 18.7,
+        "raise": 10.3
+      }
+    },
+    "KK": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.1,
+        "call": 18.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 3.4,
+        "fold": 75.2,
+        "call": 19.7,
+        "raise": 3.4
+      },
+      "CO": {
+        "unopened": 5.6,
+        "fold": 77.0,
+        "call": 17.1,
+        "raise": 5.6
+      },
+      "BTN": {
+        "unopened": 24.4,
+        "fold": 62.7,
+        "call": 7.1,
+        "raise": 24.4
+      },
+      "SB": {
+        "unopened": 0.6,
+        "fold": 79.4,
+        "call": 18.0,
+        "raise": 0.6
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.9,
+        "call": 17.7,
+        "raise": 0.0
+      }
+    },
+    "KQs": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.4,
+        "call": 24.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 73.3,
+        "call": 16.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 77.2,
+        "call": 14.9,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.4,
+        "fold": 72.2,
+        "call": 14.8,
+        "raise": 0.4
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 76.2,
+        "call": 18.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.4,
+        "call": 26.7,
+        "raise": 0.0
+      }
+    },
+    "KJs": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.9,
+        "call": 18.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 1.0,
+        "fold": 78.8,
+        "call": 18.1,
+        "raise": 1.0
+      },
+      "CO": {
+        "unopened": 1.4,
+        "fold": 79.5,
+        "call": 18.7,
+        "raise": 1.4
+      },
+      "BTN": {
+        "unopened": 5.8,
+        "fold": 76.0,
+        "call": 17.8,
+        "raise": 5.8
+      },
+      "SB": {
+        "unopened": 0.1,
+        "fold": 80.3,
+        "call": 16.1,
+        "raise": 0.1
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 73.9,
+        "call": 17.7,
+        "raise": 0.0
+      }
+    },
+    "KTs": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.2,
+        "call": 25.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 73.3,
+        "call": 15.3,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 80.2,
+        "call": 16.6,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 1.0,
+        "fold": 78.6,
+        "call": 18.2,
+        "raise": 1.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 76.3,
+        "call": 16.9,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 71.0,
+        "call": 25.9,
+        "raise": 0.0
+      }
+    },
+    "K9s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.4,
+        "call": 24.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 75.3,
+        "call": 16.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 80.4,
+        "call": 17.6,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 1.4,
+        "fold": 78.5,
+        "call": 19.2,
+        "raise": 1.4
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 76.0,
+        "call": 16.3,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.8,
+        "call": 26.3,
+        "raise": 0.0
+      }
+    },
+    "K8s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.1,
+        "call": 26.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 73.9,
+        "call": 18.7,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 81.3,
+        "call": 17.6,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.4,
+        "fold": 79.2,
+        "call": 19.2,
+        "raise": 0.4
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 75.7,
+        "call": 20.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.8,
+        "call": 27.7,
+        "raise": 0.0
+      }
+    },
+    "K7s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 73.2,
+        "call": 23.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 76.9,
+        "call": 16.3,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.3,
+        "fold": 80.3,
+        "call": 17.8,
+        "raise": 0.3
+      },
+      "BTN": {
+        "unopened": 3.1,
+        "fold": 77.1,
+        "call": 19.0,
+        "raise": 3.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 77.5,
+        "call": 14.6,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.1,
+        "call": 24.1,
+        "raise": 0.0
+      }
+    },
+    "K6s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 67.8,
+        "call": 27.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.4,
+        "fold": 75.4,
+        "call": 19.9,
+        "raise": 0.4
+      },
+      "CO": {
+        "unopened": 0.9,
+        "fold": 78.5,
+        "call": 20.3,
+        "raise": 0.9
+      },
+      "BTN": {
+        "unopened": 5.1,
+        "fold": 74.8,
+        "call": 19.9,
+        "raise": 5.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 77.3,
+        "call": 17.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 67.9,
+        "call": 25.8,
+        "raise": 0.0
+      }
+    },
+    "K5s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 67.9,
+        "call": 26.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.7,
+        "fold": 75.4,
+        "call": 20.0,
+        "raise": 0.7
+      },
+      "CO": {
+        "unopened": 1.6,
+        "fold": 77.6,
+        "call": 20.5,
+        "raise": 1.6
+      },
+      "BTN": {
+        "unopened": 6.6,
+        "fold": 72.4,
+        "call": 20.3,
+        "raise": 6.6
+      },
+      "SB": {
+        "unopened": 0.1,
+        "fold": 77.0,
+        "call": 17.7,
+        "raise": 0.1
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.5,
+        "call": 24.6,
+        "raise": 0.0
+      }
+    },
+    "K4s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 67.6,
+        "call": 29.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 70.8,
+        "call": 22.3,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 78.3,
+        "call": 19.1,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.2,
+        "fold": 75.8,
+        "call": 20.3,
+        "raise": 0.2
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 71.6,
+        "call": 23.4,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 67.4,
+        "call": 29.8,
+        "raise": 0.0
+      }
+    },
+    "K3s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.5,
+        "call": 29.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 69.2,
+        "call": 23.8,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 75.3,
+        "call": 19.1,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.1,
+        "fold": 75.4,
+        "call": 19.4,
+        "raise": 0.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 71.0,
+        "call": 25.4,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.3,
+        "call": 29.0,
+        "raise": 0.0
+      }
+    },
+    "K2s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.3,
+        "call": 28.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 69.6,
+        "call": 22.4,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 72.5,
+        "call": 19.0,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.2,
+        "fold": 69.1,
+        "call": 17.0,
+        "raise": 0.2
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 71.7,
+        "call": 23.8,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.2,
+        "call": 28.4,
+        "raise": 0.0
+      }
+    },
+    "AQo": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.6,
+        "call": 15.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 6.8,
+        "fold": 74.7,
+        "call": 17.3,
+        "raise": 6.8
+      },
+      "CO": {
+        "unopened": 4.2,
+        "fold": 77.8,
+        "call": 17.9,
+        "raise": 4.2
+      },
+      "BTN": {
+        "unopened": 21.2,
+        "fold": 67.8,
+        "call": 6.7,
+        "raise": 21.2
+      },
+      "SB": {
+        "unopened": 1.5,
+        "fold": 79.9,
+        "call": 17.6,
+        "raise": 1.5
+      },
+      "BB": {
+        "unopened": 0.2,
+        "fold": 76.6,
+        "call": 17.7,
+        "raise": 0.2
+      }
+    },
+    "KQo": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.7,
+        "call": 25.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 74.0,
+        "call": 18.7,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 75.8,
+        "call": 15.5,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.1,
+        "fold": 68.9,
+        "call": 13.9,
+        "raise": 0.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 77.0,
+        "call": 18.9,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.4,
+        "call": 26.5,
+        "raise": 0.0
+      }
+    },
+    "QQ": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.1,
+        "call": 22.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 74.2,
+        "call": 14.2,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 77.0,
+        "call": 14.1,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.4,
+        "fold": 72.3,
+        "call": 14.0,
+        "raise": 0.4
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 77.1,
+        "call": 15.8,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.8,
+        "call": 24.1,
+        "raise": 0.0
+      }
+    },
+    "QJs": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 77.0,
+        "call": 16.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.4,
+        "fold": 78.1,
+        "call": 19.1,
+        "raise": 2.4
+      },
+      "CO": {
+        "unopened": 4.1,
+        "fold": 78.1,
+        "call": 17.7,
+        "raise": 4.1
+      },
+      "BTN": {
+        "unopened": 5.3,
+        "fold": 76.5,
+        "call": 18.0,
+        "raise": 5.3
+      },
+      "SB": {
+        "unopened": 0.4,
+        "fold": 81.0,
+        "call": 17.7,
+        "raise": 0.4
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 78.8,
+        "call": 17.0,
+        "raise": 0.0
+      }
+    },
+    "QTs": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.2,
+        "call": 25.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 79.5,
+        "call": 17.2,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.2,
+        "fold": 81.2,
+        "call": 18.2,
+        "raise": 0.2
+      },
+      "BTN": {
+        "unopened": 2.4,
+        "fold": 79.4,
+        "call": 17.6,
+        "raise": 2.4
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.2,
+        "call": 16.3,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 71.4,
+        "call": 24.9,
+        "raise": 0.0
+      }
+    },
+    "Q9s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 73.5,
+        "call": 23.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 79.8,
+        "call": 17.8,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.4,
+        "fold": 80.7,
+        "call": 18.7,
+        "raise": 0.4
+      },
+      "BTN": {
+        "unopened": 3.6,
+        "fold": 78.2,
+        "call": 17.8,
+        "raise": 3.6
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.3,
+        "call": 15.9,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 73.1,
+        "call": 22.7,
+        "raise": 0.0
+      }
+    },
+    "Q8s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.9,
+        "call": 25.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 80.7,
+        "call": 17.8,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 81.4,
+        "call": 18.5,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 1.3,
+        "fold": 80.2,
+        "call": 18.4,
+        "raise": 1.3
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.1,
+        "call": 17.5,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.4,
+        "call": 25.2,
+        "raise": 0.0
+      }
+    },
+    "Q7s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.1,
+        "call": 22.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.5,
+        "fold": 79.4,
+        "call": 19.2,
+        "raise": 0.5
+      },
+      "CO": {
+        "unopened": 1.3,
+        "fold": 80.2,
+        "call": 18.4,
+        "raise": 1.3
+      },
+      "BTN": {
+        "unopened": 4.8,
+        "fold": 77.3,
+        "call": 17.9,
+        "raise": 4.8
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.8,
+        "call": 17.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 75.8,
+        "call": 20.9,
+        "raise": 0.0
+      }
+    },
+    "Q6s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 75.8,
+        "call": 22.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 1.6,
+        "fold": 77.5,
+        "call": 20.7,
+        "raise": 1.6
+      },
+      "CO": {
+        "unopened": 3.6,
+        "fold": 77.8,
+        "call": 18.6,
+        "raise": 3.6
+      },
+      "BTN": {
+        "unopened": 5.4,
+        "fold": 75.8,
+        "call": 18.8,
+        "raise": 5.4
+      },
+      "SB": {
+        "unopened": 0.2,
+        "fold": 79.9,
+        "call": 19.6,
+        "raise": 0.2
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 78.9,
+        "call": 20.2,
+        "raise": 0.0
+      }
+    },
+    "Q5s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 75.4,
+        "call": 22.1,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.9,
+        "fold": 76.3,
+        "call": 20.6,
+        "raise": 2.9
+      },
+      "CO": {
+        "unopened": 5.5,
+        "fold": 75.9,
+        "call": 18.6,
+        "raise": 5.5
+      },
+      "BTN": {
+        "unopened": 5.6,
+        "fold": 74.6,
+        "call": 19.7,
+        "raise": 5.6
+      },
+      "SB": {
+        "unopened": 0.4,
+        "fold": 79.5,
+        "call": 19.7,
+        "raise": 0.4
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 78.6,
+        "call": 20.3,
+        "raise": 0.0
+      }
+    },
+    "Q4s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.3,
+        "call": 29.1,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 77.2,
+        "call": 20.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.2,
+        "fold": 79.5,
+        "call": 20.3,
+        "raise": 0.2
+      },
+      "BTN": {
+        "unopened": 1.6,
+        "fold": 78.2,
+        "call": 19.9,
+        "raise": 1.6
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 77.2,
+        "call": 20.0,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.8,
+        "call": 28.4,
+        "raise": 0.0
+      }
+    },
+    "Q3s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.5,
+        "call": 28.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 76.8,
+        "call": 20.3,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 80.5,
+        "call": 19.2,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 1.0,
+        "fold": 78.7,
+        "call": 20.0,
+        "raise": 1.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 74.7,
+        "call": 22.4,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.3,
+        "call": 27.3,
+        "raise": 0.0
+      }
+    },
+    "Q2s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 67.8,
+        "call": 29.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 71.4,
+        "call": 20.2,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 79.7,
+        "call": 18.4,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.6,
+        "fold": 77.2,
+        "call": 18.9,
+        "raise": 0.6
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 72.3,
+        "call": 23.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 67.7,
+        "call": 29.6,
+        "raise": 0.0
+      }
+    },
+    "AJo": {
+      "UTG": {
+        "unopened": 1.8,
+        "fold": 77.4,
+        "call": 20.3,
+        "raise": 1.8
+      },
+      "HJ": {
+        "unopened": 9.3,
+        "fold": 73.5,
+        "call": 17.1,
+        "raise": 9.3
+      },
+      "CO": {
+        "unopened": 5.6,
+        "fold": 77.7,
+        "call": 16.7,
+        "raise": 5.6
+      },
+      "BTN": {
+        "unopened": 5.8,
+        "fold": 81.6,
+        "call": 12.5,
+        "raise": 5.8
+      },
+      "SB": {
+        "unopened": 4.9,
+        "fold": 76.8,
+        "call": 18.2,
+        "raise": 4.9
+      },
+      "BB": {
+        "unopened": 5.7,
+        "fold": 74.1,
+        "call": 19.9,
+        "raise": 5.7
+      }
+    },
+    "KJo": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.1,
+        "call": 24.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 74.8,
+        "call": 16.8,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.2,
+        "fold": 79.1,
+        "call": 18.6,
+        "raise": 0.2
+      },
+      "BTN": {
+        "unopened": 2.3,
+        "fold": 77.7,
+        "call": 18.7,
+        "raise": 2.3
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 75.0,
+        "call": 15.4,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.6,
+        "call": 24.9,
+        "raise": 0.0
+      }
+    },
+    "QJo": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.8,
+        "call": 24.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 79.0,
+        "call": 18.8,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.5,
+        "fold": 80.4,
+        "call": 19.0,
+        "raise": 0.5
+      },
+      "BTN": {
+        "unopened": 3.7,
+        "fold": 79.1,
+        "call": 17.0,
+        "raise": 3.7
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.3,
+        "call": 16.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.5,
+        "call": 23.1,
+        "raise": 0.0
+      }
+    },
+    "JJ": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 76.1,
+        "call": 16.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 4.4,
+        "fold": 75.8,
+        "call": 19.2,
+        "raise": 4.4
+      },
+      "CO": {
+        "unopened": 4.7,
+        "fold": 76.9,
+        "call": 18.4,
+        "raise": 4.7
+      },
+      "BTN": {
+        "unopened": 7.1,
+        "fold": 75.2,
+        "call": 17.6,
+        "raise": 7.1
+      },
+      "SB": {
+        "unopened": 0.8,
+        "fold": 80.2,
+        "call": 18.2,
+        "raise": 0.8
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 77.2,
+        "call": 17.3,
+        "raise": 0.0
+      }
+    },
+    "JTs": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 79.5,
+        "call": 16.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 3.6,
+        "fold": 77.5,
+        "call": 18.5,
+        "raise": 3.6
+      },
+      "CO": {
+        "unopened": 4.4,
+        "fold": 77.5,
+        "call": 18.0,
+        "raise": 4.4
+      },
+      "BTN": {
+        "unopened": 5.8,
+        "fold": 76.1,
+        "call": 18.0,
+        "raise": 5.8
+      },
+      "SB": {
+        "unopened": 0.8,
+        "fold": 81.1,
+        "call": 17.6,
+        "raise": 0.8
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 79.6,
+        "call": 17.1,
+        "raise": 0.0
+      }
+    },
+    "J9s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 80.8,
+        "call": 16.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 4.6,
+        "fold": 76.8,
+        "call": 18.3,
+        "raise": 4.6
+      },
+      "CO": {
+        "unopened": 4.3,
+        "fold": 77.8,
+        "call": 17.8,
+        "raise": 4.3
+      },
+      "BTN": {
+        "unopened": 6.3,
+        "fold": 76.1,
+        "call": 17.5,
+        "raise": 6.3
+      },
+      "SB": {
+        "unopened": 0.9,
+        "fold": 81.1,
+        "call": 17.7,
+        "raise": 0.9
+      },
+      "BB": {
+        "unopened": 0.1,
+        "fold": 80.1,
+        "call": 17.6,
+        "raise": 0.1
+      }
+    },
+    "J8s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 80.2,
+        "call": 17.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.2,
+        "fold": 78.2,
+        "call": 19.3,
+        "raise": 2.2
+      },
+      "CO": {
+        "unopened": 4.5,
+        "fold": 78.5,
+        "call": 17.0,
+        "raise": 4.5
+      },
+      "BTN": {
+        "unopened": 5.4,
+        "fold": 76.7,
+        "call": 17.9,
+        "raise": 5.4
+      },
+      "SB": {
+        "unopened": 0.4,
+        "fold": 81.1,
+        "call": 18.1,
+        "raise": 0.4
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 80.8,
+        "call": 18.0,
+        "raise": 0.0
+      }
+    },
+    "J7s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 81.0,
+        "call": 16.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 5.3,
+        "fold": 75.8,
+        "call": 18.7,
+        "raise": 5.3
+      },
+      "CO": {
+        "unopened": 4.7,
+        "fold": 77.6,
+        "call": 17.6,
+        "raise": 4.7
+      },
+      "BTN": {
+        "unopened": 5.5,
+        "fold": 77.5,
+        "call": 17.0,
+        "raise": 5.5
+      },
+      "SB": {
+        "unopened": 2.8,
+        "fold": 79.2,
+        "call": 17.9,
+        "raise": 2.8
+      },
+      "BB": {
+        "unopened": 0.3,
+        "fold": 79.6,
+        "call": 18.6,
+        "raise": 0.3
+      }
+    },
+    "J6s": {
+      "UTG": {
+        "unopened": 0.1,
+        "fold": 79.0,
+        "call": 19.9,
+        "raise": 0.1
+      },
+      "HJ": {
+        "unopened": 6.0,
+        "fold": 73.1,
+        "call": 20.8,
+        "raise": 6.0
+      },
+      "CO": {
+        "unopened": 5.9,
+        "fold": 75.7,
+        "call": 18.4,
+        "raise": 5.9
+      },
+      "BTN": {
+        "unopened": 6.5,
+        "fold": 73.6,
+        "call": 19.9,
+        "raise": 6.5
+      },
+      "SB": {
+        "unopened": 4.9,
+        "fold": 76.1,
+        "call": 18.9,
+        "raise": 4.9
+      },
+      "BB": {
+        "unopened": 1.0,
+        "fold": 77.4,
+        "call": 21.2,
+        "raise": 1.0
+      }
+    },
+    "J5s": {
+      "UTG": {
+        "unopened": 0.6,
+        "fold": 77.8,
+        "call": 20.6,
+        "raise": 0.6
+      },
+      "HJ": {
+        "unopened": 7.5,
+        "fold": 71.7,
+        "call": 20.7,
+        "raise": 7.5
+      },
+      "CO": {
+        "unopened": 6.2,
+        "fold": 74.9,
+        "call": 18.9,
+        "raise": 6.2
+      },
+      "BTN": {
+        "unopened": 6.5,
+        "fold": 74.1,
+        "call": 19.3,
+        "raise": 6.5
+      },
+      "SB": {
+        "unopened": 5.5,
+        "fold": 75.0,
+        "call": 19.4,
+        "raise": 5.5
+      },
+      "BB": {
+        "unopened": 1.8,
+        "fold": 76.5,
+        "call": 21.3,
+        "raise": 1.8
+      }
+    },
+    "J4s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 73.0,
+        "call": 21.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.6,
+        "fold": 76.2,
+        "call": 20.4,
+        "raise": 2.6
+      },
+      "CO": {
+        "unopened": 5.1,
+        "fold": 76.4,
+        "call": 18.5,
+        "raise": 5.1
+      },
+      "BTN": {
+        "unopened": 5.6,
+        "fold": 74.9,
+        "call": 19.5,
+        "raise": 5.6
+      },
+      "SB": {
+        "unopened": 0.5,
+        "fold": 79.0,
+        "call": 19.4,
+        "raise": 0.5
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 75.8,
+        "call": 19.5,
+        "raise": 0.0
+      }
+    },
+    "J3s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.9,
+        "call": 23.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 1.3,
+        "fold": 77.5,
+        "call": 20.1,
+        "raise": 1.3
+      },
+      "CO": {
+        "unopened": 3.9,
+        "fold": 77.1,
+        "call": 18.9,
+        "raise": 3.9
+      },
+      "BTN": {
+        "unopened": 5.8,
+        "fold": 74.5,
+        "call": 19.7,
+        "raise": 5.8
+      },
+      "SB": {
+        "unopened": 0.1,
+        "fold": 79.7,
+        "call": 18.4,
+        "raise": 0.1
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 73.4,
+        "call": 21.2,
+        "raise": 0.0
+      }
+    },
+    "J2s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.3,
+        "call": 20.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 1.6,
+        "fold": 76.8,
+        "call": 19.8,
+        "raise": 1.6
+      },
+      "CO": {
+        "unopened": 2.1,
+        "fold": 77.5,
+        "call": 20.0,
+        "raise": 2.1
+      },
+      "BTN": {
+        "unopened": 6.2,
+        "fold": 73.5,
+        "call": 20.1,
+        "raise": 6.2
+      },
+      "SB": {
+        "unopened": 0.2,
+        "fold": 78.7,
+        "call": 18.0,
+        "raise": 0.2
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 71.5,
+        "call": 19.6,
+        "raise": 0.0
+      }
+    },
+    "ATo": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 73.8,
+        "call": 19.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.6,
+        "fold": 77.0,
+        "call": 19.8,
+        "raise": 2.6
+      },
+      "CO": {
+        "unopened": 4.1,
+        "fold": 79.0,
+        "call": 16.9,
+        "raise": 4.1
+      },
+      "BTN": {
+        "unopened": 7.5,
+        "fold": 79.6,
+        "call": 12.6,
+        "raise": 7.5
+      },
+      "SB": {
+        "unopened": 0.3,
+        "fold": 81.0,
+        "call": 17.4,
+        "raise": 0.3
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 77.8,
+        "call": 18.5,
+        "raise": 0.0
+      }
+    },
+    "KTo": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.2,
+        "call": 28.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 70.6,
+        "call": 24.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 75.4,
+        "call": 19.6,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 74.6,
+        "call": 14.8,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 73.5,
+        "call": 24.0,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.6,
+        "call": 28.9,
+        "raise": 0.0
+      }
+    },
+    "QTo": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.9,
+        "call": 27.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 74.0,
+        "call": 20.6,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 82.2,
+        "call": 16.4,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.1,
+        "fold": 79.4,
+        "call": 15.5,
+        "raise": 0.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 75.0,
+        "call": 21.5,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.3,
+        "call": 29.5,
+        "raise": 0.0
+      }
+    },
+    "JTo": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.2,
+        "call": 22.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.2,
+        "fold": 79.1,
+        "call": 18.3,
+        "raise": 0.2
+      },
+      "CO": {
+        "unopened": 0.5,
+        "fold": 80.4,
+        "call": 18.9,
+        "raise": 0.5
+      },
+      "BTN": {
+        "unopened": 3.8,
+        "fold": 77.8,
+        "call": 18.3,
+        "raise": 3.8
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.1,
+        "call": 16.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 73.7,
+        "call": 21.5,
+        "raise": 0.0
+      }
+    },
+    "TT": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.9,
+        "call": 26.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 75.6,
+        "call": 17.5,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 81.2,
+        "call": 17.5,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.5,
+        "fold": 79.6,
+        "call": 19.2,
+        "raise": 0.5
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 76.0,
+        "call": 19.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.7,
+        "call": 27.9,
+        "raise": 0.0
+      }
+    },
+    "T9s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.8,
+        "call": 21.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.4,
+        "fold": 80.1,
+        "call": 18.0,
+        "raise": 0.4
+      },
+      "CO": {
+        "unopened": 1.1,
+        "fold": 80.2,
+        "call": 18.4,
+        "raise": 1.1
+      },
+      "BTN": {
+        "unopened": 4.6,
+        "fold": 76.6,
+        "call": 18.7,
+        "raise": 4.6
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.9,
+        "call": 16.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 74.2,
+        "call": 20.1,
+        "raise": 0.0
+      }
+    },
+    "T8s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.6,
+        "call": 25.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 80.1,
+        "call": 18.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.4,
+        "fold": 80.7,
+        "call": 18.8,
+        "raise": 0.4
+      },
+      "BTN": {
+        "unopened": 2.7,
+        "fold": 78.8,
+        "call": 18.5,
+        "raise": 2.7
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.6,
+        "call": 16.5,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.5,
+        "call": 24.1,
+        "raise": 0.0
+      }
+    },
+    "T7s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 75.6,
+        "call": 19.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 1.8,
+        "fold": 78.7,
+        "call": 19.1,
+        "raise": 1.8
+      },
+      "CO": {
+        "unopened": 3.8,
+        "fold": 78.5,
+        "call": 17.6,
+        "raise": 3.8
+      },
+      "BTN": {
+        "unopened": 4.8,
+        "fold": 76.8,
+        "call": 18.4,
+        "raise": 4.8
+      },
+      "SB": {
+        "unopened": 0.3,
+        "fold": 81.3,
+        "call": 17.6,
+        "raise": 0.3
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 78.0,
+        "call": 18.3,
+        "raise": 0.0
+      }
+    },
+    "T6s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 77.1,
+        "call": 20.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 3.5,
+        "fold": 76.2,
+        "call": 20.1,
+        "raise": 3.5
+      },
+      "CO": {
+        "unopened": 5.4,
+        "fold": 76.3,
+        "call": 18.3,
+        "raise": 5.4
+      },
+      "BTN": {
+        "unopened": 6.1,
+        "fold": 74.5,
+        "call": 19.4,
+        "raise": 6.1
+      },
+      "SB": {
+        "unopened": 0.6,
+        "fold": 79.3,
+        "call": 19.7,
+        "raise": 0.6
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 78.3,
+        "call": 20.4,
+        "raise": 0.0
+      }
+    },
+    "T5s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 77.1,
+        "call": 20.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 5.7,
+        "fold": 74.2,
+        "call": 20.0,
+        "raise": 5.7
+      },
+      "CO": {
+        "unopened": 5.9,
+        "fold": 75.1,
+        "call": 19.0,
+        "raise": 5.9
+      },
+      "BTN": {
+        "unopened": 6.6,
+        "fold": 73.1,
+        "call": 20.2,
+        "raise": 6.6
+      },
+      "SB": {
+        "unopened": 1.0,
+        "fold": 78.7,
+        "call": 20.0,
+        "raise": 1.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 78.5,
+        "call": 20.5,
+        "raise": 0.0
+      }
+    },
+    "T4s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.0,
+        "call": 29.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 76.7,
+        "call": 19.7,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.7,
+        "fold": 78.7,
+        "call": 20.4,
+        "raise": 0.7
+      },
+      "BTN": {
+        "unopened": 3.9,
+        "fold": 76.3,
+        "call": 19.7,
+        "raise": 3.9
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 78.3,
+        "call": 18.2,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.5,
+        "call": 27.2,
+        "raise": 0.0
+      }
+    },
+    "T3s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.7,
+        "call": 28.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 76.6,
+        "call": 19.8,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.3,
+        "fold": 79.7,
+        "call": 19.7,
+        "raise": 0.3
+      },
+      "BTN": {
+        "unopened": 2.7,
+        "fold": 77.2,
+        "call": 20.0,
+        "raise": 2.7
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 76.8,
+        "call": 19.5,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.4,
+        "call": 28.0,
+        "raise": 0.0
+      }
+    },
+    "T2s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.4,
+        "call": 28.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 73.4,
+        "call": 18.5,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 78.8,
+        "call": 18.7,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 1.5,
+        "fold": 77.0,
+        "call": 20.9,
+        "raise": 1.5
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 74.0,
+        "call": 19.8,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.4,
+        "call": 28.7,
+        "raise": 0.0
+      }
+    },
+    "A9o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 76.6,
+        "call": 19.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 1.2,
+        "fold": 78.6,
+        "call": 19.7,
+        "raise": 1.2
+      },
+      "CO": {
+        "unopened": 3.3,
+        "fold": 79.2,
+        "call": 17.5,
+        "raise": 3.3
+      },
+      "BTN": {
+        "unopened": 5.0,
+        "fold": 77.0,
+        "call": 18.0,
+        "raise": 5.0
+      },
+      "SB": {
+        "unopened": 0.2,
+        "fold": 80.9,
+        "call": 18.2,
+        "raise": 0.2
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 79.7,
+        "call": 18.1,
+        "raise": 0.0
+      }
+    },
+    "K9o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.0,
+        "call": 26.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 72.9,
+        "call": 24.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 75.8,
+        "call": 21.0,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 75.6,
+        "call": 17.3,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 75.8,
+        "call": 22.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.8,
+        "call": 28.0,
+        "raise": 0.0
+      }
+    },
+    "Q9o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.7,
+        "call": 26.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 74.1,
+        "call": 22.4,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 82.4,
+        "call": 17.1,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 82.4,
+        "call": 16.6,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 75.7,
+        "call": 22.4,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 71.3,
+        "call": 26.8,
+        "raise": 0.0
+      }
+    },
+    "J9o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 75.4,
+        "call": 22.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 80.7,
+        "call": 17.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 81.7,
+        "call": 18.0,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 1.2,
+        "fold": 80.2,
+        "call": 18.6,
+        "raise": 1.2
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.6,
+        "call": 15.6,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 74.7,
+        "call": 22.2,
+        "raise": 0.0
+      }
+    },
+    "T9o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.8,
+        "call": 26.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 75.4,
+        "call": 19.8,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 82.9,
+        "call": 16.3,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.1,
+        "fold": 81.1,
+        "call": 18.4,
+        "raise": 0.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 77.3,
+        "call": 20.2,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.8,
+        "call": 27.2,
+        "raise": 0.0
+      }
+    },
+    "99": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.7,
+        "call": 26.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 75.1,
+        "call": 20.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 82.6,
+        "call": 16.6,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.1,
+        "fold": 80.7,
+        "call": 18.7,
+        "raise": 0.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 76.7,
+        "call": 20.6,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.7,
+        "call": 27.3,
+        "raise": 0.0
+      }
+    },
+    "98s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 73.5,
+        "call": 23.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 80.1,
+        "call": 18.6,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.6,
+        "fold": 80.5,
+        "call": 18.9,
+        "raise": 0.6
+      },
+      "BTN": {
+        "unopened": 4.1,
+        "fold": 78.1,
+        "call": 17.8,
+        "raise": 4.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 82.1,
+        "call": 16.4,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 73.7,
+        "call": 23.3,
+        "raise": 0.0
+      }
+    },
+    "97s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 75.8,
+        "call": 19.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 1.4,
+        "fold": 79.2,
+        "call": 18.8,
+        "raise": 1.4
+      },
+      "CO": {
+        "unopened": 4.3,
+        "fold": 77.8,
+        "call": 17.8,
+        "raise": 4.3
+      },
+      "BTN": {
+        "unopened": 4.8,
+        "fold": 76.7,
+        "call": 18.5,
+        "raise": 4.8
+      },
+      "SB": {
+        "unopened": 0.4,
+        "fold": 81.3,
+        "call": 17.6,
+        "raise": 0.4
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 78.0,
+        "call": 18.3,
+        "raise": 0.0
+      }
+    },
+    "96s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 78.4,
+        "call": 20.1,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 4.5,
+        "fold": 75.3,
+        "call": 19.9,
+        "raise": 4.5
+      },
+      "CO": {
+        "unopened": 5.9,
+        "fold": 75.6,
+        "call": 18.6,
+        "raise": 5.9
+      },
+      "BTN": {
+        "unopened": 6.1,
+        "fold": 74.2,
+        "call": 19.7,
+        "raise": 6.1
+      },
+      "SB": {
+        "unopened": 1.0,
+        "fold": 78.8,
+        "call": 20.0,
+        "raise": 1.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 78.5,
+        "call": 20.6,
+        "raise": 0.0
+      }
+    },
+    "95s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 77.7,
+        "call": 20.1,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 5.2,
+        "fold": 74.4,
+        "call": 20.1,
+        "raise": 5.2
+      },
+      "CO": {
+        "unopened": 6.1,
+        "fold": 74.9,
+        "call": 19.0,
+        "raise": 6.1
+      },
+      "BTN": {
+        "unopened": 6.5,
+        "fold": 72.7,
+        "call": 20.8,
+        "raise": 6.5
+      },
+      "SB": {
+        "unopened": 1.8,
+        "fold": 78.0,
+        "call": 19.9,
+        "raise": 1.8
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 77.9,
+        "call": 20.7,
+        "raise": 0.0
+      }
+    },
+    "94s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.6,
+        "call": 28.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.2,
+        "fold": 77.0,
+        "call": 20.0,
+        "raise": 0.2
+      },
+      "CO": {
+        "unopened": 1.1,
+        "fold": 78.8,
+        "call": 20.1,
+        "raise": 1.1
+      },
+      "BTN": {
+        "unopened": 5.0,
+        "fold": 75.8,
+        "call": 19.2,
+        "raise": 5.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 78.8,
+        "call": 18.2,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.3,
+        "call": 27.0,
+        "raise": 0.0
+      }
+    },
+    "93s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.8,
+        "call": 28.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 76.6,
+        "call": 19.5,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.4,
+        "fold": 79.3,
+        "call": 20.1,
+        "raise": 0.4
+      },
+      "BTN": {
+        "unopened": 3.0,
+        "fold": 77.1,
+        "call": 19.9,
+        "raise": 3.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 76.6,
+        "call": 19.0,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.0,
+        "call": 28.3,
+        "raise": 0.0
+      }
+    },
+    "92s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.8,
+        "call": 28.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 73.3,
+        "call": 17.8,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 78.5,
+        "call": 19.2,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 2.6,
+        "fold": 76.1,
+        "call": 20.6,
+        "raise": 2.6
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 73.9,
+        "call": 18.0,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.6,
+        "call": 28.3,
+        "raise": 0.0
+      }
+    },
+    "A8o": {
+      "UTG": {
+        "unopened": 0.6,
+        "fold": 78.2,
+        "call": 20.0,
+        "raise": 0.6
+      },
+      "HJ": {
+        "unopened": 10.8,
+        "fold": 71.6,
+        "call": 17.3,
+        "raise": 10.8
+      },
+      "CO": {
+        "unopened": 5.5,
+        "fold": 76.5,
+        "call": 18.1,
+        "raise": 5.5
+      },
+      "BTN": {
+        "unopened": 6.1,
+        "fold": 79.5,
+        "call": 14.3,
+        "raise": 6.1
+      },
+      "SB": {
+        "unopened": 5.0,
+        "fold": 75.9,
+        "call": 18.9,
+        "raise": 5.0
+      },
+      "BB": {
+        "unopened": 2.6,
+        "fold": 76.1,
+        "call": 20.8,
+        "raise": 2.6
+      }
+    },
+    "K8o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.2,
+        "call": 25.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 73.1,
+        "call": 16.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 79.4,
+        "call": 18.0,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 1.7,
+        "fold": 77.3,
+        "call": 19.1,
+        "raise": 1.7
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 75.3,
+        "call": 16.0,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.9,
+        "call": 26.9,
+        "raise": 0.0
+      }
+    },
+    "Q8o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.1,
+        "call": 24.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.2,
+        "fold": 78.3,
+        "call": 18.8,
+        "raise": 0.2
+      },
+      "CO": {
+        "unopened": 0.5,
+        "fold": 80.4,
+        "call": 18.9,
+        "raise": 0.5
+      },
+      "BTN": {
+        "unopened": 4.1,
+        "fold": 78.0,
+        "call": 17.6,
+        "raise": 4.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.4,
+        "call": 16.6,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 71.4,
+        "call": 24.2,
+        "raise": 0.0
+      }
+    },
+    "J8o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 79.5,
+        "call": 17.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 5.2,
+        "fold": 75.3,
+        "call": 19.1,
+        "raise": 5.2
+      },
+      "CO": {
+        "unopened": 4.5,
+        "fold": 77.5,
+        "call": 18.0,
+        "raise": 4.5
+      },
+      "BTN": {
+        "unopened": 6.5,
+        "fold": 76.3,
+        "call": 17.1,
+        "raise": 6.5
+      },
+      "SB": {
+        "unopened": 2.2,
+        "fold": 79.1,
+        "call": 18.5,
+        "raise": 2.2
+      },
+      "BB": {
+        "unopened": 0.2,
+        "fold": 78.6,
+        "call": 19.0,
+        "raise": 0.2
+      }
+    },
+    "T8o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 73.2,
+        "call": 22.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.6,
+        "fold": 78.8,
+        "call": 19.3,
+        "raise": 0.6
+      },
+      "CO": {
+        "unopened": 1.0,
+        "fold": 79.8,
+        "call": 18.9,
+        "raise": 1.0
+      },
+      "BTN": {
+        "unopened": 4.7,
+        "fold": 76.3,
+        "call": 18.9,
+        "raise": 4.7
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.0,
+        "call": 17.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 73.1,
+        "call": 21.1,
+        "raise": 0.0
+      }
+    },
+    "98o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.2,
+        "call": 20.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.7,
+        "fold": 79.1,
+        "call": 19.2,
+        "raise": 0.7
+      },
+      "CO": {
+        "unopened": 2.4,
+        "fold": 79.3,
+        "call": 18.3,
+        "raise": 2.4
+      },
+      "BTN": {
+        "unopened": 4.6,
+        "fold": 76.5,
+        "call": 18.9,
+        "raise": 4.6
+      },
+      "SB": {
+        "unopened": 0.2,
+        "fold": 80.6,
+        "call": 17.9,
+        "raise": 0.2
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 74.5,
+        "call": 19.7,
+        "raise": 0.0
+      }
+    },
+    "88": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.2,
+        "call": 25.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 79.2,
+        "call": 19.3,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.6,
+        "fold": 79.8,
+        "call": 19.5,
+        "raise": 0.6
+      },
+      "BTN": {
+        "unopened": 4.4,
+        "fold": 77.2,
+        "call": 18.5,
+        "raise": 4.4
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.5,
+        "call": 17.2,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.4,
+        "call": 23.9,
+        "raise": 0.0
+      }
+    },
+    "87s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 75.9,
+        "call": 21.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.4,
+        "fold": 79.8,
+        "call": 19.2,
+        "raise": 0.4
+      },
+      "CO": {
+        "unopened": 1.6,
+        "fold": 80.1,
+        "call": 18.3,
+        "raise": 1.6
+      },
+      "BTN": {
+        "unopened": 5.7,
+        "fold": 76.3,
+        "call": 18.0,
+        "raise": 5.7
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 82.2,
+        "call": 17.3,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 77.5,
+        "call": 20.9,
+        "raise": 0.0
+      }
+    },
+    "86s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 80.2,
+        "call": 19.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.4,
+        "fold": 76.9,
+        "call": 20.7,
+        "raise": 2.4
+      },
+      "CO": {
+        "unopened": 5.8,
+        "fold": 76.4,
+        "call": 17.8,
+        "raise": 5.8
+      },
+      "BTN": {
+        "unopened": 8.3,
+        "fold": 72.6,
+        "call": 19.1,
+        "raise": 8.3
+      },
+      "SB": {
+        "unopened": 0.3,
+        "fold": 79.5,
+        "call": 20.1,
+        "raise": 0.3
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 81.1,
+        "call": 18.7,
+        "raise": 0.0
+      }
+    },
+    "85s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 79.3,
+        "call": 20.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 3.2,
+        "fold": 76.1,
+        "call": 20.6,
+        "raise": 3.2
+      },
+      "CO": {
+        "unopened": 6.9,
+        "fold": 74.7,
+        "call": 18.4,
+        "raise": 6.9
+      },
+      "BTN": {
+        "unopened": 8.4,
+        "fold": 72.4,
+        "call": 19.2,
+        "raise": 8.4
+      },
+      "SB": {
+        "unopened": 0.5,
+        "fold": 79.1,
+        "call": 20.3,
+        "raise": 0.5
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 80.4,
+        "call": 19.2,
+        "raise": 0.0
+      }
+    },
+    "84s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.1,
+        "call": 26.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 79.3,
+        "call": 19.7,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.2,
+        "fold": 80.0,
+        "call": 19.8,
+        "raise": 0.2
+      },
+      "BTN": {
+        "unopened": 1.9,
+        "fold": 77.8,
+        "call": 20.3,
+        "raise": 1.9
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.7,
+        "call": 18.4,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 71.3,
+        "call": 25.9,
+        "raise": 0.0
+      }
+    },
+    "83s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.5,
+        "call": 26.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 76.9,
+        "call": 21.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 81.2,
+        "call": 18.7,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.8,
+        "fold": 78.3,
+        "call": 20.9,
+        "raise": 0.8
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 76.0,
+        "call": 22.3,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 71.8,
+        "call": 25.8,
+        "raise": 0.0
+      }
+    },
+    "82s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 67.9,
+        "call": 29.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 73.5,
+        "call": 20.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 80.0,
+        "call": 19.6,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 1.3,
+        "fold": 77.3,
+        "call": 21.3,
+        "raise": 1.3
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 73.7,
+        "call": 21.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.5,
+        "call": 28.8,
+        "raise": 0.0
+      }
+    },
+    "A7o": {
+      "UTG": {
+        "unopened": 0.8,
+        "fold": 78.8,
+        "call": 20.1,
+        "raise": 0.8
+      },
+      "HJ": {
+        "unopened": 5.4,
+        "fold": 74.6,
+        "call": 20.0,
+        "raise": 5.4
+      },
+      "CO": {
+        "unopened": 6.7,
+        "fold": 76.2,
+        "call": 17.1,
+        "raise": 6.7
+      },
+      "BTN": {
+        "unopened": 5.7,
+        "fold": 78.4,
+        "call": 15.9,
+        "raise": 5.7
+      },
+      "SB": {
+        "unopened": 4.9,
+        "fold": 76.8,
+        "call": 18.2,
+        "raise": 4.9
+      },
+      "BB": {
+        "unopened": 2.1,
+        "fold": 77.3,
+        "call": 20.4,
+        "raise": 2.1
+      }
+    },
+    "K7o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.3,
+        "call": 26.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 76.5,
+        "call": 17.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 80.5,
+        "call": 18.5,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 1.4,
+        "fold": 78.0,
+        "call": 19.9,
+        "raise": 1.4
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 75.9,
+        "call": 17.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.5,
+        "call": 26.8,
+        "raise": 0.0
+      }
+    },
+    "Q7o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.6,
+        "call": 24.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 80.0,
+        "call": 19.0,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.6,
+        "fold": 80.3,
+        "call": 19.1,
+        "raise": 0.6
+      },
+      "BTN": {
+        "unopened": 4.0,
+        "fold": 78.6,
+        "call": 17.4,
+        "raise": 4.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 82.1,
+        "call": 17.0,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.4,
+        "call": 23.8,
+        "raise": 0.0
+      }
+    },
+    "J7o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 80.2,
+        "call": 17.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 4.3,
+        "fold": 76.4,
+        "call": 19.1,
+        "raise": 4.3
+      },
+      "CO": {
+        "unopened": 5.2,
+        "fold": 77.1,
+        "call": 17.7,
+        "raise": 5.2
+      },
+      "BTN": {
+        "unopened": 5.3,
+        "fold": 76.8,
+        "call": 17.9,
+        "raise": 5.3
+      },
+      "SB": {
+        "unopened": 1.1,
+        "fold": 80.1,
+        "call": 18.5,
+        "raise": 1.1
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 79.8,
+        "call": 18.4,
+        "raise": 0.0
+      }
+    },
+    "T7o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.2,
+        "call": 22.1,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.6,
+        "fold": 79.2,
+        "call": 19.4,
+        "raise": 0.6
+      },
+      "CO": {
+        "unopened": 1.7,
+        "fold": 79.9,
+        "call": 18.3,
+        "raise": 1.7
+      },
+      "BTN": {
+        "unopened": 5.2,
+        "fold": 76.2,
+        "call": 18.5,
+        "raise": 5.2
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.5,
+        "call": 17.4,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 75.0,
+        "call": 21.0,
+        "raise": 0.0
+      }
+    },
+    "97o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.2,
+        "call": 21.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.5,
+        "fold": 79.5,
+        "call": 19.3,
+        "raise": 0.5
+      },
+      "CO": {
+        "unopened": 1.8,
+        "fold": 80.1,
+        "call": 18.1,
+        "raise": 1.8
+      },
+      "BTN": {
+        "unopened": 5.1,
+        "fold": 76.5,
+        "call": 18.3,
+        "raise": 5.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.6,
+        "call": 17.4,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 75.8,
+        "call": 20.8,
+        "raise": 0.0
+      }
+    },
+    "87o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 76.2,
+        "call": 22.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 80.4,
+        "call": 19.2,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.8,
+        "fold": 80.7,
+        "call": 18.5,
+        "raise": 0.8
+      },
+      "BTN": {
+        "unopened": 5.4,
+        "fold": 76.9,
+        "call": 17.7,
+        "raise": 5.4
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 82.8,
+        "call": 16.9,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 76.2,
+        "call": 22.2,
+        "raise": 0.0
+      }
+    },
+    "77": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 75.0,
+        "call": 21.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 1.3,
+        "fold": 78.3,
+        "call": 20.0,
+        "raise": 1.3
+      },
+      "CO": {
+        "unopened": 3.9,
+        "fold": 78.1,
+        "call": 18.0,
+        "raise": 3.9
+      },
+      "BTN": {
+        "unopened": 6.1,
+        "fold": 75.3,
+        "call": 18.7,
+        "raise": 6.1
+      },
+      "SB": {
+        "unopened": 0.2,
+        "fold": 80.8,
+        "call": 18.5,
+        "raise": 0.2
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 77.7,
+        "call": 19.7,
+        "raise": 0.0
+      }
+    },
+    "76s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 79.8,
+        "call": 19.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 6.0,
+        "fold": 73.8,
+        "call": 20.1,
+        "raise": 6.0
+      },
+      "CO": {
+        "unopened": 6.8,
+        "fold": 74.8,
+        "call": 18.5,
+        "raise": 6.8
+      },
+      "BTN": {
+        "unopened": 7.5,
+        "fold": 72.8,
+        "call": 19.7,
+        "raise": 7.5
+      },
+      "SB": {
+        "unopened": 3.3,
+        "fold": 77.6,
+        "call": 19.0,
+        "raise": 3.3
+      },
+      "BB": {
+        "unopened": 0.4,
+        "fold": 78.0,
+        "call": 21.3,
+        "raise": 0.4
+      }
+    },
+    "75s": {
+      "UTG": {
+        "unopened": 0.1,
+        "fold": 79.1,
+        "call": 20.1,
+        "raise": 0.1
+      },
+      "HJ": {
+        "unopened": 6.4,
+        "fold": 73.2,
+        "call": 20.4,
+        "raise": 6.4
+      },
+      "CO": {
+        "unopened": 7.0,
+        "fold": 74.3,
+        "call": 18.7,
+        "raise": 7.0
+      },
+      "BTN": {
+        "unopened": 8.0,
+        "fold": 71.9,
+        "call": 20.2,
+        "raise": 8.0
+      },
+      "SB": {
+        "unopened": 5.5,
+        "fold": 75.5,
+        "call": 19.0,
+        "raise": 5.5
+      },
+      "BB": {
+        "unopened": 0.7,
+        "fold": 77.5,
+        "call": 21.5,
+        "raise": 0.7
+      }
+    },
+    "74s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.0,
+        "call": 27.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.7,
+        "fold": 77.4,
+        "call": 20.8,
+        "raise": 0.7
+      },
+      "CO": {
+        "unopened": 2.2,
+        "fold": 77.9,
+        "call": 19.8,
+        "raise": 2.2
+      },
+      "BTN": {
+        "unopened": 6.5,
+        "fold": 73.8,
+        "call": 19.7,
+        "raise": 6.5
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.0,
+        "call": 18.6,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.3,
+        "call": 24.6,
+        "raise": 0.0
+      }
+    },
+    "73s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.2,
+        "call": 28.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 78.0,
+        "call": 19.8,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 1.0,
+        "fold": 78.8,
+        "call": 20.2,
+        "raise": 1.0
+      },
+      "BTN": {
+        "unopened": 5.9,
+        "fold": 74.7,
+        "call": 19.4,
+        "raise": 5.9
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.1,
+        "call": 18.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.2,
+        "call": 26.5,
+        "raise": 0.0
+      }
+    },
+    "72s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.0,
+        "call": 28.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.3,
+        "fold": 76.2,
+        "call": 19.6,
+        "raise": 0.3
+      },
+      "CO": {
+        "unopened": 0.8,
+        "fold": 78.8,
+        "call": 20.1,
+        "raise": 0.8
+      },
+      "BTN": {
+        "unopened": 5.8,
+        "fold": 73.9,
+        "call": 20.2,
+        "raise": 5.8
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 78.4,
+        "call": 17.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.4,
+        "call": 26.2,
+        "raise": 0.0
+      }
+    },
+    "A6o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 73.4,
+        "call": 22.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.0,
+        "fold": 77.1,
+        "call": 20.2,
+        "raise": 2.0
+      },
+      "CO": {
+        "unopened": 4.8,
+        "fold": 77.1,
+        "call": 18.1,
+        "raise": 4.8
+      },
+      "BTN": {
+        "unopened": 5.4,
+        "fold": 75.2,
+        "call": 19.4,
+        "raise": 5.4
+      },
+      "SB": {
+        "unopened": 0.4,
+        "fold": 79.8,
+        "call": 18.8,
+        "raise": 0.4
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 76.5,
+        "call": 19.0,
+        "raise": 0.0
+      }
+    },
+    "K6o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.2,
+        "call": 28.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 70.8,
+        "call": 25.7,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 74.3,
+        "call": 21.6,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 73.2,
+        "call": 16.8,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 74.3,
+        "call": 23.3,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.8,
+        "call": 28.7,
+        "raise": 0.0
+      }
+    },
+    "Q6o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.0,
+        "call": 28.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 72.6,
+        "call": 22.9,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 81.9,
+        "call": 17.3,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.1,
+        "fold": 80.7,
+        "call": 17.2,
+        "raise": 0.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 74.6,
+        "call": 23.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.2,
+        "call": 28.7,
+        "raise": 0.0
+      }
+    },
+    "J6o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.0,
+        "call": 23.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 79.0,
+        "call": 17.3,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.2,
+        "fold": 80.8,
+        "call": 18.6,
+        "raise": 0.2
+      },
+      "BTN": {
+        "unopened": 2.2,
+        "fold": 78.2,
+        "call": 19.3,
+        "raise": 2.2
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.5,
+        "call": 15.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 73.0,
+        "call": 23.9,
+        "raise": 0.0
+      }
+    },
+    "T6o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.5,
+        "call": 27.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 74.0,
+        "call": 19.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 82.0,
+        "call": 16.9,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.3,
+        "fold": 79.7,
+        "call": 19.3,
+        "raise": 0.3
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 76.3,
+        "call": 20.5,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.5,
+        "call": 28.2,
+        "raise": 0.0
+      }
+    },
+    "96o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.3,
+        "call": 27.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 73.7,
+        "call": 19.9,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 81.9,
+        "call": 17.5,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.3,
+        "fold": 79.5,
+        "call": 19.7,
+        "raise": 0.3
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 75.6,
+        "call": 20.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 28.9,
+        "raise": 0.0
+      }
+    },
+    "86o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.6,
+        "call": 25.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 74.6,
+        "call": 22.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 83.2,
+        "call": 16.7,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 80.8,
+        "call": 19.0,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 75.9,
+        "call": 21.9,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 71.9,
+        "call": 26.0,
+        "raise": 0.0
+      }
+    },
+    "76o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.6,
+        "call": 25.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 79.1,
+        "call": 17.7,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 81.5,
+        "call": 18.1,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 1.9,
+        "fold": 78.6,
+        "call": 19.4,
+        "raise": 1.9
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 78.5,
+        "call": 17.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 71.2,
+        "call": 26.4,
+        "raise": 0.0
+      }
+    },
+    "66": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.7,
+        "call": 27.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 77.7,
+        "call": 20.4,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 79.9,
+        "call": 19.9,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 1.7,
+        "fold": 77.2,
+        "call": 21.1,
+        "raise": 1.7
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 77.1,
+        "call": 20.9,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.4,
+        "call": 26.8,
+        "raise": 0.0
+      }
+    },
+    "65s": {
+      "UTG": {
+        "unopened": 1.1,
+        "fold": 76.0,
+        "call": 22.8,
+        "raise": 1.1
+      },
+      "HJ": {
+        "unopened": 8.1,
+        "fold": 70.2,
+        "call": 21.6,
+        "raise": 8.1
+      },
+      "CO": {
+        "unopened": 9.3,
+        "fold": 71.4,
+        "call": 19.3,
+        "raise": 9.3
+      },
+      "BTN": {
+        "unopened": 9.8,
+        "fold": 69.8,
+        "call": 20.4,
+        "raise": 9.8
+      },
+      "SB": {
+        "unopened": 7.6,
+        "fold": 72.4,
+        "call": 20.0,
+        "raise": 7.6
+      },
+      "BB": {
+        "unopened": 3.6,
+        "fold": 74.0,
+        "call": 22.4,
+        "raise": 3.6
+      }
+    },
+    "64s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 75.9,
+        "call": 23.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 3.1,
+        "fold": 74.9,
+        "call": 21.9,
+        "raise": 3.1
+      },
+      "CO": {
+        "unopened": 7.0,
+        "fold": 74.3,
+        "call": 18.8,
+        "raise": 7.0
+      },
+      "BTN": {
+        "unopened": 9.3,
+        "fold": 70.2,
+        "call": 20.5,
+        "raise": 9.3
+      },
+      "SB": {
+        "unopened": 0.6,
+        "fold": 77.4,
+        "call": 21.9,
+        "raise": 0.6
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 79.8,
+        "call": 19.9,
+        "raise": 0.0
+      }
+    },
+    "63s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.0,
+        "call": 24.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.0,
+        "fold": 75.7,
+        "call": 22.2,
+        "raise": 2.0
+      },
+      "CO": {
+        "unopened": 4.6,
+        "fold": 75.7,
+        "call": 19.6,
+        "raise": 4.6
+      },
+      "BTN": {
+        "unopened": 9.0,
+        "fold": 70.5,
+        "call": 20.5,
+        "raise": 9.0
+      },
+      "SB": {
+        "unopened": 0.2,
+        "fold": 78.5,
+        "call": 21.1,
+        "raise": 0.2
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 77.3,
+        "call": 22.0,
+        "raise": 0.0
+      }
+    },
+    "62s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.6,
+        "call": 25.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 1.1,
+        "fold": 75.5,
+        "call": 22.3,
+        "raise": 1.1
+      },
+      "CO": {
+        "unopened": 2.6,
+        "fold": 76.3,
+        "call": 21.0,
+        "raise": 2.6
+      },
+      "BTN": {
+        "unopened": 7.4,
+        "fold": 71.6,
+        "call": 21.0,
+        "raise": 7.4
+      },
+      "SB": {
+        "unopened": 0.1,
+        "fold": 77.9,
+        "call": 20.5,
+        "raise": 0.1
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 73.6,
+        "call": 23.2,
+        "raise": 0.0
+      }
+    },
+    "A5o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 79.5,
+        "call": 19.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 6.7,
+        "fold": 72.8,
+        "call": 20.4,
+        "raise": 6.7
+      },
+      "CO": {
+        "unopened": 7.7,
+        "fold": 73.4,
+        "call": 18.9,
+        "raise": 7.7
+      },
+      "BTN": {
+        "unopened": 8.2,
+        "fold": 72.0,
+        "call": 19.8,
+        "raise": 8.2
+      },
+      "SB": {
+        "unopened": 4.0,
+        "fold": 76.5,
+        "call": 19.5,
+        "raise": 4.0
+      },
+      "BB": {
+        "unopened": 0.3,
+        "fold": 77.7,
+        "call": 21.6,
+        "raise": 0.3
+      }
+    },
+    "K5o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 67.3,
+        "call": 30.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 69.9,
+        "call": 24.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 79.3,
+        "call": 19.1,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.2,
+        "fold": 77.5,
+        "call": 21.0,
+        "raise": 0.2
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 70.9,
+        "call": 25.3,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 67.1,
+        "call": 30.3,
+        "raise": 0.0
+      }
+    },
+    "Q5o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.6,
+        "call": 27.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 79.6,
+        "call": 19.6,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 80.6,
+        "call": 19.3,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 1.4,
+        "fold": 78.1,
+        "call": 20.4,
+        "raise": 1.4
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 78.8,
+        "call": 20.3,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 71.3,
+        "call": 26.1,
+        "raise": 0.0
+      }
+    },
+    "J5o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.3,
+        "call": 23.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 1.5,
+        "fold": 77.1,
+        "call": 21.0,
+        "raise": 1.5
+      },
+      "CO": {
+        "unopened": 4.4,
+        "fold": 76.9,
+        "call": 18.7,
+        "raise": 4.4
+      },
+      "BTN": {
+        "unopened": 6.5,
+        "fold": 74.1,
+        "call": 19.4,
+        "raise": 6.5
+      },
+      "SB": {
+        "unopened": 0.2,
+        "fold": 79.8,
+        "call": 19.4,
+        "raise": 0.2
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 76.6,
+        "call": 20.7,
+        "raise": 0.0
+      }
+    },
+    "T5o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.8,
+        "call": 27.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 79.1,
+        "call": 19.9,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.2,
+        "fold": 79.5,
+        "call": 20.1,
+        "raise": 0.2
+      },
+      "BTN": {
+        "unopened": 3.1,
+        "fold": 76.9,
+        "call": 20.0,
+        "raise": 3.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.5,
+        "call": 18.5,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.4,
+        "call": 26.9,
+        "raise": 0.0
+      }
+    },
+    "95o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.2,
+        "call": 28.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 78.4,
+        "call": 20.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.5,
+        "fold": 79.1,
+        "call": 20.3,
+        "raise": 0.5
+      },
+      "BTN": {
+        "unopened": 3.9,
+        "fold": 76.5,
+        "call": 19.6,
+        "raise": 3.9
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.0,
+        "call": 18.5,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.6,
+        "call": 27.4,
+        "raise": 0.0
+      }
+    },
+    "85o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.9,
+        "call": 24.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 80.8,
+        "call": 18.8,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 81.7,
+        "call": 18.2,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 1.0,
+        "fold": 79.1,
+        "call": 19.9,
+        "raise": 1.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.8,
+        "call": 18.8,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.9,
+        "call": 24.2,
+        "raise": 0.0
+      }
+    },
+    "75o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.1,
+        "call": 25.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.5,
+        "fold": 78.1,
+        "call": 21.2,
+        "raise": 0.5
+      },
+      "CO": {
+        "unopened": 2.2,
+        "fold": 78.0,
+        "call": 19.7,
+        "raise": 2.2
+      },
+      "BTN": {
+        "unopened": 7.4,
+        "fold": 73.2,
+        "call": 19.4,
+        "raise": 7.4
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 81.2,
+        "call": 18.4,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.5,
+        "call": 24.4,
+        "raise": 0.0
+      }
+    },
+    "65o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 75.6,
+        "call": 23.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.6,
+        "fold": 75.5,
+        "call": 21.9,
+        "raise": 2.6
+      },
+      "CO": {
+        "unopened": 4.8,
+        "fold": 76.9,
+        "call": 18.3,
+        "raise": 4.8
+      },
+      "BTN": {
+        "unopened": 9.5,
+        "fold": 70.4,
+        "call": 20.1,
+        "raise": 9.5
+      },
+      "SB": {
+        "unopened": 0.2,
+        "fold": 78.7,
+        "call": 21.0,
+        "raise": 0.2
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 79.1,
+        "call": 20.5,
+        "raise": 0.0
+      }
+    },
+    "55": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.3,
+        "call": 24.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.7,
+        "fold": 74.8,
+        "call": 22.5,
+        "raise": 2.7
+      },
+      "CO": {
+        "unopened": 5.5,
+        "fold": 75.2,
+        "call": 19.3,
+        "raise": 5.5
+      },
+      "BTN": {
+        "unopened": 10.1,
+        "fold": 69.2,
+        "call": 20.7,
+        "raise": 10.1
+      },
+      "SB": {
+        "unopened": 0.2,
+        "fold": 78.5,
+        "call": 21.2,
+        "raise": 0.2
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 78.3,
+        "call": 21.3,
+        "raise": 0.0
+      }
+    },
+    "54s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 77.7,
+        "call": 21.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 6.6,
+        "fold": 72.2,
+        "call": 21.2,
+        "raise": 6.6
+      },
+      "CO": {
+        "unopened": 8.6,
+        "fold": 71.3,
+        "call": 20.1,
+        "raise": 8.6
+      },
+      "BTN": {
+        "unopened": 9.4,
+        "fold": 69.6,
+        "call": 20.9,
+        "raise": 9.4
+      },
+      "SB": {
+        "unopened": 1.6,
+        "fold": 76.4,
+        "call": 21.9,
+        "raise": 1.6
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 78.5,
+        "call": 21.0,
+        "raise": 0.0
+      }
+    },
+    "53s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 73.7,
+        "call": 24.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.7,
+        "fold": 75.0,
+        "call": 22.1,
+        "raise": 2.7
+      },
+      "CO": {
+        "unopened": 7.3,
+        "fold": 73.0,
+        "call": 19.7,
+        "raise": 7.3
+      },
+      "BTN": {
+        "unopened": 9.6,
+        "fold": 69.5,
+        "call": 20.9,
+        "raise": 9.6
+      },
+      "SB": {
+        "unopened": 0.3,
+        "fold": 78.0,
+        "call": 21.4,
+        "raise": 0.3
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 77.7,
+        "call": 21.6,
+        "raise": 0.0
+      }
+    },
+    "52s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 24.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.3,
+        "fold": 74.3,
+        "call": 22.5,
+        "raise": 2.3
+      },
+      "CO": {
+        "unopened": 5.2,
+        "fold": 74.2,
+        "call": 20.6,
+        "raise": 5.2
+      },
+      "BTN": {
+        "unopened": 7.8,
+        "fold": 70.0,
+        "call": 22.2,
+        "raise": 7.8
+      },
+      "SB": {
+        "unopened": 0.4,
+        "fold": 77.1,
+        "call": 21.2,
+        "raise": 0.4
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 74.0,
+        "call": 22.5,
+        "raise": 0.0
+      }
+    },
+    "A4o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 74.6,
+        "call": 22.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 2.2,
+        "fold": 76.8,
+        "call": 20.7,
+        "raise": 2.2
+      },
+      "CO": {
+        "unopened": 5.3,
+        "fold": 76.5,
+        "call": 18.2,
+        "raise": 5.3
+      },
+      "BTN": {
+        "unopened": 6.1,
+        "fold": 74.8,
+        "call": 19.1,
+        "raise": 6.1
+      },
+      "SB": {
+        "unopened": 0.3,
+        "fold": 79.5,
+        "call": 19.6,
+        "raise": 0.3
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 78.1,
+        "call": 20.1,
+        "raise": 0.0
+      }
+    },
+    "K4o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.5,
+        "call": 29.3,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 68.4,
+        "call": 28.6,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 71.6,
+        "call": 24.4,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 72.4,
+        "call": 19.9,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 71.8,
+        "call": 25.8,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.2,
+        "call": 29.5,
+        "raise": 0.0
+      }
+    },
+    "Q4o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.9,
+        "call": 28.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 70.3,
+        "call": 25.5,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 81.5,
+        "call": 18.1,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 81.1,
+        "call": 18.2,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 73.1,
+        "call": 24.8,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.6,
+        "call": 27.3,
+        "raise": 0.0
+      }
+    },
+    "J4o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.0,
+        "call": 25.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 78.6,
+        "call": 18.7,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.3,
+        "fold": 80.1,
+        "call": 19.4,
+        "raise": 0.3
+      },
+      "BTN": {
+        "unopened": 3.1,
+        "fold": 77.5,
+        "call": 19.3,
+        "raise": 3.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.2,
+        "call": 16.9,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 71.0,
+        "call": 25.5,
+        "raise": 0.0
+      }
+    },
+    "T4o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.8,
+        "call": 29.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 72.9,
+        "call": 22.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 82.1,
+        "call": 17.3,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.1,
+        "fold": 79.6,
+        "call": 20.0,
+        "raise": 0.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 73.8,
+        "call": 23.2,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.2,
+        "call": 28.7,
+        "raise": 0.0
+      }
+    },
+    "94o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 29.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 73.1,
+        "call": 21.3,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 81.7,
+        "call": 18.0,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.3,
+        "fold": 78.9,
+        "call": 20.5,
+        "raise": 0.3
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 74.0,
+        "call": 22.6,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 28.9,
+        "raise": 0.0
+      }
+    },
+    "84o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 72.1,
+        "call": 26.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 73.0,
+        "call": 24.4,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 83.5,
+        "call": 16.4,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 80.7,
+        "call": 19.2,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 75.1,
+        "call": 22.6,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.6,
+        "call": 25.3,
+        "raise": 0.0
+      }
+    },
+    "74o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.1,
+        "call": 26.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 78.3,
+        "call": 19.5,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 81.3,
+        "call": 18.5,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 1.0,
+        "fold": 78.4,
+        "call": 20.4,
+        "raise": 1.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 77.7,
+        "call": 20.2,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.5,
+        "call": 27.1,
+        "raise": 0.0
+      }
+    },
+    "64o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.9,
+        "call": 25.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 78.6,
+        "call": 20.9,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.2,
+        "fold": 80.0,
+        "call": 19.8,
+        "raise": 0.2
+      },
+      "BTN": {
+        "unopened": 3.6,
+        "fold": 76.3,
+        "call": 20.1,
+        "raise": 3.6
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.4,
+        "call": 19.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.9,
+        "call": 25.7,
+        "raise": 0.0
+      }
+    },
+    "54o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.9,
+        "call": 26.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 78.0,
+        "call": 21.4,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.7,
+        "fold": 78.7,
+        "call": 20.6,
+        "raise": 0.7
+      },
+      "BTN": {
+        "unopened": 6.7,
+        "fold": 73.6,
+        "call": 19.7,
+        "raise": 6.7
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 80.4,
+        "call": 19.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 72.5,
+        "call": 26.1,
+        "raise": 0.0
+      }
+    },
+    "44": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.3,
+        "call": 27.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 68.3,
+        "call": 27.2,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 81.1,
+        "call": 18.6,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 78.7,
+        "call": 21.0,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 69.7,
+        "call": 27.5,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.4,
+        "call": 27.3,
+        "raise": 0.0
+      }
+    },
+    "43s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.9,
+        "call": 27.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 76.2,
+        "call": 21.3,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 79.6,
+        "call": 20.3,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 1.2,
+        "fold": 76.5,
+        "call": 22.2,
+        "raise": 1.2
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 71.2,
+        "call": 25.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.2,
+        "call": 27.0,
+        "raise": 0.0
+      }
+    },
+    "42s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 66.6,
+        "call": 30.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 69.6,
+        "call": 21.5,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 78.1,
+        "call": 21.3,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 1.1,
+        "fold": 75.6,
+        "call": 22.9,
+        "raise": 1.1
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 68.3,
+        "call": 25.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 67.1,
+        "call": 30.0,
+        "raise": 0.0
+      }
+    },
+    "A3o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.2,
+        "call": 22.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 1.7,
+        "fold": 76.2,
+        "call": 20.8,
+        "raise": 1.7
+      },
+      "CO": {
+        "unopened": 4.3,
+        "fold": 76.7,
+        "call": 18.9,
+        "raise": 4.3
+      },
+      "BTN": {
+        "unopened": 5.4,
+        "fold": 74.0,
+        "call": 20.6,
+        "raise": 5.4
+      },
+      "SB": {
+        "unopened": 0.3,
+        "fold": 78.3,
+        "call": 19.1,
+        "raise": 0.3
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.7,
+        "call": 20.6,
+        "raise": 0.0
+      }
+    },
+    "K3o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.6,
+        "call": 28.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 27.7,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 70.0,
+        "call": 25.6,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 71.7,
+        "call": 20.0,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 70.7,
+        "call": 26.6,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.4,
+        "call": 29.1,
+        "raise": 0.0
+      }
+    },
+    "Q3o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.6,
+        "call": 29.4,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 69.0,
+        "call": 25.5,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 77.7,
+        "call": 20.3,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 78.4,
+        "call": 18.1,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 70.5,
+        "call": 27.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.3,
+        "call": 29.6,
+        "raise": 0.0
+      }
+    },
+    "J3o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.9,
+        "call": 26.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 77.3,
+        "call": 17.8,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.2,
+        "fold": 79.5,
+        "call": 19.5,
+        "raise": 0.2
+      },
+      "BTN": {
+        "unopened": 2.2,
+        "fold": 77.5,
+        "call": 19.9,
+        "raise": 2.2
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 77.5,
+        "call": 16.8,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.7,
+        "call": 26.7,
+        "raise": 0.0
+      }
+    },
+    "T3o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 28.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 72.4,
+        "call": 21.3,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 78.2,
+        "call": 18.7,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.2,
+        "fold": 78.3,
+        "call": 20.1,
+        "raise": 0.2
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 72.5,
+        "call": 23.3,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.8,
+        "call": 28.9,
+        "raise": 0.0
+      }
+    },
+    "93o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 28.9,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 72.5,
+        "call": 21.8,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 79.3,
+        "call": 18.7,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.3,
+        "fold": 78.1,
+        "call": 20.1,
+        "raise": 0.3
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 73.3,
+        "call": 22.8,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.7,
+        "call": 29.0,
+        "raise": 0.0
+      }
+    },
+    "83o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.0,
+        "call": 29.2,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 68.5,
+        "call": 27.3,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 79.6,
+        "call": 19.7,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 80.0,
+        "call": 19.6,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 71.3,
+        "call": 26.5,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.1,
+        "call": 28.9,
+        "raise": 0.0
+      }
+    },
+    "73o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.7,
+        "call": 29.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 72.6,
+        "call": 20.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 80.3,
+        "call": 18.4,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.5,
+        "fold": 78.4,
+        "call": 20.5,
+        "raise": 0.5
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 74.1,
+        "call": 21.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.5,
+        "call": 29.1,
+        "raise": 0.0
+      }
+    },
+    "63o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 28.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 76.8,
+        "call": 21.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 78.7,
+        "call": 21.1,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 2.4,
+        "fold": 76.3,
+        "call": 21.2,
+        "raise": 2.4
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 75.7,
+        "call": 21.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.2,
+        "call": 28.1,
+        "raise": 0.0
+      }
+    },
+    "53o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.2,
+        "call": 29.1,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.1,
+        "fold": 76.8,
+        "call": 21.3,
+        "raise": 0.1
+      },
+      "CO": {
+        "unopened": 0.6,
+        "fold": 77.5,
+        "call": 21.8,
+        "raise": 0.6
+      },
+      "BTN": {
+        "unopened": 5.6,
+        "fold": 73.8,
+        "call": 20.5,
+        "raise": 5.6
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 77.1,
+        "call": 20.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 28.1,
+        "raise": 0.0
+      }
+    },
+    "43o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 68.0,
+        "call": 30.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 67.1,
+        "call": 29.3,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 77.0,
+        "call": 22.1,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 78.6,
+        "call": 20.6,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 67.3,
+        "call": 30.2,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.3,
+        "call": 29.6,
+        "raise": 0.0
+      }
+    },
+    "33": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.0,
+        "call": 29.1,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 67.9,
+        "call": 29.4,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 71.4,
+        "call": 25.9,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 77.7,
+        "call": 20.8,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 68.2,
+        "call": 29.6,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 29.1,
+        "raise": 0.0
+      }
+    },
+    "32s": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 67.6,
+        "call": 30.1,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 69.9,
+        "call": 23.5,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 78.7,
+        "call": 20.1,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.6,
+        "fold": 76.8,
+        "call": 22.1,
+        "raise": 0.6
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 68.5,
+        "call": 27.3,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 68.0,
+        "call": 29.3,
+        "raise": 0.0
+      }
+    },
+    "A2o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.5,
+        "call": 28.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 74.9,
+        "call": 17.8,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.1,
+        "fold": 80.3,
+        "call": 18.8,
+        "raise": 0.1
+      },
+      "BTN": {
+        "unopened": 2.0,
+        "fold": 77.8,
+        "call": 20.0,
+        "raise": 2.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 74.9,
+        "call": 19.3,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.0,
+        "call": 28.3,
+        "raise": 0.0
+      }
+    },
+    "K2o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.2,
+        "call": 27.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 69.4,
+        "call": 27.9,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 70.9,
+        "call": 27.0,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 69.6,
+        "call": 27.5,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 71.9,
+        "call": 25.9,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.0,
+        "call": 27.9,
+        "raise": 0.0
+      }
+    },
+    "Q2o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.5,
+        "call": 27.8,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 29.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 71.0,
+        "call": 27.1,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 71.3,
+        "call": 24.6,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 71.7,
+        "call": 26.6,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.3,
+        "call": 28.0,
+        "raise": 0.0
+      }
+    },
+    "J2o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 71.2,
+        "call": 26.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 73.9,
+        "call": 21.7,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 76.6,
+        "call": 19.1,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 78.9,
+        "call": 18.0,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 76.1,
+        "call": 21.7,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.3,
+        "call": 27.4,
+        "raise": 0.0
+      }
+    },
+    "T2o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.6,
+        "call": 27.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 69.7,
+        "call": 27.9,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 71.8,
+        "call": 26.1,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 71.9,
+        "call": 23.5,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 72.6,
+        "call": 25.6,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.2,
+        "call": 27.9,
+        "raise": 0.0
+      }
+    },
+    "92o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.7,
+        "call": 27.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 70.4,
+        "call": 27.3,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 72.1,
+        "call": 25.8,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 73.6,
+        "call": 21.7,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 73.0,
+        "call": 25.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.3,
+        "call": 27.8,
+        "raise": 0.0
+      }
+    },
+    "82o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.8,
+        "call": 27.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 69.9,
+        "call": 28.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 74.4,
+        "call": 23.6,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 74.1,
+        "call": 23.7,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 73.2,
+        "call": 25.2,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.6,
+        "call": 27.7,
+        "raise": 0.0
+      }
+    },
+    "72o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.4,
+        "call": 27.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 71.0,
+        "call": 26.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 74.7,
+        "call": 21.9,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 79.9,
+        "call": 18.5,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 74.0,
+        "call": 23.9,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.7,
+        "call": 28.1,
+        "raise": 0.0
+      }
+    },
+    "62o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.1,
+        "call": 28.0,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 68.3,
+        "call": 28.1,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 75.4,
+        "call": 23.5,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 79.8,
+        "call": 19.9,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 69.2,
+        "call": 28.5,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.2,
+        "call": 27.7,
+        "raise": 0.0
+      }
+    },
+    "52o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.2,
+        "call": 28.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 68.3,
+        "call": 27.5,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 76.2,
+        "call": 22.5,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 78.8,
+        "call": 20.8,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 69.1,
+        "call": 28.5,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.6,
+        "call": 28.3,
+        "raise": 0.0
+      }
+    },
+    "42o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.6,
+        "call": 28.6,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 67.7,
+        "call": 30.0,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 70.8,
+        "call": 26.9,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 69.6,
+        "call": 27.4,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 68.9,
+        "call": 29.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.5,
+        "call": 28.5,
+        "raise": 0.0
+      }
+    },
+    "32o": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 70.6,
+        "call": 27.7,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 68.8,
+        "call": 29.2,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 71.1,
+        "call": 26.8,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 70.1,
+        "call": 27.2,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 70.0,
+        "call": 28.1,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 70.5,
+        "call": 27.6,
+        "raise": 0.0
+      }
+    },
+    "22": {
+      "UTG": {
+        "unopened": 0.0,
+        "fold": 69.6,
+        "call": 28.5,
+        "raise": 0.0
+      },
+      "HJ": {
+        "unopened": 0.0,
+        "fold": 68.1,
+        "call": 29.3,
+        "raise": 0.0
+      },
+      "CO": {
+        "unopened": 0.0,
+        "fold": 68.0,
+        "call": 29.8,
+        "raise": 0.0
+      },
+      "BTN": {
+        "unopened": 0.0,
+        "fold": 67.1,
+        "call": 30.0,
+        "raise": 0.0
+      },
+      "SB": {
+        "unopened": 0.0,
+        "fold": 69.0,
+        "call": 28.8,
+        "raise": 0.0
+      },
+      "BB": {
+        "unopened": 0.0,
+        "fold": 69.4,
+        "call": 28.5,
+        "raise": 0.0
+      }
+    }
+  }
+}
