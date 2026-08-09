@@ -86,6 +86,24 @@ export function hasRaisingRights(state, playerId = state.actingPlayerId) {
   return state.currentBetMilliBb >= player.raiseReopenAtMilliBb;
 }
 
+export function playerNeedsAction(state, playerId) {
+  requirePokerState(state);
+  const player = playerById(state, playerId);
+  if (!player) throw new RangeError(`Unknown playerId: ${playerId}`);
+  return isPlayerLive(player)
+    && !isPlayerAllIn(player)
+    && (!player.actedThisStreet || player.streetContributionMilliBb < state.currentBetMilliBb);
+}
+
+export function nextActionablePlayerId(state, afterPlayerId) {
+  requirePokerState(state);
+  const player = playerById(state, afterPlayerId);
+  if (!player) throw new RangeError(`Unknown playerId: ${afterPlayerId}`);
+  const next = playersClockwiseAfterSeat(state.players, player.seat)
+    .find((candidate) => playerNeedsAction(state, candidate.playerId));
+  return next ? next.playerId : null;
+}
+
 export function ledgerTotals(state) {
   requirePokerState(state);
   let potMilliBb = 0;

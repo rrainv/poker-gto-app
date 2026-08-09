@@ -235,6 +235,12 @@ export function validatePokerState(state) {
   if (state.phase === PHASES.BETTING && state.actingPlayerId === null) {
     throw new RangeError('A betting state requires an acting player');
   }
+  if (state.phase === PHASES.BETTING) {
+    const actor = state.players.find((player) => player.playerId === state.actingPlayerId);
+    if (!actor.dealtIn || actor.folded || actor.currentStackMilliBb === 0) {
+      throw new RangeError('A betting actor must be live and have chips');
+    }
+  }
   if (state.phase === PHASES.TERMINAL && (state.actingPlayerId !== null || state.potMilliBb !== 0)) {
     throw new RangeError('A terminal fold state must have no actor and no unsettled pot');
   }

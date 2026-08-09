@@ -2,11 +2,11 @@ import { assertCardArray, assertUniqueKnownCards } from './cards.js';
 import { deepFreeze } from './freeze.js';
 import { firstPreflopActorId } from './selectors.js';
 import { CHANCE_TYPES, PHASES } from './schema.js';
+import { completePreflop } from './settlement.js';
 import { validateInitializedPokerState, validatePokerState } from './validate.js';
 
 export function applyChance(state, chanceEvent) {
   validateInitializedPokerState(state);
-  if (state.players.length !== 2) throw new RangeError('ENGINE-003 supports heads-up chance transitions only');
   if (!chanceEvent || typeof chanceEvent !== 'object' || Array.isArray(chanceEvent)) {
     throw new TypeError('chanceEvent must be an object');
   }
@@ -23,7 +23,7 @@ export function applyChance(state, chanceEvent) {
   const expectedIds = new Set(dealtPlayers.map((player) => player.playerId));
   const suppliedIds = Object.keys(chanceEvent.cardsByPlayer);
   if (suppliedIds.length !== expectedIds.size || suppliedIds.some((playerId) => !expectedIds.has(playerId))) {
-    throw new RangeError('cardsByPlayer must contain every dealt-in player exactly once');
+    throw new RangeError('cardsByPlayer must contain every dealt-in player exactly once for heads-up or multiway play');
   }
 
   const cardGroups = [
@@ -32,7 +32,7 @@ export function applyChance(state, chanceEvent) {
   ];
   for (const player of dealtPlayers) {
     const cards = assertCardArray(chanceEvent.cardsByPlayer[player.playerId], `cardsByPlayer.${player.playerId}`);
-    if (cards.length !== 2) throw new RangeError('Each dealt-in heads-up player must receive exactly two cards');
+    if (cards.length !== 2) throw new RangeError('Each dealt-in player must receive exactly two cards');
     cardGroups.push({ label: `holeCards.${player.playerId}`, cards });
   }
   assertUniqueKnownCards(cardGroups);
@@ -44,6 +44,7 @@ export function applyChance(state, chanceEvent) {
   nextState.phase = PHASES.BETTING;
   nextState.actingPlayerId = firstPreflopActorId(nextState);
   nextState.pendingChance = null;
+  if (nextState.actingPlayerId === null) completePreflop(nextState);
 
   validatePokerState(nextState);
   return deepFreeze(nextState);
