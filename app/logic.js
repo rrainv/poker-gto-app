@@ -7375,9 +7375,10 @@ setInterval(async () => {
         const pbar = document.getElementById('trainProgress');
         const ptext = document.getElementById('trainProgressText');
         if (pbar && ptext) {
-            const pct = Math.min(100, Math.max(0, (data.elapsed_hours / 9.0) * 100));
+            let pct = Math.min(100, Math.max(0, (data.elapsed_hours / 9.0) * 100));
+            if (data.status === 'done') pct = 100;
             pbar.style.width = pct + '%';
-            ptext.textContent = `STATUS: ${data.status.toUpperCase()} | TIME: ${data.elapsed_hours.toFixed(2)}h / 9.0h (ETA ${data.eta_hours.toFixed(1)}h) | LOSS: ${data.loss.toFixed(4)} | EPOCH: ${data.epoch} | BATCH: ${data.iteration.toLocaleString()}`;
+            ptext.textContent = `STATUS: ${data.status.toUpperCase()} | TIME: ${data.elapsed_hours.toFixed(2)}h (ETA ${data.eta_hours.toFixed(1)}h) | LOSS: ${data.loss.toFixed(4)} | EPOCH: ${data.epoch} | BATCH: ${data.iteration.toLocaleString()}`;
             if (data.status === 'done') {
                 ptext.style.color = '#00ff00';
             }
