@@ -34,7 +34,7 @@ HIDDEN_DIM = 512
 NUM_HIDDEN_LAYERS = 4
 ACCUMULATION_STEPS = 64
 EPOCHS = 10
-STEPS_PER_EPOCH = 2000
+STEPS_PER_EPOCH = 50000
 
 parser = argparse.ArgumentParser(description="Train PostFlop model.")
 parser.add_argument("--device", type=str, default="xpu", choices=["xpu", "cpu"], help="Device to train on (xpu or cpu)")
@@ -44,6 +44,9 @@ args, _ = parser.parse_known_args()
 device_str = args.device if (args.device == "cpu" or (hasattr(torch, 'xpu') and torch.xpu.is_available())) else "cpu"
 device = torch.device(device_str)
 print(f"Targeting device: {device}")
+if device.type == "cpu":
+    torch.set_num_threads(16)
+    print("CPU detected: Setting oneDNN thread count to 16 for maximum utilization.")
 
 class PostFlopNet(nn.Module):
     def __init__(self, state_dim, num_actions):
@@ -153,9 +156,8 @@ def train():
                     torch.xpu.empty_cache()
                 print(f"Epoch {epoch+1}, Step {step+1}, Loss: {loss.item()*ACCUMULATION_STEPS:.4f}")
 
-        # Thermal Soak Management
-        print(f"Epoch {epoch+1} completed. Mitigating thermal soak on mobile chassis: sleeping for 120s...")
-        time.sleep(120)
+        # Epoch completed
+        print(f"Epoch {epoch+1} completed.")
 
 if __name__ == '__main__':
     train()
