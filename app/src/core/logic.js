@@ -2713,8 +2713,13 @@ async function updateContext(reason = 'Context updated') {
   }
 
   // Trigger Visual Table Engine
-  const dealerPos = ['SB','BB','UTG','UTG+1','UTG+2','LJ','HJ','CO','BTN'].indexOf(ctxHeroPos) !== -1 
-    ? (['SB','BB','UTG','UTG+1','UTG+2','LJ','HJ','CO','BTN'].indexOf(ctxHeroPos) + 2) % 10 : 0;
+  const activePlayers = numericValue('#players', 6);
+  const allPos = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP', 'LJ', 'HJ', 'CO', 'BTN'];
+  const currentPosArr = POSITIONS[activePlayers] || POSITIONS[6];
+  const sortedPos = currentPosArr.slice().sort((a,b) => allPos.indexOf(a) - allPos.indexOf(b));
+  const heroIdx = sortedPos.indexOf(ctxHeroPos);
+  const btnIdx = sortedPos.indexOf('BTN');
+  const dealerPos = (heroIdx !== -1 && btnIdx !== -1) ? (btnIdx - heroIdx + activePlayers) % activePlayers : 0;
   
   const parsedBoard = (app.board || []).map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
   const parsedHero = (app.heroCards || []).map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));

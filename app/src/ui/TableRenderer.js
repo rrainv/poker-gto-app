@@ -2,6 +2,7 @@ class TableRenderer {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
     if (!this.container) return;
+    this.currentActivePlayers = 10;
     this.initSVG();
     window.addEventListener('gameStateUpdate', (e) => this.renderState(e.detail));
   }
@@ -40,27 +41,24 @@ class TableRenderer {
     this.drawSeats();
   }
 
-  drawSeats() {
+  drawSeats(activePlayers = 10) {
     const seatsLayer = this.container.querySelector('#seats-layer');
-    // Positions for 10-max around an oval
-    // Center is (400, 250), Radii are ~380, 240
-    const positions = [
-      { x: 400, y: 460 }, // 0: Bottom Center (Hero typically)
-      { x: 200, y: 440 }, // 1: Bottom Left
-      { x: 60, y: 250 },  // 2: Left Center
-      { x: 200, y: 60 },  // 3: Top Left
-      { x: 340, y: 30 },  // 4: Top Center Left
-      { x: 460, y: 30 },  // 5: Top Center Right
-      { x: 600, y: 60 },  // 6: Top Right
-      { x: 740, y: 250 }, // 7: Right Center
-      { x: 600, y: 440 }, // 8: Bottom Right
-      { x: 500, y: 460 }  // 9: Bottom Center Right
-    ];
+    if (!seatsLayer) return;
+
+    const centerX = 400;
+    const centerY = 250;
+    const rx = 340;
+    const ry = 210;
 
     let html = '';
-    positions.forEach((pos, i) => {
+    for (let i = 0; i < activePlayers; i++) {
+      // Start at Math.PI / 2 (bottom center) and go clockwise
+      const angle = (Math.PI / 2) + (i * (2 * Math.PI / activePlayers));
+      const x = Math.round(centerX + rx * Math.cos(angle));
+      const y = Math.round(centerY + ry * Math.sin(angle));
+      
       html += `
-        <g id="seat-${i}" transform="translate(${pos.x}, ${pos.y})">
+        <g id="seat-${i}" transform="translate(${x}, ${y})">
           <circle cx="0" cy="0" r="25" fill="#2b2d31" stroke="#5865f2" stroke-width="2" filter="url(#shadow)"/>
           <text x="0" y="5" font-family="Arial" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">P${i+1}</text>
           <!-- Dealer Button Placeholder -->
@@ -71,7 +69,7 @@ class TableRenderer {
           <g id="hole-cards-${i}" transform="translate(0, -60)"></g>
         </g>
       `;
-    });
+    }
     seatsLayer.innerHTML = html;
   }
 
@@ -100,6 +98,11 @@ class TableRenderer {
     // state = { pot: number, board: [{rank, suit}], heroCards: [{rank, suit}], dealerPos: number, activePlayers: number }
     if (!state) return;
 
+    if (state.activePlayers && state.activePlayers !== this.currentActivePlayers) {
+      this.currentActivePlayers = state.activePlayers;
+      this.drawSeats(this.currentActivePlayers);
+    }
+
     // 1. Update Pot
     const potText = this.container.querySelector('#table-pot');
     if (potText && state.pot !== undefined) {
@@ -107,7 +110,7 @@ class TableRenderer {
     }
 
     // 2. Update Dealer Button
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < this.currentActivePlayers; i++) {
       const d = this.container.querySelector(`#dealer-${i}`);
       const dTxt = this.container.querySelector(`#dealer-txt-${i}`);
       if (d && dTxt) {
