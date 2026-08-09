@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import time
 import os
 import sys
+import argparse
 
 class ResBlock(nn.Module):
     def __init__(self, dim):
@@ -35,8 +36,13 @@ ACCUMULATION_STEPS = 64
 EPOCHS = 10
 STEPS_PER_EPOCH = 2000
 
-# Target the Arc iGPU
-device = torch.device("xpu" if hasattr(torch, 'xpu') and torch.xpu.is_available() else "cpu")
+parser = argparse.ArgumentParser(description="Train PostFlop model.")
+parser.add_argument("--device", type=str, default="xpu", choices=["xpu", "cpu"], help="Device to train on (xpu or cpu)")
+args, _ = parser.parse_known_args()
+
+# Target device
+device_str = args.device if (args.device == "cpu" or (hasattr(torch, 'xpu') and torch.xpu.is_available())) else "cpu"
+device = torch.device(device_str)
 print(f"Targeting device: {device}")
 
 class PostFlopNet(nn.Module):
@@ -100,6 +106,8 @@ def train():
     preflop_model.eval() # Freeze weights
     
     model = PostFlopNet(state_dim=16, num_actions=5).to(device)
+    if device.type == "xpu":
+        model = model.to(torch.bfloat16)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     
     print(f"Starting XPU Training Loop. BATCH_SIZE={BATCH_SIZE}, ACCUMULATION_STEPS={ACCUMULATION_STEPS}")
@@ -115,6 +123,11 @@ def train():
             features = features.to(device)
             target_policy = target_policy.to(device)
             target_value = target_value.to(device)
+            
+            if device.type == "xpu":
+                features = features.to(torch.bfloat16)
+                target_policy = target_policy.to(torch.bfloat16)
+                target_value = target_value.to(torch.bfloat16)
 
             pred_policy, pred_value = model(features)
             
