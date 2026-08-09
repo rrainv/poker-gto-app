@@ -41,25 +41,31 @@ function createElement(value = '', options = {}) {
 function createHarness() {
   const source = fs.readFileSync(LOGIC_PATH, 'utf8');
   const positions = source.match(/const POSITIONS\s*=\s*\{[\s\S]*?\n\};/);
+  const ranks = source.match(/const RANKS\s*=\s*\[[^\n]+\];/);
   const rankValue = source.match(/const RANK_VALUE\s*=\s*\{[^\n]+\};/);
   const fallbackPositions = source.match(/const PREFLOP_FALLBACK_POSITION_MODIFIERS\s*=\s*Object\.freeze\(\{[\s\S]*?\n\}\);/);
-  if (!positions || !rankValue || !fallbackPositions) throw new Error('Could not extract core constants from logic.js');
+  if (!positions || !ranks || !rankValue || !fallbackPositions) throw new Error('Could not extract core constants from logic.js');
 
   const numericSource = sliceBetween(source, 'function numericValue(id, fallback = 0)', 'function updatePositionSelect(');
   const currentStreetProductionSource = sliceBetween(source, 'function currentStreet(board)', 'function handClass(cards)');
   const currentStreetSource = currentStreetProductionSource
     .replace('function currentStreet(', 'function qaCurrentStreet(');
+  const handClassSource = sliceBetween(source, 'function handClass(cards)', 'function numericValue(id, fallback = 0)');
   const updatePositionsSource = sliceBetween(source, 'function updatePositionSelect(', 'function normalizeTree(data, fileName)');
   const actionParserSource = sliceBetween(source, 'function isAllInActionName(name)', 'function parseCard(cardStr)');
+  const treeContextSource = sliceBetween(source, 'function treeContext(decisionContext =', 'function isAllInActionName(name)')
+    .replace('function treeContext(', 'function qaTreeContext(');
+  const noTreeProfileSource = sliceBetween(source, 'function noTreeProfile(reason,', 'function actionProfile(hand =')
+    .replace('function noTreeProfile(', 'function qaNoTreeProfile(');
   const actionProfileSource = sliceBetween(source, 'function actionProfile(hand =', 'function setFrequency(index, action)')
     .replace('function actionProfile(', 'function qaActionProfile(');
-  const fallbackSource = sliceBetween(source, 'function calculatePreflopFallbackStrategy(', 'function noTreeProfile(reason)');
+  const fallbackSource = sliceBetween(source, 'function calculatePreflopFallbackStrategy(', 'function noTreeProfile(reason,');
   const potSource = sliceBetween(source, 'function preflopBasePot()', 'function updateMetrics()');
   const updateContextSource = sliceBetween(source, 'async function updateContext(reason =', 'async function loadOnnxModel()');
   const sliderSource = sliceBetween(source, 'function syncSliderPair(rangeId, numberId)', 'function bindSliderPair(rangeId, numberId, callback)');
   const heuristicSource = sliceBetween(source, 'function getHandTier(hand)', 'function combinations(items, size)');
   const trainingActionSource = sliceBetween(source, 'const ACTION_PASSIVE_TO_AGGRESSIVE_ORDER', 'function generateFeedback(userAction, bestAction, solution)');
-  const postflopSource = sliceBetween(source, 'function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [])', 'function calculatePostflopFallbackStrategy(context, heroCards)');
+  const postflopSource = sliceBetween(source, 'function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [], decisionContext = null)', 'function calculatePostflopFallbackStrategy(context, heroCards)');
   const trainingStrategySource = sliceBetween(source, 'function getTrainingStrategy(context, heroCards)', '// Hook renderRangeAdvantage into updateContext and villain pos changes');
 
   const controls = new Map();
@@ -106,6 +112,7 @@ function createHarness() {
   vm.createContext(sandbox);
   vm.runInContext(`
     ${positions[0]}
+    ${ranks[0]}
     ${rankValue[0]}
     ${fallbackPositions[0]}
     const ACTION_COLORS = { aggressive: 'a', passive: 'p', fold: 'f', unavailable: 'u' };
@@ -157,7 +164,11 @@ function createHarness() {
       category: 'air', score: 1, tripsType: null, tripsStrength: 1,
       isBoardPaired: false, isWetBoard: false, boardTexture: {}
     });
-    const simulateEquity = () => ({ eq: postflopEquity, pct: postflopEquity * 100 });
+    let capturedEquityDecisionContext = null;
+    const simulateEquity = (heroCards, board, deadCards, iterations, decisionContext) => {
+      capturedEquityDecisionContext = decisionContext || null;
+      return { eq: postflopEquity, pct: postflopEquity * 100 };
+    };
     const generateStrategyWithOnnx = async (context) => {
       capturedOnnxContext = JSON.parse(JSON.stringify(context));
       return { strategy: {} };
@@ -166,7 +177,9 @@ function createHarness() {
     ${numericSource}
     ${currentStreetProductionSource}
     ${currentStreetSource}
+    ${handClassSource}
     ${updatePositionsSource}
+    ${treeContextSource}
     ${actionParserSource}
     ${fallbackSource}
     ${potSource}
@@ -175,6 +188,7 @@ function createHarness() {
     ${trainingActionSource}
     ${postflopSource}
     ${trainingStrategySource}
+    ${noTreeProfileSource}
     ${actionProfileSource}
     ${updateContextSource}
 
@@ -205,6 +219,8 @@ function createHarness() {
       strategyAccountingContext,
       deriveDecisionContext,
       decisionContextToLegacyStrategyContext,
+      decisionContextToLegacyPostflopContext,
+      calculatePreflopFallbackForDecisionContext,
       parseSolverEntry,
       classifyAction,
       standardActionName,
@@ -213,8 +229,31 @@ function createHarness() {
         controls.set('#lastAction', createElement('unopened', { text: 'Unopened' }));
         app.gto.hero = ['As', 'Ks'];
         app.gto.board = [];
+        app.decisionContext = null;
         app.solver = { strategy: { AKs: { BTN: entry } } };
         return qaActionProfile('AKs');
+      },
+      strategyProfile(context, solver = null) {
+        app.decisionContext = null;
+        app.useOnnx = false;
+        app.onnxSession = null;
+        app.solver = solver;
+        return qaActionProfile(null, context);
+      },
+      strategyProfileCapture(context, solver = null) {
+        capturedEquityDecisionContext = null;
+        const profile = this.strategyProfile(context, solver);
+        return { profile, equityDecisionContext: capturedEquityDecisionContext };
+      },
+      noTreeStrategyProfile(context, reason = 'No matching tree') {
+        app.decisionContext = null;
+        app.solver = null;
+        return qaNoTreeProfile(reason, context);
+      },
+      localTreeContext(context, solver) {
+        app.decisionContext = null;
+        app.solver = solver;
+        return qaTreeContext(context);
       },
       normalizeActionName,
       actionRank: getActionAggressionRank,
@@ -342,10 +381,16 @@ module.exports = {
   strategyAccountingContext: (...args) => plain(harness.strategyAccountingContext(...args)),
   deriveDecisionContext: (...args) => plain(harness.deriveDecisionContext(...args)),
   legacyStrategyContext: (...args) => plain(harness.decisionContextToLegacyStrategyContext(...args)),
+  legacyPostflopContext: (...args) => plain(harness.decisionContextToLegacyPostflopContext(...args)),
+  fallbackForDecisionContext: (...args) => plain(harness.calculatePreflopFallbackForDecisionContext(...args)),
   parseSolverEntry: (...args) => plain(harness.parseSolverEntry(...args)),
   classifyAction: (...args) => harness.classifyAction(...args),
   standardActionName: (...args) => harness.standardActionName(...args),
   playbookActionProfile: (...args) => plain(harness.playbookActionProfile(...args)),
+  strategyProfile: (...args) => plain(harness.strategyProfile(...args)),
+  strategyProfileCapture: (...args) => plain(harness.strategyProfileCapture(...args)),
+  noTreeStrategyProfile: (...args) => plain(harness.noTreeStrategyProfile(...args)),
+  localTreeContext: (...args) => plain(harness.localTreeContext(...args)),
   normalizeActionName: (...args) => harness.normalizeActionName(...args),
   actionRank: (...args) => harness.actionRank(...args),
   heuristic: (...args) => plain(harness.heuristic(...args)),

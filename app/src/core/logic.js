@@ -868,6 +868,69 @@ function decisionContextToLegacyStrategyContext(context) {
 
 
 
+function requireDecisionContext(context) {
+
+  if (context !== null && context !== undefined) {
+    if (context.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION) return context;
+    throw new TypeError('Expected DecisionContext decision-context/v1');
+  }
+
+  if (app.decisionContext && app.decisionContext.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION) {
+    return app.decisionContext;
+  }
+
+  return deriveDecisionContext(readPlaybookInputSnapshot());
+
+}
+
+
+
+function decisionContextToLegacyPostflopContext(context) {
+
+  const decisionContext = requireDecisionContext(context);
+  const heroPosition = decisionContext.heroPosition;
+
+  return {
+    board: decisionContext.board.slice(),
+    heroCards: decisionContext.heroCards.slice(),
+    deadCards: decisionContext.deadCards.slice(),
+    hero_pos: heroPosition,
+    villain_pos: ['BTN', 'CO', 'HJ'].includes(heroPosition) ? 'BB' : 'SB',
+    facingSize: decisionContext.facingSizeBb,
+    potSize: decisionContext.potBb,
+    stack: decisionContext.stackBb
+  };
+
+}
+
+
+
+function calculatePreflopFallbackForDecisionContext(context) {
+
+  const decisionContext = requireDecisionContext(context);
+  const cards = decisionContext.heroCards;
+
+  if (cards.length !== 2 || !cards[0] || !cards[1]) return null;
+
+  const r1str = cards[0][0];
+  const r2str = cards[1][0];
+
+  return calculatePreflopFallbackStrategy(
+    r1str,
+    r2str,
+    r1str === r2str,
+    cards[0][1] === cards[1][1],
+    decisionContext.heroPosition,
+    decisionContext.lastAction,
+    decisionContext.facingSizeBb,
+    decisionContext.potBb,
+    decisionContext.stackBb
+  );
+
+}
+
+
+
 function updatePositionSelect(playersSelector, positionSelector) {
 
   const players = numericValue(playersSelector, 6);
@@ -928,20 +991,19 @@ function normalizeTree(data, fileName) {
 
 
 
-function treeContext() {
+function treeContext(decisionContext = null) {
 
   if (!app.solver) return { available: false, reason: 'Load a local preflop tree to show solver frequencies.' };
 
-  if (currentStreet() !== 'preflop') return { available: false, reason: 'The loaded file has no postflop tree.' };
+  const context = requireDecisionContext(decisionContext);
+
+  if (context.street !== 'preflop') return { available: false, reason: 'The loaded file has no postflop tree.' };
 
   
 
   // If we have API/ONNX strategy data, it's available for any context
 
   if (app.solver.strategy) {
-
-    const heroPos = selectedValue('#heroPos');
-
     return { 
 
       available: true, 
@@ -958,15 +1020,15 @@ function treeContext() {
 
   // Local tree restrictions only apply to local trees
 
-  if (numericValue('#players', 6) !== 6) return { available: false, reason: 'The loaded tree is six-max; current table size does not match.' };
+  if (context.tableSize !== 6) return { available: false, reason: 'The loaded tree is six-max; current table size does not match.' };
 
   
 
-  if (selectedValue('#lastAction') !== 'unopened') return { available: false, reason: 'The loaded tree is RFI-only; this action branch is not in the file.' };
+  if (context.lastAction !== 'unopened') return { available: false, reason: 'The loaded tree is RFI-only; this action branch is not in the file.' };
 
   
 
-  if (app.solver.stack && Math.abs(numericValue('#stack', app.solver.stack) - app.solver.stack) > 1) {
+  if (app.solver.stack && Math.abs(context.stackBb - app.solver.stack) > 1) {
 
     return { available: false, reason: `Loaded tree is ${app.solver.stack}bb; current stack does not match.` };
 
@@ -974,7 +1036,7 @@ function treeContext() {
 
   
 
-  const heroPos = selectedValue('#heroPos');
+  const heroPos = context.heroPosition;
 
   if (Array.isArray(app.solver.positions)) {
 
@@ -1087,7 +1149,7 @@ function parseCard(cardStr) {
 
 
 // evaluateHand removed
-function simulateEquity(heroStr, boardStr, deadStr = [], iterations = 800) {
+function simulateEquity(heroStr, boardStr, deadStr = [], iterations = 800, decisionContext = null) {
   let exclude = heroStr.concat(boardStr).concat(deadStr || []).filter(c => c);
   let heroCards = heroStr.filter(c => c);
   let boardCards = boardStr.filter(c => c);
@@ -1147,12 +1209,22 @@ function simulateEquity(heroStr, boardStr, deadStr = [], iterations = 800) {
   const oppL_sim = (app.settings && app.settings.oppTightness !== undefined) ? app.settings.oppTightness / 100.0 : 0.0;
   const opponent_range_percent = 0.15 + (0.30 * oppL_sim);
 
-  let facingEl = document.getElementById('facingSize');
-  let facing = facingEl ? (parseFloat(facingEl.value) || 0) : 0;
-  let actionEl = document.getElementById('lastAction');
-  let actionText = (actionEl && actionEl.selectedOptions && actionEl.selectedOptions[0]) ? actionEl.selectedOptions[0].text.toLowerCase() : 'unopened';
-  let playersEl = document.getElementById('players');
-  let players = playersEl ? (parseInt(playersEl.value) || 6) : 6;
+  let facing;
+  let actionText;
+  let players;
+  if (decisionContext) {
+    const context = requireDecisionContext(decisionContext);
+    facing = context.facingSizeBb;
+    actionText = context.lastAction.toLowerCase();
+    players = context.tableSize;
+  } else {
+    const facingEl = document.getElementById('facingSize');
+    facing = facingEl ? (parseFloat(facingEl.value) || 0) : 0;
+    const actionEl = document.getElementById('lastAction');
+    actionText = (actionEl && actionEl.selectedOptions && actionEl.selectedOptions[0]) ? actionEl.selectedOptions[0].text.toLowerCase() : 'unopened';
+    const playersEl = document.getElementById('players');
+    players = playersEl ? (parseInt(playersEl.value) || 6) : 6;
+  }
 
   let basePct = opponent_range_percent;
   if (facing > 0 || actionText.includes('raise')) basePct *= 0.7;
@@ -1437,39 +1509,21 @@ function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 
     };
 }
 
-function noTreeProfile(reason) {
+function noTreeProfile(reason, decisionContext = null) {
 
-  if (currentStreet() === 'preflop' && app.gto.hero.length === 2 && app.gto.hero[0] && app.gto.hero[1]) {
+  const context = requireDecisionContext(decisionContext);
 
-    const h = app.gto.hero;
+  if (context.street === 'preflop' && context.heroCards.length === 2 && context.heroCards[0] && context.heroCards[1]) {
 
-    const r1str = h[0][0];
+    const pos = context.heroPosition;
 
-    const r2str = h[1][0];
+    const facingSize = context.facingSizeBb;
 
-    const isPair = r1str === r2str;
+    const potSize = context.potBb;
 
-    const isSuited = h[0][1] === h[1][1];
+    const stack = context.stackBb;
 
-    const pos = document.getElementById('heroPos') ? document.getElementById('heroPos').value : 'UTG';
-
-    const action = document.getElementById('lastAction') ? document.getElementById('lastAction').value : 'unopened';
-
-    const facingStr = document.getElementById('facingSize') ? document.getElementById('facingSize').value : '0';
-
-    const potStr = document.getElementById('potSize') ? document.getElementById('potSize').value : '1.5';
-
-    const stackStr = document.getElementById('stack') ? document.getElementById('stack').value : '30';
-
-    
-
-    const facingSize = parseFloat(facingStr) || 0;
-
-    const potSize = parseFloat(potStr) || 1.5;
-
-    const stack = parseFloat(stackStr) || 30;
-
-    const fb = calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos, action, facingSize, potSize, stack);
+    const fb = calculatePreflopFallbackForDecisionContext(context);
 
     let a1, v1, k1, a2, v2, k2;
 
@@ -1575,11 +1629,11 @@ function noTreeProfile(reason) {
 
     };
 
-  } else if (currentStreet() !== 'preflop' && app.gto.hero.length === 2 && app.gto.hero[0] && app.gto.hero[1]) {
+  } else if (context.street !== 'preflop' && context.heroCards.length === 2 && context.heroCards[0] && context.heroCards[1]) {
 
-    let deadCards = app.gto.dead || [];
+    let deadCards = context.deadCards;
 
-    let sim = simulateEquity(app.gto.hero, app.gto.board, deadCards);
+    let sim = simulateEquity(context.heroCards, context.board, deadCards, 800, context);
 
     let eq = sim.eq;
 
@@ -1595,33 +1649,11 @@ function noTreeProfile(reason) {
 
 
 
-    const facingSize = numericValue('#facingSize', 0);
-
-    const potSize = numericValue('#potSize', 1.5);
-
-    const stack = numericValue('#stack', 30);
+    const contextObj = decisionContextToLegacyPostflopContext(context);
 
 
 
-    const contextObj = {
-
-      board: app.gto.board,
-
-      hero_pos: heroPos,
-
-      villain_pos: villainPos,
-
-      facingSize: facingSize,
-
-      potSize: potSize,
-
-      stack: stack
-
-    };
-
-
-
-    const stratObj = calculateUnifiedPostflopStrategy(contextObj, app.gto.hero, deadCards);
+    const stratObj = calculateUnifiedPostflopStrategy(contextObj, context.heroCards, deadCards, context);
 
     const entries = Object.entries(stratObj);
 
@@ -1645,7 +1677,7 @@ function noTreeProfile(reason) {
 
 
 
-    let street = currentStreet();
+    let street = context.street;
 
     let rangePct = street === 'flop' ? 'Top 40%' : street === 'turn' ? 'Top 25%' : 'Top 15%';
 
@@ -1685,26 +1717,24 @@ function noTreeProfile(reason) {
 
 
 
-function actionProfile(hand = handClass(app.gto.hero)) {
+function actionProfile(hand = null, decisionContext = null) {
 
-  console.log('actionProfile - app.gto.hero:', app.gto.hero);
+  const strategyContext = requireDecisionContext(decisionContext);
+  hand = hand === null ? handClass(strategyContext.heroCards) : hand;
+
+  console.log('actionProfile - hero cards:', strategyContext.heroCards);
 
   console.log('actionProfile - handClass result:', hand);
 
   
 
-  if (!hand) return noTreeProfile('Choose two hero cards to look up a hand class.');
+  if (!hand) return noTreeProfile('Choose two hero cards to look up a hand class.', strategyContext);
 
-  if (currentStreet() === 'invalid') return noTreeProfile('Complete the current board street: 0, 3, 4, or 5 board cards.');
+  if (strategyContext.street === 'invalid') return noTreeProfile('Complete the current board street: 0, 3, 4, or 5 board cards.', strategyContext);
 
   // === POSTFLOP: bypass solver tree, use ONNX if available else JS heuristic ===
-  if (currentStreet() !== 'preflop') {
-    const heroPos = selectedValue('#heroPos') || 'BTN';
-    const villainPos = ['BTN','CO','HJ'].includes(heroPos) ? 'BB' : 'SB';
-    const facingSize = numericValue('#facingSize', 0);
-    const potSize = numericValue('#potSize', 1.5);
-    const stack = numericValue('#stack', 30);
-    const deadCards = app.gto.dead || [];
+  if (strategyContext.street !== 'preflop') {
+    const deadCards = strategyContext.deadCards;
 
     // TIER 1: If ONNX is loaded and has postflop support, use it
     // (ONNX model is trained on all streets; app.solver.strategy is set after load)
@@ -1713,22 +1743,13 @@ function actionProfile(hand = handClass(app.gto.hero)) {
       // Fall through to the solver strategy block at the bottom of actionProfile
     } else {
       // TIER 2: JS deterministic postflop math (Monte Carlo + heuristic)
-      const sim = simulateEquity(app.gto.hero, app.gto.board, deadCards);
+      const sim = simulateEquity(strategyContext.heroCards, strategyContext.board, deadCards, 800, strategyContext);
       const eq = sim ? sim.eq : 0.5;
       setTimeout(() => { const el = document.getElementById('mEquity'); if (el) el.textContent = (eq*100).toFixed(1)+'%'; }, 10);
 
-      const contextObj = {
-        board: app.gto.board,
-        heroCards: app.gto.hero,
-        deadCards: deadCards,
-        hero_pos: heroPos,
-        villain_pos: villainPos,
-        facingSize: facingSize,
-        potSize: potSize,
-        stack: stack
-      };
+      const contextObj = decisionContextToLegacyPostflopContext(strategyContext);
 
-      const stratObj = calculateUnifiedPostflopStrategy(contextObj, app.gto.hero, deadCards);
+      const stratObj = calculateUnifiedPostflopStrategy(contextObj, strategyContext.heroCards, deadCards, strategyContext);
       const entries = Object.entries(stratObj).sort((a,b) => b[1]-a[1]);
 
       const a1name = entries[0] ? entries[0][0] : 'Check';
@@ -1737,7 +1758,7 @@ function actionProfile(hand = handClass(app.gto.hero)) {
       const a2val  = entries[1] ? entries[1][1] : 0;
 
       const toKind = (name) => ['Bet','Raise','All-In'].includes(name) ? 'aggressive' : name === 'Fold' ? 'fold' : 'passive';
-      const street = currentStreet();
+      const street = strategyContext.street;
       const rangePct = street === 'flop' ? 'Top 40%' : street === 'turn' ? 'Top 25%' : 'Top 15%';
 
       return {
@@ -1754,13 +1775,13 @@ function actionProfile(hand = handClass(app.gto.hero)) {
     }
   }
 
-  const context = treeContext();
+  const context = treeContext(strategyContext);
 
-  if (!context.available) return noTreeProfile(context.reason);
+  if (!context.available) return noTreeProfile(context.reason, strategyContext);
 
   
 
-  const heroPos = selectedValue('#heroPos');
+  const heroPos = strategyContext.heroPosition;
 
   
 
@@ -1778,7 +1799,7 @@ function actionProfile(hand = handClass(app.gto.hero)) {
 
       console.log('Hand not found in strategy:', hand, 'Position:', heroPos);
 
-      return noTreeProfile('This hand is not present in the matched solver file.');
+      return noTreeProfile('This hand is not present in the matched solver file.', strategyContext);
 
     }
 
@@ -1812,9 +1833,7 @@ function actionProfile(hand = handClass(app.gto.hero)) {
 
     let bestFormatted = best.name.toUpperCase();
 
-    let lastActionEl = $('#lastAction');
-
-    let lastAction = (lastActionEl && lastActionEl.selectedOptions && lastActionEl.selectedOptions[0]) ? lastActionEl.selectedOptions[0].text.toLowerCase() : 'unopened';
+    let lastAction = strategyContext.lastAction.toLowerCase();
 
     
 
@@ -1850,7 +1869,7 @@ function actionProfile(hand = handClass(app.gto.hero)) {
 
     const entry = (app.solver.positions[heroPos] || {})[hand];
 
-    if (!entry) return noTreeProfile('This hand is not present in the matched solver file.');
+    if (!entry) return noTreeProfile('This hand is not present in the matched solver file.', strategyContext);
 
     const actions = parseSolverEntry(entry);
 
@@ -2763,7 +2782,7 @@ async function updateContext(reason = 'Context updated') {
 
   
 
-  const profile = actionProfile();
+  const profile = actionProfile(null, decisionContext);
 
   console.log('Action profile:', profile);
 
@@ -6703,10 +6722,10 @@ function evaluatePostflopHandStrength(heroCards, boardCards) {
 
 }
 
-function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = []) {
+function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [], decisionContext = null) {
   if (!heroCards || heroCards.length !== 2 || !context || !context.board || context.board.length < 3) return { 'Check': 100 };
   const evalRes = evaluatePostflopHandStrength(heroCards, context.board);
-  const sim = simulateEquity(heroCards, context.board, deadCards, 250);
+  const sim = simulateEquity(heroCards, context.board, deadCards, 250, decisionContext);
   let eq = sim.eq;
   
   // Legacy manual postflop heuristic only: this is not the ClubGG forced
