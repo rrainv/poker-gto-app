@@ -4273,3 +4273,6 @@ html[data-four-color="false"] .card.black {
   max-height: 0;
   opacity: 0;
 }
+
+html[data-four-color="false"] .suit-s { color: #111827 !important; }
+html[data-four-color="false"] .suit-c { color: #111827 !important; }

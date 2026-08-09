@@ -3749,8 +3749,9 @@ function loadSolverFile(file) {
 
 
 function applyDeckStyle(is4Color) {
-  if (typeof is4Color === 'string') is4Color = (is4Color === '4-color');
+  if (typeof is4Color === 'string') is4Color = (is4Color === '4-color' || is4Color === 'true');
   app.settings.fourColorDeck = is4Color;
+  localStorage.setItem('riverline_4color', is4Color);
   document.documentElement.style.setProperty('--heart', '#ff0000');
   document.documentElement.style.setProperty('--spade', '#111827');
   document.documentElement.style.setProperty('--diamond', is4Color ? '#0044ff' : '#ff0000');
@@ -4535,6 +4536,18 @@ window.refreshDynamicTranslations = refreshDynamicTranslations;
 function init() {
 
   try {
+    
+    // Explicitly hide all inactive mode-views on load to prevent bleeding
+    $$('.mode-view').forEach(view => {
+      if (!view.classList.contains('active')) {
+        view.style.display = 'none';
+      } else {
+        view.style.display = 'block';
+      }
+    });
+
+    const saved4Color = localStorage.getItem('riverline_4color');
+    applyDeckStyle(saved4Color !== 'false'); // true by default
 
     SoundFX.initBtn();
 
