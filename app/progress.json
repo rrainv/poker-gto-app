@@ -1,1 +1,1 @@
-{"epoch": 21707, "max_epochs": 125793, "iteration": 948174848, "elapsed_hours": 1.55, "eta_hours": 7.45, "loss": 1.0356, "status": "training"}
+{"epoch": 126839, "max_epochs": 126839, "iteration": 5541462016, "elapsed_hours": 8.5, "eta_hours": 0, "loss": 1.0375, "status": "done", "model_ready": true}
