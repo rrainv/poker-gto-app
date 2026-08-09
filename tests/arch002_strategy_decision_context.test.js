@@ -181,5 +181,6 @@ test('strategy-facing consumers contain no independent poker-state control reads
     assert.doesNotMatch(source, /app\.gto/, name);
     assert.doesNotMatch(source, /currentStreet\(\)/, name);
   }
-  assert.match(logicSource, /const profile = actionProfile\(null, decisionContext\);/);
+  assert.match(logicSource, /const strategyResult = actionProfile\(null, decisionContext\);/);
+  assert.match(logicSource, /const profile = strategyResultToLegacyProfile\(strategyResult\);/);
 });

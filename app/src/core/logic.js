@@ -162,6 +162,8 @@ const app = {
 
   decisionContext: null,
 
+  strategyResult: null,
+
   onnxSession: null,
 
   useOnnx: false
@@ -1100,6 +1102,256 @@ function standardActionName(name) {
 
 
 
+const STRATEGY_RESULT_SCHEMA_VERSION = 'strategy-result/v1';
+
+const STRATEGY_SOURCES = Object.freeze({
+  HEURISTIC_PREFLOP: 'heuristic_preflop',
+  HEURISTIC_POSTFLOP: 'heuristic_postflop',
+  LOCAL_TREE: 'local_tree',
+  ONNX_MODEL: 'onnx_model',
+  API: 'api',
+  EQUITY_FALLBACK: 'equity_fallback',
+  UNAVAILABLE: 'unavailable'
+});
+
+const STRATEGY_SOURCE_VALUES = Object.freeze(Object.values(STRATEGY_SOURCES));
+
+
+
+function structuralActionFromName(name) {
+
+  const label = String(name || '');
+  const normalized = label.toLowerCase();
+  const amountMatch = normalized.match(/(-?\d+(?:\.\d+)?)\s*bb\b/);
+  const potFractionMatch = normalized.match(/(-?\d+(?:\.\d+)?)\s*%\s*(?:of\s+)?pot\b/);
+  let type = 'unknown';
+
+  if (!label || label === 'â€”' || /impossible|unavailable|solver tree|needed/.test(normalized)) type = 'unavailable';
+  else if (isAllInActionName(normalized)) type = 'all_in';
+  else if (/\bfold\b/.test(normalized)) type = 'fold';
+  else if (/\bcheck\b/.test(normalized)) type = 'check';
+  else if (/\bcall\b/.test(normalized)) type = 'call';
+  else if (/\bbet\b/.test(normalized) && !/\d\s*-?\s*bet\b/.test(normalized)) type = 'bet';
+  else if (/\b(?:open|raise|3\s*-?\s*bet|4\s*-?\s*bet)\b/.test(normalized)) type = 'raise';
+
+  return {
+    type,
+    amountBb: amountMatch ? Number(amountMatch[1]) : null,
+    potFraction: potFractionMatch ? Number(potFractionMatch[1]) / 100 : null
+  };
+
+}
+
+
+
+function normalizedStrategyActions(entries) {
+
+  const prepared = (Array.isArray(entries) ? entries : [])
+    .map((entry) => ({
+      label: String(entry && (entry.label || entry.name) || ''),
+      value: Math.max(0, Number(entry && (entry.probability ?? entry.value)) || 0),
+      evBb: Number.isFinite(entry && entry.evBb) ? Number(entry.evBb) : null
+    }))
+    .filter((entry) => entry.value > 0 && entry.label && entry.label !== 'â€”');
+  const total = prepared.reduce((sum, entry) => sum + entry.value, 0);
+
+  if (!(total > 0)) return [];
+
+  return prepared.map((entry) => ({
+    action: structuralActionFromName(entry.label),
+    label: entry.label,
+    probability: entry.value / total,
+    evBb: entry.evBb
+  }));
+
+}
+
+
+
+function nullableStrategyMetric(value) {
+
+  return Number.isFinite(value) ? Math.min(1, Math.max(0, Number(value))) : null;
+
+}
+
+
+
+function createStrategyResult({
+  source,
+  actions = [],
+  recommendedLabel = null,
+  explanation = null,
+  confidence = null,
+  coverage = null,
+  modelVersion = null,
+  warnings = [],
+  details = null
+}) {
+
+  if (!STRATEGY_SOURCE_VALUES.includes(source)) {
+    throw new TypeError(`Unsupported StrategyResult source: ${source}`);
+  }
+
+  const normalizedActions = normalizedStrategyActions(actions);
+  const bestAction = normalizedActions.length
+    ? normalizedActions.reduce((best, entry) => entry.probability > best.probability ? entry : best)
+    : null;
+
+  return {
+    schemaVersion: STRATEGY_RESULT_SCHEMA_VERSION,
+    source,
+    actions: normalizedActions,
+    recommendation: bestAction ? {
+      action: { ...bestAction.action },
+      label: recommendedLabel || bestAction.label
+    } : recommendedLabel ? {
+      action: structuralActionFromName(recommendedLabel),
+      label: recommendedLabel
+    } : null,
+    explanation: explanation === null ? null : String(explanation),
+    confidence: nullableStrategyMetric(confidence),
+    coverage: nullableStrategyMetric(coverage),
+    modelVersion: modelVersion === null || modelVersion === undefined ? null : String(modelVersion),
+    warnings: Array.isArray(warnings) ? warnings.map(String) : [],
+    details: details === undefined ? null : details
+  };
+
+}
+
+
+
+function preflopHeuristicToStrategyResult(fallback, presentation = {}) {
+
+  const values = {
+    open: Number(fallback && fallback.open) || 0,
+    call: Number(fallback && fallback.call) || 0,
+    fold: Number(fallback && fallback.fold) || 0
+  };
+  const labels = { open: 'Open', call: 'Call', fold: 'Fold' };
+  const requestedOrder = Array.isArray(presentation.actionOrder) ? presentation.actionOrder : [];
+  const order = [...requestedOrder, 'open', 'call', 'fold'].filter((key, index, all) => labels[key] && all.indexOf(key) === index);
+  const actions = order.map((key) => ({
+    label: key === 'open' && presentation.openLabel ? presentation.openLabel : labels[key],
+    value: values[key]
+  }));
+
+  return createStrategyResult({
+    source: STRATEGY_SOURCES.HEURISTIC_PREFLOP,
+    actions,
+    recommendedLabel: presentation.recommendedLabel || null,
+    explanation: presentation.explanation || null
+  });
+
+}
+
+
+
+function postflopHeuristicToStrategyResult(strategy, presentation = {}) {
+
+  const actions = Object.entries(strategy || {})
+    .filter(([name, value]) => name !== 'context' && Number.isFinite(Number(value)))
+    .map(([name, value]) => ({ label: name, value: Number(value) }))
+    .sort((a, b) => b.value - a.value);
+
+  return createStrategyResult({
+    source: STRATEGY_SOURCES.HEURISTIC_POSTFLOP,
+    actions,
+    recommendedLabel: presentation.recommendedLabel || (actions[0] && actions[0].label) || null,
+    explanation: presentation.explanation || null,
+    details: strategy && strategy.context ? strategy.context : null
+  });
+
+}
+
+
+
+function localTreeToStrategyResult(actions, presentation = {}) {
+
+  return createStrategyResult({
+    source: STRATEGY_SOURCES.LOCAL_TREE,
+    actions,
+    recommendedLabel: presentation.recommendedLabel || null,
+    explanation: presentation.explanation || null
+  });
+
+}
+
+
+
+function modelStrategyToStrategyResult(entry, presentation = {}) {
+
+  const source = presentation.source === STRATEGY_SOURCES.API
+    ? STRATEGY_SOURCES.API
+    : STRATEGY_SOURCES.ONNX_MODEL;
+  const actions = Object.entries(entry || {})
+    .map(([name, value]) => ({ label: name, value }))
+    .sort((a, b) => Number(b.value) - Number(a.value));
+
+  return createStrategyResult({
+    source,
+    actions,
+    recommendedLabel: presentation.recommendedLabel || null,
+    explanation: presentation.explanation || null,
+    confidence: presentation.confidence,
+    coverage: presentation.coverage,
+    modelVersion: presentation.modelVersion,
+    warnings: presentation.warnings
+  });
+
+}
+
+
+
+function unavailableStrategyResult(reason, recommendedLabel) {
+
+  return createStrategyResult({
+    source: STRATEGY_SOURCES.UNAVAILABLE,
+    actions: [],
+    recommendedLabel: recommendedLabel || null,
+    explanation: reason || null,
+    warnings: reason ? [String(reason)] : []
+  });
+
+}
+
+
+
+function strategyResultToLegacyProfile(result) {
+
+  if (!result || result.schemaVersion !== STRATEGY_RESULT_SCHEMA_VERSION) {
+    throw new TypeError('Expected StrategyResult strategy-result/v1');
+  }
+
+  let actions = result.actions.map((entry) => ({
+    name: entry.label,
+    value: result.source === STRATEGY_SOURCES.HEURISTIC_PREFLOP
+      ? Math.round(entry.probability * 100)
+      : Math.round(entry.probability * 10000) / 100,
+    kind: entry.action.type === 'fold' ? 'fold'
+      : (entry.action.type === 'check' || entry.action.type === 'call') ? 'passive'
+        : entry.action.type === 'unavailable' ? 'unavailable' : 'aggressive'
+  }));
+
+  if (result.source === STRATEGY_SOURCES.HEURISTIC_PREFLOP) actions = actions.slice(0, 2);
+
+  const legacySource = result.source === STRATEGY_SOURCES.HEURISTIC_PREFLOP ? 'MATH FALLBACK'
+    : result.source === STRATEGY_SOURCES.HEURISTIC_POSTFLOP ? 'MONTE CARLO'
+      : result.source === STRATEGY_SOURCES.LOCAL_TREE ? 'LOCAL TREE'
+        : result.source;
+
+  return {
+    actions,
+    best: result.recommendation ? String(result.recommendation.label) : 'LOAD SOLVER TREE',
+    reason: result.explanation || '',
+    source: legacySource,
+    provenance: result.source,
+    context: result.details
+  };
+
+}
+
+
+
 function parseSolverEntry(entry) {
 
   const detail = String((entry && entry.detail) || '').replace(/Â·/g, '·');
@@ -1525,7 +1777,7 @@ function noTreeProfile(reason, decisionContext = null) {
 
     const fb = calculatePreflopFallbackForDecisionContext(context);
 
-    let a1, v1, k1, a2, v2, k2;
+    let a1, a2;
 
     let open = fb.open, call = fb.call, fold = fb.fold;
 
@@ -1585,27 +1837,27 @@ function noTreeProfile(reason, decisionContext = null) {
 
       
 
-      a1 = 'Open'; v1 = Math.round(open * 100); k1 = 'aggressive';
+      a1 = 'Open';
 
-      if (call > fold) { a2 = 'Call'; v2 = Math.round(call * 100); k2 = 'passive'; }
+      if (call > fold) { a2 = 'Call'; }
 
-      else { a2 = 'Fold'; v2 = Math.round(fold * 100); k2 = 'fold'; }
+      else { a2 = 'Fold'; }
 
     } else if (call > open && call > fold) {
 
-      a1 = 'Call'; v1 = Math.round(call * 100); k1 = 'passive';
+      a1 = 'Call';
 
-      if (open > fold) { a2 = 'Open'; v2 = Math.round(open * 100); k2 = 'aggressive'; }
+      if (open > fold) { a2 = 'Open'; }
 
-      else { a2 = 'Fold'; v2 = Math.round(fold * 100); k2 = 'fold'; }
+      else { a2 = 'Fold'; }
 
     } else {
 
-      a1 = 'Fold'; v1 = Math.round(fold * 100); k1 = 'fold';
+      a1 = 'Fold';
 
-      if (open > call) { a2 = 'Open'; v2 = Math.round(open * 100); k2 = 'aggressive'; }
+      if (open > call) { a2 = 'Open'; }
 
-      else { a2 = 'Call'; v2 = Math.round(call * 100); k2 = 'passive'; }
+      else { a2 = 'Call'; }
 
     }
 
@@ -1621,13 +1873,14 @@ function noTreeProfile(reason, decisionContext = null) {
 
     
 
-    return {
+    const actionKey = (name) => name.startsWith('Open') ? 'open' : name === 'Call' ? 'call' : 'fold';
 
-      actions: [{ name: t(a1), value: v1, kind: k1 }, { name: t(a2), value: v2, kind: k2 }, { name: '—', value: 0, kind: 'unavailable' }],
-
-      best: t(a1).toUpperCase(), reason: `${t('Mathematical Fallback suggests')} ${t(a1)} ${t('based on hand playability & position.')}`, source: 'MATH FALLBACK'
-
-    };
+    return preflopHeuristicToStrategyResult(fb, {
+      actionOrder: [actionKey(a1), actionKey(a2)],
+      openLabel: a1.startsWith('Open') ? a1 : a2.startsWith('Open') ? a2 : 'Open',
+      recommendedLabel: t(a1).toUpperCase(),
+      explanation: `${t('Mathematical Fallback suggests')} ${t(a1)} ${t('based on hand playability & position.')}`
+    });
 
   } else if (context.street !== 'preflop' && context.heroCards.length === 2 && context.heroCards[0] && context.heroCards[1]) {
 
@@ -1663,55 +1916,23 @@ function noTreeProfile(reason, decisionContext = null) {
 
     const a1 = entries[0] ? entries[0][0] : 'Check';
 
-    const v1 = entries[0] ? entries[0][1] : 100;
-
-    const k1 = (a1 === 'Bet' || a1 === 'Raise' || a1 === 'All-In') ? 'aggressive' : (a1 === 'Fold' ? 'fold' : 'passive');
-
-
-
-    const a2 = entries[1] ? entries[1][0] : '—';
-
-    const v2 = entries[1] ? entries[1][1] : 0;
-
-    const k2 = (a2 === 'Bet' || a2 === 'Raise' || a2 === 'All-In') ? 'aggressive' : (a2 === 'Fold' ? 'fold' : 'passive');
-
-
-
     let street = context.street;
 
     let rangePct = street === 'flop' ? 'Top 40%' : street === 'turn' ? 'Top 25%' : 'Top 15%';
 
 
 
-    return {
-
-      actions: [{ name: t(a1), value: v1, kind: k1 }, { name: t(a2), value: v2, kind: k2 }, { name: '—', value: 0, kind: 'unavailable' }],
-
-      best: t(a1).toUpperCase(), reason: `${t('Mathematical Fallback suggests')} ${(eq*100).toFixed(1)}% ${t('vs Villain')} ${t(rangePct)} ${t('range')}.`, source: 'MONTE CARLO', context: stratObj.context
-
-    };
+    return postflopHeuristicToStrategyResult(stratObj, {
+      recommendedLabel: t(a1).toUpperCase(),
+      explanation: `${t('Mathematical Fallback suggests')} ${(eq*100).toFixed(1)}% ${t('vs Villain')} ${t(rangePct)} ${t('range')}.`
+    });
 
   }
 
-  return {
-
-    actions: [
-
-      { name: t('Solver tree'), value: 0, kind: 'unavailable' },
-
-      { name: t('needed'), value: 0, kind: 'unavailable' },
-
-      { name: '—', value: 0, kind: 'unavailable' }
-
-    ],
-
-    best: app.solver ? t('TREE UNAVAILABLE') : t('LOAD SOLVER TREE'),
-
-    reason: t(reason),
-
-    source: app.solver ? 'TREE MISMATCH' : 'NO TREE'
-
-  };
+  return unavailableStrategyResult(
+    t(reason),
+    app.solver ? t('TREE UNAVAILABLE') : t('LOAD SOLVER TREE')
+  );
 
 }
 
@@ -1753,25 +1974,13 @@ function actionProfile(hand = null, decisionContext = null) {
       const entries = Object.entries(stratObj).sort((a,b) => b[1]-a[1]);
 
       const a1name = entries[0] ? entries[0][0] : 'Check';
-      const a1val  = entries[0] ? entries[0][1] : 100;
-      const a2name = entries[1] ? entries[1][0] : '—';
-      const a2val  = entries[1] ? entries[1][1] : 0;
-
-      const toKind = (name) => ['Bet','Raise','All-In'].includes(name) ? 'aggressive' : name === 'Fold' ? 'fold' : 'passive';
       const street = strategyContext.street;
       const rangePct = street === 'flop' ? 'Top 40%' : street === 'turn' ? 'Top 25%' : 'Top 15%';
 
-      return {
-        actions: [
-          { name: t(a1name), value: a1val, kind: toKind(a1name) },
-          { name: t(a2name), value: a2val, kind: toKind(a2name) },
-          { name: '—', value: 0, kind: 'unavailable' }
-        ],
-        best: t(a1name).toUpperCase(),
-        reason: `${t('Mathematical Fallback suggests')} ${(eq*100).toFixed(1)}% ${t('vs Villain')} ${t(rangePct)} ${t('range')}.`,
-        source: 'MONTE CARLO',
-        context: stratObj.context
-      };
+      return postflopHeuristicToStrategyResult(stratObj, {
+        recommendedLabel: t(a1name).toUpperCase(),
+        explanation: `${t('Mathematical Fallback suggests')} ${(eq*100).toFixed(1)}% ${t('vs Villain')} ${t(rangePct)} ${t('range')}.`
+      });
     }
   }
 
@@ -1853,17 +2062,31 @@ function actionProfile(hand = null, decisionContext = null) {
 
     
 
-    return {
+    const strategySource = app.solver.strategySource === STRATEGY_SOURCES.API
+      ? STRATEGY_SOURCES.API
+      : app.solver.strategySourceByHand && app.solver.strategySourceByHand[hand]
+        ? app.solver.strategySourceByHand[hand]
+        : STRATEGY_SOURCES.ONNX_MODEL;
+    const modelVersion = app.solver.modelVersion || app.solver.model_version
+      || (app.solver.metadata && (app.solver.metadata.modelVersion || app.solver.metadata.model_version))
+      || null;
 
-      actions,
+    if (strategySource === STRATEGY_SOURCES.HEURISTIC_PREFLOP) {
+      return createStrategyResult({
+        source: STRATEGY_SOURCES.HEURISTIC_PREFLOP,
+        actions,
+        recommendedLabel: bestFormatted,
+        explanation: t('Preflop heuristic fallback after model inference failure'),
+        warnings: ['onnx_inference_failed']
+      });
+    }
 
-      best: bestFormatted,
-
-      reason: t('Custom DeepCFR Solver · AI Network Output'),
-
-      source: 'DEEP CFR MODEL'
-
-    };
+    return modelStrategyToStrategyResult(entry, {
+      source: strategySource,
+      recommendedLabel: bestFormatted,
+      explanation: strategySource === STRATEGY_SOURCES.API ? t('API strategy output') : t('ONNX model strategy output'),
+      modelVersion
+    });
 
   } else {
 
@@ -1875,17 +2098,10 @@ function actionProfile(hand = null, decisionContext = null) {
 
     const best = [...actions].sort((a, b) => b.value - a.value)[0];
 
-    return {
-
-      actions,
-
-      best: best.name.toUpperCase(),
-
-      reason: t('Local solver tree') + ` · ${app.solver.title}. ` + t('Action sizing is not stored in this file.'),
-
-      source: 'LOCAL TREE'
-
-    };
+    return localTreeToStrategyResult(actions, {
+      recommendedLabel: best.name.toUpperCase(),
+      explanation: t('Local solver tree') + ` · ${app.solver.title}. ` + t('Action sizing is not stored in this file.')
+    });
 
   }
 
@@ -2672,7 +2888,7 @@ async function updateContext(reason = 'Context updated') {
 
          console.log('ONNX Response:', data);
 
-         app.solver = data;
+         app.solver = { ...data, strategySource: STRATEGY_SOURCES.ONNX_MODEL };
 
          app.cachedStrategy = data.strategy;
 
@@ -2748,7 +2964,7 @@ async function updateContext(reason = 'Context updated') {
 
            console.log('API Response:', data);
 
-           app.solver = data;
+           app.solver = { ...data, strategySource: STRATEGY_SOURCES.API };
 
            app.cachedStrategy = data.strategy;
 
@@ -2782,9 +2998,11 @@ async function updateContext(reason = 'Context updated') {
 
   
 
-  const profile = actionProfile(null, decisionContext);
+  const strategyResult = actionProfile(null, decisionContext);
+  const profile = strategyResultToLegacyProfile(strategyResult);
+  app.strategyResult = strategyResult;
 
-  console.log('Action profile:', profile);
+  console.log('Strategy result:', strategyResult);
 
   const street = decisionContext.street;
 
@@ -2844,7 +3062,7 @@ async function updateContext(reason = 'Context updated') {
 
   const sourceBadge = $('#sourceBadge');
 
-  if (sourceBadge) sourceBadge.textContent = profile.source;
+  if (sourceBadge) sourceBadge.textContent = strategyResult.source;
 
   const streetLabel = $('#streetLabel');
 
@@ -3277,6 +3495,7 @@ async function generateStrategyWithOnnx(context) {
   const actionIdx = rawAct !== -1 ? rawAct : 0;
 
   const strategyMap = {};
+  const strategySourceByHand = {};
   const handOrder = [];
   const batchInputs = new Float32Array(169 * 121);
   let handCount = 0;
@@ -3428,13 +3647,16 @@ async function generateStrategyWithOnnx(context) {
         }
       }
       strategyMap[hand] = { [context.hero_pos]: fbActions };
+      strategySourceByHand[hand] = STRATEGY_SOURCES.HEURISTIC_PREFLOP;
     }
   }
 
   return {
-    title: "Local ONNX DeepCFR",
+    title: "Local ONNX Strategy",
     positions: [context.hero_pos],
-    strategy: strategyMap
+    strategy: strategyMap,
+    strategySource: STRATEGY_SOURCES.ONNX_MODEL,
+    strategySourceByHand
   };
   } finally {
     // We don't reset the controller here because a new one might have been created
@@ -5506,7 +5728,7 @@ function renderBettingTree() {
   const container = $('#pioTreeContainer');
   if (!container) return;
 
-  const profile = actionProfile();
+  const profile = strategyResultToLegacyProfile(actionProfile());
   const board = app.gto ? app.gto.board.filter(Boolean) : [];
   const pos = $('#heroPos') ? $('#heroPos').value : 'BTN';
   const pot = typeof getPotBeforeAction === 'function' ? getPotBeforeAction() : 1.5;

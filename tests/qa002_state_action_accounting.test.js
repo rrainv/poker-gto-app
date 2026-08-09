@@ -204,17 +204,21 @@ test('characterization: local-tree action parser does not normalize totals above
   assert.equal(actions.reduce((sum, action) => sum + action.value, 0), 120);
 });
 
-test('characterization: Playbook model actionProfile preserves percentage totals above 100%', () => {
+test('StrategyResult adapter normalizes Playbook model percentage totals above 100%', () => {
   const profile = qa.playbookActionProfile({ Open: 70, Call: 50 });
-  assert.equal(profile.actions.reduce((sum, action) => sum + action.value, 0), 120);
+  assert.equal(profile.actions.reduce((sum, action) => sum + action.value, 0), 100);
+  assert.deepEqual(profile.actions.map(({ name, value }) => ({ name, value })), [
+    { name: 'Open', value: 58.33 },
+    { name: 'Call', value: 41.67 },
+  ]);
   assert.equal(profile.best, 'OPEN 3 BB');
 });
 
-test('characterization: Playbook model actionProfile preserves probability-scale values without conversion', () => {
+test('StrategyResult adapter converts probability-scale model output to legacy UI percentages', () => {
   const profile = qa.playbookActionProfile({ Open: 0.7, Call: 0.3 });
   assert.deepEqual(profile.actions.map(({ name, value, kind }) => ({ name, value, kind })), [
-    { name: 'Open', value: 0.7, kind: 'aggressive' },
-    { name: 'Call', value: 0.3, kind: 'passive' },
+    { name: 'Open', value: 70, kind: 'aggressive' },
+    { name: 'Call', value: 30, kind: 'passive' },
   ]);
 });
 

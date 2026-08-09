@@ -126,7 +126,8 @@ function createHarness() {
       solver: null,
       cachedStrategy: null,
       lastApiContext: '',
-      lastContextKey: ''
+      lastContextKey: '',
+      strategyResult: null
     };
 
     const $ = (selector) => controls.get(selector) || null;
@@ -139,9 +140,11 @@ function createHarness() {
     const displayCard = (card) => card;
     const requestAnimationFrame = (callback) => callback();
     const syncNoop = () => {};
-    const actionProfile = () => ({
-      actions: [{ name: 'Fold', value: 100, kind: 'fold' }],
-      best: 'FOLD', reason: 'test capture', source: 'TEST'
+    const actionProfile = () => createStrategyResult({
+      source: STRATEGY_SOURCES.HEURISTIC_PREFLOP,
+      actions: [{ name: 'Fold', value: 100 }],
+      recommendedLabel: 'Fold',
+      explanation: 'test capture'
     });
     const setFrequency = syncNoop;
     const updateMetrics = syncNoop;
@@ -221,6 +224,16 @@ function createHarness() {
       decisionContextToLegacyStrategyContext,
       decisionContextToLegacyPostflopContext,
       calculatePreflopFallbackForDecisionContext,
+      STRATEGY_RESULT_SCHEMA_VERSION,
+      STRATEGY_SOURCES,
+      structuralActionFromName,
+      createStrategyResult,
+      preflopHeuristicToStrategyResult,
+      postflopHeuristicToStrategyResult,
+      localTreeToStrategyResult,
+      modelStrategyToStrategyResult,
+      unavailableStrategyResult,
+      strategyResultToLegacyProfile,
       parseSolverEntry,
       classifyAction,
       standardActionName,
@@ -231,13 +244,21 @@ function createHarness() {
         app.gto.board = [];
         app.decisionContext = null;
         app.solver = { strategy: { AKs: { BTN: entry } } };
-        return qaActionProfile('AKs');
+        return strategyResultToLegacyProfile(qaActionProfile('AKs'));
       },
       strategyProfile(context, solver = null) {
         app.decisionContext = null;
         app.useOnnx = false;
         app.onnxSession = null;
         app.solver = solver;
+        return strategyResultToLegacyProfile(qaActionProfile(null, context));
+      },
+      strategyResult(context, solver = null) {
+        app.decisionContext = null;
+        app.useOnnx = false;
+        app.onnxSession = null;
+        app.solver = solver;
+        if (!solver && context.street === 'preflop') return qaNoTreeProfile('No matching tree', context);
         return qaActionProfile(null, context);
       },
       strategyProfileCapture(context, solver = null) {
@@ -246,6 +267,11 @@ function createHarness() {
         return { profile, equityDecisionContext: capturedEquityDecisionContext };
       },
       noTreeStrategyProfile(context, reason = 'No matching tree') {
+        app.decisionContext = null;
+        app.solver = null;
+        return strategyResultToLegacyProfile(qaNoTreeProfile(reason, context));
+      },
+      noTreeStrategyResult(context, reason = 'No matching tree') {
         app.decisionContext = null;
         app.solver = null;
         return qaNoTreeProfile(reason, context);
@@ -383,13 +409,25 @@ module.exports = {
   legacyStrategyContext: (...args) => plain(harness.decisionContextToLegacyStrategyContext(...args)),
   legacyPostflopContext: (...args) => plain(harness.decisionContextToLegacyPostflopContext(...args)),
   fallbackForDecisionContext: (...args) => plain(harness.calculatePreflopFallbackForDecisionContext(...args)),
+  strategyResultSchemaVersion: harness.STRATEGY_RESULT_SCHEMA_VERSION,
+  strategySources: plain(harness.STRATEGY_SOURCES),
+  structuralAction: (...args) => plain(harness.structuralActionFromName(...args)),
+  createStrategyResult: (...args) => plain(harness.createStrategyResult(...args)),
+  preflopStrategyResult: (...args) => plain(harness.preflopHeuristicToStrategyResult(...args)),
+  postflopStrategyResult: (...args) => plain(harness.postflopHeuristicToStrategyResult(...args)),
+  localTreeStrategyResult: (...args) => plain(harness.localTreeToStrategyResult(...args)),
+  modelStrategyResult: (...args) => plain(harness.modelStrategyToStrategyResult(...args)),
+  unavailableStrategyResult: (...args) => plain(harness.unavailableStrategyResult(...args)),
+  legacyProfileForStrategyResult: (...args) => plain(harness.strategyResultToLegacyProfile(...args)),
   parseSolverEntry: (...args) => plain(harness.parseSolverEntry(...args)),
   classifyAction: (...args) => harness.classifyAction(...args),
   standardActionName: (...args) => harness.standardActionName(...args),
   playbookActionProfile: (...args) => plain(harness.playbookActionProfile(...args)),
   strategyProfile: (...args) => plain(harness.strategyProfile(...args)),
+  strategyResult: (...args) => plain(harness.strategyResult(...args)),
   strategyProfileCapture: (...args) => plain(harness.strategyProfileCapture(...args)),
   noTreeStrategyProfile: (...args) => plain(harness.noTreeStrategyProfile(...args)),
+  noTreeStrategyResult: (...args) => plain(harness.noTreeStrategyResult(...args)),
   localTreeContext: (...args) => plain(harness.localTreeContext(...args)),
   normalizeActionName: (...args) => harness.normalizeActionName(...args),
   actionRank: (...args) => harness.actionRank(...args),
