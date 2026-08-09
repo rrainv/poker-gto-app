@@ -61,11 +61,11 @@ test('table and stack controls expose the current UI boundaries', () => {
   assert.deepEqual(qa.readInputBounds('stackNum'), { min: 10, max: 500, step: 1 });
 });
 
-test('unopened non-BB context forces the UI and ONNX context to a 1bb facing size', async () => {
+test('unopened non-BB context passes zero facing size to the UI and ONNX context', async () => {
   const capture = await qa.captureContext({ heroPos: 'BTN', lastAction: 'unopened', facingSize: 0 });
-  assert.equal(capture.context.facingSize, 1);
-  assert.equal(capture.facingControl, 1);
-  assert.equal(capture.facingNumberControl, 1);
+  assert.equal(capture.context.facingSize, 0);
+  assert.equal(capture.facingControl, 0);
+  assert.equal(capture.facingNumberControl, 0);
 });
 
 test('unopened BB context preserves a zero facing size', async () => {
@@ -73,13 +73,10 @@ test('unopened BB context preserves a zero facing size', async () => {
   assert.equal(capture.context.facingSize, 0);
 });
 
-test('characterization: fallback unopened semantics differ between facing 0bb and forced 1bb', () => {
+test('unopened context and fallback share the same zero-facing convention', () => {
   const zeroFacing = qa.fallback('T', '9', false, true, 'BTN', 'unopened', 0, 1.5, 30);
-  const blindFacing = qa.fallback('T', '9', false, true, 'BTN', 'unopened', 1, 1.5, 30);
   assert.equal(zeroFacing.call, 0);
-  assert.notDeepEqual(zeroFacing, blindFacing);
   assertNormalized(zeroFacing);
-  assertNormalized(blindFacing);
 });
 
 for (const fixture of [

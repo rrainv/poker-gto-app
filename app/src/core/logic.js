@@ -564,7 +564,7 @@ function selectCard(card) {
       const lastAction = $('#trainingLastAction')?.value || 'unopened';
       const tableSize = numericValue('#trainingPlayers', 6);
       const stack = numericValue('#trainingStack', 30);
-      const facingSize = (lastAction === 'raise' ? 2.5 : lastAction === '3bet' ? 7.5 : lastAction === '4bet' ? 18.0 : (lastAction === 'unopened' && heroPos !== 'BB' ? 1.0 : 0));
+      const facingSize = defaultTrainingFacingSize(lastAction);
       const potSize = (lastAction === 'unopened' ? 1.5 : facingSize > 0 ? facingSize * 1.5 : 1.5);
       
       app.training.currentHand = [...app.training.hero];
@@ -694,6 +694,28 @@ function numericValue(id, fallback = 0) {
   const value = Number(selectedValue(id));
 
   return Number.isFinite(value) ? value : fallback;
+
+}
+
+
+
+function normalizeFacingSize(lastAction, facingSize = 0) {
+
+  if (lastAction === 'unopened') return 0;
+
+  const value = Number(facingSize);
+
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+
+}
+
+
+
+function defaultTrainingFacingSize(lastAction) {
+
+  const defaults = { raise: 2.5, '3bet': 7.5, '4bet': 18.0 };
+
+  return normalizeFacingSize(lastAction, defaults[lastAction] || 0);
 
 }
 
@@ -1747,15 +1769,16 @@ function updateMetrics() {
   const rakeMode = selectedValue('#rakeMode');
   const rake = numericValue('#rakeValue');
 
-  const isPreflopUnopened = (street === 'preflop') && (lastAction === 'unopened') && (heroPos !== 'BB');
+  const isPreflopUnopened = (street === 'preflop') && (lastAction === 'unopened');
+  const isPreflopOpenDecision = isPreflopUnopened && heroPos !== 'BB';
 
-  // Enforce facing size floor of 1.0 bb for unopened preflop spots
+  // Blinds are forced contributions, not a voluntary wager facing the hero.
   if (isPreflopUnopened) {
-    facing = 1.0;
+    facing = normalizeFacingSize(lastAction, facing);
     const facingSlider = $('#facingSize');
     const facingNum = $('#facingSizeNum');
-    if (facingSlider && Number(facingSlider.value) < 1.0) facingSlider.value = '1.0';
-    if (facingNum && Number(facingNum.value) < 1.0) facingNum.value = '1.0';
+    if (facingSlider) facingSlider.value = '0';
+    if (facingNum) facingNum.value = '0';
   }
 
   const mEquity = $('#mEquity');
@@ -1763,7 +1786,7 @@ function updateMetrics() {
 
   const mPotOdds = $('#mPotOdds');
   if (mPotOdds) {
-    if (isPreflopUnopened) {
+    if (isPreflopOpenDecision) {
       mPotOdds.textContent = '— (Unopened)';
     } else if (lastAction === 'unopened' || !facing) {
       mPotOdds.textContent = '—';
@@ -1780,8 +1803,8 @@ function updateMetrics() {
 
   const facingSizeOut = $('#facingSizeOut');
   if (facingSizeOut) {
-    if (isPreflopUnopened) {
-      facingSizeOut.textContent = '1.0 bb (Blind)';
+    if (isPreflopOpenDecision) {
+      facingSizeOut.textContent = '0.0 bb (Unopened)';
     } else if (facing > 0) {
       facingSizeOut.textContent = facing.toFixed(1) + ' bb';
     } else {
@@ -2450,12 +2473,10 @@ async function updateContext(reason = 'Context updated') {
   const ctxHeroPos = selectedValue('#heroPos');
   let ctxFacingSize = numericValue('#facingSize');
   
-  if (ctxStreet === 'preflop' && ctxLastAction === 'unopened' && ctxHeroPos !== 'BB') {
-    if (ctxFacingSize < 1.0) {
-      ctxFacingSize = 1.0;
-      if ($('#facingSize')) $('#facingSize').value = 1.0;
-      if ($('#facingSizeNum')) $('#facingSizeNum').value = 1.0;
-    }
+  if (ctxStreet === 'preflop' && ctxLastAction === 'unopened') {
+    ctxFacingSize = normalizeFacingSize(ctxLastAction, ctxFacingSize);
+    if ($('#facingSize')) $('#facingSize').value = 0;
+    if ($('#facingSizeNum')) $('#facingSizeNum').value = 0;
   }
   
   // Try ONNX first if available
@@ -3138,10 +3159,8 @@ async function generateStrategyWithOnnx(context) {
       handCount++;
 
       // Encode single hand features (121 dimensions)
-      // CRITICAL FIX: Model.onnx feature x[56] was trained with 0.0 for all unopened preflop spots.
-      // UI facingSize (1.0 bb for blind) must be zeroed out for x[56] when lastAction === 'unopened'
-      // to match exact model training distribution and prevent out-of-bounds neural fold artifacts!
-      const inputFacing = (context.lastAction === 'unopened') ? 0.0 : (context.facingSize || 0);
+      // Model.onnx feature x[56] was trained with 0.0 for unopened preflop spots.
+      const inputFacing = normalizeFacingSize(context.lastAction, context.facingSize);
       batchInputs[offset + 52] = context.table_size / 9.0;
       batchInputs[offset + 53] = context.stack / 200.0;
       batchInputs[offset + 54] = context.rake / 10.0;
@@ -3251,7 +3270,7 @@ async function generateStrategyWithOnnx(context) {
         const r2 = hand[1];
         const isSuited = hand.length === 3 && hand[2] === 's';
         const isPair = r1 === r2;
-        const facingSize = (context.lastAction === 'unopened') ? 1.0 : (context.facingSize || 0);
+        const facingSize = normalizeFacingSize(context.lastAction, context.facingSize);
         const fb = calculatePreflopFallbackStrategy(r1, r2, isPair, isSuited, [context.hero_pos], context.lastAction, facingSize, context.potSize || 1.5, context.stack || 30);
         if (fb && fb[context.hero_pos]) {
           fbActions = fb[context.hero_pos];
@@ -5788,7 +5807,7 @@ function updateTrainingButtons(solution) {
   const street = app.training?.currentContext?.street || (app.training?.board && app.training.board.length >= 3 ? 'postflop' : 'preflop');
   const heroPos = app.training?.currentContext?.hero_pos || 'UTG';
 
-  const isPreflopUnopened = (street === 'preflop') && (facing === 0) && (heroPos !== 'BB');
+  const isPreflopUnopened = (street === 'preflop') && (lastAction === 'unopened') && (facing === 0) && (heroPos !== 'BB');
 
   let rawKeys = (solution && typeof solution === 'object' && Object.keys(solution).length > 0)
     ? [...Object.keys(solution)]
@@ -6751,7 +6770,7 @@ function getTrainingStrategy(context, heroCards) {
       // Universal Poker Guard: Never fold when facing 0.0 bet in check-legal spots
       const facing = Number(context.facingSize) || 0;
       const isPreflop = !context.board || context.board.length < 3;
-      const isPreflopUnopened = isPreflop && facing === 0 && context.hero_pos !== 'BB';
+      const isPreflopUnopened = isPreflop && context.lastAction === 'unopened' && facing === 0 && context.hero_pos !== 'BB';
 
       if (facing === 0 && !isPreflopUnopened) {
         if (res['Fold'] || res['fold']) {
@@ -6837,7 +6856,7 @@ function getTrainingStrategy(context, heroCards) {
       const lastAction = $('#trainingLastAction')?.value || 'unopened';
       const tableSize = numericValue('#trainingPlayers', 6);
       const stack = numericValue('#trainingStack', 30);
-      const facingSize = (lastAction === 'raise' ? 2.5 : lastAction === '3bet' ? 7.5 : lastAction === '4bet' ? 18.0 : (lastAction === 'unopened' && heroPos !== 'BB' ? 1.0 : 0));
+      const facingSize = defaultTrainingFacingSize(lastAction);
       const potSize = (lastAction === 'unopened' ? 1.5 : facingSize > 0 ? facingSize * 1.5 : 1.5);
       
       app.training.currentSolution = getTrainingStrategy({
@@ -6984,7 +7003,7 @@ function newRandomTrainingHand() {
       facingSize = Math.round((Math.random() * 1.5 + 6.75) * 10) / 10;
       potSize = Math.round((facingSize + 4.0) * 10) / 10;
     } else {
-      facingSize = heroPos === 'BB' ? 0 : 1.0;
+      facingSize = 0;
       potSize = 1.5;
     }
   } else {
@@ -6999,6 +7018,8 @@ function newRandomTrainingHand() {
       facingSize = 0;
     }
   }
+
+  facingSize = normalizeFacingSize(lastAction, facingSize);
 
   // Calculate Pot Odds & MDF
   const potOdds = facingSize > 0 ? (facingSize / (potSize + facingSize) * 100) : 0;
@@ -7018,7 +7039,7 @@ function newRandomTrainingHand() {
 
   if (facingVal) {
     if (isUnopenedPreflop) {
-      facingVal.textContent = '1.0 bb (Blind)';
+      facingVal.textContent = '0.0 bb (Unopened)';
     } else if (facingSize > 0) {
       facingVal.textContent = facingSize.toFixed(1) + ' bb';
     } else {
