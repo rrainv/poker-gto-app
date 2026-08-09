@@ -1,5 +1,5 @@
 // ONNX Model Lazy Loader Service
-export class LazyLoader {
+class LazyLoader {
   constructor() {
     this.sessions = new Map();
     this.loading = new Map(); // Promises to prevent duplicate fetches
@@ -96,3 +96,5 @@ export class LazyLoader {
 if (typeof window !== 'undefined') {
   window.onnxLazyLoader = new LazyLoader();
 }
+
+window.LazyLoader = LazyLoader;

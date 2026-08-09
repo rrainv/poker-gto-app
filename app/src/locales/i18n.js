@@ -2023,7 +2023,7 @@ function t(key, count) {
 
 
 
-export function t(key, count) {
+function t(key, count) {
     if (!window.appTranslations) return key;
     var lang = window.appLang || 'en';
     var dict = window.appTranslations[lang] || {};
@@ -2062,7 +2062,7 @@ function translateNode(node) {
     }
 }
 
-export function initI18n() {
+function initI18n() {
     const savedLang = localStorage.getItem('language');
     if (savedLang) {
         window.appLang = savedLang;
@@ -2102,7 +2102,7 @@ export function initI18n() {
 }
 
 // Expose setLanguage for UI
-export function setLanguage(lang) {
+function setLanguage(lang) {
     window.appLang = lang;
     localStorage.setItem('language', lang);
     document.documentElement.lang = lang;
@@ -2110,12 +2110,5 @@ export function setLanguage(lang) {
     translateNode(document.body);
 }
 
-// Force apply missed translations to the dictionary directly
-if (appTranslations && appTranslations['ru']) {
-    appTranslations['ru'][' With deep stacks (SPR: {SPR}), your implied odds are excellent - you can profitably call with draws that might not have immediate pot odds.'] = '  ?>?+?? ?'? (SPR: {SPR}) ?? ?'?Ő>??< ???< +? ?'>ؐ?< - ?< ?? ' ?+<>??? ?>>???'? ? ???, ?  ?> ???< ???< +? ??<????<.';
-    appTranslations['ru']['Hero'] = '???';
-    appTranslations['ru']['Opponent'] = '????'';
-    appTranslations['ru']['+ Add Opponent'] = '+ "?+?'? ????'';
-    appTranslations['ru']['+ Add opponent'] = '+ "?+?'? ????'';
-}
+
 window.appTranslations = appTranslations;

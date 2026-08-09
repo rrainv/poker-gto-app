@@ -1,6 +1,6 @@
 // Drag and Drop Workspace Layout Manager
 
-export function initDragAndDrop() {
+function initDragAndDrop() {
   const panels = document.querySelectorAll('.panel');
   let draggedPanel = null;
 
@@ -133,3 +133,5 @@ if (document.readyState === 'loading') {
 } else {
   initDragAndDrop();
 }
+
+window.initDragAndDrop = initDragAndDrop;

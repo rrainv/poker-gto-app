@@ -1,4 +1,4 @@
-export class TableRenderer {
+class TableRenderer {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
     if (!this.container) return;
@@ -163,3 +163,5 @@ export class TableRenderer {
 document.addEventListener('DOMContentLoaded', () => {
   window.tableRenderer = new TableRenderer('visual-table-container');
 });
+
+window.TableRenderer = TableRenderer;

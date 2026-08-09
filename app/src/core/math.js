@@ -113,4 +113,4 @@ class PerfectHash {
 
 
 const perfectHash = new PerfectHash();
-export { PerfectHash, perfectHash };
+{ PerfectHash, perfectHash };

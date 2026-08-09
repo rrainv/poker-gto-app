@@ -20,7 +20,7 @@
 
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 fill=%22%2325c281%22>♠</text></svg>">
 
-  <script src="src/locales/i18n.js?v=2" defer></script>
+  <script src="i18n.js?v=2" defer></script>
 
 
 
@@ -325,20 +325,6 @@
 
 
 <body>
-
-  <!-- Valorant-Style Main Menu -->
-  <div id="mainMenuOverlay" class="valorant-menu-overlay">
-    <div class="valorant-menu-content">
-      <div class="menu-brand">
-        <h1>RIVERLINE</h1>
-        <div class="menu-subtitle">GTO WORKSTATION</div>
-      </div>
-      <nav class="valorant-nav">
-        <button class="valorant-btn" id="enterWorkstationBtn" onclick="document.getElementById('mainMenuOverlay').classList.add('hidden');" data-i18n="Enter Workstation">ENTER WORKSTATION</button>
-        <button class="valorant-btn" onclick="document.getElementById('settingsModal').classList.add('show'); document.getElementById('mainMenuOverlay').classList.add('hidden');" data-i18n="Settings">SETTINGS</button>
-      </nav>
-    </div>
-  </div>
 
   <div class="shell">
 
@@ -726,7 +712,6 @@
 
 
         <main class="main-content">
-          <div id="visual-table-container" style="width: 100%; max-width: 800px; margin: 0 auto 20px auto;"></div>
 
           <div class="sub-tabs" style="margin-bottom:16px;">
 
@@ -2545,7 +2530,7 @@
             <div class="field" style="margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line);">
               <label style="font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: block;" data-i18n="Custom Solver Tree (JSON)">Custom Solver Tree (JSON)</label>
               <label class="solver-import-btn" style="display: block; width: 100%; text-align: center; padding: 12px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">
-                <span data-i18n="Load Solver Tree (.json)">📁 Load Solver Tree (.json)</span>
+                <span data-i18n="Load Solver Tree (.json)">?"? Load Solver Tree (.json)</span>
                 <input type="file" id="solverTreeUpload" accept=".json" style="display: none;">
               </label>
             </div>
@@ -2562,13 +2547,10 @@
 
 
   <script src="ort.min.js" defer></script>
-  <script src="src/core/math.js" defer></script>
-  <script src="src/core/SoundFX.js" defer></script>
-  <script src="src/core/logic.js?v=20" defer></script>
-  <script src="src/ui/teacher.js" defer></script>
-  <script src="src/ui/dragAndDrop.js" defer></script>
-  <script src="src/ui/TableRenderer.js" defer></script>
-  <script src="src/ml/engine.js" defer></script>
+  <script src="logic.js?v=20" defer></script>
+  <script src="teacher.js" defer></script>
+
+
 
 </body>
 

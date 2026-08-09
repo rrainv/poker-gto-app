@@ -154,4 +154,3 @@ const SoundFX = (function() {
     }
   };
 })();
-export default SoundFX;

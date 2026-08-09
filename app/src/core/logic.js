@@ -24,12 +24,12 @@ const SUITS = [
 
 ];
 
-import SoundFX from './src/core/SoundFX.js';
+
 window.SoundFX = SoundFX;
 
 
 
-import { perfectHash } from './src/core/math.js';
+
 
 const POSITIONS = {
 
@@ -2713,12 +2713,11 @@ async function updateContext(reason = 'Context updated') {
   }
 
   // Trigger Visual Table Engine
-  const ctxHeroPos = selectedValue('#heroPos');
   const dealerPos = ['SB','BB','UTG','UTG+1','UTG+2','LJ','HJ','CO','BTN'].indexOf(ctxHeroPos) !== -1 
     ? (['SB','BB','UTG','UTG+1','UTG+2','LJ','HJ','CO','BTN'].indexOf(ctxHeroPos) + 2) % 10 : 0;
   
-  const parsedBoard = app.board.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
-  const parsedHero = app.heroCards.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
+  const parsedBoard = (app.board || []).map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
+  const parsedHero = (app.heroCards || []).map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
   
   window.dispatchEvent(new CustomEvent('gameStateUpdate', {
     detail: {
