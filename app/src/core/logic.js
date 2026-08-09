@@ -910,9 +910,9 @@ function simulateEquity(heroStr, boardStr, deadStr = [], iterations = 800) {
 
   
 
-  // Bayesian Range Widening: scales from top 15% (GTO) to top 45% (Loose)
-  const L_sim = (app.settings && app.settings.tightness !== undefined) ? app.settings.tightness / 100.0 : 0.0;
-  const opponent_range_percent = 0.15 + (0.30 * L_sim);
+  // Bayesian Range Widening: scales from top 15% (GTO) to top 45% (Loose) based on Opponent Tightness
+  const oppL_sim = (app.settings && app.settings.oppTightness !== undefined) ? app.settings.oppTightness / 100.0 : 0.0;
+  const opponent_range_percent = 0.15 + (0.30 * oppL_sim);
 
   let facingEl = document.getElementById('facingSize');
   let facing = facingEl ? (parseFloat(facingEl.value) || 0) : 0;
@@ -3165,11 +3165,28 @@ function applyHeuristicToPrediction(p, context, posIdx, actionIdx, hand) {
       foldPct -= foldReduction;
       callPct += foldReduction * 0.75; // Most goes to passive calling (typical loose behavior)
       openPct += foldReduction * 0.25; 
-      
-      openPct = Math.round(openPct);
-      callPct = Math.round(callPct);
-      foldPct = 100 - openPct - callPct;
     }
+
+    // Incorporate Opponent Playstyle (Tightness) Slider extrapolation (Exploitative Adjustments)
+    const oppL = (typeof app !== "undefined" && app.settings && app.settings.oppTightness !== undefined) ? app.settings.oppTightness / 100.0 : 0.0;
+    if (oppL > 0 && hand) {
+      const tier = getHandTier(hand);
+      if (tier <= 2) {
+        // Value hands: Exploit loose opponents by raising more, calling less.
+        const callShift = callPct * (0.3 * oppL);
+        callPct -= callShift;
+        openPct += callShift;
+      } else if (tier >= 4) {
+        // Bluffs / Trash: Exploit loose opponents by bluffing less (folding more).
+        const bluffReduction = openPct * (0.5 * oppL);
+        openPct -= bluffReduction;
+        foldPct += bluffReduction;
+      }
+    }
+
+    openPct = Math.round(openPct);
+    callPct = Math.round(callPct);
+    foldPct = 100 - openPct - callPct;
 
   // GTO Monotonicity & Rationality Guard
   if (hand) {
@@ -4094,7 +4111,24 @@ function bindEvents() {
     tightnessSlider.addEventListener('change', () => updateContext('Tightness changed'));
   }
 
-  // === FLAT DROP listener ===
+  // === OPPONENT TIGHTNESS SLIDER ===
+  const oppTightnessSlider = document.getElementById('oppTightnessSlider');
+  const oppTightnessLabel = document.getElementById('oppTightnessLabel');
+  if (oppTightnessSlider) {
+    oppTightnessSlider.addEventListener('input', () => {
+      const val = Number(oppTightnessSlider.value);
+      if (!app.settings) app.settings = {};
+      app.settings.oppTightness = val;
+      if (oppTightnessLabel) {
+        oppTightnessLabel.textContent = val <= 25 ? 'Strict GTO' : val <= 75 ? 'Loose Online' : 'Splashy Home Game';
+      }
+    });
+    oppTightnessSlider.addEventListener('change', () => updateContext('Opponent Tightness changed'));
+  }
+
+  // Initialize slider values
+  if (tightnessSlider) tightnessSlider.dispatchEvent(new Event('input'));
+  if (oppTightnessSlider) oppTightnessSlider.dispatchEvent(new Event('input'));
   const flatDropEl = document.getElementById('flatDrop');
   if (flatDropEl) {
     flatDropEl.addEventListener('change', () => updateContext('Flat Drop changed'));
