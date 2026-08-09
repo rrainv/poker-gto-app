@@ -160,6 +160,8 @@ const app = {
 
   lastApiContext: null,
 
+  decisionContext: null,
+
   onnxSession: null,
 
   useOnnx: false
@@ -722,6 +724,7 @@ function defaultTrainingFacingSize(lastAction) {
 
 
 const CLUBGG_FORCED_CONTRIBUTION_PER_PLAYER_BB = 0.1;
+const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
 
 function strategyAccountingContext(rakeMode, seatedPlayerCount, legacyRakeValue = 0) {
 
@@ -744,6 +747,121 @@ function strategyAccountingContext(rakeMode, seatedPlayerCount, legacyRakeValue 
     forcedContributionPerPlayerBb,
     totalForcedContributionBb,
     rake
+  };
+
+}
+
+
+
+function normalizedDecisionNumber(value, fallback, min, max) {
+
+  const numeric = Number(value);
+  const finite = Number.isFinite(numeric) ? numeric : fallback;
+
+  return Math.min(max, Math.max(min, finite));
+
+}
+
+
+
+function normalizedDecisionCards(cards) {
+
+  return Array.isArray(cards) ? cards.filter(Boolean).slice() : [];
+
+}
+
+
+
+function readPlaybookInputSnapshot() {
+
+  const lastActionControl = $('#lastAction');
+
+  return {
+    tableSize: numericValue('#players', 6),
+    heroPosition: selectedValue('#heroPos'),
+    heroCards: normalizedDecisionCards(app.gto && app.gto.hero),
+    board: normalizedDecisionCards(app.gto && app.gto.board),
+    deadCards: normalizedDecisionCards(app.gto && app.gto.dead),
+    stackBb: numericValue('#stack', 100),
+    stackMode: selectedValue('#stackMode'),
+    potBb: numericValue('#potSize', 1.5),
+    lastAction: selectedValue('#lastAction'),
+    lastActionLabel: lastActionControl && lastActionControl.selectedOptions && lastActionControl.selectedOptions[0]
+      ? lastActionControl.selectedOptions[0].text
+      : 'Unopened',
+    facingSizeBb: numericValue('#facingSize', 0),
+    rakeMode: selectedValue('#rakeMode'),
+    legacyRakeValue: numericValue('#rakeValue', 0)
+  };
+
+}
+
+
+
+function deriveDecisionContext(snapshot = {}) {
+
+  const tableSize = Math.trunc(normalizedDecisionNumber(snapshot.tableSize, 6, 2, 10));
+  const heroPosition = typeof snapshot.heroPosition === 'string' && snapshot.heroPosition
+    ? snapshot.heroPosition
+    : 'BTN';
+  const heroCards = normalizedDecisionCards(snapshot.heroCards);
+  const board = normalizedDecisionCards(snapshot.board);
+  const deadCards = normalizedDecisionCards(snapshot.deadCards);
+  const stackBb = normalizedDecisionNumber(snapshot.stackBb, 100, 10, 500);
+  const stackMode = typeof snapshot.stackMode === 'string' && snapshot.stackMode
+    ? snapshot.stackMode
+    : 'hero';
+  const potBb = normalizedDecisionNumber(snapshot.potBb, 1.5, 0.5, 200);
+  const lastAction = typeof snapshot.lastAction === 'string' && snapshot.lastAction
+    ? snapshot.lastAction
+    : 'unopened';
+  const rawFacingSizeBb = normalizedDecisionNumber(snapshot.facingSizeBb, 0, 0, 100);
+  const facingSizeBb = normalizeFacingSize(lastAction, rawFacingSizeBb);
+  const supportedRakeModes = ['off', 'percent', 'fixed', 'cap'];
+  const rakeMode = supportedRakeModes.includes(snapshot.rakeMode) ? snapshot.rakeMode : 'off';
+  const accounting = strategyAccountingContext(rakeMode, tableSize, snapshot.legacyRakeValue);
+
+  return {
+    schemaVersion: DECISION_CONTEXT_SCHEMA_VERSION,
+    tableSize,
+    heroPosition,
+    street: currentStreet(board),
+    heroCards,
+    board,
+    deadCards,
+    stackBb,
+    stackMode,
+    potBb,
+    lastAction,
+    facingSizeBb,
+    rakeMode: accounting.rakeMode,
+    forcedContributionPerPlayerBb: accounting.forcedContributionPerPlayerBb,
+    totalForcedContributionBb: accounting.totalForcedContributionBb,
+    legacyRakePercent: accounting.rake
+  };
+
+}
+
+
+
+function decisionContextToLegacyStrategyContext(context) {
+
+  if (!context || context.schemaVersion !== DECISION_CONTEXT_SCHEMA_VERSION) {
+    throw new TypeError('Expected DecisionContext decision-context/v1');
+  }
+
+  return {
+    table_size: context.tableSize,
+    stack: context.stackBb,
+    rakeMode: context.rakeMode,
+    forcedContributionPerPlayerBb: context.forcedContributionPerPlayerBb,
+    totalForcedContributionBb: context.totalForcedContributionBb,
+    rake: context.legacyRakePercent,
+    hero_pos: context.heroPosition,
+    lastAction: context.lastAction,
+    potSize: context.potBb,
+    facingSize: context.facingSizeBb,
+    board: context.board.slice()
   };
 
 }
@@ -2503,31 +2621,19 @@ async function updateContext(reason = 'Context updated') {
   syncSliderPair('rakeValue', 'rakeValueNum');
   syncSliderPair('ante', 'anteNum');
 
-  const ctxStreet = currentStreet();
-  const ctxLastAction = selectedValue('#lastAction');
-  const ctxHeroPos = selectedValue('#heroPos');
-  const ctxTableSize = numericValue('#players', 6);
-  const ctxAccounting = strategyAccountingContext(selectedValue('#rakeMode'), ctxTableSize, numericValue('#rakeValue', 0));
-  let ctxFacingSize = numericValue('#facingSize');
+  const inputSnapshot = readPlaybookInputSnapshot();
+  const decisionContext = deriveDecisionContext(inputSnapshot);
+  const legacyStrategyContext = decisionContextToLegacyStrategyContext(decisionContext);
+  app.decisionContext = decisionContext;
   
-  if (ctxStreet === 'preflop' && ctxLastAction === 'unopened') {
-    ctxFacingSize = normalizeFacingSize(ctxLastAction, ctxFacingSize);
-    if ($('#facingSize')) $('#facingSize').value = 0;
-    if ($('#facingSizeNum')) $('#facingSizeNum').value = 0;
+  if (decisionContext.street === 'preflop' && decisionContext.lastAction === 'unopened') {
+    if ($('#facingSize')) $('#facingSize').value = decisionContext.facingSizeBb;
+    if ($('#facingSizeNum')) $('#facingSizeNum').value = decisionContext.facingSizeBb;
   }
   
   // Try ONNX first if available
   if (app.useOnnx && app.onnxSession) {
-     const apiContext = {
-       table_size: ctxTableSize,
-       stack: numericValue('#stack', 100),
-       ...ctxAccounting,
-       hero_pos: ctxHeroPos,
-       lastAction: ctxLastAction,
-       potSize: numericValue('#potSize'),
-       facingSize: ctxFacingSize,
-       board: app.gto.board.filter(Boolean)
-     };
+     const apiContext = legacyStrategyContext;
 
      const contextKey = JSON.stringify(apiContext);
 
@@ -2587,16 +2693,7 @@ async function updateContext(reason = 'Context updated') {
 
   } else if (app.useApi) {
      // Fallback to API if ONNX not available
-     const apiContext = {
-       table_size: ctxTableSize,
-       stack: numericValue('#stack', 100),
-       ...ctxAccounting,
-       hero_pos: ctxHeroPos,
-       lastAction: ctxLastAction,
-       potSize: numericValue('#potSize'),
-       facingSize: ctxFacingSize,
-       board: app.gto.board.filter(Boolean)
-     };
+     const apiContext = legacyStrategyContext;
 
      const contextKey = JSON.stringify(apiContext);
 
@@ -2670,19 +2767,17 @@ async function updateContext(reason = 'Context updated') {
 
   console.log('Action profile:', profile);
 
-  const street = currentStreet();
+  const street = decisionContext.street;
 
-  const hero = selectedValue('#heroPos');
+  const hero = decisionContext.heroPosition;
 
-  const lastActionEl = $('#lastAction');
+  const lastAction = inputSnapshot.lastActionLabel;
 
-  const lastAction = lastActionEl && lastActionEl.selectedOptions && lastActionEl.selectedOptions[0] ? lastActionEl.selectedOptions[0].text : 'Unopened';
+  const hand = decisionContext.heroCards.map(displayCard).join(' ');
 
-  const hand = app.gto.hero.filter(Boolean).map(displayCard).join(' ');
+  const board = decisionContext.board.map(displayCard).join(' ');
 
-  const board = app.gto.board.filter(Boolean).map(displayCard).join(' ');
-
-  const contextKey = [profile.best, hero, street, lastAction, hand, board, selectedValue('#players'), selectedValue('#stack'), selectedValue('#facingSize'), selectedValue('#potSize')].join('|');
+  const contextKey = [profile.best, hero, street, lastAction, hand, board, decisionContext.tableSize, decisionContext.stackBb, decisionContext.facingSizeBb, decisionContext.potBb].join('|');
 
 
 
@@ -2836,11 +2931,11 @@ async function updateContext(reason = 'Context updated') {
   }
 
   // Trigger Visual Table Engine
-  const activePlayers = numericValue('#players', 6);
+  const activePlayers = decisionContext.tableSize;
   const allPos = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP', 'LJ', 'HJ', 'CO', 'BTN'];
   const currentPosArr = POSITIONS[activePlayers] || POSITIONS[6];
   const sortedPos = currentPosArr.slice().sort((a,b) => allPos.indexOf(a) - allPos.indexOf(b));
-  const heroIdx = sortedPos.indexOf(ctxHeroPos);
+  const heroIdx = sortedPos.indexOf(decisionContext.heroPosition);
   const btnIdx = sortedPos.indexOf('BTN');
   const dealerPos = (heroIdx !== -1 && btnIdx !== -1) ? (btnIdx - heroIdx + activePlayers) % activePlayers : 0;
   
@@ -2853,7 +2948,7 @@ async function updateContext(reason = 'Context updated') {
       board: parsedBoard,
       heroCards: parsedHero,
       dealerPos: dealerPos,
-      activePlayers: numericValue('#players', 6)
+      activePlayers: decisionContext.tableSize
     }
   }));
 }
@@ -3152,7 +3247,7 @@ async function generateStrategyWithOnnx(context) {
   const signal = onnxAbortController.signal;
   
   try {
-  const street = currentStreet() || 'flop';
+  const street = currentStreet(context.board) || 'flop';
   const session = await window.onnxLazyLoader.getSession(street, 'student');
 
   const RANKS = '23456789TJQKA';

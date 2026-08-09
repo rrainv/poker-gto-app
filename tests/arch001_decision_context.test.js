@@ -1,0 +1,198 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+
+const qa = require('./qa002_adapters');
+
+function snapshot(overrides = {}) {
+  return {
+    tableSize: 6,
+    heroPosition: 'BTN',
+    heroCards: ['As', 'Kd'],
+    board: [],
+    deadCards: [],
+    stackBb: 100,
+    stackMode: 'hero',
+    potBb: 1.5,
+    lastAction: 'unopened',
+    facingSizeBb: 0,
+    rakeMode: 'off',
+    legacyRakeValue: 5,
+    ...overrides,
+  };
+}
+
+test('DecisionContext v1 derives a Home unopened spot', () => {
+  assert.deepEqual(qa.deriveDecisionContext(snapshot()), {
+    schemaVersion: 'decision-context/v1',
+    tableSize: 6,
+    heroPosition: 'BTN',
+    street: 'preflop',
+    heroCards: ['As', 'Kd'],
+    board: [],
+    deadCards: [],
+    stackBb: 100,
+    stackMode: 'hero',
+    potBb: 1.5,
+    lastAction: 'unopened',
+    facingSizeBb: 0,
+    rakeMode: 'off',
+    forcedContributionPerPlayerBb: 0,
+    totalForcedContributionBb: 0,
+    legacyRakePercent: 0,
+  });
+});
+
+test('DecisionContext v1 derives a ClubGG unopened spot', () => {
+  const context = qa.deriveDecisionContext(snapshot({
+    tableSize: 9,
+    heroPosition: 'LJ',
+    stackBb: 200,
+    facingSizeBb: 7,
+    rakeMode: 'fixed',
+  }));
+  assert.equal(context.facingSizeBb, 0);
+  assert.equal(context.forcedContributionPerPlayerBb, 0.1);
+  assert.equal(context.totalForcedContributionBb, 0.9);
+  assert.equal(context.legacyRakePercent, 0);
+});
+
+test('raise and 3-bet facing sizes remain positive', () => {
+  const raise = qa.deriveDecisionContext(snapshot({ lastAction: 'raise', facingSizeBb: 2.5, potBb: 4 }));
+  const threeBet = qa.deriveDecisionContext(snapshot({ lastAction: '3bet', facingSizeBb: 7.5, potBb: 11.5 }));
+  assert.equal(raise.facingSizeBb, 2.5);
+  assert.equal(threeBet.facingSizeBb, 7.5);
+});
+
+test('DecisionContext preserves a 10-max full-ring position', () => {
+  const context = qa.deriveDecisionContext(snapshot({
+    tableSize: 10,
+    heroPosition: 'UTG+2',
+    rakeMode: 'fixed',
+  }));
+  assert.equal(context.tableSize, 10);
+  assert.equal(context.heroPosition, 'UTG+2');
+  assert.equal(context.totalForcedContributionBb, 1.0);
+});
+
+test('street is derived from explicit board cards for flop, turn, and river', () => {
+  const boards = [
+    [['2c', '7d', '9h'], 'flop'],
+    [['2c', '7d', '9h', 'Ts'], 'turn'],
+    [['2c', '7d', '9h', 'Ts', 'Jc'], 'river'],
+  ];
+  for (const [board, street] of boards) {
+    assert.equal(qa.deriveDecisionContext(snapshot({ board })).street, street);
+  }
+});
+
+test('invalid and edge inputs use current production bounds and explicit defaults', () => {
+  const context = qa.deriveDecisionContext({
+    tableSize: 99,
+    heroPosition: '',
+    heroCards: null,
+    board: [null, '2c', '7d'],
+    deadCards: 'As',
+    stackBb: -20,
+    stackMode: '',
+    potBb: Number.NaN,
+    lastAction: '',
+    facingSizeBb: 999,
+    rakeMode: 'unknown',
+    legacyRakeValue: 12,
+  });
+  assert.deepEqual({
+    tableSize: context.tableSize,
+    heroPosition: context.heroPosition,
+    heroCards: context.heroCards,
+    board: context.board,
+    deadCards: context.deadCards,
+    street: context.street,
+    stackBb: context.stackBb,
+    stackMode: context.stackMode,
+    potBb: context.potBb,
+    lastAction: context.lastAction,
+    facingSizeBb: context.facingSizeBb,
+    rakeMode: context.rakeMode,
+    legacyRakePercent: context.legacyRakePercent,
+  }, {
+    tableSize: 10,
+    heroPosition: 'BTN',
+    heroCards: [],
+    board: ['2c', '7d'],
+    deadCards: [],
+    street: 'invalid',
+    stackBb: 10,
+    stackMode: 'hero',
+    potBb: 1.5,
+    lastAction: 'unopened',
+    facingSizeBb: 0,
+    rakeMode: 'off',
+    legacyRakePercent: 0,
+  });
+});
+
+test('legacy strategy adapter preserves the established ONNX/API shape', () => {
+  const context = qa.deriveDecisionContext(snapshot({
+    tableSize: 10,
+    heroPosition: 'UTG+2',
+    board: ['2c', '7d', '9h'],
+    deadCards: ['Ac'],
+    stackBb: 200,
+    stackMode: 'effective',
+    potBb: 11.5,
+    lastAction: '3bet',
+    facingSizeBb: 7.5,
+    rakeMode: 'fixed',
+  }));
+  assert.deepEqual(qa.legacyStrategyContext(context), {
+    table_size: 10,
+    stack: 200,
+    rakeMode: 'fixed',
+    forcedContributionPerPlayerBb: 0.1,
+    totalForcedContributionBb: 1,
+    rake: 0,
+    hero_pos: 'UTG+2',
+    lastAction: '3bet',
+    potSize: 11.5,
+    facingSize: 7.5,
+    board: ['2c', '7d', '9h'],
+  });
+});
+
+test('updateContext follows snapshot to DecisionContext to legacy adapter', async () => {
+  const capture = await qa.captureContext({
+    players: 10,
+    heroPos: 'UTG+2',
+    heroCards: ['As', 'Kd'],
+    board: ['2c', '7d', '9h'],
+    deadCards: ['Ac'],
+    stack: 200,
+    stackMode: 'effective',
+    potSize: 11.5,
+    lastAction: '3bet',
+    facingSize: 7.5,
+    rakeMode: 'fixed',
+  });
+  assert.equal(capture.snapshot.tableSize, 10);
+  assert.equal(capture.decisionContext.schemaVersion, 'decision-context/v1');
+  assert.deepEqual(capture.context, qa.legacyStrategyContext(capture.decisionContext));
+});
+
+test('existing fallback recommendations are unchanged through DecisionContext fields', () => {
+  const fixtures = [
+    snapshot({ heroPosition: 'BTN' }),
+    snapshot({ tableSize: 10, heroPosition: 'UTG+2', rakeMode: 'fixed' }),
+    snapshot({ heroPosition: 'BTN', lastAction: 'raise', facingSizeBb: 2.5, potBb: 10, stackBb: 30 }),
+    snapshot({ heroPosition: 'BB' }),
+  ];
+
+  for (const input of fixtures) {
+    const context = qa.deriveDecisionContext(input);
+    const direct = qa.fallback('T', '8', false, true, input.heroPosition, input.lastAction, input.facingSizeBb, input.potBb, input.stackBb);
+    const throughContext = qa.fallback(
+      'T', '8', false, true,
+      context.heroPosition, context.lastAction, context.facingSizeBb, context.potBb, context.stackBb,
+    );
+    assert.deepEqual(throughContext, direct);
+  }
+});

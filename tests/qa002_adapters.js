@@ -46,7 +46,8 @@ function createHarness() {
   if (!positions || !rankValue || !fallbackPositions) throw new Error('Could not extract core constants from logic.js');
 
   const numericSource = sliceBetween(source, 'function numericValue(id, fallback = 0)', 'function updatePositionSelect(');
-  const currentStreetSource = sliceBetween(source, 'function currentStreet(board)', 'function handClass(cards)')
+  const currentStreetProductionSource = sliceBetween(source, 'function currentStreet(board)', 'function handClass(cards)');
+  const currentStreetSource = currentStreetProductionSource
     .replace('function currentStreet(', 'function qaCurrentStreet(');
   const updatePositionsSource = sliceBetween(source, 'function updatePositionSelect(', 'function normalizeTree(data, fileName)');
   const actionParserSource = sliceBetween(source, 'function isAllInActionName(name)', 'function parseCard(cardStr)');
@@ -127,7 +128,6 @@ function createHarness() {
       const element = $(selector);
       return element ? element.value : undefined;
     };
-    const currentStreet = () => app.gto.board.filter(Boolean).length === 0 ? 'preflop' : 'flop';
     const t = (value) => value;
     const displayCard = (card) => card;
     const requestAnimationFrame = (callback) => callback();
@@ -164,6 +164,7 @@ function createHarness() {
     };
 
     ${numericSource}
+    ${currentStreetProductionSource}
     ${currentStreetSource}
     ${updatePositionsSource}
     ${actionParserSource}
@@ -202,6 +203,8 @@ function createHarness() {
       normalizeFacingSize,
       defaultTrainingFacingSize,
       strategyAccountingContext,
+      deriveDecisionContext,
+      decisionContextToLegacyStrategyContext,
       parseSolverEntry,
       classifyAction,
       standardActionName,
@@ -250,23 +253,29 @@ function createHarness() {
         app.onnxSession = {};
         app.useApi = false;
         app.gto.board = values.board || [];
-        app.gto.hero = [];
+        app.gto.hero = values.heroCards || [];
+        app.gto.dead = values.deadCards || [];
         app.lastApiContext = '';
         app.lastContextKey = '';
         app.cachedStrategy = null;
         capturedOnnxContext = null;
         dispatchedState = null;
         const contexts = [];
+        const decisionContexts = [];
         const refreshCount = values.refreshCount ?? 1;
         for (let refresh = 0; refresh < refreshCount; refresh += 1) {
           app.lastApiContext = '';
           capturedOnnxContext = null;
           await updateContext('QA-002 capture');
           contexts.push({ ...capturedOnnxContext });
+          decisionContexts.push({ ...app.decisionContext });
         }
         return {
           context: contexts[contexts.length - 1],
           contexts,
+          decisionContext: decisionContexts[decisionContexts.length - 1],
+          decisionContexts,
+          snapshot: readPlaybookInputSnapshot(),
           facingControl: controls.get('#facingSize').value,
           facingNumberControl: controls.get('#facingSizeNum').value,
           dispatchedState,
@@ -331,6 +340,8 @@ module.exports = {
   normalizeFacingSize: (...args) => harness.normalizeFacingSize(...args),
   defaultTrainingFacingSize: (...args) => harness.defaultTrainingFacingSize(...args),
   strategyAccountingContext: (...args) => plain(harness.strategyAccountingContext(...args)),
+  deriveDecisionContext: (...args) => plain(harness.deriveDecisionContext(...args)),
+  legacyStrategyContext: (...args) => plain(harness.decisionContextToLegacyStrategyContext(...args)),
   parseSolverEntry: (...args) => plain(harness.parseSolverEntry(...args)),
   classifyAction: (...args) => harness.classifyAction(...args),
   standardActionName: (...args) => harness.standardActionName(...args),
