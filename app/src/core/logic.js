@@ -2935,19 +2935,14 @@ function encodeCardsForOnnx(cards, tensor) {
 
 
 async function runOnnxInference(inputs) {
-
-  if (!app.onnxSession || !app.useOnnx) return null;
-
-  
+  if (!app.useOnnx) return null;
 
   try {
-
+    const street = currentStreet() || 'flop';
+    const session = await window.onnxLazyLoader.getSession(street, 'student');
     const inputTensor = new ort.Tensor('float32', new Float32Array(inputs), [1, 121]);
-
-    const outputs = await app.onnxSession.run({ input: inputTensor });
-
+    const outputs = await session.run({ input: inputTensor });
     return outputs.output.data;
-
   } catch (err) {
 
     console.error('ONNX inference error:', err);
@@ -2970,6 +2965,9 @@ async function generateStrategyWithOnnx(context) {
   const signal = onnxAbortController.signal;
   
   try {
+  const street = currentStreet() || 'flop';
+  const session = await window.onnxLazyLoader.getSession(street, 'student');
+
   const RANKS = '23456789TJQKA';
   const POSITIONS = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
   const ACTIONS = ['unopened', 'raise', '3bet', '4bet', 'bet', 'check'];
@@ -3063,18 +3061,18 @@ async function generateStrategyWithOnnx(context) {
       let output;
       try {
         // Try combined single input first
-        output = await app.onnxSession.run({ input: inputTensor });
+        output = await session.run({ input: inputTensor });
       } catch (inputErr) {
         try {
           // Try separate state_features and relative_position inputs
-          output = await app.onnxSession.run({ 
+          output = await session.run({ 
             state_features: inputTensor,
             relative_pos: posTensor
           });
         } catch (altErr) {
           // Try just state_features alone
           try {
-            output = await app.onnxSession.run({ state_features: inputTensor });
+            output = await session.run({ state_features: inputTensor });
           } catch (stateErr) {
             throw new Error(`All input combinations failed: ${inputErr.message}, ${altErr.message}, ${stateErr.message}`);
           }
