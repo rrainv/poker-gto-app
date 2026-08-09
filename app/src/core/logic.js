@@ -47,9 +47,34 @@ const POSITIONS = {
 
   8: ['UTG', 'UTG+1', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
 
-  9: ['UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB']
+  9: ['UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
+
+  10: ['UTG', 'UTG+1', 'UTG+2', 'MP', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB']
 
 };
+
+// The current ONNX models expose six position features. Full-ring positions
+// are mapped explicitly to the closest existing positional band so they never
+// fall through to an accidental index-zero/UTG default.
+const MODEL_POSITION_VOCABULARY = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+const MODEL_POSITION_COMPATIBILITY = {
+  'UTG': 'UTG',
+  'UTG+1': 'UTG',
+  'UTG+2': 'UTG',
+  'MP': 'HJ',
+  'LJ': 'HJ',
+  'HJ': 'HJ',
+  'CO': 'CO',
+  'BTN': 'BTN',
+  'SB': 'SB',
+  'BB': 'BB'
+};
+
+function modelPositionIndex(position) {
+  const compatiblePosition = MODEL_POSITION_COMPATIBILITY[position];
+  if (!compatiblePosition) throw new RangeError(`Unsupported position: ${position}`);
+  return MODEL_POSITION_VOCABULARY.indexOf(compatiblePosition);
+}
 
 const ACTION_COLORS = {
 
@@ -659,13 +684,13 @@ function numericValue(id, fallback = 0) {
 
 
 
-function updatePositions() {
+function updatePositionSelect(playersSelector, positionSelector) {
 
-  const playersStr = numericValue('#playersNum', 6);
+  const players = numericValue(playersSelector, 6);
 
-  const positions = POSITIONS[playersStr] || POSITIONS[6];
+  const positions = POSITIONS[players] || POSITIONS[6];
 
-  const hero = $('#heroPos');
+  const hero = $(positionSelector);
 
   if (!hero) return;
 
@@ -674,6 +699,22 @@ function updatePositions() {
   hero.innerHTML = positions.map((position) => `<option value="${position}">${position}</option>`).join('');
 
   hero.value = positions.includes(oldHero) ? oldHero : (positions.includes('BTN') ? 'BTN' : positions[0]);
+
+}
+
+
+
+function updatePositions() {
+
+  updatePositionSelect('#playersNum', '#heroPos');
+
+}
+
+
+
+function updateTrainingPositions() {
+
+  updatePositionSelect('#trainingPlayersNum', '#trainingHeroPos');
 
 }
 
@@ -3041,11 +3082,9 @@ async function generateStrategyWithOnnx(context) {
   const session = await window.onnxLazyLoader.getSession(street, 'student');
 
   const RANKS = '23456789TJQKA';
-  const POSITIONS = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
   const ACTIONS = ['unopened', 'raise', '3bet', '4bet', 'bet', 'check'];
 
-  const rawPos = POSITIONS.indexOf(context.hero_pos);
-  const posIdx = rawPos !== -1 ? rawPos : 0;
+  const posIdx = modelPositionIndex(context.hero_pos);
   const rawAct = ACTIONS.indexOf(context.lastAction);
   const actionIdx = rawAct !== -1 ? rawAct : 0;
 
@@ -5532,9 +5571,11 @@ function initTrainingMode() {
   // Training mode sliders
   $('#trainingPlayers')?.addEventListener('input', function() {
     $('#trainingPlayersNum').value = this.value;
+    updateTrainingPositions();
   });
   $('#trainingPlayersNum')?.addEventListener('input', function() {
     $('#trainingPlayers').value = this.value;
+    updateTrainingPositions();
   });
   $('#trainingStack')?.addEventListener('input', function() {
     $('#trainingStackNum').value = this.value;
@@ -5542,6 +5583,8 @@ function initTrainingMode() {
   $('#trainingStackNum')?.addEventListener('input', function() {
     $('#trainingStack').value = this.value;
   });
+
+  updateTrainingPositions();
 
   // Show clean initial state (no auto-generated hand)
   const handDisplay = $('#trainingHandDisplay');
@@ -6857,6 +6900,17 @@ function sampleRealisticBoard(heroCards, boardCount) {
 }
 
 let trainingToken = 0;
+
+function randomTrainingTableSize() {
+  return Math.floor(Math.random() * 9) + 2;
+}
+
+function randomTrainingPosition(tableSize) {
+  const positions = POSITIONS[tableSize];
+  if (!positions) throw new RangeError(`Unsupported training table size: ${tableSize}`);
+  return positions[Math.floor(Math.random() * positions.length)];
+}
+
 function newRandomTrainingHand() {
 
   console.log('[Training] newRandomTrainingHand called');
@@ -6869,12 +6923,13 @@ function newRandomTrainingHand() {
   else if (streetRoll > 0.85) { street = 'turn'; boardCount = 4; }
   else if (streetRoll > 0.60) { street = 'flop'; boardCount = 3; }
 
-  // Randomize Table Size (2 to 8 players)
-  const tableSize = Math.floor(Math.random() * 7) + 2;
+  // Randomize Table Size (2 to 10 players)
+  const tableSize = randomTrainingTableSize();
   const playersEl = $('#trainingPlayers');
   const playersNumEl = $('#trainingPlayersNum');
   if (playersEl) playersEl.value = tableSize;
   if (playersNumEl) playersNumEl.value = tableSize;
+  updateTrainingPositions();
 
   // Randomize Starting Stack (15, 20, 30, 50, 100bb)
   const stacks = [15, 20, 30, 50, 100];
@@ -6885,10 +6940,7 @@ function newRandomTrainingHand() {
   if (stackNumEl) stackNumEl.value = stack;
 
   // Randomize Hero Position (based on table size)
-  const allPositions = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
-  const posCount = Math.min(tableSize, allPositions.length);
-  const availPositions = allPositions.slice(allPositions.length - posCount);
-  const heroPos = availPositions[Math.floor(Math.random() * availPositions.length)];
+  const heroPos = randomTrainingPosition(tableSize);
   const posSelect = $('#trainingHeroPos');
   if (posSelect) posSelect.value = heroPos;
 

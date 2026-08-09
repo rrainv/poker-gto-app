@@ -12,6 +12,7 @@ const EXPECTED_POSITIONS = {
   7: ['UTG', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
   8: ['UTG', 'UTG+1', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
   9: ['UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
+  10: ['UTG', 'UTG+1', 'UTG+2', 'MP', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'],
 };
 
 function assertNormalized(profile) {
@@ -28,10 +29,6 @@ for (const [count, expected] of Object.entries(EXPECTED_POSITIONS)) {
   });
 }
 
-test('characterization: 10-player Playbook falls back to the six-player position list', () => {
-  assert.deepEqual(qa.positionsFor(10), EXPECTED_POSITIONS[6]);
-});
-
 test('table-size change preserves a still-valid hero position', () => {
   const result = qa.updateHeroPositions(5, 'CO');
   assert.equal(result.value, 'CO');
@@ -42,11 +39,11 @@ test('table-size change replaces an invalid hero position with BTN', () => {
   assert.equal(qa.updateHeroPositions(3, 'UTG').value, 'BTN');
 });
 
-test('characterization: 10-player table-size change also presents only six positions', () => {
+test('10-player table-size change presents and preserves full-ring positions', () => {
   const result = qa.updateHeroPositions(10, 'MP');
-  assert.equal(result.value, 'BTN');
-  assert.doesNotMatch(result.html, /value="MP"/);
-  assert.equal((result.html.match(/<option/g) || []).length, 6);
+  assert.equal(result.value, 'MP');
+  assert.match(result.html, /value="UTG\+2"/);
+  assert.equal((result.html.match(/<option/g) || []).length, 10);
 });
 
 test('street is derived only from the number of populated board cards', () => {
