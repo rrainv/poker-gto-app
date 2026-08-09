@@ -201,6 +201,7 @@ function createHarness() {
       fallbackPositionModifiers() { return { ...PREFLOP_FALLBACK_POSITION_MODIFIERS }; },
       normalizeFacingSize,
       defaultTrainingFacingSize,
+      strategyAccountingContext,
       parseSolverEntry,
       classifyAction,
       standardActionName,
@@ -255,9 +256,17 @@ function createHarness() {
         app.cachedStrategy = null;
         capturedOnnxContext = null;
         dispatchedState = null;
-        await updateContext('QA-002 capture');
+        const contexts = [];
+        const refreshCount = values.refreshCount ?? 1;
+        for (let refresh = 0; refresh < refreshCount; refresh += 1) {
+          app.lastApiContext = '';
+          capturedOnnxContext = null;
+          await updateContext('QA-002 capture');
+          contexts.push({ ...capturedOnnxContext });
+        }
         return {
-          context: capturedOnnxContext,
+          context: contexts[contexts.length - 1],
+          contexts,
           facingControl: controls.get('#facingSize').value,
           facingNumberControl: controls.get('#facingSizeNum').value,
           dispatchedState,
@@ -321,6 +330,7 @@ module.exports = {
   fallbackPositionModifiers: () => plain(harness.fallbackPositionModifiers()),
   normalizeFacingSize: (...args) => harness.normalizeFacingSize(...args),
   defaultTrainingFacingSize: (...args) => harness.defaultTrainingFacingSize(...args),
+  strategyAccountingContext: (...args) => plain(harness.strategyAccountingContext(...args)),
   parseSolverEntry: (...args) => plain(harness.parseSolverEntry(...args)),
   classifyAction: (...args) => harness.classifyAction(...args),
   standardActionName: (...args) => harness.standardActionName(...args),

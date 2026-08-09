@@ -576,7 +576,7 @@ function selectCard(card) {
       app.training.currentSolution = getTrainingStrategy({
         table_size: tableSize,
         stack: stack,
-        rake: 0,
+        ...strategyAccountingContext('off', tableSize, 0),
         hero_pos: heroPos,
         lastAction: lastAction,
         potSize: potSize,
@@ -716,6 +716,35 @@ function defaultTrainingFacingSize(lastAction) {
   const defaults = { raise: 2.5, '3bet': 7.5, '4bet': 18.0 };
 
   return normalizeFacingSize(lastAction, defaults[lastAction] || 0);
+
+}
+
+
+
+const CLUBGG_FORCED_CONTRIBUTION_PER_PLAYER_BB = 0.1;
+
+function strategyAccountingContext(rakeMode, seatedPlayerCount, legacyRakeValue = 0) {
+
+  const mode = rakeMode || 'off';
+  const players = Math.max(0, Math.trunc(Number(seatedPlayerCount) || 0));
+  const isClubGg = mode === 'fixed';
+  const forcedContributionPerPlayerBb = isClubGg ? CLUBGG_FORCED_CONTRIBUTION_PER_PLAYER_BB : 0;
+  const totalForcedContributionBb = Math.round(players * forcedContributionPerPlayerBb * 10) / 10;
+
+  // The existing model/API `rake` feature means percentage rake. A fixed
+  // per-player hand contribution is not semantically compatible, so Home and
+  // ClubGG contexts explicitly adapt that legacy feature to zero.
+  const legacyValue = Number(legacyRakeValue);
+  const rake = (mode === 'percent' || mode === 'cap') && Number.isFinite(legacyValue)
+    ? Math.max(0, legacyValue)
+    : 0;
+
+  return {
+    rakeMode: mode,
+    forcedContributionPerPlayerBb,
+    totalForcedContributionBb,
+    rake
+  };
 
 }
 
@@ -1768,6 +1797,7 @@ function updateMetrics() {
   const stack = numericValue('#stack', 100);
   const rakeMode = selectedValue('#rakeMode');
   const rake = numericValue('#rakeValue');
+  const accounting = strategyAccountingContext(rakeMode, numericValue('#players', 6), rake);
 
   const isPreflopUnopened = (street === 'preflop') && (lastAction === 'unopened');
   const isPreflopOpenDecision = isPreflopUnopened && heroPos !== 'BB';
@@ -1799,7 +1829,12 @@ function updateMetrics() {
   if (mSPR) mSPR.textContent = (stack / Math.max(.5, pot)).toFixed(1);
 
   const mRake = $('#mRake');
-  if (mRake) mRake.textContent = rakeMode === 'off' ? t('Off') : rake + ' ' + selectedValue('#rakeUnit');
+  if (mRake) {
+    if (rakeMode === 'off') mRake.textContent = t('Off');
+    else if (rakeMode === 'fixed') {
+      mRake.textContent = `${accounting.forcedContributionPerPlayerBb.toFixed(1)} bb/player · ${accounting.totalForcedContributionBb.toFixed(1)} bb total`;
+    } else mRake.textContent = rake + ' ' + selectedValue('#rakeUnit');
+  }
 
   const facingSizeOut = $('#facingSizeOut');
   if (facingSizeOut) {
@@ -2471,6 +2506,8 @@ async function updateContext(reason = 'Context updated') {
   const ctxStreet = currentStreet();
   const ctxLastAction = selectedValue('#lastAction');
   const ctxHeroPos = selectedValue('#heroPos');
+  const ctxTableSize = numericValue('#players', 6);
+  const ctxAccounting = strategyAccountingContext(selectedValue('#rakeMode'), ctxTableSize, numericValue('#rakeValue', 0));
   let ctxFacingSize = numericValue('#facingSize');
   
   if (ctxStreet === 'preflop' && ctxLastAction === 'unopened') {
@@ -2482,9 +2519,9 @@ async function updateContext(reason = 'Context updated') {
   // Try ONNX first if available
   if (app.useOnnx && app.onnxSession) {
      const apiContext = {
-       table_size: numericValue('#players', 6),
+       table_size: ctxTableSize,
        stack: numericValue('#stack', 100),
-       rake: numericValue('#rakeValue', 0),
+       ...ctxAccounting,
        hero_pos: ctxHeroPos,
        lastAction: ctxLastAction,
        potSize: numericValue('#potSize'),
@@ -2551,9 +2588,9 @@ async function updateContext(reason = 'Context updated') {
   } else if (app.useApi) {
      // Fallback to API if ONNX not available
      const apiContext = {
-       table_size: numericValue('#players', 6),
+       table_size: ctxTableSize,
        stack: numericValue('#stack', 100),
-       rake: numericValue('#rakeValue', 0),
+       ...ctxAccounting,
        hero_pos: ctxHeroPos,
        lastAction: ctxLastAction,
        potSize: numericValue('#potSize'),
@@ -4170,7 +4207,9 @@ function bindEvents() {
 
   });
 
-  if ($('#rakeMode')) $('#rakeMode').addEventListener('change', () => { if ($('#rakeValueWrapper')) $('#rakeValueWrapper').classList.toggle('hidden', $('#rakeMode').value === 'off'); });
+  if ($('#rakeMode')) $('#rakeMode').addEventListener('change', () => {
+    if ($('#rakeValueWrapper')) $('#rakeValueWrapper').classList.toggle('hidden', ['off', 'fixed'].includes($('#rakeMode').value));
+  });
 
 
 
@@ -6575,6 +6614,8 @@ function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = []) {
   const sim = simulateEquity(heroCards, context.board, deadCards, 250);
   let eq = sim.eq;
   
+  // Legacy manual postflop heuristic only: this is not the ClubGG forced
+  // contribution and it never mutates the context pot or accounting fields.
   const flatDrop = Number(document.getElementById('flatDrop') ? document.getElementById('flatDrop').value : 0) || 0;
   const potSize = (Number(context.potSize) || 1.5) + flatDrop;
   const facingSize = Number(context.facingSize) || 0;
@@ -6862,7 +6903,7 @@ function getTrainingStrategy(context, heroCards) {
       app.training.currentSolution = getTrainingStrategy({
         table_size: tableSize,
         stack: stack,
-        rake: 0,
+        ...strategyAccountingContext('off', tableSize, 0),
         hero_pos: heroPos,
         lastAction: lastAction,
         potSize: potSize,
@@ -7057,7 +7098,7 @@ function newRandomTrainingHand() {
   const context = {
     table_size: tableSize,
     stack: stack,
-    rake: 0,
+    ...strategyAccountingContext('off', tableSize, 0),
     hero_pos: heroPos,
     lastAction: lastAction,
     potSize: potSize,

@@ -120,16 +120,27 @@ test('preflop base pot is blinds plus per-player ante plus straddle', () => {
   assert.equal(qa.preflopPot({ ante: 0.5, players: 8, straddle: 2 }), 7.5);
 });
 
-test('characterization: rake-off still passes the nonzero rake control value to ONNX', async () => {
+test('rake-off sends zero and explicit zero forced contributions to ONNX', async () => {
   const capture = await qa.captureContext({ rakeMode: 'off', rake: 5 });
-  assert.equal(capture.context.rake, 5);
-  assert.equal(Object.hasOwn(capture.context, 'rakeMode'), false);
+  assert.equal(capture.context.rake, 0);
+  assert.equal(capture.context.rakeMode, 'off');
+  assert.equal(capture.context.forcedContributionPerPlayerBb, 0);
+  assert.equal(capture.context.totalForcedContributionBb, 0);
 });
 
-test('characterization: fixed rake mode passes only an untyped numeric rake feature', async () => {
-  const capture = await qa.captureContext({ rakeMode: 'fixed', rake: 0.1 });
-  assert.equal(capture.context.rake, 0.1);
-  assert.equal(Object.hasOwn(capture.context, 'rakeMode'), false);
+test('fixed mode is an explicit per-player contribution with a zero legacy rake feature', async () => {
+  const capture = await qa.captureContext({ players: 6, rakeMode: 'fixed', rake: 5 });
+  assert.equal(capture.context.rake, 0);
+  assert.equal(capture.context.rakeMode, 'fixed');
+  assert.equal(capture.context.forcedContributionPerPlayerBb, 0.1);
+  assert.equal(capture.context.totalForcedContributionBb, 0.6);
+});
+
+test('legacy percentage mode preserves its existing numeric model feature', async () => {
+  const capture = await qa.captureContext({ rakeMode: 'percent', rake: 5 });
+  assert.equal(capture.context.rake, 5);
+  assert.equal(capture.context.forcedContributionPerPlayerBb, 0);
+  assert.equal(capture.context.totalForcedContributionBb, 0);
 });
 
 test('characterization: stack mode does not change the single stack value sent to strategy', async () => {
