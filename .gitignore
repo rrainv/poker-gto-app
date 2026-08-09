@@ -25,7 +25,6 @@ electron_cache/
 *.pt
 *.bin
 *.dat
-solver-model/
 checkpoints/
 
 # OS / IDE
