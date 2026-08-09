@@ -1,5 +1,16 @@
 export const POKER_STATE_SCHEMA_VERSION = 'poker-state/v1';
+export const POKER_ACTION_SCHEMA_VERSION = 'poker-action/v1';
+export const POKER_ACTION_RECORD_SCHEMA_VERSION = 'poker-action-record/v1';
 export const POKER_VARIANT = 'no_limit_texas_holdem';
+
+export const ACTION_TYPES = Object.freeze({
+  FOLD: 'fold',
+  CHECK: 'check',
+  CALL: 'call',
+  BET: 'bet',
+  RAISE: 'raise',
+  ALL_IN: 'all_in',
+});
 
 export const GAME_MODES = Object.freeze({
   HOME: 'home',
@@ -38,11 +49,15 @@ export const LEDGER_KINDS = Object.freeze({
   ANTE: 'ante',
   SMALL_BLIND: 'small_blind',
   BIG_BLIND: 'big_blind',
+  ACTION: 'action',
+  UNCALLED_REFUND: 'uncalled_refund',
+  POT_AWARD: 'pot_award',
 });
 
 export const LEDGER_MOVEMENTS = Object.freeze({
   STACK_TO_POT: 'stack_to_pot',
   STACK_TO_DEDUCTION: 'stack_to_deduction',
+  POT_TO_STACK: 'pot_to_stack',
 });
 
 export const CLUBGG_FORCED_CONTRIBUTION_MILLI_BB = 100;

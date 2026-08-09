@@ -1,5 +1,6 @@
 import { assertCardArray, assertUniqueKnownCards } from './cards.js';
 import { assertMilliBbAlignment, assertPositiveMilliBb } from './amounts.js';
+import { validateAction } from './action.js';
 import { deriveSeatAssignments, POSITIONS_BY_TABLE_SIZE } from './positions.js';
 import {
   ANTE_TYPES,
@@ -9,6 +10,7 @@ import {
   LEDGER_KINDS,
   LEDGER_MOVEMENTS,
   PHASES,
+  POKER_ACTION_RECORD_SCHEMA_VERSION,
   POKER_STATE_SCHEMA_VERSION,
   POKER_VARIANT,
   STREETS,
@@ -86,7 +88,8 @@ export function validatePokerState(state) {
     if (seats.has(player.seat)) throw new RangeError(`Duplicate seat: ${player.seat}`);
     seats.add(player.seat);
     if (player.seated !== true || player.dealtIn !== true) throw new RangeError('Sitting-out players are deferred in poker-state/v1 initialization');
-    if (player.folded !== false) throw new RangeError('An initialized player cannot already be folded');
+    if (typeof player.folded !== 'boolean') throw new TypeError('player.folded must be boolean');
+    if (typeof player.actedThisStreet !== 'boolean') throw new TypeError('player.actedThisStreet must be boolean');
     if (Object.hasOwn(player, 'allIn')) throw new RangeError('allIn must be derived, not stored');
     if (Object.hasOwn(player, 'totalHandContributionMilliBb')) {
       throw new RangeError('totalHandContributionMilliBb must be derived, not stored');
@@ -103,9 +106,12 @@ export function validatePokerState(state) {
     if (player.streetContributionMilliBb > player.totalPotContributionMilliBb) {
       throw new RangeError('street contribution cannot exceed total pot contribution');
     }
-    if (player.startingStackMilliBb !== player.currentStackMilliBb
-      + player.totalPotContributionMilliBb + player.totalDeductionMilliBb) {
-      throw new RangeError(`Player stack accounting does not conserve for ${player.playerId}`);
+    if (player.raiseReopenAtMilliBb !== null) {
+      assertMilliBbAlignment(
+        player.raiseReopenAtMilliBb,
+        state.game.chipUnitMilliBb,
+        'player.raiseReopenAtMilliBb',
+      );
     }
     if (player.holeCards !== null) {
       if (!Array.isArray(player.holeCards) || player.holeCards.length !== 2) {
@@ -129,8 +135,8 @@ export function validatePokerState(state) {
   if (Object.hasOwn(state, 'minimumBetToMilliBb') || Object.hasOwn(state, 'minimumRaiseToMilliBb')) {
     throw new RangeError('Minimum bet and raise values must be derived, not stored');
   }
-  if (state.potMilliBb !== state.players.reduce((sum, player) => sum + player.totalPotContributionMilliBb, 0)) {
-    throw new RangeError('potMilliBb must equal player pot contributions');
+  if (state.potMilliBb > state.players.reduce((sum, player) => sum + player.totalPotContributionMilliBb, 0)) {
+    throw new RangeError('potMilliBb cannot exceed gross player pot contributions');
   }
   if (state.deductionTotalMilliBb !== state.players.reduce((sum, player) => sum + player.totalDeductionMilliBb, 0)) {
     throw new RangeError('deductionTotalMilliBb must equal player deductions');
@@ -141,7 +147,7 @@ export function validatePokerState(state) {
   let ledgerDeduction = 0;
   const ledgerPotByPlayer = new Map(state.players.map((player) => [player.playerId, 0]));
   const ledgerDeductionByPlayer = new Map(state.players.map((player) => [player.playerId, 0]));
-  const blindByPlayer = new Map(state.players.map((player) => [player.playerId, 0]));
+  const streetPotByPlayer = new Map(state.players.map((player) => [player.playerId, 0]));
   state.ledger.forEach((entry, index) => {
     if (entry.sequence !== index) throw new RangeError('Ledger sequence must be contiguous');
     if (!ids.has(entry.playerId)) throw new RangeError('Ledger entry refers to an unknown player');
@@ -153,9 +159,13 @@ export function validatePokerState(state) {
       && entry.movement !== LEDGER_MOVEMENTS.STACK_TO_DEDUCTION) {
       throw new RangeError('ClubGG contributions must be non-pot deductions');
     }
-    if (entry.kind !== LEDGER_KINDS.CLUBGG_FORCED_CONTRIBUTION
+    if ([LEDGER_KINDS.ANTE, LEDGER_KINDS.SMALL_BLIND, LEDGER_KINDS.BIG_BLIND, LEDGER_KINDS.ACTION].includes(entry.kind)
       && entry.movement !== LEDGER_MOVEMENTS.STACK_TO_POT) {
-      throw new RangeError('Antes and blinds must enter the pot');
+      throw new RangeError('Antes, blinds, and actions must enter the pot');
+    }
+    if ([LEDGER_KINDS.UNCALLED_REFUND, LEDGER_KINDS.POT_AWARD].includes(entry.kind)
+      && entry.movement !== LEDGER_MOVEMENTS.POT_TO_STACK) {
+      throw new RangeError('Refunds and awards must move from pot to stack');
     }
     if (entry.movement === LEDGER_MOVEMENTS.STACK_TO_POT) {
       ledgerPot += entry.amountMilliBb;
@@ -165,8 +175,13 @@ export function validatePokerState(state) {
       ledgerDeduction += entry.amountMilliBb;
       ledgerDeductionByPlayer.set(entry.playerId, ledgerDeductionByPlayer.get(entry.playerId) + entry.amountMilliBb);
     }
-    if (entry.kind === LEDGER_KINDS.SMALL_BLIND || entry.kind === LEDGER_KINDS.BIG_BLIND) {
-      blindByPlayer.set(entry.playerId, blindByPlayer.get(entry.playerId) + entry.amountMilliBb);
+    if (entry.movement === LEDGER_MOVEMENTS.POT_TO_STACK) {
+      ledgerPot -= entry.amountMilliBb;
+      if (ledgerPot < 0) throw new RangeError('Ledger cannot credit more than the available pot');
+    }
+    if (entry.street === state.street
+      && [LEDGER_KINDS.SMALL_BLIND, LEDGER_KINDS.BIG_BLIND, LEDGER_KINDS.ACTION].includes(entry.kind)) {
+      streetPotByPlayer.set(entry.playerId, streetPotByPlayer.get(entry.playerId) + entry.amountMilliBb);
     }
   });
   if (ledgerPot !== state.potMilliBb || ledgerDeduction !== state.deductionTotalMilliBb) {
@@ -175,12 +190,54 @@ export function validatePokerState(state) {
   for (const player of state.players) {
     if (ledgerPotByPlayer.get(player.playerId) !== player.totalPotContributionMilliBb
       || ledgerDeductionByPlayer.get(player.playerId) !== player.totalDeductionMilliBb
-      || blindByPlayer.get(player.playerId) !== player.streetContributionMilliBb) {
+      || streetPotByPlayer.get(player.playerId) !== player.streetContributionMilliBb) {
       throw new RangeError(`Ledger does not agree with player totals for ${player.playerId}`);
     }
   }
 
+  const startingStacks = state.players.reduce((sum, player) => sum + player.startingStackMilliBb, 0);
+  const currentStacks = state.players.reduce((sum, player) => sum + player.currentStackMilliBb, 0);
+  if (startingStacks !== currentStacks + state.potMilliBb + state.deductionTotalMilliBb) {
+    throw new RangeError('Aggregate chips are not conserved');
+  }
+
   if (!Array.isArray(state.actionHistory)) throw new TypeError('actionHistory must be an array');
+  state.actionHistory.forEach((record, index) => {
+    if (!record || record.schemaVersion !== POKER_ACTION_RECORD_SCHEMA_VERSION) {
+      throw new TypeError(`Expected ${POKER_ACTION_RECORD_SCHEMA_VERSION}`);
+    }
+    if (record.sequence !== index) throw new RangeError('ActionRecord sequence must be contiguous');
+    if (!ids.has(record.playerId)) throw new RangeError('ActionRecord refers to an unknown player');
+    if (!VALUES(STREETS).includes(record.street)) throw new RangeError('ActionRecord has an invalid street');
+    validateAction(record.submittedAction, state.game.chipUnitMilliBb);
+    if (record.submittedAction.playerId !== record.playerId) {
+      throw new RangeError('ActionRecord player must match its submitted action');
+    }
+    for (const field of [
+      'toCallBeforeMilliBb',
+      'committedMilliBb',
+      'streetContributionAfterMilliBb',
+      'currentBetBeforeMilliBb',
+      'currentBetAfterMilliBb',
+    ]) {
+      assertMilliBbAlignment(record[field], state.game.chipUnitMilliBb, `actionHistory.${field}`);
+    }
+    if (typeof record.wasAllIn !== 'boolean'
+      || typeof record.wasFullRaise !== 'boolean'
+      || typeof record.reopenedBetting !== 'boolean') {
+      throw new TypeError('ActionRecord flags must be boolean');
+    }
+  });
+
+  if (state.actingPlayerId !== null && !ids.has(state.actingPlayerId)) {
+    throw new RangeError('actingPlayerId must identify a player or be null');
+  }
+  if (state.phase === PHASES.BETTING && state.actingPlayerId === null) {
+    throw new RangeError('A betting state requires an acting player');
+  }
+  if (state.phase === PHASES.TERMINAL && (state.actingPlayerId !== null || state.potMilliBb !== 0)) {
+    throw new RangeError('A terminal fold state must have no actor and no unsettled pot');
+  }
 
   return state;
 }

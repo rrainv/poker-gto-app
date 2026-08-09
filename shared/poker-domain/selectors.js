@@ -45,12 +45,54 @@ export function firstPreflopActorId(state) {
   return actor ? actor.playerId : null;
 }
 
+export function currentActor(state) {
+  requirePokerState(state);
+  return state.actingPlayerId === null ? null : playerById(state, state.actingPlayerId);
+}
+
+export function amountToCallMilliBb(state, playerId = state.actingPlayerId) {
+  requirePokerState(state);
+  const player = playerById(state, playerId);
+  if (!player) throw new RangeError(`Unknown playerId: ${playerId}`);
+  return Math.max(0, state.currentBetMilliBb - player.streetContributionMilliBb);
+}
+
+export function maximumAmountToMilliBb(state, playerId = state.actingPlayerId) {
+  requirePokerState(state);
+  const player = playerById(state, playerId);
+  if (!player) throw new RangeError(`Unknown playerId: ${playerId}`);
+  return player.streetContributionMilliBb + player.currentStackMilliBb;
+}
+
+export function minimumBetToMilliBb(state) {
+  requirePokerState(state);
+  return state.currentBetMilliBb === 0 ? state.game.bigBlindMilliBb : null;
+}
+
+export function minimumRaiseToMilliBb(state) {
+  requirePokerState(state);
+  if (state.currentBetMilliBb === 0) return null;
+  if (state.currentBetMilliBb < state.game.bigBlindMilliBb) return state.game.bigBlindMilliBb;
+  return state.currentBetMilliBb + state.lastFullRaiseIncrementMilliBb;
+}
+
+export function hasRaisingRights(state, playerId = state.actingPlayerId) {
+  requirePokerState(state);
+  const player = playerById(state, playerId);
+  if (!player) throw new RangeError(`Unknown playerId: ${playerId}`);
+  if (!isPlayerLive(player) || isPlayerAllIn(player)) return false;
+  if (maximumAmountToMilliBb(state, playerId) <= state.currentBetMilliBb) return false;
+  if (!player.actedThisStreet || player.raiseReopenAtMilliBb === null) return true;
+  return state.currentBetMilliBb >= player.raiseReopenAtMilliBb;
+}
+
 export function ledgerTotals(state) {
   requirePokerState(state);
   let potMilliBb = 0;
   let deductionMilliBb = 0;
   for (const entry of state.ledger) {
     if (entry.movement === LEDGER_MOVEMENTS.STACK_TO_POT) potMilliBb += entry.amountMilliBb;
+    if (entry.movement === LEDGER_MOVEMENTS.POT_TO_STACK) potMilliBb -= entry.amountMilliBb;
     if (entry.movement === LEDGER_MOVEMENTS.STACK_TO_DEDUCTION) deductionMilliBb += entry.amountMilliBb;
   }
   return Object.freeze({ potMilliBb, deductionMilliBb });
