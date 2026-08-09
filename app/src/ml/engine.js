@@ -44,8 +44,8 @@ class LazyLoader {
   async _loadModel(modelName) {
     this._showSpinner(modelName);
     
-    // We expect the models to be served from /solver-model/
-    const url = `solver-model/${modelName}`;
+    // We expect the models to be served from /frozen_models/
+    const url = `frozen_models/${modelName}`;
     
     // Fetch buffer via HTTP
     const response = await fetch(url);

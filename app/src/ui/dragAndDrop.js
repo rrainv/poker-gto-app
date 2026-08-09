@@ -86,19 +86,24 @@ function initDragAndDrop() {
 
 function saveLayout() {
   const layout = {};
-  // Find all grid/column containers
-  const containers = document.querySelectorAll('.side-stack, .main-content, .right-rail');
+  // Find all grid/column containers inside mode views
+  const containers = document.querySelectorAll('.mode-view .side-stack, .mode-view .main-content, .mode-view .right-rail');
   
   containers.forEach(container => {
-    // Only save containers that actually have panels
+    // Only save containers that actually have panels or are main-content
     if (container.querySelectorAll('.panel').length === 0 && !container.classList.contains('main-content')) return;
     
-    // Generate an ID for the container if it doesn't have one
-    let containerId = container.id || container.className.split(' ')[0];
+    const parentMode = container.closest('.mode-view');
+    if (!parentMode) return;
+    
+    // Create a unique key like "gtoMode-side-stack" or "gtoMode-right-rail"
+    const classKey = container.classList.contains('main-content') ? 'main-content' : 
+                     (container.classList.contains('right-rail') ? 'right-rail' : 'side-stack');
+    const containerKey = `${parentMode.id}-${classKey}`;
     
     // Get ordered list of panel IDs in this container
     const panelIds = Array.from(container.querySelectorAll('.panel')).map(p => p.id);
-    layout[containerId] = panelIds;
+    layout[containerKey] = panelIds;
   });
 
   localStorage.setItem('riverline_layout', JSON.stringify(layout));
@@ -108,12 +113,27 @@ function loadLayout() {
   const saved = localStorage.getItem('riverline_layout');
   if (!saved) return;
 
+  // Clear legacy layout format that caused cross-tab bleeding
+  if (!saved.includes('Mode-')) {
+    localStorage.removeItem('riverline_layout');
+    return;
+  }
+
   try {
     const layout = JSON.parse(saved);
     
-    for (const [containerId, panelIds] of Object.entries(layout)) {
-      // Find container by class or ID
-      const container = document.getElementById(containerId) || document.querySelector(`.${containerId}`);
+    for (const [containerKey, panelIds] of Object.entries(layout)) {
+      const parts = containerKey.split('-');
+      const modeId = parts[0];
+      const classKey = parts.slice(1).join('-');
+      
+      const modeEl = document.getElementById(modeId);
+      if (!modeEl) continue;
+      
+      const container = classKey === 'right-rail' ? modeEl.querySelector('.right-rail') : 
+                        classKey === 'main-content' ? modeEl.querySelector('.main-content') : 
+                        modeEl.querySelector('.side-stack:not(.right-rail)');
+                        
       if (!container) continue;
 
       // Reorder panels
