@@ -3987,7 +3987,8 @@ input:focus, select:focus, .quick-select:focus { transition: border-color var(--
 .valorant-menu-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(15, 25, 35, 0.9);
+  background: rgba(15, 25, 35, 0.5);
+  backdrop-filter: blur(15px);
   z-index: var(--depth-menu);
   display: flex;
   align-items: center;
