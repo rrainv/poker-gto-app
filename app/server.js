@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const server = http.createServer((req, res) => {
-  let filePath = '.' + req.url;
+  const urlWithoutQuery = req.url.split('?')[0];
+  let filePath = '.' + urlWithoutQuery;
   if (filePath === './') filePath = './index.html';
   
   const extname = String(path.extname(filePath)).toLowerCase();
