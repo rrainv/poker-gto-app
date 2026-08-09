@@ -69,28 +69,52 @@ class PostFlopNet(nn.Module):
 
 def generate_synthetic_mccfr_batch(batch_size):
     """
-    On-the-fly Monte Carlo Counterfactual Regret Minimization (MCCFR)
-    synthetic postflop state generator.
-    
-    Continuous Inputs generated:
-    - Active_Players_Mask (float in [0, 1])
-    - Relative_Position_to_Button (float in [0, 1])
-    - SPR (float, e.g. 0.5 to 20.0)
-    + Other dummy features to fill out state_dim
+    On-the-fly Heuristic GTO trajectory generator.
+    Generates meaningful features and deterministically calculates 
+    GTO-like policies (Fold, Check/Call, Bet Small, Bet Large, All-in) 
+    so the neural network has a consistent, learnable mathematical landscape.
     """
     state_dim = 16
     num_actions = 5
     
-    # Generate random features
-    features = torch.randn(batch_size, state_dim)
+    # Generate realistic continuous features [0, 1]
+    features = torch.rand(batch_size, state_dim)
     
-    # Specifically assign the continuous inputs
-    features[:, 0] = torch.rand(batch_size) # Active_Players_Mask
-    features[:, 1] = torch.rand(batch_size) # Relative_Position_to_Button
-    features[:, 2] = torch.rand(batch_size) * 19.5 + 0.5 # SPR from 0.5 to 20.0
+    # Extract semantic features for heuristic mapping
+    hand_strength = features[:, 0]
+    draw_potential = features[:, 1]
+    board_texture = features[:, 2]
+    spr = features[:, 3] * 19.5 + 0.5 # SPR from 0.5 to 20.0
+    position = torch.round(features[:, 4]) # 0 for OOP, 1 for IP
     
-    target_policy = F.softmax(torch.randn(batch_size, num_actions), dim=-1)
-    target_value = torch.randn(batch_size, 1)
+    # Map to 5 actions: [Fold, Check/Call, Bet Small, Bet Large, All-in]
+    logits = torch.zeros(batch_size, num_actions)
+    
+    # 1. Fold: high when hand_strength is very low and draw_potential is very low
+    logits[:, 0] = (1.0 - hand_strength) * (1.0 - draw_potential) * 10.0
+    
+    # 2. Check/Call: preferred for medium hand strengths and decent draws
+    cc_weight = (1.0 - torch.abs(hand_strength - 0.5) * 2.0) * 8.0 + draw_potential * 5.0
+    logits[:, 1] = cc_weight + (position * 2.0)
+    
+    # 3. Bet Small: good for dry boards, medium-strong hands
+    logits[:, 2] = hand_strength * (1.0 - board_texture) * 6.0
+    
+    # 4. Bet Large: strong hands, wet boards (protection), or semi-bluffing
+    logits[:, 3] = hand_strength * board_texture * 8.0 + draw_potential * 4.0
+    
+    # 5. All-in: Nuts (hand_strength > 0.8) with low SPR
+    logits[:, 4] = F.relu(hand_strength - 0.8) * 20.0 + F.relu(3.0 - spr) * hand_strength * 10.0
+    
+    # Softmax to get target probabilities
+    target_policy = F.softmax(logits, dim=-1)
+    
+    # Target EV (Expected Value) from -1.0 to +1.0 roughly
+    target_value = (hand_strength * 2.0 - 1.0) + (position * 0.2) + (draw_potential * 0.3)
+    target_value = target_value.unsqueeze(1)
+    
+    # Replace SPR feature with scaled value
+    features[:, 3] = spr
     
     return features, target_policy, target_value
 
