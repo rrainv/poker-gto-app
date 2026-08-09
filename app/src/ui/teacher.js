@@ -1101,3 +1101,14 @@ function generateTeacherText(profile) {
 
   return clipboardHTML;
 }
+// Expose all globals to window for ES6 module compatibility
+window.HAND_TIERS = HAND_TIERS;
+window.getHandTier = getHandTier;
+window.handDescription = handDescription;
+window.analyzeBoardTexture = analyzeBoardTexture;
+window.analyzeHandImplications = analyzeHandImplications;
+window.postflopHandDescription = postflopHandDescription;
+window.FeedbackEngine = FeedbackEngine;
+window.feedbackEngine = feedbackEngine;
+window.analyzeGameState = analyzeGameState;
+window.generateTeacherText = generateTeacherText;
