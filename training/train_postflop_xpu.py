@@ -159,5 +159,8 @@ def train():
         # Epoch completed
         print(f"Epoch {epoch+1} completed.")
 
+    torch.save(model.state_dict(), "app/frozen_models/postflop_model.pt")
+    print("Training complete. Model saved to app/frozen_models/postflop_model.pt")
+
 if __name__ == '__main__':
     train()
