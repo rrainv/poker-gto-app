@@ -48,7 +48,7 @@ function createHarness() {
   const currentStreetSource = sliceBetween(source, 'function currentStreet(board)', 'function handClass(cards)')
     .replace('function currentStreet(', 'function qaCurrentStreet(');
   const updatePositionsSource = sliceBetween(source, 'function updatePositions()', 'function normalizeTree(data, fileName)');
-  const actionParserSource = sliceBetween(source, 'function classifyAction(name)', 'function parseCard(cardStr)');
+  const actionParserSource = sliceBetween(source, 'function isAllInActionName(name)', 'function parseCard(cardStr)');
   const actionProfileSource = sliceBetween(source, 'function actionProfile(hand =', 'function setFrequency(index, action)')
     .replace('function actionProfile(', 'function qaActionProfile(');
   const fallbackSource = sliceBetween(source, 'function calculatePreflopFallbackStrategy(', 'function noTreeProfile(reason)');

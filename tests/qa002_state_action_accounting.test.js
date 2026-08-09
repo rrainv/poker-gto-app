@@ -167,8 +167,30 @@ test('characterization: flat drop is added to postflop pot and lowers aggression
 test('local-tree action parser fills a missing percentage with Fold', () => {
   assert.deepEqual(qa.parseSolverEntry({ detail: 'Raise 40% · Call 30%' }), [
     { name: 'Open', value: 40, kind: 'aggressive' },
-    { name: 'All-in', value: 30, kind: 'aggressive' },
+    { name: 'Call', value: 30, kind: 'passive' },
     { name: 'Fold', value: 30, kind: 'fold' },
+  ]);
+});
+
+test('Call tokens never become All-in actions', () => {
+  for (const input of ['Call', 'CALL', 'Call 30%', 'Callback option', 'recall', 'locally called']) {
+    assert.equal(qa.classifyAction(input), 'passive');
+    assert.equal(qa.standardActionName(input), 'Call');
+  }
+  assert.deepEqual(qa.parseSolverEntry({ detail: 'Call 30%' }), [
+    { name: 'Call', value: 30, kind: 'passive' },
+    { name: 'Fold', value: 70, kind: 'fold' },
+  ]);
+});
+
+test('All-in, All In, and Jam remain legitimate all-in tokens', () => {
+  for (const input of ['All-in', 'All In', 'Jam']) {
+    assert.equal(qa.classifyAction(input), 'aggressive');
+    assert.equal(qa.standardActionName(input), 'All-in');
+  }
+  assert.deepEqual(qa.parseSolverEntry({ detail: 'All-in 30%' }), [
+    { name: 'All-in', value: 30, kind: 'aggressive' },
+    { name: 'Fold', value: 70, kind: 'fold' },
   ]);
 });
 
@@ -204,7 +226,8 @@ test('Playbook parser recognizes its current string action families', () => {
     'Bet': ['aggressive', 'Bet'],
     'Jam': ['aggressive', 'All-in'],
     'All-in': ['aggressive', 'All-in'],
-    'Call': ['aggressive', 'All-in'],
+    'All In': ['aggressive', 'All-in'],
+    'Call': ['passive', 'Call'],
     'Check': ['passive', 'Check'],
     'Fold': ['fold', 'Fold'],
   };
@@ -266,26 +289,45 @@ test('characterization: mixed Training action units can produce a total above 10
   assert.deepEqual(result, { Open: 100, Call: 25 });
 });
 
-test('preflop fallback receives standard card ranks but its predicates identify Queen as Ace and Jack as King', () => {
+test('preflop fallback Ace and King predicates use the production card-rank values', () => {
   assert.deepEqual(['A', 'K', 'Q', 'J'].map(qa.rankValue), [14, 13, 12, 11]);
-  assert.match(qa.fallbackSource, /const hasAce = highRank === 12;/);
-  assert.match(qa.fallbackSource, /const hasKing = highRank === 11;/);
-  const queenDeuce = qa.fallback('Q', '2', false, true, 'UTG', 'raise', 2.5, 5, 100);
-  assert.deepEqual(queenDeuce, { open: 0.35, call: 0.3525, fold: 0.2975 });
+  assert.match(qa.fallbackSource, /const hasAce = highRank === 14;/);
+  assert.match(qa.fallbackSource, /const hasKing = highRank === 13;/);
 });
 
-test('characterization: Ace does not receive the fallback hasAce wheel override', () => {
+test('Ace is recognized by the fallback ace-wheel response branch', () => {
   const aceDeuce = qa.fallback('A', '2', false, true, 'UTG', 'raise', 2.5, 5, 100);
-  const queenDeuce = qa.fallback('Q', '2', false, true, 'UTG', 'raise', 2.5, 5, 100);
-  assert.notDeepEqual(aceDeuce, queenDeuce);
-  assert.notDeepEqual(aceDeuce, { open: 0.35, call: 0.3525, fold: 0.2975 });
+  assert.deepEqual(aceDeuce, { open: 0.35, call: 0.3525, fold: 0.2975 });
+  assert.notDeepEqual(aceDeuce, { open: 0.005454841059780644, call: 0.4945451589402194, fold: 0.4999999999999999 });
   assertNormalized(aceDeuce);
 });
 
-test('characterization: Jack/King outputs can converge despite the reversed hasKing predicate', () => {
-  const jackTen = qa.fallback('J', 'T', false, false, 'UTG', '4bet', 18, 20, 100);
-  const kingTen = qa.fallback('K', 'T', false, false, 'UTG', '4bet', 18, 20, 100);
-  assert.deepEqual(jackTen, kingTen);
-  assertNormalized(jackTen);
-  assertNormalized(kingTen);
+test('King is recognized by the fallback King response bonus', () => {
+  const kingDeuce = qa.fallback('K', '2', false, true, 'UTG', 'raise', 2.5, 5, 100);
+  assert.deepEqual(kingDeuce, { open: 0.01771718468871022, call: 0.48228281531128975, fold: 0.5 });
+  assert.notDeepEqual(kingDeuce, { open: 0.005454841059780644, call: 0.4945451589402194, fold: 0.4999999999999999 });
+  assertNormalized(kingDeuce);
+});
+
+test('Queen is not recognized as Ace by the fallback', () => {
+  const queenDeuce = qa.fallback('Q', '2', false, true, 'UTG', 'raise', 2.5, 5, 100);
+  assert.deepEqual(queenDeuce, { open: 0.005454841059780644, call: 0.4945451589402194, fold: 0.4999999999999999 });
+  assert.notDeepEqual(queenDeuce, { open: 0.35, call: 0.3525, fold: 0.2975 });
+  assertNormalized(queenDeuce);
+});
+
+test('Jack is not recognized as King by the fallback', () => {
+  const jackDeuce = qa.fallback('J', '2', false, true, 'UTG', 'raise', 2.5, 5, 100);
+  assert.deepEqual(jackDeuce, { open: 0.005454841059780644, call: 0.4945451589402194, fold: 0.4999999999999999 });
+  assert.notDeepEqual(jackDeuce, { open: 0.01771718468871022, call: 0.48228281531128975, fold: 0.5 });
+  assertNormalized(jackDeuce);
+});
+
+test('representative fallback output is unchanged for a hand outside the rank-predicate bug', () => {
+  const tenNineSuited = qa.fallback('T', '9', false, true, 'UTG', 'raise', 2.5, 5, 100);
+  assert.deepEqual(tenNineSuited, {
+    open: 0.48648510476127127,
+    call: 0.35902106476226897,
+    fold: 0.15449383047645973,
+  });
 });

@@ -769,11 +769,19 @@ function treeContext() {
 
 
 
+function isAllInActionName(name) {
+
+  return /\b(?:all(?:[-\s]+in)?|jam)\b/.test(String(name || '').toLowerCase());
+
+}
+
+
+
 function classifyAction(name) {
 
   const normalized = name.toLowerCase();
 
-  if (/raise|open|bet|jam|all/.test(normalized)) return 'aggressive';
+  if (/raise|open|bet/.test(normalized) || isAllInActionName(normalized)) return 'aggressive';
 
   if (/fold/.test(normalized)) return 'fold';
 
@@ -791,7 +799,7 @@ function standardActionName(name) {
 
   if (/bet/.test(normalized)) return 'Bet';
 
-  if (/all|jam/.test(normalized)) return 'All-in';
+  if (isAllInActionName(normalized)) return 'All-in';
 
   if (/call/.test(normalized)) return 'Call';
 
@@ -990,8 +998,8 @@ function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 
     const highRank = Math.max(r1, r2);
     const lowRank = Math.min(r1, r2);
     const gap = highRank - lowRank;
-    const hasAce = highRank === 12;
-    const hasKing = highRank === 11;
+    const hasAce = highRank === 14;
+    const hasKing = highRank === 13;
     const bothBroadway = highRank >= 8 && lowRank >= 8;
     const connected = gap <= 1 && !isPair;
     const oneGap = gap === 2 && !isPair;
