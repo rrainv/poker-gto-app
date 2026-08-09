@@ -329,6 +329,47 @@ self.onmessage = function(e) {
   const neededBoard = 5 - boardLen;
   const sampleSize = 2 + neededBoard; // 2 cards for Villain + needed board cards
 
+    // Build inverse map for LUT if villainWeights present
+  let useWeights = false;
+  const weightLUT = new Float32Array(52 * 52); // We can just use a Map for code -> weight if we want, but let's use a JS object mapping `code1_code2` -> weight.
+  const codePairToWeight = new Map();
+  if (data.villainWeights && data.villainWeights.length > 0) {
+      useWeights = true;
+      const CODE_TO_STR = {};
+      for (const k in CARD_CODES) CODE_TO_STR[CARD_CODES[k]] = k;
+      
+      const rankStrToIdx = {};
+      for(let r=0; r<13; r++) rankStrToIdx[RANK_CHARS[r]] = r;
+      
+      const weightMap = {};
+      for (let vw of data.villainWeights) weightMap[vw.hand] = vw.weight;
+      
+      for(let i=0; i<deckLen; i++) {
+          for(let j=0; j<deckLen; j++) {
+              if (i === j) continue;
+              const c1Code = STATIC_DECK[i];
+              const c2Code = STATIC_DECK[j];
+              const str1 = CODE_TO_STR[c1Code];
+              const str2 = CODE_TO_STR[c2Code];
+              if (str1 && str2) {
+                  const r1 = rankStrToIdx[str1[0]];
+                  const r2 = rankStrToIdx[str2[0]];
+                  const s1 = str1[1];
+                  const s2 = str2[1];
+                  const maxR = r1 > r2 ? str1[0] : str2[0];
+                  const minR = r1 < r2 ? str1[0] : str2[0];
+                  let handType = '';
+                  if (r1 === r2) handType = maxR + minR;
+                  else if (s1 === s2) handType = maxR + minR + 's';
+                  else handType = maxR + minR + 'o';
+                  
+                  const w = weightMap[handType] !== undefined ? weightMap[handType] : 1.0;
+                  codePairToWeight.set(c1Code + '_' + c2Code, w);
+              }
+          }
+      }
+  }
+
   let heroWins = 0, villainWins = 0, ties = 0;
 
   // Zero-GC Monte Carlo Loop
@@ -349,6 +390,13 @@ self.onmessage = function(e) {
     // Villain hole cards: STATIC_DECK[0], STATIC_DECK[1]
     const vCard1 = STATIC_DECK[0];
     const vCard2 = STATIC_DECK[1];
+    
+    // Importance Sampling Weight
+    let iterWeight = 1.0;
+    if (useWeights) {
+        const key = vCard1 + '_' + vCard2;
+        iterWeight = codePairToWeight.get(key) || 1.0;
+    }
 
     // Combine board cards for this run
     let runBoardLen = 0;
@@ -371,9 +419,9 @@ self.onmessage = function(e) {
     for (let b = 0; b < 5; b++) STATIC_EVAL_7[2 + b] = STATIC_RUN_BOARD[b];
     const villainScore = evaluateHandFast(STATIC_EVAL_7, 7);
 
-    if (heroScore > villainScore) heroWins++;
-    else if (villainScore > heroScore) villainWins++;
-    else ties++;
+    if (heroScore > villainScore) heroWins += iterWeight;
+    else if (villainScore > heroScore) villainWins += iterWeight;
+    else ties += iterWeight;
   }
 
   const total = heroWins + villainWins + ties;

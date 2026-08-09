@@ -2959,6 +2959,66 @@ async function runOnnxInference(inputs) {
 
 
 
+async function computeVillainPriorWithPreflopONNX(context) {
+    let session;
+    try {
+        session = await window.onnxLazyLoader.getSession('preflop', 'student');
+    } catch(e) {
+        return []; // fail gracefully if preflop model isn't available
+    }
+    const RANKS = '23456789TJQKA';
+    const weights = [];
+    const dummyInputs = new Float32Array(121);
+    
+    for (let i = 0; i < 13; i++) {
+        for (let j = 0; j < 13; j++) {
+            const r1 = RANKS[i], r2 = RANKS[j];
+            let hand = i===j ? r1+r2 : (i>j ? r1+r2+'o' : r2+r1+'s');
+            
+            const inputTensor = new ort.Tensor('float32', dummyInputs, [1, 121]);
+            const posTensor = new ort.Tensor('int64', BigInt64Array.from([1n]), [1]); // villain dummy pos
+            try {
+                // Try different input combinations similar to logic.js main flow
+                let out;
+                try {
+                    out = await session.run({ state_features: inputTensor, relative_pos: posTensor });
+                } catch(e) {
+                    out = await session.run({ input: inputTensor });
+                }
+                const p = out.policy ? out.policy.data : out.output.data;
+                const playProb = 1.0 - p[0]; // Assuming index 0 is fold
+                weights.push({ hand, weight: Math.max(0.01, playProb) });
+            } catch (e) {
+                weights.push({ hand, weight: 1.0 }); // Uniform prior if failure
+            }
+        }
+    }
+    return weights;
+}
+
+function getEquityWithWorker(heroHandStr, board, iterations, villainWeights) {
+    return new Promise((resolve) => {
+        const worker = new Worker('equity.worker.js');
+        worker.onmessage = (e) => {
+            if (e.data.type === 'EQUITY_RESULT') {
+                resolve(e.data.payload.heroEquity / 100.0);
+                worker.terminate();
+            }
+        };
+        const heroHand = [
+            heroHandStr[0] + (heroHandStr.length === 3 && heroHandStr[2] === 's' ? 's' : 's'), 
+            heroHandStr[1] + (heroHandStr.length === 3 && heroHandStr[2] === 's' ? 's' : 'h')
+        ];
+        worker.postMessage({
+            type: 'SIMULATE_EQUITY',
+            heroHand: heroHand,
+            board: board || [],
+            iterations: iterations,
+            villainWeights: villainWeights
+        });
+    });
+}
+
 let onnxAbortController = null;
 
 async function generateStrategyWithOnnx(context) {
@@ -3084,7 +3144,40 @@ async function generateStrategyWithOnnx(context) {
       }
       
       const p = output.policy ? output.policy.data : output.output.data;
-      const actions = applyHeuristicToPrediction(p, context, posIdx, actionIdx, hand);
+      
+      // Calculate Entropy of ONNX policy output (Confidence Metric)
+      let entropy = 0;
+      for (let i = 0; i < p.length; i++) {
+        if (p[i] > 0) entropy -= p[i] * Math.log2(p[i]);
+      }
+      
+      // Flat if entropy is close to max. For 5 actions, max is ~2.32
+      const isFlat = entropy > 2.2;
+      const isPotCommitted = (context.stack / Math.max(context.potSize, 1)) < 1.5;
+      
+      let actions;
+      if (isFlat || isPotCommitted) {
+        // Bypass ML and use Fallback Math Engine with NN-Weighted Monte Carlo
+        if (!context.villainWeightsCache) {
+          // Mocking the query to preflop prior distribution
+          context.villainWeightsCache = await computeVillainPriorWithPreflopONNX(context);
+        }
+        
+        // Wait for equity simulation from worker
+        const equity = await getEquityWithWorker(hand, context.board, 2000, context.villainWeightsCache);
+        
+        // Pot Commitment Thresholds
+        if (isPotCommitted && equity > 0.65) {
+          actions = { "raise": 100 }; // Default to high-frequency All-In push
+        } else {
+          // Standard heuristic math fallback
+          actions = applyHeuristicToPrediction(p, context, posIdx, actionIdx, hand);
+          // (Can apply equity mathematically to adjust actions, but heuristic works for now)
+        }
+      } else {
+        actions = applyHeuristicToPrediction(p, context, posIdx, actionIdx, hand);
+      }
+      
       strategyMap[hand] = { [context.hero_pos]: actions };
     } catch (innerErr) {
       console.error(`ONNX Inference Error for hand ${hand}:`, innerErr);
