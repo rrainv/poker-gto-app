@@ -326,6 +326,20 @@
 
 <body>
 
+  <!-- Valorant-Style Main Menu -->
+  <div id="mainMenuOverlay" class="valorant-menu-overlay">
+    <div class="valorant-menu-content">
+      <div class="menu-brand">
+        <h1>RIVERLINE</h1>
+        <div class="menu-subtitle">GTO WORKSTATION</div>
+      </div>
+      <nav class="valorant-nav">
+        <button class="valorant-btn" id="enterWorkstationBtn" onclick="document.getElementById('mainMenuOverlay').classList.add('hidden');" data-i18n="Enter Workstation">ENTER WORKSTATION</button>
+        <button class="valorant-btn" onclick="document.getElementById('openSettings').click(); document.getElementById('mainMenuOverlay').style.display='none';" data-i18n="Settings">SETTINGS</button>
+      </nav>
+    </div>
+  </div>
+
   <div class="shell">
 
     

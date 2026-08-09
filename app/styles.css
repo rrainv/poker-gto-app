@@ -12,7 +12,12 @@
 
   --muted: #949ba4;
 
-  
+  /* Valorant-Style Tokens */
+  --color-primary: #ff4655;
+  --border-radius-lg: 8px;
+  --font-tracking-base: 0.05em;
+  --font-tracking-hover: 0.15em;
+  --depth-menu: 1000;
 
   --primary: #5865f2;
 
@@ -3977,3 +3982,78 @@ input:focus, select:focus, .quick-select:focus { transition: border-color var(--
   background: var(--bg-secondary);
   transform: translateX(4px);
 }
+
+/* --- VALORANT-STYLE MAIN MENU --- */
+.valorant-menu-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 25, 35, 0.9);
+  z-index: var(--depth-menu);
+  display: flex;
+  align-items: center;
+  transition: opacity 0.5s ease-out;
+}
+.valorant-menu-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.valorant-menu-content {
+  margin-left: 5%;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.menu-brand h1 {
+  font-size: 5rem;
+  font-weight: 900;
+  margin: 0;
+  color: #ece8e1;
+  letter-spacing: var(--font-tracking-base);
+  text-transform: uppercase;
+}
+.menu-subtitle {
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  font-weight: bold;
+  letter-spacing: 0.3em;
+}
+.valorant-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: flex-start;
+}
+.valorant-btn {
+  background: transparent;
+  color: #ece8e1;
+  border: 1px solid rgba(236, 232, 225, 0.2);
+  padding: 15px 40px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--font-tracking-base);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.valorant-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 0;
+  background: var(--color-primary);
+  z-index: -1;
+  transition: width 0.2s ease-in-out;
+}
+.valorant-btn:hover {
+  transform: translateX(15px);
+  letter-spacing: var(--font-tracking-hover);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.valorant-btn:hover::before {
+  width: 100%;
+}
+
