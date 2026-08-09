@@ -1449,7 +1449,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 
 
 
-.shell { max-width: 1480px; margin: auto; padding: 26px 24px 46px; }
+.shell { max-width: 1480px; margin: auto; padding: 16px 24px 32px; }
 
 
 
@@ -1703,7 +1703,7 @@ h1 { font-size: 20px; letter-spacing: -.5px; }
 
 
 
-.app-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr) 298px; gap: 16px; align-items: start; }
+.app-grid { display: grid; grid-template-columns: 290px minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
 
 .side-stack { display: grid; gap: 16px; }
 
