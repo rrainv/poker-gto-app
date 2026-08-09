@@ -4058,3 +4058,11 @@ input:focus, select:focus, .quick-select:focus { transition: border-color var(--
   width: 100%;
 }
 
+/* Explicit 2-color deck overrides for dark suits (Spades & Clubs) to prevent white color bleed on light cards */
+html[data-four-color="false"] .s-s,
+html[data-four-color="false"] .s-c,
+html[data-four-color="false"] .suit-s,
+html[data-four-color="false"] .suit-c,
+html[data-four-color="false"] .card.black {
+  color: #111827 !important;
+}

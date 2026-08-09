@@ -139,7 +139,7 @@ if (document.readyState === 'loading') {
 
 window.initDragAndDrop = initDragAndDrop;
 
-window.uiLocked = localStorage.getItem('riverline_ui_locked') === 'true';
+window.uiLocked = localStorage.getItem('riverline_ui_locked') !== 'false';
 window.applyUILockState = function() {
   const btn = document.getElementById('lockUiBtn');
   if (btn) btn.textContent = window.uiLocked ? '🔒' : '🔓';

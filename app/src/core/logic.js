@@ -70,7 +70,7 @@ const RANK_VALUE = { 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, T: 10, J: 1
 
 
 const app = {
-  settings: { tightness: 0, useOnnx: true, fourColorDeck: false },
+  settings: { tightness: 0, useOnnx: true, fourColorDeck: true },
 
   gto: { hero: [], board: [], dead: [] },
 
@@ -3755,6 +3755,7 @@ function applyDeckStyle(is4Color) {
   document.documentElement.style.setProperty('--spade', '#111827');
   document.documentElement.style.setProperty('--diamond', is4Color ? '#0044ff' : '#ff0000');
   document.documentElement.style.setProperty('--club', is4Color ? '#00b300' : '#111827');
+  document.documentElement.dataset.fourColor = is4Color;
   const toggle = document.getElementById('fourColorDeckToggle');
   if (toggle) {
     if (is4Color) { toggle.classList.add('on'); toggle.setAttribute('aria-pressed', 'true'); }
