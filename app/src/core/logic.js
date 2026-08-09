@@ -2712,6 +2712,23 @@ async function updateContext(reason = 'Context updated') {
 
   }
 
+  // Trigger Visual Table Engine
+  const ctxHeroPos = selectedValue('#heroPos');
+  const dealerPos = ['SB','BB','UTG','UTG+1','UTG+2','LJ','HJ','CO','BTN'].indexOf(ctxHeroPos) !== -1 
+    ? (['SB','BB','UTG','UTG+1','UTG+2','LJ','HJ','CO','BTN'].indexOf(ctxHeroPos) + 2) % 10 : 0;
+  
+  const parsedBoard = app.board.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
+  const parsedHero = app.heroCards.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
+  
+  window.dispatchEvent(new CustomEvent('gameStateUpdate', {
+    detail: {
+      pot: (parseFloat(numericValue('#potValue')) || 0).toFixed(1),
+      board: parsedBoard,
+      heroCards: parsedHero,
+      dealerPos: dealerPos,
+      activePlayers: numericValue('#players', 6)
+    }
+  }));
 }
 
 
