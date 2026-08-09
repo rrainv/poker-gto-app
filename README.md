@@ -1,60 +1,63 @@
-<h1 align="center">Riverline Poker GTO Workstation</h1>
+# Riverline
 
-<p align="center">
-  <strong>An open-source, dual-engine poker strategy workstation powered by PyTorch and Vanilla JS.</strong>
-</p>
+Riverline is a browser-first Texas Hold'em analysis application. It combines a configurable strategy Playbook, multiway equity calculations, and practice hands in one interface, with an optional Electron desktop wrapper.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Electron-191970?style=for-the-badge&logo=Electron&logoColor=white" />
-  <img src="https://img.shields.io/badge/ONNX-005CED?style=for-the-badge&logo=onnx&logoColor=white" />
-  <img src="https://img.shields.io/badge/Vanilla_JS-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" />
-  <img src="https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white" />
-</p>
+Riverline is under active development. Its current strategy output is primarily heuristic and should not be treated as solved GTO.
 
-![App Screenshot](assets/screenshot1.png)
+## What it does today
 
-## Architecture Overview
-Riverline Poker GTO Workstation operates on a powerful dual-engine design:
-1. **Python/PyTorch CFR Backend:** A high-performance Counterfactual Regret Minimization engine that solves multi-way poker situations and exports lightweight ONNX models.
-2. **Vanilla JS Frontend:** A zero-build-step, hyper-optimized frontend that leverages `ort-wasm` to run the neural net locally within the browser/Electron wrapper. It relies heavily on Web Workers and typed arrays to guarantee a Zero-GC footprint and buttery smooth 60fps UX.
+- **Playbook:** enter hole cards, board cards, position, stack, pot, and prior action to receive a strategy mix and supporting hand metrics.
+- **Win Probability / Equity:** estimate outcomes for known hands and board states, including ties and multiway pots. The current Equity UI supports up to eight players.
+- **Training:** generate practice spots and compare a chosen action with Riverline's current recommendation.
+- **Game configuration:** Playbook and Training support tables from 2 to 10 players, full-ring positions, and configurable stack depths.
+- **Game modes:** represent zero-contribution Home games and ClubGG-style fixed per-player contributions. Legacy percentage-rake controls remain in the application.
+- **Optional strategy sources:** compatible local trees, ONNX inference, and API responses can feed the Playbook; heuristic fallbacks keep the application usable when those sources are unavailable.
 
-## Features
-- **Multi-Way Pot Logic:** Fully evaluates hero against multiple active villains to detect split pots and multi-way equity properly.
-- **Zero-GC Web Workers:** The Monte Carlo equity simulation relies on surgically overwritten `Int32Array` buffers, completely eliminating JavaScript heap allocation and garbage collection stalls.
-- **JS Fallback Heuristics:** The UI operates elegantly even when neural networks aren't loaded, falling back to a deterministic 0ms latency preflop/postflop hand strength evaluator.
-- **Audio Feedback & Premium Polish:** Complete HTML5 Audio SoundManager, GPU-composited CSS transforms, and pristine layout styling.
-- **Native Localization:** Authentic transliterated poker slang and grammatically perfect pluralizations built on `Intl.PluralRules` for global languages.
+The Playbook's current application boundary is deliberately small: a versioned `DecisionContext` is passed to a strategy source, which returns a versioned `StrategyResult`. This provides a stable seam for future solver- and model-backed work without presenting today's heuristics as equilibrium solutions.
 
-## Installation
+## Run Riverline
 
-### Prerequisites
-- Node.js (v18+)
-- Python 3.10+
+### Browser
 
-### Setup
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Riverline-Poker/GTO-Workstation.git
-   cd GTO-Workstation
-   ```
+Browser mode uses Python's standard-library HTTP server and does not require a Python package installation.
 
-2. Install JavaScript dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+git clone https://github.com/rrainv/poker-gto-app.git
+cd poker-gto-app
+python server.py
+```
 
-3. Setup the Python environment and run the local server:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-   pip install -r requirements.txt
-   python server.py
-   ```
+Open the URL printed by the server (normally `http://localhost:3000`; it falls back to port 8080 if needed). Run the command from the repository root so model and worker assets are served from `app/` correctly.
 
-4. Launch the application (in a separate terminal):
-   ```bash
-   npm start
-   ```
+### Electron desktop app
 
-## Contributing
-Please see `CONTRIBUTING.md` for our Conventional Commits workflow and branching strategies.
+Install a current Node.js/npm release, then run:
+
+```bash
+cd app
+npm install
+npm start
+```
+
+The Electron app loads `app/index.html` directly. A Python backend is not required.
+
+## Current status and limitations
+
+- Riverline is a pre-beta analysis and study tool, not a validated poker solver.
+- Heuristic recommendations are not solved GTO, CFR output, or evidence of low exploitability.
+- The repository contains several experimental model and training implementations with incompatible schemas. Bundled ONNX paths exist, but model-backed behavior is not yet a single validated capability across browser and Electron.
+- Multiway equity analysis is supported; solver-backed multiway equilibrium is not.
+- Equity results for incomplete boards are Monte Carlo estimates and may vary between runs.
+- Some in-app labels still use older “GTO” or “DeepCFR” language. Those labels are not proof of the underlying method or accuracy.
+
+## Development direction
+
+Current work focuses on stabilizing shared poker state and action contracts, consolidating evaluator and model paths, and strengthening regression coverage. The longer-term aim is to replace unverified training targets with reproducible solver-generated data, validate exported models, and improve preflop first before extending postflop approximations.
+
+## Documentation
+
+- [Documentation index](docs/README.md)
+- [Project charter](docs/project/PROJECT_CHARTER.md)
+- [Architecture contract](docs/project/ARCHITECTURE_CONTRACT.md)
+- [Roadmap](docs/project/ROADMAP.md)
+- [Contributing](CONTRIBUTING.md)
