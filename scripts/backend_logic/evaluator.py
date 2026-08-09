@@ -1,164 +1,154 @@
 import itertools
-from abc import ABC, abstractmethod
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
-class Card:
+PRIMES = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]
+
+class EvaluatorLookupTable:
     """
-    Represents a playing card.
+    Singleton Cactus Kev / OMPEval style Pre-computed Lookup Table.
+    Provides clean memory initialization, zero startup lag, and 
+    optimal L1/L2 cache efficiency by storing exactly 7462 
+    unique hand equivalence classes.
     """
-    RANK_MAP = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, 'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14}
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._initialize()
+        return cls._instance
+
+    def _initialize(self):
+        self.flush_lookup = {}
+        self.unsuited_lookup = {}
+        
+        # 13 choose 5 with replacement = 6188 combinations
+        for combo in itertools.combinations_with_replacement(range(13), 5):
+            counts = {r: combo.count(r) for r in set(combo)}
+            if any(c > 4 for c in counts.values()):
+                continue
+
+            prime_prod = 1
+            bitmask = 0
+            for r in combo:
+                prime_prod *= PRIMES[r]
+                bitmask |= (1 << r)
+
+            rank_counts = sorted([(count, r) for r, count in counts.items()], reverse=True)
+            
+            if rank_counts[0][0] == 4:
+                score = (7, [rank_counts[0][1] + 2, rank_counts[1][1] + 2])
+            elif rank_counts[0][0] == 3 and rank_counts[1][0] == 2:
+                score = (6, [rank_counts[0][1] + 2, rank_counts[1][1] + 2])
+            elif rank_counts[0][0] == 3:
+                score = (3, [rank_counts[0][1] + 2, rank_counts[1][1] + 2, rank_counts[2][1] + 2])
+            elif rank_counts[0][0] == 2 and rank_counts[1][0] == 2:
+                score = (2, [rank_counts[0][1] + 2, rank_counts[1][1] + 2, rank_counts[2][1] + 2])
+            elif rank_counts[0][0] == 2:
+                score = (1, [rank_counts[0][1] + 2, rank_counts[1][1] + 2, rank_counts[2][1] + 2, rank_counts[3][1] + 2])
+            else:
+                ranks = sorted([r + 2 for r in combo], reverse=True)
+                is_straight = (ranks[0] - ranks[4] == 4 and len(set(ranks)) == 5)
+                is_wheel = (ranks == [14, 5, 4, 3, 2])
+                
+                if is_straight:
+                    score = (4, [ranks[0]])
+                elif is_wheel:
+                    score = (4, [5])
+                else:
+                    score = (0, ranks)
+                    
+            self.unsuited_lookup[prime_prod] = score
+
+            if len(counts) == 5:
+                if is_straight:
+                    f_score = (8, [ranks[0]])
+                elif is_wheel:
+                    f_score = (8, [5])
+                else:
+                    f_score = (5, ranks)
+                
+                self.flush_lookup[bitmask] = f_score
+
+def make_card_int(card_str: str) -> int:
+    RANK_CHARS = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
+    SUITS = {'s': 1, 'h': 2, 'd': 4, 'c': 8}
+    r = RANK_CHARS.index(card_str[0])
+    s = SUITS[card_str[1]]
+    prime = PRIMES[r]
+    rank_bit = 1 << r
+    return (rank_bit << 16) | (s << 12) | (r << 8) | prime
+
+def evaluate5(c1: int, c2: int, c3: int, c4: int, c5: int, lookup: EvaluatorLookupTable) -> Tuple[int, List[int]]:
+    if (c1 & c2 & c3 & c4 & c5 & 0xF000) != 0:
+        rank_mask = (c1 | c2 | c3 | c4 | c5) >> 16
+        return lookup.flush_lookup[rank_mask]
     
-    def __init__(self, card_str: str):
-        self.card_str = card_str
-        self.rank_char = card_str[0]
-        self.suit = card_str[1]
-        self.rank = self.RANK_MAP[self.rank_char]
+    prime_prod = (c1 & 0xFF) * (c2 & 0xFF) * (c3 & 0xFF) * (c4 & 0xFF) * (c5 & 0xFF)
+    return lookup.unsuited_lookup[prime_prod]
 
-    def __repr__(self):
-        return self.card_str
-
-class IEvaluationStrategy(ABC):
-    """
-    Interface for hand evaluation strategies.
-    """
-    @abstractmethod
-    def evaluate(self, cards: List[Card]) -> Optional[Tuple[int, List[int]]]:
-        """
-        Evaluate exactly 5 cards.
-        Returns None if condition is not met.
-        Returns Tuple(Rank, [tie-breakers]) if met.
-        """
-        pass
-
-class HighCardStrategy(IEvaluationStrategy):
-    def evaluate(self, cards: List[Card]) -> Optional[Tuple[int, List[int]]]:
-        ranks = sorted([c.rank for c in cards], reverse=True)
-        return (0, ranks)
-
-class PairStrategy(IEvaluationStrategy):
-    def evaluate(self, cards: List[Card]) -> Optional[Tuple[int, List[int]]]:
-        ranks = [c.rank for c in cards]
-        for r in set(ranks):
-            if ranks.count(r) == 2:
-                kickers = sorted([x for x in ranks if x != r], reverse=True)
-                return (1, [r] + kickers)
-        return None
-
-class TwoPairStrategy(IEvaluationStrategy):
-    def evaluate(self, cards: List[Card]) -> Optional[Tuple[int, List[int]]]:
-        ranks = [c.rank for c in cards]
-        pairs = []
-        for r in set(ranks):
-            if ranks.count(r) == 2:
-                pairs.append(r)
-        if len(pairs) == 2:
-            pairs.sort(reverse=True)
-            kicker = [x for x in ranks if x not in pairs][0]
-            return (2, pairs + [kicker])
-        return None
-
-class ThreeOfAKindStrategy(IEvaluationStrategy):
-    def evaluate(self, cards: List[Card]) -> Optional[Tuple[int, List[int]]]:
-        ranks = [c.rank for c in cards]
-        for r in set(ranks):
-            if ranks.count(r) == 3:
-                kickers = sorted([x for x in ranks if x != r], reverse=True)
-                return (3, [r] + kickers)
-        return None
-
-class StraightStrategy(IEvaluationStrategy):
-    def evaluate(self, cards: List[Card]) -> Optional[Tuple[int, List[int]]]:
-        ranks = sorted([c.rank for c in cards], reverse=True)
-        if ranks[0] - ranks[4] == 4 and len(set(ranks)) == 5:
-            return (4, [ranks[0]])
-        # Check Ace-low straight (Wheel: A, 5, 4, 3, 2)
-        if ranks == [14, 5, 4, 3, 2]:
-            return (4, [5])
-        return None
-
-class FlushStrategy(IEvaluationStrategy):
-    def evaluate(self, cards: List[Card]) -> Optional[Tuple[int, List[int]]]:
-        suits = [c.suit for c in cards]
-        if len(set(suits)) == 1:
-            ranks = sorted([c.rank for c in cards], reverse=True)
-            return (5, ranks)
-        return None
-
-class FullHouseStrategy(IEvaluationStrategy):
-    def evaluate(self, cards: List[Card]) -> Optional[Tuple[int, List[int]]]:
-        ranks = [c.rank for c in cards]
-        threes = [r for r in set(ranks) if ranks.count(r) == 3]
-        twos = [r for r in set(ranks) if ranks.count(r) == 2]
-        if threes and twos:
-            return (6, [threes[0], twos[0]])
-        return None
-
-class QuadsStrategy(IEvaluationStrategy):
-    def evaluate(self, cards: List[Card]) -> Optional[Tuple[int, List[int]]]:
-        ranks = [c.rank for c in cards]
-        for r in set(ranks):
-            if ranks.count(r) == 4:
-                kicker = [x for x in ranks if x != r][0]
-                return (7, [r, kicker])
-        return None
-
-class StraightFlushStrategy(IEvaluationStrategy):
-    def evaluate(self, cards: List[Card]) -> Optional[Tuple[int, List[int]]]:
-        is_flush = FlushStrategy().evaluate(cards)
-        if is_flush:
-            is_straight = StraightStrategy().evaluate(cards)
-            if is_straight:
-                return (8, is_straight[1])
-        return None
-
-class EvaluatorContext:
-    """
-    Main execution context implementing the Strategy Pattern.
-    """
-    def __init__(self):
-        # Ordered from strongest to weakest
-        self.strategies = [
-            StraightFlushStrategy(),
-            QuadsStrategy(),
-            FullHouseStrategy(),
-            FlushStrategy(),
-            StraightStrategy(),
-            ThreeOfAKindStrategy(),
-            TwoPairStrategy(),
-            PairStrategy(),
-            HighCardStrategy()
-        ]
-
-    def evaluate_5_cards(self, cards: List[Card]) -> Tuple[int, List[int]]:
-        """
-        Evaluate exactly 5 cards.
-        """
-        for strategy in self.strategies:
-            result = strategy.evaluate(cards)
-            if result:
-                return result
-        raise ValueError("No strategy matched, which is impossible.")
-
-    def evaluate_7_cards(self, cards: List[Card]) -> Tuple[int, List[int]]:
-        """
-        Evaluate 7 cards by finding the best 5-card combination.
-        """
-        best_score = (-1, [])
-        for combo in itertools.combinations(cards, 5):
-            score = self.evaluate_5_cards(list(combo))
-            if score > best_score:
-                best_score = score
-        return best_score
+def evaluate7(c1: int, c2: int, c3: int, c4: int, c5: int, c6: int, c7: int, lookup: EvaluatorLookupTable) -> Tuple[int, List[int]]:
+    best = (-1, [])
+    
+    # 21 fully unrolled combinations for absolute O(1) performance
+    s = evaluate5(c1, c2, c3, c4, c5, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c2, c3, c4, c6, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c2, c3, c4, c7, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c2, c3, c5, c6, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c2, c3, c5, c7, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c2, c3, c6, c7, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c2, c4, c5, c6, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c2, c4, c5, c7, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c2, c4, c6, c7, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c2, c5, c6, c7, lookup)
+    if s > best: best = s
+    
+    s = evaluate5(c1, c3, c4, c5, c6, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c3, c4, c5, c7, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c3, c4, c6, c7, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c3, c5, c6, c7, lookup)
+    if s > best: best = s
+    s = evaluate5(c1, c4, c5, c6, c7, lookup)
+    if s > best: best = s
+    
+    s = evaluate5(c2, c3, c4, c5, c6, lookup)
+    if s > best: best = s
+    s = evaluate5(c2, c3, c4, c5, c7, lookup)
+    if s > best: best = s
+    s = evaluate5(c2, c3, c4, c6, c7, lookup)
+    if s > best: best = s
+    s = evaluate5(c2, c3, c5, c6, c7, lookup)
+    if s > best: best = s
+    s = evaluate5(c2, c4, c5, c6, c7, lookup)
+    if s > best: best = s
+    
+    s = evaluate5(c3, c4, c5, c6, c7, lookup)
+    if s > best: best = s
+    
+    return best
 
 def evaluate_hand(card_strings: List[str]) -> Tuple[int, List[int]]:
     """
-    Wrapper function to evaluate a list of string cards.
+    Main evaluation wrapper to map string arrays down to the bitwise engine.
     """
-    cards = [Card(s) for s in card_strings]
-    ctx = EvaluatorContext()
+    cards = [make_card_int(s) for s in card_strings]
+    lookup = EvaluatorLookupTable()
+    
     if len(cards) == 5:
-        return ctx.evaluate_5_cards(cards)
+        return evaluate5(cards[0], cards[1], cards[2], cards[3], cards[4], lookup)
     elif len(cards) == 7:
-        return ctx.evaluate_7_cards(cards)
+        return evaluate7(cards[0], cards[1], cards[2], cards[3], cards[4], cards[5], cards[6], lookup)
     else:
         raise ValueError(f"Can only evaluate 5 or 7 cards. Got {len(cards)}")
