@@ -1,35 +1,17 @@
-# Contributing to Riverline GTO Workstation
+# Contributing to Riverline
 
-We love your input! We want to make contributing to this project as easy and transparent as possible, whether it's:
-- Reporting a bug
-- Discussing the current state of the code
-- Submitting a fix
-- Proposing new features
+Bug reports, focused fixes, tests, documentation improvements, and feature proposals are welcome.
 
-## Our Development Workflow
-We use Git Flow. All direct commits to `main` are restricted.
-1. Branch off `main` to a feature branch (e.g., `feature/add-tightness-slider`).
-2. Write your code and push it.
-3. Open a Pull Request back to `main`.
+## Workflow
 
-## Conventional Commits
-We strictly follow [Conventional Commits](https://www.conventionalcommits.org/). This leads to more readable messages that are easy to follow when looking through the project history, and allows us to generate automatic changelogs.
+1. Inspect the relevant code, tests, and project documentation before making changes.
+2. Keep each change focused. Use a separate branch for risky or substantial work.
+3. Add or update tests when behavior changes, especially for poker mathematics.
+4. Run the relevant tests and review the diff before submitting the change.
+5. Open a pull request when contributing through GitHub and explain the behavior and verification clearly.
 
-**Format:**
-`<type>[optional scope]: <description>`
+The repository does not declare enforced Git Flow, branch protection, or CI requirements. Follow any additional maintainer guidance provided for a specific contribution.
 
-**Common Types:**
-- `feat:` A new feature.
-- `fix:` A bug fix.
-- `docs:` Documentation only changes.
-- `style:` Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc).
-- `refactor:` A code change that neither fixes a bug nor adds a feature.
-- `perf:` A code change that improves performance (e.g., `perf: patched zero-gc memory leak`).
-- `test:` Adding missing tests or correcting existing tests.
-- `build:` Changes that affect the build system or external dependencies.
+## Commit messages
 
-**Example Commits:**
-- `feat(ui): added tightness slider`
-- `fix(worker): patched zero-gc memory leak in equity simulator`
-- `docs: updated README with architecture details`
-- `build: finalize production architecture and initialize open-source repository`
+Use short, descriptive commit messages. [Conventional Commits](https://www.conventionalcommits.org/) are welcome, but the repository does not currently enforce them.

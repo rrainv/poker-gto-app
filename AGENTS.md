@@ -41,7 +41,9 @@ ClubGG-style tournaments:
 
 - 7-10 players
 - 100-300bb
-- fixed 0.1bb deduction per player per hand, pending final accounting semantics
+- each seated player contributes exactly 0.1bb once per hand
+- total forced contribution is player count × 0.1bb
+- this contribution is not percentage rake
 
 ## Engineering rules
 
