@@ -1,0 +1,48 @@
+export const POKER_STATE_SCHEMA_VERSION = 'poker-state/v1';
+export const POKER_VARIANT = 'no_limit_texas_holdem';
+
+export const GAME_MODES = Object.freeze({
+  HOME: 'home',
+  CLUBGG: 'clubgg',
+});
+
+export const ANTE_TYPES = Object.freeze({
+  NONE: 'none',
+  PER_PLAYER: 'per_player',
+  BIG_BLIND: 'big_blind',
+});
+
+export const PHASES = Object.freeze({
+  CHANCE: 'chance',
+  BETTING: 'betting',
+  SHOWDOWN: 'showdown',
+  TERMINAL: 'terminal',
+});
+
+export const STREETS = Object.freeze({
+  PREFLOP: 'preflop',
+  FLOP: 'flop',
+  TURN: 'turn',
+  RIVER: 'river',
+});
+
+export const CHANCE_TYPES = Object.freeze({
+  DEAL_HOLE: 'deal_hole',
+  DEAL_FLOP: 'deal_flop',
+  DEAL_TURN: 'deal_turn',
+  DEAL_RIVER: 'deal_river',
+});
+
+export const LEDGER_KINDS = Object.freeze({
+  CLUBGG_FORCED_CONTRIBUTION: 'clubgg_forced_contribution',
+  ANTE: 'ante',
+  SMALL_BLIND: 'small_blind',
+  BIG_BLIND: 'big_blind',
+});
+
+export const LEDGER_MOVEMENTS = Object.freeze({
+  STACK_TO_POT: 'stack_to_pot',
+  STACK_TO_DEDUCTION: 'stack_to_deduction',
+});
+
+export const CLUBGG_FORCED_CONTRIBUTION_MILLI_BB = 100;
