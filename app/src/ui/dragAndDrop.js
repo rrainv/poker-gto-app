@@ -11,11 +11,9 @@ function initDragAndDrop() {
       panel.id = `panel-auto-${index}`;
     }
     
-    // Make draggable
-    panel.setAttribute('draggable', 'true');
+    // Make draggable (handled by applyUILockState)
     
-    // Styling for drag visual feedback
-    panel.style.cursor = 'grab';
+    // Styling for drag visual feedback (handled by applyUILockState)
 
     // Drag Start
     panel.addEventListener('dragstart', (e) => {
@@ -79,6 +77,11 @@ function initDragAndDrop() {
 
   // Load layout immediately
   loadLayout();
+
+  // Apply UI lock state
+  if (window.applyUILockState) {
+    window.applyUILockState();
+  }
 }
 
 function saveLayout() {
@@ -135,3 +138,25 @@ if (document.readyState === 'loading') {
 }
 
 window.initDragAndDrop = initDragAndDrop;
+
+window.uiLocked = localStorage.getItem('riverline_ui_locked') === 'true';
+window.applyUILockState = function() {
+  const btn = document.getElementById('lockUiBtn');
+  if (btn) btn.textContent = window.uiLocked ? '🔒' : '🔓';
+  const panels = document.querySelectorAll('.panel');
+  panels.forEach(panel => {
+    if (window.uiLocked) {
+      panel.removeAttribute('draggable');
+      panel.style.cursor = 'default';
+    } else {
+      panel.setAttribute('draggable', 'true');
+      panel.style.cursor = 'grab';
+    }
+  });
+};
+
+window.toggleUILock = function() {
+  window.uiLocked = !window.uiLocked;
+  localStorage.setItem('riverline_ui_locked', window.uiLocked);
+  window.applyUILockState();
+};
