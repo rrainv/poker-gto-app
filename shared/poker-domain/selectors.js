@@ -45,6 +45,13 @@ export function firstPreflopActorId(state) {
   return actor ? actor.playerId : null;
 }
 
+export function firstPostflopActorId(state) {
+  requirePokerState(state);
+  const order = playersClockwiseAfterSeat(state.players, state.buttonSeat);
+  const actor = order.find((player) => isPlayerLive(player) && !isPlayerAllIn(player));
+  return actor ? actor.playerId : null;
+}
+
 export function currentActor(state) {
   requirePokerState(state);
   return state.actingPlayerId === null ? null : playerById(state, state.actingPlayerId);

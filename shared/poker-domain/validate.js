@@ -1,7 +1,7 @@
 import { assertCardArray, assertUniqueKnownCards } from './cards.js';
 import { assertMilliBbAlignment, assertPositiveMilliBb } from './amounts.js';
 import { validateAction } from './action.js';
-import { deriveSeatAssignments, POSITIONS_BY_TABLE_SIZE } from './positions.js';
+import { deriveSeatAssignments, playersClockwiseAfterSeat, POSITIONS_BY_TABLE_SIZE } from './positions.js';
 import {
   ANTE_TYPES,
   CHANCE_TYPES,
@@ -17,6 +17,17 @@ import {
 } from './schema.js';
 
 const VALUES = (object) => Object.values(object);
+const BOARD_LENGTH_BY_STREET = Object.freeze({
+  [STREETS.PREFLOP]: 0,
+  [STREETS.FLOP]: 3,
+  [STREETS.TURN]: 4,
+  [STREETS.RIVER]: 5,
+});
+const CHANCE_CARD_COUNT = Object.freeze({
+  [CHANCE_TYPES.DEAL_FLOP]: 3,
+  [CHANCE_TYPES.DEAL_TURN]: 1,
+  [CHANCE_TYPES.DEAL_RIVER]: 1,
+});
 
 export function validateGameConfiguration(game, tableSize) {
   if (!game || typeof game !== 'object') throw new TypeError('game configuration is required');
@@ -122,6 +133,13 @@ export function validatePokerState(state) {
   }
 
   assertUniqueKnownCards(cardGroups);
+  if (state.board.length !== BOARD_LENGTH_BY_STREET[state.street]) {
+    throw new RangeError(`Street ${state.street} requires exactly ${BOARD_LENGTH_BY_STREET[state.street]} board cards`);
+  }
+  const knownHoleCardPlayers = state.players.filter((player) => player.holeCards !== null);
+  if (knownHoleCardPlayers.length !== 0 && knownHoleCardPlayers.length !== state.players.length) {
+    throw new RangeError('Hole cards must be either entirely pending or known for every dealt-in player');
+  }
   if (!seats.has(state.buttonSeat)) throw new RangeError('buttonSeat must be occupied');
   const expectedAssignments = deriveSeatAssignments(state.players, state.buttonSeat);
   for (const assignment of expectedAssignments) {
@@ -232,6 +250,57 @@ export function validatePokerState(state) {
   if (state.actingPlayerId !== null && !ids.has(state.actingPlayerId)) {
     throw new RangeError('actingPlayerId must identify a player or be null');
   }
+
+  if (state.phase === PHASES.CHANCE) {
+    if (!state.pendingChance || typeof state.pendingChance !== 'object') {
+      throw new RangeError('A chance phase requires pendingChance');
+    }
+    let expectedChanceType;
+    if (state.street === STREETS.PREFLOP) {
+      expectedChanceType = knownHoleCardPlayers.length === 0
+        ? CHANCE_TYPES.DEAL_HOLE
+        : CHANCE_TYPES.DEAL_FLOP;
+    } else if (state.street === STREETS.FLOP) {
+      expectedChanceType = CHANCE_TYPES.DEAL_TURN;
+    } else if (state.street === STREETS.TURN) {
+      expectedChanceType = CHANCE_TYPES.DEAL_RIVER;
+    } else {
+      throw new RangeError('River cannot have a pending board chance event');
+    }
+    if (state.pendingChance.type !== expectedChanceType) {
+      throw new RangeError(`Street ${state.street} requires pending chance ${expectedChanceType}`);
+    }
+    const expectedCardCount = expectedChanceType === CHANCE_TYPES.DEAL_HOLE
+      ? state.players.length * 2
+      : CHANCE_CARD_COUNT[expectedChanceType];
+    if (state.pendingChance.cardCount !== expectedCardCount) {
+      throw new RangeError(`Pending ${expectedChanceType} has an invalid card count`);
+    }
+  } else if (state.pendingChance !== null) {
+    throw new RangeError('pendingChance is only valid during a chance phase');
+  }
+
+  if (state.phase !== PHASES.CHANCE && knownHoleCardPlayers.length !== state.players.length) {
+    throw new RangeError('All dealt-in players require hole cards outside the initial chance state');
+  }
+
+  const currentStreetActions = state.actionHistory.filter((record) => record.street === state.street);
+  if (state.street !== STREETS.PREFLOP && currentStreetActions.length === 0) {
+    if (state.currentBetMilliBb !== 0
+      || state.lastFullRaiseIncrementMilliBb !== state.game.bigBlindMilliBb
+      || state.lastAggressorPlayerId !== null
+      || state.players.some((player) => (
+        player.streetContributionMilliBb !== 0
+        || player.actedThisStreet
+        || player.raiseReopenAtMilliBb !== null
+      ))) {
+      throw new RangeError('A newly initialized postflop street must have reset betting state');
+    }
+  }
+
+  const playersAbleToBet = state.players.filter((player) => (
+    player.dealtIn && !player.folded && player.currentStackMilliBb > 0
+  ));
   if (state.phase === PHASES.BETTING && state.actingPlayerId === null) {
     throw new RangeError('A betting state requires an acting player');
   }
@@ -240,6 +309,40 @@ export function validatePokerState(state) {
     if (!actor.dealtIn || actor.folded || actor.currentStackMilliBb === 0) {
       throw new RangeError('A betting actor must be live and have chips');
     }
+    if (state.street !== STREETS.PREFLOP && playersAbleToBet.length < 2) {
+      throw new RangeError('Postflop betting requires at least two players able to act');
+    }
+    if (state.street !== STREETS.PREFLOP && currentStreetActions.length === 0) {
+      const expectedActor = playersClockwiseAfterSeat(state.players, state.buttonSeat)
+        .find((player) => player.dealtIn && !player.folded && player.currentStackMilliBb > 0);
+      if (!expectedActor || state.actingPlayerId !== expectedActor.playerId) {
+        throw new RangeError('A new postflop street must begin left of the button');
+      }
+    }
+  }
+  if (state.phase === PHASES.CHANCE
+    && state.street !== STREETS.PREFLOP
+    && currentStreetActions.length === 0
+    && playersAbleToBet.length >= 2) {
+    throw new RangeError('An actionable postflop street cannot skip directly to chance');
+  }
+  if (state.phase === PHASES.SHOWDOWN) {
+    if (state.street !== STREETS.RIVER || state.actingPlayerId !== null || state.pendingChance !== null) {
+      throw new RangeError('Showdown-ready state requires a complete river and no actor or chance');
+    }
+    if (!state.showdown || state.showdown.status !== 'ready' || playersAbleToBet.length >= 2) {
+      throw new RangeError('Showdown is ready only when postflop betting is impossible');
+    }
+    const eligiblePlayerIds = state.players
+      .filter((player) => player.dealtIn && !player.folded)
+      .map((player) => player.playerId);
+    if (!Array.isArray(state.showdown.eligiblePlayerIds)
+      || state.showdown.eligiblePlayerIds.length !== eligiblePlayerIds.length
+      || state.showdown.eligiblePlayerIds.some((playerId, index) => playerId !== eligiblePlayerIds[index])) {
+      throw new RangeError('Showdown eligible players must match live players');
+    }
+  } else if (!state.showdown || state.showdown.status !== 'not_reached') {
+    throw new RangeError('Showdown status must remain not_reached before showdown');
   }
   if (state.phase === PHASES.TERMINAL && (state.actingPlayerId !== null || state.potMilliBb !== 0)) {
     throw new RangeError('A terminal fold state must have no actor and no unsettled pot');

@@ -3,17 +3,23 @@ import { deepFreeze } from './freeze.js';
 import { firstPreflopActorId } from './selectors.js';
 import { CHANCE_TYPES, PHASES } from './schema.js';
 import { completePreflop } from './settlement.js';
+import { boardChanceTransition, initializeStreetAfterBoardDeal } from './street-transitions.js';
 import { validateInitializedPokerState, validatePokerState } from './validate.js';
 
-export function applyChance(state, chanceEvent) {
-  validateInitializedPokerState(state);
+function requirePendingChance(state, chanceEvent) {
   if (!chanceEvent || typeof chanceEvent !== 'object' || Array.isArray(chanceEvent)) {
     throw new TypeError('chanceEvent must be an object');
   }
-  if (chanceEvent.type !== CHANCE_TYPES.DEAL_HOLE
-    || state.pendingChance.type !== CHANCE_TYPES.DEAL_HOLE) {
-    throw new RangeError('Only the pending deal_hole chance event is supported');
+  if (state.phase !== PHASES.CHANCE || state.pendingChance === null) {
+    throw new RangeError('No chance event is pending');
   }
+  if (chanceEvent.type !== state.pendingChance.type) {
+    throw new RangeError(`Expected pending chance event ${state.pendingChance.type}`);
+  }
+}
+
+function applyHoleDeal(state, chanceEvent) {
+  validateInitializedPokerState(state);
   if (!chanceEvent.cardsByPlayer || typeof chanceEvent.cardsByPlayer !== 'object'
     || Array.isArray(chanceEvent.cardsByPlayer)) {
     throw new TypeError('deal_hole requires cardsByPlayer');
@@ -45,6 +51,37 @@ export function applyChance(state, chanceEvent) {
   nextState.actingPlayerId = firstPreflopActorId(nextState);
   nextState.pendingChance = null;
   if (nextState.actingPlayerId === null) completePreflop(nextState);
+  return nextState;
+}
+
+function applyBoardDeal(state, chanceEvent, transition) {
+  if (!Object.hasOwn(chanceEvent, 'cards')) throw new TypeError(`${chanceEvent.type} requires cards`);
+  const cards = assertCardArray(chanceEvent.cards, 'chanceEvent.cards');
+  if (cards.length !== transition.cardCount) {
+    throw new RangeError(`${chanceEvent.type} requires exactly ${transition.cardCount} card(s)`);
+  }
+  const cardGroups = [
+    { label: 'board', cards: state.board },
+    { label: 'deadCards', cards: state.deadCards },
+    ...state.players
+      .filter((player) => player.holeCards !== null)
+      .map((player) => ({ label: `holeCards.${player.playerId}`, cards: player.holeCards })),
+    { label: chanceEvent.type, cards },
+  ];
+  assertUniqueKnownCards(cardGroups);
+
+  const nextState = structuredClone(state);
+  initializeStreetAfterBoardDeal(nextState, transition, cards);
+  return nextState;
+}
+
+export function applyChance(state, chanceEvent) {
+  validatePokerState(state);
+  requirePendingChance(state, chanceEvent);
+
+  const nextState = chanceEvent.type === CHANCE_TYPES.DEAL_HOLE
+    ? applyHoleDeal(state, chanceEvent)
+    : applyBoardDeal(state, chanceEvent, boardChanceTransition(chanceEvent.type));
 
   validatePokerState(nextState);
   return deepFreeze(nextState);
