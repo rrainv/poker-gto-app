@@ -5,15 +5,33 @@ import time
 import os
 import sys
 
-# Ensure model can be imported
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from model import PokerNet
+class ResBlock(nn.Module):
+    def __init__(self, dim):
+        super(ResBlock, self).__init__()
+        self.fc1 = nn.Linear(dim, dim)
+        self.fc2 = nn.Linear(dim, dim)
+        
+    def forward(self, x):
+        return x + F.relu(self.fc2(F.relu(self.fc1(x))))
 
+class PreflopNet(nn.Module):
+    def __init__(self):
+        super(PreflopNet, self).__init__()
+        self.in_proj = nn.Sequential(nn.Linear(69, 512), nn.ReLU())
+        self.res1 = ResBlock(512)
+        self.res2 = ResBlock(512)
+        self.head = nn.Sequential(nn.Linear(512, 256), nn.ReLU(), nn.Linear(256, 5))
+        
+    def forward(self, x):
+        x = self.in_proj(x)
+        x = self.res1(x)
+        x = self.res2(x)
+        return self.head(x)
 # Hyperparameters explicitly mandated
-BATCH_SIZE = 2048
+BATCH_SIZE = 32
 HIDDEN_DIM = 512
 NUM_HIDDEN_LAYERS = 4
-ACCUMULATION_STEPS = 2
+ACCUMULATION_STEPS = 64
 EPOCHS = 10
 STEPS_PER_EPOCH = 2000
 
@@ -51,7 +69,7 @@ def generate_synthetic_mccfr_batch(batch_size):
     - SPR (float, e.g. 0.5 to 20.0)
     + Other dummy features to fill out state_dim
     """
-    state_dim = 15
+    state_dim = 16
     num_actions = 5
     
     # Generate random features
@@ -69,7 +87,7 @@ def generate_synthetic_mccfr_batch(batch_size):
 
 def train():
     # 1. Load Preflop frozen model
-    preflop_model = PokerNet(state_dim=15, num_actions=5)
+    preflop_model = PreflopNet()
     preflop_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "app", "frozen_models", "preflop_model.pt")
     
     if os.path.exists(preflop_path):
@@ -81,8 +99,7 @@ def train():
     preflop_model.to(device)
     preflop_model.eval() # Freeze weights
     
-    # 2. Initialize new Postflop model
-    model = PostFlopNet(state_dim=15, num_actions=5).to(device)
+    model = PostFlopNet(state_dim=16, num_actions=5).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
     
     print(f"Starting XPU Training Loop. BATCH_SIZE={BATCH_SIZE}, ACCUMULATION_STEPS={ACCUMULATION_STEPS}")
@@ -99,14 +116,12 @@ def train():
             target_policy = target_policy.to(device)
             target_value = target_value.to(device)
 
-            # PyTorch Native XPU Autocast with bfloat16
-            with torch.autocast(device_type="xpu", dtype=torch.bfloat16) if device.type == "xpu" else torch.autocast(device_type="cpu", dtype=torch.bfloat16):
-                pred_policy, pred_value = model(features)
-                
-                # Loss computation
-                policy_loss = -torch.sum(target_policy * torch.log(pred_policy + 1e-8), dim=-1).mean()
-                value_loss = F.mse_loss(pred_value, target_value)
-                loss = (policy_loss + value_loss) / ACCUMULATION_STEPS
+            pred_policy, pred_value = model(features)
+            
+            # Loss computation
+            policy_loss = -torch.sum(target_policy * torch.log(pred_policy + 1e-8), dim=-1).mean()
+            value_loss = F.mse_loss(pred_value, target_value)
+            loss = (policy_loss + value_loss) / ACCUMULATION_STEPS
 
             # Backward pass
             loss.backward()
