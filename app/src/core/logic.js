@@ -3866,31 +3866,22 @@ function bindEvents() {
 
 
   $$('.tab[data-mode]').forEach((button) => button.addEventListener('click', () => {
-
     $$('.tab[data-mode]').forEach((item) => item.classList.toggle('active', item === button));
-
     const mode = button.dataset.mode;
-
-    if ($('#gtoMode')) {
-
-      $('#gtoMode').classList.toggle('active', mode === 'gto');
-
-      $('#gtoMode').style.display = mode === 'gto' ? 'block' : 'none';
-
+    
+    // Explicitly hide all mode views
+    $$('.mode-view').forEach(view => {
+      view.classList.remove('active');
+      view.style.display = 'none';
+    });
+    
+    // Explicitly show the active mode view
+    const activeView = $(`#${mode}Mode`);
+    if (activeView) {
+      activeView.classList.add('active');
+      activeView.style.display = 'block';
     }
-
-    if ($('#trainingMode')) {
-
-      $('#trainingMode').classList.toggle('active', mode === 'training');
-
-      $('#trainingMode').style.display = mode === 'training' ? 'block' : 'none';
-
-    }
-
-    if ($('#equityMode')) {
-      $('#equityMode').classList.toggle('active', mode === 'equity');
-      $('#equityMode').style.display = mode === 'equity' ? 'block' : 'none';
-    }
+    
     const infoEl = $('#infoMode') || $('#guideMode');
     if (infoEl) {
       const isInfo = (mode === 'info' || mode === 'guide');
@@ -4050,6 +4041,16 @@ function bindEvents() {
   if ($('#settingsModal')) $('#settingsModal').addEventListener('click', (event) => { if (event.target === $('#settingsModal')) $('#settingsModal').classList.remove('show'); });
 
   if ($('#fourColorDeckToggle')) $('#fourColorDeckToggle').addEventListener('click', () => applyDeckStyle(!app.settings.fourColorDeck));
+
+  if ($('#toggleTableBtn')) {
+    $('#toggleTableBtn').addEventListener('click', (e) => {
+      const wrapper = $('#table-wrapper');
+      if (wrapper) {
+        wrapper.classList.toggle('collapsed');
+        e.target.textContent = wrapper.classList.contains('collapsed') ? 'Expand Table' : 'Collapse Table';
+      }
+    });
+  }
 
   if ($('#themeColor')) $('#themeColor').addEventListener('change', (event) => {
 

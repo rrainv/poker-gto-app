@@ -4057,6 +4057,201 @@ input:focus, select:focus, .quick-select:focus { transition: border-color var(--
 .valorant-btn:hover::before {
   width: 100%;
 }
+.suit-h { color: var(--heart, #ef4444) !important; }
+.suit-d { color: var(--diamond, #3b82f6) !important; }
+.suit-c { color: var(--club, #10b981) !important; }
+
+/* Dark contrast enforcement for terminal / dark brutalist modes */
+[data-theme*="terminal"] .suit-s,
+[data-theme*="brutalist"] .suit-s {
+  color: #ffffff !important;
+}
+
+/* 4. Complete Bi-Directional (i18n & Hebrew RTL) Layout Support */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .app-header,
+[dir="rtl"] .topbar,
+[dir="rtl"] .brand,
+[dir="rtl"] .tabs,
+[dir="rtl"] .header-tabs,
+[dir="rtl"] .context-line,
+[dir="rtl"] .card-slots,
+[dir="rtl"] .hero-stats,
+[dir="rtl"] .switchrow,
+[dir="rtl"] .tree-action-item {
+  flex-direction: row-reverse;
+}
+
+/* MANDATE: Keep the 13x13 preflop matrix grid axes Left-to-Right in Hebrew RTL mode */
+[dir="rtl"] .matrix-wrap,
+[dir="rtl"] .strategy-grid,
+[dir="rtl"] #strategyGrid {
+  direction: ltr !important;
+}
+
+[dir="rtl"] .panel-title,
+[dir="rtl"] .field label,
+[dir="rtl"] .path-body,
+[dir="rtl"] .panel-note {
+  text-align: right;
+}
+
+[dir="rtl"] .piotree-bars-inline {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+
+
+
+
+
+
+
+/* Outs panel sits inline below card slots in each player row */
+.player-card {
+  position: relative;
+}
+
+[id^="outsPanel-"] {
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes outsReveal {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+[id^="outsPanel-"] {
+  animation: outsReveal 0.25s ease;
+}
+
+
+/* RTL Fixes for text scale mirroring */
+[dir="rtl"] .bar > * {
+    transform: scaleX(-1);
+    display: inline-block; /* Required for transform on span/inline elements */
+}
+
+[dir="rtl"] #heroAdvBar, 
+[dir="rtl"] #villainAdvBar {
+    transform-origin: right !important;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cardFlipIn {
+  from { transform: rotateY(90deg) scale(0.9); opacity: 0; }
+  to { transform: rotateY(0) scale(1); opacity: 1; }
+}
+
+.mode-view {
+  animation: fadeSlideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.card {
+  animation: cardFlipIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.coach-clipboard {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 10px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+.coach-clipboard ul li {
+  transition: transform 0.2s ease, background 0.2s ease;
+  padding: 6px;
+  border-radius: 6px;
+}
+.coach-clipboard ul li:hover {
+  background: var(--bg-secondary);
+  transform: translateX(4px);
+}
+
+/* --- VALORANT-STYLE MAIN MENU --- */
+.valorant-menu-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 25, 35, 0.5);
+  backdrop-filter: blur(15px);
+  z-index: var(--depth-menu);
+  display: flex;
+  align-items: center;
+  transition: opacity 0.5s ease-out;
+}
+.valorant-menu-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.valorant-menu-content {
+  margin-left: 5%;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.menu-brand h1 {
+  font-size: 5rem;
+  font-weight: 900;
+  margin: 0;
+  color: #ece8e1;
+  letter-spacing: var(--font-tracking-base);
+  text-transform: uppercase;
+}
+.menu-subtitle {
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  font-weight: bold;
+  letter-spacing: 0.3em;
+}
+.valorant-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: flex-start;
+}
+.valorant-btn {
+  background: transparent;
+  color: #ece8e1;
+  border: 1px solid rgba(236, 232, 225, 0.2);
+  padding: 15px 40px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--font-tracking-base);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.valorant-btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 0;
+  background: var(--color-primary);
+  z-index: -1;
+  transition: width 0.2s ease-in-out;
+}
+.valorant-btn:hover {
+  transform: translateX(15px);
+  letter-spacing: var(--font-tracking-hover);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.valorant-btn:hover::before {
+  width: 100%;
+}
 
 /* Explicit 2-color deck overrides for dark suits (Spades & Clubs) to prevent white color bleed on light cards */
 html[data-four-color="false"] .s-s,
@@ -4065,4 +4260,16 @@ html[data-four-color="false"] .suit-s,
 html[data-four-color="false"] .suit-c,
 html[data-four-color="false"] .card.black {
   color: #111827 !important;
+}
+
+/* Collapsible Table */
+.table-wrapper {
+  overflow: hidden;
+  max-height: 800px;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+.table-wrapper.collapsed {
+  max-height: 0;
+  opacity: 0;
 }
