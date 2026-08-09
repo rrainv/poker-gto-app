@@ -42,7 +42,8 @@ function createHarness() {
   const source = fs.readFileSync(LOGIC_PATH, 'utf8');
   const positions = source.match(/const POSITIONS\s*=\s*\{[\s\S]*?\n\};/);
   const rankValue = source.match(/const RANK_VALUE\s*=\s*\{[^\n]+\};/);
-  if (!positions || !rankValue) throw new Error('Could not extract core constants from logic.js');
+  const fallbackPositions = source.match(/const PREFLOP_FALLBACK_POSITION_MODIFIERS\s*=\s*Object\.freeze\(\{[\s\S]*?\n\}\);/);
+  if (!positions || !rankValue || !fallbackPositions) throw new Error('Could not extract core constants from logic.js');
 
   const numericSource = sliceBetween(source, 'function numericValue(id, fallback = 0)', 'function updatePositionSelect(');
   const currentStreetSource = sliceBetween(source, 'function currentStreet(board)', 'function handClass(cards)')
@@ -105,6 +106,7 @@ function createHarness() {
   vm.runInContext(`
     ${positions[0]}
     ${rankValue[0]}
+    ${fallbackPositions[0]}
     const ACTION_COLORS = { aggressive: 'a', passive: 'p', fold: 'f', unavailable: 'u' };
     let app = {
       settings: { tightness: 0, oppTightness: 0 },
@@ -196,6 +198,7 @@ function createHarness() {
         return { range: range.value, number: number.value };
       },
       fallback: calculatePreflopFallbackStrategy,
+      fallbackPositionModifiers() { return { ...PREFLOP_FALLBACK_POSITION_MODIFIERS }; },
       parseSolverEntry,
       classifyAction,
       standardActionName,
@@ -313,6 +316,7 @@ module.exports = {
   updateHeroPositions: (...args) => plain(harness.updateHeroPositions(...args)),
   clampPair: (...args) => plain(harness.clampPair(...args)),
   fallback: (...args) => plain(harness.fallback(...args)),
+  fallbackPositionModifiers: () => plain(harness.fallbackPositionModifiers()),
   parseSolverEntry: (...args) => plain(harness.parseSolverEntry(...args)),
   classifyAction: (...args) => harness.classifyAction(...args),
   standardActionName: (...args) => harness.standardActionName(...args),

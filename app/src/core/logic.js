@@ -92,6 +92,21 @@ const ACTION_COLORS = {
 
 const RANK_VALUE = { 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, T: 10, J: 11, Q: 12, K: 13, A: 14 };
 
+// Preserve the existing six-max modifiers while giving full-ring seats an
+// explicit, monotonic progression between UTG and HJ.
+const PREFLOP_FALLBACK_POSITION_MODIFIERS = Object.freeze({
+  'UTG': -4.0,
+  'UTG+1': -3.6,
+  'UTG+2': -3.2,
+  'MP': -2.8,
+  'LJ': -2.4,
+  'HJ': -2.0,
+  'CO': -0.5,
+  'BTN': 1.0,
+  'SB': 1.5,
+  'BB': 3.0
+});
+
 
 
 const app = {
@@ -1057,9 +1072,10 @@ function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 
         if (lowRank <= 7) score -= (8 - lowRank) * 0.5; // Low kicker weakness
     }
 
-    const POS_MAP = { 'UTG': 0, 'HJ': 1, 'CO': 2, 'BTN': 3, 'SB': 4, 'BB': 5 };
-    const posIdx = POS_MAP[pos] !== undefined ? POS_MAP[pos] : 0;
-    let posModifier = [ -4.0, -2.0, -0.5, 1.0, 1.5, 3.0 ][posIdx] || 0.0;
+    const positionModifier = PREFLOP_FALLBACK_POSITION_MODIFIERS[pos];
+    let posModifier = positionModifier !== undefined
+        ? positionModifier
+        : PREFLOP_FALLBACK_POSITION_MODIFIERS.UTG;
 
     // Enhanced position-aware adjustments
     // Steal position bonuses for BTN/SB when unopened
@@ -1152,7 +1168,7 @@ function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 
     }
 
     // In unopened pots outside SB/BB, remove limping (calling 1bb)
-    if (facingSize === 0 && posIdx < 4) {
+    if (facingSize === 0 && pos !== 'SB' && pos !== 'BB') {
         if (base[0] >= 0.25) {
             base[0] = Math.min(1.0, base[0] + base[1]);
             base[1] = 0.0;
@@ -1240,7 +1256,7 @@ function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 
         base[2] = Math.min(base[2], 0.10);
     }
 
-    if (posIdx === 5 && facingSize === 0) {
+    if (pos === 'BB' && facingSize === 0) {
         base[1] += base[2];
         base[2] = 0.0;
     }
