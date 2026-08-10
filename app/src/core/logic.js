@@ -4820,18 +4820,8 @@ function bindEvents() {
 
     // L - Toggle dark/light mode
     if (e.key === 'l' || e.key === 'L') {
-      const currentTheme = document.documentElement.dataset.theme || 'discord';
-      const lightThemes = ['monochrome', 'felt', 'luxury'];
-      const darkThemes = ['discord', 'blue', 'green', 'purple', 'red', 'orange', 'midnight', 'cyberpunk'];
-      
-      // Check if current theme is light
-      const isLight = lightThemes.includes(currentTheme);
-      
-      // Toggle to a theme of opposite type
-      const targetThemes = isLight ? darkThemes : lightThemes;
-      const currentIndex = targetThemes.indexOf(currentTheme);
-      const nextIndex = (currentIndex + 1) % targetThemes.length;
-      const newTheme = targetThemes[nextIndex];
+      const currentTheme = document.documentElement.dataset.theme || 'midnight';
+      const newTheme = currentTheme === 'daylight' ? 'midnight' : 'daylight';
       
       document.documentElement.dataset.theme = newTheme;
       localStorage.setItem('appTheme', newTheme);
@@ -4848,54 +4838,32 @@ function bindEvents() {
 
 
 const THEME_PREVIEWS = [
+  { id: 'midnight', name: 'Riverline Midnight', color: '#42ad7b', bg: '#101311', sharp: false, legacy: false },
+  { id: 'graphite', name: 'Riverline Graphite', color: '#4aa77b', bg: '#151716', sharp: false, legacy: false },
+  { id: 'daylight', name: 'Riverline Daylight', color: '#2f8b65', bg: '#f2eee6', sharp: false, legacy: false },
 
-  // --- STANDARD CURVED THEMES ---
-
-  { id: 'discord', name: 'Discord Dark', color: '#5865f2', bg: '#1e1f22', sharp: false },
-
-  { id: 'monochrome', name: 'Carbon Slate', color: '#94a3b8', bg: '#121824', sharp: false },
-
-  { id: 'blue', name: 'Riverline Blue', color: '#3b82f6', bg: '#0b1329', sharp: false },
-
-  { id: 'green', name: 'Matrix Green', color: '#10b981', bg: '#061912', sharp: false },
-
-  { id: 'purple', name: 'Solver Purple', color: '#8b5cf6', bg: '#160d29', sharp: false },
-
-  { id: 'red', name: 'Action Red', color: '#ef4444', bg: '#1a0b0b', sharp: false },
-
-  { id: 'orange', name: 'Home Game Orange', color: '#f97316', bg: '#18110c', sharp: false },
-
-  { id: 'midnight', name: 'Midnight Cyan', color: '#06b6d4', bg: '#08171e', sharp: false },
-
-  { id: 'cyberpunk', name: 'Cyberpunk Neon', color: '#ec4899', bg: '#1a0916', sharp: false },
-
-  { id: 'felt', name: 'Casino Felt', color: '#4caf50', bg: '#0a2e1a', sharp: false },
-
-  { id: 'luxury', name: 'Luxury Gold', color: '#e94560', bg: '#1a1a2e', sharp: false },
-
-
-
-  // --- 0PX SHARP / BRUTALIST THEMES ---
-
-  { id: 'discord-0px', name: 'Discord Dark (0px)', color: '#5865f2', bg: '#1e1f22', sharp: true },
-
-  { id: 'serious-pio', name: 'PioSolver Sharp (0px)', color: '#6a8c7a', bg: '#12161a', sharp: true },
-
-  { id: 'terminal', name: 'Terminal Dark CRT (0px)', color: '#00ff66', bg: '#040906', sharp: true },
-
-  { id: 'brutalist-slate', name: 'Brutalist Slate (0px)', color: '#94a3b8', bg: '#0f172a', sharp: true },
-
-  { id: 'brutalist-cyan', name: 'Brutalist Cyan (0px)', color: '#06b6d4', bg: '#0a1a1a', sharp: true },
-
-  { id: 'brutalist-purple', name: 'Brutalist Purple (0px)', color: '#a855f7', bg: '#1a0a1a', sharp: true },
-
-  { id: 'brutalist-amber', name: 'Brutalist Amber (0px)', color: '#f59e0b', bg: '#140c04', sharp: true },
-
-  { id: 'brutalist-emerald', name: 'Brutalist Emerald (0px)', color: '#10b981', bg: '#051410', sharp: true },
-
-  { id: 'brutalist-rose', name: 'Brutalist Rose (0px)', color: '#f43f5e', bg: '#1a0a10', sharp: true },
-
-  { id: 'brutalist-red', name: 'Brutalist Red (0px)', color: '#ef4444', bg: '#1a0a0a', sharp: true }
+  // Preserved for existing preferences; these are not part of the new supported visual foundation.
+  { id: 'discord', name: 'Discord Dark', color: '#5865f2', bg: '#1e1f22', sharp: false, legacy: true },
+  { id: 'monochrome', name: 'Carbon Slate', color: '#94a3b8', bg: '#121824', sharp: false, legacy: true },
+  { id: 'blue', name: 'Riverline Blue', color: '#3b82f6', bg: '#0b1329', sharp: false, legacy: true },
+  { id: 'green', name: 'Matrix Green', color: '#10b981', bg: '#061912', sharp: false, legacy: true },
+  { id: 'purple', name: 'Solver Purple', color: '#8b5cf6', bg: '#160d29', sharp: false, legacy: true },
+  { id: 'red', name: 'Action Red', color: '#ef4444', bg: '#1a0b0b', sharp: false, legacy: true },
+  { id: 'orange', name: 'Home Game Orange', color: '#f97316', bg: '#18110c', sharp: false, legacy: true },
+  { id: 'legacy-midnight-cyan', name: 'Midnight Cyan', color: '#06b6d4', bg: '#08171e', sharp: false, legacy: true },
+  { id: 'cyberpunk', name: 'Cyberpunk Neon', color: '#ec4899', bg: '#1a0916', sharp: false, legacy: true },
+  { id: 'felt', name: 'Casino Felt', color: '#4caf50', bg: '#0a2e1a', sharp: false, legacy: true },
+  { id: 'luxury', name: 'Luxury Gold', color: '#e94560', bg: '#1a1a2e', sharp: false, legacy: true },
+  { id: 'discord-0px', name: 'Discord Dark (0px)', color: '#5865f2', bg: '#1e1f22', sharp: true, legacy: true },
+  { id: 'serious-pio', name: 'PioSolver Sharp (0px)', color: '#6a8c7a', bg: '#12161a', sharp: true, legacy: true },
+  { id: 'terminal', name: 'Terminal Dark CRT (0px)', color: '#00ff66', bg: '#040906', sharp: true, legacy: true },
+  { id: 'brutalist-slate', name: 'Brutalist Slate (0px)', color: '#94a3b8', bg: '#0f172a', sharp: true, legacy: true },
+  { id: 'brutalist-cyan', name: 'Brutalist Cyan (0px)', color: '#06b6d4', bg: '#0a1a1a', sharp: true, legacy: true },
+  { id: 'brutalist-purple', name: 'Brutalist Purple (0px)', color: '#a855f7', bg: '#1a0a1a', sharp: true, legacy: true },
+  { id: 'brutalist-amber', name: 'Brutalist Amber (0px)', color: '#f59e0b', bg: '#140c04', sharp: true, legacy: true },
+  { id: 'brutalist-emerald', name: 'Brutalist Emerald (0px)', color: '#10b981', bg: '#051410', sharp: true, legacy: true },
+  { id: 'brutalist-rose', name: 'Brutalist Rose (0px)', color: '#f43f5e', bg: '#1a0a10', sharp: true, legacy: true },
+  { id: 'brutalist-red', name: 'Brutalist Red (0px)', color: '#ef4444', bg: '#1a0a0a', sharp: true, legacy: true }
 
 ];
 
@@ -4907,13 +4875,13 @@ function initThemeSwatches() {
 
   if (!grid) return;
 
-  const currentTheme = document.documentElement.dataset.theme || 'discord';
+  const currentTheme = document.documentElement.dataset.theme || 'midnight';
 
   
 
-  const roundedThemes = THEME_PREVIEWS.filter(t => !t.sharp);
+  const riverlineThemes = THEME_PREVIEWS.filter(t => !t.legacy);
 
-  const sharpThemes = THEME_PREVIEWS.filter(t => t.sharp);
+  const legacyThemes = THEME_PREVIEWS.filter(t => t.legacy);
 
 
 
@@ -4925,11 +4893,11 @@ function initThemeSwatches() {
 
       <button type="button" class="theme-swatch-btn ${isSelected ? 'active' : ''}" data-theme-id="${tItem.id}"
 
-        style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; width: 100%; min-width: 0; box-sizing: border-box; background: ${tItem.bg}; border: ${isSelected ? '2px solid ' + tItem.color : '1px solid rgba(255,255,255,0.12)'}; border-radius: ${tItem.sharp ? '0px' : '6px'}; cursor: pointer; text-align: left; transition: transform 0.1s;">
+        style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; width: 100%; min-width: 0; box-sizing: border-box; background: ${tItem.bg}; border: ${isSelected ? '2px solid ' + tItem.color : '1px solid rgba(127,127,127,0.35)'}; border-radius: ${tItem.sharp ? '0px' : '6px'}; cursor: pointer; text-align: left; transition: transform 0.1s;">
 
         <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; min-width: 0; flex: 1;">
 
-          <span style="display: inline-block; margin-left: 4px; width: 8px; height: 8px; flex-shrink: 0; border-radius: ${tItem.sharp ? '0px' : '50%'}; background: ${tItem.color}; box-shadow: 0 0 6px ${tItem.color};"></span>
+          <span style="display: inline-block; margin-left: 4px; width: 8px; height: 8px; flex-shrink: 0; border-radius: ${tItem.sharp ? '0px' : '50%'}; background: ${tItem.color};"></span>
 
           <span style="color: ${tItem.color}; font-size: 11px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${t(tItem.name)}</span>
 
@@ -4947,13 +4915,13 @@ function initThemeSwatches() {
 
   grid.innerHTML = `
 
-    <div style="grid-column: 1 / -1; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 2px 0 4px 2px;">Standard Themes (Curved)</div>
+    <div style="grid-column: 1 / -1; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 2px 0 4px 2px;">Riverline Themes</div>
 
-    ${roundedThemes.map(renderBtn).join('')}
+    ${riverlineThemes.map(renderBtn).join('')}
 
-    <div style="grid-column: 1 / -1; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 10px 0 4px 2px; border-top: 1px dashed var(--line); padding-top: 6px;">0px Themes (Sharp / Brutalist)</div>
+    <div style="grid-column: 1 / -1; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 10px 0 4px 2px; border-top: 1px dashed var(--border-default); padding-top: 6px;">Legacy / Experimental</div>
 
-    ${sharpThemes.map(renderBtn).join('')}
+    ${legacyThemes.map(renderBtn).join('')}
 
   `;
 
@@ -5195,7 +5163,7 @@ function init() {
 
     
 
-    // Reset to default settings on page reload (English, Grey Theme 'monochrome', Automatic API connection)
+    // Reset language and API defaults while preserving a valid saved visual theme.
     const defaultLang = 'en';
     window.appLang = defaultLang;
     localStorage.setItem('appLang', defaultLang);
@@ -5203,10 +5171,14 @@ function init() {
     document.documentElement.dir = 'ltr';
     if ($('#langToggle')) $('#langToggle').value = defaultLang;
 
-    const defaultTheme = 'discord'; // Discord Dark theme (without much color, default)
-    localStorage.setItem('appTheme', defaultTheme);
-    document.documentElement.dataset.theme = defaultTheme;
-    if ($('#themeColor')) $('#themeColor').value = defaultTheme;
+    const defaultTheme = 'midnight';
+    const persistedTheme = localStorage.getItem('appTheme');
+    const selectedTheme = THEME_PREVIEWS.some(theme => theme.id === persistedTheme)
+      ? persistedTheme
+      : defaultTheme;
+    if (selectedTheme !== persistedTheme) localStorage.setItem('appTheme', selectedTheme);
+    document.documentElement.dataset.theme = selectedTheme;
+    if ($('#themeColor')) $('#themeColor').value = selectedTheme;
 
     const defaultAutoConnect = 'true';
     localStorage.setItem('autoConnectApi', defaultAutoConnect);
