@@ -3,7 +3,6 @@ import {
   GAME_MODES,
   PHASES,
   STREETS,
-  amountToCallMilliBb,
   isPlayerLive,
   playerById,
   validatePokerState,
@@ -12,6 +11,13 @@ import {
 export const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
 
 const STACK_MODES = Object.freeze(new Set(['hero', 'effective', 'custom']));
+const PREFLOP_AGGRESSION_ACTIONS = Object.freeze(['raise', '3bet', '4bet']);
+
+function normalizedDecisionNumber(value, fallback, min, max) {
+  const numeric = Number(value);
+  const finite = Number.isFinite(numeric) ? numeric : fallback;
+  return Math.min(max, Math.max(min, finite));
+}
 
 function currentStreetRecords(state) {
   return state.actionHistory.filter((record) => record.street === state.street);
@@ -24,48 +30,21 @@ function classifyLastAction(state) {
   ));
 
   if (aggressiveRecords.length > 0) {
-    const latest = aggressiveRecords[aggressiveRecords.length - 1].submittedAction.type;
-    if (latest === ACTION_TYPES.ALL_IN) return 'all-in';
     if (state.street === STREETS.PREFLOP) {
-      if (aggressiveRecords.length === 1) return 'raise';
-      if (aggressiveRecords.length === 2) return '3bet';
-      return '4bet';
+      return PREFLOP_AGGRESSION_ACTIONS[Math.min(aggressiveRecords.length - 1, 2)];
     }
-    return latest === ACTION_TYPES.BET ? 'bet' : 'raise';
+    const latest = aggressiveRecords[aggressiveRecords.length - 1];
+    return latest.currentBetBeforeMilliBb === 0 ? 'bet' : 'raise';
   }
 
-  const latestNonFold = [...records].reverse().find((record) => (
+  // DecisionContext v1 and its ONNX encoder have no call/limp action index.
+  // Passive action without aggression is projected to the existing check
+  // category; folds alone preserve the established unopened preflop meaning.
+  const hasPassiveAction = records.some((record) => (
     record.submittedAction.type !== ACTION_TYPES.FOLD
   ));
-  if (latestNonFold) {
-    if (latestNonFold.submittedAction.type === ACTION_TYPES.ALL_IN) return 'all-in';
-    return latestNonFold.submittedAction.type;
-  }
+  if (hasPassiveAction) return 'check';
   return state.street === STREETS.PREFLOP ? 'unopened' : 'check';
-}
-
-function projectStackMilliBb(state, hero, stackMode, effectiveOpponentPlayerId) {
-  if (stackMode !== 'effective') return hero.currentStackMilliBb;
-
-  const liveOpponents = state.players.filter((player) => (
-    player.playerId !== hero.playerId && isPlayerLive(player)
-  ));
-  let opponent = null;
-  if (effectiveOpponentPlayerId !== undefined && effectiveOpponentPlayerId !== null) {
-    opponent = liveOpponents.find((player) => (
-      player.playerId === effectiveOpponentPlayerId
-    )) || null;
-    if (!opponent) {
-      throw new RangeError('effectiveOpponentPlayerId must identify a live opponent');
-    }
-  } else if (liveOpponents.length === 1) {
-    [opponent] = liveOpponents;
-  } else {
-    throw new RangeError(
-      'Multiway effective stack requires an explicit effectiveOpponentPlayerId',
-    );
-  }
-  return Math.min(hero.currentStackMilliBb, opponent.currentStackMilliBb);
 }
 
 function requireActorDecision(state, heroPlayerId) {
@@ -97,9 +76,11 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
   if (!STACK_MODES.has(stackMode)) throw new RangeError(`Unsupported stackMode: ${stackMode}`);
 
   const lastAction = classifyLastAction(state);
-  const facingCommitMilliBb = state.street === STREETS.PREFLOP && lastAction === 'unopened'
-    ? 0
-    : Math.min(amountToCallMilliBb(state, hero.playerId), hero.currentStackMilliBb);
+  const hasCompatibleAggression = PREFLOP_AGGRESSION_ACTIONS.includes(lastAction)
+    || lastAction === 'bet';
+  const facingSizeBb = hasCompatibleAggression
+    ? normalizedDecisionNumber(state.currentBetMilliBb / 1000, 0, 0, 100)
+    : 0;
   const forcedContributionPerPlayerBb = state.game.forcedContributionPerPlayerMilliBb / 1000;
   const rakeMode = state.game.mode === GAME_MODES.CLUBGG ? 'fixed' : 'off';
 
@@ -111,16 +92,13 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
     heroCards: [...hero.holeCards],
     board: [...state.board],
     deadCards: [...state.deadCards],
-    stackBb: projectStackMilliBb(
-      state,
-      hero,
-      stackMode,
-      options.effectiveOpponentPlayerId,
-    ) / 1000,
+    // DecisionContext v1's stack control is configured starting depth. The
+    // selected stackMode is metadata only in the current Playbook runtime.
+    stackBb: normalizedDecisionNumber(hero.startingStackMilliBb / 1000, 100, 10, 500),
     stackMode,
-    potBb: state.potMilliBb / 1000,
+    potBb: normalizedDecisionNumber(state.potMilliBb / 1000, 1.5, 0.5, 200),
     lastAction,
-    facingSizeBb: facingCommitMilliBb / 1000,
+    facingSizeBb,
     rakeMode,
     forcedContributionPerPlayerBb,
     totalForcedContributionBb: (

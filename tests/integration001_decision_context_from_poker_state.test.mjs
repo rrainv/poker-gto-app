@@ -11,6 +11,7 @@ import {
   PHASES,
   applyAction,
   applyChance,
+  amountToCallMilliBb,
   createAction,
   initializeHand,
 } from '../shared/poker-domain/index.js';
@@ -130,7 +131,7 @@ test('HU unopened PokerState projects the exact DecisionContext v1 shape', () =>
     heroCards: ['As', 'Ad'],
     board: [],
     deadCards: [],
-    stackBb: 99.5,
+    stackBb: 100,
     stackMode: 'hero',
     potBb: 1.5,
     lastAction: 'unopened',
@@ -160,38 +161,48 @@ test('10-max UTG unopened projection preserves the full-ring position', () => {
   assertLegacyParity(projected);
 });
 
-test('preflop raise and 3-bet levels derive from structural action history', () => {
+test('preflop raise, 3-bet, and 4-bet use legacy nominal facing sizes', () => {
   let state = createDealtState();
   state = act(state, ACTION_TYPES.RAISE, 2500);
   const raised = context(state);
   assert.equal(raised.lastAction, 'raise');
-  assert.equal(raised.facingSizeBb, 1.5);
+  assert.equal(raised.facingSizeBb, 2.5);
   assertLegacyParity(raised);
 
   state = act(state, ACTION_TYPES.RAISE, 7500);
   const threeBet = context(state);
   assert.equal(threeBet.lastAction, '3bet');
-  assert.equal(threeBet.facingSizeBb, 5);
+  assert.equal(threeBet.facingSizeBb, 7.5);
   assertLegacyParity(threeBet);
+
+  state = act(state, ACTION_TYPES.RAISE, 18_000);
+  const fourBet = context(state);
+  assert.equal(fourBet.lastAction, '4bet');
+  assert.equal(fourBet.facingSizeBb, 18);
+  assertLegacyParity(fourBet);
 });
 
-test('BB option after limps has no call commitment and retains call provenance', () => {
+test('limps map lossily to check and preserve the BB free option', () => {
   let state = createDealtState({ playerCount: 3 });
   state = act(state, ACTION_TYPES.CALL);
+  assert.equal(context(state).lastAction, 'check');
+  assert.equal(context(state).facingSizeBb, 0);
   state = act(state, ACTION_TYPES.CALL);
   const projected = context(state);
   assert.equal(projected.heroPosition, 'BB');
-  assert.equal(projected.lastAction, 'call');
+  assert.equal(projected.lastAction, 'check');
   assert.equal(projected.facingSizeBb, 0);
   assertLegacyParity(projected);
 });
 
-test('short-stack facing size is the actual capped call commitment', () => {
+test('short-stack projection keeps starting depth and nominal wager size', () => {
   let state = createDealtState({ stacksMilliBb: [100_000, 20_000] });
   state = act(state, ACTION_TYPES.RAISE, 25_000);
   const projected = context(state);
-  assert.equal(projected.stackBb, 19);
-  assert.equal(projected.facingSizeBb, 19);
+  assert.equal(projected.stackBb, 20);
+  assert.equal(projected.facingSizeBb, 25);
+  assert.equal(amountToCallMilliBb(state, state.actingPlayerId), 24_000);
+  assert.equal(state.players.find((player) => player.playerId === state.actingPlayerId).currentStackMilliBb, 19_000);
   assert.equal(projected.lastAction, 'raise');
   assertLegacyParity(projected);
 });
@@ -211,7 +222,7 @@ test('flop first action and a prior check project as check with zero facing size
   assertLegacyParity(checkedTo);
 });
 
-test('postflop bet and raise classifications preserve exact call commitments', () => {
+test('postflop bet and raise classifications preserve nominal bet-to sizes', () => {
   let state = reachFlop();
   state = act(state, ACTION_TYPES.BET, 2000);
   const facingBet = context(state);
@@ -222,7 +233,7 @@ test('postflop bet and raise classifications preserve exact call commitments', (
   state = act(state, ACTION_TYPES.RAISE, 6000);
   const facingRaise = context(state);
   assert.equal(facingRaise.lastAction, 'raise');
-  assert.equal(facingRaise.facingSizeBb, 4);
+  assert.equal(facingRaise.facingSizeBb, 6);
   assertLegacyParity(facingRaise);
 });
 
@@ -260,37 +271,35 @@ test('Home and ClubGG accounting map without percentage-rake semantics', () => {
   }
 });
 
-test('hero, custom, and unambiguous effective stack modes derive from player stacks', () => {
-  let state = createDealtState({ stacksMilliBb: [80_000, 50_000] });
+test('all stack modes preserve the same configured starting-stack projection', () => {
+  let state = createDealtState();
+  const firstActor = state.players.find((player) => player.playerId === state.actingPlayerId);
+  assert.ok(firstActor.currentStackMilliBb < firstActor.startingStackMilliBb);
+  const contexts = [];
+  for (const stackMode of ['hero', 'effective', 'custom']) {
+    const projected = context(state, { stackMode });
+    assert.equal(projected.stackBb, 100);
+    assert.equal(projected.stackMode, stackMode);
+    assertLegacyParity(projected);
+    contexts.push(projected);
+  }
+
   state = act(state, ACTION_TYPES.RAISE, 2500);
-  const heroPlayer = state.players.find((player) => player.playerId === state.actingPlayerId);
-  const opponent = state.players.find((player) => player.playerId !== state.actingPlayerId);
-
-  assert.equal(context(state, { stackMode: 'hero' }).stackBb, heroPlayer.currentStackMilliBb / 1000);
-  assert.equal(context(state, { stackMode: 'custom' }).stackBb, heroPlayer.currentStackMilliBb / 1000);
-  assert.equal(
-    context(state, { stackMode: 'effective' }).stackBb,
-    Math.min(heroPlayer.currentStackMilliBb, opponent.currentStackMilliBb) / 1000,
-  );
-  assertLegacyParity(context(state, { stackMode: 'effective' }));
-});
-
-test('multiway effective stack requires an explicit opponent projection', () => {
-  const state = createDealtState({ playerCount: 3, stacksMilliBb: [100_000, 70_000, 40_000] });
-  assert.throws(() => context(state, { stackMode: 'effective' }), /explicit effectiveOpponentPlayerId/);
-  const opponent = state.players.find((player) => (
-    player.playerId !== state.actingPlayerId && player.currentStackMilliBb === 39_000
+  state = act(state, ACTION_TYPES.RAISE, 7500);
+  const actorAfterThreeBet = state.players.find((player) => (
+    player.playerId === state.actingPlayerId
   ));
-  assert.equal(
-    context(state, {
-      stackMode: 'effective',
-      effectiveOpponentPlayerId: opponent.playerId,
-    }).stackBb,
-    39,
-  );
+  assert.ok(actorAfterThreeBet.currentStackMilliBb < actorAfterThreeBet.startingStackMilliBb);
+  for (const stackMode of ['hero', 'effective', 'custom']) {
+    assert.equal(context(state, { stackMode }).stackBb, 100);
+  }
+  assert.equal(new Set(contexts.map((projected) => projected.stackBb)).size, 1);
+
+  const multiway = createDealtState({ playerCount: 3 });
+  assert.equal(context(multiway, { stackMode: 'effective' }).stackBb, 100);
 });
 
-test('action classification covers unopened, check, call, bet, raise, and all-in', () => {
+test('action compatibility emits only the vocabulary supported downstream', () => {
   const unopened = context(createDealtState());
 
   let callState = createDealtState({ playerCount: 3 });
@@ -310,6 +319,13 @@ test('action classification covers unopened, check, call, bet, raise, and all-in
   let allInState = createDealtState();
   allInState = act(allInState, ACTION_TYPES.ALL_IN);
 
+  let allInThreeBetState = createDealtState();
+  allInThreeBetState = act(allInThreeBetState, ACTION_TYPES.RAISE, 2500);
+  allInThreeBetState = act(allInThreeBetState, ACTION_TYPES.ALL_IN);
+
+  let postflopAllInState = reachFlop();
+  postflopAllInState = act(postflopAllInState, ACTION_TYPES.ALL_IN);
+
   assert.deepEqual([
     unopened.lastAction,
     context(checkState).lastAction,
@@ -317,7 +333,60 @@ test('action classification covers unopened, check, call, bet, raise, and all-in
     context(betState).lastAction,
     context(raiseState).lastAction,
     context(allInState).lastAction,
-  ], ['unopened', 'check', 'call', 'bet', 'raise', 'all-in']);
+    context(allInThreeBetState).lastAction,
+    context(postflopAllInState).lastAction,
+  ], ['unopened', 'check', 'check', 'bet', 'raise', 'raise', '3bet', 'bet']);
+});
+
+test('DecisionContext v1 applies the same stack, pot, and facing bounds as legacy derivation', () => {
+  const shallowState = createDealtState({ stacksMilliBb: [5000, 5000] });
+  const shallow = context(shallowState);
+  assert.equal(shallowState.players[0].startingStackMilliBb, 5000);
+  assert.equal(shallow.stackBb, 10);
+  assert.equal(shallow.facingSizeBb, 0);
+  assertLegacyParity(shallow);
+
+  let deepState = createDealtState({ stacksMilliBb: [600_000, 600_000] });
+  deepState = act(deepState, ACTION_TYPES.RAISE, 250_000);
+  const deep = context(deepState);
+  assert.equal(deepState.players.find((player) => player.playerId === deepState.actingPlayerId).startingStackMilliBb, 600_000);
+  assert.equal(deepState.currentBetMilliBb, 250_000);
+  assert.equal(deepState.potMilliBb, 251_000);
+  assert.equal(deep.stackBb, 500);
+  assert.equal(deep.facingSizeBb, 100);
+  assert.equal(deep.potBb, 200);
+  assertLegacyParity(deep);
+});
+
+test('every emitted lastAction is accepted by current fallback and ONNX vocabularies', () => {
+  const supported = ['unopened', 'raise', '3bet', '4bet', 'bet', 'check'];
+  const productionLogic = fs.readFileSync(
+    new URL('../app/src/core/logic.js', import.meta.url),
+    'utf8',
+  );
+  assert.match(
+    productionLogic,
+    /const ACTIONS = \['unopened', 'raise', '3bet', '4bet', 'bet', 'check'\];/,
+  );
+
+  for (const lastAction of supported) {
+    const projected = legacy.deriveDecisionContext({
+      tableSize: 6,
+      heroPosition: 'BTN',
+      heroCards: ['As', 'Ad'],
+      board: [],
+      deadCards: [],
+      stackBb: 100,
+      stackMode: 'hero',
+      potBb: 10,
+      lastAction,
+      facingSizeBb: lastAction === 'unopened' || lastAction === 'check' ? 0 : 5,
+      rakeMode: 'off',
+      legacyRakeValue: 0,
+    });
+    assert.equal(projected.lastAction, lastAction);
+    assert.doesNotThrow(() => legacy.fallbackForDecisionContext(projected));
+  }
 });
 
 test('adapter rejects unsupported or non-decision projections clearly', () => {
