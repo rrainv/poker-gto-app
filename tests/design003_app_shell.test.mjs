@@ -79,7 +79,10 @@ test('strategy source status distinguishes fallback, loading, available, and una
 });
 
 test('mobile navigation and utilities remain visible and reachable', () => {
-  const design003Css = css.slice(css.indexOf('DESIGN-003: Riverline application shell'));
+  const design003Css = css.slice(
+    css.indexOf('DESIGN-003: Riverline application shell'),
+    css.indexOf('DESIGN-004: shared component system'),
+  );
   assert.match(design003Css, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation\s*\{[\s\S]*?grid-template-columns: repeat\(4/);
   assert.match(design003Css, /@media \(max-width: 560px\)[\s\S]*?\.workspace-utilities\s*\{[\s\S]*?display: grid/);
   assert.doesNotMatch(design003Css, /\.workspace-utilities\s*\{[^}]*display:\s*none/);
@@ -87,7 +90,10 @@ test('mobile navigation and utilities remain visible and reachable', () => {
 });
 
 test('the shell consumes semantic tokens and remains theme-independent', () => {
-  const design003Css = css.slice(css.indexOf('DESIGN-003: Riverline application shell'));
+  const design003Css = css.slice(
+    css.indexOf('DESIGN-003: Riverline application shell'),
+    css.indexOf('DESIGN-004: shared component system'),
+  );
   assert.match(design003Css, /background: var\(--surface-shell\)/);
   assert.match(design003Css, /background: var\(--accent-primary\)/);
   assert.match(design003Css, /border-color: var\(--border-subtle\)/);

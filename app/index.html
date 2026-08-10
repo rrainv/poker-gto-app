@@ -14,7 +14,7 @@
 
   <title data-i18n="Riverline — Poker Strategy &amp; Analysis">Riverline — Poker Strategy &amp; Analysis</title>
 
-  <link rel="stylesheet" href="styles.css?v=20">
+  <link rel="stylesheet" href="styles.css?v=21">
 
   <link rel="icon"
 
@@ -324,7 +324,7 @@
 
 
 
-<body>
+<body data-density="comfortable">
 
   <div class="riverline-shell" data-active-mode="gto">
     <aside class="mode-rail" aria-label="Riverline application">
@@ -446,7 +446,7 @@
 
                 style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">
 
-                <span id="trainingProgressText">Training DeepCFR Network...</span>
+                <span id="trainingProgressText">Preparing strategy source...</span>
 
                 <span id="trainingProgressPercent">0%</span>
 
@@ -478,15 +478,13 @@
 
                       <span data-i18n="Table size">Table size</span>
 
-                      <span><input id="playersNum" type="number" min="2" max="10" step="1" value="8"
-
-                          style="width: 40px; background: transparent; color: white; border: none; text-align: right; font-weight: bold; font-family: inherit; font-size: inherit; outline: none; padding: 0;">
+                      <span class="control-value"><input id="playersNum" class="control-input control-input--inline" type="number" min="2" max="10" step="1" value="8">
 
                         -max</span>
 
                     </div>
 
-                    <input id="players" type="range" min="2" max="10" step="1" value="8">
+                    <input id="players" class="control-range" type="range" min="2" max="10" step="1" value="8">
 
                   </div>
 
@@ -496,7 +494,7 @@
 
                   <label for="stackMode" style="margin-bottom:8px;" data-i18n="Stack setup">Stack setup</label>
 
-                  <select id="stackMode">
+                  <select id="stackMode" class="control-select">
 
                     <option value="effective" data-i18n="Effective stack">Effective stack</option>
 
@@ -516,15 +514,13 @@
 
                       <span data-i18n="Starting stack">Starting stack</span>
 
-                      <span><input id="stackNum" type="number" min="10" max="500" step="1" value="30"
-
-                          style="width: 50px; background: transparent; color: white; border: none; text-align: right; font-weight: bold; font-family: inherit; font-size: inherit; outline: none; padding: 0;">
+                      <span class="control-value"><input id="stackNum" class="control-input control-input--inline" type="number" min="10" max="500" step="1" value="30">
 
                         bb</span>
 
                     </div>
 
-                    <input id="stack" type="range" min="10" max="500" step="1" value="30">
+                    <input id="stack" class="control-range" type="range" min="10" max="500" step="1" value="30">
 
                   </div>
                 
@@ -536,9 +532,9 @@
                   <div class="slider-container">
                     <div class="slider-header" style="margin-bottom: 8px;">
                       <span data-i18n="Play Style">Play Style</span>
-                      <span id="tightnessLabel" style="color: var(--primary); font-size: 13px;">Strict GTO</span>
+                      <span id="tightnessLabel" style="color: var(--primary); font-size: 13px;">Baseline</span>
                     </div>
-                    <input type="range" id="tightnessSlider" min="0" max="100" value="0" style="margin-bottom: 4px;">
+                    <input type="range" class="control-range" id="tightnessSlider" min="0" max="100" value="0" style="margin-bottom: 4px;">
                   </div>
                 </div>
 
@@ -546,9 +542,9 @@
                   <div class="slider-container">
                     <div class="slider-header" style="margin-bottom: 8px;">
                       <span data-i18n="Opponent Style">Opponent Style</span>
-                      <span id="oppTightnessLabel" style="color: var(--orange); font-size: 13px;">Strict GTO</span>
+                      <span id="oppTightnessLabel" style="color: var(--orange); font-size: 13px;">Baseline</span>
                     </div>
-                    <input type="range" id="oppTightnessSlider" min="0" max="100" value="0" style="margin-bottom: 4px;">
+                    <input type="range" class="control-range" id="oppTightnessSlider" min="0" max="100" value="0" style="margin-bottom: 4px;">
                   </div>
                 </div>
 
@@ -556,7 +552,7 @@
 
                   <label for="rakeMode" data-i18n="Rake">Rake</label>
 
-                  <select id="rakeMode">
+                  <select id="rakeMode" class="control-select">
 
                     <option value="off" selected data-i18n="Off">Off</option>
 
@@ -578,17 +574,15 @@
 
                       <span data-i18n="Rake value">Rake value</span>
 
-                      <span><input id="rakeValueNum" type="number" min="0" max="20" step="0.5" value="5"
-
-                          style="width: 50px; background: transparent; color: white; border: none; text-align: right; font-weight: bold; font-family: inherit; font-size: inherit; outline: none; padding: 0;"></span>
+                      <span class="control-value"><input id="rakeValueNum" class="control-input control-input--inline" type="number" min="0" max="20" step="0.5" value="5"></span>
 
                     </div>
 
                     <div class="field-split">
 
-                      <input id="rakeValue" type="range" min="0" max="20" step="0.5" value="5">
+                      <input id="rakeValue" class="control-range" type="range" min="0" max="20" step="0.5" value="5">
 
-                      <select id="rakeUnit">
+                      <select id="rakeUnit" class="control-select control-select--compact">
 
                         <option>%</option>
 
@@ -610,7 +604,7 @@
 
                 <span data-i18n="Show Advanced Rules (Ante/Straddle)">Show Advanced Rules (Ante/Straddle)</span>
 
-                <button class="switch" id="toggleAdvanced" aria-pressed="false"><b></b></button>
+                <button class="switch ui-switch" id="toggleAdvanced" type="button" aria-label="Show advanced rules" aria-pressed="false"><b aria-hidden="true"></b></button>
 
               </div>
 
@@ -624,13 +618,11 @@
 
                       <span>Ante</span>
 
-                      <span><input id="anteNum" type="number" min="0" max="5" step="0.5" value="0"
-
-                          style="width: 40px; background: transparent; color: white; border: none; text-align: right; font-weight: bold; font-family: inherit; font-size: inherit; outline: none; padding: 0;"></span>
+                      <span class="control-value"><input id="anteNum" class="control-input control-input--inline" type="number" min="0" max="5" step="0.5" value="0"></span>
 
                     </div>
 
-                    <input id="ante" type="range" min="0" max="5" step="0.5" value="0">
+                    <input id="ante" class="control-range" type="range" min="0" max="5" step="0.5" value="0">
 
                   </div>
 
@@ -640,7 +632,7 @@
 
                   <label for="straddle">Straddle</label>
 
-                  <select id="straddle">
+                  <select id="straddle" class="control-select">
 
                     <option value="0">None</option>
 
@@ -660,7 +652,7 @@
 
                 <span data-i18n="Take rake from pot">Take rake from pot</span>
 
-                <button class="switch" id="rakePot" aria-pressed="false"><b></b></button>
+                <button class="switch ui-switch" id="rakePot" type="button" aria-label="Take rake from pot" aria-pressed="false"><b aria-hidden="true"></b></button>
 
               </div>
 
@@ -732,19 +724,19 @@
 
         <main class="main-content">
           <div style="text-align: right; margin-bottom: 8px; padding-right: 16px;">
-            <button id="toggleTableBtn" class="btn-action" style="font-size: 12px; padding: 4px 10px;">Collapse Table</button>
+            <button id="toggleTableBtn" class="ui-button ui-button--quiet" type="button">Collapse Table</button>
           </div>
           <div id="table-wrapper" class="table-wrapper">
             <div id="visual-table-container" style="width: 100%; max-width: 800px; margin: 0 auto 20px auto;"></div>
           </div>
 
-          <div class="sub-tabs" style="margin-bottom:16px;">
+          <div class="sub-tabs ui-segments" role="tablist" aria-label="Playbook views" style="margin-bottom:16px;">
 
-            <button class="sub-tab active" data-gto-view="context" data-i18n="Decision">Decision</button>
+            <button class="sub-tab ui-tab active" type="button" role="tab" aria-selected="true" data-gto-view="context" data-i18n="Decision">Decision</button>
 
-            <button class="sub-tab" data-gto-view="chart" data-i18n="Full range chart">Full range chart</button>
+            <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="chart" data-i18n="Full range chart">Full range chart</button>
 
-            <button class="sub-tab" data-gto-view="range" data-i18n="Range Advantage">Range Advantage</button>
+            <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="range" data-i18n="Range Advantage">Range Advantage</button>
 
             
 
@@ -760,7 +752,7 @@
 
             <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
 
-              <select id="heroPos" class="quick-select"
+              <select id="heroPos" class="quick-select control-select"
 
                 style="width:auto; min-width:80px; background:var(--surface-interactive); color:var(--text-primary); border:1px solid var(--border-default); padding:8px 12px; border-radius:var(--radius-control); font-weight:bold; font-size:14px; cursor:pointer;">
 
@@ -778,7 +770,7 @@
 
               </select>
 
-              <select id="lastAction" class="quick-select"
+              <select id="lastAction" class="quick-select control-select"
 
                 style="width:auto; min-width:110px; background:var(--surface-interactive); color:var(--text-primary); border:1px solid var(--border-default); padding:8px 12px; border-radius:var(--radius-control); font-weight:bold; font-size:14px; cursor:pointer;">
 
@@ -796,7 +788,7 @@
 
               </select>
 
-              <button class="secondary" id="openCharts" style="margin-left:auto;" data-i18n="View all hands">View all
+              <button class="secondary ui-button ui-button--secondary button-push-end" type="button" id="openCharts" data-i18n="View all hands">View all
 
                 hands</button>
 
@@ -808,13 +800,11 @@
 
                 <div class="slider-container">
 
-                  <div class="slider-header"><span data-i18n="Facing size">Facing size</span><span><input id="facingSizeNum" type="number" min="0" max="100" step="0.5" value="0"
-
-                      style="width: 50px; background: transparent; color: white; border: none; text-align: right; font-weight: bold; font-family: inherit; font-size: inherit; outline: none; padding: 0;">
+                  <div class="slider-header"><span data-i18n="Facing size">Facing size</span><span class="control-value"><input id="facingSizeNum" class="control-input control-input--inline" type="number" min="0" max="100" step="0.5" value="0">
 
                     bb</span></div>
 
-                  <input id="facingSize" type="range" min="0" max="100" step="0.5" value="0">
+                  <input id="facingSize" class="control-range" type="range" min="0" max="100" step="0.5" value="0">
 
                 </div>
 
@@ -824,13 +814,11 @@
 
                 <div class="slider-container">
 
-                  <div class="slider-header"><span data-i18n="Pot before action">Pot before action</span><span><input id="potSizeNum" type="number" min="0.5" max="200" step="0.5" value="1.5"
-
-                      style="width: 50px; background: transparent; color: white; border: none; text-align: right; font-weight: bold; font-family: inherit; font-size: inherit; outline: none; padding: 0;">
+                  <div class="slider-header"><span data-i18n="Pot before action">Pot before action</span><span class="control-value"><input id="potSizeNum" class="control-input control-input--inline" type="number" min="0.5" max="200" step="0.5" value="1.5">
 
                     bb</span></div>
 
-                  <input id="potSize" type="range" min="0.5" max="200" step="0.5" value="1.5">
+                  <input id="potSize" class="control-range" type="range" min="0.5" max="200" step="0.5" value="1.5">
 
                 </div>
 
@@ -872,7 +860,7 @@
 
                 </div>
 
-                <div class="badge" id="sourceBadge" style="margin-top:4px;">GTO MATRIX</div>
+                <div class="badge status-badge status-badge--info" id="sourceBadge" style="margin-top:4px;">HEURISTIC</div>
 
               </div>
 
@@ -1026,13 +1014,13 @@
 
                 <div class="street-tabs">
 
-                  <button class="street-tab active" data-chart-street="preflop" data-i18n="Preflop">Preflop</button>
+                  <button class="street-tab ui-tab active" type="button" role="tab" aria-selected="true" data-chart-street="preflop" data-i18n="Preflop">Preflop</button>
 
-                  <button class="street-tab" data-chart-street="flop" data-i18n="Flop">Flop</button>
+                  <button class="street-tab ui-tab" type="button" role="tab" aria-selected="false" data-chart-street="flop" data-i18n="Flop">Flop</button>
 
-                  <button class="street-tab" data-chart-street="turn" data-i18n="Turn">Turn</button>
+                  <button class="street-tab ui-tab" type="button" role="tab" aria-selected="false" data-chart-street="turn" data-i18n="Turn">Turn</button>
 
-                  <button class="street-tab" data-chart-street="river" data-i18n="River">River</button>
+                  <button class="street-tab ui-tab" type="button" role="tab" aria-selected="false" data-chart-street="river" data-i18n="River">River</button>
 
                 </div>
 
@@ -1289,15 +1277,13 @@
 
                       <span data-i18n="Table size">Table size</span>
 
-                      <span><input id="trainingPlayersNum" type="number" min="2" max="10" step="1" value="8"
-
-                          style="width: 40px; background: transparent; color: white; border: none; text-align: right; font-weight: bold; font-family: inherit; font-size: inherit; outline: none; padding: 0;">
+                      <span class="control-value"><input id="trainingPlayersNum" class="control-input control-input--inline" type="number" min="2" max="10" step="1" value="8">
 
                         -max</span>
 
                     </div>
 
-                    <input id="trainingPlayers" type="range" min="2" max="10" step="1" value="8">
+                    <input id="trainingPlayers" class="control-range" type="range" min="2" max="10" step="1" value="8">
 
                   </div>
 
@@ -1311,15 +1297,13 @@
 
                       <span data-i18n="Starting stack">Starting stack</span>
 
-                      <span><input id="trainingStackNum" type="number" min="10" max="500" step="1" value="30"
-
-                          style="width: 50px; background: transparent; color: white; border: none; text-align: right; font-weight: bold; font-family: inherit; font-size: inherit; outline: none; padding: 0;">
+                      <span class="control-value"><input id="trainingStackNum" class="control-input control-input--inline" type="number" min="10" max="500" step="1" value="30">
 
                         bb</span>
 
                     </div>
 
-                    <input id="trainingStack" type="range" min="10" max="500" step="1" value="30">
+                    <input id="trainingStack" class="control-range" type="range" min="10" max="500" step="1" value="30">
 
                   </div>
 
@@ -1363,7 +1347,7 @@
 
           <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
 
-            <select id="trainingHeroPos" class="quick-select training-select">
+            <select id="trainingHeroPos" class="quick-select training-select control-select">
 
               <option value="UTG" selected>UTG</option>
 
@@ -1379,7 +1363,7 @@
 
             </select>
 
-            <select id="trainingLastAction" class="quick-select training-select">
+            <select id="trainingLastAction" class="quick-select training-select control-select">
 
               <option value="unopened" selected data-i18n="Unopened">Unopened</option>
 
@@ -1447,11 +1431,11 @@
 
             <div id="trainingGuessButtons" style="display:none; gap:12px; margin-bottom:20px;">
 
-              <button class="cta" id="trainingFoldBtn" style="background:var(--red);" data-i18n="Fold">Fold</button>
+              <button class="cta ui-button ui-button--poker-fold" type="button" id="trainingFoldBtn" data-action="fold" data-i18n="Fold">Fold</button>
 
-              <button class="cta" id="trainingCallBtn" style="background:var(--matrix-call);" data-i18n="Call">Call</button>
+              <button class="cta ui-button ui-button--poker-passive" type="button" id="trainingCallBtn" data-action="call" data-i18n="Call">Call</button>
 
-              <button class="cta" id="trainingRaiseBtn" style="background:var(--matrix-open);" data-i18n="Raise">Raise</button>
+              <button class="cta ui-button ui-button--poker-aggressive" type="button" id="trainingRaiseBtn" data-action="raise" data-i18n="Raise">Raise</button>
 
             </div>
 
@@ -1461,7 +1445,7 @@
 
               <div style="font-size:14px; font-weight:600; margin-bottom:8px; color:var(--text);" id="feedbackTitle">Feedback</div>
 
-              <div style="font-size:13px; color:var(--muted);" id="feedbackText">Your guess will be compared against the GTO solution.</div>
+              <div style="font-size:13px; color:var(--muted);" id="feedbackText">Your guess will be compared against the current strategy reference.</div>
 
             </div>
 
@@ -1469,7 +1453,7 @@
 
             <div id="trainingSolution" style="display:none;">
 
-              <div style="font-size:12px; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;" data-i18n="GTO Solution">GTO Solution</div>
+              <div style="font-size:12px; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;" data-i18n="Strategy reference">Strategy reference</div>
 
               <div class="wheel-section" style="display:flex; gap: 32px; align-items:center;">
 
@@ -1537,7 +1521,7 @@
 
             </div>
 
-            <button class="cta training-next-btn" id="trainingNextHandBtn" style="display:none; margin-top:20px; width:100%; justify-content:center;" data-i18n="Next Hand →">Next Hand →</button>
+            <button class="cta ui-button ui-button--primary training-next-btn" type="button" id="trainingNextHandBtn" style="display:none; margin-top:20px; width:100%; justify-content:center;" data-i18n="Next Hand →">Next Hand →</button>
 
           </section>
 
@@ -1572,7 +1556,7 @@
 
                 <label class="field-label" style="font-size:12px; font-weight:600; color:var(--text);" data-i18n="Assistance Level">Assistance Level</label>
 
-                <select id="trainingDifficulty" class="select" style="width:100%; margin-top:4px;">
+                <select id="trainingDifficulty" class="select control-select" style="width:100%; margin-top:4px;">
 
                   <option value="hard" selected data-i18n="Hard (Standard GTO - No Odds)">Hard (Standard GTO - No Odds)</option>
 
@@ -1592,23 +1576,23 @@
 
                   <span style="font-size:13px; font-weight:600; color:var(--text);" data-i18n="Show solution immediately">Show solution immediately</span>
 
-                  <button class="switch" id="trainingShowSolution" aria-pressed="false"><b></b></button>
+                  <button class="switch ui-switch" id="trainingShowSolution" type="button" aria-label="Show solution immediately" aria-pressed="false"><b aria-hidden="true"></b></button>
 
                 </div>
 
-                <div class="panel-note" style="margin-top:4px;" data-i18n="Reveal GTO solution right after your guess.">Reveal GTO solution right after your guess.</div>
+                <div class="panel-note" style="margin-top:4px;" data-i18n="Reveal the current strategy reference right after your guess.">Reveal the current strategy reference right after your guess.</div>
 
               </div>
 
               <div class="field full" style="margin-top:16px;">
 
-                <button class="secondary" id="trainingResetStats" data-i18n="Reset Statistics">Reset Statistics</button>
+                <button class="secondary ui-button ui-button--destructive" type="button" id="trainingResetStats" data-i18n="Reset Statistics">Reset Statistics</button>
 
               </div>
 
               <div class="field full" style="margin-top:16px;">
 
-                <button class="cta" id="trainingNewHand" data-i18n="New Random Hand">New Random Hand</button>
+                <button class="cta ui-button ui-button--primary" type="button" id="trainingNewHand" data-i18n="New Random Hand">New Random Hand</button>
 
               </div>
 
@@ -1843,7 +1827,7 @@
 
 
 
-                  <select id="trials">
+                  <select id="trials" class="control-select">
 
 
 
@@ -1879,7 +1863,7 @@
 
 
 
-                  <select id="calcStyle">
+                  <select id="calcStyle" class="control-select">
 
 
 
@@ -1907,7 +1891,7 @@
 
 
 
-              <button class="cta" id="calculate" data-i18n="Calculate win probability">Calculate win
+              <button class="cta ui-button ui-button--primary" type="button" id="calculate" data-i18n="Calculate win probability">Calculate win
 
                 probability</button>
 
@@ -2462,7 +2446,7 @@
 
   <div class="modal-backdrop" id="cardModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
 
-    <div class="modal">
+    <div class="modal overlay-surface">
 
       <div class="modal-head">
 
@@ -2476,7 +2460,9 @@
 
         </div>
 
-        <button class="close" id="closeModal" aria-label="Close card picker">×</button>
+        <button class="close ui-button ui-button--icon" id="closeModal" type="button" aria-label="Close card picker" title="Close card picker">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
 
       </div>
 
@@ -2503,39 +2489,41 @@
 
 
   <div class="modal-backdrop" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-    <div class="modal" style="max-width:750px; width:100%;">
+    <div class="modal overlay-surface settings-modal">
       <div class="modal-head">
         <div>
           <h2 id="settingsTitle" data-i18n="Settings">Settings</h2>
           <p data-i18n="Customize your workstation.">Customize your workstation.</p>
         </div>
-        <button class="close" id="closeSettingsModal" aria-label="Close settings">-</button>
+        <button class="close ui-button ui-button--icon" id="closeSettingsModal" type="button" aria-label="Close settings" title="Close settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
       </div>
-      <div class="panel-body" style="padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+      <div class="panel-body modal-body settings-grid">
         
-        <div>
-            <h3 style="font-size:14px; font-weight:700; color:var(--text); margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--line);" data-i18n="Appearance & Themes">Appearance & Themes</h3>
+        <div class="settings-group">
+            <h3 class="settings-section-title" data-i18n="Appearance & Themes">Appearance & Themes</h3>
             
             <div class="field" style="margin-top: 16px;">
               <div class="switchrow" style="margin: 0;">
                 <span style="font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;" data-i18n="4-Color Deck (Pro)">4-Color Deck (Pro)</span>
-                <button class="switch on" id="fourColorDeckToggle" aria-pressed="true"><b></b></button>
+                <button class="switch ui-switch on" id="fourColorDeckToggle" type="button" aria-label="Use four-color deck" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
               <div class="panel-note" style="margin-top: 4px;" data-i18n="Use distinct colors for all four suits.">Use distinct colors for all four suits.</div>
             </div>
 
-            <div id="themeSwatchGrid" style="box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 24px; max-height: 280px; overflow-y: auto; overflow-x: hidden; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel2);">
+            <div id="themeSwatchGrid" class="theme-swatch-grid section-inset">
               <!-- Dynamically populated theme swatch buttons in JS -->
             </div>
         </div>
 
-        <div>
-            <h3 style="font-size:14px; font-weight:700; color:var(--text); margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--line);" data-i18n="Engine & Connectivity">Engine & Connectivity</h3>
+        <div class="settings-group">
+            <h3 class="settings-section-title" data-i18n="Engine & Connectivity">Engine & Connectivity</h3>
 
             <div class="field" style="margin-top: 16px;">
               <div class="switchrow" style="margin: 0;">
                 <span style="font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;" data-i18n="Local ONNX Engine">Local ONNX Engine</span>
-                <button class="switch on" id="useOnnxToggle" aria-pressed="true"><b></b></button>
+                <button class="switch ui-switch on" id="useOnnxToggle" type="button" aria-label="Use local ONNX engine" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
               <div class="panel-note" style="margin-top: 4px;" data-i18n="Run the neural network locally in your browser.">Run the neural network locally in your browser.</div>
             </div>
@@ -2543,7 +2531,7 @@
             <div class="field" style="margin-top: 24px;">
               <div class="switchrow" style="margin: 0;">
                 <span style="font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;" data-i18n="Auto-connect Live API">Auto-connect Live API</span>
-                <button class="switch" id="autoConnectApi" aria-pressed="false"><b></b></button>
+                <button class="switch ui-switch" id="autoConnectApi" type="button" aria-label="Auto-connect live API" aria-pressed="false"><b aria-hidden="true"></b></button>
               </div>
               <div class="panel-note" style="margin-top: 4px;" data-i18n="Automatically connect to the local Python AI server on startup.">Automatically connect to the local Python AI server on startup.</div>
             </div>
@@ -2551,15 +2539,16 @@
             <div class="field" style="margin-top: 24px;">
               <div class="switchrow" style="margin: 0;">
                 <span style="font-size: 13px; font-weight: 600; color: var(--text);" data-i18n="Audio Sound FX">Audio Sound FX</span>
-                <button class="switch on" id="audioSettingsSwitch" aria-pressed="true"><b></b></button>
+                <button class="switch ui-switch on" id="audioSettingsSwitch" type="button" aria-label="Enable audio sound effects" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
               <div class="panel-note" style="margin-top: 4px;" data-i18n="Play UI sound effects.">Play UI sound effects.</div>
             </div>
 
             <div class="field" style="margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line);">
               <label style="font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: block;" data-i18n="Custom Solver Tree (JSON)">Custom Solver Tree (JSON)</label>
-              <label class="solver-import-btn" style="display: block; width: 100%; text-align: center; padding: 12px; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">
-                <span data-i18n="Load Solver Tree (.json)">📁 Load Solver Tree (.json)</span>
+              <label class="solver-import-btn ui-button ui-button--secondary">
+                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5h6l2 2h10v9.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7.5Z"/><path d="M3 7.5V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2.5"/></svg>
+                <span data-i18n="Load Solver Tree (.json)">Load Solver Tree (.json)</span>
                 <input type="file" id="solverTreeUpload" accept=".json" style="display: none;">
               </label>
             </div>
@@ -2571,7 +2560,7 @@
 
 
 
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" data-tone="info"></div>
 
   </div> <!-- /.shell -->
 

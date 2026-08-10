@@ -327,7 +327,7 @@ function renderSlots(group, count) {
 
     const card = cards[index];
 
-    return `<button class="card-slot${card ? ' filled card-bend-flip' : ''}" data-group="${group}" data-index="${index}" aria-label="${card ? 'Replace ' + displayCard(card) : 'Choose card ' + (index + 1)}">${cardMarkup(card)}</button>`;
+    return `<button type="button" class="card-slot${card ? ' filled card-bend-flip' : ''}" data-group="${group}" data-index="${index}" aria-label="${card ? 'Replace ' + displayCard(card) : 'Choose card ' + (index + 1)}">${cardMarkup(card)}</button>`;
 
   }).join('');
 
@@ -357,7 +357,7 @@ function renderEquityPlayers() {
     row.innerHTML = `
       <div class="player-label">
         <strong>${playerLabelText}</strong>
-        ${playerIndex > 1 ? `<button class="remove-player" data-remove-player="${playerIndex}">${removeText}</button>` : ''}
+        ${playerIndex > 1 ? `<button type="button" class="remove-player ui-button ui-button--quiet ui-button--destructive" data-remove-player="${playerIndex}">${removeText}</button>` : ''}
       </div>
       <div style="display:flex; flex-direction:row; gap:16px; align-items:stretch;">
         <div class="card-slots" data-slots="player-${playerIndex}" style="flex-shrink:0;"></div>
@@ -381,13 +381,14 @@ function renderEquityPlayers() {
 
   const add = document.createElement('button');
 
-  add.className = 'add-player';
+  add.type = 'button';
+  add.className = 'add-player ui-button ui-button--secondary';
 
   add.innerHTML = '<span>' + (t('+ Add Opponent') || '+ Add Opponent') + '</span>';
 
   add.addEventListener('click', () => {
 
-    if (app.equity.players.length >= 8) return toast('Maximum of eight players.');
+    if (app.equity.players.length >= 8) return toast('Maximum of eight players.', 'warning');
 
     // Edge case: Check if adding too many players would break equity calculation
     if (app.equity.players.length >= 7) {
@@ -527,7 +528,7 @@ function renderDeck() {
 
       const suit = getSuit(card);
 
-      return `<button class="deck-card" data-deck-card="${card}" ${unavailable.has(card) ? 'disabled' : ''}><span class="s-${suit.id}">${card[0]}</span><span class="symbol s-${suit.id}">${suit.symbol}</span></button>`;
+      return `<button type="button" class="deck-card" aria-label="Choose ${card}" data-deck-card="${card}" ${unavailable.has(card) ? 'disabled' : ''}><span class="s-${suit.id}">${card[0]}</span><span class="symbol s-${suit.id}">${suit.symbol}</span></button>`;
 
     }).join('');
 
@@ -565,7 +566,7 @@ function selectCard(card) {
 
     const freeIndex = firstEmptyIndex(deadCards, 52);
 
-    if (freeIndex < 0) return toast('No empty burned-card slot.');
+    if (freeIndex < 0) return toast('No empty burned-card slot.', 'warning');
 
     target[index] = null;
 
@@ -3089,6 +3090,7 @@ async function updateContext(reason = 'Context updated') {
       const isCurrent = button.dataset.chartStreet === street;
 
       button.classList.toggle('active', isCurrent);
+      button.setAttribute('aria-selected', String(isCurrent));
 
       button.disabled = !isCurrent;
 
@@ -3256,7 +3258,7 @@ async function loadOnnxModel() {
 
       console.error('ONNX Runtime not loaded - ort is undefined');
 
-      toast('ONNX Runtime library not loaded');
+      toast('ONNX Runtime library not loaded', 'error');
 
       setStrategySourceStatus('unavailable', 'Model unavailable · heuristic');
 
@@ -3311,7 +3313,7 @@ async function loadOnnxModel() {
 
         console.log(`ONNX model loaded successfully from ${modelPath}`);
 
-        toast('ONNX model loaded successfully');
+        toast('ONNX model loaded successfully', 'success');
 
         
 
@@ -3341,7 +3343,7 @@ async function loadOnnxModel() {
 
     console.error('Failed to load ONNX model:', err);
 
-    toast('Failed to load ONNX: ' + err.message);
+    toast('Failed to load ONNX: ' + err.message, 'error');
 
     app.useOnnx = false;
 
@@ -4015,7 +4017,7 @@ function calculateEquity() {
 
   const needed = blankHoleCards + missingBoard;
 
-  if (deck.length < needed) return toast('Not enough cards remain in the deck.');
+  if (deck.length < needed) return toast('Not enough cards remain in the deck.', 'warning');
 
 
 
@@ -4111,7 +4113,7 @@ function renderEquityResult(result, exact, total, splitRate) {
 
   `).join('') + `<div class="equity-row"><span>Split pots</span><div class="eqbar"><div class="eqfill tie" style="width:${splitRate}%"></div></div><b>${splitRate.toFixed(1)}%</b></div>`;
 
-  toast('Win probability updated');
+  toast('Win probability updated', 'success');
 
   // === OUTS CALCULATION (per-player, shown inline beside each player's cards) ===
   // Available on Flop (3 cards) or Turn (4 cards) when both player hands are known
@@ -4280,7 +4282,7 @@ function loadSolverFile(file) {
 
       $('#sourceBadge').textContent = 'LOCAL TREE';
 
-      toast(`Loaded ${app.solver.title}`);
+      toast(`Loaded ${app.solver.title}`, 'success');
 
       updateContext('Solver tree loaded');
 
@@ -4288,7 +4290,7 @@ function loadSolverFile(file) {
 
       app.solver = null;
 
-      toast(error.message || 'Could not parse solver JSON.');
+      toast(error.message || 'Could not parse solver JSON.', 'error');
 
       updateContext('Solver import failed');
 
@@ -4320,11 +4322,15 @@ function applyDeckStyle(is4Color) {
 
 
 
-function toast(message) {
+function toast(message, tone = 'info') {
 
   const element = $('#toast');
 
+  if (!element) return;
+
   element.textContent = message;
+
+  element.dataset.tone = ['info', 'success', 'warning', 'error'].includes(tone) ? tone : 'info';
 
   element.classList.add('show');
 
@@ -4472,7 +4478,11 @@ function bindEvents() {
 
     const view = button.dataset.gtoView;
 
-    $$('.sub-tab').forEach((item) => item.classList.toggle('active', item === button));
+    $$('.sub-tab').forEach((item) => {
+      const isSelected = item === button;
+      item.classList.toggle('active', isSelected);
+      item.setAttribute('aria-selected', String(isSelected));
+    });
 
     if ($('#contextView')) $('#contextView').style.display = view === 'context' ? 'block' : 'none';
 
@@ -4706,7 +4716,7 @@ function bindEvents() {
       if (!app.settings) app.settings = {};
       app.settings.tightness = val;
       if (tightnessLabel) {
-        tightnessLabel.textContent = val <= 25 ? 'Strict GTO' : val <= 75 ? 'Loose Online' : 'Splashy Home Game';
+        tightnessLabel.textContent = val <= 25 ? 'Baseline' : val <= 75 ? 'Loose Online' : 'Splashy Home Game';
       }
     });
     tightnessSlider.addEventListener('change', () => updateContext('Tightness changed'));
@@ -4721,7 +4731,7 @@ function bindEvents() {
       if (!app.settings) app.settings = {};
       app.settings.oppTightness = val;
       if (oppTightnessLabel) {
-        oppTightnessLabel.textContent = val <= 25 ? 'Strict GTO' : val <= 75 ? 'Loose Online' : 'Splashy Home Game';
+        oppTightnessLabel.textContent = val <= 25 ? 'Baseline' : val <= 75 ? 'Loose Online' : 'Splashy Home Game';
       }
     });
     oppTightnessSlider.addEventListener('change', () => updateContext('Opponent Tightness changed'));
@@ -4877,19 +4887,19 @@ function initThemeSwatches() {
 
     return `
 
-      <button type="button" class="theme-swatch-btn ${isSelected ? 'active' : ''}" data-theme-id="${tItem.id}"
+      <button type="button" class="theme-swatch-btn ${isSelected ? 'active' : ''}" data-theme-id="${tItem.id}" aria-pressed="${isSelected}"
 
-        style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; width: 100%; min-width: 0; box-sizing: border-box; background: ${tItem.bg}; border: ${isSelected ? '2px solid ' + tItem.color : '1px solid rgba(127,127,127,0.35)'}; border-radius: ${tItem.sharp ? '0px' : '6px'}; cursor: pointer; text-align: left; transition: transform 0.1s;">
+        style="--swatch-bg:${tItem.bg}; --swatch-accent:${tItem.color}; --swatch-radius:${tItem.sharp ? '0px' : 'var(--radius-cell)'}; --swatch-border-width:${isSelected ? '2px' : '1px'};">
 
-        <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; min-width: 0; flex: 1;">
+        <div class="theme-swatch-copy">
 
-          <span style="display: inline-block; margin-left: 4px; width: 8px; height: 8px; flex-shrink: 0; border-radius: ${tItem.sharp ? '0px' : '50%'}; background: ${tItem.color};"></span>
+          <span class="theme-swatch-dot"></span>
 
-          <span style="color: ${tItem.color}; font-size: 11px; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${t(tItem.name)}</span>
+          <span class="theme-swatch-name">${t(tItem.name)}</span>
 
         </div>
 
-        ${tItem.sharp ? `<span style="font-size: 8px; padding: 1px 3px; background: ${tItem.color}; color: #000; font-weight: bold; border-radius: 2px; flex-shrink: 0; margin-left: 4px;">0px</span>` : ''}
+        ${tItem.sharp ? `<span class="theme-swatch-sharp">0px</span>` : ''}
 
       </button>
 
@@ -4901,11 +4911,11 @@ function initThemeSwatches() {
 
   grid.innerHTML = `
 
-    <div style="grid-column: 1 / -1; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 2px 0 4px 2px;">Riverline Themes</div>
+    <div class="theme-swatch-heading">Riverline Themes</div>
 
     ${riverlineThemes.map(renderBtn).join('')}
 
-    <div style="grid-column: 1 / -1; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 10px 0 4px 2px; border-top: 1px dashed var(--border-default); padding-top: 6px;">Legacy / Experimental</div>
+    <div class="theme-swatch-heading theme-swatch-heading--legacy">Legacy / Experimental</div>
 
     ${legacyThemes.map(renderBtn).join('')}
 
@@ -4964,7 +4974,7 @@ async function toggleOnnxModel() {
 
     }
 
-    toast(t('ONNX Neural Net disabled'));
+    toast(t('ONNX Neural Net disabled'), 'info');
 
     updateContext('ONNX Disabled');
 
@@ -4992,7 +5002,7 @@ async function toggleOnnxModel() {
 
       }
 
-      toast(t('ONNX Neural Net connected'));
+      toast(t('ONNX Neural Net connected'), 'success');
 
       updateContext('Switched to ONNX');
 
@@ -5008,7 +5018,7 @@ async function toggleOnnxModel() {
 
       }
 
-      toast(t('Failed to load ONNX model'));
+      toast(t('Failed to load ONNX model'), 'error');
 
     }
 
