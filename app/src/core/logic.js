@@ -172,6 +172,34 @@ const app = {
 
 window.app = app;
 
+// Narrow classic-script boundary to the opt-in ESM canonical development
+// controller. Bridge failures are observational only and never interrupt the
+// authoritative legacy Playbook path.
+function callCanonicalDevelopmentBridge(method, ...args) {
+  try {
+    const bridge = window.RiverlineCanonicalDev;
+    if (!bridge || typeof bridge[method] !== 'function') return null;
+    return bridge[method](...args);
+  } catch (error) {
+    if (window.RiverlineCanonicalDev?.isEnabled?.()) {
+      console.debug('[Riverline canonical shadow] bridge error', error);
+    }
+    return null;
+  }
+}
+
+function notifyCanonicalConfigurationChanged() {
+  return callCanonicalDevelopmentBridge('configurationChanged');
+}
+
+function notifyCanonicalHeroCardsChanged() {
+  return callCanonicalDevelopmentBridge('heroCardsChanged', app.gto.hero.filter(Boolean));
+}
+
+function notifyCanonicalBoardCardsChanged() {
+  return callCanonicalDevelopmentBridge('boardCardsChanged', app.gto.board.filter(Boolean));
+}
+
 
 
 const $ = (selector) => document.querySelector(selector);
@@ -551,7 +579,11 @@ function selectCard(card) {
 
 
 
-  if (group === 'hero') app.selectedHand = null;
+  if (group === 'hero') {
+    app.selectedHand = null;
+    notifyCanonicalHeroCardsChanged();
+  }
+  if (group === 'board') notifyCanonicalBoardCardsChanged();
 
   if (window.SoundFX) SoundFX.playCardDeal();
 
@@ -621,6 +653,9 @@ function clearGroup(group) {
   if (group === 'hero') app.selectedHand = null;
 
   groupCards(group).length = 0;
+
+  if (group === 'hero') notifyCanonicalHeroCardsChanged();
+  if (group === 'board') notifyCanonicalBoardCardsChanged();
 
   renderAllCards();
 
@@ -2860,6 +2895,11 @@ async function updateContext(reason = 'Context updated') {
   const decisionContext = deriveDecisionContext(inputSnapshot);
   const legacyStrategyContext = decisionContextToLegacyStrategyContext(decisionContext);
   app.decisionContext = decisionContext;
+  try {
+    globalThis.RiverlineCanonicalDev?.compare?.();
+  } catch (error) {
+    // Shadow diagnostics are non-authoritative and must never interrupt Playbook.
+  }
   
   if (decisionContext.street === 'preflop' && decisionContext.lastAction === 'unopened') {
     if ($('#facingSize')) $('#facingSize').value = decisionContext.facingSizeBb;
@@ -4350,6 +4390,9 @@ function bindEvents() {
 
         groupCards(group)[index] = null;
 
+        if (group === 'hero') notifyCanonicalHeroCardsChanged();
+        if (group === 'board') notifyCanonicalBoardCardsChanged();
+
         renderAllCards();
 
         if (isEquityGroup(group)) setEquityPending();
@@ -4487,19 +4530,38 @@ function bindEvents() {
 
 
 
-  bindSliderPair('players', 'playersNum', () => { updatePositions(); updateContext('Table size changed'); });
+  bindSliderPair('players', 'playersNum', () => {
+    updatePositions();
+    notifyCanonicalConfigurationChanged();
+    updateContext('Table size changed');
+  });
 
-  bindSliderPair('stack', 'stackNum', () => updateContext('Stack changed'));
+  bindSliderPair('stack', 'stackNum', () => {
+    notifyCanonicalConfigurationChanged();
+    updateContext('Stack changed');
+  });
 
   bindSliderPair('rakeValue', 'rakeValueNum', () => updateContext('Rake changed'));
 
-  bindSliderPair('ante', 'anteNum', () => updateContext('Ante changed'));
+  bindSliderPair('ante', 'anteNum', () => {
+    notifyCanonicalConfigurationChanged();
+    updateContext('Ante changed');
+  });
 
   bindSliderPair('facingSize', 'facingSizeNum', () => updateContext('Sizing changed'));
 
   bindSliderPair('potSize', 'potSizeNum', () => updateContext('Sizing changed'));
 
-  ['rakeMode', 'rakeUnit', 'stackMode', 'heroPos', 'lastAction', 'straddle'].forEach((id) => {
+  ['rakeMode', 'stackMode', 'heroPos', 'straddle'].forEach((id) => {
+
+    if ($('#' + id)) $('#' + id).addEventListener('change', () => {
+      notifyCanonicalConfigurationChanged();
+      updateContext('Configuration changed');
+    });
+
+  });
+
+  ['rakeUnit', 'lastAction'].forEach((id) => {
 
     if ($('#' + id)) $('#' + id).addEventListener('change', () => updateContext('Configuration changed'));
 

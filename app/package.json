@@ -40,6 +40,13 @@
       "!**/node_modules/*.d.ts",
       "!**/node_modules/.bin"
     ],
+    "extraResources": [
+      {
+        "from": "../shared/poker-domain",
+        "to": "shared/poker-domain",
+        "filter": ["**/*"]
+      }
+    ],
     "win": {
       "target": [
         {

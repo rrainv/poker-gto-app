@@ -1,9 +1,29 @@
 ﻿import http.server
 import socketserver
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+
+REPOSITORY_ROOT = Path(__file__).resolve().parent
+APP_DIRECTORY = REPOSITORY_ROOT / "app"
+POKER_DOMAIN_DIRECTORY = REPOSITORY_ROOT / "shared" / "poker-domain"
+
 
 class CustomHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory="app", **kwargs)
+        super().__init__(*args, directory=str(APP_DIRECTORY), **kwargs)
+
+    def translate_path(self, path):
+        request_path = unquote(urlsplit(path).path)
+        domain_prefix = "/shared/poker-domain/"
+        if request_path.startswith(domain_prefix):
+            candidate = (POKER_DOMAIN_DIRECTORY / request_path[len(domain_prefix):]).resolve()
+            try:
+                candidate.relative_to(POKER_DOMAIN_DIRECTORY.resolve())
+            except ValueError:
+                return str(POKER_DOMAIN_DIRECTORY / "__invalid_path__")
+            return str(candidate)
+        return super().translate_path(path)
+
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
