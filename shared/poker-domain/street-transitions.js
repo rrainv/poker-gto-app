@@ -63,6 +63,7 @@ export function markShowdownReady(state) {
     eligiblePlayerIds: state.players.filter(isPlayerLive).map((player) => player.playerId),
     pots: [],
     handRanksByPlayer: null,
+    layerResults: [],
   };
 }
 

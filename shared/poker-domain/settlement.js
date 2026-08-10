@@ -9,7 +9,7 @@ import { isPlayerLive } from './selectors.js';
 import { deriveUnmatchedContribution } from './pot-layers.js';
 import { markShowdownReady, requestBoardChance } from './street-transitions.js';
 
-function appendLedger(state, playerId, kind, amountMilliBb) {
+function appendLedger(state, playerId, kind, amountMilliBb, metadata = {}) {
   if (amountMilliBb === 0) return;
   state.ledger.push({
     sequence: state.ledger.length,
@@ -18,15 +18,18 @@ function appendLedger(state, playerId, kind, amountMilliBb) {
     kind,
     movement: LEDGER_MOVEMENTS.POT_TO_STACK,
     amountMilliBb,
+    ...metadata,
   });
 }
 
-function creditFromPot(state, player, amountMilliBb, kind) {
+export function creditPotToPlayer(state, playerId, amountMilliBb, kind, metadata = {}) {
+  const player = state.players.find((candidate) => candidate.playerId === playerId);
+  if (!player) throw new RangeError(`Unknown playerId: ${playerId}`);
   if (amountMilliBb === 0) return;
   if (amountMilliBb > state.potMilliBb) throw new RangeError('Pot credit exceeds the pot');
   state.potMilliBb -= amountMilliBb;
   player.currentStackMilliBb += amountMilliBb;
-  appendLedger(state, player.playerId, kind, amountMilliBb);
+  appendLedger(state, player.playerId, kind, amountMilliBb, metadata);
 }
 
 function highestLiveContributor(state) {
@@ -41,10 +44,10 @@ export function refundUncalledExcess(state, recipientPlayerId = null) {
   const recipient = recipientPlayerId === null
     ? highestLiveContributor(state)
     : state.players.find((player) => player.playerId === recipientPlayerId);
-  if (!recipient || !isPlayerLive(recipient)) return null;
+  if (!recipient || (recipientPlayerId === null && !isPlayerLive(recipient))) return null;
   const unmatched = deriveUnmatchedContribution(state, recipient.playerId);
   const amountMilliBb = unmatched === null ? 0 : unmatched.amountMilliBb;
-  creditFromPot(state, recipient, amountMilliBb, LEDGER_KINDS.UNCALLED_REFUND);
+  creditPotToPlayer(state, recipient.playerId, amountMilliBb, LEDGER_KINDS.UNCALLED_REFUND);
   return amountMilliBb === 0 ? null : { playerId: recipient.playerId, amountMilliBb };
 }
 
@@ -73,7 +76,7 @@ export function settleFoldTerminal(state, winnerPlayerId) {
   if (!winner || !isPlayerLive(winner)) throw new RangeError('Fold settlement requires one live winner');
   const refund = refundUncalledExcess(state, winnerPlayerId);
   const payoutMilliBb = state.potMilliBb;
-  creditFromPot(state, winner, payoutMilliBb, LEDGER_KINDS.POT_AWARD);
+  creditPotToPlayer(state, winner.playerId, payoutMilliBb, LEDGER_KINDS.POT_AWARD);
 
   state.phase = PHASES.TERMINAL;
   state.actingPlayerId = null;

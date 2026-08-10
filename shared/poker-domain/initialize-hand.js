@@ -204,6 +204,7 @@ export function initializeHand(configuration) {
       eligiblePlayerIds: [],
       pots: [],
       handRanksByPlayer: null,
+      layerResults: [],
     },
   };
 

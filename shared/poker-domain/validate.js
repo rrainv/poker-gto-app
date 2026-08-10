@@ -1,6 +1,7 @@
 import { assertCardArray, assertUniqueKnownCards } from './cards.js';
 import { assertMilliBbAlignment, assertPositiveMilliBb } from './amounts.js';
 import { validateAction } from './action.js';
+import { derivePotLayers } from './pot-layers.js';
 import { deriveSeatAssignments, playersClockwiseAfterSeat, POSITIONS_BY_TABLE_SIZE } from './positions.js';
 import {
   isBettingRoundComplete,
@@ -17,6 +18,8 @@ import {
   LEDGER_MOVEMENTS,
   PHASES,
   POKER_ACTION_RECORD_SCHEMA_VERSION,
+  POKER_HAND_RANK_SCHEMA_VERSION,
+  POKER_SHOWDOWN_LAYER_RESULT_SCHEMA_VERSION,
   POKER_STATE_SCHEMA_VERSION,
   POKER_VARIANT,
   STREETS,
@@ -34,6 +37,15 @@ const CHANCE_CARD_COUNT = Object.freeze({
   [CHANCE_TYPES.DEAL_TURN]: 1,
   [CHANCE_TYPES.DEAL_RIVER]: 1,
 });
+
+function sameNumericRecord(left, right) {
+  if (!left || typeof left !== 'object' || Array.isArray(left)
+    || !right || typeof right !== 'object' || Array.isArray(right)) return false;
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  return leftKeys.length === rightKeys.length
+    && leftKeys.every((key) => Object.hasOwn(right, key) && left[key] === right[key]);
+}
 
 export function validateGameConfiguration(game, tableSize) {
   if (!game || typeof game !== 'object') throw new TypeError('game configuration is required');
@@ -190,6 +202,14 @@ export function validatePokerState(state) {
     if ([LEDGER_KINDS.UNCALLED_REFUND, LEDGER_KINDS.POT_AWARD].includes(entry.kind)
       && entry.movement !== LEDGER_MOVEMENTS.POT_TO_STACK) {
       throw new RangeError('Refunds and awards must move from pot to stack');
+    }
+    if (Object.hasOwn(entry, 'settlementReason')) {
+      if (entry.kind !== LEDGER_KINDS.POT_AWARD
+        || entry.settlementReason !== 'showdown'
+        || !Number.isInteger(entry.potLayerIndex)
+        || entry.potLayerIndex < 0) {
+        throw new RangeError('Showdown award metadata requires a nonnegative potLayerIndex');
+      }
     }
     if (entry.movement === LEDGER_MOVEMENTS.STACK_TO_POT) {
       ledgerPot += entry.amountMilliBb;
@@ -353,6 +373,11 @@ export function validatePokerState(state) {
     && !bettingIsResolved) {
     throw new RangeError('Postflop chance requires completed betting or no meaningful action');
   }
+  const expectedShowdownEligiblePlayerIds = state.players
+    .filter((player) => player.dealtIn && !player.folded)
+    .map((player) => player.playerId);
+  const settledShowdown = state.phase === PHASES.TERMINAL
+    && state.terminal && state.terminal.reason === 'showdown';
   if (state.phase === PHASES.SHOWDOWN) {
     if (state.street !== STREETS.RIVER || state.actingPlayerId !== null || state.pendingChance !== null) {
       throw new RangeError('Showdown-ready state requires a complete river and no actor or chance');
@@ -360,22 +385,112 @@ export function validatePokerState(state) {
     if (!state.showdown || state.showdown.status !== 'ready' || !bettingIsResolved) {
       throw new RangeError('Showdown requires completed river betting or no meaningful action');
     }
-    const eligiblePlayerIds = state.players
-      .filter((player) => player.dealtIn && !player.folded)
-      .map((player) => player.playerId);
     if (!Array.isArray(state.showdown.eligiblePlayerIds)
-      || state.showdown.eligiblePlayerIds.length !== eligiblePlayerIds.length
-      || state.showdown.eligiblePlayerIds.some((playerId, index) => playerId !== eligiblePlayerIds[index])) {
+      || state.showdown.eligiblePlayerIds.length !== expectedShowdownEligiblePlayerIds.length
+      || state.showdown.eligiblePlayerIds.some((playerId, index) => (
+        playerId !== expectedShowdownEligiblePlayerIds[index]
+      ))) {
       throw new RangeError('Showdown eligible players must match live players');
+    }
+    if (state.showdown.handRanksByPlayer !== null
+      || !Array.isArray(state.showdown.layerResults)
+      || state.showdown.layerResults.length !== 0) {
+      throw new RangeError('Showdown-ready state cannot contain settlement results');
+    }
+  } else if (settledShowdown) {
+    if (!state.showdown || state.showdown.status !== 'settled'
+      || state.street !== STREETS.RIVER
+      || state.actingPlayerId !== null
+      || state.pendingChance !== null) {
+      throw new RangeError('Settled showdown requires a complete river and no actor or chance');
+    }
+    if (!Array.isArray(state.showdown.eligiblePlayerIds)
+      || state.showdown.eligiblePlayerIds.length !== expectedShowdownEligiblePlayerIds.length
+      || state.showdown.eligiblePlayerIds.some((playerId, index) => (
+        playerId !== expectedShowdownEligiblePlayerIds[index]
+      ))) {
+      throw new RangeError('Settled showdown eligible players must match live players');
+    }
+    if (!state.showdown.handRanksByPlayer
+      || typeof state.showdown.handRanksByPlayer !== 'object'
+      || Array.isArray(state.showdown.handRanksByPlayer)
+      || !Array.isArray(state.showdown.layerResults)) {
+      throw new RangeError('Settled showdown requires structural ranks and layer results');
+    }
+    const derivedLayers = derivePotLayers(state);
+    if (state.showdown.layerResults.length !== derivedLayers.length) {
+      throw new RangeError('Settled showdown results must match every derived pot layer');
+    }
+    const evaluatedPlayerIds = new Set(
+      derivedLayers.flatMap((layer) => layer.eligiblePlayerIds),
+    );
+    const rankedPlayerIds = Object.keys(state.showdown.handRanksByPlayer);
+    if (rankedPlayerIds.length !== evaluatedPlayerIds.size
+      || rankedPlayerIds.some((playerId) => !evaluatedPlayerIds.has(playerId))
+      || rankedPlayerIds.some((playerId) => (
+        state.showdown.handRanksByPlayer[playerId]?.schemaVersion
+          !== POKER_HAND_RANK_SCHEMA_VERSION
+      ))) {
+      throw new RangeError('Settled showdown ranks must match every evaluated player');
+    }
+    const aggregatePayouts = {};
+    state.showdown.layerResults.forEach((result, index) => {
+      const layer = derivedLayers[index];
+      if (!result || result.schemaVersion !== POKER_SHOWDOWN_LAYER_RESULT_SCHEMA_VERSION
+        || result.layerIndex !== index
+        || result.amountMilliBb !== layer.amountMilliBb
+        || result.contributionFloorMilliBb !== layer.contributionFloorMilliBb
+        || result.contributionCeilingMilliBb !== layer.contributionCeilingMilliBb
+        || !Array.isArray(result.eligiblePlayerIds)
+        || result.eligiblePlayerIds.length !== layer.eligiblePlayerIds.length
+        || result.eligiblePlayerIds.some((playerId, playerIndex) => (
+          playerId !== layer.eligiblePlayerIds[playerIndex]
+        ))
+        || !Array.isArray(result.winnerPlayerIds)
+        || result.winnerPlayerIds.length === 0
+        || new Set(result.winnerPlayerIds).size !== result.winnerPlayerIds.length
+        || result.winnerPlayerIds.some((playerId) => !layer.eligiblePlayerIds.includes(playerId))
+        || !result.payoutsMilliBbByPlayer
+        || typeof result.payoutsMilliBbByPlayer !== 'object') {
+        throw new RangeError('Invalid settled showdown layer result');
+      }
+      const payoutIds = Object.keys(result.payoutsMilliBbByPlayer);
+      if (payoutIds.length !== result.winnerPlayerIds.length
+        || payoutIds.some((playerId) => !result.winnerPlayerIds.includes(playerId))) {
+        throw new RangeError('Layer payout recipients must match layer winners');
+      }
+      let layerPayout = 0;
+      for (const [playerId, amountMilliBb] of Object.entries(result.payoutsMilliBbByPlayer)) {
+        assertPositiveMilliBb(amountMilliBb, 'showdown.layer payout');
+        assertMilliBbAlignment(amountMilliBb, state.game.chipUnitMilliBb, 'showdown.layer payout');
+        layerPayout += amountMilliBb;
+        aggregatePayouts[playerId] = (aggregatePayouts[playerId] || 0) + amountMilliBb;
+        const rank = state.showdown.handRanksByPlayer[playerId];
+        if (!rank || rank.schemaVersion !== POKER_HAND_RANK_SCHEMA_VERSION) {
+          throw new RangeError('Every showdown winner requires a canonical hand rank');
+        }
+      }
+      if (layerPayout !== layer.amountMilliBb) {
+        throw new RangeError('Layer payouts must equal the exact pot-layer amount');
+      }
+    });
+    if (!sameNumericRecord(aggregatePayouts, state.terminal.payoutsMilliBbByPlayer)) {
+      throw new RangeError('Terminal showdown payouts must equal aggregate layer payouts');
     }
   } else if (!state.showdown || state.showdown.status !== 'not_reached') {
     throw new RangeError('Showdown status must remain not_reached before showdown');
+  } else if (state.showdown.handRanksByPlayer !== null
+    || !Array.isArray(state.showdown.layerResults)
+    || state.showdown.layerResults.length !== 0) {
+    throw new RangeError('Unreached showdown cannot contain settlement results');
   }
   if (!state.showdown || !Array.isArray(state.showdown.pots) || state.showdown.pots.length !== 0) {
     throw new RangeError('showdown.pots is reserved; canonical pot layers are derived');
   }
-  if (state.phase === PHASES.TERMINAL && (state.actingPlayerId !== null || state.potMilliBb !== 0)) {
-    throw new RangeError('A terminal fold state must have no actor and no unsettled pot');
+  if (state.phase === PHASES.TERMINAL
+    && (state.actingPlayerId !== null || state.potMilliBb !== 0
+      || !state.terminal || state.terminal.isTerminal !== true)) {
+    throw new RangeError('A terminal state must have no actor, no unsettled pot, and terminal status');
   }
 
   return state;
