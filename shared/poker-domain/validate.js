@@ -371,6 +371,9 @@ export function validatePokerState(state) {
   } else if (!state.showdown || state.showdown.status !== 'not_reached') {
     throw new RangeError('Showdown status must remain not_reached before showdown');
   }
+  if (!state.showdown || !Array.isArray(state.showdown.pots) || state.showdown.pots.length !== 0) {
+    throw new RangeError('showdown.pots is reserved; canonical pot layers are derived');
+  }
   if (state.phase === PHASES.TERMINAL && (state.actingPlayerId !== null || state.potMilliBb !== 0)) {
     throw new RangeError('A terminal fold state must have no actor and no unsettled pot');
   }

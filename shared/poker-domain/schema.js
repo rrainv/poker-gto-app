@@ -1,6 +1,8 @@
 export const POKER_STATE_SCHEMA_VERSION = 'poker-state/v1';
 export const POKER_ACTION_SCHEMA_VERSION = 'poker-action/v1';
 export const POKER_ACTION_RECORD_SCHEMA_VERSION = 'poker-action-record/v1';
+export const POKER_POT_LAYER_SCHEMA_VERSION = 'poker-pot-layer/v1';
+export const POKER_UNMATCHED_CONTRIBUTION_SCHEMA_VERSION = 'poker-unmatched-contribution/v1';
 export const POKER_VARIANT = 'no_limit_texas_holdem';
 
 export const ACTION_TYPES = Object.freeze({

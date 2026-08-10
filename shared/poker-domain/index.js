@@ -5,6 +5,7 @@ export * from './chance.js';
 export * from './initialize-hand.js';
 export * from './legal-actions.js';
 export * from './positions.js';
+export * from './pot-layers.js';
 export * from './schema.js';
 export * from './selectors.js';
 export * from './transitions.js';

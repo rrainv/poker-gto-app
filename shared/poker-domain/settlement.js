@@ -6,6 +6,7 @@ import {
   STREETS,
 } from './schema.js';
 import { isPlayerLive } from './selectors.js';
+import { deriveUnmatchedContribution } from './pot-layers.js';
 import { markShowdownReady, requestBoardChance } from './street-transitions.js';
 
 function appendLedger(state, playerId, kind, amountMilliBb) {
@@ -41,13 +42,8 @@ export function refundUncalledExcess(state, recipientPlayerId = null) {
     ? highestLiveContributor(state)
     : state.players.find((player) => player.playerId === recipientPlayerId);
   if (!recipient || !isPlayerLive(recipient)) return null;
-  const matchedByOthers = state.players
-    .filter((player) => player.playerId !== recipient.playerId)
-    .reduce((maximum, player) => Math.max(maximum, player.totalPotContributionMilliBb), 0);
-  const amountMilliBb = Math.max(
-    0,
-    recipient.totalPotContributionMilliBb - matchedByOthers,
-  );
+  const unmatched = deriveUnmatchedContribution(state, recipient.playerId);
+  const amountMilliBb = unmatched === null ? 0 : unmatched.amountMilliBb;
   creditFromPot(state, recipient, amountMilliBb, LEDGER_KINDS.UNCALLED_REFUND);
   return amountMilliBb === 0 ? null : { playerId: recipient.playerId, amountMilliBb };
 }
