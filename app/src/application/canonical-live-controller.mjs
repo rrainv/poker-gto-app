@@ -8,6 +8,7 @@ import {
   assertUniqueKnownCards,
   bbToMilliBb,
   createAction,
+  getLegalActionSpec,
 } from '../../../shared/poker-domain/index.js';
 import { createCanonicalHandSession } from './canonical-hand-session.mjs';
 import { runDecisionContextShadowComparison } from './decision-context-shadow.mjs';
@@ -63,8 +64,18 @@ function normalizeConfiguration(configuration) {
     throw new RangeError('ClubGG canonical sessions require 7 through 10 players');
   }
 
-  if (typeof configuration.heroPosition !== 'string' || !configuration.heroPosition) {
-    throw new TypeError('heroPosition is required');
+  const hasHeroSeat = configuration.heroSeat !== undefined
+    && configuration.heroSeat !== null
+    && configuration.heroSeat !== '';
+  const heroSeat = hasHeroSeat
+    ? requireInteger(configuration.heroSeat, 0, tableSize - 1, 'heroSeat')
+    : null;
+  const heroPosition = typeof configuration.heroPosition === 'string'
+    && configuration.heroPosition
+    ? configuration.heroPosition
+    : null;
+  if (heroSeat === null && heroPosition === null) {
+    throw new TypeError('heroSeat or heroPosition is required');
   }
   const stackMode = configuration.stackMode ?? 'hero';
   if (!SUPPORTED_STACK_MODES.has(stackMode)) {
@@ -91,7 +102,12 @@ function normalizeConfiguration(configuration) {
     throw new RangeError('Canonical Playbook sessions do not yet support straddles');
   }
 
-  const buttonSeat = 0;
+  const buttonSeat = requireInteger(
+    configuration.buttonSeat ?? 0,
+    0,
+    tableSize - 1,
+    'buttonSeat',
+  );
   const players = Array.from({ length: tableSize }, (_, seat) => ({
     playerId: `seat-${seat}`,
     seat,
@@ -113,7 +129,8 @@ function normalizeConfiguration(configuration) {
   return {
     pokerConfiguration,
     projectionOptions: { stackMode },
-    requestedHeroPosition: configuration.heroPosition,
+    requestedHeroPosition: heroPosition,
+    requestedHeroSeat: heroSeat,
   };
 }
 
@@ -189,13 +206,17 @@ export function createCanonicalLiveController({
       try {
         const normalized = normalizeConfiguration(configuration);
         const state = session.initialize(normalized.pokerConfiguration);
-        const hero = state.players.find((player) => (
-          player.position === normalized.requestedHeroPosition
-        ));
+        const hero = normalized.requestedHeroSeat === null
+          ? state.players.find((player) => (
+            player.position === normalized.requestedHeroPosition
+          ))
+          : state.players.find((player) => player.seat === normalized.requestedHeroSeat);
         if (!hero) {
           session.reset();
           throw new RangeError(
-            `heroPosition ${normalized.requestedHeroPosition} is invalid for ${state.players.length} players`,
+            normalized.requestedHeroSeat === null
+              ? `heroPosition ${normalized.requestedHeroPosition} is invalid for ${state.players.length} players`
+              : `heroSeat ${normalized.requestedHeroSeat} is invalid for ${state.players.length} players`,
           );
         }
         heroPlayerId = hero.playerId;
@@ -234,6 +255,15 @@ export function createCanonicalLiveController({
 
     getDiagnostics() {
       return diagnostics;
+    },
+
+    getLegalActions() {
+      if (!featureEnabled || session.getState()?.phase !== PHASES.BETTING) return null;
+      try {
+        return getLegalActionSpec(session.getState());
+      } catch (error) {
+        return setError(error);
+      }
     },
 
     setHeroHoleCards(cards) {
@@ -317,15 +347,29 @@ export function createCanonicalLiveController({
       }
     },
 
+    resolveShowdown() {
+      const state = requireEnabledState();
+      if (!state) return null;
+      try {
+        const nextState = session.resolveShowdown();
+        setUnavailable('terminal_state');
+        return nextState;
+      } catch (error) {
+        return setError(error);
+      }
+    },
+
     compare(legacyContext) {
       const state = requireEnabledState();
       if (!state) return diagnostics;
       if (!legacyContext || typeof legacyContext !== 'object') {
         return setUnavailable('legacy_context_unavailable');
       }
-      if (state.phase !== PHASES.BETTING || state.pendingChance !== null) {
+      if (state.phase === PHASES.CHANCE || state.pendingChance !== null) {
         return setUnavailable('chance_state');
       }
+      if (state.phase === PHASES.SHOWDOWN) return setUnavailable('showdown_state');
+      if (state.phase === PHASES.TERMINAL) return setUnavailable('terminal_state');
       if (state.actingPlayerId !== heroPlayerId) {
         return setUnavailable('hero_not_actor');
       }

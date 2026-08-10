@@ -2,6 +2,7 @@ import {
   applyAction as applyPokerAction,
   applyChance as applyPokerChance,
   initializeHand,
+  resolveShowdown as resolvePokerShowdown,
 } from '../../../shared/poker-domain/index.js';
 
 function requireState(state) {
@@ -31,6 +32,12 @@ export function createCanonicalHandSession(initialConfiguration) {
 
     applyAction(action) {
       const nextState = applyPokerAction(requireState(state), action);
+      state = nextState;
+      return state;
+    },
+
+    resolveShowdown() {
+      const nextState = resolvePokerShowdown(requireState(state));
       state = nextState;
       return state;
     },

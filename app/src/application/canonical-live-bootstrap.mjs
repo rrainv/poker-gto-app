@@ -2,6 +2,10 @@ import {
   CANONICAL_LIVE_DEFAULT_ENABLED,
   createCanonicalLiveController,
 } from './canonical-live-controller.mjs';
+import {
+  CANONICAL_DEV_CHANGE_EVENT,
+  installCanonicalHandHarness,
+} from './canonical-hand-harness.mjs';
 
 function controlValue(documentObject, id, fallback = '') {
   const control = documentObject.getElementById(id);
@@ -44,9 +48,21 @@ export function installCanonicalLiveBridge(browserWindow) {
     return result;
   };
 
+  const publish = (operation) => {
+    const result = emitDiagnostics(operation);
+    if (typeof browserWindow.dispatchEvent === 'function'
+      && typeof browserWindow.CustomEvent === 'function') {
+      browserWindow.dispatchEvent(new browserWindow.CustomEvent(
+        CANONICAL_DEV_CHANGE_EVENT,
+        { detail: { operation, diagnostics: result } },
+      ));
+    }
+    return result;
+  };
+
   const compareCurrentContext = () => {
     const result = controller.compare(browserWindow.app?.decisionContext ?? null);
-    return emitDiagnostics('compare');
+    return publish('compare');
   };
 
   const bridge = Object.freeze({
@@ -56,15 +72,21 @@ export function installCanonicalLiveBridge(browserWindow) {
 
     setEnabled(enabled) {
       const result = controller.setEnabled(enabled === true);
-      if (enabled === true) emitDiagnostics('enabled');
+      publish(enabled === true ? 'enabled' : 'disabled');
       return result;
+    },
+
+    initialize(configuration) {
+      const state = controller.initialize(configuration);
+      publish('initialize');
+      return state;
     },
 
     initializeFromCurrentControls() {
       const state = controller.initialize(
         readCanonicalPlaybookConfiguration(browserWindow.document),
       );
-      emitDiagnostics('initialize');
+      publish('initialize');
       return state;
     },
 
@@ -76,7 +98,7 @@ export function installCanonicalLiveBridge(browserWindow) {
     heroCardsChanged(cards) {
       if (!controller.isEnabled()) return controller.getDiagnostics();
       controller.setHeroHoleCards(cards);
-      emitDiagnostics('hero_cards');
+      publish('hero_cards');
       return controller.getDiagnostics();
     },
 
@@ -94,28 +116,35 @@ export function installCanonicalLiveBridge(browserWindow) {
         return controller.getDiagnostics();
       }
       controller.dealBoardCards(cards.slice(state.board.length));
-      emitDiagnostics('board_cards');
+      publish('board_cards');
       return controller.getDiagnostics();
     },
 
     dealHoleCards(cardsByPlayer) {
       const state = controller.dealHoleCards(cardsByPlayer);
       if (state) compareCurrentContext();
-      else emitDiagnostics('deal_hole');
+      else publish('deal_hole');
       return state;
     },
 
     dealBoardCards(cards) {
       const state = controller.dealBoardCards(cards);
       if (state) compareCurrentContext();
-      else emitDiagnostics('deal_board');
+      else publish('deal_board');
       return state;
     },
 
     applyAction(type, amountToBb = null) {
       const state = controller.applyAction({ type, amountToBb });
       if (state) compareCurrentContext();
-      else emitDiagnostics('action');
+      else publish('action');
+      return state;
+    },
+
+    resolveShowdown() {
+      const state = controller.resolveShowdown();
+      if (state) compareCurrentContext();
+      else publish('showdown');
       return state;
     },
 
@@ -125,7 +154,7 @@ export function installCanonicalLiveBridge(browserWindow) {
 
     reset() {
       controller.reset();
-      return emitDiagnostics('reset');
+      return publish('reset');
     },
 
     getState() {
@@ -139,6 +168,10 @@ export function installCanonicalLiveBridge(browserWindow) {
     getDiagnostics() {
       return controller.getDiagnostics();
     },
+
+    getLegalActions() {
+      return controller.getLegalActions();
+    },
   });
 
   Object.defineProperty(browserWindow, 'RiverlineCanonicalDev', {
@@ -147,6 +180,7 @@ export function installCanonicalLiveBridge(browserWindow) {
     value: bridge,
     writable: false,
   });
+  installCanonicalHandHarness(browserWindow, bridge);
   return bridge;
 }
 
