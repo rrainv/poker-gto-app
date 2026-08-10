@@ -727,7 +727,7 @@
             <button id="toggleTableBtn" class="ui-button ui-button--quiet" type="button">Collapse Table</button>
           </div>
           <div id="table-wrapper" class="table-wrapper">
-            <div id="visual-table-container" style="width: 100%; max-width: 800px; margin: 0 auto 20px auto;"></div>
+            <div id="visual-table-container"></div>
           </div>
 
           <div class="sub-tabs ui-segments" role="tablist" aria-label="Playbook views" style="margin-bottom:16px;">
@@ -848,9 +848,7 @@
 
                       data-i18n="PREFLOP" style="text-transform:uppercase;">PREFLOP</span></div>
 
-                  <div class="action-name" id="bestAction"
-
-                    style="text-transform: uppercase; font-weight: 800; font-size: 42px; margin-top: 8px; letter-spacing: -1.5px;">
+                  <div class="action-name" id="bestAction">
 
                     OPEN 2.5 BB</div>
 
@@ -858,13 +856,17 @@
 
                     candidate in this position.</div>
 
+                  <div class="recommendation-meta" id="strategyMeta" hidden></div>
+
                 </div>
 
                 <div class="badge status-badge status-badge--info" id="sourceBadge" style="margin-top:4px;">HEURISTIC</div>
 
               </div>
 
-              <div class="wheel-section" style="display:flex; gap: 32px; align-items:center;">
+              <div class="strategy-warning" id="strategyWarnings" role="note" hidden></div>
+
+              <div class="wheel-section frequency-visualization" style="display:flex; gap: 32px; align-items:center;">
 
                 <div class="wheel-container">
 
@@ -882,13 +884,19 @@
 
                 <div class="frequency-bars" style="flex:1;">
 
-                  <div class="frequency">
+                  <div class="frequency-stack" id="actionFrequencyStack" role="img" aria-label="Open 76%, Limp 10%, Fold 14%">
+                    <span class="frequency-stack-segment" data-action-kind="aggressive" style="width:76%"></span>
+                    <span class="frequency-stack-segment" data-action-kind="passive" style="width:10%"></span>
+                    <span class="frequency-stack-segment" data-action-kind="fold" style="width:14%"></span>
+                  </div>
+
+                  <div class="frequency" data-action-kind="aggressive">
 
                     <span class="freq-name" id="f1name">Open</span>
 
                     <div class="bar">
 
-                      <div class="fill" id="f1" style="width:76%"></div>
+                      <div class="fill" id="f1" data-action-kind="aggressive" style="width:76%"></div>
 
                     </div>
 
@@ -896,13 +904,13 @@
 
                   </div>
 
-                  <div class="frequency">
+                  <div class="frequency" data-action-kind="passive">
 
                     <span class="freq-name" id="f2name">Limp</span>
 
                     <div class="bar">
 
-                      <div class="fill orange" id="f2" style="width:10%"></div>
+                      <div class="fill" id="f2" data-action-kind="passive" style="width:10%"></div>
 
                     </div>
 
@@ -910,13 +918,13 @@
 
                   </div>
 
-                  <div class="frequency">
+                  <div class="frequency" data-action-kind="fold">
 
                     <span class="freq-name" id="f3name" data-i18n="Fold">Fold</span>
 
                     <div class="bar">
 
-                      <div class="fill red" id="f3" style="width:14%"></div>
+                      <div class="fill" id="f3" data-action-kind="fold" style="width:14%"></div>
 
                     </div>
 
@@ -1052,13 +1060,15 @@
 
               <div class="strategy-key" id="strategyKey">
 
-                <span class="key"><i class="open"></i><span data-i18n="Raise / bet">Raise / bet</span></span>
+                <span class="key"><i class="open" data-action-kind="aggressive"></i><span data-i18n="Raise / bet">Raise / bet</span></span>
 
-                <span class="key"><i class="call"></i><span data-i18n="Call">Call</span></span>
+                <span class="key"><i class="call" data-action-kind="passive"></i><span>Check / call</span></span>
 
-                <span class="key"><i class="mix"></i><span data-i18n="Mixed">Mixed</span></span>
+                <span class="key"><i class="all-in" data-action-kind="all-in"></i><span>All-in</span></span>
 
-                <span class="key"><i class="fold"></i><span data-i18n="Fold">Fold</span></span>
+                <span class="key"><i class="mix" data-action-kind="mixed"></i><span data-i18n="Mixed">Mixed</span></span>
+
+                <span class="key"><i class="fold" data-action-kind="fold"></i><span data-i18n="Fold">Fold</span></span>
 
               </div>
 
@@ -1455,7 +1465,7 @@
 
               <div style="font-size:12px; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;" data-i18n="Strategy reference">Strategy reference</div>
 
-              <div class="wheel-section" style="display:flex; gap: 32px; align-items:center;">
+              <div class="wheel-section frequency-visualization" style="display:flex; gap: 32px; align-items:center;">
 
                 <div class="wheel-container">
 
@@ -1472,6 +1482,8 @@
                 </div>
 
                 <div class="frequency-bars" style="flex:1;">
+
+                  <div class="frequency-stack is-empty" id="trainingFrequencyStack" role="img" aria-label="Strategy frequencies unavailable"></div>
 
                   <div class="frequency">
 
@@ -1967,47 +1979,19 @@
 
 
 
-              <div class="equity-row">
+              <div class="equity-row" data-player-series="0">
 
 
 
-                <span data-i18n="Hero">Hero</span>
+                <span class="equity-player-label"><i class="series-marker"></i><span data-i18n="Hero">Hero</span></span>
 
 
 
-                <div class="eqbar">
+                <div class="eqbar" role="progressbar" aria-label="Hero equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
 
 
 
-                  <div class="eqfill hero" style="width:0%"></div>
-
-
-
-                </div>
-
-
-
-                <b>—</b>
-
-
-
-              </div>
-
-
-
-              <div class="equity-row">
-
-
-
-                <span data-i18n="Opponent">Opponent</span>
-
-
-
-                <div class="eqbar">
-
-
-
-                  <div class="eqfill villain" style="width:0%"></div>
+                  <div class="eqfill player-series" style="width:0%"></div>
 
 
 
@@ -2023,15 +2007,43 @@
 
 
 
-              <div class="equity-row">
+              <div class="equity-row" data-player-series="1">
 
 
 
-                <span data-i18n="Tie">Tie</span>
+                <span class="equity-player-label"><i class="series-marker"></i><span data-i18n="Opponent">Opponent</span></span>
 
 
 
-                <div class="eqbar">
+                <div class="eqbar" role="progressbar" aria-label="Opponent equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+
+
+
+                  <div class="eqfill player-series" style="width:0%"></div>
+
+
+
+                </div>
+
+
+
+                <b>—</b>
+
+
+
+              </div>
+
+
+
+              <div class="equity-row equity-row--tie">
+
+
+
+                <span class="equity-player-label"><i class="series-marker"></i><span data-i18n="Tie">Tie</span></span>
+
+
+
+                <div class="eqbar" role="progressbar" aria-label="Tie equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
 
 
 

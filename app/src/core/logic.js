@@ -78,15 +78,17 @@ function modelPositionIndex(position) {
 
 const ACTION_COLORS = {
 
-  aggressive: 'var(--matrix-open)',
+  aggressive: 'var(--action-aggressive)',
 
-  passive: 'var(--matrix-call)',
+  passive: 'var(--action-passive)',
 
-  check: 'var(--matrix-check)',
+  check: 'var(--action-passive)',
 
-  fold: 'var(--matrix-fold)',
+  fold: 'var(--action-fold)',
 
-  unavailable: 'var(--line)'
+  'all-in': 'var(--action-all-in)',
+
+  unavailable: 'var(--border-strong)'
 
 };
 
@@ -299,6 +301,12 @@ function cardMarkup(card) {
 
 }
 
+function cardVisualState(group, card) {
+  if (!card) return 'empty';
+  if (group.includes('dead')) return 'dead';
+  return 'known';
+}
+
 
 
 function renderSlots(group, count) {
@@ -327,7 +335,9 @@ function renderSlots(group, count) {
 
     const card = cards[index];
 
-    return `<button type="button" class="card-slot${card ? ' filled card-bend-flip' : ''}" data-group="${group}" data-index="${index}" aria-label="${card ? 'Replace ' + displayCard(card) : 'Choose card ' + (index + 1)}">${cardMarkup(card)}</button>`;
+    const state = cardVisualState(group, card);
+    const suitClass = card ? ` card--suit-${card[1]}` : '';
+    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass}" data-card-state="${state}" data-group="${group}" data-index="${index}" aria-label="${card ? 'Replace ' + displayCard(card) + (state === 'dead' ? ', dead card' : '') : 'Choose card ' + (index + 1)}">${cardMarkup(card)}</button>`;
 
   }).join('');
 
@@ -523,15 +533,15 @@ function renderDeck() {
   const deck = $('#deck');
 
   if (deck) {
-
-    deck.innerHTML = allDeck().map((card) => {
-
-      const suit = getSuit(card);
-
-      return `<button type="button" class="deck-card" aria-label="Choose ${card}" data-deck-card="${card}" ${unavailable.has(card) ? 'disabled' : ''}><span class="s-${suit.id}">${card[0]}</span><span class="symbol s-${suit.id}">${suit.symbol}</span></button>`;
-
+    deck.innerHTML = SUITS.map((suit) => {
+      const cards = RANKS.map((rank) => {
+        const card = rank + suit.id;
+        const isUnavailable = unavailable.has(card);
+        const isSelected = current === card;
+        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''}" aria-label="Choose ${card}${isUnavailable ? ', unavailable' : ''}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}><span class="rank s-${suit.id}">${rank}</span><span class="symbol s-${suit.id}">${suit.symbol}</span></button>`;
+      }).join('');
+      return `<div class="deck-suit-row" data-picker-suit="${suit.id}"><div class="deck-suit-label s-${suit.id}" aria-hidden="true">${suit.symbol}</div><div class="deck-ranks">${cards}</div></div>`;
     }).join('');
-
   }
 
 }
@@ -2159,7 +2169,11 @@ function setFrequency(index, action) {
 
     barEl.style.width = action.value + '%';
 
-    barEl.style.background = ACTION_COLORS[action.kind] || ACTION_COLORS.unavailable;
+    barEl.dataset.actionKind = visualActionKind(action);
+
+    barEl.setAttribute('aria-label', `${action.name}: ${action.value}%`);
+
+    if (barEl.closest('.frequency')) barEl.closest('.frequency').dataset.actionKind = visualActionKind(action);
 
   }
 
@@ -2613,6 +2627,7 @@ function renderChart() {
     
 
     const type = (actions[0] && actions[0].kind) || 'unavailable';
+    const handKind = row === column ? 'pair' : hand.endsWith('s') ? 'suited' : 'offsuit';
 
     const detail = actions.length ? actions.map((action) => `${action.name} ${action.value}%`).join(' · ') : (useEquityFallback ? 'Blocked by Board' : context.reason);
 
@@ -2621,13 +2636,18 @@ function renderChart() {
 
     const isSelected = app.selectedHand === hand || (!app.selectedHand && currentHeroClass === hand);
 
-    button.className = 'hand-cell ' + (isSelected ? 'selected ' : '') + type;
+    button.className = `hand-cell hand-${handKind} action-${type} ${isSelected ? 'selected ' : ''}${type}`;
+    button.dataset.handKind = handKind;
+    button.dataset.primaryAction = visualActionKind(actions[0]);
+    button.dataset.state = actions.length ? 'available' : 'unavailable';
+    button.setAttribute('aria-pressed', String(isSelected));
 
     const chartMode = $('#chartAction')?.value || 'strategy';
 
     let cellSubtext = '';
 
     let cellBg = '';
+    button.style.removeProperty('background');
 
 
 
@@ -2667,7 +2687,7 @@ function renderChart() {
 
       const intensity = Math.min(1.0, estEV / 3.5);
 
-      cellBg = `rgba(234, 179, 8, ${0.15 + intensity * 0.75})`;
+      cellBg = `color-mix(in srgb, var(--ev-positive) ${(15 + intensity * 75).toFixed(1)}%, transparent)`;
 
     } else if (chartMode === 'equity') {
 
@@ -2685,7 +2705,7 @@ function renderChart() {
 
       const intensity = (estEq - 25) / 63;
 
-      cellBg = `rgba(16, 185, 129, ${0.15 + intensity * 0.75})`;
+      cellBg = `color-mix(in srgb, var(--equity-primary) ${(15 + intensity * 75).toFixed(1)}%, transparent)`;
 
     } else if (chartMode === 'raise') {
 
@@ -2693,7 +2713,7 @@ function renderChart() {
 
       cellSubtext = `${val}%`;
 
-      cellBg = `rgba(168, 85, 247, ${val / 100})`;
+      cellBg = `color-mix(in srgb, var(--action-aggressive) ${val}%, transparent)`;
 
     } else if (chartMode === 'call') {
 
@@ -2701,7 +2721,7 @@ function renderChart() {
 
       cellSubtext = `${val}%`;
 
-      cellBg = `rgba(236, 72, 153, ${val / 100})`;
+      cellBg = `color-mix(in srgb, var(--action-passive) ${val}%, transparent)`;
 
     } else if (chartMode === 'fold') {
 
@@ -2709,7 +2729,7 @@ function renderChart() {
 
       cellSubtext = `${val}%`;
 
-      cellBg = `rgba(88, 28, 135, ${val / 100})`;
+      cellBg = `color-mix(in srgb, var(--action-fold) ${val}%, transparent)`;
 
     }
 
@@ -2717,11 +2737,11 @@ function renderChart() {
 
     if (cellSubtext) {
 
-      button.innerHTML = `<span>${hand}</span><div class="matrix-cell-subtext">${cellSubtext}</div>`;
+      button.innerHTML = `<span class="matrix-hand-label">${hand}</span><div class="matrix-cell-subtext">${cellSubtext}</div>`;
 
     } else {
 
-      button.textContent = hand;
+      button.innerHTML = `<span class="matrix-hand-label">${hand}</span>`;
 
     }
 
@@ -2737,31 +2757,19 @@ function renderChart() {
 
       button.style.background = cellBg;
 
-    } else if (actions.length > 1) {
-
-      let progress = 0;
-
-      button.style.background = 'linear-gradient(135deg, ' + actions.map((action) => {
-
-        const start = progress;
-
-        progress += action.value;
-
-        return `${ACTION_COLORS[action.kind]} ${start}% ${progress}%`;
-
-      }).join(', ') + ')';
-
+    } else if (actions.length > 0) {
+      button.insertAdjacentHTML('beforeend', `<span class="matrix-mix-bar" aria-hidden="true">${actions.map((action) => `<i data-action-kind="${visualActionKind(action)}" style="width:${action.value}%"></i>`).join('')}</span>`);
     }
 
 
 
     if (isSelected && actions.length > 0) {
 
-        previewHTML = `<span style="color:#fff;">${hand}</span> ` + actions.map(a => `<span style="color:${ACTION_COLORS[a.kind]}">${a.name.toUpperCase()} ${(a.value % 1 === 0 ? a.value : Number(a.value).toFixed(1))}%</span>`).join(' · ');
+        previewHTML = `<strong class="matrix-preview-hand">${hand}</strong> ` + actions.map(a => `<span class="matrix-preview-action" data-action-kind="${visualActionKind(a)}">${a.name.toUpperCase()} ${(a.value % 1 === 0 ? a.value : Number(a.value).toFixed(1))}%</span>`).join(' · ');
 
         $('#selectedHand').textContent = hand;
 
-        $('#selectedMix').innerHTML = `<span>${detail}</span><div class="alloc">${actions.map((action) => `<i class="${action.kind}" style="width:${action.value}%; background:${ACTION_COLORS[action.kind] || 'var(--matrix-open)'}"></i>`).join('')}</div>`;
+        $('#selectedMix').innerHTML = `<span>${detail}</span><div class="alloc" role="img" aria-label="${detail}">${actions.map((action) => `<i data-action-kind="${visualActionKind(action)}" style="width:${action.value}%"></i>`).join('')}</div>`;
 
     }
 
@@ -2831,6 +2839,33 @@ function setStrategySourceStatus(state, label) {
   control.setAttribute('aria-label', `${t('Strategy source')}: ${t(label)}`);
   dot.style.background = '';
   text.textContent = t(label);
+}
+
+function visualActionKind(action) {
+  const name = String(action?.name || '').toLowerCase();
+  if (name.includes('all-in') || name.includes('all in') || name.includes('jam')) return 'all-in';
+  if (action?.kind === 'fold' || name.includes('fold')) return 'fold';
+  if (action?.kind === 'passive' || action?.kind === 'check' || name.includes('call') || name.includes('check')) return 'passive';
+  if (action?.kind === 'aggressive') return 'aggressive';
+  return 'unavailable';
+}
+
+function actionVisualColor(action) {
+  return ACTION_COLORS[visualActionKind(action)] || ACTION_COLORS.unavailable;
+}
+
+function renderFrequencyStack(container, actions) {
+  if (!container) return;
+  const populated = actions.filter((action) => Number(action.value) > 0);
+  container.innerHTML = populated.map((action) => {
+    const kind = visualActionKind(action);
+    return `<span class="frequency-stack-segment" data-action-kind="${kind}" style="width:${action.value}%" title="${action.name}: ${action.value}%"></span>`;
+  }).join('');
+  const label = populated.length
+    ? populated.map((action) => `${action.name} ${action.value}%`).join(', ')
+    : 'Strategy frequencies unavailable';
+  container.setAttribute('aria-label', label);
+  container.classList.toggle('is-empty', populated.length === 0);
 }
 
 function setApiStatus(status) {
@@ -3065,6 +3100,9 @@ async function updateContext(reason = 'Context updated') {
 
   if (bestReason) bestReason.textContent = t(profile.reason);
 
+  const recommendation = $('#recommendation');
+  if (recommendation) recommendation.dataset.actionKind = visualActionKind(profile.actions[0]);
+
   
 
   if (typeof generateTeacherText === 'function') {
@@ -3102,7 +3140,30 @@ async function updateContext(reason = 'Context updated') {
 
   const sourceBadge = $('#sourceBadge');
 
-  if (sourceBadge) sourceBadge.textContent = strategyResult.source;
+  if (sourceBadge) {
+    sourceBadge.textContent = strategyResult.source;
+    const sourceTone = strategyResult.source.startsWith('heuristic_') ? 'heuristic'
+      : strategyResult.source === 'local_tree' ? 'experimental'
+      : strategyResult.source === 'onnx_model' || strategyResult.source === 'api' ? 'available'
+      : 'info';
+    sourceBadge.className = `badge status-badge status-badge--${sourceTone}`;
+  }
+
+  const strategyMeta = $('#strategyMeta');
+  if (strategyMeta) {
+    const metadata = [];
+    if (strategyResult.confidence !== null) metadata.push(`Confidence ${(strategyResult.confidence * 100).toFixed(0)}%`);
+    if (strategyResult.coverage !== null) metadata.push(`Coverage ${(strategyResult.coverage * 100).toFixed(0)}%`);
+    if (strategyResult.modelVersion !== null) metadata.push(`Model ${strategyResult.modelVersion}`);
+    strategyMeta.textContent = metadata.join(' · ');
+    strategyMeta.hidden = metadata.length === 0;
+  }
+
+  const strategyWarnings = $('#strategyWarnings');
+  if (strategyWarnings) {
+    strategyWarnings.textContent = strategyResult.warnings.join(' · ');
+    strategyWarnings.hidden = strategyResult.warnings.length === 0;
+  }
 
   const streetLabel = $('#streetLabel');
 
@@ -3114,13 +3175,17 @@ async function updateContext(reason = 'Context updated') {
 
   displayActions.forEach((action, index) => setFrequency(index + 1, action));
 
+  if (typeof renderFrequencyStack === 'function') {
+    renderFrequencyStack($('#actionFrequencyStack'), displayActions);
+  }
+
   const [a, b] = displayActions;
 
   const actionWheel = $('#actionWheel');
 
   if (actionWheel) {
 
-    actionWheel.style.background = `conic-gradient(${ACTION_COLORS[a.kind]} 0% ${a.value}%, ${ACTION_COLORS[b.kind]} ${a.value}% ${a.value + b.value}%, ${ACTION_COLORS[displayActions[2].kind]} ${a.value + b.value}% 100%)`;
+    actionWheel.style.background = `conic-gradient(${actionVisualColor(a)} 0% ${a.value}%, ${actionVisualColor(b)} ${a.value}% ${a.value + b.value}%, ${actionVisualColor(displayActions[2])} ${a.value + b.value}% 100%)`;
 
   }
 
@@ -4109,9 +4174,13 @@ function renderEquityResult(result, exact, total, splitRate) {
 
   $('#equityBars').innerHTML = result.map((player, index) => `
 
-    <div class="equity-row"><span>${player.name}</span><div class="eqbar"><div class="eqfill ${index === 0 ? 'hero' : 'villain'}" style="width:${player.equity}%"></div></div><b>${player.equity.toFixed(1)}%</b></div>
+    <div class="equity-row" data-player-series="${index % 8}">
+      <span class="equity-player-label"><i class="series-marker" aria-hidden="true"></i><span>${player.name}<small>Win ${player.win.toFixed(1)}% · Tie ${player.tie.toFixed(1)}%</small></span></span>
+      <div class="eqbar" role="progressbar" aria-label="${player.name} equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${player.equity.toFixed(1)}"><div class="eqfill player-series" style="width:${player.equity}%"></div></div>
+      <b>${player.equity.toFixed(1)}%</b>
+    </div>
 
-  `).join('') + `<div class="equity-row"><span>Split pots</span><div class="eqbar"><div class="eqfill tie" style="width:${splitRate}%"></div></div><b>${splitRate.toFixed(1)}%</b></div>`;
+  `).join('') + `<div class="equity-row equity-row--tie"><span class="equity-player-label"><i class="series-marker" aria-hidden="true"></i><span>Split pots</span></span><div class="eqbar" role="progressbar" aria-label="Split pots" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${splitRate.toFixed(1)}"><div class="eqfill tie" style="width:${splitRate}%"></div></div><b>${splitRate.toFixed(1)}%</b></div>`;
 
   toast('Win probability updated', 'success');
 
@@ -6449,16 +6518,13 @@ function showTrainingSolution(solution) {
     const val = Number(rawPct) || 0;
     if (val <= 0) continue;
     const lower = name.toLowerCase();
-    let colorVar = 'var(--matrix-open)';
-    if (lower.includes('fold')) colorVar = 'var(--matrix-fold)';
-    else if (lower.includes('call')) colorVar = 'var(--matrix-call)';
-    else if (lower.includes('check')) colorVar = 'var(--matrix-check)';
-    else colorVar = 'var(--matrix-open)';
+    const kind = visualActionKind({ name, kind: lower.includes('fold') ? 'fold' : lower.includes('call') || lower.includes('check') ? 'passive' : 'aggressive' });
 
     actionsList.push({
       name: name,
       pct: val,
-      color: colorVar
+      kind,
+      color: ACTION_COLORS[kind] || ACTION_COLORS.unavailable
     });
   }
 
@@ -6492,6 +6558,14 @@ function showTrainingSolution(solution) {
     ? `conic-gradient(${slices.join(', ')})`
     : `var(--card-bg)`;
 
+  if (typeof renderFrequencyStack === 'function') {
+    renderFrequencyStack($('#trainingFrequencyStack'), actionsList.map((action) => ({
+      name: action.name,
+      value: action.pct,
+      kind: action.kind
+    })));
+  }
+
   // Show highest frequency action in center text
   const bestAction = actionsList.length > 0 ? actionsList[0].name.toUpperCase() : '-';
   centerText.textContent = bestAction;
@@ -6507,7 +6581,9 @@ function showTrainingSolution(solution) {
       if (nameEl) nameEl.textContent = item.name;
       if (fillEl) {
         fillEl.style.width = item.pct + '%';
-        fillEl.style.background = item.color;
+        fillEl.style.removeProperty('background');
+        fillEl.dataset.actionKind = item.kind;
+        fillEl.setAttribute('aria-label', `${item.name}: ${item.pct}%`);
       }
       if (numEl) numEl.textContent = item.pct + '%';
       if (nameEl?.parentElement) nameEl.parentElement.style.display = 'flex';

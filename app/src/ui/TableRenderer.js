@@ -1,3 +1,14 @@
+const TABLE_SUIT_PRESENTATION = Object.freeze({
+  h: { id: 'h', symbol: '♥' },
+  '♥': { id: 'h', symbol: '♥' },
+  d: { id: 'd', symbol: '♦' },
+  '♦': { id: 'd', symbol: '♦' },
+  c: { id: 'c', symbol: '♣' },
+  '♣': { id: 'c', symbol: '♣' },
+  s: { id: 's', symbol: '♠' },
+  '♠': { id: 's', symbol: '♠' },
+});
+
 class TableRenderer {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
@@ -9,32 +20,30 @@ class TableRenderer {
 
   initSVG() {
     this.container.innerHTML = `
-      <svg id="poker-table-svg" viewBox="0 0 800 500" width="100%" height="auto" style="background: transparent;">
+      <svg id="poker-table-svg" class="riverline-poker-table" viewBox="0 0 800 500" width="100%" role="img" aria-labelledby="poker-table-title" preserveAspectRatio="xMidYMid meet">
+        <title id="poker-table-title">Riverline poker table</title>
         <defs>
-          <radialGradient id="tableGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-            <stop offset="0%" style="stop-color:#1e4c31;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#0d2617;stop-opacity:1" />
+          <linearGradient id="riverlineTableRail" x1="0" y1="0" x2="0" y2="1">
+            <stop class="table-rail-start" offset="0%" />
+            <stop class="table-rail-end" offset="100%" />
+          </linearGradient>
+          <radialGradient id="riverlineTableSurface" cx="50%" cy="45%" r="62%">
+            <stop class="table-surface-start" offset="0%" />
+            <stop class="table-surface-end" offset="100%" />
           </radialGradient>
-          <filter id="shadow">
-            <feDropShadow dx="0" dy="5" stdDeviation="5" flood-opacity="0.5"/>
+          <filter id="riverlineTableShadow" x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="7" stdDeviation="8" flood-opacity="0.28"/>
           </filter>
         </defs>
-        
-        <!-- Table Base -->
-        <rect x="50" y="50" width="700" height="400" rx="200" ry="200" fill="#3a1e04" filter="url(#shadow)" />
-        <rect x="70" y="70" width="660" height="360" rx="180" ry="180" fill="url(#tableGradient)" />
-        
-        <!-- Inner Table Line -->
-        <rect x="100" y="100" width="600" height="300" rx="150" ry="150" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" />
-        
-        <!-- Pot text -->
-        <text id="table-pot" x="400" y="220" font-family="Arial" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">Pot: 0</text>
-        
-        <!-- Community Cards Anchor -->
-        <g id="community-cards" transform="translate(250, 240)"></g>
-        
-        <!-- Seats and Hole Cards Anchors -->
-        <g id="seats-layer"></g>
+
+        <rect class="table-rail" x="50" y="50" width="700" height="400" rx="200" ry="200" />
+        <rect class="table-surface" x="70" y="70" width="660" height="360" rx="180" ry="180" />
+        <rect class="table-betting-line" x="100" y="100" width="600" height="300" rx="150" ry="150" />
+        <path class="table-riverline-mark" d="M286 176 C342 146 458 146 514 176" />
+
+        <text id="table-pot" class="table-pot" x="400" y="220" text-anchor="middle">Pot 0 bb</text>
+        <g id="community-cards" class="table-community-cards" transform="translate(250, 240)"></g>
+        <g id="seats-layer" class="table-seats-layer"></g>
       </svg>
     `;
 
@@ -52,21 +61,21 @@ class TableRenderer {
 
     let html = '';
     for (let i = 0; i < activePlayers; i++) {
-      // Start at Math.PI / 2 (bottom center) and go clockwise
+      // Seat zero remains the visual hero anchor; poker turn order is not derived here.
       const angle = (Math.PI / 2) + (i * (2 * Math.PI / activePlayers));
       const x = Math.round(centerX + rx * Math.cos(angle));
       const y = Math.round(centerY + ry * Math.sin(angle));
-      
+
       html += `
-        <g id="seat-${i}" transform="translate(${x}, ${y})">
-          <circle cx="0" cy="0" r="25" fill="#2b2d31" stroke="#5865f2" stroke-width="2" filter="url(#shadow)"/>
-          <text x="0" y="5" font-family="Arial" font-size="12" font-weight="bold" fill="#fff" text-anchor="middle">P${i+1}</text>
-          <!-- Dealer Button Placeholder -->
-          <circle id="dealer-${i}" cx="-30" cy="-20" r="10" fill="#fff" stroke="#000" stroke-width="1" style="display:none;" />
-          <text id="dealer-txt-${i}" x="-30" y="-16" font-family="Arial" font-size="10" font-weight="bold" fill="#000" text-anchor="middle" style="display:none;">D</text>
-          
-          <!-- Hole Cards Anchors -->
-          <g id="hole-cards-${i}" transform="translate(0, -60)"></g>
+        <g id="seat-${i}" class="table-seat${i === 0 ? ' is-hero' : ''}" data-seat-index="${i}" transform="translate(${x}, ${y})">
+          <rect class="table-seat-surface" x="-31" y="-19" width="62" height="38" rx="10" />
+          <text class="table-seat-name" x="0" y="1" text-anchor="middle">${i === 0 ? 'Hero' : `P${i + 1}`}</text>
+          <text id="seat-meta-${i}" class="table-seat-meta" x="0" y="12" text-anchor="middle" hidden></text>
+          <g id="dealer-${i}" class="table-dealer-button" transform="translate(-30, -27)" hidden>
+            <circle r="10" />
+            <text id="dealer-txt-${i}" x="0" y="3.5" text-anchor="middle">D</text>
+          </g>
+          <g id="hole-cards-${i}" class="table-hole-cards" transform="translate(0, -67)">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
         </g>
       `;
     }
@@ -74,28 +83,31 @@ class TableRenderer {
   }
 
   renderCard(rank, suit, index, isCommunity = false) {
-    const w = 40, h = 60;
-    const colors = { '♥': '#e74c3c', '♦': '#3498db', '♣': '#2ecc71', '♠': '#f2f3f5' };
-    const color = colors[suit] || '#fff';
-    // Starting position for animation (center of table)
-    let startX = isCommunity ? 150 : 400;
-    let startY = isCommunity ? 0 : 250;
-    
-    // Target position
-    let targetX = isCommunity ? index * 50 : (index * 45) - 22;
-    let targetY = 0;
-    
+    const presentation = TABLE_SUIT_PRESENTATION[suit] || { id: 'unknown', symbol: suit || '?' };
+    const startX = isCommunity ? 150 : 400;
+    const startY = isCommunity ? 0 : 250;
+
     return `
-      <g class="card-group" style="transform: translate(${startX}px, ${startY}px); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) ${index * 0.1}s;">
-        <rect x="0" y="0" width="${w}" height="${h}" rx="4" ry="4" fill="#fff" stroke="#ccc" filter="url(#shadow)"/>
-        <text x="5" y="15" font-family="Arial" font-size="14" font-weight="bold" fill="${color}">${rank}</text>
-        <text x="5" y="30" font-family="Arial" font-size="16" fill="${color}">${suit}</text>
+      <g class="card-group poker-card-svg card--known card--suit-${presentation.id}" data-card-state="known" style="transform: translate(${startX}px, ${startY}px); transition-delay: ${index * 70}ms;">
+        <rect class="table-card-face" x="0" y="0" width="40" height="58" rx="4" ry="4" />
+        <text class="table-card-rank" x="6" y="17">${rank}</text>
+        <text class="table-card-suit" x="6" y="35">${presentation.symbol}</text>
+      </g>
+    `;
+  }
+
+  renderCardBack(index) {
+    return `
+      <g class="table-card-back poker-card-svg poker-card-back" data-card-state="unknown" transform="translate(${(index * 25) - 20}, 0)">
+        <rect class="table-card-back-face" x="0" y="0" width="40" height="58" rx="4" ry="4" />
+        <path class="table-card-back-line" d="M7 17 C15 11 25 11 33 17 M7 41 C15 47 25 47 33 41" />
+        <text class="table-card-back-mark" x="20" y="34" text-anchor="middle">R</text>
       </g>
     `;
   }
 
   renderState(state) {
-    // state = { pot: number, board: [{rank, suit}], heroCards: [{rank, suit}], dealerPos: number, activePlayers: number }
+    // Presentation-only state: no betting order or poker semantics are inferred here.
     if (!state) return;
 
     if (state.activePlayers && state.activePlayers !== this.currentActivePlayers) {
@@ -103,66 +115,63 @@ class TableRenderer {
       this.drawSeats(this.currentActivePlayers);
     }
 
-    // 1. Update Pot
     const potText = this.container.querySelector('#table-pot');
     if (potText && state.pot !== undefined) {
-      potText.textContent = `Pot: ${state.pot}`;
+      potText.textContent = `Pot ${state.pot} bb`;
     }
 
-    // 2. Update Dealer Button
     for (let i = 0; i < this.currentActivePlayers; i++) {
-      const d = this.container.querySelector(`#dealer-${i}`);
-      const dTxt = this.container.querySelector(`#dealer-txt-${i}`);
-      if (d && dTxt) {
-        if (state.dealerPos === i) {
-          d.style.display = 'block';
-          dTxt.style.display = 'block';
-        } else {
-          d.style.display = 'none';
-          dTxt.style.display = 'none';
-        }
+      const seat = this.container.querySelector(`#seat-${i}`);
+      const dealer = this.container.querySelector(`#dealer-${i}`);
+      const meta = this.container.querySelector(`#seat-meta-${i}`);
+      const playerState = Array.isArray(state.players)
+        ? state.players.find((player) => player?.seat === i || player?.seatIndex === i)
+        : null;
+      const isDealer = state.dealerPos === i;
+      const isActor = state.actorPos === i || state.currentActor === i;
+
+      if (dealer) dealer.toggleAttribute('hidden', !isDealer);
+      if (meta) {
+        const details = [];
+        if (Number.isFinite(playerState?.stackBb)) details.push(`${playerState.stackBb} bb`);
+        if (Number.isFinite(playerState?.streetContributionBb)) details.push(`in ${playerState.streetContributionBb}`);
+        meta.textContent = details.join(' · ');
+        meta.toggleAttribute('hidden', details.length === 0);
+      }
+      if (seat) {
+        seat.classList.toggle('is-dealer', isDealer);
+        seat.classList.toggle('is-actor', isActor);
+        seat.classList.toggle('is-folded', Boolean(playerState?.folded));
+        seat.classList.toggle('is-all-in', Boolean(playerState?.allIn || playerState?.isAllIn));
       }
     }
 
-    // 3. Render Hero Cards (Assuming Hero is always seat 0 for visual top-down representation)
     const heroHole = this.container.querySelector('#hole-cards-0');
     if (heroHole && state.heroCards) {
-      let html = '';
-      state.heroCards.forEach((card, idx) => {
-        html += this.renderCard(card.rank, card.suit, idx, false);
-      });
-      heroHole.innerHTML = html;
-      
-      // Trigger animation after DOM update
+      heroHole.innerHTML = state.heroCards
+        .map((card, idx) => this.renderCard(card.rank, card.suit, idx, false))
+        .join('');
       setTimeout(() => {
-        const cards = heroHole.querySelectorAll('.card-group');
-        cards.forEach((c, idx) => {
-          c.style.transform = `translate(${(idx * 45) - 22}px, 0px)`;
+        heroHole.querySelectorAll('.card-group').forEach((card, idx) => {
+          card.style.transform = `translate(${(idx * 45) - 22}px, 0px)`;
         });
       }, 50);
     }
 
-    // 4. Render Community Cards
     const community = this.container.querySelector('#community-cards');
     if (community && state.board) {
-      let html = '';
-      state.board.forEach((card, idx) => {
-        html += this.renderCard(card.rank, card.suit, idx, true);
-      });
-      community.innerHTML = html;
-
-      // Trigger animation
+      community.innerHTML = state.board
+        .map((card, idx) => this.renderCard(card.rank, card.suit, idx, true))
+        .join('');
       setTimeout(() => {
-        const cards = community.querySelectorAll('.card-group');
-        cards.forEach((c, idx) => {
-          c.style.transform = `translate(${idx * 50}px, 0px)`;
+        community.querySelectorAll('.card-group').forEach((card, idx) => {
+          card.style.transform = `translate(${idx * 50}px, 0px)`;
         });
       }, 50);
     }
   }
 }
 
-// Initialize if container exists
 document.addEventListener('DOMContentLoaded', () => {
   window.tableRenderer = new TableRenderer('visual-table-container');
 });
