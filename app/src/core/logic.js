@@ -2819,31 +2819,29 @@ function renderChart() {
 
 
 
+function setStrategySourceStatus(state, label) {
+  const control = $('#connectApiBtn');
+  const dot = $('#apiStatusDot');
+  const text = $('#apiStatusText');
+  if (!control || !dot || !text) return;
+
+  control.dataset.status = state;
+  control.setAttribute('aria-busy', state === 'loading' ? 'true' : 'false');
+  control.setAttribute('aria-label', `${t('Strategy source')}: ${t(label)}`);
+  dot.style.background = '';
+  text.textContent = t(label);
+}
+
 function setApiStatus(status) {
 
-  const dot = $('#apiStatusDot');
-
-  const text = $('#apiStatusText');
-
-  if (!dot || !text) return;
-
   if (status === 'connected') {
-
-    dot.style.background = '#4caf50';
-
-    text.textContent = t('Live API Connected');
+    setStrategySourceStatus('available', 'API strategy available');
 
   } else if (status === 'querying') {
-
-    dot.style.background = '#ffc107';
-
-    text.textContent = t('Querying AI...');
+    setStrategySourceStatus('loading', 'Loading strategy source');
 
   } else if (status === 'error' || status === 'offline') {
-
-    dot.style.background = '#f44336';
-
-    text.textContent = t('Live Server Offline');
+    setStrategySourceStatus('unavailable', 'Source unavailable · heuristic');
 
   }
 
@@ -3250,17 +3248,7 @@ async function loadOnnxModel() {
 
     // Update status to loading
 
-    const statusDot = document.getElementById('apiStatusDot');
-
-    const statusText = document.getElementById('apiStatusText');
-
-    if (statusDot && statusText) {
-
-      statusDot.style.background = '#f59e0b'; // yellow for loading
-
-      statusText.textContent = t('Loading ONNX...');
-
-    }
+    setStrategySourceStatus('loading', 'Loading model');
 
     
 
@@ -3270,13 +3258,7 @@ async function loadOnnxModel() {
 
       toast('ONNX Runtime library not loaded');
 
-      if (statusDot && statusText) {
-
-        statusDot.style.background = '#f44336'; // red for error
-
-        statusText.textContent = t('ONNX Offline');
-
-      }
+      setStrategySourceStatus('unavailable', 'Model unavailable · heuristic');
 
       return false;
 
@@ -3335,13 +3317,7 @@ async function loadOnnxModel() {
 
         // Update status to connected
 
-        if (statusDot && statusText) {
-
-          statusDot.style.background = '#10b981'; // green for connected
-
-          statusText.textContent = t('ONNX Connected');
-
-        }
+        setStrategySourceStatus('available', 'ONNX model');
 
         
 
@@ -3373,17 +3349,7 @@ async function loadOnnxModel() {
 
     // Update status to offline
 
-    const statusDot = document.getElementById('apiStatusDot');
-
-    const statusText = document.getElementById('apiStatusText');
-
-    if (statusDot && statusText) {
-
-      statusDot.style.background = '#f44336'; // red for offline
-
-      statusText.textContent = t('ONNX Offline');
-
-    }
+    setStrategySourceStatus('unavailable', 'Model unavailable · heuristic');
 
     
 
@@ -4457,9 +4423,29 @@ function bindEvents() {
 
 
 
-  $$('.tab[data-mode]').forEach((button) => button.addEventListener('click', () => {
-    $$('.tab[data-mode]').forEach((item) => item.classList.toggle('active', item === button));
+  $$('.mode-nav-item[data-mode]').forEach((button) => button.addEventListener('click', () => {
+    $$('.mode-nav-item[data-mode]').forEach((item) => {
+      const isActive = item === button;
+      item.classList.toggle('active', isActive);
+      item.setAttribute('aria-current', isActive ? 'page' : 'false');
+    });
     const mode = button.dataset.mode;
+
+    const shell = $('.riverline-shell');
+    if (shell) shell.dataset.activeMode = mode;
+
+    const modeTitle = button.dataset.modeTitle || button.textContent.trim();
+    const modeSubtitle = button.dataset.modeSubtitle || '';
+    const workspaceTitle = $('#workspaceTitle');
+    const workspaceSubtitle = $('#workspaceSubtitle');
+    if (workspaceTitle) {
+      workspaceTitle.dataset.i18n = modeTitle;
+      workspaceTitle.textContent = t(modeTitle);
+    }
+    if (workspaceSubtitle) {
+      workspaceSubtitle.dataset.i18n = modeSubtitle;
+      workspaceSubtitle.textContent = t(modeSubtitle);
+    }
     
     // Explicitly hide all mode views
     $$('.mode-view').forEach(view => {
@@ -4960,11 +4946,6 @@ async function toggleOnnxConnection() {
 
 
 async function toggleOnnxModel() {
-
-  const topDot = $('#apiStatusDot');
-
-  const topText = $('#apiStatusText');
-
   const useBtn = $('#useOnnxBtn');
 
   
@@ -4973,13 +4954,7 @@ async function toggleOnnxModel() {
 
     app.useOnnx = false;
 
-    if (topDot && topText) {
-
-      topDot.style.background = '#f44336';
-
-      topText.textContent = t('ONNX Offline');
-
-    }
+    setStrategySourceStatus('fallback', 'Heuristic fallback');
 
     if (useBtn) {
 
@@ -4995,7 +4970,7 @@ async function toggleOnnxModel() {
 
   } else {
 
-    if (topText) topText.textContent = t('Loading ONNX...');
+    setStrategySourceStatus('loading', 'Loading model');
 
     if (useBtn) useBtn.textContent = '⏳ ' + t('Loading ONNX...');
 
@@ -5007,13 +4982,7 @@ async function toggleOnnxModel() {
 
       app.useApi = false;
 
-      if (topDot && topText) {
-
-        topDot.style.background = '#10b981';
-
-        topText.textContent = t('ONNX Connected');
-
-      }
+      setStrategySourceStatus('available', 'ONNX model');
 
       if (useBtn) {
 
@@ -5029,13 +4998,7 @@ async function toggleOnnxModel() {
 
     } else {
 
-      if (topDot && topText) {
-
-        topDot.style.background = '#f44336';
-
-        topText.textContent = t('ONNX Offline');
-
-      }
+      setStrategySourceStatus('unavailable', 'Model unavailable · heuristic');
 
       if (useBtn) {
 
@@ -5060,15 +5023,8 @@ async function toggleOnnxModel() {
 // This function covers text set via t() calls in JS that won't auto-refresh.
 function refreshDynamicTranslations() {
   // --- ONNX status bar ---
-  const topText = $('#apiStatusText');
   const useBtn = $('#useOnnxBtn');
-  if (topText) {
-    if (app.useOnnx) {
-      topText.textContent = t('ONNX Connected');
-    } else {
-      topText.textContent = t('ONNX Offline');
-    }
-  }
+  setStrategySourceStatus(app.useOnnx ? 'available' : 'fallback', app.useOnnx ? 'ONNX model' : 'Heuristic fallback');
   if (useBtn) {
     if (app.useOnnx) {
       useBtn.textContent = '⚡ ' + t('ONNX Active');

@@ -12,9 +12,9 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title data-i18n="Riverline — Poker GTO Workstation">Riverline — Poker GTO Workstation</title>
+  <title data-i18n="Riverline — Poker Strategy &amp; Analysis">Riverline — Poker Strategy &amp; Analysis</title>
 
-  <link rel="stylesheet" href="styles.css?v=19">
+  <link rel="stylesheet" href="styles.css?v=20">
 
   <link rel="icon"
 
@@ -326,87 +326,87 @@
 
 <body>
 
-  <!-- Valorant-Style Main Menu -->
-  <div id="mainMenuOverlay" class="valorant-menu-overlay">
-    <div class="valorant-menu-content">
-      <div class="menu-brand">
-        <h1>RIVERLINE</h1>
-        <div class="menu-subtitle">GTO WORKSTATION</div>
+  <div class="riverline-shell" data-active-mode="gto">
+    <aside class="mode-rail" aria-label="Riverline application">
+      <div class="rail-brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" role="img"><path d="M12 3c-2.2 3.2-6.5 5.7-6.5 9.7A4.3 4.3 0 0 0 12 16.4a4.3 4.3 0 0 0 6.5-3.7C18.5 8.7 14.2 6.2 12 3Z"/><path d="M9.2 20h5.6M12 15.5V20"/></svg>
+        </div>
+        <div class="rail-brand-copy">
+          <strong data-i18n="Riverline">Riverline</strong>
+          <span data-i18n="Poker strategy &amp; analysis">Poker strategy &amp; analysis</span>
+        </div>
       </div>
-      <nav class="valorant-nav">
-        <button class="valorant-btn" id="enterWorkstationBtn" onclick="document.getElementById('mainMenuOverlay').classList.add('hidden');" data-i18n="Enter Workstation">ENTER WORKSTATION</button>
-        <button class="valorant-btn" onclick="document.getElementById('settingsModal').classList.add('show'); document.getElementById('mainMenuOverlay').classList.add('hidden');" data-i18n="Settings">SETTINGS</button>
+
+      <nav class="mode-navigation" aria-label="Primary mode">
+        <button class="mode-nav-item active" type="button" data-mode="gto" data-mode-title="Playbook" data-mode-subtitle="Strategy guidance with explicit source provenance." aria-current="page">
+          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="11" height="14" rx="2"/><path d="m9 9 2-2 2 2-2 2-2-2Zm7-1h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8"/></svg>
+          <span data-i18n="Playbook">Playbook</span>
+        </button>
+        <button class="mode-nav-item" type="button" data-mode="equity" data-mode-title="Equity" data-mode-subtitle="Exact enumeration and Monte Carlo win probability." aria-current="false">
+          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15V3.6Z"/></svg>
+          <span data-i18n="Equity">Equity</span>
+        </button>
+        <button class="mode-nav-item" type="button" data-mode="training" data-mode-title="Training" data-mode-subtitle="Practice decisions against the current strategy sources." aria-current="false">
+          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m16.5 7.5 3-3m0 0v3m0-3h-3"/></svg>
+          <span data-i18n="Training">Training</span>
+        </button>
+        <button class="mode-nav-item" type="button" data-mode="info" data-mode-title="Guide" data-mode-subtitle="Product guidance, poker terms, and control reference." aria-current="false">
+          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
+          <span data-i18n="Guide">Guide</span>
+        </button>
       </nav>
-    </div>
-  </div>
 
-  <div class="shell">
-    <header>
+      <div class="rail-footer" data-i18n="Analysis workspace">Analysis workspace</div>
+    </aside>
 
-      <div class="brand">
-
-        <div class="brand-mark">♠</div>
-
-        <div>
-
-          <h1 data-i18n="Riverline">Riverline</h1>
-
-          <div class="subtitle" data-i18n="Poker GTO Workstation">Poker GTO Workstation</div>
-
+    <div class="workspace-shell">
+      <header class="workspace-header">
+        <div class="workspace-heading">
+          <div class="workspace-eyebrow" data-i18n="Riverline workspace">Riverline workspace</div>
+          <h1 id="workspaceTitle" data-i18n="Playbook">Playbook</h1>
+          <p id="workspaceSubtitle" data-i18n="Strategy guidance with explicit source provenance.">Strategy guidance with explicit source provenance.</p>
         </div>
 
-      </div>
+        <div class="workspace-utilities" aria-label="Workspace utilities">
+          <button id="connectApiBtn" class="model-status" type="button" data-status="fallback" aria-label="Strategy source: Heuristic fallback">
+            <span id="apiStatusDot" class="model-status-dot" aria-hidden="true"></span>
+            <span class="model-status-copy">
+              <span class="model-status-label" data-i18n="Strategy source">Strategy source</span>
+              <strong id="apiStatusText">Heuristic fallback</strong>
+            </span>
+          </button>
 
-      <div class="status" style="display:flex; gap:12px; align-items:center;">
+          <label class="utility-select" for="langToggle">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.4 2.5 3.7 5.5 3.7 9S14.4 18.5 12 21c-2.4-2.5-3.7-5.5-3.7-9S9.6 5.5 12 3Z"/></svg>
+            <span class="sr-only" data-i18n="Language">Language</span>
+            <select id="langToggle" onchange="setLanguage(this.value)" aria-label="Language">
+              <option value="en">EN</option>
+              <option value="ru">RU</option>
+              <option value="he">HE</option>
+            </select>
+          </label>
 
-        <select id="langToggle" class="quick-select" onchange="setLanguage(this.value)"
+          <button id="audioToggleBtn" class="utility-button" type="button" aria-label="Mute sound" aria-pressed="true" title="Audio">
+            <svg class="utility-icon utility-icon-sound" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 3V7l-4 3H5Z"/><path d="M15 9a4 4 0 0 1 0 6m2-8a7 7 0 0 1 0 10"/></svg>
+            <svg class="utility-icon utility-icon-muted" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 3V7l-4 3H5Z"/><path d="m16 10 4 4m0-4-4 4"/></svg>
+            <span class="utility-label" data-i18n="Audio">Audio</span>
+          </button>
 
-          style="width:auto; background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-weight:bold; font-size:14px; cursor:pointer; outline:none; font-family:inherit;">
+          <button id="lockUiBtn" class="utility-button" type="button" aria-label="Unlock layout editing" aria-pressed="true" title="Layout" onclick="window.toggleUILock && window.toggleUILock()">
+            <svg class="utility-icon utility-icon-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <svg class="utility-icon utility-icon-unlock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M9 10V7a4 4 0 0 1 7.5-2"/></svg>
+            <span class="utility-label" data-i18n="Layout">Layout</span>
+          </button>
 
-          <option value="en">🇺🇸 EN</option>
+          <button id="openSettings" class="utility-button" type="button" aria-label="Open settings" title="Settings">
+            <svg class="utility-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>
+            <span class="utility-label" data-i18n="Settings">Settings</span>
+          </button>
+        </div>
+      </header>
 
-          <option value="ru">🇷🇺 RU</option>
-
-          <option value="he">🇮🇱 HE</option>
-
-        </select>
-
-        <button id="connectApiBtn" class="solver-import-btn"
-
-          style="display:flex; align-items:center; gap:8px; background: var(--panel2); border: 1px solid var(--line); padding: 6px 12px; border-radius: 4px; color: #fff; cursor: pointer; font-family: inherit;"
-
-          aria-label="Connect to ONNX model" onclick="toggleOnnxConnection()">
-
-          <span id="apiStatusDot"
-
-            style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#f44336;"></span>
-
-          <span id="apiStatusText">ONNX Offline</span>
-
-        </button>
-
-        <button id="audioToggleBtn" class="icon-btn" aria-label="Audio Sound FX" title="Audio Sound FX (On/Off)" style="background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:6px 10px; cursor:pointer; font-size:16px;">🔊</button>
-        <button id="lockUiBtn" class="icon-btn" aria-label="Lock UI Layout" title="Lock UI Layout" style="background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:6px 10px; cursor:pointer; font-size:16px;" onclick="window.toggleUILock && window.toggleUILock()">🔒</button>
-        <button id="openSettings" class="icon-btn" aria-label="Settings" title="Settings">⚙️</button>
-
-      </div>
-
-</header>
-
-
-
-
-
-    <nav class="main-tabs" aria-label="Primary mode">
-
-      <button class="tab active" data-mode="gto" data-i18n="GTO Playbook">GTO Playbook</button>
-
-      <button class="tab" data-mode="training" data-i18n="Training">Training</button>
-
-      <button class="tab" data-mode="equity" data-i18n="Win Probability">Win Probability</button>
-
-          <button class="tab" data-mode="info" data-i18n="Info & Guide">Info & Guide</button>
-</nav>
+      <div class="shell workspace-canvas">
 
 
 
@@ -2454,6 +2454,8 @@
     </section>
 
 
+      </div>
+    </div>
   </div>
 
 
@@ -2577,7 +2579,7 @@
   <script src="src/core/math.js" defer></script>
   <script src="src/core/SoundFX.js" defer></script>
   <script type="module" src="src/application/canonical-live-bootstrap.mjs"></script>
-  <script src="src/core/logic.js?v=20" defer></script>
+  <script src="src/core/logic.js?v=21" defer></script>
   <script src="src/ui/teacher.js" defer></script>
   <script src="src/ui/dragAndDrop.js" defer></script>
   <script src="src/ui/TableRenderer.js" defer></script>

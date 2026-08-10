@@ -162,7 +162,12 @@ window.initDragAndDrop = initDragAndDrop;
 window.uiLocked = localStorage.getItem('riverline_ui_locked') !== 'false';
 window.applyUILockState = function() {
   const btn = document.getElementById('lockUiBtn');
-  if (btn) btn.textContent = window.uiLocked ? '🔒' : '🔓';
+  if (btn) {
+    btn.classList.toggle('is-unlocked', !window.uiLocked);
+    btn.setAttribute('aria-pressed', String(window.uiLocked));
+    btn.setAttribute('aria-label', window.uiLocked ? 'Unlock layout editing' : 'Lock layout editing');
+    btn.title = window.uiLocked ? 'Unlock layout editing' : 'Lock layout editing';
+  }
   const panels = document.querySelectorAll('.panel');
   panels.forEach(panel => {
     if (window.uiLocked) {

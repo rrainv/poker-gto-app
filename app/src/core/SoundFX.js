@@ -24,16 +24,21 @@ const SoundFX = (function() {
   }
 
   const btn = document.getElementById('audioToggleBtn');
+  function renderButtonState() {
+    if (!btn) return;
+    btn.classList.toggle('muted', !soundEnabled);
+    btn.setAttribute('aria-pressed', String(soundEnabled));
+    btn.setAttribute('aria-label', soundEnabled ? 'Mute sound' : 'Enable sound');
+    btn.title = soundEnabled ? 'Mute sound' : 'Enable sound';
+  }
+
   return {
     isEnabled: () => soundEnabled,
     toggle: function() {
       soundEnabled = !soundEnabled;
       localStorage.setItem('appSoundEnabled', soundEnabled);
       
-      if (btn) {
-        btn.textContent = soundEnabled ? '🔊' : '🔇';
-        btn.classList.toggle('muted', !soundEnabled);
-      }
+      renderButtonState();
       const switchBtn = document.getElementById('audioSettingsSwitch');
       if (switchBtn) {
         switchBtn.classList.toggle('on', soundEnabled);
@@ -44,8 +49,7 @@ const SoundFX = (function() {
     initBtn: function() {
       
       if (btn) {
-        btn.textContent = soundEnabled ? '🔊' : '🔇';
-        btn.classList.toggle('muted', !soundEnabled);
+        renderButtonState();
         btn.onclick = () => {
           const state = SoundFX.toggle();
           if (state) SoundFX.playClick();
