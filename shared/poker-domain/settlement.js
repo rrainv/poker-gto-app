@@ -3,8 +3,10 @@ import {
   LEDGER_KINDS,
   LEDGER_MOVEMENTS,
   PHASES,
+  STREETS,
 } from './schema.js';
 import { isPlayerLive } from './selectors.js';
+import { markShowdownReady, requestBoardChance } from './street-transitions.js';
 
 function appendLedger(state, playerId, kind, amountMilliBb) {
   if (amountMilliBb === 0) return;
@@ -50,14 +52,24 @@ export function refundUncalledExcess(state, recipientPlayerId = null) {
   return amountMilliBb === 0 ? null : { playerId: recipient.playerId, amountMilliBb };
 }
 
-export function completePreflop(state) {
+export function completeBettingRound(state) {
   refundUncalledExcess(state);
-  state.phase = PHASES.CHANCE;
-  state.actingPlayerId = null;
-  state.pendingChance = {
-    type: CHANCE_TYPES.DEAL_FLOP,
-    cardCount: 3,
-  };
+  if (state.street === STREETS.PREFLOP) {
+    requestBoardChance(state, CHANCE_TYPES.DEAL_FLOP);
+  } else if (state.street === STREETS.FLOP) {
+    requestBoardChance(state, CHANCE_TYPES.DEAL_TURN);
+  } else if (state.street === STREETS.TURN) {
+    requestBoardChance(state, CHANCE_TYPES.DEAL_RIVER);
+  } else if (state.street === STREETS.RIVER) {
+    markShowdownReady(state);
+  } else {
+    throw new RangeError(`Cannot complete unsupported betting street: ${state.street}`);
+  }
+}
+
+export function completePreflop(state) {
+  if (state.street !== STREETS.PREFLOP) throw new RangeError('completePreflop requires the preflop street');
+  completeBettingRound(state);
 }
 
 export function settleFoldTerminal(state, winnerPlayerId) {

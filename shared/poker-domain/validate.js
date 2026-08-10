@@ -3,6 +3,12 @@ import { assertMilliBbAlignment, assertPositiveMilliBb } from './amounts.js';
 import { validateAction } from './action.js';
 import { deriveSeatAssignments, playersClockwiseAfterSeat, POSITIONS_BY_TABLE_SIZE } from './positions.js';
 import {
+  isBettingRoundComplete,
+  isPlayerAllIn,
+  isPlayerLive,
+  playerNeedsAction,
+} from './selectors.js';
+import {
   ANTE_TYPES,
   CHANCE_TYPES,
   CLUBGG_FORCED_CONTRIBUTION_MILLI_BB,
@@ -298,9 +304,23 @@ export function validatePokerState(state) {
     }
   }
 
+  if (state.street !== STREETS.PREFLOP && currentStreetActions.length > 0) {
+    const maximumStreetContribution = state.players.reduce((maximum, player) => (
+      Math.max(maximum, player.streetContributionMilliBb)
+    ), 0);
+    if (state.currentBetMilliBb !== maximumStreetContribution) {
+      throw new RangeError('Postflop current bet must equal the greatest street contribution');
+    }
+  }
+
   const playersAbleToBet = state.players.filter((player) => (
-    player.dealtIn && !player.folded && player.currentStackMilliBb > 0
+    isPlayerLive(player) && !isPlayerAllIn(player)
   ));
+  const hasOutstandingCall = playersAbleToBet.some((player) => (
+    player.streetContributionMilliBb < state.currentBetMilliBb
+  ));
+  const bettingIsResolved = isBettingRoundComplete(state)
+    || (playersAbleToBet.length < 2 && !hasOutstandingCall);
   if (state.phase === PHASES.BETTING && state.actingPlayerId === null) {
     throw new RangeError('A betting state requires an acting player');
   }
@@ -309,8 +329,16 @@ export function validatePokerState(state) {
     if (!actor.dealtIn || actor.folded || actor.currentStackMilliBb === 0) {
       throw new RangeError('A betting actor must be live and have chips');
     }
-    if (state.street !== STREETS.PREFLOP && playersAbleToBet.length < 2) {
-      throw new RangeError('Postflop betting requires at least two players able to act');
+    if (!playerNeedsAction(state, actor.playerId)) {
+      throw new RangeError('The betting actor must still need action');
+    }
+    if (isBettingRoundComplete(state)) {
+      throw new RangeError('A complete betting round cannot retain an actor');
+    }
+    if (state.street !== STREETS.PREFLOP
+      && playersAbleToBet.length < 2
+      && !hasOutstandingCall) {
+      throw new RangeError('Postflop betting cannot require a fake check from the only player with chips');
     }
     if (state.street !== STREETS.PREFLOP && currentStreetActions.length === 0) {
       const expectedActor = playersClockwiseAfterSeat(state.players, state.buttonSeat)
@@ -322,16 +350,15 @@ export function validatePokerState(state) {
   }
   if (state.phase === PHASES.CHANCE
     && state.street !== STREETS.PREFLOP
-    && currentStreetActions.length === 0
-    && playersAbleToBet.length >= 2) {
-    throw new RangeError('An actionable postflop street cannot skip directly to chance');
+    && !bettingIsResolved) {
+    throw new RangeError('Postflop chance requires completed betting or no meaningful action');
   }
   if (state.phase === PHASES.SHOWDOWN) {
     if (state.street !== STREETS.RIVER || state.actingPlayerId !== null || state.pendingChance !== null) {
       throw new RangeError('Showdown-ready state requires a complete river and no actor or chance');
     }
-    if (!state.showdown || state.showdown.status !== 'ready' || playersAbleToBet.length >= 2) {
-      throw new RangeError('Showdown is ready only when postflop betting is impossible');
+    if (!state.showdown || state.showdown.status !== 'ready' || !bettingIsResolved) {
+      throw new RangeError('Showdown requires completed river betting or no meaningful action');
     }
     const eligiblePlayerIds = state.players
       .filter((player) => player.dealtIn && !player.folded)

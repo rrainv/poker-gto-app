@@ -3,6 +3,7 @@ import { deepFreeze } from './freeze.js';
 import { getLegalActionSpec } from './legal-actions.js';
 import {
   amountToCallMilliBb,
+  isBettingRoundComplete,
   isPlayerAllIn,
   isPlayerLive,
   nextActionablePlayerId,
@@ -12,8 +13,9 @@ import {
   LEDGER_KINDS,
   LEDGER_MOVEMENTS,
   POKER_ACTION_RECORD_SCHEMA_VERSION,
+  STREETS,
 } from './schema.js';
-import { completePreflop, settleFoldTerminal } from './settlement.js';
+import { completeBettingRound, settleFoldTerminal } from './settlement.js';
 import { validatePokerState } from './validate.js';
 
 function mutablePlayerById(state, playerId) {
@@ -48,14 +50,6 @@ function commitToPot(state, player, amountMilliBb) {
     LEDGER_MOVEMENTS.STACK_TO_POT,
     amountMilliBb,
   );
-}
-
-function isBettingRoundComplete(state) {
-  const livePlayers = state.players.filter(isPlayerLive);
-  return livePlayers.length >= 2 && livePlayers.every((player) => (
-    isPlayerAllIn(player)
-      || (player.actedThisStreet && player.streetContributionMilliBb === state.currentBetMilliBb)
-  ));
 }
 
 function validateConcreteAction(action, spec) {
@@ -103,13 +97,17 @@ export function applyAction(state, action) {
     commitToPot(nextState, actor, committedMilliBb);
 
     const raiseIncrementMilliBb = amountToMilliBb - currentBetBeforeMilliBb;
-    wasFullRaise = currentBetBeforeMilliBb === 0
+    const isPostflopCompletion = nextState.street !== STREETS.PREFLOP
+      && currentBetBeforeMilliBb > 0
+      && currentBetBeforeMilliBb < nextState.game.bigBlindMilliBb
+      && amountToMilliBb >= nextState.game.bigBlindMilliBb;
+    wasFullRaise = isPostflopCompletion || (currentBetBeforeMilliBb === 0
       ? amountToMilliBb >= nextState.game.bigBlindMilliBb
-      : raiseIncrementMilliBb >= nextState.lastFullRaiseIncrementMilliBb;
+      : raiseIncrementMilliBb >= nextState.lastFullRaiseIncrementMilliBb);
     if (wasFullRaise) {
       nextState.lastFullRaiseIncrementMilliBb = currentBetBeforeMilliBb === 0
         ? amountToMilliBb
-        : raiseIncrementMilliBb;
+        : Math.max(nextState.game.bigBlindMilliBb, raiseIncrementMilliBb);
     }
     nextState.currentBetMilliBb = amountToMilliBb;
     nextState.lastAggressorPlayerId = actor.playerId;
@@ -147,11 +145,11 @@ export function applyAction(state, action) {
   if (livePlayers.length === 1) {
     settleFoldTerminal(nextState, livePlayers[0].playerId);
   } else if (isBettingRoundComplete(nextState)) {
-    completePreflop(nextState);
+    completeBettingRound(nextState);
   } else {
     const nextPlayerId = nextActionablePlayerId(nextState, actor.playerId);
     if (nextPlayerId === null) {
-      throw new RangeError('No actionable player found before preflop betting was complete');
+      throw new RangeError('No actionable player found before betting was complete');
     }
     nextState.actingPlayerId = nextPlayerId;
   }

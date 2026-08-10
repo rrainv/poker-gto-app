@@ -43,16 +43,18 @@ function playersAbleToBet(state) {
   return state.players.filter((player) => isPlayerLive(player) && !isPlayerAllIn(player));
 }
 
-function requestNextRunoutCard(state, chanceType) {
+export function requestBoardChance(state, chanceType) {
   const transition = boardChanceTransition(chanceType);
+  if (!transition) throw new RangeError(`Unsupported board chance type: ${chanceType}`);
   state.phase = PHASES.CHANCE;
+  state.actingPlayerId = null;
   state.pendingChance = {
     type: chanceType,
     cardCount: transition.cardCount,
   };
 }
 
-function markShowdownReady(state) {
+export function markShowdownReady(state) {
   state.phase = PHASES.SHOWDOWN;
   state.actingPlayerId = null;
   state.pendingChance = null;
@@ -76,7 +78,7 @@ export function initializeStreetAfterBoardDeal(state, transition, cards) {
     state.phase = PHASES.BETTING;
     state.actingPlayerId = firstPostflopActorId(state);
   } else if (transition.nextChanceType !== null) {
-    requestNextRunoutCard(state, transition.nextChanceType);
+    requestBoardChance(state, transition.nextChanceType);
   } else {
     markShowdownReady(state);
   }

@@ -111,6 +111,15 @@ export function nextActionablePlayerId(state, afterPlayerId) {
   return next ? next.playerId : null;
 }
 
+export function isBettingRoundComplete(state) {
+  requirePokerState(state);
+  const livePlayers = state.players.filter(isPlayerLive);
+  return livePlayers.length >= 2 && livePlayers.every((player) => (
+    isPlayerAllIn(player)
+      || (player.actedThisStreet && player.streetContributionMilliBb === state.currentBetMilliBb)
+  ));
+}
+
 export function ledgerTotals(state) {
   requirePokerState(state);
   let potMilliBb = 0;

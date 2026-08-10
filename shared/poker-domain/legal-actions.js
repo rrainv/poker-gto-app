@@ -9,12 +9,11 @@ import {
   minimumBetToMilliBb,
   minimumRaiseToMilliBb,
 } from './selectors.js';
-import { PHASES, STREETS } from './schema.js';
+import { PHASES } from './schema.js';
 import { validatePokerState } from './validate.js';
 
-function requirePreflopBettingState(state) {
+function requireBettingState(state) {
   validatePokerState(state);
-  if (state.street !== STREETS.PREFLOP) throw new RangeError('Canonical betting transitions currently support preflop only');
   if (state.phase !== PHASES.BETTING) throw new RangeError('Actions require a betting phase');
   const actor = currentActor(state);
   if (!actor || !isPlayerLive(actor) || isPlayerAllIn(actor)) {
@@ -24,7 +23,7 @@ function requirePreflopBettingState(state) {
 }
 
 export function getLegalActionSpec(state) {
-  const actor = requirePreflopBettingState(state);
+  const actor = requireBettingState(state);
   const toCallMilliBb = amountToCallMilliBb(state, actor.playerId);
   const maximumTo = maximumAmountToMilliBb(state, actor.playerId);
   const commitMilliBb = Math.min(toCallMilliBb, actor.currentStackMilliBb);
