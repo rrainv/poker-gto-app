@@ -7295,6 +7295,30 @@ button.rail-utility { width: 100%; cursor: pointer; }
   border-color: var(--border-subtle) !important;
 }
 
+.analysis-explanation { display: grid; gap: var(--space-4); color: var(--text-secondary); }
+.analysis-explanation-header { display: grid; gap: var(--space-1); padding-bottom: var(--space-3); border-bottom: 1px solid var(--border-subtle); }
+.analysis-explanation-headline { margin: 0; color: var(--text-primary); font-size: var(--text-body-size); }
+.analysis-explanation-summary { margin: 0; color: var(--text-secondary); line-height: 1.5; }
+.analysis-explanation-sections { display: grid; gap: var(--space-4); }
+.analysis-explanation-section { display: grid; gap: var(--space-2); min-width: 0; }
+.analysis-explanation-section-title { margin: 0; color: var(--text-primary); font-size: var(--text-label-size); }
+.analysis-explanation-facts { display: grid; gap: var(--space-2); margin: 0; }
+.analysis-explanation-fact { display: grid; grid-template-columns: minmax(92px, .4fr) minmax(0, 1fr); gap: var(--space-3); align-items: start; }
+.analysis-explanation-fact dt { color: var(--text-muted); font-size: var(--text-micro-size); font-weight: 700; }
+.analysis-explanation-fact dd { min-width: 0; margin: 0; color: var(--text-secondary); overflow-wrap: anywhere; }
+.analysis-explanation-fact[data-fact-kind="derived"] dd { color: var(--text-primary); font-family: var(--font-data); }
+.analysis-explanation-text { margin: 0; color: var(--text-secondary); line-height: 1.5; }
+.analysis-explanation-footer { display: grid; gap: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle); }
+.analysis-explanation-source { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); align-items: baseline; }
+.analysis-explanation-source span { color: var(--text-muted); font-size: var(--text-micro-size); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.analysis-explanation-source strong { color: var(--text-primary); }
+.analysis-explanation-source small { color: var(--text-muted); }
+.analysis-explanation-limitations summary { color: var(--text-muted); cursor: pointer; font-weight: 700; }
+.analysis-explanation-limitations ul { display: grid; gap: var(--space-1); margin: var(--space-2) 0 0; padding-inline-start: var(--space-5); color: var(--text-muted); }
+.analysis-explanation-empty { margin: 0; color: var(--text-muted); }
+.training-shared-analysis { margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--border-subtle); }
+.training-shared-analysis .analysis-explanation-sections { grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); }
+
 /* Playbook stabilization ------------------------------------------------- */
 
 #gtoMode .playbook-state-source {

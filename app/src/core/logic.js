@@ -163,6 +163,8 @@ const app = {
 
     currentPresentation: null,
 
+    currentAnalysisExplanation: null,
+
     lifecycle: 'idle',
 
     nextSeed: Date.now() >>> 0
@@ -188,6 +190,8 @@ const app = {
   decisionContext: null,
 
   strategyResult: null,
+
+  analysisExplanation: null,
 
   playbookMode: PLAYBOOK_MODES.SCENARIO,
 
@@ -1238,6 +1242,12 @@ function renderUnavailableStrategy(resolution) {
   if (resolution?.mode === 'hand' && $('#pathList')) {
     $('#pathList').innerHTML = `<div class="panel-note">${message}</div>`;
   }
+  renderPlaybookDecisionAnalysis(
+    null,
+    unavailableStrategyResult(message),
+    resolution,
+    analysisUnavailableReasonForResolution(resolution)
+  );
   renderPlaybookModeStatus(resolution);
 }
 
@@ -3763,6 +3773,122 @@ function setRecommendationState(state) {
   recommendation.setAttribute('aria-busy', String(state === 'loading'));
 }
 
+function analysisUnavailableReasonForResolution(resolution) {
+  const reason = String(resolution?.reason || '');
+  if (reason === 'canonical_hero_cards_unknown') return 'missing_hero_cards';
+  if (reason === 'canonical_hero_not_actor') return 'hero_not_actor';
+  if (reason === 'canonical_chance_state') return 'waiting_for_board';
+  if (reason === 'canonical_terminal_state' || reason === 'canonical_showdown_state') return 'terminal_hand';
+  if (resolution?.mode === 'scenario') return 'invalid_scenario';
+  return 'strategy_unavailable';
+}
+
+function trustedHandClassificationForAnalysis(decisionContext) {
+  if (!decisionContext || decisionContext.street === 'preflop'
+    || decisionContext.heroCards.length !== 2 || decisionContext.board.length < 3
+    || typeof evaluatePostflopHand !== 'function') return null;
+  const classification = evaluatePostflopHand(decisionContext.heroCards, decisionContext.board);
+  if (!classification) return null;
+  return {
+    madeHand: classification.madeHand || null,
+    draws: Array.isArray(classification.draws) ? classification.draws.slice() : [],
+    source: 'legacy_postflop_classifier'
+  };
+}
+
+function canonicalActionHistoryForAnalysis(resolution) {
+  if (resolution?.mode !== 'hand') return [];
+  const bridge = globalThis.RiverlinePlaybookState;
+  const state = bridge && typeof bridge.getState === 'function' ? bridge.getState() : null;
+  if (!state || !Array.isArray(state.actionHistory) || !Array.isArray(state.players)) return [];
+  const heroPlayerId = typeof bridge.getHeroPlayerId === 'function' ? bridge.getHeroPlayerId() : null;
+  const playersById = new Map(state.players.map((player) => [player.playerId, player]));
+  const labels = {
+    fold: 'Fold', check: 'Check', call: 'Call', bet: 'Bet to', raise: 'Raise to', all_in: 'All-in to'
+  };
+  return state.actionHistory.map((record, index) => {
+    const action = record.submittedAction || {};
+    const player = playersById.get(record.playerId);
+    const amountMilliBb = action.type === 'call'
+      ? record.committedMilliBb
+      : action.type === 'fold' || action.type === 'check' ? null : action.amountToMilliBb;
+    return {
+      sequence: Number.isInteger(record.sequence) ? record.sequence : index,
+      street: record.street,
+      actorLabel: record.playerId === heroPlayerId ? 'Hero' : (player?.position || record.playerId),
+      position: player?.position || null,
+      actionType: action.type || 'unknown',
+      actionLabel: labels[action.type] || String(action.type || 'Action').replaceAll('_', ' '),
+      amountBb: Number.isSafeInteger(amountMilliBb) ? amountMilliBb / 1000 : null,
+      isHero: record.playerId === heroPlayerId
+    };
+  });
+}
+
+function trustedAnalysisFacts(decisionContext, strategyResult, actionHistory = []) {
+  const facts = { actionHistory: Array.isArray(actionHistory) ? actionHistory : [] };
+  const handClassification = trustedHandClassificationForAnalysis(decisionContext);
+  if (handClassification) facts.handClassification = handClassification;
+  const rawEquity = strategyResult?.details?.originalEquity;
+  const alreadyCalculatedEquity = rawEquity === null || rawEquity === undefined
+    ? NaN
+    : Number(rawEquity);
+  if (Number.isFinite(alreadyCalculatedEquity) && alreadyCalculatedEquity >= 0 && alreadyCalculatedEquity <= 1) {
+    facts.equity = {
+      heroEquity: alreadyCalculatedEquity,
+      method: 'existing postflop heuristic sample'
+    };
+  }
+  return facts;
+}
+
+function renderDecisionAnalysis(container, {
+  decisionContext,
+  strategyResult,
+  trustedFacts,
+  authority,
+  depth,
+  unavailableReason = null
+}) {
+  if (!container) return null;
+  const bridge = globalThis.RiverlineAnalysisExplanation;
+  if (!bridge || typeof bridge.create !== 'function' || typeof renderAnalysisExplanation !== 'function') {
+    container.textContent = 'Decision analysis is unavailable.';
+    return null;
+  }
+  const explanation = bridge.create({
+    decisionContext,
+    strategyResult,
+    trustedFacts,
+    authority,
+    depth,
+    unavailableReason
+  });
+  renderAnalysisExplanation(container, explanation, { depth });
+  return explanation;
+}
+
+function renderPlaybookDecisionAnalysis(decisionContext, strategyResult, resolution, unavailableReason = null) {
+  const authority = resolution?.mode === 'hand' ? 'hand' : 'scenario';
+  const result = strategyResult?.schemaVersion === STRATEGY_RESULT_SCHEMA_VERSION
+    ? strategyResult
+    : unavailableStrategyResult(playbookResolutionMessage(resolution));
+  const explanation = renderDecisionAnalysis($('#teacherContent'), {
+    decisionContext,
+    strategyResult: result,
+    trustedFacts: trustedAnalysisFacts(
+      decisionContext,
+      result,
+      canonicalActionHistoryForAnalysis(resolution)
+    ),
+    authority,
+    depth: 'detailed',
+    unavailableReason
+  });
+  app.analysisExplanation = explanation;
+  return explanation;
+}
+
 function renderLoadingStrategy() {
   setRecommendationState('loading');
   if ($('#bestAction')) $('#bestAction').textContent = 'Loading strategy';
@@ -3784,6 +3910,12 @@ function renderLoadingStrategy() {
   emptyActions.forEach((action, index) => setFrequency(index + 1, action));
   renderFrequencyStack($('#actionFrequencyStack'), emptyActions);
   if ($('#actionWheel')) $('#actionWheel').style.background = 'var(--surface-interactive)';
+  renderPlaybookDecisionAnalysis(
+    app.decisionContext,
+    unavailableStrategyResult('Strategy source is loading.'),
+    app.playbookResolution,
+    'strategy_loading'
+  );
   if ($('#wheelCenterText')) $('#wheelCenterText').textContent = '—';
 }
 
@@ -4083,18 +4215,8 @@ async function updateContext(reason = 'Context updated') {
 
   
 
-  if (typeof generateTeacherText === 'function') {
-
-    const teacherContent = $('#teacherContent');
-
-    if (teacherContent) {
-
-      teacherContent.innerHTML = generateTeacherText(profile);
-
-      if (typeof updateDomTranslations === 'function') updateDomTranslations();
-
-    }
-
+  if (typeof renderPlaybookDecisionAnalysis === 'function') {
+    renderPlaybookDecisionAnalysis(decisionContext, strategyResult, playbookResolution);
   }
 
   
@@ -9215,6 +9337,12 @@ function renderCanonicalTrainingExercise(exercise) {
 
   const feedbackDiv = $('#trainingFeedback');
   if (feedbackDiv) feedbackDiv.hidden = true;
+  const trainingAnalysis = $('#trainingAnalysis');
+  if (trainingAnalysis) {
+    trainingAnalysis.replaceChildren();
+    trainingAnalysis.hidden = true;
+  }
+  app.training.currentAnalysisExplanation = null;
   const solutionDiv = $('#trainingSolution');
   if (solutionDiv) solutionDiv.hidden = true;
   const scoreBadge = $('#trainingScoreBadge');
@@ -9298,6 +9426,7 @@ async function newRandomTrainingHand(options = {}) {
 
 function canonicalTrainingFeedback(evaluation, strategyResult) {
   const source = strategySourceDisplayLabel(strategyResult.source);
+  const heuristic = String(strategyResult.source || '').startsWith('heuristic_');
   const chosen = evaluation.mappedStrategyAction?.label
     || trainingActionLabel(evaluation.chosenAction.type, app.training.currentExercise.decisionContext);
   const best = evaluation.bestStrategyAction.label;
@@ -9306,19 +9435,58 @@ function canonicalTrainingFeedback(evaluation, strategyResult) {
   if (evaluation.grade === 'optimal') {
     return {
       title: 'Optimal',
-      text: `${source} assigns ${chosenPct}% to ${chosen}. The highest-frequency action is ${best} at ${bestPct}%.`
+      text: heuristic
+        ? `Within the current strategy estimate, ${chosen} receives ${chosenPct}%. The highest-frequency action is ${best} at ${bestPct}%.`
+        : `${source} assigns ${chosenPct}% to ${chosen}. The highest-frequency action is ${best} at ${bestPct}%.`
     };
   }
   if (evaluation.grade === 'acceptable') {
     return {
       title: 'Acceptable',
-      text: `Acceptable mixed-strategy choice: ${source} mixes ${chosen} at ${chosenPct}%, within 15 percentage points of ${best} at ${bestPct}%.`
+      text: heuristic
+        ? `Acceptable mixed-strategy choice. Within the current strategy estimate, ${chosen} has ${chosenPct}%, within 15 percentage points of ${best} at ${bestPct}%.`
+        : `Acceptable mixed-strategy choice: ${source} mixes ${chosen} at ${chosenPct}%, within 15 percentage points of ${best} at ${bestPct}%.`
     };
   }
   return {
     title: 'Mistake',
-    text: `${source} assigns ${chosenPct}% to ${chosen}, compared with ${bestPct}% for ${best}. No EV estimate is available unless the strategy source supplies one.`
+    text: heuristic
+      ? `Within the current strategy estimate, ${chosen} has ${chosenPct}%, compared with ${bestPct}% for ${best}. No EV estimate is available unless the strategy source supplies one.`
+      : `${source} assigns ${chosenPct}% to ${chosen}, compared with ${bestPct}% for ${best}. No EV estimate is available unless the strategy source supplies one.`
   };
+}
+
+function trainingActionHistoryForAnalysis(presentation) {
+  return (presentation?.actionHistory || []).map((entry) => {
+    const parsedAmount = Number.parseFloat(String(entry.amountLabel || '').replace('bb', ''));
+    return {
+      sequence: entry.sequence,
+      street: entry.street,
+      actorLabel: entry.actorLabel,
+      position: entry.position,
+      actionType: entry.actionType,
+      actionLabel: entry.actionLabel,
+      amountBb: Number.isFinite(parsedAmount) ? parsedAmount : null,
+      amountLabel: entry.amountLabel,
+      isHero: entry.isHero
+    };
+  });
+}
+
+function renderTrainingDecisionAnalysis(exercise) {
+  const container = $('#trainingAnalysis');
+  if (!container || !exercise) return null;
+  const history = trainingActionHistoryForAnalysis(app.training.currentPresentation || exercise.presentation);
+  const explanation = renderDecisionAnalysis(container, {
+    decisionContext: exercise.decisionContext,
+    strategyResult: exercise.strategyResult,
+    trustedFacts: trustedAnalysisFacts(exercise.decisionContext, exercise.strategyResult, history),
+    authority: 'training',
+    depth: 'concise'
+  });
+  container.hidden = !explanation;
+  app.training.currentAnalysisExplanation = explanation;
+  return explanation;
 }
 
 function handleTrainingGuess(userAction) {
@@ -9367,6 +9535,7 @@ function handleTrainingGuess(userAction) {
   if (evAvailable && $('#trainingEvValue')) {
     $('#trainingEvValue').textContent = `${evaluation.explanationData.chosenEvBb.toFixed(2)}bb vs ${evaluation.explanationData.bestEvBb.toFixed(2)}bb`;
   }
+  renderTrainingDecisionAnalysis(exercise);
   showTrainingSolution(app.training.currentSolution);
   const guessButtons = $('#trainingGuessButtons');
   if (guessButtons) guessButtons.hidden = true;
