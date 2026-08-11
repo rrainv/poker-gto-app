@@ -6,7 +6,6 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
-const layout = fs.readFileSync(new URL('../app/src/ui/dragAndDrop.js', import.meta.url), 'utf8');
 
 function shellMarkup() {
   const start = html.indexOf('<div class="riverline-shell"');

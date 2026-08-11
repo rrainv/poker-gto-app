@@ -8,7 +8,6 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
-const layout = fs.readFileSync(new URL('../app/src/ui/dragAndDrop.js', import.meta.url), 'utf8');
 const bootstrap = fs.readFileSync(
   new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url),
   'utf8',
@@ -228,11 +227,9 @@ test('workflow, legal actions, status, and card inputs expose accessible semanti
   assert.match(logic, /data-playbook-canonical-display disabled aria-label/);
 });
 
-test('Playbook fixed hierarchy is excluded from legacy panel serialization', () => {
-  assert.match(html, /id="recommendation"[^>]+data-layout-fixed/);
-  assert.match(html, /id="playbookHandWorkspace"[^>]+data-layout-fixed/);
-  assert.match(layout, /\.panel:not\(\[data-layout-fixed\]\)/);
-  assert.match(layout, /!panel\.hasAttribute\('data-layout-fixed'\)/);
+test('Playbook hierarchy does not depend on an arbitrary drag/drop layout implementation', () => {
+  assert.doesNotMatch(html, /data-layout-fixed/);
+  assert.doesNotMatch(html, /src="src\/ui\/dragAndDrop\.js"/);
 });
 
 test('Playbook redesign remains tokenized across Midnight, Graphite, and Daylight', () => {

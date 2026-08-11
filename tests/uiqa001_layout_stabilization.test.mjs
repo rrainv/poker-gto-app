@@ -140,6 +140,7 @@ test('full-ten preference changes presentation but preserves canonical card iden
 test('broken free-form layout editor is no longer presented or bootstrapped', () => {
   assert.doesNotMatch(html, /id="lockUiBtn"/);
   assert.doesNotMatch(html, /src="src\/ui\/dragAndDrop\.js"/);
+  assert.doesNotMatch(html, /data-layout-fixed/);
   assert.doesNotMatch(railHtml, />Layout</);
 });
 

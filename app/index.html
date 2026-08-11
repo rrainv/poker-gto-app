@@ -431,7 +431,7 @@
 
         <aside class="side-stack playbook-context-rail" aria-label="Playbook context and configuration">
 
-          <section id="scenarioConfigurationPanel" class="panel playbook-config-panel" data-playbook-scenario data-layout-fixed>
+          <section id="scenarioConfigurationPanel" class="panel playbook-config-panel" data-playbook-scenario>
 
             <div class="panel-head" style="align-items: center; flex-wrap: nowrap; white-space: nowrap;">
 
@@ -679,7 +679,7 @@
 
 
 
-          <section id="scenarioCardsPanel" class="panel playbook-cards-panel" data-playbook-scenario data-layout-fixed>
+          <section id="scenarioCardsPanel" class="panel playbook-cards-panel" data-playbook-scenario>
 
             <div class="panel-head">
 
@@ -737,7 +737,7 @@
 
           </section>
 
-          <section id="playbookHandWorkspace" class="panel playbook-hand-workspace" data-playbook-hand data-layout-fixed hidden aria-hidden="true">
+          <section id="playbookHandWorkspace" class="panel playbook-hand-workspace" data-playbook-hand hidden aria-hidden="true">
             <div class="panel-head playbook-hand-head">
               <div>
                 <div class="label" data-i18n="Canonical Hand">Canonical Hand</div>
@@ -900,7 +900,7 @@
 
 
 
-            <section class="panel recommend playbook-primary-decision" id="recommendation" data-layout-fixed data-recommendation-state="ready" aria-live="polite" aria-atomic="false">
+            <section class="panel recommend playbook-primary-decision" id="recommendation" data-recommendation-state="ready" aria-live="polite" aria-atomic="false">
 
               <div class="recommend-top">
 
@@ -1313,7 +1313,7 @@
 
 
         <aside class="right-rail side-stack playbook-support-rail">
-          <section id="playbookDecisionPathPanel" class="panel" data-layout-fixed>
+          <section id="playbookDecisionPathPanel" class="panel">
             <div class="panel-head">
               <div>
                 <div class="panel-title" data-i18n="Action path">Action path</div>
@@ -1325,7 +1325,7 @@
             </div>
           </section>
 
-          <section id="playbookGuardrailPanel" class="panel" data-layout-fixed>
+          <section id="playbookGuardrailPanel" class="panel">
             <div class="panel-head">
               <div>
                 <div class="panel-title" data-i18n="Playbook guardrail">Playbook guardrail</div>
@@ -1861,7 +1861,6 @@
   </div> <!-- /.shell -->
 
   <script src="ort.min.js" defer></script>
-  <script src="src/core/math.js" defer></script>
   <script src="src/core/SoundFX.js" defer></script>
   <script type="module" src="src/application/analysis-explanation-bootstrap.mjs"></script>
   <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
