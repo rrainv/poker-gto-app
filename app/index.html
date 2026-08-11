@@ -1077,9 +1077,9 @@
 
           <div id="chartView" class="gto-view" style="display: none;">
 
-            <section class="panel">
+            <section class="panel range-matrix-panel">
 
-              <div class="panel-head">
+              <div class="panel-head range-matrix-head">
 
                 <div>
 
@@ -1091,11 +1091,10 @@
 
                 </div>
 
-                <div style="display:flex; align-items:center; gap:16px;">
+                <div class="range-matrix-head-actions">
 
                   <div id="chartSelectionPreview"
-
-                    style="font-size:13px; color:#94a3b8; font-weight:bold; display:flex; gap:12px; align-items:center;">
+                    class="range-matrix-selection-status" role="status" aria-live="polite">
 
                     <!-- Dynamically populated by JS -->
 
@@ -1107,7 +1106,7 @@
 
               </div>
 
-              <div class="chart-toolbar">
+              <div class="chart-toolbar range-matrix-toolbar">
 
                 <div class="street-tabs">
 
@@ -1121,7 +1120,9 @@
 
                 </div>
 
-                <select id="chartAction" style="width:200px; background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px 10px; font-weight:bold; font-size:13px; cursor:pointer;">
+                <label class="matrix-mode-control" for="chartAction"><span data-i18n="View">View</span>
+
+                <select id="chartAction" class="control-select">
 
                   <option value="strategy" data-i18n="Strategy colors">Strategy colors</option>
 
@@ -1135,39 +1136,53 @@
 
                   <option value="fold" data-i18n="Fold %">Fold %</option>
 
-                </select>
+                </select></label>
 
               </div>
 
               <div class="chart-summary" id="chartSummary">BTN vs BB · 100 bb · rake 5% · unopened pot</div>
 
-              <div class="matrix-wrap">
+              <div class="range-matrix-layout">
 
-                <div class="strategy-grid" id="strategyGrid" aria-label="13 by 13 starting hand strategy matrix"></div>
+                <div class="range-matrix-main">
 
-              </div>
+              <div class="matrix-wrap" tabindex="0" aria-label="Scrollable 13 by 13 starting hand strategy matrix">
 
-              <div class="strategy-key" id="strategyKey">
-
-                <span class="key"><i class="open" data-action-kind="aggressive"></i><span data-i18n="Raise / bet">Raise / bet</span></span>
-
-                <span class="key"><i class="call" data-action-kind="passive"></i><span>Check / call</span></span>
-
-                <span class="key"><i class="all-in" data-action-kind="all-in"></i><span>All-in</span></span>
-
-                <span class="key"><i class="mix" data-action-kind="mixed"></i><span data-i18n="Mixed">Mixed</span></span>
-
-                <span class="key"><i class="fold" data-action-kind="fold"></i><span data-i18n="Fold">Fold</span></span>
+                <div class="strategy-grid" id="strategyGrid" role="grid" aria-rowcount="13" aria-colcount="13" aria-label="13 by 13 starting hand strategy matrix"></div>
 
               </div>
 
-              <div class="selected-hand">
+              <div class="strategy-key matrix-action-legend" id="strategyKey" role="list" aria-label="Strategy action colors">
 
-                <div>
+                <span class="key" role="listitem"><i class="open" data-action-kind="aggressive"></i><span data-i18n="Raise / bet">Raise / bet</span></span>
 
-                  <span data-i18n="Selected hand">Selected hand</span>
+                <span class="key" role="listitem"><i class="call" data-action-kind="passive"></i><span>Check / call</span></span>
+
+                <span class="key" role="listitem"><i class="all-in" data-action-kind="all-in"></i><span>All-in</span></span>
+
+                <span class="key" role="listitem"><i class="mix" data-action-kind="mixed"></i><span data-i18n="Mixed">Mixed</span></span>
+
+                <span class="key" role="listitem"><i class="fold" data-action-kind="fold"></i><span data-i18n="Fold">Fold</span></span>
+
+              </div>
+
+                </div>
+
+              <aside class="selected-hand matrix-hand-inspector" aria-labelledby="selectedHand" aria-live="polite">
+
+                <div class="matrix-inspector-heading">
+
+                  <span class="matrix-inspector-eyebrow" data-i18n="Selected hand">Selected hand</span>
 
                   <strong id="selectedHand" data-i18n="Select a hand">Select a hand</strong>
+
+                </div>
+
+                <div class="matrix-inspector-meta">
+
+                  <span id="selectedHandKind">Hand class</span>
+
+                  <strong id="selectedHandPrimary">No action selected</strong>
 
                 </div>
 
@@ -1178,6 +1193,8 @@
                     frequencies.</span>
 
                 </div>
+
+              </aside>
 
               </div>
 
@@ -1353,6 +1370,8 @@
                 <p class="training-eyebrow" data-i18n="Training workspace">Training workspace</p>
                 <h2 id="trainingWorkspaceTitle" data-i18n="Make the decision">Make the decision</h2>
                 <p id="trainingInstruction" class="muted">Generate a reachable canonical decision, then choose one legal action.</p>
+              </aside>
+
               </div>
               <div class="training-state-cluster">
                 <span id="trainingStateBadge" class="badge status-badge status-badge--info">Idle</span>

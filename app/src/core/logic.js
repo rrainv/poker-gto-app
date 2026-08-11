@@ -510,10 +510,11 @@ function renderEquityPlayers() {
             : `<div class="equity-unknown-hand" aria-label="${label} unknown cards"><span class="poker-card-back" aria-hidden="true"></span><span class="poker-card-back" aria-hidden="true"></span><span>Random legal hand</span></div>`}
         </div>
         <div class="equity-hand-message" id="equityHandMessage-${playerIndex}">${status}</div>
-        <div id="outsPanel-${playerIndex}" class="equity-player-outs">
-          <span data-i18n="Outs">Outs</span><span id="outsCount-${playerIndex}"></span>
-          <div id="outsSummary-${playerIndex}"></div><div id="outsCards-${playerIndex}"></div>
-        </div>
+        <section id="outsPanel-${playerIndex}" class="equity-player-outs" aria-label="Outs" aria-live="polite">
+          <div class="outs-panel-head"><span class="outs-panel-title" data-i18n="Outs">Outs</span><span id="outsCount-${playerIndex}" class="outs-total"></span></div>
+          <div id="outsSummary-${playerIndex}" class="outs-summary"></div>
+          <div id="outsCards-${playerIndex}" class="outs-groups"></div>
+        </section>
       </article>`;
   }).join('');
 
@@ -732,6 +733,8 @@ function firstEmptyIndex(cards, limit) {
 function selectCard(card) {
 
   const { group, index } = app.picker;
+  let appearanceGroup = group;
+  let appearanceIndex = index;
 
   if (isHandMode() && PLAYBOOK_DECISION_CARD_GROUPS.includes(group)) {
     closePicker();
@@ -763,6 +766,8 @@ function selectCard(card) {
     target[index] = null;
 
     deadCards[freeIndex] = card;
+    appearanceGroup = destination;
+    appearanceIndex = freeIndex;
 
   } else {
 
@@ -789,6 +794,9 @@ function selectCard(card) {
   else if (group.startsWith('hand-')) renderCanonicalHandWorkspace();
 
   else updateContext('Cards changed');
+
+  const appearedCard = document.querySelector(`[data-slots="${appearanceGroup}"] [data-index="${appearanceIndex}"]`);
+  if (appearedCard) appearedCard.classList.add('is-card-dealt');
 
 }
 
@@ -1370,6 +1378,7 @@ function commitCanonicalHoleDeal() {
   }
   const next = callPlaybookStateBridge('dealObservedHoleCards', cardsByPlayer);
   if (!next) toast(canonicalHandFailureMessage(), 'error');
+  else if (window.SoundFX) window.SoundFX.playCardDeal(Math.max(2, Object.keys(cardsByPlayer).length * 2));
   renderCanonicalHandWorkspace();
   return next;
 }
@@ -1409,7 +1418,10 @@ function commitCanonicalBoardDeal() {
   }
   const next = callPlaybookStateBridge('dealBoardCards', cards);
   if (!next) toast(canonicalHandFailureMessage(), 'error');
-  else app.playbookHandDraft.board = [];
+  else {
+    app.playbookHandDraft.board = [];
+    if (window.SoundFX) window.SoundFX.playCardDeal(expected);
+  }
   renderCanonicalHandWorkspace();
   return next;
 }
@@ -1446,6 +1458,7 @@ function chooseCanonicalSizedAction(type, option) {
 function applyCanonicalHandAction(type, amountToBb = null) {
   const next = callPlaybookStateBridge('applyAction', type, amountToBb);
   if (!next) toast(canonicalHandFailureMessage(), 'error');
+  else if (window.SoundFX) window.SoundFX.playPokerAction(type);
   app.playbookHandDraft.sizedAction = null;
   renderCanonicalHandWorkspace();
   return next;
@@ -3322,6 +3335,10 @@ function renderChart() {
     RANKS.forEach((_, row) => RANKS.forEach((__, col) => {
       const btn = document.createElement('button');
       btn.className = 'hand-cell';
+      btn.type = 'button';
+      btn.setAttribute('role', 'gridcell');
+      btn.setAttribute('aria-rowindex', String(row + 1));
+      btn.setAttribute('aria-colindex', String(col + 1));
       grid.appendChild(btn);
     }));
     grid.dataset.delegated = 'true';
@@ -3596,7 +3613,7 @@ function renderChart() {
 
     button.dataset.hand = hand;
 
-    button.setAttribute('aria-label', hand + ': ' + detail);
+    button.setAttribute('aria-label', `${hand}, ${handKind}: ${detail}`);
 
 
 
@@ -3610,13 +3627,24 @@ function renderChart() {
 
 
 
-    if (isSelected && actions.length > 0) {
+    if (isSelected) {
 
-        previewHTML = `<strong class="matrix-preview-hand">${hand}</strong> ` + actions.map(a => `<span class="matrix-preview-action" data-action-kind="${visualActionKind(a)}">${a.name.toUpperCase()} ${(a.value % 1 === 0 ? a.value : Number(a.value).toFixed(1))}%</span>`).join(' · ');
+        const kindLabel = handKind === 'pair' ? 'Pair' : handKind === 'suited' ? 'Suited' : 'Offsuit';
+        const primaryAction = actions[0];
+        previewHTML = `<strong class="matrix-preview-hand">${hand}</strong><span class="matrix-preview-summary">${primaryAction ? `${primaryAction.name} ${primaryAction.value}%` : 'Unavailable'}</span>`;
 
         $('#selectedHand').textContent = hand;
+        if ($('#selectedHandKind')) $('#selectedHandKind').textContent = kindLabel;
+        if ($('#selectedHandPrimary')) {
+          $('#selectedHandPrimary').textContent = primaryAction
+            ? `Primary · ${primaryAction.name} ${primaryAction.value}%`
+            : 'Strategy unavailable';
+          $('#selectedHandPrimary').dataset.actionKind = visualActionKind(primaryAction);
+        }
 
-        $('#selectedMix').innerHTML = `<span>${detail}</span><div class="alloc" role="img" aria-label="${detail}">${actions.map((action) => `<i data-action-kind="${visualActionKind(action)}" style="width:${action.value}%"></i>`).join('')}</div>`;
+        $('#selectedMix').innerHTML = actions.length
+          ? `<div class="matrix-inspector-actions">${actions.map((action) => `<span class="matrix-inspector-action"><i data-action-kind="${visualActionKind(action)}"></i><span>${action.name}</span><strong>${action.value % 1 === 0 ? action.value : Number(action.value).toFixed(1)}%</strong></span>`).join('')}</div><div class="alloc" role="img" aria-label="${detail}">${actions.map((action) => `<i data-action-kind="${visualActionKind(action)}" style="width:${action.value}%"></i>`).join('')}</div>`
+          : `<span class="matrix-inspector-unavailable">${detail || 'Strategy unavailable for this hand.'}</span>`;
 
     }
 
@@ -5229,7 +5257,6 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
     const board = app.equity.board.filter(Boolean);
     const deadCards = app.equity.dead || [];
     const suitSymbols = { s: '♠', h: '♥', d: '♦', c: '♣' };
-    const suitColors  = { s: '#94a3b8', h: '#f87171', d: '#fb923c', c: '#4ade80' };
 
     app.equity.players.forEach((player, playerIndex) => {
       const panel   = document.getElementById(`outsPanel-${playerIndex}`);
@@ -5260,31 +5287,34 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
 
       if (!outsResult) { panel.style.display = 'none'; return; }
 
-      panel.style.display = 'block';
+      panel.style.display = 'grid';
 
       if (outsResult.ahead) {
-        if (countEl) { countEl.textContent = 'Ahead'; countEl.style.background = 'rgba(74,222,128,0.15)'; countEl.style.color = '#4ade80'; }
+        panel.dataset.outsState = 'ahead';
+        if (countEl) countEl.textContent = 'Ahead';
         if (summEl)  summEl.textContent = 'Currently winning — no outs needed.';
         if (cardsEl) cardsEl.innerHTML = '';
       } else if (outsResult.count === 0) {
-        if (countEl) { countEl.textContent = 'Drawing Dead'; countEl.style.background = 'rgba(248,113,113,0.15)'; countEl.style.color = '#f87171'; }
+        panel.dataset.outsState = 'drawing-dead';
+        if (countEl) countEl.textContent = '0 total';
         if (summEl)  summEl.textContent = 'No outs — drawing dead.';
         if (cardsEl) cardsEl.innerHTML = '';
       } else {
-        if (countEl) { countEl.textContent = outsResult.count + ' outs'; countEl.style.background = 'rgba(56,189,248,0.15)'; countEl.style.color = 'var(--accent,#38bdf8)'; }
-        if (summEl)  summEl.innerHTML = ''; // We will put categories in cardsEl directly for a cleaner layout
+        panel.dataset.outsState = 'drawing';
+        if (countEl) countEl.textContent = outsResult.count + ' total';
+        if (summEl) summEl.textContent = 'Cards that improve this hand against the entered known opponents.';
         if (cardsEl) {
           let html = '';
           outsResult.categories.forEach(cat => {
-            html += `<div style="width:100%; margin-bottom: 6px;">`;
-            html += `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">${cat.name} (${cat.cards.length} outs)</div>`;
-            html += `<div style="display:flex; flex-wrap:wrap; gap:3px;">`;
+            html += '<div class="outs-group">';
+            html += `<div class="outs-group-head"><strong>${cat.name}</strong><span>${cat.cards.length} ${cat.cards.length === 1 ? 'out' : 'outs'}</span></div>`;
+            html += '<div class="outs-card-list">';
             html += cat.cards.map(card => {
               const rank = displayCardRank(card[0]), suit = card[1];
-              const color = suitColors[suit] || '#fff';
-              return `<span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:42px;border-radius:5px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);font-size:0.78rem;font-weight:700;color:${color};cursor:default;">${rank}${suitSymbols[suit]||suit}</span>`;
+              const label = displayCard(card);
+              return `<span class="outs-card riverline-card card--suit-${suit}" role="img" aria-label="${label}"><strong>${rank}</strong><span aria-hidden="true">${suitSymbols[suit] || suit}</span></span>`;
             }).join('');
-            html += `</div></div>`;
+            html += '</div></div>';
           });
           cardsEl.innerHTML = html;
         }
@@ -5371,8 +5401,6 @@ function bindSliderPair(rangeId, numberId, callback) {
 
     number.value = range.value;
 
-    if (window.SoundFX) SoundFX.playChip();
-
     callback();
 
   });
@@ -5380,8 +5408,6 @@ function bindSliderPair(rangeId, numberId, callback) {
   number.addEventListener('input', () => {
 
     syncSliderPair(rangeId, numberId);
-
-    if (window.SoundFX) SoundFX.playChip();
 
     callback();
 
@@ -7369,7 +7395,7 @@ if (!app.training) {
     }
     if ($('#trainingHandDisplay')) {
       $('#trainingHandDisplay').textContent = heroCards.length === 2
-        ? formatHand(heroCards) || heroCards.join(' ')
+        ? formatHand(heroCards) || heroCards.map(displayCard).join(' ')
         : '—';
     }
   };
@@ -8828,16 +8854,12 @@ function handleTrainingGuessLegacy(userAction) {
     app.training.stats.correct++;
 
     app.training.stats.streak++;
-        if(window.SoundFX) window.SoundFX.play('success_chime');
-
-    SoundFX.playCorrect();
+    if (window.SoundFX) window.SoundFX.playTrainingResult('optimal');
 
   } else {
 
     app.training.stats.streak = 0;
-        if(window.SoundFX) window.SoundFX.play('error_buzz');
-
-    SoundFX.playWrong();
+    if (window.SoundFX) window.SoundFX.playTrainingResult('mistake');
 
   }
 
@@ -9207,6 +9229,12 @@ function renderCanonicalTrainingExercise(exercise) {
   updateAssistanceDisplay();
   renderTrainingSource(exercise);
   renderAllCards();
+  document.querySelectorAll('#trainingHeroCards .training-readonly-card, #trainingBoardCards .training-readonly-card')
+    .forEach((card, index) => {
+      card.classList.add('is-card-dealt');
+      card.style.setProperty('--card-deal-order', String(Math.min(index, 4)));
+    });
+  if (window.SoundFX) window.SoundFX.playCardDeal(presentation.heroCards.length + presentation.board.length);
 
   if (app.training.showSolutionImmediately) {
     showTrainingSolution(app.training.currentSolution);
@@ -9312,13 +9340,7 @@ function handleTrainingGuess(userAction) {
   app.training.stats.streak = evaluation.accepted ? app.training.stats.streak + 1 : 0;
   app.training.bestStreak = Math.max(app.training.bestStreak || 0, app.training.stats.streak);
   app.training.gradeStats[evaluation.grade] = (app.training.gradeStats[evaluation.grade] || 0) + 1;
-  if (evaluation.accepted) {
-    if (window.SoundFX) window.SoundFX.play('success_chime');
-    SoundFX.playCorrect();
-  } else {
-    if (window.SoundFX) window.SoundFX.play('error_buzz');
-    SoundFX.playWrong();
-  }
+  if (window.SoundFX) window.SoundFX.playTrainingResult(evaluation.grade);
   updateTrainingStats();
 
   const scoreBadge = $('#trainingScoreBadge');

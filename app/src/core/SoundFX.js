@@ -2,6 +2,9 @@
 const SoundFX = (function() {
   let audioCtx = null;
   let soundEnabled = localStorage.getItem('appSoundEnabled') !== 'false';
+  let lastDealTime = -Infinity;
+
+  const VOLUME = Object.freeze({ click: 0.035, card: 0.045, action: 0.04, result: 0.04 });
 
   function getAudioContext() {
     if (!audioCtx && (window.AudioContext || window.webkitAudioContext)) {
@@ -69,22 +72,29 @@ const SoundFX = (function() {
         };
       }
     },
-    playCardDeal: function() {
+    playCardDeal: function(cardCount = 1) {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
       try {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(420, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.12, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.08);
+        const now = ctx.currentTime;
+        if (now - lastDealTime < 0.06) return;
+        lastDealTime = now;
+        const cueCount = Number(cardCount) > 1 ? 2 : 1;
+        for (let index = 0; index < cueCount; index += 1) {
+          const start = now + (index * 0.045);
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(280 - (index * 24), start);
+          osc.frequency.exponentialRampToValueAtTime(125, start + 0.055);
+          gain.gain.setValueAtTime(VOLUME.card, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.06);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(start);
+          osc.stop(start + 0.06);
+        }
       } catch (e) {}
     },
     playChip: function() {
@@ -97,7 +107,7 @@ const SoundFX = (function() {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(1100, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(550, ctx.currentTime + 0.05);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.setValueAtTime(VOLUME.action, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -105,27 +115,30 @@ const SoundFX = (function() {
         osc.stop(ctx.currentTime + 0.05);
       } catch (e) {}
     },
-    playCorrect: function() {
+    playTrainingResult: function(grade = 'acceptable') {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
       try {
         const now = ctx.currentTime;
-        [659.25, 830.61, 987.77].forEach((freq, i) => {
+        const tones = grade === 'optimal' ? [440, 554]
+          : grade === 'mistake' ? [196]
+            : [330];
+        tones.forEach((freq, i) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
-          osc.type = 'sine';
+          osc.type = grade === 'mistake' ? 'triangle' : 'sine';
           osc.frequency.value = freq;
-          gain.gain.setValueAtTime(0.12, now + i * 0.06);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.22);
+          gain.gain.setValueAtTime(VOLUME.result, now + i * 0.055);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.055 + 0.12);
           osc.connect(gain);
           gain.connect(ctx.destination);
-          osc.start(now + i * 0.06);
-          osc.stop(now + i * 0.06 + 0.22);
+          osc.start(now + i * 0.055);
+          osc.stop(now + i * 0.055 + 0.12);
         });
       } catch (e) {}
     },
-    playWrong: function() {
+    playPokerAction: function(action = 'check') {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
@@ -133,17 +146,22 @@ const SoundFX = (function() {
         const now = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(175, now);
-        osc.frequency.linearRampToValueAtTime(115, now + 0.22);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        const actionName = String(action).toLowerCase();
+        const frequency = actionName === 'fold' ? 220
+          : actionName === 'all_in' || actionName === 'all-in' ? 380
+            : actionName === 'bet' || actionName === 'raise' ? 340 : 290;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, now);
+        gain.gain.setValueAtTime(VOLUME.action, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.22);
+        osc.stop(now + 0.055);
       } catch (e) {}
     },
+    playCorrect: function() { return this.playTrainingResult('optimal'); },
+    playWrong: function() { return this.playTrainingResult('mistake'); },
     playClick: function() {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
@@ -153,7 +171,7 @@ const SoundFX = (function() {
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(750, ctx.currentTime);
-        gain.gain.setValueAtTime(0.06, ctx.currentTime);
+        gain.gain.setValueAtTime(VOLUME.click, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -163,8 +181,9 @@ const SoundFX = (function() {
     },
     play: function(name) {
       if (!soundEnabled) return;
-      if (name === 'success_chime' || name === 'correct') return this.playCorrect();
-      if (name === 'error_buzz' || name === 'wrong') return this.playWrong();
+      if (name === 'success_chime' || name === 'correct') return this.playTrainingResult('optimal');
+      if (name === 'acceptable') return this.playTrainingResult('acceptable');
+      if (name === 'error_buzz' || name === 'wrong') return this.playTrainingResult('mistake');
       if (name === 'chip_clink' || name === 'chip') return this.playChip();
       if (name === 'card_slide' || name === 'card') return this.playCardDeal();
       return this.playClick();

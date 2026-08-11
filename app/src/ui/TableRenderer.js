@@ -15,6 +15,7 @@ class TableRenderer {
     if (!this.container) return;
     this.currentActivePlayers = 10;
     this.lastState = null;
+    this.renderedCardSignatures = new Map();
     this.initSVG();
     window.addEventListener('gameStateUpdate', (e) => this.renderState(e.detail));
     window.addEventListener('riverlineCardRankStyleChanged', () => {
@@ -89,15 +90,14 @@ class TableRenderer {
     seatsLayer.innerHTML = html;
   }
 
-  renderCard(rank, suit, index, isCommunity = false) {
+  renderCard(rank, suit, index, isCommunity = false, isDealing = false) {
     const presentation = TABLE_SUIT_PRESENTATION[suit] || { id: 'unknown', symbol: suit || '?' };
     const visualRank = rank === 'T' && document.documentElement.dataset.cardRankStyle === 'full-ten' ? '10' : rank;
     const rankClass = visualRank === '10' ? ' table-card-rank--ten' : '';
-    const startX = isCommunity ? 150 : 400;
-    const startY = isCommunity ? 0 : 250;
+    const finalX = isCommunity ? index * 50 : (index * 45) - 22;
 
     return `
-      <g class="card-group poker-card-svg riverline-card card--known card--suit-${presentation.id}" data-card-state="known" style="transform: translate(${startX}px, ${startY}px); transition-delay: ${index * 70}ms;">
+      <g class="card-group poker-card-svg riverline-card card--known card--suit-${presentation.id}${isDealing ? ' is-card-dealt' : ''}" data-card-state="known" style="--card-final-x:${finalX}px; --card-deal-order:${Math.min(index, 4)}; transform:translate(${finalX}px, 0px);">
         <rect class="riverline-card-face table-card-face" x="0" y="0" width="40" height="57" rx="5" ry="5" />
         <text class="riverline-card-rank table-card-rank${rankClass}" x="6" y="17">${visualRank}</text>
         <text class="riverline-card-suit table-card-suit" x="6" y="35">${presentation.symbol}</text>
@@ -116,6 +116,15 @@ class TableRenderer {
     `;
   }
 
+  renderKnownCards(container, cards, key, isCommunity = false) {
+    const signatures = cards.map((card) => `${card.rank}${card.suit}`);
+    const previous = this.renderedCardSignatures.get(key) || [];
+    container.innerHTML = cards
+      .map((card, index) => this.renderCard(card.rank, card.suit, index, isCommunity, previous[index] !== signatures[index]))
+      .join('');
+    this.renderedCardSignatures.set(key, signatures);
+  }
+
   renderState(state) {
     // Presentation-only state: no betting order or poker semantics are inferred here.
     if (!state) return;
@@ -123,6 +132,7 @@ class TableRenderer {
 
     if (state.mode === 'hand' && state.empty) {
       this.currentActivePlayers = 0;
+      this.renderedCardSignatures.clear();
       this.drawSeats(0);
       const emptyPot = this.container.querySelector('#table-pot');
       const emptyBoard = this.container.querySelector('#community-cards');
@@ -173,18 +183,12 @@ class TableRenderer {
       }
       if (holeCards && state.mode === 'hand') {
         if (isHero && Array.isArray(state.heroCards)) {
-          holeCards.innerHTML = state.heroCards
-            .map((card, index) => this.renderCard(card.rank, card.suit, index, false))
-            .join('');
-          setTimeout(() => {
-            holeCards.querySelectorAll('.card-group').forEach((card, index) => {
-              card.style.transform = `translate(${(index * 45) - 22}px, 0px)`;
-            });
-          }, 50);
+          this.renderKnownCards(holeCards, state.heroCards, `hole-${i}`, false);
         } else {
           holeCards.innerHTML = playerState?.hasCards
             ? `${this.renderCardBack(0)}${this.renderCardBack(1)}`
             : '';
+          this.renderedCardSignatures.set(`hole-${i}`, []);
         }
       }
     }
@@ -192,26 +196,12 @@ class TableRenderer {
     const heroSeat = Number.isInteger(state.heroSeat) ? state.heroSeat : 0;
     const heroHole = this.container.querySelector(`#hole-cards-${heroSeat}`);
     if (heroHole && state.mode !== 'hand' && state.heroCards) {
-      heroHole.innerHTML = state.heroCards
-        .map((card, idx) => this.renderCard(card.rank, card.suit, idx, false))
-        .join('');
-      setTimeout(() => {
-        heroHole.querySelectorAll('.card-group').forEach((card, idx) => {
-          card.style.transform = `translate(${(idx * 45) - 22}px, 0px)`;
-        });
-      }, 50);
+      this.renderKnownCards(heroHole, state.heroCards, `hole-${heroSeat}`, false);
     }
 
     const community = this.container.querySelector('#community-cards');
     if (community && state.board) {
-      community.innerHTML = state.board
-        .map((card, idx) => this.renderCard(card.rank, card.suit, idx, true))
-        .join('');
-      setTimeout(() => {
-        community.querySelectorAll('.card-group').forEach((card, idx) => {
-          card.style.transform = `translate(${idx * 50}px, 0px)`;
-        });
-      }, 50);
+      this.renderKnownCards(community, state.board, 'community', true);
     }
   }
 }
