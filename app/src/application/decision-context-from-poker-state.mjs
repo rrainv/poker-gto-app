@@ -37,7 +37,7 @@ function classifyLastAction(state) {
     return latest.currentBetBeforeMilliBb === 0 ? 'bet' : 'raise';
   }
 
-  // DecisionContext v1 and its ONNX encoder have no call/limp action index.
+  // DecisionContext v1 has no call/limp prior-action value.
   // Passive action without aggression is projected to the existing check
   // category; folds alone preserve the established unopened preflop meaning.
   const hasPassiveAction = records.some((record) => (

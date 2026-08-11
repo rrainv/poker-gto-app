@@ -22,16 +22,14 @@ function createHarness() {
   const positionsSource = source.match(/const POSITIONS\s*=\s*\{[\s\S]*?\n\};/);
   if (!positionsSource) throw new Error('Could not extract POSITIONS from logic.js');
 
-  const modelSource = sliceBetween(source, 'const MODEL_POSITION_VOCABULARY', 'const ACTION_COLORS');
   const numericSource = sliceBetween(source, 'function numericValue(id, fallback = 0)', 'function updatePositionSelect(');
-  const updateSource = sliceBetween(source, 'function updatePositionSelect(', 'function normalizeTree(data, fileName)');
+  const updateSource = sliceBetween(source, 'function updatePositionSelect(', 'function isAllInActionName(name)');
   const controls = new Map();
 
   const sandbox = { controls, createElement };
   vm.createContext(sandbox);
   vm.runInContext(`
     ${positionsSource[0]}
-    ${modelSource}
     const $ = (selector) => controls.get(selector) || null;
     const selectedValue = (selector) => {
       const element = $(selector);
@@ -56,10 +54,7 @@ function createHarness() {
         controls.set('#trainingHeroPos', select);
         updateTrainingPositions();
         return { value: select.value, html: select.innerHTML };
-      },
-      modelIndex: modelPositionIndex,
-      modelVocabulary() { return [...MODEL_POSITION_VOCABULARY]; },
-      modelCompatibility() { return { ...MODEL_POSITION_COMPATIBILITY }; }
+      }
     };
   `, sandbox, { filename: LOGIC_PATH });
 
@@ -73,7 +68,4 @@ module.exports = {
   positionsFor: (tableSize) => plain(harness.positionsFor(tableSize)),
   updatePlaybook: (...args) => plain(harness.updatePlaybook(...args)),
   updateTraining: (...args) => plain(harness.updateTraining(...args)),
-  modelIndex: (...args) => harness.modelIndex(...args),
-  modelVocabulary: () => plain(harness.modelVocabulary()),
-  modelCompatibility: () => plain(harness.modelCompatibility()),
 };

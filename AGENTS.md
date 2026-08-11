@@ -18,7 +18,7 @@ Core features:
 - Win Probability / Equity
 - Training
 - Multiway analysis
-- ONNX Runtime Web inference
+- deterministic browser strategy fallback behind versioned contracts
 - Electron desktop wrapper
 
 Strategic priorities:

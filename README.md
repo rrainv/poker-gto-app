@@ -11,7 +11,7 @@ Riverline is under active development. Its current strategy output is primarily 
 - **Training:** generate practice spots and compare a chosen action with Riverline's current recommendation.
 - **Game configuration:** Playbook and Training support tables from 2 to 10 players, full-ring positions, and configurable stack depths.
 - **Game modes:** represent zero-contribution Home games and ClubGG-style fixed per-player contributions. Legacy percentage-rake controls remain in the application.
-- **Experimental strategy sources:** local solver-tree loading, ONNX inference, and API strategy paths are in progress and are not all validated production sources. The reliable current fallback is heuristic.
+- **Strategy:** the deterministic heuristic fallback is the browser's only current production strategy authority. Future solver-backed providers must enter through a new validated, versioned contract.
 
 The Playbook's current application boundary is deliberately small: a versioned `DecisionContext` is passed to a strategy source, which returns a versioned `StrategyResult`. This provides a stable seam for future solver- and model-backed work without presenting today's heuristics as equilibrium solutions.
 
@@ -27,7 +27,7 @@ cd poker-gto-app
 python server.py
 ```
 
-Open the URL printed by the server (normally `http://localhost:3000`; it falls back to port 8080 if needed). Run the command from the repository root so model and worker assets are served from `app/` correctly.
+Open the URL printed by the server (normally `http://localhost:3000`; it falls back to port 8080 if needed). Run the command from the repository root so application and canonical Equity worker assets are served correctly.
 
 ### Electron desktop app
 
@@ -45,14 +45,14 @@ The Electron app loads `app/index.html` directly. A Python backend is not requir
 
 - Riverline is a pre-beta analysis and study tool, not a validated poker solver.
 - Heuristic recommendations are not solved GTO, CFR output, or evidence of low exploitability.
-- The repository contains several experimental model and training implementations with incompatible schemas. Bundled ONNX paths exist, but model-backed behavior is not yet a single validated capability across browser and Electron.
+- The browser has no trusted production model and does not load model/ONNX assets. The separate Electron-native experiment remains outside the browser strategy path pending its own cleanup decision.
 - Multiway equity analysis is supported; solver-backed multiway equilibrium is not.
 - Equity uses exact enumeration where practical and Monte Carlo simulation for larger incomplete states.
 - Some in-app labels still use older “GTO” or “DeepCFR” language. Those labels are not proof of the underlying method or accuracy.
 
 ## Development direction
 
-Current work focuses on stabilizing shared poker state and action contracts, consolidating evaluator and model paths, and strengthening regression coverage. The longer-term aim is to replace unverified training targets with reproducible solver-generated data, validate exported models, and improve preflop first before extending postflop approximations.
+Current work focuses on stabilizing shared poker state and action contracts, consolidating evaluator paths, and strengthening regression coverage. The longer-term aim is to create reproducible solver-generated data, introduce a new validated strategy-provider contract, and improve preflop first before extending postflop approximations.
 
 ## Documentation
 

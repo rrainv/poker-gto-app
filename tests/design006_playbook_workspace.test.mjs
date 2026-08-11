@@ -174,11 +174,12 @@ test('recommendation uses stacked frequencies first and demotes the wheel', () =
 
 test('recommendation states clear stale output and retain truthful provenance', () => {
   assert.match(logic, /setRecommendationState\(waiting \? 'waiting' : 'unavailable'\)/);
-  assert.match(logic, /function renderLoadingStrategy\(\)/);
+  assert.doesNotMatch(logic, /function renderLoadingStrategy\(\)/);
   assert.match(logic, /if \(\$\('#strategyMeta'\)\)[\s\S]*?#strategyWarnings[\s\S]*?#actionWheel/);
   assert.match(logic, /heuristic_preflop:\s*'Heuristic'/);
-  assert.match(logic, /onnx_model:\s*'ONNX model'/);
-  assert.match(logic, /local_tree:\s*'Local tree'/);
+  assert.match(logic, /heuristic_postflop:\s*'Heuristic'/);
+  assert.match(logic, /equity_fallback:\s*'Equity fallback'/);
+  assert.doesNotMatch(logic, /onnx_model|local_tree|api:\s*'API'/);
   assert.match(html, /Canonical hand state does not imply solved strategy/);
   assert.doesNotMatch(html.slice(html.indexOf('id="recommendation"'), html.indexOf('id="chartView"')), /solved GTO|Deep CFR/i);
 });

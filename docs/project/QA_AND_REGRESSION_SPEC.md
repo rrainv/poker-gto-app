@@ -15,13 +15,13 @@ Protect poker correctness and user-facing stability from agent-driven changes.
 - street transitions
 - legal-action generation
 
-### ML
+### Future ML provider (when present)
 
 - model input shape
 - output shape
 - probability normalization
 - deterministic inference when seeded
-- PyTorch vs ONNX output agreement within tolerance
+- training-runtime vs exported-runtime output agreement within tolerance
 - model metadata
 
 ### UI
@@ -29,7 +29,8 @@ Protect poker correctness and user-facing stability from agent-driven changes.
 - Playbook loads
 - Equity loads
 - Training loads
-- model lazy-loading works
+- strategy provenance reports the deterministic fallback while no validated provider exists
+- browser bootstrap makes no retired model/runtime requests
 - translations resolve
 - mobile layout
 - dark/light theme

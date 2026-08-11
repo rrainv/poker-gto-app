@@ -4063,7 +4063,7 @@ input:focus, select:focus, .quick-select:focus { transition: border-color var(--
 }
 
 /* Live Dot Gentle Breathing Animation */
-#apiStatusDot, .live-indicator .dot {
+.strategy-source-status-dot, .live-indicator .dot {
   animation: statusPulse 2s infinite ease-in-out;
 }
 
@@ -4943,7 +4943,7 @@ html[data-four-color="false"] .suit-c { color: #111827 !important; }
   gap: var(--space-3);
 }
 
-.model-status,
+.strategy-source-status,
 .utility-button,
 .utility-select {
   min-height: 38px;
@@ -4953,20 +4953,22 @@ html[data-four-color="false"] .suit-c { color: #111827 !important; }
   border-radius: var(--radius-control);
 }
 
-.model-status,
+.strategy-source-status,
 .utility-button {
   display: inline-flex;
   align-items: center;
+}
+
+.utility-button {
   cursor: pointer;
 }
 
-.model-status {
+.strategy-source-status {
   gap: var(--space-3);
   padding: var(--space-2) var(--space-4);
   text-align: start;
 }
 
-.model-status:hover,
 .utility-button:hover,
 .utility-select:hover {
   color: var(--text-primary);
@@ -4974,7 +4976,7 @@ html[data-four-color="false"] .suit-c { color: #111827 !important; }
   border-color: var(--border-subtle);
 }
 
-.model-status-dot {
+.strategy-source-status-dot {
   width: 8px;
   height: 8px;
   flex: 0 0 8px;
@@ -4982,23 +4984,18 @@ html[data-four-color="false"] .suit-c { color: #111827 !important; }
   background: var(--status-info);
 }
 
-.model-status[data-status="available"] .model-status-dot { background: var(--status-positive); }
-.model-status[data-status="loading"] .model-status-dot { background: var(--status-warning); }
-.model-status[data-status="unavailable"] .model-status-dot { background: var(--status-danger); }
-.model-status[data-status="fallback"] .model-status-dot { background: var(--status-info); }
-
-.model-status-copy {
+.strategy-source-status-copy {
   display: grid;
   gap: 0;
 }
 
-.model-status-label {
+.strategy-source-status-label {
   color: var(--text-muted);
   font-size: 9px;
   line-height: 1.1;
 }
 
-.model-status-copy strong {
+.strategy-source-status-copy strong {
   color: var(--text-secondary);
   font-size: var(--text-micro-size);
   line-height: 1.25;
@@ -5064,7 +5061,7 @@ html[data-four-color="false"] .suit-c { color: #111827 !important; }
   .rail-footer,
   .mode-nav-item > span,
   .utility-label,
-  .model-status-label { display: none; }
+  .strategy-source-status-label { display: none; }
   .mode-nav-item { justify-content: center; padding-inline: 0; }
   .workspace-header { padding-inline: var(--space-6); }
 }
@@ -5123,14 +5120,14 @@ html[data-four-color="false"] .suit-c { color: #111827 !important; }
     grid-template-columns: minmax(76px, 1fr) repeat(3, 42px);
     gap: var(--space-2);
   }
-  .model-status {
+  .strategy-source-status {
     grid-column: 1 / -1;
     justify-content: flex-start;
     padding-inline: var(--space-3);
     background: var(--surface-interactive);
     border-color: var(--border-subtle);
   }
-  .model-status-label { display: block; }
+  .strategy-source-status-label { display: block; }
   .utility-select,
   .utility-button {
     min-width: 0;
@@ -5144,7 +5141,7 @@ html[data-four-color="false"] .suit-c { color: #111827 !important; }
 
 [dir="rtl"] .mode-rail { border-inline-end: 1px solid var(--border-subtle); }
 [dir="rtl"] .mode-nav-item,
-[dir="rtl"] .model-status { text-align: right; }
+[dir="rtl"] .strategy-source-status { text-align: right; }
 
 /* --------------------------------------------------------------------------
    DESIGN-004: shared component system
@@ -7262,7 +7259,7 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .workspace-heading h1 { font-size: 1.05rem; }
 .workspace-heading p { max-width: 62ch; font-size: var(--text-micro-size); }
 .workspace-utilities { flex: 0 1 auto; }
-.workspace-utilities .model-status { min-height: 36px; }
+.workspace-utilities .strategy-source-status { min-height: 36px; }
 .workspace-canvas { max-width: 1840px; padding: clamp(var(--space-4), 1.4vw, var(--space-7)) clamp(var(--space-4), 1.8vw, var(--space-8)) var(--space-9); }
 
 /* Surface hierarchy and affordances ------------------------------------- */
@@ -7662,8 +7659,8 @@ button.rail-utility { width: 100%; cursor: pointer; }
   .workspace-heading p { display: none; }
   .workspace-heading { min-width: 0; }
   .workspace-utilities { margin-inline-start: auto; }
-  .model-status-label { display: none; }
-  .model-status { min-width: 0; padding-inline: var(--space-3); }
+  .strategy-source-status-label { display: none; }
+  .strategy-source-status { min-width: 0; padding-inline: var(--space-3); }
   .playbook-context-primary { grid-template-columns: 1fr; }
   .playbook-context-primary .button-push-end { grid-column: auto; }
   .equity-player-count-control { width: 100%; grid-template-columns: 42px minmax(0, 1fr) 42px; }

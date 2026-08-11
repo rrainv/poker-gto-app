@@ -1,5 +1,7 @@
 # 🚀 DeepCFR Neural Solver Optimization & Retraining Blueprint
 
+> Historical, unvalidated proposal. Its paths and browser ONNX integration were removed; its capability projections are not current Riverline architecture or verified solver evidence.
+
 This document contains the complete mathematical and algorithmic specifications to optimize and retrain Riverline's DeepCFR Neural Solver on a single GPU (e.g. NVIDIA GTX 1660 Super / RTX series).
 
 ---

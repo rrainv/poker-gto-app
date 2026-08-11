@@ -69,16 +69,12 @@ test('utility controls use coherent SVG icons and accessible flag-and-name langu
   assert.doesNotMatch(sound, /btn\.textContent\s*=/);
 });
 
-test('strategy source status distinguishes fallback, loading, available, and unavailable states', () => {
-  assert.match(html, /id="connectApiBtn"[^>]*data-status="fallback"/);
-  assert.match(html, /id="apiStatusText">Heuristic fallback</);
-  for (const status of ['fallback', 'loading', 'available', 'unavailable']) {
-    assert.match(css, new RegExp(`model-status\\[data-status="${status}"\\]`));
-  }
-  assert.match(logic, /setStrategySourceStatus\('loading', 'Loading model'\)/);
-  assert.match(logic, /setStrategySourceStatus\('available', 'ONNX model'\)/);
-  assert.match(logic, /setStrategySourceStatus\('fallback', 'Heuristic fallback'\)/);
-  assert.match(logic, /setStrategySourceStatus\('unavailable', 'Model unavailable · heuristic'\)/);
+test('strategy source status is truthful, noninteractive fallback copy', () => {
+  assert.match(html, /<div id="strategySourceStatus" class="strategy-source-status"[^>]*>/);
+  assert.match(html, /<strong>Heuristic fallback<\/strong>/);
+  assert.match(css, /\.strategy-source-status/);
+  assert.doesNotMatch(html, /connectApiBtn|apiStatusText|data-status=/);
+  assert.doesNotMatch(logic, /setStrategySourceStatus|Loading model|Model unavailable/);
 });
 
 test('mobile navigation and utilities remain visible and reachable', () => {

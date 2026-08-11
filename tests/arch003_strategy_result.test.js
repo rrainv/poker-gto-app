@@ -72,12 +72,9 @@ test('StrategyResult v1 exposes the versioned schema without invented metadata',
 
 test('controlled provenance vocabulary contains every approved current source', () => {
   assert.deepEqual(Object.values(qa.strategySources).sort(), [
-    'api',
     'equity_fallback',
     'heuristic_postflop',
     'heuristic_preflop',
-    'local_tree',
-    'onnx_model',
     'unavailable',
   ]);
 });
@@ -128,41 +125,18 @@ test('postflop heuristic results are explicit on flop, turn, and river', () => {
   }
 });
 
-test('local tree output adapts to structural normalized actions', () => {
-  const result = qa.strategyResult(context(), {
-    title: 'Fixture tree',
-    positions: {
-      BTN: {
-        AKs: { detail: 'Raise 70% Call 30%' },
-      },
-    },
-  });
-
-  assert.equal(result.source, 'local_tree');
-  assert.deepEqual(result.actions.map((entry) => entry.action.type), ['raise', 'call']);
-  assert.equal(result.modelVersion, null);
-  assertNormalized(result);
-});
-
-test('model-backed and API output have distinct provenance and known-only versions', () => {
+test('legacy strategy-shaped state cannot override fallback authority', () => {
   const strategy = { AKs: { BTN: { Open: 0.7, Call: 0.3 } } };
-  const onnx = qa.strategyResult(context(), { strategy });
-  const api = qa.strategyResult(context(), {
-    strategy,
-    strategySource: 'api',
-    modelVersion: 'api-fixture-v1',
-  });
+  const baseline = qa.strategyResult(context());
+  const attemptedOverride = qa.strategyResult(context(), { strategy });
 
-  assert.equal(onnx.source, 'onnx_model');
-  assert.equal(onnx.modelVersion, null);
-  assert.equal(api.source, 'api');
-  assert.equal(api.modelVersion, 'api-fixture-v1');
-  assert.deepEqual(onnx.actions.map((entry) => entry.probability), [0.7, 0.3]);
-  assertNormalized(onnx);
-  assertNormalized(api);
+  assert.deepEqual(attemptedOverride, baseline);
+  assert.equal(attemptedOverride.source, 'heuristic_preflop');
+  assert.equal(attemptedOverride.modelVersion, null);
+  assertNormalized(attemptedOverride);
 });
 
-test('probability normalization accepts probability, percentage, and over-total legacy units', () => {
+test('generic StrategyResult normalization accepts probability, percentage, and over-total units', () => {
   const fixtures = [
     [{ Open: 0.7, Call: 0.3 }, [0.7, 0.3]],
     [{ Open: 70, Call: 30 }, [0.7, 0.3]],
@@ -170,21 +144,24 @@ test('probability normalization accepts probability, percentage, and over-total 
   ];
 
   for (const [entry, expected] of fixtures) {
-    const result = qa.modelStrategyResult(entry, { source: 'onnx_model' });
+    const result = qa.createStrategyResult({
+      source: 'equity_fallback',
+      actions: Object.entries(entry).map(([name, value]) => ({ name, value })),
+    });
     assert.deepEqual(result.actions.map((action) => action.probability), expected);
     assertNormalized(result);
   }
 });
 
-test('legacy UI adapter preserves the visible recommendation while converting to percentages', () => {
-  const result = qa.modelStrategyResult(
-    { Open: 0.7, Call: 0.3 },
-    { source: 'onnx_model', recommendedLabel: 'OPEN 3 BB', explanation: 'Model output' },
+test('legacy UI adapter preserves fallback recommendation while converting to percentages', () => {
+  const result = qa.preflopStrategyResult(
+    { open: 0.7, call: 0.3, fold: 0 },
+    { recommendedLabel: 'OPEN 3 BB', explanation: 'Fallback output' },
   );
   const profile = qa.legacyProfileForStrategyResult(result);
 
   assert.equal(profile.best, 'OPEN 3 BB');
-  assert.equal(profile.source, 'onnx_model');
+  assert.equal(profile.source, 'MATH FALLBACK');
   assert.deepEqual(profile.actions.map(({ name, value }) => ({ name, value })), [
     { name: 'Open', value: 70 },
     { name: 'Call', value: 30 },

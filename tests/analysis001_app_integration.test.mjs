@@ -33,7 +33,7 @@ test('browser bridge exposes only the immutable local explanation operations bef
 });
 
 test('Playbook replaces the legacy HTML teacher with current contracts and trusted facts', () => {
-  const update = sourceBetween('async function updateContext(', 'async function loadOnnxModel(');
+  const update = sourceBetween('async function updateContext(', '// Legacy fast evaluator retained for Playbook heuristics');
   assert.match(update, /typeof renderPlaybookDecisionAnalysis === 'function'[\s\S]*renderPlaybookDecisionAnalysis\(decisionContext, strategyResult, playbookResolution\)/);
   assert.match(logic, /trustedAnalysisFacts\(\s*decisionContext,\s*result,\s*canonicalActionHistoryForAnalysis\(resolution\)/);
   assert.match(logic, /authority = resolution\?\.mode === 'hand' \? 'hand' : 'scenario'/);
@@ -42,11 +42,10 @@ test('Playbook replaces the legacy HTML teacher with current contracts and trust
   assert.doesNotMatch(teacher, /Math\.random|\bGTO\b|\bCFR\b|equilibrium|solver says/i);
 });
 
-test('Playbook loading and unavailable states replace stale analysis', () => {
-  const loading = sourceBetween('function renderLoadingStrategy()', 'async function updateContext(');
+test('Playbook unavailable states replace stale analysis', () => {
   const unavailable = sourceBetween('function renderUnavailableStrategy(', 'async function requestPlaybookMode(');
-  assert.match(loading, /renderPlaybookDecisionAnalysis[\s\S]*'strategy_loading'/);
   assert.match(unavailable, /renderPlaybookDecisionAnalysis[\s\S]*analysisUnavailableReasonForResolution/);
+  assert.doesNotMatch(logic, /renderLoadingStrategy|strategy_loading/);
   assert.match(logic, /canonical_hero_not_actor'\) return 'hero_not_actor'/);
   assert.match(logic, /canonical_terminal_state'[\s\S]*return 'terminal_hand'/);
 });

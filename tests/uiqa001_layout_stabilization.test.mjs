@@ -33,7 +33,8 @@ test('global utilities live in the lower sidebar and not the workspace header', 
   for (const id of ['langToggle', 'audioToggleBtn', 'openSettings']) {
     assert.doesNotMatch(headerHtml, new RegExp(`id="${id}"`));
   }
-  assert.match(headerHtml, /id="connectApiBtn"/);
+  assert.match(headerHtml, /id="strategySourceStatus"[^>]+aria-label="Strategy source: Heuristic fallback"/);
+  assert.doesNotMatch(headerHtml, /connectApiBtn|<button[^>]+strategySourceStatus/);
   assert.match(railHtml, /data-tooltip="Audio"/);
   assert.match(railHtml, /data-tooltip="Settings"/);
 });

@@ -23,24 +23,6 @@ const SOURCE_PRESENTATION = Object.freeze({
     limitation: 'This is an approximate postflop fallback, not solver reasoning.',
     warningCode: 'heuristic_source',
   }),
-  local_tree: Object.freeze({
-    label: 'Local strategy tree',
-    labelKey: 'analysis.provenance.localTree',
-    limitation: 'The loaded tree is experimental and has no validated solver provenance metadata.',
-    warningCode: 'unvalidated_strategy_source',
-  }),
-  onnx_model: Object.freeze({
-    label: 'ONNX model',
-    labelKey: 'analysis.provenance.onnxModel',
-    limitation: 'Model output alone does not establish validated strategy quality.',
-    warningCode: 'unvalidated_strategy_source',
-  }),
-  api: Object.freeze({
-    label: 'API strategy',
-    labelKey: 'analysis.provenance.api',
-    limitation: 'The API response has no validated solver provenance metadata in StrategyResult v1.',
-    warningCode: 'unvalidated_strategy_source',
-  }),
   equity_fallback: Object.freeze({
     label: 'Equity-based fallback',
     labelKey: 'analysis.provenance.equityFallback',
@@ -61,7 +43,6 @@ const UNAVAILABLE_COPY = Object.freeze({
   hero_not_actor: 'The canonical hand is waiting for another player to act.',
   waiting_for_hero: 'The current state is waiting for Hero to act.',
   terminal_hand: 'The hand is complete, so there is no decision to explain.',
-  strategy_loading: 'Riverline is checking the selected strategy source.',
   strategy_unavailable: 'No valid strategy recommendation is available for this state.',
   invalid_scenario: 'The supplied scenario cannot be analyzed safely.',
   invalid_context: 'The current decision context is unavailable.',

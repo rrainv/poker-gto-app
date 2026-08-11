@@ -422,7 +422,8 @@ test('Hand presentation is one-way, disables scenario facts, and guards direct c
 
 test('both modes converge on one actionProfile and StrategyResult rendering path', () => {
   const updateStart = LOGIC.indexOf("async function updateContext(reason = 'Context updated')");
-  const updateEnd = LOGIC.indexOf('async function loadOnnxModel()', updateStart);
+  const updateEnd = LOGIC.indexOf('// Legacy fast evaluator retained for Playbook heuristics', updateStart);
+  assert.ok(updateEnd > updateStart);
   const update = LOGIC.slice(updateStart, updateEnd);
   assert.equal((update.match(/actionProfile\(null, decisionContext\)/g) || []).length, 1);
   assert.equal((update.match(/strategyResultToLegacyProfile\(strategyResult\)/g) || []).length, 1);

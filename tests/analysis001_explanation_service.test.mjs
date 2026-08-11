@@ -238,10 +238,8 @@ test('provenance labels remain controlled and never upgrade any source to unsupp
   const sources = {
     heuristic_preflop: 'Heuristic estimate',
     heuristic_postflop: 'Heuristic estimate',
-    local_tree: 'Local strategy tree',
-    onnx_model: 'ONNX model',
-    api: 'API strategy',
     equity_fallback: 'Equity-based fallback',
+    unavailable: 'Source unavailable',
   };
   Object.entries(sources).forEach(([source, label]) => {
     const result = explanation({ strategyResult: strategy({ source }) });
@@ -251,10 +249,10 @@ test('provenance labels remain controlled and never upgrade any source to unsupp
   });
 });
 
-test('known model metadata is retained while unsupported metadata stays null', () => {
+test('generic future-provider metadata is retained while unsupported metadata stays null', () => {
   const known = explanation({
     strategyResult: strategy({
-      source: 'onnx_model', modelVersion: 'riverline-test', confidence: 0.8, coverage: 0.65,
+      source: 'future_provider', modelVersion: 'riverline-test', confidence: 0.8, coverage: 0.65,
     }),
   });
   assert.equal(known.provenance.modelVersion, 'riverline-test');

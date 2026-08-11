@@ -70,9 +70,9 @@ This layer must be deterministic and testable.
 Responsible for:
 
 - selecting the appropriate strategy source
-- model inference
+- deterministic fallback calculations
+- future provider/model inference only through a validated versioned contract
 - interpolation
-- fallback calculations
 - result provenance
 - confidence/coverage metadata
 
@@ -126,25 +126,22 @@ Example:
     "call": 0.31,
     "raise": 0.67
   },
-  "source": "preflop_model",
-  "modelVersion": "preflop_v001",
-  "confidence": 0.81
+  "source": "heuristic_preflop",
+  "modelVersion": null,
+  "confidence": null
 }
 ```
 
 ## 4. Provenance values
 
-Use a controlled vocabulary:
+Current browser vocabulary:
 
-- preflop_model
-- flop_model
-- turn_model
-- interpolated_model
+- heuristic_preflop
+- heuristic_postflop
 - equity_fallback
-- river_math
-- experimental_solver
+- unavailable
 
-Do not silently mix sources.
+Future providers must add explicitly versioned vocabulary; do not silently mix sources.
 
 ## 5. Model versioning
 

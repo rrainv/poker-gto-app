@@ -6,7 +6,7 @@ This is a snapshot of the repository supplied for review. It is intentionally bl
 
 CLEANUP-001D removed the obsolete root prototype training pipeline, pseudo-CFR model pipeline, and checked-in strategy-tree data. They were not runtime, package-script, or bounded-solver dependencies.
 
-The retained bounded solver is `solver/riverline_solver`; it is intentionally separate from browser runtime code. The browser ONNX loader at `app/src/ml/engine.js` remains the current lazy-loading path and is not evidence that a model has verified solver provenance.
+The retained bounded solver is `solver/riverline_solver`; it is intentionally separate from browser runtime code. The legacy browser ONNX/model stack was retired in CLEANUP-001E1. Browser strategy now resolves directly from `DecisionContext` through the deterministic fallback to `StrategyResult`.
 
 ## 2. Training and solver evidence
 
@@ -18,13 +18,13 @@ Before describing a new component as a Hold'em solver, verify legal betting tran
 
 The bounded solver uses the maintained evaluator adapter and parity coverage. Do not silently create a zero-filled production lookup table; missing or invalid evaluator data must fail loudly.
 
-## 4. Existing lazy loading
+## 4. Current browser strategy authority
 
-`app/src/ml/engine.js` already contains a lazy loader.
+The browser has no trusted production strategy model and no model loader.
 
-It caches ONNX sessions and prevents duplicate concurrent loads.
+The deterministic fallback is the only current browser production strategy authority. The generic, versioned `StrategyResult` and provenance fields remain so a future validated provider can be introduced without reviving the removed implementation.
 
-Therefore lazy loading is not a future architecture problem. Preserve and improve it only when necessary.
+The distinct Electron-native experiment is reserved for a separate cleanup decision and is not browser strategy authority.
 
 ## 5. Documentation policy
 
@@ -41,6 +41,6 @@ First establish:
 1. canonical state
 2. canonical action schema
 3. canonical evaluator/equity path
-4. canonical model path
+4. a new versioned strategy-provider contract before any production model path
 5. tests
 6. only then the real preflop solver experiment

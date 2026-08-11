@@ -61,16 +61,16 @@ test('table and stack controls expose the current UI boundaries', () => {
   assert.deepEqual(qa.readInputBounds('stackNum'), { min: 10, max: 500, step: 1 });
 });
 
-test('unopened non-BB context passes zero facing size to the UI and ONNX context', async () => {
+test('unopened non-BB context passes zero facing size to the UI and DecisionContext', async () => {
   const capture = await qa.captureContext({ heroPos: 'BTN', lastAction: 'unopened', facingSize: 0 });
-  assert.equal(capture.context.facingSize, 0);
+  assert.equal(capture.decisionContext.facingSizeBb, 0);
   assert.equal(capture.facingControl, 0);
   assert.equal(capture.facingNumberControl, 0);
 });
 
 test('unopened BB context preserves a zero facing size', async () => {
   const capture = await qa.captureContext({ heroPos: 'BB', lastAction: 'unopened', facingSize: 0 });
-  assert.equal(capture.context.facingSize, 0);
+  assert.equal(capture.decisionContext.facingSizeBb, 0);
 });
 
 test('unopened context and fallback share the same zero-facing convention', () => {
@@ -86,8 +86,8 @@ for (const fixture of [
 ]) {
   test(`${fixture.action} context passes its action and facing size unchanged`, async () => {
     const capture = await qa.captureContext({ lastAction: fixture.action, facingSize: fixture.facing });
-    assert.equal(capture.context.lastAction, fixture.action);
-    assert.equal(capture.context.facingSize, fixture.facing);
+    assert.equal(capture.decisionContext.lastAction, fixture.action);
+    assert.equal(capture.decisionContext.facingSizeBb, fixture.facing);
     assertNormalized(qa.fallback('A', 'K', false, true, 'BTN', fixture.action, fixture.facing, 10, 100));
   });
 }
@@ -120,42 +120,42 @@ test('preflop base pot is blinds plus per-player ante plus straddle', () => {
   assert.equal(qa.preflopPot({ ante: 0.5, players: 8, straddle: 2 }), 7.5);
 });
 
-test('rake-off sends zero and explicit zero forced contributions to ONNX', async () => {
+test('rake-off sends zero and explicit zero forced contributions to DecisionContext', async () => {
   const capture = await qa.captureContext({ rakeMode: 'off', rake: 5 });
-  assert.equal(capture.context.rake, 0);
-  assert.equal(capture.context.rakeMode, 'off');
-  assert.equal(capture.context.forcedContributionPerPlayerBb, 0);
-  assert.equal(capture.context.totalForcedContributionBb, 0);
+  assert.equal(capture.decisionContext.legacyRakePercent, 0);
+  assert.equal(capture.decisionContext.rakeMode, 'off');
+  assert.equal(capture.decisionContext.forcedContributionPerPlayerBb, 0);
+  assert.equal(capture.decisionContext.totalForcedContributionBb, 0);
 });
 
 test('fixed mode is an explicit per-player contribution with a zero legacy rake feature', async () => {
   const capture = await qa.captureContext({ players: 6, rakeMode: 'fixed', rake: 5 });
-  assert.equal(capture.context.rake, 0);
-  assert.equal(capture.context.rakeMode, 'fixed');
-  assert.equal(capture.context.forcedContributionPerPlayerBb, 0.1);
-  assert.equal(capture.context.totalForcedContributionBb, 0.6);
+  assert.equal(capture.decisionContext.legacyRakePercent, 0);
+  assert.equal(capture.decisionContext.rakeMode, 'fixed');
+  assert.equal(capture.decisionContext.forcedContributionPerPlayerBb, 0.1);
+  assert.equal(capture.decisionContext.totalForcedContributionBb, 0.6);
 });
 
-test('legacy percentage mode preserves its existing numeric model feature', async () => {
+test('legacy percentage mode preserves its DecisionContext compatibility value', async () => {
   const capture = await qa.captureContext({ rakeMode: 'percent', rake: 5 });
-  assert.equal(capture.context.rake, 5);
-  assert.equal(capture.context.forcedContributionPerPlayerBb, 0);
-  assert.equal(capture.context.totalForcedContributionBb, 0);
+  assert.equal(capture.decisionContext.legacyRakePercent, 5);
+  assert.equal(capture.decisionContext.forcedContributionPerPlayerBb, 0);
+  assert.equal(capture.decisionContext.totalForcedContributionBb, 0);
 });
 
-test('characterization: stack mode does not change the single stack value sent to strategy', async () => {
+test('DecisionContext preserves stack mode and stack value for fallback strategy', async () => {
   for (const stackMode of ['hero', 'effective', 'custom']) {
-    const capture = await qa.captureContext({ stackMode, stack: 73 });
-    assert.equal(capture.context.stack, 73);
-    assert.equal(Object.hasOwn(capture.context, 'stackMode'), false);
-    assert.equal(Object.hasOwn(capture.context, 'effectiveStack'), false);
+    const capture = await qa.captureContext({ stackMode, stack: 73, heroCards: ['As', 'Kd'] });
+    assert.equal(capture.decisionContext.stackBb, 73);
+    assert.equal(capture.decisionContext.stackMode, stackMode);
+    assert.equal(capture.strategyResult.source, 'heuristic_preflop');
   }
 });
 
 test('characterization: visual-table activePlayers is table size, with no players-remaining field', async () => {
   const capture = await qa.captureContext({ players: 8 });
   assert.equal(capture.dispatchedState.activePlayers, 8);
-  assert.equal(Object.hasOwn(capture.context, 'playersRemaining'), false);
+  assert.equal(Object.hasOwn(capture.decisionContext, 'playersRemaining'), false);
   assert.equal(Object.hasOwn(capture.dispatchedState, 'playersRemaining'), false);
 });
 
@@ -169,23 +169,11 @@ test('characterization: flat drop is added to postflop pot and lowers aggression
   assert.equal(oneBlindDrop.context.spr, 30 / 11);
 });
 
-test('local-tree action parser fills a missing percentage with Fold', () => {
-  assert.deepEqual(qa.parseSolverEntry({ detail: 'Raise 40% · Call 30%' }), [
-    { name: 'Open', value: 40, kind: 'aggressive' },
-    { name: 'Call', value: 30, kind: 'passive' },
-    { name: 'Fold', value: 30, kind: 'fold' },
-  ]);
-});
-
 test('Call tokens never become All-in actions', () => {
   for (const input of ['Call', 'CALL', 'Call 30%', 'Callback option', 'recall', 'locally called']) {
     assert.equal(qa.classifyAction(input), 'passive');
     assert.equal(qa.standardActionName(input), 'Call');
   }
-  assert.deepEqual(qa.parseSolverEntry({ detail: 'Call 30%' }), [
-    { name: 'Call', value: 30, kind: 'passive' },
-    { name: 'Fold', value: 70, kind: 'fold' },
-  ]);
 });
 
 test('All-in, All In, and Jam remain legitimate all-in tokens', () => {
@@ -193,39 +181,6 @@ test('All-in, All In, and Jam remain legitimate all-in tokens', () => {
     assert.equal(qa.classifyAction(input), 'aggressive');
     assert.equal(qa.standardActionName(input), 'All-in');
   }
-  assert.deepEqual(qa.parseSolverEntry({ detail: 'All-in 30%' }), [
-    { name: 'All-in', value: 30, kind: 'aggressive' },
-    { name: 'Fold', value: 70, kind: 'fold' },
-  ]);
-});
-
-test('characterization: local-tree action parser does not normalize totals above 100%', () => {
-  const actions = qa.parseSolverEntry({ detail: 'Raise 70% Call 50%' });
-  assert.equal(actions.reduce((sum, action) => sum + action.value, 0), 120);
-});
-
-test('StrategyResult adapter normalizes Playbook model percentage totals above 100%', () => {
-  const profile = qa.playbookActionProfile({ Open: 70, Call: 50 });
-  assert.equal(profile.actions.reduce((sum, action) => sum + action.value, 0), 100);
-  assert.deepEqual(profile.actions.map(({ name, value }) => ({ name, value })), [
-    { name: 'Open', value: 58.33 },
-    { name: 'Call', value: 41.67 },
-  ]);
-  assert.equal(profile.best, 'OPEN 3 BB');
-});
-
-test('StrategyResult adapter converts probability-scale model output to legacy UI percentages', () => {
-  const profile = qa.playbookActionProfile({ Open: 0.7, Call: 0.3 });
-  assert.deepEqual(profile.actions.map(({ name, value, kind }) => ({ name, value, kind })), [
-    { name: 'Open', value: 70, kind: 'aggressive' },
-    { name: 'Call', value: 30, kind: 'passive' },
-  ]);
-});
-
-test('ONNX action-profile adapter combines five model outputs into three normalized families', () => {
-  const result = qa.heuristic([0.2, 0.1, 0.3, 0.15, 0.25], { potSize: 10, facingSize: 5 }, null);
-  assert.deepEqual(result, { open: 45, call: 25, fold: 30 });
-  assert.equal(Object.values(result).reduce((sum, value) => sum + value, 0), 100);
 });
 
 test('Playbook parser recognizes its current string action families', () => {

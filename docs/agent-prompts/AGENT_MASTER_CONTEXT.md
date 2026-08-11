@@ -25,13 +25,13 @@ Games:
 Runtime:
 
 - Vanilla JS/CSS
-- ONNX Runtime Web
-- lazy-loaded models
+- deterministic browser fallback as the only current strategy authority
+- versioned `StrategyResult` contracts for future validated providers
 - Electron wrapper
 
 Important repository reality:
 
-- Multiple generations of model and solver code exist.
+- A separate Electron-native model experiment remains; it is not browser strategy authority.
 - Current random training-data generation is not genuine CFR data.
 - Existing solver code is experimental.
 - Historical documentation can overstate implementation maturity.

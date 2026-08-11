@@ -30,7 +30,7 @@ CLEANUP-001D removed the obsolete root prototype training, pseudo-CFR model, and
 | `training/export_onnx.py` | Exports the 121-input experimental model and reports simulated quantization | Experimental exporter | Do not reuse in SOLVER-001/002 |
 | `solver-model/export*.py`, `server.py` | Export/load the 69-input model; server blends model output with heuristics and emits “DeepCFR” labels | Experimental/unsafe provenance | Quarantine; no production solver evidence |
 | `trees/preflop_solver.json`, `trees/preflop_30bb_solver.json` | Static RFI tables with no reproducible solver metadata | Provenance unclear | Treat only as legacy local-tree inputs, not solver data |
-| `app/src/core/logic.js` local tree/ONNX/API paths | Adapters to `StrategyResult v1`, with heuristic fallback still reliable | Production compatibility path, not a solver | No SOLVER-001 changes |
+| Retired `app/src/core/logic.js` local tree/ONNX/API paths | Removed in CLEANUP-001E1; browser strategy now resolves directly through deterministic fallback | Historical production compatibility path, not a solver | Do not restore; future providers require a new versioned contract |
 
 No legacy CFR, model, target generator, or exporter is imported by `solver/riverline_solver`.
 

@@ -11,7 +11,7 @@ Primary features:
 - Training
 - Hand and state analysis
 - Multiway support
-- Browser inference through ONNX Runtime Web
+- Deterministic browser strategy fallback behind versioned contracts
 - Electron desktop wrapper
 
 The product should feel like a coherent poker tool, not a research demo.
@@ -47,9 +47,9 @@ Do not implement percentage rake unless explicitly requested.
 ## 4. Runtime
 
 - Vanilla JS/CSS frontend
-- ONNX Runtime Web
 - Electron wrapper
-- Models are lazy-loaded by street/model type
+- The browser has no trusted production model; deterministic fallback is its only current strategy authority
+- Future models require a new validated, versioned StrategyProvider/model contract
 - Runtime must remain usable without a Python backend
 
 ## 5. Engineering principles

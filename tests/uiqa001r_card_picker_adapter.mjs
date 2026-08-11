@@ -84,12 +84,10 @@ export function delegatedCardSlotClick(group = 'hero', index = 0) {
     function clearGroup() {}
     function bindSliderPair() {}
     function initTrainingMode() {}
-    function setStrategySourceStatus() {}
     function renderPath() {}
     function initThemeSwatches() {}
     function renderBettingTree() {}
     const street = 'preflop';
-    app.useOnnx = false;
     globalThis.__calls = ${JSON.stringify(calls)};
     ${extractFunction('bindEvents')}
     bindEvents();

@@ -395,13 +395,13 @@
         </div>
 
         <div class="workspace-utilities" aria-label="Strategy source status">
-          <button id="connectApiBtn" class="model-status" type="button" data-status="fallback" aria-label="Strategy source: Heuristic fallback">
-            <span id="apiStatusDot" class="model-status-dot" aria-hidden="true"></span>
-            <span class="model-status-copy">
-              <span class="model-status-label" data-i18n="Strategy source">Strategy source</span>
-              <strong id="apiStatusText">Heuristic fallback</strong>
+          <div id="strategySourceStatus" class="strategy-source-status" aria-label="Strategy source: Heuristic fallback">
+            <span class="strategy-source-status-dot" aria-hidden="true"></span>
+            <span class="strategy-source-status-copy">
+              <span class="strategy-source-status-label" data-i18n="Strategy source">Strategy source</span>
+              <strong>Heuristic fallback</strong>
             </span>
-          </button>
+          </div>
 
         </div>
       </header>
@@ -446,32 +446,6 @@
               <div id="liveContextIndicator" class="live-indicator">
 
                 <i class="dot"></i><span id="liveContextText">Live</span>
-
-              </div>
-
-            </div>
-
-            <div id="trainingProgressBlock" style="display:none; padding: 12px 16px 0 16px;">
-
-              <div
-
-                style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">
-
-                <span id="trainingProgressText">Preparing strategy source...</span>
-
-                <span id="trainingProgressPercent">0%</span>
-
-              </div>
-
-              <div
-
-                style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
-
-                <div id="trainingProgressBar"
-
-                  style="height: 100%; width: 0%; background: var(--primary); transition: width 0.5s ease; box-shadow: 0 0 8px var(--primary);">
-
-                </div>
 
               </div>
 
@@ -1712,8 +1686,6 @@
 
                   <p>4. <strong data-i18n="Get the Action:">Get the Action:</strong> <span data-i18n="The 'Decision' tab will give you a bottom-line recommendation. The 'Full range chart' lets you explore how you should play every possible starting hand in this specific spot.">The 'Decision' tab will give you a bottom-line recommendation. The 'Full range chart' lets you explore how you should play every possible starting hand in this specific spot.</span></p>
 
-                  <p>5. <strong data-i18n="Postflop Fallbacks:">Postflop Fallbacks:</strong> <span data-i18n="If you input board cards but haven't loaded a custom solver tree, the app seamlessly falls back to a fast Monte Carlo simulation to estimate your equity and provide an action.">If you input board cards but haven't loaded a custom solver tree, the app seamlessly falls back to a fast Monte Carlo simulation to estimate your equity and provide an action.</span></p>
-
                 </div>
 
               </div>
@@ -1814,39 +1786,14 @@
         </div>
 
         <div class="settings-group">
-            <h3 class="settings-section-title" data-i18n="Engine & Connectivity">Engine & Connectivity</h3>
+            <h3 class="settings-section-title" data-i18n="Audio">Audio</h3>
 
             <div class="field" style="margin-top: 16px;">
-              <div class="switchrow" style="margin: 0;">
-                <span style="font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;" data-i18n="Local ONNX Engine">Local ONNX Engine</span>
-                <button class="switch ui-switch on" id="useOnnxToggle" type="button" aria-label="Use local ONNX engine" aria-pressed="true"><b aria-hidden="true"></b></button>
-              </div>
-              <div class="panel-note" style="margin-top: 4px;" data-i18n="Run the neural network locally in your browser.">Run the neural network locally in your browser.</div>
-            </div>
-
-            <div class="field" style="margin-top: 24px;">
-              <div class="switchrow" style="margin: 0;">
-                <span style="font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;" data-i18n="Auto-connect Live API">Auto-connect Live API</span>
-                <button class="switch ui-switch" id="autoConnectApi" type="button" aria-label="Auto-connect live API" aria-pressed="false"><b aria-hidden="true"></b></button>
-              </div>
-              <div class="panel-note" style="margin-top: 4px;" data-i18n="Automatically connect to the local Python AI server on startup.">Automatically connect to the local Python AI server on startup.</div>
-            </div>
-            
-            <div class="field" style="margin-top: 24px;">
               <div class="switchrow" style="margin: 0;">
                 <span style="font-size: 13px; font-weight: 600; color: var(--text);" data-i18n="Audio Sound FX">Audio Sound FX</span>
                 <button class="switch ui-switch on" id="audioSettingsSwitch" type="button" aria-label="Enable audio sound effects" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
               <div class="panel-note" style="margin-top: 4px;" data-i18n="Play UI sound effects.">Play UI sound effects.</div>
-            </div>
-
-            <div class="field" style="margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line);">
-              <label style="font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 8px; display: block;" data-i18n="Custom Solver Tree (JSON)">Custom Solver Tree (JSON)</label>
-              <label class="solver-import-btn ui-button ui-button--secondary">
-                <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5h6l2 2h10v9.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7.5Z"/><path d="M3 7.5V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2.5"/></svg>
-                <span data-i18n="Load Solver Tree (.json)">Load Solver Tree (.json)</span>
-                <input type="file" id="solverTreeUpload" accept=".json" style="display: none;">
-              </label>
             </div>
         </div>
 
@@ -1860,7 +1807,6 @@
 
   </div> <!-- /.shell -->
 
-  <script src="ort.min.js" defer></script>
   <script src="src/core/SoundFX.js" defer></script>
   <script type="module" src="src/application/analysis-explanation-bootstrap.mjs"></script>
   <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
@@ -1870,7 +1816,6 @@
   <script src="src/core/logic.js?v=21" defer></script>
   <script src="src/ui/teacher.js" defer></script>
   <script src="src/ui/TableRenderer.js" defer></script>
-  <script src="src/ml/engine.js" defer></script>
 
 </body>
 

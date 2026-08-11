@@ -131,35 +131,7 @@ test('invalid and edge inputs use current production bounds and explicit default
   });
 });
 
-test('legacy strategy adapter preserves the established ONNX/API shape', () => {
-  const context = qa.deriveDecisionContext(snapshot({
-    tableSize: 10,
-    heroPosition: 'UTG+2',
-    board: ['2c', '7d', '9h'],
-    deadCards: ['Ac'],
-    stackBb: 200,
-    stackMode: 'effective',
-    potBb: 11.5,
-    lastAction: '3bet',
-    facingSizeBb: 7.5,
-    rakeMode: 'fixed',
-  }));
-  assert.deepEqual(qa.legacyStrategyContext(context), {
-    table_size: 10,
-    stack: 200,
-    rakeMode: 'fixed',
-    forcedContributionPerPlayerBb: 0.1,
-    totalForcedContributionBb: 1,
-    rake: 0,
-    hero_pos: 'UTG+2',
-    lastAction: '3bet',
-    potSize: 11.5,
-    facingSize: 7.5,
-    board: ['2c', '7d', '9h'],
-  });
-});
-
-test('updateContext follows snapshot to DecisionContext to legacy adapter', async () => {
+test('updateContext follows snapshot to DecisionContext to fallback StrategyResult', async () => {
   const capture = await qa.captureContext({
     players: 10,
     heroPos: 'UTG+2',
@@ -175,7 +147,8 @@ test('updateContext follows snapshot to DecisionContext to legacy adapter', asyn
   });
   assert.equal(capture.snapshot.tableSize, 10);
   assert.equal(capture.decisionContext.schemaVersion, 'decision-context/v1');
-  assert.deepEqual(capture.context, qa.legacyStrategyContext(capture.decisionContext));
+  assert.equal(capture.strategyResult.schemaVersion, 'strategy-result/v1');
+  assert.equal(capture.strategyResult.source, 'heuristic_postflop');
 });
 
 test('existing fallback recommendations are unchanged through DecisionContext fields', () => {

@@ -6,8 +6,8 @@ const qa = require('./qa002_adapters');
 test('unopened Playbook contexts use zero facing size for BTN, UTG, and SB', async () => {
   for (const heroPos of ['BTN', 'UTG', 'SB']) {
     const capture = await qa.captureContext({ heroPos, lastAction: 'unopened', facingSize: 12 });
-    assert.equal(capture.context.lastAction, 'unopened');
-    assert.equal(capture.context.facingSize, 0);
+    assert.equal(capture.decisionContext.lastAction, 'unopened');
+    assert.equal(capture.decisionContext.facingSizeBb, 0);
     assert.equal(capture.facingControl, 0);
     assert.equal(capture.facingNumberControl, 0);
   }
@@ -23,7 +23,7 @@ test('BTN, UTG, and SB use their zero-facing unopened fallback paths', async () 
   for (const [heroPos, strategy] of Object.entries(expected)) {
     const capture = await qa.captureContext({ heroPos, lastAction: 'unopened', facingSize: 1, potSize: 1.5, stack: 30 });
     assert.deepEqual(
-      qa.fallback('T', '9', false, true, heroPos, capture.context.lastAction, capture.context.facingSize, 1.5, 30),
+      qa.fallback('T', '9', false, true, heroPos, capture.decisionContext.lastAction, capture.decisionContext.facingSizeBb, 1.5, 30),
       strategy,
     );
   }
@@ -31,9 +31,9 @@ test('BTN, UTG, and SB use their zero-facing unopened fallback paths', async () 
 
 test('BB unopened context retains its separate free-check fallback behavior', async () => {
   const capture = await qa.captureContext({ heroPos: 'BB', lastAction: 'unopened', facingSize: 4, potSize: 1.5, stack: 30 });
-  assert.equal(capture.context.facingSize, 0);
+  assert.equal(capture.decisionContext.facingSizeBb, 0);
   assert.deepEqual(
-    qa.fallback('T', '9', false, true, 'BB', 'unopened', capture.context.facingSize, 1.5, 30),
+    qa.fallback('T', '9', false, true, 'BB', 'unopened', capture.decisionContext.facingSizeBb, 1.5, 30),
     { open: 0.85, call: 0.15000000000000002, fold: 0 },
   );
 });
@@ -41,8 +41,8 @@ test('BB unopened context retains its separate free-check fallback behavior', as
 test('raise, 3-bet, and 4-bet contexts retain their positive facing sizes', async () => {
   for (const [lastAction, facingSize] of [['raise', 2.5], ['3bet', 7.5], ['4bet', 18]]) {
     const capture = await qa.captureContext({ heroPos: 'BTN', lastAction, facingSize });
-    assert.equal(capture.context.lastAction, lastAction);
-    assert.equal(capture.context.facingSize, facingSize);
+    assert.equal(capture.decisionContext.lastAction, lastAction);
+    assert.equal(capture.decisionContext.facingSizeBb, facingSize);
     assert.equal(Number(capture.facingControl), facingSize);
     assert.equal(Number(capture.facingNumberControl), facingSize);
   }

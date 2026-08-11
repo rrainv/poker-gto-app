@@ -4,7 +4,6 @@ const assert = require('node:assert/strict');
 const {
   evaluateProduction,
   evaluatePython,
-  evaluateWorker,
   renderProductionEquityDeck,
   runProductionEquity,
 } = require('./qa001_adapters');
@@ -28,10 +27,6 @@ function productionPack(category, ...ranks) {
 
 function productionCategory(score) {
   return Math.floor(score / 1e10);
-}
-
-function workerCategory(score) {
-  return Math.floor(score / 1e7);
 }
 
 function compareNumbers(left, right) {
@@ -159,17 +154,14 @@ const pythonCrossResults = evaluatePython(crossFixtures.map((fixture) => fixture
 for (const [index, fixture] of crossFixtures.entries()) {
   test(`cross-implementation category fixture: ${fixture.name}`, () => {
     const productionScore = evaluateProduction(fixture.cards);
-    const workerScore = evaluateWorker(fixture.cards);
     const pythonScore = pythonCrossResults[index];
     const diagnostic = JSON.stringify({
       cards: fixture.cards,
       productionScore,
-      workerScore,
       pythonScore,
     });
 
     assert.equal(pythonScore.error, null, diagnostic);
-    assert.equal(workerCategory(workerScore), productionCategory(productionScore), diagnostic);
     assert.equal(pythonScore.category, productionCategory(productionScore), diagnostic);
   });
 }
@@ -206,18 +198,15 @@ const pythonOrderingResults = evaluatePython(orderingFixtures.flatMap((fixture) 
 for (const [index, fixture] of orderingFixtures.entries()) {
   test(`cross-implementation ordering fixture: ${fixture.name}`, () => {
     const productionScores = [evaluateProduction(fixture.stronger), evaluateProduction(fixture.weaker)];
-    const workerScores = [evaluateWorker(fixture.stronger), evaluateWorker(fixture.weaker)];
     const pythonScores = [pythonOrderingResults[index * 2], pythonOrderingResults[index * 2 + 1]];
     const diagnostic = JSON.stringify({
       stronger: fixture.stronger,
       weaker: fixture.weaker,
       productionScores,
-      workerScores,
       pythonScores,
     });
 
     assert.equal(compareNumbers(...productionScores), fixture.expected, diagnostic);
-    assert.equal(compareNumbers(...workerScores), fixture.expected, diagnostic);
     assert.equal(comparePython(...pythonScores), fixture.expected, diagnostic);
   });
 }

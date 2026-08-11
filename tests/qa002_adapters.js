@@ -51,23 +51,17 @@ function createHarness() {
   const currentStreetSource = currentStreetProductionSource
     .replace('function currentStreet(', 'function qaCurrentStreet(');
   const handClassSource = sliceBetween(source, 'function handClass(cards)', 'function numericValue(id, fallback = 0)');
-  const updatePositionsSource = sliceBetween(source, 'function updatePositionSelect(', 'function normalizeTree(data, fileName)');
+  const updatePositionsSource = sliceBetween(source, 'function updatePositionSelect(', 'function isAllInActionName(name)');
   const actionParserSource = sliceBetween(source, 'function isAllInActionName(name)', 'function simulateEquity(');
-  const treeContextSource = sliceBetween(source, 'function treeContext(decisionContext =', 'function isAllInActionName(name)')
-    .replace('function treeContext(', 'function qaTreeContext(');
-  const noTreeProfileSource = sliceBetween(source, 'function noTreeProfile(reason,', 'function actionProfile(hand =')
-    .replace('function noTreeProfile(', 'function qaNoTreeProfile(');
+  const fallbackStrategySource = sliceBetween(source, 'function fallbackStrategyResult(reason,', 'function actionProfile(hand =')
+    .replace('function fallbackStrategyResult(', 'function qaFallbackStrategyResult(');
   const actionProfileSource = sliceBetween(source, 'function actionProfile(hand =', 'function setFrequency(index, action)')
-    .replace('function actionProfile(', 'function qaActionProfile(');
-  const fallbackSource = sliceBetween(source, 'function calculatePreflopFallbackStrategy(', 'function noTreeProfile(reason,');
+    .replace('function actionProfile(', 'function qaActionProfile(')
+    .replaceAll('fallbackStrategyResult(', 'qaFallbackStrategyResult(');
+  const fallbackSource = sliceBetween(source, 'function calculatePreflopFallbackStrategy(', 'function fallbackStrategyResult(reason,');
   const potSource = sliceBetween(source, 'function preflopBasePot()', 'function updateMetrics()');
-  const updateContextSource = sliceBetween(source, 'async function updateContext(reason =', 'async function loadOnnxModel()');
+  const updateContextSource = sliceBetween(source, 'async function updateContext(reason =', '// Legacy fast evaluator retained for Playbook heuristics');
   const sliderSource = sliceBetween(source, 'function syncSliderPair(rangeId, numberId)', 'function bindSliderPair(rangeId, numberId, callback)');
-  const heuristicSource = sliceBetween(
-    source,
-    'function getHandTier(hand)',
-    '// Static TypedArray buffers for zero-GC hand evaluation in main thread'
-  );
   const postflopSource = sliceBetween(
     source,
     'function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [], decisionContext = null)',
@@ -94,7 +88,6 @@ function createHarness() {
     controls,
     createElement,
     activeElement: null,
-    capturedOnnxContext: null,
     dispatchedState: null,
     flatDrop: 0,
     postflopEquity: 0.48,
@@ -126,13 +119,11 @@ function createHarness() {
       settings: { tightness: 0, oppTightness: 0 },
       gto: { hero: [], board: [], dead: [] },
       training: { board: [], currentContext: null },
-      useOnnx: true,
-      onnxSession: {},
-      solver: null,
-      cachedStrategy: null,
-      lastApiContext: '',
       lastContextKey: '',
-      strategyResult: null
+      strategyResult: null,
+      playbookResolution: null,
+      playbookViewModel: null,
+      decisionContext: null
     };
 
     const $ = (selector) => controls.get(selector) || null;
@@ -145,20 +136,13 @@ function createHarness() {
     const displayCard = (card) => card;
     const requestAnimationFrame = (callback) => callback();
     const syncNoop = () => {};
-    const actionProfile = () => createStrategyResult({
-      source: STRATEGY_SOURCES.HEURISTIC_PREFLOP,
-      actions: [{ name: 'Fold', value: 100 }],
-      recommendedLabel: 'Fold',
-      explanation: 'test capture'
-    });
+    const actionProfile = (...args) => qaActionProfile(...args);
     const setFrequency = syncNoop;
     const updateMetrics = syncNoop;
     const renderPath = syncNoop;
     const renderChart = syncNoop;
     const renderRangeAdvantage = syncNoop;
     const renderBettingTree = syncNoop;
-    const treeContext = () => ({ available: true });
-    const noTreeProfile = (reason) => ({ actions: [], best: 'NONE', reason, source: 'NO TREE' });
     const formatHand = (cards) => {
       const first = cards[0][0];
       const second = cards[1][0];
@@ -174,24 +158,17 @@ function createHarness() {
       capturedEquityDecisionContext = decisionContext || null;
       return { eq: postflopEquity, pct: postflopEquity * 100 };
     };
-    const generateStrategyWithOnnx = async (context) => {
-      capturedOnnxContext = JSON.parse(JSON.stringify(context));
-      return { strategy: {} };
-    };
-
     ${numericSource}
     ${currentStreetProductionSource}
     ${currentStreetSource}
     ${handClassSource}
     ${updatePositionsSource}
-    ${treeContextSource}
     ${actionParserSource}
     ${fallbackSource}
     ${potSource}
     ${sliderSource}
-    ${heuristicSource}
     ${postflopSource}
-    ${noTreeProfileSource}
+    ${fallbackStrategySource}
     ${actionProfileSource}
     ${updateContextSource}
 
@@ -220,7 +197,6 @@ function createHarness() {
       normalizeFacingSize,
       strategyAccountingContext,
       deriveDecisionContext,
-      decisionContextToLegacyStrategyContext,
       decisionContextToLegacyPostflopContext,
       calculatePreflopFallbackForDecisionContext,
       STRATEGY_RESULT_SCHEMA_VERSION,
@@ -229,59 +205,30 @@ function createHarness() {
       createStrategyResult,
       preflopHeuristicToStrategyResult,
       postflopHeuristicToStrategyResult,
-      localTreeToStrategyResult,
-      modelStrategyToStrategyResult,
       unavailableStrategyResult,
       strategyResultToLegacyProfile,
-      parseSolverEntry,
       classifyAction,
       standardActionName,
-      playbookActionProfile(entry) {
-        controls.set('#heroPos', createElement('BTN'));
-        controls.set('#lastAction', createElement('unopened', { text: 'Unopened' }));
-        app.gto.hero = ['As', 'Ks'];
-        app.gto.board = [];
+      strategyProfile(context) {
         app.decisionContext = null;
-        app.solver = { strategy: { AKs: { BTN: entry } } };
-        return strategyResultToLegacyProfile(qaActionProfile('AKs'));
-      },
-      strategyProfile(context, solver = null) {
-        app.decisionContext = null;
-        app.useOnnx = false;
-        app.onnxSession = null;
-        app.solver = solver;
         return strategyResultToLegacyProfile(qaActionProfile(null, context));
       },
-      strategyResult(context, solver = null) {
+      strategyResult(context) {
         app.decisionContext = null;
-        app.useOnnx = false;
-        app.onnxSession = null;
-        app.solver = solver;
-        if (!solver && context.street === 'preflop') return qaNoTreeProfile('No matching tree', context);
         return qaActionProfile(null, context);
       },
-      strategyProfileCapture(context, solver = null) {
+      strategyProfileCapture(context) {
         capturedEquityDecisionContext = null;
-        const profile = this.strategyProfile(context, solver);
+        const profile = this.strategyProfile(context);
         return { profile, equityDecisionContext: capturedEquityDecisionContext };
       },
-      noTreeStrategyProfile(context, reason = 'No matching tree') {
+      fallbackStrategyProfile(context, reason = 'Heuristic fallback') {
         app.decisionContext = null;
-        app.solver = null;
-        return strategyResultToLegacyProfile(qaNoTreeProfile(reason, context));
+        return strategyResultToLegacyProfile(qaFallbackStrategyResult(reason, context));
       },
-      noTreeStrategyResult(context, reason = 'No matching tree') {
+      fallbackStrategyResult(context, reason = 'Heuristic fallback') {
         app.decisionContext = null;
-        app.solver = null;
-        return qaNoTreeProfile(reason, context);
-      },
-      localTreeContext(context, solver) {
-        app.decisionContext = null;
-        app.solver = solver;
-        return qaTreeContext(context);
-      },
-      heuristic(policy, context, hand) {
-        return applyHeuristicToPrediction(policy, context, 0, 0, hand);
+        return qaFallbackStrategyResult(reason, context);
       },
       preflopPot({ ante, players, straddle }) {
         controls.set('#ante', createElement(ante));
@@ -311,31 +258,24 @@ function createHarness() {
         for (const [id, [value, min, max]] of Object.entries(definitions)) {
           controls.set('#' + id, createElement(value, { min, max, text: String(value) }));
         }
-        app.useOnnx = true;
-        app.onnxSession = {};
         app.gto.board = values.board || [];
         app.gto.hero = values.heroCards || [];
         app.gto.dead = values.deadCards || [];
-        app.lastApiContext = '';
         app.lastContextKey = '';
-        app.cachedStrategy = null;
-        capturedOnnxContext = null;
         dispatchedState = null;
-        const contexts = [];
         const decisionContexts = [];
+        const strategyResults = [];
         const refreshCount = values.refreshCount ?? 1;
         for (let refresh = 0; refresh < refreshCount; refresh += 1) {
-          app.lastApiContext = '';
-          capturedOnnxContext = null;
           await updateContext('QA-002 capture');
-          contexts.push({ ...capturedOnnxContext });
           decisionContexts.push({ ...app.decisionContext });
+          strategyResults.push(JSON.parse(JSON.stringify(app.strategyResult)));
         }
         return {
-          context: contexts[contexts.length - 1],
-          contexts,
           decisionContext: decisionContexts[decisionContexts.length - 1],
           decisionContexts,
+          strategyResult: strategyResults[strategyResults.length - 1],
+          strategyResults,
           snapshot: readPlaybookInputSnapshot(),
           facingControl: controls.get('#facingSize').value,
           facingNumberControl: controls.get('#facingSizeNum').value,
@@ -386,7 +326,6 @@ module.exports = {
   normalizeFacingSize: (...args) => harness.normalizeFacingSize(...args),
   strategyAccountingContext: (...args) => plain(harness.strategyAccountingContext(...args)),
   deriveDecisionContext: (...args) => plain(harness.deriveDecisionContext(...args)),
-  legacyStrategyContext: (...args) => plain(harness.decisionContextToLegacyStrategyContext(...args)),
   legacyPostflopContext: (...args) => plain(harness.decisionContextToLegacyPostflopContext(...args)),
   fallbackForDecisionContext: (...args) => plain(harness.calculatePreflopFallbackForDecisionContext(...args)),
   strategyResultSchemaVersion: harness.STRATEGY_RESULT_SCHEMA_VERSION,
@@ -395,21 +334,15 @@ module.exports = {
   createStrategyResult: (...args) => plain(harness.createStrategyResult(...args)),
   preflopStrategyResult: (...args) => plain(harness.preflopHeuristicToStrategyResult(...args)),
   postflopStrategyResult: (...args) => plain(harness.postflopHeuristicToStrategyResult(...args)),
-  localTreeStrategyResult: (...args) => plain(harness.localTreeToStrategyResult(...args)),
-  modelStrategyResult: (...args) => plain(harness.modelStrategyToStrategyResult(...args)),
   unavailableStrategyResult: (...args) => plain(harness.unavailableStrategyResult(...args)),
   legacyProfileForStrategyResult: (...args) => plain(harness.strategyResultToLegacyProfile(...args)),
-  parseSolverEntry: (...args) => plain(harness.parseSolverEntry(...args)),
   classifyAction: (...args) => harness.classifyAction(...args),
   standardActionName: (...args) => harness.standardActionName(...args),
-  playbookActionProfile: (...args) => plain(harness.playbookActionProfile(...args)),
   strategyProfile: (...args) => plain(harness.strategyProfile(...args)),
   strategyResult: (...args) => plain(harness.strategyResult(...args)),
   strategyProfileCapture: (...args) => plain(harness.strategyProfileCapture(...args)),
-  noTreeStrategyProfile: (...args) => plain(harness.noTreeStrategyProfile(...args)),
-  noTreeStrategyResult: (...args) => plain(harness.noTreeStrategyResult(...args)),
-  localTreeContext: (...args) => plain(harness.localTreeContext(...args)),
-  heuristic: (...args) => plain(harness.heuristic(...args)),
+  fallbackStrategyProfile: (...args) => plain(harness.fallbackStrategyProfile(...args)),
+  fallbackStrategyResult: (...args) => plain(harness.fallbackStrategyResult(...args)),
   preflopPot: (...args) => harness.preflopPot(...args),
   captureContext: async (...args) => plain(await harness.captureContext(...args)),
   postflopWithDrop: (...args) => plain(harness.postflopWithDrop(...args)),

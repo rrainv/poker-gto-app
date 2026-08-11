@@ -358,16 +358,8 @@ test('DecisionContext v1 applies the same stack, pot, and facing bounds as legac
   assertLegacyParity(deep);
 });
 
-test('every emitted lastAction is accepted by current fallback and ONNX vocabularies', () => {
+test('every emitted lastAction is accepted by the current fallback vocabulary', () => {
   const supported = ['unopened', 'raise', '3bet', '4bet', 'bet', 'check'];
-  const productionLogic = fs.readFileSync(
-    new URL('../app/src/core/logic.js', import.meta.url),
-    'utf8',
-  );
-  assert.match(
-    productionLogic,
-    /const ACTIONS = \['unopened', 'raise', '3bet', '4bet', 'bet', 'check'\];/,
-  );
 
   for (const lastAction of supported) {
     const projected = legacy.deriveDecisionContext({

@@ -14,8 +14,7 @@
     "dist-portable": "electron-builder --win --publish never"
   },
   "dependencies": {
-    "onnxruntime-node": "^1.27.0",
-    "onnxruntime-web": "^1.27.0"
+    "onnxruntime-node": "^1.27.0"
   },
   "devDependencies": {
     "electron": "^30.0.0",
@@ -33,8 +32,6 @@
       "index.html",
       "styles.css",
       "src/**/*",
-      "equity.worker.js",
-      "solver-model/**/*",
       "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
       "!**/node_modules/*/{test,tests,example,examples}",
       "!**/node_modules/*.d.ts",

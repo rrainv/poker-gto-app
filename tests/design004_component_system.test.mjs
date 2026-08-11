@@ -52,7 +52,7 @@ test('range controls use shared track, thumb, focus, and disabled semantics', ()
 
 test('switches expose labels and pressed states without replacing behavior', () => {
   const switches = [...html.matchAll(/<button\b[^>]*class="[^"]*ui-switch[^"]*"[^>]*>/g)];
-  assert.ok(switches.length >= 7);
+  assert.ok(switches.length >= 5);
   for (const [tag] of switches) {
     assert.match(tag, /type="button"/);
     assert.match(tag, /aria-label="[^"]+"/);

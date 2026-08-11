@@ -2,7 +2,7 @@
 
 /* Riverline application logic
 
- * Solver trees are used only where their metadata matches the current decision.
+ * Production recommendations use the deterministic heuristic fallback.
 
  * Equity uses complete seven-card hand ordering, including kickers and split pots.
 
@@ -53,29 +53,6 @@ const POSITIONS = {
 
 };
 
-// The current ONNX models expose six position features. Full-ring positions
-// are mapped explicitly to the closest existing positional band so they never
-// fall through to an accidental index-zero/UTG default.
-const MODEL_POSITION_VOCABULARY = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
-const MODEL_POSITION_COMPATIBILITY = {
-  'UTG': 'UTG',
-  'UTG+1': 'UTG',
-  'UTG+2': 'UTG',
-  'MP': 'HJ',
-  'LJ': 'HJ',
-  'HJ': 'HJ',
-  'CO': 'CO',
-  'BTN': 'BTN',
-  'SB': 'SB',
-  'BB': 'BB'
-};
-
-function modelPositionIndex(position) {
-  const compatiblePosition = MODEL_POSITION_COMPATIBILITY[position];
-  if (!compatiblePosition) throw new RangeError(`Unsupported position: ${position}`);
-  return MODEL_POSITION_VOCABULARY.indexOf(compatiblePosition);
-}
-
 const ACTION_COLORS = {
 
   aggressive: 'var(--action-aggressive)',
@@ -115,7 +92,7 @@ const PLAYBOOK_MODES = Object.freeze({ SCENARIO: 'scenario', HAND: 'hand' });
 
 
 const app = {
-  settings: { tightness: 0, useOnnx: true, fourColorDeck: true, cardRankStyle: 'poker' },
+  settings: { tightness: 0, fourColorDeck: true, cardRankStyle: 'poker' },
 
   gto: { hero: [], board: [], dead: [] },
 
@@ -179,13 +156,7 @@ const app = {
 
   selectedHand: null,
 
-  solver: null,
-
   lastContextKey: '',
-
-  cachedStrategy: null,
-
-  lastApiContext: null,
 
   decisionContext: null,
 
@@ -197,11 +168,7 @@ const app = {
 
   playbookResolution: null,
 
-  playbookViewModel: null,
-
-  onnxSession: null,
-
-  useOnnx: false
+  playbookViewModel: null
 
 };
 
@@ -853,7 +820,7 @@ function clearGroup(group) {
 
 // ---------------------------------------------------------------------------
 
-// Context and solver tree
+// Decision context and fallback strategy contracts
 
 // ---------------------------------------------------------------------------
 
@@ -941,9 +908,9 @@ function strategyAccountingContext(rakeMode, seatedPlayerCount, legacyRakeValue 
   const forcedContributionPerPlayerBb = isClubGg ? CLUBGG_FORCED_CONTRIBUTION_PER_PLAYER_BB : 0;
   const totalForcedContributionBb = Math.round(players * forcedContributionPerPlayerBb * 10) / 10;
 
-  // The existing model/API `rake` feature means percentage rake. A fixed
-  // per-player hand contribution is not semantically compatible, so Home and
-  // ClubGG contexts explicitly adapt that legacy feature to zero.
+  // The compatibility `rake` field means percentage rake. A fixed per-player
+  // hand contribution is not semantically compatible, so Home and ClubGG
+  // contexts explicitly adapt that field to zero.
   const legacyValue = Number(legacyRakeValue);
   const rake = (mode === 'percent' || mode === 'cap') && Number.isFinite(legacyValue)
     ? Math.max(0, legacyValue)
@@ -1733,30 +1700,6 @@ function deriveDecisionContext(snapshot = {}) {
 
 
 
-function decisionContextToLegacyStrategyContext(context) {
-
-  if (!context || context.schemaVersion !== DECISION_CONTEXT_SCHEMA_VERSION) {
-    throw new TypeError('Expected DecisionContext decision-context/v1');
-  }
-
-  return {
-    table_size: context.tableSize,
-    stack: context.stackBb,
-    rakeMode: context.rakeMode,
-    forcedContributionPerPlayerBb: context.forcedContributionPerPlayerBb,
-    totalForcedContributionBb: context.totalForcedContributionBb,
-    rake: context.legacyRakePercent,
-    hero_pos: context.heroPosition,
-    lastAction: context.lastAction,
-    potSize: context.potBb,
-    facingSize: context.facingSizeBb,
-    board: context.board.slice()
-  };
-
-}
-
-
-
 function requireDecisionContext(context) {
 
   if (context !== null && context !== undefined) {
@@ -1856,95 +1799,6 @@ function updateTrainingPositions() {
 
 
 
-function normalizeTree(data, fileName) {
-
-  if (!data || typeof data !== 'object' || !data.positions) throw new Error('This JSON does not contain a positions solver tree.');
-
-  const stackMatch = String(data.title || fileName).match(/(\d+)\s*bb/i);
-
-  return {
-
-    title: data.title || fileName,
-
-    positions: data.positions,
-
-    strategy: data.strategy,
-
-    stack: stackMatch ? Number(stackMatch[1]) : null,
-
-    fileName
-
-  };
-
-}
-
-
-
-function treeContext(decisionContext = null) {
-
-  if (!app.solver) return { available: false, reason: 'Load a local preflop tree to show solver frequencies.' };
-
-  const context = requireDecisionContext(decisionContext);
-
-  if (context.street !== 'preflop') return { available: false, reason: 'The loaded file has no postflop tree.' };
-
-  
-
-  // If we have API/ONNX strategy data, it's available for any context
-
-  if (app.solver.strategy) {
-    return { 
-
-      available: true, 
-
-      reason: 'AI solver matches this decision context.',
-
-      isApiStrategy: true
-
-    };
-
-  }
-
-  
-
-  // Local tree restrictions only apply to local trees
-
-  if (context.tableSize !== 6) return { available: false, reason: 'The loaded tree is six-max; current table size does not match.' };
-
-  
-
-  if (context.lastAction !== 'unopened') return { available: false, reason: 'The loaded tree is RFI-only; this action branch is not in the file.' };
-
-  
-
-  if (app.solver.stack && Math.abs(context.stackBb - app.solver.stack) > 1) {
-
-    return { available: false, reason: `Loaded tree is ${app.solver.stack}bb; current stack does not match.` };
-
-  }
-
-  
-
-  const heroPos = context.heroPosition;
-
-  if (Array.isArray(app.solver.positions)) {
-
-    if (!app.solver.positions.includes(heroPos)) return { available: false, reason: 'This hero position is not included in the loaded tree.' };
-
-  } else {
-
-    if (!app.solver.positions[heroPos]) return { available: false, reason: 'This hero position is not included in the loaded tree.' };
-
-  }
-
-  
-
-  return { available: true, reason: 'Loaded local tree matches this decision context.' };
-
-}
-
-
-
 function isAllInActionName(name) {
 
   return /\b(?:all(?:[-\s]+in)?|jam)\b/.test(String(name || '').toLowerCase());
@@ -1994,9 +1848,6 @@ const STRATEGY_RESULT_SCHEMA_VERSION = 'strategy-result/v1';
 const STRATEGY_SOURCES = Object.freeze({
   HEURISTIC_PREFLOP: 'heuristic_preflop',
   HEURISTIC_POSTFLOP: 'heuristic_postflop',
-  LOCAL_TREE: 'local_tree',
-  ONNX_MODEL: 'onnx_model',
-  API: 'api',
   EQUITY_FALLBACK: 'equity_fallback',
   UNAVAILABLE: 'unavailable'
 });
@@ -2013,7 +1864,7 @@ function structuralActionFromName(name) {
   const potFractionMatch = normalized.match(/(-?\d+(?:\.\d+)?)\s*%\s*(?:of\s+)?pot\b/);
   let type = 'unknown';
 
-  if (!label || label === 'â€”' || /impossible|unavailable|solver tree|needed/.test(normalized)) type = 'unavailable';
+  if (!label || label === 'â€”' || /impossible|unavailable|needed/.test(normalized)) type = 'unavailable';
   else if (isAllInActionName(normalized)) type = 'all_in';
   else if (/\bfold\b/.test(normalized)) type = 'fold';
   else if (/\bcheck\b/.test(normalized)) type = 'check';
@@ -2152,43 +2003,6 @@ function postflopHeuristicToStrategyResult(strategy, presentation = {}) {
 
 
 
-function localTreeToStrategyResult(actions, presentation = {}) {
-
-  return createStrategyResult({
-    source: STRATEGY_SOURCES.LOCAL_TREE,
-    actions,
-    recommendedLabel: presentation.recommendedLabel || null,
-    explanation: presentation.explanation || null
-  });
-
-}
-
-
-
-function modelStrategyToStrategyResult(entry, presentation = {}) {
-
-  const source = presentation.source === STRATEGY_SOURCES.API
-    ? STRATEGY_SOURCES.API
-    : STRATEGY_SOURCES.ONNX_MODEL;
-  const actions = Object.entries(entry || {})
-    .map(([name, value]) => ({ label: name, value }))
-    .sort((a, b) => Number(b.value) - Number(a.value));
-
-  return createStrategyResult({
-    source,
-    actions,
-    recommendedLabel: presentation.recommendedLabel || null,
-    explanation: presentation.explanation || null,
-    confidence: presentation.confidence,
-    coverage: presentation.coverage,
-    modelVersion: presentation.modelVersion,
-    warnings: presentation.warnings
-  });
-
-}
-
-
-
 function unavailableStrategyResult(reason, recommendedLabel) {
 
   return createStrategyResult({
@@ -2223,12 +2037,11 @@ function strategyResultToLegacyProfile(result) {
 
   const legacySource = result.source === STRATEGY_SOURCES.HEURISTIC_PREFLOP ? 'MATH FALLBACK'
     : result.source === STRATEGY_SOURCES.HEURISTIC_POSTFLOP ? 'MONTE CARLO'
-      : result.source === STRATEGY_SOURCES.LOCAL_TREE ? 'LOCAL TREE'
-        : result.source;
+      : result.source;
 
   return {
     actions,
-    best: result.recommendation ? String(result.recommendation.label) : 'LOAD SOLVER TREE',
+    best: result.recommendation ? String(result.recommendation.label) : 'STRATEGY UNAVAILABLE',
     reason: result.explanation || '',
     source: legacySource,
     provenance: result.source,
@@ -2236,42 +2049,6 @@ function strategyResultToLegacyProfile(result) {
   };
 
 }
-
-
-
-function parseSolverEntry(entry) {
-
-  const detail = String((entry && entry.detail) || '').replace(/Â·/g, '·');
-
-  const extracted = [];
-
-  const matcher = /(raise|open|bet|call|check|fold|jam|all[- ]?in)\s*(\d+(?:\.\d+)?)\s*%/gi;
-
-  let match;
-
-  while ((match = matcher.exec(detail))) {
-
-    extracted.push({ name: standardActionName(match[1]), value: Number(match[2]), kind: classifyAction(match[1]) });
-
-  }
-
-  if (!extracted.length && (entry && entry.type)) {
-
-    const name = standardActionName(entry.type);
-
-    extracted.push({ name, value: 100, kind: classifyAction(name) });
-
-  }
-
-  const total = extracted.reduce((sum, action) => sum + action.value, 0);
-
-  if (total < 100) extracted.push({ name: 'Fold', value: 100 - total, kind: 'fold' });
-
-  return extracted.slice(0, 3);
-
-}
-
-
 
 
 
@@ -2636,7 +2413,7 @@ function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 
     };
 }
 
-function noTreeProfile(reason, decisionContext = null) {
+function fallbackStrategyResult(reason, decisionContext = null) {
 
   const context = requireDecisionContext(decisionContext);
 
@@ -2804,10 +2581,7 @@ function noTreeProfile(reason, decisionContext = null) {
 
   }
 
-  return unavailableStrategyResult(
-    t(reason),
-    app.solver ? t('TREE UNAVAILABLE') : t('LOAD SOLVER TREE')
-  );
+  return unavailableStrategyResult(t(reason), t('STRATEGY UNAVAILABLE'));
 
 }
 
@@ -2816,172 +2590,19 @@ function noTreeProfile(reason, decisionContext = null) {
 function actionProfile(hand = null, decisionContext = null) {
 
   const strategyContext = requireDecisionContext(decisionContext);
-  hand = hand === null ? handClass(strategyContext.heroCards) : hand;
+  const resolvedHand = hand === null ? handClass(strategyContext.heroCards) : hand;
 
-  console.log('actionProfile - hero cards:', strategyContext.heroCards);
-
-  console.log('actionProfile - handClass result:', hand);
-
-  
-
-  if (!hand) return noTreeProfile('Choose two hero cards to look up a hand class.', strategyContext);
-
-  if (strategyContext.street === 'invalid') return noTreeProfile('Complete the current board street: 0, 3, 4, or 5 board cards.', strategyContext);
-
-  // === POSTFLOP: bypass solver tree, use ONNX if available else JS heuristic ===
-  if (strategyContext.street !== 'preflop') {
-    const deadCards = strategyContext.deadCards;
-
-    // TIER 1: If ONNX is loaded and has postflop support, use it
-    // (ONNX model is trained on all streets; app.solver.strategy is set after load)
-    if (app.useOnnx && app.onnxSession && app.solver && app.solver.strategy && window.ONNX_POSTFLOP_READY) {
-      // ONNX result flows through the existing solver strategy path below
-      // Fall through to the solver strategy block at the bottom of actionProfile
-    } else {
-      // TIER 2: JS deterministic postflop math (Monte Carlo + heuristic)
-      const sim = simulateEquity(strategyContext.heroCards, strategyContext.board, deadCards, 800, strategyContext);
-      const eq = sim ? sim.eq : 0.5;
-      setTimeout(() => { const el = document.getElementById('mEquity'); if (el) el.textContent = (eq*100).toFixed(1)+'%'; }, 10);
-
-      const contextObj = decisionContextToLegacyPostflopContext(strategyContext);
-
-      const stratObj = calculateUnifiedPostflopStrategy(contextObj, strategyContext.heroCards, deadCards, strategyContext);
-      const entries = Object.entries(stratObj).sort((a,b) => b[1]-a[1]);
-
-      const a1name = entries[0] ? entries[0][0] : 'Check';
-      const street = strategyContext.street;
-      const rangePct = street === 'flop' ? 'Top 40%' : street === 'turn' ? 'Top 25%' : 'Top 15%';
-
-      return postflopHeuristicToStrategyResult(stratObj, {
-        recommendedLabel: t(a1name).toUpperCase(),
-        explanation: `${t('Mathematical Fallback suggests')} ${(eq*100).toFixed(1)}% ${t('vs Villain')} ${t(rangePct)} ${t('range')}.`
-      });
-    }
+  if (!resolvedHand) {
+    return fallbackStrategyResult('Choose two hero cards to calculate a heuristic strategy.', strategyContext);
   }
 
-  const context = treeContext(strategyContext);
-
-  if (!context.available) return noTreeProfile(context.reason, strategyContext);
-
-  
-
-  const heroPos = strategyContext.heroPosition;
-
-  
-
-  console.log('actionProfile - hand:', hand, 'heroPos:', heroPos, 'app.solver:', app.solver);
-
-  
-
-  if (app.solver.strategy) {
-
-    const entry = (app.solver.strategy[hand] || {})[heroPos];
-
-    console.log('strategy entry for hand:', hand, 'pos:', heroPos, 'entry:', entry);
-
-    if (!entry) {
-
-      console.log('Hand not found in strategy:', hand, 'Position:', heroPos);
-
-      return noTreeProfile('This hand is not present in the matched solver file.', strategyContext);
-
-    }
-
-    // Use the ONNX/API strategy directly without converting to chart format
-
-    const actions = [];
-
-    for (const [key, val] of Object.entries(entry)) {
-
-        let kind = 'unavailable';
-
-        const name = key.toLowerCase();
-
-        if (name.includes('fold') || name.includes('impossible')) kind = 'fold';
-
-        else if (name.includes('call') || name.includes('check')) kind = 'passive';
-
-        else kind = 'aggressive';
-
-        
-
-        actions.push({ name: key, value: val || 0, kind: kind });
-
-    }
-
-    actions.sort((a, b) => b.value - a.value);
-
-    const best = actions[0];
-
-    
-
-    let bestFormatted = best.name.toUpperCase();
-
-    let lastAction = strategyContext.lastAction.toLowerCase();
-
-    
-
-    if (bestFormatted === 'OPEN') {
-
-      if (lastAction.includes('unopened')) {
-
-        bestFormatted = 'OPEN 3 BB';
-
-      } else {
-
-        bestFormatted = 'RAISE 3x';
-
-      }
-
-    }
-
-    
-
-    const strategySource = app.solver.strategySource === STRATEGY_SOURCES.API
-      ? STRATEGY_SOURCES.API
-      : app.solver.strategySourceByHand && app.solver.strategySourceByHand[hand]
-        ? app.solver.strategySourceByHand[hand]
-        : STRATEGY_SOURCES.ONNX_MODEL;
-    const modelVersion = app.solver.modelVersion || app.solver.model_version
-      || (app.solver.metadata && (app.solver.metadata.modelVersion || app.solver.metadata.model_version))
-      || null;
-
-    if (strategySource === STRATEGY_SOURCES.HEURISTIC_PREFLOP) {
-      return createStrategyResult({
-        source: STRATEGY_SOURCES.HEURISTIC_PREFLOP,
-        actions,
-        recommendedLabel: bestFormatted,
-        explanation: t('Preflop heuristic fallback after model inference failure'),
-        warnings: ['onnx_inference_failed']
-      });
-    }
-
-    return modelStrategyToStrategyResult(entry, {
-      source: strategySource,
-      recommendedLabel: bestFormatted,
-      explanation: strategySource === STRATEGY_SOURCES.API ? t('API strategy output') : t('ONNX model strategy output'),
-      modelVersion
-    });
-
-  } else {
-
-    const entry = (app.solver.positions[heroPos] || {})[hand];
-
-    if (!entry) return noTreeProfile('This hand is not present in the matched solver file.', strategyContext);
-
-    const actions = parseSolverEntry(entry);
-
-    const best = [...actions].sort((a, b) => b.value - a.value)[0];
-
-    return localTreeToStrategyResult(actions, {
-      recommendedLabel: best.name.toUpperCase(),
-      explanation: t('Local solver tree') + ` · ${app.solver.title}. ` + t('Action sizing is not stored in this file.')
-    });
-
+  if (strategyContext.street === 'invalid') {
+    return fallbackStrategyResult('Complete the current board street: 0, 3, 4, or 5 board cards.', strategyContext);
   }
+
+  return fallbackStrategyResult('Heuristic fallback', strategyContext);
 
 }
-
 
 
 function setFrequency(index, action) {
@@ -3316,8 +2937,6 @@ function renderChart() {
 
   const positions = selectedValue('#heroPos');
 
-  const context = treeContext();
-
   if (grid.children.length === 0) {
     grid.innerHTML = '';
     RANKS.forEach((_, row) => RANKS.forEach((__, col) => {
@@ -3353,7 +2972,7 @@ function renderChart() {
 
   const boardCount = app.gto.board.filter(Boolean).length;
 
-  const useEquityFallback = !context.available && isPostFlop && boardCount >= 3;
+  const useEquityFallback = isPostFlop && boardCount >= 3;
 
   const currentBoard = app.gto.board.filter(Boolean);
 
@@ -3363,59 +2982,7 @@ function renderChart() {
 
     
 
-    let entry = null;
-
-    if (context.available && app.solver) {
-
-        if (app.solver.strategy) {
-
-            entry = (app.solver.strategy[hand] || {})[positions];
-
-        } else if (app.solver.positions) {
-
-            entry = (app.solver.positions[positions] || {})[hand];
-
-        }
-
-    }
-
-    
-
-    let actions = [];
-
-    if (entry) {
-
-        if (app.solver.strategy) {
-
-            // API Format
-
-            for (const [key, val] of Object.entries(entry)) {
-
-                let kind = 'unavailable';
-
-                const name = key.toLowerCase();
-
-                if (name.includes('fold') || name.includes('impossible')) kind = 'fold';
-
-                else if (name.includes('call') || name.includes('check')) kind = 'passive';
-
-                else kind = 'aggressive';
-
-                actions.push({ name: key, value: val || 0, kind: kind });
-
-            }
-
-            actions.sort((a, b) => b.value - a.value);
-
-        } else {
-
-            // Local Tree Format
-
-            actions = parseSolverEntry(entry);
-
-        }
-
-    } else if (isPostFlop && useEquityFallback) {
+    if (isPostFlop && useEquityFallback) {
 
         // Fast Postflop Heuristic Grid Fallback (0ms latency, zero main-thread lag)
 
@@ -3441,8 +3008,8 @@ function renderChart() {
 
         }
 
-    } else if (!isPostFlop && !context.available) {
-        // Unified preflop mathematical fallback when no solver tree is loaded
+    } else if (!isPostFlop) {
+        // Unified deterministic preflop fallback.
         const heroPos = positions;
         const r1str = RANKS[row], r2str = RANKS[column];
         const isPair = row === column;
@@ -3468,20 +3035,12 @@ function renderChart() {
         if (foldVal > 0) actions.push({ name: 'Fold', value: foldVal, kind: 'fold' });
         actions.sort((a, b) => b.value - a.value);
 
-    } else if (!isPostFlop && context.available) {
-
-        // Missing preflop hand in the solver file is implicitly folded
-
-        actions = [{ name: 'Fold', value: 100, kind: 'fold' }];
-
     }
-
-    
 
     const type = (actions[0] && actions[0].kind) || 'unavailable';
     const handKind = row === column ? 'pair' : hand.endsWith('s') ? 'suited' : 'offsuit';
 
-    const detail = actions.length ? actions.map((action) => `${action.name} ${action.value}%`).join(' · ') : (useEquityFallback ? 'Blocked by Board' : context.reason);
+    const detail = actions.length ? actions.map((action) => `${action.name} ${action.value}%`).join(' · ') : (useEquityFallback ? 'Blocked by Board' : 'Heuristic fallback');
 
     const idx = row * 13 + column;
     const button = grid.children[idx];
@@ -3674,35 +3233,13 @@ function renderChart() {
 
 
 
-  const stackTag = (app.solver && app.solver.stack) ? app.solver.stack + 'bb tree' : t('no tree');
-
-  if (useEquityFallback) {
-
-      $('#chartSummary').textContent = `${positions} · ${numericValue('#stack')} bb · Postflop Monte Carlo Equity Fallback`;
-
-  } else {
-
-      $('#chartSummary').textContent = `${positions} · ${numericValue('#stack')} bb · ${stackTag} · ${context.available ? t('matched') : context.reason}`;
-
+  const chartSummary = $('#chartSummary');
+  if (chartSummary) {
+    chartSummary.textContent = `${positions} · ${numericValue('#stack')} bb · Heuristic fallback`;
   }
 
 }
 
-
-
-
-function setStrategySourceStatus(state, label) {
-  const control = $('#connectApiBtn');
-  const dot = $('#apiStatusDot');
-  const text = $('#apiStatusText');
-  if (!control || !dot || !text) return;
-
-  control.dataset.status = state;
-  control.setAttribute('aria-busy', state === 'loading' ? 'true' : 'false');
-  control.setAttribute('aria-label', `${t('Strategy source')}: ${t(label)}`);
-  dot.style.background = '';
-  text.textContent = t(label);
-}
 
 function visualActionKind(action) {
   const name = String(action?.name || '').toLowerCase();
@@ -3735,14 +3272,12 @@ function strategySourceDisplayLabel(source) {
   const labels = {
     heuristic_preflop: 'Heuristic',
     heuristic_postflop: 'Heuristic',
-    local_tree: 'Local tree',
-    onnx_model: 'ONNX model',
-    api: 'API',
     equity_fallback: 'Equity fallback',
     unavailable: 'Unavailable'
   };
   return labels[source] || String(source || 'Unavailable');
 }
+
 
 function setRecommendationState(state) {
   const recommendation = $('#recommendation');
@@ -3867,36 +3402,6 @@ function renderPlaybookDecisionAnalysis(decisionContext, strategyResult, resolut
   return explanation;
 }
 
-function renderLoadingStrategy() {
-  setRecommendationState('loading');
-  if ($('#bestAction')) $('#bestAction').textContent = 'Loading strategy';
-  if ($('#bestReason')) $('#bestReason').textContent = 'Checking the selected strategy source.';
-  if ($('#bestSizing')) $('#bestSizing').hidden = true;
-  if ($('#strategyMeta')) {
-    $('#strategyMeta').textContent = '';
-    $('#strategyMeta').hidden = true;
-  }
-  if ($('#strategyWarnings')) {
-    $('#strategyWarnings').textContent = '';
-    $('#strategyWarnings').hidden = true;
-  }
-  if ($('#sourceBadge')) {
-    $('#sourceBadge').textContent = 'Loading';
-    $('#sourceBadge').className = 'badge status-badge status-badge--loading';
-  }
-  const emptyActions = Array.from({ length: 3 }, () => ({ name: '—', value: 0, kind: 'unavailable' }));
-  emptyActions.forEach((action, index) => setFrequency(index + 1, action));
-  renderFrequencyStack($('#actionFrequencyStack'), emptyActions);
-  if ($('#actionWheel')) $('#actionWheel').style.background = 'var(--surface-interactive)';
-  renderPlaybookDecisionAnalysis(
-    app.decisionContext,
-    unavailableStrategyResult('Strategy source is loading.'),
-    app.playbookResolution,
-    'strategy_loading'
-  );
-  if ($('#wheelCenterText')) $('#wheelCenterText').textContent = '—';
-}
-
 async function updateContext(reason = 'Context updated') {
 
   syncSliderPair('players', 'playersNum');
@@ -3932,7 +3437,6 @@ async function updateContext(reason = 'Context updated') {
   }
 
   const decisionContext = playbookResolution.decisionContext;
-  const legacyStrategyContext = decisionContextToLegacyStrategyContext(decisionContext);
   app.decisionContext = decisionContext;
   if (playbookResolution.mode === 'scenario') {
     try {
@@ -3952,71 +3456,6 @@ async function updateContext(reason = 'Context updated') {
     if ($('#facingSizeNum')) $('#facingSizeNum').value = decisionContext.facingSizeBb;
   }
   
-  // Try ONNX first if available
-  if (app.useOnnx && app.onnxSession) {
-     if (typeof renderLoadingStrategy === 'function') renderLoadingStrategy();
-     const apiContext = legacyStrategyContext;
-
-     const contextKey = JSON.stringify(apiContext);
-
-     
-
-     if (contextKey !== app.lastApiContext) {
-
-       try {
-
-         const liveContextText = $('#liveContextText');
-
-         if (liveContextText) liveContextText.textContent = 'Local · computing...';
-
-         
-
-         const data = await generateStrategyWithOnnx(apiContext);
-
-         console.log('ONNX Response:', data);
-
-         app.solver = { ...data, strategySource: STRATEGY_SOURCES.ONNX_MODEL };
-
-         app.cachedStrategy = data.strategy;
-
-         app.lastApiContext = contextKey;
-
-         
-
-         if (liveContextText) liveContextText.textContent = 'Local · ONNX';
-
-       } catch (err) {
-
-         console.error("ONNX Error:", err);
-
-         app.useOnnx = false;
-
-         // Show user-friendly error message
-         const liveContextText = $('#liveContextText');
-         if (liveContextText) {
-           liveContextText.textContent = 'Local · JS Fallback';
-           liveContextText.style.color = 'var(--orange)';
-         }
-
-         // Fallback to JS math
-         console.log("Falling back to enhanced JS math system");
-
-       }
-
-     } else {
-
-       if (app.cachedStrategy) {
-
-         app.solver = { ...app.solver, strategy: app.cachedStrategy };
-
-       }
-
-     }
-
-  }
-
-  
-
   const strategyResult = actionProfile(null, decisionContext);
   const profile = strategyResultToLegacyProfile(strategyResult);
   const meaningfulActions = strategyResult.actions.filter((entry) => entry.probability >= 0.05).length;
@@ -4105,10 +3544,7 @@ async function updateContext(reason = 'Context updated') {
     sourceBadge.textContent = typeof strategySourceDisplayLabel === 'function'
       ? strategySourceDisplayLabel(strategyResult.source)
       : strategyResult.source;
-    const sourceTone = strategyResult.source.startsWith('heuristic_') ? 'heuristic'
-      : strategyResult.source === 'local_tree' ? 'experimental'
-      : strategyResult.source === 'onnx_model' || strategyResult.source === 'api' ? 'available'
-      : 'info';
+    const sourceTone = strategyResult.source.startsWith('heuristic_') ? 'heuristic' : 'info';
     sourceBadge.className = `badge status-badge status-badge--${sourceTone}`;
   }
 
@@ -4260,507 +3696,6 @@ async function updateContext(reason = 'Context updated') {
       }
     }));
   }
-}
-
-
-
-// ---------------------------------------------------------------------------
-
-// ONNX Runtime Web Integration
-
-// ---------------------------------------------------------------------------
-
-
-
-async function loadOnnxModel() {
-
-  try {
-
-    console.log('Loading ONNX model...');
-
-    
-
-    // Update status to loading
-
-    setStrategySourceStatus('loading', 'Loading model');
-
-    
-
-    if (typeof ort === 'undefined') {
-
-      console.error('ONNX Runtime not loaded - ort is undefined');
-
-      toast('ONNX Runtime library not loaded', 'error');
-
-      setStrategySourceStatus('unavailable', 'Model unavailable · heuristic');
-
-      return false;
-
-    }
-
-    
-
-    console.log('ORT available, configuring WASM backend...');
-
-    
-
-    // Configure ONNX Runtime for single-threaded mode (no cross-origin isolation)
-
-    ort.env.wasm.numThreads = 1;  // Single thread to avoid cross-origin issues
-    ort.env.wasm.wasmPaths = './';
-
-    
-
-    console.log('Attempting to load embedded ONNX model...');
-
-    
-
-    // Try loading embedded model first (no external data files)
-
-    const modelPaths = [
-    'model.onnx',
-    '/model.onnx',
-    'solver-model/model_embedded.onnx',
-  ]
-
-    
-
-    for (const modelPath of modelPaths) {
-
-      try {
-
-        console.log(`Trying to load model from: ${modelPath}`);
-
-        const response = await fetch(modelPath);
-
-        if (!response.ok) throw new Error(`Model file not found at ${modelPath}`);
-
-        const arrayBuffer = await response.arrayBuffer();
-
-        const session = await ort.InferenceSession.create(arrayBuffer);
-
-        app.onnxSession = session;
-
-        app.useOnnx = true;
-
-        console.log(`ONNX model loaded successfully from ${modelPath}`);
-
-        toast('ONNX model loaded successfully', 'success');
-
-        
-
-        // Update status to connected
-
-        setStrategySourceStatus('available', 'ONNX model');
-
-        
-
-        return true;
-
-      } catch (fetchError) {
-
-        console.log(`Failed to load from ${modelPath}:`, fetchError.message);
-
-        continue;
-
-      }
-
-    }
-
-    
-
-    throw new Error('All model paths failed');
-
-  } catch (err) {
-
-    console.error('Failed to load ONNX model:', err);
-
-    toast('Failed to load ONNX: ' + err.message, 'error');
-
-    app.useOnnx = false;
-
-    
-
-    // Update status to offline
-
-    setStrategySourceStatus('unavailable', 'Model unavailable · heuristic');
-
-    
-
-    return false;
-
-  }
-
-}
-
-
-
-async function computeVillainPriorWithPreflopONNX(context) {
-    let session;
-    try {
-        session = await window.onnxLazyLoader.getSession('preflop', 'student');
-    } catch(e) {
-        return []; // fail gracefully if preflop model isn't available
-    }
-    const RANKS = '23456789TJQKA';
-    const weights = [];
-    const dummyInputs = new Float32Array(121);
-    
-    for (let i = 0; i < 13; i++) {
-        for (let j = 0; j < 13; j++) {
-            const r1 = RANKS[i], r2 = RANKS[j];
-            let hand = i===j ? r1+r2 : (i>j ? r1+r2+'o' : r2+r1+'s');
-            
-            const inputTensor = new ort.Tensor('float32', dummyInputs, [1, 121]);
-            const posTensor = new ort.Tensor('int64', BigInt64Array.from([1n]), [1]); // villain dummy pos
-            try {
-                // Try different input combinations similar to logic.js main flow
-                let out;
-                try {
-                    out = await session.run({ state_features: inputTensor, relative_pos: posTensor });
-                } catch(e) {
-                    out = await session.run({ input: inputTensor });
-                }
-                const p = out.policy ? out.policy.data : out.output.data;
-                const playProb = 1.0 - p[0]; // Assuming index 0 is fold
-                weights.push({ hand, weight: Math.max(0.01, playProb) });
-            } catch (e) {
-                weights.push({ hand, weight: 1.0 }); // Uniform prior if failure
-            }
-        }
-    }
-    return weights;
-}
-
-function getEquityWithWorker(heroHandStr, board, iterations, villainWeights) {
-    return new Promise((resolve) => {
-        const worker = new Worker('equity.worker.js');
-        worker.onmessage = (e) => {
-            if (e.data.type === 'EQUITY_RESULT') {
-                resolve(e.data.payload.heroEquity / 100.0);
-                worker.terminate();
-            }
-        };
-        const heroHand = [
-            heroHandStr[0] + (heroHandStr.length === 3 && heroHandStr[2] === 's' ? 's' : 's'), 
-            heroHandStr[1] + (heroHandStr.length === 3 && heroHandStr[2] === 's' ? 's' : 'h')
-        ];
-        worker.postMessage({
-            type: 'SIMULATE_EQUITY',
-            heroHand: heroHand,
-            board: board || [],
-            iterations: iterations,
-            villainWeights: villainWeights
-        });
-    });
-}
-
-let onnxAbortController = null;
-
-async function generateStrategyWithOnnx(context) {
-  if (onnxAbortController) {
-    onnxAbortController.abort();
-  }
-  onnxAbortController = new AbortController();
-  const signal = onnxAbortController.signal;
-  
-  try {
-  const street = currentStreet(context.board) || 'flop';
-  const session = await window.onnxLazyLoader.getSession(street, 'student');
-
-  const RANKS = '23456789TJQKA';
-  const ACTIONS = ['unopened', 'raise', '3bet', '4bet', 'bet', 'check'];
-
-  const posIdx = modelPositionIndex(context.hero_pos);
-  const rawAct = ACTIONS.indexOf(context.lastAction);
-  const actionIdx = rawAct !== -1 ? rawAct : 0;
-
-  const strategyMap = {};
-  const strategySourceByHand = {};
-  const handOrder = [];
-  const batchInputs = new Float32Array(169 * 121);
-  let handCount = 0;
-
-  // Encode all 169 hand combinations into a single batch buffer for zero-lag 1-pass ONNX inference
-  for (let i = 0; i < 13; i++) {
-    for (let j = 0; j < 13; j++) {
-      const r1 = RANKS[i], r2 = RANKS[j];
-      let hand, hole;
-
-      if (i === j) {
-        hand = r1 + r2;
-        hole = [r1 + 's', r2 + 'h'];
-      } else if (i > j) {
-        hand = r1 + r2 + 'o';
-        hole = [r1 + 's', r2 + 'h'];
-      } else {
-        hand = r2 + r1 + 's';
-        hole = [r2 + 's', r1 + 's'];
-      }
-
-      // Check board conflict
-      const conflict = context.board && context.board.some(c => hole.includes(c));
-      if (conflict) {
-        strategyMap[hand] = { [context.hero_pos]: { "impossible": 100 } };
-        continue;
-      }
-
-      handOrder.push(hand);
-      const offset = handCount * 121;
-      handCount++;
-
-      // Encode single hand features (121 dimensions)
-      // Model.onnx feature x[56] was trained with 0.0 for unopened preflop spots.
-      const inputFacing = normalizeFacingSize(context.lastAction, context.facingSize);
-      batchInputs[offset + 52] = context.table_size / 9.0;
-      batchInputs[offset + 53] = context.stack / 200.0;
-      batchInputs[offset + 54] = context.rake / 10.0;
-      batchInputs[offset + 55] = Math.min(1.0, context.potSize / 200.0);
-      batchInputs[offset + 56] = Math.min(1.0, inputFacing / 200.0);
-      batchInputs[offset + 57 + posIdx] = 1.0;
-      batchInputs[offset + 63 + actionIdx] = 1.0;
-
-      // Encode cards
-      for (const card of hole) {
-        const rankIdx = RANKS.indexOf(card[0]);
-        const suitIdx = ['s', 'h', 'd', 'c'].indexOf(card[1]);
-        if (rankIdx >= 0 && suitIdx >= 0) {
-          batchInputs[offset + rankIdx * 4 + suitIdx] = 1.0;
-        }
-      }
-      // Encode board cards
-      if (context.board) {
-        for (const card of context.board) {
-          if (!card) continue;
-          const rankIdx = RANKS.indexOf(card[0]);
-          const suitIdx = ['s', 'h', 'd', 'c'].indexOf(card[1]);
-          if (rankIdx >= 0 && suitIdx >= 0) {
-            batchInputs[offset + 69 + rankIdx * 4 + suitIdx] = 1.0;
-          }
-        }
-      }
-
-    }
-  }
-
-  // Process each hand individually due to WASM static batch shape limitations
-  for (let idx = 0; idx < handOrder.length; idx++) {
-    if (idx % 20 === 0) await new Promise(r => requestAnimationFrame(r));
-    const hand = handOrder[idx];
-    try {
-      const subBuffer = batchInputs.subarray(idx * 121, (idx + 1) * 121);
-      const inputTensor = new ort.Tensor('float32', subBuffer, [1, 121]);
-      
-      // Create position tensor as required by the model
-      const posTensor = new ort.Tensor('int64', BigInt64Array.from([BigInt(posIdx)]), [1]);
-      
-      // Try different input combinations for compatibility
-      let output;
-      try {
-        // Try combined single input first
-        output = await session.run({ input: inputTensor });
-      } catch (inputErr) {
-        try {
-          // Try separate state_features and relative_position inputs
-          output = await session.run({ 
-            state_features: inputTensor,
-            relative_pos: posTensor
-          });
-        } catch (altErr) {
-          // Try just state_features alone
-          try {
-            output = await session.run({ state_features: inputTensor });
-          } catch (stateErr) {
-            throw new Error(`All input combinations failed: ${inputErr.message}, ${altErr.message}, ${stateErr.message}`);
-          }
-        }
-      }
-      
-      const p = output.policy ? output.policy.data : output.output.data;
-      
-      // Calculate Entropy of ONNX policy output (Confidence Metric)
-      let entropy = 0;
-      for (let i = 0; i < p.length; i++) {
-        if (p[i] > 0) entropy -= p[i] * Math.log2(p[i]);
-      }
-      
-      // Flat if entropy is close to max. For 5 actions, max is ~2.32
-      const isFlat = entropy > 2.2;
-      const isPotCommitted = (context.stack / Math.max(context.potSize, 1)) < 1.5;
-      
-      let actions;
-      if (isFlat || isPotCommitted) {
-        // Bypass ML and use Fallback Math Engine with NN-Weighted Monte Carlo
-        if (!context.villainWeightsCache) {
-          // Mocking the query to preflop prior distribution
-          context.villainWeightsCache = await computeVillainPriorWithPreflopONNX(context);
-        }
-        
-        // Wait for equity simulation from worker
-        const equity = await getEquityWithWorker(hand, context.board, 2000, context.villainWeightsCache);
-        
-        // Pot Commitment Thresholds
-        if (isPotCommitted && equity > 0.65) {
-          actions = { "raise": 100 }; // Default to high-frequency All-In push
-        } else {
-          // Standard heuristic math fallback
-          actions = applyHeuristicToPrediction(p, context, posIdx, actionIdx, hand);
-          // (Can apply equity mathematically to adjust actions, but heuristic works for now)
-        }
-      } else {
-        actions = applyHeuristicToPrediction(p, context, posIdx, actionIdx, hand);
-      }
-      
-      strategyMap[hand] = { [context.hero_pos]: actions };
-    } catch (innerErr) {
-      console.error(`ONNX Inference Error for hand ${hand}:`, innerErr);
-      // Ultimate Failsafe: If even individual ONNX inference fails, use JS math
-      let fbActions = { "fold": 100 };
-      if (!context.board || context.board.length === 0) {
-        const r1 = hand[0];
-        const r2 = hand[1];
-        const isSuited = hand.length === 3 && hand[2] === 's';
-        const isPair = r1 === r2;
-        const facingSize = normalizeFacingSize(context.lastAction, context.facingSize);
-        const fb = calculatePreflopFallbackStrategy(r1, r2, isPair, isSuited, [context.hero_pos], context.lastAction, facingSize, context.potSize || 1.5, context.stack || 30);
-        if (fb && fb[context.hero_pos]) {
-          fbActions = fb[context.hero_pos];
-        }
-      }
-      strategyMap[hand] = { [context.hero_pos]: fbActions };
-      strategySourceByHand[hand] = STRATEGY_SOURCES.HEURISTIC_PREFLOP;
-    }
-  }
-
-  return {
-    title: "Local ONNX Strategy",
-    positions: [context.hero_pos],
-    strategy: strategyMap,
-    strategySource: STRATEGY_SOURCES.ONNX_MODEL,
-    strategySourceByHand
-  };
-  } finally {
-    // We don't reset the controller here because a new one might have been created
-  }
-}
-
-function getHandTier(hand) {
-  if (!hand) return 5;
-  const rank1 = hand[0];
-  const rank2 = hand[1];
-  const suited = hand.length === 3 && hand[2] === 's';
-  const pair = rank1 === rank2;
-
-  const R = '23456789TJQKA';
-  const v1 = R.indexOf(rank1);
-  const v2 = R.indexOf(rank2);
-
-  // Tier 1: Monster (AA-TT, AKs, AKo, AQs)
-  if (pair && v1 >= 8) return 1;
-  if (hand === 'AKs' || hand === 'AKo' || hand === 'AQs') return 1;
-
-  // Tier 2: Strong (99-77, AQo, AJs, AJo, ATs, KQs, KQo, KJs)
-  if (pair && v1 >= 5) return 2;
-  if (hand === 'AQo' || hand === 'AJs' || hand === 'AJo' || hand === 'ATs' || hand === 'KQs' || hand === 'KQo' || hand === 'KJs') return 2;
-
-  // Tier 3: Medium (66-22, ATo, KTs, QJs, QTs, JTs, 98s, 87s)
-  if (pair) return 3;
-  if (v1 >= 9 && v2 >= 8) return 3;
-  if (suited && Math.abs(v1 - v2) === 1 && v2 >= 3) return 3;
-
-  // Tier 4: Speculative
-  if (suited && (v1 >= 8 || v2 >= 8)) return 4;
-  return 5;
-}
-
-function applyHeuristicToPrediction(p, context, posIdx, actionIdx, hand) {
-  // Model output vector:
-  // p[0]: Open / Raise, p[1]: Call, p[2]: Fold, p[3]: Check, p[4]: Jam / All-In
-  const raiseVal = (p[0] || 0) + (p[4] || 0);
-  const passiveVal = (p[1] || 0) + (p[3] || 0);
-  const foldVal = p[2] || 0;
-
-  const total = raiseVal + passiveVal + foldVal || 1.0;
-
-  let openPct = Math.round((raiseVal / total) * 100);
-  let callPct = Math.round((passiveVal / total) * 100);
-  let foldPct = 100 - openPct - callPct;
-
-    // Incorporate Playstyle (Tightness) Slider extrapolation
-    const L = (typeof app !== "undefined" && app.settings && app.settings.tightness !== undefined) ? app.settings.tightness / 100.0 : 0.0;
-    if (L > 0 && foldPct > 0) {
-      // Extrapolate outputs for "loose" playstyles by converting folds to calls/raises
-      const foldReduction = foldPct * (0.4 * L); // Max 40% reduction of folds
-      foldPct -= foldReduction;
-      callPct += foldReduction * 0.75; // Most goes to passive calling (typical loose behavior)
-      openPct += foldReduction * 0.25; 
-    }
-
-    // Incorporate Opponent Playstyle (Tightness) Slider extrapolation (Exploitative Adjustments)
-    const oppL = (typeof app !== "undefined" && app.settings && app.settings.oppTightness !== undefined) ? app.settings.oppTightness / 100.0 : 0.0;
-    if (oppL > 0 && hand) {
-      const tier = getHandTier(hand);
-      if (tier <= 2) {
-        // Value hands: Exploit loose opponents by raising more, calling less.
-        const callShift = callPct * (0.3 * oppL);
-        callPct -= callShift;
-        openPct += callShift;
-      } else if (tier >= 4) {
-        // Bluffs / Trash: Exploit loose opponents by bluffing less (folding more).
-        const bluffReduction = openPct * (0.5 * oppL);
-        openPct -= bluffReduction;
-        foldPct += bluffReduction;
-      }
-    }
-
-    openPct = Math.round(openPct);
-    callPct = Math.round(callPct);
-    foldPct = 100 - openPct - callPct;
-
-  // GTO Monotonicity & Rationality Guard
-  if (hand) {
-    const tier = getHandTier(hand);
-    const pot = context.potSize || 1.5;
-    const facing = context.facingSize || 0;
-    const potOdds = facing > 0 ? (facing / (pot + facing)) : 0;
-
-    // Never fold when facing 0bb (you can check and stay in the game for free)
-    if (facing === 0) {
-      if (foldPct > 0) {
-        callPct += foldPct;
-        foldPct = 0;
-      }
-    }
-
-    if (tier === 1) { // Monster hands: AA, KK, QQ, JJ, TT, AKs, AKo, AQs
-      // Tier 1 hands MUST NEVER fold preflop unopened or in standard pots!
-      foldPct = 0;
-      openPct = Math.max(85, openPct);
-      callPct = 100 - openPct;
-    } else if (tier <= 2 && facing > 0 && potOdds <= 0.44) {
-      const maxFold = 15;
-      if (foldPct > maxFold) {
-        const excessFold = foldPct - maxFold;
-        foldPct = maxFold;
-        const continueSum = openPct + callPct || 1;
-        openPct += Math.round(excessFold * (openPct / continueSum));
-        callPct = 100 - openPct - foldPct;
-      }
-    } else if (tier <= 2 && facing === 0) { // Unopened RFI
-      const maxFold = 0; // facing 0bb means checking is free, handled above, but just in case
-      if (foldPct > maxFold) {
-        const excessFold = foldPct - maxFold;
-        foldPct = maxFold;
-        openPct += excessFold;
-      }
-    }
-  }
-
-  return {
-    "open": Math.max(0, openPct),
-    "call": Math.max(0, callPct),
-    "fold": Math.max(0, foldPct)
-  };
 }
 
 
@@ -5341,48 +4276,6 @@ function bindSliderPair(rangeId, numberId, callback) {
 
 
 
-function loadSolverFile(file) {
-
-  const reader = new FileReader();
-
-  reader.onload = () => {
-
-    try {
-
-      app.solver = normalizeTree(JSON.parse(reader.result), file.name);
-
-      if (app.solver.stack) {
-
-        $('#stack').value = app.solver.stack;
-
-        $('#stackNum').value = app.solver.stack;
-
-      }
-
-      $('#sourceBadge').textContent = 'LOCAL TREE';
-
-      toast(`Loaded ${app.solver.title}`, 'success');
-
-      updateContext('Solver tree loaded');
-
-    } catch (error) {
-
-      app.solver = null;
-
-      toast(error.message || 'Could not parse solver JSON.', 'error');
-
-      updateContext('Solver import failed');
-
-    }
-
-  };
-
-  reader.readAsText(file);
-
-}
-
-
-
 function applyDeckStyle(is4Color) {
   if (typeof is4Color === 'string') is4Color = (is4Color === '4-color' || is4Color === 'true');
   app.settings.fourColorDeck = is4Color;
@@ -5719,30 +4612,6 @@ function bindEvents() {
 
 
 
-  if ($('#solverFile')) $('#solverFile').addEventListener('change', (event) => {
-
-    const [file] = event.target.files;
-
-    if (file) {
-
-      loadSolverFile(file);
-
-    }
-
-    event.target.value = '';
-
-  });
-
-  
-
-  // Wire both topbar & settings ONNX buttons to toggleOnnxModel
-
-  if ($('#connectApiBtn')) $('#connectApiBtn').addEventListener('click', toggleOnnxModel);
-
-  if ($('#useOnnxToggle')) $('#useOnnxToggle').addEventListener('click', toggleOnnxModel);
-
-  
-
   if ($('#calculate')) $('#calculate').addEventListener('click', calculateEquity);
 
   if ($('#cancelEquity')) $('#cancelEquity').addEventListener('click', cancelEquityCalculation);
@@ -5815,36 +4684,6 @@ function bindEvents() {
     updateContext('Theme changed');
 
   });
-
-  if ($('#autoConnectApi')) $('#autoConnectApi').addEventListener('click', () => {
-
-    const enabled = $('#autoConnectApi').classList.toggle('on');
-
-    $('#autoConnectApi').setAttribute('aria-pressed', enabled);
-
-    localStorage.setItem('autoConnectApi', enabled);
-
-    if (enabled && !app.useOnnx && $('#connectApiBtn')) $('#connectApiBtn').click();
-
-  });
-
-  
-
-  if (localStorage.getItem('autoConnectApi') === 'true') {
-
-      if ($('#autoConnectApi')) {
-
-        $('#autoConnectApi').classList.add('on');
-
-        $('#autoConnectApi').setAttribute('aria-pressed', 'true');
-
-      }
-
-      setTimeout(() => { if ($('#connectApiBtn')) $('#connectApiBtn').click(); }, 500);
-
-  }
-
-  
 
   // Fix Rake Value initial state bug
 
@@ -6092,77 +4931,6 @@ function initThemeSwatches() {
 
 
 
-async function toggleOnnxModel() {
-  const useBtn = $('#useOnnxBtn');
-
-  
-
-  if (app.useOnnx) {
-
-    app.useOnnx = false;
-
-    setStrategySourceStatus('fallback', 'Heuristic fallback');
-
-    if (useBtn) {
-
-      useBtn.textContent = '⚡ ' + t('Use Local ONNX');
-
-      useBtn.classList.remove('active');
-
-    }
-
-    toast(t('ONNX Neural Net disabled'), 'info');
-
-    updateContext('ONNX Disabled');
-
-  } else {
-
-    setStrategySourceStatus('loading', 'Loading model');
-
-    if (useBtn) useBtn.textContent = '⏳ ' + t('Loading ONNX...');
-
-    const loaded = await loadOnnxModel();
-
-    if (loaded) {
-
-      app.useOnnx = true;
-
-      setStrategySourceStatus('available', 'ONNX model');
-
-      if (useBtn) {
-
-        useBtn.textContent = '⚡ ' + t('ONNX Active');
-
-        useBtn.classList.add('active');
-
-      }
-
-      toast(t('ONNX Neural Net connected'), 'success');
-
-      updateContext('Switched to ONNX');
-
-    } else {
-
-      setStrategySourceStatus('unavailable', 'Model unavailable · heuristic');
-
-      if (useBtn) {
-
-        useBtn.textContent = '⚡ ' + t('Use Local ONNX');
-
-        useBtn.classList.remove('active');
-
-      }
-
-      toast(t('Failed to load ONNX model'), 'error');
-
-    }
-
-  }
-
-}
-
-
-
 function init() {
 
   try {
@@ -6234,15 +5002,6 @@ function init() {
     if (selectedTheme !== persistedTheme) localStorage.setItem('appTheme', selectedTheme);
     document.documentElement.dataset.theme = selectedTheme;
     if ($('#themeColor')) $('#themeColor').value = selectedTheme;
-
-    const defaultAutoConnect = 'true';
-    localStorage.setItem('autoConnectApi', defaultAutoConnect);
-    if ($('#autoConnectApi')) {
-      $('#autoConnectApi').classList.add('on');
-      $('#autoConnectApi').setAttribute('aria-pressed', 'true');
-    }
-
-    
 
     initThemeSwatches();
 
@@ -8249,9 +7008,7 @@ function renderTrainingSource(exercise) {
   const label = strategySourceDisplayLabel(source);
   sourceElement.textContent = label;
   sourceElement.title = `Strategy source: ${label}. Exercise seed ${exercise.seed}.`;
-  const tone = source.startsWith('heuristic_') ? 'heuristic'
-    : source === 'local_tree' ? 'experimental'
-      : source === 'onnx_model' || source === 'api' ? 'available' : 'info';
+  const tone = source.startsWith('heuristic_') ? 'heuristic' : 'info';
   sourceElement.className = `badge status-badge status-badge--${tone}`;
 }
 

@@ -6,7 +6,6 @@ const { pathToFileURL } = require('url');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const LOGIC_PATH = path.join(REPO_ROOT, 'app', 'src', 'core', 'logic.js');
-const WORKER_PATH = path.join(REPO_ROOT, 'app', 'equity.worker.js');
 const PYTHON_ADAPTER_PATH = path.join(__dirname, 'python_evaluator_adapter.py');
 
 function sliceBetween(source, startMarker, endMarker) {
@@ -78,46 +77,13 @@ function createLogicHarness() {
   return sandbox.__qa001;
 }
 
-function createWorkerHarness() {
-  const workerCode = fs.readFileSync(WORKER_PATH, 'utf8');
-  const sandbox = {
-    self: { postMessage() {} },
-    console,
-    Date,
-    Float32Array,
-    Int32Array,
-    Map,
-    Math,
-    Set,
-    Uint8Array,
-  };
-
-  vm.createContext(sandbox);
-  vm.runInContext(`${workerCode}
-    self.__qa001 = { CARD_CODES, evaluate5, evaluateHandFast };
-  `, sandbox, { filename: WORKER_PATH });
-
-  const api = sandbox.self.__qa001;
-  return {
-    evaluate(cards) {
-      const encoded = new Int32Array(cards.map((card) => api.CARD_CODES[card]));
-      return api.evaluateHandFast(encoded, encoded.length);
-    }
-  };
-}
-
 const logicHarness = createLogicHarness();
-const workerHarness = createWorkerHarness();
 const equityModulePromise = import(pathToFileURL(
   path.join(REPO_ROOT, 'shared', 'poker-domain', 'equity.js')
 ).href);
 
 function evaluateProduction(cards) {
   return logicHarness.scoreSeven(cards);
-}
-
-function evaluateWorker(cards) {
-  return workerHarness.evaluate(cards);
 }
 
 function evaluatePython(hands) {
@@ -177,7 +143,6 @@ function renderProductionEquityDeck(state, picker) {
 module.exports = {
   evaluateProduction,
   evaluatePython,
-  evaluateWorker,
   renderProductionEquityDeck,
   runProductionEquity,
 };

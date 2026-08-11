@@ -36,7 +36,6 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
 CustomHandler.extensions_map.update({
     '.mjs': 'application/javascript',
     '.wasm': 'application/wasm',
-    '.onnx': 'application/octet-stream',
     '.js': 'application/javascript',
     '.json': 'application/json',
     '.css': 'text/css',

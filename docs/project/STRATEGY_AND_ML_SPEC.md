@@ -6,19 +6,17 @@ The ML system provides fast strategic approximations. It is not required to prod
 
 ## 2. Strategy hierarchy
 
-Current intended hierarchy:
+Current browser production hierarchy:
 
 ```text
-Preflop → trained strategy model
-Flop    → trained approximation
-Turn    → trained approximation + fallback
-River   → deterministic range/equity mathematics
+DecisionContext → deterministic fallback → StrategyResult
 ```
 
-Future:
+Target hierarchy after validated providers exist:
 
 ```text
 MCCFR / solver → training-data source
+validated, versioned model provider → optional strategy source
 depth-limited solver → optional runtime enhancement
 ```
 
@@ -128,9 +126,11 @@ A useful river fallback should consider:
 
 A future small river CFR solver is optional.
 
-## 10. Browser model
+## 10. Future browser model
 
-Models are lazy-loaded by street/type.
+There is no current browser production model. Do not reconnect the retired browser ONNX stack.
+
+A future model must use a new versioned StrategyProvider/model contract and must be validated against its documented training source before it can become production authority.
 
 Do not optimize model size prematurely.
 

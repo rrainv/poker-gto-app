@@ -357,9 +357,8 @@ test('shadow mismatches cannot alter the legacy context or actionProfile result'
   const session = createDealtSession();
   const canonical = canonicalContext(session);
   const legacyContext = { ...legacyEquivalent(canonical), potBb: canonical.potBb + 1 };
-  const solver = { strategy: { AA: { BTN: { Open: 100 } } } };
   const beforeContext = structuredClone(legacyContext);
-  const beforeProfile = legacy.strategyProfile(legacyContext, solver);
+  const beforeProfile = legacy.strategyProfile(legacyContext);
 
   const shadow = runDecisionContextShadowComparison({
     enabled: true,
@@ -367,7 +366,7 @@ test('shadow mismatches cannot alter the legacy context or actionProfile result'
     legacyContext,
     heroPlayerId: session.getState().actingPlayerId,
   });
-  const afterProfile = legacy.strategyProfile(legacyContext, solver);
+  const afterProfile = legacy.strategyProfile(legacyContext);
 
   assert.equal(shadow.status, 'compared');
   assert.equal(shadow.comparison.matches, false);

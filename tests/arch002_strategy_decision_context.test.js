@@ -86,7 +86,7 @@ test('preflop fallback entry preserves six-max, 10-max, raise, and 3-bet behavio
     );
     assert.deepEqual(qa.fallbackForDecisionContext(context), expected);
 
-    const profile = qa.noTreeStrategyProfile(context);
+    const profile = qa.fallbackStrategyProfile(context);
     assert.equal(profile.source, 'MATH FALLBACK');
     assert.equal(profile.actions[0].value + profile.actions[1].value, Math.round(Math.max(expected.open, expected.call, expected.fold) * 100)
       + Math.round([expected.open, expected.call, expected.fold].sort((a, b) => b - a)[1] * 100));
@@ -97,7 +97,7 @@ test('Home and ClubGG contexts produce identical strategy when poker decision in
   const home = decisionContext({ tableSize: 9, heroPosition: 'HJ', rakeMode: 'off' });
   const club = decisionContext({ tableSize: 9, heroPosition: 'HJ', rakeMode: 'fixed' });
 
-  assert.deepEqual(qa.noTreeStrategyProfile(club), qa.noTreeStrategyProfile(home));
+  assert.deepEqual(qa.fallbackStrategyProfile(club), qa.fallbackStrategyProfile(home));
   assert.equal(home.totalForcedContributionBb, 0);
   assert.equal(club.totalForcedContributionBb, 0.9);
 });
@@ -126,56 +126,11 @@ test('postflop strategy entry uses DecisionContext on flop, turn, and river', ()
   }
 });
 
-test('local-tree matching uses DecisionContext table, action, stack, and position', () => {
-  const solver = {
-    stack: 100,
-    positions: { BTN: { AKs: 'Raise 100' } },
-  };
-
-  assert.equal(qa.localTreeContext(decisionContext(), solver).available, true);
-  assert.match(
-    qa.localTreeContext(decisionContext({ tableSize: 10 }), solver).reason,
-    /six-max/,
-  );
-  assert.match(
-    qa.localTreeContext(decisionContext({ lastAction: 'raise', facingSizeBb: 2.5 }), solver).reason,
-    /RFI-only/,
-  );
-  assert.match(
-    qa.localTreeContext(decisionContext({ stackBb: 80 }), solver).reason,
-    /does not match/,
-  );
-  assert.match(
-    qa.localTreeContext(decisionContext({ heroPosition: 'CO' }), solver).reason,
-    /hero position/,
-  );
-});
-
-test('model-backed actionProfile uses DecisionContext position and prior action', () => {
-  const solver = {
-    strategy: {
-      AKs: {
-        BTN: { Open: 70, Fold: 30 },
-        CO: { Open: 40, Fold: 60 },
-      },
-    },
-  };
-
-  const unopened = qa.strategyProfile(decisionContext(), solver);
-  const raised = qa.strategyProfile(decisionContext({ lastAction: 'raise', facingSizeBb: 2.5 }), solver);
-  const cutoff = qa.strategyProfile(decisionContext({ heroPosition: 'CO' }), solver);
-
-  assert.equal(unopened.best, 'OPEN 3 BB');
-  assert.equal(raised.best, 'RAISE 3x');
-  assert.equal(cutoff.actions[0].name, 'Fold');
-});
-
 test('strategy-facing consumers contain no independent poker-state control reads', () => {
-  const tree = functionSource('function treeContext(', 'function isAllInActionName(');
-  const noTree = functionSource('function noTreeProfile(', 'function actionProfile(');
+  const fallback = functionSource('function fallbackStrategyResult(', 'function actionProfile(');
   const profile = functionSource('function actionProfile(', 'function setFrequency(');
 
-  for (const [name, source] of Object.entries({ tree, noTree, profile })) {
+  for (const [name, source] of Object.entries({ fallback, profile })) {
     assert.doesNotMatch(source, /selectedValue\('#(?:heroPos|lastAction)'\)/, name);
     assert.doesNotMatch(source, /numericValue\('#(?:players|stack|potSize|facingSize)'/, name);
     assert.doesNotMatch(source, /app\.gto/, name);
