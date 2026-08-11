@@ -160,9 +160,9 @@ Every production model needs metadata containing:
 
 ## 6. Legacy policy
 
-Do not delete experimental implementations simply because they are obsolete.
+Retain experimental implementations only while they have an active research purpose.
 
-Move them to clearly marked legacy/research locations when practical.
+When a prototype is obsolete, unreferenced, and outside the retained architecture, remove it from the current tree; Git history is the archive. Do not keep it in a misleading `legacy` directory.
 
 Production code must have one obvious canonical path.
 

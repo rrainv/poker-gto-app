@@ -8,9 +8,9 @@ Version: `riverline-hu-preflop-100bb/v1`
 
 Any strategy later solved for this game is an equilibrium of **this abstraction**. It is not automatically equivalent to full-game 100bb heads-up no-limit Hold'em GTO. SOLVER-001 contains no trained strategy, dataset, model, ONNX artifact, or production UI integration.
 
-## Existing solver/training audit
+## Retired prototype audit
 
-Executable behavior, rather than names or comments, gives the following classification.
+CLEANUP-001D removed the obsolete root prototype training, pseudo-CFR model, and checked-in tree-data directories. The table below is retained only as a historical audit of the components that were removed; none is part of the current repository or the bounded solver.
 
 | Component | Actual behavior | Classification | Recommendation |
 |---|---|---|---|
