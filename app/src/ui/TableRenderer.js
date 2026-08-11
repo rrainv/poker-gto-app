@@ -24,7 +24,7 @@ class TableRenderer {
 
   initSVG() {
     this.container.innerHTML = `
-      <svg id="poker-table-svg" class="riverline-poker-table" viewBox="0 0 800 500" width="100%" role="img" aria-labelledby="poker-table-title" preserveAspectRatio="xMidYMid meet">
+      <svg id="poker-table-svg" class="riverline-poker-table" viewBox="0 -40 800 560" width="100%" role="img" aria-labelledby="poker-table-title" preserveAspectRatio="xMidYMid meet">
         <title id="poker-table-title">Riverline poker table</title>
         <defs>
           <linearGradient id="riverlineTableRail" x1="0" y1="0" x2="0" y2="1">
@@ -89,13 +89,14 @@ class TableRenderer {
   renderCard(rank, suit, index, isCommunity = false) {
     const presentation = TABLE_SUIT_PRESENTATION[suit] || { id: 'unknown', symbol: suit || '?' };
     const visualRank = rank === 'T' && document.documentElement.dataset.cardRankStyle === 'full-ten' ? '10' : rank;
+    const rankClass = visualRank === '10' ? ' table-card-rank--ten' : '';
     const startX = isCommunity ? 150 : 400;
     const startY = isCommunity ? 0 : 250;
 
     return `
       <g class="card-group poker-card-svg card--known card--suit-${presentation.id}" data-card-state="known" style="transform: translate(${startX}px, ${startY}px); transition-delay: ${index * 70}ms;">
         <rect class="table-card-face" x="0" y="0" width="40" height="58" rx="4" ry="4" />
-        <text class="table-card-rank" x="6" y="17">${visualRank}</text>
+        <text class="table-card-rank${rankClass}" x="6" y="17">${visualRank}</text>
         <text class="table-card-suit" x="6" y="35">${presentation.symbol}</text>
       </g>
     `;

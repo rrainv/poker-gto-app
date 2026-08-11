@@ -818,6 +818,7 @@
 
             <div class="playbook-inline-heading"><span class="label" data-i18n="Betting context">Betting context</span><small data-i18n="Manual values for this study spot">Manual values for this study spot</small></div>
 
+            <div class="playbook-context-grid">
             <div class="playbook-context-primary">
 
               <label class="playbook-context-field"><span data-i18n="Position">Position</span><select id="heroPos" class="quick-select control-select">
@@ -888,6 +889,7 @@
 
               </div>
 
+            </div>
             </div>
 
           </div>
@@ -1428,7 +1430,6 @@
               <p class="muted">Probabilities from the displayed strategy source; no EV is implied.</p>
               <div class="training-frequency-stack frequency-stack is-empty" id="trainingFrequencyStack" role="img" aria-label="Strategy frequencies unavailable"></div>
               <div id="trainingFrequencyRows" class="training-frequency-rows"></div>
-              <div class="training-wheel-secondary" aria-label="Secondary frequency view"><div class="wheel" id="trainingWheel"><div class="wheel-inner"><span id="trainingWheelCenterText">-</span></div></div></div>
             </div>
           </section>
           <section class="panel training-session-panel" aria-labelledby="trainingSessionTitle">
@@ -1501,6 +1502,7 @@
             <div id="equityPlayers" class="equity-player-list"></div>
           </section>
 
+          <div class="equity-shared-flow">
           <section class="panel equity-cards-panel" aria-labelledby="equityCardsTitle">
             <div class="panel-head equity-section-head">
               <div>
@@ -1546,6 +1548,7 @@
             <div id="progress" class="progress-wrap" hidden aria-live="polite"><div class="progress-track" role="progressbar" aria-label="Equity calculation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill"></div></div><div class="progress-copy"><span class="progress-status">Preparing calculation…</span><span class="progress-percent">0%</span></div></div>
             <details id="equityAdvanced" class="equity-advanced"><summary data-i18n="Advanced calculation settings">Advanced calculation settings</summary><div class="equity-advanced-body"><label class="ui-field"><span data-i18n="Monte Carlo seed">Monte Carlo seed</span><div class="equity-seed-row"><input id="equitySeed" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="Generated automatically"><button id="rerollEquitySeed" class="ui-button ui-button-ghost" type="button" data-i18n="New seed">New seed</button></div><small class="muted" data-i18n="Leave blank for a generated seed. Reuse a seed for reproducible simulation.">Leave blank for a generated seed. Reuse a seed for reproducible simulation.</small></label></div></details>
           </section>
+          </div>
         </div>
 
         <div class="equity-output-stack">

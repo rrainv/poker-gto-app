@@ -271,8 +271,6 @@
 .training-frequency-row > strong { grid-column: 3; font: 750 var(--text-label-size)/1 var(--font-data); text-align: end; }
 .training-frequency-row.is-chosen { outline: 1px solid var(--border-focus); outline-offset: var(--space-1); }
 .training-frequency-row.is-best > span:first-child { color: var(--accent-primary); }
-.training-wheel-secondary { display: flex; justify-content: center; padding-top: var(--space-2); opacity: .72; }
-.training-wheel-secondary .wheel { width: 84px; height: 84px; }
 .training-stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border-subtle); border-radius: var(--radius-control); overflow: hidden; }
 .training-stat-grid > div { min-width: 0; display: grid; gap: var(--space-1); padding: var(--space-3); background: var(--surface-inset); }
 .training-stat-grid span { color: var(--text-muted); font-size: var(--text-micro-size); }
@@ -362,7 +360,6 @@
   .training-feedback,
   .training-solution-panel,
   .training-readonly-card { transition: none; animation: none; }
-  #trainingWheel { transition: none !important; transform: none !important; }
 }
 
 [data-theme="midnight"] {
@@ -7155,12 +7152,12 @@ html[data-four-color="false"] {
 }
 
 .rail-brand { position: relative; min-width: 0; padding-inline: var(--space-1); }
-.rail-brand-copy { padding-inline-end: var(--space-8); }
+.rail-brand-copy { flex: 1 1 auto; padding-inline-end: 0; }
 
 .rail-collapse-button {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 30px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   display: inline-grid;
   place-items: center;
   margin-inline-start: auto;
@@ -7228,7 +7225,8 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .is-sidebar-collapsed .rail-footer,
 .is-sidebar-collapsed .mode-nav-item > span,
 .is-sidebar-collapsed .rail-utility-label { display: none; }
-.is-sidebar-collapsed .rail-collapse-button { position: absolute; inset-inline-end: -11px; inset-block-end: -29px; z-index: 2; }
+.is-sidebar-collapsed .rail-brand { flex-direction: column; gap: var(--space-2); }
+.is-sidebar-collapsed .rail-collapse-button { position: static; margin-inline-start: 0; }
 .is-sidebar-collapsed .mode-nav-item,
 .is-sidebar-collapsed .rail-utility { justify-content: center; padding-inline: 0; }
 .is-sidebar-collapsed .rail-language { position: relative; display: flex; justify-content: center; }
@@ -7308,11 +7306,14 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .playbook-betting-context { padding: var(--space-3) var(--space-4); }
 .playbook-inline-heading { margin-bottom: var(--space-2); }
 .playbook-inline-heading small { font-size: var(--text-micro-size); }
-.playbook-context-primary { display: grid; grid-template-columns: minmax(100px, .65fr) minmax(130px, .85fr) minmax(150px, 1fr); gap: var(--space-3); align-items: end; }
+.playbook-context-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-3); align-items: end; }
+.playbook-context-primary,
+.playbook-context-sliders { display: contents; }
+.playbook-context-primary > * { grid-column: span 2; }
 .playbook-context-field { min-width: 0; display: grid; gap: var(--space-1); color: var(--text-muted); font-size: var(--text-micro-size); font-weight: 700; }
 .playbook-context-field .control-select { width: 100%; min-width: 0; min-height: 36px; padding-block: 0; font-size: var(--text-label-size); }
 .playbook-context-primary .button-push-end { width: 100%; min-height: 36px; margin: 0; }
-.playbook-context-sliders { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin: 0; }
+.playbook-context-sliders > .field { grid-column: span 3; min-width: 0; margin: 0; }
 .playbook-context-sliders .slider-container { padding: var(--space-2) var(--space-3); }
 .playbook-context-sliders .slider-header { margin-bottom: var(--space-1); }
 .playbook-betting-context > div:not(.playbook-inline-heading) { margin-bottom: var(--space-2); }
@@ -7326,7 +7327,7 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .playbook-metric-strip { margin-top: var(--space-4); }
 .playbook-metric-strip .metric { padding: var(--space-2) var(--space-3); background: var(--surface-section); }
 
-.table-wrapper { min-height: 0; max-height: 800px; margin: 0; }
+.table-wrapper { min-height: 0; max-height: 800px; margin: 0; overflow: visible; }
 .table-wrapper.collapsed {
   height: 0;
   min-height: 0;
@@ -7335,10 +7336,14 @@ button.rail-utility { width: 100%; cursor: pointer; }
   padding: 0;
   visibility: hidden;
   pointer-events: none;
+  overflow: hidden;
 }
 .table-wrapper.collapsed #visual-table-container { margin: 0; }
 .playbook-table-toggle { margin: 0; }
-#visual-table-container { margin-bottom: var(--space-4); }
+#visual-table-container { margin-bottom: var(--space-4); padding-block: var(--space-2); overflow: visible; }
+.riverline-poker-table { aspect-ratio: 10 / 7; }
+.table-card-rank--ten { font-size: 12px; letter-spacing: -.08em; }
+.playbook-decision-workspace .matrix-wrap { max-width: 100%; }
 
 @media (min-width: 1200px) {
   .playbook-primary-decision {
@@ -7379,6 +7384,20 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .equity-workspace { width: min(1660px, 100%); grid-template-columns: minmax(0, 1.55fr) minmax(340px, .72fr); gap: var(--space-4); }
 .equity-input-stack,
 .equity-output-stack { gap: var(--space-4); }
+.equity-shared-flow {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  overflow: hidden;
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-xs);
+}
+.equity-shared-flow > .panel { margin: 0; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+.equity-shared-flow .equity-controls-panel { border-top: 1px solid var(--border-subtle); }
+.equity-shared-flow .equity-card-group { border: 0; border-radius: var(--radius-control); }
+.equity-shared-flow .equity-card-group + .equity-card-group { padding-top: var(--space-4); border-top: 1px solid var(--border-subtle); border-radius: 0; }
 .equity-section-head { padding-block: var(--space-4); }
 .equity-player-toolbar { align-items: center; padding: var(--space-3) var(--space-4); }
 .equity-player-count-control { display: grid; grid-template-columns: 38px minmax(96px, auto) 38px; gap: var(--space-2); align-items: center; }
@@ -7411,8 +7430,8 @@ button.rail-utility { width: 100%; cursor: pointer; }
 @media (min-width: 1280px) {
   .equity-input-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .equity-player-panel,
-  .equity-cards-panel { min-width: 0; }
-  .equity-controls-panel { grid-column: 1 / -1; }
+  .equity-shared-flow { min-width: 0; }
+  .equity-controls-panel { grid-column: auto; }
 }
 
 /* Training stabilization ------------------------------------------------- */
@@ -7440,6 +7459,16 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .training-frequency-track,
 .training-action-button kbd,
 .training-shortcut-help kbd { background: var(--surface-panel); }
+.training-insight-column > .panel,
+.training-setup-column > .panel,
+.training-setup-column > details {
+  background: var(--surface-panel);
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-xs);
+}
+.training-solution-panel { border-color: color-mix(in srgb, var(--accent-primary) 24%, var(--border-subtle)) !important; }
+.training-solution-panel .panel-body { gap: var(--space-3); }
+.training-frequency-row { padding-block: var(--space-1); }
 
 @media (min-width: 1320px) {
   .training-workspace {
@@ -7479,10 +7508,11 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .guide-mode { padding: clamp(var(--space-4), 1.5vw, var(--space-7)); overflow-y: auto; }
 .guide-workspace { width: min(1320px, 100%); margin-inline: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); align-items: start; }
 
-[data-card-rank-style="full-ten"] .card-slot .rank,
-[data-card-rank-style="full-ten"] .card-slot .corner-rank,
-[data-card-rank-style="full-ten"] .training-readonly-card .rank,
-[data-card-rank-style="full-ten"] .training-readonly-card .corner-rank { font-size: .82em; letter-spacing: -.08em; }
+.card-slot .rank.rank--ten { font-size: 16px; line-height: 17px; letter-spacing: -.08em; }
+.card-slot .corner-rank.rank--ten { font-size: 10px; letter-spacing: -.08em; }
+.training-readonly-card .rank.rank--ten { font-size: 1rem; letter-spacing: -.08em; }
+.training-readonly-card .corner-rank.rank--ten { font-size: .72rem; letter-spacing: -.08em; }
+.deck-card .rank.rank--ten { font-size: .9em; letter-spacing: -.08em; }
 
 /* Narrow desktop, tablet, and mobile smoke ------------------------------ */
 
@@ -7565,9 +7595,10 @@ button.rail-utility { width: 100%; cursor: pointer; }
   #gtoMode .playbook-state-source { grid-template-columns: 1fr; }
   #playbookModeControl { width: 100%; }
   .playbook-mode-status { grid-column: auto; }
-  .playbook-context-primary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .playbook-context-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .playbook-context-primary > * { grid-column: span 1; }
   .playbook-context-primary .button-push-end { grid-column: 1 / -1; }
-  .playbook-context-sliders { grid-template-columns: 1fr; }
+  .playbook-context-sliders > .field { grid-column: 1 / -1; }
   .playbook-support-rail { grid-template-columns: 1fr; }
   .equity-workspace { display: flex; flex-direction: column; }
   .equity-input-stack,

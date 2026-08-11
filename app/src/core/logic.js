@@ -400,7 +400,8 @@ function cardMarkup(card) {
   
   // Enhanced card markup with better visual hierarchy
   const rank = displayCardRank(card[0]);
-  return `<span class="rank s-${suit.id}">${rank}</span><span class="suit s-${suit.id}">${suit.symbol}</span><span class="corner-rank s-${suit.id}">${rank}</span>`;
+  const rankClass = rank === '10' ? ' rank--ten' : '';
+  return `<span class="rank${rankClass} s-${suit.id}">${rank}</span><span class="suit s-${suit.id}">${suit.symbol}</span><span class="corner-rank${rankClass} s-${suit.id}">${rank}</span>`;
 
 }
 
@@ -707,7 +708,8 @@ function renderDeck() {
           && document.documentElement?.dataset?.cardRankStyle === 'full-ten'
           ? '10'
           : rank;
-        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''}" aria-label="Choose ${visualRank}${suit.symbol}${isUnavailable ? ', unavailable' : ''}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}><span class="rank s-${suit.id}">${visualRank}</span><span class="symbol s-${suit.id}">${suit.symbol}</span></button>`;
+        const rankClass = visualRank === '10' ? ' rank--ten' : '';
+        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''}" aria-label="Choose ${visualRank}${suit.symbol}${isUnavailable ? ', unavailable' : ''}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}><span class="rank${rankClass} s-${suit.id}">${visualRank}</span><span class="symbol s-${suit.id}">${suit.symbol}</span></button>`;
       }).join('');
       return `<div class="deck-suit-row" data-picker-suit="${suit.id}"><div class="deck-suit-label s-${suit.id}" aria-hidden="true">${suit.symbol}</div><div class="deck-ranks">${cards}</div></div>`;
     }).join('');
@@ -5491,7 +5493,10 @@ function bindEvents() {
       return setEquityPlayerCount(app.equity.players.length + Number(playerCountStep.dataset.equityPlayerDelta));
     }
 
-    const cardRankStyle = event.target.closest('[data-card-rank-style]');
+    // The root element also carries the active presentation preference. Limit
+    // routing to the actual Settings buttons so unrelated clicks continue to
+    // their production handlers.
+    const cardRankStyle = event.target.closest('button[data-card-rank-style]');
     if (cardRankStyle) return applyCardRankStyle(cardRankStyle.dataset.cardRankStyle);
 
     const slot = event.target.closest('.card-slot');
@@ -7153,7 +7158,7 @@ function applyCardRankStyle(style, refresh = true) {
   app.settings.cardRankStyle = nextStyle;
   localStorage.setItem('riverline_card_rank_style', nextStyle);
   document.documentElement.dataset.cardRankStyle = nextStyle;
-  $$('[data-card-rank-style]').forEach((button) => {
+  $$('button[data-card-rank-style]').forEach((button) => {
     const selected = button.dataset.cardRankStyle === nextStyle;
     button.classList.toggle('active', selected);
     button.setAttribute('aria-pressed', String(selected));
@@ -7692,11 +7697,7 @@ function showTrainingSolution(solution) {
 
   const solutionDiv = $('#trainingSolution');
 
-  const wheel = $('#trainingWheel');
-
-  const centerText = $('#trainingWheelCenterText');
-
-  if (!solutionDiv || !wheel || !centerText) return;
+  if (!solutionDiv) return;
 
   // Build normalized list of actions with color and percentage
   const actionsList = [];
@@ -7730,19 +7731,6 @@ function showTrainingSolution(solution) {
       }
     });
   }
-
-  // Render conic-gradient wheel slices in descending sorted order!
-  let cumulative = 0;
-  const slices = [];
-  actionsList.forEach(act => {
-    const start = cumulative;
-    cumulative += act.pct;
-    slices.push(`${act.color} ${start}% ${cumulative}%`);
-  });
-
-  wheel.style.background = slices.length > 0
-    ? `conic-gradient(${slices.join(', ')})`
-    : `var(--card-bg)`;
 
   if (typeof renderFrequencyStack === 'function') {
     renderFrequencyStack($('#trainingFrequencyStack'), actionsList.map((action) => ({
@@ -7785,10 +7773,6 @@ function showTrainingSolution(solution) {
       rows.appendChild(row);
     });
   }
-
-  // Show highest frequency action in center text
-  const bestAction = actionsList.length > 0 ? actionsList[0].name.toUpperCase() : '-';
-  centerText.textContent = bestAction;
 
   // Render frequency bars in descending sorted order!
   for (let i = 1; i <= 3; i++) {

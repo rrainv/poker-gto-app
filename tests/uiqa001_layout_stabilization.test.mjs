@@ -103,7 +103,8 @@ test('Equity communicates arbitrary 2 through 10 counts with a stepper and optio
 test('Equity keeps calculation in the primary input workflow and coexists with results on desktop', () => {
   assert.match(equityHtml, /class="equity-input-stack"[\s\S]*id="calculate"/);
   assert.match(uiQaCss, /@media \(min-width: 1280px\)[\s\S]*?\.equity-input-stack\s*\{[^}]*grid-template-columns:\s*repeat\(2/);
-  assert.match(uiQaCss, /\.equity-controls-panel\s*\{\s*grid-column:\s*1 \/ -1/);
+  assert.match(equityHtml, /class="equity-shared-flow"[\s\S]*class="panel equity-cards-panel"[\s\S]*class="panel equity-controls-panel"/);
+  assert.match(uiQaCss, /\.equity-shared-flow \.equity-controls-panel\s*\{\s*border-top:/);
   assert.match(uiQaCss, /\.equity-workspace\s*\{[^}]*grid-template-columns:/);
   assert.match(uiQaCss, /@media \(max-width: 900px\)[\s\S]*?\.equity-workspace\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/);
 });
