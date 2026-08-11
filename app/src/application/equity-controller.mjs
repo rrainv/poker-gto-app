@@ -2,6 +2,7 @@ import {
   EQUITY_ERROR_CODES,
   calculateEquity,
   createEquityFailure,
+  estimateEquityCombinations,
 } from '../../../shared/poker-domain/index.js';
 import { EQUITY_WORKER_MESSAGES } from './equity-worker-runtime.mjs';
 
@@ -76,6 +77,10 @@ export function createEquityController({
   };
 
   const controller = {
+    estimate(request) {
+      return estimateEquityCombinations(request);
+    },
+
     calculate(request, { onProgress = null } = {}) {
       if (currentRequestId !== null) controller.cancel(currentRequestId);
       const requestId = `equity-${++sequence}`;

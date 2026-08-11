@@ -129,9 +129,9 @@ const app = {
 
     players: [
 
-      { id: 'equity-player-0', name: 'Hero', cards: [] },
+      { id: 'equity-player-0', name: 'Hero', cards: [], handMode: 'known' },
 
-      { id: 'equity-player-1', name: 'Opponent 1', cards: [] }
+      { id: 'equity-player-1', name: 'Opponent 1', cards: [], handMode: 'unknown' }
 
     ]
 
@@ -407,83 +407,97 @@ function renderSlots(group, count) {
 
 
 
+function equityPlayerLabel(playerIndex) {
+  return playerIndex === 0 ? t('Hero') : `${t('Player')} ${playerIndex + 1}`;
+}
+
+function createEquityPlayer() {
+  const playerNumber = app.equity.players.length + 1;
+  return {
+    id: `equity-player-${app.equity.nextPlayerId++}`,
+    name: `Player ${playerNumber}`,
+    cards: [],
+    handMode: 'unknown'
+  };
+}
+
+function setEquityPlayerCount(requestedCount) {
+  const count = Math.max(2, Math.min(10, Number(requestedCount) || 2));
+  while (app.equity.players.length < count) app.equity.players.push(createEquityPlayer());
+  if (app.equity.players.length > count) app.equity.players.splice(count);
+  renderAllCards();
+  setEquityPending();
+}
+
+function setEquityHandMode(playerIndex, handMode) {
+  const player = app.equity.players[playerIndex];
+  if (!player || !['known', 'unknown'].includes(handMode)) return;
+  player.handMode = handMode;
+  if (handMode === 'unknown') player.cards = [];
+  renderAllCards();
+  setEquityPending();
+}
+
 function renderEquityPlayers() {
-
   const root = $('#equityPlayers');
-
   if (!root) return;
 
-  root.innerHTML = '';
+  root.innerHTML = app.equity.players.map((player, playerIndex) => {
+    const mode = player.handMode || (player.cards.filter(Boolean).length ? 'known' : 'unknown');
+    player.handMode = mode;
+    const cardCount = player.cards.filter(Boolean).length;
+    const handState = mode === 'unknown' ? 'unknown' : (cardCount === 2 ? 'known' : 'incomplete');
+    const label = equityPlayerLabel(playerIndex);
+    const status = mode === 'unknown'
+      ? 'Random hand from the remaining deck'
+      : (cardCount === 2 ? 'Known two-card hand' : `Known hand incomplete · ${cardCount} / 2 cards`);
+    return `
+      <article class="equity-player-card" data-player-id="${player.id}" data-player-series="${playerIndex}" data-hand-state="${handState}">
+        <header class="equity-player-head">
+          <span class="equity-player-identity"><i class="series-marker" aria-hidden="true"></i><strong>${label}</strong><small>${status}</small></span>
+          <span class="equity-player-result" id="equityPlayerResult-${playerIndex}">—</span>
+          ${playerIndex > 1 ? `<button type="button" class="remove-player ui-button ui-button-ghost" data-remove-player="${playerIndex}" aria-label="Remove ${label}">${t('Remove')}</button>` : ''}
+        </header>
+        <div class="equity-player-body">
+          <div class="equity-hand-mode" role="group" aria-label="${label} hand type">
+            <button type="button" data-equity-hand-mode="known" data-player-index="${playerIndex}" aria-pressed="${mode === 'known'}">Known</button>
+            <button type="button" data-equity-hand-mode="unknown" data-player-index="${playerIndex}" aria-pressed="${mode === 'unknown'}">Unknown</button>
+          </div>
+          ${mode === 'known'
+            ? `<div class="card-slots equity-known-hand" data-slots="player-${playerIndex}"></div>`
+            : `<div class="equity-unknown-hand" aria-label="${label} unknown cards"><span class="poker-card-back" aria-hidden="true"></span><span class="poker-card-back" aria-hidden="true"></span><span>Random legal hand</span></div>`}
+        </div>
+        <div class="equity-hand-message" id="equityHandMessage-${playerIndex}">${status}</div>
+        <div id="outsPanel-${playerIndex}" class="equity-player-outs">
+          <span data-i18n="Outs">Outs</span><span id="outsCount-${playerIndex}"></span>
+          <div id="outsSummary-${playerIndex}"></div><div id="outsCards-${playerIndex}"></div>
+        </div>
+      </article>`;
+  }).join('');
 
   app.equity.players.forEach((player, playerIndex) => {
-
-    const row = document.createElement('div');
-
-    row.className = 'player-card';
-
-    const playerLabelText = playerIndex === 0 ? t('Hero') : (t('Opponent') + ' ' + playerIndex);
-
-    const removeText = t('Remove') || 'Remove';
-
-    // Each player row includes card slots + an inline outs panel (hidden until calculated)
-    row.innerHTML = `
-      <div class="player-label">
-        <strong>${playerLabelText}</strong>
-        ${playerIndex > 1 ? `<button type="button" class="remove-player ui-button ui-button--quiet ui-button--destructive" data-remove-player="${playerIndex}">${removeText}</button>` : ''}
-      </div>
-      <div style="display:flex; flex-direction:row; gap:16px; align-items:stretch;">
-        <div class="card-slots" data-slots="player-${playerIndex}" style="flex-shrink:0;"></div>
-        <div id="outsPanel-${playerIndex}" style="display:none; flex:1; background:rgba(56,189,248,0.07); border:1px solid rgba(56,189,248,0.18); border-radius:8px; padding:10px 12px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:7px;">
-          <span style="font-size:0.78rem; font-weight:700; color:var(--accent,#38bdf8); letter-spacing:0.04em; text-transform:uppercase;" data-i18n="Outs">Outs</span>
-          <span id="outsCount-${playerIndex}" style="font-size:0.78rem; font-weight:800; background:rgba(56,189,248,0.15); color:var(--accent,#38bdf8); padding:2px 8px; border-radius:20px;"></span>
-        </div>
-        <div id="outsSummary-${playerIndex}" style="font-size:0.77rem; color:var(--text-muted); margin-bottom:8px; line-height:1.4;"></div>
-        <div id="outsCards-${playerIndex}" style="display:flex; flex-wrap:wrap; gap:3px;"></div>
-      </div>
-      </div>`;
-
-    root.appendChild(row);
-
-    renderSlots(`player-${playerIndex}`, 2);
-
+    if (player.handMode === 'known') renderSlots(`player-${playerIndex}`, 2);
   });
-
-
 
   const add = document.createElement('button');
-
   add.type = 'button';
   add.className = 'add-player ui-button ui-button--secondary';
-
-  add.innerHTML = '<span>' + (t('+ Add Opponent') || '+ Add Opponent') + '</span>';
-
+  add.disabled = app.equity.players.length >= 10;
+  add.textContent = app.equity.players.length >= 10 ? '10 player maximum' : '+ Add player';
   add.addEventListener('click', () => {
-
     if (app.equity.players.length >= 10) return toast('Maximum of ten players.', 'warning');
-
-    // Edge case: Check if adding too many players would break equity calculation
-    if (app.equity.players.length >= 7) {
-      const confirmAdd = confirm('Adding more than 7 players may slow down equity calculations. Continue?');
-      if (!confirmAdd) return;
-    }
-
-    app.equity.players.push({
-      id: `equity-player-${app.equity.nextPlayerId++}`,
-      name: `Opponent ${app.equity.players.length}`,
-      cards: []
-    });
-
+    app.equity.players.push(createEquityPlayer());
     renderAllCards();
-
     setEquityPending();
-
   });
-
   root.appendChild(add);
 
+  const playerCount = $('#equityPlayerCount');
+  if (playerCount) playerCount.textContent = `${app.equity.players.length} / 10`;
+  document.querySelectorAll('[data-equity-player-count]').forEach((button) => {
+    button.classList.toggle('is-active', Number(button.dataset.equityPlayerCount) === app.equity.players.length);
+  });
   if (typeof updateDomTranslations === 'function') updateDomTranslations();
-
 }
 
 
@@ -555,7 +569,15 @@ function renderAllCards() {
 
   $('#eqDeckCount').textContent = remainingCards('equity');
 
+  const boardCount = $('#equityBoardCount');
+  if (boardCount) boardCount.textContent = `${app.equity.board.filter(Boolean).length} / 5`;
+
+  const deadCount = $('#equityDeadCount');
+  if (deadCount) deadCount.textContent = String(app.equity.dead.filter(Boolean).length);
+
   updateActionOptions();
+
+  if (typeof updateEquityReadiness === 'function') updateEquityReadiness();
 
 }
 
@@ -573,7 +595,15 @@ function openPicker(group, index) {
 
   const modalTitle = $('#modalTitle');
 
-  if (modalTitle) modalTitle.textContent = current ? 'Replace card' : t('Choose a card');
+  if (modalTitle) {
+    let targetLabel = '';
+    if (group === 'eqboard') targetLabel = `board card ${index + 1}`;
+    else if (group === 'eqdead') targetLabel = `dead card ${index + 1}`;
+    else if (group.startsWith('player-')) targetLabel = `${equityPlayerLabel(Number(group.split('-')[1]))} card ${index + 1}`;
+    modalTitle.textContent = targetLabel
+      ? `${current ? 'Replace' : 'Choose'} ${targetLabel}`
+      : (current ? 'Replace card' : t('Choose a card'));
+  }
 
   const modalCopy = $('#modalCopy');
 
@@ -4915,45 +4945,132 @@ function scoreSeven(cards) {
 
 
 let equityCalculationGeneration = 0;
+let equityCalculationRunning = false;
 
 function equityRequestFromCurrentInputs() {
   const methodByControl = { auto: 'auto', exact: 'exact', sim: 'monte_carlo' };
-  return {
+  const seedInput = $('#equitySeed')?.value?.trim();
+  const request = {
     schemaVersion: 'equity-request/v1',
     players: app.equity.players.map((player) => {
       const cards = player.cards.filter(Boolean);
-      return { id: player.id, cards: cards.length === 0 ? null : cards.slice() };
+      return {
+        id: player.id,
+        cards: player.handMode === 'unknown' ? null : cards.slice()
+      };
     }),
     board: app.equity.board.filter(Boolean).slice(),
     deadCards: app.equity.dead.filter(Boolean).slice(),
     method: methodByControl[selectedValue('#calcStyle')] || 'auto',
     samples: numericValue('#trials', 10000)
   };
+  if (seedInput !== undefined && seedInput !== '') request.seed = Number(seedInput);
+  return request;
+}
+
+function formatEquityCombinationCount(estimate) {
+  if (!estimate?.ok) return 'Unavailable';
+  if (estimate.exceedsSafeInteger) {
+    const digits = estimate.combinationsText;
+    const leading = digits.length > 1 ? `${digits[0]}.${digits.slice(1, 3)}` : digits;
+    return `≈ ${leading}e+${digits.length - 1} combinations`;
+  }
+  return `${Number(estimate.combinations).toLocaleString()} combinations`;
+}
+
+function updateEquityReadiness() {
+  const calculate = $('#calculate');
+  const readiness = $('#equityReadiness');
+  const estimateCopy = $('#equityEstimate');
+  if (!calculate || !readiness) return null;
+
+  const incompleteIndex = app.equity.players.findIndex((player) => (
+    player.handMode !== 'unknown' && player.cards.filter(Boolean).length !== 2
+  ));
+  const seedValue = $('#equitySeed')?.value?.trim() || '';
+  const seedNumber = seedValue === '' ? null : Number(seedValue);
+  let state = 'ready';
+  let message = 'Ready to calculate.';
+  let estimate = null;
+
+  if (incompleteIndex >= 0) {
+    state = 'blocked';
+    message = `${equityPlayerLabel(incompleteIndex)} is marked known and needs exactly two cards.`;
+  } else if (seedNumber !== null && (!Number.isInteger(seedNumber) || seedNumber < 0 || seedNumber > 0xffffffff)) {
+    state = 'blocked';
+    message = 'Seed must be a whole number from 0 through 4,294,967,295.';
+  } else {
+    estimate = callEquityServiceBridge('estimate', equityRequestFromCurrentInputs());
+    if (estimate?.ok === false) {
+      state = 'blocked';
+      message = equityFailureMessage(estimate.error);
+    } else if (estimate?.ok) {
+      const requestedMethod = equityRequestFromCurrentInputs().method;
+      if (requestedMethod === 'exact' && !estimate.exactFeasible) {
+        state = 'warning';
+        message = 'Exact enumeration exceeds the safe workload limit. Choose Auto or Monte Carlo.';
+      } else {
+        const actual = requestedMethod === 'auto'
+          ? (estimate.exactFeasible ? 'exact enumeration' : 'Monte Carlo')
+          : (requestedMethod === 'exact' ? 'exact enumeration' : 'Monte Carlo');
+        message = `Ready · ${actual} · ${formatEquityCombinationCount(estimate)}`;
+      }
+    } else {
+      message = 'Ready. Calculation details will be confirmed when the Equity service loads.';
+    }
+  }
+
+  readiness.dataset.state = state;
+  readiness.textContent = message;
+  calculate.disabled = equityCalculationRunning || state === 'blocked' || state === 'warning';
+  if (estimateCopy) estimateCopy.textContent = estimate?.ok
+    ? `Estimated workload: ${formatEquityCombinationCount(estimate)}. Auto will use ${estimate.exactFeasible ? 'exact enumeration' : 'Monte Carlo'}.`
+    : 'Workload estimate appears when all known hands are complete.';
+
+  const request = equityRequestFromCurrentInputs();
+  if ($('#equityDetailRequested')) $('#equityDetailRequested').textContent = request.method === 'monte_carlo' ? 'Monte Carlo' : (request.method === 'exact' ? 'Exact' : 'Auto');
+  if ($('#equityDetailEstimate')) $('#equityDetailEstimate').textContent = estimate?.ok ? formatEquityCombinationCount(estimate) : '—';
+  if ($('#equityDetailSamples')) $('#equityDetailSamples').textContent = request.samples.toLocaleString();
+  if ($('#equityDetailSeed')) $('#equityDetailSeed').textContent = request.seed === undefined ? 'Generated at run time' : String(request.seed);
+  if ($('#equityDetailUnknown')) $('#equityDetailUnknown').textContent = String(request.players.filter((player) => player.cards === null).length);
+  if ($('#equityDetailBoard')) $('#equityDetailBoard').textContent = String(5 - request.board.length);
+  return { state, message, estimate, request };
 }
 
 function setEquityCalculationRunning(running) {
+  equityCalculationRunning = running;
   const calculate = $('#calculate');
   const cancel = $('#cancelEquity');
-  const progress = $('#equityProgressWrap');
+  const progress = $('#progress');
   if (calculate) calculate.disabled = running;
   if (cancel) cancel.hidden = !running;
   if (progress) progress.hidden = !running;
+  if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = running ? 'running' : $('#equityResultsPanel').dataset.resultState;
+  if ($('#equityDetailExecution')) $('#equityDetailExecution').textContent = running
+    ? (callEquityServiceBridge('isWorkerBacked') ? 'Web Worker' : 'In-process fallback')
+    : 'Ready';
+  if (!running) updateEquityReadiness();
 }
 
 function renderEquityProgress(progress) {
-  const bar = $('#equityProgress');
-  const text = $('#equityProgressText');
-  if (bar) bar.value = progress.fraction;
-  if (text) text.textContent = `${(progress.fraction * 100).toFixed(0)}% · ${progress.completed.toLocaleString()} / ${progress.total.toLocaleString()}`;
+  const fill = document.querySelector('#progress .progress-fill');
+  const track = document.querySelector('#progress .progress-track');
+  const status = document.querySelector('#progress .progress-status');
+  const percent = document.querySelector('#progress .progress-percent');
+  const fraction = Math.min(1, Math.max(0, Number(progress?.fraction) || 0));
+  if (fill) fill.style.width = `${fraction * 100}%`;
+  if (track) track.setAttribute('aria-valuenow', String(Math.round(fraction * 100)));
+  if (status) status.textContent = `${Number(progress?.completed || 0).toLocaleString()} / ${Number(progress?.total || 0).toLocaleString()} trials`;
+  if (percent) percent.textContent = `${(fraction * 100).toFixed(0)}%`;
 }
 
 function equityFailureMessage(error) {
   if (!error) return 'Equity calculation failed.';
   const messages = {
     invalid_request: 'Complete each known hand with exactly two valid cards.',
-    duplicate_card: 'A physical card can appear only once.',
-    impossible_deck: 'The requested hands and board cannot fit in the remaining deck.',
-    exact_limit_exceeded: 'This exact calculation is too large. Choose Automatic or Monte Carlo.',
+    duplicate_card: 'That card is already in use.',
+    impossible_deck: 'Not enough unseen cards remain for this setup.',
+    exact_limit_exceeded: 'This exact calculation is too large. Use Auto or Monte Carlo.',
     aborted: 'Equity calculation cancelled.',
     internal_error: 'The Equity service could not complete this calculation.'
   };
@@ -4961,8 +5078,14 @@ function equityFailureMessage(error) {
 }
 
 async function calculateEquity() {
+  const readiness = updateEquityReadiness();
+  if (!readiness || readiness.state !== 'ready') {
+    if (readiness?.message) toast(readiness.message, 'warning');
+    return null;
+  }
   const generation = ++equityCalculationGeneration;
-  const calculation = callEquityServiceBridge('calculate', equityRequestFromCurrentInputs(), {
+  const request = readiness.request;
+  const calculation = callEquityServiceBridge('calculate', request, {
     onProgress(progress) {
       if (generation === equityCalculationGeneration) renderEquityProgress(progress);
     }
@@ -4971,8 +5094,8 @@ async function calculateEquity() {
     return toast('The canonical Equity service is unavailable.', 'error');
   }
 
+  clearEquityResults('running', 'Calculating conditional equity…');
   setEquityCalculationRunning(true);
-  $('#equityStatus').textContent = 'Calculating conditional win probability…';
   $('#methodBadge').textContent = 'RUNNING';
   const response = await calculation;
   if (generation !== equityCalculationGeneration) return response;
@@ -4982,10 +5105,11 @@ async function calculateEquity() {
     const message = equityFailureMessage(response.error);
     $('#equityStatus').textContent = message;
     $('#methodBadge').textContent = response.error.code === 'aborted' ? 'CANCELLED' : 'ERROR';
+    $('#equityResultsPanel').dataset.resultState = response.error.code === 'aborted' ? 'empty' : 'error';
     toast(message, response.error.code === 'aborted' ? 'info' : 'warning');
     return response;
   }
-  renderEquityResult(response);
+  renderEquityResult(response, request);
   return response;
 }
 
@@ -4995,11 +5119,34 @@ function cancelEquityCalculation() {
   setEquityCalculationRunning(false);
   $('#equityStatus').textContent = 'Equity calculation cancelled.';
   $('#methodBadge').textContent = 'CANCELLED';
+  if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = 'empty';
   return true;
 }
 
-function renderEquityResult(equityResult) {
-  const namesById = new Map(app.equity.players.map((player) => [player.id, player.name]));
+function clearEquityResults(state = 'empty', status = 'Results update after calculation.') {
+  const panel = $('#equityResultsPanel');
+  if (panel) panel.dataset.resultState = state;
+  if ($('#headlineEquity')) $('#headlineEquity').textContent = '—';
+  if ($('#equityStatus')) $('#equityStatus').textContent = status;
+  if ($('#equitySum')) $('#equitySum').textContent = '—';
+  if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = '—';
+  if ($('#equityDetailActual')) $('#equityDetailActual').textContent = '—';
+  if ($('#equityBars')) {
+    $('#equityBars').innerHTML = app.equity.players.map((player, index) => `
+      <div class="equity-row" data-player-series="${index}">
+        <span class="equity-player-label"><i class="series-marker" aria-hidden="true"></i><span>${equityPlayerLabel(index)}<small>Win — · Tie —</small></span></span>
+        <div class="eqbar" role="progressbar" aria-label="${equityPlayerLabel(index)} equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="eqfill player-series" style="width:0%"></div></div>
+        <b>—</b>
+      </div>`).join('');
+  }
+  app.equity.players.forEach((player, index) => {
+    const playerResult = $(`#equityPlayerResult-${index}`);
+    if (playerResult) playerResult.textContent = '—';
+  });
+}
+
+function renderEquityResult(equityResult, request = equityRequestFromCurrentInputs()) {
+  const namesById = new Map(app.equity.players.map((player, index) => [player.id, equityPlayerLabel(index)]));
   const result = equityResult.players.map((player) => ({
     name: namesById.get(player.id) || player.id,
     win: player.winProbability * 100,
@@ -5009,12 +5156,16 @@ function renderEquityResult(equityResult) {
   const exact = equityResult.exact;
   const total = equityResult.trials;
   const splitRate = equityResult.metadata.splitPotTrials / total * 100;
+  const equityTotal = result.reduce((sum, player) => sum + player.equity, 0);
+  const leadingEquity = Math.max(...result.map((player) => player.equity));
+  const requestedLabel = request.method === 'auto' ? 'AUTO' : (request.method === 'exact' ? 'EXACT' : 'MONTE CARLO');
+  const actualLabel = exact ? 'EXACT' : 'MONTE CARLO';
 
-  $('#headlineEquity').textContent = result[0].equity.toFixed(1) + '%';
+  $('#headlineEquity').textContent = leadingEquity.toFixed(1) + '%';
 
-  $('#equityStatus').textContent = `${exact ? 'Exact enumeration' : 'Monte Carlo'} · ${total.toLocaleString()} conditional runouts · ${remainingCards('equity')} cards available`;
+  $('#equityStatus').textContent = `${exact ? 'Exact enumeration' : 'Monte Carlo simulation'} · ${total.toLocaleString()} conditional trials`;
 
-  $('#methodBadge').textContent = exact ? 'EXACT' : 'MONTE CARLO';
+  $('#methodBadge').textContent = request.method === 'auto' ? `${requestedLabel} → ${actualLabel}` : actualLabel;
 
   $('#equityBars').innerHTML = result.map((player, index) => `
 
@@ -5025,6 +5176,21 @@ function renderEquityResult(equityResult) {
     </div>
 
   `).join('') + `<div class="equity-row equity-row--tie"><span class="equity-player-label"><i class="series-marker" aria-hidden="true"></i><span>Split pots</span></span><div class="eqbar" role="progressbar" aria-label="Split pots" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${splitRate.toFixed(1)}"><div class="eqfill tie" style="width:${splitRate}%"></div></div><b>${splitRate.toFixed(1)}%</b></div>`;
+
+  if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = 'complete';
+  if ($('#equitySum')) $('#equitySum').textContent = `${equityTotal.toFixed(2)}%`;
+  if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = `${equityResult.metadata.splitPotTrials.toLocaleString()} · ${splitRate.toFixed(1)}%`;
+  if ($('#equityDetailActual')) $('#equityDetailActual').textContent = exact ? 'Exact enumeration' : 'Monte Carlo simulation';
+  if ($('#equityDetailEstimate')) $('#equityDetailEstimate').textContent = `${equityResult.metadata.estimatedCombinationsText} combinations`;
+  if ($('#equityDetailSamples')) $('#equityDetailSamples').textContent = exact ? 'Not applicable' : equityResult.metadata.samplesCompleted.toLocaleString();
+  if ($('#equityDetailSeed')) $('#equityDetailSeed').textContent = exact ? 'Not applicable' : String(equityResult.metadata.seed);
+  if ($('#equityDetailUnknown')) $('#equityDetailUnknown').textContent = String(equityResult.metadata.unknownPlayers);
+  if ($('#equityDetailBoard')) $('#equityDetailBoard').textContent = String(equityResult.metadata.boardCardsMissing);
+  if ($('#equityDetailExecution')) $('#equityDetailExecution').textContent = callEquityServiceBridge('isWorkerBacked') ? 'Web Worker' : 'In-process fallback';
+  result.forEach((player, index) => {
+    const playerResult = $(`#equityPlayerResult-${index}`);
+    if (playerResult) playerResult.textContent = `${player.equity.toFixed(1)}%`;
+  });
 
   toast('Win probability updated', 'success');
 
@@ -5102,17 +5268,32 @@ function renderEquityResult(equityResult) {
 
 
 function setEquityPending() {
-
   callEquityServiceBridge('cancel');
-
   equityCalculationGeneration += 1;
-
   setEquityCalculationRunning(false);
+  clearEquityResults('empty', 'Inputs changed. Calculate to refresh the result.');
+  if ($('#methodBadge')) $('#methodBadge').textContent = 'AWAITING CALCULATION';
+  updateEquityReadiness();
+}
 
-  $('#equityStatus').textContent = 'Inputs changed. Calculate to refresh the result.';
-
-  $('#methodBadge').textContent = 'READY';
-
+function resetEquityCalculator() {
+  callEquityServiceBridge('cancel');
+  equityCalculationGeneration += 1;
+  app.equity.board = [];
+  app.equity.dead = [];
+  app.equity.nextPlayerId = 2;
+  app.equity.players = [
+    { id: 'equity-player-0', name: 'Hero', cards: [], handMode: 'known' },
+    { id: 'equity-player-1', name: 'Opponent 1', cards: [], handMode: 'unknown' }
+  ];
+  if ($('#calcStyle')) $('#calcStyle').value = 'auto';
+  if ($('#trials')) $('#trials').value = '10000';
+  if ($('#equitySeed')) $('#equitySeed').value = '';
+  setEquityCalculationRunning(false);
+  renderAllCards();
+  clearEquityResults('empty', 'Results update after calculation.');
+  if ($('#methodBadge')) $('#methodBadge').textContent = 'AWAITING INPUT';
+  updateEquityReadiness();
 }
 
 
@@ -5267,6 +5448,17 @@ function bindEvents() {
 
   document.addEventListener('click', (event) => {
 
+    const handModeControl = event.target.closest('[data-equity-hand-mode]');
+    if (handModeControl) {
+      return setEquityHandMode(
+        Number(handModeControl.dataset.playerIndex),
+        handModeControl.dataset.equityHandMode
+      );
+    }
+
+    const playerCountPreset = event.target.closest('[data-equity-player-count]');
+    if (playerCountPreset) return setEquityPlayerCount(playerCountPreset.dataset.equityPlayerCount);
+
     const slot = event.target.closest('.card-slot');
 
     if (slot) {
@@ -5311,8 +5503,9 @@ function bindEvents() {
     const removePlayer = event.target.closest('[data-remove-player]');
 
     if (removePlayer) {
-
-      app.equity.players.splice(Number(removePlayer.dataset.removePlayer), 1);
+      const playerIndex = Number(removePlayer.dataset.removePlayer);
+      if (playerIndex < 2 || playerIndex >= app.equity.players.length) return;
+      app.equity.players.splice(playerIndex, 1);
 
       renderAllCards();
 
@@ -5567,6 +5760,18 @@ function bindEvents() {
   if ($('#trials')) $('#trials').addEventListener('change', setEquityPending);
 
   if ($('#calcStyle')) $('#calcStyle').addEventListener('change', setEquityPending);
+
+  if ($('#equitySeed')) $('#equitySeed').addEventListener('input', setEquityPending);
+
+  if ($('#rerollEquitySeed')) $('#rerollEquitySeed').addEventListener('click', () => {
+    const seed = window.crypto?.getRandomValues
+      ? window.crypto.getRandomValues(new Uint32Array(1))[0]
+      : Date.now() >>> 0;
+    $('#equitySeed').value = String(seed);
+    setEquityPending();
+  });
+
+  if ($('#resetEquity')) $('#resetEquity').addEventListener('click', resetEquityCalculator);
 
 
 
@@ -8761,17 +8966,20 @@ window.encodeCardsForOnnx = encodeCardsForOnnx;
 window.onnxAbortController = onnxAbortController;
 window.getHandTier = getHandTier;
 window.applyHeuristicToPrediction = applyHeuristicToPrediction;
-window.combinations = combinations;
 window.JS_EVAL_COUNTS = JS_EVAL_COUNTS;
 window.JS_EVAL_RANKS = JS_EVAL_RANKS;
 window.JS_EVAL_SUITS = JS_EVAL_SUITS;
 window.JS_EVAL_5 = JS_EVAL_5;
 window.scoreFive = scoreFive;
 window.scoreSeven = scoreSeven;
-window.shuffled = shuffled;
 window.calculateEquity = calculateEquity;
 window.renderEquityResult = renderEquityResult;
 window.setEquityPending = setEquityPending;
+window.equityRequestFromCurrentInputs = equityRequestFromCurrentInputs;
+window.updateEquityReadiness = updateEquityReadiness;
+window.setEquityPlayerCount = setEquityPlayerCount;
+window.setEquityHandMode = setEquityHandMode;
+window.resetEquityCalculator = resetEquityCalculator;
 window.syncSliderPair = syncSliderPair;
 window.bindSliderPair = bindSliderPair;
 window.loadSolverFile = loadSolverFile;

@@ -469,9 +469,10 @@ test('controller converts worker-boundary and in-process exceptions into structu
   assert.equal(inProcessFailure.error.code, EQUITY_ERROR_CODES.INTERNAL_ERROR);
 });
 
-test('browser bridge exposes only canonical calculate, cancel, status, and worker state operations', () => {
+test('browser bridge exposes canonical estimate, calculate, cancel, status, and worker state operations', () => {
   const calls = [];
   const controller = {
+    estimate(request) { calls.push(['estimate', request]); return { ok: true, combinations: 1 }; },
     calculate(request, options) { calls.push(['calculate', request, options]); return Promise.resolve({}); },
     cancel() { calls.push(['cancel']); return true; },
     getCurrentRequestId() { return 'request-1'; },
@@ -480,10 +481,11 @@ test('browser bridge exposes only canonical calculate, cancel, status, and worke
   const browserWindow = {};
   const bridge = installEquityModeBridge(browserWindow, { controller });
   assert.equal(browserWindow.RiverlineEquity, bridge);
+  assert.deepEqual(bridge.estimate(equityRequest()), { ok: true, combinations: 1 });
   assert.equal(bridge.getCurrentRequestId(), 'request-1');
   assert.equal(bridge.isWorkerBacked(), true);
   assert.equal(bridge.cancel(), true);
-  assert.equal(calls[0][0], 'cancel');
+  assert.deepEqual(calls.map(([operation]) => operation), ['estimate', 'cancel']);
 });
 
 test('Equity production path imports canonical semantics and contains no random evaluator copy', () => {
@@ -495,13 +497,14 @@ test('Equity production path imports canonical semantics and contains no random 
   const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
   assert.match(service, /import \{ evaluateSeven \} from '\.\/evaluator\.js'/);
   assert.doesNotMatch(service + worker + runtime, /Math\.random|function scoreFive|function evaluate5/);
-  assert.match(logic, /callEquityServiceBridge\('calculate', equityRequestFromCurrentInputs\(\)/);
+  assert.match(logic, /callEquityServiceBridge\('calculate', request/);
+  assert.match(logic, /callEquityServiceBridge\('estimate', equityRequestFromCurrentInputs\(\)/);
   assert.doesNotMatch(logic.slice(
     logic.indexOf('function equityRequestFromCurrentInputs'),
     logic.indexOf('function renderEquityResult'),
   ), /scoreSeven|Math\.random|PokerState|DecisionContext/);
   assert.match(logic, /Maximum of ten players/);
-  assert.match(html, /id="equityProgress"/);
+  assert.match(html, /id="progress"/);
   assert.match(html, /id="cancelEquity"/);
   assert.match(css, /--series-8:/);
   assert.match(css, /--series-9:/);

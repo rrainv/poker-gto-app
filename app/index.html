@@ -1768,647 +1768,91 @@
 
 
 
-    <!-- Equity Mode view remains identical structurally, just formatted -->
-
-    <section id="equityMode" class="mode-view" style="display: none;">
-
-
-
-      <div class="app-grid">
-
-
-
-        <aside class="side-stack">
-
-
-
-          <section class="panel">
-
-
-
-            <div class="panel-head">
-
-
-
+    <!-- Equity workspace -->
+    <section id="equityMode" class="mode-view equity-mode" style="display: none;">
+      <div class="equity-workspace">
+        <div class="equity-input-stack">
+          <section class="panel equity-player-panel" aria-labelledby="equityPlayersTitle">
+            <div class="panel-head equity-section-head">
               <div>
-
-
-
-                <div class="panel-title" data-i18n="Known cards">Known cards</div>
-
-
-
-                <div class="panel-note" data-i18n="Every selector uses the same single-deck picker.">Every selector uses
-
-
-
-                  the same single-deck picker.</div>
-
-
-
+                <p class="equity-eyebrow" data-i18n="Equity workspace">Equity workspace</p>
+                <h2 id="equityPlayersTitle" data-i18n="Player Hands">Player Hands</h2>
+                <p class="muted" data-i18n="Mark each hand as known or unknown. Known hands require exactly two cards.">Mark each hand as known or unknown. Known hands require exactly two cards.</p>
               </div>
-
-
-
+              <button id="resetEquity" class="ui-button ui-button-ghost equity-reset" type="button" data-i18n="Reset">Reset</button>
             </div>
-
-
-
-            <div class="panel-body">
-
-
-
-              <div class="section-head">
-
-
-
-                <strong data-i18n="Community board">Community board</strong>
-
-
-
-                <button class="small-link" data-clear="eqboard" data-i18n="Clear">Clear</button>
-
-
-
+            <div class="equity-player-toolbar">
+              <div class="equity-presets" aria-label="Player count presets">
+                <span class="equity-toolbar-label" data-i18n="Players">Players</span>
+                <button class="ui-button ui-button-ghost is-active" type="button" data-equity-player-count="2">2</button>
+                <button class="ui-button ui-button-ghost" type="button" data-equity-player-count="6">6</button>
+                <button class="ui-button ui-button-ghost" type="button" data-equity-player-count="9">9</button>
               </div>
-
-
-
-              <div class="card-slots" data-slots="eqboard"></div>
-
-
-
-              <div class="divider"></div>
-
-
-
-              <div class="section-head">
-
-
-
-                <strong data-i18n="Known burned / dead">Known burned / dead</strong>
-
-
-
-                <button class="small-link" data-clear="eqdead" data-i18n="Clear">Clear</button>
-
-
-
-              </div>
-
-
-
-              <div class="card-slots" data-slots="eqdead"></div>
-
-
-
-              <div class="actual-note">
-
-
-
-                <span data-i18n="Burned cards are removed from every runout. This makes the estimate conditional on the exact known deck.">Burned cards are removed from every runout. This makes the estimate conditional on the exact known deck.</span>
-
-
-
-              </div>
-
-
-
+              <span id="equityPlayerCount" class="equity-count" aria-live="polite">2 / 10</span>
             </div>
-
-
-
+            <div id="equityPlayers" class="equity-player-list"></div>
           </section>
 
-
-
-          <section class="panel">
-
-
-
-            <div class="panel-head">
-
-
-
+          <section class="panel equity-cards-panel" aria-labelledby="equityCardsTitle">
+            <div class="panel-head equity-section-head">
               <div>
-
-
-
-                <div class="panel-title" data-i18n="Calculation">Calculation</div>
-
-
-
-                <div class="panel-note" data-i18n="Exact enumeration where small; Monte Carlo otherwise.">Exact
-
-
-
-                  enumeration where small; Monte Carlo otherwise.</div>
-
-
-
+                <p class="equity-eyebrow" data-i18n="Shared cards">Shared cards</p>
+                <h2 id="equityCardsTitle" data-i18n="Board & Dead Cards">Board &amp; Dead Cards</h2>
+                <p class="muted" data-i18n="Enter any board from zero to five cards. Street labels are visual guides only.">Enter any board from zero to five cards. Street labels are visual guides only.</p>
               </div>
-
-
-
             </div>
-
-
-
-            <div class="panel-body">
-
-
-
-              <div class="fields">
-
-
-
-                <div class="field">
-
-
-
-                  <label for="trials" data-i18n="Max samples">Max samples</label>
-
-
-
-                  <select id="trials" class="control-select">
-
-
-
-                    <option value="1000">1,000</option>
-
-
-
-                    <option value="5000">5,000</option>
-
-
-
-                    <option value="10000" selected>10,000</option>
-
-
-
-                    <option value="25000">25,000</option>
-
-
-
-                  </select>
-
-
-
+            <div class="equity-card-group">
+              <div class="equity-card-group-head">
+                <div><h3 data-i18n="Board">Board</h3><span class="muted" data-i18n="0–5 cards, in deal order">0–5 cards, in deal order</span></div>
+                <div class="equity-card-group-actions">
+                  <span id="equityBoardCount" class="equity-count">0 / 5</span>
+                  <button class="ui-button ui-button-ghost" type="button" data-clear="eqboard" data-i18n="Clear">Clear</button>
                 </div>
-
-
-
-                <div class="field">
-
-
-
-                  <label for="calcStyle" data-i18n="Method">Method</label>
-
-
-
-                  <select id="calcStyle" class="control-select">
-
-
-
-                    <option value="auto" data-i18n="Automatic">Automatic</option>
-
-
-
-                    <option value="exact" data-i18n="Prefer exact">Prefer exact</option>
-
-
-
-                    <option value="sim" data-i18n="Monte Carlo">Monte Carlo</option>
-
-
-
-                  </select>
-
-
-
-                </div>
-
-
-
               </div>
-
-
-
-              <div class="equity-calculation-actions">
-                <button class="cta ui-button ui-button--primary" type="button" id="calculate" data-i18n="Calculate win probability">Calculate win
-
-                  probability</button>
-                <button class="ui-button ui-button--secondary" type="button" id="cancelEquity" hidden data-i18n="Cancel">Cancel</button>
-              </div>
-              <div class="equity-progress" id="equityProgressWrap" hidden>
-                <progress id="equityProgress" max="1" value="0" aria-label="Equity calculation progress"></progress>
-                <small id="equityProgressText" aria-live="polite">0%</small>
-              </div>
-
-
-
-
-
+              <div class="equity-street-guide" aria-hidden="true"><span class="equity-street-flop">Flop</span><span>Turn</span><span>River</span></div>
+              <div class="cards-row equity-board-cards" data-slots="eqboard" aria-label="Board cards"></div>
             </div>
-
-
-
+            <div class="equity-card-group equity-dead-group">
+              <div class="equity-card-group-head">
+                <div><h3 data-i18n="Dead Cards">Dead Cards</h3><span class="muted" data-i18n="Excluded from the remaining deck">Excluded from the remaining deck</span></div>
+                <div class="equity-card-group-actions"><span id="equityDeadCount" class="equity-count">0</span><button class="ui-button ui-button-ghost" type="button" data-clear="eqdead" data-i18n="Clear">Clear</button></div>
+              </div>
+              <div class="cards-row equity-dead-cards" data-slots="eqdead" aria-label="Dead cards"></div>
+            </div>
           </section>
 
-
-
-        </aside>
-
-
-
-
-
-
-
-        <main class="main-content">
-
-
-
-          <section class="panel calc-result">
-
-
-
-            <div class="equity-winner">
-
-
-
-              <div>
-
-
-
-                <div class="eyebrow" data-i18n="Win probability">Win probability</div>
-
-
-
-                <div class="equity-big" id="headlineEquity">—</div>
-
-
-
-                <div class="equity-copy" id="equityStatus"
-
-
-
-                  data-i18n="Choose at least two complete hands, then calculate.">Choose at least two complete hands,
-
-
-
-                  then calculate.</div>
-
-
-
-              </div>
-
-
-
-              <div class="badge" id="methodBadge">READY</div>
-
-
-
+          <section class="panel equity-controls-panel" aria-labelledby="equityCalculationTitle">
+            <div class="panel-head equity-section-head"><div><p class="equity-eyebrow" data-i18n="Calculation">Calculation</p><h2 id="equityCalculationTitle" data-i18n="Method & Precision">Method &amp; Precision</h2></div></div>
+            <div class="equity-control-grid">
+              <label class="ui-field"><span data-i18n="Method">Method</span><select id="calcStyle"><option value="auto" data-i18n="Auto (recommended)">Auto (recommended)</option><option value="exact" data-i18n="Exact enumeration">Exact enumeration</option><option value="sim" data-i18n="Monte Carlo">Monte Carlo</option></select></label>
+              <label class="ui-field"><span data-i18n="Monte Carlo samples">Monte Carlo samples</span><select id="trials"><option value="10000">10,000</option><option value="50000">50,000</option><option value="100000">100,000</option><option value="250000">250,000</option></select></label>
             </div>
-
-
-
-            <div class="equity-bars" id="equityBars">
-
-
-
-              <div class="equity-row" data-player-series="0">
-
-
-
-                <span class="equity-player-label"><i class="series-marker"></i><span data-i18n="Hero">Hero</span></span>
-
-
-
-                <div class="eqbar" role="progressbar" aria-label="Hero equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-
-
-
-                  <div class="eqfill player-series" style="width:0%"></div>
-
-
-
-                </div>
-
-
-
-                <b>—</b>
-
-
-
-              </div>
-
-
-
-              <div class="equity-row" data-player-series="1">
-
-
-
-                <span class="equity-player-label"><i class="series-marker"></i><span data-i18n="Opponent">Opponent</span></span>
-
-
-
-                <div class="eqbar" role="progressbar" aria-label="Opponent equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-
-
-
-                  <div class="eqfill player-series" style="width:0%"></div>
-
-
-
-                </div>
-
-
-
-                <b>—</b>
-
-
-
-              </div>
-
-
-
-              <div class="equity-row equity-row--tie">
-
-
-
-                <span class="equity-player-label"><i class="series-marker"></i><span data-i18n="Tie">Tie</span></span>
-
-
-
-                <div class="eqbar" role="progressbar" aria-label="Tie equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-
-
-
-                  <div class="eqfill tie" style="width:0%"></div>
-
-
-
-                </div>
-
-
-
-                <b>—</b>
-
-
-
-              </div>
-
-
-
-            </div>
-
-
-
+            <p class="equity-method-help">
+              <strong>Auto</strong> uses exact enumeration when practical, otherwise simulation.
+              <strong>Exact</strong> enumerates every realization and rejects oversized spaces.
+              <strong>Monte Carlo</strong> is a seeded simulation.
+            </p>
+            <div id="equityEstimate" class="equity-estimate" aria-live="polite">Add complete known hands or mark them unknown to estimate the calculation.</div>
+            <div id="equityReadiness" class="equity-readiness" data-state="blocked" role="status" aria-live="polite">Complete Hero's known hand or mark it unknown.</div>
+            <div class="equity-calculate-row"><button id="calculate" class="primary equity-calculate" type="button" aria-describedby="equityReadiness equityEstimate" disabled data-i18n="Calculate equity">Calculate equity</button><button id="cancelEquity" class="ui-button ui-button-danger equity-cancel" type="button" hidden data-i18n="Cancel">Cancel</button></div>
+            <div id="progress" class="progress-wrap" hidden aria-live="polite"><div class="progress-track" role="progressbar" aria-label="Equity calculation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill"></div></div><div class="progress-copy"><span class="progress-status">Preparing calculation…</span><span class="progress-percent">0%</span></div></div>
+            <details id="equityAdvanced" class="equity-advanced"><summary data-i18n="Advanced calculation settings">Advanced calculation settings</summary><div class="equity-advanced-body"><label class="ui-field"><span data-i18n="Monte Carlo seed">Monte Carlo seed</span><div class="equity-seed-row"><input id="equitySeed" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="Generated automatically"><button id="rerollEquitySeed" class="ui-button ui-button-ghost" type="button" data-i18n="New seed">New seed</button></div><small class="muted" data-i18n="Leave blank for a generated seed. Reuse a seed for reproducible simulation.">Leave blank for a generated seed. Reuse a seed for reproducible simulation.</small></label></div></details>
           </section>
+        </div>
 
-
-
-          <section class="panel">
-
-
-
-            <div class="panel-head">
-
-
-
-              <div>
-
-
-
-                <div class="panel-title" data-i18n="Hands in the pot">Hands in the pot</div>
-
-
-
-                <div class="panel-note">Add as many known player hands as you want. For random opponents, leave their
-
-
-
-                  cards blank.</div>
-
-
-
-              </div>
-
-
-
-            </div>
-
-
-
-            <div class="panel-body" id="equityPlayers"></div>
-
-
-
+        <div class="equity-output-stack">
+          <section id="equityResultsPanel" class="panel equity-results-panel" data-result-state="empty" aria-labelledby="equityResultsTitle">
+            <div class="panel-head equity-result-head"><div><p class="equity-eyebrow" data-i18n="Results">Results</p><h2 id="equityResultsTitle" data-i18n="Equity">Equity</h2></div><span id="methodBadge" class="equity-method-badge">Awaiting input</span></div>
+            <div class="equity-headline"><span class="equity-headline-label" data-i18n="Leading equity">Leading equity</span><strong id="headlineEquity">—</strong><span id="equityStatus" class="muted">Results update after calculation.</span></div>
+            <div id="equityBars" class="equity-bars" aria-live="polite"></div>
+            <div class="equity-result-summary"><div><span data-i18n="Total equity">Total equity</span><strong id="equitySum">—</strong></div><div><span data-i18n="Split-pot trials">Split-pot trials</span><strong id="equitySplitSummary">—</strong></div><div><span data-i18n="Remaining deck">Remaining deck</span><strong id="eqDeckCount">52</strong></div></div>
           </section>
-
-
-
-        </main>
-
-
-
-
-
-
-
-        <aside class="right-rail side-stack">
-
-
-
-          <section class="panel">
-
-
-
-            <div class="panel-head">
-
-
-
-              <div>
-
-
-
-                <div class="panel-title" data-i18n="How it adjusts">How it adjusts</div>
-
-
-
-              </div>
-
-
-
-            </div>
-
-
-
-            <div class="panel-body">
-
-
-
-              <div class="path-list">
-
-
-
-                <div class="path-step active">
-
-
-
-                  <div class="path-node"><span class="node-active"></span></div>
-
-
-
-                  <div class="path-body">
-
-
-
-                    <b data-i18n="Known cards removed">Known cards removed</b>
-
-
-
-                    <span data-i18n="Hero, opponents, board, and burns leave the deck.">Hero, opponents, board, and burns leave the deck.</span>
-
-
-
-                  </div>
-
-
-
-                </div>
-
-
-
-                <div class="path-step">
-
-
-
-                  <div class="path-node"><span class="node-dot"></span></div>
-
-
-
-                  <div class="path-body">
-
-
-
-                    <b data-i18n="Missing cards dealt">Missing cards dealt</b>
-
-
-
-                    <span data-i18n="Runouts are drawn from exactly what remains.">Runouts are drawn from exactly what remains.</span>
-
-
-
-                  </div>
-
-
-
-                </div>
-
-
-
-                <div class="path-step">
-
-
-
-                  <div class="path-node"><span class="node-dot"></span></div>
-
-
-
-                  <div class="path-body">
-
-
-
-                    <b data-i18n="Hands evaluated">Hands evaluated</b>
-
-
-
-                    <span data-i18n="Best five-card poker hand determines each result.">Best five-card poker hand determines each result.</span>
-
-
-
-                  </div>
-
-
-
-                </div>
-
-
-
-              </div>
-
-
-
-            </div>
-
-
-
-          </section>
-
-
-
-          <section class="panel">
-
-
-
-            <div class="panel-head">
-
-
-
-              <div>
-
-
-
-                <div class="panel-title" data-i18n="Deck status">Deck status</div>
-
-
-
-              </div>
-
-
-
-            </div>
-
-
-
-            <div class="panel-body">
-
-
-
-              <div class="label" data-i18n="Available cards">Available cards</div>
-
-
-
-              <div style="font-size:27px;font-weight:750;margin-top:2px" id="eqDeckCount">52</div>
-
-
-
-              <div class="panel-note" data-i18n="No typed card notation — all cards are visual selections.">No typed
-
-
-
-                card notation — all cards are visual selections.</div>
-
-
-
-            </div>
-
-
-
-          </section>
-
-
-
-        </aside>
-
-
-
+          <details id="equityDetails" class="panel equity-details-panel">
+            <summary><span data-i18n="Calculation details">Calculation details</span><span class="muted" data-i18n="Method, workload, and execution metadata">Method, workload, and execution metadata</span></summary>
+            <dl class="equity-detail-grid"><div><dt data-i18n="Requested">Requested</dt><dd id="equityDetailRequested">Auto</dd></div><div><dt data-i18n="Actual method">Actual method</dt><dd id="equityDetailActual">—</dd></div><div><dt data-i18n="Estimated combinations">Estimated combinations</dt><dd id="equityDetailEstimate">—</dd></div><div><dt data-i18n="Samples">Samples</dt><dd id="equityDetailSamples">—</dd></div><div><dt data-i18n="Seed">Seed</dt><dd id="equityDetailSeed">—</dd></div><div><dt data-i18n="Unknown hands">Unknown hands</dt><dd id="equityDetailUnknown">1</dd></div><div><dt data-i18n="Missing board cards">Missing board cards</dt><dd id="equityDetailBoard">5</dd></div><div><dt data-i18n="Execution">Execution</dt><dd id="equityDetailExecution">Ready</dd></div></dl>
+          </details>
+        </div>
       </div>
-
-
-
     </section>
 
     <section id="infoMode" class="mode-view" style="display: none; padding: 24px; overflow-y: auto;">

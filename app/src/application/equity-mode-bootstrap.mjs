@@ -5,6 +5,9 @@ export function installEquityModeBridge(browserWindow, {
 } = {}) {
   if (!browserWindow) return null;
   const bridge = Object.freeze({
+    estimate(request) {
+      return controller.estimate(request);
+    },
     calculate(request, options) {
       return controller.calculate(request, options);
     },
