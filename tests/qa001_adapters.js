@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const { spawnSync } = require('child_process');
+const { pathToFileURL } = require('url');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const LOGIC_PATH = path.join(REPO_ROOT, 'app', 'src', 'core', 'logic.js');
@@ -26,8 +27,8 @@ function createLogicHarness() {
   const renderDeckSource = sliceBetween(source, 'function renderDeck()', 'function firstEmptyIndex(cards, limit)');
   const evaluatorEquitySource = sliceBetween(
     source,
-    'function combinations(items, size)',
-    'function renderEquityResult(result, exact, total, splitRate)'
+    '// Static TypedArray buffers for zero-GC hand evaluation in main thread',
+    'let equityCalculationGeneration = 0;'
   );
 
   const sandbox = {
@@ -52,24 +53,11 @@ function createLogicHarness() {
 
     let app = { equity: { board: [], dead: [], players: [] }, gto: {}, training: {} };
     let config = {};
-    let capturedResult = null;
-    let toastMessages = [];
     let deckNode = { innerHTML: '' };
 
     const $ = (selector) => selector === '#deck' ? deckNode : null;
     const allDeck = () => SUITS.flatMap((suit) => RANKS.map((rank) => rank + suit.id));
     const getSuit = (card) => SUITS.find((suit) => suit.id === (card && card[1]));
-    const selectedValue = (id) => config[id];
-    const numericValue = (id, fallback = 0) => {
-      const value = Number(config[id]);
-      return Number.isFinite(value) ? value : fallback;
-    };
-    const requestAnimationFrame = (callback) => callback();
-    const renderEquityResult = (result, exact, total, splitRate) => {
-      capturedResult = { result, exact, total, splitRate };
-    };
-    const toast = (message) => { toastMessages.push(message); };
-
     ${cardStateSource}
     ${renderDeckSource}
     ${evaluatorEquitySource}
@@ -77,19 +65,6 @@ function createLogicHarness() {
     globalThis.__qa001 = {
       scoreFive,
       scoreSeven,
-      calculateEquity,
-      setEquityState(state, options) {
-        app.equity = state;
-        config = {
-          '#calcStyle': options.calcStyle || 'exact',
-          '#trials': options.trials === undefined ? 1000 : options.trials
-        };
-        capturedResult = null;
-        toastMessages = [];
-      },
-      getEquityCapture() {
-        return { capturedResult, toastMessages: [...toastMessages] };
-      },
       renderDeckFor(state, picker) {
         app.equity = state;
         app.picker = picker;
@@ -133,6 +108,9 @@ function createWorkerHarness() {
 
 const logicHarness = createLogicHarness();
 const workerHarness = createWorkerHarness();
+const equityModulePromise = import(pathToFileURL(
+  path.join(REPO_ROOT, 'shared', 'poker-domain', 'equity.js')
+).href);
 
 function evaluateProduction(cards) {
   return logicHarness.scoreSeven(cards);
@@ -156,14 +134,39 @@ function evaluatePython(hands) {
   return JSON.parse(processResult.stdout);
 }
 
-function runProductionEquity(state, options = {}) {
-  const clonedState = JSON.parse(JSON.stringify(state));
-  logicHarness.setEquityState(clonedState, options);
-  logicHarness.calculateEquity();
-  const capture = logicHarness.getEquityCapture();
+async function runProductionEquity(state, options = {}) {
+  const equity = await equityModulePromise;
+  const method = options.calcStyle === 'sim'
+    ? equity.EQUITY_METHODS.MONTE_CARLO
+    : options.calcStyle === 'exact'
+      ? equity.EQUITY_METHODS.EXACT
+      : equity.EQUITY_METHODS.AUTO;
+  const result = await equity.calculateEquity({
+    schemaVersion: equity.EQUITY_REQUEST_SCHEMA_VERSION,
+    players: state.players.map((entry, index) => ({
+      id: `P${index}`,
+      cards: entry.cards.length === 0 ? null : [...entry.cards],
+    })),
+    board: [...state.board],
+    deadCards: [...state.dead],
+    method,
+    samples: options.trials === undefined ? 1000 : options.trials,
+    seed: options.seed === undefined ? 12345 : options.seed,
+  }, { yieldControl: async () => {} });
+  if (result.ok === false) {
+    return { result: null, error: result.error, toastMessages: [] };
+  }
   return {
-    ...capture.capturedResult,
-    toastMessages: capture.toastMessages,
+    result: result.players.map((entry, index) => ({
+      name: state.players[index].name,
+      win: entry.winProbability * 100,
+      tie: entry.tieProbability * 100,
+      equity: entry.equity * 100,
+    })),
+    exact: result.exact,
+    total: result.trials,
+    splitRate: result.metadata.splitPotTrials / result.trials * 100,
+    toastMessages: [],
   };
 }
 

@@ -5709,6 +5709,8 @@ input[type="range"]:disabled::-moz-range-thumb { background: var(--text-disabled
   --series-5: #61a7a2;
   --series-6: #b7a24f;
   --series-7: #778da9;
+  --series-8: #c06f5b;
+  --series-9: #6e9f68;
 }
 
 [data-theme="graphite"] {
@@ -6029,10 +6031,18 @@ html[data-four-color="false"] {
 .equity-row[data-player-series="5"] { --series-color: var(--series-5); }
 .equity-row[data-player-series="6"] { --series-color: var(--series-6); }
 .equity-row[data-player-series="7"] { --series-color: var(--series-7); }
+.equity-row[data-player-series="8"] { --series-color: var(--series-8); }
+.equity-row[data-player-series="9"] { --series-color: var(--series-9); }
 .equity-row--tie { --series-color: var(--equity-tie); }
 .equity-row .eqbar { height: 12px; background: var(--surface-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); }
 .equity-row .eqfill { height: 100%; background: var(--series-color); border-radius: inherit; }
 .equity-row b { font-family: var(--font-data); font-variant-numeric: tabular-nums; text-align: end; }
+.equity-calculation-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.equity-calculation-actions .cta { flex: 1 1 180px; }
+.equity-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; margin-top: var(--space-3); }
+.equity-progress[hidden] { display: none; }
+.equity-progress progress { width: 100%; accent-color: var(--accent-primary); }
+.equity-progress small { min-width: 3.5rem; color: var(--text-muted); font-family: var(--font-data); text-align: end; }
 .ev-positive { color: var(--ev-positive); }
 .ev-neutral { color: var(--ev-neutral); }
 .ev-negative { color: var(--ev-negative); }

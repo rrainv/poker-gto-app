@@ -222,8 +222,8 @@ for (const [index, fixture] of orderingFixtures.entries()) {
   });
 }
 
-test('production equity: heads-up known river winner', () => {
-  const capture = runProductionEquity({
+test('production equity: heads-up known river winner', async () => {
+  const capture = await runProductionEquity({
     board: ['2c', '7d', '9h', 'Js', '3c'],
     dead: [],
     players: [player('Hero', ['As', 'Ad']), player('Villain', ['Kh', 'Kd'])],
@@ -235,21 +235,21 @@ test('production equity: heads-up known river winner', () => {
   assertPercentEquitiesAreValid(capture);
 });
 
-test('production equity: requested simulation mode keeps every returned value in bounds', () => {
-  const capture = runProductionEquity({
+test('production equity: fully-known river uses the exact fast path even when simulation is requested', async () => {
+  const capture = await runProductionEquity({
     board: ['2c', '7d', '9h', 'Js', '3c'],
     dead: [],
     players: [player('Hero', ['As', 'Ad']), player('Villain', ['Kh', 'Kd'])],
   }, { calcStyle: 'sim', trials: 128 });
 
-  assert.equal(capture.exact, false);
-  assert.equal(capture.total, 128);
+  assert.equal(capture.exact, true);
+  assert.equal(capture.total, 1);
   assert.deepEqual(capture.result.map((entry) => entry.equity), [100, 0]);
   assertPercentEquitiesAreValid(capture);
 });
 
-test('production equity: three-way known river winner', () => {
-  const capture = runProductionEquity({
+test('production equity: three-way known river winner', async () => {
+  const capture = await runProductionEquity({
     board: ['2h', '5h', '9h', 'Kc', '3d'],
     dead: [],
     players: [
@@ -263,8 +263,8 @@ test('production equity: three-way known river winner', () => {
   assertPercentEquitiesAreValid(capture);
 });
 
-test('production equity: exact heads-up board tie', () => {
-  const capture = runProductionEquity({
+test('production equity: exact heads-up board tie', async () => {
+  const capture = await runProductionEquity({
     board: ['As', 'Ks', 'Qs', 'Js', 'Ts'],
     dead: [],
     players: [player('Hero', ['2c', '3d']), player('Villain', ['4c', '5d'])],
@@ -276,8 +276,8 @@ test('production equity: exact heads-up board tie', () => {
   assertPercentEquitiesAreValid(capture);
 });
 
-test('production equity: exact three-way board tie splits equally', () => {
-  const capture = runProductionEquity({
+test('production equity: exact three-way board tie splits equally', async () => {
+  const capture = await runProductionEquity({
     board: ['As', 'Ks', 'Qs', 'Js', 'Ts'],
     dead: [],
     players: [
@@ -293,8 +293,8 @@ test('production equity: exact three-way board tie splits equally', () => {
   assertPercentEquitiesAreValid(capture);
 });
 
-test('production equity: exact turn enumeration uses every legal river', () => {
-  const capture = runProductionEquity({
+test('production equity: exact turn enumeration uses every legal river', async () => {
+  const capture = await runProductionEquity({
     board: ['As', 'Ks', 'Qs', 'Js'],
     dead: [],
     players: [player('Hero', ['Ts', '2c']), player('Villain', ['Th', '2d'])],
@@ -306,8 +306,8 @@ test('production equity: exact turn enumeration uses every legal river', () => {
   assertPercentEquitiesAreValid(capture);
 });
 
-test('production equity: exact flop enumeration covers every legal turn-river pair', () => {
-  const capture = runProductionEquity({
+test('production equity: exact flop enumeration covers every legal turn-river pair', async () => {
+  const capture = await runProductionEquity({
     board: ['As', 'Ks', 'Qs'],
     dead: [],
     players: [player('Hero', ['Js', 'Ts']), player('Villain', ['Ah', 'Ad'])],
@@ -333,14 +333,13 @@ test('production card picker marks already-used equity cards unavailable', () =>
   assert.match(html, /data-deck-card="Kh" >/);
 });
 
-test('characterization: calculateEquity itself accepts duplicate physical cards', () => {
-  const capture = runProductionEquity({
+test('canonical production equity rejects duplicate physical cards structurally', async () => {
+  const capture = await runProductionEquity({
     board: ['2c', '7d', '9h', 'Js', '3c'],
     dead: [],
     players: [player('Hero', ['As', 'Ad']), player('Villain', ['As', 'Kd'])],
   });
 
-  assert.ok(capture.result, 'current calculation proceeds instead of rejecting the duplicate As');
-  assert.equal(capture.toastMessages.length, 0);
-  assertPercentEquitiesAreValid(capture);
+  assert.equal(capture.result, null);
+  assert.equal(capture.error.code, 'duplicate_card');
 });

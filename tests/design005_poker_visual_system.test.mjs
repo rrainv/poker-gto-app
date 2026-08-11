@@ -103,10 +103,10 @@ test('recommendations distinguish decision, provenance, metadata, and warnings',
 });
 
 test('Equity uses reusable multiway series while retaining separate win and tie values', () => {
-  assert.match(logic, /data-player-series="\$\{index % 8\}"/);
+  assert.match(logic, /data-player-series="\$\{index\}"/);
   assert.match(logic, /Win \$\{player\.win\.toFixed\(1\)\}%[^T]+Tie \$\{player\.tie\.toFixed\(1\)\}%/);
   assert.match(logic, /aria-valuenow="\$\{player\.equity\.toFixed\(1\)\}"/);
-  for (let index = 0; index < 8; index += 1) {
+  for (let index = 0; index < 10; index += 1) {
     assert.match(visualSystem, new RegExp(`equity-row\\[data-player-series="${index}"\\]`));
   }
   assert.match(visualSystem, /equity-row--tie[\s\S]*?equity-tie/);

@@ -3,6 +3,7 @@ export * from './action.js';
 export * from './cards.js';
 export * from './chance.js';
 export * from './evaluator.js';
+export * from './equity.js';
 export * from './initialize-hand.js';
 export * from './legal-actions.js';
 export * from './positions.js';

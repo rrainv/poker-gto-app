@@ -63,7 +63,11 @@ function createHarness() {
   const potSource = sliceBetween(source, 'function preflopBasePot()', 'function updateMetrics()');
   const updateContextSource = sliceBetween(source, 'async function updateContext(reason =', 'async function loadOnnxModel()');
   const sliderSource = sliceBetween(source, 'function syncSliderPair(rangeId, numberId)', 'function bindSliderPair(rangeId, numberId, callback)');
-  const heuristicSource = sliceBetween(source, 'function getHandTier(hand)', 'function combinations(items, size)');
+  const heuristicSource = sliceBetween(
+    source,
+    'function getHandTier(hand)',
+    '// Static TypedArray buffers for zero-GC hand evaluation in main thread'
+  );
   const trainingActionSource = sliceBetween(source, 'const ACTION_PASSIVE_TO_AGGRESSIVE_ORDER', 'function generateFeedback(userAction, bestAction, solution)');
   const postflopSource = sliceBetween(source, 'function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [], decisionContext = null)', 'function calculatePostflopFallbackStrategy(context, heroCards)');
   const trainingStrategySource = sliceBetween(source, 'function getTrainingStrategy(context, heroCards)', '// Hook renderRangeAdvantage into updateContext and villain pos changes');

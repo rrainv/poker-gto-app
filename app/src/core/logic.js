@@ -125,11 +125,13 @@ const app = {
 
     dead: [],
 
+    nextPlayerId: 2,
+
     players: [
 
-      { name: 'Hero', cards: [] },
+      { id: 'equity-player-0', name: 'Hero', cards: [] },
 
-      { name: 'Opponent 1', cards: [] }
+      { id: 'equity-player-1', name: 'Opponent 1', cards: [] }
 
     ]
 
@@ -208,6 +210,17 @@ function callPlaybookStateBridge(method, ...args) {
     return bridge[method](...args);
   } catch (error) {
     console.error('[Riverline Playbook state source]', error);
+    return null;
+  }
+}
+
+function callEquityServiceBridge(method, ...args) {
+  try {
+    const bridge = window.RiverlineEquity;
+    if (!bridge || typeof bridge[method] !== 'function') return null;
+    return bridge[method](...args);
+  } catch (error) {
+    console.error('[Riverline Equity service]', error);
     return null;
   }
 }
@@ -447,7 +460,7 @@ function renderEquityPlayers() {
 
   add.addEventListener('click', () => {
 
-    if (app.equity.players.length >= 8) return toast('Maximum of eight players.', 'warning');
+    if (app.equity.players.length >= 10) return toast('Maximum of ten players.', 'warning');
 
     // Edge case: Check if adding too many players would break equity calculation
     if (app.equity.players.length >= 7) {
@@ -455,7 +468,11 @@ function renderEquityPlayers() {
       if (!confirmAdd) return;
     }
 
-    app.equity.players.push({ name: `Opponent ${app.equity.players.length}`, cards: [] });
+    app.equity.players.push({
+      id: `equity-player-${app.equity.nextPlayerId++}`,
+      name: `Opponent ${app.equity.players.length}`,
+      cards: []
+    });
 
     renderAllCards();
 
@@ -4739,45 +4756,10 @@ function applyHeuristicToPrediction(p, context, posIdx, actionIdx, hand) {
 
 // ---------------------------------------------------------------------------
 
-// Correct Hold'em evaluator and equity calculation
+// Legacy fast evaluator retained for Playbook heuristics and the outs display.
+// Canonical Equity calculation lives in shared/poker-domain/equity.js.
 
 // ---------------------------------------------------------------------------
-
-
-
-function combinations(items, size) {
-
-  const output = [];
-
-  const choose = (start, chosen) => {
-
-    if (chosen.length === size) {
-
-      output.push([...chosen]);
-
-      return;
-
-    }
-
-    for (let index = start; index <= items.length - (size - chosen.length); index += 1) {
-
-      chosen.push(items[index]);
-
-      choose(index + 1, chosen);
-
-      chosen.pop();
-
-    }
-
-  };
-
-  choose(0, []);
-
-  return output;
-
-}
-
-
 
 // Static TypedArray buffers for zero-GC hand evaluation in main thread
 const JS_EVAL_COUNTS = new Uint8Array(15);
@@ -4932,129 +4914,111 @@ function scoreSeven(cards) {
 
 
 
-function shuffled(cards) {
+let equityCalculationGeneration = 0;
 
-  const result = [...cards];
-
-  for (let index = result.length - 1; index > 0; index -= 1) {
-
-    const picked = Math.floor(Math.random() * (index + 1));
-
-    [result[index], result[picked]] = [result[picked], result[index]];
-
-  }
-
-  return result;
-
+function equityRequestFromCurrentInputs() {
+  const methodByControl = { auto: 'auto', exact: 'exact', sim: 'monte_carlo' };
+  return {
+    schemaVersion: 'equity-request/v1',
+    players: app.equity.players.map((player) => {
+      const cards = player.cards.filter(Boolean);
+      return { id: player.id, cards: cards.length === 0 ? null : cards.slice() };
+    }),
+    board: app.equity.board.filter(Boolean).slice(),
+    deadCards: app.equity.dead.filter(Boolean).slice(),
+    method: methodByControl[selectedValue('#calcStyle')] || 'auto',
+    samples: numericValue('#trials', 10000)
+  };
 }
 
-
-
-function calculateEquity() {
-
-  const players = app.equity.players;
-
-  const deck = allDeck().filter((card) => !new Set(usedCards('equity')).has(card));
-
-  const blankHoleCards = players.reduce((sum, player) => sum + Math.max(0, 2 - player.cards.filter(Boolean).length), 0);
-
-  const missingBoard = 5 - app.equity.board.filter(Boolean).length;
-
-  const needed = blankHoleCards + missingBoard;
-
-  if (deck.length < needed) return toast('Not enough cards remain in the deck.', 'warning');
-
-
-
-  const requestedMethod = selectedValue('#calcStyle');
-
-  const exact = requestedMethod !== 'sim' && blankHoleCards === 0 && missingBoard <= 2;
-
-  const deals = exact
-
-    ? (needed === 0 ? [[]] : needed === 1 ? deck.map((card) => [card]) : combinations(deck, 2))
-
-    : Array.from({ length: numericValue('#trials', 10000) }, () => shuffled(deck).slice(0, needed));
-
-
-
-  const wins = players.map(() => 0);
-
-  const ties = players.map(() => 0);
-
-  const equityShares = players.map(() => 0);
-
-  let splitPotRunouts = 0;
-
-  
-  // Refactored to prevent main thread spin-lock and UI freezing
-  // using an asynchronous chunked loop
-  let i = 0;
-  const CHUNK_SIZE = 500;
-  
-  function processChunk() {
-      const end = Math.min(i + CHUNK_SIZE, deals.length);
-      for (; i < end; i++) {
-        let deal = deals[i];
-        let dealIndex = 0;
-        const hands = players.map((player) => {
-          const cards = player.cards.filter(Boolean).slice();
-          while (cards.length < 2) cards.push(deal[dealIndex++]);
-          return cards;
-        });
-        const board = app.equity.board.filter(Boolean).slice();
-        while (board.length < 5) board.push(deal[dealIndex++]);
-        const scores = hands.map((hand) => scoreSeven([...hand, ...board]));
-        const best = Math.max(...scores);
-        const winners = scores.map((score, index) => score === best ? index : -1).filter((index) => index >= 0);
-        if (winners.length === 1) {
-          wins[winners[0]] += 1;
-          equityShares[winners[0]] += 1;
-        } else {
-          splitPotRunouts += 1;
-          winners.forEach((index) => {
-            ties[index] += 1;
-            equityShares[index] += 1 / winners.length;
-          });
-        }
-      }
-      
-      if (i < deals.length) {
-          requestAnimationFrame(processChunk);
-      } else {
-          const total = deals.length;
-          const result = players.map((player, index) => ({
-            name: player.name,
-            win: wins[index] / total * 100,
-            tie: ties[index] / total * 100,
-            equity: equityShares[index] / total * 100
-          }));
-          renderEquityResult(result, exact, total, splitPotRunouts / total * 100);
-      }
-  }
-  
-  requestAnimationFrame(processChunk);
-  return; // Early return, renderEquityResult is called asynchronously now
-
-
-
-
-
+function setEquityCalculationRunning(running) {
+  const calculate = $('#calculate');
+  const cancel = $('#cancelEquity');
+  const progress = $('#equityProgressWrap');
+  if (calculate) calculate.disabled = running;
+  if (cancel) cancel.hidden = !running;
+  if (progress) progress.hidden = !running;
 }
 
+function renderEquityProgress(progress) {
+  const bar = $('#equityProgress');
+  const text = $('#equityProgressText');
+  if (bar) bar.value = progress.fraction;
+  if (text) text.textContent = `${(progress.fraction * 100).toFixed(0)}% · ${progress.completed.toLocaleString()} / ${progress.total.toLocaleString()}`;
+}
 
+function equityFailureMessage(error) {
+  if (!error) return 'Equity calculation failed.';
+  const messages = {
+    invalid_request: 'Complete each known hand with exactly two valid cards.',
+    duplicate_card: 'A physical card can appear only once.',
+    impossible_deck: 'The requested hands and board cannot fit in the remaining deck.',
+    exact_limit_exceeded: 'This exact calculation is too large. Choose Automatic or Monte Carlo.',
+    aborted: 'Equity calculation cancelled.',
+    internal_error: 'The Equity service could not complete this calculation.'
+  };
+  return messages[error.code] || 'Equity calculation failed.';
+}
 
-function renderEquityResult(result, exact, total, splitRate) {
+async function calculateEquity() {
+  const generation = ++equityCalculationGeneration;
+  const calculation = callEquityServiceBridge('calculate', equityRequestFromCurrentInputs(), {
+    onProgress(progress) {
+      if (generation === equityCalculationGeneration) renderEquityProgress(progress);
+    }
+  });
+  if (!calculation || typeof calculation.then !== 'function') {
+    return toast('The canonical Equity service is unavailable.', 'error');
+  }
+
+  setEquityCalculationRunning(true);
+  $('#equityStatus').textContent = 'Calculating conditional win probability…';
+  $('#methodBadge').textContent = 'RUNNING';
+  const response = await calculation;
+  if (generation !== equityCalculationGeneration) return response;
+  setEquityCalculationRunning(false);
+
+  if (response?.ok === false) {
+    const message = equityFailureMessage(response.error);
+    $('#equityStatus').textContent = message;
+    $('#methodBadge').textContent = response.error.code === 'aborted' ? 'CANCELLED' : 'ERROR';
+    toast(message, response.error.code === 'aborted' ? 'info' : 'warning');
+    return response;
+  }
+  renderEquityResult(response);
+  return response;
+}
+
+function cancelEquityCalculation() {
+  if (!callEquityServiceBridge('cancel')) return false;
+  equityCalculationGeneration += 1;
+  setEquityCalculationRunning(false);
+  $('#equityStatus').textContent = 'Equity calculation cancelled.';
+  $('#methodBadge').textContent = 'CANCELLED';
+  return true;
+}
+
+function renderEquityResult(equityResult) {
+  const namesById = new Map(app.equity.players.map((player) => [player.id, player.name]));
+  const result = equityResult.players.map((player) => ({
+    name: namesById.get(player.id) || player.id,
+    win: player.winProbability * 100,
+    tie: player.tieProbability * 100,
+    equity: player.equity * 100
+  }));
+  const exact = equityResult.exact;
+  const total = equityResult.trials;
+  const splitRate = equityResult.metadata.splitPotTrials / total * 100;
 
   $('#headlineEquity').textContent = result[0].equity.toFixed(1) + '%';
 
   $('#equityStatus').textContent = `${exact ? 'Exact enumeration' : 'Monte Carlo'} · ${total.toLocaleString()} conditional runouts · ${remainingCards('equity')} cards available`;
 
-  $('#methodBadge').textContent = exact ? 'EXACT' : 'SIMULATED';
+  $('#methodBadge').textContent = exact ? 'EXACT' : 'MONTE CARLO';
 
   $('#equityBars').innerHTML = result.map((player, index) => `
 
-    <div class="equity-row" data-player-series="${index % 8}">
+    <div class="equity-row" data-player-series="${index}">
       <span class="equity-player-label"><i class="series-marker" aria-hidden="true"></i><span>${player.name}<small>Win ${player.win.toFixed(1)}% · Tie ${player.tie.toFixed(1)}%</small></span></span>
       <div class="eqbar" role="progressbar" aria-label="${player.name} equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${player.equity.toFixed(1)}"><div class="eqfill player-series" style="width:${player.equity}%"></div></div>
       <b>${player.equity.toFixed(1)}%</b>
@@ -5138,6 +5102,12 @@ function renderEquityResult(result, exact, total, splitRate) {
 
 
 function setEquityPending() {
+
+  callEquityServiceBridge('cancel');
+
+  equityCalculationGeneration += 1;
+
+  setEquityCalculationRunning(false);
 
   $('#equityStatus').textContent = 'Inputs changed. Calculate to refresh the result.';
 
@@ -5591,6 +5561,8 @@ function bindEvents() {
   // Training status polling removed - training no longer needed
 
   if ($('#calculate')) $('#calculate').addEventListener('click', calculateEquity);
+
+  if ($('#cancelEquity')) $('#cancelEquity').addEventListener('click', cancelEquityCalculation);
 
   if ($('#trials')) $('#trials').addEventListener('change', setEquityPending);
 

@@ -1994,9 +1994,16 @@
 
 
 
-              <button class="cta ui-button ui-button--primary" type="button" id="calculate" data-i18n="Calculate win probability">Calculate win
+              <div class="equity-calculation-actions">
+                <button class="cta ui-button ui-button--primary" type="button" id="calculate" data-i18n="Calculate win probability">Calculate win
 
-                probability</button>
+                  probability</button>
+                <button class="ui-button ui-button--secondary" type="button" id="cancelEquity" hidden data-i18n="Cancel">Cancel</button>
+              </div>
+              <div class="equity-progress" id="equityProgressWrap" hidden>
+                <progress id="equityProgress" max="1" value="0" aria-label="Equity calculation progress"></progress>
+                <small id="equityProgressText" aria-live="polite">0%</small>
+              </div>
 
 
 
@@ -2672,6 +2679,7 @@
   <script src="src/core/SoundFX.js" defer></script>
   <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/canonical-live-bootstrap.mjs"></script>
+  <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script src="src/core/logic.js?v=21" defer></script>
   <script src="src/ui/teacher.js" defer></script>
   <script src="src/ui/dragAndDrop.js" defer></script>
