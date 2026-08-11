@@ -61,6 +61,14 @@ export function installPlaybookStateSourceBridge(browserWindow, {
       return publish('deal_hole', canonicalController.dealHoleCards(cardsByPlayer));
     },
 
+    dealObservedHoleCards(cardsByPlayer) {
+      return publish('deal_hole_observed', canonicalController.dealObservedHoleCards(cardsByPlayer));
+    },
+
+    revealHoleCards(playerId, cards) {
+      return publish('reveal_hole', canonicalController.revealHoleCards(playerId, cards));
+    },
+
     dealBoardCards(cards) {
       return publish('deal_board', canonicalController.dealBoardCards(cards));
     },

@@ -1,5 +1,6 @@
 import { assertCardArray, assertUniqueKnownCards } from './cards.js';
 import { deepFreeze } from './freeze.js';
+import { createHiddenHoleCards } from './private-cards.js';
 import { firstPreflopActorId } from './selectors.js';
 import { CHANCE_TYPES, PHASES } from './schema.js';
 import { completePreflop } from './settlement.js';
@@ -28,15 +29,32 @@ function applyHoleDeal(state, chanceEvent) {
   const dealtPlayers = state.players.filter((player) => player.dealtIn);
   const expectedIds = new Set(dealtPlayers.map((player) => player.playerId));
   const suppliedIds = Object.keys(chanceEvent.cardsByPlayer);
-  if (suppliedIds.length !== expectedIds.size || suppliedIds.some((playerId) => !expectedIds.has(playerId))) {
-    throw new RangeError('cardsByPlayer must contain every dealt-in player exactly once for heads-up or multiway play');
+  const hiddenPlayerIds = chanceEvent.hiddenPlayerIds ?? [];
+  if (!Array.isArray(hiddenPlayerIds)
+    || hiddenPlayerIds.some((playerId) => typeof playerId !== 'string')) {
+    throw new TypeError('hiddenPlayerIds must be an array of player IDs');
+  }
+  if (new Set(hiddenPlayerIds).size !== hiddenPlayerIds.length) {
+    throw new RangeError('hiddenPlayerIds cannot contain duplicates');
+  }
+  if (suppliedIds.some((playerId) => !expectedIds.has(playerId))
+    || hiddenPlayerIds.some((playerId) => !expectedIds.has(playerId))) {
+    throw new RangeError('Hole-card deal refers to an unknown or non-dealt player');
+  }
+  if (suppliedIds.some((playerId) => hiddenPlayerIds.includes(playerId))) {
+    throw new RangeError('A player cannot have both known and hidden hole cards');
+  }
+  const representedIds = new Set([...suppliedIds, ...hiddenPlayerIds]);
+  if (representedIds.size !== expectedIds.size
+    || [...expectedIds].some((playerId) => !representedIds.has(playerId))) {
+    throw new RangeError('deal_hole must represent every dealt-in player as known or hidden for heads-up or multiway play');
   }
 
   const cardGroups = [
     { label: 'board', cards: state.board },
     { label: 'deadCards', cards: state.deadCards },
   ];
-  for (const player of dealtPlayers) {
+  for (const player of dealtPlayers.filter((candidate) => suppliedIds.includes(candidate.playerId))) {
     const cards = assertCardArray(chanceEvent.cardsByPlayer[player.playerId], `cardsByPlayer.${player.playerId}`);
     if (cards.length !== 2) throw new RangeError('Each dealt-in player must receive exactly two cards');
     cardGroups.push({ label: `holeCards.${player.playerId}`, cards });
@@ -45,7 +63,9 @@ function applyHoleDeal(state, chanceEvent) {
 
   const nextState = structuredClone(state);
   for (const player of nextState.players) {
-    player.holeCards = [...chanceEvent.cardsByPlayer[player.playerId]];
+    player.holeCards = Object.hasOwn(chanceEvent.cardsByPlayer, player.playerId)
+      ? [...chanceEvent.cardsByPlayer[player.playerId]]
+      : createHiddenHoleCards();
   }
   nextState.phase = PHASES.BETTING;
   nextState.actingPlayerId = firstPreflopActorId(nextState);
@@ -63,8 +83,10 @@ function applyBoardDeal(state, chanceEvent, transition) {
   const cardGroups = [
     { label: 'board', cards: state.board },
     { label: 'deadCards', cards: state.deadCards },
+    // A hidden hand consumes two physical cards, but has no observable identity.
+    // Only known cards can participate in duplicate checks until an explicit reveal.
     ...state.players
-      .filter((player) => player.holeCards !== null)
+      .filter((player) => Array.isArray(player.holeCards))
       .map((player) => ({ label: `holeCards.${player.playerId}`, cards: player.holeCards })),
     { label: chanceEvent.type, cards },
   ];

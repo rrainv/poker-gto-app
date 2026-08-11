@@ -7,6 +7,8 @@ export * from './initialize-hand.js';
 export * from './legal-actions.js';
 export * from './positions.js';
 export * from './pot-layers.js';
+export * from './private-cards.js';
+export * from './private-reveal.js';
 export * from './schema.js';
 export * from './selectors.js';
 export * from './showdown.js';

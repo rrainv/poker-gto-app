@@ -103,7 +103,7 @@ test('private and board card controls reuse the picker without mutating PokerSta
   assert.match(html, /id="handPrivateCards"/);
   assert.match(html, /data-slots="hand-board-chance"/);
   assert.match(logic, /group\.startsWith\('hand-seat-'\)/);
-  assert.match(logic, /callPlaybookStateBridge\('dealHoleCards', cardsByPlayer\)/);
+  assert.match(logic, /callPlaybookStateBridge\('dealObservedHoleCards', cardsByPlayer\)/);
   assert.match(logic, /callPlaybookStateBridge\('dealBoardCards', cards\)/);
   assert.doesNotMatch(logic, /PokerState\s*=|state\.board\.push|state\.players\[[^\]]+\]\.holeCards\s*=/);
 });

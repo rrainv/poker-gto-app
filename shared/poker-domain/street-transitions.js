@@ -1,4 +1,5 @@
 import { firstPostflopActorId, isPlayerAllIn, isPlayerLive } from './selectors.js';
+import { isHiddenHoleCards } from './private-cards.js';
 import { CHANCE_TYPES, PHASES, STREETS } from './schema.js';
 
 export const BOARD_CHANCE_TRANSITIONS = Object.freeze({
@@ -55,15 +56,20 @@ export function requestBoardChance(state, chanceType) {
 }
 
 export function markShowdownReady(state) {
+  const eligiblePlayers = state.players.filter(isPlayerLive);
+  const requiredRevealPlayerIds = eligiblePlayers
+    .filter((player) => isHiddenHoleCards(player.holeCards))
+    .map((player) => player.playerId);
   state.phase = PHASES.SHOWDOWN;
   state.actingPlayerId = null;
   state.pendingChance = null;
   state.showdown = {
-    status: 'ready',
-    eligiblePlayerIds: state.players.filter(isPlayerLive).map((player) => player.playerId),
+    status: requiredRevealPlayerIds.length > 0 ? 'awaiting_private_reveal' : 'ready',
+    eligiblePlayerIds: eligiblePlayers.map((player) => player.playerId),
     pots: [],
     handRanksByPlayer: null,
     layerResults: [],
+    ...(requiredRevealPlayerIds.length > 0 ? { requiredRevealPlayerIds } : {}),
   };
 }
 

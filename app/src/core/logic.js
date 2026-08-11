@@ -301,14 +301,18 @@ function usedCards(scope) {
   const training = s === 'training' || s.startsWith('training');
 
   const canonicalHand = s === 'hand' || s.startsWith('hand-');
+  const canonicalState = canonicalHand ? callPlaybookStateBridge('getState') : null;
 
   const cards = canonicalHand
 
     ? [
         ...Object.values(app.playbookHandDraft.bySeat).flat(),
         ...app.playbookHandDraft.board,
-        ...(callPlaybookStateBridge('getState')?.board || []),
-        ...(callPlaybookStateBridge('getState')?.deadCards || [])
+        ...(canonicalState?.board || []),
+        ...(canonicalState?.deadCards || []),
+        ...(canonicalState?.players || []).flatMap((player) => (
+          Array.isArray(player.holeCards) ? player.holeCards : []
+        ))
       ]
 
     : equity
@@ -1278,17 +1282,46 @@ function resetCanonicalPlaybookHand() {
 function commitCanonicalHoleDeal() {
   const state = callPlaybookStateBridge('getState');
   if (!state?.players?.length) return toast('Start a canonical hand first.', 'warning');
-  const cardsByPlayer = Object.fromEntries(state.players.map((player) => [
-    player.playerId,
-    normalizedDecisionCards(app.playbookHandDraft.bySeat[player.seat])
-  ]));
-  if (Object.values(cardsByPlayer).some((cards) => cards.length !== 2)) {
-    return toast('Choose two private cards for every seated player.', 'warning');
+  const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
+  const cardsByPlayer = {};
+  for (const player of state.players) {
+    const cards = normalizedDecisionCards(app.playbookHandDraft.bySeat[player.seat]);
+    if (cards.length === 1) return toast('Private cards must be empty or contain exactly two cards.', 'warning');
+    if (player.playerId === heroPlayerId && cards.length !== 2) {
+      return toast('Choose both Hero cards before starting betting.', 'warning');
+    }
+    if (cards.length === 2) cardsByPlayer[player.playerId] = cards;
   }
-  const next = callPlaybookStateBridge('dealHoleCards', cardsByPlayer);
+  const next = callPlaybookStateBridge('dealObservedHoleCards', cardsByPlayer);
   if (!next) toast(canonicalHandFailureMessage(), 'error');
   renderCanonicalHandWorkspace();
   return next;
+}
+
+function commitCanonicalPrivateReveals() {
+  const state = callPlaybookStateBridge('getState');
+  const required = state?.showdown?.requiredRevealPlayerIds || [];
+  if (required.length === 0) return null;
+  let next = state;
+  for (const playerId of required) {
+    const player = state.players.find((candidate) => candidate.playerId === playerId);
+    const cards = normalizedDecisionCards(app.playbookHandDraft.bySeat[player?.seat]);
+    if (cards.length !== 2) return toast('Choose both cards for every live hand that must be revealed.', 'warning');
+    next = callPlaybookStateBridge('revealHoleCards', playerId, cards);
+    if (!next) {
+      toast(canonicalHandFailureMessage(), 'error');
+      break;
+    }
+  }
+  renderCanonicalHandWorkspace();
+  return next;
+}
+
+function commitCanonicalPrivateCards() {
+  const state = callPlaybookStateBridge('getState');
+  return state?.showdown?.status === 'awaiting_private_reveal'
+    ? commitCanonicalPrivateReveals()
+    : commitCanonicalHoleDeal();
 }
 
 function commitCanonicalBoardDeal() {
@@ -1400,8 +1433,9 @@ function renderCanonicalLegalActions(state) {
 function canonicalHandStatus(state) {
   if (!state) return { label: 'Not started', tone: 'info', summary: 'Configure and start a canonical hand.' };
   if (state.terminal?.isTerminal || state.phase === 'terminal') return { label: 'Complete', tone: 'available', summary: 'The canonical hand is complete.' };
+  if (state.showdown?.status === 'awaiting_private_reveal') return { label: 'Reveal hands', tone: 'warning', summary: 'Reveal the remaining live hands to settle this showdown exactly.' };
   if (state.phase === 'showdown') return { label: 'Showdown', tone: 'warning', summary: 'Betting is complete. Resolve the canonical showdown.' };
-  if (state.pendingChance?.type === 'deal_hole') return { label: 'Deal cards', tone: 'loading', summary: 'Choose two private cards for every seated player.' };
+  if (state.pendingChance?.type === 'deal_hole') return { label: 'Set Hero cards', tone: 'loading', summary: 'Choose Hero cards. Opponents may remain hidden.' };
   if (state.phase === 'chance') return { label: 'Board chance', tone: 'loading', summary: `Waiting for ${state.pendingChance?.type?.replace('deal_', '') || 'board cards'}.` };
   return { label: 'In progress', tone: 'available', summary: 'Only canonical legal actions can advance this hand.' };
 }
@@ -1410,17 +1444,44 @@ function renderCanonicalPrivateDeal(state) {
   const section = $('#handDealSection');
   const root = $('#handPrivateCards');
   const isHoleDeal = state?.pendingChance?.type === 'deal_hole';
+  const isAwaitingReveal = state?.showdown?.status === 'awaiting_private_reveal';
   if (!section || !root) return;
-  section.hidden = !isHoleDeal;
-  if (!isHoleDeal) return;
+  section.hidden = !isHoleDeal && !isAwaitingReveal;
+  if (!isHoleDeal && !isAwaitingReveal) return;
   const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
-  root.innerHTML = state.players.map((player) => `
+  const privateRow = (player, note) => `
     <div class="hand-private-row">
-      <div><strong>${canonicalPlayerLabel(player, heroPlayerId)}</strong><small>Seat ${player.seat + 1}</small></div>
+      <div><strong>${canonicalPlayerLabel(player, heroPlayerId)}</strong><small>Seat ${player.seat + 1} · ${note}</small></div>
       <div class="card-slots" data-slots="hand-seat-${player.seat}"></div>
-    </div>`).join('');
-  state.players.forEach((player) => renderSlots(`hand-seat-${player.seat}`, 2));
-  const complete = state.players.every((player) => normalizedDecisionCards(app.playbookHandDraft.bySeat[player.seat]).length === 2);
+    </div>`;
+  let renderedPlayers;
+  if (isAwaitingReveal) {
+    renderedPlayers = state.showdown.requiredRevealPlayerIds
+      .map((playerId) => state.players.find((player) => player.playerId === playerId));
+    if ($('#handDealTitle')) $('#handDealTitle').textContent = 'Reveal remaining hands';
+    if ($('#handDealHelp')) $('#handDealHelp').textContent = 'Exact settlement needs the two cards held by each remaining live player.';
+    if ($('#handDealHoleButton')) $('#handDealHoleButton').textContent = 'Reveal hands';
+    root.innerHTML = renderedPlayers.map((player) => privateRow(player, 'Reveal for showdown')).join('');
+  } else {
+    const hero = state.players.find((player) => player.playerId === heroPlayerId);
+    const opponents = state.players.filter((player) => player.playerId !== heroPlayerId);
+    renderedPlayers = state.players;
+    if ($('#handDealTitle')) $('#handDealTitle').textContent = 'Set private cards';
+    if ($('#handDealHelp')) $('#handDealHelp').textContent = "Choose Hero's cards. Opponents remain hidden unless you set them explicitly.";
+    if ($('#handDealHoleButton')) $('#handDealHoleButton').textContent = 'Start betting';
+    root.innerHTML = `${privateRow(hero, 'Required')}
+      <div class="hand-hidden-summary" role="status"><span class="hand-card-backs" aria-hidden="true"><i></i><i></i></span><strong>${opponents.length} opponent${opponents.length === 1 ? '' : 's'} hidden by default</strong></div>
+      <details class="hand-known-opponents"><summary>Set known opponent cards (optional)</summary>
+        <div class="hand-known-opponent-list">${opponents.map((player) => privateRow(player, 'Optional · otherwise Hidden')).join('')}</div>
+      </details>`;
+  }
+  renderedPlayers.forEach((player) => renderSlots(`hand-seat-${player.seat}`, 2));
+  const complete = isAwaitingReveal
+    ? renderedPlayers.every((player) => normalizedDecisionCards(app.playbookHandDraft.bySeat[player.seat]).length === 2)
+    : renderedPlayers.every((player) => {
+      const length = normalizedDecisionCards(app.playbookHandDraft.bySeat[player.seat]).length;
+      return player.playerId === heroPlayerId ? length === 2 : length !== 1;
+    });
   if ($('#handDealHoleButton')) $('#handDealHoleButton').disabled = !complete;
 }
 
@@ -1459,7 +1520,7 @@ function dispatchCanonicalTableState(state) {
     mode: 'hand',
     pot: (state.potMilliBb / 1000).toFixed(1),
     board: state.board.map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) })),
-    heroCards: (hero?.holeCards || []).map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) })),
+    heroCards: (Array.isArray(hero?.holeCards) ? hero.holeCards : []).map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) })),
     dealerPos: state.buttonSeat,
     actorPos: actor?.seat ?? null,
     heroSeat: hero?.seat ?? null,
@@ -1474,7 +1535,7 @@ function dispatchCanonicalTableState(state) {
       totalContributionBb: player.totalPotContributionMilliBb / 1000,
       folded: player.folded,
       allIn: player.currentStackMilliBb === 0 && !player.folded,
-      hasCards: Array.isArray(player.holeCards) && player.holeCards.length === 2
+      hasCards: player.holeCards !== null
     }))
   }}));
 }
@@ -1509,7 +1570,10 @@ function renderCanonicalHandWorkspace() {
   renderCanonicalChance(state);
   renderCanonicalLegalActions(state || { players: [] });
   renderCanonicalActionHistory(state);
-  if ($('#handResolveShowdownButton')) $('#handResolveShowdownButton').hidden = state?.phase !== 'showdown';
+  if ($('#handResolveShowdownButton')) {
+    $('#handResolveShowdownButton').hidden = state?.phase !== 'showdown'
+      || state?.showdown?.status !== 'ready';
+  }
   if (state) dispatchCanonicalTableState(state);
   else window.dispatchEvent(new CustomEvent('gameStateUpdate', {
     detail: { mode: 'hand', empty: true, board: [], heroCards: [] }
@@ -1523,7 +1587,7 @@ function bindCanonicalHandWorkspace() {
   });
   if ($('#handStartButton')) $('#handStartButton').addEventListener('click', startCanonicalPlaybookHand);
   if ($('#handResetButton')) $('#handResetButton').addEventListener('click', resetCanonicalPlaybookHand);
-  if ($('#handDealHoleButton')) $('#handDealHoleButton').addEventListener('click', commitCanonicalHoleDeal);
+  if ($('#handDealHoleButton')) $('#handDealHoleButton').addEventListener('click', commitCanonicalPrivateCards);
   if ($('#handDealBoardButton')) $('#handDealBoardButton').addEventListener('click', commitCanonicalBoardDeal);
   if ($('#handResolveShowdownButton')) $('#handResolveShowdownButton').addEventListener('click', () => {
     const next = callPlaybookStateBridge('resolveShowdown');

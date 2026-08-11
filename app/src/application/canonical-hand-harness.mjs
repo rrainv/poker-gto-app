@@ -102,7 +102,10 @@ export function buildCanonicalHarnessViewModel({
     isButton: player.seat === state.buttonSeat,
     isHero: player.playerId === heroPlayerId,
     isActor: player.playerId === state.actingPlayerId,
-    holeCards: player.holeCards ? [...player.holeCards] : null,
+    holeCards: Array.isArray(player.holeCards) ? [...player.holeCards] : null,
+    privateCardsStatus: Array.isArray(player.holeCards)
+      ? 'known'
+      : player.holeCards === null ? 'not_dealt' : 'hidden',
   })) || [];
   const actions = legalActions
     ? ACTION_ORDER.map((type) => actionView(

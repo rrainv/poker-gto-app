@@ -5,6 +5,7 @@ export const POKER_POT_LAYER_SCHEMA_VERSION = 'poker-pot-layer/v1';
 export const POKER_UNMATCHED_CONTRIBUTION_SCHEMA_VERSION = 'poker-unmatched-contribution/v1';
 export const POKER_HAND_RANK_SCHEMA_VERSION = 'poker-hand-rank/v1';
 export const POKER_SHOWDOWN_LAYER_RESULT_SCHEMA_VERSION = 'poker-showdown-layer-result/v1';
+export const POKER_HIDDEN_HOLE_CARDS_SCHEMA_VERSION = 'poker-hidden-hole-cards/v1';
 export const POKER_VARIANT = 'no_limit_texas_holdem';
 
 export const ACTION_TYPES = Object.freeze({
@@ -46,6 +47,10 @@ export const CHANCE_TYPES = Object.freeze({
   DEAL_FLOP: 'deal_flop',
   DEAL_TURN: 'deal_turn',
   DEAL_RIVER: 'deal_river',
+});
+
+export const HOLE_CARD_STATES = Object.freeze({
+  HIDDEN: 'hidden',
 });
 
 export const LEDGER_KINDS = Object.freeze({

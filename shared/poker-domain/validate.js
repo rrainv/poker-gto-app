@@ -2,6 +2,11 @@ import { assertCardArray, assertUniqueKnownCards } from './cards.js';
 import { assertMilliBbAlignment, assertPositiveMilliBb } from './amounts.js';
 import { validateAction } from './action.js';
 import { derivePotLayers } from './pot-layers.js';
+import {
+  areHoleCardsDealt,
+  isHiddenHoleCards,
+  validateHiddenHoleCards,
+} from './private-cards.js';
 import { deriveSeatAssignments, playersClockwiseAfterSeat, POSITIONS_BY_TABLE_SIZE } from './positions.js';
 import {
   isBettingRoundComplete,
@@ -142,21 +147,27 @@ export function validatePokerState(state) {
         'player.raiseReopenAtMilliBb',
       );
     }
-    if (player.holeCards !== null) {
-      if (!Array.isArray(player.holeCards) || player.holeCards.length !== 2) {
+    if (Array.isArray(player.holeCards)) {
+      if (player.holeCards.length !== 2) {
         throw new RangeError('Known holeCards must contain exactly two cards');
       }
       cardGroups.push({ label: `holeCards.${player.playerId}`, cards: player.holeCards });
+    } else if (player.holeCards !== null) {
+      validateHiddenHoleCards(player.holeCards, `holeCards.${player.playerId}`);
     }
   }
 
-  assertUniqueKnownCards(cardGroups);
+  const uniqueKnownCards = assertUniqueKnownCards(cardGroups);
   if (state.board.length !== BOARD_LENGTH_BY_STREET[state.street]) {
     throw new RangeError(`Street ${state.street} requires exactly ${BOARD_LENGTH_BY_STREET[state.street]} board cards`);
   }
-  const knownHoleCardPlayers = state.players.filter((player) => player.holeCards !== null);
-  if (knownHoleCardPlayers.length !== 0 && knownHoleCardPlayers.length !== state.players.length) {
-    throw new RangeError('Hole cards must be either entirely pending or known for every dealt-in player');
+  const hiddenHoleCardPlayers = state.players.filter((player) => isHiddenHoleCards(player.holeCards));
+  const dealtHoleCardPlayers = state.players.filter((player) => areHoleCardsDealt(player.holeCards));
+  if (dealtHoleCardPlayers.length !== 0 && dealtHoleCardPlayers.length !== state.players.length) {
+    throw new RangeError('Hole cards must be either entirely pending or dealt for every dealt-in player');
+  }
+  if (uniqueKnownCards.size + (hiddenHoleCardPlayers.length * 2) > 52) {
+    throw new RangeError('Known and hidden physical card counts cannot exceed the deck');
   }
   if (!seats.has(state.buttonSeat)) throw new RangeError('buttonSeat must be occupied');
   const expectedAssignments = deriveSeatAssignments(state.players, state.buttonSeat);
@@ -283,7 +294,7 @@ export function validatePokerState(state) {
     }
     let expectedChanceType;
     if (state.street === STREETS.PREFLOP) {
-      expectedChanceType = knownHoleCardPlayers.length === 0
+      expectedChanceType = dealtHoleCardPlayers.length === 0
         ? CHANCE_TYPES.DEAL_HOLE
         : CHANCE_TYPES.DEAL_FLOP;
     } else if (state.street === STREETS.FLOP) {
@@ -306,8 +317,8 @@ export function validatePokerState(state) {
     throw new RangeError('pendingChance is only valid during a chance phase');
   }
 
-  if (state.phase !== PHASES.CHANCE && knownHoleCardPlayers.length !== state.players.length) {
-    throw new RangeError('All dealt-in players require hole cards outside the initial chance state');
+  if (state.phase !== PHASES.CHANCE && dealtHoleCardPlayers.length !== state.players.length) {
+    throw new RangeError('All dealt-in players require dealt hole cards outside the initial chance state');
   }
 
   const currentStreetActions = state.actionHistory.filter((record) => record.street === state.street);
@@ -382,7 +393,9 @@ export function validatePokerState(state) {
     if (state.street !== STREETS.RIVER || state.actingPlayerId !== null || state.pendingChance !== null) {
       throw new RangeError('Showdown-ready state requires a complete river and no actor or chance');
     }
-    if (!state.showdown || state.showdown.status !== 'ready' || !bettingIsResolved) {
+    if (!state.showdown
+      || !['ready', 'awaiting_private_reveal'].includes(state.showdown.status)
+      || !bettingIsResolved) {
       throw new RangeError('Showdown requires completed river betting or no meaningful action');
     }
     if (!Array.isArray(state.showdown.eligiblePlayerIds)
@@ -396,6 +409,22 @@ export function validatePokerState(state) {
       || !Array.isArray(state.showdown.layerResults)
       || state.showdown.layerResults.length !== 0) {
       throw new RangeError('Showdown-ready state cannot contain settlement results');
+    }
+    const expectedRevealPlayerIds = state.players
+      .filter((player) => isPlayerLive(player) && isHiddenHoleCards(player.holeCards))
+      .map((player) => player.playerId);
+    if (state.showdown.status === 'awaiting_private_reveal') {
+      if (expectedRevealPlayerIds.length === 0
+        || !Array.isArray(state.showdown.requiredRevealPlayerIds)
+        || state.showdown.requiredRevealPlayerIds.length !== expectedRevealPlayerIds.length
+        || state.showdown.requiredRevealPlayerIds.some((playerId, index) => (
+          playerId !== expectedRevealPlayerIds[index]
+        ))) {
+        throw new RangeError('Awaiting showdown reveal IDs must match live hidden players');
+      }
+    } else if (expectedRevealPlayerIds.length !== 0
+      || Object.hasOwn(state.showdown, 'requiredRevealPlayerIds')) {
+      throw new RangeError('Showdown cannot be ready while a live private hand is hidden');
     }
   } else if (settledShowdown) {
     if (!state.showdown || state.showdown.status !== 'settled'

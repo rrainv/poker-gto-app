@@ -320,6 +320,35 @@ export function createCanonicalLiveController({
       return controller.applyChance({ type: CHANCE_TYPES.DEAL_HOLE, cardsByPlayer });
     },
 
+    dealObservedHoleCards(cardsByPlayer) {
+      const state = requireEnabledState();
+      if (!state) return null;
+      const knownCardsByPlayer = cardsByPlayer && typeof cardsByPlayer === 'object'
+        && !Array.isArray(cardsByPlayer) ? cardsByPlayer : {};
+      const hiddenPlayerIds = state.players
+        .filter((player) => !Object.hasOwn(knownCardsByPlayer, player.playerId))
+        .map((player) => player.playerId);
+      return controller.applyChance({
+        type: CHANCE_TYPES.DEAL_HOLE,
+        cardsByPlayer: knownCardsByPlayer,
+        hiddenPlayerIds,
+      });
+    },
+
+    revealHoleCards(playerId, cards) {
+      const state = requireEnabledState();
+      if (!state) return null;
+      try {
+        const nextState = session.revealPrivateCards({ playerId, cards });
+        setUnavailable(nextState.showdown.status === 'ready'
+          ? 'showdown_ready'
+          : nextState.phase === PHASES.BETTING ? 'comparison_pending' : 'awaiting_private_reveal');
+        return nextState;
+      } catch (error) {
+        return setError(error);
+      }
+    },
+
     dealBoardCards(cards) {
       const state = requireEnabledState();
       if (!state) return null;
@@ -354,6 +383,10 @@ export function createCanonicalLiveController({
     resolveShowdown() {
       const state = requireEnabledState();
       if (!state) return null;
+      if (state.showdown?.status === 'awaiting_private_reveal') {
+        setUnavailable('awaiting_private_reveal');
+        return null;
+      }
       try {
         const nextState = session.resolveShowdown();
         setUnavailable('terminal_state');

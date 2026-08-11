@@ -460,7 +460,7 @@ test('showdown resolution rejects invalid phase, incomplete board, and unknown l
   assert.throws(() => resolveShowdown(unknownLive));
 });
 
-test('PokerState v1 validation still requires folded hole cards to remain known', () => {
+test('PokerState v1 validation does not allow folded hole cards to revert to undealt null', () => {
   const ready = showdownState({
     contributions: [1000, 1000, 1000],
     holeCards: [['Ah', 'Ad'], ['Kh', 'Kd'], ['Qh', 'Qd']],

@@ -6451,6 +6451,32 @@ html[data-four-color="false"] {
 .hand-private-row small { color: var(--text-muted); }
 .hand-private-row .card-slots { justify-content: flex-end; }
 
+.hand-hidden-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  color: var(--text-secondary);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-cell);
+}
+.hand-card-backs { position: relative; display: inline-block; width: 48px; height: 34px; flex: 0 0 48px; }
+.hand-card-backs i {
+  position: absolute;
+  top: 0;
+  width: 24px;
+  height: 34px;
+  background: var(--card-back);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  transform: rotate(-5deg);
+}
+.hand-card-backs i:last-child { inset-inline-start: 19px; transform: rotate(5deg); }
+.hand-known-opponents { padding: var(--space-3); background: var(--surface-panel); border: 1px solid var(--border-subtle); border-radius: var(--radius-cell); }
+.hand-known-opponents summary { min-height: 32px; color: var(--text-secondary); cursor: pointer; font-weight: 700; }
+.hand-known-opponent-list { display: grid; gap: var(--space-3); margin-top: var(--space-3); }
+
 .hand-legal-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .hand-legal-actions .ui-button { min-height: 42px; flex: 1 1 92px; }
 .hand-legal-actions [data-canonical-action="fold"] { color: var(--action-fold); }
