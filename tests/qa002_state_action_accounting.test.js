@@ -245,57 +245,19 @@ test('Playbook parser recognizes its current string action families', () => {
   }
 });
 
-test('Training action normalization uses different strings from Playbook output', () => {
-  assert.equal(qa.normalizeActionName('Open 2.5bb'), 'raise');
-  assert.equal(qa.normalizeActionName('3bet'), '3-bet');
-  assert.equal(qa.normalizeActionName('4bet'), '4-bet');
-  assert.equal(qa.normalizeActionName('Jam'), 'jam');
-  assert.equal(qa.normalizeActionName('All-In'), 'all-in');
-  assert.deepEqual(['fold', 'check', 'call', 'bet', 'raise', '3-bet', '4-bet', 'all-in'].map(qa.actionRank), [0, 1, 2, 3, 4, 5, 6, 7]);
-});
-
-test('Training exposes Fold/Open for an unopened preflop non-BB spot', () => {
-  assert.deepEqual(qa.trainingButtons({ street: 'preflop', hero_pos: 'BTN', lastAction: 'unopened', facingSize: 0 }, {}), [
-    { text: 'Fold', action: 'fold' },
-    { text: 'Open', action: 'raise' },
-  ]);
-});
-
-test('Training exposes Check/Bet, not Fold, when checking is free', () => {
-  assert.deepEqual(qa.trainingButtons({ street: 'postflop', hero_pos: 'BTN', lastAction: 'check', facingSize: 0, board: ['2c', '7d', '9h'] }, { Fold: 80 }), [
-    { text: 'Check', action: 'check' },
-    { text: 'Bet', action: 'bet' },
-  ]);
-});
-
-test('Training adds Fold/Call/3-Bet when facing a raise', () => {
-  assert.deepEqual(qa.trainingButtons({ street: 'preflop', hero_pos: 'BTN', lastAction: 'raise', facingSize: 2.5 }, {}), [
-    { text: 'Fold', action: 'fold' },
-    { text: 'Call', action: 'call' },
-    { text: '3-Bet', action: '3-bet' },
-  ]);
-});
-
-test('Training adds Fold/Call/4-Bet when facing a 3-bet', () => {
-  assert.deepEqual(qa.trainingButtons({ street: 'preflop', hero_pos: 'BTN', lastAction: '3bet', facingSize: 7.5 }, {}), [
-    { text: 'Fold', action: 'fold' },
-    { text: 'Call', action: 'call' },
-    { text: '4-Bet', action: '4-bet' },
-  ]);
-});
-
-test('Training converts solver probabilities in [0,1] to integer percentages', () => {
-  const result = qa.trainingStrategy({ Open: 0.5, Call: 0.25, Fold: 0.25 }, {
-    hero_pos: 'BTN', board: [], facingSize: 1, lastAction: 'raise', potSize: 4, stack: 100,
-  });
-  assert.deepEqual(result, { Open: 50, Call: 25, Fold: 25 });
-});
-
-test('characterization: mixed Training action units can produce a total above 100%', () => {
-  const result = qa.trainingStrategy({ Open: 1, Call: 25 }, {
-    hero_pos: 'BTN', board: [], facingSize: 1, lastAction: 'raise', potSize: 4, stack: 100,
-  });
-  assert.deepEqual(result, { Open: 100, Call: 25 });
+test('canonical StrategyResult action mapping preserves action families and sizing', () => {
+  const cases = {
+    Fold: { type: 'fold', amountBb: null, potFraction: null },
+    Check: { type: 'check', amountBb: null, potFraction: null },
+    Call: { type: 'call', amountBb: null, potFraction: null },
+    'Bet 50% pot': { type: 'bet', amountBb: null, potFraction: 0.5 },
+    'Open 2.5bb': { type: 'raise', amountBb: 2.5, potFraction: null },
+    '3-Bet 8bb': { type: 'raise', amountBb: 8, potFraction: null },
+    Jam: { type: 'all_in', amountBb: null, potFraction: null },
+  };
+  for (const [label, expected] of Object.entries(cases)) {
+    assert.deepEqual(qa.structuralAction(label), expected);
+  }
 });
 
 test('preflop fallback Ace and King predicates use the production card-rank values', () => {

@@ -25,11 +25,6 @@ function createHarness() {
   const modelSource = sliceBetween(source, 'const MODEL_POSITION_VOCABULARY', 'const ACTION_COLORS');
   const numericSource = sliceBetween(source, 'function numericValue(id, fallback = 0)', 'function updatePositionSelect(');
   const updateSource = sliceBetween(source, 'function updatePositionSelect(', 'function normalizeTree(data, fileName)');
-  const randomSource = sliceBetween(
-    source,
-    'function randomTrainingTableSize()',
-    'function newRandomTrainingHandLegacy()',
-  );
   const controls = new Map();
 
   const sandbox = { controls, createElement };
@@ -44,15 +39,6 @@ function createHarness() {
     };
     ${numericSource}
     ${updateSource}
-    ${randomSource}
-
-    function withRandom(value, callback) {
-      const original = Math.random;
-      Math.random = () => value;
-      try { return callback(); }
-      finally { Math.random = original; }
-    }
-
     globalThis.__bug003 = {
       positionsFor(tableSize) { return POSITIONS[tableSize] ? [...POSITIONS[tableSize]] : null; },
       updatePlaybook(tableSize, oldPosition) {
@@ -71,10 +57,6 @@ function createHarness() {
         updateTrainingPositions();
         return { value: select.value, html: select.innerHTML };
       },
-      randomTableSize(value) { return withRandom(value, randomTrainingTableSize); },
-      randomPosition(tableSize, value) {
-        return withRandom(value, () => randomTrainingPosition(tableSize));
-      },
       modelIndex: modelPositionIndex,
       modelVocabulary() { return [...MODEL_POSITION_VOCABULARY]; },
       modelCompatibility() { return { ...MODEL_POSITION_COMPATIBILITY }; }
@@ -91,8 +73,6 @@ module.exports = {
   positionsFor: (tableSize) => plain(harness.positionsFor(tableSize)),
   updatePlaybook: (...args) => plain(harness.updatePlaybook(...args)),
   updateTraining: (...args) => plain(harness.updateTraining(...args)),
-  randomTableSize: (...args) => harness.randomTableSize(...args),
-  randomPosition: (...args) => harness.randomPosition(...args),
   modelIndex: (...args) => harness.modelIndex(...args),
   modelVocabulary: () => plain(harness.modelVocabulary()),
   modelCompatibility: () => plain(harness.modelCompatibility()),

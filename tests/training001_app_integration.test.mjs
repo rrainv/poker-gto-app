@@ -5,16 +5,16 @@ import fs from 'node:fs';
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const canonicalStart = logic.indexOf("const TRAINING_CONFIG_SCHEMA_VERSION = 'training-config/v1'");
-const canonicalTraining = logic.slice(canonicalStart, logic.indexOf('// Expose training functions globally'));
+const canonicalTraining = logic.slice(canonicalStart, logic.indexOf('function calculateOuts(', canonicalStart));
 
 test('production Training route uses the canonical bridge and the same Playbook actionProfile path', () => {
   assert.ok(canonicalStart >= 0);
   assert.match(canonicalTraining, /callTrainingServiceBridge\('generate', config/);
   assert.match(canonicalTraining, /actionProfile\(null, decisionContext\)/);
   assert.match(canonicalTraining, /callTrainingServiceBridge\('answer', exercise\.id, userAction\)/);
-  assert.doesNotMatch(canonicalTraining, /getTrainingStrategyLegacy|newRandomTrainingHandLegacy/);
-  assert.match(logic, /window\.newRandomTrainingHand = newRandomTrainingHand/);
-  assert.doesNotMatch(logic, /window\.newRandomTrainingHand = newRandomTrainingHandLegacy/);
+  assert.match(logic, /bind\('#trainingNewHand', 'click', \(\) => newRandomTrainingHand\(\)\)/);
+  assert.match(logic, /button\.addEventListener\('click', \(\) => handleTrainingGuess\(type\)\)/);
+  assert.doesNotMatch(logic, /window\.(?:newRandomTrainingHand|handleTrainingGuess|replayTrainingExercise|resetTrainingStats)\s*=/);
 });
 
 test('Training controls become TrainingConfig filters instead of synthetic final-state fields', () => {
@@ -23,7 +23,6 @@ test('Training controls become TrainingConfig filters instead of synthetic final
     'tableSize', 'stackBb', 'streets', 'gameMode', 'heroPositions',
     'allowedDecisionTypes', 'difficulty', 'seed',
   ]) assert.match(canonicalTraining, new RegExp(`${field}[,:]`), field);
-  assert.doesNotMatch(canonicalTraining, /basePot|potSize \* 0\.75|sampleRealisticTrainingHand/);
   assert.match(canonicalTraining, /trainingContextPresentationAdapter\(decisionContext\)/);
 });
 
@@ -62,10 +61,7 @@ test('Training module bridge loads before classic application logic', () => {
   assert.ok(bridgeIndex < logicIndex);
 });
 
-test('legacy synthetic implementation is quarantined and not used as an error fallback', () => {
-  assert.match(logic, /LEGACY_SYNTHETIC/);
-  assert.match(logic, /function newRandomTrainingHandLegacy\(/);
-  assert.match(logic, /function getTrainingStrategyLegacy\(/);
+test('canonical Training errors remain explicit without an alternate fallback route', () => {
   assert.match(canonicalTraining, /renderTrainingGenerationError\(result\?\.error\)/);
-  assert.doesNotMatch(canonicalTraining, /catch[\s\S]{0,300}newRandomTrainingHandLegacy/);
+  assert.match(canonicalTraining, /code: 'service_unavailable'/);
 });

@@ -40,20 +40,7 @@ for (let tableSize = 2; tableSize <= 10; tableSize += 1) {
     assert.equal(positions.updateTraining(tableSize, 'INVALID').value, 'BTN');
   });
 
-  test(`${tableSize}-player Training generator can sample every valid position`, () => {
-    const expected = EXPECTED[tableSize];
-    const generated = expected.map((_, index) => positions.randomPosition(tableSize, (index + 0.1) / expected.length));
-    assert.deepEqual(generated, expected);
-  });
 }
-
-test('Training table-size generator covers every size from 2 through 10', () => {
-  const generated = [];
-  for (let tableSize = 2; tableSize <= 10; tableSize += 1) {
-    generated.push(positions.randomTableSize((tableSize - 2 + 0.1) / 9));
-  }
-  assert.deepEqual(generated, [2, 3, 4, 5, 6, 7, 8, 9, 10]);
-});
 
 test('model position vocabulary remains the existing six model features', () => {
   assert.deepEqual(positions.modelVocabulary(), ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB']);
@@ -92,5 +79,4 @@ test('every supported UI position has an explicit model compatibility mapping', 
 
 test('unknown positions fail explicitly instead of silently becoming UTG', () => {
   assert.throws(() => positions.modelIndex('INVALID'), /Unsupported position: INVALID/);
-  assert.throws(() => positions.randomPosition(11, 0), /Unsupported training table size: 11/);
 });

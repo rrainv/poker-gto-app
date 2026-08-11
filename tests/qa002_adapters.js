@@ -52,7 +52,7 @@ function createHarness() {
     .replace('function currentStreet(', 'function qaCurrentStreet(');
   const handClassSource = sliceBetween(source, 'function handClass(cards)', 'function numericValue(id, fallback = 0)');
   const updatePositionsSource = sliceBetween(source, 'function updatePositionSelect(', 'function normalizeTree(data, fileName)');
-  const actionParserSource = sliceBetween(source, 'function isAllInActionName(name)', 'function parseCard(cardStr)');
+  const actionParserSource = sliceBetween(source, 'function isAllInActionName(name)', 'function simulateEquity(');
   const treeContextSource = sliceBetween(source, 'function treeContext(decisionContext =', 'function isAllInActionName(name)')
     .replace('function treeContext(', 'function qaTreeContext(');
   const noTreeProfileSource = sliceBetween(source, 'function noTreeProfile(reason,', 'function actionProfile(hand =')
@@ -68,17 +68,11 @@ function createHarness() {
     'function getHandTier(hand)',
     '// Static TypedArray buffers for zero-GC hand evaluation in main thread'
   );
-  const trainingActionSource = sliceBetween(
+  const postflopSource = sliceBetween(
     source,
-    'const ACTION_PASSIVE_TO_AGGRESSIVE_ORDER',
-    'function generateFeedbackLegacy(userAction, bestAction, solution)',
-  ).replace('function updateTrainingButtonsLegacy(', 'function updateTrainingButtons(');
-  const postflopSource = sliceBetween(source, 'function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [], decisionContext = null)', 'function calculatePostflopFallbackStrategy(context, heroCards)');
-  const trainingStrategySource = sliceBetween(
-    source,
-    'function getTrainingStrategyLegacy(context, heroCards)',
-    '// Hook renderRangeAdvantage into updateContext and villain pos changes',
-  ).replace('function getTrainingStrategyLegacy(', 'function getTrainingStrategy(');
+    'function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [], decisionContext = null)',
+    "const TRAINING_CONFIG_SCHEMA_VERSION = 'training-config/v1'",
+  );
 
   const controls = new Map();
   const sandbox = {
@@ -134,7 +128,6 @@ function createHarness() {
       training: { board: [], currentContext: null },
       useOnnx: true,
       onnxSession: {},
-      useApi: false,
       solver: null,
       cachedStrategy: null,
       lastApiContext: '',
@@ -164,17 +157,14 @@ function createHarness() {
     const renderChart = syncNoop;
     const renderRangeAdvantage = syncNoop;
     const renderBettingTree = syncNoop;
-    const setApiStatus = syncNoop;
     const treeContext = () => ({ available: true });
     const noTreeProfile = (reason) => ({ actions: [], best: 'NONE', reason, source: 'NO TREE' });
-    const fetchWithTimeout = async () => ({ ok: false });
     const formatHand = (cards) => {
       const first = cards[0][0];
       const second = cards[1][0];
       if (first === second) return first + second;
       return first + second + (cards[0][1] === cards[1][1] ? 's' : 'o');
     };
-    const calculatePostflopFallbackStrategy = () => ({ Check: 100 });
     const evaluatePostflopHandStrength = () => ({
       category: 'air', score: 1, tripsType: null, tripsStrength: 1,
       isBoardPaired: false, isWetBoard: false, boardTexture: {}
@@ -200,9 +190,7 @@ function createHarness() {
     ${potSource}
     ${sliderSource}
     ${heuristicSource}
-    ${trainingActionSource}
     ${postflopSource}
-    ${trainingStrategySource}
     ${noTreeProfileSource}
     ${actionProfileSource}
     ${updateContextSource}
@@ -230,7 +218,6 @@ function createHarness() {
       fallback: calculatePreflopFallbackStrategy,
       fallbackPositionModifiers() { return { ...PREFLOP_FALLBACK_POSITION_MODIFIERS }; },
       normalizeFacingSize,
-      defaultTrainingFacingSize,
       strategyAccountingContext,
       deriveDecisionContext,
       decisionContextToLegacyStrategyContext,
@@ -293,8 +280,6 @@ function createHarness() {
         app.solver = solver;
         return qaTreeContext(context);
       },
-      normalizeActionName,
-      actionRank: getActionAggressionRank,
       heuristic(policy, context, hand) {
         return applyHeuristicToPrediction(policy, context, 0, 0, hand);
       },
@@ -328,7 +313,6 @@ function createHarness() {
         }
         app.useOnnx = true;
         app.onnxSession = {};
-        app.useApi = false;
         app.gto.board = values.board || [];
         app.gto.hero = values.heroCards || [];
         app.gto.dead = values.deadCards || [];
@@ -357,21 +341,6 @@ function createHarness() {
           facingNumberControl: controls.get('#facingSizeNum').value,
           dispatchedState,
         };
-      },
-      trainingButtons(context, solution) {
-        const container = createElement();
-        controls.set('#trainingGuessButtons', container);
-        app.training.currentContext = { ...context };
-        app.training.board = context.board || [];
-        updateTrainingButtons(solution);
-        return container.children.map((child) => ({
-          text: child.textContent,
-          action: child['data-action']
-        }));
-      },
-      trainingStrategy(entry, context) {
-        app.solver = { strategy: { AKs: { BTN: entry } } };
-        return getTrainingStrategy(context, ['As', 'Ks']);
       },
       postflopWithDrop(drop, equity = 0.48) {
         flatDrop = drop;
@@ -415,7 +384,6 @@ module.exports = {
   fallback: (...args) => plain(harness.fallback(...args)),
   fallbackPositionModifiers: () => plain(harness.fallbackPositionModifiers()),
   normalizeFacingSize: (...args) => harness.normalizeFacingSize(...args),
-  defaultTrainingFacingSize: (...args) => harness.defaultTrainingFacingSize(...args),
   strategyAccountingContext: (...args) => plain(harness.strategyAccountingContext(...args)),
   deriveDecisionContext: (...args) => plain(harness.deriveDecisionContext(...args)),
   legacyStrategyContext: (...args) => plain(harness.decisionContextToLegacyStrategyContext(...args)),
@@ -441,13 +409,9 @@ module.exports = {
   noTreeStrategyProfile: (...args) => plain(harness.noTreeStrategyProfile(...args)),
   noTreeStrategyResult: (...args) => plain(harness.noTreeStrategyResult(...args)),
   localTreeContext: (...args) => plain(harness.localTreeContext(...args)),
-  normalizeActionName: (...args) => harness.normalizeActionName(...args),
-  actionRank: (...args) => harness.actionRank(...args),
   heuristic: (...args) => plain(harness.heuristic(...args)),
   preflopPot: (...args) => harness.preflopPot(...args),
   captureContext: async (...args) => plain(await harness.captureContext(...args)),
-  trainingButtons: (...args) => plain(harness.trainingButtons(...args)),
-  trainingStrategy: (...args) => plain(harness.trainingStrategy(...args)),
   postflopWithDrop: (...args) => plain(harness.postflopWithDrop(...args)),
   rankValue: (...args) => harness.rankValue(...args),
   fallbackSource: harness.fallbackSource,

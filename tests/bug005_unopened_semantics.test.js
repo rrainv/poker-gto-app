@@ -48,12 +48,43 @@ test('raise, 3-bet, and 4-bet contexts retain their positive facing sizes', asyn
   }
 });
 
-test('Training defaults use the same unopened convention', () => {
-  assert.equal(qa.defaultTrainingFacingSize('unopened'), 0);
-  assert.equal(qa.defaultTrainingFacingSize('raise'), 2.5);
-  assert.equal(qa.defaultTrainingFacingSize('3bet'), 7.5);
-  assert.equal(qa.defaultTrainingFacingSize('4bet'), 18);
-  assert.equal(qa.normalizeFacingSize('unopened', 1), 0);
+test('canonical Training generation uses zero facing size for an unopened decision', async () => {
+  const {
+    TRAINING_CONFIG_SCHEMA_VERSION,
+    TRAINING_DECISION_TYPES,
+    generateTrainingExercise,
+  } = await import('../app/src/application/training-generator.mjs');
+  const result = generateTrainingExercise({
+    schemaVersion: TRAINING_CONFIG_SCHEMA_VERSION,
+    tableSize: 6,
+    stackBb: 100,
+    streets: ['preflop'],
+    gameMode: 'home',
+    heroPositions: ['BTN'],
+    allowedDecisionTypes: [TRAINING_DECISION_TYPES.PREFLOP_UNOPENED],
+    difficulty: 'hard',
+    seed: 5005,
+  }, {
+    strategyProvider: () => ({
+      schemaVersion: 'strategy-result/v1',
+      source: 'heuristic_preflop',
+      actions: [
+        { action: { type: 'fold', amountBb: null, potFraction: null }, label: 'Fold', probability: 0.25, evBb: null },
+        { action: { type: 'raise', amountBb: null, potFraction: null }, label: 'Open', probability: 0.75, evBb: null },
+      ],
+      recommendation: { action: { type: 'raise', amountBb: null, potFraction: null }, label: 'Open' },
+      explanation: null,
+      confidence: null,
+      coverage: null,
+      modelVersion: null,
+      warnings: [],
+      details: null,
+    }),
+  });
+  assert.equal(result.ok, true, result.error?.message);
+  assert.equal(result.exercise.decisionContext.lastAction, 'unopened');
+  assert.equal(result.exercise.decisionContext.facingSizeBb, 0);
+  assert.equal(result.exercise.presentation.facingBb, 0);
 });
 
 test('six-max and full-ring position outputs are otherwise unchanged', () => {
