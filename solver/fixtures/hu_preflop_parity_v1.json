@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "riverline-hu-preflop-parity-fixtures/v1",
+  "notes": "Non-all-in closure is a canonical JS deal-flop chance boundary and a solver showdown-equity terminal. The explicit implementation fields prevent that intentional difference from being normalized away.",
+  "cases": [
+    {
+      "name": "root",
+      "actions": [],
+      "expectedCommon": { "actor": "P0", "potMilliBb": 1500, "stacksMilliBb": [99500, 99000], "contributionsMilliBb": [500, 1000], "currentBetMilliBb": 1000, "boundaryStatus": "decision" },
+      "expectedCanonical": { "terminal": false, "terminalReason": null, "phase": "betting", "legalFamilies": ["fold", "call", "raise", "all_in"] },
+      "expectedSolver": { "terminal": false, "terminalReason": null, "legalFamilies": ["fold", "call", "raise", "all_in"], "nodeId": "hp100-v1:4f53cda18c2baa0c0354" }
+    },
+    {
+      "name": "button-folds",
+      "actions": [{ "type": "fold", "amountToMilliBb": null }],
+      "expectedCommon": { "actor": null, "potMilliBb": 0, "stacksMilliBb": [99500, 100500], "contributionsMilliBb": [500, 1000], "currentBetMilliBb": 1000, "boundaryStatus": "fold_terminal" },
+      "expectedCanonical": { "terminal": true, "terminalReason": "fold", "phase": "terminal", "legalFamilies": [] },
+      "expectedSolver": { "terminal": true, "terminalReason": "fold", "legalFamilies": [], "nodeId": "hp100-v1:7a34d9386440660d7929" }
+    },
+    {
+      "name": "limp-bb-option",
+      "actions": [{ "type": "call", "amountToMilliBb": null }],
+      "expectedCommon": { "actor": "P1", "potMilliBb": 2000, "stacksMilliBb": [99000, 99000], "contributionsMilliBb": [1000, 1000], "currentBetMilliBb": 1000, "boundaryStatus": "decision" },
+      "expectedCanonical": { "terminal": false, "terminalReason": null, "phase": "betting", "legalFamilies": ["check", "raise", "all_in"] },
+      "expectedSolver": { "terminal": false, "terminalReason": null, "legalFamilies": ["check", "raise", "all_in"], "nodeId": "hp100-v1:485a58bb4d956b70d473" }
+    },
+    {
+      "name": "limp-check-closes",
+      "actions": [{ "type": "call", "amountToMilliBb": null }, { "type": "check", "amountToMilliBb": null }],
+      "expectedCommon": { "actor": null, "potMilliBb": 2000, "stacksMilliBb": [99000, 99000], "contributionsMilliBb": [1000, 1000], "currentBetMilliBb": 1000, "boundaryStatus": "preflop_closed" },
+      "expectedCanonical": { "terminal": false, "terminalReason": null, "phase": "chance", "legalFamilies": [] },
+      "expectedSolver": { "terminal": true, "terminalReason": "showdown_equity", "legalFamilies": [], "nodeId": "hp100-v1:a8690b458a3d7a0986ad" }
+    },
+    {
+      "name": "open-2.5",
+      "actions": [{ "type": "raise", "amountToMilliBb": 2500 }],
+      "expectedCommon": { "actor": "P1", "potMilliBb": 3500, "stacksMilliBb": [97500, 99000], "contributionsMilliBb": [2500, 1000], "currentBetMilliBb": 2500, "boundaryStatus": "decision" },
+      "expectedCanonical": { "terminal": false, "terminalReason": null, "phase": "betting", "legalFamilies": ["fold", "call", "raise", "all_in"] },
+      "expectedSolver": { "terminal": false, "terminalReason": null, "legalFamilies": ["fold", "call", "raise", "all_in"], "nodeId": "hp100-v1:ed7e2b715dc05e5ac221" }
+    },
+    {
+      "name": "open-fold",
+      "actions": [{ "type": "raise", "amountToMilliBb": 2500 }, { "type": "fold", "amountToMilliBb": null }],
+      "expectedCommon": { "actor": null, "potMilliBb": 0, "stacksMilliBb": [101000, 99000], "contributionsMilliBb": [2500, 1000], "currentBetMilliBb": 2500, "boundaryStatus": "fold_terminal" },
+      "expectedCanonical": { "terminal": true, "terminalReason": "fold", "phase": "terminal", "legalFamilies": [] },
+      "expectedSolver": { "terminal": true, "terminalReason": "fold", "legalFamilies": [], "nodeId": "hp100-v1:67ff70af86c52c95c1e3" }
+    },
+    {
+      "name": "open-call-closes",
+      "actions": [{ "type": "raise", "amountToMilliBb": 2500 }, { "type": "call", "amountToMilliBb": null }],
+      "expectedCommon": { "actor": null, "potMilliBb": 5000, "stacksMilliBb": [97500, 97500], "contributionsMilliBb": [2500, 2500], "currentBetMilliBb": 2500, "boundaryStatus": "preflop_closed" },
+      "expectedCanonical": { "terminal": false, "terminalReason": null, "phase": "chance", "legalFamilies": [] },
+      "expectedSolver": { "terminal": true, "terminalReason": "showdown_equity", "legalFamilies": [], "nodeId": "hp100-v1:ce1c5d5e875e81354e7e" }
+    },
+    {
+      "name": "open-3bet-8",
+      "actions": [{ "type": "raise", "amountToMilliBb": 2500 }, { "type": "raise", "amountToMilliBb": 8000 }],
+      "expectedCommon": { "actor": "P0", "potMilliBb": 10500, "stacksMilliBb": [97500, 92000], "contributionsMilliBb": [2500, 8000], "currentBetMilliBb": 8000, "boundaryStatus": "decision" },
+      "expectedCanonical": { "terminal": false, "terminalReason": null, "phase": "betting", "legalFamilies": ["fold", "call", "raise", "all_in"] },
+      "expectedSolver": { "terminal": false, "terminalReason": null, "legalFamilies": ["fold", "call", "raise", "all_in"], "nodeId": "hp100-v1:f8070ebc4d9ea32d2e00" }
+    },
+    {
+      "name": "3bet-call-closes",
+      "actions": [{ "type": "raise", "amountToMilliBb": 2500 }, { "type": "raise", "amountToMilliBb": 8000 }, { "type": "call", "amountToMilliBb": null }],
+      "expectedCommon": { "actor": null, "potMilliBb": 16000, "stacksMilliBb": [92000, 92000], "contributionsMilliBb": [8000, 8000], "currentBetMilliBb": 8000, "boundaryStatus": "preflop_closed" },
+      "expectedCanonical": { "terminal": false, "terminalReason": null, "phase": "chance", "legalFamilies": [] },
+      "expectedSolver": { "terminal": true, "terminalReason": "showdown_equity", "legalFamilies": [], "nodeId": "hp100-v1:856ac3031988b974410e" }
+    },
+    {
+      "name": "open-4bet-20",
+      "actions": [{ "type": "raise", "amountToMilliBb": 2500 }, { "type": "raise", "amountToMilliBb": 8000 }, { "type": "raise", "amountToMilliBb": 20000 }],
+      "expectedCommon": { "actor": "P1", "potMilliBb": 28000, "stacksMilliBb": [80000, 92000], "contributionsMilliBb": [20000, 8000], "currentBetMilliBb": 20000, "boundaryStatus": "decision" },
+      "expectedCanonical": { "terminal": false, "terminalReason": null, "phase": "betting", "legalFamilies": ["fold", "call", "raise", "all_in"] },
+      "expectedSolver": { "terminal": false, "terminalReason": null, "legalFamilies": ["fold", "call", "all_in"], "nodeId": "hp100-v1:c94b7f3b26c9a34f62c7" }
+    },
+    {
+      "name": "4bet-fold",
+      "actions": [{ "type": "raise", "amountToMilliBb": 2500 }, { "type": "raise", "amountToMilliBb": 8000 }, { "type": "raise", "amountToMilliBb": 20000 }, { "type": "fold", "amountToMilliBb": null }],
+      "expectedCommon": { "actor": null, "potMilliBb": 0, "stacksMilliBb": [108000, 92000], "contributionsMilliBb": [20000, 8000], "currentBetMilliBb": 20000, "boundaryStatus": "fold_terminal" },
+      "expectedCanonical": { "terminal": true, "terminalReason": "fold", "phase": "terminal", "legalFamilies": [] },
+      "expectedSolver": { "terminal": true, "terminalReason": "fold", "legalFamilies": [], "nodeId": "hp100-v1:d30be9f725c5ce80527c" }
+    },
+    {
+      "name": "button-shoves",
+      "actions": [{ "type": "all_in", "amountToMilliBb": null }],
+      "expectedCommon": { "actor": "P1", "potMilliBb": 101000, "stacksMilliBb": [0, 99000], "contributionsMilliBb": [100000, 1000], "currentBetMilliBb": 100000, "boundaryStatus": "decision" },
+      "expectedCanonical": { "terminal": false, "terminalReason": null, "phase": "betting", "legalFamilies": ["fold", "call"] },
+      "expectedSolver": { "terminal": false, "terminalReason": null, "legalFamilies": ["fold", "call"], "nodeId": "hp100-v1:020bcd3e887260dba793" }
+    },
+    {
+      "name": "button-shove-called",
+      "actions": [{ "type": "all_in", "amountToMilliBb": null }, { "type": "call", "amountToMilliBb": null }],
+      "expectedCommon": { "actor": null, "potMilliBb": 200000, "stacksMilliBb": [0, 0], "contributionsMilliBb": [100000, 100000], "currentBetMilliBb": 100000, "boundaryStatus": "preflop_closed" },
+      "expectedCanonical": { "terminal": false, "terminalReason": null, "phase": "chance", "legalFamilies": [] },
+      "expectedSolver": { "terminal": true, "terminalReason": "showdown_equity", "legalFamilies": [], "nodeId": "hp100-v1:258d7726e982d44b0f81" }
+    }
+  ]
+}
