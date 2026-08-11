@@ -2,7 +2,7 @@
   "name": "riverline-poker-workstation",
   "private": true,
   "version": "1.0.0",
-  "description": "High-performance Desktop Poker GTO Workstation & Neural Solver",
+  "description": "Desktop Texas Hold'em strategy and analysis workstation",
   "main": "main.js",
   "author": "Riverline Development Team",
   "license": "MIT",
@@ -12,9 +12,6 @@
     "electron-dev": "electron . --dev",
     "dist": "electron-builder --win",
     "dist-portable": "electron-builder --win --publish never"
-  },
-  "dependencies": {
-    "onnxruntime-node": "^1.27.0"
   },
   "devDependencies": {
     "electron": "^30.0.0",

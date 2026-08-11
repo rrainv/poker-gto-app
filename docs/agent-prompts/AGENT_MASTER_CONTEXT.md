@@ -31,7 +31,7 @@ Runtime:
 
 Important repository reality:
 
-- A separate Electron-native model experiment remains; it is not browser strategy authority.
+- The obsolete Electron-native model experiment has been retired; Electron is a desktop host for the current application.
 - Current random training-data generation is not genuine CFR data.
 - Existing solver code is experimental.
 - Historical documentation can overstate implementation maturity.

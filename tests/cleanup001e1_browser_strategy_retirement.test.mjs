@@ -31,7 +31,7 @@ test('browser bootstrap contains no legacy ORT or model engine', () => {
 
 test('browser package and build contain no web inference dependency or asset inclusion', () => {
   assert.equal(manifest.dependencies?.['onnxruntime-web'], undefined);
-  assert.equal(manifest.dependencies?.['onnxruntime-node'], '^1.27.0');
+  assert.equal(manifest.dependencies?.['onnxruntime-node'], undefined);
   assert.doesNotMatch(JSON.stringify(manifest.build), /frozen_models|solver-model|equity\.worker\.js|ort(?:\.|-)/i);
 });
 

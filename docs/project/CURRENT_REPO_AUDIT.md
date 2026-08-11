@@ -24,7 +24,7 @@ The browser has no trusted production strategy model and no model loader.
 
 The deterministic fallback is the only current browser production strategy authority. The generic, versioned `StrategyResult` and provenance fields remain so a future validated provider can be introduced without reviving the removed implementation.
 
-The distinct Electron-native experiment is reserved for a separate cleanup decision and is not browser strategy authority.
+The obsolete Electron-native ONNX experiment has also been retired. Electron is a desktop host for the same current Riverline application and does not provide a second inference architecture.
 
 ## 5. Documentation policy
 

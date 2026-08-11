@@ -45,7 +45,7 @@ The Electron app loads `app/index.html` directly. A Python backend is not requir
 
 - Riverline is a pre-beta analysis and study tool, not a validated poker solver.
 - Heuristic recommendations are not solved GTO, CFR output, or evidence of low exploitability.
-- The browser has no trusted production model and does not load model/ONNX assets. The separate Electron-native experiment remains outside the browser strategy path pending its own cleanup decision.
+- Riverline has no trusted production model and does not load model/ONNX assets in either browser or Electron mode.
 - Multiway equity analysis is supported; solver-backed multiway equilibrium is not.
 - Equity uses exact enumeration where practical and Monte Carlo simulation for larger incomplete states.
 - Some in-app labels still use older “GTO” or “DeepCFR” language. Those labels are not proof of the underlying method or accuracy.
