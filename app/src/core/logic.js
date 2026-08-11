@@ -441,7 +441,7 @@ function renderSlots(group, count) {
 
     const state = cardVisualState(group, card);
     const suitClass = card ? ` card--suit-${card[1]}` : '';
-    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass}" data-card-state="${state}" data-group="${group}" data-index="${index}" aria-label="${card ? 'Replace ' + displayCard(card) + (state === 'dead' ? ', dead card' : '') : 'Choose card ' + (index + 1)}">${cardMarkup(card)}</button>`;
+    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-group="${group}" data-index="${index}" aria-label="${card ? 'Replace ' + displayCard(card) + (state === 'dead' ? ', dead card' : '') : 'Choose card ' + (index + 1)}">${cardMarkup(card)}</button>`;
 
   }).join('');
 
@@ -709,7 +709,7 @@ function renderDeck() {
           ? '10'
           : rank;
         const rankClass = visualRank === '10' ? ' rank--ten' : '';
-        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''}" aria-label="Choose ${visualRank}${suit.symbol}${isUnavailable ? ', unavailable' : ''}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}><span class="rank${rankClass} s-${suit.id}">${visualRank}</span><span class="symbol s-${suit.id}">${suit.symbol}</span></button>`;
+        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''} riverline-card" aria-label="Choose ${visualRank}${suit.symbol}${isUnavailable ? ', unavailable' : ''}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}><span class="rank${rankClass} s-${suit.id}">${visualRank}</span><span class="symbol s-${suit.id}">${suit.symbol}</span></button>`;
       }).join('');
       return `<div class="deck-suit-row" data-picker-suit="${suit.id}"><div class="deck-suit-label s-${suit.id}" aria-hidden="true">${suit.symbol}</div><div class="deck-ranks">${cards}</div></div>`;
     }).join('');
@@ -1159,7 +1159,7 @@ function renderCanonicalDecisionCards(group, cards, count) {
     const state = cardVisualState(group, card);
     const suitClass = card ? ` card--suit-${card[1]}` : '';
     const label = card ? `${displayCard(card)}, canonical hand card` : `No canonical card ${index + 1}`;
-    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass}" data-card-state="${state}" data-group="${group}" data-index="${index}" data-playbook-canonical-display disabled aria-label="${label}">${cardMarkup(card)}</button>`;
+    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-group="${group}" data-index="${index}" data-playbook-canonical-display disabled aria-label="${label}">${cardMarkup(card)}</button>`;
   }).join('');
 }
 
@@ -7358,7 +7358,7 @@ if (!app.training) {
     const heroCards = app.training.hero || [];
     const boardCards = app.training.board || [];
     const readOnlyCard = (card) =>
-      `<span class="training-readonly-card" role="img" aria-label="${card}">${cardMarkup(card)}</span>`;
+      `<span class="training-readonly-card riverline-card" role="img" aria-label="${displayCard(card)}">${cardMarkup(card)}</span>`;
     const heroTarget = $('#trainingHeroCards');
     const boardTarget = $('#trainingBoardCards');
     if (heroTarget) heroTarget.innerHTML = heroCards.map(readOnlyCard).join('');
@@ -7671,10 +7671,7 @@ function showTrainingFeedback(feedback, isCorrect) {
 
   
 
-  if (titleEl) {
-    titleEl.textContent = feedback.title;
-    titleEl.style.color = isCorrect ? 'var(--primary)' : 'var(--orange)';
-  }
+  if (titleEl) titleEl.textContent = feedback.title;
 
   if (textEl) textEl.textContent = feedback.text;
 
@@ -7682,6 +7679,7 @@ function showTrainingFeedback(feedback, isCorrect) {
 
   if (feedbackDiv) {
     feedbackDiv.hidden = false;
+    feedbackDiv.dataset.accepted = String(Boolean(isCorrect));
     feedbackDiv.classList.remove('animate-feedback');
     void feedbackDiv.offsetWidth;
     feedbackDiv.classList.add('animate-feedback');
@@ -7756,12 +7754,22 @@ function showTrainingSolution(solution) {
       row.dataset.actionKind = action.kind;
       row.classList.toggle('is-chosen', Boolean(isChosen));
       row.classList.toggle('is-best', Boolean(isBest));
+      const label = document.createElement('span');
+      label.className = 'training-frequency-label';
       const name = document.createElement('span');
+      name.className = 'training-frequency-name';
       name.textContent = action.name;
       const markers = document.createElement('span');
       markers.className = 'training-frequency-markers';
-      if (isChosen) markers.append(Object.assign(document.createElement('em'), { textContent: 'Chosen' }));
-      if (isBest) markers.append(Object.assign(document.createElement('em'), { textContent: 'Highest' }));
+      if (isChosen) markers.append(Object.assign(document.createElement('em'), {
+        className: 'training-frequency-marker training-frequency-marker--chosen',
+        textContent: 'Chosen'
+      }));
+      if (isBest) markers.append(Object.assign(document.createElement('em'), {
+        className: 'training-frequency-marker training-frequency-marker--highest',
+        textContent: 'Highest'
+      }));
+      label.append(name, markers);
       const track = document.createElement('span');
       track.className = 'training-frequency-track';
       const fill = document.createElement('i');
@@ -7769,7 +7777,8 @@ function showTrainingSolution(solution) {
       track.appendChild(fill);
       const value = document.createElement('strong');
       value.textContent = `${action.pct}%`;
-      row.append(name, markers, track, value);
+      row.setAttribute('aria-label', `${action.name}: ${action.pct}%${isChosen ? ', chosen action' : ''}${isBest ? ', highest frequency' : ''}`);
+      row.append(label, track, value);
       rows.appendChild(row);
     });
   }

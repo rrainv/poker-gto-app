@@ -13,7 +13,8 @@ const visualSystem = css.slice(designStart);
 
 test('playing cards share one ratio and all four stable suit classes', () => {
   assert.match(visualSystem, /--poker-card-aspect:\s*0\.7059/);
-  assert.match(visualSystem, /background:\s*var\(--card-face\)\s*!important/);
+  assert.match(visualSystem, /--riverline-card-face:\s*var\(--card-face\)/);
+  assert.match(visualSystem, /background:\s*var\(--riverline-card-face,\s*var\(--card-face\)\)\s*!important/);
   for (const [suit, token] of [
     ['h', 'suit-heart'], ['s', 'suit-spade'], ['d', 'suit-diamond'], ['c', 'suit-club'],
   ]) {

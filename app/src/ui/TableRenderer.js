@@ -38,6 +38,9 @@ class TableRenderer {
           <filter id="riverlineTableShadow" x="-20%" y="-20%" width="140%" height="150%">
             <feDropShadow dx="0" dy="7" stdDeviation="8" flood-opacity="0.28"/>
           </filter>
+          <filter id="riverlineCardShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.22"/>
+          </filter>
         </defs>
 
         <rect class="table-rail" x="50" y="50" width="700" height="400" rx="200" ry="200" />
@@ -94,10 +97,11 @@ class TableRenderer {
     const startY = isCommunity ? 0 : 250;
 
     return `
-      <g class="card-group poker-card-svg card--known card--suit-${presentation.id}" data-card-state="known" style="transform: translate(${startX}px, ${startY}px); transition-delay: ${index * 70}ms;">
-        <rect class="table-card-face" x="0" y="0" width="40" height="58" rx="4" ry="4" />
-        <text class="table-card-rank${rankClass}" x="6" y="17">${visualRank}</text>
-        <text class="table-card-suit" x="6" y="35">${presentation.symbol}</text>
+      <g class="card-group poker-card-svg riverline-card card--known card--suit-${presentation.id}" data-card-state="known" style="transform: translate(${startX}px, ${startY}px); transition-delay: ${index * 70}ms;">
+        <rect class="riverline-card-face table-card-face" x="0" y="0" width="40" height="57" rx="5" ry="5" />
+        <text class="riverline-card-rank table-card-rank${rankClass}" x="6" y="17">${visualRank}</text>
+        <text class="riverline-card-suit table-card-suit" x="6" y="35">${presentation.symbol}</text>
+        <text class="riverline-card-corner-rank table-card-corner-rank${rankClass}" x="34" y="51" text-anchor="end" transform="rotate(180 34 51)">${visualRank}</text>
       </g>
     `;
   }

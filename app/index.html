@@ -1427,7 +1427,7 @@
           <section id="trainingSolution" class="panel training-solution-panel" hidden aria-labelledby="trainingSolutionTitle">
             <div class="panel-head"><div><p class="training-eyebrow" data-i18n="After-answer reference">After-answer reference</p><h2 id="trainingSolutionTitle" data-i18n="Strategy frequencies">Strategy frequencies</h2></div></div>
             <div class="panel-body">
-              <p class="muted">Probabilities from the displayed strategy source; no EV is implied.</p>
+              <p class="training-reference-note">Probabilities from the displayed strategy source; no EV is implied.</p>
               <div class="training-frequency-stack frequency-stack is-empty" id="trainingFrequencyStack" role="img" aria-label="Strategy frequencies unavailable"></div>
               <div id="trainingFrequencyRows" class="training-frequency-rows"></div>
             </div>
@@ -1435,7 +1435,7 @@
           <section class="panel training-session-panel" aria-labelledby="trainingSessionTitle">
             <div class="panel-head"><div><p class="training-eyebrow" data-i18n="This browser session">This browser session</p><h2 id="trainingSessionTitle" data-i18n="Session progress">Session progress</h2></div></div>
             <div class="panel-body">
-              <div class="training-stat-grid"><div><span>Attempts</span><strong id="trainingTotalHands">0</strong></div><div><span>Accepted</span><strong id="trainingCorrect">0</strong></div><div><span>Acceptance</span><strong id="trainingAccuracy">0%</strong></div><div><span>Streak</span><strong id="trainingStreak">0</strong></div><div><span>Best streak</span><strong id="trainingBestStreak">0</strong></div></div>
+              <div class="training-stat-grid" role="list" aria-label="Session summary"><div class="training-stat-cell" data-training-stat="attempts" role="listitem"><span>Attempts</span><strong id="trainingTotalHands">0</strong></div><div class="training-stat-cell" data-training-stat="accepted" role="listitem"><span>Accepted</span><strong id="trainingCorrect">0</strong></div><div class="training-stat-cell" data-training-stat="acceptance" role="listitem"><span>Acceptance</span><strong id="trainingAccuracy">0%</strong></div><div class="training-stat-cell" data-training-stat="streak" role="listitem"><span>Streak</span><strong id="trainingStreak">0</strong></div><div class="training-stat-cell" data-training-stat="best-streak" role="listitem"><span>Best streak</span><strong id="trainingBestStreak">0</strong></div></div>
               <div class="training-grade-counts" aria-label="Answer grades"><span><i data-grade="optimal"></i>Optimal <strong id="trainingOptimalCount">0</strong></span><span><i data-grade="acceptable"></i>Acceptable <strong id="trainingAcceptableCount">0</strong></span><span><i data-grade="mistake"></i>Mistake <strong id="trainingMistakeCount">0</strong></span></div>
               <button class="ui-button ui-button-ghost ui-button--destructive" type="button" id="trainingResetStats" data-i18n="Reset session stats">Reset session stats</button>
             </div>
