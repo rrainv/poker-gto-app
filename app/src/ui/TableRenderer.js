@@ -110,6 +110,16 @@ class TableRenderer {
     // Presentation-only state: no betting order or poker semantics are inferred here.
     if (!state) return;
 
+    if (state.mode === 'hand' && state.empty) {
+      this.currentActivePlayers = 0;
+      this.drawSeats(0);
+      const emptyPot = this.container.querySelector('#table-pot');
+      const emptyBoard = this.container.querySelector('#community-cards');
+      if (emptyPot) emptyPot.textContent = 'Start a hand';
+      if (emptyBoard) emptyBoard.innerHTML = '';
+      return;
+    }
+
     if (state.activePlayers && state.activePlayers !== this.currentActivePlayers) {
       this.currentActivePlayers = state.activePlayers;
       this.drawSeats(this.currentActivePlayers);
@@ -124,30 +134,53 @@ class TableRenderer {
       const seat = this.container.querySelector(`#seat-${i}`);
       const dealer = this.container.querySelector(`#dealer-${i}`);
       const meta = this.container.querySelector(`#seat-meta-${i}`);
+      const name = seat?.querySelector('.table-seat-name');
+      const holeCards = this.container.querySelector(`#hole-cards-${i}`);
       const playerState = Array.isArray(state.players)
         ? state.players.find((player) => player?.seat === i || player?.seatIndex === i)
         : null;
       const isDealer = state.dealerPos === i;
       const isActor = state.actorPos === i || state.currentActor === i;
+      const isHero = playerState ? Boolean(playerState.isHero) : i === 0;
 
       if (dealer) dealer.toggleAttribute('hidden', !isDealer);
+      if (name) name.textContent = playerState?.name || (isHero ? 'Hero' : `P${i + 1}`);
       if (meta) {
         const details = [];
         if (Number.isFinite(playerState?.stackBb)) details.push(`${playerState.stackBb} bb`);
-        if (Number.isFinite(playerState?.streetContributionBb)) details.push(`in ${playerState.streetContributionBb}`);
+        if (Number.isFinite(playerState?.streetContributionBb)) details.push(`street ${playerState.streetContributionBb}`);
+        if (Number.isFinite(playerState?.totalContributionBb)) details.push(`hand ${playerState.totalContributionBb}`);
         meta.textContent = details.join(' · ');
         meta.toggleAttribute('hidden', details.length === 0);
       }
       if (seat) {
+        seat.classList.toggle('is-hero', isHero);
         seat.classList.toggle('is-dealer', isDealer);
         seat.classList.toggle('is-actor', isActor);
         seat.classList.toggle('is-folded', Boolean(playerState?.folded));
         seat.classList.toggle('is-all-in', Boolean(playerState?.allIn || playerState?.isAllIn));
       }
+      if (holeCards && state.mode === 'hand') {
+        if (isHero && Array.isArray(state.heroCards)) {
+          holeCards.innerHTML = state.heroCards
+            .map((card, index) => this.renderCard(card.rank, card.suit, index, false))
+            .join('');
+          setTimeout(() => {
+            holeCards.querySelectorAll('.card-group').forEach((card, index) => {
+              card.style.transform = `translate(${(index * 45) - 22}px, 0px)`;
+            });
+          }, 50);
+        } else {
+          holeCards.innerHTML = playerState?.hasCards
+            ? `${this.renderCardBack(0)}${this.renderCardBack(1)}`
+            : '';
+        }
+      }
     }
 
-    const heroHole = this.container.querySelector('#hole-cards-0');
-    if (heroHole && state.heroCards) {
+    const heroSeat = Number.isInteger(state.heroSeat) ? state.heroSeat : 0;
+    const heroHole = this.container.querySelector(`#hole-cards-${heroSeat}`);
+    if (heroHole && state.mode !== 'hand' && state.heroCards) {
       heroHole.innerHTML = state.heroCards
         .map((card, idx) => this.renderCard(card.rank, card.suit, idx, false))
         .join('');

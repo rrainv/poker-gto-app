@@ -151,6 +151,8 @@ const app = {
 
   },
 
+  playbookHandDraft: { bySeat: {}, board: [] },
+
   picker: null,
 
   chartStreet: 'preflop',
@@ -262,6 +264,18 @@ function groupCards(group) {
 
   if (group === 'eqdead') return app.equity.dead;
 
+  if (group === 'hand-board-chance') return app.playbookHandDraft.board;
+
+  if (group.startsWith('hand-seat-')) {
+
+    const seat = Number(group.slice('hand-seat-'.length));
+
+    if (!app.playbookHandDraft.bySeat[seat]) app.playbookHandDraft.bySeat[seat] = [];
+
+    return app.playbookHandDraft.bySeat[seat];
+
+  }
+
   if (group.startsWith('player-')) return app.equity.players[Number(group.slice(7))].cards;
 
   return [];
@@ -286,7 +300,18 @@ function usedCards(scope) {
 
   const training = s === 'training' || s.startsWith('training');
 
-  const cards = equity
+  const canonicalHand = s === 'hand' || s.startsWith('hand-');
+
+  const cards = canonicalHand
+
+    ? [
+        ...Object.values(app.playbookHandDraft.bySeat).flat(),
+        ...app.playbookHandDraft.board,
+        ...(callPlaybookStateBridge('getState')?.board || []),
+        ...(callPlaybookStateBridge('getState')?.deadCards || [])
+      ]
+
+    : equity
 
     ? [...app.equity.board, ...app.equity.dead, ...app.equity.players.flatMap((player) => player.cards)]
 
@@ -561,7 +586,9 @@ function renderDeck() {
 
   const current = groupCards(group)[index];
 
-  const scope = group.startsWith('training') ? 'training' : isEquityGroup(group) ? 'equity' : 'gto';
+  const scope = group.startsWith('hand-') ? 'hand'
+    : group.startsWith('training') ? 'training'
+      : isEquityGroup(group) ? 'equity' : 'gto';
 
   const unavailable = new Set(usedCards(scope));
 
@@ -646,6 +673,8 @@ function selectCard(card) {
 
   if (isEquityGroup(group)) setEquityPending();
 
+  else if (group.startsWith('hand-')) renderCanonicalHandWorkspace();
+
   else if (group.startsWith('training')) {
 
     if (app.training.hero.length === 2 && app.training.hero[0] && app.training.hero[1]) {
@@ -717,6 +746,8 @@ function clearGroup(group) {
   renderAllCards();
 
   if (isEquityGroup(group)) setEquityPending();
+
+  else if (group.startsWith('hand-')) renderCanonicalHandWorkspace();
 
   else if (group.startsWith('training')) {
 
@@ -966,6 +997,10 @@ function setPlaybookControlAuthority(mode) {
   const handMode = mode === PLAYBOOK_MODES.HAND;
   const modeView = $('#gtoMode');
   if (modeView) modeView.dataset.playbookMode = mode;
+  if (handMode && modeView) modeView.classList.remove('is-context-collapsed');
+  if (handMode && $('#togglePlaybookContext')) {
+    $('#togglePlaybookContext').setAttribute('aria-expanded', 'true');
+  }
 
   $$('#playbookModeControl [data-playbook-mode]').forEach((button) => {
     const active = button.dataset.playbookMode === mode;
@@ -991,6 +1026,16 @@ function setPlaybookControlAuthority(mode) {
     button.disabled = handMode;
     button.toggleAttribute('data-scenario-only', handMode);
   });
+
+  $$('[data-playbook-scenario]').forEach((element) => {
+    element.hidden = handMode;
+    element.setAttribute('aria-hidden', String(handMode));
+  });
+  $$('[data-playbook-hand]').forEach((element) => {
+    element.hidden = !handMode;
+    element.setAttribute('aria-hidden', String(!handMode));
+  });
+  if (handMode) renderCanonicalHandWorkspace();
 }
 
 function playbookResolutionMessage(resolution) {
@@ -1073,7 +1118,13 @@ function syncCanonicalDecisionDisplay(decisionContext) {
 
 function renderUnavailableStrategy(resolution) {
   const message = playbookResolutionMessage(resolution);
+  const waiting = resolution?.mode === 'hand' && String(resolution?.reason || '').startsWith('canonical_');
+  setRecommendationState(waiting ? 'waiting' : 'unavailable');
   if ($('#bestAction')) $('#bestAction').textContent = 'Unavailable';
+  if ($('#bestSizing')) {
+    $('#bestSizing').textContent = '';
+    $('#bestSizing').hidden = true;
+  }
   if ($('#bestReason')) $('#bestReason').textContent = message;
   if ($('#sourceBadge')) {
     $('#sourceBadge').textContent = 'unavailable';
@@ -1093,6 +1144,12 @@ function renderUnavailableStrategy(resolution) {
   }
   if ($('#actionWheel')) $('#actionWheel').style.background = 'var(--surface-interactive)';
   if ($('#wheelCenterText')) $('#wheelCenterText').textContent = '—';
+  ['mPosition', 'mPot', 'mFacing', 'mStack', 'mEquity', 'mPotOdds', 'mSPR', 'mRake'].forEach((id) => {
+    if ($('#' + id)) $('#' + id).textContent = '—';
+  });
+  if (resolution?.mode === 'hand' && $('#pathList')) {
+    $('#pathList').innerHTML = `<div class="panel-note">${message}</div>`;
+  }
   renderPlaybookModeStatus(resolution);
 }
 
@@ -1125,9 +1182,354 @@ function bindPlaybookModeControl() {
     button.addEventListener('click', () => requestPlaybookMode(button.dataset.playbookMode));
   });
   window.addEventListener('riverline:playbook-state-change', (event) => {
-    if (event.detail?.operation !== 'mode' && isHandMode()) updateContext('Canonical hand updated');
+    if (event.detail?.operation !== 'mode' && isHandMode()) {
+      renderCanonicalHandWorkspace();
+      updateContext('Canonical hand updated');
+    }
   });
   setPlaybookControlAuthority(PLAYBOOK_MODES.SCENARIO);
+}
+
+
+
+function formatCanonicalBb(milliBb, digits = 1) {
+  const value = Number(milliBb) / 1000;
+  if (!Number.isFinite(value)) return '—';
+  return `${value.toFixed(digits).replace(/\.0$/, '')} bb`;
+}
+
+function canonicalPlayerLabel(player, heroPlayerId) {
+  if (!player) return '—';
+  const hero = player.playerId === heroPlayerId ? 'Hero · ' : '';
+  return `${hero}${player.position || `Seat ${player.seat + 1}`}`;
+}
+
+function syncHandSeatSelectors() {
+  const tableControl = $('#handTableSize');
+  if (!tableControl) return;
+  const gameMode = selectedValue('#handGameMode') || 'home';
+  const minimum = gameMode === 'clubgg' ? 7 : 2;
+  const tableSize = Math.min(10, Math.max(minimum, Math.trunc(Number(tableControl.value) || minimum)));
+  tableControl.min = String(minimum);
+  tableControl.value = String(tableSize);
+
+  ['handButtonSeat', 'handHeroSeat'].forEach((id) => {
+    const select = $('#' + id);
+    if (!select) return;
+    const previous = Number(select.value);
+    select.innerHTML = Array.from({ length: tableSize }, (_, seat) => (
+      `<option value="${seat}">Seat ${seat + 1}</option>`
+    )).join('');
+    select.value = String(Number.isInteger(previous) && previous < tableSize ? previous : 0);
+  });
+
+  const anteType = selectedValue('#handAnteType') || 'none';
+  const ante = $('#handAnteBb');
+  if (ante) {
+    ante.disabled = anteType === 'none';
+    if (anteType === 'none') ante.value = '0';
+  }
+  const preview = $('#handAccountingPreview');
+  if (preview) preview.textContent = gameMode === 'clubgg'
+    ? `ClubGG · 0.1 bb per seated player · ${(tableSize * 0.1).toFixed(1)} bb total deduction`
+    : 'Home · no rake or forced deduction';
+}
+
+function readCanonicalHandConfiguration() {
+  return {
+    tableSize: Number(selectedValue('#handTableSize')),
+    gameMode: selectedValue('#handGameMode') || 'home',
+    stackBb: Number(selectedValue('#handStackBb')),
+    stackMode: 'hero',
+    heroSeat: Number(selectedValue('#handHeroSeat')),
+    buttonSeat: Number(selectedValue('#handButtonSeat')),
+    anteType: selectedValue('#handAnteType') || 'none',
+    anteBb: Number(selectedValue('#handAnteBb')) || 0,
+    straddleBb: 0
+  };
+}
+
+function resetCanonicalHandDraft() {
+  app.playbookHandDraft.bySeat = {};
+  app.playbookHandDraft.board = [];
+  app.playbookHandDraft.sizedAction = null;
+}
+
+function canonicalHandFailureMessage() {
+  const diagnostics = callPlaybookStateBridge('getDiagnostics');
+  return diagnostics?.error?.message || 'The canonical hand could not be updated.';
+}
+
+function startCanonicalPlaybookHand() {
+  syncHandSeatSelectors();
+  resetCanonicalHandDraft();
+  const state = callPlaybookStateBridge('initializeHand', readCanonicalHandConfiguration());
+  if (!state) toast(canonicalHandFailureMessage(), 'error');
+  renderCanonicalHandWorkspace();
+  return state;
+}
+
+function resetCanonicalPlaybookHand() {
+  callPlaybookStateBridge('resetHand');
+  resetCanonicalHandDraft();
+  renderCanonicalHandWorkspace();
+}
+
+function commitCanonicalHoleDeal() {
+  const state = callPlaybookStateBridge('getState');
+  if (!state?.players?.length) return toast('Start a canonical hand first.', 'warning');
+  const cardsByPlayer = Object.fromEntries(state.players.map((player) => [
+    player.playerId,
+    normalizedDecisionCards(app.playbookHandDraft.bySeat[player.seat])
+  ]));
+  if (Object.values(cardsByPlayer).some((cards) => cards.length !== 2)) {
+    return toast('Choose two private cards for every seated player.', 'warning');
+  }
+  const next = callPlaybookStateBridge('dealHoleCards', cardsByPlayer);
+  if (!next) toast(canonicalHandFailureMessage(), 'error');
+  renderCanonicalHandWorkspace();
+  return next;
+}
+
+function commitCanonicalBoardDeal() {
+  const state = callPlaybookStateBridge('getState');
+  const expected = Number(state?.pendingChance?.cardCount) || 0;
+  const cards = normalizedDecisionCards(app.playbookHandDraft.board);
+  if (!expected || cards.length !== expected) {
+    return toast(`Choose exactly ${expected || 'the required'} board cards.`, 'warning');
+  }
+  const next = callPlaybookStateBridge('dealBoardCards', cards);
+  if (!next) toast(canonicalHandFailureMessage(), 'error');
+  else app.playbookHandDraft.board = [];
+  renderCanonicalHandWorkspace();
+  return next;
+}
+
+function canonicalActionLabel(type, option) {
+  if (type === 'all_in') return `All-in · ${formatCanonicalBb(option.amountToMilliBb)}`;
+  if (type === 'call') return `Call · ${formatCanonicalBb(option.commitMilliBb)}`;
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function chooseCanonicalSizedAction(type, option) {
+  app.playbookHandDraft.sizedAction = type;
+  const sizing = $('#handActionSizing');
+  const input = $('#handActionAmountBb');
+  const label = $('#handActionSizingLabel');
+  const bounds = $('#handActionAmountBounds');
+  if (!sizing || !input) return;
+  const min = Number(option.minToMilliBb) / 1000;
+  const max = Number(option.maxToMilliBb) / 1000;
+  const step = Number(callPlaybookStateBridge('getState')?.game?.chipUnitMilliBb || 100) / 1000;
+  sizing.hidden = false;
+  input.min = String(min);
+  input.max = String(max);
+  input.step = String(step);
+  input.value = String(min);
+  if (label) label.textContent = type === 'bet' ? 'Bet to' : 'Raise to';
+  if (bounds) bounds.textContent = `${min}–${max} bb · amount-to`;
+  if ($('#handCommitSizedAction')) $('#handCommitSizedAction').hidden = false;
+  $$('#handLegalActions [data-canonical-action]').forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.canonicalAction === type));
+  });
+}
+
+function applyCanonicalHandAction(type, amountToBb = null) {
+  const next = callPlaybookStateBridge('applyAction', type, amountToBb);
+  if (!next) toast(canonicalHandFailureMessage(), 'error');
+  app.playbookHandDraft.sizedAction = null;
+  renderCanonicalHandWorkspace();
+  return next;
+}
+
+function commitCanonicalSizedAction() {
+  const type = app.playbookHandDraft.sizedAction;
+  if (!type) return toast('Choose Bet or Raise first.', 'warning');
+  return applyCanonicalHandAction(type, Number(selectedValue('#handActionAmountBb')));
+}
+
+function renderCanonicalLegalActions(state) {
+  const root = $('#handLegalActions');
+  const section = $('#handActionSection');
+  if (!root || !section) return;
+  const spec = callPlaybookStateBridge('getLegalActions');
+  section.hidden = !spec;
+  root.innerHTML = '';
+  if (!spec) return;
+
+  const actor = state.players.find((player) => player.playerId === state.actingPlayerId);
+  if ($('#handActionActor')) $('#handActionActor').textContent = `${canonicalPlayerLabel(actor, callPlaybookStateBridge('getHeroPlayerId'))} to act`;
+  const options = [
+    ['fold', spec.fold], ['check', spec.check], ['call', spec.call],
+    ['bet', spec.bet], ['raise', spec.raise], ['all_in', spec.allIn]
+  ].filter(([, option]) => option?.available);
+
+  options.forEach(([type, option]) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = type === 'bet' || type === 'raise'
+      ? 'ui-button ui-button--primary'
+      : 'ui-button ui-button--secondary';
+    button.dataset.canonicalAction = type;
+    button.setAttribute('aria-pressed', 'false');
+    button.textContent = canonicalActionLabel(type, option);
+    button.setAttribute('aria-label', `${button.textContent}${type === 'bet' || type === 'raise' ? ', choose amount-to sizing' : ''}`);
+    button.addEventListener('click', () => {
+      if (type === 'bet' || type === 'raise') chooseCanonicalSizedAction(type, option);
+      else applyCanonicalHandAction(type);
+    });
+    root.appendChild(button);
+  });
+
+  if (spec.bet.available || spec.raise.available) {
+    const commit = document.createElement('button');
+    commit.id = 'handCommitSizedAction';
+    commit.type = 'button';
+    commit.className = 'ui-button ui-button--primary';
+    commit.textContent = 'Apply amount-to';
+    commit.hidden = true;
+    commit.addEventListener('click', commitCanonicalSizedAction);
+    root.appendChild(commit);
+  }
+  const currentType = app.playbookHandDraft.sizedAction;
+  const currentOption = currentType === 'bet' ? spec.bet : currentType === 'raise' ? spec.raise : null;
+  if (currentOption?.available) chooseCanonicalSizedAction(currentType, currentOption);
+  else if ($('#handActionSizing')) $('#handActionSizing').hidden = true;
+}
+
+function canonicalHandStatus(state) {
+  if (!state) return { label: 'Not started', tone: 'info', summary: 'Configure and start a canonical hand.' };
+  if (state.terminal?.isTerminal || state.phase === 'terminal') return { label: 'Complete', tone: 'available', summary: 'The canonical hand is complete.' };
+  if (state.phase === 'showdown') return { label: 'Showdown', tone: 'warning', summary: 'Betting is complete. Resolve the canonical showdown.' };
+  if (state.pendingChance?.type === 'deal_hole') return { label: 'Deal cards', tone: 'loading', summary: 'Choose two private cards for every seated player.' };
+  if (state.phase === 'chance') return { label: 'Board chance', tone: 'loading', summary: `Waiting for ${state.pendingChance?.type?.replace('deal_', '') || 'board cards'}.` };
+  return { label: 'In progress', tone: 'available', summary: 'Only canonical legal actions can advance this hand.' };
+}
+
+function renderCanonicalPrivateDeal(state) {
+  const section = $('#handDealSection');
+  const root = $('#handPrivateCards');
+  const isHoleDeal = state?.pendingChance?.type === 'deal_hole';
+  if (!section || !root) return;
+  section.hidden = !isHoleDeal;
+  if (!isHoleDeal) return;
+  const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
+  root.innerHTML = state.players.map((player) => `
+    <div class="hand-private-row">
+      <div><strong>${canonicalPlayerLabel(player, heroPlayerId)}</strong><small>Seat ${player.seat + 1}</small></div>
+      <div class="card-slots" data-slots="hand-seat-${player.seat}"></div>
+    </div>`).join('');
+  state.players.forEach((player) => renderSlots(`hand-seat-${player.seat}`, 2));
+  const complete = state.players.every((player) => normalizedDecisionCards(app.playbookHandDraft.bySeat[player.seat]).length === 2);
+  if ($('#handDealHoleButton')) $('#handDealHoleButton').disabled = !complete;
+}
+
+function renderCanonicalChance(state) {
+  const section = $('#handChanceSection');
+  const isBoardChance = state?.phase === 'chance' && state?.pendingChance?.type !== 'deal_hole';
+  if (!section) return;
+  section.hidden = !isBoardChance;
+  if (!isBoardChance) return;
+  const chanceName = state.pendingChance.type.replace('deal_', '');
+  const expected = Number(state.pendingChance.cardCount) || 0;
+  if ($('#handChanceTitle')) $('#handChanceTitle').textContent = `Deal ${chanceName}`;
+  if ($('#handChanceHelp')) $('#handChanceHelp').textContent = `Choose the next ${expected} legal board card${expected === 1 ? '' : 's'}.`;
+  renderSlots('hand-board-chance', expected);
+  if ($('#handDealBoardButton')) $('#handDealBoardButton').disabled = normalizedDecisionCards(app.playbookHandDraft.board).length !== expected;
+}
+
+function renderCanonicalActionHistory(state) {
+  const root = $('#handActionHistory');
+  if (!root) return;
+  const records = state?.actionHistory || [];
+  root.innerHTML = records.length ? records.map((record) => {
+    const player = state.players.find((entry) => entry.playerId === record.playerId);
+    const action = record.submittedAction;
+    const amount = action.amountToMilliBb === null ? '' : ` to ${formatCanonicalBb(action.amountToMilliBb)}`;
+    return `<li><span><strong>${record.street}</strong> · ${canonicalPlayerLabel(player, callPlaybookStateBridge('getHeroPlayerId'))} · ${action.type.replace('_', ' ')}${amount}</span></li>`;
+  }).join('') : '<li><span>No actions yet</span></li>';
+}
+
+function dispatchCanonicalTableState(state) {
+  if (!state) return;
+  const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
+  const hero = state.players.find((player) => player.playerId === heroPlayerId);
+  const actor = state.players.find((player) => player.playerId === state.actingPlayerId);
+  window.dispatchEvent(new CustomEvent('gameStateUpdate', { detail: {
+    mode: 'hand',
+    pot: (state.potMilliBb / 1000).toFixed(1),
+    board: state.board.map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) })),
+    heroCards: (hero?.holeCards || []).map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) })),
+    dealerPos: state.buttonSeat,
+    actorPos: actor?.seat ?? null,
+    heroSeat: hero?.seat ?? null,
+    activePlayers: state.players.length,
+    players: state.players.map((player) => ({
+      seat: player.seat,
+      name: player.playerId === heroPlayerId ? 'Hero' : player.position,
+      position: player.position,
+      isHero: player.playerId === heroPlayerId,
+      stackBb: player.currentStackMilliBb / 1000,
+      streetContributionBb: player.streetContributionMilliBb / 1000,
+      totalContributionBb: player.totalPotContributionMilliBb / 1000,
+      folded: player.folded,
+      allIn: player.currentStackMilliBb === 0 && !player.folded,
+      hasCards: Array.isArray(player.holeCards) && player.holeCards.length === 2
+    }))
+  }}));
+}
+
+function renderCanonicalHandWorkspace() {
+  const workspace = $('#playbookHandWorkspace');
+  if (!workspace) return;
+  const state = callPlaybookStateBridge('getState');
+  const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
+  const status = canonicalHandStatus(state);
+  const badge = $('#handSessionBadge');
+  if (badge) {
+    badge.textContent = status.label;
+    badge.className = `badge status-badge status-badge--${status.tone}`;
+  }
+  if ($('#handStateSummary')) $('#handStateSummary').textContent = status.summary;
+  if ($('#handStateStreet')) $('#handStateStreet').textContent = state?.street || '—';
+  const actor = state?.players?.find((player) => player.playerId === state.actingPlayerId);
+  if ($('#handStateActor')) $('#handStateActor').textContent = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '—';
+  if ($('#handStatePot')) $('#handStatePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '—';
+  if ($('#handStateDeduction')) $('#handStateDeduction').textContent = state ? formatCanonicalBb(state.deductionTotalMilliBb) : '—';
+  if ($('#handStartButton')) $('#handStartButton').textContent = state ? 'Start new hand' : 'Start hand';
+
+  const seats = $('#handSeatList');
+  if (seats) seats.innerHTML = state?.players?.map((player) => `
+    <div class="hand-seat-row${player.playerId === state.actingPlayerId ? ' is-actor' : ''}${player.folded ? ' is-folded' : ''}">
+      <div><strong>${canonicalPlayerLabel(player, heroPlayerId)}</strong><small>Seat ${player.seat + 1}${player.currentStackMilliBb === 0 && !player.folded ? ' · all-in' : ''}${player.folded ? ' · folded' : ''}</small></div>
+      <div class="hand-seat-values">${formatCanonicalBb(player.currentStackMilliBb)}<br>street ${formatCanonicalBb(player.streetContributionMilliBb)} · hand ${formatCanonicalBb(player.totalPotContributionMilliBb)}</div>
+    </div>`).join('') || '<p class="panel-note">No players yet.</p>';
+
+  renderCanonicalPrivateDeal(state);
+  renderCanonicalChance(state);
+  renderCanonicalLegalActions(state || { players: [] });
+  renderCanonicalActionHistory(state);
+  if ($('#handResolveShowdownButton')) $('#handResolveShowdownButton').hidden = state?.phase !== 'showdown';
+  if (state) dispatchCanonicalTableState(state);
+  else window.dispatchEvent(new CustomEvent('gameStateUpdate', {
+    detail: { mode: 'hand', empty: true, board: [], heroCards: [] }
+  }));
+}
+
+function bindCanonicalHandWorkspace() {
+  syncHandSeatSelectors();
+  ['handTableSize', 'handGameMode', 'handAnteType'].forEach((id) => {
+    if ($('#' + id)) $('#' + id).addEventListener('change', syncHandSeatSelectors);
+  });
+  if ($('#handStartButton')) $('#handStartButton').addEventListener('click', startCanonicalPlaybookHand);
+  if ($('#handResetButton')) $('#handResetButton').addEventListener('click', resetCanonicalPlaybookHand);
+  if ($('#handDealHoleButton')) $('#handDealHoleButton').addEventListener('click', commitCanonicalHoleDeal);
+  if ($('#handDealBoardButton')) $('#handDealBoardButton').addEventListener('click', commitCanonicalBoardDeal);
+  if ($('#handResolveShowdownButton')) $('#handResolveShowdownButton').addEventListener('click', () => {
+    const next = callPlaybookStateBridge('resolveShowdown');
+    if (!next) toast(canonicalHandFailureMessage(), 'error');
+    renderCanonicalHandWorkspace();
+  });
 }
 
 
@@ -2478,15 +2880,19 @@ function preflopBasePot() {
 
 
 function updateMetrics() {
-  const lastAction = selectedValue('#lastAction');
-  const heroPos = selectedValue('#heroPos');
-  const street = currentStreet();
-  const pot = numericValue('#potSize', preflopBasePot());
-  let facing = numericValue('#facingSize');
-  const stack = numericValue('#stack', 100);
-  const rakeMode = selectedValue('#rakeMode');
-  const rake = numericValue('#rakeValue');
-  const accounting = strategyAccountingContext(rakeMode, numericValue('#players', 6), rake);
+  const decisionContext = arguments.length > 0 ? arguments[0] : null;
+  const context = decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
+    ? decisionContext
+    : null;
+  const lastAction = context?.lastAction || selectedValue('#lastAction');
+  const heroPos = context?.heroPosition || selectedValue('#heroPos');
+  const street = context?.street || currentStreet();
+  const pot = context ? context.potBb : numericValue('#potSize', preflopBasePot());
+  let facing = context ? context.facingSizeBb : numericValue('#facingSize');
+  const stack = context ? context.stackBb : numericValue('#stack', 100);
+  const rakeMode = context?.rakeMode || selectedValue('#rakeMode');
+  const rake = context ? context.legacyRakePercent : numericValue('#rakeValue');
+  const accounting = context || strategyAccountingContext(rakeMode, numericValue('#players', 6), rake);
 
   const isPreflopUnopened = (street === 'preflop') && (lastAction === 'unopened');
   const isPreflopOpenDecision = isPreflopUnopened && heroPos !== 'BB';
@@ -2525,6 +2931,16 @@ function updateMetrics() {
     } else mRake.textContent = rake + ' ' + selectedValue('#rakeUnit');
   }
 
+  const metricValues = {
+    mPosition: heroPos || '—',
+    mPot: `${Number(pot).toFixed(1)} bb`,
+    mFacing: `${Number(facing).toFixed(1)} bb`,
+    mStack: `${Number(stack).toFixed(0)} bb`
+  };
+  Object.entries(metricValues).forEach(([id, value]) => {
+    if ($('#' + id)) $('#' + id).textContent = value;
+  });
+
   const facingSizeOut = $('#facingSizeOut');
   if (facingSizeOut) {
     if (isPreflopOpenDecision) {
@@ -2550,13 +2966,18 @@ function renderPath(street) {
 
   
 
-  const boardCards = app.gto.board.filter(Boolean).map(displayCard);
+  const context = app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
+    ? app.decisionContext
+    : null;
+  const boardCards = (context?.board || app.gto.board).filter(Boolean).map(displayCard);
 
-  const heroPos = selectedValue('#heroPos') || 'BTN';
+  const heroPos = context?.heroPosition || selectedValue('#heroPos') || 'BTN';
 
   const lastActionEl = $('#lastAction');
 
-  const lastActionText = lastActionEl && lastActionEl.selectedOptions && lastActionEl.selectedOptions[0] ? lastActionEl.selectedOptions[0].text : 'Unopened';
+  const lastActionText = context?.lastAction
+    || (lastActionEl && lastActionEl.selectedOptions && lastActionEl.selectedOptions[0]
+      ? lastActionEl.selectedOptions[0].text : 'Unopened');
 
   
 
@@ -3154,6 +3575,50 @@ function renderFrequencyStack(container, actions) {
   container.classList.toggle('is-empty', populated.length === 0);
 }
 
+function strategySourceDisplayLabel(source) {
+  const labels = {
+    heuristic_preflop: 'Heuristic',
+    heuristic_postflop: 'Heuristic',
+    local_tree: 'Local tree',
+    onnx_model: 'ONNX model',
+    api: 'API',
+    equity_fallback: 'Equity fallback',
+    unavailable: 'Unavailable'
+  };
+  return labels[source] || String(source || 'Unavailable');
+}
+
+function setRecommendationState(state) {
+  const recommendation = $('#recommendation');
+  if (!recommendation) return;
+  recommendation.dataset.recommendationState = state;
+  recommendation.setAttribute('aria-busy', String(state === 'loading'));
+}
+
+function renderLoadingStrategy() {
+  setRecommendationState('loading');
+  if ($('#bestAction')) $('#bestAction').textContent = 'Loading strategy';
+  if ($('#bestReason')) $('#bestReason').textContent = 'Checking the selected strategy source.';
+  if ($('#bestSizing')) $('#bestSizing').hidden = true;
+  if ($('#strategyMeta')) {
+    $('#strategyMeta').textContent = '';
+    $('#strategyMeta').hidden = true;
+  }
+  if ($('#strategyWarnings')) {
+    $('#strategyWarnings').textContent = '';
+    $('#strategyWarnings').hidden = true;
+  }
+  if ($('#sourceBadge')) {
+    $('#sourceBadge').textContent = 'Loading';
+    $('#sourceBadge').className = 'badge status-badge status-badge--loading';
+  }
+  const emptyActions = Array.from({ length: 3 }, () => ({ name: '—', value: 0, kind: 'unavailable' }));
+  emptyActions.forEach((action, index) => setFrequency(index + 1, action));
+  renderFrequencyStack($('#actionFrequencyStack'), emptyActions);
+  if ($('#actionWheel')) $('#actionWheel').style.background = 'var(--surface-interactive)';
+  if ($('#wheelCenterText')) $('#wheelCenterText').textContent = '—';
+}
+
 function setApiStatus(status) {
 
   if (status === 'connected') {
@@ -3259,6 +3724,7 @@ async function updateContext(reason = 'Context updated') {
   
   // Try ONNX first if available
   if (app.useOnnx && app.onnxSession) {
+     if (typeof renderLoadingStrategy === 'function') renderLoadingStrategy();
      const apiContext = legacyStrategyContext;
 
      const contextKey = JSON.stringify(apiContext);
@@ -3318,6 +3784,7 @@ async function updateContext(reason = 'Context updated') {
      }
 
   } else if (app.useApi) {
+     if (typeof renderLoadingStrategy === 'function') renderLoadingStrategy();
      // Fallback to API if ONNX not available
      const apiContext = legacyStrategyContext;
 
@@ -3391,6 +3858,12 @@ async function updateContext(reason = 'Context updated') {
 
   const strategyResult = actionProfile(null, decisionContext);
   const profile = strategyResultToLegacyProfile(strategyResult);
+  const meaningfulActions = strategyResult.actions.filter((entry) => entry.probability >= 0.05).length;
+  if (typeof setRecommendationState === 'function') {
+    setRecommendationState(strategyResult.warnings.length > 0
+      ? 'warning'
+      : meaningfulActions > 1 ? 'mixed' : 'ready');
+  }
   app.strategyResult = strategyResult;
   app.playbookViewModel = playbookBridge && typeof playbookBridge.createViewModel === 'function'
     ? playbookBridge.createViewModel(strategyResult)
@@ -3417,6 +3890,21 @@ async function updateContext(reason = 'Context updated') {
   const bestAction = $('#bestAction');
 
   if (bestAction) bestAction.textContent = t(profile.best);
+
+  const recommendationSizing = strategyResult.recommendation?.action;
+  const bestSizing = $('#bestSizing');
+  if (bestSizing) {
+    if (Number.isFinite(recommendationSizing?.amountBb)) {
+      bestSizing.textContent = `${recommendationSizing.amountBb} bb`;
+      bestSizing.hidden = false;
+    } else if (Number.isFinite(recommendationSizing?.potFraction)) {
+      bestSizing.textContent = `${(recommendationSizing.potFraction * 100).toFixed(0)}% pot`;
+      bestSizing.hidden = false;
+    } else {
+      bestSizing.textContent = '';
+      bestSizing.hidden = true;
+    }
+  }
 
   const bestReason = $('#bestReason');
 
@@ -3463,7 +3951,9 @@ async function updateContext(reason = 'Context updated') {
   const sourceBadge = $('#sourceBadge');
 
   if (sourceBadge) {
-    sourceBadge.textContent = strategyResult.source;
+    sourceBadge.textContent = typeof strategySourceDisplayLabel === 'function'
+      ? strategySourceDisplayLabel(strategyResult.source)
+      : strategyResult.source;
     const sourceTone = strategyResult.source.startsWith('heuristic_') ? 'heuristic'
       : strategyResult.source === 'local_tree' ? 'experimental'
       : strategyResult.source === 'onnx_model' || strategyResult.source === 'api' ? 'available'
@@ -3531,7 +4021,7 @@ async function updateContext(reason = 'Context updated') {
 
   
 
-  updateMetrics();
+  updateMetrics(decisionContext);
 
   renderPath(street);
 
@@ -3594,27 +4084,31 @@ async function updateContext(reason = 'Context updated') {
 
   }
 
-  // Trigger Visual Table Engine
-  const activePlayers = decisionContext.tableSize;
-  const allPos = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP', 'LJ', 'HJ', 'CO', 'BTN'];
-  const currentPosArr = POSITIONS[activePlayers] || POSITIONS[6];
-  const sortedPos = currentPosArr.slice().sort((a,b) => allPos.indexOf(a) - allPos.indexOf(b));
-  const heroIdx = sortedPos.indexOf(decisionContext.heroPosition);
-  const btnIdx = sortedPos.indexOf('BTN');
-  const dealerPos = (heroIdx !== -1 && btnIdx !== -1) ? (btnIdx - heroIdx + activePlayers) % activePlayers : 0;
-  
-  const parsedBoard = decisionContext.board.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
-  const parsedHero = decisionContext.heroCards.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
-  
-  window.dispatchEvent(new CustomEvent('gameStateUpdate', {
-    detail: {
-      pot: Number(decisionContext.potBb).toFixed(1),
-      board: parsedBoard,
-      heroCards: parsedHero,
-      dealerPos: dealerPos,
-      activePlayers: decisionContext.tableSize
-    }
-  }));
+  // Trigger the presentation-only table. Hand mode supplies canonical player
+  // facts; Scenario mode retains the established simplified projection.
+  if (playbookResolution.mode === 'hand' && typeof dispatchCanonicalTableState === 'function') {
+    dispatchCanonicalTableState(playbookBridge?.getState?.());
+  } else {
+    const activePlayers = decisionContext.tableSize;
+    const allPos = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP', 'LJ', 'HJ', 'CO', 'BTN'];
+    const currentPosArr = POSITIONS[activePlayers] || POSITIONS[6];
+    const sortedPos = currentPosArr.slice().sort((a,b) => allPos.indexOf(a) - allPos.indexOf(b));
+    const heroIdx = sortedPos.indexOf(decisionContext.heroPosition);
+    const btnIdx = sortedPos.indexOf('BTN');
+    const dealerPos = (heroIdx !== -1 && btnIdx !== -1) ? (btnIdx - heroIdx + activePlayers) % activePlayers : 0;
+    const parsedBoard = decisionContext.board.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
+    const parsedHero = decisionContext.heroCards.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
+
+    window.dispatchEvent(new CustomEvent('gameStateUpdate', {
+      detail: {
+        pot: Number(decisionContext.potBb).toFixed(1),
+        board: parsedBoard,
+        heroCards: parsedHero,
+        dealerPos: dealerPos,
+        activePlayers: decisionContext.tableSize
+      }
+    }));
+  }
 }
 
 
@@ -4764,6 +5258,8 @@ function bindEvents() {
 
         if (isEquityGroup(group)) setEquityPending();
 
+        else if (group.startsWith('hand-')) renderCanonicalHandWorkspace();
+
         else updateContext('Cards changed');
 
         return;
@@ -5053,6 +5549,25 @@ function bindEvents() {
         wrapper.classList.toggle('collapsed');
         e.target.textContent = wrapper.classList.contains('collapsed') ? 'Expand Table' : 'Collapse Table';
       }
+    });
+  }
+
+  if ($('#toggleFrequencyAlternate')) {
+    $('#toggleFrequencyAlternate').addEventListener('click', (event) => {
+      const container = $('#actionWheelContainer');
+      if (!container) return;
+      const expanded = event.currentTarget.getAttribute('aria-expanded') === 'true';
+      event.currentTarget.setAttribute('aria-expanded', String(!expanded));
+      container.hidden = expanded;
+    });
+  }
+
+  if ($('#togglePlaybookContext')) {
+    $('#togglePlaybookContext').addEventListener('click', (event) => {
+      const mode = $('#gtoMode');
+      if (!mode) return;
+      const collapsed = mode.classList.toggle('is-context-collapsed');
+      event.currentTarget.setAttribute('aria-expanded', String(!collapsed));
     });
   }
 
@@ -5559,6 +6074,8 @@ function init() {
     renderAllCards();
 
     bindEvents();
+
+    bindCanonicalHandWorkspace();
 
     bindPlaybookModeControl();
 

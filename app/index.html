@@ -412,31 +412,34 @@
 
     <section id="gtoMode" class="mode-view active">
 
-      <div class="playbook-state-source" aria-label="Playbook state source">
+      <div class="playbook-state-source" aria-label="Playbook workflow">
+        <div class="playbook-workflow-copy">
+          <span class="playbook-workflow-kicker" data-i18n="Analysis workflow">Analysis workflow</span>
+          <strong data-i18n="Choose how this poker spot is built">Choose how this poker spot is built</strong>
+        </div>
         <div id="playbookModeControl" class="ui-segments" role="group" aria-label="Choose Playbook workflow">
-          <button id="playbookScenarioMode" class="ui-tab active" type="button" data-playbook-mode="scenario" aria-pressed="true">Scenario</button>
-          <button id="playbookHandMode" class="ui-tab" type="button" data-playbook-mode="hand" aria-pressed="false">Hand</button>
+          <button id="playbookScenarioMode" class="ui-tab active" type="button" data-playbook-mode="scenario" aria-pressed="true"><strong data-i18n="Scenario Analysis">Scenario Analysis</strong><small data-i18n="Build any study spot">Build any study spot</small></button>
+          <button id="playbookHandMode" class="ui-tab" type="button" data-playbook-mode="hand" aria-pressed="false"><strong data-i18n="Hand Mode">Hand Mode</strong><small data-i18n="Play a legal hand">Play a legal hand</small></button>
         </div>
         <p id="playbookModeStatus" class="playbook-mode-status" role="status" aria-live="polite">Scenario controls are authoritative. This spot does not claim a legal hand history.</p>
+        <button id="togglePlaybookContext" class="ui-button ui-button--quiet playbook-context-toggle" type="button" aria-expanded="true" aria-controls="scenarioConfigurationPanel scenarioCardsPanel playbookHandWorkspace" data-i18n="Toggle context controls">Toggle context controls</button>
       </div>
 
-      <div class="app-grid">
+      <div class="app-grid playbook-workspace">
 
 
 
-        <aside class="side-stack">
+        <aside class="side-stack playbook-context-rail" aria-label="Playbook context and configuration">
 
-          <section class="panel">
+          <section id="scenarioConfigurationPanel" class="panel playbook-config-panel" data-playbook-scenario data-layout-fixed>
 
             <div class="panel-head" style="align-items: center; flex-wrap: nowrap; white-space: nowrap;">
 
               <div>
 
-                <div class="label" style="color:var(--primary); margin-bottom: 2px;" data-i18n="Live Configuration">Live
+                <div class="label" data-i18n="Scenario Analysis">Scenario Analysis</div>
 
-                  Configuration</div>
-
-                <div class="panel-title" style="font-size: 16px;" data-i18n="Game parameters">Game parameters</div>
+                <div class="panel-title" data-i18n="Spot configuration">Spot configuration</div>
 
               </div>
 
@@ -477,6 +480,8 @@
             <div class="panel-body">
 
               <div class="fields">
+
+                <div class="field full playbook-field-group-title" data-i18n="Spot context">Spot context</div>
 
                 <div class="field full">
 
@@ -536,6 +541,8 @@
 
                 </div>
 
+                <div class="field full playbook-field-group-title" data-i18n="Strategy adjustment">Strategy adjustment</div>
+
                 <div class="field full">
                   <div class="slider-container">
                     <div class="slider-header" style="margin-bottom: 8px;">
@@ -556,19 +563,21 @@
                   </div>
                 </div>
 
+                <div class="field full playbook-field-group-title" data-i18n="Game and accounting">Game and accounting</div>
+
                 <div class="field">
 
                   <label for="rakeMode" data-i18n="Rake">Rake</label>
 
                   <select id="rakeMode" class="control-select">
 
-                    <option value="off" selected data-i18n="Off">Off</option>
+                    <option value="off" selected data-i18n="Home · no deduction">Home · no deduction</option>
 
-                    <option value="percent" data-i18n="Percentage">Percentage</option>
+                    <option value="fixed" data-i18n="ClubGG · 0.1 bb/player">ClubGG · 0.1 bb/player</option>
 
-                    <option value="fixed" data-i18n="Fixed amount">Fixed amount</option>
+                    <option value="percent" data-i18n="Legacy percentage">Legacy percentage</option>
 
-                    <option value="cap" data-i18n="% + cap">% + cap</option>
+                    <option value="cap" data-i18n="Legacy percentage + cap">Legacy percentage + cap</option>
 
                   </select>
 
@@ -670,13 +679,15 @@
 
 
 
-          <section class="panel">
+          <section id="scenarioCardsPanel" class="panel playbook-cards-panel" data-playbook-scenario data-layout-fixed>
 
             <div class="panel-head">
 
               <div>
 
-                <div class="panel-title" data-i18n="Hand & board">Hand & board</div>
+                <div class="label" data-i18n="Cards">Cards</div>
+
+                <div class="panel-title" data-i18n="Hero, board and dead cards">Hero, board and dead cards</div>
 
                 <div class="panel-note" data-i18n="Click a card slot to choose from the available deck.">Click a card
 
@@ -726,37 +737,86 @@
 
           </section>
 
+          <section id="playbookHandWorkspace" class="panel playbook-hand-workspace" data-playbook-hand data-layout-fixed hidden aria-hidden="true">
+            <div class="panel-head playbook-hand-head">
+              <div>
+                <div class="label" data-i18n="Canonical Hand">Canonical Hand</div>
+                <div class="panel-title" data-i18n="Legal hand controls">Legal hand controls</div>
+                <div class="panel-note" data-i18n="Actions and cards advance the real hand state.">Actions and cards advance the real hand state.</div>
+              </div>
+              <span id="handSessionBadge" class="badge status-badge status-badge--info">Not started</span>
+            </div>
+
+            <div class="panel-body playbook-hand-body">
+              <section id="handSetupSection" class="hand-control-section" aria-labelledby="handSetupTitle">
+                <div class="hand-section-head">
+                  <div><strong id="handSetupTitle" data-i18n="Start a hand">Start a hand</strong><small data-i18n="Choose seats and forced contributions">Choose seats and forced contributions</small></div>
+                </div>
+                <div class="hand-setup-grid">
+                  <label><span data-i18n="Players">Players</span><input id="handTableSize" class="control-input" type="number" min="2" max="10" step="1" value="2"></label>
+                  <label><span data-i18n="Game mode">Game mode</span><select id="handGameMode" class="control-select"><option value="home" data-i18n="Home">Home</option><option value="clubgg">ClubGG</option></select></label>
+                  <label><span data-i18n="Starting stack">Starting stack</span><span class="input-with-unit"><input id="handStackBb" class="control-input" type="number" min="1" max="500" step="1" value="100"><em>bb</em></span></label>
+                  <label><span data-i18n="Button seat">Button seat</span><select id="handButtonSeat" class="control-select"></select></label>
+                  <label><span data-i18n="Hero seat">Hero seat</span><select id="handHeroSeat" class="control-select"></select></label>
+                  <label><span data-i18n="Ante type">Ante type</span><select id="handAnteType" class="control-select"><option value="none" data-i18n="None">None</option><option value="per_player" data-i18n="Per player">Per player</option><option value="big_blind" data-i18n="Big blind ante">Big blind ante</option></select></label>
+                  <label><span data-i18n="Ante amount">Ante amount</span><span class="input-with-unit"><input id="handAnteBb" class="control-input" type="number" min="0" max="20" step="0.1" value="0"><em>bb</em></span></label>
+                </div>
+                <p id="handAccountingPreview" class="hand-accounting-preview">Home · no rake or forced deduction</p>
+                <div class="hand-button-row">
+                  <button id="handStartButton" class="ui-button ui-button--primary" type="button" data-i18n="Start hand">Start hand</button>
+                  <button id="handResetButton" class="ui-button ui-button--quiet" type="button" data-i18n="Reset hand">Reset hand</button>
+                </div>
+              </section>
+
+              <section id="handStateSection" class="hand-control-section" aria-labelledby="handStateTitle">
+                <div class="hand-section-head"><div><strong id="handStateTitle" data-i18n="Current hand">Current hand</strong><small id="handStateSummary">No canonical hand yet</small></div></div>
+                <div class="hand-state-strip" aria-live="polite">
+                  <div><span data-i18n="Street">Street</span><strong id="handStateStreet">—</strong></div>
+                  <div><span data-i18n="Actor">Actor</span><strong id="handStateActor">—</strong></div>
+                  <div><span data-i18n="Pot">Pot</span><strong id="handStatePot">—</strong></div>
+                  <div><span data-i18n="Deduction">Deduction</span><strong id="handStateDeduction">—</strong></div>
+                </div>
+                <div id="handSeatList" class="hand-seat-list" aria-label="Canonical players"></div>
+              </section>
+
+              <section id="handDealSection" class="hand-control-section" aria-labelledby="handDealTitle" hidden>
+                <div class="hand-section-head"><div><strong id="handDealTitle" data-i18n="Deal private cards">Deal private cards</strong><small data-i18n="The canonical engine currently requires every player's two cards.">The canonical engine currently requires every player's two cards.</small></div></div>
+                <div id="handPrivateCards" class="hand-private-cards"></div>
+                <button id="handDealHoleButton" class="ui-button ui-button--primary" type="button" data-i18n="Commit private deal">Commit private deal</button>
+              </section>
+
+              <section id="handChanceSection" class="hand-control-section" aria-labelledby="handChanceTitle" hidden>
+                <div class="hand-section-head"><div><strong id="handChanceTitle">Deal board</strong><small id="handChanceHelp">Choose the next legal board cards.</small></div></div>
+                <div class="card-slots" data-slots="hand-board-chance"></div>
+                <button id="handDealBoardButton" class="ui-button ui-button--primary" type="button" data-i18n="Commit board cards">Commit board cards</button>
+              </section>
+
+              <section id="handActionSection" class="hand-control-section" aria-labelledby="handActionTitle" hidden>
+                <div class="hand-section-head"><div><strong id="handActionTitle" data-i18n="Legal actions">Legal actions</strong><small id="handActionActor">Waiting for a betting decision</small></div></div>
+                <div id="handLegalActions" class="hand-legal-actions" role="group" aria-label="Canonical legal actions"></div>
+                <label id="handActionSizing" class="hand-action-sizing" hidden>
+                  <span id="handActionSizingLabel">Raise to</span>
+                  <span class="input-with-unit"><input id="handActionAmountBb" class="control-input" type="number" step="0.1"><em>bb</em></span>
+                  <small id="handActionAmountBounds"></small>
+                </label>
+              </section>
+
+              <section id="handHistorySection" class="hand-control-section" aria-labelledby="handHistoryTitle">
+                <div class="hand-section-head"><div><strong id="handHistoryTitle" data-i18n="Action history">Action history</strong><small data-i18n="Canonical, chronological and read-only">Canonical, chronological and read-only</small></div></div>
+                <ol id="handActionHistory" class="hand-action-history"><li>No actions yet</li></ol>
+                <button id="handResolveShowdownButton" class="ui-button ui-button--primary" type="button" hidden data-i18n="Resolve showdown">Resolve showdown</button>
+              </section>
+            </div>
+          </section>
+
         </aside>
 
 
 
-        <main class="main-content">
-          <div style="text-align: right; margin-bottom: 8px; padding-right: 16px;">
-            <button id="toggleTableBtn" class="ui-button ui-button--quiet" type="button">Collapse Table</button>
-          </div>
-          <div id="table-wrapper" class="table-wrapper">
-            <div id="visual-table-container"></div>
-          </div>
+        <main class="main-content playbook-decision-workspace">
+          <div id="sharedControls" class="playbook-betting-context" data-playbook-scenario>
 
-          <div class="sub-tabs ui-segments" role="tablist" aria-label="Playbook views" style="margin-bottom:16px;">
-
-            <button class="sub-tab ui-tab active" type="button" role="tab" aria-selected="true" data-gto-view="context" data-i18n="Decision">Decision</button>
-
-            <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="chart" data-i18n="Full range chart">Full range chart</button>
-
-            <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="range" data-i18n="Range Advantage">Range Advantage</button>
-
-            
-
-            
-
-            
-
-          </div>
-
-
-
-          <div id="sharedControls">
+            <div class="playbook-inline-heading"><span class="label" data-i18n="Betting context">Betting context</span><small data-i18n="Manual values for this study spot">Manual values for this study spot</small></div>
 
             <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
 
@@ -842,23 +902,23 @@
 
 
 
-            <section class="panel recommend" id="recommendation">
+            <section class="panel recommend playbook-primary-decision" id="recommendation" data-layout-fixed data-recommendation-state="ready" aria-live="polite" aria-atomic="false">
 
-              <div class="recommend-top"
-
-                style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 24px;">
+              <div class="recommend-top">
 
                 <div>
 
-                  <div class="eyebrow" style="font-size: 11px; letter-spacing: 2px;"><span
+                  <div class="eyebrow"><span
 
-                      data-i18n="BOTTOM-LINE ACTION">BOTTOM-LINE ACTION</span> · <span id="streetLabel"
+                      data-i18n="Primary decision">PRIMARY DECISION</span> · <span id="streetLabel"
 
                       data-i18n="PREFLOP" style="text-transform:uppercase;">PREFLOP</span></div>
 
                   <div class="action-name" id="bestAction">
 
                     OPEN 2.5 BB</div>
+
+                  <div class="action-sizing" id="bestSizing" hidden></div>
 
                   <div class="action-copy" id="bestReason" style="font-size: 13px; margin-top: 8px;">Strong opening
 
@@ -874,9 +934,11 @@
 
               <div class="strategy-warning" id="strategyWarnings" role="note" hidden></div>
 
-              <div class="wheel-section frequency-visualization" style="display:flex; gap: 32px; align-items:center;">
+              <div class="frequency-visualization">
 
-                <div class="wheel-container">
+                <div class="frequency-heading"><strong data-i18n="Strategy mix">Strategy mix</strong><button id="toggleFrequencyAlternate" class="small-link" type="button" aria-expanded="false" aria-controls="actionWheelContainer" data-i18n="Alternate view">Alternate view</button></div>
+
+                <div class="wheel-container" id="actionWheelContainer" hidden>
 
                   <div class="wheel" id="actionWheel">
 
@@ -890,7 +952,7 @@
 
                 </div>
 
-                <div class="frequency-bars" style="flex:1;">
+                <div class="frequency-bars">
 
                   <div class="frequency-stack" id="actionFrequencyStack" role="img" aria-label="Open 76%, Limp 10%, Fold 14%">
                     <span class="frequency-stack-segment" data-action-kind="aggressive" style="width:76%"></span>
@@ -972,7 +1034,15 @@
 
               </div>
 
-              <div class="metric-grid">
+              <div class="metric-grid playbook-metric-strip" aria-label="Decision metrics">
+
+                <div class="metric"><span data-i18n="Position">Position</span><b id="mPosition">—</b></div>
+
+                <div class="metric"><span data-i18n="Pot">Pot</span><b id="mPot">—</b></div>
+
+                <div class="metric"><span data-i18n="Facing">Facing</span><b id="mFacing">—</b></div>
+
+                <div class="metric"><span data-i18n="Stack">Stack</span><b id="mStack">—</b></div>
 
                 <div class="metric"><span data-i18n="Est. equity">Est. equity</span><b id="mEquity">—</b></div>
 
@@ -994,6 +1064,19 @@
 
 
 
+          <div class="playbook-table-toggle">
+            <button id="toggleTableBtn" class="ui-button ui-button--quiet" type="button">Collapse Table</button>
+          </div>
+          <div id="table-wrapper" class="table-wrapper">
+            <div id="visual-table-container"></div>
+          </div>
+
+          <div id="playbookAnalysisTabs" class="sub-tabs ui-segments" role="tablist" aria-label="Playbook analysis views">
+            <button class="sub-tab ui-tab active" type="button" role="tab" aria-selected="true" data-gto-view="context" data-i18n="Decision">Decision</button>
+            <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="chart" data-i18n="Range Matrix">Range Matrix</button>
+            <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="range" data-i18n="Range Advantage">Range Advantage</button>
+          </div>
+
           <div id="chartView" class="gto-view" style="display: none;">
 
             <section class="panel">
@@ -1002,7 +1085,7 @@
 
                 <div>
 
-                  <div class="panel-title" data-i18n="Full GTO chart explorer">Full GTO chart explorer</div>
+                  <div class="panel-title" data-i18n="Range Matrix">Range Matrix</div>
 
                   <div class="panel-note" data-i18n="All 169 hand classes · click any square for its current mix.">All
 
@@ -1214,8 +1297,8 @@
 
 
 
-        <aside class="right-rail side-stack">
-          <section class="panel">
+        <aside class="right-rail side-stack playbook-support-rail">
+          <section id="playbookDecisionPathPanel" class="panel" data-layout-fixed>
             <div class="panel-head">
               <div>
                 <div class="panel-title" data-i18n="Action path">Action path</div>
@@ -1227,15 +1310,15 @@
             </div>
           </section>
 
-          <section class="panel">
+          <section id="playbookGuardrailPanel" class="panel" data-layout-fixed>
             <div class="panel-head">
               <div>
                 <div class="panel-title" data-i18n="Playbook guardrail">Playbook guardrail</div>
               </div>
             </div>
             <div class="panel-body">
-              <p class="panel-note" style="font-size:12px;line-height:1.55" data-i18n="Fallback GTO heuristic is active. Model is dynamically blending preflop approximations.">
-                Fallback GTO heuristic is active. Model is dynamically blending preflop approximations.
+              <p class="panel-note" style="font-size:12px;line-height:1.55" data-i18n="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">
+                Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.
               </p>
               <div class="divider"></div>
               <div class="label" data-i18n="Available deck">Available deck</div>

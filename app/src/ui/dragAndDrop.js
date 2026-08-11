@@ -1,7 +1,7 @@
 // Drag and Drop Workspace Layout Manager
 
 function initDragAndDrop() {
-  const panels = document.querySelectorAll('.panel');
+  const panels = document.querySelectorAll('.panel:not([data-layout-fixed])');
   let draggedPanel = null;
 
   // 1. Initialize panels
@@ -91,7 +91,7 @@ function saveLayout() {
   
   containers.forEach(container => {
     // Only save containers that actually have panels or are main-content
-    if (container.querySelectorAll('.panel').length === 0 && !container.classList.contains('main-content')) return;
+    if (container.querySelectorAll('.panel:not([data-layout-fixed])').length === 0 && !container.classList.contains('main-content')) return;
     
     const parentMode = container.closest('.mode-view');
     if (!parentMode) return;
@@ -102,7 +102,7 @@ function saveLayout() {
     const containerKey = `${parentMode.id}-${classKey}`;
     
     // Get ordered list of panel IDs in this container
-    const panelIds = Array.from(container.querySelectorAll('.panel')).map(p => p.id);
+    const panelIds = Array.from(container.querySelectorAll('.panel:not([data-layout-fixed])')).map(p => p.id);
     layout[containerKey] = panelIds;
   });
 
@@ -139,7 +139,7 @@ function loadLayout() {
       // Reorder panels
       panelIds.forEach(panelId => {
         const panel = document.getElementById(panelId);
-        if (panel && panel.parentNode) {
+        if (panel && panel.parentNode && !panel.hasAttribute('data-layout-fixed')) {
           // Move the panel to the end of this container
           container.appendChild(panel);
         }
@@ -168,7 +168,7 @@ window.applyUILockState = function() {
     btn.setAttribute('aria-label', window.uiLocked ? 'Unlock layout editing' : 'Lock layout editing');
     btn.title = window.uiLocked ? 'Unlock layout editing' : 'Lock layout editing';
   }
-  const panels = document.querySelectorAll('.panel');
+  const panels = document.querySelectorAll('.panel:not([data-layout-fixed])');
   panels.forEach(panel => {
     if (window.uiLocked) {
       panel.removeAttribute('draggable');
