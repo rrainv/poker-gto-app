@@ -376,13 +376,14 @@ test('shadow mismatches cannot alter the legacy context or actionProfile result'
   assert.deepEqual(afterProfile, beforeProfile);
 });
 
-test('production path and domain dependency direction remain unchanged', () => {
+test('production path resolves one Playbook state source before the shared strategy path', () => {
   const logicSource = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
   assert.doesNotMatch(
     logicSource,
     /canonical-hand-session|decision-context-shadow|runDecisionContextShadowComparison/,
   );
-  assert.match(logicSource, /const decisionContext = deriveDecisionContext\(inputSnapshot\);/);
+  assert.match(logicSource, /playbookBridge\.resolveDecisionContext\(inputSnapshot, deriveDecisionContext\)/);
+  assert.match(logicSource, /const decisionContext = playbookResolution\.decisionContext;/);
   assert.match(logicSource, /const strategyResult = actionProfile\(null, decisionContext\);/);
 
   const applicationFiles = [

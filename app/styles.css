@@ -6116,3 +6116,47 @@ html[data-four-color="false"] {
   .card-slot.filled { animation: none; }
   .card-group { transition-duration: 0.01ms; transition-delay: 0ms !important; }
 }
+
+/* PLAYBOOK-001: explicit state-source contract -------------------------- */
+
+.playbook-state-source {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  margin: 0 0 var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  color: var(--text-secondary);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.playbook-state-source .ui-segments { flex: 0 0 auto; }
+.playbook-state-source .ui-tab[aria-pressed="true"] {
+  color: var(--text-primary);
+  background: var(--surface-interactive-hover);
+  box-shadow: inset 0 -2px 0 var(--accent-primary);
+}
+
+.playbook-mode-status {
+  min-width: 0;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-label-size);
+  line-height: 1.4;
+}
+
+.playbook-mode-status[data-status="unavailable"],
+.playbook-mode-status[data-status="error"] { color: var(--status-warning); }
+
+#gtoMode[data-playbook-mode="hand"] [data-scenario-only] {
+  cursor: not-allowed;
+}
+
+#gtoMode[data-playbook-mode="hand"] .card-slot[data-playbook-canonical-display] {
+  cursor: default;
+}
+
+@media (max-width: 768px) {
+  .playbook-state-source { align-items: flex-start; flex-direction: column; }
+}

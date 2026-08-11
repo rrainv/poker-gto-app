@@ -109,6 +109,9 @@ const PREFLOP_FALLBACK_POSITION_MODIFIERS = Object.freeze({
   'BB': 3.0
 });
 
+const PLAYBOOK_SCENARIO_SCHEMA_VERSION = 'playbook-scenario/v1';
+const PLAYBOOK_MODES = Object.freeze({ SCENARIO: 'scenario', HAND: 'hand' });
+
 
 
 const app = {
@@ -166,6 +169,12 @@ const app = {
 
   strategyResult: null,
 
+  playbookMode: PLAYBOOK_MODES.SCENARIO,
+
+  playbookResolution: null,
+
+  playbookViewModel: null,
+
   onnxSession: null,
 
   useOnnx: false
@@ -186,6 +195,17 @@ function callCanonicalDevelopmentBridge(method, ...args) {
     if (window.RiverlineCanonicalDev?.isEnabled?.()) {
       console.debug('[Riverline canonical shadow] bridge error', error);
     }
+    return null;
+  }
+}
+
+function callPlaybookStateBridge(method, ...args) {
+  try {
+    const bridge = window.RiverlinePlaybookState;
+    if (!bridge || typeof bridge[method] !== 'function') return null;
+    return bridge[method](...args);
+  } catch (error) {
+    console.error('[Riverline Playbook state source]', error);
     return null;
   }
 }
@@ -456,11 +476,24 @@ function updateActionOptions() {
 
 function renderAllCards() {
 
-  renderSlots('hero', 2);
+  if (typeof isHandMode === 'function' && isHandMode()) {
+    const canonicalState = callPlaybookStateBridge('getState');
+    const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
+    const canonicalHero = canonicalState?.players?.find((player) => player.playerId === heroPlayerId);
+    renderCanonicalDecisionCards('hero', canonicalHero?.holeCards || [], 2);
+    renderCanonicalDecisionCards('board', canonicalState?.board || [], 5);
+    renderCanonicalDecisionCards(
+      'dead',
+      canonicalState?.deadCards || [],
+      Math.min(52, (canonicalState?.deadCards?.length || 0) + 1)
+    );
+  } else {
+    renderSlots('hero', 2);
 
-  renderSlots('board', 5);
+    renderSlots('board', 5);
 
-  renderSlots('dead', 52);
+    renderSlots('dead', 52);
+  }
 
   renderSlots('trainingHero', 2);
 
@@ -483,6 +516,10 @@ function renderAllCards() {
 
 
 function openPicker(group, index) {
+
+  if (isHandMode() && PLAYBOOK_DECISION_CARD_GROUPS.includes(group)) {
+    return toast('These cards come from the canonical hand in Hand mode.', 'warning');
+  }
 
   app.picker = { group, index };
 
@@ -561,6 +598,11 @@ function firstEmptyIndex(cards, limit) {
 function selectCard(card) {
 
   const { group, index } = app.picker;
+
+  if (isHandMode() && PLAYBOOK_DECISION_CARD_GROUPS.includes(group)) {
+    closePicker();
+    return toast('These cards come from the canonical hand in Hand mode.', 'warning');
+  }
 
   const target = groupCards(group);
 
@@ -660,6 +702,10 @@ function closePicker() {
 
 
 function clearGroup(group) {
+
+  if (isHandMode() && PLAYBOOK_DECISION_CARD_GROUPS.includes(group)) {
+    return toast('These cards come from the canonical hand in Hand mode.', 'warning');
+  }
 
   if (group === 'hero') app.selectedHand = null;
 
@@ -820,15 +866,22 @@ function normalizedDecisionCards(cards) {
 
 
 
-function readPlaybookInputSnapshot() {
-
+function readPlaybookScenarioInput() {
   const lastActionControl = $('#lastAction');
-
-  return {
-    tableSize: numericValue('#players', 6),
+  const tableSize = numericValue('#players', 6);
+  const board = normalizedDecisionCards(app.gto && app.gto.board);
+  const rakeMode = selectedValue('#rakeMode');
+  const legacyRakeValue = numericValue('#rakeValue', 0);
+  const accounting = strategyAccountingContext(rakeMode, tableSize, legacyRakeValue);
+  const rawInput = {
+    schemaVersion: typeof PLAYBOOK_SCENARIO_SCHEMA_VERSION === 'string'
+      ? PLAYBOOK_SCENARIO_SCHEMA_VERSION
+      : 'playbook-scenario/v1',
+    tableSize,
     heroPosition: selectedValue('#heroPos'),
+    street: currentStreet(board),
     heroCards: normalizedDecisionCards(app.gto && app.gto.hero),
-    board: normalizedDecisionCards(app.gto && app.gto.board),
+    board,
     deadCards: normalizedDecisionCards(app.gto && app.gto.dead),
     stackBb: numericValue('#stack', 100),
     stackMode: selectedValue('#stackMode'),
@@ -838,10 +891,243 @@ function readPlaybookInputSnapshot() {
       ? lastActionControl.selectedOptions[0].text
       : 'Unopened',
     facingSizeBb: numericValue('#facingSize', 0),
-    rakeMode: selectedValue('#rakeMode'),
-    legacyRakeValue: numericValue('#rakeValue', 0)
+    rakeMode,
+    forcedContributionPerPlayerBb: accounting.forcedContributionPerPlayerBb,
+    totalForcedContributionBb: accounting.totalForcedContributionBb,
+    legacyRakePercent: accounting.rake,
+    legacyRakeValue,
+    anteBb: numericValue('#ante', 0),
+    straddleBb: numericValue('#straddle', 0)
   };
 
+  const bridged = typeof callPlaybookStateBridge === 'function'
+    ? callPlaybookStateBridge('createScenarioInput', rawInput)
+    : null;
+  if (bridged) return bridged;
+  rawInput.heroCards = Object.freeze(rawInput.heroCards);
+  rawInput.board = Object.freeze(rawInput.board);
+  rawInput.deadCards = Object.freeze(rawInput.deadCards);
+  return Object.freeze(rawInput);
+}
+
+// Compatibility name retained for the existing characterization harnesses.
+function readPlaybookInputSnapshot() {
+  return readPlaybookScenarioInput();
+
+}
+
+
+
+const PLAYBOOK_SCENARIO_CONTROL_IDS = Object.freeze([
+  'players', 'playersNum', 'stack', 'stackNum', 'stackMode',
+  'rakeMode', 'rakeValue', 'rakeValueNum', 'rakeUnit', 'rakePot',
+  'ante', 'anteNum', 'straddle', 'heroPos', 'lastAction',
+  'facingSize', 'facingSizeNum', 'potSize', 'potSizeNum'
+]);
+
+const PLAYBOOK_DECISION_CARD_GROUPS = Object.freeze(['hero', 'board', 'dead']);
+let savedPlaybookScenarioPresentation = null;
+
+function isHandMode() {
+  return callPlaybookStateBridge('getMode') === PLAYBOOK_MODES.HAND;
+}
+
+function capturePlaybookScenarioPresentation() {
+  const controls = {};
+  PLAYBOOK_SCENARIO_CONTROL_IDS.forEach((id) => {
+    const control = document.getElementById(id);
+    if (control) controls[id] = control.value;
+  });
+  return {
+    controls,
+    hero: normalizedDecisionCards(app.gto && app.gto.hero),
+    board: normalizedDecisionCards(app.gto && app.gto.board),
+    dead: normalizedDecisionCards(app.gto && app.gto.dead)
+  };
+}
+
+function restorePlaybookScenarioPresentation(snapshot) {
+  if (!snapshot) return;
+  Object.entries(snapshot.controls || {}).forEach(([id, value]) => {
+    const control = document.getElementById(id);
+    if (control) control.value = value;
+  });
+  updatePositions();
+  if (snapshot.controls && snapshot.controls.heroPos && $('#heroPos')) {
+    $('#heroPos').value = snapshot.controls.heroPos;
+  }
+  app.gto.hero = normalizedDecisionCards(snapshot.hero);
+  app.gto.board = normalizedDecisionCards(snapshot.board);
+  app.gto.dead = normalizedDecisionCards(snapshot.dead);
+  renderAllCards();
+}
+
+function setPlaybookControlAuthority(mode) {
+  const handMode = mode === PLAYBOOK_MODES.HAND;
+  const modeView = $('#gtoMode');
+  if (modeView) modeView.dataset.playbookMode = mode;
+
+  $$('#playbookModeControl [data-playbook-mode]').forEach((button) => {
+    const active = button.dataset.playbookMode === mode;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+
+  PLAYBOOK_SCENARIO_CONTROL_IDS.forEach((id) => {
+    const control = document.getElementById(id);
+    if (!control) return;
+    control.disabled = handMode;
+    control.toggleAttribute('data-scenario-only', handMode);
+    if (handMode) {
+      control.setAttribute('aria-describedby', 'playbookModeStatus');
+      control.title = 'Scenario-only control; ignored while the canonical hand is authoritative.';
+    } else {
+      control.removeAttribute('aria-describedby');
+      control.removeAttribute('title');
+    }
+  });
+
+  $$('[data-clear="hero"], [data-clear="board"], [data-clear="dead"]').forEach((button) => {
+    button.disabled = handMode;
+    button.toggleAttribute('data-scenario-only', handMode);
+  });
+}
+
+function playbookResolutionMessage(resolution) {
+  if (!resolution) return 'Playbook state has not been resolved.';
+  if (resolution.status === 'available') {
+    return resolution.mode === PLAYBOOK_MODES.HAND
+      ? 'Hand facts come from the canonical hand. Scenario controls are read-only.'
+      : 'Scenario controls are authoritative. This spot does not claim a legal hand history.';
+  }
+  const reasons = {
+    unsupported_canonical_rake_mode: 'Hand mode does not support percentage or capped rake.',
+    canonical_straddle_unsupported: 'Hand mode does not support a nonzero straddle.',
+    clubgg_requires_7_to_10_players: 'ClubGG hand mode requires 7 to 10 seated players.',
+    canonical_session_not_initialized: 'Hand mode is unavailable until a canonical hand is initialized.',
+    canonical_chance_state: 'The canonical hand is waiting for explicit chance cards.',
+    canonical_showdown_state: 'The canonical hand is at showdown; there is no hero decision.',
+    canonical_terminal_state: 'The canonical hand is complete; there is no hero decision.',
+    canonical_not_betting: 'The canonical hand does not currently have a betting decision.',
+    canonical_hero_unknown: 'The canonical hand has no configured hero.',
+    canonical_hero_not_actor: 'The canonical hand is waiting for another player to act.',
+    canonical_hero_cards_unknown: 'Deal the hero two cards before requesting strategy.',
+    scenario_projection_failed: 'The Scenario input could not be converted to a decision context.',
+    canonical_projection_failed: 'The canonical hand could not be converted to a decision context.'
+  };
+  return reasons[resolution.reason] || 'This Playbook state is unavailable.';
+}
+
+function renderPlaybookModeStatus(resolution) {
+  const status = $('#playbookModeStatus');
+  if (!status) return;
+  status.textContent = playbookResolutionMessage(resolution);
+  status.dataset.status = resolution?.status || 'unavailable';
+}
+
+function renderCanonicalDecisionCards(group, cards, count) {
+  const target = document.querySelector(`[data-slots="${group}"]`);
+  if (!target) return;
+  const values = normalizedDecisionCards(cards);
+  target.innerHTML = Array.from({ length: count }, (_, index) => {
+    const card = values[index];
+    const state = cardVisualState(group, card);
+    const suitClass = card ? ` card--suit-${card[1]}` : '';
+    const label = card ? `${displayCard(card)}, canonical hand card` : `No canonical card ${index + 1}`;
+    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass}" data-card-state="${state}" data-group="${group}" data-index="${index}" data-playbook-canonical-display disabled aria-label="${label}">${cardMarkup(card)}</button>`;
+  }).join('');
+}
+
+function syncCanonicalDecisionDisplay(decisionContext) {
+  if (!decisionContext) return;
+  const values = {
+    players: decisionContext.tableSize,
+    playersNum: decisionContext.tableSize,
+    stack: decisionContext.stackBb,
+    stackNum: decisionContext.stackBb,
+    stackMode: decisionContext.stackMode,
+    heroPos: decisionContext.heroPosition,
+    potSize: decisionContext.potBb,
+    potSizeNum: decisionContext.potBb,
+    lastAction: decisionContext.lastAction,
+    facingSize: decisionContext.facingSizeBb,
+    facingSizeNum: decisionContext.facingSizeBb,
+    rakeMode: decisionContext.rakeMode,
+    rakeValue: decisionContext.legacyRakePercent,
+    rakeValueNum: decisionContext.legacyRakePercent
+  };
+  Object.entries(values).forEach(([id, value]) => {
+    const control = document.getElementById(id);
+    if (control && value !== undefined && value !== null) control.value = String(value);
+  });
+  updatePositions();
+  if ($('#heroPos')) $('#heroPos').value = decisionContext.heroPosition;
+  renderCanonicalDecisionCards('hero', decisionContext.heroCards, 2);
+  renderCanonicalDecisionCards('board', decisionContext.board, 5);
+  renderCanonicalDecisionCards('dead', decisionContext.deadCards, Math.min(52, decisionContext.deadCards.length + 1));
+  if ($('#deckCount')) $('#deckCount').textContent = 52
+    - decisionContext.heroCards.length
+    - decisionContext.board.length
+    - decisionContext.deadCards.length;
+}
+
+function renderUnavailableStrategy(resolution) {
+  const message = playbookResolutionMessage(resolution);
+  if ($('#bestAction')) $('#bestAction').textContent = 'Unavailable';
+  if ($('#bestReason')) $('#bestReason').textContent = message;
+  if ($('#sourceBadge')) {
+    $('#sourceBadge').textContent = 'unavailable';
+    $('#sourceBadge').className = 'badge status-badge status-badge--unavailable';
+  }
+  if ($('#strategyMeta')) $('#strategyMeta').hidden = true;
+  if ($('#strategyWarnings')) {
+    $('#strategyWarnings').textContent = message;
+    $('#strategyWarnings').hidden = false;
+  }
+  const unavailableActions = Array.from({ length: 3 }, () => ({
+    name: '—', value: 0, kind: 'unavailable'
+  }));
+  unavailableActions.forEach((action, index) => setFrequency(index + 1, action));
+  if (typeof renderFrequencyStack === 'function') {
+    renderFrequencyStack($('#actionFrequencyStack'), unavailableActions);
+  }
+  if ($('#actionWheel')) $('#actionWheel').style.background = 'var(--surface-interactive)';
+  if ($('#wheelCenterText')) $('#wheelCenterText').textContent = '—';
+  renderPlaybookModeStatus(resolution);
+}
+
+async function requestPlaybookMode(mode) {
+  const previousMode = callPlaybookStateBridge('getMode') || PLAYBOOK_MODES.SCENARIO;
+  if (mode === previousMode) return updateContext('Playbook mode unchanged');
+
+  const scenarioInput = readPlaybookScenarioInput();
+  if (mode === PLAYBOOK_MODES.HAND) {
+    savedPlaybookScenarioPresentation = capturePlaybookScenarioPresentation();
+  }
+  const modeResult = callPlaybookStateBridge('setMode', mode, scenarioInput);
+  if (!modeResult || modeResult.mode !== mode) {
+    renderPlaybookModeStatus(modeResult);
+    if (mode === PLAYBOOK_MODES.HAND) savedPlaybookScenarioPresentation = null;
+    return modeResult;
+  }
+
+  app.playbookMode = mode;
+  setPlaybookControlAuthority(mode);
+  if (mode === PLAYBOOK_MODES.SCENARIO) {
+    restorePlaybookScenarioPresentation(savedPlaybookScenarioPresentation);
+    savedPlaybookScenarioPresentation = null;
+  }
+  return updateContext(mode === PLAYBOOK_MODES.HAND ? 'Hand workflow selected' : 'Scenario workflow selected');
+}
+
+function bindPlaybookModeControl() {
+  $$('#playbookModeControl [data-playbook-mode]').forEach((button) => {
+    button.addEventListener('click', () => requestPlaybookMode(button.dataset.playbookMode));
+  });
+  window.addEventListener('riverline:playbook-state-change', (event) => {
+    if (event.detail?.operation !== 'mode' && isHandMode()) updateContext('Canonical hand updated');
+  });
+  setPlaybookControlAuthority(PLAYBOOK_MODES.SCENARIO);
 }
 
 
@@ -2926,14 +3212,45 @@ async function updateContext(reason = 'Context updated') {
   syncSliderPair('ante', 'anteNum');
 
   const inputSnapshot = readPlaybookInputSnapshot();
-  const decisionContext = deriveDecisionContext(inputSnapshot);
+  const playbookBridge = globalThis.RiverlinePlaybookState;
+  const playbookResolution = playbookBridge && typeof playbookBridge.resolveDecisionContext === 'function'
+    ? playbookBridge.resolveDecisionContext(inputSnapshot, deriveDecisionContext)
+    : {
+        schemaVersion: 'playbook-decision-resolution/v1',
+        mode: 'scenario',
+        status: 'available',
+        reason: null,
+        error: null,
+        decisionContext: deriveDecisionContext(inputSnapshot)
+      };
+  app.playbookMode = playbookResolution.mode;
+  app.playbookResolution = playbookResolution;
+
+  if (playbookResolution.status !== 'available' || !playbookResolution.decisionContext) {
+    app.decisionContext = null;
+    app.strategyResult = null;
+    app.playbookViewModel = playbookBridge && typeof playbookBridge.createViewModel === 'function'
+      ? playbookBridge.createViewModel(null)
+      : null;
+    if (typeof renderUnavailableStrategy === 'function') renderUnavailableStrategy(playbookResolution);
+    return playbookResolution;
+  }
+
+  const decisionContext = playbookResolution.decisionContext;
   const legacyStrategyContext = decisionContextToLegacyStrategyContext(decisionContext);
   app.decisionContext = decisionContext;
-  try {
-    globalThis.RiverlineCanonicalDev?.compare?.();
-  } catch (error) {
-    // Shadow diagnostics are non-authoritative and must never interrupt Playbook.
+  if (playbookResolution.mode === 'scenario') {
+    try {
+      globalThis.RiverlineCanonicalDev?.compare?.();
+    } catch (error) {
+      // Shadow diagnostics are non-authoritative and must never interrupt Playbook.
+    }
   }
+
+  if (playbookResolution.mode === 'hand' && typeof syncCanonicalDecisionDisplay === 'function') {
+    syncCanonicalDecisionDisplay(decisionContext);
+  }
+  if (typeof renderPlaybookModeStatus === 'function') renderPlaybookModeStatus(playbookResolution);
   
   if (decisionContext.street === 'preflop' && decisionContext.lastAction === 'unopened') {
     if ($('#facingSize')) $('#facingSize').value = decisionContext.facingSizeBb;
@@ -3075,6 +3392,9 @@ async function updateContext(reason = 'Context updated') {
   const strategyResult = actionProfile(null, decisionContext);
   const profile = strategyResultToLegacyProfile(strategyResult);
   app.strategyResult = strategyResult;
+  app.playbookViewModel = playbookBridge && typeof playbookBridge.createViewModel === 'function'
+    ? playbookBridge.createViewModel(strategyResult)
+    : null;
 
   console.log('Strategy result:', strategyResult);
 
@@ -3082,7 +3402,9 @@ async function updateContext(reason = 'Context updated') {
 
   const hero = decisionContext.heroPosition;
 
-  const lastAction = inputSnapshot.lastActionLabel;
+  const lastAction = playbookResolution.mode === 'hand'
+    ? decisionContext.lastAction
+    : inputSnapshot.lastActionLabel;
 
   const hand = decisionContext.heroCards.map(displayCard).join(' ');
 
@@ -3281,12 +3603,12 @@ async function updateContext(reason = 'Context updated') {
   const btnIdx = sortedPos.indexOf('BTN');
   const dealerPos = (heroIdx !== -1 && btnIdx !== -1) ? (btnIdx - heroIdx + activePlayers) % activePlayers : 0;
   
-  const parsedBoard = (app.board || []).map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
-  const parsedHero = (app.heroCards || []).map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
+  const parsedBoard = decisionContext.board.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
+  const parsedHero = decisionContext.heroCards.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
   
   window.dispatchEvent(new CustomEvent('gameStateUpdate', {
     detail: {
-      pot: (parseFloat(numericValue('#potValue')) || 0).toFixed(1),
+      pot: Number(decisionContext.potBb).toFixed(1),
       board: parsedBoard,
       heroCards: parsedHero,
       dealerPos: dealerPos,
@@ -4423,6 +4745,10 @@ function bindEvents() {
 
       const group = slot.dataset.group;
 
+      if (isHandMode() && PLAYBOOK_DECISION_CARD_GROUPS.includes(group)) {
+        return toast('These cards come from the canonical hand in Hand mode.', 'warning');
+      }
+
       const index = Number(slot.dataset.index);
 
       const current = groupCards(group)[index];
@@ -5233,6 +5559,8 @@ function init() {
     renderAllCards();
 
     bindEvents();
+
+    bindPlaybookModeControl();
 
     
 

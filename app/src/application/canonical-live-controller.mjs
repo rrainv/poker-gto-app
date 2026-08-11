@@ -253,6 +253,10 @@ export function createCanonicalLiveController({
       return stagedHeroCards;
     },
 
+    getProjectionOptions() {
+      return projectionOptions;
+    },
+
     getDiagnostics() {
       return diagnostics;
     },

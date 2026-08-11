@@ -412,6 +412,14 @@
 
     <section id="gtoMode" class="mode-view active">
 
+      <div class="playbook-state-source" aria-label="Playbook state source">
+        <div id="playbookModeControl" class="ui-segments" role="group" aria-label="Choose Playbook workflow">
+          <button id="playbookScenarioMode" class="ui-tab active" type="button" data-playbook-mode="scenario" aria-pressed="true">Scenario</button>
+          <button id="playbookHandMode" class="ui-tab" type="button" data-playbook-mode="hand" aria-pressed="false">Hand</button>
+        </div>
+        <p id="playbookModeStatus" class="playbook-mode-status" role="status" aria-live="polite">Scenario controls are authoritative. This spot does not claim a legal hand history.</p>
+      </div>
+
       <div class="app-grid">
 
 
@@ -2579,6 +2587,7 @@
   <script src="ort.min.js" defer></script>
   <script src="src/core/math.js" defer></script>
   <script src="src/core/SoundFX.js" defer></script>
+  <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/canonical-live-bootstrap.mjs"></script>
   <script src="src/core/logic.js?v=21" defer></script>
   <script src="src/ui/teacher.js" defer></script>
