@@ -25,7 +25,11 @@ function createHarness() {
   const modelSource = sliceBetween(source, 'const MODEL_POSITION_VOCABULARY', 'const ACTION_COLORS');
   const numericSource = sliceBetween(source, 'function numericValue(id, fallback = 0)', 'function updatePositionSelect(');
   const updateSource = sliceBetween(source, 'function updatePositionSelect(', 'function normalizeTree(data, fileName)');
-  const randomSource = sliceBetween(source, 'function randomTrainingTableSize()', 'function newRandomTrainingHand()');
+  const randomSource = sliceBetween(
+    source,
+    'function randomTrainingTableSize()',
+    'function newRandomTrainingHandLegacy()',
+  );
   const controls = new Map();
 
   const sandbox = { controls, createElement };

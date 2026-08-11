@@ -1502,7 +1502,7 @@
 
                   READY TO TRAIN?</div>
 
-                <div class="action-copy" id="trainingInstruction" style="font-size: 13px; margin-top: 8px;">Click 'Start Training' to generate a scenario, or select cards manually.</div>
+                <div class="action-copy" id="trainingInstruction" style="font-size: 13px; margin-top: 8px;">Click 'Start Training' to generate a reachable canonical decision.</div>
 
                 <div id="trainingPotInfo" style="display:none; margin-top:14px; padding:10px 14px; background:var(--card-bg); border:1px solid var(--border); border-radius:8px; gap:16px; align-items:center; flex-wrap:wrap; font-size:13px; font-weight:600;">
 
@@ -1554,7 +1554,10 @@
 
             <div id="trainingSolution" style="display:none;">
 
-              <div style="font-size:12px; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;" data-i18n="Strategy reference">Strategy reference</div>
+              <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                <div style="font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;" data-i18n="Strategy reference">Strategy reference</div>
+                <span id="trainingStrategySource" class="badge status-badge status-badge--info">Unavailable</span>
+              </div>
 
               <div class="wheel-section frequency-visualization" style="display:flex; gap: 32px; align-items:center;">
 
@@ -1661,7 +1664,7 @@
 
                 <select id="trainingDifficulty" class="select control-select" style="width:100%; margin-top:4px;">
 
-                  <option value="hard" selected data-i18n="Hard (Standard GTO - No Odds)">Hard (Standard GTO - No Odds)</option>
+                  <option value="hard" selected data-i18n="Hard (No Odds)">Hard (No Odds)</option>
 
                   <option value="easy" data-i18n="Easy Mode (Pot Odds & MDF)">Easy Mode (Pot Odds & MDF)</option>
 
@@ -1711,7 +1714,7 @@
 
                 <div class="panel-title" data-i18n="Training Statistics">Training Statistics</div>
 
-                <div class="panel-note"><span data-i18n="Track your progress over time.">Track your progress over time.</span></div>
+                <div class="panel-note"><span data-i18n="Track this Training session.">Track this Training session.</span></div>
 
               </div>
 
@@ -1731,7 +1734,7 @@
 
                 <div class="metric">
 
-                  <span data-i18n="Correct">Correct</span>
+                  <span data-i18n="Accepted">Accepted</span>
 
                   <b id="trainingCorrect" style="color:var(--primary);">0</b>
 
@@ -1739,7 +1742,7 @@
 
                 <div class="metric">
 
-                  <span data-i18n="Accuracy">Accuracy</span>
+                  <span data-i18n="Acceptance rate">Acceptance rate</span>
 
                   <b id="trainingAccuracy">0%</b>
 
@@ -2124,6 +2127,7 @@
   <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/canonical-live-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
+  <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script src="src/core/logic.js?v=21" defer></script>
   <script src="src/ui/teacher.js" defer></script>
   <script src="src/ui/dragAndDrop.js" defer></script>

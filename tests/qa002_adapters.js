@@ -68,9 +68,17 @@ function createHarness() {
     'function getHandTier(hand)',
     '// Static TypedArray buffers for zero-GC hand evaluation in main thread'
   );
-  const trainingActionSource = sliceBetween(source, 'const ACTION_PASSIVE_TO_AGGRESSIVE_ORDER', 'function generateFeedback(userAction, bestAction, solution)');
+  const trainingActionSource = sliceBetween(
+    source,
+    'const ACTION_PASSIVE_TO_AGGRESSIVE_ORDER',
+    'function generateFeedbackLegacy(userAction, bestAction, solution)',
+  ).replace('function updateTrainingButtonsLegacy(', 'function updateTrainingButtons(');
   const postflopSource = sliceBetween(source, 'function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [], decisionContext = null)', 'function calculatePostflopFallbackStrategy(context, heroCards)');
-  const trainingStrategySource = sliceBetween(source, 'function getTrainingStrategy(context, heroCards)', '// Hook renderRangeAdvantage into updateContext and villain pos changes');
+  const trainingStrategySource = sliceBetween(
+    source,
+    'function getTrainingStrategyLegacy(context, heroCards)',
+    '// Hook renderRangeAdvantage into updateContext and villain pos changes',
+  ).replace('function getTrainingStrategyLegacy(', 'function getTrainingStrategy(');
 
   const controls = new Map();
   const sandbox = {

@@ -149,7 +149,17 @@ const app = {
 
     currentHand: null,
 
-    currentSolution: null
+    currentSolution: null,
+
+    currentExercise: null,
+
+    currentStrategyResult: null,
+
+    currentEvaluation: null,
+
+    lifecycle: 'idle',
+
+    nextSeed: Date.now() >>> 0
 
   },
 
@@ -221,6 +231,17 @@ function callEquityServiceBridge(method, ...args) {
     return bridge[method](...args);
   } catch (error) {
     console.error('[Riverline Equity service]', error);
+    return null;
+  }
+}
+
+function callTrainingServiceBridge(method, ...args) {
+  try {
+    const bridge = window.RiverlineTraining;
+    if (!bridge || typeof bridge[method] !== 'function') return null;
+    return bridge[method](...args);
+  } catch (error) {
+    console.error('[Riverline Training service]', error);
     return null;
   }
 }
@@ -589,6 +610,10 @@ function openPicker(group, index) {
     return toast('These cards come from the canonical hand in Hand mode.', 'warning');
   }
 
+  if (group.startsWith('training')) {
+    return toast('Training cards come from the canonical generated hand.', 'warning');
+  }
+
   app.picker = { group, index };
 
   const current = groupCards(group)[index];
@@ -682,6 +707,12 @@ function selectCard(card) {
     return toast('These cards come from the canonical hand in Hand mode.', 'warning');
   }
 
+
+  if (group.startsWith('training')) {
+    closePicker();
+    return toast('Training cards come from the canonical generated hand.', 'warning');
+  }
+
   const target = groupCards(group);
 
   const markBurn = $('#markBurn').checked;
@@ -726,44 +757,7 @@ function selectCard(card) {
 
   else if (group.startsWith('hand-')) renderCanonicalHandWorkspace();
 
-  else if (group.startsWith('training')) {
-
-    if (app.training.hero.length === 2 && app.training.hero[0] && app.training.hero[1]) {
-      const heroPos = $('#trainingHeroPos')?.value || 'UTG';
-      const lastAction = $('#trainingLastAction')?.value || 'unopened';
-      const tableSize = numericValue('#trainingPlayers', 6);
-      const stack = numericValue('#trainingStack', 30);
-      const facingSize = defaultTrainingFacingSize(lastAction);
-      const potSize = (lastAction === 'unopened' ? 1.5 : facingSize > 0 ? facingSize * 1.5 : 1.5);
-      
-      app.training.currentHand = [...app.training.hero];
-      const trainingBoard = (app.training && app.training.board) ? app.training.board : [];
-      const activeStreet = trainingBoard.length === 5 ? 'RIVER' : trainingBoard.length === 4 ? 'TURN' : trainingBoard.length === 3 ? 'FLOP' : 'PREFLOP';
-      const streetLabel = $('#trainingStreetLabel');
-      if (streetLabel) streetLabel.textContent = activeStreet;
-
-      app.training.currentSolution = getTrainingStrategy({
-        table_size: tableSize,
-        stack: stack,
-        ...strategyAccountingContext('off', tableSize, 0),
-        hero_pos: heroPos,
-        lastAction: lastAction,
-        potSize: potSize,
-        facingSize: facingSize,
-        board: trainingBoard
-      }, app.training.currentHand);
-
-      const feedbackDiv = $('#trainingFeedback');
-      if (feedbackDiv) feedbackDiv.style.display = 'none';
-      const solutionDiv = $('#trainingSolution');
-      if (solutionDiv) solutionDiv.style.display = 'none';
-      const scoreBadge = $('#trainingScoreBadge');
-      if (scoreBadge) scoreBadge.style.display = 'none';
-      const guessButtons = $('#trainingGuessButtons');
-      if (guessButtons) guessButtons.style.display = 'flex';
-    }
-
-  } else updateContext('Cards changed');
+  else updateContext('Cards changed');
 
 }
 
@@ -785,6 +779,10 @@ function clearGroup(group) {
 
   if (isHandMode() && PLAYBOOK_DECISION_CARD_GROUPS.includes(group)) {
     return toast('These cards come from the canonical hand in Hand mode.', 'warning');
+  }
+
+  if (group.startsWith('training')) {
+    return toast('Training cards come from the canonical generated hand.', 'warning');
   }
 
   if (group === 'hero') app.selectedHand = null;
@@ -5469,6 +5467,10 @@ function bindEvents() {
         return toast('These cards come from the canonical hand in Hand mode.', 'warning');
       }
 
+      if (group.startsWith('training')) {
+        return toast('Training cards come from the canonical generated hand.', 'warning');
+      }
+
       const index = Number(slot.dataset.index);
 
       const current = groupCards(group)[index];
@@ -7121,16 +7123,10 @@ function initTrainingMode() {
 
   $('#trainingHeroPos')?.addEventListener('change', function() {
     console.log('[Training] Hero position changed to:', this.value);
-    if (app.training && app.training.hero && app.training.hero.length === 2) {
-      updateContext('Training position changed');
-    }
   });
 
   $('#trainingLastAction')?.addEventListener('change', function() {
     console.log('[Training] Last action changed to:', this.value);
-    if (app.training && app.training.hero && app.training.hero.length === 2) {
-      updateContext('Training action changed');
-    }
   });
 
   // Training mode sliders
@@ -7158,7 +7154,7 @@ function initTrainingMode() {
   }
   const instruction = $('#trainingInstruction');
   if (instruction && (!app.training.hero || app.training.hero.length === 0)) {
-    instruction.textContent = t("Click 'Start Training' to generate a scenario, or select cards manually.") || "Click 'Start Training' to generate a scenario, or select cards manually.";
+    instruction.textContent = "Click 'Start Training' to generate a reachable canonical decision.";
   }
   if (nextBtn && (!app.training.hero || app.training.hero.length === 0)) {
     nextBtn.style.display = 'inline-flex';
@@ -7228,6 +7224,18 @@ if (!app.training) {
 
     const instruction = document.getElementById('trainingInstruction');
 
+    if (app.training.lifecycle === 'generating') {
+      if (handDisplay) handDisplay.textContent = 'GENERATING…';
+      if (instruction) instruction.textContent = 'Replaying a legal canonical hand trajectory.';
+      if (guessButtons) guessButtons.style.display = 'none';
+      return;
+    }
+
+    if (app.training.lifecycle === 'error') {
+      if (guessButtons) guessButtons.style.display = 'none';
+      return;
+    }
+
     
 
     if (heroCards.length === 2 && heroCards[0] && heroCards[1]) {
@@ -7260,13 +7268,15 @@ if (!app.training) {
 
       if (instruction) instruction.textContent = t('Choose your action:') || 'Choose your action:';
 
-      if (guessButtons && (!app.training.currentSolution || $('#trainingSolution')?.style.display === 'none')) {
+      if (guessButtons
+        && app.training.lifecycle === 'ready'
+        && (!app.training.currentSolution || $('#trainingSolution')?.style.display === 'none')) {
         guessButtons.style.display = 'flex';
       }
 
     } else {
       if (handDisplay) handDisplay.innerHTML = t('READY TO TRAIN?') || 'READY TO TRAIN?';
-      if (instruction) instruction.textContent = t("Click 'Start Training' to generate a scenario, or select cards manually.") || "Click 'Start Training' to generate a scenario, or select cards manually.";
+      if (instruction) instruction.textContent = "Click 'Start Training' to generate a reachable canonical decision.";
     }
   }
 })();
@@ -7326,7 +7336,7 @@ function getActionPct(solution, action) {
   return maxVal;
 }
 
-function updateTrainingButtons(solution) {
+function updateTrainingButtonsLegacy(solution) {
   const container = $('#trainingGuessButtons');
   if (!container) return;
 
@@ -7411,7 +7421,7 @@ function updateTrainingButtons(solution) {
     btn.textContent = t(key) || key;
 
     btn.addEventListener('click', function() {
-      handleTrainingGuess(this.getAttribute('data-action') || key);
+      handleTrainingGuessLegacy(this.getAttribute('data-action') || key);
     });
 
     container.appendChild(btn);
@@ -7420,7 +7430,7 @@ function updateTrainingButtons(solution) {
   container.style.display = 'flex';
 }
 
-function generateFeedback(userAction, bestAction, solution) {
+function generateFeedbackLegacy(userAction, bestAction, solution) {
   const userPct = getActionPct(solution, userAction);
   const bestPct = getActionPct(solution, bestAction);
 
@@ -8271,7 +8281,9 @@ function calculatePostflopFallbackStrategy(context, heroCards) {
 
 }
 
-function getTrainingStrategy(context, heroCards) {
+// LEGACY_SYNTHETIC: retained for characterization only. Production Training
+// never calls this independent strategy implementation.
+function getTrainingStrategyLegacy(context, heroCards) {
 
   if (!heroCards || heroCards.length !== 2) return { "Fold": 100 };
 
@@ -8389,27 +8401,6 @@ function getTrainingStrategy(context, heroCards) {
 
     }
 
-    // Refresh training strategy if ONNX or context changed
-    if (app.training && app.training.currentHand && app.training.currentHand.length === 2) {
-      const heroPos = $('#trainingHeroPos')?.value || 'UTG';
-      const lastAction = $('#trainingLastAction')?.value || 'unopened';
-      const tableSize = numericValue('#trainingPlayers', 6);
-      const stack = numericValue('#trainingStack', 30);
-      const facingSize = defaultTrainingFacingSize(lastAction);
-      const potSize = (lastAction === 'unopened' ? 1.5 : facingSize > 0 ? facingSize * 1.5 : 1.5);
-      
-      app.training.currentSolution = getTrainingStrategy({
-        table_size: tableSize,
-        stack: stack,
-        ...strategyAccountingContext('off', tableSize, 0),
-        hero_pos: heroPos,
-        lastAction: lastAction,
-        potSize: potSize,
-        facingSize: facingSize,
-        board: []
-      }, app.training.currentHand);
-    }
-
     return result;
 
   };
@@ -8485,7 +8476,9 @@ function randomTrainingPosition(tableSize) {
   return positions[Math.floor(Math.random() * positions.length)];
 }
 
-function newRandomTrainingHand() {
+// LEGACY_SYNTHETIC: retained until canonical Training acceptance is complete.
+// There is deliberately no production fallback to this generator.
+function newRandomTrainingHandLegacy() {
 
   console.log('[Training] newRandomTrainingHand called');
 
@@ -8610,13 +8603,13 @@ function newRandomTrainingHand() {
   trainingToken = currentToken;
   
   // Convert to async handling
-  Promise.resolve(getTrainingStrategy(context, heroCards)).then(solution => {
+  Promise.resolve(getTrainingStrategyLegacy(context, heroCards)).then(solution => {
       if (trainingToken !== currentToken) {
           console.log('[Training] Stale result discarded due to desync.');
           return;
       }
       app.training.currentSolution = solution;
-      updateTrainingButtons(solution);
+      updateTrainingButtonsLegacy(solution);
   });
 
   app.training.currentHand = heroCards;
@@ -8653,7 +8646,7 @@ function newRandomTrainingHand() {
 
 
 
-function handleTrainingGuess(userAction) {
+function handleTrainingGuessLegacy(userAction) {
 
   console.log('[Training] handleTrainingGuess called with:', userAction);
 
@@ -8742,7 +8735,7 @@ function handleTrainingGuess(userAction) {
 
   
 
-  const feedback = generateFeedback(userAction, bestAction, solution);
+  const feedback = generateFeedbackLegacy(userAction, bestAction, solution);
 
   showTrainingFeedback(feedback, isCorrect);
 
@@ -8763,9 +8756,390 @@ function handleTrainingGuess(userAction) {
 
 }
 
+const TRAINING_CONFIG_SCHEMA_VERSION = 'training-config/v1';
+
+const TRAINING_TARGETS = Object.freeze({
+  PREFLOP_UNOPENED: 'preflop_unopened',
+  PREFLOP_FACING_OPEN: 'preflop_facing_open',
+  PREFLOP_FACING_3BET: 'preflop_facing_3bet',
+  PREFLOP_FACING_4BET: 'preflop_facing_4bet',
+  PREFLOP_BB_OPTION: 'preflop_bb_option',
+  POSTFLOP_FIRST_ACTION: 'postflop_first_action',
+  POSTFLOP_FACING_BET: 'postflop_facing_bet',
+  POSTFLOP_FACING_RAISE: 'postflop_facing_raise'
+});
+
+function nextTrainingSeed(seed) {
+  return (Math.imul(seed >>> 0, 1664525) + 1013904223) >>> 0;
+}
+
+function trainingTargetsFromControls(lastAction, heroPosition) {
+  if (lastAction === 'unopened') {
+    return {
+      streets: ['preflop'],
+      targets: [heroPosition === 'BB'
+        ? TRAINING_TARGETS.PREFLOP_BB_OPTION
+        : TRAINING_TARGETS.PREFLOP_UNOPENED]
+    };
+  }
+  if (lastAction === '3bet') {
+    return { streets: ['preflop'], targets: [TRAINING_TARGETS.PREFLOP_FACING_3BET] };
+  }
+  if (lastAction === '4bet') {
+    return { streets: ['preflop'], targets: [TRAINING_TARGETS.PREFLOP_FACING_4BET] };
+  }
+  if (lastAction === 'bet') {
+    return {
+      streets: ['flop', 'turn', 'river'],
+      targets: [TRAINING_TARGETS.POSTFLOP_FACING_BET]
+    };
+  }
+  if (lastAction === 'check') {
+    return {
+      streets: ['flop', 'turn', 'river'],
+      targets: [TRAINING_TARGETS.POSTFLOP_FIRST_ACTION]
+    };
+  }
+  // The current compact selector uses "Raise" for both a preflop open and a
+  // postflop raise. Keep that UI ambiguity explicit by permitting both real
+  // target families; the seeded generator chooses a compatible trajectory.
+  return {
+    streets: ['preflop', 'flop', 'turn', 'river'],
+    targets: [
+      TRAINING_TARGETS.PREFLOP_FACING_OPEN,
+      TRAINING_TARGETS.POSTFLOP_FACING_RAISE
+    ]
+  };
+}
+
+function readTrainingConfig(seed) {
+  const tableSize = numericValue('#trainingPlayers', 6);
+  const stackBb = numericValue('#trainingStack', 30);
+  const heroPosition = $('#trainingHeroPos')?.value || POSITIONS[tableSize]?.[0] || 'BTN';
+  const lastAction = $('#trainingLastAction')?.value || 'unopened';
+  const selection = trainingTargetsFromControls(lastAction, heroPosition);
+  return {
+    schemaVersion: TRAINING_CONFIG_SCHEMA_VERSION,
+    tableSize,
+    stackBb,
+    streets: selection.streets,
+    gameMode: 'home',
+    heroPositions: [heroPosition],
+    allowedDecisionTypes: selection.targets,
+    difficulty: $('#trainingDifficulty')?.value || 'hard',
+    seed: seed >>> 0
+  };
+}
+
+function withDeterministicTrainingStrategyRandom(seed, callback) {
+  let state = (seed >>> 0) || 0x9e3779b9;
+  const originalRandom = Math.random;
+  Math.random = function trainingStrategyRandom() {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return (state >>> 0) / 0x100000000;
+  };
+  try {
+    return callback();
+  } finally {
+    Math.random = originalRandom;
+  }
+}
+
+function trainingStrategyResultToLegacySolution(strategyResult) {
+  if (!strategyResult || strategyResult.schemaVersion !== STRATEGY_RESULT_SCHEMA_VERSION) {
+    throw new TypeError('Training requires StrategyResult v1');
+  }
+  return strategyResult.actions.reduce((solution, entry) => {
+    const label = entry.label || entry.action?.type || 'Unavailable';
+    solution[label] = (solution[label] || 0) + (Number(entry.probability) || 0) * 100;
+    return solution;
+  }, {});
+}
+
+function trainingContextPresentationAdapter(decisionContext) {
+  const facingSize = decisionContext.facingSizeBb;
+  const potSize = decisionContext.potBb;
+  return {
+    table_size: decisionContext.tableSize,
+    stack: decisionContext.stackBb,
+    hero_pos: decisionContext.heroPosition,
+    street: decisionContext.street,
+    lastAction: decisionContext.lastAction,
+    potSize,
+    facingSize,
+    potOdds: facingSize > 0 ? facingSize / (potSize + facingSize) * 100 : 0,
+    mdf: facingSize > 0 ? potSize / (potSize + facingSize) * 100 : 100,
+    board: [...decisionContext.board],
+    rakeMode: decisionContext.rakeMode,
+    forcedContributionPerPlayerBb: decisionContext.forcedContributionPerPlayerBb,
+    totalForcedContributionBb: decisionContext.totalForcedContributionBb
+  };
+}
+
+function trainingActionLabel(type, decisionContext) {
+  if (type === 'all_in') return 'All-in';
+  if (type === 'raise' && decisionContext.street === 'preflop') {
+    if (decisionContext.lastAction === 'unopened') return 'Open';
+    if (decisionContext.lastAction === 'raise') return '3-Bet';
+    if (decisionContext.lastAction === '3bet') return '4-Bet';
+    if (decisionContext.lastAction === '4bet') return '5-Bet';
+  }
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function canonicalTrainingLegalActionTypes(exercise) {
+  const spec = exercise?.legalActions;
+  if (!spec) return [];
+  return ['fold', 'check', 'call', 'bet', 'raise', 'all_in'].filter((type) => (
+    type === 'all_in' ? spec.allIn?.available : spec[type]?.available
+  ));
+}
+
+function updateTrainingButtons(exercise) {
+  const container = $('#trainingGuessButtons');
+  if (!container) return;
+  container.innerHTML = '';
+  const colorMap = {
+    fold: 'var(--red)',
+    check: 'var(--matrix-call)',
+    call: 'var(--matrix-call)',
+    bet: 'var(--matrix-open)',
+    raise: 'var(--matrix-open)',
+    all_in: 'var(--red)'
+  };
+  canonicalTrainingLegalActionTypes(exercise).forEach((type) => {
+    const label = trainingActionLabel(type, exercise.decisionContext);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'cta animate-deal';
+    button.style.background = colorMap[type];
+    button.dataset.action = type;
+    button.textContent = label;
+    button.addEventListener('click', () => handleTrainingGuess(type));
+    container.appendChild(button);
+  });
+  container.style.display = 'flex';
+}
+
+function renderTrainingSource(exercise) {
+  const source = exercise?.strategyResult?.source || 'unavailable';
+  const sourceElement = $('#trainingStrategySource');
+  if (!sourceElement) return;
+  const label = strategySourceDisplayLabel(source);
+  sourceElement.textContent = `${label} · Seed ${exercise.seed}`;
+  const tone = source.startsWith('heuristic_') ? 'heuristic'
+    : source === 'local_tree' ? 'experimental'
+      : source === 'onnx_model' || source === 'api' ? 'available' : 'info';
+  sourceElement.className = `badge status-badge status-badge--${tone}`;
+}
+
+function renderTrainingGenerationError(error) {
+  app.training.lifecycle = 'error';
+  const instruction = $('#trainingInstruction');
+  if (instruction) {
+    instruction.textContent = error?.message || 'A canonical Training exercise is unavailable.';
+  }
+  const handDisplay = $('#trainingHandDisplay');
+  if (handDisplay) handDisplay.textContent = 'EXERCISE UNAVAILABLE';
+  const guessButtons = $('#trainingGuessButtons');
+  if (guessButtons) guessButtons.style.display = 'none';
+  const nextBtn = $('#trainingNextHandBtn');
+  if (nextBtn) {
+    nextBtn.disabled = false;
+    nextBtn.style.display = 'inline-flex';
+    nextBtn.textContent = 'Try Again';
+  }
+  const sourceElement = $('#trainingStrategySource');
+  if (sourceElement) {
+    sourceElement.textContent = error?.code || 'unavailable';
+    sourceElement.className = 'badge status-badge status-badge--warning';
+  }
+}
+
+function renderCanonicalTrainingExercise(exercise) {
+  const context = exercise.decisionContext;
+  const presentation = exercise.presentation;
+  const legacyContext = trainingContextPresentationAdapter(context);
+  app.training.currentExercise = exercise;
+  app.training.currentStrategyResult = exercise.strategyResult;
+  app.training.currentEvaluation = null;
+  app.training.currentHand = [...presentation.heroCards];
+  app.training.hero = [...presentation.heroCards];
+  app.training.board = [...presentation.board];
+  app.training.currentContext = legacyContext;
+  app.training.currentSolution = trainingStrategyResultToLegacySolution(exercise.strategyResult);
+  app.training.lifecycle = 'ready';
+
+  const streetLabel = $('#trainingStreetLabel');
+  if (streetLabel) streetLabel.textContent = context.street.toUpperCase();
+  const potInfo = $('#trainingPotInfo');
+  if (potInfo) potInfo.style.display = 'flex';
+  if ($('#trainingPotVal')) $('#trainingPotVal').textContent = `${context.potBb.toFixed(1)} bb`;
+  if ($('#trainingFacingVal')) {
+    $('#trainingFacingVal').textContent = context.facingSizeBb > 0
+      ? `${context.facingSizeBb.toFixed(1)} bb`
+      : context.street === 'preflop' && context.heroPosition !== 'BB'
+        ? '0.0 bb (Unopened)' : '0.0 bb (Free Check)';
+  }
+  if ($('#trainingPotOddsVal')) $('#trainingPotOddsVal').textContent = `${legacyContext.potOdds.toFixed(1)}%`;
+  if ($('#trainingMdfVal')) $('#trainingMdfVal').textContent = `${legacyContext.mdf.toFixed(1)}%`;
+  if ($('#trainingHeroPos')) $('#trainingHeroPos').value = context.heroPosition;
+
+  const feedbackDiv = $('#trainingFeedback');
+  if (feedbackDiv) feedbackDiv.style.display = 'none';
+  const solutionDiv = $('#trainingSolution');
+  if (solutionDiv) solutionDiv.style.display = 'none';
+  const scoreBadge = $('#trainingScoreBadge');
+  if (scoreBadge) scoreBadge.style.display = 'none';
+  const nextBtn = $('#trainingNextHandBtn');
+  if (nextBtn) {
+    nextBtn.disabled = false;
+    nextBtn.style.display = 'none';
+  }
+
+  updateTrainingButtons(exercise);
+  updateAssistanceDisplay();
+  renderTrainingSource(exercise);
+  renderAllCards();
+
+  if (app.training.showSolutionImmediately) {
+    showTrainingSolution(app.training.currentSolution);
+  }
+}
+
+async function newRandomTrainingHand(options = {}) {
+  const explicitSeed = Number.isInteger(options?.seed) ? options.seed >>> 0 : null;
+  const seed = explicitSeed === null ? app.training.nextSeed >>> 0 : explicitSeed;
+  if (explicitSeed === null) app.training.nextSeed = nextTrainingSeed(seed);
+  const config = readTrainingConfig(seed);
+
+  app.training.lifecycle = 'generating';
+  app.training.currentExercise = null;
+  app.training.currentStrategyResult = null;
+  app.training.currentEvaluation = null;
+  app.training.currentSolution = null;
+  app.training.currentHand = null;
+  app.training.hero = [];
+  app.training.board = [];
+  const handDisplay = $('#trainingHandDisplay');
+  if (handDisplay) handDisplay.textContent = 'GENERATING…';
+  const instruction = $('#trainingInstruction');
+  if (instruction) instruction.textContent = 'Replaying a legal canonical hand trajectory.';
+  const guessButtons = $('#trainingGuessButtons');
+  if (guessButtons) guessButtons.style.display = 'none';
+  const nextBtn = $('#trainingNextHandBtn');
+  if (nextBtn) nextBtn.disabled = true;
+  renderAllCards();
+
+  const request = callTrainingServiceBridge('generate', config, {
+    strategyProvider(decisionContext) {
+      return withDeterministicTrainingStrategyRandom(seed, () => (
+        actionProfile(null, decisionContext)
+      ));
+    }
+  });
+  if (!request || typeof request.then !== 'function') {
+    renderTrainingGenerationError({
+      code: 'service_unavailable',
+      message: 'The canonical Training service is unavailable.'
+    });
+    return null;
+  }
+
+  const result = await request;
+  if (!result?.ok) {
+    if (result?.error?.code !== 'stale_generation') renderTrainingGenerationError(result?.error);
+    return result;
+  }
+  renderCanonicalTrainingExercise(result.exercise);
+  return result;
+}
+
+function canonicalTrainingFeedback(evaluation, strategyResult) {
+  const source = strategySourceDisplayLabel(strategyResult.source);
+  const chosen = evaluation.mappedStrategyAction?.label
+    || trainingActionLabel(evaluation.chosenAction.type, app.training.currentExercise.decisionContext);
+  const best = evaluation.bestStrategyAction.label;
+  const chosenPct = (evaluation.chosenProbability * 100).toFixed(0);
+  const bestPct = (evaluation.bestProbability * 100).toFixed(0);
+  if (evaluation.grade === 'optimal') {
+    return {
+      title: 'Strong choice',
+      text: `${source} assigns ${chosenPct}% to ${chosen}. The highest-frequency action is ${best} at ${bestPct}%.`
+    };
+  }
+  if (evaluation.grade === 'acceptable') {
+    return {
+      title: 'Acceptable mixed-strategy choice',
+      text: `${source} mixes ${chosen} at ${chosenPct}%, within 15 percentage points of ${best} at ${bestPct}%.`
+    };
+  }
+  return {
+    title: 'Lower-frequency choice',
+    text: `${source} assigns ${chosenPct}% to ${chosen}, compared with ${bestPct}% for ${best}. No EV estimate is available unless the strategy source supplies one.`
+  };
+}
+
+function handleTrainingGuess(userAction) {
+  const exercise = app.training.currentExercise;
+  if (app.training.lifecycle !== 'ready' || !exercise) return;
+  const result = callTrainingServiceBridge('answer', exercise.id, userAction);
+  if (!result?.ok) {
+    if (result?.error?.code !== 'already_answered') {
+      console.warn('[Riverline Training answer]', result?.error);
+    }
+    return;
+  }
+
+  const evaluation = result.evaluation;
+  app.training.lifecycle = 'answered';
+  app.training.currentEvaluation = evaluation;
+  app.training.stats.totalHands += 1;
+  app.training.stats.correct += evaluation.scoreDelta;
+  app.training.stats.streak = evaluation.accepted ? app.training.stats.streak + 1 : 0;
+  if (evaluation.accepted) {
+    if (window.SoundFX) window.SoundFX.play('success_chime');
+    SoundFX.playCorrect();
+  } else {
+    if (window.SoundFX) window.SoundFX.play('error_buzz');
+    SoundFX.playWrong();
+  }
+  updateTrainingStats();
+
+  const scoreBadge = $('#trainingScoreBadge');
+  if (scoreBadge) {
+    scoreBadge.style.display = 'flex';
+    scoreBadge.textContent = `${evaluation.accepted ? 'Accepted' : 'Review'} · ${app.training.stats.correct}/${app.training.stats.totalHands}`;
+    scoreBadge.style.color = evaluation.accepted ? 'var(--primary)' : 'var(--orange)';
+  }
+  showTrainingFeedback(
+    canonicalTrainingFeedback(evaluation, exercise.strategyResult),
+    evaluation.accepted
+  );
+  showTrainingSolution(app.training.currentSolution);
+  const guessButtons = $('#trainingGuessButtons');
+  if (guessButtons) guessButtons.style.display = 'none';
+  const nextBtn = $('#trainingNextHandBtn');
+  if (nextBtn) {
+    nextBtn.style.display = 'inline-flex';
+    nextBtn.textContent = t('Next Hand →') || 'Next Hand →';
+  }
+  app.training.lifecycle = 'feedback';
+}
+
+function replayTrainingExercise(seed) {
+  if (!Number.isInteger(Number(seed)) || Number(seed) < 0 || Number(seed) > 0xffffffff) {
+    throw new RangeError('Training replay seed must be an unsigned 32-bit integer');
+  }
+  return newRandomTrainingHand({ seed: Number(seed) >>> 0 });
+}
+
 // Expose training functions globally for HTML onclick handlers
 window.handleTrainingGuess = handleTrainingGuess;
 window.newRandomTrainingHand = newRandomTrainingHand;
+window.replayTrainingExercise = replayTrainingExercise;
 window.resetTrainingStats = resetTrainingStats;
 
 

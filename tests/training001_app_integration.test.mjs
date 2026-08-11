@@ -1,0 +1,71 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
+const canonicalStart = logic.indexOf("const TRAINING_CONFIG_SCHEMA_VERSION = 'training-config/v1'");
+const canonicalTraining = logic.slice(canonicalStart, logic.indexOf('// Expose training functions globally'));
+
+test('production Training route uses the canonical bridge and the same Playbook actionProfile path', () => {
+  assert.ok(canonicalStart >= 0);
+  assert.match(canonicalTraining, /callTrainingServiceBridge\('generate', config/);
+  assert.match(canonicalTraining, /actionProfile\(null, decisionContext\)/);
+  assert.match(canonicalTraining, /callTrainingServiceBridge\('answer', exercise\.id, userAction\)/);
+  assert.doesNotMatch(canonicalTraining, /getTrainingStrategyLegacy|newRandomTrainingHandLegacy/);
+  assert.match(logic, /window\.newRandomTrainingHand = newRandomTrainingHand/);
+  assert.doesNotMatch(logic, /window\.newRandomTrainingHand = newRandomTrainingHandLegacy/);
+});
+
+test('Training controls become TrainingConfig filters instead of synthetic final-state fields', () => {
+  assert.match(canonicalTraining, /function readTrainingConfig\(seed\)/);
+  for (const field of [
+    'tableSize', 'stackBb', 'streets', 'gameMode', 'heroPositions',
+    'allowedDecisionTypes', 'difficulty', 'seed',
+  ]) assert.match(canonicalTraining, new RegExp(`${field}[,:]`), field);
+  assert.doesNotMatch(canonicalTraining, /basePot|potSize \* 0\.75|sampleRealisticTrainingHand/);
+  assert.match(canonicalTraining, /trainingContextPresentationAdapter\(decisionContext\)/);
+});
+
+test('answer controls are rendered only from canonical legal-action availability', () => {
+  assert.match(canonicalTraining, /function canonicalTrainingLegalActionTypes\(exercise\)/);
+  assert.match(canonicalTraining, /spec\.allIn\?\.available/);
+  assert.match(canonicalTraining, /spec\[type\]\?\.available/);
+  assert.match(canonicalTraining, /canonicalTrainingLegalActionTypes\(exercise\)\.forEach/);
+  assert.doesNotMatch(canonicalTraining, /isPreflopUnopened[\s\S]*solKeys/);
+});
+
+test('Training cards are generated read-only projections and manual mutation paths are guarded', () => {
+  const guardCount = (logic.match(/Training cards come from the canonical generated hand\./g) || []).length;
+  assert.ok(guardCount >= 4);
+  assert.match(canonicalTraining, /app\.training\.hero = \[\.\.\.presentation\.heroCards\]/);
+  assert.match(canonicalTraining, /app\.training\.board = \[\.\.\.presentation\.board\]/);
+});
+
+test('canonical feedback retains source provenance and avoids unsupported GTO or solver claims', () => {
+  const feedback = canonicalTraining.slice(
+    canonicalTraining.indexOf('function canonicalTrainingFeedback'),
+    canonicalTraining.indexOf('function handleTrainingGuess'),
+  );
+  assert.match(feedback, /strategySourceDisplayLabel\(strategyResult\.source\)/);
+  assert.match(feedback, /Acceptable mixed-strategy choice/);
+  assert.doesNotMatch(feedback, /\bGTO\b|\bsolver\b|Deep CFR/i);
+  assert.match(html, /id="trainingStrategySource"/);
+  const trainingMarkup = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="infoMode"'));
+  assert.doesNotMatch(trainingMarkup, /\bGTO\b|Deep CFR/i);
+});
+
+test('Training module bridge loads before classic application logic', () => {
+  const bridgeIndex = html.indexOf('src/application/training-mode-bootstrap.mjs');
+  const logicIndex = html.indexOf('src/core/logic.js');
+  assert.ok(bridgeIndex >= 0);
+  assert.ok(bridgeIndex < logicIndex);
+});
+
+test('legacy synthetic implementation is quarantined and not used as an error fallback', () => {
+  assert.match(logic, /LEGACY_SYNTHETIC/);
+  assert.match(logic, /function newRandomTrainingHandLegacy\(/);
+  assert.match(logic, /function getTrainingStrategyLegacy\(/);
+  assert.match(canonicalTraining, /renderTrainingGenerationError\(result\?\.error\)/);
+  assert.doesNotMatch(canonicalTraining, /catch[\s\S]{0,300}newRandomTrainingHandLegacy/);
+});
