@@ -115,7 +115,7 @@ const PLAYBOOK_MODES = Object.freeze({ SCENARIO: 'scenario', HAND: 'hand' });
 
 
 const app = {
-  settings: { tightness: 0, useOnnx: true, fourColorDeck: true },
+  settings: { tightness: 0, useOnnx: true, fourColorDeck: true, cardRankStyle: 'poker' },
 
   gto: { hero: [], board: [], dead: [] },
 
@@ -285,7 +285,9 @@ const allDeck = () => SUITS.flatMap((suit) => RANKS.map((rank) => rank + suit.id
 
 const getSuit = (card) => SUITS.find((suit) => suit.id === (card && card[1]));
 
-const displayCard = (card) => card ? card[0] + getSuit(card).symbol : '';
+const displayCardRank = (rank) => rank === 'T' && app.settings.cardRankStyle === 'full-ten' ? '10' : rank;
+
+const displayCard = (card) => card ? displayCardRank(card[0]) + getSuit(card).symbol : '';
 
 const selectedValue = (id) => ($(id) || {}).value;
 
@@ -397,7 +399,8 @@ function cardMarkup(card) {
   const suit = getSuit(card);
   
   // Enhanced card markup with better visual hierarchy
-  return `<span class="rank s-${suit.id}">${card[0]}</span><span class="suit s-${suit.id}">${suit.symbol}</span><span class="corner-rank s-${suit.id}">${card[0]}</span>`;
+  const rank = displayCardRank(card[0]);
+  return `<span class="rank s-${suit.id}">${rank}</span><span class="suit s-${suit.id}">${suit.symbol}</span><span class="corner-rank s-${suit.id}">${rank}</span>`;
 
 }
 
@@ -531,7 +534,11 @@ function renderEquityPlayers() {
   root.appendChild(add);
 
   const playerCount = $('#equityPlayerCount');
-  if (playerCount) playerCount.textContent = `${app.equity.players.length} / 10`;
+  if (playerCount) playerCount.textContent = `${app.equity.players.length} players`;
+  const decrease = $('#equityDecreasePlayers');
+  const increase = $('#equityIncreasePlayers');
+  if (decrease) decrease.disabled = app.equity.players.length <= 2;
+  if (increase) increase.disabled = app.equity.players.length >= 10;
   document.querySelectorAll('[data-equity-player-count]').forEach((button) => {
     button.classList.toggle('is-active', Number(button.dataset.equityPlayerCount) === app.equity.players.length);
   });
@@ -695,7 +702,12 @@ function renderDeck() {
         const card = rank + suit.id;
         const isUnavailable = unavailable.has(card);
         const isSelected = current === card;
-        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''}" aria-label="Choose ${card}${isUnavailable ? ', unavailable' : ''}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}><span class="rank s-${suit.id}">${rank}</span><span class="symbol s-${suit.id}">${suit.symbol}</span></button>`;
+        const visualRank = rank === 'T'
+          && typeof document !== 'undefined'
+          && document.documentElement?.dataset?.cardRankStyle === 'full-ten'
+          ? '10'
+          : rank;
+        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''}" aria-label="Choose ${visualRank}${suit.symbol}${isUnavailable ? ', unavailable' : ''}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}><span class="rank s-${suit.id}">${visualRank}</span><span class="symbol s-${suit.id}">${suit.symbol}</span></button>`;
       }).join('');
       return `<div class="deck-suit-row" data-picker-suit="${suit.id}"><div class="deck-suit-label s-${suit.id}" aria-hidden="true">${suit.symbol}</div><div class="deck-ranks">${cards}</div></div>`;
     }).join('');
@@ -5266,7 +5278,7 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
             html += `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">${cat.name} (${cat.cards.length} outs)</div>`;
             html += `<div style="display:flex; flex-wrap:wrap; gap:3px;">`;
             html += cat.cards.map(card => {
-              const rank = card[0], suit = card[1];
+              const rank = displayCardRank(card[0]), suit = card[1];
               const color = suitColors[suit] || '#fff';
               return `<span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:42px;border-radius:5px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);font-size:0.78rem;font-weight:700;color:${color};cursor:default;">${rank}${suitSymbols[suit]||suit}</span>`;
             }).join('');
@@ -5473,6 +5485,14 @@ function bindEvents() {
 
     const playerCountPreset = event.target.closest('[data-equity-player-count]');
     if (playerCountPreset) return setEquityPlayerCount(playerCountPreset.dataset.equityPlayerCount);
+
+    const playerCountStep = event.target.closest('[data-equity-player-delta]');
+    if (playerCountStep) {
+      return setEquityPlayerCount(app.equity.players.length + Number(playerCountStep.dataset.equityPlayerDelta));
+    }
+
+    const cardRankStyle = event.target.closest('[data-card-rank-style]');
+    if (cardRankStyle) return applyCardRankStyle(cardRankStyle.dataset.cardRankStyle);
 
     const slot = event.target.closest('.card-slot');
 
@@ -5807,7 +5827,9 @@ function bindEvents() {
       const wrapper = $('#table-wrapper');
       if (wrapper) {
         wrapper.classList.toggle('collapsed');
-        e.target.textContent = wrapper.classList.contains('collapsed') ? 'Expand Table' : 'Collapse Table';
+        const collapsed = wrapper.classList.contains('collapsed');
+        e.currentTarget.setAttribute('aria-expanded', String(!collapsed));
+        e.currentTarget.textContent = collapsed ? 'Expand Table' : 'Collapse Table';
       }
     });
   }
@@ -6267,6 +6289,11 @@ function init() {
     const saved4Color = localStorage.getItem('riverline_4color');
     applyDeckStyle(saved4Color !== 'false'); // true by default
 
+    const savedCardRankStyle = localStorage.getItem('riverline_card_rank_style');
+    applyCardRankStyle(savedCardRankStyle, false);
+
+    initSidebar();
+
     SoundFX.initBtn();
 
     // Bypassing browser form-fill cache on reload
@@ -6301,13 +6328,13 @@ function init() {
 
     
 
-    // Reset language and API defaults while preserving a valid saved visual theme.
-    const defaultLang = 'en';
-    window.appLang = defaultLang;
-    localStorage.setItem('appLang', defaultLang);
-    document.documentElement.lang = defaultLang;
-    document.documentElement.dir = 'ltr';
-    if ($('#langToggle')) $('#langToggle').value = defaultLang;
+    // Preserve the translation system's existing language preference.
+    const savedLanguage = localStorage.getItem('language') || localStorage.getItem('appLang');
+    const selectedLanguage = ['en', 'ru', 'he'].includes(savedLanguage) ? savedLanguage : (window.appLang || 'en');
+    window.appLang = selectedLanguage;
+    document.documentElement.lang = selectedLanguage;
+    document.documentElement.dir = selectedLanguage === 'he' ? 'rtl' : 'ltr';
+    if ($('#langToggle')) $('#langToggle').value = selectedLanguage;
 
     const defaultTheme = 'midnight';
     const persistedTheme = localStorage.getItem('appTheme');
@@ -7119,6 +7146,47 @@ function updateTrainingFilterAvailability() {
   } else if (message) {
     message.textContent = '';
   }
+}
+
+function applyCardRankStyle(style, refresh = true) {
+  const nextStyle = style === 'full-ten' ? 'full-ten' : 'poker';
+  app.settings.cardRankStyle = nextStyle;
+  localStorage.setItem('riverline_card_rank_style', nextStyle);
+  document.documentElement.dataset.cardRankStyle = nextStyle;
+  $$('[data-card-rank-style]').forEach((button) => {
+    const selected = button.dataset.cardRankStyle === nextStyle;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  if (!refresh) return;
+  renderAllCards();
+  window.dispatchEvent(new CustomEvent('riverlineCardRankStyleChanged', { detail: { style: nextStyle } }));
+}
+
+function applySidebarState(collapsed) {
+  const shell = $('.riverline-shell');
+  const rail = $('#modeRail');
+  const button = $('#sidebarCollapseBtn');
+  if (!shell || !rail || !button) return;
+  shell.classList.toggle('is-sidebar-collapsed', collapsed);
+  rail.dataset.collapsed = String(collapsed);
+  button.setAttribute('aria-expanded', String(!collapsed));
+  button.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+  button.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+}
+
+function initSidebar() {
+  const button = $('#sidebarCollapseBtn');
+  if (!button) return;
+  const saved = localStorage.getItem('riverline_sidebar_collapsed');
+  const compactDefault = window.matchMedia?.('(max-width: 1180px)').matches === true;
+  applySidebarState(saved === null ? compactDefault : saved === 'true');
+  button.addEventListener('click', () => {
+    const shell = $('.riverline-shell');
+    const collapsed = !shell?.classList.contains('is-sidebar-collapsed');
+    localStorage.setItem('riverline_sidebar_collapsed', String(collapsed));
+    applySidebarState(collapsed);
+  });
 }
 
 async function copyCurrentTrainingSeed() {

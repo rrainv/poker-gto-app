@@ -49,7 +49,7 @@ test('the three supported themes define distinct semantic surface palettes', () 
   assert.match(graphite, /color-scheme:\s*dark/);
   assert.match(graphite, /--surface-canvas:\s*#151716/);
   assert.match(daylight, /color-scheme:\s*light/);
-  assert.match(daylight, /--surface-canvas:\s*#f2eee6/);
+  assert.match(daylight, /--surface-canvas:\s*#e8e2d8/);
 
   for (const block of [midnight, graphite, daylight]) {
     assert.match(block, /--surface-panel:/);

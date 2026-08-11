@@ -327,7 +327,7 @@
 <body data-density="comfortable">
 
   <div class="riverline-shell" data-active-mode="gto">
-    <aside class="mode-rail" aria-label="Riverline application">
+    <aside id="modeRail" class="mode-rail" aria-label="Riverline application">
       <div class="rail-brand">
         <div class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" role="img"><path d="M12 3c-2.2 3.2-6.5 5.7-6.5 9.7A4.3 4.3 0 0 0 12 16.4a4.3 4.3 0 0 0 6.5-3.7C18.5 8.7 14.2 6.2 12 3Z"/><path d="M9.2 20h5.6M12 15.5V20"/></svg>
@@ -336,26 +336,52 @@
           <strong data-i18n="Riverline">Riverline</strong>
           <span data-i18n="Poker strategy &amp; analysis">Poker strategy &amp; analysis</span>
         </div>
+        <button id="sidebarCollapseBtn" class="rail-collapse-button" type="button" aria-label="Collapse sidebar" aria-expanded="true" aria-controls="modeRail" title="Collapse sidebar">
+          <svg class="rail-collapse-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5"/></svg>
+        </button>
       </div>
 
       <nav class="mode-navigation" aria-label="Primary mode">
-        <button class="mode-nav-item active" type="button" data-mode="gto" data-mode-title="Playbook" data-mode-subtitle="Strategy guidance with explicit source provenance." aria-current="page">
+        <button class="mode-nav-item active" type="button" data-mode="gto" data-mode-title="Playbook" data-mode-subtitle="Strategy guidance with explicit source provenance." aria-label="Playbook" title="Playbook" data-tooltip="Playbook" aria-current="page">
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="11" height="14" rx="2"/><path d="m9 9 2-2 2 2-2 2-2-2Zm7-1h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8"/></svg>
           <span data-i18n="Playbook">Playbook</span>
         </button>
-        <button class="mode-nav-item" type="button" data-mode="equity" data-mode-title="Equity" data-mode-subtitle="Exact enumeration and Monte Carlo win probability." aria-current="false">
+        <button class="mode-nav-item" type="button" data-mode="equity" data-mode-title="Equity" data-mode-subtitle="Exact enumeration and Monte Carlo win probability." aria-label="Equity" title="Equity" data-tooltip="Equity" aria-current="false">
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15V3.6Z"/></svg>
           <span data-i18n="Equity">Equity</span>
         </button>
-        <button class="mode-nav-item" type="button" data-mode="training" data-mode-title="Training" data-mode-subtitle="Practice decisions against the current strategy sources." aria-current="false">
+        <button class="mode-nav-item" type="button" data-mode="training" data-mode-title="Training" data-mode-subtitle="Practice decisions against the current strategy sources." aria-label="Training" title="Training" data-tooltip="Training" aria-current="false">
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m16.5 7.5 3-3m0 0v3m0-3h-3"/></svg>
           <span data-i18n="Training">Training</span>
         </button>
-        <button class="mode-nav-item" type="button" data-mode="info" data-mode-title="Guide" data-mode-subtitle="Product guidance, poker terms, and control reference." aria-current="false">
+        <button class="mode-nav-item" type="button" data-mode="info" data-mode-title="Guide" data-mode-subtitle="Product guidance, poker terms, and control reference." aria-label="Guide" title="Guide" data-tooltip="Guide" aria-current="false">
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
           <span data-i18n="Guide">Guide</span>
         </button>
       </nav>
+
+      <div class="rail-utilities" aria-label="Global utilities">
+        <label class="rail-utility rail-language" for="langToggle" title="Language" data-tooltip="Language">
+          <svg class="rail-utility-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.4 2.5 3.7 5.5 3.7 9S14.4 18.5 12 21c-2.4-2.5-3.7-5.5-3.7-9S9.6 5.5 12 3Z"/></svg>
+          <span class="rail-utility-label" data-i18n="Language">Language</span>
+          <select id="langToggle" onchange="setLanguage(this.value)" aria-label="Language">
+            <option value="en">🇺🇸 English</option>
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="he">🇮🇱 עברית</option>
+          </select>
+        </label>
+
+        <button id="audioToggleBtn" class="rail-utility utility-button" type="button" aria-label="Mute sound" aria-pressed="true" title="Audio" data-tooltip="Audio">
+          <svg class="rail-utility-icon utility-icon utility-icon-sound" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 3V7l-4 3H5Z"/><path d="M15 9a4 4 0 0 1 0 6m2-8a7 7 0 0 1 0 10"/></svg>
+          <svg class="rail-utility-icon utility-icon utility-icon-muted" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 3V7l-4 3H5Z"/><path d="m16 10 4 4m0-4-4 4"/></svg>
+          <span class="rail-utility-label" data-i18n="Audio">Audio</span>
+        </button>
+
+        <button id="openSettings" class="rail-utility utility-button" type="button" aria-label="Open settings" title="Settings" data-tooltip="Settings">
+          <svg class="rail-utility-icon utility-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>
+          <span class="rail-utility-label" data-i18n="Settings">Settings</span>
+        </button>
+      </div>
 
       <div class="rail-footer" data-i18n="Analysis workspace">Analysis workspace</div>
     </aside>
@@ -368,7 +394,7 @@
           <p id="workspaceSubtitle" data-i18n="Strategy guidance with explicit source provenance.">Strategy guidance with explicit source provenance.</p>
         </div>
 
-        <div class="workspace-utilities" aria-label="Workspace utilities">
+        <div class="workspace-utilities" aria-label="Strategy source status">
           <button id="connectApiBtn" class="model-status" type="button" data-status="fallback" aria-label="Strategy source: Heuristic fallback">
             <span id="apiStatusDot" class="model-status-dot" aria-hidden="true"></span>
             <span class="model-status-copy">
@@ -377,32 +403,6 @@
             </span>
           </button>
 
-          <label class="utility-select" for="langToggle">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.4 2.5 3.7 5.5 3.7 9S14.4 18.5 12 21c-2.4-2.5-3.7-5.5-3.7-9S9.6 5.5 12 3Z"/></svg>
-            <span class="sr-only" data-i18n="Language">Language</span>
-            <select id="langToggle" onchange="setLanguage(this.value)" aria-label="Language">
-              <option value="en">EN</option>
-              <option value="ru">RU</option>
-              <option value="he">HE</option>
-            </select>
-          </label>
-
-          <button id="audioToggleBtn" class="utility-button" type="button" aria-label="Mute sound" aria-pressed="true" title="Audio">
-            <svg class="utility-icon utility-icon-sound" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 3V7l-4 3H5Z"/><path d="M15 9a4 4 0 0 1 0 6m2-8a7 7 0 0 1 0 10"/></svg>
-            <svg class="utility-icon utility-icon-muted" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 3V7l-4 3H5Z"/><path d="m16 10 4 4m0-4-4 4"/></svg>
-            <span class="utility-label" data-i18n="Audio">Audio</span>
-          </button>
-
-          <button id="lockUiBtn" class="utility-button" type="button" aria-label="Unlock layout editing" aria-pressed="true" title="Layout" onclick="window.toggleUILock && window.toggleUILock()">
-            <svg class="utility-icon utility-icon-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-            <svg class="utility-icon utility-icon-unlock" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M9 10V7a4 4 0 0 1 7.5-2"/></svg>
-            <span class="utility-label" data-i18n="Layout">Layout</span>
-          </button>
-
-          <button id="openSettings" class="utility-button" type="button" aria-label="Open settings" title="Settings">
-            <svg class="utility-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>
-            <span class="utility-label" data-i18n="Settings">Settings</span>
-          </button>
         </div>
       </header>
 
@@ -412,7 +412,7 @@
 
     <section id="gtoMode" class="mode-view active">
 
-      <div class="playbook-state-source" aria-label="Playbook workflow">
+      <div class="playbook-state-source" aria-label="Playbook workflow" data-interaction-surface="interactive">
         <div class="playbook-workflow-copy">
           <span class="playbook-workflow-kicker" data-i18n="Analysis workflow">Analysis workflow</span>
           <strong data-i18n="Choose how this poker spot is built">Choose how this poker spot is built</strong>
@@ -814,15 +814,13 @@
 
 
         <main class="main-content playbook-decision-workspace">
-          <div id="sharedControls" class="playbook-betting-context" data-playbook-scenario>
+          <div id="sharedControls" class="playbook-betting-context" data-playbook-scenario data-interaction-surface="interactive">
 
             <div class="playbook-inline-heading"><span class="label" data-i18n="Betting context">Betting context</span><small data-i18n="Manual values for this study spot">Manual values for this study spot</small></div>
 
-            <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
+            <div class="playbook-context-primary">
 
-              <select id="heroPos" class="quick-select control-select"
-
-                style="width:auto; min-width:80px; background:var(--surface-interactive); color:var(--text-primary); border:1px solid var(--border-default); padding:8px 12px; border-radius:var(--radius-control); font-weight:bold; font-size:14px; cursor:pointer;">
+              <label class="playbook-context-field"><span data-i18n="Position">Position</span><select id="heroPos" class="quick-select control-select">
 
                 <option value="UTG" selected>UTG</option>
 
@@ -836,11 +834,9 @@
 
                 <option value="BB">BB</option>
 
-              </select>
+              </select></label>
 
-              <select id="lastAction" class="quick-select control-select"
-
-                style="width:auto; min-width:110px; background:var(--surface-interactive); color:var(--text-primary); border:1px solid var(--border-default); padding:8px 12px; border-radius:var(--radius-control); font-weight:bold; font-size:14px; cursor:pointer;">
+              <label class="playbook-context-field"><span data-i18n="Prior action">Prior action</span><select id="lastAction" class="quick-select control-select">
 
                 <option value="unopened" selected data-i18n="Unopened">Unopened</option>
 
@@ -854,7 +850,7 @@
 
                 <option value="check">Check</option>
 
-              </select>
+              </select></label>
 
               <button class="secondary ui-button ui-button--secondary button-push-end" type="button" id="openCharts" data-i18n="View all hands">View all
 
@@ -862,7 +858,7 @@
 
             </div>
 
-            <div class="fields" style="margin-bottom:16px;">
+            <div class="fields playbook-context-sliders">
 
               <div class="field">
 
@@ -1034,7 +1030,7 @@
 
               </div>
 
-              <div class="metric-grid playbook-metric-strip" aria-label="Decision metrics">
+              <div class="metric-grid playbook-metric-strip" aria-label="Decision metrics" data-state-surface="derived">
 
                 <div class="metric"><span data-i18n="Position">Position</span><b id="mPosition">—</b></div>
 
@@ -1065,9 +1061,9 @@
 
 
           <div class="playbook-table-toggle">
-            <button id="toggleTableBtn" class="ui-button ui-button--quiet" type="button">Collapse Table</button>
+            <button id="toggleTableBtn" class="ui-button ui-button--quiet" type="button" aria-expanded="true" aria-controls="table-wrapper">Collapse Table</button>
           </div>
-          <div id="table-wrapper" class="table-wrapper">
+          <div id="table-wrapper" class="table-wrapper" data-collapsible-region="poker-table">
             <div id="visual-table-container"></div>
           </div>
 
@@ -1385,7 +1381,7 @@
                   <div id="trainingHeroCards" class="training-card-row" aria-label="Hero cards"></div>
                 </div>
               </div>
-              <div id="trainingPotInfo" class="training-context-strip">
+              <div id="trainingPotInfo" class="training-context-strip" data-state-surface="derived">
                 <div><span data-i18n="Street">Street</span><strong id="trainingStreetLabel">—</strong></div>
                 <div><span data-i18n="Position">Position</span><strong id="trainingPositionVal">—</strong></div>
                 <div><span data-i18n="Stack">Stack</span><strong id="trainingStackVal">—</strong></div>
@@ -1490,13 +1486,17 @@
               <button id="resetEquity" class="ui-button ui-button-ghost equity-reset" type="button" data-i18n="Reset">Reset</button>
             </div>
             <div class="equity-player-toolbar">
-              <div class="equity-presets" aria-label="Player count presets">
-                <span class="equity-toolbar-label" data-i18n="Players">Players</span>
-                <button class="ui-button ui-button-ghost is-active" type="button" data-equity-player-count="2">2</button>
-                <button class="ui-button ui-button-ghost" type="button" data-equity-player-count="6">6</button>
-                <button class="ui-button ui-button-ghost" type="button" data-equity-player-count="9">9</button>
+              <div class="equity-player-count-control" role="group" aria-label="Player count, from 2 through 10">
+                <button id="equityDecreasePlayers" class="ui-button ui-button--icon" type="button" data-equity-player-delta="-1" aria-label="Remove one player" title="Remove one player">−</button>
+                <span id="equityPlayerCount" class="equity-count" aria-live="polite">2 players</span>
+                <button id="equityIncreasePlayers" class="ui-button ui-button--icon" type="button" data-equity-player-delta="1" aria-label="Add one player" title="Add one player">+</button>
               </div>
-              <span id="equityPlayerCount" class="equity-count" aria-live="polite">2 / 10</span>
+              <div class="equity-presets" aria-label="Quick player count presets">
+                <span class="equity-toolbar-label">Quick</span>
+                <button class="ui-button ui-button-ghost is-active" type="button" data-equity-player-count="2" aria-label="Set 2 players">2</button>
+                <button class="ui-button ui-button-ghost" type="button" data-equity-player-count="6" aria-label="Set 6 players">6</button>
+                <button class="ui-button ui-button-ghost" type="button" data-equity-player-count="9" aria-label="Set 9 players">9</button>
+              </div>
             </div>
             <div id="equityPlayers" class="equity-player-list"></div>
           </section>
@@ -1563,8 +1563,8 @@
       </div>
     </section>
 
-    <section id="infoMode" class="mode-view" style="display: none; padding: 24px; overflow-y: auto;">
-      <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
+    <section id="infoMode" class="mode-view guide-mode" style="display: none;">
+      <div class="guide-workspace">
         <div id="infoView" class="gto-view" style="display: block; min-width: 0;">
 
             <section class="panel">
@@ -1774,6 +1774,17 @@
               <div class="panel-note" style="margin-top: 4px;" data-i18n="Use distinct colors for all four suits.">Use distinct colors for all four suits.</div>
             </div>
 
+            <div class="field settings-preference-field">
+              <div class="settings-preference-copy">
+                <strong>Card rank style</strong>
+                <span class="panel-note">Changes visual playing cards only. Canonical card IDs still use T.</span>
+              </div>
+              <div id="cardRankStyleControl" class="ui-segments card-rank-style-control" role="group" aria-label="Card rank style">
+                <button class="ui-tab active" type="button" data-card-rank-style="poker" aria-pressed="true"><strong>T</strong><small>Poker notation</small></button>
+                <button class="ui-tab" type="button" data-card-rank-style="full-ten" aria-pressed="false"><strong>10</strong><small>Full ten</small></button>
+              </div>
+            </div>
+
             <div id="themeSwatchGrid" class="theme-swatch-grid section-inset">
               <!-- Dynamically populated theme swatch buttons in JS -->
             </div>
@@ -1835,7 +1846,6 @@
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script src="src/core/logic.js?v=21" defer></script>
   <script src="src/ui/teacher.js" defer></script>
-  <script src="src/ui/dragAndDrop.js" defer></script>
   <script src="src/ui/TableRenderer.js" defer></script>
   <script src="src/ml/engine.js" defer></script>
 

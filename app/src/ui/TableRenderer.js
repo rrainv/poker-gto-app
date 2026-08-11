@@ -14,8 +14,12 @@ class TableRenderer {
     this.container = document.getElementById(containerId);
     if (!this.container) return;
     this.currentActivePlayers = 10;
+    this.lastState = null;
     this.initSVG();
     window.addEventListener('gameStateUpdate', (e) => this.renderState(e.detail));
+    window.addEventListener('riverlineCardRankStyleChanged', () => {
+      if (this.lastState) this.renderState(this.lastState);
+    });
   }
 
   initSVG() {
@@ -84,13 +88,14 @@ class TableRenderer {
 
   renderCard(rank, suit, index, isCommunity = false) {
     const presentation = TABLE_SUIT_PRESENTATION[suit] || { id: 'unknown', symbol: suit || '?' };
+    const visualRank = rank === 'T' && document.documentElement.dataset.cardRankStyle === 'full-ten' ? '10' : rank;
     const startX = isCommunity ? 150 : 400;
     const startY = isCommunity ? 0 : 250;
 
     return `
       <g class="card-group poker-card-svg card--known card--suit-${presentation.id}" data-card-state="known" style="transform: translate(${startX}px, ${startY}px); transition-delay: ${index * 70}ms;">
         <rect class="table-card-face" x="0" y="0" width="40" height="58" rx="4" ry="4" />
-        <text class="table-card-rank" x="6" y="17">${rank}</text>
+        <text class="table-card-rank" x="6" y="17">${visualRank}</text>
         <text class="table-card-suit" x="6" y="35">${presentation.symbol}</text>
       </g>
     `;
@@ -109,6 +114,7 @@ class TableRenderer {
   renderState(state) {
     // Presentation-only state: no betting order or poker semantics are inferred here.
     if (!state) return;
+    this.lastState = state;
 
     if (state.mode === 'hand' && state.empty) {
       this.currentActivePlayers = 0;
