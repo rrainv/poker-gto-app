@@ -1347,427 +1347,132 @@
 
 
     <section id="trainingMode" class="mode-view" style="display:none;">
-
-      <div class="app-grid">
-
-        <aside class="side-stack">
-
-          <section class="panel">
-
-            <div class="panel-head" style="align-items: center; flex-wrap: nowrap; white-space: nowrap;">
-
+      <div class="training-workspace" data-training-state="idle" aria-labelledby="trainingWorkspaceTitle">
+        <main class="training-decision-column">
+          <section class="panel training-decision-panel" id="trainingRecommendation" aria-labelledby="trainingWorkspaceTitle">
+            <header class="training-decision-head">
               <div>
-
-                <div class="label" style="color:var(--primary); margin-bottom: 2px;" data-i18n="Training Mode">Training Mode</div>
-
-                <div class="panel-title" style="font-size: 16px;" data-i18n="Game parameters">Game parameters</div>
-
+                <p class="training-eyebrow" data-i18n="Training workspace">Training workspace</p>
+                <h2 id="trainingWorkspaceTitle" data-i18n="Make the decision">Make the decision</h2>
+                <p id="trainingInstruction" class="muted">Generate a reachable canonical decision, then choose one legal action.</p>
               </div>
+              <div class="training-state-cluster">
+                <span id="trainingStateBadge" class="badge status-badge status-badge--info">Idle</span>
+                <span id="trainingStrategySource" class="badge status-badge status-badge--info">Source unavailable</span>
+              </div>
+            </header>
 
+            <div id="trainingExerciseTags" class="training-tag-row" aria-label="Exercise tags"></div>
+            <div id="trainingIdle" class="training-state-message">
+              <strong data-i18n="Ready for a drill">Ready for a drill</strong>
+              <span>Use the setup controls to generate a legal poker decision.</span>
+            </div>
+            <div id="trainingGenerating" class="training-state-message" hidden aria-live="polite">
+              <span class="training-spinner" aria-hidden="true"></span>
+              <div><strong>Generating exercise</strong><span>Replaying a bounded legal hand trajectory.</span></div>
+            </div>
+            <div id="trainingError" class="training-state-message training-state-message--error" role="alert" hidden>
+              <div><strong id="trainingErrorTitle">Exercise unavailable</strong><span id="trainingErrorText">Try again or adjust the drill.</span></div>
+              <button id="trainingRetryButton" class="ui-button ui-button--secondary" type="button" data-i18n="Try again">Try again</button>
             </div>
 
-            <div class="panel-body">
-
-              <div class="fields">
-
-                <div class="field full">
-
-                  <div class="slider-container">
-
-                    <div class="slider-header">
-
-                      <span data-i18n="Table size">Table size</span>
-
-                      <span class="control-value"><input id="trainingPlayersNum" class="control-input control-input--inline" type="number" min="2" max="10" step="1" value="8">
-
-                        -max</span>
-
-                    </div>
-
-                    <input id="trainingPlayers" class="control-range" type="range" min="2" max="10" step="1" value="8">
-
-                  </div>
-
+            <div id="trainingExerciseSurface" class="training-exercise-surface" hidden>
+              <div class="training-table-summary" aria-label="Read-only exercise cards">
+                <div class="training-board-zone"><span class="training-zone-label" data-i18n="Board">Board</span><div id="trainingBoardCards" class="training-card-row" aria-label="Board cards"></div></div>
+                <div class="training-table-divider" aria-hidden="true"></div>
+                <div class="training-hero-zone">
+                  <div><span class="training-zone-label" data-i18n="Hero">Hero</span><strong id="trainingHandDisplay">—</strong></div>
+                  <div id="trainingHeroCards" class="training-card-row" aria-label="Hero cards"></div>
                 </div>
-
-                <div class="field full">
-
-                  <div class="slider-container">
-
-                    <div class="slider-header">
-
-                      <span data-i18n="Starting stack">Starting stack</span>
-
-                      <span class="control-value"><input id="trainingStackNum" class="control-input control-input--inline" type="number" min="10" max="500" step="1" value="30">
-
-                        bb</span>
-
-                    </div>
-
-                    <input id="trainingStack" class="control-range" type="range" min="10" max="500" step="1" value="30">
-
-                  </div>
-
-                </div>
-
               </div>
-
-              <div class="divider"></div>
-
-              <div class="section-head">
-
-                <strong data-i18n="Hero">Hero</strong>
-
-                <button class="small-link" data-clear="trainingHero" data-i18n="Clear">Clear</button>
-
+              <div id="trainingPotInfo" class="training-context-strip">
+                <div><span data-i18n="Street">Street</span><strong id="trainingStreetLabel">—</strong></div>
+                <div><span data-i18n="Position">Position</span><strong id="trainingPositionVal">—</strong></div>
+                <div><span data-i18n="Stack">Stack</span><strong id="trainingStackVal">—</strong></div>
+                <div><span data-i18n="Pot">Pot</span><strong id="trainingPotVal">—</strong></div>
+                <div><span data-i18n="Facing">Facing</span><strong id="trainingFacingVal">—</strong></div>
+                <div><span data-i18n="Players">Players</span><strong id="trainingTableVal">—</strong></div>
               </div>
-
-              <div class="card-slots" data-slots="trainingHero"></div>
-
-              <div class="divider"></div>
-
-              <div class="section-head">
-
-                <strong data-i18n="Board">Board</strong>
-
-                <button class="small-link" data-clear="trainingBoard" data-i18n="Clear">Clear</button>
-
+              <div id="trainingAssistance" class="training-assistance">
+                <div class="pot-math-detail"><span data-i18n="Pot Odds">Pot odds</span><strong id="trainingPotOddsVal">—</strong></div>
+                <div class="pot-math-detail"><span data-i18n="MDF">MDF</span><strong id="trainingMdfVal">—</strong></div>
+                <div id="trainingHintBox" class="training-hint"><strong data-i18n="Guided prompt">Guided prompt</strong><span id="trainingHintText"></span></div>
               </div>
-
-              <div class="card-slots" data-slots="trainingBoard"></div>
-
+              <div class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
+              <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions"></div>
+              <p class="training-shortcut-help"><span>Keyboard:</span> <kbd>1</kbd>–<kbd>6</kbd> choose a visible action</p>
             </div>
 
+            <div id="trainingFeedback" class="training-feedback" data-grade="none" aria-live="polite" hidden>
+              <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info">Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
+              <h3 id="feedbackTitle">Feedback</h3><p id="feedbackText">Your answer will be compared with the current strategy reference.</p>
+              <dl class="training-feedback-facts">
+                <div><dt>Chosen action</dt><dd id="trainingChosenAction">—</dd></div>
+                <div><dt>Chosen frequency</dt><dd id="trainingChosenProbability">—</dd></div>
+                <div><dt>Highest frequency</dt><dd id="trainingBestProbability">—</dd></div>
+                <div id="trainingEvFact" hidden><dt>EV comparison</dt><dd id="trainingEvValue">—</dd></div>
+              </dl>
+            </div>
+            <div class="training-completion-actions">
+              <button class="ui-button ui-button--primary training-primary-next" type="button" id="trainingNextHandBtn" aria-keyshortcuts="Enter" data-i18n="Generate exercise">Generate exercise</button>
+              <button class="ui-button ui-button--secondary" type="button" id="trainingReplayDecisionBtn" hidden data-i18n="Replay this decision">Replay this decision</button>
+              <button class="ui-button ui-button-ghost" type="button" id="trainingAdjustDrill" data-i18n="Adjust drill">Adjust drill</button>
+            </div>
           </section>
-
-        </aside>
-
-
-
-        <main class="main-content">
-
-          <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
-
-            <select id="trainingHeroPos" class="quick-select training-select control-select">
-
-              <option value="UTG" selected>UTG</option>
-
-              <option value="HJ">HJ</option>
-
-              <option value="CO">CO</option>
-
-              <option value="BTN">BTN</option>
-
-              <option value="SB">SB</option>
-
-              <option value="BB">BB</option>
-
-            </select>
-
-            <select id="trainingLastAction" class="quick-select training-select control-select">
-
-              <option value="unopened" selected data-i18n="Unopened">Unopened</option>
-
-              <option value="raise" data-i18n="Raise">Raise</option>
-
-              <option value="3bet" data-i18n="3-Bet">3-Bet</option>
-
-              <option value="4bet" data-i18n="4-Bet">4-Bet</option>
-
-              <option value="bet" data-i18n="Bet">Bet</option>
-
-              <option value="check" data-i18n="Check">Check</option>
-
-            </select>
-
-          </div>
-
-
-
-          <section class="panel recommend" id="trainingRecommendation">
-
-            <div class="recommend-top"
-
-              style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 24px;">
-
-              <div>
-
-                <div class="eyebrow" style="font-size: 11px; letter-spacing: 2px;"><span
-
-                    data-i18n="MAKE YOUR GUESS">MAKE YOUR GUESS</span> · <span id="trainingStreetLabel" style="text-transform:uppercase;">PREFLOP</span></div>
-
-                <div class="action-name" id="trainingHandDisplay"
-
-                  style="text-transform: uppercase; font-weight: 800; font-size: 32px; margin-top: 8px; letter-spacing: -1.5px;">
-
-                  READY TO TRAIN?</div>
-
-                <div class="action-copy" id="trainingInstruction" style="font-size: 13px; margin-top: 8px;">Click 'Start Training' to generate a reachable canonical decision.</div>
-
-                <div id="trainingPotInfo" style="display:none; margin-top:14px; padding:10px 14px; background:var(--card-bg); border:1px solid var(--border); border-radius:8px; gap:16px; align-items:center; flex-wrap:wrap; font-size:13px; font-weight:600;">
-
-                  <div><span style="color:var(--muted);" data-i18n="Pot:">Pot:</span> <strong id="trainingPotVal" style="color:var(--text);">1.5 bb</strong></div>
-
-                  <div><span style="color:var(--muted);" data-i18n="Facing:">Facing:</span> <strong id="trainingFacingVal" style="color:var(--text);">0.0 bb</strong></div>
-
-                  <div class="pot-math-detail" style="display:none;"><span style="color:var(--muted);" data-i18n="Pot Odds:">Pot Odds:</span> <strong id="trainingPotOddsVal" style="color:var(--primary);">0.0%</strong></div>
-
-                  <div class="pot-math-detail" style="display:none;"><span style="color:var(--muted);" data-i18n="MDF:">MDF:</span> <strong id="trainingMdfVal" style="color:var(--orange);">100.0%</strong></div>
-
-                </div>
-
-                <div id="trainingHintBox" style="display:none; margin-top:10px; padding:10px 14px; background:rgba(30,58,138,0.25); border:1px solid rgba(59,130,246,0.3); border-radius:8px; font-size:12px; color:var(--text);">
-
-                  💡 <strong style="color:var(--primary);" data-i18n="Strategic Hint:">Strategic Hint:</strong> <span id="trainingHintText">Evaluate Hero's position and equity requirement facing this bet size.</span>
-
-                </div>
-
-              </div>
-
-              <div class="badge training-score-badge" id="trainingScoreBadge" style="display:none;">Score: 0</div>
-
-            </div>
-
-            
-
-            <div id="trainingGuessButtons" style="display:none; gap:12px; margin-bottom:20px;">
-
-              <button class="cta ui-button ui-button--poker-fold" type="button" id="trainingFoldBtn" data-action="fold" data-i18n="Fold">Fold</button>
-
-              <button class="cta ui-button ui-button--poker-passive" type="button" id="trainingCallBtn" data-action="call" data-i18n="Call">Call</button>
-
-              <button class="cta ui-button ui-button--poker-aggressive" type="button" id="trainingRaiseBtn" data-action="raise" data-i18n="Raise">Raise</button>
-
-            </div>
-
-
-
-            <div id="trainingFeedback" style="display:none; padding:16px; background:rgba(15,23,42,0.5); border-radius:8px; margin-bottom:16px;">
-
-              <div style="font-size:14px; font-weight:600; margin-bottom:8px; color:var(--text);" id="feedbackTitle">Feedback</div>
-
-              <div style="font-size:13px; color:var(--muted);" id="feedbackText">Your guess will be compared against the current strategy reference.</div>
-
-            </div>
-
-
-
-            <div id="trainingSolution" style="display:none;">
-
-              <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
-                <div style="font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;" data-i18n="Strategy reference">Strategy reference</div>
-                <span id="trainingStrategySource" class="badge status-badge status-badge--info">Unavailable</span>
-              </div>
-
-              <div class="wheel-section frequency-visualization" style="display:flex; gap: 32px; align-items:center;">
-
-                <div class="wheel-container">
-
-                  <div class="wheel" id="trainingWheel">
-
-                    <div class="wheel-inner">
-
-                      <span id="trainingWheelCenterText">-</span>
-
-                    </div>
-
-                  </div>
-
-                </div>
-
-                <div class="frequency-bars" style="flex:1;">
-
-                  <div class="frequency-stack is-empty" id="trainingFrequencyStack" role="img" aria-label="Strategy frequencies unavailable"></div>
-
-                  <div class="frequency">
-
-                    <span class="freq-name" id="tf1name">Fold</span>
-
-                    <div class="bar">
-
-                      <div class="fill red" id="tf1" style="width:0%"></div>
-
-                    </div>
-
-                    <span class="freq-num" id="tf1num">0%</span>
-
-                  </div>
-
-                  <div class="frequency">
-
-                    <span class="freq-name" id="tf2name">Call</span>
-
-                    <div class="bar">
-
-                      <div class="fill" id="tf2" style="width:0%"></div>
-
-                    </div>
-
-                    <span class="freq-num" id="tf2num">0%</span>
-
-                  </div>
-
-                  <div class="frequency">
-
-                    <span class="freq-name" id="tf3name">Raise</span>
-
-                    <div class="bar">
-
-                      <div class="fill orange" id="tf3" style="width:0%"></div>
-
-                    </div>
-
-                    <span class="freq-num" id="tf3num">0%</span>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            <button class="cta ui-button ui-button--primary training-next-btn" type="button" id="trainingNextHandBtn" style="display:none; margin-top:20px; width:100%; justify-content:center;" data-i18n="Next Hand →">Next Hand →</button>
-
-          </section>
-
-
-
-
-
-
-
         </main>
 
-
-
-        <aside class="right-rail side-stack">
-          <section class="panel">
-
-            <div class="panel-head">
-
-              <div>
-
-                <div class="panel-title" data-i18n="Training Settings">Training Settings</div>
-
-                <div class="panel-note"><span data-i18n="Customize your training experience.">Customize your training experience.</span></div>
-
-              </div>
-
-            </div>
-
-            <div class="panel-body">
-
-              <div class="field full" style="margin-top:16px;">
-
-                <label class="field-label" style="font-size:12px; font-weight:600; color:var(--text);" data-i18n="Assistance Level">Assistance Level</label>
-
-                <select id="trainingDifficulty" class="select control-select" style="width:100%; margin-top:4px;">
-
-                  <option value="hard" selected data-i18n="Hard (No Odds)">Hard (No Odds)</option>
-
-                  <option value="easy" data-i18n="Easy Mode (Pot Odds & MDF)">Easy Mode (Pot Odds & MDF)</option>
-
-                  <option value="guided" data-i18n="Guided Mode (Odds & Strategic Hints)">Guided Mode (Odds & Strategic Hints)</option>
-
-                </select>
-
-                <div class="panel-note" style="margin-top:4px;" data-i18n="Show Pot Odds, MDF, or strategic hints before guessing.">Show Pot Odds, MDF, or strategic hints before guessing.</div>
-
-              </div>
-
-              <div class="field full" style="margin-top:16px;">
-
-                <div class="switchrow" style="margin:0;">
-
-                  <span style="font-size:13px; font-weight:600; color:var(--text);" data-i18n="Show solution immediately">Show solution immediately</span>
-
-                  <button class="switch ui-switch" id="trainingShowSolution" type="button" aria-label="Show solution immediately" aria-pressed="false"><b aria-hidden="true"></b></button>
-
-                </div>
-
-                <div class="panel-note" style="margin-top:4px;" data-i18n="Reveal the current strategy reference right after your guess.">Reveal the current strategy reference right after your guess.</div>
-
-              </div>
-
-              <div class="field full" style="margin-top:16px;">
-
-                <button class="secondary ui-button ui-button--destructive" type="button" id="trainingResetStats" data-i18n="Reset Statistics">Reset Statistics</button>
-
-              </div>
-
-              <div class="field full" style="margin-top:16px;">
-
-                <button class="cta ui-button ui-button--primary" type="button" id="trainingNewHand" data-i18n="New Random Hand">New Random Hand</button>
-
-              </div>
-
-            </div>
-
+        <aside class="training-insight-column">
+          <section class="panel training-history-panel" aria-labelledby="trainingHistoryTitle">
+            <div class="panel-head"><div><p class="training-eyebrow" data-i18n="Canonical replay">Canonical replay</p><h2 id="trainingHistoryTitle" data-i18n="Action history">Action history</h2></div></div>
+            <div class="panel-body"><ol id="trainingActionHistory" class="training-action-history"><li class="is-empty">Generate an exercise to view its chronological action history.</li></ol><p id="trainingCurrentActor" class="training-current-actor">No decision loaded.</p></div>
           </section>
-
-          <section class="panel">
-
-            <div class="panel-head">
-
-              <div>
-
-                <div class="panel-title" data-i18n="Training Statistics">Training Statistics</div>
-
-                <div class="panel-note"><span data-i18n="Track this Training session.">Track this Training session.</span></div>
-
-              </div>
-
-            </div>
-
+          <section id="trainingSolution" class="panel training-solution-panel" hidden aria-labelledby="trainingSolutionTitle">
+            <div class="panel-head"><div><p class="training-eyebrow" data-i18n="After-answer reference">After-answer reference</p><h2 id="trainingSolutionTitle" data-i18n="Strategy frequencies">Strategy frequencies</h2></div></div>
             <div class="panel-body">
-
-              <div class="metric-grid" style="margin-top:0;">
-
-                <div class="metric">
-
-                  <span data-i18n="Total Hands">Total Hands</span>
-
-                  <b id="trainingTotalHands">0</b>
-
-                </div>
-
-                <div class="metric">
-
-                  <span data-i18n="Accepted">Accepted</span>
-
-                  <b id="trainingCorrect" style="color:var(--primary);">0</b>
-
-                </div>
-
-                <div class="metric">
-
-                  <span data-i18n="Acceptance rate">Acceptance rate</span>
-
-                  <b id="trainingAccuracy">0%</b>
-
-                </div>
-
-                <div class="metric">
-
-                  <span data-i18n="Streak">Streak</span>
-
-                  <b id="trainingStreak" style="color:var(--orange);">0</b>
-
-                </div>
-
-              </div>
-
+              <p class="muted">Probabilities from the displayed strategy source; no EV is implied.</p>
+              <div class="training-frequency-stack frequency-stack is-empty" id="trainingFrequencyStack" role="img" aria-label="Strategy frequencies unavailable"></div>
+              <div id="trainingFrequencyRows" class="training-frequency-rows"></div>
+              <div class="training-wheel-secondary" aria-label="Secondary frequency view"><div class="wheel" id="trainingWheel"><div class="wheel-inner"><span id="trainingWheelCenterText">-</span></div></div></div>
             </div>
-
           </section>
+          <section class="panel training-session-panel" aria-labelledby="trainingSessionTitle">
+            <div class="panel-head"><div><p class="training-eyebrow" data-i18n="This browser session">This browser session</p><h2 id="trainingSessionTitle" data-i18n="Session progress">Session progress</h2></div></div>
+            <div class="panel-body">
+              <div class="training-stat-grid"><div><span>Attempts</span><strong id="trainingTotalHands">0</strong></div><div><span>Accepted</span><strong id="trainingCorrect">0</strong></div><div><span>Acceptance</span><strong id="trainingAccuracy">0%</strong></div><div><span>Streak</span><strong id="trainingStreak">0</strong></div><div><span>Best streak</span><strong id="trainingBestStreak">0</strong></div></div>
+              <div class="training-grade-counts" aria-label="Answer grades"><span><i data-grade="optimal"></i>Optimal <strong id="trainingOptimalCount">0</strong></span><span><i data-grade="acceptable"></i>Acceptable <strong id="trainingAcceptableCount">0</strong></span><span><i data-grade="mistake"></i>Mistake <strong id="trainingMistakeCount">0</strong></span></div>
+              <button class="ui-button ui-button-ghost ui-button--destructive" type="button" id="trainingResetStats" data-i18n="Reset session stats">Reset session stats</button>
+            </div>
+          </section>
+        </aside>
 
-
-
+        <aside class="training-setup-column" id="trainingSetupColumn">
+          <section class="panel" aria-labelledby="trainingSetupTitle">
+            <div class="panel-head"><div><p class="training-eyebrow" data-i18n="Drill setup">Drill setup</p><h2 id="trainingSetupTitle" data-i18n="Choose a decision family">Choose a decision family</h2></div><span class="badge status-badge status-badge--available" data-i18n="Home · no rake">Home · no rake</span></div>
+            <div class="panel-body training-setup-fields">
+              <label class="ui-field"><span>Street</span><select id="trainingStreet" class="control-select"><option value="any" selected>Any street</option><option value="preflop">Preflop</option><option value="flop">Flop</option><option value="turn">Turn</option><option value="river">River</option></select></label>
+              <label class="ui-field"><span>Decision target</span><select id="trainingDecisionTarget" class="control-select"><option value="any" selected>Any compatible target</option><optgroup label="Preflop"><option value="preflop_unopened">Unopened / RFI</option><option value="preflop_facing_open">Facing an open</option><option value="preflop_facing_3bet">Facing a 3-bet</option><option value="preflop_facing_4bet">Facing a 4-bet</option><option value="preflop_bb_option">Big blind check option</option></optgroup><optgroup label="Postflop"><option value="postflop_first_action">First action / checked to</option><option value="postflop_facing_bet">Facing a bet</option><option value="postflop_facing_raise">Facing a raise</option></optgroup></select></label>
+              <label class="ui-field"><span>Hero position</span><select id="trainingHeroPos" class="control-select"><option value="UTG" selected>UTG</option><option value="HJ">HJ</option><option value="CO">CO</option><option value="BTN">BTN</option><option value="SB">SB</option><option value="BB">BB</option></select></label>
+              <label class="ui-field"><span>Assistance</span><select id="trainingDifficulty" class="control-select"><option value="hard" selected>Hard · no odds shown</option><option value="easy">Easy · pot odds and MDF</option><option value="guided">Guided · odds and prompt</option></select></label>
+              <div class="training-slider-field"><div class="slider-header"><span>Table size</span><span class="control-value"><input id="trainingPlayersNum" class="control-input control-input--inline" type="number" min="2" max="10" step="1" value="8">-max</span></div><input id="trainingPlayers" class="control-range" type="range" min="2" max="10" step="1" value="8"></div>
+              <div class="training-slider-field"><div class="slider-header"><span>Starting stack</span><span class="control-value"><input id="trainingStackNum" class="control-input control-input--inline" type="number" min="10" max="500" step="1" value="30">bb</span></div><input id="trainingStack" class="control-range" type="range" min="10" max="500" step="1" value="30"></div>
+              <div id="trainingFilterMessage" class="training-filter-message" role="status"></div>
+              <button class="ui-button ui-button--primary training-generate" type="button" id="trainingNewHand">Generate exercise</button>
+            </div>
+          </section>
+          <section class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle"><div class="panel-head"><div><h2 id="trainingAssistanceTitle">Assistance</h2><p class="panel-note">Pre-answer help is explicit and never changes grading.</p></div></div><div class="panel-body"><div class="switchrow"><span><strong>Study mode preview</strong><small>Reveal strategy frequencies before answering.</small></span><button class="switch ui-switch" id="trainingShowSolution" type="button" aria-label="Preview strategy frequencies before answering" aria-pressed="false"><b aria-hidden="true"></b></button></div></div></section>
+          <details class="panel training-advanced" id="trainingAdvanced">
+            <summary>Seed, replay & diagnostics</summary>
+            <div class="panel-body">
+              <label class="ui-field"><span>Exact uint32 seed</span><input id="trainingSeedInput" class="control-input" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="0–4294967295"></label>
+              <button id="trainingGenerateSeed" class="ui-button ui-button--secondary" type="button">Generate from seed</button>
+              <dl class="training-metadata-grid"><div><dt>Current seed</dt><dd id="trainingCurrentSeed">—</dd></div><div><dt>Exercise ID</dt><dd id="trainingExerciseId">—</dd></div><div><dt>Generation attempts</dt><dd id="trainingGenerationAttempts">—</dd></div><div><dt>Trajectory actions</dt><dd id="trainingTrajectoryLength">—</dd></div><div><dt>Policy</dt><dd id="trainingGenerationPolicy">—</dd></div></dl>
+              <div class="training-seed-actions"><button id="trainingCopySeed" class="ui-button ui-button-ghost" type="button" disabled>Copy seed</button><button id="trainingReplayBtn" class="ui-button ui-button-ghost" type="button" aria-keyshortcuts="R" disabled>Replay seed <kbd>R</kbd></button></div>
+            </div>
+          </details>
         </aside>
       </div>
-
     </section>
+
 
 
 

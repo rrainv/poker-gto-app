@@ -1,4 +1,5 @@
 import { createTrainingSessionController } from './training-session-controller.mjs';
+import { createTrainingPresentationModel } from './training-presentation.mjs';
 
 export function installTrainingModeBridge(browserWindow, {
   controller = createTrainingSessionController(),
@@ -27,4 +28,23 @@ export function installTrainingModeBridge(browserWindow, {
   return bridge;
 }
 
-if (typeof window !== 'undefined') installTrainingModeBridge(window);
+export function installTrainingPresentationBridge(browserWindow) {
+  if (!browserWindow) return null;
+  const bridge = Object.freeze({
+    createViewModel(exercise) {
+      return createTrainingPresentationModel(exercise);
+    },
+  });
+  Object.defineProperty(browserWindow, 'RiverlineTrainingPresentation', {
+    configurable: true,
+    enumerable: false,
+    value: bridge,
+    writable: false,
+  });
+  return bridge;
+}
+
+if (typeof window !== 'undefined') {
+  installTrainingModeBridge(window);
+  installTrainingPresentationBridge(window);
+}

@@ -1993,6 +1993,80 @@ const appTranslations = {
   }
 };
 
+// DESIGN-008 static Training workspace copy. Dynamic exercise facts remain
+// presentation data and are translated only where an existing poker term is available.
+const trainingWorkspaceTranslations = {
+  en: {
+    "Training workspace": "Training workspace",
+    "Make the decision": "Make the decision",
+    "Ready for a drill": "Ready for a drill",
+    "Try again": "Try again",
+    "Hero to act": "Hero to act",
+    "What is your decision?": "What is your decision?",
+    "Only legal actions are shown.": "Only legal actions are shown.",
+    "Generate exercise": "Generate exercise",
+    "Replay this decision": "Replay this decision",
+    "Adjust drill": "Adjust drill",
+    "Canonical replay": "Canonical replay",
+    "Action history": "Action history",
+    "After-answer reference": "After-answer reference",
+    "Strategy frequencies": "Strategy frequencies",
+    "This browser session": "This browser session",
+    "Session progress": "Session progress",
+    "Reset session stats": "Reset session stats",
+    "Drill setup": "Drill setup",
+    "Choose a decision family": "Choose a decision family",
+    "Home · no rake": "Home · no rake"
+  },
+  ru: {
+    "Training workspace": "Тренировочное пространство",
+    "Make the decision": "Примите решение",
+    "Ready for a drill": "Готово к упражнению",
+    "Try again": "Попробовать снова",
+    "Hero to act": "Ход Hero",
+    "What is your decision?": "Каково ваше решение?",
+    "Only legal actions are shown.": "Показаны только допустимые действия.",
+    "Generate exercise": "Создать упражнение",
+    "Replay this decision": "Повторить это решение",
+    "Adjust drill": "Настроить упражнение",
+    "Canonical replay": "Каноническое воспроизведение",
+    "Action history": "История действий",
+    "After-answer reference": "Разбор после ответа",
+    "Strategy frequencies": "Частоты стратегии",
+    "This browser session": "Текущая сессия браузера",
+    "Session progress": "Прогресс сессии",
+    "Reset session stats": "Сбросить статистику сессии",
+    "Drill setup": "Настройка упражнения",
+    "Choose a decision family": "Выберите тип решения",
+    "Home · no rake": "Домашняя игра · без рейка"
+  },
+  he: {
+    "Training workspace": "מרחב אימון",
+    "Make the decision": "קבלת החלטה",
+    "Ready for a drill": "מוכנים לתרגיל",
+    "Try again": "לנסות שוב",
+    "Hero to act": "תור הגיבור",
+    "What is your decision?": "מה ההחלטה שלך?",
+    "Only legal actions are shown.": "מוצגות רק פעולות חוקיות.",
+    "Generate exercise": "יצירת תרגיל",
+    "Replay this decision": "חזרה על ההחלטה",
+    "Adjust drill": "התאמת התרגיל",
+    "Canonical replay": "שחזור קנוני",
+    "Action history": "היסטוריית פעולות",
+    "After-answer reference": "ייחוס לאחר התשובה",
+    "Strategy frequencies": "תדירויות אסטרטגיה",
+    "This browser session": "הפעלת הדפדפן הנוכחית",
+    "Session progress": "התקדמות בהפעלה",
+    "Reset session stats": "איפוס נתוני ההפעלה",
+    "Drill setup": "הגדרת תרגיל",
+    "Choose a decision family": "בחירת סוג החלטה",
+    "Home · no rake": "משחק ביתי · ללא רייק"
+  }
+};
+Object.entries(trainingWorkspaceTranslations).forEach(([language, entries]) => {
+  Object.assign(appTranslations[language], entries);
+});
+
 window.appTranslations = appTranslations;
 
 window.appLang = localStorage.getItem('appLang') || 'en';

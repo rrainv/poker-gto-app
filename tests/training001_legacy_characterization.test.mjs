@@ -65,14 +65,16 @@ test('legacy feedback contains overstated solver and GTO labels', () => {
   assert.match(feedback, /Math\.random/);
 });
 
-test('current Training controls cover 2 through 10, 10 through 500bb, context labels, and assistance only', () => {
+test('current Training controls cover canonical filters, 2 through 10, 10 through 500bb, and assistance', () => {
   const trainingHtml = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="infoMode"'));
   assert.match(trainingHtml, /id="trainingPlayers"[^>]+min="2" max="10"/);
   assert.match(trainingHtml, /id="trainingStack"[^>]+min="10" max="500"/);
   assert.match(trainingHtml, /id="trainingHeroPos"/);
-  assert.match(trainingHtml, /id="trainingLastAction"/);
+  assert.match(trainingHtml, /id="trainingStreet"/);
+  assert.match(trainingHtml, /id="trainingDecisionTarget"/);
   assert.match(trainingHtml, /id="trainingDifficulty"/);
   assert.match(trainingHtml, /value="hard"[\s\S]*value="easy"[\s\S]*value="guided"/);
+  assert.match(trainingHtml, /id="trainingSeedInput"/);
   assert.doesNotMatch(legacyGenerator, /difficulty|trainingDifficulty/);
 });
 

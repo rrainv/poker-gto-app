@@ -100,9 +100,13 @@ test('comfortable and compact density share one token mechanism', () => {
 });
 
 test('poker actions retain stable semantics across Training and the canonical harness', () => {
-  assert.match(html, /id="trainingFoldBtn"[^>]*data-action="fold"/);
-  assert.match(html, /id="trainingCallBtn"[^>]*data-action="call"/);
-  assert.match(html, /id="trainingRaiseBtn"[^>]*data-action="raise"/);
+  assert.match(html, /id="trainingGuessButtons"[^>]*aria-label="Available actions"/);
+  assert.match(logic, /canonicalTrainingLegalActionTypes\(exercise\)\.forEach/);
+  assert.match(logic, /training-action-button--\$\{type\}/);
+  assert.match(css, /training-action-button--fold[^}]*var\(--action-fold\)/);
+  assert.match(css, /training-action-button--check,[\s\S]*training-action-button--call[^}]*var\(--action-passive\)/);
+  assert.match(css, /training-action-button--bet,[\s\S]*training-action-button--raise[^}]*var\(--action-aggressive\)/);
+  assert.match(css, /training-action-button--all_in[^}]*var\(--action-all-in\)/);
   assert.match(components, /ui-button--poker-fold[\s\S]*?var\(--action-fold\)/);
   assert.match(components, /ui-button--poker-passive[\s\S]*?var\(--action-passive\)/);
   assert.match(components, /ui-button--poker-aggressive[\s\S]*?var\(--action-aggressive\)/);
