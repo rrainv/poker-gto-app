@@ -5,6 +5,10 @@ import fs from 'node:fs';
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+const strategy = [
+  '../app/src/strategy/preflop-heuristic.mjs',
+  '../app/src/strategy/postflop-heuristic.mjs',
+].map((url) => fs.readFileSync(new URL(url, import.meta.url), 'utf8')).join('\n');
 
 const componentStart = css.indexOf('DESIGN-004: shared component system');
 assert.ok(componentStart >= 0, 'DESIGN-004 component section must exist');
@@ -133,11 +137,10 @@ test('mobile rules preserve touch targets, wrapping, and viewport-safe overlays'
 });
 
 test('component work leaves core poker contracts and function entry points intact', () => {
-  for (const symbol of [
-    'deriveDecisionContext', 'calculatePreflopFallbackStrategy',
-    'calculateUnifiedPostflopStrategy', 'calculateEquity',
-  ]) {
+  for (const symbol of ['deriveDecisionContext', 'calculateEquity']) {
     assert.match(logic, new RegExp(symbol));
   }
+  assert.match(strategy, /calculatePreflopFallbackStrategy/);
+  assert.match(strategy, /calculatePostflopHeuristicStrategy/);
   assert.doesNotMatch(components, /DecisionContext|StrategyResult|PokerState|calculateEquity/);
 });

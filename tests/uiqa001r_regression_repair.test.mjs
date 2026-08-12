@@ -10,6 +10,7 @@ import {
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+const preflop = fs.readFileSync(new URL('../app/src/strategy/preflop-heuristic.mjs', import.meta.url), 'utf8');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 
 const repairCss = css.slice(css.indexOf('UI-QA-001: responsive shell'));
@@ -139,8 +140,9 @@ test('Training keeps stacked probabilities and removes the circular reference wh
 });
 
 test('repair remains outside poker, Equity math, Training grading, and solver code', () => {
-  for (const symbol of ['deriveDecisionContext', 'calculateEquity', 'handleTrainingGuess', 'calculatePreflopFallbackStrategy']) {
+  for (const symbol of ['deriveDecisionContext', 'calculateEquity', 'handleTrainingGuess']) {
     assert.match(logic, new RegExp(symbol));
   }
+  assert.match(preflop, /calculatePreflopFallbackStrategy/);
   assert.doesNotMatch(repairCss, /PokerState|DecisionContext|StrategyResult|evaluateSeven|MCCFR|regret/);
 });

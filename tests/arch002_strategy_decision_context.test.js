@@ -9,6 +9,15 @@ const logicSource = fs.readFileSync(
   path.resolve(__dirname, '..', 'app', 'src', 'core', 'logic.js'),
   'utf8',
 );
+const heuristicSource = [
+  'heuristic-strategy.mjs',
+  'preflop-heuristic.mjs',
+  'postflop-heuristic.mjs',
+  'heuristic-evaluator.mjs',
+].map((name) => fs.readFileSync(
+  path.resolve(__dirname, '..', 'app', 'src', 'strategy', name),
+  'utf8',
+)).join('\n');
 
 function decisionContext(overrides = {}) {
   return qa.deriveDecisionContext({
@@ -36,7 +45,7 @@ function functionSource(start, end) {
   return logicSource.slice(startIndex, endIndex);
 }
 
-test('DecisionContext adapters preserve the established preflop and postflop argument shapes', () => {
+test('extracted fallback preserves established DecisionContext inputs', () => {
   const context = decisionContext({
     tableSize: 10,
     heroPosition: 'UTG+2',
@@ -48,17 +57,6 @@ test('DecisionContext adapters preserve the established preflop and postflop arg
     lastAction: '3bet',
     facingSizeBb: 7.5,
     rakeMode: 'fixed',
-  });
-
-  assert.deepEqual(qa.legacyPostflopContext(context), {
-    board: ['2c', '7d', '9h'],
-    heroCards: ['Ah', 'Kd'],
-    deadCards: ['Ac'],
-    hero_pos: 'UTG+2',
-    villain_pos: 'SB',
-    facingSize: 7.5,
-    potSize: 11.5,
-    stack: 200,
   });
 
   assert.deepEqual(
@@ -128,15 +126,10 @@ test('postflop strategy entry uses DecisionContext on flop, turn, and river', ()
 });
 
 test('strategy-facing consumers contain no independent poker-state control reads', () => {
-  const fallback = functionSource('function fallbackStrategyCandidate(', 'function decisionContextStrategySeed(');
-  const providerSeam = functionSource('function decisionContextStrategySeed(', 'function setFrequency(');
-
-  for (const [name, source] of Object.entries({ fallback, providerSeam })) {
-    assert.doesNotMatch(source, /selectedValue\('#(?:heroPos|lastAction)'\)/, name);
-    assert.doesNotMatch(source, /numericValue\('#(?:players|stack|potSize|facingSize)'/, name);
-    assert.doesNotMatch(source, /app\.gto/, name);
-    assert.doesNotMatch(source, /currentStreet\(\)/, name);
-  }
+  assert.doesNotMatch(heuristicSource, /\b(?:document|window|querySelector|selectedValue|numericValue)\b/);
+  assert.doesNotMatch(heuristicSource, /\bapp\.settings\b|\bwindow\.app\b/);
+  const providerSeam = functionSource('function readHeuristicOptions(', 'function setFrequency(');
+  assert.match(providerSeam, /heuristicOptionsResolver: readHeuristicOptions/);
   assert.match(logicSource, /const strategyResult = strategyProvider\.resolve\(decisionContext\);/);
   assert.match(logicSource, /const profile = strategyResultToLegacyProfile\(strategyResult\);/);
 });

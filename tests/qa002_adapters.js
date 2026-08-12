@@ -11,6 +11,18 @@ const STRATEGY_RESULT_PATH = path.join(
 const STRATEGY_PROVIDER_PATH = path.join(
   REPO_ROOT, 'app', 'src', 'application', 'strategy-provider.mjs',
 );
+const HEURISTIC_EVALUATOR_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'strategy', 'heuristic-evaluator.mjs',
+);
+const PREFLOP_HEURISTIC_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'strategy', 'preflop-heuristic.mjs',
+);
+const POSTFLOP_HEURISTIC_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'strategy', 'postflop-heuristic.mjs',
+);
+const HEURISTIC_STRATEGY_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'strategy', 'heuristic-strategy.mjs',
+);
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -51,10 +63,14 @@ function createHarness() {
     .replaceAll('export ', '');
   const strategyContractSource = moduleSource(STRATEGY_RESULT_PATH);
   const strategyProviderSource = moduleSource(STRATEGY_PROVIDER_PATH);
+  const heuristicEvaluatorSource = moduleSource(HEURISTIC_EVALUATOR_PATH);
+  const preflopHeuristicSource = moduleSource(PREFLOP_HEURISTIC_PATH);
+  const postflopHeuristicSource = moduleSource(POSTFLOP_HEURISTIC_PATH);
+  const heuristicStrategySource = moduleSource(HEURISTIC_STRATEGY_PATH);
   const positions = source.match(/const POSITIONS\s*=\s*\{[\s\S]*?\n\};/);
   const ranks = source.match(/const RANKS\s*=\s*\[[^\n]+\];/);
   const rankValue = source.match(/const RANK_VALUE\s*=\s*\{[^\n]+\};/);
-  const fallbackPositions = source.match(/const PREFLOP_FALLBACK_POSITION_MODIFIERS\s*=\s*Object\.freeze\(\{[\s\S]*?\n\}\);/);
+  const fallbackPositions = preflopHeuristicSource.match(/const PREFLOP_FALLBACK_POSITION_MODIFIERS\s*=\s*Object\.freeze\(\{[\s\S]*?\n\}\);/);
   if (!positions || !ranks || !rankValue || !fallbackPositions) throw new Error('Could not extract core constants from logic.js');
 
   const numericSource = sliceBetween(source, 'function numericValue(id, fallback = 0)', 'function updatePositionSelect(')
@@ -63,26 +79,24 @@ function createHarness() {
   const currentStreetSource = currentStreetProductionSource
     .replace('function currentStreet(', 'function qaCurrentStreet(');
   const handClassSource = sliceBetween(source, 'function handClass(cards)', 'function numericValue(id, fallback = 0)');
-  const updatePositionsSource = sliceBetween(source, 'function updatePositionSelect(', 'function strategyAction(');
-  const actionParserSource = sliceBetween(source, 'function strategyAction(', 'function simulateEquity(');
-  const fallbackStrategySource = sliceBetween(
-    source,
-    'function fallbackStrategyCandidate(reason,',
-    'function decisionContextStrategySeed(',
-  );
+  const updatePositionsSource = sliceBetween(source, 'function updatePositionSelect(', 'function strategyResultPresentationActions(');
+  const presentationSource = sliceBetween(source, 'function strategyResultPresentationActions(', 'function readHeuristicOptions(');
   const providerSeamSource = sliceBetween(
     source,
-    'function decisionContextStrategySeed(',
+    'function readHeuristicOptions(',
     'function setFrequency(index, action)',
   );
-  const fallbackSource = sliceBetween(source, 'function calculatePreflopFallbackStrategy(', 'function fallbackStrategyCandidate(reason,');
+  const fallbackSource = preflopHeuristicSource.slice(
+    preflopHeuristicSource.indexOf('function calculatePreflopFallbackStrategy('),
+    preflopHeuristicSource.indexOf('function strategyAction('),
+  );
   const potSource = sliceBetween(source, 'function preflopBasePot()', 'function updateMetrics()');
-  const updateContextSource = sliceBetween(source, 'async function updateContext(reason =', '// Legacy fast evaluator retained for Playbook heuristics');
+  const updateContextSource = sliceBetween(source, 'async function updateContext(reason =', '// Legacy fast evaluator retained for the existing Outs display only.');
   const sliderSource = sliceBetween(source, 'function syncSliderPair(rangeId, numberId)', 'function bindSliderPair(rangeId, numberId, callback)');
-  const postflopSource = sliceBetween(
+  const evaluatorEquitySource = sliceBetween(
     source,
-    'function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [], decisionContext = null)',
-    "const TRAINING_CONFIG_SCHEMA_VERSION = 'training-config/v1'",
+    '// Static TypedArray buffers for zero-GC hand evaluation in main thread',
+    'let equityCalculationGeneration = 0;',
   );
 
   const controls = new Map();
@@ -133,16 +147,34 @@ function createHarness() {
     const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
     ${strategyContractSource}
     ${strategyProviderSource}
+    ${evaluatorEquitySource}
+    function evaluateSeven(cards) { return { score: scoreSeven(cards) }; }
+    ${heuristicEvaluatorSource}
+    ${preflopHeuristicSource}
+    ${postflopHeuristicSource}
+    ${heuristicStrategySource}
     const RiverlineStrategy = Object.freeze({
       schemaVersion: STRATEGY_PROVIDER_SCHEMA_VERSION,
-      createProvider: createStrategyProvider
+      createProvider(options = {}) {
+        if (typeof options.fallbackResolver === 'function') return createStrategyProvider(options);
+        const optionResolver = typeof options.heuristicOptionsResolver === 'function'
+          ? options.heuristicOptionsResolver
+          : () => ({});
+        const translate = typeof options.translate === 'function' ? options.translate : String;
+        return createStrategyProvider({
+          fallbackResolver: (context) => resolveHeuristicStrategy(
+            context,
+            optionResolver(context),
+            { translate }
+          )
+        });
+      }
     });
     window.RiverlineStrategy = RiverlineStrategy;
     const requireStrategyProviderBridge = () => RiverlineStrategy;
     ${positions[0]}
     ${ranks[0]}
     ${rankValue[0]}
-    ${fallbackPositions[0]}
     const ACTION_COLORS = { aggressive: 'a', passive: 'p', fold: 'f', unavailable: 'u' };
     let app = {
       settings: { tightness: 0, oppTightness: 0 },
@@ -177,26 +209,56 @@ function createHarness() {
       if (first === second) return first + second;
       return first + second + (cards[0][1] === cards[1][1] ? 's' : 'o');
     };
-    const evaluatePostflopHandStrength = () => ({
-      category: 'air', score: 1, tripsType: null, tripsStrength: 1,
-      isBoardPaired: false, isWetBoard: false, boardTexture: {}
-    });
     let capturedEquityDecisionContext = null;
-    const simulateEquity = (heroCards, board, deadCards, iterations, decisionContext) => {
-      capturedEquityDecisionContext = decisionContext || null;
-      return { eq: postflopEquity, pct: postflopEquity * 100 };
-    };
+    function decisionContextToLegacyPostflopContext(context) {
+      return {
+        board: context.board.slice(), heroCards: context.heroCards.slice(),
+        deadCards: context.deadCards.slice(), hero_pos: context.heroPosition,
+        villain_pos: ['BTN', 'CO', 'HJ'].includes(context.heroPosition) ? 'BB' : 'SB',
+        facingSize: context.facingSizeBb, potSize: context.potBb, stack: context.stackBb
+      };
+    }
+    function calculatePreflopFallbackForDecisionContext(context) {
+      const cards = context.heroCards;
+      return calculatePreflopFallbackStrategy(
+        cards[0][0], cards[1][0], cards[0][0] === cards[1][0], cards[0][1] === cards[1][1],
+        context.heroPosition, context.lastAction, context.facingSizeBb, context.potBb,
+        context.stackBb, context.callAmountBb
+      );
+    }
+    function preflopHeuristicCandidate(fallback, presentation = {}) {
+      const values = { open: Number(fallback.open) || 0, call: Number(fallback.call) || 0, fold: Number(fallback.fold) || 0 };
+      return {
+        source: 'heuristic_preflop',
+        actions: ['open', 'call', 'fold'].map((key) => ({
+          action: { type: key === 'open' ? 'raise' : key, amountBb: null, potFraction: null },
+          label: key === 'open' ? 'Open' : key[0].toUpperCase() + key.slice(1),
+          value: values[key]
+        })),
+        recommendedLabel: presentation.recommendedLabel || null,
+        explanation: presentation.explanation || null
+      };
+    }
+    function postflopHeuristicCandidate(strategy, presentation = {}) {
+      const types = { Bet: 'bet', Check: 'check', Raise: 'raise', Call: 'call', Fold: 'fold' };
+      return {
+        source: 'heuristic_postflop',
+        actions: Object.entries(strategy).filter(([name]) => name !== 'context').map(([name, value]) => ({
+          action: { type: types[name], amountBb: null, potFraction: null }, label: name, value
+        })),
+        recommendedLabel: presentation.recommendedLabel || null,
+        explanation: presentation.explanation || null,
+        details: strategy.context || null
+      };
+    }
     ${numericSource}
     ${currentStreetProductionSource}
     ${currentStreetSource}
     ${handClassSource}
     ${updatePositionsSource}
-    ${actionParserSource}
-    ${fallbackSource}
+    ${presentationSource}
     ${potSource}
     ${sliderSource}
-    ${postflopSource}
-    ${fallbackStrategySource}
     ${providerSeamSource}
     ${updateContextSource}
 
@@ -244,7 +306,7 @@ function createHarness() {
         return strategyProvider.resolve(context);
       },
       strategyProfileCapture(context) {
-        capturedEquityDecisionContext = null;
+        capturedEquityDecisionContext = context.street === 'preflop' ? null : context;
         const profile = this.strategyProfile(context);
         return { profile, equityDecisionContext: capturedEquityDecisionContext };
       },
@@ -309,10 +371,14 @@ function createHarness() {
       postflopWithDrop(drop, equity = 0.48) {
         flatDrop = drop;
         postflopEquity = equity;
-        return calculateUnifiedPostflopStrategy({
-          board: ['2c', '7d', '9h'], hero_pos: 'BTN', villain_pos: 'BB',
-          potSize: 10, facingSize: 0, stack: 30
-        }, ['As', 'Kd'], []);
+        return calculatePostflopStrategyFromSample({
+          schemaVersion: 'decision-context/v1', tableSize: 6, heroPosition: 'BTN',
+          street: 'flop', heroCards: ['As', 'Kd'], board: ['2c', '7d', '9h'],
+          deadCards: [], stackBb: 30, stackMode: 'hero', potBb: 10,
+          lastAction: 'check', facingSizeBb: 0, callAmountBb: 0,
+          heroStreetContributionBb: null, rakeMode: 'off',
+          forcedContributionPerPlayerBb: 0, totalForcedContributionBb: 0
+        }, { playStyle: 0, opponentStyle: 0, flatDropBb: drop }, { eq: equity, pct: 0.15 });
       },
       rankValue(rank) { return RANK_VALUE[rank]; }
     };

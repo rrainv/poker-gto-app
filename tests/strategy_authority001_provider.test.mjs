@@ -26,6 +26,22 @@ const analysisExplanation = fs.readFileSync(
   new URL('../app/src/application/analysis-explanation.mjs', import.meta.url),
   'utf8',
 );
+const heuristicStrategy = fs.readFileSync(
+  new URL('../app/src/strategy/heuristic-strategy.mjs', import.meta.url),
+  'utf8',
+);
+const preflopHeuristic = fs.readFileSync(
+  new URL('../app/src/strategy/preflop-heuristic.mjs', import.meta.url),
+  'utf8',
+);
+const postflopHeuristic = fs.readFileSync(
+  new URL('../app/src/strategy/postflop-heuristic.mjs', import.meta.url),
+  'utf8',
+);
+const heuristicEvaluator = fs.readFileSync(
+  new URL('../app/src/strategy/heuristic-evaluator.mjs', import.meta.url),
+  'utf8',
+);
 
 function context(overrides = {}) {
   return {
@@ -154,7 +170,7 @@ test('browser bridge is frozen, narrow, and loaded before classic logic', () => 
 test('Playbook, Training, and preflop Matrix converge on the same provider boundary', () => {
   const update = logic.slice(
     logic.indexOf('async function updateContext('),
-    logic.indexOf('// Legacy fast evaluator retained for Playbook heuristics'),
+    logic.indexOf('// Legacy fast evaluator retained for the existing Outs display only.'),
   );
   const matrix = logic.slice(
     logic.indexOf('function renderChart()'),
@@ -207,8 +223,15 @@ test('production source sweep leaves fallback math only behind the provider seam
   assert.equal((logic.match(/strategyProvider\.resolve\(/g) || []).length, 5);
   assert.doesNotMatch(logic, /\bactionProfile\s*\(/);
   assert.doesNotMatch(logic, /\bfallbackStrategyResult\s*\(/);
-  assert.equal((logic.match(/calculatePreflopFallbackStrategy\(/g) || []).length, 2);
-  assert.equal((logic.match(/calculateUnifiedPostflopStrategy\(/g) || []).length, 2);
+  assert.doesNotMatch(logic, /calculatePreflopFallbackStrategy|calculatePostflopHeuristicStrategy|simulateHeuristicEquity/);
+  assert.equal((preflopHeuristic.match(/calculatePreflopFallbackStrategy\(/g) || []).length, 2);
+  assert.equal((postflopHeuristic.match(/calculatePostflopHeuristicStrategy\(/g) || []).length, 1);
+  assert.match(heuristicStrategy, /resolveHeuristicStrategy/);
+  assert.match(heuristicEvaluator, /from '\.\.\/\.\.\/\.\.\/shared\/poker-domain\/evaluator\.js'/);
   assert.equal((logic.match(/strategyResultToLegacyProfile\(/g) || []).length, 3);
+  for (const source of [heuristicStrategy, preflopHeuristic, postflopHeuristic, heuristicEvaluator]) {
+    assert.doesNotMatch(source, /\b(?:document|window|querySelector|selectedValue|numericValue)\b/);
+    assert.doesNotMatch(source, /\bapp\.settings\b|Math\.random\s*=/);
+  }
   assert.doesNotMatch(trainingGenerator, /createStrategyResult|normalizeStrategy|fallbackStrategy/);
 });

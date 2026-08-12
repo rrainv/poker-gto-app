@@ -36,13 +36,13 @@ test('browser package and build contain no web inference dependency or asset inc
 });
 
 test('Playbook resolves DecisionContext through the deterministic StrategyProvider fallback', () => {
-  const providerSeam = sourceBetween('function decisionContextStrategySeed(', 'function setFrequency(index, action)');
+  const providerSeam = sourceBetween('function readHeuristicOptions(', 'function setFrequency(index, action)');
   const updateContext = sourceBetween(
     "async function updateContext(reason = 'Context updated')",
-    '// Legacy fast evaluator retained for Playbook heuristics',
+    '// Legacy fast evaluator retained for the existing Outs display only.',
   );
 
-  assert.match(providerSeam, /fallbackResolver: resolveHeuristicFallback/);
+  assert.match(providerSeam, /heuristicOptionsResolver: readHeuristicOptions/);
   assert.match(updateContext, /const strategyResult = strategyProvider\.resolve\(decisionContext\)/);
   assert.doesNotMatch(`${providerSeam}\n${updateContext}`, /fetch\(|InferenceSession|useOnnx|onnxSession|app\.solver|connectApi|loadOnnx|generateStrategyWithOnnx/i);
 });

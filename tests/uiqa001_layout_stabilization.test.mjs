@@ -5,6 +5,10 @@ import fs from 'node:fs';
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+const strategy = [
+  '../app/src/strategy/preflop-heuristic.mjs',
+  '../app/src/strategy/postflop-heuristic.mjs',
+].map((url) => fs.readFileSync(new URL(url, import.meta.url), 'utf8')).join('\n');
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 
@@ -165,7 +169,9 @@ test('RTL, reduced motion, and interaction-versus-state affordances remain expli
 
 test('UI-QA-001 presentation section contains no poker, strategy, Equity-math, Training-generation, or solver code', () => {
   assert.doesNotMatch(uiQaCss, /DecisionContext|StrategyResult|PokerState|calculateEquity|evaluateSeven|MCCFR|regret|TrainingConfig/);
-  for (const symbol of ['deriveDecisionContext', 'calculatePreflopFallbackStrategy', 'calculateUnifiedPostflopStrategy', 'calculateEquity']) {
+  for (const symbol of ['deriveDecisionContext', 'calculateEquity']) {
     assert.match(logic, new RegExp(symbol));
   }
+  assert.match(strategy, /calculatePreflopFallbackStrategy/);
+  assert.match(strategy, /calculatePostflopHeuristicStrategy/);
 });

@@ -9,6 +9,10 @@ const logicSource = fs.readFileSync(
   path.resolve(__dirname, '..', 'app', 'src', 'core', 'logic.js'),
   'utf8',
 );
+const heuristicSource = fs.readFileSync(
+  path.resolve(__dirname, '..', 'app', 'src', 'strategy', 'heuristic-strategy.mjs'),
+  'utf8',
+);
 
 function context(overrides = {}) {
   return qa.deriveDecisionContext({
@@ -187,7 +191,7 @@ test('main Playbook path stores StrategyResult before adapting for legacy render
   assert.match(logicSource, /app\.strategyResult = strategyResult;/);
   assert.match(logicSource, /const profile = strategyResultToLegacyProfile\(strategyResult\);/);
   assert.doesNotMatch(
-    logicSource.slice(logicSource.indexOf('function decisionContextStrategySeed('), logicSource.indexOf('function setFrequency(')),
+    heuristicSource,
     /source:\s*['"](?:MATH FALLBACK|MONTE CARLO|DEEP CFR MODEL|LOCAL TREE)['"]/,
   );
 });

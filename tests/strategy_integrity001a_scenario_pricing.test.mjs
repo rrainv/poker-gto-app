@@ -8,6 +8,8 @@ import { createAnalysisExplanation } from '../app/src/application/analysis-expla
 const require = createRequire(import.meta.url);
 const qa = require('./qa002_adapters.js');
 const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+const PREFLOP = fs.readFileSync(new URL('../app/src/strategy/preflop-heuristic.mjs', import.meta.url), 'utf8');
+const POSTFLOP = fs.readFileSync(new URL('../app/src/strategy/postflop-heuristic.mjs', import.meta.url), 'utf8');
 
 function scenario(overrides = {}) {
   return qa.deriveDecisionContext({
@@ -106,9 +108,11 @@ test('Scenario facing a postflop raise retains an available normalized strategy'
 });
 
 test('fallback price mathematics never defaults missing call price to nominal facing size', () => {
-  assert.doesNotMatch(LOGIC, /callAmountBb\s*=\s*facingSize/);
-  assert.doesNotMatch(LOGIC, /trustedCallAmount\s*===\s*null\s*\?\s*0/);
-  assert.doesNotMatch(LOGIC, /potSize\s*\/\s*\(potSize\s*\+\s*facingSize\)/);
-  assert.match(LOGIC, /requiredRawEquity[\s\S]*trustedCallAmount\s*\/\s*\(potSize\s*\+\s*trustedCallAmount\)/);
-  assert.match(LOGIC, /const raiseAmount = facingSize \+ potSize/);
+  const fallback = `${PREFLOP}\n${POSTFLOP}`;
+  assert.doesNotMatch(fallback, /callAmountBb\s*=\s*facingSize/);
+  assert.doesNotMatch(fallback, /trustedCallAmount\s*===\s*null\s*\?\s*0/);
+  assert.doesNotMatch(fallback, /potSize\s*\/\s*\(potSize\s*\+\s*facingSize\)/);
+  assert.match(POSTFLOP, /requiredRawEquity[\s\S]*trustedCallAmount\s*\/\s*\(potSize\s*\+\s*trustedCallAmount\)/);
+  assert.match(PREFLOP, /const raiseAmount = facingSizeBb \+ potBb/);
+  assert.doesNotMatch(LOGIC, /requiredRawEquity|cheapOddsDefenseBoost/);
 });

@@ -33,7 +33,7 @@ test('browser bridge exposes only the immutable local explanation operations bef
 });
 
 test('Playbook replaces the legacy HTML teacher with current contracts and trusted facts', () => {
-  const update = sourceBetween('async function updateContext(', '// Legacy fast evaluator retained for Playbook heuristics');
+  const update = sourceBetween('async function updateContext(', '// Legacy fast evaluator retained for the existing Outs display only.');
   assert.match(update, /typeof renderPlaybookDecisionAnalysis === 'function'[\s\S]*renderPlaybookDecisionAnalysis\(decisionContext, strategyResult, playbookResolution\)/);
   assert.match(logic, /trustedAnalysisFacts\(\s*decisionContext,\s*result,\s*canonicalActionHistoryForAnalysis\(resolution\)/);
   assert.match(logic, /authority = resolution\?\.mode === 'hand' \? 'hand' : 'scenario'/);

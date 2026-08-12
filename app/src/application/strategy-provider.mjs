@@ -35,7 +35,7 @@ function fallbackFailure(error) {
 
 /**
  * The provider is the sole application strategy entry point. The injected
- * fallback is a transitional seam for logic.js; a future validated model can
+ * fallback is injected by the browser bootstrap; a future validated model can
  * be selected inside this module without changing resolve() consumers.
  */
 export function createStrategyProvider({ fallbackResolver } = {}) {

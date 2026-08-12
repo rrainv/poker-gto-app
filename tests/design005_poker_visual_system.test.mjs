@@ -5,6 +5,10 @@ import fs from 'node:fs';
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+const strategy = [
+  '../app/src/strategy/preflop-heuristic.mjs',
+  '../app/src/strategy/postflop-heuristic.mjs',
+].map((url) => fs.readFileSync(new URL(url, import.meta.url), 'utf8')).join('\n');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 
 const designStart = css.indexOf('DESIGN-005: poker visual system');
@@ -160,11 +164,10 @@ test('responsive, RTL, and reduced-motion rules preserve poker semantics', () =>
 });
 
 test('poker and strategy safety entry points remain intact', () => {
-  for (const symbol of [
-    'deriveDecisionContext', 'calculatePreflopFallbackStrategy',
-    'calculateUnifiedPostflopStrategy', 'calculateEquity', 'evaluateHand',
-  ]) {
+  for (const symbol of ['deriveDecisionContext', 'calculateEquity', 'evaluateHand']) {
     assert.match(logic, new RegExp(symbol));
   }
+  assert.match(strategy, /calculatePreflopFallbackStrategy/);
+  assert.match(strategy, /calculatePostflopHeuristicStrategy/);
   assert.match(logic, /board: parsedBoard,[\s\S]*?heroCards: parsedHero,[\s\S]*?dealerPos: dealerPos,[\s\S]*?activePlayers: decisionContext\.tableSize/);
 });
