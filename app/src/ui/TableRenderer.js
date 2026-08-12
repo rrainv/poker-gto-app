@@ -76,14 +76,17 @@ class TableRenderer {
 
       html += `
         <g id="seat-${i}" class="table-seat${i === 0 ? ' is-hero' : ''}" data-seat-index="${i}" transform="translate(${x}, ${y})">
-          <rect class="table-seat-surface" x="-31" y="-19" width="62" height="38" rx="10" />
-          <text class="table-seat-name" x="0" y="1" text-anchor="middle">${i === 0 ? 'Hero' : `P${i + 1}`}</text>
-          <text id="seat-meta-${i}" class="table-seat-meta" x="0" y="12" text-anchor="middle" hidden></text>
-          <g id="dealer-${i}" class="table-dealer-button" transform="translate(-30, -27)" hidden>
+          <g id="hole-cards-${i}" class="table-hole-cards" transform="translate(0, -92)">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
+          <g class="table-seat-info">
+            <rect class="table-seat-surface" x="-41" y="-23" width="82" height="46" rx="10" />
+            <text class="table-seat-name" x="0" y="-5" text-anchor="middle">${i === 0 ? 'Hero' : `P${i + 1}`}</text>
+            <text id="seat-meta-${i}" class="table-seat-meta table-seat-stack" x="0" y="7" text-anchor="middle" hidden></text>
+            <text id="seat-diagnostic-${i}" class="table-seat-meta table-seat-diagnostic" x="0" y="17" text-anchor="middle" hidden></text>
+          </g>
+          <g id="dealer-${i}" class="table-dealer-button" transform="translate(35, -15)" hidden>
             <circle r="10" />
             <text id="dealer-txt-${i}" x="0" y="3.5" text-anchor="middle">D</text>
           </g>
-          <g id="hole-cards-${i}" class="table-hole-cards" transform="translate(0, -67)">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
         </g>
       `;
     }
@@ -155,6 +158,7 @@ class TableRenderer {
       const seat = this.container.querySelector(`#seat-${i}`);
       const dealer = this.container.querySelector(`#dealer-${i}`);
       const meta = this.container.querySelector(`#seat-meta-${i}`);
+      const diagnostic = this.container.querySelector(`#seat-diagnostic-${i}`);
       const name = seat?.querySelector('.table-seat-name');
       const holeCards = this.container.querySelector(`#hole-cards-${i}`);
       const playerState = Array.isArray(state.players)
@@ -173,6 +177,18 @@ class TableRenderer {
         if (Number.isFinite(playerState?.totalContributionBb)) details.push(`hand ${playerState.totalContributionBb}`);
         meta.textContent = details.join(' · ');
         meta.toggleAttribute('hidden', details.length === 0);
+      }
+      if (meta) {
+        const stack = Number.isFinite(playerState?.stackBb) ? `${playerState.stackBb} bb` : '';
+        meta.textContent = stack;
+        meta.toggleAttribute('hidden', !stack);
+      }
+      if (diagnostic) {
+        const details = [];
+        if (Number.isFinite(playerState?.streetContributionBb)) details.push(`street ${playerState.streetContributionBb}`);
+        if (Number.isFinite(playerState?.totalContributionBb)) details.push(`hand ${playerState.totalContributionBb}`);
+        diagnostic.textContent = details.join(' · ');
+        diagnostic.toggleAttribute('hidden', details.length === 0);
       }
       if (seat) {
         seat.classList.toggle('is-hero', isHero);

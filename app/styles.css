@@ -3067,7 +3067,7 @@ input[type=range]::-moz-range-thumb {
 
   position: absolute;
 
-  left: 9px;
+  inset-inline-start: 9px;
 
   top: 20px;
 
@@ -7834,4 +7834,255 @@ button.rail-utility { width: 100%; cursor: pointer; }
   .animate-solution,
   .animate-feedback { animation: none; }
   .range-matrix-panel .hand-cell { transition: none; }
+}
+
+/* PRODUCT-UI-002: density, geometry, and component fit ------------------ */
+
+/* A single rail-axis token positions both nodes and connectors in either
+   document direction. The halo is contained by local breathing room. */
+#playbookDecisionPathPanel { overflow: visible; }
+#playbookDecisionPathPanel .panel-body { overflow: visible; }
+#playbookDecisionPathPanel .path-list {
+  --path-node-size: 20px;
+  --path-connector-width: 2px;
+  --path-rail-axis: calc((var(--path-node-size) - var(--path-connector-width)) / 2);
+  min-height: 0;
+  padding: var(--space-3) var(--space-4);
+  overflow: visible;
+}
+#playbookDecisionPathPanel .path-step {
+  display: grid;
+  grid-template-columns: var(--path-node-size) minmax(0, 1fr);
+  column-gap: var(--space-3);
+  min-height: 42px;
+  padding: 0 0 var(--space-4);
+  overflow: visible;
+}
+#playbookDecisionPathPanel .path-node {
+  box-sizing: border-box;
+  grid-column: 1;
+  justify-self: center;
+  width: var(--path-node-size);
+  height: var(--path-node-size);
+  margin-top: 2px;
+}
+#playbookDecisionPathPanel .path-body { grid-column: 2; min-width: 0; }
+#playbookDecisionPathPanel .path-step::before {
+  inset-inline-start: var(--path-rail-axis);
+  inset-inline-end: auto;
+  top: 20px;
+}
+#playbookDecisionPathPanel .path-step.active .path-node {
+  box-shadow: 0 0 6px var(--primary);
+}
+
+/* Ordinary status labels remain content-sized and on one line. Longer
+   localized messages belong in a state block instead of a compact pill. */
+.status-badge,
+.badge,
+.chip,
+.status,
+.training-curriculum-tag,
+.theme-swatch-sharp {
+  box-sizing: border-box;
+  min-height: 26px;
+  max-width: 100%;
+  width: fit-content;
+  justify-content: center;
+  padding: 4px var(--space-3);
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+/* The recommendation copy and provenance label use separate grid rows so the
+   label cannot consume horizontal space reserved for Strategy Mix. */
+.recommend-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  align-items: start;
+  justify-items: start;
+  gap: var(--space-3);
+}
+.recommend-top > :first-child { width: 100%; min-width: 0; }
+.recommend-top #sourceBadge {
+  justify-self: start;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+
+/* Compact context: the utility action belongs to the heading while the four
+   values form a 2-by-2 grid on narrower workspaces and one row on desktop. */
+.playbook-betting-context {
+  padding: var(--space-2) var(--space-4);
+}
+.playbook-inline-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-1);
+}
+.playbook-inline-copy {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-2);
+}
+.playbook-inline-heading #openCharts {
+  width: auto;
+  min-height: 32px;
+  margin: 0;
+  padding-block: var(--space-1);
+  padding-inline: var(--space-3);
+  white-space: nowrap;
+}
+.playbook-context-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1) var(--space-3);
+}
+.playbook-context-primary > *,
+.playbook-context-sliders > .field { grid-column: span 1; }
+.playbook-context-field .control-select { min-height: 36px; }
+.playbook-context-sliders .slider-container {
+  min-height: 48px;
+  gap: 0;
+  padding: 2px var(--space-3);
+}
+.playbook-context-sliders .slider-header {
+  min-height: 22px;
+  align-items: center;
+}
+.playbook-context-sliders .control-range { height: 18px; min-height: 18px; }
+.playbook-betting-context > div:not(.playbook-inline-heading) { margin-bottom: 0; }
+
+@media (min-width: 1200px) {
+  .playbook-context-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Keep the selector visibly secondary to the decision without hiding status. */
+#gtoMode .playbook-state-source {
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+#playbookModeControl .ui-tab { min-height: 40px; }
+.playbook-mode-status {
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
+/* Setup remains available after a hand starts, but recedes behind the
+   canonical current state and the currently legal step. */
+.playbook-hand-workspace.is-hand-in-progress #handSetupSection {
+  padding: var(--space-3);
+  background: var(--surface-section);
+  opacity: .78;
+}
+.playbook-hand-workspace.is-hand-in-progress #handSetupSection .hand-section-head {
+  margin-bottom: var(--space-2);
+}
+.playbook-hand-workspace.is-hand-in-progress #handSetupSection .hand-setup-grid,
+.playbook-hand-workspace.is-hand-in-progress #handSetupSection .hand-accounting-preview {
+  display: none;
+}
+.playbook-hand-workspace.is-hand-in-progress #handSetupSection .hand-button-row {
+  margin-top: 0;
+}
+.playbook-hand-workspace .is-current-hand-step,
+.playbook-hand-workspace.is-hand-in-progress #handStateSection {
+  border-color: color-mix(in srgb, var(--accent-primary) 42%, var(--border-default));
+  box-shadow: inset 3px 0 0 var(--accent-primary);
+}
+
+/* Stack stays the primary attached seat fact; contributions are secondary. */
+.table-seat-name { font-size: 11px; }
+.table-seat-info { pointer-events: none; }
+.table-hole-cards { pointer-events: none; }
+.table-seat-stack {
+  fill: var(--text-secondary);
+  font: 750 10px/1 var(--font-data);
+}
+.table-seat-diagnostic {
+  fill: var(--text-muted);
+  font: 600 7px/1 var(--font-data);
+}
+
+/* Explicit overlay ordering keeps every modal above the sticky application
+   chrome, while transient feedback stays below a blocking dialog. */
+:root {
+  --z-workspace-header: 20;
+  --z-mode-rail: 30;
+  --z-toast: 60;
+  --z-modal-backdrop: 100;
+}
+.workspace-header { z-index: var(--z-workspace-header); }
+.mode-rail { z-index: var(--z-mode-rail); }
+.toast { z-index: var(--z-toast); }
+.modal-backdrop {
+  z-index: var(--z-modal-backdrop);
+  overflow: auto;
+}
+.modal-backdrop > .modal {
+  position: relative;
+  z-index: 1;
+}
+
+/* Settings grows on desktop but always fits inside explicit viewport margins. */
+.settings-modal {
+  box-sizing: border-box;
+  width: min(940px, calc(100vw - (var(--space-7) * 2)));
+  max-width: calc(100vw - (var(--space-7) * 2));
+  height: min(760px, calc(100dvh - (var(--space-6) * 2)));
+  max-height: calc(100dvh - (var(--space-6) * 2));
+  min-width: 0;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.settings-modal .modal-head { flex: 0 0 auto; }
+.settings-modal .modal-body { min-width: 0; overflow: auto; overscroll-behavior: contain; }
+.settings-grid {
+  grid-template-columns: minmax(0, 1.55fr) minmax(220px, .75fr);
+  gap: var(--space-6);
+}
+.theme-swatch-grid {
+  max-height: min(420px, calc(100dvh - 250px));
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+}
+.settings-group { min-width: 0; }
+
+/* Collapsed table becomes a compact adjacent control rather than a blank row. */
+.playbook-decision-workspace.is-table-collapsed .playbook-table-toggle {
+  justify-content: flex-start;
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+}
+.playbook-decision-workspace.is-table-collapsed .playbook-table-toggle .ui-button {
+  min-height: 30px;
+  padding-inline: var(--space-3);
+}
+
+@media (max-width: 1024px) {
+  .settings-modal {
+    width: min(900px, calc(100vw - (var(--space-4) * 2)));
+    max-width: calc(100vw - (var(--space-4) * 2));
+    height: min(760px, calc(100dvh - (var(--space-6) * 2)));
+    max-height: calc(100dvh - (var(--space-6) * 2));
+  }
+  .settings-grid { grid-template-columns: minmax(0, 1.35fr) minmax(200px, .65fr); }
+  .theme-swatch-grid { max-height: min(360px, calc(100dvh - 235px)); }
+}
+
+@media (max-width: 700px) {
+  .settings-grid { grid-template-columns: minmax(0, 1fr); }
+  .theme-swatch-grid { max-height: min(320px, calc(100dvh - 220px)); }
+  .playbook-context-sliders > .field { grid-column: 1 / -1; }
 }

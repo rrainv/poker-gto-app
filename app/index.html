@@ -748,7 +748,10 @@
         <main class="main-content playbook-decision-workspace">
           <div id="sharedControls" class="playbook-betting-context" data-playbook-scenario data-interaction-surface="interactive">
 
-            <div class="playbook-inline-heading"><span class="label" data-i18n="Betting context">Betting context</span><small data-i18n="Manual values for this study spot">Manual values for this study spot</small></div>
+            <div class="playbook-inline-heading">
+              <div class="playbook-inline-copy"><span class="label" data-i18n="Betting context">Betting context</span><small data-i18n="Manual values for this study spot">Manual values for this study spot</small></div>
+              <button class="secondary ui-button ui-button--secondary" type="button" id="openCharts" data-i18n="View all hands">View all hands</button>
+            </div>
 
             <div class="playbook-context-grid">
             <div class="playbook-context-primary">
@@ -784,10 +787,6 @@
                 <option value="check">Check</option>
 
               </select></label>
-
-              <button class="secondary ui-button ui-button--secondary button-push-end" type="button" id="openCharts" data-i18n="View all hands">View all
-
-                hands</button>
 
             </div>
 

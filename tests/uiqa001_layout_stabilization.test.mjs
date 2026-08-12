@@ -14,7 +14,9 @@ const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.m
 
 const uiQaStart = css.indexOf('UI-QA-001: responsive shell');
 assert.ok(uiQaStart >= 0, 'UI-QA-001 stabilization section must exist');
-const uiQaCss = css.slice(uiQaStart);
+const uiQaEnd = css.indexOf('UI-QA-002B:', uiQaStart);
+assert.ok(uiQaEnd > uiQaStart, 'UI-QA-001 section must end before UI-QA-002B');
+const uiQaCss = css.slice(uiQaStart, uiQaEnd);
 
 const shellHtml = html.slice(html.indexOf('<div class="riverline-shell"'), html.indexOf('<section id="gtoMode"'));
 const railHtml = shellHtml.slice(shellHtml.indexOf('<aside'), shellHtml.indexOf('</aside>') + 8);

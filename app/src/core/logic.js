@@ -1578,6 +1578,7 @@ function renderCanonicalHandWorkspace() {
   const workspace = $('#playbookHandWorkspace');
   if (!workspace) return;
   const state = callPlaybookStateBridge('getState');
+  workspace.classList.toggle('is-hand-in-progress', Boolean(state));
   const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
   const status = canonicalHandStatus(state);
   const badge = $('#handSessionBadge');
@@ -1603,6 +1604,10 @@ function renderCanonicalHandWorkspace() {
   renderCanonicalPrivateDeal(state);
   renderCanonicalChance(state);
   renderCanonicalLegalActions(state || { players: [] });
+  ['handDealSection', 'handChanceSection', 'handActionSection'].forEach((id) => {
+    const section = $('#' + id);
+    if (section) section.classList.toggle('is-current-hand-step', !section.hidden);
+  });
   renderCanonicalActionHistory(state);
   if ($('#handResolveShowdownButton')) {
     const canResolveShowdown = state?.phase === 'showdown' && state?.showdown?.status === 'ready';
@@ -2628,6 +2633,12 @@ function renderPlaybookTableProjection() {
     ? (btnIdx - heroIdx + activePlayers) % activePlayers : 0;
   const parsedBoard = decisionContext.board.map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) }));
   const parsedHero = decisionContext.heroCards.map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) }));
+  const scenarioPlayers = Array.from({ length: activePlayers }, (_, seat) => ({
+    seat,
+    name: seat === 0 ? 'Hero' : sortedPos[(heroIdx + seat) % activePlayers] || `P${seat + 1}`,
+    isHero: seat === 0,
+    stackBb: Number(decisionContext.stackBb),
+  }));
 
   window.dispatchEvent(new CustomEvent('gameStateUpdate', {
     detail: {
@@ -2635,7 +2646,8 @@ function renderPlaybookTableProjection() {
       board: parsedBoard,
       heroCards: parsedHero,
       dealerPos: dealerPos,
-      activePlayers: decisionContext.tableSize
+      activePlayers: decisionContext.tableSize,
+      players: scenarioPlayers,
     }
   }));
 }
@@ -3809,6 +3821,7 @@ function bindEvents() {
       if (wrapper) {
         wrapper.classList.toggle('collapsed');
         const collapsed = wrapper.classList.contains('collapsed');
+        e.currentTarget.closest('.playbook-decision-workspace')?.classList.toggle('is-table-collapsed', collapsed);
         e.currentTarget.setAttribute('aria-expanded', String(!collapsed));
         e.currentTarget.textContent = collapsed ? 'Expand Table' : 'Collapse Table';
         if (!collapsed) playbookSurfaceInvalidator.renderIfNeeded('table');
