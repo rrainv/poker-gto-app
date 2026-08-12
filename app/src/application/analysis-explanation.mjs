@@ -724,12 +724,6 @@ export function createAnalysisExplanation({
       'warning',
     ));
   }
-  if (decisionContext && ['percent', 'cap'].includes(decisionContext.rakeMode)) {
-    warnings.push(warning(
-      'legacy_rake_compatibility',
-      'Percentage/capped rake remains a legacy compatibility input outside the canonical accounting model.',
-    ));
-  }
   if (reason) warnings.push(warning(reason, UNAVAILABLE_COPY[reason] || UNAVAILABLE_COPY.strategy_unavailable, 'warning'));
 
   const uniqueWarnings = [...new Map(warnings.map((entry) => [entry.code, entry])).values()];

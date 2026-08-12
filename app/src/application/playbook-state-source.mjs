@@ -68,8 +68,6 @@ export function createPlaybookScenarioInput(input = {}) {
     rakeMode: input.rakeMode,
     forcedContributionPerPlayerBb: input.forcedContributionPerPlayerBb ?? 0,
     totalForcedContributionBb: input.totalForcedContributionBb ?? 0,
-    legacyRakePercent: input.legacyRakePercent ?? 0,
-    legacyRakeValue: input.legacyRakeValue ?? 0,
     anteBb: input.anteBb ?? 0,
     straddleBb: input.straddleBb ?? 0,
   });
@@ -77,11 +75,6 @@ export function createPlaybookScenarioInput(input = {}) {
 
 export function handModeCompatibility(scenarioInput) {
   const input = createPlaybookScenarioInput(scenarioInput);
-  if (input.rakeMode === 'percent' || input.rakeMode === 'cap') {
-    return resolution(PLAYBOOK_MODES.SCENARIO, 'unavailable', {
-      reason: 'unsupported_canonical_rake_mode',
-    });
-  }
   if (Number(input.straddleBb) !== 0) {
     return resolution(PLAYBOOK_MODES.SCENARIO, 'unavailable', {
       reason: 'canonical_straddle_unsupported',

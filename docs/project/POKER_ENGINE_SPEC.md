@@ -56,10 +56,10 @@ Home games:
 deduction = 0
 ```
 
-ClubGG-style game:
+ClubGG-style game (once per seated player, outside the contestable pot):
 
 ```text
-deduction = 0.1bb per hand
+deduction = 0.1bb × seated player count per hand
 ```
 
 Do not model this as a percentage.

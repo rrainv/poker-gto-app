@@ -174,22 +174,6 @@ const app = {
 
 window.app = app;
 
-// Narrow classic-script boundary to the opt-in ESM canonical development
-// controller. Bridge failures are observational only and never interrupt the
-// authoritative legacy Playbook path.
-function callCanonicalDevelopmentBridge(method, ...args) {
-  try {
-    const bridge = window.RiverlineCanonicalDev;
-    if (!bridge || typeof bridge[method] !== 'function') return null;
-    return bridge[method](...args);
-  } catch (error) {
-    if (window.RiverlineCanonicalDev?.isEnabled?.()) {
-      console.debug('[Riverline canonical shadow] bridge error', error);
-    }
-    return null;
-  }
-}
-
 function callPlaybookStateBridge(method, ...args) {
   try {
     const bridge = window.RiverlinePlaybookState;
@@ -233,19 +217,6 @@ function callTrainingPresentationBridge(method, ...args) {
     return null;
   }
 }
-
-function notifyCanonicalConfigurationChanged() {
-  return callCanonicalDevelopmentBridge('configurationChanged');
-}
-
-function notifyCanonicalHeroCardsChanged() {
-  return callCanonicalDevelopmentBridge('heroCardsChanged', app.gto.hero.filter(Boolean));
-}
-
-function notifyCanonicalBoardCardsChanged() {
-  return callCanonicalDevelopmentBridge('boardCardsChanged', app.gto.board.filter(Boolean));
-}
-
 
 
 const $ = (selector) => document.querySelector(selector);
@@ -748,11 +719,7 @@ function selectCard(card) {
 
 
 
-  if (group === 'hero') {
-    app.selectedHand = null;
-    notifyCanonicalHeroCardsChanged();
-  }
-  if (group === 'board') notifyCanonicalBoardCardsChanged();
+  if (group === 'hero') app.selectedHand = null;
 
   if (window.SoundFX) SoundFX.playCardDeal();
 
@@ -798,9 +765,6 @@ function clearGroup(group) {
   if (group === 'hero') app.selectedHand = null;
 
   groupCards(group).length = 0;
-
-  if (group === 'hero') notifyCanonicalHeroCardsChanged();
-  if (group === 'board') notifyCanonicalBoardCardsChanged();
 
   renderAllCards();
 
@@ -900,7 +864,7 @@ function normalizeFacingSize(lastAction, facingSize = 0) {
 const CLUBGG_FORCED_CONTRIBUTION_PER_PLAYER_BB = 0.1;
 const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
 
-function strategyAccountingContext(rakeMode, seatedPlayerCount, legacyRakeValue = 0) {
+function strategyAccountingContext(rakeMode, seatedPlayerCount) {
 
   const mode = rakeMode || 'off';
   const players = Math.max(0, Math.trunc(Number(seatedPlayerCount) || 0));
@@ -908,19 +872,10 @@ function strategyAccountingContext(rakeMode, seatedPlayerCount, legacyRakeValue 
   const forcedContributionPerPlayerBb = isClubGg ? CLUBGG_FORCED_CONTRIBUTION_PER_PLAYER_BB : 0;
   const totalForcedContributionBb = Math.round(players * forcedContributionPerPlayerBb * 10) / 10;
 
-  // The compatibility `rake` field means percentage rake. A fixed per-player
-  // hand contribution is not semantically compatible, so Home and ClubGG
-  // contexts explicitly adapt that field to zero.
-  const legacyValue = Number(legacyRakeValue);
-  const rake = (mode === 'percent' || mode === 'cap') && Number.isFinite(legacyValue)
-    ? Math.max(0, legacyValue)
-    : 0;
-
   return {
-    rakeMode: mode,
+    rakeMode: isClubGg ? 'fixed' : 'off',
     forcedContributionPerPlayerBb,
-    totalForcedContributionBb,
-    rake
+    totalForcedContributionBb
   };
 
 }
@@ -951,8 +906,7 @@ function readPlaybookScenarioInput() {
   const tableSize = numericValue('#players', 6);
   const board = normalizedDecisionCards(app.gto && app.gto.board);
   const rakeMode = selectedValue('#rakeMode');
-  const legacyRakeValue = numericValue('#rakeValue', 0);
-  const accounting = strategyAccountingContext(rakeMode, tableSize, legacyRakeValue);
+  const accounting = strategyAccountingContext(rakeMode, tableSize);
   const rawInput = {
     schemaVersion: typeof PLAYBOOK_SCENARIO_SCHEMA_VERSION === 'string'
       ? PLAYBOOK_SCENARIO_SCHEMA_VERSION
@@ -974,8 +928,6 @@ function readPlaybookScenarioInput() {
     rakeMode,
     forcedContributionPerPlayerBb: accounting.forcedContributionPerPlayerBb,
     totalForcedContributionBb: accounting.totalForcedContributionBb,
-    legacyRakePercent: accounting.rake,
-    legacyRakeValue,
     anteBb: numericValue('#ante', 0),
     straddleBb: numericValue('#straddle', 0)
   };
@@ -1000,7 +952,7 @@ function readPlaybookInputSnapshot() {
 
 const PLAYBOOK_SCENARIO_CONTROL_IDS = Object.freeze([
   'players', 'playersNum', 'stack', 'stackNum', 'stackMode',
-  'rakeMode', 'rakeValue', 'rakeValueNum', 'rakeUnit', 'rakePot',
+  'rakeMode',
   'ante', 'anteNum', 'straddle', 'heroPos', 'lastAction',
   'facingSize', 'facingSizeNum', 'potSize', 'potSizeNum'
 ]);
@@ -1146,9 +1098,7 @@ function syncCanonicalDecisionDisplay(decisionContext) {
     lastAction: decisionContext.lastAction,
     facingSize: decisionContext.facingSizeBb,
     facingSizeNum: decisionContext.facingSizeBb,
-    rakeMode: decisionContext.rakeMode,
-    rakeValue: decisionContext.legacyRakePercent,
-    rakeValueNum: decisionContext.legacyRakePercent
+    rakeMode: decisionContext.rakeMode
   };
   Object.entries(values).forEach(([id, value]) => {
     const control = document.getElementById(id);
@@ -1673,9 +1623,9 @@ function deriveDecisionContext(snapshot = {}) {
     : 'unopened';
   const rawFacingSizeBb = normalizedDecisionNumber(snapshot.facingSizeBb, 0, 0, 100);
   const facingSizeBb = normalizeFacingSize(lastAction, rawFacingSizeBb);
-  const supportedRakeModes = ['off', 'percent', 'fixed', 'cap'];
+  const supportedRakeModes = ['off', 'fixed'];
   const rakeMode = supportedRakeModes.includes(snapshot.rakeMode) ? snapshot.rakeMode : 'off';
-  const accounting = strategyAccountingContext(rakeMode, tableSize, snapshot.legacyRakeValue);
+  const accounting = strategyAccountingContext(rakeMode, tableSize);
 
   return {
     schemaVersion: DECISION_CONTEXT_SCHEMA_VERSION,
@@ -1692,8 +1642,7 @@ function deriveDecisionContext(snapshot = {}) {
     facingSizeBb,
     rakeMode: accounting.rakeMode,
     forcedContributionPerPlayerBb: accounting.forcedContributionPerPlayerBb,
-    totalForcedContributionBb: accounting.totalForcedContributionBb,
-    legacyRakePercent: accounting.rake
+    totalForcedContributionBb: accounting.totalForcedContributionBb
   };
 
 }
@@ -1802,42 +1751,6 @@ function updateTrainingPositions() {
 function isAllInActionName(name) {
 
   return /\b(?:all(?:[-\s]+in)?|jam)\b/.test(String(name || '').toLowerCase());
-
-}
-
-
-
-function classifyAction(name) {
-
-  const normalized = name.toLowerCase();
-
-  if (/raise|open|bet/.test(normalized) || isAllInActionName(normalized)) return 'aggressive';
-
-  if (/fold/.test(normalized)) return 'fold';
-
-  return 'passive';
-
-}
-
-
-
-function standardActionName(name) {
-
-  const normalized = name.toLowerCase();
-
-  if (/raise|open/.test(normalized)) return 'Open';
-
-  if (/bet/.test(normalized)) return 'Bet';
-
-  if (isAllInActionName(normalized)) return 'All-in';
-
-  if (/call/.test(normalized)) return 'Call';
-
-  if (/check/.test(normalized)) return 'Check';
-
-  if (/fold/.test(normalized)) return 'Fold';
-
-  return name;
 
 }
 
@@ -2653,8 +2566,7 @@ function updateMetrics() {
   let facing = context ? context.facingSizeBb : numericValue('#facingSize');
   const stack = context ? context.stackBb : numericValue('#stack', 100);
   const rakeMode = context?.rakeMode || selectedValue('#rakeMode');
-  const rake = context ? context.legacyRakePercent : numericValue('#rakeValue');
-  const accounting = context || strategyAccountingContext(rakeMode, numericValue('#players', 6), rake);
+  const accounting = context || strategyAccountingContext(rakeMode, numericValue('#players', 6));
 
   const isPreflopUnopened = (street === 'preflop') && (lastAction === 'unopened');
   const isPreflopOpenDecision = isPreflopUnopened && heroPos !== 'BB';
@@ -2690,7 +2602,7 @@ function updateMetrics() {
     if (rakeMode === 'off') mRake.textContent = t('Off');
     else if (rakeMode === 'fixed') {
       mRake.textContent = `${accounting.forcedContributionPerPlayerBb.toFixed(1)} bb/player · ${accounting.totalForcedContributionBb.toFixed(1)} bb total`;
-    } else mRake.textContent = rake + ' ' + selectedValue('#rakeUnit');
+    } else mRake.textContent = t('Off');
   }
 
   const metricValues = {
@@ -2979,6 +2891,7 @@ function renderChart() {
   RANKS.forEach((_, row) => RANKS.forEach((__, column) => {
 
     const hand = handCode(row, column);
+    let actions = [];
 
     
 
@@ -3029,7 +2942,6 @@ function renderChart() {
         const callVal = Math.round(fb.call * 100);
         const foldVal = Math.round(fb.fold * 100);
 
-        actions = [];
         if (openVal > 0) actions.push({ name: facingSize === 0 ? 'Raise' : '3-Bet', value: openVal, kind: 'aggressive' });
         if (callVal > 0) actions.push({ name: 'Call', value: callVal, kind: 'passive' });
         if (foldVal > 0) actions.push({ name: 'Fold', value: foldVal, kind: 'fold' });
@@ -3408,7 +3320,6 @@ async function updateContext(reason = 'Context updated') {
 
   syncSliderPair('stack', 'stackNum');
 
-  syncSliderPair('rakeValue', 'rakeValueNum');
   syncSliderPair('ante', 'anteNum');
 
   const inputSnapshot = readPlaybookInputSnapshot();
@@ -3438,14 +3349,6 @@ async function updateContext(reason = 'Context updated') {
 
   const decisionContext = playbookResolution.decisionContext;
   app.decisionContext = decisionContext;
-  if (playbookResolution.mode === 'scenario') {
-    try {
-      globalThis.RiverlineCanonicalDev?.compare?.();
-    } catch (error) {
-      // Shadow diagnostics are non-authoritative and must never interrupt Playbook.
-    }
-  }
-
   if (playbookResolution.mode === 'hand' && typeof syncCanonicalDecisionDisplay === 'function') {
     syncCanonicalDecisionDisplay(decisionContext);
   }
@@ -4364,9 +4267,6 @@ function bindEvents() {
 
         groupCards(group)[index] = null;
 
-        if (group === 'hero') notifyCanonicalHeroCardsChanged();
-        if (group === 'board') notifyCanonicalBoardCardsChanged();
-
         renderAllCards();
 
         if (isEquityGroup(group)) setEquityPending();
@@ -4533,19 +4433,14 @@ function bindEvents() {
 
   bindSliderPair('players', 'playersNum', () => {
     updatePositions();
-    notifyCanonicalConfigurationChanged();
     updateContext('Table size changed');
   });
 
   bindSliderPair('stack', 'stackNum', () => {
-    notifyCanonicalConfigurationChanged();
     updateContext('Stack changed');
   });
 
-  bindSliderPair('rakeValue', 'rakeValueNum', () => updateContext('Rake changed'));
-
   bindSliderPair('ante', 'anteNum', () => {
-    notifyCanonicalConfigurationChanged();
     updateContext('Ante changed');
   });
 
@@ -4556,13 +4451,12 @@ function bindEvents() {
   ['rakeMode', 'stackMode', 'heroPos', 'straddle'].forEach((id) => {
 
     if ($('#' + id)) $('#' + id).addEventListener('change', () => {
-      notifyCanonicalConfigurationChanged();
       updateContext('Configuration changed');
     });
 
   });
 
-  ['rakeUnit', 'lastAction'].forEach((id) => {
+  ['lastAction'].forEach((id) => {
 
     if ($('#' + id)) $('#' + id).addEventListener('change', () => updateContext('Configuration changed'));
 
@@ -4586,16 +4480,6 @@ function bindEvents() {
 
   });
 
-  if ($('#rakePot')) $('#rakePot').addEventListener('click', () => {
-
-    $('#rakePot').classList.toggle('on');
-
-    $('#rakePot').setAttribute('aria-pressed', $('#rakePot').classList.contains('on'));
-
-    updateContext('Rake setting changed');
-
-  });
-
   if ($('#toggleAdvanced')) $('#toggleAdvanced').addEventListener('click', () => {
 
     const enabled = $('#toggleAdvanced').classList.toggle('on');
@@ -4604,10 +4488,6 @@ function bindEvents() {
 
     if ($('#advancedRules')) $('#advancedRules').classList.toggle('hidden', !enabled);
 
-  });
-
-  if ($('#rakeMode')) $('#rakeMode').addEventListener('change', () => {
-    if ($('#rakeValueWrapper')) $('#rakeValueWrapper').classList.toggle('hidden', ['off', 'fixed'].includes($('#rakeMode').value));
   });
 
 
@@ -4684,10 +4564,6 @@ function bindEvents() {
     updateContext('Theme changed');
 
   });
-
-  // Fix Rake Value initial state bug
-
-  if ($('#rakeMode')) $('#rakeMode').dispatchEvent(new Event('change'));
 
   // === TIGHTNESS SLIDER ===
   const tightnessSlider = document.getElementById('tightnessSlider');
@@ -4967,14 +4843,6 @@ function init() {
     if ($('#stackNum')) $('#stackNum').value = '30';
 
     if ($('#rakeMode')) $('#rakeMode').value = 'off';
-
-    if ($('#rakePot')) {
-
-      $('#rakePot').setAttribute('aria-pressed', 'false');
-
-      $('#rakePot').classList.remove('on');
-
-    }
 
     if ($('#heroPos')) $('#heroPos').value = 'UTG';
 

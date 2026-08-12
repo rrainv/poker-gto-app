@@ -82,7 +82,6 @@ function legacyEquivalent(projected) {
     lastAction: projected.lastAction,
     facingSizeBb: projected.facingSizeBb,
     rakeMode: projected.rakeMode,
-    legacyRakeValue: 0,
   });
 }
 
@@ -139,7 +138,6 @@ test('HU unopened PokerState projects the exact DecisionContext v1 shape', () =>
     rakeMode: 'off',
     forcedContributionPerPlayerBb: 0,
     totalForcedContributionBb: 0,
-    legacyRakePercent: 0,
   });
   assertLegacyParity(projected);
 });
@@ -257,15 +255,14 @@ test('Home and ClubGG accounting map without percentage-rake semantics', () => {
     rakeMode: home.rakeMode,
     perPlayer: home.forcedContributionPerPlayerBb,
     total: home.totalForcedContributionBb,
-    legacy: home.legacyRakePercent,
-  }, { rakeMode: 'off', perPlayer: 0, total: 0, legacy: 0 });
+  }, { rakeMode: 'off', perPlayer: 0, total: 0 });
 
   for (const playerCount of [7, 9, 10]) {
     const club = context(createDealtState({ playerCount, mode: GAME_MODES.CLUBGG }));
     assert.equal(club.rakeMode, 'fixed');
     assert.equal(club.forcedContributionPerPlayerBb, 0.1);
     assert.equal(club.totalForcedContributionBb, playerCount / 10);
-    assert.equal(club.legacyRakePercent, 0);
+    assert.equal(Object.hasOwn(club, 'legacyRakePercent'), false);
     assert.equal(club.potBb, 1.5);
     assertLegacyParity(club);
   }
@@ -374,7 +371,6 @@ test('every emitted lastAction is accepted by the current fallback vocabulary', 
       lastAction,
       facingSizeBb: lastAction === 'unopened' || lastAction === 'check' ? 0 : 5,
       rakeMode: 'off',
-      legacyRakeValue: 0,
     });
     assert.equal(projected.lastAction, lastAction);
     assert.doesNotThrow(() => legacy.fallbackForDecisionContext(projected));

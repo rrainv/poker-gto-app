@@ -207,8 +207,6 @@ function createHarness() {
       postflopHeuristicToStrategyResult,
       unavailableStrategyResult,
       strategyResultToLegacyProfile,
-      classifyAction,
-      standardActionName,
       strategyProfile(context) {
         app.decisionContext = null;
         return strategyResultToLegacyProfile(qaActionProfile(null, context));
@@ -243,8 +241,6 @@ function createHarness() {
           playersNum: [values.players ?? 6, 2, 10],
           stack: [values.stack ?? 100, 10, 500],
           stackNum: [values.stack ?? 100, 10, 500],
-          rakeValue: [values.rake ?? 5, 0, 20],
-          rakeValueNum: [values.rake ?? 5, 0, 20],
           ante: [values.ante ?? 0, 0, 5],
           anteNum: [values.ante ?? 0, 0, 5],
           heroPos: [values.heroPos ?? 'BTN'],
@@ -336,8 +332,6 @@ module.exports = {
   postflopStrategyResult: (...args) => plain(harness.postflopHeuristicToStrategyResult(...args)),
   unavailableStrategyResult: (...args) => plain(harness.unavailableStrategyResult(...args)),
   legacyProfileForStrategyResult: (...args) => plain(harness.strategyResultToLegacyProfile(...args)),
-  classifyAction: (...args) => harness.classifyAction(...args),
-  standardActionName: (...args) => harness.standardActionName(...args),
   strategyProfile: (...args) => plain(harness.strategyProfile(...args)),
   strategyResult: (...args) => plain(harness.strategyResult(...args)),
   strategyProfileCapture: (...args) => plain(harness.strategyProfileCapture(...args)),

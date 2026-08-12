@@ -4622,122 +4622,6 @@ html[data-four-color="false"] .card.black {
 html[data-four-color="false"] .suit-s { color: #111827 !important; }
 html[data-four-color="false"] .suit-c { color: #111827 !important; }
 
-/* Canonical hand harness: intentionally utilitarian and development-only. */
-.canonical-dev-harness[hidden] { display: none !important; }
-.canonical-dev-harness { margin-top: 16px; border-style: dashed; }
-.canonical-dev-harness > details > summary {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 13px 17px;
-  cursor: pointer;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 750;
-  list-style-position: inside;
-}
-.canonical-dev-harness > details > summary small {
-  color: var(--orange);
-  font-size: var(--text-micro-size);
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-}
-.canonical-dev-harness-body { border-top: 1px solid var(--line); }
-.canonical-harness-grid {
-  display: grid;
-  grid-template-columns: minmax(220px, .9fr) minmax(280px, 1.2fr) minmax(240px, 1fr);
-  gap: 12px;
-  padding: 12px;
-}
-.canonical-harness-grid > div { display: grid; align-content: start; gap: 12px; }
-.canonical-harness-section {
-  padding: 12px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: rgba(15, 23, 42, .42);
-}
-.canonical-harness-section h4 {
-  margin: 0 0 9px;
-  color: var(--text-primary);
-  font-size: 11px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-.canonical-harness-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.canonical-harness-form label,
-.canonical-size-input { color: var(--muted); font-size: 10px; }
-.canonical-harness-form select,
-.canonical-harness-form input,
-.canonical-size-input input,
-.canonical-card-row input,
-.canonical-board-control input {
-  margin-top: 4px;
-  min-width: 0;
-  padding: 6px 7px;
-  border: 1px solid var(--border-default);
-  border-radius: 7px;
-  background: var(--surface-inset);
-  color: var(--text-primary);
-  font: inherit;
-}
-.canonical-harness-buttons { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
-.canonical-harness-buttons button,
-.canonical-harness-section > button { padding: 7px 10px; font-size: 11px; }
-.canonical-seat-list { display: grid; gap: 5px; }
-.canonical-seat-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px 8px;
-  padding: 7px;
-  border: 1px solid rgba(51, 65, 85, .65);
-  border-radius: 7px;
-  color: var(--text);
-  font-size: 10px;
-}
-.canonical-seat-row small { grid-column: 1 / -1; color: var(--muted); font-size: 9px; }
-.canonical-seat-row.is-actor { border-color: var(--primary); background: rgba(var(--primary-rgb), .08); }
-.canonical-card-row {
-  display: grid;
-  grid-template-columns: minmax(95px, 1fr) 45px 45px;
-  gap: 6px;
-  align-items: center;
-  margin-bottom: 6px;
-  color: var(--text-muted);
-  font-size: 10px;
-}
-.canonical-card-row input,
-.canonical-board-control input { width: 45px; text-align: center; text-transform: none; }
-.canonical-board-control { display: flex; flex-wrap: wrap; align-items: end; gap: 6px; margin-top: 10px; color: var(--muted); font-size: 10px; }
-.canonical-size-input { display: grid; grid-template-columns: minmax(110px, 150px) auto; align-items: end; gap: 0 8px; }
-.canonical-size-input small { grid-column: 2; grid-row: 1; color: var(--muted); }
-.canonical-state-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.canonical-state-grid > div { padding: 6px; border-radius: 6px; background: rgba(2, 6, 23, .45); }
-.canonical-state-grid span { display: block; color: var(--muted); font-size: 9px; }
-.canonical-state-grid b { display: block; margin-top: 2px; color: var(--text); font-size: 11px; overflow-wrap: anywhere; }
-.canonical-action-history,
-.canonical-diagnostic-details,
-.canonical-terminal ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 10px; line-height: 1.5; }
-.canonical-harness-note,
-.canonical-harness-empty,
-.canonical-terminal p { margin: 0; color: var(--muted); font-size: 10px; }
-.canonical-diagnostic { padding: 7px 9px; border-radius: 7px; font-size: 11px; font-weight: 700; }
-.canonical-diagnostic.is-muted { background: rgba(100, 116, 139, .14); color: var(--muted); }
-.canonical-diagnostic.is-match { background: rgba(34, 197, 94, .14); color: #86efac; }
-.canonical-diagnostic.is-mismatch { background: rgba(245, 158, 11, .14); color: #fbbf24; }
-.canonical-diagnostic.is-error { background: rgba(239, 68, 68, .14); color: #fca5a5; }
-.canonical-terminal { border-color: rgba(var(--primary-rgb), .55); }
-
-@media (max-width: 1050px) {
-  .canonical-harness-grid { grid-template-columns: 1fr 1fr; }
-  .canonical-harness-grid > div:last-child { grid-column: 1 / -1; }
-}
-@media (max-width: 700px) {
-  .canonical-dev-harness > details > summary { flex-direction: column; }
-  .canonical-harness-grid { grid-template-columns: 1fr; }
-  .canonical-harness-grid > div:last-child { grid-column: auto; }
-}
-
 /* --------------------------------------------------------------------------
    DESIGN-003: Riverline application shell
    -------------------------------------------------------------------------- */
@@ -5305,32 +5189,25 @@ html[data-four-color="false"] .suit-c { color: #111827 !important; }
   stroke-linejoin: round;
 }
 
-.ui-button--poker-fold,
-.canonical-dev-harness [data-canonical-action="fold"] {
+.ui-button--poker-fold {
   color: var(--text-primary);
   background: var(--action-fold);
   border-color: var(--action-fold);
 }
 
-.ui-button--poker-passive,
-.canonical-dev-harness [data-canonical-action="check"],
-.canonical-dev-harness [data-canonical-action="call"] {
+.ui-button--poker-passive {
   color: var(--text-on-accent);
   background: var(--action-passive);
   border-color: var(--action-passive);
 }
 
-.ui-button--poker-aggressive,
-.canonical-dev-harness [data-canonical-action="bet"],
-.canonical-dev-harness [data-canonical-action="raise"] {
+.ui-button--poker-aggressive {
   color: var(--text-on-accent);
   background: var(--action-aggressive);
   border-color: var(--action-aggressive);
 }
 
-.ui-button--poker-all-in,
-.canonical-dev-harness [data-canonical-action="all-in"],
-.canonical-dev-harness [data-canonical-action="all_in"] {
+.ui-button--poker-all-in {
   color: #fff;
   background: var(--action-all-in);
   border-color: var(--action-all-in);
@@ -5339,8 +5216,7 @@ html[data-four-color="false"] .suit-c { color: #111827 !important; }
 .ui-button--poker-fold:hover:not(:disabled),
 .ui-button--poker-passive:hover:not(:disabled),
 .ui-button--poker-aggressive:hover:not(:disabled),
-.ui-button--poker-all-in:hover:not(:disabled),
-.canonical-dev-harness [data-canonical-action]:hover:not(:disabled) {
+.ui-button--poker-all-in:hover:not(:disabled) {
   filter: brightness(1.08);
   transform: none;
 }
@@ -5719,7 +5595,6 @@ input[type="range"]:disabled::-moz-range-thumb { background: var(--text-disabled
 .section-light { padding: var(--component-padding); border-block-start: 1px solid var(--border-subtle); }
 
 .section-inset,
-.canonical-harness-section,
 .player-card,
 .context-line {
   background: var(--surface-inset);

@@ -19,7 +19,6 @@ import {
   resolveShowdown,
   validatePokerState,
 } from '../shared/poker-domain/index.js';
-import { buildCanonicalHarnessViewModel } from '../app/src/application/canonical-hand-harness.mjs';
 import { createCanonicalLiveController } from '../app/src/application/canonical-live-controller.mjs';
 import { deriveDecisionContextFromPokerState } from '../app/src/application/decision-context-from-poker-state.mjs';
 import { installPlaybookStateSourceBridge } from '../app/src/application/playbook-mode-bootstrap.mjs';
@@ -228,15 +227,9 @@ test('controller partial deal makes the normal Hand decision available without o
   });
   assert.equal(result.status, 'available');
   assert.deepEqual(result.decisionContext.heroCards, ['As', 'Ad']);
-  const display = buildCanonicalHarnessViewModel({
-    enabled: true,
-    state,
-    heroPlayerId: 'seat-0',
-    diagnostics: controller.getDiagnostics(),
-    legalActions: controller.getLegalActions(),
-  });
-  assert.equal(display.players[1].privateCardsStatus, 'hidden');
-  assert.equal(display.players[1].holeCards, null);
+  const opponent = state.players.find((player) => player.playerId === 'seat-1');
+  assert.equal(opponent.holeCards.status, 'hidden');
+  assert.equal(opponent.holeCards.cardCount, 2);
 });
 
 test('live hidden opponent produces explicit awaiting-private-reveal showdown state', () => {

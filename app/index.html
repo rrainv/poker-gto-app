@@ -549,41 +549,7 @@
 
                     <option value="fixed" data-i18n="ClubGG · 0.1 bb/player">ClubGG · 0.1 bb/player</option>
 
-                    <option value="percent" data-i18n="Legacy percentage">Legacy percentage</option>
-
-                    <option value="cap" data-i18n="Legacy percentage + cap">Legacy percentage + cap</option>
-
                   </select>
-
-                </div>
-
-                <div id="rakeValueWrapper" class="field">
-
-                  <div class="slider-container">
-
-                    <div class="slider-header">
-
-                      <span data-i18n="Rake value">Rake value</span>
-
-                      <span class="control-value"><input id="rakeValueNum" class="control-input control-input--inline" type="number" min="0" max="20" step="0.5" value="5"></span>
-
-                    </div>
-
-                    <div class="field-split">
-
-                      <input id="rakeValue" class="control-range" type="range" min="0" max="20" step="0.5" value="5">
-
-                      <select id="rakeUnit" class="control-select control-select--compact">
-
-                        <option>%</option>
-
-                        <option>bb</option>
-
-                      </select>
-
-                    </div>
-
-                  </div>
 
                 </div>
 
@@ -636,14 +602,6 @@
                   </select>
 
                 </div>
-
-              </div>
-
-              <div class="switchrow">
-
-                <span data-i18n="Take rake from pot">Take rake from pot</span>
-
-                <button class="switch ui-switch" id="rakePot" type="button" aria-label="Take rake from pot" aria-pressed="false"><b aria-hidden="true"></b></button>
 
               </div>
 
@@ -1321,16 +1279,6 @@
 
       </div>
 
-      <section id="canonicalDevHarness" class="panel canonical-dev-harness" hidden aria-hidden="true">
-        <details open>
-          <summary>
-            <span>Canonical Hand Harness</span>
-            <small>Development / testing only · non-authoritative</small>
-          </summary>
-          <div id="canonicalDevHarnessBody" class="canonical-dev-harness-body"></div>
-        </details>
-      </section>
-
     </section>
 
 
@@ -1810,7 +1758,6 @@
   <script src="src/core/SoundFX.js" defer></script>
   <script type="module" src="src/application/analysis-explanation-bootstrap.mjs"></script>
   <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
-  <script type="module" src="src/application/canonical-live-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script src="src/core/logic.js?v=21" defer></script>

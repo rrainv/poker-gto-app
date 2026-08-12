@@ -10,7 +10,7 @@ Riverline is under active development. Its current strategy output is primarily 
 - **Win Probability / Equity:** estimate outcomes for known hands and board states, including ties and multiway pots. The current Equity UI supports up to eight players.
 - **Training:** generate practice spots and compare a chosen action with Riverline's current recommendation.
 - **Game configuration:** Playbook and Training support tables from 2 to 10 players, full-ring positions, and configurable stack depths.
-- **Game modes:** represent zero-contribution Home games and ClubGG-style fixed per-player contributions. Legacy percentage-rake controls remain in the application.
+- **Game modes:** Home games have no deduction; ClubGG deducts exactly 0.1bb from each seated player once per hand, outside the contestable pot.
 - **Strategy:** the deterministic heuristic fallback is the browser's only current production strategy authority. Future solver-backed providers must enter through a new validated, versioned contract.
 
 The Playbook's current application boundary is deliberately small: a versioned `DecisionContext` is passed to a strategy source, which returns a versioned `StrategyResult`. This provides a stable seam for future solver- and model-backed work without presenting today's heuristics as equilibrium solutions.
@@ -48,7 +48,6 @@ The Electron app loads `app/index.html` directly. A Python backend is not requir
 - Riverline has no trusted production model and does not load model/ONNX assets in either browser or Electron mode.
 - Multiway equity analysis is supported; solver-backed multiway equilibrium is not.
 - Equity uses exact enumeration where practical and Monte Carlo simulation for larger incomplete states.
-- Some in-app labels still use older “GTO” or “DeepCFR” language. Those labels are not proof of the underlying method or accuracy.
 
 ## Development direction
 

@@ -75,16 +75,16 @@ test('workspace hierarchy makes decision primary and deep analysis secondary', (
   assert.match(css, /#playbookAnalysisTabs\s*\{\s*order:\s*4/);
 });
 
-test('Scenario organization retains every authoritative and compatibility control', () => {
+test('Scenario organization retains supported product controls only', () => {
   for (const id of [
     'players', 'heroPos', 'stack', 'stackMode', 'potSize', 'facingSize',
-    'lastAction', 'rakeMode', 'rakeValue', 'rakeUnit', 'ante', 'straddle',
+    'lastAction', 'rakeMode', 'ante', 'straddle',
   ]) assert.match(html, new RegExp(`id="${id}"`), id);
   assert.match(html, /data-playbook-scenario/);
   assert.match(html, /Spot context/);
   assert.match(html, /Game and accounting/);
   assert.match(html, /Show Advanced Rules/);
-  assert.match(html, /Legacy percentage/);
+  assert.doesNotMatch(html, /Legacy percentage|rakeValue|rakeUnit|rakePot/);
 });
 
 test('Hand workspace includes bounded initialization and canonical state summaries', () => {

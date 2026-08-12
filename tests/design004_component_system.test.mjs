@@ -52,7 +52,7 @@ test('range controls use shared track, thumb, focus, and disabled semantics', ()
 
 test('switches expose labels and pressed states without replacing behavior', () => {
   const switches = [...html.matchAll(/<button\b[^>]*class="[^"]*ui-switch[^"]*"[^>]*>/g)];
-  assert.ok(switches.length >= 5);
+  assert.ok(switches.length >= 4);
   for (const [tag] of switches) {
     assert.match(tag, /type="button"/);
     assert.match(tag, /aria-label="[^"]+"/);
@@ -99,7 +99,7 @@ test('comfortable and compact density share one token mechanism', () => {
   assert.match(components, /--component-padding:/);
 });
 
-test('poker actions retain stable semantics across Training and the canonical harness', () => {
+test('poker actions retain stable semantics across Training and Hand Mode', () => {
   assert.match(html, /id="trainingGuessButtons"[^>]*aria-label="Available actions"/);
   assert.match(logic, /canonicalTrainingLegalActionTypes\(exercise\)\.forEach/);
   assert.match(logic, /training-action-button--\$\{type\}/);

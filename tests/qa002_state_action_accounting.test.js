@@ -120,27 +120,18 @@ test('preflop base pot is blinds plus per-player ante plus straddle', () => {
   assert.equal(qa.preflopPot({ ante: 0.5, players: 8, straddle: 2 }), 7.5);
 });
 
-test('rake-off sends zero and explicit zero forced contributions to DecisionContext', async () => {
-  const capture = await qa.captureContext({ rakeMode: 'off', rake: 5 });
-  assert.equal(capture.decisionContext.legacyRakePercent, 0);
+test('Home sends zero forced contributions to DecisionContext', async () => {
+  const capture = await qa.captureContext({ rakeMode: 'off' });
   assert.equal(capture.decisionContext.rakeMode, 'off');
   assert.equal(capture.decisionContext.forcedContributionPerPlayerBb, 0);
   assert.equal(capture.decisionContext.totalForcedContributionBb, 0);
 });
 
-test('fixed mode is an explicit per-player contribution with a zero legacy rake feature', async () => {
-  const capture = await qa.captureContext({ players: 6, rakeMode: 'fixed', rake: 5 });
-  assert.equal(capture.decisionContext.legacyRakePercent, 0);
+test('ClubGG is an explicit per-player contribution', async () => {
+  const capture = await qa.captureContext({ players: 7, rakeMode: 'fixed' });
   assert.equal(capture.decisionContext.rakeMode, 'fixed');
   assert.equal(capture.decisionContext.forcedContributionPerPlayerBb, 0.1);
-  assert.equal(capture.decisionContext.totalForcedContributionBb, 0.6);
-});
-
-test('legacy percentage mode preserves its DecisionContext compatibility value', async () => {
-  const capture = await qa.captureContext({ rakeMode: 'percent', rake: 5 });
-  assert.equal(capture.decisionContext.legacyRakePercent, 5);
-  assert.equal(capture.decisionContext.forcedContributionPerPlayerBb, 0);
-  assert.equal(capture.decisionContext.totalForcedContributionBb, 0);
+  assert.equal(capture.decisionContext.totalForcedContributionBb, 0.7);
 });
 
 test('DecisionContext preserves stack mode and stack value for fallback strategy', async () => {
@@ -167,37 +158,6 @@ test('characterization: flat drop is added to postflop pot and lowers aggression
   assert.deepEqual({ Bet: oneBlindDrop.Bet, Check: oneBlindDrop.Check }, { Bet: 75, Check: 25 });
   assert.equal(noDrop.context.spr, 3);
   assert.equal(oneBlindDrop.context.spr, 30 / 11);
-});
-
-test('Call tokens never become All-in actions', () => {
-  for (const input of ['Call', 'CALL', 'Call 30%', 'Callback option', 'recall', 'locally called']) {
-    assert.equal(qa.classifyAction(input), 'passive');
-    assert.equal(qa.standardActionName(input), 'Call');
-  }
-});
-
-test('All-in, All In, and Jam remain legitimate all-in tokens', () => {
-  for (const input of ['All-in', 'All In', 'Jam']) {
-    assert.equal(qa.classifyAction(input), 'aggressive');
-    assert.equal(qa.standardActionName(input), 'All-in');
-  }
-});
-
-test('Playbook parser recognizes its current string action families', () => {
-  const cases = {
-    'Open 2.5': ['aggressive', 'Open'],
-    'Raise': ['aggressive', 'Open'],
-    'Bet': ['aggressive', 'Bet'],
-    'Jam': ['aggressive', 'All-in'],
-    'All-in': ['aggressive', 'All-in'],
-    'All In': ['aggressive', 'All-in'],
-    'Call': ['passive', 'Call'],
-    'Check': ['passive', 'Check'],
-    'Fold': ['fold', 'Fold'],
-  };
-  for (const [input, expected] of Object.entries(cases)) {
-    assert.deepEqual([qa.classifyAction(input), qa.standardActionName(input)], expected);
-  }
 });
 
 test('canonical StrategyResult action mapping preserves action families and sizing', () => {

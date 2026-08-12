@@ -11,7 +11,6 @@ import {
   getLegalActionSpec,
 } from '../../../shared/poker-domain/index.js';
 import { createCanonicalHandSession } from './canonical-hand-session.mjs';
-import { runDecisionContextShadowComparison } from './decision-context-shadow.mjs';
 
 export const CANONICAL_LIVE_DEFAULT_ENABLED = false;
 
@@ -114,7 +113,7 @@ function normalizeConfiguration(configuration) {
     startingStackMilliBb,
   }));
   const pokerConfiguration = {
-    handId: 'playbook-canonical-shadow',
+    handId: 'playbook-canonical',
     game: {
       mode: gameMode,
       smallBlindMilliBb: 500,
@@ -307,9 +306,7 @@ export function createCanonicalLiveController({
           }
         }
         const state = session.applyChance(chanceEvent);
-        setUnavailable(state.phase === PHASES.BETTING
-          ? 'comparison_pending'
-          : 'chance_state');
+        setUnavailable(state.phase === PHASES.BETTING ? 'active_decision' : 'chance_state');
         return state;
       } catch (error) {
         return setError(error);
@@ -371,9 +368,7 @@ export function createCanonicalLiveController({
           : bbToMilliBb(Number(amountToBb), 'amountToBb');
         const action = createAction(state.actingPlayerId, type, amountToMilliBb);
         const nextState = session.applyAction(action);
-        setUnavailable(nextState.phase === PHASES.BETTING
-          ? 'comparison_pending'
-          : 'chance_state');
+        setUnavailable(nextState.phase === PHASES.BETTING ? 'active_decision' : 'chance_state');
         return nextState;
       } catch (error) {
         return setError(error);
@@ -396,42 +391,6 @@ export function createCanonicalLiveController({
       }
     },
 
-    compare(legacyContext) {
-      const state = requireEnabledState();
-      if (!state) return diagnostics;
-      if (!legacyContext || typeof legacyContext !== 'object') {
-        return setUnavailable('legacy_context_unavailable');
-      }
-      if (state.phase === PHASES.CHANCE || state.pendingChance !== null) {
-        return setUnavailable('chance_state');
-      }
-      if (state.phase === PHASES.SHOWDOWN) return setUnavailable('showdown_state');
-      if (state.phase === PHASES.TERMINAL) return setUnavailable('terminal_state');
-      if (state.actingPlayerId !== heroPlayerId) {
-        return setUnavailable('hero_not_actor');
-      }
-      const hero = state.players.find((player) => player.playerId === heroPlayerId);
-      if (!hero || !Array.isArray(hero.holeCards) || hero.holeCards.length !== 2) {
-        return setUnavailable('hero_cards_unknown');
-      }
-
-      const result = runDecisionContextShadowComparison({
-        enabled: true,
-        session,
-        legacyContext,
-        heroPlayerId,
-        projectionOptions,
-      });
-      if (result.status === 'error') {
-        diagnostics = diagnostic('error', { error: result.error });
-      } else {
-        diagnostics = diagnostic('compared', {
-          matches: result.comparison.matches,
-          comparison: result.comparison,
-        });
-      }
-      return diagnostics;
-    },
   };
 
   return Object.freeze(controller);

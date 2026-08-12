@@ -16,7 +16,6 @@ function snapshot(overrides = {}) {
     lastAction: 'unopened',
     facingSizeBb: 0,
     rakeMode: 'off',
-    legacyRakeValue: 5,
     ...overrides,
   };
 }
@@ -38,7 +37,6 @@ test('DecisionContext v1 derives a Home unopened spot', () => {
     rakeMode: 'off',
     forcedContributionPerPlayerBb: 0,
     totalForcedContributionBb: 0,
-    legacyRakePercent: 0,
   });
 });
 
@@ -53,7 +51,7 @@ test('DecisionContext v1 derives a ClubGG unopened spot', () => {
   assert.equal(context.facingSizeBb, 0);
   assert.equal(context.forcedContributionPerPlayerBb, 0.1);
   assert.equal(context.totalForcedContributionBb, 0.9);
-  assert.equal(context.legacyRakePercent, 0);
+  assert.equal(Object.hasOwn(context, 'legacyRakePercent'), false);
 });
 
 test('raise and 3-bet facing sizes remain positive', () => {
@@ -98,7 +96,6 @@ test('invalid and edge inputs use current production bounds and explicit default
     lastAction: '',
     facingSizeBb: 999,
     rakeMode: 'unknown',
-    legacyRakeValue: 12,
   });
   assert.deepEqual({
     tableSize: context.tableSize,
@@ -113,7 +110,6 @@ test('invalid and edge inputs use current production bounds and explicit default
     lastAction: context.lastAction,
     facingSizeBb: context.facingSizeBb,
     rakeMode: context.rakeMode,
-    legacyRakePercent: context.legacyRakePercent,
   }, {
     tableSize: 10,
     heroPosition: 'BTN',
@@ -127,7 +123,6 @@ test('invalid and edge inputs use current production bounds and explicit default
     lastAction: 'unopened',
     facingSizeBb: 0,
     rakeMode: 'off',
-    legacyRakePercent: 0,
   });
 });
 

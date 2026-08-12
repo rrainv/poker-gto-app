@@ -4,20 +4,20 @@ const assert = require('node:assert/strict');
 const qa = require('./qa002_adapters');
 
 test('Home mode has zero forced contribution and zero legacy rake feature', async () => {
-  const capture = await qa.captureContext({ players: 10, rakeMode: 'off', rake: 17 });
+  const capture = await qa.captureContext({ players: 10, rakeMode: 'off' });
   assert.equal(capture.decisionContext.rakeMode, 'off');
   assert.equal(capture.decisionContext.forcedContributionPerPlayerBb, 0);
   assert.equal(capture.decisionContext.totalForcedContributionBb, 0);
-  assert.equal(capture.decisionContext.legacyRakePercent, 0);
+  assert.equal(Object.hasOwn(capture.decisionContext, 'legacyRakePercent'), false);
 });
 
 test('ClubGG mode derives exact totals for 7, 9, and 10 seated players', async () => {
   for (const [players, expectedTotal] of [[7, 0.7], [9, 0.9], [10, 1.0]]) {
-    const capture = await qa.captureContext({ players, rakeMode: 'fixed', rake: 20 });
+    const capture = await qa.captureContext({ players, rakeMode: 'fixed' });
     assert.equal(capture.decisionContext.rakeMode, 'fixed');
     assert.equal(capture.decisionContext.forcedContributionPerPlayerBb, 0.1);
     assert.equal(capture.decisionContext.totalForcedContributionBb, expectedTotal);
-    assert.equal(capture.decisionContext.legacyRakePercent, 0);
+    assert.equal(Object.hasOwn(capture.decisionContext, 'legacyRakePercent'), false);
   }
 });
 
@@ -44,14 +44,12 @@ test('repeated context refresh does not accumulate ClubGG contribution', async (
   assert.deepEqual(capture.decisionContexts.map((context) => context.forcedContributionPerPlayerBb), [0.1, 0.1, 0.1, 0.1]);
 });
 
-test('legacy percentage and cap modes retain their numeric compatibility feature', () => {
-  assert.deepEqual(qa.strategyAccountingContext('percent', 9, 5), {
-    rakeMode: 'percent',
+test('unsupported rake modes normalize to Home accounting', () => {
+  assert.deepEqual(qa.strategyAccountingContext('percent', 9), {
+    rakeMode: 'off',
     forcedContributionPerPlayerBb: 0,
     totalForcedContributionBb: 0,
-    rake: 5,
   });
-  assert.equal(qa.strategyAccountingContext('cap', 9, 3).rake, 3);
 });
 
 test('legacy flatDrop remains separate from ClubGG and does not mutate its total', () => {

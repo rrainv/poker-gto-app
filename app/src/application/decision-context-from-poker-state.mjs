@@ -104,6 +104,5 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
     totalForcedContributionBb: (
       state.players.length * state.game.forcedContributionPerPlayerMilliBb
     ) / 1000,
-    legacyRakePercent: 0,
   };
 }

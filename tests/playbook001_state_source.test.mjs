@@ -19,10 +19,6 @@ const require = createRequire(import.meta.url);
 const legacy = require('./qa002_adapters.js');
 const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const HTML = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const HARNESS_BOOTSTRAP = fs.readFileSync(
-  new URL('../app/src/application/canonical-live-bootstrap.mjs', import.meta.url),
-  'utf8',
-);
 const PRODUCT_BOOTSTRAP = fs.readFileSync(
   new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url),
   'utf8',
@@ -50,8 +46,6 @@ function scenario(overrides = {}) {
     rakeMode: 'off',
     forcedContributionPerPlayerBb: 0,
     totalForcedContributionBb: 0,
-    legacyRakePercent: 0,
-    legacyRakeValue: 0,
     anteBb: 0,
     straddleBb: 0,
     ...overrides,
@@ -100,8 +94,6 @@ function projectedScenario(context, overrides = {}) {
     rakeMode: context.rakeMode,
     forcedContributionPerPlayerBb: context.forcedContributionPerPlayerBb,
     totalForcedContributionBb: context.totalForcedContributionBb,
-    legacyRakePercent: context.legacyRakePercent,
-    legacyRakeValue: context.legacyRakePercent,
     ...overrides,
   });
 }
@@ -137,7 +129,7 @@ test('ScenarioInput is versioned, immutable, DOM-free, and intentionally applica
   assert.equal('actionHistory' in input, false);
 });
 
-test('Scenario mode preserves manual pot, facing, action, cards, stack mode, and legacy inputs', () => {
+test('Scenario mode preserves manual pot, facing, action, cards, and stack mode', () => {
   const input = scenario({
     tableSize: 10,
     heroPosition: 'LJ',
@@ -148,8 +140,7 @@ test('Scenario mode preserves manual pot, facing, action, cards, stack mode, and
     potBb: 37.5,
     lastAction: 'raise',
     facingSizeBb: 14,
-    rakeMode: 'percent',
-    legacyRakeValue: 4.5,
+    rakeMode: 'off',
     straddleBb: 2,
   });
   const result = resolveScenario(input);
@@ -164,7 +155,6 @@ test('Scenario mode preserves manual pot, facing, action, cards, stack mode, and
     potBb: result.decisionContext.potBb,
     lastAction: result.decisionContext.lastAction,
     facingSizeBb: result.decisionContext.facingSizeBb,
-    legacyRakePercent: result.decisionContext.legacyRakePercent,
   }, {
     tableSize: 10,
     heroPosition: 'LJ',
@@ -175,7 +165,6 @@ test('Scenario mode preserves manual pot, facing, action, cards, stack mode, and
     potBb: 37.5,
     lastAction: 'raise',
     facingSizeBb: 14,
-    legacyRakePercent: 4.5,
   });
   assert.equal(input.straddleBb, 2);
 });
@@ -206,11 +195,7 @@ test('mode switching preserves the Scenario snapshot and canonical session indep
   assert.equal(canonicalController.getState(), handState);
 });
 
-test('Hand mode rejects percentage, cap, straddle, and undersized ClubGG configuration', () => {
-  assert.equal(handModeCompatibility(scenario({ rakeMode: 'percent' })).reason,
-    'unsupported_canonical_rake_mode');
-  assert.equal(handModeCompatibility(scenario({ rakeMode: 'cap' })).reason,
-    'unsupported_canonical_rake_mode');
+test('Hand mode rejects straddle and undersized ClubGG configuration', () => {
   assert.equal(handModeCompatibility(scenario({ straddleBb: 2 })).reason,
     'canonical_straddle_unsupported');
   assert.equal(handModeCompatibility(scenario({ rakeMode: 'fixed', tableSize: 6 })).reason,
@@ -266,7 +251,7 @@ test('Hand ClubGG uses canonical 0.1bb per seated player outside the pot', () =>
   assert.equal(result.decisionContext.rakeMode, 'fixed');
   assert.equal(result.decisionContext.forcedContributionPerPlayerBb, 0.1);
   assert.equal(result.decisionContext.totalForcedContributionBb, 0.7);
-  assert.equal(result.decisionContext.legacyRakePercent, 0);
+  assert.equal(Object.hasOwn(result.decisionContext, 'legacyRakePercent'), false);
   assert.equal(result.decisionContext.potBb, 1.5);
 });
 
@@ -431,11 +416,10 @@ test('both modes converge on one actionProfile and StrategyResult rendering path
   assert.match(update, /playbookResolution\.decisionContext/);
 });
 
-test('product Hand path is independent of dev harness and shadow remains diagnostic only', () => {
-  assert.doesNotMatch(PRODUCT_BOOTSTRAP, /CanonicalDev|shadow|canonicalDevHarness/);
-  assert.match(HARNESS_BOOTSTRAP, /CANONICAL_LIVE_DEFAULT_ENABLED/);
-  assert.match(HTML, /id="canonicalDevHarness"[^>]+hidden/);
-  assert.match(LOGIC, /if \(playbookResolution\.mode === 'scenario'\)[\s\S]+RiverlineCanonicalDev\?\.compare/);
+test('product Hand path has one canonical controller and no dev shadow path', () => {
+  assert.match(PRODUCT_BOOTSTRAP, /createCanonicalLiveController/);
+  assert.doesNotMatch(`${HTML}\n${LOGIC}\n${PRODUCT_BOOTSTRAP}`,
+    /canonical-live-bootstrap|canonical-hand-harness|decision-context-shadow|RiverlineCanonicalDev|canonicalDevHarness/);
 });
 
 test('dependency and scope boundaries remain intact', () => {
