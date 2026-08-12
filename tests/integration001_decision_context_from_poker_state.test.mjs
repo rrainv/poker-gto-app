@@ -87,8 +87,13 @@ function legacyEquivalent(projected) {
 }
 
 function assertLegacyParity(projected) {
-  const { callAmountBb, heroStreetContributionBb, ...legacyFields } = projected;
-  const { callAmountBb: ignoredCallAmount, heroStreetContributionBb: ignoredContribution, ...expectedLegacyFields } = legacyEquivalent(projected);
+  const { callAmountBb, heroStreetContributionBb, opponentCount, ...legacyFields } = projected;
+  const {
+    callAmountBb: ignoredCallAmount,
+    heroStreetContributionBb: ignoredContribution,
+    opponentCount: ignoredOpponentCount,
+    ...expectedLegacyFields
+  } = legacyEquivalent(projected);
   assert.deepEqual(legacyFields, expectedLegacyFields);
 }
 
@@ -128,6 +133,7 @@ test('HU unopened PokerState projects the exact DecisionContext v1 shape', () =>
   assert.deepEqual(projected, {
     schemaVersion: 'decision-context/v1',
     tableSize: 2,
+    opponentCount: 1,
     heroPosition: 'BTN',
     street: 'preflop',
     heroCards: ['As', 'Ad'],
@@ -151,6 +157,7 @@ test('six-max BTN remains unopened after earlier positions fold', () => {
   const state = foldUntilPosition(createDealtState({ playerCount: 6 }), 'BTN');
   const projected = context(state);
   assert.equal(projected.heroPosition, 'BTN');
+  assert.equal(projected.opponentCount, 2, 'three players remain live after folds to BTN');
   assert.equal(projected.lastAction, 'unopened');
   assert.equal(projected.facingSizeBb, 0);
   assertLegacyParity(projected);

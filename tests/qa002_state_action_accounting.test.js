@@ -150,14 +150,16 @@ test('characterization: visual-table activePlayers is table size, with no player
   assert.equal(Object.hasOwn(capture.dispatchedState, 'playersRemaining'), false);
 });
 
-test('characterization: flat drop is added to postflop pot and lowers aggression thresholds', () => {
-  assert.deepEqual(qa.readInputBounds('flatDrop'), { min: 0, max: null, step: 0.1 });
+test('manual flat-drop strategy control is removed and legacy option is ignored', () => {
   const noDrop = qa.postflopWithDrop(0);
   const oneBlindDrop = qa.postflopWithDrop(1);
-  assert.deepEqual({ Bet: noDrop.Bet, Check: noDrop.Check }, { Bet: 25, Check: 75 });
-  assert.deepEqual({ Bet: oneBlindDrop.Bet, Check: oneBlindDrop.Check }, { Bet: 75, Check: 25 });
-  assert.equal(noDrop.context.spr, 3);
-  assert.equal(oneBlindDrop.context.spr, 30 / 11);
+  assert.deepEqual(
+    { Bet: oneBlindDrop.Bet, Check: oneBlindDrop.Check },
+    { Bet: noDrop.Bet, Check: noDrop.Check },
+  );
+  assert.equal(noDrop.context.compatibilityStackToPotRatio, 3);
+  assert.equal(oneBlindDrop.context.compatibilityStackToPotRatio, 3);
+  assert.equal(oneBlindDrop.context.flatDropApplied, false);
 });
 
 test('canonical StrategyResult action mapping preserves action families and sizing', () => {

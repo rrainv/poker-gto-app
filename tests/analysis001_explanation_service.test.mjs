@@ -317,13 +317,13 @@ test('trusted made-hand and draw labels are reused instead of running another ev
       handClassification: {
         madeHand: 'Top Pair',
         draws: ['Flush Draw'],
-        source: 'legacy_postflop_classifier',
+        source: 'heuristic_postflop_classifier',
       },
     },
   });
   assert.equal(findFact(result, 'hand_board', 'made_hand').value, 'Top Pair');
   assert.deepEqual(findFact(result, 'hand_board', 'draws').value, ['Flush Draw']);
-  assert.ok(result.warnings.some((entry) => entry.code === 'legacy_hand_classifier'));
+  assert.ok(result.warnings.some((entry) => entry.code === 'heuristic_hand_classifier'));
 });
 
 test('missing trusted hand classification is omitted and warned rather than guessed', () => {

@@ -1,8 +1,5 @@
 import { calculatePreflopHeuristic } from './preflop-heuristic.mjs';
-import {
-  calculatePostflopHeuristicStrategy,
-  simulateHeuristicEquity,
-} from './postflop-heuristic.mjs';
+import { calculatePostflopHeuristicStrategy } from './postflop-heuristic.mjs';
 
 export const DEFAULT_HEURISTIC_OPTIONS = Object.freeze({
   playStyle: 0,
@@ -24,16 +21,23 @@ export function normalizeHeuristicOptions(options = {}) {
   });
 }
 
-export function decisionContextStrategySeed(decisionContext) {
+export function decisionContextStrategySeed(decisionContext, rawOptions = {}) {
+  const options = normalizeHeuristicOptions(rawOptions);
+  const effectiveOpponentCount = Number.isInteger(decisionContext?.opponentCount)
+    && decisionContext.opponentCount >= 1
+    ? decisionContext.opponentCount
+    : Math.max(1, (Number(decisionContext?.tableSize) || 2) - 1);
   // Only sampled-strength inputs participate. Presentation/accounting fields
-  // that do not change the legacy opponent/runout sampler cannot perturb it.
+  // that do not change the opponent/runout sampler cannot perturb it.
   const input = JSON.stringify({
     tableSize: decisionContext?.tableSize,
+    opponentCount: effectiveOpponentCount,
     heroCards: decisionContext?.heroCards,
     board: decisionContext?.board,
     deadCards: decisionContext?.deadCards,
     facingSizeBb: decisionContext?.facingSizeBb,
     lastAction: decisionContext?.lastAction,
+    opponentStyle: options.opponentStyle,
   });
   let hash = 2166136261;
   for (let index = 0; index < input.length; index += 1) {
@@ -43,8 +47,8 @@ export function decisionContextStrategySeed(decisionContext) {
   return hash >>> 0;
 }
 
-export function createDeterministicHeuristicRng(decisionContext) {
-  let state = decisionContextStrategySeed(decisionContext) || 0x9e3779b9;
+export function createDeterministicHeuristicRng(decisionContext, rawOptions = {}) {
+  let state = decisionContextStrategySeed(decisionContext, rawOptions) || 0x9e3779b9;
   return function heuristicRandom() {
     state ^= state << 13;
     state ^= state >>> 17;
@@ -85,17 +89,6 @@ function preflopCandidate(decisionContext, translate) {
 }
 
 function postflopCandidate(decisionContext, options, translate, rng) {
-  const explanationSimulation = simulateHeuristicEquity({
-    heroCards: decisionContext.heroCards,
-    board: decisionContext.board,
-    deadCards: decisionContext.deadCards,
-    tableSize: decisionContext.tableSize,
-    facingSizeBb: decisionContext.facingSizeBb,
-    lastAction: decisionContext.lastAction,
-    opponentStyle: options.opponentStyle,
-    iterations: 800,
-    rng,
-  });
   const strategy = calculatePostflopHeuristicStrategy(decisionContext, options, rng);
   const actionTypes = {
     Bet: 'bet',
@@ -113,15 +106,17 @@ function postflopCandidate(decisionContext, options, translate, rng) {
     }))
     .sort((left, right) => right.value - left.value);
   const recommendedAction = actions[0]?.label || 'Check';
-  const rangePercent = decisionContext.street === 'flop'
-    ? 'Top 40%'
-    : decisionContext.street === 'turn' ? 'Top 25%' : 'Top 15%';
+  const sample = strategy.context?.heuristicSample || null;
+  const sampledPercent = Number.isFinite(sample?.eq) ? (sample.eq * 100).toFixed(1) : '—';
+  const candidatePercent = Number.isFinite(sample?.rangeFraction)
+    ? (sample.rangeFraction * 100).toFixed(1)
+    : '—';
 
   return {
     source: 'heuristic_postflop',
     actions,
     recommendedLabel: translate(recommendedAction).toUpperCase(),
-    explanation: `${translate('Mathematical Fallback suggests')} ${(explanationSimulation.eq * 100).toFixed(1)}% ${translate('vs Villain')} ${translate(rangePercent)} ${translate('range')}.`,
+    explanation: `${translate('Heuristic sampled equity')}: ${sampledPercent}% ${translate('against an assumed opponent range')} (${candidatePercent}% ${translate('of unblocked combinations')}).`,
     details: strategy.context || null,
   };
 }
@@ -153,6 +148,6 @@ export function resolveHeuristicStrategy(
     decisionContext,
     options,
     translate,
-    createDeterministicHeuristicRng(decisionContext),
+    createDeterministicHeuristicRng(decisionContext, options),
   );
 }

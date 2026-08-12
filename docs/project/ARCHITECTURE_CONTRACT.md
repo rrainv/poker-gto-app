@@ -125,6 +125,15 @@ invent either fact; their call price is `null` except for an explicit check or
 the BB's unopened check option (`0`). Consumers calculating pot odds must use only
 finite `callAmountBb` values.
 
+`opponentCount` is also additive in DecisionContext v1:
+
+- canonical PokerState projections provide the exact number of other dealt-in,
+  non-folded players, including all-in players;
+- lossy Scenario projections use `null` because seated `tableSize` does not
+  prove how many players remain live;
+- a heuristic may disclose and use `tableSize - 1` as a Scenario approximation,
+  but must not reinterpret `tableSize` itself as a live-player field.
+
 ### StrategyResult
 
 The runtime strategy API should conceptually return:

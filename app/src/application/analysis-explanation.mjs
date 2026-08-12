@@ -350,10 +350,10 @@ function handBoardSection(context, trustedFacts, warnings, depth) {
         templateKey: 'analysis.hand.madeHand', fallback: 'Current hand classification: {madeHand}.',
         values: { madeHand: String(madeHand) },
       }));
-      if (hand?.source === 'legacy_postflop_classifier') {
+      if (hand?.source === 'heuristic_postflop_classifier') {
         warnings.push(warning(
-          'legacy_hand_classifier',
-          'Hand and draw labels use the current legacy postflop classifier and inherit its known limitations.',
+          'heuristic_hand_classifier',
+          'Hero-specific made-hand and draw labels are heuristic strategic features, separate from canonical hand ordering.',
         ));
       }
     } else {
@@ -660,6 +660,67 @@ function equitySection(trustedFacts, warnings) {
   ]);
 }
 
+function heuristicSampleSection(strategyResult, warnings) {
+  if (strategyResult?.source !== STRATEGY_SOURCES.HEURISTIC_POSTFLOP) return null;
+  const sample = strategyResult?.details?.heuristicSample;
+  const sampledEquity = boundedProbability(sample?.eq);
+  if (sampledEquity === null || sample?.provenance !== 'heuristic_conditional_sample') {
+    warnings.push(warning(
+      'heuristic_sample_unavailable',
+      'The postflop fallback did not supply its already-resolved conditional sample.',
+    ));
+    return null;
+  }
+  const facts = [
+    fact('heuristic_sampled_equity', {
+      label: 'Heuristic sampled equity', labelKey: 'analysis.fact.heuristicSampledEquity',
+      value: sampledEquity, unit: 'probability',
+      templateKey: 'analysis.heuristicSample.equity',
+      fallback: 'The fallback estimated {equity} showdown share against its assumed opponent range.',
+      values: { equity: percent(sampledEquity, 1) },
+    }),
+  ];
+  if (Number.isInteger(sample.completedSamples) && sample.completedSamples > 0) {
+    facts.push(fact('heuristic_samples_completed', {
+      label: 'Completed samples', labelKey: 'analysis.fact.heuristicSamplesCompleted',
+      value: sample.completedSamples, unit: 'trials',
+      templateKey: 'analysis.heuristicSample.completed',
+      fallback: '{samples} valid trials were completed.',
+      values: { samples: sample.completedSamples },
+    }));
+  }
+  if (Number.isInteger(sample.opponentCount) && sample.opponentCount > 0) {
+    facts.push(fact('heuristic_opponent_count', {
+      label: 'Sampled opponents', labelKey: 'analysis.fact.heuristicOpponentCount',
+      value: sample.opponentCount, unit: 'players',
+      templateKey: 'analysis.heuristicSample.opponents',
+      fallback: 'Each valid trial allocated {opponents} opponent(s).',
+      values: { opponents: sample.opponentCount },
+    }));
+  }
+  if (boundedProbability(sample.rangeFraction) !== null) {
+    facts.push(fact('heuristic_range_fraction', {
+      label: 'Assumed candidate range', labelKey: 'analysis.fact.heuristicRangeFraction',
+      value: boundedProbability(sample.rangeFraction), unit: 'probability',
+      templateKey: 'analysis.heuristicSample.rangeFraction',
+      fallback: 'The crude assumed range contains {rangeFraction} of currently unblocked starting combinations.',
+      values: { rangeFraction: percent(sample.rangeFraction, 1) },
+    }));
+  }
+  warnings.push(warning(
+    'heuristic_conditional_sample',
+    'This sampled fact is conditional on crude assumed opponent ranges and is not canonical Equity.',
+  ));
+  return section('heuristic_sample', 'Estimated Strength', 'supporting', facts, [
+    textPart(
+      'analysis.heuristicSample.limitation',
+      'The strategy and this displayed fact use the same resolved sample; no second sample is calculated for explanation.',
+      {},
+      'interpretation',
+    ),
+  ]);
+}
+
 function unavailableReasonFor(context, strategyResult, explicitReason) {
   if (explicitReason) return explicitReason;
   if (!context) return 'invalid_context';
@@ -714,6 +775,8 @@ export function createAnalysisExplanation({
     sections.push(actionContextSection(decisionContext, normalizedAuthority, history, depth, warnings));
     const strategy = strategySection(decisionContext, actions, provenance.source, depth);
     if (strategy) sections.push(strategy);
+    const heuristicSample = heuristicSampleSection(strategyResult, warnings);
+    if (heuristicSample) sections.push(heuristicSample);
     const sizing = sizingSection(decisionContext, actions);
     if (sizing) sections.push(sizing);
     const equity = equitySection(trustedFacts, warnings);

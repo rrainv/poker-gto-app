@@ -37,6 +37,33 @@ legal, and internally coherent pending validated preflop data.
 - Play Style and Opponent Style controls are not applied to preflop frequencies.
   Their strategy semantics require a separate calibrated product design.
 
+### Current postflop fallback limitations
+
+The production postflop source remains a deterministic heuristic, not solved
+GTO, Nash, equilibrium strategy, or canonical Equity.
+
+- Its sampled showdown share is conditional on a crude assumed opponent range.
+  Each opponent currently uses the same uniformly sampled candidate-range model;
+  card removal makes allocations dependent, but no weighted range engine exists.
+- Canonical Hand and Training contexts use exact live-opponent counts. Scenario
+  contexts disclose a seated-table approximation because they have no legal
+  fold history.
+- Every counted trial allocates every intended opponent, excludes known/dead
+  cards, uses the shared evaluator, and awards Hero exactly `1 / winners` in a
+  split pot.
+- `StrategyResult.details.heuristicSample` is the one sample used by both the
+  strategy decision and AnalysisExplanation. It is labeled
+  `heuristic_conditional_sample` and remains separate from `equity-request/v1`.
+- Postflop action frequencies use continuous heuristic interpolation. The
+  category/style offsets remain assumptions awaiting calibration.
+- Exact price adjustment uses `callAmountBb` only. Unknown Scenario prices do
+  not become zero or create exact pot odds.
+- Postflop exact bet/raise amounts are omitted because DecisionContext v1 does
+  not prove complete legal sizing bounds.
+- The former manual flat-drop threshold penalty was removed. ClubGG's fixed
+  0.1bb-per-seated-player deduction is outside the contested pot and does not
+  receive an invented strategy penalty.
+
 ## 3. Training truth
 
 Training targets must have a documented source.

@@ -52,12 +52,18 @@ test('unsupported rake modes normalize to Home accounting', () => {
   });
 });
 
-test('legacy flatDrop remains separate from ClubGG and does not mutate its total', () => {
+test('removed manual flatDrop penalty cannot mutate ClubGG accounting or postflop strategy', () => {
   const before = qa.strategyAccountingContext('fixed', 9, 0);
-  qa.postflopWithDrop(1);
+  const baseline = qa.postflopWithDrop(0);
+  const ignoredDrop = qa.postflopWithDrop(1);
   const after = qa.strategyAccountingContext('fixed', 9, 0);
   assert.deepEqual(after, before);
   assert.equal(after.totalForcedContributionBb, 0.9);
+  assert.deepEqual(
+    { Bet: ignoredDrop.Bet, Check: ignoredDrop.Check },
+    { Bet: baseline.Bet, Check: baseline.Check },
+  );
+  assert.equal(ignoredDrop.context.flatDropApplied, false);
 });
 
 test('position and unopened semantics remain normalized in a ClubGG context', async () => {

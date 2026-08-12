@@ -1,126 +1,289 @@
 import {
+  CARD_RANKS,
+  CARD_SUITS,
+  assertUniqueKnownCards,
+} from '../../../shared/poker-domain/cards.js';
+import {
   HEURISTIC_RANK_VALUES,
   evaluatePostflopHandStrength,
   scoreHeuristicSeven,
 } from './heuristic-evaluator.mjs';
 
-const DECK_RANKS = Object.freeze(['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']);
-const DECK_SUITS = Object.freeze(['s', 'h', 'd', 'c']);
+export const POSTFLOP_HEURISTIC_SAMPLES = 250;
+
+const FULL_DECK = Object.freeze(
+  [...CARD_RANKS].flatMap((rank) => [...CARD_SUITS].map((suit) => `${rank}${suit}`)),
+);
+
+function clampUnit(value) {
+  return Math.min(1, Math.max(0, Number(value)));
+}
+
+function sampleIndex(rng, length) {
+  if (!Number.isInteger(length) || length <= 0) throw new RangeError('Cannot sample an empty set');
+  const randomValue = Number(rng());
+  if (!Number.isFinite(randomValue) || randomValue < 0 || randomValue >= 1) {
+    throw new RangeError('Injected heuristic RNG must return values in [0, 1)');
+  }
+  return Math.floor(randomValue * length);
+}
+
+function opponentCountFor({ opponentCount, tableSize }) {
+  if (Number.isInteger(opponentCount) && opponentCount >= 1 && opponentCount <= 9) {
+    return { count: opponentCount, source: 'decision_context_exact' };
+  }
+  const seatedPlayers = Number.isInteger(tableSize)
+    ? Math.min(10, Math.max(2, tableSize))
+    : 2;
+  return { count: seatedPlayers - 1, source: 'table_size_approximation' };
+}
+
+function preflopComboScore(card1, card2) {
+  const rank1 = HEURISTIC_RANK_VALUES[card1[0]] || 0;
+  const rank2 = HEURISTIC_RANK_VALUES[card2[0]] || 0;
+  const highRank = Math.max(rank1, rank2);
+  const lowRank = Math.min(rank1, rank2);
+  if (rank1 === rank2) return highRank * 5 + 30;
+  let points = highRank * 3 + lowRank;
+  if (card1[1] === card2[1]) points += 8;
+  const gap = highRank - lowRank;
+  if (gap === 1) points += 4;
+  else if (gap === 2) points += 2;
+  else if (gap === 3) points += 1;
+  return points;
+}
+
+function buildOpponentCandidateRange(deck, {
+  opponentStyle,
+  facingSizeBb,
+  lastAction,
+  totalPlayers,
+}) {
+  const allCombos = [];
+  for (let first = 0; first < deck.length; first += 1) {
+    for (let second = first + 1; second < deck.length; second += 1) {
+      const hand = [deck[first], deck[second]];
+      allCombos.push({ hand, points: preflopComboScore(...hand) });
+    }
+  }
+  allCombos.sort((left, right) => (
+    right.points - left.points
+    || left.hand[0].localeCompare(right.hand[0])
+    || left.hand[1].localeCompare(right.hand[1])
+  ));
+
+  // This is deliberately a crude, uniform candidate range rather than a
+  // weighted or solved range. A higher opponentStyle means a looser range.
+  let targetFraction = 0.15 + 0.3 * clampUnit(opponentStyle);
+  if (Number(facingSizeBb) > 0 || String(lastAction || '').toLowerCase().includes('raise')) {
+    targetFraction *= 0.7;
+  }
+  if (totalPlayers >= 6) targetFraction *= 0.9;
+  targetFraction = Math.max(0.05, Math.min(1, targetFraction));
+  const selectedCount = Math.max(1, Math.floor(allCombos.length * targetFraction));
+  return {
+    combos: allCombos.slice(0, selectedCount),
+    selectedCount,
+    totalCount: allCombos.length,
+    actualFraction: selectedCount / allCombos.length,
+    targetFraction,
+  };
+}
+
+function allocateOpponentHands(candidateCombos, opponentCount, initialUsedCards, rng) {
+  const usedCards = new Set(initialUsedCards);
+  const hands = [];
+  for (let opponent = 0; opponent < opponentCount; opponent += 1) {
+    const legal = candidateCombos.filter(({ hand }) => (
+      !usedCards.has(hand[0]) && !usedCards.has(hand[1])
+    ));
+    if (legal.length === 0) return null;
+    const selected = legal[sampleIndex(rng, legal.length)].hand;
+    hands.push(selected);
+    usedCards.add(selected[0]);
+    usedCards.add(selected[1]);
+  }
+  return { hands, usedCards };
+}
+
+function sampleRunout(deck, usedCards, neededRunout, rng) {
+  const available = deck.filter((card) => !usedCards.has(card));
+  if (available.length < neededRunout) return null;
+  for (let index = 0; index < neededRunout; index += 1) {
+    const selected = index + sampleIndex(rng, available.length - index);
+    [available[index], available[selected]] = [available[selected], available[index]];
+  }
+  return available.slice(0, neededRunout);
+}
 
 /**
- * Legacy sampled strength used only by the heuristic strategy fallback. This
- * is deliberately separate from the canonical Equity service.
+ * Range-conditioned sampled showdown share used only by the heuristic strategy
+ * fallback. This is not the canonical Equity service or an equilibrium range.
  */
 export function simulateHeuristicEquity({
   heroCards,
   board,
   deadCards = [],
   tableSize,
+  opponentCount = null,
   facingSizeBb,
   lastAction,
   opponentStyle = 0,
-  iterations = 800,
+  iterations = POSTFLOP_HEURISTIC_SAMPLES,
   rng,
+  observeTrial = null,
 }) {
   if (typeof rng !== 'function') throw new TypeError('Heuristic equity requires an injected RNG');
+  if (!Number.isInteger(iterations) || iterations <= 0) {
+    throw new RangeError('Heuristic sample count must be a positive integer');
+  }
+  const filteredHeroCards = Array.isArray(heroCards) ? heroCards.filter(Boolean) : [];
+  const boardCards = Array.isArray(board) ? board.filter(Boolean) : [];
+  const excludedDeadCards = Array.isArray(deadCards) ? deadCards.filter(Boolean) : [];
+  if (filteredHeroCards.length !== 2 || boardCards.length < 3 || boardCards.length > 5) {
+    throw new RangeError('Heuristic postflop sampling requires two Hero cards and a valid board street');
+  }
+  assertUniqueKnownCards([
+    { label: 'heroCards', cards: filteredHeroCards },
+    { label: 'board', cards: boardCards },
+    { label: 'deadCards', cards: excludedDeadCards },
+  ]);
 
-  const excluded = heroCards.concat(board).concat(deadCards || []).filter(Boolean);
-  const filteredHeroCards = heroCards.filter(Boolean);
-  const boardCards = board.filter(Boolean);
-  const deck = [];
-  for (const rank of DECK_RANKS) {
-    for (const suit of DECK_SUITS) {
-      if (!excluded.includes(rank + suit)) deck.push(rank + suit);
+  const excluded = new Set([...filteredHeroCards, ...boardCards, ...excludedDeadCards]);
+  const deck = FULL_DECK.filter((card) => !excluded.has(card));
+  const opponents = opponentCountFor({ opponentCount, tableSize });
+  const neededRunout = 5 - boardCards.length;
+  if (deck.length < opponents.count * 2 + neededRunout) {
+    throw new RangeError('Heuristic sample cannot allocate every opponent and board card');
+  }
+  const range = buildOpponentCandidateRange(deck, {
+    opponentStyle,
+    facingSizeBb,
+    lastAction,
+    totalPlayers: opponents.count + 1,
+  });
+
+  let equityShare = 0;
+  let soleWins = 0;
+  let splitPotTrials = 0;
+  let attemptedSamples = 0;
+  let completedSamples = 0;
+  const maximumAttempts = iterations * 25;
+
+  while (completedSamples < iterations && attemptedSamples < maximumAttempts) {
+    attemptedSamples += 1;
+    const allocation = allocateOpponentHands(range.combos, opponents.count, excluded, rng);
+    if (!allocation) continue;
+    const runout = sampleRunout(deck, allocation.usedCards, neededRunout, rng);
+    if (!runout) continue;
+
+    const finalBoard = [...boardCards, ...runout];
+    const scores = [
+      scoreHeuristicSeven([...filteredHeroCards, ...finalBoard]),
+      ...allocation.hands.map((hand) => scoreHeuristicSeven([...hand, ...finalBoard])),
+    ];
+    const bestScore = Math.max(...scores);
+    const winnerIndexes = scores
+      .map((score, index) => (score === bestScore ? index : -1))
+      .filter((index) => index >= 0);
+    if (winnerIndexes.includes(0)) {
+      equityShare += 1 / winnerIndexes.length;
+      if (winnerIndexes.length === 1) soleWins += 1;
+      else splitPotTrials += 1;
+    }
+
+    completedSamples += 1;
+    if (typeof observeTrial === 'function') {
+      observeTrial({
+        heroCards: [...filteredHeroCards],
+        opponentHands: allocation.hands.map((hand) => [...hand]),
+        board: finalBoard,
+        runout: [...runout],
+        deadCards: [...excludedDeadCards],
+        winnerIndexes: [...winnerIndexes],
+      });
     }
   }
 
-  let wins = 0;
-  let ties = 0;
-  const neededRunout = Math.max(0, 5 - boardCards.length);
-  let villainCombos = [];
-  for (let first = 0; first < deck.length; first += 1) {
-    for (let second = first + 1; second < deck.length; second += 1) {
-      const card1 = deck[first];
-      const card2 = deck[second];
-      const rank1 = HEURISTIC_RANK_VALUES[card1[0]] || 0;
-      const rank2 = HEURISTIC_RANK_VALUES[card2[0]] || 0;
-      const highRank = Math.max(rank1, rank2);
-      const lowRank = Math.min(rank1, rank2);
-      const isPair = rank1 === rank2;
-      const isSuited = card1[1] === card2[1];
-      let points = 0;
-      if (isPair) {
-        points = highRank * 5 + 30;
-      } else {
-        points = highRank * 3 + lowRank;
-        if (isSuited) points += 8;
-        const gap = highRank - lowRank;
-        if (gap === 1) points += 4;
-        else if (gap === 2) points += 2;
-        else if (gap === 3) points += 1;
-      }
-      villainCombos.push({ hand: [card1, card2], points });
-    }
-  }
-
-  villainCombos.sort((left, right) => right.points - left.points);
-  let basePercent = 0.15 + 0.3 * opponentStyle;
-  if (facingSizeBb > 0 || String(lastAction || '').toLowerCase().includes('raise')) {
-    basePercent *= 0.7;
-  }
-  if (tableSize >= 6) basePercent *= 0.9;
-  const rangePercent = Math.max(0.05, Math.min(1, basePercent));
-  const cutoff = Math.max(1, Math.floor(villainCombos.length * rangePercent));
-  villainCombos = villainCombos.slice(0, cutoff);
-
-  const villainCount = Math.max(1, tableSize - 1);
-  for (let iteration = 0; iteration < iterations; iteration += 1) {
-    const villainHands = [];
-    const usedCards = [...filteredHeroCards, ...boardCards];
-    for (let villain = 0; villain < villainCount; villain += 1) {
-      let candidate;
-      let valid = false;
-      let attempts = 0;
-      while (!valid && attempts < 20) {
-        candidate = villainCombos[Math.floor(rng() * villainCombos.length)];
-        if (!usedCards.includes(candidate.hand[0]) && !usedCards.includes(candidate.hand[1])) {
-          valid = true;
-        }
-        attempts += 1;
-      }
-      if (valid) {
-        villainHands.push(candidate.hand);
-        usedCards.push(candidate.hand[0], candidate.hand[1]);
-      }
-    }
-
-    const runoutDeck = deck.filter((card) => !usedCards.includes(card));
-    const runout = [];
-    const deckLength = runoutDeck.length;
-    for (let cardIndex = 0; cardIndex < neededRunout; cardIndex += 1) {
-      const randomIndex = cardIndex + Math.floor(rng() * (deckLength - cardIndex));
-      const temporary = runoutDeck[cardIndex];
-      runoutDeck[cardIndex] = runoutDeck[randomIndex];
-      runoutDeck[randomIndex] = temporary;
-      runout.push(runoutDeck[cardIndex]);
-    }
-
-    const finalBoard = boardCards.concat(runout);
-    const heroScore = scoreHeuristicSeven([...filteredHeroCards, ...finalBoard]);
-    let maximumVillainScore = 0;
-    for (const villainHand of villainHands) {
-      maximumVillainScore = Math.max(
-        maximumVillainScore,
-        scoreHeuristicSeven([...villainHand, ...finalBoard]),
-      );
-    }
-    if (heroScore > maximumVillainScore) wins += 1;
-    else if (heroScore === maximumVillainScore) ties += 1;
+  if (completedSamples !== iterations) {
+    throw new RangeError(
+      `Heuristic allocation completed ${completedSamples}/${iterations} samples after ${attemptedSamples} attempts`,
+    );
   }
 
   return {
-    eq: (wins + ties / 2) / iterations,
-    pct: rangePercent,
+    eq: equityShare / completedSamples,
+    pct: range.actualFraction,
+    provenance: 'heuristic_conditional_sample',
+    requestedSamples: iterations,
+    attemptedSamples,
+    completedSamples,
+    opponentCount: opponents.count,
+    opponentCountSource: opponents.source,
+    rangeComboCount: range.selectedCount,
+    unblockedComboCount: range.totalCount,
+    rangeFraction: range.actualFraction,
+    rangeTargetFraction: range.targetFraction,
+    rangeDistribution: 'uniform_over_selected_legal_combos',
+    sharedRangeAssumption: true,
+    soleWins,
+    splitPotTrials,
+  };
+}
+
+function linearAt(value, anchors) {
+  if (value <= anchors[0][0]) return anchors[0][1];
+  for (let index = 1; index < anchors.length; index += 1) {
+    const [rightX, rightY] = anchors[index];
+    const [leftX, leftY] = anchors[index - 1];
+    if (value <= rightX) {
+      const progress = (value - leftX) / (rightX - leftX);
+      return leftY + (rightY - leftY) * progress;
+    }
+  }
+  return anchors[anchors.length - 1][1];
+}
+
+function smoothBoundary(value, center, halfWidth = 0.1) {
+  const progress = clampUnit((value - (center - halfWidth)) / (halfWidth * 2));
+  return progress * progress * (3 - 2 * progress);
+}
+
+function closedHeadsUpMix(aggressiveName, passiveName, aggressivePercent) {
+  const aggressive = Math.min(100, Math.max(0, aggressivePercent));
+  return {
+    [aggressiveName]: aggressive,
+    [passiveName]: 100 - aggressive,
+  };
+}
+
+function actionContextFacesWager(decisionContext, trustedCallAmount) {
+  if (trustedCallAmount === 0) return false;
+  return Number(decisionContext.facingSizeBb) > 0
+    || ['bet', 'raise'].includes(String(decisionContext.lastAction || '').toLowerCase());
+}
+
+function handClassificationDetails(evaluation) {
+  const draws = [];
+  if (evaluation.drawFeatures?.flushDraw) {
+    draws.push(evaluation.drawFeatures.nutFlushDraw ? 'Nut Flush Draw' : 'Flush Draw');
+  }
+  if (evaluation.drawFeatures?.isOESD) draws.push('OESD');
+  else if (evaluation.drawFeatures?.isDoubleGutshot) draws.push('Double Gutshot');
+  else if (evaluation.drawFeatures?.isGutshot) draws.push('Gutshot');
+  return {
+    canonicalCategory: evaluation.canonicalRank?.category ?? null,
+    canonicalScore: evaluation.canonicalRank?.score ?? null,
+    strategicCategory: evaluation.strategicCategory,
+    madeHand: evaluation.madeHand,
+    madeHandLabel: evaluation.madeHandLabel,
+    draws,
+    drawFeatures: evaluation.drawFeatures,
+    boardTexture: evaluation.boardTexture,
+    tripsType: evaluation.tripsType,
+    usesHeroCards: evaluation.usesHeroCards,
+    playsBoard: evaluation.playsBoard,
+    source: 'heuristic_postflop_classifier',
   };
 }
 
@@ -136,10 +299,11 @@ export function calculatePostflopHeuristicStrategy(decisionContext, options, rng
     board,
     deadCards: decisionContext.deadCards,
     tableSize: decisionContext.tableSize,
+    opponentCount: decisionContext.opponentCount,
     facingSizeBb: decisionContext.facingSizeBb,
     lastAction: decisionContext.lastAction,
     opponentStyle: options.opponentStyle,
-    iterations: 250,
+    iterations: POSTFLOP_HEURISTIC_SAMPLES,
     rng,
   });
   return calculatePostflopStrategyFromSample(decisionContext, options, simulation);
@@ -152,113 +316,113 @@ export function calculatePostflopStrategyFromSample(decisionContext, options, si
     return { Check: 100 };
   }
   const evaluation = evaluatePostflopHandStrength(heroCards, board);
-  let equity = simulation.eq;
+  const sampledEquity = clampUnit(simulation.eq);
+  if (!Number.isFinite(sampledEquity)) throw new RangeError('Heuristic sample equity must be finite');
 
-  // Compatibility-only manual drop. It remains distinct from ClubGG's fixed
-  // per-player contribution and does not mutate DecisionContext accounting.
-  const flatDropBb = options.flatDropBb;
-  const potSize = (Number(decisionContext.potBb) || 1.5) + flatDropBb;
-  const facingSize = Number(decisionContext.facingSizeBb) || 0;
+  const potSize = Number.isFinite(Number(decisionContext.potBb))
+    ? Math.max(0, Number(decisionContext.potBb))
+    : 1.5;
   const trustedCallAmount = Number.isFinite(decisionContext.callAmountBb)
     && decisionContext.callAmountBb >= 0
     ? decisionContext.callAmountBb
     : null;
-  const stack = Number(decisionContext.stackBb) || 100;
-  const spr = stack / (potSize || 1);
-  const bleedDiscount = flatDropBb * 0.15;
-  const tripsType = evaluation.tripsType || null;
-  const tripsStrength = evaluation.tripsStrength || 1;
-  const isBoardPaired = evaluation.isBoardPaired || false;
-  const isWetBoard = evaluation.isWetBoard || false;
-  const boardTexture = evaluation.boardTexture || {};
+  const compatibilityStack = Number.isFinite(Number(decisionContext.stackBb))
+    ? Math.max(0, Number(decisionContext.stackBb))
+    : 100;
+  const compatibilityStackToPotRatio = potSize > 0 ? compatibilityStack / potSize : null;
+  const playStyle = clampUnit(options.playStyle);
 
-  if (boardTexture.flushDrawCompletion) equity *= 1.15;
-  if (boardTexture.backdoorFlushDraw && evaluation.category === 'middle_pair') equity *= 1.05;
-  if (boardTexture.isOESD) equity *= 1.12;
-  else if (boardTexture.isGutshot) equity *= 1.04;
-  if (boardTexture.monotone && evaluation.category === 'air') equity *= 0.85;
-  if (tripsType && tripsStrength !== 1) equity *= tripsStrength;
-  if (isBoardPaired && evaluation.category === 'monster' && !tripsType) equity *= 0.8;
-
-  if (isWetBoard && evaluation.category === 'top_pair') {
-    const heroSuits = heroCards.map((card) => card[1]);
-    const boardSuits = board.map((card) => card[1]);
-    const hasSuitBlocker = heroSuits.some((suit) => boardSuits.includes(suit));
-    if (!hasSuitBlocker) equity *= 0.75;
+  // These offsets are explicit strategic heuristics, not equity corrections.
+  const categoryOffsets = {
+    monster: 0.12,
+    two_pair: 0.07,
+    overpair: 0.05,
+    top_pair: 0.04,
+    middle_pair: 0.01,
+    bottom_pair: -0.01,
+    weak_pair: -0.03,
+    flush_draw: 0.03,
+    air: -0.02,
+  };
+  let aggressionScore = sampledEquity + (categoryOffsets[evaluation.strategicCategory] || 0);
+  if (evaluation.drawFeatures?.isOESD) aggressionScore += 0.04;
+  else if (evaluation.drawFeatures?.isGutshot) aggressionScore += 0.015;
+  if (evaluation.drawFeatures?.nutFlushDraw) aggressionScore += 0.02;
+  if (evaluation.isWetBoard && evaluation.strategicCategory === 'top_pair') aggressionScore -= 0.04;
+  if (compatibilityStackToPotRatio !== null && compatibilityStackToPotRatio < 2
+    && ['monster', 'two_pair', 'overpair', 'top_pair'].includes(evaluation.strategicCategory)) {
+    aggressionScore += 0.03;
   }
-
-  if (spr < 2) {
-    if ((evaluation.category === 'top_pair' || evaluation.category === 'two_pair' || tripsType)
-      && tripsType && tripsStrength < 1) {
-      equity /= tripsStrength;
-    }
-  } else if (spr > 10) {
-    if (tripsType === 'trips' && tripsStrength < 1) equity *= 0.8;
-    if (evaluation.category === 'top_pair' && isWetBoard) equity *= 0.7;
+  if (compatibilityStackToPotRatio !== null && compatibilityStackToPotRatio > 10
+    && evaluation.isWetBoard && evaluation.strategicCategory === 'top_pair') {
+    aggressionScore -= 0.03;
   }
+  aggressionScore = clampUnit(aggressionScore + playStyle * 0.05);
 
-  const isSuited = heroCards[0][1] === heroCards[1][1];
-  const rank1 = HEURISTIC_RANK_VALUES[heroCards[0][0]];
-  const rank2 = HEURISTIC_RANK_VALUES[heroCards[1][0]];
-  const isKxQx = rank1 >= 10 || rank2 >= 10;
-  if (isSuited || isKxQx) equity *= 1 + 0.15 * options.playStyle;
-
-  // calculateBoardWetness was never defined in production, so its guarded
-  // compatibility branch had no runtime effect and is intentionally omitted.
   const requiredRawEquity = trustedCallAmount !== null && trustedCallAmount > 0
     ? trustedCallAmount / (potSize + trustedCallAmount)
     : null;
-  let realizationFactor = 1;
-  const heroPosition = decisionContext.heroPosition || 'BTN';
-  const villainPosition = ['BTN', 'CO', 'HJ'].includes(heroPosition) ? 'BB' : 'SB';
-  const inPosition = ['BTN', 'CO', 'HJ'].includes(heroPosition)
-    && ['BB', 'SB'].includes(villainPosition);
-  if (inPosition) realizationFactor += 0.15;
-  else realizationFactor -= 0.1;
-  const isConnected = Math.abs(rank1 - rank2) <= 2;
-  if (isSuited) realizationFactor += 0.1;
-  if (isConnected) realizationFactor += 0.05;
-
-  let realizedEquity = equity * realizationFactor;
-  if (evaluation.category === 'monster') realizedEquity = Math.max(realizedEquity, 0.9);
-  realizedEquity = Math.min(1, realizedEquity);
-
+  const facesWager = actionContextFacesWager(decisionContext, trustedCallAmount);
   let strategy;
-  const openThreshold = 0.85 - bleedDiscount;
-  const betThreshold = 0.65 - bleedDiscount;
-  const callRaiseThreshold = 0.75 - bleedDiscount;
-  if (facingSize === 0) {
-    if (realizedEquity >= openThreshold || equity >= 0.95 || evaluation.category === 'monster') {
-      strategy = { Bet: 100 };
-    } else if (realizedEquity >= betThreshold
-      || evaluation.category === 'two_pair' || evaluation.category === 'top_pair') {
-      strategy = { Bet: 75, Check: 25 };
-    } else if (realizedEquity >= 0.5 - bleedDiscount || evaluation.category === 'middle_pair') {
-      strategy = { Bet: 25, Check: 75 };
-    } else {
-      strategy = { Check: 100 };
-    }
-  } else if (realizedEquity >= 0.9 - bleedDiscount || evaluation.category === 'monster') {
-    strategy = { Raise: 100 };
-  } else if (realizedEquity >= callRaiseThreshold || evaluation.category === 'two_pair') {
-    strategy = { Raise: 25, Call: 75 };
-  } else if (requiredRawEquity !== null
-    ? realizedEquity >= requiredRawEquity
-    : realizedEquity >= 0.5 - bleedDiscount) {
-    strategy = { Call: 100 };
+
+  if (!facesWager) {
+    let betPercent = linearAt(aggressionScore, [
+      [0, 0], [0.35, 0], [0.5, 25], [0.65, 75], [0.85, 100], [1, 100],
+    ]);
+    const categoryFloor = {
+      monster: 95,
+      two_pair: 75,
+      overpair: 60,
+      top_pair: 60,
+      middle_pair: 20,
+      bottom_pair: 15,
+      weak_pair: 10,
+      flush_draw: 25,
+    }[evaluation.strategicCategory] || 0;
+    betPercent = Math.max(categoryFloor, betPercent);
+    strategy = closedHeadsUpMix('Bet', 'Check', betPercent);
   } else {
-    strategy = { Fold: 100 };
+    const continueBoundary = requiredRawEquity ?? 0.5;
+    const defendPercent = smoothBoundary(sampledEquity, continueBoundary, 0.1) * 100;
+    const raiseShare = linearAt(aggressionScore, [
+      [0, 0], [0.6, 0], [0.75, 0.25], [0.9, 1], [1, 1],
+    ]);
+    const raisePercent = defendPercent * raiseShare;
+    const callPercent = defendPercent - raisePercent;
+    strategy = {
+      Raise: raisePercent,
+      Call: callPercent,
+      Fold: 100 - defendPercent,
+    };
   }
 
   strategy.context = {
-    tripsType,
-    tripsStrength,
-    isBoardPaired,
-    isWetBoard,
-    spr,
-    originalEquity: simulation.eq,
-    modifiedEquity: equity,
-    boardTexture,
+    heuristicSample: {
+      ...simulation,
+      eq: sampledEquity,
+      provenance: 'heuristic_conditional_sample',
+    },
+    handClassification: handClassificationDetails(evaluation),
+    aggressionScore,
+    sampledEquity,
+    requiredRawEquity,
+    priceSource: trustedCallAmount === null
+      ? 'unavailable_scenario_price'
+      : trustedCallAmount === 0 ? 'trusted_free_action' : 'trusted_call_amount',
+    priceDependentAdjustmentApplied: requiredRawEquity !== null,
+    facesWager,
+    compatibilityStackToPotRatio,
+    stackSemantics: 'decision_context_compatibility_stack_not_effective_stack',
+    playStyle,
+    opponentStyle: clampUnit(options.opponentStyle),
+    playStyleSemantics: 'continuous_aggression_bias',
+    opponentStyleSemantics: 'higher_value_samples_a_looser_assumed_range',
+    positionAdjustmentApplied: false,
+    flatDropApplied: false,
+    flatDropBbIgnored: Number.isFinite(Number(options.flatDropBb))
+      ? Math.max(0, Number(options.flatDropBb))
+      : 0,
+    sizingSemantics: 'omitted_because_decision_context_lacks_complete_legal_raise_bounds',
   };
   return strategy;
 }

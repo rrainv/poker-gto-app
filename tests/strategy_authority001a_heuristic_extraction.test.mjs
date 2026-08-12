@@ -125,7 +125,7 @@ test('preflop characterization survives extraction across action and stack conte
   }
 });
 
-test('postflop classifier/threshold character remains stable for made hands, draws, air, and flat drop', () => {
+test('postflop classifier remains qualitative while thresholds are continuous and flat drop is ignored', () => {
   const base = context({
     street: 'flop',
     heroCards: ['As', 'Kd'],
@@ -156,12 +156,23 @@ test('postflop classifier/threshold character remains stable for made hands, dra
     { ...options, flatDropBb: 1 },
     { eq: 0.48, pct: 0.15 },
   );
+  const withoutDrop = calculatePostflopStrategyFromSample(
+    base,
+    options,
+    { eq: 0.48, pct: 0.15 },
+  );
 
-  assert.deepEqual({ Bet: pair.Bet, Check: pair.Check }, { Bet: 75, Check: 25 });
-  assert.deepEqual({ Bet: draw.Bet, Check: draw.Check }, { Bet: 75, Check: 25 });
+  assert.ok(pair.Bet >= 60);
+  assert.equal(pair.Bet + pair.Check, 100);
+  assert.ok(draw.Bet >= 25);
+  assert.equal(draw.Bet + draw.Check, 100);
   assert.deepEqual({ Check: air.Check }, { Check: 100 });
-  assert.deepEqual({ Bet: withDrop.Bet, Check: withDrop.Check }, { Bet: 75, Check: 25 });
-  assert.equal(withDrop.context.spr, 30 / 11);
+  assert.deepEqual(
+    { Bet: withDrop.Bet, Check: withDrop.Check },
+    { Bet: withoutDrop.Bet, Check: withoutDrop.Check },
+  );
+  assert.equal(withDrop.context.flatDropApplied, false);
+  assert.equal(withDrop.context.compatibilityStackToPotRatio, 3);
 });
 
 test('provider browser seam injects options and preserves canonical StrategyResult normalization', () => {
@@ -185,8 +196,10 @@ test('provider browser seam injects options and preserves canonical StrategyResu
   assert.equal(baseline.schemaVersion, 'strategy-result/v1');
   assert.equal(baseline.source, 'heuristic_postflop');
   assert.equal(baseline.actions.reduce((sum, entry) => sum + entry.probability, 0), 1);
-  assert.ok(styled.details.modifiedEquity > baseline.details.modifiedEquity);
-  assert.ok(looseOpponent.details.originalEquity > baseline.details.originalEquity);
+  assert.ok(styled.details.aggressionScore > baseline.details.aggressionScore);
+  assert.ok(looseOpponent.details.heuristicSample.rangeFraction
+    > baseline.details.heuristicSample.rangeFraction);
+  assert.equal(styled.details.sampledEquity, baseline.details.sampledEquity);
 });
 
 test('local deterministic RNG streams are repeatable, independent, and reentrant', () => {

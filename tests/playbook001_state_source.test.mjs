@@ -323,9 +323,22 @@ test('flop first-action parity and facing-bet pricing authority remain explicit'
   controller.dealBoardCards(['2c', '3d', '4s']);
   const flop = resolveHand(controller);
   assert.equal(flop.decisionContext.street, 'flop');
-  assert.deepEqual(
-    legacy.strategyResult(resolveScenario(projectedScenario(flop.decisionContext)).decisionContext),
-    legacy.strategyResult(flop.decisionContext),
+  const scenarioFlop = legacy.strategyResult(
+    resolveScenario(projectedScenario(flop.decisionContext)).decisionContext,
+  );
+  const handFlop = legacy.strategyResult(flop.decisionContext);
+  assert.deepEqual(scenarioFlop.actions, handFlop.actions);
+  assert.equal(
+    scenarioFlop.details.heuristicSample.eq,
+    handFlop.details.heuristicSample.eq,
+  );
+  assert.equal(
+    scenarioFlop.details.heuristicSample.opponentCountSource,
+    'table_size_approximation',
+  );
+  assert.equal(
+    handFlop.details.heuristicSample.opponentCountSource,
+    'decision_context_exact',
   );
 
   controller.applyAction({ type: ACTION_TYPES.CHECK });

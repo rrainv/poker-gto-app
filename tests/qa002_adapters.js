@@ -148,7 +148,36 @@ function createHarness() {
     ${strategyContractSource}
     ${strategyProviderSource}
     ${evaluatorEquitySource}
-    function evaluateSeven(cards) { return { score: scoreSeven(cards) }; }
+    const CARD_RANKS = '23456789TJQKA';
+    const CARD_SUITS = 'shdc';
+    const HAND_CATEGORIES = Object.freeze({
+      HIGH_CARD: 'high_card', ONE_PAIR: 'one_pair', TWO_PAIR: 'two_pair',
+      THREE_OF_A_KIND: 'three_of_a_kind', STRAIGHT: 'straight', FLUSH: 'flush',
+      FULL_HOUSE: 'full_house', FOUR_OF_A_KIND: 'four_of_a_kind',
+      STRAIGHT_FLUSH: 'straight_flush'
+    });
+    const QA_HAND_CATEGORIES = Object.freeze(Object.values(HAND_CATEGORIES));
+    function qaRank(cards, score) {
+      return {
+        score,
+        category: QA_HAND_CATEGORIES[Math.floor(score / 1e10)],
+        tiebreakers: [],
+        bestFiveCards: cards.slice(0, 5)
+      };
+    }
+    function evaluateFive(cards) { return qaRank(cards, scoreFive(cards)); }
+    function evaluateSeven(cards) { return qaRank(cards, scoreSeven(cards)); }
+    function assertUniqueKnownCards(groups) {
+      const seen = new Set();
+      for (const group of groups) {
+        for (const card of group.cards) {
+          if (!/^[2-9TJQKA][shdc]$/.test(card)) throw new TypeError('Invalid card');
+          if (seen.has(card)) throw new RangeError('Duplicate known card: ' + card);
+          seen.add(card);
+        }
+      }
+      return seen;
+    }
     ${heuristicEvaluatorSource}
     ${preflopHeuristicSource}
     ${postflopHeuristicSource}

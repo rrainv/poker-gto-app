@@ -1628,6 +1628,8 @@ function deriveDecisionContext(snapshot = {}) {
   return {
     schemaVersion: DECISION_CONTEXT_SCHEMA_VERSION,
     tableSize,
+    // Scenario mode knows seated players only; it must not claim an exact live count.
+    opponentCount: null,
     heroPosition,
     street: currentStreet(board),
     heroCards,
@@ -1752,12 +1754,10 @@ function readHeuristicOptions() {
 
   const playStyle = Number(app.settings && app.settings.tightness);
   const opponentStyle = Number(app.settings && app.settings.oppTightness);
-  const flatDropBb = numericValue('#flatDrop', 0);
 
   return {
     playStyle: Number.isFinite(playStyle) ? Math.min(100, Math.max(0, playStyle)) / 100 : 0,
-    opponentStyle: Number.isFinite(opponentStyle) ? Math.min(100, Math.max(0, opponentStyle)) / 100 : 0,
-    flatDropBb: Math.max(0, flatDropBb)
+    opponentStyle: Number.isFinite(opponentStyle) ? Math.min(100, Math.max(0, opponentStyle)) / 100 : 0
   };
 
 }
@@ -2388,16 +2388,15 @@ function analysisUnavailableReasonForResolution(resolution) {
   return 'strategy_unavailable';
 }
 
-function trustedHandClassificationForAnalysis(decisionContext) {
+function trustedHandClassificationForAnalysis(decisionContext, strategyResult) {
   if (!decisionContext || decisionContext.street === 'preflop'
-    || decisionContext.heroCards.length !== 2 || decisionContext.board.length < 3
-    || typeof evaluatePostflopHand !== 'function') return null;
-  const classification = evaluatePostflopHand(decisionContext.heroCards, decisionContext.board);
-  if (!classification) return null;
+    || decisionContext.heroCards.length !== 2 || decisionContext.board.length < 3) return null;
+  const classification = strategyResult?.details?.handClassification;
+  if (!classification || classification.source !== 'heuristic_postflop_classifier') return null;
   return {
-    madeHand: classification.madeHand || null,
-    draws: Array.isArray(classification.draws) ? classification.draws.slice() : [],
-    source: 'legacy_postflop_classifier'
+    madeHand: classification.madeHandLabel ? t(classification.madeHandLabel) : null,
+    draws: Array.isArray(classification.draws) ? classification.draws.map(draw => t(draw)) : [],
+    source: classification.source
   };
 }
 
@@ -2430,9 +2429,9 @@ function canonicalActionHistoryForAnalysis(resolution) {
   });
 }
 
-function trustedAnalysisFacts(decisionContext, _strategyResult, actionHistory = []) {
+function trustedAnalysisFacts(decisionContext, strategyResult, actionHistory = []) {
   const facts = { actionHistory: Array.isArray(actionHistory) ? actionHistory : [] };
-  const handClassification = trustedHandClassificationForAnalysis(decisionContext);
+  const handClassification = trustedHandClassificationForAnalysis(decisionContext, strategyResult);
   if (handClassification) facts.handClassification = handClassification;
   return facts;
 }
@@ -3769,12 +3768,6 @@ function bindEvents() {
   // Initialize slider values
   if (tightnessSlider) tightnessSlider.dispatchEvent(new Event('input'));
   if (oppTightnessSlider) oppTightnessSlider.dispatchEvent(new Event('input'));
-  const flatDropEl = document.getElementById('flatDrop');
-  if (flatDropEl) {
-    flatDropEl.addEventListener('change', () => updateContext('Flat Drop changed'));
-    flatDropEl.addEventListener('input', () => updateContext('Flat Drop changed'));
-  }
-
   // Initialize training mode
 
   initTrainingMode();
@@ -5244,70 +5237,6 @@ function formatHand(cards) {
 
 
 
-function evaluatePostflopHand(heroCards, boardCards) {
-  if (!heroCards || heroCards.length !== 2 || !boardCards || boardCards.length < 3) {
-    return { madeHand: t('High Card'), draws: [] };
-  }
-
-  const allCards = [...heroCards, ...boardCards];
-  const hRanks = heroCards.map(c => RANK_VALUE[c[0]] !== undefined ? RANK_VALUE[c[0]] : 0);
-  const bRanks = boardCards.map(c => RANK_VALUE[c[0]] !== undefined ? RANK_VALUE[c[0]] : 0);
-  
-  const rankCounts = {};
-  allCards.forEach(c => {
-    const r = RANK_VALUE[c[0]];
-    if (r !== undefined) rankCounts[r] = (rankCounts[r] || 0) + 1;
-  });
-  
-  const counts = Object.values(rankCounts).sort((a, b) => b - a);
-  const maxRankCount = counts[0] || 0;
-  const secondRankCount = counts[1] || 0;
-
-  let isFlush = false, isFlushDraw = false;
-  const handSuitCounts = {};
-  allCards.forEach(c => { handSuitCounts[c[1]] = (handSuitCounts[c[1]] || 0) + 1; });
-  Object.values(handSuitCounts).forEach(cnt => {
-    if (cnt >= 5) isFlush = true;
-    if (cnt === 4) isFlushDraw = true;
-  });
-
-  const uniqueRanks = Array.from(new Set(allCards.map(c => RANK_VALUE[c[0]]))).sort((a, b) => b - a);
-  if (uniqueRanks.includes(12)) uniqueRanks.push(-1);
-  let isStraight = false, isOESD = false;
-  for (let i = 0; i <= uniqueRanks.length - 5; i++) {
-    if (uniqueRanks[i] - uniqueRanks[i + 4] === 4) isStraight = true;
-  }
-  for (let i = 0; i <= uniqueRanks.length - 4; i++) {
-    if (uniqueRanks[i] - uniqueRanks[i + 3] === 3) isOESD = true;
-  }
-
-  let madeHand = t('High Card');
-  if (maxRankCount >= 4) madeHand = t('Quads');
-  else if (maxRankCount >= 3 && secondRankCount >= 2) madeHand = t('Full House');
-  else if (isFlush) madeHand = t('Flush');
-  else if (isStraight) madeHand = t('Straight');
-  else if (maxRankCount >= 3) madeHand = t('Three of a Kind');
-  else if (maxRankCount === 2 && secondRankCount === 2) madeHand = t('Two Pair');
-  else if (maxRankCount === 2) {
-    const maxBoardRank = Math.max(...bRanks);
-    const matchedBoardRanks = hRanks.filter(r => bRanks.includes(r));
-    if (hRanks[0] === hRanks[1]) {
-      madeHand = hRanks[0] > maxBoardRank ? t('Overpair') : t('Pocket Pair');
-    } else if (matchedBoardRanks.includes(maxBoardRank)) {
-      madeHand = t('Top Pair');
-    } else if (matchedBoardRanks.length > 0) {
-      madeHand = Math.max(...matchedBoardRanks) === Math.min(...bRanks) ? t('Bottom Pair') : t('Middle Pair');
-    } else {
-      madeHand = t('Pair on Board');
-    }
-  }
-
-  const draws = [];
-  if (isFlushDraw && !isFlush) draws.push(t('Flush Draw'));
-  if (isOESD && !isStraight) draws.push(t('OESD'));
-  
-  return { madeHand, draws };
-}
 const TRAINING_CONFIG_SCHEMA_VERSION = 'training-config/v1';
 
 const TRAINING_TARGETS = Object.freeze({

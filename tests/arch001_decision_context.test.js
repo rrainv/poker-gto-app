@@ -26,6 +26,7 @@ test('DecisionContext v1 derives a Home unopened spot', () => {
   assert.deepEqual(qa.deriveDecisionContext(snapshot()), {
     schemaVersion: 'decision-context/v1',
     tableSize: 6,
+    opponentCount: null,
     heroPosition: 'BTN',
     street: 'preflop',
     heroCards: ['As', 'Kd'],

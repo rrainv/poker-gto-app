@@ -68,8 +68,9 @@ function requireActorDecision(state, heroPlayerId) {
 
 /**
  * Project an actor-only application strategy snapshot from canonical PokerState.
- * tableSize is the seated-player count; poker-state/v1 currently deals in every
- * seated player. All integer milliBb -> bb conversion remains at this boundary.
+ * tableSize is the seated-player count. The additive opponentCount fact is the
+ * exact number of other dealt-in, non-folded players for this canonical state.
+ * All integer milliBb -> bb conversion remains at this boundary.
  */
 export function deriveDecisionContextFromPokerState(state, heroPlayerId, options = {}) {
   const hero = requireActorDecision(state, heroPlayerId);
@@ -89,10 +90,14 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
   const heroStreetContributionBb = hero.streetContributionMilliBb / 1000;
   const forcedContributionPerPlayerBb = state.game.forcedContributionPerPlayerMilliBb / 1000;
   const rakeMode = state.game.mode === GAME_MODES.CLUBGG ? 'fixed' : 'off';
+  const opponentCount = state.players.filter((player) => (
+    player.playerId !== hero.playerId && isPlayerLive(player)
+  )).length;
 
   return {
     schemaVersion: DECISION_CONTEXT_SCHEMA_VERSION,
     tableSize: state.players.length,
+    opponentCount,
     heroPosition: hero.position,
     street: state.street,
     heroCards: [...hero.holeCards],
