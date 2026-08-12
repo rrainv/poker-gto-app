@@ -141,6 +141,8 @@ const app = {
 
   selectedHand: null,
 
+  matrixModel: null,
+
   lastContextKey: '',
 
   decisionContext: null,
@@ -208,6 +210,16 @@ function requireStrategyProviderBridge() {
   if (!bridge || bridge.schemaVersion !== 'strategy-provider/v1'
     || typeof bridge.createProvider !== 'function') {
     throw new Error('Riverline StrategyProvider bridge is unavailable');
+  }
+  return bridge;
+}
+
+function requireProductPerformanceBridge() {
+  const bridge = globalThis.RiverlineProductPerformance;
+  if (!bridge || bridge.schemaVersion !== 'product-performance/v1'
+    || typeof bridge.createLatestFrameScheduler !== 'function'
+    || typeof bridge.createSurfaceInvalidator !== 'function') {
+    throw new Error('Riverline product-performance bridge is unavailable');
   }
   return bridge;
 }
@@ -517,8 +529,11 @@ function updateActionOptions() {
 
 
 
-function renderAllCards() {
+function activeWorkspaceMode() {
+  return $('.riverline-shell')?.dataset.activeMode || 'gto';
+}
 
+function renderPlaybookCards() {
   if (typeof isHandMode === 'function' && isHandMode()) {
     const canonicalState = callPlaybookStateBridge('getState');
     const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
@@ -538,19 +553,20 @@ function renderAllCards() {
     renderSlots('dead', 52);
   }
 
-  renderSlots('trainingHero', 2);
+  const deckCount = $('#deckCount');
+  if (deckCount) deckCount.textContent = remainingCards('gto');
+  updateActionOptions();
+}
 
-  renderSlots('trainingBoard', 5);
-
+function renderEquityCards() {
   renderSlots('eqboard', 5);
 
   renderSlots('eqdead', 52);
 
   if (app.equity.players.length > 0) renderEquityPlayers();
 
-  $('#deckCount').textContent = remainingCards('gto');
-
-  $('#eqDeckCount').textContent = remainingCards('equity');
+  const deckCount = $('#eqDeckCount');
+  if (deckCount) deckCount.textContent = remainingCards('equity');
 
   const boardCount = $('#equityBoardCount');
   if (boardCount) boardCount.textContent = `${app.equity.board.filter(Boolean).length} / 5`;
@@ -558,10 +574,12 @@ function renderAllCards() {
   const deadCount = $('#equityDeadCount');
   if (deadCount) deadCount.textContent = String(app.equity.dead.filter(Boolean).length);
 
-  updateActionOptions();
+}
 
-  if (typeof updateEquityReadiness === 'function') updateEquityReadiness();
-
+function renderAllCards({ mode = activeWorkspaceMode() } = {}) {
+  if (mode === 'gto') renderPlaybookCards();
+  else if (mode === 'equity') renderEquityCards();
+  else if (mode === 'training' && typeof renderTrainingCards === 'function') renderTrainingCards();
 }
 
 
@@ -1143,12 +1161,8 @@ function renderUnavailableStrategy(resolution) {
   if (resolution?.mode === 'hand' && $('#pathList')) {
     $('#pathList').innerHTML = `<div class="panel-note">${message}</div>`;
   }
-  renderPlaybookDecisionAnalysis(
-    null,
-    strategyProvider.resolve(null),
-    resolution,
-    analysisUnavailableReasonForResolution(resolution)
-  );
+  app.strategyResult = strategyProvider.resolve(null);
+  playbookSurfaceInvalidator.renderIfNeeded('analysis');
   renderPlaybookModeStatus(resolution);
 }
 
@@ -1769,6 +1783,74 @@ const strategyProvider = requireStrategyProviderBridge().createProvider({
   translate: t
 });
 
+const productPerformance = requireProductPerformanceBridge();
+const PLAYBOOK_DERIVED_SURFACES = Object.freeze(['matrix', 'range', 'tree', 'analysis', 'table']);
+const playbookUpdateScheduler = productPerformance.createLatestFrameScheduler({
+  requestFrame: window.requestAnimationFrame.bind(window),
+  cancelFrame: window.cancelAnimationFrame.bind(window),
+  run: (reason) => updateContext(reason)
+});
+const playbookSurfaceInvalidator = productPerformance.createSurfaceInvalidator({
+  surfaceNames: PLAYBOOK_DERIVED_SURFACES,
+  isVisible: playbookSurfaceIsVisible,
+  render: renderPlaybookDerivedSurface
+});
+
+function playbookModeIsVisible() {
+  const mode = $('#gtoMode');
+  return Boolean(activeWorkspaceMode() === 'gto' && mode && mode.style.display !== 'none' && !mode.hidden);
+}
+
+function playbookSurfaceIsVisible(surface) {
+  if (!playbookModeIsVisible()) return false;
+  if (surface === 'matrix') return $('#chartView')?.style.display !== 'none';
+  if (surface === 'range') return $('#rangeView')?.style.display !== 'none';
+  if (surface === 'tree') return Boolean($('#treeView') && $('#treeView').style.display !== 'none');
+  if (surface === 'analysis') return $('#teacherContent')?.style.display === 'block';
+  if (surface === 'table') return !$('#table-wrapper')?.classList.contains('collapsed');
+  return false;
+}
+
+function renderPlaybookDerivedSurface(surface) {
+  if (surface === 'matrix') {
+    renderChart();
+    app.chartUpdatePending = false;
+  } else if (surface === 'range') {
+    renderRangeAdvantage();
+  } else if (surface === 'tree') {
+    renderBettingTree();
+  } else if (surface === 'analysis') {
+    renderPlaybookDecisionAnalysis(
+      app.decisionContext,
+      app.strategyResult,
+      app.playbookResolution,
+      app.playbookResolution?.status === 'available'
+        ? null
+        : analysisUnavailableReasonForResolution(app.playbookResolution)
+    );
+  } else if (surface === 'table') {
+    renderPlaybookTableProjection();
+  }
+}
+
+function invalidatePlaybookDerivedSurfaces() {
+  playbookSurfaceInvalidator.mark();
+  app.chartUpdatePending = true;
+}
+
+function renderVisiblePlaybookDerivedSurfaces() {
+  PLAYBOOK_DERIVED_SURFACES.forEach((surface) => playbookSurfaceInvalidator.renderIfNeeded(surface));
+}
+
+function schedulePlaybookUpdate(reason) {
+  playbookUpdateScheduler.schedule(reason);
+}
+
+function commitPlaybookUpdate(reason) {
+  playbookUpdateScheduler.schedule(reason);
+  playbookUpdateScheduler.flush();
+}
+
 function setFrequency(index, action) {
 
   const nameEl = $('#f' + index + 'name');
@@ -2107,6 +2189,7 @@ function renderChart() {
   const matrixContextUnavailable = !decisionContext;
   const positions = decisionContext?.heroPosition || '—';
   const matrixStack = decisionContext?.stackBb ?? 0;
+  const matrixModel = prepareMatrixStrategyModel(decisionContext);
 
   if (grid.children.length === 0) {
     grid.innerHTML = '';
@@ -2140,35 +2223,13 @@ function renderChart() {
 
   
 
-  const isPostFlop = !matrixContextUnavailable
-    && (decisionContext?.street || currentStreet()) !== 'preflop';
-
-  let matrixSource = null;
+  const isPostFlop = matrixModel.isPostFlop;
+  const matrixSource = matrixModel.source;
 
   RANKS.forEach((_, row) => RANKS.forEach((__, column) => {
 
     const hand = handCode(row, column);
-    let actions = [];
-
-    
-
-    if (!isPostFlop && !matrixContextUnavailable) {
-      const representativeCards = getFirstValidCombo(
-        hand,
-        [...decisionContext.board, ...decisionContext.deadCards]
-      );
-      if (representativeCards) {
-        const cellDecisionContext = {
-          ...decisionContext,
-          heroCards: representativeCards
-        };
-        const cellStrategyResult = strategyProvider.resolve(cellDecisionContext);
-        matrixSource = matrixSource || cellStrategyResult.source;
-        if (cellStrategyResult.source !== strategyProvider.sources.UNAVAILABLE) {
-          actions = strategyResultPresentationActions(cellStrategyResult);
-        }
-      }
-    }
+    const actions = matrixModel.cells[row * 13 + column]?.actions || [];
 
     const type = (actions[0] && actions[0].kind) || 'unavailable';
     const handKind = row === column ? 'pair' : hand.endsWith('s') ? 'suited' : 'offsuit';
@@ -2324,6 +2385,49 @@ function renderChart() {
         : `${positions} · ${matrixStack} bb · ${strategySourceDisplayLabel(matrixSource)}`;
   }
 
+}
+
+
+function matrixStrategyKey(decisionContext) {
+  if (!decisionContext) return 'unavailable';
+  return JSON.stringify({
+    decisionContext: { ...decisionContext, heroCards: null },
+    providerOptions: readHeuristicOptions()
+  });
+}
+
+function prepareMatrixStrategyModel(decisionContext) {
+  const key = matrixStrategyKey(decisionContext);
+  if (app.matrixModel?.key === key) return app.matrixModel;
+
+  const matrixContextUnavailable = !decisionContext;
+  const isPostFlop = !matrixContextUnavailable
+    && (decisionContext.street || currentStreet()) !== 'preflop';
+  let matrixSource = null;
+  const cells = RANKS.flatMap((_, row) => RANKS.map((__, column) => {
+    const hand = handCode(row, column);
+    let actions = [];
+    if (!isPostFlop && !matrixContextUnavailable) {
+      const representativeCards = getFirstValidCombo(
+        hand,
+        [...decisionContext.board, ...decisionContext.deadCards]
+      );
+      if (representativeCards) {
+        const cellDecisionContext = {
+          ...decisionContext,
+          heroCards: representativeCards
+        };
+        const cellStrategyResult = strategyProvider.resolve(cellDecisionContext);
+        matrixSource = matrixSource || cellStrategyResult.source;
+        if (cellStrategyResult.source !== strategyProvider.sources.UNAVAILABLE) {
+          actions = strategyResultPresentationActions(cellStrategyResult);
+        }
+      }
+    }
+    return { hand, actions };
+  }));
+  app.matrixModel = { key, source: matrixSource, isPostFlop, cells };
+  return app.matrixModel;
 }
 
 
@@ -2483,7 +2587,41 @@ function renderPlaybookDecisionAnalysis(decisionContext, strategyResult, resolut
   return explanation;
 }
 
+function renderPlaybookTableProjection() {
+  const decisionContext = app.decisionContext;
+  const playbookResolution = app.playbookResolution;
+  if (!decisionContext || !playbookResolution) return;
+  const playbookBridge = globalThis.RiverlinePlaybookState;
+  if (playbookResolution.mode === 'hand' && typeof dispatchCanonicalTableState === 'function') {
+    dispatchCanonicalTableState(playbookBridge?.getState?.());
+    return;
+  }
+
+  const activePlayers = decisionContext.tableSize;
+  const allPos = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP', 'LJ', 'HJ', 'CO', 'BTN'];
+  const currentPosArr = POSITIONS[activePlayers] || POSITIONS[6];
+  const sortedPos = currentPosArr.slice().sort((a, b) => allPos.indexOf(a) - allPos.indexOf(b));
+  const heroIdx = sortedPos.indexOf(decisionContext.heroPosition);
+  const btnIdx = sortedPos.indexOf('BTN');
+  const dealerPos = heroIdx !== -1 && btnIdx !== -1
+    ? (btnIdx - heroIdx + activePlayers) % activePlayers : 0;
+  const parsedBoard = decisionContext.board.map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) }));
+  const parsedHero = decisionContext.heroCards.map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) }));
+
+  window.dispatchEvent(new CustomEvent('gameStateUpdate', {
+    detail: {
+      pot: Number(decisionContext.potBb).toFixed(1),
+      board: parsedBoard,
+      heroCards: parsedHero,
+      dealerPos: dealerPos,
+      activePlayers: decisionContext.tableSize
+    }
+  }));
+}
+
 async function updateContext(reason = 'Context updated') {
+
+  if (playbookUpdateScheduler.isPending()) playbookUpdateScheduler.cancel();
 
   syncSliderPair('players', 'playersNum');
 
@@ -2512,7 +2650,9 @@ async function updateContext(reason = 'Context updated') {
     app.playbookViewModel = playbookBridge && typeof playbookBridge.createViewModel === 'function'
       ? playbookBridge.createViewModel(null)
       : null;
+    invalidatePlaybookDerivedSurfaces();
     if (typeof renderUnavailableStrategy === 'function') renderUnavailableStrategy(playbookResolution);
+    renderVisiblePlaybookDerivedSurfaces();
     return playbookResolution;
   }
 
@@ -2540,8 +2680,7 @@ async function updateContext(reason = 'Context updated') {
   app.playbookViewModel = playbookBridge && typeof playbookBridge.createViewModel === 'function'
     ? playbookBridge.createViewModel(strategyResult)
     : null;
-
-  console.log('Strategy result:', strategyResult);
+  invalidatePlaybookDerivedSurfaces();
 
   const street = decisionContext.street;
 
@@ -2584,12 +2723,6 @@ async function updateContext(reason = 'Context updated') {
 
   const recommendation = $('#recommendation');
   if (recommendation) recommendation.dataset.actionKind = visualActionKind(profile.actions[0]);
-
-  
-
-  if (typeof renderPlaybookDecisionAnalysis === 'function') {
-    renderPlaybookDecisionAnalysis(decisionContext, strategyResult, playbookResolution);
-  }
 
   
 
@@ -2684,46 +2817,13 @@ async function updateContext(reason = 'Context updated') {
 
   renderPath(street);
 
-  const chartGrid = $('#strategyGrid');
-
-  if (chartGrid) {
-
-    renderChart();
-
-    app.chartUpdatePending = false;
-
-  } else {
-
-    app.chartUpdatePending = true;
-
-  }
-
-  
-
-  // Update range view & decision tree if visible
-  const rangeView = $('#rangeView');
-  if (rangeView && rangeView.style.display !== 'none') {
-    renderRangeAdvantage();
-  }
-  renderBettingTree();
+  renderVisiblePlaybookDerivedSurfaces();
 
 
 
   if (contextKey !== app.lastContextKey) {
 
     app.lastContextKey = contextKey;
-
-    const recommendation = $('#recommendation');
-
-    if (recommendation) {
-
-      recommendation.classList.remove('wobble');
-
-      void recommendation.offsetWidth;
-
-      recommendation.classList.add('wobble');
-
-    }
 
     const liveContextText = $('#liveContextText');
 
@@ -2743,31 +2843,6 @@ async function updateContext(reason = 'Context updated') {
 
   }
 
-  // Trigger the presentation-only table. Hand mode supplies canonical player
-  // facts; Scenario mode retains the established simplified projection.
-  if (playbookResolution.mode === 'hand' && typeof dispatchCanonicalTableState === 'function') {
-    dispatchCanonicalTableState(playbookBridge?.getState?.());
-  } else {
-    const activePlayers = decisionContext.tableSize;
-    const allPos = ['SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP', 'LJ', 'HJ', 'CO', 'BTN'];
-    const currentPosArr = POSITIONS[activePlayers] || POSITIONS[6];
-    const sortedPos = currentPosArr.slice().sort((a,b) => allPos.indexOf(a) - allPos.indexOf(b));
-    const heroIdx = sortedPos.indexOf(decisionContext.heroPosition);
-    const btnIdx = sortedPos.indexOf('BTN');
-    const dealerPos = (heroIdx !== -1 && btnIdx !== -1) ? (btnIdx - heroIdx + activePlayers) % activePlayers : 0;
-    const parsedBoard = decisionContext.board.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
-    const parsedHero = decisionContext.heroCards.map(c => ({ rank: c.slice(0,-1), suit: c.slice(-1) }));
-
-    window.dispatchEvent(new CustomEvent('gameStateUpdate', {
-      detail: {
-        pot: Number(decisionContext.potBb).toFixed(1),
-        board: parsedBoard,
-        heroCards: parsedHero,
-        dealerPos: dealerPos,
-        activePlayers: decisionContext.tableSize
-      }
-    }));
-  }
 }
 
 
@@ -3325,11 +3400,15 @@ function bindSliderPair(rangeId, numberId, callback) {
 
   const number = $('#' + numberId);
 
+  const { onInput, onChange = onInput } = callback || {};
+
+  if (!range || !number || typeof onInput !== 'function') return;
+
   range.addEventListener('input', () => {
 
     number.value = range.value;
 
-    callback();
+    onInput();
 
   });
 
@@ -3337,8 +3416,18 @@ function bindSliderPair(rangeId, numberId, callback) {
 
     syncSliderPair(rangeId, numberId);
 
-    callback();
+    onInput();
 
+  });
+
+  range.addEventListener('change', () => {
+    number.value = range.value;
+    onChange();
+  });
+
+  number.addEventListener('change', () => {
+    syncSliderPair(rangeId, numberId);
+    onChange();
   });
 
 }
@@ -3490,6 +3579,8 @@ function bindEvents() {
 
       t.style.display = isHidden ? 'block' : 'none';
 
+      if (isHidden) playbookSurfaceInvalidator.renderIfNeeded('analysis');
+
     }
 
   });
@@ -3536,6 +3627,11 @@ function bindEvents() {
       activeView.classList.add('active');
       activeView.style.display = 'block';
     }
+
+    if (mode !== 'gto') playbookUpdateScheduler.cancel();
+    renderAllCards({ mode });
+    if (mode === 'equity') updateEquityReadiness();
+    if (mode === 'gto') renderVisiblePlaybookDerivedSurfaces();
     
     const infoEl = $('#infoMode') || $('#guideMode');
     if (infoEl) {
@@ -3566,24 +3662,12 @@ function bindEvents() {
     if ($('#sharedControls')) $('#sharedControls').style.display = 'block';
 
     if (view === 'chart') {
-
-      if (app.chartUpdatePending) {
-
-        renderChart();
-
-        app.chartUpdatePending = false;
-
-      } else {
-
-        renderChart();
-
-      }
-
+      if (!playbookSurfaceInvalidator.renderIfNeeded('matrix')) renderChart();
     }
 
-    if (view === 'range') renderRangeAdvantage();
+    if (view === 'range') playbookSurfaceInvalidator.renderIfNeeded('range');
 
-    if (view === 'tree') renderBettingTree();
+    if (view === 'tree') playbookSurfaceInvalidator.renderIfNeeded('tree');
 
   }));
 
@@ -3593,7 +3677,9 @@ function bindEvents() {
 
   
 
-  if ($('#chartAction')) $('#chartAction').addEventListener('change', renderChart);
+  if ($('#chartAction')) $('#chartAction').addEventListener('change', () => {
+    if (!playbookSurfaceInvalidator.renderIfNeeded('matrix')) renderChart();
+  });
 
   ['rangeAdvHeroPos', 'rangeAdvVilPos'].forEach((id) => {
     if ($('#' + id)) $('#' + id).addEventListener('change', renderRangeAdvantage);
@@ -3601,22 +3687,36 @@ function bindEvents() {
 
 
 
-  bindSliderPair('players', 'playersNum', () => {
-    updatePositions();
-    updateContext('Table size changed');
+  bindSliderPair('players', 'playersNum', {
+    onInput: () => {
+      updatePositions();
+      schedulePlaybookUpdate('Table size changed');
+    },
+    onChange: () => {
+      updatePositions();
+      commitPlaybookUpdate('Table size changed');
+    }
   });
 
-  bindSliderPair('stack', 'stackNum', () => {
-    updateContext('Stack changed');
+  bindSliderPair('stack', 'stackNum', {
+    onInput: () => schedulePlaybookUpdate('Stack changed'),
+    onChange: () => commitPlaybookUpdate('Stack changed')
   });
 
-  bindSliderPair('ante', 'anteNum', () => {
-    updateContext('Ante changed');
+  bindSliderPair('ante', 'anteNum', {
+    onInput: () => schedulePlaybookUpdate('Ante changed'),
+    onChange: () => commitPlaybookUpdate('Ante changed')
   });
 
-  bindSliderPair('facingSize', 'facingSizeNum', () => updateContext('Sizing changed'));
+  bindSliderPair('facingSize', 'facingSizeNum', {
+    onInput: () => schedulePlaybookUpdate('Facing size changed'),
+    onChange: () => commitPlaybookUpdate('Facing size changed')
+  });
 
-  bindSliderPair('potSize', 'potSizeNum', () => updateContext('Sizing changed'));
+  bindSliderPair('potSize', 'potSizeNum', {
+    onInput: () => schedulePlaybookUpdate('Pot size changed'),
+    onChange: () => commitPlaybookUpdate('Pot size changed')
+  });
 
   ['rakeMode', 'stackMode', 'heroPos', 'straddle'].forEach((id) => {
 
@@ -3629,24 +3729,6 @@ function bindEvents() {
   ['lastAction'].forEach((id) => {
 
     if ($('#' + id)) $('#' + id).addEventListener('change', () => updateContext('Configuration changed'));
-
-  });
-
-  // Debounce slider inputs to prevent lag - reduced to 50ms for faster response
-
-  let sliderDebounce;
-
-  ['facingSize', 'potSize'].forEach((id) => {
-
-    if ($('#' + id)) {
-      $('#' + id).addEventListener('input', () => {
-
-        clearTimeout(sliderDebounce);
-
-        sliderDebounce = setTimeout(() => updateContext('Sizing changed'), 50);
-
-      });
-    }
 
   });
 
@@ -3700,6 +3782,7 @@ function bindEvents() {
         const collapsed = wrapper.classList.contains('collapsed');
         e.currentTarget.setAttribute('aria-expanded', String(!collapsed));
         e.currentTarget.textContent = collapsed ? 'Expand Table' : 'Collapse Table';
+        if (!collapsed) playbookSurfaceInvalidator.renderIfNeeded('table');
       }
     });
   }
@@ -3730,8 +3813,6 @@ function bindEvents() {
     localStorage.setItem('appTheme', event.target.value);
 
     initThemeSwatches();
-
-    updateContext('Theme changed');
 
   });
 
@@ -3768,12 +3849,6 @@ function bindEvents() {
   // Initialize slider values
   if (tightnessSlider) tightnessSlider.dispatchEvent(new Event('input'));
   if (oppTightnessSlider) oppTightnessSlider.dispatchEvent(new Event('input'));
-  // Initialize training mode
-
-  initTrainingMode();
-
-
-
   document.addEventListener('keydown', (e) => {
 
     // Ignore if typing in an input field
@@ -3848,7 +3923,6 @@ function bindEvents() {
       
       if ($('#themeColor')) $('#themeColor').value = newTheme;
       
-      updateContext(`Switched to ${newTheme} theme`);
     }
 
   });
@@ -3960,8 +4034,6 @@ function initThemeSwatches() {
       if ($('#themeColor')) $('#themeColor').value = themeId;
 
       initThemeSwatches();
-
-      updateContext('Theme changed');
 
     });
 
@@ -4957,32 +5029,27 @@ function initTrainingMode() {
 
 
 // Keep Training cards as a read-only projection of the generated exercise.
-(function installTrainingCardProjection() {
-  const originalRenderAllCards = renderAllCards;
-  renderAllCards = function renderAllCardsWithTrainingProjection() {
-    originalRenderAllCards();
-    const trainingMode = $('#trainingMode');
-    if (!trainingMode || trainingMode.style.display === 'none') return;
+function renderTrainingCards() {
+  if (!trainingModeIsVisible()) return;
 
-    const heroCards = app.training.hero || [];
-    const boardCards = app.training.board || [];
-    const readOnlyCard = (card) =>
-      `<span class="training-readonly-card riverline-card" role="img" aria-label="${displayCard(card)}">${cardMarkup(card)}</span>`;
-    const heroTarget = $('#trainingHeroCards');
-    const boardTarget = $('#trainingBoardCards');
-    if (heroTarget) heroTarget.innerHTML = heroCards.map(readOnlyCard).join('');
-    if (boardTarget) {
-      boardTarget.innerHTML = boardCards.length
-        ? boardCards.map(readOnlyCard).join('')
-        : '<span class="training-no-board">No board cards</span>';
-    }
-    if ($('#trainingHandDisplay')) {
-      $('#trainingHandDisplay').textContent = heroCards.length === 2
-        ? formatHand(heroCards) || heroCards.map(displayCard).join(' ')
-        : '—';
-    }
-  };
-})();
+  const heroCards = app.training.hero || [];
+  const boardCards = app.training.board || [];
+  const readOnlyCard = (card) =>
+    `<span class="training-readonly-card riverline-card" role="img" aria-label="${displayCard(card)}">${cardMarkup(card)}</span>`;
+  const heroTarget = $('#trainingHeroCards');
+  const boardTarget = $('#trainingBoardCards');
+  if (heroTarget) heroTarget.innerHTML = heroCards.map(readOnlyCard).join('');
+  if (boardTarget) {
+    boardTarget.innerHTML = boardCards.length
+      ? boardCards.map(readOnlyCard).join('')
+      : '<span class="training-no-board">No board cards</span>';
+  }
+  if ($('#trainingHandDisplay')) {
+    $('#trainingHandDisplay').textContent = heroCards.length === 2
+      ? formatHand(heroCards) || heroCards.map(displayCard).join(' ')
+      : '—';
+  }
+}
 
 
 function updateAssistanceDisplay() {
@@ -5040,8 +5107,6 @@ function showTrainingFeedback(feedback, isCorrect) {
   if (feedbackDiv) {
     feedbackDiv.hidden = false;
     feedbackDiv.dataset.accepted = String(Boolean(isCorrect));
-    feedbackDiv.classList.remove('animate-feedback');
-    void feedbackDiv.offsetWidth;
     feedbackDiv.classList.add('animate-feedback');
   }
 
@@ -5142,8 +5207,6 @@ function showTrainingSolution(solution) {
   }
 
   solutionDiv.hidden = false;
-  solutionDiv.classList.remove('animate-solution');
-  void solutionDiv.offsetWidth;
   solutionDiv.classList.add('animate-solution');
 
 }

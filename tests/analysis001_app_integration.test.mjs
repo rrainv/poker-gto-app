@@ -34,7 +34,8 @@ test('browser bridge exposes only the immutable local explanation operations bef
 
 test('Playbook replaces the legacy HTML teacher with current contracts and trusted facts', () => {
   const update = sourceBetween('async function updateContext(', '// Legacy fast evaluator retained for the existing Outs display only.');
-  assert.match(update, /typeof renderPlaybookDecisionAnalysis === 'function'[\s\S]*renderPlaybookDecisionAnalysis\(decisionContext, strategyResult, playbookResolution\)/);
+  assert.match(update, /invalidatePlaybookDerivedSurfaces\(\)[\s\S]*renderVisiblePlaybookDerivedSurfaces\(\)/);
+  assert.match(logic, /surface === 'analysis'[\s\S]*renderPlaybookDecisionAnalysis\(\s*app\.decisionContext,\s*app\.strategyResult,\s*app\.playbookResolution/);
   assert.match(logic, /trustedAnalysisFacts\(\s*decisionContext,\s*result,\s*canonicalActionHistoryForAnalysis\(resolution\)/);
   assert.match(logic, /authority = resolution\?\.mode === 'hand' \? 'hand' : 'scenario'/);
   assert.doesNotMatch(update, /generateTeacherText|teacherContent\.innerHTML/);
@@ -44,7 +45,9 @@ test('Playbook replaces the legacy HTML teacher with current contracts and trust
 
 test('Playbook unavailable states replace stale analysis', () => {
   const unavailable = sourceBetween('function renderUnavailableStrategy(', 'async function requestPlaybookMode(');
-  assert.match(unavailable, /renderPlaybookDecisionAnalysis[\s\S]*analysisUnavailableReasonForResolution/);
+  assert.match(unavailable, /app\.strategyResult = strategyProvider\.resolve\(null\)/);
+  assert.match(unavailable, /playbookSurfaceInvalidator\.renderIfNeeded\('analysis'\)/);
+  assert.match(logic, /analysisUnavailableReasonForResolution\(app\.playbookResolution\)/);
   assert.doesNotMatch(logic, /renderLoadingStrategy|strategy_loading/);
   assert.match(logic, /canonical_hero_not_actor'\) return 'hero_not_actor'/);
   assert.match(logic, /canonical_terminal_state'[\s\S]*return 'terminal_hand'/);

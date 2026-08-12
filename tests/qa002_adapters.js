@@ -92,6 +92,11 @@ function createHarness() {
   );
   const potSource = sliceBetween(source, 'function preflopBasePot()', 'function updateMetrics()');
   const updateContextSource = sliceBetween(source, 'async function updateContext(reason =', '// Legacy fast evaluator retained for the existing Outs display only.');
+  const tableProjectionSource = sliceBetween(
+    source,
+    'function renderPlaybookTableProjection()',
+    'async function updateContext(reason =',
+  );
   const sliderSource = sliceBetween(source, 'function syncSliderPair(rangeId, numberId)', 'function bindSliderPair(rangeId, numberId, callback)');
   const evaluatorEquitySource = sliceBetween(
     source,
@@ -136,6 +141,8 @@ function createHarness() {
   sandbox.window = {
     clearTimeout,
     setTimeout,
+    requestAnimationFrame(callback) { callback(); return 1; },
+    cancelAnimationFrame() {},
     dispatchEvent(event) { sandbox.dispatchedState = event.detail; },
   };
 
@@ -201,6 +208,29 @@ function createHarness() {
     });
     window.RiverlineStrategy = RiverlineStrategy;
     const requireStrategyProviderBridge = () => RiverlineStrategy;
+    const requireProductPerformanceBridge = () => ({
+      schemaVersion: 'product-performance/v1',
+      createLatestFrameScheduler({ run }) {
+        let value;
+        return {
+          schedule(nextValue) { value = nextValue; },
+          flush() { const nextValue = value; value = undefined; return run(nextValue); },
+          cancel() { value = undefined; },
+          isPending() { return value !== undefined; }
+        };
+      },
+      createSurfaceInvalidator({ render }) {
+        return {
+          mark() {},
+          renderIfNeeded(surface) {
+            if (surface !== 'table') return false;
+            render(surface);
+            return true;
+          },
+          isDirty() { return true; }
+        };
+      }
+    });
     ${positions[0]}
     ${ranks[0]}
     ${rankValue[0]}
@@ -289,6 +319,7 @@ function createHarness() {
     ${potSource}
     ${sliderSource}
     ${providerSeamSource}
+    ${tableProjectionSource}
     ${updateContextSource}
 
     globalThis.__qa002 = {

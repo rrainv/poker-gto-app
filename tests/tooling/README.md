@@ -28,6 +28,20 @@ The importable harness supports:
 - defined L1, maximum-action-error, dominant-action, aggression, passive, and
   fold comparisons against a bounded-HU reference.
 
+## Product performance profile
+
+PERF-001's non-production Node profile covers application/context resolution,
+preflop and postflop provider resolution, 169-cell preflop Matrix preparation,
+and deterministic Training generation:
+
+```powershell
+node tests/tooling/run-product-performance-profile.mjs --pretty
+```
+
+Use `--quick` for a smaller local sample. The report deliberately excludes DOM,
+layout, paint, and browser interaction timing; those require a browser harness
+and must not be inferred from Node measurements.
+
 ## Bounded-HU reference boundary
 
 The current repository does not contain a solved or sufficiently converged
@@ -52,4 +66,3 @@ The limp branch is excluded because `DecisionContext v1` projects a limp to
 `check` and cannot identify the bounded solver's distinct 4bb branch. Reference
 quality metadata is a gate, not an informational label: insufficient references
 produce no calibration metrics.
-
