@@ -266,7 +266,7 @@ function preflopAggressiveAction(decisionContext) {
   const stackBb = Number.isFinite(decisionContext.stackBb)
     ? Math.max(0, decisionContext.stackBb)
     : 0;
-  if (stackBb < 2) return strategyAction('all_in');
+  if (stackBb <= 2) return strategyAction('all_in');
   const openToBb = 2 + 0.5 * smoothstep(20, 80, stackBb);
   return strategyAction('raise', Math.min(stackBb, Number(openToBb.toFixed(3))));
 }
@@ -296,12 +296,34 @@ export function calculatePreflopHeuristic(decisionContext) {
   const passiveType = isFreeCheckOption ? 'check' : 'call';
   const passiveLabel = isFreeCheckOption
     ? 'Check'
-    : facingSizeBb === 0 && decisionContext.heroPosition === 'SB' ? 'Limp' : 'Call';
-  const aggressiveLabel = preflopAggressiveLabel(lastAction, facingSizeBb);
+    : facingSizeBb === 0 && (
+      decisionContext.heroPosition === 'SB'
+      || (decisionContext.tableSize === 2 && decisionContext.heroPosition === 'BTN')
+    ) ? 'Limp' : 'Call';
   const aggressiveAction = preflopAggressiveAction(decisionContext);
+  const aggressiveLabel = aggressiveAction.type === 'all_in'
+    ? 'All-In'
+    : preflopAggressiveLabel(lastAction, facingSizeBb);
+  const callReachesStackCap = (
+    facingSizeBb > 0 || AGGRESSIVE_PRIOR_ACTIONS.has(lastAction)
+  )
+    && Number.isFinite(decisionContext.callAmountBb)
+    && decisionContext.callAmountBb >= 0
+    && Number.isFinite(decisionContext.heroStreetContributionBb)
+    && decisionContext.heroStreetContributionBb >= 0
+    && Number.isFinite(decisionContext.stackBb)
+    && decisionContext.stackBb >= 0
+    && decisionContext.callAmountBb + decisionContext.heroStreetContributionBb
+      >= decisionContext.stackBb;
+  // DecisionContext does not generally prove legal raise bounds. It can prove
+  // this one boundary: on preflop, a stack-capped call plus Hero's existing
+  // street contribution consumes the configured starting stack. Preserve the
+  // heuristic's continue mass while projecting the unavailable raise to call.
+  const aggressiveValue = callReachesStackCap ? 0 : open;
+  const passiveValue = call + (callReachesStackCap ? open : 0);
   const actions = [
-    { action: aggressiveAction, label: aggressiveLabel, value: open, order: 0 },
-    { action: strategyAction(passiveType), label: passiveLabel, value: call, order: 1 },
+    { action: aggressiveAction, label: aggressiveLabel, value: aggressiveValue, order: 0 },
+    { action: strategyAction(passiveType), label: passiveLabel, value: passiveValue, order: 1 },
     { action: strategyAction('fold'), label: 'Fold', value: fold, order: 2 },
   ].sort((left, right) => right.value - left.value || left.order - right.order);
 
@@ -321,6 +343,7 @@ export function calculatePreflopHeuristic(decisionContext) {
       ) && callPriceAvailable,
       styleControlsApplied: false,
       forcedContributionAdjustmentApplied: false,
+      stackCapActionProjectionApplied: callReachesStackCap,
     },
   };
 }
