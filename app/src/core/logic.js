@@ -1623,6 +1623,10 @@ function deriveDecisionContext(snapshot = {}) {
     : 'unopened';
   const rawFacingSizeBb = normalizedDecisionNumber(snapshot.facingSizeBb, 0, 0, 100);
   const facingSizeBb = normalizeFacingSize(lastAction, rawFacingSizeBb);
+  // Scenario mode deliberately does not reconstruct a legal betting history.
+  // Only an explicit check, or the BB's unopened check option, proves a free price.
+  const callAmountBb = (lastAction === 'check'
+    || (lastAction === 'unopened' && heroPosition === 'BB')) ? 0 : null;
   const supportedRakeModes = ['off', 'fixed'];
   const rakeMode = supportedRakeModes.includes(snapshot.rakeMode) ? snapshot.rakeMode : 'off';
   const accounting = strategyAccountingContext(rakeMode, tableSize);
@@ -1640,6 +1644,8 @@ function deriveDecisionContext(snapshot = {}) {
     potBb,
     lastAction,
     facingSizeBb,
+    callAmountBb,
+    heroStreetContributionBb: null,
     rakeMode: accounting.rakeMode,
     forcedContributionPerPlayerBb: accounting.forcedContributionPerPlayerBb,
     totalForcedContributionBb: accounting.totalForcedContributionBb
@@ -1705,7 +1711,8 @@ function calculatePreflopFallbackForDecisionContext(context) {
     decisionContext.lastAction,
     decisionContext.facingSizeBb,
     decisionContext.potBb,
-    decisionContext.stackBb
+    decisionContext.stackBb,
+    decisionContext.callAmountBb
   );
 
 }
@@ -2106,7 +2113,7 @@ function simulateEquity(heroStr, boardStr, deadStr = [], iterations = 800, decis
 
 
 
-function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 'UTG', action = 'unopened', facingSize = 0, potSize = 1.5, stack = 30) {
+function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 'UTG', action = 'unopened', facingSize = 0, potSize = 1.5, stack = 30, callAmountBb = null) {
     const r1 = RANK_VALUE[r1str] || 0;
     const r2 = RANK_VALUE[r2str] || 0;
     const highRank = Math.max(r1, r2);
@@ -2153,7 +2160,10 @@ function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 
     }
     
     // Stack depth considerations
-    const spr = stack > 0 ? stack / (potSize + facingSize) : 20;
+    const trustedCallAmount = Number.isFinite(callAmountBb) && callAmountBb >= 0
+        ? callAmountBb
+        : null;
+    const spr = trustedCallAmount === null ? 20 : (stack > 0 ? stack / (potSize + trustedCallAmount) : 20);
     if (spr < 5) {
         // Shallow stacks - favor high cards and pairs
         if (isPair || highRank >= 10) posModifier += 0.5;
@@ -2164,11 +2174,20 @@ function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 
         if (isPair && highRank <= 8) posModifier += 0.3; // Small pairs gain set-mining value
     }
 
-    const commitment = stack > 0 ? facingSize / stack : 1.0;
+    const commitment = trustedCallAmount === null
+        ? null
+        : (stack > 0 ? trustedCallAmount / stack : 1.0);
     let actionTightness = 0.0;
-    if (action === 'raise') actionTightness = Math.min(3.0, commitment * 8.0);
-    else if (action === '3bet') actionTightness = Math.min(6.0, 3.0 + commitment * 10.0);
-    else if (action === '4bet') actionTightness = Math.min(10.0, 6.0 + commitment * 15.0);
+    // Scenario price can be unknown. Preserve the existing action-category
+    // baseline, but omit only the price-dependent increment instead of
+    // coercing an unknown call commitment to zero.
+    if (action === 'raise') {
+        actionTightness = commitment === null ? 0.0 : Math.min(3.0, commitment * 8.0);
+    } else if (action === '3bet') {
+        actionTightness = commitment === null ? 3.0 : Math.min(6.0, 3.0 + commitment * 10.0);
+    } else if (action === '4bet') {
+        actionTightness = commitment === null ? 6.0 : Math.min(10.0, 6.0 + commitment * 15.0);
+    }
 
     let handStrength = score + posModifier - actionTightness;
 
@@ -2244,13 +2263,13 @@ function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 
         base = [0.20, 0.50, 0.30];
     }
 
-    if (facingSize > 0) {
+    if (facingSize > 0 && trustedCallAmount !== null) {
 
         // Calculate Pot Odds & MDF across all positions
 
-        const potOdds = (potSize + facingSize) > 0 ? (facingSize / (potSize + facingSize)) : 0.3;
+        const potOdds = (potSize + trustedCallAmount) > 0 ? (trustedCallAmount / (potSize + trustedCallAmount)) : 0.3;
 
-        const mdf = (potSize + facingSize) > 0 ? (potSize / (potSize + facingSize)) : 0.7;
+        const mdf = (potSize + trustedCallAmount) > 0 ? (potSize / (potSize + trustedCallAmount)) : 0.7;
 
 
 
@@ -2353,8 +2372,6 @@ function fallbackStrategyResult(reason, decisionContext = null) {
     if (open > call && open > fold) {
 
       // Calculate realistic bet size
-
-      const potOdds = potSize > 0 ? facingSize / (potSize + facingSize) : 0;
 
       const stackToPot = stack > 0 ? stack / potSize : 20;
 
@@ -2564,6 +2581,7 @@ function updateMetrics() {
   const street = context?.street || currentStreet();
   const pot = context ? context.potBb : numericValue('#potSize', preflopBasePot());
   let facing = context ? context.facingSizeBb : numericValue('#facingSize');
+  const callAmount = context ? context.callAmountBb : null;
   const stack = context ? context.stackBb : numericValue('#stack', 100);
   const rakeMode = context?.rakeMode || selectedValue('#rakeMode');
   const accounting = context || strategyAccountingContext(rakeMode, numericValue('#players', 6));
@@ -2587,10 +2605,12 @@ function updateMetrics() {
   if (mPotOdds) {
     if (isPreflopOpenDecision) {
       mPotOdds.textContent = '— (Unopened)';
-    } else if (lastAction === 'unopened' || !facing) {
+    } else if (!Number.isFinite(callAmount)) {
+      mPotOdds.textContent = '— (Price unavailable)';
+    } else if (lastAction === 'unopened' || callAmount === 0) {
       mPotOdds.textContent = '—';
     } else {
-      mPotOdds.textContent = (facing / (pot + facing) * 100).toFixed(1) + '%';
+      mPotOdds.textContent = (callAmount / (pot + callAmount) * 100).toFixed(1) + '%';
     }
   }
 
@@ -2841,13 +2861,53 @@ function getFirstValidCombo(handClassStr, excludeCards) {
 
 
 
+function normalizedMatrixActions(entries) {
+  const prepared = (Array.isArray(entries) ? entries : [])
+    .map((entry) => ({
+      ...entry,
+      rawValue: Math.max(0, Number(entry?.value) || 0)
+    }))
+    .filter((entry) => entry.rawValue > 0)
+    .map((entry, index) => ({ ...entry, index }));
+  const total = prepared.reduce((sum, entry) => sum + entry.rawValue, 0);
+  if (!(total > 0)) return [];
+
+  const allocations = prepared.map((entry) => {
+    const exact = entry.rawValue / total * 100;
+    const value = Math.floor(exact);
+    return { ...entry, value, remainder: exact - value };
+  });
+  let pointsLeft = 100 - allocations.reduce((sum, entry) => sum + entry.value, 0);
+  [...allocations]
+    .sort((left, right) => right.remainder - left.remainder || left.index - right.index)
+    .forEach((entry) => {
+      if (pointsLeft <= 0) return;
+      allocations[entry.index].value += 1;
+      pointsLeft -= 1;
+    });
+
+  return allocations.map(({ index, rawValue, remainder, ...entry }) => entry);
+}
+
+
 function renderChart() {
 
   const grid = $('#strategyGrid');
 
   if (!grid) return;
 
-  const positions = selectedValue('#heroPos');
+  const handMode = app.playbookMode === PLAYBOOK_MODES.HAND;
+  const decisionContext = handMode
+    && app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
+    ? app.decisionContext
+    : null;
+  const matrixContextUnavailable = handMode && !decisionContext;
+  const positions = decisionContext?.heroPosition || selectedValue('#heroPos');
+  const matrixFacingSize = decisionContext?.facingSizeBb ?? numericValue('#facingSize', 0);
+  const matrixPotSize = decisionContext?.potBb ?? numericValue('#potSize', 1.5);
+  const matrixStack = decisionContext?.stackBb ?? numericValue('#stack', 30);
+  const matrixLastAction = decisionContext?.lastAction || $('#lastAction')?.value || 'unopened';
+  const matrixCallAmount = decisionContext?.callAmountBb ?? null;
 
   if (grid.children.length === 0) {
     grid.innerHTML = '';
@@ -2872,7 +2932,8 @@ function renderChart() {
     });
   }
 
-  const currentHeroClass = handClass(app.gto.hero);
+  const currentHeroClass = matrixContextUnavailable
+    ? '' : handClass(decisionContext?.heroCards || app.gto.hero);
 
   
 
@@ -2880,13 +2941,15 @@ function renderChart() {
 
   
 
-  const isPostFlop = currentStreet() !== 'preflop';
+  const isPostFlop = !matrixContextUnavailable
+    && (decisionContext?.street || currentStreet()) !== 'preflop';
 
-  const boardCount = app.gto.board.filter(Boolean).length;
+  const currentBoard = matrixContextUnavailable
+    ? [] : (decisionContext?.board || app.gto.board).filter(Boolean);
+
+  const boardCount = currentBoard.length;
 
   const useEquityFallback = isPostFlop && boardCount >= 3;
-
-  const currentBoard = app.gto.board.filter(Boolean);
 
   RANKS.forEach((_, row) => RANKS.forEach((__, column) => {
 
@@ -2921,38 +2984,36 @@ function renderChart() {
 
         }
 
-    } else if (!isPostFlop) {
+    } else if (!isPostFlop && !matrixContextUnavailable) {
         // Unified deterministic preflop fallback.
         const heroPos = positions;
         const r1str = RANKS[row], r2str = RANKS[column];
         const isPair = row === column;
         const isSuited = hand.length === 3 && hand[2] === 's';
-        const facingSize = numericValue('#facingSize', 0);
-        const potSize = numericValue('#potSize', 1.5);
-        const stack = numericValue('#stack', 30);
-        const actionEl = $('#lastAction');
-        const lastAction = actionEl ? actionEl.value : 'unopened';
-
         const fb = calculatePreflopFallbackStrategy(
           r1str, r2str, isPair, isSuited,
-          heroPos, lastAction, facingSize, potSize, stack
+          heroPos, matrixLastAction, matrixFacingSize, matrixPotSize, matrixStack, matrixCallAmount
         );
 
-        const openVal = Math.round(fb.open * 100);
-        const callVal = Math.round(fb.call * 100);
-        const foldVal = Math.round(fb.fold * 100);
+        const openVal = fb.open * 100;
+        const callVal = fb.call * 100;
+        const foldVal = fb.fold * 100;
 
-        if (openVal > 0) actions.push({ name: facingSize === 0 ? 'Raise' : '3-Bet', value: openVal, kind: 'aggressive' });
+        if (openVal > 0) actions.push({ name: matrixFacingSize === 0 ? 'Raise' : '3-Bet', value: openVal, kind: 'aggressive' });
         if (callVal > 0) actions.push({ name: 'Call', value: callVal, kind: 'passive' });
         if (foldVal > 0) actions.push({ name: 'Fold', value: foldVal, kind: 'fold' });
         actions.sort((a, b) => b.value - a.value);
 
     }
 
+    actions = normalizedMatrixActions(actions);
+
     const type = (actions[0] && actions[0].kind) || 'unavailable';
     const handKind = row === column ? 'pair' : hand.endsWith('s') ? 'suited' : 'offsuit';
 
-    const detail = actions.length ? actions.map((action) => `${action.name} ${action.value}%`).join(' · ') : (useEquityFallback ? 'Blocked by Board' : 'Heuristic fallback');
+    const detail = actions.length
+      ? actions.map((action) => `${action.name} ${action.value}%`).join(' · ')
+      : (useEquityFallback ? 'Unavailable · no representative combo' : 'Strategy unavailable');
 
     const idx = row * 13 + column;
     const button = grid.children[idx];
@@ -2974,85 +3035,29 @@ function renderChart() {
 
 
 
-    if (chartMode === 'ev') {
+    if (chartMode === 'raise') {
 
-      const r1str = RANKS[row], r2str = RANKS[column];
+      const val = actions.find(a => a.kind === 'aggressive')?.value;
 
-      const isPair = row === column;
+      cellSubtext = actions.length ? `${val || 0}%` : 'Unavailable';
 
-      const isSuited = hand.length === 3 && hand[2] === 's';
-
-      const facingSize = numericValue('#facingSize', 0);
-
-      const potSize = numericValue('#potSize', 1.5);
-
-      const stack = numericValue('#stack', 30);
-
-      const actionEl = $('#lastAction');
-
-      const lastAction = actionEl ? actionEl.value : 'unopened';
-
-
-
-      const fb = calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, positions, lastAction, facingSize, potSize, stack);
-
-      const openPct = (actions.find(a => a.kind === 'aggressive')?.value || (fb.open * 100)) / 100;
-
-      const callPct = (actions.find(a => a.kind === 'passive')?.value || (fb.call * 100)) / 100;
-
-      
-
-      const score = Math.max(RANK_VALUE[r1str] || 0, RANK_VALUE[r2str] || 0) + (isPair ? 6 : 0) + (isSuited ? 1.5 : 0);
-
-      const estEV = Math.max(0, (score - 4.0) * 0.22 * potSize * (openPct * 1.2 + callPct * 0.8));
-
-      cellSubtext = `+${estEV.toFixed(1)}bb`;
-
-      const intensity = Math.min(1.0, estEV / 3.5);
-
-      cellBg = `color-mix(in srgb, var(--ev-positive) ${(15 + intensity * 75).toFixed(1)}%, transparent)`;
-
-    } else if (chartMode === 'equity') {
-
-      const r1str = RANKS[row], r2str = RANKS[column];
-
-      const isPair = row === column;
-
-      const isSuited = hand.length === 3 && hand[2] === 's';
-
-      const score = Math.max(RANK_VALUE[r1str] || 0, RANK_VALUE[r2str] || 0) + (isPair ? 8 : 0) + (isSuited ? 2 : 0);
-
-      const estEq = Math.min(88, Math.max(25, Math.round(30 + score * 2.8)));
-
-      cellSubtext = `${estEq}%`;
-
-      const intensity = (estEq - 25) / 63;
-
-      cellBg = `color-mix(in srgb, var(--equity-primary) ${(15 + intensity * 75).toFixed(1)}%, transparent)`;
-
-    } else if (chartMode === 'raise') {
-
-      const val = Math.round(actions.find(a => a.kind === 'aggressive')?.value || 0);
-
-      cellSubtext = `${val}%`;
-
-      cellBg = `color-mix(in srgb, var(--action-aggressive) ${val}%, transparent)`;
+      if (actions.length) cellBg = `color-mix(in srgb, var(--action-aggressive) ${val || 0}%, transparent)`;
 
     } else if (chartMode === 'call') {
 
-      const val = Math.round(actions.find(a => a.kind === 'passive')?.value || 0);
+      const val = actions.find(a => a.kind === 'passive')?.value;
 
-      cellSubtext = `${val}%`;
+      cellSubtext = actions.length ? `${val || 0}%` : 'Unavailable';
 
-      cellBg = `color-mix(in srgb, var(--action-passive) ${val}%, transparent)`;
+      if (actions.length) cellBg = `color-mix(in srgb, var(--action-passive) ${val || 0}%, transparent)`;
 
     } else if (chartMode === 'fold') {
 
-      const val = Math.round(actions.find(a => a.kind === 'fold')?.value || 0);
+      const val = actions.find(a => a.kind === 'fold')?.value;
 
-      cellSubtext = `${val}%`;
+      cellSubtext = actions.length ? `${val || 0}%` : 'Unavailable';
 
-      cellBg = `color-mix(in srgb, var(--action-fold) ${val}%, transparent)`;
+      if (actions.length) cellBg = `color-mix(in srgb, var(--action-fold) ${val || 0}%, transparent)`;
 
     }
 
@@ -3147,7 +3152,9 @@ function renderChart() {
 
   const chartSummary = $('#chartSummary');
   if (chartSummary) {
-    chartSummary.textContent = `${positions} · ${numericValue('#stack')} bb · Heuristic fallback`;
+    chartSummary.textContent = matrixContextUnavailable
+      ? 'Hand Mode · Strategy unavailable for the current canonical state'
+      : `${positions} · ${matrixStack} bb · Heuristic fallback`;
   }
 
 }
@@ -3250,20 +3257,10 @@ function canonicalActionHistoryForAnalysis(resolution) {
   });
 }
 
-function trustedAnalysisFacts(decisionContext, strategyResult, actionHistory = []) {
+function trustedAnalysisFacts(decisionContext, _strategyResult, actionHistory = []) {
   const facts = { actionHistory: Array.isArray(actionHistory) ? actionHistory : [] };
   const handClassification = trustedHandClassificationForAnalysis(decisionContext);
   if (handClassification) facts.handClassification = handClassification;
-  const rawEquity = strategyResult?.details?.originalEquity;
-  const alreadyCalculatedEquity = rawEquity === null || rawEquity === undefined
-    ? NaN
-    : Number(rawEquity);
-  if (Number.isFinite(alreadyCalculatedEquity) && alreadyCalculatedEquity >= 0 && alreadyCalculatedEquity <= 1) {
-    facts.equity = {
-      heroEquity: alreadyCalculatedEquity,
-      method: 'existing postflop heuristic sample'
-    };
-  }
   return facts;
 }
 
@@ -3947,7 +3944,6 @@ function clearEquityResults(state = 'empty', status = 'Results update after calc
   if (panel) panel.dataset.resultState = state;
   if ($('#headlineEquity')) $('#headlineEquity').textContent = '—';
   if ($('#equityStatus')) $('#equityStatus').textContent = status;
-  if ($('#equitySum')) $('#equitySum').textContent = '—';
   if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = '—';
   if ($('#equityDetailActual')) $('#equityDetailActual').textContent = '—';
   if ($('#equityBars')) {
@@ -3975,7 +3971,6 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
   const exact = equityResult.exact;
   const total = equityResult.trials;
   const splitRate = equityResult.metadata.splitPotTrials / total * 100;
-  const equityTotal = result.reduce((sum, player) => sum + player.equity, 0);
   const leadingEquity = Math.max(...result.map((player) => player.equity));
   const requestedLabel = request.method === 'auto' ? 'AUTO' : (request.method === 'exact' ? 'EXACT' : 'MONTE CARLO');
   const actualLabel = exact ? 'EXACT' : 'MONTE CARLO';
@@ -3997,7 +3992,6 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
   `).join('') + `<div class="equity-row equity-row--tie"><span class="equity-player-label"><i class="series-marker" aria-hidden="true"></i><span>Split pots</span></span><div class="eqbar" role="progressbar" aria-label="Split pots" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${splitRate.toFixed(1)}"><div class="eqfill tie" style="width:${splitRate}%"></div></div><b>${splitRate.toFixed(1)}%</b></div>`;
 
   if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = 'complete';
-  if ($('#equitySum')) $('#equitySum').textContent = `${equityTotal.toFixed(2)}%`;
   if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = `${equityResult.metadata.splitPotTrials.toLocaleString()} · ${splitRate.toFixed(1)}%`;
   if ($('#equityDetailActual')) $('#equityDetailActual').textContent = exact ? 'Exact enumeration' : 'Monte Carlo simulation';
   if ($('#equityDetailEstimate')) $('#equityDetailEstimate').textContent = `${equityResult.metadata.estimatedCombinationsText} combinations`;
@@ -4428,6 +4422,10 @@ function bindEvents() {
   
 
   if ($('#chartAction')) $('#chartAction').addEventListener('change', renderChart);
+
+  ['rangeAdvHeroPos', 'rangeAdvVilPos'].forEach((id) => {
+    if ($('#' + id)) $('#' + id).addEventListener('change', renderRangeAdvantage);
+  });
 
 
 
@@ -4920,13 +4918,13 @@ if (document.readyState === 'loading') {
 
 // ── Range Advantage ──────────────────────────────────────────────────────────
 
-// Preflop ranges by position (used for range advantage comparison)
+// Fixed, approximate preflop hand-class samples used for descriptive comparison.
 
 // Return the first valid combo of a hand class that isn't blocked by the board
 
 const PREFLOP_RANGES = {
 
-  // Approximate GTO opening/defending ranges by position (percentage of hands)
+  // These are unweighted analytical assumptions, not solver-derived ranges.
 
   'UTG': new Set(['AA','KK','QQ','JJ','TT','99','88','77','66','55','AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','KQs','KJs','KTs','K9s','QJs','QTs','JTs','J9s','T9s','98s','87s','AKo','AQo','AJo','ATo','KQo','KJo','QJo']), // ~17%
 
@@ -5178,7 +5176,8 @@ function getValidComboForRange(handCode, boardCards) {
 
 
 
-// Score a hand on the board: returns 0–4 (0=air,1=marginal,2=strong,3=nuts, -1=not in range)
+// Categorize one representative available combo: 0=air, 1=marginal/draw,
+// 2=strong made, 3=very strong made, -1=not in the fixed sample.
 
 function scoreRangeHand(handCode, boardCards, range) {
 
@@ -5196,9 +5195,9 @@ function scoreRangeHand(handCode, boardCards, range) {
 
 
 
-  if      (cat >= 4)  return 3; // nuts  (straight+)
+  if      (cat >= 4)  return 3; // very strong made (straight+)
 
-  else if (cat >= 2)  return 2; // strong (two pair+)
+  else if (cat >= 2)  return 2; // strong made (two pair / trips)
 
   else if (cat >= 1)  return 1; // marginal (pair)
 
@@ -5234,11 +5233,17 @@ function scoreRangeHand(handCode, boardCards, range) {
 
 function renderRangeGrid(gridId, hoverInfoId, range, board, statIds) {
   const grid = $('#' + gridId);
-  if (!grid) return { nuts:0, strong:0, marginal:0, air:0, total:0 };
+  if (!grid) return { veryStrong:0, strongMade:0, marginal:0, air:0, total:0 };
   
-  const stats = { nuts:0, strong:0, marginal:0, air:0, total:0 };
+  const stats = { veryStrong:0, strongMade:0, marginal:0, air:0, total:0 };
   const COLOR = { 3:'var(--primary)', 2:'#8bc34a', 1:'var(--orange)', 0:'var(--red)' };
-  const LABEL = { 3: t('Nuts'), 2: t(t('Strong (10%+)')), 1: t(t('Marginal (5%+)')), 0: t(t('Air')), [-1]: t(t('Not in range')) };
+  const LABEL = {
+    3: t('Very strong made'),
+    2: t('Strong made'),
+    1: t('Marginal or draw'),
+    0: t('Air'),
+    [-1]: t('Not in sample')
+  };
 
   // Init grid once
   if (grid.children.length === 0) {
@@ -5275,7 +5280,7 @@ function renderRangeGrid(gridId, hoverInfoId, range, board, statIds) {
     const btn = grid.children[idx];
     
     btn.textContent = hand;
-    btn.title = LABEL[tier] || t(t('Not in range'));
+    btn.title = LABEL[tier] || t('Not in sample');
 
     if (tier === -1) {
       btn.style.background = 'transparent';
@@ -5287,7 +5292,7 @@ function renderRangeGrid(gridId, hoverInfoId, range, board, statIds) {
       btn.style.border = 'none';
       btn.style.color = '#ffffff';
       btn.style.opacity = '0.88';
-      stats[['air','marginal','strong','nuts'][tier]]++;
+      stats[['air','marginal','strongMade','veryStrong'][tier]]++;
       stats.total++;
     }
   }));
@@ -5298,9 +5303,9 @@ function renderRangeGrid(gridId, hoverInfoId, range, board, statIds) {
 
     const pct = v => stats.total ? (v/stats.total*100).toFixed(0)+'%' : '0%';
 
-    if ($('#'+statIds.nuts))     $('#'+statIds.nuts).textContent     = `${stats.nuts} (${pct(stats.nuts)})`;
+    if ($('#'+statIds.veryStrong)) $('#'+statIds.veryStrong).textContent = `${stats.veryStrong} (${pct(stats.veryStrong)})`;
 
-    if ($('#'+statIds.strong))   $('#'+statIds.strong).textContent   = `${stats.strong} (${pct(stats.strong)})`;
+    if ($('#'+statIds.strongMade)) $('#'+statIds.strongMade).textContent = `${stats.strongMade} (${pct(stats.strongMade)})`;
 
     if ($('#'+statIds.marginal)) $('#'+statIds.marginal).textContent = `${stats.marginal} (${pct(stats.marginal)})`;
 
@@ -5315,130 +5320,91 @@ function renderRangeGrid(gridId, hoverInfoId, range, board, statIds) {
 
 
 function renderRangeAdvantage() {
+  const heroPos = $('#rangeAdvHeroPos')?.value || 'BTN';
+  const villainPos = $('#rangeAdvVilPos')?.value || 'BB';
+  const status = $('#rangeAdvantageStatus');
+  const analysis = $('#rangeAdvantageAnalysis');
 
+  if ($('#heroRangeTitle')) $('#heroRangeTitle').textContent = `${t('Hero sample')} (${heroPos})`;
+  if ($('#villainRangeTitle')) $('#villainRangeTitle').textContent = `${t('Villain sample')} (${villainPos})`;
+
+  if (app.playbookMode === PLAYBOOK_MODES.HAND) {
+    if (analysis) analysis.hidden = true;
+    if (status) {
+      status.dataset.state = 'unavailable';
+      status.textContent = t('Unavailable in Hand Mode. Canonical hand history does not establish weighted ranges, so Scenario cards and manual range assumptions are not used.');
+    }
+    return { status: 'unavailable', mode: PLAYBOOK_MODES.HAND, heroPos, villainPos };
+  }
+
+  const heroRange = PREFLOP_RANGES[heroPos] || PREFLOP_RANGES.BTN;
+  const villainRange = PREFLOP_RANGES[villainPos] || PREFLOP_RANGES.BB;
   const board = app.gto.board.filter(Boolean);
-
-  const heroPos    = selectedValue('#heroPos');
-
-  const villainSel = $('#rangeAdvVillainPos');
-
-  const villainPos = villainSel ? villainSel.value : 'BB';
-
-
-
-  const heroRange    = PREFLOP_RANGES[heroPos]    || PREFLOP_RANGES['BTN'];
-
-  const villainRange = PREFLOP_RANGES[villainPos] || PREFLOP_RANGES['BB'];
-
-
-
-  // Update titles
-
-  if ($('#heroRangeTitle'))    $('#heroRangeTitle').textContent    = `${t('Hero')} (${heroPos})`;
-
-  if ($('#villainRangeTitle')) $('#villainRangeTitle').textContent = `${t('Villain')} (${villainPos})`;
-
-
-
   if (board.length < 3) {
-
-    if ($('#rangeConclusion')) $('#rangeConclusion').innerHTML = t('Waiting for board...');
-
-    // Render empty grids to show ranges
-
-    renderRangeGrid('heroRangeGrid',    'heroHoverInfo',    heroRange,    [], { nuts:'heroStatNuts', strong:'heroStatStrong', marginal:'heroStatMarginal', air:'heroStatAir' });
-
-    renderRangeGrid('villainRangeGrid', 'villainHoverInfo', villainRange, [], { nuts:'vilStatNuts',  strong:'vilStatStrong',  marginal:'vilStatMarginal',  air:'vilStatAir' });
-
-    if ($('#heroAdvBar'))    $('#heroAdvBar').style.width    = '50%';
-
-    if ($('#villainAdvBar')) $('#villainAdvBar').style.transform = 'scaleX(0.5)';
-
-    if ($('#heroRangeScore'))    $('#heroRangeScore').textContent    = t('Preflop range');
-
-    if ($('#villainRangeScore')) $('#villainRangeScore').textContent = t('Preflop range');
-
-    return;
-
+    if (analysis) analysis.hidden = true;
+    if (status) {
+      status.dataset.state = 'waiting';
+      status.textContent = t('Add at least a flop to compare the manually selected heuristic range samples.');
+    }
+    return { status: 'waiting_for_board', mode: PLAYBOOK_MODES.SCENARIO, heroPos, villainPos };
   }
 
+  if (analysis) analysis.hidden = false;
+  if (status) {
+    status.dataset.state = 'available';
+    status.textContent = t('Source: heuristic fixed-range/category analysis. Fixed approximate preflop ranges; one representative available combo per hand class; no combo weights. This is not solver range advantage, range-vs-range equity, or support for a betting size or frequency.');
+  }
 
+  const statIds = {
+    hero: { veryStrong:'heroStatVeryStrong', strongMade:'heroStatStrongMade', marginal:'heroStatMarginal', air:'heroStatAir' },
+    villain: { veryStrong:'vilStatVeryStrong', strongMade:'vilStatStrongMade', marginal:'vilStatMarginal', air:'vilStatAir' }
+  };
+  const heroStats = renderRangeGrid('heroRangeGrid', 'heroHoverInfo', heroRange, board, statIds.hero);
+  const villainStats = renderRangeGrid('villainRangeGrid', 'villainHoverInfo', villainRange, board, statIds.villain);
 
-  const heroStats    = renderRangeGrid('heroRangeGrid',    'heroHoverInfo',    heroRange,    board, { nuts:'heroStatNuts', strong:'heroStatStrong', marginal:'heroStatMarginal', air:'heroStatAir' });
+  const heroStrongShare = heroStats.total
+    ? (heroStats.veryStrong + heroStats.strongMade) / heroStats.total : 0;
+  const villainStrongShare = villainStats.total
+    ? (villainStats.veryStrong + villainStats.strongMade) / villainStats.total : 0;
+  const combinedShare = heroStrongShare + villainStrongShare;
+  const heroBarShare = combinedShare > 0 ? Math.round(heroStrongShare / combinedShare * 100) : 50;
 
-  const villainStats = renderRangeGrid('villainRangeGrid', 'villainHoverInfo', villainRange, board, { nuts:'vilStatNuts',  strong:'vilStatStrong',  marginal:'vilStatMarginal',  air:'vilStatAir' });
+  if ($('#heroAdvBar')) $('#heroAdvBar').style.width = `${heroBarShare}%`;
+  if ($('#villainAdvBar')) $('#villainAdvBar').style.width = `${100 - heroBarShare}%`;
+  if ($('#heroRangeScore')) $('#heroRangeScore').textContent = `${(heroStrongShare * 100).toFixed(1)}% ${t('strong made categories')}`;
+  if ($('#villainRangeScore')) $('#villainRangeScore').textContent = `${(villainStrongShare * 100).toFixed(1)}% ${t('strong made categories')}`;
 
-
-
-  // Advantage bar
-
-  const heroNutsPct = heroStats.total    ? heroStats.nuts    / heroStats.total    : 0;
-
-  const vilNutsPct  = villainStats.total ? villainStats.nuts / villainStats.total : 0;
-
-  const totalNuts   = heroNutsPct + vilNutsPct || 1;
-
-  const heroShare   = Math.round(heroNutsPct / totalNuts * 100);
-
-
-
-  if ($('#heroAdvBar'))    $('#heroAdvBar').style.width    = heroShare + '%';
-
-  if ($('#villainAdvBar')) $('#villainAdvBar').style.width = (100 - heroShare) + '%';
-
-  if ($('#heroRangeScore'))    $('#heroRangeScore').textContent    = `${(heroNutsPct*100).toFixed(1)}% ${t('Nuts')}`;
-
-  if ($('#villainRangeScore')) $('#villainRangeScore').textContent = `${(vilNutsPct*100).toFixed(1)}% ${t('Nuts')}`;
-
-
-
-  // Conclusion
-
-  let conclusion = '', color = 'var(--primary)';
-
-  const nutDiff   = heroNutsPct - vilNutsPct;
-
-  const heroStrong = heroStats.total ? (heroStats.nuts+heroStats.strong)/heroStats.total : 0;
-
-  const vilStrong  = villainStats.total ? (villainStats.nuts+villainStats.strong)/villainStats.total : 0;
-
-
-
-  if (nutDiff > 0.08) {
-
-    conclusion = `<strong>${t('Significant Nut Advantage')}</strong><br>${t('Hero has a high concentration of nutted hands compared to Villain. This allows Hero to use large bet sizes and overbets, as Villain will struggle to defend.')}`;
-
+  let title = t('Similar sampled categories');
+  let description = t('The sampled made-hand and draw categories are similar.');
+  let color = 'var(--orange)';
+  if (heroStrongShare - villainStrongShare > 0.10) {
+    title = t('Hero sample contains more strong made categories');
+    description = t('This heuristic range sample contains a higher share of strong and very strong made-hand categories for Hero.');
     color = 'var(--primary)';
-
-  } else if (heroStrong - vilStrong > 0.10) {
-
-    conclusion = `<strong>${t('Range Advantage')}</strong><br>${t('Hero connects much better with this board overall. Hero can bet very frequently (using smaller bet sizes) to apply maximum pressure.')}`;
-
-    color = '#8bc34a';
-
-  } else if (nutDiff < -0.08) {
-
-    conclusion = `<strong>${t('Villain Nut Advantage')}</strong><br>${t("The board favors the opponent's range. Hero must proceed with caution and play more passively (check/calling), avoiding large bluffs.")}`;
-
+  } else if (villainStrongShare - heroStrongShare > 0.10) {
+    title = t('Villain sample contains more strong made categories');
+    description = t("Villain's sampled range contains a higher share of strong and very strong made-hand categories.");
     color = 'var(--red)';
-
-  } else {
-
-    conclusion = `<strong>${t('Neutral Board')}</strong><br>${t('The board is relatively neutral, distributing equity evenly. Play should be mixed, relying on individual hand strength rather than broad range bets.')}`;
-
-    color = 'var(--orange)';
-
   }
-
-
 
   if ($('#rangeConclusion')) {
-
-    $('#rangeConclusion').innerHTML = conclusion;
-
+    $('#rangeConclusion').replaceChildren();
+    const heading = document.createElement('strong');
+    heading.textContent = title;
+    const copy = document.createElement('span');
+    copy.textContent = description;
+    $('#rangeConclusion').append(heading, document.createElement('br'), copy);
     $('#rangeConclusion').style.borderLeftColor = color;
-
   }
+
+  return {
+    status: 'available',
+    mode: PLAYBOOK_MODES.SCENARIO,
+    heroPos,
+    villainPos,
+    heroStrongShare,
+    villainStrongShare
+  };
 
 }
 
@@ -5886,11 +5852,12 @@ function updateAssistanceDisplay() {
         const ctx = app.training.currentContext;
         const heroPos = ctx.hero_pos || 'UTG';
         const facing = ctx.facingSize || 0;
-        const odds = ctx.potOdds ? ctx.potOdds.toFixed(1) : '0.0';
-        const mdf = ctx.mdf ? ctx.mdf.toFixed(1) : '100.0';
+        const callAmount = ctx.callAmount;
+        const odds = ctx.potOdds === null ? null : ctx.potOdds.toFixed(1);
+        const mdf = ctx.mdf === null ? null : ctx.mdf.toFixed(1);
 
-        if (facing > 0) {
-          hintText.textContent = `Facing a ${facing.toFixed(1)}bb bet/raise in ${heroPos}. Pot Odds require at least ${odds}% equity to call. MDF target is ${mdf}%. Consider your position and blocker strength before choosing your action.`;
+        if (callAmount !== null && callAmount > 0) {
+          hintText.textContent = `The nominal wager is ${facing.toFixed(1)}bb; Hero must call ${callAmount.toFixed(1)}bb in ${heroPos}. Pot odds require at least ${odds}% raw equity to call. MDF (${mdf}%) is a range-level reference, not a threshold for this hand. Consider position and blockers before choosing.`;
         } else {
           hintText.textContent = `Unopened/Checked spot in ${heroPos}. Consider positional advantage and range-building when deciding between opening/betting or checking.`;
         }
@@ -6489,6 +6456,10 @@ function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [], de
   const flatDrop = Number(document.getElementById('flatDrop') ? document.getElementById('flatDrop').value : 0) || 0;
   const potSize = (Number(context.potSize) || 1.5) + flatDrop;
   const facingSize = Number(context.facingSize) || 0;
+  const trustedCallAmount = Number.isFinite(decisionContext?.callAmountBb)
+    && decisionContext.callAmountBb >= 0
+    ? decisionContext.callAmountBb
+    : null;
   const stack = Number(context.stack) || 100;
   const spr = stack / (potSize || 1);
   const L = (app.settings && app.settings.tightness !== undefined) ? app.settings.tightness / 100.0 : 0.0;
@@ -6574,8 +6545,9 @@ function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [], de
   
   if (typeof calculateBoardWetness !== 'undefined' && calculateBoardWetness(context.board) > 0.7 && evalRes.category !== 'monster') eq *= 0.85;
   
-  let mdf = facingSize > 0 ? (potSize / (potSize + facingSize)) : 1.0;
-  mdf = mdf * (1.0 - (0.15 * L));
+  const requiredRawEquity = trustedCallAmount !== null && trustedCallAmount > 0
+    ? trustedCallAmount / (potSize + trustedCallAmount)
+    : null;
   
   let rFactor = 1.0;
   const heroPos = context.hero_pos || context.positions || 'BTN';
@@ -6615,7 +6587,11 @@ function calculateUnifiedPostflopStrategy(context, heroCards, deadCards = [], de
       strategy = { 'Raise': 100 };
     } else if (realizedEquity >= callRaiseThreshold || evalRes.category === 'two_pair') {
       strategy = { 'Raise': 25, 'Call': 75 };
-    } else if (realizedEquity >= (1.0 - mdf)) {
+    } else if (requiredRawEquity !== null
+      ? realizedEquity >= requiredRawEquity
+      // Scenario has no exact call price. Keep the heuristic available using
+      // its established neutral equity boundary without inventing pot odds.
+      : realizedEquity >= 0.50 - bleedDiscount) {
       strategy = { 'Call': 100 };
     } else {
       strategy = { 'Fold': 100 };
@@ -6720,6 +6696,9 @@ function trainingStrategyResultToLegacySolution(strategyResult) {
 
 function trainingContextPresentationAdapter(decisionContext) {
   const facingSize = decisionContext.facingSizeBb;
+  const callAmount = Number.isFinite(decisionContext.callAmountBb)
+    ? decisionContext.callAmountBb
+    : null;
   const potSize = decisionContext.potBb;
   return {
     table_size: decisionContext.tableSize,
@@ -6729,8 +6708,9 @@ function trainingContextPresentationAdapter(decisionContext) {
     lastAction: decisionContext.lastAction,
     potSize,
     facingSize,
-    potOdds: facingSize > 0 ? facingSize / (potSize + facingSize) * 100 : 0,
-    mdf: facingSize > 0 ? potSize / (potSize + facingSize) * 100 : 100,
+    callAmount,
+    potOdds: callAmount !== null && callAmount > 0 ? callAmount / (potSize + callAmount) * 100 : null,
+    mdf: callAmount !== null && callAmount > 0 ? potSize / (potSize + callAmount) * 100 : null,
     board: [...decisionContext.board],
     rakeMode: decisionContext.rakeMode,
     forcedContributionPerPlayerBb: decisionContext.forcedContributionPerPlayerBb,
@@ -6934,13 +6914,13 @@ function renderCanonicalTrainingExercise(exercise) {
   if (potInfo) potInfo.style.display = 'flex';
   if ($('#trainingPotVal')) $('#trainingPotVal').textContent = `${context.potBb.toFixed(1)} bb`;
   if ($('#trainingFacingVal')) {
-    $('#trainingFacingVal').textContent = context.facingSizeBb > 0
-      ? `${context.facingSizeBb.toFixed(1)} bb`
+    $('#trainingFacingVal').textContent = context.callAmountBb > 0
+      ? `${context.callAmountBb.toFixed(1)} bb to call (${context.facingSizeBb.toFixed(1)} bb to)`
       : context.street === 'preflop' && context.heroPosition !== 'BB'
         ? '0.0 bb (Unopened)' : '0.0 bb (Free Check)';
   }
-  if ($('#trainingPotOddsVal')) $('#trainingPotOddsVal').textContent = `${legacyContext.potOdds.toFixed(1)}%`;
-  if ($('#trainingMdfVal')) $('#trainingMdfVal').textContent = `${legacyContext.mdf.toFixed(1)}%`;
+  if ($('#trainingPotOddsVal')) $('#trainingPotOddsVal').textContent = legacyContext.potOdds === null ? '—' : `${legacyContext.potOdds.toFixed(1)}%`;
+  if ($('#trainingMdfVal')) $('#trainingMdfVal').textContent = legacyContext.mdf === null ? '— (range reference)' : `${legacyContext.mdf.toFixed(1)}% (range reference)`;
   if ($('#trainingHeroPos')) $('#trainingHeroPos').value = context.heroPosition;
   if ($('#trainingPositionVal')) $('#trainingPositionVal').textContent = context.heroPosition;
   if ($('#trainingStackVal')) $('#trainingStackVal').textContent = `${context.stackBb.toFixed(1)}bb`;

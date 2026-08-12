@@ -13,6 +13,7 @@ import {
   applyChance,
   amountToCallMilliBb,
   createAction,
+  getLegalActionSpec,
   initializeHand,
 } from '../shared/poker-domain/index.js';
 import { deriveDecisionContextFromPokerState } from '../app/src/application/decision-context-from-poker-state.mjs';
@@ -86,7 +87,9 @@ function legacyEquivalent(projected) {
 }
 
 function assertLegacyParity(projected) {
-  assert.deepEqual(projected, legacyEquivalent(projected));
+  const { callAmountBb, heroStreetContributionBb, ...legacyFields } = projected;
+  const { callAmountBb: ignoredCallAmount, heroStreetContributionBb: ignoredContribution, ...expectedLegacyFields } = legacyEquivalent(projected);
+  assert.deepEqual(legacyFields, expectedLegacyFields);
 }
 
 function foldUntilPosition(state, position) {
@@ -135,6 +138,8 @@ test('HU unopened PokerState projects the exact DecisionContext v1 shape', () =>
     potBb: 1.5,
     lastAction: 'unopened',
     facingSizeBb: 0,
+    callAmountBb: 0.5,
+    heroStreetContributionBb: 0.5,
     rakeMode: 'off',
     forcedContributionPerPlayerBb: 0,
     totalForcedContributionBb: 0,
@@ -159,24 +164,30 @@ test('10-max UTG unopened projection preserves the full-ring position', () => {
   assertLegacyParity(projected);
 });
 
-test('preflop raise, 3-bet, and 4-bet use legacy nominal facing sizes', () => {
+test('preflop raises preserve nominal wager-to values and trusted incremental prices', () => {
   let state = createDealtState();
   state = act(state, ACTION_TYPES.RAISE, 2500);
   const raised = context(state);
   assert.equal(raised.lastAction, 'raise');
   assert.equal(raised.facingSizeBb, 2.5);
+  assert.equal(raised.heroStreetContributionBb, 1);
+  assert.equal(raised.callAmountBb, 1.5);
   assertLegacyParity(raised);
 
   state = act(state, ACTION_TYPES.RAISE, 7500);
   const threeBet = context(state);
   assert.equal(threeBet.lastAction, '3bet');
   assert.equal(threeBet.facingSizeBb, 7.5);
+  assert.equal(threeBet.heroStreetContributionBb, 2.5);
+  assert.equal(threeBet.callAmountBb, 5);
   assertLegacyParity(threeBet);
 
   state = act(state, ACTION_TYPES.RAISE, 18_000);
   const fourBet = context(state);
   assert.equal(fourBet.lastAction, '4bet');
   assert.equal(fourBet.facingSizeBb, 18);
+  assert.equal(fourBet.heroStreetContributionBb, 7.5);
+  assert.equal(fourBet.callAmountBb, 10.5);
   assertLegacyParity(fourBet);
 });
 
@@ -193,7 +204,7 @@ test('limps map lossily to check and preserve the BB free option', () => {
   assertLegacyParity(projected);
 });
 
-test('short-stack projection keeps starting depth and nominal wager size', () => {
+test('short-stack projection keeps nominal wager size and clamps the trusted call commitment', () => {
   let state = createDealtState({ stacksMilliBb: [100_000, 20_000] });
   state = act(state, ACTION_TYPES.RAISE, 25_000);
   const projected = context(state);
@@ -202,6 +213,8 @@ test('short-stack projection keeps starting depth and nominal wager size', () =>
   assert.equal(amountToCallMilliBb(state, state.actingPlayerId), 24_000);
   assert.equal(state.players.find((player) => player.playerId === state.actingPlayerId).currentStackMilliBb, 19_000);
   assert.equal(projected.lastAction, 'raise');
+  assert.equal(projected.heroStreetContributionBb, 1);
+  assert.equal(projected.callAmountBb, 19);
   assertLegacyParity(projected);
 });
 
@@ -226,12 +239,16 @@ test('postflop bet and raise classifications preserve nominal bet-to sizes', () 
   const facingBet = context(state);
   assert.equal(facingBet.lastAction, 'bet');
   assert.equal(facingBet.facingSizeBb, 2);
+  assert.equal(facingBet.heroStreetContributionBb, 0);
+  assert.equal(facingBet.callAmountBb, 2);
   assertLegacyParity(facingBet);
 
   state = act(state, ACTION_TYPES.RAISE, 6000);
   const facingRaise = context(state);
   assert.equal(facingRaise.lastAction, 'raise');
   assert.equal(facingRaise.facingSizeBb, 6);
+  assert.equal(facingRaise.heroStreetContributionBb, 2);
+  assert.equal(facingRaise.callAmountBb, 4);
   assertLegacyParity(facingRaise);
 });
 
@@ -350,9 +367,39 @@ test('DecisionContext v1 applies the same stack, pot, and facing bounds as legac
   assert.equal(deepState.currentBetMilliBb, 250_000);
   assert.equal(deepState.potMilliBb, 251_000);
   assert.equal(deep.stackBb, 500);
-  assert.equal(deep.facingSizeBb, 100);
+  assert.equal(deep.facingSizeBb, 250);
   assert.equal(deep.potBb, 200);
-  assertLegacyParity(deep);
+});
+
+test('SB blind investment is excluded from its incremental call price', () => {
+  let state = createDealtState({ playerCount: 3 });
+  state = act(state, ACTION_TYPES.RAISE, 3000);
+  const projected = context(state);
+  assert.equal(projected.heroPosition, 'SB');
+  assert.equal(projected.facingSizeBb, 3);
+  assert.equal(projected.heroStreetContributionBb, 0.5);
+  assert.equal(projected.callAmountBb, 2.5);
+});
+
+test('canonical call price always matches the legal commitment and stack bound', () => {
+  const states = [];
+  let preflop = createDealtState();
+  states.push(preflop);
+  preflop = act(preflop, ACTION_TYPES.RAISE, 2500);
+  states.push(preflop);
+  let flop = reachFlop();
+  states.push(flop);
+  flop = act(flop, ACTION_TYPES.BET, 2000);
+  states.push(flop);
+  for (const state of states) {
+    const projected = context(state);
+    const legal = getLegalActionSpec(state);
+    const actor = state.players.find((player) => player.playerId === state.actingPlayerId);
+    assert.equal(projected.callAmountBb, legal.call.commitMilliBb / 1000);
+    assert.ok(projected.callAmountBb >= 0);
+    assert.ok(projected.callAmountBb <= actor.currentStackMilliBb / 1000);
+    if (legal.check.available) assert.equal(projected.callAmountBb, 0);
+  }
 });
 
 test('every emitted lastAction is accepted by the current fallback vocabulary', () => {

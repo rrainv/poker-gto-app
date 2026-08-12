@@ -63,7 +63,7 @@ test('DecisionContext adapters preserve the established preflop and postflop arg
 
   assert.deepEqual(
     qa.fallbackForDecisionContext(context),
-    qa.fallback('A', 'K', false, false, 'UTG+2', '3bet', 7.5, 11.5, 200),
+    qa.fallback('A', 'K', false, false, 'UTG+2', '3bet', 7.5, 11.5, 200, context.callAmountBb),
   );
 });
 
@@ -83,6 +83,7 @@ test('preflop fallback entry preserves six-max, 10-max, raise, and 3-bet behavio
       context.facingSizeBb,
       context.potBb,
       context.stackBb,
+      context.callAmountBb,
     );
     assert.deepEqual(qa.fallbackForDecisionContext(context), expected);
 

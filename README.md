@@ -15,6 +15,10 @@ Riverline is under active development. Its current strategy output is primarily 
 
 The Playbook's current application boundary is deliberately small: a versioned `DecisionContext` is passed to a strategy source, which returns a versioned `StrategyResult`. This provides a stable seam for future solver- and model-backed work without presenting today's heuristics as equilibrium solutions.
 
+For pricing, `facingSizeBb` means the nominal wager-to level. The trusted
+incremental price to call is `callAmountBb` when available; Scenario mode
+intentionally leaves it unavailable when no legal history establishes it.
+
 ## Run Riverline
 
 ### Browser

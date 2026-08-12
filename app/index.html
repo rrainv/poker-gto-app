@@ -1004,7 +1004,7 @@
           <div id="playbookAnalysisTabs" class="sub-tabs ui-segments" role="tablist" aria-label="Playbook analysis views">
             <button class="sub-tab ui-tab active" type="button" role="tab" aria-selected="true" data-gto-view="context" data-i18n="Decision">Decision</button>
             <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="chart" data-i18n="Range Matrix">Range Matrix</button>
-            <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="range" data-i18n="Range Advantage">Range Advantage</button>
+            <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="range" data-i18n="Range Category Comparison">Range Category Comparison</button>
           </div>
 
           <div id="chartView" class="gto-view" style="display: none;">
@@ -1057,10 +1057,6 @@
                 <select id="chartAction" class="control-select">
 
                   <option value="strategy" data-i18n="Strategy colors">Strategy colors</option>
-
-                  <option value="ev" data-i18n="EV Heatmap (bb)">EV Heatmap (bb)</option>
-
-                  <option value="equity" data-i18n="Equity % Heatmap">Equity % Heatmap</option>
 
                   <option value="raise" data-i18n="Raise / Bet %">Raise / Bet %</option>
 
@@ -1140,8 +1136,8 @@
             <section class="panel">
               <div class="panel-head">
                 <div>
-                  <div class="panel-title" data-i18n="Range Advantage">Range Advantage</div>
-                  <div class="panel-note"><span data-i18n="Compare your preflop range against the opponent's on this board.">Compare your preflop range against the opponent's on this board.</span></div>
+                  <div class="panel-title" data-i18n="Range Category Comparison">Range Category Comparison</div>
+                  <div class="panel-note"><span data-i18n="Compare fixed heuristic preflop samples by made-hand and draw category.">Compare fixed heuristic preflop samples by made-hand and draw category.</span></div>
                 </div>
 
                 <div class="field" style="margin-top: 12px;">
@@ -1153,35 +1149,33 @@
 
                 
                                 <div style="display:flex; gap:12px;">
-                  <select id="rangeAdvHeroPos" class="settings-select" style="width:70px;">
+                  <label><span class="sr-only" data-i18n="Hero sample position">Hero sample position</span><select id="rangeAdvHeroPos" class="settings-select" style="width:70px;">
                     <option value="UTG">UTG</option>
                     <option value="HJ">HJ</option>
                     <option value="CO">CO</option>
                     <option value="BTN" selected>BTN</option>
                     <option value="SB">SB</option>
                     <option value="BB">BB</option>
-                  </select>
+                  </select></label>
                   <span style="color:var(--muted); margin-top:6px;">vs</span>
-                  <select id="rangeAdvVilPos" class="settings-select" style="width:70px;">
+                  <label><span class="sr-only" data-i18n="Villain sample position">Villain sample position</span><select id="rangeAdvVilPos" class="settings-select" style="width:70px;">
                     <option value="UTG">UTG</option>
                     <option value="HJ">HJ</option>
                     <option value="CO">CO</option>
                     <option value="BTN">BTN</option>
                     <option value="SB">SB</option>
                     <option value="BB" selected>BB</option>
-                  </select>
+                  </select></label>
                 </div>
               </div>
               <div class="panel-body">
-                <div style="background: rgba(46, 204, 113, 0.1); border-left: 4px solid var(--primary); padding: 12px 16px; margin-bottom: 24px; border-radius: 4px;">
-                  <p data-i18n="How to read this chart" style="margin: 0 0 8px 0; font-size: 13px; font-weight: 600; color: var(--primary);">How to read this chart</p>
-                  <p class="muted" style="margin: 0; font-size: 13px; line-height: 1.5;">
-                    <span data-i18n="Compare your preflop range against the opponent's on this board.">Compare your preflop range against the opponent's on this board.</span>
-                  </p>
+                <div id="rangeAdvantageStatus" data-state="waiting" role="status" aria-live="polite" data-i18n="Add at least a flop to compare the manually selected heuristic range samples." style="background: rgba(46, 204, 113, 0.1); border-left: 4px solid var(--primary); padding: 12px 16px; margin-bottom: 24px; border-radius: 4px; font-size:13px; line-height:1.5;">
+                  Add at least a flop to compare the manually selected heuristic range samples.
                 </div>
+                <div id="rangeAdvantageAnalysis" hidden>
                 <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:12px; font-weight:bold; text-transform:uppercase; color:var(--muted);">
-                  <span data-i18n="Hero Advantage">Hero Advantage</span>
-                  <span data-i18n="Villain Advantage">Villain Advantage</span>
+                  <span data-i18n="Hero strong-category share">Hero strong-category share</span>
+                  <span data-i18n="Villain strong-category share">Villain strong-category share</span>
                 </div>
                 <div style="display:flex; height:24px; border-radius:4px; overflow:hidden; margin-bottom:24px; background:var(--bg);">
                   <div id="heroAdvBar" style="width:50%; background:var(--primary); transition:width 0.3s;"></div>
@@ -1190,46 +1184,47 @@
                 <div class="range-grid-split" style="display:flex; gap:16px; flex-wrap:wrap;">
                   <div style="flex:1; min-width:280px;">
                     <div style="margin-bottom:8px; font-weight:bold; color:var(--text); display:flex; justify-content:space-between;">
-                      <span id="heroRangeTitle">Hero (BTN)</span>
-                      <span id="heroRangeScore" style="color:var(--primary);">0% Nuts</span>
+                      <span id="heroRangeTitle">Hero sample (BTN)</span>
+                      <span id="heroRangeScore" style="color:var(--primary);">0% strong made categories</span>
                     </div>
                     <div class="matrix-wrap" style="padding:0;">
                       <div class="strategy-grid range-grid" id="heroRangeGrid" aria-label="13 by 13 starting hand matrix"></div>
                     </div>
                     <div id="heroHoverInfo" style="margin-top:8px; font-size:12px; min-height:16px; color:var(--muted); text-align:center;" data-i18n="Hover over a hand to see details">Hover over a hand to see details</div>
                     <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:12px;">
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--primary)" data-i18n="Nuts">Nuts</span><span id="heroStatNuts">0 (0%)</span></div>
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:#8bc34a" data-i18n="Strong">Strong</span><span id="heroStatStrong">0 (0%)</span></div>
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--orange)" data-i18n="Marginal">Marginal</span><span id="heroStatMarginal">0 (0%)</span></div>
+                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--primary)" data-i18n="Very strong made">Very strong made</span><span id="heroStatVeryStrong">0 (0%)</span></div>
+                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:#8bc34a" data-i18n="Strong made">Strong made</span><span id="heroStatStrongMade">0 (0%)</span></div>
+                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--orange)" data-i18n="Marginal or draw">Marginal or draw</span><span id="heroStatMarginal">0 (0%)</span></div>
                       <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--red)" data-i18n="Air">Air</span><span id="heroStatAir">0 (0%)</span></div>
                     </div>
                   </div>
                   <div style="flex:1; min-width:280px;">
                     <div style="margin-bottom:8px; font-weight:bold; color:var(--text); display:flex; justify-content:space-between;">
-                      <span id="villainRangeTitle">Villain (BB)</span>
-                      <span id="villainRangeScore" style="color:var(--red);">0% Nuts</span>
+                      <span id="villainRangeTitle">Villain sample (BB)</span>
+                      <span id="villainRangeScore" style="color:var(--red);">0% strong made categories</span>
                     </div>
                     <div class="matrix-wrap" style="padding:0;">
                       <div class="strategy-grid range-grid" id="villainRangeGrid" aria-label="13 by 13 starting hand matrix"></div>
                     </div>
                     <div id="villainHoverInfo" style="margin-top:8px; font-size:12px; min-height:16px; color:var(--muted); text-align:center;" data-i18n="Hover over a hand to see details">Hover over a hand to see details</div>
                     <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:12px;">
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--primary)" data-i18n="Nuts">Nuts</span><span id="vilStatNuts">0 (0%)</span></div>
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:#8bc34a" data-i18n="Strong">Strong</span><span id="vilStatStrong">0 (0%)</span></div>
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--orange)" data-i18n="Marginal">Marginal</span><span id="vilStatMarginal">0 (0%)</span></div>
+                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--primary)" data-i18n="Very strong made">Very strong made</span><span id="vilStatVeryStrong">0 (0%)</span></div>
+                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:#8bc34a" data-i18n="Strong made">Strong made</span><span id="vilStatStrongMade">0 (0%)</span></div>
+                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--orange)" data-i18n="Marginal or draw">Marginal or draw</span><span id="vilStatMarginal">0 (0%)</span></div>
                       <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--red)" data-i18n="Air">Air</span><span id="vilStatAir">0 (0%)</span></div>
                     </div>
                   </div>
                 </div>
                 <div class="strategy-key" style="margin-top:24px; justify-content:center;">
-                  <span class="key"><i style="background:var(--primary)"></i><span data-i18n="Nuts (20%+) font-normal">Nuts (20%+)</span></span>
-                  <span class="key"><i style="background:#8bc34a"></i><span data-i18n="Strong (10%+)">Strong (10%+)</span></span>
-                  <span class="key"><i style="background:var(--orange)"></i><span data-i18n="Marginal (5%+)">Marginal (5%+)</span></span>
+                  <span class="key"><i style="background:var(--primary)"></i><span data-i18n="Very strong made">Very strong made</span></span>
+                  <span class="key"><i style="background:#8bc34a"></i><span data-i18n="Strong made">Strong made</span></span>
+                  <span class="key"><i style="background:var(--orange)"></i><span data-i18n="Marginal or draw">Marginal or draw</span></span>
                   <span class="key"><i style="background:var(--red)"></i><span data-i18n="Air">Air</span></span>
-                  <span class="key"><i style="background:transparent; border:1px solid #334155;"></i><span data-i18n="Not in range">Not in range</span></span>
+                  <span class="key"><i style="background:transparent; border:1px solid #334155;"></i><span data-i18n="Not in sample">Not in sample</span></span>
                 </div>
                 <div id="rangeConclusion" style="margin-top:24px; padding:16px; background:#0f172a; border-left:4px solid var(--primary); border-radius:4px; font-size:14px; line-height:1.5;">
                   Waiting for board...
+                </div>
                 </div>
               </div>
             </section>
@@ -1498,7 +1493,7 @@
             <div class="panel-head equity-result-head"><div><p class="equity-eyebrow" data-i18n="Results">Results</p><h2 id="equityResultsTitle" data-i18n="Equity">Equity</h2></div><span id="methodBadge" class="equity-method-badge">Awaiting input</span></div>
             <div class="equity-headline"><span class="equity-headline-label" data-i18n="Leading equity">Leading equity</span><strong id="headlineEquity">—</strong><span id="equityStatus" class="muted">Results update after calculation.</span></div>
             <div id="equityBars" class="equity-bars" aria-live="polite"></div>
-            <div class="equity-result-summary"><div><span data-i18n="Total equity">Total equity</span><strong id="equitySum">—</strong></div><div><span data-i18n="Split-pot trials">Split-pot trials</span><strong id="equitySplitSummary">—</strong></div><div><span data-i18n="Remaining deck">Remaining deck</span><strong id="eqDeckCount">52</strong></div></div>
+            <div class="equity-result-summary"><div><span data-i18n="Split-pot trials">Split-pot trials</span><strong id="equitySplitSummary">—</strong></div><div><span data-i18n="Remaining deck">Remaining deck</span><strong id="eqDeckCount">52</strong></div></div>
           </section>
           <details id="equityDetails" class="panel equity-details-panel">
             <summary><span data-i18n="Calculation details">Calculation details</span><span class="muted" data-i18n="Method, workload, and execution metadata">Method, workload, and execution metadata</span></summary>

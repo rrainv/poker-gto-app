@@ -28,6 +28,8 @@ function context(overrides = {}) {
     potBb: 1.5,
     lastAction: 'unopened',
     facingSizeBb: 0,
+    callAmountBb: null,
+    heroStreetContributionBb: null,
     rakeMode: 'off',
     forcedContributionPerPlayerBb: 0,
     totalForcedContributionBb: 0,
@@ -137,29 +139,40 @@ test('cards, board, pot, facing, position, street, and StrategyResult each react
 
 test('facing a bet derives call amount, pot after call, and correct raw required equity', () => {
   const result = explanation({
-    decisionContext: context({ lastAction: 'raise', facingSizeBb: 3, potBb: 6.5 }),
+    decisionContext: context({
+      lastAction: 'raise', facingSizeBb: 3, callAmountBb: 2, heroStreetContributionBb: 1, potBb: 6.5,
+    }),
   });
-  assert.equal(findFact(result, 'pot_odds', 'call_amount').value, 3);
+  assert.equal(findFact(result, 'pot_odds', 'call_amount').value, 2);
   assert.equal(findFact(result, 'pot_odds', 'pot_before_action').value, 6.5);
-  assert.equal(findFact(result, 'pot_odds', 'pot_after_call').value, 9.5);
-  assert.equal(findFact(result, 'pot_odds', 'required_raw_equity').value, 3 / 9.5);
-  assert.match(findFact(result, 'pot_odds', 'required_raw_equity').text, /31\.6%/);
+  assert.equal(findFact(result, 'pot_odds', 'pot_after_call').value, 8.5);
+  assert.equal(findFact(result, 'pot_odds', 'required_raw_equity').value, 2 / 8.5);
+  assert.match(findFact(result, 'pot_odds', 'required_raw_equity').text, /23\.5%/);
 });
 
-test('an all-in call uses the available stack as the call amount', () => {
+test('a supplied short all-in call uses the trusted legal commitment', () => {
   const result = explanation({
-    decisionContext: context({ lastAction: 'raise', facingSizeBb: 20, potBb: 10, stackBb: 7 }),
+    decisionContext: context({ lastAction: 'raise', facingSizeBb: 20, callAmountBb: 7, potBb: 10, stackBb: 7 }),
   });
   assert.equal(findFact(result, 'pot_odds', 'call_amount').value, 7);
   assert.equal(findFact(result, 'pot_odds', 'pot_after_call').value, 17);
   assert.equal(findFact(result, 'pot_odds', 'required_raw_equity').value, 7 / 17);
 });
 
-test('unopened and free-check states do not create pot-odds or required-equity facts', () => {
+test('unavailable Scenario pricing never manufactures exact pot odds', () => {
+  const result = explanation({
+    decisionContext: context({ lastAction: 'raise', facingSizeBb: 3, callAmountBb: null, potBb: 6.5 }),
+  });
+  assert.equal(findFact(result, 'pot_odds', 'call_price_availability').value, 'unavailable');
+  assert.equal(findFact(result, 'pot_odds', 'call_amount'), undefined);
+  assert.equal(findFact(result, 'pot_odds', 'required_raw_equity'), undefined);
+});
+
+test('trusted free-check states never create required-equity facts', () => {
   for (const decisionContext of [
-    context({ lastAction: 'unopened', facingSizeBb: 0 }),
-    context({ heroPosition: 'BB', lastAction: 'unopened', facingSizeBb: 0 }),
-    context({ street: 'flop', board: ['Ah', '7d', '2c'], lastAction: 'check', facingSizeBb: 0, potBb: 6 }),
+    context({ lastAction: 'unopened', facingSizeBb: 0, callAmountBb: 0 }),
+    context({ heroPosition: 'BB', lastAction: 'unopened', facingSizeBb: 0, callAmountBb: 0 }),
+    context({ street: 'flop', board: ['Ah', '7d', '2c'], lastAction: 'check', facingSizeBb: 0, callAmountBb: 0, potBb: 6 }),
   ]) {
     const result = explanation({
       decisionContext,
@@ -168,7 +181,6 @@ test('unopened and free-check states do not create pot-odds or required-equity f
         actions: [action('Check', 'check', 1)],
       }),
     });
-    assert.equal(findFact(result, 'pot_odds', 'call_amount'), undefined);
     assert.equal(findFact(result, 'pot_odds', 'required_raw_equity'), undefined);
   }
 });

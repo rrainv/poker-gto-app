@@ -24,6 +24,8 @@ test('Training controls become TrainingConfig filters instead of synthetic final
     'allowedDecisionTypes', 'difficulty', 'seed',
   ]) assert.match(canonicalTraining, new RegExp(`${field}[,:]`), field);
   assert.match(canonicalTraining, /trainingContextPresentationAdapter\(decisionContext\)/);
+  assert.match(canonicalTraining, /callAmount/);
+  assert.match(logic, /range-level reference, not a threshold for this hand/);
 });
 
 test('answer controls are rendered only from canonical legal-action availability', () => {

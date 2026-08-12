@@ -73,17 +73,17 @@ test('six-max raised-pot outputs remain unchanged', () => {
   };
 
   for (const [position, strategy] of Object.entries(expected)) {
-    assert.deepEqual(qa.fallback('7', '7', true, false, position, '3bet', 9, 10, 30), strategy);
+    assert.deepEqual(qa.fallback('7', '7', true, false, position, '3bet', 9, 10, 30, 9), strategy);
   }
 });
 
 test('SB and BB retain their raised-pot overrides', () => {
   assert.deepEqual(
-    qa.fallback('7', '7', true, false, 'SB', '3bet', 9, 10, 30),
+    qa.fallback('7', '7', true, false, 'SB', '3bet', 9, 10, 30, 9),
     { open: 0.06344707106849976, call: 0.5403412132054992, fold: 0.1 },
   );
   assert.deepEqual(
-    qa.fallback('7', '7', true, false, 'BB', '3bet', 9, 10, 30),
+    qa.fallback('7', '7', true, false, 'BB', '3bet', 9, 10, 30, 9),
     { open: 0.1429072592045993, call: 0.6213951605302672, fold: 0.1 },
   );
 });

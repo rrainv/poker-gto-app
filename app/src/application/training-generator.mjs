@@ -609,6 +609,7 @@ function buildExercise(config, random, attempt, pair, strategyProvider) {
         potBb: decisionContext.potBb,
         stackBb: decisionContext.stackBb,
         facingBb: decisionContext.facingSizeBb,
+        callBb: decisionContext.callAmountBb,
         street: decisionContext.street,
         lastAction: decisionContext.lastAction,
         assistanceMode: config.difficulty,

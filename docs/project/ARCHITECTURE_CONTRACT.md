@@ -104,7 +104,28 @@ There should be one canonical implementation of:
 
 If two implementations exist, one must be marked legacy/experimental.
 
-## 3. StrategyResult
+## 3. DecisionContext and StrategyResult
+
+### DecisionContext pricing facts
+
+`DecisionContext v1` keeps `facingSizeBb` as its established nominal/current
+wager-to compatibility value. It is not an incremental call price.
+
+The additive v1 fields below make decision pricing explicit without changing
+the established schema version:
+
+- `callAmountBb`: the actor's incremental, stack-capped commitment to call,
+  or `null` when the source cannot prove it.
+- `heroStreetContributionBb`: the actor's current-street contribution, or
+  `null` when it is not known.
+
+Canonical PokerState projections derive both in integer milliBb through the
+legal-action contract before converting to bb. Lossy Scenario inputs must not
+invent either fact; their call price is `null` except for an explicit check or
+the BB's unopened check option (`0`). Consumers calculating pot odds must use only
+finite `callAmountBb` values.
+
+### StrategyResult
 
 The runtime strategy API should conceptually return:
 

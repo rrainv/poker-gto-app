@@ -105,11 +105,11 @@ test('seed is optional, validated as uint32, and forwarded without changing requ
 
 test('results prioritize equity while preserving per-player win and tie detail and order', () => {
   assert.match(equityHtml, /id="headlineEquity"/);
-  assert.match(equityHtml, /id="equitySum"/);
+  assert.doesNotMatch(equityHtml, /id="equitySum"|Total equity/);
   assert.match(equityHtml, /id="equitySplitSummary"/);
   assert.match(equityLogic, /equityResult\.players\.map/);
   assert.match(equityLogic, /Win \$\{player\.win\.toFixed\(1\)\}% · Tie \$\{player\.tie\.toFixed\(1\)\}%/);
-  assert.match(equityLogic, /result\.reduce\(\(sum, player\) => sum \+ player\.equity, 0\)/);
+  assert.doesNotMatch(equityLogic, /equityTotal|#equitySum/);
   assert.match(equityLogic, /data-player-series="\$\{index\}"/);
 });
 

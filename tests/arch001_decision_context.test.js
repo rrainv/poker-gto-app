@@ -15,6 +15,8 @@ function snapshot(overrides = {}) {
     potBb: 1.5,
     lastAction: 'unopened',
     facingSizeBb: 0,
+    callAmountBb: null,
+    heroStreetContributionBb: null,
     rakeMode: 'off',
     ...overrides,
   };
@@ -34,6 +36,8 @@ test('DecisionContext v1 derives a Home unopened spot', () => {
     potBb: 1.5,
     lastAction: 'unopened',
     facingSizeBb: 0,
+    callAmountBb: null,
+    heroStreetContributionBb: null,
     rakeMode: 'off',
     forcedContributionPerPlayerBb: 0,
     totalForcedContributionBb: 0,
@@ -156,11 +160,12 @@ test('existing fallback recommendations are unchanged through DecisionContext fi
 
   for (const input of fixtures) {
     const context = qa.deriveDecisionContext(input);
-    const direct = qa.fallback('T', '8', false, true, input.heroPosition, input.lastAction, input.facingSizeBb, input.potBb, input.stackBb);
-    const throughContext = qa.fallback(
+    const direct = qa.fallback(
       'T', '8', false, true,
-      context.heroPosition, context.lastAction, context.facingSizeBb, context.potBb, context.stackBb,
+      input.heroPosition, input.lastAction, input.facingSizeBb, input.potBb, input.stackBb,
+      context.callAmountBb,
     );
+    const throughContext = qa.fallbackForDecisionContext(context);
     assert.deepEqual(throughContext, direct);
   }
 });

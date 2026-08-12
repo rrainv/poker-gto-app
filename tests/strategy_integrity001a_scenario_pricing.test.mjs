@@ -1,0 +1,114 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import fs from 'node:fs';
+
+import { createAnalysisExplanation } from '../app/src/application/analysis-explanation.mjs';
+
+const require = createRequire(import.meta.url);
+const qa = require('./qa002_adapters.js');
+const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+
+function scenario(overrides = {}) {
+  return qa.deriveDecisionContext({
+    tableSize: 6,
+    heroPosition: 'BTN',
+    heroCards: ['As', 'Kh'],
+    board: [],
+    deadCards: [],
+    stackBb: 100,
+    stackMode: 'hero',
+    potBb: 4.5,
+    lastAction: 'raise',
+    facingSizeBb: 3,
+    rakeMode: 'off',
+    ...overrides,
+  });
+}
+
+function assertAvailableScenarioStrategy(context, expectedSource) {
+  assert.equal(context.schemaVersion, 'decision-context/v1');
+  assert.equal(context.callAmountBb, null);
+  assert.equal(context.heroStreetContributionBb, null);
+  assert.ok(context.facingSizeBb > 0);
+
+  const result = qa.strategyResult(context);
+  assert.equal(result.schemaVersion, 'strategy-result/v1');
+  assert.equal(result.source, expectedSource);
+  assert.ok(result.recommendation);
+  assert.ok(result.actions.length > 0);
+  assert.ok(result.actions.every((entry) => (
+    Number.isFinite(entry.probability)
+    && entry.probability >= 0
+    && entry.probability <= 1
+    && (entry.action.amountBb === null || Number.isFinite(entry.action.amountBb))
+    && (entry.action.potFraction === null || Number.isFinite(entry.action.potFraction))
+  )));
+  assert.ok(Math.abs(result.actions.reduce((sum, entry) => sum + entry.probability, 0) - 1) < 1e-12);
+
+  const explanation = createAnalysisExplanation({
+    decisionContext: context,
+    strategyResult: result,
+    authority: 'scenario',
+  });
+  const potOdds = explanation.sections.find((section) => section.key === 'pot_odds');
+  assert.equal(potOdds.facts.find((fact) => fact.key === 'call_price_availability')?.value,
+    'unavailable');
+  assert.equal(potOdds.facts.some((fact) => fact.key === 'call_amount'), false);
+  assert.equal(potOdds.facts.some((fact) => fact.key === 'pot_after_call'), false);
+  assert.equal(potOdds.facts.some((fact) => fact.key === 'required_raw_equity'), false);
+  return result;
+}
+
+test('Scenario BTN facing a 3bb open retains an available normalized preflop strategy', () => {
+  const context = scenario();
+  assert.equal(context.lastAction, 'raise');
+  assert.equal(context.facingSizeBb, 3);
+  assertAvailableScenarioStrategy(context, 'heuristic_preflop');
+});
+
+test('Scenario facing a 3-bet retains an available normalized preflop strategy', () => {
+  const context = scenario({
+    heroCards: ['Qs', 'Qh'],
+    potBb: 12,
+    lastAction: '3bet',
+    facingSizeBb: 9,
+  });
+  assert.equal(context.lastAction, '3bet');
+  assert.equal(context.facingSizeBb, 9);
+  assertAvailableScenarioStrategy(context, 'heuristic_preflop');
+});
+
+test('Scenario facing a postflop bet retains an available normalized strategy', () => {
+  const context = scenario({
+    board: ['Qs', '7d', '2c'],
+    potBb: 10,
+    lastAction: 'bet',
+    facingSizeBb: 5,
+  });
+  assert.equal(context.street, 'flop');
+  assert.equal(context.lastAction, 'bet');
+  assert.equal(context.facingSizeBb, 5);
+  assertAvailableScenarioStrategy(context, 'heuristic_postflop');
+});
+
+test('Scenario facing a postflop raise retains an available normalized strategy', () => {
+  const context = scenario({
+    board: ['Qs', '7d', '2c'],
+    potBb: 20,
+    lastAction: 'raise',
+    facingSizeBb: 15,
+  });
+  assert.equal(context.street, 'flop');
+  assert.equal(context.lastAction, 'raise');
+  assert.equal(context.facingSizeBb, 15);
+  assertAvailableScenarioStrategy(context, 'heuristic_postflop');
+});
+
+test('fallback price mathematics never defaults missing call price to nominal facing size', () => {
+  assert.doesNotMatch(LOGIC, /callAmountBb\s*=\s*facingSize/);
+  assert.doesNotMatch(LOGIC, /trustedCallAmount\s*===\s*null\s*\?\s*0/);
+  assert.doesNotMatch(LOGIC, /potSize\s*\/\s*\(potSize\s*\+\s*facingSize\)/);
+  assert.match(LOGIC, /requiredRawEquity[\s\S]*trustedCallAmount\s*\/\s*\(potSize\s*\+\s*trustedCallAmount\)/);
+  assert.match(LOGIC, /const raiseAmount = facingSize \+ potSize/);
+});

@@ -182,35 +182,35 @@ test('preflop fallback Ace and King predicates use the production card-rank valu
 });
 
 test('Ace is recognized by the fallback ace-wheel response branch', () => {
-  const aceDeuce = qa.fallback('A', '2', false, true, 'UTG', 'raise', 2.5, 5, 100);
+  const aceDeuce = qa.fallback('A', '2', false, true, 'UTG', 'raise', 2.5, 5, 100, 2.5);
   assert.deepEqual(aceDeuce, { open: 0.35, call: 0.3525, fold: 0.2975 });
   assert.notDeepEqual(aceDeuce, { open: 0.005454841059780644, call: 0.4945451589402194, fold: 0.4999999999999999 });
   assertNormalized(aceDeuce);
 });
 
 test('King is recognized by the fallback King response bonus', () => {
-  const kingDeuce = qa.fallback('K', '2', false, true, 'UTG', 'raise', 2.5, 5, 100);
+  const kingDeuce = qa.fallback('K', '2', false, true, 'UTG', 'raise', 2.5, 5, 100, 2.5);
   assert.deepEqual(kingDeuce, { open: 0.01771718468871022, call: 0.48228281531128975, fold: 0.5 });
   assert.notDeepEqual(kingDeuce, { open: 0.005454841059780644, call: 0.4945451589402194, fold: 0.4999999999999999 });
   assertNormalized(kingDeuce);
 });
 
 test('Queen is not recognized as Ace by the fallback', () => {
-  const queenDeuce = qa.fallback('Q', '2', false, true, 'UTG', 'raise', 2.5, 5, 100);
+  const queenDeuce = qa.fallback('Q', '2', false, true, 'UTG', 'raise', 2.5, 5, 100, 2.5);
   assert.deepEqual(queenDeuce, { open: 0.005454841059780644, call: 0.4945451589402194, fold: 0.4999999999999999 });
   assert.notDeepEqual(queenDeuce, { open: 0.35, call: 0.3525, fold: 0.2975 });
   assertNormalized(queenDeuce);
 });
 
 test('Jack is not recognized as King by the fallback', () => {
-  const jackDeuce = qa.fallback('J', '2', false, true, 'UTG', 'raise', 2.5, 5, 100);
+  const jackDeuce = qa.fallback('J', '2', false, true, 'UTG', 'raise', 2.5, 5, 100, 2.5);
   assert.deepEqual(jackDeuce, { open: 0.005454841059780644, call: 0.4945451589402194, fold: 0.4999999999999999 });
   assert.notDeepEqual(jackDeuce, { open: 0.01771718468871022, call: 0.48228281531128975, fold: 0.5 });
   assertNormalized(jackDeuce);
 });
 
 test('representative fallback output is unchanged for a hand outside the rank-predicate bug', () => {
-  const tenNineSuited = qa.fallback('T', '9', false, true, 'UTG', 'raise', 2.5, 5, 100);
+  const tenNineSuited = qa.fallback('T', '9', false, true, 'UTG', 'raise', 2.5, 5, 100, 2.5);
   assert.deepEqual(tenNineSuited, {
     open: 0.48648510476127127,
     call: 0.35902106476226897,

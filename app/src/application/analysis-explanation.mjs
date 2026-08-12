@@ -437,36 +437,43 @@ function positionSection(context, trustedFacts) {
 
 function potOddsSection(context) {
   const potBeforeCallBb = finiteNumber(context.potBb);
-  const facingSizeBb = finiteNumber(context.facingSizeBb);
-  const stackBb = finiteNumber(context.stackBb);
+  const callAmountBb = finiteNumber(context.callAmountBb);
   if (potBeforeCallBb === null || potBeforeCallBb < 0) return null;
   const facts = [fact('pot_before_action', {
     label: 'Pot before action', labelKey: 'analysis.fact.potBeforeAction', value: potBeforeCallBb, unit: 'bb',
     templateKey: 'analysis.pot.current', fallback: 'The current pot is {pot}.', values: { pot: bb(potBeforeCallBb) },
   })];
-  if (facingSizeBb !== null && facingSizeBb > 0) {
-    const callAmountBb = stackBb === null ? facingSizeBb : Math.min(facingSizeBb, Math.max(0, stackBb));
-    const potAfterCallBb = potBeforeCallBb + callAmountBb;
-    const requiredEquity = potAfterCallBb > 0 ? callAmountBb / potAfterCallBb : 0;
-    facts.push(
-      fact('call_amount', {
-        label: 'Amount to call', labelKey: 'analysis.fact.callAmount', value: callAmountBb, unit: 'bb',
-        templateKey: 'analysis.pot.callAmount', fallback: 'The compatibility call amount is {callAmount}.',
-        values: { callAmount: bb(callAmountBb) },
-      }),
-      fact('pot_after_call', {
-        kind: 'derived', label: 'Pot after call', labelKey: 'analysis.fact.potAfterCall', value: potAfterCallBb, unit: 'bb',
-        templateKey: 'analysis.pot.afterCall', fallback: 'Calling {callAmount} makes the contested pot {potAfterCall}.',
-        values: { callAmount: bb(callAmountBb), potAfterCall: bb(potAfterCallBb) },
-      }),
-      fact('required_raw_equity', {
-        kind: 'derived', label: 'Required raw equity', labelKey: 'analysis.fact.requiredEquity', value: requiredEquity, unit: 'probability',
-        templateKey: 'analysis.pot.requiredEquity', fallback: 'The raw break-even equity is {requiredEquity}.',
-        values: { requiredEquity: percent(requiredEquity, 1) },
-      }),
-    );
+  if (callAmountBb !== null && callAmountBb >= 0) {
+    facts.push(fact('call_amount', {
+      label: 'Amount to call', labelKey: 'analysis.fact.callAmount', value: callAmountBb, unit: 'bb',
+      templateKey: 'analysis.pot.callAmount', fallback: 'The trusted amount to call is {callAmount}.',
+      values: { callAmount: bb(callAmountBb) },
+    }));
+    if (callAmountBb > 0) {
+      const potAfterCallBb = potBeforeCallBb + callAmountBb;
+      const requiredEquity = potAfterCallBb > 0 ? callAmountBb / potAfterCallBb : 0;
+      facts.push(
+        fact('pot_after_call', {
+          kind: 'derived', label: 'Pot after call', labelKey: 'analysis.fact.potAfterCall', value: potAfterCallBb, unit: 'bb',
+          templateKey: 'analysis.pot.afterCall', fallback: 'Calling {callAmount} makes the contested pot {potAfterCall}.',
+          values: { callAmount: bb(callAmountBb), potAfterCall: bb(potAfterCallBb) },
+        }),
+        fact('required_raw_equity', {
+          kind: 'derived', label: 'Required raw equity', labelKey: 'analysis.fact.requiredEquity', value: requiredEquity, unit: 'probability',
+          templateKey: 'analysis.pot.requiredEquity', fallback: 'The raw break-even equity is {requiredEquity}.',
+          values: { requiredEquity: percent(requiredEquity, 1) },
+        }),
+      );
+    }
+  } else {
+    facts.push(fact('call_price_availability', {
+      kind: 'availability', label: 'Call price', labelKey: 'analysis.fact.callPrice', value: 'unavailable',
+      templateKey: 'analysis.pot.priceUnavailable',
+      fallback: 'The exact call price is unavailable because this context does not supply Hero\'s current-street contribution.',
+      values: {},
+    }));
   }
-  return section('pot_odds', 'Pot & Odds', 'primary', facts, facingSizeBb > 0 ? [
+  return section('pot_odds', 'Pot & Odds', 'primary', facts, callAmountBb !== null && callAmountBb > 0 ? [
     textPart(
       'analysis.pot.notSufficient',
       'Pot odds are a price, not a complete strategy recommendation.',

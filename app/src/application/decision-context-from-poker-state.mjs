@@ -1,6 +1,7 @@
 import {
   ACTION_TYPES,
   GAME_MODES,
+  getLegalActionSpec,
   PHASES,
   STREETS,
   isPlayerLive,
@@ -78,9 +79,14 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
   const lastAction = classifyLastAction(state);
   const hasCompatibleAggression = PREFLOP_AGGRESSION_ACTIONS.includes(lastAction)
     || lastAction === 'bet';
-  const facingSizeBb = hasCompatibleAggression
-    ? normalizedDecisionNumber(state.currentBetMilliBb / 1000, 0, 0, 100)
-    : 0;
+  // `facingSizeBb` is retained as a nominal wager-to compatibility field.
+  // Do not use it as Hero's price: the actor may already have chips invested.
+  const facingSizeBb = hasCompatibleAggression ? state.currentBetMilliBb / 1000 : 0;
+  const legalActions = getLegalActionSpec(state);
+  // These additive v1 facts are derived from the canonical legal-action
+  // contract in integer milliBb and converted only at this boundary.
+  const callAmountBb = legalActions.call.commitMilliBb / 1000;
+  const heroStreetContributionBb = hero.streetContributionMilliBb / 1000;
   const forcedContributionPerPlayerBb = state.game.forcedContributionPerPlayerMilliBb / 1000;
   const rakeMode = state.game.mode === GAME_MODES.CLUBGG ? 'fixed' : 'off';
 
@@ -99,6 +105,8 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
     potBb: normalizedDecisionNumber(state.potMilliBb / 1000, 1.5, 0.5, 200),
     lastAction,
     facingSizeBb,
+    callAmountBb,
+    heroStreetContributionBb,
     rakeMode,
     forcedContributionPerPlayerBb,
     totalForcedContributionBb: (

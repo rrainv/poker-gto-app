@@ -6951,7 +6951,7 @@ html[data-four-color="false"] {
 .equity-headline-label { color: var(--text-muted); font-size: var(--text-label-size); }
 .equity-headline strong { margin: var(--space-1) 0; color: var(--text-primary); font: 850 clamp(2.4rem, 6vw, 4.5rem)/1 var(--font-data); letter-spacing: -.06em; font-variant-numeric: tabular-nums; }
 .equity-results-panel .equity-bars { padding: var(--space-5); border-block: 1px solid var(--border-subtle); }
-.equity-result-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.equity-result-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .equity-result-summary > div { min-width: 0; display: grid; gap: var(--space-1); padding: var(--space-4); }
 .equity-result-summary > div + div { border-inline-start: 1px solid var(--border-subtle); }
 .equity-result-summary span { color: var(--text-muted); font-size: var(--text-micro-size); }

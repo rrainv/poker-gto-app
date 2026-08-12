@@ -255,27 +255,24 @@ test('Hand ClubGG uses canonical 0.1bb per seated player outside the pot', () =>
   assert.equal(result.decisionContext.potBb, 1.5);
 });
 
-test('equivalent HU unopened Scenario and Hand contexts produce identical StrategyResult', () => {
+test('Scenario mode keeps canonical pricing facts unavailable instead of copying hand history', () => {
   const hand = resolveHand(controllerWithCards());
   const manual = resolveScenario(projectedScenario(hand.decisionContext));
-  assert.deepEqual(manual.decisionContext, hand.decisionContext);
-  const scenarioResult = legacy.strategyResult(manual.decisionContext);
-  const handResult = legacy.strategyResult(hand.decisionContext);
-  assert.deepEqual(scenarioResult, handResult);
-  assert.equal(handResult.source, 'heuristic_preflop');
+  assert.equal(manual.decisionContext.facingSizeBb, hand.decisionContext.facingSizeBb);
+  assert.equal(manual.decisionContext.callAmountBb, null);
+  assert.equal(manual.decisionContext.heroStreetContributionBb, null);
+  assert.equal(hand.decisionContext.callAmountBb, 0.5);
+  assert.equal(hand.decisionContext.heroStreetContributionBb, 0.5);
 });
 
-test('equivalent six-max unopened and open-raise contexts preserve strategy parity', () => {
+test('Scenario pricing remains unavailable when a Hand-mode raise has a known call commitment', () => {
   const controller = controllerWithCards({ tableSize: 6, heroPosition: 'BTN' });
   while (controller.getState().actingPlayerId !== controller.getHeroPlayerId()) {
     controller.applyAction({ type: ACTION_TYPES.FOLD });
   }
   const unopened = resolveHand(controller);
   assert.equal(unopened.decisionContext.lastAction, 'unopened');
-  assert.deepEqual(
-    legacy.strategyResult(resolveScenario(projectedScenario(unopened.decisionContext)).decisionContext),
-    legacy.strategyResult(unopened.decisionContext),
-  );
+  assert.equal(resolveScenario(projectedScenario(unopened.decisionContext)).decisionContext.callAmountBb, null);
 
   controller.applyAction({ type: ACTION_TYPES.RAISE, amountToBb: 2.5 });
   const nextActor = controller.getState().actingPlayerId;
@@ -285,13 +282,14 @@ test('equivalent six-max unopened and open-raise contexts preserve strategy pari
     projectionOptions: controller.getProjectionOptions(),
   });
   assert.equal(raisedContext.decisionContext.lastAction, 'raise');
-  assert.deepEqual(
-    legacy.strategyResult(resolveScenario(projectedScenario(raisedContext.decisionContext)).decisionContext),
-    legacy.strategyResult(raisedContext.decisionContext),
-  );
+  const scenarioRaised = resolveScenario(projectedScenario(raisedContext.decisionContext));
+  assert.equal(scenarioRaised.decisionContext.facingSizeBb, raisedContext.decisionContext.facingSizeBb);
+  assert.equal(scenarioRaised.decisionContext.callAmountBb, null);
+  assert.equal(scenarioRaised.decisionContext.heroStreetContributionBb, null);
+  assert.ok(raisedContext.decisionContext.callAmountBb > 0);
 });
 
-test('equivalent 3-bet and BB-after-limps compatibility contexts preserve parity', () => {
+test('3-bet and BB-option contexts preserve nominal facts without fabricating Scenario pricing', () => {
   const raised = controllerWithCards();
   raised.applyAction({ type: ACTION_TYPES.RAISE, amountToBb: 2.5 });
   raised.applyAction({ type: ACTION_TYPES.RAISE, amountToBb: 7.5 });
@@ -302,9 +300,9 @@ test('equivalent 3-bet and BB-after-limps compatibility contexts preserve parity
   });
   assert.equal(threeBet.decisionContext.lastAction, '3bet');
   const manualThreeBet = resolveScenario(projectedScenario(threeBet.decisionContext));
-  assert.deepEqual(manualThreeBet.decisionContext, threeBet.decisionContext);
-  assert.deepEqual(legacy.strategyResult(manualThreeBet.decisionContext),
-    legacy.strategyResult(threeBet.decisionContext));
+  assert.equal(manualThreeBet.decisionContext.facingSizeBb, threeBet.decisionContext.facingSizeBb);
+  assert.equal(manualThreeBet.decisionContext.callAmountBb, null);
+  assert.ok(threeBet.decisionContext.callAmountBb > 0);
 
   const limped = controllerWithCards({ tableSize: 3, heroPosition: 'BB' });
   limped.applyAction({ type: ACTION_TYPES.CALL });
@@ -313,12 +311,12 @@ test('equivalent 3-bet and BB-after-limps compatibility contexts preserve parity
   assert.equal(option.decisionContext.lastAction, 'check');
   assert.equal(option.decisionContext.facingSizeBb, 0);
   const manualOption = resolveScenario(projectedScenario(option.decisionContext));
-  assert.deepEqual(manualOption.decisionContext, option.decisionContext);
-  assert.deepEqual(legacy.strategyResult(manualOption.decisionContext),
-    legacy.strategyResult(option.decisionContext));
+  assert.equal(manualOption.decisionContext.callAmountBb, 0);
+  assert.equal(manualOption.decisionContext.heroStreetContributionBb, null);
+  assert.equal(option.decisionContext.callAmountBb, 0);
 });
 
-test('equivalent flop-first-action and facing-bet contexts preserve postflop parity', () => {
+test('flop first-action parity and facing-bet pricing authority remain explicit', () => {
   const controller = controllerWithCards({ heroPosition: 'BB' });
   controller.applyAction({ type: ACTION_TYPES.CALL });
   controller.applyAction({ type: ACTION_TYPES.CHECK });
@@ -335,20 +333,28 @@ test('equivalent flop-first-action and facing-bet contexts preserve postflop par
   const facingBet = resolveHand(controller);
   assert.equal(facingBet.decisionContext.lastAction, 'bet');
   assert.equal(facingBet.decisionContext.facingSizeBb, 2);
-  assert.deepEqual(
-    legacy.strategyResult(resolveScenario(projectedScenario(facingBet.decisionContext)).decisionContext),
+  assert.equal(facingBet.decisionContext.callAmountBb, 2);
+  const scenarioFacingBet = resolveScenario(projectedScenario(facingBet.decisionContext));
+  assert.equal(scenarioFacingBet.decisionContext.callAmountBb, null);
+  for (const result of [
+    legacy.strategyResult(scenarioFacingBet.decisionContext),
     legacy.strategyResult(facingBet.decisionContext),
-  );
+  ]) {
+    assert.equal(result.schemaVersion, 'strategy-result/v1');
+    assert.equal(result.source, 'heuristic_postflop');
+    assert.ok(result.actions.every((entry) => Number.isFinite(entry.probability)));
+  }
 });
 
-test('equivalent ClubGG Scenario and Hand context keeps honest heuristic provenance', () => {
+test('ClubGG Scenario preserves its nominal configuration without copying canonical price facts', () => {
   const hand = resolveHand(controllerWithCards({
     tableSize: 7, gameMode: GAME_MODES.CLUBGG, heroPosition: 'UTG',
   }));
   const manual = resolveScenario(projectedScenario(hand.decisionContext));
   const result = legacy.strategyResult(hand.decisionContext);
-  assert.deepEqual(manual.decisionContext, hand.decisionContext);
-  assert.deepEqual(legacy.strategyResult(manual.decisionContext), result);
+  assert.equal(manual.decisionContext.callAmountBb, null);
+  assert.equal(manual.decisionContext.heroStreetContributionBb, null);
+  assert.equal(hand.decisionContext.callAmountBb, 1);
   assert.equal(result.source, 'heuristic_preflop');
   assert.doesNotMatch(result.source, /gto|cfr|solver/i);
 });

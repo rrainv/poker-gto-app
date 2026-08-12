@@ -191,6 +191,8 @@ test('every required target is a reachable, legal, nonterminal Hero decision', (
     assert.equal(exercise.presentation.potBb, exercise.pokerState.potMilliBb / 1000);
     assert.equal(exercise.presentation.stackBb, hero.startingStackMilliBb / 1000);
     assert.equal(exercise.presentation.facingBb, exercise.decisionContext.facingSizeBb);
+    assert.equal(exercise.presentation.callBb, exercise.decisionContext.callAmountBb);
+    assert.equal(exercise.decisionContext.callAmountBb, exercise.legalActions.call.commitMilliBb / 1000);
     assert.equal(exercise.pokerState.board.length, {
       preflop: 0, flop: 3, turn: 4, river: 5,
     }[street]);

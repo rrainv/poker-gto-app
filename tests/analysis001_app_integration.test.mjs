@@ -60,13 +60,12 @@ test('Hand Mode supplies canonical history while Scenario remains an authority l
   assert.doesNotMatch(history, /readPlaybookInputSnapshot|selectedValue|querySelector/);
 });
 
-test('trusted analysis adapter reuses current classification and already-calculated equity only', () => {
+test('trusted analysis adapter reuses classification without promoting heuristic samples to canonical Equity', () => {
   const hand = sourceBetween('function trustedHandClassificationForAnalysis(', 'function canonicalActionHistoryForAnalysis(');
   const facts = sourceBetween('function trustedAnalysisFacts(', 'function renderDecisionAnalysis(');
   assert.match(hand, /evaluatePostflopHand\(decisionContext\.heroCards, decisionContext\.board\)/);
   assert.match(hand, /source: 'legacy_postflop_classifier'/);
-  assert.match(facts, /strategyResult\?\.details\?\.originalEquity/);
-  assert.match(facts, /rawEquity === null \|\| rawEquity === undefined/);
+  assert.doesNotMatch(facts, /originalEquity|facts\.equity|heroEquity/);
   assert.doesNotMatch(facts, /calculateEquity|simulateEquity|evaluateSeven|scoreSeven/);
 });
 
