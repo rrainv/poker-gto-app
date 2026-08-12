@@ -80,6 +80,7 @@ function preflopCandidate(decisionContext, translate) {
     actions: result.actions,
     recommendedLabel: translate(actionLabel).toUpperCase(),
     explanation: `${translate('Mathematical Fallback suggests')} ${translate(actionLabel)} ${translate('based on hand playability & position.')}`,
+    details: result.details,
   };
 }
 

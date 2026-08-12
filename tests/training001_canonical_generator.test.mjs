@@ -38,7 +38,7 @@ const strategyProvider = Object.freeze({
   const passiveType = context.facingSizeBb > 0
     ? ACTION_TYPES.CALL
     : context.street === 'preflop' && context.heroPosition === 'BB'
-      ? ACTION_TYPES.CALL
+      ? ACTION_TYPES.CHECK
       : ACTION_TYPES.CHECK;
   const aggressiveType = context.street === 'preflop'
     ? ACTION_TYPES.RAISE
@@ -283,7 +283,7 @@ test('unreachable quality targets stop after the bounded retry budget', () => {
   assert.equal(typeof exhausted.error.details.lastRetryReason, 'string');
 });
 
-test('canonical-to-StrategyResult mapping preserves explicit action families and the BB legacy seam', () => {
+test('canonical-to-StrategyResult mapping preserves explicit action families including BB Check', () => {
   const result = strategyProvider.resolve({ street: 'preflop', heroPosition: 'BB', facingSizeBb: 0 });
   assert.equal(mapCanonicalActionToStrategyAction(ACTION_TYPES.RAISE, result).type, 'raise');
   assert.equal(mapCanonicalActionToStrategyAction(ACTION_TYPES.FOLD, result).type, 'fold');
@@ -291,8 +291,8 @@ test('canonical-to-StrategyResult mapping preserves explicit action families and
     ACTION_TYPES.CHECK,
     result,
     { street: 'preflop', heroPosition: 'BB', facingSizeBb: 0 },
-  ).type, 'call');
-  assert.equal(mapCanonicalActionToStrategyAction(ACTION_TYPES.CHECK, result), null);
+  ).type, 'check');
+  assert.equal(mapCanonicalActionToStrategyAction(ACTION_TYPES.CALL, result), null);
 });
 
 test('mixed StrategyResult grading accepts actions within 15 points and never invents EV', () => {

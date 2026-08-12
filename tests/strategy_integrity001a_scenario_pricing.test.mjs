@@ -113,6 +113,8 @@ test('fallback price mathematics never defaults missing call price to nominal fa
   assert.doesNotMatch(fallback, /trustedCallAmount\s*===\s*null\s*\?\s*0/);
   assert.doesNotMatch(fallback, /potSize\s*\/\s*\(potSize\s*\+\s*facingSize\)/);
   assert.match(POSTFLOP, /requiredRawEquity[\s\S]*trustedCallAmount\s*\/\s*\(potSize\s*\+\s*trustedCallAmount\)/);
-  assert.match(PREFLOP, /const raiseAmount = facingSizeBb \+ potBb/);
+  assert.match(PREFLOP, /const potOdds = callAmountBb \/ priceDenominator/);
+  assert.match(PREFLOP, /Facing aggression lacks a proven legal minimum/);
+  assert.doesNotMatch(PREFLOP, /facingSizeBb\s*\/\s*|const raiseAmount/);
   assert.doesNotMatch(LOGIC, /requiredRawEquity|cheapOddsDefenseBoost/);
 });

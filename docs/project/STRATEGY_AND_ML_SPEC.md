@@ -20,6 +20,23 @@ validated, versioned model provider → optional strategy source
 depth-limited solver → optional runtime enhancement
 ```
 
+### Current preflop fallback limitations
+
+The production preflop source is a deterministic heuristic, not solved GTO,
+Nash, or solver-derived strategy. Its frequencies are intended to be smooth,
+legal, and internally coherent pending validated preflop data.
+
+- Exact price adjustments use `callAmountBb` only. When Scenario cannot prove
+  the incremental call price, exact-price adjustments are omitted.
+- A finite preflop `StrategyResult.action.amountBb` means amount-to: Hero's
+  total preflop contribution after acting. Facing-aggression sizing is omitted
+  when DecisionContext does not prove a legal raise-to bound.
+- The ClubGG fixed 0.1bb-per-seated-player deduction remains an accounting fact
+  outside the pot. The current heuristic applies no invented strategy penalty
+  for it, so otherwise identical Home and ClubGG decisions resolve identically.
+- Play Style and Opponent Style controls are not applied to preflop frequencies.
+  Their strategy semantics require a separate calibrated product design.
+
 ## 3. Training truth
 
 Training targets must have a documented source.

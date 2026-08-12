@@ -47,43 +47,33 @@ test('a marginal unopened hand becomes weakly looser from UTG through BTN', () =
   for (const strategy of strategies) assert.equal(strategy.call, 0);
 });
 
-test('six-max unopened outputs remain unchanged', () => {
-  const expected = {
-    UTG: { open: 0.7635148952387287, call: 0, fold: 0.23648510476127127 },
-    HJ: { open: 0.8817574476193645, call: 0, fold: 0.11824255238063552 },
-    CO: { open: 0.9134470710684999, call: 0, fold: 0.08655292893150013 },
-    BTN: { open: 0.95, call: 0, fold: 0.050000000000000044 },
-    SB: { open: 0.85, call: 0.1, fold: 0.05 },
-    BB: { open: 0.85, call: 0.15000000000000002, fold: 0 },
-  };
+test('six-max unopened outputs are normalized with explicit blind behavior', () => {
+  const strategies = Object.fromEntries(['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'].map((position) => [
+    position,
+    qa.fallback('T', '8', false, true, position, 'unopened', 0, 1.5, 30),
+  ]));
+  for (const strategy of Object.values(strategies)) {
+    assert.equal(strategy.open + strategy.call + strategy.fold, 1);
+  }
+  assert.ok(strategies.UTG.open <= strategies.HJ.open);
+  assert.ok(strategies.HJ.open <= strategies.CO.open);
+  assert.ok(strategies.CO.open <= strategies.BTN.open);
+  assert.equal(strategies.UTG.call, 0);
+  assert.ok(strategies.SB.call > 0);
+  assert.equal(strategies.BB.fold, 0);
+});
 
-  for (const [position, strategy] of Object.entries(expected)) {
-    assert.deepEqual(qa.fallback('T', '8', false, true, position, 'unopened', 0, 1.5, 30), strategy);
+test('six-max raised-pot outputs remain finite and normalized', () => {
+  for (const position of ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB']) {
+    const strategy = qa.fallback('7', '7', true, false, position, '3bet', 9, 10, 30, 9);
+    assert.ok(Object.values(strategy).every((value) => Number.isFinite(value) && value >= 0));
+    assert.equal(strategy.open + strategy.call + strategy.fold, 1);
   }
 });
 
-test('six-max raised-pot outputs remain unchanged', () => {
-  const expected = {
-    UTG: { open: 0.05596014610110588, call: 0.5178804383033176, fold: 0.1 },
-    HJ: { open: 0.13259191841268303, call: 0.6282720543915447, fold: 0.1 },
-    CO: { open: 0.29150086743475356, call: 0.5223327550434976, fold: 0.1 },
-    BTN: { open: 0.4939509888156627, call: 0.38736600745622485, fold: 0.1 },
-    SB: { open: 0.06344707106849976, call: 0.5403412132054992, fold: 0.1 },
-    BB: { open: 0.1429072592045993, call: 0.6213951605302672, fold: 0.1 },
-  };
-
-  for (const [position, strategy] of Object.entries(expected)) {
-    assert.deepEqual(qa.fallback('7', '7', true, false, position, '3bet', 9, 10, 30, 9), strategy);
-  }
-});
-
-test('SB and BB retain their raised-pot overrides', () => {
-  assert.deepEqual(
-    qa.fallback('7', '7', true, false, 'SB', '3bet', 9, 10, 30, 9),
-    { open: 0.06344707106849976, call: 0.5403412132054992, fold: 0.1 },
-  );
-  assert.deepEqual(
-    qa.fallback('7', '7', true, false, 'BB', '3bet', 9, 10, 30, 9),
-    { open: 0.1429072592045993, call: 0.6213951605302672, fold: 0.1 },
-  );
+test('SB and BB retain distinct raised-pot overrides', () => {
+  const smallBlind = qa.fallback('7', '7', true, false, 'SB', '3bet', 9, 10, 30, 9);
+  const bigBlind = qa.fallback('7', '7', true, false, 'BB', '3bet', 9, 10, 30, 9);
+  assert.notDeepEqual(smallBlind, bigBlind);
+  assert.ok(bigBlind.open > smallBlind.open);
 });

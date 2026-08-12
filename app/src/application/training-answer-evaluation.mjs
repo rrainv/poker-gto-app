@@ -34,21 +34,9 @@ export function mapCanonicalActionToStrategyAction(
   if (!isStrategyResultV1(strategyResult)) {
     throw new TypeError('Training grading requires StrategyResult v1');
   }
-  let candidates = strategyResult.actions
+  const candidates = strategyResult.actions
     .filter((entry) => strategyType(entry) === canonicalActionType)
     .sort((left, right) => right.probability - left.probability);
-  // The current preflop heuristic predates Action v1 and stores the BB's free
-  // check in its passive `call` bucket. Keep that compatibility rule explicit
-  // at this adapter boundary instead of changing either source contract.
-  if (candidates.length === 0
-    && canonicalActionType === ACTION_TYPES.CHECK
-    && decisionContext?.street === 'preflop'
-    && decisionContext?.heroPosition === 'BB'
-    && decisionContext?.facingSizeBb === 0) {
-    candidates = strategyResult.actions
-      .filter((entry) => strategyType(entry) === ACTION_TYPES.CALL)
-      .sort((left, right) => right.probability - left.probability);
-  }
   const selected = candidates[0] ?? null;
   return selected === null ? null : deepFreeze({
     type: strategyType(selected),

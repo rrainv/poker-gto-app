@@ -139,7 +139,9 @@ test('StrategyResult has one source vocabulary, one normalization rule, and stru
   assert.deepEqual(Object.values(STRATEGY_SOURCES).sort(), [
     'equity_fallback', 'heuristic_postflop', 'heuristic_preflop', 'unavailable',
   ]);
-  assert.deepEqual(result.actions.map((entry) => entry.probability), [0.7, 0.2, 0.10000000000000012]);
+  assert.deepEqual(result.actions.slice(0, 2).map((entry) => entry.probability), [0.7, 0.2]);
+  assert.ok(Math.abs(result.actions[2].probability - 0.1) < 1e-12);
+  assert.equal(result.actions.reduce((sum, entry) => sum + entry.probability, 0), 1);
   assert.equal(result.actions[0].action.type, 'raise');
   assert.equal(result.actions[0].label, 'Open 2.5bb');
   assert.throws(() => createStrategyResult({

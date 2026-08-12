@@ -152,7 +152,12 @@ test('generic StrategyResult normalization accepts probability, percentage, and 
       source: 'equity_fallback',
       actions: Object.entries(entry).map(([name, value]) => ({ name, value })),
     });
-    assert.deepEqual(result.actions.map((action) => action.probability), expected);
+    const probabilities = result.actions.map((action) => action.probability);
+    assert.equal(probabilities.length, expected.length);
+    probabilities.forEach((probability, index) => {
+      assert.ok(Math.abs(probability - expected[index]) < 1e-12);
+    });
+    assert.equal(probabilities.reduce((sum, probability) => sum + probability, 0), 1);
     assertNormalized(result);
   }
 });

@@ -117,8 +117,21 @@ function normalizedActions(entries) {
     probability: entry.weight / total,
     evBb: entry.evBb,
   }));
-  const normalizedTotal = normalized.reduce((sum, entry) => sum + entry.probability, 0);
-  normalized[normalized.length - 1].probability += 1 - normalizedTotal;
+  // Close the distribution with an exact residual in array order. A positive
+  // weight smaller than floating-point resolution can leave no representable
+  // residual; in that case omit that zero-probability entry and absorb it into
+  // the preceding action instead of violating the StrategyResult contract.
+  while (normalized.length > 0) {
+    const prefixTotal = normalized
+      .slice(0, -1)
+      .reduce((sum, entry) => sum + entry.probability, 0);
+    const residual = 1 - prefixTotal;
+    if (residual > 0) {
+      normalized[normalized.length - 1].probability = residual;
+      break;
+    }
+    normalized.pop();
+  }
   return normalized;
 }
 
@@ -189,4 +202,3 @@ export function isStrategyResultV1(result) {
   const total = result.actions.reduce((sum, entry) => sum + entry.probability, 0);
   return result.actions.length === 0 || Math.abs(total - 1) <= STRATEGY_PROBABILITY_TOLERANCE;
 }
-

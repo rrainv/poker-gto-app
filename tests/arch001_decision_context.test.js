@@ -150,7 +150,7 @@ test('updateContext follows snapshot to DecisionContext to fallback StrategyResu
   assert.equal(capture.strategyResult.source, 'heuristic_postflop');
 });
 
-test('existing fallback recommendations are unchanged through DecisionContext fields', () => {
+test('fallback recommendations use the same cards and fields through DecisionContext', () => {
   const fixtures = [
     snapshot({ heroPosition: 'BTN' }),
     snapshot({ tableSize: 10, heroPosition: 'UTG+2', rakeMode: 'fixed' }),
@@ -160,8 +160,9 @@ test('existing fallback recommendations are unchanged through DecisionContext fi
 
   for (const input of fixtures) {
     const context = qa.deriveDecisionContext(input);
+    const [firstCard, secondCard] = context.heroCards;
     const direct = qa.fallback(
-      'T', '8', false, true,
+      firstCard[0], secondCard[0], firstCard[0] === secondCard[0], firstCard[1] === secondCard[1],
       input.heroPosition, input.lastAction, input.facingSizeBb, input.potBb, input.stackBb,
       context.callAmountBb,
     );
