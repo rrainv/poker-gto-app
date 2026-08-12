@@ -1,4 +1,5 @@
 import { ACTION_TYPES } from '../../../shared/poker-domain/index.js';
+import { isStrategyResultV1 } from './strategy-result.mjs';
 
 export const TRAINING_ANSWER_EVALUATION_SCHEMA_VERSION =
   'training-answer-evaluation/v1';
@@ -14,18 +15,7 @@ function deepFreeze(value) {
 }
 
 function strategyType(entry) {
-  const explicit = entry?.action?.type;
-  if (explicit && explicit !== 'unknown') return explicit;
-  const label = String(entry?.label || '').toLowerCase();
-  if (/\ball(?:[-\s]+in)?\b|\bjam\b/.test(label)) return ACTION_TYPES.ALL_IN;
-  if (/\bfold\b/.test(label)) return ACTION_TYPES.FOLD;
-  if (/\bcheck\b/.test(label)) return ACTION_TYPES.CHECK;
-  if (/\bcall\b/.test(label)) return ACTION_TYPES.CALL;
-  if (/\bbet\b/.test(label) && !/\d\s*-?\s*bet\b/.test(label)) return ACTION_TYPES.BET;
-  if (/\bopen\b|\braise\b|\b3\s*-?\s*bet\b|\b4\s*-?\s*bet\b/.test(label)) {
-    return ACTION_TYPES.RAISE;
-  }
-  return 'unknown';
+  return entry?.action?.type ?? null;
 }
 
 /**
@@ -41,7 +31,7 @@ export function mapCanonicalActionToStrategyAction(
   if (!CANONICAL_ACTION_TYPES.has(canonicalActionType)) {
     throw new RangeError(`Unsupported canonical training action: ${canonicalActionType}`);
   }
-  if (strategyResult?.schemaVersion !== 'strategy-result/v1') {
+  if (!isStrategyResultV1(strategyResult)) {
     throw new TypeError('Training grading requires StrategyResult v1');
   }
   let candidates = strategyResult.actions

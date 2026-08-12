@@ -88,7 +88,7 @@ test('preflop fallback entry preserves six-max, 10-max, raise, and 3-bet behavio
     assert.deepEqual(qa.fallbackForDecisionContext(context), expected);
 
     const profile = qa.fallbackStrategyProfile(context);
-    assert.equal(profile.source, 'MATH FALLBACK');
+    assert.equal(profile.source, 'heuristic_preflop');
     assert.equal(profile.actions[0].value + profile.actions[1].value, Math.round(Math.max(expected.open, expected.call, expected.fold) * 100)
       + Math.round([expected.open, expected.call, expected.fold].sort((a, b) => b - a)[1] * 100));
   }
@@ -120,7 +120,7 @@ test('postflop strategy entry uses DecisionContext on flop, turn, and river', ()
     });
     const capture = qa.strategyProfileCapture(context);
     const profile = capture.profile;
-    assert.equal(profile.source, 'MONTE CARLO');
+    assert.equal(profile.source, 'heuristic_postflop');
     assert.equal(typeof profile.best, 'string');
     assert.equal(profile.context.spr, 3);
     assert.deepEqual(capture.equityDecisionContext, context);
@@ -128,15 +128,15 @@ test('postflop strategy entry uses DecisionContext on flop, turn, and river', ()
 });
 
 test('strategy-facing consumers contain no independent poker-state control reads', () => {
-  const fallback = functionSource('function fallbackStrategyResult(', 'function actionProfile(');
-  const profile = functionSource('function actionProfile(', 'function setFrequency(');
+  const fallback = functionSource('function fallbackStrategyCandidate(', 'function decisionContextStrategySeed(');
+  const providerSeam = functionSource('function decisionContextStrategySeed(', 'function setFrequency(');
 
-  for (const [name, source] of Object.entries({ fallback, profile })) {
+  for (const [name, source] of Object.entries({ fallback, providerSeam })) {
     assert.doesNotMatch(source, /selectedValue\('#(?:heroPos|lastAction)'\)/, name);
     assert.doesNotMatch(source, /numericValue\('#(?:players|stack|potSize|facingSize)'/, name);
     assert.doesNotMatch(source, /app\.gto/, name);
     assert.doesNotMatch(source, /currentStreet\(\)/, name);
   }
-  assert.match(logicSource, /const strategyResult = actionProfile\(null, decisionContext\);/);
+  assert.match(logicSource, /const strategyResult = strategyProvider\.resolve\(decisionContext\);/);
   assert.match(logicSource, /const profile = strategyResultToLegacyProfile\(strategyResult\);/);
 });

@@ -5,6 +5,12 @@ const vm = require('vm');
 const REPO_ROOT = path.resolve(__dirname, '..');
 const LOGIC_PATH = path.join(REPO_ROOT, 'app', 'src', 'core', 'logic.js');
 const HTML_PATH = path.join(REPO_ROOT, 'app', 'index.html');
+const STRATEGY_RESULT_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'application', 'strategy-result.mjs',
+);
+const STRATEGY_PROVIDER_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'application', 'strategy-provider.mjs',
+);
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -40,25 +46,36 @@ function createElement(value = '', options = {}) {
 
 function createHarness() {
   const source = fs.readFileSync(LOGIC_PATH, 'utf8');
+  const moduleSource = (filePath) => fs.readFileSync(filePath, 'utf8')
+    .replace(/import[\s\S]*?from\s+['"][^'"]+['"];\s*/g, '')
+    .replaceAll('export ', '');
+  const strategyContractSource = moduleSource(STRATEGY_RESULT_PATH);
+  const strategyProviderSource = moduleSource(STRATEGY_PROVIDER_PATH);
   const positions = source.match(/const POSITIONS\s*=\s*\{[\s\S]*?\n\};/);
   const ranks = source.match(/const RANKS\s*=\s*\[[^\n]+\];/);
   const rankValue = source.match(/const RANK_VALUE\s*=\s*\{[^\n]+\};/);
   const fallbackPositions = source.match(/const PREFLOP_FALLBACK_POSITION_MODIFIERS\s*=\s*Object\.freeze\(\{[\s\S]*?\n\}\);/);
   if (!positions || !ranks || !rankValue || !fallbackPositions) throw new Error('Could not extract core constants from logic.js');
 
-  const numericSource = sliceBetween(source, 'function numericValue(id, fallback = 0)', 'function updatePositionSelect(');
+  const numericSource = sliceBetween(source, 'function numericValue(id, fallback = 0)', 'function updatePositionSelect(')
+    .replace("const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';", '');
   const currentStreetProductionSource = sliceBetween(source, 'function currentStreet(board)', 'function handClass(cards)');
   const currentStreetSource = currentStreetProductionSource
     .replace('function currentStreet(', 'function qaCurrentStreet(');
   const handClassSource = sliceBetween(source, 'function handClass(cards)', 'function numericValue(id, fallback = 0)');
-  const updatePositionsSource = sliceBetween(source, 'function updatePositionSelect(', 'function isAllInActionName(name)');
-  const actionParserSource = sliceBetween(source, 'function isAllInActionName(name)', 'function simulateEquity(');
-  const fallbackStrategySource = sliceBetween(source, 'function fallbackStrategyResult(reason,', 'function actionProfile(hand =')
-    .replace('function fallbackStrategyResult(', 'function qaFallbackStrategyResult(');
-  const actionProfileSource = sliceBetween(source, 'function actionProfile(hand =', 'function setFrequency(index, action)')
-    .replace('function actionProfile(', 'function qaActionProfile(')
-    .replaceAll('fallbackStrategyResult(', 'qaFallbackStrategyResult(');
-  const fallbackSource = sliceBetween(source, 'function calculatePreflopFallbackStrategy(', 'function fallbackStrategyResult(reason,');
+  const updatePositionsSource = sliceBetween(source, 'function updatePositionSelect(', 'function strategyAction(');
+  const actionParserSource = sliceBetween(source, 'function strategyAction(', 'function simulateEquity(');
+  const fallbackStrategySource = sliceBetween(
+    source,
+    'function fallbackStrategyCandidate(reason,',
+    'function decisionContextStrategySeed(',
+  );
+  const providerSeamSource = sliceBetween(
+    source,
+    'function decisionContextStrategySeed(',
+    'function setFrequency(index, action)',
+  );
+  const fallbackSource = sliceBetween(source, 'function calculatePreflopFallbackStrategy(', 'function fallbackStrategyCandidate(reason,');
   const potSource = sliceBetween(source, 'function preflopBasePot()', 'function updateMetrics()');
   const updateContextSource = sliceBetween(source, 'async function updateContext(reason =', '// Legacy fast evaluator retained for Playbook heuristics');
   const sliderSource = sliceBetween(source, 'function syncSliderPair(rangeId, numberId)', 'function bindSliderPair(rangeId, numberId, callback)');
@@ -110,6 +127,18 @@ function createHarness() {
 
   vm.createContext(sandbox);
   vm.runInContext(`
+    const ACTION_TYPES = Object.freeze({
+      FOLD: 'fold', CHECK: 'check', CALL: 'call', BET: 'bet', RAISE: 'raise', ALL_IN: 'all_in'
+    });
+    const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
+    ${strategyContractSource}
+    ${strategyProviderSource}
+    const RiverlineStrategy = Object.freeze({
+      schemaVersion: STRATEGY_PROVIDER_SCHEMA_VERSION,
+      createProvider: createStrategyProvider
+    });
+    window.RiverlineStrategy = RiverlineStrategy;
+    const requireStrategyProviderBridge = () => RiverlineStrategy;
     ${positions[0]}
     ${ranks[0]}
     ${rankValue[0]}
@@ -136,7 +165,6 @@ function createHarness() {
     const displayCard = (card) => card;
     const requestAnimationFrame = (callback) => callback();
     const syncNoop = () => {};
-    const actionProfile = (...args) => qaActionProfile(...args);
     const setFrequency = syncNoop;
     const updateMetrics = syncNoop;
     const renderPath = syncNoop;
@@ -169,7 +197,7 @@ function createHarness() {
     ${sliderSource}
     ${postflopSource}
     ${fallbackStrategySource}
-    ${actionProfileSource}
+    ${providerSeamSource}
     ${updateContextSource}
 
     globalThis.__qa002 = {
@@ -201,19 +229,19 @@ function createHarness() {
       calculatePreflopFallbackForDecisionContext,
       STRATEGY_RESULT_SCHEMA_VERSION,
       STRATEGY_SOURCES,
-      structuralActionFromName,
+      strategyActionFromLegacyLabel,
       createStrategyResult,
-      preflopHeuristicToStrategyResult,
-      postflopHeuristicToStrategyResult,
-      unavailableStrategyResult,
+      preflopHeuristicCandidate,
+      postflopHeuristicCandidate,
+      createUnavailableStrategyResult,
       strategyResultToLegacyProfile,
       strategyProfile(context) {
         app.decisionContext = null;
-        return strategyResultToLegacyProfile(qaActionProfile(null, context));
+        return strategyResultToLegacyProfile(strategyProvider.resolve(context));
       },
       strategyResult(context) {
         app.decisionContext = null;
-        return qaActionProfile(null, context);
+        return strategyProvider.resolve(context);
       },
       strategyProfileCapture(context) {
         capturedEquityDecisionContext = null;
@@ -222,11 +250,11 @@ function createHarness() {
       },
       fallbackStrategyProfile(context, reason = 'Heuristic fallback') {
         app.decisionContext = null;
-        return strategyResultToLegacyProfile(qaFallbackStrategyResult(reason, context));
+        return strategyResultToLegacyProfile(strategyProvider.resolve(context));
       },
       fallbackStrategyResult(context, reason = 'Heuristic fallback') {
         app.decisionContext = null;
-        return qaFallbackStrategyResult(reason, context);
+        return strategyProvider.resolve(context);
       },
       preflopPot({ ante, players, straddle }) {
         controls.set('#ante', createElement(ante));
@@ -326,11 +354,11 @@ module.exports = {
   fallbackForDecisionContext: (...args) => plain(harness.calculatePreflopFallbackForDecisionContext(...args)),
   strategyResultSchemaVersion: harness.STRATEGY_RESULT_SCHEMA_VERSION,
   strategySources: plain(harness.STRATEGY_SOURCES),
-  structuralAction: (...args) => plain(harness.structuralActionFromName(...args)),
+  structuralAction: (...args) => plain(harness.strategyActionFromLegacyLabel(...args)),
   createStrategyResult: (...args) => plain(harness.createStrategyResult(...args)),
-  preflopStrategyResult: (...args) => plain(harness.preflopHeuristicToStrategyResult(...args)),
-  postflopStrategyResult: (...args) => plain(harness.postflopHeuristicToStrategyResult(...args)),
-  unavailableStrategyResult: (...args) => plain(harness.unavailableStrategyResult(...args)),
+  preflopStrategyResult: (...args) => plain(harness.createStrategyResult(harness.preflopHeuristicCandidate(...args))),
+  postflopStrategyResult: (...args) => plain(harness.createStrategyResult(harness.postflopHeuristicCandidate(...args))),
+  unavailableStrategyResult: (...args) => plain(harness.createUnavailableStrategyResult(...args)),
   legacyProfileForStrategyResult: (...args) => plain(harness.strategyResultToLegacyProfile(...args)),
   strategyProfile: (...args) => plain(harness.strategyProfile(...args)),
   strategyResult: (...args) => plain(harness.strategyResult(...args)),

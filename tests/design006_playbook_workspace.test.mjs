@@ -176,8 +176,8 @@ test('recommendation states clear stale output and retain truthful provenance', 
   assert.match(logic, /setRecommendationState\(waiting \? 'waiting' : 'unavailable'\)/);
   assert.doesNotMatch(logic, /function renderLoadingStrategy\(\)/);
   assert.match(logic, /if \(\$\('#strategyMeta'\)\)[\s\S]*?#strategyWarnings[\s\S]*?#actionWheel/);
-  assert.match(logic, /heuristic_preflop:\s*'Heuristic'/);
-  assert.match(logic, /heuristic_postflop:\s*'Heuristic'/);
+  assert.match(logic, /heuristic_preflop:\s*'Heuristic fallback'/);
+  assert.match(logic, /heuristic_postflop:\s*'Heuristic fallback'/);
   assert.match(logic, /equity_fallback:\s*'Equity fallback'/);
   assert.doesNotMatch(logic, /onnx_model|local_tree|api:\s*'API'/);
   assert.match(html, /Canonical hand state does not imply solved strategy/);

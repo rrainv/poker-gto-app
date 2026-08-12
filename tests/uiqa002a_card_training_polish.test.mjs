@@ -71,9 +71,9 @@ test('Training leading and chosen rows use calm accents rather than a dominant o
 });
 
 test('Training probability normalization and displayed facts are unchanged', () => {
-  assert.match(solution, /const total = actionsList\.reduce\(\(acc, cur\) => acc \+ cur\.pct, 0\)/);
-  assert.match(solution, /act\.pct = Math\.round\(\(act\.pct \/ total\) \* 100\)/);
-  assert.match(solution, /rem -= act\.pct/);
+  assert.match(solution, /Array\.isArray\(solution\)/);
+  assert.match(logic, /function strategyResultPresentationActions\(result\)/);
+  assert.doesNotMatch(solution, /actionsList\.reduce|rem -= act\.pct|act\.pct\s*=/);
   assert.match(logic, /trainingChosenProbability[^\n]*evaluation\.chosenProbability \* 100/);
   assert.match(logic, /trainingBestProbability[^\n]*evaluation\.bestProbability \* 100/);
 });
@@ -111,7 +111,7 @@ test('muted action tokens retain the stable Fold passive aggressive all-in and m
 });
 
 test('UI-QA-002A remains presentation-only and leaves the Range Matrix deferred', () => {
-  for (const symbol of ['deriveDecisionContext', 'STRATEGY_RESULT_SCHEMA_VERSION', 'calculateEquity', 'handleTrainingGuess']) {
+  for (const symbol of ['deriveDecisionContext', 'strategyProvider.resultSchemaVersion', 'calculateEquity', 'handleTrainingGuess']) {
     assert.match(logic, new RegExp(symbol));
   }
   assert.match(trainingPresentation, /schemaVersion/);

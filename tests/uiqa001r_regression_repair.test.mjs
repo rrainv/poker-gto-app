@@ -130,8 +130,10 @@ test('Training keeps stacked probabilities and removes the circular reference wh
   assert.match(trainingHtml, /id="trainingFrequencyRows"/);
   assert.doesNotMatch(trainingHtml, /id="trainingWheel"|training-wheel-secondary/);
   const solution = logic.match(/function showTrainingSolution\(solution\)[\s\S]*?\n\}/)?.[0] ?? '';
-  assert.match(solution, /const total = actionsList\.reduce/);
-  assert.match(solution, /act\.pct = Math\.round\(\(act\.pct \/ total\) \* 100\)/);
+  assert.match(solution, /Array\.isArray\(solution\)/);
+  assert.match(solution, /action:\s*entry\.action/);
+  assert.doesNotMatch(solution, /actionsList\.reduce|act\.pct\s*=/);
+  assert.match(logic, /function strategyResultPresentationActions\(result\)/);
   assert.match(solution, /renderFrequencyStack/);
   assert.doesNotMatch(solution, /conic-gradient|trainingWheel/);
 });

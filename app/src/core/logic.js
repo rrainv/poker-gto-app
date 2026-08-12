@@ -218,6 +218,15 @@ function callTrainingPresentationBridge(method, ...args) {
   }
 }
 
+function requireStrategyProviderBridge() {
+  const bridge = globalThis.RiverlineStrategy;
+  if (!bridge || bridge.schemaVersion !== 'strategy-provider/v1'
+    || typeof bridge.createProvider !== 'function') {
+    throw new Error('Riverline StrategyProvider bridge is unavailable');
+  }
+  return bridge;
+}
+
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -1151,7 +1160,7 @@ function renderUnavailableStrategy(resolution) {
   }
   renderPlaybookDecisionAnalysis(
     null,
-    unavailableStrategyResult(message),
+    strategyProvider.resolve(null),
     resolution,
     analysisUnavailableReasonForResolution(resolution)
   );
@@ -1755,130 +1764,11 @@ function updateTrainingPositions() {
 
 
 
-function isAllInActionName(name) {
-
-  return /\b(?:all(?:[-\s]+in)?|jam)\b/.test(String(name || '').toLowerCase());
-
+function strategyAction(type, amountBb = null, potFraction = null) {
+  return { type, amountBb, potFraction };
 }
 
-
-
-const STRATEGY_RESULT_SCHEMA_VERSION = 'strategy-result/v1';
-
-const STRATEGY_SOURCES = Object.freeze({
-  HEURISTIC_PREFLOP: 'heuristic_preflop',
-  HEURISTIC_POSTFLOP: 'heuristic_postflop',
-  EQUITY_FALLBACK: 'equity_fallback',
-  UNAVAILABLE: 'unavailable'
-});
-
-const STRATEGY_SOURCE_VALUES = Object.freeze(Object.values(STRATEGY_SOURCES));
-
-
-
-function structuralActionFromName(name) {
-
-  const label = String(name || '');
-  const normalized = label.toLowerCase();
-  const amountMatch = normalized.match(/(-?\d+(?:\.\d+)?)\s*bb\b/);
-  const potFractionMatch = normalized.match(/(-?\d+(?:\.\d+)?)\s*%\s*(?:of\s+)?pot\b/);
-  let type = 'unknown';
-
-  if (!label || label === 'â€”' || /impossible|unavailable|needed/.test(normalized)) type = 'unavailable';
-  else if (isAllInActionName(normalized)) type = 'all_in';
-  else if (/\bfold\b/.test(normalized)) type = 'fold';
-  else if (/\bcheck\b/.test(normalized)) type = 'check';
-  else if (/\bcall\b/.test(normalized)) type = 'call';
-  else if (/\bbet\b/.test(normalized) && !/\d\s*-?\s*bet\b/.test(normalized)) type = 'bet';
-  else if (/\b(?:open|raise|3\s*-?\s*bet|4\s*-?\s*bet)\b/.test(normalized)) type = 'raise';
-
-  return {
-    type,
-    amountBb: amountMatch ? Number(amountMatch[1]) : null,
-    potFraction: potFractionMatch ? Number(potFractionMatch[1]) / 100 : null
-  };
-
-}
-
-
-
-function normalizedStrategyActions(entries) {
-
-  const prepared = (Array.isArray(entries) ? entries : [])
-    .map((entry) => ({
-      label: String(entry && (entry.label || entry.name) || ''),
-      value: Math.max(0, Number(entry && (entry.probability ?? entry.value)) || 0),
-      evBb: Number.isFinite(entry && entry.evBb) ? Number(entry.evBb) : null
-    }))
-    .filter((entry) => entry.value > 0 && entry.label && entry.label !== 'â€”');
-  const total = prepared.reduce((sum, entry) => sum + entry.value, 0);
-
-  if (!(total > 0)) return [];
-
-  return prepared.map((entry) => ({
-    action: structuralActionFromName(entry.label),
-    label: entry.label,
-    probability: entry.value / total,
-    evBb: entry.evBb
-  }));
-
-}
-
-
-
-function nullableStrategyMetric(value) {
-
-  return Number.isFinite(value) ? Math.min(1, Math.max(0, Number(value))) : null;
-
-}
-
-
-
-function createStrategyResult({
-  source,
-  actions = [],
-  recommendedLabel = null,
-  explanation = null,
-  confidence = null,
-  coverage = null,
-  modelVersion = null,
-  warnings = [],
-  details = null
-}) {
-
-  if (!STRATEGY_SOURCE_VALUES.includes(source)) {
-    throw new TypeError(`Unsupported StrategyResult source: ${source}`);
-  }
-
-  const normalizedActions = normalizedStrategyActions(actions);
-  const bestAction = normalizedActions.length
-    ? normalizedActions.reduce((best, entry) => entry.probability > best.probability ? entry : best)
-    : null;
-
-  return {
-    schemaVersion: STRATEGY_RESULT_SCHEMA_VERSION,
-    source,
-    actions: normalizedActions,
-    recommendation: bestAction ? {
-      action: { ...bestAction.action },
-      label: recommendedLabel || bestAction.label
-    } : recommendedLabel ? {
-      action: structuralActionFromName(recommendedLabel),
-      label: recommendedLabel
-    } : null,
-    explanation: explanation === null ? null : String(explanation),
-    confidence: nullableStrategyMetric(confidence),
-    coverage: nullableStrategyMetric(coverage),
-    modelVersion: modelVersion === null || modelVersion === undefined ? null : String(modelVersion),
-    warnings: Array.isArray(warnings) ? warnings.map(String) : [],
-    details: details === undefined ? null : details
-  };
-
-}
-
-
-
-function preflopHeuristicToStrategyResult(fallback, presentation = {}) {
+function preflopHeuristicCandidate(fallback, presentation = {}) {
 
   const values = {
     open: Number(fallback && fallback.open) || 0,
@@ -1889,81 +1779,97 @@ function preflopHeuristicToStrategyResult(fallback, presentation = {}) {
   const requestedOrder = Array.isArray(presentation.actionOrder) ? presentation.actionOrder : [];
   const order = [...requestedOrder, 'open', 'call', 'fold'].filter((key, index, all) => labels[key] && all.indexOf(key) === index);
   const actions = order.map((key) => ({
+    action: strategyAction(
+      key === 'open' ? 'raise' : key,
+      key === 'open' ? presentation.openAmountBb ?? null : null
+    ),
     label: key === 'open' && presentation.openLabel ? presentation.openLabel : labels[key],
     value: values[key]
   }));
 
-  return createStrategyResult({
-    source: STRATEGY_SOURCES.HEURISTIC_PREFLOP,
+  return {
+    source: 'heuristic_preflop',
     actions,
     recommendedLabel: presentation.recommendedLabel || null,
     explanation: presentation.explanation || null
-  });
+  };
 
 }
 
 
 
-function postflopHeuristicToStrategyResult(strategy, presentation = {}) {
+function postflopHeuristicCandidate(strategy, presentation = {}) {
+
+  const actionTypes = { Bet: 'bet', Check: 'check', Raise: 'raise', Call: 'call', Fold: 'fold' };
 
   const actions = Object.entries(strategy || {})
     .filter(([name, value]) => name !== 'context' && Number.isFinite(Number(value)))
-    .map(([name, value]) => ({ label: name, value: Number(value) }))
+    .map(([name, value]) => ({
+      action: strategyAction(actionTypes[name]),
+      label: name,
+      value: Number(value)
+    }))
     .sort((a, b) => b.value - a.value);
 
-  return createStrategyResult({
-    source: STRATEGY_SOURCES.HEURISTIC_POSTFLOP,
+  return {
+    source: 'heuristic_postflop',
     actions,
     recommendedLabel: presentation.recommendedLabel || (actions[0] && actions[0].label) || null,
     explanation: presentation.explanation || null,
     details: strategy && strategy.context ? strategy.context : null
-  });
+  };
 
 }
 
 
 
-function unavailableStrategyResult(reason, recommendedLabel) {
-
-  return createStrategyResult({
-    source: STRATEGY_SOURCES.UNAVAILABLE,
+function unavailableStrategyCandidate(reason) {
+  return {
+    source: 'unavailable',
     actions: [],
-    recommendedLabel: recommendedLabel || null,
     explanation: reason || null,
     warnings: reason ? [String(reason)] : []
-  });
-
+  };
 }
 
 
+function strategyResultPresentationActions(result) {
+  if (!result || !Array.isArray(result.actions)) throw new TypeError('Expected StrategyResult v1');
+  const allocations = result.actions.map((entry, index) => {
+    const exact = entry.probability * 100;
+    return {
+      entry,
+      index,
+      value: Math.floor(exact),
+      remainder: exact - Math.floor(exact)
+    };
+  });
+  let pointsLeft = 100 - allocations.reduce((sum, entry) => sum + entry.value, 0);
+  [...allocations]
+    .sort((left, right) => right.remainder - left.remainder || left.index - right.index)
+    .forEach((entry) => {
+      if (pointsLeft <= 0) return;
+      allocations[entry.index].value += 1;
+      pointsLeft -= 1;
+    });
+  return allocations.map(({ entry, value }) => ({
+    action: entry.action,
+    name: entry.label,
+    value,
+    kind: entry.action.type === 'fold' ? 'fold'
+      : entry.action.type === 'check' || entry.action.type === 'call' ? 'passive'
+        : entry.action.type === 'all_in' ? 'all-in' : 'aggressive'
+  }));
+}
 
 function strategyResultToLegacyProfile(result) {
-
-  if (!result || result.schemaVersion !== STRATEGY_RESULT_SCHEMA_VERSION) {
-    throw new TypeError('Expected StrategyResult strategy-result/v1');
-  }
-
-  let actions = result.actions.map((entry) => ({
-    name: entry.label,
-    value: result.source === STRATEGY_SOURCES.HEURISTIC_PREFLOP
-      ? Math.round(entry.probability * 100)
-      : Math.round(entry.probability * 10000) / 100,
-    kind: entry.action.type === 'fold' ? 'fold'
-      : (entry.action.type === 'check' || entry.action.type === 'call') ? 'passive'
-        : entry.action.type === 'unavailable' ? 'unavailable' : 'aggressive'
-  }));
-
-  if (result.source === STRATEGY_SOURCES.HEURISTIC_PREFLOP) actions = actions.slice(0, 2);
-
-  const legacySource = result.source === STRATEGY_SOURCES.HEURISTIC_PREFLOP ? 'MATH FALLBACK'
-    : result.source === STRATEGY_SOURCES.HEURISTIC_POSTFLOP ? 'MONTE CARLO'
-      : result.source;
+  const actions = strategyResultPresentationActions(result);
 
   return {
     actions,
     best: result.recommendation ? String(result.recommendation.label) : 'STRATEGY UNAVAILABLE',
     reason: result.explanation || '',
-    source: legacySource,
+    source: result.source,
     provenance: result.source,
     context: result.details
   };
@@ -2345,7 +2251,7 @@ function calculatePreflopFallbackStrategy(r1str, r2str, isPair, isSuited, pos = 
     };
 }
 
-function fallbackStrategyResult(reason, decisionContext = null) {
+function fallbackStrategyCandidate(reason, decisionContext = null) {
 
   const context = requireDecisionContext(decisionContext);
 
@@ -2457,9 +2363,10 @@ function fallbackStrategyResult(reason, decisionContext = null) {
 
     const actionKey = (name) => name.startsWith('Open') ? 'open' : name === 'Call' ? 'call' : 'fold';
 
-    return preflopHeuristicToStrategyResult(fb, {
+    return preflopHeuristicCandidate(fb, {
       actionOrder: [actionKey(a1), actionKey(a2)],
       openLabel: a1.startsWith('Open') ? a1 : a2.startsWith('Open') ? a2 : 'Open',
+      openAmountBb: betSize > 0 ? betSize : null,
       recommendedLabel: t(a1).toUpperCase(),
       explanation: `${t('Mathematical Fallback suggests')} ${t(a1)} ${t('based on hand playability & position.')}`
     });
@@ -2471,16 +2378,6 @@ function fallbackStrategyResult(reason, decisionContext = null) {
     let sim = simulateEquity(context.heroCards, context.board, deadCards, 800, context);
 
     let eq = sim.eq;
-
-
-
-    setTimeout(() => {
-
-      let eqEl = document.getElementById('mEquity');
-
-      if (eqEl) eqEl.textContent = (eq * 100).toFixed(1) + '%';
-
-    }, 10);
 
 
 
@@ -2504,35 +2401,66 @@ function fallbackStrategyResult(reason, decisionContext = null) {
 
 
 
-    return postflopHeuristicToStrategyResult(stratObj, {
+    return postflopHeuristicCandidate(stratObj, {
       recommendedLabel: t(a1).toUpperCase(),
       explanation: `${t('Mathematical Fallback suggests')} ${(eq*100).toFixed(1)}% ${t('vs Villain')} ${t(rangePct)} ${t('range')}.`
     });
 
   }
 
-  return unavailableStrategyResult(t(reason), t('STRATEGY UNAVAILABLE'));
+  return unavailableStrategyCandidate(t(reason));
 
 }
 
 
 
-function actionProfile(hand = null, decisionContext = null) {
+function decisionContextStrategySeed(decisionContext) {
+  const input = JSON.stringify(decisionContext);
+  let hash = 2166136261;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
 
+function resolveHeuristicFallback(decisionContext) {
   const strategyContext = requireDecisionContext(decisionContext);
-  const resolvedHand = hand === null ? handClass(strategyContext.heroCards) : hand;
-
+  const resolvedHand = handClass(strategyContext.heroCards);
   if (!resolvedHand) {
-    return fallbackStrategyResult('Choose two hero cards to calculate a heuristic strategy.', strategyContext);
+    return fallbackStrategyCandidate(
+      'Choose two hero cards to calculate a heuristic strategy.',
+      strategyContext
+    );
   }
-
   if (strategyContext.street === 'invalid') {
-    return fallbackStrategyResult('Complete the current board street: 0, 3, 4, or 5 board cards.', strategyContext);
+    return fallbackStrategyCandidate(
+      'Complete the current board street: 0, 3, 4, or 5 board cards.',
+      strategyContext
+    );
   }
 
-  return fallbackStrategyResult('Heuristic fallback', strategyContext);
-
+  // The legacy postflop fallback samples through Math.random. Keep the
+  // transitional implementation reproducible at the single provider seam;
+  // Training generation seeds never enter this stream.
+  let state = decisionContextStrategySeed(strategyContext) || 0x9e3779b9;
+  const originalRandom = Math.random;
+  Math.random = function strategyFallbackRandom() {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return (state >>> 0) / 0x100000000;
+  };
+  try {
+    return fallbackStrategyCandidate('Heuristic fallback', strategyContext);
+  } finally {
+    Math.random = originalRandom;
+  }
 }
+
+const strategyProvider = requireStrategyProviderBridge().createProvider({
+  fallbackResolver: resolveHeuristicFallback
+});
 
 
 function setFrequency(index, action) {
@@ -2861,53 +2789,18 @@ function getFirstValidCombo(handClassStr, excludeCards) {
 
 
 
-function normalizedMatrixActions(entries) {
-  const prepared = (Array.isArray(entries) ? entries : [])
-    .map((entry) => ({
-      ...entry,
-      rawValue: Math.max(0, Number(entry?.value) || 0)
-    }))
-    .filter((entry) => entry.rawValue > 0)
-    .map((entry, index) => ({ ...entry, index }));
-  const total = prepared.reduce((sum, entry) => sum + entry.rawValue, 0);
-  if (!(total > 0)) return [];
-
-  const allocations = prepared.map((entry) => {
-    const exact = entry.rawValue / total * 100;
-    const value = Math.floor(exact);
-    return { ...entry, value, remainder: exact - value };
-  });
-  let pointsLeft = 100 - allocations.reduce((sum, entry) => sum + entry.value, 0);
-  [...allocations]
-    .sort((left, right) => right.remainder - left.remainder || left.index - right.index)
-    .forEach((entry) => {
-      if (pointsLeft <= 0) return;
-      allocations[entry.index].value += 1;
-      pointsLeft -= 1;
-    });
-
-  return allocations.map(({ index, rawValue, remainder, ...entry }) => entry);
-}
-
-
 function renderChart() {
 
   const grid = $('#strategyGrid');
 
   if (!grid) return;
 
-  const handMode = app.playbookMode === PLAYBOOK_MODES.HAND;
-  const decisionContext = handMode
-    && app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
+  const decisionContext = app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
     ? app.decisionContext
     : null;
-  const matrixContextUnavailable = handMode && !decisionContext;
-  const positions = decisionContext?.heroPosition || selectedValue('#heroPos');
-  const matrixFacingSize = decisionContext?.facingSizeBb ?? numericValue('#facingSize', 0);
-  const matrixPotSize = decisionContext?.potBb ?? numericValue('#potSize', 1.5);
-  const matrixStack = decisionContext?.stackBb ?? numericValue('#stack', 30);
-  const matrixLastAction = decisionContext?.lastAction || $('#lastAction')?.value || 'unopened';
-  const matrixCallAmount = decisionContext?.callAmountBb ?? null;
+  const matrixContextUnavailable = !decisionContext;
+  const positions = decisionContext?.heroPosition || '—';
+  const matrixStack = decisionContext?.stackBb ?? 0;
 
   if (grid.children.length === 0) {
     grid.innerHTML = '';
@@ -2944,12 +2837,7 @@ function renderChart() {
   const isPostFlop = !matrixContextUnavailable
     && (decisionContext?.street || currentStreet()) !== 'preflop';
 
-  const currentBoard = matrixContextUnavailable
-    ? [] : (decisionContext?.board || app.gto.board).filter(Boolean);
-
-  const boardCount = currentBoard.length;
-
-  const useEquityFallback = isPostFlop && boardCount >= 3;
+  let matrixSource = null;
 
   RANKS.forEach((_, row) => RANKS.forEach((__, column) => {
 
@@ -2958,62 +2846,32 @@ function renderChart() {
 
     
 
-    if (isPostFlop && useEquityFallback) {
-
-        // Fast Postflop Heuristic Grid Fallback (0ms latency, zero main-thread lag)
-
-        const validCombo = getFirstValidCombo(hand, currentBoard);
-
-        if (validCombo) {
-
-            const hEval = evaluatePostflopHandStrength(validCombo, currentBoard);
-
-            if (hEval.category === 'monster' || hEval.category === 'two_pair' || hEval.category === 'top_pair' || hEval.category === 'overpair') {
-
-               actions = [{ name: 'Raise', value: 70, kind: 'aggressive' }, { name: 'Call', value: 30, kind: 'passive' }];
-
-            } else if (hEval.category === 'middle_pair' || hEval.category === 'flush_draw') {
-
-               actions = [{ name: 'Call', value: 70, kind: 'passive' }, { name: 'Fold', value: 30, kind: 'fold' }];
-
-            } else {
-
-               actions = [{ name: 'Fold', value: 85, kind: 'fold' }, { name: 'Call', value: 15, kind: 'passive' }];
-
-            }
-
+    if (!isPostFlop && !matrixContextUnavailable) {
+      const representativeCards = getFirstValidCombo(
+        hand,
+        [...decisionContext.board, ...decisionContext.deadCards]
+      );
+      if (representativeCards) {
+        const cellDecisionContext = {
+          ...decisionContext,
+          heroCards: representativeCards
+        };
+        const cellStrategyResult = strategyProvider.resolve(cellDecisionContext);
+        matrixSource = matrixSource || cellStrategyResult.source;
+        if (cellStrategyResult.source !== strategyProvider.sources.UNAVAILABLE) {
+          actions = strategyResultPresentationActions(cellStrategyResult);
         }
-
-    } else if (!isPostFlop && !matrixContextUnavailable) {
-        // Unified deterministic preflop fallback.
-        const heroPos = positions;
-        const r1str = RANKS[row], r2str = RANKS[column];
-        const isPair = row === column;
-        const isSuited = hand.length === 3 && hand[2] === 's';
-        const fb = calculatePreflopFallbackStrategy(
-          r1str, r2str, isPair, isSuited,
-          heroPos, matrixLastAction, matrixFacingSize, matrixPotSize, matrixStack, matrixCallAmount
-        );
-
-        const openVal = fb.open * 100;
-        const callVal = fb.call * 100;
-        const foldVal = fb.fold * 100;
-
-        if (openVal > 0) actions.push({ name: matrixFacingSize === 0 ? 'Raise' : '3-Bet', value: openVal, kind: 'aggressive' });
-        if (callVal > 0) actions.push({ name: 'Call', value: callVal, kind: 'passive' });
-        if (foldVal > 0) actions.push({ name: 'Fold', value: foldVal, kind: 'fold' });
-        actions.sort((a, b) => b.value - a.value);
-
+      }
     }
-
-    actions = normalizedMatrixActions(actions);
 
     const type = (actions[0] && actions[0].kind) || 'unavailable';
     const handKind = row === column ? 'pair' : hand.endsWith('s') ? 'suited' : 'offsuit';
 
     const detail = actions.length
       ? actions.map((action) => `${action.name} ${action.value}%`).join(' · ')
-      : (useEquityFallback ? 'Unavailable · no representative combo' : 'Strategy unavailable');
+      : isPostFlop
+        ? 'Unavailable · provider-backed postflop Matrix deferred'
+        : 'Strategy unavailable';
 
     const idx = row * 13 + column;
     const button = grid.children[idx];
@@ -3024,6 +2882,7 @@ function renderChart() {
     button.dataset.handKind = handKind;
     button.dataset.primaryAction = visualActionKind(actions[0]);
     button.dataset.state = actions.length ? 'available' : 'unavailable';
+    button.dataset.strategySource = matrixSource || 'unavailable';
     button.setAttribute('aria-pressed', String(isSelected));
 
     const chartMode = $('#chartAction')?.value || 'strategy';
@@ -3153,14 +3012,22 @@ function renderChart() {
   const chartSummary = $('#chartSummary');
   if (chartSummary) {
     chartSummary.textContent = matrixContextUnavailable
-      ? 'Hand Mode · Strategy unavailable for the current canonical state'
-      : `${positions} · ${matrixStack} bb · Heuristic fallback`;
+      ? 'Strategy unavailable for the current decision context'
+      : isPostFlop
+        ? 'Postflop Matrix unavailable · provider-backed class expansion deferred'
+        : `${positions} · ${matrixStack} bb · ${strategySourceDisplayLabel(matrixSource)}`;
   }
 
 }
 
 
 function visualActionKind(action) {
+  const type = action?.action?.type;
+  if (type === 'all_in') return 'all-in';
+  if (type === 'fold') return 'fold';
+  if (type === 'check' || type === 'call') return 'passive';
+  if (type === 'bet' || type === 'raise') return 'aggressive';
+  // Presentation-only compatibility for non-StrategyResult UI structures.
   const name = String(action?.name || '').toLowerCase();
   if (name.includes('all-in') || name.includes('all in') || name.includes('jam')) return 'all-in';
   if (action?.kind === 'fold' || name.includes('fold')) return 'fold';
@@ -3189,8 +3056,8 @@ function renderFrequencyStack(container, actions) {
 
 function strategySourceDisplayLabel(source) {
   const labels = {
-    heuristic_preflop: 'Heuristic',
-    heuristic_postflop: 'Heuristic',
+    heuristic_preflop: 'Heuristic fallback',
+    heuristic_postflop: 'Heuristic fallback',
     equity_fallback: 'Equity fallback',
     unavailable: 'Unavailable'
   };
@@ -3292,9 +3159,9 @@ function renderDecisionAnalysis(container, {
 
 function renderPlaybookDecisionAnalysis(decisionContext, strategyResult, resolution, unavailableReason = null) {
   const authority = resolution?.mode === 'hand' ? 'hand' : 'scenario';
-  const result = strategyResult?.schemaVersion === STRATEGY_RESULT_SCHEMA_VERSION
+  const result = strategyResult?.schemaVersion === strategyProvider.resultSchemaVersion
     ? strategyResult
-    : unavailableStrategyResult(playbookResolutionMessage(resolution));
+    : strategyProvider.resolve(null);
   const explanation = renderDecisionAnalysis($('#teacherContent'), {
     decisionContext,
     strategyResult: result,
@@ -3356,7 +3223,7 @@ async function updateContext(reason = 'Context updated') {
     if ($('#facingSizeNum')) $('#facingSizeNum').value = decisionContext.facingSizeBb;
   }
   
-  const strategyResult = actionProfile(null, decisionContext);
+  const strategyResult = strategyProvider.resolve(decisionContext);
   const profile = strategyResultToLegacyProfile(strategyResult);
   const meaningfulActions = strategyResult.actions.filter((entry) => entry.probability >= 0.05).length;
   if (typeof setRecommendationState === 'function') {
@@ -5414,7 +5281,8 @@ function renderBettingTree() {
   const container = $('#pioTreeContainer');
   if (!container) return;
 
-  const profile = strategyResultToLegacyProfile(actionProfile());
+  const currentStrategyResult = app.strategyResult || strategyProvider.resolve(null);
+  const profile = strategyResultToLegacyProfile(currentStrategyResult);
   const board = app.gto ? app.gto.board.filter(Boolean) : [];
   const pos = $('#heroPos') ? $('#heroPos').value : 'BTN';
   const pot = typeof getPotBeforeAction === 'function' ? getPotBeforeAction() : 1.5;
@@ -5818,18 +5686,6 @@ function initTrainingMode() {
 })();
 
 
-function normalizeActionName(act) {
-  const a = (act || '').toLowerCase();
-  if (a.includes('3-bet') || a.includes('3bet')) return '3-bet';
-  if (a.includes('4-bet') || a.includes('4bet')) return '4-bet';
-  if (a.includes('raise') || a.includes('open')) return 'raise';
-  if (a.includes('bet')) return 'bet';
-  if (a.includes('check')) return 'check';
-  if (a.includes('call')) return 'call';
-  if (a.includes('fold')) return 'fold';
-  return a;
-}
-
 function updateAssistanceDisplay() {
   const diffSelect = $('#trainingDifficulty');
   const level = diffSelect ? diffSelect.value : 'hard';
@@ -5902,44 +5758,22 @@ function showTrainingSolution(solution) {
 
   if (!solutionDiv) return;
 
-  // Build normalized list of actions with color and percentage
-  const actionsList = [];
-  for (const [name, rawPct] of Object.entries(solution)) {
-    const val = Number(rawPct) || 0;
-    if (val <= 0) continue;
-    const lower = name.toLowerCase();
-    const kind = visualActionKind({ name, kind: lower.includes('fold') ? 'fold' : lower.includes('call') || lower.includes('check') ? 'passive' : 'aggressive' });
+  const actionsList = (Array.isArray(solution) ? solution : []).map((entry) => ({
+    action: entry.action,
+    name: entry.name,
+    pct: entry.value,
+    kind: visualActionKind(entry),
+    color: actionVisualColor(entry)
+  }));
 
-    actionsList.push({
-      name: name,
-      pct: val,
-      kind,
-      color: ACTION_COLORS[kind] || ACTION_COLORS.unavailable
-    });
-  }
-
-  // Sort actions strictly by descending percentage chance!
   actionsList.sort((a, b) => b.pct - a.pct);
-
-  // Normalize percentages to sum to 100%
-  const total = actionsList.reduce((acc, cur) => acc + cur.pct, 0);
-  if (total > 0) {
-    let rem = 100;
-    actionsList.forEach((act, i) => {
-      if (i === actionsList.length - 1) {
-        act.pct = Math.max(0, rem);
-      } else {
-        act.pct = Math.round((act.pct / total) * 100);
-        rem -= act.pct;
-      }
-    });
-  }
 
   if (typeof renderFrequencyStack === 'function') {
     renderFrequencyStack($('#trainingFrequencyStack'), actionsList.map((action) => ({
       name: action.name,
       value: action.pct,
-      kind: action.kind
+      kind: action.kind,
+      action: action.action
     })));
   }
 
@@ -5948,12 +5782,10 @@ function showTrainingSolution(solution) {
   if (rows) {
     rows.innerHTML = '';
     actionsList.forEach((action) => {
-      const isChosen = evaluation && normalizeActionName(action.name) === normalizeActionName(
-        evaluation.mappedStrategyAction?.label || evaluation.chosenAction?.type
-      );
-      const isBest = evaluation && normalizeActionName(action.name) === normalizeActionName(
-        evaluation.bestStrategyAction?.label
-      );
+      const isChosen = evaluation
+        && action.action?.type === evaluation.mappedStrategyAction?.type;
+      const isBest = evaluation
+        && action.action?.type === evaluation.bestStrategyAction?.type;
       const row = document.createElement('div');
       row.className = 'training-frequency-row';
       row.dataset.actionKind = action.kind;
@@ -6667,31 +6499,11 @@ function readTrainingConfig(seed) {
   };
 }
 
-function withDeterministicTrainingStrategyRandom(seed, callback) {
-  let state = (seed >>> 0) || 0x9e3779b9;
-  const originalRandom = Math.random;
-  Math.random = function trainingStrategyRandom() {
-    state ^= state << 13;
-    state ^= state >>> 17;
-    state ^= state << 5;
-    return (state >>> 0) / 0x100000000;
-  };
-  try {
-    return callback();
-  } finally {
-    Math.random = originalRandom;
-  }
-}
-
-function trainingStrategyResultToLegacySolution(strategyResult) {
-  if (!strategyResult || strategyResult.schemaVersion !== STRATEGY_RESULT_SCHEMA_VERSION) {
+function trainingStrategyResultToPresentation(strategyResult) {
+  if (!strategyResult || strategyResult.schemaVersion !== strategyProvider.resultSchemaVersion) {
     throw new TypeError('Training requires StrategyResult v1');
   }
-  return strategyResult.actions.reduce((solution, entry) => {
-    const label = entry.label || entry.action?.type || 'Unavailable';
-    solution[label] = (solution[label] || 0) + (Number(entry.probability) || 0) * 100;
-    return solution;
-  }, {});
+  return strategyResultPresentationActions(strategyResult);
 }
 
 function trainingContextPresentationAdapter(decisionContext) {
@@ -6903,7 +6715,7 @@ function renderCanonicalTrainingExercise(exercise) {
   app.training.hero = [...presentation.heroCards];
   app.training.board = [...presentation.board];
   app.training.currentContext = legacyContext;
-  app.training.currentSolution = trainingStrategyResultToLegacySolution(exercise.strategyResult);
+  app.training.currentSolution = trainingStrategyResultToPresentation(exercise.strategyResult);
   app.training.lifecycle = 'ready';
   setTrainingWorkspaceState('ready');
   renderTrainingPresentation(exercise);
@@ -6991,13 +6803,7 @@ async function newRandomTrainingHand(options = {}) {
   if ($('#trainingReplayDecisionBtn')) $('#trainingReplayDecisionBtn').hidden = true;
   renderAllCards();
 
-  const request = callTrainingServiceBridge('generate', config, {
-    strategyProvider(decisionContext) {
-      return withDeterministicTrainingStrategyRandom(seed, () => (
-        actionProfile(null, decisionContext)
-      ));
-    }
-  });
+  const request = callTrainingServiceBridge('generate', config, { strategyProvider });
   if (!request || typeof request.then !== 'function') {
     renderTrainingGenerationError({
       code: 'service_unavailable',

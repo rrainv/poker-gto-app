@@ -1,3 +1,8 @@
+import {
+  STRATEGY_RESULT_SCHEMA_VERSION,
+  STRATEGY_SOURCES,
+} from './strategy-result.mjs';
+
 export const ANALYSIS_EXPLANATION_SCHEMA_VERSION = 'analysis-explanation/v1';
 
 export const ANALYSIS_THRESHOLDS = Object.freeze({
@@ -7,29 +12,28 @@ export const ANALYSIS_THRESHOLDS = Object.freeze({
 });
 
 const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
-const STRATEGY_RESULT_SCHEMA_VERSION = 'strategy-result/v1';
 const AUTHORITY_TYPES = Object.freeze(['scenario', 'hand', 'training']);
 
 const SOURCE_PRESENTATION = Object.freeze({
-  heuristic_preflop: Object.freeze({
+  [STRATEGY_SOURCES.HEURISTIC_PREFLOP]: Object.freeze({
     label: 'Heuristic estimate',
     labelKey: 'analysis.provenance.heuristicPreflop',
     limitation: 'This is heuristic guidance without validated solver provenance.',
     warningCode: 'heuristic_source',
   }),
-  heuristic_postflop: Object.freeze({
+  [STRATEGY_SOURCES.HEURISTIC_POSTFLOP]: Object.freeze({
     label: 'Heuristic estimate',
     labelKey: 'analysis.provenance.heuristicPostflop',
     limitation: 'This is an approximate postflop fallback, not solver reasoning.',
     warningCode: 'heuristic_source',
   }),
-  equity_fallback: Object.freeze({
+  [STRATEGY_SOURCES.EQUITY_FALLBACK]: Object.freeze({
     label: 'Equity-based fallback',
     labelKey: 'analysis.provenance.equityFallback',
     limitation: 'Equity alone does not provide a complete strategy or action EV comparison.',
     warningCode: 'equity_only_source',
   }),
-  unavailable: Object.freeze({
+  [STRATEGY_SOURCES.UNAVAILABLE]: Object.freeze({
     label: 'Source unavailable',
     labelKey: 'analysis.provenance.unavailable',
     limitation: 'No current strategy recommendation is available.',

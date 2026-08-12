@@ -7,10 +7,11 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const canonicalStart = logic.indexOf("const TRAINING_CONFIG_SCHEMA_VERSION = 'training-config/v1'");
 const canonicalTraining = logic.slice(canonicalStart, logic.indexOf('function calculateOuts(', canonicalStart));
 
-test('production Training route uses the canonical bridge and the same Playbook actionProfile path', () => {
+test('production Training route uses the canonical bridge and shared StrategyProvider instance', () => {
   assert.ok(canonicalStart >= 0);
   assert.match(canonicalTraining, /callTrainingServiceBridge\('generate', config/);
-  assert.match(canonicalTraining, /actionProfile\(null, decisionContext\)/);
+  assert.match(canonicalTraining, /callTrainingServiceBridge\('generate', config, \{ strategyProvider \}\)/);
+  assert.doesNotMatch(canonicalTraining, /actionProfile\(|Math\.random\s*=/);
   assert.match(canonicalTraining, /callTrainingServiceBridge\('answer', exercise\.id, userAction\)/);
   assert.match(logic, /bind\('#trainingNewHand', 'click', \(\) => newRandomTrainingHand\(\)\)/);
   assert.match(logic, /button\.addEventListener\('click', \(\) => handleTrainingGuess\(type\)\)/);

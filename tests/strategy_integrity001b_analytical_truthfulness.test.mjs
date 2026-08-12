@@ -25,32 +25,36 @@ test('Matrix exposes only heuristic strategy-frequency views', () => {
   assert.doesNotMatch(logic, /estEV|estEq|\(score - 4\.0\) \* 0\.22|30 \+ score \* 2\.8/);
 });
 
-test('Matrix action allocations normalize deterministically to exactly 100 percent', () => {
-  const helper = sourceBetween(logic, 'function normalizedMatrixActions(', 'function renderChart()');
+test('canonical StrategyResult presentation allocates exactly 100 visible percent', () => {
+  const helper = sourceBetween(logic, 'function strategyResultPresentationActions(', 'function strategyResultToLegacyProfile(');
   const context = {};
-  vm.runInNewContext(`${helper}\nglobalThis.normalize = normalizedMatrixActions;`, context);
+  vm.runInNewContext(`${helper}\nglobalThis.present = strategyResultPresentationActions;`, context);
 
   for (const entries of [
-    [{ name: 'Raise', value: 1 }, { name: 'Call', value: 1 }, { name: 'Fold', value: 1 }],
-    [{ name: 'Raise', value: 0.666 }, { name: 'Call', value: 0.111 }, { name: 'Fold', value: 0.223 }],
-    [{ name: 'Call', value: 70 }, { name: 'Fold', value: 30 }],
-    [{ name: 'Raise', value: 0 }, { name: 'Call', value: 2 }, { name: 'Fold', value: 1 }],
+    [['Raise', 'raise', 1 / 3], ['Call', 'call', 1 / 3], ['Fold', 'fold', 1 / 3]],
+    [['Raise', 'raise', 0.666], ['Call', 'call', 0.111], ['Fold', 'fold', 0.223]],
+    [['Call', 'call', 0.7], ['Fold', 'fold', 0.3]],
   ]) {
-    const normalized = context.normalize(entries);
-    assert.equal(normalized.reduce((sum, entry) => sum + entry.value, 0), 100);
-    assert.ok(normalized.every((entry) => Number.isInteger(entry.value) && entry.value >= 0));
+    const result = {
+      actions: entries.map(([label, type, probability]) => ({ label, action: { type }, probability })),
+    };
+    const presented = context.present(result);
+    assert.equal(presented.reduce((sum, entry) => sum + entry.value, 0), 100);
+    assert.ok(presented.every((entry) => Number.isInteger(entry.value) && entry.value >= 0));
   }
-  assert.deepEqual(Array.from(context.normalize([])), []);
+  assert.deepEqual(Array.from(context.present({ actions: [] })), []);
 });
 
 test('Matrix uses current context, labels unavailable cells, and discloses fallback provenance', () => {
   const matrix = sourceBetween(logic, 'function renderChart()', 'function visualActionKind(');
-  assert.match(matrix, /app\.playbookMode === PLAYBOOK_MODES\.HAND/);
-  assert.match(matrix, /decisionContext\?\.board \|\| app\.gto\.board/);
-  assert.match(matrix, /actions = normalizedMatrixActions\(actions\)/);
+  assert.match(matrix, /app\.decisionContext\?\.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION/);
+  assert.match(matrix, /heroCards: representativeCards/);
+  assert.match(matrix, /strategyProvider\.resolve\(cellDecisionContext\)/);
+  assert.match(matrix, /actions = strategyResultPresentationActions\(cellStrategyResult\)/);
+  assert.doesNotMatch(matrix, /calculatePreflopFallbackStrategy|evaluatePostflopHandStrength/);
   assert.match(matrix, /actions\.length \? `\$\{val \|\| 0\}%` : 'Unavailable'/);
-  assert.match(matrix, /Heuristic fallback/);
-  assert.match(matrix, /Hand Mode · Strategy unavailable for the current canonical state/);
+  assert.match(matrix, /strategySourceDisplayLabel\(matrixSource\)/);
+  assert.match(matrix, /provider-backed postflop Matrix deferred/);
 });
 
 function fakeElement(value = '') {

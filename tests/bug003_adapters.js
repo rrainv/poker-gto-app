@@ -23,7 +23,7 @@ function createHarness() {
   if (!positionsSource) throw new Error('Could not extract POSITIONS from logic.js');
 
   const numericSource = sliceBetween(source, 'function numericValue(id, fallback = 0)', 'function updatePositionSelect(');
-  const updateSource = sliceBetween(source, 'function updatePositionSelect(', 'function isAllInActionName(name)');
+  const updateSource = sliceBetween(source, 'function updatePositionSelect(', 'function strategyAction(');
   const controls = new Map();
 
   const sandbox = { controls, createElement };

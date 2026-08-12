@@ -33,7 +33,8 @@ import {
 } from '../app/src/application/training-session-controller.mjs';
 import { installTrainingModeBridge } from '../app/src/application/training-mode-bootstrap.mjs';
 
-function strategyProvider(context) {
+const strategyProvider = Object.freeze({
+  resolve(context) {
   const passiveType = context.facingSizeBb > 0
     ? ACTION_TYPES.CALL
     : context.street === 'preflop' && context.heroPosition === 'BB'
@@ -44,7 +45,7 @@ function strategyProvider(context) {
     : context.facingSizeBb > 0 ? ACTION_TYPES.RAISE : ACTION_TYPES.BET;
   const passiveLabel = passiveType === ACTION_TYPES.CALL ? 'Call' : 'Check';
   const aggressiveLabel = aggressiveType === ACTION_TYPES.RAISE ? 'Raise' : 'Bet';
-  return {
+    return {
     schemaVersion: 'strategy-result/v1',
     source: context.street === 'preflop' ? 'heuristic_preflop' : 'heuristic_postflop',
     actions: [
@@ -71,8 +72,9 @@ function strategyProvider(context) {
     modelVersion: null,
     warnings: [],
     details: null,
-  };
-}
+    };
+  },
+});
 
 function config(overrides = {}) {
   return {
@@ -261,7 +263,7 @@ test('unsupported targets and unavailable strategy return structured failures wi
   assert.equal(unsupported.error.schemaVersion, 'training-generation-error/v1');
 
   const unavailable = generateTrainingExercise(config(), {
-    strategyProvider: () => null,
+    strategyProvider: { resolve: () => null },
   });
   assert.equal(unavailable.ok, false);
   assert.equal(unavailable.error.code, TRAINING_GENERATION_ERROR_CODES.STRATEGY_UNAVAILABLE);
@@ -282,7 +284,7 @@ test('unreachable quality targets stop after the bounded retry budget', () => {
 });
 
 test('canonical-to-StrategyResult mapping preserves explicit action families and the BB legacy seam', () => {
-  const result = strategyProvider({ street: 'preflop', heroPosition: 'BB', facingSizeBb: 0 });
+  const result = strategyProvider.resolve({ street: 'preflop', heroPosition: 'BB', facingSizeBb: 0 });
   assert.equal(mapCanonicalActionToStrategyAction(ACTION_TYPES.RAISE, result).type, 'raise');
   assert.equal(mapCanonicalActionToStrategyAction(ACTION_TYPES.FOLD, result).type, 'fold');
   assert.equal(mapCanonicalActionToStrategyAction(
@@ -300,7 +302,6 @@ test('mixed StrategyResult grading accepts actions within 15 points and never in
     actions: [
       { action: { type: 'raise' }, label: 'Raise', probability: 0.55, evBb: null },
       { action: { type: 'call' }, label: 'Call', probability: 0.45, evBb: null },
-      { action: { type: 'fold' }, label: 'Fold', probability: 0, evBb: null },
     ],
   };
   const acceptable = evaluateTrainingAnswer({

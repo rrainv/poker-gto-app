@@ -411,12 +411,12 @@ test('Hand presentation is one-way, disables scenario facts, and guards direct c
   assert.doesNotMatch(PRODUCT_BOOTSTRAP, /setHeroHoleCards|setBoardCards|groupCards/);
 });
 
-test('both modes converge on one actionProfile and StrategyResult rendering path', () => {
+test('both modes converge on one StrategyProvider and StrategyResult rendering path', () => {
   const updateStart = LOGIC.indexOf("async function updateContext(reason = 'Context updated')");
   const updateEnd = LOGIC.indexOf('// Legacy fast evaluator retained for Playbook heuristics', updateStart);
   assert.ok(updateEnd > updateStart);
   const update = LOGIC.slice(updateStart, updateEnd);
-  assert.equal((update.match(/actionProfile\(null, decisionContext\)/g) || []).length, 1);
+  assert.equal((update.match(/strategyProvider\.resolve\(decisionContext\)/g) || []).length, 1);
   assert.equal((update.match(/strategyResultToLegacyProfile\(strategyResult\)/g) || []).length, 1);
   assert.doesNotMatch(LOGIC, /scenarioActionProfile|handActionProfile/);
   assert.match(update, /playbookResolution\.decisionContext/);

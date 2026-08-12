@@ -35,16 +35,16 @@ test('browser package and build contain no web inference dependency or asset inc
   assert.doesNotMatch(JSON.stringify(manifest.build), /frozen_models|solver-model|equity\.worker\.js|ort(?:\.|-)/i);
 });
 
-test('Playbook resolves DecisionContext directly through deterministic fallback', () => {
-  const actionProfile = sourceBetween('function actionProfile(hand =', 'function setFrequency(index, action)');
+test('Playbook resolves DecisionContext through the deterministic StrategyProvider fallback', () => {
+  const providerSeam = sourceBetween('function decisionContextStrategySeed(', 'function setFrequency(index, action)');
   const updateContext = sourceBetween(
     "async function updateContext(reason = 'Context updated')",
     '// Legacy fast evaluator retained for Playbook heuristics',
   );
 
-  assert.match(actionProfile, /requireDecisionContext[\s\S]*return fallbackStrategyResult\('Heuristic fallback', strategyContext\)/);
-  assert.match(updateContext, /const strategyResult = actionProfile\(null, decisionContext\)/);
-  assert.doesNotMatch(`${actionProfile}\n${updateContext}`, /fetch\(|InferenceSession|useOnnx|onnxSession|app\.solver|connectApi|loadOnnx|generateStrategyWithOnnx/i);
+  assert.match(providerSeam, /fallbackResolver: resolveHeuristicFallback/);
+  assert.match(updateContext, /const strategyResult = strategyProvider\.resolve\(decisionContext\)/);
+  assert.doesNotMatch(`${providerSeam}\n${updateContext}`, /fetch\(|InferenceSession|useOnnx|onnxSession|app\.solver|connectApi|loadOnnx|generateStrategyWithOnnx/i);
 });
 
 test('strategy source provenance is static, truthful, and noninteractive', () => {

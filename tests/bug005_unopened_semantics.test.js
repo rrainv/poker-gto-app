@@ -65,7 +65,7 @@ test('canonical Training generation uses zero facing size for an unopened decisi
     difficulty: 'hard',
     seed: 5005,
   }, {
-    strategyProvider: () => ({
+    strategyProvider: { resolve: () => ({
       schemaVersion: 'strategy-result/v1',
       source: 'heuristic_preflop',
       actions: [
@@ -79,7 +79,7 @@ test('canonical Training generation uses zero facing size for an unopened decisi
       modelVersion: null,
       warnings: [],
       details: null,
-    }),
+    }) },
   });
   assert.equal(result.ok, true, result.error?.message);
   assert.equal(result.exercise.decisionContext.lastAction, 'unopened');

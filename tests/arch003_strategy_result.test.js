@@ -161,7 +161,7 @@ test('legacy UI adapter preserves fallback recommendation while converting to pe
   const profile = qa.legacyProfileForStrategyResult(result);
 
   assert.equal(profile.best, 'OPEN 3 BB');
-  assert.equal(profile.source, 'MATH FALLBACK');
+  assert.equal(profile.source, 'heuristic_preflop');
   assert.deepEqual(profile.actions.map(({ name, value }) => ({ name, value })), [
     { name: 'Open', value: 70 },
     { name: 'Call', value: 30 },
@@ -183,11 +183,11 @@ test('heuristic StrategyResults never receive unsupported Deep CFR labels', () =
 });
 
 test('main Playbook path stores StrategyResult before adapting for legacy renderers', () => {
-  assert.match(logicSource, /const strategyResult = actionProfile\(null, decisionContext\);/);
+  assert.match(logicSource, /const strategyResult = strategyProvider\.resolve\(decisionContext\);/);
   assert.match(logicSource, /app\.strategyResult = strategyResult;/);
   assert.match(logicSource, /const profile = strategyResultToLegacyProfile\(strategyResult\);/);
   assert.doesNotMatch(
-    logicSource.slice(logicSource.indexOf('function actionProfile('), logicSource.indexOf('function setFrequency(')),
+    logicSource.slice(logicSource.indexOf('function decisionContextStrategySeed('), logicSource.indexOf('function setFrequency(')),
     /source:\s*['"](?:MATH FALLBACK|MONTE CARLO|DEEP CFR MODEL|LOCAL TREE)['"]/,
   );
 });

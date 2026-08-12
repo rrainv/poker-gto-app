@@ -17,6 +17,7 @@ import {
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
 import { deriveDecisionContextFromPokerState } from './decision-context-from-poker-state.mjs';
+import { isStrategyResultV1 } from './strategy-result.mjs';
 
 export const TRAINING_CONFIG_SCHEMA_VERSION = 'training-config/v1';
 export const TRAINING_EXERCISE_SCHEMA_VERSION = 'training-exercise/v1';
@@ -562,7 +563,7 @@ function buildExercise(config, random, attempt, pair, strategyProvider) {
 
   let strategyResult;
   try {
-    strategyResult = strategyProvider(decisionContext);
+    strategyResult = strategyProvider.resolve(decisionContext);
   } catch (error) {
     return failure(
       TRAINING_GENERATION_ERROR_CODES.STRATEGY_UNAVAILABLE,
@@ -570,9 +571,7 @@ function buildExercise(config, random, attempt, pair, strategyProvider) {
       { error: serializedError(error) },
     );
   }
-  if (strategyResult?.schemaVersion !== 'strategy-result/v1'
-    || !Array.isArray(strategyResult.actions)
-    || strategyResult.actions.length === 0) {
+  if (!isStrategyResultV1(strategyResult) || strategyResult.actions.length === 0) {
     return failure(
       TRAINING_GENERATION_ERROR_CODES.STRATEGY_UNAVAILABLE,
       'The existing strategy path returned no gradeable StrategyResult.',
@@ -652,10 +651,10 @@ export function generateTrainingExercise(input, {
       { error: serializedError(error) },
     );
   }
-  if (typeof strategyProvider !== 'function') {
+  if (!strategyProvider || typeof strategyProvider.resolve !== 'function') {
     return failure(
       TRAINING_GENERATION_ERROR_CODES.STRATEGY_UNAVAILABLE,
-      'A StrategyResult provider is required.',
+      'A StrategyProvider v1 resolver is required.',
     );
   }
   const pairs = targetPairs(config);

@@ -157,7 +157,7 @@ test('deal and feedback motion are event-scoped, restrained, and reduced-motion 
 });
 
 test('UI-QA-002B remains presentation-only and keeps protected engines intact', () => {
-  for (const symbol of ['deriveDecisionContext', 'STRATEGY_RESULT_SCHEMA_VERSION', 'calculateEquity', 'calculateOuts', 'handleTrainingGuess']) {
+  for (const symbol of ['deriveDecisionContext', 'strategyProvider.resultSchemaVersion', 'calculateEquity', 'calculateOuts', 'handleTrainingGuess']) {
     assert.match(logic, new RegExp(symbol));
   }
   assert.doesNotMatch(table, /PokerState|DecisionContext|StrategyResult|calculateEquity|regret|MCCFR/);
