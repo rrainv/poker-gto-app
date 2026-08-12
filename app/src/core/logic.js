@@ -554,7 +554,8 @@ function renderPlaybookCards() {
   }
 
   const deckCount = $('#deckCount');
-  if (deckCount) deckCount.textContent = remainingCards('gto');
+  // Hand mode has its own canonical deck and must never inherit Scenario cards.
+  if (deckCount) deckCount.textContent = remainingCards(isHandMode() ? 'hand' : 'gto');
   updateActionOptions();
 }
 
@@ -857,6 +858,16 @@ function numericValue(id, fallback = 0) {
 
   return Number.isFinite(value) ? value : fallback;
 
+}
+
+function clearToast() {
+  const element = $('#toast');
+  window.clearTimeout(toast.timer);
+  toast.sequence = (toast.sequence || 0) + 1;
+  if (!element) return;
+  element.classList.remove('show');
+  element.textContent = '';
+  delete element.dataset.scope;
 }
 
 
@@ -1278,6 +1289,7 @@ function startCanonicalPlaybookHand() {
   resetCanonicalHandDraft();
   const state = callPlaybookStateBridge('initializeHand', readCanonicalHandConfiguration());
   if (!state) toast(canonicalHandFailureMessage(), 'error');
+  else clearToast();
   renderCanonicalHandWorkspace();
   return state;
 }
@@ -1303,7 +1315,10 @@ function commitCanonicalHoleDeal() {
   }
   const next = callPlaybookStateBridge('dealObservedHoleCards', cardsByPlayer);
   if (!next) toast(canonicalHandFailureMessage(), 'error');
-  else if (window.SoundFX) window.SoundFX.playCardDeal(Math.max(2, Object.keys(cardsByPlayer).length * 2));
+  else {
+    clearToast();
+    if (window.SoundFX) window.SoundFX.playCardDeal(Math.max(2, Object.keys(cardsByPlayer).length * 2));
+  }
   renderCanonicalHandWorkspace();
   return next;
 }
@@ -1323,6 +1338,7 @@ function commitCanonicalPrivateReveals() {
       break;
     }
   }
+  if (next && next.showdown?.status !== 'awaiting_private_reveal') clearToast();
   renderCanonicalHandWorkspace();
   return next;
 }
@@ -1344,6 +1360,7 @@ function commitCanonicalBoardDeal() {
   const next = callPlaybookStateBridge('dealBoardCards', cards);
   if (!next) toast(canonicalHandFailureMessage(), 'error');
   else {
+    clearToast();
     app.playbookHandDraft.board = [];
     if (window.SoundFX) window.SoundFX.playCardDeal(expected);
   }
@@ -1383,7 +1400,10 @@ function chooseCanonicalSizedAction(type, option) {
 function applyCanonicalHandAction(type, amountToBb = null) {
   const next = callPlaybookStateBridge('applyAction', type, amountToBb);
   if (!next) toast(canonicalHandFailureMessage(), 'error');
-  else if (window.SoundFX) window.SoundFX.playPokerAction(type);
+  else {
+    clearToast();
+    if (window.SoundFX) window.SoundFX.playPokerAction(type);
+  }
   app.playbookHandDraft.sizedAction = null;
   renderCanonicalHandWorkspace();
   return next;
@@ -1585,8 +1605,9 @@ function renderCanonicalHandWorkspace() {
   renderCanonicalLegalActions(state || { players: [] });
   renderCanonicalActionHistory(state);
   if ($('#handResolveShowdownButton')) {
-    $('#handResolveShowdownButton').hidden = state?.phase !== 'showdown'
-      || state?.showdown?.status !== 'ready';
+    const canResolveShowdown = state?.phase === 'showdown' && state?.showdown?.status === 'ready';
+    $('#handResolveShowdownButton').hidden = !canResolveShowdown;
+    $('#handResolveShowdownButton').disabled = !canResolveShowdown;
   }
   if (state) dispatchCanonicalTableState(state);
   else window.dispatchEvent(new CustomEvent('gameStateUpdate', {
@@ -3452,21 +3473,26 @@ function applyDeckStyle(is4Color) {
 
 
 
-function toast(message, tone = 'info') {
+function toast(message, tone = 'info', scope = activeWorkspaceMode()) {
 
   const element = $('#toast');
 
   if (!element) return;
 
+  const sequence = (toast.sequence || 0) + 1;
+  toast.sequence = sequence;
+  window.clearTimeout(toast.timer);
+
   element.textContent = message;
 
   element.dataset.tone = ['info', 'success', 'warning', 'error'].includes(tone) ? tone : 'info';
+  element.dataset.scope = scope;
 
   element.classList.add('show');
 
-  window.clearTimeout(toast.timer);
-
-  toast.timer = window.setTimeout(() => element.classList.remove('show'), 2200);
+  toast.timer = window.setTimeout(() => {
+    if (toast.sequence === sequence) clearToast();
+  }, 3200);
 
 }
 
@@ -3515,24 +3541,6 @@ function bindEvents() {
       }
 
       const index = Number(slot.dataset.index);
-
-      const current = groupCards(group)[index];
-
-      if (current) {
-
-        groupCards(group)[index] = null;
-
-        renderAllCards();
-
-        if (isEquityGroup(group)) setEquityPending();
-
-        else if (group.startsWith('hand-')) renderCanonicalHandWorkspace();
-
-        else updateContext('Cards changed');
-
-        return;
-
-      }
 
       return openPicker(group, index);
 
@@ -3598,6 +3606,7 @@ function bindEvents() {
       item.setAttribute('aria-current', isActive ? 'page' : 'false');
     });
     const mode = button.dataset.mode;
+    clearToast();
 
     const shell = $('.riverline-shell');
     if (shell) shell.dataset.activeMode = mode;
@@ -3641,7 +3650,15 @@ function bindEvents() {
     }
   }));
 
-  $$('.sub-tab').forEach((button) => button.addEventListener('click', () => {
+  const revealPlaybookDestination = (view, control) => {
+    const destination = view === 'context' ? $('#contextView') : $(`#${view === 'chart' ? 'chart' : view === 'range' ? 'range' : 'tree'}View`);
+    if (!destination) return;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    destination.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+    control?.focus?.({ preventScroll: true });
+  };
+
+  const selectPlaybookAnalysisView = (button, reveal = false) => {
 
     const view = button.dataset.gtoView;
 
@@ -3669,11 +3686,20 @@ function bindEvents() {
 
     if (view === 'tree') playbookSurfaceInvalidator.renderIfNeeded('tree');
 
-  }));
+    if (reveal) revealPlaybookDestination(view, button);
+  };
 
-  if ($('#openCharts')) $('#openCharts').addEventListener('click', () => { const el = document.querySelector('[data-gto-view="chart"]'); if (el) el.click(); });
+  $$('.sub-tab').forEach((button) => button.addEventListener('click', () => selectPlaybookAnalysisView(button)));
 
-  if ($('#backContext')) $('#backContext').addEventListener('click', () => { const el = document.querySelector('[data-gto-view="context"]'); if (el) el.click(); });
+  if ($('#openCharts')) $('#openCharts').addEventListener('click', () => {
+    const el = document.querySelector('[data-gto-view="chart"]');
+    if (el) selectPlaybookAnalysisView(el, true);
+  });
+
+  if ($('#backContext')) $('#backContext').addEventListener('click', () => {
+    const el = document.querySelector('[data-gto-view="context"]');
+    if (el) selectPlaybookAnalysisView(el, true);
+  });
 
   
 
@@ -3766,7 +3792,10 @@ function bindEvents() {
 
 
 
-  if ($('#openSettings')) $('#openSettings').addEventListener('click', () => { if ($('#settingsModal')) $('#settingsModal').classList.add('show'); });
+  if ($('#openSettings')) $('#openSettings').addEventListener('click', () => {
+    clearToast();
+    if ($('#settingsModal')) $('#settingsModal').classList.add('show');
+  });
 
   if ($('#closeSettingsModal')) $('#closeSettingsModal').addEventListener('click', () => { if ($('#settingsModal')) $('#settingsModal').classList.remove('show'); });
 
@@ -4891,7 +4920,9 @@ function applySidebarState(collapsed) {
   const button = $('#sidebarCollapseBtn');
   if (!shell || !rail || !button) return;
   shell.classList.toggle('is-sidebar-collapsed', collapsed);
+  shell.dataset.sidebarState = collapsed ? 'collapsed' : 'expanded';
   rail.dataset.collapsed = String(collapsed);
+  rail.dataset.expanded = String(!collapsed);
   button.setAttribute('aria-expanded', String(!collapsed));
   button.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
   button.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
@@ -5121,6 +5152,17 @@ function showTrainingSolution(solution) {
   const solutionDiv = $('#trainingSolution');
 
   if (!solutionDiv) return;
+
+  const preview = app.training.lifecycle === 'ready';
+  const eyebrow = $('#trainingSolutionEyebrow');
+  if (eyebrow) {
+    eyebrow.textContent = preview ? 'Strategy preview' : 'After-answer reference';
+    eyebrow.dataset.i18n = preview ? 'Strategy preview' : 'After-answer reference';
+  }
+  const note = solutionDiv.querySelector?.('.training-reference-note');
+  if (note) note.textContent = preview
+    ? 'Study preview is enabled. It does not change how your answer is graded.'
+    : 'Probabilities from the displayed strategy source; no EV is implied.';
 
   const actionsList = (Array.isArray(solution) ? solution : []).map((entry) => ({
     action: entry.action,
@@ -5385,6 +5427,20 @@ function trainingContextPresentationAdapter(decisionContext) {
   };
 }
 
+function formatTrainingFacingCopy(context) {
+  const callAmount = Number(context?.callAmountBb);
+  const facingSize = Number(context?.facingSizeBb);
+  if (Number.isFinite(callAmount) && callAmount > 0) {
+    const callCopy = `${callAmount.toFixed(1)} bb to call`;
+    return Number.isFinite(facingSize) && Math.abs(facingSize - callAmount) > 0.001
+      ? `Facing ${facingSize.toFixed(1)} bb Â· ${callCopy}`
+      : callCopy;
+  }
+  return context?.street === 'preflop' && context?.heroPosition !== 'BB'
+    ? '0.0 bb (Unopened)'
+    : '0.0 bb (Free Check)';
+}
+
 function trainingActionLabel(type, decisionContext) {
   if (type === 'all_in') return 'All-in';
   if (type === 'raise' && decisionContext.street === 'preflop') {
@@ -5580,12 +5636,7 @@ function renderCanonicalTrainingExercise(exercise) {
   const potInfo = $('#trainingPotInfo');
   if (potInfo) potInfo.style.display = 'flex';
   if ($('#trainingPotVal')) $('#trainingPotVal').textContent = `${context.potBb.toFixed(1)} bb`;
-  if ($('#trainingFacingVal')) {
-    $('#trainingFacingVal').textContent = context.callAmountBb > 0
-      ? `${context.callAmountBb.toFixed(1)} bb to call (${context.facingSizeBb.toFixed(1)} bb to)`
-      : context.street === 'preflop' && context.heroPosition !== 'BB'
-        ? '0.0 bb (Unopened)' : '0.0 bb (Free Check)';
-  }
+  if ($('#trainingFacingVal')) $('#trainingFacingVal').textContent = formatTrainingFacingCopy(context);
   if ($('#trainingPotOddsVal')) $('#trainingPotOddsVal').textContent = legacyContext.potOdds === null ? '—' : `${legacyContext.potOdds.toFixed(1)}%`;
   if ($('#trainingMdfVal')) $('#trainingMdfVal').textContent = legacyContext.mdf === null ? '— (range reference)' : `${legacyContext.mdf.toFixed(1)}% (range reference)`;
   if ($('#trainingHeroPos')) $('#trainingHeroPos').value = context.heroPosition;
@@ -5603,6 +5654,10 @@ function renderCanonicalTrainingExercise(exercise) {
   app.training.currentAnalysisExplanation = null;
   const solutionDiv = $('#trainingSolution');
   if (solutionDiv) solutionDiv.hidden = true;
+  if ($('#trainingSolutionEyebrow')) {
+    $('#trainingSolutionEyebrow').textContent = 'After-answer reference';
+    $('#trainingSolutionEyebrow').dataset.i18n = 'After-answer reference';
+  }
   const scoreBadge = $('#trainingScoreBadge');
   if (scoreBadge) scoreBadge.hidden = true;
   const nextBtn = $('#trainingNextHandBtn');

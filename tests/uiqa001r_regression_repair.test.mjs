@@ -60,6 +60,24 @@ test('picker can close one target and open the next board or dead-card target', 
   assert.equal(picker.modalOpen(), true);
 });
 
+test('filled editable cards use Replace semantics: open, cancel, then replace', () => {
+  const picker = createProductionPickerHarness();
+  picker.openPicker('hero', 0);
+  picker.selectCard('Ah');
+
+  picker.openPicker('hero', 0);
+  assert.equal(picker.modalOpen(), true);
+  assert.equal(picker.groupCards('hero')[0], 'Ah');
+  assert.match(picker.slotMarkup('hero'), /aria-label="Replace A/);
+
+  picker.closePicker();
+  assert.equal(picker.groupCards('hero')[0], 'Ah');
+
+  picker.openPicker('hero', 0);
+  picker.selectCard('Kh');
+  assert.equal(picker.groupCards('hero')[0], 'Kh');
+});
+
 test('T and 10 are presentation choices while canonical IDs and face ranks stay stable', () => {
   const poker = createProductionPickerHarness({ rankStyle: 'poker' });
   poker.openPicker('hero', 0);

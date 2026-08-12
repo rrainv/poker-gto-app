@@ -196,6 +196,7 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
       app,
       openPicker,
       selectCard,
+      closePicker,
       renderAllCards,
       groupCards,
       slotMarkup(group) { return document.querySelector('[data-slots="' + group + '"]').innerHTML; },

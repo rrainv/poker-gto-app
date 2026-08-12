@@ -93,7 +93,7 @@ test('modal, tooltip, and toast primitives share semantic surfaces', () => {
   for (const tone of ['success', 'warning', 'error']) {
     assert.match(components, new RegExp(`toast\\[data-tone="${tone}"\\]`));
   }
-  assert.match(logic, /function toast\(message, tone = 'info'\)/);
+  assert.match(logic, /function toast\(message, tone = 'info'(?:, scope = activeWorkspaceMode\(\))?\)/);
 });
 
 test('comfortable and compact density share one token mechanism', () => {
