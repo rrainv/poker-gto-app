@@ -1,56 +1,107 @@
-# Git Workflow for Agent Work
+# Git workflow for Riverline agent work
 
-## Before an agent task
+## Principles
 
-```bash
-git status
-git branch
-git diff
+- one ticket, one reviewable commit
+- agent does not stage or commit by default
+- human reviews and commits after tests/manual acceptance
+- same chat fixes current-ticket regressions
+- new ticket starts a new chat
+- do not mix unrelated dirty files into a ticket
+
+## Before a ticket
+
+```powershell
+git status --short
+git branch --show-current
+git diff --stat
 ```
 
-Create a clean checkpoint:
+Do not create an automatic `git add .` checkpoint when unrelated files are dirty.
 
-```bash
-git add .
-git commit -m "checkpoint before <task>"
+Use a branch for risky/long work when helpful:
+
+```powershell
+git switch -c product-ui-003-analysis-presentation
 ```
 
-## For risky work
+## Protected operational files
 
-Use a branch:
+Unless explicitly owned by the ticket, do not stage, revert, or commit:
 
-```bash
-git switch -c arch-001-state-schema
+- `.codex/config.toml`
+- `repo_dump.py`
+- `repo_dump.txt`
+
+Other pre-existing dirty paths must be identified in the report.
+
+## Agent completion
+
+The agent leaves changes unstaged and uncommitted.
+
+The report must separate:
+
+- ticket files
+- pre-existing user/tooling changes
+- generated/ignored artifacts
+
+## Human review and staging
+
+After acceptance, stage the ticket while excluding protected files:
+
+```powershell
+git add -A -- . `
+  ':(exclude).codex/config.toml' `
+  ':(exclude)repo_dump.py' `
+  ':(exclude)repo_dump.txt'
 ```
 
-or:
+Then inspect:
 
-```bash
-git switch -c ui-002-playbook-polish
+```powershell
+git --no-pager diff --cached --name-status
+git --no-pager diff --cached --stat
+git --no-pager diff --cached --check
+
+git diff --cached --name-only |
+  Select-String '\.codex/config\.toml|repo_dump\.py|repo_dump\.txt'
 ```
 
-## After the agent
+The protected-file check should return no output.
 
-Inspect:
+For tickets with known line-ending-only files, exclude those paths explicitly rather than committing meaningless changes.
 
-```bash
-git diff
-git status
+## Commit
+
+Use a short descriptive message:
+
+```text
+ui: refine workspace density and geometry
+strategy: improve postflop heuristic integrity
+perf: reduce redundant interaction work
+docs: refresh agent workflow and project navigation
 ```
 
-Run the relevant tests.
+Then verify:
 
-If the patch is bad, revert the branch rather than manually repairing a tangled patch.
+```powershell
+git commit -m "<message>"
+git status --short
+git log -5 --oneline
+```
 
-## Branch principle
+## Regressions
 
-Keep these separate:
+If manual QA finds a regression before commit:
 
-- architecture
-- poker engine
-- ML/training
-- solver experiments
-- UI
-- localization
+- do not commit
+- return to the same ticket chat
+- fix only that regression
+- rerun focused/full tests
+- repeat manual acceptance
 
-Do not combine a solver rewrite and UI redesign in one branch.
+If found after commit, create a clearly named repair ticket unless the commit is still local and intentionally amended.
+
+## Large/reviewer tickets
+
+Use a new chat for independent review. Do not let a reviewer silently implement unrelated recommendations.

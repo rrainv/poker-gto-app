@@ -1,27 +1,16 @@
-# Session Start Prompt
+# Session start prompt
 
-Read the following before touching code:
+Read:
 
-1. `docs/project/PROJECT_CHARTER.md`
-2. `docs/project/ARCHITECTURE_CONTRACT.md`
-3. `docs/project/CURRENT_REPO_AUDIT.md`
-4. The relevant subsystem specification
+1. `AGENTS.md`
+2. `docs/agent-prompts/AGENT_MASTER_CONTEXT.md`
+3. `docs/agent-prompts/CODEX_WORKFLOW.md`
+4. `docs/project/CURRENT_PHASE.md`
+5. the relevant subsystem specification
+6. the ticket-owned QA/Product backlog IDs
 
-You are now in Explorer mode.
+Then execute the ticket below.
 
-Do not edit anything yet.
+Do not stage or commit. Do not modify protected tooling/config files unless explicitly owned.
 
-For today's task:
-
-[PASTE TASK]
-
-First:
-
-1. locate the current implementation
-2. trace the relevant data flow
-3. identify tests
-4. identify dependencies
-5. identify files that should not change
-6. propose the smallest safe implementation plan
-
-Wait for approval before editing.
+[TICKET]

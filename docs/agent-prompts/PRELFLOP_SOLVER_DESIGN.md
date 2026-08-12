@@ -1,38 +1,25 @@
-# Preflop Solver Design Prompt
+# Bounded preflop solver extension prompt
 
-Explorer mode. Do not implement yet.
+Compatibility filename retained. Riverline already has a bounded HU preflop solver under `solver/riverline_solver/`.
 
-Design a bounded real preflop CFR/MCCFR experiment.
+Do not design a new solver from scratch without first reading:
 
-Target:
+- `docs/solver/HU_PREFLOP_100BB_V1.md`
+- current solver tests and characterization tools
+- calibration baseline documents
 
-- heads-up
-- 100bb
-- no rake
-- standard Hold'em
-- preflop only
-- discrete action abstraction
-- correct chance/dealing logic
-- correct betting/terminal logic
-- reproducible seed
+Any extension must preserve isolation from production runtime and document:
 
-Do not design a full 10-max solver.
+1. exact game and abstraction
+2. chance/private-card representation
+3. legal betting tree and amount semantics
+4. information sets
+5. utility and leaf-value assumptions
+6. regret/average-strategy algorithm
+7. RNG/reproducibility
+8. convergence/exploitability metric
+9. memory and compute estimate
+10. validation fixtures
+11. artifact schema/provenance
 
-Explain:
-
-1. game state
-2. information set
-3. action abstraction
-4. chance nodes
-5. terminal utility
-6. regret update
-7. average strategy
-8. sampling method
-9. convergence metric
-10. expected memory
-11. expected compute
-12. validation against known strategic expectations
-
-Do not use random synthetic labels.
-
-Do not call the output GTO until convergence/validation evidence supports the claim.
+Do not extrapolate bounded HU results to multiway, other stacks, or full-game Hold'em without evidence.

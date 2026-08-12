@@ -2,94 +2,87 @@
 
 ## 1. Product
 
-Riverline is a browser-first Texas Hold'em analysis application for personal use, friends, and a possible future public release.
+Riverline is a browser-first Texas Hold'em analysis and training application for personal use, friends, and a possible future public release.
 
-Primary features:
+Primary workspaces:
 
-- Playbook, the main strategy feature
-- Win Probability / Equity
+- Playbook Scenario Analysis
+- canonical Hand Mode
+- Equity / win probability
 - Training
-- Hand and state analysis
-- Multiway support
-- Deterministic browser strategy fallback behind versioned contracts
-- Electron desktop wrapper
+- Guide and Settings
+- multiway analysis where supported
+- thin Electron desktop wrapper
 
-The product should feel like a coherent poker tool, not a research demo.
+The product should feel like a serious, coherent analytical workstation. Premium means reliable, deliberate, and readable, not visually excessive.
 
-## 2. Strategic scope
+## 2. Strategy scope
 
-The project does not currently aim to solve full 2-10 player Hold'em to exact equilibrium.
+Riverline does not currently solve full 2–10-player Hold'em to exact equilibrium.
 
-Current target:
+Current production strategy is a deterministic heuristic fallback behind versioned contracts. It has mathematical-integrity and calibration infrastructure, but no validated general strategy reference.
 
-- Preflop: highest accuracy target, eventually supported by genuine solver-generated data
-- Flop: strong approximation
-- Turn: useful approximation, with mathematical fallback
-- River: deterministic range/equity mathematics for now
-- Multiway: supported in the product, while acknowledging that multiplayer equilibrium is harder than heads-up zero-sum poker
+Long-term priorities:
 
-## 3. Supported environments
+- preflop receives the highest accuracy effort
+- postflop remains a transparent approximation until better data exists
+- multiway support must distinguish correct Equity from approximate strategy
+- no GTO, CFR, Nash, model-accuracy, or exploitability claim without reproducible evidence
 
-Home games:
+## 3. Supported study environments
 
-- 2-10 players
-- 0-150bb stack range
-- 0 rake
+- 2–10 seated players where the workspace supports it
+- current exposed strategy/training stack controls: 10–500bb
+- Home: no rake or forced deduction
+- ClubGG-style: 7–10 players, exactly 0.1bb per seated player once per hand, outside the contestable pot
+- no percentage/capped rake unless explicitly reintroduced through a new product decision
 
-ClubGG-style tournaments:
-
-- 7-10 players
-- 100-300bb stack range
-- fixed 0.1bb deduction per hand
-
-Do not implement percentage rake unless explicitly requested.
+Accuracy is not uniform across all configurations; configuration support is not a solver-accuracy claim.
 
 ## 4. Runtime
 
-- Vanilla JS/CSS frontend
-- Electron wrapper
-- The browser has no trusted production model; deterministic fallback is its only current strategy authority
-- Future models require a new validated, versioned StrategyProvider/model contract
-- Runtime must remain usable without a Python backend
+- Vanilla JavaScript/CSS frontend
+- browser runtime works without Python
+- Electron is a thin host for the same application
+- no current production model, model loader, remote strategy API, or tree upload
+- future providers enter through a new validated, versioned StrategyProvider contract
 
 ## 5. Engineering principles
 
-- Correctness before optimization
-- One canonical representation per concept
-- Small reversible changes
-- Tests before and after risky changes
-- No broad rewrites during feature work
-- No unrelated cleanup in scoped tasks
-- No claims of GTO or equilibrium without appropriate evidence
-- Experimental solver work stays separate from production application code
+- correctness and truthfulness before optimization or visual polish
+- one canonical authority per concept
+- small, reviewable, reversible tickets
+- tests for behavior and mathematical invariants
+- no unrelated cleanup during scoped work
+- no UI-implemented poker mathematics
+- isolated solver/model/data experiments
+- explicit provenance and limitations
+- structural tests do not replace live visual acceptance
+- Git history is the archive; obsolete implementations are removed, not kept as misleading legacy runtime
 
 ## 6. Current development priority
 
-1. Architecture stabilization
-2. Poker-engine correctness
-3. Real preflop strategy experiment
-4. Cheap cloud benchmark and bounded cloud run
-5. Useful preflop model
-6. UI/UX stabilization
-7. Translation and responsive polish
-8. Flop/turn approximation
-9. Public-beta readiness
-10. Optional advanced solver research
+1. finish Product UI repair pipeline
+2. Equity UX and Guide
+3. i18n architecture and EN/RU/HE acceptance
+4. responsive desktop acceptance and later distinct mobile composition
+5. Product Lab UI capabilities and Feature Lab additions
+6. desktop/web release preparation after product quality is acceptable
+7. return to solver/reference data and model work later
 
-## 7. Budget principle
+The roadmap is flexible. New features may be inserted before release when they fit the architecture and budget.
 
-Cloud compute is experimental.
+## 7. Budget
 
-Never start an unbounded cloud run.
+The project is a student personal project. Optional compute/services should stay within approximately US$75 total unless the user explicitly approves more.
 
-Every cloud experiment must have:
+Every paid experiment requires:
 
-- explicit configuration
-- expected workload
-- maximum runtime
 - maximum spend
-- output artifacts
+- maximum runtime
+- reproducible configuration
+- artifact path
 - success criteria
 - stop criteria
 
-A failed $20 experiment is acceptable. An uncontrolled multi-hundred-dollar run is not.
+Public deployment is not the current focus.

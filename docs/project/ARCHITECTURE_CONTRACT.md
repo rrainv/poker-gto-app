@@ -1,207 +1,138 @@
 # Riverline Architecture Contract
 
-This document is authoritative for implementation decisions unless explicitly superseded.
+This document is authoritative for implementation decisions unless an approved ticket explicitly supersedes it.
 
-## 1. Layers
+## 1. Dependency direction
 
 ```text
-UI
-  ↓
-Application / Controllers
-  ↓
-Poker Domain Engine
-  ↓
-Strategy Services
-  ↓
-Models / Solvers / Data Generation
+UI / renderers
+      ↓
+Application controllers and versioned contracts
+      ↓
+Poker domain and service modules
+      ↓
+Isolated research/data/model tooling
 ```
 
-### UI
+Production must not import solver experiments, training scripts, cloud tooling, notebooks, or generated datasets.
 
-Responsible for:
+## 2. Canonical production authorities
 
-- rendering
-- interaction
-- formatting
-- loading states
-- errors
-- localization
-- responsive behavior
+- PokerState, Action, legality, accounting, evaluator, canonical Equity: `shared/poker-domain/`
+- Scenario/Hand selection and projection: Playbook application layer
+- Decision strategy entry point: `StrategyProvider v1`
+- Strategy result/provenance: `StrategyResult v1`
+- current heuristic implementation: `app/src/strategy/`
+- Training generation/session/grading: canonical application modules
+- explanation data: `AnalysisExplanation v1`
+- performance scheduling/invalidation: `product-performance/v1`
+- desktop host: `app/main.js`
 
-Not responsible for:
+A consumer must not bypass these authorities to compute its own alternative answer.
+
+## 3. UI boundary
+
+UI may:
+
+- render
+- format
+- collect inputs
+- manage interaction, focus, responsive state, accessibility, localization, and loading/errors
+- invoke application/services and consume versioned results
+
+UI must not implement:
 
 - hand evaluation
-- equity calculation
+- Equity calculation
 - pot accounting
+- betting legality
 - strategy mathematics
-- model training
+- solver/model training
 
-### Application layer
+## 4. Scenario versus canonical Hand
 
-Responsible for:
+Scenario:
 
-- coordinating UI actions
-- calling poker-engine services
-- requesting strategy
-- managing session state
-- mapping engine results to UI-friendly structures
+- arbitrary, intentionally lossy study snapshot
+- does not claim a legal PokerState/history
+- preserves unknown facts as `null`
 
-### Poker domain engine
+Hand Mode:
 
-Responsible for:
+- legal canonical PokerState transitions only
+- exact actor/legal-action/accounting facts when available
 
-- cards
-- board
-- players
-- stacks
-- contributions
-- pot
-- street
-- action legality
-- hand evaluation
-- equity calculations
-- terminal conditions
-- game-specific deductions
+Do not merge their state or silently fall back across modes.
 
-This layer must be deterministic and testable.
+## 5. DecisionContext v1
 
-### Strategy layer
+Key semantics:
 
-Responsible for:
+- `facingSizeBb`: nominal/current wager-to context
+- `callAmountBb`: incremental stack-capped call amount when known
+- `heroStreetContributionBb`: actor investment this street when known
+- `tableSize`: seated players
+- `opponentCount`: exact live opponents for canonical state; `null` in Scenario when unknown
 
-- selecting the appropriate strategy source
-- deterministic fallback calculations
-- future provider/model inference only through a validated versioned contract
-- interpolation
-- result provenance
-- confidence/coverage metadata
+Pot-odds or commitment math must use `callAmountBb`, not `facingSizeBb`.
 
-The UI should not need to know whether a result came from a model or fallback.
+Additive fields may remain in v1 only when backward-compatible and explicitly documented/tested. Breaking changes require an approved schema migration.
 
-### Training/solver layer
+## 6. StrategyProvider and StrategyResult
 
-Responsible for:
-
-- data generation
-- CFR/MCCFR experiments
-- model training
-- validation
-- export
-
-It must not become a runtime dependency.
-
-## 2. Canonical concepts
-
-There should be one canonical implementation of:
-
-- PokerState
-- Action
-- Card representation
-- Hand evaluator
-- Equity calculator
-- StrategyResult
-- Model metadata
-
-If two implementations exist, one must be marked legacy/experimental.
-
-## 3. DecisionContext and StrategyResult
-
-### DecisionContext pricing facts
-
-`DecisionContext v1` keeps `facingSizeBb` as its established nominal/current
-wager-to compatibility value. It is not an incremental call price.
-
-The additive v1 fields below make decision pricing explicit without changing
-the established schema version:
-
-- `callAmountBb`: the actor's incremental, stack-capped commitment to call,
-  or `null` when the source cannot prove it.
-- `heroStreetContributionBb`: the actor's current-street contribution, or
-  `null` when it is not known.
-
-Canonical PokerState projections derive both in integer milliBb through the
-legal-action contract before converting to bb. Lossy Scenario inputs must not
-invent either fact; their call price is `null` except for an explicit check or
-the BB's unopened check option (`0`). Consumers calculating pot odds must use only
-finite `callAmountBb` values.
-
-`opponentCount` is also additive in DecisionContext v1:
-
-- canonical PokerState projections provide the exact number of other dealt-in,
-  non-folded players, including all-in players;
-- lossy Scenario projections use `null` because seated `tableSize` does not
-  prove how many players remain live;
-- a heuristic may disclose and use `tableSize - 1` as a Scenario approximation,
-  but must not reinterpret `tableSize` itself as a live-player field.
-
-### StrategyResult
-
-The runtime strategy API should conceptually return:
+All current strategy-consuming surfaces use:
 
 ```text
-action probabilities
-expected values where available
-confidence/coverage
-source/provenance
-model version
-state/schema version
+DecisionContext v1 → StrategyProvider v1 → StrategyResult v1
 ```
 
-Example:
+Current source vocabulary:
 
-```json
-{
-  "actions": {
-    "fold": 0.02,
-    "call": 0.31,
-    "raise": 0.67
-  },
-  "source": "heuristic_preflop",
-  "modelVersion": null,
-  "confidence": null
-}
-```
+- `heuristic_preflop`
+- `heuristic_postflop`
+- `equity_fallback`
+- `unavailable`
 
-## 4. Provenance values
+Actions use structured canonical action types; labels are presentation data. Probabilities normalize through the StrategyResult contract.
 
-Current browser vocabulary:
+A future model/provider must enter behind this boundary with versioned metadata and validation. Do not revive retired loaders.
 
-- heuristic_preflop
-- heuristic_postflop
-- equity_fallback
-- unavailable
+## 7. Equity
 
-Future providers must add explicitly versioned vocabulary; do not silently mix sources.
+Canonical Equity is a separate product service. Worker and in-process execution must use the same shared implementation.
 
-## 5. Model versioning
+Heuristic conditional samples inside strategy are not canonical Equity and must be labelled separately.
 
-Every production model needs metadata containing:
+## 8. Training
 
-- model version
-- state schema version
-- action schema version
-- training configuration
-- source dataset
-- creation timestamp
-- framework/version where relevant
+Training must:
 
-## 6. Legacy policy
+- generate legal canonical states
+- use deterministic seed/replay behavior
+- call the same StrategyProvider as Playbook
+- grade from StrategyResult
+- avoid Training-only strategy fallbacks
 
-Retain experimental implementations only while they have an active research purpose.
+Training modules do not become browser strategy authorities.
 
-When a prototype is obsolete, unreferenced, and outside the retained architecture, remove it from the current tree; Git history is the archive. Do not keep it in a misleading `legacy` directory.
+## 9. AnalysisExplanation
 
-Production code must have one obvious canonical path.
+AnalysisExplanation consumes DecisionContext, StrategyResult, and trusted facts. Renderers must not recreate poker math or strategy.
 
-## 7. Dependency direction
+## 10. Performance contract
 
-Production code must not import:
+Preserve PERF-001 guarantees:
 
-- training scripts
-- experimental solver code
-- notebooks
-- cloud benchmarking code
+- one primary strategy resolution per decision update
+- coalesced rapid inputs
+- no hidden 169-cell Matrix computation
+- keyed Matrix reuse
+- hidden surfaces use dirty/visible invalidation
+- no forced-layout animation restart
+- Training and Equity do not rerender inactive workspaces unnecessarily
 
-Training code may import shared domain-engine code.
+## 11. Research isolation and legacy policy
 
-The domain engine must not import UI code.
+The bounded solver remains under `solver/` and is not a production dependency.
+
+Obsolete prototypes are removed. Do not create a new generic `legacy/` runtime. Historical documentation must be marked historical.

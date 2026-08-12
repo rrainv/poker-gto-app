@@ -1,26 +1,42 @@
 # Riverline documentation
 
-Start with the main [README](../README.md) for an overview and verified browser and Electron launch instructions.
+Executable code and passing tests are the final source of truth. Current-state documentation should match them; historical documents do not override them.
 
-## Project direction
+## Agent entry points
 
-- [Project charter](project/PROJECT_CHARTER.md) — product scope, supported environments, and engineering principles
-- [Product specification](project/PRODUCT_SPEC.md) — intended product behavior and boundaries
-- [Roadmap](project/ROADMAP.md) — staged development direction
-- [Definition of done](project/DEFINITION_OF_DONE.md) — completion criteria for engineering work
+- [Root agent instructions](../AGENTS.md)
+- [Agent-documentation index](agent-prompts/README.md)
+- [Current architecture context](agent-prompts/AGENT_MASTER_CONTEXT.md)
+- [Codex workflow](agent-prompts/CODEX_WORKFLOW.md)
+- [Model and chat guide](agent-prompts/MODEL_AND_CHAT_GUIDE.md)
+- [Ticket template](agent-prompts/TICKET_TEMPLATE.md)
+- [Reviewer prompt](agent-prompts/REVIEW_PROMPT.md)
+
+## Current planning
+
+- [Current phase](project/CURRENT_PHASE.md)
+- [Roadmap](project/ROADMAP.md)
+- [Persistent QA backlog](project/QA_BACKLOG.md)
+- [Product and feature backlog](project/PRODUCT_BACKLOG.md)
+- [Definition of done](project/DEFINITION_OF_DONE.md)
+- [Git workflow](project/GIT_WORKFLOW.md)
 
 ## Engineering contracts
 
-- [Architecture contract](project/ARCHITECTURE_CONTRACT.md) — dependency boundaries and versioned state/result contracts
-- [Poker engine specification](project/POKER_ENGINE_SPEC.md) — poker-state, accounting, evaluator, and equity requirements
-- [Strategy and ML specification](project/STRATEGY_AND_ML_SPEC.md) — strategy provenance, training-data, model, and export requirements
-- [QA and regression specification](project/QA_AND_REGRESSION_SPEC.md) — required safety rails and test coverage
-- [Git workflow](project/GIT_WORKFLOW.md) and [contributing guide](../CONTRIBUTING.md)
+- [Project charter](project/PROJECT_CHARTER.md)
+- [Architecture contract](project/ARCHITECTURE_CONTRACT.md)
+- [Current repository audit](project/CURRENT_REPO_AUDIT.md)
+- [Product and UI specification](project/PRODUCT_SPEC.md)
+- [Poker engine specification](project/POKER_ENGINE_SPEC.md)
+- [Strategy and ML specification](project/STRATEGY_AND_ML_SPEC.md)
+- [QA and regression specification](project/QA_AND_REGRESSION_SPEC.md)
 
-## Audits and historical material
+## Specialized future work
 
-- [Current repository audit](project/CURRENT_REPO_AUDIT.md) is a baseline audit snapshot. It should be checked against executable code and newer regression tests before being treated as current behavior.
-- [DeepCFR training blueprint](DEEPCFR_TRAINING_BLUEPRINT.md), [audit report](audit_report.txt), and [post-mortem](../POST_MORTEM.md) are historical or experimental material. They describe proposals, investigations, or earlier repository states—not verified current product capabilities.
-- Files under [`agent-prompts/`](agent-prompts/) are development instructions, not user documentation or evidence that a proposed subsystem has been implemented.
+Files under `agent-prompts/` for solver, data, cloud, models, i18n, and UI are task templates. Their existence does not authorize that phase or prove the subsystem exists.
 
-When documentation and executable behavior disagree, the code and tests are the source of truth. Claims of GTO, equilibrium, CFR provenance, model accuracy, or exploitability require reproducible evidence.
+## Historical material
+
+`POST_MORTEM.md`, the retired DeepCFR blueprint, old audit reports, and historical ticket prompts may describe earlier repository states. Treat them as history unless a current contract explicitly cites them.
+
+Claims of GTO, equilibrium, CFR provenance, model accuracy, or exploitability require reproducible evidence.

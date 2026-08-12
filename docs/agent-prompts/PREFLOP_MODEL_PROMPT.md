@@ -1,22 +1,20 @@
-# Preflop Model Prompt
+# Future preflop model prompt
 
-Implement only after a validated solver-generated or otherwise explicitly approved strategy dataset exists.
+Do not implement until a validated, versioned strategy dataset exists and the roadmap explicitly authorizes model work.
 
 Requirements:
 
-- use the canonical model architecture
-- no duplicate model definition
-- reproducible split
-- held-out evaluation
-- policy loss
-- calibration
-- action-frequency comparison
-- worst-case examples
-- ONNX export
-- PyTorch/ONNX output comparison
-- model metadata
-- versioned artifact
+- enter production only through a new validated StrategyProvider branch
+- no revival of retired browser/Electron model loaders
+- reproducible train/validation/test split
+- source dataset and game-abstraction metadata
+- held-out policy/calibration metrics
+- action-frequency and worst-case analysis
+- coverage/uncertainty behavior
+- versioned model and schema metadata
+- browser size, memory, cold-load, and inference measurements
+- exported-runtime agreement if an export format is used
 
-Do not call the model GTO.
+ONNX is optional, not assumed. If chosen, validate exported outputs against the training runtime.
 
-Report model size and browser inference latency.
+Do not call the model GTO unless its exact source and validation evidence support that claim.

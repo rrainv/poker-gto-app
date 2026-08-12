@@ -1,41 +1,26 @@
-# Real Data Pipeline Prompt
+# Real strategy-data pipeline prompt
 
-Explorer mode first.
+Future work only. Do not run unless `CURRENT_PHASE.md` and a ticket explicitly authorize it.
 
-Trace the complete current path from state generation to training target.
+Inspect the current bounded solver and strategy-provider contracts first.
 
-Determine whether each target comes from:
+Trace every proposed target to a documented source:
 
-- CFR/MCCFR
-- deterministic poker math
-- curated data
-- heuristic labels
-- random synthetic generation
+- converged solver/MCCFR output
+- curated strategy data
+- deterministic poker feature
+- heuristic label
 
-Do not edit.
+Random or heuristic targets must never be described as CFR/equilibrium data.
 
-Then design a reproducible real-state dataset generator.
+A dataset generator must provide:
 
-Requirements:
+- valid canonical Hold'em states and legal histories
+- unique cards and correct board/street
+- exact pot/stack/contribution semantics
+- configuration coverage metadata
+- reproducible seed and sample identifier
+- source/provenance and solver convergence metadata
+- diagnostics for invalid states, duplicates, actions, stacks, streets, players, and targets
 
-- valid Hold'em states
-- no duplicate cards
-- correct street
-- legal history
-- correct pot/stack values
-- player count distribution
-- stack distribution
-- reproducible seed
-- metadata for reproducing a bad sample
-
-Add dataset diagnostics:
-
-- invalid states
-- duplicate cards
-- action distribution
-- stack distribution
-- street distribution
-- player distribution
-- target distribution
-
-Do not train until the dataset is validated.
+Do not train until data validity and reference quality are demonstrated.

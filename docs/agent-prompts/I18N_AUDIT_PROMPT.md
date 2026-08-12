@@ -1,23 +1,35 @@
-# Translation Audit Prompt
+# I18N audit prompt
 
-Explorer mode first.
+This work is diagnostics-first. Do not begin with a giant translation rewrite.
+
+## Phase 1: runtime observability
 
 Find:
 
-- missing keys
+- keys that exist but are not applied
 - hardcoded user-facing strings
-- duplicate keys
-- inconsistent terminology
-- bad fallbacks
-- untranslated errors
-- untranslated loading states
-- text overflow
-- inconsistent capitalization
+- missing-key fallbacks
+- duplicate/conflicting keys
+- dynamic copy that bypasses i18n
+- incorrect language persistence
+- RTL direction or logical-property failures
+- malformed encoding/mojibake
 
-Produce a report first.
+Add development-time diagnostics where practical:
 
-After approval, fix only localization issues.
+- missing-key reporting
+- unused-key inventory
+- current-language fallback reporting
+- optional translation-length stress mode
 
-Do not modify poker logic.
+Report before broad copy changes.
 
-Add a development-time missing-key check if practical.
+## Phase 2: architecture fixes
+
+Fix key application, interpolation, units, dynamic errors/loading states, and RTL behavior without modifying poker logic.
+
+## Phase 3: translation content
+
+Perform bounded EN/RU/HE passes by workspace. Preserve poker notation where intentional. Validate real rendering after each workspace rather than editing every key at once.
+
+Do not let translation work change DecisionContext, StrategyResult, Equity, Training grading, or poker semantics.

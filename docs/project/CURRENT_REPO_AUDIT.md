@@ -1,46 +1,79 @@
 # Current Repository Audit
 
-This is a snapshot of the repository supplied for review. It is intentionally blunt. It exists to prevent agents from assuming that comments or old documentation describe implemented behavior.
+Snapshot refreshed August 13, 2026 from the architecture-focused repository dump and accepted ticket reports. Verify against executable code, tests, and Git history.
 
-## 1. Current architecture boundary
+## 1. Browser runtime
 
-CLEANUP-001D removed the obsolete root prototype training pipeline, pseudo-CFR model pipeline, and checked-in strategy-tree data. They were not runtime, package-script, or bounded-solver dependencies.
+Production loads one browser application from `app/index.html`.
 
-The retained bounded solver is `solver/riverline_solver`; it is intentionally separate from browser runtime code. The legacy browser ONNX/model stack was retired in CLEANUP-001E1. Browser strategy now resolves directly from `DecisionContext` through the deterministic fallback to `StrategyResult`.
+Major paths:
 
-## 2. Training and solver evidence
+- Playbook Scenario and canonical Hand state controllers
+- DecisionContext v1 projection
+- one StrategyProvider / StrategyResult authority
+- deterministic heuristic strategy under `app/src/strategy/`
+- AnalysisExplanation v1
+- canonical Equity controller/worker backed by `shared/poker-domain`
+- canonical Training generator/session/grading/presentation
+- product-performance scheduling and hidden-surface invalidation
+- classic UI/application orchestration in `app/src/core/logic.js`
 
-Training targets must have a documented, reproducible source. Random labels, heuristic thresholds, and unverified model artifacts are not CFR or equilibrium data.
+## 2. Desktop
 
-Before describing a new component as a Hold'em solver, verify legal betting transitions, chance nodes, terminal conditions, pot accounting, information sets, regret accumulation, average strategy, and utility calculation.
+`app/main.js` is a thin Electron BrowserWindow host. No preload, IPC strategy, ONNX, model, or second poker implementation remains.
 
-## 3. Evaluator boundary
+Packaging layout/version reproducibility still requires a later Desktop ticket.
 
-The bounded solver uses the maintained evaluator adapter and parity coverage. Do not silently create a zero-filled production lookup table; missing or invalid evaluator data must fail loudly.
+## 3. Strategy
 
-## 4. Current browser strategy authority
+The deterministic heuristic fallback is the only current production strategy source. Playbook, Training, and preflop Matrix consume it through the same provider.
 
-The browser has no trusted production strategy model and no model loader.
+Preflop/postflop mathematical-integrity work is complete. A calibration harness exists, but the repository has no validated general Hold'em strategy reference. Further broad tuning is paused pending reference data.
 
-The deterministic fallback is the only current browser production strategy authority. The generic, versioned `StrategyResult` and provenance fields remain so a future validated provider can be introduced without reviving the removed implementation.
+Postflop Matrix remains unavailable rather than using a second fast heuristic.
 
-The obsolete Electron-native ONNX experiment has also been retired. Electron is a desktop host for the same current Riverline application and does not provide a second inference architecture.
+## 4. Equity
 
-## 5. Documentation policy
+Canonical Equity is singular at product-service level and supports exact enumeration or seeded Monte Carlo, 2–10 players, unknown hands, dead cards, progress, and cancellation.
 
-Historical documents such as `POST_MORTEM.md` are useful as history but must not override the architecture contract.
+A separate legacy evaluator remains in `logic.js` only for the current Outs display. It is not canonical Equity and is an extraction/migration candidate if Outs is redesigned.
 
-Claims such as "Deep CFR", "solved", "Nash", or exploitability figures require verification from executable code and reproducible evaluation.
+## 5. Training
 
-## 6. Immediate recommendation
+Training uses legal canonical trajectories, deterministic seeds, replay metadata, one StrategyProvider, and one grading path. Session persistence, mistake review, adaptive curriculum, and range profiling remain future features.
 
-Do not start with a repository-wide rewrite.
+## 6. Analysis and UI
 
-First establish:
+AnalysisExplanation is structurally clean, but its visual presentation is the next major Product UI target.
 
-1. canonical state
-2. canonical action schema
-3. canonical evaluator/equity path
-4. a new versioned strategy-provider contract before any production model path
-5. tests
-6. only then the real preflop solver experiment
+PERF-001 removed duplicate slider updates, hidden Matrix computation, unnecessary theme recomputation, duplicate Training init, duplicate Equity readiness, and forced layout reads.
+
+Product UI repair is active. `QA_BACKLOG.md` is the authoritative issue/status map.
+
+## 7. Deliberately absent
+
+- browser/Electron ONNX strategy runtime
+- model artifacts and loaders
+- remote strategy API
+- uploaded solver-tree authority
+- root legacy Training/model/tree prototypes
+- duplicate Equity worker
+- arbitrary drag-and-drop layout editor
+
+## 8. Research
+
+The bounded HU 100bb no-rake preflop solver is isolated under `solver/riverline_solver/`. It is useful infrastructure, not current production strategy and not a universal calibration source.
+
+## 9. Current debt
+
+- `logic.js` remains a large classic orchestration/rendering file
+- many user-facing strings still bypass i18n
+- Guide copy is stale
+- workspace composition and responsive acceptance remain incomplete
+- settings/theme catalog includes legacy/experimental presentation debt
+- hidden DOM should be remeasured after composition work
+- Electron clean install/package flow needs a later repair
+
+## 10. Documentation rule
+
+Current contracts, code, tests, and accepted ticket reports override historical DeepCFR/model/ONNX documents. Claims require executable evidence.

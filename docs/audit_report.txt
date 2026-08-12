@@ -1,9 +1,0 @@
-=== AUDIT REPORT ===
-Total unique data-i18n elements in index.html: 168
-Missing HTML in RU: 0
-
-Missing HTML in HE: 0
-
-Total JS t(...) calls: 181
-JS missing in RU: 0
-JS missing in HE: 0

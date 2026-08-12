@@ -1,0 +1,142 @@
+# Riverline persistent QA backlog
+
+Last consolidated: August 13, 2026.
+
+This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
+
+## Status vocabulary
+
+- `OPEN`: not addressed
+- `ACTIVE`: owned by the current ticket
+- `PARTIAL`: structural or incomplete fix; requires more work or live acceptance
+- `CLOSED`: accepted behavior fix
+- `REMOVED`: feature/control intentionally retired
+- `DEFERRED`: accepted future owner exists
+- `REGRESSION`: previously better/closed behavior broke
+
+A visual issue is not `CLOSED` without manual/browser confirmation.
+
+## Active Product UI repair
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-UI-001 | PARTIAL | Action Path nodes/connector must share one axis in LTR/RTL; glow must not clip | PRODUCT-UI-002R manual acceptance |
+| QA-UI-002 | PARTIAL | ordinary status pills must remain one-line, content-sized, centered | PRODUCT-UI-002R manual acceptance |
+| QA-UI-003 | PARTIAL | Betting Context still needs confirmed meaningful height reduction/alignment | PRODUCT-UI-002R manual acceptance |
+| QA-UI-004 | PARTIAL | `View all hands` must align with Position/Prior action row | PRODUCT-UI-002R manual acceptance |
+| QA-UI-005 | PARTIAL | table identity/stack must remain visible and cards must not cover seat information | PRODUCT-UI-002R manual acceptance |
+| QA-UI-006 | PARTIAL | Settings modal must remain centered and viewport-safe at smaller desktop sizes | PRODUCT-UI-002R manual acceptance |
+
+## Next: shared analysis presentation
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-ANALYSIS-001 | OPEN | Playbook `What goes into this decision?` is too narrow/tall and wastes panel width | PRODUCT-UI-003 |
+| QA-ANALYSIS-002 | OPEN | Analysis needs concise-first, systematic hierarchy without losing detail | PRODUCT-UI-003 |
+| QA-TRAIN-ANALYSIS-001 | OPEN | Training deep analysis is chaotic and difficult to scan | PRODUCT-UI-003 |
+| QA-TRAIN-ANALYSIS-002 | OPEN | Training repeats verdict/frequencies/source across competing panels | PRODUCT-UI-003 |
+| QA-TRAIN-ANALYSIS-003 | OPEN | post-answer reference still feels visually detached | PRODUCT-UI-003 |
+
+## Cards, themes, and micro-polish
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-CARD-001 | OPEN | table/DOM card corner rank and suit can clip | PRODUCT-UI-004 |
+| QA-CARD-002 | OPEN | full `10` mirrored bottom-corner centering/geometry looks wrong | PRODUCT-UI-004 |
+| QA-CARD-003 | OPEN | DOM and SVG card-face geometry need final consistency pass | PRODUCT-UI-004 |
+| QA-THEME-001 | OPEN | Daylight still has dark/black inputs in some states | PRODUCT-UI-004 |
+| QA-THEME-002 | OPEN | Daylight small muted text needs contrast verification | PRODUCT-UI-004 |
+| QA-THEME-003 | OPEN | legacy/experimental theme labels expose `(0px)`/debug-like text | PRODUCT-UI-004 |
+| QA-THEME-004 | OPEN | duplicate/confusing Discord Dark entries | PRODUCT-UI-004 |
+| QA-THEME-005 | OPEN | Luxury Gold name does not match its palette | PRODUCT-UI-004 |
+| QA-MICRO-001 | OPEN | Settings/current utility icon alignment needs final pass | PRODUCT-UI-004 |
+| QA-MICRO-002 | OPEN | action-color palette needs final restrained consistency review | PRODUCT-UI-004 |
+| QA-MICRO-003 | OPEN | awkward near-black inset surfaces need final token review | PRODUCT-UI-004 |
+
+## Workspace composition and responsive fit
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-LAYOUT-001 | OPEN | Decision/Matrix/Range tabs sit too low and feel disconnected | PRODUCT-UI-005 |
+| QA-LAYOUT-002 | OPEN | Playbook table/configuration pushes analysis far below the fold | PRODUCT-UI-005 |
+| QA-LAYOUT-003 | OPEN | card-first versus configuration-first ordering needs product decision | PRODUCT-UI-005 / Product Lab |
+| QA-MATRIX-001 | OPEN | Matrix remains visually difficult to read despite fixed density | PRODUCT-UI-005 |
+| QA-MATRIX-002 | OPEN | postflop unavailable state should not render 169 inactive cells | PRODUCT-UI-005 |
+| QA-RANGE-001 | OPEN | two Range Category grids create an extremely long comparison page | PRODUCT-UI-005 |
+| QA-EQUITY-001 | OPEN | Equity workspace still feels like loosely assembled panels | PRODUCT-UI-005 |
+| QA-EQUITY-002 | OPEN | Equity `Hero / Win / Tie` label spacing/wrapping | PRODUCT-UI-005 |
+| QA-EQUITY-003 | OPEN | Flop/Turn/River guides misalign with board card slots | PRODUCT-UI-005 |
+| QA-TRAIN-LAYOUT-001 | OPEN | Training clips/extends below 1920×1080 and needs better viewport fit | PRODUCT-UI-005 |
+| QA-TRAIN-LAYOUT-002 | OPEN | idle/no-board surfaces waste vertical space | PRODUCT-UI-005 |
+| QA-TABLE-001 | OPEN | support rails/Action Path should be visible where useful without excessive scroll | PRODUCT-UI-005 |
+| QA-COLLAPSE-001 | PARTIAL | collapsed table control should remain compact and integrated | PRODUCT-UI-002R acceptance / UI-005 |
+
+## Equity UX
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-EQUITY-ETA-001 | OPEN | long Monte Carlo runs need ETA/throughput and meaningful preparation state | EQUITY-UX-001 |
+| QA-EQUITY-PROGRESS-001 | OPEN | `Preparing… 0%` dead period increases perceived latency | EQUITY-UX-001 |
+| QA-EQUITY-NARROW-001 | OPEN | result metrics are too small/tightly wrapped at narrower widths | EQUITY-UX-001 / UI-005 |
+
+## Guide, localization, responsive, and mobile
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-GUIDE-001 | OPEN | Guide terminology/placement is stale (`Last Action`, `Full range chart`, RFI wording, etc.) | GUIDE-001 |
+| QA-I18N-001 | OPEN | missing/unapplied translations and dynamic hardcoded English | I18N-001 |
+| QA-I18N-002 | OPEN | keys may exist but fail to render; diagnostics required before copy sweep | I18N-001 |
+| QA-I18N-003 | OPEN | encoding/mojibake and unit interpolation need audit | I18N-001 |
+| QA-I18N-004 | OPEN | RTL/translation-length acceptance across workspaces | I18N-001 / RESPONSIVE-001 |
+| QA-RESP-001 | OPEN | formal 1024/1080p/1440p/1600p/4K/16:10/zoom acceptance | RESPONSIVE-001 |
+| QA-MOBILE-001 | DEFERRED | mobile needs a distinct composition, not only stacked desktop panels | MOBILE-001 |
+
+## Performance and DOM follow-up
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-PERF-001 | CLOSED | duplicate slider/context updates and hidden Matrix computation | PERF-001 |
+| QA-PERF-002 | OPEN | large hidden mounted DOM/buttons should be remeasured after workspace composition | later PERF follow-up if measured |
+| QA-PERF-003 | OPEN | visible Matrix DOM mutation needs browser profiling if still sluggish | later PERF follow-up if measured |
+
+## Closed or intentionally removed historical QA
+
+| ID | Status | Outcome |
+|---|---|---|
+| QA-HIST-001 | CLOSED | collapsible vertical sidebar and utilities moved into rail |
+| QA-HIST-002 | CLOSED | flags/full language names and persisted RTL direction |
+| QA-HIST-003 | REMOVED | broken arbitrary layout-lock/drag editor removed |
+| QA-HIST-004 | CLOSED | table-collapse empty-region bug |
+| QA-HIST-005 | CLOSED | card picker root event interception regression |
+| QA-HIST-006 | CLOSED | card typography/proportions restored and shared card system introduced |
+| QA-HIST-007 | CLOSED | spade/outside-suit contrast refinement |
+| QA-HIST-008 | CLOSED | T/10 visual preference added |
+| QA-HIST-009 | CLOSED | basic deal/action/training sounds and reduced-motion support |
+| QA-HIST-010 | CLOSED | Matrix fixed grid/no hover expansion and selected-hand inspector |
+| QA-HIST-011 | REMOVED | fake Matrix EV heatmap |
+| QA-HIST-012 | REMOVED | fake Matrix Equity heatmap |
+| QA-HIST-013 | CLOSED | Range controls use dedicated selectors and unsupported prescriptions removed |
+| QA-HIST-014 | CLOSED | Scenario/Hand pricing semantics and truthful pot odds |
+| QA-HIST-015 | CLOSED | AJo/pure-fold implementation cliff and per-hand MDF/fake preflop SPR |
+| QA-HIST-016 | CLOSED | postflop multiway split/allocation/evaluator/sample consistency |
+| QA-HIST-017 | CLOSED | one StrategyProvider/StrategyResult authority across surfaces |
+| QA-HIST-018 | CLOSED | Equity board horizontal and 2–10 player controls |
+| QA-HIST-019 | REMOVED | useless Total Equity summary |
+| QA-HIST-020 | CLOSED | Outs visual grouping and raw-card cleanup |
+| QA-HIST-021 | REMOVED | Training circular answer wheel |
+| QA-HIST-022 | CLOSED | Training chosen/highest markers, muted action palette, session dividers |
+| QA-HIST-023 | CLOSED | Replace-card semantics, scoped toasts, sidebar truthfulness, View-all destination reveal |
+| QA-HIST-024 | CLOSED | Hand pre-start state isolation and showdown prerequisite |
+| QA-HIST-025 | CLOSED | Training Strategy Preview versus After-answer copy truthfulness |
+| QA-HIST-026 | REMOVED | local solver-tree/model upload control until a validated import contract exists |
+
+## Update rules
+
+Every UI/product ticket report must list owned IDs as:
+
+- `CLOSED`
+- `PARTIAL`
+- `DEFERRED` with next owner
+- `REGRESSION`
+
+Do not close an issue merely because source-level tests pass. Add newly reported issues here rather than relying on chat memory.

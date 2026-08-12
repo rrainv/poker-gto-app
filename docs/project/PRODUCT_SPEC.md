@@ -2,86 +2,101 @@
 
 ## 1. Product principle
 
-Riverline should feel like a serious poker analysis application.
+Riverline should feel like a serious poker analysis workstation.
 
-Premium means consistency and reliability, not visual excess.
+Premium means consistency, reliability, clear hierarchy, honest provenance, and restrained interaction—not visual excess or casino-game styling.
 
 ## 2. Core surfaces
 
-- Playbook
-- Win Probability / Equity
+- Playbook Scenario Analysis
+- canonical Hand Mode
+- Range Matrix and descriptive range-category comparison
+- Equity
 - Training
+- Guide
 - Settings
-- Hand/state analysis where present
 
-## 3. Design system
+## 3. Visual system
 
-Establish canonical tokens for:
+Use canonical tokens/components for:
 
-- typography
-- font sizes
-- line heights
-- spacing
-- border radii
-- surfaces
-- borders
-- primary/secondary actions
-- status states
-- shadows
-- poker-specific colors
+- typography and line height
+- spacing and density
+- radii, borders, surfaces, and shadows
+- controls, buttons, badges, pills, tabs, and focus
+- status and poker-action colors
+- cards and table visuals
 
-Do not invent one-off styles when an existing component/token exists.
+Avoid one-off inline styles when an existing shared component can own the rule. Do not begin a stylesheet rewrite during bounded tickets.
 
-## 4. UI states
+## 4. Information hierarchy
 
-Every meaningful feature should define:
+Every workspace should make the next action and primary result obvious.
 
-- default
-- loading
-- empty
-- invalid input
-- calculation error
-- unavailable model
+Analysis should generally present:
+
+1. answer/verdict
+2. concise reason
+3. key facts/numbers
+4. deeper detail
+5. provenance and limitations
+
+Do not duplicate the same strategy evidence across several equally prominent panels.
+
+## 5. UI states
+
+Every meaningful feature defines as applicable:
+
+- idle/default
+- loading/generating
+- empty/incomplete input
+- blocked/invalid
+- unavailable source
+- error/cancelled
 - success/result
 
-## 5. Responsive behavior
+Controls must visually and accessibly reflect actual state.
 
-Test:
+## 6. Responsive behavior
 
-- desktop
-- narrow desktop
-- tablet
-- mobile portrait
+Desktop repair targets:
 
-Do not allow critical strategy information to disappear on narrow screens.
+- 1024×768
+- 1280×900
+- 1440×900
+- 1600×900
+- 1920×1080
+- 2560×1440
+- 2560×1600
+- 4K and common zoom levels
 
-## 6. Localization
+Critical information must not disappear. Mobile will later use a distinct composition rather than merely stacking every desktop panel.
 
-All user-facing strings should use the translation system.
+## 7. Localization and RTL
 
-Avoid hardcoded text in components.
+- all stable user-facing strings should enter the translation system
+- dynamic errors/loading/result copy needs interpolation and unit support
+- use logical CSS properties
+- poker cards/matrices/amount sequences may remain naturally LTR inside RTL UI
+- translation work must not alter poker logic
 
-Translation changes must not modify poker logic.
-
-## 7. Accessibility
+## 8. Accessibility
 
 Maintain:
 
-- keyboard navigation
+- semantic controls and headings
 - visible focus
+- keyboard workflows
+- truthful ARIA state
 - adequate contrast
-- semantic controls
-- labels for inputs
-- readable error states
+- non-color cues
+- reduced-motion support
+- readable error/status announcements
 
-## 8. UI change policy
+## 9. UI change policy
 
-A UI ticket should not modify:
+A UI ticket must not modify poker math, StrategyProvider semantics, Training grading, Equity math, state schemas, solver, or models unless explicitly approved.
 
-- poker mathematics
-- model training
-- state representation
-- evaluator
-- equity engine
+## 10. Product Lab boundary
 
-unless explicitly required and separately approved.
+Repair tickets fix current defects and hierarchy. Product Lab later adds layouts, themes, density modes, richer table presentation, and personalization. Feature Lab adds replay, persistence, Training review, ranges, and session tools.

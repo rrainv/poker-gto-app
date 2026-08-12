@@ -1,93 +1,126 @@
 # Riverline Roadmap
 
-## Phase A: Architecture
+This roadmap is directional, not a rigid waterfall. Insert bounded features before release when they fit architecture, budget, and product quality.
 
-- repository audit
-- canonical state
-- canonical actions
-- canonical evaluator/equity path
-- canonical model path
-- archive obsolete implementations
+## Completed foundation
 
-Exit criteria:
-- one obvious production path for each major subsystem
-- tests exist for critical poker math
+### Legacy and architecture
 
-## Phase B: Data correctness
+- repository/runtime audit
+- removal of obsolete servers, entrypoints, model/ONNX paths, tree upload, legacy Training, duplicate Equity worker, and prototypes
+- canonical PokerState/Action/evaluator/Equity authority
+- Scenario versus Hand state separation
 
-- real state generator
-- deterministic seeds
-- reproducible datasets
-- remove random policy/value labels from production training path
+### Strategy integrity
 
-Exit criteria:
-- dataset statistics are sensible
-- impossible-state rate is zero
+- truthful call-price and actor-contribution semantics
+- removal of fake EV/Equity analytical views
+- one StrategyProvider and StrategyResult path
+- heuristic engine extracted from `logic.js`
+- preflop and postflop mathematical-integrity repairs
+- calibration harness and evidence boundary
+- broad tuning paused until trustworthy reference data exists
 
-## Phase C: Bounded preflop solver
+### Performance
 
-- heads-up
-- 100bb
-- no rake
-- preflop only
-- small action abstraction
-- MCCFR/CFR
-- local validation
+- rAF input coalescing
+- hidden-surface invalidation
+- Matrix model reuse
+- one primary strategy resolution per decision update
+- removal of forced-layout animation restarts
 
-Exit criteria:
-- correct game tree
-- convergence behavior
-- strategy output passes sanity checks
+## Current phase: Product UI repair
 
-## Phase D: Cloud benchmark
+Reported status at this refresh:
 
-- benchmark CPU and GPU options
-- short runs
-- calculate cost per useful unit of work
+- `PRODUCT-UI-001` complete
+- `PRODUCT-UI-002R` implemented, pending manual visual acceptance and commit
 
-Exit criteria:
-- known throughput and cost
+Next:
 
-## Phase E: Preflop model
+1. `PRODUCT-UI-003` — shared Playbook/Training analysis presentation
+2. `PRODUCT-UI-004` — card geometry, themes, and micro-polish
+3. `PRODUCT-UI-005` — workspace composition and responsive fit
+4. fresh live UI QA checkpoint
 
-- generate real strategy dataset
-- train model
-- validate against held-out solver states
-- export ONNX
-- measure browser inference
+Issue ownership lives in `QA_BACKLOG.md`.
 
-## Phase F: Product polish
+## Product completion sequence
 
-- design tokens
-- Playbook UX
-- Equity UX
-- Training UX
-- translation audit
-- responsive layout
-- accessibility
-- visual regression
+### Equity UX
 
-## Phase G: Flop/turn
+- progress startup state
+- ETA/throughput for long Monte Carlo runs
+- narrow-width result readability
+- preserve canonical Equity math
 
-- real poker features
-- equity/range features
-- strategy approximation
-- fallback behavior
-- uncertainty/coverage
+### Guide
 
-## Phase H: Public beta
+- replace stale interface terminology
+- document Scenario versus Hand, provenance, Training, seeds, Home/ClubGG, Matrix limits
 
-- build/release pipeline
-- error telemetry if desired
-- documentation
-- legal/product review
-- performance
+### I18N
 
-## Phase I: Advanced solver research
+- runtime missing/unapplied-key diagnostics
+- hardcoded dynamic copy inventory
+- bounded EN/RU/HE workspace passes
+- RTL and translation-length acceptance
 
-Only after the product is stable:
+### Responsive and mobile
 
-- deeper MCCFR
-- Deep CFR
-- depth-limited solving
-- stronger multiway research
+- formal desktop/zoom acceptance
+- 1024, 1080p, 1440p, 1600p, 4K, and 16:10
+- later distinct mobile composition rather than a compressed desktop clone
+
+## Product Lab: new UI capabilities
+
+After the repair baseline is stable:
+
+- safe layout presets
+- card-first/config-first variants
+- compact/comfortable density modes
+- additional theme families
+- beginner/expert presentation modes
+- richer table, dealer, chips, contributions, and restrained motion
+- safe persistence/reset for workspace preferences
+
+## Feature Lab
+
+Priorities may be inserted flexibly:
+
+- replay timeline with animated actions
+- bookmarks/saved spots/hands/ranges
+- Training filters
+- mistake review and targeted re-drilling
+- Range Builder
+- Range Profiler / user-range inference
+- session review/history/comparison
+- weighted range and range-vs-range analysis
+- poker math/board tools
+- expert keyboard workflow
+
+## Desktop, web, and release
+
+Only after the product meets the chosen quality bar:
+
+- reproducible Electron install/package layout
+- proper portable/installer targets and assets
+- web hosting choice
+- offline/cache/service-worker decision if useful
+- release documentation
+- privacy/legal/product review
+- optional telemetry only with explicit decision
+
+## Solver/model return
+
+Do not resume broad fallback tuning from intuition.
+
+Later options:
+
+- complete/validate bounded solver iterations
+- use exact covered game as regression oracle/dataset source
+- configuration-specific preflop anchors only when data supports them
+- validated model behind StrategyProvider
+- bounded cloud benchmark with explicit budget cap
+
+No model is required for Riverline to become a polished useful product.

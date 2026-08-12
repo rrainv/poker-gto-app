@@ -2,76 +2,95 @@
 
 ## 1. Goal
 
-Protect poker correctness and user-facing stability from agent-driven changes.
+Protect poker correctness, architecture contracts, performance, and user-facing stability from agent-driven changes.
 
-## 2. Required test categories
+## 2. Required categories
 
-### Poker math
+### Poker/domain
 
-- evaluator known-answer tests
-- equity tests
-- multiway equity tests
-- pot/stack accounting
-- street transitions
-- legal-action generation
+- evaluator known answers
+- exact and Monte Carlo Equity
+- multiway ties
+- pot/stack/contribution accounting
+- legal actions and street transitions
+- dead/duplicate/impossible cards
+- Home and ClubGG deductions
 
-### Future ML provider (when present)
+### Strategy/application
 
-- model input shape
-- output shape
-- probability normalization
-- deterministic inference when seeded
-- training-runtime vs exported-runtime output agreement within tolerance
-- model metadata
+- DecisionContext pricing semantics
+- StrategyProvider/StrategyResult validation and normalization
+- Playbook/Training/Matrix authority convergence
+- source/provenance truthfulness
+- deterministic heuristic behavior
+- Scenario versus Hand isolation
 
-### UI
+### Training
 
-- Playbook loads
-- Equity loads
-- Training loads
-- strategy provenance reports the deterministic fallback while no validated provider exists
-- browser bootstrap makes no retired model/runtime requests
-- translations resolve
-- mobile layout
-- dark/light theme
+- deterministic generation/replay
+- 2–10 players and valid positions
+- legal trajectory replay
+- grading and stale/double/illegal protection
+- no pre-answer leakage except explicit Study Preview
 
-### E2E
+### UI/UX
+
+- primary workspaces load and switch
+- card picker replace/cancel behavior
+- notifications do not cross workflows
+- keyboard/focus/ARIA truthfulness
+- empty/loading/error/unavailable/result states
+- themes and Daylight contrast
+- RTL and translation-length geometry
+- requested desktop widths and zoom
+- Product UI owned QA IDs
+
+### Performance
+
+- one main strategy resolution per decision update
+- input coalescing
+- hidden Matrix does not compute
+- dirty surface renders on reveal
+- no forced-layout restart
+- single Training init and Equity readiness update
+
+### Future model/provider
+
+Only when present:
+
+- versioned metadata
+- input/output schemas
+- normalization
+- runtime agreement
+- coverage/uncertainty
+- source/reference validation
+
+## 3. E2E smoke
 
 At minimum:
 
 1. open app
-2. open Playbook
-3. select cards
-4. set board
-5. request strategy
-6. open Equity
-7. calculate equity
-8. open Training
-9. complete one training interaction
-10. switch language
-11. reload
+2. Playbook Scenario cards/context/recommendation
+3. canonical Hand start/deal/action/chance
+4. Matrix selection
+5. Equity calculate/cancel/result
+6. Training generate/answer/replay
+7. Settings/theme/deck preference
+8. language switch and RTL smoke
+9. reload/persistence
 
-## 3. Mathematical smoke cases
+## 4. Visual acceptance
 
-Include:
+For visual tickets, record:
 
-- AA vs KK
-- AKs vs a defined range
-- obvious straight
-- obvious flush
-- full house
-- quads
-- board-made hand
-- tie
-- 3-way equity
-- 5-way equity
-- impossible duplicate cards
-- all-in state
-- zero-rake state
-- 0.1bb ClubGG deduction
+- viewport
+- theme
+- language/direction
+- state exercised
+- screenshot or exact observation where practical
 
-## 4. Agent rule
+No browser means no claim of visual closure.
 
-An agent must not claim a task is complete if relevant tests were not run.
+## 5. Agent rule
 
-If a test cannot run, report why.
+An agent must not claim completion if required tests were not run or if visual acceptance is unavailable and the issue is inherently visual. Report the exact limitation.
