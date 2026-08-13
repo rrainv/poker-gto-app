@@ -6248,10 +6248,10 @@ function canonicalTrainingFeedback(evaluation, strategyResult) {
     || trainingActionLabel(evaluation.chosenAction.type, app.training.currentExercise.decisionContext));
   if (evaluation.grade === 'optimal') {
     return {
-      title: t('Optimal'),
+      title: t('Correct'),
       text: heuristic
-        ? t('Within the current strategy estimate, {action} is an optimal choice. Compare the displayed reference for the full mix.', { action: chosen })
-        : t('{source} supports {action}. Compare the displayed reference for the full mix.', { source, action: chosen })
+        ? t('{action} matches Riverline\'s current reference. Compare the displayed action frequencies for the full mix.', { action: chosen })
+        : t('{action} matches the current reference from {source}. Compare the displayed action frequencies for the full mix.', { source, action: chosen })
     };
   }
   if (evaluation.grade === 'acceptable') {
@@ -6265,8 +6265,8 @@ function canonicalTrainingFeedback(evaluation, strategyResult) {
   return {
     title: t('Mistake'),
     text: heuristic
-      ? t('Within the current strategy estimate, {action} is not the leading response. Compare the displayed reference before the next decision. No EV estimate is available unless the strategy source supplies one.', { action: chosen })
-      : t('{source} does not make {action} the leading response. Compare the displayed reference before the next decision. No EV estimate is available unless the strategy source supplies one.', { source, action: chosen })
+      ? t('Within the current strategy estimate, {action} is not the highest-frequency action. Compare the displayed action frequencies before the next decision. No EV estimate is available unless the strategy source supplies one.', { action: chosen })
+      : t('{source} does not make {action} the highest-frequency action in the current reference. Compare the displayed action frequencies before the next decision. No EV estimate is available unless the strategy source supplies one.', { source, action: chosen })
   };
 }
 

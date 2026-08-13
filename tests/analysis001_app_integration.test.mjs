@@ -88,13 +88,14 @@ test('Training calls the same service only after answer and retains the grade wr
   assert.match(answer, /showTrainingFeedback/);
 });
 
-test('Training heuristic grade copy is explicitly bounded to the current estimate', () => {
+test('Training matching-reference verdict is honest about the current reference', () => {
   const feedback = sourceBetween('function canonicalTrainingFeedback(', 'function trainingActionHistoryForAnalysis(');
-  assert.match(feedback, /Within the current strategy estimate/);
-  assert.match(feedback, /title: t\('Optimal'\)/);
+  assert.match(feedback, /evaluation\.grade === 'optimal'/);
+  assert.match(feedback, /title: t\('Correct'\)/);
   assert.match(feedback, /title: t\('Acceptable'\)/);
   assert.match(feedback, /title: t\('Mistake'\)/);
-  assert.doesNotMatch(feedback, /\bGTO\b|\bCFR\b|equilibrium|solver says/i);
+  assert.match(feedback, /matches Riverline\\'s current reference/);
+  assert.doesNotMatch(feedback, /title: t\('Optimal'\)|optimal choice|\bGTO\b|\bCFR\b|equilibrium|solver says/i);
 });
 
 test('Training keeps analysis and exact strategy reference out of normal pre-answer markup', () => {

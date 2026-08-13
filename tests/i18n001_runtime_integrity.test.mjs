@@ -144,6 +144,19 @@ test('runtime messages support named interpolation through the single translatio
   );
 });
 
+test('Training matching-reference verdict localizes as Correct in every supported language', () => {
+  const runtime = createRuntime();
+  for (const [language, expected] of [
+    ['en', 'Correct'],
+    ['ru', 'Верно'],
+    ['he', 'נכון']
+  ]) {
+    runtime.context.window.setLanguage(language);
+    assert.equal(runtime.context.window.RiverlineI18n.resolveTranslation('Correct').missing, false);
+    assert.equal(runtime.context.window.t('Correct'), expected);
+  }
+});
+
 test('live language switching owns a dynamic rerender hook without triggering hidden strategy work', () => {
   assert.match(logicSource, /riverline:languagechange/);
   assert.match(logicSource, /refreshLocalizedRuntime/);

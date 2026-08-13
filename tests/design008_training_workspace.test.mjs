@@ -28,7 +28,8 @@ test('Training has explicit lifecycle, feedback, history, provenance, and replay
   ]) assert.match(training, new RegExp(`id="${id}"`), id);
   assert.match(training, /aria-live="polite"/);
   assert.match(training, /role="alert"/);
-  assert.match(training, /Optimal[\s\S]*Acceptable[\s\S]*Mistake/);
+  assert.match(training, /Correct[\s\S]*Acceptable[\s\S]*Mistake/);
+  assert.doesNotMatch(training, /\bOptimal\b/);
   assert.doesNotMatch(training, /\bGTO\b|Deep CFR/i);
 });
 

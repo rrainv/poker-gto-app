@@ -26,7 +26,7 @@ test('Guide documents the current Training, Equity, and Matrix behavior', () => 
   for (const concept of [
     'Training generates legal hand trajectories',
     'Study hints are optional coaching prompts',
-    'exact reference frequencies',
+    'current reference frequencies',
     'session progress',
     'exact enumeration',
     'Monte Carlo simulation',
@@ -35,7 +35,7 @@ test('Guide documents the current Training, Equity, and Matrix behavior', () => 
     'Cancel stops the calculation and keeps your configuration intact',
     'tint shows the dominant action',
     'Hover or focus a cell',
-    'select it for exact action detail',
+    'select it for action-frequency detail',
     'A full postflop Matrix expansion is not available yet',
     'exact-hand postflop recommendation',
   ]) assert.match(guideHtml, new RegExp(concept));
