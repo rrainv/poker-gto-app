@@ -21,6 +21,9 @@ class TableRenderer {
     window.addEventListener('riverlineCardRankStyleChanged', () => {
       if (this.lastState) this.renderState(this.lastState);
     });
+    window.addEventListener('riverlineCardStyleChanged', () => {
+      if (this.lastState) this.renderState(this.lastState);
+    });
   }
 
   initSVG() {
@@ -97,14 +100,29 @@ class TableRenderer {
     const presentation = TABLE_SUIT_PRESENTATION[suit] || { id: 'unknown', symbol: suit || '?' };
     const visualRank = rank === 'T' && document.documentElement.dataset.cardRankStyle === 'full-ten' ? '10' : rank;
     const rankClass = visualRank === '10' ? ' table-card-rank--ten' : '';
+    const cardStyle = ['classic-mirrored', 'tournament', 'clean-corner', 'clarity-corner'].includes(document.documentElement.dataset.cardStyle)
+      ? document.documentElement.dataset.cardStyle
+      : 'tournament';
     const finalX = isCommunity ? index * 50 : (index * 45) - 22;
+    const secondaryCorner = cardStyle === 'clean-corner' ? '' : `
+        <g class="table-card-corner table-card-corner--bottom table-card-corner--${cardStyle === 'clarity-corner' ? 'subdued' : 'full'}" aria-hidden="true" transform="translate(40 57) rotate(180)">
+          <text class="riverline-card-corner-rank table-card-corner-rank${rankClass}" x="5" y="13">${visualRank}</text>
+          <text class="riverline-card-corner-suit table-card-corner-suit" x="5" y="25">${presentation.symbol}</text>
+        </g>`;
+    const cornerMarkup = cardStyle === 'tournament' ? '' : `
+        <g class="table-card-corner table-card-corner--top" aria-hidden="true">
+          <text class="riverline-card-rank table-card-rank${rankClass}" x="6" y="15">${visualRank}</text>
+          <text class="riverline-card-suit table-card-suit" x="6" y="28">${presentation.symbol}</text>
+        </g>${secondaryCorner}`;
 
     return `
-      <g class="card-group poker-card-svg riverline-card card--known card--suit-${presentation.id}${isDealing ? ' is-card-dealt' : ''}" data-card-state="known" style="--card-final-x:${finalX}px; --card-deal-order:${Math.min(index, 4)}; transform:translate(${finalX}px, 0px);">
+      <g class="card-group poker-card-svg riverline-card card--known card--style-${cardStyle} card--suit-${presentation.id}${isDealing ? ' is-card-dealt' : ''}" data-card-state="known" data-card-style="${cardStyle}" style="--card-final-x:${finalX}px; --card-deal-order:${Math.min(index, 4)}; transform:translate(${finalX}px, 0px);">
         <rect class="riverline-card-face table-card-face" x="0" y="0" width="40" height="57" rx="5" ry="5" />
-        <text class="riverline-card-rank table-card-rank${rankClass}" x="6" y="17">${visualRank}</text>
-        <text class="riverline-card-suit table-card-suit" x="6" y="35">${presentation.symbol}</text>
-        <text class="riverline-card-corner-rank table-card-corner-rank${rankClass}" x="34" y="51" text-anchor="end" transform="rotate(180 34 51)">${visualRank}</text>
+        ${cornerMarkup}
+        <g class="table-card-tournament" aria-hidden="true">
+          <text class="riverline-card-tournament-rank${rankClass}" x="20" y="25" text-anchor="middle">${visualRank}</text>
+          <text class="riverline-card-tournament-suit" x="20" y="42" text-anchor="middle">${presentation.symbol}</text>
+        </g>
       </g>
     `;
   }

@@ -82,13 +82,56 @@ function analysisFactSecondaryText(analysisFact) {
   return null;
 }
 
+const ANALYSIS_CARD_SUITS = Object.freeze({
+  h: { symbol: '♥' },
+  d: { symbol: '♦' },
+  c: { symbol: '♣' },
+  s: { symbol: '♠' },
+});
+
+function analysisCardTokenElement(card) {
+  const value = String(card || '');
+  const match = value.match(/^([2-9TJQKA])([hdcs])$/i);
+  if (!match) return null;
+  const suitId = match[2].toLowerCase();
+  const rank = match[1].toUpperCase() === 'T' && document.documentElement.dataset.cardRankStyle === 'full-ten'
+    ? '10'
+    : match[1].toUpperCase();
+  const token = analysisElement('span', `analysis-mini-card card--suit-${suitId}`);
+  const suit = ANALYSIS_CARD_SUITS[suitId];
+  token.setAttribute('role', 'img');
+  token.setAttribute('aria-label', `${rank}${suit.symbol}`);
+  const rankElement = analysisElement('span', 'analysis-mini-card-rank', rank);
+  const suitElement = analysisElement('span', 'analysis-mini-card-suit', suit.symbol);
+  rankElement.setAttribute('aria-hidden', 'true');
+  suitElement.setAttribute('aria-hidden', 'true');
+  token.append(rankElement, suitElement);
+  return token;
+}
+
+function analysisCardPairElement(analysisFact) {
+  const cards = Array.isArray(analysisFact.value)
+    ? analysisFact.value
+    : String(analysisFact.values?.cards || analysisFact.value || '').trim().split(/\s+/);
+  const token = analysisElement('span', 'analysis-card-token');
+  const rendered = cards.map(analysisCardTokenElement).filter(Boolean);
+  if (!rendered.length) {
+    token.textContent = analysisUiText(analysisFactPrimaryText(analysisFact));
+    return token;
+  }
+  token.setAttribute('aria-label', rendered.map((item) => item.getAttribute('aria-label')).join(' '));
+  token.append(...rendered);
+  return token;
+}
+
 function analysisFactElement(analysisFact) {
   const cell = analysisElement('div', 'analysis-key-fact');
   cell.dataset.factKind = analysisFact.kind;
   cell.dataset.factKey = analysisFact.key;
   const value = analysisElement('dd', 'analysis-fact-value');
-  const primary = analysisElement('span', 'analysis-fact-primary', analysisFactPrimaryText(analysisFact));
-  if (analysisFact.key === 'hero_cards') primary.classList.add('analysis-card-token');
+  const primary = analysisFact.key === 'hero_cards'
+    ? analysisCardPairElement(analysisFact)
+    : analysisElement('span', 'analysis-fact-primary', analysisFactPrimaryText(analysisFact));
   value.appendChild(primary);
   const secondaryText = analysisFactSecondaryText(analysisFact);
   if (secondaryText) value.appendChild(analysisElement('small', 'analysis-fact-secondary', secondaryText));

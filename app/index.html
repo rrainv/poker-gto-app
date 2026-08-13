@@ -1,6 +1,6 @@
 <!doctype html>
 
-<html lang="en" data-theme="midnight">
+<html lang="en" data-theme="midnight" data-card-style="tournament">
 
 
 
@@ -1720,6 +1720,19 @@
                 <button class="ui-tab" type="button" data-card-rank-style="full-ten" aria-pressed="false"><strong>10</strong><small>Full ten</small></button>
               </div>
             </div>
+
+            <label class="field settings-preference-field" for="cardStyleSelect">
+              <span class="settings-preference-copy">
+                <strong>Card style</strong>
+                <span class="panel-note">Changes card presentation only.</span>
+              </span>
+              <select id="cardStyleSelect" class="control-select" aria-label="Card style">
+                <option value="classic-mirrored">Classic Mirrored</option>
+                <option value="tournament" selected>Tournament</option>
+                <option value="clean-corner">Clean Corner</option>
+                <option value="clarity-corner">Clarity Corner</option>
+              </select>
+            </label>
 
             <div id="themeSwatchGrid" class="theme-swatch-grid section-inset">
               <!-- Dynamically populated theme swatch buttons in JS -->

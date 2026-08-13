@@ -77,7 +77,7 @@ const PLAYBOOK_MODES = Object.freeze({ SCENARIO: 'scenario', HAND: 'hand' });
 
 
 const app = {
-  settings: { tightness: 0, fourColorDeck: true, cardRankStyle: 'poker' },
+  settings: { tightness: 0, fourColorDeck: true, cardRankStyle: 'poker', cardStyle: 'tournament' },
 
   gto: { hero: [], board: [], dead: [] },
 
@@ -348,10 +348,10 @@ function cardMarkup(card) {
 
   const suit = getSuit(card);
   
-  // Enhanced card markup with better visual hierarchy
   const rank = displayCardRank(card[0]);
   const rankClass = rank === '10' ? ' rank--ten' : '';
-  return `<span class="rank${rankClass} s-${suit.id}">${rank}</span><span class="suit s-${suit.id}">${suit.symbol}</span><span class="corner-rank${rankClass} s-${suit.id}">${rank}</span>`;
+  const face = `<span class="rank${rankClass} s-${suit.id}">${rank}</span><span class="suit s-${suit.id}">${suit.symbol}</span>`;
+  return `<span class="card-corner card-corner--top" aria-hidden="true">${face}</span><span class="card-corner card-corner--bottom" aria-hidden="true">${face}</span>`;
 
 }
 
@@ -667,7 +667,8 @@ function renderDeck() {
           ? '10'
           : rank;
         const rankClass = visualRank === '10' ? ' rank--ten' : '';
-        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''} riverline-card" aria-label="Choose ${visualRank}${suit.symbol}${isUnavailable ? ', unavailable' : ''}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}><span class="rank${rankClass} s-${suit.id}">${visualRank}</span><span class="symbol s-${suit.id}">${suit.symbol}</span></button>`;
+        const face = `<span class="rank${rankClass} s-${suit.id}">${visualRank}</span><span class="suit s-${suit.id}">${suit.symbol}</span>`;
+        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''} riverline-card" aria-label="Choose ${visualRank}${suit.symbol}${isUnavailable ? ', unavailable' : ''}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}><span class="card-corner card-corner--top" aria-hidden="true">${face}</span><span class="card-corner card-corner--bottom" aria-hidden="true">${face}</span></button>`;
       }).join('');
       return `<div class="deck-suit-row" data-picker-suit="${suit.id}"><div class="deck-suit-label s-${suit.id}" aria-hidden="true">${suit.symbol}</div><div class="deck-ranks">${cards}</div></div>`;
     }).join('');
@@ -3819,6 +3820,8 @@ function bindEvents() {
 
   if ($('#fourColorDeckToggle')) $('#fourColorDeckToggle').addEventListener('click', () => applyDeckStyle(!app.settings.fourColorDeck));
 
+  if ($('#cardStyleSelect')) $('#cardStyleSelect').addEventListener('change', (event) => applyCardStyle(event.target.value));
+
   if ($('#toggleTableBtn')) {
     $('#toggleTableBtn').addEventListener('click', (e) => {
       const wrapper = $('#table-wrapper');
@@ -3993,17 +3996,17 @@ const THEME_PREVIEWS = [
   { id: 'legacy-midnight-cyan', name: 'Midnight Cyan', color: '#06b6d4', bg: '#08171e', sharp: false, legacy: true },
   { id: 'cyberpunk', name: 'Cyberpunk Neon', color: '#ec4899', bg: '#1a0916', sharp: false, legacy: true },
   { id: 'felt', name: 'Casino Felt', color: '#4caf50', bg: '#0a2e1a', sharp: false, legacy: true },
-  { id: 'luxury', name: 'Luxury Gold', color: '#e94560', bg: '#1a1a2e', sharp: false, legacy: true },
-  { id: 'discord-0px', name: 'Discord Dark (0px)', color: '#5865f2', bg: '#1e1f22', sharp: true, legacy: true },
-  { id: 'serious-pio', name: 'PioSolver Sharp (0px)', color: '#6a8c7a', bg: '#12161a', sharp: true, legacy: true },
-  { id: 'terminal', name: 'Terminal Dark CRT (0px)', color: '#00ff66', bg: '#040906', sharp: true, legacy: true },
-  { id: 'brutalist-slate', name: 'Brutalist Slate (0px)', color: '#94a3b8', bg: '#0f172a', sharp: true, legacy: true },
-  { id: 'brutalist-cyan', name: 'Brutalist Cyan (0px)', color: '#06b6d4', bg: '#0a1a1a', sharp: true, legacy: true },
-  { id: 'brutalist-purple', name: 'Brutalist Purple (0px)', color: '#a855f7', bg: '#1a0a1a', sharp: true, legacy: true },
-  { id: 'brutalist-amber', name: 'Brutalist Amber (0px)', color: '#f59e0b', bg: '#140c04', sharp: true, legacy: true },
-  { id: 'brutalist-emerald', name: 'Brutalist Emerald (0px)', color: '#10b981', bg: '#051410', sharp: true, legacy: true },
-  { id: 'brutalist-rose', name: 'Brutalist Rose (0px)', color: '#f43f5e', bg: '#1a0a10', sharp: true, legacy: true },
-  { id: 'brutalist-red', name: 'Brutalist Red (0px)', color: '#ef4444', bg: '#1a0a0a', sharp: true, legacy: true }
+  { id: 'luxury', name: 'Rose Luxe', color: '#e94560', bg: '#1a1a2e', sharp: false, legacy: true },
+  { id: 'discord-0px', name: 'Discord Sharp', color: '#5865f2', bg: '#1e1f22', sharp: true, legacy: true },
+  { id: 'serious-pio', name: 'PioSolver Sharp', color: '#6a8c7a', bg: '#12161a', sharp: true, legacy: true },
+  { id: 'terminal', name: 'Terminal Dark CRT', color: '#00ff66', bg: '#040906', sharp: true, legacy: true },
+  { id: 'brutalist-slate', name: 'Brutalist Slate', color: '#94a3b8', bg: '#0f172a', sharp: true, legacy: true },
+  { id: 'brutalist-cyan', name: 'Brutalist Cyan', color: '#06b6d4', bg: '#0a1a1a', sharp: true, legacy: true },
+  { id: 'brutalist-purple', name: 'Brutalist Purple', color: '#a855f7', bg: '#1a0a1a', sharp: true, legacy: true },
+  { id: 'brutalist-amber', name: 'Brutalist Amber', color: '#f59e0b', bg: '#140c04', sharp: true, legacy: true },
+  { id: 'brutalist-emerald', name: 'Brutalist Emerald', color: '#10b981', bg: '#051410', sharp: true, legacy: true },
+  { id: 'brutalist-rose', name: 'Brutalist Rose', color: '#f43f5e', bg: '#1a0a10', sharp: true, legacy: true },
+  { id: 'brutalist-red', name: 'Brutalist Red', color: '#ef4444', bg: '#1a0a0a', sharp: true, legacy: true }
 
 ];
 
@@ -4042,8 +4045,6 @@ function initThemeSwatches() {
           <span class="theme-swatch-name">${t(tItem.name)}</span>
 
         </div>
-
-        ${tItem.sharp ? `<span class="theme-swatch-sharp">0px</span>` : ''}
 
       </button>
 
@@ -4107,6 +4108,9 @@ function init() {
 
     const savedCardRankStyle = localStorage.getItem('riverline_card_rank_style');
     applyCardRankStyle(savedCardRankStyle, false);
+
+    const savedCardStyle = localStorage.getItem('riverline_card_style');
+    applyCardStyle(savedCardStyle, false);
 
     initSidebar();
 
@@ -4928,7 +4932,33 @@ function applyCardRankStyle(style, refresh = true) {
   });
   if (!refresh) return;
   renderAllCards();
+  if (activeWorkspaceMode() === 'gto' && playbookSurfaceIsVisible('analysis')) {
+    renderPlaybookDecisionAnalysis(
+      app.decisionContext,
+      app.strategyResult,
+      app.playbookResolution,
+      app.playbookResolution?.status === 'available'
+        ? null
+        : analysisUnavailableReasonForResolution(app.playbookResolution)
+    );
+  }
+  if (activeWorkspaceMode() === 'training' && app.training.currentExercise && !$('#trainingAnalysis')?.hidden) {
+    renderTrainingDecisionAnalysis(app.training.currentExercise);
+  }
   window.dispatchEvent(new CustomEvent('riverlineCardRankStyleChanged', { detail: { style: nextStyle } }));
+}
+
+const CARD_STYLES = Object.freeze(['classic-mirrored', 'tournament', 'clean-corner', 'clarity-corner']);
+
+function applyCardStyle(style, refresh = true) {
+  const nextStyle = CARD_STYLES.includes(style) ? style : 'tournament';
+  app.settings.cardStyle = nextStyle;
+  localStorage.setItem('riverline_card_style', nextStyle);
+  document.documentElement.dataset.cardStyle = nextStyle;
+  if ($('#cardStyleSelect')) $('#cardStyleSelect').value = nextStyle;
+  if (!refresh) return;
+  renderAllCards();
+  window.dispatchEvent(new CustomEvent('riverlineCardStyleChanged', { detail: { style: nextStyle } }));
 }
 
 function applySidebarState(collapsed) {
