@@ -55,13 +55,21 @@ test('Hand presentation reads the isolated canonical deck and gates showdown res
   assert.match(logic, /handResolveShowdownButton'\)\.disabled = !canResolveShowdown/);
 });
 
-test('Training preview and pricing copy remain truthful before and after an answer', () => {
+test('Training study hints and pricing copy remain truthful before and after an answer', () => {
   assert.match(html, /id="trainingSolutionEyebrow"/);
-  assert.match(logic, /const preview = app\.training\.lifecycle === 'ready'/);
-  assert.match(logic, /preview \? 'Strategy preview' : 'After-answer reference'/);
+  assert.match(html, /id="trainingRevealHint"/);
+  assert.doesNotMatch(html, /id="trainingShowSolution"|Study mode preview/);
+  assert.match(html, /Get a nudge about the spot\./);
+  assert.match(html, />Get a hint<\/button>/);
+  assert.doesNotMatch(html, /Hints never reveal|never reveal the answer|does not change grading/i);
+  const solution = between('function showTrainingSolution(solution)', 'function updateTrainingStats()');
+  assert.match(solution, /After-answer reference/);
+  assert.doesNotMatch(solution, /Strategy preview|lifecycle === 'ready'/);
   const pricing = between('function formatTrainingFacingCopy', 'function trainingActionLabel');
   assert.match(pricing, /Math\.abs\(facingSize - callAmount\) > 0\.001/);
   assert.match(pricing, /\$\{callAmount\.toFixed\(1\)\} bb to call/);
   assert.doesNotMatch(pricing, /\(\$\{facingSize\.toFixed\(1\)\} bb to\)/);
+  const answer = between('function handleTrainingGuess(', 'function replayTrainingExercise(');
+  assert.match(answer, /callTrainingServiceBridge\('answer', exercise\.id, userAction\)/);
+  assert.match(answer, /renderTrainingDecisionAnalysis\(exercise\)[\s\S]*showTrainingSolution\(app\.training\.currentSolution\)/);
 });
-

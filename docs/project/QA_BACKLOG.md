@@ -31,11 +31,28 @@ A visual issue is not `CLOSED` without manual/browser confirmation.
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-ANALYSIS-001 | OPEN | Playbook `What goes into this decision?` is too narrow/tall and wastes panel width | PRODUCT-UI-003 |
-| QA-ANALYSIS-002 | OPEN | Analysis needs concise-first, systematic hierarchy without losing detail | PRODUCT-UI-003 |
-| QA-TRAIN-ANALYSIS-001 | OPEN | Training deep analysis is chaotic and difficult to scan | PRODUCT-UI-003 |
-| QA-TRAIN-ANALYSIS-002 | OPEN | Training repeats verdict/frequencies/source across competing panels | PRODUCT-UI-003 |
-| QA-TRAIN-ANALYSIS-003 | OPEN | post-answer reference still feels visually detached | PRODUCT-UI-003 |
+| QA-ANALYSIS-001 | PARTIAL | Playbook analysis retains its full Decision-grid row; R2 readability needs final manual acceptance | PRODUCT-UI-003R2 |
+| QA-ANALYSIS-002 | PARTIAL | Shared Hero/board, economics, reasons, and context hierarchy refined; final manual acceptance pending | PRODUCT-UI-003R2 |
+| QA-TRAIN-ANALYSIS-001 | PARTIAL | Training uses the refined shared hierarchy; final manual acceptance pending | PRODUCT-UI-003R2 |
+| QA-TRAIN-ANALYSIS-002 | PARTIAL | Pre-answer assistance is now one-at-a-time coaching hints; final manual acceptance pending | PRODUCT-UI-003R2 |
+| QA-TRAIN-ANALYSIS-003 | PARTIAL | Post-answer reference remains one canonical frequency panel; final manual acceptance pending | PRODUCT-UI-003R2 |
+
+## August 13 live audit IDs
+
+These identifiers are the current live-audit baseline. They remain distinct from historical QA routing.
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| RL-05 | OPEN | Playbook long-page / analysis-location composition | PRODUCT-UI-005 |
+| RL-06 | OPEN | 169 unavailable postflop Matrix cells | PRODUCT-UI-005 |
+| RL-07 | OPEN | Range comparison stacking / long-page comparison | PRODUCT-UI-005 |
+| RL-12 | OPEN | theme/debug labels | PRODUCT-UI-004 |
+| RL-13 | PARTIAL | One-at-a-time coaching hints replace pre-answer reference disclosure; manual acceptance pending | PRODUCT-UI-003R2 |
+| RL-14 | PARTIAL | Training result uses the refined Hero/board-first hierarchy; manual acceptance pending | PRODUCT-UI-003R2 |
+| RL-16 | OPEN | Equity preparing/progress and narrow result metrics | EQUITY-UX-001 / PRODUCT-UI-005 |
+| RL-17 | OPEN | Guide terminology drift | GUIDE-001 |
+| RL-18 | OPEN | large hidden mounted DOM | later PERF follow-up |
+| RL-20 | OPEN | theme semantics / Daylight contrast | PRODUCT-UI-004 |
 
 ## Cards, themes, and micro-polish
 

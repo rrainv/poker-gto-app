@@ -54,9 +54,10 @@ test('range controls use shared track, thumb, focus, and disabled semantics', ()
   assert.match(components, /accent-color:\s*var\(--accent-primary\)/);
 });
 
-test('switches expose labels and pressed states without replacing behavior', () => {
+test('remaining switches expose labels and pressed states without replacing behavior', () => {
   const switches = [...html.matchAll(/<button\b[^>]*class="[^"]*ui-switch[^"]*"[^>]*>/g)];
-  assert.ok(switches.length >= 4);
+  // Study Preview was intentionally replaced with a non-solution hint button.
+  assert.ok(switches.length >= 3);
   for (const [tag] of switches) {
     assert.match(tag, /type="button"/);
     assert.match(tag, /aria-label="[^"]+"/);

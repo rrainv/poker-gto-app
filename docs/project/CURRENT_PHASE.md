@@ -16,17 +16,15 @@ Completed major phases:
 - evidence-first calibration baseline; further broad tuning paused pending reference data
 - `PERF-001`
 - `PRODUCT-UI-001`
+- `PRODUCT-UI-002` and its accepted correction pass
+- agent-documentation refresh
 
 Current reported ticket:
 
-- `PRODUCT-UI-002R` implemented and automated tests passing
-- pending human visual acceptance and commit
+- `PRODUCT-UI-003`, `PRODUCT-UI-003R`, and `PRODUCT-UI-003R2` form the current unstaged working ticket
+- implementation is awaiting human visual acceptance and commit
 
 Next planned ticket after acceptance:
-
-- `PRODUCT-UI-003` — shared Playbook/Training analysis presentation
-
-Then:
 
 - `PRODUCT-UI-004` — cards, themes, and micro-polish
 - `PRODUCT-UI-005` — workspace composition and responsive fit

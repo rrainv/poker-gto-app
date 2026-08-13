@@ -97,22 +97,116 @@ test('Training heuristic grade copy is explicitly bounded to the current estimat
   assert.doesNotMatch(feedback, /\bGTO\b|\bCFR\b|equilibrium|solver says/i);
 });
 
-test('Training markup exposes no shared strategy explanation before its hidden post-answer container', () => {
+test('Training keeps analysis and exact strategy reference out of normal pre-answer markup', () => {
   const trainingMarkup = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="equityMode"'));
   assert.match(trainingMarkup, /id="trainingAnalysis" class="training-shared-analysis" hidden/);
-  assert.match(trainingMarkup, /id="trainingShowSolution"/);
+  assert.match(trainingMarkup, /id="trainingStudyHints" class="training-study-hints"[^>]*hidden/);
+  assert.match(trainingMarkup, /id="trainingRevealHint"/);
+  assert.doesNotMatch(trainingMarkup, /id="trainingShowSolution"|Study mode preview|Strategy preview/);
   assert.doesNotMatch(trainingMarkup, /id="trainingAnalysis"[^>]*>[\s\S]*?Strategy Mix/);
 });
 
-test('shared renderer uses text nodes and the UI has responsive structured hierarchy', () => {
+test('shared renderer uses one summary-first grammar with responsive facts and native detail disclosure', () => {
   assert.match(teacher, /container\.replaceChildren\(\)/);
   assert.match(teacher, /element\.textContent = analysisUiText\(text\)/);
   assert.doesNotMatch(teacher, /innerHTML|insertAdjacentHTML|document\.write/);
   for (const className of [
-    'analysis-explanation', 'analysis-explanation-sections', 'analysis-explanation-facts',
-    'analysis-explanation-limitations', 'training-shared-analysis',
+    'analysis-presentation', 'analysis-summary', 'analysis-hero-state', 'analysis-hero-facts',
+    'analysis-board-facts',
+    'analysis-economics-facts', 'analysis-context-facts', 'analysis-key-facts',
+    'analysis-reasoning-blocks', 'analysis-detail-group', 'analysis-provenance',
+    'training-shared-analysis',
   ]) assert.match(css, new RegExp(`\\.${className}`), className);
-  assert.match(css, /training-shared-analysis[\s\S]*repeat\(auto-fit, minmax\(min\(240px, 100%\), 1fr\)\)/);
+  assert.match(teacher, /analysisGrammar = 'summary-key-facts-reasons-details-provenance'/);
+  assert.match(teacher, /analysisFactGroup\('Hero state', 'hero'/);
+  assert.match(teacher, /analysisFactGroup\('Board', 'board'/);
+  assert.match(teacher, /analysisFactGroup\('Decision economics', 'economics'/);
+  assert.match(teacher, /analysisFactGroup\('Context', 'context'/);
+  assert.match(teacher, /analysisElement\('details', 'analysis-detail-group'\)/);
+  assert.match(css, /@media \(min-width: 1280px\)[\s\S]*analysis-key-facts[\s\S]*repeat\(4/);
+  assert.match(css, /@media \(max-width: 1080px\)[\s\S]*analysis-key-facts[\s\S]*repeat\(2/);
+});
+
+test('primary analysis values use readable UI typography while compact cards retain data typography', () => {
+  const primaryFacts = css.match(/\.analysis-key-fact dd \{[^}]+\}/)?.[0] || '';
+  assert.match(primaryFacts, /font-family: var\(--font-ui\)/);
+  assert.doesNotMatch(primaryFacts, /font-family: var\(--font-data\)/);
+  assert.match(css, /\.analysis-card-token \{[^}]*font-family: var\(--font-data\)/);
+  assert.match(teacher, /analysisFactPrimaryText/);
+  assert.match(teacher, /case 'made_hand': return values\.madeHand/);
+  assert.match(teacher, /OESD: 'Open-ended straight draw'/);
+});
+
+test('Hero state makes trusted made-hand, draw, and board facts primary without deriving poker facts', () => {
+  assert.match(teacher, /hero: new Set\(\['hero_cards', 'preflop_hand_class', 'made_hand', 'draws', 'hero_overcards'\]\)/);
+  assert.match(teacher, /board: new Set\(\['board_pairing', 'board_suits', 'board_connectivity', 'board_broadway_count'\]\)/);
+  assert.match(teacher, /const heroRegion = analysisHeroState\(explanation\)/);
+  assert.match(css, /\.analysis-hero-state \{[^}]*border-inline-start: 4px solid var\(--accent-primary\)/);
+  assert.doesNotMatch(teacher, /evaluatePostflopHand|deriveBoardTextureFacts|scoreSeven|calculateEquity/);
+});
+
+test('economics, reasons, and context retain distinct descending presentation priority', () => {
+  assert.doesNotMatch(teacher.match(/economics: new Set\(([^\n]+)/)?.[1] || '', /hero_position|table_size/);
+  assert.match(teacher, /context: new Set\(\['hero_position', 'postflop_position_relation', 'heuristic_opponent_count'/);
+  const availableRender = teacher.slice(teacher.indexOf('const strategy ='), teacher.indexOf('const selectedKeys'));
+  assert.ok(availableRender.indexOf('analysis-reasoning-blocks') < availableRender.indexOf("analysisFactGroup('Context'"));
+  assert.match(css, /\.analysis-economics-facts \{[^}]*border-inline-start: 3px solid var\(--accent-secondary\)/);
+  assert.match(css, /\.analysis-context-facts \{[^}]*background:/);
+});
+
+test('expanded Playbook analysis owns the full Decision-grid row at desktop widths', () => {
+  assert.match(html, /class="teacher-panel"/);
+  const desktopGrid = css.slice(css.indexOf('@media (min-width: 1200px)'));
+  assert.match(desktopGrid, /\.playbook-primary-decision \{[\s\S]*display: grid/);
+  assert.match(desktopGrid, /\.playbook-primary-decision \.teacher-panel \{[\s\S]*grid-column: 1 \/ -1;[\s\S]*grid-row: 3/);
+  assert.match(css, /\.teacher-panel,[\s\S]*\.teacher-panel #teacherContent \{ width: 100%; min-width: 0; \}/);
+});
+
+test('unavailable analysis remains compact while retaining only useful facts and provenance', () => {
+  assert.match(teacher, /explanation\.availability === 'unavailable'/);
+  assert.match(teacher, /article\.classList\.add\('is-unavailable'\)/);
+  assert.match(teacher, /analysis-unavailable-note/);
+  assert.doesNotMatch(teacher.slice(teacher.indexOf("explanation.availability === 'unavailable'"), teacher.indexOf('const strategy =')), /analysis-detail-group/);
+});
+
+test('Study hints consume AnalysisExplanation facts without exposing strategy result probabilities', () => {
+  const hints = sourceBetween('function resetTrainingStudyHints(', 'function showTrainingFeedback(');
+  const exercise = sourceBetween('function renderCanonicalTrainingExercise(', 'async function newRandomTrainingHand(');
+  assert.match(hints, /bridge\.create\(/);
+  assert.match(hints, /renderAnalysisStudyHints/);
+  assert.match(hints, /app\.training\.studyHintStep = Math\.min\(3/);
+  assert.doesNotMatch(hints, /currentSolution|showTrainingSolution|chosenProbability|bestProbability|recommendation|probability/);
+  assert.match(exercise, /resetTrainingStudyHints\(exercise\)/);
+  assert.doesNotMatch(exercise, /showTrainingSolution/);
+  assert.match(logic, /resetTrainingStudyHints\(\);[\s\S]*showTrainingFeedback/);
+});
+
+test('Study hints coach one step at a time and omit implementation-oriented safeguard copy', () => {
+  const hintRenderer = teacher.slice(teacher.indexOf('function studyHintDefinition('), teacher.indexOf('function renderAnalysisExplanation('));
+  assert.match(hintRenderer, /What made hand does Hero have here\?/);
+  assert.match(hintRenderer, /How much are you being asked to call relative to the pot\?/);
+  assert.match(hintRenderer, /How should the board texture and number of opponents affect/);
+  assert.match(hintRenderer, /const hint = studyHintDefinition\(explanation, currentStep\)/);
+  assert.doesNotMatch(hintRenderer, /slice\(0, step\)|strategy_mix|actionAnalysis|recommendation|probability/);
+  assert.match(logic, /button\.textContent = 'Get a hint'/);
+  assert.match(logic, /complete \? 'All hints viewed' : 'Another hint'/);
+  assert.doesNotMatch(html, /Hints never reveal|never reveal the answer|assistance does not change grading/i);
+  assert.match(html, /Get a nudge about the spot\./);
+});
+
+test('Playbook and Training compose the same renderer without a second strategy visualization', () => {
+  const playbook = sourceBetween('function renderPlaybookDecisionAnalysis(', 'function renderPlaybookTableProjection(');
+  const training = sourceBetween('function renderTrainingDecisionAnalysis(', 'function handleTrainingGuess(');
+  const trainingMarkup = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="equityMode"'));
+  assert.match(playbook, /surface: 'playbook'/);
+  assert.match(training, /surface: 'training'/);
+  assert.match(teacher, /analysisSection\.key === 'strategy_mix'\) return/);
+  assert.doesNotMatch(teacher, /renderFrequencyStack|frequency-stack|training-frequency-row/);
+  assert.match(trainingMarkup, /class="training-verdict-facts"/);
+  assert.match(trainingMarkup, /id="trainingAnalysisTitle">Analysis/);
+  assert.doesNotMatch(trainingMarkup, /class="training-feedback-facts"/);
+  assert.match(trainingMarkup, /class="training-verdict-frequency" hidden><dt>Chosen frequency/);
+  assert.ok(trainingMarkup.indexOf('id="trainingSolution"') < trainingMarkup.indexOf('training-history-panel'));
 });
 
 test('ANALYSIS-001 changes do not touch protected poker, Equity, grading, or solver implementations', () => {

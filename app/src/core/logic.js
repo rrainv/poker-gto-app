@@ -111,7 +111,9 @@ const app = {
 
     bestStreak: 0,
 
-    showSolutionImmediately: false,
+    studyHintStep: 0,
+
+    studyHintExplanation: null,
 
     currentHand: null,
 
@@ -2572,7 +2574,8 @@ function renderDecisionAnalysis(container, {
   trustedFacts,
   authority,
   depth,
-  unavailableReason = null
+  unavailableReason = null,
+  surface = 'playbook'
 }) {
   if (!container) return null;
   const bridge = globalThis.RiverlineAnalysisExplanation;
@@ -2588,7 +2591,7 @@ function renderDecisionAnalysis(container, {
     depth,
     unavailableReason
   });
-  renderAnalysisExplanation(container, explanation, { depth });
+  renderAnalysisExplanation(container, explanation, { depth, surface });
   return explanation;
 }
 
@@ -2607,7 +2610,8 @@ function renderPlaybookDecisionAnalysis(decisionContext, strategyResult, resolut
     ),
     authority,
     depth: 'detailed',
-    unavailableReason
+    unavailableReason,
+    surface: 'playbook'
   });
   app.analysisExplanation = explanation;
   return explanation;
@@ -5026,17 +5030,7 @@ function initTrainingMode() {
     $('#trainingStreet')?.focus({ preventScroll: false });
   });
 
-  bind('#trainingShowSolution', 'click', function toggleStudyMode() {
-    const nextState = this.getAttribute('aria-pressed') !== 'true';
-    this.classList.toggle('on', nextState);
-    this.setAttribute('aria-pressed', String(nextState));
-    app.training.showSolutionImmediately = nextState;
-    if (nextState && app.training.currentSolution && app.training.lifecycle === 'ready') {
-      showTrainingSolution(app.training.currentSolution);
-    } else if (!nextState && app.training.lifecycle === 'ready' && $('#trainingSolution')) {
-      $('#trainingSolution').hidden = true;
-    }
-  });
+  bind('#trainingRevealHint', 'click', revealNextTrainingStudyHint);
   bind('#trainingDifficulty', 'change', updateAssistanceDisplay);
   bind('#trainingStreet', 'change', updateTrainingFilterAvailability);
   bind('#trainingDecisionTarget', 'change', updateTrainingFilterAvailability);
@@ -5132,6 +5126,50 @@ function updateAssistanceDisplay() {
   }
 }
 
+function resetTrainingStudyHints(exercise = null) {
+  app.training.studyHintStep = 0;
+  app.training.studyHintExplanation = null;
+  const region = $('#trainingStudyHints');
+  const content = $('#trainingStudyHintContent');
+  const button = $('#trainingRevealHint');
+  if (content) content.replaceChildren();
+  if (region) region.hidden = !exercise;
+  if (button) {
+    button.hidden = !exercise;
+    button.disabled = !exercise;
+    button.textContent = 'Get a hint';
+  }
+}
+
+function trainingStudyHintExplanation(exercise) {
+  const bridge = globalThis.RiverlineAnalysisExplanation;
+  if (!exercise || !bridge || typeof bridge.create !== 'function') return null;
+  const history = trainingActionHistoryForAnalysis(app.training.currentPresentation || exercise.presentation);
+  return bridge.create({
+    decisionContext: exercise.decisionContext,
+    strategyResult: exercise.strategyResult,
+    trustedFacts: trustedAnalysisFacts(exercise.decisionContext, exercise.strategyResult, history),
+    authority: 'training',
+    depth: 'concise'
+  });
+}
+
+function revealNextTrainingStudyHint() {
+  const exercise = app.training.currentExercise;
+  if (app.training.lifecycle !== 'ready' || !exercise || typeof renderAnalysisStudyHints !== 'function') return;
+  const explanation = app.training.studyHintExplanation || trainingStudyHintExplanation(exercise);
+  if (!explanation) return;
+  app.training.studyHintExplanation = explanation;
+  app.training.studyHintStep = Math.min(3, app.training.studyHintStep + 1);
+  renderAnalysisStudyHints($('#trainingStudyHintContent'), explanation, app.training.studyHintStep);
+  const button = $('#trainingRevealHint');
+  if (button) {
+    const complete = app.training.studyHintStep >= 3;
+    button.disabled = complete;
+    button.textContent = complete ? 'All hints viewed' : 'Another hint';
+  }
+}
+
 function showTrainingFeedback(feedback, isCorrect) {
 
   const feedbackDiv = $('#trainingFeedback');
@@ -5166,16 +5204,13 @@ function showTrainingSolution(solution) {
 
   if (!solutionDiv) return;
 
-  const preview = app.training.lifecycle === 'ready';
   const eyebrow = $('#trainingSolutionEyebrow');
   if (eyebrow) {
-    eyebrow.textContent = preview ? 'Strategy preview' : 'After-answer reference';
-    eyebrow.dataset.i18n = preview ? 'Strategy preview' : 'After-answer reference';
+    eyebrow.textContent = 'After-answer reference';
+    eyebrow.dataset.i18n = 'After-answer reference';
   }
   const note = solutionDiv.querySelector?.('.training-reference-note');
-  if (note) note.textContent = preview
-    ? 'Study preview is enabled. It does not change how your answer is graded.'
-    : 'Probabilities from the displayed strategy source; no EV is implied.';
+  if (note) note.textContent = 'Probabilities from the displayed strategy source; no EV is implied.';
 
   const actionsList = (Array.isArray(solution) ? solution : []).map((entry) => ({
     action: entry.action,
@@ -5492,6 +5527,7 @@ function setTrainingWorkspaceState(state) {
 }
 
 function clearTrainingExercisePresentation() {
+  resetTrainingStudyHints();
   if ($('#trainingExerciseTags')) $('#trainingExerciseTags').innerHTML = '';
   if ($('#trainingActionHistory')) $('#trainingActionHistory').innerHTML = '<li class="is-empty">Generating a new canonical trajectory.</li>';
   if ($('#trainingCurrentActor')) $('#trainingCurrentActor').textContent = 'No decision loaded.';
@@ -5681,6 +5717,7 @@ function renderCanonicalTrainingExercise(exercise) {
 
   updateTrainingButtons(exercise);
   updateAssistanceDisplay();
+  resetTrainingStudyHints(exercise);
   renderTrainingSource(exercise);
   renderAllCards();
   document.querySelectorAll('#trainingHeroCards .training-readonly-card, #trainingBoardCards .training-readonly-card')
@@ -5690,9 +5727,6 @@ function renderCanonicalTrainingExercise(exercise) {
     });
   if (window.SoundFX) window.SoundFX.playCardDeal(presentation.heroCards.length + presentation.board.length);
 
-  if (app.training.showSolutionImmediately) {
-    showTrainingSolution(app.training.currentSolution);
-  }
 }
 
 async function newRandomTrainingHand(options = {}) {
@@ -5749,30 +5783,27 @@ function canonicalTrainingFeedback(evaluation, strategyResult) {
   const heuristic = String(strategyResult.source || '').startsWith('heuristic_');
   const chosen = evaluation.mappedStrategyAction?.label
     || trainingActionLabel(evaluation.chosenAction.type, app.training.currentExercise.decisionContext);
-  const best = evaluation.bestStrategyAction.label;
-  const chosenPct = (evaluation.chosenProbability * 100).toFixed(0);
-  const bestPct = (evaluation.bestProbability * 100).toFixed(0);
   if (evaluation.grade === 'optimal') {
     return {
       title: 'Optimal',
       text: heuristic
-        ? `Within the current strategy estimate, ${chosen} receives ${chosenPct}%. The highest-frequency action is ${best} at ${bestPct}%.`
-        : `${source} assigns ${chosenPct}% to ${chosen}. The highest-frequency action is ${best} at ${bestPct}%.`
+        ? `Within the current strategy estimate, ${chosen} is an optimal choice. Compare the displayed reference for the full mix.`
+        : `${source} supports ${chosen}. Compare the displayed reference for the full mix.`
     };
   }
   if (evaluation.grade === 'acceptable') {
     return {
       title: 'Acceptable',
       text: heuristic
-        ? `Acceptable mixed-strategy choice. Within the current strategy estimate, ${chosen} has ${chosenPct}%, within 15 percentage points of ${best} at ${bestPct}%.`
-        : `Acceptable mixed-strategy choice: ${source} mixes ${chosen} at ${chosenPct}%, within 15 percentage points of ${best} at ${bestPct}%.`
+        ? `Acceptable mixed-strategy choice. Within the current strategy estimate, ${chosen} remains close enough to the leading action.`
+        : `Acceptable mixed-strategy choice from ${source}. Compare the displayed reference for the full mix.`
     };
   }
   return {
     title: 'Mistake',
     text: heuristic
-      ? `Within the current strategy estimate, ${chosen} has ${chosenPct}%, compared with ${bestPct}% for ${best}. No EV estimate is available unless the strategy source supplies one.`
-      : `${source} assigns ${chosenPct}% to ${chosen}, compared with ${bestPct}% for ${best}. No EV estimate is available unless the strategy source supplies one.`
+      ? `Within the current strategy estimate, ${chosen} is not the leading response. Compare the displayed reference before the next decision. No EV estimate is available unless the strategy source supplies one.`
+      : `${source} does not make ${chosen} the leading response. Compare the displayed reference before the next decision. No EV estimate is available unless the strategy source supplies one.`
   };
 }
 
@@ -5802,7 +5833,8 @@ function renderTrainingDecisionAnalysis(exercise) {
     strategyResult: exercise.strategyResult,
     trustedFacts: trustedAnalysisFacts(exercise.decisionContext, exercise.strategyResult, history),
     authority: 'training',
-    depth: 'concise'
+    depth: 'concise',
+    surface: 'training'
   });
   container.hidden = !explanation;
   app.training.currentAnalysisExplanation = explanation;
@@ -5823,6 +5855,7 @@ function handleTrainingGuess(userAction) {
   const evaluation = result.evaluation;
   app.training.lifecycle = 'answered';
   app.training.currentEvaluation = evaluation;
+  resetTrainingStudyHints();
   app.training.stats.totalHands += 1;
   app.training.stats.correct += evaluation.scoreDelta;
   app.training.stats.streak = evaluation.accepted ? app.training.stats.streak + 1 : 0;

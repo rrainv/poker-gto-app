@@ -955,9 +955,9 @@
 
                     
 
-<div id="teacherContent"
+<div id="teacherContent" class="analysis-panel-content"
 
-                  style="display: none; font-size: 13px; color: var(--muted); margin-top: 12px; line-height: 1.5; padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                  style="display: none;">
 
                 </div>
 
@@ -1323,6 +1323,13 @@
                 <div class="pot-math-detail"><span data-i18n="MDF">MDF</span><strong id="trainingMdfVal">—</strong></div>
                 <div id="trainingHintBox" class="training-hint"><strong data-i18n="Guided prompt">Guided prompt</strong><span id="trainingHintText"></span></div>
               </div>
+              <section id="trainingStudyHints" class="training-study-hints" aria-labelledby="trainingStudyHintsTitle" hidden>
+                <div class="training-study-hints-head">
+                  <div><h3 id="trainingStudyHintsTitle">Study hints</h3><p>Get a nudge about the spot.</p></div>
+                  <button id="trainingRevealHint" class="ui-button ui-button--secondary" type="button">Get a hint</button>
+                </div>
+                <div id="trainingStudyHintContent" class="training-study-hint-content" aria-live="polite"></div>
+              </section>
               <div class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
               <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions"></div>
               <p class="training-shortcut-help"><span>Keyboard:</span> <kbd>1</kbd>–<kbd>6</kbd> choose a visible action</p>
@@ -1330,14 +1337,14 @@
 
             <div id="trainingFeedback" class="training-feedback" data-grade="none" aria-live="polite" hidden>
               <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info">Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
-              <h3 id="feedbackTitle">Feedback</h3><p id="feedbackText">Your answer will be compared with the current strategy reference.</p>
-              <dl class="training-feedback-facts">
+              <div class="training-verdict"><h3 id="feedbackTitle">Feedback</h3><p id="feedbackText">Your answer will be compared with the current strategy reference.</p></div>
+              <dl class="training-verdict-facts">
                 <div><dt>Chosen action</dt><dd id="trainingChosenAction">—</dd></div>
-                <div><dt>Chosen frequency</dt><dd id="trainingChosenProbability">—</dd></div>
-                <div><dt>Highest frequency</dt><dd id="trainingBestProbability">—</dd></div>
+                <div class="training-verdict-frequency" hidden><dt>Chosen frequency</dt><dd id="trainingChosenProbability">—</dd></div>
+                <div class="training-verdict-frequency" hidden><dt>Highest frequency</dt><dd id="trainingBestProbability">—</dd></div>
                 <div id="trainingEvFact" hidden><dt>EV comparison</dt><dd id="trainingEvValue">—</dd></div>
               </dl>
-              <div id="trainingAnalysis" class="training-shared-analysis" hidden></div>
+              <section class="training-analysis-region" aria-labelledby="trainingAnalysisTitle"><h4 id="trainingAnalysisTitle">Analysis</h4><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></section>
             </div>
             <div class="training-completion-actions">
               <button class="ui-button ui-button--primary training-primary-next" type="button" id="trainingNextHandBtn" aria-keyshortcuts="Enter" data-i18n="Generate exercise">Generate exercise</button>
@@ -1348,10 +1355,6 @@
         </main>
 
         <aside class="training-insight-column">
-          <section class="panel training-history-panel" aria-labelledby="trainingHistoryTitle">
-            <div class="panel-head"><div><p class="training-eyebrow" data-i18n="Canonical replay">Canonical replay</p><h2 id="trainingHistoryTitle" data-i18n="Action history">Action history</h2></div></div>
-            <div class="panel-body"><ol id="trainingActionHistory" class="training-action-history"><li class="is-empty">Generate an exercise to view its chronological action history.</li></ol><p id="trainingCurrentActor" class="training-current-actor">No decision loaded.</p></div>
-          </section>
           <section id="trainingSolution" class="panel training-solution-panel" hidden aria-labelledby="trainingSolutionTitle">
             <div class="panel-head"><div><p id="trainingSolutionEyebrow" class="training-eyebrow" data-i18n="After-answer reference">After-answer reference</p><h2 id="trainingSolutionTitle" data-i18n="Strategy frequencies">Strategy frequencies</h2></div></div>
             <div class="panel-body">
@@ -1360,6 +1363,10 @@
               <div id="trainingFrequencyRows" class="training-frequency-rows"></div>
             </div>
           </section>
+          <details class="panel training-history-panel" aria-labelledby="trainingHistoryTitle">
+            <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="Canonical replay">Canonical replay</p><h2 id="trainingHistoryTitle" data-i18n="Action history">Action history</h2></div></summary>
+            <div class="panel-body"><ol id="trainingActionHistory" class="training-action-history"><li class="is-empty">Generate an exercise to view its chronological action history.</li></ol><p id="trainingCurrentActor" class="training-current-actor">No decision loaded.</p></div>
+          </details>
           <section class="panel training-session-panel" aria-labelledby="trainingSessionTitle">
             <div class="panel-head"><div><p class="training-eyebrow" data-i18n="This browser session">This browser session</p><h2 id="trainingSessionTitle" data-i18n="Session progress">Session progress</h2></div></div>
             <div class="panel-body">
@@ -1384,7 +1391,7 @@
               <button class="ui-button ui-button--primary training-generate" type="button" id="trainingNewHand">Generate exercise</button>
             </div>
           </section>
-          <section class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle"><div class="panel-head"><div><h2 id="trainingAssistanceTitle">Assistance</h2><p class="panel-note">Pre-answer help is explicit and never changes grading.</p></div></div><div class="panel-body"><div class="switchrow"><span><strong>Study mode preview</strong><small>Reveal strategy frequencies before answering.</small></span><button class="switch ui-switch" id="trainingShowSolution" type="button" aria-label="Preview strategy frequencies before answering" aria-pressed="false"><b aria-hidden="true"></b></button></div></div></section>
+          <section class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle"><div class="panel-head"><div><h2 id="trainingAssistanceTitle">Assistance</h2><p class="panel-note">Difficulty controls automatic help.</p></div></div><div class="panel-body"><p class="training-study-hints-note"><strong>Study hints</strong><span>Ask for a coaching prompt in the decision panel.</span></p></div></section>
           <details class="panel training-advanced" id="trainingAdvanced">
             <summary>Seed, replay & diagnostics</summary>
             <div class="panel-body">
