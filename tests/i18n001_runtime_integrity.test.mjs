@@ -246,9 +246,10 @@ test('theme display names and Equity seed placeholder localize without changing 
   const runtime = createRuntime();
   for (const language of ['ru', 'he']) {
     runtime.context.window.setLanguage(language);
-    for (const name of ['Riverline Midnight', 'Discord Dark', 'Carbon Slate', 'Terminal Dark CRT']) {
+    for (const name of ['Riverline Midnight', 'Discord Dark', 'Terminal Dark CRT']) {
       assert.notEqual(runtime.context.window.t(name), name, `${language} retained theme display name ${name}`);
     }
+    assert.equal(runtime.context.window.t('Carbon Slate'), 'Carbon Slate');
     const placeholder = runtime.context.window.t('Generated automatically');
     assert.notEqual(placeholder, 'Generated automatically');
     assert.match(placeholder, language === 'ru' ? /[\u0400-\u04FF]{2,}/u : /[\u0590-\u05FF]{2,}/u);
@@ -265,7 +266,11 @@ test('Analysis renderer consumes structured keys and rendered audit covers live 
   assert.match(teacherSource, /analysisMessage\(analysisFact\.templateKey, analysisFact\.text/);
   assert.match(teacherSource, /analysisMessage\(analysisFact\.labelKey, analysisFact\.label/);
   assert.match(teacherSource, /analysisMessage\(part\.templateKey, part\.text/);
-  for (const state of ['matrix-selected', 'hand-empty', 'playbook-unavailable', 'training-answered', 'settings', 'equity-advanced']) {
+  for (const state of [
+    'matrix-selected', 'hand-empty', 'playbook-unavailable', 'playbook-expanded', 'range-comparison',
+    'training-pre-answer', 'training-hint', 'training-answered', 'settings',
+    'equity-idle', 'equity-advanced', 'equity-complete', 'guide'
+  ]) {
     assert.match(renderedAuditSource, new RegExp(state));
   }
   assert.match(renderedAuditSource, /matrixPreserved/);

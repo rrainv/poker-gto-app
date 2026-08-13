@@ -11,13 +11,13 @@ const http = require('node:http');
 const path = require('node:path');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
-const artifactRoot = path.join(repoRoot, 'tests', 'artifacts', 'i18n001r2');
+const artifactRoot = path.join(repoRoot, 'tests', 'artifacts', 'l10n001');
 const screenshotsEnabled = process.argv.includes('--screenshots');
 const ALLOWED_ENGLISH_TOKENS = Object.freeze([
-  'Riverline', 'Hero', 'Villain', 'UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB', 'LJ', 'MP',
+  'Riverline', 'Playbook', 'Hero', 'Villain', 'UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB', 'LJ', 'MP',
   'bb', 'SPR', 'MDF', 'EV', 'GTO', 'Monte Carlo', 'ClubGG', 'DecisionContext',
   'StrategyResult', 'TrainingConfig', 'Web Worker', 'English', 'uint32', 'ID',
-  'Discord', 'PioSolver', 'CRT'
+  'Discord', 'PioSolver', 'Carbon Slate', 'CRT'
 ]);
 
 app.disableHardwareAcceleration();
@@ -66,7 +66,7 @@ async function selectPlaybookView(win, view) {
   await waitFor(win, `document.querySelector('#${id}')?.style.display !== 'none'`);
 }
 
-async function generateAnsweredTraining(win) {
+async function generateTraining(win) {
   await selectMode(win, 'training');
   await win.webContents.executeJavaScript(`(() => {
     const seed = document.querySelector('#trainingSeedInput');
@@ -76,6 +76,10 @@ async function generateAnsweredTraining(win) {
   await click(win, '#trainingGenerateSeed');
   await waitFor(win, "!document.querySelector('#trainingExerciseSurface')?.hidden", 25_000);
   await waitFor(win, "document.querySelectorAll('#trainingGuessButtons button').length > 0", 25_000);
+}
+
+async function generateAnsweredTraining(win) {
+  await generateTraining(win);
   await win.webContents.executeJavaScript(`(() => {
     const solution = [...(window.app?.training?.currentSolution || [])].sort((a, b) => a.value - b.value);
     const action = solution[0]?.action?.type;
@@ -86,6 +90,36 @@ async function generateAnsweredTraining(win) {
   await waitFor(win, "!document.querySelector('#trainingFeedback')?.hidden", 15_000);
   await win.webContents.executeJavaScript(`(() => {
     document.querySelectorAll('#trainingAnalysis details').forEach((entry) => { entry.open = true; });
+  })()`);
+  await settle(win);
+}
+
+async function setScenarioCards(win) {
+  await win.webContents.executeJavaScript(`(() => {
+    window.app.gto.hero = ${JSON.stringify(['As', 'Kd'])};
+    window.app.gto.board = ${JSON.stringify(['2c', '7d', 'Th'])};
+    window.app.gto.dead = [];
+    renderAllCards({ mode: 'gto' });
+    return updateContext('L10N-001 rendered audit');
+  })()`);
+  await waitFor(win, "window.app?.strategyResult?.source !== 'unavailable'", 25_000);
+  await settle(win);
+}
+
+async function setEquityScenario(win, { hero = [], board = [], dead = [] } = {}) {
+  await selectMode(win, 'equity');
+  await win.webContents.executeJavaScript(`(() => {
+    resetEquityCalculator();
+    window.app.equity.players[0].handMode = ${hero.length ? "'known'" : "'unknown'"};
+    window.app.equity.players[0].cards = ${JSON.stringify(hero)};
+    for (let index = 1; index < window.app.equity.players.length; index += 1) {
+      window.app.equity.players[index].handMode = 'unknown';
+      window.app.equity.players[index].cards = [];
+    }
+    window.app.equity.board = ${JSON.stringify(board)};
+    window.app.equity.dead = ${JSON.stringify(dead)};
+    renderAllCards({ mode: 'equity' });
+    updateEquityReadiness();
   })()`);
   await settle(win);
 }
@@ -219,6 +253,7 @@ async function capture(win, name, focusSelector) {
     await win.webContents.executeJavaScript(`document.querySelector(${JSON.stringify(focusSelector)})?.scrollIntoView({ block: 'start' })`);
     await settle(win);
   }
+  await delay(350);
   const filePath = path.join(artifactRoot, `${name}.png`);
   const image = await win.webContents.capturePage();
   fs.writeFileSync(filePath, image.toPNG());
@@ -238,7 +273,19 @@ async function auditLanguage(win, language) {
   const reports = [];
   await selectMode(win, 'gto');
   await setLanguage(win, language);
+  await click(win, '#playbookScenarioMode');
+  await win.webContents.executeJavaScript(`(() => {
+    window.app.gto.hero = ['As', 'Kd'];
+    window.app.gto.board = [];
+    window.app.gto.dead = [];
+    renderAllCards({ mode: 'gto' });
+    return updateContext('L10N-001 preflop matrix audit');
+  })()`);
+  await settle(win);
   await selectPlaybookView(win, 'chart');
+  await win.webContents.executeJavaScript(`renderChart()`);
+  await settle(win);
+  await waitFor(win, "document.querySelectorAll('#strategyGrid button[data-hand]').length > 0", 25_000);
   await click(win, '#strategyGrid button[data-hand="AA"]');
   reports.push(await auditState(win, language, 'matrix-selected', '.riverline-shell', '.matrix-hand-inspector'));
 
@@ -249,6 +296,19 @@ async function auditLanguage(win, language) {
   await selectPlaybookView(win, 'context');
   reports.push(await auditState(win, language, 'playbook-unavailable', '.riverline-shell', '#teacherContent'));
 
+  await setScenarioCards(win);
+  await win.webContents.executeJavaScript(`document.querySelectorAll('#teacherContent details').forEach((entry) => { entry.open = true; })`);
+  await settle(win);
+  reports.push(await auditState(win, language, 'playbook-expanded', '.riverline-shell', '#teacherContent'));
+
+  await selectPlaybookView(win, 'range');
+  reports.push(await auditState(win, language, 'range-comparison', '.riverline-shell', '#rangeView'));
+
+  await generateTraining(win);
+  reports.push(await auditState(win, language, 'training-pre-answer', '.riverline-shell', '#trainingExerciseSurface'));
+  await click(win, '#trainingRevealHint');
+  reports.push(await auditState(win, language, 'training-hint', '.riverline-shell', '#trainingStudyHints'));
+
   await generateAnsweredTraining(win);
   reports.push(await auditState(win, language, 'training-answered', '.riverline-shell', '#trainingAnalysis'));
 
@@ -256,17 +316,38 @@ async function auditLanguage(win, language) {
   reports.push(await auditState(win, language, 'settings', '#settingsModal', '#settingsModal'));
   await click(win, '#closeSettingsModal');
 
-  await selectMode(win, 'equity');
+  await setEquityScenario(win);
+  reports.push(await auditState(win, language, 'equity-idle', '.riverline-shell', '#equityResultsPanel'));
   await win.webContents.executeJavaScript(`document.querySelector('#equityAdvanced').open = true`);
   await settle(win);
   reports.push(await auditState(win, language, 'equity-advanced', '.riverline-shell', '#equityAdvanced'));
+
+  await setEquityScenario(win, { hero: ['As', 'Kd'], board: ['2c', '7d', 'Th', '9s', '3h'] });
+  await click(win, '#calculate');
+  await waitFor(win, "document.querySelector('#equityResultsPanel')?.dataset.resultState === 'complete'", 25_000);
+  reports.push(await auditState(win, language, 'equity-complete', '.riverline-shell', '#equityResultsPanel'));
+
+  await selectMode(win, 'info');
+  reports.push(await auditState(win, language, 'guide', '.riverline-shell', '#infoView'));
   return reports;
 }
 
 async function verifyLiveSwitch(win) {
   await setLanguage(win, 'en');
   await selectMode(win, 'gto');
+  await click(win, '#playbookScenarioMode');
+  await win.webContents.executeJavaScript(`(() => {
+    window.app.gto.hero = ['As', 'Kd'];
+    window.app.gto.board = [];
+    window.app.gto.dead = [];
+    renderAllCards({ mode: 'gto' });
+    return updateContext('L10N-001 live-switch matrix audit');
+  })()`);
+  await settle(win);
   await selectPlaybookView(win, 'chart');
+  await win.webContents.executeJavaScript(`renderChart()`);
+  await settle(win);
+  await waitFor(win, "document.querySelectorAll('#strategyGrid button[data-hand]').length > 0", 25_000);
   await click(win, '#strategyGrid button[data-hand="AA"]');
   const matrixBefore = await win.webContents.executeJavaScript(`(() => {
     window.__i18nAuditMatrixModel = window.app?.matrixModel;

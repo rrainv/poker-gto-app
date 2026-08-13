@@ -1988,6 +1988,50 @@ const trainingWorkspaceTranslations = {
     "Home · no rake": "משחק ביתי · ללא רייק"
   }
 };
+// L10N-001 native-language Training copy. Keep these values beside the
+// DESIGN-008 overlay so the final resolved catalog owns one terminology set.
+Object.assign(trainingWorkspaceTranslations.ru, {
+  "Training workspace": "Тренировка",
+  "Make the decision": "Примите решение",
+  "Ready for a drill": "Готовы к упражнению?",
+  "Try again": "Попробовать снова",
+  "Hero to act": "Ход Hero",
+  "What is your decision?": "Ваше решение?",
+  "Only legal actions are shown.": "Показаны только допустимые действия.",
+  "Generate exercise": "Новое упражнение",
+  "Replay this decision": "Повторить решение",
+  "Adjust drill": "Настроить упражнение",
+  "Canonical replay": "Повтор раздачи",
+  "Action history": "История действий",
+  "After-answer reference": "Разбор после ответа",
+  "Strategy frequencies": "Частоты стратегии",
+  "This browser session": "Текущая сессия",
+  "Session progress": "Прогресс сессии",
+  "Reset session stats": "Сбросить статистику сессии",
+  "Drill setup": "Настройки упражнения",
+  "Choose a decision family": "Выберите тип решения"
+});
+Object.assign(trainingWorkspaceTranslations.he, {
+  "Training workspace": "אימון",
+  "Make the decision": "קבלו החלטה",
+  "Ready for a drill": "מוכנים לתרגיל?",
+  "Try again": "לנסות שוב",
+  "Hero to act": "תור Hero",
+  "What is your decision?": "מה ההחלטה שלכם?",
+  "Only legal actions are shown.": "מוצגות רק פעולות חוקיות.",
+  "Generate exercise": "תרגיל חדש",
+  "Replay this decision": "תרגלו שוב",
+  "Adjust drill": "התאימו את התרגיל",
+  "Canonical replay": "חזרה על היד",
+  "Action history": "היסטוריית פעולות",
+  "After-answer reference": "פירוט אחרי התשובה",
+  "Strategy frequencies": "תדירויות אסטרטגיה",
+  "This browser session": "הסשן הנוכחי",
+  "Session progress": "התקדמות בסשן",
+  "Reset session stats": "איפוס נתוני הסשן",
+  "Drill setup": "הגדרות התרגיל",
+  "Choose a decision family": "בחרו סוג החלטה"
+});
 Object.entries(trainingWorkspaceTranslations).forEach(([language, entries]) => {
   Object.assign(appTranslations[language], entries);
 });
