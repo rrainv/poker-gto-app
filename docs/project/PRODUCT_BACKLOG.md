@@ -60,6 +60,7 @@ Status vocabulary:
 | PROD-RANGE-003 | PLANNED | save/share named ranges |
 | PROD-RANGE-004 | PLANNED | weighted range analysis |
 | PROD-RANGE-005 | PLANNED | range-vs-range Equity/category tools |
+| PROD-RANGE-006 | PLANNED | provider-backed postflop full-range Matrix with board-aware weighted combos and validated source coverage |
 | PROD-MATH-001 | IDEA | board/pot/poker-math study tools |
 
 ## Input and workflow

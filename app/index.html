@@ -994,17 +994,24 @@
 
 
           <div class="playbook-table-toggle">
+            <span class="playbook-table-label"><strong>Spot table</strong><small>Seats, stacks, cards, and current action</small></span>
             <button id="toggleTableBtn" class="ui-button ui-button--quiet" type="button" aria-expanded="true" aria-controls="table-wrapper">Collapse Table</button>
           </div>
           <div id="table-wrapper" class="table-wrapper" data-collapsible-region="poker-table">
             <div id="visual-table-container"></div>
           </div>
 
-          <div id="playbookAnalysisTabs" class="sub-tabs ui-segments" role="tablist" aria-label="Playbook analysis views">
-            <button class="sub-tab ui-tab active" type="button" role="tab" aria-selected="true" data-gto-view="context" data-i18n="Decision">Decision</button>
-            <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="chart" data-i18n="Range Matrix">Range Matrix</button>
-            <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="range" data-i18n="Range Category Comparison">Range Category Comparison</button>
-          </div>
+          <nav id="playbookAnalysisNavigation" class="playbook-analysis-switcher" aria-labelledby="playbookAnalysisNavigationTitle">
+            <div class="playbook-analysis-switcher-copy">
+              <strong id="playbookAnalysisNavigationTitle">Current spot views</strong>
+              <small>Decision, provider-backed Matrix, or heuristic category comparison</small>
+            </div>
+            <div id="playbookAnalysisTabs" class="sub-tabs ui-segments" role="tablist" aria-label="Playbook analysis views">
+              <button class="sub-tab ui-tab active" type="button" role="tab" aria-selected="true" data-gto-view="context" data-i18n="Decision">Decision</button>
+              <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="chart" data-i18n="Range Matrix">Range Matrix</button>
+              <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="range" data-i18n="Range Category Comparison">Range Category Comparison</button>
+            </div>
+          </nav>
 
           <div id="chartView" class="gto-view" style="display: none;">
 
@@ -1016,7 +1023,7 @@
 
                   <div class="panel-title" data-i18n="Range Matrix">Range Matrix</div>
 
-                  <div class="panel-note" data-i18n="All 169 hand classes · click any square for its current mix.">All
+                  <div id="matrixPanelDescription" class="panel-note" data-i18n="All 169 hand classes · click any square for its current mix.">All
 
                     169 hand classes · click any square for its current mix.</div>
 
@@ -1069,6 +1076,15 @@
 
               <div class="chart-summary" id="chartSummary">BTN vs BB · 100 bb · rake 5% · unopened pot</div>
 
+              <section id="postflopMatrixEmpty" class="matrix-empty-state" aria-labelledby="postflopMatrixEmptyTitle" hidden>
+                <div>
+                  <span class="matrix-empty-eyebrow">Postflop Range Matrix</span>
+                  <h3 id="postflopMatrixEmptyTitle">Range expansion not available yet</h3>
+                  <p>Exact-hand postflop strategy is available in Decision, but the current strategy source does not provide a full postflop range expansion.</p>
+                </div>
+                <button id="postflopMatrixBack" class="ui-button ui-button--secondary" type="button">Back to Decision</button>
+              </section>
+
               <div class="range-matrix-layout">
 
                 <div class="range-matrix-main">
@@ -1090,6 +1106,8 @@
                 <span class="key" role="listitem"><i class="mix" data-action-kind="mixed"></i><span data-i18n="Mixed">Mixed</span></span>
 
                 <span class="key" role="listitem"><i class="fold" data-action-kind="fold"></i><span data-i18n="Fold">Fold</span></span>
+
+                <span class="matrix-legend-note">Tint shows the dominant action · band shows the full mix</span>
 
               </div>
 
@@ -1132,15 +1150,15 @@
 
 
           <div id="rangeView" class="gto-view" style="display: none;">
-            <section class="panel">
-              <div class="panel-head">
+            <section class="panel range-comparison-panel">
+              <div class="panel-head range-comparison-head">
                 <div>
                   <div class="panel-title" data-i18n="Range Category Comparison">Range Category Comparison</div>
                   <div class="panel-note"><span data-i18n="Compare fixed heuristic preflop samples by made-hand and draw category.">Compare fixed heuristic preflop samples by made-hand and draw category.</span></div>
                 </div>
 
-                <div style="display:flex; gap:12px;">
-                  <label><span class="sr-only" data-i18n="Hero sample position">Hero sample position</span><select id="rangeAdvHeroPos" class="settings-select" style="width:70px;">
+                <div class="range-comparison-selectors">
+                  <label><span class="sr-only" data-i18n="Hero sample position">Hero sample position</span><select id="rangeAdvHeroPos" class="settings-select">
                     <option value="UTG">UTG</option>
                     <option value="HJ">HJ</option>
                     <option value="CO">CO</option>
@@ -1148,8 +1166,8 @@
                     <option value="SB">SB</option>
                     <option value="BB">BB</option>
                   </select></label>
-                  <span style="color:var(--muted); margin-top:6px;">vs</span>
-                  <label><span class="sr-only" data-i18n="Villain sample position">Villain sample position</span><select id="rangeAdvVilPos" class="settings-select" style="width:70px;">
+                  <span class="range-comparison-versus">vs</span>
+                  <label><span class="sr-only" data-i18n="Villain sample position">Villain sample position</span><select id="rangeAdvVilPos" class="settings-select">
                     <option value="UTG">UTG</option>
                     <option value="HJ">HJ</option>
                     <option value="CO">CO</option>
@@ -1172,8 +1190,9 @@
                   <div id="heroAdvBar" style="width:50%; background:var(--primary); transition:width 0.3s;"></div>
                   <div id="villainAdvBar" style="width:50%; background:var(--red); transition:width 0.3s;"></div>
                 </div>
-                <div class="range-grid-split" style="display:flex; gap:16px; flex-wrap:wrap;">
-                  <div style="flex:1; min-width:280px;">
+                <div class="range-comparison-scroll" tabindex="0" aria-label="Scrollable aligned Hero and Villain range category matrices">
+                <div class="range-grid-split">
+                  <div class="range-comparison-pane">
                     <div style="margin-bottom:8px; font-weight:bold; color:var(--text); display:flex; justify-content:space-between;">
                       <span id="heroRangeTitle">Hero sample (BTN)</span>
                       <span id="heroRangeScore" style="color:var(--primary);">0% strong made categories</span>
@@ -1189,7 +1208,7 @@
                       <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--red)" data-i18n="Air">Air</span><span id="heroStatAir">0 (0%)</span></div>
                     </div>
                   </div>
-                  <div style="flex:1; min-width:280px;">
+                  <div class="range-comparison-pane">
                     <div style="margin-bottom:8px; font-weight:bold; color:var(--text); display:flex; justify-content:space-between;">
                       <span id="villainRangeTitle">Villain sample (BB)</span>
                       <span id="villainRangeScore" style="color:var(--red);">0% strong made categories</span>
@@ -1205,6 +1224,7 @@
                       <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--red)" data-i18n="Air">Air</span><span id="vilStatAir">0 (0%)</span></div>
                     </div>
                   </div>
+                </div>
                 </div>
                 <div class="strategy-key" style="margin-top:24px; justify-content:center;">
                   <span class="key"><i style="background:var(--primary)"></i><span data-i18n="Very strong made">Very strong made</span></span>
@@ -1756,6 +1776,11 @@
   </div>
 
 
+
+  <div id="matrixCellCue" class="matrix-cell-cue" role="tooltip" hidden>
+    <strong id="matrixCellCueHand"></strong>
+    <span id="matrixCellCueMix"></span>
+  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" data-tone="info"></div>
 

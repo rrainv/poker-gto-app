@@ -77,13 +77,13 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | QA-LAYOUT-001 | OPEN | Decision/Matrix/Range tabs sit too low and feel disconnected | PRODUCT-UI-005 |
 | QA-LAYOUT-002 | OPEN | Playbook table/configuration pushes analysis far below the fold | PRODUCT-UI-005 |
 | QA-LAYOUT-003 | OPEN | card-first versus configuration-first ordering needs product decision | PRODUCT-UI-005 / Product Lab |
-| QA-MATRIX-001 | OPEN | Matrix remains visually difficult to read despite fixed density | PRODUCT-UI-005 |
+| QA-MATRIX-001 | PARTIAL | Matrix now has dominant-action tint, a full-mix band, and exact hover/focus cues; final live acceptance pending | PRODUCT-UI-005R |
 | QA-MATRIX-002 | OPEN | postflop unavailable state should not render 169 inactive cells | PRODUCT-UI-005 |
 | QA-RANGE-001 | OPEN | two Range Category grids create an extremely long comparison page | PRODUCT-UI-005 |
 | QA-EQUITY-001 | OPEN | Equity workspace still feels like loosely assembled panels | PRODUCT-UI-005 |
 | QA-EQUITY-002 | OPEN | Equity `Hero / Win / Tie` label spacing/wrapping | PRODUCT-UI-005 |
 | QA-EQUITY-003 | OPEN | Flop/Turn/River guides misalign with board card slots | PRODUCT-UI-005 |
-| QA-TRAIN-LAYOUT-001 | OPEN | Training clips/extends below 1920×1080 and needs better viewport fit | PRODUCT-UI-005 |
+| QA-TRAIN-LAYOUT-001 | PARTIAL | Training desktop density is reduced for 1920×1080 pre-answer fit; final live acceptance pending | PRODUCT-UI-005R |
 | QA-TRAIN-LAYOUT-002 | OPEN | idle/no-board surfaces waste vertical space | PRODUCT-UI-005 |
 | QA-TABLE-001 | OPEN | support rails/Action Path should be visible where useful without excessive scroll | PRODUCT-UI-005 |
 | QA-COLLAPSE-001 | PARTIAL | collapsed table control should remain compact and integrated | PRODUCT-UI-002R acceptance / UI-005 |

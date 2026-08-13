@@ -2206,6 +2206,69 @@ function getFirstValidCombo(handClassStr, excludeCards) {
 
 
 
+function hideMatrixCellCue() {
+  const cue = $('#matrixCellCue');
+  if (!cue) return;
+  cue.hidden = true;
+  cue.removeAttribute('data-input');
+  cue.style.removeProperty('--matrix-cue-x');
+  cue.style.removeProperty('--matrix-cue-y');
+}
+
+function showMatrixCellCue(cell, pointerEvent = null) {
+  const cue = $('#matrixCellCue');
+  if (!cue || !cell?.dataset.hand) return;
+
+  const hand = $('#matrixCellCueHand');
+  const mix = $('#matrixCellCueMix');
+  if (hand) hand.textContent = cell.dataset.hand;
+  if (mix) mix.textContent = cell.dataset.strategyCue || 'Strategy unavailable';
+  cue.dataset.input = pointerEvent ? 'pointer' : 'keyboard';
+  if (pointerEvent) {
+    cue.style.setProperty('--matrix-cue-x', `${pointerEvent.clientX}px`);
+    cue.style.setProperty('--matrix-cue-y', `${pointerEvent.clientY}px`);
+  } else {
+    cue.style.removeProperty('--matrix-cue-x');
+    cue.style.removeProperty('--matrix-cue-y');
+  }
+  cue.hidden = false;
+}
+
+function bindMatrixGridInteractions(grid) {
+  if (!grid || grid.dataset.delegated) return;
+  grid.dataset.delegated = 'true';
+  grid.addEventListener('click', (event) => {
+    const cell = event.target.closest('.hand-cell');
+    if (!cell || !cell.dataset.hand) return;
+    if (window.SoundFX) SoundFX.playClick();
+    app.selectedHand = cell.dataset.hand;
+    const selectedHand = $('#selectedHand');
+    if (selectedHand) selectedHand.textContent = app.selectedHand;
+    renderChart();
+  });
+  grid.addEventListener('pointerover', (event) => {
+    const cell = event.target.closest('.hand-cell');
+    if (!cell || (event.relatedTarget && cell.contains(event.relatedTarget))) return;
+    showMatrixCellCue(cell, event);
+  });
+  grid.addEventListener('pointerout', (event) => {
+    const cell = event.target.closest('.hand-cell');
+    if (!cell || (event.relatedTarget && cell.contains(event.relatedTarget))) return;
+    hideMatrixCellCue();
+  });
+  grid.addEventListener('focusin', (event) => showMatrixCellCue(event.target.closest('.hand-cell')));
+  grid.addEventListener('focusout', hideMatrixCellCue);
+  grid.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') hideMatrixCellCue();
+  });
+  grid.closest('.matrix-wrap')?.addEventListener('scroll', hideMatrixCellCue, { passive: true });
+}
+
+function matrixMixState(actions, dominantAction) {
+  const meaningfulActions = actions.filter((action) => Number(action.value) >= 0.5);
+  return meaningfulActions.length <= 1 || Number(dominantAction?.value) >= 99.5 ? 'pure' : 'mixed';
+}
+
 function renderChart() {
 
   const grid = $('#strategyGrid');
@@ -2219,6 +2282,35 @@ function renderChart() {
   const positions = decisionContext?.heroPosition || '—';
   const matrixStack = decisionContext?.stackBb ?? 0;
   const matrixModel = prepareMatrixStrategyModel(decisionContext);
+  const currentHeroClass = matrixContextUnavailable
+    ? '' : handClass(decisionContext?.heroCards || app.gto.hero);
+  const isPostFlop = matrixModel.isPostFlop;
+  const matrixSource = matrixModel.source;
+  const matrixLayout = document.querySelector('.range-matrix-layout');
+  const matrixEmptyState = $('#postflopMatrixEmpty');
+  const matrixToolbar = document.querySelector('.range-matrix-toolbar');
+  const matrixDescription = $('#matrixPanelDescription');
+
+  if (matrixLayout) matrixLayout.hidden = isPostFlop;
+  if (matrixEmptyState) matrixEmptyState.hidden = !isPostFlop;
+  if (matrixToolbar) matrixToolbar.hidden = isPostFlop;
+  if (matrixDescription) {
+    matrixDescription.textContent = isPostFlop
+      ? 'Range expansion is not available yet; use Decision for exact-hand postflop strategy.'
+      : 'All 169 hand classes · click any square for its current mix.';
+  }
+
+  if (isPostFlop) {
+    hideMatrixCellCue();
+    grid.replaceChildren();
+    if ($('#chartSelectionPreview')) $('#chartSelectionPreview').innerHTML = '<span>Exact hand only</span>';
+    if ($('#selectedHand')) $('#selectedHand').textContent = 'Exact hand only';
+    if ($('#selectedHandKind')) $('#selectedHandKind').textContent = 'Postflop decision';
+    if ($('#selectedHandPrimary')) $('#selectedHandPrimary').textContent = 'Range expansion unavailable';
+    if ($('#selectedMix')) $('#selectedMix').innerHTML = '<span class="matrix-inspector-unavailable">Use Decision for the exact-hand strategy.</span>';
+    if ($('#chartSummary')) $('#chartSummary').textContent = 'Use Decision for exact-hand postflop strategy.';
+    return;
+  }
 
   if (grid.children.length === 0) {
     grid.innerHTML = '';
@@ -2231,20 +2323,9 @@ function renderChart() {
       btn.setAttribute('aria-colindex', String(col + 1));
       grid.appendChild(btn);
     }));
-    grid.dataset.delegated = 'true';
-    grid.addEventListener('click', (event) => {
-      const cell = event.target.closest('.hand-cell');
-      if (!cell || !cell.dataset.hand) return;
-      if (window.SoundFX) SoundFX.playClick();
-      app.selectedHand = cell.dataset.hand;
-      const selHand = document.querySelector('#selectedHand');
-      if (selHand) selHand.textContent = app.selectedHand;
-      renderChart();
-    });
   }
 
-  const currentHeroClass = matrixContextUnavailable
-    ? '' : handClass(decisionContext?.heroCards || app.gto.hero);
+  bindMatrixGridInteractions(grid);
 
   
 
@@ -2252,16 +2333,16 @@ function renderChart() {
 
   
 
-  const isPostFlop = matrixModel.isPostFlop;
-  const matrixSource = matrixModel.source;
-
   RANKS.forEach((_, row) => RANKS.forEach((__, column) => {
 
     const hand = handCode(row, column);
     const actions = matrixModel.cells[row * 13 + column]?.actions || [];
+    const dominantAction = actions.reduce((highest, action) =>
+      Number(action.value) > Number(highest?.value ?? -1) ? action : highest, null);
 
-    const type = (actions[0] && actions[0].kind) || 'unavailable';
+    const type = dominantAction?.kind || 'unavailable';
     const handKind = row === column ? 'pair' : hand.endsWith('s') ? 'suited' : 'offsuit';
+    const mixState = matrixMixState(actions, dominantAction);
 
     const detail = actions.length
       ? actions.map((action) => `${action.name} ${action.value}%`).join(' · ')
@@ -2274,12 +2355,15 @@ function renderChart() {
 
     const isSelected = app.selectedHand === hand || (!app.selectedHand && currentHeroClass === hand);
 
-    button.className = `hand-cell hand-${handKind} action-${type} ${isSelected ? 'selected ' : ''}${type}`;
+    button.className = `hand-cell hand-${handKind} action-${type} matrix-${mixState} ${isSelected ? 'selected ' : ''}${type}`;
     button.dataset.handKind = handKind;
-    button.dataset.primaryAction = visualActionKind(actions[0]);
+    button.dataset.primaryAction = visualActionKind(dominantAction);
+    button.dataset.mixState = mixState;
     button.dataset.state = actions.length ? 'available' : 'unavailable';
     button.dataset.strategySource = matrixSource || 'unavailable';
+    button.dataset.strategyCue = detail;
     button.setAttribute('aria-pressed', String(isSelected));
+    button.setAttribute('aria-describedby', 'matrixCellCue');
 
     const chartMode = $('#chartAction')?.value || 'strategy';
 
@@ -2349,7 +2433,7 @@ function renderChart() {
     if (isSelected) {
 
         const kindLabel = handKind === 'pair' ? 'Pair' : handKind === 'suited' ? 'Suited' : 'Offsuit';
-        const primaryAction = actions[0];
+        const primaryAction = dominantAction;
         previewHTML = `<strong class="matrix-preview-hand">${hand}</strong><span class="matrix-preview-summary">${primaryAction ? `${primaryAction.name} ${primaryAction.value}%` : 'Unavailable'}</span>`;
 
         $('#selectedHand').textContent = hand;
@@ -2373,28 +2457,6 @@ function renderChart() {
 
   }));
 
-  /**
-   * Performance Optimization: Event Delegation
-   * Instead of attaching 169 individual 'click' event listeners to each hand cell
-   * (which bloats memory and slows down rendering), we attach a single listener
-   * to the parent `#strategyGrid`. The `event.target.closest` method efficiently
-   * resolves the clicked child cell. This drastically reduces the DOM node memory footprint.
-   */
-  if (grid && !grid.dataset.delegated) {
-    grid.dataset.delegated = 'true';
-    grid.addEventListener('click', (event) => {
-      const cell = event.target.closest('.hand-cell');
-      if (!cell || !cell.dataset.hand) return;
-      if (window.SoundFX) SoundFX.playClick();
-      app.selectedHand = cell.dataset.hand;
-      const selHand = $('#selectedHand');
-      if (selHand) selHand.textContent = app.selectedHand;
-      renderChart();
-    });
-  }
-
-  
-
   const previewContainer = $('#chartSelectionPreview');
 
   if (previewContainer) {
@@ -2410,7 +2472,7 @@ function renderChart() {
     chartSummary.textContent = matrixContextUnavailable
       ? 'Strategy unavailable for the current decision context'
       : isPostFlop
-        ? 'Postflop Matrix unavailable · provider-backed class expansion deferred'
+        ? 'Use Decision for exact-hand postflop strategy.'
         : `${positions} · ${matrixStack} bb · ${strategySourceDisplayLabel(matrixSource)}`;
   }
 
@@ -3713,9 +3775,11 @@ function bindEvents() {
     if (el) selectPlaybookAnalysisView(el, true);
   });
 
-  if ($('#backContext')) $('#backContext').addEventListener('click', () => {
-    const el = document.querySelector('[data-gto-view="context"]');
-    if (el) selectPlaybookAnalysisView(el, true);
+  ['backContext', 'postflopMatrixBack'].forEach((id) => {
+    if ($('#' + id)) $('#' + id).addEventListener('click', () => {
+      const el = document.querySelector('[data-gto-view="context"]');
+      if (el) selectPlaybookAnalysisView(el, true);
+    });
   });
 
   
@@ -5106,6 +5170,8 @@ function renderTrainingCards() {
     `<span class="training-readonly-card riverline-card" role="img" aria-label="${displayCard(card)}">${cardMarkup(card)}</span>`;
   const heroTarget = $('#trainingHeroCards');
   const boardTarget = $('#trainingBoardCards');
+  const tableSummary = document.querySelector('.training-table-summary');
+  if (tableSummary) tableSummary.dataset.boardState = boardCards.length ? 'board' : 'empty';
   if (heroTarget) heroTarget.innerHTML = heroCards.map(readOnlyCard).join('');
   if (boardTarget) {
     boardTarget.innerHTML = boardCards.length

@@ -59,20 +59,19 @@ test('Playbook exposes prominent semantic Scenario Analysis and Hand Mode workfl
   assert.match(html, /Play a legal hand/);
 });
 
-test('workspace hierarchy makes decision primary and deep analysis secondary', () => {
+test('workspace hierarchy keeps Decision primary and its alternate analytical views adjacent', () => {
   assert.match(html, /class="app-grid playbook-workspace"/);
   assert.match(html, /class="panel recommend playbook-primary-decision" id="recommendation"/);
+  assert.match(html, /id="playbookAnalysisNavigation" class="playbook-analysis-switcher"/);
   assert.match(html, /id="playbookAnalysisTabs" class="sub-tabs ui-segments"/);
   const sharedIndex = html.indexOf('id="sharedControls"');
   const decisionIndex = html.indexOf('id="recommendation"');
-  const tableIndex = html.indexOf('id="table-wrapper"');
-  const analysisIndex = html.indexOf('id="playbookAnalysisTabs"');
-  const matrixIndex = html.indexOf('id="chartView"');
-  assert.ok(sharedIndex < decisionIndex && decisionIndex < tableIndex
-    && tableIndex < analysisIndex && analysisIndex < matrixIndex);
+  assert.ok(sharedIndex < decisionIndex);
   assert.match(css, /#contextView\s*\{\s*order:\s*1/);
-  assert.match(css, /#table-wrapper\s*\{\s*order:\s*3/);
-  assert.match(css, /#playbookAnalysisTabs\s*\{\s*order:\s*4/);
+  const composition = css.slice(css.indexOf('PRODUCT-UI-005: workspace composition'));
+  assert.match(composition, /#playbookAnalysisNavigation\s*\{\s*order:\s*2/);
+  assert.match(composition, /#chartView,[\s\S]*?order:\s*3/);
+  assert.match(composition, /#table-wrapper\s*\{\s*order:\s*5/);
 });
 
 test('Scenario organization retains supported product controls only', () => {

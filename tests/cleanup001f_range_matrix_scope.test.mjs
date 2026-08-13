@@ -13,5 +13,6 @@ test('Range Matrix gives every cell a local action list and never writes window.
   assert.match(renderChart, /const hand = handCode\(row, column\);\s+let actions = \[\];/);
   assert.doesNotMatch(renderChart, /(?:window|globalThis)\.actions\s*=/);
   assert.equal((renderChart.match(/\blet actions\s*=/g) || []).length, 1);
-  assert.match(renderChart, /const type = \(actions\[0\] && actions\[0\]\.kind\) \|\| 'unavailable';/);
+  assert.match(renderChart, /const dominantAction = actions\.reduce/);
+  assert.match(renderChart, /const type = dominantAction\?\.kind \|\| 'unavailable';/);
 });
