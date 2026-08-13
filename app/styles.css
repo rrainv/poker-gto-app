@@ -6990,19 +6990,6 @@ html[data-four-color="false"] {
 .equity-card-group + .equity-card-group { margin-top: var(--space-4); }
 .equity-card-group-head { justify-content: space-between; align-items: flex-start; }
 .equity-card-group-head h3 { margin: 0 0 var(--space-1); font-size: 1rem; }
-.equity-street-guide {
-  width: fit-content;
-  display: grid;
-  grid-template-columns: calc((var(--poker-card-width, 52px) * 3) + (var(--space-4) * 2)) var(--poker-card-width, 52px) var(--poker-card-width, 52px);
-  gap: var(--space-4);
-  margin-top: var(--space-4);
-  color: var(--text-muted);
-  font: 700 var(--text-micro-size)/1.2 var(--font-data);
-  text-align: center;
-}
-.equity-board-cards { flex-wrap: nowrap; margin-top: var(--space-2); }
-.equity-board-cards .card-slot:nth-child(4) { margin-inline-start: var(--space-2); }
-.equity-board-cards .card-slot:nth-child(5) { margin-inline-start: var(--space-2); }
 .equity-dead-cards { max-height: 170px; overflow-y: auto; margin-top: var(--space-4); }
 
 .equity-control-grid {
@@ -7824,6 +7811,51 @@ button.rail-utility { width: 100%; cursor: pointer; }
 }
 
 [dir="rtl"] .poker-data-token {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* RESPONSIVE-001: one grid owns Equity street labels and board-slot geometry. */
+.equity-board-layout {
+  --equity-board-column-gap: var(--space-4);
+  width: max-content;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, var(--poker-card-width, 48px));
+  grid-template-rows: auto var(--poker-card-height, 68px);
+  column-gap: var(--equity-board-column-gap);
+  row-gap: var(--space-2);
+  margin-top: var(--space-4);
+  margin-right: auto;
+  margin-left: 0;
+  overflow-x: auto;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.equity-board-layout > .equity-street-guide,
+.equity-board-layout > .equity-board-cards {
+  display: contents;
+}
+
+.equity-board-layout [data-equity-street="flop"] { grid-column: 1 / span 3; grid-row: 1; }
+.equity-board-layout [data-equity-street="turn"] { grid-column: 4; grid-row: 1; }
+.equity-board-layout [data-equity-street="river"] { grid-column: 5; grid-row: 1; }
+.equity-board-layout .equity-board-cards > .card-slot { grid-row: 2; margin: 0; }
+.equity-board-layout .equity-board-cards > .card-slot:nth-child(1) { grid-column: 1; }
+.equity-board-layout .equity-board-cards > .card-slot:nth-child(2) { grid-column: 2; }
+.equity-board-layout .equity-board-cards > .card-slot:nth-child(3) { grid-column: 3; }
+.equity-board-layout .equity-board-cards > .card-slot:nth-child(4) { grid-column: 4; }
+.equity-board-layout .equity-board-cards > .card-slot:nth-child(5) { grid-column: 5; }
+
+.equity-board-layout [data-equity-street] {
+  align-self: center;
+  color: var(--text-muted);
+  font: 700 var(--text-micro-size)/1.2 var(--font-data);
+  text-align: center;
+}
+
+[dir="rtl"] .equity-board-layout {
   direction: ltr;
   unicode-bidi: isolate;
 }

@@ -82,7 +82,7 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | QA-RANGE-001 | OPEN | two Range Category grids create an extremely long comparison page | PRODUCT-UI-005 |
 | QA-EQUITY-001 | OPEN | Equity workspace still feels like loosely assembled panels | PRODUCT-UI-005 |
 | QA-EQUITY-002 | OPEN | Equity `Hero / Win / Tie` label spacing/wrapping | PRODUCT-UI-005 |
-| QA-EQUITY-003 | OPEN | Flop/Turn/River guides misalign with board card slots | PRODUCT-UI-005 |
+| QA-EQUITY-003 | PARTIAL | Flop/Turn/River guides and live board slots now share one five-column LTR grid; Electron geometry is exact across the RESPONSIVE-001 EN/RU/HE viewport matrix, with human visual acceptance still pending | RESPONSIVE-001 human acceptance |
 | QA-TRAIN-LAYOUT-001 | PARTIAL | Training desktop density is reduced for 1920×1080 pre-answer fit; final live acceptance pending | PRODUCT-UI-005R |
 | QA-TRAIN-LAYOUT-002 | OPEN | idle/no-board surfaces waste vertical space | PRODUCT-UI-005 |
 | QA-TABLE-001 | OPEN | support rails/Action Path should be visible where useful without excessive scroll | PRODUCT-UI-005 |
@@ -104,8 +104,8 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | QA-I18N-001 | PARTIAL | I18N-001R2 Electron rendered-visible RU/HE audit is clean across Matrix, empty Hand, unavailable Playbook Analysis, answered Training Analysis, localized theme Settings, and Equity advanced seed controls; exact-state screenshots captured, with human linguistic acceptance pending | I18N-001R2 human acceptance |
 | QA-I18N-002 | PARTIAL | one initialized runtime localizes static/dynamic/attribute content; Electron live switching preserves the same Matrix model, Training exercise/ID/seed, and unavailable StrategyResult while RU → HE → EN → RU re-renders both unavailable message surfaces without recomputation or cross-locale script leakage | I18N-001R2 human acceptance |
 | QA-I18N-003 | PARTIAL | static diagnostics report zero missing visible keys, zero mojibake, and zero cross-locale script contamination; the rendered audit covers text, pseudo-content, options, input values, and user-facing attributes with zero unintended English/Cyrillic/Hebrew findings under the narrow poker/technical proper-noun whitelist | I18N-001R2 human acceptance |
-| QA-I18N-004 | PARTIAL | RTL direction and LTR poker-data islands are structurally tested and captured in Hebrew Electron evidence; formal cross-viewport responsive acceptance remains with RESPONSIVE-001 | RESPONSIVE-001 |
-| QA-RESP-001 | OPEN | formal 1024/1080p/1440p/1600p/4K/16:10/zoom acceptance | RESPONSIVE-001 |
+| QA-I18N-004 | PARTIAL | RTL direction and LTR poker-data islands are structurally tested; RESPONSIVE-001's 260-case Electron sweep and exact Equity street geometry cover Hebrew at 1024, 1080p, 1600p, and 90/110/125% zoom, with human visual acceptance still pending | RESPONSIVE-001 human acceptance |
+| QA-RESP-001 | PARTIAL | RESPONSIVE-001 completed a 260-case Electron renderer sweep across the target desktop viewport, EN/RU/HE, primary-theme, workspace-state, and zoom matrix with no automated bounds/overflow findings; human visual acceptance remains pending | RESPONSIVE-001 human acceptance |
 | QA-MOBILE-001 | DEFERRED | mobile needs a distinct composition, not only stacked desktop panels | MOBILE-001 |
 
 ## Performance and DOM follow-up
