@@ -3905,6 +3905,8 @@ function bindEvents() {
 
       t.style.display = isHidden ? 'block' : 'none';
 
+      t.classList.toggle('is-analysis-entering', isHidden);
+
       if (isHidden) playbookSurfaceInvalidator.renderIfNeeded('analysis');
 
     }
@@ -3979,6 +3981,10 @@ function bindEvents() {
   const selectPlaybookAnalysisView = (button, reveal = false) => {
 
     const view = button.dataset.gtoView;
+
+    const destination = view === 'context' ? $('#contextView') : $(`#${view === 'chart' ? 'chart' : view === 'range' ? 'range' : 'tree'}View`);
+
+    $$('.gto-view').forEach((item) => item.classList.toggle('is-view-entering', item === destination));
 
     $$('.sub-tab').forEach((item) => {
       const isSelected = item === button;
@@ -5600,6 +5606,7 @@ function revealNextTrainingStudyHint() {
   app.training.studyHintExplanation = explanation;
   app.training.studyHintStep = Math.min(3, app.training.studyHintStep + 1);
   renderAnalysisStudyHints($('#trainingStudyHintContent'), explanation, app.training.studyHintStep);
+  if (window.SoundFX) window.SoundFX.playHint();
   const button = $('#trainingRevealHint');
   if (button) {
     const complete = app.training.studyHintStep >= 3;
@@ -6043,18 +6050,22 @@ function updateTrainingButtons(exercise) {
     const semanticLabel = trainingActionLabel(type, exercise.decisionContext);
     const label = t(semanticLabel) || semanticLabel;
     const sizing = presentationByType.get(type);
+    const boundsLabel = sizing?.boundsLabel?.endsWith(' to')
+      ? t('to {range}', { range: sizing.boundsLabel.slice(0, -3) })
+      : sizing?.boundsLabel;
+    const sizingLabel = boundsLabel || sizing?.amountLabel || '';
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `ui-button training-action-button training-action-button--${type}`;
     button.dataset.action = type;
     button.setAttribute('aria-keyshortcuts', String(index + 1));
-    button.setAttribute('aria-label', `${label}${sizing?.boundsLabel ? `, ${sizing.boundsLabel}` : sizing?.amountLabel ? `, ${sizing.amountLabel}` : ''}`);
+    button.setAttribute('aria-label', `${label}${sizingLabel ? `, ${sizingLabel}` : ''}`);
     const copy = document.createElement('span');
     copy.className = 'training-action-copy';
     const name = document.createElement('strong');
     name.textContent = label;
     const detail = document.createElement('small');
-    detail.textContent = sizing?.boundsLabel || sizing?.amountLabel || t('No size required');
+    detail.textContent = sizingLabel || t('No size required');
     copy.append(name, detail);
     const shortcut = document.createElement('kbd');
     shortcut.textContent = String(index + 1);

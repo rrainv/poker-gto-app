@@ -58,6 +58,7 @@ These identifiers are the current live-audit baseline. They remain distinct from
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
+| QA-POLISH-001 | PARTIAL | Visual/motion polish is manually accepted; POLISH-FINAL-001R raises and separates cue levels with clean one-event/one-hook and Audio-toggle renderer checks, pending human audibility acceptance | POLISH-FINAL-001R human listening acceptance |
 | QA-CARD-001 | OPEN | table/DOM card corner rank and suit can clip | PRODUCT-UI-004 |
 | QA-CARD-002 | OPEN | full `10` mirrored bottom-corner centering/geometry looks wrong | PRODUCT-UI-004 |
 | QA-CARD-003 | OPEN | DOM and SVG card-face geometry need final consistency pass | PRODUCT-UI-004 |

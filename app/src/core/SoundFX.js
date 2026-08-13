@@ -3,10 +3,24 @@ const SoundFX = (function() {
   let audioCtx = null;
   let soundEnabled = localStorage.getItem('appSoundEnabled') !== 'false';
   let lastDealTime = -Infinity;
+  let lastHintTime = -Infinity;
 
-  const VOLUME = Object.freeze({ click: 0.035, card: 0.045, action: 0.04, result: 0.04 });
+  const CUE_PROFILE = Object.freeze({
+    click: Object.freeze({ gain: 0.05, attack: 0.002, duration: 0.045 }),
+    hint: Object.freeze({ gain: 0.055, attack: 0.004, duration: 0.105 }),
+    card: Object.freeze({ gain: 0.08, attack: 0.002, duration: 0.085 }),
+    action: Object.freeze({ gain: 0.075, attack: 0.003, duration: 0.075 }),
+    result: Object.freeze({ gain: 0.11, attack: 0.006, duration: 0.18 })
+  });
+
+  function shapeCueEnvelope(gainParam, start, profile, peakGain = profile.gain) {
+    gainParam.setValueAtTime(0.001, start);
+    gainParam.exponentialRampToValueAtTime(peakGain, start + profile.attack);
+    gainParam.exponentialRampToValueAtTime(0.001, start + profile.duration);
+  }
 
   function getAudioContext() {
+    if (!soundEnabled) return null;
     if (!audioCtx && (window.AudioContext || window.webkitAudioContext)) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       audioCtx = new AudioContextClass();
@@ -20,6 +34,7 @@ const SoundFX = (function() {
   if (typeof window !== 'undefined') {
     ['click', 'touchstart', 'keydown', 'pointerdown'].forEach((evt) => {
       window.addEventListener(evt, () => {
+        if (!soundEnabled) return;
         const ctx = getAudioContext();
         if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
       }, { passive: true });
@@ -82,18 +97,17 @@ const SoundFX = (function() {
         lastDealTime = now;
         const cueCount = Number(cardCount) > 1 ? 2 : 1;
         for (let index = 0; index < cueCount; index += 1) {
-          const start = now + (index * 0.045);
+          const start = now + (index * 0.055);
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(280 - (index * 24), start);
-          osc.frequency.exponentialRampToValueAtTime(125, start + 0.055);
-          gain.gain.setValueAtTime(VOLUME.card, start);
-          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.06);
+          osc.frequency.setValueAtTime(360 - (index * 38), start);
+          osc.frequency.exponentialRampToValueAtTime(170, start + 0.07);
+          shapeCueEnvelope(gain.gain, start, CUE_PROFILE.card);
           osc.connect(gain);
           gain.connect(ctx.destination);
           osc.start(start);
-          osc.stop(start + 0.06);
+          osc.stop(start + CUE_PROFILE.card.duration + 0.01);
         }
       } catch (e) {}
     },
@@ -106,13 +120,12 @@ const SoundFX = (function() {
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(1100, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(550, ctx.currentTime + 0.05);
-        gain.gain.setValueAtTime(VOLUME.action, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+        osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.065);
+        shapeCueEnvelope(gain.gain, ctx.currentTime, CUE_PROFILE.action);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.05);
+        osc.stop(ctx.currentTime + CUE_PROFILE.action.duration + 0.01);
       } catch (e) {}
     },
     playTrainingResult: function(grade = 'acceptable') {
@@ -121,20 +134,25 @@ const SoundFX = (function() {
       if (!ctx) return;
       try {
         const now = ctx.currentTime;
-        const tones = grade === 'optimal' ? [440, 554]
-          : grade === 'mistake' ? [196]
-            : [330];
+        const tones = grade === 'optimal' ? [480, 620]
+          : grade === 'mistake' ? [240]
+            : [380];
         tones.forEach((freq, i) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           osc.type = grade === 'mistake' ? 'triangle' : 'sine';
-          osc.frequency.value = freq;
-          gain.gain.setValueAtTime(VOLUME.result, now + i * 0.055);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.055 + 0.12);
+          const start = now + i * 0.065;
+          const peakGain = grade === 'optimal' ? CUE_PROFILE.result.gain * 0.72 : CUE_PROFILE.result.gain;
+          osc.frequency.setValueAtTime(freq, start);
+          osc.frequency.exponentialRampToValueAtTime(
+            grade === 'optimal' ? freq * 1.08 : grade === 'mistake' ? 180 : 410,
+            start + 0.09
+          );
+          shapeCueEnvelope(gain.gain, start, CUE_PROFILE.result, peakGain);
           osc.connect(gain);
           gain.connect(ctx.destination);
-          osc.start(now + i * 0.055);
-          osc.stop(now + i * 0.055 + 0.12);
+          osc.start(start);
+          osc.stop(start + CUE_PROFILE.result.duration + 0.01);
         });
       } catch (e) {}
     },
@@ -152,16 +170,36 @@ const SoundFX = (function() {
             : actionName === 'bet' || actionName === 'raise' ? 340 : 290;
         osc.type = 'sine';
         osc.frequency.setValueAtTime(frequency, now);
-        gain.gain.setValueAtTime(VOLUME.action, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.055);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(180, frequency * 0.82), now + 0.06);
+        shapeCueEnvelope(gain.gain, now, CUE_PROFILE.action);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.055);
+        osc.stop(now + CUE_PROFILE.action.duration + 0.01);
       } catch (e) {}
     },
     playCorrect: function() { return this.playTrainingResult('optimal'); },
     playWrong: function() { return this.playTrainingResult('mistake'); },
+    playHint: function() {
+      if (!soundEnabled) return;
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      try {
+        const now = ctx.currentTime;
+        if (now - lastHintTime < 0.1) return;
+        lastHintTime = now;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(540, now);
+        osc.frequency.exponentialRampToValueAtTime(690, now + 0.065);
+        shapeCueEnvelope(gain.gain, now, CUE_PROFILE.hint);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + CUE_PROFILE.hint.duration + 0.01);
+      } catch (e) {}
+    },
     playClick: function() {
       if (!soundEnabled) return;
       const ctx = getAudioContext();
@@ -171,12 +209,12 @@ const SoundFX = (function() {
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(750, ctx.currentTime);
-        gain.gain.setValueAtTime(VOLUME.click, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+        osc.frequency.exponentialRampToValueAtTime(620, ctx.currentTime + 0.035);
+        shapeCueEnvelope(gain.gain, ctx.currentTime, CUE_PROFILE.click);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.03);
+        osc.stop(ctx.currentTime + CUE_PROFILE.click.duration + 0.01);
       } catch (e) {}
     },
     play: function(name) {

@@ -20,8 +20,8 @@ Completed major phases:
 
 Current reported ticket:
 
-- `PERF-RL18` completed a live Electron DOM inventory across Playbook, Matrix, Range, Training, Equity, and Guide states
-- the targeted card-picker cleanup detaches 376 elements/52 buttons on close with focus return; `RL-18` and `QA-PERF-002` are closed while visible-Matrix profiling remains `QA-PERF-003`
+- `POLISH-FINAL-001` visual and motion polish is manually accepted
+- `POLISH-FINAL-001R` raises and separates existing cue levels without changing event ownership; focused automation and Electron hook/toggle checks are clean, while `QA-POLISH-001` remains `PARTIAL` pending human listening acceptance
 
 Previously reported acceptance work:
 
@@ -31,8 +31,9 @@ Previously reported acceptance work:
 
 Next planned ticket after acceptance:
 
-- `I18N-001`
-- `RESPONSIVE-001`
+- `L10N-001`
+- one final fresh QA sweep
+- Product / Feature Labs only after that acceptance
 
 ## Current priority
 

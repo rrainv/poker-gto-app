@@ -8600,3 +8600,123 @@ button.rail-utility { width: 100%; cursor: pointer; }
   }
   .training-table-summary[data-board-state="empty"] .training-table-divider { width: 100%; height: 1px; }
 }
+
+/* POLISH-FINAL-001: restrained product-feel language ------------------- */
+:root {
+  --motion-micro: var(--duration-fast);
+  --motion-standard: var(--duration-normal);
+  --motion-emphasis: var(--duration-slow);
+}
+
+/* Shared inline notation is a compact card token, not colored prose. */
+.analysis-card-token {
+  gap: var(--space-2);
+  align-items: center;
+}
+.analysis-mini-card {
+  min-height: 1.45rem;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 5px 2px 4px;
+  background: color-mix(in srgb, var(--card-face) 96%, var(--surface-panel));
+  border: 1px solid color-mix(in srgb, var(--card-border) 88%, var(--border-strong));
+  border-radius: 4px;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .18);
+  font-size: .9rem;
+  line-height: 1;
+}
+.analysis-mini-card-rank { font-weight: 850; }
+.analysis-mini-card-suit { font-size: 1.12em; line-height: 1; }
+
+/* Feedback remains immediate and textual; motion only softens its arrival. */
+.training-feedback {
+  transition: border-color var(--motion-micro) var(--ease-standard),
+    background-color var(--motion-micro) var(--ease-standard),
+    box-shadow var(--motion-standard) var(--ease-standard);
+}
+.training-feedback[data-grade="optimal"] {
+  background: color-mix(in srgb, var(--status-success) 5%, var(--surface-section));
+  border-color: color-mix(in srgb, var(--status-success) 38%, var(--border-subtle));
+  border-inline-start-color: var(--status-success);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--status-success) 8%, transparent);
+}
+.training-feedback[data-grade="acceptable"] {
+  background: color-mix(in srgb, var(--status-info) 4%, var(--surface-section));
+}
+.training-feedback[data-grade="mistake"] {
+  background: color-mix(in srgb, var(--status-danger) 4%, var(--surface-section));
+  border-color: color-mix(in srgb, var(--status-danger) 34%, var(--border-subtle));
+  border-inline-start-color: var(--status-danger);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--status-danger) 7%, transparent);
+}
+.animate-feedback { animation: riverline-answer-enter var(--motion-emphasis) var(--ease-standard) both; }
+@keyframes riverline-answer-enter {
+  from { opacity: 0; translate: 0 -5px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+.training-study-hint-content .analysis-study-hint {
+  animation: riverline-hint-enter var(--motion-standard) var(--ease-standard) both;
+}
+@keyframes riverline-hint-enter {
+  from { opacity: 0; translate: 0 4px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+/* Event-scoped entrances avoid animating computation or large DOM trees. */
+.gto-view.is-view-entering,
+.analysis-panel-content.is-analysis-entering,
+.equity-results-panel[data-result-state="complete"] .equity-result-card {
+  animation: riverline-panel-enter var(--motion-standard) var(--ease-standard) both;
+}
+@keyframes riverline-panel-enter {
+  from { opacity: 0; translate: 0 5px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+.modal-backdrop.show > .modal {
+  animation: riverline-modal-enter var(--motion-emphasis) var(--ease-standard) both;
+}
+@keyframes riverline-modal-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.deck-card {
+  transition: border-color var(--motion-micro) var(--ease-standard),
+    background-color var(--motion-micro) var(--ease-standard),
+    box-shadow var(--motion-micro) var(--ease-standard);
+}
+
+/* Visibility waits for the restrained collapse instead of cutting it off. */
+.table-wrapper {
+  visibility: visible;
+  transition: max-height var(--motion-standard) var(--ease-standard),
+    opacity var(--motion-micro) var(--ease-standard),
+    visibility 0s linear 0s;
+}
+.table-wrapper.collapsed {
+  height: auto;
+  visibility: hidden;
+  transition: max-height var(--motion-standard) var(--ease-standard),
+    opacity var(--motion-micro) var(--ease-standard),
+    visibility 0s linear var(--motion-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;
+  }
+  .animate-feedback,
+  .training-study-hint-content .analysis-study-hint,
+  .gto-view.is-view-entering,
+  .analysis-panel-content.is-analysis-entering,
+  .equity-results-panel[data-result-state="complete"] .equity-result-card,
+  .modal-backdrop.show > .modal { animation: none !important; }
+}
