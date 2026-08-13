@@ -6126,7 +6126,7 @@ function renderTrainingDecisionContextSummary(exercise) {
   const streetLabel = $('#trainingStreetLabel');
   if (streetLabel) streetLabel.textContent = t(context.street.charAt(0).toUpperCase() + context.street.slice(1));
   const potInfo = $('#trainingPotInfo');
-  if (potInfo) potInfo.style.display = 'flex';
+  if (potInfo) potInfo.style.removeProperty('display');
   if ($('#trainingPotVal')) $('#trainingPotVal').textContent = `${context.potBb.toFixed(1)} bb`;
   if ($('#trainingFacingVal')) $('#trainingFacingVal').textContent = formatTrainingFacingCopy(context);
   if ($('#trainingPotOddsVal')) $('#trainingPotOddsVal').textContent = legacyContext.potOdds === null ? '—' : `${legacyContext.potOdds.toFixed(1)}%`;

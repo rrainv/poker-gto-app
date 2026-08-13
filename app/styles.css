@@ -200,7 +200,8 @@
 .training-context-strip > div { min-width: 0; display: grid; gap: var(--space-1); padding: var(--space-3); background: var(--surface-panel); }
 .training-context-strip > div + div { border-inline-start: 1px solid var(--border-subtle); }
 .training-context-strip span { color: var(--text-muted); font-size: var(--text-micro-size); }
-.training-context-strip strong { overflow-wrap: anywhere; color: var(--text-primary); font: 750 var(--text-label-size)/1.2 var(--font-data); font-variant-numeric: tabular-nums; }
+.training-context-strip strong { min-width: 0; overflow-wrap: normal; word-break: normal; color: var(--text-primary); font: 750 var(--text-label-size)/1.2 var(--font-data); font-variant-numeric: tabular-nums; }
+.training-context-strip .training-context-value--atomic { white-space: nowrap; }
 
 .training-assistance { display: flex; flex-wrap: wrap; gap: var(--space-3); }
 .training-assistance > div { padding: var(--space-3) var(--space-4); background: var(--surface-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-control); }
@@ -320,8 +321,9 @@
 @media (max-width: 1024px) {
   #trainingMode { padding: var(--space-5); }
   .training-workspace { grid-template-columns: minmax(0, 1.25fr) minmax(260px, .72fr); grid-template-areas: "decision insight" "setup setup"; gap: var(--space-4); }
-  .training-context-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .training-context-strip > div:nth-child(4) { border-inline-start: 0; }
+  .training-context-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .training-context-strip > div:nth-child(odd) { border-inline-start: 0; }
+  .training-context-strip > div:nth-child(n + 3) { border-top: 1px solid var(--border-subtle); }
   .training-action-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .training-verdict-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .training-verdict-facts > div:nth-child(odd) { border-inline-start: 0; }
@@ -7810,7 +7812,8 @@ button.rail-utility { width: 100%; cursor: pointer; }
   unicode-bidi: isolate;
 }
 
-[dir="rtl"] .poker-data-token {
+[dir="rtl"] .poker-data-token,
+[dir="rtl"] .control-value {
   direction: ltr;
   unicode-bidi: isolate;
 }

@@ -302,6 +302,7 @@ test('Hebrew uses component-level LTR islands for invariant poker data', () => {
   assert.match(css, /\[dir="rtl"\][^{]*\.equity-board-order[^}]*direction:\s*ltr/);
   assert.match(css, /\[dir="rtl"\][^{]*\.strategy-grid[^}]*direction:\s*ltr/);
   assert.match(css, /\[dir="rtl"\][^{]*\.poker-data-token[^}]*direction:\s*ltr/);
+  assert.match(css, /\[dir="rtl"\][^{]*\.control-value[^}]*direction:\s*ltr[^}]*unicode-bidi:\s*isolate/);
   const flop = html.indexOf('data-equity-street="flop"');
   const turn = html.indexOf('data-equity-street="turn"');
   const river = html.indexOf('data-equity-street="river"');

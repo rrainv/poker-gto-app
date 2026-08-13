@@ -38,6 +38,9 @@ test('Training controls and feedback remain contract-honest', () => {
   assert.match(logic, /callTrainingServiceBridge\('answer', exercise\.id, userAction\)/);
   assert.match(logic, /callTrainingPresentationBridge\('createViewModel', exercise\)/);
   assert.match(logic, /evaluation\.grade/);
+  assert.match(logic, /optimal: 'Correct'/);
+  assert.match(logic, /publicGradeLabels\[evaluation\.grade\] \|\| 'Review'/);
+  assert.doesNotMatch(logic, /t\(evaluation\.grade\.charAt/);
   assert.match(logic, /explanationData\.evAvailable/);
   assert.match(logic, /generationMetadata\?\.trainingConfig/);
   assert.doesNotMatch(training, /data-ev-bb|Expected value/);
