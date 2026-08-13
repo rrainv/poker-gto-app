@@ -49,8 +49,8 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | RL-12 | OPEN | theme/debug labels | PRODUCT-UI-004 |
 | RL-13 | PARTIAL | One-at-a-time coaching hints replace pre-answer reference disclosure; manual acceptance pending | PRODUCT-UI-003R2 |
 | RL-14 | PARTIAL | Training result uses the refined Hero/board-first hierarchy; manual acceptance pending | PRODUCT-UI-003R2 |
-| RL-16 | OPEN | Equity preparing/progress and narrow result metrics | EQUITY-UX-001 / PRODUCT-UI-005 |
-| RL-17 | OPEN | Guide terminology drift | GUIDE-001 |
+| RL-16 | PARTIAL | Equity UX accepted except card-back containment and small 1080p fit regressions; correction implemented and test-verified, final renderer acceptance pending | EQUITY-UX-001R visual acceptance |
+| RL-17 | PARTIAL | Guide terminology/content refresh is implemented and test-verified; final human Guide review is pending | GUIDE-001 human review |
 | RL-18 | OPEN | large hidden mounted DOM | later PERF follow-up |
 | RL-20 | OPEN | theme semantics / Daylight contrast | PRODUCT-UI-004 |
 
@@ -92,15 +92,15 @@ These identifiers are the current live-audit baseline. They remain distinct from
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-EQUITY-ETA-001 | OPEN | long Monte Carlo runs need ETA/throughput and meaningful preparation state | EQUITY-UX-001 |
-| QA-EQUITY-PROGRESS-001 | OPEN | `Preparing… 0%` dead period increases perceived latency | EQUITY-UX-001 |
-| QA-EQUITY-NARROW-001 | OPEN | result metrics are too small/tightly wrapped at narrower widths | EQUITY-UX-001 / UI-005 |
+| QA-EQUITY-ETA-001 | PARTIAL | real Monte Carlo throughput and conservative ETA implemented and test-verified; live renderer acceptance pending | EQUITY-UX-001 visual acceptance |
+| QA-EQUITY-PROGRESS-001 | PARTIAL | indeterminate preparation replaces fake `0%`; determinate progress uses real counters; live renderer acceptance pending | EQUITY-UX-001 visual acceptance |
+| QA-EQUITY-NARROW-001 | PARTIAL | per-hand Equity/Win/Tie cards and responsive context hierarchy implemented; live renderer acceptance pending | EQUITY-UX-001 visual acceptance |
 
 ## Guide, localization, responsive, and mobile
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-GUIDE-001 | OPEN | Guide terminology/placement is stale (`Last Action`, `Full range chart`, RFI wording, etc.) | GUIDE-001 |
+| QA-GUIDE-001 | PARTIAL | Guide terminology/content refresh is implemented and test-verified; final human Guide review is pending | GUIDE-001 human review |
 | QA-I18N-001 | OPEN | missing/unapplied translations and dynamic hardcoded English | I18N-001 |
 | QA-I18N-002 | OPEN | keys may exist but fail to render; diagnostics required before copy sweep | I18N-001 |
 | QA-I18N-003 | OPEN | encoding/mojibake and unit interpolation need audit | I18N-001 |

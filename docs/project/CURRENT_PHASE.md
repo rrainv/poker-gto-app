@@ -15,22 +15,17 @@ Completed major phases:
 - preflop and postflop mathematical-integrity work
 - evidence-first calibration baseline; further broad tuning paused pending reference data
 - `PERF-001`
-- `PRODUCT-UI-001`
-- `PRODUCT-UI-002` and its accepted correction pass
+- `PRODUCT-UI-001` through `PRODUCT-UI-005`, including their accepted correction passes
 - agent-documentation refresh
 
 Current reported ticket:
 
-- `PRODUCT-UI-003`, `PRODUCT-UI-003R`, and `PRODUCT-UI-003R2` form the current unstaged working ticket
-- implementation is awaiting human visual acceptance and commit
+- `EQUITY-UX-001` and its `EQUITY-UX-001R` presentation correction are implemented and test-verified in the current unstaged working ticket
+- renderer automation was unavailable for the correction pass, so `RL-16` remains `PARTIAL` pending final human visual acceptance and commit
+- `GUIDE-001` is implemented and test-verified; `RL-17` remains `PARTIAL` pending final human review of the live Guide
 
 Next planned ticket after acceptance:
 
-- `PRODUCT-UI-004` — cards, themes, and micro-polish
-- `PRODUCT-UI-005` — workspace composition and responsive fit
-- fresh UI QA checkpoint
-- `EQUITY-UX-001`
-- `GUIDE-001`
 - `I18N-001`
 - `RESPONSIVE-001`
 

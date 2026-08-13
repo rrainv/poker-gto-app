@@ -7662,6 +7662,7 @@ button.rail-utility { width: 100%; cursor: pointer; }
 
 .guide-mode { padding: clamp(var(--space-4), 1.5vw, var(--space-7)); overflow-y: auto; }
 .guide-workspace { width: min(1320px, 100%); margin-inline: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); align-items: start; }
+#infoView .info-section:last-child p:last-child { margin-block-end: 8px; }
 
 .card-slot .rank.rank--ten { font-size: 16px; line-height: 17px; letter-spacing: -.08em; }
 .card-slot .corner-rank.rank--ten { font-size: 10px; letter-spacing: -.08em; }
