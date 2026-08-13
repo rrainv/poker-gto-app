@@ -1,6 +1,8 @@
 // Procedural Web Audio API SoundFX Engine
 const SoundFX = (function() {
   let audioCtx = null;
+  let resumeContext = null;
+  let resumePromise = null;
   let soundEnabled = localStorage.getItem('appSoundEnabled') !== 'false';
   let lastDealTime = -Infinity;
   let lastHintTime = -Infinity;
@@ -19,26 +21,61 @@ const SoundFX = (function() {
     gainParam.exponentialRampToValueAtTime(0.001, start + profile.duration);
   }
 
-  function getAudioContext() {
+  function createAudioContext() {
     if (!soundEnabled) return null;
+    if (audioCtx?.state === 'closed') audioCtx = null;
     if (!audioCtx && (window.AudioContext || window.webkitAudioContext)) {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       audioCtx = new AudioContextClass();
     }
-    if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
-    }
     return audioCtx;
   }
 
-  if (typeof window !== 'undefined') {
-    ['click', 'touchstart', 'keydown', 'pointerdown'].forEach((evt) => {
-      window.addEventListener(evt, () => {
-        if (!soundEnabled) return;
-        const ctx = getAudioContext();
-        if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
-      }, { passive: true });
-    });
+  async function ensureAudioReady() {
+    const ctx = createAudioContext();
+    if (!ctx) return null;
+    if (ctx.state === 'running') return ctx;
+    if (ctx.state !== 'suspended') return null;
+
+    if (!resumePromise || resumeContext !== ctx) {
+      resumeContext = ctx;
+      let resumeResult;
+      try {
+        // Invoke resume synchronously in the cue's user-activation call stack.
+        resumeResult = ctx.resume();
+      } catch (error) {
+        resumeContext = null;
+        return null;
+      }
+      resumePromise = Promise.resolve(resumeResult)
+        .then(() => ctx)
+        .catch(() => null)
+        .finally(() => {
+          if (resumeContext === ctx) {
+            resumeContext = null;
+            resumePromise = null;
+          }
+        });
+    }
+
+    const readyContext = await resumePromise;
+    return soundEnabled
+      && readyContext === audioCtx
+      && readyContext?.state === 'running'
+      ? readyContext
+      : null;
+  }
+
+  function releaseAudioContext() {
+    const contextToClose = audioCtx;
+    audioCtx = null;
+    resumeContext = null;
+    resumePromise = null;
+    lastDealTime = -Infinity;
+    lastHintTime = -Infinity;
+    if (contextToClose && contextToClose.state !== 'closed' && typeof contextToClose.close === 'function') {
+      Promise.resolve(contextToClose.close()).catch(() => {});
+    }
   }
 
   const btn = document.getElementById('audioToggleBtn');
@@ -61,6 +98,7 @@ const SoundFX = (function() {
     toggle: function() {
       soundEnabled = !soundEnabled;
       localStorage.setItem('appSoundEnabled', soundEnabled);
+      if (!soundEnabled) releaseAudioContext();
       
       renderButtonState();
       const switchBtn = document.getElementById('audioSettingsSwitch');
@@ -87,9 +125,9 @@ const SoundFX = (function() {
         };
       }
     },
-    playCardDeal: function(cardCount = 1) {
+    playCardDeal: async function(cardCount = 1) {
       if (!soundEnabled) return;
-      const ctx = getAudioContext();
+      const ctx = await ensureAudioReady();
       if (!ctx) return;
       try {
         const now = ctx.currentTime;
@@ -111,9 +149,9 @@ const SoundFX = (function() {
         }
       } catch (e) {}
     },
-    playChip: function() {
+    playChip: async function() {
       if (!soundEnabled) return;
-      const ctx = getAudioContext();
+      const ctx = await ensureAudioReady();
       if (!ctx) return;
       try {
         const osc = ctx.createOscillator();
@@ -128,9 +166,9 @@ const SoundFX = (function() {
         osc.stop(ctx.currentTime + CUE_PROFILE.action.duration + 0.01);
       } catch (e) {}
     },
-    playTrainingResult: function(grade = 'acceptable') {
+    playTrainingResult: async function(grade = 'acceptable') {
       if (!soundEnabled) return;
-      const ctx = getAudioContext();
+      const ctx = await ensureAudioReady();
       if (!ctx) return;
       try {
         const now = ctx.currentTime;
@@ -156,9 +194,9 @@ const SoundFX = (function() {
         });
       } catch (e) {}
     },
-    playPokerAction: function(action = 'check') {
+    playPokerAction: async function(action = 'check') {
       if (!soundEnabled) return;
-      const ctx = getAudioContext();
+      const ctx = await ensureAudioReady();
       if (!ctx) return;
       try {
         const now = ctx.currentTime;
@@ -180,9 +218,9 @@ const SoundFX = (function() {
     },
     playCorrect: function() { return this.playTrainingResult('optimal'); },
     playWrong: function() { return this.playTrainingResult('mistake'); },
-    playHint: function() {
+    playHint: async function() {
       if (!soundEnabled) return;
-      const ctx = getAudioContext();
+      const ctx = await ensureAudioReady();
       if (!ctx) return;
       try {
         const now = ctx.currentTime;
@@ -200,9 +238,9 @@ const SoundFX = (function() {
         osc.stop(now + CUE_PROFILE.hint.duration + 0.01);
       } catch (e) {}
     },
-    playClick: function() {
+    playClick: async function() {
       if (!soundEnabled) return;
-      const ctx = getAudioContext();
+      const ctx = await ensureAudioReady();
       if (!ctx) return;
       try {
         const osc = ctx.createOscillator();

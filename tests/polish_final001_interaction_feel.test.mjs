@@ -104,42 +104,42 @@ function createSoundHarness(initialSound = null) {
   };
 }
 
-test('disabled audio persists, stays uninitialized, and blocks playback', () => {
+test('disabled audio persists, stays uninitialized, and blocks playback', async () => {
   const harness = createSoundHarness('false');
   harness.listeners.forEach((listener) => listener());
-  harness.soundFx.playHint();
-  harness.soundFx.playTrainingResult('optimal');
+  await harness.soundFx.playHint();
+  await harness.soundFx.playTrainingResult('optimal');
   assert.equal(harness.contextCount(), 0);
   assert.equal(harness.oscillatorCount(), 0);
   assert.equal(harness.soundFx.isEnabled(), false);
 });
 
-test('audio profiles make results clearest while card and hint cues remain subordinate', () => {
+test('audio profiles make results clearest while card and hint cues remain subordinate', async () => {
   assert.match(sound, /hint:\s*Object\.freeze\(\{ gain:\s*0\.055, attack:\s*0\.004, duration:\s*0\.105 \}\)/);
   assert.match(sound, /card:\s*Object\.freeze\(\{ gain:\s*0\.08, attack:\s*0\.002, duration:\s*0\.085 \}\)/);
   assert.match(sound, /result:\s*Object\.freeze\(\{ gain:\s*0\.11, attack:\s*0\.006, duration:\s*0\.18 \}\)/);
 
   const peak = (harness) => Math.max(...harness.gainEnvelopes.flatMap((events) => events.map((event) => event.value)));
   const hintHarness = createSoundHarness();
-  hintHarness.soundFx.playHint();
+  await hintHarness.soundFx.playHint();
   const cardHarness = createSoundHarness();
-  cardHarness.soundFx.playCardDeal(1);
+  await cardHarness.soundFx.playCardDeal(1);
   const mistakeHarness = createSoundHarness();
-  mistakeHarness.soundFx.playTrainingResult('mistake');
+  await mistakeHarness.soundFx.playTrainingResult('mistake');
   assert.ok(peak(mistakeHarness) > peak(cardHarness));
   assert.ok(peak(cardHarness) > peak(hintHarness));
   assert.ok(peak(mistakeHarness) > 0.04, 'result peak is stronger than the pre-correction level');
 
   const correctHarness = createSoundHarness();
-  correctHarness.soundFx.playTrainingResult('optimal');
+  await correctHarness.soundFx.playTrainingResult('optimal');
   const correctPeaks = correctHarness.gainEnvelopes.map((events) => Math.max(...events.map((event) => event.value)));
   const correctCombinedLevel = Math.sqrt(correctPeaks.reduce((sum, value) => sum + value ** 2, 0));
   assert.ok(Math.abs(correctCombinedLevel - peak(mistakeHarness)) < 0.01, 'correct and mistake have similar combined level');
 });
 
-test('cue envelopes have a short attack and decay instead of an inaudible instantaneous peak', () => {
+test('cue envelopes have a short attack and decay instead of an inaudible instantaneous peak', async () => {
   const harness = createSoundHarness();
-  harness.soundFx.playCardDeal(1);
+  await harness.soundFx.playCardDeal(1);
   const envelope = harness.gainEnvelopes[0];
   assert.deepEqual(envelope.map((event) => event.type), ['set', 'exponential', 'exponential']);
   assert.equal(envelope[0].value, 0.001);
@@ -148,10 +148,10 @@ test('cue envelopes have a short attack and decay instead of an inaudible instan
   assert.ok(envelope[2].time > envelope[1].time);
 });
 
-test('hint sound remains throttled and triggered once per revealed hint', () => {
+test('hint sound remains throttled and triggered once per revealed hint', async () => {
   const harness = createSoundHarness();
-  harness.soundFx.playHint();
-  harness.soundFx.playHint();
+  await harness.soundFx.playHint();
+  await harness.soundFx.playHint();
   assert.equal(harness.oscillatorCount(), 1);
   assert.equal((logic.match(/playHint\(\)/g) || []).length, 1);
   assert.match(logic, /renderAnalysisStudyHints[\s\S]{0,180}playHint\(\)/);

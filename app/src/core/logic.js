@@ -6314,7 +6314,12 @@ function renderTrainingEvaluationSummary(evaluation, exercise) {
   }
   const chosenLabel = t(trainingActionLabel(evaluation.chosenAction.type, exercise.decisionContext));
   if ($('#trainingGradeBadge')) {
-    $('#trainingGradeBadge').textContent = t(evaluation.grade.charAt(0).toUpperCase() + evaluation.grade.slice(1));
+    const publicGradeLabels = {
+      optimal: 'Correct',
+      acceptable: 'Acceptable',
+      mistake: 'Mistake'
+    };
+    $('#trainingGradeBadge').textContent = t(publicGradeLabels[evaluation.grade] || 'Review');
     $('#trainingGradeBadge').className = `badge training-grade-badge training-grade-badge--${evaluation.grade}`;
   }
   if ($('#trainingFeedback')) $('#trainingFeedback').dataset.grade = evaluation.grade;

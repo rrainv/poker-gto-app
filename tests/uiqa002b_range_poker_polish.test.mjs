@@ -123,15 +123,15 @@ function createSoundHarness() {
   return { soundFx: sandbox.exposedSoundFX, context, oscillatorCount: () => oscillatorCount };
 }
 
-test('card-deal sound is combined, throttled, and controlled by the global Audio toggle', () => {
+test('card-deal sound is combined, throttled, and controlled by the global Audio toggle', async () => {
   const harness = createSoundHarness();
-  harness.soundFx.playCardDeal(5);
+  await harness.soundFx.playCardDeal(5);
   assert.equal(harness.oscillatorCount(), 2, 'a multi-card deal uses one two-stroke cue');
-  harness.soundFx.playCardDeal(5);
+  await harness.soundFx.playCardDeal(5);
   assert.equal(harness.oscillatorCount(), 2, 'same-frame rerenders do not create audio spam');
   harness.soundFx.toggle();
   harness.context.currentTime += 1;
-  harness.soundFx.playCardDeal(2);
+  await harness.soundFx.playCardDeal(2);
   assert.equal(harness.oscillatorCount(), 2, 'muted playback is silent');
 });
 

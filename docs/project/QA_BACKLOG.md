@@ -58,7 +58,7 @@ These identifiers are the current live-audit baseline. They remain distinct from
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-POLISH-001 | PARTIAL | Visual/motion polish is manually accepted; POLISH-FINAL-001R raises and separates cue levels with clean one-event/one-hook and Audio-toggle renderer checks, pending human audibility acceptance | POLISH-FINAL-001R human listening acceptance |
+| QA-POLISH-001 | PARTIAL | Visual/motion polish is manually accepted; PRELABS-FIX-001 now proves Firefox 153 creates/resumes one lazy AudioContext before starting the first cue, with card/correct/mistake/hint and off/re-enable paths clean; subjective Firefox audibility still needs human listening acceptance | PRELABS-FIX-001 human Firefox listening acceptance |
 | QA-CARD-001 | OPEN | table/DOM card corner rank and suit can clip | PRODUCT-UI-004 |
 | QA-CARD-002 | OPEN | full `10` mirrored bottom-corner centering/geometry looks wrong | PRODUCT-UI-004 |
 | QA-CARD-003 | OPEN | DOM and SVG card-face geometry need final consistency pass | PRODUCT-UI-004 |
@@ -86,6 +86,8 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | QA-EQUITY-003 | PARTIAL | Flop/Turn/River guides and live board slots now share one five-column LTR grid; Electron geometry is exact across the RESPONSIVE-001 EN/RU/HE viewport matrix, with human visual acceptance still pending | RESPONSIVE-001 human acceptance |
 | QA-TRAIN-LAYOUT-001 | PARTIAL | Training desktop density is reduced for 1920×1080 pre-answer fit; final live acceptance pending | PRODUCT-UI-005R |
 | QA-TRAIN-LAYOUT-002 | OPEN | idle/no-board surfaces waste vertical space | PRODUCT-UI-005 |
+| FQA-002 | CLOSED | Training context values use the real grid, reflow to two columns at 1024, and remain atomic in Firefox EN/RU/HE with no global overflow or inaccessible action controls | PRELABS-FIX-001 |
+| FQA-004 | DEFERRED | Settings column imbalance is accepted low-priority Labs-era debt; no redesign is justified before Labs | Product Lab |
 | QA-TABLE-001 | OPEN | support rails/Action Path should be visible where useful without excessive scroll | PRODUCT-UI-005 |
 | QA-COLLAPSE-001 | PARTIAL | collapsed table control should remain compact and integrated | PRODUCT-UI-002R acceptance / UI-005 |
 
