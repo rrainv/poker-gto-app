@@ -71,7 +71,7 @@ The bounded HU 100bb no-rake preflop solver is isolated under `solver/riverline_
 - Guide copy is stale
 - workspace composition and responsive acceptance remain incomplete
 - settings/theme catalog includes legacy/experimental presentation debt
-- hidden DOM should be remeasured after composition work
+- hidden DOM was remeasured by PERF-RL18: cold Decision is 1,423 elements/91 buttons; a warmed Decision retaining Matrix and Range caches is 2,575/598, and the 52-button picker deck now detaches on close
 - Electron clean install/package flow needs a later repair
 
 ## 10. Documentation rule

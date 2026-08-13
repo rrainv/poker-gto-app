@@ -636,6 +636,12 @@ function openPicker(group, index) {
 
   if (cardModal) cardModal.classList.add('show');
 
+  const deck = $('#deck');
+  const pickerFocusTarget = deck?.querySelector?.(
+    current ? `[data-deck-card="${current}"]` : 'button:not([disabled])'
+  ) || $('#closeModal');
+  pickerFocusTarget?.focus?.({ preventScroll: true });
+
 }
 
 
@@ -740,7 +746,7 @@ function selectCard(card) {
 
   if (window.SoundFX) SoundFX.playCardDeal();
 
-  closePicker();
+  closePicker({ restoreFocus: false });
 
   renderAllCards();
 
@@ -751,19 +757,38 @@ function selectCard(card) {
   else updateContext('Cards changed');
 
   const appearedCard = document.querySelector(`[data-slots="${appearanceGroup}"] [data-index="${appearanceIndex}"]`);
-  if (appearedCard) appearedCard.classList.add('is-card-dealt');
+  if (appearedCard) {
+    appearedCard.classList.add('is-card-dealt');
+    appearedCard.focus({ preventScroll: true });
+  }
 
 }
 
 
 
-function closePicker() {
+function closePicker(options) {
+
+  const restoreFocus = options?.restoreFocus !== false;
+
+  const picker = app.picker;
+
+  const focusTarget = picker
+    ? document.querySelector(`[data-slots="${picker.group}"] [data-index="${picker.index}"]`)
+    : null;
 
   app.picker = null;
 
   const cardModal = $('#cardModal');
 
+  const focusWasInsidePicker = Boolean(cardModal?.contains?.(document.activeElement));
+
   if (cardModal) cardModal.classList.remove('show');
+
+  // The deck is rebuilt on every open already. Detach its 52 hidden controls
+  // after close so an inactive picker does not retain a large subtree.
+  $('#deck')?.replaceChildren?.();
+
+  if (restoreFocus && focusWasInsidePicker) focusTarget?.focus?.({ preventScroll: true });
 
 }
 

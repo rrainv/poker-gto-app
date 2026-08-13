@@ -51,7 +51,7 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | RL-14 | PARTIAL | Training result uses the refined Hero/board-first hierarchy; manual acceptance pending | PRODUCT-UI-003R2 |
 | RL-16 | PARTIAL | Equity UX accepted except card-back containment and small 1080p fit regressions; correction implemented and test-verified, final renderer acceptance pending | EQUITY-UX-001R visual acceptance |
 | RL-17 | PARTIAL | Guide terminology/content refresh is implemented and test-verified; final human Guide review is pending | GUIDE-001 human review |
-| RL-18 | OPEN | large hidden mounted DOM | later PERF follow-up |
+| RL-18 | CLOSED | current DOM remeasured; card-picker deck now detaches on close while Matrix/Range caches retain PERF-001 behavior | PERF-RL18 |
 | RL-20 | OPEN | theme semantics / Daylight contrast | PRODUCT-UI-004 |
 
 ## Cards, themes, and micro-polish
@@ -113,7 +113,7 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | ID | Status | Issue | Owner |
 |---|---|---|---|
 | QA-PERF-001 | CLOSED | duplicate slider/context updates and hidden Matrix computation | PERF-001 |
-| QA-PERF-002 | OPEN | large hidden mounted DOM/buttons should be remeasured after workspace composition | later PERF follow-up if measured |
+| QA-PERF-002 | CLOSED | live renderer inventory completed; 376-element/52-button hidden picker deck removed on close, remaining heavy grids are intentional visible/cached work | PERF-RL18 |
 | QA-PERF-003 | OPEN | visible Matrix DOM mutation needs browser profiling if still sluggish | later PERF follow-up if measured |
 
 ## Closed or intentionally removed historical QA

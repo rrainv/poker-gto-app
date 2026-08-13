@@ -20,6 +20,11 @@ Completed major phases:
 
 Current reported ticket:
 
+- `PERF-RL18` completed a live Electron DOM inventory across Playbook, Matrix, Range, Training, Equity, and Guide states
+- the targeted card-picker cleanup detaches 376 elements/52 buttons on close with focus return; `RL-18` and `QA-PERF-002` are closed while visible-Matrix profiling remains `QA-PERF-003`
+
+Previously reported acceptance work:
+
 - `EQUITY-UX-001` and its `EQUITY-UX-001R` presentation correction are implemented and test-verified in the current unstaged working ticket
 - renderer automation was unavailable for the correction pass, so `RL-16` remains `PARTIAL` pending final human visual acceptance and commit
 - `GUIDE-001` is implemented and test-verified; `RL-17` remains `PARTIAL` pending final human review of the live Guide
