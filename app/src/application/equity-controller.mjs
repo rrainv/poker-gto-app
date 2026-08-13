@@ -5,6 +5,7 @@ import {
   estimateEquityCombinations,
 } from '../../../shared/poker-domain/index.js';
 import { EQUITY_WORKER_MESSAGES } from './equity-worker-runtime.mjs';
+import { createEquityProgressTracker } from './equity-progress.mjs';
 
 function defaultSeedSource() {
   if (globalThis.crypto?.getRandomValues) {
@@ -60,7 +61,7 @@ export function createEquityController({
       const entry = pending.get(message?.requestId);
       if (!entry) return;
       if (message.type === EQUITY_WORKER_MESSAGES.PROGRESS) {
-        entry.onProgress?.(message.progress);
+        if (!entry.cancelled) entry.onProgress?.(message.progress);
       } else if (message.type === EQUITY_WORKER_MESSAGES.RESULT) {
         pending.delete(message.requestId);
         if (currentRequestId === message.requestId) currentRequestId = null;
@@ -86,11 +87,20 @@ export function createEquityController({
       const requestId = `equity-${++sequence}`;
       currentRequestId = requestId;
       const seededRequest = requestWithSeed(request, seedSource);
+      const estimate = estimateEquityCombinations(seededRequest);
+      const progressTracker = estimate.ok
+        ? createEquityProgressTracker({ request: seededRequest, estimate, onProgress })
+        : Object.freeze({ start() {}, update() {} });
+      progressTracker.start();
       const activeWorker = ensureWorker();
 
       if (activeWorker) {
         return new Promise((resolve) => {
-          pending.set(requestId, { resolve, onProgress });
+          pending.set(requestId, {
+            resolve,
+            onProgress: progressTracker.update,
+            cancelled: false,
+          });
           try {
             activeWorker.postMessage({
               type: EQUITY_WORKER_MESSAGES.CALCULATE,
@@ -109,12 +119,15 @@ export function createEquityController({
       }
 
       const abortController = new AbortController();
-      inProcessControllers.set(requestId, abortController);
+      const inProcessEntry = { abortController, cancelled: false };
+      inProcessControllers.set(requestId, inProcessEntry);
       let calculation;
       try {
         calculation = calculateInProcess(seededRequest, {
           signal: abortController.signal,
-          onProgress,
+          onProgress(progress) {
+            if (!inProcessEntry.cancelled) progressTracker.update(progress);
+          },
         });
       } catch (error) {
         calculation = createEquityFailure(
@@ -136,13 +149,14 @@ export function createEquityController({
     cancel(requestId = currentRequestId) {
       if (requestId === null) return false;
       if (worker && pending.has(requestId)) {
+        const entry = pending.get(requestId);
+        entry.cancelled = true;
+        if (currentRequestId === requestId) currentRequestId = null;
         try {
           worker.postMessage({ type: EQUITY_WORKER_MESSAGES.CANCEL, requestId });
           return true;
         } catch (error) {
-          const entry = pending.get(requestId);
           pending.delete(requestId);
-          if (currentRequestId === requestId) currentRequestId = null;
           entry?.resolve(createEquityFailure(
             EQUITY_ERROR_CODES.INTERNAL_ERROR,
             error instanceof Error ? error.message : String(error),
@@ -150,9 +164,11 @@ export function createEquityController({
           return false;
         }
       }
-      const abortController = inProcessControllers.get(requestId);
-      if (abortController) {
-        abortController.abort();
+      const inProcessEntry = inProcessControllers.get(requestId);
+      if (inProcessEntry) {
+        inProcessEntry.cancelled = true;
+        if (currentRequestId === requestId) currentRequestId = null;
+        inProcessEntry.abortController.abort();
         return true;
       }
       return false;

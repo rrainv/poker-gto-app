@@ -41,8 +41,8 @@ test('card states use explicit classes and dead or invalid states do not rely on
 });
 
 test('unknown cards use the Riverline jade and graphite card-back treatment', () => {
-  assert.match(visualSystem, /\.poker-card-back[\s\S]*?var\(--card-back\)/);
-  assert.match(visualSystem, /\.poker-card-back::after[\s\S]*?content:\s*"R"/);
+  assert.match(visualSystem, /\.riverline-card-back[\s\S]*?var\(--card-back\)/);
+  assert.match(visualSystem, /\.riverline-card-back::after[\s\S]*?content:\s*"R"/);
   assert.match(table, /renderCardBack\(index\)/);
   assert.match(table, /data-card-state="unknown"/);
   assert.match(table, /table-card-back-line/);
@@ -109,12 +109,14 @@ test('recommendations distinguish decision, provenance, metadata, and warnings',
 
 test('Equity uses reusable multiway series while retaining separate win and tie values', () => {
   assert.match(logic, /data-player-series="\$\{index\}"/);
-  assert.match(logic, /Win \$\{player\.win\.toFixed\(1\)\}%[^T]+Tie \$\{player\.tie\.toFixed\(1\)\}%/);
-  assert.match(logic, /aria-valuenow="\$\{player\.equity\.toFixed\(1\)\}"/);
-  for (let index = 0; index < 10; index += 1) {
-    assert.match(visualSystem, new RegExp(`equity-row\\[data-player-series="${index}"\\]`));
+  assert.match(logic, /<span>Win<\/span><strong>\$\{win\}<\/strong>/);
+  assert.match(logic, /<span>Tie<\/span><strong>\$\{tie\}<\/strong>/);
+  assert.match(logic, /aria-valuenow="\$\{ariaValue\}"/);
+  assert.match(visualSystem, /equity-result-card \{ --series-color: var\(--series-0\)/);
+  for (let index = 1; index < 10; index += 1) {
+    assert.match(visualSystem, new RegExp(`equity-result-card\\[data-player-series="${index}"\\]`));
   }
-  assert.match(visualSystem, /equity-row--tie[\s\S]*?equity-tie/);
+  assert.match(html, /id="equitySplitSummary"/);
 });
 
 test('the poker table retains seat mapping and adds semantic presentation states', () => {

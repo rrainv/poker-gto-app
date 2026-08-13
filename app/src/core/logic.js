@@ -447,7 +447,6 @@ function renderEquityPlayers() {
       <article class="equity-player-card" data-player-id="${player.id}" data-player-series="${playerIndex}" data-hand-state="${handState}">
         <header class="equity-player-head">
           <span class="equity-player-identity"><i class="series-marker" aria-hidden="true"></i><strong>${label}</strong><small>${status}</small></span>
-          <span class="equity-player-result" id="equityPlayerResult-${playerIndex}">—</span>
           ${playerIndex > 1 ? `<button type="button" class="remove-player ui-button ui-button-ghost" data-remove-player="${playerIndex}" aria-label="Remove ${label}">${t('Remove')}</button>` : ''}
         </header>
         <div class="equity-player-body">
@@ -457,7 +456,7 @@ function renderEquityPlayers() {
           </div>
           ${mode === 'known'
             ? `<div class="card-slots equity-known-hand" data-slots="player-${playerIndex}"></div>`
-            : `<div class="equity-unknown-hand" aria-label="${label} unknown cards"><span class="poker-card-back" aria-hidden="true"></span><span class="poker-card-back" aria-hidden="true"></span><span>Random legal hand</span></div>`}
+            : `<div class="equity-unknown-hand" aria-label="${label} unknown cards"><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span>Random legal hand</span></div>`}
         </div>
         <div class="equity-hand-message" id="equityHandMessage-${playerIndex}">${status}</div>
         <section id="outsPanel-${playerIndex}" class="equity-player-outs" aria-label="Outs" aria-live="polite">
@@ -576,6 +575,8 @@ function renderEquityCards() {
 
   const deadCount = $('#equityDeadCount');
   if (deadCount) deadCount.textContent = String(app.equity.dead.filter(Boolean).length);
+
+  renderEquityScenarioContext();
 
 }
 
@@ -3109,6 +3110,8 @@ function scoreSeven(cards) {
 
 let equityCalculationGeneration = 0;
 let equityCalculationRunning = false;
+let equityProgressRevealTimer = null;
+const EQUITY_PROGRESS_REVEAL_DELAY_MS = 140;
 
 function equityRequestFromCurrentInputs() {
   const methodByControl = { auto: 'auto', exact: 'exact', sim: 'monte_carlo' };
@@ -3207,7 +3210,19 @@ function setEquityCalculationRunning(running) {
   const progress = $('#progress');
   if (calculate) calculate.disabled = running;
   if (cancel) cancel.hidden = !running;
-  if (progress) progress.hidden = !running;
+  if (equityProgressRevealTimer !== null) {
+    window.clearTimeout(equityProgressRevealTimer);
+    equityProgressRevealTimer = null;
+  }
+  if (progress) {
+    progress.hidden = true;
+    if (running) {
+      equityProgressRevealTimer = window.setTimeout(() => {
+        equityProgressRevealTimer = null;
+        if (equityCalculationRunning) progress.hidden = false;
+      }, EQUITY_PROGRESS_REVEAL_DELAY_MS);
+    }
+  }
   if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = running ? 'running' : $('#equityResultsPanel').dataset.resultState;
   if ($('#equityDetailExecution')) $('#equityDetailExecution').textContent = running
     ? (callEquityServiceBridge('isWorkerBacked') ? 'Web Worker' : 'In-process fallback')
@@ -3216,15 +3231,81 @@ function setEquityCalculationRunning(running) {
 }
 
 function renderEquityProgress(progress) {
+  const wrap = $('#progress');
   const fill = document.querySelector('#progress .progress-fill');
   const track = document.querySelector('#progress .progress-track');
+  const method = document.querySelector('#progress .progress-method');
   const status = document.querySelector('#progress .progress-status');
   const percent = document.querySelector('#progress .progress-percent');
-  const fraction = Math.min(1, Math.max(0, Number(progress?.fraction) || 0));
+  const telemetry = document.querySelector('#progress .progress-telemetry');
+  const determinate = progress?.mode === 'determinate';
+  const isExact = progress?.method === 'exact';
+  const methodLabel = isExact ? 'Exact calculation' : 'Monte Carlo';
+  if (wrap) wrap.dataset.progressMode = determinate ? 'determinate' : 'indeterminate';
+  if (method) method.textContent = methodLabel;
+  if (track) {
+    track.setAttribute('aria-label', `${methodLabel} progress`);
+    if (determinate) {
+      track.setAttribute('aria-valuemin', '0');
+      track.setAttribute('aria-valuemax', '100');
+      track.setAttribute('aria-valuenow', String(Math.round(progress.percentage)));
+    } else {
+      track.removeAttribute('aria-valuemin');
+      track.removeAttribute('aria-valuemax');
+      track.removeAttribute('aria-valuenow');
+    }
+  }
+  if (!determinate) {
+    if (fill) fill.style.width = '';
+    if (status) status.textContent = 'Preparing calculation…';
+    if (percent) {
+      percent.hidden = true;
+      percent.textContent = '';
+    }
+    if (telemetry) {
+      telemetry.hidden = true;
+      telemetry.textContent = '';
+    }
+    return;
+  }
+
+  const fraction = Math.min(1, Math.max(0, Number(progress.fraction) || 0));
+  const unit = isExact ? 'outcomes' : 'trials';
   if (fill) fill.style.width = `${fraction * 100}%`;
-  if (track) track.setAttribute('aria-valuenow', String(Math.round(fraction * 100)));
-  if (status) status.textContent = `${Number(progress?.completed || 0).toLocaleString()} / ${Number(progress?.total || 0).toLocaleString()} trials`;
-  if (percent) percent.textContent = `${(fraction * 100).toFixed(0)}%`;
+  if (status) status.textContent = `${Number(progress.completed).toLocaleString()} / ${Number(progress.total).toLocaleString()} ${unit}`;
+  if (percent) {
+    percent.hidden = false;
+    percent.textContent = `${Math.round(progress.percentage)}%`;
+  }
+  if (telemetry) {
+    const details = [];
+    if (!isExact && Number.isFinite(progress.throughputPerSecond)) {
+      details.push(`${formatEquityThroughput(progress.throughputPerSecond)} trials/s`);
+    }
+    if (!isExact && Number.isFinite(progress.etaSeconds)) {
+      details.push(`${formatEquityDuration(progress.etaSeconds)} remaining`);
+    }
+    telemetry.hidden = details.length === 0;
+    telemetry.textContent = details.join(' · ');
+  }
+}
+
+function formatEquityThroughput(rate) {
+  if (!Number.isFinite(rate) || rate <= 0) return '';
+  if (rate >= 1000) {
+    const thousands = rate / 1000;
+    return `~${thousands >= 10 ? Math.round(thousands) : thousands.toFixed(1)}k`;
+  }
+  return `~${Math.max(1, Math.round(rate))}`;
+}
+
+function formatEquityDuration(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 1) return '<1s';
+  const rounded = Math.max(1, Math.round(seconds));
+  if (rounded < 60) return `~${rounded}s`;
+  const minutes = Math.floor(rounded / 60);
+  const remainder = rounded % 60;
+  return remainder ? `~${minutes}m ${remainder}s` : `~${minutes}m`;
 }
 
 function equityFailureMessage(error) {
@@ -3286,6 +3367,63 @@ function cancelEquityCalculation() {
   return true;
 }
 
+function equityStreetLabel(boardCount) {
+  const labels = { 0: 'Preflop', 3: 'Flop', 4: 'Turn', 5: 'River' };
+  return labels[boardCount] || `Partial board · ${boardCount} / 5 cards`;
+}
+
+function equityReadOnlyCardsMarkup(cards, label) {
+  if (cards === null) {
+    return `<span class="equity-result-unknown" aria-label="${label}: unknown hand"><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span>Unknown hand</span></span>`;
+  }
+  if (!cards?.length) return '<span class="equity-context-empty">No cards</span>';
+  return `<span class="equity-readonly-cards">${cards.map((card) => `<span class="training-readonly-card riverline-card" role="img" aria-label="${displayCard(card)}">${cardMarkup(card)}</span>`).join('')}</span>`;
+}
+
+function renderEquityScenarioContext(request = equityRequestFromCurrentInputs()) {
+  const root = $('#equityScenarioContext');
+  if (!root) return;
+  const board = request.board || [];
+  const handRows = request.players.map((player, index) => {
+    const label = equityPlayerLabel(index);
+    return `<div class="equity-context-row"><span class="equity-context-label">${label}</span>${equityReadOnlyCardsMarkup(player.cards, label)}</div>`;
+  }).join('');
+  const boardMarkup = board.length
+    ? equityReadOnlyCardsMarkup(board, 'Board')
+    : '<span class="equity-context-empty">No board cards</span>';
+  const deadMarkup = request.deadCards?.length
+    ? `<div class="equity-context-row equity-context-row--dead"><span class="equity-context-label">Dead</span>${equityReadOnlyCardsMarkup(request.deadCards, 'Dead cards')}</div>`
+    : '';
+  root.innerHTML = `
+    <div class="equity-context-street"><span>Street</span><strong>${equityStreetLabel(board.length)}</strong></div>
+    <div class="equity-context-hands">${handRows}</div>
+    <div class="equity-context-row"><span class="equity-context-label">Board</span>${boardMarkup}</div>
+    ${deadMarkup}`;
+}
+
+function equityResultCardMarkup(player, index, requestPlayer) {
+  const hasResult = Number.isFinite(player?.equity);
+  const name = player?.name || equityPlayerLabel(index);
+  const equity = hasResult ? `${player.equity.toFixed(1)}%` : '—';
+  const win = Number.isFinite(player?.win) ? `${player.win.toFixed(1)}%` : '—';
+  const tie = Number.isFinite(player?.tie) ? `${player.tie.toFixed(1)}%` : '—';
+  const hand = requestPlayer?.cards === null ? null : (requestPlayer?.cards || []);
+  const ariaValue = hasResult ? player.equity.toFixed(1) : '0';
+  return `
+    <article class="equity-result-card" data-player-series="${index}">
+      <header class="equity-result-player">
+        <span class="equity-result-identity"><i class="series-marker" aria-hidden="true"></i><strong>${name}</strong></span>
+        ${equityReadOnlyCardsMarkup(hand, name)}
+      </header>
+      <div class="equity-result-metrics">
+        <div class="equity-result-primary"><span>Equity</span><strong>${equity}</strong></div>
+        <div><span>Win</span><strong>${win}</strong></div>
+        <div><span>Tie</span><strong>${tie}</strong></div>
+      </div>
+      <div class="eqbar" role="progressbar" aria-label="${name} equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${ariaValue}"><div class="eqfill player-series" style="width:${hasResult ? player.equity : 0}%"></div></div>
+    </article>`;
+}
+
 function clearEquityResults(state = 'empty', status = 'Results update after calculation.') {
   const panel = $('#equityResultsPanel');
   if (panel) panel.dataset.resultState = state;
@@ -3294,22 +3432,20 @@ function clearEquityResults(state = 'empty', status = 'Results update after calc
   if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = '—';
   if ($('#equityDetailActual')) $('#equityDetailActual').textContent = '—';
   if ($('#equityBars')) {
-    $('#equityBars').innerHTML = app.equity.players.map((player, index) => `
-      <div class="equity-row" data-player-series="${index}">
-        <span class="equity-player-label"><i class="series-marker" aria-hidden="true"></i><span>${equityPlayerLabel(index)}<small>Win — · Tie —</small></span></span>
-        <div class="eqbar" role="progressbar" aria-label="${equityPlayerLabel(index)} equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="eqfill player-series" style="width:0%"></div></div>
-        <b>—</b>
-      </div>`).join('');
+    $('#equityBars').innerHTML = app.equity.players.map((player, index) => equityResultCardMarkup(
+      { name: equityPlayerLabel(index) },
+      index,
+      { cards: player.handMode === 'unknown' ? null : player.cards.filter(Boolean) },
+    )).join('');
   }
-  app.equity.players.forEach((player, index) => {
-    const playerResult = $(`#equityPlayerResult-${index}`);
-    if (playerResult) playerResult.textContent = '—';
-  });
+  renderEquityScenarioContext();
 }
 
 function renderEquityResult(equityResult, request = equityRequestFromCurrentInputs()) {
   const namesById = new Map(app.equity.players.map((player, index) => [player.id, equityPlayerLabel(index)]));
+  const requestById = new Map(request.players.map((player) => [player.id, player]));
   const result = equityResult.players.map((player) => ({
+    id: player.id,
     name: namesById.get(player.id) || player.id,
     win: player.winProbability * 100,
     tie: player.tieProbability * 100,
@@ -3322,21 +3458,21 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
   const requestedLabel = request.method === 'auto' ? 'AUTO' : (request.method === 'exact' ? 'EXACT' : 'MONTE CARLO');
   const actualLabel = exact ? 'EXACT' : 'MONTE CARLO';
 
-  $('#headlineEquity').textContent = leadingEquity.toFixed(1) + '%';
+  const leaders = result.filter((player) => Math.abs(player.equity - leadingEquity) < 0.05);
+  $('#headlineEquity').textContent = leaders.length === 1 ? `${leaders[0].name} leads` : `${leaders.length}-way equity tie`;
 
-  $('#equityStatus').textContent = `${exact ? 'Exact enumeration' : 'Monte Carlo simulation'} · ${total.toLocaleString()} conditional trials`;
+  $('#equityStatus').textContent = exact
+    ? `Exact enumeration · ${total.toLocaleString()} outcomes`
+    : `Monte Carlo · ${total.toLocaleString()} trials`;
 
   $('#methodBadge').textContent = request.method === 'auto' ? `${requestedLabel} → ${actualLabel}` : actualLabel;
 
-  $('#equityBars').innerHTML = result.map((player, index) => `
-
-    <div class="equity-row" data-player-series="${index}">
-      <span class="equity-player-label"><i class="series-marker" aria-hidden="true"></i><span>${player.name}<small>Win ${player.win.toFixed(1)}% · Tie ${player.tie.toFixed(1)}%</small></span></span>
-      <div class="eqbar" role="progressbar" aria-label="${player.name} equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${player.equity.toFixed(1)}"><div class="eqfill player-series" style="width:${player.equity}%"></div></div>
-      <b>${player.equity.toFixed(1)}%</b>
-    </div>
-
-  `).join('') + `<div class="equity-row equity-row--tie"><span class="equity-player-label"><i class="series-marker" aria-hidden="true"></i><span>Split pots</span></span><div class="eqbar" role="progressbar" aria-label="Split pots" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${splitRate.toFixed(1)}"><div class="eqfill tie" style="width:${splitRate}%"></div></div><b>${splitRate.toFixed(1)}%</b></div>`;
+  $('#equityBars').innerHTML = result.map((player, index) => equityResultCardMarkup(
+    player,
+    index,
+    requestById.get(player.id),
+  )).join('');
+  renderEquityScenarioContext(request);
 
   if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = 'complete';
   if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = `${equityResult.metadata.splitPotTrials.toLocaleString()} · ${splitRate.toFixed(1)}%`;
@@ -3347,11 +3483,6 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
   if ($('#equityDetailUnknown')) $('#equityDetailUnknown').textContent = String(equityResult.metadata.unknownPlayers);
   if ($('#equityDetailBoard')) $('#equityDetailBoard').textContent = String(equityResult.metadata.boardCardsMissing);
   if ($('#equityDetailExecution')) $('#equityDetailExecution').textContent = callEquityServiceBridge('isWorkerBacked') ? 'Web Worker' : 'In-process fallback';
-  result.forEach((player, index) => {
-    const playerResult = $(`#equityPlayerResult-${index}`);
-    if (playerResult) playerResult.textContent = `${player.equity.toFixed(1)}%`;
-  });
-
   toast('Win probability updated', 'success');
 
   // === OUTS CALCULATION (per-player, shown inline beside each player's cards) ===

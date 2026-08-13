@@ -46,7 +46,7 @@ test('known and unknown hands are explicit and incomplete known hands block calc
 });
 
 test('unknown hands use canonical card backs and known hands reuse the shared picker slots', () => {
-  assert.match(logic, /class="poker-card-back"/);
+  assert.match(logic, /class="poker-card-back riverline-card-back"/);
   assert.match(logic, /data-slots="player-\$\{playerIndex\}"/);
   assert.match(logic, /renderSlots\(\`player-\$\{playerIndex\}\`, 2\)/);
   assert.match(css, /\.equity-unknown-hand \.poker-card-back/);
@@ -108,9 +108,20 @@ test('results prioritize equity while preserving per-player win and tie detail a
   assert.doesNotMatch(equityHtml, /id="equitySum"|Total equity/);
   assert.match(equityHtml, /id="equitySplitSummary"/);
   assert.match(equityLogic, /equityResult\.players\.map/);
-  assert.match(equityLogic, /Win \$\{player\.win\.toFixed\(1\)\}% · Tie \$\{player\.tie\.toFixed\(1\)\}%/);
+  assert.match(equityLogic, /class="equity-result-primary"><span>Equity<\/span>/);
+  assert.match(equityLogic, /<span>Win<\/span><strong>\$\{win\}<\/strong>/);
+  assert.match(equityLogic, /<span>Tie<\/span><strong>\$\{tie\}<\/strong>/);
+  assert.match(equityLogic, /equityReadOnlyCardsMarkup\(hand, name\)/);
   assert.doesNotMatch(equityLogic, /equityTotal|#equitySum/);
   assert.match(equityLogic, /data-player-series="\$\{index\}"/);
+});
+
+test('result context preserves hands, board street, and dead-card presentation', () => {
+  assert.match(equityHtml, /id="equityScenarioContext"/);
+  assert.match(equityLogic, /0: 'Preflop', 3: 'Flop', 4: 'Turn', 5: 'River'/);
+  assert.match(equityLogic, /request\.players\.map/);
+  assert.match(equityLogic, /request\.deadCards\?\.length/);
+  assert.match(equityLogic, /training-readonly-card riverline-card/);
 });
 
 test('actual method, samples, seed, unknown count, board count, and execution are visible metadata', () => {
@@ -126,10 +137,16 @@ test('actual method, samples, seed, unknown count, board count, and execution ar
 
 test('running, progress, cancellation, stale-result, and structured error states are explicit', () => {
   assert.match(equityHtml, /id="progress"[^>]+hidden/);
-  assert.match(equityHtml, /class="progress-track"[^>]+role="progressbar"[^>]+aria-valuenow="0"/);
+  assert.match(equityHtml, /id="progress"[^>]+data-progress-mode="indeterminate"/);
+  assert.match(equityHtml, /class="progress-track"[^>]+role="progressbar"/);
+  assert.doesNotMatch(equityHtml, /Preparing calculation…[\s\S]{0,180}>0%</);
+  assert.doesNotMatch(equityHtml, /aria-valuenow="0"/);
   assert.match(equityHtml, /class="progress-fill"/);
+  assert.match(equityHtml, /class="progress-percent" hidden/);
   assert.match(equityHtml, /id="cancelEquity"[^>]+hidden/);
   assert.match(equityLogic, /clearEquityResults\('running'/);
+  assert.match(equityLogic, /EQUITY_PROGRESS_REVEAL_DELAY_MS/);
+  assert.match(equityLogic, /generation === equityCalculationGeneration/);
   assert.match(equityLogic, /Inputs changed\. Calculate to refresh the result/);
   for (const code of [
     'invalid_request', 'duplicate_card', 'impossible_deck',
