@@ -92,8 +92,8 @@ test('Action Path is sticky on wide desktop and returns to normal flow below it'
 });
 
 test('Equity board is an explicit horizontal Holdem flow', () => {
-  assert.match(equityHtml, /class="cards-row equity-board-cards"/);
-  assert.match(equityHtml, /equity-street-flop">Flop[\s\S]*Turn[\s\S]*River/);
+  assert.match(equityHtml, /class="cards-row equity-board-cards[^\"]*"/);
+  assert.match(equityHtml, /equity-street-flop"[^>]*>Flop[\s\S]*Turn[\s\S]*River/);
   assert.match(uiQaCss, /\.equity-board-cards\s*\{[^}]*flex-direction:\s*row[^}]*flex-wrap:\s*nowrap[^}]*direction:\s*ltr/);
   assert.match(uiQaCss, /overflow-x:\s*auto/);
 });
@@ -104,7 +104,7 @@ test('Equity communicates arbitrary 2 through 10 counts with a stepper and optio
   assert.match(equityHtml, /data-equity-player-delta="1"/);
   assert.match(equityHtml, /aria-label="Quick player count presets"/);
   assert.match(logic, /Math\.max\(2, Math\.min\(10/);
-  assert.match(logic, /playerCount\.textContent = `\$\{app\.equity\.players\.length\} players`/);
+  assert.match(logic, /playerCount\.textContent = t\('\{count\} players', \{ count: app\.equity\.players\.length \}\)/);
 });
 
 test('Equity keeps calculation in the primary input workflow and coexists with results on desktop', () => {

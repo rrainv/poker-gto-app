@@ -103,14 +103,14 @@ test('recommendations distinguish decision, provenance, metadata, and warnings',
   assert.match(html, /id="strategyWarnings" role="note" hidden/);
   assert.match(logic, /strategyResult\.confidence !== null/);
   assert.match(logic, /strategyResult\.coverage !== null/);
-  assert.match(logic, /strategyResult\.warnings\.join/);
+  assert.match(logic, /localizedStrategyWarnings\(strategyResult\)\.join/);
   assert.doesNotMatch(html, /id="sourceBadge"[^>]*>(?:GTO|DEEP CFR)/i);
 });
 
 test('Equity uses reusable multiway series while retaining separate win and tie values', () => {
   assert.match(logic, /data-player-series="\$\{index\}"/);
-  assert.match(logic, /<span>Win<\/span><strong>\$\{win\}<\/strong>/);
-  assert.match(logic, /<span>Tie<\/span><strong>\$\{tie\}<\/strong>/);
+  assert.match(logic, /<span>\$\{t\('Win'\)\}<\/span><strong[^>]*>\$\{win\}<\/strong>/);
+  assert.match(logic, /<span>\$\{t\('Tie'\)\}<\/span><strong[^>]*>\$\{tie\}<\/strong>/);
   assert.match(logic, /aria-valuenow="\$\{ariaValue\}"/);
   assert.match(visualSystem, /equity-result-card \{ --series-color: var\(--series-0\)/);
   for (let index = 1; index < 10; index += 1) {

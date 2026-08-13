@@ -57,9 +57,9 @@ test('Training after-answer keeps the analytical stack and both textual state ma
   assert.doesNotMatch(trainingHtml, /trainingWheel|training-wheel-secondary/);
   assert.match(solution, /training-frequency-label/);
   assert.match(solution, /training-frequency-marker--chosen/);
-  assert.match(solution, /textContent:\s*'Chosen'/);
+  assert.match(solution, /textContent:\s*t\('Chosen'\)/);
   assert.match(solution, /training-frequency-marker--highest/);
-  assert.match(solution, /textContent:\s*'Highest'/);
+  assert.match(solution, /textContent:\s*t\('Highest'\)/);
   assert.match(solution, /setAttribute\('aria-label'/);
 });
 

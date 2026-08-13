@@ -108,9 +108,9 @@ test('results prioritize equity while preserving per-player win and tie detail a
   assert.doesNotMatch(equityHtml, /id="equitySum"|Total equity/);
   assert.match(equityHtml, /id="equitySplitSummary"/);
   assert.match(equityLogic, /equityResult\.players\.map/);
-  assert.match(equityLogic, /class="equity-result-primary"><span>Equity<\/span>/);
-  assert.match(equityLogic, /<span>Win<\/span><strong>\$\{win\}<\/strong>/);
-  assert.match(equityLogic, /<span>Tie<\/span><strong>\$\{tie\}<\/strong>/);
+  assert.match(equityLogic, /class="equity-result-primary"><span>\$\{t\('Equity'\)\}<\/span>/);
+  assert.match(equityLogic, /<span>\$\{t\('Win'\)\}<\/span><strong class="poker-data-token">\$\{win\}<\/strong>/);
+  assert.match(equityLogic, /<span>\$\{t\('Tie'\)\}<\/span><strong class="poker-data-token">\$\{tie\}<\/strong>/);
   assert.match(equityLogic, /equityReadOnlyCardsMarkup\(hand, name\)/);
   assert.doesNotMatch(equityLogic, /equityTotal|#equitySum/);
   assert.match(equityLogic, /data-player-series="\$\{index\}"/);
@@ -178,7 +178,7 @@ test('responsive, theme-token, keyboard-focus, reduced-motion, and RTL safeguard
 
 test('interactive controls retain accessible names, relationships, and pressed states', () => {
   assert.match(equityHtml, /id="calculate"[^>]+aria-describedby="equityReadiness equityEstimate"/);
-  assert.match(logic, /data-remove-player="\$\{playerIndex\}" aria-label="Remove \$\{label\}"/);
+  assert.match(logic, /data-remove-player="\$\{playerIndex\}" aria-label="\$\{t\('Remove \{player\}'/);
   assert.match(logic, /data-equity-hand-mode="known"[^>]+aria-pressed=/);
   assert.match(logic, /data-equity-hand-mode="unknown"[^>]+aria-pressed=/);
   assert.match(equityLogic, /track\.setAttribute\('aria-valuenow'/);

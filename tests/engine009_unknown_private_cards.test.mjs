@@ -360,7 +360,7 @@ test('Hand Mode source uses canonical partial deal/reveal APIs and does not samp
   const canonicalHandLogic = logic.slice(handStart, handEnd);
   assert.match(logic, /callPlaybookStateBridge\('dealObservedHoleCards', cardsByPlayer\)/);
   assert.match(logic, /callPlaybookStateBridge\('revealHoleCards', playerId, cards\)/);
-  assert.match(logic, /opponents\.length[^\n]+hidden by default/);
+  assert.match(logic, /t\('\{count\} opponents hidden by default', \{ count: opponents\.length \}\)/);
   assert.match(bootstrap, /revealHoleCards\(playerId, cards\)/);
   assert.doesNotMatch(
     canonicalHandLogic + bootstrap + chance + reveal,

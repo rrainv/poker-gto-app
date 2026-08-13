@@ -9,15 +9,11 @@ function browserProviderOptions(options = {}) {
   const heuristicOptionsResolver = typeof options?.heuristicOptionsResolver === 'function'
     ? options.heuristicOptionsResolver
     : () => ({});
-  const translate = typeof options?.translate === 'function'
-    ? options.translate
-    : (value) => String(value);
   return {
     fallbackResolver(decisionContext) {
       return resolveHeuristicStrategy(
         decisionContext,
         heuristicOptionsResolver(decisionContext),
-        { translate },
       );
     },
   };

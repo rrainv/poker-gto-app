@@ -20,7 +20,9 @@
 
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 fill=%22%2325c281%22>♠</text></svg>">
 
-  <script src="src/locales/i18n.js?v=2" defer></script>
+  <script src="src/locales/product-translations.js?v=1" defer></script>
+  <script src="src/locales/analysis-translations.js?v=1" defer></script>
+  <script src="src/locales/i18n.js?v=3" defer></script>
 
 
 
@@ -327,7 +329,7 @@
 <body data-density="comfortable">
 
   <div class="riverline-shell" data-active-mode="gto">
-    <aside id="modeRail" class="mode-rail" aria-label="Riverline application">
+  <aside id="modeRail" class="mode-rail" aria-label="Riverline application" data-i18n-aria-label="Riverline application">
       <div class="rail-brand">
         <div class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" role="img"><path d="M12 3c-2.2 3.2-6.5 5.7-6.5 9.7A4.3 4.3 0 0 0 12 16.4a4.3 4.3 0 0 0 6.5-3.7C18.5 8.7 14.2 6.2 12 3Z"/><path d="M9.2 20h5.6M12 15.5V20"/></svg>
@@ -336,48 +338,48 @@
           <strong data-i18n="Riverline">Riverline</strong>
           <span data-i18n="Poker strategy &amp; analysis">Poker strategy &amp; analysis</span>
         </div>
-        <button id="sidebarCollapseBtn" class="rail-collapse-button" type="button" aria-label="Collapse sidebar" aria-expanded="true" aria-controls="modeRail" title="Collapse sidebar">
+      <button id="sidebarCollapseBtn" class="rail-collapse-button" type="button" aria-label="Collapse sidebar" data-i18n-aria-label="Collapse sidebar" aria-expanded="true" aria-controls="modeRail" title="Collapse sidebar" data-i18n-title="Collapse sidebar">
           <svg class="rail-collapse-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 7-5 5 5 5"/></svg>
         </button>
       </div>
 
-      <nav class="mode-navigation" aria-label="Primary mode">
-        <button class="mode-nav-item active" type="button" data-mode="gto" data-mode-title="Playbook" data-mode-subtitle="Strategy guidance with explicit source provenance." aria-label="Playbook" title="Playbook" data-tooltip="Playbook" aria-current="page">
+      <nav class="mode-navigation" aria-label="Primary mode" data-i18n-aria-label="Primary mode">
+        <button class="mode-nav-item active" type="button" data-mode="gto" data-mode-title="Playbook" data-mode-subtitle="Strategy guidance with explicit source provenance." aria-label="Playbook" data-i18n-aria-label="Playbook" title="Playbook" data-i18n-title="Playbook" data-tooltip="Playbook" aria-current="page">
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="11" height="14" rx="2"/><path d="m9 9 2-2 2 2-2 2-2-2Zm7-1h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8"/></svg>
           <span data-i18n="Playbook">Playbook</span>
         </button>
-        <button class="mode-nav-item" type="button" data-mode="equity" data-mode-title="Equity" data-mode-subtitle="Exact enumeration and Monte Carlo win probability." aria-label="Equity" title="Equity" data-tooltip="Equity" aria-current="false">
+        <button class="mode-nav-item" type="button" data-mode="equity" data-mode-title="Equity" data-mode-subtitle="Exact enumeration and Monte Carlo win probability." aria-label="Equity" data-i18n-aria-label="Equity" title="Equity" data-i18n-title="Equity" data-tooltip="Equity" aria-current="false">
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15V3.6Z"/></svg>
           <span data-i18n="Equity">Equity</span>
         </button>
-        <button class="mode-nav-item" type="button" data-mode="training" data-mode-title="Training" data-mode-subtitle="Practice decisions against the current strategy sources." aria-label="Training" title="Training" data-tooltip="Training" aria-current="false">
+        <button class="mode-nav-item" type="button" data-mode="training" data-mode-title="Training" data-mode-subtitle="Practice decisions against the current strategy sources." aria-label="Training" data-i18n-aria-label="Training" title="Training" data-i18n-title="Training" data-tooltip="Training" aria-current="false">
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m16.5 7.5 3-3m0 0v3m0-3h-3"/></svg>
           <span data-i18n="Training">Training</span>
         </button>
-        <button class="mode-nav-item" type="button" data-mode="info" data-mode-title="Guide" data-mode-subtitle="Product guidance, poker terms, and control reference." aria-label="Guide" title="Guide" data-tooltip="Guide" aria-current="false">
+        <button class="mode-nav-item" type="button" data-mode="info" data-mode-title="Guide" data-mode-subtitle="Product guidance, poker terms, and control reference." aria-label="Guide" data-i18n-aria-label="Guide" title="Guide" data-i18n-title="Guide" data-tooltip="Guide" aria-current="false">
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
           <span data-i18n="Guide">Guide</span>
         </button>
       </nav>
 
-      <div class="rail-utilities" aria-label="Global utilities">
-        <label class="rail-utility rail-language" for="langToggle" title="Language" data-tooltip="Language">
+        <div class="rail-utilities" aria-label="Global utilities" data-i18n-aria-label="Global utilities">
+        <label class="rail-utility rail-language" for="langToggle" title="Language" data-i18n-title="Language" data-tooltip="Language">
           <svg class="rail-utility-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.4 2.5 3.7 5.5 3.7 9S14.4 18.5 12 21c-2.4-2.5-3.7-5.5-3.7-9S9.6 5.5 12 3Z"/></svg>
           <span class="rail-utility-label" data-i18n="Language">Language</span>
-          <select id="langToggle" onchange="setLanguage(this.value)" aria-label="Language">
+          <select id="langToggle" onchange="setLanguage(this.value)" aria-label="Language" data-i18n-aria-label="Language">
             <option value="en">🇺🇸 English</option>
             <option value="ru">🇷🇺 Русский</option>
             <option value="he">🇮🇱 עברית</option>
           </select>
         </label>
 
-        <button id="audioToggleBtn" class="rail-utility utility-button" type="button" aria-label="Mute sound" aria-pressed="true" title="Audio" data-tooltip="Audio">
+          <button id="audioToggleBtn" class="rail-utility utility-button" type="button" aria-label="Mute sound" data-i18n-aria-label="Mute sound" aria-pressed="true" title="Audio" data-i18n-title="Audio" data-tooltip="Audio">
           <svg class="rail-utility-icon utility-icon utility-icon-sound" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 3V7l-4 3H5Z"/><path d="M15 9a4 4 0 0 1 0 6m2-8a7 7 0 0 1 0 10"/></svg>
           <svg class="rail-utility-icon utility-icon utility-icon-muted" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10v4h3l4 3V7l-4 3H5Z"/><path d="m16 10 4 4m0-4-4 4"/></svg>
           <span class="rail-utility-label" data-i18n="Audio">Audio</span>
         </button>
 
-        <button id="openSettings" class="rail-utility utility-button" type="button" aria-label="Open settings" title="Settings" data-tooltip="Settings">
+          <button id="openSettings" class="rail-utility utility-button" type="button" aria-label="Open settings" data-i18n-aria-label="Open settings" title="Settings" data-i18n-title="Settings" data-tooltip="Settings">
           <svg class="rail-utility-icon utility-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>
           <span class="rail-utility-label" data-i18n="Settings">Settings</span>
         </button>
@@ -394,12 +396,12 @@
           <p id="workspaceSubtitle" data-i18n="Strategy guidance with explicit source provenance.">Strategy guidance with explicit source provenance.</p>
         </div>
 
-        <div class="workspace-utilities" aria-label="Strategy source status">
-          <div id="strategySourceStatus" class="strategy-source-status" aria-label="Strategy source: Heuristic fallback">
+        <div class="workspace-utilities" aria-label="Strategy source status" data-i18n-aria-label="Strategy source status">
+          <div id="strategySourceStatus" class="strategy-source-status" aria-label="Strategy source: Heuristic fallback" data-i18n-aria-label="Strategy source: Heuristic fallback">
             <span class="strategy-source-status-dot" aria-hidden="true"></span>
             <span class="strategy-source-status-copy">
               <span class="strategy-source-status-label" data-i18n="Strategy source">Strategy source</span>
-              <strong>Heuristic fallback</strong>
+              <strong data-i18n="Heuristic fallback">Heuristic fallback</strong>
             </span>
           </div>
 
@@ -412,16 +414,16 @@
 
     <section id="gtoMode" class="mode-view active">
 
-      <div class="playbook-state-source" aria-label="Playbook workflow" data-interaction-surface="interactive">
+      <div class="playbook-state-source" aria-label="Playbook workflow" data-i18n-aria-label="Playbook workflow" data-interaction-surface="interactive">
         <div class="playbook-workflow-copy">
           <span class="playbook-workflow-kicker" data-i18n="Analysis workflow">Analysis workflow</span>
           <strong data-i18n="Choose how this poker spot is built">Choose how this poker spot is built</strong>
         </div>
-        <div id="playbookModeControl" class="ui-segments" role="group" aria-label="Choose Playbook workflow">
+        <div id="playbookModeControl" class="ui-segments" role="group" aria-label="Choose Playbook workflow" data-i18n-aria-label="Choose Playbook workflow">
           <button id="playbookScenarioMode" class="ui-tab active" type="button" data-playbook-mode="scenario" aria-pressed="true"><strong data-i18n="Scenario Analysis">Scenario Analysis</strong><small data-i18n="Build any study spot">Build any study spot</small></button>
           <button id="playbookHandMode" class="ui-tab" type="button" data-playbook-mode="hand" aria-pressed="false"><strong data-i18n="Hand Mode">Hand Mode</strong><small data-i18n="Play a legal hand">Play a legal hand</small></button>
         </div>
-        <p id="playbookModeStatus" class="playbook-mode-status" role="status" aria-live="polite">Scenario controls are authoritative. This spot does not claim a legal hand history.</p>
+        <p id="playbookModeStatus" class="playbook-mode-status" role="status" aria-live="polite" data-i18n="Scenario controls are authoritative. This spot does not claim a legal hand history.">Scenario controls are authoritative. This spot does not claim a legal hand history.</p>
         <button id="togglePlaybookContext" class="ui-button ui-button--quiet playbook-context-toggle" type="button" aria-expanded="true" aria-controls="scenarioConfigurationPanel scenarioCardsPanel playbookHandWorkspace" data-i18n="Toggle context controls">Toggle context controls</button>
       </div>
 
@@ -429,7 +431,7 @@
 
 
 
-        <aside class="side-stack playbook-context-rail" aria-label="Playbook context and configuration">
+        <aside class="side-stack playbook-context-rail" aria-label="Playbook context and configuration" data-i18n-aria-label="Playbook context and configuration">
 
           <section id="scenarioConfigurationPanel" class="panel playbook-config-panel" data-playbook-scenario>
 
@@ -445,7 +447,7 @@
 
               <div id="liveContextIndicator" class="live-indicator">
 
-                <i class="dot"></i><span id="liveContextText">Live</span>
+                    <i class="dot"></i><span id="liveContextText" data-i18n="Live">Live</span>
 
               </div>
 
@@ -465,9 +467,7 @@
 
                       <span data-i18n="Table size">Table size</span>
 
-                      <span class="control-value"><input id="playersNum" class="control-input control-input--inline" type="number" min="2" max="10" step="1" value="8">
-
-                        -max</span>
+                      <span class="control-value"><input id="playersNum" class="control-input control-input--inline" type="number" min="2" max="10" step="1" value="8"><span data-i18n="-max">-max</span></span>
 
                     </div>
 
@@ -521,7 +521,7 @@
                   <div class="slider-container">
                     <div class="slider-header" style="margin-bottom: 8px;">
                       <span data-i18n="Play Style">Play Style</span>
-                      <span id="tightnessLabel" style="color: var(--primary); font-size: 13px;">Baseline</span>
+                      <span id="tightnessLabel" style="color: var(--primary); font-size: 13px;" data-i18n="Baseline">Baseline</span>
                     </div>
                     <input type="range" class="control-range" id="tightnessSlider" min="0" max="100" value="0" style="margin-bottom: 4px;">
                   </div>
@@ -531,7 +531,7 @@
                   <div class="slider-container">
                     <div class="slider-header" style="margin-bottom: 8px;">
                       <span data-i18n="Opponent Style">Opponent Style</span>
-                      <span id="oppTightnessLabel" style="color: var(--orange); font-size: 13px;">Baseline</span>
+                      <span id="oppTightnessLabel" style="color: var(--orange); font-size: 13px;" data-i18n="Baseline">Baseline</span>
                     </div>
                     <input type="range" class="control-range" id="oppTightnessSlider" min="0" max="100" value="0" style="margin-bottom: 4px;">
                   </div>
@@ -561,7 +561,7 @@
 
                 <span data-i18n="Show Advanced Rules (Ante/Straddle)">Show Advanced Rules (Ante/Straddle)</span>
 
-                <button class="switch ui-switch" id="toggleAdvanced" type="button" aria-label="Show advanced rules" aria-pressed="false"><b aria-hidden="true"></b></button>
+          <button class="switch ui-switch" id="toggleAdvanced" type="button" aria-label="Show advanced rules" data-i18n-aria-label="Show advanced rules" aria-pressed="false"><b aria-hidden="true"></b></button>
 
               </div>
 
@@ -573,7 +573,7 @@
 
                     <div class="slider-header">
 
-                      <span>Ante</span>
+                      <span data-i18n="Ante">Ante</span>
 
                       <span class="control-value"><input id="anteNum" class="control-input control-input--inline" type="number" min="0" max="5" step="0.5" value="0"></span>
 
@@ -587,11 +587,11 @@
 
                 <div class="field">
 
-                  <label for="straddle">Straddle</label>
+                  <label for="straddle" data-i18n="Straddle">Straddle</label>
 
                   <select id="straddle" class="control-select">
 
-                    <option value="0">None</option>
+                    <option value="0" data-i18n="None">None</option>
 
                     <option value="2">2 bb</option>
 
@@ -676,7 +676,7 @@
                 <div class="panel-title" data-i18n="Legal hand controls">Legal hand controls</div>
                 <div class="panel-note" data-i18n="Actions and cards advance the real hand state.">Actions and cards advance the real hand state.</div>
               </div>
-              <span id="handSessionBadge" class="badge status-badge status-badge--info">Not started</span>
+              <span id="handSessionBadge" class="badge status-badge status-badge--info" data-i18n="Not started">Not started</span>
             </div>
 
             <div class="panel-body playbook-hand-body">
@@ -693,7 +693,7 @@
                   <label><span data-i18n="Ante type">Ante type</span><select id="handAnteType" class="control-select"><option value="none" data-i18n="None">None</option><option value="per_player" data-i18n="Per player">Per player</option><option value="big_blind" data-i18n="Big blind ante">Big blind ante</option></select></label>
                   <label><span data-i18n="Ante amount">Ante amount</span><span class="input-with-unit"><input id="handAnteBb" class="control-input" type="number" min="0" max="20" step="0.1" value="0"><em>bb</em></span></label>
                 </div>
-                <p id="handAccountingPreview" class="hand-accounting-preview">Home · no rake or forced deduction</p>
+              <p id="handAccountingPreview" class="hand-accounting-preview" data-i18n="Home · no rake or forced deduction">Home · no rake or forced deduction</p>
                 <div class="hand-button-row">
                   <button id="handStartButton" class="ui-button ui-button--primary" type="button" data-i18n="Start hand">Start hand</button>
                   <button id="handResetButton" class="ui-button ui-button--quiet" type="button" data-i18n="Reset hand">Reset hand</button>
@@ -708,7 +708,7 @@
                   <div><span data-i18n="Pot">Pot</span><strong id="handStatePot">—</strong></div>
                   <div><span data-i18n="Deduction">Deduction</span><strong id="handStateDeduction">—</strong></div>
                 </div>
-                <div id="handSeatList" class="hand-seat-list" aria-label="Canonical players"></div>
+              <div id="handSeatList" class="hand-seat-list" aria-label="Canonical players" data-i18n-aria-label="Canonical players"></div>
               </section>
 
               <section id="handDealSection" class="hand-control-section" aria-labelledby="handDealTitle" hidden>
@@ -718,16 +718,16 @@
               </section>
 
               <section id="handChanceSection" class="hand-control-section" aria-labelledby="handChanceTitle" hidden>
-                <div class="hand-section-head"><div><strong id="handChanceTitle">Deal board</strong><small id="handChanceHelp">Choose the next legal board cards.</small></div></div>
+                  <div class="hand-section-head"><div><strong id="handChanceTitle" data-i18n="Deal board">Deal board</strong><small id="handChanceHelp" data-i18n="Choose the next legal board cards.">Choose the next legal board cards.</small></div></div>
                 <div class="card-slots" data-slots="hand-board-chance"></div>
                 <button id="handDealBoardButton" class="ui-button ui-button--primary" type="button" data-i18n="Commit board cards">Commit board cards</button>
               </section>
 
               <section id="handActionSection" class="hand-control-section" aria-labelledby="handActionTitle" hidden>
                 <div class="hand-section-head"><div><strong id="handActionTitle" data-i18n="Legal actions">Legal actions</strong><small id="handActionActor">Waiting for a betting decision</small></div></div>
-                <div id="handLegalActions" class="hand-legal-actions" role="group" aria-label="Canonical legal actions"></div>
+                  <div id="handLegalActions" class="hand-legal-actions" role="group" aria-label="Canonical legal actions" data-i18n-aria-label="Canonical legal actions"></div>
                 <label id="handActionSizing" class="hand-action-sizing" hidden>
-                  <span id="handActionSizingLabel">Raise to</span>
+                      <span id="handActionSizingLabel" data-i18n="Raise to">Raise to</span>
                   <span class="input-with-unit"><input id="handActionAmountBb" class="control-input" type="number" step="0.1"><em>bb</em></span>
                   <small id="handActionAmountBounds"></small>
                 </label>
@@ -735,7 +735,7 @@
 
               <section id="handHistorySection" class="hand-control-section" aria-labelledby="handHistoryTitle">
                 <div class="hand-section-head"><div><strong id="handHistoryTitle" data-i18n="Action history">Action history</strong><small data-i18n="Canonical, chronological and read-only">Canonical, chronological and read-only</small></div></div>
-                <ol id="handActionHistory" class="hand-action-history"><li>No actions yet</li></ol>
+                  <ol id="handActionHistory" class="hand-action-history"><li data-i18n="No actions yet">No actions yet</li></ol>
                 <button id="handResolveShowdownButton" class="ui-button ui-button--primary" type="button" hidden data-i18n="Resolve showdown">Resolve showdown</button>
               </section>
             </div>
@@ -782,9 +782,9 @@
 
                 <option value="4bet" data-i18n="4-Bet">4-Bet</option>
 
-                <option value="bet">Bet</option>
+                      <option value="bet" data-i18n="Bet">Bet</option>
 
-                <option value="check">Check</option>
+                      <option value="check" data-i18n="Check">Check</option>
 
               </select></label>
 
@@ -857,7 +857,7 @@
 
                 </div>
 
-                <div class="badge status-badge status-badge--info" id="sourceBadge" style="margin-top:4px;">HEURISTIC</div>
+            <div class="badge status-badge status-badge--info" id="sourceBadge" style="margin-top:4px;" data-i18n="HEURISTIC">HEURISTIC</div>
 
               </div>
 
@@ -891,7 +891,7 @@
 
                   <div class="frequency" data-action-kind="aggressive">
 
-                    <span class="freq-name" id="f1name">Open</span>
+                  <span class="freq-name" id="f1name" data-i18n="Open">Open</span>
 
                     <div class="bar">
 
@@ -905,7 +905,7 @@
 
                   <div class="frequency" data-action-kind="passive">
 
-                    <span class="freq-name" id="f2name">Limp</span>
+                  <span class="freq-name" id="f2name" data-i18n="Limp">Limp</span>
 
                     <div class="bar">
 
@@ -963,7 +963,7 @@
 
               </div>
 
-              <div class="metric-grid playbook-metric-strip" aria-label="Decision metrics" data-state-surface="derived">
+            <div class="metric-grid playbook-metric-strip" aria-label="Decision metrics" data-i18n-aria-label="Decision metrics" data-state-surface="derived">
 
                 <div class="metric"><span data-i18n="Position">Position</span><b id="mPosition">—</b></div>
 
@@ -994,8 +994,8 @@
 
 
           <div class="playbook-table-toggle">
-            <span class="playbook-table-label"><strong>Spot table</strong><small>Seats, stacks, cards, and current action</small></span>
-            <button id="toggleTableBtn" class="ui-button ui-button--quiet" type="button" aria-expanded="true" aria-controls="table-wrapper">Collapse Table</button>
+          <span class="playbook-table-label"><strong data-i18n="Spot table">Spot table</strong><small data-i18n="Seats, stacks, cards, and current action">Seats, stacks, cards, and current action</small></span>
+          <button id="toggleTableBtn" class="ui-button ui-button--quiet" type="button" aria-expanded="true" aria-controls="table-wrapper" data-i18n="Collapse Table">Collapse Table</button>
           </div>
           <div id="table-wrapper" class="table-wrapper" data-collapsible-region="poker-table">
             <div id="visual-table-container"></div>
@@ -1003,10 +1003,10 @@
 
           <nav id="playbookAnalysisNavigation" class="playbook-analysis-switcher" aria-labelledby="playbookAnalysisNavigationTitle">
             <div class="playbook-analysis-switcher-copy">
-              <strong id="playbookAnalysisNavigationTitle">Current spot views</strong>
-              <small>Decision, provider-backed Matrix, or heuristic category comparison</small>
+              <strong id="playbookAnalysisNavigationTitle" data-i18n="Current spot views">Current spot views</strong>
+              <small data-i18n="Decision, provider-backed Matrix, or heuristic category comparison">Decision, provider-backed Matrix, or heuristic category comparison</small>
             </div>
-            <div id="playbookAnalysisTabs" class="sub-tabs ui-segments" role="tablist" aria-label="Playbook analysis views">
+          <div id="playbookAnalysisTabs" class="sub-tabs ui-segments" role="tablist" aria-label="Playbook analysis views" data-i18n-aria-label="Playbook analysis views">
               <button class="sub-tab ui-tab active" type="button" role="tab" aria-selected="true" data-gto-view="context" data-i18n="Decision">Decision</button>
               <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="chart" data-i18n="Range Matrix">Range Matrix</button>
               <button class="sub-tab ui-tab" type="button" role="tab" aria-selected="false" data-gto-view="range" data-i18n="Range Category Comparison">Range Category Comparison</button>
@@ -1074,40 +1074,40 @@
 
               </div>
 
-              <div class="chart-summary" id="chartSummary">BTN vs BB · 100 bb · rake 5% · unopened pot</div>
+              <div class="chart-summary poker-data-token" id="chartSummary">—</div>
 
               <section id="postflopMatrixEmpty" class="matrix-empty-state" aria-labelledby="postflopMatrixEmptyTitle" hidden>
                 <div>
-                  <span class="matrix-empty-eyebrow">Postflop Range Matrix</span>
-                  <h3 id="postflopMatrixEmptyTitle">Range expansion not available yet</h3>
-                  <p>Exact-hand postflop strategy is available in Decision, but the current strategy source does not provide a full postflop range expansion.</p>
+              <span class="matrix-empty-eyebrow" data-i18n="Postflop Range Matrix">Postflop Range Matrix</span>
+              <h3 id="postflopMatrixEmptyTitle" data-i18n="Range expansion not available yet">Range expansion not available yet</h3>
+              <p data-i18n="Exact-hand postflop strategy is available in Decision, but the current strategy source does not provide a full postflop range expansion.">Exact-hand postflop strategy is available in Decision, but the current strategy source does not provide a full postflop range expansion.</p>
                 </div>
-                <button id="postflopMatrixBack" class="ui-button ui-button--secondary" type="button">Back to Decision</button>
+              <button id="postflopMatrixBack" class="ui-button ui-button--secondary" type="button" data-i18n="Back to Decision">Back to Decision</button>
               </section>
 
               <div class="range-matrix-layout">
 
                 <div class="range-matrix-main">
 
-              <div class="matrix-wrap" tabindex="0" aria-label="Scrollable 13 by 13 starting hand strategy matrix">
+                <div class="matrix-wrap" tabindex="0" aria-label="Scrollable 13 by 13 starting hand strategy matrix" data-i18n-aria-label="Scrollable 13 by 13 starting hand strategy matrix">
 
-                <div class="strategy-grid" id="strategyGrid" role="grid" aria-rowcount="13" aria-colcount="13" aria-label="13 by 13 starting hand strategy matrix"></div>
+                <div class="strategy-grid" id="strategyGrid" role="grid" aria-rowcount="13" aria-colcount="13" aria-label="13 by 13 starting hand strategy matrix" data-i18n-aria-label="13 by 13 starting hand strategy matrix"></div>
 
               </div>
 
-              <div class="strategy-key matrix-action-legend" id="strategyKey" role="list" aria-label="Strategy action colors">
+              <div class="strategy-key matrix-action-legend" id="strategyKey" role="list" aria-label="Strategy action colors" data-i18n-aria-label="Strategy action colors">
 
                 <span class="key" role="listitem"><i class="open" data-action-kind="aggressive"></i><span data-i18n="Raise / bet">Raise / bet</span></span>
 
-                <span class="key" role="listitem"><i class="call" data-action-kind="passive"></i><span>Check / call</span></span>
+              <span class="key" role="listitem"><i class="call" data-action-kind="passive"></i><span data-i18n="Check / call">Check / call</span></span>
 
-                <span class="key" role="listitem"><i class="all-in" data-action-kind="all-in"></i><span>All-in</span></span>
+              <span class="key" role="listitem"><i class="all-in" data-action-kind="all-in"></i><span data-i18n="All-in">All-in</span></span>
 
                 <span class="key" role="listitem"><i class="mix" data-action-kind="mixed"></i><span data-i18n="Mixed">Mixed</span></span>
 
                 <span class="key" role="listitem"><i class="fold" data-action-kind="fold"></i><span data-i18n="Fold">Fold</span></span>
 
-                <span class="matrix-legend-note">Tint shows the dominant action · band shows the full mix</span>
+            <span class="matrix-legend-note" data-i18n="Tint shows the dominant action · band shows the full mix">Tint shows the dominant action · band shows the full mix</span>
 
               </div>
 
@@ -1125,9 +1125,9 @@
 
                 <div class="matrix-inspector-meta">
 
-                  <span id="selectedHandKind">Hand class</span>
+              <span id="selectedHandKind" data-i18n="Hand class">Hand class</span>
 
-                  <strong id="selectedHandPrimary">No action selected</strong>
+              <strong id="selectedHandPrimary" data-i18n="No action selected">No action selected</strong>
 
                 </div>
 
@@ -1166,7 +1166,7 @@
                     <option value="SB">SB</option>
                     <option value="BB">BB</option>
                   </select></label>
-                  <span class="range-comparison-versus">vs</span>
+                <span class="range-comparison-versus" data-i18n="vs">vs</span>
                   <label><span class="sr-only" data-i18n="Villain sample position">Villain sample position</span><select id="rangeAdvVilPos" class="settings-select">
                     <option value="UTG">UTG</option>
                     <option value="HJ">HJ</option>
@@ -1190,12 +1190,12 @@
                   <div id="heroAdvBar" style="width:50%; background:var(--primary); transition:width 0.3s;"></div>
                   <div id="villainAdvBar" style="width:50%; background:var(--red); transition:width 0.3s;"></div>
                 </div>
-                <div class="range-comparison-scroll" tabindex="0" aria-label="Scrollable aligned Hero and Villain range category matrices">
+          <div class="range-comparison-scroll" tabindex="0" aria-label="Scrollable aligned Hero and Villain range category matrices" data-i18n-aria-label="Scrollable aligned Hero and Villain range category matrices">
                 <div class="range-grid-split">
                   <div class="range-comparison-pane">
                     <div style="margin-bottom:8px; font-weight:bold; color:var(--text); display:flex; justify-content:space-between;">
-                      <span id="heroRangeTitle">Hero sample (BTN)</span>
-                      <span id="heroRangeScore" style="color:var(--primary);">0% strong made categories</span>
+                    <span id="heroRangeTitle" data-i18n="Hero sample">Hero sample</span>
+                    <span id="heroRangeScore" class="poker-data-token" style="color:var(--primary);">0%</span>
                     </div>
                     <div class="matrix-wrap" style="padding:0;">
                       <div class="strategy-grid range-grid" id="heroRangeGrid" aria-label="13 by 13 starting hand matrix"></div>
@@ -1210,8 +1210,8 @@
                   </div>
                   <div class="range-comparison-pane">
                     <div style="margin-bottom:8px; font-weight:bold; color:var(--text); display:flex; justify-content:space-between;">
-                      <span id="villainRangeTitle">Villain sample (BB)</span>
-                      <span id="villainRangeScore" style="color:var(--red);">0% strong made categories</span>
+                    <span id="villainRangeTitle" data-i18n="Villain sample">Villain sample</span>
+                    <span id="villainRangeScore" class="poker-data-token" style="color:var(--red);">0%</span>
                     </div>
                     <div class="matrix-wrap" style="padding:0;">
                       <div class="strategy-grid range-grid" id="villainRangeGrid" aria-label="13 by 13 starting hand matrix"></div>
@@ -1297,37 +1297,37 @@
               <div>
                 <p class="training-eyebrow" data-i18n="Training workspace">Training workspace</p>
                 <h2 id="trainingWorkspaceTitle" data-i18n="Make the decision">Make the decision</h2>
-                <p id="trainingInstruction" class="muted">Generate a reachable canonical decision, then choose one legal action.</p>
+                <p id="trainingInstruction" class="muted" data-i18n="Generate a reachable canonical decision, then choose one legal action.">Generate a reachable canonical decision, then choose one legal action.</p>
               </aside>
 
               </div>
               <div class="training-state-cluster">
-                <span id="trainingStateBadge" class="badge status-badge status-badge--info">Idle</span>
-                <span id="trainingStrategySource" class="badge status-badge status-badge--info">Source unavailable</span>
+                <span id="trainingStateBadge" class="badge status-badge status-badge--info" data-i18n="Idle">Idle</span>
+                <span id="trainingStrategySource" class="badge status-badge status-badge--info" data-i18n="Source unavailable">Source unavailable</span>
               </div>
             </header>
 
-            <div id="trainingExerciseTags" class="training-tag-row" aria-label="Exercise tags"></div>
+            <div id="trainingExerciseTags" class="training-tag-row" aria-label="Exercise tags" data-i18n-aria-label="Exercise tags"></div>
             <div id="trainingIdle" class="training-state-message">
               <strong data-i18n="Ready for a drill">Ready for a drill</strong>
-              <span>Use the setup controls to generate a legal poker decision.</span>
+              <span data-i18n="Use the setup controls to generate a legal poker decision.">Use the setup controls to generate a legal poker decision.</span>
             </div>
             <div id="trainingGenerating" class="training-state-message" hidden aria-live="polite">
               <span class="training-spinner" aria-hidden="true"></span>
-              <div><strong>Generating exercise</strong><span>Replaying a bounded legal hand trajectory.</span></div>
+              <div><strong data-i18n="Generating exercise">Generating exercise</strong><span data-i18n="Replaying a bounded legal hand trajectory.">Replaying a bounded legal hand trajectory.</span></div>
             </div>
             <div id="trainingError" class="training-state-message training-state-message--error" role="alert" hidden>
-              <div><strong id="trainingErrorTitle">Exercise unavailable</strong><span id="trainingErrorText">Try again or adjust the drill.</span></div>
+              <div><strong id="trainingErrorTitle" data-i18n="Exercise unavailable">Exercise unavailable</strong><span id="trainingErrorText" data-i18n="Try again or adjust the drill.">Try again or adjust the drill.</span></div>
               <button id="trainingRetryButton" class="ui-button ui-button--secondary" type="button" data-i18n="Try again">Try again</button>
             </div>
 
             <div id="trainingExerciseSurface" class="training-exercise-surface" hidden>
-              <div class="training-table-summary" aria-label="Read-only exercise cards">
-                <div class="training-board-zone"><span class="training-zone-label" data-i18n="Board">Board</span><div id="trainingBoardCards" class="training-card-row" aria-label="Board cards"></div></div>
+              <div class="training-table-summary" aria-label="Read-only exercise cards" data-i18n-aria-label="Read-only exercise cards">
+                <div class="training-board-zone"><span class="training-zone-label" data-i18n="Board">Board</span><div id="trainingBoardCards" class="training-card-row" aria-label="Board cards" data-i18n-aria-label="Board cards"></div></div>
                 <div class="training-table-divider" aria-hidden="true"></div>
                 <div class="training-hero-zone">
                   <div><span class="training-zone-label" data-i18n="Hero">Hero</span><strong id="trainingHandDisplay">—</strong></div>
-                  <div id="trainingHeroCards" class="training-card-row" aria-label="Hero cards"></div>
+                  <div id="trainingHeroCards" class="training-card-row" aria-label="Hero cards" data-i18n-aria-label="Hero cards"></div>
                 </div>
               </div>
               <div id="trainingPotInfo" class="training-context-strip" data-state-surface="derived">
@@ -1345,26 +1345,26 @@
               </div>
               <section id="trainingStudyHints" class="training-study-hints" aria-labelledby="trainingStudyHintsTitle" hidden>
                 <div class="training-study-hints-head">
-                  <div><h3 id="trainingStudyHintsTitle">Study hints</h3><p>Get a nudge about the spot.</p></div>
-                  <button id="trainingRevealHint" class="ui-button ui-button--secondary" type="button">Get a hint</button>
+                  <div><h3 id="trainingStudyHintsTitle" data-i18n="Study hints">Study hints</h3><p data-i18n="Get a nudge about the spot.">Get a nudge about the spot.</p></div>
+                  <button id="trainingRevealHint" class="ui-button ui-button--secondary" type="button" data-i18n="Get a hint">Get a hint</button>
                 </div>
                 <div id="trainingStudyHintContent" class="training-study-hint-content" aria-live="polite"></div>
               </section>
               <div class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
-              <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions"></div>
-              <p class="training-shortcut-help"><span>Keyboard:</span> <kbd>1</kbd>–<kbd>6</kbd> choose a visible action</p>
+              <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions" data-i18n-aria-label="Available actions"></div>
+              <p class="training-shortcut-help"><span data-i18n="Keyboard:">Keyboard:</span> <span class="poker-data-token" dir="ltr"><kbd>1</kbd>–<kbd>6</kbd></span> <span data-i18n="choose a visible action">choose a visible action</span></p>
             </div>
 
             <div id="trainingFeedback" class="training-feedback" data-grade="none" aria-live="polite" hidden>
-              <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info">Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
-              <div class="training-verdict"><h3 id="feedbackTitle">Feedback</h3><p id="feedbackText">Your answer will be compared with the current strategy reference.</p></div>
+              <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info" data-i18n="Feedback">Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
+              <div class="training-verdict"><h3 id="feedbackTitle" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
               <dl class="training-verdict-facts">
-                <div><dt>Chosen action</dt><dd id="trainingChosenAction">—</dd></div>
-                <div class="training-verdict-frequency" hidden><dt>Chosen frequency</dt><dd id="trainingChosenProbability">—</dd></div>
-                <div class="training-verdict-frequency" hidden><dt>Highest frequency</dt><dd id="trainingBestProbability">—</dd></div>
-                <div id="trainingEvFact" hidden><dt>EV comparison</dt><dd id="trainingEvValue">—</dd></div>
+                <div><dt data-i18n="Chosen action">Chosen action</dt><dd id="trainingChosenAction">—</dd></div>
+                <div class="training-verdict-frequency" hidden><dt data-i18n="Chosen frequency">Chosen frequency</dt><dd id="trainingChosenProbability" class="poker-data-token">—</dd></div>
+                <div class="training-verdict-frequency" hidden><dt data-i18n="Highest frequency">Highest frequency</dt><dd id="trainingBestProbability" class="poker-data-token">—</dd></div>
+                <div id="trainingEvFact" hidden><dt data-i18n="EV comparison">EV comparison</dt><dd id="trainingEvValue" class="poker-data-token">—</dd></div>
               </dl>
-              <section class="training-analysis-region" aria-labelledby="trainingAnalysisTitle"><h4 id="trainingAnalysisTitle">Analysis</h4><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></section>
+              <section class="training-analysis-region" aria-labelledby="trainingAnalysisTitle"><h4 id="trainingAnalysisTitle" data-i18n="Analysis">Analysis</h4><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></section>
             </div>
             <div class="training-completion-actions">
               <button class="ui-button ui-button--primary training-primary-next" type="button" id="trainingNextHandBtn" aria-keyshortcuts="Enter" data-i18n="Generate exercise">Generate exercise</button>
@@ -1378,20 +1378,20 @@
           <section id="trainingSolution" class="panel training-solution-panel" hidden aria-labelledby="trainingSolutionTitle">
             <div class="panel-head"><div><p id="trainingSolutionEyebrow" class="training-eyebrow" data-i18n="After-answer reference">After-answer reference</p><h2 id="trainingSolutionTitle" data-i18n="Strategy frequencies">Strategy frequencies</h2></div></div>
             <div class="panel-body">
-              <p class="training-reference-note">Probabilities from the displayed strategy source; no EV is implied.</p>
+              <p class="training-reference-note" data-i18n="Probabilities from the displayed strategy source; no EV is implied.">Probabilities from the displayed strategy source; no EV is implied.</p>
               <div class="training-frequency-stack frequency-stack is-empty" id="trainingFrequencyStack" role="img" aria-label="Strategy frequencies unavailable"></div>
               <div id="trainingFrequencyRows" class="training-frequency-rows"></div>
             </div>
           </section>
           <details class="panel training-history-panel" aria-labelledby="trainingHistoryTitle">
             <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="Canonical replay">Canonical replay</p><h2 id="trainingHistoryTitle" data-i18n="Action history">Action history</h2></div></summary>
-            <div class="panel-body"><ol id="trainingActionHistory" class="training-action-history"><li class="is-empty">Generate an exercise to view its chronological action history.</li></ol><p id="trainingCurrentActor" class="training-current-actor">No decision loaded.</p></div>
+            <div class="panel-body"><ol id="trainingActionHistory" class="training-action-history"><li class="is-empty" data-i18n="Generate an exercise to view its chronological action history.">Generate an exercise to view its chronological action history.</li></ol><p id="trainingCurrentActor" class="training-current-actor" data-i18n="No decision loaded.">No decision loaded.</p></div>
           </details>
           <section class="panel training-session-panel" aria-labelledby="trainingSessionTitle">
             <div class="panel-head"><div><p class="training-eyebrow" data-i18n="This browser session">This browser session</p><h2 id="trainingSessionTitle" data-i18n="Session progress">Session progress</h2></div></div>
             <div class="panel-body">
-              <div class="training-stat-grid" role="list" aria-label="Session summary"><div class="training-stat-cell" data-training-stat="attempts" role="listitem"><span>Attempts</span><strong id="trainingTotalHands">0</strong></div><div class="training-stat-cell" data-training-stat="accepted" role="listitem"><span>Accepted</span><strong id="trainingCorrect">0</strong></div><div class="training-stat-cell" data-training-stat="acceptance" role="listitem"><span>Acceptance</span><strong id="trainingAccuracy">0%</strong></div><div class="training-stat-cell" data-training-stat="streak" role="listitem"><span>Streak</span><strong id="trainingStreak">0</strong></div><div class="training-stat-cell" data-training-stat="best-streak" role="listitem"><span>Best streak</span><strong id="trainingBestStreak">0</strong></div></div>
-              <div class="training-grade-counts" aria-label="Answer grades"><span><i data-grade="optimal"></i>Optimal <strong id="trainingOptimalCount">0</strong></span><span><i data-grade="acceptable"></i>Acceptable <strong id="trainingAcceptableCount">0</strong></span><span><i data-grade="mistake"></i>Mistake <strong id="trainingMistakeCount">0</strong></span></div>
+              <div class="training-stat-grid" role="list" aria-label="Session summary" data-i18n-aria-label="Session summary"><div class="training-stat-cell" data-training-stat="attempts" role="listitem"><span data-i18n="Attempts">Attempts</span><strong id="trainingTotalHands">0</strong></div><div class="training-stat-cell" data-training-stat="accepted" role="listitem"><span data-i18n="Accepted">Accepted</span><strong id="trainingCorrect">0</strong></div><div class="training-stat-cell" data-training-stat="acceptance" role="listitem"><span data-i18n="Acceptance">Acceptance</span><strong id="trainingAccuracy" class="poker-data-token">0%</strong></div><div class="training-stat-cell" data-training-stat="streak" role="listitem"><span data-i18n="Streak">Streak</span><strong id="trainingStreak">0</strong></div><div class="training-stat-cell" data-training-stat="best-streak" role="listitem"><span data-i18n="Best streak">Best streak</span><strong id="trainingBestStreak">0</strong></div></div>
+              <div class="training-grade-counts" aria-label="Answer grades" data-i18n-aria-label="Answer grades"><span><i data-grade="optimal"></i><span data-i18n="Optimal">Optimal</span> <strong id="trainingOptimalCount">0</strong></span><span><i data-grade="acceptable"></i><span data-i18n="Acceptable">Acceptable</span> <strong id="trainingAcceptableCount">0</strong></span><span><i data-grade="mistake"></i><span data-i18n="Mistake">Mistake</span> <strong id="trainingMistakeCount">0</strong></span></div>
               <button class="ui-button ui-button-ghost ui-button--destructive" type="button" id="trainingResetStats" data-i18n="Reset session stats">Reset session stats</button>
             </div>
           </section>
@@ -1401,24 +1401,24 @@
           <section class="panel" aria-labelledby="trainingSetupTitle">
             <div class="panel-head"><div><p class="training-eyebrow" data-i18n="Drill setup">Drill setup</p><h2 id="trainingSetupTitle" data-i18n="Choose a decision family">Choose a decision family</h2></div><span class="badge status-badge status-badge--available" data-i18n="Home · no rake">Home · no rake</span></div>
             <div class="panel-body training-setup-fields">
-              <label class="ui-field"><span>Street</span><select id="trainingStreet" class="control-select"><option value="any" selected>Any street</option><option value="preflop">Preflop</option><option value="flop">Flop</option><option value="turn">Turn</option><option value="river">River</option></select></label>
-              <label class="ui-field"><span>Decision target</span><select id="trainingDecisionTarget" class="control-select"><option value="any" selected>Any compatible target</option><optgroup label="Preflop"><option value="preflop_unopened">Unopened / RFI</option><option value="preflop_facing_open">Facing an open</option><option value="preflop_facing_3bet">Facing a 3-bet</option><option value="preflop_facing_4bet">Facing a 4-bet</option><option value="preflop_bb_option">Big blind check option</option></optgroup><optgroup label="Postflop"><option value="postflop_first_action">First action / checked to</option><option value="postflop_facing_bet">Facing a bet</option><option value="postflop_facing_raise">Facing a raise</option></optgroup></select></label>
-              <label class="ui-field"><span>Hero position</span><select id="trainingHeroPos" class="control-select"><option value="UTG" selected>UTG</option><option value="HJ">HJ</option><option value="CO">CO</option><option value="BTN">BTN</option><option value="SB">SB</option><option value="BB">BB</option></select></label>
-              <label class="ui-field"><span>Assistance</span><select id="trainingDifficulty" class="control-select"><option value="hard" selected>Hard · no odds shown</option><option value="easy">Easy · pot odds and MDF</option><option value="guided">Guided · odds and prompt</option></select></label>
-              <div class="training-slider-field"><div class="slider-header"><span>Table size</span><span class="control-value"><input id="trainingPlayersNum" class="control-input control-input--inline" type="number" min="2" max="10" step="1" value="8">-max</span></div><input id="trainingPlayers" class="control-range" type="range" min="2" max="10" step="1" value="8"></div>
-              <div class="training-slider-field"><div class="slider-header"><span>Starting stack</span><span class="control-value"><input id="trainingStackNum" class="control-input control-input--inline" type="number" min="10" max="500" step="1" value="30">bb</span></div><input id="trainingStack" class="control-range" type="range" min="10" max="500" step="1" value="30"></div>
+              <label class="ui-field"><span data-i18n="Street">Street</span><select id="trainingStreet" class="control-select"><option value="any" selected data-i18n="Any street">Any street</option><option value="preflop" data-i18n="Preflop">Preflop</option><option value="flop" data-i18n="Flop">Flop</option><option value="turn" data-i18n="Turn">Turn</option><option value="river" data-i18n="River">River</option></select></label>
+              <label class="ui-field"><span data-i18n="Decision target">Decision target</span><select id="trainingDecisionTarget" class="control-select"><option value="any" selected data-i18n="Any compatible target">Any compatible target</option><optgroup label="Preflop" data-i18n-label="Preflop"><option value="preflop_unopened" data-i18n="Unopened / RFI">Unopened / RFI</option><option value="preflop_facing_open" data-i18n="Facing an open">Facing an open</option><option value="preflop_facing_3bet" data-i18n="Facing a 3-bet">Facing a 3-bet</option><option value="preflop_facing_4bet" data-i18n="Facing a 4-bet">Facing a 4-bet</option><option value="preflop_bb_option" data-i18n="Big blind check option">Big blind check option</option></optgroup><optgroup label="Postflop" data-i18n-label="Postflop"><option value="postflop_first_action" data-i18n="First action / checked to">First action / checked to</option><option value="postflop_facing_bet" data-i18n="Facing a bet">Facing a bet</option><option value="postflop_facing_raise" data-i18n="Facing a raise">Facing a raise</option></optgroup></select></label>
+              <label class="ui-field"><span data-i18n="Hero position">Hero position</span><select id="trainingHeroPos" class="control-select poker-data-token"><option value="UTG" selected>UTG</option><option value="HJ">HJ</option><option value="CO">CO</option><option value="BTN">BTN</option><option value="SB">SB</option><option value="BB">BB</option></select></label>
+              <label class="ui-field"><span data-i18n="Assistance">Assistance</span><select id="trainingDifficulty" class="control-select"><option value="hard" selected data-i18n="Hard · no odds shown">Hard · no odds shown</option><option value="easy" data-i18n="Easy · pot odds and MDF">Easy · pot odds and MDF</option><option value="guided" data-i18n="Guided · odds and prompt">Guided · odds and prompt</option></select></label>
+              <div class="training-slider-field"><div class="slider-header"><span data-i18n="Table size">Table size</span><span class="control-value poker-data-token"><input id="trainingPlayersNum" class="control-input control-input--inline" type="number" min="2" max="10" step="1" value="8">-max</span></div><input id="trainingPlayers" class="control-range" type="range" min="2" max="10" step="1" value="8"></div>
+              <div class="training-slider-field"><div class="slider-header"><span data-i18n="Starting stack">Starting stack</span><span class="control-value poker-data-token"><input id="trainingStackNum" class="control-input control-input--inline" type="number" min="10" max="500" step="1" value="30"> bb</span></div><input id="trainingStack" class="control-range" type="range" min="10" max="500" step="1" value="30"></div>
               <div id="trainingFilterMessage" class="training-filter-message" role="status"></div>
-              <button class="ui-button ui-button--primary training-generate" type="button" id="trainingNewHand">Generate exercise</button>
+              <button class="ui-button ui-button--primary training-generate" type="button" id="trainingNewHand" data-i18n="Generate exercise">Generate exercise</button>
             </div>
           </section>
-          <section class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle"><div class="panel-head"><div><h2 id="trainingAssistanceTitle">Assistance</h2><p class="panel-note">Difficulty controls automatic help.</p></div></div><div class="panel-body"><p class="training-study-hints-note"><strong>Study hints</strong><span>Ask for a coaching prompt in the decision panel.</span></p></div></section>
+          <section class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle"><div class="panel-head"><div><h2 id="trainingAssistanceTitle" data-i18n="Assistance">Assistance</h2><p class="panel-note" data-i18n="Difficulty controls automatic help.">Difficulty controls automatic help.</p></div></div><div class="panel-body"><p class="training-study-hints-note"><strong data-i18n="Study hints">Study hints</strong><span data-i18n="Ask for a coaching prompt in the decision panel.">Ask for a coaching prompt in the decision panel.</span></p></div></section>
           <details class="panel training-advanced" id="trainingAdvanced">
-            <summary>Seed, replay & diagnostics</summary>
+            <summary data-i18n="Seed, replay & diagnostics">Seed, replay & diagnostics</summary>
             <div class="panel-body">
-              <label class="ui-field"><span>Exact uint32 seed</span><input id="trainingSeedInput" class="control-input" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="0–4294967295"></label>
-              <button id="trainingGenerateSeed" class="ui-button ui-button--secondary" type="button">Generate from seed</button>
-              <dl class="training-metadata-grid"><div><dt>Current seed</dt><dd id="trainingCurrentSeed">—</dd></div><div><dt>Exercise ID</dt><dd id="trainingExerciseId">—</dd></div><div><dt>Generation attempts</dt><dd id="trainingGenerationAttempts">—</dd></div><div><dt>Trajectory actions</dt><dd id="trainingTrajectoryLength">—</dd></div><div><dt>Policy</dt><dd id="trainingGenerationPolicy">—</dd></div></dl>
-              <div class="training-seed-actions"><button id="trainingCopySeed" class="ui-button ui-button-ghost" type="button" disabled>Copy seed</button><button id="trainingReplayBtn" class="ui-button ui-button-ghost" type="button" aria-keyshortcuts="R" disabled>Replay seed <kbd>R</kbd></button></div>
+              <label class="ui-field"><span data-i18n="Exact uint32 seed">Exact uint32 seed</span><input id="trainingSeedInput" class="control-input poker-data-token" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="0–4294967295"></label>
+              <button id="trainingGenerateSeed" class="ui-button ui-button--secondary" type="button" data-i18n="Generate from seed">Generate from seed</button>
+              <dl class="training-metadata-grid"><div><dt data-i18n="Current seed">Current seed</dt><dd id="trainingCurrentSeed" class="poker-data-token">—</dd></div><div><dt data-i18n="Exercise ID">Exercise ID</dt><dd id="trainingExerciseId" class="poker-data-token">—</dd></div><div><dt data-i18n="Generation attempts">Generation attempts</dt><dd id="trainingGenerationAttempts" class="poker-data-token">—</dd></div><div><dt data-i18n="Trajectory actions">Trajectory actions</dt><dd id="trainingTrajectoryLength" class="poker-data-token">—</dd></div><div><dt data-i18n="Policy">Policy</dt><dd id="trainingGenerationPolicy" class="poker-data-token">—</dd></div></dl>
+              <div class="training-seed-actions"><button id="trainingCopySeed" class="ui-button ui-button-ghost" type="button" disabled data-i18n="Copy seed">Copy seed</button><button id="trainingReplayBtn" class="ui-button ui-button-ghost" type="button" aria-keyshortcuts="R" disabled><span data-i18n="Replay seed">Replay seed</span> <kbd class="poker-data-token">R</kbd></button></div>
             </div>
           </details>
         </aside>
@@ -1442,13 +1442,13 @@
               <button id="resetEquity" class="ui-button ui-button-ghost equity-reset" type="button" data-i18n="Reset">Reset</button>
             </div>
             <div class="equity-player-toolbar">
-              <div class="equity-player-count-control" role="group" aria-label="Player count, from 2 through 10">
-                <button id="equityDecreasePlayers" class="ui-button ui-button--icon" type="button" data-equity-player-delta="-1" aria-label="Remove one player" title="Remove one player">−</button>
-                <span id="equityPlayerCount" class="equity-count" aria-live="polite">2 players</span>
-                <button id="equityIncreasePlayers" class="ui-button ui-button--icon" type="button" data-equity-player-delta="1" aria-label="Add one player" title="Add one player">+</button>
+              <div class="equity-player-count-control" role="group" aria-label="Player count, from 2 through 10" data-i18n-aria-label="Player count, from 2 through 10">
+                <button id="equityDecreasePlayers" class="ui-button ui-button--icon" type="button" data-equity-player-delta="-1" aria-label="Remove one player" data-i18n-aria-label="Remove one player" title="Remove one player" data-i18n-title="Remove one player">−</button>
+                <span id="equityPlayerCount" class="equity-count poker-data-token" aria-live="polite">2 players</span>
+                <button id="equityIncreasePlayers" class="ui-button ui-button--icon" type="button" data-equity-player-delta="1" aria-label="Add one player" data-i18n-aria-label="Add one player" title="Add one player" data-i18n-title="Add one player">+</button>
               </div>
-              <div class="equity-presets" aria-label="Quick player count presets">
-                <span class="equity-toolbar-label">Quick</span>
+              <div class="equity-presets" aria-label="Quick player count presets" data-i18n-aria-label="Quick player count presets">
+                <span class="equity-toolbar-label" data-i18n="Quick">Quick</span>
                 <button class="ui-button ui-button-ghost is-active" type="button" data-equity-player-count="2" aria-label="Set 2 players">2</button>
                 <button class="ui-button ui-button-ghost" type="button" data-equity-player-count="6" aria-label="Set 6 players">6</button>
                 <button class="ui-button ui-button-ghost" type="button" data-equity-player-count="9" aria-label="Set 9 players">9</button>
@@ -1474,15 +1474,15 @@
                   <button class="ui-button ui-button-ghost" type="button" data-clear="eqboard" data-i18n="Clear">Clear</button>
                 </div>
               </div>
-              <div class="equity-street-guide" aria-hidden="true"><span class="equity-street-flop">Flop</span><span>Turn</span><span>River</span></div>
-              <div class="cards-row equity-board-cards" data-slots="eqboard" aria-label="Board cards"></div>
+              <div class="equity-street-guide equity-board-order" aria-hidden="true" dir="ltr"><span class="equity-street-flop" data-equity-street="flop" data-i18n="Flop">Flop</span><span data-equity-street="turn" data-i18n="Turn">Turn</span><span data-equity-street="river" data-i18n="River">River</span></div>
+              <div class="cards-row equity-board-cards equity-board-order" data-slots="eqboard" aria-label="Board cards" data-i18n-aria-label="Board cards" dir="ltr"></div>
             </div>
             <div class="equity-card-group equity-dead-group">
               <div class="equity-card-group-head">
                 <div><h3 data-i18n="Dead Cards">Dead Cards</h3><span class="muted" data-i18n="Excluded from the remaining deck">Excluded from the remaining deck</span></div>
                 <div class="equity-card-group-actions"><span id="equityDeadCount" class="equity-count">0</span><button class="ui-button ui-button-ghost" type="button" data-clear="eqdead" data-i18n="Clear">Clear</button></div>
               </div>
-              <div class="cards-row equity-dead-cards" data-slots="eqdead" aria-label="Dead cards"></div>
+              <div class="cards-row equity-dead-cards" data-slots="eqdead" aria-label="Dead cards" data-i18n-aria-label="Dead cards"></div>
             </div>
           </section>
 
@@ -1493,24 +1493,24 @@
               <label class="ui-field"><span data-i18n="Monte Carlo samples">Monte Carlo samples</span><select id="trials"><option value="10000">10,000</option><option value="50000">50,000</option><option value="100000">100,000</option><option value="250000">250,000</option></select></label>
             </div>
             <p class="equity-method-help">
-              <strong>Auto</strong> uses exact enumeration when practical, otherwise simulation.
-              <strong>Exact</strong> enumerates every realization and rejects oversized spaces.
-              <strong>Monte Carlo</strong> is a seeded simulation.
+              <strong data-i18n="Auto">Auto</strong> <span data-i18n="uses exact enumeration when practical, otherwise simulation.">uses exact enumeration when practical, otherwise simulation.</span>
+              <strong data-i18n="Exact">Exact</strong> <span data-i18n="enumerates every realization and rejects oversized spaces.">enumerates every realization and rejects oversized spaces.</span>
+              <strong data-i18n="Monte Carlo">Monte Carlo</strong> <span data-i18n="is a seeded simulation.">is a seeded simulation.</span>
             </p>
-            <div id="equityEstimate" class="equity-estimate" aria-live="polite">Add complete known hands or mark them unknown to estimate the calculation.</div>
-            <div id="equityReadiness" class="equity-readiness" data-state="blocked" role="status" aria-live="polite">Complete Hero's known hand or mark it unknown.</div>
+            <div id="equityEstimate" class="equity-estimate" aria-live="polite" data-i18n="Add complete known hands or mark them unknown to estimate the calculation.">Add complete known hands or mark them unknown to estimate the calculation.</div>
+            <div id="equityReadiness" class="equity-readiness" data-state="blocked" role="status" aria-live="polite" data-i18n="Complete Hero's known hand or mark it unknown.">Complete Hero's known hand or mark it unknown.</div>
             <div class="equity-calculate-row"><button id="calculate" class="primary equity-calculate" type="button" aria-describedby="equityReadiness equityEstimate" disabled data-i18n="Calculate equity">Calculate equity</button><button id="cancelEquity" class="ui-button ui-button-danger equity-cancel" type="button" hidden data-i18n="Cancel">Cancel</button></div>
-            <div id="progress" class="progress-wrap" data-progress-mode="indeterminate" hidden aria-label="Equity calculation activity"><div class="progress-heading"><span class="progress-spinner" aria-hidden="true"></span><strong class="progress-method">Preparing calculation…</strong><span class="progress-percent" hidden></span></div><div class="progress-track" role="progressbar" aria-label="Equity calculation progress"><div class="progress-fill"></div></div><div class="progress-copy"><span class="progress-status">Waiting for measurable work…</span><span class="progress-telemetry" hidden></span></div></div>
-            <details id="equityAdvanced" class="equity-advanced"><summary data-i18n="Advanced calculation settings">Advanced calculation settings</summary><div class="equity-advanced-body"><label class="ui-field"><span data-i18n="Monte Carlo seed">Monte Carlo seed</span><div class="equity-seed-row"><input id="equitySeed" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="Generated automatically"><button id="rerollEquitySeed" class="ui-button ui-button-ghost" type="button" data-i18n="New seed">New seed</button></div><small class="muted" data-i18n="Leave blank for a generated seed. Reuse a seed for reproducible simulation.">Leave blank for a generated seed. Reuse a seed for reproducible simulation.</small></label></div></details>
+            <div id="progress" class="progress-wrap" data-progress-mode="indeterminate" hidden aria-label="Equity calculation activity" data-i18n-aria-label="Equity calculation activity"><div class="progress-heading"><span class="progress-spinner" aria-hidden="true"></span><strong class="progress-method" data-i18n="Preparing calculation…">Preparing calculation…</strong><span class="progress-percent" hidden></span></div><div class="progress-track" role="progressbar" aria-label="Equity calculation progress" data-i18n-aria-label="Equity calculation progress"><div class="progress-fill"></div></div><div class="progress-copy"><span class="progress-status" data-i18n="Waiting for measurable work…">Waiting for measurable work…</span><span class="progress-telemetry poker-data-token" hidden></span></div></div>
+            <details id="equityAdvanced" class="equity-advanced"><summary data-i18n="Advanced calculation settings">Advanced calculation settings</summary><div class="equity-advanced-body"><label class="ui-field"><span data-i18n="Monte Carlo seed">Monte Carlo seed</span><div class="equity-seed-row"><input id="equitySeed" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="Generated automatically" data-i18n-placeholder="Generated automatically"><button id="rerollEquitySeed" class="ui-button ui-button-ghost" type="button" data-i18n="New seed">New seed</button></div><small class="muted" data-i18n="Leave blank for a generated seed. Reuse a seed for reproducible simulation.">Leave blank for a generated seed. Reuse a seed for reproducible simulation.</small></label></div></details>
           </section>
           </div>
         </div>
 
         <div class="equity-output-stack">
           <section id="equityResultsPanel" class="panel equity-results-panel" data-result-state="empty" aria-labelledby="equityResultsTitle">
-            <div class="panel-head equity-result-head"><div><p class="equity-eyebrow" data-i18n="Results">Results</p><h2 id="equityResultsTitle" data-i18n="Equity">Equity</h2></div><span id="methodBadge" class="equity-method-badge">Awaiting input</span></div>
-            <div class="equity-headline"><span class="equity-headline-label">Result overview</span><strong id="headlineEquity">—</strong><span id="equityStatus" class="muted" role="status" aria-live="polite" aria-atomic="true">Results update after calculation.</span></div>
-            <section class="equity-scenario" aria-labelledby="equityScenarioTitle"><h3 id="equityScenarioTitle">Scenario</h3><div id="equityScenarioContext" class="equity-scenario-context"></div></section>
+            <div class="panel-head equity-result-head"><div><p class="equity-eyebrow" data-i18n="Results">Results</p><h2 id="equityResultsTitle" data-i18n="Equity">Equity</h2></div><span id="methodBadge" class="equity-method-badge" data-i18n="Awaiting input">Awaiting input</span></div>
+            <div class="equity-headline"><span class="equity-headline-label" data-i18n="Result overview">Result overview</span><strong id="headlineEquity" class="poker-data-token">—</strong><span id="equityStatus" class="muted" role="status" aria-live="polite" aria-atomic="true" data-i18n="Results update after calculation.">Results update after calculation.</span></div>
+            <section class="equity-scenario" aria-labelledby="equityScenarioTitle"><h3 id="equityScenarioTitle" data-i18n="Scenario">Scenario</h3><div id="equityScenarioContext" class="equity-scenario-context"></div></section>
             <div id="equityBars" class="equity-bars" aria-live="polite"></div>
             <div class="equity-result-summary"><div><span data-i18n="Split-pot trials">Split-pot trials</span><strong id="equitySplitSummary">—</strong></div><div><span data-i18n="Remaining deck">Remaining deck</span><strong id="eqDeckCount">52</strong></div></div>
           </section>
@@ -1606,7 +1606,7 @@
 
         </div>
 
-        <button class="close ui-button ui-button--icon" id="closeModal" type="button" aria-label="Close card picker" title="Close card picker">
+        <button class="close ui-button ui-button--icon" id="closeModal" type="button" aria-label="Close card picker" data-i18n-aria-label="Close card picker" title="Close card picker" data-i18n-title="Close card picker">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
         </button>
 
@@ -1641,7 +1641,7 @@
           <h2 id="settingsTitle" data-i18n="Settings">Settings</h2>
           <p data-i18n="Customize your workstation.">Customize your workstation.</p>
         </div>
-        <button class="close ui-button ui-button--icon" id="closeSettingsModal" type="button" aria-label="Close settings" title="Close settings">
+        <button class="close ui-button ui-button--icon" id="closeSettingsModal" type="button" aria-label="Close settings" data-i18n-aria-label="Close settings" title="Close settings" data-i18n-title="Close settings">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
         </button>
       </div>
@@ -1653,32 +1653,32 @@
             <div class="field" style="margin-top: 16px;">
               <div class="switchrow" style="margin: 0;">
                 <span style="font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;" data-i18n="4-Color Deck (Pro)">4-Color Deck (Pro)</span>
-                <button class="switch ui-switch on" id="fourColorDeckToggle" type="button" aria-label="Use four-color deck" aria-pressed="true"><b aria-hidden="true"></b></button>
+                <button class="switch ui-switch on" id="fourColorDeckToggle" type="button" aria-label="Use four-color deck" data-i18n-aria-label="Use four-color deck" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
               <div class="panel-note" style="margin-top: 4px;" data-i18n="Use distinct colors for all four suits.">Use distinct colors for all four suits.</div>
             </div>
 
             <div class="field settings-preference-field">
               <div class="settings-preference-copy">
-                <strong>Card rank style</strong>
-                <span class="panel-note">Changes visual playing cards only. Canonical card IDs still use T.</span>
+                <strong data-i18n="Card rank style">Card rank style</strong>
+                <span class="panel-note" data-i18n="Changes visual playing cards only. Canonical card IDs still use T.">Changes visual playing cards only. Canonical card IDs still use T.</span>
               </div>
-              <div id="cardRankStyleControl" class="ui-segments card-rank-style-control" role="group" aria-label="Card rank style">
-                <button class="ui-tab active" type="button" data-card-rank-style="poker" aria-pressed="true"><strong>T</strong><small>Poker notation</small></button>
-                <button class="ui-tab" type="button" data-card-rank-style="full-ten" aria-pressed="false"><strong>10</strong><small>Full ten</small></button>
+              <div id="cardRankStyleControl" class="ui-segments card-rank-style-control" role="group" aria-label="Card rank style" data-i18n-aria-label="Card rank style">
+                <button class="ui-tab active" type="button" data-card-rank-style="poker" aria-pressed="true"><strong class="poker-data-token">T</strong><small data-i18n="Poker notation">Poker notation</small></button>
+                <button class="ui-tab" type="button" data-card-rank-style="full-ten" aria-pressed="false"><strong class="poker-data-token">10</strong><small data-i18n="Full ten">Full ten</small></button>
               </div>
             </div>
 
             <label class="field settings-preference-field" for="cardStyleSelect">
               <span class="settings-preference-copy">
-                <strong>Card style</strong>
-                <span class="panel-note">Changes card presentation only.</span>
+                <strong data-i18n="Card style">Card style</strong>
+                <span class="panel-note" data-i18n="Changes card presentation only.">Changes card presentation only.</span>
               </span>
-              <select id="cardStyleSelect" class="control-select" aria-label="Card style">
-                <option value="classic-mirrored">Classic Mirrored</option>
-                <option value="tournament" selected>Tournament</option>
-                <option value="clean-corner">Clean Corner</option>
-                <option value="clarity-corner">Clarity Corner</option>
+              <select id="cardStyleSelect" class="control-select" aria-label="Card style" data-i18n-aria-label="Card style">
+                <option value="classic-mirrored" data-i18n="Classic Mirrored">Classic Mirrored</option>
+                <option value="tournament" selected data-i18n="Tournament">Tournament</option>
+                <option value="clean-corner" data-i18n="Clean Corner">Clean Corner</option>
+                <option value="clarity-corner" data-i18n="Clarity Corner">Clarity Corner</option>
               </select>
             </label>
 
@@ -1693,7 +1693,7 @@
             <div class="field" style="margin-top: 16px;">
               <div class="switchrow" style="margin: 0;">
                 <span style="font-size: 13px; font-weight: 600; color: var(--text);" data-i18n="Audio Sound FX">Audio Sound FX</span>
-                <button class="switch ui-switch on" id="audioSettingsSwitch" type="button" aria-label="Enable audio sound effects" aria-pressed="true"><b aria-hidden="true"></b></button>
+                <button class="switch ui-switch on" id="audioSettingsSwitch" type="button" aria-label="Enable audio sound effects" data-i18n-aria-label="Enable audio sound effects" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
               <div class="panel-note" style="margin-top: 4px;" data-i18n="Play UI sound effects.">Play UI sound effects.</div>
             </div>

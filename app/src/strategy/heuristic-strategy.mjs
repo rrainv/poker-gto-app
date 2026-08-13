@@ -66,29 +66,28 @@ function hasValidHeroHand(cards) {
   ));
 }
 
-function unavailableCandidate(reason, translate) {
-  const translatedReason = translate(reason);
+function unavailableCandidate(reason) {
   return {
     source: 'unavailable',
     actions: [],
-    explanation: translatedReason || null,
-    warnings: translatedReason ? [String(translatedReason)] : [],
+    explanation: reason || null,
+    warnings: reason ? [String(reason)] : [],
   };
 }
 
-function preflopCandidate(decisionContext, translate) {
+function preflopCandidate(decisionContext) {
   const result = calculatePreflopHeuristic(decisionContext);
   const actionLabel = result.recommendedActionLabel;
   return {
     source: result.source,
     actions: result.actions,
-    recommendedLabel: translate(actionLabel).toUpperCase(),
-    explanation: `${translate('Mathematical Fallback suggests')} ${translate(actionLabel)} ${translate('based on hand playability & position.')}`,
+    recommendedLabel: actionLabel.toUpperCase(),
+    explanation: `Mathematical Fallback suggests ${actionLabel} based on hand playability & position.`,
     details: result.details,
   };
 }
 
-function postflopCandidate(decisionContext, options, translate, rng) {
+function postflopCandidate(decisionContext, options, rng) {
   const strategy = calculatePostflopHeuristicStrategy(decisionContext, options, rng);
   const actionTypes = {
     Bet: 'bet',
@@ -115,8 +114,8 @@ function postflopCandidate(decisionContext, options, translate, rng) {
   return {
     source: 'heuristic_postflop',
     actions,
-    recommendedLabel: translate(recommendedAction).toUpperCase(),
-    explanation: `${translate('Heuristic sampled equity')}: ${sampledPercent}% ${translate('against an assumed opponent range')} (${candidatePercent}% ${translate('of unblocked combinations')}).`,
+    recommendedLabel: recommendedAction.toUpperCase(),
+    explanation: `Heuristic sampled equity: ${sampledPercent}% against an assumed opponent range (${candidatePercent}% of unblocked combinations).`,
     details: strategy.context || null,
   };
 }
@@ -128,26 +127,22 @@ function postflopCandidate(decisionContext, options, translate, rng) {
 export function resolveHeuristicStrategy(
   decisionContext,
   rawOptions = DEFAULT_HEURISTIC_OPTIONS,
-  { translate = (value) => String(value) } = {},
 ) {
   const options = normalizeHeuristicOptions(rawOptions);
   if (!hasValidHeroHand(decisionContext?.heroCards)) {
     return unavailableCandidate(
       'Choose two hero cards to calculate a heuristic strategy.',
-      translate,
     );
   }
   if (decisionContext.street === 'invalid') {
     return unavailableCandidate(
       'Complete the current board street: 0, 3, 4, or 5 board cards.',
-      translate,
     );
   }
-  if (decisionContext.street === 'preflop') return preflopCandidate(decisionContext, translate);
+  if (decisionContext.street === 'preflop') return preflopCandidate(decisionContext);
   return postflopCandidate(
     decisionContext,
     options,
-    translate,
     createDeterministicHeuristicRng(decisionContext, options),
   );
 }

@@ -67,7 +67,7 @@ test('Training study hints and pricing copy remain truthful before and after an 
   assert.doesNotMatch(solution, /Strategy preview|lifecycle === 'ready'/);
   const pricing = between('function formatTrainingFacingCopy', 'function trainingActionLabel');
   assert.match(pricing, /Math\.abs\(facingSize - callAmount\) > 0\.001/);
-  assert.match(pricing, /\$\{callAmount\.toFixed\(1\)\} bb to call/);
+  assert.match(pricing, /t\('\{value\} bb to call', \{ value: callAmount\.toFixed\(1\) \}\)/);
   assert.doesNotMatch(pricing, /\(\$\{facingSize\.toFixed\(1\)\} bb to\)/);
   const answer = between('function handleTrainingGuess(', 'function replayTrainingExercise(');
   assert.match(answer, /callTrainingServiceBridge\('answer', exercise\.id, userAction\)/);

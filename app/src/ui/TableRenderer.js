@@ -9,6 +9,17 @@ const TABLE_SUIT_PRESENTATION = Object.freeze({
   '♠': { id: 's', symbol: '♠' },
 });
 
+function tableMessage(key, fallback, values = {}) {
+  const runtime = globalThis.RiverlineI18n;
+  if (runtime && typeof runtime.resolveTranslation === 'function') {
+    const resolution = runtime.resolveTranslation(key);
+    if (!resolution.missing && typeof globalThis.t === 'function') return globalThis.t(key, values);
+  }
+  return String(fallback || '').replace(/\{([A-Za-z0-9_]+)\}/g, (token, name) => (
+    Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : token
+  ));
+}
+
 class TableRenderer {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
@@ -24,12 +35,16 @@ class TableRenderer {
     window.addEventListener('riverlineCardStyleChanged', () => {
       if (this.lastState) this.renderState(this.lastState);
     });
+    window.addEventListener('riverline:languagechange', () => {
+      if (this.lastState) this.renderState(this.lastState);
+      else this.initSVG();
+    });
   }
 
   initSVG() {
     this.container.innerHTML = `
       <svg id="poker-table-svg" class="riverline-poker-table" viewBox="0 -40 800 560" width="100%" role="img" aria-labelledby="poker-table-title" preserveAspectRatio="xMidYMid meet">
-        <title id="poker-table-title">Riverline poker table</title>
+        <title id="poker-table-title">${tableMessage('table.title', 'Riverline poker table')}</title>
         <defs>
           <linearGradient id="riverlineTableRail" x1="0" y1="0" x2="0" y2="1">
             <stop class="table-rail-start" offset="0%" />
@@ -52,7 +67,7 @@ class TableRenderer {
         <rect class="table-betting-line" x="100" y="100" width="600" height="300" rx="150" ry="150" />
         <path class="table-riverline-mark" d="M286 176 C342 146 458 146 514 176" />
 
-        <text id="table-pot" class="table-pot" x="400" y="220" text-anchor="middle">Pot 0 bb</text>
+        <text id="table-pot" class="table-pot" x="400" y="220" text-anchor="middle">${tableMessage('table.pot', 'Pot {value} bb', { value: 0 })}</text>
         <g id="community-cards" class="table-community-cards" transform="translate(250, 240)"></g>
         <g id="seats-layer" class="table-seats-layer"></g>
       </svg>
@@ -82,7 +97,7 @@ class TableRenderer {
           <g id="hole-cards-${i}" class="table-hole-cards" transform="translate(0, -92)">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
           <g class="table-seat-info">
             <rect class="table-seat-surface" x="-41" y="-23" width="82" height="46" rx="10" />
-            <text class="table-seat-name" x="0" y="-5" text-anchor="middle">${i === 0 ? 'Hero' : `P${i + 1}`}</text>
+            <text class="table-seat-name" x="0" y="-5" text-anchor="middle">${i === 0 ? tableMessage('Hero', 'Hero') : `P${i + 1}`}</text>
             <text id="seat-meta-${i}" class="table-seat-meta table-seat-stack" x="0" y="7" text-anchor="middle" hidden></text>
             <text id="seat-diagnostic-${i}" class="table-seat-meta table-seat-diagnostic" x="0" y="17" text-anchor="middle" hidden></text>
           </g>
@@ -157,7 +172,7 @@ class TableRenderer {
       this.drawSeats(0);
       const emptyPot = this.container.querySelector('#table-pot');
       const emptyBoard = this.container.querySelector('#community-cards');
-      if (emptyPot) emptyPot.textContent = 'Start a hand';
+      if (emptyPot) emptyPot.textContent = tableMessage('table.empty.startHand', 'Start a hand');
       if (emptyBoard) emptyBoard.innerHTML = '';
       return;
     }
@@ -169,7 +184,7 @@ class TableRenderer {
 
     const potText = this.container.querySelector('#table-pot');
     if (potText && state.pot !== undefined) {
-      potText.textContent = `Pot ${state.pot} bb`;
+      potText.textContent = tableMessage('table.pot', 'Pot {value} bb', { value: state.pot });
     }
 
     for (let i = 0; i < this.currentActivePlayers; i++) {
@@ -187,12 +202,12 @@ class TableRenderer {
       const isHero = playerState ? Boolean(playerState.isHero) : i === 0;
 
       if (dealer) dealer.toggleAttribute('hidden', !isDealer);
-      if (name) name.textContent = playerState?.name || (isHero ? 'Hero' : `P${i + 1}`);
+      if (name) name.textContent = playerState?.name || (isHero ? tableMessage('Hero', 'Hero') : `P${i + 1}`);
       if (meta) {
         const details = [];
         if (Number.isFinite(playerState?.stackBb)) details.push(`${playerState.stackBb} bb`);
-        if (Number.isFinite(playerState?.streetContributionBb)) details.push(`street ${playerState.streetContributionBb}`);
-        if (Number.isFinite(playerState?.totalContributionBb)) details.push(`hand ${playerState.totalContributionBb}`);
+        if (Number.isFinite(playerState?.streetContributionBb)) details.push(tableMessage('table.streetContribution', 'street {value}', { value: playerState.streetContributionBb }));
+        if (Number.isFinite(playerState?.totalContributionBb)) details.push(tableMessage('table.handContribution', 'hand {value}', { value: playerState.totalContributionBb }));
         meta.textContent = details.join(' · ');
         meta.toggleAttribute('hidden', details.length === 0);
       }
@@ -203,8 +218,8 @@ class TableRenderer {
       }
       if (diagnostic) {
         const details = [];
-        if (Number.isFinite(playerState?.streetContributionBb)) details.push(`street ${playerState.streetContributionBb}`);
-        if (Number.isFinite(playerState?.totalContributionBb)) details.push(`hand ${playerState.totalContributionBb}`);
+        if (Number.isFinite(playerState?.streetContributionBb)) details.push(tableMessage('table.streetContribution', 'street {value}', { value: playerState.streetContributionBb }));
+        if (Number.isFinite(playerState?.totalContributionBb)) details.push(tableMessage('table.handContribution', 'hand {value}', { value: playerState.totalContributionBb }));
         diagnostic.textContent = details.join(' · ');
         diagnostic.toggleAttribute('hidden', details.length === 0);
       }

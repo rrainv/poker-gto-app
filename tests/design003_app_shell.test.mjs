@@ -71,7 +71,7 @@ test('utility controls use coherent SVG icons and accessible flag-and-name langu
 
 test('strategy source status is truthful, noninteractive fallback copy', () => {
   assert.match(html, /<div id="strategySourceStatus" class="strategy-source-status"[^>]*>/);
-  assert.match(html, /<strong>Heuristic fallback<\/strong>/);
+  assert.match(html, /<strong[^>]*>Heuristic fallback<\/strong>/);
   assert.match(css, /\.strategy-source-status/);
   assert.doesNotMatch(html, /connectApiBtn|apiStatusText|data-status=/);
   assert.doesNotMatch(logic, /setStrategySourceStatus|Loading model|Model unavailable/);

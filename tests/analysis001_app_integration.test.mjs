@@ -91,9 +91,9 @@ test('Training calls the same service only after answer and retains the grade wr
 test('Training heuristic grade copy is explicitly bounded to the current estimate', () => {
   const feedback = sourceBetween('function canonicalTrainingFeedback(', 'function trainingActionHistoryForAnalysis(');
   assert.match(feedback, /Within the current strategy estimate/);
-  assert.match(feedback, /title: 'Optimal'/);
-  assert.match(feedback, /title: 'Acceptable'/);
-  assert.match(feedback, /title: 'Mistake'/);
+  assert.match(feedback, /title: t\('Optimal'\)/);
+  assert.match(feedback, /title: t\('Acceptable'\)/);
+  assert.match(feedback, /title: t\('Mistake'\)/);
   assert.doesNotMatch(feedback, /\bGTO\b|\bCFR\b|equilibrium|solver says/i);
 });
 
@@ -118,10 +118,10 @@ test('shared renderer uses one summary-first grammar with responsive facts and n
     'training-shared-analysis',
   ]) assert.match(css, new RegExp(`\\.${className}`), className);
   assert.match(teacher, /analysisGrammar = 'summary-key-facts-reasons-details-provenance'/);
-  assert.match(teacher, /analysisFactGroup\('Hero state', 'hero'/);
-  assert.match(teacher, /analysisFactGroup\('Board', 'board'/);
-  assert.match(teacher, /analysisFactGroup\('Decision economics', 'economics'/);
-  assert.match(teacher, /analysisFactGroup\('Context', 'context'/);
+  assert.match(teacher, /analysisFactGroup\(analysisMessage\('analysis\.ui\.heroState', 'Hero state'\), 'hero'/);
+  assert.match(teacher, /analysisFactGroup\(analysisMessage\('analysis\.ui\.board', 'Board'\), 'board'/);
+  assert.match(teacher, /analysisFactGroup\(analysisMessage\('analysis\.ui\.decisionEconomics', 'Decision economics'\), 'economics'/);
+  assert.match(teacher, /analysisFactGroup\(analysisMessage\('analysis\.ui\.context', 'Context'\), 'context'/);
   assert.match(teacher, /analysisElement\('details', 'analysis-detail-group'\)/);
   assert.match(css, /@media \(min-width: 1280px\)[\s\S]*analysis-key-facts[\s\S]*repeat\(4/);
   assert.match(css, /@media \(max-width: 1080px\)[\s\S]*analysis-key-facts[\s\S]*repeat\(2/);
@@ -133,8 +133,8 @@ test('primary analysis values use readable UI typography while compact cards ret
   assert.doesNotMatch(primaryFacts, /font-family: var\(--font-data\)/);
   assert.match(css, /\.analysis-card-token \{[^}]*font-family: var\(--font-data\)/);
   assert.match(teacher, /analysisFactPrimaryText/);
-  assert.match(teacher, /case 'made_hand': return values\.madeHand/);
-  assert.match(teacher, /OESD: 'Open-ended straight draw'/);
+  assert.match(teacher, /case 'made_hand': return analysisConceptText\(values\.madeHand/);
+  assert.match(teacher, /OESD: 'analysis\.value\.openEndedDraw'/);
 });
 
 test('Hero state makes trusted made-hand, draw, and board facts primary without deriving poker facts', () => {
@@ -149,7 +149,7 @@ test('economics, reasons, and context retain distinct descending presentation pr
   assert.doesNotMatch(teacher.match(/economics: new Set\(([^\n]+)/)?.[1] || '', /hero_position|table_size/);
   assert.match(teacher, /context: new Set\(\['hero_position', 'postflop_position_relation', 'heuristic_opponent_count'/);
   const availableRender = teacher.slice(teacher.indexOf('const strategy ='), teacher.indexOf('const selectedKeys'));
-  assert.ok(availableRender.indexOf('analysis-reasoning-blocks') < availableRender.indexOf("analysisFactGroup('Context'"));
+  assert.ok(availableRender.indexOf('analysis-reasoning-blocks') < availableRender.indexOf("analysis.ui.context"));
   assert.match(css, /\.analysis-economics-facts \{[^}]*border-inline-start: 3px solid var\(--accent-secondary\)/);
   assert.match(css, /\.analysis-context-facts \{[^}]*background:/);
 });
@@ -182,14 +182,14 @@ test('Study hints consume AnalysisExplanation facts without exposing strategy re
 });
 
 test('Study hints coach one step at a time and omit implementation-oriented safeguard copy', () => {
-  const hintRenderer = teacher.slice(teacher.indexOf('function studyHintDefinition('), teacher.indexOf('function renderAnalysisExplanation('));
+  const hintRenderer = teacher.slice(teacher.indexOf('function studyHintDefinition('), teacher.indexOf('function analysisProvenanceLabel('));
   assert.match(hintRenderer, /What made hand does Hero have here\?/);
   assert.match(hintRenderer, /How much are you being asked to call relative to the pot\?/);
   assert.match(hintRenderer, /How should the board texture and number of opponents affect/);
   assert.match(hintRenderer, /const hint = studyHintDefinition\(explanation, currentStep\)/);
   assert.doesNotMatch(hintRenderer, /slice\(0, step\)|strategy_mix|actionAnalysis|recommendation|probability/);
-  assert.match(logic, /button\.textContent = 'Get a hint'/);
-  assert.match(logic, /complete \? 'All hints viewed' : 'Another hint'/);
+  assert.match(logic, /button\.textContent = t\('Get a hint'\)/);
+  assert.match(logic, /t\(complete \? 'All hints viewed' : 'Another hint'\)/);
   assert.doesNotMatch(html, /Hints never reveal|never reveal the answer|assistance does not change grading/i);
   assert.match(html, /Get a nudge about the spot\./);
 });
@@ -203,9 +203,9 @@ test('Playbook and Training compose the same renderer without a second strategy 
   assert.match(teacher, /analysisSection\.key === 'strategy_mix'\) return/);
   assert.doesNotMatch(teacher, /renderFrequencyStack|frequency-stack|training-frequency-row/);
   assert.match(trainingMarkup, /class="training-verdict-facts"/);
-  assert.match(trainingMarkup, /id="trainingAnalysisTitle">Analysis/);
+  assert.match(trainingMarkup, /id="trainingAnalysisTitle"[^>]*>Analysis/);
   assert.doesNotMatch(trainingMarkup, /class="training-feedback-facts"/);
-  assert.match(trainingMarkup, /class="training-verdict-frequency" hidden><dt>Chosen frequency/);
+  assert.match(trainingMarkup, /class="training-verdict-frequency" hidden><dt[^>]*>Chosen frequency/);
   assert.ok(trainingMarkup.indexOf('id="trainingSolution"') < trainingMarkup.indexOf('training-history-panel'));
 });
 

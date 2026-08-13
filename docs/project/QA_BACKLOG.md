@@ -101,10 +101,10 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | ID | Status | Issue | Owner |
 |---|---|---|---|
 | QA-GUIDE-001 | PARTIAL | Guide terminology/content refresh is implemented and test-verified; final human Guide review is pending | GUIDE-001 human review |
-| QA-I18N-001 | OPEN | missing/unapplied translations and dynamic hardcoded English | I18N-001 |
-| QA-I18N-002 | OPEN | keys may exist but fail to render; diagnostics required before copy sweep | I18N-001 |
-| QA-I18N-003 | OPEN | encoding/mojibake and unit interpolation need audit | I18N-001 |
-| QA-I18N-004 | OPEN | RTL/translation-length acceptance across workspaces | I18N-001 / RESPONSIVE-001 |
+| QA-I18N-001 | PARTIAL | I18N-001R2 Electron rendered-visible RU/HE audit is clean across Matrix, empty Hand, unavailable Playbook Analysis, answered Training Analysis, localized theme Settings, and Equity advanced seed controls; exact-state screenshots captured, with human linguistic acceptance pending | I18N-001R2 human acceptance |
+| QA-I18N-002 | PARTIAL | one initialized runtime localizes static/dynamic/attribute content; Electron live switching preserves the same Matrix model, Training exercise/ID/seed, and unavailable StrategyResult while RU → HE → EN → RU re-renders both unavailable message surfaces without recomputation or cross-locale script leakage | I18N-001R2 human acceptance |
+| QA-I18N-003 | PARTIAL | static diagnostics report zero missing visible keys, zero mojibake, and zero cross-locale script contamination; the rendered audit covers text, pseudo-content, options, input values, and user-facing attributes with zero unintended English/Cyrillic/Hebrew findings under the narrow poker/technical proper-noun whitelist | I18N-001R2 human acceptance |
+| QA-I18N-004 | PARTIAL | RTL direction and LTR poker-data islands are structurally tested and captured in Hebrew Electron evidence; formal cross-viewport responsive acceptance remains with RESPONSIVE-001 | RESPONSIVE-001 |
 | QA-RESP-001 | OPEN | formal 1024/1080p/1440p/1600p/4K/16:10/zoom acceptance | RESPONSIVE-001 |
 | QA-MOBILE-001 | DEFERRED | mobile needs a distinct composition, not only stacked desktop panels | MOBILE-001 |
 

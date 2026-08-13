@@ -95,7 +95,17 @@ const app = {
 
       { id: 'equity-player-1', name: 'Opponent 1', cards: [], handMode: 'unknown' }
 
-    ]
+    ],
+
+    lifecycle: 'idle',
+
+    lastRequest: null,
+
+    lastResult: null,
+
+    lastProgress: null,
+
+    lastError: null
 
   },
 
@@ -391,7 +401,10 @@ function renderSlots(group, count) {
 
     const state = cardVisualState(group, card);
     const suitClass = card ? ` card--suit-${card[1]}` : '';
-    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-group="${group}" data-index="${index}" aria-label="${card ? 'Replace ' + displayCard(card) + (state === 'dead' ? ', dead card' : '') : 'Choose card ' + (index + 1)}">${cardMarkup(card)}</button>`;
+    const ariaLabel = card
+      ? t('Replace {card}{dead}', { card: displayCard(card), dead: state === 'dead' ? `, ${t('dead card')}` : '' })
+      : t('Choose card {number}', { number: index + 1 });
+    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-group="${group}" data-index="${index}" aria-label="${ariaLabel}">${cardMarkup(card)}</button>`;
 
   }).join('');
 
@@ -400,7 +413,7 @@ function renderSlots(group, count) {
 
 
 function equityPlayerLabel(playerIndex) {
-  return playerIndex === 0 ? t('Hero') : `${t('Player')} ${playerIndex + 1}`;
+  return playerIndex === 0 ? t('Hero') : t('Player {number}', { number: playerIndex + 1 });
 }
 
 function createEquityPlayer() {
@@ -441,22 +454,24 @@ function renderEquityPlayers() {
     const handState = mode === 'unknown' ? 'unknown' : (cardCount === 2 ? 'known' : 'incomplete');
     const label = equityPlayerLabel(playerIndex);
     const status = mode === 'unknown'
-      ? 'Random hand from the remaining deck'
-      : (cardCount === 2 ? 'Known two-card hand' : `Known hand incomplete · ${cardCount} / 2 cards`);
+      ? t('Random hand from the remaining deck')
+      : (cardCount === 2
+        ? t('Known two-card hand')
+        : t('Known hand incomplete · {count} / 2 cards', { count: cardCount }));
     return `
       <article class="equity-player-card" data-player-id="${player.id}" data-player-series="${playerIndex}" data-hand-state="${handState}">
         <header class="equity-player-head">
           <span class="equity-player-identity"><i class="series-marker" aria-hidden="true"></i><strong>${label}</strong><small>${status}</small></span>
-          ${playerIndex > 1 ? `<button type="button" class="remove-player ui-button ui-button-ghost" data-remove-player="${playerIndex}" aria-label="Remove ${label}">${t('Remove')}</button>` : ''}
+          ${playerIndex > 1 ? `<button type="button" class="remove-player ui-button ui-button-ghost" data-remove-player="${playerIndex}" aria-label="${t('Remove {player}', { player: label })}">${t('Remove')}</button>` : ''}
         </header>
         <div class="equity-player-body">
-          <div class="equity-hand-mode" role="group" aria-label="${label} hand type">
-            <button type="button" data-equity-hand-mode="known" data-player-index="${playerIndex}" aria-pressed="${mode === 'known'}">Known</button>
-            <button type="button" data-equity-hand-mode="unknown" data-player-index="${playerIndex}" aria-pressed="${mode === 'unknown'}">Unknown</button>
+          <div class="equity-hand-mode" role="group" aria-label="${t('{player} hand type', { player: label })}">
+            <button type="button" data-equity-hand-mode="known" data-player-index="${playerIndex}" aria-pressed="${mode === 'known'}">${t('Known')}</button>
+            <button type="button" data-equity-hand-mode="unknown" data-player-index="${playerIndex}" aria-pressed="${mode === 'unknown'}">${t('Unknown')}</button>
           </div>
           ${mode === 'known'
             ? `<div class="card-slots equity-known-hand" data-slots="player-${playerIndex}"></div>`
-            : `<div class="equity-unknown-hand" aria-label="${label} unknown cards"><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span>Random legal hand</span></div>`}
+            : `<div class="equity-unknown-hand" aria-label="${t('{player} unknown cards', { player: label })}"><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span>${t('Random legal hand')}</span></div>`}
         </div>
         <div class="equity-hand-message" id="equityHandMessage-${playerIndex}">${status}</div>
         <section id="outsPanel-${playerIndex}" class="equity-player-outs" aria-label="Outs" aria-live="polite">
@@ -475,9 +490,9 @@ function renderEquityPlayers() {
   add.type = 'button';
   add.className = 'add-player ui-button ui-button--secondary';
   add.disabled = app.equity.players.length >= 10;
-  add.textContent = app.equity.players.length >= 10 ? '10 player maximum' : '+ Add player';
+  add.textContent = app.equity.players.length >= 10 ? t('10 player maximum') : t('+ Add player');
   add.addEventListener('click', () => {
-    if (app.equity.players.length >= 10) return toast('Maximum of ten players.', 'warning');
+    if (app.equity.players.length >= 10) return toast(t('Maximum of ten players.'), 'warning');
     app.equity.players.push(createEquityPlayer());
     renderAllCards();
     setEquityPending();
@@ -485,13 +500,14 @@ function renderEquityPlayers() {
   root.appendChild(add);
 
   const playerCount = $('#equityPlayerCount');
-  if (playerCount) playerCount.textContent = `${app.equity.players.length} players`;
+  if (playerCount) playerCount.textContent = t('{count} players', { count: app.equity.players.length });
   const decrease = $('#equityDecreasePlayers');
   const increase = $('#equityIncreasePlayers');
   if (decrease) decrease.disabled = app.equity.players.length <= 2;
   if (increase) increase.disabled = app.equity.players.length >= 10;
   document.querySelectorAll('[data-equity-player-count]').forEach((button) => {
     button.classList.toggle('is-active', Number(button.dataset.equityPlayerCount) === app.equity.players.length);
+    button.setAttribute('aria-label', t('Set {count} players', { count: button.dataset.equityPlayerCount }));
   });
   if (typeof updateDomTranslations === 'function') updateDomTranslations();
 }
@@ -606,19 +622,22 @@ function openPicker(group, index) {
 
   if (modalTitle) {
     let targetLabel = '';
-    if (group === 'eqboard') targetLabel = `board card ${index + 1}`;
-    else if (group === 'eqdead') targetLabel = `dead card ${index + 1}`;
-    else if (group.startsWith('player-')) targetLabel = `${equityPlayerLabel(Number(group.split('-')[1]))} card ${index + 1}`;
+    if (group === 'eqboard') targetLabel = t('board card {number}', { number: index + 1 });
+    else if (group === 'eqdead') targetLabel = t('dead card {number}', { number: index + 1 });
+    else if (group.startsWith('player-')) targetLabel = t('{player} card {number}', {
+      player: equityPlayerLabel(Number(group.split('-')[1])),
+      number: index + 1
+    });
     modalTitle.textContent = targetLabel
-      ? `${current ? 'Replace' : 'Choose'} ${targetLabel}`
-      : (current ? 'Replace card' : t('Choose a card'));
+      ? t(current ? 'Replace {target}' : 'Choose {target}', { target: targetLabel })
+      : (current ? t('Replace card') : t('Choose a card'));
   }
 
   const modalCopy = $('#modalCopy');
 
   if (modalCopy) modalCopy.textContent = group.includes('dead')
 
-    ? 'Choose a card known to be out of play.'
+    ? t('Choose a card known to be out of play.')
 
     : t('Cards already used in this scenario are unavailable.');
 
@@ -1068,7 +1087,7 @@ function setPlaybookControlAuthority(mode) {
     control.toggleAttribute('data-scenario-only', handMode);
     if (handMode) {
       control.setAttribute('aria-describedby', 'playbookModeStatus');
-      control.title = 'Scenario-only control; ignored while the canonical hand is authoritative.';
+      control.title = t('Scenario-only control; ignored while the canonical hand is authoritative.');
     } else {
       control.removeAttribute('aria-describedby');
       control.removeAttribute('title');
@@ -1092,28 +1111,28 @@ function setPlaybookControlAuthority(mode) {
 }
 
 function playbookResolutionMessage(resolution) {
-  if (!resolution) return 'Playbook state has not been resolved.';
+  if (!resolution) return t('Playbook state has not been resolved.');
   if (resolution.status === 'available') {
-    return resolution.mode === PLAYBOOK_MODES.HAND
+    return t(resolution.mode === PLAYBOOK_MODES.HAND
       ? 'Hand facts come from the canonical hand. Scenario controls are read-only.'
-      : 'Scenario controls are authoritative. This spot does not claim a legal hand history.';
+      : 'Scenario controls are authoritative. This spot does not claim a legal hand history.');
   }
   const reasons = {
-    unsupported_canonical_rake_mode: 'Hand mode does not support percentage or capped rake.',
-    canonical_straddle_unsupported: 'Hand mode does not support a nonzero straddle.',
-    clubgg_requires_7_to_10_players: 'ClubGG hand mode requires 7 to 10 seated players.',
-    canonical_session_not_initialized: 'Hand mode is unavailable until a canonical hand is initialized.',
-    canonical_chance_state: 'The canonical hand is waiting for explicit chance cards.',
-    canonical_showdown_state: 'The canonical hand is at showdown; there is no hero decision.',
-    canonical_terminal_state: 'The canonical hand is complete; there is no hero decision.',
-    canonical_not_betting: 'The canonical hand does not currently have a betting decision.',
-    canonical_hero_unknown: 'The canonical hand has no configured hero.',
-    canonical_hero_not_actor: 'The canonical hand is waiting for another player to act.',
-    canonical_hero_cards_unknown: 'Deal the hero two cards before requesting strategy.',
-    scenario_projection_failed: 'The Scenario input could not be converted to a decision context.',
-    canonical_projection_failed: 'The canonical hand could not be converted to a decision context.'
+    unsupported_canonical_rake_mode: t('Hand mode does not support percentage or capped rake.'),
+    canonical_straddle_unsupported: t('Hand mode does not support a nonzero straddle.'),
+    clubgg_requires_7_to_10_players: t('ClubGG hand mode requires 7 to 10 seated players.'),
+    canonical_session_not_initialized: t('Hand mode is unavailable until a canonical hand is initialized.'),
+    canonical_chance_state: t('The canonical hand is waiting for explicit chance cards.'),
+    canonical_showdown_state: t('The canonical hand is at showdown; there is no hero decision.'),
+    canonical_terminal_state: t('The canonical hand is complete; there is no hero decision.'),
+    canonical_not_betting: t('The canonical hand does not currently have a betting decision.'),
+    canonical_hero_unknown: t('The canonical hand has no configured hero.'),
+    canonical_hero_not_actor: t('The canonical hand is waiting for another player to act.'),
+    canonical_hero_cards_unknown: t('Deal the hero two cards before requesting strategy.'),
+    scenario_projection_failed: t('The Scenario input could not be converted to a decision context.'),
+    canonical_projection_failed: t('The canonical hand could not be converted to a decision context.')
   };
-  return reasons[resolution.reason] || 'This Playbook state is unavailable.';
+  return reasons[resolution.reason] || t('This Playbook state is unavailable.');
 }
 
 function renderPlaybookModeStatus(resolution) {
@@ -1131,7 +1150,9 @@ function renderCanonicalDecisionCards(group, cards, count) {
     const card = values[index];
     const state = cardVisualState(group, card);
     const suitClass = card ? ` card--suit-${card[1]}` : '';
-    const label = card ? `${displayCard(card)}, canonical hand card` : `No canonical card ${index + 1}`;
+    const label = card
+      ? t('{card}, canonical hand card', { card: displayCard(card) })
+      : t('No canonical card {number}', { number: index + 1 });
     return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-group="${group}" data-index="${index}" data-playbook-canonical-display disabled aria-label="${label}">${cardMarkup(card)}</button>`;
   }).join('');
 }
@@ -1171,14 +1192,14 @@ function renderUnavailableStrategy(resolution) {
   const message = playbookResolutionMessage(resolution);
   const waiting = resolution?.mode === 'hand' && String(resolution?.reason || '').startsWith('canonical_');
   setRecommendationState(waiting ? 'waiting' : 'unavailable');
-  if ($('#bestAction')) $('#bestAction').textContent = 'Unavailable';
+  if ($('#bestAction')) $('#bestAction').textContent = t('Unavailable');
   if ($('#bestSizing')) {
     $('#bestSizing').textContent = '';
     $('#bestSizing').hidden = true;
   }
   if ($('#bestReason')) $('#bestReason').textContent = message;
   if ($('#sourceBadge')) {
-    $('#sourceBadge').textContent = 'unavailable';
+    $('#sourceBadge').textContent = t('Unavailable');
     $('#sourceBadge').className = 'badge status-badge status-badge--unavailable';
   }
   if ($('#strategyMeta')) $('#strategyMeta').hidden = true;
@@ -1208,7 +1229,10 @@ function renderUnavailableStrategy(resolution) {
 
 async function requestPlaybookMode(mode) {
   const previousMode = callPlaybookStateBridge('getMode') || PLAYBOOK_MODES.SCENARIO;
-  if (mode === previousMode) return updateContext('Playbook mode unchanged');
+  if (mode === previousMode) {
+    if (mode === PLAYBOOK_MODES.HAND) syncHandSeatSelectors();
+    return updateContext('Playbook mode unchanged');
+  }
 
   const scenarioInput = readPlaybookScenarioInput();
   if (mode === PLAYBOOK_MODES.HAND) {
@@ -1223,6 +1247,7 @@ async function requestPlaybookMode(mode) {
 
   app.playbookMode = mode;
   setPlaybookControlAuthority(mode);
+  if (mode === PLAYBOOK_MODES.HAND) syncHandSeatSelectors();
   if (mode === PLAYBOOK_MODES.SCENARIO) {
     restorePlaybookScenarioPresentation(savedPlaybookScenarioPresentation);
     savedPlaybookScenarioPresentation = null;
@@ -1253,8 +1278,8 @@ function formatCanonicalBb(milliBb, digits = 1) {
 
 function canonicalPlayerLabel(player, heroPlayerId) {
   if (!player) return '—';
-  const hero = player.playerId === heroPlayerId ? 'Hero · ' : '';
-  return `${hero}${player.position || `Seat ${player.seat + 1}`}`;
+  const hero = player.playerId === heroPlayerId ? `${t('Hero')} · ` : '';
+  return `${hero}${player.position || t('Seat {number}', { number: player.seat + 1 })}`;
 }
 
 function syncHandSeatSelectors() {
@@ -1271,7 +1296,7 @@ function syncHandSeatSelectors() {
     if (!select) return;
     const previous = Number(select.value);
     select.innerHTML = Array.from({ length: tableSize }, (_, seat) => (
-      `<option value="${seat}">Seat ${seat + 1}</option>`
+      `<option value="${seat}">${t('Seat {number}', { number: seat + 1 })}</option>`
     )).join('');
     select.value = String(Number.isInteger(previous) && previous < tableSize ? previous : 0);
   });
@@ -1284,8 +1309,8 @@ function syncHandSeatSelectors() {
   }
   const preview = $('#handAccountingPreview');
   if (preview) preview.textContent = gameMode === 'clubgg'
-    ? `ClubGG · 0.1 bb per seated player · ${(tableSize * 0.1).toFixed(1)} bb total deduction`
-    : 'Home · no rake or forced deduction';
+    ? t('ClubGG · 0.1 bb per seated player · {total} bb total deduction', { total: (tableSize * 0.1).toFixed(1) })
+    : t('Home · no rake or forced deduction');
 }
 
 function readCanonicalHandConfiguration() {
@@ -1310,7 +1335,7 @@ function resetCanonicalHandDraft() {
 
 function canonicalHandFailureMessage() {
   const diagnostics = callPlaybookStateBridge('getDiagnostics');
-  return diagnostics?.error?.message || 'The canonical hand could not be updated.';
+  return diagnostics?.error?.message || t('The canonical hand could not be updated.');
 }
 
 function startCanonicalPlaybookHand() {
@@ -1331,14 +1356,14 @@ function resetCanonicalPlaybookHand() {
 
 function commitCanonicalHoleDeal() {
   const state = callPlaybookStateBridge('getState');
-  if (!state?.players?.length) return toast('Start a canonical hand first.', 'warning');
+  if (!state?.players?.length) return toast(t('Start a canonical hand first.'), 'warning');
   const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
   const cardsByPlayer = {};
   for (const player of state.players) {
     const cards = normalizedDecisionCards(app.playbookHandDraft.bySeat[player.seat]);
-    if (cards.length === 1) return toast('Private cards must be empty or contain exactly two cards.', 'warning');
+    if (cards.length === 1) return toast(t('Private cards must be empty or contain exactly two cards.'), 'warning');
     if (player.playerId === heroPlayerId && cards.length !== 2) {
-      return toast('Choose both Hero cards before starting betting.', 'warning');
+      return toast(t('Choose both Hero cards before starting betting.'), 'warning');
     }
     if (cards.length === 2) cardsByPlayer[player.playerId] = cards;
   }
@@ -1360,7 +1385,7 @@ function commitCanonicalPrivateReveals() {
   for (const playerId of required) {
     const player = state.players.find((candidate) => candidate.playerId === playerId);
     const cards = normalizedDecisionCards(app.playbookHandDraft.bySeat[player?.seat]);
-    if (cards.length !== 2) return toast('Choose both cards for every live hand that must be revealed.', 'warning');
+    if (cards.length !== 2) return toast(t('Choose both cards for every live hand that must be revealed.'), 'warning');
     next = callPlaybookStateBridge('revealHoleCards', playerId, cards);
     if (!next) {
       toast(canonicalHandFailureMessage(), 'error');
@@ -1384,7 +1409,7 @@ function commitCanonicalBoardDeal() {
   const expected = Number(state?.pendingChance?.cardCount) || 0;
   const cards = normalizedDecisionCards(app.playbookHandDraft.board);
   if (!expected || cards.length !== expected) {
-    return toast(`Choose exactly ${expected || 'the required'} board cards.`, 'warning');
+    return toast(t('Choose exactly {count} board cards.', { count: expected || t('the required') }), 'warning');
   }
   const next = callPlaybookStateBridge('dealBoardCards', cards);
   if (!next) toast(canonicalHandFailureMessage(), 'error');
@@ -1398,9 +1423,10 @@ function commitCanonicalBoardDeal() {
 }
 
 function canonicalActionLabel(type, option) {
-  if (type === 'all_in') return `All-in · ${formatCanonicalBb(option.amountToMilliBb)}`;
-  if (type === 'call') return `Call · ${formatCanonicalBb(option.commitMilliBb)}`;
-  return type.charAt(0).toUpperCase() + type.slice(1);
+  if (type === 'all_in') return `${t('All-in')} · ${formatCanonicalBb(option.amountToMilliBb)}`;
+  if (type === 'call') return `${t('Call')} · ${formatCanonicalBb(option.commitMilliBb)}`;
+  const labels = { fold: 'Fold', check: 'Check', bet: 'Bet', raise: 'Raise' };
+  return t(labels[type] || type);
 }
 
 function chooseCanonicalSizedAction(type, option) {
@@ -1418,8 +1444,8 @@ function chooseCanonicalSizedAction(type, option) {
   input.max = String(max);
   input.step = String(step);
   input.value = String(min);
-  if (label) label.textContent = type === 'bet' ? 'Bet to' : 'Raise to';
-  if (bounds) bounds.textContent = `${min}–${max} bb · amount-to`;
+  if (label) label.textContent = t(type === 'bet' ? 'Bet to' : 'Raise to');
+  if (bounds) bounds.textContent = t('{min}–{max} bb · amount-to', { min, max });
   if ($('#handCommitSizedAction')) $('#handCommitSizedAction').hidden = false;
   $$('#handLegalActions [data-canonical-action]').forEach((button) => {
     button.setAttribute('aria-pressed', String(button.dataset.canonicalAction === type));
@@ -1440,7 +1466,7 @@ function applyCanonicalHandAction(type, amountToBb = null) {
 
 function commitCanonicalSizedAction() {
   const type = app.playbookHandDraft.sizedAction;
-  if (!type) return toast('Choose Bet or Raise first.', 'warning');
+  if (!type) return toast(t('Choose Bet or Raise first.'), 'warning');
   return applyCanonicalHandAction(type, Number(selectedValue('#handActionAmountBb')));
 }
 
@@ -1454,7 +1480,9 @@ function renderCanonicalLegalActions(state) {
   if (!spec) return;
 
   const actor = state.players.find((player) => player.playerId === state.actingPlayerId);
-  if ($('#handActionActor')) $('#handActionActor').textContent = `${canonicalPlayerLabel(actor, callPlaybookStateBridge('getHeroPlayerId'))} to act`;
+  if ($('#handActionActor')) $('#handActionActor').textContent = t('{player} to act', {
+    player: canonicalPlayerLabel(actor, callPlaybookStateBridge('getHeroPlayerId'))
+  });
   const options = [
     ['fold', spec.fold], ['check', spec.check], ['call', spec.call],
     ['bet', spec.bet], ['raise', spec.raise], ['all_in', spec.allIn]
@@ -1469,7 +1497,7 @@ function renderCanonicalLegalActions(state) {
     button.dataset.canonicalAction = type;
     button.setAttribute('aria-pressed', 'false');
     button.textContent = canonicalActionLabel(type, option);
-    button.setAttribute('aria-label', `${button.textContent}${type === 'bet' || type === 'raise' ? ', choose amount-to sizing' : ''}`);
+    button.setAttribute('aria-label', `${button.textContent}${type === 'bet' || type === 'raise' ? `, ${t('choose amount-to sizing')}` : ''}`);
     button.addEventListener('click', () => {
       if (type === 'bet' || type === 'raise') chooseCanonicalSizedAction(type, option);
       else applyCanonicalHandAction(type);
@@ -1482,7 +1510,7 @@ function renderCanonicalLegalActions(state) {
     commit.id = 'handCommitSizedAction';
     commit.type = 'button';
     commit.className = 'ui-button ui-button--primary';
-    commit.textContent = 'Apply amount-to';
+    commit.textContent = t('Apply amount-to');
     commit.hidden = true;
     commit.addEventListener('click', commitCanonicalSizedAction);
     root.appendChild(commit);
@@ -1494,13 +1522,13 @@ function renderCanonicalLegalActions(state) {
 }
 
 function canonicalHandStatus(state) {
-  if (!state) return { label: 'Not started', tone: 'info', summary: 'Configure and start a canonical hand.' };
-  if (state.terminal?.isTerminal || state.phase === 'terminal') return { label: 'Complete', tone: 'available', summary: 'The canonical hand is complete.' };
-  if (state.showdown?.status === 'awaiting_private_reveal') return { label: 'Reveal hands', tone: 'warning', summary: 'Reveal the remaining live hands to settle this showdown exactly.' };
-  if (state.phase === 'showdown') return { label: 'Showdown', tone: 'warning', summary: 'Betting is complete. Resolve the canonical showdown.' };
-  if (state.pendingChance?.type === 'deal_hole') return { label: 'Set Hero cards', tone: 'loading', summary: 'Choose Hero cards. Opponents may remain hidden.' };
-  if (state.phase === 'chance') return { label: 'Board chance', tone: 'loading', summary: `Waiting for ${state.pendingChance?.type?.replace('deal_', '') || 'board cards'}.` };
-  return { label: 'In progress', tone: 'available', summary: 'Only canonical legal actions can advance this hand.' };
+  if (!state) return { label: t('Not started'), tone: 'info', summary: t('Configure and start a canonical hand.') };
+  if (state.terminal?.isTerminal || state.phase === 'terminal') return { label: t('Complete'), tone: 'available', summary: t('The canonical hand is complete.') };
+  if (state.showdown?.status === 'awaiting_private_reveal') return { label: t('Reveal hands'), tone: 'warning', summary: t('Reveal the remaining live hands to settle this showdown exactly.') };
+  if (state.phase === 'showdown') return { label: t('Showdown'), tone: 'warning', summary: t('Betting is complete. Resolve the canonical showdown.') };
+  if (state.pendingChance?.type === 'deal_hole') return { label: t('Set Hero cards'), tone: 'loading', summary: t('Choose Hero cards. Opponents may remain hidden.') };
+  if (state.phase === 'chance') return { label: t('Board chance'), tone: 'loading', summary: t('Waiting for {cards}.', { cards: t(state.pendingChance?.type?.replace('deal_', '') || 'board cards') }) };
+  return { label: t('In progress'), tone: 'available', summary: t('Only canonical legal actions can advance this hand.') };
 }
 
 function renderCanonicalPrivateDeal(state) {
@@ -1514,28 +1542,28 @@ function renderCanonicalPrivateDeal(state) {
   const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
   const privateRow = (player, note) => `
     <div class="hand-private-row">
-      <div><strong>${canonicalPlayerLabel(player, heroPlayerId)}</strong><small>Seat ${player.seat + 1} · ${note}</small></div>
+      <div><strong>${canonicalPlayerLabel(player, heroPlayerId)}</strong><small>${t('Seat {number}', { number: player.seat + 1 })} · ${note}</small></div>
       <div class="card-slots" data-slots="hand-seat-${player.seat}"></div>
     </div>`;
   let renderedPlayers;
   if (isAwaitingReveal) {
     renderedPlayers = state.showdown.requiredRevealPlayerIds
       .map((playerId) => state.players.find((player) => player.playerId === playerId));
-    if ($('#handDealTitle')) $('#handDealTitle').textContent = 'Reveal remaining hands';
-    if ($('#handDealHelp')) $('#handDealHelp').textContent = 'Exact settlement needs the two cards held by each remaining live player.';
-    if ($('#handDealHoleButton')) $('#handDealHoleButton').textContent = 'Reveal hands';
-    root.innerHTML = renderedPlayers.map((player) => privateRow(player, 'Reveal for showdown')).join('');
+    if ($('#handDealTitle')) $('#handDealTitle').textContent = t('Reveal remaining hands');
+    if ($('#handDealHelp')) $('#handDealHelp').textContent = t('Exact settlement needs the two cards held by each remaining live player.');
+    if ($('#handDealHoleButton')) $('#handDealHoleButton').textContent = t('Reveal hands');
+    root.innerHTML = renderedPlayers.map((player) => privateRow(player, t('Reveal for showdown'))).join('');
   } else {
     const hero = state.players.find((player) => player.playerId === heroPlayerId);
     const opponents = state.players.filter((player) => player.playerId !== heroPlayerId);
     renderedPlayers = state.players;
-    if ($('#handDealTitle')) $('#handDealTitle').textContent = 'Set private cards';
-    if ($('#handDealHelp')) $('#handDealHelp').textContent = "Choose Hero's cards. Opponents remain hidden unless you set them explicitly.";
-    if ($('#handDealHoleButton')) $('#handDealHoleButton').textContent = 'Start betting';
-    root.innerHTML = `${privateRow(hero, 'Required')}
-      <div class="hand-hidden-summary" role="status"><span class="hand-card-backs" aria-hidden="true"><i></i><i></i></span><strong>${opponents.length} opponent${opponents.length === 1 ? '' : 's'} hidden by default</strong></div>
-      <details class="hand-known-opponents"><summary>Set known opponent cards (optional)</summary>
-        <div class="hand-known-opponent-list">${opponents.map((player) => privateRow(player, 'Optional · otherwise Hidden')).join('')}</div>
+    if ($('#handDealTitle')) $('#handDealTitle').textContent = t('Set private cards');
+    if ($('#handDealHelp')) $('#handDealHelp').textContent = t("Choose Hero's cards. Opponents remain hidden unless you set them explicitly.");
+    if ($('#handDealHoleButton')) $('#handDealHoleButton').textContent = t('Start betting');
+    root.innerHTML = `${privateRow(hero, t('Required'))}
+      <div class="hand-hidden-summary" role="status"><span class="hand-card-backs" aria-hidden="true"><i></i><i></i></span><strong>${t('{count} opponents hidden by default', { count: opponents.length })}</strong></div>
+      <details class="hand-known-opponents"><summary>${t('Set known opponent cards (optional)')}</summary>
+        <div class="hand-known-opponent-list">${opponents.map((player) => privateRow(player, t('Optional · otherwise Hidden'))).join('')}</div>
       </details>`;
   }
   renderedPlayers.forEach((player) => renderSlots(`hand-seat-${player.seat}`, 2));
@@ -1556,8 +1584,8 @@ function renderCanonicalChance(state) {
   if (!isBoardChance) return;
   const chanceName = state.pendingChance.type.replace('deal_', '');
   const expected = Number(state.pendingChance.cardCount) || 0;
-  if ($('#handChanceTitle')) $('#handChanceTitle').textContent = `Deal ${chanceName}`;
-  if ($('#handChanceHelp')) $('#handChanceHelp').textContent = `Choose the next ${expected} legal board card${expected === 1 ? '' : 's'}.`;
+  if ($('#handChanceTitle')) $('#handChanceTitle').textContent = t('Deal {street}', { street: t(chanceName.charAt(0).toUpperCase() + chanceName.slice(1)) });
+  if ($('#handChanceHelp')) $('#handChanceHelp').textContent = t('Choose the next {count} legal board cards.', { count: expected });
   renderSlots('hand-board-chance', expected);
   if ($('#handDealBoardButton')) $('#handDealBoardButton').disabled = normalizedDecisionCards(app.playbookHandDraft.board).length !== expected;
 }
@@ -1569,9 +1597,9 @@ function renderCanonicalActionHistory(state) {
   root.innerHTML = records.length ? records.map((record) => {
     const player = state.players.find((entry) => entry.playerId === record.playerId);
     const action = record.submittedAction;
-    const amount = action.amountToMilliBb === null ? '' : ` to ${formatCanonicalBb(action.amountToMilliBb)}`;
-    return `<li><span><strong>${record.street}</strong> · ${canonicalPlayerLabel(player, callPlaybookStateBridge('getHeroPlayerId'))} · ${action.type.replace('_', ' ')}${amount}</span></li>`;
-  }).join('') : '<li><span>No actions yet</span></li>';
+    const amount = action.amountToMilliBb === null ? '' : ` ${t('to')} ${formatCanonicalBb(action.amountToMilliBb)}`;
+    return `<li><span><strong>${t(record.street.charAt(0).toUpperCase() + record.street.slice(1))}</strong> · ${canonicalPlayerLabel(player, callPlaybookStateBridge('getHeroPlayerId'))} · ${t(action.type.replace('_', ' '))}${amount}</span></li>`;
+  }).join('') : `<li><span>${t('No actions yet')}</span></li>`;
 }
 
 function dispatchCanonicalTableState(state) {
@@ -1621,14 +1649,14 @@ function renderCanonicalHandWorkspace() {
   if ($('#handStateActor')) $('#handStateActor').textContent = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '—';
   if ($('#handStatePot')) $('#handStatePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '—';
   if ($('#handStateDeduction')) $('#handStateDeduction').textContent = state ? formatCanonicalBb(state.deductionTotalMilliBb) : '—';
-  if ($('#handStartButton')) $('#handStartButton').textContent = state ? 'Start new hand' : 'Start hand';
+  if ($('#handStartButton')) $('#handStartButton').textContent = t(state ? 'Start new hand' : 'Start hand');
 
   const seats = $('#handSeatList');
   if (seats) seats.innerHTML = state?.players?.map((player) => `
     <div class="hand-seat-row${player.playerId === state.actingPlayerId ? ' is-actor' : ''}${player.folded ? ' is-folded' : ''}">
-      <div><strong>${canonicalPlayerLabel(player, heroPlayerId)}</strong><small>Seat ${player.seat + 1}${player.currentStackMilliBb === 0 && !player.folded ? ' · all-in' : ''}${player.folded ? ' · folded' : ''}</small></div>
-      <div class="hand-seat-values">${formatCanonicalBb(player.currentStackMilliBb)}<br>street ${formatCanonicalBb(player.streetContributionMilliBb)} · hand ${formatCanonicalBb(player.totalPotContributionMilliBb)}</div>
-    </div>`).join('') || '<p class="panel-note">No players yet.</p>';
+      <div><strong>${canonicalPlayerLabel(player, heroPlayerId)}</strong><small>${t('Seat {number}', { number: player.seat + 1 })}${player.currentStackMilliBb === 0 && !player.folded ? ` · ${t('All-in')}` : ''}${player.folded ? ` · ${t('Folded')}` : ''}</small></div>
+      <div class="hand-seat-values poker-data-token">${formatCanonicalBb(player.currentStackMilliBb)}<br>${t('street')} ${formatCanonicalBb(player.streetContributionMilliBb)} · ${t('hand')} ${formatCanonicalBb(player.totalPotContributionMilliBb)}</div>
+    </div>`).join('') || `<p class="panel-note">${t('No players yet.')}</p>`;
 
   renderCanonicalPrivateDeal(state);
   renderCanonicalChance(state);
@@ -1808,12 +1836,36 @@ function strategyResultToLegacyProfile(result) {
   return {
     actions,
     best: result.recommendation ? String(result.recommendation.label) : 'STRATEGY UNAVAILABLE',
-    reason: result.explanation || '',
+    reason: localizedStrategyExplanation(result),
     source: result.source,
     provenance: result.source,
     context: result.details
   };
 
+}
+
+function localizedStrategyExplanation(result) {
+  if (!result) return '';
+  if (result.source === 'heuristic_preflop') {
+    return t('strategy.heuristic.preflopExplanation', {
+      action: t(result.recommendation?.label || 'Unavailable')
+    });
+  }
+  if (result.source === 'heuristic_postflop') {
+    const sample = result.details?.heuristicSample || null;
+    const sampledPercent = Number.isFinite(sample?.eq) ? (sample.eq * 100).toFixed(1) : '—';
+    const candidatePercent = Number.isFinite(sample?.rangeFraction)
+      ? (sample.rangeFraction * 100).toFixed(1)
+      : '—';
+    return t('strategy.heuristic.postflopExplanation', { sampledPercent, candidatePercent });
+  }
+  return t(result.explanation || '');
+}
+
+function localizedStrategyWarnings(result) {
+  return (result?.warnings || []).map((warning) => (
+    warning === result.explanation ? localizedStrategyExplanation(result) : t(warning)
+  ));
 }
 
 
@@ -1834,8 +1886,7 @@ function readHeuristicOptions() {
 
 
 const strategyProvider = requireStrategyProviderBridge().createProvider({
-  heuristicOptionsResolver: readHeuristicOptions,
-  translate: t
+  heuristicOptionsResolver: readHeuristicOptions
 });
 
 const productPerformance = requireProductPerformanceBridge();
@@ -1922,7 +1973,7 @@ function setFrequency(index, action) {
 
     barEl.dataset.actionKind = visualActionKind(action);
 
-    barEl.setAttribute('aria-label', `${action.name}: ${action.value}%`);
+    barEl.setAttribute('aria-label', `${t(action.name)}: ${action.value}%`);
 
     if (barEl.closest('.frequency')) barEl.closest('.frequency').dataset.actionKind = visualActionKind(action);
 
@@ -1975,9 +2026,9 @@ function updateMetrics() {
   const mPotOdds = $('#mPotOdds');
   if (mPotOdds) {
     if (isPreflopOpenDecision) {
-      mPotOdds.textContent = '— (Unopened)';
+      mPotOdds.textContent = t('— (Unopened)');
     } else if (!Number.isFinite(callAmount)) {
-      mPotOdds.textContent = '— (Price unavailable)';
+      mPotOdds.textContent = t('— (Price unavailable)');
     } else if (lastAction === 'unopened' || callAmount === 0) {
       mPotOdds.textContent = '—';
     } else {
@@ -1992,7 +2043,10 @@ function updateMetrics() {
   if (mRake) {
     if (rakeMode === 'off') mRake.textContent = t('Off');
     else if (rakeMode === 'fixed') {
-      mRake.textContent = `${accounting.forcedContributionPerPlayerBb.toFixed(1)} bb/player · ${accounting.totalForcedContributionBb.toFixed(1)} bb total`;
+      mRake.textContent = t('{perPlayer} bb/player · {total} bb total', {
+        perPlayer: accounting.forcedContributionPerPlayerBb.toFixed(1),
+        total: accounting.totalForcedContributionBb.toFixed(1)
+      });
     } else mRake.textContent = t('Off');
   }
 
@@ -2009,11 +2063,11 @@ function updateMetrics() {
   const facingSizeOut = $('#facingSizeOut');
   if (facingSizeOut) {
     if (isPreflopOpenDecision) {
-      facingSizeOut.textContent = '0.0 bb (Unopened)';
+      facingSizeOut.textContent = t('0.0 bb (Unopened)');
     } else if (facing > 0) {
       facingSizeOut.textContent = facing.toFixed(1) + ' bb';
     } else {
-      facingSizeOut.textContent = '0.0 bb (Free Check)';
+      facingSizeOut.textContent = t('0.0 bb (Free Check)');
     }
   }
 
@@ -2248,7 +2302,7 @@ function showMatrixCellCue(cell, pointerEvent = null) {
   const hand = $('#matrixCellCueHand');
   const mix = $('#matrixCellCueMix');
   if (hand) hand.textContent = cell.dataset.hand;
-  if (mix) mix.textContent = cell.dataset.strategyCue || 'Strategy unavailable';
+  if (mix) mix.textContent = cell.dataset.strategyCue || t('Strategy unavailable');
   cue.dataset.input = pointerEvent ? 'pointer' : 'keyboard';
   if (pointerEvent) {
     cue.style.setProperty('--matrix-cue-x', `${pointerEvent.clientX}px`);
@@ -2321,20 +2375,20 @@ function renderChart() {
   if (matrixEmptyState) matrixEmptyState.hidden = !isPostFlop;
   if (matrixToolbar) matrixToolbar.hidden = isPostFlop;
   if (matrixDescription) {
-    matrixDescription.textContent = isPostFlop
+    matrixDescription.textContent = t(isPostFlop
       ? 'Range expansion is not available yet; use Decision for exact-hand postflop strategy.'
-      : 'All 169 hand classes · click any square for its current mix.';
+      : 'All 169 hand classes · click any square for its current mix.');
   }
 
   if (isPostFlop) {
     hideMatrixCellCue();
     grid.replaceChildren();
-    if ($('#chartSelectionPreview')) $('#chartSelectionPreview').innerHTML = '<span>Exact hand only</span>';
-    if ($('#selectedHand')) $('#selectedHand').textContent = 'Exact hand only';
-    if ($('#selectedHandKind')) $('#selectedHandKind').textContent = 'Postflop decision';
-    if ($('#selectedHandPrimary')) $('#selectedHandPrimary').textContent = 'Range expansion unavailable';
-    if ($('#selectedMix')) $('#selectedMix').innerHTML = '<span class="matrix-inspector-unavailable">Use Decision for the exact-hand strategy.</span>';
-    if ($('#chartSummary')) $('#chartSummary').textContent = 'Use Decision for exact-hand postflop strategy.';
+    if ($('#chartSelectionPreview')) $('#chartSelectionPreview').innerHTML = `<span>${t('Exact hand only')}</span>`;
+    if ($('#selectedHand')) $('#selectedHand').textContent = t('Exact hand only');
+    if ($('#selectedHandKind')) $('#selectedHandKind').textContent = t('Postflop decision');
+    if ($('#selectedHandPrimary')) $('#selectedHandPrimary').textContent = t('Range expansion unavailable');
+    if ($('#selectedMix')) $('#selectedMix').innerHTML = `<span class="matrix-inspector-unavailable">${t('Use Decision for the exact-hand strategy.')}</span>`;
+    if ($('#chartSummary')) $('#chartSummary').textContent = t('Use Decision for exact-hand postflop strategy.');
     return;
   }
 
@@ -2371,10 +2425,10 @@ function renderChart() {
     const mixState = matrixMixState(actions, dominantAction);
 
     const detail = actions.length
-      ? actions.map((action) => `${action.name} ${action.value}%`).join(' · ')
+      ? actions.map((action) => `${t(action.name)} ${action.value}%`).join(' · ')
       : isPostFlop
-        ? 'Unavailable · provider-backed postflop Matrix deferred'
-        : 'Strategy unavailable';
+        ? t('Unavailable · provider-backed postflop Matrix deferred')
+        : t('Strategy unavailable');
 
     const idx = row * 13 + column;
     const button = grid.children[idx];
@@ -2404,7 +2458,7 @@ function renderChart() {
 
       const val = actions.find(a => a.kind === 'aggressive')?.value;
 
-      cellSubtext = actions.length ? `${val || 0}%` : 'Unavailable';
+      cellSubtext = actions.length ? `${val || 0}%` : t('Unavailable');
 
       if (actions.length) cellBg = `color-mix(in srgb, var(--action-aggressive) ${val || 0}%, transparent)`;
 
@@ -2412,7 +2466,7 @@ function renderChart() {
 
       const val = actions.find(a => a.kind === 'passive')?.value;
 
-      cellSubtext = actions.length ? `${val || 0}%` : 'Unavailable';
+      cellSubtext = actions.length ? `${val || 0}%` : t('Unavailable');
 
       if (actions.length) cellBg = `color-mix(in srgb, var(--action-passive) ${val || 0}%, transparent)`;
 
@@ -2420,7 +2474,7 @@ function renderChart() {
 
       const val = actions.find(a => a.kind === 'fold')?.value;
 
-      cellSubtext = actions.length ? `${val || 0}%` : 'Unavailable';
+      cellSubtext = actions.length ? `${val || 0}%` : t('Unavailable');
 
       if (actions.length) cellBg = `color-mix(in srgb, var(--action-fold) ${val || 0}%, transparent)`;
 
@@ -2442,7 +2496,8 @@ function renderChart() {
 
     button.dataset.hand = hand;
 
-    button.setAttribute('aria-label', `${hand}, ${handKind}: ${detail}`);
+    const kindLabel = t(handKind === 'pair' ? 'Pair' : handKind === 'suited' ? 'Suited' : 'Offsuit');
+    button.setAttribute('aria-label', `${hand}, ${kindLabel}: ${detail}`);
 
 
 
@@ -2458,22 +2513,21 @@ function renderChart() {
 
     if (isSelected) {
 
-        const kindLabel = handKind === 'pair' ? 'Pair' : handKind === 'suited' ? 'Suited' : 'Offsuit';
         const primaryAction = dominantAction;
-        previewHTML = `<strong class="matrix-preview-hand">${hand}</strong><span class="matrix-preview-summary">${primaryAction ? `${primaryAction.name} ${primaryAction.value}%` : 'Unavailable'}</span>`;
+        previewHTML = `<strong class="matrix-preview-hand">${hand}</strong><span class="matrix-preview-summary">${primaryAction ? `${t(primaryAction.name)} ${primaryAction.value}%` : t('Unavailable')}</span>`;
 
         $('#selectedHand').textContent = hand;
         if ($('#selectedHandKind')) $('#selectedHandKind').textContent = kindLabel;
         if ($('#selectedHandPrimary')) {
           $('#selectedHandPrimary').textContent = primaryAction
-            ? `Primary · ${primaryAction.name} ${primaryAction.value}%`
-            : 'Strategy unavailable';
+            ? t('Primary · {action} {value}%', { action: t(primaryAction.name), value: primaryAction.value })
+            : t('Strategy unavailable');
           $('#selectedHandPrimary').dataset.actionKind = visualActionKind(primaryAction);
         }
 
         $('#selectedMix').innerHTML = actions.length
-          ? `<div class="matrix-inspector-actions">${actions.map((action) => `<span class="matrix-inspector-action"><i data-action-kind="${visualActionKind(action)}"></i><span>${action.name}</span><strong>${action.value % 1 === 0 ? action.value : Number(action.value).toFixed(1)}%</strong></span>`).join('')}</div><div class="alloc" role="img" aria-label="${detail}">${actions.map((action) => `<i data-action-kind="${visualActionKind(action)}" style="width:${action.value}%"></i>`).join('')}</div>`
-          : `<span class="matrix-inspector-unavailable">${detail || 'Strategy unavailable for this hand.'}</span>`;
+          ? `<div class="matrix-inspector-actions">${actions.map((action) => `<span class="matrix-inspector-action"><i data-action-kind="${visualActionKind(action)}"></i><span>${t(action.name)}</span><strong>${action.value % 1 === 0 ? action.value : Number(action.value).toFixed(1)}%</strong></span>`).join('')}</div><div class="alloc" role="img" aria-label="${detail}">${actions.map((action) => `<i data-action-kind="${visualActionKind(action)}" style="width:${action.value}%"></i>`).join('')}</div>`
+          : `<span class="matrix-inspector-unavailable">${detail || t('Strategy unavailable for this hand.')}</span>`;
 
     }
 
@@ -2496,9 +2550,9 @@ function renderChart() {
   const chartSummary = $('#chartSummary');
   if (chartSummary) {
     chartSummary.textContent = matrixContextUnavailable
-      ? 'Strategy unavailable for the current decision context'
+      ? t('Strategy unavailable for the current decision context')
       : isPostFlop
-        ? 'Use Decision for exact-hand postflop strategy.'
+        ? t('Use Decision for exact-hand postflop strategy.')
         : `${positions} · ${matrixStack} bb · ${strategySourceDisplayLabel(matrixSource)}`;
   }
 
@@ -2572,11 +2626,11 @@ function renderFrequencyStack(container, actions) {
   const populated = actions.filter((action) => Number(action.value) > 0);
   container.innerHTML = populated.map((action) => {
     const kind = visualActionKind(action);
-    return `<span class="frequency-stack-segment" data-action-kind="${kind}" style="width:${action.value}%" title="${action.name}: ${action.value}%"></span>`;
+    return `<span class="frequency-stack-segment" data-action-kind="${kind}" style="width:${action.value}%" title="${t(action.name)}: ${action.value}%"></span>`;
   }).join('');
   const label = populated.length
-    ? populated.map((action) => `${action.name} ${action.value}%`).join(', ')
-    : 'Strategy frequencies unavailable';
+    ? populated.map((action) => `${t(action.name)} ${action.value}%`).join(', ')
+    : t('Strategy frequencies unavailable');
   container.setAttribute('aria-label', label);
   container.classList.toggle('is-empty', populated.length === 0);
 }
@@ -2588,7 +2642,7 @@ function strategySourceDisplayLabel(source) {
     equity_fallback: 'Equity fallback',
     unavailable: 'Unavailable'
   };
-  return labels[source] || String(source || 'Unavailable');
+  return t(labels[source] || String(source || 'Unavailable'));
 }
 
 
@@ -2615,8 +2669,8 @@ function trustedHandClassificationForAnalysis(decisionContext, strategyResult) {
   const classification = strategyResult?.details?.handClassification;
   if (!classification || classification.source !== 'heuristic_postflop_classifier') return null;
   return {
-    madeHand: classification.madeHandLabel ? t(classification.madeHandLabel) : null,
-    draws: Array.isArray(classification.draws) ? classification.draws.map(draw => t(draw)) : [],
+    madeHand: classification.madeHandLabel || null,
+    draws: Array.isArray(classification.draws) ? [...classification.draws] : [],
     source: classification.source
   };
 }
@@ -2669,7 +2723,7 @@ function renderDecisionAnalysis(container, {
   if (!container) return null;
   const bridge = globalThis.RiverlineAnalysisExplanation;
   if (!bridge || typeof bridge.create !== 'function' || typeof renderAnalysisExplanation !== 'function') {
-    container.textContent = 'Decision analysis is unavailable.';
+    container.textContent = t('Decision analysis is unavailable.');
     return null;
   }
   const explanation = bridge.create({
@@ -2835,7 +2889,7 @@ async function updateContext(reason = 'Context updated') {
       bestSizing.textContent = `${recommendationSizing.amountBb} bb`;
       bestSizing.hidden = false;
     } else if (Number.isFinite(recommendationSizing?.potFraction)) {
-      bestSizing.textContent = `${(recommendationSizing.potFraction * 100).toFixed(0)}% pot`;
+      bestSizing.textContent = t('{value}% pot', { value: (recommendationSizing.potFraction * 100).toFixed(0) });
       bestSizing.hidden = false;
     } else {
       bestSizing.textContent = '';
@@ -2845,7 +2899,7 @@ async function updateContext(reason = 'Context updated') {
 
   const bestReason = $('#bestReason');
 
-  if (bestReason) bestReason.textContent = t(profile.reason);
+  if (bestReason) bestReason.textContent = profile.reason;
 
   const recommendation = $('#recommendation');
   if (recommendation) recommendation.dataset.actionKind = visualActionKind(profile.actions[0]);
@@ -2882,22 +2936,22 @@ async function updateContext(reason = 'Context updated') {
   const strategyMeta = $('#strategyMeta');
   if (strategyMeta) {
     const metadata = [];
-    if (strategyResult.confidence !== null) metadata.push(`Confidence ${(strategyResult.confidence * 100).toFixed(0)}%`);
-    if (strategyResult.coverage !== null) metadata.push(`Coverage ${(strategyResult.coverage * 100).toFixed(0)}%`);
-    if (strategyResult.modelVersion !== null) metadata.push(`Model ${strategyResult.modelVersion}`);
+    if (strategyResult.confidence !== null) metadata.push(t('Confidence {value}%', { value: (strategyResult.confidence * 100).toFixed(0) }));
+    if (strategyResult.coverage !== null) metadata.push(t('Coverage {value}%', { value: (strategyResult.coverage * 100).toFixed(0) }));
+    if (strategyResult.modelVersion !== null) metadata.push(t('Model {version}', { version: strategyResult.modelVersion }));
     strategyMeta.textContent = metadata.join(' · ');
     strategyMeta.hidden = metadata.length === 0;
   }
 
   const strategyWarnings = $('#strategyWarnings');
   if (strategyWarnings) {
-    strategyWarnings.textContent = strategyResult.warnings.join(' · ');
+    strategyWarnings.textContent = localizedStrategyWarnings(strategyResult).join(' · ');
     strategyWarnings.hidden = strategyResult.warnings.length === 0;
   }
 
   const streetLabel = $('#streetLabel');
 
-  if (streetLabel) streetLabel.textContent = street.toUpperCase();
+  if (streetLabel) streetLabel.textContent = t(street.charAt(0).toUpperCase() + street.slice(1));
 
   const displayActions = [...profile.actions];
 
@@ -2955,13 +3009,13 @@ async function updateContext(reason = 'Context updated') {
 
     if (liveContextText) {
 
-      liveContextText.textContent = 'Live · updated';
+      liveContextText.textContent = t('Live · updated');
 
       window.clearTimeout(updateContext.timer);
 
       updateContext.timer = window.setTimeout(() => { 
 
-        if ($('#liveContextText')) $('#liveContextText').textContent = 'Live'; 
+    if ($('#liveContextText')) $('#liveContextText').textContent = t('Live');
 
       }, 1400);
 
@@ -3160,13 +3214,13 @@ function equityRequestFromCurrentInputs() {
 }
 
 function formatEquityCombinationCount(estimate) {
-  if (!estimate?.ok) return 'Unavailable';
+  if (!estimate?.ok) return t('Unavailable');
   if (estimate.exceedsSafeInteger) {
     const digits = estimate.combinationsText;
     const leading = digits.length > 1 ? `${digits[0]}.${digits.slice(1, 3)}` : digits;
-    return `≈ ${leading}e+${digits.length - 1} combinations`;
+    return t('≈ {value} combinations', { value: `${leading}e+${digits.length - 1}` });
   }
-  return `${Number(estimate.combinations).toLocaleString()} combinations`;
+  return t('{count} combinations', { count: Number(estimate.combinations).toLocaleString() });
 }
 
 function updateEquityReadiness() {
@@ -3181,15 +3235,15 @@ function updateEquityReadiness() {
   const seedValue = $('#equitySeed')?.value?.trim() || '';
   const seedNumber = seedValue === '' ? null : Number(seedValue);
   let state = 'ready';
-  let message = 'Ready to calculate.';
+  let message = t('Ready to calculate.');
   let estimate = null;
 
   if (incompleteIndex >= 0) {
     state = 'blocked';
-    message = `${equityPlayerLabel(incompleteIndex)} is marked known and needs exactly two cards.`;
+    message = t('{player} is marked known and needs exactly two cards.', { player: equityPlayerLabel(incompleteIndex) });
   } else if (seedNumber !== null && (!Number.isInteger(seedNumber) || seedNumber < 0 || seedNumber > 0xffffffff)) {
     state = 'blocked';
-    message = 'Seed must be a whole number from 0 through 4,294,967,295.';
+    message = t('Seed must be a whole number from 0 through 4,294,967,295.');
   } else {
     estimate = callEquityServiceBridge('estimate', equityRequestFromCurrentInputs());
     if (estimate?.ok === false) {
@@ -3199,15 +3253,15 @@ function updateEquityReadiness() {
       const requestedMethod = equityRequestFromCurrentInputs().method;
       if (requestedMethod === 'exact' && !estimate.exactFeasible) {
         state = 'warning';
-        message = 'Exact enumeration exceeds the safe workload limit. Choose Auto or Monte Carlo.';
+        message = t('Exact enumeration exceeds the safe workload limit. Choose Auto or Monte Carlo.');
       } else {
-        const actual = requestedMethod === 'auto'
+        const actual = t(requestedMethod === 'auto'
           ? (estimate.exactFeasible ? 'exact enumeration' : 'Monte Carlo')
-          : (requestedMethod === 'exact' ? 'exact enumeration' : 'Monte Carlo');
-        message = `Ready · ${actual} · ${formatEquityCombinationCount(estimate)}`;
+          : (requestedMethod === 'exact' ? 'exact enumeration' : 'Monte Carlo'));
+        message = t('Ready · {method} · {workload}', { method: actual, workload: formatEquityCombinationCount(estimate) });
       }
     } else {
-      message = 'Ready. Calculation details will be confirmed when the Equity service loads.';
+      message = t('Ready. Calculation details will be confirmed when the Equity service loads.');
     }
   }
 
@@ -3215,14 +3269,17 @@ function updateEquityReadiness() {
   readiness.textContent = message;
   calculate.disabled = equityCalculationRunning || state === 'blocked' || state === 'warning';
   if (estimateCopy) estimateCopy.textContent = estimate?.ok
-    ? `Estimated workload: ${formatEquityCombinationCount(estimate)}. Auto will use ${estimate.exactFeasible ? 'exact enumeration' : 'Monte Carlo'}.`
-    : 'Workload estimate appears when all known hands are complete.';
+    ? t('Estimated workload: {workload}. Auto will use {method}.', {
+      workload: formatEquityCombinationCount(estimate),
+      method: t(estimate.exactFeasible ? 'exact enumeration' : 'Monte Carlo')
+    })
+    : t('Workload estimate appears when all known hands are complete.');
 
   const request = equityRequestFromCurrentInputs();
-  if ($('#equityDetailRequested')) $('#equityDetailRequested').textContent = request.method === 'monte_carlo' ? 'Monte Carlo' : (request.method === 'exact' ? 'Exact' : 'Auto');
+  if ($('#equityDetailRequested')) $('#equityDetailRequested').textContent = t(request.method === 'monte_carlo' ? 'Monte Carlo' : (request.method === 'exact' ? 'Exact' : 'Auto'));
   if ($('#equityDetailEstimate')) $('#equityDetailEstimate').textContent = estimate?.ok ? formatEquityCombinationCount(estimate) : '—';
   if ($('#equityDetailSamples')) $('#equityDetailSamples').textContent = request.samples.toLocaleString();
-  if ($('#equityDetailSeed')) $('#equityDetailSeed').textContent = request.seed === undefined ? 'Generated at run time' : String(request.seed);
+  if ($('#equityDetailSeed')) $('#equityDetailSeed').textContent = request.seed === undefined ? t('Generated at run time') : String(request.seed);
   if ($('#equityDetailUnknown')) $('#equityDetailUnknown').textContent = String(request.players.filter((player) => player.cards === null).length);
   if ($('#equityDetailBoard')) $('#equityDetailBoard').textContent = String(5 - request.board.length);
   return { state, message, estimate, request };
@@ -3250,12 +3307,13 @@ function setEquityCalculationRunning(running) {
   }
   if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = running ? 'running' : $('#equityResultsPanel').dataset.resultState;
   if ($('#equityDetailExecution')) $('#equityDetailExecution').textContent = running
-    ? (callEquityServiceBridge('isWorkerBacked') ? 'Web Worker' : 'In-process fallback')
-    : 'Ready';
+    ? t(callEquityServiceBridge('isWorkerBacked') ? 'Web Worker' : 'In-process fallback')
+    : t('Ready');
   if (!running) updateEquityReadiness();
 }
 
 function renderEquityProgress(progress) {
+  app.equity.lastProgress = progress ? { ...progress } : null;
   const wrap = $('#progress');
   const fill = document.querySelector('#progress .progress-fill');
   const track = document.querySelector('#progress .progress-track');
@@ -3265,11 +3323,11 @@ function renderEquityProgress(progress) {
   const telemetry = document.querySelector('#progress .progress-telemetry');
   const determinate = progress?.mode === 'determinate';
   const isExact = progress?.method === 'exact';
-  const methodLabel = isExact ? 'Exact calculation' : 'Monte Carlo';
+  const methodLabel = t(isExact ? 'Exact calculation' : 'Monte Carlo');
   if (wrap) wrap.dataset.progressMode = determinate ? 'determinate' : 'indeterminate';
   if (method) method.textContent = methodLabel;
   if (track) {
-    track.setAttribute('aria-label', `${methodLabel} progress`);
+    track.setAttribute('aria-label', t('{method} progress', { method: methodLabel }));
     if (determinate) {
       track.setAttribute('aria-valuemin', '0');
       track.setAttribute('aria-valuemax', '100');
@@ -3282,7 +3340,7 @@ function renderEquityProgress(progress) {
   }
   if (!determinate) {
     if (fill) fill.style.width = '';
-    if (status) status.textContent = 'Preparing calculation…';
+    if (status) status.textContent = t('Preparing calculation…');
     if (percent) {
       percent.hidden = true;
       percent.textContent = '';
@@ -3297,7 +3355,7 @@ function renderEquityProgress(progress) {
   const fraction = Math.min(1, Math.max(0, Number(progress.fraction) || 0));
   const unit = isExact ? 'outcomes' : 'trials';
   if (fill) fill.style.width = `${fraction * 100}%`;
-  if (status) status.textContent = `${Number(progress.completed).toLocaleString()} / ${Number(progress.total).toLocaleString()} ${unit}`;
+  if (status) status.textContent = `${Number(progress.completed).toLocaleString()} / ${Number(progress.total).toLocaleString()} ${t(unit)}`;
   if (percent) {
     percent.hidden = false;
     percent.textContent = `${Math.round(progress.percentage)}%`;
@@ -3305,10 +3363,10 @@ function renderEquityProgress(progress) {
   if (telemetry) {
     const details = [];
     if (!isExact && Number.isFinite(progress.throughputPerSecond)) {
-      details.push(`${formatEquityThroughput(progress.throughputPerSecond)} trials/s`);
+      details.push(t('{rate} trials/s', { rate: formatEquityThroughput(progress.throughputPerSecond) }));
     }
     if (!isExact && Number.isFinite(progress.etaSeconds)) {
-      details.push(`${formatEquityDuration(progress.etaSeconds)} remaining`);
+      details.push(t('{duration} remaining', { duration: formatEquityDuration(progress.etaSeconds) }));
     }
     telemetry.hidden = details.length === 0;
     telemetry.textContent = details.join(' · ');
@@ -3334,16 +3392,16 @@ function formatEquityDuration(seconds) {
 }
 
 function equityFailureMessage(error) {
-  if (!error) return 'Equity calculation failed.';
+  if (!error) return t('Equity calculation failed.');
   const messages = {
-    invalid_request: 'Complete each known hand with exactly two valid cards.',
-    duplicate_card: 'That card is already in use.',
-    impossible_deck: 'Not enough unseen cards remain for this setup.',
-    exact_limit_exceeded: 'This exact calculation is too large. Use Auto or Monte Carlo.',
-    aborted: 'Equity calculation cancelled.',
-    internal_error: 'The Equity service could not complete this calculation.'
+    invalid_request: t('Complete each known hand with exactly two valid cards.'),
+    duplicate_card: t('That card is already in use.'),
+    impossible_deck: t('Not enough unseen cards remain for this setup.'),
+    exact_limit_exceeded: t('This exact calculation is too large. Use Auto or Monte Carlo.'),
+    aborted: t('Equity calculation cancelled.'),
+    internal_error: t('The Equity service could not complete this calculation.')
   };
-  return messages[error.code] || 'Equity calculation failed.';
+  return messages[error.code] || t('Equity calculation failed.');
 }
 
 async function calculateEquity() {
@@ -3354,26 +3412,33 @@ async function calculateEquity() {
   }
   const generation = ++equityCalculationGeneration;
   const request = readiness.request;
+  app.equity.lifecycle = 'running';
+  app.equity.lastRequest = structuredClone(request);
+  app.equity.lastResult = null;
+  app.equity.lastError = null;
   const calculation = callEquityServiceBridge('calculate', request, {
     onProgress(progress) {
       if (generation === equityCalculationGeneration) renderEquityProgress(progress);
     }
   });
   if (!calculation || typeof calculation.then !== 'function') {
-    return toast('The canonical Equity service is unavailable.', 'error');
+    app.equity.lifecycle = 'error';
+    return toast(t('The canonical Equity service is unavailable.'), 'error');
   }
 
-  clearEquityResults('running', 'Calculating conditional equity…');
+  clearEquityResults('running', t('Calculating conditional equity…'));
   setEquityCalculationRunning(true);
-  $('#methodBadge').textContent = 'RUNNING';
+  $('#methodBadge').textContent = t('RUNNING');
   const response = await calculation;
   if (generation !== equityCalculationGeneration) return response;
   setEquityCalculationRunning(false);
 
   if (response?.ok === false) {
+    app.equity.lifecycle = response.error.code === 'aborted' ? 'cancelled' : 'error';
+    app.equity.lastError = response.error;
     const message = equityFailureMessage(response.error);
     $('#equityStatus').textContent = message;
-    $('#methodBadge').textContent = response.error.code === 'aborted' ? 'CANCELLED' : 'ERROR';
+    $('#methodBadge').textContent = t(response.error.code === 'aborted' ? 'CANCELLED' : 'ERROR');
     $('#equityResultsPanel').dataset.resultState = response.error.code === 'aborted' ? 'empty' : 'error';
     toast(message, response.error.code === 'aborted' ? 'info' : 'warning');
     return response;
@@ -3386,22 +3451,24 @@ function cancelEquityCalculation() {
   if (!callEquityServiceBridge('cancel')) return false;
   equityCalculationGeneration += 1;
   setEquityCalculationRunning(false);
-  $('#equityStatus').textContent = 'Equity calculation cancelled.';
-  $('#methodBadge').textContent = 'CANCELLED';
+  app.equity.lifecycle = 'cancelled';
+  app.equity.lastError = { code: 'aborted' };
+  $('#equityStatus').textContent = t('Equity calculation cancelled.');
+  $('#methodBadge').textContent = t('CANCELLED');
   if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = 'empty';
   return true;
 }
 
 function equityStreetLabel(boardCount) {
   const labels = { 0: 'Preflop', 3: 'Flop', 4: 'Turn', 5: 'River' };
-  return labels[boardCount] || `Partial board · ${boardCount} / 5 cards`;
+  return labels[boardCount] ? t(labels[boardCount]) : t('Partial board · {count} / 5 cards', { count: boardCount });
 }
 
 function equityReadOnlyCardsMarkup(cards, label) {
   if (cards === null) {
-    return `<span class="equity-result-unknown" aria-label="${label}: unknown hand"><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span>Unknown hand</span></span>`;
+    return `<span class="equity-result-unknown" aria-label="${t('{player}: unknown hand', { player: label })}"><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span>${t('Unknown hand')}</span></span>`;
   }
-  if (!cards?.length) return '<span class="equity-context-empty">No cards</span>';
+  if (!cards?.length) return `<span class="equity-context-empty">${t('No cards')}</span>`;
   return `<span class="equity-readonly-cards">${cards.map((card) => `<span class="training-readonly-card riverline-card" role="img" aria-label="${displayCard(card)}">${cardMarkup(card)}</span>`).join('')}</span>`;
 }
 
@@ -3414,15 +3481,15 @@ function renderEquityScenarioContext(request = equityRequestFromCurrentInputs())
     return `<div class="equity-context-row"><span class="equity-context-label">${label}</span>${equityReadOnlyCardsMarkup(player.cards, label)}</div>`;
   }).join('');
   const boardMarkup = board.length
-    ? equityReadOnlyCardsMarkup(board, 'Board')
-    : '<span class="equity-context-empty">No board cards</span>';
+    ? equityReadOnlyCardsMarkup(board, t('Board'))
+    : `<span class="equity-context-empty">${t('No board cards')}</span>`;
   const deadMarkup = request.deadCards?.length
-    ? `<div class="equity-context-row equity-context-row--dead"><span class="equity-context-label">Dead</span>${equityReadOnlyCardsMarkup(request.deadCards, 'Dead cards')}</div>`
+    ? `<div class="equity-context-row equity-context-row--dead"><span class="equity-context-label">${t('Dead')}</span>${equityReadOnlyCardsMarkup(request.deadCards, t('Dead cards'))}</div>`
     : '';
   root.innerHTML = `
-    <div class="equity-context-street"><span>Street</span><strong>${equityStreetLabel(board.length)}</strong></div>
+    <div class="equity-context-street"><span>${t('Street')}</span><strong>${equityStreetLabel(board.length)}</strong></div>
     <div class="equity-context-hands">${handRows}</div>
-    <div class="equity-context-row"><span class="equity-context-label">Board</span>${boardMarkup}</div>
+    <div class="equity-context-row"><span class="equity-context-label">${t('Board')}</span>${boardMarkup}</div>
     ${deadMarkup}`;
 }
 
@@ -3441,15 +3508,15 @@ function equityResultCardMarkup(player, index, requestPlayer) {
         ${equityReadOnlyCardsMarkup(hand, name)}
       </header>
       <div class="equity-result-metrics">
-        <div class="equity-result-primary"><span>Equity</span><strong>${equity}</strong></div>
-        <div><span>Win</span><strong>${win}</strong></div>
-        <div><span>Tie</span><strong>${tie}</strong></div>
+        <div class="equity-result-primary"><span>${t('Equity')}</span><strong class="poker-data-token">${equity}</strong></div>
+        <div><span>${t('Win')}</span><strong class="poker-data-token">${win}</strong></div>
+        <div><span>${t('Tie')}</span><strong class="poker-data-token">${tie}</strong></div>
       </div>
-      <div class="eqbar" role="progressbar" aria-label="${name} equity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${ariaValue}"><div class="eqfill player-series" style="width:${hasResult ? player.equity : 0}%"></div></div>
+      <div class="eqbar" role="progressbar" aria-label="${t('{player} equity', { player: name })}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${ariaValue}"><div class="eqfill player-series" style="width:${hasResult ? player.equity : 0}%"></div></div>
     </article>`;
 }
 
-function clearEquityResults(state = 'empty', status = 'Results update after calculation.') {
+function clearEquityResults(state = 'empty', status = t('Results update after calculation.')) {
   const panel = $('#equityResultsPanel');
   if (panel) panel.dataset.resultState = state;
   if ($('#headlineEquity')) $('#headlineEquity').textContent = '—';
@@ -3466,7 +3533,11 @@ function clearEquityResults(state = 'empty', status = 'Results update after calc
   renderEquityScenarioContext();
 }
 
-function renderEquityResult(equityResult, request = equityRequestFromCurrentInputs()) {
+function renderEquityResult(equityResult, request = equityRequestFromCurrentInputs(), { announce = true } = {}) {
+  app.equity.lifecycle = 'complete';
+  app.equity.lastResult = equityResult;
+  app.equity.lastRequest = structuredClone(request);
+  app.equity.lastError = null;
   const namesById = new Map(app.equity.players.map((player, index) => [player.id, equityPlayerLabel(index)]));
   const requestById = new Map(request.players.map((player) => [player.id, player]));
   const result = equityResult.players.map((player) => ({
@@ -3480,15 +3551,17 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
   const total = equityResult.trials;
   const splitRate = equityResult.metadata.splitPotTrials / total * 100;
   const leadingEquity = Math.max(...result.map((player) => player.equity));
-  const requestedLabel = request.method === 'auto' ? 'AUTO' : (request.method === 'exact' ? 'EXACT' : 'MONTE CARLO');
-  const actualLabel = exact ? 'EXACT' : 'MONTE CARLO';
+  const requestedLabel = t(request.method === 'auto' ? 'AUTO' : (request.method === 'exact' ? 'EXACT' : 'MONTE CARLO'));
+  const actualLabel = t(exact ? 'EXACT' : 'MONTE CARLO');
 
   const leaders = result.filter((player) => Math.abs(player.equity - leadingEquity) < 0.05);
-  $('#headlineEquity').textContent = leaders.length === 1 ? `${leaders[0].name} leads` : `${leaders.length}-way equity tie`;
+  $('#headlineEquity').textContent = leaders.length === 1
+    ? t('{player} leads', { player: leaders[0].name })
+    : t('{count}-way equity tie', { count: leaders.length });
 
   $('#equityStatus').textContent = exact
-    ? `Exact enumeration · ${total.toLocaleString()} outcomes`
-    : `Monte Carlo · ${total.toLocaleString()} trials`;
+    ? t('Exact enumeration · {count} outcomes', { count: total.toLocaleString() })
+    : t('Monte Carlo · {count} trials', { count: total.toLocaleString() });
 
   $('#methodBadge').textContent = request.method === 'auto' ? `${requestedLabel} → ${actualLabel}` : actualLabel;
 
@@ -3501,14 +3574,14 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
 
   if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = 'complete';
   if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = `${equityResult.metadata.splitPotTrials.toLocaleString()} · ${splitRate.toFixed(1)}%`;
-  if ($('#equityDetailActual')) $('#equityDetailActual').textContent = exact ? 'Exact enumeration' : 'Monte Carlo simulation';
-  if ($('#equityDetailEstimate')) $('#equityDetailEstimate').textContent = `${equityResult.metadata.estimatedCombinationsText} combinations`;
-  if ($('#equityDetailSamples')) $('#equityDetailSamples').textContent = exact ? 'Not applicable' : equityResult.metadata.samplesCompleted.toLocaleString();
-  if ($('#equityDetailSeed')) $('#equityDetailSeed').textContent = exact ? 'Not applicable' : String(equityResult.metadata.seed);
+  if ($('#equityDetailActual')) $('#equityDetailActual').textContent = t(exact ? 'Exact enumeration' : 'Monte Carlo simulation');
+  if ($('#equityDetailEstimate')) $('#equityDetailEstimate').textContent = t('{count} combinations', { count: equityResult.metadata.estimatedCombinationsText });
+  if ($('#equityDetailSamples')) $('#equityDetailSamples').textContent = exact ? t('Not applicable') : equityResult.metadata.samplesCompleted.toLocaleString();
+  if ($('#equityDetailSeed')) $('#equityDetailSeed').textContent = exact ? t('Not applicable') : String(equityResult.metadata.seed);
   if ($('#equityDetailUnknown')) $('#equityDetailUnknown').textContent = String(equityResult.metadata.unknownPlayers);
   if ($('#equityDetailBoard')) $('#equityDetailBoard').textContent = String(equityResult.metadata.boardCardsMissing);
-  if ($('#equityDetailExecution')) $('#equityDetailExecution').textContent = callEquityServiceBridge('isWorkerBacked') ? 'Web Worker' : 'In-process fallback';
-  toast('Win probability updated', 'success');
+  if ($('#equityDetailExecution')) $('#equityDetailExecution').textContent = t(callEquityServiceBridge('isWorkerBacked') ? 'Web Worker' : 'In-process fallback');
+  if (announce) toast(t('Win probability updated'), 'success');
 
   // === OUTS CALCULATION (per-player, shown inline beside each player's cards) ===
   // Available on Flop (3 cards) or Turn (4 cards) when both player hands are known
@@ -3550,23 +3623,23 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
 
       if (outsResult.ahead) {
         panel.dataset.outsState = 'ahead';
-        if (countEl) countEl.textContent = 'Ahead';
-        if (summEl)  summEl.textContent = 'Currently winning — no outs needed.';
+        if (countEl) countEl.textContent = t('Ahead');
+        if (summEl)  summEl.textContent = t('Currently winning — no outs needed.');
         if (cardsEl) cardsEl.innerHTML = '';
       } else if (outsResult.count === 0) {
         panel.dataset.outsState = 'drawing-dead';
-        if (countEl) countEl.textContent = '0 total';
-        if (summEl)  summEl.textContent = 'No outs — drawing dead.';
+        if (countEl) countEl.textContent = t('0 total');
+        if (summEl)  summEl.textContent = t('No outs — drawing dead.');
         if (cardsEl) cardsEl.innerHTML = '';
       } else {
         panel.dataset.outsState = 'drawing';
-        if (countEl) countEl.textContent = outsResult.count + ' total';
-        if (summEl) summEl.textContent = 'Cards that improve this hand against the entered known opponents.';
+        if (countEl) countEl.textContent = t('{count} total', { count: outsResult.count });
+        if (summEl) summEl.textContent = t('Cards that improve this hand against the entered known opponents.');
         if (cardsEl) {
           let html = '';
           outsResult.categories.forEach(cat => {
             html += '<div class="outs-group">';
-            html += `<div class="outs-group-head"><strong>${cat.name}</strong><span>${cat.cards.length} ${cat.cards.length === 1 ? 'out' : 'outs'}</span></div>`;
+            html += `<div class="outs-group-head"><strong>${t(cat.name)}</strong><span>${t(cat.cards.length === 1 ? '{count} out' : '{count} outs', { count: cat.cards.length })}</span></div>`;
             html += '<div class="outs-card-list">';
             html += cat.cards.map(card => {
               const rank = displayCardRank(card[0]), suit = card[1];
@@ -3589,8 +3662,13 @@ function setEquityPending() {
   callEquityServiceBridge('cancel');
   equityCalculationGeneration += 1;
   setEquityCalculationRunning(false);
-  clearEquityResults('empty', 'Inputs changed. Calculate to refresh the result.');
-  if ($('#methodBadge')) $('#methodBadge').textContent = 'AWAITING CALCULATION';
+  app.equity.lifecycle = 'pending';
+  app.equity.lastRequest = null;
+  app.equity.lastResult = null;
+  app.equity.lastProgress = null;
+  app.equity.lastError = null;
+  clearEquityResults('empty', t('Inputs changed. Calculate to refresh the result.'));
+  if ($('#methodBadge')) $('#methodBadge').textContent = t('AWAITING CALCULATION');
   updateEquityReadiness();
 }
 
@@ -3609,8 +3687,13 @@ function resetEquityCalculator() {
   if ($('#equitySeed')) $('#equitySeed').value = '';
   setEquityCalculationRunning(false);
   renderAllCards();
-  clearEquityResults('empty', 'Results update after calculation.');
-  if ($('#methodBadge')) $('#methodBadge').textContent = 'AWAITING INPUT';
+  app.equity.lifecycle = 'idle';
+  app.equity.lastRequest = null;
+  app.equity.lastResult = null;
+  app.equity.lastProgress = null;
+  app.equity.lastError = null;
+  clearEquityResults('empty', t('Results update after calculation.'));
+  if ($('#methodBadge')) $('#methodBadge').textContent = t('AWAITING INPUT');
   updateEquityReadiness();
 }
 
@@ -4276,11 +4359,11 @@ function initThemeSwatches() {
 
   grid.innerHTML = `
 
-    <div class="theme-swatch-heading">Riverline Themes</div>
+    <div class="theme-swatch-heading">${t('Riverline Themes')}</div>
 
     ${riverlineThemes.map(renderBtn).join('')}
 
-    <div class="theme-swatch-heading theme-swatch-heading--legacy">Legacy / Experimental</div>
+    <div class="theme-swatch-heading theme-swatch-heading--legacy">${t('Legacy / Experimental')}</div>
 
     ${legacyThemes.map(renderBtn).join('')}
 
@@ -4309,6 +4392,105 @@ function initThemeSwatches() {
 }
 
 
+
+const localizedStrategyProfile = strategyResultToLegacyProfile;
+
+function refreshLocalizedPlaybookRuntime() {
+  if (app.playbookResolution) renderPlaybookModeStatus(app.playbookResolution);
+  if (isHandMode()) {
+    syncHandSeatSelectors();
+    renderCanonicalHandWorkspace();
+  }
+  if (app.decisionContext && app.strategyResult) {
+    const profile = localizedStrategyProfile(app.strategyResult);
+    if ($('#bestAction')) $('#bestAction').textContent = t(profile.best);
+    if ($('#bestReason')) $('#bestReason').textContent = profile.reason;
+    if ($('#sourceBadge')) $('#sourceBadge').textContent = strategySourceDisplayLabel(app.strategyResult.source);
+    if ($('#strategyWarnings')) {
+      $('#strategyWarnings').textContent = localizedStrategyWarnings(app.strategyResult).join(' · ');
+    }
+    const displayActions = [...profile.actions];
+    while (displayActions.length < 3) displayActions.push({ name: '—', value: 0, kind: 'unavailable' });
+    displayActions.forEach((action, index) => setFrequency(index + 1, action));
+    renderFrequencyStack($('#actionFrequencyStack'), displayActions);
+    updateMetrics(app.decisionContext);
+    renderPath(app.decisionContext.street);
+  }
+  if (playbookSurfaceIsVisible('matrix')) renderChart();
+  if (playbookSurfaceIsVisible('range')) renderRangeAdvantage();
+  if (playbookSurfaceIsVisible('tree')) renderBettingTree();
+  if (playbookSurfaceIsVisible('analysis')) {
+    renderPlaybookDecisionAnalysis(
+      app.decisionContext,
+      app.strategyResult,
+      app.playbookResolution,
+      app.playbookResolution?.status === 'available'
+        ? null
+        : analysisUnavailableReasonForResolution(app.playbookResolution)
+    );
+  }
+}
+
+function refreshLocalizedEquityRuntime() {
+  renderEquityPlayers();
+  renderEquityCards();
+  if (['idle', 'pending'].includes(app.equity.lifecycle) && $('#equityDetailExecution')) {
+    $('#equityDetailExecution').textContent = t('Ready');
+  }
+  if (app.equity.lifecycle === 'complete' && app.equity.lastResult && app.equity.lastRequest) {
+    renderEquityResult(app.equity.lastResult, app.equity.lastRequest, { announce: false });
+    return;
+  }
+  renderEquityScenarioContext(app.equity.lastRequest || equityRequestFromCurrentInputs());
+  updateEquityReadiness();
+  if (app.equity.lifecycle === 'running') {
+    if (app.equity.lastProgress) renderEquityProgress(app.equity.lastProgress);
+    if ($('#methodBadge')) $('#methodBadge').textContent = t('RUNNING');
+  } else if (app.equity.lifecycle === 'cancelled') {
+    if ($('#equityStatus')) $('#equityStatus').textContent = t('Equity calculation cancelled.');
+    if ($('#methodBadge')) $('#methodBadge').textContent = t('CANCELLED');
+  } else if (app.equity.lifecycle === 'error') {
+    if ($('#equityStatus')) $('#equityStatus').textContent = equityFailureMessage(app.equity.lastError);
+    if ($('#methodBadge')) $('#methodBadge').textContent = t('ERROR');
+  } else if (app.equity.lifecycle === 'pending') {
+    if ($('#equityStatus')) $('#equityStatus').textContent = t('Inputs changed. Calculate to refresh the result.');
+    if ($('#methodBadge')) $('#methodBadge').textContent = t('AWAITING CALCULATION');
+  }
+}
+
+function refreshLocalizedTrainingRuntime() {
+  updateTrainingPositions();
+  updateTrainingFilterAvailability();
+  updateTrainingStats();
+  renderTrainingCards();
+  const exercise = app.training.currentExercise;
+  if (!exercise) return;
+  renderTrainingPresentation(exercise);
+  renderTrainingDecisionContextSummary(exercise);
+  renderTrainingSource(exercise);
+  updateAssistanceDisplay();
+  if (app.training.lifecycle === 'ready') updateTrainingButtons(exercise);
+  if (app.training.lifecycle === 'feedback' && app.training.currentEvaluation) {
+    renderTrainingEvaluationSummary(app.training.currentEvaluation, exercise);
+    showTrainingFeedback(
+      canonicalTrainingFeedback(app.training.currentEvaluation, exercise.strategyResult),
+      app.training.currentEvaluation.accepted
+    );
+    showTrainingSolution(app.training.currentSolution);
+    renderTrainingDecisionAnalysis(exercise);
+  }
+}
+
+function refreshLocalizedRuntime() {
+  const shell = $('.riverline-shell');
+  applySidebarState(Boolean(shell?.classList.contains('is-sidebar-collapsed')));
+  initThemeSwatches();
+  updatePositions();
+  renderAllCards();
+  refreshLocalizedPlaybookRuntime();
+  refreshLocalizedEquityRuntime();
+  refreshLocalizedTrainingRuntime();
+}
 
 function init() {
 
@@ -4390,6 +4572,8 @@ function init() {
     bindCanonicalHandWorkspace();
 
     bindPlaybookModeControl();
+
+    window.addEventListener('riverline:languagechange', refreshLocalizedRuntime);
 
     
 
@@ -5102,7 +5286,7 @@ function selectedTrainingSeed() {
   const numeric = Number(input?.value);
   if (!input?.value || !Number.isInteger(numeric) || numeric < 0 || numeric > 0xffffffff) {
     if (input) input.setAttribute('aria-invalid', 'true');
-    toast('Enter a whole-number seed from 0 through 4294967295.', 'warning');
+    toast(t('Enter a whole-number seed from 0 through 4294967295.'), 'warning');
     return null;
   }
   input.removeAttribute('aria-invalid');
@@ -5130,11 +5314,11 @@ function updateTrainingFilterAvailability() {
   const message = $('#trainingFilterMessage');
   if (target.value === TRAINING_TARGETS.PREFLOP_BB_OPTION && position?.value !== 'BB') {
     position.value = 'BB';
-    if (message) message.textContent = 'Hero moved to BB because the check-option target requires the big blind.';
+    if (message) message.textContent = t('Hero moved to BB because the check-option target requires the big blind.');
   } else if (target.value === TRAINING_TARGETS.PREFLOP_UNOPENED && position?.value === 'BB') {
     const alternatives = [...position.options].map((option) => option.value).filter((value) => value !== 'BB');
     position.value = alternatives.includes('BTN') ? 'BTN' : alternatives[0];
-    if (message) message.textContent = 'Hero moved out of BB because an unopened RFI is not a BB check option.';
+    if (message) message.textContent = t('Hero moved out of BB because an unopened RFI is not a BB check option.');
   } else if (message) {
     message.textContent = '';
   }
@@ -5191,8 +5375,8 @@ function applySidebarState(collapsed) {
   rail.dataset.collapsed = String(collapsed);
   rail.dataset.expanded = String(!collapsed);
   button.setAttribute('aria-expanded', String(!collapsed));
-  button.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
-  button.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  button.setAttribute('aria-label', t(collapsed ? 'Expand sidebar' : 'Collapse sidebar'));
+  button.title = t(collapsed ? 'Expand sidebar' : 'Collapse sidebar');
 }
 
 function initSidebar() {
@@ -5214,14 +5398,14 @@ async function copyCurrentTrainingSeed() {
   if (!Number.isInteger(seed)) return;
   try {
     await navigator.clipboard.writeText(String(seed));
-    toast('Training seed copied.', 'success');
+    toast(t('Training seed copied.'), 'success');
   } catch (error) {
     const input = $('#trainingSeedInput');
     if (input) {
       input.value = String(seed);
       input.select();
     }
-    toast('Seed placed in the field. Copy it from there.', 'info');
+    toast(t('Seed placed in the field. Copy it from there.'), 'info');
   }
 }
 
@@ -5332,7 +5516,7 @@ function renderTrainingCards() {
   if (boardTarget) {
     boardTarget.innerHTML = boardCards.length
       ? boardCards.map(readOnlyCard).join('')
-      : '<span class="training-no-board">No board cards</span>';
+      : `<span class="training-no-board">${t('No board cards')}</span>`;
   }
   if ($('#trainingHandDisplay')) {
     $('#trainingHandDisplay').textContent = heroCards.length === 2
@@ -5369,9 +5553,11 @@ function updateAssistanceDisplay() {
         const mdf = ctx.mdf === null ? null : ctx.mdf.toFixed(1);
 
         if (callAmount !== null && callAmount > 0) {
-          hintText.textContent = `The nominal wager is ${facing.toFixed(1)}bb; Hero must call ${callAmount.toFixed(1)}bb in ${heroPos}. Pot odds require at least ${odds}% raw equity to call. MDF (${mdf}%) is a range-level reference, not a threshold for this hand. Consider position and blockers before choosing.`;
+          hintText.textContent = t('The nominal wager is {facing} bb; Hero must call {call} bb in {position}. Pot odds require at least {odds}% raw equity to call. MDF ({mdf}%) is a range-level reference, not a threshold for this hand. Consider position and blockers before choosing.', {
+            facing: facing.toFixed(1), call: callAmount.toFixed(1), position: heroPos, odds, mdf
+          });
         } else {
-          hintText.textContent = `Unopened/Checked spot in ${heroPos}. Consider positional advantage and range-building when deciding between opening/betting or checking.`;
+          hintText.textContent = t('Unopened/Checked spot in {position}. Consider positional advantage and range-building when deciding between opening/betting or checking.', { position: heroPos });
         }
       }
     }
@@ -5389,7 +5575,7 @@ function resetTrainingStudyHints(exercise = null) {
   if (button) {
     button.hidden = !exercise;
     button.disabled = !exercise;
-    button.textContent = 'Get a hint';
+    button.textContent = t('Get a hint');
   }
 }
 
@@ -5418,7 +5604,7 @@ function revealNextTrainingStudyHint() {
   if (button) {
     const complete = app.training.studyHintStep >= 3;
     button.disabled = complete;
-    button.textContent = complete ? 'All hints viewed' : 'Another hint';
+    button.textContent = t(complete ? 'All hints viewed' : 'Another hint');
   }
 }
 
@@ -5458,11 +5644,11 @@ function showTrainingSolution(solution) {
 
   const eyebrow = $('#trainingSolutionEyebrow');
   if (eyebrow) {
-    eyebrow.textContent = 'After-answer reference';
+    eyebrow.textContent = t('After-answer reference');
     eyebrow.dataset.i18n = 'After-answer reference';
   }
   const note = solutionDiv.querySelector?.('.training-reference-note');
-  if (note) note.textContent = 'Probabilities from the displayed strategy source; no EV is implied.';
+  if (note) note.textContent = t('Probabilities from the displayed strategy source; no EV is implied.');
 
   const actionsList = (Array.isArray(solution) ? solution : []).map((entry) => ({
     action: entry.action,
@@ -5501,16 +5687,16 @@ function showTrainingSolution(solution) {
       label.className = 'training-frequency-label';
       const name = document.createElement('span');
       name.className = 'training-frequency-name';
-      name.textContent = action.name;
+      name.textContent = t(action.name);
       const markers = document.createElement('span');
       markers.className = 'training-frequency-markers';
       if (isChosen) markers.append(Object.assign(document.createElement('em'), {
         className: 'training-frequency-marker training-frequency-marker--chosen',
-        textContent: 'Chosen'
+        textContent: t('Chosen')
       }));
       if (isBest) markers.append(Object.assign(document.createElement('em'), {
         className: 'training-frequency-marker training-frequency-marker--highest',
-        textContent: 'Highest'
+        textContent: t('Highest')
       }));
       label.append(name, markers);
       const track = document.createElement('span');
@@ -5520,7 +5706,7 @@ function showTrainingSolution(solution) {
       track.appendChild(fill);
       const value = document.createElement('strong');
       value.textContent = `${action.pct}%`;
-      row.setAttribute('aria-label', `${action.name}: ${action.pct}%${isChosen ? ', chosen action' : ''}${isBest ? ', highest frequency' : ''}`);
+      row.setAttribute('aria-label', `${t(action.name)}: ${action.pct}%${isChosen ? `, ${t('chosen action')}` : ''}${isBest ? `, ${t('highest frequency')}` : ''}`);
       row.append(label, track, value);
       rows.appendChild(row);
     });
@@ -5534,12 +5720,12 @@ function showTrainingSolution(solution) {
     const numEl = $(`#tf${i}num`);
 
     if (item) {
-      if (nameEl) nameEl.textContent = item.name;
+      if (nameEl) nameEl.textContent = t(item.name);
       if (fillEl) {
         fillEl.style.width = item.pct + '%';
         fillEl.style.removeProperty('background');
         fillEl.dataset.actionKind = item.kind;
-        fillEl.setAttribute('aria-label', `${item.name}: ${item.pct}%`);
+        fillEl.setAttribute('aria-label', `${t(item.name)}: ${item.pct}%`);
       }
       if (numEl) numEl.textContent = item.pct + '%';
       if (nameEl?.parentElement) nameEl.parentElement.style.display = 'flex';
@@ -5731,14 +5917,14 @@ function formatTrainingFacingCopy(context) {
   const callAmount = Number(context?.callAmountBb);
   const facingSize = Number(context?.facingSizeBb);
   if (Number.isFinite(callAmount) && callAmount > 0) {
-    const callCopy = `${callAmount.toFixed(1)} bb to call`;
+    const callCopy = t('{value} bb to call', { value: callAmount.toFixed(1) });
     return Number.isFinite(facingSize) && Math.abs(facingSize - callAmount) > 0.001
-      ? `Facing ${facingSize.toFixed(1)} bb Â· ${callCopy}`
+      ? t('Facing {value} bb · {callCopy}', { value: facingSize.toFixed(1), callCopy })
       : callCopy;
   }
   return context?.street === 'preflop' && context?.heroPosition !== 'BB'
-    ? '0.0 bb (Unopened)'
-    : '0.0 bb (Free Check)';
+    ? t('0.0 bb (Unopened)')
+    : t('0.0 bb (Free Check)');
 }
 
 function trainingActionLabel(type, decisionContext) {
@@ -5768,7 +5954,7 @@ function setTrainingWorkspaceState(state) {
   const stateBadge = $('#trainingStateBadge');
   const labels = { idle: 'Idle', generating: 'Generating', ready: 'Decision ready', feedback: 'Feedback', error: 'Error' };
   if (stateBadge) {
-    stateBadge.textContent = labels[state] || state;
+    stateBadge.textContent = t(labels[state] || state);
     stateBadge.className = `badge status-badge status-badge--${state === 'error' ? 'warning' : state === 'ready' ? 'available' : 'info'}`;
   }
   if ($('#trainingIdle')) $('#trainingIdle').hidden = state !== 'idle';
@@ -5781,10 +5967,10 @@ function setTrainingWorkspaceState(state) {
 function clearTrainingExercisePresentation() {
   resetTrainingStudyHints();
   if ($('#trainingExerciseTags')) $('#trainingExerciseTags').innerHTML = '';
-  if ($('#trainingActionHistory')) $('#trainingActionHistory').innerHTML = '<li class="is-empty">Generating a new canonical trajectory.</li>';
-  if ($('#trainingCurrentActor')) $('#trainingCurrentActor').textContent = 'No decision loaded.';
+  if ($('#trainingActionHistory')) $('#trainingActionHistory').innerHTML = `<li class="is-empty">${t('Generating a new canonical trajectory.')}</li>`;
+  if ($('#trainingCurrentActor')) $('#trainingCurrentActor').textContent = t('No decision loaded.');
   if ($('#trainingStrategySource')) {
-    $('#trainingStrategySource').textContent = 'Source pending';
+    $('#trainingStrategySource').textContent = t('Source pending');
     $('#trainingStrategySource').className = 'badge status-badge status-badge--info';
   }
   ['#trainingCurrentSeed', '#trainingExerciseId', '#trainingGenerationAttempts', '#trainingTrajectoryLength', '#trainingGenerationPolicy']
@@ -5803,7 +5989,10 @@ function renderTrainingPresentation(exercise) {
     presentation.tags.forEach((label) => {
       const tag = document.createElement('span');
       tag.className = 'badge training-curriculum-tag';
-      tag.textContent = label;
+      const tableSizeMatch = String(label).match(/^(\d+)-MAX$/);
+      tag.textContent = tableSizeMatch
+        ? t('analysis.value.tableSize', { count: tableSizeMatch[1] })
+        : t(label);
       tags.appendChild(tag);
     });
   }
@@ -5813,7 +6002,7 @@ function renderTrainingPresentation(exercise) {
     if (presentation.actionHistory.length === 0) {
       const empty = document.createElement('li');
       empty.className = 'is-empty';
-      empty.textContent = 'No voluntary action precedes this decision.';
+      empty.textContent = t('No voluntary action precedes this decision.');
       history.appendChild(empty);
     } else {
       presentation.actionHistory.forEach((entry) => {
@@ -5822,16 +6011,19 @@ function renderTrainingPresentation(exercise) {
         item.classList.toggle('is-hero', entry.isHero);
         const street = document.createElement('span');
         street.className = 'training-history-street';
-        street.textContent = entry.street;
+        street.textContent = t(entry.street.charAt(0).toUpperCase() + entry.street.slice(1));
         const action = document.createElement('span');
         action.className = 'training-history-action';
-        action.textContent = `${entry.actorLabel} · ${t(entry.actionLabel)}${entry.amountLabel ? ` ${entry.amountLabel}` : ''}`;
+        action.textContent = `${t(entry.actorLabel)} · ${t(entry.actionLabel)}${entry.amountLabel ? ` ${entry.amountLabel}` : ''}`;
         item.append(street, action);
         history.appendChild(item);
       });
     }
   }
-  if ($('#trainingCurrentActor')) $('#trainingCurrentActor').textContent = `${presentation.currentActor.label} (${presentation.currentActor.position || 'position unavailable'}) is next to act.`;
+  if ($('#trainingCurrentActor')) $('#trainingCurrentActor').textContent = t('{player} ({position}) is next to act.', {
+    player: presentation.currentActor.isHero ? t('Hero') : t(presentation.currentActor.label),
+    position: presentation.currentActor.position || t('position unavailable')
+  });
   if ($('#trainingCurrentSeed')) $('#trainingCurrentSeed').textContent = String(presentation.seed);
   if ($('#trainingExerciseId')) $('#trainingExerciseId').textContent = presentation.exerciseId;
   if ($('#trainingGenerationAttempts')) $('#trainingGenerationAttempts').textContent = presentation.metadata.attempts ?? '—';
@@ -5862,7 +6054,7 @@ function updateTrainingButtons(exercise) {
     const name = document.createElement('strong');
     name.textContent = label;
     const detail = document.createElement('small');
-    detail.textContent = sizing?.boundsLabel || sizing?.amountLabel || 'No size required';
+    detail.textContent = sizing?.boundsLabel || sizing?.amountLabel || t('No size required');
     copy.append(name, detail);
     const shortcut = document.createElement('kbd');
     shortcut.textContent = String(index + 1);
@@ -5879,7 +6071,7 @@ function renderTrainingSource(exercise) {
   if (!sourceElement) return;
   const label = strategySourceDisplayLabel(source);
   sourceElement.textContent = label;
-  sourceElement.title = `Strategy source: ${label}. Exercise seed ${exercise.seed}.`;
+  sourceElement.title = t('Strategy source: {source}. Exercise seed {seed}.', { source: label, seed: exercise.seed });
   const tone = source.startsWith('heuristic_') ? 'heuristic' : 'info';
   sourceElement.className = `badge status-badge status-badge--${tone}`;
 }
@@ -5890,15 +6082,15 @@ function renderTrainingGenerationError(error) {
   app.training.currentPresentation = null;
   setTrainingWorkspaceState('error');
   const errorCopy = {
-    invalid_config: ['Check the drill setup', 'One or more filters are outside the supported TrainingConfig range.'],
-    unsupported_target: ['Unsupported filter combination', 'Choose a street and decision target that belong to the same decision family.'],
-    generation_exhausted: ['No matching exercise found', 'The bounded generator could not reach this exact combination. Broaden a filter and try again.'],
-    decision_projection_unavailable: ['Decision context unavailable', 'The generated hand could not be projected safely for the strategy path.'],
-    strategy_unavailable: ['Strategy reference unavailable', 'The current strategy path did not return a gradeable StrategyResult.'],
-    service_unavailable: ['Training service unavailable', 'Reload Riverline and try again. The canonical Training bridge did not load.'],
-    internal_error: ['Training could not continue', 'An internal generation error occurred. Try another seed or adjust the drill.']
+    invalid_config: [t('Check the drill setup'), t('One or more filters are outside the supported TrainingConfig range.')],
+    unsupported_target: [t('Unsupported filter combination'), t('Choose a street and decision target that belong to the same decision family.')],
+    generation_exhausted: [t('No matching exercise found'), t('The bounded generator could not reach this exact combination. Broaden a filter and try again.')],
+    decision_projection_unavailable: [t('Decision context unavailable'), t('The generated hand could not be projected safely for the strategy path.')],
+    strategy_unavailable: [t('Strategy reference unavailable'), t('The current strategy path did not return a gradeable StrategyResult.')],
+    service_unavailable: [t('Training service unavailable'), t('Reload Riverline and try again. The canonical Training bridge did not load.')],
+    internal_error: [t('Training could not continue'), t('An internal generation error occurred. Try another seed or adjust the drill.')]
   };
-  const [title, message] = errorCopy[error?.code] || ['Exercise unavailable', 'Try again or adjust the drill.'];
+  const [title, message] = errorCopy[error?.code] || [t('Exercise unavailable'), t('Try again or adjust the drill.')];
   if ($('#trainingErrorTitle')) $('#trainingErrorTitle').textContent = title;
   if ($('#trainingErrorText')) $('#trainingErrorText').textContent = message;
   if ($('#trainingInstruction')) $('#trainingInstruction').textContent = message;
@@ -5907,13 +6099,33 @@ function renderTrainingGenerationError(error) {
   const nextBtn = $('#trainingNextHandBtn');
   if (nextBtn) {
     nextBtn.disabled = false;
-    nextBtn.textContent = 'Try again';
+    nextBtn.textContent = t('Try again');
   }
   const sourceElement = $('#trainingStrategySource');
   if (sourceElement) {
-    sourceElement.textContent = 'Source unavailable';
+    sourceElement.textContent = t('Source unavailable');
     sourceElement.className = 'badge status-badge status-badge--warning';
   }
+}
+
+function renderTrainingDecisionContextSummary(exercise) {
+  const context = exercise?.decisionContext;
+  if (!context) return;
+  const legacyContext = trainingContextPresentationAdapter(context);
+  const streetLabel = $('#trainingStreetLabel');
+  if (streetLabel) streetLabel.textContent = t(context.street.charAt(0).toUpperCase() + context.street.slice(1));
+  const potInfo = $('#trainingPotInfo');
+  if (potInfo) potInfo.style.display = 'flex';
+  if ($('#trainingPotVal')) $('#trainingPotVal').textContent = `${context.potBb.toFixed(1)} bb`;
+  if ($('#trainingFacingVal')) $('#trainingFacingVal').textContent = formatTrainingFacingCopy(context);
+  if ($('#trainingPotOddsVal')) $('#trainingPotOddsVal').textContent = legacyContext.potOdds === null ? '—' : `${legacyContext.potOdds.toFixed(1)}%`;
+  if ($('#trainingMdfVal')) $('#trainingMdfVal').textContent = legacyContext.mdf === null
+    ? t('— (range reference)')
+    : t('{value}% (range reference)', { value: legacyContext.mdf.toFixed(1) });
+  if ($('#trainingHeroPos')) $('#trainingHeroPos').value = context.heroPosition;
+  if ($('#trainingPositionVal')) $('#trainingPositionVal').textContent = context.heroPosition;
+  if ($('#trainingStackVal')) $('#trainingStackVal').textContent = `${context.stackBb.toFixed(1)}bb`;
+  if ($('#trainingTableVal')) $('#trainingTableVal').textContent = t('analysis.value.tableSize', { count: context.tableSize });
 }
 
 function renderCanonicalTrainingExercise(exercise) {
@@ -5931,19 +6143,7 @@ function renderCanonicalTrainingExercise(exercise) {
   app.training.lifecycle = 'ready';
   setTrainingWorkspaceState('ready');
   renderTrainingPresentation(exercise);
-
-  const streetLabel = $('#trainingStreetLabel');
-  if (streetLabel) streetLabel.textContent = context.street.toUpperCase();
-  const potInfo = $('#trainingPotInfo');
-  if (potInfo) potInfo.style.display = 'flex';
-  if ($('#trainingPotVal')) $('#trainingPotVal').textContent = `${context.potBb.toFixed(1)} bb`;
-  if ($('#trainingFacingVal')) $('#trainingFacingVal').textContent = formatTrainingFacingCopy(context);
-  if ($('#trainingPotOddsVal')) $('#trainingPotOddsVal').textContent = legacyContext.potOdds === null ? '—' : `${legacyContext.potOdds.toFixed(1)}%`;
-  if ($('#trainingMdfVal')) $('#trainingMdfVal').textContent = legacyContext.mdf === null ? '— (range reference)' : `${legacyContext.mdf.toFixed(1)}% (range reference)`;
-  if ($('#trainingHeroPos')) $('#trainingHeroPos').value = context.heroPosition;
-  if ($('#trainingPositionVal')) $('#trainingPositionVal').textContent = context.heroPosition;
-  if ($('#trainingStackVal')) $('#trainingStackVal').textContent = `${context.stackBb.toFixed(1)}bb`;
-  if ($('#trainingTableVal')) $('#trainingTableVal').textContent = `${context.tableSize}-max`;
+  renderTrainingDecisionContextSummary(exercise);
 
   const feedbackDiv = $('#trainingFeedback');
   if (feedbackDiv) feedbackDiv.hidden = true;
@@ -5956,7 +6156,7 @@ function renderCanonicalTrainingExercise(exercise) {
   const solutionDiv = $('#trainingSolution');
   if (solutionDiv) solutionDiv.hidden = true;
   if ($('#trainingSolutionEyebrow')) {
-    $('#trainingSolutionEyebrow').textContent = 'After-answer reference';
+    $('#trainingSolutionEyebrow').textContent = t('After-answer reference');
     $('#trainingSolutionEyebrow').dataset.i18n = 'After-answer reference';
   }
   const scoreBadge = $('#trainingScoreBadge');
@@ -5964,7 +6164,7 @@ function renderCanonicalTrainingExercise(exercise) {
   const nextBtn = $('#trainingNextHandBtn');
   if (nextBtn) {
     nextBtn.disabled = false;
-    nextBtn.textContent = 'Skip / next exercise';
+    nextBtn.textContent = t('Skip / next exercise');
   }
 
   updateTrainingButtons(exercise);
@@ -6001,9 +6201,9 @@ async function newRandomTrainingHand(options = {}) {
   app.training.hero = [];
   app.training.board = [];
   const handDisplay = $('#trainingHandDisplay');
-  if (handDisplay) handDisplay.textContent = 'GENERATING…';
+  if (handDisplay) handDisplay.textContent = t('GENERATING…');
   const instruction = $('#trainingInstruction');
-  if (instruction) instruction.textContent = 'Replaying a legal canonical hand trajectory.';
+  if (instruction) instruction.textContent = t('Replaying a legal canonical hand trajectory.');
   const guessButtons = $('#trainingGuessButtons');
   if (guessButtons) guessButtons.hidden = true;
   const nextBtn = $('#trainingNextHandBtn');
@@ -6033,29 +6233,29 @@ async function newRandomTrainingHand(options = {}) {
 function canonicalTrainingFeedback(evaluation, strategyResult) {
   const source = strategySourceDisplayLabel(strategyResult.source);
   const heuristic = String(strategyResult.source || '').startsWith('heuristic_');
-  const chosen = evaluation.mappedStrategyAction?.label
-    || trainingActionLabel(evaluation.chosenAction.type, app.training.currentExercise.decisionContext);
+  const chosen = t(evaluation.mappedStrategyAction?.label
+    || trainingActionLabel(evaluation.chosenAction.type, app.training.currentExercise.decisionContext));
   if (evaluation.grade === 'optimal') {
     return {
-      title: 'Optimal',
+      title: t('Optimal'),
       text: heuristic
-        ? `Within the current strategy estimate, ${chosen} is an optimal choice. Compare the displayed reference for the full mix.`
-        : `${source} supports ${chosen}. Compare the displayed reference for the full mix.`
+        ? t('Within the current strategy estimate, {action} is an optimal choice. Compare the displayed reference for the full mix.', { action: chosen })
+        : t('{source} supports {action}. Compare the displayed reference for the full mix.', { source, action: chosen })
     };
   }
   if (evaluation.grade === 'acceptable') {
     return {
-      title: 'Acceptable',
+      title: t('Acceptable'),
       text: heuristic
-        ? `Acceptable mixed-strategy choice. Within the current strategy estimate, ${chosen} remains close enough to the leading action.`
-        : `Acceptable mixed-strategy choice from ${source}. Compare the displayed reference for the full mix.`
+        ? t('Acceptable mixed-strategy choice. Within the current strategy estimate, {action} remains close enough to the leading action.', { action: chosen })
+        : t('Acceptable mixed-strategy choice from {source}. Compare the displayed reference for the full mix.', { source })
     };
   }
   return {
-    title: 'Mistake',
+    title: t('Mistake'),
     text: heuristic
-      ? `Within the current strategy estimate, ${chosen} is not the leading response. Compare the displayed reference before the next decision. No EV estimate is available unless the strategy source supplies one.`
-      : `${source} does not make ${chosen} the leading response. Compare the displayed reference before the next decision. No EV estimate is available unless the strategy source supplies one.`
+      ? t('Within the current strategy estimate, {action} is not the leading response. Compare the displayed reference before the next decision. No EV estimate is available unless the strategy source supplies one.', { action: chosen })
+      : t('{source} does not make {action} the leading response. Compare the displayed reference before the next decision. No EV estimate is available unless the strategy source supplies one.', { source, action: chosen })
   };
 }
 
@@ -6093,6 +6293,30 @@ function renderTrainingDecisionAnalysis(exercise) {
   return explanation;
 }
 
+function renderTrainingEvaluationSummary(evaluation, exercise) {
+  if (!evaluation || !exercise) return;
+  const scoreBadge = $('#trainingScoreBadge');
+  if (scoreBadge) {
+    scoreBadge.hidden = false;
+    scoreBadge.textContent = `${t(evaluation.accepted ? 'Accepted' : 'Review')} · ${app.training.stats.correct}/${app.training.stats.totalHands}`;
+    scoreBadge.dataset.accepted = String(evaluation.accepted);
+  }
+  const chosenLabel = t(trainingActionLabel(evaluation.chosenAction.type, exercise.decisionContext));
+  if ($('#trainingGradeBadge')) {
+    $('#trainingGradeBadge').textContent = t(evaluation.grade.charAt(0).toUpperCase() + evaluation.grade.slice(1));
+    $('#trainingGradeBadge').className = `badge training-grade-badge training-grade-badge--${evaluation.grade}`;
+  }
+  if ($('#trainingFeedback')) $('#trainingFeedback').dataset.grade = evaluation.grade;
+  if ($('#trainingChosenAction')) $('#trainingChosenAction').textContent = chosenLabel;
+  if ($('#trainingChosenProbability')) $('#trainingChosenProbability').textContent = `${(evaluation.chosenProbability * 100).toFixed(0)}%`;
+  if ($('#trainingBestProbability')) $('#trainingBestProbability').textContent = `${t(evaluation.bestStrategyAction.label)} · ${(evaluation.bestProbability * 100).toFixed(0)}%`;
+  const evAvailable = evaluation.explanationData.evAvailable;
+  if ($('#trainingEvFact')) $('#trainingEvFact').hidden = !evAvailable;
+  if (evAvailable && $('#trainingEvValue')) {
+    $('#trainingEvValue').textContent = `${evaluation.explanationData.chosenEvBb.toFixed(2)} bb ${t('vs')} ${evaluation.explanationData.bestEvBb.toFixed(2)} bb`;
+  }
+}
+
 function handleTrainingGuess(userAction) {
   const exercise = app.training.currentExercise;
   if (app.training.lifecycle !== 'ready' || !exercise) return;
@@ -6116,37 +6340,18 @@ function handleTrainingGuess(userAction) {
   if (window.SoundFX) window.SoundFX.playTrainingResult(evaluation.grade);
   updateTrainingStats();
 
-  const scoreBadge = $('#trainingScoreBadge');
-  if (scoreBadge) {
-    scoreBadge.hidden = false;
-    scoreBadge.textContent = `${evaluation.accepted ? 'Accepted' : 'Review'} · ${app.training.stats.correct}/${app.training.stats.totalHands}`;
-    scoreBadge.dataset.accepted = String(evaluation.accepted);
-  }
+  renderTrainingEvaluationSummary(evaluation, exercise);
   showTrainingFeedback(
     canonicalTrainingFeedback(evaluation, exercise.strategyResult),
     evaluation.accepted
   );
-  const chosenLabel = trainingActionLabel(evaluation.chosenAction.type, exercise.decisionContext);
-  if ($('#trainingGradeBadge')) {
-    $('#trainingGradeBadge').textContent = evaluation.grade.charAt(0).toUpperCase() + evaluation.grade.slice(1);
-    $('#trainingGradeBadge').className = `badge training-grade-badge training-grade-badge--${evaluation.grade}`;
-  }
-  if ($('#trainingFeedback')) $('#trainingFeedback').dataset.grade = evaluation.grade;
-  if ($('#trainingChosenAction')) $('#trainingChosenAction').textContent = chosenLabel;
-  if ($('#trainingChosenProbability')) $('#trainingChosenProbability').textContent = `${(evaluation.chosenProbability * 100).toFixed(0)}%`;
-  if ($('#trainingBestProbability')) $('#trainingBestProbability').textContent = `${evaluation.bestStrategyAction.label} · ${(evaluation.bestProbability * 100).toFixed(0)}%`;
-  const evAvailable = evaluation.explanationData.evAvailable;
-  if ($('#trainingEvFact')) $('#trainingEvFact').hidden = !evAvailable;
-  if (evAvailable && $('#trainingEvValue')) {
-    $('#trainingEvValue').textContent = `${evaluation.explanationData.chosenEvBb.toFixed(2)}bb vs ${evaluation.explanationData.bestEvBb.toFixed(2)}bb`;
-  }
   renderTrainingDecisionAnalysis(exercise);
   showTrainingSolution(app.training.currentSolution);
   const guessButtons = $('#trainingGuessButtons');
   if (guessButtons) guessButtons.hidden = true;
   const nextBtn = $('#trainingNextHandBtn');
   if (nextBtn) {
-    nextBtn.textContent = 'Next exercise';
+    nextBtn.textContent = t('Next exercise');
   }
   app.training.lifecycle = 'feedback';
   setTrainingWorkspaceState('feedback');

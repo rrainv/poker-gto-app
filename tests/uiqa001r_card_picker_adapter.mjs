@@ -161,7 +161,7 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
     const getSuit = (card) => SUITS.find((suit) => suit.id === (card && card[1]));
     const displayCardRank = (rank) => rank === 'T' && app.settings.cardRankStyle === 'full-ten' ? '10' : rank;
     const displayCard = (card) => card ? displayCardRank(card[0]) + getSuit(card).symbol : '';
-    const t = (value) => value;
+    const t = (value, variables = {}) => String(value).replace(/\\{(\\w+)\\}/g, (_, key) => variables[key] ?? '{' + key + '}');
     function isHandMode() { return app.playbookMode === PLAYBOOK_MODES.HAND; }
     function equityPlayerLabel(index) { return index === 0 ? 'Hero' : 'Player ' + (index + 1); }
     function callPlaybookStateBridge() { return null; }

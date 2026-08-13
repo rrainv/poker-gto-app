@@ -52,7 +52,7 @@ test('Matrix uses current context, labels unavailable cells, and discloses fallb
   assert.match(matrix, /strategyProvider\.resolve\(cellDecisionContext\)/);
   assert.match(matrix, /actions = strategyResultPresentationActions\(cellStrategyResult\)/);
   assert.doesNotMatch(matrix, /calculatePreflopFallbackStrategy|evaluatePostflopHandStrength/);
-  assert.match(matrix, /actions\.length \? `\$\{val \|\| 0\}%` : 'Unavailable'/);
+  assert.match(matrix, /actions\.length \? `\$\{val \|\| 0\}%` : t\('Unavailable'\)/);
   assert.match(matrix, /strategySourceDisplayLabel\(matrixSource\)/);
   assert.match(matrix, /provider-backed postflop Matrix deferred/);
 });

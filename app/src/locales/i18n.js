@@ -1905,6 +1905,19 @@ const appTranslations = {
   }
 };
 
+// I18N-001 modern product catalog. This remains data-only; this module is the
+// sole runtime translation/lifecycle authority.
+if (window.riverlineProductTranslations) {
+  Object.entries(window.riverlineProductTranslations).forEach(([language, entries]) => {
+    if (appTranslations[language]) Object.assign(appTranslations[language], entries);
+  });
+}
+if (window.riverlineAnalysisTranslations) {
+  Object.entries(window.riverlineAnalysisTranslations).forEach(([language, entries]) => {
+    if (appTranslations[language]) Object.assign(appTranslations[language], entries);
+  });
+}
+
 // DESIGN-008 static Training workspace copy. Dynamic exercise facts remain
 // presentation data and are translated only where an existing poker term is available.
 const trainingWorkspaceTranslations = {
@@ -1980,121 +1993,179 @@ Object.entries(trainingWorkspaceTranslations).forEach(([language, entries]) => {
 });
 
 window.appTranslations = appTranslations;
-
-window.appLang = localStorage.getItem('appLang') || 'en';
-
-
-
-function t(key, count) {
-    if (!window.appTranslations) return key;
-    var lang = window.appLang || 'en';
-    var dict = window.appTranslations[lang] || {};
-    
-    if (typeof count === 'number') {
-        try {
-            var pr = new Intl.PluralRules(lang);
-            var rule = pr.select(count);
-            var pluralKey = key + '_' + rule;
-            if (dict[pluralKey]) {
-                return dict[pluralKey].replace('{X}', count);
-            }
-        } catch (e) {}
-        
-        var translated = dict[key] || key;
-        return translated.replace('{X}', count);
-    }
-
-    return dict[key] || key;
+const I18N_STORAGE_KEY = 'language';
+const I18N_LEGACY_STORAGE_KEY = 'appLang';
+const I18N_LANGUAGES = new Set(['en', 'ru', 'he']);
+const i18nDiagnostics = {
+  missing: new Set(),
+  fallbacks: new Set()
 };
+let i18nObserver = null;
+let i18nInitialized = false;
 
-
-
-function t(key, count) {
-    if (!window.appTranslations) return key;
-    var lang = window.appLang || 'en';
-    var dict = window.appTranslations[lang] || {};
-    if (typeof count === 'number') {
-        try {
-            var pr = new Intl.PluralRules(lang);
-            var rule = pr.select(count);
-            var pluralKey = key + '_' + rule;
-            if (dict[pluralKey]) {
-                return dict[pluralKey].replace('{count}', count);
-            }
-        } catch (e) {}
-    }
-    return dict[key] || key;
+function normalizeLanguage(language) {
+  const normalized = String(language || '').toLocaleLowerCase().split('-')[0];
+  return I18N_LANGUAGES.has(normalized) ? normalized : 'en';
 }
 
-// Ensure `t` is available globally for inline scripts (optional, but good for backward compatibility during transition)
-window.t = t;
+function resolveTranslation(key, language = window.appLang || 'en') {
+  const lang = normalizeLanguage(language);
+  const dictionary = window.appTranslations?.[lang] || {};
+  if (Object.prototype.hasOwnProperty.call(dictionary, key)) {
+    return { value: dictionary[key], language: lang, fallback: false, missing: false };
+  }
+  const english = window.appTranslations?.en || {};
+  if (Object.prototype.hasOwnProperty.call(english, key)) {
+    i18nDiagnostics.fallbacks.add(`${lang}:${key}`);
+    return { value: english[key], language: 'en', fallback: lang !== 'en', missing: false };
+  }
+  i18nDiagnostics.missing.add(`${lang}:${key}`);
+  return { value: key, language: 'en', fallback: lang !== 'en', missing: true };
+}
 
-// Observer Design Pattern for Localization
-let observer;
-let isTranslating = false;
+function interpolateTranslation(value, parameters = {}) {
+  return String(value).replace(/\{([A-Za-z0-9_]+)\}/g, (token, name) => (
+    Object.prototype.hasOwnProperty.call(parameters, name) ? String(parameters[name]) : token
+  ));
+}
+
+function t(key, parameters) {
+  const lang = normalizeLanguage(window.appLang || 'en');
+  const params = typeof parameters === 'number'
+    ? { count: parameters, X: parameters }
+    : (parameters && typeof parameters === 'object' ? parameters : {});
+  let resolvedKey = key;
+  if (typeof parameters === 'number') {
+    try {
+      const pluralKey = `${key}_${new Intl.PluralRules(lang).select(parameters)}`;
+      if (Object.prototype.hasOwnProperty.call(window.appTranslations?.[lang] || {}, pluralKey)) {
+        resolvedKey = pluralKey;
+      }
+    } catch (_) {}
+  }
+  return interpolateTranslation(resolveTranslation(resolvedKey, lang).value, params);
+}
+
+function applyFallbackDirection(element, resolution) {
+  if (!element?.setAttribute) return;
+  if (normalizeLanguage(window.appLang) === 'he' && resolution.fallback) {
+    element.setAttribute('data-i18n-fallback', 'ltr');
+    element.setAttribute('lang', 'en');
+    element.setAttribute('dir', 'ltr');
+    return;
+  }
+  if (element.getAttribute?.('data-i18n-fallback') === 'ltr') {
+    element.removeAttribute('data-i18n-fallback');
+    element.removeAttribute('lang');
+    element.removeAttribute('dir');
+  }
+}
+
+function translateElement(element) {
+  if (!element?.hasAttribute) return;
+  if (element.hasAttribute('data-i18n')) {
+    const key = element.getAttribute('data-i18n');
+    const resolution = resolveTranslation(key);
+    element.textContent = resolution.value;
+    applyFallbackDirection(element, resolution);
+  }
+  const attributes = [
+    ['data-i18n-placeholder', 'placeholder'],
+    ['data-i18n-title', 'title'],
+    ['data-i18n-aria-label', 'aria-label'],
+    ['data-i18n-label', 'label']
+  ];
+  attributes.forEach(([keyAttribute, targetAttribute]) => {
+    if (!element.hasAttribute(keyAttribute)) return;
+    const resolution = resolveTranslation(element.getAttribute(keyAttribute));
+    element.setAttribute(targetAttribute, resolution.value);
+  });
+}
 
 function translateNode(node) {
-    if (node.nodeType === Node.ELEMENT_NODE) {
-        if (node.hasAttribute('data-i18n')) {
-            const key = node.getAttribute('data-i18n');
-            node.textContent = t(key);
-        }
-        if (node.hasAttribute('placeholder') && node.hasAttribute('data-i18n-placeholder')) {
-            const key = node.getAttribute('data-i18n-placeholder');
-            node.setAttribute('placeholder', t(key));
-        }
-        // Recursively translate children
-        node.querySelectorAll('[data-i18n], [data-i18n-placeholder]').forEach(child => translateNode(child));
-    }
+  if (!node || node.nodeType !== 1) return;
+  const elements = [node];
+  if (typeof node.querySelectorAll === 'function') {
+    elements.push(...node.querySelectorAll('[data-i18n], [data-i18n-placeholder], [data-i18n-title], [data-i18n-aria-label], [data-i18n-label]'));
+  }
+  elements.forEach(translateElement);
+}
+
+function setDocumentLanguage(language) {
+  const lang = normalizeLanguage(language);
+  window.appLang = lang;
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
+  const select = document.getElementById('langToggle');
+  if (select) select.value = lang;
+  return lang;
+}
+
+function setLocalizedText(element, key, parameters) {
+  if (!element) return '';
+  const resolution = resolveTranslation(key);
+  const value = interpolateTranslation(resolution.value, parameters || {});
+  element.textContent = value;
+  applyFallbackDirection(element, resolution);
+  return value;
+}
+
+function getI18nDiagnostics() {
+  return {
+    language: normalizeLanguage(window.appLang),
+    missing: [...i18nDiagnostics.missing].sort(),
+    fallbacks: [...i18nDiagnostics.fallbacks].sort()
+  };
 }
 
 function initI18n() {
-    const savedLang = localStorage.getItem('language');
-    if (savedLang) {
-        window.appLang = savedLang;
-    } else {
-        const browserLang = navigator.language || navigator.userLanguage;
-        window.appLang = (browserLang && browserLang.startsWith('ru')) ? 'ru' : 'en';
-    }
-
-    document.documentElement.lang = window.appLang;
-    document.documentElement.dir = (window.appLang === 'he') ? 'rtl' : 'ltr';
-
-    const sel = document.getElementById('langToggle');
-    if (sel) sel.value = window.appLang;
-
-    // Initial translation of the DOM
-    translateNode(document.body);
-
-    // Initialize MutationObserver
-    observer = new MutationObserver((mutations) => {
-        if (isTranslating) return; // Prevent infinite loops
-        isTranslating = true;
-        
-        mutations.forEach(mutation => {
-            if (mutation.type === 'childList') {
-                mutation.addedNodes.forEach(node => translateNode(node));
-            }
-        });
-        
-        isTranslating = false;
+  if (i18nInitialized || !document.body) return;
+  const stored = localStorage.getItem(I18N_STORAGE_KEY)
+    || localStorage.getItem(I18N_LEGACY_STORAGE_KEY);
+  const browserLanguage = typeof navigator === 'undefined'
+    ? 'en'
+    : (navigator.language || navigator.userLanguage || 'en');
+  const lang = setDocumentLanguage(stored || browserLanguage);
+  localStorage.setItem(I18N_STORAGE_KEY, lang);
+  localStorage.setItem(I18N_LEGACY_STORAGE_KEY, lang);
+  translateNode(document.body);
+  if (typeof MutationObserver === 'function') {
+    i18nObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList') mutation.addedNodes.forEach(translateNode);
+      });
     });
-
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        characterData: false // We only care about new nodes/elements
-    });
+    i18nObserver.observe(document.body, { childList: true, subtree: true });
+  }
+  i18nInitialized = true;
 }
 
-// Expose setLanguage for UI
-function setLanguage(lang) {
-    window.appLang = lang;
-    localStorage.setItem('language', lang);
-    document.documentElement.lang = lang;
-    document.documentElement.dir = (lang === 'he') ? 'rtl' : 'ltr';
-    translateNode(document.body);
+function setLanguage(language) {
+  const lang = setDocumentLanguage(language);
+  localStorage.setItem(I18N_STORAGE_KEY, lang);
+  localStorage.setItem(I18N_LEGACY_STORAGE_KEY, lang);
+  if (document.body) translateNode(document.body);
+  if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+    window.dispatchEvent(new CustomEvent('riverline:languagechange', { detail: { language: lang } }));
+  }
+  return lang;
 }
 
+window.appLang = normalizeLanguage(
+  localStorage.getItem(I18N_STORAGE_KEY) || localStorage.getItem(I18N_LEGACY_STORAGE_KEY) || 'en'
+);
+window.t = t;
+window.setLocalizedText = setLocalizedText;
+window.setLanguage = setLanguage;
+window.RiverlineI18n = Object.freeze({
+  schemaVersion: 'riverline-i18n/v1',
+  init: initI18n,
+  setLanguage,
+  translateNode,
+  resolveTranslation,
+  setLocalizedText,
+  getDiagnostics: getI18nDiagnostics
+});
 
-window.appTranslations = appTranslations;
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initI18n, { once: true });
+else initI18n();

@@ -7796,6 +7796,38 @@ button.rail-utility { width: 100%; cursor: pointer; }
 [dir="rtl"] .equity-board-cards,
 [dir="rtl"] .equity-dead-cards { direction: ltr; }
 
+/* I18N-001: component-level bidi isolation for invariant poker/data tokens. */
+.i18n-ltr-isolate,
+.poker-data-token,
+.equity-board-order,
+.equity-readonly-cards,
+.analysis-card-token,
+.training-card-row,
+.matrix-wrap,
+.strategy-grid {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+[data-i18n-fallback="ltr"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: start;
+}
+
+[dir="rtl"] .equity-board-order,
+[dir="rtl"] .equity-board-cards,
+[dir="rtl"] .equity-dead-cards,
+[dir="rtl"] .equity-readonly-cards {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+[dir="rtl"] .poker-data-token {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .riverline-shell,
   .rail-collapse-icon,
