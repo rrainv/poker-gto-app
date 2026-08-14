@@ -17,7 +17,8 @@ app.commandLine.appendSwitch('disable-gpu-sandbox');
 app.commandLine.appendSwitch('headless');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
-const artifactRoot = path.join(repoRoot, 'tests', 'artifacts', 'range-cal001a');
+const artifactRoot = process.env.RIVERLINE_RANGE_CAL_ARTIFACT_ROOT
+  || path.join(repoRoot, 'tests', 'artifacts', 'range-cal001a');
 const windows = new Set();
 const rendererErrors = [];
 let server;
@@ -155,6 +156,24 @@ async function inspectState(win, label) {
       rect: [element.getBoundingClientRect().left, element.getBoundingClientRect().right],
     }));
     const modalRect = visible(modal) ? modal.querySelector('.calibration-profile-modal')?.getBoundingClientRect() : null;
+    const profileModal = modal?.querySelector('.calibration-profile-modal');
+    const profileBody = profileModal?.querySelector('.modal-body');
+    const profileFooter = profileModal?.querySelector('.calibration-profile-modal-actions');
+    const modeNameFields = profileModal?.querySelector('.calibration-mode-name-fields');
+    const modeLegend = modeNameFields?.querySelector('legend');
+    const modeNamePanel = modeNameFields?.querySelector('.calibration-mode-name-panel');
+    const profileRect = profileModal?.getBoundingClientRect();
+    const bodyRect = profileBody?.getBoundingClientRect();
+    const footerRect = profileFooter?.getBoundingClientRect();
+    const legendRect = modeLegend?.getBoundingClientRect();
+    const panelRect = modeNamePanel?.getBoundingClientRect();
+    const modalOverflows = profileModal ? [...profileModal.querySelectorAll('button, input, select, textarea, legend, p, h2, small, span')]
+      .filter(visible)
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.left < -1 || rect.right > innerWidth + 1 || rect.top < -1 || rect.bottom > innerHeight + 1;
+      })
+      .map((element) => element.id || element.tagName) : [];
     const modeButtons = [...document.querySelectorAll('#calibrationModeOptions [role="radio"]')];
     const dataToken = document.querySelector('#calibrationPreviewSpot');
     return {
@@ -171,6 +190,16 @@ async function inspectState(win, label) {
       modalOpen: Boolean(modal?.classList.contains('show')),
       modalRect: modalRect ? [modalRect.left, modalRect.top, modalRect.right, modalRect.bottom] : null,
       modalFullyInViewport: modalRect ? modalRect.left >= 0 && modalRect.top >= 0 && modalRect.right <= innerWidth && modalRect.bottom <= innerHeight : null,
+      profileEditorGeometry: profileRect ? {
+        fieldsetBorderTop: getComputedStyle(modeNameFields).borderTopWidth,
+        legendClearsModePanel: Boolean(legendRect && panelRect) && legendRect.bottom <= panelRect.top + 1,
+        footerBelowBody: Boolean(bodyRect && footerRect) && footerRect.top >= bodyRect.bottom - 1,
+        footerReachable: Boolean(profileRect && footerRect) && footerRect.bottom <= profileRect.bottom + 1,
+        bodyScroll: [profileBody.clientHeight, profileBody.scrollHeight, getComputedStyle(profileBody).overflowY],
+        modeInputCount: profileModal.querySelectorAll('.calibration-mode-name-inputs input').length,
+        modeValueLengths: [1, 2, 3].map((index) => document.querySelector('#calibrationModeName' + index)?.value.length || 0),
+        modalOverflows,
+      } : null,
       profileName: document.querySelector('#calibrationProfileName')?.textContent || null,
       modeNames: modeButtons.map((button) => button.textContent),
       modeCount: modeButtons.length,
@@ -193,6 +222,15 @@ async function capture(win, id, label) {
   const fileName = `${id}.png`;
   fs.writeFileSync(path.join(artifactRoot, fileName), image.toPNG());
   return { ...state, screenshot: `tests/artifacts/range-cal001a/${fileName}` };
+}
+
+async function captureProfileEditor(win, id, label) {
+  await click(win, '#calibrationEditProfile');
+  await waitFor(win, "document.querySelector('#calibrationProfileModal')?.classList.contains('show')");
+  const state = await capture(win, id, label);
+  await click(win, '#calibrationProfileCancel');
+  await waitFor(win, "!document.querySelector('#calibrationProfileModal')?.classList.contains('show')");
+  return state;
 }
 
 async function runVisualAudit() {
@@ -242,24 +280,40 @@ async function runVisualAudit() {
     '#calibrationModeName2': 'Patient adjustment when the table gets splashy',
     '#calibrationModeName3': 'Maximum pressure against overly cautious regulars',
   });
+  states.push(await capture(win, 'M-profile-editor-long-1920x1080-en', 'M. Profile editor with long names'));
   await submitProfileForm(win);
   await waitFor(win, "!document.querySelector('#toast')?.classList.contains('show')", 5_000);
   states.push(await capture(win, 'D-long-names-1920x1080-en', 'D. Long profile and mode names'));
 
   await setViewport(win, 1024, 768);
+  states.push(await captureProfileEditor(win, 'N-profile-editor-long-1024x768-en', 'N. Profile editor at 1024×768'));
   states.push(await capture(win, 'F-small-desktop-1024x768-en', 'F. Small desktop width'));
+
+  await setViewport(win, 1280, 720);
+  states.push(await captureProfileEditor(win, 'O-profile-editor-long-1280x720-en', 'O. Profile editor at 1280×720'));
+
+  await setViewport(win, 2560, 1600);
+  states.push(await captureProfileEditor(win, 'P-profile-editor-long-2560x1600-en', 'P. Profile editor at 2560×1600'));
 
   await setViewport(win, 1440, 900);
   await setLanguage(win, 'he');
   states.push(await capture(win, 'G-hebrew-rtl-1440x900', 'G. Hebrew RTL'));
+  states.push(await captureProfileEditor(win, 'Q-profile-editor-hebrew-rtl-1440x900', 'Q. Profile editor Hebrew RTL'));
 
   await setLanguage(win, 'ru');
   states.push(await capture(win, 'H-russian-1440x900', 'H. Russian'));
+  states.push(await captureProfileEditor(win, 'R-profile-editor-russian-1440x900', 'R. Profile editor Russian'));
 
   await setViewport(win, 1920, 1080);
   await setLanguage(win, 'en');
   await setTheme(win, 'daylight');
   states.push(await capture(win, 'I-daylight-theme-1920x1080-en', 'I. Alternate Riverline theme'));
+  states.push(await captureProfileEditor(win, 'S-profile-editor-daylight-1920x1080-en', 'S. Profile editor Daylight theme'));
+  win.webContents.setZoomFactor(1.25);
+  await settle(win);
+  states.push(await captureProfileEditor(win, 'T-profile-editor-125pct-1920x1080-en', 'T. Profile editor at 125% zoom'));
+  win.webContents.setZoomFactor(1);
+  await settle(win);
 
   await win.webContents.executeJavaScript(`(() => {
     const stack = document.querySelector('#calibrationEffectiveStack');
@@ -351,6 +405,14 @@ function collectFindings(report) {
   for (const state of report.visual.states) {
     if (state.documentOverflowX > 1 || state.horizontalOverflows.length) findings.push(`${state.label}: horizontal overflow detected.`);
     if (state.modalOpen && !state.modalFullyInViewport) findings.push(`${state.label}: modal is not fully in the viewport.`);
+    if (state.profileEditorGeometry) {
+      const geometry = state.profileEditorGeometry;
+      if (geometry.fieldsetBorderTop !== '0px' || !geometry.legendClearsModePanel) findings.push(`${state.label}: mode legend still collides with a border.`);
+      if (!geometry.footerBelowBody || !geometry.footerReachable) findings.push(`${state.label}: profile-editor footer is not reachable.`);
+      if (geometry.modeInputCount !== 3) findings.push(`${state.label}: profile-editor mode fields are invalid.`);
+      if (state.state === 'configured' && geometry.modeValueLengths.some((length) => length === 0)) findings.push(`${state.label}: profile-editor mode fields lost user data.`);
+      if (geometry.modalOverflows.length) findings.push(`${state.label}: profile-editor control overflow detected.`);
+    }
     if (state.state === 'configured' && (state.modeCount !== 3 || state.activeModeCount !== 1)) findings.push(`${state.label}: mode selection invariant failed.`);
     if (state.state === 'configured' && state.startQuestionsDisabled) findings.push(`${state.label}: question action is unexpectedly disabled.`);
   }

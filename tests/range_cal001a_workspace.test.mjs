@@ -9,6 +9,7 @@ const bootstrap = fs.readFileSync(new URL('../app/src/application/range-calibrat
 const workspace = fs.readFileSync(new URL('../app/src/application/range-calibration-workspace.mjs', import.meta.url), 'utf8');
 const service = fs.readFileSync(new URL('../app/src/application/range-calibration-service.mjs', import.meta.url), 'utf8');
 const browserStorage = fs.readFileSync(new URL('../app/src/personal-strategy/browser-storage.mjs', import.meta.url), 'utf8');
+const visualAudit = fs.readFileSync(new URL('./tooling/audit_range_cal001a.cjs', import.meta.url), 'utf8');
 
 test('Range Calibration is reachable without reordering or removing existing workspaces', () => {
   const modes = [...html.matchAll(/data-mode="([^"]+)"/g)].map((match) => match[1]);
@@ -33,6 +34,39 @@ test('profile editor requires exactly three text-named modes and contains no int
   assert.equal((modal.match(/id="calibrationModeName[123]"/g) || []).length, 3);
   assert.doesNotMatch(modal, /type="range"|styleValue|interpolation|Tight 0|Loose 100/i);
   assert.match(service, /Mode names must be different within one profile/);
+});
+
+test('profile editor gives the semantic mode legend its own flow space above the bordered input group', () => {
+  const modal = html.slice(html.indexOf('id="calibrationProfileModalTemplate"'), html.indexOf('</template>', html.indexOf('id="calibrationProfileModalTemplate"')));
+  assert.match(modal, /<fieldset class="calibration-mode-name-fields">[\s\S]*?<legend[^>]*>Your three strategy modes<\/legend>[\s\S]*?<div class="calibration-mode-name-panel">/);
+  assert.match(modal, /<div class="calibration-mode-name-inputs">[\s\S]*?calibrationModeName1[\s\S]*?calibrationModeName2[\s\S]*?calibrationModeName3/);
+  assert.match(css, /\.calibration-mode-name-fields \{[^}]*padding: 0;[^}]*border: 0;/);
+  assert.match(css, /\.calibration-mode-name-panel \{[^}]*padding: clamp\([^}]*border: 1px solid var\(--border-subtle\)/);
+  assert.match(css, /\.calibration-mode-name-inputs \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.calibration-mode-name-inputs input \{[^}]*min-inline-size: 0;[^}]*text-overflow: ellipsis;/);
+});
+
+test('profile editor keeps its footer usable by scrolling only the form body when viewport height is constrained', () => {
+  assert.match(css, /\.calibration-profile-modal \.modal-body \{[^}]*min-block-size: 0;[^}]*flex: 1 1 auto;[^}]*overflow-y: auto;[^}]*overscroll-behavior: contain;/);
+  assert.match(css, /\.calibration-profile-modal-actions \{[^}]*flex: 0 0 auto;[^}]*justify-content: flex-end;/);
+  assert.match(css, /@media \(max-width: 620px\)[\s\S]*?\.calibration-mode-name-inputs \{ grid-template-columns: minmax\(0, 1fr\); \}/);
+});
+
+test('focused renderer audit covers long-name modal geometry across desktop sizes, RTL, locales, theme, and zoom', () => {
+  assert.match(visualAudit, /RIVERLINE_RANGE_CAL_ARTIFACT_ROOT/);
+  for (const captureId of [
+    'M-profile-editor-long-1920x1080-en',
+    'N-profile-editor-long-1024x768-en',
+    'O-profile-editor-long-1280x720-en',
+    'P-profile-editor-long-2560x1600-en',
+    'Q-profile-editor-hebrew-rtl-1440x900',
+    'R-profile-editor-russian-1440x900',
+    'S-profile-editor-daylight-1920x1080-en',
+    'T-profile-editor-125pct-1920x1080-en',
+  ]) assert.match(visualAudit, new RegExp(captureId));
+  assert.match(visualAudit, /fieldsetBorderTop !== '0px' \|\| !geometry\.legendClearsModePanel/);
+  assert.match(visualAudit, /!geometry\.footerBelowBody \|\| !geometry\.footerReachable/);
+  assert.match(visualAudit, /geometry\.modalOverflows\.length/);
 });
 
 test('context builder remains truthful while the bounded RFI question loop is operational', () => {

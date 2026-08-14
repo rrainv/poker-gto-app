@@ -1925,10 +1925,14 @@
         </label>
         <fieldset class="calibration-mode-name-fields">
           <legend data-i18n="Your three strategy modes">Your three strategy modes</legend>
-          <p data-i18n="Use names that describe distinct ways you play. There are no numeric style values.">Use names that describe distinct ways you play. There are no numeric style values.</p>
-          <label for="calibrationModeName1"><span data-i18n="Mode 1 name">Mode 1 name</span><input id="calibrationModeName1" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
-          <label for="calibrationModeName2"><span data-i18n="Mode 2 name">Mode 2 name</span><input id="calibrationModeName2" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
-          <label for="calibrationModeName3"><span data-i18n="Mode 3 name">Mode 3 name</span><input id="calibrationModeName3" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
+          <div class="calibration-mode-name-panel">
+            <p data-i18n="Use names that describe distinct ways you play. There are no numeric style values.">Use names that describe distinct ways you play. There are no numeric style values.</p>
+            <div class="calibration-mode-name-inputs">
+              <label for="calibrationModeName1"><span data-i18n="Mode 1 name">Mode 1 name</span><input id="calibrationModeName1" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
+              <label for="calibrationModeName2"><span data-i18n="Mode 2 name">Mode 2 name</span><input id="calibrationModeName2" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
+              <label for="calibrationModeName3"><span data-i18n="Mode 3 name">Mode 3 name</span><input id="calibrationModeName3" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
+            </div>
+          </div>
         </fieldset>
         <p id="calibrationProfileFormError" class="calibration-form-error" role="alert" hidden></p>
       </div>
