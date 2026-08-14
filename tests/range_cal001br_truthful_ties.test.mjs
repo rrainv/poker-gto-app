@@ -6,6 +6,7 @@ import {
   DIRECT_COMPARISON_RELATIONS,
   PERSONAL_STRATEGY_STORAGE_KEY,
   createLocalOwnerRef,
+  createMemoryPersonalStrategyDatabase,
   createPersonalStrategyRepository,
   createRangeObservation,
   createRfiCalibrationContext,
@@ -23,7 +24,7 @@ const T3 = '2026-08-14T12:03:00.000Z';
 const OWNER = createLocalOwnerRef('truthful-tie-owner');
 
 class MemoryStorage {
-  constructor() { this.values = new Map(); }
+  constructor() { this.values = new Map(); this.database = createMemoryPersonalStrategyDatabase(); }
   getItem(key) { return this.values.get(key) ?? null; }
   setItem(key, value) { this.values.set(key, String(value)); }
 }
@@ -48,9 +49,11 @@ function observation({ id, dominantAction, frequencies = null, supersedesObserva
   });
 }
 
-function configuredRepository(storage, now = T3) {
-  const repository = createPersonalStrategyRepository({ storage, ownerRef: OWNER, clock: () => now });
-  repository.saveProfileBundle(createStrategyProfileBundle({
+async function configuredRepository(storage, now = T3) {
+  const repository = createPersonalStrategyRepository({
+    database: storage.database, legacyStorage: storage, ownerRef: OWNER, clock: () => now,
+  });
+  await repository.saveProfileBundle(createStrategyProfileBundle({
     profileId: 'profile-1',
     ownerRef: OWNER,
     displayName: 'Home Game',
@@ -115,9 +118,9 @@ test('RangeObservation v1 distinguishes quick, pure, unique-dominant, and tied e
   }), /dominantAction/);
 });
 
-test('repository persists, revises, exports, and imports tied and non-tied mixes', () => {
+test('repository persists, revises, exports, and imports tied and non-tied mixes', async () => {
   const storage = new MemoryStorage();
-  const repository = configuredRepository(storage);
+  const repository = await configuredRepository(storage);
   const tied = observation({
     id: 'tie-1', dominantAction: null,
     frequencies: [
@@ -134,28 +137,32 @@ test('repository persists, revises, exports, and imports tied and non-tied mixes
     supersedesObservationId: tied.id,
     createdAt: T2,
   });
-  repository.saveRangeObservation(tied);
-  repository.saveRangeObservation(unique);
+  await repository.saveRangeObservation(tied);
+  await repository.saveRangeObservation(unique);
 
-  const reopened = createPersonalStrategyRepository({ storage, ownerRef: OWNER, clock: () => T3 });
-  assert.equal(reopened.loadSnapshot().rangeObservations[0].dominantAction, null);
-  assert.equal(reopened.getCurrentRangeObservation({
+  const reopened = createPersonalStrategyRepository({
+    database: storage.database, legacyStorage: storage, ownerRef: OWNER, clock: () => T3,
+  });
+  assert.equal((await reopened.loadSnapshot()).rangeObservations[0].dominantAction, null);
+  assert.equal((await reopened.getCurrentRangeObservation({
     profileId: 'profile-1', modeId: 'mode-1', context: context(), handClass: 'AKs',
-  }).id, unique.id);
+  })).id, unique.id);
 
-  const exported = reopened.exportPortable({ exportedAt: T3 });
+  const exported = await reopened.exportPortable({ exportedAt: T3 });
   const roundTrip = parsePersonalStrategyExport(serializePersonalStrategyExport(exported));
   assert.deepEqual(roundTrip, exported);
   const targetStorage = new MemoryStorage();
-  const target = createPersonalStrategyRepository({ storage: targetStorage, ownerRef: OWNER, clock: () => T3 });
-  target.importPortable(roundTrip);
-  assert.deepEqual(target.loadSnapshot().rangeObservations, reopened.loadSnapshot().rangeObservations);
-  assert.ok(targetStorage.getItem(PERSONAL_STRATEGY_STORAGE_KEY));
+  const target = createPersonalStrategyRepository({
+    database: targetStorage.database, legacyStorage: targetStorage, ownerRef: OWNER, clock: () => T3,
+  });
+  await target.importPortable(roundTrip);
+  assert.deepEqual((await target.loadSnapshot()).rangeObservations, (await reopened.loadSnapshot()).rangeObservations);
+  assert.equal(targetStorage.getItem(PERSONAL_STRATEGY_STORAGE_KEY), null);
 });
 
-test('a tied direct mix has no fabricated Training comparison relation', () => {
+test('a tied direct mix has no fabricated Training comparison relation', async () => {
   const storage = new MemoryStorage();
-  const repository = configuredRepository(storage);
+  const repository = await configuredRepository(storage);
   const tied = observation({
     id: 'tie-training', dominantAction: null,
     frequencies: [
@@ -163,7 +170,7 @@ test('a tied direct mix has no fabricated Training comparison relation', () => {
       { action: { type: ACTION_TYPES.RAISE }, weight: 50 },
     ],
   });
-  repository.saveRangeObservation(tied);
+  await repository.saveRangeObservation(tied);
   const training = createTrainingObservation({
     id: 'training-1',
     profileId: 'profile-1',
@@ -175,9 +182,9 @@ test('a tied direct mix has no fabricated Training comparison relation', () => {
     directCalibrationComparison: null,
     createdAt: T2,
   });
-  repository.saveTrainingObservation(training);
+  await repository.saveTrainingObservation(training);
 
-  assert.throws(() => repository.saveTrainingObservation(createTrainingObservation({
+  await assert.rejects(repository.saveTrainingObservation(createTrainingObservation({
     id: 'training-2',
     profileId: 'profile-1',
     modeId: 'mode-1',

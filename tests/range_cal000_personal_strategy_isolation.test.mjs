@@ -26,16 +26,20 @@ test('Personal Strategy foundation contains no DOM, localization, network, solve
     new URL('../app/src/personal-strategy/repository.mjs', import.meta.url),
     'utf8',
   );
-  const combined = `${domain}\n${repository}`;
+  const database = fs.readFileSync(
+    new URL('../app/src/personal-strategy/indexeddb-storage.mjs', import.meta.url),
+    'utf8',
+  );
+  const combined = `${domain}\n${repository}\n${database}`;
 
   assert.doesNotMatch(combined, /\bdocument\b|querySelector|innerHTML|textContent/);
   assert.doesNotMatch(combined, /\bt\(|localiz|translated|displayLabel/);
   assert.doesNotMatch(combined, /\bfetch\b|XMLHttpRequest|WebSocket|https?:\/\//);
   assert.doesNotMatch(combined, /StrategyProvider|StrategyResult|solver|inference|confidence|modelVersion/i);
-  assert.doesNotMatch(combined, /indexedDB/);
+  assert.match(database, /globalThis\.indexedDB/);
 });
 
-test('repository owns the only Personal Strategy Storage calls and uses one namespaced key', () => {
+test('repository owns legacy migration reads while the backend owns IndexedDB access', () => {
   const domain = fs.readFileSync(
     new URL('../app/src/personal-strategy/domain.mjs', import.meta.url),
     'utf8',
@@ -47,6 +51,6 @@ test('repository owns the only Personal Strategy Storage calls and uses one name
   assert.doesNotMatch(domain, /getItem|setItem|localStorage|sessionStorage/);
   assert.match(repository, /riverline\.personalStrategy\.v1/);
   assert.match(repository, /storage\.getItem\(storageKey\)/);
-  assert.match(repository, /storage\.setItem\(storageKey, serialized\)/);
+  assert.doesNotMatch(repository, /storage\.setItem\(storageKey/);
   assert.doesNotMatch(repository, /\blocalStorage\b|\bsessionStorage\b/);
 });

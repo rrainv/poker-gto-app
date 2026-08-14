@@ -50,6 +50,10 @@ function friendlyError(error) {
   if (error?.code === 'owner_mismatch') return translated('Stored Personal Strategy data belongs to a different local owner and was left untouched.');
   if (error?.code === 'read_failed') return translated('Personal Strategy data could not be read.');
   if (error?.code === 'write_failed') return translated('Your changes could not be saved. The previous data remains intact.');
+  if (error?.code === 'open_failed') return translated('Personal Strategy storage could not be opened. Try again.');
+  if (error?.code === 'unsupported_database_version') return translated('Personal Strategy storage uses a newer unsupported version and was left untouched.');
+  if (error?.code === 'migration_failed') return translated('Personal Strategy migration did not finish. Your previous data remains intact; try again.');
+  if (error?.code === 'transaction_failed') return translated('Your answer was not confirmed. Your previous data remains intact; retry the save.');
   const message = String(error?.message || '');
   if (/must be different/i.test(message)) return translated('Give each mode a different name.');
   if (/characters or fewer/i.test(message)) return translated('Use a shorter name or description.');
@@ -90,6 +94,8 @@ function createController(root, application, initialWorkspace, activationStarted
   let focusBeforeMix = null;
   let educationVisible = true;
   let lastAnswerError = null;
+  let answerPending = false;
+  let failedAnswer = null;
   const interactionSamples = [];
   const activationReads = application.getStorageMetrics();
   const metrics = {
@@ -132,9 +138,9 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationErrorMessage').textContent = friendlyError(error);
   }
 
-  function persistSelection() {
+  async function persistSelection() {
     if (!selection) return;
-    application.saveWorkspaceSelection({
+    await application.saveWorkspaceSelection({
       selectedProfileId: selection.profileId,
       activeModeId: selection.modeId,
       context: selection.context,
@@ -291,10 +297,24 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationUndoAnswer').disabled = disabled;
   }
 
-  function enterQuestions() {
-    if (!validateAndSaveStack()) return;
+  function setAnswerPending(pending) {
+    answerPending = pending;
+    setAnswerControlsDisabled(pending || Boolean(failedAnswer));
+    query('#calibrationRetryAnswer').disabled = pending;
+    query('#calibrationMixRetry').disabled = pending;
+    query('#calibrationMixSave').disabled = pending || Boolean(failedAnswer);
+    query('#calibrationMixFold').disabled = pending || Boolean(failedAnswer);
+    query('#calibrationMixRaise').disabled = pending || Boolean(failedAnswer);
+    query('#calibrationQuestionRegion')?.setAttribute('aria-busy', String(pending));
+    root.dataset.persistenceState = pending ? 'pending' : (failedAnswer ? 'failed' : 'ready');
+  }
+
+  async function enterQuestions() {
+    if (!await validateAndSaveStack()) return;
     try {
-      calibrationState = application.startOrResumeSession({
+      failedAnswer = null;
+      query('#calibrationRetryAnswer').hidden = true;
+      calibrationState = await application.startOrResumeSession({
         selectedProfileId: selection.profileId,
         activeModeId: selection.modeId,
         context: selection.context,
@@ -319,14 +339,27 @@ function createController(root, application, initialWorkspace, activationStarted
     });
   }
 
-  function acceptAnswer({ actionType = null, mix = null } = {}) {
-    if (!calibrationState?.prompt) return false;
+  async function acceptAnswer({ actionType = null, mix = null } = {}, { retry = false } = {}) {
+    if (!calibrationState?.prompt || answerPending) return false;
     const startedAt = now();
-    setAnswerControlsDisabled(true);
+    const command = retry && failedAnswer
+      ? failedAnswer
+      : {
+        state: calibrationState,
+        input: { actionType, mix },
+        operation: application.createAnswerOperation(calibrationState),
+      };
+    setAnswerPending(true);
     try {
       lastAnswerError = null;
-      const nextState = application.answerCalibrationQuestion(calibrationState, { actionType, mix });
+      const nextState = await application.answerCalibrationQuestion(command.state, {
+        ...command.input,
+        ...command.operation,
+      });
       calibrationState = nextState;
+      failedAnswer = null;
+      query('#calibrationRetryAnswer').hidden = true;
+      query('#calibrationMixRetry').hidden = true;
       syncSnapshot(nextState.snapshot);
       educationVisible = false;
       const renderStartedAt = now();
@@ -338,32 +371,38 @@ function createController(root, application, initialWorkspace, activationStarted
       return true;
     } catch (error) {
       lastAnswerError = error;
+      failedAnswer = command;
       query('#calibrationAnswerError').textContent = friendlyError(error);
+      const mixVisible = !query('#calibrationMixDialog').hidden;
+      query('#calibrationRetryAnswer').hidden = mixVisible;
+      query('#calibrationMixRetry').hidden = !mixVisible;
       return false;
     } finally {
-      setAnswerControlsDisabled(false);
+      setAnswerPending(false);
     }
   }
 
-  function undoAnswer() {
-    if (!calibrationState?.previousAnswer) return;
-    setAnswerControlsDisabled(true);
+  async function undoAnswer() {
+    if (!calibrationState?.previousAnswer || answerPending) return;
+    setAnswerPending(true);
     try {
-      calibrationState = application.undoPreviousAnswer(calibrationState);
+      calibrationState = await application.undoPreviousAnswer(calibrationState, {
+        operationId: application.createAnswerOperation(calibrationState).operationId,
+      });
       syncSnapshot(calibrationState.snapshot);
       renderQuestion();
       window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
     } catch (error) {
       query('#calibrationAnswerError').textContent = friendlyError(error);
     } finally {
-      setAnswerControlsDisabled(false);
+      setAnswerPending(false);
     }
   }
 
-  function pauseQuestions() {
-    if (!calibrationState) return;
+  async function pauseQuestions() {
+    if (!calibrationState || answerPending) return;
     try {
-      calibrationState = application.pauseSession(calibrationState);
+      calibrationState = await application.pauseSession(calibrationState);
       syncSnapshot(calibrationState.snapshot);
       calibrationState = null;
       renderConfigured();
@@ -383,6 +422,7 @@ function createController(root, application, initialWorkspace, activationStarted
     focusBeforeMix = document.activeElement;
     query('#calibrationMixForm').reset();
     query('#calibrationMixError').textContent = '';
+    query('#calibrationMixRetry').hidden = true;
     setTranslatedText(query('#calibrationMixTitle'), 'Set frequencies for {hand}', { hand: calibrationState.prompt.handClass });
     query('#calibrationMixDialog').hidden = false;
     document.body.classList.add('has-modal-open');
@@ -392,17 +432,21 @@ function createController(root, application, initialWorkspace, activationStarted
   function closeMixEditor({ restoreFocus = true } = {}) {
     if (query('#calibrationMixDialog').hidden) return;
     query('#calibrationMixDialog').hidden = true;
+    if (failedAnswer) {
+      query('#calibrationMixRetry').hidden = true;
+      query('#calibrationRetryAnswer').hidden = false;
+    }
     document.body.classList.remove('has-modal-open');
     if (restoreFocus) focusBeforeMix?.focus?.({ preventScroll: true });
   }
 
-  function submitMix(event) {
+  async function submitMix(event) {
     event.preventDefault();
     const mix = {
       fold: Number(query('#calibrationMixFold').value),
       raise: Number(query('#calibrationMixRaise').value),
     };
-    if (acceptAnswer({ mix })) closeMixEditor({ restoreFocus: false });
+    if (await acceptAnswer({ mix })) closeMixEditor({ restoreFocus: false });
     else query('#calibrationMixError').textContent = query('#calibrationAnswerError').textContent;
   }
 
@@ -416,8 +460,8 @@ function createController(root, application, initialWorkspace, activationStarted
     renderConfigured();
   }
 
-  function refreshWorkspace(preferredProfileId = selection?.profileId) {
-    workspace = application.readWorkspace();
+  async function refreshWorkspace(preferredProfileId = selection?.profileId) {
+    workspace = await application.readWorkspace();
     const entry = selectedEntry(workspace, preferredProfileId) || workspace.profiles[0] || null;
     if (!entry) selection = null;
     else if (!selection || selection.profileId !== entry.profile.id) {
@@ -434,7 +478,7 @@ function createController(root, application, initialWorkspace, activationStarted
     render();
   }
 
-  function changeProfile(profileId) {
+  async function changeProfile(profileId) {
     const entry = selectedEntry(workspace, profileId);
     if (!entry) return;
     const preference = workspace.preferences.byProfile[profileId];
@@ -445,11 +489,11 @@ function createController(root, application, initialWorkspace, activationStarted
         environmentDefault: profileDefaultEnvironment(entry.profile),
       }),
     };
-    persistSelection();
+    await persistSelection();
     renderConfigured();
   }
 
-  function updateContextFromControls({ announceCorrection = false } = {}) {
+  async function updateContextFromControls({ announceCorrection = false } = {}) {
     const previousPosition = selection.context.heroPosition;
     const candidate = {
       environment: query('#calibrationEnvironment').value,
@@ -460,7 +504,7 @@ function createController(root, application, initialWorkspace, activationStarted
     selection.context = normalizeRfiContextSelection(candidate, {
       environmentDefault: selection.context.environment,
     });
-    persistSelection();
+    await persistSelection();
     renderContextControls();
     renderDerivedContext();
     if (announceCorrection && previousPosition !== selection.context.heroPosition) {
@@ -471,7 +515,7 @@ function createController(root, application, initialWorkspace, activationStarted
     } else query('#calibrationPositionNotice').textContent = '';
   }
 
-  function validateAndSaveStack() {
+  async function validateAndSaveStack() {
     const input = query('#calibrationEffectiveStack');
     const value = Number(input.value);
     if (!Number.isFinite(value) || value < RANGE_CALIBRATION_STACK_LIMITS.min || value > RANGE_CALIBRATION_STACK_LIMITS.max) {
@@ -484,7 +528,7 @@ function createController(root, application, initialWorkspace, activationStarted
     }
     input.removeAttribute('aria-invalid');
     query('#calibrationStackError').textContent = '';
-    updateContextFromControls();
+    await updateContextFromControls();
     return true;
   }
 
@@ -528,7 +572,7 @@ function createController(root, application, initialWorkspace, activationStarted
     if (restoreFocus) focusBeforeModal?.focus?.({ preventScroll: true });
   }
 
-  function submitProfile(event) {
+  async function submitProfile(event) {
     event.preventDefault();
     const error = query('#calibrationProfileFormError');
     error.hidden = true;
@@ -542,10 +586,10 @@ function createController(root, application, initialWorkspace, activationStarted
       let profileId;
       if (editorMode === 'edit') {
         profileId = selection.profileId;
-        application.updateProfileConfiguration(profileId, input);
+        await application.updateProfileConfiguration(profileId, input);
         notify(translated('Profile changes saved.'), 'success');
       } else {
-        const bundle = application.createProfile(input);
+        const bundle = await application.createProfile(input);
         profileId = bundle.profile.id;
         selection = {
           profileId,
@@ -555,8 +599,8 @@ function createController(root, application, initialWorkspace, activationStarted
         notify(translated('Profile created.'), 'success');
       }
       closeProfileEditor({ restoreFocus: false });
-      refreshWorkspace(profileId);
-      persistSelection();
+      await refreshWorkspace(profileId);
+      await persistSelection();
       query('#calibrationProfileSelect')?.focus?.({ preventScroll: true });
     } catch (caught) {
       error.textContent = friendlyError(caught);
@@ -569,17 +613,22 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationCreateFirstProfile').addEventListener('click', () => openProfileEditor('create'));
     query('#calibrationCreateProfile').addEventListener('click', () => openProfileEditor('create'));
     query('#calibrationEditProfile').addEventListener('click', () => openProfileEditor('edit'));
-    query('#calibrationRetry').addEventListener('click', () => {
-      try { refreshWorkspace(); } catch (error) { showWorkspaceError(error); }
+    query('#calibrationRetry').addEventListener('click', async () => {
+      try { await refreshWorkspace(); } catch (error) { showWorkspaceError(error); }
     });
     query('#calibrationStartQuestions').addEventListener('click', enterQuestions);
     query('#calibrationPauseQuestions').addEventListener('click', pauseQuestions);
     query('#calibrationReturnToContext').addEventListener('click', pauseQuestions);
     query('#calibrationActionFold').addEventListener('click', () => acceptAnswer({ actionType: 'fold' }));
     query('#calibrationActionRaise').addEventListener('click', () => acceptAnswer({ actionType: 'raise' }));
+    query('#calibrationRetryAnswer').addEventListener('click', () => acceptAnswer({}, { retry: true }));
     query('#calibrationUndoAnswer').addEventListener('click', undoAnswer);
     query('#calibrationOpenMix').addEventListener('click', openMixEditor);
     query('#calibrationMixForm').addEventListener('submit', submitMix);
+    query('#calibrationMixRetry').addEventListener('click', async () => {
+      if (await acceptAnswer({}, { retry: true })) closeMixEditor({ restoreFocus: false });
+      else query('#calibrationMixError').textContent = query('#calibrationAnswerError').textContent;
+    });
     query('#calibrationMixClose').addEventListener('click', () => closeMixEditor());
     query('#calibrationMixCancel').addEventListener('click', () => closeMixEditor());
     query('#calibrationMixDialog').addEventListener('click', (event) => {
@@ -596,12 +645,14 @@ function createController(root, application, initialWorkspace, activationStarted
       event.preventDefault();
       acceptAnswer({ actionType: action.type });
     });
-    query('#calibrationProfileSelect').addEventListener('change', (event) => changeProfile(event.target.value));
-    query('#calibrationModeOptions').addEventListener('click', (event) => {
+    query('#calibrationProfileSelect').addEventListener('change', async (event) => {
+      try { await changeProfile(event.target.value); } catch (error) { notify(friendlyError(error), 'error'); }
+    });
+    query('#calibrationModeOptions').addEventListener('click', async (event) => {
       const button = event.target.closest('[data-mode-id]');
       if (!button) return;
       selection.modeId = button.dataset.modeId;
-      persistSelection();
+      try { await persistSelection(); } catch (error) { notify(friendlyError(error), 'error'); }
       renderConfigured({ controls: false });
     });
     query('#calibrationModeOptions').addEventListener('keydown', (event) => {
@@ -615,29 +666,35 @@ function createController(root, application, initialWorkspace, activationStarted
       next.click();
       next.focus();
     });
-    query('#calibrationEnvironment').addEventListener('change', () => {
+    query('#calibrationEnvironment').addEventListener('change', async () => {
       const environment = query('#calibrationEnvironment').value;
       const sizes = tableSizesForEnvironment(environment);
       const requested = Number(query('#calibrationTableSize').value);
       const tableSize = sizes.includes(requested) ? requested : sizes[0];
       selection.context = normalizeRfiContextSelection({ ...selection.context, environment, tableSize }, { environmentDefault: environment });
-      persistSelection();
+      try { await persistSelection(); } catch (error) { notify(friendlyError(error), 'error'); }
       renderContextControls();
       renderDerivedContext();
       query('#calibrationPositionNotice').textContent = '';
     });
-    query('#calibrationTableSize').addEventListener('change', () => updateContextFromControls({ announceCorrection: true }));
-    query('#calibrationHeroPosition').addEventListener('change', () => updateContextFromControls());
-    query('#calibrationEffectiveStack').addEventListener('change', validateAndSaveStack);
+    query('#calibrationTableSize').addEventListener('change', async () => {
+      try { await updateContextFromControls({ announceCorrection: true }); } catch (error) { notify(friendlyError(error), 'error'); }
+    });
+    query('#calibrationHeroPosition').addEventListener('change', async () => {
+      try { await updateContextFromControls(); } catch (error) { notify(friendlyError(error), 'error'); }
+    });
+    query('#calibrationEffectiveStack').addEventListener('change', async () => {
+      try { await validateAndSaveStack(); } catch (error) { notify(friendlyError(error), 'error'); }
+    });
     query('#calibrationEffectiveStack').addEventListener('input', () => {
       query('#calibrationEffectiveStack').removeAttribute('aria-invalid');
       query('#calibrationStackError').textContent = '';
     });
-    root.addEventListener('click', (event) => {
+    root.addEventListener('click', async (event) => {
       const preset = event.target.closest('[data-calibration-stack]');
       if (!preset) return;
       query('#calibrationEffectiveStack').value = preset.dataset.calibrationStack;
-      validateAndSaveStack();
+      try { await validateAndSaveStack(); } catch (error) { notify(friendlyError(error), 'error'); }
     });
     query('#calibrationProfileForm').addEventListener('submit', submitProfile);
     query('#calibrationProfileModalClose').addEventListener('click', () => closeProfileEditor());
@@ -733,7 +790,7 @@ export async function mountRangeCalibrationWorkspace() {
   try {
     const application = createRangeCalibrationApplication();
     const profileLoadStartedAt = now();
-    const initialWorkspace = application.readWorkspace();
+    const initialWorkspace = await application.readWorkspace();
     const profileLoadMs = now() - profileLoadStartedAt;
     mountedWorkspace = createController(root, application, initialWorkspace, activationStartedAt, profileLoadMs);
     window.RiverlineRangeCalibration = mountedWorkspace;

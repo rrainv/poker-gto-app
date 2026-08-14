@@ -8,19 +8,22 @@ Schema generation: v1
 
 Personal Strategy is Riverline's local-first domain for recording how a person intends to play in a relatable poker environment. It is evidence storage, not a strategy engine. This specification and the contracts under `app/src/personal-strategy/` govern the subsystem until an approved, versioned migration supersedes them.
 
-The v1 dependency boundary is:
+The active dependency boundary is:
 
 ```text
-future Personal Strategy UI or Training opt-in
-                    |
-                    v
-          Personal Strategy service/repository
-                    |
-                    v
- versioned profiles, modes, contexts, and evidence
+Range Calibration UI
+        |
+        v
+async Range Calibration application service
+        |
+        v
+Personal Strategy repository
+        |
+        v
+record-oriented IndexedDB storage
 ```
 
-There is no Personal Strategy import in current application startup, Playbook, Matrix, Training, Analysis, Equity, or StrategyProvider. The subsystem is dormant until a later ticket owns activation.
+The Range Calibration bootstrap dynamically imports this path only when its workspace is opened. There is no Personal Strategy import or database work in normal application startup, Playbook, Matrix, Training, Analysis, Equity, or StrategyProvider.
 
 ## 2. Terminology and locked semantics
 
@@ -80,7 +83,7 @@ It is an immutable behavioral observation, not a direct range edit. It has its o
 | `RangeObservation` | `range-observation/v1` | Direct preferred-action evidence and its revision link |
 | `TrainingObservation` | `training-observation/v1` | Actual Training choice and direct-answer comparison |
 | `CalibrationSession` | `calibration-session/v1` | Resumable elicitation scope and cursor |
-| Personal Strategy store | `personal-strategy-store/v1` | Durable aggregate and repository revision |
+| Personal Strategy logical snapshot / legacy document | `personal-strategy-store/v1` | Validated domain aggregate used by migration, tests, and full snapshots; not the physical IndexedDB layout |
 | Portable export | `personal-strategy-export/v1` | Validated local transfer representation |
 
 There is no v1 `InferredRange`, confidence score, `SavedSpot`, derived range cache, solver reference, or separate profile-range snapshot. Those objects acquire authority only when a future ticket implements their behavior and validation.
@@ -259,53 +262,48 @@ This is enough to pause, close, reload, and resume a future deterministic elicit
 
 ### Technology choice
 
-V1 uses one injected Web Storage-compatible adapter, normally browser `localStorage`, under:
+`RANGE-CAL-001C-A` uses a hybrid browser-native model:
 
-```text
-riverline.personalStrategy.v1
-```
+- IndexedDB database `riverline-personal-strategy`, database version `1`, is the one durable Personal Strategy record authority;
+- Web Storage retains only the stable local-owner bootstrap, Range Calibration workspace preferences, and any pre-migration recovery source under `riverline.personalStrategy.v1`;
+- domain schema identifiers remain v1; `personal-strategy-indexeddb/v1` and IndexedDB database version `1` separately version physical storage.
 
-This choice fits the first RFI-only scope and the current browser-first application:
+The decision follows measured evidence. Whole-document Web Storage remained fast for one 169-hand mode, but the supplied benchmark reached about 194 ms median at 3,042 observations and 452 ms median at 7,605 observations with a roughly 5.7 MB document. Every answer parsed, graph-validated, serialized, and synchronously replaced all history, so quota and main-thread time grew with total store size.
 
-- the product already relies on local browser persistence for small preferences;
-- profile/mode/RFI observation documents are JSON-serializable and modest at the foundation stage;
-- one `setItem` replaces a fully validated document atomically from the application's perspective;
-- no asynchronous database, Electron IPC, server, account, or startup service is required;
-- the injected adapter keeps tests deterministic and permits a later storage technology migration behind one repository boundary.
-
-IndexedDB is not justified until measured record volume, serialization time, or quota pressure makes whole-document localStorage unsuitable. Postflop evidence, large histories, or derived caches could trigger that future migration; none are stored now.
+Whole-document Web Storage therefore fails the demonstrated scale. Chunked/journaled Web Storage would reimplement transactions, indexes, and crash recovery on a synchronous preference API. Electron-only storage would violate Firefox parity, while a server, cloud database, or third-party framework is unnecessary. Native IndexedDB supplies Firefox/Electron compatibility, atomic multi-record transactions, and indexed lookup without a new dependency.
 
 ### Repository authority
 
-`createPersonalStrategyRepository` is the only persistence owner. Domain objects contain no storage calls. Future UI must call an application service/repository rather than reading or writing localStorage directly.
+`createPersonalStrategyRepository` remains the only persistence owner. Domain objects contain no storage calls. UI calls the asynchronous Range Calibration application service and never reads IndexedDB or Web Storage directly.
 
-The store document contains:
+The physical object stores are:
 
 ```text
-schemaVersion
-revision
-ownerRef
-updatedAt
-profiles[]
-modes[]
-rangeObservations[]
-trainingObservations[]
-calibrationSessions[]
+metadata
+profiles
+modes                         index: profileId
+rangeObservations             indexes: profileId, logicalKey, scopeKey, calibrationSessionId
+currentRangeObservations      indexes: profileId, scopeKey
+trainingObservations          indexes: profileId, logicalKey
+calibrationSessions           indexes: profileId, scopeKey
 ```
 
-Every mutation performs:
+Evidence/session records use stable domain IDs. Storage-only wrappers carry index keys and an unmodified domain `value`; storage fields never enter portable exports. `currentRangeObservations` materializes the unique leaf of each `profile + mode + canonical context + hand` chain, including retracted leaves. Immutable history remains in `rangeObservations`.
 
-1. read and parse the current document;
-2. migrate in memory if supported;
-3. validate the complete graph;
-4. apply one bounded change to a clone;
-5. increment repository revision and validate again;
-6. serialize before touching durable storage;
-7. issue one namespaced `setItem`.
+An accepted answer runs one strict read/write transaction over metadata, immutable history, the current-leaf index, and the session:
 
-If serialization, quota, or write fails, the prior durable record remains authoritative. The repository does not update unrelated settings keys.
+1. validate the domain observation/session;
+2. verify profile, mode, session, and expected session timestamp;
+3. verify that the observation supersedes the indexed current leaf;
+4. append immutable history;
+5. replace the current-leaf record;
+6. replace session progress/cursor;
+7. increment repository metadata;
+8. commit all records atomically.
 
-Malformed JSON, invalid graphs, owner mismatch, and unsupported schema versions fail closed with typed storage errors. Raw stored bytes are left untouched for diagnosis/recovery; the repository never replaces them with an empty store silently.
+The operation ID is also the observation ID. Repeating the exact same committed observation/session pair returns idempotent success rather than duplicating it. Conflicting ID reuse fails closed. Transaction abort or quota failure leaves all prior records authoritative.
+
+`loadWorkspaceSnapshot` loads profiles, modes, sessions, and current leaves only. Full history is read only for full snapshots, migration validation, or export. Answer writes and one-hand lookup are therefore bounded independently from total immutable history.
 
 ## 12. Export and import
 
@@ -318,26 +316,30 @@ Import behavior is deliberately conservative:
 - require the same local owner in v1;
 - reject any object-ID collision;
 - reject a second root for an existing direct-calibration key;
-- merge all collections in memory, validate the combined graph, then perform one store write;
+- merge all collections in memory, validate the combined graph, then perform one IndexedDB transaction;
 - leave current data unchanged on any error.
 
 V1 does not silently regenerate IDs or adopt another owner. A future explicit "import as copy" flow may remap all IDs and references under a target owner, but that is a separate contract and UX decision.
 
 ## 13. Versioning and migrations
 
-Every durable object and envelope has an exact schema identifier. The repository currently has one ordered synthetic migration:
+Every durable object and envelope has an exact schema identifier. Domain schema and physical database/backend versions are independent. The ordered synthetic domain migration remains:
 
 ```text
 personal-strategy-store/v0 -> personal-strategy-store/v1
 ```
 
-The v0 fixture exercises envelope changes: `ownerId` becomes structured `ownerRef`, `observations` becomes `rangeObservations`, `sessions` becomes `calibrationSessions`, and an empty `trainingObservations` collection is introduced. Migration occurs in memory on read; durable bytes are rewritten only by the next successful user mutation or an explicit future migration command.
+The v0 fixture exercises envelope changes: `ownerId` becomes structured `ownerRef`, `observations` becomes `rangeObservations`, `sessions` becomes `calibrationSessions`, and an empty `trainingObservations` collection is introduced.
+
+On first IndexedDB activation, the repository detects the legacy `riverline.personalStrategy.v1` document. It parses, applies the ordered domain migration if necessary, validates the complete graph and owner, then imports profiles, modes, immutable evidence, current leaves, Training evidence, and sessions in one IndexedDB transaction. Counts are verified inside that transaction before completed migration metadata is written.
+
+The legacy source is retained after success as a recovery copy; this ticket never deletes it. Completed database metadata makes repeated activation idempotent even while the source remains. If parsing, validation, quota, open, or transaction work fails, the legacy bytes remain untouched, the database transaction aborts, a typed actionable error is returned, and activation can retry. A database without completed metadata is treated as an interrupted initialization and retried.
 
 Migration rules:
 
 - apply migrations in declared order, one version at a time;
 - validate after the final step before exposing data;
-- never partially write a migration;
+- never partially write a domain or backend migration;
 - reject unknown/incompatible schema identifiers without altering stored data;
 - require an approved ticket for a breaking contract change;
 - additive unknown fields on recognized objects are tolerated and preserved through store cloning; the portable envelope imports only its recognized collections;
@@ -370,7 +372,11 @@ Local browser storage is not encryption. Anyone with access to the application p
 
 ## 16. Isolation, activation, and performance
 
-The foundation modules are side-effect free at import except for constant construction. The repository performs no read until a caller invokes it and no write until an explicit mutation/import. Normal Riverline startup performs no Personal Strategy initialization, range recomputation, inference, or storage scan.
+The foundation modules are side-effect free at import except for constant construction. The Range Calibration bootstrap dynamically imports the workspace and creates/opens the repository only after workspace activation. Normal Riverline startup performs no Personal Strategy database open, profile read, migration, range recomputation, inference, or storage scan.
+
+The repeatable benchmark matrix covers empty, 169, approximately 1k, approximately 3k, approximately 10k, and revision-heavy histories. In Firefox 153 with 10,140 current leaves, the accepted-answer path measured 15 ms median / 31 ms p95 / 33 ms worst; its IndexedDB transaction measured 13 ms median / 30 ms p95 / 33 ms worst. Current-leaf lookup was 1 ms median / 5 ms p95. Workspace activation intentionally grows with current-leaf count (about 1.0 s at the 10k upper fixture), while answer writes do not grow with immutable history. A 3,042-record legacy migration plus workspace activation took about 5.2 s.
+
+Those large one-time/on-activation costs are explicit scaling triggers. If realistic profile libraries make activation or profile export disruptive, the next smallest change is profile/context-scoped workspace loading and streamed export; it does not require a domain-contract or answer-transaction change.
 
 Future incomplete features remain isolated by:
 
@@ -380,7 +386,7 @@ Future incomplete features remain isolated by:
 - storing source observations rather than unbounded derived caches;
 - permitting removal of a failed Lab surface without changing the canonical Personal Strategy store.
 
-PERF-001 remains unchanged: this foundation does not resolve strategy, render Matrix cells, alter invalidation, or add a hidden surface. Future RANGE-CAL tickets must define measured profile-load and prompt-to-next budgets before activation.
+PERF-001 remains unchanged: persistence does not resolve strategy, render Matrix cells, alter invalidation, or add a hidden surface. The accepted-answer budget is median below 50 ms and p95 below 100 ms for realistic libraries.
 
 ## 17. Integration gates for future tickets
 
@@ -423,7 +429,7 @@ The following are release-blocking for this subsystem:
 7. Direct calibration and Training behavior use separate schemas/collections.
 8. Training conflict records a comparison and never rewrites direct evidence.
 9. Direct edits/retractions append to one linear history.
-10. One repository owns all persistence and touches one namespaced key.
+10. One repository owns durable IndexedDB records, legacy migration reads, and backend-independent export/import; UI has no storage access.
 11. Invalid, corrupt, incompatible, or colliding data cannot partially overwrite valid data.
 12. Existing Playbook, Matrix, Training, Equity, Analysis, settings, and StrategyProvider behavior remains unchanged.
 13. Personal Strategy has no startup cost until a future feature explicitly activates it.

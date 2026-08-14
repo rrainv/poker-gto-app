@@ -10,6 +10,7 @@ import {
   RANGE_OBSERVATION_STATES,
   createCalibrationSession,
   createLocalOwnerRef,
+  createMemoryPersonalStrategyDatabase,
   createPersonalStrategyRepository,
   createRangeObservation,
   createRfiCalibrationContext,
@@ -29,6 +30,7 @@ class MemoryStorage {
   constructor(initial = {}) {
     this.values = new Map(Object.entries(initial));
     this.writes = [];
+    this.database = createMemoryPersonalStrategyDatabase();
   }
 
   getItem(key) {
@@ -42,7 +44,12 @@ class MemoryStorage {
 }
 
 function repository(storage, now = T2) {
-  return createPersonalStrategyRepository({ storage, ownerRef: OWNER, clock: () => now });
+  return createPersonalStrategyRepository({
+    database: storage.database,
+    legacyStorage: storage,
+    ownerRef: OWNER,
+    clock: () => now,
+  });
 }
 
 function bundle(suffix = '1') {
@@ -81,13 +88,13 @@ function direct(overrides = {}) {
   });
 }
 
-test('repository saves and reloads multiple profiles and custom modes under one namespaced key', () => {
+test('repository saves and reloads multiple profiles and custom modes without rewriting Web Storage', async () => {
   const storage = new MemoryStorage({ appTheme: 'midnight', language: 'he' });
   const first = repository(storage);
-  first.saveProfileBundle(bundle('1'));
-  first.saveProfileBundle(bundle('2'));
+  await first.saveProfileBundle(bundle('1'));
+  await first.saveProfileBundle(bundle('2'));
 
-  const reopened = repository(storage).loadSnapshot();
+  const reopened = await repository(storage).loadSnapshot();
   assert.equal(reopened.profiles.length, 2);
   assert.equal(reopened.modes.length, 6);
   assert.deepEqual(reopened.profiles.map((profile) => profile.displayName), [
@@ -98,13 +105,13 @@ test('repository saves and reloads multiple profiles and custom modes under one 
   ]);
   assert.equal(storage.getItem('appTheme'), 'midnight');
   assert.equal(storage.getItem('language'), 'he');
-  assert.ok(storage.writes.every((write) => write.key === PERSONAL_STRATEGY_STORAGE_KEY));
+  assert.equal(storage.getItem(PERSONAL_STRATEGY_STORAGE_KEY), null);
 });
 
-test('CalibrationSession persists resumable scope, observation IDs, cursor, and state', () => {
+test('CalibrationSession persists resumable scope, observation IDs, cursor, and state', async () => {
   const storage = new MemoryStorage();
   const repo = repository(storage);
-  repo.saveProfileBundle(bundle());
+  await repo.saveProfileBundle(bundle());
   const session = createCalibrationSession({
     id: 'calibration-session-1',
     profileId: 'profile-1',
@@ -112,15 +119,15 @@ test('CalibrationSession persists resumable scope, observation IDs, cursor, and 
     contextScope: context(),
     startedAt: T0,
   });
-  repo.saveCalibrationSession(session);
-  repo.saveRangeObservation(direct({ calibrationSessionId: session.id }));
-  repo.saveCalibrationSession(updateCalibrationSession(session, {
+  await repo.saveCalibrationSession(session);
+  await repo.saveRangeObservation(direct({ calibrationSessionId: session.id }));
+  await repo.saveCalibrationSession(updateCalibrationSession(session, {
     state: 'paused',
     observationIds: ['direct-1'],
     nextPromptIndex: 1,
   }, T2));
 
-  const reopened = repository(storage).loadSnapshot();
+  const reopened = await repository(storage).loadSnapshot();
   assert.deepEqual(reopened.calibrationSessions[0], {
     ...session,
     updatedAt: T2,
@@ -130,11 +137,11 @@ test('CalibrationSession persists resumable scope, observation IDs, cursor, and 
   });
 });
 
-test('direct answers form one linear revision chain and current lookup honors retraction', () => {
+test('direct answers form one linear revision chain and current lookup honors retraction', async () => {
   const storage = new MemoryStorage();
   const repo = repository(storage);
-  repo.saveProfileBundle(bundle());
-  repo.saveRangeObservation(direct());
+  await repo.saveProfileBundle(bundle());
+  await repo.saveRangeObservation(direct());
 
   const revision = direct({
     id: 'direct-2',
@@ -142,17 +149,17 @@ test('direct answers form one linear revision chain and current lookup honors re
     supersedesObservationId: 'direct-1',
     createdAt: T2,
   });
-  repo.saveRangeObservation(revision);
-  assert.equal(repo.getCurrentRangeObservation({
+  await repo.saveRangeObservation(revision);
+  assert.equal((await repo.getCurrentRangeObservation({
     profileId: revision.profileId,
     modeId: revision.modeId,
     context: revision.context,
     handClass: revision.handClass,
-  }).id, 'direct-2');
-  assert.equal(repo.loadSnapshot().rangeObservations.length, 2);
+  })).id, 'direct-2');
+  assert.equal((await repo.loadSnapshot()).rangeObservations.length, 2);
 
-  assert.throws(
-    () => repo.saveRangeObservation(direct({
+  await assert.rejects(
+    repo.saveRangeObservation(direct({
       id: 'branch', supersedesObservationId: 'direct-1', createdAt: T2,
     })),
     /current direct revision/,
@@ -165,22 +172,22 @@ test('direct answers form one linear revision chain and current lookup honors re
     supersedesObservationId: 'direct-2',
     createdAt: T2,
   });
-  repo.saveRangeObservation(retraction);
-  assert.equal(repo.getCurrentRangeObservation({
+  await repo.saveRangeObservation(retraction);
+  assert.equal(await repo.getCurrentRangeObservation({
     profileId: retraction.profileId,
     modeId: retraction.modeId,
     context: retraction.context,
     handClass: retraction.handClass,
   }), null);
-  assert.equal(repo.loadSnapshot().rangeObservations.length, 3);
+  assert.equal((await repo.loadSnapshot()).rangeObservations.length, 3);
 });
 
-test('Training evidence records deviation separately and never overwrites direct calibration', () => {
+test('Training evidence records deviation separately and never overwrites direct calibration', async () => {
   const storage = new MemoryStorage();
   const repo = repository(storage);
-  repo.saveProfileBundle(bundle());
+  await repo.saveProfileBundle(bundle());
   const calibration = direct();
-  repo.saveRangeObservation(calibration);
+  await repo.saveRangeObservation(calibration);
   const training = createTrainingObservation({
     id: 'training-observation-1',
     profileId: calibration.profileId,
@@ -196,9 +203,9 @@ test('Training evidence records deviation separately and never overwrites direct
     },
     createdAt: T2,
   });
-  repo.saveTrainingObservation(training);
+  await repo.saveTrainingObservation(training);
 
-  const snapshot = repo.loadSnapshot();
+  const snapshot = await repo.loadSnapshot();
   assert.equal(snapshot.rangeObservations.length, 1);
   assert.equal(snapshot.trainingObservations.length, 1);
   assert.equal(snapshot.rangeObservations[0].dominantAction.type, ACTION_TYPES.RAISE);
@@ -217,23 +224,23 @@ test('Training evidence records deviation separately and never overwrites direct
     directCalibrationComparison: null,
     createdAt: T2,
   });
-  assert.throws(
-    () => repo.saveTrainingObservation(missingDeviation),
+  await assert.rejects(
+    repo.saveTrainingObservation(missingDeviation),
     /must record its current direct-calibration deviation/,
   );
 });
 
-test('portable export/import validates versions and rejects collisions atomically', () => {
+test('portable export/import validates versions and rejects collisions atomically', async () => {
   const sourceStorage = new MemoryStorage();
   const source = repository(sourceStorage);
-  source.saveProfileBundle(bundle());
-  source.saveRangeObservation(direct({
+  await source.saveProfileBundle(bundle());
+  await source.saveRangeObservation(direct({
     frequencies: [
       { action: { type: ACTION_TYPES.RAISE }, weight: 65 },
       { action: { type: ACTION_TYPES.FOLD }, weight: 35 },
     ],
   }));
-  const portable = source.exportPortable({ exportedAt: T2 });
+  const portable = await source.exportPortable({ exportedAt: T2 });
   const encoded = serializePersonalStrategyExport(portable);
 
   assert.equal(portable.schemaVersion, PERSONAL_STRATEGY_EXPORT_SCHEMA_VERSION);
@@ -241,26 +248,26 @@ test('portable export/import validates versions and rejects collisions atomicall
 
   const targetStorage = new MemoryStorage({ appTheme: 'daylight' });
   const target = repository(targetStorage);
-  target.importPortable(encoded);
+  await target.importPortable(encoded);
   assert.deepEqual(
-    target.loadSnapshot().profiles,
-    source.loadSnapshot().profiles,
+    (await target.loadSnapshot()).profiles,
+    (await source.loadSnapshot()).profiles,
   );
   assert.deepEqual(
-    target.loadSnapshot().rangeObservations,
-    source.loadSnapshot().rangeObservations,
+    (await target.loadSnapshot()).rangeObservations,
+    (await source.loadSnapshot()).rangeObservations,
   );
-  const beforeCollision = targetStorage.getItem(PERSONAL_STRATEGY_STORAGE_KEY);
-  assert.throws(() => target.importPortable(encoded), /ID collision/);
-  assert.equal(targetStorage.getItem(PERSONAL_STRATEGY_STORAGE_KEY), beforeCollision);
+  const beforeCollision = await target.loadSnapshot();
+  await assert.rejects(target.importPortable(encoded), /ID collision/);
+  assert.deepEqual(await target.loadSnapshot(), beforeCollision);
   assert.equal(targetStorage.getItem('appTheme'), 'daylight');
 
   const unsupported = JSON.parse(encoded);
   unsupported.schemaVersion = 'personal-strategy-export/v99';
-  assert.throws(() => target.importPortable(unsupported), /Expected personal-strategy-export\/v1/);
+  await assert.rejects(target.importPortable(unsupported), /Expected personal-strategy-export\/v1/);
 });
 
-test('malformed, invalid, and future records fail closed without overwriting stored bytes', () => {
+test('malformed, invalid, and future legacy records fail closed without overwriting stored bytes', async () => {
   for (const [serialized, expectedCode] of [
     ['{not-json', 'corrupt_record'],
     [JSON.stringify({ schemaVersion: 'personal-strategy-store/v99' }), 'unsupported_schema'],
@@ -268,8 +275,8 @@ test('malformed, invalid, and future records fail closed without overwriting sto
   ]) {
     const storage = new MemoryStorage({ [PERSONAL_STRATEGY_STORAGE_KEY]: serialized });
     const before = storage.getItem(PERSONAL_STRATEGY_STORAGE_KEY);
-    assert.throws(
-      () => repository(storage).loadSnapshot(),
+    await assert.rejects(
+      repository(storage).loadSnapshot(),
       (error) => error instanceof PersonalStrategyStorageError && error.code === expectedCode,
     );
     assert.equal(storage.getItem(PERSONAL_STRATEGY_STORAGE_KEY), before);
@@ -277,12 +284,12 @@ test('malformed, invalid, and future records fail closed without overwriting sto
   }
 });
 
-test('synthetic v0 store fixture migrates in memory in deterministic order', () => {
+test('synthetic v0 store fixture migrates transactionally in deterministic order', async () => {
   const seedStorage = new MemoryStorage();
   const seed = repository(seedStorage);
-  seed.saveProfileBundle(bundle());
-  seed.saveRangeObservation(direct());
-  const current = seed.loadSnapshot();
+  await seed.saveProfileBundle(bundle());
+  await seed.saveRangeObservation(direct());
+  const current = await seed.loadSnapshot();
   const legacy = {
     schemaVersion: 'personal-strategy-store/v0',
     revision: current.revision,
@@ -297,24 +304,25 @@ test('synthetic v0 store fixture migrates in memory in deterministic order', () 
     [PERSONAL_STRATEGY_STORAGE_KEY]: JSON.stringify(legacy),
   });
 
-  const migrated = repository(storage).loadSnapshot();
+  const migrated = await repository(storage).loadSnapshot();
   assert.equal(migrated.schemaVersion, 'personal-strategy-store/v1');
   assert.deepEqual(migrated.ownerRef, OWNER);
   assert.deepEqual(migrated.rangeObservations, current.rangeObservations);
   assert.deepEqual(migrated.trainingObservations, []);
-  assert.equal(storage.writes.length, 0, 'read migration does not mutate durable bytes');
+  assert.equal(storage.getItem(PERSONAL_STRATEGY_STORAGE_KEY), JSON.stringify(legacy));
+  assert.equal((await repository(storage).getMigrationStatus()).sourceRetained, true);
 });
 
-test('a failed whole-document write leaves the prior durable snapshot authoritative', () => {
+test('a failed database transaction leaves the prior durable snapshot authoritative', async () => {
   const storage = new MemoryStorage();
   const repo = repository(storage);
-  repo.saveProfileBundle(bundle());
-  const before = storage.getItem(PERSONAL_STRATEGY_STORAGE_KEY);
-  storage.setItem = () => { throw new Error('quota exceeded'); };
+  await repo.saveProfileBundle(bundle());
+  const before = await repo.loadSnapshot();
+  storage.database.failNextTransaction('before_commit', new Error('quota exceeded'));
 
-  assert.throws(
-    () => repo.saveRangeObservation(direct()),
-    (error) => error instanceof PersonalStrategyStorageError && error.code === 'write_failed',
+  await assert.rejects(
+    repo.saveRangeObservation(direct()),
+    (error) => error instanceof PersonalStrategyStorageError && error.code === 'transaction_failed',
   );
-  assert.equal(storage.getItem(PERSONAL_STRATEGY_STORAGE_KEY), before);
+  assert.deepEqual(await repo.loadSnapshot(), before);
 });

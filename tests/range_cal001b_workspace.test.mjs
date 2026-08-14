@@ -26,6 +26,8 @@ test('question UI exposes one dominant hand-class prompt with canonical RFI acti
     'calibrationUndoAnswer',
     'calibrationPauseQuestions',
     'calibrationCompleteState',
+    'calibrationRetryAnswer',
+    'calibrationMixRetry',
   ]) assert.match(template, new RegExp(`id="${id}"`));
   assert.match(template, /data-calibration-action="fold"/);
   assert.match(template, /data-calibration-action="raise"/);
@@ -70,7 +72,9 @@ test('accepted observation and cursor use one atomic repository commit and failu
   assert.match(repository, /Calibration answer must append exactly one session observation/);
   assert.match(service, /repository\.saveCalibrationAnswer/);
   assert.match(service, /supersedesObservationId: latestObservation\?\.id \?\? null/);
-  assert.match(workspace, /const nextState = application\.answerCalibrationQuestion/);
+  assert.match(workspace, /const nextState = await application\.answerCalibrationQuestion/);
+  assert.match(workspace, /answerPending/);
+  assert.match(workspace, /operation: application\.createAnswerOperation\(calibrationState\)/);
   assert.match(workspace, /catch \(error\)[\s\S]*?calibrationAnswerError/);
 });
 

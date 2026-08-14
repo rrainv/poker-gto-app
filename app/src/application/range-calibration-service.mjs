@@ -16,6 +16,7 @@ import {
   createRangeObservation,
   createRfiCalibrationContext,
   createStrategyProfileBundle,
+  rangeObservationKey,
   updateCalibrationSession,
   updateStrategyMode,
   updateStrategyProfile,
@@ -296,16 +297,13 @@ function currentDirectObservationMap(snapshot, { profileId, modeId, context, con
     .map((entry) => [entry.handClass, entry]));
 }
 
-function latestDirectObservation(snapshot, { profileId, modeId, context, contextScope }, handClass) {
+function currentDirectLeafMap(snapshot, { profileId, modeId, context, contextScope }) {
   const contextKey = calibrationContextKey(context ?? contextScope);
-  const matching = snapshot.rangeObservations.filter((observation) => (
-    observation.profileId === profileId
-    && observation.modeId === modeId
-    && observation.handClass === handClass
-    && calibrationContextKey(observation.context) === contextKey
-  ));
-  const superseded = new Set(matching.map((entry) => entry.revision.supersedesObservationId).filter(Boolean));
-  return matching.find((entry) => !superseded.has(entry.id)) ?? null;
+  return new Map(snapshot.rangeObservations
+    .filter((observation) => observation.profileId === profileId
+      && observation.modeId === modeId
+      && calibrationContextKey(observation.context) === contextKey)
+    .map((entry) => [entry.handClass, entry]));
 }
 
 function nextUnansweredPrompt(answered, startIndex = 0) {
@@ -363,18 +361,28 @@ function matchingSession(snapshot, { profileId, modeId, context }) {
     .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0] ?? null;
 }
 
-function recentActiveAnswer(snapshot, session, answered) {
-  const observationsById = new Map(snapshot.rangeObservations.map((entry) => [entry.id, entry]));
+function recentActiveAnswer(session, leaves) {
+  const observationsById = new Map([...leaves.values()].map((entry) => [entry.id, entry]));
   for (let index = session.observationIds.length - 1; index >= 0; index -= 1) {
     const observation = observationsById.get(session.observationIds[index]);
-    if (observation?.state === RANGE_OBSERVATION_STATES.ACTIVE
-      && answered.get(observation.handClass)?.id === observation.id) return observation;
+    if (observation?.state === RANGE_OBSERVATION_STATES.ACTIVE) return observation;
   }
   return null;
 }
 
-function calibrationState(snapshot, session, operationMetrics = null) {
-  const answered = currentDirectObservationMap(snapshot, session);
+function calibrationState(
+  snapshot,
+  session,
+  operationMetrics = null,
+  suppliedLeaves = null,
+  suppliedWorkspaceLeafIndexes = null,
+) {
+  const leaves = suppliedLeaves ?? currentDirectLeafMap(snapshot, session);
+  const workspaceLeafIndexes = suppliedWorkspaceLeafIndexes ?? new Map(
+    snapshot.rangeObservations.map((entry, index) => [rangeObservationKey(entry), index]),
+  );
+  const answered = new Map([...leaves]
+    .filter(([, observation]) => observation.state === RANGE_OBSERVATION_STATES.ACTIVE));
   const prompt = nextUnansweredPrompt(answered, session.cursor.nextPromptIndex);
   return Object.freeze({
     snapshot,
@@ -386,8 +394,44 @@ function calibrationState(snapshot, session, operationMetrics = null) {
       remaining: RANGE_CALIBRATION_QUESTION_ORDER.length - answered.size,
       total: RANGE_CALIBRATION_QUESTION_ORDER.length,
     }),
-    previousAnswer: recentActiveAnswer(snapshot, session, answered),
+    previousAnswer: recentActiveAnswer(session, leaves),
+    scopeLeaves: Object.freeze([...leaves.values()]),
+    workspaceLeafIndexes,
     operationMetrics,
+  });
+}
+
+function snapshotMetadata(snapshot, metadata) {
+  return {
+    ...snapshot,
+    revision: metadata.revision,
+    updatedAt: metadata.updatedAt,
+  };
+}
+
+function snapshotWithSession(snapshot, session, metadata) {
+  const sessions = [...snapshot.calibrationSessions];
+  const index = sessions.findIndex((entry) => entry.id === session.id);
+  if (index < 0) sessions.push(session);
+  else sessions[index] = session;
+  return Object.freeze({
+    ...snapshotMetadata(snapshot, metadata),
+    calibrationSessions: Object.freeze(sessions),
+  });
+}
+
+function snapshotWithObservationAndSession(snapshot, observation, session, metadata, workspaceLeafIndexes) {
+  const observations = [...snapshot.rangeObservations];
+  const key = rangeObservationKey(observation);
+  const observationIndex = workspaceLeafIndexes.get(key);
+  if (observationIndex === undefined) {
+    workspaceLeafIndexes.set(key, observations.length);
+    observations.push(observation);
+  } else observations[observationIndex] = observation;
+  const withSession = snapshotWithSession(snapshot, session, metadata);
+  return Object.freeze({
+    ...withSession,
+    rangeObservations: Object.freeze(observations),
   });
 }
 
@@ -400,6 +444,7 @@ function requireCalibrationState(value) {
 
 export function createRangeCalibrationApplication({
   storage = createPersonalStrategyBrowserStorage(),
+  database = null,
   clock = () => new Date(),
   idFactory = defaultIdFactory,
 } = {}) {
@@ -423,10 +468,15 @@ export function createRangeCalibrationApplication({
   };
 
   const ownerRef = getOrCreateOwnerRef(storageAdapter, idFactory);
-  const repository = createPersonalStrategyRepository({ storage: storageAdapter, ownerRef, clock });
+  const repository = createPersonalStrategyRepository({
+    database,
+    legacyStorage: storageAdapter,
+    ownerRef,
+    clock,
+  });
 
-  function readWorkspace() {
-    const snapshot = repository.loadSnapshot();
+  async function readWorkspace() {
+    const snapshot = await repository.loadWorkspaceSnapshot();
     const preferences = loadPreferences(storageAdapter);
     return Object.freeze({
       ownerRef,
@@ -437,7 +487,7 @@ export function createRangeCalibrationApplication({
     });
   }
 
-  function createProfile({ displayName, description, environment, modeNames }) {
+  async function createProfile({ displayName, description, environment, modeNames }) {
     const createdAt = timestampFrom(clock);
     const normalizedModes = normalizeModeNames(modeNames);
     const bundle = createStrategyProfileBundle({
@@ -450,12 +500,12 @@ export function createRangeCalibrationApplication({
       createdAt,
       modeIds: normalizedModes.map(() => idFactory('mode')),
     });
-    repository.saveProfileBundle(bundle);
+    await repository.saveProfileBundle(bundle);
     return bundle;
   }
 
-  function updateProfileConfiguration(profileId, { displayName, description, modeNames }) {
-    const workspace = readWorkspace();
+  async function updateProfileConfiguration(profileId, { displayName, description, modeNames }) {
+    const workspace = await readWorkspace();
     const entry = workspace.profiles.find((candidate) => candidate.profile.id === profileId);
     if (!entry) throw new RangeError('Strategy profile was not found');
     const updatedAt = timestampFrom(clock);
@@ -467,12 +517,12 @@ export function createRangeCalibrationApplication({
     const modes = entry.modes.map((mode, index) => updateStrategyMode(mode, {
       displayName: normalizedModes[index],
     }, updatedAt));
-    repository.saveProfileConfiguration({ profile, modes });
+    await repository.saveProfileConfiguration({ profile, modes });
     return Object.freeze({ profile, modes });
   }
 
-  function saveWorkspaceSelection({ selectedProfileId, activeModeId, context }) {
-    const workspace = readWorkspace();
+  async function saveWorkspaceSelection({ selectedProfileId, activeModeId, context }) {
+    const workspace = await readWorkspace();
     const entry = workspace.profiles.find((candidate) => candidate.profile.id === selectedProfileId);
     if (!entry) throw new RangeError('Strategy profile was not found');
     if (!entry.modes.some((mode) => mode.id === activeModeId)) {
@@ -492,13 +542,13 @@ export function createRangeCalibrationApplication({
     return Object.freeze({ activeModeId, context: normalizedContext });
   }
 
-  function startOrResumeSession({ selectedProfileId, activeModeId, context }) {
+  async function startOrResumeSession({ selectedProfileId, activeModeId, context }) {
     const operationStartedAt = performanceNow();
     const normalizedContext = normalizeRfiContextSelection(context, {
       environmentDefault: context?.environment ?? CALIBRATION_ENVIRONMENTS.HOME,
     });
     const contextScope = createContextFromSelection(normalizedContext);
-    let snapshot = repository.loadSnapshot();
+    let snapshot = await repository.loadWorkspaceSnapshot();
     const profile = snapshot.profiles.find((entry) => entry.id === selectedProfileId && entry.state === PROFILE_STATES.ACTIVE);
     const mode = snapshot.modes.find((entry) => entry.id === activeModeId
       && entry.profileId === selectedProfileId && entry.state === PROFILE_STATES.ACTIVE);
@@ -527,7 +577,8 @@ export function createRangeCalibrationApplication({
         completedAt: requiredState === CALIBRATION_SESSION_STATES.COMPLETED ? updatedAt : null,
         nextPromptIndex: firstPrompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length,
       });
-      snapshot = repository.saveCalibrationSession(session);
+      const metadata = await repository.saveCalibrationSession(session);
+      snapshot = snapshotWithSession(snapshot, session, metadata);
     } else if (session.state !== requiredState
       || (firstPrompt && session.cursor.nextPromptIndex !== firstPrompt.index)) {
       session = updateCalibrationSession(session, {
@@ -535,7 +586,8 @@ export function createRangeCalibrationApplication({
         completedAt: requiredState === CALIBRATION_SESSION_STATES.COMPLETED ? updatedAt : null,
         nextPromptIndex: firstPrompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length,
       }, updatedAt);
-      snapshot = repository.saveCalibrationSession(session);
+      const metadata = await repository.saveCalibrationSession(session);
+      snapshot = snapshotWithSession(snapshot, session, metadata);
     }
     const durableSession = snapshot.calibrationSessions.find((entry) => entry.id === session.id);
     return calibrationState(snapshot, durableSession, Object.freeze({
@@ -545,7 +597,12 @@ export function createRangeCalibrationApplication({
     }));
   }
 
-  function answerCalibrationQuestion(activeState, { actionType, mix = null } = {}) {
+  async function answerCalibrationQuestion(activeState, {
+    actionType,
+    mix = null,
+    operationId = null,
+    operationCreatedAt = null,
+  } = {}) {
     const operationStartedAt = performanceNow();
     const state = requireCalibrationState(activeState);
     if (state.session.state !== CALIBRATION_SESSION_STATES.ACTIVE || !state.prompt) {
@@ -559,14 +616,11 @@ export function createRangeCalibrationApplication({
       dominantAction = normalizedMix.dominantAction;
       frequencies = normalizedMix.frequencies;
     }
-    const createdAt = timestampNotBefore(clock, state.session.updatedAt);
-    const latestObservation = latestDirectObservation(
-      state.snapshot,
-      state.session,
-      state.prompt.handClass,
-    );
+    const createdAt = operationCreatedAt ?? timestampNotBefore(clock, state.session.updatedAt);
+    const leaves = new Map(state.scopeLeaves.map((entry) => [entry.handClass, entry]));
+    const latestObservation = leaves.get(state.prompt.handClass) ?? null;
     const observation = createRangeObservation({
-      id: idFactory('range-observation'),
+      id: operationId ?? idFactory('range-observation'),
       profileId: state.session.profileId,
       modeId: state.session.modeId,
       context: state.session.contextScope,
@@ -577,8 +631,10 @@ export function createRangeCalibrationApplication({
       supersedesObservationId: latestObservation?.id ?? null,
       createdAt,
     });
-    const answered = currentDirectObservationMap(state.snapshot, state.session);
+    const answered = new Map([...leaves]
+      .filter(([, observation]) => observation.state === RANGE_OBSERVATION_STATES.ACTIVE));
     answered.set(observation.handClass, observation);
+    leaves.set(observation.handClass, observation);
     const nextPrompt = nextUnansweredPrompt(answered, state.prompt.index + 1);
     const completed = nextPrompt === null;
     const session = updateCalibrationSession(state.session, {
@@ -588,15 +644,22 @@ export function createRangeCalibrationApplication({
       nextPromptIndex: nextPrompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length,
     }, createdAt);
     const repositoryStartedAt = performanceNow();
-    const snapshot = repository.saveCalibrationAnswer({
+    const metadata = await repository.saveCalibrationAnswer({
       observation,
       session,
       expectedSessionUpdatedAt: state.session.updatedAt,
     });
     const repositoryTransactionMs = performanceNow() - repositoryStartedAt;
     const resolutionStartedAt = performanceNow();
-    const durableSession = snapshot.calibrationSessions.find((entry) => entry.id === session.id);
-    const nextState = calibrationState(snapshot, durableSession);
+    const snapshot = snapshotWithObservationAndSession(
+      state.snapshot,
+      observation,
+      session,
+      metadata,
+      state.workspaceLeafIndexes,
+    );
+    const durableSession = session;
+    const nextState = calibrationState(snapshot, durableSession, null, leaves, state.workspaceLeafIndexes);
     const nextQuestionResolutionMs = performanceNow() - resolutionStartedAt;
     return Object.freeze({
       ...nextState,
@@ -609,18 +672,18 @@ export function createRangeCalibrationApplication({
     });
   }
 
-  function undoPreviousAnswer(activeState) {
+  async function undoPreviousAnswer(activeState, { operationId = null } = {}) {
     const operationStartedAt = performanceNow();
     const state = requireCalibrationState(activeState);
     if (state.session.state === CALIBRATION_SESSION_STATES.PAUSED) {
       throw new RangeError('Paused CalibrationSession cannot be changed');
     }
-    const answered = currentDirectObservationMap(state.snapshot, state.session);
-    const target = recentActiveAnswer(state.snapshot, state.session, answered);
+    const leaves = new Map(state.scopeLeaves.map((entry) => [entry.handClass, entry]));
+    const target = recentActiveAnswer(state.session, leaves);
     if (!target) throw new RangeError('There is no previous answer to undo');
     const createdAt = timestampNotBefore(clock, state.session.updatedAt);
     const retraction = createRangeObservation({
-      id: idFactory('range-observation'),
+      id: operationId ?? idFactory('range-observation'),
       profileId: target.profileId,
       modeId: target.modeId,
       context: target.context,
@@ -638,14 +701,22 @@ export function createRangeCalibrationApplication({
       nextPromptIndex: promptIndex,
     }, createdAt);
     const repositoryStartedAt = performanceNow();
-    const snapshot = repository.saveCalibrationAnswer({
+    const metadata = await repository.saveCalibrationAnswer({
       observation: retraction,
       session,
       expectedSessionUpdatedAt: state.session.updatedAt,
     });
     const repositoryTransactionMs = performanceNow() - repositoryStartedAt;
-    const durableSession = snapshot.calibrationSessions.find((entry) => entry.id === session.id);
-    const nextState = calibrationState(snapshot, durableSession);
+    const snapshot = snapshotWithObservationAndSession(
+      state.snapshot,
+      retraction,
+      session,
+      metadata,
+      state.workspaceLeafIndexes,
+    );
+    const durableSession = session;
+    leaves.set(retraction.handClass, retraction);
+    const nextState = calibrationState(snapshot, durableSession, null, leaves, state.workspaceLeafIndexes);
     return Object.freeze({
       ...nextState,
       undoneObservation: target,
@@ -657,15 +728,16 @@ export function createRangeCalibrationApplication({
     });
   }
 
-  function pauseSession(activeState) {
+  async function pauseSession(activeState) {
     const state = requireCalibrationState(activeState);
     if (state.session.state !== CALIBRATION_SESSION_STATES.ACTIVE) return state;
     const updatedAt = timestampNotBefore(clock, state.session.updatedAt);
     const session = updateCalibrationSession(state.session, {
       state: CALIBRATION_SESSION_STATES.PAUSED,
     }, updatedAt);
-    const snapshot = repository.saveCalibrationSession(session);
-    const durableSession = snapshot.calibrationSessions.find((entry) => entry.id === session.id);
+    const metadata = await repository.saveCalibrationSession(session);
+    const snapshot = snapshotWithSession(state.snapshot, session, metadata);
+    const durableSession = session;
     return calibrationState(snapshot, durableSession);
   }
 
@@ -680,6 +752,13 @@ export function createRangeCalibrationApplication({
     answerCalibrationQuestion,
     undoPreviousAnswer,
     pauseSession,
+    createAnswerOperation(activeState) {
+      const state = requireCalibrationState(activeState);
+      return Object.freeze({
+        operationId: idFactory('range-observation'),
+        operationCreatedAt: timestampNotBefore(clock, state.session.updatedAt),
+      });
+    },
     getStorageMetrics: () => cloneData(storageMetrics),
   });
 }
