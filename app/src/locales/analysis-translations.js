@@ -149,7 +149,37 @@
     'table.pot': 'Pot {value} bb',
     'table.streetContribution': 'street {value}',
     'table.handContribution': 'hand {value}',
-    'table.title': 'Riverline poker table'
+    'table.title': 'Riverline poker table',
+    'table.stack': '{value} bb',
+    'table.status.toAct': 'To act',
+    'table.status.folded': 'Folded',
+    'table.status.allIn': 'All-in',
+    'table.action.fold': 'Fold',
+    'table.action.check': 'Check',
+    'table.action.call': 'Call {value} bb',
+    'table.action.betTo': 'Bet to {value} bb',
+    'table.action.raiseTo': 'Raise to {value} bb',
+    'table.action.allInTo': 'All-in to {value} bb',
+    'table.action.unknown': 'Action',
+    'table.phase.awaitingPrivateCards': 'Awaiting private cards',
+    'table.phase.awaitingStreet': 'Waiting for {street}',
+    'table.phase.showdown': 'Showdown',
+    'table.phase.terminal': 'Hand complete',
+    'table.phase.scenario': 'Scenario',
+    'table.street.preflop': 'Preflop',
+    'table.street.flop': 'Flop',
+    'table.street.turn': 'Turn',
+    'table.street.river': 'River',
+    'table.a11y.stack': 'Stack {value} bb',
+    'table.a11y.dealer': 'Dealer button',
+    'table.a11y.contribution': 'Current-street contribution {value} bb',
+    'table.a11y.cardsKnown': 'Cards known',
+    'table.a11y.cardsKnownValue': 'Cards {cards}',
+    'table.a11y.cardsHidden': 'Cards hidden',
+    'table.a11y.cardsUndealt': 'Cards not dealt',
+    'table.a11y.boardEmpty': 'Board not dealt',
+    'table.a11y.boardCards': 'Board {cards}',
+    'table.a11y.scenario': 'Lossy Scenario table presentation'
   };
 
   const ru = {
@@ -229,7 +259,18 @@
     'analysis.hint.board.title': 'Борд и соперники', 'analysis.hint.board.prompt': 'Как текстура борда и число соперников меняют силу руки?',
     'analysis.hint.count': 'Подсказка {current} из {total} · {title}', 'analysis.hint.spotCheck': 'Проверка спота',
     'table.empty.startHand': 'Начните раздачу', 'table.pot': 'Банк {value} bb', 'table.streetContribution': 'улица {value}',
-    'table.handContribution': 'раздача {value}', 'table.title': 'Покерный стол Riverline'
+    'table.handContribution': 'раздача {value}', 'table.title': 'Покерный стол Riverline',
+    'table.stack': '{value} bb', 'table.status.toAct': 'Ход игрока', 'table.status.folded': 'Фолд', 'table.status.allIn': 'Олл-ин',
+    'table.action.fold': 'Фолд', 'table.action.check': 'Чек', 'table.action.call': 'Колл {value} bb',
+    'table.action.betTo': 'Бет до {value} bb', 'table.action.raiseTo': 'Рейз до {value} bb', 'table.action.allInTo': 'Олл-ин до {value} bb',
+    'table.action.unknown': 'Действие', 'table.phase.awaitingPrivateCards': 'Ожидание закрытых карт',
+    'table.phase.awaitingStreet': 'Ожидание: {street}', 'table.phase.showdown': 'Шоудаун', 'table.phase.terminal': 'Раздача завершена',
+    'table.phase.scenario': 'Сценарий', 'table.street.preflop': 'Префлоп', 'table.street.flop': 'Флоп',
+    'table.street.turn': 'Тёрн', 'table.street.river': 'Ривер', 'table.a11y.stack': 'Стек {value} bb',
+    'table.a11y.dealer': 'Баттон дилера', 'table.a11y.contribution': 'Вклад на текущей улице {value} bb',
+    'table.a11y.cardsKnown': 'Карты известны', 'table.a11y.cardsKnownValue': 'Карты: {cards}', 'table.a11y.cardsHidden': 'Карты скрыты',
+    'table.a11y.cardsUndealt': 'Карты не розданы', 'table.a11y.boardEmpty': 'Борд не роздан',
+    'table.a11y.boardCards': 'Борд: {cards}', 'table.a11y.scenario': 'Упрощённое представление стола сценария'
   };
 
   const he = {
@@ -309,7 +350,18 @@
     'analysis.hint.board.title': 'בורד ויריבים', 'analysis.hint.board.prompt': 'איך מרקם הבורד ומספר היריבים משפיעים על חוזק היד?',
     'analysis.hint.count': 'רמז {current} מתוך {total} · {title}', 'analysis.hint.spotCheck': 'בדיקת מצב',
     'table.empty.startHand': 'התחילו יד', 'table.pot': 'קופה {value} bb', 'table.streetContribution': 'רחוב {value}',
-    'table.handContribution': 'יד {value}', 'table.title': 'שולחן הפוקר של Riverline'
+    'table.handContribution': 'יד {value}', 'table.title': 'שולחן הפוקר של Riverline',
+    'table.stack': '{value} bb', 'table.status.toAct': 'לתורו', 'table.status.folded': 'פולד', 'table.status.allIn': 'אול-אין',
+    'table.action.fold': 'פולד', 'table.action.check': 'צ׳ק', 'table.action.call': 'קול {value} bb',
+    'table.action.betTo': 'בט עד {value} bb', 'table.action.raiseTo': 'רייז עד {value} bb', 'table.action.allInTo': 'אול-אין עד {value} bb',
+    'table.action.unknown': 'פעולה', 'table.phase.awaitingPrivateCards': 'ממתין לקלפים פרטיים',
+    'table.phase.awaitingStreet': 'ממתין ל-{street}', 'table.phase.showdown': 'שואודאון', 'table.phase.terminal': 'היד הסתיימה',
+    'table.phase.scenario': 'תרחיש', 'table.street.preflop': 'פרה-פלופ', 'table.street.flop': 'פלופ',
+    'table.street.turn': 'טרן', 'table.street.river': 'ריבר', 'table.a11y.stack': 'סטאק {value} bb',
+    'table.a11y.dealer': 'כפתור הדילר', 'table.a11y.contribution': 'תרומה ברחוב הנוכחי {value} bb',
+    'table.a11y.cardsKnown': 'הקלפים ידועים', 'table.a11y.cardsKnownValue': 'קלפים: {cards}', 'table.a11y.cardsHidden': 'הקלפים מוסתרים',
+    'table.a11y.cardsUndealt': 'הקלפים טרם חולקו', 'table.a11y.boardEmpty': 'הבורד טרם חולק',
+    'table.a11y.boardCards': 'בורד: {cards}', 'table.a11y.scenario': 'תצוגת שולחן מצומצמת של תרחיש'
   };
 
   const themeNames = {

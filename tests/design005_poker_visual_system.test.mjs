@@ -132,7 +132,7 @@ test('the poker table retains seat mapping and adds semantic presentation states
 
 test('table markup fixes the invalid height attribute and remains presentation-only', () => {
   assert.doesNotMatch(table, /height="auto"/);
-  assert.match(table, /viewBox="0 -40 800 560" width="100%"/);
+  assert.match(table, /viewBox="0 -80 800 600" width="100%"/);
   assert.match(table, /role="img" aria-labelledby="poker-table-title"/);
   assert.match(table, /Presentation-only state/);
   assert.doesNotMatch(table, /applyAction|legalActions|PokerState|DecisionContext|calculateEquity/);

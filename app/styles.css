@@ -7491,7 +7491,7 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .table-wrapper.collapsed #visual-table-container { margin: 0; }
 .playbook-table-toggle { margin: 0; }
 #visual-table-container { margin-bottom: var(--space-4); padding-block: var(--space-2); overflow: visible; }
-.riverline-poker-table { aspect-ratio: 10 / 7; }
+.riverline-poker-table { aspect-ratio: 4 / 3; }
 .table-card-rank.table-card-rank--ten { font-size: 12px; letter-spacing: -.1em; }
 .table-card-corner-rank.table-card-rank--ten { font-size: 8px; letter-spacing: -.1em; }
 .playbook-decision-workspace .matrix-wrap { max-width: 100%; }
@@ -8718,17 +8718,86 @@ body.has-modal-open { overflow: hidden; }
   box-shadow: inset 3px 0 0 var(--accent-primary);
 }
 
-/* Stack stays the primary attached seat fact; contributions are secondary. */
-.table-seat-name { font-size: 11px; }
+/* TABLE-PRESENCE-001A: canonical facts stay attached to a restrained table surface. */
+.table-seat-name { font-size: 10px; }
 .table-seat-info { pointer-events: none; }
 .table-hole-cards { pointer-events: none; }
-.table-seat-stack {
+.table-phase-status {
   fill: var(--text-secondary);
+  font: 750 9px/1 var(--font-ui);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.table-seat-position {
+  fill: var(--text-muted);
+  font: 700 8px/1 var(--font-data);
+  letter-spacing: .08em;
+}
+.table-seat-stack {
+  fill: var(--text-primary);
   font: 750 10px/1 var(--font-data);
 }
-.table-seat-diagnostic {
-  fill: var(--text-muted);
-  font: 600 7px/1 var(--font-data);
+.table-seat-status {
+  fill: var(--text-secondary);
+  font: 750 7px/1 var(--font-ui);
+  letter-spacing: .03em;
+}
+.table-seat.is-actor .table-seat-status { fill: var(--status-warning); }
+.table-seat.is-folded .table-seat-status { fill: var(--text-disabled); }
+.table-seat.is-all-in .table-seat-status { fill: var(--action-all-in); }
+.table-actor-indicator {
+  display: none;
+  fill: none;
+  stroke: var(--status-warning);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.table-seat.is-actor .table-actor-indicator { display: block; }
+.table-seat.is-folded .table-hole-cards { opacity: .58; }
+.table-contribution[hidden],
+.table-action-badge[hidden],
+.table-seat-status[hidden],
+.table-pot[hidden] { display: none; }
+.table-contribution-chip {
+  fill: var(--accent-primary);
+  stroke: color-mix(in srgb, var(--accent-primary) 50%, var(--text-primary));
+  stroke-width: 1;
+}
+.table-contribution-chip--back {
+  fill: color-mix(in srgb, var(--accent-primary) 62%, var(--surface-inset));
+}
+.table-contribution-surface {
+  fill: color-mix(in srgb, var(--surface-overlay) 90%, transparent);
+  stroke: color-mix(in srgb, var(--accent-primary) 42%, var(--border-default));
+  stroke-width: 1;
+}
+.table-contribution-amount {
+  fill: var(--text-primary);
+  font: 750 8px/1 var(--font-data);
+}
+.table-action-badge { --table-action-color: var(--text-secondary); }
+.table-action-surface {
+  fill: color-mix(in srgb, var(--surface-overlay) 92%, transparent);
+  stroke: color-mix(in srgb, var(--table-action-color) 62%, var(--border-default));
+  stroke-width: 1.25;
+}
+.table-action-label {
+  fill: var(--text-primary);
+  font: 800 8px/1 var(--font-ui);
+  letter-spacing: 0;
+}
+.table-action-badge.is-action-fold { --table-action-color: var(--action-fold); }
+.table-action-badge.is-action-check,
+.table-action-badge.is-action-call { --table-action-color: var(--action-passive); }
+.table-action-badge.is-action-bet,
+.table-action-badge.is-action-raise { --table-action-color: var(--action-aggressive); }
+.table-action-badge.is-action-all-in { --table-action-color: var(--action-all-in); }
+[dir="rtl"] .table-seat-stack,
+[dir="rtl"] .table-contribution-amount,
+[dir="rtl"] .table-card-rank,
+[dir="rtl"] .table-card-suit {
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 /* Explicit overlay ordering keeps every modal above the sticky application

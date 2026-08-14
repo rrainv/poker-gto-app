@@ -5,6 +5,7 @@ import {
   createPlaybookScenarioInput,
   createPlaybookViewModel,
 } from './playbook-state-source.mjs';
+import { createTablePresenceViewModel } from './table-presence-view-model.mjs';
 
 export const PLAYBOOK_STATE_CHANGE_EVENT = 'riverline:playbook-state-change';
 
@@ -42,6 +43,13 @@ export function installPlaybookStateSourceBridge(browserWindow, {
       return createPlaybookViewModel({
         resolution: modeController.getResolution(),
         strategyResult,
+      });
+    },
+
+    createTablePresenceViewModel() {
+      return createTablePresenceViewModel({
+        state: canonicalController.getState(),
+        heroPlayerId: canonicalController.getHeroPlayerId(),
       });
     },
 

@@ -126,7 +126,7 @@ test('Betting Context is a coherent six-column two-row structural grid', () => {
 });
 
 test('table viewBox reserves seat extrema and expanded wrapper does not clip', () => {
-  assert.match(table, /viewBox="0 -40 800 560"/);
+  assert.match(table, /viewBox="0 -80 800 600"/);
   assert.match(repairCss, /\.table-wrapper\s*\{[^}]*overflow:\s*visible/);
   assert.match(repairCss, /#visual-table-container\s*\{[^}]*overflow:\s*visible/);
   assert.match(repairCss, /\.table-wrapper\.collapsed\s*\{[^}]*height:\s*0[^}]*overflow:\s*hidden/);

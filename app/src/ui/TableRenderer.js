@@ -28,7 +28,7 @@ class TableRenderer {
     this.lastState = null;
     this.renderedCardSignatures = new Map();
     this.initSVG();
-    window.addEventListener('gameStateUpdate', (e) => this.renderState(e.detail));
+    window.addEventListener('gameStateUpdate', (event) => this.renderState(event.detail));
     window.addEventListener('riverlineCardRankStyleChanged', () => {
       if (this.lastState) this.renderState(this.lastState);
     });
@@ -43,8 +43,9 @@ class TableRenderer {
 
   initSVG() {
     this.container.innerHTML = `
-      <svg id="poker-table-svg" class="riverline-poker-table" viewBox="0 -40 800 560" width="100%" role="img" aria-labelledby="poker-table-title" preserveAspectRatio="xMidYMid meet">
+      <svg id="poker-table-svg" class="riverline-poker-table" viewBox="0 -80 800 600" width="100%" role="img" aria-labelledby="poker-table-title" aria-describedby="poker-table-description" preserveAspectRatio="xMidYMid meet">
         <title id="poker-table-title">${tableMessage('table.title', 'Riverline poker table')}</title>
+        <desc id="poker-table-description"></desc>
         <defs>
           <linearGradient id="riverlineTableRail" x1="0" y1="0" x2="0" y2="1">
             <stop class="table-rail-start" offset="0%" />
@@ -55,24 +56,24 @@ class TableRenderer {
             <stop class="table-surface-end" offset="100%" />
           </radialGradient>
           <filter id="riverlineTableShadow" x="-20%" y="-20%" width="140%" height="150%">
-            <feDropShadow dx="0" dy="7" stdDeviation="8" flood-opacity="0.28"/>
+            <feDropShadow dx="0" dy="7" stdDeviation="8" flood-opacity="0.28" />
           </filter>
           <filter id="riverlineCardShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.22"/>
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.22" />
           </filter>
         </defs>
 
-        <rect class="table-rail" x="50" y="50" width="700" height="400" rx="200" ry="200" />
-        <rect class="table-surface" x="70" y="70" width="660" height="360" rx="180" ry="180" />
-        <rect class="table-betting-line" x="100" y="100" width="600" height="300" rx="150" ry="150" />
-        <path class="table-riverline-mark" d="M286 176 C342 146 458 146 514 176" />
+        <rect class="table-rail" x="50" y="50" width="700" height="400" rx="200" ry="200" aria-hidden="true" />
+        <rect class="table-surface" x="70" y="70" width="660" height="360" rx="180" ry="180" aria-hidden="true" />
+        <rect class="table-betting-line" x="100" y="100" width="600" height="300" rx="150" ry="150" aria-hidden="true" />
+        <path class="table-riverline-mark" d="M286 176 C342 146 458 146 514 176" aria-hidden="true" />
 
+        <text id="table-phase-status" class="table-phase-status" x="400" y="194" text-anchor="middle"></text>
         <text id="table-pot" class="table-pot" x="400" y="220" text-anchor="middle">${tableMessage('table.pot', 'Pot {value} bb', { value: 0 })}</text>
         <g id="community-cards" class="table-community-cards" transform="translate(250, 240)"></g>
         <g id="seats-layer" class="table-seats-layer"></g>
       </svg>
     `;
-
     this.drawSeats();
   }
 
@@ -84,26 +85,38 @@ class TableRenderer {
     const centerY = 250;
     const rx = 340;
     const ry = 210;
-
     let html = '';
+
     for (let i = 0; i < activePlayers; i++) {
-      // Seat zero remains the visual hero anchor; poker turn order is not derived here.
+      // Visual index zero is the stable Hero anchor. Turn order is supplied by the model.
       const angle = (Math.PI / 2) + (i * (2 * Math.PI / activePlayers));
       const x = Math.round(centerX + rx * Math.cos(angle));
       const y = Math.round(centerY + ry * Math.sin(angle));
 
       html += `
         <g id="seat-${i}" class="table-seat${i === 0 ? ' is-hero' : ''}" data-seat-index="${i}" transform="translate(${x}, ${y})">
-          <g id="hole-cards-${i}" class="table-hole-cards" transform="translate(0, -92)">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
+          <g id="hole-cards-${i}" class="table-hole-cards" transform="translate(0, -110)" aria-hidden="true">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
           <g class="table-seat-info">
-            <rect class="table-seat-surface" x="-41" y="-23" width="82" height="46" rx="10" />
-            <text class="table-seat-name" x="0" y="-5" text-anchor="middle">${i === 0 ? tableMessage('Hero', 'Hero') : `P${i + 1}`}</text>
-            <text id="seat-meta-${i}" class="table-seat-meta table-seat-stack" x="0" y="7" text-anchor="middle" hidden></text>
-            <text id="seat-diagnostic-${i}" class="table-seat-meta table-seat-diagnostic" x="0" y="17" text-anchor="middle" hidden></text>
+            <rect class="table-seat-surface" x="-54" y="-48" width="108" height="96" rx="12" aria-hidden="true" />
+            <path class="table-actor-indicator" d="M-44 -41 H44" aria-hidden="true" />
+            <text class="table-seat-name" x="0" y="-31" text-anchor="middle">${i === 0 ? tableMessage('Hero', 'Hero') : `P${i + 1}`}</text>
+            <text id="seat-position-${i}" class="table-seat-meta table-seat-position" x="0" y="-19" text-anchor="middle"></text>
+            <text id="seat-stack-${i}" class="table-seat-meta table-seat-stack" x="0" y="-6" text-anchor="middle"></text>
+            <text id="seat-status-${i}" class="table-seat-meta table-seat-status" x="0" y="7" text-anchor="middle" hidden></text>
           </g>
-          <g id="dealer-${i}" class="table-dealer-button" transform="translate(35, -15)" hidden>
-            <circle r="10" />
-            <text id="dealer-txt-${i}" x="0" y="3.5" text-anchor="middle">D</text>
+          <g id="dealer-${i}" class="table-dealer-button" transform="translate(47, -39)" hidden>
+            <circle r="10" aria-hidden="true" />
+            <text id="dealer-txt-${i}" x="0" y="3.5" text-anchor="middle" aria-hidden="true">D</text>
+          </g>
+          <g id="contribution-${i}" class="table-contribution" transform="translate(0, 39)" hidden aria-hidden="true">
+            <circle class="table-contribution-chip table-contribution-chip--back" cx="-32" cy="0" r="6" aria-hidden="true" />
+            <circle class="table-contribution-chip" cx="-28" cy="0" r="6" aria-hidden="true" />
+            <rect class="table-contribution-surface" x="-18" y="-9" width="61" height="18" rx="9" aria-hidden="true" />
+            <text class="table-contribution-amount" x="12" y="3" text-anchor="middle"></text>
+          </g>
+          <g id="action-${i}" class="table-action-badge" transform="translate(0, 20)" hidden aria-hidden="true">
+            <rect class="table-action-surface" x="-48" y="-9" width="96" height="18" rx="9" aria-hidden="true" />
+            <text class="table-action-label" x="0" y="3" text-anchor="middle"></text>
           </g>
         </g>
       `;
@@ -161,97 +174,303 @@ class TableRenderer {
     this.renderedCardSignatures.set(key, signatures);
   }
 
-  renderState(state) {
-    // Presentation-only state: no betting order or poker semantics are inferred here.
-    if (!state) return;
-    this.lastState = state;
+  formatMilliBb(milliBb) {
+    if (!Number.isSafeInteger(milliBb) || milliBb < 0) return '';
+    const value = Number((milliBb / 1000).toFixed(3));
+    return new Intl.NumberFormat(document.documentElement.lang || 'en', {
+      maximumFractionDigits: 3,
+    }).format(value);
+  }
 
-    if (state.mode === 'hand' && state.empty) {
-      this.currentActivePlayers = 0;
-      this.renderedCardSignatures.clear();
-      this.drawSeats(0);
-      const emptyPot = this.container.querySelector('#table-pot');
-      const emptyBoard = this.container.querySelector('#community-cards');
-      if (emptyPot) emptyPot.textContent = tableMessage('table.empty.startHand', 'Start a hand');
-      if (emptyBoard) emptyBoard.innerHTML = '';
-      return;
+  presenceSeatIdentity(player) {
+    const fallback = player.isHero
+      ? tableMessage('Hero', 'Hero')
+      : tableMessage('Player {number}', 'Player {number}', { number: player.seat + 1 });
+    if (!player.suppliedName) return fallback;
+    return player.isHero ? `${tableMessage('Hero', 'Hero')} · ${player.suppliedName}` : player.suppliedName;
+  }
+
+  presenceStatus(player) {
+    if (player.isCurrentActor) return tableMessage('table.status.toAct', 'To act');
+    if (player.isFolded) return tableMessage('table.status.folded', 'Folded');
+    if (player.isAllIn) return tableMessage('table.status.allIn', 'All-in');
+    return '';
+  }
+
+  presenceAction(action) {
+    if (!action) return '';
+    const value = this.formatMilliBb(action.amountMilliBb);
+    const messages = {
+      fold: ['table.action.fold', 'Fold'],
+      check: ['table.action.check', 'Check'],
+      call: ['table.action.call', 'Call {value} bb'],
+      bet: ['table.action.betTo', 'Bet to {value} bb'],
+      raise: ['table.action.raiseTo', 'Raise to {value} bb'],
+      all_in: ['table.action.allInTo', 'All-in to {value} bb'],
+    };
+    const [key, fallback] = messages[action.type] || ['table.action.unknown', 'Action'];
+    return tableMessage(key, fallback, { value });
+  }
+
+  presencePhase(state) {
+    if (state.empty) return tableMessage('table.empty.startHand', 'Start a hand');
+    if (state.status === 'awaiting_private_cards') {
+      return tableMessage('table.phase.awaitingPrivateCards', 'Awaiting private cards');
+    }
+    if (state.status === 'awaiting_board') {
+      const nextStreet = String(state.pendingChance?.type || '').replace('deal_', '');
+      const street = tableMessage(`table.street.${nextStreet}`, nextStreet, {});
+      return tableMessage('table.phase.awaitingStreet', 'Waiting for {street}', { street });
+    }
+    if (state.status === 'showdown') return tableMessage('table.phase.showdown', 'Showdown');
+    if (state.status === 'terminal') return tableMessage('table.phase.terminal', 'Hand complete');
+    return tableMessage(`table.street.${state.street}`, state.street || '', {});
+  }
+
+  presenceSeatDescription(player) {
+    const parts = [
+      this.presenceSeatIdentity(player),
+      player.position,
+      tableMessage('table.a11y.stack', 'Stack {value} bb', {
+        value: this.formatMilliBb(player.currentStackMilliBb),
+      }),
+    ].filter(Boolean);
+    if (player.isButton) parts.push(tableMessage('table.a11y.dealer', 'Dealer button'));
+    const status = this.presenceStatus(player);
+    if (status) parts.push(status);
+    if (player.streetContributionMilliBb > 0) {
+      parts.push(tableMessage('table.a11y.contribution', 'Current-street contribution {value} bb', {
+        value: this.formatMilliBb(player.streetContributionMilliBb),
+      }));
+    }
+    const action = this.presenceAction(player.latestAction);
+    if (action) parts.push(action);
+    if (player.cardVisibility === 'known') {
+      parts.push(tableMessage('table.a11y.cardsKnownValue', 'Cards {cards}', {
+        cards: player.cards.map((card) => card.id).join(' '),
+      }));
+    } else {
+      const cardsKey = player.cardVisibility === 'hidden'
+        ? 'table.a11y.cardsHidden' : 'table.a11y.cardsUndealt';
+      const cardsFallback = player.cardVisibility === 'hidden' ? 'Cards hidden' : 'Cards not dealt';
+      parts.push(tableMessage(cardsKey, cardsFallback));
+    }
+    return parts.join(' · ');
+  }
+
+  renderPresenceState(state) {
+    const activePlayers = state.seats.length;
+    if (activePlayers !== this.currentActivePlayers) {
+      this.currentActivePlayers = activePlayers;
+      this.drawSeats(activePlayers);
     }
 
+    const phase = this.container.querySelector('#table-phase-status');
+    const pot = this.container.querySelector('#table-pot');
+    const description = this.container.querySelector('#poker-table-description');
+    if (phase) phase.textContent = this.presencePhase(state);
+    if (pot) {
+      pot.textContent = tableMessage('table.pot', 'Pot {value} bb', {
+        value: this.formatMilliBb(state.potMilliBb),
+      });
+      pot.toggleAttribute('hidden', state.empty);
+    }
+
+    const community = this.container.querySelector('#community-cards');
+    if (community) {
+      this.renderKnownCards(community, state.board, 'community', true);
+      community.setAttribute('role', 'group');
+      community.setAttribute('aria-label', state.board.length
+        ? tableMessage('table.a11y.boardCards', 'Board {cards}', {
+          cards: state.board.map((card) => card.id).join(' '),
+        })
+        : tableMessage('table.a11y.boardEmpty', 'Board not dealt'));
+    }
+
+    if (description) {
+      description.textContent = [
+        this.presencePhase(state),
+        state.empty ? null : tableMessage('table.pot', 'Pot {value} bb', {
+          value: this.formatMilliBb(state.potMilliBb),
+        }),
+        ...state.seats.map((player) => this.presenceSeatDescription(player)),
+      ].filter(Boolean).join('. ');
+    }
+
+    for (const player of state.seats) {
+      const i = player.visualSeatIndex;
+      const seat = this.container.querySelector(`#seat-${i}`);
+      if (!seat) continue;
+      const dealer = this.container.querySelector(`#dealer-${i}`);
+      const name = seat.querySelector('.table-seat-name');
+      const position = this.container.querySelector(`#seat-position-${i}`);
+      const stack = this.container.querySelector(`#seat-stack-${i}`);
+      const status = this.container.querySelector(`#seat-status-${i}`);
+      const contribution = this.container.querySelector(`#contribution-${i}`);
+      const action = this.container.querySelector(`#action-${i}`);
+      const holeCards = this.container.querySelector(`#hole-cards-${i}`);
+      const isHero = player.isHero;
+      const isDealer = player.isButton;
+      const isActor = player.isCurrentActor;
+
+      seat.dataset.canonicalSeat = String(player.seat);
+      seat.dataset.playerId = player.playerId;
+      seat.setAttribute('role', 'group');
+      seat.setAttribute('aria-label', this.presenceSeatDescription(player));
+      seat.classList.toggle('is-hero', isHero);
+      seat.classList.toggle('is-dealer', isDealer);
+      seat.classList.toggle('is-actor', isActor);
+      seat.classList.toggle('is-folded', player.isFolded);
+      seat.classList.toggle('is-all-in', player.isAllIn);
+
+      if (name) {
+        name.textContent = this.presenceSeatIdentity(player);
+        if (name.textContent.length > 15) {
+          name.setAttribute('textLength', '96');
+          name.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+        } else {
+          name.removeAttribute('textLength');
+          name.removeAttribute('lengthAdjust');
+        }
+      }
+      if (position) position.textContent = player.position || '';
+      if (stack) stack.textContent = tableMessage('table.stack', '{value} bb', {
+        value: this.formatMilliBb(player.currentStackMilliBb),
+      });
+      if (status) {
+        status.textContent = this.presenceStatus(player);
+        status.toggleAttribute('hidden', !status.textContent);
+      }
+      if (dealer) {
+        dealer.toggleAttribute('hidden', !isDealer);
+        dealer.setAttribute('role', 'img');
+        dealer.setAttribute('aria-label', tableMessage('table.a11y.dealer', 'Dealer button'));
+      }
+      if (contribution) {
+        const isVisible = player.streetContributionMilliBb > 0;
+        contribution.toggleAttribute('hidden', !isVisible);
+        contribution.setAttribute('aria-hidden', String(!isVisible));
+        if (isVisible) {
+          const amount = this.formatMilliBb(player.streetContributionMilliBb);
+          contribution.querySelector('.table-contribution-amount').textContent = `${amount} bb`;
+          contribution.setAttribute('role', 'group');
+          contribution.setAttribute('aria-label', tableMessage(
+            'table.a11y.contribution',
+            'Current-street contribution {value} bb',
+            { value: amount },
+          ));
+        }
+      }
+      if (action) {
+        const actionLabel = this.presenceAction(player.latestAction);
+        action.toggleAttribute('hidden', !actionLabel);
+        action.setAttribute('aria-hidden', String(!actionLabel));
+        action.classList.remove(
+          'is-action-fold', 'is-action-check', 'is-action-call',
+          'is-action-bet', 'is-action-raise', 'is-action-all-in',
+        );
+        if (actionLabel) {
+          const actionType = player.latestAction.type.replace('_', '-');
+          action.classList.add(`is-action-${actionType}`);
+          action.dataset.actionType = player.latestAction.type;
+          const actionText = action.querySelector('.table-action-label');
+          actionText.textContent = actionLabel;
+          if (actionLabel.length > 17) {
+            actionText.setAttribute('textLength', '80');
+            actionText.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+          } else {
+            actionText.removeAttribute('textLength');
+            actionText.removeAttribute('lengthAdjust');
+          }
+          action.setAttribute('role', 'group');
+          action.setAttribute('aria-label', actionLabel);
+        } else {
+          delete action.dataset.actionType;
+        }
+      }
+      if (holeCards) {
+        if (player.cardVisibility === 'known') {
+          this.renderKnownCards(holeCards, player.cards, `hole-${player.seat}`, false);
+        } else {
+          holeCards.innerHTML = player.cardVisibility === 'hidden'
+            ? `${this.renderCardBack(0)}${this.renderCardBack(1)}`
+            : '';
+          this.renderedCardSignatures.set(`hole-${player.seat}`, []);
+        }
+      }
+    }
+  }
+
+  renderScenarioState(state) {
     if (state.activePlayers && state.activePlayers !== this.currentActivePlayers) {
       this.currentActivePlayers = state.activePlayers;
       this.drawSeats(this.currentActivePlayers);
     }
-
+    const phase = this.container.querySelector('#table-phase-status');
+    if (phase) phase.textContent = tableMessage('table.phase.scenario', 'Scenario');
+    const description = this.container.querySelector('#poker-table-description');
+    if (description) description.textContent = tableMessage('table.a11y.scenario', 'Lossy Scenario table presentation');
     const potText = this.container.querySelector('#table-pot');
     if (potText && state.pot !== undefined) {
+      potText.removeAttribute('hidden');
       potText.textContent = tableMessage('table.pot', 'Pot {value} bb', { value: state.pot });
     }
 
     for (let i = 0; i < this.currentActivePlayers; i++) {
       const seat = this.container.querySelector(`#seat-${i}`);
       const dealer = this.container.querySelector(`#dealer-${i}`);
-      const meta = this.container.querySelector(`#seat-meta-${i}`);
-      const diagnostic = this.container.querySelector(`#seat-diagnostic-${i}`);
       const name = seat?.querySelector('.table-seat-name');
+      const position = this.container.querySelector(`#seat-position-${i}`);
+      const stack = this.container.querySelector(`#seat-stack-${i}`);
+      const status = this.container.querySelector(`#seat-status-${i}`);
+      const contribution = this.container.querySelector(`#contribution-${i}`);
+      const action = this.container.querySelector(`#action-${i}`);
       const holeCards = this.container.querySelector(`#hole-cards-${i}`);
       const playerState = Array.isArray(state.players)
         ? state.players.find((player) => player?.seat === i || player?.seatIndex === i)
         : null;
       const isDealer = state.dealerPos === i;
-      const isActor = state.actorPos === i || state.currentActor === i;
+      const isActor = false;
       const isHero = playerState ? Boolean(playerState.isHero) : i === 0;
 
       if (dealer) dealer.toggleAttribute('hidden', !isDealer);
       if (name) name.textContent = playerState?.name || (isHero ? tableMessage('Hero', 'Hero') : `P${i + 1}`);
-      if (meta) {
-        const details = [];
-        if (Number.isFinite(playerState?.stackBb)) details.push(`${playerState.stackBb} bb`);
-        if (Number.isFinite(playerState?.streetContributionBb)) details.push(tableMessage('table.streetContribution', 'street {value}', { value: playerState.streetContributionBb }));
-        if (Number.isFinite(playerState?.totalContributionBb)) details.push(tableMessage('table.handContribution', 'hand {value}', { value: playerState.totalContributionBb }));
-        meta.textContent = details.join(' · ');
-        meta.toggleAttribute('hidden', details.length === 0);
-      }
-      if (meta) {
-        const stack = Number.isFinite(playerState?.stackBb) ? `${playerState.stackBb} bb` : '';
-        meta.textContent = stack;
-        meta.toggleAttribute('hidden', !stack);
-      }
-      if (diagnostic) {
-        const details = [];
-        if (Number.isFinite(playerState?.streetContributionBb)) details.push(tableMessage('table.streetContribution', 'street {value}', { value: playerState.streetContributionBb }));
-        if (Number.isFinite(playerState?.totalContributionBb)) details.push(tableMessage('table.handContribution', 'hand {value}', { value: playerState.totalContributionBb }));
-        diagnostic.textContent = details.join(' · ');
-        diagnostic.toggleAttribute('hidden', details.length === 0);
-      }
+      if (position) position.textContent = '';
+      if (stack) stack.textContent = Number.isFinite(playerState?.stackBb) ? `${playerState.stackBb} bb` : '';
+      if (status) status.setAttribute('hidden', '');
+      if (contribution) contribution.setAttribute('hidden', '');
+      if (action) action.setAttribute('hidden', '');
       if (seat) {
+        seat.removeAttribute('aria-label');
         seat.classList.toggle('is-hero', isHero);
         seat.classList.toggle('is-dealer', isDealer);
         seat.classList.toggle('is-actor', isActor);
-        seat.classList.toggle('is-folded', Boolean(playerState?.folded));
-        seat.classList.toggle('is-all-in', Boolean(playerState?.allIn || playerState?.isAllIn));
+        seat.classList.toggle('is-folded', false);
+        seat.classList.toggle('is-all-in', false);
       }
-      if (holeCards && state.mode === 'hand') {
+      if (holeCards) {
         if (isHero && Array.isArray(state.heroCards)) {
-          this.renderKnownCards(holeCards, state.heroCards, `hole-${i}`, false);
+          this.renderKnownCards(holeCards, state.heroCards, `scenario-hole-${i}`, false);
         } else {
           holeCards.innerHTML = playerState?.hasCards
             ? `${this.renderCardBack(0)}${this.renderCardBack(1)}`
             : '';
-          this.renderedCardSignatures.set(`hole-${i}`, []);
         }
       }
     }
 
-    const heroSeat = Number.isInteger(state.heroSeat) ? state.heroSeat : 0;
-    const heroHole = this.container.querySelector(`#hole-cards-${heroSeat}`);
-    if (heroHole && state.mode !== 'hand' && state.heroCards) {
-      this.renderKnownCards(heroHole, state.heroCards, `hole-${heroSeat}`, false);
-    }
-
     const community = this.container.querySelector('#community-cards');
-    if (community && state.board) {
-      this.renderKnownCards(community, state.board, 'community', true);
-    }
+    if (community && state.board) this.renderKnownCards(community, state.board, 'community', true);
+  }
+
+  renderState(state) {
+    // Presentation-only state: no betting order or poker semantics are inferred here.
+    if (!state) return;
+    this.lastState = state;
+    const title = this.container.querySelector('#poker-table-title');
+    if (title) title.textContent = tableMessage('table.title', 'Riverline poker table');
+    if (state.schemaVersion === 'table-presence/v1') this.renderPresenceState(state);
+    else this.renderScenarioState(state);
   }
 }
 

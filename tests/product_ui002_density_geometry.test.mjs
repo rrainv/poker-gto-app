@@ -63,17 +63,19 @@ test('Hand Mode uses a compact post-start setup and highlights the current canon
 });
 
 test('table seat identity and stack remain above a separately positioned card layer', () => {
-  assert.match(table, /class="table-hole-cards" transform="translate\(0, -92\)"/);
+  assert.match(table, /class="table-hole-cards" transform="translate\(0, -110\)"/);
   const cardIndex = table.indexOf('class="table-hole-cards"');
   const infoIndex = table.indexOf('class="table-seat-info"');
   assert.ok(cardIndex >= 0 && infoIndex > cardIndex, 'seat information must paint above cards');
-  assert.match(table, /id="seat-meta-\$\{i\}" class="table-seat-meta table-seat-stack"/);
-  assert.match(table, /id="seat-diagnostic-\$\{i\}" class="table-seat-meta table-seat-diagnostic"/);
-  assert.match(table, /const stack = Number\.isFinite\(playerState\?\.stackBb\)/);
+  assert.match(table, /id="seat-position-\$\{i\}" class="table-seat-meta table-seat-position"/);
+  assert.match(table, /id="seat-stack-\$\{i\}" class="table-seat-meta table-seat-stack"/);
+  assert.match(table, /id="seat-status-\$\{i\}" class="table-seat-meta table-seat-status"/);
+  assert.match(table, /stack\.textContent = tableMessage\('table\.stack'/);
+  assert.doesNotMatch(table, /table-seat-diagnostic/);
   assert.match(logic, /const scenarioPlayers = Array\.from/);
   assert.match(logic, /players: scenarioPlayers/);
   assert.match(density, /\.table-seat-stack[\s\S]*font: 750 10px/);
-  assert.match(density, /\.table-seat-diagnostic[\s\S]*font: 600 7px/);
+  assert.match(density, /\.table-seat-status[\s\S]*font: 750 7px/);
 });
 
 test('Settings and collapsed table use viewport-safe responsive layout contracts', () => {

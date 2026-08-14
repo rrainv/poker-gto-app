@@ -8,6 +8,10 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
+const tablePresence = fs.readFileSync(
+  new URL('../app/src/application/table-presence-view-model.mjs', import.meta.url),
+  'utf8',
+);
 const bootstrap = fs.readFileSync(
   new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url),
   'utf8',
@@ -193,13 +197,14 @@ test('supporting metrics are compact and DecisionContext-backed', () => {
 
 test('canonical table projection includes actor, hero, stacks, contributions, and statuses', () => {
   for (const field of [
-    'actorPos', 'heroSeat', 'stackBb', 'streetContributionBb',
-    'totalContributionBb', 'folded', 'allIn',
-  ]) assert.match(logic, new RegExp(`${field}:`), field);
+    'currentActorSeat', 'heroSeat', 'currentStackMilliBb', 'streetContributionMilliBb',
+    'totalPotContributionMilliBb', 'isFolded', 'isAllIn', 'latestAction',
+  ]) assert.match(tablePresence, new RegExp(`${field}[:,]`), field);
+  assert.match(logic, /callPlaybookStateBridge\('createTablePresenceViewModel'\)/);
   assert.match(table, /seat\.classList\.toggle\('is-hero'/);
   assert.match(table, /seat\.classList\.toggle\('is-actor'/);
-  assert.match(table, /playerState\?\.totalContributionBb/);
-  assert.match(table, /state\.mode === 'hand'/);
+  assert.match(table, /player\.latestAction/);
+  assert.match(table, /state\.schemaVersion === 'table-presence\/v1'/);
 });
 
 test('Range Matrix remains 13 by 13, mixed, inspectable, and LTR', () => {

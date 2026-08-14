@@ -1609,33 +1609,10 @@ function renderCanonicalActionHistory(state) {
   }).join('') : `<li><span>${t('No actions yet')}</span></li>`;
 }
 
-function dispatchCanonicalTableState(state) {
-  if (!state) return;
-  const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
-  const hero = state.players.find((player) => player.playerId === heroPlayerId);
-  const actor = state.players.find((player) => player.playerId === state.actingPlayerId);
-  window.dispatchEvent(new CustomEvent('gameStateUpdate', { detail: {
-    mode: 'hand',
-    pot: (state.potMilliBb / 1000).toFixed(1),
-    board: state.board.map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) })),
-    heroCards: (Array.isArray(hero?.holeCards) ? hero.holeCards : []).map((card) => ({ rank: card.slice(0, -1), suit: card.slice(-1) })),
-    dealerPos: state.buttonSeat,
-    actorPos: actor?.seat ?? null,
-    heroSeat: hero?.seat ?? null,
-    activePlayers: state.players.length,
-    players: state.players.map((player) => ({
-      seat: player.seat,
-      name: player.playerId === heroPlayerId ? 'Hero' : player.position,
-      position: player.position,
-      isHero: player.playerId === heroPlayerId,
-      stackBb: player.currentStackMilliBb / 1000,
-      streetContributionBb: player.streetContributionMilliBb / 1000,
-      totalContributionBb: player.totalPotContributionMilliBb / 1000,
-      folded: player.folded,
-      allIn: player.currentStackMilliBb === 0 && !player.folded,
-      hasCards: player.holeCards !== null
-    }))
-  }}));
+function dispatchCanonicalTableState() {
+  const tableModel = callPlaybookStateBridge('createTablePresenceViewModel');
+  if (!tableModel) return;
+  window.dispatchEvent(new CustomEvent('gameStateUpdate', { detail: tableModel }));
 }
 
 function renderCanonicalHandWorkspace() {
@@ -1678,10 +1655,7 @@ function renderCanonicalHandWorkspace() {
     $('#handResolveShowdownButton').hidden = !canResolveShowdown;
     $('#handResolveShowdownButton').disabled = !canResolveShowdown;
   }
-  if (state) dispatchCanonicalTableState(state);
-  else window.dispatchEvent(new CustomEvent('gameStateUpdate', {
-    detail: { mode: 'hand', empty: true, board: [], heroCards: [] }
-  }));
+  dispatchCanonicalTableState();
 }
 
 function bindCanonicalHandWorkspace() {
@@ -2772,7 +2746,7 @@ function renderPlaybookTableProjection() {
   if (!decisionContext || !playbookResolution) return;
   const playbookBridge = globalThis.RiverlinePlaybookState;
   if (playbookResolution.mode === 'hand' && typeof dispatchCanonicalTableState === 'function') {
-    dispatchCanonicalTableState(playbookBridge?.getState?.());
+    dispatchCanonicalTableState();
     return;
   }
 
@@ -2795,6 +2769,7 @@ function renderPlaybookTableProjection() {
 
   window.dispatchEvent(new CustomEvent('gameStateUpdate', {
     detail: {
+      mode: 'scenario',
       pot: Number(decisionContext.potBb).toFixed(1),
       board: parsedBoard,
       heroCards: parsedHero,
