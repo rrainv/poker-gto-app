@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 13, 2026.
+Last refreshed: August 14, 2026.
 
 Code, tests, Git history, and the latest accepted ticket report override this snapshot.
 
@@ -17,27 +17,35 @@ Completed major phases:
 - `PERF-001`
 - `PRODUCT-UI-001` through `PRODUCT-UI-005`, including their accepted correction passes
 - agent-documentation refresh
+- `RANGE-CAL-000` through `RANGE-CAL-002A` Personal Strategy foundation and isolated sparse-RFI inference baseline
 
-Current reported ticket:
+## Strategy checkpoint — Personal Strategy
 
-- `POLISH-FINAL-001` visual and motion polish is manually accepted
-- `POLISH-FINAL-001R` raises and separates existing cue levels without changing event ownership; focused automation and Electron hook/toggle checks are clean, while `QA-POLISH-001` remains `PARTIAL` pending human listening acceptance
+`STRATEGY-CHECKPOINT-001` records the completed Personal Strategy foundation:
 
-Previously reported acceptance work:
+- `RANGE-CAL-000` domain foundation
+- `RANGE-CAL-001A` workspace/context builder
+- `RANGE-CAL-001B/001BR` direct elicitation and truthful tied mixes
+- `RANGE-CAL-001C-A` record-oriented IndexedDB persistence, migration, recovery, and atomic writes
+- `RANGE-CAL-UI-001R` profile-editor geometry and polish
+- `RANGE-CAL-002A` isolated sparse RFI inference baseline and synthetic holdout evaluation
 
-- `EQUITY-UX-001` and its `EQUITY-UX-001R` presentation correction are implemented and test-verified in the current unstaged working ticket
-- renderer automation was unavailable for the correction pass, so `RL-16` remains `PARTIAL` pending final human visual acceptance and commit
-- `GUIDE-001` is implemented and test-verified; `RL-17` remains `PARTIAL` pending final human review of the live Guide
+The usable subsystem has named profiles, exactly three user-named discrete modes, direct RFI Fold/Raise calibration, optional explicit mixes, truthful tied-mix semantics, pause/resume/undo, durable local persistence, migration/recovery, portable export/import groundwork, and an isolated deterministic inference research module.
 
-Next planned ticket after acceptance:
+`RANGE-CAL-002A` is promising only for locally structured synthetic ranges: at 30/40/50 answers it selectively covered about 49.6%/60.0%/64.3% of eligible holdouts at about 89.5%/89.4%/91.0% attempted accuracy. It abstains rather than filling every cell, and the deliberately irregular/non-monotonic fixture remained near chance on attempted predictions. These are synthetic research results, not independent real-user validation. Internal support differences are not confidence, inferred dominant actions are not action frequencies, and the module remains unexported from the live Personal Strategy index, unpersisted, and unused by the product. See `RANGE_CAL_002A_HOLDOUT_REPORT.md`.
 
-- `L10N-001`
-- one final fresh QA sweep
-- Product / Feature Labs only after that acceptance
+Further Personal Strategy work is intentionally **DEFERRED**, not rejected: `RANGE-CAL-002B`–`002D`, `RANGE-CAL-002R`, mode interpolation, StrategyProvider integration, Training-to-profile evidence, and broader integration. Existing contracts/data remain preserved, the Range Calibration workspace remains usable, the deterministic 169 loop remains a fallback/test harness, and no current workspace depends on incomplete inference. Resume at `RANGE-CAL-002B`; do not redesign the foundation.
+
+## Active product direction
+
+- **ACTIVE NEXT — `TABLE-PRESENCE-001A`:** create the richer static Hand Mode table layer from trusted canonical Hand Mode data only. It owns presentation for the dealer/button marker, player identity and stack hierarchy, current-actor emphasis, folded/all-in states, current-street contributions/chips, central pot, completed versus current actions, and a reusable application-level table view model. The renderer consumes trusted state; it does not calculate poker rules, pots, contributions, legality, or replay states. No replay controls or playback animation belong to this ticket. Preserve restrained premium presentation, EN/RU/HE, RTL, themes, desktop responsiveness, and Firefox-first acceptance.
+- **PLANNED — `REPLAY-001A`:** after Table Presence acceptance, add a read-only canonical action timeline grouped by street, with player/position identity, action and amount, Hero emphasis, folds/checks/calls/bets/raises/all-ins, and a current-decision marker. No scrubbing yet.
+- **PLANNED LATER — `REPLAY-001B`:** deterministic previous/next step-through with a trustworthy projected state and clear live-state versus replay-state distinction; table updates flow through the Table Presence layer.
+- **PLANNED LATER — `REPLAY-001C`:** play/pause, adjustable speed, restrained card/chip/bet/pot motion, and reduced-motion behavior. No casino/jackpot aesthetic.
 
 ## Current priority
 
-Finish the existing product as a polished, trustworthy application before returning to model/cloud/deployment work.
+Develop one bounded ticket at a time: start with `TABLE-PRESENCE-001A`, then consider the Replay sequence only after the preceding acceptance gate. Preserve the polished baseline; Scenario Mode and canonical Hand Mode remain distinct, PokerState remains the poker-rule authority, and table rendering must not implement poker mathematics.
 
 Do not start solver/model/cloud work merely because specialized prompt files exist.
 

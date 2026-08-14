@@ -9,6 +9,13 @@ Status vocabulary:
 - `IDEA`: worth exploring
 - `DEFERRED`: intentionally later
 
+## Current delivery ordering
+
+- **ACTIVE NEXT — `TABLE-PRESENCE-001A`:** richer static canonical Hand Mode table presentation, using trusted state only; no replay controls, animation, or UI poker mathematics.
+- **PLANNED — `REPLAY-001A`:** read-only canonical action timeline after Table Presence acceptance.
+- **PLANNED LATER — `REPLAY-001B/001C`:** deterministic step-through, then playback/motion through the Table Presence layer.
+- **DEFERRED — Personal Strategy continuation:** `RANGE-CAL-002B`–`002D`, `RANGE-CAL-002R`, mode interpolation, StrategyProvider integration, Training-to-profile evidence, and broader integration. The completed foundation and usable Range Calibration workspace remain preserved; resume at `RANGE-CAL-002B`.
+
 ## Product Lab: UI capabilities
 
 | ID | Status | Capability | Dependencies |
@@ -25,7 +32,7 @@ Status vocabulary:
 
 | ID | Status | Capability | Notes |
 |---|---|---|---|
-| PROD-TABLE-001 | PRIORITY | richer physical table presentation | preserve analytical readability |
+| PROD-TABLE-001 | PRIORITY | richer physical table presentation | active delivery begins with `TABLE-PRESENCE-001A`; preserve analytical readability and canonical-state authority |
 | PROD-TABLE-002 | PLANNED | dealer and dealing/chip/contribution animations | replay-ready state model |
 | PROD-TABLE-003 | PRIORITY | configurable player/villain names | generic seat labels remain fallback |
 | PROD-TABLE-004 | PRIORITY | per-player starting/current stacks | canonical and Scenario authority must be explicit |
@@ -34,9 +41,9 @@ Status vocabulary:
 
 ## Replay, persistence, and review
 
-| ID | Status | Capability |
-|---|---|---|
-| PROD-REPLAY-001 | PRIORITY | replay timeline with animated bets/raises/calls/chance events |
+| ID | Status | Capability | Notes |
+|---|---|---|---|
+| PROD-REPLAY-001 | PRIORITY | replay timeline with animated bets/raises/calls/chance events | `REPLAY-001A` is timeline-only; step-through and motion follow only after acceptance |
 | PROD-SAVE-001 | PRIORITY | bookmark/save spots, hands, and ranges |
 | PROD-SESSION-001 | PLANNED | session history and review |
 | PROD-COMPARE-001 | PLANNED | compare strategies/spots/history |

@@ -5,6 +5,16 @@
 
 > This is a planning authority, not code truth. The current repository remains the authority for implementation details. New manual QA and explicit product decisions override older planning assumptions.
 
+## Strategy checkpoint — August 14, 2026
+
+The Personal Strategy foundation is **COMPLETED through `RANGE-CAL-002A`**: `RANGE-CAL-000`, `001A`, `001B/001BR`, `001C-A`, `RANGE-CAL-UI-001R`, and the isolated sparse-RFI inference baseline. It provides named profiles; exactly three user-named discrete modes; direct RFI Fold/Raise calibration; optional explicit mixes and truthful tied-mix semantics; pause/resume/undo; durable local persistence with migration/recovery; portable export/import groundwork; and an isolated deterministic inference research module.
+
+The `RANGE-CAL-002A` holdout result is successful but limited. At 30/40/50 answers, selective synthetic-holdout coverage was approximately 49.6%/60.0%/64.3%, at approximately 89.5%/89.4%/91.0% attempted accuracy. Locally structured, boundary-heavy, tied-boundary, and exploitative/gapped synthetic ranges were promising; the deliberately irregular/non-monotonic range remained near chance on attempted predictions. The method abstains rather than filling every cell. These are synthetic research results, not independent real-user validation. Internal support differences are not confidence, and inferred dominant actions are not action frequencies. The module is unexported from the live Personal Strategy index, unpersisted, and unused by the product. See `RANGE_CAL_002A_HOLDOUT_REPORT.md`.
+
+Further Personal Strategy work is intentionally **DEFERRED**, not rejected: `RANGE-CAL-002B`–`002D`, `RANGE-CAL-002R`, mode interpolation, StrategyProvider integration, Training-to-profile evidence, and broader integration. Existing contracts/data remain preserved, the Range Calibration workspace remains usable, the deterministic 169 loop remains a fallback/test harness, and no existing workspace depends on incomplete inference. A return resumes at `RANGE-CAL-002B`; it does not redesign the foundation.
+
+The active product direction is now **ACTIVE NEXT — `TABLE-PRESENCE-001A`**, followed by **PLANNED — `REPLAY-001A`**, then **PLANNED LATER — `REPLAY-001B/001C`**. This ordering overrides older roadmap language that placed Personal Strategy inference/integration immediately next.
+
 ## 1. Executive vision
 
 Riverline should evolve from a polished Texas Hold’em study workstation into a **personal poker strategy and study platform**.
@@ -19,7 +29,7 @@ The development pattern should be:
 
 > **foundation → visible payoff → deeper foundation → larger payoff**
 
-The most important upcoming foundation is the **Personal Strategy Foundation**, beginning with fast range elicitation and eventually supporting:
+The long-term Personal Strategy Foundation can eventually support:
 - inferred personal ranges;
 - style anchors;
 - interpolation/extrapolation;
@@ -337,9 +347,9 @@ When this plan refers to a “small first step,” it means:
 
 It does **not** mean the overall feature family is small.
 
-## 7. Immediate new era: Personal Strategy Foundation
+## 7. Personal Strategy Foundation — completed historical plan
 
-The next major direction should begin with:
+The following records the original foundation plan, now completed through `RANGE-CAL-002A`; its remaining inference and integration stages are deferred by the August 14 checkpoint.
 
 ### `RANGE-CAL-000 — Personal Strategy Domain, Contracts, and Implementation Specification`
 
@@ -605,7 +615,7 @@ Every direct answer should be stored immediately.
 
 The user can close Riverline and resume later.
 
-## 9. Active question selection — `RANGE-CAL-002`, not the initial skeleton
+## 9. Deferred active-question selection — `RANGE-CAL-002`, not the initial skeleton
 
 A core premium feature should be **adaptive/boundary-seeking questioning**.
 
@@ -664,45 +674,45 @@ Selecting an inferred cell should expose:
 
 The traditional manual Range Builder can later become an advanced direct editor of the same data model.
 
-## 11. RANGE-CAL-002 EPIC — Inference, Confidence, and Active Questioning
+## 11. RANGE-CAL-002 EPIC — completed baseline and deferred continuation
 
-Only after `RANGE-CAL-001R` confirms the direct-observation workflow is useful and reliable should Riverline infer unanswered cells.
+`RANGE-CAL-002A` is complete as an isolated, unpersisted, unexported research baseline. The remaining stages are intentionally deferred; they must not be integrated into Matrix, StrategyProvider, Training, or live question selection without a new approved ticket.
 
 Suggested staged delivery:
 
-### `RANGE-CAL-002A — Transparent Similarity Baseline`
+### `RANGE-CAL-002A — Transparent Similarity Baseline` — COMPLETED
 - deterministic hand/context similarity;
 - explainable neighboring observations;
 - no active questioning yet;
 - direct holdout evaluation against known answers.
 
-### `RANGE-CAL-002B — Confidence & Validation`
+### `RANGE-CAL-002B — Confidence & Validation` — DEFERRED
 - confidence model;
 - calibration of confidence against withheld direct observations;
 - uncertainty display;
 - contradiction detection;
 - avoid presenting confidence as truth.
 
-### `RANGE-CAL-002C — Boundary Detection & Next-Best Question`
+### `RANGE-CAL-002C — Boundary Detection & Next-Best Question` — DEFERRED
 - identify likely strategic boundaries;
 - estimate expected information gain;
 - select high-value next questions;
 - preserve diversity and avoid repetitive sessions.
 
-### `RANGE-CAL-002D — Inferred Matrix & Uncertainty Queue`
+### `RANGE-CAL-002D — Inferred Matrix & Uncertainty Queue` — DEFERRED
 - inferred action/mix display;
 - confidence/provenance;
 - “teach Riverline next” queue;
 - direct confirm/correct workflow.
 
-### `RANGE-CAL-002R — Independent Inference Quality Review`
+### `RANGE-CAL-002R — Independent Inference Quality Review` — DEFERRED
 - compare inferred ranges against intentionally held-out manual ranges;
 - quantify questions needed for useful coverage;
 - test profile/mode/context separation;
 - verify no systematic ordering assumptions erase legitimate exploitative strategies;
 - decide whether deterministic inference is sufficient before considering ML.
 
-After collecting real user answers, build the first inference engine.
+When the deferral is explicitly lifted at `RANGE-CAL-002B`, evaluate further inference only through the approved confidence/validation gate; do not integrate the current baseline from this historical plan.
 
 Start transparent and deterministic before introducing ML.
 
@@ -737,7 +747,7 @@ Direct user answers must remain distinguishable from inferred values.
 
 ## 12. Style anchors
 
-### `STRATEGY-FOUNDATION-002 — Style Anchors & Interpolation`
+### `STRATEGY-FOUNDATION-002 — Style Anchors & Interpolation` — DEFERRED
 
 The existing playstyle sliders should eventually stop being arbitrary heuristic multipliers.
 
@@ -788,7 +798,7 @@ Do not assume those dimensions are independent without data.
 
 The elicitation data itself may help determine which style dimensions are useful.
 
-## 14. Training as optional profile evidence
+## 14. Training as optional profile evidence — DEFERRED
 
 Normal Training can become another source of information for the personal strategy model.
 
@@ -825,7 +835,7 @@ A valuable later comparison:
 
 This could become an excellent leak-detection tool.
 
-## 15. Cross-Riverline strategy integration
+## 15. Cross-Riverline strategy integration — DEFERRED
 
 ### `STRATEGY-FOUNDATION-003`
 
@@ -1675,12 +1685,18 @@ Do not make consumers model-aware.
 
 ## 37. Proposed high-level roadmap
 
+### Active product direction — Table Presence → Replay
+
+`TABLE-PRESENCE-001A` is **ACTIVE NEXT**. It creates a richer static Hand Mode table from trusted canonical Hand Mode state: dealer/button marker; player identity and stack hierarchy; current actor; folded/all-in states; street contributions/chips; central pot; current versus completed actions; and a reusable application-level table view model. It must preserve restrained premium presentation, EN/RU/HE, RTL, themes, desktop responsiveness, and Firefox-first acceptance. Its renderer consumes trusted state and does not calculate poker rules, pots, contributions, legality, or replay states. Replay controls and playback animation are out of scope.
+
+`REPLAY-001A` is **PLANNED** after Table Presence acceptance: a read-only canonical action timeline grouped by street, with player/position identity, action/amount, Hero emphasis, folds/checks/calls/bets/raises/all-ins, and a current-decision marker. `REPLAY-001B` and `REPLAY-001C` are **PLANNED LATER**: first deterministic previous/next projection with a clear live-versus-replay distinction and table updates through the Table Presence layer; then restrained playback/motion with reduced-motion behavior and no casino/jackpot aesthetic.
+
 ### Phase 0 — Protect the accepted product
 - tag/checkpoint the polished pre-Personal-Strategy baseline;
 - record current performance/UX baselines;
 - establish feature isolation/activation policy.
 
-### Phase A — Domain and implementation specification
+### Phase A — Domain and implementation specification — COMPLETED
 `RANGE-CAL-000`
 - `PERSONAL_STRATEGY_FOUNDATION_SPEC.md`;
 - domain semantics;
@@ -1694,7 +1710,7 @@ Do not make consumers model-aware.
 - export/import groundwork;
 - architecture review.
 
-### Phase B — Range Calibration Skeleton Epic
+### Phase B — Range Calibration Skeleton Epic — COMPLETED
 `RANGE-CAL-001A`
 - workspace/context builder.
 
@@ -1716,8 +1732,8 @@ Do not make consumers model-aware.
 Visible milestone:
 > A user can teach Riverline one RFI profile/mode through fast dominant-action answers, safely resume later, and inspect/correct the direct range.
 
-### Phase C — Inference Epic
-`RANGE-CAL-002A`
+### Phase C — Inference Epic — DEFERRED
+`RANGE-CAL-002A` — COMPLETED
 - transparent similarity baseline.
 
 `RANGE-CAL-002B`
@@ -1735,7 +1751,7 @@ Visible milestone:
 Visible milestone:
 > Riverline reconstructs a recognizably useful range from substantially fewer questions than a full 169-hand form, while clearly separating direct and inferred data.
 
-### Phase D — Mode relationships and style foundation
+### Phase D — Mode relationships and style foundation — DEFERRED
 `STRATEGY-FOUNDATION-002`
 - analyze relationships among three modes;
 - keep modes discrete if no valid continuum exists;
@@ -1743,7 +1759,7 @@ Visible milestone:
 - extrapolation/clamping/confidence rules;
 - later redefine existing style sliders from real anchors.
 
-### Phase E — Cross-Riverline integration
+### Phase E — Cross-Riverline integration — DEFERRED
 `STRATEGY-FOUNDATION-003`
 - selectable personal StrategyProvider source;
 - Playbook;
@@ -1768,7 +1784,7 @@ Visible milestone:
 - layout/density personalization;
 - per-workspace tutorials for the new workflows.
 
-### Feature Wave 2
+### Feature Wave 2 — later, after the active Table Presence → Replay direction
 - leak detection;
 - Concept Mastery;
 - adaptive/daily sessions;
@@ -1916,7 +1932,7 @@ This document should maintain explicit decision states:
 
 Future revisions should move items between these states instead of silently rewriting history.
 
-## 40. Immediate next step
+## 40. Active next step
 
 The core Personal Strategy semantics are resolved:
 
@@ -1929,12 +1945,4 @@ The core Personal Strategy semantics are resolved:
 - RFI/open ranges are the first proof-of-concept family;
 - personal data is local-first/private/exportable.
 
-Before implementation:
-1. tag/checkpoint the polished Riverline baseline;
-2. create `PERSONAL_STRATEGY_FOUNDATION_SPEC.md`;
-3. run `RANGE-CAL-000` as a domain/specification/contract ticket with independent architecture review;
-4. do not begin the workspace until the `RANGE-CAL-000` exit gate passes.
-
-Remaining social/platform/product questions can be resolved when they become relevant.
-
-The project should treat `RANGE-CAL-001` as a flagship epic delivered through `001A–001E` plus `001R`, not as one broad implementation prompt.
+The Personal Strategy foundation has passed its completed checkpoint and its remaining work is deferred. Begin `TABLE-PRESENCE-001A` as the next bounded ticket. Keep Scenario Mode and canonical Hand Mode distinct, keep PokerState as the poker-rule authority, do not put poker mathematics in the table renderer, and preserve the polished baseline. Only after Table Presence acceptance may `REPLAY-001A` begin; do not start step-through or motion early.
