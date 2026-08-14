@@ -164,7 +164,7 @@ createdAt
 updatedAt
 ```
 
-An active record requires a structured canonical action identity such as `{ type: "raise" }`. Labels such as "Raise", "Open", or translated UI text are never persisted as action identity.
+An active record without explicit frequencies requires a structured canonical action identity such as `{ type: "raise" }`. An active explicit mix has that identity only when one action has the unique maximum frequency. An exact maximum-frequency tie stores `dominantAction = null`; it must not invent a dominant action. Labels such as "Raise", "Open", or translated UI text are never persisted as action identity.
 
 A retraction is a new record in the same revision chain with `state = retracted`, no dominant action, `hasExplicitFrequencies = false`, and `frequencies = null`. It removes the current answer without deleting history.
 
@@ -192,7 +192,7 @@ The following records are intentionally different:
 
 The first means preferred/dominant raise with unknown mix. The second is an explicit pure raise strategy. No consumer may infer a missing mix from the dominant action.
 
-When a mix is supplied, the factory accepts non-negative structured weights, removes zero-weight entries, normalizes positive entries to exactly one in stable input order, and closes the final floating-point residual. Action identities must be unique. The dominant action must be tied for the maximum supplied probability.
+When a mix is supplied, the factory accepts non-negative structured weights, removes zero-weight entries, normalizes positive entries to exactly one in stable input order, and closes the final floating-point residual. Action identities must be unique. A unique maximum requires the matching `dominantAction`; a maximum-frequency tie requires `dominantAction = null`.
 
 Sizing is not encoded as a translated label or parsed string. V1 evidence uses canonical action-family identity. A future sizing-aware family must add a structured, versioned action-sizing contract.
 
@@ -207,7 +207,7 @@ TrainingObservation   provenance.type = training_observation
 
 No generic bag of evidence fields is stored. Separate contracts prevent a Training choice from acquiring direct-calibration semantics accidentally.
 
-`TrainingObservation v1` stores its chosen canonical action, Training exercise ID, optional Training session ID, context and hand class, and an optional direct-calibration comparison. When a current direct answer exists at write time, the repository requires a comparison that references it and records `matches` or `deviates`. The relation is validated from action identities. If there is no current direct answer, the comparison is null.
+`TrainingObservation v1` stores its chosen canonical action, Training exercise ID, optional Training session ID, context and hand class, and an optional direct-calibration comparison. When a current direct answer with a unique dominant action exists at write time, the repository requires a comparison that references it and records `matches` or `deviates`. The relation is validated from action identities. If there is no current direct answer, or the current explicit mix is tied and therefore has no dominant action, the comparison is null.
 
 Later direct revisions do not rewrite historical Training comparisons. This preserves what the user intended and what they did at the time. Future clarification UX can query contradictory evidence without inference being part of v1.
 
@@ -419,10 +419,11 @@ The following are release-blocking for this subsystem:
 3. V1 has exactly three user-named discrete modes and no numeric style axis.
 4. `dominantAction = raise` plus `frequencies = null` is not a pure raise mix.
 5. Explicit mixes use structured canonical action identities and normalize to one.
-6. Direct calibration and Training behavior use separate schemas/collections.
-7. Training conflict records a comparison and never rewrites direct evidence.
-8. Direct edits/retractions append to one linear history.
-9. One repository owns all persistence and touches one namespaced key.
-10. Invalid, corrupt, incompatible, or colliding data cannot partially overwrite valid data.
-11. Existing Playbook, Matrix, Training, Equity, Analysis, settings, and StrategyProvider behavior remains unchanged.
-12. Personal Strategy has no startup cost until a future feature explicitly activates it.
+6. An exact maximum-frequency tie has `dominantAction = null`; no action is fabricated.
+7. Direct calibration and Training behavior use separate schemas/collections.
+8. Training conflict records a comparison and never rewrites direct evidence.
+9. Direct edits/retractions append to one linear history.
+10. One repository owns all persistence and touches one namespaced key.
+11. Invalid, corrupt, incompatible, or colliding data cannot partially overwrite valid data.
+12. Existing Playbook, Matrix, Training, Equity, Analysis, settings, and StrategyProvider behavior remains unchanged.
+13. Personal Strategy has no startup cost until a future feature explicitly activates it.

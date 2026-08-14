@@ -223,6 +223,7 @@ const appTranslations = {
     "Playbook guardrail": "Playbook guardrail",
     "No generated thresholds are presented as GTO. A loaded tree is used only when its table size, stack, position, and action branch match the current context.": "No generated thresholds are presented as GTO. A loaded tree is used only when its table size, stack, position, and action branch match the current context.",
     "Available deck": "Available deck",
+    "Available": "Available",
     "cards remaining": "cards remaining",
     "Win probability": "Win probability",
     "Choose at least two complete hands, then calculate.": "Choose at least two complete hands, then calculate.",
@@ -804,6 +805,7 @@ const appTranslations = {
     "Playbook guardrail": "Ограничения стратегии",
     "No generated thresholds are presented as GTO. A loaded tree is used only when its table size, stack, position, and action branch match the current context.": "Никакие сгенерированные пороги не выдаются за GTO. Загруженное дерево используется только тогда, когда его размер стола, стек, позиция и ветка действий совпадают с текущим контекстом.",
     "Available deck": "Доступная колода",
+    "Available": "Доступно",
     "cards remaining": "карт осталось",
     "Win probability": "Вероятность победы",
     "Choose at least two complete hands, then calculate.": "Выберите хотя бы две полные руки, затем рассчитайте.",
@@ -1917,6 +1919,11 @@ if (window.riverlineAnalysisTranslations) {
     if (appTranslations[language]) Object.assign(appTranslations[language], entries);
   });
 }
+if (window.riverlineRangeCalibrationTranslations) {
+  Object.entries(window.riverlineRangeCalibrationTranslations).forEach(([language, entries]) => {
+    if (appTranslations[language]) Object.assign(appTranslations[language], entries);
+  });
+}
 
 // DESIGN-008 static Training workspace copy. Dynamic exercise facts remain
 // presentation data and are translated only where an existing poker term is available.
@@ -1966,6 +1973,7 @@ const trainingWorkspaceTranslations = {
     "Home · no rake": "Домашняя игра · без рейка"
   },
   he: {
+    "Available": "זמין",
     "Training workspace": "מרחב אימון",
     "Make the decision": "קבלת החלטה",
     "Ready for a drill": "מוכנים לתרגיל",

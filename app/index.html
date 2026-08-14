@@ -22,6 +22,7 @@
 
   <script src="src/locales/product-translations.js?v=1" defer></script>
   <script src="src/locales/analysis-translations.js?v=1" defer></script>
+  <script src="src/locales/range-calibration-translations.js?v=1" defer></script>
   <script src="src/locales/i18n.js?v=3" defer></script>
 
 
@@ -356,6 +357,10 @@
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m16.5 7.5 3-3m0 0v3m0-3h-3"/></svg>
           <span data-i18n="Training">Training</span>
         </button>
+        <button class="mode-nav-item" type="button" data-mode="calibration" data-mode-title="Range Calibration" data-mode-subtitle="Teach Riverline how you play in a specific poker environment." aria-label="Range Calibration" data-i18n-aria-label="Range Calibration" title="Range Calibration" data-i18n-title="Range Calibration" data-tooltip="Range Calibration" aria-current="false">
+          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 5v14m4-14v14m4-14v14M4 9h16m-16 5h16"/><circle cx="16" cy="9" r="2"/></svg>
+          <span data-i18n="Range Calibration">Range Calibration</span>
+        </button>
         <button class="mode-nav-item" type="button" data-mode="info" data-mode-title="Guide" data-mode-subtitle="Product guidance, poker terms, and control reference." aria-label="Guide" data-i18n-aria-label="Guide" title="Guide" data-i18n-title="Guide" data-tooltip="Guide" aria-current="false">
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
           <span data-i18n="Guide">Guide</span>
@@ -655,10 +660,16 @@
 
               <div class="divider"></div>
 
-              <div class="section-head">
+              <div class="section-head playbook-dead-card-header">
 
-                <strong data-i18n="Known burned / dead">Known burned / dead</strong>
-
+                <div class="playbook-card-state-copy">
+                  <strong data-i18n="Known burned / dead">Known burned / dead</strong>
+                  <div class="playbook-card-state-summary" role="status" aria-live="polite" aria-atomic="true">
+                    <span><span data-i18n="Dead">Dead</span>: <strong id="deadCardCount">0</strong></span>
+                    <span class="playbook-card-state-separator" aria-hidden="true">·</span>
+                    <span><span data-i18n="Available">Available</span>: <strong id="deckCount">52</strong></span>
+                  </div>
+                </div>
                 <button class="small-link" data-clear="dead" data-i18n="Clear">Clear</button>
 
               </div>
@@ -857,7 +868,8 @@
 
                 </div>
 
-            <div class="badge status-badge status-badge--info" id="sourceBadge" style="margin-top:4px;" data-i18n="HEURISTIC">HEURISTIC</div>
+            <div class="badge status-badge status-badge--info" id="sourceBadge" style="margin-top:4px;" data-i18n="HEURISTIC" aria-label="Strategy source: Heuristic fallback" data-i18n-aria-label="Strategy source: Heuristic fallback" aria-describedby="strategySourceProvenance" title="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy." data-i18n-title="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">HEURISTIC</div>
+            <span id="strategySourceProvenance" class="sr-only" data-i18n="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.</span>
 
               </div>
 
@@ -1263,24 +1275,6 @@
             </div>
           </section>
 
-          <section id="playbookGuardrailPanel" class="panel">
-            <div class="panel-head">
-              <div>
-                <div class="panel-title" data-i18n="Playbook guardrail">Playbook guardrail</div>
-              </div>
-            </div>
-            <div class="panel-body">
-              <p class="panel-note" style="font-size:12px;line-height:1.55" data-i18n="Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.">
-                Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.
-              </p>
-              <div class="divider"></div>
-              <div class="label" data-i18n="Available deck">Available deck</div>
-              <div style="font-size:21px;font-weight:750;margin-top:4px">
-                <span id="deckCount">52</span> <span style="font-size:11px;color:var(--muted);font-weight:500" data-i18n="cards remaining">cards
-                  remaining</span>
-              </div>
-            </div>
-          </section>
         </aside>
 
       </div>
@@ -1288,6 +1282,198 @@
     </section>
 
 
+
+    <template id="rangeCalibrationTemplate">
+      <div id="rangeCalibrationWorkspace" class="range-calibration-workspace" data-calibration-state="loading" aria-busy="true">
+        <section id="calibrationLoadingState" class="panel calibration-loading-state" aria-live="polite">
+          <span class="calibration-spinner" aria-hidden="true"></span>
+          <strong data-i18n="Opening Range Calibration">Opening Range Calibration</strong>
+        </section>
+
+        <section id="calibrationErrorState" class="panel calibration-error-state" role="alert" hidden>
+          <div>
+            <p class="calibration-eyebrow" data-i18n="Personal strategy data">Personal strategy data</p>
+            <h2 data-i18n="Range Calibration could not be opened">Range Calibration could not be opened</h2>
+            <p id="calibrationErrorMessage" data-i18n="Your stored data was left untouched. Try reopening this workspace.">Your stored data was left untouched. Try reopening this workspace.</p>
+          </div>
+          <button id="calibrationRetry" class="ui-button ui-button--secondary" type="button" data-i18n="Try again">Try again</button>
+        </section>
+
+        <section id="calibrationEmptyState" class="panel calibration-empty-state" hidden>
+          <div class="calibration-empty-copy">
+            <p class="calibration-eyebrow" data-i18n="Your poker environments">Your poker environments</p>
+            <h2 id="calibrationWorkspaceTitle" data-i18n="Teach Riverline how you play">Teach Riverline how you play</h2>
+            <p data-i18n="Start with a real game you recognize. Then name the three ways you play there and choose an unopened preflop spot.">Start with a real game you recognize. Then name the three ways you play there and choose an unopened preflop spot.</p>
+            <button id="calibrationCreateFirstProfile" class="ui-button ui-button--primary" type="button" data-i18n="Create your first profile">Create your first profile</button>
+          </div>
+          <ol class="calibration-first-use-steps" aria-label="How Range Calibration works" data-i18n-aria-label="How Range Calibration works">
+            <li><span>1</span><div><strong data-i18n="Choose where you play">Choose where you play</strong><small data-i18n="Name a real poker environment, not an abstract style.">Name a real poker environment, not an abstract style.</small></div></li>
+            <li><span>2</span><div><strong data-i18n="Name three ways you play">Name three ways you play</strong><small data-i18n="Modes stay discrete and use your own words.">Modes stay discrete and use your own words.</small></div></li>
+            <li><span>3</span><div><strong data-i18n="Choose the exact RFI spot">Choose the exact RFI spot</strong><small data-i18n="Set table, position, stack, and game accounting.">Set table, position, stack, and game accounting.</small></div></li>
+          </ol>
+        </section>
+
+        <div id="calibrationConfiguredState" class="calibration-configured-state" hidden>
+          <section class="panel calibration-identity-panel calibration-configuration-view" aria-labelledby="calibrationIdentityTitle">
+            <div class="calibration-section-heading">
+              <div>
+                <p class="calibration-eyebrow" data-i18n="Profile and mode">Profile and mode</p>
+                <h2 id="calibrationIdentityTitle" data-i18n="Where and how do you play?">Where and how do you play?</h2>
+              </div>
+              <div class="calibration-profile-actions">
+                <button id="calibrationEditProfile" class="ui-button ui-button--tertiary" type="button" data-i18n="Edit profile">Edit profile</button>
+                <button id="calibrationCreateProfile" class="ui-button ui-button--secondary" type="button" data-i18n="New profile">New profile</button>
+              </div>
+            </div>
+            <div class="calibration-profile-row">
+              <label class="calibration-field calibration-profile-field" for="calibrationProfileSelect">
+                <span data-i18n="Poker environment profile">Poker environment profile</span>
+                <select id="calibrationProfileSelect" class="control-select" dir="auto"></select>
+              </label>
+              <div class="calibration-profile-copy">
+                <strong id="calibrationProfileName" dir="auto"></strong>
+                <span id="calibrationProfileDescription" dir="auto"></span>
+              </div>
+            </div>
+            <fieldset class="calibration-mode-fieldset">
+              <legend data-i18n="How you play here">How you play here</legend>
+              <div id="calibrationModeOptions" class="calibration-mode-options" role="radiogroup" aria-label="Strategy mode" data-i18n-aria-label="Strategy mode"></div>
+            </fieldset>
+          </section>
+
+          <div class="calibration-main-grid calibration-configuration-view">
+            <section class="panel calibration-context-panel" aria-labelledby="calibrationContextTitle">
+              <div class="calibration-section-heading">
+                <div>
+                  <p class="calibration-eyebrow" data-i18n="RFI context">RFI context</p>
+                  <h2 id="calibrationContextTitle" data-i18n="Unopened preflop range">Unopened preflop range</h2>
+                  <p data-i18n="Choose the objective facts for the range you are about to define.">Choose the objective facts for the range you are about to define.</p>
+                </div>
+                <span class="status-badge status-badge--info" data-i18n="RFI only">RFI only</span>
+              </div>
+
+              <div class="calibration-context-controls" data-interaction-surface="interactive">
+                <label class="calibration-field" for="calibrationEnvironment"><span data-i18n="Game environment">Game environment</span><select id="calibrationEnvironment" class="control-select"><option value="home" data-i18n="Home game">Home game</option><option value="clubgg" data-i18n="ClubGG-style game">ClubGG-style game</option></select></label>
+                <label class="calibration-field" for="calibrationTableSize"><span data-i18n="Table size">Table size</span><select id="calibrationTableSize" class="control-select poker-data-token"></select></label>
+                <label class="calibration-field" for="calibrationHeroPosition"><span data-i18n="Hero position">Hero position</span><select id="calibrationHeroPosition" class="control-select poker-data-token"></select></label>
+                <label class="calibration-field calibration-stack-field" for="calibrationEffectiveStack">
+                  <span data-i18n="Effective stack">Effective stack</span>
+                  <span class="calibration-input-unit"><input id="calibrationEffectiveStack" class="control-input poker-data-token" type="number" min="10" max="500" step="1" inputmode="decimal" value="100" aria-describedby="calibrationStackHelp calibrationStackError"><em>bb</em></span>
+                  <small id="calibrationStackHelp" class="poker-data-token" data-i18n="10–500 bb">10–500 bb</small>
+                  <small id="calibrationStackError" class="control-message control-message--invalid" role="alert"></small>
+                </label>
+              </div>
+
+              <div class="calibration-stack-presets" aria-label="Effective stack presets" data-i18n-aria-label="Effective stack presets">
+                <span data-i18n="Quick stacks">Quick stacks</span>
+                <button type="button" class="ui-button ui-button--tertiary poker-data-token" data-calibration-stack="20">20bb</button>
+                <button type="button" class="ui-button ui-button--tertiary poker-data-token" data-calibration-stack="30">30bb</button>
+                <button type="button" class="ui-button ui-button--tertiary poker-data-token" data-calibration-stack="50">50bb</button>
+                <button type="button" class="ui-button ui-button--tertiary poker-data-token" data-calibration-stack="100">100bb</button>
+              </div>
+
+              <div id="calibrationAccounting" class="calibration-accounting" role="status" aria-live="polite"></div>
+              <p id="calibrationPositionNotice" class="calibration-position-notice" aria-live="polite"></p>
+              <div class="calibration-context-preview" aria-labelledby="calibrationPreviewLabel">
+                <span id="calibrationPreviewLabel" data-i18n="Current range">Current range</span>
+                <strong id="calibrationPreviewIdentity" dir="auto"></strong>
+                <div id="calibrationPreviewSpot" class="poker-data-token"></div>
+              </div>
+              <p class="calibration-family-note" data-i18n="More decision families will be added later.">More decision families will be added later.</p>
+            </section>
+
+            <aside class="calibration-session-column">
+              <section class="panel calibration-session-panel" aria-labelledby="calibrationSessionTitle">
+                <div class="calibration-section-heading"><div><p class="calibration-eyebrow" data-i18n="Calibration session">Calibration session</p><h2 id="calibrationSessionTitle" data-i18n="Ready to calibrate this range">Ready to calibrate this range</h2></div></div>
+                <div class="calibration-ready-state">
+                  <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 12h28v24H10z"/><path d="M17 18h14M17 24h14M17 30h8"/></svg>
+                  <p data-i18n="Choose one hand at a time. Every accepted answer is saved before the next hand appears.">Choose one hand at a time. Every accepted answer is saved before the next hand appears.</p>
+                  <button id="calibrationStartQuestions" class="ui-button ui-button--primary" type="button" data-i18n="Start questions">Start questions</button>
+                </div>
+              </section>
+
+              <section class="panel calibration-progress-panel" aria-labelledby="calibrationProgressTitle">
+                <div class="calibration-section-heading"><div><p class="calibration-eyebrow" data-i18n="Workspace status">Workspace status</p><h2 id="calibrationProgressTitle" data-i18n="What is configured">What is configured</h2></div></div>
+                <dl class="calibration-progress-list">
+                  <div><dt data-i18n="Profiles">Profiles</dt><dd id="calibrationProfileCount" class="poker-data-token">0</dd></div>
+                  <div><dt data-i18n="Selected mode">Selected mode</dt><dd id="calibrationProgressMode" dir="auto"></dd></div>
+                  <div><dt data-i18n="Direct answers here">Direct answers here</dt><dd id="calibrationObservationCount" class="poker-data-token">0</dd></div>
+                </dl>
+                <p id="calibrationObservationNote" data-i18n="No direct answers have been recorded for this range yet.">No direct answers have been recorded for this range yet.</p>
+              </section>
+            </aside>
+          </div>
+
+          <section id="calibrationQuestionView" class="panel calibration-question-view" aria-labelledby="calibrationQuestionTitle" hidden>
+            <header class="calibration-question-header">
+              <div class="calibration-question-context">
+                <p class="calibration-eyebrow" data-i18n="Calibration session">Calibration session</p>
+                <strong id="calibrationQuestionIdentity" dir="auto"></strong>
+                <span id="calibrationQuestionSpot" class="poker-data-token" dir="ltr"></span>
+              </div>
+              <button id="calibrationPauseQuestions" class="ui-button ui-button--secondary" type="button" data-i18n="Pause questions">Pause questions</button>
+            </header>
+
+            <div id="calibrationActiveQuestion" class="calibration-active-question">
+              <p id="calibrationFirstUseEducation" class="calibration-answer-meaning" data-i18n="Choose the action that best represents how this profile usually plays the hand. A quick answer records your dominant action, not a 100% frequency.">Choose the action that best represents how this profile usually plays the hand. A quick answer records your dominant action, not a 100% frequency.</p>
+              <div id="calibrationQuestionRegion" class="calibration-question-region" tabindex="-1" aria-labelledby="calibrationQuestionTitle" aria-describedby="calibrationQuestionKind calibrationQuestionPrompt">
+                <span id="calibrationQuestionKind" class="calibration-hand-kind" data-i18n="Pair">Pair</span>
+                <h2 id="calibrationQuestionTitle" class="calibration-hand-class poker-data-token" dir="ltr" aria-live="polite">AA</h2>
+                <p id="calibrationQuestionPrompt" data-i18n="What is your dominant action?">What is your dominant action?</p>
+                <div class="calibration-action-grid" role="group" aria-label="Dominant action" data-i18n-aria-label="Dominant action">
+                  <button id="calibrationActionFold" class="calibration-action-button calibration-action-button--fold" type="button" data-calibration-action="fold"><span data-i18n="Fold">Fold</span><kbd>F</kbd></button>
+                  <button id="calibrationActionRaise" class="calibration-action-button calibration-action-button--raise" type="button" data-calibration-action="raise"><span data-i18n="Raise">Raise</span><kbd>R</kbd></button>
+                </div>
+                <button id="calibrationOpenMix" class="ui-button ui-button--tertiary calibration-mix-trigger" type="button" data-i18n="Set frequencies">Set frequencies</button>
+                <p id="calibrationAnswerError" class="control-message control-message--invalid calibration-answer-error" role="alert" aria-live="assertive"></p>
+              </div>
+
+              <footer class="calibration-question-footer">
+                <div class="calibration-progress-copy">
+                  <strong id="calibrationQuestionProgress" class="poker-data-token">0 / 169</strong>
+                  <span id="calibrationQuestionRemaining" data-i18n="{count} remaining">169 remaining</span>
+                  <progress id="calibrationProgressBar" max="169" value="0" aria-label="Direct calibration progress" data-i18n-aria-label="Direct calibration progress"></progress>
+                </div>
+                <div id="calibrationPreviousAnswer" class="calibration-previous-answer" hidden>
+                  <span><span data-i18n="Previous">Previous</span>: <b id="calibrationPreviousHand" class="poker-data-token" dir="ltr"></b> — <span id="calibrationPreviousAction"></span></span>
+                  <button id="calibrationUndoAnswer" class="ui-button ui-button--tertiary" type="button" data-i18n="Undo previous answer">Undo previous answer</button>
+                </div>
+              </footer>
+            </div>
+
+            <div id="calibrationCompleteState" class="calibration-complete-state" hidden>
+              <p class="calibration-eyebrow" data-i18n="Direct answers complete">Direct answers complete</p>
+              <h2 data-i18n="Direct RFI calibration complete for this spot.">Direct RFI calibration complete for this spot.</h2>
+              <p class="poker-data-token">169 / 169</p>
+              <button id="calibrationReturnToContext" class="ui-button ui-button--primary" type="button" data-i18n="Return to context">Return to context</button>
+            </div>
+          </section>
+
+          <div id="calibrationMixDialog" class="modal-overlay calibration-mix-dialog" role="dialog" aria-modal="true" aria-labelledby="calibrationMixTitle" hidden>
+            <form id="calibrationMixForm" class="modal calibration-mix-modal" novalidate>
+              <div class="modal-header">
+                <div><p class="calibration-eyebrow" data-i18n="Explicit mix">Explicit mix</p><h2 id="calibrationMixTitle" data-i18n="Set frequencies for {hand}">Set frequencies</h2></div>
+                <button id="calibrationMixClose" class="icon-button" type="button" aria-label="Close frequency editor" data-i18n-aria-label="Close frequency editor">×</button>
+              </div>
+              <p data-i18n="Enter the exact Fold and Raise mix. Unlike a quick answer, this stores explicit frequencies.">Enter the exact Fold and Raise mix. Unlike a quick answer, this stores explicit frequencies.</p>
+              <div class="calibration-mix-fields poker-data-token" dir="ltr">
+                <label for="calibrationMixFold"><span data-i18n="Fold">Fold</span><span class="calibration-frequency-input"><input id="calibrationMixFold" type="number" min="0" max="100" step="1" inputmode="decimal" value="50" required><em>%</em></span></label>
+                <label for="calibrationMixRaise"><span data-i18n="Raise">Raise</span><span class="calibration-frequency-input"><input id="calibrationMixRaise" type="number" min="0" max="100" step="1" inputmode="decimal" value="50" required><em>%</em></span></label>
+              </div>
+              <p class="calibration-mix-tie-note" data-i18n="An exact tie is stored as a tied mix with no dominant action.">An exact tie is stored as a tied mix with no dominant action.</p>
+              <p id="calibrationMixError" class="control-message control-message--invalid" role="alert" aria-live="assertive"></p>
+              <div class="modal-actions">
+                <button id="calibrationMixCancel" class="ui-button ui-button--secondary" type="button" data-i18n="Cancel">Cancel</button>
+                <button id="calibrationMixSave" class="ui-button ui-button--primary" type="submit" data-i18n="Save mix and continue">Save mix and continue</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </template>
+    <section id="calibrationMode" class="mode-view range-calibration-mode" style="display:none;" aria-label="Range Calibration" data-i18n-aria-label="Range Calibration">
+      <div id="rangeCalibrationMount"></div>
+    </section>
 
     <section id="trainingMode" class="mode-view" style="display:none;">
       <div class="training-workspace" data-training-state="idle" aria-labelledby="trainingWorkspaceTitle">
@@ -1707,6 +1893,51 @@
 
 
 
+  <template id="calibrationProfileModalTemplate">
+  <div class="modal-backdrop" id="calibrationProfileModal" role="dialog" aria-modal="true" aria-labelledby="calibrationProfileModalTitle" aria-describedby="calibrationProfileModalDescription">
+    <form id="calibrationProfileForm" class="modal overlay-surface calibration-profile-modal" novalidate>
+      <div class="modal-head">
+        <div>
+          <p class="calibration-eyebrow" data-i18n="Poker environment">Poker environment</p>
+          <h2 id="calibrationProfileModalTitle" data-i18n="Create a strategy profile">Create a strategy profile</h2>
+          <p id="calibrationProfileModalDescription" data-i18n="Name where you play, then name exactly three recognizable ways you play there.">Name where you play, then name exactly three recognizable ways you play there.</p>
+        </div>
+        <button id="calibrationProfileModalClose" class="close ui-button ui-button--icon" type="button" aria-label="Close profile editor" data-i18n-aria-label="Close profile editor" title="Close profile editor" data-i18n-title="Close profile editor">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body calibration-profile-form-grid">
+        <label class="calibration-field calibration-profile-name-field" for="calibrationProfileDisplayName">
+          <span data-i18n="Profile name">Profile name</span>
+          <input id="calibrationProfileDisplayName" class="control-input" type="text" maxlength="80" autocomplete="off" required dir="auto" placeholder="Home Game with Friends" data-i18n-placeholder="Home Game with Friends">
+          <small data-i18n="Think: Where am I playing?">Think: Where am I playing?</small>
+        </label>
+        <label class="calibration-field calibration-profile-description-field" for="calibrationProfileDescription">
+          <span data-i18n="Short description (optional)">Short description (optional)</span>
+          <textarea id="calibrationProfileDescription" maxlength="240" rows="3" dir="auto" placeholder="Regular Friday game with friends" data-i18n-placeholder="Regular Friday game with friends"></textarea>
+        </label>
+        <label id="calibrationProfileEnvironmentField" class="calibration-field" for="calibrationProfileEnvironment">
+          <span data-i18n="Usual environment">Usual environment</span>
+          <select id="calibrationProfileEnvironment" class="control-select"><option value="home" data-i18n="Home game">Home game</option><option value="clubgg" data-i18n="ClubGG-style game">ClubGG-style game</option></select>
+          <small data-i18n="This prefills new spots; you can still change the exact context.">This prefills new spots; you can still change the exact context.</small>
+        </label>
+        <fieldset class="calibration-mode-name-fields">
+          <legend data-i18n="Your three strategy modes">Your three strategy modes</legend>
+          <p data-i18n="Use names that describe distinct ways you play. There are no numeric style values.">Use names that describe distinct ways you play. There are no numeric style values.</p>
+          <label for="calibrationModeName1"><span data-i18n="Mode 1 name">Mode 1 name</span><input id="calibrationModeName1" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
+          <label for="calibrationModeName2"><span data-i18n="Mode 2 name">Mode 2 name</span><input id="calibrationModeName2" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
+          <label for="calibrationModeName3"><span data-i18n="Mode 3 name">Mode 3 name</span><input id="calibrationModeName3" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
+        </fieldset>
+        <p id="calibrationProfileFormError" class="calibration-form-error" role="alert" hidden></p>
+      </div>
+      <div class="modal-foot calibration-profile-modal-actions">
+        <button id="calibrationProfileCancel" class="ui-button ui-button--tertiary" type="button" data-i18n="Cancel">Cancel</button>
+        <button id="calibrationProfileSubmit" class="ui-button ui-button--primary" type="submit" data-i18n="Create profile">Create profile</button>
+      </div>
+    </form>
+  </div>
+  </template>
+
   <div id="matrixCellCue" class="matrix-cell-cue" role="tooltip" hidden>
     <strong id="matrixCellCueHand"></strong>
     <span id="matrixCellCueMix"></span>
@@ -1723,6 +1954,7 @@
   <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
+  <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>
   <script src="src/core/logic.js?v=21" defer></script>
   <script src="src/ui/teacher.js" defer></script>
   <script src="src/ui/TableRenderer.js" defer></script>

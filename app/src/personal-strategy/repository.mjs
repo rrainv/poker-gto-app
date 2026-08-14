@@ -167,11 +167,15 @@ function validateTrainingComparisons(store) {
       || rangeObservationKey(direct) !== rangeObservationKey(training)) {
       throw new RangeError('TrainingObservation comparison must reference matching direct evidence');
     }
-    const expected = direct.dominantAction.type === training.chosenAction.type
-      ? DIRECT_COMPARISON_RELATIONS.MATCHES
-      : DIRECT_COMPARISON_RELATIONS.DEVIATES;
-    if (comparison.relation !== expected) {
-      throw new RangeError('TrainingObservation direct comparison relation is inconsistent');
+    if (direct.dominantAction === null) {
+      throw new RangeError('A tied direct mix has no dominant action to compare');
+    } else {
+      const expected = direct.dominantAction.type === training.chosenAction.type
+        ? DIRECT_COMPARISON_RELATIONS.MATCHES
+        : DIRECT_COMPARISON_RELATIONS.DEVIATES;
+      if (comparison.relation !== expected) {
+        throw new RangeError('TrainingObservation direct comparison relation is inconsistent');
+      }
     }
   }
 }
@@ -447,6 +451,45 @@ export function createPersonalStrategyRepository({
     if (idsForStore(store).includes(id)) throw new RangeError(`Personal Strategy ID collision: ${id}`);
   }
 
+  function appendRangeObservation(draft, observation) {
+    assertUnusedId(draft, observation.id);
+    profileAndMode(draft, observation.profileId, observation.modeId, 'RangeObservation');
+    const latest = latestDirectRevision(draft, observation);
+    const supersedes = observation.revision.supersedesObservationId;
+    if ((latest === null && supersedes !== null)
+      || (latest !== null && supersedes !== latest.id)) {
+      throw new RangeError('RangeObservation must supersede the current direct revision');
+    }
+    const sessionId = observation.provenance.calibrationSessionId;
+    if (sessionId !== null) {
+      const session = draft.calibrationSessions.find((entry) => entry.id === sessionId);
+      if (!session || session.profileId !== observation.profileId
+        || session.modeId !== observation.modeId
+        || calibrationContextKey(session.contextScope) !== calibrationContextKey(observation.context)) {
+        throw new RangeError('RangeObservation references an incompatible CalibrationSession');
+      }
+    }
+    draft.rangeObservations.push(cloneData(observation));
+  }
+
+  function replaceCalibrationSession(draft, session) {
+    profileAndMode(draft, session.profileId, session.modeId, 'CalibrationSession');
+    const index = draft.calibrationSessions.findIndex((entry) => entry.id === session.id);
+    if (index < 0) {
+      assertUnusedId(draft, session.id);
+      draft.calibrationSessions.push(cloneData(session));
+      return null;
+    }
+    const previous = draft.calibrationSessions[index];
+    if (session.profileId !== previous.profileId || session.modeId !== previous.modeId
+      || session.startedAt !== previous.startedAt
+      || calibrationContextKey(session.contextScope) !== calibrationContextKey(previous.contextScope)) {
+      throw new RangeError('CalibrationSession update cannot change identity or context scope');
+    }
+    draft.calibrationSessions[index] = cloneData(session);
+    return previous;
+  }
+
   return Object.freeze({
     schemaVersion: PERSONAL_STRATEGY_STORE_SCHEMA_VERSION,
     storageKey,
@@ -490,6 +533,37 @@ export function createPersonalStrategyRepository({
       });
     },
 
+    saveProfileConfiguration({ profile, modes } = {}) {
+      validateStrategyProfile(profile);
+      requireArray(modes, 'StrategyProfile configuration modes').forEach(validateStrategyMode);
+      if (modes.length !== 3
+        || profile.modeIds.some((id) => !modes.some((mode) => mode.id === id))
+        || modes.some((mode) => mode.profileId !== profile.id)) {
+        throw new RangeError('StrategyProfile configuration must contain its three declared modes');
+      }
+      return commit((draft) => {
+        const profileIndex = draft.profiles.findIndex((entry) => entry.id === profile.id);
+        if (profileIndex < 0) throw new RangeError('StrategyProfile does not exist');
+        const previousProfile = draft.profiles[profileIndex];
+        if (!sameOwnerRef(profile.ownerRef, previousProfile.ownerRef)
+          || profile.createdAt !== previousProfile.createdAt
+          || JSON.stringify(profile.modeIds) !== JSON.stringify(previousProfile.modeIds)) {
+          throw new RangeError('StrategyProfile update cannot change identity, owner, creation, or mode relationship');
+        }
+        const modeUpdates = modes.map((mode) => {
+          const index = draft.modes.findIndex((entry) => entry.id === mode.id);
+          if (index < 0) throw new RangeError('StrategyMode does not exist');
+          const previousMode = draft.modes[index];
+          if (mode.profileId !== previousMode.profileId || mode.createdAt !== previousMode.createdAt) {
+            throw new RangeError('StrategyMode update cannot change identity, parent, or creation');
+          }
+          return { index, mode };
+        });
+        draft.profiles[profileIndex] = cloneData(profile);
+        modeUpdates.forEach(({ index, mode }) => { draft.modes[index] = cloneData(mode); });
+      });
+    },
+
     saveMode(mode) {
       validateStrategyMode(mode);
       return commit((draft) => {
@@ -506,24 +580,35 @@ export function createPersonalStrategyRepository({
     saveRangeObservation(observation) {
       validateRangeObservation(observation);
       return commit((draft) => {
-        assertUnusedId(draft, observation.id);
-        profileAndMode(draft, observation.profileId, observation.modeId, 'RangeObservation');
-        const latest = latestDirectRevision(draft, observation);
-        const supersedes = observation.revision.supersedesObservationId;
-        if ((latest === null && supersedes !== null)
-          || (latest !== null && supersedes !== latest.id)) {
-          throw new RangeError('RangeObservation must supersede the current direct revision');
+        appendRangeObservation(draft, observation);
+      });
+    },
+
+    saveCalibrationAnswer({ observation, session, expectedSessionUpdatedAt } = {}) {
+      validateRangeObservation(observation);
+      validateCalibrationSession(session);
+      if (observation.provenance.calibrationSessionId !== session.id
+        || observation.profileId !== session.profileId
+        || observation.modeId !== session.modeId
+        || calibrationContextKey(observation.context) !== calibrationContextKey(session.contextScope)) {
+        throw new RangeError('Calibration answer observation and session must share one scope');
+      }
+      if (!session.observationIds.includes(observation.id)) {
+        throw new RangeError('CalibrationSession must include the accepted observation ID');
+      }
+      return commit((draft) => {
+        const durableSession = draft.calibrationSessions.find((entry) => entry.id === session.id);
+        if (!durableSession) throw new RangeError('CalibrationSession does not exist');
+        if (expectedSessionUpdatedAt && durableSession.updatedAt !== expectedSessionUpdatedAt) {
+          throw new RangeError('CalibrationSession changed since the question was presented');
         }
-        const sessionId = observation.provenance.calibrationSessionId;
-        if (sessionId !== null) {
-          const session = draft.calibrationSessions.find((entry) => entry.id === sessionId);
-          if (!session || session.profileId !== observation.profileId
-            || session.modeId !== observation.modeId
-            || calibrationContextKey(session.contextScope) !== calibrationContextKey(observation.context)) {
-            throw new RangeError('RangeObservation references an incompatible CalibrationSession');
-          }
+        if (session.observationIds.length !== durableSession.observationIds.length + 1
+          || session.observationIds.at(-1) !== observation.id
+          || durableSession.observationIds.some((id, index) => session.observationIds[index] !== id)) {
+          throw new RangeError('Calibration answer must append exactly one session observation');
         }
-        draft.rangeObservations.push(cloneData(observation));
+        appendRangeObservation(draft, observation);
+        replaceCalibrationSession(draft, session);
       });
     },
 
@@ -537,13 +622,15 @@ export function createPersonalStrategyRepository({
         if (direct === null && comparison !== null) {
           throw new RangeError('TrainingObservation cannot compare against absent direct calibration');
         }
-        if (direct !== null) {
+        if (direct !== null && direct.dominantAction !== null) {
           const expected = direct.dominantAction.type === observation.chosenAction.type
             ? DIRECT_COMPARISON_RELATIONS.MATCHES
             : DIRECT_COMPARISON_RELATIONS.DEVIATES;
           if (comparison?.observationId !== direct.id || comparison.relation !== expected) {
             throw new RangeError('TrainingObservation must record its current direct-calibration deviation');
           }
+        } else if (direct !== null && comparison !== null) {
+          throw new RangeError('TrainingObservation cannot compare against a tied direct mix');
         }
         draft.trainingObservations.push(cloneData(observation));
       });
@@ -552,20 +639,7 @@ export function createPersonalStrategyRepository({
     saveCalibrationSession(session) {
       validateCalibrationSession(session);
       return commit((draft) => {
-        profileAndMode(draft, session.profileId, session.modeId, 'CalibrationSession');
-        const index = draft.calibrationSessions.findIndex((entry) => entry.id === session.id);
-        if (index < 0) {
-          assertUnusedId(draft, session.id);
-          draft.calibrationSessions.push(cloneData(session));
-          return;
-        }
-        const previous = draft.calibrationSessions[index];
-        if (session.profileId !== previous.profileId || session.modeId !== previous.modeId
-          || session.startedAt !== previous.startedAt
-          || calibrationContextKey(session.contextScope) !== calibrationContextKey(previous.contextScope)) {
-          throw new RangeError('CalibrationSession update cannot change identity or context scope');
-        }
-        draft.calibrationSessions[index] = cloneData(session);
+        replaceCalibrationSession(draft, session);
       });
     },
 

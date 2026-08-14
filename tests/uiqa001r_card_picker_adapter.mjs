@@ -119,7 +119,7 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
     ...overrides,
   });
 
-  for (const id of ['deck', 'cardModal', 'modalTitle', 'modalCopy', 'burnControl', 'markBurn', 'deckCount', 'eqDeckCount', 'equityBoardCount', 'equityDeadCount']) {
+  for (const id of ['deck', 'cardModal', 'modalTitle', 'modalCopy', 'burnControl', 'markBurn', 'deckCount', 'deadCardCount', 'eqDeckCount', 'equityBoardCount', 'equityDeadCount']) {
     elements.set(`#${id}`, makeElement());
   }
   const groups = ['hero', 'board', 'dead', 'eqboard', 'eqdead', 'player-0', 'hand-seat-0'];
@@ -182,8 +182,10 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
     ${extractFunction('cardMarkup')}
     ${extractFunction('cardVisualState')}
     ${extractFunction('renderSlots')}
+    ${extractFunction('renderPlaybookCardStateSummary')}
+    ${extractFunction('renderPlaybookCards')}
     function renderAllCards() {
-      renderSlots('hero', 2); renderSlots('board', 5); renderSlots('dead', 52);
+      renderPlaybookCards();
       renderSlots('eqboard', 5); renderSlots('eqdead', 52); renderSlots('player-0', 2);
       renderSlots('hand-seat-0', 2);
     }
@@ -200,6 +202,12 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
       renderAllCards,
       groupCards,
       slotMarkup(group) { return document.querySelector('[data-slots="' + group + '"]').innerHTML; },
+      cardStateSummary() {
+        return {
+          available: String(document.querySelector('#deckCount').textContent),
+          dead: String(document.querySelector('#deadCardCount').textContent),
+        };
+      },
       modalOpen() { return document.querySelector('#cardModal').classList.contains('show'); }
     };
     renderAllCards();

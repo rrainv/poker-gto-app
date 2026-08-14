@@ -9,9 +9,11 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const i18nPath = path.join(repoRoot, 'app', 'src', 'locales', 'i18n.js');
 const productTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'product-translations.js');
 const analysisTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'analysis-translations.js');
+const rangeCalibrationTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'range-calibration-translations.js');
 const productSources = [
   path.join(repoRoot, 'app', 'index.html'),
   path.join(repoRoot, 'app', 'src', 'core', 'logic.js'),
+  path.join(repoRoot, 'app', 'src', 'application', 'range-calibration-workspace.mjs'),
   path.join(repoRoot, 'app', 'src', 'ui', 'teacher.js'),
   path.join(repoRoot, 'app', 'src', 'ui', 'TableRenderer.js'),
   analysisTranslationsPath
@@ -42,6 +44,9 @@ function loadTranslations(
   }
   if (includeProductCatalog && fs.existsSync(analysisTranslationsPath)) {
     vm.runInNewContext(fs.readFileSync(analysisTranslationsPath, 'utf8'), context, { filename: analysisTranslationsPath });
+  }
+  if (includeProductCatalog && fs.existsSync(rangeCalibrationTranslationsPath)) {
+    vm.runInNewContext(fs.readFileSync(rangeCalibrationTranslationsPath, 'utf8'), context, { filename: rangeCalibrationTranslationsPath });
   }
   vm.runInNewContext(source, context, { filename: i18nPath });
   return context.window.appTranslations;

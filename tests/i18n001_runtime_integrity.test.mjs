@@ -12,6 +12,7 @@ const repoRoot = path.resolve(here, '..');
 const i18nSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/i18n.js'), 'utf8');
 const productTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/product-translations.js'), 'utf8');
 const analysisTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/analysis-translations.js'), 'utf8');
+const rangeCalibrationTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/range-calibration-translations.js'), 'utf8');
 const logicSource = fs.readFileSync(path.join(repoRoot, 'app/src/core/logic.js'), 'utf8');
 const heuristicStrategySource = fs.readFileSync(path.join(repoRoot, 'app/src/strategy/heuristic-strategy.mjs'), 'utf8');
 const strategyBootstrapSource = fs.readFileSync(path.join(repoRoot, 'app/src/application/strategy-provider-bootstrap.mjs'), 'utf8');
@@ -78,6 +79,7 @@ function createRuntime() {
   };
   vm.runInNewContext(productTranslationsSource, context, { filename: 'product-translations.js' });
   vm.runInNewContext(analysisTranslationsSource, context, { filename: 'analysis-translations.js' });
+  vm.runInNewContext(rangeCalibrationTranslationsSource, context, { filename: 'range-calibration-translations.js' });
   vm.runInNewContext(i18nSource, context, { filename: 'i18n.js' });
   return { clear, context, documentElement, events, languageSelect, storage };
 }

@@ -47,7 +47,7 @@ test('global utilities live in the lower sidebar and not the workspace header', 
 
 test('collapsed utility access and mobile navigation remain structural', () => {
   assert.match(uiQaCss, /\.is-sidebar-collapsed \.rail-language select[^{]*\{[^}]*opacity:\s*0/);
-  assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation\s*\{\s*grid-template-columns:\s*repeat\(4/);
+  assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation\s*\{\s*grid-template-columns:\s*repeat\(5/);
   assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.rail-utilities[\s\S]*?grid-template-columns:\s*repeat\(3/);
   assert.doesNotMatch(uiQaCss, /@media \(max-width: (?:820|700|520)px\)[\s\S]*?\.mode-navigation\s*\{[^}]*display:\s*none/);
 });

@@ -570,10 +570,20 @@ function renderPlaybookCards() {
     renderSlots('dead', 52);
   }
 
-  const deckCount = $('#deckCount');
-  // Hand mode has its own canonical deck and must never inherit Scenario cards.
-  if (deckCount) deckCount.textContent = remainingCards(isHandMode() ? 'hand' : 'gto');
+  renderPlaybookCardStateSummary(remainingCards(isHandMode() ? 'hand' : 'gto'));
   updateActionOptions();
+}
+
+function renderPlaybookCardStateSummary(availableCount) {
+  const handMode = isHandMode();
+  const canonicalState = handMode ? callPlaybookStateBridge('getState') : null;
+  const deadCards = handMode ? (canonicalState?.deadCards || []) : app.gto.dead;
+  const deckCount = $('#deckCount');
+  const deadCardCount = $('#deadCardCount');
+
+  // Hand mode reads the canonical PokerState through the existing deck authority.
+  if (deckCount) deckCount.textContent = availableCount ?? remainingCards(handMode ? 'hand' : 'gto');
+  if (deadCardCount) deadCardCount.textContent = String(deadCards.filter(Boolean).length);
 }
 
 function renderEquityCards() {
@@ -1182,10 +1192,7 @@ function syncCanonicalDecisionDisplay(decisionContext) {
   renderCanonicalDecisionCards('hero', decisionContext.heroCards, 2);
   renderCanonicalDecisionCards('board', decisionContext.board, 5);
   renderCanonicalDecisionCards('dead', decisionContext.deadCards, Math.min(52, decisionContext.deadCards.length + 1));
-  if ($('#deckCount')) $('#deckCount').textContent = 52
-    - decisionContext.heroCards.length
-    - decisionContext.board.length
-    - decisionContext.deadCards.length;
+  renderPlaybookCardStateSummary(remainingCards('hand'));
 }
 
 function renderUnavailableStrategy(resolution) {
@@ -2645,7 +2652,6 @@ function strategySourceDisplayLabel(source) {
   return t(labels[source] || String(source || 'Unavailable'));
 }
 
-
 function setRecommendationState(state) {
   const recommendation = $('#recommendation');
   if (!recommendation) return;
@@ -2926,11 +2932,19 @@ async function updateContext(reason = 'Context updated') {
   const sourceBadge = $('#sourceBadge');
 
   if (sourceBadge) {
-    sourceBadge.textContent = typeof strategySourceDisplayLabel === 'function'
+    const sourceLabel = typeof strategySourceDisplayLabel === 'function'
       ? strategySourceDisplayLabel(strategyResult.source)
       : strategyResult.source;
     const sourceTone = strategyResult.source.startsWith('heuristic_') ? 'heuristic' : 'info';
+    const provenance = sourceTone === 'heuristic'
+      ? t('Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.')
+      : `${t('Strategy source')}: ${sourceLabel}`;
+    sourceBadge.textContent = sourceLabel;
+    sourceBadge.title = provenance;
+    sourceBadge.setAttribute('aria-label', `${t('Strategy source')}: ${sourceLabel}`);
     sourceBadge.className = `badge status-badge status-badge--${sourceTone}`;
+    const provenanceElement = $('#strategySourceProvenance');
+    if (provenanceElement) provenanceElement.textContent = provenance;
   }
 
   const strategyMeta = $('#strategyMeta');

@@ -461,9 +461,18 @@ function validateNormalizedFrequencies(frequencies, dominantAction) {
   if (Math.abs(total - 1) > FREQUENCY_TOLERANCE) {
     throw new RangeError('RangeObservation frequencies must normalize to 1');
   }
-  const dominantEntry = frequencies.find((entry) => entry.action.type === dominantAction.type);
-  if (!dominantEntry || Math.abs(dominantEntry.probability - maximum) > FREQUENCY_TOLERANCE) {
-    throw new RangeError('RangeObservation dominantAction must be a maximum-frequency action');
+  const maximumEntries = frequencies.filter(
+    (entry) => Math.abs(entry.probability - maximum) <= FREQUENCY_TOLERANCE,
+  );
+  if (maximumEntries.length > 1) {
+    if (dominantAction !== null) {
+      throw new RangeError('A tied explicit RangeObservation mix cannot claim a dominantAction');
+    }
+  } else {
+    requireActionIdentity(dominantAction, 'RangeObservation.dominantAction');
+    if (maximumEntries[0].action.type !== dominantAction.type) {
+      throw new RangeError('RangeObservation dominantAction must be the unique maximum-frequency action');
+    }
   }
 }
 
@@ -489,14 +498,16 @@ export function validateRangeObservation(observation) {
     throw new RangeError(`Unsupported RangeObservation state: ${observation.state}`);
   }
   if (observation.state === RANGE_OBSERVATION_STATES.ACTIVE) {
-    requireActionIdentity(observation.dominantAction, 'RangeObservation.dominantAction');
     if (typeof observation.hasExplicitFrequencies !== 'boolean') {
       throw new TypeError('RangeObservation.hasExplicitFrequencies must be boolean');
     }
     if (observation.hasExplicitFrequencies) {
       validateNormalizedFrequencies(observation.frequencies, observation.dominantAction);
-    } else if (observation.frequencies !== null) {
-      throw new RangeError('Absent frequency detail must be stored as null');
+    } else {
+      requireActionIdentity(observation.dominantAction, 'RangeObservation.dominantAction');
+      if (observation.frequencies !== null) {
+        throw new RangeError('Absent frequency detail must be stored as null');
+      }
     }
   } else if (observation.dominantAction !== null
     || observation.hasExplicitFrequencies !== false || observation.frequencies !== null) {
@@ -546,7 +557,9 @@ export function createRangeObservation({
     modeId: requireString(modeId, 'RangeObservation.modeId'),
     context: cloneData(context),
     handClass,
-    dominantAction: isActive ? cloneData(actionIdentity(dominantAction)) : null,
+    dominantAction: isActive && dominantAction !== null
+      ? cloneData(actionIdentity(dominantAction))
+      : null,
     hasExplicitFrequencies: isActive && normalizedFrequencies !== null,
     frequencies: normalizedFrequencies === null ? null : cloneData(normalizedFrequencies),
     state,

@@ -25,7 +25,7 @@ test('the application opens directly into the workstation', () => {
 
 test('the shell exposes every current mode with structural active semantics', () => {
   const shell = shellMarkup();
-  for (const mode of ['gto', 'equity', 'training', 'info']) {
+  for (const mode of ['gto', 'equity', 'training', 'calibration', 'info']) {
     assert.match(shell, new RegExp(`class="mode-nav-item(?: active)?"[^>]*data-mode="${mode}"`));
   }
   assert.match(shell, /data-mode="gto"[^>]*aria-current="page"/);
@@ -79,7 +79,7 @@ test('strategy source status is truthful, noninteractive fallback copy', () => {
 
 test('mobile navigation and utilities remain visible and reachable', () => {
   const uiQaCss = css.slice(css.indexOf('UI-QA-001: responsive shell'));
-  assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation\s*\{\s*grid-template-columns: repeat\(4/);
+  assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation\s*\{\s*grid-template-columns: repeat\(5/);
   assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.rail-utilities[\s\S]*?grid-template-columns: repeat\(3/);
   assert.doesNotMatch(uiQaCss, /\.mode-navigation\s*\{[^}]*display:\s*none/);
   assert.doesNotMatch(uiQaCss, /\.rail-utilities\s*\{[^}]*display:\s*none/);
