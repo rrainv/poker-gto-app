@@ -204,7 +204,24 @@
     'replay.marker.terminal': 'Hand complete',
     'replay.marker.empty': 'No hand started',
     'replay.marker.unavailable': 'Current hand state',
-    'replay.empty.noVoluntaryActions': 'No voluntary actions yet'
+    'replay.empty.noVoluntaryActions': 'No voluntary actions yet',
+    'replay.controls.label': 'Replay controls',
+    'replay.control.previous': 'Previous',
+    'replay.control.next': 'Next',
+    'replay.control.returnToLive': 'Return to live',
+    'replay.status.live': 'LIVE',
+    'replay.status.replay': 'REPLAY',
+    'replay.progress': 'Step {current} of {total}',
+    'replay.status.announcement': '{mode} · Step {current} of {total} · {transition}',
+    'replay.readOnlyHelp': 'Read-only earlier state. Strategy and analysis remain tied to the live decision.',
+    'replay.transition.initialization': 'Hand initialized',
+    'replay.transition.privateDeal': 'Private cards dealt',
+    'replay.transition.privateReveal': 'Private cards revealed',
+    'replay.transition.action': 'Action recorded',
+    'replay.transition.flopDeal': 'Flop dealt',
+    'replay.transition.turnDeal': 'Turn dealt',
+    'replay.transition.riverDeal': 'River dealt',
+    'replay.transition.showdown': 'Showdown resolved'
   };
 
   const ru = {
@@ -306,7 +323,17 @@
     'replay.marker.awaitingPrivateCards': 'Ожидание закрытых карт', 'replay.marker.awaitingStreet': 'Ожидание: {street}',
     'replay.marker.showdown': 'Шоудаун', 'replay.marker.revealRequired': 'Нужно открыть карты',
     'replay.marker.terminal': 'Раздача завершена', 'replay.marker.empty': 'Раздача не начата',
-    'replay.marker.unavailable': 'Текущее состояние раздачи', 'replay.empty.noVoluntaryActions': 'Добровольных действий пока нет'
+    'replay.marker.unavailable': 'Текущее состояние раздачи', 'replay.empty.noVoluntaryActions': 'Добровольных действий пока нет',
+    'replay.controls.label': 'Управление повтором', 'replay.control.previous': 'Предыдущий',
+    'replay.control.next': 'Следующий', 'replay.control.returnToLive': 'Вернуться к LIVE',
+    'replay.status.live': 'LIVE', 'replay.status.replay': 'REPLAY',
+    'replay.progress': 'Шаг {current} из {total}',
+    'replay.status.announcement': '{mode} · Шаг {current} из {total} · {transition}',
+    'replay.readOnlyHelp': 'Показано более раннее состояние только для чтения. Стратегия и анализ по-прежнему относятся к решению в LIVE.',
+    'replay.transition.initialization': 'Раздача создана', 'replay.transition.privateDeal': 'Закрытые карты розданы',
+    'replay.transition.privateReveal': 'Закрытые карты открыты', 'replay.transition.action': 'Действие записано',
+    'replay.transition.flopDeal': 'Флоп роздан', 'replay.transition.turnDeal': 'Тёрн роздан',
+    'replay.transition.riverDeal': 'Ривер роздан', 'replay.transition.showdown': 'Шоудаун рассчитан'
   };
 
   const he = {
@@ -408,7 +435,17 @@
     'replay.marker.awaitingPrivateCards': 'ממתין לקלפים פרטיים', 'replay.marker.awaitingStreet': 'ממתין ל-{street}',
     'replay.marker.showdown': 'שואודאון', 'replay.marker.revealRequired': 'נדרשת חשיפה',
     'replay.marker.terminal': 'היד הסתיימה', 'replay.marker.empty': 'היד טרם התחילה',
-    'replay.marker.unavailable': 'מצב היד הנוכחי', 'replay.empty.noVoluntaryActions': 'עדיין אין פעולות רצוניות'
+    'replay.marker.unavailable': 'מצב היד הנוכחי', 'replay.empty.noVoluntaryActions': 'עדיין אין פעולות רצוניות',
+    'replay.controls.label': 'בקרי הילוך חוזר', 'replay.control.previous': 'הקודם',
+    'replay.control.next': 'הבא', 'replay.control.returnToLive': 'חזרה ל-LIVE',
+    'replay.status.live': 'LIVE', 'replay.status.replay': 'REPLAY',
+    'replay.progress': 'שלב {current} מתוך {total}',
+    'replay.status.announcement': '{mode} · שלב {current} מתוך {total} · {transition}',
+    'replay.readOnlyHelp': 'מוצג מצב מוקדם יותר לקריאה בלבד. האסטרטגיה והניתוח עדיין שייכים להחלטה במצב LIVE.',
+    'replay.transition.initialization': 'היד אותחלה', 'replay.transition.privateDeal': 'הקלפים הפרטיים חולקו',
+    'replay.transition.privateReveal': 'הקלפים הפרטיים נחשפו', 'replay.transition.action': 'הפעולה נרשמה',
+    'replay.transition.flopDeal': 'הפלופ חולק', 'replay.transition.turnDeal': 'הטרן חולק',
+    'replay.transition.riverDeal': 'הריבר חולק', 'replay.transition.showdown': 'השואודאון הוכרע'
   };
 
   const themeNames = {

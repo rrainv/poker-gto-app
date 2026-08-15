@@ -746,6 +746,20 @@
 
               <section id="handHistorySection" class="hand-control-section" aria-labelledby="handHistoryTitle">
                 <div class="hand-section-head"><div><strong id="handHistoryTitle" data-i18n="replay.title">Hand replay</strong><small data-i18n="replay.subtitle">Read-only timeline</small></div></div>
+                <div id="handReplayControls" class="replay-control-bar" data-replay-mode="empty">
+                  <div class="replay-state-summary">
+                    <span id="handReplayModeBadge" class="badge replay-mode-badge" data-i18n="replay.status.live">LIVE</span>
+                    <span id="handReplayProgress" class="replay-step-progress poker-data-token" dir="ltr">Step 0 of 0</span>
+                    <span id="handReplayTransition" class="replay-transition-label" data-i18n="replay.marker.empty">No hand started</span>
+                  </div>
+                  <div class="replay-control-actions" role="group" aria-label="Replay controls" data-i18n-aria-label="replay.controls.label">
+                    <button id="handReplayPreviousButton" class="ui-button ui-button--secondary" type="button" disabled data-i18n="replay.control.previous">Previous</button>
+                    <button id="handReplayNextButton" class="ui-button ui-button--secondary" type="button" disabled data-i18n="replay.control.next">Next</button>
+                    <button id="handReplayLiveButton" class="ui-button ui-button--quiet" type="button" disabled data-i18n="replay.control.returnToLive">Return to live</button>
+                  </div>
+                </div>
+                <p id="handReplayStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true">LIVE, Step 0 of 0</p>
+                <p id="handReplayReadOnlyNote" class="replay-readonly-note" hidden data-i18n="replay.readOnlyHelp">Read-only earlier state. Strategy and analysis remain tied to the live decision.</p>
                 <div id="handActionHistory" class="replay-timeline" aria-label="Read-only canonical action timeline" data-i18n-aria-label="replay.a11y.timeline"></div>
                 <div class="replay-resolution-actions">
                   <button id="handResolveShowdownButton" class="ui-button ui-button--primary" type="button" hidden data-i18n="Resolve showdown">Resolve showdown</button>

@@ -56,7 +56,7 @@ test('Playbook bridge exposes the immutable application-produced Replay model', 
   assert.deepEqual(events, []);
 });
 
-test('classic logic renders normalized Replay facts and no longer reconstructs raw history', () => {
+test('classic logic renders normalized Replay projection facts and Analysis keeps the accepted timeline', () => {
   const renderer = sourceBetween(
     logic,
     'function replayActorLabel(',
@@ -68,7 +68,7 @@ test('classic logic renders normalized Replay facts and no longer reconstructs r
     'function trustedAnalysisFacts(',
   );
 
-  assert.match(renderer, /callPlaybookStateBridge\('createReplayTimelineViewModel'\)/);
+  assert.match(renderer, /callPlaybookStateBridge\('createReplayProjectionViewModel'\)/);
   assert.match(analysisHistory, /callPlaybookStateBridge\('createReplayTimelineViewModel'\)/);
   assert.doesNotMatch(`${renderer}\n${analysisHistory}`, /\.actionHistory|submittedAction|committedMilliBb|currentBetAfterMilliBb/);
   assert.doesNotMatch(logic, /function renderCanonicalActionHistory\(/);
@@ -150,7 +150,7 @@ test('timeline accessibility has no fake controls or empty numbered action row',
   assert.match(historySurface, /class="replay-resolution-actions"[\s\S]*id="handResolveShowdownButton"/);
 });
 
-test('there are no Replay playback, step, or scrub controls', () => {
+test('bounded Replay step controls exist without playback, scrub, or timing controls', () => {
   const historySurface = sourceBetween(
     html,
     '<section id="handHistorySection"',
@@ -162,7 +162,10 @@ test('there are no Replay playback, step, or scrub controls', () => {
     'function dispatchCanonicalTableState()',
   );
 
-  assert.doesNotMatch(historySurface, /\b(?:play|pause|previous|next|scrub|speed|autoplay|playback)\b/i);
+  assert.match(historySurface, /id="handReplayPreviousButton"/);
+  assert.match(historySurface, /id="handReplayNextButton"/);
+  assert.match(historySurface, /id="handReplayLiveButton"/);
+  assert.doesNotMatch(historySurface, /\b(?:play|pause|scrub|speed|autoplay|playback)\b/i);
   assert.doesNotMatch(renderer, /selectedReplay|replayIndex|projectedState|setInterval|requestAnimationFrame/);
 });
 
