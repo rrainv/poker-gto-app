@@ -209,7 +209,9 @@ test('application-provided timeline progress marks selected actions and chance f
   let projection = journal.controller.previous();
   assert.equal(projection.selectedFrame.kind, 'flop_deal');
   assert.equal(projection.selectedFrame.actionSequence, null);
-  assert.equal(projection.timeline.showCurrentMarker, true);
+  assert.equal(projection.timeline.showCurrentMarker, false);
+  assert.equal(projection.timeline.selectedTransition.transitionKind, 'flop_deal');
+  assert.equal(projection.timeline.selectedTransition.presentationState, 'current');
   assert.deepEqual(
     projection.timeline.groups.flatMap((group) => group.entries)
       .map((entry) => entry.presentationState),

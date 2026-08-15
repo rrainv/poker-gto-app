@@ -1694,6 +1694,53 @@ function createReplayActionEntry(entry) {
   return item;
 }
 
+function createReplayTransitionEntry(event) {
+  const item = document.createElement('div');
+  item.className = `replay-transition-entry replay-transition-entry--${event.transitionKind.replaceAll('_', '-')} is-replay-${event.presentationState}`;
+  item.dataset.transitionKind = event.transitionKind;
+  item.dataset.replayProgress = event.presentationState;
+  item.dataset.frameIndex = String(event.frameIndex);
+  if (event.presentationState === 'current') item.setAttribute('aria-current', 'step');
+
+  const label = document.createElement('strong');
+  label.className = 'replay-transition-event-label';
+  label.textContent = t(event.labelKey);
+  item.appendChild(label);
+
+  if (event.cardVisibility === 'public_board' && event.cards.length > 0) {
+    const cards = document.createElement('span');
+    cards.className = 'replay-transition-cards poker-data-token';
+    cards.dir = 'ltr';
+    event.cards.forEach((card) => {
+      const token = document.createElement('span');
+      token.className = `replay-transition-card replay-transition-card--${card.tone}`;
+      token.textContent = card.token;
+      cards.appendChild(token);
+    });
+    item.appendChild(cards);
+  }
+  return item;
+}
+
+function appendReplayTimelineItems(section, heading, items) {
+  let actionList = null;
+  items.forEach((item) => {
+    if (item.itemKind === 'transition') {
+      actionList = null;
+      section.appendChild(createReplayTransitionEntry(item));
+      return;
+    }
+    if (!actionList) {
+      actionList = document.createElement('ol');
+      actionList.className = 'replay-action-list';
+      actionList.start = item.sequence + 1;
+      actionList.setAttribute('aria-labelledby', heading.id);
+      section.appendChild(actionList);
+    }
+    actionList.appendChild(createReplayActionEntry(item));
+  });
+}
+
 function keepReplaySelectionVisible(root) {
   const selected = root.querySelector('[aria-current="step"], .replay-current-marker[aria-current]');
   if (!selected) return;
@@ -1771,13 +1818,8 @@ function renderCanonicalReplayTimeline() {
     heading.textContent = t(group.headingKey);
     section.appendChild(heading);
 
-    if (group.entries.length > 0) {
-      const list = document.createElement('ol');
-      list.className = 'replay-action-list';
-      list.start = group.entries[0].sequence + 1;
-      list.setAttribute('aria-labelledby', heading.id);
-      group.entries.forEach((entry) => list.appendChild(createReplayActionEntry(entry)));
-      section.appendChild(list);
+    if (group.items.length > 0) {
+      appendReplayTimelineItems(section, heading, group.items);
     } else if (model.emptyState === 'no_voluntary_actions') {
       const empty = document.createElement('p');
       empty.className = 'replay-empty-state';
@@ -1785,7 +1827,7 @@ function renderCanonicalReplayTimeline() {
       section.appendChild(empty);
     }
 
-    if (model.showCurrentMarker && model.currentMarker.street === group.street) {
+    if (model.showCurrentMarker && model.currentMarkerGroup === group.street) {
       section.appendChild(createReplayCurrentMarker(model.currentMarker));
       markerAttached = true;
     }

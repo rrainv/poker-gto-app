@@ -6841,6 +6841,48 @@ html[data-four-color="false"] {
   text-transform: uppercase;
 }
 .replay-street-group.is-current-street .replay-street-heading { color: var(--text-primary); border-bottom-color: color-mix(in srgb, var(--accent-primary) 42%, var(--border-subtle)); }
+.replay-transition-entry {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin: 0 0 var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--status-info) 6%, var(--surface-inset));
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 3px solid color-mix(in srgb, var(--status-info) 72%, var(--border-strong));
+  border-radius: var(--radius-cell);
+  font-size: var(--text-label-size);
+}
+.replay-transition-entry.is-replay-current {
+  color: var(--text-primary);
+  border-width: 2px;
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-control);
+}
+.replay-transition-entry.is-replay-future {
+  opacity: .52;
+  border-style: dashed;
+  box-shadow: none;
+}
+.replay-transition-event-label { color: inherit; font-size: var(--text-label-size); line-height: 1.35; }
+.replay-transition-cards { display: inline-flex; align-items: center; gap: var(--space-1); direction: ltr; unicode-bidi: isolate; }
+.replay-transition-card {
+  min-width: 2.2em;
+  padding: 2px 5px;
+  color: var(--suit-spade);
+  background: var(--card-face);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  font: 850 var(--text-label-size)/1.25 var(--font-data);
+  text-align: center;
+  white-space: nowrap;
+}
+.replay-transition-card--heart { color: var(--suit-heart); }
+.replay-transition-card--diamond { color: var(--suit-diamond); }
+.replay-transition-card--club { color: var(--suit-club); }
 .replay-action-list { min-width: 0; margin: 0; padding-inline-start: 27px; border-inline-start: 2px solid var(--border-subtle); }
 .replay-action-entry {
   --replay-action-color: var(--border-strong);
@@ -6930,6 +6972,7 @@ html[data-four-color="false"] {
 
 [dir="rtl"] .replay-action-amount,
 [dir="rtl"] .replay-position,
+[dir="rtl"] .replay-transition-cards,
 [dir="rtl"] .replay-step-progress { direction: ltr; unicode-bidi: isolate; }
 
 @media (max-width: 720px) {

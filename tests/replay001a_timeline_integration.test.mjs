@@ -100,7 +100,7 @@ test('street headings, ordered entries, Hero, amount, all-in, and current semant
   }
   assert.match(renderer, /document\.createElement\('h3'\)/);
   assert.match(renderer, /document\.createElement\('ol'\)/);
-  assert.match(renderer, /list\.start = group\.entries\[0\]\.sequence \+ 1/);
+  assert.match(renderer, /actionList\.start = item\.sequence \+ 1/);
   assert.match(renderer, /item\.value = entry\.sequence \+ 1/);
   assert.match(renderer, /entry\.amountKind !== 'none'/);
   assert.match(renderer, /entry\.wasAllIn/);
@@ -142,7 +142,7 @@ test('timeline accessibility has no fake controls or empty numbered action row',
 
   assert.match(html, /id="handHistorySection"[^>]*aria-labelledby="handHistoryTitle"/);
   assert.match(html, /id="handActionHistory"[^>]*data-i18n-aria-label="replay\.a11y\.timeline"/);
-  assert.match(renderer, /list\.setAttribute\('aria-labelledby', heading\.id\)/);
+  assert.match(renderer, /actionList\.setAttribute\('aria-labelledby', heading\.id\)/);
   assert.match(renderer, /replay-empty-state/);
   assert.doesNotMatch(historySurface, /<li/);
   assert.doesNotMatch(renderer, /tabIndex|createElement\('button'\)|addEventListener/);
@@ -189,6 +189,7 @@ test('EN, RU, and HE Replay catalogs cover every visible and assistive key', () 
   const keys = [
     'replay.title', 'replay.subtitle', 'replay.a11y.timeline',
     'replay.street.preflop', 'replay.street.flop', 'replay.street.turn', 'replay.street.river',
+    'replay.street.showdown',
     'replay.action.fold', 'replay.action.check', 'replay.action.call', 'replay.action.betTo',
     'replay.action.raiseTo', 'replay.action.allInTo', 'replay.action.unknown',
     'replay.status.allIn', 'replay.marker.currentDecision', 'replay.marker.toAct',

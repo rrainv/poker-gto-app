@@ -14,6 +14,9 @@ export const REPLAY_FRAME_OPERATIONS = Object.freeze({
 });
 
 const SUPPORTED_OPERATIONS = new Set(Object.values(REPLAY_FRAME_OPERATIONS));
+const TIMELINE_GROUP_ORDER = Object.freeze(['preflop', 'flop', 'turn', 'river', 'showdown']);
+const SUIT_SYMBOLS = Object.freeze({ s: '♠', h: '♥', d: '♦', c: '♣' });
+const SUIT_TONES = Object.freeze({ s: 'spade', h: 'heart', d: 'diamond', c: 'club' });
 
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
@@ -59,6 +62,19 @@ function actionSequenceForFrame(operation, state) {
   return sequence;
 }
 
+function publicBoardCardsForFrame(kind, tablePresence) {
+  const cards = {
+    flop_deal: tablePresence.board.slice(0, 3),
+    turn_deal: tablePresence.board.slice(3, 4),
+    river_deal: tablePresence.board.slice(4, 5),
+  }[kind] || [];
+  return cards.map((card) => ({
+    ...card,
+    token: `${card.rank}${SUIT_SYMBOLS[card.suit] || card.suit}`,
+    tone: SUIT_TONES[card.suit] || 'spade',
+  }));
+}
+
 function captureFrame(state, heroPlayerId, operation) {
   if (!state || typeof state !== 'object' || Array.isArray(state)) {
     throw new TypeError('A canonical PokerState is required for a Replay frame');
@@ -72,7 +88,7 @@ function captureFrame(state, heroPlayerId, operation) {
 
   // The journal owns an immutable value snapshot rather than a mutable or reconstructable delta.
   const snapshot = deepFreeze(structuredClone(state));
-  createTablePresenceViewModel({ state: snapshot, heroPlayerId });
+  const tablePresence = createTablePresenceViewModel({ state: snapshot, heroPlayerId });
   const presentation = framePresentation(operation, snapshot);
   return deepFreeze({
     state: snapshot,
@@ -81,47 +97,121 @@ function captureFrame(state, heroPlayerId, operation) {
     kind: presentation.kind,
     labelKey: presentation.labelKey,
     actionSequence: actionSequenceForFrame(operation, snapshot),
+    publicBoardCards: publicBoardCardsForFrame(presentation.kind, tablePresence),
   });
 }
 
-function actionPresentationState(entry, selectedFrame, atLive) {
+function itemPresentationState(frameIndex, selectedFrameIndex, atLive) {
   if (atLive) return 'completed';
-  if (selectedFrame.actionSequence !== null) {
-    if (entry.sequence < selectedFrame.actionSequence) return 'completed';
-    if (entry.sequence === selectedFrame.actionSequence) return 'current';
-    return 'future';
-  }
-  return entry.sequence < selectedFrame.state.actionHistory.length ? 'completed' : 'future';
+  if (frameIndex < selectedFrameIndex) return 'completed';
+  if (frameIndex === selectedFrameIndex) return 'current';
+  return 'future';
 }
 
-function createTimelineProgress({ liveTimeline, selectedTimeline, selectedFrame, atLive }) {
-  const counts = { completed: 0, current: 0, future: 0 };
+function timelineGroupForFrame(frame, actionEntry = null) {
+  if (actionEntry) return actionEntry.street;
+  if (frame.kind === 'flop_deal') return 'flop';
+  if (frame.kind === 'turn_deal') return 'turn';
+  if (frame.kind === 'river_deal') return 'river';
+  if (frame.kind === 'private_reveal' || frame.kind === 'showdown_resolution') return 'showdown';
+  return 'preflop';
+}
+
+function createTimelineProgress({
+  liveTimeline,
+  selectedTimeline,
+  selectedFrameIndex,
+  journalFrames,
+  atLive,
+}) {
+  const actionCounts = { completed: 0, current: 0, future: 0 };
+  const itemCounts = { completed: 0, current: 0, future: 0 };
+  const actionEntriesBySequence = new Map(
+    liveTimeline.groups.flatMap((group) => group.entries)
+      .map((entry) => [entry.sequence, entry]),
+  );
+  const groupedItems = new Map(TIMELINE_GROUP_ORDER.map((street) => [street, []]));
   let selectedAction = null;
-  const groups = liveTimeline.groups.map((group) => ({
-    street: group.street,
-    headingKey: group.headingKey,
-    isSelectedStreet: group.street === selectedFrame.state.street,
-    entries: group.entries.map((entry) => {
-      const presentationState = actionPresentationState(entry, selectedFrame, atLive);
-      counts[presentationState] += 1;
-      const projected = { ...entry, presentationState };
-      if (presentationState === 'current') selectedAction = projected;
-      return projected;
-    }),
-  }));
+  let selectedTransition = null;
+  let selectedGroup = 'preflop';
+
+  journalFrames.forEach((frame, frameIndex) => {
+    const presentationState = itemPresentationState(frameIndex, selectedFrameIndex, atLive);
+    const actionEntry = frame.actionSequence === null
+      ? null
+      : actionEntriesBySequence.get(frame.actionSequence);
+    if (frame.actionSequence !== null && !actionEntry) {
+      throw new RangeError(`Replay frame ${frameIndex} has no canonical action entry`);
+    }
+    const street = timelineGroupForFrame(frame, actionEntry);
+    const item = actionEntry
+      ? {
+        ...actionEntry,
+        itemKind: 'action',
+        source: 'canonical_action_history',
+        frameIndex,
+        presentationState,
+      }
+      : {
+        itemKind: 'transition',
+        source: 'replay_frame',
+        frameIndex,
+        street,
+        operation: frame.operation,
+        transitionKind: frame.kind,
+        labelKey: frame.labelKey,
+        cards: frame.publicBoardCards,
+        cardVisibility: frame.publicBoardCards.length > 0 ? 'public_board' : 'none',
+        presentationState,
+      };
+    groupedItems.get(street).push(item);
+    itemCounts[presentationState] += 1;
+    if (actionEntry) {
+      actionCounts[presentationState] += 1;
+      if (presentationState === 'current') selectedAction = item;
+    } else if (presentationState === 'current') {
+      selectedTransition = item;
+    }
+    if (frameIndex === selectedFrameIndex) selectedGroup = street;
+  });
+
+  const groups = TIMELINE_GROUP_ORDER.map((street) => {
+    const items = groupedItems.get(street);
+    if (items.length === 0) return null;
+    return {
+      street,
+      headingKey: `replay.street.${street}`,
+      isSelectedStreet: street === selectedGroup,
+      items,
+      entries: items.filter((item) => item.itemKind === 'action'),
+      transitions: items.filter((item) => item.itemKind === 'transition'),
+    };
+  }).filter(Boolean);
+  const hasShowdownGroup = groupedItems.get('showdown').length > 0;
+  const currentMarkerGroup = hasShowdownGroup
+    && ['terminal', 'showdown', 'reveal_required'].includes(selectedTimeline.currentMarker.kind)
+    ? 'showdown'
+    : selectedTimeline.currentMarker.street;
 
   return deepFreeze({
-    empty: liveTimeline.empty,
-    emptyState: liveTimeline.emptyState,
+    empty: groups.length === 0,
+    emptyState: groups.length === 0 ? liveTimeline.emptyState : null,
     status: selectedTimeline.status,
     entryCount: liveTimeline.entryCount,
+    transitionCount: journalFrames.length - liveTimeline.entryCount,
+    itemCount: journalFrames.length,
     groups,
     currentMarker: selectedTimeline.currentMarker,
-    showCurrentMarker: atLive || selectedFrame.actionSequence === null,
+    currentMarkerGroup,
+    showCurrentMarker: atLive,
     selectedAction,
-    completedCount: counts.completed,
-    currentCount: counts.current,
-    futureCount: counts.future,
+    selectedTransition,
+    completedCount: actionCounts.completed,
+    currentCount: actionCounts.current,
+    futureCount: actionCounts.future,
+    completedItemCount: itemCounts.completed,
+    currentItemCount: itemCounts.current,
+    futureItemCount: itemCounts.future,
   });
 }
 
@@ -151,13 +241,20 @@ function emptyProjection() {
       emptyState: liveTimeline.emptyState,
       status: liveTimeline.status,
       entryCount: 0,
+      transitionCount: 0,
+      itemCount: 0,
       groups: [],
       currentMarker: liveTimeline.currentMarker,
+      currentMarkerGroup: null,
       showCurrentMarker: true,
       selectedAction: null,
+      selectedTransition: null,
       completedCount: 0,
       currentCount: 0,
       futureCount: 0,
+      completedItemCount: 0,
+      currentItemCount: 0,
+      futureItemCount: 0,
     },
     liveTimeline,
   });
@@ -206,7 +303,8 @@ export function createReplayProjectionController({
     const timeline = createTimelineProgress({
       liveTimeline,
       selectedTimeline,
-      selectedFrame,
+      selectedFrameIndex,
+      journalFrames: frames.slice(),
       atLive,
     });
 
