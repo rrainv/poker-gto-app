@@ -179,7 +179,32 @@
     'table.a11y.cardsUndealt': 'Cards not dealt',
     'table.a11y.boardEmpty': 'Board not dealt',
     'table.a11y.boardCards': 'Board {cards}',
-    'table.a11y.scenario': 'Lossy Scenario table presentation'
+    'table.a11y.scenario': 'Lossy Scenario table presentation',
+    'replay.title': 'Hand replay',
+    'replay.subtitle': 'Read-only timeline',
+    'replay.a11y.timeline': 'Read-only canonical action timeline',
+    'replay.street.preflop': 'Preflop',
+    'replay.street.flop': 'Flop',
+    'replay.street.turn': 'Turn',
+    'replay.street.river': 'River',
+    'replay.action.fold': 'Fold',
+    'replay.action.check': 'Check',
+    'replay.action.call': 'Call',
+    'replay.action.betTo': 'Bet to',
+    'replay.action.raiseTo': 'Raise to',
+    'replay.action.allInTo': 'All-in to',
+    'replay.action.unknown': 'Unknown action',
+    'replay.status.allIn': 'All-in',
+    'replay.marker.currentDecision': 'Current decision',
+    'replay.marker.toAct': 'To act',
+    'replay.marker.awaitingPrivateCards': 'Waiting for private cards',
+    'replay.marker.awaitingStreet': 'Waiting for {street}',
+    'replay.marker.showdown': 'Showdown',
+    'replay.marker.revealRequired': 'Reveal required',
+    'replay.marker.terminal': 'Hand complete',
+    'replay.marker.empty': 'No hand started',
+    'replay.marker.unavailable': 'Current hand state',
+    'replay.empty.noVoluntaryActions': 'No voluntary actions yet'
   };
 
   const ru = {
@@ -270,7 +295,18 @@
     'table.a11y.dealer': 'Баттон дилера', 'table.a11y.contribution': 'Вклад на текущей улице {value} bb',
     'table.a11y.cardsKnown': 'Карты известны', 'table.a11y.cardsKnownValue': 'Карты: {cards}', 'table.a11y.cardsHidden': 'Карты скрыты',
     'table.a11y.cardsUndealt': 'Карты не розданы', 'table.a11y.boardEmpty': 'Борд не роздан',
-    'table.a11y.boardCards': 'Борд: {cards}', 'table.a11y.scenario': 'Упрощённое представление стола сценария'
+    'table.a11y.boardCards': 'Борд: {cards}', 'table.a11y.scenario': 'Упрощённое представление стола сценария',
+    'replay.title': 'Повтор раздачи', 'replay.subtitle': 'Хронология только для чтения',
+    'replay.a11y.timeline': 'Каноническая хронология действий только для чтения',
+    'replay.street.preflop': 'Префлоп', 'replay.street.flop': 'Флоп', 'replay.street.turn': 'Тёрн', 'replay.street.river': 'Ривер',
+    'replay.action.fold': 'Фолд', 'replay.action.check': 'Чек', 'replay.action.call': 'Колл',
+    'replay.action.betTo': 'Бет до', 'replay.action.raiseTo': 'Рейз до', 'replay.action.allInTo': 'Олл-ин до',
+    'replay.action.unknown': 'Неизвестное действие', 'replay.status.allIn': 'Олл-ин',
+    'replay.marker.currentDecision': 'Текущее решение', 'replay.marker.toAct': 'Ход игрока',
+    'replay.marker.awaitingPrivateCards': 'Ожидание закрытых карт', 'replay.marker.awaitingStreet': 'Ожидание: {street}',
+    'replay.marker.showdown': 'Шоудаун', 'replay.marker.revealRequired': 'Нужно открыть карты',
+    'replay.marker.terminal': 'Раздача завершена', 'replay.marker.empty': 'Раздача не начата',
+    'replay.marker.unavailable': 'Текущее состояние раздачи', 'replay.empty.noVoluntaryActions': 'Добровольных действий пока нет'
   };
 
   const he = {
@@ -361,7 +397,18 @@
     'table.a11y.dealer': 'כפתור הדילר', 'table.a11y.contribution': 'תרומה ברחוב הנוכחי {value} bb',
     'table.a11y.cardsKnown': 'הקלפים ידועים', 'table.a11y.cardsKnownValue': 'קלפים: {cards}', 'table.a11y.cardsHidden': 'הקלפים מוסתרים',
     'table.a11y.cardsUndealt': 'הקלפים טרם חולקו', 'table.a11y.boardEmpty': 'הבורד טרם חולק',
-    'table.a11y.boardCards': 'בורד: {cards}', 'table.a11y.scenario': 'תצוגת שולחן מצומצמת של תרחיש'
+    'table.a11y.boardCards': 'בורד: {cards}', 'table.a11y.scenario': 'תצוגת שולחן מצומצמת של תרחיש',
+    'replay.title': 'הילוך חוזר של היד', 'replay.subtitle': 'ציר זמן לקריאה בלבד',
+    'replay.a11y.timeline': 'ציר זמן קנוני של הפעולות, לקריאה בלבד',
+    'replay.street.preflop': 'פרה-פלופ', 'replay.street.flop': 'פלופ', 'replay.street.turn': 'טרן', 'replay.street.river': 'ריבר',
+    'replay.action.fold': 'פולד', 'replay.action.check': 'צ׳ק', 'replay.action.call': 'קול',
+    'replay.action.betTo': 'בט עד', 'replay.action.raiseTo': 'רייז עד', 'replay.action.allInTo': 'אול-אין עד',
+    'replay.action.unknown': 'פעולה לא מוכרת', 'replay.status.allIn': 'אול-אין',
+    'replay.marker.currentDecision': 'ההחלטה הנוכחית', 'replay.marker.toAct': 'לתורו',
+    'replay.marker.awaitingPrivateCards': 'ממתין לקלפים פרטיים', 'replay.marker.awaitingStreet': 'ממתין ל-{street}',
+    'replay.marker.showdown': 'שואודאון', 'replay.marker.revealRequired': 'נדרשת חשיפה',
+    'replay.marker.terminal': 'היד הסתיימה', 'replay.marker.empty': 'היד טרם התחילה',
+    'replay.marker.unavailable': 'מצב היד הנוכחי', 'replay.empty.noVoluntaryActions': 'עדיין אין פעולות רצוניות'
   };
 
   const themeNames = {

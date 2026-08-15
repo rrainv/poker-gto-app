@@ -745,9 +745,11 @@
               </section>
 
               <section id="handHistorySection" class="hand-control-section" aria-labelledby="handHistoryTitle">
-                <div class="hand-section-head"><div><strong id="handHistoryTitle" data-i18n="Action history">Action history</strong><small data-i18n="Canonical, chronological and read-only">Canonical, chronological and read-only</small></div></div>
-                  <ol id="handActionHistory" class="hand-action-history"><li data-i18n="No actions yet">No actions yet</li></ol>
-                <button id="handResolveShowdownButton" class="ui-button ui-button--primary" type="button" hidden data-i18n="Resolve showdown">Resolve showdown</button>
+                <div class="hand-section-head"><div><strong id="handHistoryTitle" data-i18n="replay.title">Hand replay</strong><small data-i18n="replay.subtitle">Read-only timeline</small></div></div>
+                <div id="handActionHistory" class="replay-timeline" aria-label="Read-only canonical action timeline" data-i18n-aria-label="replay.a11y.timeline"></div>
+                <div class="replay-resolution-actions">
+                  <button id="handResolveShowdownButton" class="ui-button ui-button--primary" type="button" hidden data-i18n="Resolve showdown">Resolve showdown</button>
+                </div>
               </section>
             </div>
           </section>

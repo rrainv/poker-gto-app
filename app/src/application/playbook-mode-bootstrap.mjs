@@ -6,6 +6,7 @@ import {
   createPlaybookViewModel,
 } from './playbook-state-source.mjs';
 import { createTablePresenceViewModel } from './table-presence-view-model.mjs';
+import { createReplayTimelineViewModel } from './replay-timeline-view-model.mjs';
 
 export const PLAYBOOK_STATE_CHANGE_EVENT = 'riverline:playbook-state-change';
 
@@ -48,6 +49,13 @@ export function installPlaybookStateSourceBridge(browserWindow, {
 
     createTablePresenceViewModel() {
       return createTablePresenceViewModel({
+        state: canonicalController.getState(),
+        heroPlayerId: canonicalController.getHeroPlayerId(),
+      });
+    },
+
+    createReplayTimelineViewModel() {
+      return createReplayTimelineViewModel({
         state: canonicalController.getState(),
         heroPlayerId: canonicalController.getHeroPlayerId(),
       });

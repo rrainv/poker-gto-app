@@ -1597,16 +1597,148 @@ function renderCanonicalChance(state) {
   if ($('#handDealBoardButton')) $('#handDealBoardButton').disabled = normalizedDecisionCards(app.playbookHandDraft.board).length !== expected;
 }
 
-function renderCanonicalActionHistory(state) {
+function replayActorLabel(actor) {
+  if (!actor) return '—';
+  if (actor.suppliedName) {
+    return actor.isHero ? `${t('Hero')} · ${actor.suppliedName}` : actor.suppliedName;
+  }
+  return actor.isHero ? t('Hero') : t('Player {number}', { number: actor.seat + 1 });
+}
+
+function replayMarkerLabel(marker) {
+  if (marker?.targetStreet) {
+    return t(marker.labelKey, { street: t(`replay.street.${marker.targetStreet}`) });
+  }
+  return t(marker?.labelKey || 'replay.marker.unavailable');
+}
+
+function createReplayIdentity(actor, className) {
+  const identity = document.createElement('span');
+  identity.className = className;
+
+  const name = document.createElement('strong');
+  name.className = 'replay-actor-name';
+  name.textContent = replayActorLabel(actor);
+  identity.appendChild(name);
+
+  if (actor?.position) {
+    const position = document.createElement('span');
+    position.className = 'replay-position poker-data-token';
+    position.textContent = actor.position;
+    identity.appendChild(position);
+  }
+  return identity;
+}
+
+function createReplayCurrentMarker(marker) {
+  const current = document.createElement('div');
+  current.className = `replay-current-marker replay-current-marker--${marker.kind.replaceAll('_', '-')}${marker.actor?.isHero ? ' is-hero' : ''}`;
+  current.dataset.markerKind = marker.kind;
+  current.setAttribute('aria-current', 'true');
+  current.setAttribute('role', 'status');
+  current.setAttribute('aria-live', 'polite');
+  current.setAttribute('aria-atomic', 'true');
+
+  const eyebrow = document.createElement('span');
+  eyebrow.className = 'replay-current-eyebrow';
+  eyebrow.textContent = replayMarkerLabel(marker);
+  current.appendChild(eyebrow);
+
+  if (marker.kind === 'current_decision' && marker.actor) {
+    current.appendChild(createReplayIdentity(marker.actor, 'replay-current-identity'));
+    const toAct = document.createElement('strong');
+    toAct.className = 'replay-current-action';
+    toAct.textContent = t('replay.marker.toAct');
+    current.appendChild(toAct);
+  }
+  return current;
+}
+
+function createReplayActionEntry(entry) {
+  const item = document.createElement('li');
+  item.className = `replay-action-entry replay-action-entry--${entry.actionFamily}${entry.isHero ? ' is-hero' : ''}${entry.wasAllIn ? ' is-all-in' : ''}`;
+  item.dataset.actionType = entry.actionType;
+  item.dataset.amountKind = entry.amountKind;
+  item.dataset.sequence = String(entry.sequence);
+  item.value = entry.sequence + 1;
+
+  const body = document.createElement('div');
+  body.className = 'replay-action-body';
+  body.appendChild(createReplayIdentity(entry, 'replay-action-identity'));
+
+  const semantics = document.createElement('div');
+  semantics.className = 'replay-action-semantics';
+  const action = document.createElement('strong');
+  action.className = 'replay-action-label';
+  action.textContent = t(entry.actionLabelKey);
+  semantics.appendChild(action);
+
+  if (entry.amountKind !== 'none' && Number.isSafeInteger(entry.amountMilliBb)) {
+    const amount = document.createElement('span');
+    amount.className = 'replay-action-amount poker-data-token';
+    amount.textContent = formatCanonicalBb(entry.amountMilliBb);
+    semantics.appendChild(amount);
+  }
+  if (entry.wasAllIn) {
+    const allIn = document.createElement('span');
+    allIn.className = 'replay-all-in-status';
+    allIn.textContent = t('replay.status.allIn');
+    semantics.appendChild(allIn);
+  }
+
+  body.appendChild(semantics);
+  item.appendChild(body);
+  return item;
+}
+
+function renderCanonicalReplayTimeline() {
   const root = $('#handActionHistory');
   if (!root) return;
-  const records = state?.actionHistory || [];
-  root.innerHTML = records.length ? records.map((record) => {
-    const player = state.players.find((entry) => entry.playerId === record.playerId);
-    const action = record.submittedAction;
-    const amount = action.amountToMilliBb === null ? '' : ` ${t('to')} ${formatCanonicalBb(action.amountToMilliBb)}`;
-    return `<li><span><strong>${t(record.street.charAt(0).toUpperCase() + record.street.slice(1))}</strong> · ${canonicalPlayerLabel(player, callPlaybookStateBridge('getHeroPlayerId'))} · ${t(action.type.replace('_', ' '))}${amount}</span></li>`;
-  }).join('') : `<li><span>${t('No actions yet')}</span></li>`;
+  if (!isHandMode()) {
+    root.replaceChildren();
+    root.removeAttribute('data-replay-state');
+    return;
+  }
+
+  const model = callPlaybookStateBridge('createReplayTimelineViewModel');
+  if (!model || model.schemaVersion !== 'replay-timeline/v1') return;
+  root.replaceChildren();
+  root.dataset.replayState = model.status;
+  let markerAttached = false;
+
+  for (const group of model.groups) {
+    const section = document.createElement('section');
+    section.className = `replay-street-group${group.isCurrentStreet ? ' is-current-street' : ''}`;
+    section.dataset.replayStreet = group.street;
+
+    const heading = document.createElement('h3');
+    heading.className = 'replay-street-heading';
+    heading.id = `replay-street-${group.street}`;
+    heading.textContent = t(group.headingKey);
+    section.appendChild(heading);
+
+    if (group.entries.length > 0) {
+      const list = document.createElement('ol');
+      list.className = 'replay-action-list';
+      list.start = group.entries[0].sequence + 1;
+      list.setAttribute('aria-labelledby', heading.id);
+      group.entries.forEach((entry) => list.appendChild(createReplayActionEntry(entry)));
+      section.appendChild(list);
+    } else if (model.emptyState === 'no_voluntary_actions') {
+      const empty = document.createElement('p');
+      empty.className = 'replay-empty-state';
+      empty.textContent = t('replay.empty.noVoluntaryActions');
+      section.appendChild(empty);
+    }
+
+    if (model.currentMarker.street === group.street) {
+      section.appendChild(createReplayCurrentMarker(model.currentMarker));
+      markerAttached = true;
+    }
+    root.appendChild(section);
+  }
+
+  if (!markerAttached) root.appendChild(createReplayCurrentMarker(model.currentMarker));
 }
 
 function dispatchCanonicalTableState() {
@@ -1649,7 +1781,7 @@ function renderCanonicalHandWorkspace() {
     const section = $('#' + id);
     if (section) section.classList.toggle('is-current-hand-step', !section.hidden);
   });
-  renderCanonicalActionHistory(state);
+  renderCanonicalReplayTimeline();
   if ($('#handResolveShowdownButton')) {
     const canResolveShowdown = state?.phase === 'showdown' && state?.showdown?.status === 'ready';
     $('#handResolveShowdownButton').hidden = !canResolveShowdown;
@@ -2657,29 +2789,21 @@ function trustedHandClassificationForAnalysis(decisionContext, strategyResult) {
 
 function canonicalActionHistoryForAnalysis(resolution) {
   if (resolution?.mode !== 'hand') return [];
-  const bridge = globalThis.RiverlinePlaybookState;
-  const state = bridge && typeof bridge.getState === 'function' ? bridge.getState() : null;
-  if (!state || !Array.isArray(state.actionHistory) || !Array.isArray(state.players)) return [];
-  const heroPlayerId = typeof bridge.getHeroPlayerId === 'function' ? bridge.getHeroPlayerId() : null;
-  const playersById = new Map(state.players.map((player) => [player.playerId, player]));
+  const timeline = callPlaybookStateBridge('createReplayTimelineViewModel');
+  if (!timeline || timeline.schemaVersion !== 'replay-timeline/v1') return [];
   const labels = {
     fold: 'Fold', check: 'Check', call: 'Call', bet: 'Bet to', raise: 'Raise to', all_in: 'All-in to'
   };
-  return state.actionHistory.map((record, index) => {
-    const action = record.submittedAction || {};
-    const player = playersById.get(record.playerId);
-    const amountMilliBb = action.type === 'call'
-      ? record.committedMilliBb
-      : action.type === 'fold' || action.type === 'check' ? null : action.amountToMilliBb;
+  return timeline.groups.flatMap((group) => group.entries).map((entry) => {
     return {
-      sequence: Number.isInteger(record.sequence) ? record.sequence : index,
-      street: record.street,
-      actorLabel: record.playerId === heroPlayerId ? 'Hero' : (player?.position || record.playerId),
-      position: player?.position || null,
-      actionType: action.type || 'unknown',
-      actionLabel: labels[action.type] || String(action.type || 'Action').replaceAll('_', ' '),
-      amountBb: Number.isSafeInteger(amountMilliBb) ? amountMilliBb / 1000 : null,
-      isHero: record.playerId === heroPlayerId
+      sequence: entry.sequence,
+      street: entry.street,
+      actorLabel: entry.isHero ? 'Hero' : (entry.position || entry.identity),
+      position: entry.position,
+      actionType: entry.actionType,
+      actionLabel: labels[entry.actionType] || 'Action',
+      amountBb: Number.isSafeInteger(entry.amountMilliBb) ? entry.amountMilliBb / 1000 : null,
+      isHero: entry.isHero
     };
   });
 }

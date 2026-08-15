@@ -6731,10 +6731,113 @@ html[data-four-color="false"] {
 .hand-action-sizing { margin-top: var(--space-4); }
 .hand-action-sizing small { color: var(--text-muted); font-weight: 500; }
 
-.hand-action-history { display: grid; gap: var(--space-2); max-height: 190px; margin: 0; padding: 0; overflow-y: auto; list-style: none; counter-reset: hand-action; }
-.hand-action-history li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--space-2); align-items: baseline; color: var(--text-secondary); font-size: var(--text-label-size); }
-.hand-action-history li::before { color: var(--text-muted); font-variant-numeric: tabular-nums; content: counter(hand-action); counter-increment: hand-action; }
-#handResolveShowdownButton { width: 100%; margin-top: var(--space-4); }
+.replay-timeline {
+  min-width: 0;
+  max-height: min(320px, 42vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-block: contain;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface-panel);
+}
+.replay-street-group { min-width: 0; position: relative; padding: 0 var(--space-3) var(--space-3); }
+.replay-street-group + .replay-street-group { border-top: 1px solid var(--border-subtle); }
+.replay-street-heading {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  margin: 0 calc(var(--space-3) * -1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-panel) 94%, var(--accent-primary));
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--text-overline-size);
+  font-weight: 850;
+  letter-spacing: .07em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+.replay-street-group.is-current-street .replay-street-heading { color: var(--text-primary); border-bottom-color: color-mix(in srgb, var(--accent-primary) 42%, var(--border-subtle)); }
+.replay-action-list { min-width: 0; margin: 0; padding-inline-start: 27px; border-inline-start: 2px solid var(--border-subtle); }
+.replay-action-entry {
+  --replay-action-color: var(--border-strong);
+  min-width: 0;
+  margin: 0 0 var(--space-2);
+  padding-inline-start: var(--space-1);
+  color: var(--text-secondary);
+  font-size: var(--text-label-size);
+}
+.replay-action-entry:last-child { margin-bottom: 0; }
+.replay-action-entry::marker { color: var(--text-muted); font: 700 var(--text-micro-size)/1 var(--font-data); }
+.replay-action-entry--fold { --replay-action-color: var(--action-fold); }
+.replay-action-entry--passive { --replay-action-color: var(--action-passive); }
+.replay-action-entry--aggressive { --replay-action-color: var(--action-aggressive); }
+.replay-action-entry--all_in,
+.replay-action-entry--all-in { --replay-action-color: var(--action-all-in); }
+.replay-action-entry--unknown { --replay-action-color: var(--status-warning); }
+.replay-action-body {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-primary);
+  background: var(--surface-inset);
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 3px solid var(--replay-action-color);
+  border-radius: var(--radius-cell);
+}
+.replay-action-entry.is-hero .replay-action-body {
+  background: color-mix(in srgb, var(--accent-primary) 8%, var(--surface-inset));
+  border-color: color-mix(in srgb, var(--accent-primary) 46%, var(--border-subtle));
+  border-inline-start-width: 5px;
+}
+.replay-action-entry.is-hero .replay-actor-name { font-weight: 900; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.replay-action-identity,
+.replay-current-identity { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); }
+.replay-actor-name { min-width: 0; overflow-wrap: anywhere; color: var(--text-primary); font-size: var(--text-label-size); line-height: 1.3; }
+.replay-position { color: var(--text-muted); font-size: var(--text-micro-size); font-weight: 750; }
+.replay-action-semantics { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
+.replay-action-label { color: var(--text-primary); font-size: var(--text-label-size); line-height: 1.35; }
+.replay-action-amount { color: var(--text-secondary); font: 800 var(--text-label-size)/1.35 var(--font-data); white-space: nowrap; }
+.replay-all-in-status {
+  padding: 2px var(--space-2);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--action-all-in) 16%, var(--surface-interactive));
+  border: 1px solid var(--action-all-in);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-micro-size);
+  font-weight: 850;
+  line-height: 1.3;
+}
+.replay-empty-state { margin: 0; padding: var(--space-2) var(--space-3); color: var(--text-muted); font-size: var(--text-label-size); line-height: 1.4; }
+.replay-current-marker {
+  position: sticky;
+  z-index: 1;
+  bottom: 0;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent-primary) 10%, var(--surface-elevated));
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 58%, var(--border-default));
+  border-inline-start: 4px solid var(--accent-primary);
+  border-radius: var(--radius-cell);
+  box-shadow: var(--shadow-xs);
+}
+.replay-timeline > .replay-current-marker { margin: var(--space-3); }
+.replay-current-marker.is-hero { border-inline-start-width: 6px; }
+.replay-current-eyebrow { color: var(--text-secondary); font-size: var(--text-micro-size); font-weight: 850; letter-spacing: .04em; line-height: 1.35; text-transform: uppercase; }
+.replay-current-action { color: var(--text-primary); font-size: var(--text-label-size); }
+.replay-resolution-actions { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle); }
+.replay-resolution-actions:has(#handResolveShowdownButton[hidden]) { display: none; }
+#handResolveShowdownButton { width: 100%; }
+
+[dir="rtl"] .replay-action-amount,
+[dir="rtl"] .replay-position { direction: ltr; unicode-bidi: isolate; }
 
 @media (max-width: 1180px) {
   #gtoMode { --playbook-rail-width: 286px; }

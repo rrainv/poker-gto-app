@@ -56,10 +56,17 @@ test('Playbook unavailable states replace stale analysis', () => {
 test('Hand Mode supplies canonical history while Scenario remains an authority label only', () => {
   const history = sourceBetween('function canonicalActionHistoryForAnalysis(', 'function trustedAnalysisFacts(');
   assert.match(history, /resolution\?\.mode !== 'hand'\) return \[\]/);
-  assert.match(history, /bridge\.getState/);
-  assert.match(history, /state\.actionHistory\.map/);
-  assert.match(history, /record\.submittedAction/);
-  assert.match(history, /amountToMilliBb/);
+  assert.match(history, /callPlaybookStateBridge\('createReplayTimelineViewModel'\)/);
+  assert.match(history, /timeline\.groups\.flatMap\(\(group\) => group\.entries\)\.map\(\(entry\)/);
+  for (const fact of ['sequence', 'street', 'actionType', 'amountMilliBb', 'isHero', 'position']) {
+    assert.match(history, new RegExp(`entry\\.${fact}`), fact);
+  }
+  assert.match(history, /entry\.isHero \? 'Hero' : \(entry\.position \|\| entry\.identity\)/);
+  assert.doesNotMatch(history, /bridge\.getState|state\.actionHistory|record\.submittedAction/);
+  assert.doesNotMatch(
+    history,
+    /record\.|committedMilliBb|streetContributionAfterMilliBb|currentBetAfterMilliBb|toCallBeforeMilliBb|amountToMilliBb/,
+  );
   assert.doesNotMatch(history, /readPlaybookInputSnapshot|selectedValue|querySelector/);
 });
 
