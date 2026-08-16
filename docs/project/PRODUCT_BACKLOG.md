@@ -8,6 +8,7 @@ Status vocabulary:
 - `PLANNED`: accepted direction
 - `IDEA`: worth exploring
 - `DEFERRED`: intentionally later
+- `CHECKPOINTED`: current product scope is complete; later features own their incremental updates
 
 ## Current delivery ordering
 
@@ -27,6 +28,7 @@ Status vocabulary:
 | PROD-MODE-001 | PLANNED | beginner versus expert presentation modes | Guide/i18n, analysis hierarchy |
 | PROD-PERSONALIZE-001 | PLANNED | persist/reset workspace preferences safely | no arbitrary drag-drop serializer |
 | PROD-MOTION-001 | PLANNED | restrained sound/motion controls | current sound inventory |
+| PROD-TUTORIAL-001 | CHECKPOINTED | per-workspace guided tutorials explaining what, how, and why | `TUTORIAL-001` foundation and `TUTORIAL-002` current-app coverage complete; every future meaningful feature/workspace owns its own tutorial update |
 
 ## Table and player experience
 

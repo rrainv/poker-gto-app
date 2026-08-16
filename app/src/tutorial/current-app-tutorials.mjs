@@ -1,0 +1,161 @@
+import { createTutorialDefinition } from './domain.mjs';
+
+function definition(input) {
+  return createTutorialDefinition({ version: 1, restartPolicy: 'always', firstUsePolicy: 'manual', ...input });
+}
+
+export const SCENARIO_TUTORIAL_DEFINITION = definition({
+  id: 'playbook.scenario-basics', workspace: 'gto', firstUsePolicy: 'prompt',
+  titleKey: 'Scenario basics',
+  descriptionKey: 'Build a quick what-if decision without claiming a reconstructed hand history.',
+  steps: [
+    { id: 'workflow', anchor: 'playbook-workflow', titleKey: 'Choose the right Playbook workflow', bodyKey: 'Scenario is a fast, lossy study snapshot for exploring what-if decisions. Use Hand Mode instead when legal action history and canonical PokerState matter.', placement: 'bottom' },
+    { id: 'cards', anchor: 'scenario-cards', titleKey: 'Set the known cards', bodyKey: 'Choose Hero cards, board cards, and any known dead cards. These inputs describe the study snapshot; they do not reconstruct how the hand reached it.', placement: 'right' },
+    { id: 'context', anchor: 'scenario-context', titleKey: 'Describe the objective spot', bodyKey: 'Set table, stack, position, prior action, pot, and facing size to match the decision you want to study. Scenario values are supplied facts, not trusted call history.', placement: 'left' },
+    { id: 'recommendation', anchor: 'playbook-recommendation', titleKey: 'Read the recommendation with its source', bodyKey: 'The action mix is Riverline’s current StrategyProvider result. Keep the source and provenance visible: heuristic guidance is useful study input, not solved GTO or proof of an optimum.', placement: 'bottom' },
+    { id: 'views', anchor: 'playbook-analysis-navigation', titleKey: 'Place the decision in context', bodyKey: 'Use Decision for the exact spot, Range Matrix for surrounding preflop hand classes, and Range Category Comparison for a coarse descriptive board comparison.', placement: 'top' },
+    { id: 'save', anchor: 'scenario-save', titleKey: 'Save the study snapshot', bodyKey: 'Save Spot preserves this Scenario for later review. Reopening it restores the supplied decision facts, but Riverline does not invent canonical history or Replay for a Scenario-derived spot.', placement: 'bottom' },
+    { id: 'saved', anchor: 'saved-spot-context', titleKey: 'A reopened Scenario stays a snapshot', bodyKey: 'This banner marks a restored study spot. Its Scenario facts are available again, while canonical action history remains unavailable.', placement: 'bottom', precondition: 'saved-spot-open' },
+  ],
+});
+
+export const HAND_TUTORIAL_DEFINITION = definition({
+  id: 'playbook.hand-mode', workspace: 'gto', firstUsePolicy: 'prompt',
+  titleKey: 'Hand Mode essentials',
+  descriptionKey: 'Start and progress a legal canonical hand, then save or replay its history.',
+  steps: [
+    { id: 'workflow', anchor: 'playbook-workflow', titleKey: 'Hand Mode owns legal progression', bodyKey: 'Hand Mode advances canonical PokerState through dealt cards and legal actions. Unlike Scenario, its stacks, contributions, pot, actor, and history come from the real hand state.', placement: 'bottom' },
+    { id: 'setup', anchor: 'hand-setup', titleKey: 'Start the canonical hand', bodyKey: 'Choose seats, stacks, button, Hero, and forced contributions, then start. Riverline establishes the initial state before any decision controls become available.', placement: 'right' },
+    { id: 'state', anchor: 'hand-state', titleKey: 'Follow trusted table facts', bodyKey: 'Street, current actor, pot, player stacks, and contributions are projections of canonical state. Use them to understand whose legal decision is next.', placement: 'right' },
+    { id: 'actions', anchor: 'hand-action-controls', titleKey: 'Deal cards and take legal actions', bodyKey: 'Only controls valid for the current phase are shown. Dealing and betting progress the hand street by street; the tutorial never submits a poker action for you.', placement: 'right' },
+    { id: 'replay', anchor: 'hand-replay', titleKey: 'Replay grows with the hand', bodyKey: 'Actions and chance events are added to a read-only timeline as the hand progresses. Replay projects earlier states without mutating the live PokerState.', placement: 'top' },
+    { id: 'save', anchor: 'hand-save', titleKey: 'Preserve canonical history', bodyKey: 'Save Hand stores the durable canonical snapshot and replay source when available. The saved viewer can be opened later without replacing a separate live hand.', placement: 'bottom', precondition: 'hand-save-ready' },
+  ],
+});
+
+export const REPLAY_TUTORIAL_DEFINITION = definition({
+  id: 'playbook.replay', workspace: 'gto',
+  titleKey: 'Using Replay',
+  descriptionKey: 'Inspect canonical actions and chance events without changing the live hand.',
+  steps: [
+    { id: 'saved-viewer', anchor: 'saved-hand-context', titleKey: 'This saved hand is read-only', bodyKey: 'The viewer reconstructs durable canonical hand history. Any separate live Hand Mode session is preserved and can be returned to independently.', placement: 'bottom', precondition: 'saved-hand-open' },
+    { id: 'timeline', anchor: 'replay-timeline', titleKey: 'Read the canonical timeline', bodyKey: 'The timeline records betting actions and chance events by street. It is a historical projection, not a second poker-state authority.', placement: 'left' },
+    { id: 'controls', anchor: 'replay-controls', titleKey: 'Move through history', bodyKey: 'Previous and Next step deterministically through available frames. Play and Pause advance the same read-only cursor at a restrained pace.', placement: 'top' },
+    { id: 'endpoint', anchor: 'replay-return', titleKey: 'Return to the correct endpoint', bodyKey: 'Return to live restores the current live decision; in a saved viewer it returns to the saved endpoint. Neither path rewrites canonical history.', placement: 'top' },
+    { id: 'analysis', anchor: 'playbook-recommendation', titleKey: 'Analysis remains tied to the live decision', bodyKey: 'While an earlier Replay frame is displayed, current Strategy and Analysis remain tied to the live or saved decision endpoint. Do not read them as recommendations for every historical frame.', placement: 'bottom' },
+  ],
+});
+
+export const PLAYBOOK_ANALYSIS_TUTORIAL_DEFINITION = definition({
+  id: 'playbook.analysis-views', workspace: 'gto',
+  titleKey: 'Understanding Playbook analysis',
+  descriptionKey: 'Interpret the current recommendation, Matrix, and coarse category comparison truthfully.',
+  steps: [
+    { id: 'navigation', anchor: 'playbook-analysis-navigation', titleKey: 'Choose the question you are asking', bodyKey: 'Decision explains the selected spot, Range Matrix adds preflop surrounding-range context, and Range Category Comparison describes fixed heuristic samples on a board.', placement: 'top' },
+    { id: 'decision', anchor: 'playbook-recommendation', titleKey: 'Start with the exact decision', bodyKey: 'Read the recommendation mix together with trusted context facts, explanation, warnings, and provider provenance. Current Analysis explains the present result; it cannot prove universal optimality or exploitability.', placement: 'bottom' },
+    { id: 'matrix', anchor: 'range-matrix', titleKey: 'See the surrounding preflop range', bodyKey: 'The 13×13 Matrix organizes pairs, suited hands, and offsuit hands. Cell tint shows the dominant action and its band shows the full provider mix; cells are not claimed as independently solver-resolved.', placement: 'top' },
+    { id: 'matrix-selection', anchor: 'range-matrix-selection', titleKey: 'Inspect one hand class', bodyKey: 'Select a cell to read its exact action frequencies in the inspector. Full postflop range expansion is unavailable when the current source cannot provide it.', placement: 'left' },
+    { id: 'comparison', anchor: 'range-category-comparison', titleKey: 'Compare coarse hand categories', bodyKey: 'This view compares fixed heuristic preflop samples by made-hand and draw category on the supplied board. It supplements the spot; it is not weighted range-versus-range analysis.', placement: 'top' },
+  ],
+});
+
+export const EQUITY_BASIC_TUTORIAL_DEFINITION = definition({
+  id: 'equity.basics', workspace: 'equity', firstUsePolicy: 'prompt',
+  titleKey: 'Equity calculator basics',
+  descriptionKey: 'Supply known and unknown cards, calculate, and interpret outcome share.',
+  steps: [
+    { id: 'players', anchor: 'equity-player-hands', titleKey: 'Describe the players', bodyKey: 'Add opponents and mark each hand known or unknown. Known hands need two cards; unknown hands are sampled or enumerated from the remaining deck.', placement: 'right' },
+    { id: 'shared-cards', anchor: 'equity-shared-cards', titleKey: 'Set board and dead cards', bodyKey: 'Enter zero to five board cards in deal order and exclude any known dead or burnt cards. Incomplete boards leave future runouts to the calculation.', placement: 'right' },
+    { id: 'method', anchor: 'equity-method', titleKey: 'Choose a truthful calculation method', bodyKey: 'Auto uses exact enumeration when practical and Monte Carlo otherwise. Exact visits every supported realization; Monte Carlo is a seeded estimate whose sample count controls precision.', placement: 'right' },
+    { id: 'calculate', anchor: 'equity-calculate', titleKey: 'Calculate or cancel safely', bodyKey: 'Readiness explains missing inputs. Start when the scenario is valid; progress reflects real work, and Cancel stops the run without clearing your cards.', placement: 'top' },
+    { id: 'results', anchor: 'equity-results', titleKey: 'Interpret Equity, Win, and Tie', bodyKey: 'Equity is outcome share under the supplied known and assumed cards, including split pots. It is useful evidence, but it is not by itself a complete strategy recommendation.', placement: 'left' },
+  ],
+});
+
+export const EQUITY_ADVANCED_TUTORIAL_DEFINITION = definition({
+  id: 'equity.advanced', workspace: 'equity',
+  titleKey: 'Advanced Equity controls',
+  descriptionKey: 'Use multiway, dead-card, method, progress, and reproducibility controls.',
+  steps: [
+    { id: 'multiway', anchor: 'equity-player-hands', titleKey: 'Model multiway uncertainty', bodyKey: 'Use two to ten players and mix known with unknown hands. More players and missing cards increase the realization space and may make simulation the practical method.', placement: 'right' },
+    { id: 'dead', anchor: 'equity-shared-cards', titleKey: 'Exclude information you actually know', bodyKey: 'Dead or burnt cards are removed from every remaining hand and runout. Add them only when they are genuinely known.', placement: 'right' },
+    { id: 'advanced', anchor: 'equity-advanced', titleKey: 'Reuse a Monte Carlo seed when needed', bodyKey: 'Advanced settings let you keep or reroll a seed. Reusing the same seed makes a simulated calculation reproducible; it does not make the estimate exact.', placement: 'top' },
+    { id: 'details', anchor: 'equity-results', titleKey: 'Check method provenance in the result', bodyKey: 'The result identifies the actual method, workload, samples, seed, and ties. Use those facts when comparing exact and simulated outcomes.', placement: 'left' },
+  ],
+});
+
+export const TRAINING_BASIC_TUTORIAL_DEFINITION = definition({
+  id: 'training.first-spot', workspace: 'training', firstUsePolicy: 'prompt',
+  titleKey: 'Your first Training spot',
+  descriptionKey: 'Generate a legal decision, answer before feedback, and continue the drill.',
+  steps: [
+    { id: 'setup', anchor: 'training-setup', titleKey: 'Choose a focused drill', bodyKey: 'Select the important decision family, street, position, and assistance level, then generate a reachable legal spot. Filters shape the drill without changing poker rules.', placement: 'left' },
+    { id: 'decision', anchor: 'training-decision', titleKey: 'Read the spot before answering', bodyKey: 'Hero cards, board, pot, stack, position, and facing action come from the generated canonical trajectory. Form your answer before Riverline reveals its reference.', placement: 'right' },
+    { id: 'actions', anchor: 'training-decision', titleKey: 'Choose one legal action', bodyKey: 'Only legal actions are offered. Your answer is compared once with Riverline’s current StrategyResult according to the Training contract.', placement: 'bottom' },
+    { id: 'hints', anchor: 'training-decision', titleKey: 'Use hints as coaching prompts', bodyKey: 'Optional hints reveal one prompt at a time without exposing the full reference strategy before your answer.', placement: 'bottom' },
+    { id: 'next', anchor: 'training-next', titleKey: 'Continue the workflow', bodyKey: 'After review, generate the next exercise or adjust the drill. Session progress summarizes this browser run; it is not a future mistake-history or spaced-review system.', placement: 'top' },
+  ],
+});
+
+export const TRAINING_FEEDBACK_TUTORIAL_DEFINITION = definition({
+  id: 'training.feedback', workspace: 'training',
+  titleKey: 'Understanding Training feedback',
+  descriptionKey: 'Read the verdict, reference frequencies, explanation, and next action after answering.',
+  steps: [
+    { id: 'feedback', anchor: 'training-feedback', titleKey: 'Interpret the grade narrowly', bodyKey: '“Correct” means your answer matched Riverline’s current reference under the Training grading contract. It is not a claim of mathematically proven universal optimality.', placement: 'bottom', precondition: 'training-answered' },
+    { id: 'reference', anchor: 'training-reference', titleKey: 'Compare with the displayed source', bodyKey: 'Reference frequencies come from the named strategy source. They show its mix and do not imply EV loss, solver accuracy, or confidence percentages.', placement: 'left', precondition: 'training-answered' },
+    { id: 'analysis', anchor: 'training-analysis', titleKey: 'Use the explanation to review the spot', bodyKey: 'The shared Analysis organizes trusted hand facts and reasons behind the current result. Treat it as study guidance from the current authority, with the same provenance limits.', placement: 'top', precondition: 'training-answered' },
+    { id: 'next', anchor: 'training-next', titleKey: 'Apply the review, then move on', bodyKey: 'Generate the next spot once you understand the mismatch or agreement. Replay can revisit this generated trajectory without turning the session into saved mistake history.', placement: 'top' },
+  ],
+});
+
+export const CALIBRATION_SETUP_TUTORIAL_DEFINITION = definition({
+  id: 'calibration.setup', workspace: 'calibration', firstUsePolicy: 'prompt',
+  titleKey: 'Range Calibration setup',
+  descriptionKey: 'Define the real environment, three named modes, and objective RFI context.',
+  steps: [
+    { id: 'overview', anchor: 'calibration-overview', titleKey: 'Teach direct observations, not inferred confidence', bodyKey: 'Range Calibration stores how you say you play specific RFI hands. The experimental sparse-inference research is not presented here as a finished user-facing range or confidence system.', placement: 'bottom' },
+    { id: 'empty-profile', anchor: 'calibration-empty-profile', titleKey: 'Name a real poker environment', bodyKey: 'A Profile represents a recognizable game or player-pool identity. Each Profile has exactly three discrete Modes named in your own words; they are not points on a numeric style slider.', placement: 'bottom', precondition: 'calibration-empty' },
+    { id: 'profile', anchor: 'calibration-profile', titleKey: 'Name a real poker environment', bodyKey: 'A Profile represents a recognizable game or player-pool identity. Each Profile has exactly three discrete Modes named in your own words; they are not points on a numeric style slider.', placement: 'bottom', precondition: 'calibration-configured' },
+    { id: 'context', anchor: 'calibration-context', titleKey: 'Choose objective RFI facts', bodyKey: 'Set environment, table size, Hero position, effective stack, and accounting for an unopened preflop range. These facts identify the direct range you are calibrating.', placement: 'right', precondition: 'calibration-configured' },
+    { id: 'start', anchor: 'calibration-start', titleKey: 'Start a bounded direct-answer session', bodyKey: 'Answer only as much as is useful and pause whenever needed. The 169-hand loop is a direct calibration fallback, not the product’s claim about an ideal learning journey.', placement: 'left', precondition: 'calibration-configured' },
+  ],
+});
+
+export const CALIBRATION_ANSWERS_TUTORIAL_DEFINITION = definition({
+  id: 'calibration.answers', workspace: 'calibration',
+  titleKey: 'Answering and exact mixes',
+  descriptionKey: 'Record dominant actions, optional exact frequencies, and resumable direct progress.',
+  steps: [
+    { id: 'meaning', anchor: 'calibration-question', titleKey: 'Answer for the named Profile and Mode', bodyKey: 'The displayed hand belongs to the selected real environment, Mode, and RFI context. Choose what best represents that identity, not a generic poker answer.', placement: 'bottom', precondition: 'calibration-question-ready' },
+    { id: 'quick', anchor: 'calibration-answer-actions', titleKey: 'Quick answers mean dominant action', bodyKey: 'Fold or Raise records the preferred or dominant action for this hand. It never means the action is played at a pure 100% frequency.', placement: 'bottom', precondition: 'calibration-question-ready' },
+    { id: 'mix', anchor: 'calibration-exact-mix', titleKey: 'Use exact mixes only when you know them', bodyKey: 'Set Frequencies stores an explicit Fold/Raise mix separately from a quick answer. An exact tie is valid and has no dominant action.', placement: 'top', precondition: 'calibration-question-ready' },
+    { id: 'progress', anchor: 'calibration-progress', titleKey: 'Progress records direct observations', bodyKey: 'Every accepted answer is saved before the next hand. Progress counts direct answers for this exact range; it is not inferred coverage or confidence.', placement: 'top', precondition: 'calibration-question-ready' },
+    { id: 'control', anchor: 'calibration-session-controls', titleKey: 'Pause, resume, or undo safely', bodyKey: 'Pause returns to context without discarding saved answers, and Undo removes the immediately previous direct observation when available.', placement: 'bottom', precondition: 'calibration-question-ready' },
+  ],
+});
+
+export const SETTINGS_TUTORIAL_DEFINITION = definition({
+  id: 'settings.preferences', workspace: 'settings', firstUsePolicy: 'prompt',
+  titleKey: 'Settings essentials',
+  descriptionKey: 'Adjust language, theme, cards, and sound without touring every toggle.',
+  steps: [
+    { id: 'overview', anchor: 'settings-overview', titleKey: 'Preferences change presentation', bodyKey: 'Settings controls presentation rather than poker state. Language is available from the global rail; this dialog groups theme, card, and sound preferences.', placement: 'bottom' },
+    { id: 'appearance', anchor: 'settings-appearance', titleKey: 'Choose theme and card presentation', bodyKey: 'Select a supported theme, four-color deck, rank notation, and card style for comfortable reading. Card IDs and poker calculations do not change.', placement: 'right' },
+    { id: 'audio', anchor: 'settings-audio', titleKey: 'Keep sound under your control', bodyKey: 'Sound effects can be disabled here or from the rail. Tutorial motion continues to respect the system reduced-motion preference.', placement: 'left' },
+  ],
+});
+
+export const CURRENT_APP_TUTORIAL_DEFINITIONS = Object.freeze([
+  SCENARIO_TUTORIAL_DEFINITION,
+  HAND_TUTORIAL_DEFINITION,
+  REPLAY_TUTORIAL_DEFINITION,
+  PLAYBOOK_ANALYSIS_TUTORIAL_DEFINITION,
+  EQUITY_BASIC_TUTORIAL_DEFINITION,
+  EQUITY_ADVANCED_TUTORIAL_DEFINITION,
+  TRAINING_BASIC_TUTORIAL_DEFINITION,
+  TRAINING_FEEDBACK_TUTORIAL_DEFINITION,
+  CALIBRATION_SETUP_TUTORIAL_DEFINITION,
+  CALIBRATION_ANSWERS_TUTORIAL_DEFINITION,
+  SETTINGS_TUTORIAL_DEFINITION,
+]);

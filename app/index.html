@@ -24,6 +24,7 @@
   <script src="src/locales/analysis-translations.js?v=1" defer></script>
   <script src="src/locales/range-calibration-translations.js?v=1" defer></script>
   <script src="src/locales/home-translations.js?v=1" defer></script>
+  <script src="src/locales/tutorial-translations.js?v=1" defer></script>
   <script src="src/locales/i18n.js?v=4" defer></script>
 
 
@@ -400,13 +401,16 @@
 
     <div class="workspace-shell">
       <header class="workspace-header">
-        <div class="workspace-heading">
+        <div class="workspace-heading" data-tutorial-anchor="home-overview">
           <div class="workspace-eyebrow" data-i18n="Riverline workspace">Riverline workspace</div>
           <h1 id="workspaceTitle" data-i18n="Home dashboard">Home</h1>
           <p id="workspaceSubtitle" data-i18n="Your saved study, review queue, and next useful action.">Your saved study, review queue, and next useful action.</p>
         </div>
 
         <div class="workspace-utilities" aria-label="Strategy source status" data-i18n-aria-label="Strategy source status">
+          <button id="workspaceTutorialButton" class="ui-button ui-button--icon workspace-tutorial-button" type="button" aria-label="Restart tutorial" title="Tutorial" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.4 2.4 0 0 1 4.6.9c0 1.8-2.4 2-2.4 3.7M12 17.2h.01"/></svg>
+          </button>
           <div id="strategySourceStatus" class="strategy-source-status" aria-label="Strategy source: Heuristic fallback" data-i18n-aria-label="Strategy source: Heuristic fallback">
             <span class="strategy-source-status-dot" aria-hidden="true"></span>
             <span class="strategy-source-status-copy">
@@ -433,22 +437,22 @@
             <div id="homeContinueContent" class="home-section-content"></div>
           </section>
 
-          <section class="panel home-section home-section--review" aria-labelledby="homeReviewTitle">
+          <section class="panel home-section home-section--review" aria-labelledby="homeReviewTitle" data-tutorial-anchor="home-review">
             <header class="home-section-head"><div><p data-i18n="Items you classified for another look">Items you classified for another look</p><h2 id="homeReviewTitle" data-i18n="Review">Review</h2></div></header>
             <div id="homeReviewContent" class="home-review-groups"></div>
           </section>
 
-          <section class="panel home-section home-section--recent" aria-labelledby="homeRecentTitle">
+          <section class="panel home-section home-section--recent" aria-labelledby="homeRecentTitle" data-tutorial-anchor="home-recent">
             <header class="home-section-head"><div><p data-i18n="Your latest saved study items">Your latest saved study items</p><h2 id="homeRecentTitle" data-i18n="Recent">Recent</h2></div></header>
             <div id="homeRecentContent" class="home-saved-list"></div>
           </section>
 
-          <section class="panel home-section home-section--strategy" aria-labelledby="homeStrategyTitle">
+          <section class="panel home-section home-section--strategy" aria-labelledby="homeStrategyTitle" data-tutorial-anchor="home-personal-strategy">
             <header class="home-section-head"><div><p data-i18n="Direct calibration only">Direct calibration only</p><h2 id="homeStrategyTitle" data-i18n="Personal Strategy">Personal Strategy</h2></div></header>
             <div id="homeStrategyContent" class="home-section-content"></div>
           </section>
 
-          <section class="panel home-section home-section--quick" aria-labelledby="homeQuickStartTitle">
+          <section class="panel home-section home-section--quick" aria-labelledby="homeQuickStartTitle" data-tutorial-anchor="home-quick-start">
             <header class="home-section-head"><div><p data-i18n="Go straight to a workspace">Go straight to a workspace</p><h2 id="homeQuickStartTitle" data-i18n="Quick Start">Quick Start</h2></div></header>
             <nav class="home-quick-links" aria-label="Quick Start" data-i18n-aria-label="Quick Start">
               <button type="button" class="home-quick-link" data-home-destination="gto"><strong data-i18n="Playbook">Playbook</strong><span data-i18n="Build or play a spot">Build or play a spot</span></button>
@@ -465,7 +469,7 @@
 
     <section id="gtoMode" class="mode-view">
 
-      <div class="playbook-state-source" aria-label="Playbook workflow" data-i18n-aria-label="Playbook workflow" data-interaction-surface="interactive">
+      <div class="playbook-state-source" aria-label="Playbook workflow" data-i18n-aria-label="Playbook workflow" data-interaction-surface="interactive" data-tutorial-anchor="playbook-workflow">
         <div class="playbook-workflow-copy">
           <span class="playbook-workflow-kicker" data-i18n="Analysis workflow">Analysis workflow</span>
           <strong data-i18n="Choose how this poker spot is built">Choose how this poker spot is built</strong>
@@ -484,7 +488,7 @@
 
         <aside class="side-stack playbook-context-rail" aria-label="Playbook context and configuration" data-i18n-aria-label="Playbook context and configuration">
 
-          <section id="scenarioConfigurationPanel" class="panel playbook-config-panel" data-playbook-scenario>
+          <section id="scenarioConfigurationPanel" class="panel playbook-config-panel" data-playbook-scenario data-tutorial-anchor="scenario-configuration">
 
             <div class="panel-head" style="align-items: center; flex-wrap: nowrap; white-space: nowrap;">
 
@@ -662,7 +666,7 @@
 
 
 
-          <section id="scenarioCardsPanel" class="panel playbook-cards-panel" data-playbook-scenario>
+          <section id="scenarioCardsPanel" class="panel playbook-cards-panel" data-playbook-scenario data-tutorial-anchor="scenario-cards">
 
             <div class="panel-head">
 
@@ -726,7 +730,7 @@
 
           </section>
 
-          <section id="savedSpotViewerBanner" class="saved-study-viewer-banner saved-study-viewer-banner--spot" hidden aria-labelledby="savedSpotViewerTitle">
+          <section id="savedSpotViewerBanner" class="saved-study-viewer-banner saved-study-viewer-banner--spot" hidden aria-labelledby="savedSpotViewerTitle" data-tutorial-anchor="saved-spot-context">
             <div>
               <span class="badge status-badge status-badge--info" data-i18n="Saved Spot">Saved Spot</span>
               <strong id="savedSpotViewerTitle" dir="auto" data-i18n="Saved study spot">Saved study spot</strong>
@@ -745,7 +749,7 @@
               <span id="handSessionBadge" class="badge status-badge status-badge--info" data-i18n="Not started">Not started</span>
             </div>
 
-            <div id="savedHandViewerBanner" class="saved-study-viewer-banner saved-study-viewer-banner--hand" hidden aria-labelledby="savedHandViewerTitle">
+            <div id="savedHandViewerBanner" class="saved-study-viewer-banner saved-study-viewer-banner--hand" hidden aria-labelledby="savedHandViewerTitle" data-tutorial-anchor="saved-hand-context">
               <div>
                 <span class="badge status-badge status-badge--info" data-i18n="Saved Hand">Saved Hand</span>
                 <span class="badge status-badge status-badge--neutral" data-i18n="Read-only">Read-only</span>
@@ -757,8 +761,8 @@
               </div>
             </div>
 
-            <div class="panel-body playbook-hand-body">
-              <section id="handSetupSection" class="hand-control-section" aria-labelledby="handSetupTitle">
+            <div class="panel-body playbook-hand-body" data-tutorial-anchor="hand-action-controls">
+              <section id="handSetupSection" class="hand-control-section" aria-labelledby="handSetupTitle" data-tutorial-anchor="hand-setup">
                 <div class="hand-section-head">
                   <div><strong id="handSetupTitle" data-i18n="Start a hand">Start a hand</strong><small data-i18n="Choose seats and forced contributions">Choose seats and forced contributions</small></div>
                 </div>
@@ -778,10 +782,10 @@
                 </div>
               </section>
 
-              <section id="handStateSection" class="hand-control-section" aria-labelledby="handStateTitle">
+              <section id="handStateSection" class="hand-control-section" aria-labelledby="handStateTitle" data-tutorial-anchor="hand-state">
                 <div class="hand-section-head hand-current-section-head">
                   <div><strong id="handStateTitle" data-i18n="Current hand">Current hand</strong><small id="handStateSummary">No canonical hand yet</small></div>
-                  <div id="handSavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--hand"></div>
+                  <div id="handSavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--hand" data-tutorial-anchor="hand-save"></div>
                 </div>
                 <div class="hand-state-strip" aria-live="polite">
                   <div><span data-i18n="Street">Street</span><strong id="handStateStreet">—</strong></div>
@@ -814,9 +818,9 @@
                 </label>
               </section>
 
-              <section id="handHistorySection" class="hand-control-section" aria-labelledby="handHistoryTitle">
+              <section id="handHistorySection" class="hand-control-section" aria-labelledby="handHistoryTitle" data-tutorial-anchor="hand-replay">
                 <div class="hand-section-head"><div><strong id="handHistoryTitle" data-i18n="replay.title">Hand replay</strong><small data-i18n="replay.subtitle">Read-only timeline</small></div></div>
-                <div id="handReplayControls" class="replay-control-bar" data-replay-mode="empty">
+                <div id="handReplayControls" class="replay-control-bar" data-replay-mode="empty" data-tutorial-anchor="replay-controls">
                   <div class="replay-state-summary">
                     <span id="handReplayModeBadge" class="badge replay-mode-badge" data-i18n="replay.status.live">LIVE</span>
                     <span id="handReplayProgress" class="replay-step-progress poker-data-token" dir="ltr">Step 0 of 0</span>
@@ -826,13 +830,13 @@
                     <button id="handReplayPlaybackButton" class="ui-button ui-button--primary replay-playback-button" type="button" aria-pressed="false" disabled data-i18n="replay.control.play">Play</button>
                     <button id="handReplayPreviousButton" class="ui-button ui-button--secondary" type="button" disabled data-i18n="replay.control.previous">Previous</button>
                     <button id="handReplayNextButton" class="ui-button ui-button--secondary" type="button" disabled data-i18n="replay.control.next">Next</button>
-                    <button id="handReplayLiveButton" class="ui-button ui-button--quiet" type="button" disabled data-i18n="replay.control.returnToLive">Return to live</button>
+                    <button id="handReplayLiveButton" class="ui-button ui-button--quiet" type="button" disabled data-i18n="replay.control.returnToLive" data-tutorial-anchor="replay-return">Return to live</button>
                   </div>
                   <div id="replaySavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--replay"></div>
                 </div>
                 <p id="handReplayStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true">LIVE, Step 0 of 0</p>
                 <p id="handReplayReadOnlyNote" class="replay-readonly-note" hidden data-i18n="replay.readOnlyHelp">Read-only earlier state. Strategy and analysis remain tied to the live decision.</p>
-                <div id="handActionHistory" class="replay-timeline" aria-label="Read-only canonical action timeline" data-i18n-aria-label="replay.a11y.timeline"></div>
+                <div id="handActionHistory" class="replay-timeline" aria-label="Read-only canonical action timeline" data-i18n-aria-label="replay.a11y.timeline" data-tutorial-anchor="replay-timeline"></div>
                 <div class="replay-resolution-actions">
                   <button id="handResolveShowdownButton" class="ui-button ui-button--primary" type="button" hidden data-i18n="Resolve showdown">Resolve showdown</button>
                 </div>
@@ -845,12 +849,12 @@
 
 
         <main class="main-content playbook-decision-workspace">
-          <div id="sharedControls" class="playbook-betting-context" data-playbook-scenario data-interaction-surface="interactive">
+          <div id="sharedControls" class="playbook-betting-context" data-playbook-scenario data-interaction-surface="interactive" data-tutorial-anchor="scenario-context">
 
             <div class="playbook-inline-heading">
               <div class="playbook-inline-copy"><span class="label" data-i18n="Betting context">Betting context</span><small data-i18n="Manual values for this study spot">Manual values for this study spot</small></div>
               <div class="playbook-inline-actions">
-                <div id="scenarioSavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--scenario">
+                <div id="scenarioSavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--scenario" data-tutorial-anchor="scenario-save">
                   <div id="savedStudySourceActions" class="saved-study-source-actions">
                     <button id="savedStudySaveButton" class="ui-button ui-button--secondary" type="button" aria-pressed="false" aria-describedby="savedStudySourceStatus" data-i18n="Save spot">Save spot</button>
                     <button id="savedStudyEditButton" class="ui-button ui-button--quiet" type="button" hidden data-i18n="Edit saved item">Edit saved item</button>
@@ -941,7 +945,7 @@
 
 
 
-            <section class="panel recommend playbook-primary-decision" id="recommendation" data-recommendation-state="ready" aria-live="polite" aria-atomic="false">
+            <section class="panel recommend playbook-primary-decision" id="recommendation" data-recommendation-state="ready" aria-live="polite" aria-atomic="false" data-tutorial-anchor="playbook-recommendation">
 
               <div class="recommend-top">
 
@@ -1112,7 +1116,7 @@
             <div id="visual-table-container"></div>
           </div>
 
-          <nav id="playbookAnalysisNavigation" class="playbook-analysis-switcher" aria-labelledby="playbookAnalysisNavigationTitle">
+          <nav id="playbookAnalysisNavigation" class="playbook-analysis-switcher" aria-labelledby="playbookAnalysisNavigationTitle" data-tutorial-anchor="playbook-analysis-navigation">
             <div class="playbook-analysis-switcher-copy">
               <strong id="playbookAnalysisNavigationTitle" data-i18n="Current spot views">Current spot views</strong>
               <small data-i18n="Decision, provider-backed Matrix, or heuristic category comparison">Decision, provider-backed Matrix, or heuristic category comparison</small>
@@ -1126,7 +1130,7 @@
 
           <div id="chartView" class="gto-view" style="display: none;">
 
-            <section class="panel range-matrix-panel">
+            <section class="panel range-matrix-panel" data-tutorial-anchor="range-matrix">
 
               <div class="panel-head range-matrix-head">
 
@@ -1224,7 +1228,7 @@
 
                 </div>
 
-              <aside class="selected-hand matrix-hand-inspector" aria-labelledby="selectedHand" aria-live="polite">
+              <aside class="selected-hand matrix-hand-inspector" aria-labelledby="selectedHand" aria-live="polite" data-tutorial-anchor="range-matrix-selection">
 
                 <div class="matrix-inspector-heading">
 
@@ -1261,7 +1265,7 @@
 
 
           <div id="rangeView" class="gto-view" style="display: none;">
-            <section class="panel range-comparison-panel">
+            <section class="panel range-comparison-panel" data-tutorial-anchor="range-category-comparison">
               <div class="panel-head range-comparison-head">
                 <div>
                   <div class="panel-title" data-i18n="Range Category Comparison">Range Category Comparison</div>
@@ -1399,7 +1403,7 @@
           <button id="calibrationRetry" class="ui-button ui-button--secondary" type="button" data-i18n="Try again">Try again</button>
         </section>
 
-        <section id="calibrationEmptyState" class="panel calibration-empty-state" hidden>
+        <section id="calibrationEmptyState" class="panel calibration-empty-state" hidden data-tutorial-anchor="calibration-empty-profile">
           <div class="calibration-empty-copy">
             <p class="calibration-eyebrow" data-i18n="Your poker environments">Your poker environments</p>
             <h2 id="calibrationWorkspaceTitle" data-i18n="Teach Riverline how you play">Teach Riverline how you play</h2>
@@ -1414,7 +1418,7 @@
         </section>
 
         <div id="calibrationConfiguredState" class="calibration-configured-state" hidden>
-          <section class="panel calibration-identity-panel calibration-configuration-view" aria-labelledby="calibrationIdentityTitle">
+          <section class="panel calibration-identity-panel calibration-configuration-view" aria-labelledby="calibrationIdentityTitle" data-tutorial-anchor="calibration-profile">
             <div class="calibration-section-heading">
               <div>
                 <p class="calibration-eyebrow" data-i18n="Profile and mode">Profile and mode</p>
@@ -1442,7 +1446,7 @@
           </section>
 
           <div class="calibration-main-grid calibration-configuration-view">
-            <section class="panel calibration-context-panel" aria-labelledby="calibrationContextTitle">
+            <section class="panel calibration-context-panel" aria-labelledby="calibrationContextTitle" data-tutorial-anchor="calibration-context">
               <div class="calibration-section-heading">
                 <div>
                   <p class="calibration-eyebrow" data-i18n="RFI context">RFI context</p>
@@ -1483,7 +1487,7 @@
             </section>
 
             <aside class="calibration-session-column">
-              <section class="panel calibration-session-panel" aria-labelledby="calibrationSessionTitle">
+              <section class="panel calibration-session-panel" aria-labelledby="calibrationSessionTitle" data-tutorial-anchor="calibration-start">
                 <div class="calibration-section-heading"><div><p class="calibration-eyebrow" data-i18n="Calibration session">Calibration session</p><h2 id="calibrationSessionTitle" data-i18n="Ready to calibrate this range">Ready to calibrate this range</h2></div></div>
                 <div class="calibration-ready-state">
                   <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 12h28v24H10z"/><path d="M17 18h14M17 24h14M17 30h8"/></svg>
@@ -1504,14 +1508,14 @@
             </aside>
           </div>
 
-          <section id="calibrationQuestionView" class="panel calibration-question-view" aria-labelledby="calibrationQuestionTitle" hidden>
+          <section id="calibrationQuestionView" class="panel calibration-question-view" aria-labelledby="calibrationQuestionTitle" hidden data-tutorial-anchor="calibration-question">
             <header class="calibration-question-header">
               <div class="calibration-question-context">
                 <p class="calibration-eyebrow" data-i18n="Calibration session">Calibration session</p>
                 <strong id="calibrationQuestionIdentity" dir="auto"></strong>
                 <span id="calibrationQuestionSpot" class="poker-data-token" dir="ltr"></span>
               </div>
-              <button id="calibrationPauseQuestions" class="ui-button ui-button--secondary" type="button" data-i18n="Pause questions">Pause questions</button>
+              <button id="calibrationPauseQuestions" class="ui-button ui-button--secondary" type="button" data-i18n="Pause questions" data-tutorial-anchor="calibration-session-controls">Pause questions</button>
             </header>
 
             <div id="calibrationActiveQuestion" class="calibration-active-question">
@@ -1520,16 +1524,16 @@
                 <span id="calibrationQuestionKind" class="calibration-hand-kind" data-i18n="Pair">Pair</span>
                 <h2 id="calibrationQuestionTitle" class="calibration-hand-class poker-data-token" dir="ltr" aria-live="polite">AA</h2>
                 <p id="calibrationQuestionPrompt" data-i18n="What is your dominant action?">What is your dominant action?</p>
-                <div class="calibration-action-grid" role="group" aria-label="Dominant action" data-i18n-aria-label="Dominant action">
+                <div class="calibration-action-grid" role="group" aria-label="Dominant action" data-i18n-aria-label="Dominant action" data-tutorial-anchor="calibration-answer-actions">
                   <button id="calibrationActionFold" class="calibration-action-button calibration-action-button--fold" type="button" data-calibration-action="fold"><span data-i18n="Fold">Fold</span><kbd>F</kbd></button>
                   <button id="calibrationActionRaise" class="calibration-action-button calibration-action-button--raise" type="button" data-calibration-action="raise"><span data-i18n="Raise">Raise</span><kbd>R</kbd></button>
                 </div>
-                <button id="calibrationOpenMix" class="ui-button ui-button--tertiary calibration-mix-trigger" type="button" data-i18n="Set frequencies">Set frequencies</button>
+                <button id="calibrationOpenMix" class="ui-button ui-button--tertiary calibration-mix-trigger" type="button" data-i18n="Set frequencies" data-tutorial-anchor="calibration-exact-mix">Set frequencies</button>
                 <p id="calibrationAnswerError" class="control-message control-message--invalid calibration-answer-error" role="alert" aria-live="assertive"></p>
                 <button id="calibrationRetryAnswer" class="ui-button ui-button--secondary" type="button" data-i18n="Retry save" hidden>Retry save</button>
               </div>
 
-              <footer class="calibration-question-footer">
+              <footer class="calibration-question-footer" data-tutorial-anchor="calibration-progress">
                 <div class="calibration-progress-copy">
                   <strong id="calibrationQuestionProgress" class="poker-data-token">0 / 169</strong>
                   <span id="calibrationQuestionRemaining" data-i18n="{count} remaining">169 remaining</span>
@@ -1573,14 +1577,14 @@
         </div>
       </div>
     </template>
-    <section id="calibrationMode" class="mode-view range-calibration-mode" style="display:none;" aria-label="Range Calibration" data-i18n-aria-label="Range Calibration">
+    <section id="calibrationMode" class="mode-view range-calibration-mode" style="display:none;" aria-label="Range Calibration" data-i18n-aria-label="Range Calibration" data-tutorial-anchor="calibration-overview">
       <div id="rangeCalibrationMount"></div>
     </section>
 
     <section id="trainingMode" class="mode-view" style="display:none;">
       <div class="training-workspace" data-training-state="idle" aria-labelledby="trainingWorkspaceTitle">
         <main class="training-decision-column">
-          <section class="panel training-decision-panel" id="trainingRecommendation" aria-labelledby="trainingWorkspaceTitle">
+          <section class="panel training-decision-panel" id="trainingRecommendation" aria-labelledby="trainingWorkspaceTitle" data-tutorial-anchor="training-decision">
             <header class="training-decision-head">
               <div>
                 <p class="training-eyebrow" data-i18n="Training workspace">Training workspace</p>
@@ -1631,7 +1635,7 @@
                 <div class="pot-math-detail"><span data-i18n="MDF">MDF</span><strong id="trainingMdfVal">—</strong></div>
                 <div id="trainingHintBox" class="training-hint"><strong data-i18n="Guided prompt">Guided prompt</strong><span id="trainingHintText"></span></div>
               </div>
-              <section id="trainingStudyHints" class="training-study-hints" aria-labelledby="trainingStudyHintsTitle" hidden>
+              <section id="trainingStudyHints" class="training-study-hints" aria-labelledby="trainingStudyHintsTitle" hidden data-tutorial-anchor="training-hints">
                 <div class="training-study-hints-head">
                   <div><h3 id="trainingStudyHintsTitle" data-i18n="Study hints">Study hints</h3><p data-i18n="Get a nudge about the spot.">Get a nudge about the spot.</p></div>
                   <button id="trainingRevealHint" class="ui-button ui-button--secondary" type="button" data-i18n="Get a hint">Get a hint</button>
@@ -1639,11 +1643,11 @@
                 <div id="trainingStudyHintContent" class="training-study-hint-content" aria-live="polite"></div>
               </section>
               <div class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
-              <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions" data-i18n-aria-label="Available actions"></div>
+              <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions" data-i18n-aria-label="Available actions" data-tutorial-anchor="training-answer-actions"></div>
               <p class="training-shortcut-help"><span data-i18n="Keyboard:">Keyboard:</span> <span class="poker-data-token" dir="ltr"><kbd>1</kbd>–<kbd>6</kbd></span> <span data-i18n="choose a visible action">choose a visible action</span></p>
             </div>
 
-            <div id="trainingFeedback" class="training-feedback" data-grade="none" aria-live="polite" hidden>
+            <div id="trainingFeedback" class="training-feedback" data-grade="none" aria-live="polite" hidden data-tutorial-anchor="training-feedback">
               <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info" data-i18n="Feedback">Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
               <div class="training-verdict"><h3 id="feedbackTitle" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
               <dl class="training-verdict-facts">
@@ -1652,9 +1656,9 @@
                 <div class="training-verdict-frequency" hidden><dt data-i18n="Highest frequency">Highest frequency</dt><dd id="trainingBestProbability" class="poker-data-token">—</dd></div>
                 <div id="trainingEvFact" hidden><dt data-i18n="EV comparison">EV comparison</dt><dd id="trainingEvValue" class="poker-data-token">—</dd></div>
               </dl>
-              <section class="training-analysis-region" aria-labelledby="trainingAnalysisTitle"><h4 id="trainingAnalysisTitle" data-i18n="Analysis">Analysis</h4><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></section>
+              <section class="training-analysis-region" aria-labelledby="trainingAnalysisTitle" data-tutorial-anchor="training-analysis"><h4 id="trainingAnalysisTitle" data-i18n="Analysis">Analysis</h4><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></section>
             </div>
-            <div class="training-completion-actions">
+            <div class="training-completion-actions" data-tutorial-anchor="training-next">
               <button class="ui-button ui-button--primary training-primary-next" type="button" id="trainingNextHandBtn" aria-keyshortcuts="Enter" data-i18n="Generate exercise">Generate exercise</button>
               <button class="ui-button ui-button--secondary" type="button" id="trainingReplayDecisionBtn" hidden data-i18n="Replay this decision">Replay this decision</button>
               <button class="ui-button ui-button-ghost" type="button" id="trainingAdjustDrill" data-i18n="Adjust drill">Adjust drill</button>
@@ -1663,7 +1667,7 @@
         </main>
 
         <aside class="training-insight-column">
-          <section id="trainingSolution" class="panel training-solution-panel" hidden aria-labelledby="trainingSolutionTitle">
+          <section id="trainingSolution" class="panel training-solution-panel" hidden aria-labelledby="trainingSolutionTitle" data-tutorial-anchor="training-reference">
             <div class="panel-head"><div><p id="trainingSolutionEyebrow" class="training-eyebrow" data-i18n="After-answer reference">After-answer reference</p><h2 id="trainingSolutionTitle" data-i18n="Strategy frequencies">Strategy frequencies</h2></div></div>
             <div class="panel-body">
               <p class="training-reference-note" data-i18n="Probabilities from the displayed strategy source; no EV is implied.">Probabilities from the displayed strategy source; no EV is implied.</p>
@@ -1686,7 +1690,7 @@
         </aside>
 
         <aside class="training-setup-column" id="trainingSetupColumn">
-          <section class="panel" aria-labelledby="trainingSetupTitle">
+          <section class="panel" aria-labelledby="trainingSetupTitle" data-tutorial-anchor="training-setup">
             <div class="panel-head"><div><p class="training-eyebrow" data-i18n="Drill setup">Drill setup</p><h2 id="trainingSetupTitle" data-i18n="Choose a decision family">Choose a decision family</h2></div><span class="badge status-badge status-badge--available" data-i18n="Home · no rake">Home · no rake</span></div>
             <div class="panel-body training-setup-fields">
               <label class="ui-field"><span data-i18n="Street">Street</span><select id="trainingStreet" class="control-select"><option value="any" selected data-i18n="Any street">Any street</option><option value="preflop" data-i18n="Preflop">Preflop</option><option value="flop" data-i18n="Flop">Flop</option><option value="turn" data-i18n="Turn">Turn</option><option value="river" data-i18n="River">River</option></select></label>
@@ -1720,7 +1724,7 @@
     <section id="equityMode" class="mode-view equity-mode" style="display: none;">
       <div class="equity-workspace">
         <div class="equity-input-stack">
-          <section class="panel equity-player-panel" aria-labelledby="equityPlayersTitle">
+          <section class="panel equity-player-panel" aria-labelledby="equityPlayersTitle" data-tutorial-anchor="equity-player-hands">
             <div class="panel-head equity-section-head">
               <div>
                 <p class="equity-eyebrow" data-i18n="Equity workspace">Equity workspace</p>
@@ -1746,7 +1750,7 @@
           </section>
 
           <div class="equity-shared-flow">
-          <section class="panel equity-cards-panel" aria-labelledby="equityCardsTitle">
+          <section class="panel equity-cards-panel" aria-labelledby="equityCardsTitle" data-tutorial-anchor="equity-shared-cards">
             <div class="panel-head equity-section-head">
               <div>
                 <p class="equity-eyebrow" data-i18n="Shared cards">Shared cards</p>
@@ -1776,7 +1780,7 @@
             </div>
           </section>
 
-          <section class="panel equity-controls-panel" aria-labelledby="equityCalculationTitle">
+          <section class="panel equity-controls-panel" aria-labelledby="equityCalculationTitle" data-tutorial-anchor="equity-method">
             <div class="panel-head equity-section-head"><div><p class="equity-eyebrow" data-i18n="Calculation">Calculation</p><h2 id="equityCalculationTitle" data-i18n="Method & Precision">Method &amp; Precision</h2></div></div>
             <div class="equity-control-grid">
               <label class="ui-field"><span data-i18n="Method">Method</span><select id="calcStyle"><option value="auto" data-i18n="Auto (recommended)">Auto (recommended)</option><option value="exact" data-i18n="Exact enumeration">Exact enumeration</option><option value="sim" data-i18n="Monte Carlo">Monte Carlo</option></select></label>
@@ -1789,15 +1793,15 @@
             </p>
             <div id="equityEstimate" class="equity-estimate" aria-live="polite" data-i18n="Add complete known hands or mark them unknown to estimate the calculation.">Add complete known hands or mark them unknown to estimate the calculation.</div>
             <div id="equityReadiness" class="equity-readiness" data-state="blocked" role="status" aria-live="polite" data-i18n="Complete Hero's known hand or mark it unknown.">Complete Hero's known hand or mark it unknown.</div>
-            <div class="equity-calculate-row"><button id="calculate" class="primary equity-calculate" type="button" aria-describedby="equityReadiness equityEstimate" disabled data-i18n="Calculate equity">Calculate equity</button><button id="cancelEquity" class="ui-button ui-button-danger equity-cancel" type="button" hidden data-i18n="Cancel">Cancel</button></div>
+            <div class="equity-calculate-row" data-tutorial-anchor="equity-calculate"><button id="calculate" class="primary equity-calculate" type="button" aria-describedby="equityReadiness equityEstimate" disabled data-i18n="Calculate equity">Calculate equity</button><button id="cancelEquity" class="ui-button ui-button-danger equity-cancel" type="button" hidden data-i18n="Cancel">Cancel</button></div>
             <div id="progress" class="progress-wrap" data-progress-mode="indeterminate" hidden aria-label="Equity calculation activity" data-i18n-aria-label="Equity calculation activity"><div class="progress-heading"><span class="progress-spinner" aria-hidden="true"></span><strong class="progress-method" data-i18n="Preparing calculation…">Preparing calculation…</strong><span class="progress-percent" hidden></span></div><div class="progress-track" role="progressbar" aria-label="Equity calculation progress" data-i18n-aria-label="Equity calculation progress"><div class="progress-fill"></div></div><div class="progress-copy"><span class="progress-status" data-i18n="Waiting for measurable work…">Waiting for measurable work…</span><span class="progress-telemetry poker-data-token" hidden></span></div></div>
-            <details id="equityAdvanced" class="equity-advanced"><summary data-i18n="Advanced calculation settings">Advanced calculation settings</summary><div class="equity-advanced-body"><label class="ui-field"><span data-i18n="Monte Carlo seed">Monte Carlo seed</span><div class="equity-seed-row"><input id="equitySeed" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="Generated automatically" data-i18n-placeholder="Generated automatically"><button id="rerollEquitySeed" class="ui-button ui-button-ghost" type="button" data-i18n="New seed">New seed</button></div><small class="muted" data-i18n="Leave blank for a generated seed. Reuse a seed for reproducible simulation.">Leave blank for a generated seed. Reuse a seed for reproducible simulation.</small></label></div></details>
+            <details id="equityAdvanced" class="equity-advanced" data-tutorial-anchor="equity-advanced"><summary data-i18n="Advanced calculation settings">Advanced calculation settings</summary><div class="equity-advanced-body"><label class="ui-field"><span data-i18n="Monte Carlo seed">Monte Carlo seed</span><div class="equity-seed-row"><input id="equitySeed" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="Generated automatically" data-i18n-placeholder="Generated automatically"><button id="rerollEquitySeed" class="ui-button ui-button-ghost" type="button" data-i18n="New seed">New seed</button></div><small class="muted" data-i18n="Leave blank for a generated seed. Reuse a seed for reproducible simulation.">Leave blank for a generated seed. Reuse a seed for reproducible simulation.</small></label></div></details>
           </section>
           </div>
         </div>
 
         <div class="equity-output-stack">
-          <section id="equityResultsPanel" class="panel equity-results-panel" data-result-state="empty" aria-labelledby="equityResultsTitle">
+          <section id="equityResultsPanel" class="panel equity-results-panel" data-result-state="empty" aria-labelledby="equityResultsTitle" data-tutorial-anchor="equity-results">
             <div class="panel-head equity-result-head"><div><p class="equity-eyebrow" data-i18n="Results">Results</p><h2 id="equityResultsTitle" data-i18n="Equity">Equity</h2></div><span id="methodBadge" class="equity-method-badge" data-i18n="Awaiting input">Awaiting input</span></div>
             <div class="equity-headline"><span class="equity-headline-label" data-i18n="Result overview">Result overview</span><strong id="headlineEquity" class="poker-data-token">—</strong><span id="equityStatus" class="muted" role="status" aria-live="polite" aria-atomic="true" data-i18n="Results update after calculation.">Results update after calculation.</span></div>
             <section class="equity-scenario" aria-labelledby="equityScenarioTitle"><h3 id="equityScenarioTitle" data-i18n="Scenario">Scenario</h3><div id="equityScenarioContext" class="equity-scenario-context"></div></section>
@@ -1926,18 +1930,19 @@
 
   <div class="modal-backdrop" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
     <div class="modal overlay-surface settings-modal">
-      <div class="modal-head">
+      <div class="modal-head" data-tutorial-anchor="settings-overview">
         <div>
           <h2 id="settingsTitle" data-i18n="Settings">Settings</h2>
           <p data-i18n="Customize your workstation.">Customize your workstation.</p>
         </div>
+        <div class="settings-head-actions"><button id="settingsTutorialButton" class="ui-button ui-button--icon" type="button" aria-label="Tutorials" title="Tutorials">?</button>
         <button class="close ui-button ui-button--icon" id="closeSettingsModal" type="button" aria-label="Close settings" data-i18n-aria-label="Close settings" title="Close settings" data-i18n-title="Close settings">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
-        </button>
+        </button></div>
       </div>
       <div class="panel-body modal-body settings-grid">
         
-        <div class="settings-group">
+        <div class="settings-group" data-tutorial-anchor="settings-appearance">
             <h3 class="settings-section-title" data-i18n="Appearance & Themes">Appearance & Themes</h3>
             
             <div class="field" style="margin-top: 16px;">
@@ -1977,7 +1982,7 @@
             </div>
         </div>
 
-        <div class="settings-group">
+        <div class="settings-group" data-tutorial-anchor="settings-audio">
             <h3 class="settings-section-title" data-i18n="Audio">Audio</h3>
 
             <div class="field" style="margin-top: 16px;">
@@ -2108,6 +2113,7 @@
   <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/saved-study-object-bootstrap.mjs"></script>
   <script type="module" src="src/application/home-workspace-bootstrap.mjs"></script>
+  <script type="module" src="src/application/tutorial-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>

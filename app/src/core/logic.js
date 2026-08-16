@@ -687,6 +687,7 @@ function openPicker(group, index) {
 
   const cardModal = $('#cardModal');
 
+  window.RiverlineTutorials?.cancelForOverlay?.('card-picker');
   if (cardModal) cardModal.classList.add('show');
 
   const deck = $('#deck');
@@ -1290,7 +1291,9 @@ async function requestPlaybookMode(mode) {
     restorePlaybookScenarioPresentation(savedPlaybookScenarioPresentation);
     savedPlaybookScenarioPresentation = null;
   }
-  return updateContext(mode === PLAYBOOK_MODES.HAND ? 'Hand workflow selected' : 'Scenario workflow selected');
+  const result = await updateContext(mode === PLAYBOOK_MODES.HAND ? 'Hand workflow selected' : 'Scenario workflow selected');
+  window.RiverlineTutorials?.offerForWorkspace?.('gto', $('#gtoMode'));
+  return result;
 }
 
 function bindPlaybookModeControl() {
@@ -1459,6 +1462,7 @@ function openSavedStudyEditor() {
   $('#savedStudyMistake').checked = object.annotations.classifications.includes('mistake');
   $('#savedStudyEditorStatus').textContent = '';
   hideSavedStudyArchiveConfirmation();
+  window.RiverlineTutorials?.cancelForOverlay?.('saved-study-editor');
   modal.hidden = false;
   modal.classList.add('show');
   window.requestAnimationFrame(() => $('#savedStudyTitle')?.focus());
@@ -4693,6 +4697,7 @@ function renderHomeWorkspace(model) {
   if (workspace) workspace.setAttribute('aria-busy', 'false');
   if (loading) loading.hidden = true;
   if (content) content.hidden = false;
+  window.RiverlineTutorials?.offerForWorkspace?.('home', workspace);
 }
 
 async function refreshHomeWorkspace() {
@@ -4988,6 +4993,7 @@ function bindEvents() {
     });
     const mode = button.dataset.mode;
     clearToast();
+    window.RiverlineTutorials?.workspaceChanged?.(mode);
     if (mode !== 'gto') callPlaybookStateBridge('cancelReplayPlayback');
 
     const shell = $('.riverline-shell');
@@ -5018,6 +5024,8 @@ function bindEvents() {
       activeView.classList.add('active');
       activeView.style.display = 'block';
     }
+
+    if (mode !== 'home') window.RiverlineTutorials?.offerForWorkspace?.(mode, activeView);
 
     if (mode !== 'gto') playbookUpdateScheduler.cancel();
     renderAllCards({ mode });
@@ -5193,12 +5201,22 @@ function bindEvents() {
 
   if ($('#openSettings')) $('#openSettings').addEventListener('click', () => {
     clearToast();
-    if ($('#settingsModal')) $('#settingsModal').classList.add('show');
+    if ($('#settingsModal')) {
+      $('#settingsModal').classList.add('show');
+      window.RiverlineTutorials?.workspaceChanged?.('settings');
+      window.RiverlineTutorials?.offerForWorkspace?.('settings', $('#settingsModal .settings-grid'));
+    }
   });
 
-  if ($('#closeSettingsModal')) $('#closeSettingsModal').addEventListener('click', () => { if ($('#settingsModal')) $('#settingsModal').classList.remove('show'); });
+  const closeSettings = () => {
+    if ($('#settingsModal')) $('#settingsModal').classList.remove('show');
+    const workspace = $('.riverline-shell')?.dataset.activeMode ?? null;
+    window.RiverlineTutorials?.workspaceChanged?.(workspace);
+  };
 
-  if ($('#settingsModal')) $('#settingsModal').addEventListener('click', (event) => { if (event.target === $('#settingsModal')) $('#settingsModal').classList.remove('show'); });
+  if ($('#closeSettingsModal')) $('#closeSettingsModal').addEventListener('click', closeSettings);
+
+  if ($('#settingsModal')) $('#settingsModal').addEventListener('click', (event) => { if (event.target === $('#settingsModal')) closeSettings(); });
 
   if ($('#fourColorDeckToggle')) $('#fourColorDeckToggle').addEventListener('click', () => applyDeckStyle(!app.settings.fourColorDeck));
 
