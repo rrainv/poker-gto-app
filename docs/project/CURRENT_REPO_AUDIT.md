@@ -1,6 +1,6 @@
 # Current Repository Audit
 
-Snapshot refreshed August 13, 2026 from the architecture-focused repository dump and accepted ticket reports. Verify against executable code, tests, and Git history.
+Snapshot refreshed August 16, 2026 from the architecture-focused repository dump and accepted ticket reports. Verify against executable code, tests, and Git history.
 
 ## 1. Browser runtime
 
@@ -16,6 +16,7 @@ Major paths:
 - canonical Equity controller/worker backed by `shared/poker-domain`
 - canonical Training generator/session/grading/presentation
 - product-performance scheduling and hidden-surface invalidation
+- lazy local-first SavedStudyObject v1 domain/repository for saved Hands, Spots, annotations, review state, and portable export/import; Saved Hands include an exact observer-safe canonical event source for cold deterministic Replay reconstruction
 - classic UI/application orchestration in `app/src/core/logic.js`
 
 ## 2. Desktop
@@ -41,6 +42,10 @@ A separate legacy evaluator remains in `logic.js` only for the current Outs disp
 ## 5. Training
 
 Training uses legal canonical trajectories, deterministic seeds, replay metadata, one StrategyProvider, and one grading path. Session persistence, mistake review, adaptive curriculum, and range profiling remain future features.
+
+## 5.1 Saved Study Objects
+
+`app/src/saved-study-objects/` is the canonical user-owned Saved / Noted Study Object authority. V1 supports strict Hand and Spot snapshots, shared title/note/tag/review/mistake metadata, local ownership, archive tombstones, Dashboard-ready queries, and deterministic portable export/import behind native IndexedDB. Hand snapshots retain observer-level PokerState privacy markers; Scenario spots remain lossy and contain no invented history. No current renderer or Dashboard UI consumes the foundation yet.
 
 ## 6. Analysis and UI
 

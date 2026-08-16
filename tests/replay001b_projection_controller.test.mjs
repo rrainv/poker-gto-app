@@ -389,10 +389,15 @@ test('bridge records only successful operations, replaces a new hand, and clears
   const fake = browserWindow();
   const bridge = installPlaybookStateSourceBridge(fake.window);
   assert.equal(bridge.createReplayProjectionViewModel(), null);
+  assert.equal(bridge.createCanonicalHandReplaySource(), null);
   bridge.setMode('hand', handModeScenario());
 
   bridge.initializeHand(bridgeConfiguration());
   assert.equal(bridge.createReplayProjectionViewModel().totalFrameCount, 1);
+  assert.deepEqual(
+    bridge.createCanonicalHandReplaySource().events.map((event) => event.operation),
+    [REPLAY_FRAME_OPERATIONS.INITIALIZE_HAND],
+  );
   assert.equal(bridge.dealBoardCards(BOARD.slice(0, 3)), null);
   assert.equal(bridge.createReplayProjectionViewModel().totalFrameCount, 1);
   bridge.dealObservedHoleCards({ 'seat-0': HOLE_CARDS[0] });
@@ -408,6 +413,7 @@ test('bridge records only successful operations, replaces a new hand, and clears
   projection = bridge.createReplayProjectionViewModel();
   assert.equal(projection.mode, 'empty');
   assert.equal(projection.totalFrameCount, 0);
+  assert.equal(bridge.createCanonicalHandReplaySource(), null);
 });
 
 test('historical cursor never mutates or invisibly advances the live canonical hand', () => {

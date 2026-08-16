@@ -25,10 +25,13 @@ Production must not import solver experiments, training scripts, cloud tooling, 
 - current heuristic implementation: `app/src/strategy/`
 - Training generation/session/grading: canonical application modules
 - explanation data: `AnalysisExplanation v1`
+- user-owned saved hands/spots/notes/review metadata: `SavedStudyObject v1` under `app/src/saved-study-objects/`
 - performance scheduling/invalidation: `product-performance/v1`
 - desktop host: `app/main.js`
 
 A consumer must not bypass these authorities to compute its own alternative answer.
+
+Home/Dashboard, Hand/Replay, Training review, Matrix, and future Range tools are consumers of the Saved Study application/repository boundary. They must not define parallel bookmark, note, review, or saved-object persistence models. Saved Hand payloads preserve canonical observer-level PokerState facts plus a versioned canonical transition source that replays only through `shared/poker-domain`; they never persist Replay presentation frames. Saved Scenario spots remain explicitly lossy and cannot claim canonical history.
 
 ## 3. UI boundary
 

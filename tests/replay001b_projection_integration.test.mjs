@@ -27,9 +27,10 @@ function sourceBetween(source, startToken, endToken) {
   return source.slice(start, end);
 }
 
-test('Playbook bridge exposes only bounded projection and cursor operations', () => {
+test('Playbook bridge exposes bounded projection/cursor operations and the durable canonical source', () => {
   for (const method of [
     'createReplayProjectionViewModel',
+    'createCanonicalHandReplaySource',
     'previousReplayFrame',
     'nextReplayFrame',
     'returnReplayToLive',

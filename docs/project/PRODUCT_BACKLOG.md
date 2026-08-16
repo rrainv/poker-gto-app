@@ -44,7 +44,7 @@ Status vocabulary:
 | ID | Status | Capability | Notes |
 |---|---|---|---|
 | PROD-REPLAY-001 | PRIORITY | replay timeline with animated bets/raises/calls/chance events | `REPLAY-001A` is timeline-only; step-through and motion follow only after acceptance |
-| PROD-SAVE-001 | PRIORITY | bookmark/save spots, hands, and ranges |
+| PROD-SAVE-001 | PRIORITY | bookmark/save spots, hands, and ranges | `SAVED-OBJECTS-001/001R` establishes the local-first Hand/Spot foundation and cold-reconstructable canonical Saved Hand Replay source; consumer UX and future Range payload remain later work |
 | PROD-SESSION-001 | PLANNED | session history and review |
 | PROD-COMPARE-001 | PLANNED | compare strategies/spots/history |
 

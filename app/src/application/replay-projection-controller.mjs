@@ -1,18 +1,16 @@
 import { createReplayTimelineViewModel } from './replay-timeline-view-model.mjs';
 import { createTablePresenceViewModel } from './table-presence-view-model.mjs';
+import {
+  REPLAY_FRAME_OPERATIONS,
+  createCanonicalHandReplaySource,
+  deriveCanonicalHandReplayEvent,
+  reconstructCanonicalHandReplaySource,
+} from './canonical-hand-replay-source.mjs';
+
+export { REPLAY_FRAME_OPERATIONS } from './canonical-hand-replay-source.mjs';
 
 export const REPLAY_PROJECTION_SCHEMA_VERSION = 'replay-projection/v1';
 export const REPLAY_MOTION_SCHEMA_VERSION = 'replay-motion/v1';
-
-export const REPLAY_FRAME_OPERATIONS = Object.freeze({
-  INITIALIZE_HAND: 'initialize_hand',
-  DEAL_HOLE: 'deal_hole',
-  DEAL_HOLE_OBSERVED: 'deal_hole_observed',
-  REVEAL_HOLE: 'reveal_hole',
-  DEAL_BOARD: 'deal_board',
-  ACTION: 'action',
-  SHOWDOWN: 'showdown',
-});
 
 const SUPPORTED_OPERATIONS = new Set(Object.values(REPLAY_FRAME_OPERATIONS));
 const TIMELINE_GROUP_ORDER = Object.freeze(['preflop', 'flop', 'turn', 'river', 'showdown']);
@@ -367,6 +365,7 @@ export function createReplayProjectionController({
   }
 
   let frames = [];
+  let sourceEvents = [];
   let replayCursor = null;
   let selectionRevision = 0;
   let selectionDirection = 'none';
@@ -455,6 +454,7 @@ export function createReplayProjectionController({
   const controller = {
     clear() {
       frames = [];
+      sourceEvents = [];
       replayCursor = null;
       selectionRevision = 0;
       selectionDirection = 'none';
@@ -467,10 +467,19 @@ export function createReplayProjectionController({
       operation = REPLAY_FRAME_OPERATIONS.INITIALIZE_HAND,
     } = {}) {
       frames = [];
+      sourceEvents = [];
       replayCursor = null;
       selectionRevision = 0;
       selectionDirection = 'none';
-      if (state) frames.push(captureFrame(state, heroPlayerId, operation));
+      if (state) {
+        const event = deriveCanonicalHandReplayEvent({
+          sequence: 0,
+          operation,
+          state,
+        });
+        frames.push(captureFrame(state, heroPlayerId, operation));
+        sourceEvents.push(event);
+      }
       return projection();
     },
 
@@ -482,7 +491,44 @@ export function createReplayProjectionController({
       if (frames.length === 0) {
         throw new RangeError('Initialize Replay before recording later transitions');
       }
+      if (heroPlayerId !== frames[0].heroPlayerId) {
+        throw new RangeError('Replay observer perspective cannot change within one hand');
+      }
+      const event = deriveCanonicalHandReplayEvent({
+        sequence: sourceEvents.length,
+        operation,
+        previousState: frames.at(-1).state,
+        state,
+      });
       frames.push(captureFrame(state, heroPlayerId, operation));
+      sourceEvents.push(event);
+      return projection();
+    },
+
+    createCanonicalHandReplaySource() {
+      if (frames.length === 0) return null;
+      return createCanonicalHandReplaySource({
+        heroPlayerId: frames[0].heroPlayerId,
+        events: sourceEvents,
+      });
+    },
+
+    replaceFromCanonicalHandReplaySource(source) {
+      const durableSource = createCanonicalHandReplaySource({
+        heroPlayerId: source?.heroPlayerId,
+        events: source?.events,
+      });
+      const reconstruction = reconstructCanonicalHandReplaySource(durableSource);
+      const restoredFrames = reconstruction.frames.map((frame) => captureFrame(
+        frame.state,
+        frame.heroPlayerId,
+        frame.operation,
+      ));
+      frames = restoredFrames;
+      sourceEvents = [...durableSource.events];
+      replayCursor = null;
+      selectionRevision = 0;
+      selectionDirection = 'none';
       return projection();
     },
 

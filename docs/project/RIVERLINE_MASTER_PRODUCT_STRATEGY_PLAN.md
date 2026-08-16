@@ -1187,6 +1187,8 @@ Distinguish:
 
 A Home screen should return, but only when it has meaningful information to surface.
 
+Home/Dashboard is a consumer of the canonical SavedStudyObject application domain established by `SAVED-OBJECTS-001`; it must not own or redefine saved hands, spots, notes, tags, review state, or persistence.
+
 It should become the center of Riverline, not a decorative navigation page.
 
 Possible sections:
@@ -1328,6 +1330,8 @@ Useful for:
 - session review.
 
 ## 26. Saved objects and version history
+
+`SAVED-OBJECTS-001/001R` establishes the local-first `SavedStudyObject v1` foundation. Current strict payloads are canonical observer-level Hands and truthful Hand/Scenario Spots. Saved Hands include a versioned observer-safe canonical event source that cold-reconstructs deterministic Replay states through the existing poker domain/projection architecture without persisting presentation frames. Shared annotations, review state, mistake classification, local ownership, archive tombstones, IndexedDB queries, and portable export/import belong to this domain rather than Dashboard. Visible save/note/library UX is deferred to `SAVED-OBJECTS-002`; Range, drill, session-review, account, cloud, sharing, and object-history payloads remain later work.
 
 Future saved content:
 - spots;

@@ -1,0 +1,255 @@
+import { validatePokerState } from '../../../shared/poker-domain/index.js';
+import {
+  SAVED_SPOT_DERIVATIONS,
+  SAVED_STUDY_CLASSIFICATIONS,
+  SAVED_STUDY_KINDS,
+  SAVED_STUDY_REVIEW_STATES,
+  SAVED_STUDY_SOURCE_SURFACES,
+  createSavedHandReference,
+  createSavedHandSnapshot,
+  createSavedSpotSnapshot,
+  createSavedStudyAnnotations,
+  createSavedStudyBrowserStorage,
+  createSavedStudyObject,
+  createSavedStudyOwnerRef,
+  createSavedStudyRepository,
+  createSavedStudySource,
+} from '../saved-study-objects/index.mjs';
+import { deriveDecisionContextFromPokerState } from './decision-context-from-poker-state.mjs';
+
+export const SAVED_STUDY_LOCAL_OWNER_KEY = 'riverline.savedStudyObjects.owner.v1';
+
+function defaultIdFactory(prefix) {
+  const uuid = globalThis.crypto?.randomUUID?.();
+  if (uuid) return `${prefix}-${uuid}`;
+  const random = Math.random().toString(36).slice(2, 14);
+  return `${prefix}-${Date.now().toString(36)}-${random}`;
+}
+
+function timestampFrom(clock) {
+  const value = clock();
+  const date = value instanceof Date ? value : new Date(value);
+  if (!Number.isFinite(date.getTime())) throw new TypeError('Saved Study clock returned an invalid date');
+  return date.toISOString();
+}
+
+function requireStorage(storage) {
+  if (!storage || typeof storage.getItem !== 'function' || typeof storage.setItem !== 'function') {
+    throw new TypeError('Saved Study requires a Storage-compatible adapter');
+  }
+  return storage;
+}
+
+function getOrCreateOwnerRef(storage, idFactory) {
+  let id = storage.getItem(SAVED_STUDY_LOCAL_OWNER_KEY);
+  if (typeof id !== 'string' || !id.trim()) {
+    id = idFactory('local-owner');
+    storage.setItem(SAVED_STUDY_LOCAL_OWNER_KEY, id);
+  }
+  return createSavedStudyOwnerRef(id);
+}
+
+function operationIdentity(operation, idFactory, clock) {
+  const supplied = operation ?? {};
+  return Object.freeze({
+    id: supplied.id ?? idFactory('saved-study'),
+    createdAt: supplied.createdAt ?? timestampFrom(clock),
+  });
+}
+
+function annotationInput(input = {}) {
+  return {
+    title: input.title ?? null,
+    note: input.note ?? null,
+    tags: input.tags ?? [],
+    reviewState: input.reviewState ?? SAVED_STUDY_REVIEW_STATES.NONE,
+    classifications: input.classifications ?? [],
+  };
+}
+
+/**
+ * Lazy application boundary for all Saved / Noted Study Object work.
+ * Creating this service performs no Web Storage or IndexedDB work.
+ */
+export function createSavedStudyObjectApplication({
+  storage = null,
+  database = null,
+  repository = null,
+  ownerRef = null,
+  clock = () => new Date(),
+  idFactory = defaultIdFactory,
+} = {}) {
+  if (typeof clock !== 'function' || typeof idFactory !== 'function') {
+    throw new TypeError('Saved Study clock and idFactory must be functions');
+  }
+  let activationPromise = null;
+
+  async function activate() {
+    if (activationPromise) return activationPromise;
+    activationPromise = Promise.resolve().then(async () => {
+      if (repository) {
+        await repository.initialize();
+        return Object.freeze({ repository, ownerRef: repository.ownerRef });
+      }
+      const storageAdapter = ownerRef === null
+        ? requireStorage(storage ?? createSavedStudyBrowserStorage())
+        : storage;
+      const resolvedOwnerRef = ownerRef ?? getOrCreateOwnerRef(storageAdapter, idFactory);
+      const durableRepository = createSavedStudyRepository({ database, ownerRef: resolvedOwnerRef, clock });
+      await durableRepository.initialize();
+      return Object.freeze({ repository: durableRepository, ownerRef: resolvedOwnerRef });
+    });
+    try {
+      return await activationPromise;
+    } catch (error) {
+      activationPromise = null;
+      throw error;
+    }
+  }
+
+  async function saveObject({ kind, payload, source, annotations, operation }) {
+    const activated = await activate();
+    const identity = operationIdentity(operation, idFactory, clock);
+    const object = createSavedStudyObject({
+      id: identity.id,
+      ownerRef: activated.ownerRef,
+      kind,
+      createdAt: identity.createdAt,
+      annotations,
+      source,
+      payload,
+    });
+    return activated.repository.save(object);
+  }
+
+  async function saveHand({
+    pokerState,
+    heroPlayerId,
+    replaySource,
+    sourceSurface = SAVED_STUDY_SOURCE_SURFACES.HAND,
+    sourceId = pokerState?.handId ?? null,
+    operation = null,
+    ...annotations
+  } = {}) {
+    const payload = createSavedHandSnapshot({ pokerState, heroPlayerId, replaySource });
+    return saveObject({
+      kind: SAVED_STUDY_KINDS.HAND,
+      payload,
+      source: createSavedStudySource({ surface: sourceSurface, sourceId }),
+      annotations: createSavedStudyAnnotations(annotationInput(annotations)),
+      operation,
+    });
+  }
+
+  async function saveHandDerivedSpot({
+    pokerState,
+    heroPlayerId,
+    projectionOptions = {},
+    savedHandObjectId = null,
+    sourceSurface = SAVED_STUDY_SOURCE_SURFACES.PLAYBOOK,
+    sourceId = pokerState?.handId ?? null,
+    operation = null,
+    ...annotations
+  } = {}) {
+    validatePokerState(pokerState);
+    const decisionContext = deriveDecisionContextFromPokerState(
+      pokerState,
+      heroPlayerId,
+      projectionOptions,
+    );
+    const payload = createSavedSpotSnapshot({
+      derivation: SAVED_SPOT_DERIVATIONS.HAND,
+      decisionContext,
+      handReference: createSavedHandReference({
+        savedHandObjectId,
+        canonicalHandId: pokerState.handId,
+        actionSequenceCount: pokerState.actionHistory.length,
+      }),
+    });
+    return saveObject({
+      kind: SAVED_STUDY_KINDS.SPOT,
+      payload,
+      source: createSavedStudySource({
+        surface: sourceSurface,
+        sourceId,
+        parentObjectId: savedHandObjectId,
+      }),
+      annotations: createSavedStudyAnnotations(annotationInput(annotations)),
+      operation,
+    });
+  }
+
+  async function saveScenarioDerivedSpot({
+    scenarioInput,
+    decisionContext,
+    sourceSurface = SAVED_STUDY_SOURCE_SURFACES.PLAYBOOK,
+    sourceId = null,
+    operation = null,
+    ...annotations
+  } = {}) {
+    const payload = createSavedSpotSnapshot({
+      derivation: SAVED_SPOT_DERIVATIONS.SCENARIO,
+      decisionContext,
+      scenarioInput,
+    });
+    return saveObject({
+      kind: SAVED_STUDY_KINDS.SPOT,
+      payload,
+      source: createSavedStudySource({ surface: sourceSurface, sourceId }),
+      annotations: createSavedStudyAnnotations(annotationInput(annotations)),
+      operation,
+    });
+  }
+
+  return Object.freeze({
+    activate,
+    saveHand,
+    saveSpot(input = {}) {
+      if (input.derivation === SAVED_SPOT_DERIVATIONS.HAND) return saveHandDerivedSpot(input);
+      if (input.derivation === SAVED_SPOT_DERIVATIONS.SCENARIO) return saveScenarioDerivedSpot(input);
+      throw new RangeError(`Unsupported saved spot derivation: ${input.derivation}`);
+    },
+    saveHandDerivedSpot,
+    saveScenarioDerivedSpot,
+    async updateAnnotations(id, changes, options = {}) {
+      const activated = await activate();
+      return activated.repository.updateAnnotations(id, changes, options);
+    },
+    async getById(id, options = {}) {
+      return (await activate()).repository.getById(id, options);
+    },
+    async listRecent(options = {}) {
+      return (await activate()).repository.listRecent(options);
+    },
+    async listByKind(kind, options = {}) {
+      return (await activate()).repository.listByKind(kind, options);
+    },
+    async listForReview(options = {}) {
+      return (await activate()).repository.listForReview(options);
+    },
+    async listByTag(tag, options = {}) {
+      return (await activate()).repository.listByTag(tag, options);
+    },
+    async listMistakes(options = {}) {
+      return (await activate()).repository.listByClassification(
+        SAVED_STUDY_CLASSIFICATIONS.MISTAKE,
+        options,
+      );
+    },
+    async archive(id, options = {}) {
+      return (await activate()).repository.archive(id, options);
+    },
+    async exportLibrary(options = {}) {
+      return (await activate()).repository.exportLibrary(options);
+    },
+    async importLibrary(value, options = {}) {
+      return (await activate()).repository.importLibrary(value, options);
+    },
+    async close() {
+      if (!activationPromise) return;
+      const activated = await activationPromise;
+      await activated.repository.close();
+      activationPromise = null;
+    },
+  });
+}

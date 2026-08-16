@@ -100,6 +100,12 @@ export function installPlaybookStateSourceBridge(browserWindow, {
         : null;
     },
 
+    createCanonicalHandReplaySource() {
+      return modeController.getMode() === PLAYBOOK_MODES.HAND
+        ? replayController.createCanonicalHandReplaySource()
+        : null;
+    },
+
     createReplayPlaybackViewModel() {
       return playbackController.getState();
     },
