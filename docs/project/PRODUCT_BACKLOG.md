@@ -17,6 +17,8 @@ Status vocabulary:
 - **PLANNED LATER — `REPLAY-001B/001C`:** deterministic step-through, then playback/motion through the Table Presence layer.
 - **DEFERRED — Personal Strategy continuation:** `RANGE-CAL-002B`–`002D`, `RANGE-CAL-002R`, mode interpolation, StrategyProvider integration, Training-to-profile evidence, and broader integration. The completed foundation and usable Range Calibration workspace remain preserved; resume at `RANGE-CAL-002B`.
 
+- **CHECKPOINTED — `RANGE-CORE-001`:** canonical 1,326-combo `HoldemWeightedRange v1` foundation, explicit unknown semantics, provenance, blockers, normalization, and DOM-free 169 projection. Visible range consumers remain separate future tickets.
+
 ## Product Lab: UI capabilities
 
 | ID | Status | Capability | Dependencies |
@@ -64,6 +66,7 @@ Status vocabulary:
 
 | ID | Status | Capability |
 |---|---|---|
+| PROD-RANGE-000 | CHECKPOINTED | canonical combo-level weighted/partial Hold'em range foundation |
 | PROD-RANGE-001 | PRIORITY | Range Builder |
 | PROD-RANGE-002 | PRIORITY | Range Profiler / infer how tight or loose the user's choices are |
 | PROD-RANGE-003 | PLANNED | save/share named ranges |

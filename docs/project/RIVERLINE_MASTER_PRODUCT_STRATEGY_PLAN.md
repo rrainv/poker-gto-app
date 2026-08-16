@@ -15,6 +15,8 @@ Further Personal Strategy work is intentionally **DEFERRED**, not rejected: `RAN
 
 The active product direction is now **ACTIVE NEXT — `TABLE-PRESENCE-001A`**, followed by **PLANNED — `REPLAY-001A`**, then **PLANNED LATER — `REPLAY-001B/001C`**. This ordering overrides older roadmap language that placed Personal Strategy inference/integration immediately next.
 
+`RANGE-CORE-001` is **COMPLETED** as a domain-only foundation. `shared/poker-domain` now owns one deterministic 52-card / 1,326-combo Hold'em registry and `HoldemWeightedRange v1`, with explicit known-versus-unknown weights, per-combo provenance, combo mass, blocker conditioning, complete-range normalization, deterministic serialization, and truthful DOM-free 169 projection. No current Matrix, Analysis, Personal Strategy, Equity, Saved Object, Training, StrategyProvider, or tutorial behavior changed. See `RANGE_CORE_SPEC.md`.
+
 ## 1. Executive vision
 
 Riverline should evolve from a polished Texas Hold’em study workstation into a **personal poker strategy and study platform**.
@@ -124,7 +126,8 @@ Do not repeatedly advertise implementation safeguards such as “hints never rev
 - refunds;
 - side pots;
 - showdown;
-- canonical hand ordering/evaluation.
+- canonical hand ordering/evaluation;
+- canonical Hold'em deck/combo identity and combo-level weighted range math.
 
 UI code must not become a second poker-rules engine.
 
@@ -990,7 +993,7 @@ Eventually becomes:
 - clone;
 - correct inferred profiles.
 
-It should use the same underlying Range/Profile objects as elicitation.
+It should use the canonical combo-level `HoldemWeightedRange v1` foundation and preserve Personal Strategy evidence/profile boundaries rather than inventing another Matrix-owned range format.
 
 ### 19.2 Range Teacher / Profiler
 Can ask:
@@ -1650,6 +1653,8 @@ Range Builder, Range Teacher, Training intelligence, Compare Spots, profiles, sh
 
 Do not let each feature invent its own “range” format.
 
+`RANGE-CORE-001` establishes the combo-level range half of this rule. Future visible consumers adopt it deliberately; existing Personal Strategy evidence remains a separate source contract until an approved adapter owns the semantic mapping.
+
 ### 36.2 Provenance everywhere
 Distinguish:
 - direct user answer;
@@ -1713,6 +1718,16 @@ Do not make consumers model-aware.
 - local ownership;
 - export/import groundwork;
 - architecture review.
+
+### Cross-cutting range foundation — COMPLETED
+`RANGE-CORE-001`
+- canonical 52-card and 1,326-combo identity;
+- exact canonical 169 mapping;
+- versioned weighted/partial range contract;
+- unknown-versus-zero semantics and provenance;
+- blocker conditioning and complete-range normalization;
+- DOM-free Matrix projection and deterministic portability;
+- no visible product or StrategyProvider/Equity behavior change.
 
 ### Phase B — Range Calibration Skeleton Epic — COMPLETED
 `RANGE-CAL-001A`

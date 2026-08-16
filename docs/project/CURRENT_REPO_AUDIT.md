@@ -14,6 +14,7 @@ Major paths:
 - deterministic heuristic strategy under `app/src/strategy/`
 - AnalysisExplanation v1
 - canonical Equity controller/worker backed by `shared/poker-domain`
+- canonical 52-card / 1,326-combo Hold'em registry and immutable weighted/partial range foundation under `shared/poker-domain`; no current UI consumes it yet
 - canonical Training generator/session/grading/presentation
 - product-performance scheduling and hidden-surface invalidation
 - lazy local-first SavedStudyObject v1 domain/repository for saved Hands, Spots, annotations, review state, and portable export/import; Saved Hands include an exact observer-safe canonical event source for cold deterministic Replay reconstruction
@@ -38,6 +39,12 @@ Postflop Matrix remains unavailable rather than using a second fast heuristic.
 Canonical Equity is singular at product-service level and supports exact enumeration or seeded Monte Carlo, 2–10 players, unknown hands, dead cards, progress, and cancellation.
 
 A separate legacy evaluator remains in `logic.js` only for the current Outs display. It is not canonical Equity and is an extraction/migration candidate if Outs is redesigned.
+
+## 4.1 Hold'em range core
+
+`shared/poker-domain/holdem-combos.js` is the production authority for all 1,326 unordered Hold'em hole-card combos and their exact mapping to the canonical 169 hand classes. `shared/poker-domain/holdem-range.js` defines `HoldemWeightedRange v1`, explicit known/unknown combo entries, provenance, combo mass, blocker conditioning, complete positive-mass normalization, deterministic portability, and a DOM-free 169-cell projection.
+
+The current production Matrix, fixed Range Comparison samples, Personal Strategy action evidence, postflop heuristic candidate subset, and isolated solver combo utilities retain their existing bounded meanings; none is a second canonical weighted-range format. `equity-request/v1` cannot express weighted opponents, so no lossy adapter or Equity behavior change was introduced.
 
 ## 5. Training
 

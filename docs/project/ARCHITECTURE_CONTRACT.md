@@ -18,7 +18,7 @@ Production must not import solver experiments, training scripts, cloud tooling, 
 
 ## 2. Canonical production authorities
 
-- PokerState, Action, legality, accounting, evaluator, canonical Equity: `shared/poker-domain/`
+- PokerState, Action, legality, accounting, evaluator, canonical Equity, canonical Hold'em combos, and weighted range math: `shared/poker-domain/`
 - Scenario/Hand selection and projection: Playbook application layer
 - Decision strategy entry point: `StrategyProvider v1`
 - Strategy result/provenance: `StrategyResult v1`
@@ -106,7 +106,15 @@ Canonical Equity is a separate product service. Worker and in-process execution 
 
 Heuristic conditional samples inside strategy are not canonical Equity and must be labelled separately.
 
-## 8. Training
+## 8. Hold'em range core
+
+`shared/poker-domain/holdem-combos.js` is the one production authority for the 52-card deck's 1,326 unordered Hold'em hole-card combos and their mapping to the existing 169 hand classes. `shared/poker-domain/holdem-range.js` owns `HoldemWeightedRange v1`, explicit known-versus-unknown combo weights, combo mass, provenance, blocker conditioning, complete-range normalization, deterministic serialization, and DOM-free Matrix projection.
+
+Combo-level truth is canonical; a 13x13 Matrix is a derived presentation. UI, Personal Strategy storage, heuristic candidate ranges, Equity, and solver research must not create a second production weighted-range contract. Current `equity-request/v1` has no weighted-opponent shape, so range-to-Equity integration requires a separately approved versioned boundary.
+
+See `RANGE_CORE_SPEC.md`.
+
+## 9. Training
 
 Training must:
 
@@ -118,11 +126,11 @@ Training must:
 
 Training modules do not become browser strategy authorities.
 
-## 9. AnalysisExplanation
+## 10. AnalysisExplanation
 
 AnalysisExplanation consumes DecisionContext, StrategyResult, and trusted facts. Renderers must not recreate poker math or strategy.
 
-## 10. Performance contract
+## 11. Performance contract
 
 Preserve PERF-001 guarantees:
 
@@ -134,7 +142,7 @@ Preserve PERF-001 guarantees:
 - no forced-layout animation restart
 - Training and Equity do not rerender inactive workspaces unnecessarily
 
-## 11. Research isolation and legacy policy
+## 12. Research isolation and legacy policy
 
 The bounded solver remains under `solver/` and is not a production dependency.
 
