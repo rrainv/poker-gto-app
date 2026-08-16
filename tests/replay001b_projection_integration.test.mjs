@@ -193,7 +193,7 @@ test('controls and status are native, localized, focus-stable, RTL-safe, and res
   assert.match(css, /@media \(max-width: 720px\)[\s\S]*?replay-control-actions/);
 });
 
-test('REPLAY-001C playback, motion, scrub, speed, persistence, and sound remain absent', () => {
+test('REPLAY-001C playback and motion are additive while scrub, speed, persistence, and sound remain absent', () => {
   const historySurface = sourceBetween(
     html,
     '<section id="handHistorySection"',
@@ -204,8 +204,10 @@ test('REPLAY-001C playback, motion, scrub, speed, persistence, and sound remain 
     'function replayActorLabel(',
     'function renderCanonicalHandWorkspace()',
   );
-  assert.doesNotMatch(historySurface, /\b(?:play|pause|autoplay|scrub|speed)\b/i);
-  assert.doesNotMatch(replayLogic, /setInterval|setTimeout|requestAnimationFrame|SoundFX|localStorage|indexedDB/);
+  assert.match(historySurface, /id="handReplayPlaybackButton"/);
+  assert.match(replayLogic, /createReplayPlaybackViewModel/);
+  assert.doesNotMatch(historySurface, /\b(?:autoplay|scrub|speed)\b/i);
+  assert.doesNotMatch(replayLogic, /setInterval|requestAnimationFrame|SoundFX|localStorage|indexedDB/);
   assert.doesNotMatch(projectionSource, /setInterval|setTimeout|requestAnimationFrame|localStorage|indexedDB/);
-  assert.doesNotMatch(css.match(/\.replay-control-bar[\s\S]*?@media \(max-width: 720px\)/)?.[0] || '', /animation\s*:/);
+  assert.doesNotMatch(historySurface, /type="range"/);
 });

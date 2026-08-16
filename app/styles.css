@@ -6291,7 +6291,7 @@ html[data-four-color="false"] {
 .table-seat-meta[hidden] { display: none; }
 .table-seat.is-hero .table-seat-surface { fill: var(--poker-table-seat-hero); stroke: var(--accent-primary); stroke-width: 2.5; }
 .table-seat.is-actor .table-seat-surface { stroke: var(--status-warning); stroke-width: 3; }
-.table-seat.is-folded .table-seat-surface { stroke-dasharray: 4 3; }
+.table-seat.is-folded .table-seat-surface { opacity: .68; stroke-dasharray: 4 3; }
 .table-seat.is-folded .table-seat-name { text-decoration: line-through; fill: var(--text-disabled); }
 .table-seat.is-all-in .table-seat-surface { stroke: var(--action-all-in); stroke-width: 2.5; stroke-dasharray: 2 2; }
 .table-seat.is-all-in .table-seat-meta { fill: var(--action-all-in); }
@@ -6775,7 +6775,7 @@ html[data-four-color="false"] {
 .replay-control-actions {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
 }
 .replay-control-actions .ui-button {
@@ -6783,6 +6783,11 @@ html[data-four-color="false"] {
   min-height: 36px;
   padding-inline: var(--space-2);
   white-space: normal;
+}
+.replay-playback-button[aria-pressed="true"] {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--status-warning) 16%, var(--surface-interactive));
+  border-color: color-mix(in srgb, var(--status-warning) 62%, var(--border-default));
 }
 .replay-readonly-note {
   margin: 0 0 var(--space-3);
@@ -6927,6 +6932,16 @@ html[data-four-color="false"] {
   box-shadow: none;
 }
 .replay-action-entry.is-replay-future::marker { opacity: .58; }
+.replay-timeline[data-replay-motion-cycle="a"] .is-replay-motion-current { animation: replay-timeline-current-a 440ms cubic-bezier(.25, .1, .25, 1) both; }
+.replay-timeline[data-replay-motion-cycle="b"] .is-replay-motion-current { animation: replay-timeline-current-b 440ms cubic-bezier(.25, .1, .25, 1) both; }
+@keyframes replay-timeline-current-a {
+  from { opacity: .42; translate: 0 5px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes replay-timeline-current-b {
+  from { opacity: .42; translate: 0 5px; }
+  to { opacity: 1; translate: 0 0; }
+}
 .replay-action-entry.is-hero .replay-actor-name { font-weight: 900; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .replay-action-identity,
 .replay-current-identity { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); }
@@ -9035,6 +9050,54 @@ body.has-modal-open { overflow: hidden; }
 .table-action-badge.is-action-bet,
 .table-action-badge.is-action-raise { --table-action-color: var(--action-aggressive); }
 .table-action-badge.is-action-all-in { --table-action-color: var(--action-all-in); }
+
+/* REPLAY-001C: bounded semantic motion over authoritative Table Presence facts. */
+#visual-table-container {
+  --replay-motion-action: 560ms;
+  --replay-motion-deal: 680ms;
+  --replay-motion-showdown: 760ms;
+  --replay-motion-ease: cubic-bezier(.25, .1, .25, 1);
+}
+#visual-table-container[data-replay-motion-cycle="a"] .table-seat.is-replay-action-motion .table-seat-surface { animation: replay-seat-action-a var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="b"] .table-seat.is-replay-action-motion .table-seat-surface { animation: replay-seat-action-b var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="a"] .table-action-badge.is-replay-action-motion { animation: replay-action-badge-a var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="b"] .table-action-badge.is-replay-action-motion { animation: replay-action-badge-b var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="a"] .table-seat.is-replay-next-actor-motion .table-actor-indicator { animation: replay-next-actor-a var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="b"] .table-seat.is-replay-next-actor-motion .table-actor-indicator { animation: replay-next-actor-b var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="a"] .is-replay-value-motion { animation: replay-value-settle-a var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="b"] .is-replay-value-motion { animation: replay-value-settle-b var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="a"] .table-seat.is-replay-fold-motion .table-seat-surface { animation: replay-fold-settle-a var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="b"] .table-seat.is-replay-fold-motion .table-seat-surface { animation: replay-fold-settle-b var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="a"] .table-seat.is-replay-all-in-motion .table-seat-surface { animation: replay-all-in-settle-a var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="b"] .table-seat.is-replay-all-in-motion .table-seat-surface { animation: replay-all-in-settle-b var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="a"] .table-pot.is-replay-pot-motion { animation: replay-pot-settle-a var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="b"] .table-pot.is-replay-pot-motion { animation: replay-pot-settle-b var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle] .card-group.is-replay-card-motion,
+#visual-table-container[data-replay-motion-cycle] .table-hole-cards.is-replay-card-motion {
+  animation: replay-card-deal var(--replay-motion-deal) var(--replay-motion-ease) both;
+  animation-delay: calc(var(--card-deal-order, 0) * 70ms);
+}
+#visual-table-container[data-replay-motion-cycle="a"] .riverline-poker-table.is-replay-showdown-motion { animation: replay-showdown-settle-a var(--replay-motion-showdown) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="b"] .riverline-poker-table.is-replay-showdown-motion { animation: replay-showdown-settle-b var(--replay-motion-showdown) var(--replay-motion-ease) both; }
+
+.table-seat-surface { transform-box: fill-box; transform-origin: center; }
+@keyframes replay-seat-action-a { from { filter: brightness(1.42); stroke-width: 4; } to { filter: brightness(1); } }
+@keyframes replay-seat-action-b { from { filter: brightness(1.42); stroke-width: 4; } to { filter: brightness(1); } }
+@keyframes replay-action-badge-a { from { opacity: 0; translate: 0 7px; } to { opacity: 1; translate: 0 0; } }
+@keyframes replay-action-badge-b { from { opacity: 0; translate: 0 7px; } to { opacity: 1; translate: 0 0; } }
+@keyframes replay-next-actor-a { from { opacity: 0; stroke-dasharray: 80; stroke-dashoffset: 80; } to { opacity: 1; stroke-dasharray: 80; stroke-dashoffset: 0; } }
+@keyframes replay-next-actor-b { from { opacity: 0; stroke-dasharray: 80; stroke-dashoffset: 80; } to { opacity: 1; stroke-dasharray: 80; stroke-dashoffset: 0; } }
+@keyframes replay-value-settle-a { from { opacity: .28; translate: 0 -5px; } to { opacity: 1; translate: 0 0; } }
+@keyframes replay-value-settle-b { from { opacity: .28; translate: 0 -5px; } to { opacity: 1; translate: 0 0; } }
+@keyframes replay-card-deal { from { opacity: 0; translate: 0 -14px; filter: brightness(1.18); } to { opacity: 1; translate: 0 0; filter: brightness(1); } }
+@keyframes replay-fold-settle-a { from { opacity: 1; filter: saturate(1); } to { opacity: .68; filter: saturate(.35); } }
+@keyframes replay-fold-settle-b { from { opacity: 1; filter: saturate(1); } to { opacity: .68; filter: saturate(.35); } }
+@keyframes replay-all-in-settle-a { from { filter: brightness(1.48); stroke-width: 4; } to { filter: brightness(1); } }
+@keyframes replay-all-in-settle-b { from { filter: brightness(1.48); stroke-width: 4; } to { filter: brightness(1); } }
+@keyframes replay-pot-settle-a { from { opacity: .25; translate: 0 -5px; } to { opacity: 1; translate: 0 0; } }
+@keyframes replay-pot-settle-b { from { opacity: .25; translate: 0 -5px; } to { opacity: 1; translate: 0 0; } }
+@keyframes replay-showdown-settle-a { from { filter: brightness(1.2); } to { filter: brightness(1); } }
+@keyframes replay-showdown-settle-b { from { filter: brightness(1.2); } to { filter: brightness(1); } }
 [dir="rtl"] .table-seat-stack,
 [dir="rtl"] .table-contribution-amount,
 [dir="rtl"] .table-card-rank,
@@ -9447,4 +9510,16 @@ body.has-modal-open { overflow: hidden; }
   .analysis-panel-content.is-analysis-entering,
   .equity-results-panel[data-result-state="complete"] .equity-result-card,
   .modal-backdrop.show > .modal { animation: none !important; }
+  .replay-timeline .is-replay-motion-current,
+  #visual-table-container .table-seat.is-replay-action-motion .table-seat-surface,
+  #visual-table-container .table-action-badge.is-replay-action-motion,
+  #visual-table-container .table-seat.is-replay-next-actor-motion .table-actor-indicator,
+  #visual-table-container .table-seat.is-replay-all-in-motion .table-seat-surface,
+  #visual-table-container .is-replay-action-motion,
+  #visual-table-container .is-replay-next-actor-motion,
+  #visual-table-container .is-replay-value-motion,
+  #visual-table-container .is-replay-fold-motion,
+  #visual-table-container .is-replay-all-in-motion,
+  #visual-table-container .is-replay-pot-motion,
+  #visual-table-container .is-replay-showdown-motion { animation: none !important; }
 }

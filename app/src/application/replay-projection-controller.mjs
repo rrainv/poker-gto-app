@@ -2,6 +2,7 @@ import { createReplayTimelineViewModel } from './replay-timeline-view-model.mjs'
 import { createTablePresenceViewModel } from './table-presence-view-model.mjs';
 
 export const REPLAY_PROJECTION_SCHEMA_VERSION = 'replay-projection/v1';
+export const REPLAY_MOTION_SCHEMA_VERSION = 'replay-motion/v1';
 
 export const REPLAY_FRAME_OPERATIONS = Object.freeze({
   INITIALIZE_HAND: 'initialize_hand',
@@ -92,12 +93,100 @@ function captureFrame(state, heroPlayerId, operation) {
   const presentation = framePresentation(operation, snapshot);
   return deepFreeze({
     state: snapshot,
+    tablePresence,
     heroPlayerId,
     operation,
     kind: presentation.kind,
     labelKey: presentation.labelKey,
     actionSequence: actionSequenceForFrame(operation, snapshot),
     publicBoardCards: publicBoardCardsForFrame(presentation.kind, tablePresence),
+  });
+}
+
+function cardIds(cards) {
+  return Array.isArray(cards) ? cards.map((card) => card.id) : [];
+}
+
+function changedCards(previousSeat, nextSeat) {
+  return JSON.stringify(cardIds(previousSeat?.cards)) !== JSON.stringify(cardIds(nextSeat.cards));
+}
+
+function createReplayMotion({
+  atLive,
+  frame,
+  frameIndex,
+  previousFrame,
+  tablePresence,
+  timeline,
+  selectionDirection,
+  selectionRevision,
+}) {
+  const active = !atLive
+    && ['forward', 'restart'].includes(selectionDirection)
+    && frame.kind !== 'initialization';
+  if (!active) {
+    return deepFreeze({
+      schemaVersion: REPLAY_MOTION_SCHEMA_VERSION,
+      active: false,
+      token: selectionRevision,
+      direction: selectionDirection,
+      transitionKind: frame.kind,
+      frameIndex,
+    });
+  }
+
+  const previousPresence = previousFrame?.tablePresence || null;
+  const previousSeats = new Map(
+    (previousPresence?.seats || []).map((seat) => [seat.playerId, seat]),
+  );
+  const seatChanges = tablePresence.seats.map((seat) => {
+    const previous = previousSeats.get(seat.playerId);
+    return {
+      playerId: seat.playerId,
+      visualSeatIndex: seat.visualSeatIndex,
+      stack: {
+        changed: previous?.currentStackMilliBb !== seat.currentStackMilliBb,
+        previousMilliBb: previous?.currentStackMilliBb ?? null,
+        nextMilliBb: seat.currentStackMilliBb,
+      },
+      contribution: {
+        changed: previous?.streetContributionMilliBb !== seat.streetContributionMilliBb,
+        previousMilliBb: previous?.streetContributionMilliBb ?? null,
+        nextMilliBb: seat.streetContributionMilliBb,
+      },
+      foldedChanged: previous?.isFolded !== seat.isFolded,
+      allInChanged: previous?.isAllIn !== seat.isAllIn,
+      cardsChanged: changedCards(previous, seat),
+      cardVisibilityChanged: previous?.cardVisibility !== seat.cardVisibility,
+    };
+  }).filter((change) => change.stack.changed
+    || change.contribution.changed
+    || change.foldedChanged
+    || change.allInChanged
+    || change.cardsChanged
+    || change.cardVisibilityChanged);
+  const selectedAction = timeline.selectedAction;
+  const nextActor = tablePresence.seats.find((seat) => seat.isCurrentActor) || null;
+
+  return deepFreeze({
+    schemaVersion: REPLAY_MOTION_SCHEMA_VERSION,
+    active: true,
+    token: selectionRevision,
+    direction: selectionDirection,
+    transitionKind: frame.kind,
+    frameIndex,
+    actorPlayerId: selectedAction?.playerId || null,
+    nextActorPlayerId: nextActor?.playerId || null,
+    actionType: selectedAction?.actionType || null,
+    actionFamily: selectedAction?.actionFamily || null,
+    wasAllIn: selectedAction?.wasAllIn === true,
+    boardCards: frame.publicBoardCards.map((card) => card.id),
+    seatChanges,
+    pot: {
+      changed: previousPresence?.potMilliBb !== tablePresence.potMilliBb,
+      previousMilliBb: previousPresence?.potMilliBb ?? null,
+      nextMilliBb: tablePresence.potMilliBb,
+    },
   });
 }
 
@@ -232,9 +321,14 @@ function emptyProjection() {
     canReturnToLive: false,
     atStart: false,
     atLive: false,
+    canPlayback: false,
+    canPlaybackAdvance: false,
+    atPlaybackEnd: false,
+    selectionRevision: 0,
     selectedStreet: null,
     selectedPhase: null,
     selectedFrame: null,
+    motion: null,
     tablePresence,
     timeline: {
       empty: true,
@@ -274,6 +368,8 @@ export function createReplayProjectionController({
 
   let frames = [];
   let replayCursor = null;
+  let selectionRevision = 0;
+  let selectionDirection = 'none';
 
   const projection = () => {
     if (frames.length === 0) return emptyProjection();
@@ -286,10 +382,12 @@ export function createReplayProjectionController({
     const liveHeroPlayerId = getHeroPlayerId() || latestFrame.heroPlayerId;
     const selectedState = atLive ? liveState : selectedFrame.state;
     const selectedHeroPlayerId = atLive ? liveHeroPlayerId : selectedFrame.heroPlayerId;
-    const tablePresence = createTablePresenceViewModel({
-      state: selectedState,
-      heroPlayerId: selectedHeroPlayerId,
-    });
+    const tablePresence = atLive
+      ? createTablePresenceViewModel({
+        state: selectedState,
+        heroPlayerId: selectedHeroPlayerId,
+      })
+      : selectedFrame.tablePresence;
     const liveTimeline = createReplayTimelineViewModel({
       state: liveState,
       heroPlayerId: liveHeroPlayerId,
@@ -307,6 +405,16 @@ export function createReplayProjectionController({
       journalFrames: frames.slice(),
       atLive,
     });
+    const motion = createReplayMotion({
+      atLive,
+      frame: selectedFrame,
+      frameIndex: selectedFrameIndex,
+      previousFrame: frames[selectedFrameIndex - 1] || null,
+      tablePresence,
+      timeline,
+      selectionDirection,
+      selectionRevision,
+    });
 
     return deepFreeze({
       schemaVersion: REPLAY_PROJECTION_SCHEMA_VERSION,
@@ -322,6 +430,10 @@ export function createReplayProjectionController({
       canReturnToLive: !atLive,
       atStart: selectedFrameIndex === 0,
       atLive,
+      canPlayback: frames.length > 1,
+      canPlaybackAdvance: !atLive && selectedFrameIndex < frames.length - 1,
+      atPlaybackEnd: !atLive && selectedFrameIndex === frames.length - 1,
+      selectionRevision,
       selectedStreet: selectedState.street,
       selectedPhase: selectedState.phase,
       selectedFrame: {
@@ -333,6 +445,7 @@ export function createReplayProjectionController({
         phase: selectedFrame.state.phase,
         actionSequence: selectedFrame.actionSequence,
       },
+      motion,
       tablePresence,
       timeline,
       liveTimeline,
@@ -343,6 +456,8 @@ export function createReplayProjectionController({
     clear() {
       frames = [];
       replayCursor = null;
+      selectionRevision = 0;
+      selectionDirection = 'none';
       return projection();
     },
 
@@ -353,6 +468,8 @@ export function createReplayProjectionController({
     } = {}) {
       frames = [];
       replayCursor = null;
+      selectionRevision = 0;
+      selectionDirection = 'none';
       if (state) frames.push(captureFrame(state, heroPlayerId, operation));
       return projection();
     },
@@ -374,6 +491,8 @@ export function createReplayProjectionController({
         replayCursor = replayCursor === null
           ? frames.length - 2
           : Math.max(0, replayCursor - 1);
+        selectionRevision += 1;
+        selectionDirection = 'backward';
       }
       return projection();
     },
@@ -381,12 +500,34 @@ export function createReplayProjectionController({
     next() {
       if (replayCursor !== null) {
         replayCursor = replayCursor >= frames.length - 2 ? null : replayCursor + 1;
+        selectionRevision += 1;
+        selectionDirection = 'forward';
+      }
+      return projection();
+    },
+
+    beginPlayback() {
+      if (frames.length > 1) {
+        replayCursor = 0;
+        selectionRevision += 1;
+        selectionDirection = 'restart';
+      }
+      return projection();
+    },
+
+    advancePlayback() {
+      if (replayCursor !== null && replayCursor < frames.length - 1) {
+        replayCursor += 1;
+        selectionRevision += 1;
+        selectionDirection = 'forward';
       }
       return projection();
     },
 
     returnToLive() {
       replayCursor = null;
+      selectionRevision += 1;
+      selectionDirection = 'jump';
       return projection();
     },
 

@@ -11,11 +11,13 @@ import {
   REPLAY_FRAME_OPERATIONS,
   createReplayProjectionController,
 } from './replay-projection-controller.mjs';
+import { createReplayPlaybackController } from './replay-playback-controller.mjs';
 
 export const PLAYBOOK_STATE_CHANGE_EVENT = 'riverline:playbook-state-change';
 
 export function installPlaybookStateSourceBridge(browserWindow, {
   canonicalController = createCanonicalLiveController({ enabled: true }),
+  replayPlaybackOptions = {},
 } = {}) {
   if (!browserWindow) return null;
   const modeController = createPlaybookModeController({ canonicalController });
@@ -48,10 +50,18 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     return publish(operation, result);
   };
 
+  const playbackController = createReplayPlaybackController({
+    ...replayPlaybackOptions,
+    getProjection: () => replayController.getProjection(),
+    advance: () => replayController.advancePlayback(),
+    onAdvance: (projection) => publish('replay_playback_tick', projection),
+  });
+
   const bridge = Object.freeze({
     getMode: () => modeController.getMode(),
 
     setMode(mode, scenarioInput) {
+      playbackController.cancel();
       const result = modeController.setMode(mode, scenarioInput);
       if (result?.mode === PLAYBOOK_MODES.SCENARIO) replayController.returnToLive();
       return publish('mode', result);
@@ -90,18 +100,54 @@ export function installPlaybookStateSourceBridge(browserWindow, {
         : null;
     },
 
+    createReplayPlaybackViewModel() {
+      return playbackController.getState();
+    },
+
+    startReplayPlayback() {
+      if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
+      if (!replayController.isReplayActive()) replayController.beginPlayback();
+      const playback = playbackController.start();
+      return publish('replay_playback_start', {
+        playback,
+        projection: replayController.getProjection(),
+      });
+    },
+
+    pauseReplayPlayback() {
+      if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
+      const playback = playbackController.pause();
+      return publish('replay_playback_pause', {
+        playback,
+        projection: replayController.getProjection(),
+      });
+    },
+
+    cancelReplayPlayback() {
+      const playback = playbackController.cancel();
+      return publish('replay_playback_cancel', {
+        playback,
+        projection: modeController.getMode() === PLAYBOOK_MODES.HAND
+          ? replayController.getProjection()
+          : null,
+      });
+    },
+
     previousReplayFrame() {
       if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
+      playbackController.pause();
       return publish('replay_previous', replayController.previous());
     },
 
     nextReplayFrame() {
       if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
+      playbackController.pause();
       return publish('replay_next', replayController.next());
     },
 
     returnReplayToLive() {
       if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
+      playbackController.cancel();
       return publish('replay_live', replayController.returnToLive());
     },
 
@@ -109,6 +155,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     getScenarioInput: () => modeController.getLastScenarioInput(),
 
     initializeHand(configuration) {
+      playbackController.cancel();
       const result = canonicalController.initialize(configuration);
       replayController.replaceHand({
         state: result,
@@ -119,6 +166,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     },
 
     resetHand() {
+      playbackController.cancel();
       canonicalController.reset();
       replayController.clear();
       return publish('reset_hand', null);

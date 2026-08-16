@@ -62,8 +62,12 @@ test('Hand Mode uses a compact post-start setup and highlights the current canon
   assert.match(density, /\.playbook-hand-workspace \.is-current-hand-step/);
 });
 
-test('table seat identity and stack remain above a separately positioned card layer', () => {
-  assert.match(table, /class="table-hole-cards" transform="translate\(0, -110\)"/);
+test('table seats use one centered compact player-unit anchor for cards and identity', () => {
+  assert.match(table, /class="table-seat table-player-unit\$\{[^}]+\}"[^>]*data-card-anchor="center"/);
+  assert.match(table, /class="table-hole-cards" transform="translate\(0, -94\)"/);
+  assert.match(table, /class="table-seat-surface" x="-50" y="-34" width="100" height="70"/);
+  assert.match(table, /const finalX = \(\(index - \(\(totalCards - 1\) \/ 2\)\) \* cardStep\) - 20/);
+  assert.match(table, /renderCardBack\(index\)[\s\S]*const finalX = \(\(index - 0\.5\) \* 25\) - 20/);
   const cardIndex = table.indexOf('class="table-hole-cards"');
   const infoIndex = table.indexOf('class="table-seat-info"');
   assert.ok(cardIndex >= 0 && infoIndex > cardIndex, 'seat information must paint above cards');

@@ -150,7 +150,7 @@ test('timeline accessibility has no fake controls or empty numbered action row',
   assert.match(historySurface, /class="replay-resolution-actions"[\s\S]*id="handResolveShowdownButton"/);
 });
 
-test('bounded Replay step controls exist without playback, scrub, or timing controls', () => {
+test('bounded Replay step and playback controls exist without scrub or timing controls', () => {
   const historySurface = sourceBetween(
     html,
     '<section id="handHistorySection"',
@@ -165,7 +165,8 @@ test('bounded Replay step controls exist without playback, scrub, or timing cont
   assert.match(historySurface, /id="handReplayPreviousButton"/);
   assert.match(historySurface, /id="handReplayNextButton"/);
   assert.match(historySurface, /id="handReplayLiveButton"/);
-  assert.doesNotMatch(historySurface, /\b(?:play|pause|scrub|speed|autoplay|playback)\b/i);
+  assert.match(historySurface, /id="handReplayPlaybackButton"/);
+  assert.doesNotMatch(historySurface, /\b(?:scrub|speed|autoplay)\b/i);
   assert.doesNotMatch(renderer, /selectedReplay|replayIndex|projectedState|setInterval|requestAnimationFrame/);
 });
 

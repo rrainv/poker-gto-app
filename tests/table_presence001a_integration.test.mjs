@@ -92,7 +92,7 @@ test('table action labels use readable local typography while semantic color sta
   assert.match(labelRule, /font:\s*800 8px\/1 var\(--font-ui\)/);
   assert.doesNotMatch(labelRule, /var\(--table-action-color\)/);
   assert.match(surfaceRule, /stroke:[^;]*var\(--table-action-color\)/);
-  assert.match(renderer, /class="table-action-surface"[^>]*width="96" height="18"/);
+  assert.match(renderer, /class="table-action-surface"[^>]*width="88" height="18"/);
 });
 
 test('theme, RTL, reduced motion, collapse, and shared-card contracts remain in place', () => {

@@ -1744,7 +1744,7 @@ function appendReplayTimelineItems(section, heading, items) {
 function keepReplaySelectionVisible(root) {
   const selected = root.querySelector('[aria-current="step"], .replay-current-marker[aria-current]');
   if (!selected) return;
-  selected.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
+  selected.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
 }
 
 function renderCanonicalReplayControls(projection) {
@@ -1755,37 +1755,57 @@ function renderCanonicalReplayControls(projection) {
   const transition = $('#handReplayTransition');
   const status = $('#handReplayStatus');
   const readOnlyNote = $('#handReplayReadOnlyNote');
+  const playbackButton = $('#handReplayPlaybackButton');
   const previous = $('#handReplayPreviousButton');
   const next = $('#handReplayNextButton');
   const live = $('#handReplayLiveButton');
   const transitionLabel = t(projection.selectedFrame?.labelKey || 'replay.marker.empty');
+  const playback = callPlaybookStateBridge('createReplayPlaybackViewModel');
+  const isPlaying = playback?.playing === true;
   const modeLabel = t(projection.modeLabelKey);
   const progressLabel = t('replay.progress', {
     current: projection.currentStep,
     total: projection.totalSteps
   });
 
-  if (controls) controls.dataset.replayMode = projection.mode;
+  if (controls) {
+    controls.dataset.replayMode = projection.mode;
+    controls.dataset.playbackState = isPlaying ? 'playing' : 'paused';
+  }
   if (modeBadge) {
     modeBadge.textContent = modeLabel;
     modeBadge.className = `badge replay-mode-badge replay-mode-badge--${projection.mode}`;
   }
   if (progress) progress.textContent = progressLabel;
   if (transition) transition.textContent = transitionLabel;
-  if (status) status.textContent = t('replay.status.announcement', {
-    mode: modeLabel,
-    current: projection.currentStep,
-    total: projection.totalSteps,
-    transition: transitionLabel
-  });
+  if (status) {
+    status.setAttribute('aria-live', isPlaying ? 'off' : 'polite');
+    status.textContent = t('replay.status.announcement', {
+      mode: modeLabel,
+      current: projection.currentStep,
+      total: projection.totalSteps,
+      transition: transitionLabel
+    });
+  }
   if (readOnlyNote) readOnlyNote.hidden = !projection.readOnly;
 
   const focusedControl = document.activeElement;
+  if (playbackButton) {
+    const labelKey = isPlaying ? 'replay.control.pause' : 'replay.control.play';
+    const label = t(labelKey);
+    playbackButton.textContent = label;
+    playbackButton.dataset.i18n = labelKey;
+    playbackButton.setAttribute('aria-label', label);
+    playbackButton.setAttribute('aria-pressed', String(isPlaying));
+    playbackButton.disabled = !isPlaying
+      && !(projection.canPlayback && (projection.atLive || projection.canPlaybackAdvance));
+  }
   if (previous) previous.disabled = !projection.canPrevious;
   if (next) next.disabled = !projection.canNext;
   if (live) live.disabled = !projection.canReturnToLive;
   if (focusedControl?.disabled) {
-    [previous, next, live].find((button) => button && !button.disabled)?.focus();
+    [playbackButton, previous, next, live]
+      .find((button) => button && !button.disabled)?.focus();
   }
 }
 
@@ -1805,6 +1825,20 @@ function renderCanonicalReplayTimeline() {
   root.replaceChildren();
   root.dataset.replayState = model.status;
   root.dataset.replayMode = projection.mode;
+  const motionToken = projection.motion?.active ? String(projection.motion.token) : null;
+  const shouldAnimateReplayTimeline = motionToken !== null
+    && root.dataset.replayLastMotionToken !== motionToken;
+  if (shouldAnimateReplayTimeline) {
+    root.dataset.replayMotionCycle = projection.motion.token % 2 === 0 ? 'a' : 'b';
+    root.dataset.replayTransition = projection.motion.transitionKind;
+    root.dataset.replayMotionToken = motionToken;
+    root.dataset.replayLastMotionToken = motionToken;
+  } else {
+    delete root.dataset.replayMotionCycle;
+    delete root.dataset.replayTransition;
+    delete root.dataset.replayMotionToken;
+    if (motionToken === null) delete root.dataset.replayLastMotionToken;
+  }
   let markerAttached = false;
 
   for (const group of model.groups) {
@@ -1836,6 +1870,24 @@ function renderCanonicalReplayTimeline() {
 
   if (model.showCurrentMarker && !markerAttached) {
     root.appendChild(createReplayCurrentMarker(model.currentMarker));
+  }
+  if (shouldAnimateReplayTimeline) {
+    const current = root.querySelector('[aria-current="step"]');
+    if (current) {
+      current.classList.add('is-replay-motion-current');
+      const animations = typeof current.getAnimations === 'function' ? current.getAnimations() : [];
+      const settleTimelineMotion = () => {
+        if (current.isConnected && root.dataset.replayMotionToken === motionToken) {
+          current.classList.remove('is-replay-motion-current');
+          delete root.dataset.replayMotionCycle;
+          delete root.dataset.replayTransition;
+          delete root.dataset.replayMotionToken;
+        }
+      };
+      if (animations.length === 0) settleTimelineMotion();
+      else Promise.allSettled(animations.map((animation) => animation.finished))
+        .then(settleTimelineMotion);
+    }
   }
   keepReplaySelectionVisible(root);
 }
@@ -1871,6 +1923,9 @@ function dispatchCanonicalTableState() {
     if (projection?.readOnly) wrapper.setAttribute('aria-describedby', 'handReplayStatus');
     else wrapper.removeAttribute('aria-describedby');
   }
+  window.dispatchEvent(new CustomEvent('riverline:replay-motion', {
+    detail: projection?.motion?.active ? projection.motion : null
+  }));
   window.dispatchEvent(new CustomEvent('gameStateUpdate', { detail: tableModel }));
 }
 
@@ -1929,6 +1984,10 @@ function bindCanonicalHandWorkspace() {
   if ($('#handResetButton')) $('#handResetButton').addEventListener('click', resetCanonicalPlaybookHand);
   if ($('#handDealHoleButton')) $('#handDealHoleButton').addEventListener('click', commitCanonicalPrivateCards);
   if ($('#handDealBoardButton')) $('#handDealBoardButton').addEventListener('click', commitCanonicalBoardDeal);
+  if ($('#handReplayPlaybackButton')) $('#handReplayPlaybackButton').addEventListener('click', () => {
+    const playback = callPlaybookStateBridge('createReplayPlaybackViewModel');
+    callPlaybookStateBridge(playback?.playing ? 'pauseReplayPlayback' : 'startReplayPlayback');
+  });
   if ($('#handReplayPreviousButton')) $('#handReplayPreviousButton').addEventListener('click', () => {
     callPlaybookStateBridge('previousReplayFrame');
   });
@@ -1938,6 +1997,14 @@ function bindCanonicalHandWorkspace() {
   if ($('#handReplayLiveButton')) $('#handReplayLiveButton').addEventListener('click', () => {
     callPlaybookStateBridge('returnReplayToLive');
   });
+  const replayTimeline = $('#handActionHistory');
+  const pauseForTimelineInteraction = () => {
+    if (callPlaybookStateBridge('createReplayPlaybackViewModel')?.playing) {
+      callPlaybookStateBridge('pauseReplayPlayback');
+    }
+  };
+  replayTimeline?.addEventListener('pointerdown', pauseForTimelineInteraction);
+  replayTimeline?.addEventListener('wheel', pauseForTimelineInteraction, { passive: true });
   if ($('#handResolveShowdownButton')) $('#handResolveShowdownButton').addEventListener('click', () => {
     const next = callPlaybookStateBridge('resolveShowdown');
     if (!next) toast(canonicalHandFailureMessage(), 'error');
@@ -4179,6 +4246,7 @@ function bindEvents() {
     });
     const mode = button.dataset.mode;
     clearToast();
+    if (mode !== 'gto') callPlaybookStateBridge('cancelReplayPlayback');
 
     const shell = $('.riverline-shell');
     if (shell) shell.dataset.activeMode = mode;
