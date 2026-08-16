@@ -6396,6 +6396,24 @@ html[data-four-color="false"] {
 .playbook-mode-status[data-status="unavailable"],
 .playbook-mode-status[data-status="error"] { color: var(--status-warning); }
 
+.saved-study-action-mount:empty { display: none; }
+.saved-study-source-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.saved-study-source-actions .ui-button { min-height: 36px; white-space: nowrap; }
+.saved-study-source-actions [hidden] { display: none; }
+#savedStudySaveButton[aria-pressed="true"] {
+  color: var(--status-success);
+  border-color: color-mix(in srgb, var(--status-success) 45%, var(--border-default));
+}
+#savedStudySaveButton[aria-pressed="true"]::before { content: "✓"; margin-inline-end: var(--space-2); }
+#savedStudySaveButton[data-save-state="failed"] { color: var(--status-danger); }
+
 #gtoMode[data-playbook-mode="hand"] [data-scenario-only] {
   cursor: not-allowed;
 }
@@ -6668,6 +6686,9 @@ html[data-four-color="false"] {
 .hand-section-head strong, .hand-section-head small { display: block; }
 .hand-section-head strong { color: var(--text-primary); }
 .hand-section-head small { margin-top: 2px; color: var(--text-muted); font-size: var(--text-label-size); line-height: 1.35; }
+.hand-current-section-head { flex-wrap: wrap; }
+.hand-current-section-head > :first-child { min-width: 0; }
+.saved-study-action-mount--hand { flex: 1 1 100%; }
 
 .hand-setup-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 .hand-setup-grid label, .hand-action-sizing { display: grid; gap: var(--space-2); color: var(--text-secondary); font-size: var(--text-label-size); font-weight: 700; }
@@ -6777,6 +6798,11 @@ html[data-four-color="false"] {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
+}
+.saved-study-action-mount--replay {
+  justify-self: start;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
 }
 .replay-control-actions .ui-button {
   min-width: 0;
@@ -7012,6 +7038,7 @@ html[data-four-color="false"] {
   #gtoMode .playbook-state-source { grid-template-columns: 1fr; }
   #playbookModeControl { width: 100%; }
   .playbook-mode-status { grid-column: auto; }
+  .saved-study-source-actions { justify-content: flex-start; }
   .playbook-context-toggle { display: inline-flex; justify-self: start; }
   #gtoMode .playbook-workspace { display: flex; flex-direction: column; }
   .playbook-decision-workspace { order: 1; width: 100%; }
@@ -7046,6 +7073,74 @@ html[data-four-color="false"] {
 
 [dir="rtl"] #gtoMode .strategy-grid { direction: ltr; }
 [dir="rtl"] .hand-seat-row.is-actor { box-shadow: inset -3px 0 0 var(--accent-primary); }
+
+/* SAVED-OBJECTS-002: compact source action and annotation editor. */
+.saved-study-modal {
+  box-sizing: border-box;
+  width: min(620px, calc(100vw - (var(--space-7) * 2)));
+  max-width: calc(100vw - (var(--space-7) * 2));
+  max-height: calc(100dvh - (var(--space-6) * 2));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.saved-study-modal .modal-head { flex: 0 0 auto; }
+.saved-study-form-body {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.saved-study-field { display: grid; gap: var(--space-2); min-width: 0; }
+.saved-study-field > span,
+.saved-study-flags legend { color: var(--text-secondary); font-size: var(--text-label-size); font-weight: 750; }
+.saved-study-field small { color: var(--text-muted); font-size: var(--text-label-size); }
+.saved-study-field textarea {
+  width: 100%;
+  min-height: 128px;
+  resize: vertical;
+  padding: var(--space-4);
+  color: var(--text-primary);
+  background: var(--surface-interactive);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-control);
+  font: var(--text-body-size)/1.5 var(--font-ui);
+}
+.saved-study-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-6);
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+.saved-study-flags legend { padding-inline: var(--space-2); }
+.saved-study-flags label { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--text-primary); }
+.saved-study-archive-confirmation {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--status-danger) 8%, var(--surface-section));
+  border: 1px solid color-mix(in srgb, var(--status-danger) 35%, var(--border-default));
+  border-radius: var(--radius-control);
+}
+.saved-study-archive-confirmation[hidden] { display: none; }
+.saved-study-archive-confirmation p { margin: 0; line-height: 1.45; }
+.saved-study-archive-confirmation > div,
+.saved-study-modal-actions,
+.saved-study-modal-actions > div { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.saved-study-modal-actions { justify-content: space-between; flex: 0 0 auto; }
+.saved-study-modal-actions > div { justify-content: flex-end; }
+
+@media (max-width: 640px) {
+  .saved-study-modal { width: calc(100vw - (var(--space-4) * 2)); max-width: calc(100vw - (var(--space-4) * 2)); }
+  .saved-study-modal-actions { align-items: stretch; flex-direction: column-reverse; }
+  .saved-study-modal-actions > div { display: grid; grid-template-columns: 1fr 1fr; }
+  .saved-study-modal-actions .ui-button { width: 100%; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .playbook-primary-decision[data-recommendation-state="loading"]::before { animation: none; }
@@ -8908,6 +9003,14 @@ body.has-modal-open { overflow: hidden; }
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0 var(--space-2);
+}
+.playbook-inline-actions {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }
 .playbook-inline-heading #openCharts {
   width: auto;

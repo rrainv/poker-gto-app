@@ -184,6 +184,18 @@ function callPlaybookStateBridge(method, ...args) {
   }
 }
 
+function callSavedStudyBridge(method, ...args) {
+  const bridge = window.RiverlineSavedStudyObjects;
+  if (!bridge || typeof bridge[method] !== 'function') {
+    return Promise.reject(new Error('Riverline Saved Study Objects bridge is unavailable'));
+  }
+  try {
+    return Promise.resolve(bridge[method](...args));
+  } catch (error) {
+    return Promise.reject(error);
+  }
+}
+
 function callEquityServiceBridge(method, ...args) {
   try {
     const bridge = window.RiverlineEquity;
@@ -1276,6 +1288,275 @@ function bindPlaybookModeControl() {
   setPlaybookControlAuthority(PLAYBOOK_MODES.SCENARIO);
 }
 
+let savedStudyCurrentObject = null;
+let savedStudySourceState = 'unavailable';
+let savedStudyRefreshSequence = 0;
+let savedStudyDialogLastFocus = null;
+
+function currentSavedStudyInput() {
+  const mode = isHandMode() ? PLAYBOOK_MODES.HAND : PLAYBOOK_MODES.SCENARIO;
+  return {
+    mode,
+    scenarioInput: mode === PLAYBOOK_MODES.SCENARIO ? readPlaybookScenarioInput() : null,
+    decisionContext: mode === PLAYBOOK_MODES.SCENARIO
+      && app.playbookResolution?.status === 'available'
+      ? app.playbookResolution.decisionContext
+      : null
+  };
+}
+
+function savedStudySourceCanSave(input = currentSavedStudyInput()) {
+  if (input.mode === PLAYBOOK_MODES.HAND) return Boolean(callPlaybookStateBridge('getState'));
+  return input.decisionContext?.schemaVersion === 'decision-context/v1';
+}
+
+function placeSavedStudySourceActions(replayProjection = null) {
+  const actions = $('#savedStudySourceActions');
+  if (!actions) return;
+  let mount = $('#scenarioSavedStudyActionMount');
+  if (isHandMode()) {
+    const projection = replayProjection
+      || callPlaybookStateBridge('createReplayProjectionViewModel');
+    mount = projection?.readOnly
+      ? $('#replaySavedStudyActionMount')
+      : $('#handSavedStudyActionMount');
+  }
+  if (mount && actions.parentElement !== mount) mount.appendChild(actions);
+}
+
+function savedStudySourceCopy(state, mode) {
+  const hand = mode === PLAYBOOK_MODES.HAND;
+  if (state === 'saved') return t(hand ? 'Saved hand.' : 'Saved study spot.');
+  if (state === 'saving') return t('Saving…');
+  if (state === 'checking') return t('Checking saved state…');
+  if (state === 'failed') return t('Save failed');
+  if (state === 'unavailable') return t(hand
+    ? 'Start a canonical hand before saving.'
+    : 'Complete a valid study spot before saving.');
+  return t(hand ? 'This hand is not saved.' : 'This spot is not saved.');
+}
+
+function renderSavedStudySourceState(state, object = savedStudyCurrentObject) {
+  savedStudySourceState = state;
+  savedStudyCurrentObject = state === 'saved' ? object : null;
+  const input = currentSavedStudyInput();
+  placeSavedStudySourceActions();
+  const hand = input.mode === PLAYBOOK_MODES.HAND;
+  const saveButton = $('#savedStudySaveButton');
+  const editButton = $('#savedStudyEditButton');
+  const status = $('#savedStudySourceStatus');
+  const saved = state === 'saved';
+  const busy = state === 'saving' || state === 'checking';
+  const canSave = savedStudySourceCanSave(input);
+  if (saveButton) {
+    const label = state === 'saving'
+      ? t('Saving…')
+      : saved ? t('Saved') : t(hand ? 'Save hand' : 'Save spot');
+    saveButton.textContent = label;
+    saveButton.dataset.i18n = state === 'saving'
+      ? 'Saving…'
+      : saved ? 'Saved' : hand ? 'Save hand' : 'Save spot';
+    saveButton.dataset.saveState = state;
+    saveButton.setAttribute('aria-pressed', String(saved));
+    saveButton.setAttribute('aria-busy', String(busy));
+    saveButton.disabled = saved || busy || !canSave;
+  }
+  if (editButton) editButton.hidden = !saved;
+  if (status) status.textContent = savedStudySourceCopy(state, input.mode);
+}
+
+async function refreshSavedStudySource() {
+  const input = currentSavedStudyInput();
+  const sequence = ++savedStudyRefreshSequence;
+  if (!savedStudySourceCanSave(input) && input.mode === PLAYBOOK_MODES.SCENARIO) {
+    renderSavedStudySourceState('unavailable', null);
+    return;
+  }
+  renderSavedStudySourceState('checking', null);
+  try {
+    const result = await callSavedStudyBridge('getCurrentStatus', input);
+    if (sequence !== savedStudyRefreshSequence) return;
+    renderSavedStudySourceState(result.state, result.object);
+  } catch (error) {
+    if (sequence !== savedStudyRefreshSequence) return;
+    console.error('[Riverline Saved Study Objects]', error);
+    renderSavedStudySourceState('failed', null);
+  }
+}
+
+async function saveCurrentStudySource() {
+  const input = currentSavedStudyInput();
+  if (!savedStudySourceCanSave(input) || savedStudySourceState === 'saving') return;
+  const sequence = ++savedStudyRefreshSequence;
+  renderSavedStudySourceState('saving', null);
+  try {
+    const result = await callSavedStudyBridge('saveCurrent', input);
+    if (sequence !== savedStudyRefreshSequence) return;
+    renderSavedStudySourceState('saved', result.object);
+    toast(t('Saved'), 'success');
+  } catch (error) {
+    if (sequence !== savedStudyRefreshSequence) return;
+    console.error('[Riverline Saved Study Objects]', error);
+    renderSavedStudySourceState('failed', null);
+    toast(t('Save failed'), 'error');
+  }
+}
+
+function savedStudyDialogFocusableElements() {
+  const modal = $('#savedStudyModal');
+  if (!modal) return [];
+  return [...modal.querySelectorAll('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex="-1"])')]
+    .filter((element) => !element.closest('[hidden]'));
+}
+
+function hideSavedStudyArchiveConfirmation() {
+  const confirmation = $('#savedStudyArchiveConfirmation');
+  if (confirmation) confirmation.hidden = true;
+}
+
+function closeSavedStudyEditor() {
+  const modal = $('#savedStudyModal');
+  if (!modal || modal.hidden) return;
+  modal.classList.remove('show');
+  modal.hidden = true;
+  hideSavedStudyArchiveConfirmation();
+  const focusTarget = savedStudyDialogLastFocus;
+  savedStudyDialogLastFocus = null;
+  if (focusTarget?.isConnected && typeof focusTarget.focus === 'function') focusTarget.focus();
+}
+
+function openSavedStudyEditor() {
+  const object = savedStudyCurrentObject;
+  const modal = $('#savedStudyModal');
+  if (!object || !modal) return;
+  savedStudyDialogLastFocus = document.activeElement;
+  $('#savedStudyTitle').value = object.annotations.title || '';
+  $('#savedStudyNote').value = object.annotations.note || '';
+  $('#savedStudyTags').value = object.annotations.tags.map((tag) => tag.display).join(', ');
+  $('#savedStudyReviewLater').checked = object.annotations.reviewState === 'review_later';
+  $('#savedStudyMistake').checked = object.annotations.classifications.includes('mistake');
+  $('#savedStudyEditorStatus').textContent = '';
+  hideSavedStudyArchiveConfirmation();
+  modal.hidden = false;
+  modal.classList.add('show');
+  window.requestAnimationFrame(() => $('#savedStudyTitle')?.focus());
+}
+
+function setSavedStudyEditorBusy(busy) {
+  ['savedStudyTitle', 'savedStudyNote', 'savedStudyTags', 'savedStudyReviewLater',
+    'savedStudyMistake', 'savedStudyArchiveButton', 'savedStudyArchiveConfirmButton',
+    'savedStudyArchiveKeepButton', 'savedStudyCancelButton', 'savedStudySubmitButton',
+    'savedStudyCloseButton'].forEach((id) => {
+    if ($('#' + id)) $('#' + id).disabled = busy;
+  });
+  if ($('#savedStudySubmitButton')) $('#savedStudySubmitButton').setAttribute('aria-busy', String(busy));
+}
+
+function savedStudyTagsFromEditor() {
+  return $('#savedStudyTags').value.split(/[,\n]/u).map((tag) => tag.trim()).filter(Boolean);
+}
+
+async function saveSavedStudyAnnotations(event) {
+  event.preventDefault();
+  const object = savedStudyCurrentObject;
+  if (!object) return;
+  const originalReviewState = object.annotations.reviewState;
+  const reviewState = $('#savedStudyReviewLater').checked
+    ? 'review_later'
+    : originalReviewState === 'resolved' ? 'resolved' : 'none';
+  const classifications = window.RiverlineSavedStudyObjects.classificationsWithMistake(
+    object,
+    $('#savedStudyMistake').checked
+  );
+  setSavedStudyEditorBusy(true);
+  $('#savedStudyEditorStatus').textContent = t('Saving…');
+  try {
+    const result = await callSavedStudyBridge('updateAnnotations', object.id, {
+      title: $('#savedStudyTitle').value,
+      note: $('#savedStudyNote').value,
+      tags: savedStudyTagsFromEditor(),
+      reviewState,
+      classifications
+    }, { expectedRevision: object.revision });
+    savedStudyCurrentObject = result.object;
+    renderSavedStudySourceState('saved', result.object);
+    closeSavedStudyEditor();
+    toast(t('Changes saved'), 'success');
+  } catch (error) {
+    console.error('[Riverline Saved Study Objects]', error);
+    $('#savedStudyEditorStatus').textContent = t('Changes could not be saved.');
+    toast(t('Changes could not be saved.'), 'error');
+  } finally {
+    setSavedStudyEditorBusy(false);
+  }
+}
+
+async function archiveSavedStudyObjectFromEditor() {
+  const object = savedStudyCurrentObject;
+  if (!object) return;
+  setSavedStudyEditorBusy(true);
+  $('#savedStudyEditorStatus').textContent = t('Archiving…');
+  try {
+    await callSavedStudyBridge('archiveCurrent', {
+      ...currentSavedStudyInput(),
+      expectedRevision: object.revision
+    });
+    ++savedStudyRefreshSequence;
+    savedStudyCurrentObject = null;
+    renderSavedStudySourceState('unsaved', null);
+    closeSavedStudyEditor();
+    toast(t('Archived'), 'success');
+  } catch (error) {
+    console.error('[Riverline Saved Study Objects]', error);
+    $('#savedStudyEditorStatus').textContent = t('Archive failed');
+    toast(t('Archive failed'), 'error');
+  } finally {
+    setSavedStudyEditorBusy(false);
+  }
+}
+
+function bindSavedStudyObjectsUx() {
+  $('#savedStudySaveButton')?.addEventListener('click', saveCurrentStudySource);
+  $('#savedStudyEditButton')?.addEventListener('click', openSavedStudyEditor);
+  $('#savedStudyForm')?.addEventListener('submit', saveSavedStudyAnnotations);
+  ['savedStudyCancelButton', 'savedStudyCloseButton'].forEach((id) => {
+    $('#' + id)?.addEventListener('click', closeSavedStudyEditor);
+  });
+  $('#savedStudyArchiveButton')?.addEventListener('click', () => {
+    const confirmation = $('#savedStudyArchiveConfirmation');
+    if (!confirmation) return;
+    confirmation.hidden = false;
+    $('#savedStudyArchiveConfirmButton')?.focus();
+  });
+  $('#savedStudyArchiveKeepButton')?.addEventListener('click', () => {
+    hideSavedStudyArchiveConfirmation();
+    $('#savedStudyArchiveButton')?.focus();
+  });
+  $('#savedStudyArchiveConfirmButton')?.addEventListener('click', archiveSavedStudyObjectFromEditor);
+  $('#savedStudyModal')?.addEventListener('click', (event) => {
+    if (event.target === $('#savedStudyModal')) closeSavedStudyEditor();
+  });
+  $('#savedStudyModal')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeSavedStudyEditor();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = savedStudyDialogFocusableElements();
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable.at(-1);
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+}
+
 
 
 function formatCanonicalBb(milliBb, digits = 1) {
@@ -1934,6 +2215,7 @@ function renderCanonicalHandWorkspace() {
   if (!workspace) return;
   const state = callPlaybookStateBridge('getState');
   const replayProjection = callPlaybookStateBridge('createReplayProjectionViewModel');
+  placeSavedStudySourceActions(replayProjection);
   workspace.classList.toggle('is-hand-in-progress', Boolean(state));
   const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
   const status = canonicalHandStatus(state);
@@ -3144,6 +3426,7 @@ async function updateContext(reason = 'Context updated') {
     invalidatePlaybookDerivedSurfaces();
     if (typeof renderUnavailableStrategy === 'function') renderUnavailableStrategy(playbookResolution);
     renderVisiblePlaybookDerivedSurfaces();
+    if (window.RiverlineSavedStudyObjects) void refreshSavedStudySource();
     return playbookResolution;
   }
 
@@ -3341,6 +3624,8 @@ async function updateContext(reason = 'Context updated') {
     }
 
   }
+
+  if (window.RiverlineSavedStudyObjects) void refreshSavedStudySource();
 
 }
 
@@ -4723,6 +5008,7 @@ const localizedStrategyProfile = strategyResultToLegacyProfile;
 
 function refreshLocalizedPlaybookRuntime() {
   if (app.playbookResolution) renderPlaybookModeStatus(app.playbookResolution);
+  renderSavedStudySourceState(savedStudySourceState, savedStudyCurrentObject);
   if (isHandMode()) {
     syncHandSeatSelectors();
     renderCanonicalHandWorkspace();
@@ -4896,6 +5182,8 @@ function init() {
     bindEvents();
 
     bindCanonicalHandWorkspace();
+
+    bindSavedStudyObjectsUx();
 
     bindPlaybookModeControl();
 

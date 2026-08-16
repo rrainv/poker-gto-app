@@ -712,7 +712,10 @@
               </section>
 
               <section id="handStateSection" class="hand-control-section" aria-labelledby="handStateTitle">
-                <div class="hand-section-head"><div><strong id="handStateTitle" data-i18n="Current hand">Current hand</strong><small id="handStateSummary">No canonical hand yet</small></div></div>
+                <div class="hand-section-head hand-current-section-head">
+                  <div><strong id="handStateTitle" data-i18n="Current hand">Current hand</strong><small id="handStateSummary">No canonical hand yet</small></div>
+                  <div id="handSavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--hand"></div>
+                </div>
                 <div class="hand-state-strip" aria-live="polite">
                   <div><span data-i18n="Street">Street</span><strong id="handStateStreet">—</strong></div>
                   <div><span data-i18n="Actor">Actor</span><strong id="handStateActor">—</strong></div>
@@ -758,6 +761,7 @@
                     <button id="handReplayNextButton" class="ui-button ui-button--secondary" type="button" disabled data-i18n="replay.control.next">Next</button>
                     <button id="handReplayLiveButton" class="ui-button ui-button--quiet" type="button" disabled data-i18n="replay.control.returnToLive">Return to live</button>
                   </div>
+                  <div id="replaySavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--replay"></div>
                 </div>
                 <p id="handReplayStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true">LIVE, Step 0 of 0</p>
                 <p id="handReplayReadOnlyNote" class="replay-readonly-note" hidden data-i18n="replay.readOnlyHelp">Read-only earlier state. Strategy and analysis remain tied to the live decision.</p>
@@ -778,7 +782,16 @@
 
             <div class="playbook-inline-heading">
               <div class="playbook-inline-copy"><span class="label" data-i18n="Betting context">Betting context</span><small data-i18n="Manual values for this study spot">Manual values for this study spot</small></div>
-              <button class="secondary ui-button ui-button--secondary" type="button" id="openCharts" data-i18n="View all hands">View all hands</button>
+              <div class="playbook-inline-actions">
+                <div id="scenarioSavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--scenario">
+                  <div id="savedStudySourceActions" class="saved-study-source-actions">
+                    <button id="savedStudySaveButton" class="ui-button ui-button--secondary" type="button" aria-pressed="false" aria-describedby="savedStudySourceStatus" data-i18n="Save spot">Save spot</button>
+                    <button id="savedStudyEditButton" class="ui-button ui-button--quiet" type="button" hidden data-i18n="Edit saved item">Edit saved item</button>
+                    <span id="savedStudySourceStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-i18n="This spot is not saved.">This spot is not saved.</span>
+                  </div>
+                </div>
+                <button class="secondary ui-button ui-button--secondary" type="button" id="openCharts" data-i18n="View all hands">View all hands</button>
+              </div>
             </div>
 
             <div class="playbook-context-grid">
@@ -1959,7 +1972,55 @@
       </div>
     </form>
   </div>
+
   </template>
+
+  <div class="modal-backdrop saved-study-modal-backdrop" id="savedStudyModal" hidden>
+    <form id="savedStudyForm" class="modal overlay-surface saved-study-modal" role="dialog" aria-modal="true" aria-labelledby="savedStudyModalTitle" aria-describedby="savedStudyModalDescription" novalidate>
+      <div class="modal-head">
+        <div>
+          <h2 id="savedStudyModalTitle" data-i18n="Edit saved item">Edit saved item</h2>
+          <p id="savedStudyModalDescription" data-i18n="Add private study details to this saved item.">Add private study details to this saved item.</p>
+        </div>
+        <button id="savedStudyCloseButton" class="icon-btn" type="button" aria-label="Close saved item editor" data-i18n-aria-label="Close saved item editor">&times;</button>
+      </div>
+      <div class="modal-body saved-study-form-body">
+        <label class="saved-study-field" for="savedStudyTitle">
+          <span data-i18n="Title">Title</span>
+          <input id="savedStudyTitle" class="control-input" type="text" maxlength="240" autocomplete="off" dir="auto" placeholder="Optional study title" data-i18n-placeholder="Optional study title">
+        </label>
+        <label class="saved-study-field" for="savedStudyNote">
+          <span data-i18n="Note">Note</span>
+          <textarea id="savedStudyNote" maxlength="100000" rows="6" dir="auto" placeholder="Write a private note" data-i18n-placeholder="Write a private note"></textarea>
+        </label>
+        <label class="saved-study-field" for="savedStudyTags">
+          <span data-i18n="Tags">Tags</span>
+          <input id="savedStudyTags" class="control-input" type="text" autocomplete="off" dir="auto" placeholder="Comma-separated tags" data-i18n-placeholder="Comma-separated tags" aria-describedby="savedStudyTagsHelp">
+          <small id="savedStudyTagsHelp" data-i18n="Separate tags with commas or new lines.">Separate tags with commas or new lines.</small>
+        </label>
+        <fieldset class="saved-study-flags">
+          <legend data-i18n="Review">Review</legend>
+          <label><input id="savedStudyReviewLater" type="checkbox"> <span data-i18n="Review later">Review later</span></label>
+          <label><input id="savedStudyMistake" type="checkbox"> <span data-i18n="Mistake">Mistake</span></label>
+        </fieldset>
+        <div id="savedStudyArchiveConfirmation" class="saved-study-archive-confirmation" role="alert" hidden>
+          <p data-i18n="Archive this saved item? It will be removed from active saved items.">Archive this saved item? It will be removed from active saved items.</p>
+          <div>
+            <button id="savedStudyArchiveConfirmButton" class="ui-button ui-button--destructive" type="button" data-i18n="Confirm archive">Confirm archive</button>
+            <button id="savedStudyArchiveKeepButton" class="ui-button ui-button--quiet" type="button" data-i18n="Keep saved item">Keep saved item</button>
+          </div>
+        </div>
+        <p id="savedStudyEditorStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+      </div>
+      <div class="modal-foot saved-study-modal-actions">
+        <button id="savedStudyArchiveButton" class="ui-button ui-button--destructive" type="button" data-i18n="Archive / remove">Archive / remove</button>
+        <div>
+          <button id="savedStudyCancelButton" class="ui-button ui-button--secondary" type="button" data-i18n="Cancel">Cancel</button>
+          <button id="savedStudySubmitButton" class="ui-button ui-button--primary" type="submit" data-i18n="Save changes">Save changes</button>
+        </div>
+      </div>
+    </form>
+  </div>
 
   <div id="matrixCellCue" class="matrix-cell-cue" role="tooltip" hidden>
     <strong id="matrixCellCueHand"></strong>
@@ -1975,6 +2036,7 @@
   <script type="module" src="src/application/strategy-provider-bootstrap.mjs"></script>
   <script type="module" src="src/application/analysis-explanation-bootstrap.mjs"></script>
   <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
+  <script type="module" src="src/application/saved-study-object-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>

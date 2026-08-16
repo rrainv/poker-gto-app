@@ -15,12 +15,23 @@ import { createReplayPlaybackController } from './replay-playback-controller.mjs
 
 export const PLAYBOOK_STATE_CHANGE_EVENT = 'riverline:playbook-state-change';
 
+let handSourceSequence = 0;
+function defaultHandSourceIdFactory() {
+  const uuid = globalThis.crypto?.randomUUID?.();
+  if (uuid) return `hand-session-${uuid}`;
+  handSourceSequence += 1;
+  return `hand-session-${Date.now().toString(36)}-${handSourceSequence.toString(36)}`;
+}
+
 export function installPlaybookStateSourceBridge(browserWindow, {
   canonicalController = createCanonicalLiveController({ enabled: true }),
   replayPlaybackOptions = {},
+  handSourceIdFactory = defaultHandSourceIdFactory,
 } = {}) {
   if (!browserWindow) return null;
+  if (typeof handSourceIdFactory !== 'function') throw new TypeError('handSourceIdFactory must be a function');
   const modeController = createPlaybookModeController({ canonicalController });
+  let canonicalHandSourceId = null;
   const replayController = createReplayProjectionController({
     getLiveState: () => canonicalController.getState(),
     getHeroPlayerId: () => canonicalController.getHeroPlayerId(),
@@ -106,6 +117,10 @@ export function installPlaybookStateSourceBridge(browserWindow, {
         : null;
     },
 
+    getCanonicalHandSourceId() {
+      return canonicalController.getState() ? canonicalHandSourceId : null;
+    },
+
     createReplayPlaybackViewModel() {
       return playbackController.getState();
     },
@@ -163,6 +178,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     initializeHand(configuration) {
       playbackController.cancel();
       const result = canonicalController.initialize(configuration);
+      canonicalHandSourceId = handSourceIdFactory();
       replayController.replaceHand({
         state: result,
         heroPlayerId: canonicalController.getHeroPlayerId(),
@@ -174,6 +190,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     resetHand() {
       playbackController.cancel();
       canonicalController.reset();
+      canonicalHandSourceId = null;
       replayController.clear();
       return publish('reset_hand', null);
     },

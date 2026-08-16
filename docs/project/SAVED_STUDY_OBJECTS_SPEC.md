@@ -1,6 +1,6 @@
 # Saved Study Objects Foundation
 
-Status: implemented by `SAVED-OBJECTS-001/001R`
+Status: implemented through `SAVED-OBJECTS-002`
 
 Date: August 16, 2026
 
@@ -211,6 +211,24 @@ The application service provides trusted builders and consumer-facing operations
 
 No renderer constructs persistence wrappers or raw IndexedDB records.
 
+## Source-surface identity and duplicate policy
+
+`SAVED-OBJECTS-002` adds `saved-study-source-controller/v1` between the Playbook renderer and the Saved Study application service. The controller, not DOM copy, owns whether the current source is already saved.
+
+- Every newly initialized live Hand receives an application-session source ID. Replay keeps that same ID because it is a historical projection of the same live Hand. Starting another Hand receives a new source ID even though the current canonical Hand controller uses a stable internal PokerState hand ID.
+- A Scenario spot uses a deterministic fingerprint of `playbook-scenario/v1`. The localized `lastActionLabel` is excluded; the canonical action value and remaining Scenario facts own identity. Editing a Scenario fact therefore identifies a different spot, while changing language does not.
+- The local source reference stores only source key, SavedStudyObject ID, and original creation timestamp under `riverline.savedStudyObjects.sourceRef.v1:*`. It is application/session navigation state, not a second saved-object schema, and it is not exported.
+- The first save establishes a stable operation ID/timestamp before the repository write. Concurrent clicks share one in-flight promise; a retry reuses the operation identity. A resolved source reference is reopened with one bounded `getById` call and never with a recent/full-library query.
+- Metadata mutations target the referenced SavedStudyObject with `expectedRevision`. Archive writes the existing v1 tombstone and clears the active source reference. It does not delete durable bytes or make an archived object mutable.
+
+This policy prevents repeated Hand, historical Replay, or unchanged Scenario clicks from creating accidental duplicates while allowing a genuinely new Hand session or changed Scenario to create a new SavedStudyObject.
+
+## Source-surface UX
+
+Hand/Replay exposes a compact `Save hand` / `Saved` action; Scenario exposes `Save spot` / `Saved`. Both open one modal editor for optional title, line-preserving note, normalized comma/newline-separated tags, Review later, and Mistake. Changes persist only on `Save changes`; Cancel and Escape discard form edits. Archive requires an inline accessible confirmation. EN, RU, and HE use the normal Riverline translation lifecycle, with `dir=auto` text fields inside RTL UI.
+
+This is not a Saved Library or Home surface. It exposes only the current source reference and performs no hidden polling, whole-library read, strategy resolution, Equity calculation, Matrix work, or Training render.
+
 ## Export and import
 
 Envelope: `saved-study-library-export/v1`
@@ -262,8 +280,6 @@ These figures establish comfortable thousands-of-objects behavior; they are not 
 
 ## Deferred UX and platform work
 
-`SAVED-OBJECTS-001/001R` adds no Dashboard, Home redesign, Save button, note editor, tag picker, saved-hand browser, search UI, Training auto-save, Range integration, account, cloud sync, sharing, or backend.
-
-`SAVED-OBJECTS-002` should add the first small Hand/Replay consumer: explicit Save Hand and Save Spot actions, a compact annotation editor, clear saved/error state, and a minimal reopen/list surface. A live Hand save must obtain `createCanonicalHandReplaySource()` from the Hand application bridge and pass it with the matching canonical state to `saveHand`; it must not synthesize history from final PokerState.
+`SAVED-OBJECTS-001/001R/002` add no Dashboard, Home redesign, saved-hand browser, global search, Training auto-save, Range integration, account, cloud sync, sharing, or backend. `SAVED-OBJECTS-002` intentionally adds no temporary recent-items list; the current-source reference proves bounded reopen behavior without building UI that Home will replace.
 
 `SAVED-OBJECTS-003` (or the ticket owning saved-hand Replay reopening) should load a Saved Hand, validate/reconstruct `payload.replaySource`, and feed the reconstruction to the existing Replay projection/playback controllers. It may then build navigation and failure UX, but must not persist or invent renderer frames, playback cursor/timers, or hidden cards.
