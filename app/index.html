@@ -868,6 +868,8 @@
 
 
 
+          <div id="playbookCompactActionPathMount" class="playbook-action-path-mount playbook-action-path-mount--compact"></div>
+
           <div id="contextView" class="gto-view active">
 
 
@@ -1292,13 +1294,14 @@
 
 
 
-        <aside class="right-rail side-stack playbook-support-rail">
-          <section id="playbookDecisionPathPanel" class="panel">
-            <div class="panel-head">
+        <aside id="playbookActionPathRailMount" class="right-rail side-stack playbook-support-rail">
+          <section id="playbookDecisionPathPanel" class="panel" data-action-path-presentation="full">
+            <div class="panel-head action-path-panel-head">
               <div>
                 <div class="panel-title" data-i18n="Action path">Action path</div>
                 <div class="panel-note" data-i18n="Current decision tree branch.">Current decision tree branch.</div>
               </div>
+              <button id="actionPathDetailsToggle" class="ui-button ui-button--quiet action-path-details-toggle" type="button" aria-expanded="false" aria-controls="pathList" data-i18n="Expand details" hidden>Expand details</button>
             </div>
             <div class="panel-body">
               <div class="path-list" id="pathList"></div>

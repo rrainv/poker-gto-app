@@ -96,7 +96,7 @@ class TableRenderer {
             <stop class="table-surface-end" offset="100%" />
           </radialGradient>
           <filter id="riverlineTableShadow" x="-20%" y="-20%" width="140%" height="150%">
-            <feDropShadow dx="0" dy="7" stdDeviation="8" flood-opacity="0.28" />
+            <feDropShadow class="table-shadow-effect" dx="0" dy="7" stdDeviation="8" flood-opacity="0.28" />
           </filter>
           <filter id="riverlineCardShadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.22" />

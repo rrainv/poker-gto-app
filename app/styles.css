@@ -4466,6 +4466,11 @@ input:focus, select:focus, .quick-select:focus { transition: border-color var(--
   color: #ffffff !important;
 }
 
+.path-progress {
+  display: flex;
+  flex-direction: column;
+}
+
 /* 4. Complete Bi-Directional (i18n & Hebrew RTL) Layout Support */
 [dir="rtl"] {
   direction: rtl;
@@ -5833,6 +5838,8 @@ input[type="range"]:disabled::-moz-range-thumb { background: var(--text-disabled
   --poker-table-surface-start: #204b3a;
   --poker-table-surface-end: #112c22;
   --poker-table-line: rgba(231, 240, 234, 0.15);
+  --poker-table-rail-stroke: var(--border-strong);
+  --poker-table-shadow-opacity: 0.28;
   --poker-table-seat: #202824;
   --poker-table-seat-hero: #293b33;
   --series-0: #42ad7b;
@@ -5855,13 +5862,15 @@ input[type="range"]:disabled::-moz-range-thumb { background: var(--text-disabled
 }
 
 [data-theme="daylight"] {
-  --poker-table-rail-start: #776f63;
-  --poker-table-rail-end: #443f38;
-  --poker-table-surface-start: #3f765f;
-  --poker-table-surface-end: #275340;
-  --poker-table-line: rgba(255, 255, 255, 0.28);
-  --poker-table-seat: #fffdf8;
-  --poker-table-seat-hero: #e2f1e8;
+  --poker-table-rail-start: color-mix(in srgb, var(--surface-shell) 70%, var(--accent-secondary));
+  --poker-table-rail-end: color-mix(in srgb, var(--surface-inset) 62%, var(--text-secondary));
+  --poker-table-surface-start: color-mix(in srgb, var(--accent-secondary) 86%, var(--surface-elevated));
+  --poker-table-surface-end: color-mix(in srgb, var(--accent-primary) 64%, var(--text-secondary));
+  --poker-table-line: color-mix(in srgb, var(--surface-elevated) 28%, transparent);
+  --poker-table-rail-stroke: color-mix(in srgb, var(--border-strong) 72%, var(--accent-secondary));
+  --poker-table-shadow-opacity: 0.14;
+  --poker-table-seat: var(--surface-elevated);
+  --poker-table-seat-hero: color-mix(in srgb, var(--accent-primary) 12%, var(--surface-elevated));
 }
 
 html[data-four-color="false"] {
@@ -6279,7 +6288,8 @@ html[data-four-color="false"] {
 .table-rail-end { stop-color: var(--poker-table-rail-end); }
 .table-surface-start { stop-color: var(--poker-table-surface-start); }
 .table-surface-end { stop-color: var(--poker-table-surface-end); }
-.table-rail { fill: url(#riverlineTableRail); filter: url(#riverlineTableShadow); stroke: var(--border-strong); stroke-width: 2; }
+.table-shadow-effect { flood-opacity: var(--poker-table-shadow-opacity); }
+.table-rail { fill: url(#riverlineTableRail); filter: url(#riverlineTableShadow); stroke: var(--poker-table-rail-stroke); stroke-width: 2; }
 .table-surface { fill: url(#riverlineTableSurface); stroke: var(--poker-table-line); stroke-width: 2; }
 .table-betting-line { fill: none; stroke: var(--poker-table-line); stroke-width: 2; stroke-dasharray: 4 7; }
 .table-riverline-mark { fill: none; stroke: var(--poker-table-line); stroke-width: 2; }
@@ -8946,6 +8956,151 @@ body.has-modal-open { overflow: hidden; }
 }
 #playbookDecisionPathPanel .path-step.active .path-node {
   box-shadow: 0 0 6px var(--primary);
+}
+
+/* UI-POLISH-003: Action Path keeps one panel and renderer. At constrained
+   desktop width or height, JavaScript moves that panel into the decision flow
+   and this presentation reduces it to the current branch plus progression. */
+.playbook-action-path-mount:empty,
+.playbook-support-rail:empty { display: none; }
+.action-path-panel-head { align-items: flex-start; gap: var(--space-3); }
+.action-path-panel-head > div { min-width: 0; }
+.action-path-details-toggle {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding-inline: var(--space-3);
+  white-space: nowrap;
+}
+.action-path-details-toggle[hidden] { display: none !important; }
+.path-current-summary { display: none; }
+.action-path-unavailable {
+  padding: var(--space-3);
+  color: var(--text-muted);
+  background: var(--surface-inset);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-control);
+  font-size: var(--text-label-size);
+  line-height: 1.45;
+}
+
+@media (max-width: 1499px), (max-height: 900px) {
+  .playbook-action-path-mount--compact {
+    box-sizing: border-box;
+    align-self: flex-start;
+    width: min(100%, 720px);
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    max-height: none;
+    overflow: visible;
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"] {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    max-height: none;
+    height: auto;
+    overflow: visible;
+    border-color: color-mix(in srgb, var(--accent-primary) 22%, var(--border-default));
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"] .panel-head {
+    min-height: 0;
+    padding: var(--space-2) var(--space-3);
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"] .action-path-details-toggle {
+    min-height: 28px;
+    padding-inline: var(--space-2);
+    font-size: var(--text-micro-size);
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"] .panel-note { display: none; }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"] .panel-body {
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 0;
+    max-height: none;
+    padding: 0 var(--space-3) var(--space-3);
+    overflow: visible;
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"] .path-list {
+    display: grid;
+    justify-items: start;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0;
+    overflow: visible;
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"]:not(.is-expanded) .path-progress {
+    direction: ltr;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: start;
+    width: min(100%, 560px);
+    min-width: 0;
+    max-width: 100%;
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"]:not(.is-expanded) .path-step {
+    --path-node-size: 16px;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 16px auto;
+    justify-items: center;
+    min-height: 0;
+    padding: 0;
+    column-gap: 0;
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"]:not(.is-expanded) .path-step::before {
+    inset-inline-start: 50%;
+    inset-inline-end: -50%;
+    top: 7px;
+    bottom: auto;
+    width: auto;
+    height: 2px;
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"]:not(.is-expanded) .path-node {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"]:not(.is-expanded) .path-body {
+    grid-column: 1;
+    grid-row: 2;
+    min-width: 0;
+    margin-top: var(--space-1);
+    text-align: center;
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"]:not(.is-expanded) .path-body b {
+    max-width: 100%;
+    font-size: var(--text-micro-size);
+    overflow-wrap: anywhere;
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"]:not(.is-expanded) .path-body > span:not(.sr-only) { display: none; }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"]:not(.is-expanded) .path-current-summary {
+    display: grid;
+    grid-template-columns: max-content minmax(0, auto);
+    gap: var(--space-2);
+    align-items: baseline;
+    width: min(100%, 560px);
+    min-width: 0;
+    max-width: 100%;
+    margin: var(--space-2) 0 0;
+    padding: var(--space-2) var(--space-1) 0;
+    border-top: 1px solid var(--border-subtle);
+    font-size: var(--text-micro-size);
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"]:not(.is-expanded) .path-current-summary span {
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+  #playbookDecisionPathPanel[data-action-path-presentation="compact"]:not(.is-expanded) .path-current-summary strong {
+    min-width: 0;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+  }
+  [dir="rtl"] #playbookDecisionPathPanel[data-action-path-presentation="compact"]:not(.is-expanded) .path-current-summary {
+    direction: rtl;
+  }
 }
 
 /* Ordinary status labels remain content-sized and on one line. Longer

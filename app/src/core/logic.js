@@ -1238,8 +1238,8 @@ function renderUnavailableStrategy(resolution) {
   ['mPosition', 'mPot', 'mFacing', 'mStack', 'mEquity', 'mPotOdds', 'mSPR', 'mRake'].forEach((id) => {
     if ($('#' + id)) $('#' + id).textContent = '—';
   });
-  if (resolution?.mode === 'hand' && $('#pathList')) {
-    $('#pathList').innerHTML = `<div class="panel-note">${message}</div>`;
+  if (resolution?.mode === 'hand') {
+    renderUnavailableActionPath(message, waiting ? 'waiting' : 'unavailable');
   }
   app.strategyResult = strategyProvider.resolve(null);
   playbookSurfaceInvalidator.renderIfNeeded('analysis');
@@ -2678,121 +2678,124 @@ function updateMetrics() {
 
 
 
-function renderPath(street) {
+const ACTION_PATH_COMPACT_MEDIA = '(max-width: 1499px), (max-height: 900px)';
+let actionPathCompactExpanded = false;
+let actionPathMediaQuery = null;
 
+function escapeActionPathMarkup(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+
+function updateActionPathDisclosure() {
+  const panel = $('#playbookDecisionPathPanel');
+  const toggle = $('#actionPathDetailsToggle');
+  if (!panel || !toggle) return;
+  const compact = panel.dataset.actionPathPresentation === 'compact';
+  const expanded = compact ? actionPathCompactExpanded : true;
+  panel.classList.toggle('is-expanded', expanded);
+  toggle.hidden = !compact;
+  toggle.setAttribute('aria-expanded', String(expanded));
+  toggle.textContent = t(expanded ? 'Collapse details' : 'Expand details');
+}
+
+function applyActionPathPresentation(compact) {
+  const panel = $('#playbookDecisionPathPanel');
+  const compactMount = $('#playbookCompactActionPathMount');
+  const fullMount = $('#playbookActionPathRailMount');
+  if (!panel || !compactMount || !fullMount) return;
+  const target = compact ? compactMount : fullMount;
+  if (panel.parentElement !== target) target.append(panel);
+  panel.dataset.actionPathPresentation = compact ? 'compact' : 'full';
+  updateActionPathDisclosure();
+}
+
+function initActionPathPresentation() {
+  const toggle = $('#actionPathDetailsToggle');
+  if (!toggle || !window.matchMedia) return applyActionPathPresentation(false);
+  actionPathMediaQuery = window.matchMedia(ACTION_PATH_COMPACT_MEDIA);
+  const syncPresentation = () => applyActionPathPresentation(actionPathMediaQuery.matches);
+  if (typeof actionPathMediaQuery.addEventListener === 'function') {
+    actionPathMediaQuery.addEventListener('change', syncPresentation);
+  } else if (typeof actionPathMediaQuery.addListener === 'function') {
+    actionPathMediaQuery.addListener(syncPresentation);
+  }
+  toggle.addEventListener('click', () => {
+    if ($('#playbookDecisionPathPanel')?.dataset.actionPathPresentation !== 'compact') return;
+    actionPathCompactExpanded = !actionPathCompactExpanded;
+    updateActionPathDisclosure();
+  });
+  syncPresentation();
+}
+
+function renderUnavailableActionPath(message, state = 'unavailable') {
   const pathList = $('#pathList');
-
+  const panel = $('#playbookDecisionPathPanel');
   if (!pathList) return;
+  if (panel) panel.dataset.actionPathState = state;
+  pathList.innerHTML = `<div class="action-path-unavailable" role="status">${escapeActionPathMarkup(message)}</div>`;
+}
 
-  
+function renderPath(street) {
+  const pathList = $('#pathList');
+  const panel = $('#playbookDecisionPathPanel');
+  if (!pathList) return;
 
   const context = app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
     ? app.decisionContext
     : null;
   const boardCards = (context?.board || app.gto.board).filter(Boolean).map(displayCard);
-
   const heroPos = context?.heroPosition || selectedValue('#heroPos') || 'BTN';
-
   const lastActionEl = $('#lastAction');
-
   const lastActionText = context?.lastAction
     || (lastActionEl && lastActionEl.selectedOptions && lastActionEl.selectedOptions[0]
       ? lastActionEl.selectedOptions[0].text : 'Unopened');
-
-  
-
   const streetCount = boardCards.length;
-
-  let activeIdx = 0;
-
-  if (streetCount >= 5) activeIdx = 3;
-
-  else if (streetCount === 4) activeIdx = 2;
-
-  else if (streetCount >= 3) activeIdx = 1;
-
-  
-
   const stages = [
-
     { key: 'preflop', label: t('Preflop') },
-
     { key: 'flop', label: t('Flop') },
-
     { key: 'turn', label: t('Turn') },
-
     { key: 'river', label: t('River') }
-
   ];
+  const requestedStreet = String(context?.street || street || '').toLowerCase();
+  let activeIdx = stages.findIndex((stage) => stage.key === requestedStreet);
+  if (activeIdx < 0) {
+    activeIdx = streetCount >= 5 ? 3 : streetCount === 4 ? 2 : streetCount >= 3 ? 1 : 0;
+  }
+  const branchSummary = `${heroPos} · ${t(lastActionText)}`;
+  const stageDetails = [
+    branchSummary,
+    streetCount >= 3 ? boardCards.slice(0, 3).join(' ') : t('Waiting for flop...'),
+    streetCount >= 4 ? boardCards[3] : t('Waiting for turn...'),
+    streetCount >= 5 ? boardCards[4] : t('Waiting for river...')
+  ];
+  const activeSummary = activeIdx === 0
+    ? branchSummary
+    : `${stages[activeIdx].label} · ${stageDetails[activeIdx]} · ${branchSummary}`;
 
-
-
-  pathList.innerHTML = stages.map((stage, idx) => {
-
-    let statusClass = 'upcoming';
-
-    let statusIcon = '<span class="node-dot"></span>';
-
-    let textContent = '';
-
-
-
-    if (idx < activeIdx) {
-
-      statusClass = 'completed';
-
-      statusIcon = '<span class="node-check">✓</span>';
-
-    } else if (idx === activeIdx) {
-
-      statusClass = 'active';
-
-      statusIcon = '<span class="node-active"></span>';
-
-    }
-
-
-
-    if (idx === 0) {
-
-      textContent = `${heroPos} · ${t(lastActionText)}`;
-
-    } else if (idx === 1) {
-
-      textContent = streetCount >= 3 ? boardCards.slice(0, 3).join(' ') : t('Waiting for flop...');
-
-    } else if (idx === 2) {
-
-      textContent = streetCount >= 4 ? boardCards[3] : t('Waiting for turn...');
-
-    } else if (idx === 3) {
-
-      textContent = streetCount >= 5 ? boardCards[4] : t('Waiting for river...');
-
-    }
-
-
-
-    return `
-
-      <div class="path-step ${statusClass}">
-
-        <div class="path-node">${statusIcon}</div>
-
-        <div class="path-body">
-
-          <b>${stage.label}</b>
-
-          <span>${textContent}</span>
-
-        </div>
-
-      </div>
-
-    `;
-
-  }).join('');
-
+  if (panel) panel.dataset.actionPathState = 'available';
+  pathList.innerHTML = `
+    <div class="path-progress" role="list" aria-label="${escapeActionPathMarkup(t('Street progression'))}">
+      ${stages.map((stage, idx) => {
+        const statusClass = idx < activeIdx ? 'completed' : idx === activeIdx ? 'active' : 'upcoming';
+        const statusIcon = idx < activeIdx
+          ? '<span class="node-check" aria-hidden="true">✓</span>'
+          : idx === activeIdx
+            ? '<span class="node-active" aria-hidden="true"></span>'
+            : '<span class="node-dot" aria-hidden="true"></span>';
+        const currentAttribute = idx === activeIdx ? ' aria-current="step"' : '';
+        const currentPrefix = idx === activeIdx
+          ? `<span class="sr-only">${escapeActionPathMarkup(t('Current street'))}: </span>`
+          : '';
+        return `<div class="path-step ${statusClass}" role="listitem"${currentAttribute}>
+          <div class="path-node">${statusIcon}</div>
+          <div class="path-body"><b>${currentPrefix}${escapeActionPathMarkup(stage.label)}</b><span>${escapeActionPathMarkup(stageDetails[idx])}</span></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <p class="path-current-summary"><span>${escapeActionPathMarkup(t('Current branch'))}</span><strong>${escapeActionPathMarkup(activeSummary)}</strong></p>
+  `;
 }
 
 
@@ -5096,6 +5099,7 @@ function refreshLocalizedTrainingRuntime() {
 function refreshLocalizedRuntime() {
   const shell = $('.riverline-shell');
   applySidebarState(Boolean(shell?.classList.contains('is-sidebar-collapsed')));
+  updateActionPathDisclosure();
   initThemeSwatches();
   updatePositions();
   renderAllCards();
@@ -5127,6 +5131,8 @@ function init() {
     applyCardStyle(savedCardStyle, false);
 
     initSidebar();
+
+    initActionPathPresentation();
 
     SoundFX.initBtn();
 
