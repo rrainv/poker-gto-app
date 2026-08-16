@@ -6283,7 +6283,7 @@ html[data-four-color="false"] {
 .table-surface { fill: url(#riverlineTableSurface); stroke: var(--poker-table-line); stroke-width: 2; }
 .table-betting-line { fill: none; stroke: var(--poker-table-line); stroke-width: 2; stroke-dasharray: 4 7; }
 .table-riverline-mark { fill: none; stroke: var(--poker-table-line); stroke-width: 2; }
-.table-pot { fill: #f4f7f4; font: 750 20px/1 var(--font-data); letter-spacing: .01em; }
+.table-pot { color: var(--accent-primary); }
 .table-seat-surface { fill: var(--poker-table-seat); stroke: var(--border-strong); stroke-width: 1.5; filter: url(#riverlineTableShadow); }
 .table-seat-name { fill: var(--text-primary); font: 750 11px/1 var(--font-ui); }
 .table-seat-meta { fill: var(--text-muted); font: 650 8px/1 var(--font-data); }
@@ -8977,6 +8977,65 @@ body.has-modal-open { overflow: hidden; }
 }
 
 /* TABLE-PRESENCE-001A: canonical facts stay attached to a restrained table surface. */
+.poker-chip-glyph,
+.poker-chip-visual,
+.poker-chip-stack,
+.poker-table-amount {
+  color: var(--accent-primary);
+}
+.poker-chip-glyph {
+  overflow: visible;
+}
+.poker-chip-stack-back { opacity: .78; }
+.poker-chip-body {
+  fill: color-mix(in srgb, currentColor 76%, var(--surface-overlay));
+  stroke: color-mix(in srgb, currentColor 68%, var(--text-primary));
+  stroke-width: 1.25;
+}
+.poker-chip-edge-inserts {
+  fill: var(--surface-overlay);
+  stroke: color-mix(in srgb, currentColor 34%, var(--surface-overlay));
+  stroke-width: .2;
+}
+.poker-chip-inner-ring {
+  fill: none;
+  stroke: color-mix(in srgb, var(--surface-overlay) 88%, var(--text-primary));
+  stroke-width: 1.15;
+}
+.poker-chip-core {
+  fill: color-mix(in srgb, currentColor 62%, var(--surface-overlay));
+  stroke: color-mix(in srgb, currentColor 62%, var(--text-primary));
+  stroke-width: .75;
+}
+.poker-amount {
+  color: var(--accent-primary);
+  direction: ltr;
+  unicode-bidi: isolate;
+  overflow: visible;
+}
+.poker-table-amount {
+  direction: ltr;
+  unicode-bidi: isolate;
+  overflow: visible;
+  pointer-events: none;
+}
+.poker-amount-text {
+  fill: var(--text-primary);
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.poker-amount--small .poker-amount-text { font: 750 10px/1 var(--font-data); }
+.poker-amount--normal .poker-amount-text { font: 750 16px/1 var(--font-data); }
+.poker-table-amount--small .poker-table-amount-text { font: 750 8px/1 var(--font-data); }
+.poker-table-amount--normal .poker-table-amount-text { font: 750 13px/1 var(--font-data); }
+.poker-amount-prefix,
+.poker-amount-value,
+.poker-amount-unit { unicode-bidi: isolate; }
+.poker-amount-value,
+.poker-amount-unit { direction: ltr; }
+.poker-amount-prefix { font-family: var(--font-ui); font-weight: 700; }
 .table-seat-name { font-size: 10px; }
 .table-seat-info { pointer-events: none; }
 .table-hole-cards { pointer-events: none; }
@@ -8992,7 +9051,7 @@ body.has-modal-open { overflow: hidden; }
   letter-spacing: .08em;
 }
 .table-seat-stack {
-  fill: var(--text-primary);
+  color: var(--accent-primary);
   font: 750 10px/1 var(--font-data);
 }
 .table-seat-status {
@@ -9016,23 +9075,8 @@ body.has-modal-open { overflow: hidden; }
 .table-action-badge[hidden],
 .table-seat-status[hidden],
 .table-pot[hidden] { display: none; }
-.table-contribution-chip {
-  fill: var(--accent-primary);
-  stroke: color-mix(in srgb, var(--accent-primary) 50%, var(--text-primary));
-  stroke-width: 1;
-}
-.table-contribution-chip--back {
-  fill: color-mix(in srgb, var(--accent-primary) 62%, var(--surface-inset));
-}
-.table-contribution-surface {
-  fill: color-mix(in srgb, var(--surface-overlay) 90%, transparent);
-  stroke: color-mix(in srgb, var(--accent-primary) 42%, var(--border-default));
-  stroke-width: 1;
-}
-.table-contribution-amount {
-  fill: var(--text-primary);
-  font: 750 8px/1 var(--font-data);
-}
+.table-contributions-layer { pointer-events: none; }
+.table-contribution { color: var(--accent-primary); }
 .table-action-badge { --table-action-color: var(--text-secondary); }
 .table-action-surface {
   fill: color-mix(in srgb, var(--surface-overlay) 92%, transparent);
@@ -9099,7 +9143,9 @@ body.has-modal-open { overflow: hidden; }
 @keyframes replay-showdown-settle-a { from { filter: brightness(1.2); } to { filter: brightness(1); } }
 @keyframes replay-showdown-settle-b { from { filter: brightness(1.2); } to { filter: brightness(1); } }
 [dir="rtl"] .table-seat-stack,
-[dir="rtl"] .table-contribution-amount,
+[dir="rtl"] .table-contribution,
+[dir="rtl"] .poker-amount,
+[dir="rtl"] .poker-table-amount,
 [dir="rtl"] .table-card-rank,
 [dir="rtl"] .table-card-suit {
   direction: ltr;

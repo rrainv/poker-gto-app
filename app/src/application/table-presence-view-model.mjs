@@ -1,5 +1,6 @@
 import {
   ACTION_TYPES,
+  CHANCE_TYPES,
   PHASES,
   POKER_STATE_SCHEMA_VERSION,
   areHoleCardsDealt,
@@ -73,6 +74,15 @@ function phaseStatus(state) {
   return 'unavailable';
 }
 
+function shouldShowStreetContributions(state) {
+  // Blinds are already canonical street contributions while private cards are pending.
+  // After that, PokerState's phase boundary is the sole authority: a board chance,
+  // showdown, or terminal state means the betting round has been closed.
+  return state.phase === PHASES.BETTING
+    || (state.phase === PHASES.CHANCE
+      && state.pendingChance?.type === CHANCE_TYPES.DEAL_HOLE);
+}
+
 function emptyModel() {
   return deepFreeze({
     schemaVersion: TABLE_PRESENCE_SCHEMA_VERSION,
@@ -82,6 +92,7 @@ function emptyModel() {
     street: null,
     phase: null,
     pendingChance: null,
+    showStreetContributions: false,
     board: [],
     potMilliBb: 0,
     buttonSeat: null,
@@ -166,6 +177,7 @@ export function createTablePresenceViewModel({ state = null, heroPlayerId = null
       type: state.pendingChance.type,
       cardCount: state.pendingChance.cardCount,
     },
+    showStreetContributions: shouldShowStreetContributions(state),
     board: state.board.map(cardPresentation),
     potMilliBb: state.potMilliBb,
     buttonSeat: state.buttonSeat,
@@ -174,4 +186,3 @@ export function createTablePresenceViewModel({ state = null, heroPlayerId = null
     seats,
   });
 }
-

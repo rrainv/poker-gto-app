@@ -72,9 +72,9 @@ test('table seats use one centered compact player-unit anchor for cards and iden
   const infoIndex = table.indexOf('class="table-seat-info"');
   assert.ok(cardIndex >= 0 && infoIndex > cardIndex, 'seat information must paint above cards');
   assert.match(table, /id="seat-position-\$\{i\}" class="table-seat-meta table-seat-position"/);
-  assert.match(table, /id="seat-stack-\$\{i\}" class="table-seat-meta table-seat-stack"/);
+  assert.match(table, /id: `seat-stack-\$\{i\}`[\s\S]*className: 'table-seat-meta table-seat-stack'/);
   assert.match(table, /id="seat-status-\$\{i\}" class="table-seat-meta table-seat-status"/);
-  assert.match(table, /stack\.textContent = tableMessage\('table\.stack'/);
+  assert.match(table, /this\.setPokerAmount\(stack/);
   assert.doesNotMatch(table, /table-seat-diagnostic/);
   assert.match(logic, /const scenarioPlayers = Array\.from/);
   assert.match(logic, /players: scenarioPlayers/);

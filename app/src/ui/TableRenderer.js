@@ -20,6 +20,35 @@ function tableMessage(key, fallback, values = {}) {
   ));
 }
 
+function tableContributionPoint({ centerX, centerY, seatX, seatY }) {
+  const radialFraction = 0.5;
+  const idealX = centerX + ((seatX - centerX) * radialFraction);
+  const idealY = centerY + ((seatY - centerY) * radialFraction);
+  const rayX = centerX - seatX;
+  const rayY = centerY - seatY;
+  const rayLength = Math.hypot(rayX, rayY);
+  const unitX = rayLength ? rayX / rayLength : 0;
+  const unitY = rayLength ? rayY / rayLength : 0;
+  const intersectsHoleCards = (candidateX, candidateY) => (
+    candidateX + 38 >= seatX - 33
+    && candidateX - 38 <= seatX + 33
+    && candidateY + 10 >= seatY - 94
+    && candidateY - 10 <= seatY - 36
+  );
+
+  // Keep the ideal seat-to-pot ray. If it reaches the shared card box, move only
+  // as many SVG units inward on that same ray as are required to clear it.
+  for (let inwardCorrection = 0; inwardCorrection <= Math.ceil(rayLength); inwardCorrection += 1) {
+    const point = {
+      x: idealX + (unitX * inwardCorrection),
+      y: idealY + (unitY * inwardCorrection),
+    };
+    if (!intersectsHoleCards(point.x, point.y)) return point;
+  }
+
+  return { x: idealX, y: idealY };
+}
+
 class TableRenderer {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
@@ -80,8 +109,12 @@ class TableRenderer {
         <path class="table-riverline-mark" d="M286 176 C342 146 458 146 514 176" aria-hidden="true" />
 
         <text id="table-phase-status" class="table-phase-status" x="400" y="194" text-anchor="middle"></text>
-        <text id="table-pot" class="table-pot" x="400" y="220" text-anchor="middle">${tableMessage('table.pot', 'Pot {value} bb', { value: 0 })}</text>
+        ${this.pokerTableAmountMarkup({
+          id: 'table-pot', className: 'table-pot', size: 'normal', x: 400, y: 213,
+          prefix: tableMessage('table.potLabel', 'Pot'), value: '0', unit: 'bb', ariaHidden: true,
+        })}
         <g id="community-cards" class="table-community-cards" transform="translate(400, 240)"></g>
+        <g id="table-contributions-layer" class="table-contributions-layer"></g>
         <g id="seats-layer" class="table-seats-layer"></g>
       </svg>
     `;
@@ -90,22 +123,30 @@ class TableRenderer {
 
   drawSeats(activePlayers = 10) {
     const seatsLayer = this.container.querySelector('#seats-layer');
-    if (!seatsLayer) return;
+    const contributionsLayer = this.container.querySelector('#table-contributions-layer');
+    if (!seatsLayer || !contributionsLayer) return;
 
     const centerX = 400;
     const centerY = 250;
     const rx = 340;
     const ry = 210;
-    let html = '';
+    let seatsHtml = '';
+    let contributionsHtml = '';
     seatsLayer.dataset.tableSize = String(activePlayers);
+    contributionsLayer.dataset.tableSize = String(activePlayers);
 
     for (let i = 0; i < activePlayers; i++) {
       // Visual index zero is the stable Hero anchor. Turn order is supplied by the model.
       const angle = (Math.PI / 2) + (i * (2 * Math.PI / activePlayers));
       const x = Math.round(centerX + rx * Math.cos(angle));
       const y = Math.round(centerY + ry * Math.sin(angle));
+      // Contributions sit halfway along the shared radial line from seat to pot.
+      // Any card-box correction remains on that line and moves inward only.
+      const contributionPoint = tableContributionPoint({
+        centerX, centerY, seatX: x, seatY: y,
+      });
 
-      html += `
+      seatsHtml += `
         <g id="seat-${i}" class="table-seat table-player-unit${i === 0 ? ' is-hero' : ''}" data-seat-index="${i}" data-card-anchor="center" transform="translate(${x}, ${y})">
           <g id="hole-cards-${i}" class="table-hole-cards" transform="translate(0, -94)" aria-hidden="true">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
           <g class="table-seat-info">
@@ -113,18 +154,15 @@ class TableRenderer {
             <path class="table-actor-indicator" d="M-40 -28 H40" aria-hidden="true" />
             <text class="table-seat-name" x="0" y="-19" text-anchor="middle">${i === 0 ? tableMessage('Hero', 'Hero') : `P${i + 1}`}</text>
             <text id="seat-position-${i}" class="table-seat-meta table-seat-position" x="0" y="-7" text-anchor="middle"></text>
-            <text id="seat-stack-${i}" class="table-seat-meta table-seat-stack" x="0" y="6" text-anchor="middle"></text>
+            ${this.pokerAmountMarkup({
+              id: `seat-stack-${i}`, className: 'table-seat-meta table-seat-stack',
+              size: 'small', x: -38, y: -1, unit: '', ariaHidden: true,
+            })}
             <text id="seat-status-${i}" class="table-seat-meta table-seat-status" x="0" y="19" text-anchor="middle" hidden></text>
           </g>
           <g id="dealer-${i}" class="table-dealer-button" transform="translate(43, -27)" hidden>
             <circle r="10" aria-hidden="true" />
             <text id="dealer-txt-${i}" x="0" y="3.5" text-anchor="middle" aria-hidden="true">D</text>
-          </g>
-          <g id="contribution-${i}" class="table-contribution" transform="translate(0, 46)" hidden aria-hidden="true">
-            <circle class="table-contribution-chip table-contribution-chip--back" cx="-32" cy="0" r="6" aria-hidden="true" />
-            <circle class="table-contribution-chip" cx="-28" cy="0" r="6" aria-hidden="true" />
-            <rect class="table-contribution-surface" x="-18" y="-9" width="61" height="18" rx="9" aria-hidden="true" />
-            <text class="table-contribution-amount" x="12" y="3" text-anchor="middle"></text>
           </g>
           <g id="action-${i}" class="table-action-badge" transform="translate(0, 27)" hidden aria-hidden="true">
             <rect class="table-action-surface" x="-44" y="-9" width="88" height="18" rx="9" aria-hidden="true" />
@@ -132,8 +170,20 @@ class TableRenderer {
           </g>
         </g>
       `;
+      contributionsHtml += this.pokerTableAmountMarkup({
+        id: `contribution-${i}`,
+        className: 'table-contribution',
+        size: 'small',
+        x: contributionPoint.x,
+        y: contributionPoint.y,
+        value: '',
+        unit: 'bb',
+        ariaHidden: true,
+        hidden: true,
+      });
     }
-    seatsLayer.innerHTML = html;
+    seatsLayer.innerHTML = seatsHtml;
+    contributionsLayer.innerHTML = contributionsHtml;
   }
 
   renderCard(rank, suit, index, totalCards = 1, isCommunity = false, isDealing = false) {
@@ -166,6 +216,28 @@ class TableRenderer {
         </g>
       </g>
     `;
+  }
+
+  pokerAmountMarkup(options) {
+    const primitives = globalThis.RiverlinePokerPrimitives;
+    if (!primitives) throw new Error('RiverlinePokerPrimitives must load before TableRenderer');
+    return primitives.pokerAmountSvg(options);
+  }
+
+  pokerChipVisualMarkup(options) {
+    const primitives = globalThis.RiverlinePokerPrimitives;
+    if (!primitives) throw new Error('RiverlinePokerPrimitives must load before TableRenderer');
+    return primitives.pokerChipVisualSvg(options);
+  }
+
+  pokerTableAmountMarkup(options) {
+    const primitives = globalThis.RiverlinePokerPrimitives;
+    if (!primitives) throw new Error('RiverlinePokerPrimitives must load before TableRenderer');
+    return primitives.pokerTableAmountSvg(options);
+  }
+
+  setPokerAmount(element, options) {
+    globalThis.RiverlinePokerPrimitives?.setPokerAmount(element, options);
   }
 
   renderCardBack(index) {
@@ -391,11 +463,19 @@ class TableRenderer {
       const seat = seatForPlayer(change.playerId);
       if (!seat) return;
       if (change.stack.changed) seat.querySelector('.table-seat-stack')?.classList.add('is-replay-value-motion');
-      if (change.contribution.changed) seat.querySelector('.table-contribution')?.classList.add('is-replay-value-motion');
+      if (change.contribution.changed && Number.isInteger(change.visualSeatIndex)) {
+        this.container.querySelector(`#contribution-${change.visualSeatIndex}`)
+          ?.classList.add('is-replay-value-motion');
+      }
       if (change.foldedChanged) seat.classList.add('is-replay-fold-motion');
       if (change.allInChanged) seat.classList.add('is-replay-all-in-motion');
     });
-    if (motion.pot.changed) this.container.querySelector('#table-pot')?.classList.add('is-replay-pot-motion');
+    const contributionsCollected = motion.transitionKind === 'action'
+      && state.showStreetContributions === false
+      && state.status === 'awaiting_board';
+    if (motion.pot.changed || contributionsCollected) {
+      this.container.querySelector('#table-pot')?.classList.add('is-replay-pot-motion');
+    }
     if (motion.transitionKind === 'showdown_resolution') {
       this.container.querySelector('#poker-table-svg')?.classList.add('is-replay-showdown-motion');
     }
@@ -414,8 +494,9 @@ class TableRenderer {
     const description = this.container.querySelector('#poker-table-description');
     if (phase) phase.textContent = this.presencePhase(state);
     if (pot) {
-      pot.textContent = tableMessage('table.pot', 'Pot {value} bb', {
-        value: this.formatMilliBb(state.potMilliBb),
+      const value = this.formatMilliBb(state.potMilliBb);
+      this.setPokerAmount(pot, {
+        prefix: tableMessage('table.potLabel', 'Pot'), value, unit: 'bb', ariaHidden: true,
       });
       pot.toggleAttribute('hidden', state.empty);
     }
@@ -480,8 +561,8 @@ class TableRenderer {
         }
       }
       if (position) position.textContent = player.position || '';
-      if (stack) stack.textContent = tableMessage('table.stack', '{value} bb', {
-        value: this.formatMilliBb(player.currentStackMilliBb),
+      if (stack) this.setPokerAmount(stack, {
+        value: this.formatMilliBb(player.currentStackMilliBb), unit: 'bb', ariaHidden: true,
       });
       if (status) {
         status.textContent = this.presenceStatus(player);
@@ -493,19 +574,22 @@ class TableRenderer {
         dealer.setAttribute('aria-label', tableMessage('table.a11y.dealer', 'Dealer button'));
       }
       if (contribution) {
-        const isVisible = player.streetContributionMilliBb > 0;
+        const isVisible = state.showStreetContributions === true
+          && player.streetContributionMilliBb > 0;
         contribution.toggleAttribute('hidden', !isVisible);
-        contribution.setAttribute('aria-hidden', String(!isVisible));
-        if (isVisible) {
-          const amount = this.formatMilliBb(player.streetContributionMilliBb);
-          contribution.querySelector('.table-contribution-amount').textContent = `${amount} bb`;
-          contribution.setAttribute('role', 'group');
-          contribution.setAttribute('aria-label', tableMessage(
-            'table.a11y.contribution',
-            'Current-street contribution {value} bb',
-            { value: amount },
-          ));
-        }
+        const amount = isVisible ? this.formatMilliBb(player.streetContributionMilliBb) : '';
+        this.setPokerAmount(contribution, {
+          value: amount,
+          unit: isVisible ? 'bb' : '',
+          ariaHidden: !isVisible,
+          ariaLabel: isVisible
+            ? tableMessage(
+              'table.a11y.contribution',
+              'Current-street contribution {value} bb',
+              { value: amount },
+            )
+            : '',
+        });
       }
       if (action) {
         const actionLabel = this.presenceAction(player.latestAction);
@@ -577,7 +661,9 @@ class TableRenderer {
     const potText = this.container.querySelector('#table-pot');
     if (potText && state.pot !== undefined) {
       potText.removeAttribute('hidden');
-      potText.textContent = tableMessage('table.pot', 'Pot {value} bb', { value: state.pot });
+      this.setPokerAmount(potText, {
+        prefix: tableMessage('table.potLabel', 'Pot'), value: state.pot, unit: 'bb', ariaHidden: true,
+      });
     }
 
     for (let i = 0; i < this.currentActivePlayers; i++) {
@@ -600,7 +686,11 @@ class TableRenderer {
       if (dealer) dealer.toggleAttribute('hidden', !isDealer);
       if (name) name.textContent = playerState?.name || (isHero ? tableMessage('Hero', 'Hero') : `P${i + 1}`);
       if (position) position.textContent = '';
-      if (stack) stack.textContent = Number.isFinite(playerState?.stackBb) ? `${playerState.stackBb} bb` : '';
+      if (stack) this.setPokerAmount(stack, {
+        value: Number.isFinite(playerState?.stackBb) ? playerState.stackBb : '',
+        unit: Number.isFinite(playerState?.stackBb) ? 'bb' : '',
+        ariaHidden: true,
+      });
       if (status) status.setAttribute('hidden', '');
       if (contribution) contribution.setAttribute('hidden', '');
       if (action) action.setAttribute('hidden', '');

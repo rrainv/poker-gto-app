@@ -177,10 +177,58 @@ test('supplied presentation names are respected without replacing position facts
   assert.equal(seat(viewModel, 'P1').position, state.players[1].position);
 });
 
-test('forced blinds remain contributions and do not fabricate voluntary actions', () => {
-  const viewModel = model(dealt());
-  assert.deepEqual(viewModel.seats.map((entry) => entry.streetContributionMilliBb), [500, 1000]);
-  assert.equal(viewModel.seats.every((entry) => entry.latestAction === null), true);
+test('posted blinds stay on felt before and after the private deal', () => {
+  const beforeDeal = model(initialized());
+  const afterDeal = model(dealt());
+
+  for (const viewModel of [beforeDeal, afterDeal]) {
+    assert.equal(viewModel.showStreetContributions, true);
+    assert.deepEqual(viewModel.seats.map((entry) => entry.streetContributionMilliBb), [500, 1000]);
+    assert.equal(viewModel.seats.every((entry) => entry.latestAction === null), true);
+  }
+});
+
+test('Hero contribution remains on felt until the canonical opponent call closes betting', () => {
+  let canonical = dealt();
+  canonical = act(canonical, ACTION_TYPES.RAISE, 2000);
+  let viewModel = model(canonical);
+
+  assert.equal(canonical.phase, PHASES.BETTING);
+  assert.equal(canonical.actingPlayerId, 'P1');
+  assert.equal(viewModel.showStreetContributions, true);
+  assert.deepEqual(viewModel.seats.map((entry) => entry.streetContributionMilliBb), [2000, 1000]);
+
+  canonical = act(canonical, ACTION_TYPES.CALL);
+  viewModel = model(canonical);
+  assert.equal(canonical.phase, PHASES.CHANCE);
+  assert.equal(canonical.pendingChance.type, CHANCE_TYPES.DEAL_FLOP);
+  assert.equal(viewModel.showStreetContributions, false);
+});
+
+test('equal HU contributions stay on felt while the big blind still has its option', () => {
+  let canonical = act(dealt(), ACTION_TYPES.CALL);
+  let viewModel = model(canonical);
+
+  assert.equal(canonical.phase, PHASES.BETTING);
+  assert.equal(canonical.actingPlayerId, 'P1');
+  assert.deepEqual(viewModel.seats.map((entry) => entry.streetContributionMilliBb), [1000, 1000]);
+  assert.equal(viewModel.showStreetContributions, true);
+
+  canonical = act(canonical, ACTION_TYPES.CHECK);
+  viewModel = model(canonical);
+  assert.equal(canonical.phase, PHASES.CHANCE);
+  assert.equal(viewModel.showStreetContributions, false);
+});
+
+test('closing the betting round collects presentation chips before the board is dealt', () => {
+  const canonical = waitingForFlop();
+  const viewModel = model(canonical);
+
+  assert.equal(canonical.phase, PHASES.CHANCE);
+  assert.equal(viewModel.status, 'awaiting_board');
+  assert.equal(viewModel.showStreetContributions, false);
+  assert.equal(viewModel.potMilliBb, canonical.potMilliBb);
+  assert.equal(viewModel.seats.every((entry) => entry.streetContributionMilliBb > 0), true);
 });
 
 test('Call uses committed-amount semantics and Check carries no amount', () => {
