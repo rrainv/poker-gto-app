@@ -19,16 +19,17 @@ test('the application opens directly into the workstation', () => {
   assert.doesNotMatch(html, /id="enterWorkstationBtn"/);
   assert.doesNotMatch(html, /valorant-menu-overlay/);
   assert.doesNotMatch(css, /valorant-menu-overlay|valorant-btn/);
-  assert.match(html, /<div class="riverline-shell" data-active-mode="gto">/);
-  assert.match(html, /<section id="gtoMode" class="mode-view active">/);
+  assert.match(html, /<div class="riverline-shell" data-active-mode="home">/);
+  assert.match(html, /<section id="homeMode" class="mode-view active"/);
 });
 
 test('the shell exposes every current mode with structural active semantics', () => {
   const shell = shellMarkup();
-  for (const mode of ['gto', 'equity', 'training', 'calibration', 'info']) {
+  for (const mode of ['home', 'gto', 'equity', 'training', 'calibration', 'info']) {
     assert.match(shell, new RegExp(`class="mode-nav-item(?: active)?"[^>]*data-mode="${mode}"`));
   }
-  assert.match(shell, /data-mode="gto"[^>]*aria-current="page"/);
+  assert.match(shell, /data-mode="home"[^>]*aria-current="page"/);
+  assert.match(shell, /data-mode="gto"[^>]*aria-current="false"/);
   assert.match(shell, /data-mode="equity"[^>]*aria-current="false"/);
   assert.match(logic, /\$\$\('\.mode-nav-item\[data-mode\]'\)/);
   assert.match(logic, /item\.setAttribute\('aria-current', isActive \? 'page' : 'false'\)/);
@@ -36,7 +37,7 @@ test('the shell exposes every current mode with structural active semantics', ()
 });
 
 test('mode switching updates workspace context without touching poker state', () => {
-  assert.match(html, /id="workspaceTitle"[^>]*>Playbook</);
+  assert.match(html, /id="workspaceTitle"[^>]*>Home</);
   assert.match(html, /id="workspaceSubtitle"/);
   assert.match(logic, /shell\.dataset\.activeMode = mode/);
   assert.match(logic, /workspaceTitle\.textContent = t\(modeTitle\)/);

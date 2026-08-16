@@ -13,20 +13,20 @@ const visualAudit = fs.readFileSync(new URL('./tooling/audit_range_cal001a.cjs',
 
 test('Range Calibration is reachable without reordering or removing existing workspaces', () => {
   const modes = [...html.matchAll(/data-mode="([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(modes.slice(0, 5), ['gto', 'equity', 'training', 'calibration', 'info']);
+  assert.deepEqual(modes.slice(0, 6), ['home', 'gto', 'equity', 'training', 'calibration', 'info']);
   assert.match(html, /data-mode="calibration"[^>]*data-mode-title="Range Calibration"/);
   assert.match(html, /id="calibrationMode" class="mode-view range-calibration-mode"/);
   for (const mode of ['gto', 'equity', 'training', 'info']) assert.ok(modes.includes(mode));
   assert.match(logic, /const activeView = \$\(`#\$\{mode\}Mode`\)/);
 });
 
-test('Personal Strategy remains dormant until the calibration workspace is opened', () => {
+test('the full Personal Strategy workspace remains dormant until Range Calibration is opened', () => {
   assert.match(html, /<template id="rangeCalibrationTemplate">/);
   assert.match(html, /<template id="calibrationProfileModalTemplate">/);
   assert.match(html, /id="rangeCalibrationMount"><\/div>/);
   assert.doesNotMatch(bootstrap, /from ['"].*personal-strategy/);
   assert.match(bootstrap, /import\('\.\/range-calibration-workspace\.mjs'\)/);
-  assert.doesNotMatch(logic, /personalStrategy|rangeCalibrationRepository|loadSnapshot/);
+  assert.doesNotMatch(logic, /rangeCalibrationRepository|loadSnapshot/);
 });
 
 test('profile editor requires exactly three text-named modes and contains no interpolation controls', () => {

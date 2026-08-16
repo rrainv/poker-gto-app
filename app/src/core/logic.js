@@ -196,6 +196,18 @@ function callSavedStudyBridge(method, ...args) {
   }
 }
 
+function callHomeBridge(method, ...args) {
+  const bridge = window.RiverlineHome;
+  if (!bridge || typeof bridge[method] !== 'function') {
+    return Promise.reject(new Error('Riverline Home bridge is unavailable'));
+  }
+  try {
+    return Promise.resolve(bridge[method](...args));
+  } catch (error) {
+    return Promise.reject(error);
+  }
+}
+
 function callEquityServiceBridge(method, ...args) {
   try {
     const bridge = window.RiverlineEquity;
@@ -1135,6 +1147,12 @@ function setPlaybookControlAuthority(mode) {
 function playbookResolutionMessage(resolution) {
   if (!resolution) return t('Playbook state has not been resolved.');
   if (resolution.status === 'available') {
+    if (resolution.reason === 'saved_scenario_spot') {
+      return t('Saved Scenario facts are restored. Canonical hand history is unavailable.');
+    }
+    if (resolution.reason === 'saved_hand_derived_spot') {
+      return t('Saved canonical decision facts are authoritative. Hand history is unavailable.');
+    }
     return t(resolution.mode === PLAYBOOK_MODES.HAND
       ? 'Hand facts come from the canonical hand. Scenario controls are read-only.'
       : 'Scenario controls are authoritative. This spot does not claim a legal hand history.');
@@ -1151,6 +1169,7 @@ function playbookResolutionMessage(resolution) {
     canonical_hero_unknown: t('The canonical hand has no configured hero.'),
     canonical_hero_not_actor: t('The canonical hand is waiting for another player to act.'),
     canonical_hero_cards_unknown: t('Deal the hero two cards before requesting strategy.'),
+    saved_hand_read_only: t('Read-only saved hand. Replay controls do not change your live hand.'),
     scenario_projection_failed: t('The Scenario input could not be converted to a decision context.'),
     canonical_projection_failed: t('The canonical hand could not be converted to a decision context.')
   };
@@ -1281,7 +1300,8 @@ function bindPlaybookModeControl() {
   window.addEventListener('riverline:playbook-state-change', (event) => {
     if (event.detail?.operation !== 'mode' && isHandMode()) {
       renderCanonicalHandWorkspace();
-      if (event.detail?.operation?.startsWith('replay_')) return;
+      if (event.detail?.operation?.startsWith('replay_')
+        || event.detail?.operation?.startsWith('saved_hand_')) return;
       updateContext('Canonical hand updated');
     }
   });
@@ -1313,10 +1333,12 @@ function savedStudySourceCanSave(input = currentSavedStudyInput()) {
 function placeSavedStudySourceActions(replayProjection = null) {
   const actions = $('#savedStudySourceActions');
   if (!actions) return;
+  const projection = replayProjection
+    || (isHandMode() ? callPlaybookStateBridge('createReplayProjectionViewModel') : null);
+  actions.hidden = projection?.viewerContext?.kind === 'saved_hand';
+  if (actions.hidden) return;
   let mount = $('#scenarioSavedStudyActionMount');
   if (isHandMode()) {
-    const projection = replayProjection
-      || callPlaybookStateBridge('createReplayProjectionViewModel');
     mount = projection?.readOnly
       ? $('#replaySavedStudyActionMount')
       : $('#handSavedStudyActionMount');
@@ -2069,6 +2091,11 @@ function renderCanonicalReplayControls(projection) {
     });
   }
   if (readOnlyNote) readOnlyNote.hidden = !projection.readOnly;
+  if (readOnlyNote && projection.viewerContext?.kind === 'saved_hand') {
+    readOnlyNote.textContent = t('Read-only saved hand. Replay controls do not change your live hand.');
+  } else if (readOnlyNote) {
+    readOnlyNote.textContent = t('replay.readOnlyHelp');
+  }
 
   const focusedControl = document.activeElement;
   if (playbackButton) {
@@ -2079,11 +2106,17 @@ function renderCanonicalReplayControls(projection) {
     playbackButton.setAttribute('aria-label', label);
     playbackButton.setAttribute('aria-pressed', String(isPlaying));
     playbackButton.disabled = !isPlaying
-      && !(projection.canPlayback && (projection.atLive || projection.canPlaybackAdvance));
+      && !(projection.canPlayback && (projection.atEndpoint || projection.canPlaybackAdvance));
   }
   if (previous) previous.disabled = !projection.canPrevious;
   if (next) next.disabled = !projection.canNext;
-  if (live) live.disabled = !projection.canReturnToLive;
+  if (live) {
+    const endpointKey = projection.endpointLabelKey || 'replay.control.returnToLive';
+    live.textContent = t(endpointKey);
+    live.dataset.i18n = endpointKey;
+    live.setAttribute('aria-label', t(endpointKey));
+    live.disabled = !projection.canReturnToEndpoint;
+  }
   if (focusedControl?.disabled) {
     [playbackButton, previous, next, live]
       .find((button) => button && !button.disabled)?.focus();
@@ -2182,14 +2215,38 @@ function setCanonicalReplayReadOnly(projection) {
   ['handDealSection', 'handChanceSection', 'handActionSection'].forEach((id) => {
     const section = $('#' + id);
     if (!section) return;
-    section.toggleAttribute('aria-disabled', readOnly);
+    if (readOnly) section.setAttribute('aria-disabled', 'true');
+    else section.removeAttribute('aria-disabled');
     if (readOnly) {
       section.querySelectorAll('button, input, select').forEach((control) => {
         control.disabled = true;
       });
     }
   });
+  const savedViewer = projection?.viewerContext?.kind === 'saved_hand';
+  const setup = $('#handSetupSection');
+  if (setup) {
+    if (savedViewer) setup.setAttribute('aria-disabled', 'true');
+    else setup.removeAttribute('aria-disabled');
+    setup.querySelectorAll('button, input, select').forEach((control) => {
+      control.disabled = savedViewer;
+    });
+  }
   if (readOnly && $('#handResolveShowdownButton')) $('#handResolveShowdownButton').disabled = true;
+}
+
+function renderSavedHandViewerContext(projection) {
+  const context = projection?.viewerContext?.kind === 'saved_hand'
+    ? projection.viewerContext
+    : null;
+  const banner = $('#savedHandViewerBanner');
+  if (!banner) return;
+  banner.hidden = !context;
+  if (!context) return;
+  const title = $('#savedHandViewerTitle');
+  if (title) title.textContent = context.title || t('Saved hand replay');
+  const returnLive = $('#savedHandReturnLiveButton');
+  if (returnLive) returnLive.hidden = !context.hasLiveHand;
 }
 
 function dispatchCanonicalTableState() {
@@ -2216,6 +2273,7 @@ function renderCanonicalHandWorkspace() {
   const state = callPlaybookStateBridge('getState');
   const replayProjection = callPlaybookStateBridge('createReplayProjectionViewModel');
   placeSavedStudySourceActions(replayProjection);
+  renderSavedHandViewerContext(replayProjection);
   workspace.classList.toggle('is-hand-in-progress', Boolean(state));
   const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
   const status = canonicalHandStatus(state);
@@ -2277,7 +2335,18 @@ function bindCanonicalHandWorkspace() {
     callPlaybookStateBridge('nextReplayFrame');
   });
   if ($('#handReplayLiveButton')) $('#handReplayLiveButton').addEventListener('click', () => {
-    callPlaybookStateBridge('returnReplayToLive');
+    callPlaybookStateBridge('returnReplayToEndpoint');
+  });
+  $('#savedHandBackHomeButton')?.addEventListener('click', () => navigateToWorkspace('home'));
+  $('#savedHandReturnLiveButton')?.addEventListener('click', () => {
+    callPlaybookStateBridge('closeSavedHand');
+    renderCanonicalHandWorkspace();
+    updateContext('Returned to live hand');
+  });
+  $('#savedSpotCloseButton')?.addEventListener('click', () => {
+    activeSavedSpotContext = null;
+    renderSavedSpotViewer(null);
+    updateContext('Saved context closed');
   });
   const replayTimeline = $('#handActionHistory');
   const pauseForTimelineInteraction = () => {
@@ -3396,6 +3465,14 @@ function renderPlaybookTableProjection() {
 }
 
 async function updateContext(reason = 'Context updated') {
+  const resolutionOverride = arguments[1] || null;
+
+  if (!resolutionOverride
+    && typeof activeSavedSpotContext !== 'undefined'
+    && activeSavedSpotContext) {
+    activeSavedSpotContext = null;
+    renderSavedSpotViewer(null);
+  }
 
   if (playbookUpdateScheduler.isPending()) playbookUpdateScheduler.cancel();
 
@@ -3407,7 +3484,7 @@ async function updateContext(reason = 'Context updated') {
 
   const inputSnapshot = readPlaybookInputSnapshot();
   const playbookBridge = globalThis.RiverlinePlaybookState;
-  const playbookResolution = playbookBridge && typeof playbookBridge.resolveDecisionContext === 'function'
+  const playbookResolution = resolutionOverride || (playbookBridge && typeof playbookBridge.resolveDecisionContext === 'function'
     ? playbookBridge.resolveDecisionContext(inputSnapshot, deriveDecisionContext)
     : {
         schemaVersion: 'playbook-decision-resolution/v1',
@@ -3416,7 +3493,7 @@ async function updateContext(reason = 'Context updated') {
         reason: null,
         error: null,
         decisionContext: deriveDecisionContext(inputSnapshot)
-      };
+      });
   app.playbookMode = playbookResolution.mode;
   app.playbookResolution = playbookResolution;
 
@@ -4378,6 +4455,371 @@ function bindSliderPair(rangeId, numberId, callback) {
 
 }
 
+let homeViewModel = null;
+let homeRefreshSequence = 0;
+let activeSavedSpotContext = null;
+
+function navigateToWorkspace(mode) {
+  document.querySelector(`.mode-nav-item[data-mode="${mode}"]`)?.click();
+}
+
+function homeEmptyState(messageKey, error = false) {
+  const message = document.createElement('p');
+  message.className = error ? 'home-error-state' : 'home-empty-state';
+  message.textContent = t(messageKey);
+  return message;
+}
+
+function homeRecency(isoTimestamp) {
+  const timestamp = Date.parse(isoTimestamp);
+  if (!Number.isFinite(timestamp)) return '';
+  const elapsedDays = Math.round((timestamp - Date.now()) / 86400000);
+  try {
+    if (Math.abs(elapsedDays) <= 7) {
+      return new Intl.RelativeTimeFormat(window.appLang || 'en', { numeric: 'auto' })
+        .format(elapsedDays, 'day');
+    }
+    return new Intl.DateTimeFormat(window.appLang || 'en', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    }).format(new Date(timestamp));
+  } catch (_) {
+    return new Date(timestamp).toLocaleDateString();
+  }
+}
+
+function homeSavedItemTitle(item) {
+  if (item.title) return item.title;
+  const kind = item.kind === 'hand' ? t('Saved Hand') : t('Saved Spot');
+  const facts = [item.heroPosition, item.street && t(item.street[0].toUpperCase() + item.street.slice(1))]
+    .filter(Boolean);
+  return facts.length ? `${kind} · ${facts.join(' · ')}` : kind;
+}
+
+function homeSavedItemFacts(item) {
+  const facts = [];
+  if (Number.isInteger(item.tableSize)) facts.push(t('{count}-handed', { count: item.tableSize }));
+  if (item.heroPosition) facts.push(item.heroPosition);
+  if (item.street) facts.push(t(item.street[0].toUpperCase() + item.street.slice(1)));
+  if (Number.isFinite(item.stackBb)) facts.push(`${item.stackBb} bb`);
+  if (Number.isFinite(item.potBb)) facts.push(`${t('Pot')} ${item.potBb} bb`);
+  if (item.kind === 'spot') {
+    facts.push(item.derivation === 'scenario' ? t('Scenario') : t('Hand-derived'));
+  }
+  const recency = homeRecency(item.updatedAt);
+  if (recency) facts.push(recency);
+  return facts;
+}
+
+function createHomeSavedItemElement(item, { compact = false } = {}) {
+  const row = document.createElement('article');
+  row.className = 'home-saved-item';
+  const main = document.createElement('div');
+  main.className = 'home-saved-item-main';
+  const titleRow = document.createElement('div');
+  titleRow.className = 'home-saved-item-title-row';
+  const kind = document.createElement('span');
+  kind.className = 'home-saved-item-kind';
+  kind.textContent = t(item.kind === 'hand' ? 'Saved Hand' : 'Saved Spot');
+  const title = document.createElement('strong');
+  title.dir = 'auto';
+  title.textContent = homeSavedItemTitle(item);
+  titleRow.append(kind, title);
+  main.appendChild(titleRow);
+
+  const meta = document.createElement('div');
+  meta.className = 'home-saved-item-meta poker-data-token';
+  meta.dir = 'ltr';
+  homeSavedItemFacts(item).forEach((fact) => {
+    const token = document.createElement('span');
+    token.textContent = fact;
+    meta.appendChild(token);
+  });
+  main.appendChild(meta);
+
+  const badges = document.createElement('div');
+  badges.className = 'home-saved-item-badges';
+  if (item.hasNote) {
+    const note = document.createElement('span');
+    note.className = 'home-saved-badge';
+    note.textContent = t('Note');
+    badges.appendChild(note);
+  }
+  if (item.reviewState === 'review_later') {
+    const review = document.createElement('span');
+    review.className = 'home-saved-badge home-saved-badge--review';
+    review.textContent = t('Review later');
+    badges.appendChild(review);
+  }
+  if (item.isMistake) {
+    const mistake = document.createElement('span');
+    mistake.className = 'home-saved-badge home-saved-badge--mistake';
+    mistake.textContent = t('Mistake');
+    badges.appendChild(mistake);
+  }
+  if (item.tags.length > 0) {
+    const tags = document.createElement('span');
+    tags.className = 'home-saved-badge';
+    tags.dir = 'auto';
+    tags.textContent = item.tags.slice(0, 2).join(' · ');
+    badges.appendChild(tags);
+  }
+  if (badges.childElementCount > 0) main.appendChild(badges);
+
+  const open = document.createElement('button');
+  open.type = 'button';
+  open.className = `ui-button ${compact ? 'ui-button--quiet' : 'ui-button--secondary'} home-open-button`;
+  open.dataset.homeSavedId = item.id;
+  const action = t(item.kind === 'hand' ? 'Open replay' : 'Open spot');
+  open.textContent = action;
+  open.setAttribute('aria-label', `${action}: ${homeSavedItemTitle(item)}`);
+  row.append(main, open);
+  return row;
+}
+
+function renderHomeContinue(section) {
+  const root = $('#homeContinueContent');
+  if (!root) return;
+  root.replaceChildren();
+  if (!section?.items?.length) {
+    root.appendChild(homeEmptyState('Nothing to continue right now.'));
+    return;
+  }
+  const item = section.items[0];
+  const card = document.createElement('div');
+  card.className = 'home-calibration-card';
+  const title = document.createElement('strong');
+  title.dir = 'auto';
+  title.textContent = `${item.profileName} · ${item.modeName}`;
+  const progress = document.createElement('p');
+  progress.textContent = t('{answered} of {total} directly answered', {
+    answered: item.answeredCount, total: item.totalCount
+  });
+  const actions = document.createElement('div');
+  actions.className = 'home-calibration-actions';
+  const resume = document.createElement('button');
+  resume.type = 'button';
+  resume.className = 'ui-button ui-button--primary';
+  resume.dataset.homeDestination = 'calibration';
+  resume.textContent = t('Resume calibration');
+  actions.appendChild(resume);
+  card.append(title, progress, actions);
+  root.appendChild(card);
+}
+
+function renderHomeRecent(section) {
+  const root = $('#homeRecentContent');
+  if (!root) return;
+  root.replaceChildren();
+  if (section?.status === 'error') {
+    root.appendChild(homeEmptyState('Saved items could not be loaded.', true));
+    return;
+  }
+  if (!section?.items?.length) {
+    root.appendChild(homeEmptyState('Saved hands and spots will appear here.'));
+    return;
+  }
+  section.items.forEach((item) => root.appendChild(createHomeSavedItemElement(item)));
+}
+
+function renderHomeReviewGroup(root, titleKey, section, emptyKey) {
+  const group = document.createElement('section');
+  group.className = 'home-review-group';
+  const heading = document.createElement('h3');
+  heading.textContent = t(titleKey);
+  const list = document.createElement('div');
+  list.className = 'home-review-list';
+  if (section?.status === 'error') list.appendChild(homeEmptyState('Saved items could not be loaded.', true));
+  else if (!section?.items?.length) list.appendChild(homeEmptyState(emptyKey));
+  else section.items.forEach((item) => list.appendChild(createHomeSavedItemElement(item, { compact: true })));
+  group.append(heading, list);
+  root.appendChild(group);
+}
+
+function renderHomeReview(section) {
+  const root = $('#homeReviewContent');
+  if (!root) return;
+  root.replaceChildren();
+  renderHomeReviewGroup(root, 'Review later', section?.reviewLater, 'Nothing marked for review.');
+  renderHomeReviewGroup(root, 'Mistake', section?.mistakes, 'No mistakes marked.');
+}
+
+function renderHomePersonalStrategy(section) {
+  const root = $('#homeStrategyContent');
+  if (!root) return;
+  root.replaceChildren();
+  if (section?.status === 'error') {
+    root.appendChild(homeEmptyState('Personal Strategy could not be loaded.', true));
+    return;
+  }
+  const card = document.createElement('div');
+  card.className = 'home-strategy-summary';
+  const action = document.createElement('button');
+  action.type = 'button';
+  action.className = 'ui-button ui-button--secondary';
+  action.dataset.homeDestination = 'calibration';
+  if (!section?.selectedProfile) {
+    const empty = document.createElement('p');
+    empty.textContent = t(section?.profileCount > 0
+      ? 'Open Personal Strategy to choose a profile.'
+      : 'Create a profile to start building your ranges.');
+    action.textContent = t(section?.profileCount > 0
+      ? 'Open Range Calibration'
+      : 'Create your first strategy profile');
+    card.append(empty, action);
+    root.appendChild(card);
+    return;
+  }
+  const title = document.createElement('strong');
+  title.dir = 'auto';
+  title.textContent = `${section.selectedProfile.displayName} · ${section.selectedMode.displayName}`;
+  const progress = document.createElement('p');
+  progress.textContent = t('{answered} of {total} directly answered', {
+    answered: section.answeredCount, total: section.totalCount
+  });
+  action.textContent = t(section.resumable ? 'Resume calibration' : 'Open Range Calibration');
+  card.append(title, progress, action);
+  root.appendChild(card);
+}
+
+function renderHomeWorkspace(model) {
+  homeViewModel = model;
+  renderHomeContinue(model.sections.continue);
+  renderHomeRecent(model.sections.recent);
+  renderHomeReview(model.sections.review);
+  renderHomePersonalStrategy(model.sections.personalStrategy);
+  const workspace = $('#homeWorkspace');
+  const loading = $('#homeLoadingState');
+  const content = $('#homeWorkspaceContent');
+  if (workspace) workspace.setAttribute('aria-busy', 'false');
+  if (loading) loading.hidden = true;
+  if (content) content.hidden = false;
+}
+
+async function refreshHomeWorkspace() {
+  const sequence = ++homeRefreshSequence;
+  const workspace = $('#homeWorkspace');
+  const loading = $('#homeLoadingState');
+  const content = $('#homeWorkspaceContent');
+  if (workspace) workspace.setAttribute('aria-busy', 'true');
+  if (loading) loading.hidden = false;
+  if (content) content.hidden = true;
+  try {
+    const model = await callHomeBridge('load');
+    if (sequence !== homeRefreshSequence || activeWorkspaceMode() !== 'home') return;
+    renderHomeWorkspace(model);
+  } catch (error) {
+    if (sequence !== homeRefreshSequence) return;
+    console.error('[Riverline Home]', error);
+    const fallback = {
+      sections: {
+        continue: { status: 'ready', items: [] },
+        recent: { status: 'error' },
+        review: { reviewLater: { status: 'error' }, mistakes: { status: 'error' } },
+        personalStrategy: { status: 'error' }
+      }
+    };
+    renderHomeWorkspace(fallback);
+  }
+}
+
+function restoreSavedSpotPresentation(result) {
+  const source = result.scenarioInput || result.decisionContext;
+  const context = result.decisionContext;
+  const values = {
+    players: source.tableSize,
+    playersNum: source.tableSize,
+    stack: source.stackBb,
+    stackNum: source.stackBb,
+    stackMode: source.stackMode,
+    rakeMode: source.rakeMode,
+    ante: source.anteBb ?? 0,
+    anteNum: source.anteBb ?? 0,
+    straddle: source.straddleBb ?? 0,
+    lastAction: source.lastAction,
+    facingSize: source.facingSizeBb,
+    facingSizeNum: source.facingSizeBb,
+    potSize: source.potBb,
+    potSizeNum: source.potBb,
+  };
+  Object.entries(values).forEach(([id, value]) => {
+    const control = $('#' + id);
+    if (control && value !== undefined && value !== null) control.value = String(value);
+  });
+  updatePositions();
+  if ($('#heroPos')) $('#heroPos').value = context.heroPosition;
+  app.gto.hero = normalizedDecisionCards(context.heroCards);
+  app.gto.board = normalizedDecisionCards(context.board);
+  app.gto.dead = normalizedDecisionCards(context.deadCards);
+  renderAllCards({ mode: 'gto' });
+}
+
+function renderSavedSpotViewer(result = activeSavedSpotContext) {
+  const banner = $('#savedSpotViewerBanner');
+  if (!banner) return;
+  banner.hidden = !result;
+  if (!result) return;
+  const title = result.object.annotations.title || t('Saved study spot');
+  $('#savedSpotViewerTitle').textContent = title;
+  $('#savedSpotViewerTruth').textContent = t(result.derivation === 'scenario'
+    ? 'Scenario-derived · history unavailable'
+    : 'Hand-derived · canonical decision context; history unavailable');
+}
+
+async function openHomeSavedItem(id, control) {
+  if (!id || control?.disabled) return;
+  if (control) {
+    control.disabled = true;
+    control.setAttribute('aria-busy', 'true');
+  }
+  try {
+    const result = await callHomeBridge('openSavedItem', id);
+    if (result.kind === 'hand') {
+      activeSavedSpotContext = null;
+      renderSavedSpotViewer(null);
+      app.playbookMode = PLAYBOOK_MODES.HAND;
+      app.playbookResolution = {
+        schemaVersion: 'playbook-decision-resolution/v1',
+        mode: PLAYBOOK_MODES.HAND,
+        status: 'unavailable',
+        reason: 'saved_hand_read_only',
+        error: null,
+        decisionContext: null
+      };
+      app.decisionContext = null;
+      app.strategyResult = null;
+      setPlaybookControlAuthority(PLAYBOOK_MODES.HAND);
+      renderUnavailableStrategy(app.playbookResolution);
+      navigateToWorkspace('gto');
+      renderCanonicalHandWorkspace();
+      return;
+    }
+
+    callPlaybookStateBridge('setMode', PLAYBOOK_MODES.SCENARIO, result.scenarioInput || {});
+    app.playbookMode = PLAYBOOK_MODES.SCENARIO;
+    setPlaybookControlAuthority(PLAYBOOK_MODES.SCENARIO);
+    restoreSavedSpotPresentation(result);
+    activeSavedSpotContext = result;
+    renderSavedSpotViewer(result);
+    navigateToWorkspace('gto');
+    await updateContext('Saved spot opened', {
+      schemaVersion: 'playbook-decision-resolution/v1',
+      mode: PLAYBOOK_MODES.SCENARIO,
+      status: 'available',
+      reason: result.derivation === 'scenario' ? 'saved_scenario_spot' : 'saved_hand_derived_spot',
+      error: null,
+      decisionContext: result.decisionContext
+    });
+  } catch (error) {
+    console.error('[Riverline Home saved item]', error);
+    toast(t('Saved item could not be opened.'), 'error', 'home');
+  } finally {
+    if (control?.isConnected) {
+      control.disabled = false;
+      control.removeAttribute('aria-busy');
+    }
+  }
+}
+
 
 
 function applyDeckStyle(is4Color) {
@@ -4428,6 +4870,18 @@ function toast(message, tone = 'info', scope = activeWorkspaceMode()) {
 function bindEvents() {
 
   document.addEventListener('click', (event) => {
+
+    const homeDestination = event.target.closest('[data-home-destination]');
+    if (homeDestination) {
+      navigateToWorkspace(homeDestination.dataset.homeDestination);
+      return;
+    }
+
+    const homeSavedItem = event.target.closest('[data-home-saved-id]');
+    if (homeSavedItem) {
+      void openHomeSavedItem(homeSavedItem.dataset.homeSavedId, homeSavedItem);
+      return;
+    }
 
     const handModeControl = event.target.closest('[data-equity-hand-mode]');
     if (handModeControl) {
@@ -4568,7 +5022,18 @@ function bindEvents() {
     if (mode !== 'gto') playbookUpdateScheduler.cancel();
     renderAllCards({ mode });
     if (mode === 'equity') updateEquityReadiness();
-    if (mode === 'gto') renderVisiblePlaybookDerivedSurfaces();
+    if (mode === 'home') void refreshHomeWorkspace();
+    if (mode === 'gto') {
+      const savedHandProjection = callPlaybookStateBridge('createReplayProjectionViewModel');
+      if (savedHandProjection?.viewerContext?.kind === 'saved_hand') {
+        renderCanonicalHandWorkspace();
+        renderVisiblePlaybookDerivedSurfaces();
+      } else if (!app.playbookResolution && !activeSavedSpotContext) {
+        void updateContext('Playbook opened');
+      } else {
+        renderVisiblePlaybookDerivedSurfaces();
+      }
+    }
     
     const infoEl = $('#infoMode') || $('#guideMode');
     if (infoEl) {
@@ -5103,6 +5568,7 @@ function refreshLocalizedRuntime() {
   initThemeSwatches();
   updatePositions();
   renderAllCards();
+  if (activeWorkspaceMode() === 'home' && homeViewModel) renderHomeWorkspace(homeViewModel);
   refreshLocalizedPlaybookRuntime();
   refreshLocalizedEquityRuntime();
   refreshLocalizedTrainingRuntime();
@@ -5197,7 +5663,8 @@ function init() {
 
     
 
-    updateContext('Ready');
+    if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
+    else updateContext('Ready');
 
   } catch (error) {
 

@@ -80,7 +80,7 @@ export function createReplayPlaybackController({
   };
 
   const canAdvance = (projection) => projection?.schemaVersion === 'replay-projection/v1'
-    && projection.mode === 'replay'
+    && ['replay', 'saved'].includes(projection.mode)
     && projection.canPlaybackAdvance === true;
 
   const scheduleNext = () => {

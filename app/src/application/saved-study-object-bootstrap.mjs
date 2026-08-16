@@ -10,13 +10,20 @@ export function installSavedStudyObjectBridge(browserWindow, options = {}) {
     getPlaybookBridge: options.getPlaybookBridge ?? (() => browserWindow.RiverlinePlaybookState),
     clock: options.clock,
   });
+  const bridge = Object.freeze({
+    ...controller,
+    getById: (...args) => application.getById(...args),
+    listRecent: (...args) => application.listRecent(...args),
+    listForReview: (...args) => application.listForReview(...args),
+    listMistakes: (...args) => application.listMistakes(...args),
+  });
   Object.defineProperty(browserWindow, 'RiverlineSavedStudyObjects', {
     configurable: true,
     enumerable: false,
-    value: controller,
+    value: bridge,
     writable: false,
   });
-  return controller;
+  return bridge;
 }
 
 if (typeof window !== 'undefined') installSavedStudyObjectBridge(window);

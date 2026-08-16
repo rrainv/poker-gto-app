@@ -805,6 +805,70 @@ export function createPersonalStrategyRepository({
       });
     },
 
+    /**
+     * Read only the selected calibration scope needed by Home. The exact-scope
+     * indexes cap current direct observations at the 169 RFI hand classes and
+     * avoid loading the profile library's observation/session history.
+     */
+    async loadHomeSummary({ profileId = null, modeId = null, context = null } = {}) {
+      return readTransaction([
+        STORES.PROFILES,
+        STORES.MODES,
+        STORES.CURRENT_RANGE_OBSERVATIONS,
+        STORES.CALIBRATION_SESSIONS,
+      ], async (transaction) => {
+        const profileCount = await transaction.count(STORES.PROFILES);
+        if (typeof profileId !== 'string' || typeof modeId !== 'string' || !context) {
+          return deepFreeze({
+            profileCount,
+            selectedProfile: null,
+            selectedMode: null,
+            context: null,
+            answeredCount: 0,
+            session: null,
+          });
+        }
+
+        const selectedProfile = await transaction.get(STORES.PROFILES, profileId);
+        const selectedMode = await transaction.get(STORES.MODES, modeId);
+        if (!selectedProfile || !selectedMode
+          || selectedProfile.state !== 'active'
+          || selectedMode.state !== 'active'
+          || selectedMode.profileId !== selectedProfile.id
+          || !selectedProfile.modeIds.includes(selectedMode.id)) {
+          return deepFreeze({
+            profileCount,
+            selectedProfile: null,
+            selectedMode: null,
+            context: null,
+            answeredCount: 0,
+            session: null,
+          });
+        }
+        validateStrategyProfile(selectedProfile);
+        validateStrategyMode(selectedMode);
+        const selectedScopeKey = scopeKey({ profileId, modeId, context });
+        const [currentRecords, sessionRecords] = await Promise.all([
+          transaction.getAllByIndex(STORES.CURRENT_RANGE_OBSERVATIONS, 'scopeKey', selectedScopeKey),
+          transaction.getAllByIndex(STORES.CALIBRATION_SESSIONS, 'scopeKey', selectedScopeKey),
+        ]);
+        const observations = currentRecords.map((entry) => entry.value);
+        observations.forEach(validateRangeObservation);
+        const sessions = sessionRecords.map((entry) => entry.value);
+        sessions.forEach(validateCalibrationSession);
+        const session = sessions
+          .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0] ?? null;
+        return deepFreeze({
+          profileCount,
+          selectedProfile: cloneData(selectedProfile),
+          selectedMode: cloneData(selectedMode),
+          context: cloneData(context),
+          answeredCount: observations.filter((entry) => entry.state === RANGE_OBSERVATION_STATES.ACTIVE).length,
+          session: cloneData(session),
+        });
+      });
+    },
+
     async saveProfileBundle(bundle) {
       requireObject(bundle, 'StrategyProfile bundle');
       validateStrategyProfile(bundle.profile);

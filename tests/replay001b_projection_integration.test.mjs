@@ -50,7 +50,7 @@ test('successful live transitions journal exact states while rejected and histor
     'const publishLiveTransition',
     'const bridge = Object.freeze',
   );
-  assert.match(liveTransition, /if \(replayController\.isReplayActive\(\)\) return null/);
+  assert.match(liveTransition, /if \(savedHandViewer \|\| replayController\.isReplayActive\(\)\) return null/);
   assert.match(liveTransition, /const result = transition\(\)/);
   assert.match(liveTransition, /if \(result\) \{[\s\S]*replayController\.recordTransition\(\{/);
   assert.match(projectionSource, /structuredClone\(state\)/);
@@ -87,12 +87,13 @@ test('Previous, Next, and Live controls consume projection flags without poker i
   );
   assert.match(controls, /projection\.canPrevious/);
   assert.match(controls, /projection\.canNext/);
-  assert.match(controls, /projection\.canReturnToLive/);
+  assert.match(controls, /projection\.canReturnToEndpoint/);
+  assert.match(controls, /projection\.endpointLabelKey/);
   assert.match(controls, /projection\.modeLabelKey/);
   assert.match(controls, /projection\.selectedFrame\?\.labelKey/);
   assert.match(bindings, /callPlaybookStateBridge\('previousReplayFrame'\)/);
   assert.match(bindings, /callPlaybookStateBridge\('nextReplayFrame'\)/);
-  assert.match(bindings, /callPlaybookStateBridge\('returnReplayToLive'\)/);
+  assert.match(bindings, /callPlaybookStateBridge\('returnReplayToEndpoint'\)/);
   assert.doesNotMatch(`${controls}\n${bindings}`, /actionHistory|ledger|potMilliBb|streetContribution|legalAction|applyAction\(/);
 });
 
@@ -117,7 +118,7 @@ test('cursor events rerender Replay/table only and bypass strategy and Equity re
   );
   assert.match(
     stateListener,
-    /renderCanonicalHandWorkspace\(\);[\s\S]*?operation\?\.startsWith\('replay_'\)\) return;[\s\S]*?updateContext/,
+    /renderCanonicalHandWorkspace\(\);[\s\S]*?operation\?\.startsWith\('replay_'\)[\s\S]*?operation\?\.startsWith\('saved_hand_'\)\) return;[\s\S]*?updateContext/,
   );
   for (const method of ['previousReplayFrame', 'nextReplayFrame', 'returnReplayToLive']) {
     const block = sourceBetween(

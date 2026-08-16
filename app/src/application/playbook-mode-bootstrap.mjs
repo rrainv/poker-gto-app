@@ -36,6 +36,14 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     getLiveState: () => canonicalController.getState(),
     getHeroPlayerId: () => canonicalController.getHeroPlayerId(),
   });
+  const savedReplayController = createReplayProjectionController();
+  let savedHandViewer = null;
+
+  const activeReplayController = () => (savedHandViewer ? savedReplayController : replayController);
+  const closeSavedHandViewer = () => {
+    savedHandViewer = null;
+    savedReplayController.clear();
+  };
 
   const publish = (operation, result) => {
     if (typeof browserWindow.dispatchEvent === 'function'
@@ -49,7 +57,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
   };
 
   const publishLiveTransition = (operation, frameOperation, transition) => {
-    if (replayController.isReplayActive()) return null;
+    if (savedHandViewer || replayController.isReplayActive()) return null;
     const result = transition();
     if (result) {
       replayController.recordTransition({
@@ -63,8 +71,8 @@ export function installPlaybookStateSourceBridge(browserWindow, {
 
   const playbackController = createReplayPlaybackController({
     ...replayPlaybackOptions,
-    getProjection: () => replayController.getProjection(),
-    advance: () => replayController.advancePlayback(),
+    getProjection: () => activeReplayController().getProjection(),
+    advance: () => activeReplayController().advancePlayback(),
     onAdvance: (projection) => publish('replay_playback_tick', projection),
   });
 
@@ -73,6 +81,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
 
     setMode(mode, scenarioInput) {
       playbackController.cancel();
+      if (mode === PLAYBOOK_MODES.SCENARIO) closeSavedHandViewer();
       const result = modeController.setMode(mode, scenarioInput);
       if (result?.mode === PLAYBOOK_MODES.SCENARIO) replayController.returnToLive();
       return publish('mode', result);
@@ -92,6 +101,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     },
 
     createTablePresenceViewModel() {
+      if (savedHandViewer) return savedReplayController.getProjection().tablePresence;
       return createTablePresenceViewModel({
         state: canonicalController.getState(),
         heroPlayerId: canonicalController.getHeroPlayerId(),
@@ -99,6 +109,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     },
 
     createReplayTimelineViewModel() {
+      if (savedHandViewer) return savedReplayController.getProjection().liveTimeline;
       return createReplayTimelineViewModel({
         state: canonicalController.getState(),
         heroPlayerId: canonicalController.getHeroPlayerId(),
@@ -106,19 +117,29 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     },
 
     createReplayProjectionViewModel() {
-      return modeController.getMode() === PLAYBOOK_MODES.HAND
-        ? replayController.getProjection()
-        : null;
+      if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
+      const projection = activeReplayController().getProjection();
+      return savedHandViewer
+        ? Object.freeze({
+          ...projection,
+          viewerContext: Object.freeze({
+            kind: 'saved_hand',
+            objectId: savedHandViewer.objectId,
+            title: savedHandViewer.title,
+            hasLiveHand: savedHandViewer.hasLiveHand,
+          }),
+        })
+        : projection;
     },
 
     createCanonicalHandReplaySource() {
-      return modeController.getMode() === PLAYBOOK_MODES.HAND
+      return modeController.getMode() === PLAYBOOK_MODES.HAND && !savedHandViewer
         ? replayController.createCanonicalHandReplaySource()
         : null;
     },
 
     getCanonicalHandSourceId() {
-      return canonicalController.getState() ? canonicalHandSourceId : null;
+      return canonicalController.getState() && !savedHandViewer ? canonicalHandSourceId : null;
     },
 
     createReplayPlaybackViewModel() {
@@ -127,11 +148,12 @@ export function installPlaybookStateSourceBridge(browserWindow, {
 
     startReplayPlayback() {
       if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
-      if (!replayController.isReplayActive()) replayController.beginPlayback();
+      const activeController = activeReplayController();
+      if (!activeController.isReplayActive()) activeController.beginPlayback();
       const playback = playbackController.start();
       return publish('replay_playback_start', {
         playback,
-        projection: replayController.getProjection(),
+        projection: activeController.getProjection(),
       });
     },
 
@@ -140,7 +162,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
       const playback = playbackController.pause();
       return publish('replay_playback_pause', {
         playback,
-        projection: replayController.getProjection(),
+        projection: activeReplayController().getProjection(),
       });
     },
 
@@ -149,7 +171,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
       return publish('replay_playback_cancel', {
         playback,
         projection: modeController.getMode() === PLAYBOOK_MODES.HAND
-          ? replayController.getProjection()
+          ? activeReplayController().getProjection()
           : null,
       });
     },
@@ -157,19 +179,62 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     previousReplayFrame() {
       if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
       playbackController.pause();
-      return publish('replay_previous', replayController.previous());
+      return publish('replay_previous', activeReplayController().previous());
     },
 
     nextReplayFrame() {
       if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
       playbackController.pause();
-      return publish('replay_next', replayController.next());
+      return publish('replay_next', activeReplayController().next());
     },
 
     returnReplayToLive() {
       if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
       playbackController.cancel();
-      return publish('replay_live', replayController.returnToLive());
+      return publish(
+        savedHandViewer ? 'replay_saved_endpoint' : 'replay_live',
+        activeReplayController().returnToEndpoint(),
+      );
+    },
+
+    returnReplayToEndpoint() {
+      if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
+      playbackController.cancel();
+      return publish(
+        savedHandViewer ? 'replay_saved_endpoint' : 'replay_live',
+        activeReplayController().returnToEndpoint(),
+      );
+    },
+
+    openSavedHand({ objectId, title = null, pokerState, heroPlayerId, replaySource } = {}) {
+      playbackController.cancel();
+      const modeResult = modeController.setMode(
+        PLAYBOOK_MODES.HAND,
+        modeController.getLastScenarioInput() || createPlaybookScenarioInput({}),
+      );
+      if (modeResult.mode !== PLAYBOOK_MODES.HAND) {
+        throw new RangeError('Saved Hand could not enter Hand Mode');
+      }
+      savedReplayController.replaceFromCanonicalHandReplaySource(replaySource, { readOnly: true });
+      savedHandViewer = Object.freeze({
+        objectId,
+        title,
+        pokerState,
+        heroPlayerId,
+        hasLiveHand: Boolean(canonicalController.getState()),
+      });
+      return publish('saved_hand_open', bridge.createReplayProjectionViewModel());
+    },
+
+    closeSavedHand() {
+      if (!savedHandViewer) return bridge.createReplayProjectionViewModel();
+      playbackController.cancel();
+      closeSavedHandViewer();
+      return publish('saved_hand_close', replayController.getProjection());
+    },
+
+    hasLiveHand() {
+      return Boolean(canonicalController.getState());
     },
 
     getResolution: () => modeController.getResolution(),
@@ -177,6 +242,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
 
     initializeHand(configuration) {
       playbackController.cancel();
+      closeSavedHandViewer();
       const result = canonicalController.initialize(configuration);
       canonicalHandSourceId = handSourceIdFactory();
       replayController.replaceHand({
@@ -189,6 +255,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
 
     resetHand() {
       playbackController.cancel();
+      closeSavedHandViewer();
       canonicalController.reset();
       canonicalHandSourceId = null;
       replayController.clear();
@@ -243,9 +310,9 @@ export function installPlaybookStateSourceBridge(browserWindow, {
       );
     },
 
-    getState: () => canonicalController.getState(),
-    getHeroPlayerId: () => canonicalController.getHeroPlayerId(),
-    getLegalActions: () => canonicalController.getLegalActions(),
+    getState: () => savedHandViewer?.pokerState ?? canonicalController.getState(),
+    getHeroPlayerId: () => savedHandViewer?.heroPlayerId ?? canonicalController.getHeroPlayerId(),
+    getLegalActions: () => (savedHandViewer ? null : canonicalController.getLegalActions()),
     getDiagnostics: () => canonicalController.getDiagnostics(),
   });
 

@@ -274,7 +274,7 @@ test('cursor rendering bypasses strategy and Equity, with localized Showdown and
   const listenerEnd = logic.indexOf('function formatCanonicalBb(', listenerStart);
   const listener = logic.slice(listenerStart, listenerEnd);
 
-  assert.match(listener, /operation\?\.startsWith\('replay_'\)\) return/);
+  assert.match(listener, /operation\?\.startsWith\('replay_'\)[\s\S]*?operation\?\.startsWith\('saved_hand_'\)\) return/);
   assert.doesNotMatch(listener, /calculateEquity|resolveStrategy|Training/);
   for (const key of [
     'replay.street.showdown', 'replay.transition.flopDeal', 'replay.transition.turnDeal',

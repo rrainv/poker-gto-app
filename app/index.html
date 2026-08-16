@@ -14,7 +14,7 @@
 
   <title data-i18n="Riverline — Poker Strategy &amp; Analysis">Riverline — Poker Strategy &amp; Analysis</title>
 
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="stylesheet" href="styles.css?v=22">
 
   <link rel="icon"
 
@@ -23,7 +23,8 @@
   <script src="src/locales/product-translations.js?v=1" defer></script>
   <script src="src/locales/analysis-translations.js?v=1" defer></script>
   <script src="src/locales/range-calibration-translations.js?v=1" defer></script>
-  <script src="src/locales/i18n.js?v=3" defer></script>
+  <script src="src/locales/home-translations.js?v=1" defer></script>
+  <script src="src/locales/i18n.js?v=4" defer></script>
 
 
 
@@ -329,7 +330,7 @@
 
 <body data-density="comfortable">
 
-  <div class="riverline-shell" data-active-mode="gto">
+  <div class="riverline-shell" data-active-mode="home">
   <aside id="modeRail" class="mode-rail" aria-label="Riverline application" data-i18n-aria-label="Riverline application">
       <div class="rail-brand">
         <div class="brand-mark" aria-hidden="true">
@@ -345,7 +346,11 @@
       </div>
 
       <nav class="mode-navigation" aria-label="Primary mode" data-i18n-aria-label="Primary mode">
-        <button class="mode-nav-item active" type="button" data-mode="gto" data-mode-title="Playbook" data-mode-subtitle="Strategy guidance with explicit source provenance." aria-label="Playbook" data-i18n-aria-label="Playbook" title="Playbook" data-i18n-title="Playbook" data-tooltip="Playbook" aria-current="page">
+        <button class="mode-nav-item active" type="button" data-mode="home" data-mode-title="Home dashboard" data-mode-subtitle="Your saved study, review queue, and next useful action." aria-label="Home" data-i18n-aria-label="Home dashboard" title="Home" data-i18n-title="Home dashboard" data-tooltip="Home" aria-current="page">
+          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7v9h-6v-6h-4v6H4v-9Z"/></svg>
+          <span data-i18n="Home dashboard">Home</span>
+        </button>
+        <button class="mode-nav-item" type="button" data-mode="gto" data-mode-title="Playbook" data-mode-subtitle="Strategy guidance with explicit source provenance." aria-label="Playbook" data-i18n-aria-label="Playbook" title="Playbook" data-i18n-title="Playbook" data-tooltip="Playbook" aria-current="false">
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="11" height="14" rx="2"/><path d="m9 9 2-2 2 2-2 2-2-2Zm7-1h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8"/></svg>
           <span data-i18n="Playbook">Playbook</span>
         </button>
@@ -397,8 +402,8 @@
       <header class="workspace-header">
         <div class="workspace-heading">
           <div class="workspace-eyebrow" data-i18n="Riverline workspace">Riverline workspace</div>
-          <h1 id="workspaceTitle" data-i18n="Playbook">Playbook</h1>
-          <p id="workspaceSubtitle" data-i18n="Strategy guidance with explicit source provenance.">Strategy guidance with explicit source provenance.</p>
+          <h1 id="workspaceTitle" data-i18n="Home dashboard">Home</h1>
+          <p id="workspaceSubtitle" data-i18n="Your saved study, review queue, and next useful action.">Your saved study, review queue, and next useful action.</p>
         </div>
 
         <div class="workspace-utilities" aria-label="Strategy source status" data-i18n-aria-label="Strategy source status">
@@ -416,8 +421,49 @@
       <div class="shell workspace-canvas">
 
 
+    <section id="homeMode" class="mode-view active" aria-label="Home" data-i18n-aria-label="Home dashboard">
+      <div id="homeWorkspace" class="home-workspace" aria-busy="true">
+        <div id="homeLoadingState" class="home-loading-state" role="status">
+          <span class="home-loading-spinner" aria-hidden="true"></span>
+          <span data-i18n="Opening your study workspace">Opening your study workspace</span>
+        </div>
+        <div id="homeWorkspaceContent" class="home-dashboard-grid" hidden>
+          <section class="panel home-section home-section--continue" aria-labelledby="homeContinueTitle">
+            <header class="home-section-head"><div><p data-i18n="Pick up where you left off">Pick up where you left off</p><h2 id="homeContinueTitle" data-i18n="Continue">Continue</h2></div></header>
+            <div id="homeContinueContent" class="home-section-content"></div>
+          </section>
 
-    <section id="gtoMode" class="mode-view active">
+          <section class="panel home-section home-section--review" aria-labelledby="homeReviewTitle">
+            <header class="home-section-head"><div><p data-i18n="Items you classified for another look">Items you classified for another look</p><h2 id="homeReviewTitle" data-i18n="Review">Review</h2></div></header>
+            <div id="homeReviewContent" class="home-review-groups"></div>
+          </section>
+
+          <section class="panel home-section home-section--recent" aria-labelledby="homeRecentTitle">
+            <header class="home-section-head"><div><p data-i18n="Your latest saved study items">Your latest saved study items</p><h2 id="homeRecentTitle" data-i18n="Recent">Recent</h2></div></header>
+            <div id="homeRecentContent" class="home-saved-list"></div>
+          </section>
+
+          <section class="panel home-section home-section--strategy" aria-labelledby="homeStrategyTitle">
+            <header class="home-section-head"><div><p data-i18n="Direct calibration only">Direct calibration only</p><h2 id="homeStrategyTitle" data-i18n="Personal Strategy">Personal Strategy</h2></div></header>
+            <div id="homeStrategyContent" class="home-section-content"></div>
+          </section>
+
+          <section class="panel home-section home-section--quick" aria-labelledby="homeQuickStartTitle">
+            <header class="home-section-head"><div><p data-i18n="Go straight to a workspace">Go straight to a workspace</p><h2 id="homeQuickStartTitle" data-i18n="Quick Start">Quick Start</h2></div></header>
+            <nav class="home-quick-links" aria-label="Quick Start" data-i18n-aria-label="Quick Start">
+              <button type="button" class="home-quick-link" data-home-destination="gto"><strong data-i18n="Playbook">Playbook</strong><span data-i18n="Build or play a spot">Build or play a spot</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="training"><strong data-i18n="Training">Training</strong><span data-i18n="Practice a decision">Practice a decision</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="equity"><strong data-i18n="Equity">Equity</strong><span data-i18n="Calculate win chances">Calculate win chances</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="calibration"><strong data-i18n="Range Calibration">Range Calibration</strong><span data-i18n="Build your ranges">Build your ranges</span></button>
+            </nav>
+          </section>
+        </div>
+      </div>
+    </section>
+
+
+
+    <section id="gtoMode" class="mode-view">
 
       <div class="playbook-state-source" aria-label="Playbook workflow" data-i18n-aria-label="Playbook workflow" data-interaction-surface="interactive">
         <div class="playbook-workflow-copy">
@@ -680,6 +726,15 @@
 
           </section>
 
+          <section id="savedSpotViewerBanner" class="saved-study-viewer-banner saved-study-viewer-banner--spot" hidden aria-labelledby="savedSpotViewerTitle">
+            <div>
+              <span class="badge status-badge status-badge--info" data-i18n="Saved Spot">Saved Spot</span>
+              <strong id="savedSpotViewerTitle" dir="auto" data-i18n="Saved study spot">Saved study spot</strong>
+              <span id="savedSpotViewerTruth" data-i18n="History unavailable">History unavailable</span>
+            </div>
+            <button id="savedSpotCloseButton" class="ui-button ui-button--quiet" type="button" data-i18n="Close saved context">Close saved context</button>
+          </section>
+
           <section id="playbookHandWorkspace" class="panel playbook-hand-workspace" data-playbook-hand hidden aria-hidden="true">
             <div class="panel-head playbook-hand-head">
               <div>
@@ -688,6 +743,18 @@
                 <div class="panel-note" data-i18n="Actions and cards advance the real hand state.">Actions and cards advance the real hand state.</div>
               </div>
               <span id="handSessionBadge" class="badge status-badge status-badge--info" data-i18n="Not started">Not started</span>
+            </div>
+
+            <div id="savedHandViewerBanner" class="saved-study-viewer-banner saved-study-viewer-banner--hand" hidden aria-labelledby="savedHandViewerTitle">
+              <div>
+                <span class="badge status-badge status-badge--info" data-i18n="Saved Hand">Saved Hand</span>
+                <span class="badge status-badge status-badge--neutral" data-i18n="Read-only">Read-only</span>
+                <strong id="savedHandViewerTitle" dir="auto" data-i18n="Saved hand replay">Saved hand replay</strong>
+              </div>
+              <div class="saved-study-viewer-actions">
+                <button id="savedHandBackHomeButton" class="ui-button ui-button--secondary" type="button" data-i18n="Back to Home">Back to Home</button>
+                <button id="savedHandReturnLiveButton" class="ui-button ui-button--quiet" type="button" data-i18n="Return to live hand">Return to live hand</button>
+              </div>
             </div>
 
             <div class="panel-body playbook-hand-body">
@@ -2040,10 +2107,11 @@
   <script type="module" src="src/application/analysis-explanation-bootstrap.mjs"></script>
   <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/saved-study-object-bootstrap.mjs"></script>
+  <script type="module" src="src/application/home-workspace-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>
-  <script src="src/core/logic.js?v=21" defer></script>
+  <script src="src/core/logic.js?v=22" defer></script>
   <script src="src/ui/teacher.js" defer></script>
   <script src="src/ui/PokerPrimitives.js" defer></script>
   <script src="src/ui/TableRenderer.js" defer></script>

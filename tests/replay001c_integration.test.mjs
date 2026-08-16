@@ -44,12 +44,13 @@ test('one playback coordinator owns one cancellable timeout and no interval or r
 });
 
 test('playback uses the existing Replay cursor and keeps final-frame Replay separate from Live', () => {
-  assert.match(bridgeSource, /advance:\s*\(\) => replayController\.advancePlayback\(\)/);
+  assert.match(bridgeSource, /advance:\s*\(\) => activeReplayController\(\)\.advancePlayback\(\)/);
+  assert.match(bridgeSource, /const activeReplayController = \(\) => \(savedHandViewer \? savedReplayController : replayController\)/);
   assert.match(projectionSource, /beginPlayback\(\)[\s\S]*?replayCursor = 0/);
   assert.match(projectionSource, /advancePlayback\(\)[\s\S]*?replayCursor \+= 1/);
   assert.equal((projectionSource.match(/let replayCursor = null/g) || []).length, 1);
   assert.match(projectionSource, /atPlaybackEnd:\s*!atLive && selectedFrameIndex === frames\.length - 1/);
-  assert.match(bridgeSource, /returnReplayToLive\(\)[\s\S]*?playbackController\.cancel\(\)[\s\S]*?replayController\.returnToLive\(\)/);
+  assert.match(bridgeSource, /returnReplayToLive\(\)[\s\S]*?playbackController\.cancel\(\)[\s\S]*?activeReplayController\(\)\.returnToEndpoint\(\)/);
 });
 
 test('manual navigation and lifecycle boundaries cancel before selection or mutation', () => {
@@ -69,7 +70,7 @@ test('manual navigation and lifecycle boundaries cancel before selection or muta
     const block = sourceBetween(bridgeSource, method, endToken);
     assert.ok(block.indexOf(cancellation) < block.indexOf(method.startsWith('initialize')
       ? 'canonicalController.initialize' : method.startsWith('reset')
-        ? 'canonicalController.reset' : 'replayController.'), method);
+        ? 'canonicalController.reset' : 'activeReplayController()'), method);
   }
   assert.match(bridgeSource, /setMode\(mode, scenarioInput\) \{\s*playbackController\.cancel\(\)/);
   assert.match(logic, /mode !== 'gto'\) callPlaybookStateBridge\('cancelReplayPlayback'\)/);
@@ -188,7 +189,7 @@ test('playback events preserve PERF-001 by returning before strategy, Matrix, Eq
     "window.addEventListener('riverline:playbook-state-change'",
     'function formatCanonicalBb(',
   );
-  assert.match(listener, /operation\?\.startsWith\('replay_'\)\) return/);
+  assert.match(listener, /operation\?\.startsWith\('replay_'\)[\s\S]*?operation\?\.startsWith\('saved_hand_'\)\) return/);
   assert.doesNotMatch(listener, /strategyProvider|calculateEquity|renderChart|Training|updateEquity/);
   assert.doesNotMatch(`${playbackSource}\n${projectionSource}`, /StrategyProvider|calculateEquity|renderChart|Training/);
 });

@@ -310,6 +310,7 @@ function emptyProjection() {
     mode: 'empty',
     modeLabelKey: 'replay.status.live',
     readOnly: false,
+    detachedReadOnly: false,
     selectedFrameIndex: null,
     totalFrameCount: 0,
     currentStep: 0,
@@ -317,8 +318,12 @@ function emptyProjection() {
     canPrevious: false,
     canNext: false,
     canReturnToLive: false,
+    canReturnToEndpoint: false,
+    endpoint: null,
+    endpointLabelKey: 'replay.control.returnToLive',
     atStart: false,
     atLive: false,
+    atEndpoint: false,
     canPlayback: false,
     canPlaybackAdvance: false,
     atPlaybackEnd: false,
@@ -367,21 +372,25 @@ export function createReplayProjectionController({
   let frames = [];
   let sourceEvents = [];
   let replayCursor = null;
+  let detachedReadOnly = false;
   let selectionRevision = 0;
   let selectionDirection = 'none';
 
   const projection = () => {
     if (frames.length === 0) return emptyProjection();
 
-    const atLive = replayCursor === null;
-    const selectedFrameIndex = atLive ? frames.length - 1 : replayCursor;
+    const atEndpoint = replayCursor === null;
+    const atLive = atEndpoint && !detachedReadOnly;
+    const selectedFrameIndex = atEndpoint ? frames.length - 1 : replayCursor;
     const selectedFrame = frames[selectedFrameIndex];
     const latestFrame = frames.at(-1);
-    const liveState = getLiveState() || latestFrame.state;
-    const liveHeroPlayerId = getHeroPlayerId() || latestFrame.heroPlayerId;
-    const selectedState = atLive ? liveState : selectedFrame.state;
-    const selectedHeroPlayerId = atLive ? liveHeroPlayerId : selectedFrame.heroPlayerId;
-    const tablePresence = atLive
+    const liveState = detachedReadOnly ? latestFrame.state : (getLiveState() || latestFrame.state);
+    const liveHeroPlayerId = detachedReadOnly
+      ? latestFrame.heroPlayerId
+      : (getHeroPlayerId() || latestFrame.heroPlayerId);
+    const selectedState = atEndpoint ? liveState : selectedFrame.state;
+    const selectedHeroPlayerId = atEndpoint ? liveHeroPlayerId : selectedFrame.heroPlayerId;
+    const tablePresence = atEndpoint
       ? createTablePresenceViewModel({
         state: selectedState,
         heroPlayerId: selectedHeroPlayerId,
@@ -391,7 +400,7 @@ export function createReplayProjectionController({
       state: liveState,
       heroPlayerId: liveHeroPlayerId,
     });
-    const selectedTimeline = atLive
+    const selectedTimeline = atEndpoint
       ? liveTimeline
       : createReplayTimelineViewModel({
         state: selectedFrame.state,
@@ -402,10 +411,10 @@ export function createReplayProjectionController({
       selectedTimeline,
       selectedFrameIndex,
       journalFrames: frames.slice(),
-      atLive,
+      atLive: atEndpoint,
     });
     const motion = createReplayMotion({
-      atLive,
+      atLive: atEndpoint,
       frame: selectedFrame,
       frameIndex: selectedFrameIndex,
       previousFrame: frames[selectedFrameIndex - 1] || null,
@@ -417,18 +426,27 @@ export function createReplayProjectionController({
 
     return deepFreeze({
       schemaVersion: REPLAY_PROJECTION_SCHEMA_VERSION,
-      mode: atLive ? 'live' : 'replay',
-      modeLabelKey: atLive ? 'replay.status.live' : 'replay.status.replay',
-      readOnly: !atLive,
+      mode: detachedReadOnly ? 'saved' : (atLive ? 'live' : 'replay'),
+      modeLabelKey: detachedReadOnly
+        ? 'replay.status.saved'
+        : (atLive ? 'replay.status.live' : 'replay.status.replay'),
+      readOnly: detachedReadOnly || !atLive,
+      detachedReadOnly,
       selectedFrameIndex,
       totalFrameCount: frames.length,
       currentStep: selectedFrameIndex + 1,
       totalSteps: frames.length,
       canPrevious: frames.length > 1 && (atLive || selectedFrameIndex > 0),
       canNext: !atLive,
-      canReturnToLive: !atLive,
+      canReturnToLive: !detachedReadOnly && !atLive,
+      canReturnToEndpoint: !atEndpoint,
+      endpoint: detachedReadOnly ? 'saved_hand' : 'live_hand',
+      endpointLabelKey: detachedReadOnly
+        ? 'replay.control.returnToSavedHand'
+        : 'replay.control.returnToLive',
       atStart: selectedFrameIndex === 0,
       atLive,
+      atEndpoint,
       canPlayback: frames.length > 1,
       canPlaybackAdvance: !atLive && selectedFrameIndex < frames.length - 1,
       atPlaybackEnd: !atLive && selectedFrameIndex === frames.length - 1,
@@ -456,6 +474,7 @@ export function createReplayProjectionController({
       frames = [];
       sourceEvents = [];
       replayCursor = null;
+      detachedReadOnly = false;
       selectionRevision = 0;
       selectionDirection = 'none';
       return projection();
@@ -469,6 +488,7 @@ export function createReplayProjectionController({
       frames = [];
       sourceEvents = [];
       replayCursor = null;
+      detachedReadOnly = false;
       selectionRevision = 0;
       selectionDirection = 'none';
       if (state) {
@@ -484,6 +504,9 @@ export function createReplayProjectionController({
     },
 
     recordTransition({ state, heroPlayerId = getHeroPlayerId(), operation } = {}) {
+      if (detachedReadOnly) {
+        throw new RangeError('A detached read-only Replay cannot record live transitions');
+      }
       if (replayCursor !== null) {
         throw new RangeError('Return to the live edge before recording a canonical transition');
       }
@@ -513,7 +536,7 @@ export function createReplayProjectionController({
       });
     },
 
-    replaceFromCanonicalHandReplaySource(source) {
+    replaceFromCanonicalHandReplaySource(source, { readOnly = false } = {}) {
       const durableSource = createCanonicalHandReplaySource({
         heroPlayerId: source?.heroPlayerId,
         events: source?.events,
@@ -527,6 +550,7 @@ export function createReplayProjectionController({
       frames = restoredFrames;
       sourceEvents = [...durableSource.events];
       replayCursor = null;
+      detachedReadOnly = readOnly === true;
       selectionRevision = 0;
       selectionDirection = 'none';
       return projection();
@@ -571,6 +595,13 @@ export function createReplayProjectionController({
     },
 
     returnToLive() {
+      replayCursor = null;
+      selectionRevision += 1;
+      selectionDirection = 'jump';
+      return projection();
+    },
+
+    returnToEndpoint() {
       replayCursor = null;
       selectionRevision += 1;
       selectionDirection = 'jump';

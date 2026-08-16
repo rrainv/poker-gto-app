@@ -2,17 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const protectedSources = [
-  '../app/index.html',
-  '../app/src/core/logic.js',
+const strategyConsumers = [
   '../app/src/application/strategy-provider.mjs',
   '../app/src/application/strategy-provider-bootstrap.mjs',
   '../app/src/application/training-generator.mjs',
   '../app/src/application/training-session-controller.mjs',
 ].map((path) => [path, fs.readFileSync(new URL(path, import.meta.url), 'utf8')]);
 
-test('Personal Strategy is dormant and absent from startup, StrategyProvider, and Training imports', () => {
-  for (const [path, source] of protectedSources) {
+test('Personal Strategy remains absent from StrategyProvider and Training imports', () => {
+  for (const [path, source] of strategyConsumers) {
     assert.doesNotMatch(source, /personal-strategy|personalStrategy/i, path);
   }
 });
