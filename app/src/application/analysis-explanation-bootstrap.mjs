@@ -12,6 +12,10 @@ import {
   createRangeAnalysisRequest,
   deriveExactHandFacts,
 } from './range-analysis.mjs';
+import {
+  BLUFF_ANALYSIS_FACTS_SCHEMA_VERSION,
+  createBluffAnalysisFacts,
+} from './bluff-analysis.mjs';
 
 export function installAnalysisExplanationBridge(browserWindow) {
   if (!browserWindow) return null;
@@ -23,6 +27,8 @@ export function installAnalysisExplanationBridge(browserWindow) {
     rangeAnalysisRequestSchemaVersion: RANGE_ANALYSIS_REQUEST_SCHEMA_VERSION,
     createRangeAnalysisRequest,
     createRangeAnalysisFacts,
+    bluffAnalysisFactsSchemaVersion: BLUFF_ANALYSIS_FACTS_SCHEMA_VERSION,
+    createBluffAnalysisFacts,
     deriveExactHandFacts,
     deriveBoardTextureFacts,
     formatTemplate: formatAnalysisTemplate,

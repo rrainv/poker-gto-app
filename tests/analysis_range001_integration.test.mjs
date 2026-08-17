@@ -10,6 +10,7 @@ import {
   createHoldemWeightedRangeFromHandClassWeights,
 } from '../shared/poker-domain/index.js';
 import { createAnalysisExplanation } from '../app/src/application/analysis-explanation.mjs';
+import { createBluffAnalysisFacts } from '../app/src/application/bluff-analysis.mjs';
 import { createRangeAnalysisFacts } from '../app/src/application/range-analysis.mjs';
 import { PLAYBOOK_ANALYSIS_TUTORIAL_DEFINITION } from '../app/src/tutorial/current-app-tutorials.mjs';
 
@@ -20,6 +21,10 @@ const EXPLANATION = fs.readFileSync(
 );
 const RANGE_ANALYSIS = fs.readFileSync(
   new URL('../app/src/application/range-analysis.mjs', import.meta.url),
+  'utf8',
+);
+const BLUFF_ANALYSIS = fs.readFileSync(
+  new URL('../app/src/application/bluff-analysis.mjs', import.meta.url),
   'utf8',
 );
 const RENDERER = fs.readFileSync(new URL('../app/src/ui/teacher.js', import.meta.url), 'utf8');
@@ -180,6 +185,22 @@ function strategy() {
   };
 }
 
+function betStrategy(amountBb = 5) {
+  return {
+    ...strategy(),
+    actions: [{
+      action: { type: 'bet', amountBb, potFraction: null },
+      label: `Bet ${amountBb}bb`,
+      probability: 1,
+      evBb: null,
+    }],
+    recommendation: {
+      action: { type: 'bet', amountBb, potFraction: null },
+      label: `Bet ${amountBb}bb`,
+    },
+  };
+}
+
 function partialManualRange() {
   const source = createHoldemRangeProvenanceSource({ id: 'manual', kind: 'manual' });
   return createHoldemWeightedRangeFromHandClassWeights({
@@ -254,6 +275,94 @@ test('AnalysisExplanation consumes RangeAnalysisFacts as its trusted exact-hand 
     'board',
     'decision_context',
   ]);
+});
+
+test('BluffAnalysisFacts reaches compact Analysis UI without renderer bluff math', () => {
+  const decisionContext = context({
+    tableSize: 2,
+    opponentCount: 1,
+    heroCards: ['Ah', '4h'],
+    board: ['2h', '3h', '9s'],
+    potBb: 10,
+    lastAction: 'check',
+    facingSizeBb: 0,
+    callAmountBb: 0,
+    heroStreetContributionBb: 0,
+  });
+  const strategyResult = betStrategy(5);
+  const rangeAnalysisFacts = createRangeAnalysisFacts({ decisionContext });
+  const bluffAnalysisFacts = createBluffAnalysisFacts({
+    decisionContext,
+    strategyResult,
+    rangeAnalysisFacts,
+  });
+  const explanation = createAnalysisExplanation({
+    decisionContext,
+    strategyResult,
+    rangeAnalysisFacts,
+    bluffAnalysisFacts,
+    authority: 'hand',
+  });
+  assert.equal(fact(explanation, 'bluff_pressure', 'bluff_risk').value, 5);
+  assert.equal(fact(explanation, 'bluff_pressure', 'bluff_immediate_reward').value, 10);
+  assert.equal(fact(explanation, 'bluff_pressure', 'bluff_break_even_folds').value, 1 / 3);
+  assert.equal(
+    fact(explanation, 'bluff_pressure', 'bluff_structural_improvement_cards').value,
+    12,
+  );
+
+  const rendered = createTeacherRuntime('en').render(explanation);
+  const bluffSection = renderedDescendants(rendered)
+    .find((element) => element.dataset.analysisSection === 'bluff_pressure');
+  assert.match(bluffSection.textContent, /Bluff & Pressure/);
+  assert.match(bluffSection.textContent, /5bb/);
+  assert.match(bluffSection.textContent, /10bb/);
+  assert.match(bluffSection.textContent, /33\.3%/);
+  assert.match(bluffSection.textContent, /Semibluff structure/);
+  assert.match(bluffSection.textContent, /Nut flush draw/);
+  assert.match(bluffSection.textContent, /12 unique cards/);
+  assert.match(bluffSection.textContent, /Opponent fold frequency is unavailable/);
+  assert.match(bluffSection.textContent, /Strategic blocker quality is unavailable/);
+  assert.doesNotMatch(BLUFF_ANALYSIS, /document\.|querySelector|calculateEquity|StrategyProvider/);
+  assert.doesNotMatch(RENDERER, /risk\s*\/\s*\(risk|bluffToValueRatio\s*=/);
+});
+
+test('Hebrew Bluff & Pressure keeps prose RTL and numeric pressure facts in local LTR islands', () => {
+  const decisionContext = context({
+    tableSize: 2,
+    opponentCount: 1,
+    heroCards: ['Ah', '4h'],
+    board: ['2h', '3h', '9s'],
+    potBb: 10,
+    lastAction: 'check',
+    facingSizeBb: 0,
+    callAmountBb: 0,
+    heroStreetContributionBb: 0,
+  });
+  const strategyResult = betStrategy(5);
+  const rangeAnalysisFacts = createRangeAnalysisFacts({ decisionContext });
+  const explanation = createAnalysisExplanation({
+    decisionContext,
+    strategyResult,
+    rangeAnalysisFacts,
+    bluffAnalysisFacts: createBluffAnalysisFacts({
+      decisionContext,
+      strategyResult,
+      rangeAnalysisFacts,
+    }),
+  });
+  const teacher = createTeacherRuntime('he');
+  const rendered = teacher.render(explanation);
+  const bluffSection = renderedDescendants(rendered)
+    .find((element) => element.dataset.analysisSection === 'bluff_pressure');
+  assert.equal(teacher.document.documentElement.dir, 'rtl');
+  assert.match(bluffSection.textContent, /[\u0590-\u05ff]/);
+  assert.doesNotMatch(bluffSection.textContent, /\b(?:Ah|4h|2h|3h|9s)\b/);
+  const dataTokens = renderedDescendants(bluffSection)
+    .filter((element) => element.classList.contains('poker-data-token'));
+  assert.ok(dataTokens.some((element) => element.textContent === '33.3%'));
+  assert.ok(dataTokens.some((element) => element.textContent === '5bb'));
+  assert.ok(dataTokens.some((element) => element.textContent === '10bb'));
 });
 
 test('compact Analysis visibly surfaces the exact wheel straight-flush draw and shared out', () => {
@@ -545,6 +654,8 @@ test('Explanation remains the only copy layer and does not evaluate or condition
   assert.match(RANGE_ANALYSIS, /evaluateFive/);
   assert.match(RANGE_ANALYSIS, /conditionHoldemRange/);
   assert.doesNotMatch(RANGE_ANALYSIS, /strategy-provider|calculateEquity|document\.|querySelector/);
+  assert.match(BLUFF_ANALYSIS, /rangeAnalysisFacts/);
+  assert.doesNotMatch(BLUFF_ANALYSIS, /evaluateFive|evaluateSeven|conditionHoldemRange|calculateEquity|document\.|querySelector/);
 });
 
 test('range analysis is invoked only inside the visible Analysis render path and never calls StrategyProvider', () => {
@@ -573,7 +684,7 @@ test('range analysis is invoked only inside the visible Analysis render path and
 });
 
 test('renderer exposes compact blocker/range sections, readable partial coverage, and separate fact sources', () => {
-  assert.match(RENDERER, /standaloneSections = \['blockers', 'range'\]/);
+  assert.match(RENDERER, /standaloneSections = \['bluff_pressure', 'blockers', 'range'\]/);
   assert.match(RENDERER, /analysis-primary-structural-section/);
   assert.match(RENDERER, /known combo mass/);
   assert.match(RENDERER, /known coverage/);
@@ -599,7 +710,8 @@ test('Analysis tutorial teaches the new facts without changing the manual v1 fir
     'comparison',
   ]);
   assert.match(tutorial.steps.find((step) => step.id === 'exact-hand').bodyKey, /canonical evaluator/);
-  assert.match(tutorial.steps.find((step) => step.id === 'blockers').bodyKey, /good or bad for bluffing/);
+  assert.match(tutorial.steps.find((step) => step.id === 'blockers').bodyKey, /33% required folds does not mean Villain folds 33%/);
+  assert.match(tutorial.steps.find((step) => step.id === 'blockers').bodyKey, /neutral removal facts/);
   assert.match(tutorial.steps.find((step) => step.id === 'range').bodyKey, /unknown combos unknown/);
   assert.match(tutorial.steps.find((step) => step.id === 'range').bodyKey, /sources remain separate/);
   assert.match(HTML, /data-tutorial-anchor="playbook-analysis-explanation"/);
@@ -637,6 +749,17 @@ test('new Analysis labels and tutorial copy are complete in EN, RU, and HE', () 
     'analysis.ui.factSources',
     'analysis.sourceLabel.scenario',
     'analysis.sourceLabel.personal_inferred',
+    'analysis.section.bluff_pressure',
+    'analysis.fact.bluffRisk',
+    'analysis.fact.bluffReward',
+    'analysis.fact.requiredFoldFrequency',
+    'analysis.fact.requiredAllOpponentsFoldFrequency',
+    'analysis.fact.semibluff',
+    'analysis.fact.structuralImprovementCards',
+    'analysis.fact.riverBalancedRangeReference',
+    'analysis.bluff.requirementNotPrediction',
+    'analysis.bluff.blockerQualityUnavailable',
+    'analysis.value.simplifiedAssumptions',
   ];
   for (const locale of ['en', 'ru', 'he']) {
     for (const key of keys) assert.equal(typeof catalog[locale][key], 'string', `${locale}: ${key}`);

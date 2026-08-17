@@ -76,7 +76,7 @@ test('Hand Mode supplies canonical history while Scenario remains an authority l
 });
 
 test('Analysis creates canonical range facts at the visible render seam without promoting heuristic samples', () => {
-  const facts = sourceBetween('function trustedAnalysisFacts(', 'function renderDecisionAnalysis(');
+  const facts = sourceBetween('function trustedAnalysisFacts(', 'function bluffAnalysisFactsForDecision(');
   assert.match(facts, /function rangeAnalysisFactsForDecision/);
   assert.match(facts, /bridge\.createRangeAnalysisRequest/);
   assert.match(facts, /bridge\.createRangeAnalysisFacts/);
@@ -157,7 +157,7 @@ test('Hero state makes trusted made-hand, draw, and board facts primary without 
   assert.match(teacher, /hero: new Set\(\['hero_cards', 'preflop_hand_class', 'made_hand', 'hand_components', 'draws', 'draw_outs', 'hero_overcards'\]\)/);
   assert.match(teacher, /board: new Set\(\['board_pairing', 'board_suits', 'board_connectivity', 'board_broadway_count', 'board_flush_state', 'board_straight_state'\]\)/);
   assert.match(teacher, /const heroRegion = analysisHeroState\(explanation\)/);
-  assert.match(teacher, /standaloneSections = \['blockers', 'range'\]/);
+  assert.match(teacher, /standaloneSections = \['bluff_pressure', 'blockers', 'range'\]/);
   assert.match(teacher, /analysisFactSourcesElement/);
   assert.match(css, /\.analysis-hero-state \{[^}]*border-inline-start: 4px solid var\(--accent-primary\)/);
   assert.doesNotMatch(teacher, /evaluatePostflopHand|deriveBoardTextureFacts|scoreSeven|calculateEquity/);

@@ -5,6 +5,9 @@ import {
 import {
   RANGE_ANALYSIS_FACTS_SCHEMA_VERSION,
 } from './range-analysis.mjs';
+import {
+  BLUFF_ANALYSIS_FACTS_SCHEMA_VERSION,
+} from './bluff-analysis.mjs';
 
 export { deriveBoardStructureFacts as deriveBoardTextureFacts } from './range-analysis.mjs';
 
@@ -477,6 +480,125 @@ function blockerSection(rangeAnalysisFacts) {
     textPart(
       'analysis.blockers.noStrategicLabel',
       'These are structural card-removal facts, not a judgment that a blocker is good or bad for bluffing.',
+      {},
+      'limitation',
+    ),
+  ]);
+}
+
+function bluffPressureSection(bluffAnalysisFacts) {
+  if (!bluffAnalysisFacts) return null;
+  const facts = [];
+  const action = bluffAnalysisFacts.action;
+  const economics = bluffAnalysisFacts.economics;
+  const structure = bluffAnalysisFacts.handStructure;
+  if (action) {
+    facts.push(fact('bluff_action', {
+      label: 'Current action', labelKey: 'analysis.fact.bluffAction', value: action.type,
+      templateKey: 'analysis.bluff.action', fallback: 'Current analyzed action: {action}.',
+      values: {
+        action: action.label,
+        actionType: action.type,
+        probability: Number.isFinite(action.probability) ? percent(action.probability, 0) : null,
+      },
+    }));
+  }
+  if (economics.availability === 'available') {
+    facts.push(
+      fact('bluff_risk', {
+        kind: 'derived', label: 'Risk', labelKey: 'analysis.fact.bluffRisk',
+        value: economics.riskBb, unit: 'bb',
+        templateKey: 'analysis.bluff.risk', fallback: 'Incremental risk: {risk}.',
+        values: { risk: bb(economics.riskBb) },
+      }),
+      fact('bluff_immediate_reward', {
+        kind: 'derived', label: 'Immediate reward', labelKey: 'analysis.fact.bluffReward',
+        value: economics.immediateRewardBb, unit: 'bb',
+        templateKey: 'analysis.bluff.reward', fallback: 'Immediate reward if all relevant opponents fold: {reward}.',
+        values: { reward: bb(economics.immediateRewardBb) },
+      }),
+      fact('bluff_break_even_folds', {
+        kind: 'derived',
+        label: economics.foldRequirementKind === 'required_all_opponents_fold_frequency'
+          ? 'Required all-opponents-fold frequency' : 'Required fold frequency',
+        labelKey: economics.foldRequirementKind === 'required_all_opponents_fold_frequency'
+          ? 'analysis.fact.requiredAllOpponentsFoldFrequency'
+          : 'analysis.fact.requiredFoldFrequency',
+        value: economics.breakEvenFoldFrequency,
+        templateKey: 'analysis.bluff.breakEven',
+        fallback: 'Break-even folds for a zero-equity bluff: {frequency}.',
+        values: {
+          frequency: percent(economics.breakEvenFoldFrequency, 1),
+          opponentCount: economics.opponentCount,
+          requirementKind: economics.foldRequirementKind,
+        },
+      }),
+    );
+  } else {
+    facts.push(fact('bluff_economics_availability', {
+      kind: 'availability',
+      label: 'Break-even fold requirement',
+      labelKey: 'analysis.fact.breakEvenFoldRequirement',
+      value: economics.availability,
+      templateKey: 'analysis.bluff.unavailable',
+      fallback: 'Break-even fold requirement unavailable: {reason}.',
+      values: { reason: economics.unavailableReason },
+    }));
+  }
+  if (structure.availability === 'available') {
+    facts.push(fact('semibluff_structure', {
+      label: 'Semibluff', labelKey: 'analysis.fact.semibluff',
+      value: {
+        classification: structure.classification,
+        madeHand: structure.madeHand,
+        madeHandRelationship: structure.madeHandRelationship,
+        drawLabels: [...structure.drawLabels],
+        overcardCount: structure.overcardCount,
+      },
+      templateKey: 'analysis.bluff.structure',
+      fallback: 'Structural bluff candidate: {classification}.',
+      values: {
+        classification: structure.classification,
+        drawCount: structure.drawLabels.length,
+        structuralCards: structure.structuralImprovementCardCount,
+        overcardCount: structure.overcardCount,
+      },
+    }));
+    facts.push(fact('bluff_structural_improvement_cards', {
+      label: 'Structural improvement cards',
+      labelKey: 'analysis.fact.structuralImprovementCards',
+      value: structure.structuralImprovementCardCount,
+      templateKey: 'analysis.bluff.structuralCards',
+      fallback: '{count} unique structural improvement cards; no Equity is inferred.',
+      values: { count: structure.structuralImprovementCardCount },
+    }));
+  }
+  if (bluffAnalysisFacts.riverReference.availability === 'available') {
+    const reference = bluffAnalysisFacts.riverReference;
+    facts.push(fact('river_bluff_value_reference', {
+      kind: 'reference',
+      label: 'River balanced-range reference',
+      labelKey: 'analysis.fact.riverBalancedRangeReference',
+      value: { ...reference, assumptions: [...reference.assumptions] },
+      templateKey: 'analysis.bluff.riverReference',
+      fallback: 'Simplified river reference: 1 bluff per {valueUnits} value bets; bluff share {share}.',
+      values: {
+        bluffUnits: 1,
+        valueUnits: rounded(1 / reference.bluffToValueRatio, 3),
+        share: percent(reference.bluffShareOfBettingRange, 1),
+      },
+    }));
+  }
+  return section('bluff_pressure', 'Bluff & Pressure', 'primary', facts, [
+    textPart(
+      'analysis.bluff.requirementNotPrediction',
+      'The break-even requirement is mathematical pressure, not a prediction of how often an opponent folds.',
+      {},
+      'limitation',
+    ),
+    textPart(
+      'analysis.bluff.blockerQualityUnavailable',
+      'Strategic blocker quality is unavailable without an explicit continue/fold or value/bluff partition.',
       {},
       'limitation',
     ),
@@ -984,6 +1106,7 @@ export function createAnalysisExplanation({
   strategyResult,
   trustedFacts = {},
   rangeAnalysisFacts = null,
+  bluffAnalysisFacts = null,
   authority = 'scenario',
   depth = 'detailed',
   unavailableReason = null,
@@ -999,6 +1122,10 @@ export function createAnalysisExplanation({
   if (rangeAnalysisFacts !== null && rangeAnalysisFacts !== undefined
     && rangeAnalysisFacts.schemaVersion !== RANGE_ANALYSIS_FACTS_SCHEMA_VERSION) {
     throw new TypeError(`Expected ${RANGE_ANALYSIS_FACTS_SCHEMA_VERSION}`);
+  }
+  if (bluffAnalysisFacts !== null && bluffAnalysisFacts !== undefined
+    && bluffAnalysisFacts.schemaVersion !== BLUFF_ANALYSIS_FACTS_SCHEMA_VERSION) {
+    throw new TypeError(`Expected ${BLUFF_ANALYSIS_FACTS_SCHEMA_VERSION}`);
   }
   if (!['concise', 'detailed'].includes(depth)) throw new TypeError('Analysis depth must be concise or detailed');
 
@@ -1020,6 +1147,8 @@ export function createAnalysisExplanation({
       depth,
     );
     if (handBoard) sections.push(handBoard);
+    const bluffPressure = bluffPressureSection(bluffAnalysisFacts);
+    if (bluffPressure) sections.push(bluffPressure);
     const blockers = blockerSection(rangeAnalysisFacts);
     if (blockers) sections.push(blockers);
     const range = rangeSection(rangeAnalysisFacts, warnings);

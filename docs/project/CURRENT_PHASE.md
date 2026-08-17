@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 17, 2026 (`ROADMAP-CHECKPOINT-002`).
+Last refreshed: August 17, 2026 (`BLUFF-001` implementation checkpoint).
 
 Code, tests, accepted tags/ticket reports, new manual QA, and explicit user decisions override this snapshot. Detailed future capability is preserved in `PRODUCT_BACKLOG.md`; subsystem contracts remain authoritative for implementation semantics.
 
@@ -103,14 +103,18 @@ Structural draw/outs support includes flush and straight outs; gutshot/OESD/doub
 
 Implementation is accepted; `QA-ANALYSIS-RANGE-001` still records final live viewport/theme/language acceptance honestly.
 
+`BLUFF-001` adds immutable DOM-free `BluffAnalysisFacts v1` after Range Analysis: exact risk/reward and pure-bluff break-even folds when action semantics are trusted; truthful unavailable raise/all-in states; all-opponents-fold multiway wording; structural semibluff classification with unchanged draw outs; neutral range-free removal; exact supplied-range removal; and a simplified heads-up river bluff:value reference. It does not infer opponent fold frequency, action EV, optimal bluffing, solver truth, or strategic blocker quality without an explicit semantic partition. Current postflop heuristic actions remain unsized, so live economics are unavailable until a trusted size is supplied; StrategyProvider behavior is unchanged.
+
+`QA-ANALYSIS-BLUFF-001` records the remaining human visual/language acceptance.
+
 **PRESERVED FUTURE:** weighted Hero-range versus Villain-range analysis, legitimate range/nut distribution and advantage, action-conditioned ranges, deeper blocker/unblocker interpretation, richer board interaction, personalized Analysis, Compare Spots, value/bluff composition, and postflop range propagation.
 
 ## Active and planned execution
 
 1. **COMPLETED — `ANALYSIS-RANGE-001` checkpoint:** range-aware Analysis v1 and RR/RRR corrections are at the accepted `analysis-range-001` tag.
-2. **ACTIVE NEXT — `PREFLOP-SANITY-001`: Premium Dominated-Action Suppression.** Characterize and remove meaningless smoothing leakage such as residual Fold mass for AA in ordinary supported chip-EV contexts. Do not blanket-zero every premium in every context, add ICM/satellite assumptions, or broadly retune hands from intuition. Preserve real boundary smoothness and add invariant-focused tests.
-3. **PLANNED NEXT — `BLUFF-001`: honest bluff analysis.** Always-available facts may include action risk/reward, scoped break-even fold percentage where semantics are trusted, exact made-hand/draw and semibluff structure, structural outs, neutral card-removal facts, and river bluff:value mathematics under explicit assumptions. Range-enhanced facts require an explicitly supplied canonical range. A blocker-quality verdict requires a trustworthy relevant continuing/value/bluff partition or strategic source. Never infer opponent fold frequency, EV, optimal bluffing, solver frequency, or good/bad blocker quality from a generic range.
-4. **PLANNED NEXT — `ACCOUNT-001`: account-ready identity foundation.** Define application/user identity, local ownership migration/mapping, offline-first behavior, privacy/security boundaries, conflict policy, and account-ready preferences. `ACCOUNT-002+` may later add authentication, cloud backup/sync, cross-device Saved Objects/Personal Strategy/settings, then approved sharing/social features. Cloud must never be required for local Riverline.
+2. **COMPLETED — `PREFLOP-SANITY-001`: Premium Dominated-Action Suppression.** The bounded premium Fold-leak suppression and invariant corpus are present without broad heuristic retuning or new ICM assumptions.
+3. **CHECKPOINTED — `BLUFF-001`: honest bluff analysis.** The structural fact contract, Analysis UI, EN/RU/HE copy, tutorial update, formula/range/raise/unavailable tests, and documentation are implemented. Final human visual/language acceptance remains tracked separately rather than being inferred from structural tests.
+4. **ACTIVE NEXT — `ACCOUNT-001`: account-ready identity foundation.** Define application/user identity, local ownership migration/mapping, offline-first behavior, privacy/security boundaries, conflict policy, and account-ready preferences. `ACCOUNT-002+` may later add authentication, cloud backup/sync, cross-device Saved Objects/Personal Strategy/settings, then approved sharing/social features. Cloud must never be required for local Riverline.
 5. **PLANNED NEXT — richer Home:** substantially extend “my Riverline” using real account/personal/study state while keeping Home a consumer.
 6. **PLANNED NEXT — Home Game Organizer:** create a separate top-level tab/domain. Stage as `HOME-GAME-001` domain/persistence, `HOME-GAME-002` session UI, and `HOME-GAME-003` settlement/reconciliation. It may own saved groups, roster/seats/button/blinds, buy-ins/rebuys/cash-outs, chip counts/stacks, net results, who-owes-whom settlement, saved sessions, and summaries. It does not belong in `StrategyProfile` or `PokerState`.
 

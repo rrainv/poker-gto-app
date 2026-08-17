@@ -539,6 +539,33 @@
   Object.assign(ru, rangeAnalysisTutorial.ru);
   Object.assign(he, rangeAnalysisTutorial.he);
 
+  const bluffAnalysisTutorial = {
+    en: {
+      'Read pressure math, exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': 'Read pressure math, exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.',
+      'Read bluff pressure as a requirement': 'Read bluff pressure as a requirement',
+      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action. It also separates semibluff structure from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model.': 'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action. It also separates semibluff structure from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model.',
+      'Read bluff pressure and blockers structurally': 'Read bluff pressure and blockers structurally',
+      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action, while semibluff structure stays separate from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model. Hero-card blockers remain neutral removal facts unless an explicit strategic range partition is supplied.': 'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action, while semibluff structure stays separate from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model. Hero-card blockers remain neutral removal facts unless an explicit strategic range partition is supplied.',
+    },
+    ru: {
+      'Read pressure math, exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': 'Читайте математику давления, факты о точной руке, дро, блокерах, рендже, стратегии и источниках без преувеличения возможностей Riverline.',
+      'Read bluff pressure as a requirement': 'Читайте давление блефа как требование',
+      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action. It also separates semibluff structure from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model.': 'Раздел «Блеф и давление» выводит порог фолдов из достоверного дополнительного риска Hero и банка до действия, а структуру полублефа отделяет от рекомендации. Требуемые 33% фолдов не означают, что Villain сделает фолд в 33% случаев: у Riverline нет модели частоты фолдов оппонента.',
+      'Read bluff pressure and blockers structurally': 'Читайте давление блефа и блокеры как структурные факты',
+      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action, while semibluff structure stays separate from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model. Hero-card blockers remain neutral removal facts unless an explicit strategic range partition is supplied.': 'Раздел «Блеф и давление» выводит порог фолдов из достоверного дополнительного риска Hero и банка до действия, а структуру полублефа отделяет от рекомендации. Требуемые 33% фолдов не означают, что Villain сделает фолд в 33% случаев: у Riverline нет модели частоты фолдов оппонента. Блокеры Hero остаются нейтральными фактами кард-ремувала без явного стратегического разделения ренджа.',
+    },
+    he: {
+      'Read pressure math, exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': 'קראו את מתמטיקת הלחץ, עובדות היד המדויקת, דרואים, בלוקרים, ריינג׳, אסטרטגיה ומקורות בלי להפריז במה ש־Riverline יודע.',
+      'Read bluff pressure as a requirement': 'קראו את לחץ הבלוף כדרישה',
+      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action. It also separates semibluff structure from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model.': '„בלוף ולחץ” גוזר את דרישת הפולד מהסיכון הנוסף והמהימן של Hero ומהקופה הזמינה לפני הפעולה, ומפריד את מבנה הסמי־בלוף מההמלצה. דרישה ל־33% פולדים אינה אומרת ש־Villain עושה פולד ב־33%; ל־Riverline אין מודל לתדירות הפולד של היריב.',
+      'Read bluff pressure and blockers structurally': 'קראו את לחץ הבלוף ואת הבלוקרים כעובדות מבניות',
+      'Bluff & Pressure derives break-even folds from Hero’s trusted incremental risk and the pot available before the action, while semibluff structure stays separate from the recommendation. 33% required folds does not mean Villain folds 33%; Riverline has no opponent fold-frequency model. Hero-card blockers remain neutral removal facts unless an explicit strategic range partition is supplied.': '„בלוף ולחץ” גוזר את דרישת הפולד מהסיכון הנוסף והמהימן של Hero ומהקופה הזמינה לפני הפעולה, ומפריד את מבנה הסמי־בלוף מההמלצה. דרישה ל־33% פולדים אינה אומרת ש־Villain עושה פולד ב־33%; ל־Riverline אין מודל לתדירות הפולד של היריב. הבלוקרים של Hero נשארים עובדות ניטרליות של הסרת קלפים בלי חלוקת ריינג׳ אסטרטגית מפורשת.',
+    },
+  };
+  Object.assign(en, bluffAnalysisTutorial.en);
+  Object.assign(ru, bluffAnalysisTutorial.ru);
+  Object.assign(he, bluffAnalysisTutorial.he);
+
   global.riverlineTutorialTranslations = Object.freeze({
     en: Object.freeze(en),
     ru: Object.freeze(ru),

@@ -120,6 +120,13 @@ const ANALYSIS_CONCEPT_KEYS = Object.freeze({
   double_gutshot: 'analysis.value.doubleGutshot',
   overcards: 'analysis.value.overcardsShort',
   made_hand_and_draw: 'analysis.value.madeHandAndDraw',
+  semibluff_structure: 'analysis.value.bluffStructure.semibluff_structure',
+  pair_plus_draw: 'analysis.value.bluffStructure.pair_plus_draw',
+  made_hand_with_redraw: 'analysis.value.bluffStructure.made_hand_with_redraw',
+  limited_direct_improvement_structure: 'analysis.value.bluffStructure.limited_direct_improvement_structure',
+  made_hand_without_direct_draw: 'analysis.value.bluffStructure.made_hand_without_direct_draw',
+  overcards_without_direct_draw: 'analysis.value.bluffStructure.overcards_without_direct_draw',
+  river_no_future_card_structure: 'analysis.value.bluffStructure.river_no_future_card_structure',
   none: 'analysis.value.flushStateNone',
   three_flush: 'analysis.value.threeFlush',
   four_flush: 'analysis.value.fourFlush',
@@ -304,9 +311,75 @@ function analysisDrawOutsElement(drawOuts) {
   return element;
 }
 
+function analysisSemibluffStructureElement(structure) {
+  const value = structure || {};
+  const element = analysisElement('span', 'analysis-fact-primary analysis-semibluff-structure');
+  element.appendChild(analysisElement(
+    'span',
+    'analysis-semibluff-classification',
+    analysisConceptText(value.classification),
+  ));
+  if (Array.isArray(value.drawLabels) && value.drawLabels.length) {
+    element.appendChild(document.createTextNode(': '));
+    element.appendChild(analysisElement(
+      'span',
+      'analysis-semibluff-draws',
+      value.drawLabels.map(analysisConceptText).join(' + '),
+    ));
+  } else if (value.overcardCount > 0) {
+    element.appendChild(document.createTextNode(' · '));
+    element.appendChild(analysisInterpolatedElement(
+      'analysis.value.bluffOvercards',
+      '{count} overcard(s)',
+      { count: value.overcardCount },
+      { count: 'data' },
+    ));
+  }
+  return element;
+}
+
 function analysisStructuredFactPrimary(analysisFact) {
   const values = analysisFact.values || {};
   if (analysisFact.key === 'draw_outs') return analysisDrawOutsElement(analysisFact.value);
+  if (analysisFact.key === 'semibluff_structure') {
+    return analysisSemibluffStructureElement(analysisFact.value);
+  }
+  if (analysisFact.key === 'bluff_break_even_folds') {
+    return analysisLiteralElement('span', 'analysis-fact-primary poker-data-token', values.frequency);
+  }
+  if (analysisFact.key === 'bluff_risk') {
+    return analysisLiteralElement('span', 'analysis-fact-primary poker-data-token', values.risk);
+  }
+  if (analysisFact.key === 'bluff_immediate_reward') {
+    return analysisLiteralElement('span', 'analysis-fact-primary poker-data-token', values.reward);
+  }
+  if (analysisFact.key === 'bluff_structural_improvement_cards') {
+    return analysisInterpolatedElement(
+      'analysis.value.structuralImprovementCards',
+      '{count} unique cards',
+      values,
+      { count: 'data' },
+    );
+  }
+  if (analysisFact.key === 'bluff_economics_availability') {
+    const reason = analysisMessage(
+      `analysis.value.bluffUnavailable.${values.reason}`,
+      analysisTitleCase(values.reason),
+    );
+    return analysisInterpolatedElement(
+      'analysis.value.bluffEconomicsUnavailable',
+      'Unavailable: {reason}',
+      { reason },
+    );
+  }
+  if (analysisFact.key === 'river_bluff_value_reference') {
+    return analysisInterpolatedElement(
+      'analysis.value.riverBluffValueReference',
+      '{bluffUnits}:{valueUnits} bluff:value · {share} bluff share',
+      values,
+      { bluffUnits: 'data', valueUnits: 'data', share: 'data' },
+    );
+  }
   if (analysisFact.key.startsWith('range_blocker_effect_')) {
     const key = values.knownMassAvailable
       ? 'analysis.value.rangeBlockerEffect'
@@ -397,6 +470,7 @@ function analysisFactPrimaryText(analysisFact) {
         : analysisMessage('analysis.value.noImmediateStraightCompletion', 'No one-card board straight completion');
     }
     case 'hero_blocker_structure': return analysisMessage('analysis.value.heroBlockerStructure', `${values.count} physical combos removed`, { count: values.count, cards: values.cards });
+    case 'bluff_action': return analysisActionText(values.action || analysisFact.value);
     case 'range_availability': return analysisMessage('analysis.value.rangeUnavailable', 'Unavailable without an explicit range source');
     case 'pot_before_action': return values.pot || analysisFact.value;
     case 'call_amount': return values.callAmount || analysisFact.value;
@@ -423,6 +497,14 @@ function analysisFactSecondaryText(analysisFact) {
   }
   if (analysisFact.key === 'heuristic_sampled_equity') return analysisMessage('analysis.value.assumedRange', 'vs assumed opponent range');
   if (analysisFact.key === 'heuristic_opponent_count') return analysisMessage('analysis.value.sampledOpponents', 'opponents sampled');
+  if (analysisFact.key === 'bluff_break_even_folds') return analysisMessage(
+    'analysis.value.breakEvenPureBluffNote',
+    'Pure zero-equity bluff reference',
+  );
+  if (analysisFact.key === 'river_bluff_value_reference') return analysisMessage(
+    'analysis.value.simplifiedAssumptions',
+    'Simplified heads-up river assumptions',
+  );
   return null;
 }
 
@@ -480,7 +562,8 @@ function analysisFactElement(analysisFact) {
   if (new Set([
     'hero_cards', 'pot_before_action', 'call_amount', 'pot_after_call', 'required_raw_equity',
     'spr', 'heuristic_sampled_equity', 'hero_position', 'facing_size', 'table_size',
-    'hero_equity', 'heuristic_samples_completed', 'heuristic_range_fraction', 'board_straight_state'
+    'hero_equity', 'heuristic_samples_completed', 'heuristic_range_fraction', 'board_straight_state',
+    'bluff_risk', 'bluff_immediate_reward', 'bluff_break_even_folds'
   ]).has(analysisFact.key)) primary.classList.add('poker-data-token');
   value.appendChild(primary);
   const secondaryText = analysisFactSecondaryText(analysisFact);
@@ -710,7 +793,7 @@ function renderAnalysisExplanation(container, explanation, options = {}) {
   if (heroRegion) article.appendChild(heroRegion);
   const economicsRegion = analysisFactGroup(analysisMessage('analysis.ui.decisionEconomics', 'Decision economics'), 'economics', economicsFacts);
   if (economicsRegion) article.appendChild(economicsRegion);
-  const standaloneSections = ['blockers', 'range']
+  const standaloneSections = ['bluff_pressure', 'blockers', 'range']
     .map((key) => explanation.sections.find((entry) => entry.key === key))
     .filter(Boolean);
   standaloneSections.forEach((entry) => {

@@ -3366,6 +3366,7 @@ function trustedAnalysisFacts(actionHistory = []) {
 
 const EMPTY_RANGE_ANALYSIS_INPUTS = Object.freeze({});
 let rangeAnalysisMemo = null;
+let bluffAnalysisMemo = null;
 
 function rangeAnalysisFactsForDecision(
   decisionContext,
@@ -3404,6 +3405,23 @@ function rangeAnalysisFactsForDecision(
   return facts;
 }
 
+function bluffAnalysisFactsForDecision(rangeAnalysisFacts, decisionContext, strategyResult) {
+  const bridge = globalThis.RiverlineAnalysisExplanation;
+  if (!rangeAnalysisFacts || !decisionContext || !bridge
+    || typeof bridge.createBluffAnalysisFacts !== 'function') return null;
+  if (bluffAnalysisMemo
+    && bluffAnalysisMemo.rangeAnalysisFacts === rangeAnalysisFacts
+    && bluffAnalysisMemo.decisionContext === decisionContext
+    && bluffAnalysisMemo.strategyResult === strategyResult) return bluffAnalysisMemo.facts;
+  const facts = bridge.createBluffAnalysisFacts({
+    decisionContext,
+    strategyResult,
+    rangeAnalysisFacts
+  });
+  bluffAnalysisMemo = { rangeAnalysisFacts, decisionContext, strategyResult, facts };
+  return facts;
+}
+
 function renderDecisionAnalysis(container, {
   decisionContext,
   strategyResult,
@@ -3421,11 +3439,17 @@ function renderDecisionAnalysis(container, {
     return null;
   }
   const rangeAnalysisFacts = rangeAnalysisFactsForDecision(decisionContext, authority, rangeInputs);
+  const bluffAnalysisFacts = bluffAnalysisFactsForDecision(
+    rangeAnalysisFacts,
+    decisionContext,
+    strategyResult
+  );
   const explanation = bridge.create({
     decisionContext,
     strategyResult,
     trustedFacts,
     rangeAnalysisFacts,
+    bluffAnalysisFacts,
     authority,
     depth,
     unavailableReason

@@ -8230,11 +8230,15 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .analysis-detail-facts .analysis-key-fact dd { margin: 0; color: var(--text-secondary); font-family: var(--font-ui); font-weight: 550; }
 .analysis-explanation-text { margin: 0; color: var(--text-secondary); line-height: 1.5; }
 .analysis-primary-structural-section { padding: var(--space-4); background: color-mix(in srgb, var(--surface-panel) 78%, transparent); border: 1px solid var(--border-subtle); border-radius: var(--radius-control); }
+.analysis-primary-structural-section[data-analysis-section="bluff_pressure"] { border-inline-start: 3px solid var(--accent-warning, var(--accent-secondary)); }
 .analysis-primary-structural-section[data-analysis-section="blockers"] { border-inline-start: 3px solid var(--accent-secondary); }
 .analysis-primary-structural-section[data-analysis-section="range"] { border-inline-start: 3px solid var(--accent-primary); }
 .analysis-primary-structural-section .analysis-detail-facts { grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: var(--space-3); }
 .analysis-primary-structural-section .analysis-key-fact { align-content: start; padding: var(--space-3); background: var(--surface-section); border: 1px solid var(--border-subtle); border-radius: var(--radius-cell); }
 .analysis-primary-structural-section .analysis-key-fact dd { margin-top: var(--space-1); color: var(--text-primary); }
+.analysis-semibluff-structure { display: inline; }
+.analysis-semibluff-classification { color: var(--text-primary); font-weight: 750; }
+.analysis-semibluff-draws { color: var(--accent-secondary); }
 .analysis-provenance { display: grid; gap: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle); }
 .analysis-provenance-source { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); align-items: baseline; }
 .analysis-provenance-source span { color: var(--text-muted); font-size: var(--text-micro-size); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }

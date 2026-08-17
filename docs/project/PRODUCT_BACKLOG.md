@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 17, 2026 (`ROADMAP-CHECKPOINT-002`).
+Last consolidated: August 17, 2026 (`BLUFF-001` implementation checkpoint).
 
 This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
@@ -19,9 +19,9 @@ This file preserves accepted future capability so it does not depend on chat mem
 | Order | Status | Ticket / outcome |
 |---:|---|---|
 | 1 | COMPLETED | `ANALYSIS-RANGE-001` accepted checkpoint, including RR/RRR corrections |
-| 2 | ACTIVE NEXT | `PREFLOP-SANITY-001` — characterize and suppress clearly dominated premium-hand Fold leakage without broad intuition retuning |
-| 3 | PLANNED NEXT | `BLUFF-001` — mathematically honest bluff analysis with strict structural/range/source boundaries |
-| 4 | PLANNED NEXT | `ACCOUNT-001` — account-ready identity, local ownership mapping, offline/privacy/conflict boundaries |
+| 2 | COMPLETED | `PREFLOP-SANITY-001` — bounded premium-hand dominated Fold suppression with invariant coverage |
+| 3 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `BLUFF-001` — structural fact contract and visible Analysis integration implemented; final human visual/language acceptance remains open |
+| 4 | ACTIVE NEXT | `ACCOUNT-001` — account-ready identity, local ownership mapping, offline/privacy/conflict boundaries |
 | 5 | PLANNED NEXT | richer Home — “my Riverline” powered by real account/personal/study state |
 | 6 | PLANNED NEXT | `HOME-GAME-001` foundation, then `002` session UI and `003` settlement/reconciliation |
 
@@ -43,8 +43,8 @@ Personal Strategy resumes separately at `RANGE-CAL-002B`; it is preserved but no
 
 | ID | Status | Preserved scope |
 |---|---|---|
-| `PREFLOP-SANITY-001` | ACTIVE NEXT | Characterize heuristic anchor smoothing; suppress absurd premium Fold leakage in ordinary supported chip-EV contexts; preserve legitimate boundaries; no ICM/satellite assumptions; invariant tests required |
-| `BLUFF-001` | PLANNED NEXT | Always available: action risk/reward, scoped break-even fold percentage where trusted, exact made-hand/draw/semibluff structure, structural outs, neutral removal facts, explicit-assumption river bluff:value math. Range-enhanced: composition/removal only from supplied canonical ranges, later explicit value/call/bluff partitions |
+| `PREFLOP-SANITY-001` | COMPLETED | Bounded premium Fold-leak suppression is implemented with invariant coverage; no broad intuition retuning or new ICM/satellite assumptions |
+| `BLUFF-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `BluffAnalysisFacts v1`, exact trusted risk/reward and break-even folds, truthful raise/all-in unavailability, multiway joint-fold wording, structural semibluff/outs reuse, neutral blocker facts, exact supplied-range removal, simplified heads-up river reference, compact UI, tutorial, and EN/RU/HE integration are implemented. Human visual/language acceptance remains open; current unsized postflop heuristic actions do not fabricate economics |
 | `ANALYSIS-RANGE-002+` | PRESERVED FUTURE | weighted Hero range vs Villain range; legitimate range/nut distribution and advantage; action-conditioned ranges; deeper blocker/unblocker interpretation; board interaction; personalized Analysis; value/bluff composition; postflop propagation |
 | Compare Spots | PRESERVED FUTURE | compare position, stack, pot, call/facing size, board, blockers, hand, opponents, range assumptions, and profile/mode; explain only relationships supported by trusted facts |
 
