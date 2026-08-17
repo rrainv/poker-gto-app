@@ -263,8 +263,10 @@ test('objective preflop action and sizing semantics are projected coherently', (
     facing: 'facing_all_in',
   }));
   assert.equal(facingCap.actionVector.raise, 0);
-  assert.equal(facingCap.actionVector.call, 0.98);
+  assert.equal(facingCap.actionVector.call, 1);
+  assert.equal(facingCap.actionVector.fold, 0);
   assert.equal(facingCap.details.stackCapActionProjectionApplied, true);
+  assert.equal(facingCap.details.dominatedFoldSuppressionApplied, true);
 
   const sizing = diagnoseSizing();
   assert.deepEqual(sizing.anomalies, []);

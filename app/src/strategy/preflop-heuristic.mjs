@@ -37,7 +37,11 @@ function normalizedStrategy(open, call, fold) {
   const total = weights.reduce((sum, value) => sum + value, 0);
   if (!(total > 0)) return { open: 0, call: 0, fold: 1 };
   const normalized = weights.map((value) => value / total);
-  normalized[2] += 1 - normalized.reduce((sum, value) => sum + value, 0);
+  // Close rounding on the last positive action so an explicit zero invariant
+  // cannot reappear as a tiny floating-point residual.
+  let closingIndex = normalized.length - 1;
+  while (closingIndex > 0 && weights[closingIndex] === 0) closingIndex -= 1;
+  normalized[closingIndex] += 1 - normalized.reduce((sum, value) => sum + value, 0);
   return { open: normalized[0], call: normalized[1], fold: normalized[2] };
 }
 
@@ -142,6 +146,24 @@ function applyKnownCallPrice(base, handStrength, potSizeBb, callAmountBb) {
   return [base[0], base[1] + shiftToCall, base[2] - shiftToCall];
 }
 
+function isDominatedPremiumFold({ isPair, highRank, lowRank, facingAggression }) {
+  // AA is the only universal premium invariant in the current chip-EV model.
+  // The narrower unopened invariant covers hands whose Fold mass can only come
+  // from the heuristic anchors: QQ+, AKs, and AKo. Facing-aggression behavior
+  // for every hand except AA remains governed by the smooth heuristic.
+  if (isPair && highRank === HEURISTIC_RANK_VALUES.A) return true;
+  if (facingAggression) return false;
+  return (isPair && highRank >= HEURISTIC_RANK_VALUES.Q)
+    || (!isPair
+      && highRank === HEURISTIC_RANK_VALUES.A
+      && lowRank === HEURISTIC_RANK_VALUES.K);
+}
+
+function conditionOnContinuingActions(base) {
+  if (!(base[2] > 0) || !(base[0] + base[1] > 0)) return base;
+  return [base[0], base[1], 0];
+}
+
 export function calculatePreflopFallbackStrategy(
   r1str,
   r2str,
@@ -236,6 +258,9 @@ export function calculatePreflopFallbackStrategy(
     base[1] += base[2];
     base[2] = 0;
   }
+  if (isDominatedPremiumFold({ isPair, highRank, lowRank, facingAggression })) {
+    base = conditionOnContinuingActions(base);
+  }
 
   return normalizedStrategy(base[0], base[1], base[2]);
 }
@@ -329,6 +354,20 @@ export function calculatePreflopHeuristic(decisionContext) {
 
   const callPriceAvailable = Number.isFinite(decisionContext.callAmountBb)
     && decisionContext.callAmountBb >= 0;
+  const highRank = Math.max(
+    HEURISTIC_RANK_VALUES[cards[0][0]] || 0,
+    HEURISTIC_RANK_VALUES[cards[1][0]] || 0,
+  );
+  const lowRank = Math.min(
+    HEURISTIC_RANK_VALUES[cards[0][0]] || 0,
+    HEURISTIC_RANK_VALUES[cards[1][0]] || 0,
+  );
+  const dominatedFoldSuppressionApplied = isDominatedPremiumFold({
+    isPair: cards[0][0] === cards[1][0],
+    highRank,
+    lowRank,
+    facingAggression: facingSizeBb > 0 || AGGRESSIVE_PRIOR_ACTIONS.has(lastAction),
+  });
   return {
     source: 'heuristic_preflop',
     actions: actions.map(({ order: _order, ...entry }) => entry),
@@ -344,6 +383,7 @@ export function calculatePreflopHeuristic(decisionContext) {
       styleControlsApplied: false,
       forcedContributionAdjustmentApplied: false,
       stackCapActionProjectionApplied: callReachesStackCap,
+      dominatedFoldSuppressionApplied,
     },
   };
 }
