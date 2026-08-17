@@ -362,6 +362,17 @@ export function parsePersonalStrategyExport(value) {
   return deepFreeze(parsed);
 }
 
+function rehomePersonalStrategyExport(portable, ownerRef) {
+  const adopted = cloneData(portable);
+  adopted.ownerRef = cloneData(ownerRef);
+  adopted.profiles = adopted.profiles.map((profile) => ({
+    ...profile,
+    ownerRef: cloneData(ownerRef),
+  }));
+  validatePersonalStrategyExport(adopted);
+  return deepFreeze(adopted);
+}
+
 export class PersonalStrategyStorageError extends Error {
   constructor(code, message, cause = null) {
     super(message, cause ? { cause } : undefined);
@@ -1093,11 +1104,17 @@ export function createPersonalStrategyRepository({
       return createPersonalStrategyExport(selected, { profileIds: selectedIds, exportedAt });
     },
 
-    async importPortable(value) {
-      const portable = parsePersonalStrategyExport(value);
-      if (!sameOwnerRef(portable.ownerRef, ownerRef)) {
+    async importPortable(value, { ownerPolicy = 'adopt_active' } = {}) {
+      const parsed = parsePersonalStrategyExport(value);
+      if (!['adopt_active', 'require_match'].includes(ownerPolicy)) {
+        throw new RangeError(`Unsupported Personal Strategy import owner policy: ${ownerPolicy}`);
+      }
+      if (ownerPolicy === 'require_match' && !sameOwnerRef(parsed.ownerRef, ownerRef)) {
         throw new RangeError('Portable Personal Strategy owner does not match repository owner');
       }
+      const portable = sameOwnerRef(parsed.ownerRef, ownerRef)
+        ? parsed
+        : rehomePersonalStrategyExport(parsed, ownerRef);
       const current = await repository.loadSnapshot();
       const existingIds = new Set(idsForStore(current));
       const collision = idsForStore(portableAsStore(portable)).find((id) => existingIds.has(id));

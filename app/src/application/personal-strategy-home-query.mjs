@@ -1,5 +1,7 @@
 import {
+  PERSONAL_STRATEGY_DATABASE_NAME,
   createLocalOwnerRef,
+  createIndexedDbPersonalStrategyDatabase,
   createPersonalStrategyBrowserStorage,
   createPersonalStrategyRepository,
 } from '../personal-strategy/index.mjs';
@@ -8,6 +10,10 @@ import {
   RANGE_CALIBRATION_PREFERENCES_KEY,
   createContextFromSelection,
 } from './range-calibration-service.mjs';
+import {
+  scopedDomainDatabaseName,
+  scopedPreferenceKey,
+} from '../account-identity/index.mjs';
 
 const TOTAL_RFI_HAND_CLASSES = 169;
 
@@ -46,24 +52,57 @@ function preferredScope(storage) {
 export function createPersonalStrategyHomeQuery({
   storage = createPersonalStrategyBrowserStorage(),
   database = null,
+  ownershipResolver = null,
+  databaseResolver = null,
   clock = () => new Date(),
 } = {}) {
-  let repository = null;
+  const repositories = new Map();
+  const databases = new Map();
+
+  function scopedStorage(binding) {
+    if (!binding) return storage;
+    return Object.freeze({
+      getItem(key) { return storage.getItem(scopedPreferenceKey(key, binding)); },
+      setItem(key, value) { return storage.setItem(scopedPreferenceKey(key, binding), value); },
+    });
+  }
+
+  async function resolveOwnership() {
+    if (ownershipResolver) {
+      const binding = await ownershipResolver();
+      const ownerId = binding?.domainOwnerId;
+      if (typeof ownerId !== 'string' || !ownerId.trim()) return null;
+      let resolvedDatabase = database;
+      if (databaseResolver) resolvedDatabase = await databaseResolver(binding);
+      else if (!resolvedDatabase) {
+        const name = scopedDomainDatabaseName(PERSONAL_STRATEGY_DATABASE_NAME, binding);
+        if (!databases.has(name)) {
+          databases.set(name, createIndexedDbPersonalStrategyDatabase({ name }));
+        }
+        resolvedDatabase = databases.get(name);
+      }
+      return { binding, ownerId, database: resolvedDatabase, storage: scopedStorage(binding) };
+    }
+    const ownerId = storage.getItem(RANGE_CALIBRATION_OWNER_KEY);
+    if (typeof ownerId !== 'string' || !ownerId.trim()) return null;
+    return { binding: null, ownerId, database, storage };
+  }
 
   return Object.freeze({
     async loadSummary() {
-      const ownerId = storage.getItem(RANGE_CALIBRATION_OWNER_KEY);
-      if (typeof ownerId !== 'string' || !ownerId.trim()) return emptySummary(0);
-      if (!repository) {
-        repository = createPersonalStrategyRepository({
-          database,
-          legacyStorage: storage,
-          ownerRef: createLocalOwnerRef(ownerId),
+      const ownership = await resolveOwnership();
+      if (!ownership) return emptySummary(0);
+      const key = `${ownership.database?.name ?? 'default'}:local:${ownership.ownerId}`;
+      if (!repositories.has(key)) {
+        repositories.set(key, createPersonalStrategyRepository({
+          database: ownership.database,
+          legacyStorage: ownership.storage,
+          ownerRef: createLocalOwnerRef(ownership.ownerId),
           clock,
-        });
+        }));
       }
-      const scope = preferredScope(storage);
-      const summary = await repository.loadHomeSummary(scope || {});
+      const scope = preferredScope(ownership.storage);
+      const summary = await repositories.get(key).loadHomeSummary(scope || {});
       if (!summary.selectedProfile || !summary.selectedMode) return emptySummary(summary.profileCount);
       const session = summary.session;
       return Object.freeze({
@@ -82,8 +121,9 @@ export function createPersonalStrategyHomeQuery({
     },
 
     async close() {
-      if (repository) await repository.close();
-      repository = null;
+      await Promise.all([...repositories.values()].map((repository) => repository.close()));
+      repositories.clear();
+      databases.clear();
     },
   });
 }

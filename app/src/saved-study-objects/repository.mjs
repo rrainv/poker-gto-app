@@ -555,9 +555,9 @@ export function createSavedStudyRepository({
       });
     },
 
-    async importLibrary(value, { ownerPolicy = 'adopt_local' } = {}) {
+    async importLibrary(value, { ownerPolicy = 'adopt_active' } = {}) {
       const portable = parseSavedStudyLibraryExport(value);
-      if (!['adopt_local', 'require_match'].includes(ownerPolicy)) {
+      if (!['adopt_active', 'adopt_local', 'require_match'].includes(ownerPolicy)) {
         throw new RangeError(`Unsupported Saved Study import owner policy: ${ownerPolicy}`);
       }
       if (ownerPolicy === 'require_match' && !sameSavedStudyOwner(portable.ownerRef, ownerRef)) {
@@ -606,4 +606,3 @@ export function createSavedStudyRepository({
 
   return Object.freeze(repository);
 }
-

@@ -21,6 +21,7 @@
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 fill=%22%2325c281%22>♠</text></svg>">
 
   <script src="src/locales/product-translations.js?v=1" defer></script>
+  <script src="src/locales/account-translations.js?v=1" defer></script>
   <script src="src/locales/analysis-translations.js?v=1" defer></script>
   <script src="src/locales/range-calibration-translations.js?v=1" defer></script>
   <script src="src/locales/home-translations.js?v=1" defer></script>
@@ -1942,7 +1943,7 @@
       </div>
       <div class="panel-body modal-body settings-grid">
         
-        <div class="settings-group" data-tutorial-anchor="settings-appearance">
+        <div class="settings-group settings-appearance-group" data-tutorial-anchor="settings-appearance">
             <h3 class="settings-section-title" data-i18n="Appearance & Themes">Appearance & Themes</h3>
             
             <div class="field" style="margin-top: 16px;">
@@ -1982,7 +1983,33 @@
             </div>
         </div>
 
-        <div class="settings-group" data-tutorial-anchor="settings-audio">
+        <div id="settingsAccountProfile" class="settings-group settings-account-group" data-account-state="loading" aria-busy="true">
+          <h3 class="settings-section-title" data-i18n="Account & Profile">Account &amp; Profile</h3>
+          <div class="account-profile-summary">
+            <div class="account-profile-heading">
+              <div>
+                <span class="account-profile-kicker" data-i18n="Local profile">Local profile</span>
+                <strong id="accountDisplayNamePreview" dir="auto">Local Player</strong>
+              </div>
+              <span class="badge status-badge status-badge--neutral" data-i18n="Local only">Local only</span>
+            </div>
+            <p class="panel-note" data-i18n="Your profile stays on this device, and Riverline continues to work offline.">Your profile stays on this device, and Riverline continues to work offline.</p>
+          </div>
+          <form id="accountDisplayNameForm" class="account-display-name-form" novalidate>
+            <label for="accountDisplayName">
+              <span data-i18n="Display name">Display name</span>
+              <input id="accountDisplayName" class="control-input" type="text" maxlength="80" autocomplete="name" dir="auto" required>
+            </label>
+            <button id="accountDisplayNameSubmit" class="ui-button ui-button--secondary" type="submit" data-i18n="Save name">Save name</button>
+          </form>
+          <p id="accountProfileStatus" class="account-profile-status" role="status" aria-live="polite" data-i18n="Loading local profile…">Loading local profile…</p>
+          <dl class="account-profile-facts">
+            <div><dt data-i18n="Study data">Study data</dt><dd data-i18n="Stored on this device">Stored on this device</dd></div>
+            <div><dt data-i18n="Account sync not enabled">Account sync not enabled</dt><dd data-i18n="Sign-in and sync are coming later.">Sign-in and sync are coming later.</dd></div>
+          </dl>
+        </div>
+
+        <div class="settings-group settings-audio-group" data-tutorial-anchor="settings-audio">
             <h3 class="settings-section-title" data-i18n="Audio">Audio</h3>
 
             <div class="field" style="margin-top: 16px;">
@@ -2111,6 +2138,7 @@
   <script type="module" src="src/application/strategy-provider-bootstrap.mjs"></script>
   <script type="module" src="src/application/analysis-explanation-bootstrap.mjs"></script>
   <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
+  <script type="module" src="src/application/account-identity-bootstrap.mjs"></script>
   <script type="module" src="src/application/saved-study-object-bootstrap.mjs"></script>
   <script type="module" src="src/application/home-workspace-bootstrap.mjs"></script>
   <script type="module" src="src/application/tutorial-bootstrap.mjs"></script>

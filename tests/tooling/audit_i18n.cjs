@@ -8,6 +8,7 @@ const vm = require('node:vm');
 const repoRoot = path.resolve(__dirname, '..', '..');
 const i18nPath = path.join(repoRoot, 'app', 'src', 'locales', 'i18n.js');
 const productTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'product-translations.js');
+const accountTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'account-translations.js');
 const analysisTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'analysis-translations.js');
 const rangeCalibrationTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'range-calibration-translations.js');
 const homeTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'home-translations.js');
@@ -15,9 +16,11 @@ const productSources = [
   path.join(repoRoot, 'app', 'index.html'),
   path.join(repoRoot, 'app', 'src', 'core', 'logic.js'),
   path.join(repoRoot, 'app', 'src', 'application', 'range-calibration-workspace.mjs'),
+  path.join(repoRoot, 'app', 'src', 'application', 'account-identity-bootstrap.mjs'),
   path.join(repoRoot, 'app', 'src', 'ui', 'teacher.js'),
   path.join(repoRoot, 'app', 'src', 'ui', 'TableRenderer.js'),
-  analysisTranslationsPath
+  analysisTranslationsPath,
+  accountTranslationsPath
 ];
 
 function loadTranslations(
@@ -42,6 +45,9 @@ function loadTranslations(
   };
   if (includeProductCatalog && fs.existsSync(productTranslationsPath)) {
     vm.runInNewContext(fs.readFileSync(productTranslationsPath, 'utf8'), context, { filename: productTranslationsPath });
+  }
+  if (includeProductCatalog && fs.existsSync(accountTranslationsPath)) {
+    vm.runInNewContext(fs.readFileSync(accountTranslationsPath, 'utf8'), context, { filename: accountTranslationsPath });
   }
   if (includeProductCatalog && fs.existsSync(analysisTranslationsPath)) {
     vm.runInNewContext(fs.readFileSync(analysisTranslationsPath, 'utf8'), context, { filename: analysisTranslationsPath });
@@ -82,6 +88,9 @@ function collectVisibleTranslationKeys(sources = productSources) {
       keys.add(decodeHtmlAttribute(match[1]));
     }
     for (const match of source.matchAll(/\b(?:t|localizedText|setLocalizedText|analysisMessage|tableMessage)\(\s*(['"])((?:\\.|(?!\1).)*)\1/g)) {
+      keys.add(readJsStringLiteral(match[1], match[2]));
+    }
+    for (const match of source.matchAll(/\bsetText\([^,]+,\s*(['"])((?:\\.|(?!\1).)*)\1/g)) {
       keys.add(readJsStringLiteral(match[1], match[2]));
     }
   }

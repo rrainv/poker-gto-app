@@ -73,6 +73,12 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | QA-MICRO-002 | OPEN | action-color palette needs final restrained consistency review | PRODUCT-UI-004 |
 | QA-MICRO-003 | OPEN | awkward near-black inset surfaces need final token review | PRODUCT-UI-004 |
 
+## Account identity foundation
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-ACCOUNT-001 | PARTIAL | Local profile Settings surface, display-name edit/reload, truthful local-only copy, EN/RU/HE RTL, theme, viewport, and keyboard behavior are structurally implemented; final human Firefox visual/linguistic acceptance remains required | ACCOUNT-001 human acceptance |
+
 ## Workspace composition and responsive fit
 
 | ID | Status | Issue | Owner |

@@ -4,12 +4,16 @@ import {
   RFI_CALIBRATION_ACTIONS,
   countCurrentDirectObservations,
   createContextFromSelection,
+  createIdentityScopedRangeCalibrationApplication,
   createRangeCalibrationApplication,
   normalizeRfiContextSelection,
   profileDefaultEnvironment,
   rfiPositionsForTableSize,
   tableSizesForEnvironment,
 } from './range-calibration-service.mjs';
+import {
+  RIVERLINE_OWNED_DOMAINS,
+} from '../account-identity/index.mjs';
 
 let mountedWorkspace = null;
 
@@ -788,7 +792,13 @@ export async function mountRangeCalibrationWorkspace() {
   const activationStartedAt = now();
   const root = cloneCalibrationDom();
   try {
-    const application = createRangeCalibrationApplication();
+    const accountIdentity = window.RiverlineAccountIdentity;
+    const binding = accountIdentity?.getDomainOwnership
+      ? await accountIdentity.getDomainOwnership(RIVERLINE_OWNED_DOMAINS.PERSONAL_STRATEGY)
+      : null;
+    const application = binding
+      ? createIdentityScopedRangeCalibrationApplication(binding)
+      : createRangeCalibrationApplication();
     const profileLoadStartedAt = now();
     const initialWorkspace = await application.readWorkspace();
     const profileLoadMs = now() - profileLoadStartedAt;

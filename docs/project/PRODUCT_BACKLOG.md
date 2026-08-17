@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 17, 2026 (`BLUFF-001` implementation checkpoint).
+Last consolidated: August 17, 2026 (`ACCOUNT-001` implementation checkpoint).
 
 This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
@@ -21,8 +21,8 @@ This file preserves accepted future capability so it does not depend on chat mem
 | 1 | COMPLETED | `ANALYSIS-RANGE-001` accepted checkpoint, including RR/RRR corrections |
 | 2 | COMPLETED | `PREFLOP-SANITY-001` — bounded premium-hand dominated Fold suppression with invariant coverage |
 | 3 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `BLUFF-001` — structural fact contract and visible Analysis integration implemented; final human visual/language acceptance remains open |
-| 4 | ACTIVE NEXT | `ACCOUNT-001` — account-ready identity, local ownership mapping, offline/privacy/conflict boundaries |
-| 5 | PLANNED NEXT | richer Home — “my Riverline” powered by real account/personal/study state |
+| 4 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `ACCOUNT-001` — local identity, legacy ownership adoption/scoping, truthful profile UI, offline/privacy/conflict boundaries; auth/sync remain future |
+| 5 | ACTIVE NEXT | richer Home — “my Riverline” powered by real account/personal/study state |
 | 6 | PLANNED NEXT | `HOME-GAME-001` foundation, then `002` session UI and `003` settlement/reconciliation |
 
 Personal Strategy resumes separately at `RANGE-CAL-002B`; it is preserved but not in this immediate sequence. Reassess at every clean checkpoint.
@@ -83,10 +83,10 @@ The current legal, deterministic, provider-backed Training base is established; 
 | Saved Range / Saved Drill / saved sessions | PRESERVED FUTURE | New versioned payloads; no parallel persistence models |
 | richer Saved search/filter/tags | PRESERVED FUTURE | Full drilldowns/View all; folders/collections only if later justified |
 | Saved history/revisions | PRESERVED FUTURE | Preserve ownership/version/conflict semantics |
-| `ACCOUNT-001` | PLANNED NEXT | application/user identity; local ownership migration/mapping; offline-first behavior; privacy/security boundary; conflict policy; account-ready preferences |
+| `ACCOUNT-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | persistent opaque local identity; active identity; Saved/Personal Strategy ownership bindings and scoped storage; local-only Settings profile; privacy/security/conflict/sign-out/import contracts; no auth or sync |
 | `ACCOUNT-002+` | PRESERVED FUTURE | authentication, cloud backup/sync, cross-device Saved Objects/Personal Strategy/settings |
 | sharing/social | PRESERVED FUTURE | share/fork ranges, spots, and drills; friends/study groups; collaborative range review only if approved |
-| richer Home | PLANNED NEXT | identity and sync status; Continue; Saved/Recent; Review/Mistakes; Personal Strategy; recent Analysis; bluff/range study; later Training history; tutorials/help; account actions |
+| richer Home | ACTIVE NEXT | identity and truthful local/sync status; Continue; Saved/Recent; Review/Mistakes; Personal Strategy; recent Analysis; bluff/range study; later Training history; tutorials/help; account actions |
 
 Riverline remains local-first and useful offline. Home is a consumer of user domains, never their owner. Do not invent analytics merely to make Home busy.
 

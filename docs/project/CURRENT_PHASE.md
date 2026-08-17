@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 17, 2026 (`BLUFF-001` implementation checkpoint).
+Last refreshed: August 17, 2026 (`ACCOUNT-001` implementation checkpoint).
 
 Code, tests, accepted tags/ticket reports, new manual QA, and explicit user decisions override this snapshot. Detailed future capability is preserved in `PRODUCT_BACKLOG.md`; subsystem contracts remain authoritative for implementation semantics.
 
@@ -74,6 +74,14 @@ Current product includes canonical table presence; a read-only action/chance tim
 
 **PRESERVED FUTURE:** evolve Home into “my Riverline” with full Saved drilldowns/View all, filtering/search/tags, recent Analysis, Training history, mistake/re-drill queues, account/profile identity and sync status, Personal Strategy progress, bluff/range-study shortcuts, session history, and personalization. Streak/mastery belongs only after an explicit gamification decision. Do not add fake analytics to fill space.
 
+### Account identity foundation — CHECKPOINTED / INTENTIONALLY INCOMPLETE
+
+`ACCOUNT-001` establishes a persistent opaque local `RiverlineIdentity v1`, central active-identity service, reusable ownership reference, non-destructive legacy owner bindings for Saved Study and Personal Strategy, active-identity query/storage scoping, safe import adoption, explicit preference scope/privacy/conflict/sign-out contracts, an additive Home identity seam, and a minimal truthful EN/RU/HE Settings profile surface.
+
+Local/offline Riverline remains first-class. No authentication, provider SDK, password, token, telemetry, upload, sync, cloud claim, account switcher, or sharing path exists. Existing Saved and Personal Strategy object/profile/evidence/session IDs and canonical replay data are not rewritten.
+
+**PRESERVED FUTURE:** `ACCOUNT-002+` may add explicit authentication/provider mapping, local-data claim/link UX, cloud backup/sync, cross-device selected preferences, account switching/sign-out UI, domain-specific conflicts, and only later approved sharing/social features. Provider IDs and credentials remain outside user domain objects.
+
 ### Tutorials — CHECKPOINTED
 
 `TUTORIAL-001/002` provide the reusable tutorial foundation and current-app coverage for Home, Scenario, Hand, Replay, Matrix, Analysis, Range Comparison, Equity, Training, Range Calibration, Settings, and truthful Saved contexts through reused flows. Guide remains the persistent reference rather than owning a tour.
@@ -114,8 +122,8 @@ Implementation is accepted; `QA-ANALYSIS-RANGE-001` still records final live vie
 1. **COMPLETED — `ANALYSIS-RANGE-001` checkpoint:** range-aware Analysis v1 and RR/RRR corrections are at the accepted `analysis-range-001` tag.
 2. **COMPLETED — `PREFLOP-SANITY-001`: Premium Dominated-Action Suppression.** The bounded premium Fold-leak suppression and invariant corpus are present without broad heuristic retuning or new ICM assumptions.
 3. **CHECKPOINTED — `BLUFF-001`: honest bluff analysis.** The structural fact contract, Analysis UI, EN/RU/HE copy, tutorial update, formula/range/raise/unavailable tests, and documentation are implemented. Final human visual/language acceptance remains tracked separately rather than being inferred from structural tests.
-4. **ACTIVE NEXT — `ACCOUNT-001`: account-ready identity foundation.** Define application/user identity, local ownership migration/mapping, offline-first behavior, privacy/security boundaries, conflict policy, and account-ready preferences. `ACCOUNT-002+` may later add authentication, cloud backup/sync, cross-device Saved Objects/Personal Strategy/settings, then approved sharing/social features. Cloud must never be required for local Riverline.
-5. **PLANNED NEXT — richer Home:** substantially extend “my Riverline” using real account/personal/study state while keeping Home a consumer.
+4. **CHECKPOINTED — `ACCOUNT-001`: local-first account identity foundation.** Persistent local identity, ownership adoption/scoping, Settings profile UI, and future auth/sync boundaries are implemented; final human visual/language acceptance remains separate from structural verification.
+5. **ACTIVE NEXT — richer Home:** substantially extend “my Riverline” using real account/personal/study state while keeping Home a consumer.
 6. **PLANNED NEXT — Home Game Organizer:** create a separate top-level tab/domain. Stage as `HOME-GAME-001` domain/persistence, `HOME-GAME-002` session UI, and `HOME-GAME-003` settlement/reconciliation. It may own saved groups, roster/seats/button/blinds, buy-ins/rebuys/cash-outs, chip counts/stacks, net results, who-owes-whom settlement, saved sessions, and summaries. It does not belong in `StrategyProfile` or `PokerState`.
 
 Reassess priorities at every clean checkpoint rather than forcing an entire branch through without review.

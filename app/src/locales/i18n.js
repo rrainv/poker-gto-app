@@ -1914,6 +1914,11 @@ if (window.riverlineProductTranslations) {
     if (appTranslations[language]) Object.assign(appTranslations[language], entries);
   });
 }
+if (window.riverlineAccountTranslations) {
+  Object.entries(window.riverlineAccountTranslations).forEach(([language, entries]) => {
+    if (appTranslations[language]) Object.assign(appTranslations[language], entries);
+  });
+}
 if (window.riverlineAnalysisTranslations) {
   Object.entries(window.riverlineAnalysisTranslations).forEach(([language, entries]) => {
     if (appTranslations[language]) Object.assign(appTranslations[language], entries);

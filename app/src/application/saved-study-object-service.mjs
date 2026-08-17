@@ -14,10 +14,12 @@ import {
   createSavedStudyOwnerRef,
   createSavedStudyRepository,
   createSavedStudySource,
+  savedStudyOwnerKey,
 } from '../saved-study-objects/index.mjs';
+import { LEGACY_SAVED_STUDY_OWNER_KEY } from '../account-identity/legacy-ownership.mjs';
 import { deriveDecisionContextFromPokerState } from './decision-context-from-poker-state.mjs';
 
-export const SAVED_STUDY_LOCAL_OWNER_KEY = 'riverline.savedStudyObjects.owner.v1';
+export const SAVED_STUDY_LOCAL_OWNER_KEY = LEGACY_SAVED_STUDY_OWNER_KEY;
 
 function defaultIdFactory(prefix) {
   const uuid = globalThis.crypto?.randomUUID?.();
@@ -76,17 +78,22 @@ export function createSavedStudyObjectApplication({
   database = null,
   repository = null,
   ownerRef = null,
+  activationResolver = null,
   clock = () => new Date(),
   idFactory = defaultIdFactory,
 } = {}) {
   if (typeof clock !== 'function' || typeof idFactory !== 'function') {
     throw new TypeError('Saved Study clock and idFactory must be functions');
   }
-  let activationPromise = null;
+  if (activationResolver !== null && typeof activationResolver !== 'function') {
+    throw new TypeError('Saved Study activationResolver must be a function');
+  }
+  let fixedActivationPromise = null;
+  const scopedActivations = new Map();
 
-  async function activate() {
-    if (activationPromise) return activationPromise;
-    activationPromise = Promise.resolve().then(async () => {
+  async function activateFixed() {
+    if (fixedActivationPromise) return fixedActivationPromise;
+    fixedActivationPromise = Promise.resolve().then(async () => {
       if (repository) {
         await repository.initialize();
         return Object.freeze({ repository, ownerRef: repository.ownerRef });
@@ -100,11 +107,36 @@ export function createSavedStudyObjectApplication({
       return Object.freeze({ repository: durableRepository, ownerRef: resolvedOwnerRef });
     });
     try {
-      return await activationPromise;
+      return await fixedActivationPromise;
     } catch (error) {
-      activationPromise = null;
+      fixedActivationPromise = null;
       throw error;
     }
+  }
+
+  async function activate() {
+    if (!activationResolver) return activateFixed();
+    const resolved = await activationResolver();
+    if (!resolved) return activateFixed();
+    const resolvedOwnerRef = resolved.ownerRef;
+    const resolvedDatabase = resolved.database ?? null;
+    const key = `${resolvedDatabase?.name ?? 'default'}:${savedStudyOwnerKey(resolvedOwnerRef)}`;
+    if (!scopedActivations.has(key)) {
+      const activation = Promise.resolve().then(async () => {
+        const durableRepository = createSavedStudyRepository({
+          database: resolvedDatabase,
+          ownerRef: resolvedOwnerRef,
+          clock,
+        });
+        await durableRepository.initialize();
+        return Object.freeze({ repository: durableRepository, ownerRef: resolvedOwnerRef });
+      }).catch((error) => {
+        scopedActivations.delete(key);
+        throw error;
+      });
+      scopedActivations.set(key, activation);
+    }
+    return scopedActivations.get(key);
   }
 
   async function saveObject({ kind, payload, source, annotations, operation }) {
@@ -246,10 +278,14 @@ export function createSavedStudyObjectApplication({
       return (await activate()).repository.importLibrary(value, options);
     },
     async close() {
-      if (!activationPromise) return;
-      const activated = await activationPromise;
-      await activated.repository.close();
-      activationPromise = null;
+      const activations = [
+        ...(fixedActivationPromise ? [fixedActivationPromise] : []),
+        ...scopedActivations.values(),
+      ];
+      const resolved = await Promise.all(activations);
+      await Promise.all(resolved.map((entry) => entry.repository.close()));
+      fixedActivationPromise = null;
+      scopedActivations.clear();
     },
   });
 }

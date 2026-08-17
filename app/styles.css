@@ -9947,6 +9947,9 @@ body.has-modal-open { overflow: hidden; }
 .settings-modal .modal-body { min-width: 0; overflow: auto; overscroll-behavior: contain; }
 .settings-grid {
   grid-template-columns: minmax(0, 1.55fr) minmax(220px, .75fr);
+  grid-template-areas:
+    "appearance account"
+    "appearance audio";
   gap: var(--space-6);
 }
 .theme-swatch-grid {
@@ -9955,6 +9958,22 @@ body.has-modal-open { overflow: hidden; }
   padding: var(--space-4);
 }
 .settings-group { min-width: 0; }
+.settings-appearance-group { grid-area: appearance; }
+.settings-account-group { grid-area: account; }
+.settings-audio-group { grid-area: audio; }
+.account-profile-summary { display: grid; gap: var(--space-3); }
+.account-profile-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.account-profile-heading > div { min-width: 0; display: grid; gap: var(--space-1); }
+.account-profile-heading strong { color: var(--text-primary); overflow-wrap: anywhere; }
+.account-profile-kicker { color: var(--text-muted); font-size: var(--text-micro-size); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.account-display-name-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-3); margin-top: var(--space-5); }
+.account-display-name-form label { min-width: 0; display: grid; gap: var(--space-2); color: var(--text); font-size: var(--text-label-size); font-weight: 600; }
+.account-display-name-form .ui-button { min-height: 40px; white-space: nowrap; }
+.account-profile-status { min-height: 1.4em; margin: var(--space-2) 0 0; color: var(--text-muted); font-size: var(--text-micro-size); line-height: 1.4; }
+.account-profile-facts { display: grid; gap: var(--space-3); margin: var(--space-5) 0 0; }
+.account-profile-facts > div { display: grid; gap: var(--space-1); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle); }
+.account-profile-facts dt { color: var(--text-primary); font-size: var(--text-label-size); font-weight: 700; }
+.account-profile-facts dd { margin: 0; color: var(--text-muted); font-size: var(--text-micro-size); line-height: 1.45; }
 
 /* Collapsed table becomes a compact adjacent control rather than a blank row. */
 .playbook-decision-workspace.is-table-collapsed .playbook-table-toggle {
@@ -9975,12 +9994,16 @@ body.has-modal-open { overflow: hidden; }
     height: min(760px, calc(100dvh - (var(--space-6) * 2)));
     max-height: calc(100dvh - (var(--space-6) * 2));
   }
-  .settings-grid { grid-template-columns: minmax(0, 1.35fr) minmax(200px, .65fr); }
+  .settings-grid { grid-template-columns: minmax(0, 1.35fr) minmax(240px, .65fr); }
   .theme-swatch-grid { max-height: min(360px, calc(100dvh - 235px)); }
 }
 
 @media (max-width: 700px) {
-  .settings-grid { grid-template-columns: minmax(0, 1fr); }
+  .settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "account" "appearance" "audio";
+  }
+  .account-display-name-form { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
   .theme-swatch-grid { max-height: min(320px, calc(100dvh - 220px)); }
   .playbook-context-sliders > .field { grid-column: 1 / -1; }
 }

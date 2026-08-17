@@ -6,11 +6,13 @@ import {
 } from '../../../shared/poker-domain/index.js';
 import {
   CALIBRATION_SESSION_STATES,
+  PERSONAL_STRATEGY_DATABASE_NAME,
   PROFILE_STATES,
   RANGE_OBSERVATION_STATES,
   calibrationContextKey,
   createCalibrationSession,
   createLocalOwnerRef,
+  createIndexedDbPersonalStrategyDatabase,
   createPersonalStrategyBrowserStorage,
   createPersonalStrategyRepository,
   createRangeObservation,
@@ -20,9 +22,15 @@ import {
   updateCalibrationSession,
   updateStrategyMode,
   updateStrategyProfile,
+  validateProfileOwnerRef,
 } from '../personal-strategy/index.mjs';
+import {
+  scopedDomainDatabaseName,
+  scopedPreferenceKey,
+} from '../account-identity/index.mjs';
+import { LEGACY_PERSONAL_STRATEGY_OWNER_KEY } from '../account-identity/legacy-ownership.mjs';
 
-export const RANGE_CALIBRATION_OWNER_KEY = 'riverline.personalStrategy.owner.v1';
+export const RANGE_CALIBRATION_OWNER_KEY = LEGACY_PERSONAL_STRATEGY_OWNER_KEY;
 export const RANGE_CALIBRATION_PREFERENCES_KEY = 'riverline.rangeCalibration.preferences.v1';
 export const RANGE_CALIBRATION_PREFERENCES_SCHEMA = 'range-calibration-preferences/v1';
 export const RANGE_CALIBRATION_NAME_MAX_LENGTH = 80;
@@ -442,9 +450,30 @@ function requireCalibrationState(value) {
   return value;
 }
 
+export function createIdentityScopedRangeCalibrationApplication(binding, options = {}) {
+  const {
+    storage = createPersonalStrategyBrowserStorage(),
+    database = createIndexedDbPersonalStrategyDatabase({
+      name: scopedDomainDatabaseName(PERSONAL_STRATEGY_DATABASE_NAME, binding),
+    }),
+    ...applicationOptions
+  } = options;
+  const scopedStorage = Object.freeze({
+    getItem(key) { return storage.getItem(scopedPreferenceKey(key, binding)); },
+    setItem(key, value) { return storage.setItem(scopedPreferenceKey(key, binding), value); },
+  });
+  return createRangeCalibrationApplication({
+    ...applicationOptions,
+    storage: scopedStorage,
+    database,
+    ownerRef: createLocalOwnerRef(binding.domainOwnerId),
+  });
+}
+
 export function createRangeCalibrationApplication({
   storage = createPersonalStrategyBrowserStorage(),
   database = null,
+  ownerRef = null,
   clock = () => new Date(),
   idFactory = defaultIdFactory,
 } = {}) {
@@ -467,11 +496,12 @@ export function createRangeCalibrationApplication({
     },
   };
 
-  const ownerRef = getOrCreateOwnerRef(storageAdapter, idFactory);
+  const resolvedOwnerRef = ownerRef ?? getOrCreateOwnerRef(storageAdapter, idFactory);
+  validateProfileOwnerRef(resolvedOwnerRef);
   const repository = createPersonalStrategyRepository({
     database,
     legacyStorage: storageAdapter,
-    ownerRef,
+    ownerRef: resolvedOwnerRef,
     clock,
   });
 
@@ -479,7 +509,7 @@ export function createRangeCalibrationApplication({
     const snapshot = await repository.loadWorkspaceSnapshot();
     const preferences = loadPreferences(storageAdapter);
     return Object.freeze({
-      ownerRef,
+      ownerRef: resolvedOwnerRef,
       snapshot,
       profiles: activeProfilesAndModes(snapshot),
       preferences: preferences.value,
@@ -492,7 +522,7 @@ export function createRangeCalibrationApplication({
     const normalizedModes = normalizeModeNames(modeNames);
     const bundle = createStrategyProfileBundle({
       profileId: idFactory('profile'),
-      ownerRef,
+      ownerRef: resolvedOwnerRef,
       displayName: normalizeCalibrationName(displayName, 'Profile name'),
       description: normalizeCalibrationDescription(description),
       tags: [environmentTag(environment)],
@@ -742,7 +772,7 @@ export function createRangeCalibrationApplication({
   }
 
   return Object.freeze({
-    ownerRef,
+    ownerRef: resolvedOwnerRef,
     repository,
     readWorkspace,
     createProfile,

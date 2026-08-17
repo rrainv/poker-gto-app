@@ -145,6 +145,7 @@ function continueSection(personalStrategy) {
 export function createHomeViewModelController({
   savedStudyQueries,
   personalStrategyQueries,
+  accountQueries = null,
 } = {}) {
   if (!savedStudyQueries
     || typeof savedStudyQueries.listRecent !== 'function'
@@ -155,21 +156,29 @@ export function createHomeViewModelController({
   if (!personalStrategyQueries || typeof personalStrategyQueries.loadSummary !== 'function') {
     throw new TypeError('Home requires a Personal Strategy summary query');
   }
+  if (accountQueries !== null && typeof accountQueries.getProfileSummary !== 'function') {
+    throw new TypeError('Home account query must provide getProfileSummary');
+  }
 
   return Object.freeze({
     async load() {
-      const [recentResult, reviewResult, mistakeResult, personalResult] = await Promise.allSettled([
+      const [recentResult, reviewResult, mistakeResult, personalResult, identityResult] = await Promise.allSettled([
         savedStudyQueries.listRecent({ limit: HOME_RECENT_LIMIT }),
         savedStudyQueries.listForReview({ limit: HOME_REVIEW_LIMIT }),
         savedStudyQueries.listMistakes({ limit: HOME_MISTAKE_LIMIT }),
         personalStrategyQueries.loadSummary(),
+        accountQueries?.getProfileSummary?.() ?? null,
       ]);
       const recent = sectionFrom(recentResult, mapSavedItems);
       const reviewLater = sectionFrom(reviewResult, mapSavedItems);
       const mistakes = sectionFrom(mistakeResult, mapSavedItems);
       const personalStrategy = personalStrategySection(personalResult);
+      const identity = identityResult.status === 'fulfilled' && identityResult.value
+        ? { status: 'ready', profile: identityResult.value }
+        : { status: accountQueries ? 'error' : 'unavailable', profile: null };
       return deepFreeze({
         schemaVersion: HOME_VIEW_MODEL_SCHEMA_VERSION,
+        identity,
         sections: {
           continue: continueSection(personalStrategy),
           recent,
