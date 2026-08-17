@@ -1,127 +1,49 @@
 # Riverline Roadmap
 
-This roadmap is directional, not a rigid waterfall. Insert bounded features before release when they fit architecture, budget, and product quality.
+Last refreshed: August 17, 2026 (`ROADMAP-CHECKPOINT-002`).
 
-## Completed foundation
+This roadmap is directional, not a rigid waterfall. `CURRENT_PHASE.md` is the authoritative current checkpoint/resume map; `PRODUCT_BACKLOG.md` preserves detailed future capability; code, tests, accepted tags/reports, manual QA, and explicit user decisions override planning prose.
 
-### Legacy and architecture
+## Established foundation — COMPLETED
 
-- repository/runtime audit
-- removal of obsolete servers, entrypoints, model/ONNX paths, tree upload, legacy Training, duplicate Equity worker, and prototypes
-- canonical PokerState/Action/evaluator/Equity authority
-- Scenario versus Hand state separation
+- canonical PokerState/action/evaluator/Equity authority and Scenario-versus-Hand separation;
+- `DecisionContext v1`, one `StrategyProvider v1` / `StrategyResult v1`, and an honestly labelled deterministic heuristic fallback;
+- canonical Training convergence and `PERF-001`;
+- Personal Strategy foundation through `RANGE-CAL-002A` (later inference/integration intentionally checkpointed);
+- canonical Table Presence, Replay through `REPLAY-001C`, physical current-street contributions, and reusable poker-chip visuals;
+- Saved Hand/Spot domain and visible save/note/review workflows through `SAVED-OBJECTS-002`;
+- `HOME-001` persistent study dashboard and detached Saved Hand Replay reopening;
+- reusable tutorial foundation and current-app coverage;
+- `RANGE-CORE-001` canonical combo-level weighted range foundation;
+- `ANALYSIS-RANGE-001` range-aware Analysis/structural outs checkpoint.
 
-### Strategy integrity
+Do not revive retired ONNX/model runtime, remote strategy API, arbitrary solver-tree upload, duplicate Equity, or legacy synthetic Training paths. Future validated sources enter behind versioned provider contracts.
 
-- truthful call-price and actor-contribution semantics
-- removal of fake EV/Equity analytical views
-- one StrategyProvider and StrategyResult path
-- heuristic engine extracted from `logic.js`
-- preflop and postflop mathematical-integrity repairs
-- calibration harness and evidence boundary
-- broad tuning paused until trustworthy reference data exists
+## Near-term sequence
 
-### Performance
+1. **COMPLETED — `ANALYSIS-RANGE-001` checkpoint.** Implementation is accepted at the `analysis-range-001` tag; final live visual/language acceptance remains honestly tracked in `QA_BACKLOG.md`.
+2. **ACTIVE NEXT — `PREFLOP-SANITY-001`.** Characterize and suppress obviously dominated premium Fold leakage caused by heuristic smoothing. Keep the correction narrow, context-aware, smooth at genuine boundaries, and invariant-tested; do not add broad hand-by-hand intuition tuning or unmodelled ICM assumptions.
+3. **PLANNED NEXT — `BLUFF-001`.** Deliver mathematically honest always-available risk/reward and hand/draw/removal facts, with range-enhanced claims only from explicit canonical sources and value/call/bluff verdicts only from trustworthy partitions.
+4. **PLANNED NEXT — account architecture/foundation.** Establish account-ready identity, ownership mapping, offline/privacy/conflict boundaries before authentication or sync.
+5. **PLANNED NEXT — richer Home.** Evolve Home into “my Riverline” using real account, Saved, Personal Strategy, Analysis, and later Training state; Home remains a consumer.
+6. **PLANNED NEXT — Home Game Organizer.** Build a separate top-level domain/tab, staged from persistence through session UI to settlement/reconciliation.
 
-- rAF input coalescing
-- hidden-surface invalidation
-- Matrix model reuse
-- one primary strategy resolution per decision update
-- removal of forced-layout animation restarts
+Reassess after each clean checkpoint rather than forcing all six branches to completion.
 
-## Personal Strategy checkpoint — COMPLETED and DEFERRED
+## Explicit resume points
 
-Completed: `RANGE-CAL-000`, `RANGE-CAL-001A`, `RANGE-CAL-001B/001BR`, `RANGE-CAL-001C-A`, `RANGE-CAL-UI-001R`, and `RANGE-CAL-002A`. The completed foundation provides named profiles, exactly three user-named discrete modes, direct RFI calibration, truthful optional mixes/ties, pause/resume/undo, durable local storage with recovery/migration, export/import groundwork, and an isolated deterministic inference research module.
+- **Personal Strategy — CHECKPOINTED / INTENTIONALLY INCOMPLETE:** resume at `RANGE-CAL-002B`, then `002C`, `002D`, and `002R`; mode relationships, StrategyProvider integration, Training evidence, postflop propagation, and Range Builder/Teacher remain later gates.
+- **Training intelligence — PRESERVED FUTURE:** persistent mistakes, review/re-drill, adaptive/spaced study, expanded filters, saved drills, mastery, session summaries/trends, Home/Replay integration, and opt-in profile evidence.
+- **Range tools — PRESERVED FUTURE:** canonical combo-level Range Builder, sparse Range Teacher/Profiler, range-vs-range tools, Compare Spots, and Saved Ranges.
+- **Accounts/cloud/social — PRESERVED FUTURE after `ACCOUNT-001`:** authentication, offline-first sync/backup, cross-device user data, then approved sharing/forking/friends/study groups.
+- **Product Lab — PRESERVED FUTURE:** safe layout presets, density/card sizing, beginner/expert modes, curated themes, preference persistence/reset, expert keyboard workflow, and deliberate mobile composition.
+- **Solver/reference/model — PRESERVED FUTURE:** validated bounded reference work and data first; model/interpolation only afterward; production integration only behind StrategyProvider.
+- **PLO, public release, and optional gamification — PRESERVED FUTURE / OPEN PRODUCT DECISION:** separate game domain, deliberate packaging/mobile/privacy work, and restrained study mechanics only if approved.
 
-`RANGE-CAL-002A` selectively covered approximately 49.6%/60.0%/64.3% at 30/40/50 answers and reached approximately 89.5%/89.4%/91.0% attempted accuracy on synthetic holdouts. Its irregular/non-monotonic fixture remained near chance on attempted predictions; it abstains rather than filling every cell. These results are synthetic research, not real-user validation; support differences are not confidence and inferred dominant actions are not action frequencies. See `RANGE_CAL_002A_HOLDOUT_REPORT.md`.
+## Shelved visual branch
 
-Deferred, not canceled: `RANGE-CAL-002B`–`002D`, `RANGE-CAL-002R`, mode interpolation, StrategyProvider integration, Training-to-profile evidence, and broader Personal Strategy integration. Preserve current contracts/data and the usable Range Calibration workspace. Resume at `RANGE-CAL-002B`, without redesigning the foundation.
+Richer dealer presentation, physical card trajectories, stack-to-bet and pot-collection chip animation, detailed chip stacks/denominations, deeper/3D table treatment, elaborate showdown/reveal motion, and ambience are **SHELVED FOR LATER**. Preserve the reduced-motion and no-casino aesthetic. Resume only after higher-priority product intelligence/foundation branches reach clean checkpoints.
 
-## Current phase: Table Presence, then Replay
+## Product priority principle
 
-1. **ACTIVE NEXT — `TABLE-PRESENCE-001A`:** a richer static canonical Hand Mode table state layer: dealer/button, player identity/stacks, current actor, folded/all-in states, street contributions/chips, central pot, completed/current action state, and a reusable table view model. Rendering consumes trusted state and never calculates poker rules, pots, contributions, legality, or replay states. No replay controls or playback animation.
-2. **PLANNED — `REPLAY-001A`:** accepted Table Presence first; then a read-only current-hand action timeline grouped by street with canonical identities/actions/amounts, Hero emphasis, and current-decision marker.
-3. **PLANNED LATER — `REPLAY-001B`:** deterministic previous/next projected-state step-through via the Table Presence layer.
-4. **PLANNED LATER — `REPLAY-001C`:** restrained playback/motion with reduced-motion behavior and no casino/jackpot aesthetic.
-
-Maintain EN/RU/HE, RTL, themes, desktop responsiveness, Firefox-first acceptance, the polished baseline, and one bounded ticket at a time. Scenario Mode and canonical Hand Mode remain distinct; PokerState remains the poker-rule authority.
-
-## Product completion sequence
-
-### Equity UX
-
-- progress startup state
-- ETA/throughput for long Monte Carlo runs
-- narrow-width result readability
-- preserve canonical Equity math
-
-### Guide
-
-- replace stale interface terminology
-- document Scenario versus Hand, provenance, Training, seeds, Home/ClubGG, Matrix limits
-
-### I18N
-
-- runtime missing/unapplied-key diagnostics
-- hardcoded dynamic copy inventory
-- bounded EN/RU/HE workspace passes
-- RTL and translation-length acceptance
-
-### Responsive and mobile
-
-- formal desktop/zoom acceptance
-- 1024, 1080p, 1440p, 1600p, 4K, and 16:10
-- later distinct mobile composition rather than a compressed desktop clone
-
-## Product Lab: new UI capabilities
-
-After the active Table Presence → Replay direction:
-
-- safe layout presets
-- card-first/config-first variants
-- compact/comfortable density modes
-- additional theme families
-- beginner/expert presentation modes
-- richer table, dealer, chips, contributions, and restrained motion
-- safe persistence/reset for workspace preferences
-
-## Feature Lab
-
-Later priorities may be inserted flexibly:
-
-- replay timeline with animated actions
-- bookmarks/saved spots/hands/ranges
-- Training filters
-- mistake review and targeted re-drilling
-- Range Builder
-- Range Profiler / user-range inference
-- session review/history/comparison
-- weighted range and range-vs-range analysis
-- poker math/board tools
-- expert keyboard workflow
-
-## Desktop, web, and release
-
-Only after the product meets the chosen quality bar:
-
-- reproducible Electron install/package layout
-- proper portable/installer targets and assets
-- web hosting choice
-- offline/cache/service-worker decision if useful
-- release documentation
-- privacy/legal/product review
-- optional telemetry only with explicit decision
-
-## Solver/model return
-
-Do not resume broad fallback tuning from intuition.
-
-Later options:
-
-- complete/validate bounded solver iterations
-- use exact covered game as regression oracle/dataset source
-- configuration-specific preflop anchors only when data supports them
-- validated model behind StrategyProvider
-- bounded cloud benchmark with explicit budget cap
-
-No model is required for Riverline to become a polished useful product.
+The current explicit priority is: tutorials and richer Analysis/range foundation are checkpointed; next comes the small preflop sanity correction, then Bluffing, account identity, a substantially richer Home, and the separate Home Game Organizer. Detailed accepted ideas remain in `PRODUCT_BACKLOG.md` and must not depend on chat memory.

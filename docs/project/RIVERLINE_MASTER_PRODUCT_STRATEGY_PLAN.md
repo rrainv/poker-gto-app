@@ -1,23 +1,19 @@
 # Riverline — Master Product, Strategy, and Platform Plan
-**Status:** Living planning authority — v1.2  
-**Date:** 2026-08-14  
+
+**Status:** Living planning authority — v1.3
+
+**Date:** 2026-08-17
 **Purpose:** Preserve Riverline’s product vision, strategy/mathematical direction, architecture, user priorities, constraints, accepted ideas, candidate ideas, and long-term implementation path in one place.
 
 > This is a planning authority, not code truth. The current repository remains the authority for implementation details. New manual QA and explicit product decisions override older planning assumptions.
 
-## Strategy checkpoint — August 14, 2026
+## Current checkpoint — August 17, 2026
 
-The Personal Strategy foundation is **COMPLETED through `RANGE-CAL-002A`**: `RANGE-CAL-000`, `001A`, `001B/001BR`, `001C-A`, `RANGE-CAL-UI-001R`, and the isolated sparse-RFI inference baseline. It provides named profiles; exactly three user-named discrete modes; direct RFI Fold/Raise calibration; optional explicit mixes and truthful tied-mix semantics; pause/resume/undo; durable local persistence with migration/recovery; portable export/import groundwork; and an isolated deterministic inference research module.
+`ROADMAP-CHECKPOINT-002` consolidates the current implementation checkpoint, intentionally incomplete branches, exact resume tickets, shelved work, and near-term ordering in `CURRENT_PHASE.md`. That file is the authoritative current checkpoint/resume map; `PRODUCT_BACKLOG.md` preserves detailed future capability. This master plan retains the long-term rationale and decision history without duplicating the whole live status map.
 
-The `RANGE-CAL-002A` holdout result is successful but limited. At 30/40/50 answers, selective synthetic-holdout coverage was approximately 49.6%/60.0%/64.3%, at approximately 89.5%/89.4%/91.0% attempted accuracy. Locally structured, boundary-heavy, tied-boundary, and exploitative/gapped synthetic ranges were promising; the deliberately irregular/non-monotonic range remained near chance on attempted predictions. The method abstains rather than filling every cell. These are synthetic research results, not independent real-user validation. Internal support differences are not confidence, and inferred dominant actions are not action frequencies. The module is unexported from the live Personal Strategy index, unpersisted, and unused by the product. See `RANGE_CAL_002A_HOLDOUT_REPORT.md`.
+Accepted implementation now includes Personal Strategy through `RANGE-CAL-002A`; Table Presence and Replay through `REPLAY-001C` plus the poker-chip/physical-contribution checkpoint; Saved Objects through `SAVED-OBJECTS-002`; `HOME-001`; tutorial foundation and current-app coverage; `RANGE-CORE-001`; and `ANALYSIS-RANGE-001` including RR/RRR corrections. Personal Strategy remains intentionally incomplete and resumes at `RANGE-CAL-002B`.
 
-Further Personal Strategy work is intentionally **DEFERRED**, not rejected: `RANGE-CAL-002B`–`002D`, `RANGE-CAL-002R`, mode interpolation, StrategyProvider integration, Training-to-profile evidence, and broader integration. Existing contracts/data remain preserved, the Range Calibration workspace remains usable, the deterministic 169 loop remains a fallback/test harness, and no existing workspace depends on incomplete inference. A return resumes at `RANGE-CAL-002B`; it does not redesign the foundation.
-
-The active product direction is now **ACTIVE NEXT — `TABLE-PRESENCE-001A`**, followed by **PLANNED — `REPLAY-001A`**, then **PLANNED LATER — `REPLAY-001B/001C`**. This ordering overrides older roadmap language that placed Personal Strategy inference/integration immediately next.
-
-`RANGE-CORE-001` is **COMPLETED** as a domain-only foundation. `shared/poker-domain` now owns one deterministic 52-card / 1,326-combo Hold'em registry and `HoldemWeightedRange v1`, with explicit known-versus-unknown weights, per-combo provenance, combo mass, blocker conditioning, complete-range normalization, deterministic serialization, and truthful DOM-free 169 projection. No current Matrix, Analysis, Personal Strategy, Equity, Saved Object, Training, StrategyProvider, or tutorial behavior changed. See `RANGE_CORE_SPEC.md`.
-
-`ANALYSIS-RANGE-001` is **COMPLETED** as the first visible range-core consumer. `RangeAnalysisFacts v1` now supplies exact-hand/draw, board, structural blocker, and optional explicitly supplied-range facts to `AnalysisExplanation v1`; current production decisions attach no canonical range, so Riverline reports that absence instead of inferring one. See `ANALYSIS_RANGE_SPEC.md`.
+The current execution sequence is: completed Analysis checkpoint → **ACTIVE NEXT `PREFLOP-SANITY-001`** → **PLANNED NEXT `BLUFF-001`** → account identity/foundation → richer Home → a separate Home Game Organizer domain/tab. Reassess at each clean checkpoint.
 
 ## 1. Executive vision
 
@@ -64,9 +60,9 @@ The following decisions are now explicit product authority.
 - **Personal data is local-first, private by default, and exportable.** Accounts/cloud/sharing are later optional enhancements rather than prerequisites.
 
 ### PLANNED — Product / Presentation
-- The Home/dashboard should return eventually, but it is **not a near-term priority**.
+- `HOME-001` is complete. A substantially richer “my Riverline” Home is a near-term priority after account identity/foundation and remains a consumer of real user domains.
 - Broader UI/presentation expansion remains desired after the Personal Strategy Foundation produces meaningful new data.
-- **Per-workspace guided tutorials** are planned: first-use coach marks/overlays/visual walkthroughs, always re-openable later, explaining **what to do, how it works, and why/when to use it**. They complement rather than replace the Guide.
+- **Per-workspace guided tutorials are checkpointed for the current app.** Every future meaningful visible feature owns its tutorial update in the feature ticket. Tutorials remain first-use subtle, re-openable, skippable, and focused on **what to do, how it works, and why/when to use it**; they complement rather than replace the Guide.
 - Gamification depth, including streaks/XP/badges, remains deliberately undecided and deferred.
 
 ### PLANNED — Previously candidate ideas
@@ -1192,7 +1188,7 @@ Distinguish:
 
 ## 23. Home / dashboard product direction
 
-A Home screen should return, but only when it has meaningful information to surface.
+`HOME-001` has returned Home as a meaningful persistent study hub with Continue, Recent, Review, Mistakes, Personal Strategy, Quick Start, Saved Hand detached Replay reopening, and truthful Saved Spot reopening while preserving the live Hand.
 
 Home/Dashboard is a consumer of the canonical SavedStudyObject application domain established by `SAVED-OBJECTS-001`; it must not own or redefine saved hands, spots, notes, tags, review state, or persistence.
 
@@ -1294,7 +1290,7 @@ Current subtle motion/sound system becomes the foundation for future richer phys
 Mobile should eventually receive a deliberate composition, not squeezed desktop UI.
 
 ### Per-workspace tutorials / onboarding
-Each major workspace should eventually have an optional guided tutorial.
+Tutorial foundation and current-app coverage are complete for Home, Scenario, Hand, Replay, Matrix, Analysis, Range Comparison, Equity, Training, Range Calibration, Settings, and truthful Saved contexts through reused flows.
 
 Desired behavior:
 - encouraged automatically on first use;
@@ -1306,29 +1302,13 @@ Desired behavior:
 - should never block an experienced user;
 - should use the same localization system as the rest of Riverline.
 
-Candidate coverage:
-- Playbook / Scenario / Hand;
-- Training;
-- Equity;
-- Matrix / Range comparison;
-- Range Calibration / Range Builder;
-- later Home-game organizer and other major modules.
+Every future meaningful visible feature or workspace owns its tutorial definition/update, semantic anchors, EN/RU/HE copy, RTL, accessibility, reduced-motion behavior, and relevant acceptance in the same ticket. Range Builder, Bluffing, richer Home, Home Game Organizer, and other later modules therefore extend the foundation when they ship; no giant tutorial catch-up project should be needed.
 
 Tutorials complement the existing Guide; they do not replace it.
 
 ## 25. Replay timeline
 
-Replay is largely a canonical PokerState/Hand feature and can remain architecturally independent from personal range inference.
-
-Future replay:
-- chronological action timeline;
-- street progression;
-- cards dealt;
-- bets/raises/calls;
-- animated state changes;
-- strategy/profile overlay;
-- mistake markers;
-- notes.
+Replay remains a canonical PokerState/Hand feature and architecturally independent from personal range inference. `REPLAY-001A/001B/001C`, including chance-event repair, are complete: Riverline has the chronological action/chance timeline, street progression, deterministic step projection, and restrained playback/motion. Future Replay work may add strategy/profile overlays, mistake markers, notes, and richer study integration.
 
 Useful for:
 - Training review;
@@ -1338,7 +1318,7 @@ Useful for:
 
 ## 26. Saved objects and version history
 
-`SAVED-OBJECTS-001/001R` establishes the local-first `SavedStudyObject v1` foundation. Current strict payloads are canonical observer-level Hands and truthful Hand/Scenario Spots. Saved Hands include a versioned observer-safe canonical event source that cold-reconstructs deterministic Replay states through the existing poker domain/projection architecture without persisting presentation frames. Shared annotations, review state, mistake classification, local ownership, archive tombstones, IndexedDB queries, and portable export/import belong to this domain rather than Dashboard. Visible save/note/library UX is deferred to `SAVED-OBJECTS-002`; Range, drill, session-review, account, cloud, sharing, and object-history payloads remain later work.
+`SAVED-OBJECTS-001/001R` establishes the local-first `SavedStudyObject v1` foundation. Current strict payloads are canonical observer-level Hands and truthful Hand/Scenario Spots. Saved Hands include a versioned observer-safe canonical event source that cold-reconstructs deterministic Replay states through the existing poker domain/projection architecture without persisting presentation frames. Shared annotations, review state, mistake classification, local ownership, archive tombstones, IndexedDB queries, and portable export/import belong to this domain rather than Dashboard. `SAVED-OBJECTS-002` adds visible Save Hand/Save Spot, annotations, review/mistake state, archive, and source-surface saved state; `HOME-001` consumes the domain for recent/review/mistake lists and Saved reopening. Range, drill, session-review, account, cloud, sharing, and object-history payloads remain later work.
 
 Future saved content:
 - spots;
@@ -1698,11 +1678,11 @@ Do not make consumers model-aware.
 
 ## 37. Proposed high-level roadmap
 
-### Active product direction — Table Presence → Replay
+### Active product direction — Analysis checkpoint → preflop sanity → Bluffing
 
-`TABLE-PRESENCE-001A` is **ACTIVE NEXT**. It creates a richer static Hand Mode table from trusted canonical Hand Mode state: dealer/button marker; player identity and stack hierarchy; current actor; folded/all-in states; street contributions/chips; central pot; current versus completed actions; and a reusable application-level table view model. It must preserve restrained premium presentation, EN/RU/HE, RTL, themes, desktop responsiveness, and Firefox-first acceptance. Its renderer consumes trusted state and does not calculate poker rules, pots, contributions, legality, or replay states. Replay controls and playback animation are out of scope.
+Table Presence and Replay are **COMPLETED** through `TABLE-PRESENCE-001A` and `REPLAY-001A/001B/001C`, including chance-event repair, on-felt street contributions, truthful pot transitions, and the reusable poker-chip primitive. Richer physical dealing/chip/table/showdown visuals are preserved but **SHELVED FOR LATER**.
 
-`REPLAY-001A` is **PLANNED** after Table Presence acceptance: a read-only canonical action timeline grouped by street, with player/position identity, action/amount, Hero emphasis, folds/checks/calls/bets/raises/all-ins, and a current-decision marker. `REPLAY-001B` and `REPLAY-001C` are **PLANNED LATER**: first deterministic previous/next projection with a clear live-versus-replay distinction and table updates through the Table Presence layer; then restrained playback/motion with reduced-motion behavior and no casino/jackpot aesthetic.
+`ANALYSIS-RANGE-001` is the accepted current checkpoint. `PREFLOP-SANITY-001` is **ACTIVE NEXT** and owns a narrow, characterized suppression of obviously dominated premium-hand Fold leakage from heuristic smoothing. `BLUFF-001` is **PLANNED NEXT**, followed by account-ready identity architecture, richer Home, and the separate Home Game Organizer. See `CURRENT_PHASE.md` for exact boundaries and the live status map.
 
 ### Phase 0 — Protect the accepted product
 - tag/checkpoint the polished pre-Personal-Strategy baseline;
@@ -1811,19 +1791,19 @@ Visible milestone:
 - Compare Spots.
 
 ### Product Wave 1
-- meaningful Home dashboard;
-- saved content;
+- richer Home after the completed `HOME-001` checkpoint and account foundation;
+- new Saved content types and richer library workflows after the completed Hand/Spot foundation;
 - layout/density personalization;
-- per-workspace tutorials for the new workflows.
+- per-feature tutorial maintenance for new workflows.
 
-### Feature Wave 2 — later, after the active Table Presence → Replay direction
+### Feature Wave 2 — preserved after higher-priority checkpoints
 - leak detection;
 - Concept Mastery;
 - adaptive/daily sessions;
 - optional streaks if later approved;
 - similar-spot exploration;
 - richer bluff/value coaching;
-- replay;
+- deeper Replay/study integration;
 - range-vs-range.
 
 ### Platform Wave
@@ -1860,11 +1840,11 @@ The highest-leverage calibration questions have now been resolved. The following
 3. **Conflict clarification UX — OPEN.** When Training repeatedly contradicts direct calibration data, determine when Riverline should ask whether the named profile should be revised.
 
 ### Product / Presentation
-4. **Home dashboard timing — OPEN.** Desired eventually, but not urgent. Revisit after calibration/profile data becomes useful enough to surface.
+4. **Richer Home scope after accounts — PLANNED.** `HOME-001` is complete. After account identity/foundation, decide the bounded composition of a substantially richer “my Riverline” Home using real user/study state.
 
 5. **Gamification depth — DEFERRED.** Streaks remain a future option. XP/levels/badges/achievements are deliberately undecided.
 
-6. **Tutorial presentation style — OPEN.** Decide exact combination of coach marks, animated examples, interactive walkthroughs, and static help once the first new post-repair feature is available.
+6. **Tutorial policy — LOCKED.** Tutorial foundation and current-app coverage are checkpointed. Every future meaningful visible feature/workspace owns its tutorial definition/update, anchors, localization, accessibility, RTL, and reduced-motion acceptance in that feature ticket.
 
 ### Social / Platform
 7. Sharing scope desired first:
@@ -1923,14 +1903,14 @@ The highest-leverage calibration questions have now been resolved. The following
 - local-first/private/exportable personal data.
 
 **PLANNED**
-- Personal Strategy Foundation;
+- Personal Strategy continuation from the accepted foundation at `RANGE-CAL-002B`;
 - Range elicitation/inference/style anchors;
 - Range Builder/Teacher;
 - mistake review / targeted drilling;
 - Compare Spots;
 - richer bluff/value analysis;
-- Home/dashboard eventually;
-- per-workspace guided tutorials;
+- richer Home after account foundation;
+- per-feature tutorial maintenance for every future visible feature/workspace;
 - accounts/sync/sharing later;
 - Section 34 idea set.
 
@@ -1966,15 +1946,6 @@ Future revisions should move items between these states instead of silently rewr
 
 ## 40. Active next step
 
-The core Personal Strategy semantics are resolved:
+`PREFLOP-SANITY-001` is **ACTIVE NEXT**. Characterize the known heuristic smoothing leak before changing it, then suppress meaningless Fold mass for AA and similarly clear premiums only in ordinary supported chip-EV contexts. Do not blanket-zero every premium in every situation, introduce unmodelled ICM/satellite assumptions, or resume broad intuition-based tuning. Preserve smoothness at legitimate boundaries and require focused invariants.
 
-- calibration is per real-world profile + named mode;
-- profiles represent recognizable poker environments;
-- each profile starts with three user-named discrete strategy modes;
-- quick answers mean dominant action, not pure frequency;
-- mixed-frequency detail is always available and sometimes explicitly requested;
-- Training evidence is per-session opt-in and never silently overwrites direct calibration answers;
-- RFI/open ranges are the first proof-of-concept family;
-- personal data is local-first/private/exportable.
-
-The Personal Strategy foundation has passed its completed checkpoint and its remaining work is deferred. Begin `TABLE-PRESENCE-001A` as the next bounded ticket. Keep Scenario Mode and canonical Hand Mode distinct, keep PokerState as the poker-rule authority, do not put poker mathematics in the table renderer, and preserve the polished baseline. Only after Table Presence acceptance may `REPLAY-001A` begin; do not start step-through or motion early.
+After that clean checkpoint, proceed to `BLUFF-001`, then account-ready identity architecture, richer Home, and the separate Home Game Organizer. `CURRENT_PHASE.md` owns the exact current sequence and resume map; `PRODUCT_BACKLOG.md` owns preserved future detail. Personal Strategy remains safely checkpointed and resumes at `RANGE-CAL-002B` when reprioritized.

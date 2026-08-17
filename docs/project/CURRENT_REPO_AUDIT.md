@@ -1,6 +1,6 @@
 # Current Repository Audit
 
-Snapshot refreshed August 16, 2026 from the architecture-focused repository dump and accepted ticket reports. Verify against executable code, tests, and Git history.
+Snapshot refreshed August 17, 2026 from executable code, accepted tags through `analysis-range-001`, focused specifications, and accepted ticket reports. Verify against executable code, tests, and Git history.
 
 ## 1. Browser runtime
 
@@ -18,6 +18,9 @@ Major paths:
 - canonical Training generator/session/grading/presentation
 - product-performance scheduling and hidden-surface invalidation
 - lazy local-first SavedStudyObject v1 domain/repository for saved Hands, Spots, annotations, review state, and portable export/import; Saved Hands include an exact observer-safe canonical event source for cold deterministic Replay reconstruction
+- canonical Table Presence plus Replay timeline, chance-event projection, previous/next, playback/speed, reduced-motion-safe restrained motion, truthful on-felt contribution/pot transitions, and reusable poker-chip visuals
+- persistent Home consumer for Continue, Recent, Review, Mistakes, Personal Strategy, Quick Start, detached Saved Hand Replay, and truthful Saved Spot reopening
+- reusable tutorial definition/controller/presentation foundation with current-app EN/RU/HE coverage and contextual Saved-flow reuse
 - classic UI/application orchestration in `app/src/core/logic.js`
 
 ## 2. Desktop
@@ -58,15 +61,19 @@ Training uses legal canonical trajectories, deterministic seeds, replay metadata
 
 ## 5.1 Saved Study Objects
 
-`app/src/saved-study-objects/` is the canonical user-owned Saved / Noted Study Object authority. V1 supports strict Hand and Spot snapshots, shared title/note/tag/review/mistake metadata, local ownership, archive tombstones, Dashboard-ready queries, and deterministic portable export/import behind native IndexedDB. Hand snapshots retain observer-level PokerState privacy markers; Scenario spots remain lossy and contain no invented history. No current renderer or Dashboard UI consumes the foundation yet.
+`app/src/saved-study-objects/` is the canonical user-owned Saved / Noted Study Object authority. V1 supports strict Hand and Spot snapshots, shared title/note/tag/review/mistake metadata, local ownership, archive tombstones, Dashboard-ready queries, and deterministic portable export/import behind native IndexedDB. Hand snapshots retain observer-level PokerState privacy markers; Scenario spots remain lossy and contain no invented history. `SAVED-OBJECTS-002` exposes bounded Save Hand/Save Spot and metadata/review/archive UX, while `HOME-001` consumes recent/review/mistake queries and the open controller. Neither surface owns persistence.
 
-## 6. Analysis and UI
+## 6. Analysis, Replay, Home, Tutorials, and UI
 
 AnalysisExplanation consumes canonical range-analysis facts and presents compact Hand & Board, Blockers, Supplied Range, and fact-source sections. Structural and localization tests are complete; final human viewport/theme/language acceptance remains tracked in `QA_BACKLOG.md`.
 
+Table Presence and Replay are accepted through `REPLAY-001C`, including the chance-event repair and the poker-chip/physical-contribution checkpoint. Replay projection is read-only and keeps live versus replay state distinct. Saved Hand reopening reconstructs from the canonical replay source and presents a detached read-only viewer without replacing the live Hand.
+
+`HOME-001` is an application consumer of Saved Study Objects and the Personal Strategy query seam. Tutorial foundation/current-app coverage is checkpointed; every future meaningful visible feature owns its own tutorial update rather than relying on a later catch-up project.
+
 PERF-001 removed duplicate slider updates, hidden Matrix computation, unnecessary theme recomputation, duplicate Training init, duplicate Equity readiness, and forced layout reads.
 
-Product UI repair is active. `QA_BACKLOG.md` is the authoritative issue/status map.
+`QA_BACKLOG.md` remains the authoritative unresolved visual/manual acceptance map. The active product ticket sequence is maintained in `CURRENT_PHASE.md`, not in this architecture audit.
 
 ## 7. Deliberately absent
 
@@ -82,15 +89,16 @@ Product UI repair is active. `QA_BACKLOG.md` is the authoritative issue/status m
 
 The bounded HU 100bb no-rake preflop solver is isolated under `solver/riverline_solver/`. It is useful infrastructure, not current production strategy and not a universal calibration source.
 
-## 9. Current debt
+## 9. Current debt and intentionally incomplete branches
 
-- `logic.js` remains a large classic orchestration/rendering file
-- many user-facing strings still bypass i18n
-- Guide copy is stale
-- workspace composition and responsive acceptance remain incomplete
-- settings/theme catalog includes legacy/experimental presentation debt
-- hidden DOM was remeasured by PERF-RL18: cold Decision is 1,423 elements/91 buttons; a warmed Decision retaining Matrix and Range caches is 2,575/598, and the 52-button picker deck now detaches on close
-- Electron clean install/package flow needs a later repair
+- `logic.js` remains a large classic orchestration/rendering file;
+- final human visual/language acceptance remains open for items explicitly marked partial in `QA_BACKLOG.md`;
+- settings/theme catalog and some workspace composition retain tracked presentation debt;
+- hidden DOM was remeasured by PERF-RL18: cold Decision is 1,423 elements/91 buttons; a warmed Decision retaining Matrix and Range caches is 2,575/598, and the 52-button picker deck detaches on close;
+- Electron clean install/package flow needs a later repair;
+- Personal Strategy inference/integration resumes at `RANGE-CAL-002B`;
+- current production decisions still supply no canonical weighted range to Analysis;
+- Training intelligence, richer Home/account state, and new Saved payloads remain future branches rather than hidden implementation claims.
 
 ## 10. Documentation rule
 

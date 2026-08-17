@@ -1,121 +1,143 @@
 # Riverline Product and Feature Backlog
 
-This file preserves accepted future ideas so repair tickets do not need to repeat them and agents do not implement them opportunistically.
+Last consolidated: August 17, 2026 (`ROADMAP-CHECKPOINT-002`).
 
-Status vocabulary:
+This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
-- `PRIORITY`: strongly desired when dependencies are ready
-- `PLANNED`: accepted direction
-- `PARTIAL`: a bounded foundation exists, but later capability or acceptance work remains
-- `IDEA`: worth exploring
-- `DEFERRED`: intentionally later
-- `CHECKPOINTED`: current product scope is complete; later features own their incremental updates
+## Status vocabulary
+
+- **COMPLETED**
+- **CHECKPOINTED / INTENTIONALLY INCOMPLETE**
+- **ACTIVE NEXT**
+- **PLANNED NEXT**
+- **PRESERVED FUTURE**
+- **SHELVED FOR LATER**
+- **OPEN PRODUCT DECISION**
 
 ## Current delivery ordering
 
-- **ACTIVE NEXT — `TABLE-PRESENCE-001A`:** richer static canonical Hand Mode table presentation, using trusted state only; no replay controls, animation, or UI poker mathematics.
-- **PLANNED — `REPLAY-001A`:** read-only canonical action timeline after Table Presence acceptance.
-- **PLANNED LATER — `REPLAY-001B/001C`:** deterministic step-through, then playback/motion through the Table Presence layer.
-- **DEFERRED — Personal Strategy continuation:** `RANGE-CAL-002B`–`002D`, `RANGE-CAL-002R`, mode interpolation, StrategyProvider integration, Training-to-profile evidence, and broader integration. The completed foundation and usable Range Calibration workspace remain preserved; resume at `RANGE-CAL-002B`.
+| Order | Status | Ticket / outcome |
+|---:|---|---|
+| 1 | COMPLETED | `ANALYSIS-RANGE-001` accepted checkpoint, including RR/RRR corrections |
+| 2 | ACTIVE NEXT | `PREFLOP-SANITY-001` — characterize and suppress clearly dominated premium-hand Fold leakage without broad intuition retuning |
+| 3 | PLANNED NEXT | `BLUFF-001` — mathematically honest bluff analysis with strict structural/range/source boundaries |
+| 4 | PLANNED NEXT | `ACCOUNT-001` — account-ready identity, local ownership mapping, offline/privacy/conflict boundaries |
+| 5 | PLANNED NEXT | richer Home — “my Riverline” powered by real account/personal/study state |
+| 6 | PLANNED NEXT | `HOME-GAME-001` foundation, then `002` session UI and `003` settlement/reconciliation |
 
-- **CHECKPOINTED — `RANGE-CORE-001`:** canonical 1,326-combo `HoldemWeightedRange v1` foundation, explicit unknown semantics, provenance, blockers, normalization, and DOM-free 169 projection. Visible range consumers remain separate future tickets.
+Personal Strategy resumes separately at `RANGE-CAL-002B`; it is preserved but not in this immediate sequence. Reassess at every clean checkpoint.
 
-- **CHECKPOINTED — `ANALYSIS-RANGE-001`:** Analysis now consumes canonical exact-hand, board, blocker, and optionally supplied-range facts. Current production decisions have no canonical range source, so the range panel remains explicitly unavailable until a future source-owning ticket attaches one.
+## Checkpointed foundations and explicit resume points
 
-## Product Lab: UI capabilities
-
-| ID | Status | Capability | Dependencies |
-|---|---|---|---|
-| PROD-LAYOUT-001 | PRIORITY | safe workspace layout presets | Product UI repair baseline |
-| PROD-LAYOUT-002 | PLANNED | card-first versus configuration-first Playbook layouts | UI-005 decisions |
-| PROD-DENSITY-001 | PLANNED | compact/comfortable density modes | component-system stability |
-| PROD-THEME-001 | PLANNED | additional curated theme families | UI-004 theme cleanup |
-| PROD-MODE-001 | PLANNED | beginner versus expert presentation modes | Guide/i18n, analysis hierarchy |
-| PROD-PERSONALIZE-001 | PLANNED | persist/reset workspace preferences safely | no arbitrary drag-drop serializer |
-| PROD-MOTION-001 | PLANNED | restrained sound/motion controls | current sound inventory |
-| PROD-TUTORIAL-001 | CHECKPOINTED | per-workspace guided tutorials explaining what, how, and why | `TUTORIAL-001` foundation and `TUTORIAL-002` current-app coverage complete; every future meaningful feature/workspace owns its own tutorial update |
-
-## Table and player experience
-
-| ID | Status | Capability | Notes |
-|---|---|---|---|
-| PROD-TABLE-001 | PRIORITY | richer physical table presentation | active delivery begins with `TABLE-PRESENCE-001A`; preserve analytical readability and canonical-state authority |
-| PROD-TABLE-002 | PLANNED | dealer and dealing/chip/contribution animations | replay-ready state model |
-| PROD-TABLE-003 | PRIORITY | configurable player/villain names | generic seat labels remain fallback |
-| PROD-TABLE-004 | PRIORITY | per-player starting/current stacks | canonical and Scenario authority must be explicit |
-| PROD-TABLE-005 | PLANNED | villain notes/tendencies/archetypes | not a solver claim |
-| PROD-TABLE-006 | IDEA | future per-villain strategy/player models | requires versioned source and provenance |
-
-## Replay, persistence, and review
-
-| ID | Status | Capability | Notes |
-|---|---|---|---|
-| PROD-REPLAY-001 | PRIORITY | replay timeline with animated bets/raises/calls/chance events | `REPLAY-001A` is timeline-only; step-through and motion follow only after acceptance |
-| PROD-SAVE-001 | PARTIAL | bookmark/save spots, hands, and ranges | `SAVED-OBJECTS-001/001R` establishes the local-first Hand/Spot foundation and cold-reconstructable canonical Saved Hand Replay source; `SAVED-OBJECTS-002` adds current Hand/Replay/Scenario save, annotations, review/mistake, archive, and bounded reidentification UX; Home/Library browsing and future Range payload remain later work |
-| PROD-SESSION-001 | PLANNED | session history and review |
-| PROD-COMPARE-001 | PLANNED | compare strategies/spots/history |
-
-## Training
-
-| ID | Status | Capability |
+| Subsystem | Status | Resume / future owner |
 |---|---|---|
-| PROD-TRAIN-001 | PRIORITY | expanded Training filters |
-| PROD-TRAIN-002 | PRIORITY | mistake library/review |
-| PROD-TRAIN-003 | PRIORITY | targeted re-drilling and spaced review |
-| PROD-TRAIN-004 | PLANNED | adaptive curriculum and range profiling |
-| PROD-TRAIN-005 | PLANNED | persistence across sessions |
+| Personal Strategy through `RANGE-CAL-002A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Resume `002B` validation, `002C` active boundary/question selection, `002D` inferred Matrix, `002R` review; then evidence-backed mode relationships, provider and Training integration |
+| Table Presence / Replay / poker-chip primitive | COMPLETED | Richer physical table visuals are SHELVED FOR LATER |
+| Saved Hands/Spots through `SAVED-OBJECTS-002` | COMPLETED | New payload tickets for Saved Range, Drill, or Session; richer library/history/account/sharing later |
+| Home through `HOME-001` | COMPLETED | Richer Home after account foundation |
+| Tutorials foundation/current-app coverage | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Every future meaningful visible feature owns its tutorial update; no broad catch-up epic |
+| `RANGE-CORE-001` | COMPLETED | Adopt deliberately in future combo-aware consumers |
+| `ANALYSIS-RANGE-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Live QA remains in `QA_BACKLOG.md`; deeper range-vs-range/value-bluff work uses new tickets |
 
-## Range and study tools
+## Bluffing and analysis
 
-| ID | Status | Capability |
+| ID | Status | Preserved scope |
 |---|---|---|
-| PROD-RANGE-000 | CHECKPOINTED | canonical combo-level weighted/partial Hold'em range foundation |
-| PROD-RANGE-001 | PRIORITY | Range Builder |
-| PROD-RANGE-002 | PRIORITY | Range Profiler / infer how tight or loose the user's choices are |
-| PROD-RANGE-003 | PLANNED | save/share named ranges |
-| PROD-RANGE-004 | PARTIAL | weighted range analysis foundation: `ANALYSIS-RANGE-001` supplies blocker conditioning and composition facts; range source UX and broader comparative analysis remain future work |
-| PROD-RANGE-005 | PLANNED | range-vs-range Equity/category tools |
-| PROD-RANGE-006 | PLANNED | provider-backed postflop full-range Matrix with board-aware weighted combos and validated source coverage |
-| PROD-BLUFF-001 | PRIORITY | mathematically honest bluff-candidate analysis using blockers, range composition, and action context; depends on an explicit trustworthy range source and approved strategy/EV contract because structural blockers alone are insufficient |
-| PROD-MATH-001 | IDEA | board/pot/poker-math study tools |
+| `PREFLOP-SANITY-001` | ACTIVE NEXT | Characterize heuristic anchor smoothing; suppress absurd premium Fold leakage in ordinary supported chip-EV contexts; preserve legitimate boundaries; no ICM/satellite assumptions; invariant tests required |
+| `BLUFF-001` | PLANNED NEXT | Always available: action risk/reward, scoped break-even fold percentage where trusted, exact made-hand/draw/semibluff structure, structural outs, neutral removal facts, explicit-assumption river bluff:value math. Range-enhanced: composition/removal only from supplied canonical ranges, later explicit value/call/bluff partitions |
+| `ANALYSIS-RANGE-002+` | PRESERVED FUTURE | weighted Hero range vs Villain range; legitimate range/nut distribution and advantage; action-conditioned ranges; deeper blocker/unblocker interpretation; board interaction; personalized Analysis; value/bluff composition; postflop propagation |
+| Compare Spots | PRESERVED FUTURE | compare position, stack, pot, call/facing size, board, blockers, hand, opponents, range assumptions, and profile/mode; explain only relationships supported by trusted facts |
 
-## Input and workflow
+`BLUFF-001` must not derive opponent fold frequency, EV, “optimal bluff,” solver frequency, or good/bad blocker verdicts from a generic range. Blocker quality needs a trustworthy continuing/value/bluff partition or another relevant strategic source.
 
-| ID | Status | Capability |
+## Range and Personal Strategy tools
+
+| Capability | Status | Preserved scope |
 |---|---|---|
-| PROD-KEYBOARD-001 | PLANNED | expert keyboard mode |
-| PROD-MOBILE-001 | DEFERRED | distinct mobile composition |
-| PROD-IMPORT-001 | DEFERRED | validated strategy-source/import workflow | replaces retired arbitrary tree upload; requires schema/provenance/coverage validation |
+| Range Builder | PRESERVED FUTURE | canonical combo-level editing; derived 13×13 painting; exact combo overrides; action/frequency painting; partial/unknown support; save/version/compare/export/import; later sharing/forking |
+| Range Teacher / Profiler | PRESERVED FUTURE | sparse boundary-seeking questions; uncertain-cell targeting; direct/inferred provenance; confirmation/correction; disagreement drills; Personal Strategy + Range Core reuse |
+| Range-vs-range tools | PRESERVED FUTURE | combo-aware blockers, weighted category analysis, legitimate Equity integration through an approved versioned weighted-opponent boundary |
+| Personal Strategy integration | PRESERVED FUTURE | StrategyProvider source only after validation/mode-relationship gates; Training evidence with explicit per-session opt-in; postflop range propagation later |
+| Saved Ranges | PRESERVED FUTURE | versioned SavedStudyObject payload, compare/export/import, later account ownership and sharing |
 
-## Desktop, web, and release
+The canonical chain remains 52 cards → 1,326 unordered combos → `HoldemWeightedRange v1` → derived blocker/normalization/Matrix views. Unknown is not zero, and weight/mass/count/probability/frequency/confidence remain distinct.
 
-| ID | Status | Capability |
+## Training intelligence
+
+| Capability | Status |
+|---|---|
+| persistent mistake history and Review Mistakes | PRESERVED FUTURE |
+| targeted re-drilling, similar spots, spaced/adaptive review | PRESERVED FUTURE |
+| expanded filters and saved drill presets | PRESERVED FUTURE |
+| Concept Mastery, session summaries, and performance trends | PRESERVED FUTURE |
+| Home Review and Replay integration | PRESERVED FUTURE |
+| profile-aware Training and stated-range vs actual-behavior comparison | PRESERVED FUTURE |
+| Training evidence → Personal Strategy with explicit per-session opt-in | PRESERVED FUTURE |
+
+The current legal, deterministic, provider-backed Training base is established; these intelligence and persistence branches are not completed by that foundation.
+
+## Saved study, Home, and account platform
+
+| Capability | Status | Notes |
 |---|---|---|
-| PROD-DESKTOP-001 | PLANNED | reproducible Electron install/package structure |
-| PROD-DESKTOP-002 | PLANNED | correct portable and installer targets/assets |
-| PROD-WEB-001 | DEFERRED | public web hosting after product quality acceptance |
-| PROD-RELEASE-001 | DEFERRED | documentation, privacy/legal, optional telemetry decision |
+| Saved Range / Saved Drill / saved sessions | PRESERVED FUTURE | New versioned payloads; no parallel persistence models |
+| richer Saved search/filter/tags | PRESERVED FUTURE | Full drilldowns/View all; folders/collections only if later justified |
+| Saved history/revisions | PRESERVED FUTURE | Preserve ownership/version/conflict semantics |
+| `ACCOUNT-001` | PLANNED NEXT | application/user identity; local ownership migration/mapping; offline-first behavior; privacy/security boundary; conflict policy; account-ready preferences |
+| `ACCOUNT-002+` | PRESERVED FUTURE | authentication, cloud backup/sync, cross-device Saved Objects/Personal Strategy/settings |
+| sharing/social | PRESERVED FUTURE | share/fork ranges, spots, and drills; friends/study groups; collaborative range review only if approved |
+| richer Home | PLANNED NEXT | identity and sync status; Continue; Saved/Recent; Review/Mistakes; Personal Strategy; recent Analysis; bluff/range study; later Training history; tutorials/help; account actions |
 
-## Strategy, solver, and model
+Riverline remains local-first and useful offline. Home is a consumer of user domains, never their owner. Do not invent analytics merely to make Home busy.
 
-| ID | Status | Capability |
+## Home Game Organizer
+
+This is a separate top-level tab and domain, not part of `StrategyProfile` or `PokerState`.
+
+| Ticket | Status | Scope |
 |---|---|---|
-| PROD-SOLVER-001 | DEFERRED | continue bounded solver/MCCFR validation |
-| PROD-DATA-001 | DEFERRED | generate validated strategy dataset |
-| PROD-MODEL-001 | DEFERRED | validated preflop provider/model behind StrategyProvider |
-| PROD-CLOUD-001 | DEFERRED | bounded cloud benchmark with explicit spend cap |
+| `HOME-GAME-001` | PLANNED NEXT | domain and persistence for saved groups, roster, sessions, buy-ins/rebuys/cash-outs, chip/count facts, ownership/versioning |
+| `HOME-GAME-002` | PLANNED NEXT | session UI, seats, optional button/blinds, current stacks/counts, session summary |
+| `HOME-GAME-003` | PLANNED NEXT | net result, who owes whom, settlement/reconciliation |
+| live/mobile sharing | PRESERVED FUTURE | much later, after account and organizer foundations |
 
-## Budget rule
+The exact first shipped scope remains an **OPEN PRODUCT DECISION** at ticket planning.
 
-No paid/cloud/product service should exceed the user's approximately US$75 total optional project budget without explicit approval.
+## Product Lab and table presentation
+
+| Capability | Status | Preserved scope |
+|---|---|---|
+| layout presets | PRESERVED FUTURE | Cards First, Controls First, Table Focus, Analysis Focus, Compact, Configuration First |
+| density and sizing | PRESERVED FUTURE | Comfortable/Compact density and card sizing |
+| beginner/expert modes | PRESERVED FUTURE | simpler guided presentation vs denser provenance/frequency/keyboard workflow |
+| themes/preferences | PRESERVED FUTURE | curated themes and safe workspace persistence/reset; no arbitrary drag/drop serializer |
+| expert keyboard workflow | PRESERVED FUTURE | deliberate shortcuts and fast study operation |
+| richer table visuals | SHELVED FOR LATER | richer dealer/marker, physical dealing/card paths, stack-to-bet and pot-collection chip motion, denominations/stacks, table depth/3D, showdown/reveal motion, restrained ambience |
+| mobile composition | PRESERVED FUTURE | deliberate mobile product, not compressed desktop |
+
+Preserve reduced motion, analytical clarity, and the no-casino aesthetic. Do not let endless visual polish displace strategy/study capability.
+
+## Card semantics and reusable outcome preview
+
+| ID | Status | Preserved scope |
+|---|---|---|
+| `UI-CARD-SEMANTICS-001` | PRESERVED FUTURE | replace normally visible raw IDs (`As`, `5h`) with suit glyph notation (`A♠`, `5♥`) or Riverline card tokens/mini-cards across Analysis, Replay, Saved summaries, Training, Matrix/range inspection, Bluffing, and tutorials |
+| Card Outcome Preview | PRESERVED FUTURE | hover/keyboard-focus anchored preview for an exact out/completion/combo card; show canonical resulting best five, actual kickers, and canonical made-hand headline; consume evaluator `bestFiveCards`; no renderer ranking math |
+| touch/click preview behavior | OPEN PRODUCT DECISION | define when the reusable interaction reaches touch surfaces |
+
+## Solver, reference, model, PLO, release, and optional gamification
+
+| Branch | Status | Preserved path |
+|---|---|---|
+| solver/reference/model | PRESERVED FUTURE | bounded trustworthy problems → reproducible reference data → validation → worthwhile dataset → model/interpolation if justified → validated StrategyProvider → fallback elsewhere |
+| compute/cloud experiments | PRESERVED FUTURE | explicit budget/runtime/stop criteria; no unapproved spend; approximately US$75 total optional project budget remains the planning cap |
+| PLO | PRESERVED FUTURE | separate four-card domain, exactly-two-hole-card evaluation, range representation, Equity, Training/UI, strategy/reference pipeline |
+| gamification | OPEN PRODUCT DECISION | restrained streaks, daily study, mastery, goals/progress may be useful; no XP/badges/levels merely for engagement |
+| desktop/public release | PRESERVED FUTURE | reproducible packaging, installer/portable assets, hosting, offline/cache policy, release docs, privacy/legal review |
+| telemetry | OPEN PRODUCT DECISION | only if explicitly approved |
+
+Never train on heuristic labels and present the output as solver/GTO truth. A future production model/reference remains a versioned provider behind `StrategyProvider`.
 
 ## Pull-forward rule
 
-A backlog item may move earlier when:
-
-- it naturally fits the current architecture ticket
-- it does not broaden risk materially
-- the user explicitly prioritizes it
-- dependencies are satisfied
-
-Do not implement a future item merely because a touched file makes it convenient.
+A preserved item moves earlier only when the user explicitly reprioritizes it or its dependencies are ready and a bounded ticket owns it. Do not absorb future capability merely because a touched file makes it convenient.
