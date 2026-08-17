@@ -12,6 +12,7 @@ venv/
 env/
 .env
 .env.local
+app/auth-config.js
 repo_dump.txt
 
 # Electron / Build Artifacts

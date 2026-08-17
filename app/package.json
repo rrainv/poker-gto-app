@@ -26,9 +26,11 @@
     },
     "files": [
       "main.js",
+      "preload.js",
       "index.html",
       "styles.css",
       "src/**/*",
+      "node_modules/@supabase/supabase-js/dist/umd/supabase.js",
       "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
       "!**/node_modules/*/{test,tests,example,examples}",
       "!**/node_modules/*.d.ts",
@@ -38,7 +40,9 @@
       {
         "from": "../shared/poker-domain",
         "to": "shared/poker-domain",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
@@ -58,5 +62,8 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Riverline Poker Workstation"
     }
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.112.3"
   }
 }

@@ -5,7 +5,6 @@ import {
   countCurrentDirectObservations,
   createContextFromSelection,
   createIdentityScopedRangeCalibrationApplication,
-  createRangeCalibrationApplication,
   normalizeRfiContextSelection,
   profileDefaultEnvironment,
   rfiPositionsForTableSize,
@@ -49,6 +48,7 @@ function cloneCalibrationDom() {
 }
 
 function friendlyError(error) {
+  if (error?.code === 'identity_unavailable') return translated('Your account identity is still becoming available. Try again.');
   if (error?.code === 'corrupt_record') return translated('Stored Personal Strategy data is malformed and was left untouched.');
   if (error?.code === 'unsupported_schema') return translated('Stored Personal Strategy data uses an unsupported version and was left untouched.');
   if (error?.code === 'owner_mismatch') return translated('Stored Personal Strategy data belongs to a different local owner and was left untouched.');
@@ -90,6 +90,7 @@ function initialSelection(workspace) {
 
 function createController(root, application, initialWorkspace, activationStartedAt, profileLoadMs) {
   const query = (selector) => document.querySelector(selector);
+  const lifecycle = new AbortController();
   let workspace = initialWorkspace;
   let selection = initialSelection(workspace);
   let calibrationState = null;
@@ -123,6 +124,7 @@ function createController(root, application, initialWorkspace, activationStarted
     root.dataset.calibrationState = state;
     root.setAttribute('aria-busy', String(state === 'loading'));
     query('#calibrationLoadingState').hidden = state !== 'loading';
+    query('#calibrationGuestState').hidden = state !== 'guest';
     query('#calibrationErrorState').hidden = state !== 'error';
     query('#calibrationEmptyState').hidden = state !== 'empty';
     query('#calibrationConfiguredState').hidden = state !== 'configured';
@@ -135,11 +137,6 @@ function createController(root, application, initialWorkspace, activationStarted
   function setSessionView(view) {
     root.dataset.sessionView = view;
     query('#calibrationQuestionView').hidden = view !== 'questions';
-  }
-
-  function showWorkspaceError(error) {
-    setState('error');
-    query('#calibrationErrorMessage').textContent = friendlyError(error);
   }
 
   async function persistSelection() {
@@ -617,9 +614,6 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationCreateFirstProfile').addEventListener('click', () => openProfileEditor('create'));
     query('#calibrationCreateProfile').addEventListener('click', () => openProfileEditor('create'));
     query('#calibrationEditProfile').addEventListener('click', () => openProfileEditor('edit'));
-    query('#calibrationRetry').addEventListener('click', async () => {
-      try { await refreshWorkspace(); } catch (error) { showWorkspaceError(error); }
-    });
     query('#calibrationStartQuestions').addEventListener('click', enterQuestions);
     query('#calibrationPauseQuestions').addEventListener('click', pauseQuestions);
     query('#calibrationReturnToContext').addEventListener('click', pauseQuestions);
@@ -747,14 +741,14 @@ function createController(root, application, initialWorkspace, activationStarted
         event.preventDefault();
         first.focus();
       }
-    });
+    }, { signal: lifecycle.signal });
     window.addEventListener('riverline:languagechange', () => {
       if (calibrationState) renderQuestion();
       else if (root.dataset.calibrationState === 'configured') {
         renderContextControls();
         renderDerivedContext();
       }
-    });
+    }, { signal: lifecycle.signal });
   }
 
   bindEvents();
@@ -768,6 +762,14 @@ function createController(root, application, initialWorkspace, activationStarted
   return Object.freeze({
     render,
     openCreateProfile: () => openProfileEditor('create'),
+    async dispose() {
+      lifecycle.abort();
+      await application.repository?.close?.();
+      document.querySelector('#rangeCalibrationMount')?.replaceChildren();
+      document.querySelector('#calibrationProfileModal')?.remove();
+      mountedWorkspace = null;
+      window.RiverlineRangeCalibration = null;
+    },
     getPerformanceReport: () => ({
       ...metrics,
       hiddenWorkspaceDomMounted: root.isConnected && query('#calibrationMode')?.style.display === 'none',
@@ -789,16 +791,26 @@ function createController(root, application, initialWorkspace, activationStarted
 
 export async function mountRangeCalibrationWorkspace() {
   if (mountedWorkspace) return mountedWorkspace;
+  await window.RiverlineAuthentication?.ready?.();
   const activationStartedAt = now();
   const root = cloneCalibrationDom();
+  let application = null;
   try {
+    if (window.RiverlineAuthentication?.getState?.().status !== 'signed_in') {
+      const error = new RangeError('A signed-in Account Profile is required');
+      error.code = 'persistent_identity_required';
+      throw error;
+    }
     const accountIdentity = window.RiverlineAccountIdentity;
     const binding = accountIdentity?.getDomainOwnership
       ? await accountIdentity.getDomainOwnership(RIVERLINE_OWNED_DOMAINS.PERSONAL_STRATEGY)
       : null;
-    const application = binding
-      ? createIdentityScopedRangeCalibrationApplication(binding)
-      : createRangeCalibrationApplication();
+    if (!binding) {
+      const error = new RangeError('The authenticated Personal Strategy owner is unavailable');
+      error.code = 'identity_unavailable';
+      throw error;
+    }
+    application = createIdentityScopedRangeCalibrationApplication(binding);
     const profileLoadStartedAt = now();
     const initialWorkspace = await application.readWorkspace();
     const profileLoadMs = now() - profileLoadStartedAt;
@@ -806,12 +818,25 @@ export async function mountRangeCalibrationWorkspace() {
     window.RiverlineRangeCalibration = mountedWorkspace;
     return mountedWorkspace;
   } catch (error) {
+    await application?.repository?.close?.();
     root.setAttribute('aria-busy', 'false');
     root.dataset.calibrationState = 'error';
     document.querySelector('#calibrationLoadingState').hidden = true;
+    document.querySelector('#calibrationGuestState').hidden = true;
     document.querySelector('#calibrationErrorState').hidden = false;
+    document.querySelector('#calibrationEmptyState').hidden = true;
+    document.querySelector('#calibrationConfiguredState').hidden = true;
     document.querySelector('#calibrationErrorMessage').textContent = friendlyError(error);
     console.error('[Riverline Range Calibration]', error);
     throw error;
   }
+}
+
+export async function remountRangeCalibrationWorkspace() {
+  if (mountedWorkspace) await mountedWorkspace.dispose();
+  return mountRangeCalibrationWorkspace();
+}
+
+export async function disposeRangeCalibrationWorkspace() {
+  if (mountedWorkspace) await mountedWorkspace.dispose();
 }

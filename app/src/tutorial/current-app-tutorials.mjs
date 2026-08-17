@@ -144,6 +144,7 @@ export const SETTINGS_TUTORIAL_DEFINITION = definition({
   steps: [
     { id: 'overview', anchor: 'settings-overview', titleKey: 'Preferences change presentation', bodyKey: 'Settings controls presentation rather than poker state. Language is available from the global rail; this dialog groups theme, card, and sound preferences.', placement: 'bottom' },
     { id: 'appearance', anchor: 'settings-appearance', titleKey: 'Choose theme and card presentation', bodyKey: 'Select a supported theme, four-color deck, rank notation, and card style for comfortable reading. Card IDs and poker calculations do not change.', placement: 'right' },
+    { id: 'account', anchor: 'settings-account', titleKey: 'Authentication is not cloud sync', bodyKey: 'Sign-in links a provider identity to a Riverline identity. Study data remains on this device until a later explicit cloud-sync feature says otherwise.', placement: 'left' },
     { id: 'audio', anchor: 'settings-audio', titleKey: 'Keep sound under your control', bodyKey: 'Sound effects can be disabled here or from the rail. Tutorial motion continues to respect the system reduced-motion preference.', placement: 'left' },
   ],
 });

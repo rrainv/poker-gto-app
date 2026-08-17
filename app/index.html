@@ -12,6 +12,8 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+
   <title data-i18n="Riverline — Poker Strategy &amp; Analysis">Riverline — Poker Strategy &amp; Analysis</title>
 
   <link rel="stylesheet" href="styles.css?v=22">
@@ -27,6 +29,7 @@
   <script src="src/locales/home-translations.js?v=1" defer></script>
   <script src="src/locales/tutorial-translations.js?v=1" defer></script>
   <script src="src/locales/i18n.js?v=4" defer></script>
+  <script src="node_modules/@supabase/supabase-js/dist/umd/supabase.js" defer></script>
 
 
 
@@ -378,7 +381,7 @@
         <label class="rail-utility rail-language" for="langToggle" title="Language" data-i18n-title="Language" data-tooltip="Language">
           <svg class="rail-utility-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.4 2.5 3.7 5.5 3.7 9S14.4 18.5 12 21c-2.4-2.5-3.7-5.5-3.7-9S9.6 5.5 12 3Z"/></svg>
           <span class="rail-utility-label" data-i18n="Language">Language</span>
-          <select id="langToggle" onchange="setLanguage(this.value)" aria-label="Language" data-i18n-aria-label="Language">
+          <select id="langToggle" aria-label="Language" data-i18n-aria-label="Language">
             <option value="en">🇺🇸 English</option>
             <option value="ru">🇷🇺 Русский</option>
             <option value="he">🇮🇱 עברית</option>
@@ -419,6 +422,22 @@
               <strong data-i18n="Heuristic fallback">Heuristic fallback</strong>
             </span>
           </div>
+          <div id="accountHeaderControl" class="account-header-control">
+            <button id="accountMenuButton" class="account-menu-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="accountMenu">
+              <span id="accountMenuAvatar" class="account-menu-avatar" aria-hidden="true">G</span>
+              <span id="accountMenuLabel" data-i18n="Guest">Guest</span>
+              <span aria-hidden="true">▾</span>
+            </button>
+            <div id="accountMenu" class="account-menu overlay-surface" role="menu" aria-labelledby="accountMenuButton" hidden>
+              <div class="account-menu-identity">
+                <strong id="accountMenuDisplayName" dir="auto" data-i18n="Guest Mode">Guest Mode</strong>
+                <small id="accountMenuUsername" dir="ltr" data-i18n="Not signed in">Not signed in</small>
+              </div>
+              <button id="accountMenuOpenProfile" type="button" role="menuitem" data-i18n="Sign in or create account">Sign in or create account</button>
+              <button id="accountMenuSwitch" type="button" role="menuitem" data-i18n="Use another account" hidden>Use another account</button>
+              <button id="accountMenuSignOut" type="button" role="menuitem" data-i18n="Sign out" hidden>Sign out</button>
+            </div>
+          </div>
 
         </div>
       </header>
@@ -433,6 +452,13 @@
           <span data-i18n="Opening your study workspace">Opening your study workspace</span>
         </div>
         <div id="homeWorkspaceContent" class="home-dashboard-grid" hidden>
+          <section id="homeGuestAccount" class="panel home-section home-section--guest-account" aria-labelledby="homeGuestAccountTitle" hidden>
+            <header class="home-section-head"><div><p data-i18n="Guest Mode">Guest Mode</p><h2 id="homeGuestAccountTitle" data-i18n="Keep your study progress">Keep your study progress</h2></div></header>
+            <div class="home-guest-account-copy">
+              <p data-i18n="Analysis and training work in Guest Mode. Sign in before saving study history, review items, or Personal Strategy.">Analysis and training work in Guest Mode. Sign in before saving study history, review items, or Personal Strategy.</p>
+              <button id="homeGuestSignIn" class="ui-button ui-button--primary" type="button" data-i18n="Sign in or create account">Sign in or create account</button>
+            </div>
+          </section>
           <section class="panel home-section home-section--continue" aria-labelledby="homeContinueTitle">
             <header class="home-section-head"><div><p data-i18n="Pick up where you left off">Pick up where you left off</p><h2 id="homeContinueTitle" data-i18n="Continue">Continue</h2></div></header>
             <div id="homeContinueContent" class="home-section-content"></div>
@@ -1395,6 +1421,19 @@
           <strong data-i18n="Opening Range Calibration">Opening Range Calibration</strong>
         </section>
 
+        <section id="calibrationGuestState" class="panel calibration-account-required-state" aria-labelledby="calibrationGuestTitle" hidden>
+          <div>
+            <p class="calibration-eyebrow" data-i18n="Account required">Account required</p>
+            <h2 id="calibrationGuestTitle" data-i18n="Sign in to build and save your Personal Strategy">Sign in to build and save your Personal Strategy</h2>
+            <p data-i18n="Range Calibration creates persistent profiles, sessions, and direct answers. Sign in or create an account before starting.">Range Calibration creates persistent profiles, sessions, and direct answers. Sign in or create an account before starting.</p>
+          </div>
+          <div class="calibration-account-required-actions">
+            <button class="ui-button ui-button--primary" type="button" data-calibration-account-action="sign-in" data-i18n="Sign in">Sign in</button>
+            <button class="ui-button ui-button--secondary" type="button" data-calibration-account-action="create-account" data-i18n="Create account">Create account</button>
+          </div>
+          <small data-i18n="Your current workspace remains open. No Personal Strategy data is created in Guest Mode.">Your current workspace remains open. No Personal Strategy data is created in Guest Mode.</small>
+        </section>
+
         <section id="calibrationErrorState" class="panel calibration-error-state" role="alert" hidden>
           <div>
             <p class="calibration-eyebrow" data-i18n="Personal strategy data">Personal strategy data</p>
@@ -1983,29 +2022,22 @@
             </div>
         </div>
 
-        <div id="settingsAccountProfile" class="settings-group settings-account-group" data-account-state="loading" aria-busy="true">
+        <div id="settingsAccountProfile" class="settings-group settings-account-group" data-account-state="loading" aria-busy="true" data-tutorial-anchor="settings-account">
           <h3 class="settings-section-title" data-i18n="Account & Profile">Account &amp; Profile</h3>
           <div class="account-profile-summary">
             <div class="account-profile-heading">
               <div>
-                <span class="account-profile-kicker" data-i18n="Local profile">Local profile</span>
-                <strong id="accountDisplayNamePreview" dir="auto">Local Player</strong>
+                <span id="settingsAccountKicker" class="account-profile-kicker" data-i18n="Guest Mode">Guest Mode</span>
+                <strong id="settingsAccountName" dir="auto" data-i18n="Guest">Guest</strong>
               </div>
-              <span class="badge status-badge status-badge--neutral" data-i18n="Local only">Local only</span>
+              <span id="settingsAccountBadge" class="badge status-badge status-badge--neutral" data-i18n="Not signed in">Not signed in</span>
             </div>
-            <p class="panel-note" data-i18n="Your profile stays on this device, and Riverline continues to work offline.">Your profile stays on this device, and Riverline continues to work offline.</p>
+            <p id="settingsAccountDescription" class="panel-note" data-i18n="Guest study history is not saved. Device settings remain available.">Guest study history is not saved. Device settings remain available.</p>
           </div>
-          <form id="accountDisplayNameForm" class="account-display-name-form" novalidate>
-            <label for="accountDisplayName">
-              <span data-i18n="Display name">Display name</span>
-              <input id="accountDisplayName" class="control-input" type="text" maxlength="80" autocomplete="name" dir="auto" required>
-            </label>
-            <button id="accountDisplayNameSubmit" class="ui-button ui-button--secondary" type="submit" data-i18n="Save name">Save name</button>
-          </form>
-          <p id="accountProfileStatus" class="account-profile-status" role="status" aria-live="polite" data-i18n="Loading local profile…">Loading local profile…</p>
+          <button id="settingsOpenAccount" class="ui-button ui-button--secondary" type="button" data-i18n="Open Account / Profile">Open Account / Profile</button>
           <dl class="account-profile-facts">
             <div><dt data-i18n="Study data">Study data</dt><dd data-i18n="Stored on this device">Stored on this device</dd></div>
-            <div><dt data-i18n="Account sync not enabled">Account sync not enabled</dt><dd data-i18n="Sign-in and sync are coming later.">Sign-in and sync are coming later.</dd></div>
+            <div><dt data-i18n="Cloud sync is not enabled">Cloud sync is not enabled</dt><dd data-i18n="Study data is still stored locally. Signing in does not create a cloud backup.">Study data is still stored locally. Signing in does not create a cloud backup.</dd></div>
           </dl>
         </div>
 
@@ -2124,6 +2156,80 @@
     </form>
   </div>
 
+  <div id="accountProfileModal" class="modal-backdrop account-profile-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="accountProfileModalTitle" aria-describedby="accountProfileModalDescription" hidden>
+    <div class="modal overlay-surface account-profile-modal">
+      <div class="modal-head">
+        <div><p class="account-profile-kicker" data-i18n="Riverline account">Riverline account</p><h2 id="accountProfileModalTitle" data-i18n="Account / Profile">Account / Profile</h2></div>
+        <button id="accountProfileClose" class="close ui-button ui-button--icon" type="button" aria-label="Close account" data-i18n-aria-label="Close account" title="Close" data-i18n-title="Close">&times;</button>
+      </div>
+      <div class="modal-body account-profile-modal-body">
+        <p id="accountProfileModalDescription" class="panel-note" data-i18n="Sign in to keep saved study, review, and Personal Strategy separated by account on this device.">Sign in to keep saved study, review, and Personal Strategy separated by account on this device.</p>
+        <div id="accountGuestForms" class="account-guest-forms">
+          <form id="accountSignInForm" class="account-auth-form" novalidate>
+            <h3 data-i18n="Sign in">Sign in</h3>
+            <label for="accountSignInEmail"><span data-i18n="Email">Email</span><input id="accountSignInEmail" class="control-input" type="email" inputmode="email" autocomplete="username" dir="ltr" required></label>
+            <label for="accountSignInPassword"><span data-i18n="Password">Password</span><input id="accountSignInPassword" class="control-input" type="password" minlength="6" autocomplete="current-password" required></label>
+            <button id="accountSignIn" class="ui-button ui-button--primary" type="submit" data-i18n="Sign in">Sign in</button>
+          </form>
+          <form id="accountSignUpForm" class="account-auth-form" novalidate>
+            <h3 data-i18n="Create account">Create account</h3>
+            <label for="accountSignUpEmail"><span data-i18n="Email">Email</span><input id="accountSignUpEmail" class="control-input" type="email" inputmode="email" autocomplete="email" dir="ltr" required></label>
+            <label for="accountSignUpUsername"><span data-i18n="Username">Username</span><input id="accountSignUpUsername" class="control-input" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9][A-Za-z0-9_]{2,23}" autocomplete="username" autocapitalize="none" spellcheck="false" dir="ltr" aria-describedby="accountUsernameHelp" required></label>
+            <small id="accountUsernameHelp" data-i18n="3–24 lowercase letters, digits, or underscores; start with a letter or digit.">3–24 lowercase letters, digits, or underscores; start with a letter or digit.</small>
+            <label for="accountSignUpDisplayName"><span data-i18n="Display name">Display name</span><input id="accountSignUpDisplayName" class="control-input" type="text" maxlength="80" autocomplete="name" dir="auto" required></label>
+            <label for="accountSignUpPassword"><span data-i18n="Password">Password</span><input id="accountSignUpPassword" class="control-input" type="password" minlength="6" autocomplete="new-password" required></label>
+            <button id="accountSignUp" class="ui-button ui-button--secondary" type="submit" data-i18n="Create account">Create account</button>
+          </form>
+        </div>
+        <form id="accountProfileSetupForm" class="account-auth-form" novalidate hidden>
+          <h3 data-i18n="Complete your profile">Complete your profile</h3>
+          <p data-i18n="Your sign-in is valid. Add the required profile details to continue.">Your sign-in is valid. Add the required profile details to continue.</p>
+          <label for="accountSetupUsername"><span data-i18n="Username">Username</span><input id="accountSetupUsername" class="control-input" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9][A-Za-z0-9_]{2,23}" autocomplete="username" autocapitalize="none" spellcheck="false" dir="ltr" required></label>
+          <label for="accountSetupDisplayName"><span data-i18n="Display name">Display name</span><input id="accountSetupDisplayName" class="control-input" type="text" maxlength="80" autocomplete="name" dir="auto" required></label>
+          <button class="ui-button ui-button--primary" type="submit" data-i18n="Complete profile">Complete profile</button>
+        </form>
+        <div id="accountSignedInProfile" class="account-signed-in-profile" hidden>
+          <div class="account-profile-heading">
+            <div><small data-i18n="Signed in as">Signed in as</small><strong id="accountProfileDisplayName" dir="auto"></strong><span id="accountProfileUsername" class="poker-data-token" dir="ltr"></span></div>
+            <span class="badge status-badge status-badge--available" data-i18n="Signed in">Signed in</span>
+          </div>
+          <p id="accountProfileEmail" class="poker-data-token" dir="ltr"></p>
+          <form id="accountDisplayNameForm" class="account-display-name-form" novalidate>
+            <label for="accountDisplayName"><span data-i18n="Display name">Display name</span><input id="accountDisplayName" class="control-input" type="text" maxlength="80" autocomplete="name" dir="auto" required></label>
+            <button id="accountDisplayNameSubmit" class="ui-button ui-button--secondary" type="submit" data-i18n="Save name">Save name</button>
+          </form>
+          <p class="panel-note" data-i18n="Username changes are not available yet.">Username changes are not available yet.</p>
+          <div class="account-auth-buttons">
+            <button id="accountUseAnother" class="ui-button ui-button--secondary" type="button" data-i18n="Use another account">Use another account</button>
+            <button id="accountSignOut" class="ui-button ui-button--quiet" type="button" data-i18n="Sign out">Sign out</button>
+          </div>
+        </div>
+        <p id="accountAuthStatus" class="account-auth-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+
+  <template id="accountLinkModalTemplate">
+    <div id="accountLinkModal" class="modal-backdrop account-link-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="accountLinkModalTitle" aria-describedby="accountLinkModalDescription" hidden>
+      <div class="modal overlay-surface account-link-modal">
+        <div class="modal-head">
+          <div><p class="account-profile-kicker" data-i18n="First sign-in">First sign-in</p><h2 id="accountLinkModalTitle" data-i18n="Use this account with your current Riverline data?">Use this account with your current Riverline data?</h2></div>
+          <button id="accountLinkClose" class="close ui-button ui-button--icon" type="button" aria-label="Cancel" data-i18n-aria-label="Cancel" title="Cancel" data-i18n-title="Cancel">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p id="accountLinkModalDescription" data-i18n="Choose explicitly. Riverline never merges profiles by email.">Choose explicitly. Riverline never merges profiles by email.</p>
+          <p class="account-link-email"><span data-i18n="Signed in as">Signed in as</span> <strong id="accountLinkEmail" dir="ltr"></strong></p>
+          <div class="account-link-choice-list">
+            <button id="accountLinkCurrent" class="account-link-choice" type="button"><strong data-i18n="Use current local data">Use current local data</strong><small data-i18n="Keep current Riverline data and IDs with this account.">Keep current Riverline data and IDs with this account.</small></button>
+            <button id="accountStartSeparate" class="account-link-choice" type="button"><strong data-i18n="Start separately">Start separately</strong><small data-i18n="Keep the Local Profile intact and start a separate account profile.">Keep the Local Profile intact and start a separate account profile.</small></button>
+          </div>
+          <p id="accountLinkError" class="account-auth-status" role="alert" aria-live="assertive"></p>
+        </div>
+        <div class="modal-actions"><button id="accountLinkCancel" class="ui-button ui-button--secondary" type="button" data-i18n="Cancel">Cancel</button></div>
+      </div>
+    </div>
+  </template>
+
   <div id="matrixCellCue" class="matrix-cell-cue" role="tooltip" hidden>
     <strong id="matrixCellCueHand"></strong>
     <span id="matrixCellCueMix"></span>
@@ -2139,6 +2245,7 @@
   <script type="module" src="src/application/analysis-explanation-bootstrap.mjs"></script>
   <script type="module" src="src/application/playbook-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/account-identity-bootstrap.mjs"></script>
+  <script type="module" src="src/application/authentication-bootstrap.mjs"></script>
   <script type="module" src="src/application/saved-study-object-bootstrap.mjs"></script>
   <script type="module" src="src/application/home-workspace-bootstrap.mjs"></script>
   <script type="module" src="src/application/tutorial-bootstrap.mjs"></script>

@@ -346,7 +346,7 @@ test('Home receives the truthful account seam while Saved/Review/Mistake consume
   assert.equal(model.sections.review.mistakes.items[0].id, object.id);
 });
 
-test('account initialization has no network path and visible profile copy is localized without a fake sign-in action', async () => {
+test('account initialization remains local while the ACCOUNT-002A surface distinguishes auth from sync', async () => {
   const [domain, repository, service, bootstrap, html, css, translations, specification] = await Promise.all([
     readFile(new URL('../app/src/account-identity/domain.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/account-identity/repository.mjs', import.meta.url), 'utf8'),
@@ -362,8 +362,9 @@ test('account initialization has no network path and visible profile copy is loc
   assert.match(html, /id="settingsAccountProfile"/);
   assert.match(html, /id="accountDisplayName"[^>]+maxlength="80"[^>]+dir="auto"/);
   assert.match(html, /Stored on this device/);
-  assert.match(html, /Account sync not enabled/);
-  assert.doesNotMatch(html, /<button[^>]*>\s*Sign in\s*<\/button>/i);
+  assert.match(html, /Cloud sync is not enabled/);
+  assert.match(html, /id="accountSignIn"[^>]*data-i18n="Sign in"/);
+  assert.match(html, /Signing in does not create a cloud backup/);
   assert.match(css, /grid-template-areas:[\s\S]*"appearance account"/);
   assert.match(css, /account-display-name-form/);
   assert.match(specification, /Saved Hand \/ Spot objects[\s\S]*?\| user\/identity \|/);
@@ -372,7 +373,7 @@ test('account initialization has no network path and visible profile copy is loc
   assert.match(specification, /Tutorial completion\/skip history[\s\S]*?\| device \|/);
   assert.match(specification, /\| language \|[\s\S]*?\| device \|/);
   assert.match(specification, /theme, four-color deck[\s\S]*?\| device \|/);
-  for (const key of ['Account & Profile', 'Local profile', 'Local only', 'Display name', 'Save name']) {
+  for (const key of ['Account & Profile', 'Local Profile', 'Local only', 'Display name', 'Save name', 'Sign in', 'Sign out']) {
     assert.match(translations, new RegExp(`['"]${key.replace(/[&]/g, '&')}['"]`));
   }
   assert.match(translations, /Аккаунт и профиль/);

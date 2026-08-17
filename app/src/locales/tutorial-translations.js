@@ -197,6 +197,8 @@
     'Settings controls presentation rather than poker state. Language is available from the global rail; this dialog groups theme, card, and sound preferences.',
     'Choose theme and card presentation',
     'Select a supported theme, four-color deck, rank notation, and card style for comfortable reading. Card IDs and poker calculations do not change.',
+    'Authentication is not cloud sync',
+    'Sign-in links a provider identity to a Riverline identity. Study data remains on this device until a later explicit cloud-sync feature says otherwise.',
     'Keep sound under your control',
     'Sound effects can be disabled here or from the rail. Tutorial motion continues to respect the system reduced-motion preference.',
   ];
@@ -330,6 +332,8 @@
     'Настройки не меняют покерное состояние. Язык доступен на общей панели, а здесь собраны тема, карты и звук.',
     'Выберите тему и вид карт',
     'Выберите поддерживаемую тему, четырёхцветную колоду, запись ранга и стиль карт. Идентификаторы карт и расчёты не меняются.',
+    'Аутентификация — не облачная синхронизация',
+    'Вход связывает идентичность провайдера с идентичностью Riverline. Учебные данные остаются на этом устройстве до появления отдельной явной функции облачной синхронизации.',
     'Управляйте звуком',
     'Эффекты отключаются здесь или на панели. Движение обучения продолжает учитывать системную настройку уменьшения анимации.',
   ];
@@ -463,6 +467,8 @@
     'ההגדרות אינן משנות מצב פוקר. השפה זמינה בסרגל הכללי, ובחלון זה מרוכזים ערכת נושא, קלפים וצליל.',
     'בחרו ערכת נושא ותצוגת קלפים',
     'בחרו ערכת נושא נתמכת, חפיסה בארבעה צבעים, סימון דרגה וסגנון קלף. מזהי הקלפים וחישובי הפוקר אינם משתנים.',
+    'אימות אינו סנכרון לענן',
+    'הכניסה מקשרת זהות ספק לזהות Riverline. נתוני הלימוד נשארים במכשיר עד שתכונת סנכרון ענן מפורשת תציין אחרת.',
     'שמרו את הצליל בשליטתכם',
     'אפשר לכבות אפקטים כאן או בסרגל. תנועת ההדרכה ממשיכה לכבד את העדפת המערכת להפחתת תנועה.',
   ];

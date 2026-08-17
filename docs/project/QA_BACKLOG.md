@@ -77,7 +77,8 @@ These identifiers are the current live-audit baseline. They remain distinct from
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-ACCOUNT-001 | PARTIAL | Local profile Settings surface, display-name edit/reload, truthful local-only copy, EN/RU/HE RTL, theme, viewport, and keyboard behavior are structurally implemented; final human Firefox visual/linguistic acceptance remains required | ACCOUNT-001 human acceptance |
+| QA-ACCOUNT-001 | PARTIAL | Legacy Local Profile storage remains preserved and claimable behind the Guest boundary; its earlier Settings/profile acceptance is superseded in normal signed-out UX by ACCOUNT-002AR. Final migration acceptance must still prove existing local objects survive and retain stable IDs when claimed. | ACCOUNT-001 compatibility acceptance |
+| QA-ACCOUNT-002A | PARTIAL | Supabase email/password auth, required profile/RLS migration, explicit claim/start-separate flow, Guest fail-closed semantics, durable-action resume gate, account switching/sign-out, truthful no-sync copy, EN/RU/HE/RTL, focus management, and Range Calibration gating are structurally implemented and deterministic tests pass. Electron HE automation verified the Guest Home, header menu, Guest-only auth dialog, Escape/focus restoration, and Save Spot promotion/cancel with the current spot retained at 1426×914 (plus an earlier maximized 1440×763 pass); it also found and prompted fixes for RTL menu placement, hidden Guest navigation/actions, modal visibility/panels, and asynchronous module-bootstrap ordering. Remaining acceptance: apply/verify the migration against a live Supabase project, exercise real signup/profile conflict/edit/sign-out/re-auth/resumed save, and complete human Firefox EN/RU/HE checks at 1024×768, 1366×768, and 1920×1080. | ACCOUNT-002A/AR live/manual acceptance |
 
 ## Workspace composition and responsive fit
 

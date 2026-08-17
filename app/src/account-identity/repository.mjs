@@ -8,6 +8,8 @@ import {
   createRiverlineDomainOwnershipBinding,
   createRiverlineIdentity,
   domainOwnershipBindingId,
+  rebindRiverlineDomainOwnershipBinding,
+  transitionRiverlineIdentityKind,
   updateRiverlineIdentityDisplayName,
   validateRiverlineAccountMetadata,
   validateRiverlineDomainOwnershipBinding,
@@ -20,6 +22,13 @@ import {
   RIVERLINE_ACCOUNT_OBJECT_STORES,
   createIndexedDbAccountIdentityDatabase,
 } from './indexeddb-storage.mjs';
+import {
+  createProviderIdentityMapping,
+  providerIdentityMappingId,
+  refreshProviderIdentityMapping,
+  validateAuthProviderIdentity,
+  validateProviderIdentityMapping,
+} from '../authentication/domain.mjs';
 
 const STORES = RIVERLINE_ACCOUNT_OBJECT_STORES;
 const ALL_STORES = Object.freeze(Object.values(STORES));
@@ -80,7 +89,7 @@ function createMetadata({ identity, createdAt, adoptedDomains }) {
   };
 }
 
-function validateRegistry(metadata, identities, bindings) {
+function validateRegistry(metadata, identities, bindings, mappings = []) {
   validateRiverlineAccountMetadata(metadata);
   if (metadata.backendSchemaVersion !== RIVERLINE_ACCOUNT_BACKEND_SCHEMA_VERSION
     || metadata.databaseVersion !== RIVERLINE_ACCOUNT_DATABASE_VERSION) {
@@ -91,6 +100,7 @@ function validateRegistry(metadata, identities, bindings) {
   }
   identities.forEach(validateRiverlineIdentity);
   bindings.forEach(validateRiverlineDomainOwnershipBinding);
+  mappings.forEach(validateProviderIdentityMapping);
   const identityById = new Map(identities.map((identity) => [identity.identityId, identity]));
   const active = identityById.get(metadata.activeIdentityId);
   if (!active) throw new TypeError('Active Riverline identity is missing');
@@ -123,15 +133,26 @@ function validateRegistry(metadata, identities, bindings) {
       }
     }
   }
+  const mappingIds = new Set();
+  for (const mapping of mappings) {
+    if (mappingIds.has(mapping.mappingId)) throw new TypeError('Duplicate provider identity mapping');
+    mappingIds.add(mapping.mappingId);
+    const identity = identityById.get(mapping.riverlineIdentityId);
+    if (!identity) throw new TypeError('Provider identity mapping references an unknown Riverline identity');
+    if (identity.kind !== RIVERLINE_IDENTITY_KINDS.AUTHENTICATED_FUTURE) {
+      throw new TypeError('Provider identity mapping must reference an authenticated Riverline identity');
+    }
+  }
   return { active, identityById };
 }
 
-function snapshot(metadata, identities, bindings) {
-  const { active } = validateRegistry(metadata, identities, bindings);
+function snapshot(metadata, identities, bindings, mappings = []) {
+  const { active } = validateRegistry(metadata, identities, bindings, mappings);
   return deepFreeze({
     metadata: cloneData(metadata),
     identities: cloneData(identities),
     bindings: cloneData(bindings),
+    providerIdentityMappings: cloneData(mappings),
     activeIdentity: cloneData(active),
   });
 }
@@ -171,13 +192,14 @@ export function createAccountIdentityRepository({
   }
 
   async function readRawSnapshot(transaction) {
-    const [metadata, identities, bindings] = await Promise.all([
+    const [metadata, identities, bindings, mappings] = await Promise.all([
       transaction.get(STORES.METADATA, METADATA_KEY),
       transaction.getAll(STORES.IDENTITIES),
       transaction.getAll(STORES.DOMAIN_BINDINGS),
+      transaction.getAll(STORES.PROVIDER_MAPPINGS),
     ]);
     if (!metadata) return null;
-    return snapshot(metadata, identities, bindings);
+    return snapshot(metadata, identities, bindings, mappings);
   }
 
   async function initialize() {
@@ -232,7 +254,7 @@ export function createAccountIdentityRepository({
           await transaction.add(STORES.IDENTITIES, identity);
           for (const binding of bindings) await transaction.add(STORES.DOMAIN_BINDINGS, binding);
           await transaction.add(STORES.METADATA, metadata);
-          return snapshot(metadata, [identity], bindings);
+          return snapshot(metadata, [identity], bindings, []);
         });
       } catch (error) {
         if (error instanceof AccountIdentityStorageError) throw error;
@@ -289,6 +311,62 @@ export function createAccountIdentityRepository({
     return next;
   }
 
+  function createAdditionalIdentity({
+    kind,
+    displayName,
+    localDeviceIdentityId,
+    createdAt,
+    identityId = idFactory('identity'),
+  }) {
+    const identity = createRiverlineIdentity({
+      identityId,
+      kind,
+      displayName,
+      localDeviceIdentityId,
+      createdAt,
+    });
+    const storageScope = idFactory('scope');
+    const bindings = OWNED_DOMAINS.map((domain) => createRiverlineDomainOwnershipBinding({
+      identity,
+      domain,
+      domainOwnerId: identity.identityId,
+      storageScope,
+      provenance: RIVERLINE_BINDING_PROVENANCE.IDENTITY_INITIALIZED,
+      createdAt,
+    }));
+    return { identity, bindings };
+  }
+
+  async function assertFreshIdentityTargets(transaction, identity, bindings) {
+    if (await transaction.get(STORES.IDENTITIES, identity.identityId)) {
+      throw new RangeError(`Riverline identity already exists: ${identity.identityId}`);
+    }
+    const existingBindings = await transaction.getAll(STORES.DOMAIN_BINDINGS);
+    for (const binding of bindings) {
+      if (existingBindings.some((entry) => entry.domain === binding.domain
+        && (entry.storageScope === binding.storageScope
+          || entry.domainOwnerId === binding.domainOwnerId))) {
+        throw new RangeError(`The ${binding.domain} ownership target is already assigned`);
+      }
+    }
+  }
+
+  async function addIdentityWithBindings(transaction, identity, bindings) {
+    await assertFreshIdentityTargets(transaction, identity, bindings);
+    await transaction.add(STORES.IDENTITIES, identity);
+    for (const binding of bindings) await transaction.add(STORES.DOMAIN_BINDINGS, binding);
+  }
+
+  async function mappingForProviderIdentity(transaction, providerIdentity) {
+    validateAuthProviderIdentity(providerIdentity);
+    const mapping = await transaction.get(
+      STORES.PROVIDER_MAPPINGS,
+      providerIdentityMappingId(providerIdentity),
+    );
+    if (mapping) validateProviderIdentityMapping(mapping);
+    return mapping ?? null;
+  }
+
   const repository = {
     backendSchemaVersion: RIVERLINE_ACCOUNT_BACKEND_SCHEMA_VERSION,
     databaseName: database?.name ?? RIVERLINE_ACCOUNT_DATABASE_NAME,
@@ -320,6 +398,159 @@ export function createAccountIdentityRepository({
         if (!binding) throw new RangeError(`Identity has no ${domain} ownership binding`);
         validateRiverlineDomainOwnershipBinding(binding);
         return deepFreeze(cloneData(binding));
+      });
+    },
+
+    async listKnownIdentities() {
+      const value = await repository.getSnapshot();
+      return value.identities;
+    },
+
+    reserveIdentityId() {
+      return idFactory('identity');
+    },
+
+    async getProviderIdentityMapping(providerIdentity) {
+      validateAuthProviderIdentity(providerIdentity);
+      return read(async (transaction) => {
+        const mapping = await mappingForProviderIdentity(transaction, providerIdentity);
+        return mapping ? deepFreeze(cloneData(mapping)) : null;
+      });
+    },
+
+    async activateProviderIdentity(providerIdentity) {
+      validateAuthProviderIdentity(providerIdentity);
+      return write(async (transaction) => {
+        const metadata = await currentMetadata(transaction);
+        const mapping = await mappingForProviderIdentity(transaction, providerIdentity);
+        if (!mapping) return null;
+        const identity = await transaction.get(STORES.IDENTITIES, mapping.riverlineIdentityId);
+        validateRiverlineIdentity(identity);
+        const refreshed = refreshProviderIdentityMapping(mapping, providerIdentity.authenticatedAt);
+        await transaction.put(STORES.PROVIDER_MAPPINGS, refreshed);
+        if (metadata.activeIdentityId !== identity.identityId) {
+          await commitMetadata(transaction, metadata, { activeIdentityId: identity.identityId });
+        }
+        return deepFreeze({
+          identity: cloneData(identity),
+          mapping: cloneData(refreshed),
+          created: false,
+        });
+      });
+    },
+
+    async linkProviderIdentityToLocal(providerIdentity, { localIdentityId = null } = {}) {
+      validateAuthProviderIdentity(providerIdentity);
+      return write(async (transaction) => {
+        const metadata = await currentMetadata(transaction);
+        const existingMapping = await mappingForProviderIdentity(transaction, providerIdentity);
+        if (existingMapping) {
+          throw storageFailure(
+            'provider_identity_already_linked',
+            'This provider identity is already linked to a Riverline account.',
+          );
+        }
+        const resolvedLocalIdentityId = localIdentityId ?? metadata.activeIdentityId;
+        if (metadata.activeIdentityId !== resolvedLocalIdentityId) {
+          throw storageFailure('link_target_changed', 'The active Riverline profile changed before linking completed.');
+        }
+        const localIdentity = await transaction.get(STORES.IDENTITIES, resolvedLocalIdentityId);
+        validateRiverlineIdentity(localIdentity);
+        if (localIdentity.kind !== RIVERLINE_IDENTITY_KINDS.LOCAL) {
+          throw new RangeError('Only the active Local Profile can be linked');
+        }
+
+        const changedAt = timestampNotBefore(clock, localIdentity.updatedAt);
+        const authenticatedIdentity = transitionRiverlineIdentityKind(
+          localIdentity,
+          RIVERLINE_IDENTITY_KINDS.AUTHENTICATED_FUTURE,
+          changedAt,
+        );
+        const reboundBindings = [];
+        for (const domain of OWNED_DOMAINS) {
+          const binding = await transaction.get(
+            STORES.DOMAIN_BINDINGS,
+            domainOwnershipBindingId(localIdentity.identityId, domain),
+          );
+          validateRiverlineDomainOwnershipBinding(binding);
+          reboundBindings.push(rebindRiverlineDomainOwnershipBinding(binding, authenticatedIdentity, changedAt));
+        }
+        const replacement = createAdditionalIdentity({
+          kind: RIVERLINE_IDENTITY_KINDS.LOCAL,
+          displayName: defaultDisplayName,
+          localDeviceIdentityId: metadata.localDeviceIdentityId,
+          createdAt: changedAt,
+        });
+        await assertFreshIdentityTargets(transaction, replacement.identity, replacement.bindings);
+
+        const mapping = createProviderIdentityMapping({
+          providerIdentity,
+          riverlineIdentityId: authenticatedIdentity.identityId,
+          createdAt: changedAt,
+          updatedAt: changedAt,
+          lastAuthenticatedAt: changedAt,
+        });
+        await transaction.put(STORES.IDENTITIES, authenticatedIdentity);
+        for (const binding of reboundBindings) await transaction.put(STORES.DOMAIN_BINDINGS, binding);
+        await transaction.add(STORES.IDENTITIES, replacement.identity);
+        for (const binding of replacement.bindings) await transaction.add(STORES.DOMAIN_BINDINGS, binding);
+        await transaction.add(STORES.PROVIDER_MAPPINGS, mapping);
+        await commitMetadata(transaction, metadata, { activeIdentityId: authenticatedIdentity.identityId });
+        const state = await readRawSnapshot(transaction);
+        return deepFreeze({
+          identity: cloneData(authenticatedIdentity),
+          localIdentity: cloneData(replacement.identity),
+          mapping: cloneData(mapping),
+          state,
+          created: true,
+        });
+      });
+    },
+
+    async startProviderIdentitySeparately(providerIdentity, {
+      displayName = 'Riverline Account',
+      riverlineIdentityId = null,
+    } = {}) {
+      validateAuthProviderIdentity(providerIdentity);
+      return write(async (transaction) => {
+        const metadata = await currentMetadata(transaction);
+        const existingMapping = await mappingForProviderIdentity(transaction, providerIdentity);
+        if (existingMapping) {
+          const identity = await transaction.get(STORES.IDENTITIES, existingMapping.riverlineIdentityId);
+          validateRiverlineIdentity(identity);
+          const refreshed = refreshProviderIdentityMapping(existingMapping, providerIdentity.authenticatedAt);
+          await transaction.put(STORES.PROVIDER_MAPPINGS, refreshed);
+          if (metadata.activeIdentityId !== identity.identityId) {
+            await commitMetadata(transaction, metadata, { activeIdentityId: identity.identityId });
+          }
+          return deepFreeze({ identity: cloneData(identity), mapping: cloneData(refreshed), created: false });
+        }
+
+        const createdAt = timestampFrom(clock);
+        const account = createAdditionalIdentity({
+          kind: RIVERLINE_IDENTITY_KINDS.AUTHENTICATED_FUTURE,
+          displayName,
+          localDeviceIdentityId: metadata.localDeviceIdentityId,
+          createdAt,
+          ...(riverlineIdentityId ? { identityId: riverlineIdentityId } : {}),
+        });
+        await addIdentityWithBindings(transaction, account.identity, account.bindings);
+        const mapping = createProviderIdentityMapping({
+          providerIdentity,
+          riverlineIdentityId: account.identity.identityId,
+          createdAt,
+          updatedAt: createdAt,
+          lastAuthenticatedAt: createdAt,
+        });
+        await transaction.add(STORES.PROVIDER_MAPPINGS, mapping);
+        await commitMetadata(transaction, metadata, { activeIdentityId: account.identity.identityId });
+        const state = await readRawSnapshot(transaction);
+        return deepFreeze({
+          identity: cloneData(account.identity),
+          mapping: cloneData(mapping),
+          state,
+          created: true,
+        });
       });
     },
 
@@ -380,19 +611,7 @@ export function createAccountIdentityRepository({
         if (identity.localDeviceIdentityId !== metadata.localDeviceIdentityId) {
           throw new RangeError('Registered identity must use this registry localDeviceIdentityId');
         }
-        if (await transaction.get(STORES.IDENTITIES, identity.identityId)) {
-          throw new RangeError(`Riverline identity already exists: ${identity.identityId}`);
-        }
-        const existingBindings = await transaction.getAll(STORES.DOMAIN_BINDINGS);
-        for (const binding of bindings) {
-          if (existingBindings.some((entry) => entry.domain === binding.domain
-            && (entry.storageScope === binding.storageScope
-              || entry.domainOwnerId === binding.domainOwnerId))) {
-            throw new RangeError(`The ${binding.domain} ownership target is already assigned`);
-          }
-        }
-        await transaction.add(STORES.IDENTITIES, identity);
-        for (const binding of bindings) await transaction.add(STORES.DOMAIN_BINDINGS, binding);
+        await addIdentityWithBindings(transaction, identity, bindings);
         await commitMetadata(transaction, metadata);
         return deepFreeze(cloneData(identity));
       });

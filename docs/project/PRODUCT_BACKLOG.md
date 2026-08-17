@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 17, 2026 (`ACCOUNT-001` implementation checkpoint).
+Last consolidated: August 17, 2026 (`ACCOUNT-002AR` correction checkpoint).
 
 This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
@@ -21,9 +21,10 @@ This file preserves accepted future capability so it does not depend on chat mem
 | 1 | COMPLETED | `ANALYSIS-RANGE-001` accepted checkpoint, including RR/RRR corrections |
 | 2 | COMPLETED | `PREFLOP-SANITY-001` — bounded premium-hand dominated Fold suppression with invariant coverage |
 | 3 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `BLUFF-001` — structural fact contract and visible Analysis integration implemented; final human visual/language acceptance remains open |
-| 4 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `ACCOUNT-001` — local identity, legacy ownership adoption/scoping, truthful profile UI, offline/privacy/conflict boundaries; auth/sync remain future |
-| 5 | ACTIVE NEXT | richer Home — “my Riverline” powered by real account/personal/study state |
-| 6 | PLANNED NEXT | `HOME-GAME-001` foundation, then `002` session UI and `003` settlement/reconciliation |
+| 4 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `ACCOUNT-001` + `ACCOUNT-002A/AR` — legacy-safe identity/scoping, Supabase email/password, DB-enforced account profiles, Guest semantics, durable-feature gate, header/profile UX, explicit claim/start-separate, switching/sign-out/session restoration; cloud study-data sync remains future |
+| 5 | ACTIVE NEXT | `ACCOUNT-002A2` — secure rate-limited server/Edge Function username/password login adapter; private resolution, enumeration-resistant failure, no renderer secret or public username-to-email directory |
+| 6 | ACTIVE NEXT | richer Home — “my Riverline” powered by real account/personal/study state |
+| 7 | PLANNED NEXT | `HOME-GAME-001` foundation, then `002` session UI and `003` settlement/reconciliation |
 
 Personal Strategy resumes separately at `RANGE-CAL-002B`; it is preserved but not in this immediate sequence. Reassess at every clean checkpoint.
 
@@ -83,8 +84,9 @@ The current legal, deterministic, provider-backed Training base is established; 
 | Saved Range / Saved Drill / saved sessions | PRESERVED FUTURE | New versioned payloads; no parallel persistence models |
 | richer Saved search/filter/tags | PRESERVED FUTURE | Full drilldowns/View all; folders/collections only if later justified |
 | Saved history/revisions | PRESERVED FUTURE | Preserve ownership/version/conflict semantics |
-| `ACCOUNT-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | persistent opaque local identity; active identity; Saved/Personal Strategy ownership bindings and scoped storage; local-only Settings profile; privacy/security/conflict/sign-out/import contracts; no auth or sync |
-| `ACCOUNT-002+` | PRESERVED FUTURE | authentication, cloud backup/sync, cross-device Saved Objects/Personal Strategy/settings |
+| `ACCOUNT-001` + `ACCOUNT-002A/AR` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | persistent opaque identity/scoped storage plus Supabase Auth mapping, required unique-username/Unicode-display-name profile with RLS, Guest no-history semantics, reusable persistence gate, discoverable header/profile UX, rollback-safe legacy claim or separate account, switching/sign-out, bounded restore, and no-sync copy; live-provider/manual acceptance remains tracked in QA |
+| `ACCOUNT-002A2` | ACTIVE NEXT | secure username/password login adapter deployed behind a rate-limited trusted server/Edge Function; private normalized-username resolution, enumeration-resistant errors, no public username→email lookup, no password or privileged key outside the trusted auth path |
+| `ACCOUNT-002B+` | PRESERVED FUTURE | explicit cloud backup/sync opt-in, remote schema/queue/retry, cross-device Saved Objects/Personal Strategy/selected settings, domain-specific conflicts and recovery; OAuth/provider linking/deletion only in separately bounded tickets |
 | sharing/social | PRESERVED FUTURE | share/fork ranges, spots, and drills; friends/study groups; collaborative range review only if approved |
 | richer Home | ACTIVE NEXT | identity and truthful local/sync status; Continue; Saved/Recent; Review/Mistakes; Personal Strategy; recent Analysis; bluff/range study; later Training history; tutorials/help; account actions |
 

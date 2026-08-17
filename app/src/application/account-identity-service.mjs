@@ -34,9 +34,19 @@ export function createAccountIdentityService({
     ...(idFactory ? { idFactory } : {}),
     defaultDisplayName,
   });
+  const listeners = new Set();
+
+  async function notifyAfter(operation, reason) {
+    const result = await operation;
+    if (result === null) return result;
+    const identity = await durableRepository.getActiveIdentity();
+    for (const listener of listeners) listener(Object.freeze({ reason, identity }));
+    return result;
+  }
 
   async function ensureLocalIdentity() {
-    const state = await durableRepository.initialize();
+    await durableRepository.initialize();
+    const state = await durableRepository.getSnapshot();
     const local = state.identities.find((identity) => identity.kind === RIVERLINE_IDENTITY_KINDS.LOCAL);
     if (!local) throw new RangeError('Riverline local identity is missing');
     return local;
@@ -64,18 +74,49 @@ export function createAccountIdentityService({
         kind: identity.kind,
         displayName: identity.displayName,
         ownershipRef: riverlineOwnershipRefForIdentity(identity),
-        status: identity.kind === RIVERLINE_IDENTITY_KINDS.LOCAL ? 'local_only' : 'authenticated_future',
+        status: identity.kind === RIVERLINE_IDENTITY_KINDS.LOCAL ? 'local_only' : 'signed_in',
         storage: 'on_this_device',
         syncEnabled: false,
       });
     },
     async setDisplayName(value) {
-      return durableRepository.setDisplayName(normalizeRiverlineDisplayName(value));
+      return notifyAfter(
+        durableRepository.setDisplayName(normalizeRiverlineDisplayName(value)),
+        'display_name_changed',
+      );
     },
-    activateIdentity: (identityId) => durableRepository.activateIdentity(identityId),
+    listKnownIdentities: () => durableRepository.listKnownIdentities(),
+    reserveIdentityId: () => durableRepository.reserveIdentityId(),
+    getProviderIdentityMapping: (providerIdentity) => (
+      durableRepository.getProviderIdentityMapping(providerIdentity)
+    ),
+    activateProviderIdentity: (providerIdentity) => notifyAfter(
+      durableRepository.activateProviderIdentity(providerIdentity),
+      'provider_session_activated',
+    ),
+    linkProviderIdentityToLocal: (providerIdentity, options) => notifyAfter(
+      durableRepository.linkProviderIdentityToLocal(providerIdentity, options),
+      'local_profile_linked',
+    ),
+    startProviderIdentitySeparately: (providerIdentity, options) => notifyAfter(
+      durableRepository.startProviderIdentitySeparately(providerIdentity, options),
+      'authenticated_profile_started',
+    ),
+    activateIdentity: (identityId) => notifyAfter(
+      durableRepository.activateIdentity(identityId),
+      'identity_activated',
+    ),
     async activateLocalIdentity() {
       const local = await ensureLocalIdentity();
-      return durableRepository.activateIdentity(local.identityId);
+      return notifyAfter(
+        durableRepository.activateIdentity(local.identityId),
+        'local_profile_activated',
+      );
+    },
+    subscribe(listener) {
+      if (typeof listener !== 'function') throw new TypeError('Account identity listener must be a function');
+      listeners.add(listener);
+      return () => listeners.delete(listener);
     },
     close: () => durableRepository.close(),
   });

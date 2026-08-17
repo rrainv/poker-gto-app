@@ -6,6 +6,7 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
+const i18n = fs.readFileSync(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8');
 
 function shellMarkup() {
   const start = html.indexOf('<div class="riverline-shell"');
@@ -51,7 +52,8 @@ test('settings, language, audio, and sidebar collapse controls remain available'
     assert.match(shell, new RegExp(`id="${id}"`));
   }
   assert.match(logic, /\$\('#openSettings'\)\.addEventListener\('click'/);
-  assert.match(html, /id="langToggle"[^>]*onchange="setLanguage\(this\.value\)"/);
+  assert.doesNotMatch(html, /id="langToggle"[^>]*onchange=/);
+  assert.match(i18n, /languageSelect\.addEventListener\('change'/);
   assert.match(sound, /btn\.setAttribute\('aria-pressed', String\(soundEnabled\)\)/);
   assert.match(logic, /button\.setAttribute\('aria-expanded', String\(!collapsed\)\)/);
   assert.doesNotMatch(shell, /id="lockUiBtn"/);

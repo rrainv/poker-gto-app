@@ -15,6 +15,7 @@ function createWindow() {
     autoHideMenuBar: true,
     show: false,
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       enableRemoteModule: false
@@ -24,6 +25,8 @@ function createWindow() {
   mainWindow.setMenuBarVisibility(false);
   const indexPath = path.join(__dirname, 'index.html');
   mainWindow.loadFile(indexPath);
+
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 
   mainWindow.once('ready-to-show', () => {
     if (mainWindow) {

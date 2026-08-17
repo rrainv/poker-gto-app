@@ -81,10 +81,21 @@ export function installAccountIdentityBridge(browserWindow, options = {}) {
     getActiveIdentity: () => service.getActiveIdentity(),
     getActiveIdentityId: () => service.getActiveIdentityId(),
     getProfileSummary: () => service.getProfileSummary(),
+    listKnownIdentities: () => service.listKnownIdentities(),
+    reserveIdentityId: () => service.reserveIdentityId(),
     getDomainOwnership: (domain) => service.getDomainOwnership(domain),
+    getProviderIdentityMapping: (providerIdentity) => service.getProviderIdentityMapping(providerIdentity),
+    activateProviderIdentity: (providerIdentity) => service.activateProviderIdentity(providerIdentity),
+    linkProviderIdentityToLocal: (providerIdentity, linkOptions) => (
+      service.linkProviderIdentityToLocal(providerIdentity, linkOptions)
+    ),
+    startProviderIdentitySeparately: (providerIdentity, startOptions) => (
+      service.startProviderIdentitySeparately(providerIdentity, startOptions)
+    ),
     setDisplayName: (value) => service.setDisplayName(value),
     activateIdentity: (identityId) => service.activateIdentity(identityId),
     activateLocalIdentity: () => service.activateLocalIdentity(),
+    subscribe: (listener) => service.subscribe(listener),
   });
   Object.defineProperty(browserWindow, 'RiverlineAccountIdentity', {
     configurable: true,
@@ -92,10 +103,6 @@ export function installAccountIdentityBridge(browserWindow, options = {}) {
     value: bridge,
     writable: false,
   });
-  const bind = () => bindAccountProfileUi(browserWindow, service, initialization);
-  if (browserWindow.document?.readyState === 'loading') {
-    browserWindow.document.addEventListener('DOMContentLoaded', bind, { once: true });
-  } else bind();
   return bridge;
 }
 

@@ -1,17 +1,19 @@
 export const RIVERLINE_ACCOUNT_DATABASE_NAME = 'riverline-account-identity';
-export const RIVERLINE_ACCOUNT_DATABASE_VERSION = 1;
-export const RIVERLINE_ACCOUNT_BACKEND_SCHEMA_VERSION = 'riverline-account-indexeddb/v1';
+export const RIVERLINE_ACCOUNT_DATABASE_VERSION = 2;
+export const RIVERLINE_ACCOUNT_BACKEND_SCHEMA_VERSION = 'riverline-account-indexeddb/v2';
 
 export const RIVERLINE_ACCOUNT_OBJECT_STORES = Object.freeze({
   METADATA: 'metadata',
   IDENTITIES: 'identities',
   DOMAIN_BINDINGS: 'domainOwnershipBindings',
+  PROVIDER_MAPPINGS: 'providerIdentityMappings',
 });
 
 const STORE_DEFINITIONS = Object.freeze({
   [RIVERLINE_ACCOUNT_OBJECT_STORES.METADATA]: Object.freeze({ keyPath: 'key' }),
   [RIVERLINE_ACCOUNT_OBJECT_STORES.IDENTITIES]: Object.freeze({ keyPath: 'identityId' }),
   [RIVERLINE_ACCOUNT_OBJECT_STORES.DOMAIN_BINDINGS]: Object.freeze({ keyPath: 'bindingId' }),
+  [RIVERLINE_ACCOUNT_OBJECT_STORES.PROVIDER_MAPPINGS]: Object.freeze({ keyPath: 'mappingId' }),
 });
 
 function cloneData(value) {
@@ -37,12 +39,31 @@ function transactionCompletion(transaction) {
 
 function migrateToVersion1(database) {
   for (const [name, definition] of Object.entries(STORE_DEFINITIONS)) {
+    if (name === RIVERLINE_ACCOUNT_OBJECT_STORES.PROVIDER_MAPPINGS) continue;
     if (!database.objectStoreNames.contains(name)) database.createObjectStore(name, definition);
   }
 }
 
+function migrateToVersion2(database, transaction) {
+  const mappings = RIVERLINE_ACCOUNT_OBJECT_STORES.PROVIDER_MAPPINGS;
+  if (!database.objectStoreNames.contains(mappings)) {
+    database.createObjectStore(mappings, STORE_DEFINITIONS[mappings]);
+  }
+  const metadataStore = transaction.objectStore(RIVERLINE_ACCOUNT_OBJECT_STORES.METADATA);
+  const request = metadataStore.get('state');
+  request.addEventListener('success', () => {
+    if (!request.result) return;
+    metadataStore.put({
+      ...request.result,
+      backendSchemaVersion: RIVERLINE_ACCOUNT_BACKEND_SCHEMA_VERSION,
+      databaseVersion: RIVERLINE_ACCOUNT_DATABASE_VERSION,
+    });
+  }, { once: true });
+}
+
 export const RIVERLINE_ACCOUNT_DATABASE_MIGRATIONS = Object.freeze([
   Object.freeze({ version: 1, upgrade: migrateToVersion1 }),
+  Object.freeze({ version: 2, upgrade: migrateToVersion2 }),
 ]);
 
 function openDatabase(indexedDBFactory, name, version) {
@@ -168,4 +189,3 @@ export function createMemoryAccountIdentityDatabase({ name = 'memory-account-ide
     async close() {},
   });
 }
-

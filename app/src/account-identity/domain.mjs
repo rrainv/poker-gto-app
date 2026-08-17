@@ -177,6 +177,32 @@ export function updateRiverlineIdentityDisplayName(identity, displayName, update
   });
 }
 
+export function transitionRiverlineIdentityKind(identity, kind, updatedAt) {
+  validateRiverlineIdentity(identity);
+  return createRiverlineIdentity({
+    ...cloneData(identity),
+    kind,
+    updatedAt,
+  });
+}
+
+export function rebindRiverlineDomainOwnershipBinding(binding, identity, updatedAt) {
+  validateRiverlineDomainOwnershipBinding(binding);
+  validateRiverlineIdentity(identity);
+  if (binding.identityId !== identity.identityId) {
+    throw new RangeError('Domain ownership binding cannot move to another Riverline identity');
+  }
+  return createRiverlineDomainOwnershipBinding({
+    identity,
+    domain: binding.domain,
+    domainOwnerId: binding.domainOwnerId,
+    storageScope: binding.storageScope,
+    provenance: binding.provenance,
+    createdAt: binding.createdAt,
+    updatedAt,
+  });
+}
+
 export function domainOwnershipBindingId(identityId, domain) {
   requireId(identityId, 'identityId');
   if (!OWNED_DOMAIN_VALUES.includes(domain)) throw new RangeError(`Unsupported owned domain: ${domain}`);

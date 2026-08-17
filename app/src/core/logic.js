@@ -1404,6 +1404,10 @@ async function refreshSavedStudySource() {
     renderSavedStudySourceState(result.state, result.object);
   } catch (error) {
     if (sequence !== savedStudyRefreshSequence) return;
+    if (error?.code === 'persistent_identity_cancelled') {
+      renderSavedStudySourceState('unsaved', null);
+      return;
+    }
     console.error('[Riverline Saved Study Objects]', error);
     renderSavedStudySourceState('failed', null);
   }
@@ -1421,6 +1425,10 @@ async function saveCurrentStudySource() {
     toast(t('Saved'), 'success');
   } catch (error) {
     if (sequence !== savedStudyRefreshSequence) return;
+    if (error?.code === 'persistent_identity_cancelled') {
+      renderSavedStudySourceState('unsaved', null);
+      return;
+    }
     console.error('[Riverline Saved Study Objects]', error);
     renderSavedStudySourceState('failed', null);
     toast(t('Save failed'), 'error');
@@ -4735,13 +4743,36 @@ function renderHomePersonalStrategy(section) {
 
 function renderHomeWorkspace(model) {
   homeViewModel = model;
-  renderHomeContinue(model.sections.continue);
-  renderHomeRecent(model.sections.recent);
-  renderHomeReview(model.sections.review);
-  renderHomePersonalStrategy(model.sections.personalStrategy);
+  const guest = model.sessionMode === 'guest';
+  const restricted = [
+    $('#homeContinueContent')?.closest('.home-section'),
+    $('#homeReviewContent')?.closest('.home-section'),
+    $('#homeRecentContent')?.closest('.home-section'),
+    $('#homeStrategyContent')?.closest('.home-section')
+  ];
+  restricted.forEach((section) => { if (section) section.hidden = guest; });
+  const guestAccount = $('#homeGuestAccount');
+  if (guestAccount) guestAccount.hidden = !guest;
+  const subtitle = $('#workspaceSubtitle');
+  if (activeWorkspaceMode() === 'home' && subtitle) {
+    const subtitleKey = guest
+      ? 'Analyze and train without saving account history.'
+      : 'Your saved study, review queue, and next useful action.';
+    subtitle.dataset.i18n = subtitleKey;
+    subtitle.textContent = t(subtitleKey);
+  }
+  const calibrationQuickLink = document.querySelector('[data-home-destination="calibration"]');
+  if (calibrationQuickLink) calibrationQuickLink.hidden = guest;
+  if (!guest) {
+    renderHomeContinue(model.sections.continue);
+    renderHomeRecent(model.sections.recent);
+    renderHomeReview(model.sections.review);
+    renderHomePersonalStrategy(model.sections.personalStrategy);
+  }
   const workspace = $('#homeWorkspace');
   const loading = $('#homeLoadingState');
   const content = $('#homeWorkspaceContent');
+  if (content) content.dataset.sessionMode = guest ? 'guest' : 'account';
   if (workspace) workspace.setAttribute('aria-busy', 'false');
   if (loading) loading.hidden = true;
   if (content) content.hidden = false;
@@ -5726,6 +5757,15 @@ function init() {
     bindPlaybookModeControl();
 
     window.addEventListener('riverline:languagechange', refreshLocalizedRuntime);
+    window.addEventListener('riverline:identitychange', () => {
+      homeViewModel = null;
+      if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
+    });
+    window.addEventListener('riverline:authchange', () => {
+      homeViewModel = null;
+      if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
+      if (activeWorkspaceMode() === 'gto') void refreshSavedStudySource();
+    });
 
     
 

@@ -1,14 +1,16 @@
 # Riverline account identity and ownership foundation
 
-Status: `ACCOUNT-001` implementation authority
+Status: `ACCOUNT-001` foundation, extended by `ACCOUNT-002A/002AR`
 
 Date: August 17, 2026
 
 ## Purpose and boundary
 
-Riverline is local-first. `ACCOUNT-001` adds a stable application identity, explicit ownership mapping, active-identity scoping, and a truthful local profile surface. It does not add authentication, a cloud backend, sync, telemetry, sharing, passwords, OAuth/provider SDKs, or a network requirement.
+Riverline is local-first. `ACCOUNT-001` added a stable application identity and explicit ownership mapping. `ACCOUNT-002A/AR` adds bounded auth/link/switch behavior and corrects signed-out product semantics: signed-out users are Guest, not a persistent Local Profile. The original local identity remains a non-destructive migration/claim record and is not a Guest-visible data authority.
 
-The current dependency path is:
+`AUTHENTICATION_SPEC.md` is authoritative for the current provider adapter, mapping, linking, switching, sign-out, and session behavior. Statements below describing ACCOUNT-001's former lack of auth are foundation history and are superseded where that specification says otherwise.
+
+The foundation dependency path is:
 
 ```text
 Settings / Home / owned-domain application consumers
@@ -61,21 +63,21 @@ RiverlineIdentity
 
 Identity IDs are locally generated opaque random IDs. They are never derived from display name, locale, email, profile name, machine path, or poker data. Display-name edits trim surrounding whitespace, preserve arbitrary Unicode, and cannot change the ID or ownership.
 
-`authenticated_future` is a structural vocabulary value only. ACCOUNT-001 creates only `local` identities and has no provider metadata, credential, token, email, username, or authentication behavior.
+`authenticated_future` began as a structural vocabulary value. ACCOUNT-002A uses that existing v1 value for authenticated Riverline identities rather than introducing an unapproved RiverlineIdentity schema migration. Provider metadata, credentials, tokens, email, and usernames remain outside RiverlineIdentity.
 
-## Local identity and active identity
+## Registry identity and active identity
 
-On first account-domain initialization, Riverline creates exactly one persistent local identity and selects it as `activeIdentityId`. Reload restores the same record. Initialization and legacy binding creation commit in one IndexedDB transaction; an interrupted transaction has no completed registry and retries safely.
+On first account-domain initialization, Riverline creates exactly one persistent legacy local identity and selects it as the registry's internal `activeIdentityId`. This is a storage/migration implementation detail, not Guest session state or permission to query its domains. Reload restores the same record. Initialization and legacy binding creation commit in one IndexedDB transaction; an interrupted transaction has no completed registry and retries safely.
 
 The central service exposes:
 
 - `initialize()` / `ensureLocalIdentity()`;
 - `getActiveIdentity()` / `getActiveIdentityId()`;
-- `getProfileSummary()` for Settings and future richer Home;
+- `getProfileSummary()` for authenticated consumers after the auth gate;
 - `setDisplayName(value)`;
 - `getDomainOwnership(domain)`;
 - a non-UI `activateIdentity(identityId)` seam;
-- `activateLocalIdentity()` as the future sign-out return seam.
+- `activateLocalIdentity()` for the explicit authenticated legacy-claim decision only.
 
 Changing `activeIdentityId` changes which ownership binding and physical storage namespace application queries resolve. It never rewrites a Saved object or Personal Strategy profile merely to switch views.
 
@@ -162,17 +164,17 @@ Imports default to `adopt_active`:
 
 An import can never activate a foreign identity or impersonate a future authenticated account. Imported bytes become data explicitly owned by the currently active Riverline identity.
 
-## Multiple identities and future sign-out
+## Multiple identities and Guest sign-out
 
-The registry and storage naming permit a local identity, future Account A, and future Account B on one device without sharing a domain storage target. ACCOUNT-001 exposes only the current local profile in UI.
+The registry and storage naming permit a legacy Local identity, Account A, and Account B on one device without sharing a domain storage target. ACCOUNT-002AR exposes account state from the global header and Account/Profile modal; Settings is secondary. The legacy identity is shown only during an explicit authenticated claim decision.
 
 Future sign-out behavior is fixed at the data-model level:
 
 1. keep authenticated-identity data locally stored under its binding;
-2. activate the persistent local identity (or create one through a separately approved migration if missing);
+2. enter non-persistent Guest Mode without exposing any persistent identity;
 3. stop querying the authenticated identity's namespaces;
 4. do not delete, merge, or re-own its data;
-5. re-authentication may activate that identity again;
+5. re-authentication may activate that identity again; a different account requires fresh provider validation;
 6. purge is a separate explicit destructive user action, not sign-out.
 
 ACCOUNT-002 must not create a second identity that points silently at the local identity's storage. Claiming local data requires an explicit, atomic ownership-binding transfer/link contract with failure recovery and user-visible consent.
@@ -181,7 +183,7 @@ ACCOUNT-002 must not create a second identity that points silently at the local 
 
 ACCOUNT-002 should keep the Riverline identity ID independent from any provider subject ID. A provider mapping belongs to the authentication layer. Credentials and refresh/access tokens never belong in `RiverlineIdentity`, ownership refs, SavedStudyObjects, StrategyProfiles, exports, renderer logs, or debug views.
 
-The safe future claim flow is:
+The implemented claim flow is:
 
 ```text
 existing local Riverline identity + owned-domain bindings
@@ -193,7 +195,9 @@ existing local Riverline identity + owned-domain bindings
        atomic link or binding transfer with rollback
 ```
 
-Offline local bytes remain available, and a failed sign-in/link operation leaves the local identity and its data authoritative.
+The account IndexedDB v2 transaction retains the existing Riverline identity ID, transitions it to the authenticated v1 kind, rebinds its unchanged domain owner/storage targets, creates a fresh legacy Local identity, and adds ProviderIdentityMapping v1 atomically. The new local record remains hidden from Guest but preserves a future explicit claim path. Offline bytes remain stored, and a failed local link transaction leaves them untouched.
+
+The remote `AccountProfile v1` binds the Auth UUID to the stable Riverline identity ID. It is account metadata only: normalized username, Unicode display name, timestamps, and the identity binding. It does not replace `RiverlineIdentity`, own poker-domain records, or create cloud study-data sync.
 
 ## Future conflict and sync seam
 
@@ -210,23 +214,18 @@ Stable IDs, timestamps, revisions, domain-specific tombstones/history, and the o
 ## Privacy and security boundary
 
 - all Account, Saved, Personal Strategy, preference, and poker-history data remains local by default;
-- account initialization performs no fetch, WebSocket, beacon, telemetry, upload, or background network work;
-- no sign-in is required for any Riverline feature;
-- the Settings surface says `Local only`, `Stored on this device`, and `Account sync not enabled`;
-- no functional or fake Sign in button is shown;
+- account-identity initialization itself performs no fetch, WebSocket, beacon, telemetry, or upload; the separate optional authentication service may contact Supabase to restore and validate a provider session;
+- no sign-in is required for non-persistent core analysis, Training, Equity, Guide, or device settings;
+- persistent Saved/Review/Mistakes/Personal Strategy/Range Calibration require a validated persistent account identity;
+- the header and Account/Profile surface distinguish `Guest Mode` from `Signed in`, while separately stating that cloud sync is not enabled;
+- a functional Supabase email/password surface is owned by the separate authentication boundary;
 - local browser storage is not encryption, and anyone with operating-system access to the application profile may inspect it;
 - future tokens belong in a privileged authentication layer and must not be exposed to the Electron renderer unnecessarily;
 - no opponent/player/person object is part of Riverline account identity.
 
-## Visible Settings surface
+## Visible account surfaces
 
-Settings contains one bounded Account & Profile group with:
-
-- current local display name;
-- truthful `Local profile` / `Local only` status;
-- an editable Unicode display-name field with a length bound;
-- `Stored on this device` and sync-unavailable copy;
-- no Home redesign and no inactive action disguised as sign-in.
+ACCOUNT-002AR makes the top-right header control the primary discovery surface. Guest sees Guest/Sign in/Create account. Signed-in users see an initial/display name; the menu and modal expose `@username`, status, Account/Profile, use-another-account, and sign-out. The Account/Profile modal owns email/password sign-in, required username/display-name signup/recovery, display-name editing, and explicit legacy claim/start-separate consent. Settings retains only a truthful secondary summary and launcher.
 
 The form uses semantic labels, a live status region, keyboard submission, visible existing focus styles, `dir=auto` for user-authored names, and `textContent`/input values rather than HTML injection. Stable copy is localized in EN/RU/HE; account status layout uses logical CSS and normal RTL inheritance.
 
@@ -236,15 +235,12 @@ Account startup does one bounded registry read. First launch writes one metadata
 
 ## Unsupported current features
 
-ACCOUNT-001 does not implement:
+The current account platform still does not implement:
 
-- real authentication or provider selection;
-- email, passwords, OAuth, passkeys, tokens, or credential storage;
 - cloud backup/sync or cross-device state;
-- account switching UI, sign-out UI, remote deletion, or account recovery;
+- remote deletion, local forgetting, account recovery, OAuth, magic links, passkeys, or provider-to-provider linking;
 - sharing, friends, study groups, public links, or social identity;
 - telemetry;
 - encryption-at-rest;
-- richer Home identity presentation;
+- username changes and secure username/password login (owned by immediate follow-up `ACCOUNT-002A2`);
 - opponent/person profiles inside the account model.
-

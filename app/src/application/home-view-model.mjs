@@ -1,4 +1,4 @@
-export const HOME_VIEW_MODEL_SCHEMA_VERSION = 'home-view-model/v1';
+export const HOME_VIEW_MODEL_SCHEMA_VERSION = 'home-view-model/v2';
 export const HOME_RECENT_LIMIT = 6;
 export const HOME_REVIEW_LIMIT = 3;
 export const HOME_MISTAKE_LIMIT = 3;
@@ -178,6 +178,7 @@ export function createHomeViewModelController({
         : { status: accountQueries ? 'error' : 'unavailable', profile: null };
       return deepFreeze({
         schemaVersion: HOME_VIEW_MODEL_SCHEMA_VERSION,
+        sessionMode: 'account',
         identity,
         sections: {
           continue: continueSection(personalStrategy),

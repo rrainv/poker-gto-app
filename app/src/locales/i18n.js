@@ -2195,6 +2195,10 @@ function initI18n() {
   const lang = setDocumentLanguage(stored || browserLanguage);
   localStorage.setItem(I18N_STORAGE_KEY, lang);
   localStorage.setItem(I18N_LEGACY_STORAGE_KEY, lang);
+  const languageSelect = document.getElementById('langToggle');
+  if (typeof languageSelect?.addEventListener === 'function') {
+    languageSelect.addEventListener('change', (event) => setLanguage(event.currentTarget.value));
+  }
   translateNode(document.body);
   if (typeof MutationObserver === 'function') {
     i18nObserver = new MutationObserver((mutations) => {
