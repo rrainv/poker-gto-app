@@ -8,6 +8,7 @@ import {
   createAnalysisExplanation,
   deriveBoardTextureFacts,
 } from '../app/src/application/analysis-explanation.mjs';
+import { createRangeAnalysisFacts } from '../app/src/application/range-analysis.mjs';
 
 const SERVICE_SOURCE = fs.readFileSync(
   new URL('../app/src/application/analysis-explanation.mjs', import.meta.url),
@@ -73,6 +74,16 @@ function explanation(options = {}) {
     strategyResult: strategy(),
     authority: 'scenario',
     ...options,
+  });
+}
+
+function rangeFacts(decisionContext) {
+  return createRangeAnalysisFacts({
+    decisionContext,
+    provenance: {
+      exactHand: { kind: 'scenario', label: 'Scenario cards' },
+      board: { kind: 'scenario', label: 'Scenario board' },
+    },
   });
 }
 
@@ -423,13 +434,15 @@ test('a null decision context returns a calm immutable unavailable contract', ()
 });
 
 test('concise and detailed depths share the contract while detailed mode retains more facts', () => {
+  const postflopContext = context({ street: 'flop', board: ['Ah', 'Kd', 'Qc'], potBb: 6 });
   const options = {
-    decisionContext: context({ street: 'flop', board: ['Ah', 'Kd', 'Qc'], potBb: 6 }),
+    decisionContext: postflopContext,
     strategyResult: strategy({
       source: 'heuristic_postflop',
       actions: [action('Check', 'check', 0.6), action('Bet', 'bet', 0.3), action('Fold', 'fold', 0.1)],
     }),
     authority: 'hand',
+    rangeAnalysisFacts: rangeFacts(postflopContext),
     trustedFacts: {
       handClassification: { madeHand: 'Pair', draws: [], source: 'legacy_postflop_classifier' },
       actionHistory: [

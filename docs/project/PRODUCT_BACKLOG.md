@@ -6,6 +6,7 @@ Status vocabulary:
 
 - `PRIORITY`: strongly desired when dependencies are ready
 - `PLANNED`: accepted direction
+- `PARTIAL`: a bounded foundation exists, but later capability or acceptance work remains
 - `IDEA`: worth exploring
 - `DEFERRED`: intentionally later
 - `CHECKPOINTED`: current product scope is complete; later features own their incremental updates
@@ -18,6 +19,8 @@ Status vocabulary:
 - **DEFERRED — Personal Strategy continuation:** `RANGE-CAL-002B`–`002D`, `RANGE-CAL-002R`, mode interpolation, StrategyProvider integration, Training-to-profile evidence, and broader integration. The completed foundation and usable Range Calibration workspace remain preserved; resume at `RANGE-CAL-002B`.
 
 - **CHECKPOINTED — `RANGE-CORE-001`:** canonical 1,326-combo `HoldemWeightedRange v1` foundation, explicit unknown semantics, provenance, blockers, normalization, and DOM-free 169 projection. Visible range consumers remain separate future tickets.
+
+- **CHECKPOINTED — `ANALYSIS-RANGE-001`:** Analysis now consumes canonical exact-hand, board, blocker, and optionally supplied-range facts. Current production decisions have no canonical range source, so the range panel remains explicitly unavailable until a future source-owning ticket attaches one.
 
 ## Product Lab: UI capabilities
 
@@ -70,9 +73,10 @@ Status vocabulary:
 | PROD-RANGE-001 | PRIORITY | Range Builder |
 | PROD-RANGE-002 | PRIORITY | Range Profiler / infer how tight or loose the user's choices are |
 | PROD-RANGE-003 | PLANNED | save/share named ranges |
-| PROD-RANGE-004 | PLANNED | weighted range analysis |
+| PROD-RANGE-004 | PARTIAL | weighted range analysis foundation: `ANALYSIS-RANGE-001` supplies blocker conditioning and composition facts; range source UX and broader comparative analysis remain future work |
 | PROD-RANGE-005 | PLANNED | range-vs-range Equity/category tools |
 | PROD-RANGE-006 | PLANNED | provider-backed postflop full-range Matrix with board-aware weighted combos and validated source coverage |
+| PROD-BLUFF-001 | PRIORITY | mathematically honest bluff-candidate analysis using blockers, range composition, and action context; depends on an explicit trustworthy range source and approved strategy/EV contract because structural blockers alone are insufficient |
 | PROD-MATH-001 | IDEA | board/pot/poker-math study tools |
 
 ## Input and workflow

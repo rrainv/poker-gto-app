@@ -17,6 +17,8 @@ The active product direction is now **ACTIVE NEXT — `TABLE-PRESENCE-001A`**, f
 
 `RANGE-CORE-001` is **COMPLETED** as a domain-only foundation. `shared/poker-domain` now owns one deterministic 52-card / 1,326-combo Hold'em registry and `HoldemWeightedRange v1`, with explicit known-versus-unknown weights, per-combo provenance, combo mass, blocker conditioning, complete-range normalization, deterministic serialization, and truthful DOM-free 169 projection. No current Matrix, Analysis, Personal Strategy, Equity, Saved Object, Training, StrategyProvider, or tutorial behavior changed. See `RANGE_CORE_SPEC.md`.
 
+`ANALYSIS-RANGE-001` is **COMPLETED** as the first visible range-core consumer. `RangeAnalysisFacts v1` now supplies exact-hand/draw, board, structural blocker, and optional explicitly supplied-range facts to `AnalysisExplanation v1`; current production decisions attach no canonical range, so Riverline reports that absence instead of inferring one. See `ANALYSIS_RANGE_SPEC.md`.
+
 ## 1. Executive vision
 
 Riverline should evolve from a polished Texas Hold’em study workstation into a **personal poker strategy and study platform**.
@@ -210,9 +212,11 @@ Canonical Training:
 It consumes:
 - DecisionContext;
 - StrategyResult;
-- trusted facts.
+- trusted `RangeAnalysisFacts v1` and other bounded application facts.
 
 It may explain strategy but must not independently invent strategy, Equity, or poker-state math.
+
+The range-aware path is trusted inputs -> `RangeAnalysisFacts v1` -> `AnalysisExplanation v1` -> renderer. Exact-card blocker counts are structural facts. Supplied-range effects and composition appear only when a named `HoldemWeightedRange v1` with independent provenance is attached; partial data remains partial, and normalization is limited to complete positive-mass ranges. This foundation does not establish range advantage, nut advantage, bluff quality, action EV, or solver frequencies.
 
 ### 3.9 Electron
 
@@ -1728,6 +1732,15 @@ Do not make consumers model-aware.
 - blocker conditioning and complete-range normalization;
 - DOM-free Matrix projection and deterministic portability;
 - no visible product or StrategyProvider/Equity behavior change.
+
+### Range-aware Analysis foundation — COMPLETED
+`ANALYSIS-RANGE-001`
+- canonical exact-hand and draw classification derived through the shared evaluator;
+- board-structure and exact-card blocker facts;
+- optional named `HoldemWeightedRange v1` conditioning and composition with complete/partial truth preserved;
+- separate strategy, card, board, and range provenance;
+- compact visible Analysis sections and EN/RU/HE tutorial coverage;
+- no inferred current range, range/nut-advantage claim, bluff-quality verdict, StrategyProvider call, or Equity call.
 
 ### Phase B — Range Calibration Skeleton Epic — COMPLETED
 `RANGE-CAL-001A`

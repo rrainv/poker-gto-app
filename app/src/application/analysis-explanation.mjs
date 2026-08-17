@@ -2,6 +2,11 @@ import {
   STRATEGY_RESULT_SCHEMA_VERSION,
   STRATEGY_SOURCES,
 } from './strategy-result.mjs';
+import {
+  RANGE_ANALYSIS_FACTS_SCHEMA_VERSION,
+} from './range-analysis.mjs';
+
+export { deriveBoardStructureFacts as deriveBoardTextureFacts } from './range-analysis.mjs';
 
 export const ANALYSIS_EXPLANATION_SCHEMA_VERSION = 'analysis-explanation/v1';
 
@@ -50,11 +55,6 @@ const UNAVAILABLE_COPY = Object.freeze({
   strategy_unavailable: 'No valid strategy recommendation is available for this state.',
   invalid_scenario: 'The supplied scenario cannot be analyzed safely.',
   invalid_context: 'The current decision context is unavailable.',
-});
-
-const RANK_VALUE = Object.freeze({
-  '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7,
-  '8': 8, '9': 9, T: 10, J: 11, Q: 12, K: 13, A: 14,
 });
 
 function deepFreeze(value) {
@@ -138,12 +138,13 @@ function section(key, title, importance, facts, textParts = []) {
   };
 }
 
-function warning(code, message, severity = 'info') {
+function warning(code, message, severity = 'info', values = {}, messageKey = null) {
   return {
     code,
     severity,
-    messageKey: `analysis.warning.${code}`,
+    messageKey: messageKey || `analysis.warning.${code}`,
     message,
+    values,
   };
 }
 
@@ -163,75 +164,6 @@ function validCard(card) {
 
 function expectedBoardCount(street) {
   return { preflop: 0, flop: 3, turn: 4, river: 5 }[street] ?? null;
-}
-
-function cardRank(card) {
-  return RANK_VALUE[String(card || '')[0]] ?? null;
-}
-
-export function deriveBoardTextureFacts(board) {
-  const cards = Array.isArray(board) ? [...board] : [];
-  if (cards.length < 3 || cards.length > 5 || cards.some((card) => !validCard(card))
-    || new Set(cards).size !== cards.length) {
-    return deepFreeze({
-      available: false,
-      cardCount: cards.length,
-      paired: null,
-      tripled: null,
-      monotone: null,
-      twoTone: null,
-      rainbow: null,
-      flushDrawPossible: null,
-      connectivity: null,
-      connected: null,
-      broadwayCount: null,
-      highestRank: null,
-    });
-  }
-
-  const ranks = cards.map(cardRank);
-  const suits = cards.map((card) => card[1]);
-  const rankCounts = new Map();
-  const suitCounts = new Map();
-  ranks.forEach((rank) => rankCounts.set(rank, (rankCounts.get(rank) || 0) + 1));
-  suits.forEach((suit) => suitCounts.set(suit, (suitCounts.get(suit) || 0) + 1));
-  const distinctSuits = suitCounts.size;
-  const maximumSuitCount = Math.max(...suitCounts.values());
-  const uniqueRanks = [...new Set(ranks)];
-  if (uniqueRanks.includes(14)) uniqueRanks.push(1);
-  uniqueRanks.sort((left, right) => left - right);
-
-  let longestRun = 1;
-  let currentRun = 1;
-  for (let index = 1; index < uniqueRanks.length; index += 1) {
-    if (uniqueRanks[index] === uniqueRanks[index - 1] + 1) currentRun += 1;
-    else currentRun = 1;
-    longestRun = Math.max(longestRun, currentRun);
-  }
-  let coordinated = false;
-  for (let start = 0; start < uniqueRanks.length; start += 1) {
-    for (let end = start + 2; end < uniqueRanks.length; end += 1) {
-      if (uniqueRanks[end] - uniqueRanks[start] <= 4) coordinated = true;
-    }
-  }
-  const connectivity = longestRun >= 3
-    ? 'connected'
-    : coordinated ? 'coordinated' : 'disconnected';
-
-  return deepFreeze({
-    available: true,
-    cardCount: cards.length,
-    paired: [...rankCounts.values()].some((count) => count >= 2),
-    tripled: [...rankCounts.values()].some((count) => count >= 3),
-    monotone: distinctSuits === 1,
-    twoTone: distinctSuits === 2,
-    rainbow: cards.length === 3 && distinctSuits === 3,
-    flushDrawPossible: maximumSuitCount >= 2,
-    connectivity,
-    connected: connectivity === 'connected',
-    broadwayCount: ranks.filter((rank) => rank >= 10).length,
-    highestRank: Math.max(...ranks),
-  });
 }
 
 function normalizeAuthority(authority) {
@@ -316,9 +248,36 @@ function makeActionAnalysis(actions) {
   }));
 }
 
-function handBoardSection(context, trustedFacts, warnings, depth) {
+function drawLabelsForAnalysis(draws) {
+  if (!draws?.available) return [];
+  return [
+    draws.flushDraw ? (draws.nutFlushDraw ? 'nut_flush_draw' : 'flush_draw') : null,
+    draws.openEndedStraightDraw ? 'open_ended_straight_draw' : null,
+    draws.gutshot ? 'gutshot' : null,
+    draws.doubleGutshot ? 'double_gutshot' : null,
+    draws.straightFlushDraw
+      ? (draws.royalFlushDraw
+        ? 'royal_flush_draw'
+        : draws.straightFlushDrawType || 'straight_flush_draw')
+      : null,
+  ].filter(Boolean);
+}
+
+function madeHandLabelForAnalysis(exactHand, legacyHand) {
+  if (!exactHand?.available) return legacyHand?.madeHand || legacyHand?.label || null;
+  if (exactHand.primaryCategory === 'straight') {
+    if (exactHand.madeHandSubtype === 'wheel') return 'wheel_straight';
+    if (exactHand.madeHandSubtype === 'broadway') return 'broadway_straight';
+  }
+  if (exactHand.primaryCategory === 'straight_flush') {
+    if (exactHand.madeHandSubtype === 'wheel') return 'wheel_straight_flush';
+    if (exactHand.madeHandSubtype === 'royal') return 'royal_flush';
+  }
+  return exactHand.relationship || exactHand.primaryCategory;
+}
+
+function handBoardSection(context, trustedFacts, rangeAnalysisFacts, warnings, depth) {
   const heroCards = Array.isArray(context.heroCards) ? [...context.heroCards] : [];
-  const board = Array.isArray(context.board) ? [...context.board] : [];
   const facts = [];
   const parts = [];
   if (heroCards.length === 2 && heroCards.every(validCard)) {
@@ -329,32 +288,47 @@ function handBoardSection(context, trustedFacts, warnings, depth) {
     }));
   }
 
-  if (context.street === 'preflop' && heroCards.length === 2 && heroCards.every(validCard)) {
-    const pair = heroCards[0][0] === heroCards[1][0];
-    const suited = heroCards[0][1] === heroCards[1][1];
-    const classification = pair ? 'pocket pair' : suited ? 'suited hand' : 'offsuit hand';
+  const exactHand = rangeAnalysisFacts?.exactHand;
+  if (context.street === 'preflop' && exactHand?.available && exactHand.preflopHandClass) {
+    const classification = exactHand.preflopKind === 'pair'
+      ? 'pocket pair' : exactHand.preflopKind === 'suited' ? 'suited hand' : 'offsuit hand';
     facts.push(fact('preflop_hand_class', {
-      label: 'Hand class', labelKey: 'analysis.fact.handClass', value: pair ? 'pair' : suited ? 'suited' : 'offsuit',
+      label: 'Hand class', labelKey: 'analysis.fact.handClass', value: exactHand.preflopHandClass,
       templateKey: 'analysis.hand.preflopClass', fallback: 'This is a {classification}.',
-      values: { classification },
+      values: { classification, handClass: exactHand.preflopHandClass },
     }));
   }
 
   if (context.street !== 'preflop') {
-    const hand = trustedFacts?.handClassification;
-    const madeHand = hand?.madeHand || hand?.label || null;
-    const draws = Array.isArray(hand?.draws) ? hand.draws.filter(Boolean).map(String) : [];
+    const legacyHand = rangeAnalysisFacts ? null : trustedFacts?.handClassification;
+    const madeHand = madeHandLabelForAnalysis(exactHand, legacyHand);
+    const draws = exactHand?.available
+      ? drawLabelsForAnalysis(exactHand.draws)
+      : (Array.isArray(legacyHand?.draws) ? legacyHand.draws.filter(Boolean).map(String) : []);
     if (madeHand) {
       facts.push(fact('made_hand', {
         label: 'Made hand', labelKey: 'analysis.fact.madeHand', value: String(madeHand),
         templateKey: 'analysis.hand.madeHand', fallback: 'Current hand classification: {madeHand}.',
-        values: { madeHand: String(madeHand) },
+        values: {
+          madeHand: String(madeHand),
+          primaryCategory: exactHand?.primaryCategory ?? null,
+          madeHandSubtype: exactHand?.madeHandSubtype ?? null,
+          playsBoard: exactHand?.playsBoard ?? false,
+        },
       }));
-      if (hand?.source === 'heuristic_postflop_classifier') {
+      if (legacyHand?.source === 'heuristic_postflop_classifier') {
         warnings.push(warning(
           'heuristic_hand_classifier',
           'Hero-specific made-hand and draw labels are heuristic strategic features, separate from canonical hand ordering.',
         ));
+      }
+      if (exactHand?.components?.length) {
+        facts.push(fact('hand_components', {
+          label: 'Hand components', labelKey: 'analysis.fact.handComponents',
+          value: [...exactHand.components],
+          templateKey: 'analysis.hand.components', fallback: 'Relevant components: {components}.',
+          values: { components: exactHand.components.join(', ') },
+        }));
       }
     } else {
       warnings.push(warning('hand_classification_unavailable', 'No trusted made-hand classification was supplied.'));
@@ -366,15 +340,51 @@ function handBoardSection(context, trustedFacts, warnings, depth) {
         values: { draws: draws.join(', ') },
       }));
     }
+    if (exactHand?.drawOuts?.available && exactHand.drawOuts.uniqueCompletionCardCount > 0) {
+      const drawOuts = exactHand.drawOuts;
+      facts.push(fact('draw_outs', {
+        label: 'Outs', labelKey: 'analysis.fact.outs',
+        value: {
+          ...drawOuts,
+          flush: { ...drawOuts.flush, completionCards: [...drawOuts.flush.completionCards] },
+          straight: { ...drawOuts.straight, completionCards: [...drawOuts.straight.completionCards] },
+          straightFlush: {
+            ...drawOuts.straightFlush,
+            completionCards: [...drawOuts.straightFlush.completionCards],
+            completionResults: drawOuts.straightFlush.completionResults
+              .map((completion) => ({ ...completion })),
+          },
+          overlaps: drawOuts.overlaps.map((entry) => ({
+            card: entry.card, families: [...entry.families],
+          })),
+          uniqueCompletionCards: [...drawOuts.uniqueCompletionCards],
+        },
+        templateKey: 'analysis.hand.outs',
+        fallback: 'Structural completion cards are not guaranteed winning or clean outs.',
+        values: {
+          uniqueCount: drawOuts.uniqueCompletionCardCount,
+          overlapCount: drawOuts.overlaps.length,
+          semantics: drawOuts.semantics,
+        },
+      }));
+    }
+    if (exactHand?.draws?.overcardCount > 0) {
+      facts.push(fact('hero_overcards', {
+        label: 'Overcards', labelKey: 'analysis.fact.overcards', value: exactHand.draws.overcardCount,
+        templateKey: 'analysis.hand.overcards', fallback: 'Hero has {count} overcard(s) to the board.',
+        values: { count: exactHand.draws.overcardCount },
+      }));
+    }
 
-    const texture = deriveBoardTextureFacts(board);
-    if (texture.available) {
+    const texture = rangeAnalysisFacts?.board;
+    if (texture?.available) {
       facts.push(fact('board_pairing', {
         label: 'Board pairing', labelKey: 'analysis.fact.boardPairing', value: texture.paired,
         templateKey: texture.paired ? 'analysis.board.paired' : 'analysis.board.unpaired',
         fallback: texture.paired ? 'The board is paired.' : 'The board is unpaired.', values: {},
       }));
-      const tone = texture.monotone ? 'monotone' : texture.twoTone ? 'two-tone' : texture.rainbow ? 'rainbow' : 'multi-suit';
+      const tone = texture.suitTexture === 'two_tone'
+        ? 'two-tone' : texture.suitTexture === 'multi_suit' ? 'multi-suit' : texture.suitTexture;
       facts.push(fact('board_suits', {
         label: 'Suit texture', labelKey: 'analysis.fact.boardSuits', value: tone,
         templateKey: `analysis.board.${tone.replace('-', '')}`,
@@ -391,14 +401,24 @@ function handBoardSection(context, trustedFacts, warnings, depth) {
           templateKey: 'analysis.board.broadwayCount', fallback: 'The board contains {count} Broadway card(s).',
           values: { count: texture.broadwayCount },
         }));
-      }
-      const highestBoardRank = texture.highestRank;
-      const overcards = heroCards.filter((card) => validCard(card) && cardRank(card) > highestBoardRank).length;
-      if (overcards > 0) {
-        facts.push(fact('hero_overcards', {
-          label: 'Overcards', labelKey: 'analysis.fact.overcards', value: overcards,
-          templateKey: 'analysis.hand.overcards', fallback: 'Hero has {count} overcard(s) to the board.',
-          values: { count: overcards },
+        facts.push(fact('board_flush_state', {
+          label: 'Flush completion', labelKey: 'analysis.fact.boardFlushState',
+          value: texture.flushCompletionState,
+          templateKey: 'analysis.board.flushState', fallback: 'Board flush state: {state}.',
+          values: { state: texture.flushCompletionState },
+        }));
+        facts.push(fact('board_straight_state', {
+          label: 'Straight completion', labelKey: 'analysis.fact.boardStraightState',
+          value: {
+            completed: texture.straightCompletedOnBoard,
+            completionRanks: [...texture.straightCompletionRanks],
+          },
+          templateKey: 'analysis.board.straightState',
+          fallback: 'Board straight-completion ranks: {ranks}.',
+          values: {
+            completed: texture.straightCompletedOnBoard,
+            ranks: texture.straightCompletionRanks.join(', ') || 'none',
+          },
         }));
       }
     } else {
@@ -407,6 +427,228 @@ function handBoardSection(context, trustedFacts, warnings, depth) {
   }
 
   return facts.length ? section('hand_board', 'Hand & Board', 'primary', facts, parts) : null;
+}
+
+function blockerSection(rangeAnalysisFacts) {
+  if (!rangeAnalysisFacts || !rangeAnalysisFacts.blockers.heroCards.length) return null;
+  const structural = rangeAnalysisFacts.blockers;
+  const facts = [fact('hero_blocker_structure', {
+    label: 'Hero card removal', labelKey: 'analysis.fact.heroBlockerStructure',
+    value: {
+      cards: [...structural.heroCards],
+      rawCombosRemoved: structural.rawCombosRemovedByHeroCards,
+      perCard: structural.heroCardEffects.map((entry) => ({ ...entry })),
+    },
+    templateKey: 'analysis.blockers.structural',
+    fallback: 'Hero\'s two exact cards remove {count} of the 1,326 raw two-card combinations.',
+    values: {
+      cards: structural.heroCards.join(' '),
+      count: structural.rawCombosRemovedByHeroCards,
+    },
+  })];
+  for (const analysis of Object.values(rangeAnalysisFacts.ranges)) {
+    if (!analysis.blockers.heroConditioningApplied) continue;
+    facts.push(fact(`range_blocker_effect_${analysis.key}`, {
+      label: 'Supplied-range effect', labelKey: 'analysis.fact.rangeBlockerEffect',
+      value: {
+        rangeKey: analysis.key,
+        rangeLabel: analysis.label,
+        removedComboCount: analysis.blockers.heroRemovedComboCount,
+        removedKnownComboCount: analysis.blockers.heroRemovedKnownComboCount,
+        removedKnownComboMass: analysis.blockers.heroRemovedKnownComboMass,
+        perHeroCard: analysis.blockers.perHeroCard.map((entry) => ({ ...entry })),
+        mostAffectedClasses: analysis.blockers.mostAffectedClasses.map((entry) => ({ ...entry })),
+      },
+      templateKey: 'analysis.blockers.suppliedRange',
+      fallback: 'Hero cards remove known combo mass {mass} from {rangeLabel}.',
+      values: {
+        rangeLabel: analysis.label,
+        mass: rounded(analysis.blockers.heroRemovedKnownComboMass, 2),
+        physicalBefore: analysis.blockers.physicalEligibleComboCountBeforeHero,
+        physicalAfter: analysis.blockers.physicalEligibleComboCountAfterHero,
+        physicalRemoved: analysis.blockers.heroRemovedComboCount,
+        knownAffected: analysis.blockers.heroRemovedKnownComboCount,
+        knownCoverage: percent(analysis.eligibility.eligibleCoverageRatio, 1),
+        knownMassAvailable: analysis.blockers.heroRemovedKnownComboCount > 0,
+      },
+    }));
+  }
+  return section('blockers', 'Blockers', 'primary', facts, [
+    textPart(
+      'analysis.blockers.noStrategicLabel',
+      'These are structural card-removal facts, not a judgment that a blocker is good or bad for bluffing.',
+      {},
+      'limitation',
+    ),
+  ]);
+}
+
+function positiveCompositionEntries(group) {
+  return Object.entries(group || {})
+    .filter(([, metric]) => metric.knownComboMass > 0)
+    .sort((left, right) => right[1].knownComboMass - left[1].knownComboMass)
+    .map(([key, metric]) => ({
+      key,
+      knownComboMass: metric.knownComboMass,
+      normalizedShare: metric.normalizedShare,
+    }));
+}
+
+function rangeSection(rangeAnalysisFacts, warnings) {
+  if (!rangeAnalysisFacts) return null;
+  const analyses = Object.values(rangeAnalysisFacts.ranges);
+  if (!analyses.length) {
+    warnings.push(warning(
+      'range_source_unavailable',
+      'No explicit canonical weighted range was supplied. Riverline does not promote heuristic samples or Matrix representatives into range truth.',
+    ));
+    return section('range', 'Range', 'supporting', [fact('range_availability', {
+      kind: 'availability',
+      label: 'Supplied range', labelKey: 'analysis.fact.suppliedRange', value: 'unavailable',
+      templateKey: 'analysis.range.unavailable',
+      fallback: 'No explicit weighted range is attached to this decision.',
+      values: {},
+    })]);
+  }
+
+  const facts = [];
+  for (const analysis of analyses) {
+    const coveragePercent = percent(analysis.eligibility.eligibleCoverageRatio, 1);
+    facts.push(fact(`supplied_range_summary_${analysis.key}`, {
+      label: analysis.label, labelKey: 'analysis.fact.suppliedRange',
+      value: {
+        rangeKey: analysis.key,
+        role: analysis.role,
+        state: analysis.inspection.state,
+        knownEligibleComboMass: analysis.eligibility.knownEligibleComboMass,
+        knownEligibleComboCount: analysis.eligibility.knownEligibleComboCount,
+        unknownEligibleComboCount: analysis.eligibility.unknownEligibleComboCount,
+        eligibleCoverageRatio: analysis.eligibility.eligibleCoverageRatio,
+        normalizationAvailable: analysis.normalization.available,
+      },
+      templateKey: 'analysis.range.summary',
+      fallback: '{rangeLabel}: known combo mass after blockers {mass}; known coverage {coverage}.',
+      values: {
+        rangeLabel: analysis.label,
+        mass: rounded(analysis.eligibility.knownEligibleComboMass, 2),
+        coverage: coveragePercent,
+        state: analysis.inspection.state,
+        fullyUnknown: analysis.inspection.fullyUnknown,
+        eligible: analysis.eligibility.eligibleComboCount,
+        known: analysis.eligibility.knownEligibleComboCount,
+        unknown: analysis.eligibility.unknownEligibleComboCount,
+      },
+    }));
+    const primary = analysis.composition.postflop
+      ? positiveCompositionEntries(analysis.composition.postflop.primary)
+      : positiveCompositionEntries(analysis.composition.preflop.categories);
+    if (primary.length) {
+      facts.push(fact(`supplied_range_composition_${analysis.key}`, {
+        label: 'Known composition', labelKey: 'analysis.fact.rangeComposition',
+        value: primary,
+        templateKey: 'analysis.range.composition',
+        fallback: 'Known composition is reported as combo mass; normalized shares appear only for complete positive-mass ranges.',
+        values: { rangeLabel: analysis.label },
+      }));
+    }
+    const rangeDraws = positiveCompositionEntries(analysis.composition.postflop?.draws);
+    if (rangeDraws.length) {
+      facts.push(fact(`supplied_range_draws_${analysis.key}`, {
+        label: 'Known draw mass', labelKey: 'analysis.fact.rangeDraws',
+        value: rangeDraws,
+        templateKey: 'analysis.range.draws',
+        fallback: 'Draw attributes overlap and do not sum to 100%.',
+        values: { rangeLabel: analysis.label },
+      }));
+    }
+    if (!analysis.inspection.complete) {
+      warnings.push(warning(
+        `partial_range_${analysis.key}`,
+        `${analysis.label} is partial. Known mass and coverage are shown without extrapolating unresolved combos.`,
+        'info',
+        { rangeLabel: analysis.label },
+        'analysis.warning.partial_range',
+      ));
+    }
+  }
+  return section('range', 'Supplied Range', 'supporting', facts, [
+    textPart(
+      'analysis.range.noAdvantageClaim',
+      'Composition and blocker conditioning do not establish range advantage, nut advantage, action EV, or solver frequencies.',
+      {},
+      'limitation',
+    ),
+  ]);
+}
+
+function analysisFactSources(rangeAnalysisFacts, authority, strategyProvenance) {
+  const sources = [{
+    group: 'strategy',
+    label: 'Strategy',
+    labelKey: 'analysis.source.strategy',
+    source: strategyProvenance.source,
+    sourceLabel: strategyProvenance.label,
+    sourceLabelKey: strategyProvenance.labelKey,
+    sourceSchemaVersion: STRATEGY_RESULT_SCHEMA_VERSION,
+  }];
+  if (!rangeAnalysisFacts) return sources;
+  sources.push(
+    {
+      group: 'exact_hand',
+      label: 'Exact hand',
+      labelKey: 'analysis.source.exactHand',
+      source: rangeAnalysisFacts.provenance.exactHand.kind,
+      sourceLabel: rangeAnalysisFacts.provenance.exactHand.label || authority.label,
+      sourceLabelKey: `analysis.sourceLabel.${rangeAnalysisFacts.provenance.exactHand.kind}`,
+      sourceSchemaVersion: rangeAnalysisFacts.provenance.exactHand.sourceSchemaVersion,
+    },
+    {
+      group: 'board',
+      label: 'Board',
+      labelKey: 'analysis.source.board',
+      source: rangeAnalysisFacts.provenance.board.kind,
+      sourceLabel: rangeAnalysisFacts.provenance.board.label || authority.label,
+      sourceLabelKey: `analysis.sourceLabel.${rangeAnalysisFacts.provenance.board.kind}`,
+      sourceSchemaVersion: rangeAnalysisFacts.provenance.board.sourceSchemaVersion,
+    },
+  );
+  const deadCardCount = rangeAnalysisFacts.blockers.knownCards.length
+    - rangeAnalysisFacts.blockers.heroCards.length
+    - (rangeAnalysisFacts.board.available ? rangeAnalysisFacts.board.cardCount : 0);
+  if (deadCardCount > 0) {
+    sources.push({
+      group: 'dead_cards',
+      label: 'Dead cards',
+      labelKey: 'analysis.source.deadCards',
+      source: rangeAnalysisFacts.provenance.deadCards.kind,
+      sourceLabel: rangeAnalysisFacts.provenance.deadCards.label || authority.label,
+      sourceLabelKey: `analysis.sourceLabel.${rangeAnalysisFacts.provenance.deadCards.kind}`,
+      sourceSchemaVersion: rangeAnalysisFacts.provenance.deadCards.sourceSchemaVersion,
+    });
+  }
+  if (rangeAnalysisFacts.decision) {
+    sources.push({
+      group: 'decision_context',
+      label: 'Decision context',
+      labelKey: 'analysis.source.decisionContext',
+      source: authority.type,
+      sourceLabel: authority.label,
+      sourceLabelKey: authority.labelKey,
+      sourceSchemaVersion: rangeAnalysisFacts.decision.sourceSchemaVersion,
+    });
+  }
+  for (const analysis of Object.values(rangeAnalysisFacts.ranges)) {
+    sources.push({
+      group: `range_${analysis.key}`,
+      label: analysis.label,
+      labelKey: 'analysis.source.suppliedRange',
+      source: analysis.source.kind,
+      sourceLabel: analysis.source.label,
+      sourceLabelKey: `analysis.sourceLabel.${analysis.source.kind}`,
+      sourceSchemaVersion: analysis.source.sourceSchemaVersion,
+    });
+  }
+  return sources;
 }
 
 function positionSection(context, trustedFacts) {
@@ -741,6 +983,7 @@ export function createAnalysisExplanation({
   decisionContext,
   strategyResult,
   trustedFacts = {},
+  rangeAnalysisFacts = null,
   authority = 'scenario',
   depth = 'detailed',
   unavailableReason = null,
@@ -752,6 +995,10 @@ export function createAnalysisExplanation({
   if (strategyResult !== null && strategyResult !== undefined
     && strategyResult.schemaVersion !== STRATEGY_RESULT_SCHEMA_VERSION) {
     throw new TypeError('Expected StrategyResult strategy-result/v1');
+  }
+  if (rangeAnalysisFacts !== null && rangeAnalysisFacts !== undefined
+    && rangeAnalysisFacts.schemaVersion !== RANGE_ANALYSIS_FACTS_SCHEMA_VERSION) {
+    throw new TypeError(`Expected ${RANGE_ANALYSIS_FACTS_SCHEMA_VERSION}`);
   }
   if (!['concise', 'detailed'].includes(depth)) throw new TypeError('Analysis depth must be concise or detailed');
 
@@ -765,8 +1012,18 @@ export function createAnalysisExplanation({
   const sections = [];
 
   if (decisionContext) {
-    const handBoard = handBoardSection(decisionContext, trustedFacts, warnings, depth);
+    const handBoard = handBoardSection(
+      decisionContext,
+      trustedFacts,
+      rangeAnalysisFacts,
+      warnings,
+      depth,
+    );
     if (handBoard) sections.push(handBoard);
+    const blockers = blockerSection(rangeAnalysisFacts);
+    if (blockers) sections.push(blockers);
+    const range = rangeSection(rangeAnalysisFacts, warnings);
+    if (range) sections.push(range);
     sections.push(positionSection(decisionContext, trustedFacts));
     const potOdds = potOddsSection(decisionContext);
     if (potOdds) sections.push(potOdds);
@@ -831,6 +1088,7 @@ export function createAnalysisExplanation({
       ...provenance,
       limitations: uniqueWarnings.map((entry) => entry.code),
     },
+    factSources: analysisFactSources(rangeAnalysisFacts, normalizedAuthority, provenance),
     authority: {
       ...normalizedAuthority,
       historyAvailable: history.length > 0,

@@ -25,6 +25,7 @@ Production must not import solver experiments, training scripts, cloud tooling, 
 - current heuristic implementation: `app/src/strategy/`
 - Training generation/session/grading: canonical application modules
 - explanation data: `AnalysisExplanation v1`
+- exact-hand, board-structure, blocker, and optional supplied-range facts for Analysis: `RangeAnalysisFacts v1`
 - user-owned saved hands/spots/notes/review metadata: `SavedStudyObject v1` under `app/src/saved-study-objects/`
 - performance scheduling/invalidation: `product-performance/v1`
 - desktop host: `app/main.js`
@@ -130,6 +131,17 @@ Training modules do not become browser strategy authorities.
 
 AnalysisExplanation consumes DecisionContext, StrategyResult, and trusted facts. Renderers must not recreate poker math or strategy.
 
+Range-aware Analysis follows this dependency direction:
+
+```text
+trusted cards / DecisionContext / optional HoldemWeightedRange v1
+                              -> RangeAnalysisFacts v1
+                              -> AnalysisExplanation v1
+                              -> renderer
+```
+
+`RangeAnalysisFacts v1` reuses the canonical evaluator and range core. It may classify exact hands, draws, board structure, raw exact-card removal, and the conditioned composition of explicitly supplied ranges. It must not select actions, call StrategyProvider or Equity, infer a missing range, claim range/nut advantage, or label a blocker as strategically good or bad. `AnalysisExplanation v1` consumes these facts; it does not recompute them. See `ANALYSIS_RANGE_SPEC.md`.
+
 ## 11. Performance contract
 
 Preserve PERF-001 guarantees:
@@ -141,6 +153,7 @@ Preserve PERF-001 guarantees:
 - hidden surfaces use dirty/visible invalidation
 - no forced-layout animation restart
 - Training and Equity do not rerender inactive workspaces unnecessarily
+- range analysis runs only for a visible/requested Analysis surface and never causes an additional StrategyProvider or Equity invocation
 
 ## 12. Research isolation and legacy policy
 

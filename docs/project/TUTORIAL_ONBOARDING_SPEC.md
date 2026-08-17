@@ -113,7 +113,7 @@ One compact `?` action in the workspace header opens the currently useful tutori
 | `playbook.scenario-basics` | Playbook / Scenario | prompt in Scenario | what-if snapshot, cards, objective context, provider provenance, analysis entry points, Save Spot, restored Saved Spot truth |
 | `playbook.hand-mode` | Playbook / Hand | prompt on first Hand visit | canonical setup, table facts, legal progression, Replay growth, Save Hand |
 | `playbook.replay` | Hand or Saved Hand when Replay exists | manual | read-only timeline, Previous/Next, Play/Pause, endpoint semantics, live-analysis boundary, Saved Hand viewer |
-| `playbook.analysis-views` | current Playbook analysis view | manual | current Decision, 13×13 preflop Matrix, selected-hand mix, coarse Range Category Comparison and their limits |
+| `playbook.analysis-views` | current Playbook analysis view | manual | current Decision, exact Hand & Board facts, structural blockers, explicit supplied-range/provenance boundary, 13×13 preflop Matrix, selected-hand mix, Range Category Comparison, and their limits |
 | `equity.basics` | Equity | prompt | players, board/dead cards, exact versus Monte Carlo, calculate/cancel, Equity/Win/Tie interpretation |
 | `equity.advanced` | Equity | manual | multiway and unknown hands, dead cards, reproducible seed, result method provenance |
 | `training.first-spot` | Training | prompt | drill setup, generated canonical spot, legal answer, optional hints, next-exercise workflow |

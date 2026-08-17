@@ -17,6 +17,44 @@ function analysisMessage(key, fallback, values = {}) {
   ));
 }
 
+function analysisMessageTemplate(key, fallback) {
+  const runtime = globalThis.RiverlineI18n;
+  if (key && runtime && typeof runtime.resolveTranslation === 'function') {
+    const resolution = runtime.resolveTranslation(key);
+    if (!resolution.missing) return String(resolution.value);
+  }
+  return String(fallback || '');
+}
+
+function analysisInterpolatedElement(key, fallback, values = {}, tokenKinds = {}) {
+  const element = analysisElement('span', 'analysis-fact-primary analysis-localized-message');
+  const template = analysisMessageTemplate(key, fallback);
+  const pattern = /\{([A-Za-z0-9_]+)\}/g;
+  let cursor = 0;
+  let match;
+  while ((match = pattern.exec(template))) {
+    if (match.index > cursor) element.appendChild(document.createTextNode(template.slice(cursor, match.index)));
+    const name = match[1];
+    const value = Object.prototype.hasOwnProperty.call(values, name) ? values[name] : match[0];
+    const kind = tokenKinds[name] || 'text';
+    if (kind === 'data' || kind === 'user') {
+      const token = analysisLiteralElement(
+        'span',
+        kind === 'data' ? 'poker-data-token' : 'analysis-user-text',
+        value,
+      );
+      if (kind === 'user') token.setAttribute('dir', 'auto');
+      token.dataset.analysisToken = kind;
+      element.appendChild(token);
+    } else {
+      element.appendChild(document.createTextNode(String(value)));
+    }
+    cursor = pattern.lastIndex;
+  }
+  if (cursor < template.length) element.appendChild(document.createTextNode(template.slice(cursor)));
+  return element;
+}
+
 const ANALYSIS_CONCEPT_KEYS = Object.freeze({
   'pocket pair': 'analysis.value.pocketPair',
   pair: 'Pair',
@@ -24,6 +62,31 @@ const ANALYSIS_CONCEPT_KEYS = Object.freeze({
   suited: 'analysis.value.suitedHand',
   'offsuit hand': 'analysis.value.offsuitHand',
   offsuit: 'analysis.value.offsuitHand',
+  high_card: 'analysis.value.highCard',
+  one_pair: 'analysis.value.onePair',
+  two_pair: 'analysis.value.twoPair',
+  three_of_a_kind: 'analysis.value.threeOfAKind',
+  straight: 'analysis.value.straight',
+  flush: 'analysis.value.flush',
+  full_house: 'analysis.value.fullHouse',
+  four_of_a_kind: 'analysis.value.fourOfAKind',
+  straight_flush: 'analysis.value.straightFlush',
+  wheel_straight: 'analysis.value.wheelStraight',
+  broadway_straight: 'analysis.value.broadwayStraight',
+  wheel_straight_flush: 'analysis.value.wheelStraightFlush',
+  royal_flush: 'analysis.value.royalFlush',
+  board_pair: 'analysis.value.boardPair',
+  overpair: 'analysis.value.overpair',
+  pocket_pair: 'analysis.value.pocketPair',
+  pairs_board_rank: 'analysis.value.pairsBoardRank',
+  top_pair: 'analysis.value.topPair',
+  middle_pair: 'analysis.value.middlePair',
+  lower_pair: 'analysis.value.lowerPair',
+  board_two_pair: 'analysis.value.boardTwoPair',
+  set: 'analysis.value.set',
+  trips: 'analysis.value.trips',
+  board_trips: 'analysis.value.boardTrips',
+  plays_board: 'analysis.value.playsBoard',
   paired: 'analysis.value.paired',
   unpaired: 'analysis.value.unpaired',
   rainbow: 'analysis.value.rainbow',
@@ -44,6 +107,23 @@ const ANALYSIS_CONCEPT_KEYS = Object.freeze({
   Gutshot: 'analysis.value.gutshot',
   'gutshot straight draw': 'analysis.value.gutshot',
   'Flush draw': 'analysis.value.flushDraw',
+  flush_draw: 'analysis.value.flushDraw',
+  nut_flush_draw: 'analysis.value.nutFlushDraw',
+  straight_flush_draw: 'analysis.value.straightFlushDraw',
+  gutshot_straight_flush_draw: 'analysis.value.gutshotStraightFlushDraw',
+  open_ended_straight_flush_draw: 'analysis.value.openEndedStraightFlushDraw',
+  double_gutshot_straight_flush_draw: 'analysis.value.doubleGutshotStraightFlushDraw',
+  royal_flush_draw: 'analysis.value.royalFlushDraw',
+  wheel_straight_flush_draw: 'analysis.value.wheelStraightFlushDraw',
+  open_ended_straight_draw: 'analysis.value.openEndedDraw',
+  gutshot: 'analysis.value.gutshot',
+  double_gutshot: 'analysis.value.doubleGutshot',
+  overcards: 'analysis.value.overcardsShort',
+  made_hand_and_draw: 'analysis.value.madeHandAndDraw',
+  none: 'analysis.value.flushStateNone',
+  three_flush: 'analysis.value.threeFlush',
+  four_flush: 'analysis.value.fourFlush',
+  board_flush: 'analysis.value.boardFlush',
   'No major draw': 'analysis.value.noMajorDraw'
 });
 
@@ -69,18 +149,25 @@ function analysisElement(tagName, className, text) {
   return element;
 }
 
+function analysisLiteralElement(tagName, className, text) {
+  const element = document.createElement(tagName);
+  if (className) element.className = className;
+  if (text !== undefined && text !== null) element.textContent = String(text);
+  return element;
+}
+
 // Presentation grammar only. AnalysisExplanation remains the sole source of
 // decision facts, strategy language, provenance, and limitations.
 const ANALYSIS_FACT_GROUPS = Object.freeze({
-  hero: new Set(['hero_cards', 'preflop_hand_class', 'made_hand', 'draws', 'hero_overcards']),
-  board: new Set(['board_pairing', 'board_suits', 'board_connectivity', 'board_broadway_count']),
+  hero: new Set(['hero_cards', 'preflop_hand_class', 'made_hand', 'hand_components', 'draws', 'draw_outs', 'hero_overcards']),
+  board: new Set(['board_pairing', 'board_suits', 'board_connectivity', 'board_broadway_count', 'board_flush_state', 'board_straight_state']),
   economics: new Set(['pot_before_action', 'call_amount', 'required_raw_equity', 'spr', 'heuristic_sampled_equity']),
   context: new Set(['hero_position', 'postflop_position_relation', 'heuristic_opponent_count', 'last_action', 'facing_size', 'table_size', 'context_authority', 'big_blind_check_option', 'no_voluntary_wager_faced']),
 });
 
 const ANALYSIS_GROUP_ORDER = Object.freeze({
-  hero: ['made_hand', 'draws', 'hero_cards', 'preflop_hand_class', 'hero_overcards'],
-  board: ['board_pairing', 'board_suits', 'board_connectivity', 'board_broadway_count'],
+  hero: ['made_hand', 'draws', 'draw_outs', 'hand_components', 'hero_cards', 'preflop_hand_class', 'hero_overcards'],
+  board: ['board_pairing', 'board_suits', 'board_connectivity', 'board_flush_state', 'board_straight_state', 'board_broadway_count'],
   economics: ['pot_before_action', 'call_amount', 'required_raw_equity', 'spr', 'heuristic_sampled_equity'],
   context: ['hero_position', 'postflop_position_relation', 'heuristic_opponent_count', 'last_action', 'facing_size', 'table_size', 'context_authority', 'big_blind_check_option', 'no_voluntary_wager_faced'],
 });
@@ -94,18 +181,223 @@ function analysisDrawLabel(value) {
   return analysisConceptText(value);
 }
 
+function analysisRangeCompositionText(entries) {
+  return (Array.isArray(entries) ? entries : []).map((entry) => {
+    const mass = Number(entry.knownComboMass).toFixed(2).replace(/\.00$/, '');
+    const share = Number.isFinite(entry.normalizedShare)
+      ? ` (${(entry.normalizedShare * 100).toFixed(1)}%)`
+      : '';
+    return `${analysisConceptText(entry.key)} ${mass}${share}`;
+  }).join(' · ');
+}
+
+function analysisRangeCompositionElement(entries) {
+  const list = analysisElement('span', 'analysis-fact-primary analysis-composition-list');
+  (Array.isArray(entries) ? entries : []).forEach((entry, index) => {
+    if (index) list.appendChild(document.createTextNode(' · '));
+    const item = analysisElement('span', 'analysis-composition-item');
+    item.appendChild(analysisElement('span', 'analysis-composition-label', analysisConceptText(entry.key)));
+    item.appendChild(document.createTextNode(' '));
+    const mass = Number(entry.knownComboMass).toFixed(2).replace(/\.00$/, '');
+    const massToken = analysisLiteralElement('span', 'poker-data-token', mass);
+    massToken.dataset.analysisToken = 'data';
+    item.appendChild(massToken);
+    if (Number.isFinite(entry.normalizedShare)) {
+      item.appendChild(document.createTextNode(' ('));
+      const share = analysisLiteralElement('span', 'poker-data-token', `${(entry.normalizedShare * 100).toFixed(1)}%`);
+      share.dataset.analysisToken = 'data';
+      item.append(share, document.createTextNode(')'));
+    }
+    list.appendChild(item);
+  });
+  return list;
+}
+
+function analysisOutCardList(cards) {
+  const list = analysisElement('span', 'analysis-out-card-list');
+  (Array.isArray(cards) ? cards : []).forEach((card) => {
+    const token = analysisLiteralElement('span', 'analysis-out-card poker-data-token', card);
+    token.dataset.analysisToken = 'data';
+    list.appendChild(token);
+  });
+  return list;
+}
+
+function analysisOutRow(family, labelKey, fallback, cards, count) {
+  const row = analysisElement('div', 'analysis-out-row');
+  row.dataset.outFamily = family;
+  row.append(
+    analysisElement('span', 'analysis-out-family', analysisMessage(labelKey, fallback)),
+    analysisOutCardList(cards),
+    analysisLiteralElement('span', 'analysis-out-count poker-data-token', count),
+  );
+  return row;
+}
+
+function analysisDrawOutsElement(drawOuts) {
+  const outs = drawOuts || {};
+  const element = analysisElement('div', 'analysis-fact-primary analysis-draw-outs');
+  if (outs.flush?.count > 0) {
+    element.appendChild(analysisOutRow(
+      'flush', 'analysis.outs.flush', 'Flush', outs.flush.completionCards, outs.flush.count,
+    ));
+  }
+  if (outs.straight?.count > 0) {
+    element.appendChild(analysisOutRow(
+      'straight', 'analysis.outs.straight', 'Straight',
+      outs.straight.completionCards, outs.straight.count,
+    ));
+  }
+  if (outs.straightFlush?.count > 0) {
+    const row = analysisElement('div', 'analysis-out-row');
+    row.dataset.outFamily = 'straight_flush';
+    row.appendChild(analysisElement(
+      'span', 'analysis-out-family',
+      analysisMessage('analysis.outs.straightFlush', 'Straight flush'),
+    ));
+    const results = analysisElement('span', 'analysis-out-results');
+    outs.straightFlush.completionResults.forEach((completion) => {
+      const subtypeConcept = completion.subtype === 'wheel'
+        ? 'wheel_straight_flush'
+        : completion.subtype === 'royal' ? 'royal_flush' : 'straight_flush';
+      results.appendChild(analysisInterpolatedElement(
+        'analysis.value.straightFlushOutSingle',
+        '{cards} -> {completion}',
+        { cards: completion.card, completion: analysisConceptText(subtypeConcept) },
+        { cards: 'data' },
+      ));
+    });
+    row.append(
+      results,
+      analysisLiteralElement(
+        'span', 'analysis-out-count poker-data-token', outs.straightFlush.count,
+      ),
+    );
+    element.appendChild(row);
+  }
+  const summary = analysisInterpolatedElement(
+    'analysis.outs.unique',
+    'Unique direct improvement cards: {count}',
+    { count: outs.uniqueCompletionCardCount || 0 },
+    { count: 'data' },
+  );
+  summary.classList.add('analysis-outs-summary');
+  element.appendChild(summary);
+  if (outs.overlaps?.length) {
+    const overlapCards = outs.overlaps.map((entry) => entry.card).join(', ');
+    const overlap = analysisInterpolatedElement(
+      'analysis.outs.shared',
+      'Shared out counted once: {cards}',
+      { cards: overlapCards },
+      { cards: 'data' },
+    );
+    overlap.classList.add('analysis-outs-overlap');
+    element.appendChild(overlap);
+  }
+  element.appendChild(analysisElement(
+    'small', 'analysis-outs-note',
+    analysisMessage(
+      'analysis.outs.note',
+      'Structural completion cards; not guaranteed winning or clean outs.',
+    ),
+  ));
+  return element;
+}
+
+function analysisStructuredFactPrimary(analysisFact) {
+  const values = analysisFact.values || {};
+  if (analysisFact.key === 'draw_outs') return analysisDrawOutsElement(analysisFact.value);
+  if (analysisFact.key.startsWith('range_blocker_effect_')) {
+    const key = values.knownMassAvailable
+      ? 'analysis.value.rangeBlockerEffect'
+      : 'analysis.value.rangeBlockerEffect.unknown';
+    const fallback = values.knownMassAvailable
+      ? '{rangeLabel}: {physicalBefore} eligible before, {physicalAfter} after · {physicalRemoved} physical combos removed · {knownAffected} known combos affected · known combo mass removed {mass} · {knownCoverage} known coverage'
+      : '{rangeLabel}: {physicalBefore} eligible before, {physicalAfter} after · {physicalRemoved} physical combos removed · no known weights among affected combos · {knownCoverage} known coverage';
+    return analysisInterpolatedElement(key, fallback, values, {
+      rangeLabel: 'user',
+      physicalBefore: 'data',
+      physicalAfter: 'data',
+      physicalRemoved: 'data',
+      knownAffected: 'data',
+      mass: 'data',
+      knownCoverage: 'data',
+    });
+  }
+  if (analysisFact.key.startsWith('supplied_range_summary_')) {
+    const stateKey = values.fullyUnknown
+      ? 'analysis.value.rangeState.fullyUnknown'
+      : `analysis.value.rangeState.${values.state}`;
+    const stateLabel = analysisMessage(stateKey, analysisTitleCase(values.state));
+    return analysisInterpolatedElement(
+      'analysis.value.rangeSummary',
+      '{rangeLabel} · {known}/{eligible} known combos · known combo mass {mass} · {coverage} known coverage · {stateLabel}',
+      { ...values, stateLabel },
+      {
+        rangeLabel: 'user',
+        known: 'data',
+        eligible: 'data',
+        mass: 'data',
+        coverage: 'data',
+      },
+    );
+  }
+  if (analysisFact.key.startsWith('supplied_range_composition_')
+    || analysisFact.key.startsWith('supplied_range_draws_')) {
+    return analysisRangeCompositionElement(analysisFact.value);
+  }
+  if (analysisFact.key === 'hero_blocker_structure') {
+    return analysisInterpolatedElement(
+      'analysis.value.heroBlockerStructure',
+      '{count} physical combos removed',
+      values,
+      { count: 'data', cards: 'data' },
+    );
+  }
+  return null;
+}
+
 function analysisFactPrimaryText(analysisFact) {
   const values = analysisFact.values || {};
+  if (analysisFact.key.startsWith('range_blocker_effect_')) {
+    return analysisMessage(
+      'analysis.value.rangeBlockerEffect',
+      `${values.physicalRemoved} physical combos removed; known combo mass removed ${values.mass}`,
+      values,
+    );
+  }
+  if (analysisFact.key.startsWith('supplied_range_summary_')) {
+    return analysisMessage(
+      'analysis.value.rangeSummary',
+      `${values.rangeLabel} · known combo mass ${values.mass} · ${values.coverage} known coverage`,
+      values,
+    );
+  }
+  if (analysisFact.key.startsWith('supplied_range_composition_')
+    || analysisFact.key.startsWith('supplied_range_draws_')) {
+    return analysisRangeCompositionText(analysisFact.value);
+  }
   switch (analysisFact.key) {
     case 'hero_cards': return values.cards || (Array.isArray(analysisFact.value) ? analysisFact.value.join(' ') : analysisFact.value);
     case 'preflop_hand_class': return analysisConceptText(values.classification || analysisFact.value);
     case 'made_hand': return analysisConceptText(values.madeHand || analysisFact.value);
+    case 'hand_components': return (Array.isArray(analysisFact.value) ? analysisFact.value : []).map(analysisConceptText).join(' · ');
     case 'draws': return (Array.isArray(analysisFact.value) ? analysisFact.value : [analysisFact.value]).map(analysisDrawLabel).join(' · ');
     case 'hero_overcards': return analysisMessage('analysis.value.overcards', `${values.count ?? analysisFact.value} overcard(s)`, { count: values.count ?? analysisFact.value });
     case 'board_pairing': return analysisMessage(analysisFact.value ? 'analysis.value.paired' : 'analysis.value.unpaired', analysisFact.value ? 'Paired' : 'Unpaired');
     case 'board_suits': return analysisConceptText(values.tone || analysisFact.value);
     case 'board_connectivity': return analysisConceptText(values.connectivity || analysisFact.value);
     case 'board_broadway_count': return analysisMessage('analysis.value.broadwayCards', `${values.count ?? analysisFact.value} Broadway card(s)`, { count: values.count ?? analysisFact.value });
+    case 'board_flush_state': return analysisConceptText(analysisFact.value);
+    case 'board_straight_state': {
+      if (analysisFact.value?.completed) return analysisMessage('analysis.value.straightOnBoard', 'Straight completed on board');
+      const ranks = analysisFact.value?.completionRanks || [];
+      return ranks.length
+        ? analysisMessage('analysis.value.straightCompletionRanks', `One-card board completion: ${ranks.join(', ')}`, { ranks: ranks.join(', ') })
+        : analysisMessage('analysis.value.noImmediateStraightCompletion', 'No one-card board straight completion');
+    }
+    case 'hero_blocker_structure': return analysisMessage('analysis.value.heroBlockerStructure', `${values.count} physical combos removed`, { count: values.count, cards: values.cards });
+    case 'range_availability': return analysisMessage('analysis.value.rangeUnavailable', 'Unavailable without an explicit range source');
     case 'pot_before_action': return values.pot || analysisFact.value;
     case 'call_amount': return values.callAmount || analysisFact.value;
     case 'required_raw_equity': return values.requiredEquity || analysisFact.value;
@@ -181,13 +473,14 @@ function analysisFactElement(analysisFact) {
   cell.dataset.factKind = analysisFact.kind;
   cell.dataset.factKey = analysisFact.key;
   const value = analysisElement('dd', 'analysis-fact-value');
+  const structuredPrimary = analysisStructuredFactPrimary(analysisFact);
   const primary = analysisFact.key === 'hero_cards'
     ? analysisCardPairElement(analysisFact)
-    : analysisElement('span', 'analysis-fact-primary', analysisFactPrimaryText(analysisFact));
+    : structuredPrimary || analysisElement('span', 'analysis-fact-primary', analysisFactPrimaryText(analysisFact));
   if (new Set([
     'hero_cards', 'pot_before_action', 'call_amount', 'pot_after_call', 'required_raw_equity',
     'spr', 'heuristic_sampled_equity', 'hero_position', 'facing_size', 'table_size',
-    'hero_equity', 'heuristic_samples_completed', 'heuristic_range_fraction'
+    'hero_equity', 'heuristic_samples_completed', 'heuristic_range_fraction', 'board_straight_state'
   ]).has(analysisFact.key)) primary.classList.add('poker-data-token');
   value.appendChild(primary);
   const secondaryText = analysisFactSecondaryText(analysisFact);
@@ -339,6 +632,24 @@ function analysisProvenanceLabel(explanation) {
   return analysisMessage(explanation?.provenance?.labelKey, explanation?.provenance?.label || 'Source unavailable');
 }
 
+function analysisFactSourcesElement(explanation) {
+  const sources = Array.isArray(explanation?.factSources) ? explanation.factSources : [];
+  if (sources.length <= 1) return null;
+  const region = analysisElement('section', 'analysis-fact-sources');
+  const title = analysisElement('h4', 'analysis-region-title', analysisMessage('analysis.ui.factSources', 'Fact sources'));
+  const list = analysisElement('dl', 'analysis-fact-source-list');
+  sources.filter((entry) => entry.group !== 'strategy').forEach((entry) => {
+    const item = analysisElement('div', 'analysis-fact-source-row');
+    item.append(
+      analysisElement('dt', null, analysisMessage(entry.labelKey, entry.label)),
+      analysisElement('dd', null, analysisMessage(entry.sourceLabelKey, entry.sourceLabel)),
+    );
+    list.appendChild(item);
+  });
+  region.append(title, list);
+  return region;
+}
+
 function analysisSummaryText(explanation) {
   if (explanation.availability === 'unavailable') {
     return analysisMessage(explanation.summaryKey, explanation.summary, explanation.summaryValues || {});
@@ -359,7 +670,7 @@ function analysisWarningText(entry, explanation) {
       ? 'analysis.warning.heuristic_source.postflop'
       : 'analysis.warning.heuristic_source.preflop';
   }
-  return analysisMessage(key, entry.message);
+  return analysisMessage(key, entry.message, entry.values || {});
 }
 
 function renderAnalysisExplanation(container, explanation, options = {}) {
@@ -399,6 +710,14 @@ function renderAnalysisExplanation(container, explanation, options = {}) {
   if (heroRegion) article.appendChild(heroRegion);
   const economicsRegion = analysisFactGroup(analysisMessage('analysis.ui.decisionEconomics', 'Decision economics'), 'economics', economicsFacts);
   if (economicsRegion) article.appendChild(economicsRegion);
+  const standaloneSections = ['blockers', 'range']
+    .map((key) => explanation.sections.find((entry) => entry.key === key))
+    .filter(Boolean);
+  standaloneSections.forEach((entry) => {
+    const element = analysisSectionElement(entry, entry.facts, explanation);
+    element.classList.add('analysis-primary-structural-section');
+    article.appendChild(element);
+  });
 
   if (explanation.availability === 'unavailable') {
     const contextRegion = analysisFactGroup(analysisMessage('analysis.ui.context', 'Context'), 'context', contextFacts);
@@ -412,6 +731,8 @@ function renderAnalysisExplanation(container, explanation, options = {}) {
       analysisElement('strong', null, analysisProvenanceLabel(explanation)),
     );
     provenance.appendChild(source);
+    const factSources = analysisFactSourcesElement(explanation);
+    if (factSources) provenance.appendChild(factSources);
     const warning = explanation.warnings.find((entry) => entry.severity === 'warning');
     if (warning) provenance.appendChild(analysisElement('p', 'analysis-warning', analysisWarningText(warning, explanation)));
     article.appendChild(provenance);
@@ -436,7 +757,13 @@ function renderAnalysisExplanation(container, explanation, options = {}) {
   const contextRegion = analysisFactGroup(analysisMessage('analysis.ui.context', 'Context'), 'context', contextFacts);
   if (contextRegion) article.appendChild(contextRegion);
 
-  const selectedKeys = new Set([...heroFacts, ...boardFacts, ...economicsFacts, ...contextFacts].map((entry) => entry.key));
+  const selectedKeys = new Set([
+    ...heroFacts,
+    ...boardFacts,
+    ...economicsFacts,
+    ...contextFacts,
+    ...standaloneSections.flatMap((entry) => entry.facts),
+  ].map((entry) => entry.key));
   const details = analysisElement('details', 'analysis-detail-group');
   details.dataset.analysisDisclosure = 'supporting-detail';
   details.appendChild(analysisElement('summary', null, analysisMessage('analysis.ui.supportingDetail', 'Supporting detail')));
@@ -469,6 +796,8 @@ function renderAnalysisExplanation(container, explanation, options = {}) {
     source.appendChild(analysisElement('small', null, analysisMessage('analysis.ui.coverage', `Coverage ${(explanation.provenance.coverage * 100).toFixed(0)}%`, { value: (explanation.provenance.coverage * 100).toFixed(0) })));
   }
   footer.appendChild(source);
+  const factSources = analysisFactSourcesElement(explanation);
+  if (factSources) footer.appendChild(factSources);
 
   const criticalWarnings = explanation.warnings.filter((entry) => entry.severity === 'warning');
   if (criticalWarnings.length) {

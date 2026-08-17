@@ -3339,18 +3339,6 @@ function analysisUnavailableReasonForResolution(resolution) {
   return 'strategy_unavailable';
 }
 
-function trustedHandClassificationForAnalysis(decisionContext, strategyResult) {
-  if (!decisionContext || decisionContext.street === 'preflop'
-    || decisionContext.heroCards.length !== 2 || decisionContext.board.length < 3) return null;
-  const classification = strategyResult?.details?.handClassification;
-  if (!classification || classification.source !== 'heuristic_postflop_classifier') return null;
-  return {
-    madeHand: classification.madeHandLabel || null,
-    draws: Array.isArray(classification.draws) ? [...classification.draws] : [],
-    source: classification.source
-  };
-}
-
 function canonicalActionHistoryForAnalysis(resolution) {
   if (resolution?.mode !== 'hand') return [];
   const timeline = callPlaybookStateBridge('createReplayTimelineViewModel');
@@ -3372,10 +3360,47 @@ function canonicalActionHistoryForAnalysis(resolution) {
   });
 }
 
-function trustedAnalysisFacts(decisionContext, strategyResult, actionHistory = []) {
-  const facts = { actionHistory: Array.isArray(actionHistory) ? actionHistory : [] };
-  const handClassification = trustedHandClassificationForAnalysis(decisionContext, strategyResult);
-  if (handClassification) facts.handClassification = handClassification;
+function trustedAnalysisFacts(actionHistory = []) {
+  return { actionHistory: Array.isArray(actionHistory) ? actionHistory : [] };
+}
+
+const EMPTY_RANGE_ANALYSIS_INPUTS = Object.freeze({});
+let rangeAnalysisMemo = null;
+
+function rangeAnalysisFactsForDecision(
+  decisionContext,
+  authority,
+  ranges = EMPTY_RANGE_ANALYSIS_INPUTS
+) {
+  const bridge = globalThis.RiverlineAnalysisExplanation;
+  if (!decisionContext || !bridge
+    || typeof bridge.createRangeAnalysisRequest !== 'function'
+    || typeof bridge.createRangeAnalysisFacts !== 'function') return null;
+  if (rangeAnalysisMemo
+    && rangeAnalysisMemo.decisionContext === decisionContext
+    && rangeAnalysisMemo.authority === authority
+    && rangeAnalysisMemo.ranges === ranges) return rangeAnalysisMemo.facts;
+  const sourceLabels = {
+    scenario: 'Scenario cards',
+    hand: 'Canonical PokerState cards',
+    training: 'Canonical Training cards'
+  };
+  const source = {
+    kind: authority,
+    label: sourceLabels[authority] || 'DecisionContext cards',
+    sourceSchemaVersion: decisionContext.schemaVersion
+  };
+  const request = bridge.createRangeAnalysisRequest({
+    decisionContext,
+    ranges,
+    provenance: {
+      exactHand: source,
+      board: source,
+      deadCards: source
+    }
+  });
+  const facts = bridge.createRangeAnalysisFacts(request);
+  rangeAnalysisMemo = { decisionContext, authority, ranges, facts };
   return facts;
 }
 
@@ -3386,7 +3411,8 @@ function renderDecisionAnalysis(container, {
   authority,
   depth,
   unavailableReason = null,
-  surface = 'playbook'
+  surface = 'playbook',
+  rangeInputs = EMPTY_RANGE_ANALYSIS_INPUTS
 }) {
   if (!container) return null;
   const bridge = globalThis.RiverlineAnalysisExplanation;
@@ -3394,10 +3420,12 @@ function renderDecisionAnalysis(container, {
     container.textContent = t('Decision analysis is unavailable.');
     return null;
   }
+  const rangeAnalysisFacts = rangeAnalysisFactsForDecision(decisionContext, authority, rangeInputs);
   const explanation = bridge.create({
     decisionContext,
     strategyResult,
     trustedFacts,
+    rangeAnalysisFacts,
     authority,
     depth,
     unavailableReason
@@ -3410,15 +3438,11 @@ function renderPlaybookDecisionAnalysis(decisionContext, strategyResult, resolut
   const authority = resolution?.mode === 'hand' ? 'hand' : 'scenario';
   const result = strategyResult?.schemaVersion === strategyProvider.resultSchemaVersion
     ? strategyResult
-    : strategyProvider.resolve(null);
+    : null;
   const explanation = renderDecisionAnalysis($('#teacherContent'), {
     decisionContext,
     strategyResult: result,
-    trustedFacts: trustedAnalysisFacts(
-      decisionContext,
-      result,
-      canonicalActionHistoryForAnalysis(resolution)
-    ),
+    trustedFacts: trustedAnalysisFacts(canonicalActionHistoryForAnalysis(resolution)),
     authority,
     depth: 'detailed',
     unavailableReason,
@@ -6691,7 +6715,7 @@ function trainingStudyHintExplanation(exercise) {
   return bridge.create({
     decisionContext: exercise.decisionContext,
     strategyResult: exercise.strategyResult,
-    trustedFacts: trustedAnalysisFacts(exercise.decisionContext, exercise.strategyResult, history),
+    trustedFacts: trustedAnalysisFacts(history),
     authority: 'training',
     depth: 'concise'
   });
@@ -7393,7 +7417,7 @@ function renderTrainingDecisionAnalysis(exercise) {
   const explanation = renderDecisionAnalysis(container, {
     decisionContext: exercise.decisionContext,
     strategyResult: exercise.strategyResult,
-    trustedFacts: trustedAnalysisFacts(exercise.decisionContext, exercise.strategyResult, history),
+    trustedFacts: trustedAnalysisFacts(history),
     authority: 'training',
     depth: 'concise',
     surface: 'training'

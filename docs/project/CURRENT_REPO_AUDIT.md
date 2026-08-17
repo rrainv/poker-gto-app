@@ -14,7 +14,7 @@ Major paths:
 - deterministic heuristic strategy under `app/src/strategy/`
 - AnalysisExplanation v1
 - canonical Equity controller/worker backed by `shared/poker-domain`
-- canonical 52-card / 1,326-combo Hold'em registry and immutable weighted/partial range foundation under `shared/poker-domain`; no current UI consumes it yet
+- canonical 52-card / 1,326-combo Hold'em registry and immutable weighted/partial range foundation under `shared/poker-domain`; Analysis can condition an explicitly attached range, but no current production decision source attaches one
 - canonical Training generator/session/grading/presentation
 - product-performance scheduling and hidden-surface invalidation
 - lazy local-first SavedStudyObject v1 domain/repository for saved Hands, Spots, annotations, review state, and portable export/import; Saved Hands include an exact observer-safe canonical event source for cold deterministic Replay reconstruction
@@ -46,6 +46,12 @@ A separate legacy evaluator remains in `logic.js` only for the current Outs disp
 
 The current production Matrix, fixed Range Comparison samples, Personal Strategy action evidence, postflop heuristic candidate subset, and isolated solver combo utilities retain their existing bounded meanings; none is a second canonical weighted-range format. `equity-request/v1` cannot express weighted opponents, so no lossy adapter or Equity behavior change was introduced.
 
+## 4.2 Range-aware Analysis
+
+`app/src/application/range-analysis.mjs` owns immutable `RangeAnalysisRequest v1` and `RangeAnalysisFacts v1`. It reuses the canonical evaluator and `HoldemWeightedRange v1` to derive exact-hand and draw structure, board structure, raw Hero-card removal, and conditioned composition for any explicitly supplied named range. Partial ranges stay partial and are never normalized into invented whole-range shares. Provenance for strategy, cards, board, and each range remains separate.
+
+The Playbook Analysis render seam computes these facts only while Analysis is requested. The explanation layer consumes them and the presentation layer only localizes/formats them. Current production callers attach no range, so the UI truthfully shows structural blockers and an unavailable supplied-range state; Matrix representatives and heuristic strategy samples are not promoted into range truth.
+
 ## 5. Training
 
 Training uses legal canonical trajectories, deterministic seeds, replay metadata, one StrategyProvider, and one grading path. Session persistence, mistake review, adaptive curriculum, and range profiling remain future features.
@@ -56,7 +62,7 @@ Training uses legal canonical trajectories, deterministic seeds, replay metadata
 
 ## 6. Analysis and UI
 
-AnalysisExplanation is structurally clean, but its visual presentation is the next major Product UI target.
+AnalysisExplanation consumes canonical range-analysis facts and presents compact Hand & Board, Blockers, Supplied Range, and fact-source sections. Structural and localization tests are complete; final human viewport/theme/language acceptance remains tracked in `QA_BACKLOG.md`.
 
 PERF-001 removed duplicate slider updates, hidden Matrix computation, unnecessary theme recomputation, duplicate Training init, duplicate Equity readiness, and forced layout reads.
 

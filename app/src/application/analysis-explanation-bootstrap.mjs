@@ -5,6 +5,13 @@ import {
   deriveBoardTextureFacts,
   formatAnalysisTemplate,
 } from './analysis-explanation.mjs';
+import {
+  RANGE_ANALYSIS_FACTS_SCHEMA_VERSION,
+  RANGE_ANALYSIS_REQUEST_SCHEMA_VERSION,
+  createRangeAnalysisFacts,
+  createRangeAnalysisRequest,
+  deriveExactHandFacts,
+} from './range-analysis.mjs';
 
 export function installAnalysisExplanationBridge(browserWindow) {
   if (!browserWindow) return null;
@@ -12,6 +19,11 @@ export function installAnalysisExplanationBridge(browserWindow) {
     schemaVersion: ANALYSIS_EXPLANATION_SCHEMA_VERSION,
     thresholds: ANALYSIS_THRESHOLDS,
     create: createAnalysisExplanation,
+    rangeAnalysisFactsSchemaVersion: RANGE_ANALYSIS_FACTS_SCHEMA_VERSION,
+    rangeAnalysisRequestSchemaVersion: RANGE_ANALYSIS_REQUEST_SCHEMA_VERSION,
+    createRangeAnalysisRequest,
+    createRangeAnalysisFacts,
+    deriveExactHandFacts,
     deriveBoardTextureFacts,
     formatTemplate: formatAnalysisTemplate,
   });
@@ -25,4 +37,3 @@ export function installAnalysisExplanationBridge(browserWindow) {
 }
 
 if (typeof window !== 'undefined') installAnalysisExplanationBridge(window);
-

@@ -23,6 +23,10 @@ test('browser bridge exposes only the immutable local explanation operations bef
   assert.equal(browserWindow.RiverlineAnalysisExplanation, bridge);
   assert.equal(bridge.schemaVersion, 'analysis-explanation/v1');
   assert.equal(typeof bridge.create, 'function');
+  assert.equal(typeof bridge.createRangeAnalysisRequest, 'function');
+  assert.equal(typeof bridge.createRangeAnalysisFacts, 'function');
+  assert.equal(bridge.rangeAnalysisRequestSchemaVersion, 'range-analysis-request/v1');
+  assert.equal(bridge.rangeAnalysisFactsSchemaVersion, 'range-analysis-facts/v1');
   assert.equal(typeof bridge.deriveBoardTextureFacts, 'function');
   assert.ok(Object.isFrozen(bridge));
 
@@ -36,7 +40,8 @@ test('Playbook replaces the legacy HTML teacher with current contracts and trust
   const update = sourceBetween('async function updateContext(', '// Legacy fast evaluator retained for the existing Outs display only.');
   assert.match(update, /invalidatePlaybookDerivedSurfaces\(\)[\s\S]*renderVisiblePlaybookDerivedSurfaces\(\)/);
   assert.match(logic, /surface === 'analysis'[\s\S]*renderPlaybookDecisionAnalysis\(\s*app\.decisionContext,\s*app\.strategyResult,\s*app\.playbookResolution/);
-  assert.match(logic, /trustedAnalysisFacts\(\s*decisionContext,\s*result,\s*canonicalActionHistoryForAnalysis\(resolution\)/);
+  assert.match(logic, /trustedAnalysisFacts\(canonicalActionHistoryForAnalysis\(resolution\)\)/);
+  assert.match(logic, /rangeAnalysisFactsForDecision\(decisionContext, authority, rangeInputs\)/);
   assert.match(logic, /authority = resolution\?\.mode === 'hand' \? 'hand' : 'scenario'/);
   assert.doesNotMatch(update, /generateTeacherText|teacherContent\.innerHTML/);
   assert.doesNotMatch(logic, /generateTeacherText/);
@@ -70,14 +75,17 @@ test('Hand Mode supplies canonical history while Scenario remains an authority l
   assert.doesNotMatch(history, /readPlaybookInputSnapshot|selectedValue|querySelector/);
 });
 
-test('trusted analysis adapter reuses classification without promoting heuristic samples to canonical Equity', () => {
-  const hand = sourceBetween('function trustedHandClassificationForAnalysis(', 'function canonicalActionHistoryForAnalysis(');
+test('Analysis creates canonical range facts at the visible render seam without promoting heuristic samples', () => {
   const facts = sourceBetween('function trustedAnalysisFacts(', 'function renderDecisionAnalysis(');
-  assert.match(hand, /strategyResult\?\.details\?\.handClassification/);
-  assert.match(hand, /heuristic_postflop_classifier/);
-  assert.doesNotMatch(hand, /evaluatePostflopHand|evaluateSeven|scoreSeven/);
+  assert.match(facts, /function rangeAnalysisFactsForDecision/);
+  assert.match(facts, /bridge\.createRangeAnalysisRequest/);
+  assert.match(facts, /bridge\.createRangeAnalysisFacts/);
+  assert.match(facts, /decisionContext/);
+  assert.match(facts, /ranges/);
+  assert.doesNotMatch(facts, /strategyResult|handClassification|heuristic_postflop_classifier/);
   assert.doesNotMatch(facts, /originalEquity|facts\.equity|heroEquity/);
   assert.doesNotMatch(facts, /calculateEquity|simulateEquity|evaluateSeven|scoreSeven/);
+  assert.doesNotMatch(logic, /trustedHandClassificationForAnalysis/);
 });
 
 test('Training calls the same service only after answer and retains the grade wrapper', () => {
@@ -146,9 +154,11 @@ test('primary analysis values use readable UI typography while compact cards ret
 });
 
 test('Hero state makes trusted made-hand, draw, and board facts primary without deriving poker facts', () => {
-  assert.match(teacher, /hero: new Set\(\['hero_cards', 'preflop_hand_class', 'made_hand', 'draws', 'hero_overcards'\]\)/);
-  assert.match(teacher, /board: new Set\(\['board_pairing', 'board_suits', 'board_connectivity', 'board_broadway_count'\]\)/);
+  assert.match(teacher, /hero: new Set\(\['hero_cards', 'preflop_hand_class', 'made_hand', 'hand_components', 'draws', 'draw_outs', 'hero_overcards'\]\)/);
+  assert.match(teacher, /board: new Set\(\['board_pairing', 'board_suits', 'board_connectivity', 'board_broadway_count', 'board_flush_state', 'board_straight_state'\]\)/);
   assert.match(teacher, /const heroRegion = analysisHeroState\(explanation\)/);
+  assert.match(teacher, /standaloneSections = \['blockers', 'range'\]/);
+  assert.match(teacher, /analysisFactSourcesElement/);
   assert.match(css, /\.analysis-hero-state \{[^}]*border-inline-start: 4px solid var\(--accent-primary\)/);
   assert.doesNotMatch(teacher, /evaluatePostflopHand|deriveBoardTextureFacts|scoreSeven|calculateEquity/);
 });
