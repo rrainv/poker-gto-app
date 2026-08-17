@@ -85,10 +85,22 @@ test('preflop fallback entry preserves six-max, 10-max, raise, and 3-bet behavio
     );
     assert.deepEqual(qa.fallbackForDecisionContext(context), expected);
 
-    const profile = qa.fallbackStrategyProfile(context);
-    assert.equal(profile.source, 'heuristic_preflop');
-    assert.equal(profile.actions[0].value + profile.actions[1].value, Math.round(Math.max(expected.open, expected.call, expected.fold) * 100)
-      + Math.round([expected.open, expected.call, expected.fold].sort((a, b) => b - a)[1] * 100));
+    const result = qa.fallbackStrategyResult(context);
+    assert.equal(result.schemaVersion, qa.strategyResultSchemaVersion);
+    assert.equal(result.source, 'heuristic_preflop');
+    assert.ok(result.actions.length > 0);
+    assert.equal(result.actions.reduce((sum, entry) => sum + entry.probability, 0), 1);
+    const supportedProbabilityByType = {
+      raise: expected.open,
+      call: expected.call,
+      fold: expected.fold,
+    };
+    for (const entry of result.actions) {
+      assert.ok(Number.isFinite(entry.probability));
+      assert.ok(entry.probability > 0 && entry.probability <= 1);
+      assert.ok(Object.hasOwn(supportedProbabilityByType, entry.action.type));
+      assert.ok(supportedProbabilityByType[entry.action.type] > 0);
+    }
   }
 });
 
