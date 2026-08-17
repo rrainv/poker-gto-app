@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 18, 2026 (`ACCOUNT-002B-B` implementation checkpoint).
+Last refreshed: August 18, 2026 (`HOME-002A` implementation checkpoint).
 
 Code, tests, accepted tags/ticket reports, new manual QA, and explicit user decisions override this snapshot. Detailed future capability is preserved in `PRODUCT_BACKLOG.md`; subsystem contracts remain authoritative for implementation semantics.
 
@@ -68,11 +68,13 @@ Current product includes canonical table presence; a read-only action/chance tim
 
 **PRESERVED FUTURE:** Saved Range, Saved Drill, saved sessions/session review, richer tag/filter/search, history/revisions, account/cloud ownership, and sharing/forking. Add folders/collections only if later usage justifies them. Home/Dashboard is a consumer, never the owner.
 
-### Home / Dashboard — COMPLETED
+### Home / Dashboard — CHECKPOINTED / INTENTIONALLY INCOMPLETE
 
 `HOME-001` provides Continue, Recent, Review, Mistakes, Personal Strategy summary, and Quick Start. Saved Hands open in detached read-only Replay; Saved Spots reopen truthfully; a live Hand is preserved while detached saved content is viewed.
 
-**PRESERVED FUTURE:** evolve Home into “my Riverline” with full Saved drilldowns/View all, filtering/search/tags, recent Analysis, Training history, mistake/re-drill queues, account/profile identity and sync status, Personal Strategy progress, bluff/range-study shortcuts, session history, and personalization. Streak/mastery belongs only after an explicit gamification decision. Do not add fake analytics to fill space.
+`HOME-002A` evolves this into **My Riverline** with a distinct private Guest composition; authenticated display name/username and aggregate sync state; truthful calibration/live-Hand Continue; bounded Saved/Review/Mistake previews; direct Personal Strategy evidence/contradiction facts; coalesced account/domain invalidation; intentional empty/error states; responsive EN/RU/HE UI; and explicit unsupported Training/Analysis history seams. Home remains a consumer and performs no poker or range computation. Automated acceptance is present; requested Firefox visual acceptance remains pending because no browser instance was available in the implementation environment.
+
+**PRESERVED FUTURE / `HOME-002B`:** full Saved Study Library with View all, search/filter/tags, and bounded drilldowns. Persistent Training/re-drill intelligence and Analysis history require their own canonical persistence tickets before Home may consume them. Module personalization remains later. Streak/mastery belongs only after an explicit gamification decision.
 
 ### Account identity and authentication — CHECKPOINTED / INTENTIONALLY INCOMPLETE
 
@@ -132,7 +134,7 @@ Implementation is accepted; `QA-ANALYSIS-RANGE-001` still records final live vie
 5. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `ACCOUNT-002B-A`: Saved Study sync.** Implementation, deterministic fake-adapter coverage, migration, EN/RU/HE structure, and documentation are present. Live migration/RLS verification plus two-profile Firefox lifecycle/manual visual acceptance remain open.
 6. **PLANNED NEXT — `ACCOUNT-002A2`: secure username/password login adapter.** Add a rate-limited trusted server/Edge Function path with private username resolution, enumeration-resistant errors, and no renderer secret or public username-to-email directory. Email/password remains the production sign-in path until that bounded ticket is deployed and verified.
 7. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `ACCOUNT-002B-B`: Personal Strategy / Range Calibration sync.** Domain adapters, relational migration, immutable-history/session reconciliation, separate consent, account cancellation, UI, i18n, documentation, and deterministic coverage are present. Live migration/RLS and two-profile Firefox acceptance remain open.
-8. **ACTIVE NEXT — richer Home (recommended next non-account ticket):** substantially extend “my Riverline” using real account/personal/study state while keeping Home a consumer.
+8. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `HOME-002A`: My Riverline.** Account-aware Home v2 is implemented with truthful Guest/account composition, sync/identity isolation, bounded study summaries, tutorial/i18n/accessibility coverage, and no fabricated history or heavy computation. Firefox visual/manual acceptance remains open.
 9. **PLANNED NEXT — Home Game Organizer:** create a separate top-level tab/domain. Stage as `HOME-GAME-001` domain/persistence, `HOME-GAME-002` session UI, and `HOME-GAME-003` settlement/reconciliation. It may own saved groups, roster/seats/button/blinds, buy-ins/rebuys/cash-outs, chip counts/stacks, net results, who-owes-whom settlement, saved sessions, and summaries. It does not belong in `StrategyProfile` or `PokerState`.
 
 Reassess priorities at every clean checkpoint rather than forcing an entire branch through without review.

@@ -4,7 +4,7 @@ export const HOME_TUTORIAL_ID = 'home.first-use';
 
 export const HOME_TUTORIAL_DEFINITION = createTutorialDefinition({
   id: HOME_TUTORIAL_ID,
-  version: 1,
+  version: 2,
   workspace: 'home',
   titleKey: 'A quick tour of Home',
   descriptionKey: 'See how Home keeps useful study work close without turning it into another task list.',
@@ -15,7 +15,7 @@ export const HOME_TUTORIAL_DEFINITION = createTutorialDefinition({
       id: 'overview',
       anchor: 'home-overview',
       titleKey: 'Your study starts with context',
-      bodyKey: 'Home brings saved study, review work, and the next useful action into one place, so returning to Riverline starts with context instead of setup.',
+      bodyKey: 'My Riverline shows your account identity, study sync, saved work, and next useful action without owning or recomputing that data.',
       placement: 'bottom',
     },
     {

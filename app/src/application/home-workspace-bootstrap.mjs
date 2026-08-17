@@ -1,4 +1,7 @@
-import { createHomeViewModelController } from './home-view-model.mjs';
+import {
+  createGuestHomeViewModel,
+  createHomeViewModelController,
+} from './home-view-model.mjs';
 import { createPersonalStrategyHomeQuery } from './personal-strategy-home-query.mjs';
 import { createSavedStudyObjectOpenController } from './saved-study-object-open-controller.mjs';
 import './saved-study-object-bootstrap.mjs';
@@ -8,6 +11,28 @@ export function installHomeWorkspaceBridge(browserWindow, options = {}) {
   if (!browserWindow) return null;
   const savedStudyQueries = options.savedStudyQueries ?? browserWindow.RiverlineSavedStudyObjects;
   const accountQueries = options.accountQueries ?? browserWindow.RiverlineAccountIdentity ?? null;
+  const authentication = options.authentication ?? browserWindow.RiverlineAuthentication ?? null;
+  const playbookBridge = options.playbookBridge ?? browserWindow.RiverlinePlaybookState;
+  const profileQueries = options.profileQueries ?? (authentication ? Object.freeze({
+    async getProfileSummary() {
+      await authentication.ready?.();
+      const state = authentication.getState?.();
+      if (state?.status !== 'signed_in' || !state.profile) return null;
+      return Object.freeze({
+        schemaVersion: 'home-account-identity/v1',
+        displayName: state.profile.displayName,
+        username: state.profile.username,
+      });
+    },
+  }) : null);
+  const syncQueries = options.syncQueries ?? Object.freeze({
+    getState: () => browserWindow.RiverlineStudySync?.getState?.() ?? null,
+  });
+  const continuationQueries = options.continuationQueries ?? Object.freeze({
+    getSummary: () => Object.freeze({
+      hasLiveHand: Boolean(playbookBridge?.hasLiveHand?.()),
+    }),
+  });
   const personalStrategyQueries = options.personalStrategyQueries
     ?? createPersonalStrategyHomeQuery({
       storage: options.storage ?? browserWindow.localStorage,
@@ -17,35 +42,26 @@ export function installHomeWorkspaceBridge(browserWindow, options = {}) {
         ),
       } : {}),
     });
-  const home = createHomeViewModelController({ savedStudyQueries, personalStrategyQueries, accountQueries });
+  const home = createHomeViewModelController({
+    savedStudyQueries,
+    personalStrategyQueries,
+    accountQueries,
+    profileQueries,
+    syncQueries,
+    continuationQueries,
+  });
   const opener = createSavedStudyObjectOpenController({
     application: savedStudyQueries,
-    playbookBridge: options.playbookBridge ?? browserWindow.RiverlinePlaybookState,
+    playbookBridge,
   });
   const bridge = Object.freeze({
     schemaVersion: 'home-workspace/v1',
     async load() {
-      await browserWindow.RiverlineAuthentication?.ready?.();
-      const authentication = browserWindow.RiverlineAuthentication?.getState?.();
-      if (authentication?.status !== 'signed_in') {
-        return Object.freeze({
-          schemaVersion: 'home-view-model/v2',
-          sessionMode: 'guest',
-          identity: { status: 'guest', profile: null },
-          sections: {
-            continue: { status: 'unavailable', items: [] },
-            recent: { status: 'unavailable', items: [] },
-            review: {
-              status: 'unavailable',
-              reviewLater: { status: 'unavailable', items: [] },
-              mistakes: { status: 'unavailable', items: [] },
-            },
-            personalStrategy: { status: 'unavailable' },
-            quickStart: {
-              status: 'ready',
-              destinations: ['gto', 'training', 'equity'],
-            },
-          },
+      await authentication?.ready?.();
+      const authenticationState = authentication?.getState?.();
+      if (authenticationState?.status !== 'signed_in') {
+        return createGuestHomeViewModel({
+          continuation: await continuationQueries.getSummary(),
         });
       }
       return home.load();

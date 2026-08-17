@@ -4517,10 +4517,21 @@ function bindSliderPair(rangeId, numberId, callback) {
 
 let homeViewModel = null;
 let homeRefreshSequence = 0;
+let homeRefreshTimer = null;
 let activeSavedSpotContext = null;
 
 function navigateToWorkspace(mode) {
   document.querySelector(`.mode-nav-item[data-mode="${mode}"]`)?.click();
+}
+
+async function returnToHomeLiveHand() {
+  activeSavedSpotContext = null;
+  renderSavedSpotViewer(null);
+  callPlaybookStateBridge('closeSavedHand');
+  navigateToWorkspace('gto');
+  await requestPlaybookMode(PLAYBOOK_MODES.HAND);
+  renderCanonicalHandWorkspace();
+  await updateContext('Returned to live hand');
 }
 
 function homeEmptyState(messageKey, error = false) {
@@ -4528,6 +4539,20 @@ function homeEmptyState(messageKey, error = false) {
   message.className = error ? 'home-error-state' : 'home-empty-state';
   message.textContent = t(messageKey);
   return message;
+}
+
+function homeEmptyAction(messageKey, actionKey, destination) {
+  const root = document.createElement('div');
+  root.className = 'home-empty-state';
+  const message = document.createElement('p');
+  message.textContent = t(messageKey);
+  const action = document.createElement('button');
+  action.type = 'button';
+  action.className = 'ui-button ui-button--quiet';
+  action.dataset.homeDestination = destination;
+  action.textContent = t(actionKey);
+  root.append(message, action);
+  return root;
 }
 
 function homeRecency(isoTimestamp) {
@@ -4644,26 +4669,47 @@ function renderHomeContinue(section) {
     root.appendChild(homeEmptyState('Nothing to continue right now.'));
     return;
   }
-  const item = section.items[0];
-  const card = document.createElement('div');
-  card.className = 'home-calibration-card';
-  const title = document.createElement('strong');
-  title.dir = 'auto';
-  title.textContent = `${item.profileName} · ${item.modeName}`;
-  const progress = document.createElement('p');
-  progress.textContent = t('{answered} of {total} directly answered', {
-    answered: item.answeredCount, total: item.totalCount
+  const list = document.createElement('div');
+  list.className = 'home-continue-list';
+  section.items.forEach((item) => {
+    const card = document.createElement('div');
+    card.className = item.kind === 'live_hand'
+      ? 'home-calibration-card home-live-hand-card'
+      : 'home-calibration-card';
+    const title = document.createElement('strong');
+    title.textContent = t(item.kind === 'live_hand' ? 'Live Hand' : 'Range Calibration');
+    const context = document.createElement('p');
+    context.dir = 'auto';
+    if (item.kind === 'live_hand') {
+      context.textContent = t('Your current in-memory hand is ready to continue.');
+    } else {
+      const facts = [item.profileName, item.modeName];
+      if (Number.isInteger(item.context?.tableSize)) {
+        facts.push(t('{count}-handed', { count: item.context.tableSize }));
+      }
+      context.textContent = facts.join(' · ');
+    }
+    const progress = document.createElement('p');
+    if (item.kind === 'range_calibration') {
+      progress.textContent = t('{answered} of {total} directly answered', {
+        answered: item.answeredCount, total: item.totalCount
+      });
+    }
+    const actions = document.createElement('div');
+    actions.className = 'home-calibration-actions';
+    const resume = document.createElement('button');
+    resume.type = 'button';
+    resume.className = 'ui-button ui-button--primary';
+    if (item.kind === 'live_hand') resume.dataset.homeAction = 'return-live-hand';
+    else resume.dataset.homeDestination = 'calibration';
+    resume.textContent = t(item.kind === 'live_hand' ? 'Return to live hand' : 'Resume calibration');
+    actions.appendChild(resume);
+    card.append(title, context);
+    if (progress.textContent) card.appendChild(progress);
+    card.appendChild(actions);
+    list.appendChild(card);
   });
-  const actions = document.createElement('div');
-  actions.className = 'home-calibration-actions';
-  const resume = document.createElement('button');
-  resume.type = 'button';
-  resume.className = 'ui-button ui-button--primary';
-  resume.dataset.homeDestination = 'calibration';
-  resume.textContent = t('Resume calibration');
-  actions.appendChild(resume);
-  card.append(title, progress, actions);
-  root.appendChild(card);
+  root.appendChild(list);
 }
 
 function renderHomeRecent(section) {
@@ -4675,7 +4721,7 @@ function renderHomeRecent(section) {
     return;
   }
   if (!section?.items?.length) {
-    root.appendChild(homeEmptyState('Saved hands and spots will appear here.'));
+    root.appendChild(homeEmptyAction('No saved study yet.', 'Analyze a Hand', 'gto'));
     return;
   }
   section.items.forEach((item) => root.appendChild(createHomeSavedItemElement(item)));
@@ -4689,7 +4735,7 @@ function renderHomeReviewGroup(root, titleKey, section, emptyKey) {
   const list = document.createElement('div');
   list.className = 'home-review-list';
   if (section?.status === 'error') list.appendChild(homeEmptyState('Saved items could not be loaded.', true));
-  else if (!section?.items?.length) list.appendChild(homeEmptyState(emptyKey));
+  else if (!section?.items?.length) list.appendChild(homeEmptyAction(emptyKey, 'Start Training', 'training'));
   else section.items.forEach((item) => list.appendChild(createHomeSavedItemElement(item, { compact: true })));
   group.append(heading, list);
   root.appendChild(group);
@@ -4736,16 +4782,96 @@ function renderHomePersonalStrategy(section) {
   progress.textContent = t('{answered} of {total} directly answered', {
     answered: section.answeredCount, total: section.totalCount
   });
+  const facts = document.createElement('div');
+  facts.className = 'home-strategy-facts';
+  const factValues = [
+    t('{count} strategy profiles', { count: section.profileCount }),
+    t('{count} direct evidence records', { count: section.directEvidenceCount })
+  ];
+  factValues.forEach((value) => {
+    const fact = document.createElement('span');
+    fact.className = 'home-strategy-fact';
+    fact.textContent = value;
+    facts.appendChild(fact);
+  });
+  if (section.contradictionCount > 0) {
+    const contradiction = document.createElement('span');
+    contradiction.className = 'home-strategy-fact home-strategy-fact--warning';
+    contradiction.textContent = t('{count} contradictory evidence records', {
+      count: section.contradictionCount
+    });
+    facts.appendChild(contradiction);
+  }
   action.textContent = t(section.resumable ? 'Resume calibration' : 'Open Range Calibration');
-  card.append(title, progress, action);
+  card.append(title, progress, facts, action);
   root.appendChild(card);
+}
+
+function homeSyncCopy(sync) {
+  if (sync?.status === 'error') return ['Sync issue', 'Study data remains available on this device.'];
+  if (!sync || sync.status === 'unavailable') return ['Saved on this device', 'Cloud study sync is unavailable.'];
+  if (sync.state === 'conflict') return ['Conflict needs attention', '{count} conflicts need review.'];
+  if (sync.state === 'error') return ['Sync issue', 'Study data remains available on this device.'];
+  if (sync.state === 'syncing') return ['Syncing', 'Updating your enabled study domains.'];
+  if (sync.state === 'offline') {
+    return sync.pendingCount > 0
+      ? ['Offline', '{count} changes waiting. They will sync when Riverline is online.']
+      : ['Offline', 'Study data remains available on this device.'];
+  }
+  if (sync.state === 'synced') return ['Synced', 'Enabled study data is up to date.'];
+  if (sync.state === 'auth_paused') return ['Sync paused', 'Sign in again to continue study sync.'];
+  return ['Saved on this device', 'Cloud study sync is not enabled.'];
+}
+
+function renderHomeAccountOverview(model) {
+  const overview = $('#homeAccountOverview');
+  if (!overview) return;
+  const guest = model.sessionMode === 'guest';
+  overview.hidden = guest;
+  if (guest) return;
+  const profile = model.identity?.profile;
+  const displayName = $('#homeIdentityDisplayName');
+  const username = $('#homeIdentityUsername');
+  displayName.textContent = profile?.displayName || t('Riverline player');
+  username.textContent = profile?.username ? `@${profile.username}` : '';
+  username.hidden = !profile?.username;
+  const syncRoot = $('#homeSyncStatus');
+  const [labelKey, detailKey] = homeSyncCopy(model.sync);
+  syncRoot.dataset.state = model.sync?.state || 'unavailable';
+  $('#homeSyncStatusLabel').textContent = t(labelKey);
+  $('#homeSyncStatusDetail').textContent = t(detailKey, {
+    count: model.sync?.conflictCount || model.sync?.pendingCount || 0
+  });
+  $('#homeSyncReview').hidden = !['conflict', 'error'].includes(model.sync?.state);
+}
+
+function renderHomeQuickStart(model) {
+  const allowed = new Set(model.sections.quickStart?.destinations || []);
+  document.querySelectorAll('[data-home-destination]').forEach((control) => {
+    const destination = control.dataset.homeDestination;
+    if (!['gto', 'training', 'equity', 'calibration', 'review_mistakes'].includes(destination)) return;
+    if (!control.closest('.home-quick-links')) return;
+    control.hidden = !allowed.has(destination);
+  });
+  const guest = model.sessionMode === 'guest';
+  const playbookLabel = document.querySelector('.home-quick-link[data-home-destination="gto"] strong');
+  const trainingLabel = document.querySelector('.home-quick-link[data-home-destination="training"] strong');
+  if (playbookLabel) {
+    const key = guest ? 'Playbook' : 'Analyze a Hand';
+    playbookLabel.dataset.i18n = key;
+    playbookLabel.textContent = t(key);
+  }
+  if (trainingLabel) {
+    const key = guest ? 'Training' : 'Train';
+    trainingLabel.dataset.i18n = key;
+    trainingLabel.textContent = t(key);
+  }
 }
 
 function renderHomeWorkspace(model) {
   homeViewModel = model;
   const guest = model.sessionMode === 'guest';
   const restricted = [
-    $('#homeContinueContent')?.closest('.home-section'),
     $('#homeReviewContent')?.closest('.home-section'),
     $('#homeRecentContent')?.closest('.home-section'),
     $('#homeStrategyContent')?.closest('.home-section')
@@ -4753,6 +4879,7 @@ function renderHomeWorkspace(model) {
   restricted.forEach((section) => { if (section) section.hidden = guest; });
   const guestAccount = $('#homeGuestAccount');
   if (guestAccount) guestAccount.hidden = !guest;
+  renderHomeAccountOverview(model);
   const subtitle = $('#workspaceSubtitle');
   if (activeWorkspaceMode() === 'home' && subtitle) {
     const subtitleKey = guest
@@ -4761,10 +4888,9 @@ function renderHomeWorkspace(model) {
     subtitle.dataset.i18n = subtitleKey;
     subtitle.textContent = t(subtitleKey);
   }
-  const calibrationQuickLink = document.querySelector('[data-home-destination="calibration"]');
-  if (calibrationQuickLink) calibrationQuickLink.hidden = guest;
+  renderHomeQuickStart(model);
+  renderHomeContinue(model.sections.continue);
   if (!guest) {
-    renderHomeContinue(model.sections.continue);
     renderHomeRecent(model.sections.recent);
     renderHomeReview(model.sections.review);
     renderHomePersonalStrategy(model.sections.personalStrategy);
@@ -4773,20 +4899,27 @@ function renderHomeWorkspace(model) {
   const loading = $('#homeLoadingState');
   const content = $('#homeWorkspaceContent');
   if (content) content.dataset.sessionMode = guest ? 'guest' : 'account';
+  if (content) content.dataset.hasContinuation = String(Boolean(model.sections.continue?.items?.length));
+  const continueSection = $('#homeContinueContent')?.closest('.home-section');
+  if (continueSection) continueSection.hidden = guest && !model.sections.continue?.items?.length;
   if (workspace) workspace.setAttribute('aria-busy', 'false');
   if (loading) loading.hidden = true;
   if (content) content.hidden = false;
   window.RiverlineTutorials?.offerForWorkspace?.('home', workspace);
 }
 
-async function refreshHomeWorkspace() {
-  const sequence = ++homeRefreshSequence;
+function beginHomeLoading() {
   const workspace = $('#homeWorkspace');
   const loading = $('#homeLoadingState');
   const content = $('#homeWorkspaceContent');
   if (workspace) workspace.setAttribute('aria-busy', 'true');
   if (loading) loading.hidden = false;
   if (content) content.hidden = true;
+}
+
+async function refreshHomeWorkspace() {
+  const sequence = ++homeRefreshSequence;
+  beginHomeLoading();
   try {
     const model = await callHomeBridge('load');
     if (sequence !== homeRefreshSequence || activeWorkspaceMode() !== 'home') return;
@@ -4804,6 +4937,17 @@ async function refreshHomeWorkspace() {
     };
     renderHomeWorkspace(fallback);
   }
+}
+
+function scheduleHomeRefresh({ clearPrivateState = false } = {}) {
+  homeViewModel = null;
+  if (activeWorkspaceMode() !== 'home') return;
+  if (clearPrivateState) beginHomeLoading();
+  if (homeRefreshTimer !== null) window.clearTimeout(homeRefreshTimer);
+  homeRefreshTimer = window.setTimeout(() => {
+    homeRefreshTimer = null;
+    void refreshHomeWorkspace();
+  }, 80);
 }
 
 function restoreSavedSpotPresentation(result) {
@@ -4957,7 +5101,23 @@ function bindEvents() {
 
     const homeDestination = event.target.closest('[data-home-destination]');
     if (homeDestination) {
-      navigateToWorkspace(homeDestination.dataset.homeDestination);
+      const destination = homeDestination.dataset.homeDestination;
+      if (destination === 'review_mistakes') {
+        $('#homeReviewContent')?.closest('.home-section')?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'start'
+        });
+      } else navigateToWorkspace(destination);
+      return;
+    }
+
+    const homeAction = event.target.closest('[data-home-action]');
+    if (homeAction?.dataset.homeAction === 'return-live-hand') {
+      void returnToHomeLiveHand();
+      return;
+    }
+    if (homeAction?.dataset.homeAction === 'review-sync') {
+      window.RiverlineAuthentication?.openAccount?.();
       return;
     }
 
@@ -5758,23 +5918,20 @@ function init() {
 
     window.addEventListener('riverline:languagechange', refreshLocalizedRuntime);
     window.addEventListener('riverline:identitychange', () => {
-      homeViewModel = null;
-      if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
+      scheduleHomeRefresh({ clearPrivateState: true });
     });
     window.addEventListener('riverline:authchange', () => {
-      homeViewModel = null;
-      if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
+      scheduleHomeRefresh({ clearPrivateState: true });
       if (activeWorkspaceMode() === 'gto') void refreshSavedStudySource();
     });
     window.addEventListener('riverline:savedstudychange', () => {
-      homeViewModel = null;
-      if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
+      scheduleHomeRefresh();
       if (activeWorkspaceMode() === 'gto') void refreshSavedStudySource();
     });
     window.addEventListener('riverline:personalstrategychange', () => {
-      homeViewModel = null;
-      if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
+      scheduleHomeRefresh();
     });
+    window.addEventListener('riverline:studysyncchange', () => scheduleHomeRefresh());
 
     
 

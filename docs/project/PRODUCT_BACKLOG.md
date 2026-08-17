@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 18, 2026 (`ACCOUNT-002B-B` implementation checkpoint).
+Last consolidated: August 18, 2026 (`HOME-002A` implementation checkpoint).
 
 This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
@@ -25,7 +25,7 @@ This file preserves accepted future capability so it does not depend on chat mem
 | 5 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `ACCOUNT-002B-A` — explicit Saved Hand/Spot sync, local-first outbox/retry, Supabase RLS/RPC, tombstones, account isolation, conflict UX; live migration and two-browser Firefox acceptance remain open |
 | 6 | PLANNED NEXT | `ACCOUNT-002A2` — secure rate-limited server/Edge Function username/password login adapter; private resolution, enumeration-resistant failure, no renderer secret or public username-to-email directory |
 | 7 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `ACCOUNT-002B-B` — separately consented Personal Strategy / Range Calibration sync, immutable evidence/contradiction preservation, session reconciliation, relational RLS/RPC schema, and account isolation are implemented; live Supabase and Firefox acceptance remain open |
-| 8 | ACTIVE NEXT | richer Home — recommended next non-account ticket; “my Riverline” powered by real account/personal/study state |
+| 8 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `HOME-002A` — My Riverline powered by real account, sync, Saved, Personal Strategy, and calibration state; Firefox visual acceptance remains open |
 | 9 | PLANNED NEXT | `HOME-GAME-001` foundation, then `002` session UI and `003` settlement/reconciliation |
 
 Personal Strategy resumes separately at `RANGE-CAL-002B`; it is preserved but not in this immediate sequence. Reassess at every clean checkpoint.
@@ -37,7 +37,7 @@ Personal Strategy resumes separately at `RANGE-CAL-002B`; it is preserved but no
 | Personal Strategy through `RANGE-CAL-002A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Resume `002B` validation, `002C` active boundary/question selection, `002D` inferred Matrix, `002R` review; then evidence-backed mode relationships, provider and Training integration |
 | Table Presence / Replay / poker-chip primitive | COMPLETED | Richer physical table visuals are SHELVED FOR LATER |
 | Saved Hands/Spots through `SAVED-OBJECTS-002` | COMPLETED | New payload tickets for Saved Range, Drill, or Session; richer library/history/account/sharing later |
-| Home through `HOME-001` | COMPLETED | Richer Home after account foundation |
+| Home through `HOME-002A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Firefox acceptance, then `HOME-002B` full Saved Study Library/drilldowns |
 | Tutorials foundation/current-app coverage | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Every future meaningful visible feature owns its tutorial update; no broad catch-up epic |
 | `RANGE-CORE-001` | COMPLETED | Adopt deliberately in future combo-aware consumers |
 | `ANALYSIS-RANGE-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Live QA remains in `QA_BACKLOG.md`; deeper range-vs-range/value-bluff work uses new tickets |
@@ -91,7 +91,9 @@ The current legal, deterministic, provider-backed Training base is established; 
 | `ACCOUNT-002B-A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | explicit opt-in Saved Hand/Spot sync is implemented with a reusable transport/coordinator, durable sidecar/outbox, Supabase schema/RLS/RPCs, retries, tombstones, account cancellation, compact status/manual action, three-choice conflict recovery, and cold remote Replay; live migration and Firefox lifecycle acceptance remain open |
 | `ACCOUNT-002B-B` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Personal Strategy / Range Calibration sync reuses transport/outbox/retry while owning relational profile/mode serialization, immutable evidence/retraction/contradiction preservation, inferred-artifact exclusion, calibration-session merge, separate consent, and metadata conflicts. The bounded Accounts v1 implementation is functionally present; live Supabase/RLS and Firefox multi-device acceptance remain open |
 | sharing/social | PRESERVED FUTURE | share/fork ranges, spots, and drills; friends/study groups; collaborative range review only if approved |
-| richer Home | ACTIVE NEXT | identity and truthful local/sync status; Continue; Saved/Recent; Review/Mistakes; Personal Strategy; recent Analysis; bluff/range study; later Training history; tutorials/help; account actions |
+| `HOME-002A` My Riverline | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Guest/account composition, identity and aggregate sync status, truthful Continue, Saved/Recent/Review/Mistakes, direct Personal Strategy facts, tutorial, future Training/Analysis seams; Firefox acceptance pending |
+| `HOME-002B` Saved Study Library | PRESERVED FUTURE | Full View all destination, bounded drilldowns, search/filter/tags; reuse the canonical SavedStudyObject repository |
+| Training/Analysis Home history | PRESERVED FUTURE | Consume only after canonical persistence exists; no fake accuracy, mastery, streak, or recent-analysis history |
 
 Riverline remains local-first and useful offline. Home is a consumer of user domains, never their owner. Do not invent analytics merely to make Home busy.
 

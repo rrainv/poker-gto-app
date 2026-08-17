@@ -114,31 +114,104 @@ function personalStrategySection(result) {
     selectedMode: summary.selectedMode,
     context: summary.context,
     answeredCount: summary.answeredCount,
+    directEvidenceCount: summary.directEvidenceCount ?? summary.answeredCount,
+    contradictionCount: summary.contradictionCount ?? 0,
     totalCount: summary.totalCount,
     session: summary.session,
     resumable: summary.resumable,
   }));
 }
 
-function continueSection(personalStrategy) {
-  if (personalStrategy.status === 'error') {
-    return deepFreeze({ status: 'ready', items: [], partialError: personalStrategy.error });
-  }
-  if (!personalStrategy.resumable) return deepFreeze({ status: 'ready', items: [] });
+function liveHandContinueItem(continuation) {
+  if (!continuation?.hasLiveHand) return null;
   return deepFreeze({
-    status: 'ready',
-    items: [{
+    schemaVersion: 'home-continue-item/v1',
+    kind: 'live_hand',
+  });
+}
+
+function continueSection(personalStrategy, continuation = null) {
+  const items = [];
+  if (personalStrategy.status === 'error') {
+    const liveHand = liveHandContinueItem(continuation);
+    if (liveHand) items.push(liveHand);
+    return deepFreeze({ status: 'ready', items, partialError: personalStrategy.error });
+  }
+  if (personalStrategy.resumable) {
+    items.push({
       schemaVersion: 'home-continue-item/v1',
       kind: 'range_calibration',
       profileId: personalStrategy.selectedProfile.id,
       profileName: personalStrategy.selectedProfile.displayName,
       modeId: personalStrategy.selectedMode.id,
       modeName: personalStrategy.selectedMode.displayName,
+      context: personalStrategy.context,
       answeredCount: personalStrategy.answeredCount,
       totalCount: personalStrategy.totalCount,
       sessionState: personalStrategy.session.state,
       updatedAt: personalStrategy.session.updatedAt,
-    }],
+    });
+  }
+  const liveHand = liveHandContinueItem(continuation);
+  if (liveHand) items.push(liveHand);
+  return deepFreeze({ status: 'ready', items });
+}
+
+function syncSection(result) {
+  if (!result) return deepFreeze({ status: 'unavailable', state: 'unavailable' });
+  if (result.status === 'rejected') {
+    return deepFreeze({ status: 'error', state: 'error', error: serializedError(result.reason) });
+  }
+  const state = result.value;
+  if (!state) return deepFreeze({ status: 'unavailable', state: 'unavailable' });
+  return deepFreeze({
+    status: 'ready',
+    state: state.state,
+    enabled: Boolean(state.enabled),
+    pendingCount: Number.isSafeInteger(state.pendingCount) ? state.pendingCount : 0,
+    conflictCount: Number.isSafeInteger(state.conflictCount) ? state.conflictCount : 0,
+    errorCount: Number.isSafeInteger(state.errorCount) ? state.errorCount : 0,
+  });
+}
+
+function identitySection(profileResult, accountResult) {
+  if (profileResult?.status === 'fulfilled' && profileResult.value) {
+    return deepFreeze({ status: 'ready', profile: profileResult.value });
+  }
+  if (accountResult?.status === 'fulfilled' && accountResult.value) {
+    return deepFreeze({ status: 'ready', profile: accountResult.value });
+  }
+  if (profileResult || accountResult) return deepFreeze({ status: 'error', profile: null });
+  return deepFreeze({ status: 'unavailable', profile: null });
+}
+
+function futureHistorySeams() {
+  return deepFreeze({
+    status: 'unsupported',
+    training: { status: 'unsupported' },
+    analysis: { status: 'unsupported' },
+  });
+}
+
+export function createGuestHomeViewModel({ continuation = null } = {}) {
+  const liveHand = liveHandContinueItem(continuation);
+  return deepFreeze({
+    schemaVersion: HOME_VIEW_MODEL_SCHEMA_VERSION,
+    sessionMode: 'guest',
+    identity: { status: 'guest', profile: null },
+    sync: { status: 'unavailable', state: 'unavailable' },
+    sections: {
+      continue: { status: 'ready', items: liveHand ? [liveHand] : [] },
+      recent: { status: 'unavailable', items: [] },
+      review: {
+        status: 'unavailable',
+        reviewLater: { status: 'unavailable', items: [] },
+        mistakes: { status: 'unavailable', items: [] },
+      },
+      personalStrategy: { status: 'unavailable' },
+      quickStart: { status: 'ready', destinations: ['gto', 'training', 'equity'] },
+      history: futureHistorySeams(),
+    },
   });
 }
 
@@ -146,6 +219,9 @@ export function createHomeViewModelController({
   savedStudyQueries,
   personalStrategyQueries,
   accountQueries = null,
+  profileQueries = null,
+  syncQueries = null,
+  continuationQueries = null,
 } = {}) {
   if (!savedStudyQueries
     || typeof savedStudyQueries.listRecent !== 'function'
@@ -159,29 +235,46 @@ export function createHomeViewModelController({
   if (accountQueries !== null && typeof accountQueries.getProfileSummary !== 'function') {
     throw new TypeError('Home account query must provide getProfileSummary');
   }
+  if (profileQueries !== null && typeof profileQueries.getProfileSummary !== 'function') {
+    throw new TypeError('Home profile query must provide getProfileSummary');
+  }
+  if (syncQueries !== null && typeof syncQueries.getState !== 'function') {
+    throw new TypeError('Home sync query must provide getState');
+  }
+  if (continuationQueries !== null && typeof continuationQueries.getSummary !== 'function') {
+    throw new TypeError('Home continuation query must provide getSummary');
+  }
 
   return Object.freeze({
     async load() {
-      const [recentResult, reviewResult, mistakeResult, personalResult, identityResult] = await Promise.allSettled([
+      const [recentResult, reviewResult, mistakeResult, personalResult,
+        accountResult, profileResult, syncResult, continuationResult] = await Promise.allSettled([
         savedStudyQueries.listRecent({ limit: HOME_RECENT_LIMIT }),
         savedStudyQueries.listForReview({ limit: HOME_REVIEW_LIMIT }),
         savedStudyQueries.listMistakes({ limit: HOME_MISTAKE_LIMIT }),
         personalStrategyQueries.loadSummary(),
         accountQueries?.getProfileSummary?.() ?? null,
+        profileQueries?.getProfileSummary?.() ?? null,
+        syncQueries?.getState?.() ?? null,
+        continuationQueries?.getSummary?.() ?? null,
       ]);
       const recent = sectionFrom(recentResult, mapSavedItems);
       const reviewLater = sectionFrom(reviewResult, mapSavedItems);
       const mistakes = sectionFrom(mistakeResult, mapSavedItems);
       const personalStrategy = personalStrategySection(personalResult);
-      const identity = identityResult.status === 'fulfilled' && identityResult.value
-        ? { status: 'ready', profile: identityResult.value }
-        : { status: accountQueries ? 'error' : 'unavailable', profile: null };
+      const continuation = continuationResult.status === 'fulfilled' ? continuationResult.value : null;
+      const identity = identitySection(profileQueries ? profileResult : null, accountQueries ? accountResult : null);
+      const quickStartDestinations = ['gto', 'training', 'equity', 'calibration'];
+      if (mistakes.status === 'ready' && mistakes.items.length > 0) {
+        quickStartDestinations.push('review_mistakes');
+      }
       return deepFreeze({
         schemaVersion: HOME_VIEW_MODEL_SCHEMA_VERSION,
         sessionMode: 'account',
         identity,
+        sync: syncSection(syncQueries ? syncResult : null),
         sections: {
-          continue: continueSection(personalStrategy),
+          continue: continueSection(personalStrategy, continuation),
           recent,
           review: {
             status: reviewLater.status === 'error' && mistakes.status === 'error' ? 'error' : 'ready',
@@ -191,8 +284,9 @@ export function createHomeViewModelController({
           personalStrategy,
           quickStart: {
             status: 'ready',
-            destinations: ['gto', 'training', 'equity', 'calibration'],
+            destinations: quickStartDestinations,
           },
+          history: futureHistorySeams(),
         },
       });
     },

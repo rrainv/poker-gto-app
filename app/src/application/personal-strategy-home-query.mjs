@@ -25,6 +25,8 @@ function emptySummary(profileCount = 0) {
     selectedMode: null,
     context: null,
     answeredCount: 0,
+    directEvidenceCount: 0,
+    contradictionCount: 0,
     totalCount: TOTAL_RFI_HAND_CLASSES,
     session: null,
     resumable: false,
@@ -112,6 +114,8 @@ export function createPersonalStrategyHomeQuery({
         selectedMode: summary.selectedMode,
         context: summary.context,
         answeredCount: summary.answeredCount,
+        directEvidenceCount: summary.directEvidenceCount,
+        contradictionCount: summary.contradictionCount,
         totalCount: TOTAL_RFI_HAND_CLASSES,
         session,
         resumable: Boolean(session

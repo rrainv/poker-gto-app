@@ -200,6 +200,8 @@ test('Personal Strategy Home query reads one selected exact scope and reports re
   assert.equal(summary.selectedProfile.displayName, 'Six Max Cash');
   assert.equal(summary.selectedMode.displayName, 'Normal');
   assert.equal(summary.answeredCount, 1);
+  assert.equal(summary.directEvidenceCount, 1);
+  assert.equal(summary.contradictionCount, 0);
   assert.equal(summary.session.state, 'paused');
   assert.equal(summary.resumable, true);
   assert.equal(summary.totalCount, 169);

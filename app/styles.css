@@ -385,6 +385,10 @@
   border-color: color-mix(in srgb, var(--status-danger) 44%, var(--border-default));
 }
 
+div.home-empty-state { display: grid; gap: var(--space-3); }
+div.home-empty-state p { margin: 0; }
+div.home-empty-state .ui-button { justify-self: start; }
+
 .home-saved-list,
 .home-review-list {
   display: grid;
