@@ -1,6 +1,6 @@
 # Saved Study Objects Foundation
 
-Status: implemented through `SAVED-OBJECTS-002`
+Status: implemented through `SAVED-OBJECTS-002`, with optional account sync added by `ACCOUNT-002B-A`
 
 Date: August 16, 2026
 
@@ -126,7 +126,7 @@ The snapshot copies the canonical observer state, not renderer internals. In the
 
 Privacy metadata lists player IDs known and hidden in the embedded final/current PokerState and must validate against it. The source observer must be the same Hero perspective.
 
-Saved data remains local. There is no upload, telemetry, sharing, server, or cloud path.
+Saved data remains local by default. `ACCOUNT-002B-A` adds a separate explicit account-sync adapter for complete validated Hand/Spot objects; there is still no telemetry or sharing path. See `SAVED_OBJECT_SYNC_SPEC.md`.
 
 ## Saved Spot snapshot
 
@@ -154,7 +154,7 @@ This preserves Scenario's intentionally arbitrary study semantics without invent
 
 Schema: `saved-study-owner/v1`
 
-V1 supports `{ kind: "local", id }`. The local owner ID is stable under `riverline.savedStudyObjects.owner.v1` and is created only on first Saved Study activation. The `kind + id` boundary, stable object IDs, timestamps, and revisions allow a future account identity or sync adapter without making a Dashboard or backend the domain authority.
+V1 supports `{ kind: "local", id }`. The local owner ID is stable under `riverline.savedStudyObjects.owner.v1` and is created only on first Saved Study activation. The `kind + id` boundary, stable object IDs, timestamps, and revisions support the implemented account identity and optional sync adapter without making a Dashboard or backend the domain authority. Remote documents omit this device-local owner reference and are rehomed through the active account binding on pull.
 
 Export/import defaults to deterministic `adopt_local`: imported local objects keep their globally safe object IDs and timestamps but are re-owned by the current local library. `require_match` is available for strict same-owner restore.
 
@@ -250,6 +250,8 @@ V1 uses a lightweight archive tombstone instead of hard delete. Archive sets `li
 
 This is the smallest v1 choice that preserves future sync deletion intent without building sync, a CRDT, or a complex recycle bin.
 
+`ACCOUNT-002B-A` consumes this decision directly: archive is a versioned remote tombstone update, absence is never deletion, and a stale active client cannot overwrite the newer archived revision. Remote rows are not hard-deleted; eventual purge remains future maintenance.
+
 ## Migration and failure policy
 
 Physical database migrations are an ordered registry. Version `1` deterministically creates the metadata/object stores and indexes. A future physical change adds the next database migration; a semantic object change uses a new domain schema. These version axes remain independent.
@@ -280,6 +282,6 @@ These figures establish comfortable thousands-of-objects behavior; they are not 
 
 ## Deferred UX and platform work
 
-`SAVED-OBJECTS-001/001R/002` add no Dashboard, Home redesign, saved-hand browser, global search, Training auto-save, Range integration, account, cloud sync, sharing, or backend. `SAVED-OBJECTS-002` intentionally adds no temporary recent-items list; the current-source reference proves bounded reopen behavior without building UI that Home will replace.
+`SAVED-OBJECTS-001/001R/002` add no Dashboard, Home redesign, saved-hand browser, global search, Training auto-save, Range integration, sharing, or backend. Optional account cloud sync is now owned exclusively by `ACCOUNT-002B-A` and `SAVED_OBJECT_SYNC_SPEC.md`; it does not change the Saved object/export schemas. `SAVED-OBJECTS-002` intentionally adds no temporary recent-items list; the current-source reference proves bounded reopen behavior without building UI that Home will replace.
 
 `SAVED-OBJECTS-003` (or the ticket owning saved-hand Replay reopening) should load a Saved Hand, validate/reconstruct `payload.replaySource`, and feed the reconstruction to the existing Replay projection/playback controllers. It may then build navigation and failure UX, but must not persist or invent renderer frames, playback cursor/timers, or hidden cards.

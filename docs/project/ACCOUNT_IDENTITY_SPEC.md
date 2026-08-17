@@ -199,17 +199,17 @@ The account IndexedDB v2 transaction retains the existing Riverline identity ID,
 
 The remote `AccountProfile v1` binds the Auth UUID to the stable Riverline identity ID. It is account metadata only: normalized username, Unicode display name, timestamps, and the identity binding. It does not replace `RiverlineIdentity`, own poker-domain records, or create cloud study-data sync.
 
-## Future conflict and sync seam
+## Implemented study-sync seams and domain conflicts
 
-ACCOUNT-001 performs no sync and deliberately defines no universal merge rule.
+ACCOUNT-001 itself performs no sync and deliberately defines no universal merge rule. `ACCOUNT-002B-A` consumes the stable identity/binding seam for explicit Saved Hand/Spot sync. `ACCOUNT-002B-B` reuses the same versioned coordinator, sidecar, outbox, pull cursor, retry, and generation-cancellation transport for separately consented Personal Strategy / Range Calibration sync. Each domain keeps its remote schema and reconciliation outside the account registry.
 
 - Saved Study uses stable object IDs, positive revisions, `updatedAt`, expected-revision writes, and archive tombstones. Notes/tags and lifecycle conflicts need a Saved-domain policy rather than blind last-write-wins.
-- Personal Strategy preserves immutable direct revision chains, retractions, Training evidence, and contradictions. Sync must retain both valid histories or surface a conflict; it must never discard a direct answer or contradictory observation silently.
-- Calibration sessions/cursors require session-aware reconciliation; a generic timestamp overwrite is unsafe.
+- Personal Strategy preserves immutable direct revision chains, retractions, Training evidence, and contradictions. The implemented adapter retains divergent valid heads and makes inference abstain when direct evidence conflicts; it never discards a direct answer silently.
+- Calibration sessions/cursors use stable session IDs, union compatible evidence references, and recompute progress from unique answered hand classes. A generic timestamp overwrite remains forbidden.
 - Account display-name conflicts are cosmetic and may use an explicit profile choice or a later bounded last-write policy.
-- Future deletions require domain tombstone semantics. No sync adapter may infer deletion from absence.
+- Saved deletions use the implemented archive tombstone semantics; no sync adapter may infer deletion from absence.
 
-Stable IDs, timestamps, revisions, domain-specific tombstones/history, and the ownership binding form the sync seam. A cloud transport, queue, remote schema, retry engine, and conflict UI are ACCOUNT-002+ work.
+Stable IDs, timestamps, revisions, domain-specific tombstones/history, and the ownership binding form the sync seam. `ACCOUNT-002B-A` provides the versioned cloud transport, queue, retry engine, and Saved conflict UI documented in `SAVED_OBJECT_SYNC_SPEC.md`. `ACCOUNT-002B-B` adds the Personal Strategy relational schema, profile-bundle and immutable-evidence adapters, calibration-session merge, separate consent, and metadata-only profile/mode conflicts documented in `PERSONAL_STRATEGY_SYNC_SPEC.md`.
 
 ## Privacy and security boundary
 
@@ -217,7 +217,7 @@ Stable IDs, timestamps, revisions, domain-specific tombstones/history, and the o
 - account-identity initialization itself performs no fetch, WebSocket, beacon, telemetry, or upload; the separate optional authentication service may contact Supabase to restore and validate a provider session;
 - no sign-in is required for non-persistent core analysis, Training, Equity, Guide, or device settings;
 - persistent Saved/Review/Mistakes/Personal Strategy/Range Calibration require a validated persistent account identity;
-- the header and Account/Profile surface distinguish `Guest Mode` from `Signed in`, while separately stating that cloud sync is not enabled;
+- the header and Account/Profile surface distinguish `Guest Mode` from `Signed in`, while separately stating the Saved and Personal Strategy / Range Calibration sync choices and their current status;
 - a functional Supabase email/password surface is owned by the separate authentication boundary;
 - local browser storage is not encryption, and anyone with operating-system access to the application profile may inspect it;
 - future tokens belong in a privileged authentication layer and must not be exposed to the Electron renderer unnecessarily;
@@ -237,7 +237,7 @@ Account startup does one bounded registry read. First launch writes one metadata
 
 The current account platform still does not implement:
 
-- cloud backup/sync or cross-device state;
+- Training-history, Saved Range, or cross-device preference sync. Only explicit Saved Hand/Spot and Personal Strategy / Range Calibration study sync are implemented;
 - remote deletion, local forgetting, account recovery, OAuth, magic links, passkeys, or provider-to-provider linking;
 - sharing, friends, study groups, public links, or social identity;
 - telemetry;

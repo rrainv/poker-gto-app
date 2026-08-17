@@ -218,7 +218,7 @@ Future provenance types such as imported, coach review, solver reference, or inf
 
 ## 9. Revision, conflict, and deletion policy
 
-Direct evidence is an immutable, linear chain per:
+Direct evidence is append-only revision evidence per:
 
 ```text
 profile + mode + canonical context key + hand class
@@ -230,8 +230,9 @@ Policy:
 - edit/change of mind: append a new active record that supersedes the current leaf;
 - retract/delete answer: append a retracted record that supersedes the current leaf;
 - history: retain every prior record;
-- branch prevention: a record may have at most one child and a key may have exactly one root/leaf;
-- current answer: the unique leaf when it is active; no current answer when the leaf is retracted;
+- ordinary single-device editing remains linear: a new record supersedes the selected current leaf;
+- `ACCOUNT-002B-B` may preserve multiple roots/sibling leaves created independently offline; these are explicit contradictory evidence heads, not a silently selected winner;
+- current answer: the selected local editing leaf plus any preserved contradictory heads; consumers count unique hands and must abstain/surface disagreement rather than fabricate confidence;
 - hard deletion: not part of ordinary editing and not exposed in v1.
 
 Repeated Training choices are separate immutable observations, not revisions of the direct chain. They can agree or conflict without changing current direct calibration.
@@ -264,9 +265,9 @@ This is enough to pause, close, reload, and resume a future deterministic elicit
 
 `RANGE-CAL-001C-A` uses a hybrid browser-native model:
 
-- IndexedDB database `riverline-personal-strategy`, database version `1`, is the one durable Personal Strategy record authority;
+- IndexedDB database `riverline-personal-strategy`, database version `2`, is the one durable Personal Strategy record authority; v2 adds indexed conflicting evidence heads without changing v1 domain record schemas;
 - Web Storage retains only the stable local-owner bootstrap, Range Calibration workspace preferences, and any pre-migration recovery source under `riverline.personalStrategy.v1`;
-- domain schema identifiers remain v1; `personal-strategy-indexeddb/v1` and IndexedDB database version `1` separately version physical storage.
+- domain schema identifiers remain v1; `personal-strategy-indexeddb/v2` and IndexedDB database version `2` separately version physical storage.
 
 The decision follows measured evidence. Whole-document Web Storage remained fast for one 169-hand mode, but the supplied benchmark reached about 194 ms median at 3,042 observations and 452 ms median at 7,605 observations with a roughly 5.7 MB document. Every answer parsed, graph-validated, serialized, and synchronously replaced all history, so quota and main-thread time grew with total store size.
 
@@ -284,11 +285,12 @@ profiles
 modes                         index: profileId
 rangeObservations             indexes: profileId, logicalKey, scopeKey, calibrationSessionId
 currentRangeObservations      indexes: profileId, scopeKey
+conflictingRangeObservations  indexes: profileId, logicalKey, scopeKey
 trainingObservations          indexes: profileId, logicalKey
 calibrationSessions           indexes: profileId, scopeKey
 ```
 
-Evidence/session records use stable domain IDs. Storage-only wrappers carry index keys and an unmodified domain `value`; storage fields never enter portable exports. `currentRangeObservations` materializes the unique leaf of each `profile + mode + canonical context + hand` chain, including retracted leaves. Immutable history remains in `rangeObservations`.
+Evidence/session records use stable domain IDs. Storage-only wrappers carry index keys and an unmodified domain `value`; storage fields never enter portable exports. `currentRangeObservations` materializes the selected editing leaf of each `profile + mode + canonical context + hand` chain, including retracted leaves. `conflictingRangeObservations` materializes additional synced heads by stable evidence ID. Immutable history remains in `rangeObservations`.
 
 An accepted answer runs one strict read/write transaction over metadata, immutable history, the current-leaf index, and the session:
 
@@ -398,7 +400,7 @@ A later ticket must not cross an integration gate without owning it explicitly:
 - Matrix: personal rendering must consume a validated provider result, not read repository internals in UI code;
 - inference/confidence: requires an `InferredRange`/metadata schema, evidence policy, validation, and measured performance;
 - adaptive questions: requires a versioned selection/cursor policy and deterministic resume behavior;
-- accounts/sync: requires owner migration, conflict resolution, privacy/security, and offline behavior;
+- accounts/sync: crossed by `ACCOUNT-002B-B` under `PERSONAL_STRATEGY_SYNC_SPEC.md`; later schema/domain additions still require their own sync semantics;
 - import-as-copy/sharing: requires complete ID/reference remapping and explicit ownership transfer.
 
 ## 18. Explicit non-goals
@@ -428,7 +430,7 @@ The following are release-blocking for this subsystem:
 6. An exact maximum-frequency tie has `dominantAction = null`; no action is fabricated.
 7. Direct calibration and Training behavior use separate schemas/collections.
 8. Training conflict records a comparison and never rewrites direct evidence.
-9. Direct edits/retractions append to one linear history.
+9. Direct edits/retractions append without deleting history; ordinary editing is linear and synced offline contradictions preserve every independent head.
 10. One repository owns durable IndexedDB records, legacy migration reads, and backend-independent export/import; UI has no storage access.
 11. Invalid, corrupt, incompatible, or colliding data cannot partially overwrite valid data.
 12. Existing Playbook, Matrix, Training, Equity, Analysis, settings, and StrategyProvider behavior remains unchanged.

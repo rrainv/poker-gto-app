@@ -32,6 +32,7 @@ export const RFI_INFERENCE_ABSTENTION_REASONS = Object.freeze({
   NO_MATCHING_SCOPE_EVIDENCE: 'no_matching_scope_evidence',
   INSUFFICIENT_NEARBY_EVIDENCE: 'insufficient_nearby_evidence',
   CONTRADICTORY_NEARBY_EVIDENCE: 'contradictory_nearby_evidence',
+  CONTRADICTORY_DIRECT_EVIDENCE: 'contradictory_direct_evidence',
   NEARBY_TIED_BOUNDARY: 'nearby_tied_boundary',
   UNSUPPORTED_DIRECT_ACTION: 'unsupported_direct_action',
 });
@@ -302,7 +303,6 @@ function resultFor(request, {
 function materializeDirectLeaves(observations) {
   const byId = new Map(observations.map((observation) => [observation.id, observation]));
   const superseded = new Set();
-  const childCounts = new Map();
   for (const observation of observations) {
     const parentId = observation.revision.supersedesObservationId;
     if (parentId === null || !byId.has(parentId)) continue;
@@ -310,18 +310,9 @@ function materializeDirectLeaves(observations) {
     if (rangeObservationKey(parent) !== rangeObservationKey(observation)) {
       throw new RangeError('RFI inference revision evidence cannot cross a direct-observation key');
     }
-    childCounts.set(parentId, (childCounts.get(parentId) ?? 0) + 1);
-    if (childCounts.get(parentId) > 1) {
-      throw new RangeError('RFI inference direct-observation history cannot branch');
-    }
     superseded.add(parentId);
   }
-  const leaves = observations.filter((observation) => !superseded.has(observation.id));
-  const keys = leaves.map(rangeObservationKey);
-  if (new Set(keys).size !== keys.length) {
-    throw new RangeError('RFI inference requires at most one current leaf per direct-observation key');
-  }
-  return leaves;
+  return observations.filter((observation) => !superseded.has(observation.id));
 }
 
 function matchingScopeLeaves(request) {
@@ -362,9 +353,32 @@ function diagnosticsBase(scopeLeaves, categorical, tied, unsupported) {
 export function inferSparseRfiHand(rawRequest) {
   const request = validateRfiInferenceRequest(rawRequest);
   const scopeLeaves = matchingScopeLeaves(request);
-  const requestedLeaf = scopeLeaves.find(
-    (observation) => observation.handClass === request.requestedHandClass,
-  ) ?? null;
+  const requestedLeaves = scopeLeaves.filter(
+    (observation) => observation.handClass === request.requestedHandClass
+      && observation.state === RANGE_OBSERVATION_STATES.ACTIVE,
+  );
+  const requestedLeaf = requestedLeaves[0] ?? null;
+
+  if (requestedLeaves.length > 1) {
+    const signatures = new Set(requestedLeaves.map((observation) => JSON.stringify({
+      dominantAction: observation.dominantAction,
+      hasExplicitFrequencies: observation.hasExplicitFrequencies,
+      frequencies: observation.frequencies,
+    })));
+    if (signatures.size > 1) {
+      return resultFor(request, {
+        status: RFI_INFERENCE_STATUSES.ABSTAINED,
+        sourceType: RFI_INFERENCE_SOURCE_TYPES.UNAVAILABLE,
+        sourceModelVersion: request.modelVersion,
+        evidenceReferences: requestedLeaves.map((observation) => evidenceReference(observation, 'direct_conflict')),
+        diagnostics: {
+          reason: RFI_INFERENCE_ABSTENTION_REASONS.CONTRADICTORY_DIRECT_EVIDENCE,
+          matchingScopeLeafCount: scopeLeaves.length,
+          conflictingDirectEvidenceCount: requestedLeaves.length,
+        },
+      });
+    }
+  }
 
   if (requestedLeaf?.state === RANGE_OBSERVATION_STATES.ACTIVE) {
     const reference = evidenceReference(requestedLeaf, 'direct');
@@ -373,7 +387,7 @@ export function inferSparseRfiHand(rawRequest) {
         status: RFI_INFERENCE_STATUSES.DIRECT,
         sourceType: RFI_INFERENCE_SOURCE_TYPES.DIRECT_CALIBRATION,
         sourceModelVersion: null,
-        evidenceReferences: [reference],
+        evidenceReferences: requestedLeaves.map((observation) => evidenceReference(observation, 'direct')),
         diagnostics: {
           reason: 'direct_tied_mix',
           matchingScopeLeafCount: scopeLeaves.length,
@@ -398,7 +412,7 @@ export function inferSparseRfiHand(rawRequest) {
       sourceType: RFI_INFERENCE_SOURCE_TYPES.DIRECT_CALIBRATION,
       sourceModelVersion: null,
       dominantAction: requestedLeaf.dominantAction.type,
-      evidenceReferences: [reference],
+      evidenceReferences: requestedLeaves.map((observation) => evidenceReference(observation, 'direct')),
       diagnostics: {
         reason: 'direct_observation',
         matchingScopeLeafCount: scopeLeaves.length,

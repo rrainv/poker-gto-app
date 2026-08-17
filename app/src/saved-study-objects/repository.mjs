@@ -544,6 +544,47 @@ export function createSavedStudyRepository({
       });
     },
 
+    async listAllForSync() {
+      return readTransaction([STORES.OBJECTS], async (transaction) => {
+        const records = await transaction.getAll(STORES.OBJECTS);
+        return deepFreezeSavedStudyData(sortPortableObjects(
+          records
+            .filter((record) => record.ownerKey === ownerKey)
+            .map((record) => cloneSavedStudyData(record.value)),
+        ));
+      });
+    },
+
+    async applySyncedObject(object, { expectedRevision = null } = {}) {
+      validateSavedStudyObject(object);
+      const incoming = sameSavedStudyOwner(object.ownerRef, ownerRef)
+        ? cloneSavedStudyData(object)
+        : rehomeObject(object, ownerRef);
+      return writeTransaction([STORES.OBJECTS], async (transaction) => {
+        const [metadata, record] = await Promise.all([
+          metadataIn(transaction),
+          getOwnedRecord(transaction, incoming.id),
+        ]);
+        if (expectedRevision !== null && record?.value?.revision !== expectedRevision) {
+          throw new RangeError('SavedStudyObject changed while remote sync was reconciling it');
+        }
+        if (record && canonicalJson(record.value) === canonicalJson(incoming)) {
+          return deepFreezeSavedStudyData({
+            object: cloneSavedStudyData(record.value),
+            repositoryRevision: metadata.revision,
+            changed: false,
+          });
+        }
+        await transaction.put(STORES.OBJECTS, objectRecord(incoming));
+        const next = await commitMetadata(transaction, metadata);
+        return deepFreezeSavedStudyData({
+          object: cloneSavedStudyData(incoming),
+          repositoryRevision: next.revision,
+          changed: true,
+        });
+      });
+    },
+
     async exportLibrary({ exportedAt = timestampFrom(clock) } = {}) {
       return readTransaction([STORES.OBJECTS], async (transaction) => {
         const records = await transaction.getAll(STORES.OBJECTS);

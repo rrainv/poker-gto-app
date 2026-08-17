@@ -18,12 +18,15 @@ import {
   PERSONAL_STRATEGY_OBJECT_STORES,
   createIndexedDbPersonalStrategyDatabase,
 } from './indexeddb-storage.mjs';
+import { PREFLOP_HAND_CLASSES } from '../../../shared/poker-domain/index.js';
 
 export const PERSONAL_STRATEGY_STORE_SCHEMA_VERSION = 'personal-strategy-store/v1';
 export const PERSONAL_STRATEGY_EXPORT_SCHEMA_VERSION = 'personal-strategy-export/v1';
 export const PERSONAL_STRATEGY_STORAGE_KEY = 'riverline.personalStrategy.v1';
 
 const LEGACY_STORE_SCHEMA_VERSION = 'personal-strategy-store/v0';
+const LEGACY_BACKEND_SCHEMA_VERSION = 'personal-strategy-indexeddb/v1';
+const LEGACY_DATABASE_VERSION = 1;
 
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
@@ -100,7 +103,6 @@ function directRevisionLeaves(observations) {
 
 function validateDirectRevisionGraph(store) {
   const byId = new Map(store.rangeObservations.map((entry) => [entry.id, entry]));
-  const childCounts = new Map();
   const byKey = new Map();
   for (const observation of store.rangeObservations) {
     const key = rangeObservationKey(observation);
@@ -116,15 +118,20 @@ function validateDirectRevisionGraph(store) {
     if (Date.parse(observation.createdAt) < Date.parse(parent.createdAt)) {
       throw new RangeError('RangeObservation revision cannot precede its parent');
     }
-    childCounts.set(parentId, (childCounts.get(parentId) ?? 0) + 1);
-    if (childCounts.get(parentId) > 1) {
-      throw new RangeError('RangeObservation revision history cannot branch');
-    }
   }
   for (const observations of byKey.values()) {
     const roots = observations.filter((entry) => entry.revision.supersedesObservationId === null);
-    if (roots.length !== 1 || directRevisionLeaves(observations).length !== 1) {
-      throw new RangeError('A direct calibration key must have one linear revision chain');
+    if (roots.length < 1 || directRevisionLeaves(observations).length < 1) {
+      throw new RangeError('A direct calibration key must retain a root and a current evidence head');
+    }
+    for (const observation of observations) {
+      const seen = new Set([observation.id]);
+      let parentId = observation.revision.supersedesObservationId;
+      while (parentId !== null) {
+        if (seen.has(parentId)) throw new RangeError('RangeObservation revision history cannot contain a cycle');
+        seen.add(parentId);
+        parentId = byId.get(parentId)?.revision.supersedesObservationId ?? null;
+      }
     }
   }
 }
@@ -421,6 +428,41 @@ function currentRangeRecord(observation) {
   };
 }
 
+function conflictingRangeRecord(observation) {
+  return {
+    observationId: observation.id,
+    logicalKey: rangeObservationKey(observation),
+    profileId: observation.profileId,
+    scopeKey: scopeKey(observation),
+    value: cloneData(observation),
+  };
+}
+
+function rangeHeadsByLogicalKey(observations) {
+  const leaves = directRevisionLeaves(observations);
+  const groups = new Map();
+  for (const observation of leaves) {
+    const key = rangeObservationKey(observation);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(observation);
+  }
+  return [...groups.values()].map((entries) => {
+    const ordered = [...entries].sort((left, right) => (
+      left.updatedAt.localeCompare(right.updatedAt) || left.id.localeCompare(right.id)
+    ));
+    return { selected: ordered.at(-1), conflicting: ordered.slice(0, -1) };
+  });
+}
+
+async function writeRangeHeads(transaction, observations) {
+  for (const group of rangeHeadsByLogicalKey(observations)) {
+    await transaction.put(STORES.CURRENT_RANGE_OBSERVATIONS, currentRangeRecord(group.selected));
+    for (const observation of group.conflicting) {
+      await transaction.put(STORES.CONFLICTING_RANGE_OBSERVATIONS, conflictingRangeRecord(observation));
+    }
+  }
+}
+
 function trainingRecord(observation) {
   return {
     id: observation.id,
@@ -488,6 +530,13 @@ function validateMetadata(metadata, ownerRef) {
   }
   requireTimestamp(metadata.updatedAt, 'Personal Strategy database updatedAt');
   return metadata;
+}
+
+function isUpgradeableMetadata(metadata, ownerRef) {
+  return metadata?.backendSchemaVersion === LEGACY_BACKEND_SCHEMA_VERSION
+    && metadata?.databaseVersion === LEGACY_DATABASE_VERSION
+    && metadata?.domainSchemaVersion === PERSONAL_STRATEGY_STORE_SCHEMA_VERSION
+    && sameOwnerRef(metadata?.ownerRef, ownerRef);
 }
 
 function nextMetadata(metadata, clock) {
@@ -578,9 +627,7 @@ async function importSnapshotTransaction(transaction, store, metadata) {
   for (const observation of store.rangeObservations) {
     await transaction.add(STORES.RANGE_OBSERVATIONS, rangeRecord(observation));
   }
-  for (const observation of directRevisionLeaves(store.rangeObservations)) {
-    await transaction.put(STORES.CURRENT_RANGE_OBSERVATIONS, currentRangeRecord(observation));
-  }
+  await writeRangeHeads(transaction, store.rangeObservations);
   for (const observation of store.trainingObservations) {
     await transaction.add(STORES.TRAINING_OBSERVATIONS, trainingRecord(observation));
   }
@@ -649,7 +696,25 @@ export function createPersonalStrategyRepository({
         const code = error?.name === 'VersionError' ? 'unsupported_database_version' : 'open_failed';
         throw storageFailure(code, 'Personal Strategy storage could not be opened.', error);
       }
-      if (existing) return deepFreeze(cloneData(validateMetadata(existing, ownerRef)));
+      if (existing) {
+        if (isUpgradeableMetadata(existing, ownerRef)) {
+          const upgraded = {
+            ...cloneData(existing),
+            backendSchemaVersion: PERSONAL_STRATEGY_BACKEND_SCHEMA_VERSION,
+            databaseVersion: PERSONAL_STRATEGY_DATABASE_VERSION,
+            migration: {
+              ...cloneData(existing.migration),
+              syncEvidenceHeadsAddedAt: timestampFrom(clock),
+            },
+          };
+          await getDatabase().runTransaction([
+            STORES.METADATA,
+            STORES.CONFLICTING_RANGE_OBSERVATIONS,
+          ], 'readwrite', (transaction) => transaction.put(STORES.METADATA, upgraded));
+          return deepFreeze(cloneData(validateMetadata(upgraded, ownerRef)));
+        }
+        return deepFreeze(cloneData(validateMetadata(existing, ownerRef)));
+      }
 
       const legacy = legacySnapshotFromStorage(legacyStorage, storageKey, ownerRef, clock);
       const startedAt = timestampFrom(clock);
@@ -793,12 +858,14 @@ export function createPersonalStrategyRepository({
         STORES.PROFILES,
         STORES.MODES,
         STORES.CURRENT_RANGE_OBSERVATIONS,
+        STORES.CONFLICTING_RANGE_OBSERVATIONS,
         STORES.CALIBRATION_SESSIONS,
       ], async (transaction) => {
-        const [metadata, profiles, modes, current, sessions] = await Promise.all([
+        const [metadata, profiles, modes, conflicts, current, sessions] = await Promise.all([
           metadataIn(transaction),
           transaction.getAll(STORES.PROFILES),
           transaction.getAll(STORES.MODES),
+          transaction.getAll(STORES.CONFLICTING_RANGE_OBSERVATIONS),
           transaction.getAll(STORES.CURRENT_RANGE_OBSERVATIONS),
           transaction.getAll(STORES.CALIBRATION_SESSIONS),
         ]);
@@ -809,7 +876,7 @@ export function createPersonalStrategyRepository({
           updatedAt: metadata.updatedAt,
           profiles: cloneData(profiles),
           modes: cloneData(modes),
-          rangeObservations: current.map((entry) => cloneData(entry.value)),
+          rangeObservations: [...conflicts, ...current].map((entry) => cloneData(entry.value)),
           trainingObservations: [],
           calibrationSessions: sessions.map((entry) => cloneData(entry.value)),
         });
@@ -826,6 +893,7 @@ export function createPersonalStrategyRepository({
         STORES.PROFILES,
         STORES.MODES,
         STORES.CURRENT_RANGE_OBSERVATIONS,
+        STORES.CONFLICTING_RANGE_OBSERVATIONS,
         STORES.CALIBRATION_SESSIONS,
       ], async (transaction) => {
         const profileCount = await transaction.count(STORES.PROFILES);
@@ -836,6 +904,8 @@ export function createPersonalStrategyRepository({
             selectedMode: null,
             context: null,
             answeredCount: 0,
+            directEvidenceCount: 0,
+            contradictionCount: 0,
             session: null,
           });
         }
@@ -853,18 +923,24 @@ export function createPersonalStrategyRepository({
             selectedMode: null,
             context: null,
             answeredCount: 0,
+            directEvidenceCount: 0,
+            contradictionCount: 0,
             session: null,
           });
         }
         validateStrategyProfile(selectedProfile);
         validateStrategyMode(selectedMode);
         const selectedScopeKey = scopeKey({ profileId, modeId, context });
-        const [currentRecords, sessionRecords] = await Promise.all([
+        const [currentRecords, conflictingRecords, sessionRecords] = await Promise.all([
           transaction.getAllByIndex(STORES.CURRENT_RANGE_OBSERVATIONS, 'scopeKey', selectedScopeKey),
+          transaction.getAllByIndex(STORES.CONFLICTING_RANGE_OBSERVATIONS, 'scopeKey', selectedScopeKey),
           transaction.getAllByIndex(STORES.CALIBRATION_SESSIONS, 'scopeKey', selectedScopeKey),
         ]);
-        const observations = currentRecords.map((entry) => entry.value);
+        const observations = [...conflictingRecords, ...currentRecords].map((entry) => entry.value);
         observations.forEach(validateRangeObservation);
+        const activeObservations = observations.filter(
+          (entry) => entry.state === RANGE_OBSERVATION_STATES.ACTIVE,
+        );
         const sessions = sessionRecords.map((entry) => entry.value);
         sessions.forEach(validateCalibrationSession);
         const session = sessions
@@ -874,7 +950,11 @@ export function createPersonalStrategyRepository({
           selectedProfile: cloneData(selectedProfile),
           selectedMode: cloneData(selectedMode),
           context: cloneData(context),
-          answeredCount: observations.filter((entry) => entry.state === RANGE_OBSERVATION_STATES.ACTIVE).length,
+          answeredCount: new Set(activeObservations.map((entry) => entry.handClass)).size,
+          directEvidenceCount: activeObservations.length,
+          contradictionCount: conflictingRecords.filter(
+            (entry) => entry.value.state === RANGE_OBSERVATION_STATES.ACTIVE,
+          ).length,
           session: cloneData(session),
         });
       });
@@ -1070,6 +1150,211 @@ export function createPersonalStrategyRepository({
       });
     },
 
+    async getSyncSummary() {
+      const snapshot = await repository.loadSnapshot();
+      return deepFreeze({
+        profileCount: snapshot.profiles.length,
+        directObservationCount: snapshot.rangeObservations
+          .filter((entry) => entry.state === RANGE_OBSERVATION_STATES.ACTIVE).length,
+        activeSessionCount: snapshot.calibrationSessions
+          .filter((entry) => entry.state !== 'completed').length,
+      });
+    },
+
+    async listSyncEntities() {
+      const snapshot = await repository.loadSnapshot();
+      const modesByProfile = new Map();
+      for (const mode of snapshot.modes) {
+        if (!modesByProfile.has(mode.profileId)) modesByProfile.set(mode.profileId, []);
+        modesByProfile.get(mode.profileId).push(mode);
+      }
+      return deepFreeze([
+        ...snapshot.profiles.map((profile) => ({
+          syncEntityType: 'profile_bundle',
+          id: profile.id,
+          profile: cloneData(profile),
+          modes: cloneData(profile.modeIds.map((id) => (
+            modesByProfile.get(profile.id)?.find((mode) => mode.id === id)
+          ))),
+        })),
+        ...cloneData(snapshot.calibrationSessions),
+        ...cloneData(snapshot.rangeObservations),
+        ...cloneData(snapshot.trainingObservations),
+      ]);
+    },
+
+    async getSyncEntityById(id) {
+      return readTransaction([
+        STORES.PROFILES,
+        STORES.MODES,
+        STORES.RANGE_OBSERVATIONS,
+        STORES.TRAINING_OBSERVATIONS,
+        STORES.CALIBRATION_SESSIONS,
+      ], async (transaction) => {
+        const [profile, range, training, session] = await Promise.all([
+          transaction.get(STORES.PROFILES, id),
+          transaction.get(STORES.RANGE_OBSERVATIONS, id),
+          transaction.get(STORES.TRAINING_OBSERVATIONS, id),
+          transaction.get(STORES.CALIBRATION_SESSIONS, id),
+        ]);
+        if (profile) {
+          const modes = await Promise.all(profile.modeIds.map((modeId) => transaction.get(STORES.MODES, modeId)));
+          return deepFreeze({
+            syncEntityType: 'profile_bundle', id: profile.id,
+            profile: cloneData(profile), modes: cloneData(modes),
+          });
+        }
+        return deepFreeze(cloneData(range?.value ?? training?.value ?? session?.value ?? null));
+      });
+    },
+
+    async applySyncedEntity(entity, remoteDocument) {
+      requireObject(remoteDocument, 'Remote Personal Strategy entity');
+      const type = remoteDocument.entityType;
+      if (type === 'profile_bundle') {
+        const { profile, modes } = entity;
+        validateStrategyProfile(profile);
+        requireArray(modes, 'Synced StrategyProfile modes').forEach(validateStrategyMode);
+        if (!sameOwnerRef(profile.ownerRef, ownerRef) || modes.length !== 3) {
+          throw new RangeError('Synced StrategyProfile bundle is incompatible with the active owner');
+        }
+        return writeTransaction([STORES.PROFILES, STORES.MODES, ...ID_STORES], async (transaction) => {
+          const metadata = await metadataIn(transaction);
+          const previousProfile = await transaction.get(STORES.PROFILES, profile.id);
+          if (!previousProfile) {
+            await assertUnusedId(transaction, profile.id);
+            for (const mode of modes) await assertUnusedId(transaction, mode.id);
+          } else if (!sameOwnerRef(previousProfile.ownerRef, profile.ownerRef)
+            || previousProfile.createdAt !== profile.createdAt
+            || JSON.stringify(previousProfile.modeIds) !== JSON.stringify(profile.modeIds)) {
+            throw new RangeError('Synced StrategyProfile cannot change stable identity or mode relationships');
+          }
+          for (const mode of modes) {
+            const previousMode = await transaction.get(STORES.MODES, mode.id);
+            if (previousMode && (previousMode.profileId !== mode.profileId
+              || previousMode.createdAt !== mode.createdAt)) {
+              throw new RangeError('Synced StrategyMode cannot change stable identity or parent');
+            }
+          }
+          await transaction.put(STORES.PROFILES, cloneData(profile));
+          for (const mode of modes) await transaction.put(STORES.MODES, cloneData(mode));
+          return commitMetadata(transaction, metadata);
+        });
+      }
+      if (type === 'calibration_session') {
+        validateCalibrationSession(entity);
+        return writeTransaction([...ID_STORES], async (transaction) => {
+          const metadata = await metadataIn(transaction);
+          await saveSessionInTransaction(transaction, entity);
+          return commitMetadata(transaction, metadata);
+        });
+      }
+      if (type === 'training_observation') {
+        validateTrainingObservation(entity);
+        return writeTransaction([...ID_STORES], async (transaction) => {
+          const metadata = await metadataIn(transaction);
+          const existing = await transaction.get(STORES.TRAINING_OBSERVATIONS, entity.id);
+          if (existing) {
+            if (JSON.stringify(existing.value) !== JSON.stringify(entity)) {
+              throw new RangeError(`Personal Strategy ID collision: ${entity.id}`);
+            }
+            return deepFreeze({ ...cloneData(metadata), idempotent: true });
+          }
+          await assertUnusedId(transaction, entity.id);
+          await requireProfileAndMode(transaction, entity.profileId, entity.modeId, 'TrainingObservation');
+          await transaction.add(STORES.TRAINING_OBSERVATIONS, trainingRecord(entity));
+          return commitMetadata(transaction, metadata);
+        });
+      }
+      if (type !== 'range_observation') throw new RangeError(`Unsupported synced entity type: ${type}`);
+      validateRangeObservation(entity);
+      return writeTransaction([
+        ...ID_STORES,
+        STORES.CURRENT_RANGE_OBSERVATIONS,
+        STORES.CONFLICTING_RANGE_OBSERVATIONS,
+      ], async (transaction) => {
+        const metadata = await metadataIn(transaction);
+        const existing = await transaction.get(STORES.RANGE_OBSERVATIONS, entity.id);
+        if (existing) {
+          if (JSON.stringify(existing.value) !== JSON.stringify(entity)) {
+            throw new RangeError(`Personal Strategy ID collision: ${entity.id}`);
+          }
+          return deepFreeze({ ...cloneData(metadata), idempotent: true });
+        }
+        await assertUnusedId(transaction, entity.id);
+        await requireProfileAndMode(transaction, entity.profileId, entity.modeId, 'RangeObservation');
+        const sessionId = entity.provenance.calibrationSessionId;
+        const storedSession = sessionId
+          ? await transaction.get(STORES.CALIBRATION_SESSIONS, sessionId)
+          : null;
+        if (sessionId && !storedSession) {
+          throw new RangeError('Synced RangeObservation references an unavailable CalibrationSession');
+        }
+        const logicalKey = rangeObservationKey(entity);
+        const selected = await transaction.get(STORES.CURRENT_RANGE_OBSERVATIONS, logicalKey);
+        const conflicts = await transaction.getAllByIndex(
+          STORES.CONFLICTING_RANGE_OBSERVATIONS, 'logicalKey', logicalKey,
+        );
+        const parentId = entity.revision.supersedesObservationId;
+        if (parentId) {
+          const parent = await transaction.get(STORES.RANGE_OBSERVATIONS, parentId);
+          if (!parent || parent.logicalKey !== logicalKey) {
+            throw new RangeError('Synced RangeObservation supersedes unavailable matching evidence');
+          }
+        }
+        await transaction.add(STORES.RANGE_OBSERVATIONS, rangeRecord(entity));
+        if (!selected) {
+          await transaction.put(STORES.CURRENT_RANGE_OBSERVATIONS, currentRangeRecord(entity));
+        } else if (parentId === selected.observationId) {
+          await transaction.put(STORES.CURRENT_RANGE_OBSERVATIONS, currentRangeRecord(entity));
+        } else {
+          const conflictingParent = conflicts.find((entry) => entry.observationId === parentId);
+          if (conflictingParent) await transaction.delete(
+            STORES.CONFLICTING_RANGE_OBSERVATIONS, conflictingParent.observationId,
+          );
+          await transaction.put(
+            STORES.CONFLICTING_RANGE_OBSERVATIONS,
+            conflictingRangeRecord(entity),
+          );
+        }
+        if (storedSession) {
+          const records = await transaction.getAllByIndex(
+            STORES.RANGE_OBSERVATIONS, 'calibrationSessionId', sessionId,
+          );
+          const observationIds = [...new Set([
+            ...storedSession.value.observationIds,
+            ...records.map((entry) => entry.id),
+            entity.id,
+          ])];
+          const scopeHeads = [
+            ...(await transaction.getAllByIndex(
+              STORES.CONFLICTING_RANGE_OBSERVATIONS, 'scopeKey', storedSession.scopeKey,
+            )),
+            ...(await transaction.getAllByIndex(
+              STORES.CURRENT_RANGE_OBSERVATIONS, 'scopeKey', storedSession.scopeKey,
+            )),
+          ].map((entry) => entry.value);
+          if (!scopeHeads.some((entry) => entry.id === entity.id)) scopeHeads.push(entity);
+          const answered = new Set(scopeHeads
+            .filter((entry) => entry.state === RANGE_OBSERVATION_STATES.ACTIVE)
+            .map((entry) => entry.handClass));
+          const nextPromptIndex = PREFLOP_HAND_CLASSES.findIndex((handClass) => !answered.has(handClass));
+          const completed = nextPromptIndex < 0;
+          const updatedAt = entity.updatedAt > storedSession.value.updatedAt
+            ? entity.updatedAt : storedSession.value.updatedAt;
+          await transaction.put(STORES.CALIBRATION_SESSIONS, sessionRecord({
+            ...cloneData(storedSession.value),
+            updatedAt,
+            state: completed ? 'completed' : storedSession.value.state === 'paused' ? 'paused' : 'active',
+            completedAt: completed ? updatedAt : null,
+            observationIds,
+            cursor: { nextPromptIndex: completed ? PREFLOP_HAND_CLASSES.length : nextPromptIndex },
+          }));
+        }
+        return commitMetadata(transaction, metadata);
+      });
+    },
+
     async exportPortable({ profileIds = null, exportedAt = timestampFrom(clock) } = {}) {
       if (profileIds === null) {
         return createPersonalStrategyExport(await repository.loadSnapshot(), { profileIds, exportedAt });
@@ -1141,9 +1426,7 @@ export function createPersonalStrategyRepository({
         for (const observation of portable.rangeObservations) {
           await transaction.add(STORES.RANGE_OBSERVATIONS, rangeRecord(observation));
         }
-        for (const observation of directRevisionLeaves(portable.rangeObservations)) {
-          await transaction.put(STORES.CURRENT_RANGE_OBSERVATIONS, currentRangeRecord(observation));
-        }
+        await writeRangeHeads(transaction, portable.rangeObservations);
         for (const observation of portable.trainingObservations) {
           await transaction.add(STORES.TRAINING_OBSERVATIONS, trainingRecord(observation));
         }

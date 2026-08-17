@@ -284,7 +284,7 @@ test('inferred results expose neither fabricated action frequencies nor uncalibr
   assert.deepEqual(result.dominantAction, { type: ACTION_TYPES.RAISE });
 });
 
-test('invalid request/result schemas and ambiguous direct histories fail at the boundary', () => {
+test('invalid schemas fail while contradictory sync histories are preserved and abstain', () => {
   const valid = request('AJs', localRaiseEvidence());
   assert.throws(
     () => inferSparseRfiHand({ ...valid, schemaVersion: 'rfi-inference-request/v99' }),
@@ -301,9 +301,15 @@ test('invalid request/result schemas and ambiguous direct histories fail at the 
 
   const firstRoot = direct('AQs', ACTION_TYPES.RAISE);
   const secondRoot = direct('AQs', ACTION_TYPES.FOLD);
-  assert.throws(
-    () => inferSparseRfiHand(request('AJs', [firstRoot, secondRoot])),
-    /at most one current leaf/,
+  const contradictory = inferSparseRfiHand(request('AQs', [firstRoot, secondRoot]));
+  assert.equal(contradictory.status, RFI_INFERENCE_STATUSES.ABSTAINED);
+  assert.equal(
+    contradictory.diagnostics.reason,
+    RFI_INFERENCE_ABSTENTION_REASONS.CONTRADICTORY_DIRECT_EVIDENCE,
+  );
+  assert.deepEqual(
+    new Set(contradictory.evidenceReferences.map((entry) => entry.observationId)),
+    new Set([firstRoot.id, secondRoot.id]),
   );
   assert.equal(valid.schemaVersion, RFI_INFERENCE_REQUEST_SCHEMA_VERSION);
 });

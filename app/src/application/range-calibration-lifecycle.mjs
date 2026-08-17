@@ -128,12 +128,18 @@ export function createRangeCalibrationLifecycle({
     if (isSelected() || surfaceKind === 'authenticated') void reconcile({ force: true }).catch(() => {});
   }
 
+  function onRemoteStrategyChange() {
+    if (authentication.getState()?.status !== 'signed_in') return;
+    if (isSelected() || surfaceKind === 'authenticated') void reconcile({ force: true }).catch(() => {});
+  }
+
   function start() {
     if (started) return false;
     started = true;
     navigationButton?.addEventListener?.('click', onNavigation);
     eventTarget?.addEventListener?.('riverline:authchange', onAuthenticationChange);
     eventTarget?.addEventListener?.('riverline:identitychange', onIdentityChange);
+    eventTarget?.addEventListener?.('riverline:personalstrategychange', onRemoteStrategyChange);
     if (isSelected()) void reconcile().catch(() => {});
     return true;
   }
@@ -154,6 +160,7 @@ export function createRangeCalibrationLifecycle({
       navigationButton?.removeEventListener?.('click', onNavigation);
       eventTarget?.removeEventListener?.('riverline:authchange', onAuthenticationChange);
       eventTarget?.removeEventListener?.('riverline:identitychange', onIdentityChange);
+      eventTarget?.removeEventListener?.('riverline:personalstrategychange', onRemoteStrategyChange);
       return true;
     },
     getState: () => state,

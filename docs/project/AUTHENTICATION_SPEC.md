@@ -1,12 +1,12 @@
 # Riverline authentication, identity linking, and account switching
 
-Status: `ACCOUNT-002A` implementation authority, refined by `ACCOUNT-002AR`
+Status: `ACCOUNT-002A` implementation authority, refined by `ACCOUNT-002AR` and consumed by `ACCOUNT-002B-A`
 
 Date: August 17, 2026
 
 ## Scope
 
-ACCOUNT-002A/AR adds real provider authentication, required remote account-profile metadata, explicit identity linking, and discoverable account UX. Signed-out product state is **Guest Mode**, not a durable Local Profile. Guest may use non-persistent analysis/training and device preferences, but Riverline does not query or persist Saved/Review/Mistakes/Personal Strategy/Range Calibration for Guest. It does not upload, synchronize, back up, share, or remotely delete poker study data.
+ACCOUNT-002A/AR adds real provider authentication, required remote account-profile metadata, explicit identity linking, and discoverable account UX. Signed-out product state is **Guest Mode**, not a durable Local Profile. Guest may use non-persistent analysis/training and device preferences, but Riverline does not query or persist Saved/Review/Mistakes/Personal Strategy/Range Calibration for Guest. It does not upload, synchronize, back up, share, or remotely delete poker study data. `ACCOUNT-002B-A` permits only an authenticated, currently validated session with explicit identity-scoped opt-in to synchronize Saved Hands/Spots.
 
 ```text
 Supabase Auth browser client + public.profiles/RLS
@@ -181,15 +181,17 @@ The publishable key is intentionally public. Never use a Supabase `service_role`
 - CSP restricts scripts to local assets, connections to Supabase, workers to local/blob sources, and frames/objects to none. A future custom domain requires an explicit CSP update.
 - User display names use text/value APIs and `dir=auto`; provider email fields are LTR islands.
 - Errors are sanitized; token/session values are not logged.
-- Signing in does not upload study data and does not imply a backup.
+- Signing in does not upload study data and does not imply a backup. Saved Study and Personal Strategy / Range Calibration each require a separate explicit identity-scoped opt-in and remain reversible.
 - `public.profiles` uses database uniqueness and own-row RLS; the browser receives no service-role key.
 
 ## Username login decision
 
 Current Supabase password auth accepts email or phone, not an arbitrary username. ACCOUNT-002AR therefore keeps operational email/password login and does **not** expose a client-side username-to-email lookup or pretend that username login is native. The immediate follow-up is `ACCOUNT-002A2 — Secure username/password login adapter`: a deployed, rate-limited server/Edge Function must resolve a normalized username privately, authenticate through a trusted password path, return only the caller's session result, use enumeration-resistant errors, and keep every service/secret key out of the renderer. This is separate from `ACCOUNT-002B` study-data sync.
 
-## Unsupported behavior and ACCOUNT-002B seam
+## ACCOUNT-002B sync boundary
 
-ACCOUNT-002A does not provide cloud sync/backup, cross-device data, remote deletion, local account forgetting, provider-to-provider linking, email-based merging, password recovery, username changes, username/password login, magic links, Google/Apple OAuth, sharing/social, or telemetry.
+`ACCOUNT-002B-A` adds optional Saved Hand / Saved Spot sync behind `riverline-sync/v1`. The sync coordinator may run only while AuthenticationService reports `signed_in`, the active Riverline identity matches the bound remote profile, and the identity-scoped preference is enabled. Sign-out/Guest/account switching invalidates the coordinator generation so stale async callbacks cannot write into another identity. Supabase session/RLS remains remote authority; provider tokens never enter sync state or study documents.
 
-The recommended ACCOUNT-002B boundary is a separately versioned sync transport with explicit selected-domain opt-in, encrypted transport, retry/idempotency, domain-specific Saved and Personal Strategy conflict policies, tombstones/history preservation, and clear local/offline state. Authentication mappings and provider sessions remain outside study payloads.
+`ACCOUNT-002B-B` adds a separate opt-in for Personal Strategy / Range Calibration through the same authenticated transport and cancellation boundary. Its adapter syncs relational profile/mode metadata, immutable evidence, and calibration sessions without serializing credentials or inferred artifacts. Guest Mode never starts either coordinator, and identity switching disposes both before opening the new identity's repositories. See `SAVED_OBJECT_SYNC_SPEC.md` and `PERSONAL_STRATEGY_SYNC_SPEC.md`.
+
+Authentication still does not provide remote account/study deletion, local account forgetting, provider-to-provider linking, email-based merging, password recovery, username changes, username/password login, magic links, Google/Apple OAuth, sharing/social, Training-history sync, or telemetry.

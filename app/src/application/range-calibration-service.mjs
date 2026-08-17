@@ -289,7 +289,9 @@ export function countCurrentDirectObservations(snapshot, { profileId, modeId, co
     && calibrationContextKey(observation.context) === contextKey
   ));
   const superseded = new Set(matching.map((entry) => entry.revision.supersedesObservationId).filter(Boolean));
-  return matching.filter((entry) => !superseded.has(entry.id) && entry.state === 'active').length;
+  return new Set(matching
+    .filter((entry) => !superseded.has(entry.id) && entry.state === 'active')
+    .map((entry) => entry.handClass)).size;
 }
 
 function currentDirectObservationMap(snapshot, { profileId, modeId, context, contextScope }) {
@@ -464,6 +466,13 @@ export function createIdentityScopedRangeCalibrationApplication(binding, options
   });
   return createRangeCalibrationApplication({
     ...applicationOptions,
+    onLocalMutation: applicationOptions.onLocalMutation ?? ((mutation) => {
+      if (typeof globalThis.window?.dispatchEvent !== 'function'
+        || typeof globalThis.CustomEvent !== 'function') return;
+      globalThis.window.dispatchEvent(new CustomEvent('riverline:personalstrategymutation', {
+        detail: mutation,
+      }));
+    }),
     storage: scopedStorage,
     database,
     ownerRef: createLocalOwnerRef(binding.domainOwnerId),
@@ -476,10 +485,14 @@ export function createRangeCalibrationApplication({
   ownerRef = null,
   clock = () => new Date(),
   idFactory = defaultIdFactory,
+  onLocalMutation = null,
 } = {}) {
   requireStorage(storage);
   if (typeof clock !== 'function' || typeof idFactory !== 'function') {
     throw new TypeError('Range Calibration clock and idFactory must be functions');
+  }
+  if (onLocalMutation !== null && typeof onLocalMutation !== 'function') {
+    throw new TypeError('Range Calibration onLocalMutation must be a function');
   }
 
   const storageMetrics = { reads: 0, writes: 0, readsByKey: {}, writesByKey: {} };
@@ -504,6 +517,26 @@ export function createRangeCalibrationApplication({
     ownerRef: resolvedOwnerRef,
     clock,
   });
+
+  async function notifyLocalMutation(entities) {
+    if (!onLocalMutation) return;
+    try {
+      await onLocalMutation(Object.freeze({
+        schemaVersion: 'personal-strategy-local-mutation/v1',
+        entities: Object.freeze(cloneData(entities)),
+      }));
+    } catch {
+      // Local Personal Strategy transactions remain authoritative. The sync
+      // status surface owns any sidecar/remote failure after commit.
+    }
+  }
+
+  function profileBundleEntity(profile, modes) {
+    return Object.freeze({
+      syncEntityType: 'profile_bundle', id: profile.id,
+      profile: cloneData(profile), modes: cloneData(modes),
+    });
+  }
 
   async function readWorkspace() {
     const snapshot = await repository.loadWorkspaceSnapshot();
@@ -531,6 +564,7 @@ export function createRangeCalibrationApplication({
       modeIds: normalizedModes.map(() => idFactory('mode')),
     });
     await repository.saveProfileBundle(bundle);
+    await notifyLocalMutation([profileBundleEntity(bundle.profile, bundle.modes)]);
     return bundle;
   }
 
@@ -548,6 +582,7 @@ export function createRangeCalibrationApplication({
       displayName: normalizedModes[index],
     }, updatedAt));
     await repository.saveProfileConfiguration({ profile, modes });
+    await notifyLocalMutation([profileBundleEntity(profile, modes)]);
     return Object.freeze({ profile, modes });
   }
 
@@ -596,6 +631,7 @@ export function createRangeCalibrationApplication({
     let session = matchingSession(snapshot, { profileId: selectedProfileId, modeId: activeModeId, context: contextScope });
     const requiredState = firstPrompt ? CALIBRATION_SESSION_STATES.ACTIVE : CALIBRATION_SESSION_STATES.COMPLETED;
     const updatedAt = timestampNotBefore(clock, session?.updatedAt ?? null);
+    let sessionChanged = false;
     if (!session) {
       session = createCalibrationSession({
         id: idFactory('calibration-session'),
@@ -609,6 +645,7 @@ export function createRangeCalibrationApplication({
       });
       const metadata = await repository.saveCalibrationSession(session);
       snapshot = snapshotWithSession(snapshot, session, metadata);
+      sessionChanged = true;
     } else if (session.state !== requiredState
       || (firstPrompt && session.cursor.nextPromptIndex !== firstPrompt.index)) {
       session = updateCalibrationSession(session, {
@@ -618,7 +655,9 @@ export function createRangeCalibrationApplication({
       }, updatedAt);
       const metadata = await repository.saveCalibrationSession(session);
       snapshot = snapshotWithSession(snapshot, session, metadata);
+      sessionChanged = true;
     }
+    if (sessionChanged) await notifyLocalMutation([session]);
     const durableSession = snapshot.calibrationSessions.find((entry) => entry.id === session.id);
     return calibrationState(snapshot, durableSession, Object.freeze({
       totalOperationMs: performanceNow() - operationStartedAt,
@@ -679,6 +718,7 @@ export function createRangeCalibrationApplication({
       session,
       expectedSessionUpdatedAt: state.session.updatedAt,
     });
+    await notifyLocalMutation([observation, session]);
     const repositoryTransactionMs = performanceNow() - repositoryStartedAt;
     const resolutionStartedAt = performanceNow();
     const snapshot = snapshotWithObservationAndSession(
@@ -736,6 +776,7 @@ export function createRangeCalibrationApplication({
       session,
       expectedSessionUpdatedAt: state.session.updatedAt,
     });
+    await notifyLocalMutation([retraction, session]);
     const repositoryTransactionMs = performanceNow() - repositoryStartedAt;
     const snapshot = snapshotWithObservationAndSession(
       state.snapshot,
@@ -766,6 +807,7 @@ export function createRangeCalibrationApplication({
       state: CALIBRATION_SESSION_STATES.PAUSED,
     }, updatedAt);
     const metadata = await repository.saveCalibrationSession(session);
+    await notifyLocalMutation([session]);
     const snapshot = snapshotWithSession(state.snapshot, session, metadata);
     const durableSession = session;
     return calibrationState(snapshot, durableSession);
@@ -782,6 +824,14 @@ export function createRangeCalibrationApplication({
     answerCalibrationQuestion,
     undoPreviousAnswer,
     pauseSession,
+    exportPortable: (options) => repository.exportPortable(options),
+    async importPortable(value, options) {
+      const before = new Set((await repository.listSyncEntities()).map((entry) => entry.id));
+      const result = await repository.importPortable(value, options);
+      const added = (await repository.listSyncEntities()).filter((entry) => !before.has(entry.id));
+      await notifyLocalMutation(added);
+      return result;
+    },
     createAnswerOperation(activeState) {
       const state = requireCalibrationState(activeState);
       return Object.freeze({

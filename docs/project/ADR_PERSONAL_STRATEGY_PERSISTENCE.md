@@ -1,6 +1,6 @@
 # ADR: Personal Strategy persistence
 
-Status: accepted by `RANGE-CAL-001C-A` implementation
+Status: accepted by `RANGE-CAL-001C-A`; additive evidence-head projection extended by `ACCOUNT-002B-B`
 
 Date: August 14, 2026
 
@@ -41,7 +41,7 @@ No server, remote database, Electron IPC/filesystem authority, database framewor
 
 ## Decision
 
-The one durable Personal Strategy authority is native IndexedDB database `riverline-personal-strategy`, database version `1`, behind `createPersonalStrategyRepository`.
+The one durable Personal Strategy authority is native IndexedDB database `riverline-personal-strategy`, database version `2`, behind `createPersonalStrategyRepository`.
 
 The dependency path is:
 
@@ -75,12 +75,13 @@ The UI has no direct storage access. The asynchronous boundary is real: the appl
 | `modes` | `id` | `profileId` |
 | `rangeObservations` | `id` | `profileId`, `logicalKey`, `scopeKey`, `calibrationSessionId`; immutable direct history |
 | `currentRangeObservations` | `logicalKey` | `profileId`, `scopeKey`; current leaf materialization |
+| `conflictingRangeObservations` | `observationId` | `profileId`, `logicalKey`, `scopeKey`; additional immutable heads created by offline sync conflicts |
 | `trainingObservations` | `id` | `profileId`, `logicalKey`; separate Training evidence |
 | `calibrationSessions` | `id` | `profileId`, `scopeKey`; resumable progress/cursor |
 
 Storage-only wrapper fields provide indexes around an unchanged domain `value`. They are not domain fields and never enter portable exports.
 
-`logicalKey` is the existing `profile + mode + canonical context + hand` identity. `scopeKey` omits the hand. Immutable revision records are never compacted or deleted. `currentRangeObservations` points to the unique active or retracted leaf, so one-hand and one-scope work does not scan history.
+`logicalKey` is the existing `profile + mode + canonical context + hand` identity. `scopeKey` omits the hand. Immutable revision records are never compacted or deleted. `currentRangeObservations` points to the selected active or retracted editing leaf; `conflictingRangeObservations` indexes additional synced evidence heads, so one-hand and one-scope work does not scan history.
 
 ## Atomicity and retry
 
@@ -126,8 +127,10 @@ This boundary is suitable for a future account/sync adapter because it consumes 
 The following versions are independent:
 
 - domain objects/store/export: existing v1 identifiers;
-- physical backend schema: `personal-strategy-indexeddb/v1`;
-- IndexedDB database version: `1`.
+- physical backend schema: `personal-strategy-indexeddb/v2`;
+- IndexedDB database version: `2`.
+
+Database v2 is additive: it creates the conflicting-head store and advances physical metadata without rewriting v1 profiles, modes, evidence, sessions, or portable exports. Single-device edits retain the original linear selected-head transaction. Sync-created sibling/root evidence remains immutable in full history and receives a separate indexed head rather than being forced into a fabricated linear order.
 
 Moving storage does not bump `StrategyProfile`, `RangeObservation`, `CalibrationSession`, or export schemas. A later IndexedDB object-store/index upgrade increments the database version. A semantic domain change requires its own approved schema migration.
 

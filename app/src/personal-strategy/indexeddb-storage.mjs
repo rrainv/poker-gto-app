@@ -1,6 +1,6 @@
 export const PERSONAL_STRATEGY_DATABASE_NAME = 'riverline-personal-strategy';
-export const PERSONAL_STRATEGY_DATABASE_VERSION = 1;
-export const PERSONAL_STRATEGY_BACKEND_SCHEMA_VERSION = 'personal-strategy-indexeddb/v1';
+export const PERSONAL_STRATEGY_DATABASE_VERSION = 2;
+export const PERSONAL_STRATEGY_BACKEND_SCHEMA_VERSION = 'personal-strategy-indexeddb/v2';
 
 export const PERSONAL_STRATEGY_OBJECT_STORES = Object.freeze({
   METADATA: 'metadata',
@@ -8,6 +8,7 @@ export const PERSONAL_STRATEGY_OBJECT_STORES = Object.freeze({
   MODES: 'modes',
   RANGE_OBSERVATIONS: 'rangeObservations',
   CURRENT_RANGE_OBSERVATIONS: 'currentRangeObservations',
+  CONFLICTING_RANGE_OBSERVATIONS: 'conflictingRangeObservations',
   TRAINING_OBSERVATIONS: 'trainingObservations',
   CALIBRATION_SESSIONS: 'calibrationSessions',
 });
@@ -30,6 +31,14 @@ const STORE_DEFINITIONS = Object.freeze({
   [PERSONAL_STRATEGY_OBJECT_STORES.CURRENT_RANGE_OBSERVATIONS]: Object.freeze({
     keyPath: 'logicalKey',
     indexes: [['profileId', 'profileId'], ['scopeKey', 'scopeKey']],
+  }),
+  [PERSONAL_STRATEGY_OBJECT_STORES.CONFLICTING_RANGE_OBSERVATIONS]: Object.freeze({
+    keyPath: 'observationId',
+    indexes: [
+      ['profileId', 'profileId'],
+      ['logicalKey', 'logicalKey'],
+      ['scopeKey', 'scopeKey'],
+    ],
   }),
   [PERSONAL_STRATEGY_OBJECT_STORES.TRAINING_OBSERVATIONS]: Object.freeze({
     keyPath: 'id', indexes: [['profileId', 'profileId'], ['logicalKey', 'logicalKey']],

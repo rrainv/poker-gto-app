@@ -5766,6 +5766,15 @@ function init() {
       if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
       if (activeWorkspaceMode() === 'gto') void refreshSavedStudySource();
     });
+    window.addEventListener('riverline:savedstudychange', () => {
+      homeViewModel = null;
+      if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
+      if (activeWorkspaceMode() === 'gto') void refreshSavedStudySource();
+    });
+    window.addEventListener('riverline:personalstrategychange', () => {
+      homeViewModel = null;
+      if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
+    });
 
     
 

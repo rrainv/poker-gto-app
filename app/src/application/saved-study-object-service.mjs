@@ -14,6 +14,7 @@ import {
   createSavedStudyOwnerRef,
   createSavedStudyRepository,
   createSavedStudySource,
+  parseSavedStudyLibraryExport,
   savedStudyOwnerKey,
 } from '../saved-study-objects/index.mjs';
 import { LEGACY_SAVED_STUDY_OWNER_KEY } from '../account-identity/legacy-ownership.mjs';
@@ -79,6 +80,7 @@ export function createSavedStudyObjectApplication({
   repository = null,
   ownerRef = null,
   activationResolver = null,
+  onLocalMutation = null,
   clock = () => new Date(),
   idFactory = defaultIdFactory,
 } = {}) {
@@ -87,6 +89,9 @@ export function createSavedStudyObjectApplication({
   }
   if (activationResolver !== null && typeof activationResolver !== 'function') {
     throw new TypeError('Saved Study activationResolver must be a function');
+  }
+  if (onLocalMutation !== null && typeof onLocalMutation !== 'function') {
+    throw new TypeError('Saved Study onLocalMutation must be a function');
   }
   let fixedActivationPromise = null;
   const scopedActivations = new Map();
@@ -151,7 +156,23 @@ export function createSavedStudyObjectApplication({
       source,
       payload,
     });
-    return activated.repository.save(object);
+    const result = await activated.repository.save(object);
+    if (!result.idempotent) await notifyLocalMutation('upsert', result.object);
+    return result;
+  }
+
+  async function notifyLocalMutation(type, object) {
+    if (!onLocalMutation) return;
+    try {
+      await onLocalMutation(Object.freeze({
+        schemaVersion: 'saved-study-local-mutation/v1',
+        type,
+        object,
+      }));
+    } catch {
+      // The canonical local write already committed. Sync reports its own durable
+      // sidecar failure and must never make an ordinary Saved action appear lost.
+    }
   }
 
   async function saveHand({
@@ -245,7 +266,9 @@ export function createSavedStudyObjectApplication({
     saveScenarioDerivedSpot,
     async updateAnnotations(id, changes, options = {}) {
       const activated = await activate();
-      return activated.repository.updateAnnotations(id, changes, options);
+      const result = await activated.repository.updateAnnotations(id, changes, options);
+      await notifyLocalMutation('upsert', result.object);
+      return result;
     },
     async getById(id, options = {}) {
       return (await activate()).repository.getById(id, options);
@@ -269,13 +292,35 @@ export function createSavedStudyObjectApplication({
       );
     },
     async archive(id, options = {}) {
-      return (await activate()).repository.archive(id, options);
+      const result = await (await activate()).repository.archive(id, options);
+      if (!result.idempotent) await notifyLocalMutation('tombstone', result.object);
+      return result;
     },
     async exportLibrary(options = {}) {
       return (await activate()).repository.exportLibrary(options);
     },
     async importLibrary(value, options = {}) {
-      return (await activate()).repository.importLibrary(value, options);
+      const activated = await activate();
+      const portable = parseSavedStudyLibraryExport(value);
+      const absentIds = [];
+      for (const object of portable.objects) {
+        if (!await activated.repository.getById(object.id)) absentIds.push(object.id);
+      }
+      const result = await activated.repository.importLibrary(value, options);
+      for (const id of absentIds) {
+        const object = await activated.repository.getById(id);
+        await notifyLocalMutation(
+          object.lifecycle.state === 'archived' ? 'tombstone' : 'upsert',
+          object,
+        );
+      }
+      return result;
+    },
+    async listAllForSync() {
+      return (await activate()).repository.listAllForSync();
+    },
+    async applySyncedObject(object, options = {}) {
+      return (await activate()).repository.applySyncedObject(object, options);
     },
     async close() {
       const activations = [

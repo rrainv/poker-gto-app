@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 17, 2026 (`ACCOUNT-002AR` correction checkpoint).
+Last refreshed: August 18, 2026 (`ACCOUNT-002B-B` implementation checkpoint).
 
 Code, tests, accepted tags/ticket reports, new manual QA, and explicit user decisions override this snapshot. Detailed future capability is preserved in `PRODUCT_BACKLOG.md`; subsystem contracts remain authoritative for implementation semantics.
 
@@ -80,7 +80,13 @@ Current product includes canonical table presence; a read-only action/chance tim
 
 `ACCOUNT-002A/AR` selects Supabase Auth and adds an injectable provider boundary, email/password sign-in/sign-up, required `AccountProfile v1` (unique normalized username plus Unicode display name), ProviderIdentityMapping v1, explicit rollback-safe legacy-data claim or start-separate flow, Guest sign-out/fail-closed restoration, one persistent-identity action gate, and discoverable header/menu/Account-Profile EN/RU/HE UI. Guest Home issues no account-domain reads; Saved persistence and Range Calibration promote to sign-in and resume only after a validated account. Existing linked Riverline, Saved, Replay, and Personal Strategy IDs remain stable.
 
-Local/offline Riverline remains first-class. Signing in does not upload study data or enable backup. OAuth/magic-link/deep-link recovery, provider-to-provider linking, remote deletion, local forgetting, cloud backup/sync, cross-device preferences, domain-specific conflict resolution, and later approved sharing/social features remain future. Provider IDs and credentials stay outside user domain objects.
+Local/offline Riverline remains first-class. Signing in does not upload study data or enable backup. OAuth/magic-link/deep-link recovery, provider-to-provider linking, remote deletion, local forgetting, cross-device preferences, Training-history sync, and later approved sharing/social features remain future. Provider IDs and credentials stay outside user domain objects.
+
+`ACCOUNT-002B-A` adds explicit identity-scoped opt-in for Saved Hand / Saved Spot sync only: a reusable versioned coordinator/transport boundary, separate IndexedDB sidecar and coalesced outbox, Supabase JSONB schema/RLS/RPC migration, bounded pull cursor, retry/idempotency, archive tombstones, generation-token account isolation, compact account status/manual sync, and explicit keep-device/keep-cloud/keep-both conflict UX. Local writes remain authoritative and cold remote Saved Hands reopen through canonical detached Replay. Deterministic fake-adapter tests are complete; applying `202608170002_saved_study_object_sync.sql` and the full two-browser Firefox lifecycle remain required before acceptance.
+
+`ACCOUNT-002B-B` adds a separately consented Personal Strategy / Range Calibration sync domain behind the reusable transport. It stores profile/mode metadata relationally, keeps direct range and opted-in Training observations immutable, preserves divergent direct histories, excludes inferred artifacts, merges calibration sessions by stable evidence references, and surfaces only metadata conflicts that require a choice. Guest/account switching cancels work before repositories change. Deterministic cold-device, offline contradiction, metadata conflict, identity-isolation, import/export, RLS-structure, and status-aggregation coverage is complete. Applying `202608170003_personal_strategy_sync.sql` and the requested two-profile Firefox lifecycle remain required before final acceptance.
+
+The bounded Accounts v1 implementation is now functionally present: Guest Mode, authentication/profile UX, legacy claim, identity isolation, Saved sync, Personal Strategy / Range Calibration sync, offline queues, and conflict-safe reconciliation. Live Supabase migrations/RLS checks and web multi-device acceptance remain tracked in QA, so this checkpoint does not claim those external checks were performed.
 
 ### Tutorials — CHECKPOINTED
 
@@ -123,9 +129,11 @@ Implementation is accepted; `QA-ANALYSIS-RANGE-001` still records final live vie
 2. **COMPLETED — `PREFLOP-SANITY-001`: Premium Dominated-Action Suppression.** The bounded premium Fold-leak suppression and invariant corpus are present without broad heuristic retuning or new ICM assumptions.
 3. **CHECKPOINTED — `BLUFF-001`: honest bluff analysis.** The structural fact contract, Analysis UI, EN/RU/HE copy, tutorial update, formula/range/raise/unavailable tests, and documentation are implemented. Final human visual/language acceptance remains tracked separately rather than being inferred from structural tests.
 4. **CHECKPOINTED — `ACCOUNT-001` + `ACCOUNT-002A/AR`: local-first identity and real authentication.** Supabase email/password auth, DB-enforced profiles/RLS migration, Guest semantics, durable-feature gating, atomic link/start-separate, account switching, sign-out, restoration, header/profile UX, and truthful no-sync UI are implemented. Live migration/provider validation and final human Firefox visual/language acceptance remain separate from structural verification. Secure username/password login is the immediate `ACCOUNT-002A2` follow-up, not a client-side lookup.
-5. **ACTIVE NEXT — `ACCOUNT-002A2`: secure username/password login adapter.** Add a rate-limited trusted server/Edge Function path with private username resolution, enumeration-resistant errors, and no renderer secret or public username-to-email directory. Email/password remains the production sign-in path until that bounded ticket is deployed and verified.
-6. **ACTIVE NEXT — richer Home:** substantially extend “my Riverline” using real account/personal/study state while keeping Home a consumer.
-7. **PLANNED NEXT — Home Game Organizer:** create a separate top-level tab/domain. Stage as `HOME-GAME-001` domain/persistence, `HOME-GAME-002` session UI, and `HOME-GAME-003` settlement/reconciliation. It may own saved groups, roster/seats/button/blinds, buy-ins/rebuys/cash-outs, chip counts/stacks, net results, who-owes-whom settlement, saved sessions, and summaries. It does not belong in `StrategyProfile` or `PokerState`.
+5. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `ACCOUNT-002B-A`: Saved Study sync.** Implementation, deterministic fake-adapter coverage, migration, EN/RU/HE structure, and documentation are present. Live migration/RLS verification plus two-profile Firefox lifecycle/manual visual acceptance remain open.
+6. **PLANNED NEXT — `ACCOUNT-002A2`: secure username/password login adapter.** Add a rate-limited trusted server/Edge Function path with private username resolution, enumeration-resistant errors, and no renderer secret or public username-to-email directory. Email/password remains the production sign-in path until that bounded ticket is deployed and verified.
+7. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `ACCOUNT-002B-B`: Personal Strategy / Range Calibration sync.** Domain adapters, relational migration, immutable-history/session reconciliation, separate consent, account cancellation, UI, i18n, documentation, and deterministic coverage are present. Live migration/RLS and two-profile Firefox acceptance remain open.
+8. **ACTIVE NEXT — richer Home (recommended next non-account ticket):** substantially extend “my Riverline” using real account/personal/study state while keeping Home a consumer.
+9. **PLANNED NEXT — Home Game Organizer:** create a separate top-level tab/domain. Stage as `HOME-GAME-001` domain/persistence, `HOME-GAME-002` session UI, and `HOME-GAME-003` settlement/reconciliation. It may own saved groups, roster/seats/button/blinds, buy-ins/rebuys/cash-outs, chip counts/stacks, net results, who-owes-whom settlement, saved sessions, and summaries. It does not belong in `StrategyProfile` or `PokerState`.
 
 Reassess priorities at every clean checkpoint rather than forcing an entire branch through without review.
 
@@ -154,7 +162,7 @@ Examples: a `5♥` completion may preview `A♥ 2♥ 3♥ 4♥ 5♥ — Wheel st
 - exact Personal Strategy mode naming/order defaults and whether evidence ever supports interpolation;
 - final Training-evidence opt-in placement/default and conflict-clarification UX;
 - ACCOUNT-002A2 secure rate-limited server-side username/password login adapter, with enumeration-resistant errors and no username-to-email directory;
-- ACCOUNT-002B cloud-sync opt-in, backend schema, and domain-specific conflict-resolution UX;
+- ACCOUNT-002B-B Personal Strategy / Range Calibration remote schema and domain-specific conflict-resolution UX;
 - sharing permissions, clone/fork defaults, comments, friends, and study groups;
 - Training grading default when My Strategy and a Riverline reference differ;
 - first Home Game Organizer scope beyond the staged foundation;

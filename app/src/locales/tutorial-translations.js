@@ -572,6 +572,24 @@
   Object.assign(ru, bluffAnalysisTutorial.ru);
   Object.assign(he, bluffAnalysisTutorial.he);
 
+  const savedSyncTutorial = {
+    en: {
+      'Saved Study sync is always opt-in': 'Saved Study sync is always opt-in',
+      'Sign-in does not upload study data. In Account / Profile, choose Saved Hands and Spots and Personal Strategy / Range Calibration separately; each remains local-first.': 'Sign-in does not upload study data. In Account / Profile, choose Saved Hands and Spots and Personal Strategy / Range Calibration separately; each remains local-first.',
+    },
+    ru: {
+      'Saved Study sync is always opt-in': 'Синхронизация сохранённых материалов включается только по вашему выбору',
+      'Sign-in does not upload study data. In Account / Profile, choose Saved Hands and Spots and Personal Strategy / Range Calibration separately; each remains local-first.': 'Вход не загружает учебные данные. В разделе «Аккаунт / Профиль» отдельно выберите сохранённые раздачи и ситуации, а также личную стратегию и калибровку диапазонов; каждый раздел остаётся локальным в первую очередь.',
+    },
+    he: {
+      'Saved Study sync is always opt-in': 'סנכרון נתוני לימוד שמורים מופעל רק בבחירה מפורשת',
+      'Sign-in does not upload study data. In Account / Profile, choose Saved Hands and Spots and Personal Strategy / Range Calibration separately; each remains local-first.': 'הכניסה אינה מעלה נתוני לימוד. בחשבון / פרופיל יש לבחור בנפרד ידיים ומצבים שמורים ואסטרטגיה אישית / כיול טווחים; כל תחום נשאר מקומי תחילה.',
+    },
+  };
+  Object.assign(en, savedSyncTutorial.en);
+  Object.assign(ru, savedSyncTutorial.ru);
+  Object.assign(he, savedSyncTutorial.he);
+
   global.riverlineTutorialTranslations = Object.freeze({
     en: Object.freeze(en),
     ru: Object.freeze(ru),

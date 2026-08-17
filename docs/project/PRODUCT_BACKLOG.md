@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 17, 2026 (`ACCOUNT-002AR` correction checkpoint).
+Last consolidated: August 18, 2026 (`ACCOUNT-002B-B` implementation checkpoint).
 
 This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
@@ -21,10 +21,12 @@ This file preserves accepted future capability so it does not depend on chat mem
 | 1 | COMPLETED | `ANALYSIS-RANGE-001` accepted checkpoint, including RR/RRR corrections |
 | 2 | COMPLETED | `PREFLOP-SANITY-001` — bounded premium-hand dominated Fold suppression with invariant coverage |
 | 3 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `BLUFF-001` — structural fact contract and visible Analysis integration implemented; final human visual/language acceptance remains open |
-| 4 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `ACCOUNT-001` + `ACCOUNT-002A/AR` — legacy-safe identity/scoping, Supabase email/password, DB-enforced account profiles, Guest semantics, durable-feature gate, header/profile UX, explicit claim/start-separate, switching/sign-out/session restoration; cloud study-data sync remains future |
-| 5 | ACTIVE NEXT | `ACCOUNT-002A2` — secure rate-limited server/Edge Function username/password login adapter; private resolution, enumeration-resistant failure, no renderer secret or public username-to-email directory |
-| 6 | ACTIVE NEXT | richer Home — “my Riverline” powered by real account/personal/study state |
-| 7 | PLANNED NEXT | `HOME-GAME-001` foundation, then `002` session UI and `003` settlement/reconciliation |
+| 4 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `ACCOUNT-001` + `ACCOUNT-002A/AR` — legacy-safe identity/scoping, Supabase email/password, DB-enforced account profiles, Guest semantics, durable-feature gate, header/profile UX, explicit claim/start-separate, switching/sign-out/session restoration |
+| 5 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `ACCOUNT-002B-A` — explicit Saved Hand/Spot sync, local-first outbox/retry, Supabase RLS/RPC, tombstones, account isolation, conflict UX; live migration and two-browser Firefox acceptance remain open |
+| 6 | PLANNED NEXT | `ACCOUNT-002A2` — secure rate-limited server/Edge Function username/password login adapter; private resolution, enumeration-resistant failure, no renderer secret or public username-to-email directory |
+| 7 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `ACCOUNT-002B-B` — separately consented Personal Strategy / Range Calibration sync, immutable evidence/contradiction preservation, session reconciliation, relational RLS/RPC schema, and account isolation are implemented; live Supabase and Firefox acceptance remain open |
+| 8 | ACTIVE NEXT | richer Home — recommended next non-account ticket; “my Riverline” powered by real account/personal/study state |
+| 9 | PLANNED NEXT | `HOME-GAME-001` foundation, then `002` session UI and `003` settlement/reconciliation |
 
 Personal Strategy resumes separately at `RANGE-CAL-002B`; it is preserved but not in this immediate sequence. Reassess at every clean checkpoint.
 
@@ -85,8 +87,9 @@ The current legal, deterministic, provider-backed Training base is established; 
 | richer Saved search/filter/tags | PRESERVED FUTURE | Full drilldowns/View all; folders/collections only if later justified |
 | Saved history/revisions | PRESERVED FUTURE | Preserve ownership/version/conflict semantics |
 | `ACCOUNT-001` + `ACCOUNT-002A/AR` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | persistent opaque identity/scoped storage plus Supabase Auth mapping, required unique-username/Unicode-display-name profile with RLS, Guest no-history semantics, reusable persistence gate, discoverable header/profile UX, rollback-safe legacy claim or separate account, switching/sign-out, bounded restore, and no-sync copy; live-provider/manual acceptance remains tracked in QA |
-| `ACCOUNT-002A2` | ACTIVE NEXT | secure username/password login adapter deployed behind a rate-limited trusted server/Edge Function; private normalized-username resolution, enumeration-resistant errors, no public username→email lookup, no password or privileged key outside the trusted auth path |
-| `ACCOUNT-002B+` | PRESERVED FUTURE | explicit cloud backup/sync opt-in, remote schema/queue/retry, cross-device Saved Objects/Personal Strategy/selected settings, domain-specific conflicts and recovery; OAuth/provider linking/deletion only in separately bounded tickets |
+| `ACCOUNT-002A2` | PLANNED NEXT | secure username/password login adapter deployed behind a rate-limited trusted server/Edge Function; private normalized-username resolution, enumeration-resistant errors, no public username→email lookup, no password or privileged key outside the trusted auth path |
+| `ACCOUNT-002B-A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | explicit opt-in Saved Hand/Spot sync is implemented with a reusable transport/coordinator, durable sidecar/outbox, Supabase schema/RLS/RPCs, retries, tombstones, account cancellation, compact status/manual action, three-choice conflict recovery, and cold remote Replay; live migration and Firefox lifecycle acceptance remain open |
+| `ACCOUNT-002B-B` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Personal Strategy / Range Calibration sync reuses transport/outbox/retry while owning relational profile/mode serialization, immutable evidence/retraction/contradiction preservation, inferred-artifact exclusion, calibration-session merge, separate consent, and metadata conflicts. The bounded Accounts v1 implementation is functionally present; live Supabase/RLS and Firefox multi-device acceptance remain open |
 | sharing/social | PRESERVED FUTURE | share/fork ranges, spots, and drills; friends/study groups; collaborative range review only if approved |
 | richer Home | ACTIVE NEXT | identity and truthful local/sync status; Continue; Saved/Recent; Review/Mistakes; Personal Strategy; recent Analysis; bluff/range study; later Training history; tutorials/help; account actions |
 

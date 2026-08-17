@@ -432,8 +432,12 @@
               <div class="account-menu-identity">
                 <strong id="accountMenuDisplayName" dir="auto" data-i18n="Guest Mode">Guest Mode</strong>
                 <small id="accountMenuUsername" dir="ltr" data-i18n="Not signed in">Not signed in</small>
+                <span id="accountMenuSyncStatus" class="account-menu-sync-status" role="status" aria-live="polite" hidden>
+                  <i aria-hidden="true"></i><span data-i18n="Saved locally">Saved locally</span>
+                </span>
               </div>
               <button id="accountMenuOpenProfile" type="button" role="menuitem" data-i18n="Sign in or create account">Sign in or create account</button>
+              <button id="accountMenuSyncNow" type="button" role="menuitem" data-i18n="Sync now" hidden>Sync now</button>
               <button id="accountMenuSwitch" type="button" role="menuitem" data-i18n="Use another account" hidden>Use another account</button>
               <button id="accountMenuSignOut" type="button" role="menuitem" data-i18n="Sign out" hidden>Sign out</button>
             </div>
@@ -452,10 +456,27 @@
           <span data-i18n="Opening your study workspace">Opening your study workspace</span>
         </div>
         <div id="homeWorkspaceContent" class="home-dashboard-grid" hidden>
+          <section id="homeAccountOverview" class="panel home-section home-section--overview" aria-labelledby="homeAccountOverviewTitle" hidden>
+            <div class="home-account-overview">
+              <div class="home-account-identity">
+                <p data-i18n="Your study workspace">Your study workspace</p>
+                <h2 id="homeAccountOverviewTitle" data-i18n="My Riverline">My Riverline</h2>
+                <strong id="homeIdentityDisplayName" dir="auto"></strong>
+                <span id="homeIdentityUsername" class="poker-data-token" dir="ltr"></span>
+              </div>
+              <div id="homeSyncStatus" class="home-sync-status" role="status" aria-live="polite" aria-atomic="true">
+                <span data-i18n="Study sync">Study sync</span>
+                <strong id="homeSyncStatusLabel"></strong>
+                <small id="homeSyncStatusDetail"></small>
+                <button id="homeSyncReview" class="ui-button ui-button--quiet" type="button" data-home-action="review-sync" data-i18n="Review issue" hidden>Review issue</button>
+              </div>
+            </div>
+          </section>
           <section id="homeGuestAccount" class="panel home-section home-section--guest-account" aria-labelledby="homeGuestAccountTitle" hidden>
-            <header class="home-section-head"><div><p data-i18n="Guest Mode">Guest Mode</p><h2 id="homeGuestAccountTitle" data-i18n="Keep your study progress">Keep your study progress</h2></div></header>
+            <header class="home-section-head"><div><p data-i18n="Guest Mode">Guest Mode</p><h2 id="homeGuestAccountTitle" data-i18n="Welcome to Riverline">Welcome to Riverline</h2></div></header>
             <div class="home-guest-account-copy">
-              <p data-i18n="Analysis and training work in Guest Mode. Sign in before saving study history, review items, or Personal Strategy.">Analysis and training work in Guest Mode. Sign in before saving study history, review items, or Personal Strategy.</p>
+              <p data-i18n="Analyze hands, train decisions, and calculate Equity without an account.">Analyze hands, train decisions, and calculate Equity without an account.</p>
+              <p data-i18n="Sign in to save hands, build Personal Strategy, and sync study progress.">Sign in to save hands, build Personal Strategy, and sync study progress.</p>
               <button id="homeGuestSignIn" class="ui-button ui-button--primary" type="button" data-i18n="Sign in or create account">Sign in or create account</button>
             </div>
           </section>
@@ -486,6 +507,7 @@
               <button type="button" class="home-quick-link" data-home-destination="training"><strong data-i18n="Training">Training</strong><span data-i18n="Practice a decision">Practice a decision</span></button>
               <button type="button" class="home-quick-link" data-home-destination="equity"><strong data-i18n="Equity">Equity</strong><span data-i18n="Calculate win chances">Calculate win chances</span></button>
               <button type="button" class="home-quick-link" data-home-destination="calibration"><strong data-i18n="Range Calibration">Range Calibration</strong><span data-i18n="Build your ranges">Build your ranges</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="review_mistakes" hidden><strong data-i18n="Review Mistakes">Review Mistakes</strong><span data-i18n="Revisit marked decisions">Revisit marked decisions</span></button>
             </nav>
           </section>
         </div>
@@ -2037,7 +2059,7 @@
           <button id="settingsOpenAccount" class="ui-button ui-button--secondary" type="button" data-i18n="Open Account / Profile">Open Account / Profile</button>
           <dl class="account-profile-facts">
             <div><dt data-i18n="Study data">Study data</dt><dd data-i18n="Stored on this device">Stored on this device</dd></div>
-            <div><dt data-i18n="Cloud sync is not enabled">Cloud sync is not enabled</dt><dd data-i18n="Study data is still stored locally. Signing in does not create a cloud backup.">Study data is still stored locally. Signing in does not create a cloud backup.</dd></div>
+            <div><dt id="settingsSyncHeading" data-i18n="Cloud sync is not enabled">Cloud sync is not enabled</dt><dd id="settingsSyncDescription" data-i18n="Study data is still stored locally. Signing in does not create a cloud backup.">Study data is still stored locally. Signing in does not create a cloud backup.</dd></div>
           </dl>
         </div>
 
@@ -2199,12 +2221,70 @@
             <button id="accountDisplayNameSubmit" class="ui-button ui-button--secondary" type="submit" data-i18n="Save name">Save name</button>
           </form>
           <p class="panel-note" data-i18n="Username changes are not available yet.">Username changes are not available yet.</p>
+          <section id="accountSyncPanel" class="account-sync-panel" aria-labelledby="accountSyncTitle">
+            <div class="account-sync-heading">
+              <div>
+                <h3 id="accountSyncTitle" data-i18n="Cloud study sync">Cloud study sync</h3>
+                <p data-i18n="Cloud sync is optional. Choose which private study domains sync across your signed-in devices.">Cloud sync is optional. Choose which private study domains sync across your signed-in devices.</p>
+              </div>
+              <span id="accountSyncStateBadge" class="badge status-badge status-badge--neutral" data-i18n="Saved locally">Saved locally</span>
+            </div>
+            <div id="accountSyncOptIn" class="account-sync-opt-in">
+              <strong data-i18n="Saved Hands and Spots">Saved Hands and Spots</strong>
+              <p id="accountSyncItemSummary" data-i18n="{count} items on this device will be synced.">0 items on this device will be synced.</p>
+              <div class="account-sync-actions">
+                <button id="accountSyncEnable" class="ui-button ui-button--primary" type="button" data-i18n="Enable sync">Enable sync</button>
+                <button id="accountSyncNotNow" class="ui-button ui-button--secondary" type="button" data-i18n="Not now">Not now</button>
+              </div>
+            </div>
+            <label id="accountSyncToggleRow" class="account-sync-toggle" for="accountSyncToggle" hidden>
+              <span><strong data-i18n="Saved Hands and Spots">Saved Hands and Spots</strong><small data-i18n="Turning sync off stops future network sync. Cloud data is not deleted, and local cached data remains.">Turning sync off stops future network sync. Cloud data is not deleted, and local cached data remains.</small></span>
+              <input id="accountSyncToggle" type="checkbox" role="switch" aria-describedby="accountSyncConsequence">
+            </label>
+            <p id="accountSyncConsequence" class="account-sync-consequence" data-i18n="Includes versioned Saved Hands and Saved Spots, their notes, review state, and archive tombstones.">Includes versioned Saved Hands and Saved Spots, their notes, review state, and archive tombstones.</p>
+            <div id="accountStrategySyncOptIn" class="account-sync-opt-in account-sync-opt-in--domain">
+              <strong data-i18n="Personal Strategy and Range Calibration">Personal Strategy and Range Calibration</strong>
+              <p id="accountStrategySyncItemSummary" data-i18n="{profiles} profiles, {observations} direct observations, and {sessions} active calibration sessions on this device will be synced.">0 profiles, 0 direct observations, and 0 active calibration sessions on this device will be synced.</p>
+              <div class="account-sync-actions">
+                <button id="accountStrategySyncEnable" class="ui-button ui-button--primary" type="button" data-i18n="Enable strategy sync">Enable strategy sync</button>
+                <button id="accountStrategySyncNotNow" class="ui-button ui-button--secondary" type="button" data-i18n="Not now">Not now</button>
+              </div>
+            </div>
+            <label id="accountStrategySyncToggleRow" class="account-sync-toggle" for="accountStrategySyncToggle" hidden>
+              <span><strong data-i18n="Personal Strategy and Range Calibration">Personal Strategy and Range Calibration</strong><small data-i18n="Direct and Training evidence, profile and mode metadata, contradictions, and resumable calibration sessions are included.">Direct and Training evidence, profile and mode metadata, contradictions, and resumable calibration sessions are included.</small></span>
+              <input id="accountStrategySyncToggle" type="checkbox" role="switch" aria-describedby="accountStrategySyncConsequence">
+            </label>
+            <p id="accountStrategySyncConsequence" class="account-sync-consequence" data-i18n="Inference is recomputed locally from synced evidence. Generic Training history is not synced.">Inference is recomputed locally from synced evidence. Generic Training history is not synced.</p>
+            <div class="account-sync-footer">
+              <span id="accountSyncStatus" class="account-sync-status" role="status" aria-live="polite" aria-atomic="true"><i aria-hidden="true"></i><span data-i18n="Saved locally">Saved locally</span></span>
+              <button id="accountSyncNow" class="ui-button ui-button--secondary" type="button" data-i18n="Sync now">Sync now</button>
+            </div>
+          </section>
           <div class="account-auth-buttons">
             <button id="accountUseAnother" class="ui-button ui-button--secondary" type="button" data-i18n="Use another account">Use another account</button>
             <button id="accountSignOut" class="ui-button ui-button--quiet" type="button" data-i18n="Sign out">Sign out</button>
           </div>
         </div>
         <p id="accountAuthStatus" class="account-auth-status" role="status" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="syncConflictModal" class="modal-backdrop sync-conflict-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="syncConflictTitle" aria-describedby="syncConflictDescription" hidden>
+    <div class="modal overlay-surface sync-conflict-modal">
+      <div class="modal-head">
+        <div><p class="account-profile-kicker" data-i18n="Conflict">Conflict</p><h2 id="syncConflictTitle" data-i18n="Changed on another device">Changed on another device</h2></div>
+        <button id="syncConflictClose" class="close ui-button ui-button--icon" type="button" aria-label="Close conflict" data-i18n-aria-label="Close conflict" title="Close" data-i18n-title="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="syncConflictDescription" data-i18n="This saved item changed on another device. Choose which version to preserve; Riverline will not discard one silently.">This saved item changed on another device. Choose which version to preserve; Riverline will not discard one silently.</p>
+        <strong id="syncConflictObjectTitle" class="sync-conflict-object-title" dir="auto"></strong>
+        <div class="sync-conflict-actions">
+          <button id="syncConflictKeepDevice" class="ui-button ui-button--primary" type="button" data-choice="keep_device" data-i18n="Keep this device">Keep this device</button>
+          <button id="syncConflictKeepCloud" class="ui-button ui-button--secondary" type="button" data-choice="keep_cloud" data-i18n="Keep cloud version">Keep cloud version</button>
+          <button id="syncConflictKeepBoth" class="ui-button ui-button--secondary" type="button" data-choice="keep_both" data-i18n="Keep both">Keep both</button>
+        </div>
+        <p id="syncConflictStatus" class="account-auth-status" role="status" aria-live="polite"></p>
       </div>
     </div>
   </div>
@@ -2247,6 +2327,7 @@
   <script type="module" src="src/application/account-identity-bootstrap.mjs"></script>
   <script type="module" src="src/application/authentication-bootstrap.mjs"></script>
   <script type="module" src="src/application/saved-study-object-bootstrap.mjs"></script>
+  <script type="module" src="src/application/saved-study-sync-bootstrap.mjs"></script>
   <script type="module" src="src/application/home-workspace-bootstrap.mjs"></script>
   <script type="module" src="src/application/tutorial-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>

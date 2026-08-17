@@ -14,7 +14,12 @@ import {
 export function installSavedStudyObjectBridge(browserWindow, options = {}) {
   if (!browserWindow) return null;
   const databases = new Map();
+  const mutationListeners = new Set();
+  const notifyLocalMutation = async (mutation) => {
+    for (const listener of mutationListeners) await listener(mutation);
+  };
   const application = options.application ?? createSavedStudyObjectApplication({
+    onLocalMutation: notifyLocalMutation,
     activationResolver: async () => {
       await browserWindow.RiverlineAuthentication?.ready?.();
       if (browserWindow.RiverlineAuthentication?.getState?.().status !== 'signed_in') {
@@ -72,6 +77,18 @@ export function installSavedStudyObjectBridge(browserWindow, options = {}) {
     listRecent: (...args) => (signedIn() ? application.listRecent(...args) : Promise.resolve([])),
     listForReview: (...args) => (signedIn() ? application.listForReview(...args) : Promise.resolve([])),
     listMistakes: (...args) => (signedIn() ? application.listMistakes(...args) : Promise.resolve([])),
+    subscribeLocalMutations(listener) {
+      if (typeof listener !== 'function') throw new TypeError('Saved mutation listener must be a function');
+      mutationListeners.add(listener);
+      return () => mutationListeners.delete(listener);
+    },
+    createSyncPort: () => Object.freeze({
+      listAll: () => application.listAllForSync(),
+      getById: (id) => application.getById(id),
+      applyRemote: (object, syncOptions) => application.applySyncedObject(object, syncOptions),
+      saveObject: (object) => application.applySyncedObject(object, { expectedRevision: null }),
+      activate: () => application.activate(),
+    }),
   });
   Object.defineProperty(browserWindow, 'RiverlineSavedStudyObjects', {
     configurable: true,
