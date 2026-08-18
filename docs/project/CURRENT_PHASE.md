@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 18, 2026 (`HOME-002A` implementation checkpoint).
+Last refreshed: August 18, 2026 (`RANGE-CAL-002B` implementation checkpoint).
 
 Code, tests, accepted tags/ticket reports, new manual QA, and explicit user decisions override this snapshot. Detailed future capability is preserved in `PRODUCT_BACKLOG.md`; subsystem contracts remain authoritative for implementation semantics.
 
@@ -33,7 +33,7 @@ Do not reopen the retired browser/Electron ONNX runtime, remote strategy API, ar
 
 ### Personal Strategy — CHECKPOINTED / INTENTIONALLY INCOMPLETE
 
-**COMPLETED through:** `RANGE-CAL-000`, `RANGE-CAL-001A`, `RANGE-CAL-001B/001BR`, `RANGE-CAL-001C-A`, `RANGE-CAL-UI-001R`, and `RANGE-CAL-002A`.
+**COMPLETED through:** `RANGE-CAL-000`, `RANGE-CAL-001A`, `RANGE-CAL-001B/001BR`, `RANGE-CAL-001C-A`, `RANGE-CAL-UI-001R`, `RANGE-CAL-002A`, and `RANGE-CAL-002B`.
 
 Accepted foundation:
 
@@ -45,12 +45,15 @@ Accepted foundation:
 - contradictory direct and Training evidence is preserved rather than silently overwritten;
 - local-first, private, exportable, and structurally account-ready data;
 - isolated sparse-RFI inference baseline with synthetic holdout evidence and abstention.
+- unified source-preserving evidence projection with explicit correction, compatible-head, retraction, and contradiction semantics;
+- one deterministic local-graph RFI inference authority with versioned directly-known/high/medium/uncertain/conflicting/unknown estimates, categorical-only inference, 169-estimate snapshots, 002C support facts, and scope cache/application APIs;
+- hard-fixture validation over smooth, irregular, gapped, suited/offsuit, pair, direct-conflict, and exact-boundary synthetic targets, including false-high safety, abstention, stability, and runtime.
 
-`RANGE-CAL-002A` is research evidence, not live product inference or real-user validation. Its support difference is neither confidence nor action frequency. The deterministic 169-question loop remains fallback/test infrastructure, not the intended final experience.
+`RANGE-CAL-002A` is retained only as a compatibility API and historical evaluator; all decisions delegate to the 002B authority. `RANGE-CAL-002B` synthetic validation proves deterministic mechanics and honest known failure behavior, not poker correctness or real-user uncertainty calibration. The deterministic 169-question loop remains fallback/test infrastructure, not the intended final experience.
 
 `PERSONAL-STRATEGY-ARCH-002` now defines the follow-on authority in `UNIFIED_RANGE_INTELLIGENCE_SPEC.md`: immutable sparse evidence remains durable truth; inference/conflicts/uncertainty form a recomputable read model; 169 class baselines plus sparse combo overrides lazily materialize combo action strategies; Range Calibration, Matrix, Builder, and Teacher remain surfaces over that one model. It introduces no production schema or runtime change.
 
-**Resume at:** `RANGE-CAL-002B` inference/ordinal uncertainty and hard-fixture validation, then `002C` boundary-seeking questions/automatic stopping, `002D` Personal Strategy Matrix inspection/correction/provenance, `RANGE-BUILDER-001`, `RANGE-TEACHER-001`, and `002R` independent review.
+**Resume at:** `RANGE-CAL-002C` boundary-seeking questions/automatic stopping over the 002B snapshot/support API, then `002D` Personal Strategy Matrix inspection/correction/provenance, `RANGE-BUILDER-001`, `RANGE-TEACHER-001`, and `002R` independent review.
 
 **PRESERVED FUTURE:** evidence-backed mode relationships/interpolation, StrategyProvider integration, Training-to-profile evidence, postflop range propagation, and Range Builder/Teacher links. Do not redesign the accepted foundation when work resumes.
 

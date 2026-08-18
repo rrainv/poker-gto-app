@@ -4,6 +4,7 @@ import {
   calibrationContextKey,
   rangeObservationKey,
   sameOwnerRef,
+  validateCalibrationContext,
   validateCalibrationSession,
   validateProfileOwnerRef,
   validateRangeObservation,
@@ -879,6 +880,51 @@ export function createPersonalStrategyRepository({
           rangeObservations: [...conflicts, ...current].map((entry) => cloneData(entry.value)),
           trainingObservations: [],
           calibrationSessions: sessions.map((entry) => cloneData(entry.value)),
+        });
+      });
+    },
+
+    /**
+     * Load source evidence for one Profile x Mode x objective context. Direct
+     * history uses the existing scope index so corrections and independent
+     * heads remain available to the derived evidence view. Training v1 has a
+     * profile index only, so it is bounded to the selected profile and then
+     * filtered by exact mode/context. No inferred artifact is read or written.
+     */
+    async loadEvidenceScope({ profileId, modeId, context } = {}) {
+      if (typeof profileId !== 'string' || !profileId.trim()) {
+        throw new TypeError('Personal Strategy evidence scope profileId is required');
+      }
+      if (typeof modeId !== 'string' || !modeId.trim()) {
+        throw new TypeError('Personal Strategy evidence scope modeId is required');
+      }
+      validateCalibrationContext(context);
+      const selectedScopeKey = scopeKey({ profileId, modeId, context });
+      return readTransaction([
+        STORES.METADATA,
+        STORES.RANGE_OBSERVATIONS,
+        STORES.TRAINING_OBSERVATIONS,
+      ], async (transaction) => {
+        const [metadata, rangeRecords, profileTrainingRecords] = await Promise.all([
+          metadataIn(transaction),
+          transaction.getAllByIndex(STORES.RANGE_OBSERVATIONS, 'scopeKey', selectedScopeKey),
+          transaction.getAllByIndex(STORES.TRAINING_OBSERVATIONS, 'profileId', profileId),
+        ]);
+        const rangeObservations = rangeRecords.map((entry) => entry.value);
+        const trainingObservations = profileTrainingRecords
+          .map((entry) => entry.value)
+          .filter((entry) => entry.modeId === modeId
+            && calibrationContextKey(entry.context) === calibrationContextKey(context));
+        rangeObservations.forEach(validateRangeObservation);
+        trainingObservations.forEach(validateTrainingObservation);
+        return deepFreeze({
+          schemaVersion: 'personal-strategy-evidence-scope-source/v1',
+          repositoryRevision: metadata.revision,
+          profileId,
+          modeId,
+          context: cloneData(context),
+          rangeObservations: cloneData(rangeObservations),
+          trainingObservations: cloneData(trainingObservations),
         });
       });
     },

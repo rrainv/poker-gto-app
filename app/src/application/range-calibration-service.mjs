@@ -14,6 +14,7 @@ import {
   createLocalOwnerRef,
   createIndexedDbPersonalStrategyDatabase,
   createPersonalStrategyBrowserStorage,
+  createPersonalStrategyProjectionService,
   createPersonalStrategyRepository,
   createRangeObservation,
   createRfiCalibrationContext,
@@ -517,6 +518,7 @@ export function createRangeCalibrationApplication({
     ownerRef: resolvedOwnerRef,
     clock,
   });
+  const projectionService = createPersonalStrategyProjectionService({ repository });
 
   async function notifyLocalMutation(entities) {
     if (!onLocalMutation) return;
@@ -718,6 +720,11 @@ export function createRangeCalibrationApplication({
       session,
       expectedSessionUpdatedAt: state.session.updatedAt,
     });
+    projectionService.invalidateScope({
+      profileId: observation.profileId,
+      modeId: observation.modeId,
+      context: observation.context,
+    });
     await notifyLocalMutation([observation, session]);
     const repositoryTransactionMs = performanceNow() - repositoryStartedAt;
     const resolutionStartedAt = performanceNow();
@@ -776,6 +783,11 @@ export function createRangeCalibrationApplication({
       session,
       expectedSessionUpdatedAt: state.session.updatedAt,
     });
+    projectionService.invalidateScope({
+      profileId: retraction.profileId,
+      modeId: retraction.modeId,
+      context: retraction.context,
+    });
     await notifyLocalMutation([retraction, session]);
     const repositoryTransactionMs = performanceNow() - repositoryStartedAt;
     const snapshot = snapshotWithObservationAndSession(
@@ -824,6 +836,15 @@ export function createRangeCalibrationApplication({
     answerCalibrationQuestion,
     undoPreviousAnswer,
     pauseSession,
+    getEvidenceView: (scope) => projectionService.getEvidenceView(scope),
+    getStrategyEstimate: (scope, handClass) => (
+      projectionService.getStrategyEstimate(scope, handClass)
+    ),
+    getStrategySnapshot: (scope) => projectionService.getStrategySnapshot(scope),
+    getInferenceSupport: (scope, handClass) => (
+      projectionService.getInferenceSupport(scope, handClass)
+    ),
+    getProjectionCacheMetrics: () => projectionService.getCacheMetrics(),
     exportPortable: (options) => repository.exportPortable(options),
     async importPortable(value, options) {
       const before = new Set((await repository.listSyncEntities()).map((entry) => entry.id));

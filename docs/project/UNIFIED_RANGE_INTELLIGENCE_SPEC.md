@@ -1,6 +1,6 @@
 # Unified Range Intelligence Architecture
 
-Status: architecture authority for `PERSONAL-STRATEGY-ARCH-002`; implementation remains checkpointed through `RANGE-CAL-002A`
+Status: architecture authority for `PERSONAL-STRATEGY-ARCH-002`; implementation checkpointed through `RANGE-CAL-002B`
 
 Date: August 18, 2026
 
@@ -52,6 +52,7 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 | `RANGE-CAL-001C-A` | IndexedDB v2 repository with atomic answer/session transactions, immutable history, current-leaf indexes, recovery-safe legacy migration, and measured Firefox/Electron performance. |
 | `RANGE-CAL-UI-001R` | Accepted Range Calibration product/interaction refinement. The full 169-question order remains fallback and test infrastructure. |
 | `RANGE-CAL-002A` | Isolated deterministic sparse RFI Fold/Raise inference, explicit abstention, direct-evidence precedence, contradictory-head abstention, evidence references, and synthetic holdout evaluation. |
+| `RANGE-CAL-002B` | Unified read-only evidence projection, explicit correction/compatible-head/conflict semantics, `PersonalStrategyEstimate v1`, 169-estimate snapshot, ordinal high/medium/uncertain/conflicting/unknown states, conservative local-graph inference, scope cache/application API, and eight-fixture deterministic validation. |
 | `ACCOUNT-002B-B` | Opt-in Personal Strategy sync that preserves stable IDs, immutable direct and Training evidence, divergent offline heads, profile/mode metadata conflicts, and resumable sessions; inferred output is deliberately excluded. |
 | `HOME-002A` | Lightweight Personal Strategy summary: profile count, direct-evidence count, answered hand classes, contradictory heads, and resumable calibration state. Home performs no inference or range math. |
 
@@ -61,7 +62,7 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 - `app/src/personal-strategy/repository.mjs` owns current local durability, immutable history, selected and conflicting direct heads, export/import, and sync application.
 - `app/src/application/range-calibration-service.mjs` owns the current sequential answer/session workflow.
 - `app/src/application/range-calibration-workspace.mjs` is a UI consumer of that application service and does not implement inference.
-- `app/src/personal-strategy/rfi-inference.mjs` is the isolated `sparse-rfi-local-neighbors/v1` experiment. It is not imported by the Personal Strategy index, repository, Calibration service, Matrix, Training, StrategyProvider, or startup.
+- `app/src/personal-strategy/evidence-view.mjs` owns the source-preserving `personal-strategy-evidence-view/v1` and derived conflict projection. `app/src/personal-strategy/rfi-inference.mjs` owns the sole `deterministic-rfi-local-graph/v1` estimate/snapshot authority; its 002A request/result exports are compatibility adapters over that authority. `app/src/personal-strategy/projection-service.mjs` owns scope caching and the repository-facing query API. The lazy Range Calibration application exposes those queries but does not change question order or UI.
 - `shared/poker-domain/holdem-combos.js` and `holdem-range.js` own the 1,326-combo registry and `HoldemWeightedRange v1`.
 - the current production Matrix in `app/src/core/logic.js` resolves one representative available combo per 169 class through `StrategyProvider v1`. It is not a Personal Strategy Matrix or range authority.
 - canonical Training generates, grades, and presents against `StrategyResult v1`. A `TrainingObservation v1` repository contract exists, but no live per-session Training-to-profile adapter or opt-in UI exists.
@@ -73,9 +74,9 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 - only preflop RFI is modeled, with the Fold/Raise action family;
 - direct evidence is keyed by 169 hand class, not exact combo;
 - the live question loop remains a deterministic unanswered-hand walk and implies completion only at 169 direct answers;
-- 002A returns a categorical dominant action or abstention, never an exact action-frequency vector or calibrated confidence;
-- 002A validation is synthetic only and is weak on deliberately irregular/non-local ranges;
-- its normalized neighbor-support difference is an internal diagnostic, not confidence, action frequency, or range weight;
+- 002B inference remains categorical only; exact direct mixes pass through, while inferred exact frequencies are deliberately unavailable;
+- 002B validation remains synthetic mechanics evidence rather than real-user uncertainty calibration or poker-reference truth;
+- deliberately non-local evidence is expected to produce near-total abstention; adaptive sampling and real-user corpora remain future gates;
 - synced contradictory heads are preserved, but there is no first-class conflict-resolution workflow;
 - Personal Strategy does not produce a shared action-strategy snapshot for Matrix, Builder, Teacher, Analysis, or provider consumers;
 - no unified Range Builder or Range Teacher exists;
@@ -529,6 +530,8 @@ The resolution is another immutable direct-intent event. It may select one exist
 Until that contract lands, 002B may detect conflicts and 002C may prioritize them for review, but an ordinary answer must not claim that all heads were resolved.
 
 ## 11. `RANGE-CAL-002B` — inference and uncertainty
+
+Implementation checkpoint: completed by `deterministic-rfi-local-graph/v1`, with exact semantics and fixture/budget results in `RANGE_INFERENCE_SPEC.md` and `RANGE_CAL_002B_VALIDATION_REPORT.md`. Sections 11.1–11.5 remain the normative design constraints.
 
 ### 11.1 Scope
 
@@ -1105,7 +1108,7 @@ Riverline should feel as if it is learning the user's boundaries, not assigning 
 
 ## 24. Recommended implementation sequence
 
-### 24.1 `RANGE-CAL-002B` — inference + uncertainty
+### 24.1 `RANGE-CAL-002B` — inference + uncertainty — COMPLETED
 
 Dependencies:
 
@@ -1130,10 +1133,10 @@ Acceptance:
 - deterministic versioning, scope isolation, stability, and performance tests pass;
 - no import from UI, repository, sync, StrategyProvider, Training, Analysis, or Home.
 
-Likely files:
+Implemented files:
 
-- `app/src/personal-strategy/rfi-inference.mjs` or a new versioned sibling;
-- new DOM-free evidence-view/snapshot/uncertainty modules under `app/src/personal-strategy/`;
+- `app/src/personal-strategy/evidence-view.mjs`, `rfi-inference.mjs`, and `projection-service.mjs`;
+- a scope-aware source query in the existing repository and bounded lazy Calibration application query methods;
 - `tests/range_cal002b_*.test.mjs`;
 - `tests/fixtures/` and `tests/tooling/` evaluation files;
 - a new 002B validation report and bounded spec references.

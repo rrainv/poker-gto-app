@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 18, 2026 (`HOME-GAME-001A` implementation checkpoint).
+Last consolidated: August 18, 2026 (`RANGE-CAL-002B` implementation checkpoint).
 
 This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
@@ -28,13 +28,13 @@ This file preserves accepted future capability so it does not depend on chat mem
 | 8 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `HOME-002A` — My Riverline powered by real account, sync, Saved, Personal Strategy, and calibration state; Firefox visual acceptance remains open |
 | 9 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `HOME-GAME-001A` standalone exact-accounting/persistence foundation plus bounded session/settlement workspace; Firefox acceptance and management UX hardening continue in `001B` |
 
-Personal Strategy resumes separately at `RANGE-CAL-002B`; it is preserved but not in this immediate sequence. Reassess at every clean checkpoint.
+Personal Strategy resumes separately at `RANGE-CAL-002C`; 002B now supplies the unified evidence/estimate/snapshot and support facts that ticket must consume. Reassess at every clean checkpoint.
 
 ## Checkpointed foundations and explicit resume points
 
 | Subsystem | Status | Resume / future owner |
 |---|---|---|
-| Personal Strategy through `RANGE-CAL-002A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Resume `002B` inference/uncertainty validation, `002C` adaptive questions/stopping, `002D` Personal Strategy Matrix, `RANGE-BUILDER-001`, `RANGE-TEACHER-001`, and `002R`; then evidence-backed mode relationships, provider and Training integration |
+| Personal Strategy through `RANGE-CAL-002B` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Unified evidence/correction/conflict projection, deterministic categorical RFI estimates, ordinal uncertainty, snapshots, support facts, validation, and scope cache are implemented. Resume `002C` adaptive questions/stopping, `002D` Personal Strategy Matrix, `RANGE-BUILDER-001`, `RANGE-TEACHER-001`, and `002R`; then evidence-backed mode relationships, provider and Training integration |
 | `PERSONAL-STRATEGY-ARCH-002` | COMPLETED architecture contract | `UNIFIED_RANGE_INTELLIGENCE_SPEC.md` defines one evidence-derived action-strategy model for Calibration, Matrix, Builder, and Teacher; no production implementation or schema migration is implied |
 | Table Presence / Replay / poker-chip primitive | COMPLETED | Richer physical table visuals are SHELVED FOR LATER |
 | Saved Hands/Spots through `SAVED-OBJECTS-002` | COMPLETED | New payload tickets for Saved Range, Drill, or Session; richer library/history/account/sharing later |

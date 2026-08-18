@@ -1,6 +1,6 @@
 # Personal Strategy Foundation Specification
 
-Status: implementation authority for `RANGE-CAL-000`
+Status: durable evidence/persistence authority through `RANGE-CAL-002B`
 
 Schema generation: v1
 
@@ -89,6 +89,8 @@ It is an immutable behavioral observation, not a direct range edit. It has its o
 | Portable export | `personal-strategy-export/v1` | Validated local transfer representation |
 
 There is no v1 `InferredRange`, confidence score, `SavedSpot`, derived range cache, solver reference, or separate profile-range snapshot. Those objects acquire authority only when a future ticket implements their behavior and validation.
+
+`RANGE-CAL-002B` adds only recomputable read contracts over these unchanged durable records: `PersonalStrategyEvidenceView v1`, `PersonalStrategyEstimate v1`, ordinal `PersonalStrategyUncertainty v1`, inference support facts, and `PersonalStrategySnapshot v1`. They remain in memory, are excluded from portable evidence exports/cloud sync, and are specified in `RANGE_INFERENCE_SPEC.md`. No profile, mode, context, evidence, session, export, IndexedDB, or Supabase schema was migrated.
 
 ## 4. StrategyProfile v1
 
@@ -400,7 +402,7 @@ A later ticket must not cross an integration gate without owning it explicitly:
 - Training opt-in: create `TrainingObservation` only after explicit profile/mode selection and user consent;
 - StrategyProvider: requires a validated personal-strategy provider/source contract and truthful coverage/provenance;
 - Matrix: personal rendering must consume a validated provider result, not read repository internals in UI code;
-- inference/confidence: requires an `InferredRange`/metadata schema, evidence policy, validation, and measured performance;
+- inference/uncertainty: crossed for preflop RFI Fold/Raise by `RANGE-CAL-002B`; the deterministic derived contracts, evidence policy, validation, and measured performance live in `RANGE_INFERENCE_SPEC.md`, while durable source schemas remain unchanged;
 - adaptive questions: requires a versioned selection/cursor policy and deterministic resume behavior;
 - accounts/sync: crossed by `ACCOUNT-002B-B` under `PERSONAL_STRATEGY_SYNC_SPEC.md`; later schema/domain additions still require their own sync semantics;
 - import-as-copy/sharing: requires complete ID/reference remapping and explicit ownership transfer.
