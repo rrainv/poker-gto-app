@@ -122,6 +122,7 @@ export const CALIBRATION_SETUP_TUTORIAL_DEFINITION = definition({
     { id: 'context', anchor: 'calibration-context', titleKey: 'Choose objective RFI facts', bodyKey: 'Set environment, table size, Hero position, effective stack, and accounting for an unopened preflop range. These facts identify the direct range you are calibrating.', placement: 'right', precondition: 'calibration-configured' },
     { id: 'start', anchor: 'calibration-start', titleKey: 'Choose a session depth', bodyKey: 'Quick, Standard, and Deep are question-count goals. Pause anytime; Riverline recomputes the next question from saved evidence when you resume.', placement: 'left', precondition: 'calibration-configured' },
     { id: 'matrix', anchor: 'calibration-personal-matrix', titleKey: 'Inspect the model as a matrix', bodyKey: 'The Matrix summarizes this exact Profile, Mode, and RFI context. Action fill stays separate from direct, inferred, uncertain, conflicting, and unknown status.', placement: 'top', precondition: 'calibration-configured' },
+    { id: 'builder', anchor: 'calibration-personal-matrix', titleKey: 'Build the same strategy directly', bodyKey: 'Range Builder selects or paints many Matrix hands at once. Builder edits become direct evidence, exact mixes stay explicit, Undo preserves history, and Calibration immediately uses the updated model.', placement: 'top', precondition: 'calibration-configured' },
   ],
 });
 

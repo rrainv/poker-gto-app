@@ -71,6 +71,8 @@ The combined Personal Strategy cursor is deliberate: one domain-ordered batch ap
 
 Direct `RangeObservation v1` and persisted `TrainingObservation v1` rows are append-oriented and immutable by stable evidence ID.
 
+`RANGE-BUILDER-001` uses the same direct row contract and transport. Additive `provenance.source = range_builder`, `actionGroupId`, and optional `undoesActionGroupId` remain inside the immutable evidence payload; one local Builder command notifies one batch of source rows, while the existing outbox retains one stable immutable operation per row. No Builder selection, preview, session history, Matrix, inferred snapshot, or separate sync protocol exists.
+
 - the same ID and exact payload deduplicates;
 - reusing an ID with different bytes fails closed;
 - distinct IDs are both retained even when profile/mode/context/hand match;

@@ -1,6 +1,6 @@
 # Personal Strategy Foundation Specification
 
-Status: durable evidence/persistence authority through `RANGE-CAL-002B`
+Status: durable evidence/persistence authority through `RANGE-BUILDER-001`
 
 Schema generation: v1
 
@@ -165,7 +165,13 @@ dominantAction | null
 hasExplicitFrequencies
 frequencies[] | null
 state = active | retracted
-provenance { type = direct_calibration, calibrationSessionId | null }
+provenance {
+  type = direct_calibration
+  calibrationSessionId | null
+  source = calibration | matrix | range_builder | absent on legacy records
+  actionGroupId | absent
+  undoesActionGroupId | absent
+}
 revision { supersedesObservationId | null }
 createdAt
 updatedAt
@@ -218,7 +224,7 @@ No generic bag of evidence fields is stored. Separate contracts prevent a Traini
 
 Later direct revisions do not rewrite historical Training comparisons. This preserves what the user intended and what they did at the time. Future clarification UX can query contradictory evidence without inference being part of v1.
 
-Future provenance types such as imported, coach review, solver reference, or inferred are not accepted by v1 validators. Each needs an approved schema change with authority and trust semantics.
+`RANGE-CAL-002D` and `RANGE-BUILDER-001` add source-specific direct-intent metadata inside the existing direct `RangeObservation v1` contract. They do not add a new evidence authority: `provenance.type` remains `direct_calibration`, while `source` distinguishes calibration, Matrix, and Builder UX and Builder rows may share an action group. Legacy records without `source` retain calibration semantics. Future provenance authorities such as imported, coach review, solver reference, or inferred are not accepted by v1 validators. Each needs an approved schema change with authority and trust semantics.
 
 ## 9. Revision, conflict, and deletion policy
 
@@ -306,6 +312,8 @@ An accepted answer runs one strict read/write transaction over metadata, immutab
 6. replace session progress/cursor;
 7. increment repository metadata;
 8. commit all records atomically.
+
+`RANGE-BUILDER-001` adds a bounded sibling transaction that validates one exact scope, unique canonical strategic points/IDs, and each current supersession head; appends all class evidence rows; replaces their current-leaf records; increments metadata once; and commits or aborts the whole group. It does not change the physical stores or database version.
 
 The operation ID is also the observation ID. Repeating the exact same committed observation/session pair returns idempotent success rather than duplicating it. Conflicting ID reuse fails closed. Transaction abort or quota failure leaves all prior records authoritative.
 

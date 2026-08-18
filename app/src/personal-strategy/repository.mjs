@@ -929,6 +929,31 @@ export function createPersonalStrategyRepository({
       });
     },
 
+    async loadRangeHeadsScope({ profileId, modeId, context } = {}) {
+      if (typeof profileId !== 'string' || !profileId.trim()) {
+        throw new TypeError('Personal Strategy head scope profileId is required');
+      }
+      if (typeof modeId !== 'string' || !modeId.trim()) {
+        throw new TypeError('Personal Strategy head scope modeId is required');
+      }
+      validateCalibrationContext(context);
+      const selectedScopeKey = scopeKey({ profileId, modeId, context });
+      return readTransaction([
+        STORES.CURRENT_RANGE_OBSERVATIONS,
+        STORES.CONFLICTING_RANGE_OBSERVATIONS,
+      ], async (transaction) => {
+        const [current, conflicting] = await Promise.all([
+          transaction.getAllByIndex(STORES.CURRENT_RANGE_OBSERVATIONS, 'scopeKey', selectedScopeKey),
+          transaction.getAllByIndex(STORES.CONFLICTING_RANGE_OBSERVATIONS, 'scopeKey', selectedScopeKey),
+        ]);
+        return deepFreeze({
+          schemaVersion: 'personal-strategy-range-heads/v1',
+          current: current.map((entry) => cloneData(entry.value)),
+          conflicting: conflicting.map((entry) => cloneData(entry.value)),
+        });
+      });
+    },
+
     /**
      * Read only the selected calibration scope needed by Home. The exact-scope
      * indexes cap current direct observations at the 169 RFI hand classes and
@@ -1101,6 +1126,33 @@ export function createPersonalStrategyRepository({
       ], async (transaction) => {
         const metadata = await metadataIn(transaction);
         await saveRangeInTransaction(transaction, observation);
+        return commitMetadata(transaction, metadata);
+      });
+    },
+
+    async saveRangeObservationBatch(observations) {
+      requireArray(observations, 'RangeObservation batch').forEach(validateRangeObservation);
+      if (observations.length === 0) throw new RangeError('RangeObservation batch cannot be empty');
+      const ids = observations.map((entry) => entry.id);
+      const keys = observations.map(rangeObservationKey);
+      if (new Set(ids).size !== ids.length || new Set(keys).size !== keys.length) {
+        throw new RangeError('RangeObservation batch requires unique IDs and strategic points');
+      }
+      const first = observations[0];
+      const contextKey = calibrationContextKey(first.context);
+      if (observations.some((entry) => entry.profileId !== first.profileId
+        || entry.modeId !== first.modeId
+        || calibrationContextKey(entry.context) !== contextKey)) {
+        throw new RangeError('RangeObservation batch must share one Personal Strategy scope');
+      }
+      return writeTransaction([
+        ...ID_STORES,
+        STORES.CURRENT_RANGE_OBSERVATIONS,
+      ], async (transaction) => {
+        const metadata = await metadataIn(transaction);
+        for (const observation of observations) {
+          await saveRangeInTransaction(transaction, observation);
+        }
         return commitMetadata(transaction, metadata);
       });
     },

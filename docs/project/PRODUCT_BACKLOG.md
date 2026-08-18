@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 18, 2026 (`RANGE-CAL-002D` implementation checkpoint).
+Last consolidated: August 18, 2026 (`RANGE-BUILDER-001` implementation checkpoint).
 
 This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
@@ -28,13 +28,13 @@ This file preserves accepted future capability so it does not depend on chat mem
 | 8 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `HOME-002A` — My Riverline powered by real account, sync, Saved, Personal Strategy, and calibration state; Firefox visual acceptance remains open |
 | 9 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `HOME-GAME-001A` standalone exact-accounting/persistence foundation plus bounded session/settlement workspace; Firefox acceptance and management UX hardening continue in `001B` |
 
-Personal Strategy resumes separately at `RANGE-BUILDER-001`; 002D now supplies the snapshot-derived Matrix inspection/correction projection over the 002B evidence authority and 002C question/boundary facts. Human Firefox visual acceptance remains tracked separately. Reassess at every clean checkpoint.
+Personal Strategy resumes separately at `RANGE-TEACHER-001`; 002D supplies the snapshot-derived Matrix inspection/correction projection and Builder now supplies grouped class-level direct editing/undo over the same 002B evidence authority and 002C question/boundary facts. Human Firefox visual acceptance remains tracked separately. Reassess at every clean checkpoint.
 
 ## Checkpointed foundations and explicit resume points
 
 | Subsystem | Status | Resume / future owner |
 |---|---|---|
-| Personal Strategy through `RANGE-CAL-002D` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Unified evidence/correction/conflict projection, categorical estimates, adaptive questioning/stopping, and the compact Matrix inspector/correction surface are implemented without a second authority. Resume `RANGE-BUILDER-001`, `RANGE-TEACHER-001`, and `002R`; complete 002D human Firefox visual acceptance separately, then evidence-backed mode relationships, provider and Training integration |
+| Personal Strategy through `RANGE-BUILDER-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Unified evidence/correction/conflict projection, categorical estimates, adaptive questioning/stopping, compact Matrix inspection, and atomic class-level Builder editing/undo are implemented without a second authority. Resume `RANGE-TEACHER-001` and `002R`; complete 002D/Builder human Firefox visual acceptance separately, then evidence-backed mode relationships, provider and Training integration |
 | `PERSONAL-STRATEGY-ARCH-002` | COMPLETED architecture contract | `UNIFIED_RANGE_INTELLIGENCE_SPEC.md` defines one evidence-derived action-strategy model for Calibration, Matrix, Builder, and Teacher; no production implementation or schema migration is implied |
 | Table Presence / Replay / poker-chip primitive | COMPLETED | Richer physical table visuals are SHELVED FOR LATER |
 | Saved Hands/Spots through `SAVED-OBJECTS-002` | COMPLETED | New payload tickets for Saved Range, Drill, or Session; richer library/history/account/sharing later |
@@ -58,7 +58,7 @@ Personal Strategy resumes separately at `RANGE-BUILDER-001`; 002D now supplies t
 
 | Capability | Status | Preserved scope |
 |---|---|---|
-| Range Builder | PRESERVED FUTURE | `RANGE-BUILDER-001` begins as the Personal Strategy action editor over shared evidence/snapshots: 169 painting, exact action mixes, partial/unknown state, explicit correction lineage, and no 1,326-entry write explosion; sparse canonical-combo overrides and general Saved Range editing follow only through their approved schemas |
+| Range Builder | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `RANGE-BUILDER-001` implements the Personal Strategy class editor over shared evidence/snapshots: multi-selection and painting, dominant/pure/exact actions, partial/unknown state, explicit Builder provenance/action groups, conflict skip, atomic undo, adaptive interoperability, and no 1,326-entry write explosion. Human Firefox acceptance remains open; sparse canonical-combo overrides and general Saved Range editing require later approved schemas |
 | Range Teacher / Profiler | PRESERVED FUTURE | `RANGE-TEACHER-001` reuses the 002C selector, shared evidence/snapshot, and 002D Matrix for boundary questions, uncertainty/conflict review, provenance, confirmation/correction, and useful exact-mix requests; it does not duplicate Training grading |
 | Range-vs-range tools | PRESERVED FUTURE | combo-aware blockers, weighted category analysis, legitimate Equity integration through an approved versioned weighted-opponent boundary |
 | Personal Strategy integration | PRESERVED FUTURE | sparse evidence is durable authority; derived class baselines plus sparse combo overrides are recomputable and not synced; StrategyProvider source only after quantitative/qualitative result-contract validation; Training evidence remains explicit per-session opt-in; postflop range propagation later |

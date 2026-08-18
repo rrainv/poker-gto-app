@@ -1,6 +1,6 @@
 # Unified Range Intelligence Architecture
 
-Status: architecture authority for `PERSONAL-STRATEGY-ARCH-002`; implementation checkpointed through `RANGE-CAL-002D`
+Status: architecture authority for `PERSONAL-STRATEGY-ARCH-002`; implementation checkpointed through `RANGE-BUILDER-001`
 
 Date: August 18, 2026
 
@@ -55,6 +55,7 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 | `RANGE-CAL-002B` | Unified read-only evidence projection, explicit correction/compatible-head/conflict semantics, `PersonalStrategyEstimate v1`, 169-estimate snapshot, ordinal high/medium/uncertain/conflicting/unknown states, conservative local-graph inference, scope cache/application API, and eight-fixture deterministic validation. |
 | `RANGE-CAL-002C` | Deterministic adaptive question-value ranking, structurally diverse cold start, boundary/sparsity/uncertainty targeting, repetition and skip control, category progress, explicit automatic stop reasons, resumable Quick/Standard/Deep intents, exhaustive fallback, and equal-budget comparative validation. |
 | `RANGE-CAL-002D` | Snapshot-derived 169-cell Personal Strategy Matrix, separate action/provenance encoding, evidence/support inspector, dominant-only confirmation, exact-mix correction lineage, scope isolation, adaptive-question integration, and bounded accessible EN/RU/HE presentation. |
+| `RANGE-BUILDER-001` | Same-Matrix class-level multi-selection/painting, dominant/pure/exact bulk edits, explicit Builder provenance/action groups, one atomic repository transaction/invalidation/recompute, conflict skip, semantic group undo, and immediate Calibration reranking. |
 | `ACCOUNT-002B-B` | Opt-in Personal Strategy sync that preserves stable IDs, immutable direct and Training evidence, divergent offline heads, profile/mode metadata conflicts, and resumable sessions; inferred output is deliberately excluded. |
 | `HOME-002A` | Lightweight Personal Strategy summary: profile count, direct-evidence count, answered hand classes, contradictory heads, and resumable calibration state. Home performs no inference or range math. |
 
@@ -65,6 +66,7 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 - `app/src/application/range-calibration-service.mjs` owns adaptive answer/session orchestration, one atomic answer commit, pause/stop/skip/resume, and the explicit sequential exhaustive fallback.
 - `app/src/application/range-calibration-workspace.mjs` is a UI consumer of that application service and does not implement inference.
 - `app/src/personal-strategy/evidence-view.mjs` owns the source-preserving `personal-strategy-evidence-view/v1` and derived conflict projection. `app/src/personal-strategy/rfi-inference.mjs` owns the sole `deterministic-rfi-local-graph/v1` estimate/snapshot authority; its 002A request/result exports are compatibility adapters over that authority. `app/src/personal-strategy/projection-service.mjs` owns scope caching, answer preview through the same authority, and the repository-facing query API. `app/src/personal-strategy/rfi-question-selection.mjs` owns the DOM-free 002C ranking, explanation, and stopping policies.
+- `app/src/application/range-builder-service.mjs` owns DOM-free Builder selection summaries/previews plus grouped apply/undo orchestration; `saveRangeObservationBatch(...)` in the canonical repository owns its all-or-nothing write. Builder UI remains a mode over the Personal Strategy Matrix and never accesses persistence directly.
 - `shared/poker-domain/holdem-combos.js` and `holdem-range.js` own the 1,326-combo registry and `HoldemWeightedRange v1`.
 - the current production Matrix in `app/src/core/logic.js` resolves one representative available combo per 169 class through `StrategyProvider v1`. It is not a Personal Strategy Matrix or range authority.
 - canonical Training generates, grades, and presents against `StrategyResult v1`. A `TrainingObservation v1` repository contract exists, but no live per-session Training-to-profile adapter or opt-in UI exists.
@@ -81,7 +83,7 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 - deliberately non-local evidence is expected to produce near-total abstention; 002C adaptive validation preserves that behavior, while real-user corpora remain a future gate;
 - synced contradictory heads are preserved, but there is no first-class conflict-resolution workflow;
 - Personal Strategy now projects the accepted class-level snapshot into a Matrix-specific read model; Builder, Teacher, Analysis, and provider consumers do not yet have a shared action-strategy attachment;
-- no unified Range Builder or Range Teacher exists;
+- class-level unified Range Builder exists; combo overrides, imports/exports, comparisons, and Range Teacher remain unavailable;
 - no Training click mutates Personal Strategy in the current product;
 - no personal source exists in `StrategyProvider v1` or its closed `StrategyResult v1` source vocabulary;
 - Home intentionally shows direct facts and resume state only;
@@ -1244,7 +1246,7 @@ Not owned:
 
 - general Builder brushes/import/export, Training, provider, Analysis, postflop.
 
-### 24.4 `RANGE-BUILDER-001` — unified manual editor
+### 24.4 `RANGE-BUILDER-001` — unified manual editor — IMPLEMENTED / VISUAL QA OPEN
 
 Dependencies:
 
@@ -1280,6 +1282,17 @@ Likely files:
 Not owned:
 
 - generic Saved Range library, sharing, notation parser, provider, weighted Equity, postflop propagation.
+
+Implementation checkpoint:
+
+- additive `calibration | matrix | range_builder` source metadata and Builder action-group/undo references remain inside immutable `RangeObservation v1` payloads, requiring no physical database or remote schema migration;
+- one canonical-order batch transaction, one mutation notification, one scope invalidation, and one snapshot recompute cover 1–169 accepted class edits;
+- ambiguous/conflicting heads skip by default; Builder does not claim multi-head resolution;
+- semantic undo appends canonical corrections/retractions and cannot touch a later or unrelated Calibration/Matrix/remote head;
+- the existing Personal Strategy Matrix supplies multi-selection, structural helpers, rectangular/paint gestures, exact-mix presets, keyboard operation, session history, feedback, EN/RU/HE, and RTL/LTR structure;
+- deterministic application/architecture/performance coverage is implemented; requested human Firefox visual acceptance remains in `QA_BACKLOG.md`.
+
+Detailed contracts and reusable Teacher seams are in `RANGE_BUILDER_SPEC.md`.
 
 ### 24.5 `RANGE-TEACHER-001` — active profiler/teacher
 

@@ -31,6 +31,12 @@ export const PROFILE_EVIDENCE_TYPES = Object.freeze({
   TRAINING_OBSERVATION: 'training_observation',
 });
 
+export const DIRECT_EVIDENCE_SOURCES = Object.freeze({
+  CALIBRATION: 'calibration',
+  MATRIX: 'matrix',
+  RANGE_BUILDER: 'range_builder',
+});
+
 export const RANGE_OBSERVATION_STATES = Object.freeze({
   ACTIVE: 'active',
   RETRACTED: 'retracted',
@@ -53,6 +59,7 @@ const PROFILE_STATE_VALUES = Object.freeze(Object.values(PROFILE_STATES));
 const OBSERVATION_STATE_VALUES = Object.freeze(Object.values(RANGE_OBSERVATION_STATES));
 const SESSION_STATE_VALUES = Object.freeze(Object.values(CALIBRATION_SESSION_STATES));
 const COMPARISON_RELATION_VALUES = Object.freeze(Object.values(DIRECT_COMPARISON_RELATIONS));
+const DIRECT_EVIDENCE_SOURCE_VALUES = Object.freeze(Object.values(DIRECT_EVIDENCE_SOURCES));
 const FREQUENCY_TOLERANCE = 1e-12;
 
 function deepFreeze(value) {
@@ -521,6 +528,16 @@ export function validateRangeObservation(observation) {
     observation.provenance.calibrationSessionId,
     'RangeObservation.provenance.calibrationSessionId',
   );
+  if (observation.provenance.source !== undefined
+    && !DIRECT_EVIDENCE_SOURCE_VALUES.includes(observation.provenance.source)) {
+    throw new RangeError(`Unsupported RangeObservation evidence source: ${observation.provenance.source}`);
+  }
+  optionalString(observation.provenance.actionGroupId, 'RangeObservation.provenance.actionGroupId');
+  optionalString(observation.provenance.undoesActionGroupId, 'RangeObservation.provenance.undoesActionGroupId');
+  if (observation.provenance.source === DIRECT_EVIDENCE_SOURCES.RANGE_BUILDER
+    && !observation.provenance.actionGroupId) {
+    throw new RangeError('Range Builder evidence requires an action group ID');
+  }
   requireObject(observation.revision, 'RangeObservation.revision');
   optionalString(
     observation.revision.supersedesObservationId,
@@ -542,6 +559,9 @@ export function createRangeObservation({
   frequencies = null,
   state = RANGE_OBSERVATION_STATES.ACTIVE,
   calibrationSessionId = null,
+  evidenceSource = null,
+  actionGroupId = null,
+  undoesActionGroupId = null,
   supersedesObservationId = null,
   createdAt,
   updatedAt = createdAt,
@@ -566,6 +586,11 @@ export function createRangeObservation({
     provenance: {
       type: PROFILE_EVIDENCE_TYPES.DIRECT_CALIBRATION,
       calibrationSessionId: optionalString(calibrationSessionId, 'calibrationSessionId'),
+      ...(evidenceSource === null ? {} : { source: evidenceSource }),
+      ...(actionGroupId === null ? {} : { actionGroupId: optionalString(actionGroupId, 'actionGroupId') }),
+      ...(undoesActionGroupId === null ? {} : {
+        undoesActionGroupId: optionalString(undoesActionGroupId, 'undoesActionGroupId'),
+      }),
     },
     revision: {
       supersedesObservationId: optionalString(supersedesObservationId, 'supersedesObservationId'),

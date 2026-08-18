@@ -73,15 +73,15 @@ Compact cells, a bounded grid scroll region, and an adaptive side/below inspecto
 - no StrategyProvider, Equity, or eager combo expansion participates;
 - instrumentation records projection preparation, selection, correction-to-recompute, and scope-switch time.
 
-## `RANGE-BUILDER-001` readiness
+## `RANGE-BUILDER-001` integration
 
-Builder may reuse the versioned 169-cell projection, action/mix presentation, scope contract, selected-hand identity, combo-override marker, and `recordPersonalStrategyMatrixEvidence` single-cell command. A future multi-cell brush should collect the same `{ handClass, actionType | mix }` edit values and add one bounded atomic application transaction; it must not loop renderer-owned repository calls or create a parallel table. Bulk painting, undo grouping, and combo-override persistence are deliberately not implemented by 002D.
+Builder reuses the versioned 169-cell projection, action/mix presentation, scope contract, selected-hand identity, inspector, and combo-override marker. `applyRangeBuilderOperation(...)` collects canonical classes and commits one bounded repository batch with explicit `range_builder` provenance/action grouping; it does not loop `recordPersonalStrategyMatrixEvidence(...)` or create a parallel table. Group undo appends canonical source corrections/retractions. Combo-override persistence remains deferred. See `RANGE_BUILDER_SPEC.md`.
 
 ## Known limits
 
 - Fold/Raise unopened-preflop scope only;
 - no inferred exact frequencies;
-- no writable multi-head conflict resolution;
+- no writable multi-head conflict resolution; Builder skips ambiguous/conflicting heads;
 - combo overrides are indicator/readiness data only;
 - synthetic inference validation is not poker correctness evidence;
 - automated structure and browser checks do not replace outstanding human Firefox visual acceptance tracked in `QA_BACKLOG.md`.

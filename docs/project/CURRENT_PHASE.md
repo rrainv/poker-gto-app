@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 18, 2026 (`RANGE-CAL-002D` implementation checkpoint).
+Last refreshed: August 18, 2026 (`RANGE-BUILDER-001` implementation checkpoint).
 
 Code, tests, accepted tags/ticket reports, new manual QA, and explicit user decisions override this snapshot. Detailed future capability is preserved in `PRODUCT_BACKLOG.md`; subsystem contracts remain authoritative for implementation semantics.
 
@@ -33,7 +33,7 @@ Do not reopen the retired browser/Electron ONNX runtime, remote strategy API, ar
 
 ### Personal Strategy — CHECKPOINTED / INTENTIONALLY INCOMPLETE
 
-**COMPLETED through:** `RANGE-CAL-000`, `RANGE-CAL-001A`, `RANGE-CAL-001B/001BR`, `RANGE-CAL-001C-A`, `RANGE-CAL-UI-001R`, `RANGE-CAL-002A`, `RANGE-CAL-002B`, `RANGE-CAL-002C`, and the automated implementation checkpoint for `RANGE-CAL-002D`.
+**COMPLETED through:** `RANGE-CAL-000`, `RANGE-CAL-001A`, `RANGE-CAL-001B/001BR`, `RANGE-CAL-001C-A`, `RANGE-CAL-UI-001R`, `RANGE-CAL-002A`, `RANGE-CAL-002B`, `RANGE-CAL-002C`, and the automated implementation checkpoints for `RANGE-CAL-002D` and `RANGE-BUILDER-001`.
 
 Accepted foundation:
 
@@ -51,12 +51,13 @@ Accepted foundation:
 - deterministic adaptive question value, structurally diverse cold start, boundary/uncertainty/sparsity targeting, repetition control, optional exact-mix refinement facts, truthful category progress, explicit stopping, Skip/Not sure, and resumable Quick/Standard/Deep sessions;
 - adaptive-versus-canonical validation at 10/20/30/40/50/75 questions: materially faster structured-boundary discovery and useful coverage, with irregular abstention and 002B high-band safety preserved.
 - a compact Personal Strategy Matrix over the shared 169-estimate snapshot, with separate action/status encoding, direct/inferred/uncertain/conflict/unknown inspection, actual evidence and neighbor facts, dominant-only confirmation, exact-mix correction lineage, adaptive-question follow/selection, scope isolation, and EN/RU/HE keyboard/RTL structure.
+- a unified class-level Range Builder over that Matrix/evidence authority, with multi-selection, rectangular and paint gestures, dominant/pure/exact bulk commands, explicit Builder provenance/action groups, conflict-safe atomic commits, session history, semantic undo, one-scope invalidation, and immediate adaptive reranking.
 
 `RANGE-CAL-002A` is retained only as a compatibility API and historical evaluator; all decisions delegate to the 002B authority. `RANGE-CAL-002B/002C` synthetic validation proves deterministic mechanics and honest known failure behavior, not poker correctness or real-user uncertainty calibration. Adaptive questioning is the default; the deterministic 169-question loop remains an explicit exhaustive fallback/test path.
 
-`PERSONAL-STRATEGY-ARCH-002` defines the follow-on authority in `UNIFIED_RANGE_INTELLIGENCE_SPEC.md`: immutable sparse evidence remains durable truth; inference/conflicts/uncertainty form a recomputable read model; 169 class baselines plus sparse combo overrides lazily materialize combo action strategies; Range Calibration, Matrix, Builder, and Teacher remain surfaces over that one model. `RANGE-CAL-002D` implements the first Matrix consumer without a schema migration, StrategyProvider path, Equity path, or eager combo materialization. Human Firefox visual acceptance remains tracked in `QA_BACKLOG.md`.
+`PERSONAL-STRATEGY-ARCH-002` defines the follow-on authority in `UNIFIED_RANGE_INTELLIGENCE_SPEC.md`: immutable sparse evidence remains durable truth; inference/conflicts/uncertainty form a recomputable read model; 169 class baselines plus sparse combo overrides lazily materialize combo action strategies; Range Calibration, Matrix, Builder, and Teacher remain surfaces over that one model. `RANGE-CAL-002D` implements the shared Matrix consumer and `RANGE-BUILDER-001` adds grouped direct editing over it without a database migration, StrategyProvider path, Equity path, Range Core weight write, or eager combo materialization. Human Firefox visual acceptance remains tracked in `QA_BACKLOG.md`.
 
-**Resume at:** `RANGE-BUILDER-001` over the reusable 002D projection and evidence-write seams, then `RANGE-TEACHER-001` and `002R` independent review. Complete the separately tracked 002D human Firefox visual matrix before final visual acceptance.
+**Resume at:** `RANGE-TEACHER-001` over the shared evidence/snapshot/selector/Matrix/Builder seams, then `002R` independent review. Complete the separately tracked 002D and Builder human Firefox visual matrices before final visual acceptance.
 
 **PRESERVED FUTURE:** evidence-backed mode relationships/interpolation, StrategyProvider integration, Training-to-profile evidence, postflop range propagation, and Range Builder/Teacher links. Do not redesign the accepted foundation when work resumes.
 

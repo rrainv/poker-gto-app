@@ -6,6 +6,7 @@ import {
 } from '../../../shared/poker-domain/index.js';
 import {
   CALIBRATION_SESSION_STATES,
+  DIRECT_EVIDENCE_SOURCES,
   PERSONAL_STRATEGY_DATABASE_NAME,
   PROFILE_STATES,
   RANGE_OBSERVATION_STATES,
@@ -41,6 +42,7 @@ import {
   scopedPreferenceKey,
 } from '../account-identity/index.mjs';
 import { LEGACY_PERSONAL_STRATEGY_OWNER_KEY } from '../account-identity/legacy-ownership.mjs';
+import { createPersonalStrategyRangeBuilder } from './range-builder-service.mjs';
 
 export {
   RFI_CALIBRATION_INTENTS,
@@ -657,6 +659,14 @@ export function createRangeCalibrationApplication({
     }
   }
 
+  const rangeBuilder = createPersonalStrategyRangeBuilder({
+    repository,
+    projectionService,
+    clock,
+    idFactory,
+    onCommitted: notifyLocalMutation,
+  });
+
   async function settleCalibrationSession(
     snapshot,
     session,
@@ -915,6 +925,7 @@ export function createRangeCalibrationApplication({
       dominantAction,
       frequencies,
       calibrationSessionId: state.session.id,
+      evidenceSource: DIRECT_EVIDENCE_SOURCES.CALIBRATION,
       supersedesObservationId: latestObservation?.id ?? null,
       createdAt,
     });
@@ -1024,6 +1035,7 @@ export function createRangeCalibrationApplication({
       dominantAction: null,
       state: RANGE_OBSERVATION_STATES.RETRACTED,
       calibrationSessionId: state.session.id,
+      evidenceSource: DIRECT_EVIDENCE_SOURCES.CALIBRATION,
       supersedesObservationId: target.id,
       createdAt,
     });
@@ -1259,6 +1271,10 @@ export function createRangeCalibrationApplication({
 
   async function getPersonalStrategyMatrixProjection(scope, { session = null } = {}) {
     const projectionBundle = await projectionService.getProjectionBundle(scope);
+    return matrixProjectionFromBundle(projectionBundle, session);
+  }
+
+  function matrixProjectionFromBundle(projectionBundle, session = null) {
     const cursor = session?.cursor ?? {};
     const candidateRanking = rankCalibrationCandidates(projectionBundle.snapshot, {
       recentQuestionHistory: cursor.askedHandClasses ?? [],
@@ -1310,6 +1326,7 @@ export function createRangeCalibrationApplication({
       dominantAction,
       frequencies,
       calibrationSessionId: null,
+      evidenceSource: DIRECT_EVIDENCE_SOURCES.MATRIX,
       supersedesObservationId: current?.id ?? null,
       createdAt,
     });
@@ -1349,6 +1366,50 @@ export function createRangeCalibrationApplication({
       calibrationState: nextCalibrationState,
       matrixProjection: nextCalibrationState?.personalStrategyMatrixProjection
         ?? await getPersonalStrategyMatrixProjection(scope),
+    });
+  }
+
+  function requireBuilderScope(activeState, scope) {
+    if (!activeState) return null;
+    const state = requireCalibrationState(activeState);
+    const sameScope = state.session.profileId === scope.profileId
+      && state.session.modeId === scope.modeId
+      && calibrationContextKey(state.session.contextScope) === calibrationContextKey(scope.context);
+    if (!sameScope) throw new RangeError('Range Builder state does not match the selected scope');
+    return state;
+  }
+
+  async function refreshCalibrationAfterBuilder(state) {
+    if (!state) return null;
+    const snapshot = await repository.loadWorkspaceSnapshot();
+    const session = snapshot.calibrationSessions.find((entry) => entry.id === state.session.id);
+    if (!session) throw new RangeError('Range Builder could not restore the active calibration session');
+    return calibrationState(snapshot, session, projectionService);
+  }
+
+  async function applyRangeBuilderOperation(activeState, scope, command) {
+    const state = requireBuilderScope(activeState, scope);
+    const result = await rangeBuilder.apply(scope, command);
+    const nextCalibrationState = result.acceptedObservations.length
+      ? await refreshCalibrationAfterBuilder(state)
+      : state;
+    return Object.freeze({
+      ...result,
+      calibrationState: nextCalibrationState,
+      matrixProjection: nextCalibrationState?.personalStrategyMatrixProjection
+        ?? matrixProjectionFromBundle(result.projectionBundle),
+    });
+  }
+
+  async function undoRangeBuilderOperation(activeState, scope, operation, options = {}) {
+    const state = requireBuilderScope(activeState, scope);
+    const result = await rangeBuilder.undo(scope, operation, options);
+    const nextCalibrationState = await refreshCalibrationAfterBuilder(state);
+    return Object.freeze({
+      ...result,
+      calibrationState: nextCalibrationState,
+      matrixProjection: nextCalibrationState?.personalStrategyMatrixProjection
+        ?? matrixProjectionFromBundle(result.projectionBundle),
     });
   }
 
@@ -1404,6 +1465,8 @@ export function createRangeCalibrationApplication({
     requestAdditionalQuestion,
     getPersonalStrategyMatrixProjection,
     recordPersonalStrategyMatrixEvidence,
+    applyRangeBuilderOperation,
+    undoRangeBuilderOperation,
     requestPersonalStrategyMatrixQuestion,
     getEvidenceView: (scope) => projectionService.getEvidenceView(scope),
     getStrategyEstimate: (scope, handClass) => (

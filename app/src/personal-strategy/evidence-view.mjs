@@ -5,6 +5,7 @@ import {
 } from '../../../shared/poker-domain/index.js';
 import {
   RANGE_OBSERVATION_STATES,
+  DIRECT_EVIDENCE_SOURCES,
   calibrationContextKey,
   rangeObservationKey,
   validateCalibrationContext,
@@ -24,6 +25,8 @@ export const PERSONAL_STRATEGY_EVIDENCE_AUTHORITIES = Object.freeze({
 
 export const PERSONAL_STRATEGY_EVIDENCE_SOURCE_KINDS = Object.freeze({
   CALIBRATION: 'calibration',
+  MATRIX: 'matrix',
+  RANGE_BUILDER: 'range_builder',
   TRAINING: 'training',
 });
 
@@ -141,14 +144,17 @@ function directEvidenceRecord(observation, headState) {
     : observation.hasExplicitFrequencies
       ? PERSONAL_STRATEGY_EVIDENCE_CLAIM_KINDS.EXACT_ACTION_MIX
       : PERSONAL_STRATEGY_EVIDENCE_CLAIM_KINDS.DOMINANT_ACTION;
+  const sourceKind = observation.provenance.source ?? DIRECT_EVIDENCE_SOURCES.CALIBRATION;
   return {
     schemaVersion: PERSONAL_STRATEGY_EVIDENCE_SCHEMA_VERSION,
     evidenceId: observation.id,
     authority: PERSONAL_STRATEGY_EVIDENCE_AUTHORITIES.INTENTIONAL_STRATEGY,
     source: {
-      kind: PERSONAL_STRATEGY_EVIDENCE_SOURCE_KINDS.CALIBRATION,
+      kind: sourceKind,
       sourceRecordSchema: observation.schemaVersion,
       sessionId: observation.provenance.calibrationSessionId,
+      actionGroupId: observation.provenance.actionGroupId ?? null,
+      undoesActionGroupId: observation.provenance.undoesActionGroupId ?? null,
     },
     scope: {
       profileId: observation.profileId,

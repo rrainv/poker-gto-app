@@ -549,18 +549,24 @@
       'The Matrix summarizes this exact Profile, Mode, and RFI context. Action fill stays separate from direct, inferred, uncertain, conflicting, and unknown status.': 'The Matrix summarizes this exact Profile, Mode, and RFI context. Action fill stays separate from direct, inferred, uncertain, conflicting, and unknown status.',
       'Inspect and correct Riverline': 'Inspect and correct Riverline',
       'Select a Matrix cell to see direct history, contributing neighbors, and boundary facts. Confirming an inference records only a dominant action; exact mixes remain explicit.': 'Select a Matrix cell to see direct history, contributing neighbors, and boundary facts. Confirming an inference records only a dominant action; exact mixes remain explicit.',
+      'Build the same strategy directly': 'Build the same strategy directly',
+      'Range Builder selects or paints many Matrix hands at once. Builder edits become direct evidence, exact mixes stay explicit, Undo preserves history, and Calibration immediately uses the updated model.': 'Range Builder selects or paints many Matrix hands at once. Builder edits become direct evidence, exact mixes stay explicit, Undo preserves history, and Calibration immediately uses the updated model.',
     },
     ru: {
       'Inspect the model as a matrix': 'Изучайте модель в виде матрицы',
       'The Matrix summarizes this exact Profile, Mode, and RFI context. Action fill stays separate from direct, inferred, uncertain, conflicting, and unknown status.': 'Матрица обобщает именно этот профиль, режим и контекст RFI. Заливка действия отделена от прямого, выведенного, неопределённого, конфликтующего и неизвестного статуса.',
       'Inspect and correct Riverline': 'Проверяйте и исправляйте Riverline',
       'Select a Matrix cell to see direct history, contributing neighbors, and boundary facts. Confirming an inference records only a dominant action; exact mixes remain explicit.': 'Выберите ячейку матрицы, чтобы увидеть историю прямых данных, влияющих соседей и факты о границе. Подтверждение вывода записывает только доминирующее действие; точные миксы остаются явными.',
+      'Build the same strategy directly': 'Редактируйте ту же стратегию напрямую',
+      'Range Builder selects or paints many Matrix hands at once. Builder edits become direct evidence, exact mixes stay explicit, Undo preserves history, and Calibration immediately uses the updated model.': 'Конструктор диапазона выбирает или закрашивает сразу много рук матрицы. Правки становятся прямыми свидетельствами, точные миксы остаются явными, отмена сохраняет историю, а калибровка сразу использует обновлённую модель.',
     },
     he: {
       'Inspect the model as a matrix': 'בדקו את המודל כמטריצה',
       'The Matrix summarizes this exact Profile, Mode, and RFI context. Action fill stays separate from direct, inferred, uncertain, conflicting, and unknown status.': 'המטריצה מסכמת את הפרופיל, המצב והקשר ה־RFI המדויקים האלה. מילוי הפעולה נשאר נפרד ממצב ישיר, מוסק, לא ודאי, סותר או לא ידוע.',
       'Inspect and correct Riverline': 'בדקו ותקנו את Riverline',
       'Select a Matrix cell to see direct history, contributing neighbors, and boundary facts. Confirming an inference records only a dominant action; exact mixes remain explicit.': 'בחרו תא במטריצה כדי לראות היסטוריה ישירה, שכנים תורמים ועובדות גבול. אישור הסקה מתעד רק פעולה דומיננטית; תמהילים מדויקים נשארים מפורשים.',
+      'Build the same strategy directly': 'בנו את אותה אסטרטגיה ישירות',
+      'Range Builder selects or paints many Matrix hands at once. Builder edits become direct evidence, exact mixes stay explicit, Undo preserves history, and Calibration immediately uses the updated model.': 'בונה הטווחים בוחר או צובע ידיים רבות במטריצה בבת אחת. עריכות הופכות לראיות ישירות, מיקסים מדויקים נשארים מפורשים, ביטול שומר היסטוריה והכיול משתמש מיד במודל המעודכן.',
     },
   };
   Object.assign(en, personalStrategyMatrixTutorial.en);

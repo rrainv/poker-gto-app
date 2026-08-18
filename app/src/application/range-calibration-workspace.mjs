@@ -149,6 +149,14 @@ function createController(root, application, initialWorkspace, activationStarted
   let matrixFilter = 'all';
   let matrixFollowQuestion = true;
   let matrixWritePending = false;
+  let builderActive = false;
+  let builderBrush = 'select';
+  let builderSelection = new Set();
+  let builderSelectionAnchor = null;
+  let builderGesture = null;
+  let builderPreviewAction = null;
+  let suppressBuilderClick = false;
+  const builderHistory = [];
   let mixTarget = null;
   const interactionSamples = [];
   const activationReads = application.getStorageMetrics();
@@ -257,10 +265,15 @@ function createController(root, application, initialWorkspace, activationStarted
       button.setAttribute('role', 'gridcell');
       button.setAttribute('aria-rowindex', String(cell.row + 1));
       button.setAttribute('aria-colindex', String(cell.column + 1));
-      button.setAttribute('aria-selected', String(cell.handClass === matrixSelectedHand));
-      button.setAttribute('aria-label', `${cell.handClass}, ${matrixStatusLabel(cell.status)}, ${matrixActionDescription(cell)}`);
+      const selected = builderActive
+        ? builderSelection.has(cell.handClass)
+        : cell.handClass === matrixSelectedHand;
+      button.setAttribute('aria-selected', String(selected));
+      button.setAttribute('aria-label', `${cell.handClass}, ${matrixStatusLabel(cell.status)}, ${matrixActionDescription(cell)}${builderActive ? `, ${selected ? translated('Selected') : translated('Not selected')}` : ''}`);
       button.title = `${cell.handClass} · ${matrixStatusLabel(cell.status)} · ${matrixActionDescription(cell)}`;
       button.tabIndex = cell.handClass === matrixSelectedHand || (!matrixSelectedHand && index === 0) ? 0 : -1;
+      button.classList.toggle('is-primary-selected', cell.handClass === matrixSelectedHand);
+      if (builderActive && builderPreviewAction && selected) button.dataset.builderPreview = builderPreviewAction;
       const hand = document.createElement('span');
       hand.className = 'calibration-matrix-hand';
       hand.textContent = cell.handClass;
@@ -311,6 +324,8 @@ function createController(root, application, initialWorkspace, activationStarted
 
   function evidenceSourceLabel(evidence) {
     if (evidence.source.kind === 'training') return translated('Training evidence');
+    if (evidence.source.kind === 'range_builder') return translated('Builder edit');
+    if (evidence.source.kind === 'matrix') return translated('Matrix correction');
     return evidence.source.sessionId
       ? translated('Calibration session')
       : translated('Matrix correction');
@@ -421,17 +436,113 @@ function createController(root, application, initialWorkspace, activationStarted
     ].forEach((selector) => { query(selector).disabled = matrixWritePending; });
   }
 
-  function updateMatrixSelectionDom(previousHand, nextHand) {
-    const grid = query('#calibrationPersonalStrategyGrid');
-    grid.querySelectorAll('[role="gridcell"]').forEach((button, index) => {
-      const selected = button.dataset.handClass === nextHand;
-      button.setAttribute('aria-selected', String(selected));
-      button.tabIndex = selected || (!nextHand && index === 0) ? 0 : -1;
+  function selectedBuilderHands() {
+    return matrixProjection?.cells
+      .filter((cell) => builderSelection.has(cell.handClass))
+      .map((cell) => cell.handClass) ?? [];
+  }
+
+  function renderBuilderHistory() {
+    query('#calibrationBuilderHistory').replaceChildren(...builderHistory.map((entry) => {
+      const item = document.createElement('li');
+      item.textContent = entry.text;
+      return item;
+    }));
+    query('#calibrationBuilderUndo').disabled = matrixWritePending
+      || !builderHistory.some((entry) => entry.operation && !entry.undone);
+  }
+
+  function renderBuilderSummary() {
+    if (!matrixProjection) return;
+    const selected = selectedBuilderHands();
+    const counts = { direct: 0, inferred: 0, uncertain: 0, conflict: 0, unknown: 0 };
+    selected.forEach((handClass) => {
+      const status = matrixCell(handClass)?.status;
+      if (status === 'directly_known') counts.direct += 1;
+      else if (status === 'inferred_high' || status === 'inferred_medium') counts.inferred += 1;
+      else if (status === 'uncertain') counts.uncertain += 1;
+      else if (status === 'conflicting') counts.conflict += 1;
+      else counts.unknown += 1;
     });
-    if (previousHand && previousHand !== nextHand) {
-      grid.querySelector(`[data-hand-class="${previousHand}"]`)?.classList.remove('is-selected');
+    query('#calibrationBuilderSelectionSummary').textContent = selected.length
+      ? translated('{count} hands selected · {direct} direct · {inferred} inferred · {uncertain} uncertain · {unknown} unknown · {conflict} conflict', {
+        count: selected.length,
+        ...counts,
+      })
+      : translated('No hands selected');
+    query('#calibrationBuilderToolbar').querySelectorAll('[data-builder-operation], #calibrationBuilderMix')
+      .forEach((button) => { button.disabled = matrixWritePending || selected.length === 0; });
+    query('#calibrationBuilderClearSelection').disabled = matrixWritePending || selected.length === 0;
+    renderBuilderHistory();
+  }
+
+  function syncBuilderSelectionDom() {
+    const grid = query('#calibrationPersonalStrategyGrid');
+    grid.querySelectorAll('[data-hand-class]').forEach((button, index) => {
+      const selected = builderActive
+        ? builderSelection.has(button.dataset.handClass)
+        : button.dataset.handClass === matrixSelectedHand;
+      button.setAttribute('aria-selected', String(selected));
+      button.classList.toggle('is-primary-selected', button.dataset.handClass === matrixSelectedHand);
+      button.tabIndex = button.dataset.handClass === matrixSelectedHand
+        || (!matrixSelectedHand && index === 0) ? 0 : -1;
+      if (builderActive && builderPreviewAction && selected) {
+        button.dataset.builderPreview = builderPreviewAction;
+      } else delete button.dataset.builderPreview;
+    });
+    if (builderActive) renderBuilderSummary();
+  }
+
+  function setBuilderSelection(handClasses, { primary = null } = {}) {
+    builderSelection = new Set(handClasses.filter((handClass) => matrixCell(handClass)));
+    if (primary && matrixCell(primary)) {
+      matrixSelectedHand = primary;
+      builderSelectionAnchor = primary;
+    } else if (!matrixCell(matrixSelectedHand) && builderSelection.size) {
+      matrixSelectedHand = selectedBuilderHands()[0];
     }
-    if (nextHand) grid.querySelector(`[data-hand-class="${nextHand}"]`)?.classList.add('is-selected');
+    syncBuilderSelectionDom();
+    renderMatrixInspector();
+  }
+
+  function rectangleHands(firstHand, secondHand) {
+    const first = matrixCell(firstHand);
+    const second = matrixCell(secondHand);
+    if (!first || !second) return [];
+    const minRow = Math.min(first.row, second.row);
+    const maxRow = Math.max(first.row, second.row);
+    const minColumn = Math.min(first.column, second.column);
+    const maxColumn = Math.max(first.column, second.column);
+    return matrixProjection.cells.filter((cell) => (
+      cell.row >= minRow && cell.row <= maxRow
+      && cell.column >= minColumn && cell.column <= maxColumn
+    )).map((cell) => cell.handClass);
+  }
+
+  function clearBuilderGesturePreview() {
+    query('#calibrationPersonalStrategyGrid').querySelectorAll('[data-builder-touched]')
+      .forEach((button) => delete button.dataset.builderTouched);
+  }
+
+  function suppressNextBuilderGridClick() {
+    suppressBuilderClick = true;
+    window.setTimeout(() => { suppressBuilderClick = false; }, 0);
+  }
+
+  function renderBuilderMode() {
+    query('#calibrationBuilderToggle').setAttribute('aria-pressed', String(builderActive));
+    query('#calibrationBuilderToolbar').hidden = !builderActive;
+    query('#calibrationMatrixFollow').hidden = builderActive;
+    query('#calibrationBuilderToolbar').querySelectorAll('[data-builder-brush]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.builderBrush === builderBrush));
+    });
+    syncBuilderSelectionDom();
+  }
+
+  function updateMatrixSelectionDom(previousHand, nextHand) {
+    void previousHand;
+    void nextHand;
+    syncBuilderSelectionDom();
   }
 
   function selectMatrixHand(handClass, { manual = false, focus = false } = {}) {
@@ -469,6 +580,7 @@ function createController(root, application, initialWorkspace, activationStarted
     );
     renderMatrixGrid();
     renderMatrixInspector();
+    renderBuilderMode();
     query('#calibrationMatrixFilters').querySelectorAll('[data-matrix-filter]').forEach((button) => {
       button.setAttribute('aria-pressed', String(button.dataset.matrixFilter === matrixFilter));
     });
@@ -496,6 +608,9 @@ function createController(root, application, initialWorkspace, activationStarted
     if (scopeChanged) {
       matrixProjection = null;
       matrixSelectedHand = null;
+      builderSelection = new Set();
+      builderSelectionAnchor = null;
+      builderHistory.splice(0);
     }
     matrixScopeKey = scopeKey;
     setMatrixLoading(true);
@@ -948,12 +1063,18 @@ function createController(root, application, initialWorkspace, activationStarted
     }
   }
 
-  function patchWorkspaceWithMatrixObservation(observation, metadata) {
+  function patchWorkspaceWithObservations(acceptedObservations, metadata) {
     const observations = [...workspace.snapshot.rangeObservations];
-    const parentId = observation.revision.supersedesObservationId;
-    const parentIndex = parentId ? observations.findIndex((entry) => entry.id === parentId) : -1;
-    if (parentIndex >= 0) observations[parentIndex] = observation;
-    else observations.push(observation);
+    acceptedObservations.forEach((observation) => {
+      const logicalIndex = observations.findIndex((entry) => (
+        entry.profileId === observation.profileId
+        && entry.modeId === observation.modeId
+        && entry.handClass === observation.handClass
+        && JSON.stringify(entry.context) === JSON.stringify(observation.context)
+      ));
+      if (logicalIndex >= 0) observations[logicalIndex] = observation;
+      else observations.push(observation);
+    });
     workspace = Object.freeze({
       ...workspace,
       snapshot: Object.freeze({
@@ -969,6 +1090,7 @@ function createController(root, application, initialWorkspace, activationStarted
     matrixWritePending = pending;
     query('#calibrationMatrixInspector').setAttribute('aria-busy', String(pending));
     renderMatrixInspector();
+    if (builderActive) renderBuilderSummary();
   }
 
   async function recordMatrixAnswer({ actionType = null, mix = null } = {}) {
@@ -984,7 +1106,7 @@ function createController(root, application, initialWorkspace, activationStarted
         actionType,
         mix,
       });
-      patchWorkspaceWithMatrixObservation(result.acceptedObservation, result.metadata);
+      patchWorkspaceWithObservations([result.acceptedObservation], result.metadata);
       if (result.calibrationState) {
         calibrationState = result.calibrationState;
         syncSnapshot(calibrationState.snapshot);
@@ -1002,6 +1124,103 @@ function createController(root, application, initialWorkspace, activationStarted
       query('#calibrationMatrixError').hidden = false;
       query('#calibrationMatrixError').textContent = friendlyError(error);
       return false;
+    } finally {
+      setMatrixWritePending(false);
+    }
+  }
+
+  function builderOperationLabel(operationKind) {
+    return translated({
+      dominant_fold: 'Dominant Fold',
+      dominant_raise: 'Dominant Raise',
+      pure_fold: 'Pure Fold',
+      pure_raise: 'Pure Raise',
+      exact_mix: 'Exact Mix',
+      clear_builder_edit: 'Clear Builder edit',
+    }[operationKind] ?? operationKind);
+  }
+
+  function adoptBuilderResult(result) {
+    if (result.calibrationState) {
+      calibrationState = result.calibrationState;
+      workspace = Object.freeze({ ...workspace, snapshot: calibrationState.snapshot });
+      syncSnapshot(calibrationState.snapshot);
+      renderQuestion();
+    } else if (result.metadata) {
+      patchWorkspaceWithObservations(result.acceptedObservations, result.metadata);
+    }
+    matrixProjection = result.matrixProjection;
+    renderDerivedContext();
+    renderMatrix();
+  }
+
+  async function applyBuilderOperation(operationKind, { mix = null, handClasses = null } = {}) {
+    const scope = currentMatrixScope();
+    const selected = handClasses ?? selectedBuilderHands();
+    if (!scope || !selected.length || matrixWritePending) return false;
+    setMatrixWritePending(true);
+    query('#calibrationBuilderFeedback').textContent = '';
+    try {
+      const result = await application.applyRangeBuilderOperation(calibrationState, scope, {
+        handClasses: selected,
+        operationKind,
+        mix,
+      });
+      adoptBuilderResult(result);
+      const updated = result.updatedHandClasses.length;
+      const skipped = result.skippedConflictHandClasses.length;
+      const unsupported = result.skippedUnsupportedHandClasses.length;
+      query('#calibrationBuilderFeedback').textContent = skipped
+        ? translated('{count} hands updated · {skipped} conflicts skipped', { count: updated, skipped })
+        : unsupported
+          ? translated('{count} hands updated · {skipped} unsupported edits skipped', { count: updated, skipped: unsupported })
+          : translated('{count} hands updated', { count: updated });
+      if (result.operation) {
+        builderHistory.unshift({
+          operation: result.operation,
+          undone: false,
+          text: translated('{operation} on {count} hands', {
+            operation: builderOperationLabel(operationKind),
+            count: updated,
+          }),
+        });
+        builderHistory.splice(20);
+      }
+      renderBuilderSummary();
+      return updated > 0;
+    } catch (error) {
+      query('#calibrationBuilderFeedback').textContent = friendlyError(error);
+      return false;
+    } finally {
+      setMatrixWritePending(false);
+    }
+  }
+
+  async function undoBuilderOperation() {
+    const entry = builderHistory.find((item) => item.operation && !item.undone);
+    const scope = currentMatrixScope();
+    if (!entry || !scope || matrixWritePending) return;
+    setMatrixWritePending(true);
+    try {
+      const result = await application.undoRangeBuilderOperation(
+        calibrationState,
+        scope,
+        entry.operation,
+      );
+      entry.undone = true;
+      adoptBuilderResult(result);
+      builderHistory.unshift({
+        operation: null,
+        undone: true,
+        text: translated('Undid {count}-hand Builder edit', { count: result.updatedHandClasses.length }),
+      });
+      builderHistory.splice(20);
+      query('#calibrationBuilderFeedback').textContent = translated('Undid {count}-hand Builder edit', {
+        count: result.updatedHandClasses.length,
+      });
+      renderBuilderSummary();
+    } catch (error) {
+      query('#calibrationBuilderFeedback').textContent = friendlyError(error);
     } finally {
       setMatrixWritePending(false);
     }
@@ -1033,8 +1252,10 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   function openMixEditor(target = 'question') {
-    const handClass = target === 'matrix' ? matrixSelectedHand : calibrationState?.prompt?.handClass;
-    if (!handClass) return;
+    const handClass = target === 'matrix' ? matrixSelectedHand
+      : target === 'builder' ? selectedBuilderHands()[0]
+        : calibrationState?.prompt?.handClass;
+    if (!handClass || (target === 'builder' && builderSelection.size === 0)) return;
     mixTarget = { kind: target, handClass };
     focusBeforeMix = document.activeElement;
     query('#calibrationMixForm').reset();
@@ -1049,8 +1270,12 @@ function createController(root, application, initialWorkspace, activationStarted
       query('#calibrationMixFold').value = String(byAction.fold ?? 0);
       query('#calibrationMixRaise').value = String(byAction.raise ?? 0);
     }
-    setTranslatedText(query('#calibrationMixTitle'), 'Set frequencies for {hand}', { hand: handClass });
-    setTranslatedText(query('#calibrationMixSave'), target === 'matrix' ? 'Save exact mix' : 'Save mix and continue');
+    if (target === 'builder') {
+      setTranslatedText(query('#calibrationMixTitle'), 'Set exact mix for {count} selected hands', {
+        count: builderSelection.size,
+      });
+    } else setTranslatedText(query('#calibrationMixTitle'), 'Set frequencies for {hand}', { hand: handClass });
+    setTranslatedText(query('#calibrationMixSave'), target === 'question' ? 'Save mix and continue' : 'Save exact mix');
     query('#calibrationMixDialog').hidden = false;
     document.body.classList.add('has-modal-open');
     window.requestAnimationFrame(() => query('#calibrationMixFold').focus());
@@ -1076,11 +1301,15 @@ function createController(root, application, initialWorkspace, activationStarted
     };
     const saved = mixTarget?.kind === 'matrix'
       ? await recordMatrixAnswer({ mix })
-      : await acceptAnswer({ mix });
+      : mixTarget?.kind === 'builder'
+        ? await applyBuilderOperation('exact_mix', { mix })
+        : await acceptAnswer({ mix });
     if (saved) closeMixEditor({ restoreFocus: false });
     else query('#calibrationMixError').textContent = mixTarget?.kind === 'matrix'
       ? query('#calibrationMatrixError').textContent
-      : query('#calibrationAnswerError').textContent;
+      : mixTarget?.kind === 'builder'
+        ? query('#calibrationBuilderFeedback').textContent
+        : query('#calibrationAnswerError').textContent;
   }
 
   function render() {
@@ -1277,16 +1506,134 @@ function createController(root, application, initialWorkspace, activationStarted
       query('#calibrationMixRaise').value = preset.dataset.mixRaise;
       query('#calibrationMixFold').focus();
     });
+    query('#calibrationBuilderToggle').addEventListener('click', () => {
+      builderActive = !builderActive;
+      matrixFollowQuestion = !builderActive && matrixFollowQuestion;
+      if (builderActive && matrixSelectedHand && builderSelection.size === 0) {
+        builderSelection.add(matrixSelectedHand);
+        builderSelectionAnchor = matrixSelectedHand;
+      }
+      renderBuilderMode();
+      if (builderActive) query('#calibrationBuilderToolbar').focus?.({ preventScroll: true });
+    });
+    query('#calibrationBuilderToolbar').addEventListener('click', (event) => {
+      const brush = event.target.closest('[data-builder-brush]');
+      if (brush) {
+        builderBrush = brush.dataset.builderBrush;
+        renderBuilderMode();
+        return;
+      }
+      const helper = event.target.closest('[data-builder-select]');
+      if (helper) {
+        const hands = matrixProjection.cells.filter((cell) => (
+          helper.dataset.builderSelect === 'all'
+          || (helper.dataset.builderSelect === 'pairs' && cell.handClass.length === 2)
+          || (helper.dataset.builderSelect === 'suited' && cell.handClass.endsWith('s'))
+          || (helper.dataset.builderSelect === 'offsuit' && cell.handClass.endsWith('o'))
+        )).map((cell) => cell.handClass);
+        setBuilderSelection(hands, { primary: hands[0] ?? null });
+        return;
+      }
+      const operation = event.target.closest('[data-builder-operation]');
+      if (operation) {
+        const mix = operation.dataset.builderFold === undefined ? null : {
+          fold: Number(operation.dataset.builderFold),
+          raise: Number(operation.dataset.builderRaise),
+        };
+        applyBuilderOperation(operation.dataset.builderOperation, { mix });
+      }
+    });
+    query('#calibrationBuilderToolbar').addEventListener('pointerover', (event) => {
+      const operation = event.target.closest('[data-builder-operation]');
+      if (!operation || operation.contains(event.relatedTarget)) return;
+      builderPreviewAction = operation.dataset.builderOperation.includes('fold') ? 'fold'
+        : operation.dataset.builderOperation.includes('raise') ? 'raise'
+          : operation.dataset.builderOperation === 'exact_mix' ? 'mix' : null;
+      syncBuilderSelectionDom();
+    });
+    query('#calibrationBuilderToolbar').addEventListener('pointerout', (event) => {
+      const operation = event.target.closest('[data-builder-operation]');
+      if (!operation || operation.contains(event.relatedTarget)) return;
+      builderPreviewAction = null;
+      syncBuilderSelectionDom();
+    });
+    query('#calibrationBuilderClearSelection').addEventListener('click', () => {
+      setBuilderSelection([]);
+      query('#calibrationBuilderFeedback').textContent = '';
+    });
+    query('#calibrationBuilderMix').addEventListener('click', () => openMixEditor('builder'));
+    query('#calibrationBuilderUndo').addEventListener('click', undoBuilderOperation);
     query('#calibrationPersonalStrategyGrid').addEventListener('click', (event) => {
       const cell = event.target.closest('[data-hand-class]');
-      if (cell) selectMatrixHand(cell.dataset.handClass, { manual: true });
+      if (!cell) return;
+      if (!builderActive) {
+        selectMatrixHand(cell.dataset.handClass, { manual: true });
+        return;
+      }
+      if (suppressBuilderClick) {
+        suppressBuilderClick = false;
+        return;
+      }
+      const handClass = cell.dataset.handClass;
+      if (event.shiftKey && builderSelectionAnchor) {
+        const next = new Set(builderSelection);
+        rectangleHands(builderSelectionAnchor, handClass).forEach((hand) => next.add(hand));
+        setBuilderSelection([...next], { primary: handClass });
+      } else if (event.ctrlKey || event.metaKey) {
+        const next = new Set(builderSelection);
+        if (next.has(handClass)) next.delete(handClass);
+        else next.add(handClass);
+        setBuilderSelection([...next], { primary: handClass });
+      } else setBuilderSelection([handClass], { primary: handClass });
+    });
+    query('#calibrationPersonalStrategyGrid').addEventListener('pointerdown', (event) => {
+      const cell = event.target.closest('[data-hand-class]');
+      if (!builderActive || !cell || event.button !== 0 || matrixWritePending) return;
+      builderGesture = {
+        startHand: cell.dataset.handClass,
+        currentHand: cell.dataset.handClass,
+        touched: new Set([cell.dataset.handClass]),
+        moved: false,
+      };
+      cell.dataset.builderTouched = 'true';
+    });
+    query('#calibrationPersonalStrategyGrid').addEventListener('pointerover', (event) => {
+      const cell = event.target.closest('[data-hand-class]');
+      if (!builderGesture || !cell || event.buttons !== 1) return;
+      const handClass = cell.dataset.handClass;
+      if (handClass !== builderGesture.currentHand) builderGesture.moved = true;
+      builderGesture.currentHand = handClass;
+      clearBuilderGesturePreview();
+      if (builderBrush === 'select') {
+        builderGesture.touched = new Set(rectangleHands(builderGesture.startHand, handClass));
+      } else builderGesture.touched.add(handClass);
+      builderGesture.touched.forEach((hand) => {
+        const button = query(`#calibrationPersonalStrategyGrid [data-hand-class="${hand}"]`);
+        if (button) button.dataset.builderTouched = 'true';
+      });
     });
     query('#calibrationPersonalStrategyGrid').addEventListener('keydown', (event) => {
       const cell = event.target.closest('[data-hand-class]');
       if (!cell || !matrixProjection) return;
       const current = matrixCell(cell.dataset.handClass);
       if (!current) return;
-      if (event.key === 'Enter' || event.key === ' ') {
+      if (builderActive && event.key === ' ') {
+        event.preventDefault();
+        const next = new Set(builderSelection);
+        if (next.has(current.handClass)) next.delete(current.handClass);
+        else next.add(current.handClass);
+        setBuilderSelection([...next], { primary: current.handClass });
+        return;
+      }
+      if (builderActive && ['f', 'r'].includes(event.key.toLowerCase())
+        && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        if (!builderSelection.size) setBuilderSelection([current.handClass], { primary: current.handClass });
+        applyBuilderOperation(event.key.toLowerCase() === 'f' ? 'dominant_fold' : 'dominant_raise');
+        return;
+      }
+      const activatesMatrixCell = event.key === 'Enter' || event.key === ' ';
+      if (activatesMatrixCell && (!builderActive || event.key === 'Enter')) {
         event.preventDefault();
         selectMatrixHand(current.handClass, { manual: true });
         return;
@@ -1400,6 +1747,25 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationProfileModal').addEventListener('click', (event) => {
       if (event.target === query('#calibrationProfileModal')) closeProfileEditor();
     });
+    document.addEventListener('pointerup', async () => {
+      if (!builderGesture) return;
+      const gesture = builderGesture;
+      builderGesture = null;
+      clearBuilderGesturePreview();
+      if (builderBrush === 'select') {
+        if (gesture.moved) {
+          suppressNextBuilderGridClick();
+          setBuilderSelection([...gesture.touched], { primary: gesture.currentHand });
+        }
+        return;
+      }
+      suppressNextBuilderGridClick();
+      setBuilderSelection([...gesture.touched], { primary: gesture.currentHand });
+      await applyBuilderOperation(
+        builderBrush === 'fold' ? 'dominant_fold' : 'dominant_raise',
+        { handClasses: [...gesture.touched] },
+      );
+    }, { signal: lifecycle.signal });
     document.addEventListener('keydown', (event) => {
       const mixDialog = query('#calibrationMixDialog');
       if (mixDialog && !mixDialog.hidden) {
@@ -1420,6 +1786,22 @@ function createController(root, application, initialWorkspace, activationStarted
             first.focus();
           }
         }
+        return;
+      }
+      if (builderActive && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z'
+        && !event.altKey && !event.shiftKey
+        && !event.target.matches('input, textarea, select, [contenteditable="true"]')) {
+        event.preventDefault();
+        undoBuilderOperation();
+        return;
+      }
+      if (builderActive && event.key === 'Escape'
+        && !event.target.matches('input, textarea, select, [contenteditable="true"]')) {
+        event.preventDefault();
+        if (builderGesture) {
+          builderGesture = null;
+          clearBuilderGesturePreview();
+        } else setBuilderSelection([]);
         return;
       }
       const modal = query('#calibrationProfileModal');

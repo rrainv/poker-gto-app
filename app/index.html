@@ -1699,6 +1699,7 @@
                 <p id="calibrationMatrixScope" class="calibration-matrix-scope poker-data-token" dir="ltr"></p>
               </div>
               <div class="calibration-matrix-header-actions">
+                <button id="calibrationBuilderToggle" class="ui-button ui-button--secondary" type="button" aria-pressed="false" data-i18n="Range Builder">Range Builder</button>
                 <button id="calibrationMatrixFollow" class="ui-button ui-button--tertiary" type="button" aria-pressed="true" data-i18n="Follow current question">Follow current question</button>
                 <details class="calibration-matrix-legend">
                   <summary data-i18n="Legend">Legend</summary>
@@ -1725,6 +1726,49 @@
               <button type="button" aria-pressed="false" data-matrix-filter="uncertain" data-i18n="Uncertain">Uncertain</button>
               <button type="button" aria-pressed="false" data-matrix-filter="conflicts" data-i18n="Conflicts">Conflicts</button>
             </div>
+
+            <section id="calibrationBuilderToolbar" class="calibration-builder-toolbar" aria-labelledby="calibrationBuilderTitle" data-tutorial-anchor="range-builder-toolbar" hidden>
+              <div class="calibration-builder-intro">
+                <div><p class="calibration-eyebrow" data-i18n="Advanced editor">Advanced editor</p><h3 id="calibrationBuilderTitle" data-i18n="Range Builder">Range Builder</h3></div>
+                <p data-i18n="Builder and Calibration edit the same Personal Strategy evidence for this scope.">Builder and Calibration edit the same Personal Strategy evidence for this scope.</p>
+              </div>
+              <div class="calibration-builder-row" role="toolbar" aria-label="Range Builder tools" data-i18n-aria-label="Range Builder tools">
+                <span class="calibration-builder-group-label" data-i18n="Brush">Brush</span>
+                <button type="button" class="ui-button ui-button--tertiary" aria-pressed="true" data-builder-brush="select" data-i18n="Select">Select</button>
+                <button type="button" class="ui-button ui-button--tertiary" aria-pressed="false" data-builder-brush="fold" data-i18n="Paint Fold">Paint Fold</button>
+                <button type="button" class="ui-button ui-button--tertiary" aria-pressed="false" data-builder-brush="raise" data-i18n="Paint Raise">Paint Raise</button>
+              </div>
+              <div class="calibration-builder-row" role="group" aria-label="Selection helpers" data-i18n-aria-label="Selection helpers">
+                <span class="calibration-builder-group-label" data-i18n="Select">Select</span>
+                <button type="button" class="ui-button ui-button--tertiary" data-builder-select="all" data-i18n="All hands">All hands</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-builder-select="pairs" data-i18n="Pairs">Pairs</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-builder-select="suited" data-i18n="Suited">Suited</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-builder-select="offsuit" data-i18n="Offsuit">Offsuit</button>
+                <button id="calibrationBuilderClearSelection" type="button" class="ui-button ui-button--tertiary" data-i18n="Clear selection">Clear selection</button>
+              </div>
+              <div class="calibration-builder-row calibration-builder-apply" role="group" aria-label="Apply to selection" data-i18n-aria-label="Apply to selection">
+                <span class="calibration-builder-group-label" data-i18n="Apply to selection">Apply to selection</span>
+                <button type="button" class="ui-button ui-button--secondary" data-builder-operation="dominant_fold" data-i18n="Dominant Fold">Dominant Fold</button>
+                <button type="button" class="ui-button ui-button--secondary" data-builder-operation="dominant_raise" data-i18n="Dominant Raise">Dominant Raise</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-builder-operation="pure_fold" data-i18n="Pure Fold">Pure Fold</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-builder-operation="pure_raise" data-i18n="Pure Raise">Pure Raise</button>
+                <button id="calibrationBuilderMix" type="button" class="ui-button ui-button--tertiary" data-i18n="Exact Mix">Exact Mix</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-builder-operation="exact_mix" data-builder-fold="25" data-builder-raise="75">25/75</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-builder-operation="exact_mix" data-builder-fold="50" data-builder-raise="50">50/50</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-builder-operation="exact_mix" data-builder-fold="75" data-builder-raise="25">75/25</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-builder-operation="clear_builder_edit" data-i18n="Clear Builder edit">Clear Builder edit</button>
+                <button id="calibrationBuilderUndo" type="button" class="ui-button ui-button--tertiary" disabled data-i18n="Undo">Undo</button>
+              </div>
+              <div class="calibration-builder-status">
+                <p id="calibrationBuilderSelectionSummary" aria-live="polite" data-i18n="No hands selected">No hands selected</p>
+                <p id="calibrationBuilderFeedback" role="status" aria-live="polite"></p>
+              </div>
+              <details class="calibration-builder-history">
+                <summary data-i18n="Builder session history">Builder session history</summary>
+                <ol id="calibrationBuilderHistory"></ol>
+              </details>
+              <p class="calibration-builder-shortcuts" data-i18n="Shortcuts: arrows move; Space toggles selection; F/R apply dominant action; Enter inspects; Ctrl/Cmd+Z undoes; Escape cancels or clears selection.">Shortcuts: arrows move; Space toggles selection; F/R apply dominant action; Enter inspects; Ctrl/Cmd+Z undoes; Escape cancels or clears selection.</p>
+            </section>
 
             <div id="calibrationMatrixLoading" class="calibration-matrix-loading" role="status" aria-live="polite">
               <span class="calibration-spinner" aria-hidden="true"></span>
@@ -1802,6 +1846,7 @@
               <div class="calibration-mix-presets" role="group" aria-label="Exact mix presets" data-i18n-aria-label="Exact mix presets">
                 <button type="button" class="ui-button ui-button--tertiary" data-mix-fold="100" data-mix-raise="0" data-i18n="Pure Fold">Pure Fold</button>
                 <button type="button" class="ui-button ui-button--tertiary" data-mix-fold="75" data-mix-raise="25" data-i18n="Mostly Fold">Mostly Fold</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-mix-fold="50" data-mix-raise="50">50/50</button>
                 <button type="button" class="ui-button ui-button--tertiary" data-mix-fold="25" data-mix-raise="75" data-i18n="Mostly Raise">Mostly Raise</button>
                 <button type="button" class="ui-button ui-button--tertiary" data-mix-fold="0" data-mix-raise="100" data-i18n="Pure Raise">Pure Raise</button>
               </div>
