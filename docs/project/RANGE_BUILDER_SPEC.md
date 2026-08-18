@@ -155,9 +155,9 @@ Static and dynamic copy is supplied in EN/RU/HE. The Matrix and poker class toke
 
 These are regression measurements, not universal browser latency promises. Real Firefox IndexedDB and visual responsiveness remain part of manual acceptance.
 
-## Range Teacher reusable interfaces
+## Range Teacher integration checkpoint
 
-`RANGE-TEACHER-001` can reuse, without a new data authority:
+`RANGE-TEACHER-001` now reuses, without a new data authority:
 
 - `getEvidenceView(scope)` for source/provenance/history;
 - `getStrategySnapshot(scope)` and `getInferenceSupport(scope, handClass)` for state, uncertainty, boundary facts, and evidence references;
@@ -168,6 +168,8 @@ These are regression measurements, not universal browser latency promises. Real 
 - `personal-strategy-evidence/v1.source.kind` and source action-group metadata for honest provenance.
 
 Builder UI session history is not a Teacher input. Teacher consumes durable evidence and the shared derived contracts.
+
+Teacher routes explicit grouped edits to the existing Builder UI/service and uses Builder source/action-group metadata for truthful recent-change and exact-mix opportunity explanations. It does not replay Builder session history, duplicate selection state, or use a bulk edit to resolve ambiguous multi-head conflicts. See `RANGE_TEACHER_SPEC.md`.
 
 ## Known limits
 

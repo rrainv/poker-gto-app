@@ -697,6 +697,8 @@ export function validateCalibrationSession(session) {
     'stoppingPolicyVersion',
     'coldStartPolicyVersion',
     'calibrationIntent',
+    'selectionIntent',
+    'rangeTeacherPreset',
   ]) {
     if (session.cursor[field] !== undefined && session.cursor[field] !== null) {
       requireString(session.cursor[field], `CalibrationSession.cursor.${field}`);

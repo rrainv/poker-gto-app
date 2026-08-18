@@ -14,6 +14,7 @@ import {
   RFI_CALIBRATION_STOP_REASONS,
   RFI_COLD_START_POLICY_VERSION,
   RFI_QUESTION_SELECTION_POLICY_VERSION,
+  RFI_SELECTION_INTENTS,
   RFI_STOPPING_POLICY_VERSION,
   assessCalibrationProgress,
   calibrationContextKey,
@@ -23,6 +24,7 @@ import {
   createPersonalStrategyBrowserStorage,
   createPersonalStrategyMatrixProjection,
   createPersonalStrategyProjectionService,
+  createRangeTeacherView,
   createPersonalStrategyRepository,
   createRangeObservation,
   createRfiCalibrationContext,
@@ -30,8 +32,10 @@ import {
   getCalibrationQuestionExplanation,
   getNextCalibrationQuestion,
   normalizeRfiCalibrationIntent,
+  normalizeRfiSelectionIntent,
   rankCalibrationCandidates,
   rangeObservationKey,
+  resolveRangeTeacherSessionPreset,
   updateCalibrationSession,
   updateStrategyMode,
   updateStrategyProfile,
@@ -47,6 +51,7 @@ import { createPersonalStrategyRangeBuilder } from './range-builder-service.mjs'
 export {
   RFI_CALIBRATION_INTENTS,
   RFI_CALIBRATION_STOP_REASONS,
+  RFI_SELECTION_INTENTS,
 };
 
 export const RANGE_CALIBRATION_OWNER_KEY = LEGACY_PERSONAL_STRATEGY_OWNER_KEY;
@@ -425,6 +430,11 @@ function adaptiveCursor(session, leaves, changes = {}) {
     calibrationIntent: normalizeRfiCalibrationIntent(
       changes.calibrationIntent ?? session.cursor.calibrationIntent,
     ),
+    selectionIntent: normalizeRfiSelectionIntent(
+      changes.selectionIntent ?? session.cursor.selectionIntent,
+    ),
+    rangeTeacherPreset: changes.rangeTeacherPreset !== undefined
+      ? changes.rangeTeacherPreset : session.cursor.rangeTeacherPreset ?? null,
     askedHandClasses: [...askedHandClasses],
     skippedHandClasses: [...(changes.skippedHandClasses
       ?? session.cursor.skippedHandClasses ?? [])],
@@ -453,6 +463,7 @@ function calibrationSelectionOutcome(personalStrategySnapshot, session, cursor, 
     recentQuestionHistory: cursor.askedHandClasses,
     skippedHandClasses: cursor.skippedHandClasses,
     includeSkipped: cursor.calibrationIntent === RFI_CALIBRATION_INTENTS.EXHAUSTIVE,
+    selectionIntent: cursor.selectionIntent,
   });
   let candidate;
   if (cursor.calibrationIntent === RFI_CALIBRATION_INTENTS.EXHAUSTIVE) {
@@ -514,6 +525,13 @@ async function calibrationState(
     candidateRanking,
     highValueQuestionCount: progressAssessment.highValueQuestionCount,
   });
+  const rangeTeacherView = createRangeTeacherView({
+    snapshot: personalStrategySnapshot,
+    evidenceView: projectionBundle.evidenceView,
+    candidateRanking,
+    progressAssessment,
+    selectedHandClass: prompt?.handClass ?? null,
+  });
   return Object.freeze({
     snapshot,
     session,
@@ -523,6 +541,7 @@ async function calibrationState(
     personalStrategySnapshot,
     personalStrategyEvidenceView: projectionBundle.evidenceView,
     personalStrategyMatrixProjection,
+    rangeTeacherView,
     projectionSource: projectionBundle.source,
     progressAssessment,
     availableActions: RFI_CALIBRATION_ACTIONS,
@@ -801,6 +820,9 @@ export function createRangeCalibrationApplication({
     activeModeId,
     context,
     intent = null,
+    selectionIntent = null,
+    rangeTeacherPreset = undefined,
+    forcedHandClass = null,
     continueAfterStop = false,
   }) {
     const operationStartedAt = performanceNow();
@@ -826,8 +848,20 @@ export function createRangeCalibrationApplication({
     let session = matchingSession(snapshot, { profileId: selectedProfileId, modeId: activeModeId, context: contextScope });
     const requiredState = firstPrompt ? CALIBRATION_SESSION_STATES.ACTIVE : CALIBRATION_SESSION_STATES.COMPLETED;
     const updatedAt = timestampNotBefore(clock, session?.updatedAt ?? null);
+    const presetOptions = rangeTeacherPreset == null
+      ? null : resolveRangeTeacherSessionPreset(rangeTeacherPreset);
+    const resolvedRangeTeacherPreset = rangeTeacherPreset !== undefined
+      ? rangeTeacherPreset : session?.cursor?.rangeTeacherPreset ?? null;
+    if (forcedHandClass !== null && !PREFLOP_HAND_CLASSES.includes(forcedHandClass)) {
+      throw new RangeError('Range Teacher forced hand must be a canonical preflop hand class');
+    }
     const resolvedIntent = normalizeRfiCalibrationIntent(
-      intent ?? session?.cursor?.calibrationIntent ?? RFI_CALIBRATION_INTENTS.STANDARD,
+      intent ?? presetOptions?.calibrationIntent
+        ?? session?.cursor?.calibrationIntent ?? RFI_CALIBRATION_INTENTS.STANDARD,
+    );
+    const resolvedSelectionIntent = normalizeRfiSelectionIntent(
+      selectionIntent ?? presetOptions?.selectionIntent
+        ?? session?.cursor?.selectionIntent ?? RFI_SELECTION_INTENTS.GENERAL,
     );
     let sessionChanged = false;
     if (!session) {
@@ -845,13 +879,15 @@ export function createRangeCalibrationApplication({
           stoppingPolicyVersion: RFI_STOPPING_POLICY_VERSION,
           coldStartPolicyVersion: RFI_COLD_START_POLICY_VERSION,
           calibrationIntent: resolvedIntent,
+          selectionIntent: resolvedSelectionIntent,
+          rangeTeacherPreset: resolvedRangeTeacherPreset,
           askedHandClasses: [],
           skippedHandClasses: [],
           notSureHandClasses: [],
           sessionQuestionCount: 0,
           additionalQuestionAllowance: 0,
           lastStopReason: null,
-          forcedHandClass: null,
+          forcedHandClass,
         },
       });
       const metadata = await repository.saveCalibrationSession(session);
@@ -861,12 +897,15 @@ export function createRangeCalibrationApplication({
       const leaves = currentDirectLeafMap(snapshot, session);
       const cursor = adaptiveCursor(session, leaves, {
         calibrationIntent: resolvedIntent,
+        selectionIntent: resolvedSelectionIntent,
+        rangeTeacherPreset: resolvedRangeTeacherPreset,
         additionalQuestionAllowance: continueAfterStop
           && requiredState === CALIBRATION_SESSION_STATES.ACTIVE
           && session.state === CALIBRATION_SESSION_STATES.COMPLETED
           ? Math.max(1, session.cursor.additionalQuestionAllowance ?? 0)
           : session.cursor.additionalQuestionAllowance ?? 0,
         lastStopReason: null,
+        forcedHandClass,
       });
       session = updateCalibrationSession(session, {
         state: requiredState,
@@ -1274,12 +1313,42 @@ export function createRangeCalibrationApplication({
     return matrixProjectionFromBundle(projectionBundle, session);
   }
 
+  async function getRangeTeacherView(scope, {
+    session = null,
+    selectedHandClass = null,
+    dismissedSuggestionIds = [],
+  } = {}) {
+    const projectionBundle = await projectionService.getProjectionBundle(scope);
+    const cursor = session?.cursor ?? {};
+    const candidateRanking = rankCalibrationCandidates(projectionBundle.snapshot, {
+      recentQuestionHistory: cursor.askedHandClasses ?? [],
+      skippedHandClasses: cursor.skippedHandClasses ?? [],
+      includeSkipped: cursor.calibrationIntent === RFI_CALIBRATION_INTENTS.EXHAUSTIVE,
+      selectionIntent: cursor.selectionIntent ?? RFI_SELECTION_INTENTS.GENERAL,
+    });
+    const progressAssessment = assessCalibrationProgress(projectionBundle.snapshot, {
+      intent: cursor.calibrationIntent ?? RFI_CALIBRATION_INTENTS.STANDARD,
+      rankedCandidates: candidateRanking,
+      sessionQuestionCount: cursor.sessionQuestionCount ?? 0,
+      additionalQuestionAllowance: cursor.additionalQuestionAllowance ?? 0,
+    });
+    return createRangeTeacherView({
+      snapshot: projectionBundle.snapshot,
+      evidenceView: projectionBundle.evidenceView,
+      candidateRanking,
+      progressAssessment,
+      selectedHandClass,
+      dismissedSuggestionIds,
+    });
+  }
+
   function matrixProjectionFromBundle(projectionBundle, session = null) {
     const cursor = session?.cursor ?? {};
     const candidateRanking = rankCalibrationCandidates(projectionBundle.snapshot, {
       recentQuestionHistory: cursor.askedHandClasses ?? [],
       skippedHandClasses: cursor.skippedHandClasses ?? [],
       includeSkipped: cursor.calibrationIntent === RFI_CALIBRATION_INTENTS.EXHAUSTIVE,
+      selectionIntent: cursor.selectionIntent ?? RFI_SELECTION_INTENTS.GENERAL,
     });
     const progressAssessment = assessCalibrationProgress(projectionBundle.snapshot, {
       intent: cursor.calibrationIntent ?? RFI_CALIBRATION_INTENTS.STANDARD,
@@ -1449,6 +1518,54 @@ export function createRangeCalibrationApplication({
     );
   }
 
+  async function requestRangeTeacherSession(activeState, {
+    preset,
+    handClass = null,
+  } = {}) {
+    const state = requireCalibrationState(activeState);
+    const presetOptions = resolveRangeTeacherSessionPreset(preset);
+    if (handClass !== null) {
+      const candidate = state.candidateRanking.find((entry) => (
+        entry.handClass === handClass && entry.ordinaryQuestionEligible
+      ));
+      if (!candidate) throw new RangeError('Range Teacher target is not an ordinary calibration candidate');
+    }
+    const leaves = new Map(state.scopeLeaves.map((entry) => [entry.handClass, entry]));
+    const updatedAt = timestampNotBefore(clock, state.session.updatedAt);
+    const cursor = adaptiveCursor(state.session, leaves, {
+      calibrationIntent: presetOptions.calibrationIntent,
+      selectionIntent: presetOptions.selectionIntent,
+      rangeTeacherPreset: preset,
+      forcedHandClass: handClass,
+      lastStopReason: null,
+      additionalQuestionAllowance: Math.max(
+        1,
+        state.session.cursor.additionalQuestionAllowance ?? 0,
+      ),
+    });
+    const answered = new Map([...leaves]
+      .filter(([, observation]) => observation.state === RANGE_OBSERVATION_STATES.ACTIVE));
+    const sessionCandidate = { ...state.session, state: CALIBRATION_SESSION_STATES.ACTIVE };
+    const outcome = calibrationSelectionOutcome(
+      state.personalStrategySnapshot,
+      sessionCandidate,
+      cursor,
+      answered,
+    );
+    cursor.nextPromptIndex = outcome.prompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length;
+    const session = updateCalibrationSession(state.session, {
+      state: outcome.progressAssessment.shouldStop
+        ? CALIBRATION_SESSION_STATES.COMPLETED : CALIBRATION_SESSION_STATES.ACTIVE,
+      completedAt: outcome.progressAssessment.shouldStop ? updatedAt : null,
+      nextPromptIndex: cursor.nextPromptIndex,
+      cursor,
+    }, updatedAt);
+    const metadata = await repository.saveCalibrationSession(session);
+    await notifyLocalMutation([session]);
+    const snapshot = snapshotWithSession(state.snapshot, session, metadata);
+    return calibrationState(snapshot, session, projectionService, null, leaves, state.workspaceLeafIndexes);
+  }
+
   return Object.freeze({
     ownerRef: resolvedOwnerRef,
     repository,
@@ -1464,10 +1581,12 @@ export function createRangeCalibrationApplication({
     skipCalibrationQuestion,
     requestAdditionalQuestion,
     getPersonalStrategyMatrixProjection,
+    getRangeTeacherView,
     recordPersonalStrategyMatrixEvidence,
     applyRangeBuilderOperation,
     undoRangeBuilderOperation,
     requestPersonalStrategyMatrixQuestion,
+    requestRangeTeacherSession,
     getEvidenceView: (scope) => projectionService.getEvidenceView(scope),
     getStrategyEstimate: (scope, handClass) => (
       projectionService.getStrategyEstimate(scope, handClass)

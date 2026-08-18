@@ -15,6 +15,15 @@ export const RFI_COLD_START_POLICY_VERSION = 'adaptive-rfi-cold-start/v1';
 export const RFI_STOPPING_POLICY_VERSION = 'adaptive-rfi-stopping/v1';
 export const RFI_CALIBRATION_CANDIDATE_SCHEMA_VERSION = 'rfi-calibration-candidate/v1';
 export const RFI_CALIBRATION_PROGRESS_SCHEMA_VERSION = 'rfi-calibration-progress/v1';
+export const RFI_SELECTION_INTENT_POLICY_VERSION = 'adaptive-rfi-selection-intent/v1';
+
+export const RFI_SELECTION_INTENTS = Object.freeze({
+  GENERAL: 'general',
+  BOUNDARY_FOCUS: 'boundary_focus',
+  SPARSE_FOCUS: 'sparse_focus',
+  CONFLICT_REVIEW: 'conflict_review',
+  EXACT_MIX_REFINEMENT: 'exact_mix_refinement',
+});
 
 export const RFI_CALIBRATION_INTENTS = Object.freeze({
   QUICK: 'quick',
@@ -122,6 +131,7 @@ const ORDINARY_UNRESOLVED_STATUSES = new Set([
   PERSONAL_STRATEGY_ESTIMATE_STATUSES.UNKNOWN,
 ]);
 const INTENT_VALUES = new Set(Object.values(RFI_CALIBRATION_INTENTS));
+const SELECTION_INTENT_VALUES = new Set(Object.values(RFI_SELECTION_INTENTS));
 const TIER_COVERAGE_WEIGHT = Object.freeze({ primary: 4, secondary: 2, tertiary: 1 });
 const BOUNDARY_VALUE = Object.freeze({ unknown: 0, low: 18, medium: 62, high: 100 });
 const UNCERTAINTY_VALUE = Object.freeze({
@@ -156,6 +166,13 @@ function normalizeHandHistory(values, label) {
 
 export function normalizeRfiCalibrationIntent(value = RFI_CALIBRATION_INTENTS.STANDARD) {
   if (!INTENT_VALUES.has(value)) throw new RangeError(`Unsupported RFI calibration intent: ${value}`);
+  return value;
+}
+
+export function normalizeRfiSelectionIntent(value = RFI_SELECTION_INTENTS.GENERAL) {
+  if (!SELECTION_INTENT_VALUES.has(value)) {
+    throw new RangeError(`Unsupported RFI selection intent: ${value}`);
+  }
   return value;
 }
 
@@ -312,7 +329,7 @@ function candidateReasons({
 }
 
 function compareCandidates(left, right) {
-  return right.priorityTier - left.priorityTier
+  return right.biasedPriorityTier - left.biasedPriorityTier
     || (left.coldStartIndex ?? Number.MAX_SAFE_INTEGER)
       - (right.coldStartIndex ?? Number.MAX_SAFE_INTEGER)
     || right.questionValueScore - left.questionValueScore
@@ -323,6 +340,29 @@ function compareCandidates(left, right) {
     || left.canonicalIndex - right.canonicalIndex;
 }
 
+function selectionIntentBias(selectionIntent, {
+  estimate,
+  boundaryLikelihood,
+  novelty,
+  exactMix,
+} = {}) {
+  if (selectionIntent === RFI_SELECTION_INTENTS.BOUNDARY_FOCUS) {
+    return boundaryLikelihood === 'high' ? 240 : boundaryLikelihood === 'medium' ? 120 : 0;
+  }
+  if (selectionIntent === RFI_SELECTION_INTENTS.SPARSE_FOCUS) {
+    const sparse = estimate.support.evidenceDensity === 'none'
+      ? 180 : estimate.support.evidenceDensity === 'sparse' ? 120 : 0;
+    return sparse + Math.round(novelty / 4);
+  }
+  if (selectionIntent === RFI_SELECTION_INTENTS.CONFLICT_REVIEW) {
+    return estimate.status === CONFLICT_STATUS ? 300 : estimate.support.nearbyConflictCount > 0 ? 100 : 0;
+  }
+  if (selectionIntent === RFI_SELECTION_INTENTS.EXACT_MIX_REFINEMENT) {
+    return exactMix.value * 2;
+  }
+  return 0;
+}
+
 /**
  * Ranks unresolved RFI hand classes by deterministic QUESTION VALUE.
  * questionValueScore is not poker confidence, action probability, range weight,
@@ -330,6 +370,7 @@ function compareCandidates(left, right) {
  */
 export function rankCalibrationCandidates(snapshot, options = {}) {
   validatePersonalStrategySnapshot(snapshot);
+  const selectionIntent = normalizeRfiSelectionIntent(options.selectionIntent);
   const recentQuestionHistory = normalizeHandHistory(
     options.recentQuestionHistory ?? options.askedHandClasses,
     'recentQuestionHistory',
@@ -394,6 +435,13 @@ export function rankCalibrationCandidates(snapshot, options = {}) {
       exactMix,
       boundaryLikelihood,
     });
+    const basePriorityTier = priorityTier(estimate, seedIndex, boundaryLikelihood);
+    const selectionBiasValue = selectionIntentBias(selectionIntent, {
+      estimate,
+      boundaryLikelihood,
+      novelty,
+      exactMix,
+    });
     candidates.push({
       schemaVersion: RFI_CALIBRATION_CANDIDATE_SCHEMA_VERSION,
       selectionPolicyVersion: RFI_QUESTION_SELECTION_POLICY_VERSION,
@@ -403,7 +451,11 @@ export function rankCalibrationCandidates(snapshot, options = {}) {
       canonicalIndex: HAND_INDEX.get(estimate.handClass),
       questionValueScore: score,
       questionValueSemantics: 'deterministic_question_value_not_confidence_or_probability',
-      priorityTier: priorityTier(estimate, seedIndex, boundaryLikelihood),
+      selectionIntentPolicyVersion: RFI_SELECTION_INTENT_POLICY_VERSION,
+      selectionIntent,
+      selectionBiasValue,
+      priorityTier: basePriorityTier,
+      biasedPriorityTier: basePriorityTier + selectionBiasValue,
       currentStatus: estimate.status,
       predictedDominantAction: estimate.dominantAction,
       uncertaintyBand: estimate.uncertainty.band,

@@ -1,6 +1,6 @@
 # Unified Range Intelligence Architecture
 
-Status: architecture authority for `PERSONAL-STRATEGY-ARCH-002`; implementation checkpointed through `RANGE-BUILDER-001`
+Status: architecture authority for `PERSONAL-STRATEGY-ARCH-002`; implementation checkpointed through `RANGE-TEACHER-001`
 
 Date: August 18, 2026
 
@@ -56,6 +56,7 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 | `RANGE-CAL-002C` | Deterministic adaptive question-value ranking, structurally diverse cold start, boundary/sparsity/uncertainty targeting, repetition and skip control, category progress, explicit automatic stop reasons, resumable Quick/Standard/Deep intents, exhaustive fallback, and equal-budget comparative validation. |
 | `RANGE-CAL-002D` | Snapshot-derived 169-cell Personal Strategy Matrix, separate action/provenance encoding, evidence/support inspector, dominant-only confirmation, exact-mix correction lineage, scope isolation, adaptive-question integration, and bounded accessible EN/RU/HE presentation. |
 | `RANGE-BUILDER-001` | Same-Matrix class-level multi-selection/painting, dominant/pure/exact bulk edits, explicit Builder provenance/action groups, one atomic repository transaction/invalidation/recompute, conflict skip, semantic group undo, and immediate Calibration reranking. |
+| `RANGE-TEACHER-001` | Derived Personal Strategy summary, deterministic boundary/sparse/conflict/exact-mix recommendations, focused 002C selection intents, and routing through existing Calibration, Matrix, and Builder actions without new durable truth. |
 | `ACCOUNT-002B-B` | Opt-in Personal Strategy sync that preserves stable IDs, immutable direct and Training evidence, divergent offline heads, profile/mode metadata conflicts, and resumable sessions; inferred output is deliberately excluded. |
 | `HOME-002A` | Lightweight Personal Strategy summary: profile count, direct-evidence count, answered hand classes, contradictory heads, and resumable calibration state. Home performs no inference or range math. |
 
@@ -82,8 +83,8 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 - 002B validation remains synthetic mechanics evidence rather than real-user uncertainty calibration or poker-reference truth;
 - deliberately non-local evidence is expected to produce near-total abstention; 002C adaptive validation preserves that behavior, while real-user corpora remain a future gate;
 - synced contradictory heads are preserved, but there is no first-class conflict-resolution workflow;
-- Personal Strategy now projects the accepted class-level snapshot into a Matrix-specific read model; Builder, Teacher, Analysis, and provider consumers do not yet have a shared action-strategy attachment;
-- class-level unified Range Builder exists; combo overrides, imports/exports, comparisons, and Range Teacher remain unavailable;
+- Personal Strategy now projects the accepted class-level snapshot into Matrix- and Teacher-specific read models; Analysis and provider consumers do not yet have a shared action-strategy attachment;
+- class-level unified Range Builder and derived Range Teacher exist; combo overrides, imports/exports, comparisons, writable multi-head resolution, and richer Teacher history remain unavailable;
 - no Training click mutates Personal Strategy in the current product;
 - no personal source exists in `StrategyProvider v1` or its closed `StrategyResult v1` source vocabulary;
 - Home intentionally shows direct facts and resume state only;
@@ -1294,7 +1295,7 @@ Implementation checkpoint:
 
 Detailed contracts and reusable Teacher seams are in `RANGE_BUILDER_SPEC.md`.
 
-### 24.5 `RANGE-TEACHER-001` — active profiler/teacher
+### 24.5 `RANGE-TEACHER-001` — active profiler/teacher — IMPLEMENTED / VISUAL QA OPEN
 
 Dependencies:
 
@@ -1316,6 +1317,18 @@ Acceptance:
 - stable obvious regions are skipped;
 - user can inspect, edit, stop, and resume through shared state;
 - tutorial, localization, accessibility, and Firefox acceptance are owned by the ticket.
+
+Implemented checkpoint:
+
+- `range-teacher-view/v1` is a pure projection of one matching evidence/snapshot revision plus 002C ranking/progress; it is not persisted, exported, or synced;
+- `boundary-cluster/v1` uses deterministic primary-neighborhood connectivity within structural families and canonical-hand tie-breaking;
+- contradiction hotspots preserve all direct heads; sparse regions and exact-mix opportunities reuse existing inference/support/ranking facts;
+- Quick profile, Boundaries, Unknown regions, Conflicts, and Exact-mix refinement map to the existing Calibration session with a versioned deterministic 002C selection-intent bias;
+- inspect/edit/question actions route to the existing Matrix, Builder, and Calibration application APIs; recommendation dismissal remains same-session UI state;
+- compact EN/RU/HE UI, semantic tab/keyboard/live-region structure, tutorial coverage, deterministic architecture tests, and performance benchmark are implemented;
+- requested human Firefox viewport/theme/language acceptance remains tracked in `QA_BACKLOG.md`.
+
+Detailed contracts are in `RANGE_TEACHER_SPEC.md`.
 
 Likely files:
 

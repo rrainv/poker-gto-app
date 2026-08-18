@@ -1691,7 +1691,70 @@
             </div>
           </section>
 
-          <section id="calibrationMatrixPanel" class="panel calibration-personal-matrix" aria-labelledby="calibrationMatrixTitle" data-tutorial-anchor="calibration-personal-matrix">
+          <nav class="calibration-personal-tabs" role="tablist" aria-label="Personal Strategy views" data-i18n-aria-label="Personal Strategy views">
+            <button id="calibrationTeacherTab" class="ui-button ui-button--tertiary" type="button" role="tab" aria-selected="false" aria-controls="calibrationTeacherPanel" data-i18n="Range Teacher" data-tutorial-anchor="range-teacher-tab">Range Teacher</button>
+            <button id="calibrationMatrixTab" class="ui-button ui-button--tertiary" type="button" role="tab" aria-selected="true" aria-controls="calibrationMatrixPanel" data-i18n="Matrix">Matrix</button>
+          </nav>
+
+          <section id="calibrationTeacherPanel" class="panel calibration-teacher-panel" role="tabpanel" aria-labelledby="calibrationTeacherTitle" data-tutorial-anchor="range-teacher" hidden>
+            <header class="calibration-teacher-header">
+              <div>
+                <p class="calibration-eyebrow" data-i18n="Personal Strategy">Personal Strategy</p>
+                <h2 id="calibrationTeacherTitle" data-i18n="Range Teacher">Range Teacher</h2>
+                <p data-i18n="Tell Riverline how YOU play. Teacher explains your evidence and uncertainty; it does not grade you against GTO.">Tell Riverline how YOU play. Teacher explains your evidence and uncertainty; it does not grade you against GTO.</p>
+                <p id="calibrationTeacherScope" class="calibration-teacher-scope poker-data-token" dir="ltr"></p>
+              </div>
+              <button id="calibrationTeacherStop" class="ui-button ui-button--tertiary" type="button" data-i18n="Stop for now">Stop for now</button>
+            </header>
+
+            <dl class="calibration-teacher-summary" aria-label="Personal Strategy summary" data-i18n-aria-label="Personal Strategy summary">
+              <div><dt data-i18n="Direct">Direct</dt><dd id="calibrationTeacherDirect">0</dd></div>
+              <div><dt data-i18n="Inferred high">Inferred high</dt><dd id="calibrationTeacherHigh">0</dd></div>
+              <div><dt data-i18n="Inferred medium">Inferred medium</dt><dd id="calibrationTeacherMedium">0</dd></div>
+              <div><dt data-i18n="Uncertain">Uncertain</dt><dd id="calibrationTeacherUncertain">0</dd></div>
+              <div><dt data-i18n="Unknown">Unknown</dt><dd id="calibrationTeacherUnknown">169</dd></div>
+              <div><dt data-i18n="Conflicting">Conflicting</dt><dd id="calibrationTeacherConflicting">0</dd></div>
+            </dl>
+
+            <article id="calibrationTeacherRecommendation" class="calibration-teacher-recommendation" aria-labelledby="calibrationTeacherRecommendationTitle">
+              <div>
+                <p class="calibration-eyebrow" data-i18n="Recommended next step">Recommended next step</p>
+                <h3 id="calibrationTeacherRecommendationTitle"></h3>
+                <p id="calibrationTeacherRecommendationWhy"></p>
+                <p id="calibrationTeacherRecommendationHand" class="poker-data-token" dir="ltr"></p>
+              </div>
+              <div class="calibration-teacher-card-actions">
+                <button id="calibrationTeacherRecommendationAction" class="ui-button ui-button--primary" type="button"></button>
+                <button id="calibrationTeacherRecommendationDismiss" class="ui-button ui-button--tertiary" type="button" aria-label="Dismiss recommendation" data-i18n-aria-label="Dismiss recommendation" data-i18n="Not now">Not now</button>
+              </div>
+            </article>
+
+            <section class="calibration-teacher-presets" aria-labelledby="calibrationTeacherSessionsTitle">
+              <div><h3 id="calibrationTeacherSessionsTitle" data-i18n="Focused sessions">Focused sessions</h3><p data-i18n="Choose what Riverline should prioritize next.">Choose what Riverline should prioritize next.</p></div>
+              <div class="calibration-teacher-preset-actions">
+                <button type="button" class="ui-button ui-button--secondary" data-teacher-preset="quick_profile" data-i18n="Quick profile">Quick profile</button>
+                <button type="button" class="ui-button ui-button--secondary" data-teacher-preset="boundaries" data-i18n="Boundary session">Boundary session</button>
+                <button type="button" class="ui-button ui-button--secondary" data-teacher-preset="unknown_regions" data-i18n="Unknown regions">Unknown regions</button>
+                <button type="button" class="ui-button ui-button--secondary" data-teacher-preset="conflicts" data-i18n="Conflict review">Conflict review</button>
+              </div>
+            </section>
+
+            <div class="calibration-teacher-sections">
+              <section aria-labelledby="calibrationTeacherBoundariesTitle"><h3 id="calibrationTeacherBoundariesTitle" data-i18n="Important boundaries">Important boundaries</h3><div id="calibrationTeacherBoundaries" class="calibration-teacher-list"></div></section>
+              <section aria-labelledby="calibrationTeacherConflictsTitle"><h3 id="calibrationTeacherConflictsTitle" data-i18n="Conflicting answers">Conflicting answers</h3><div id="calibrationTeacherConflicts" class="calibration-teacher-list"></div></section>
+              <section aria-labelledby="calibrationTeacherSparseTitle"><h3 id="calibrationTeacherSparseTitle" data-i18n="Unknown regions">Unknown regions</h3><div id="calibrationTeacherSparse" class="calibration-teacher-list"></div></section>
+              <section aria-labelledby="calibrationTeacherMixTitle"><h3 id="calibrationTeacherMixTitle" data-i18n="Exact-mix opportunities">Exact-mix opportunities</h3><div id="calibrationTeacherMix" class="calibration-teacher-list"></div></section>
+            </div>
+
+            <footer class="calibration-teacher-footer">
+              <button id="calibrationTeacherOpenMatrix" class="ui-button ui-button--secondary" type="button" data-i18n="Open Matrix">Open Matrix</button>
+              <button id="calibrationTeacherOpenBuilder" class="ui-button ui-button--secondary" type="button" data-i18n="Open Builder">Open Builder</button>
+              <button id="calibrationTeacherContinue" class="ui-button ui-button--primary" type="button" data-i18n="Continue Calibration">Continue Calibration</button>
+            </footer>
+            <p id="calibrationTeacherStatus" role="status" aria-live="polite"></p>
+          </section>
+
+          <section id="calibrationMatrixPanel" class="panel calibration-personal-matrix" role="tabpanel" aria-labelledby="calibrationMatrixTitle" data-tutorial-anchor="calibration-personal-matrix">
             <header class="calibration-matrix-header">
               <div>
                 <p class="calibration-eyebrow" data-i18n="Personal Strategy">Personal Strategy</p>

@@ -15,6 +15,7 @@ import {
 import {
   RIVERLINE_OWNED_DOMAINS,
 } from '../account-identity/index.mjs';
+import { RANGE_TEACHER_SESSION_PRESETS } from '../personal-strategy/index.mjs';
 
 let mountedWorkspace = null;
 
@@ -149,6 +150,11 @@ function createController(root, application, initialWorkspace, activationStarted
   let matrixFilter = 'all';
   let matrixFollowQuestion = true;
   let matrixWritePending = false;
+  let personalStrategySubview = 'matrix';
+  let rangeTeacherView = null;
+  let teacherLoadToken = 0;
+  let teacherSelectedHand = null;
+  let dismissedTeacherSuggestions = new Set();
   let builderActive = false;
   let builderBrush = 'select';
   let builderSelection = new Set();
@@ -172,6 +178,11 @@ function createController(root, application, initialWorkspace, activationStarted
       selectionMs: [],
       correctionToRecomputeMs: [],
       scopeSwitchMs: [],
+    },
+    teacher: {
+      viewLoads: 0,
+      viewPreparationMs: [],
+      actionToQuestionMs: [],
     },
   };
 
@@ -633,6 +644,185 @@ function createController(root, application, initialWorkspace, activationStarted
     }
   }
 
+  function teacherActionLabel(action) {
+    return {
+      ask_next: 'Ask next',
+      explore_boundary: 'Explore this boundary',
+      explore_sparse_region: 'Explore this region',
+      inspect_conflict: 'Inspect',
+      refine_exact_mix: 'Refine exact mix',
+    }[action?.kind] ?? 'Open';
+  }
+
+  function teacherItem({ title, reason, hands, action }) {
+    const item = document.createElement('article');
+    item.className = 'calibration-teacher-item';
+    const heading = document.createElement('strong');
+    heading.textContent = title;
+    const copy = document.createElement('p');
+    copy.textContent = reason;
+    if (hands) {
+      const tokens = document.createElement('span');
+      tokens.className = 'poker-data-token';
+      tokens.dir = 'ltr';
+      tokens.textContent = hands;
+    copy.append(' · ', tokens);
+    }
+    item.append(heading, copy);
+    if (action) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'ui-button ui-button--tertiary';
+      button.dataset.teacherAction = action.kind;
+      if (action.handClass) button.dataset.teacherHand = action.handClass;
+      if (action.preset) button.dataset.teacherPreset = action.preset;
+      button.textContent = translated(teacherActionLabel(action));
+      button.setAttribute('aria-label', `${translated(teacherActionLabel(action))}: ${hands || title}`);
+      item.append(button);
+    }
+    return item;
+  }
+
+  function teacherEmpty(key) {
+    const empty = document.createElement('p');
+    empty.className = 'calibration-teacher-empty';
+    empty.textContent = translated(key);
+    return empty;
+  }
+
+  function renderRangeTeacher() {
+    if (!rangeTeacherView) return;
+    const entry = activeEntry();
+    const mode = activeMode();
+    query('#calibrationTeacherScope').textContent = entry && mode
+      ? `${entry.profile.displayName} · ${mode.displayName} · ${selection.context.tableSize}-max · ${selection.context.heroPosition} · ${selection.context.effectiveStackBb}bb · RFI`
+      : '';
+    const summary = rangeTeacherView.summary;
+    query('#calibrationTeacherDirect').textContent = String(summary.directCount);
+    query('#calibrationTeacherHigh').textContent = String(summary.inferredHighCount);
+    query('#calibrationTeacherMedium').textContent = String(summary.inferredMediumCount);
+    query('#calibrationTeacherUncertain').textContent = String(summary.uncertainCount);
+    query('#calibrationTeacherUnknown').textContent = String(summary.unknownCount);
+    query('#calibrationTeacherConflicting').textContent = String(summary.conflictingCount);
+
+    const recommendation = rangeTeacherView.recommendedAction;
+    const recommendationCard = query('#calibrationTeacherRecommendation');
+    recommendationCard.hidden = !recommendation;
+    if (recommendation) {
+      setTranslatedText(query('#calibrationTeacherRecommendationTitle'), recommendation.titleKey);
+      setTranslatedText(
+        query('#calibrationTeacherRecommendationWhy'),
+        recommendation.whyKey,
+        recommendation.whyParameters,
+      );
+      query('#calibrationTeacherRecommendationHand').textContent = recommendation.handClass ?? '';
+      const action = query('#calibrationTeacherRecommendationAction');
+      action.textContent = translated(teacherActionLabel(recommendation));
+      action.dataset.teacherAction = recommendation.kind;
+      action.dataset.teacherHand = recommendation.handClass ?? '';
+      action.dataset.teacherPreset = recommendation.preset ?? '';
+      action.dataset.teacherSuggestion = recommendation.suggestionId;
+      query('#calibrationTeacherRecommendationDismiss').dataset.teacherSuggestion = recommendation.suggestionId;
+      teacherSelectedHand = recommendation.handClass ?? teacherSelectedHand;
+    }
+
+    const boundaries = rangeTeacherView.importantBoundaries.map((cluster) => teacherItem({
+      title: translated(cluster.labelKey, cluster.labelParameters),
+      reason: translated(cluster.whyKey),
+      hands: cluster.handClasses.join(' '),
+      action: cluster.suggestedAction,
+    }));
+    query('#calibrationTeacherBoundaries').replaceChildren(...(boundaries.length
+      ? boundaries : [teacherEmpty('No important boundary is supported yet.') ]));
+
+    const conflicts = rangeTeacherView.contradictionHotspots.map((hotspot) => teacherItem({
+        title: `${hotspot.handClass} · ${translated('Conflicting answers')}`,
+      reason: translated(hotspot.whyKey),
+      hands: hotspot.evidence.map((entry) => (
+        entry.dominantAction ? actionLabel(entry.dominantAction) : translated('Exact mix')
+      )).join(' / '),
+      action: hotspot.suggestedActions[0],
+    }));
+    query('#calibrationTeacherConflicts').replaceChildren(...(conflicts.length
+      ? conflicts : [teacherEmpty('No unresolved direct conflicts here.') ]));
+
+    const sparse = rangeTeacherView.sparseRegions.map((region) => teacherItem({
+      title: translated(region.familyLabel),
+      reason: translated(region.whyKey, region.whyParameters),
+      hands: region.handClasses.slice(0, 6).join(' '),
+      action: region.suggestedAction,
+    }));
+    query('#calibrationTeacherSparse').replaceChildren(...(sparse.length
+      ? sparse : [teacherEmpty('No sparse region needs attention right now.') ]));
+
+    const exactMix = rangeTeacherView.exactMixRefinementCandidates.map((candidate) => teacherItem({
+        title: `${candidate.handClass} · ${translated('Refine exact mix')}`,
+      reason: translated(candidate.whyKey),
+      hands: candidate.handClass,
+      action: candidate.suggestedAction,
+    }));
+    query('#calibrationTeacherMix').replaceChildren(...(exactMix.length
+      ? exactMix : [teacherEmpty('No exact-mix refinement stands out right now.') ]));
+  }
+
+  function adoptCalibrationTeacher() {
+    if (!calibrationState?.rangeTeacherView) return false;
+    rangeTeacherView = calibrationState.rangeTeacherView;
+    teacherSelectedHand = rangeTeacherView.selectedHand?.handClass ?? teacherSelectedHand;
+    renderRangeTeacher();
+    return true;
+  }
+
+  async function loadRangeTeacher({ force = false } = {}) {
+    const scope = currentMatrixScope();
+    if (!scope) return null;
+    if (!force && dismissedTeacherSuggestions.size === 0 && adoptCalibrationTeacher()) {
+      return rangeTeacherView;
+    }
+    const token = ++teacherLoadToken;
+    const startedAt = now();
+    query('#calibrationTeacherPanel').setAttribute('aria-busy', 'true');
+    try {
+      const view = await application.getRangeTeacherView(scope, {
+        session: calibrationState?.session ?? matchingCalibrationSession(),
+        selectedHandClass: teacherSelectedHand,
+        dismissedSuggestionIds: [...dismissedTeacherSuggestions],
+      });
+      if (token !== teacherLoadToken) return null;
+      rangeTeacherView = view;
+      metrics.teacher.viewLoads += 1;
+      metrics.teacher.viewPreparationMs.push(now() - startedAt);
+      renderRangeTeacher();
+      return view;
+    } catch (error) {
+      query('#calibrationTeacherStatus').textContent = friendlyError(error);
+      return null;
+    } finally {
+      if (token === teacherLoadToken) query('#calibrationTeacherPanel').setAttribute('aria-busy', 'false');
+    }
+  }
+
+  function renderPersonalStrategySubview() {
+    const teacherActive = personalStrategySubview === 'teacher';
+    query('#calibrationTeacherTab').setAttribute('aria-selected', String(teacherActive));
+    query('#calibrationTeacherTab').tabIndex = teacherActive ? 0 : -1;
+    query('#calibrationMatrixTab').setAttribute('aria-selected', String(!teacherActive));
+    query('#calibrationMatrixTab').tabIndex = teacherActive ? -1 : 0;
+    query('#calibrationTeacherPanel').hidden = !teacherActive;
+    query('#calibrationMatrixPanel').hidden = teacherActive;
+  }
+
+  async function setPersonalStrategySubview(view, { handClass = null } = {}) {
+    personalStrategySubview = view === 'teacher' ? 'teacher' : 'matrix';
+    if (handClass) teacherSelectedHand = handClass;
+    renderPersonalStrategySubview();
+    if (personalStrategySubview === 'teacher') await loadRangeTeacher({ force: true });
+    else {
+      await loadMatrixProjection();
+      if (handClass) selectMatrixHand(handClass);
+    }
+  }
+
   function renderIntentOptions() {
     const sessionIntent = matchingCalibrationSession()?.cursor?.calibrationIntent;
     if (Object.values(RFI_CALIBRATION_INTENTS).includes(sessionIntent)
@@ -771,7 +961,9 @@ function createController(root, application, initialWorkspace, activationStarted
     renderDerivedContext();
     const scopeSwitchStartedAt = pendingMatrixScopeSwitchStartedAt;
     pendingMatrixScopeSwitchStartedAt = null;
-    void loadMatrixProjection({ scopeSwitchStartedAt });
+    renderPersonalStrategySubview();
+    if (personalStrategySubview === 'teacher') void loadRangeTeacher({ force: true });
+    else void loadMatrixProjection({ scopeSwitchStartedAt });
   }
 
   function actionLabel(actionType) {
@@ -888,7 +1080,11 @@ function createController(root, application, initialWorkspace, activationStarted
         === RFI_CALIBRATION_STOP_REASONS.FULL_DIRECT_COVERAGE
         || !calibrationState.candidateRanking.some((candidate) => candidate.ordinaryQuestionEligible);
     }
-    adoptCalibrationMatrix();
+    if (personalStrategySubview === 'teacher') {
+      if (dismissedTeacherSuggestions.size) void loadRangeTeacher({ force: true });
+      else adoptCalibrationTeacher();
+    }
+    else adoptCalibrationMatrix();
   }
 
   function setAnswerControlsDisabled(disabled) {
@@ -930,6 +1126,71 @@ function createController(root, application, initialWorkspace, activationStarted
       window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
     } catch (error) {
       notify(friendlyError(error), 'error');
+    }
+  }
+
+  async function openTeacherMatrix(handClass, { builder = false } = {}) {
+    await setPersonalStrategySubview('matrix', { handClass });
+    if (!handClass && rangeTeacherView?.selectedHand?.handClass) {
+      selectMatrixHand(rangeTeacherView.selectedHand.handClass);
+    }
+    if (builder) {
+      builderActive = true;
+      const selected = handClass ?? matrixSelectedHand;
+      if (selected) setBuilderSelection([selected], { primary: selected });
+      renderBuilderMode();
+      query('#calibrationBuilderToolbar').focus?.({ preventScroll: true });
+    } else query('#calibrationMatrixPanel').focus?.({ preventScroll: true });
+  }
+
+  async function enterTeacherSession(preset, handClass = null) {
+    if (preset === RANGE_TEACHER_SESSION_PRESETS.CONFLICTS) {
+      const conflictHand = handClass ?? rangeTeacherView?.contradictionHotspots[0]?.handClass;
+      if (conflictHand) await openTeacherMatrix(conflictHand);
+      else query('#calibrationTeacherStatus').textContent = translated('No unresolved direct conflicts here.');
+      return;
+    }
+    if (!await validateAndSaveStack()) return;
+    const startedAt = now();
+    try {
+      if (calibrationState) {
+        calibrationState = await application.requestRangeTeacherSession(calibrationState, {
+          preset,
+          handClass,
+        });
+      } else {
+        calibrationState = await application.startOrResumeSession({
+          selectedProfileId: selection.profileId,
+          activeModeId: selection.modeId,
+          context: selection.context,
+          rangeTeacherPreset: preset,
+          forcedHandClass: handClass,
+          continueAfterStop: true,
+        });
+      }
+      syncSnapshot(calibrationState.snapshot);
+      educationVisible = calibrationState.progress.answered === 0;
+      metrics.teacher.actionToQuestionMs.push(now() - startedAt);
+      renderQuestion();
+      window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
+    } catch (error) {
+      query('#calibrationTeacherStatus').textContent = friendlyError(error);
+    }
+  }
+
+  async function performTeacherAction({ kind, handClass = null, preset = null } = {}) {
+    teacherSelectedHand = handClass ?? teacherSelectedHand;
+    if (kind === 'inspect_conflict') {
+      await openTeacherMatrix(handClass);
+      return;
+    }
+    if (kind === 'refine_exact_mix') {
+      await openTeacherMatrix(handClass);
+      openMixEditor('matrix');
+      return;
+    }
+    if (['ask_next', 'explore_boundary', 'explore_sparse_region'].includes(kind)) {
+      await enterTeacherSession(preset ?? RANGE_TEACHER_SESSION_PRESETS.QUICK_PROFILE, handClass);
     }
   }
 
@@ -1340,10 +1601,18 @@ function createController(root, application, initialWorkspace, activationStarted
     render();
   }
 
+  function resetTeacherForScope() {
+    rangeTeacherView = null;
+    teacherSelectedHand = null;
+    dismissedTeacherSuggestions = new Set();
+    teacherLoadToken += 1;
+  }
+
   async function changeProfile(profileId) {
     const entry = selectedEntry(workspace, profileId);
     if (!entry) return;
     pendingMatrixScopeSwitchStartedAt = now();
+    resetTeacherForScope();
     const preference = workspace.preferences.byProfile[profileId];
     selection = {
       profileId,
@@ -1359,6 +1628,7 @@ function createController(root, application, initialWorkspace, activationStarted
   async function updateContextFromControls({ announceCorrection = false } = {}) {
     const previousPosition = selection.context.heroPosition;
     pendingMatrixScopeSwitchStartedAt = now();
+    resetTeacherForScope();
     const candidate = {
       environment: query('#calibrationEnvironment').value,
       tableSize: Number(query('#calibrationTableSize').value),
@@ -1478,6 +1748,45 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationCreateProfile').addEventListener('click', () => openProfileEditor('create'));
     query('#calibrationEditProfile').addEventListener('click', () => openProfileEditor('edit'));
     query('#calibrationStartQuestions').addEventListener('click', enterQuestions);
+    query('#calibrationTeacherTab').addEventListener('click', () => setPersonalStrategySubview('teacher'));
+    query('#calibrationMatrixTab').addEventListener('click', () => setPersonalStrategySubview('matrix'));
+    query('.calibration-personal-tabs').addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+      event.preventDefault();
+      const next = personalStrategySubview === 'teacher' ? 'matrix' : 'teacher';
+      void setPersonalStrategySubview(next).then(() => query(`#calibration${next === 'teacher' ? 'Teacher' : 'Matrix'}Tab`).focus());
+    });
+    query('#calibrationTeacherPanel').addEventListener('click', (event) => {
+      const preset = event.target.closest('[data-teacher-preset]:not([data-teacher-action])');
+      if (preset) {
+        void enterTeacherSession(preset.dataset.teacherPreset);
+        return;
+      }
+      const action = event.target.closest('[data-teacher-action]');
+      if (!action) return;
+      void performTeacherAction({
+        kind: action.dataset.teacherAction,
+        handClass: action.dataset.teacherHand || null,
+        preset: action.dataset.teacherPreset || null,
+      });
+    });
+    query('#calibrationTeacherRecommendationDismiss').addEventListener('click', () => {
+      const suggestionId = query('#calibrationTeacherRecommendationDismiss').dataset.teacherSuggestion;
+      if (!suggestionId) return;
+      dismissedTeacherSuggestions.add(suggestionId);
+      void loadRangeTeacher({ force: true });
+    });
+    query('#calibrationTeacherOpenMatrix').addEventListener('click', () => {
+      void openTeacherMatrix(teacherSelectedHand);
+    });
+    query('#calibrationTeacherOpenBuilder').addEventListener('click', () => {
+      void openTeacherMatrix(teacherSelectedHand, { builder: true });
+    });
+    query('#calibrationTeacherContinue').addEventListener('click', enterQuestions);
+    query('#calibrationTeacherStop').addEventListener('click', async () => {
+      if (calibrationState) await stopQuestions();
+      query('#calibrationTeacherStatus').textContent = translated('Your evidence is saved. Return whenever you want to refine it.');
+    });
     query('#calibrationPauseQuestions').addEventListener('click', pauseQuestions);
     query('#calibrationStopQuestions').addEventListener('click', stopQuestions);
     query('#calibrationReturnToContext').addEventListener('click', pauseQuestions);
@@ -1695,6 +2004,7 @@ function createController(root, application, initialWorkspace, activationStarted
       const button = event.target.closest('[data-mode-id]');
       if (!button) return;
       pendingMatrixScopeSwitchStartedAt = now();
+      resetTeacherForScope();
       selection.modeId = button.dataset.modeId;
       try { await persistSelection(); } catch (error) { notify(friendlyError(error), 'error'); }
       renderConfigured({ controls: false });
@@ -1712,6 +2022,7 @@ function createController(root, application, initialWorkspace, activationStarted
     });
     query('#calibrationEnvironment').addEventListener('change', async () => {
       pendingMatrixScopeSwitchStartedAt = now();
+      resetTeacherForScope();
       const environment = query('#calibrationEnvironment').value;
       const sizes = tableSizesForEnvironment(environment);
       const requested = Number(query('#calibrationTableSize').value);
@@ -1829,7 +2140,8 @@ function createController(root, application, initialWorkspace, activationStarted
       else if (root.dataset.calibrationState === 'configured') {
         renderContextControls();
         renderDerivedContext();
-        renderMatrix();
+        if (personalStrategySubview === 'teacher') renderRangeTeacher();
+        else renderMatrix();
       }
     }, { signal: lifecycle.signal });
   }
@@ -1870,6 +2182,8 @@ function createController(root, application, initialWorkspace, activationStarted
       matrixProjection,
       matrixSelectedHand,
       matrixFilter,
+      personalStrategySubview,
+      rangeTeacherView,
       lastAnswerError: lastAnswerError ? {
         name: lastAnswerError.name,
         code: lastAnswerError.code ?? null,
