@@ -206,7 +206,7 @@ Full results and limitations are in `RANGE_CAL_002C_VALIDATION_REPORT.md`. Repro
 node tests/tooling/evaluate_range_cal002c.mjs
 ```
 
-## Limitations and 002D interface
+## Limitations and 002D integration
 
 - Synthetic targets validate deterministic mechanics, boundary seeking, and known failure behavior; they are not poker correctness or real-user calibration evidence.
 - The deliberately irregular fixture still produces a few low-quality medium attempts at intermediate budgets, then fully abstains at 75; it produces no high-band predictions.
@@ -215,4 +215,4 @@ node tests/tooling/evaluate_range_cal002c.mjs
 - Question budgets and thresholds require real-user usability and corpus validation before stronger product claims.
 - Firefox visual/manual acceptance is tracked separately from deterministic structural tests.
 
-`RANGE-CAL-002D` can consume the existing `PersonalStrategySnapshot v1` estimates/support/provenance/evidence IDs together with ranked candidate status, question value, boundary indicators, exact-mix refinement facts, and reason codes. It must remain a consumer of these authorities and must not persist ranking or implement a second inference engine.
+`RANGE-CAL-002D` now consumes the existing `PersonalStrategySnapshot v1` estimates/support/provenance/evidence IDs together with ranked candidate status, question value, boundary indicators, exact-mix refinement facts, and reason codes through `personal-strategy-matrix-projection/v1`. The Matrix follows the current prompt by default, can request an ordinary selected candidate as the next resumable question, and recomputes after a direct correction. Ranking remains session-derived and is neither persisted nor synced; Matrix inspection does not implement a second inference engine. See `PERSONAL_STRATEGY_MATRIX_SPEC.md`.

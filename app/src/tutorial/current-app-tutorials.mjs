@@ -121,6 +121,7 @@ export const CALIBRATION_SETUP_TUTORIAL_DEFINITION = definition({
     { id: 'profile', anchor: 'calibration-profile', titleKey: 'Name a real poker environment', bodyKey: 'A Profile represents a recognizable game or player-pool identity. Each Profile has exactly three discrete Modes named in your own words; they are not points on a numeric style slider.', placement: 'bottom', precondition: 'calibration-configured' },
     { id: 'context', anchor: 'calibration-context', titleKey: 'Choose objective RFI facts', bodyKey: 'Set environment, table size, Hero position, effective stack, and accounting for an unopened preflop range. These facts identify the direct range you are calibrating.', placement: 'right', precondition: 'calibration-configured' },
     { id: 'start', anchor: 'calibration-start', titleKey: 'Choose a session depth', bodyKey: 'Quick, Standard, and Deep are question-count goals. Pause anytime; Riverline recomputes the next question from saved evidence when you resume.', placement: 'left', precondition: 'calibration-configured' },
+    { id: 'matrix', anchor: 'calibration-personal-matrix', titleKey: 'Inspect the model as a matrix', bodyKey: 'The Matrix summarizes this exact Profile, Mode, and RFI context. Action fill stays separate from direct, inferred, uncertain, conflicting, and unknown status.', placement: 'top', precondition: 'calibration-configured' },
   ],
 });
 
@@ -134,6 +135,7 @@ export const CALIBRATION_ANSWERS_TUTORIAL_DEFINITION = definition({
     { id: 'mix', anchor: 'calibration-exact-mix', titleKey: 'Use exact mixes only when you know them', bodyKey: 'Set Frequencies stores an explicit Fold/Raise mix separately from a quick answer. An exact tie is valid and has no dominant action.', placement: 'top', precondition: 'calibration-question-ready' },
     { id: 'reason', anchor: 'calibration-question-reason', titleKey: 'See why each hand matters', bodyKey: 'The reason points to a boundary, sparse region, nearby disagreement, or coverage gain. It explains question value, not poker confidence.', placement: 'bottom', precondition: 'calibration-question-ready' },
     { id: 'progress', anchor: 'calibration-progress', titleKey: 'Read progress by category', bodyKey: 'Direct, inferred-high, inferred-medium, uncertain, conflicting, and unknown stay separate. These counts are coverage facts, not a confidence percentage.', placement: 'top', precondition: 'calibration-question-ready' },
+    { id: 'inspect-correct', anchor: 'calibration-matrix-inspector', titleKey: 'Inspect and correct Riverline', bodyKey: 'Select a Matrix cell to see direct history, contributing neighbors, and boundary facts. Confirming an inference records only a dominant action; exact mixes remain explicit.', placement: 'left', precondition: 'calibration-question-ready' },
     { id: 'control', anchor: 'calibration-session-controls', titleKey: 'Pause, stop, skip, or undo safely', bodyKey: 'Pause preserves the session, Stop ends it, and Skip or I’m not sure records no poker evidence. Undo retracts the immediately previous direct observation when available.', placement: 'bottom', precondition: 'calibration-question-ready' },
   ],
 });

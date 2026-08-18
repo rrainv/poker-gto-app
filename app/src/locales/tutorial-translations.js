@@ -543,6 +543,30 @@
     'Pause preserves the session, Stop ends it, and Skip or I’m not sure records no poker evidence. Undo retracts the immediately previous direct observation when available.': 'Pause שומר את הסשן, Stop מסיים אותו, ו־Skip או „לא בטוח” אינם שומרים ראיית פוקר. Undo מבטל את התשובה הישירה האחרונה כשיש כזו.',
   });
 
+  const personalStrategyMatrixTutorial = {
+    en: {
+      'Inspect the model as a matrix': 'Inspect the model as a matrix',
+      'The Matrix summarizes this exact Profile, Mode, and RFI context. Action fill stays separate from direct, inferred, uncertain, conflicting, and unknown status.': 'The Matrix summarizes this exact Profile, Mode, and RFI context. Action fill stays separate from direct, inferred, uncertain, conflicting, and unknown status.',
+      'Inspect and correct Riverline': 'Inspect and correct Riverline',
+      'Select a Matrix cell to see direct history, contributing neighbors, and boundary facts. Confirming an inference records only a dominant action; exact mixes remain explicit.': 'Select a Matrix cell to see direct history, contributing neighbors, and boundary facts. Confirming an inference records only a dominant action; exact mixes remain explicit.',
+    },
+    ru: {
+      'Inspect the model as a matrix': 'Изучайте модель в виде матрицы',
+      'The Matrix summarizes this exact Profile, Mode, and RFI context. Action fill stays separate from direct, inferred, uncertain, conflicting, and unknown status.': 'Матрица обобщает именно этот профиль, режим и контекст RFI. Заливка действия отделена от прямого, выведенного, неопределённого, конфликтующего и неизвестного статуса.',
+      'Inspect and correct Riverline': 'Проверяйте и исправляйте Riverline',
+      'Select a Matrix cell to see direct history, contributing neighbors, and boundary facts. Confirming an inference records only a dominant action; exact mixes remain explicit.': 'Выберите ячейку матрицы, чтобы увидеть историю прямых данных, влияющих соседей и факты о границе. Подтверждение вывода записывает только доминирующее действие; точные миксы остаются явными.',
+    },
+    he: {
+      'Inspect the model as a matrix': 'בדקו את המודל כמטריצה',
+      'The Matrix summarizes this exact Profile, Mode, and RFI context. Action fill stays separate from direct, inferred, uncertain, conflicting, and unknown status.': 'המטריצה מסכמת את הפרופיל, המצב והקשר ה־RFI המדויקים האלה. מילוי הפעולה נשאר נפרד ממצב ישיר, מוסק, לא ודאי, סותר או לא ידוע.',
+      'Inspect and correct Riverline': 'בדקו ותקנו את Riverline',
+      'Select a Matrix cell to see direct history, contributing neighbors, and boundary facts. Confirming an inference records only a dominant action; exact mixes remain explicit.': 'בחרו תא במטריצה כדי לראות היסטוריה ישירה, שכנים תורמים ועובדות גבול. אישור הסקה מתעד רק פעולה דומיננטית; תמהילים מדויקים נשארים מפורשים.',
+    },
+  };
+  Object.assign(en, personalStrategyMatrixTutorial.en);
+  Object.assign(ru, personalStrategyMatrixTutorial.ru);
+  Object.assign(he, personalStrategyMatrixTutorial.he);
+
   const rangeAnalysisTutorial = {
     en: {
       'Read exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': 'Read exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.',

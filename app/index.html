@@ -1691,6 +1691,107 @@
             </div>
           </section>
 
+          <section id="calibrationMatrixPanel" class="panel calibration-personal-matrix" aria-labelledby="calibrationMatrixTitle" data-tutorial-anchor="calibration-personal-matrix">
+            <header class="calibration-matrix-header">
+              <div>
+                <p class="calibration-eyebrow" data-i18n="Personal Strategy">Personal Strategy</p>
+                <h2 id="calibrationMatrixTitle" data-i18n="Your strategy matrix">Your strategy matrix</h2>
+                <p id="calibrationMatrixScope" class="calibration-matrix-scope poker-data-token" dir="ltr"></p>
+              </div>
+              <div class="calibration-matrix-header-actions">
+                <button id="calibrationMatrixFollow" class="ui-button ui-button--tertiary" type="button" aria-pressed="true" data-i18n="Follow current question">Follow current question</button>
+                <details class="calibration-matrix-legend">
+                  <summary data-i18n="Legend">Legend</summary>
+                  <div class="calibration-matrix-legend-content">
+                    <div class="calibration-status-legend" role="list" aria-label="Personal Strategy statuses" data-i18n-aria-label="Personal Strategy statuses">
+                      <span role="listitem" data-matrix-status="directly_known"><i>D</i><b data-i18n="Direct">Direct</b></span>
+                      <span role="listitem" data-matrix-status="inferred_high"><i>H</i><b data-i18n="Inferred high">Inferred high</b></span>
+                      <span role="listitem" data-matrix-status="inferred_medium"><i>M</i><b data-i18n="Inferred medium">Inferred medium</b></span>
+                      <span role="listitem" data-matrix-status="uncertain"><i>?</i><b data-i18n="Uncertain">Uncertain</b></span>
+                      <span role="listitem" data-matrix-status="conflicting"><i>!</i><b data-i18n="Conflict">Conflict</b></span>
+                      <span role="listitem" data-matrix-status="unknown"><i>&#183;</i><b data-i18n="Unknown">Unknown</b></span>
+                    </div>
+                    <p><span class="calibration-action-swatch" data-action="fold"></span><span data-i18n="Fold action">Fold action</span> <span class="calibration-action-swatch" data-action="raise"></span><span data-i18n="Raise action">Raise action</span></p>
+                    <small data-i18n="Fill shows action. Marker and border show provenance or uncertainty. A bottom band marks an exact mix.">Fill shows action. Marker and border show provenance or uncertainty. A bottom band marks an exact mix.</small>
+                  </div>
+                </details>
+              </div>
+            </header>
+
+            <div id="calibrationMatrixFilters" class="calibration-matrix-filters" role="group" aria-label="Highlight matrix cells" data-i18n-aria-label="Highlight matrix cells">
+              <button type="button" aria-pressed="true" data-matrix-filter="all" data-i18n="All">All</button>
+              <button type="button" aria-pressed="false" data-matrix-filter="direct" data-i18n="Direct">Direct</button>
+              <button type="button" aria-pressed="false" data-matrix-filter="inferred" data-i18n="Inferred">Inferred</button>
+              <button type="button" aria-pressed="false" data-matrix-filter="uncertain" data-i18n="Uncertain">Uncertain</button>
+              <button type="button" aria-pressed="false" data-matrix-filter="conflicts" data-i18n="Conflicts">Conflicts</button>
+            </div>
+
+            <div id="calibrationMatrixLoading" class="calibration-matrix-loading" role="status" aria-live="polite">
+              <span class="calibration-spinner" aria-hidden="true"></span>
+              <span data-i18n="Building this Personal Strategy view">Building this Personal Strategy view</span>
+            </div>
+            <p id="calibrationMatrixError" class="control-message control-message--invalid" role="alert" hidden></p>
+
+            <div id="calibrationMatrixLayout" class="calibration-matrix-layout" hidden>
+              <div class="calibration-matrix-grid-column">
+                <div class="calibration-matrix-scroll" tabindex="-1">
+                  <div id="calibrationPersonalStrategyGrid" class="calibration-matrix-grid" role="grid" aria-rowcount="13" aria-colcount="13" aria-label="13 by 13 Personal Strategy matrix" data-i18n-aria-label="13 by 13 Personal Strategy matrix" dir="ltr"></div>
+                </div>
+                <p id="calibrationMatrixSummary" class="calibration-matrix-summary poker-data-token" aria-live="polite"></p>
+              </div>
+
+              <aside id="calibrationMatrixInspector" class="calibration-matrix-inspector" aria-labelledby="calibrationInspectorHand" aria-live="polite" data-tutorial-anchor="calibration-matrix-inspector">
+                <div id="calibrationInspectorEmpty" class="calibration-inspector-empty">
+                  <strong data-i18n="Select a hand to inspect it">Select a hand to inspect it</strong>
+                  <span data-i18n="Use click, Enter, or the arrow keys. The inspector explains evidence, inference, and corrections.">Use click, Enter, or the arrow keys. The inspector explains evidence, inference, and corrections.</span>
+                </div>
+                <div id="calibrationInspectorContent" hidden>
+                  <header class="calibration-inspector-header">
+                    <div>
+                      <p class="calibration-eyebrow" data-i18n="Selected hand">Selected hand</p>
+                      <h3 id="calibrationInspectorHand" class="poker-data-token" dir="ltr"></h3>
+                    </div>
+                    <span id="calibrationInspectorStatus" class="calibration-inspector-status"></span>
+                  </header>
+                  <div id="calibrationInspectorAction" class="calibration-inspector-action"></div>
+                  <p id="calibrationInspectorExplanation" class="calibration-inspector-explanation"></p>
+                  <dl class="calibration-inspector-facts">
+                    <div><dt data-i18n="Provenance">Provenance</dt><dd id="calibrationInspectorProvenance"></dd></div>
+                    <div><dt data-i18n="Source evidence">Source evidence</dt><dd id="calibrationInspectorEvidenceCount"></dd></div>
+                    <div><dt data-i18n="Boundary">Boundary</dt><dd id="calibrationInspectorBoundary"></dd></div>
+                    <div><dt data-i18n="Question rank">Question rank</dt><dd id="calibrationInspectorQuestionRank"></dd></div>
+                  </dl>
+
+                  <section id="calibrationInspectorWhySection" class="calibration-inspector-section">
+                    <h4 data-i18n="Why Riverline thinks this">Why Riverline thinks this</h4>
+                    <ul id="calibrationInspectorReasons"></ul>
+                  </section>
+                  <section id="calibrationInspectorNeighborsSection" class="calibration-inspector-section">
+                    <h4 data-i18n="Nearby evidence">Nearby evidence</h4>
+                    <ul id="calibrationInspectorNeighbors"></ul>
+                  </section>
+                  <section id="calibrationInspectorDirectSection" class="calibration-inspector-section">
+                    <h4 data-i18n="Direct evidence">Direct evidence</h4>
+                    <div id="calibrationInspectorDirect"></div>
+                  </section>
+                  <details id="calibrationInspectorHistory" class="calibration-inspector-history">
+                    <summary data-i18n="Correction history">Correction history</summary>
+                    <ol id="calibrationInspectorHistoryList"></ol>
+                  </details>
+                  <p id="calibrationInspectorConflictNote" class="calibration-inspector-conflict-note" hidden></p>
+                  <div class="calibration-inspector-actions" data-tutorial-anchor="calibration-matrix-correction">
+                    <button id="calibrationMatrixConfirm" class="ui-button ui-button--primary" type="button" data-i18n="Confirm inference" hidden>Confirm inference</button>
+                    <button id="calibrationMatrixFold" class="ui-button ui-button--secondary" type="button" data-i18n="Change to Fold">Change to Fold</button>
+                    <button id="calibrationMatrixRaise" class="ui-button ui-button--secondary" type="button" data-i18n="Change to Raise">Change to Raise</button>
+                    <button id="calibrationMatrixMix" class="ui-button ui-button--tertiary" type="button" data-i18n="Edit exact mix">Edit exact mix</button>
+                    <button id="calibrationMatrixAskNext" class="ui-button ui-button--tertiary" type="button" data-i18n="Ask this next" hidden>Ask this next</button>
+                  </div>
+                  <p id="calibrationInspectorWriteNote" class="calibration-inspector-write-note" data-i18n="Changes create direct evidence and recompute this scope; they never edit the snapshot itself.">Changes create direct evidence and recompute this scope; they never edit the snapshot itself.</p>
+                </div>
+              </aside>
+            </div>
+          </section>
+
           <div id="calibrationMixDialog" class="modal-overlay calibration-mix-dialog" role="dialog" aria-modal="true" aria-labelledby="calibrationMixTitle" hidden>
             <form id="calibrationMixForm" class="modal calibration-mix-modal" novalidate>
               <div class="modal-header">
@@ -1698,6 +1799,12 @@
                 <button id="calibrationMixClose" class="icon-button" type="button" aria-label="Close frequency editor" data-i18n-aria-label="Close frequency editor">×</button>
               </div>
               <p data-i18n="Enter the exact Fold and Raise mix. Unlike a quick answer, this stores explicit frequencies.">Enter the exact Fold and Raise mix. Unlike a quick answer, this stores explicit frequencies.</p>
+              <div class="calibration-mix-presets" role="group" aria-label="Exact mix presets" data-i18n-aria-label="Exact mix presets">
+                <button type="button" class="ui-button ui-button--tertiary" data-mix-fold="100" data-mix-raise="0" data-i18n="Pure Fold">Pure Fold</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-mix-fold="75" data-mix-raise="25" data-i18n="Mostly Fold">Mostly Fold</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-mix-fold="25" data-mix-raise="75" data-i18n="Mostly Raise">Mostly Raise</button>
+                <button type="button" class="ui-button ui-button--tertiary" data-mix-fold="0" data-mix-raise="100" data-i18n="Pure Raise">Pure Raise</button>
+              </div>
               <div class="calibration-mix-fields poker-data-token" dir="ltr">
                 <label for="calibrationMixFold"><span data-i18n="Fold">Fold</span><span class="calibration-frequency-input"><input id="calibrationMixFold" type="number" min="0" max="100" step="1" inputmode="decimal" value="50" required><em>%</em></span></label>
                 <label for="calibrationMixRaise"><span data-i18n="Raise">Raise</span><span class="calibration-frequency-input"><input id="calibrationMixRaise" type="number" min="0" max="100" step="1" inputmode="decimal" value="50" required><em>%</em></span></label>

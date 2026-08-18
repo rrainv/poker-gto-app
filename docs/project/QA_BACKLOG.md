@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 18, 2026 (`RANGE-CAL-002C` implementation checkpoint).
+Last consolidated: August 18, 2026 (`RANGE-CAL-002D` implementation checkpoint).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -102,6 +102,7 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | ID | Status | Issue | Owner |
 |---|---|---|---|
 | QA-RANGE-CAL-002C | PARTIAL | Adaptive default selection, cold-start diversity, boundary/uncertainty/sparsity ranking, deterministic resume, atomic answer/rerank, Quick/Standard/Deep stopping, exhaustive fallback, Pause/Stop/Skip/Not sure/Ask another, category progress, EN/RU/HE/RTL structure, sync-safe cursor facts, comparative validation, and performance are automated. Remaining acceptance: human Firefox fresh/cold/10/~30/boundary/automatic-stop/Ask-another/Pause-resume checks in EN/RU/HE at 1024 and 1366; structural and scripted browser evidence is not visual acceptance. | RANGE-CAL-002C human Firefox acceptance |
+| QA-RANGE-CAL-002D | PARTIAL | The snapshot-derived 169-cell Personal Strategy Matrix, six truthful status states, separate action/provenance encoding, filters, evidence/support/history inspector, conflict preservation, dominant-only confirmation, exact-mix corrections, adaptive-question follow/selection, source-only mutation, scope isolation, keyboard/RTL structure, responsive CSS, and performance boundaries are automated. Remaining acceptance: human Firefox fresh/10/~30/conflict/correction/exact-mix/pause-resume/scope-switch checks in EN/RU/HE, Midnight/Daylight, at 1024×768, 1366×768, and 1920×1080; confirm readability rather than debugging-grid overload. | RANGE-CAL-002D human Firefox acceptance |
 
 ## Workspace composition and responsive fit
 

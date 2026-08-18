@@ -20,6 +20,7 @@ import {
   createLocalOwnerRef,
   createIndexedDbPersonalStrategyDatabase,
   createPersonalStrategyBrowserStorage,
+  createPersonalStrategyMatrixProjection,
   createPersonalStrategyProjectionService,
   createPersonalStrategyRepository,
   createRangeObservation,
@@ -505,6 +506,12 @@ async function calibrationState(
     cursor,
     answered,
   );
+  const personalStrategyMatrixProjection = createPersonalStrategyMatrixProjection({
+    snapshot: personalStrategySnapshot,
+    evidenceView: projectionBundle.evidenceView,
+    candidateRanking,
+    highValueQuestionCount: progressAssessment.highValueQuestionCount,
+  });
   return Object.freeze({
     snapshot,
     session,
@@ -512,6 +519,8 @@ async function calibrationState(
     questionExplanation: prompt ? getCalibrationQuestionExplanation(prompt) : null,
     candidateRanking,
     personalStrategySnapshot,
+    personalStrategyEvidenceView: projectionBundle.evidenceView,
+    personalStrategyMatrixProjection,
     projectionSource: projectionBundle.source,
     progressAssessment,
     availableActions: RFI_CALIBRATION_ACTIONS,
@@ -1248,6 +1257,137 @@ export function createRangeCalibrationApplication({
     );
   }
 
+  async function getPersonalStrategyMatrixProjection(scope, { session = null } = {}) {
+    const projectionBundle = await projectionService.getProjectionBundle(scope);
+    const cursor = session?.cursor ?? {};
+    const candidateRanking = rankCalibrationCandidates(projectionBundle.snapshot, {
+      recentQuestionHistory: cursor.askedHandClasses ?? [],
+      skippedHandClasses: cursor.skippedHandClasses ?? [],
+      includeSkipped: cursor.calibrationIntent === RFI_CALIBRATION_INTENTS.EXHAUSTIVE,
+    });
+    const progressAssessment = assessCalibrationProgress(projectionBundle.snapshot, {
+      intent: cursor.calibrationIntent ?? RFI_CALIBRATION_INTENTS.STANDARD,
+      rankedCandidates: candidateRanking,
+      sessionQuestionCount: cursor.sessionQuestionCount ?? 0,
+      additionalQuestionAllowance: cursor.additionalQuestionAllowance ?? 0,
+    });
+    return createPersonalStrategyMatrixProjection({
+      snapshot: projectionBundle.snapshot,
+      evidenceView: projectionBundle.evidenceView,
+      candidateRanking,
+      highValueQuestionCount: progressAssessment.highValueQuestionCount,
+    });
+  }
+
+  async function recordPersonalStrategyMatrixEvidence(activeState, {
+    profileId,
+    modeId,
+    context,
+    handClass,
+    actionType = null,
+    mix = null,
+    operationId = null,
+  } = {}) {
+    const scope = { profileId, modeId, context };
+    let dominantAction;
+    let frequencies = null;
+    if (mix === null) dominantAction = requireRfiAction(actionType);
+    else {
+      const normalizedMix = normalizeRfiMix(mix);
+      dominantAction = normalizedMix.dominantAction;
+      frequencies = normalizedMix.frequencies;
+    }
+    const current = await repository.getCurrentRangeObservation({
+      profileId, modeId, context, handClass,
+    });
+    const createdAt = timestampNotBefore(clock, current?.updatedAt ?? null);
+    const observation = createRangeObservation({
+      id: operationId ?? idFactory('range-observation'),
+      profileId,
+      modeId,
+      context,
+      handClass,
+      dominantAction,
+      frequencies,
+      calibrationSessionId: null,
+      supersedesObservationId: current?.id ?? null,
+      createdAt,
+    });
+    const metadata = await repository.saveRangeObservation(observation);
+    projectionService.invalidateScope(scope);
+    await notifyLocalMutation([observation]);
+
+    let nextCalibrationState = null;
+    if (activeState) {
+      const state = requireCalibrationState(activeState);
+      const sameScope = state.session.profileId === profileId
+        && state.session.modeId === modeId
+        && calibrationContextKey(state.session.contextScope) === calibrationContextKey(context);
+      if (!sameScope) throw new RangeError('Matrix correction state does not match the selected scope');
+      const leaves = new Map(state.scopeLeaves.map((entry) => [entry.handClass, entry]));
+      leaves.set(handClass, observation);
+      const snapshot = snapshotWithObservationAndSession(
+        state.snapshot,
+        observation,
+        state.session,
+        metadata,
+        state.workspaceLeafIndexes,
+      );
+      nextCalibrationState = await calibrationState(
+        snapshot,
+        state.session,
+        projectionService,
+        null,
+        leaves,
+        state.workspaceLeafIndexes,
+      );
+    }
+
+    return Object.freeze({
+      acceptedObservation: observation,
+      metadata,
+      calibrationState: nextCalibrationState,
+      matrixProjection: nextCalibrationState?.personalStrategyMatrixProjection
+        ?? await getPersonalStrategyMatrixProjection(scope),
+    });
+  }
+
+  async function requestPersonalStrategyMatrixQuestion(activeState, handClass) {
+    const state = requireCalibrationState(activeState);
+    const candidate = state.candidateRanking.find((entry) => (
+      entry.handClass === handClass && entry.ordinaryQuestionEligible
+    ));
+    if (!candidate) throw new RangeError('The selected Matrix cell is not an ordinary calibration candidate');
+    const leaves = new Map(state.scopeLeaves.map((entry) => [entry.handClass, entry]));
+    const updatedAt = timestampNotBefore(clock, state.session.updatedAt);
+    const cursor = adaptiveCursor(state.session, leaves, {
+      forcedHandClass: handClass,
+      lastStopReason: null,
+      additionalQuestionAllowance: Math.max(
+        1,
+        state.session.cursor.additionalQuestionAllowance ?? 0,
+      ),
+    });
+    cursor.nextPromptIndex = RANGE_CALIBRATION_QUESTION_ORDER.indexOf(handClass);
+    const session = updateCalibrationSession(state.session, {
+      state: CALIBRATION_SESSION_STATES.ACTIVE,
+      completedAt: null,
+      nextPromptIndex: cursor.nextPromptIndex,
+      cursor,
+    }, updatedAt);
+    const metadata = await repository.saveCalibrationSession(session);
+    await notifyLocalMutation([session]);
+    const snapshot = snapshotWithSession(state.snapshot, session, metadata);
+    return calibrationState(
+      snapshot,
+      session,
+      projectionService,
+      null,
+      leaves,
+      state.workspaceLeafIndexes,
+    );
+  }
+
   return Object.freeze({
     ownerRef: resolvedOwnerRef,
     repository,
@@ -1262,6 +1402,9 @@ export function createRangeCalibrationApplication({
     stopSession,
     skipCalibrationQuestion,
     requestAdditionalQuestion,
+    getPersonalStrategyMatrixProjection,
+    recordPersonalStrategyMatrixEvidence,
+    requestPersonalStrategyMatrixQuestion,
     getEvidenceView: (scope) => projectionService.getEvidenceView(scope),
     getStrategyEstimate: (scope, handClass) => (
       projectionService.getStrategyEstimate(scope, handClass)

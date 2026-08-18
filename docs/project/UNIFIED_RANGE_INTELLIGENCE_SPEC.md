@@ -1,6 +1,6 @@
 # Unified Range Intelligence Architecture
 
-Status: architecture authority for `PERSONAL-STRATEGY-ARCH-002`; implementation checkpointed through `RANGE-CAL-002C`
+Status: architecture authority for `PERSONAL-STRATEGY-ARCH-002`; implementation checkpointed through `RANGE-CAL-002D`
 
 Date: August 18, 2026
 
@@ -54,6 +54,7 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 | `RANGE-CAL-002A` | Isolated deterministic sparse RFI Fold/Raise inference, explicit abstention, direct-evidence precedence, contradictory-head abstention, evidence references, and synthetic holdout evaluation. |
 | `RANGE-CAL-002B` | Unified read-only evidence projection, explicit correction/compatible-head/conflict semantics, `PersonalStrategyEstimate v1`, 169-estimate snapshot, ordinal high/medium/uncertain/conflicting/unknown states, conservative local-graph inference, scope cache/application API, and eight-fixture deterministic validation. |
 | `RANGE-CAL-002C` | Deterministic adaptive question-value ranking, structurally diverse cold start, boundary/sparsity/uncertainty targeting, repetition and skip control, category progress, explicit automatic stop reasons, resumable Quick/Standard/Deep intents, exhaustive fallback, and equal-budget comparative validation. |
+| `RANGE-CAL-002D` | Snapshot-derived 169-cell Personal Strategy Matrix, separate action/provenance encoding, evidence/support inspector, dominant-only confirmation, exact-mix correction lineage, scope isolation, adaptive-question integration, and bounded accessible EN/RU/HE presentation. |
 | `ACCOUNT-002B-B` | Opt-in Personal Strategy sync that preserves stable IDs, immutable direct and Training evidence, divergent offline heads, profile/mode metadata conflicts, and resumable sessions; inferred output is deliberately excluded. |
 | `HOME-002A` | Lightweight Personal Strategy summary: profile count, direct-evidence count, answered hand classes, contradictory heads, and resumable calibration state. Home performs no inference or range math. |
 
@@ -79,7 +80,7 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 - 002B validation remains synthetic mechanics evidence rather than real-user uncertainty calibration or poker-reference truth;
 - deliberately non-local evidence is expected to produce near-total abstention; 002C adaptive validation preserves that behavior, while real-user corpora remain a future gate;
 - synced contradictory heads are preserved, but there is no first-class conflict-resolution workflow;
-- Personal Strategy does not produce a shared action-strategy snapshot for Matrix, Builder, Teacher, Analysis, or provider consumers;
+- Personal Strategy now projects the accepted class-level snapshot into a Matrix-specific read model; Builder, Teacher, Analysis, and provider consumers do not yet have a shared action-strategy attachment;
 - no unified Range Builder or Range Teacher exists;
 - no Training click mutates Personal Strategy in the current product;
 - no personal source exists in `StrategyProvider v1` or its closed `StrategyResult v1` source vocabulary;
@@ -757,7 +758,7 @@ PERF-001 remains binding:
 
 - no hidden 169-cell render;
 - one keyed projection per visible scope/evidence fingerprint/model version;
-- direct edits invalidate only the affected scope and dependency neighborhood;
+- direct edits invalidate only the affected scope; the shared projector then deterministically rebuilds its bounded 169 estimates;
 - remote batches coalesce invalidation;
 - visual acceptance requires Firefox, EN/RU/HE, RTL, keyboard, non-color status, and requested desktop viewports.
 
@@ -1194,7 +1195,7 @@ Not owned:
 
 - personal Matrix, Builder, Training integration, StrategyProvider, Analysis, postflop.
 
-### 24.3 `RANGE-CAL-002D` — Matrix inspection/correction/provenance
+### 24.3 `RANGE-CAL-002D` — Matrix inspection/correction/provenance — IMPLEMENTED / VISUAL QA OPEN
 
 Dependencies:
 
@@ -1219,6 +1220,18 @@ Acceptance:
 - conflicts remain visible until explicit valid resolution;
 - hidden workspace performs no 169-cell compute/render;
 - EN/RU/HE, RTL, keyboard/focus, reduced-motion, and Firefox viewport acceptance are completed or reported honestly.
+
+Implementation checkpoint:
+
+- `personal-strategy-matrix-projection/v1` maps the one 002B snapshot/evidence revision to exactly 169 canonical cells and carries 002C candidate/boundary facts;
+- action fill/precision is separate from six-state provenance/status, with no inferred percentage or Range Core weight;
+- the inspector consumes projected direct history, active heads, selected neighbors, reasons, uncertainty, candidate facts, and combo-override indicators;
+- Confirm/Change/Edit mix append canonical direct `RangeObservation v1` records through one application seam, supersede the selected head, invalidate the scope, and sync only source evidence;
+- conflicts remain visible and are not averaged; writable multi-head resolution is deferred because 002D owns no schema migration;
+- the Calibration surface reuses an active session projection, follows or selects questions explicitly, and records Matrix preparation/selection/correction/scope timing;
+- focused deterministic, i18n, architecture, and accessibility-structure coverage is present; human Firefox visual acceptance remains in `QA_BACKLOG.md`.
+
+The detailed consumer contract and `RANGE-BUILDER-001` reuse seams are in `PERSONAL_STRATEGY_MATRIX_SPEC.md`.
 
 Likely files:
 

@@ -18,6 +18,43 @@ import {
 
 let mountedWorkspace = null;
 
+const MATRIX_STATUS_KEYS = Object.freeze({
+  directly_known: 'Direct',
+  inferred_high: 'Inferred high',
+  inferred_medium: 'Inferred medium',
+  uncertain: 'Uncertain',
+  conflicting: 'Conflict',
+  unknown: 'Unknown',
+});
+
+const MATRIX_REASON_KEYS = Object.freeze({
+  direct_dominant_observation: 'Direct dominant action recorded',
+  direct_exact_frequency_observation: 'Direct exact mix recorded',
+  direct_tied_exact_mix: 'Direct tied exact mix recorded',
+  conflicting_direct_evidence: 'Active direct answers conflict',
+  multiple_consistent_neighbors: 'Multiple consistent direct neighbors',
+  adjacent_same_family_support: 'Supported by nearby hands in the same family',
+  pair_neighbor_support: 'Supported by nearby pairs',
+  suited_run_support: 'Supported by nearby suited hands',
+  connectivity_shift_support: 'Supported by nearby connected hands',
+  suited_offsuit_counterpart_support: 'Supported by the suited or offsuit counterpart',
+  boundary_nearby: 'Near a Raise/Fold boundary',
+  conflicting_neighbor: 'Conflicting nearby answers',
+  scope_locally_unstable: 'Nearby direct answers are locally unstable',
+  insufficient_support: 'Not enough nearby direct evidence',
+  no_structurally_relevant_evidence: 'No relevant direct evidence yet',
+  unsupported_direct_action: 'The direct action is outside this Fold/Raise model',
+  training_evidence_excluded_from_002b_inference: 'Training evidence is shown separately and does not drive this inference',
+});
+
+const MATRIX_FILTER_STATUSES = Object.freeze({
+  all: null,
+  direct: new Set(['directly_known']),
+  inferred: new Set(['inferred_high', 'inferred_medium']),
+  uncertain: new Set(['uncertain', 'unknown']),
+  conflicts: new Set(['conflicting']),
+});
+
 function now() {
   return globalThis.performance?.now?.() ?? Date.now();
 }
@@ -104,6 +141,15 @@ function createController(root, application, initialWorkspace, activationStarted
   let answerPending = false;
   let failedAnswer = null;
   let calibrationIntent = RFI_CALIBRATION_INTENTS.STANDARD;
+  let matrixProjection = null;
+  let matrixScopeKey = null;
+  let matrixLoadToken = 0;
+  let pendingMatrixScopeSwitchStartedAt = null;
+  let matrixSelectedHand = null;
+  let matrixFilter = 'all';
+  let matrixFollowQuestion = true;
+  let matrixWritePending = false;
+  let mixTarget = null;
   const interactionSamples = [];
   const activationReads = application.getStorageMetrics();
   const metrics = {
@@ -112,6 +158,13 @@ function createController(root, application, initialWorkspace, activationStarted
     profileCount: workspace.profiles.length,
     repositoryReadsDuringActivation: activationReads.readsByKey[application.repository.storageKey] || 0,
     domNodes: 0,
+    matrix: {
+      projectionLoads: 0,
+      projectionPreparationMs: [],
+      selectionMs: [],
+      correctionToRecomputeMs: [],
+      scopeSwitchMs: [],
+    },
   };
 
   function activeEntry() {
@@ -131,6 +184,338 @@ function createController(root, application, initialWorkspace, activationStarted
         && session.modeId === selection.modeId
         && JSON.stringify(session.contextScope) === JSON.stringify(contextScope))
       .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0] ?? null;
+  }
+
+  function currentMatrixScope() {
+    if (!selection) return null;
+    return {
+      profileId: selection.profileId,
+      modeId: selection.modeId,
+      context: createContextFromSelection(selection.context),
+    };
+  }
+
+  function currentMatrixScopeKey() {
+    const scope = currentMatrixScope();
+    return scope ? `${scope.profileId}|${scope.modeId}|${JSON.stringify(scope.context)}` : null;
+  }
+
+  function matrixCell(handClass) {
+    return matrixProjection?.cells.find((cell) => cell.handClass === handClass) ?? null;
+  }
+
+  function matrixStatusLabel(status) {
+    return translated(MATRIX_STATUS_KEYS[status] ?? 'Unknown');
+  }
+
+  function matrixActionDescription(cell) {
+    if (cell.action.exactFrequencies) {
+      return cell.action.exactFrequencies.map((entry) => (
+        `${actionLabel(entry.action.type)} ${Number((entry.probability * 100).toFixed(1))}%`
+      )).join(' · ');
+    }
+    if (cell.action.dominantAction) {
+      return `${translated('Dominant action')}: ${actionLabel(cell.action.dominantAction)}`;
+    }
+    if (cell.status === 'conflicting') return translated('Conflicting direct answers');
+    return translated('No modeled action');
+  }
+
+  function matrixFilterMatches(cell) {
+    const statuses = MATRIX_FILTER_STATUSES[matrixFilter];
+    return statuses === null || statuses.has(cell.status);
+  }
+
+  function setMatrixLoading(loading, error = null) {
+    query('#calibrationMatrixLoading').hidden = !loading;
+    query('#calibrationMatrixLayout').hidden = loading || Boolean(error);
+    query('#calibrationMatrixError').hidden = !error;
+    query('#calibrationMatrixError').textContent = error ? friendlyError(error) : '';
+    query('#calibrationMatrixPanel').setAttribute('aria-busy', String(loading));
+  }
+
+  function matrixActionToken(cell) {
+    if (cell.action.precision === 'tied_exact_mix') return translated('Mix');
+    if (cell.action.dominantAction === 'fold') return 'F';
+    if (cell.action.dominantAction === 'raise') return 'R';
+    return '—';
+  }
+
+  function renderMatrixGrid() {
+    if (!matrixProjection) return;
+    const grid = query('#calibrationPersonalStrategyGrid');
+    const fragment = document.createDocumentFragment();
+    matrixProjection.cells.forEach((cell, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'calibration-matrix-cell';
+      button.dataset.handClass = cell.handClass;
+      button.dataset.matrixStatus = cell.status;
+      button.dataset.action = cell.action.kind;
+      button.dataset.precision = cell.action.precision;
+      button.dataset.filtered = String(!matrixFilterMatches(cell));
+      button.setAttribute('role', 'gridcell');
+      button.setAttribute('aria-rowindex', String(cell.row + 1));
+      button.setAttribute('aria-colindex', String(cell.column + 1));
+      button.setAttribute('aria-selected', String(cell.handClass === matrixSelectedHand));
+      button.setAttribute('aria-label', `${cell.handClass}, ${matrixStatusLabel(cell.status)}, ${matrixActionDescription(cell)}`);
+      button.title = `${cell.handClass} · ${matrixStatusLabel(cell.status)} · ${matrixActionDescription(cell)}`;
+      button.tabIndex = cell.handClass === matrixSelectedHand || (!matrixSelectedHand && index === 0) ? 0 : -1;
+      const hand = document.createElement('span');
+      hand.className = 'calibration-matrix-hand';
+      hand.textContent = cell.handClass;
+      const action = document.createElement('span');
+      action.className = 'calibration-matrix-action';
+      action.textContent = matrixActionToken(cell);
+      const marker = document.createElement('span');
+      marker.className = 'calibration-matrix-marker';
+      marker.textContent = cell.statusMarker;
+      marker.setAttribute('aria-hidden', 'true');
+      button.append(hand, action, marker);
+      if (cell.action.exactFrequencies) {
+        const band = document.createElement('span');
+        band.className = 'calibration-matrix-mix-band';
+        band.setAttribute('aria-hidden', 'true');
+        cell.action.exactFrequencies.forEach((entry) => {
+          const segment = document.createElement('i');
+          segment.dataset.action = entry.action.type;
+          segment.style.setProperty('--mix-share', `${entry.probability * 100}%`);
+          band.append(segment);
+        });
+        button.append(band);
+      }
+      if (cell.hasComboOverrides) {
+        const override = document.createElement('span');
+        override.className = 'calibration-matrix-combo-override';
+        override.textContent = '+';
+        override.setAttribute('aria-label', translated('Contains combo overrides'));
+        button.append(override);
+      }
+      fragment.append(button);
+    });
+    grid.replaceChildren(fragment);
+  }
+
+  function evidenceActionDescription(evidence) {
+    const value = evidence.claim?.value;
+    if (!value) return translated('Retracted');
+    if (value.exactFrequencies) {
+      return value.exactFrequencies.map((entry) => (
+        `${actionLabel(entry.action.type)} ${Number((entry.probability * 100).toFixed(1))}%`
+      )).join(' · ');
+    }
+    if (value.dominantAction?.type) return `${translated('Dominant')} ${actionLabel(value.dominantAction.type)}`;
+    if (value.chosenAction?.type) return actionLabel(value.chosenAction.type);
+    return translated('Unknown');
+  }
+
+  function evidenceSourceLabel(evidence) {
+    if (evidence.source.kind === 'training') return translated('Training evidence');
+    return evidence.source.sessionId
+      ? translated('Calibration session')
+      : translated('Matrix correction');
+  }
+
+  function evidenceNode(evidence, { history = false } = {}) {
+    const item = document.createElement(history ? 'li' : 'div');
+    item.className = history ? 'calibration-history-item' : 'calibration-direct-item';
+    const heading = document.createElement('strong');
+    heading.textContent = evidenceActionDescription(evidence);
+    const meta = document.createElement('span');
+    const date = new Date(evidence.occurredAt);
+    const dateLocale = { en: 'en-US', ru: 'ru-RU', he: 'he-IL' }[document.documentElement.lang] ?? 'en-US';
+    const state = history && evidence.headState !== 'active'
+      ? ` · ${translated(evidence.headState === 'superseded' ? 'Superseded' : 'Retracted')}` : '';
+    meta.textContent = `${evidenceSourceLabel(evidence)} · ${Number.isNaN(date.getTime()) ? evidence.occurredAt : date.toLocaleDateString(dateLocale)}${state}`;
+    item.append(heading, meta);
+    return item;
+  }
+
+  function renderMatrixInspector() {
+    const cell = matrixCell(matrixSelectedHand);
+    query('#calibrationInspectorEmpty').hidden = Boolean(cell);
+    query('#calibrationInspectorContent').hidden = !cell;
+    if (!cell) return;
+    query('#calibrationInspectorHand').textContent = cell.handClass;
+    const status = query('#calibrationInspectorStatus');
+    status.textContent = `${cell.statusMarker} ${matrixStatusLabel(cell.status)}`;
+    status.dataset.matrixStatus = cell.status;
+    query('#calibrationInspectorAction').textContent = matrixActionDescription(cell);
+
+    let explanationKey = 'Riverline does not have enough direct evidence for this hand yet.';
+    let parameters;
+    if (cell.status === 'directly_known') {
+      explanationKey = 'This hand comes from direct evidence you recorded.';
+    } else if (cell.status === 'inferred_high' || cell.status === 'inferred_medium') {
+      explanationKey = 'Riverline inferred {action} from nearby direct answers.';
+      parameters = { action: actionLabel(cell.action.dominantAction) };
+    } else if (cell.status === 'uncertain') {
+      explanationKey = 'Nearby evidence exists, but Riverline is abstaining here.';
+    } else if (cell.status === 'conflicting') {
+      explanationKey = 'Active direct answers disagree. Riverline is not averaging them.';
+    }
+    setTranslatedText(query('#calibrationInspectorExplanation'), explanationKey, parameters);
+    query('#calibrationInspectorProvenance').textContent = matrixStatusLabel(cell.status);
+    query('#calibrationInspectorEvidenceCount').textContent = translated('{count} records', {
+      count: cell.evidence.directHistory.length + cell.evidence.training.length,
+    });
+    query('#calibrationInspectorBoundary').textContent = translated(
+      cell.support.boundaryLikelihood === 'high' ? 'High boundary likelihood'
+        : cell.support.boundaryLikelihood === 'medium' ? 'Medium boundary likelihood'
+          : cell.support.boundaryLikelihood === 'low' ? 'Low boundary likelihood' : 'Unknown',
+    );
+    query('#calibrationInspectorQuestionRank').textContent = cell.question
+      ? `${translated('Rank')} #${cell.question.rank}${cell.question.isHighValue ? ` · ${translated('High value')}` : ''}`
+      : translated('Not ranked');
+
+    const reasons = query('#calibrationInspectorReasons');
+    const reasonKeys = [...new Set([
+      ...cell.reasons.map((code) => MATRIX_REASON_KEYS[code] ?? code),
+      ...(cell.support.boundaryLikelihood === 'high' ? ['Near a Raise/Fold boundary'] : []),
+      ...(cell.support.evidenceDensity === 'sparse' ? ['Sparse evidence in this region'] : []),
+    ])];
+    reasons.replaceChildren(...reasonKeys.map((key) => {
+      const item = document.createElement('li');
+      item.textContent = translated(key);
+      return item;
+    }));
+    query('#calibrationInspectorWhySection').hidden = reasonKeys.length === 0;
+
+    const neighbors = query('#calibrationInspectorNeighbors');
+    neighbors.replaceChildren(...cell.support.selectedNeighbors.slice(0, 8).map((neighbor) => {
+      const item = document.createElement('li');
+      const action = neighbor.observedDominantAction?.type
+        ? actionLabel(neighbor.observedDominantAction.type)
+        : translated(neighbor.pointResolution === 'conflicting' ? 'Conflict' : 'Exact boundary');
+      item.textContent = `${neighbor.handClass} — ${action} · ${translated(neighbor.relationType.replaceAll('_', ' '))}`;
+      item.dir = 'ltr';
+      return item;
+    }));
+    query('#calibrationInspectorNeighborsSection').hidden = cell.support.selectedNeighbors.length === 0;
+
+    const direct = query('#calibrationInspectorDirect');
+    const visibleDirect = [...cell.evidence.activeDirect, ...cell.evidence.training].slice(0, 8);
+    direct.replaceChildren(...(visibleDirect.length
+      ? visibleDirect.map((entry) => evidenceNode(entry))
+      : [Object.assign(document.createElement('p'), { textContent: translated('No direct evidence for this hand.') })]));
+    const history = cell.evidence.directHistory.slice(0, 12);
+    query('#calibrationInspectorHistory').hidden = history.length <= cell.evidence.activeDirect.length;
+    query('#calibrationInspectorHistoryList').replaceChildren(...history.map((entry) => evidenceNode(entry, { history: true })));
+
+    const conflictNote = query('#calibrationInspectorConflictNote');
+    conflictNote.hidden = cell.status !== 'conflicting';
+    if (cell.status === 'conflicting') {
+      setTranslatedText(conflictNote, 'Keep both leaves the contradiction unresolved. A change corrects one active branch and preserves the other evidence.');
+    }
+    const inferred = cell.status === 'inferred_high' || cell.status === 'inferred_medium';
+    query('#calibrationMatrixConfirm').hidden = !inferred || !cell.action.dominantAction;
+    query('#calibrationMatrixAskNext').hidden = !(
+      calibrationState && cell.question?.ordinaryQuestionEligible && cell.question?.isHighValue
+    );
+    [
+      '#calibrationMatrixConfirm',
+      '#calibrationMatrixFold',
+      '#calibrationMatrixRaise',
+      '#calibrationMatrixMix',
+      '#calibrationMatrixAskNext',
+    ].forEach((selector) => { query(selector).disabled = matrixWritePending; });
+  }
+
+  function updateMatrixSelectionDom(previousHand, nextHand) {
+    const grid = query('#calibrationPersonalStrategyGrid');
+    grid.querySelectorAll('[role="gridcell"]').forEach((button, index) => {
+      const selected = button.dataset.handClass === nextHand;
+      button.setAttribute('aria-selected', String(selected));
+      button.tabIndex = selected || (!nextHand && index === 0) ? 0 : -1;
+    });
+    if (previousHand && previousHand !== nextHand) {
+      grid.querySelector(`[data-hand-class="${previousHand}"]`)?.classList.remove('is-selected');
+    }
+    if (nextHand) grid.querySelector(`[data-hand-class="${nextHand}"]`)?.classList.add('is-selected');
+  }
+
+  function selectMatrixHand(handClass, { manual = false, focus = false } = {}) {
+    if (!matrixCell(handClass)) return;
+    const startedAt = now();
+    const previous = matrixSelectedHand;
+    matrixSelectedHand = handClass;
+    if (manual) matrixFollowQuestion = false;
+    query('#calibrationMatrixFollow').setAttribute('aria-pressed', String(matrixFollowQuestion));
+    updateMatrixSelectionDom(previous, handClass);
+    renderMatrixInspector();
+    if (focus) query(`#calibrationPersonalStrategyGrid [data-hand-class="${handClass}"]`)?.focus?.({ preventScroll: true });
+    metrics.matrix.selectionMs.push(now() - startedAt);
+  }
+
+  function renderMatrix() {
+    if (!matrixProjection) return;
+    setMatrixLoading(false);
+    const entry = activeEntry();
+    const mode = activeMode();
+    query('#calibrationMatrixScope').textContent = entry && mode
+      ? `${entry.profile.displayName} · ${mode.displayName} · ${selection.context.tableSize}-max · ${selection.context.heroPosition} · ${selection.context.effectiveStackBb}bb · RFI`
+      : '';
+    const summary = matrixProjection.summary;
+    query('#calibrationMatrixSummary').textContent = translated(
+      '{direct} direct · {high} inferred high · {medium} inferred medium · {uncertain} uncertain · {unknown} unknown · {conflicting} conflicting',
+      {
+        direct: summary.directlyKnownCount,
+        high: summary.inferredHighCount,
+        medium: summary.inferredMediumCount,
+        uncertain: summary.uncertainCount,
+        unknown: summary.unknownCount,
+        conflicting: summary.conflictingCount,
+      },
+    );
+    renderMatrixGrid();
+    renderMatrixInspector();
+    query('#calibrationMatrixFilters').querySelectorAll('[data-matrix-filter]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.matrixFilter === matrixFilter));
+    });
+    query('#calibrationMatrixFollow').setAttribute('aria-pressed', String(matrixFollowQuestion));
+  }
+
+  function adoptCalibrationMatrix({ scopeChanged = false } = {}) {
+    if (!calibrationState?.personalStrategyMatrixProjection) return;
+    matrixProjection = calibrationState.personalStrategyMatrixProjection;
+    matrixScopeKey = currentMatrixScopeKey();
+    if (scopeChanged) matrixSelectedHand = null;
+    if (matrixFollowQuestion && calibrationState.prompt) matrixSelectedHand = calibrationState.prompt.handClass;
+    renderMatrix();
+  }
+
+  async function loadMatrixProjection({ force = false, scopeSwitchStartedAt = null } = {}) {
+    const scope = currentMatrixScope();
+    const scopeKey = currentMatrixScopeKey();
+    if (!scope || (!force && matrixProjection && matrixScopeKey === scopeKey)) {
+      if (matrixProjection) renderMatrix();
+      return matrixProjection;
+    }
+    const token = ++matrixLoadToken;
+    const scopeChanged = matrixScopeKey !== scopeKey;
+    if (scopeChanged) {
+      matrixProjection = null;
+      matrixSelectedHand = null;
+    }
+    matrixScopeKey = scopeKey;
+    setMatrixLoading(true);
+    const startedAt = now();
+    try {
+      const projection = await application.getPersonalStrategyMatrixProjection(scope, {
+        session: matchingCalibrationSession(),
+      });
+      if (token !== matrixLoadToken || scopeKey !== currentMatrixScopeKey()) return null;
+      matrixProjection = projection;
+      metrics.matrix.projectionLoads += 1;
+      metrics.matrix.projectionPreparationMs.push(now() - startedAt);
+      if (scopeSwitchStartedAt !== null) metrics.matrix.scopeSwitchMs.push(now() - scopeSwitchStartedAt);
+      if (matrixFollowQuestion && calibrationState?.prompt) matrixSelectedHand = calibrationState.prompt.handClass;
+      renderMatrix();
+      return projection;
+    } catch (error) {
+      if (token === matrixLoadToken) setMatrixLoading(false, error);
+      return null;
+    }
   }
 
   function renderIntentOptions() {
@@ -269,6 +654,9 @@ function createController(root, application, initialWorkspace, activationStarted
     renderIntentOptions();
     if (controls) renderContextControls();
     renderDerivedContext();
+    const scopeSwitchStartedAt = pendingMatrixScopeSwitchStartedAt;
+    pendingMatrixScopeSwitchStartedAt = null;
+    void loadMatrixProjection({ scopeSwitchStartedAt });
   }
 
   function actionLabel(actionType) {
@@ -385,6 +773,7 @@ function createController(root, application, initialWorkspace, activationStarted
         === RFI_CALIBRATION_STOP_REASONS.FULL_DIRECT_COVERAGE
         || !calibrationState.candidateRanking.some((candidate) => candidate.ordinaryQuestionEligible);
     }
+    adoptCalibrationMatrix();
   }
 
   function setAnswerControlsDisabled(disabled) {
@@ -559,18 +948,109 @@ function createController(root, application, initialWorkspace, activationStarted
     }
   }
 
+  function patchWorkspaceWithMatrixObservation(observation, metadata) {
+    const observations = [...workspace.snapshot.rangeObservations];
+    const parentId = observation.revision.supersedesObservationId;
+    const parentIndex = parentId ? observations.findIndex((entry) => entry.id === parentId) : -1;
+    if (parentIndex >= 0) observations[parentIndex] = observation;
+    else observations.push(observation);
+    workspace = Object.freeze({
+      ...workspace,
+      snapshot: Object.freeze({
+        ...workspace.snapshot,
+        revision: metadata.revision,
+        updatedAt: metadata.updatedAt,
+        rangeObservations: Object.freeze(observations),
+      }),
+    });
+  }
+
+  function setMatrixWritePending(pending) {
+    matrixWritePending = pending;
+    query('#calibrationMatrixInspector').setAttribute('aria-busy', String(pending));
+    renderMatrixInspector();
+  }
+
+  async function recordMatrixAnswer({ actionType = null, mix = null } = {}) {
+    const cell = matrixCell(matrixSelectedHand);
+    const scope = currentMatrixScope();
+    if (!cell || !scope || matrixWritePending) return false;
+    const startedAt = now();
+    setMatrixWritePending(true);
+    try {
+      const result = await application.recordPersonalStrategyMatrixEvidence(calibrationState, {
+        ...scope,
+        handClass: cell.handClass,
+        actionType,
+        mix,
+      });
+      patchWorkspaceWithMatrixObservation(result.acceptedObservation, result.metadata);
+      if (result.calibrationState) {
+        calibrationState = result.calibrationState;
+        syncSnapshot(calibrationState.snapshot);
+        renderQuestion();
+      } else {
+        matrixProjection = result.matrixProjection;
+        renderDerivedContext();
+        renderMatrix();
+      }
+      selectMatrixHand(cell.handClass);
+      metrics.matrix.correctionToRecomputeMs.push(now() - startedAt);
+      notify(translated('Personal Strategy updated.'), 'success');
+      return true;
+    } catch (error) {
+      query('#calibrationMatrixError').hidden = false;
+      query('#calibrationMatrixError').textContent = friendlyError(error);
+      return false;
+    } finally {
+      setMatrixWritePending(false);
+    }
+  }
+
+  async function askSelectedMatrixHandNext() {
+    if (!calibrationState || !matrixSelectedHand || matrixWritePending) return;
+    setMatrixWritePending(true);
+    try {
+      calibrationState = await application.requestPersonalStrategyMatrixQuestion(
+        calibrationState,
+        matrixSelectedHand,
+      );
+      syncSnapshot(calibrationState.snapshot);
+      matrixFollowQuestion = true;
+      renderQuestion();
+      query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true });
+    } catch (error) {
+      query('#calibrationMatrixError').hidden = false;
+      query('#calibrationMatrixError').textContent = friendlyError(error);
+    } finally {
+      setMatrixWritePending(false);
+    }
+  }
+
   function mixFocusableElements() {
     return [...query('#calibrationMixDialog').querySelectorAll('button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex="-1"])')]
       .filter((element) => !element.hidden && element.offsetParent !== null);
   }
 
-  function openMixEditor() {
-    if (!calibrationState?.prompt) return;
+  function openMixEditor(target = 'question') {
+    const handClass = target === 'matrix' ? matrixSelectedHand : calibrationState?.prompt?.handClass;
+    if (!handClass) return;
+    mixTarget = { kind: target, handClass };
     focusBeforeMix = document.activeElement;
     query('#calibrationMixForm').reset();
     query('#calibrationMixError').textContent = '';
     query('#calibrationMixRetry').hidden = true;
-    setTranslatedText(query('#calibrationMixTitle'), 'Set frequencies for {hand}', { hand: calibrationState.prompt.handClass });
+    const selectedCell = target === 'matrix' ? matrixCell(handClass) : null;
+    if (selectedCell?.action.exactFrequencies) {
+      const byAction = Object.fromEntries(selectedCell.action.exactFrequencies.map((entry) => [
+        entry.action.type,
+        Number((entry.probability * 100).toFixed(6)),
+      ]));
+      query('#calibrationMixFold').value = String(byAction.fold ?? 0);
+      query('#calibrationMixRaise').value = String(byAction.raise ?? 0);
+    }
+    setTranslatedText(query('#calibrationMixTitle'), 'Set frequencies for {hand}', { hand: handClass });
+    setTranslatedText(query('#calibrationMixSave'), target === 'matrix' ? 'Save exact mix' : 'Save mix and continue');
     query('#calibrationMixDialog').hidden = false;
     document.body.classList.add('has-modal-open');
     window.requestAnimationFrame(() => query('#calibrationMixFold').focus());
@@ -584,6 +1064,7 @@ function createController(root, application, initialWorkspace, activationStarted
       query('#calibrationRetryAnswer').hidden = false;
     }
     document.body.classList.remove('has-modal-open');
+    mixTarget = null;
     if (restoreFocus) focusBeforeMix?.focus?.({ preventScroll: true });
   }
 
@@ -593,8 +1074,13 @@ function createController(root, application, initialWorkspace, activationStarted
       fold: Number(query('#calibrationMixFold').value),
       raise: Number(query('#calibrationMixRaise').value),
     };
-    if (await acceptAnswer({ mix })) closeMixEditor({ restoreFocus: false });
-    else query('#calibrationMixError').textContent = query('#calibrationAnswerError').textContent;
+    const saved = mixTarget?.kind === 'matrix'
+      ? await recordMatrixAnswer({ mix })
+      : await acceptAnswer({ mix });
+    if (saved) closeMixEditor({ restoreFocus: false });
+    else query('#calibrationMixError').textContent = mixTarget?.kind === 'matrix'
+      ? query('#calibrationMatrixError').textContent
+      : query('#calibrationAnswerError').textContent;
   }
 
   function render() {
@@ -628,6 +1114,7 @@ function createController(root, application, initialWorkspace, activationStarted
   async function changeProfile(profileId) {
     const entry = selectedEntry(workspace, profileId);
     if (!entry) return;
+    pendingMatrixScopeSwitchStartedAt = now();
     const preference = workspace.preferences.byProfile[profileId];
     selection = {
       profileId,
@@ -642,6 +1129,7 @@ function createController(root, application, initialWorkspace, activationStarted
 
   async function updateContextFromControls({ announceCorrection = false } = {}) {
     const previousPosition = selection.context.heroPosition;
+    pendingMatrixScopeSwitchStartedAt = now();
     const candidate = {
       environment: query('#calibrationEnvironment').value,
       tableSize: Number(query('#calibrationTableSize').value),
@@ -771,7 +1259,7 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationUndoAnswer').addEventListener('click', undoAnswer);
     query('#calibrationSkipQuestion').addEventListener('click', () => skipQuestion(false));
     query('#calibrationNotSure').addEventListener('click', () => skipQuestion(true));
-    query('#calibrationOpenMix').addEventListener('click', openMixEditor);
+    query('#calibrationOpenMix').addEventListener('click', () => openMixEditor('question'));
     query('#calibrationMixForm').addEventListener('submit', submitMix);
     query('#calibrationMixRetry').addEventListener('click', async () => {
       if (await acceptAnswer({}, { retry: true })) closeMixEditor({ restoreFocus: false });
@@ -782,6 +1270,61 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationMixDialog').addEventListener('click', (event) => {
       if (event.target === query('#calibrationMixDialog')) closeMixEditor();
     });
+    query('#calibrationMixDialog').addEventListener('click', (event) => {
+      const preset = event.target.closest('[data-mix-fold][data-mix-raise]');
+      if (!preset) return;
+      query('#calibrationMixFold').value = preset.dataset.mixFold;
+      query('#calibrationMixRaise').value = preset.dataset.mixRaise;
+      query('#calibrationMixFold').focus();
+    });
+    query('#calibrationPersonalStrategyGrid').addEventListener('click', (event) => {
+      const cell = event.target.closest('[data-hand-class]');
+      if (cell) selectMatrixHand(cell.dataset.handClass, { manual: true });
+    });
+    query('#calibrationPersonalStrategyGrid').addEventListener('keydown', (event) => {
+      const cell = event.target.closest('[data-hand-class]');
+      if (!cell || !matrixProjection) return;
+      const current = matrixCell(cell.dataset.handClass);
+      if (!current) return;
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        selectMatrixHand(current.handClass, { manual: true });
+        return;
+      }
+      const movements = {
+        ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0],
+      };
+      const movement = movements[event.key];
+      if (!movement) return;
+      event.preventDefault();
+      const row = Math.max(0, Math.min(12, current.row + movement[0]));
+      const column = Math.max(0, Math.min(12, current.column + movement[1]));
+      selectMatrixHand(matrixProjection.cells[row * 13 + column].handClass, {
+        manual: true,
+        focus: true,
+      });
+    });
+    query('#calibrationMatrixFilters').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-matrix-filter]');
+      if (!button || !Object.hasOwn(MATRIX_FILTER_STATUSES, button.dataset.matrixFilter)) return;
+      matrixFilter = button.dataset.matrixFilter;
+      renderMatrix();
+    });
+    query('#calibrationMatrixFollow').addEventListener('click', () => {
+      matrixFollowQuestion = !matrixFollowQuestion;
+      query('#calibrationMatrixFollow').setAttribute('aria-pressed', String(matrixFollowQuestion));
+      if (matrixFollowQuestion && calibrationState?.prompt) {
+        selectMatrixHand(calibrationState.prompt.handClass);
+      }
+    });
+    query('#calibrationMatrixConfirm').addEventListener('click', () => {
+      const cell = matrixCell(matrixSelectedHand);
+      if (cell?.action.dominantAction) recordMatrixAnswer({ actionType: cell.action.dominantAction });
+    });
+    query('#calibrationMatrixFold').addEventListener('click', () => recordMatrixAnswer({ actionType: 'fold' }));
+    query('#calibrationMatrixRaise').addEventListener('click', () => recordMatrixAnswer({ actionType: 'raise' }));
+    query('#calibrationMatrixMix').addEventListener('click', () => openMixEditor('matrix'));
+    query('#calibrationMatrixAskNext').addEventListener('click', askSelectedMatrixHandNext);
     root.addEventListener('keydown', (event) => {
       if (!calibrationState?.prompt || !query('#calibrationMixDialog').hidden) return;
       const target = event.target;
@@ -804,6 +1347,7 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationModeOptions').addEventListener('click', async (event) => {
       const button = event.target.closest('[data-mode-id]');
       if (!button) return;
+      pendingMatrixScopeSwitchStartedAt = now();
       selection.modeId = button.dataset.modeId;
       try { await persistSelection(); } catch (error) { notify(friendlyError(error), 'error'); }
       renderConfigured({ controls: false });
@@ -820,6 +1364,7 @@ function createController(root, application, initialWorkspace, activationStarted
       next.focus();
     });
     query('#calibrationEnvironment').addEventListener('change', async () => {
+      pendingMatrixScopeSwitchStartedAt = now();
       const environment = query('#calibrationEnvironment').value;
       const sizes = tableSizesForEnvironment(environment);
       const requested = Number(query('#calibrationTableSize').value);
@@ -902,6 +1447,7 @@ function createController(root, application, initialWorkspace, activationStarted
       else if (root.dataset.calibrationState === 'configured') {
         renderContextControls();
         renderDerivedContext();
+        renderMatrix();
       }
     }, { signal: lifecycle.signal });
   }
@@ -927,6 +1473,10 @@ function createController(root, application, initialWorkspace, activationStarted
     },
     getPerformanceReport: () => ({
       ...metrics,
+      matrix: Object.fromEntries(Object.entries(metrics.matrix).map(([key, value]) => [
+        key,
+        Array.isArray(value) ? [...value] : value,
+      ])),
       hiddenWorkspaceDomMounted: root.isConnected && query('#calibrationMode')?.style.display === 'none',
       storage: application.getStorageMetrics(),
       interactions: interactionSamples.map((entry) => ({ ...entry })),
@@ -935,6 +1485,9 @@ function createController(root, application, initialWorkspace, activationStarted
       workspace,
       selection,
       calibrationState,
+      matrixProjection,
+      matrixSelectedHand,
+      matrixFilter,
       lastAnswerError: lastAnswerError ? {
         name: lastAnswerError.name,
         code: lastAnswerError.code ?? null,
