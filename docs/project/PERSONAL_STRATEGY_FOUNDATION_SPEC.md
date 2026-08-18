@@ -8,6 +8,8 @@ Schema generation: v1
 
 Personal Strategy is Riverline's local-first domain for recording how a person intends to play in a relatable poker environment. It is evidence storage, not a strategy engine. This specification and the contracts under `app/src/personal-strategy/` govern the subsystem until an approved, versioned migration supersedes them.
 
+`UNIFIED_RANGE_INTELLIGENCE_SPEC.md` is the architecture authority for proposed inference, uncertainty, adaptive questioning, Personal Strategy Matrix, Range Builder, Range Teacher, combo overrides, and later consumer adapters. It does not replace or migrate the implemented v1 records in this specification. Sparse immutable evidence remains durable truth; proposed snapshots and inferred outputs are recomputable read models rather than new stored authority.
+
 The active dependency boundary is:
 
 ```text
@@ -402,6 +404,8 @@ A later ticket must not cross an integration gate without owning it explicitly:
 - adaptive questions: requires a versioned selection/cursor policy and deterministic resume behavior;
 - accounts/sync: crossed by `ACCOUNT-002B-B` under `PERSONAL_STRATEGY_SYNC_SPEC.md`; later schema/domain additions still require their own sync semantics;
 - import-as-copy/sharing: requires complete ID/reference remapping and explicit ownership transfer.
+
+Follow-on work must also preserve the unified architecture gates in `UNIFIED_RANGE_INTELLIGENCE_SPEC.md`: range inclusion weight, action frequency, and inference uncertainty remain distinct; dominant-only evidence never becomes a pure frequency; inferred output and conflict markers never become evidence; the 169 Matrix is inspection/correction rather than storage; and combo-aware projections reuse Range Core identity/math without creating another `HoldemWeightedRange` authority.
 
 ## 18. Explicit non-goals
 
