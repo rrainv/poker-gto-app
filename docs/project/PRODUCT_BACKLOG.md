@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 18, 2026 (`HOME-002A` implementation checkpoint).
+Last consolidated: August 18, 2026 (`HOME-GAME-001A` implementation checkpoint).
 
 This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
@@ -26,7 +26,7 @@ This file preserves accepted future capability so it does not depend on chat mem
 | 6 | PLANNED NEXT | `ACCOUNT-002A2` — secure rate-limited server/Edge Function username/password login adapter; private resolution, enumeration-resistant failure, no renderer secret or public username-to-email directory |
 | 7 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `ACCOUNT-002B-B` — separately consented Personal Strategy / Range Calibration sync, immutable evidence/contradiction preservation, session reconciliation, relational RLS/RPC schema, and account isolation are implemented; live Supabase and Firefox acceptance remain open |
 | 8 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `HOME-002A` — My Riverline powered by real account, sync, Saved, Personal Strategy, and calibration state; Firefox visual acceptance remains open |
-| 9 | PLANNED NEXT | `HOME-GAME-001` foundation, then `002` session UI and `003` settlement/reconciliation |
+| 9 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `HOME-GAME-001A` standalone exact-accounting/persistence foundation plus bounded session/settlement workspace; Firefox acceptance and management UX hardening continue in `001B` |
 
 Personal Strategy resumes separately at `RANGE-CAL-002B`; it is preserved but not in this immediate sequence. Reassess at every clean checkpoint.
 
@@ -34,7 +34,8 @@ Personal Strategy resumes separately at `RANGE-CAL-002B`; it is preserved but no
 
 | Subsystem | Status | Resume / future owner |
 |---|---|---|
-| Personal Strategy through `RANGE-CAL-002A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Resume `002B` validation, `002C` active boundary/question selection, `002D` inferred Matrix, `002R` review; then evidence-backed mode relationships, provider and Training integration |
+| Personal Strategy through `RANGE-CAL-002A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Resume `002B` inference/uncertainty validation, `002C` adaptive questions/stopping, `002D` Personal Strategy Matrix, `RANGE-BUILDER-001`, `RANGE-TEACHER-001`, and `002R`; then evidence-backed mode relationships, provider and Training integration |
+| `PERSONAL-STRATEGY-ARCH-002` | COMPLETED architecture contract | `UNIFIED_RANGE_INTELLIGENCE_SPEC.md` defines one evidence-derived action-strategy model for Calibration, Matrix, Builder, and Teacher; no production implementation or schema migration is implied |
 | Table Presence / Replay / poker-chip primitive | COMPLETED | Richer physical table visuals are SHELVED FOR LATER |
 | Saved Hands/Spots through `SAVED-OBJECTS-002` | COMPLETED | New payload tickets for Saved Range, Drill, or Session; richer library/history/account/sharing later |
 | Home through `HOME-002A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Firefox acceptance, then `HOME-002B` full Saved Study Library/drilldowns |
@@ -57,13 +58,13 @@ Personal Strategy resumes separately at `RANGE-CAL-002B`; it is preserved but no
 
 | Capability | Status | Preserved scope |
 |---|---|---|
-| Range Builder | PRESERVED FUTURE | canonical combo-level editing; derived 13×13 painting; exact combo overrides; action/frequency painting; partial/unknown support; save/version/compare/export/import; later sharing/forking |
-| Range Teacher / Profiler | PRESERVED FUTURE | sparse boundary-seeking questions; uncertain-cell targeting; direct/inferred provenance; confirmation/correction; disagreement drills; Personal Strategy + Range Core reuse |
+| Range Builder | PRESERVED FUTURE | `RANGE-BUILDER-001` begins as the Personal Strategy action editor over shared evidence/snapshots: 169 painting, exact action mixes, partial/unknown state, explicit correction lineage, and no 1,326-entry write explosion; sparse canonical-combo overrides and general Saved Range editing follow only through their approved schemas |
+| Range Teacher / Profiler | PRESERVED FUTURE | `RANGE-TEACHER-001` reuses the 002C selector, shared evidence/snapshot, and 002D Matrix for boundary questions, uncertainty/conflict review, provenance, confirmation/correction, and useful exact-mix requests; it does not duplicate Training grading |
 | Range-vs-range tools | PRESERVED FUTURE | combo-aware blockers, weighted category analysis, legitimate Equity integration through an approved versioned weighted-opponent boundary |
-| Personal Strategy integration | PRESERVED FUTURE | StrategyProvider source only after validation/mode-relationship gates; Training evidence with explicit per-session opt-in; postflop range propagation later |
+| Personal Strategy integration | PRESERVED FUTURE | sparse evidence is durable authority; derived class baselines plus sparse combo overrides are recomputable and not synced; StrategyProvider source only after quantitative/qualitative result-contract validation; Training evidence remains explicit per-session opt-in; postflop range propagation later |
 | Saved Ranges | PRESERVED FUTURE | versioned SavedStudyObject payload, compare/export/import, later account ownership and sharing |
 
-The canonical chain remains 52 cards → 1,326 unordered combos → `HoldemWeightedRange v1` → derived blocker/normalization/Matrix views. Unknown is not zero, and weight/mass/count/probability/frequency/confidence remain distinct.
+The canonical range chain remains 52 cards → 1,326 unordered combos → `HoldemWeightedRange v1` → derived blocker/normalization/Matrix views. Personal action strategy is a separate vector-valued read model derived from evidence; an action-conditioned weighted range is valid only from a known prior inclusion range and exact action frequencies. Unknown is not zero, and weight/mass/count/probability/frequency/confidence remain distinct. See `UNIFIED_RANGE_INTELLIGENCE_SPEC.md`.
 
 ## Training intelligence
 
@@ -103,9 +104,9 @@ This is a separate top-level tab and domain, not part of `StrategyProfile` or `P
 
 | Ticket | Status | Scope |
 |---|---|---|
-| `HOME-GAME-001` | PLANNED NEXT | domain and persistence for saved groups, roster, sessions, buy-ins/rebuys/cash-outs, chip/count facts, ownership/versioning |
-| `HOME-GAME-002` | PLANNED NEXT | session UI, seats, optional button/blinds, current stacks/counts, session summary |
-| `HOME-GAME-003` | PLANNED NEXT | net result, who owes whom, settlement/reconciliation |
+| `HOME-GAME-001A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | standalone v1 players/groups/sessions, exact minor-unit ledger, append-only corrections, chip snapshots, lifecycle, balance rejection, deterministic settlement, account-scoped IndexedDB, Guest memory semantics, and bounded top-level EN/RU/HE workspace |
+| `HOME-GAME-001B` | PLANNED NEXT | saved-player reuse/edit/archive, visible correction/reversal history, session archive/delete confirmation, group/session management polish, import/export decision, and Firefox desktop/language acceptance |
+| richer organizer tools | PRESERVED FUTURE | optional button advance/blind timer, richer chip tools, player history, recurring games, payment links, and tournament mode only behind separate accounting semantics |
 | live/mobile sharing | PRESERVED FUTURE | much later, after account and organizer foundations |
 
 The exact first shipped scope remains an **OPEN PRODUCT DECISION** at ticket planning.

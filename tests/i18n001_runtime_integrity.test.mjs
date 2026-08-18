@@ -15,6 +15,7 @@ const accountTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/l
 const analysisTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/analysis-translations.js'), 'utf8');
 const rangeCalibrationTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/range-calibration-translations.js'), 'utf8');
 const homeTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/home-translations.js'), 'utf8');
+const homeGameTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/home-game-translations.js'), 'utf8');
 const logicSource = fs.readFileSync(path.join(repoRoot, 'app/src/core/logic.js'), 'utf8');
 const heuristicStrategySource = fs.readFileSync(path.join(repoRoot, 'app/src/strategy/heuristic-strategy.mjs'), 'utf8');
 const strategyBootstrapSource = fs.readFileSync(path.join(repoRoot, 'app/src/application/strategy-provider-bootstrap.mjs'), 'utf8');
@@ -84,6 +85,7 @@ function createRuntime() {
   vm.runInNewContext(analysisTranslationsSource, context, { filename: 'analysis-translations.js' });
   vm.runInNewContext(rangeCalibrationTranslationsSource, context, { filename: 'range-calibration-translations.js' });
   vm.runInNewContext(homeTranslationsSource, context, { filename: 'home-translations.js' });
+  vm.runInNewContext(homeGameTranslationsSource, context, { filename: 'home-game-translations.js' });
   vm.runInNewContext(i18nSource, context, { filename: 'i18n.js' });
   return { clear, context, documentElement, events, languageSelect, storage };
 }

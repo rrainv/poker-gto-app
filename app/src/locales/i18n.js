@@ -1934,6 +1934,11 @@ if (window.riverlineHomeTranslations) {
     if (appTranslations[language]) Object.assign(appTranslations[language], entries);
   });
 }
+if (window.riverlineHomeGameTranslations) {
+  Object.entries(window.riverlineHomeGameTranslations).forEach(([language, entries]) => {
+    if (appTranslations[language]) Object.assign(appTranslations[language], entries);
+  });
+}
 if (window.riverlineTutorialTranslations) {
   Object.entries(window.riverlineTutorialTranslations).forEach(([language, entries]) => {
     if (appTranslations[language]) Object.assign(appTranslations[language], entries);

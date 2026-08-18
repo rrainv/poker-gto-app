@@ -25,7 +25,7 @@ function translationCatalog() {
 }
 
 test('current tutorial inventory has stable unique IDs and bounded tours', () => {
-  assert.equal(definitions.length, 12);
+  assert.equal(definitions.length, 13);
   assert.equal(byId.size, definitions.length);
   assert.deepEqual([...byId.keys()], [
     'home.first-use',
@@ -39,6 +39,7 @@ test('current tutorial inventory has stable unique IDs and bounded tours', () =>
     'training.feedback',
     'calibration.setup',
     'calibration.answers',
+    'home-game.organizer',
     'settings.preferences',
   ]);
   for (const definition of definitions) {
@@ -93,6 +94,8 @@ test('truthfulness copy preserves Scenario, Replay, strategy, Training, Equity, 
   assert.match(copy['training.feedback'], /not a claim of mathematically proven universal optimality/);
   assert.match(copy['calibration.answers'], /never means the action is played at a pure 100% frequency/);
   assert.match(copy['calibration.setup'], /not presented here as a finished user-facing range or confidence system/);
+  assert.match(copy['home-game.organizer'], /do not change PokerState or Riverline strategy/);
+  assert.match(copy['home-game.organizer'], /Money and chips stay separate/);
   assert.doesNotMatch(Object.values(copy).join('\n'), /EV loss is|solver accuracy is|exploitability score|confidence: \d+%/i);
 });
 
@@ -100,7 +103,7 @@ test('first-use policy offers only contextual basics while advanced tours remain
   const prompted = definitions.filter((definition) => definition.firstUsePolicy === 'prompt').map((definition) => definition.id);
   assert.deepEqual(prompted, [
     'home.first-use', 'playbook.scenario-basics', 'playbook.hand-mode',
-    'equity.basics', 'training.first-spot', 'calibration.setup', 'settings.preferences',
+    'equity.basics', 'training.first-spot', 'calibration.setup', 'home-game.organizer', 'settings.preferences',
   ]);
   assert.match(bootstrap, /availableDefinitions\(workspace\)\.find/);
   assert.match(bootstrap, /candidate\.firstUsePolicy === 'prompt'/);

@@ -149,6 +149,18 @@ export const SETTINGS_TUTORIAL_DEFINITION = definition({
   ],
 });
 
+export const HOME_GAME_TUTORIAL_DEFINITION = definition({
+  id: 'home-game.organizer', workspace: 'homegame', firstUsePolicy: 'prompt',
+  titleKey: 'Running a Home Game',
+  descriptionKey: 'Track real cash-game money truthfully and finish with a clear settlement.',
+  steps: [
+    { id: 'overview', anchor: 'home-game-overview', titleKey: 'Home Game is separate from poker analysis', bodyKey: 'This workspace organizes a real poker night. Its players, money ledger, chip snapshots, and settlement do not change PokerState or Riverline strategy.', placement: 'bottom' },
+    { id: 'create', anchor: 'home-game-new-session', titleKey: 'Start with the real roster and currency', bodyKey: 'Enter players in seat order and an optional initial buy-in. Guest sessions stay in memory; sign in before starting a game you need to keep.', placement: 'right' },
+    { id: 'groups', anchor: 'home-game-groups', titleKey: 'Reuse a group without copying players', bodyKey: 'Signed-in accounts can save an ordered roster and start another independent session from it. Group membership only references saved players.', placement: 'right' },
+    { id: 'session', anchor: 'home-game-session', titleKey: 'Let the ledger explain every result', bodyKey: 'Record rebuys, add-ons, cash-outs, and optional chip counts. Money and chips stay separate; completion and settlement remain blocked until the exact money balance is zero.', placement: 'left' },
+  ],
+});
+
 export const CURRENT_APP_TUTORIAL_DEFINITIONS = Object.freeze([
   SCENARIO_TUTORIAL_DEFINITION,
   HAND_TUTORIAL_DEFINITION,
@@ -160,5 +172,6 @@ export const CURRENT_APP_TUTORIAL_DEFINITIONS = Object.freeze([
   TRAINING_FEEDBACK_TUTORIAL_DEFINITION,
   CALIBRATION_SETUP_TUTORIAL_DEFINITION,
   CALIBRATION_ANSWERS_TUTORIAL_DEFINITION,
+  HOME_GAME_TUTORIAL_DEFINITION,
   SETTINGS_TUTORIAL_DEFINITION,
 ]);

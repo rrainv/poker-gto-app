@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 18, 2026 (`HOME-002A` implementation checkpoint).
+Last consolidated: August 18, 2026 (`HOME-GAME-001A` implementation checkpoint).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -23,6 +23,13 @@ A visual issue is not `CLOSED` without manual/browser confirmation.
 | QA-HOME-002A-001 | PARTIAL | Guest privacy/usefulness, authenticated identity/sync composition, truthful Continue, bounded Saved/Review/Mistakes, Personal Strategy evidence facts, account switching, coalesced invalidation, performance boundaries, EN/RU/HE structure, and accessibility are automated; requested Firefox viewport/theme/language visual acceptance was unavailable in the implementation environment | HOME-002A human Firefox acceptance |
 | QA-HOME-002A-002 | DEFERRED | Full Saved Study View all/library, search, filters, and tag drilldowns do not yet exist; HOME-002A intentionally provides only actionable bounded previews | HOME-002B |
 | QA-HOME-002A-003 | DEFERRED | Persistent Training history/re-drill intelligence and recent Analysis history remain unsupported; Home exposes seams but no statistics | dedicated Training/Analysis persistence tickets |
+
+## Home Game Organizer
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-HOME-GAME-001A-001 | PARTIAL | Standalone boundary, exact money, append-only corrections, balance rejection, deterministic settlement, lifecycle/reopen, account isolation, Guest memory, groups/session-from-group, atomic persistence, top-level workspace, EN/RU/HE structure, RTL/logical CSS, and accessible form/status structure are automated; requested Firefox checks at 1024×768, 1366×768, and 1920×1080 remain open | HOME-GAME-001A human Firefox acceptance / HOME-GAME-001B |
+| QA-HOME-GAME-001A-002 | DEFERRED | Saved-player editing/archive, visible reversal history, session archive/delete confirmation, and richer organizer management are intentionally outside the foundation proof surface | HOME-GAME-001B |
 
 ## Active Product UI repair
 

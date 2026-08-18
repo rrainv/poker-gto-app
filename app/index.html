@@ -27,6 +27,7 @@
   <script src="src/locales/analysis-translations.js?v=1" defer></script>
   <script src="src/locales/range-calibration-translations.js?v=1" defer></script>
   <script src="src/locales/home-translations.js?v=1" defer></script>
+  <script src="src/locales/home-game-translations.js?v=1" defer></script>
   <script src="src/locales/tutorial-translations.js?v=1" defer></script>
   <script src="src/locales/i18n.js?v=4" defer></script>
   <script src="node_modules/@supabase/supabase-js/dist/umd/supabase.js" defer></script>
@@ -375,6 +376,10 @@
           <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
           <span data-i18n="Guide">Guide</span>
         </button>
+        <button class="mode-nav-item" type="button" data-mode="homegame" data-mode-title="Home Game" data-mode-subtitle="Run a real poker night with exact buy-ins, cash-outs, and settlement." aria-label="Home Game" data-i18n-aria-label="Home Game" title="Home Game" data-i18n-title="Home Game" data-tooltip="Home Game" aria-current="false">
+          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20v-2a5 5 0 0 1 10 0v2m1-6a4 4 0 0 1 7 2.6V20"/><circle cx="17" cy="17" r="3"/><path d="M17 15.5v3m-1.5-1.5h3"/></svg>
+          <span data-i18n="Home Game">Home Game</span>
+        </button>
       </nav>
 
         <div class="rail-utilities" aria-label="Global utilities" data-i18n-aria-label="Global utilities">
@@ -510,6 +515,46 @@
               <button type="button" class="home-quick-link" data-home-destination="review_mistakes" hidden><strong data-i18n="Review Mistakes">Review Mistakes</strong><span data-i18n="Revisit marked decisions">Revisit marked decisions</span></button>
             </nav>
           </section>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="homegameMode" class="mode-view" aria-label="Home Game" data-i18n-aria-label="Home Game">
+      <div id="homeGameWorkspace" class="home-game-workspace" aria-busy="true" data-tutorial-anchor="home-game-overview">
+        <div class="home-game-status-row">
+          <span id="homeGamePersistence" class="status-badge" role="status" aria-live="polite" data-i18n="Opening Home Game">Opening Home Game</span>
+          <p id="homeGamePersistenceNotice"></p>
+        </div>
+        <p id="homeGameError" class="home-game-error" role="alert" aria-live="assertive" hidden></p>
+
+        <div class="home-game-layout">
+          <aside class="home-game-sidebar">
+            <section class="panel home-game-create" aria-labelledby="homeGameNewSessionTitle" data-tutorial-anchor="home-game-new-session">
+              <div class="panel-head"><div><div class="panel-title" id="homeGameNewSessionTitle" data-i18n="New Session">New Session</div><div class="panel-note" data-i18n="Create players, assign seats, and start accounting.">Create players, assign seats, and start accounting.</div></div></div>
+              <form id="homeGameNewSessionForm" class="home-game-form">
+                <label class="ui-field" for="homeGameSessionTitle"><span data-i18n="Session name">Session name</span><input id="homeGameSessionTitle" class="control-input" type="text" maxlength="120" required placeholder="Friday Game" data-i18n-placeholder="Friday Game"></label>
+                <label class="ui-field" for="homeGameCurrency"><span data-i18n="Currency">Currency</span><select id="homeGameCurrency" class="control-select"><option value="ILS" data-label="₪">ILS · ₪</option><option value="USD" data-label="$">USD · $</option><option value="EUR" data-label="€">EUR · €</option></select></label>
+                <label class="ui-field" for="homeGamePlayerNames"><span data-i18n="Players">Players</span><textarea id="homeGamePlayerNames" class="control-input" rows="5" required placeholder="Dana&#10;Alex&#10;Maya" data-i18n-placeholder="One player per line"></textarea><small data-i18n="One player per line; seats follow this order.">One player per line; seats follow this order.</small></label>
+                <label class="ui-field" for="homeGameInitialBuyIn"><span data-i18n="Initial buy-in per player">Initial buy-in per player</span><input id="homeGameInitialBuyIn" class="control-input" type="number" min="0" step="0.01" value="0" inputmode="decimal"></label>
+                <label class="home-game-check"><input id="homeGameSaveGroup" type="checkbox"><span data-i18n="Save Group">Save Group</span></label>
+                <label class="ui-field" for="homeGameGroupName"><span data-i18n="Group name">Group name</span><input id="homeGameGroupName" class="control-input" type="text" maxlength="100" disabled placeholder="Friday Game" data-i18n-placeholder="Friday Game"></label>
+                <button class="ui-button ui-button--primary" type="submit" data-i18n="Start session">Start session</button>
+              </form>
+            </section>
+
+            <section class="panel home-game-library" aria-labelledby="homeGameGroupsTitle" data-tutorial-anchor="home-game-groups">
+              <div class="panel-head"><div><div class="panel-title" id="homeGameGroupsTitle" data-i18n="Saved Groups">Saved Groups</div><div class="panel-note" data-i18n="Reusable ordered player rosters.">Reusable ordered player rosters.</div></div></div>
+              <div id="homeGameGroups" class="home-game-list"></div>
+            </section>
+
+            <section class="panel home-game-library" aria-labelledby="homeGameRecentTitle">
+              <div class="panel-head"><div><div class="panel-title" id="homeGameRecentTitle" data-i18n="Recent Sessions">Recent Sessions</div></div></div>
+              <div id="homeGameRecent" class="home-game-list"></div>
+            </section>
+          </aside>
+
+          <div id="homeGameSession" class="home-game-session-surface" role="region" aria-label="Current Home Game session" data-i18n-aria-label="Current Home Game session" data-tutorial-anchor="home-game-session"></div>
         </div>
       </div>
     </section>
@@ -2329,6 +2374,7 @@
   <script type="module" src="src/application/saved-study-object-bootstrap.mjs"></script>
   <script type="module" src="src/application/saved-study-sync-bootstrap.mjs"></script>
   <script type="module" src="src/application/home-workspace-bootstrap.mjs"></script>
+  <script type="module" src="src/application/home-game-bootstrap.mjs"></script>
   <script type="module" src="src/application/tutorial-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>

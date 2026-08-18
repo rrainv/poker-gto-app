@@ -593,6 +593,48 @@
   Object.assign(ru, savedSyncTutorial.ru);
   Object.assign(he, savedSyncTutorial.he);
 
+  const homeGameTutorial = {
+    en: {
+      'Running a Home Game': 'Running a Home Game',
+      'Track real cash-game money truthfully and finish with a clear settlement.': 'Track real cash-game money truthfully and finish with a clear settlement.',
+      'Home Game is separate from poker analysis': 'Home Game is separate from poker analysis',
+      'This workspace organizes a real poker night. Its players, money ledger, chip snapshots, and settlement do not change PokerState or Riverline strategy.': 'This workspace organizes a real poker night. Its players, money ledger, chip snapshots, and settlement do not change PokerState or Riverline strategy.',
+      'Start with the real roster and currency': 'Start with the real roster and currency',
+      'Enter players in seat order and an optional initial buy-in. Guest sessions stay in memory; sign in before starting a game you need to keep.': 'Enter players in seat order and an optional initial buy-in. Guest sessions stay in memory; sign in before starting a game you need to keep.',
+      'Reuse a group without copying players': 'Reuse a group without copying players',
+      'Signed-in accounts can save an ordered roster and start another independent session from it. Group membership only references saved players.': 'Signed-in accounts can save an ordered roster and start another independent session from it. Group membership only references saved players.',
+      'Let the ledger explain every result': 'Let the ledger explain every result',
+      'Record rebuys, add-ons, cash-outs, and optional chip counts. Money and chips stay separate; completion and settlement remain blocked until the exact money balance is zero.': 'Record rebuys, add-ons, cash-outs, and optional chip counts. Money and chips stay separate; completion and settlement remain blocked until the exact money balance is zero.',
+    },
+    ru: {
+      'Running a Home Game': 'Проведение домашней игры',
+      'Track real cash-game money truthfully and finish with a clear settlement.': 'Честно учитывайте деньги в кэш-игре и завершайте её понятными расчётами.',
+      'Home Game is separate from poker analysis': 'Домашняя игра отделена от покерного анализа',
+      'This workspace organizes a real poker night. Its players, money ledger, chip snapshots, and settlement do not change PokerState or Riverline strategy.': 'Этот раздел помогает провести реальный покерный вечер. Игроки, денежный журнал, снимки стеков и расчёты не меняют PokerState или стратегию Riverline.',
+      'Start with the real roster and currency': 'Начните с реального состава и валюты',
+      'Enter players in seat order and an optional initial buy-in. Guest sessions stay in memory; sign in before starting a game you need to keep.': 'Введите игроков в порядке мест и при необходимости начальный бай-ин. Гостевая сессия остаётся в памяти; войдите до начала игры, которую нужно сохранить.',
+      'Reuse a group without copying players': 'Используйте группу повторно без копирования игроков',
+      'Signed-in accounts can save an ordered roster and start another independent session from it. Group membership only references saved players.': 'Аккаунт может сохранить упорядоченный состав и начать из него новую независимую сессию. Группа только ссылается на сохранённых игроков.',
+      'Let the ledger explain every result': 'Пусть журнал объясняет каждый результат',
+      'Record rebuys, add-ons, cash-outs, and optional chip counts. Money and chips stay separate; completion and settlement remain blocked until the exact money balance is zero.': 'Записывайте ребаи, аддоны, кэшауты и при необходимости фишки. Деньги и фишки разделены; завершение и расчёты заблокированы, пока точный денежный баланс не равен нулю.',
+    },
+    he: {
+      'Running a Home Game': 'ניהול משחק ביתי',
+      'Track real cash-game money truthfully and finish with a clear settlement.': 'נהלו רישום כספי אמין של משחק קאש וסיימו בהתחשבנות ברורה.',
+      'Home Game is separate from poker analysis': 'המשחק הביתי נפרד מניתוח פוקר',
+      'This workspace organizes a real poker night. Its players, money ledger, chip snapshots, and settlement do not change PokerState or Riverline strategy.': 'המרחב הזה מנהל ערב פוקר אמיתי. השחקנים, יומן הכספים, ספירות הצ׳יפים וההתחשבנות אינם משנים את PokerState או את אסטרטגיית Riverline.',
+      'Start with the real roster and currency': 'התחילו עם ההרכב והמטבע האמיתיים',
+      'Enter players in seat order and an optional initial buy-in. Guest sessions stay in memory; sign in before starting a game you need to keep.': 'הזינו שחקנים לפי סדר המושבים וכניסה התחלתית לפי הצורך. סשן אורח נשאר בזיכרון; התחברו לפני משחק שצריך לשמור.',
+      'Reuse a group without copying players': 'השתמשו שוב בקבוצה בלי להעתיק שחקנים',
+      'Signed-in accounts can save an ordered roster and start another independent session from it. Group membership only references saved players.': 'חשבון מחובר יכול לשמור הרכב מסודר ולפתוח ממנו סשן עצמאי חדש. החברות בקבוצה רק מפנה לשחקנים השמורים.',
+      'Let the ledger explain every result': 'תנו ליומן להסביר כל תוצאה',
+      'Record rebuys, add-ons, cash-outs, and optional chip counts. Money and chips stay separate; completion and settlement remain blocked until the exact money balance is zero.': 'רשמו ריביי, אד-און, פדיון וספירת צ׳יפים לפי הצורך. כסף וצ׳יפים נשארים נפרדים; סיום והתחשבנות חסומים עד שהמאזן הכספי המדויק הוא אפס.',
+    },
+  };
+  Object.assign(en, homeGameTutorial.en);
+  Object.assign(ru, homeGameTutorial.ru);
+  Object.assign(he, homeGameTutorial.he);
+
   global.riverlineTutorialTranslations = Object.freeze({
     en: Object.freeze(en),
     ru: Object.freeze(ru),
