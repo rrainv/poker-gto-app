@@ -5,3 +5,4 @@ export * from './indexeddb-storage.mjs';
 export * from './evidence-view.mjs';
 export * from './rfi-inference.mjs';
 export * from './projection-service.mjs';
+export * from './rfi-question-selection.mjs';

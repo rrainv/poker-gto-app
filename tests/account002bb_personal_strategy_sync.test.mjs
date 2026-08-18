@@ -153,9 +153,19 @@ test('cold device reconstructs stable profile/mode/evidence/session IDs and resu
   assert.deepEqual(snapshot.profiles[0].modeIds, created.bundle.profile.modeIds);
   assert.equal(snapshot.rangeObservations[0].id, answered.acceptedObservation.id);
   assert.equal(snapshot.calibrationSessions[0].id, answered.session.id);
+  assert.equal(snapshot.calibrationSessions[0].cursor.calibrationIntent, 'standard');
+  assert.deepEqual(
+    snapshot.calibrationSessions[0].cursor.askedHandClasses,
+    answered.session.cursor.askedHandClasses,
+  );
+  assert.equal(
+    snapshot.calibrationSessions[0].cursor.selectionPolicyVersion,
+    answered.session.cursor.selectionPolicyVersion,
+  );
   const resumed = await resume(b, created.bundle.profile.id, created.bundle.modes[0].id);
   assert.equal(resumed.progress.answered, 1);
   assert.equal(resumed.prompt.handClass, answered.prompt.handClass);
+  assert.deepEqual(resumed.session.cursor.askedHandClasses, answered.session.cursor.askedHandClasses);
 });
 
 test('offline contradictory direct answers both survive and deterministic inference abstains', async () => {
@@ -186,7 +196,13 @@ test('offline contradictory direct answers both survive and deterministic infere
   const snapshot = await a.application.repository.loadSnapshot();
   const conflicting = snapshot.rangeObservations.filter((entry) => entry.handClass === conflictingHand);
   assert.deepEqual(new Set(conflicting.map((entry) => entry.id)), new Set([aEvidenceId, bEvidenceId]));
-  assert.equal((await resume(a, created.bundle.profile.id, created.bundle.modes[0].id)).progress.answered, 2);
+  const resumedA = await resume(a, created.bundle.profile.id, created.bundle.modes[0].id);
+  const resumedB = await resume(b, created.bundle.profile.id, created.bundle.modes[0].id);
+  assert.equal(resumedA.progress.answered, 2);
+  assert.equal(resumedA.prompt.handClass, resumedB.prompt.handClass);
+  assert.notEqual(resumedA.prompt.handClass, conflictingHand);
+  assert.equal(Object.hasOwn(resumedA.session.cursor, 'rankedCandidates'), false);
+  assert.equal(Object.hasOwn(resumedA.session.cursor, 'questionValueScore'), false);
 
   const result = inferSparseRfiHand(createRfiInferenceRequest({
     profileId: created.bundle.profile.id,

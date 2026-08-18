@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 18, 2026 (`RANGE-CAL-002B` implementation checkpoint).
+Last refreshed: August 18, 2026 (`RANGE-CAL-002C` implementation checkpoint).
 
 Code, tests, accepted tags/ticket reports, new manual QA, and explicit user decisions override this snapshot. Detailed future capability is preserved in `PRODUCT_BACKLOG.md`; subsystem contracts remain authoritative for implementation semantics.
 
@@ -33,7 +33,7 @@ Do not reopen the retired browser/Electron ONNX runtime, remote strategy API, ar
 
 ### Personal Strategy — CHECKPOINTED / INTENTIONALLY INCOMPLETE
 
-**COMPLETED through:** `RANGE-CAL-000`, `RANGE-CAL-001A`, `RANGE-CAL-001B/001BR`, `RANGE-CAL-001C-A`, `RANGE-CAL-UI-001R`, `RANGE-CAL-002A`, and `RANGE-CAL-002B`.
+**COMPLETED through:** `RANGE-CAL-000`, `RANGE-CAL-001A`, `RANGE-CAL-001B/001BR`, `RANGE-CAL-001C-A`, `RANGE-CAL-UI-001R`, `RANGE-CAL-002A`, `RANGE-CAL-002B`, and `RANGE-CAL-002C`.
 
 Accepted foundation:
 
@@ -48,12 +48,14 @@ Accepted foundation:
 - unified source-preserving evidence projection with explicit correction, compatible-head, retraction, and contradiction semantics;
 - one deterministic local-graph RFI inference authority with versioned directly-known/high/medium/uncertain/conflicting/unknown estimates, categorical-only inference, 169-estimate snapshots, 002C support facts, and scope cache/application APIs;
 - hard-fixture validation over smooth, irregular, gapped, suited/offsuit, pair, direct-conflict, and exact-boundary synthetic targets, including false-high safety, abstention, stability, and runtime.
+- deterministic adaptive question value, structurally diverse cold start, boundary/uncertainty/sparsity targeting, repetition control, optional exact-mix refinement facts, truthful category progress, explicit stopping, Skip/Not sure, and resumable Quick/Standard/Deep sessions;
+- adaptive-versus-canonical validation at 10/20/30/40/50/75 questions: materially faster structured-boundary discovery and useful coverage, with irregular abstention and 002B high-band safety preserved.
 
-`RANGE-CAL-002A` is retained only as a compatibility API and historical evaluator; all decisions delegate to the 002B authority. `RANGE-CAL-002B` synthetic validation proves deterministic mechanics and honest known failure behavior, not poker correctness or real-user uncertainty calibration. The deterministic 169-question loop remains fallback/test infrastructure, not the intended final experience.
+`RANGE-CAL-002A` is retained only as a compatibility API and historical evaluator; all decisions delegate to the 002B authority. `RANGE-CAL-002B/002C` synthetic validation proves deterministic mechanics and honest known failure behavior, not poker correctness or real-user uncertainty calibration. Adaptive questioning is the default; the deterministic 169-question loop remains an explicit exhaustive fallback/test path.
 
 `PERSONAL-STRATEGY-ARCH-002` now defines the follow-on authority in `UNIFIED_RANGE_INTELLIGENCE_SPEC.md`: immutable sparse evidence remains durable truth; inference/conflicts/uncertainty form a recomputable read model; 169 class baselines plus sparse combo overrides lazily materialize combo action strategies; Range Calibration, Matrix, Builder, and Teacher remain surfaces over that one model. It introduces no production schema or runtime change.
 
-**Resume at:** `RANGE-CAL-002C` boundary-seeking questions/automatic stopping over the 002B snapshot/support API, then `002D` Personal Strategy Matrix inspection/correction/provenance, `RANGE-BUILDER-001`, `RANGE-TEACHER-001`, and `002R` independent review.
+**Resume at:** `RANGE-CAL-002D` Personal Strategy Matrix inspection/correction/provenance over the 002B snapshot and 002C question-value/boundary outputs, then `RANGE-BUILDER-001`, `RANGE-TEACHER-001`, and `002R` independent review.
 
 **PRESERVED FUTURE:** evidence-backed mode relationships/interpolation, StrategyProvider integration, Training-to-profile evidence, postflop range propagation, and Range Builder/Teacher links. Do not redesign the accepted foundation when work resumes.
 

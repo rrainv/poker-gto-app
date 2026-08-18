@@ -93,7 +93,8 @@ test('truthfulness copy preserves Scenario, Replay, strategy, Training, Equity, 
   assert.match(copy['equity.basics'], /not by itself a complete strategy recommendation/);
   assert.match(copy['training.feedback'], /not a claim of mathematically proven universal optimality/);
   assert.match(copy['calibration.answers'], /never means the action is played at a pure 100% frequency/);
-  assert.match(copy['calibration.setup'], /not presented here as a finished user-facing range or confidence system/);
+  assert.match(copy['calibration.setup'], /selects high-value hands from current direct evidence/);
+  assert.match(copy['calibration.answers'], /question value, not poker confidence/);
   assert.match(copy['home-game.organizer'], /do not change PokerState or Riverline strategy/);
   assert.match(copy['home-game.organizer'], /Money and chips stay separate/);
   assert.doesNotMatch(Object.values(copy).join('\n'), /EV loss is|solver accuracy is|exploitability score|confidence: \d+%/i);

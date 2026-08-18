@@ -2,6 +2,8 @@ import {
   CALIBRATION_ENVIRONMENTS,
   RANGE_CALIBRATION_STACK_LIMITS,
   RFI_CALIBRATION_ACTIONS,
+  RFI_CALIBRATION_INTENTS,
+  RFI_CALIBRATION_STOP_REASONS,
   countCurrentDirectObservations,
   createContextFromSelection,
   createIdentityScopedRangeCalibrationApplication,
@@ -101,6 +103,7 @@ function createController(root, application, initialWorkspace, activationStarted
   let lastAnswerError = null;
   let answerPending = false;
   let failedAnswer = null;
+  let calibrationIntent = RFI_CALIBRATION_INTENTS.STANDARD;
   const interactionSamples = [];
   const activationReads = application.getStorageMetrics();
   const metrics = {
@@ -118,6 +121,27 @@ function createController(root, application, initialWorkspace, activationStarted
   function activeMode() {
     const entry = activeEntry();
     return entry?.modes.find((mode) => mode.id === selection.modeId) || entry?.modes[0] || null;
+  }
+
+  function matchingCalibrationSession() {
+    if (!selection) return null;
+    const contextScope = createContextFromSelection(selection.context);
+    return workspace.snapshot.calibrationSessions
+      .filter((session) => session.profileId === selection.profileId
+        && session.modeId === selection.modeId
+        && JSON.stringify(session.contextScope) === JSON.stringify(contextScope))
+      .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0] ?? null;
+  }
+
+  function renderIntentOptions() {
+    const sessionIntent = matchingCalibrationSession()?.cursor?.calibrationIntent;
+    if (Object.values(RFI_CALIBRATION_INTENTS).includes(sessionIntent)
+      && sessionIntent !== RFI_CALIBRATION_INTENTS.EXHAUSTIVE) {
+      calibrationIntent = sessionIntent;
+    }
+    document.querySelectorAll('#calibrationIntentOptions input[name="calibration-intent"]').forEach((input) => {
+      input.checked = input.value === calibrationIntent;
+    });
   }
 
   function setState(state) {
@@ -242,6 +266,7 @@ function createController(root, application, initialWorkspace, activationStarted
     setState('configured');
     setSessionView('configuration');
     renderProfile();
+    renderIntentOptions();
     if (controls) renderContextControls();
     renderDerivedContext();
   }
@@ -257,6 +282,38 @@ function createController(root, application, initialWorkspace, activationStarted
     )).join(' \u00b7 ');
   }
 
+  function completionCopy(assessment) {
+    if (assessment.stopReason === RFI_CALIBRATION_STOP_REASONS.FULL_DIRECT_COVERAGE) {
+      return {
+        title: 'Direct RFI calibration complete for this spot.',
+        summary: 'All 169 hand classes have direct answers.',
+      };
+    }
+    if (assessment.stopReason === RFI_CALIBRATION_STOP_REASONS.CONFLICT_RESOLUTION_NEEDED) {
+      return {
+        title: 'Conflict review is needed',
+        summary: 'Ordinary answers cannot resolve the remaining direct contradiction.',
+      };
+    }
+    if (assessment.stopReason === RFI_CALIBRATION_STOP_REASONS.USER_TIME_BUDGET_REACHED) {
+      return {
+        title: 'Session goal reached',
+        summary: 'Your saved answers are already part of this model. Continue now or resume later.',
+      };
+    }
+    if (assessment.stopReason === RFI_CALIBRATION_STOP_REASONS.NO_USEFUL_CANDIDATES) {
+      return {
+        title: 'No useful ordinary questions remain',
+        summary: 'You can review this range or continue later after the evidence changes.',
+      };
+    }
+    return {
+      title: 'Range mapped enough for this session',
+      summary: 'Most of this range is mapped. {count} high-value questions remain.',
+      parameters: { count: assessment.highValueQuestionCount },
+    };
+  }
+
   function renderQuestion() {
     if (!calibrationState) return;
     const entry = activeEntry();
@@ -269,7 +326,13 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationQuestionSpot').textContent = `${selection.context.tableSize}-max · ${selection.context.heroPosition} · ${selection.context.effectiveStackBb}bb · RFI`;
     query('#calibrationFirstUseEducation').hidden = !educationVisible;
 
-    const { prompt, progress, previousAnswer } = calibrationState;
+    const {
+      prompt,
+      progress,
+      previousAnswer,
+      progressAssessment,
+      questionExplanation,
+    } = calibrationState;
     const complete = prompt === null;
     query('#calibrationActiveQuestion').hidden = complete;
     query('#calibrationCompleteState').hidden = !complete;
@@ -277,17 +340,50 @@ function createController(root, application, initialWorkspace, activationStarted
       query('#calibrationQuestionTitle').textContent = prompt.handClass;
       const kindKey = prompt.handClass.length === 2 ? 'Pair' : (prompt.handClass.endsWith('s') ? 'Suited' : 'Offsuit');
       setTranslatedText(query('#calibrationQuestionKind'), kindKey);
+      setTranslatedText(
+        query('#calibrationQuestionReason'),
+        questionExplanation?.messageKey ?? 'Reduces uncertainty here',
+      );
       query('#calibrationAnswerError').textContent = '';
     }
-    query('#calibrationQuestionProgress').textContent = `${progress.answered} / ${progress.total}`;
-    setTranslatedText(query('#calibrationQuestionRemaining'), '{count} remaining', { count: progress.remaining });
+    setTranslatedText(query('#calibrationQuestionProgress'), '{count} direct', {
+      count: progressAssessment.directCount,
+    });
+    setTranslatedText(query('#calibrationQuestionRemaining'), '{count} high-value questions remain', {
+      count: progressAssessment.highValueQuestionCount,
+    });
     query('#calibrationProgressBar').value = progress.answered;
     query('#calibrationProgressBar').max = progress.total;
     query('#calibrationProgressBar').setAttribute('aria-valuetext', translated('{answered} of {total} directly answered', progress));
+    query('#calibrationDirectCount').textContent = String(progressAssessment.directCount);
+    query('#calibrationInferredHighCount').textContent = String(progressAssessment.inferredHighCount);
+    query('#calibrationInferredMediumCount').textContent = String(progressAssessment.inferredMediumCount);
+    query('#calibrationUncertainCount').textContent = String(progressAssessment.uncertainCount);
+    query('#calibrationUnknownCount').textContent = String(progressAssessment.unknownCount);
+    query('#calibrationConflictingCount').textContent = String(progressAssessment.conflictingCount);
     query('#calibrationPreviousAnswer').hidden = !previousAnswer;
     if (previousAnswer) {
       query('#calibrationPreviousHand').textContent = previousAnswer.handClass;
       query('#calibrationPreviousAction').textContent = previousAnswerLabel(previousAnswer);
+    }
+    if (complete) {
+      const copy = completionCopy(progressAssessment);
+      setTranslatedText(query('#calibrationCompleteTitle'), copy.title);
+      setTranslatedText(query('#calibrationCompleteSummary'), copy.summary, copy.parameters);
+      query('#calibrationCompleteCounts').textContent = translated(
+        '{direct} direct · {high} inferred high · {medium} inferred medium · {uncertain} uncertain · {unknown} unknown · {conflicting} conflicting',
+        {
+          direct: progressAssessment.directCount,
+          high: progressAssessment.inferredHighCount,
+          medium: progressAssessment.inferredMediumCount,
+          uncertain: progressAssessment.uncertainCount,
+          unknown: progressAssessment.unknownCount,
+          conflicting: progressAssessment.conflictingCount,
+        },
+      );
+      query('#calibrationAskAnother').hidden = progressAssessment.stopReason
+        === RFI_CALIBRATION_STOP_REASONS.FULL_DIRECT_COVERAGE
+        || !calibrationState.candidateRanking.some((candidate) => candidate.ordinaryQuestionEligible);
     }
   }
 
@@ -295,6 +391,8 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationActionFold').disabled = disabled;
     query('#calibrationActionRaise').disabled = disabled;
     query('#calibrationOpenMix').disabled = disabled;
+    query('#calibrationSkipQuestion').disabled = disabled;
+    query('#calibrationNotSure').disabled = disabled;
     query('#calibrationUndoAnswer').disabled = disabled;
   }
 
@@ -319,6 +417,8 @@ function createController(root, application, initialWorkspace, activationStarted
         selectedProfileId: selection.profileId,
         activeModeId: selection.modeId,
         context: selection.context,
+        intent: calibrationIntent,
+        continueAfterStop: true,
       });
       syncSnapshot(calibrationState.snapshot);
       educationVisible = calibrationState.progress.answered === 0;
@@ -410,6 +510,52 @@ function createController(root, application, initialWorkspace, activationStarted
       query('#calibrationStartQuestions')?.focus?.({ preventScroll: true });
     } catch (error) {
       query('#calibrationAnswerError').textContent = friendlyError(error);
+    }
+  }
+
+  async function stopQuestions() {
+    if (!calibrationState || answerPending) return;
+    try {
+      calibrationState = await application.stopSession(calibrationState);
+      syncSnapshot(calibrationState.snapshot);
+      calibrationState = null;
+      renderConfigured();
+      query('#calibrationStartQuestions')?.focus?.({ preventScroll: true });
+    } catch (error) {
+      query('#calibrationAnswerError').textContent = friendlyError(error);
+    }
+  }
+
+  async function skipQuestion(notSure = false) {
+    if (!calibrationState?.prompt || answerPending) return;
+    setAnswerPending(true);
+    try {
+      calibrationState = await application.skipCalibrationQuestion(calibrationState, { notSure });
+      syncSnapshot(calibrationState.snapshot);
+      educationVisible = false;
+      renderQuestion();
+      if (calibrationState.prompt) {
+        window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
+      }
+    } catch (error) {
+      query('#calibrationAnswerError').textContent = friendlyError(error);
+    } finally {
+      setAnswerPending(false);
+    }
+  }
+
+  async function askAnotherQuestion() {
+    if (!calibrationState || answerPending) return;
+    setAnswerPending(true);
+    try {
+      calibrationState = await application.requestAdditionalQuestion(calibrationState);
+      syncSnapshot(calibrationState.snapshot);
+      renderQuestion();
+      window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
+    } catch (error) {
+      notify(friendlyError(error), 'error');
+    } finally {
+      setAnswerPending(false);
     }
   }
 
@@ -616,11 +762,15 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationEditProfile').addEventListener('click', () => openProfileEditor('edit'));
     query('#calibrationStartQuestions').addEventListener('click', enterQuestions);
     query('#calibrationPauseQuestions').addEventListener('click', pauseQuestions);
+    query('#calibrationStopQuestions').addEventListener('click', stopQuestions);
     query('#calibrationReturnToContext').addEventListener('click', pauseQuestions);
+    query('#calibrationAskAnother').addEventListener('click', askAnotherQuestion);
     query('#calibrationActionFold').addEventListener('click', () => acceptAnswer({ actionType: 'fold' }));
     query('#calibrationActionRaise').addEventListener('click', () => acceptAnswer({ actionType: 'raise' }));
     query('#calibrationRetryAnswer').addEventListener('click', () => acceptAnswer({}, { retry: true }));
     query('#calibrationUndoAnswer').addEventListener('click', undoAnswer);
+    query('#calibrationSkipQuestion').addEventListener('click', () => skipQuestion(false));
+    query('#calibrationNotSure').addEventListener('click', () => skipQuestion(true));
     query('#calibrationOpenMix').addEventListener('click', openMixEditor);
     query('#calibrationMixForm').addEventListener('submit', submitMix);
     query('#calibrationMixRetry').addEventListener('click', async () => {
@@ -645,6 +795,11 @@ function createController(root, application, initialWorkspace, activationStarted
     });
     query('#calibrationProfileSelect').addEventListener('change', async (event) => {
       try { await changeProfile(event.target.value); } catch (error) { notify(friendlyError(error), 'error'); }
+    });
+    query('#calibrationIntentOptions').addEventListener('change', (event) => {
+      const input = event.target.closest('input[name="calibration-intent"]');
+      if (!input) return;
+      calibrationIntent = input.value;
     });
     query('#calibrationModeOptions').addEventListener('click', async (event) => {
       const button = event.target.closest('[data-mode-id]');

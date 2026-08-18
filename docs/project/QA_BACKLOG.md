@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 18, 2026 (`HOME-GAME-001A` implementation checkpoint).
+Last consolidated: August 18, 2026 (`RANGE-CAL-002C` implementation checkpoint).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -96,6 +96,12 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | QA-ACCOUNT-002A | PARTIAL | Supabase email/password auth, required profile/RLS migration, explicit claim/start-separate flow, Guest fail-closed semantics, durable-action resume gate, account switching/sign-out, truthful no-sync copy, EN/RU/HE/RTL, focus management, and Range Calibration gating are structurally implemented and deterministic tests pass. Electron HE automation verified the Guest Home, header menu, Guest-only auth dialog, Escape/focus restoration, and Save Spot promotion/cancel with the current spot retained at 1426×914 (plus an earlier maximized 1440×763 pass); it also found and prompted fixes for RTL menu placement, hidden Guest navigation/actions, modal visibility/panels, and asynchronous module-bootstrap ordering. Remaining acceptance: apply/verify the migration against a live Supabase project, exercise real signup/profile conflict/edit/sign-out/re-auth/resumed save, and complete human Firefox EN/RU/HE checks at 1024×768, 1366×768, and 1920×1080. | ACCOUNT-002A/AR live/manual acceptance |
 | QA-ACCOUNT-002B-A | PARTIAL | Explicit Saved Hand/Spot opt-in, local-first coalesced outbox/retry, stable IDs, two-device fake-adapter flow, conflicts/three recovery choices, archive tombstones, Guest/account cancellation, cold remote Replay, import/export isolation, Supabase RLS/RPC structure, compact status/manual sync, and EN/RU/HE/RTL/accessibility structure are deterministic-test covered. Remaining acceptance: apply `202608170002_saved_study_object_sync.sql`, verify real cross-user RLS/idempotency/stale-revision behavior, and complete the requested two-profile Firefox lifecycle in EN/HE at 1024/1366, including offline/reconnect and conflict focus/visual checks. | ACCOUNT-002B-A live Supabase / Firefox acceptance |
 | QA-ACCOUNT-002B-B | PARTIAL | Separate Personal Strategy / Range Calibration opt-in, shared transport with domain adapters, stable profile/mode/evidence/session IDs, cold-device restore/resume, immutable evidence dedupe, offline divergent direct-history preservation and inference abstention, metadata conflicts, session merge, Guest/account cancellation, import/export isolation, relational Supabase RLS/RPC structure, status aggregation, and EN/RU/HE/RTL/accessibility structure are deterministic-test covered. Remaining acceptance: apply `202608170003_personal_strategy_sync.sql`, verify live two-user RLS/idempotency/stale-revision/append-only behavior, and complete the requested two-profile Firefox lifecycle in EN/HE at 1024/1366, including offline answers on both devices, contradictory same-hand histories, merged resume, profile/mode conflict focus, and first-sync/status visual checks. | ACCOUNT-002B-B live Supabase / Firefox acceptance |
+
+## Personal Strategy / Range Calibration
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-RANGE-CAL-002C | PARTIAL | Adaptive default selection, cold-start diversity, boundary/uncertainty/sparsity ranking, deterministic resume, atomic answer/rerank, Quick/Standard/Deep stopping, exhaustive fallback, Pause/Stop/Skip/Not sure/Ask another, category progress, EN/RU/HE/RTL structure, sync-safe cursor facts, comparative validation, and performance are automated. Remaining acceptance: human Firefox fresh/cold/10/~30/boundary/automatic-stop/Ask-another/Pause-resume checks in EN/RU/HE at 1024 and 1366; structural and scripted browser evidence is not visual acceptance. | RANGE-CAL-002C human Firefox acceptance |
 
 ## Workspace composition and responsive fit
 

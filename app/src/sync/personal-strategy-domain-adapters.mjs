@@ -11,6 +11,7 @@ import {
   validateStrategyProfile,
   validateTrainingObservation,
 } from '../personal-strategy/index.mjs';
+import { PREFLOP_HAND_CLASSES } from '../../../shared/poker-domain/index.js';
 import { PERSONAL_STRATEGY_SYNC_DOMAIN, cloneSyncData } from './domain.mjs';
 
 export const REMOTE_PERSONAL_STRATEGY_ENTITY_VERSION = 'remote-personal-strategy-entity/v1';
@@ -260,6 +261,12 @@ function mergeSessionDocuments(local, remote) {
   const observationIds = [...new Set([...left.observationIds, ...right.observationIds])];
   const newest = Date.parse(left.updatedAt) > Date.parse(right.updatedAt) ? left : right;
   const completed = left.state === 'completed' || right.state === 'completed';
+  const handIndex = new Map(PREFLOP_HAND_CLASSES.map((handClass, index) => [handClass, index]));
+  const mergeHandHistory = (field) => [...new Set([
+    ...(left.cursor[field] ?? []),
+    ...(right.cursor[field] ?? []),
+  ])].sort((first, second) => handIndex.get(first) - handIndex.get(second));
+  const askedHandClasses = mergeHandHistory('askedHandClasses');
   const payload = {
     ...cloneSyncData(newest),
     updatedAt: laterTimestamp(left.updatedAt, right.updatedAt),
@@ -269,7 +276,20 @@ function mergeSessionDocuments(local, remote) {
       : null,
     observationIds,
     cursor: {
+      ...cloneSyncData(newest.cursor),
       nextPromptIndex: Math.min(left.cursor.nextPromptIndex, right.cursor.nextPromptIndex),
+      askedHandClasses,
+      skippedHandClasses: mergeHandHistory('skippedHandClasses'),
+      notSureHandClasses: mergeHandHistory('notSureHandClasses'),
+      sessionQuestionCount: Math.max(
+        askedHandClasses.length,
+        left.cursor.sessionQuestionCount ?? 0,
+        right.cursor.sessionQuestionCount ?? 0,
+      ),
+      additionalQuestionAllowance: Math.max(
+        left.cursor.additionalQuestionAllowance ?? 0,
+        right.cursor.additionalQuestionAllowance ?? 0,
+      ),
     },
   };
   const merged = { ...cloneSyncData(remote), updatedAt: payload.updatedAt, payload };

@@ -1,6 +1,6 @@
 # Unified Range Intelligence Architecture
 
-Status: architecture authority for `PERSONAL-STRATEGY-ARCH-002`; implementation checkpointed through `RANGE-CAL-002B`
+Status: architecture authority for `PERSONAL-STRATEGY-ARCH-002`; implementation checkpointed through `RANGE-CAL-002C`
 
 Date: August 18, 2026
 
@@ -53,6 +53,7 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 | `RANGE-CAL-UI-001R` | Accepted Range Calibration product/interaction refinement. The full 169-question order remains fallback and test infrastructure. |
 | `RANGE-CAL-002A` | Isolated deterministic sparse RFI Fold/Raise inference, explicit abstention, direct-evidence precedence, contradictory-head abstention, evidence references, and synthetic holdout evaluation. |
 | `RANGE-CAL-002B` | Unified read-only evidence projection, explicit correction/compatible-head/conflict semantics, `PersonalStrategyEstimate v1`, 169-estimate snapshot, ordinal high/medium/uncertain/conflicting/unknown states, conservative local-graph inference, scope cache/application API, and eight-fixture deterministic validation. |
+| `RANGE-CAL-002C` | Deterministic adaptive question-value ranking, structurally diverse cold start, boundary/sparsity/uncertainty targeting, repetition and skip control, category progress, explicit automatic stop reasons, resumable Quick/Standard/Deep intents, exhaustive fallback, and equal-budget comparative validation. |
 | `ACCOUNT-002B-B` | Opt-in Personal Strategy sync that preserves stable IDs, immutable direct and Training evidence, divergent offline heads, profile/mode metadata conflicts, and resumable sessions; inferred output is deliberately excluded. |
 | `HOME-002A` | Lightweight Personal Strategy summary: profile count, direct-evidence count, answered hand classes, contradictory heads, and resumable calibration state. Home performs no inference or range math. |
 
@@ -60,9 +61,9 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 
 - `app/src/personal-strategy/domain.mjs` owns the implemented v1 profile, mode, RFI context, direct observation, Training observation, and calibration-session contracts.
 - `app/src/personal-strategy/repository.mjs` owns current local durability, immutable history, selected and conflicting direct heads, export/import, and sync application.
-- `app/src/application/range-calibration-service.mjs` owns the current sequential answer/session workflow.
+- `app/src/application/range-calibration-service.mjs` owns adaptive answer/session orchestration, one atomic answer commit, pause/stop/skip/resume, and the explicit sequential exhaustive fallback.
 - `app/src/application/range-calibration-workspace.mjs` is a UI consumer of that application service and does not implement inference.
-- `app/src/personal-strategy/evidence-view.mjs` owns the source-preserving `personal-strategy-evidence-view/v1` and derived conflict projection. `app/src/personal-strategy/rfi-inference.mjs` owns the sole `deterministic-rfi-local-graph/v1` estimate/snapshot authority; its 002A request/result exports are compatibility adapters over that authority. `app/src/personal-strategy/projection-service.mjs` owns scope caching and the repository-facing query API. The lazy Range Calibration application exposes those queries but does not change question order or UI.
+- `app/src/personal-strategy/evidence-view.mjs` owns the source-preserving `personal-strategy-evidence-view/v1` and derived conflict projection. `app/src/personal-strategy/rfi-inference.mjs` owns the sole `deterministic-rfi-local-graph/v1` estimate/snapshot authority; its 002A request/result exports are compatibility adapters over that authority. `app/src/personal-strategy/projection-service.mjs` owns scope caching, answer preview through the same authority, and the repository-facing query API. `app/src/personal-strategy/rfi-question-selection.mjs` owns the DOM-free 002C ranking, explanation, and stopping policies.
 - `shared/poker-domain/holdem-combos.js` and `holdem-range.js` own the 1,326-combo registry and `HoldemWeightedRange v1`.
 - the current production Matrix in `app/src/core/logic.js` resolves one representative available combo per 169 class through `StrategyProvider v1`. It is not a Personal Strategy Matrix or range authority.
 - canonical Training generates, grades, and presents against `StrategyResult v1`. A `TrainingObservation v1` repository contract exists, but no live per-session Training-to-profile adapter or opt-in UI exists.
@@ -73,10 +74,10 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 
 - only preflop RFI is modeled, with the Fold/Raise action family;
 - direct evidence is keyed by 169 hand class, not exact combo;
-- the live question loop remains a deterministic unanswered-hand walk and implies completion only at 169 direct answers;
+- adaptive question selection is the live default; the deterministic unanswered-hand walk remains only an explicit exhaustive fallback and test/debug path;
 - 002B inference remains categorical only; exact direct mixes pass through, while inferred exact frequencies are deliberately unavailable;
 - 002B validation remains synthetic mechanics evidence rather than real-user uncertainty calibration or poker-reference truth;
-- deliberately non-local evidence is expected to produce near-total abstention; adaptive sampling and real-user corpora remain future gates;
+- deliberately non-local evidence is expected to produce near-total abstention; 002C adaptive validation preserves that behavior, while real-user corpora remain a future gate;
 - synced contradictory heads are preserved, but there is no first-class conflict-resolution workflow;
 - Personal Strategy does not produce a shared action-strategy snapshot for Matrix, Builder, Teacher, Analysis, or provider consumers;
 - no unified Range Builder or Range Teacher exists;
@@ -672,24 +673,26 @@ After reopen or remote evidence application, the next question is recomputed fro
 Calibration may stop with an explicit reason:
 
 - `user_stopped`;
-- `time_budget_reached`;
+- `user_paused`;
+- `user_time_budget_reached`;
 - `target_coverage_reached`;
-- `low_marginal_question_value`;
-- `intended_use_ready`;
-- `all_points_directly_known`.
+- `low_remaining_question_value`;
+- `no_useful_candidates`;
+- `conflict_resolution_needed`;
+- `full_direct_coverage`.
 
 The product must not imply that completing all 169 direct questions is normal or required.
 
 ### 13.2 User goals
 
-Support resumable presets equivalent to:
+The implemented v1 resumable presets are deterministic question-count goals rather than wall-clock promises:
 
-- quick session, approximately 30 seconds;
-- focused session, approximately 5 minutes;
-- long session or no time limit;
-- a user-selected coverage goal once validated uncertainty bands exist.
+- Quick: at most 5 session questions unless the user asks for another;
+- Standard: at most 30;
+- Deep: at most 75;
+- Exhaustive: the advanced canonical 169-direct fallback.
 
-Time is checked after each durable answer. A session never discards progress when the budget ends.
+Coverage and remaining-value conditions may recommend stopping earlier after their minimum direct counts. A session never discards progress when a checkpoint is reached.
 
 ### 13.3 Meaningful metrics
 
@@ -1145,7 +1148,7 @@ Not owned:
 
 - live question selection, Matrix UI, persistence migration, sync payload, Builder, Teacher, Training, provider, Analysis.
 
-### 24.2 `RANGE-CAL-002C` — adaptive questions + stopping
+### 24.2 `RANGE-CAL-002C` — adaptive questions + stopping — COMPLETED
 
 Dependencies:
 
@@ -1155,7 +1158,7 @@ Owned outcome:
 
 - deterministic versioned question-value selector;
 - recent-question diversity and boundary targeting;
-- quick/5-minute/long budgets;
+- Quick/Standard/Deep deterministic question-count goals plus exhaustive fallback;
 - explicit stop reasons and category-based progress;
 - live Calibration application integration without a Matrix redesign.
 
@@ -1177,6 +1180,15 @@ Likely files:
 - `app/src/application/range-calibration-workspace.mjs`;
 - bounded HTML/CSS/localization/tutorial changes for budgets, reasons, and stop states;
 - focused selection, resume, performance, and Firefox acceptance tests.
+
+Implemented checkpoint:
+
+- `adaptive-rfi-question-value/v1`, `adaptive-rfi-cold-start/v1`, and `adaptive-rfi-stopping/v1`;
+- state-local ranking reuse over the 002B scope cache, one atomic accepted-answer write, and recomputation after commit/resume/sync;
+- additive backward-compatible cursor facts only; no ranking or inferred snapshot is persisted or synced;
+- bounded EN/RU/HE workspace/tutorial updates with truthful category progress and “Why this hand?” reasons;
+- equal-budget adaptive-versus-sequential validation over all eight 002B fixtures, with structured boundary/coverage gains, honest irregular abstention, and high-band safety;
+- `ADAPTIVE_RANGE_CALIBRATION_SPEC.md` and `RANGE_CAL_002C_VALIDATION_REPORT.md` own implementation detail and measured results.
 
 Not owned:
 

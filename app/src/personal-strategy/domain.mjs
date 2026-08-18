@@ -667,6 +667,39 @@ export function validateCalibrationSession(session) {
   if (!Number.isInteger(session.cursor.nextPromptIndex) || session.cursor.nextPromptIndex < 0) {
     throw new RangeError('CalibrationSession.cursor.nextPromptIndex must be non-negative');
   }
+  for (const field of [
+    'selectionPolicyVersion',
+    'stoppingPolicyVersion',
+    'coldStartPolicyVersion',
+    'calibrationIntent',
+  ]) {
+    if (session.cursor[field] !== undefined && session.cursor[field] !== null) {
+      requireString(session.cursor[field], `CalibrationSession.cursor.${field}`);
+    }
+  }
+  for (const field of ['askedHandClasses', 'skippedHandClasses', 'notSureHandClasses']) {
+    if (session.cursor[field] === undefined) continue;
+    if (!Array.isArray(session.cursor[field])
+      || session.cursor[field].some((handClass) => !isPreflopHandClass(handClass))) {
+      throw new RangeError(`CalibrationSession.cursor.${field} must contain canonical hand classes`);
+    }
+  }
+  for (const field of ['sessionQuestionCount', 'additionalQuestionAllowance']) {
+    if (session.cursor[field] !== undefined
+      && (!Number.isInteger(session.cursor[field]) || session.cursor[field] < 0)) {
+      throw new RangeError(`CalibrationSession.cursor.${field} must be non-negative`);
+    }
+  }
+  if (session.cursor.lastStopReason !== undefined
+    && session.cursor.lastStopReason !== null
+    && (typeof session.cursor.lastStopReason !== 'string' || !session.cursor.lastStopReason.trim())) {
+    throw new TypeError('CalibrationSession.cursor.lastStopReason must be null or a non-empty string');
+  }
+  if (session.cursor.forcedHandClass !== undefined
+    && session.cursor.forcedHandClass !== null
+    && !isPreflopHandClass(session.cursor.forcedHandClass)) {
+    throw new RangeError('CalibrationSession.cursor.forcedHandClass must be a canonical hand class or null');
+  }
   return session;
 }
 
@@ -681,6 +714,7 @@ export function createCalibrationSession({
   completedAt = null,
   observationIds = [],
   nextPromptIndex = 0,
+  cursor = null,
 } = {}) {
   const session = {
     schemaVersion: CALIBRATION_SESSION_SCHEMA_VERSION,
@@ -693,7 +727,10 @@ export function createCalibrationSession({
     state,
     completedAt,
     observationIds: [...observationIds],
-    cursor: { nextPromptIndex },
+    cursor: {
+      ...(cursor === null ? {} : cloneData(cursor)),
+      nextPromptIndex,
+    },
   };
   validateCalibrationSession(session);
   return deepFreeze(session);
@@ -710,6 +747,10 @@ export function updateCalibrationSession(session, changes = {}, updatedAt) {
       : null,
     observationIds: changes.observationIds ?? session.observationIds,
     nextPromptIndex: changes.nextPromptIndex ?? session.cursor.nextPromptIndex,
+    cursor: {
+      ...session.cursor,
+      ...(changes.cursor ?? {}),
+    },
     updatedAt,
   });
 }

@@ -114,26 +114,27 @@ export const TRAINING_FEEDBACK_TUTORIAL_DEFINITION = definition({
 export const CALIBRATION_SETUP_TUTORIAL_DEFINITION = definition({
   id: 'calibration.setup', workspace: 'calibration', firstUsePolicy: 'prompt',
   titleKey: 'Range Calibration setup',
-  descriptionKey: 'Define the real environment, three named modes, and objective RFI context.',
+  descriptionKey: 'Define the real environment, choose a question goal, and let current evidence guide the session.',
   steps: [
-    { id: 'overview', anchor: 'calibration-overview', titleKey: 'Teach direct observations, not inferred confidence', bodyKey: 'Range Calibration stores how you say you play specific RFI hands. The experimental sparse-inference research is not presented here as a finished user-facing range or confidence system.', placement: 'bottom' },
+    { id: 'overview', anchor: 'calibration-overview', titleKey: 'Riverline chooses informative hands', bodyKey: 'Riverline selects high-value hands from current direct evidence and the derived uncertainty model. You do not need to answer all 169; direct answers remain yours.', placement: 'bottom' },
     { id: 'empty-profile', anchor: 'calibration-empty-profile', titleKey: 'Name a real poker environment', bodyKey: 'A Profile represents a recognizable game or player-pool identity. Each Profile has exactly three discrete Modes named in your own words; they are not points on a numeric style slider.', placement: 'bottom', precondition: 'calibration-empty' },
     { id: 'profile', anchor: 'calibration-profile', titleKey: 'Name a real poker environment', bodyKey: 'A Profile represents a recognizable game or player-pool identity. Each Profile has exactly three discrete Modes named in your own words; they are not points on a numeric style slider.', placement: 'bottom', precondition: 'calibration-configured' },
     { id: 'context', anchor: 'calibration-context', titleKey: 'Choose objective RFI facts', bodyKey: 'Set environment, table size, Hero position, effective stack, and accounting for an unopened preflop range. These facts identify the direct range you are calibrating.', placement: 'right', precondition: 'calibration-configured' },
-    { id: 'start', anchor: 'calibration-start', titleKey: 'Start a bounded direct-answer session', bodyKey: 'Answer only as much as is useful and pause whenever needed. The 169-hand loop is a direct calibration fallback, not the product’s claim about an ideal learning journey.', placement: 'left', precondition: 'calibration-configured' },
+    { id: 'start', anchor: 'calibration-start', titleKey: 'Choose a session depth', bodyKey: 'Quick, Standard, and Deep are question-count goals. Pause anytime; Riverline recomputes the next question from saved evidence when you resume.', placement: 'left', precondition: 'calibration-configured' },
   ],
 });
 
 export const CALIBRATION_ANSWERS_TUTORIAL_DEFINITION = definition({
   id: 'calibration.answers', workspace: 'calibration',
   titleKey: 'Answering and exact mixes',
-  descriptionKey: 'Record dominant actions, optional exact frequencies, and resumable direct progress.',
+  descriptionKey: 'Answer adaptive questions, add exact frequencies when useful, and keep direct evidence distinct from inference.',
   steps: [
     { id: 'meaning', anchor: 'calibration-question', titleKey: 'Answer for the named Profile and Mode', bodyKey: 'The displayed hand belongs to the selected real environment, Mode, and RFI context. Choose what best represents that identity, not a generic poker answer.', placement: 'bottom', precondition: 'calibration-question-ready' },
     { id: 'quick', anchor: 'calibration-answer-actions', titleKey: 'Quick answers mean dominant action', bodyKey: 'Fold or Raise records the preferred or dominant action for this hand. It never means the action is played at a pure 100% frequency.', placement: 'bottom', precondition: 'calibration-question-ready' },
     { id: 'mix', anchor: 'calibration-exact-mix', titleKey: 'Use exact mixes only when you know them', bodyKey: 'Set Frequencies stores an explicit Fold/Raise mix separately from a quick answer. An exact tie is valid and has no dominant action.', placement: 'top', precondition: 'calibration-question-ready' },
-    { id: 'progress', anchor: 'calibration-progress', titleKey: 'Progress records direct observations', bodyKey: 'Every accepted answer is saved before the next hand. Progress counts direct answers for this exact range; it is not inferred coverage or confidence.', placement: 'top', precondition: 'calibration-question-ready' },
-    { id: 'control', anchor: 'calibration-session-controls', titleKey: 'Pause, resume, or undo safely', bodyKey: 'Pause returns to context without discarding saved answers, and Undo removes the immediately previous direct observation when available.', placement: 'bottom', precondition: 'calibration-question-ready' },
+    { id: 'reason', anchor: 'calibration-question-reason', titleKey: 'See why each hand matters', bodyKey: 'The reason points to a boundary, sparse region, nearby disagreement, or coverage gain. It explains question value, not poker confidence.', placement: 'bottom', precondition: 'calibration-question-ready' },
+    { id: 'progress', anchor: 'calibration-progress', titleKey: 'Read progress by category', bodyKey: 'Direct, inferred-high, inferred-medium, uncertain, conflicting, and unknown stay separate. These counts are coverage facts, not a confidence percentage.', placement: 'top', precondition: 'calibration-question-ready' },
+    { id: 'control', anchor: 'calibration-session-controls', titleKey: 'Pause, stop, skip, or undo safely', bodyKey: 'Pause preserves the session, Stop ends it, and Skip or I’m not sure records no poker evidence. Undo retracts the immediately previous direct observation when available.', placement: 'bottom', precondition: 'calibration-question-ready' },
   ],
 });
 

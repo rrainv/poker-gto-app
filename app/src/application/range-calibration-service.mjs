@@ -9,6 +9,12 @@ import {
   PERSONAL_STRATEGY_DATABASE_NAME,
   PROFILE_STATES,
   RANGE_OBSERVATION_STATES,
+  RFI_CALIBRATION_INTENTS,
+  RFI_CALIBRATION_STOP_REASONS,
+  RFI_COLD_START_POLICY_VERSION,
+  RFI_QUESTION_SELECTION_POLICY_VERSION,
+  RFI_STOPPING_POLICY_VERSION,
+  assessCalibrationProgress,
   calibrationContextKey,
   createCalibrationSession,
   createLocalOwnerRef,
@@ -19,6 +25,10 @@ import {
   createRangeObservation,
   createRfiCalibrationContext,
   createStrategyProfileBundle,
+  getCalibrationQuestionExplanation,
+  getNextCalibrationQuestion,
+  normalizeRfiCalibrationIntent,
+  rankCalibrationCandidates,
   rangeObservationKey,
   updateCalibrationSession,
   updateStrategyMode,
@@ -30,6 +40,11 @@ import {
   scopedPreferenceKey,
 } from '../account-identity/index.mjs';
 import { LEGACY_PERSONAL_STRATEGY_OWNER_KEY } from '../account-identity/legacy-ownership.mjs';
+
+export {
+  RFI_CALIBRATION_INTENTS,
+  RFI_CALIBRATION_STOP_REASONS,
+};
 
 export const RANGE_CALIBRATION_OWNER_KEY = LEGACY_PERSONAL_STRATEGY_OWNER_KEY;
 export const RANGE_CALIBRATION_PREFERENCES_KEY = 'riverline.rangeCalibration.preferences.v1';
@@ -334,6 +349,14 @@ function nextUnansweredPrompt(answered, startIndex = 0) {
   return null;
 }
 
+export function getSequentialCalibrationQuestion(answeredHandClasses = [], startIndex = 0) {
+  const answered = new Set(answeredHandClasses);
+  if ([...answered].some((handClass) => !PREFLOP_HAND_CLASSES.includes(handClass))) {
+    throw new RangeError('Sequential calibration answers must use canonical hand classes');
+  }
+  return nextUnansweredPrompt(answered, startIndex);
+}
+
 function requireRfiAction(actionType) {
   if (!RFI_CALIBRATION_ACTION_TYPES.has(actionType)) {
     throw new RangeError('RFI calibration supports only canonical fold and raise actions');
@@ -381,9 +404,84 @@ function recentActiveAnswer(session, leaves) {
   return null;
 }
 
-function calibrationState(
+function cursorHandHistory(session, leaves) {
+  if (Array.isArray(session.cursor.askedHandClasses)) return [...session.cursor.askedHandClasses];
+  const leavesById = new Map([...leaves.values()].map((entry) => [entry.id, entry]));
+  return session.observationIds
+    .map((id) => leavesById.get(id)?.handClass ?? null)
+    .filter(Boolean);
+}
+
+function adaptiveCursor(session, leaves, changes = {}) {
+  const askedHandClasses = changes.askedHandClasses ?? cursorHandHistory(session, leaves);
+  return {
+    ...session.cursor,
+    selectionPolicyVersion: RFI_QUESTION_SELECTION_POLICY_VERSION,
+    stoppingPolicyVersion: RFI_STOPPING_POLICY_VERSION,
+    coldStartPolicyVersion: RFI_COLD_START_POLICY_VERSION,
+    calibrationIntent: normalizeRfiCalibrationIntent(
+      changes.calibrationIntent ?? session.cursor.calibrationIntent,
+    ),
+    askedHandClasses: [...askedHandClasses],
+    skippedHandClasses: [...(changes.skippedHandClasses
+      ?? session.cursor.skippedHandClasses ?? [])],
+    notSureHandClasses: [...(changes.notSureHandClasses
+      ?? session.cursor.notSureHandClasses ?? [])],
+    sessionQuestionCount: changes.sessionQuestionCount
+      ?? session.cursor.sessionQuestionCount
+      ?? askedHandClasses.length,
+    additionalQuestionAllowance: changes.additionalQuestionAllowance
+      ?? session.cursor.additionalQuestionAllowance
+      ?? 0,
+    lastStopReason: changes.lastStopReason !== undefined
+      ? changes.lastStopReason : session.cursor.lastStopReason ?? null,
+    forcedHandClass: changes.forcedHandClass !== undefined
+      ? changes.forcedHandClass : session.cursor.forcedHandClass ?? null,
+  };
+}
+
+function candidateAsPrompt(candidate) {
+  if (!candidate) return null;
+  return Object.freeze({ ...candidate, index: candidate.canonicalIndex });
+}
+
+function calibrationSelectionOutcome(personalStrategySnapshot, session, cursor, answered) {
+  const candidateRanking = rankCalibrationCandidates(personalStrategySnapshot, {
+    recentQuestionHistory: cursor.askedHandClasses,
+    skippedHandClasses: cursor.skippedHandClasses,
+    includeSkipped: cursor.calibrationIntent === RFI_CALIBRATION_INTENTS.EXHAUSTIVE,
+  });
+  let candidate;
+  if (cursor.calibrationIntent === RFI_CALIBRATION_INTENTS.EXHAUSTIVE) {
+    const sequential = nextUnansweredPrompt(answered, cursor.nextPromptIndex);
+    candidate = sequential
+      ? candidateRanking.find((entry) => entry.handClass === sequential.handClass) ?? null
+      : null;
+  } else if (cursor.forcedHandClass) {
+    candidate = candidateRanking.find((entry) => (
+      entry.handClass === cursor.forcedHandClass && entry.ordinaryQuestionEligible
+    )) ?? getNextCalibrationQuestion(personalStrategySnapshot, { rankedCandidates: candidateRanking });
+  } else candidate = getNextCalibrationQuestion(personalStrategySnapshot, { rankedCandidates: candidateRanking });
+  const progressAssessment = assessCalibrationProgress(personalStrategySnapshot, {
+    intent: cursor.calibrationIntent,
+    rankedCandidates: candidateRanking,
+    sessionQuestionCount: cursor.sessionQuestionCount,
+    additionalQuestionAllowance: cursor.additionalQuestionAllowance,
+    userPaused: session.state === CALIBRATION_SESSION_STATES.PAUSED,
+    userStopped: session.state === CALIBRATION_SESSION_STATES.PAUSED
+      && cursor.lastStopReason === RFI_CALIBRATION_STOP_REASONS.USER_STOPPED,
+  });
+  return {
+    candidateRanking,
+    progressAssessment,
+    prompt: progressAssessment.shouldStop ? null : candidateAsPrompt(candidate),
+  };
+}
+
+async function calibrationState(
   snapshot,
   session,
+  projectionService,
   operationMetrics = null,
   suppliedLeaves = null,
   suppliedWorkspaceLeafIndexes = null,
@@ -394,11 +492,28 @@ function calibrationState(
   );
   const answered = new Map([...leaves]
     .filter(([, observation]) => observation.state === RANGE_OBSERVATION_STATES.ACTIVE));
-  const prompt = nextUnansweredPrompt(answered, session.cursor.nextPromptIndex);
+  const cursor = adaptiveCursor(session, leaves);
+  const projectionBundle = await projectionService.getProjectionBundle({
+    profileId: session.profileId,
+    modeId: session.modeId,
+    context: session.contextScope,
+  });
+  const personalStrategySnapshot = projectionBundle.snapshot;
+  const { candidateRanking, progressAssessment, prompt } = calibrationSelectionOutcome(
+    personalStrategySnapshot,
+    session,
+    cursor,
+    answered,
+  );
   return Object.freeze({
     snapshot,
     session,
     prompt,
+    questionExplanation: prompt ? getCalibrationQuestionExplanation(prompt) : null,
+    candidateRanking,
+    personalStrategySnapshot,
+    projectionSource: projectionBundle.source,
+    progressAssessment,
     availableActions: RFI_CALIBRATION_ACTIONS,
     progress: Object.freeze({
       answered: answered.size,
@@ -533,6 +648,59 @@ export function createRangeCalibrationApplication({
     }
   }
 
+  async function settleCalibrationSession(
+    snapshot,
+    session,
+    operationMetrics = null,
+    suppliedLeaves = null,
+    suppliedWorkspaceLeafIndexes = null,
+  ) {
+    const leaves = suppliedLeaves ?? currentDirectLeafMap(snapshot, session);
+    let state = await calibrationState(
+      snapshot,
+      session,
+      projectionService,
+      operationMetrics,
+      leaves,
+      suppliedWorkspaceLeafIndexes,
+    );
+    if (session.state === CALIBRATION_SESSION_STATES.PAUSED) return state;
+    const desiredState = state.progressAssessment.shouldStop
+      ? CALIBRATION_SESSION_STATES.COMPLETED
+      : CALIBRATION_SESSION_STATES.ACTIVE;
+    const desiredNextPromptIndex = state.prompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length;
+    const cursor = adaptiveCursor(session, leaves, {
+      lastStopReason: state.progressAssessment.shouldStop
+        ? state.progressAssessment.stopReason : null,
+      forcedHandClass: state.prompt?.handClass === session.cursor.forcedHandClass
+        ? session.cursor.forcedHandClass : null,
+    });
+    cursor.nextPromptIndex = desiredNextPromptIndex;
+    const cursorChanged = JSON.stringify(cursor) !== JSON.stringify(session.cursor);
+    if (desiredState === session.state
+      && desiredNextPromptIndex === session.cursor.nextPromptIndex
+      && !cursorChanged) return state;
+    const updatedAt = timestampNotBefore(clock, session.updatedAt);
+    const settledSession = updateCalibrationSession(session, {
+      state: desiredState,
+      completedAt: desiredState === CALIBRATION_SESSION_STATES.COMPLETED ? updatedAt : null,
+      nextPromptIndex: desiredNextPromptIndex,
+      cursor,
+    }, updatedAt);
+    const metadata = await repository.saveCalibrationSession(settledSession);
+    await notifyLocalMutation([settledSession]);
+    const settledSnapshot = snapshotWithSession(snapshot, settledSession, metadata);
+    state = await calibrationState(
+      settledSnapshot,
+      settledSession,
+      projectionService,
+      operationMetrics,
+      leaves,
+      state.workspaceLeafIndexes,
+    );
+    return state;
+  }
+
   function profileBundleEntity(profile, modes) {
     return Object.freeze({
       syncEntityType: 'profile_bundle', id: profile.id,
@@ -609,7 +777,13 @@ export function createRangeCalibrationApplication({
     return Object.freeze({ activeModeId, context: normalizedContext });
   }
 
-  async function startOrResumeSession({ selectedProfileId, activeModeId, context }) {
+  async function startOrResumeSession({
+    selectedProfileId,
+    activeModeId,
+    context,
+    intent = null,
+    continueAfterStop = false,
+  }) {
     const operationStartedAt = performanceNow();
     const normalizedContext = normalizeRfiContextSelection(context, {
       environmentDefault: context?.environment ?? CALIBRATION_ENVIRONMENTS.HOME,
@@ -633,6 +807,9 @@ export function createRangeCalibrationApplication({
     let session = matchingSession(snapshot, { profileId: selectedProfileId, modeId: activeModeId, context: contextScope });
     const requiredState = firstPrompt ? CALIBRATION_SESSION_STATES.ACTIVE : CALIBRATION_SESSION_STATES.COMPLETED;
     const updatedAt = timestampNotBefore(clock, session?.updatedAt ?? null);
+    const resolvedIntent = normalizeRfiCalibrationIntent(
+      intent ?? session?.cursor?.calibrationIntent ?? RFI_CALIBRATION_INTENTS.STANDARD,
+    );
     let sessionChanged = false;
     if (!session) {
       session = createCalibrationSession({
@@ -644,24 +821,54 @@ export function createRangeCalibrationApplication({
         state: requiredState,
         completedAt: requiredState === CALIBRATION_SESSION_STATES.COMPLETED ? updatedAt : null,
         nextPromptIndex: firstPrompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length,
+        cursor: {
+          selectionPolicyVersion: RFI_QUESTION_SELECTION_POLICY_VERSION,
+          stoppingPolicyVersion: RFI_STOPPING_POLICY_VERSION,
+          coldStartPolicyVersion: RFI_COLD_START_POLICY_VERSION,
+          calibrationIntent: resolvedIntent,
+          askedHandClasses: [],
+          skippedHandClasses: [],
+          notSureHandClasses: [],
+          sessionQuestionCount: 0,
+          additionalQuestionAllowance: 0,
+          lastStopReason: null,
+          forcedHandClass: null,
+        },
       });
       const metadata = await repository.saveCalibrationSession(session);
       snapshot = snapshotWithSession(snapshot, session, metadata);
       sessionChanged = true;
-    } else if (session.state !== requiredState
-      || (firstPrompt && session.cursor.nextPromptIndex !== firstPrompt.index)) {
+    } else {
+      const leaves = currentDirectLeafMap(snapshot, session);
+      const cursor = adaptiveCursor(session, leaves, {
+        calibrationIntent: resolvedIntent,
+        additionalQuestionAllowance: continueAfterStop
+          && requiredState === CALIBRATION_SESSION_STATES.ACTIVE
+          && session.state === CALIBRATION_SESSION_STATES.COMPLETED
+          ? Math.max(1, session.cursor.additionalQuestionAllowance ?? 0)
+          : session.cursor.additionalQuestionAllowance ?? 0,
+        lastStopReason: null,
+      });
       session = updateCalibrationSession(session, {
         state: requiredState,
         completedAt: requiredState === CALIBRATION_SESSION_STATES.COMPLETED ? updatedAt : null,
         nextPromptIndex: firstPrompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length,
+        cursor,
       }, updatedAt);
-      const metadata = await repository.saveCalibrationSession(session);
-      snapshot = snapshotWithSession(snapshot, session, metadata);
-      sessionChanged = true;
+      const previous = matchingSession(snapshot, {
+        profileId: selectedProfileId,
+        modeId: activeModeId,
+        context: contextScope,
+      });
+      if (JSON.stringify(previous) !== JSON.stringify(session)) {
+        const metadata = await repository.saveCalibrationSession(session);
+        snapshot = snapshotWithSession(snapshot, session, metadata);
+        sessionChanged = true;
+      } else session = previous;
     }
     if (sessionChanged) await notifyLocalMutation([session]);
     const durableSession = snapshot.calibrationSessions.find((entry) => entry.id === session.id);
-    return calibrationState(snapshot, durableSession, Object.freeze({
+    return settleCalibrationSession(snapshot, durableSession, Object.freeze({
       totalOperationMs: performanceNow() - operationStartedAt,
       repositoryTransactionMs: 0,
       nextQuestionResolutionMs: 0,
@@ -706,13 +913,46 @@ export function createRangeCalibrationApplication({
       .filter(([, observation]) => observation.state === RANGE_OBSERVATION_STATES.ACTIVE));
     answered.set(observation.handClass, observation);
     leaves.set(observation.handClass, observation);
-    const nextPrompt = nextUnansweredPrompt(answered, state.prompt.index + 1);
-    const completed = nextPrompt === null;
+    const cursor = adaptiveCursor(state.session, leaves, {
+      askedHandClasses: [
+        ...(state.session.cursor.askedHandClasses ?? []),
+        state.prompt.handClass,
+      ],
+      sessionQuestionCount: (state.session.cursor.sessionQuestionCount ?? 0) + 1,
+      additionalQuestionAllowance: Math.max(
+        0,
+        (state.session.cursor.additionalQuestionAllowance ?? 0) - 1,
+      ),
+      lastStopReason: null,
+      forcedHandClass: null,
+    });
+    cursor.nextPromptIndex = Math.min(
+      state.prompt.index + 1,
+      RANGE_CALIBRATION_QUESTION_ORDER.length,
+    );
+    const previewSnapshot = await projectionService.previewStrategySnapshot({
+      profileId: observation.profileId,
+      modeId: observation.modeId,
+      context: observation.context,
+    }, {
+      additionalRangeObservations: [observation],
+      source: state.projectionSource,
+    });
+    const outcome = calibrationSelectionOutcome(
+      previewSnapshot,
+      state.session,
+      cursor,
+      answered,
+    );
+    const completed = outcome.progressAssessment.shouldStop;
+    cursor.nextPromptIndex = outcome.prompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length;
+    cursor.lastStopReason = completed ? outcome.progressAssessment.stopReason : null;
     const session = updateCalibrationSession(state.session, {
       state: completed ? CALIBRATION_SESSION_STATES.COMPLETED : CALIBRATION_SESSION_STATES.ACTIVE,
       completedAt: completed ? createdAt : null,
       observationIds: [...state.session.observationIds, observation.id],
-      nextPromptIndex: nextPrompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length,
+      nextPromptIndex: cursor.nextPromptIndex,
+      cursor,
     }, createdAt);
     const repositoryStartedAt = performanceNow();
     const metadata = await repository.saveCalibrationAnswer({
@@ -736,7 +976,14 @@ export function createRangeCalibrationApplication({
       state.workspaceLeafIndexes,
     );
     const durableSession = session;
-    const nextState = calibrationState(snapshot, durableSession, null, leaves, state.workspaceLeafIndexes);
+    const nextState = await calibrationState(
+      snapshot,
+      durableSession,
+      projectionService,
+      null,
+      leaves,
+      state.workspaceLeafIndexes,
+    );
     const nextQuestionResolutionMs = performanceNow() - resolutionStartedAt;
     return Object.freeze({
       ...nextState,
@@ -772,10 +1019,47 @@ export function createRangeCalibrationApplication({
       createdAt,
     });
     const promptIndex = RANGE_CALIBRATION_QUESTION_ORDER.indexOf(target.handClass);
+    const askedHandClasses = [...(state.session.cursor.askedHandClasses ?? [])];
+    const askedIndex = askedHandClasses.lastIndexOf(target.handClass);
+    if (askedIndex >= 0) askedHandClasses.splice(askedIndex, 1);
+    const cursor = adaptiveCursor(state.session, leaves, {
+      askedHandClasses,
+      additionalQuestionAllowance: Math.max(
+        1,
+        state.session.cursor.additionalQuestionAllowance ?? 0,
+      ),
+      lastStopReason: null,
+      forcedHandClass: target.handClass,
+    });
+    cursor.nextPromptIndex = promptIndex;
+    leaves.set(retraction.handClass, retraction);
+    const answered = new Map([...leaves]
+      .filter(([, observation]) => observation.state === RANGE_OBSERVATION_STATES.ACTIVE));
+    const previewSnapshot = await projectionService.previewStrategySnapshot({
+      profileId: retraction.profileId,
+      modeId: retraction.modeId,
+      context: retraction.context,
+    }, {
+      additionalRangeObservations: [retraction],
+      source: state.projectionSource,
+    });
+    const outcome = calibrationSelectionOutcome(
+      previewSnapshot,
+      state.session,
+      cursor,
+      answered,
+    );
+    cursor.nextPromptIndex = outcome.prompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length;
+    cursor.lastStopReason = outcome.progressAssessment.shouldStop
+      ? outcome.progressAssessment.stopReason : null;
     const session = updateCalibrationSession(state.session, {
-      state: CALIBRATION_SESSION_STATES.ACTIVE,
+      state: outcome.progressAssessment.shouldStop
+        ? CALIBRATION_SESSION_STATES.COMPLETED
+        : CALIBRATION_SESSION_STATES.ACTIVE,
+      completedAt: outcome.progressAssessment.shouldStop ? createdAt : null,
       observationIds: [...state.session.observationIds, retraction.id],
-      nextPromptIndex: promptIndex,
+      nextPromptIndex: cursor.nextPromptIndex,
+      cursor,
     }, createdAt);
     const repositoryStartedAt = performanceNow();
     const metadata = await repository.saveCalibrationAnswer({
@@ -798,8 +1082,14 @@ export function createRangeCalibrationApplication({
       state.workspaceLeafIndexes,
     );
     const durableSession = session;
-    leaves.set(retraction.handClass, retraction);
-    const nextState = calibrationState(snapshot, durableSession, null, leaves, state.workspaceLeafIndexes);
+    const nextState = await calibrationState(
+      snapshot,
+      durableSession,
+      projectionService,
+      null,
+      leaves,
+      state.workspaceLeafIndexes,
+    );
     return Object.freeze({
       ...nextState,
       undoneObservation: target,
@@ -811,18 +1101,151 @@ export function createRangeCalibrationApplication({
     });
   }
 
-  async function pauseSession(activeState) {
+  async function pauseSession(activeState, {
+    stopReason = RFI_CALIBRATION_STOP_REASONS.USER_PAUSED,
+  } = {}) {
     const state = requireCalibrationState(activeState);
     if (state.session.state !== CALIBRATION_SESSION_STATES.ACTIVE) return state;
     const updatedAt = timestampNotBefore(clock, state.session.updatedAt);
+    const leaves = new Map(state.scopeLeaves.map((entry) => [entry.handClass, entry]));
+    const cursor = adaptiveCursor(state.session, leaves, { lastStopReason: stopReason });
     const session = updateCalibrationSession(state.session, {
       state: CALIBRATION_SESSION_STATES.PAUSED,
+      cursor,
     }, updatedAt);
     const metadata = await repository.saveCalibrationSession(session);
     await notifyLocalMutation([session]);
     const snapshot = snapshotWithSession(state.snapshot, session, metadata);
     const durableSession = session;
-    return calibrationState(snapshot, durableSession);
+    return calibrationState(snapshot, durableSession, projectionService);
+  }
+
+  async function stopSession(activeState) {
+    return pauseSession(activeState, {
+      stopReason: RFI_CALIBRATION_STOP_REASONS.USER_STOPPED,
+    });
+  }
+
+  async function skipCalibrationQuestion(activeState, { notSure = false } = {}) {
+    const operationStartedAt = performanceNow();
+    const state = requireCalibrationState(activeState);
+    if (state.session.state !== CALIBRATION_SESSION_STATES.ACTIVE || !state.prompt) {
+      throw new RangeError('CalibrationSession is not accepting skips');
+    }
+    const leaves = new Map(state.scopeLeaves.map((entry) => [entry.handClass, entry]));
+    const skippedHandClasses = [...new Set([
+      ...(state.session.cursor.skippedHandClasses ?? []),
+      state.prompt.handClass,
+    ])];
+    const notSureHandClasses = notSure
+      ? [...new Set([
+        ...(state.session.cursor.notSureHandClasses ?? []),
+        state.prompt.handClass,
+      ])]
+      : [...(state.session.cursor.notSureHandClasses ?? [])];
+    const cursor = adaptiveCursor(state.session, leaves, {
+      askedHandClasses: [
+        ...(state.session.cursor.askedHandClasses ?? []),
+        state.prompt.handClass,
+      ],
+      skippedHandClasses,
+      notSureHandClasses,
+      sessionQuestionCount: (state.session.cursor.sessionQuestionCount ?? 0) + 1,
+      additionalQuestionAllowance: Math.max(
+        0,
+        (state.session.cursor.additionalQuestionAllowance ?? 0) - 1,
+      ),
+      lastStopReason: null,
+      forcedHandClass: null,
+    });
+    const answered = new Map([...leaves]
+      .filter(([, observation]) => observation.state === RANGE_OBSERVATION_STATES.ACTIVE));
+    cursor.nextPromptIndex = Math.min(
+      state.prompt.index + 1,
+      RANGE_CALIBRATION_QUESTION_ORDER.length,
+    );
+    const outcome = calibrationSelectionOutcome(
+      state.personalStrategySnapshot,
+      state.session,
+      cursor,
+      answered,
+    );
+    cursor.nextPromptIndex = outcome.prompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length;
+    cursor.lastStopReason = outcome.progressAssessment.shouldStop
+      ? outcome.progressAssessment.stopReason : null;
+    const updatedAt = timestampNotBefore(clock, state.session.updatedAt);
+    const session = updateCalibrationSession(state.session, {
+      state: outcome.progressAssessment.shouldStop
+        ? CALIBRATION_SESSION_STATES.COMPLETED
+        : CALIBRATION_SESSION_STATES.ACTIVE,
+      completedAt: outcome.progressAssessment.shouldStop ? updatedAt : null,
+      nextPromptIndex: cursor.nextPromptIndex,
+      cursor,
+    }, updatedAt);
+    const metadata = await repository.saveCalibrationSession(session);
+    await notifyLocalMutation([session]);
+    const snapshot = snapshotWithSession(state.snapshot, session, metadata);
+    const nextState = await calibrationState(
+      snapshot,
+      session,
+      projectionService,
+      null,
+      leaves,
+      state.workspaceLeafIndexes,
+    );
+    return Object.freeze({
+      ...nextState,
+      skippedQuestion: Object.freeze({
+        handClass: state.prompt.handClass,
+        reason: notSure ? 'not_sure' : 'skipped',
+      }),
+      operationMetrics: Object.freeze({
+        repositoryTransactionMs: 0,
+        nextQuestionResolutionMs: 0,
+        totalOperationMs: performanceNow() - operationStartedAt,
+      }),
+    });
+  }
+
+  async function requestAdditionalQuestion(activeState) {
+    const state = requireCalibrationState(activeState);
+    const leaves = new Map(state.scopeLeaves.map((entry) => [entry.handClass, entry]));
+    const updatedAt = timestampNotBefore(clock, state.session.updatedAt);
+    const cursor = adaptiveCursor(state.session, leaves, {
+      additionalQuestionAllowance: (state.session.cursor.additionalQuestionAllowance ?? 0) + 1,
+      lastStopReason: null,
+      forcedHandClass: null,
+    });
+    const answered = new Map([...leaves]
+      .filter(([, observation]) => observation.state === RANGE_OBSERVATION_STATES.ACTIVE));
+    const outcome = calibrationSelectionOutcome(
+      state.personalStrategySnapshot,
+      { ...state.session, state: CALIBRATION_SESSION_STATES.ACTIVE },
+      cursor,
+      answered,
+    );
+    cursor.nextPromptIndex = outcome.prompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length;
+    cursor.lastStopReason = outcome.progressAssessment.shouldStop
+      ? outcome.progressAssessment.stopReason : null;
+    const session = updateCalibrationSession(state.session, {
+      state: outcome.progressAssessment.shouldStop
+        ? CALIBRATION_SESSION_STATES.COMPLETED
+        : CALIBRATION_SESSION_STATES.ACTIVE,
+      completedAt: outcome.progressAssessment.shouldStop ? updatedAt : null,
+      nextPromptIndex: cursor.nextPromptIndex,
+      cursor,
+    }, updatedAt);
+    const metadata = await repository.saveCalibrationSession(session);
+    await notifyLocalMutation([session]);
+    const snapshot = snapshotWithSession(state.snapshot, session, metadata);
+    return calibrationState(
+      snapshot,
+      session,
+      projectionService,
+      null,
+      leaves,
+      state.workspaceLeafIndexes,
+    );
   }
 
   return Object.freeze({
@@ -836,6 +1259,9 @@ export function createRangeCalibrationApplication({
     answerCalibrationQuestion,
     undoPreviousAnswer,
     pauseSession,
+    stopSession,
+    skipCalibrationQuestion,
+    requestAdditionalQuestion,
     getEvidenceView: (scope) => projectionService.getEvidenceView(scope),
     getStrategyEstimate: (scope, handClass) => (
       projectionService.getStrategyEstimate(scope, handClass)

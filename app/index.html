@@ -1598,7 +1598,14 @@
                 <div class="calibration-section-heading"><div><p class="calibration-eyebrow" data-i18n="Calibration session">Calibration session</p><h2 id="calibrationSessionTitle" data-i18n="Ready to calibrate this range">Ready to calibrate this range</h2></div></div>
                 <div class="calibration-ready-state">
                   <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 12h28v24H10z"/><path d="M17 18h14M17 24h14M17 30h8"/></svg>
-                  <p data-i18n="Choose one hand at a time. Every accepted answer is saved before the next hand appears.">Choose one hand at a time. Every accepted answer is saved before the next hand appears.</p>
+                  <p data-i18n="Riverline chooses informative hands first. Every accepted answer is saved before the next hand appears.">Riverline chooses informative hands first. Every accepted answer is saved before the next hand appears.</p>
+                  <fieldset id="calibrationIntentOptions" class="calibration-intent-options">
+                    <legend data-i18n="Session depth">Session depth</legend>
+                    <label><input type="radio" name="calibration-intent" value="quick"><span><strong data-i18n="Quick">Quick</strong><small data-i18n="About 5 questions">About 5 questions</small></span></label>
+                    <label><input type="radio" name="calibration-intent" value="standard" checked><span><strong data-i18n="Standard">Standard</strong><small data-i18n="About 30 questions">About 30 questions</small></span></label>
+                    <label><input type="radio" name="calibration-intent" value="deep"><span><strong data-i18n="Deep">Deep</strong><small data-i18n="Up to 75 questions">Up to 75 questions</small></span></label>
+                  </fieldset>
+                  <small class="calibration-intent-note" data-i18n="Question counts are session goals, not time promises.">Question counts are session goals, not time promises.</small>
                   <button id="calibrationStartQuestions" class="ui-button ui-button--primary" type="button" data-i18n="Start questions">Start questions</button>
                 </div>
               </section>
@@ -1622,7 +1629,10 @@
                 <strong id="calibrationQuestionIdentity" dir="auto"></strong>
                 <span id="calibrationQuestionSpot" class="poker-data-token" dir="ltr"></span>
               </div>
-              <button id="calibrationPauseQuestions" class="ui-button ui-button--secondary" type="button" data-i18n="Pause questions" data-tutorial-anchor="calibration-session-controls">Pause questions</button>
+              <div class="calibration-session-actions" data-tutorial-anchor="calibration-session-controls">
+                <button id="calibrationPauseQuestions" class="ui-button ui-button--secondary" type="button" data-i18n="Pause">Pause</button>
+                <button id="calibrationStopQuestions" class="ui-button ui-button--tertiary" type="button" data-i18n="Stop for now">Stop for now</button>
+              </div>
             </header>
 
             <div id="calibrationActiveQuestion" class="calibration-active-question">
@@ -1630,21 +1640,37 @@
               <div id="calibrationQuestionRegion" class="calibration-question-region" tabindex="-1" aria-labelledby="calibrationQuestionTitle" aria-describedby="calibrationQuestionKind calibrationQuestionPrompt">
                 <span id="calibrationQuestionKind" class="calibration-hand-kind" data-i18n="Pair">Pair</span>
                 <h2 id="calibrationQuestionTitle" class="calibration-hand-class poker-data-token" dir="ltr" aria-live="polite">AA</h2>
+                <div class="calibration-question-reason" data-tutorial-anchor="calibration-question-reason">
+                  <span data-i18n="Why this hand?">Why this hand?</span>
+                  <strong id="calibrationQuestionReason" data-i18n="Samples a new hand family">Samples a new hand family</strong>
+                </div>
                 <p id="calibrationQuestionPrompt" data-i18n="What is your dominant action?">What is your dominant action?</p>
                 <div class="calibration-action-grid" role="group" aria-label="Dominant action" data-i18n-aria-label="Dominant action" data-tutorial-anchor="calibration-answer-actions">
                   <button id="calibrationActionFold" class="calibration-action-button calibration-action-button--fold" type="button" data-calibration-action="fold"><span data-i18n="Fold">Fold</span><kbd>F</kbd></button>
                   <button id="calibrationActionRaise" class="calibration-action-button calibration-action-button--raise" type="button" data-calibration-action="raise"><span data-i18n="Raise">Raise</span><kbd>R</kbd></button>
                 </div>
-                <button id="calibrationOpenMix" class="ui-button ui-button--tertiary calibration-mix-trigger" type="button" data-i18n="Set frequencies" data-tutorial-anchor="calibration-exact-mix">Set frequencies</button>
+                <div class="calibration-secondary-answer-actions">
+                  <button id="calibrationOpenMix" class="ui-button ui-button--tertiary calibration-mix-trigger" type="button" data-i18n="Set frequencies" data-tutorial-anchor="calibration-exact-mix">Set frequencies</button>
+                  <button id="calibrationSkipQuestion" class="ui-button ui-button--tertiary" type="button" data-i18n="Skip">Skip</button>
+                  <button id="calibrationNotSure" class="ui-button ui-button--tertiary" type="button" data-i18n="I’m not sure">I’m not sure</button>
+                </div>
                 <p id="calibrationAnswerError" class="control-message control-message--invalid calibration-answer-error" role="alert" aria-live="assertive"></p>
                 <button id="calibrationRetryAnswer" class="ui-button ui-button--secondary" type="button" data-i18n="Retry save" hidden>Retry save</button>
               </div>
 
               <footer class="calibration-question-footer" data-tutorial-anchor="calibration-progress">
                 <div class="calibration-progress-copy">
-                  <strong id="calibrationQuestionProgress" class="poker-data-token">0 / 169</strong>
-                  <span id="calibrationQuestionRemaining" data-i18n="{count} remaining">169 remaining</span>
+                  <strong id="calibrationQuestionProgress" class="poker-data-token">0 direct</strong>
+                  <span id="calibrationQuestionRemaining" data-i18n="{count} high-value questions remain">0 high-value questions remain</span>
                   <progress id="calibrationProgressBar" max="169" value="0" aria-label="Direct calibration progress" data-i18n-aria-label="Direct calibration progress"></progress>
+                  <dl class="calibration-model-progress" aria-label="Calibration model progress" data-i18n-aria-label="Calibration model progress">
+                    <div><dt data-i18n="Direct">Direct</dt><dd id="calibrationDirectCount">0</dd></div>
+                    <div><dt data-i18n="Inferred high">Inferred high</dt><dd id="calibrationInferredHighCount">0</dd></div>
+                    <div><dt data-i18n="Inferred medium">Inferred medium</dt><dd id="calibrationInferredMediumCount">0</dd></div>
+                    <div><dt data-i18n="Uncertain">Uncertain</dt><dd id="calibrationUncertainCount">0</dd></div>
+                    <div><dt data-i18n="Unknown">Unknown</dt><dd id="calibrationUnknownCount">169</dd></div>
+                    <div><dt data-i18n="Conflicting">Conflicting</dt><dd id="calibrationConflictingCount">0</dd></div>
+                  </dl>
                 </div>
                 <div id="calibrationPreviousAnswer" class="calibration-previous-answer" hidden>
                   <span><span data-i18n="Previous">Previous</span>: <b id="calibrationPreviousHand" class="poker-data-token" dir="ltr"></b> — <span id="calibrationPreviousAction"></span></span>
@@ -1654,10 +1680,14 @@
             </div>
 
             <div id="calibrationCompleteState" class="calibration-complete-state" hidden>
-              <p class="calibration-eyebrow" data-i18n="Direct answers complete">Direct answers complete</p>
-              <h2 data-i18n="Direct RFI calibration complete for this spot.">Direct RFI calibration complete for this spot.</h2>
-              <p class="poker-data-token">169 / 169</p>
-              <button id="calibrationReturnToContext" class="ui-button ui-button--primary" type="button" data-i18n="Return to context">Return to context</button>
+              <p class="calibration-eyebrow" data-i18n="Session checkpoint">Session checkpoint</p>
+              <h2 id="calibrationCompleteTitle" data-i18n="Range mapped enough for this session">Range mapped enough for this session</h2>
+              <p id="calibrationCompleteSummary" class="calibration-complete-summary"></p>
+              <p id="calibrationCompleteCounts" class="poker-data-token"></p>
+              <div class="calibration-complete-actions">
+                <button id="calibrationAskAnother" class="ui-button ui-button--primary" type="button" data-i18n="Ask another">Ask another</button>
+                <button id="calibrationReturnToContext" class="ui-button ui-button--secondary" type="button" data-i18n="Return to context">Return to context</button>
+              </div>
             </div>
           </section>
 

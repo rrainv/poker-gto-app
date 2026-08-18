@@ -1394,7 +1394,10 @@ export function createPersonalStrategyRepository({
             state: completed ? 'completed' : storedSession.value.state === 'paused' ? 'paused' : 'active',
             completedAt: completed ? updatedAt : null,
             observationIds,
-            cursor: { nextPromptIndex: completed ? PREFLOP_HAND_CLASSES.length : nextPromptIndex },
+            cursor: {
+              ...cloneData(storedSession.value.cursor),
+              nextPromptIndex: completed ? PREFLOP_HAND_CLASSES.length : nextPromptIndex,
+            },
           }));
         }
         return commitMetadata(transaction, metadata);

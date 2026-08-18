@@ -47,11 +47,12 @@ export function createPersonalStrategyProjectionService({ repository } = {}) {
     });
     const current = cache.get(key);
     if (current?.evidenceView.evidenceFingerprint === view.evidenceFingerprint) {
+      current.source = source;
       metrics.cacheHits += 1;
       return current;
     }
     metrics.evidenceViewBuilds += 1;
-    const next = { evidenceView: view, estimates: new Map(), snapshot: null };
+    const next = { evidenceView: view, estimates: new Map(), snapshot: null, source };
     cache.set(key, next);
     return next;
   }
@@ -87,6 +88,39 @@ export function createPersonalStrategyProjectionService({ repository } = {}) {
     return entry.snapshot;
   }
 
+  async function getProjectionBundle(scope) {
+    const entry = await entryFor(scope);
+    if (!entry.snapshot) {
+      entry.snapshot = createPersonalStrategySnapshot(entry.evidenceView);
+      entry.snapshot.estimates.forEach((estimate) => entry.estimates.set(estimate.handClass, estimate));
+      metrics.snapshotBuilds += 1;
+    } else metrics.cacheHits += 1;
+    return Object.freeze({
+      evidenceView: entry.evidenceView,
+      snapshot: entry.snapshot,
+      source: Object.freeze({
+        rangeObservations: Object.freeze([...entry.source.rangeObservations]),
+        trainingObservations: Object.freeze([...entry.source.trainingObservations]),
+      }),
+    });
+  }
+
+  async function previewStrategySnapshot(scope, {
+    additionalRangeObservations = [],
+    additionalTrainingObservations = [],
+    source: suppliedSource = null,
+  } = {}) {
+    const source = suppliedSource ?? await repository.loadEvidenceScope(scope);
+    const view = createPersonalStrategyEvidenceView({
+      profileId: scope.profileId,
+      modeId: scope.modeId,
+      context: scope.context,
+      rangeObservations: [...source.rangeObservations, ...additionalRangeObservations],
+      trainingObservations: [...source.trainingObservations, ...additionalTrainingObservations],
+    });
+    return createPersonalStrategySnapshot(view);
+  }
+
   function invalidateScope(scope) {
     const deleted = cache.delete(scopeCacheKey(scope));
     if (deleted) metrics.invalidations += 1;
@@ -98,6 +132,8 @@ export function createPersonalStrategyProjectionService({ repository } = {}) {
     getEvidenceView,
     getStrategyEstimate,
     getStrategySnapshot,
+    getProjectionBundle,
+    previewStrategySnapshot,
     async getInferenceSupport(scope, handClass) {
       return (await getStrategyEstimate(scope, handClass)).support;
     },

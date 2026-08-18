@@ -500,6 +500,49 @@
     'Close tutorials': 'סגירת רשימת ההדרכות',
   });
 
+  Object.assign(en, {
+    'Define the real environment, choose a question goal, and let current evidence guide the session.': 'Define the real environment, choose a question goal, and let current evidence guide the session.',
+    'Riverline chooses informative hands': 'Riverline chooses informative hands',
+    'Riverline selects high-value hands from current direct evidence and the derived uncertainty model. You do not need to answer all 169; direct answers remain yours.': 'Riverline selects high-value hands from current direct evidence and the derived uncertainty model. You do not need to answer all 169; direct answers remain yours.',
+    'Choose a session depth': 'Choose a session depth',
+    'Quick, Standard, and Deep are question-count goals. Pause anytime; Riverline recomputes the next question from saved evidence when you resume.': 'Quick, Standard, and Deep are question-count goals. Pause anytime; Riverline recomputes the next question from saved evidence when you resume.',
+    'Answer adaptive questions, add exact frequencies when useful, and keep direct evidence distinct from inference.': 'Answer adaptive questions, add exact frequencies when useful, and keep direct evidence distinct from inference.',
+    'See why each hand matters': 'See why each hand matters',
+    'The reason points to a boundary, sparse region, nearby disagreement, or coverage gain. It explains question value, not poker confidence.': 'The reason points to a boundary, sparse region, nearby disagreement, or coverage gain. It explains question value, not poker confidence.',
+    'Read progress by category': 'Read progress by category',
+    'Direct, inferred-high, inferred-medium, uncertain, conflicting, and unknown stay separate. These counts are coverage facts, not a confidence percentage.': 'Direct, inferred-high, inferred-medium, uncertain, conflicting, and unknown stay separate. These counts are coverage facts, not a confidence percentage.',
+    'Pause, stop, skip, or undo safely': 'Pause, stop, skip, or undo safely',
+    'Pause preserves the session, Stop ends it, and Skip or I’m not sure records no poker evidence. Undo retracts the immediately previous direct observation when available.': 'Pause preserves the session, Stop ends it, and Skip or I’m not sure records no poker evidence. Undo retracts the immediately previous direct observation when available.',
+  });
+  Object.assign(ru, {
+    'Define the real environment, choose a question goal, and let current evidence guide the session.': 'Определите реальную игровую среду, выберите объём вопросов и позвольте текущим данным направлять сессию.',
+    'Riverline chooses informative hands': 'Riverline выбирает информативные руки',
+    'Riverline selects high-value hands from current direct evidence and the derived uncertainty model. You do not need to answer all 169; direct answers remain yours.': 'Riverline выбирает наиболее полезные руки по текущим прямым ответам и производной модели неопределённости. Не нужно отвечать на все 169 рук; ваши прямые ответы остаются вашими.',
+    'Choose a session depth': 'Выберите объём сессии',
+    'Quick, Standard, and Deep are question-count goals. Pause anytime; Riverline recomputes the next question from saved evidence when you resume.': 'Quick, Standard и Deep задают целевое число вопросов. Сессию можно приостановить в любой момент; при продолжении Riverline заново выбирает следующий вопрос по сохранённым данным.',
+    'Answer adaptive questions, add exact frequencies when useful, and keep direct evidence distinct from inference.': 'Отвечайте на адаптивные вопросы, при необходимости задавайте точные частоты и отличайте прямые данные от вывода.',
+    'See why each hand matters': 'Узнайте, почему важна каждая рука',
+    'The reason points to a boundary, sparse region, nearby disagreement, or coverage gain. It explains question value, not poker confidence.': 'Причина указывает на границу, разреженную область, расхождение соседей или прирост покрытия. Она объясняет ценность вопроса, а не уверенность в покерном решении.',
+    'Read progress by category': 'Читайте прогресс по категориям',
+    'Direct, inferred-high, inferred-medium, uncertain, conflicting, and unknown stay separate. These counts are coverage facts, not a confidence percentage.': 'Прямые, выведенные с высокой и средней опорой, неопределённые, конфликтующие и неизвестные руки показаны отдельно. Это данные о покрытии, а не процент уверенности.',
+    'Pause, stop, skip, or undo safely': 'Безопасно ставьте на паузу, завершайте, пропускайте и отменяйте',
+    'Pause preserves the session, Stop ends it, and Skip or I’m not sure records no poker evidence. Undo retracts the immediately previous direct observation when available.': 'Пауза сохраняет сессию, Stop завершает её, а Skip и «Не уверен» не записывают покерных данных. Undo отзывает последний прямой ответ, если он есть.',
+  });
+  Object.assign(he, {
+    'Define the real environment, choose a question goal, and let current evidence guide the session.': 'הגדירו סביבת משחק אמיתית, בחרו יעד שאלות ותנו לנתונים הקיימים לכוון את הסשן.',
+    'Riverline chooses informative hands': 'Riverline בוחרת ידיים אינפורמטיביות',
+    'Riverline selects high-value hands from current direct evidence and the derived uncertainty model. You do not need to answer all 169; direct answers remain yours.': 'Riverline בוחרת ידיים בעלות ערך גבוה לפי התשובות הישירות הקיימות ומודל אי־הוודאות הנגזר. אין צורך לענות על כל 169 הידיים; התשובות הישירות נשארות שלכם.',
+    'Choose a session depth': 'בחרו את עומק הסשן',
+    'Quick, Standard, and Deep are question-count goals. Pause anytime; Riverline recomputes the next question from saved evidence when you resume.': 'Quick, Standard ו־Deep הם יעדים למספר שאלות. אפשר להשהות בכל עת; בחזרה לסשן Riverline מחשבת מחדש את השאלה הבאה לפי הנתונים השמורים.',
+    'Answer adaptive questions, add exact frequencies when useful, and keep direct evidence distinct from inference.': 'ענו על שאלות מסתגלות, הוסיפו תדירויות מדויקות כשזה מועיל ושמרו על ההפרדה בין נתונים ישירים להסקה.',
+    'See why each hand matters': 'ראו למה כל יד חשובה',
+    'The reason points to a boundary, sparse region, nearby disagreement, or coverage gain. It explains question value, not poker confidence.': 'הסיבה מצביעה על גבול, אזור דל, מחלוקת בין שכנים או שיפור בכיסוי. היא מסבירה את ערך השאלה, לא ביטחון בהחלטת פוקר.',
+    'Read progress by category': 'קראו את ההתקדמות לפי קטגוריה',
+    'Direct, inferred-high, inferred-medium, uncertain, conflicting, and unknown stay separate. These counts are coverage facts, not a confidence percentage.': 'יש הפרדה בין ישיר, מוסק עם תמיכה גבוהה, מוסק עם תמיכה בינונית, לא ודאי, סותר ולא ידוע. אלה נתוני כיסוי, לא אחוז ביטחון.',
+    'Pause, stop, skip, or undo safely': 'השהו, עצרו, דלגו או בטלו בבטחה',
+    'Pause preserves the session, Stop ends it, and Skip or I’m not sure records no poker evidence. Undo retracts the immediately previous direct observation when available.': 'Pause שומר את הסשן, Stop מסיים אותו, ו־Skip או „לא בטוח” אינם שומרים ראיית פוקר. Undo מבטל את התשובה הישירה האחרונה כשיש כזו.',
+  });
+
   const rangeAnalysisTutorial = {
     en: {
       'Read exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.': 'Read exact-hand, draw, blocker, range, strategy, and source facts without overstating what Riverline knows.',

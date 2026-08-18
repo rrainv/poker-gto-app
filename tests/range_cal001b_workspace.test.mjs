@@ -25,6 +25,11 @@ test('question UI exposes one dominant hand-class prompt with canonical RFI acti
     'calibrationProgressBar',
     'calibrationUndoAnswer',
     'calibrationPauseQuestions',
+    'calibrationStopQuestions',
+    'calibrationSkipQuestion',
+    'calibrationNotSure',
+    'calibrationQuestionReason',
+    'calibrationAskAnother',
     'calibrationCompleteState',
     'calibrationRetryAnswer',
     'calibrationMixRetry',
@@ -33,6 +38,24 @@ test('question UI exposes one dominant hand-class prompt with canonical RFI acti
   assert.match(template, /data-calibration-action="raise"/);
   assert.doesNotMatch(template, /data-calibration-action="(?:call|all_in|check|bet)"/);
   assert.doesNotMatch(template, />\s*(?:Correct|Optimal|Mistake|EV lost)\s*</i);
+});
+
+test('adaptive setup, transparent question value, truthful model progress, and completion controls are present', () => {
+  const template = calibrationTemplate();
+  for (const intent of ['quick', 'standard', 'deep']) {
+    assert.match(template, new RegExp(`name="calibration-intent" value="${intent}"`));
+  }
+  assert.match(template, /Question counts are session goals, not time promises/);
+  assert.match(template, /Riverline chooses informative hands first/);
+  assert.match(template, /data-tutorial-anchor="calibration-question-reason"/);
+  for (const category of [
+    'Direct', 'Inferred high', 'Inferred medium', 'Uncertain', 'Unknown', 'Conflicting',
+  ]) assert.match(template, new RegExp(`>${category}<`));
+  assert.doesNotMatch(template, /confidence percentage|GTO confidence|solved range/i);
+  assert.match(workspace, /application\.skipCalibrationQuestion/);
+  assert.match(workspace, /skipQuestion\(true\)/);
+  assert.match(workspace, /application\.requestAdditionalQuestion/);
+  assert.match(workspace, /completionCopy\(progressAssessment\)/);
 });
 
 test('keyboard shortcuts are question-scoped, ignore editable targets, and retain accessible buttons', () => {
@@ -87,6 +110,11 @@ test('new elicitation strings have Russian and Hebrew catalog coverage', () => {
     'Direct RFI calibration complete for this spot.',
     'Fold and Raise frequencies must total 100%.',
     'An exact tie is stored as a tied mix with no dominant action.',
+    'Why this hand?',
+    'Near a Raise/Fold boundary',
+    'Most of this range is mapped. {count} high-value questions remain.',
+    'Ask another',
+    'Question counts are session goals, not time promises.',
   ]) {
     assert.equal(translations.split(`'${key}':`).length, 3, `${key} must exist once in RU and once in HE`);
   }

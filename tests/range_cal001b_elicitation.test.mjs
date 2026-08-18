@@ -62,6 +62,7 @@ async function createConfiguredApplication(storage = new MemoryStorage()) {
     selectedProfileId: bundle.profile.id,
     activeModeId: bundle.modes[0].id,
     context: { environment: 'home', tableSize: 6, heroPosition: 'BTN', effectiveStackBb: 100 },
+    intent: 'exhaustive',
   };
   return { application, bundle, selection, storage };
 }

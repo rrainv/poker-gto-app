@@ -23,7 +23,7 @@ immutable RangeObservation / TrainingObservation source records
 
 Source evidence remains authoritative. Evidence views, conflict markers, estimates, support diagnostics, uncertainty bands, and snapshots are derived in memory. They are not persisted as observations, exported as source truth, or sent through cloud sync.
 
-The implementation does not integrate Personal Strategy with StrategyProvider, Training UI, Matrix UI, Analysis, Equity, Range Core weights, or adaptive question selection.
+The inference authority does not integrate Personal Strategy with StrategyProvider, Training UI, Matrix UI, Analysis, Equity, or Range Core weights. `RANGE-CAL-002C` consumes its read-only snapshot/support API in a separate question-selection policy and does not redefine inference.
 
 ## Implemented contracts
 
@@ -222,6 +222,7 @@ Observed implementation-machine timings were approximately 0.47 ms median for on
 - inference never creates exact action frequencies or combo deviations;
 - synthetic ranges validate mechanics and known failure behavior, not real-user uncertainty calibration or poker correctness;
 - the deliberately non-local fixture correctly produces near-total abstention and does not become learnable merely from local evidence;
-- writable multi-head resolution, adaptive selection/stopping, Personal Strategy Matrix, Builder/Teacher, Training inference, provider integration, postflop contexts, and action-conditioned Range Core adapters remain deferred.
+- writable multi-head resolution, Personal Strategy Matrix, Builder/Teacher, Training inference, provider integration, postflop contexts, and action-conditioned Range Core adapters remain deferred;
+- adaptive selection/stopping is implemented by `RANGE-CAL-002C` in `rfi-question-selection.mjs`; it consumes this authority, persists no inferred output, and is specified in `ADAPTIVE_RANGE_CALIBRATION_SPEC.md`.
 
-`RANGE-CAL-002C` should consume the existing snapshot/support API and own only deterministic question value, conflict-review priority, session policy/cursor compatibility, stopping, and the bounded live Calibration integration.
+`RANGE-CAL-002D` may consume the same snapshot/support/provenance API together with 002C question-value and boundary facts for Matrix inspection. It must not create another inference authority.

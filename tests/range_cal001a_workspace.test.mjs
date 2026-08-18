@@ -78,7 +78,8 @@ test('context builder remains truthful while the bounded RFI question loop is op
   assert.match(template, /id="calibrationStartQuestions"[^>]+data-i18n="Start questions"/);
   assert.match(template, /data-calibration-action="fold"/);
   assert.match(template, /data-calibration-action="raise"/);
-  assert.doesNotMatch(template, /confidence|inferred|data-calibration-action="call"/i);
+  assert.match(template, /data-i18n="Inferred high">Inferred high/);
+  assert.doesNotMatch(template, /confidence|data-calibration-action="call"/i);
   assert.doesNotMatch(workspace, /saveRangeObservation|createRangeObservation|StrategyProvider|Training/);
 });
 
