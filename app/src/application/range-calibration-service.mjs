@@ -61,6 +61,7 @@ export const RANGE_CALIBRATION_NAME_MAX_LENGTH = 80;
 export const RANGE_CALIBRATION_DESCRIPTION_MAX_LENGTH = 240;
 export const RANGE_CALIBRATION_STACK_LIMITS = Object.freeze({ min: 10, max: 500 });
 export const RANGE_CALIBRATION_QUESTION_ORDER = PREFLOP_HAND_CLASSES;
+export const PERSONAL_STRATEGY_STALE_SCOPE_ERROR = 'stale_personal_strategy_scope';
 export const RFI_CALIBRATION_ACTIONS = Object.freeze([
   Object.freeze({ type: ACTION_TYPES.FOLD, shortcut: 'F' }),
   Object.freeze({ type: ACTION_TYPES.RAISE, shortcut: 'R' }),
@@ -598,6 +599,31 @@ function requireCalibrationState(value) {
   return value;
 }
 
+function stalePersonalStrategyScope(label) {
+  const error = new RangeError(`${label} state does not match the selected Personal Strategy scope`);
+  error.code = PERSONAL_STRATEGY_STALE_SCOPE_ERROR;
+  return error;
+}
+
+function requirePersonalStrategyMutationScope(activeState, scope, label) {
+  if (!activeState) return null;
+  const state = requireCalibrationState(activeState);
+  const snapshotSession = state.snapshot.calibrationSessions.find((entry) => (
+    entry.id === state.session.id
+  ));
+  const sameScope = state.session.profileId === scope.profileId
+    && state.session.modeId === scope.modeId
+    && calibrationContextKey(state.session.contextScope) === calibrationContextKey(scope.context);
+  const sameSession = snapshotSession
+    && snapshotSession.profileId === state.session.profileId
+    && snapshotSession.modeId === state.session.modeId
+    && calibrationContextKey(snapshotSession.contextScope)
+      === calibrationContextKey(state.session.contextScope)
+    && snapshotSession.updatedAt === state.session.updatedAt;
+  if (!sameScope || !sameSession) throw stalePersonalStrategyScope(label);
+  return state;
+}
+
 export function createIdentityScopedRangeCalibrationApplication(binding, options = {}) {
   const {
     storage = createPersonalStrategyBrowserStorage(),
@@ -725,7 +751,9 @@ export function createRangeCalibrationApplication({
       nextPromptIndex: desiredNextPromptIndex,
       cursor,
     }, updatedAt);
-    const metadata = await repository.saveCalibrationSession(settledSession);
+    const metadata = await repository.saveCalibrationSession(settledSession, {
+      expectedSession: session,
+    });
     await notifyLocalMutation([settledSession]);
     const settledSnapshot = snapshotWithSession(snapshot, settledSession, metadata);
     state = await calibrationState(
@@ -919,7 +947,9 @@ export function createRangeCalibrationApplication({
         context: contextScope,
       });
       if (JSON.stringify(previous) !== JSON.stringify(session)) {
-        const metadata = await repository.saveCalibrationSession(session);
+        const metadata = await repository.saveCalibrationSession(session, {
+          expectedSession: previous,
+        });
         snapshot = snapshotWithSession(snapshot, session, metadata);
         sessionChanged = true;
       } else session = previous;
@@ -1017,7 +1047,7 @@ export function createRangeCalibrationApplication({
     const metadata = await repository.saveCalibrationAnswer({
       observation,
       session,
-      expectedSessionUpdatedAt: state.session.updatedAt,
+      expectedSession: state.session,
     });
     projectionService.invalidateScope({
       profileId: observation.profileId,
@@ -1125,7 +1155,7 @@ export function createRangeCalibrationApplication({
     const metadata = await repository.saveCalibrationAnswer({
       observation: retraction,
       session,
-      expectedSessionUpdatedAt: state.session.updatedAt,
+      expectedSession: state.session,
     });
     projectionService.invalidateScope({
       profileId: retraction.profileId,
@@ -1173,7 +1203,9 @@ export function createRangeCalibrationApplication({
       state: CALIBRATION_SESSION_STATES.PAUSED,
       cursor,
     }, updatedAt);
-    const metadata = await repository.saveCalibrationSession(session);
+    const metadata = await repository.saveCalibrationSession(session, {
+      expectedSession: state.session,
+    });
     await notifyLocalMutation([session]);
     const snapshot = snapshotWithSession(state.snapshot, session, metadata);
     const durableSession = session;
@@ -1242,7 +1274,9 @@ export function createRangeCalibrationApplication({
       nextPromptIndex: cursor.nextPromptIndex,
       cursor,
     }, updatedAt);
-    const metadata = await repository.saveCalibrationSession(session);
+    const metadata = await repository.saveCalibrationSession(session, {
+      expectedSession: state.session,
+    });
     await notifyLocalMutation([session]);
     const snapshot = snapshotWithSession(state.snapshot, session, metadata);
     const nextState = await calibrationState(
@@ -1295,7 +1329,9 @@ export function createRangeCalibrationApplication({
       nextPromptIndex: cursor.nextPromptIndex,
       cursor,
     }, updatedAt);
-    const metadata = await repository.saveCalibrationSession(session);
+    const metadata = await repository.saveCalibrationSession(session, {
+      expectedSession: state.session,
+    });
     await notifyLocalMutation([session]);
     const snapshot = snapshotWithSession(state.snapshot, session, metadata);
     return calibrationState(
@@ -1374,6 +1410,7 @@ export function createRangeCalibrationApplication({
     operationId = null,
   } = {}) {
     const scope = { profileId, modeId, context };
+    const state = requirePersonalStrategyMutationScope(activeState, scope, 'Matrix correction');
     let dominantAction;
     let frequencies = null;
     if (mix === null) dominantAction = requireRfiAction(actionType);
@@ -1403,31 +1440,9 @@ export function createRangeCalibrationApplication({
     projectionService.invalidateScope(scope);
     await notifyLocalMutation([observation]);
 
-    let nextCalibrationState = null;
-    if (activeState) {
-      const state = requireCalibrationState(activeState);
-      const sameScope = state.session.profileId === profileId
-        && state.session.modeId === modeId
-        && calibrationContextKey(state.session.contextScope) === calibrationContextKey(context);
-      if (!sameScope) throw new RangeError('Matrix correction state does not match the selected scope');
-      const leaves = new Map(state.scopeLeaves.map((entry) => [entry.handClass, entry]));
-      leaves.set(handClass, observation);
-      const snapshot = snapshotWithObservationAndSession(
-        state.snapshot,
-        observation,
-        state.session,
-        metadata,
-        state.workspaceLeafIndexes,
-      );
-      nextCalibrationState = await calibrationState(
-        snapshot,
-        state.session,
-        projectionService,
-        null,
-        leaves,
-        state.workspaceLeafIndexes,
-      );
-    }
+    const nextCalibrationState = state
+      ? await refreshCalibrationAfterEvidenceMutation(state)
+      : null;
 
     return Object.freeze({
       acceptedObservation: observation,
@@ -1439,20 +1454,14 @@ export function createRangeCalibrationApplication({
   }
 
   function requireBuilderScope(activeState, scope) {
-    if (!activeState) return null;
-    const state = requireCalibrationState(activeState);
-    const sameScope = state.session.profileId === scope.profileId
-      && state.session.modeId === scope.modeId
-      && calibrationContextKey(state.session.contextScope) === calibrationContextKey(scope.context);
-    if (!sameScope) throw new RangeError('Range Builder state does not match the selected scope');
-    return state;
+    return requirePersonalStrategyMutationScope(activeState, scope, 'Range Builder');
   }
 
-  async function refreshCalibrationAfterBuilder(state) {
+  async function refreshCalibrationAfterEvidenceMutation(state) {
     if (!state) return null;
     const snapshot = await repository.loadWorkspaceSnapshot();
     const session = snapshot.calibrationSessions.find((entry) => entry.id === state.session.id);
-    if (!session) throw new RangeError('Range Builder could not restore the active calibration session');
+    if (!session) throw new RangeError('Personal Strategy could not restore the active calibration session');
     return calibrationState(snapshot, session, projectionService);
   }
 
@@ -1460,7 +1469,7 @@ export function createRangeCalibrationApplication({
     const state = requireBuilderScope(activeState, scope);
     const result = await rangeBuilder.apply(scope, command);
     const nextCalibrationState = result.acceptedObservations.length
-      ? await refreshCalibrationAfterBuilder(state)
+      ? await refreshCalibrationAfterEvidenceMutation(state)
       : state;
     return Object.freeze({
       ...result,
@@ -1473,7 +1482,7 @@ export function createRangeCalibrationApplication({
   async function undoRangeBuilderOperation(activeState, scope, operation, options = {}) {
     const state = requireBuilderScope(activeState, scope);
     const result = await rangeBuilder.undo(scope, operation, options);
-    const nextCalibrationState = await refreshCalibrationAfterBuilder(state);
+    const nextCalibrationState = await refreshCalibrationAfterEvidenceMutation(state);
     return Object.freeze({
       ...result,
       calibrationState: nextCalibrationState,
@@ -1505,7 +1514,9 @@ export function createRangeCalibrationApplication({
       nextPromptIndex: cursor.nextPromptIndex,
       cursor,
     }, updatedAt);
-    const metadata = await repository.saveCalibrationSession(session);
+    const metadata = await repository.saveCalibrationSession(session, {
+      expectedSession: state.session,
+    });
     await notifyLocalMutation([session]);
     const snapshot = snapshotWithSession(state.snapshot, session, metadata);
     return calibrationState(
@@ -1560,7 +1571,9 @@ export function createRangeCalibrationApplication({
       nextPromptIndex: cursor.nextPromptIndex,
       cursor,
     }, updatedAt);
-    const metadata = await repository.saveCalibrationSession(session);
+    const metadata = await repository.saveCalibrationSession(session, {
+      expectedSession: state.session,
+    });
     await notifyLocalMutation([session]);
     const snapshot = snapshotWithSession(state.snapshot, session, metadata);
     return calibrationState(snapshot, session, projectionService, null, leaves, state.workspaceLeafIndexes);

@@ -11,7 +11,6 @@ import {
   validateStrategyProfile,
   validateTrainingObservation,
 } from '../personal-strategy/index.mjs';
-import { PREFLOP_HAND_CLASSES } from '../../../shared/poker-domain/index.js';
 import { PERSONAL_STRATEGY_SYNC_DOMAIN, cloneSyncData } from './domain.mjs';
 
 export const REMOTE_PERSONAL_STRATEGY_ENTITY_VERSION = 'remote-personal-strategy-entity/v1';
@@ -253,46 +252,136 @@ function mergeProfileBundleDocuments(local, remote, base) {
   return Object.freeze(merged);
 }
 
+function orderedSupersequence(olderValues = [], newerValues = []) {
+  const older = [...olderValues];
+  const newer = [...newerValues];
+  const lengths = Array.from(
+    { length: older.length + 1 },
+    () => new Uint32Array(newer.length + 1),
+  );
+  for (let index = older.length; index >= 0; index -= 1) {
+    lengths[index][newer.length] = older.length - index;
+  }
+  for (let index = newer.length; index >= 0; index -= 1) {
+    lengths[older.length][index] = newer.length - index;
+  }
+  for (let leftIndex = older.length - 1; leftIndex >= 0; leftIndex -= 1) {
+    for (let rightIndex = newer.length - 1; rightIndex >= 0; rightIndex -= 1) {
+      lengths[leftIndex][rightIndex] = older[leftIndex] === newer[rightIndex]
+        ? 1 + lengths[leftIndex + 1][rightIndex + 1]
+        : 1 + Math.min(
+          lengths[leftIndex + 1][rightIndex],
+          lengths[leftIndex][rightIndex + 1],
+        );
+    }
+  }
+
+  const merged = [];
+  let leftIndex = 0;
+  let rightIndex = 0;
+  while (leftIndex < older.length && rightIndex < newer.length) {
+    if (older[leftIndex] === newer[rightIndex]) {
+      merged.push(older[leftIndex]);
+      leftIndex += 1;
+      rightIndex += 1;
+      continue;
+    }
+    const takeOlderLength = lengths[leftIndex + 1][rightIndex];
+    const takeNewerLength = lengths[leftIndex][rightIndex + 1];
+    if (takeOlderLength <= takeNewerLength) {
+      merged.push(older[leftIndex]);
+      leftIndex += 1;
+    } else {
+      merged.push(newer[rightIndex]);
+      rightIndex += 1;
+    }
+  }
+  merged.push(...older.slice(leftIndex), ...newer.slice(rightIndex));
+  return merged;
+}
+
+function orderedUniqueFacts(olderValues = [], newerValues = []) {
+  const newer = [...newerValues];
+  const newerSet = new Set(newer);
+  return [
+    ...olderValues.filter((value) => !newerSet.has(value)),
+    ...newer,
+  ];
+}
+
+function stableStringOrder(left, right) {
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+}
+
+function sessionMetadataTieKey(session) {
+  const cursor = cloneSyncData(session.cursor);
+  delete cursor.askedHandClasses;
+  delete cursor.skippedHandClasses;
+  delete cursor.notSureHandClasses;
+  delete cursor.sessionQuestionCount;
+  return JSON.stringify(canonical({
+    completedAt: session.completedAt,
+    cursor,
+  }));
+}
+
+function sessionDocumentOrder(leftDocument, rightDocument) {
+  const left = leftDocument.payload;
+  const right = rightDocument.payload;
+  const timestampOrder = Date.parse(left.updatedAt) - Date.parse(right.updatedAt);
+  if (timestampOrder !== 0) return timestampOrder;
+  const revisionOrder = leftDocument.revision - rightDocument.revision;
+  if (revisionOrder !== 0) return revisionOrder;
+  const stateOrder = { completed: 0, active: 1, paused: 2 };
+  const lifecycleOrder = (stateOrder[left.state] ?? -1) - (stateOrder[right.state] ?? -1);
+  if (lifecycleOrder !== 0) return lifecycleOrder;
+  return stableStringOrder(sessionMetadataTieKey(left), sessionMetadataTieKey(right));
+}
+
 function mergeSessionDocuments(local, remote) {
   const left = local.payload;
   const right = remote.payload;
   if (left.id !== right.id || left.profileId !== right.profileId || left.modeId !== right.modeId
     || !same(left.contextScope, right.contextScope) || left.startedAt !== right.startedAt) return null;
-  const observationIds = [...new Set([...left.observationIds, ...right.observationIds])];
-  const newest = Date.parse(left.updatedAt) > Date.parse(right.updatedAt) ? left : right;
-  const completed = left.state === 'completed' || right.state === 'completed';
-  const handIndex = new Map(PREFLOP_HAND_CLASSES.map((handClass, index) => [handClass, index]));
-  const mergeHandHistory = (field) => [...new Set([
-    ...(left.cursor[field] ?? []),
-    ...(right.cursor[field] ?? []),
-  ])].sort((first, second) => handIndex.get(first) - handIndex.get(second));
+  const [olderDocument, newestDocument] = sessionDocumentOrder(local, remote) <= 0
+    ? [local, remote] : [remote, local];
+  const older = olderDocument.payload;
+  const newest = newestDocument.payload;
+  const mergeHandHistory = (field) => orderedSupersequence(
+    older.cursor[field] ?? [],
+    newest.cursor[field] ?? [],
+  );
+  const observationIds = orderedUniqueFacts(
+    older.observationIds,
+    newest.observationIds,
+  );
   const askedHandClasses = mergeHandHistory('askedHandClasses');
   const payload = {
     ...cloneSyncData(newest),
     updatedAt: laterTimestamp(left.updatedAt, right.updatedAt),
-    state: completed ? 'completed' : newest.state,
-    completedAt: completed
-      ? laterTimestamp(left.completedAt ?? left.updatedAt, right.completedAt ?? right.updatedAt)
-      : null,
+    state: newest.state,
+    completedAt: newest.state === 'completed' ? newest.completedAt : null,
     observationIds,
     cursor: {
       ...cloneSyncData(newest.cursor),
-      nextPromptIndex: Math.min(left.cursor.nextPromptIndex, right.cursor.nextPromptIndex),
       askedHandClasses,
       skippedHandClasses: mergeHandHistory('skippedHandClasses'),
       notSureHandClasses: mergeHandHistory('notSureHandClasses'),
       sessionQuestionCount: Math.max(
         askedHandClasses.length,
-        left.cursor.sessionQuestionCount ?? 0,
-        right.cursor.sessionQuestionCount ?? 0,
+        older.cursor.sessionQuestionCount ?? 0,
+        newest.cursor.sessionQuestionCount ?? 0,
       ),
-      additionalQuestionAllowance: Math.max(
-        left.cursor.additionalQuestionAllowance ?? 0,
-        right.cursor.additionalQuestionAllowance ?? 0,
-      ),
+      additionalQuestionAllowance: newest.cursor.additionalQuestionAllowance ?? 0,
     },
   };
-  const merged = { ...cloneSyncData(remote), updatedAt: payload.updatedAt, payload };
+  const merged = {
+    ...cloneSyncData(newestDocument),
+    revision: Math.max(local.revision, remote.revision),
+    updatedAt: payload.updatedAt,
+    payload,
+  };
   validateRemotePersonalStrategyEntity(merged);
   return Object.freeze(merged);
 }

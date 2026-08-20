@@ -104,18 +104,20 @@ Existing opaque randomly generated session IDs are globally stable across device
 
 For the same stable session ID, reconciliation separates evidence from mutable session metadata:
 
-- `observationIds` are a stable deduplicated union;
+- `observationIds` remain a stable unique union with newer order retained, while asked/skipped/not-sure histories use a deterministic order-preserving sequence merge rather than canonical 169-hand sorting, so both question-history sequences remain subsequences and the newer cursor retains useful recent-question order;
 - independent/contradictory answers remain separate immutable evidence;
-- selected state follows the newer metadata unless completion evidence requires completed;
+- lifecycle state, `completedAt`, next-prompt metadata, and Ask-another allowance follow the newer valid session metadata; an older completed snapshot cannot override a later active/resumed or paused snapshot, and a consumed allowance is not resurrected by `Math.max`-style merging;
 - pause remains paused while unanswered work remains unless a later active update resumes it;
 - cursor/progress are recomputed after evidence application from unique active direct hand classes;
 - completion occurs only when all 169 RFI hand classes are answered in the merged local projection.
+
+The session document alone cannot prove exhaustive completion because observation IDs do not encode the current active hand-class projection. Canonical application resume/reconstruction performs that proof after immutable evidence has been applied. Equal-time metadata first follows the advancing remote session revision and then a stable fail-safe tie break; repeated delivery is idempotent, and no merged ranking or second cursor authority is persisted.
 
 Cold pull ordering applies profile/modes, then session identity/scope, then evidence. Device B therefore resumes the merged next unanswered prompt. Answers from B enqueue locally first; Device A later pulls them and recomputes the same progress. Session merge never last-write-wins the evidence collection.
 
 ## Local-first, import/export, and invalidation
 
-Profile creation/edit, accepted answer plus session cursor, undo/retraction, pause/resume, and portable import commit through the canonical Personal Strategy repository before outbox notification. A sidecar or remote failure cannot roll back the local action.
+Profile creation/edit, accepted answer plus session cursor, undo/retraction, pause/resume, and portable import commit through the canonical Personal Strategy repository before outbox notification. Session mutations carry the complete presented session document into the atomic repository transaction, so reconciled cursor or lifecycle changes reject a stale command before it can overwrite durable metadata even when timestamps tie. A sidecar or remote failure cannot roll back the local action.
 
 Portable exports remain backend-independent. They include the complete direct revision forest, Training evidence already persisted in Personal Strategy, and calibration sessions, but exclude cursors, outbox, remote revisions, provider mappings/sessions, auth tokens, and credentials. Import adopts the active owner through existing semantics, validates/commits locally, then enqueues only successfully added entities.
 

@@ -91,9 +91,10 @@ test('question state locks configuration, preserves LTR poker data in RTL, and f
 });
 
 test('accepted observation and cursor use one atomic repository commit and failures stay on the same prompt', () => {
-  assert.match(repository, /saveCalibrationAnswer\(\{ observation, session, expectedSessionUpdatedAt \}/);
+  assert.match(repository, /saveCalibrationAnswer\(\{[\s\S]*?expectedSession = undefined/);
+  assert.match(repository, /JSON\.stringify\(durableSession\) !== JSON\.stringify\(expectedSession\)/);
   assert.match(repository, /Calibration answer must append exactly one session observation/);
-  assert.match(service, /repository\.saveCalibrationAnswer/);
+  assert.match(service, /repository\.saveCalibrationAnswer\(\{[\s\S]*?expectedSession: state\.session/);
   assert.match(service, /supersedesObservationId: latestObservation\?\.id \?\? null/);
   assert.match(workspace, /const nextState = await application\.answerCalibrationQuestion/);
   assert.match(workspace, /answerPending/);

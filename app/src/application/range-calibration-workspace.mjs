@@ -12,6 +12,7 @@ import {
   rfiPositionsForTableSize,
   tableSizesForEnvironment,
 } from './range-calibration-service.mjs';
+import { createPersonalStrategyScopeLifecycle } from './personal-strategy-scope-lifecycle.mjs';
 import {
   RIVERLINE_OWNED_DOMAINS,
 } from '../account-identity/index.mjs';
@@ -140,19 +141,19 @@ function createController(root, application, initialWorkspace, activationStarted
   let educationVisible = true;
   let lastAnswerError = null;
   let answerPending = false;
+  let answerPendingGeneration = null;
   let failedAnswer = null;
   let calibrationIntent = RFI_CALIBRATION_INTENTS.STANDARD;
   let matrixProjection = null;
   let matrixScopeKey = null;
-  let matrixLoadToken = 0;
   let pendingMatrixScopeSwitchStartedAt = null;
   let matrixSelectedHand = null;
   let matrixFilter = 'all';
   let matrixFollowQuestion = true;
   let matrixWritePending = false;
+  let matrixWritePendingGeneration = null;
   let personalStrategySubview = 'matrix';
   let rangeTeacherView = null;
-  let teacherLoadToken = 0;
   let teacherSelectedHand = null;
   let dismissedTeacherSuggestions = new Set();
   let builderActive = false;
@@ -165,6 +166,7 @@ function createController(root, application, initialWorkspace, activationStarted
   const builderHistory = [];
   let mixTarget = null;
   const interactionSamples = [];
+  let personalStrategyScopeLifecycle = null;
   const activationReads = application.getStorageMetrics();
   const metrics = {
     activationMs: 0,
@@ -217,6 +219,60 @@ function createController(root, application, initialWorkspace, activationStarted
   function currentMatrixScopeKey() {
     const scope = currentMatrixScope();
     return scope ? `${scope.profileId}|${scope.modeId}|${JSON.stringify(scope.context)}` : null;
+  }
+
+  function clearPersonalStrategyPresentation() {
+    calibrationState = null;
+    answerPending = false;
+    answerPendingGeneration = null;
+    failedAnswer = null;
+    lastAnswerError = null;
+    matrixProjection = null;
+    matrixScopeKey = null;
+    matrixSelectedHand = null;
+    matrixWritePending = false;
+    matrixWritePendingGeneration = null;
+    rangeTeacherView = null;
+    teacherSelectedHand = null;
+    dismissedTeacherSuggestions = new Set();
+    builderActive = false;
+    builderSelection = new Set();
+    builderSelectionAnchor = null;
+    builderGesture = null;
+    builderPreviewAction = null;
+    builderHistory.splice(0);
+    if (mixTarget) {
+      closeMixEditor({ restoreFocus: false });
+    }
+    query('#calibrationPersonalStrategyGrid')?.replaceChildren();
+    query('#calibrationTeacherRecommendation').hidden = true;
+    query('#calibrationTeacherScope').textContent = '';
+    query('#calibrationTeacherStatus').textContent = '';
+    for (const id of [
+      'calibrationTeacherBoundaries',
+      'calibrationTeacherConflicts',
+      'calibrationTeacherSparse',
+      'calibrationTeacherMix',
+    ]) query(`#${id}`)?.replaceChildren();
+    setMatrixLoading(true);
+    query('#calibrationTeacherPanel').setAttribute('aria-busy', 'true');
+  }
+
+  function activateCurrentPersonalStrategyScope() {
+    const scope = currentMatrixScope();
+    if (!scope) {
+      personalStrategyScopeLifecycle.invalidate();
+      return null;
+    }
+    return personalStrategyScopeLifecycle.activate(scope);
+  }
+
+  function currentPersonalStrategyToken(scope = currentMatrixScope()) {
+    return scope ? personalStrategyScopeLifecycle.capture(scope) : null;
+  }
+
+  function beginPersonalStrategyMutation(scope) {
+    return personalStrategyScopeLifecycle.revise(scope);
   }
 
   function matrixCell(handClass) {
@@ -614,7 +670,9 @@ function createController(root, application, initialWorkspace, activationStarted
       if (matrixProjection) renderMatrix();
       return matrixProjection;
     }
-    const token = ++matrixLoadToken;
+    if (matrixWritePending) return matrixProjection;
+    const lifecycleToken = currentPersonalStrategyToken(scope);
+    if (!lifecycleToken) return null;
     const scopeChanged = matrixScopeKey !== scopeKey;
     if (scopeChanged) {
       matrixProjection = null;
@@ -630,16 +688,20 @@ function createController(root, application, initialWorkspace, activationStarted
       const projection = await application.getPersonalStrategyMatrixProjection(scope, {
         session: matchingCalibrationSession(),
       });
-      if (token !== matrixLoadToken || scopeKey !== currentMatrixScopeKey()) return null;
-      matrixProjection = projection;
-      metrics.matrix.projectionLoads += 1;
-      metrics.matrix.projectionPreparationMs.push(now() - startedAt);
-      if (scopeSwitchStartedAt !== null) metrics.matrix.scopeSwitchMs.push(now() - scopeSwitchStartedAt);
-      if (matrixFollowQuestion && calibrationState?.prompt) matrixSelectedHand = calibrationState.prompt.handClass;
-      renderMatrix();
+      const adopted = personalStrategyScopeLifecycle.adopt(lifecycleToken, scope, () => {
+        matrixProjection = projection;
+        metrics.matrix.projectionLoads += 1;
+        metrics.matrix.projectionPreparationMs.push(now() - startedAt);
+        if (scopeSwitchStartedAt !== null) metrics.matrix.scopeSwitchMs.push(now() - scopeSwitchStartedAt);
+        if (matrixFollowQuestion && calibrationState?.prompt) matrixSelectedHand = calibrationState.prompt.handClass;
+        renderMatrix();
+      });
+      if (!adopted) return null;
       return projection;
     } catch (error) {
-      if (token === matrixLoadToken) setMatrixLoading(false, error);
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        setMatrixLoading(false, error);
+      }
       return null;
     }
   }
@@ -779,7 +841,9 @@ function createController(root, application, initialWorkspace, activationStarted
     if (!force && dismissedTeacherSuggestions.size === 0 && adoptCalibrationTeacher()) {
       return rangeTeacherView;
     }
-    const token = ++teacherLoadToken;
+    if (matrixWritePending) return rangeTeacherView;
+    const lifecycleToken = currentPersonalStrategyToken(scope);
+    if (!lifecycleToken) return null;
     const startedAt = now();
     query('#calibrationTeacherPanel').setAttribute('aria-busy', 'true');
     try {
@@ -788,17 +852,23 @@ function createController(root, application, initialWorkspace, activationStarted
         selectedHandClass: teacherSelectedHand,
         dismissedSuggestionIds: [...dismissedTeacherSuggestions],
       });
-      if (token !== teacherLoadToken) return null;
-      rangeTeacherView = view;
-      metrics.teacher.viewLoads += 1;
-      metrics.teacher.viewPreparationMs.push(now() - startedAt);
-      renderRangeTeacher();
+      const adopted = personalStrategyScopeLifecycle.adopt(lifecycleToken, scope, () => {
+        rangeTeacherView = view;
+        metrics.teacher.viewLoads += 1;
+        metrics.teacher.viewPreparationMs.push(now() - startedAt);
+        renderRangeTeacher();
+      });
+      if (!adopted) return null;
       return view;
     } catch (error) {
-      query('#calibrationTeacherStatus').textContent = friendlyError(error);
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        query('#calibrationTeacherStatus').textContent = friendlyError(error);
+      }
       return null;
     } finally {
-      if (token === teacherLoadToken) query('#calibrationTeacherPanel').setAttribute('aria-busy', 'false');
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        query('#calibrationTeacherPanel').setAttribute('aria-busy', 'false');
+      }
     }
   }
 
@@ -1096,8 +1166,10 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationUndoAnswer').disabled = disabled;
   }
 
-  function setAnswerPending(pending) {
+  function setAnswerPending(pending, generation = null) {
+    if (!pending && generation !== null && answerPendingGeneration !== generation) return;
     answerPending = pending;
+    answerPendingGeneration = pending ? generation : null;
     setAnswerControlsDisabled(pending || Boolean(failedAnswer));
     query('#calibrationRetryAnswer').disabled = pending;
     query('#calibrationMixRetry').disabled = pending;
@@ -1109,23 +1181,30 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   async function enterQuestions() {
-    if (!await validateAndSaveStack()) return;
+    if (!await validateAndSaveStack({ reloadPersonalStrategy: false })) return;
+    const scope = currentMatrixScope();
+    if (!scope) return;
+    const lifecycleToken = beginPersonalStrategyMutation(scope);
     try {
       failedAnswer = null;
       query('#calibrationRetryAnswer').hidden = true;
-      calibrationState = await application.startOrResumeSession({
+      const nextState = await application.startOrResumeSession({
         selectedProfileId: selection.profileId,
         activeModeId: selection.modeId,
         context: selection.context,
         intent: calibrationIntent,
         continueAfterStop: true,
       });
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
+      calibrationState = nextState;
       syncSnapshot(calibrationState.snapshot);
       educationVisible = calibrationState.progress.answered === 0;
       renderQuestion();
       window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
     } catch (error) {
-      notify(friendlyError(error), 'error');
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        notify(friendlyError(error), 'error');
+      }
     }
   }
 
@@ -1150,16 +1229,20 @@ function createController(root, application, initialWorkspace, activationStarted
       else query('#calibrationTeacherStatus').textContent = translated('No unresolved direct conflicts here.');
       return;
     }
-    if (!await validateAndSaveStack()) return;
+    if (!await validateAndSaveStack({ reloadPersonalStrategy: false })) return;
+    const scope = currentMatrixScope();
+    if (!scope) return;
+    const lifecycleToken = beginPersonalStrategyMutation(scope);
     const startedAt = now();
     try {
+      let nextState;
       if (calibrationState) {
-        calibrationState = await application.requestRangeTeacherSession(calibrationState, {
+        nextState = await application.requestRangeTeacherSession(calibrationState, {
           preset,
           handClass,
         });
       } else {
-        calibrationState = await application.startOrResumeSession({
+        nextState = await application.startOrResumeSession({
           selectedProfileId: selection.profileId,
           activeModeId: selection.modeId,
           context: selection.context,
@@ -1168,13 +1251,17 @@ function createController(root, application, initialWorkspace, activationStarted
           continueAfterStop: true,
         });
       }
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
+      calibrationState = nextState;
       syncSnapshot(calibrationState.snapshot);
       educationVisible = calibrationState.progress.answered === 0;
       metrics.teacher.actionToQuestionMs.push(now() - startedAt);
       renderQuestion();
       window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
     } catch (error) {
-      query('#calibrationTeacherStatus').textContent = friendlyError(error);
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        query('#calibrationTeacherStatus').textContent = friendlyError(error);
+      }
     }
   }
 
@@ -1207,6 +1294,9 @@ function createController(root, application, initialWorkspace, activationStarted
 
   async function acceptAnswer({ actionType = null, mix = null } = {}, { retry = false } = {}) {
     if (!calibrationState?.prompt || answerPending) return false;
+    const scope = currentMatrixScope();
+    if (!scope) return false;
+    const lifecycleToken = beginPersonalStrategyMutation(scope);
     const startedAt = now();
     const command = retry && failedAnswer
       ? failedAnswer
@@ -1215,13 +1305,14 @@ function createController(root, application, initialWorkspace, activationStarted
         input: { actionType, mix },
         operation: application.createAnswerOperation(calibrationState),
       };
-    setAnswerPending(true);
+    setAnswerPending(true, lifecycleToken.generation);
     try {
       lastAnswerError = null;
       const nextState = await application.answerCalibrationQuestion(command.state, {
         ...command.input,
         ...command.operation,
       });
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return false;
       calibrationState = nextState;
       failedAnswer = null;
       query('#calibrationRetryAnswer').hidden = true;
@@ -1236,66 +1327,92 @@ function createController(root, application, initialWorkspace, activationStarted
       }
       return true;
     } catch (error) {
-      lastAnswerError = error;
-      failedAnswer = command;
-      query('#calibrationAnswerError').textContent = friendlyError(error);
-      const mixVisible = !query('#calibrationMixDialog').hidden;
-      query('#calibrationRetryAnswer').hidden = mixVisible;
-      query('#calibrationMixRetry').hidden = !mixVisible;
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        lastAnswerError = error;
+        failedAnswer = command;
+        query('#calibrationAnswerError').textContent = friendlyError(error);
+        const mixVisible = !query('#calibrationMixDialog').hidden;
+        query('#calibrationRetryAnswer').hidden = mixVisible;
+        query('#calibrationMixRetry').hidden = !mixVisible;
+      }
       return false;
     } finally {
-      setAnswerPending(false);
+      setAnswerPending(false, lifecycleToken.generation);
     }
   }
 
   async function undoAnswer() {
     if (!calibrationState?.previousAnswer || answerPending) return;
-    setAnswerPending(true);
+    const scope = currentMatrixScope();
+    if (!scope) return;
+    const lifecycleToken = beginPersonalStrategyMutation(scope);
+    setAnswerPending(true, lifecycleToken.generation);
     try {
-      calibrationState = await application.undoPreviousAnswer(calibrationState, {
+      const nextState = await application.undoPreviousAnswer(calibrationState, {
         operationId: application.createAnswerOperation(calibrationState).operationId,
       });
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
+      calibrationState = nextState;
       syncSnapshot(calibrationState.snapshot);
       renderQuestion();
       window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
     } catch (error) {
-      query('#calibrationAnswerError').textContent = friendlyError(error);
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        query('#calibrationAnswerError').textContent = friendlyError(error);
+      }
     } finally {
-      setAnswerPending(false);
+      setAnswerPending(false, lifecycleToken.generation);
     }
   }
 
   async function pauseQuestions() {
     if (!calibrationState || answerPending) return;
+    const scope = currentMatrixScope();
+    const lifecycleToken = scope ? beginPersonalStrategyMutation(scope) : null;
+    if (!lifecycleToken) return;
     try {
-      calibrationState = await application.pauseSession(calibrationState);
-      syncSnapshot(calibrationState.snapshot);
+      const nextState = await application.pauseSession(calibrationState);
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
+      syncSnapshot(nextState.snapshot);
       calibrationState = null;
       renderConfigured();
       query('#calibrationStartQuestions')?.focus?.({ preventScroll: true });
     } catch (error) {
-      query('#calibrationAnswerError').textContent = friendlyError(error);
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        query('#calibrationAnswerError').textContent = friendlyError(error);
+      }
     }
   }
 
   async function stopQuestions() {
     if (!calibrationState || answerPending) return;
+    const scope = currentMatrixScope();
+    const lifecycleToken = scope ? beginPersonalStrategyMutation(scope) : null;
+    if (!lifecycleToken) return;
     try {
-      calibrationState = await application.stopSession(calibrationState);
-      syncSnapshot(calibrationState.snapshot);
+      const nextState = await application.stopSession(calibrationState);
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
+      syncSnapshot(nextState.snapshot);
       calibrationState = null;
       renderConfigured();
       query('#calibrationStartQuestions')?.focus?.({ preventScroll: true });
     } catch (error) {
-      query('#calibrationAnswerError').textContent = friendlyError(error);
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        query('#calibrationAnswerError').textContent = friendlyError(error);
+      }
     }
   }
 
   async function skipQuestion(notSure = false) {
     if (!calibrationState?.prompt || answerPending) return;
-    setAnswerPending(true);
+    const scope = currentMatrixScope();
+    if (!scope) return;
+    const lifecycleToken = beginPersonalStrategyMutation(scope);
+    setAnswerPending(true, lifecycleToken.generation);
     try {
-      calibrationState = await application.skipCalibrationQuestion(calibrationState, { notSure });
+      const nextState = await application.skipCalibrationQuestion(calibrationState, { notSure });
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
+      calibrationState = nextState;
       syncSnapshot(calibrationState.snapshot);
       educationVisible = false;
       renderQuestion();
@@ -1303,24 +1420,33 @@ function createController(root, application, initialWorkspace, activationStarted
         window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
       }
     } catch (error) {
-      query('#calibrationAnswerError').textContent = friendlyError(error);
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        query('#calibrationAnswerError').textContent = friendlyError(error);
+      }
     } finally {
-      setAnswerPending(false);
+      setAnswerPending(false, lifecycleToken.generation);
     }
   }
 
   async function askAnotherQuestion() {
     if (!calibrationState || answerPending) return;
-    setAnswerPending(true);
+    const scope = currentMatrixScope();
+    if (!scope) return;
+    const lifecycleToken = beginPersonalStrategyMutation(scope);
+    setAnswerPending(true, lifecycleToken.generation);
     try {
-      calibrationState = await application.requestAdditionalQuestion(calibrationState);
+      const nextState = await application.requestAdditionalQuestion(calibrationState);
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
+      calibrationState = nextState;
       syncSnapshot(calibrationState.snapshot);
       renderQuestion();
       window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
     } catch (error) {
-      notify(friendlyError(error), 'error');
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        notify(friendlyError(error), 'error');
+      }
     } finally {
-      setAnswerPending(false);
+      setAnswerPending(false, lifecycleToken.generation);
     }
   }
 
@@ -1347,8 +1473,10 @@ function createController(root, application, initialWorkspace, activationStarted
     });
   }
 
-  function setMatrixWritePending(pending) {
+  function setMatrixWritePending(pending, generation = null) {
+    if (!pending && generation !== null && matrixWritePendingGeneration !== generation) return;
     matrixWritePending = pending;
+    matrixWritePendingGeneration = pending ? generation : null;
     query('#calibrationMatrixInspector').setAttribute('aria-busy', String(pending));
     renderMatrixInspector();
     if (builderActive) renderBuilderSummary();
@@ -1358,8 +1486,9 @@ function createController(root, application, initialWorkspace, activationStarted
     const cell = matrixCell(matrixSelectedHand);
     const scope = currentMatrixScope();
     if (!cell || !scope || matrixWritePending) return false;
+    const lifecycleToken = beginPersonalStrategyMutation(scope);
     const startedAt = now();
-    setMatrixWritePending(true);
+    setMatrixWritePending(true, lifecycleToken.generation);
     try {
       const result = await application.recordPersonalStrategyMatrixEvidence(calibrationState, {
         ...scope,
@@ -1367,6 +1496,7 @@ function createController(root, application, initialWorkspace, activationStarted
         actionType,
         mix,
       });
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return false;
       patchWorkspaceWithObservations([result.acceptedObservation], result.metadata);
       if (result.calibrationState) {
         calibrationState = result.calibrationState;
@@ -1382,11 +1512,13 @@ function createController(root, application, initialWorkspace, activationStarted
       notify(translated('Personal Strategy updated.'), 'success');
       return true;
     } catch (error) {
-      query('#calibrationMatrixError').hidden = false;
-      query('#calibrationMatrixError').textContent = friendlyError(error);
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        query('#calibrationMatrixError').hidden = false;
+        query('#calibrationMatrixError').textContent = friendlyError(error);
+      }
       return false;
     } finally {
-      setMatrixWritePending(false);
+      setMatrixWritePending(false, lifecycleToken.generation);
     }
   }
 
@@ -1419,7 +1551,8 @@ function createController(root, application, initialWorkspace, activationStarted
     const scope = currentMatrixScope();
     const selected = handClasses ?? selectedBuilderHands();
     if (!scope || !selected.length || matrixWritePending) return false;
-    setMatrixWritePending(true);
+    const lifecycleToken = beginPersonalStrategyMutation(scope);
+    setMatrixWritePending(true, lifecycleToken.generation);
     query('#calibrationBuilderFeedback').textContent = '';
     try {
       const result = await application.applyRangeBuilderOperation(calibrationState, scope, {
@@ -1427,6 +1560,7 @@ function createController(root, application, initialWorkspace, activationStarted
         operationKind,
         mix,
       });
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return false;
       adoptBuilderResult(result);
       const updated = result.updatedHandClasses.length;
       const skipped = result.skippedConflictHandClasses.length;
@@ -1450,10 +1584,12 @@ function createController(root, application, initialWorkspace, activationStarted
       renderBuilderSummary();
       return updated > 0;
     } catch (error) {
-      query('#calibrationBuilderFeedback').textContent = friendlyError(error);
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        query('#calibrationBuilderFeedback').textContent = friendlyError(error);
+      }
       return false;
     } finally {
-      setMatrixWritePending(false);
+      setMatrixWritePending(false, lifecycleToken.generation);
     }
   }
 
@@ -1461,13 +1597,15 @@ function createController(root, application, initialWorkspace, activationStarted
     const entry = builderHistory.find((item) => item.operation && !item.undone);
     const scope = currentMatrixScope();
     if (!entry || !scope || matrixWritePending) return;
-    setMatrixWritePending(true);
+    const lifecycleToken = beginPersonalStrategyMutation(scope);
+    setMatrixWritePending(true, lifecycleToken.generation);
     try {
       const result = await application.undoRangeBuilderOperation(
         calibrationState,
         scope,
         entry.operation,
       );
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
       entry.undone = true;
       adoptBuilderResult(result);
       builderHistory.unshift({
@@ -1481,29 +1619,38 @@ function createController(root, application, initialWorkspace, activationStarted
       });
       renderBuilderSummary();
     } catch (error) {
-      query('#calibrationBuilderFeedback').textContent = friendlyError(error);
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        query('#calibrationBuilderFeedback').textContent = friendlyError(error);
+      }
     } finally {
-      setMatrixWritePending(false);
+      setMatrixWritePending(false, lifecycleToken.generation);
     }
   }
 
   async function askSelectedMatrixHandNext() {
     if (!calibrationState || !matrixSelectedHand || matrixWritePending) return;
-    setMatrixWritePending(true);
+    const scope = currentMatrixScope();
+    if (!scope) return;
+    const lifecycleToken = beginPersonalStrategyMutation(scope);
+    setMatrixWritePending(true, lifecycleToken.generation);
     try {
-      calibrationState = await application.requestPersonalStrategyMatrixQuestion(
+      const nextState = await application.requestPersonalStrategyMatrixQuestion(
         calibrationState,
         matrixSelectedHand,
       );
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
+      calibrationState = nextState;
       syncSnapshot(calibrationState.snapshot);
       matrixFollowQuestion = true;
       renderQuestion();
       query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true });
     } catch (error) {
-      query('#calibrationMatrixError').hidden = false;
-      query('#calibrationMatrixError').textContent = friendlyError(error);
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        query('#calibrationMatrixError').hidden = false;
+        query('#calibrationMatrixError').textContent = friendlyError(error);
+      }
     } finally {
-      setMatrixWritePending(false);
+      setMatrixWritePending(false, lifecycleToken.generation);
     }
   }
 
@@ -1576,14 +1723,19 @@ function createController(root, application, initialWorkspace, activationStarted
   function render() {
     if (!workspace.profiles.length) {
       selection = null;
+      if (personalStrategyScopeLifecycle.capture()) activateCurrentPersonalStrategyScope();
       setState('empty');
       return;
     }
-    if (!selection || !activeEntry()) selection = initialSelection(workspace);
+    if (!selection || !activeEntry()) {
+      selection = initialSelection(workspace);
+      activateCurrentPersonalStrategyScope();
+    }
     renderConfigured();
   }
 
   async function refreshWorkspace(preferredProfileId = selection?.profileId) {
+    const previousScopeKey = currentMatrixScopeKey();
     workspace = await application.readWorkspace();
     const entry = selectedEntry(workspace, preferredProfileId) || workspace.profiles[0] || null;
     if (!entry) selection = null;
@@ -1597,22 +1749,19 @@ function createController(root, application, initialWorkspace, activationStarted
         }),
       };
     }
+    const nextScope = currentMatrixScope();
+    if (currentMatrixScopeKey() !== previousScopeKey
+      || (nextScope && !currentPersonalStrategyToken(nextScope))) {
+      activateCurrentPersonalStrategyScope();
+    }
     metrics.profileCount = workspace.profiles.length;
     render();
-  }
-
-  function resetTeacherForScope() {
-    rangeTeacherView = null;
-    teacherSelectedHand = null;
-    dismissedTeacherSuggestions = new Set();
-    teacherLoadToken += 1;
   }
 
   async function changeProfile(profileId) {
     const entry = selectedEntry(workspace, profileId);
     if (!entry) return;
     pendingMatrixScopeSwitchStartedAt = now();
-    resetTeacherForScope();
     const preference = workspace.preferences.byProfile[profileId];
     selection = {
       profileId,
@@ -1621,14 +1770,18 @@ function createController(root, application, initialWorkspace, activationStarted
         environmentDefault: profileDefaultEnvironment(entry.profile),
       }),
     };
+    activateCurrentPersonalStrategyScope();
     await persistSelection();
     renderConfigured();
   }
 
-  async function updateContextFromControls({ announceCorrection = false } = {}) {
+  async function updateContextFromControls({
+    announceCorrection = false,
+    reloadPersonalStrategy = true,
+  } = {}) {
     const previousPosition = selection.context.heroPosition;
+    const previousScopeKey = currentMatrixScopeKey();
     pendingMatrixScopeSwitchStartedAt = now();
-    resetTeacherForScope();
     const candidate = {
       environment: query('#calibrationEnvironment').value,
       tableSize: Number(query('#calibrationTableSize').value),
@@ -1638,9 +1791,11 @@ function createController(root, application, initialWorkspace, activationStarted
     selection.context = normalizeRfiContextSelection(candidate, {
       environmentDefault: selection.context.environment,
     });
+    if (currentMatrixScopeKey() !== previousScopeKey) activateCurrentPersonalStrategyScope();
     await persistSelection();
     renderContextControls();
-    renderDerivedContext();
+    if (reloadPersonalStrategy) renderConfigured({ controls: false });
+    else renderDerivedContext();
     if (announceCorrection && previousPosition !== selection.context.heroPosition) {
       query('#calibrationPositionNotice').textContent = translated(
         '{previous} is not available at this table size. Position changed to {position}.',
@@ -1649,7 +1804,7 @@ function createController(root, application, initialWorkspace, activationStarted
     } else query('#calibrationPositionNotice').textContent = '';
   }
 
-  async function validateAndSaveStack() {
+  async function validateAndSaveStack({ reloadPersonalStrategy = true } = {}) {
     const input = query('#calibrationEffectiveStack');
     const value = Number(input.value);
     if (!Number.isFinite(value) || value < RANGE_CALIBRATION_STACK_LIMITS.min || value > RANGE_CALIBRATION_STACK_LIMITS.max) {
@@ -1662,7 +1817,7 @@ function createController(root, application, initialWorkspace, activationStarted
     }
     input.removeAttribute('aria-invalid');
     query('#calibrationStackError').textContent = '';
-    await updateContextFromControls();
+    await updateContextFromControls({ reloadPersonalStrategy });
     return true;
   }
 
@@ -2004,8 +2159,8 @@ function createController(root, application, initialWorkspace, activationStarted
       const button = event.target.closest('[data-mode-id]');
       if (!button) return;
       pendingMatrixScopeSwitchStartedAt = now();
-      resetTeacherForScope();
       selection.modeId = button.dataset.modeId;
+      activateCurrentPersonalStrategyScope();
       try { await persistSelection(); } catch (error) { notify(friendlyError(error), 'error'); }
       renderConfigured({ controls: false });
     });
@@ -2022,15 +2177,15 @@ function createController(root, application, initialWorkspace, activationStarted
     });
     query('#calibrationEnvironment').addEventListener('change', async () => {
       pendingMatrixScopeSwitchStartedAt = now();
-      resetTeacherForScope();
       const environment = query('#calibrationEnvironment').value;
       const sizes = tableSizesForEnvironment(environment);
       const requested = Number(query('#calibrationTableSize').value);
       const tableSize = sizes.includes(requested) ? requested : sizes[0];
       selection.context = normalizeRfiContextSelection({ ...selection.context, environment, tableSize }, { environmentDefault: environment });
+      activateCurrentPersonalStrategyScope();
       try { await persistSelection(); } catch (error) { notify(friendlyError(error), 'error'); }
       renderContextControls();
-      renderDerivedContext();
+      renderConfigured({ controls: false });
       query('#calibrationPositionNotice').textContent = '';
     });
     query('#calibrationTableSize').addEventListener('change', async () => {
@@ -2146,6 +2301,11 @@ function createController(root, application, initialWorkspace, activationStarted
     }, { signal: lifecycle.signal });
   }
 
+  personalStrategyScopeLifecycle = createPersonalStrategyScopeLifecycle({
+    onInvalidate: clearPersonalStrategyPresentation,
+  });
+  if (currentMatrixScope()) activateCurrentPersonalStrategyScope();
+
   bindEvents();
   render();
   if (workspace.preferenceWarning) {
@@ -2159,6 +2319,7 @@ function createController(root, application, initialWorkspace, activationStarted
     openCreateProfile: () => openProfileEditor('create'),
     async dispose() {
       lifecycle.abort();
+      personalStrategyScopeLifecycle.invalidate();
       await application.repository?.close?.();
       document.querySelector('#rangeCalibrationMount')?.replaceChildren();
       document.querySelector('#calibrationProfileModal')?.remove();
@@ -2184,6 +2345,7 @@ function createController(root, application, initialWorkspace, activationStarted
       matrixFilter,
       personalStrategySubview,
       rangeTeacherView,
+      personalStrategyScopeGeneration: personalStrategyScopeLifecycle.getGeneration(),
       lastAnswerError: lastAnswerError ? {
         name: lastAnswerError.name,
         code: lastAnswerError.code ?? null,

@@ -792,11 +792,21 @@ export function createPersonalStrategyRepository({
     return deepFreeze(cloneData(next));
   }
 
-  async function saveSessionInTransaction(transaction, session) {
+  async function saveSessionInTransaction(
+    transaction,
+    session,
+    { expectedSession = undefined } = {},
+  ) {
     await requireProfileAndMode(transaction, session.profileId, session.modeId, 'CalibrationSession');
     const stored = await transaction.get(STORES.CALIBRATION_SESSIONS, session.id);
     if (!stored) await assertUnusedId(transaction, session.id);
-    else validateSessionReplacement(stored.value, session);
+    else {
+      if (expectedSession !== undefined
+        && JSON.stringify(stored.value) !== JSON.stringify(expectedSession)) {
+        throw new RangeError('CalibrationSession changed since the action was presented');
+      }
+      validateSessionReplacement(stored.value, session);
+    }
     await transaction.put(STORES.CALIBRATION_SESSIONS, sessionRecord(session));
     return stored?.value ?? null;
   }
@@ -1157,9 +1167,15 @@ export function createPersonalStrategyRepository({
       });
     },
 
-    async saveCalibrationAnswer({ observation, session, expectedSessionUpdatedAt } = {}) {
+    async saveCalibrationAnswer({
+      observation,
+      session,
+      expectedSession = undefined,
+      expectedSessionUpdatedAt = undefined,
+    } = {}) {
       validateRangeObservation(observation);
       validateCalibrationSession(session);
+      if (expectedSession !== undefined) validateCalibrationSession(expectedSession);
       if (observation.provenance.calibrationSessionId !== session.id
         || observation.profileId !== session.profileId
         || observation.modeId !== session.modeId
@@ -1187,7 +1203,10 @@ export function createPersonalStrategyRepository({
         }
         const durableSession = durableSessionRecord?.value;
         if (!durableSession) throw new RangeError('CalibrationSession does not exist');
-        if (expectedSessionUpdatedAt && durableSession.updatedAt !== expectedSessionUpdatedAt) {
+        if ((expectedSession !== undefined
+            && JSON.stringify(durableSession) !== JSON.stringify(expectedSession))
+          || (expectedSession === undefined && expectedSessionUpdatedAt
+            && durableSession.updatedAt !== expectedSessionUpdatedAt)) {
           throw new RangeError('CalibrationSession changed since the question was presented');
         }
         if (session.observationIds.length !== durableSession.observationIds.length + 1
@@ -1229,11 +1248,12 @@ export function createPersonalStrategyRepository({
       });
     },
 
-    async saveCalibrationSession(session) {
+    async saveCalibrationSession(session, { expectedSession = undefined } = {}) {
       validateCalibrationSession(session);
+      if (expectedSession !== undefined) validateCalibrationSession(expectedSession);
       return writeTransaction([...ID_STORES], async (transaction) => {
         const metadata = await metadataIn(transaction);
-        await saveSessionInTransaction(transaction, session);
+        await saveSessionInTransaction(transaction, session, { expectedSession });
         return commitMetadata(transaction, metadata);
       });
     },
