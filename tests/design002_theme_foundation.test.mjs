@@ -14,8 +14,11 @@ function themeBlock(themeId) {
 }
 
 test('the document and application default to Riverline Midnight', () => {
-  assert.match(html, /<html lang="en" data-theme="midnight">/);
+  assert.match(html, /<html\b[^>]*lang="en"/);
+  assert.match(html, /<html\b[^>]*data-theme="midnight"/);
   assert.match(logic, /const defaultTheme = 'midnight';/);
+  assert.match(logic, /const persistedTheme = localStorage\.getItem\('appTheme'\);/);
+  assert.match(logic, /const selectedTheme = THEME_PREVIEWS\.some\(theme => theme\.id === persistedTheme\)\s*\?\s*persistedTheme\s*:\s*defaultTheme;/);
   assert.doesNotMatch(logic, /localStorage\.setItem\('appTheme', defaultTheme\)/);
 });
 

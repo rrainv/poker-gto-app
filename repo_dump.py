@@ -66,6 +66,9 @@ IGNORE_DIR_NAMES = {
     # Generated Electron / Chromium resources
     "locales",
 
+    # Local configuration area intentionally excluded from architecture dumps.
+    ".codex",
+
     # ML / generated artifacts
     "checkpoints",
     "datasets",
@@ -146,6 +149,69 @@ IGNORE_FILENAMES = {
     "Thumbs.db",
 }
 
+SENSITIVE_FILES = {
+    Path("app/auth-config.js"),
+    Path(".codex/config.toml"),
+}
+
+SENSITIVE_EXPLICIT_FILENAMES = {
+    ".env",
+    "app/auth-config.js",
+    ".codex/config.toml",
+    "repo_dump.txt",
+}
+
+SENSITIVE_CREDENTIAL_BASENAMES = {
+    "credentials.json",
+    "credential.json",
+    "service-account.json",
+    "service_account.json",
+    "private-key.json",
+    "private_key.json",
+    "client-secret.json",
+    "client_secret.json",
+    "access-token.json",
+    "api-key.json",
+    "api_key.json",
+    "oauth-token.json",
+}
+
+SENSITIVE_BINARY_EXTENSIONS = {
+    ".pem",
+    ".key",
+    ".p12",
+    ".pfx",
+    ".crt",
+    ".der",
+    ".jwk",
+}
+
+
+def is_sensitive_local_config_path(path: Path) -> bool:
+    """
+    Return True when a path should be excluded because it is clearly local
+    private configuration, not because it happens to include common security
+    words in normal first-party source names.
+    """
+
+    rel = relative(path)
+    name = rel.name.lower()
+    posix = rel.as_posix().lower()
+
+    if rel in SENSITIVE_FILES:
+        return True
+
+    if name == ".env" or name.startswith(".env."):
+        return True
+
+    if posix in SENSITIVE_EXPLICIT_FILENAMES:
+        return True
+
+    if name in SENSITIVE_CREDENTIAL_BASENAMES:
+        return True
+
+    return False
+
 
 # Catch variant generated license filenames.
 IGNORE_FILENAME_KEYWORDS = {
@@ -222,6 +288,7 @@ FORCE_INCLUDE = {
 
     Path("package.json"),
     Path("app/package.json"),
+    Path("app/auth-config.example.js"),
 }
 
 
@@ -285,15 +352,24 @@ def has_ignored_suffix(path: Path) -> bool:
 
 
 def filename_is_noise(path: Path) -> bool:
+    if is_sensitive_local_config_path(path):
+        return True
+
     if path.name in IGNORE_FILENAMES:
         return True
 
     name_lower = path.name.lower()
 
-    return any(
+    if path.suffix.lower() in SENSITIVE_BINARY_EXTENSIONS:
+        return True
+
+    if any(
         keyword in name_lower
         for keyword in IGNORE_FILENAME_KEYWORDS
-    )
+    ):
+        return True
+
+    return False
 
 
 def is_useful_json(path: Path) -> bool:
@@ -345,9 +421,17 @@ def should_include(path: Path):
     if path == OUTPUT_FILE:
         return False, "output-file"
 
+    if rel in SENSITIVE_FILES:
+        return False, "sensitive-local-config"
+
     # Explicit optional historical exclusions.
     if rel in OPTIONAL_SKIP_DOCS:
         return False, "historical-doc-filter"
+
+    # Keep known first-party examples and templates even if they
+    # include sensitive-looking keywords in their names.
+    if is_force_included(path):
+        return True, "forced-critical"
 
     # Generated/package directories.
     if path_contains_ignored_dir(rel):
@@ -360,10 +444,6 @@ def should_include(path: Path):
     # Binaries/vendor-generated content.
     if has_ignored_suffix(path):
         return False, "binary-or-generated"
-
-    # Critical Riverline source bypasses size restrictions.
-    if is_force_included(path):
-        return True, "forced-critical"
 
     # Only useful source/config types.
     if not allowed_extension(path):

@@ -23,15 +23,33 @@ intentionally leaves it unavailable when no legal history establishes it.
 
 ### Browser
 
-Browser mode uses Python's standard-library HTTP server and does not require a Python package installation.
+Browser mode uses a checked-in dependency-free Node development server and does not require a Python package installation.
 
 ```bash
-git clone https://github.com/rrainv/poker-gto-app.git
-cd poker-gto-app
-python server.py
+node tools/dev-web-server.mjs
 ```
 
-Open the URL printed by the server (normally `http://localhost:3000`; it falls back to port 8080 if needed). Run the command from the repository root so application and canonical Equity worker assets are served correctly.
+Open `http://127.0.0.1:3000/` and configure your browser with `--port` or, if needed, `RIVERLINE_DEV_PORT`:
+
+```bash
+node tools/dev-web-server.mjs --port 4000
+$env:RIVERLINE_DEV_PORT='4000'
+# optional fallback for compatibility:
+$env:PORT='4000'
+node tools/dev-web-server.mjs
+```
+
+`RIVERLINE_DEV_PORT` takes precedence over `PORT` when both are set.
+
+Run this command from the repository root so application and canonical Equity worker assets are served correctly.
+
+### Canonical dev/test commands
+
+```bash
+node --test tests/*.test.js tests/*.test.mjs
+$env:PYTHONPATH='solver;.'
+py -3.12 -B -m unittest discover -s tests/solver -p 'test_*.py'
+```
 
 ### Electron desktop app
 
@@ -44,6 +62,15 @@ npm start
 ```
 
 The Electron app loads `app/index.html` directly. A Python backend is not required.
+
+Install app dependencies from:
+
+```bash
+cd app
+npm install
+```
+
+Firefox is the primary browser acceptance target.
 
 ## Current status and limitations
 
