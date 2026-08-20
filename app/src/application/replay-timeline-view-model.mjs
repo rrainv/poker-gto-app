@@ -3,6 +3,8 @@ import {
   CHANCE_TYPES,
   PHASES,
   POKER_STATE_SCHEMA_VERSION,
+  POKER_STATE_SCHEMA_VERSIONS,
+  POKER_STATE_V2_SCHEMA_VERSION,
   STREETS,
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
@@ -196,8 +198,8 @@ function emptyModel() {
  */
 export function createReplayTimelineViewModel({ state = null, heroPlayerId = null } = {}) {
   if (state === null || state === undefined) return emptyModel();
-  if (state?.schemaVersion !== POKER_STATE_SCHEMA_VERSION) {
-    throw new TypeError(`Expected ${POKER_STATE_SCHEMA_VERSION}`);
+  if (!POKER_STATE_SCHEMA_VERSIONS.includes(state?.schemaVersion)) {
+    throw new TypeError(`Expected ${POKER_STATE_SCHEMA_VERSION} or ${POKER_STATE_V2_SCHEMA_VERSION}`);
   }
   validatePokerState(state);
   if (typeof heroPlayerId !== 'string' || !heroPlayerId.trim()) {

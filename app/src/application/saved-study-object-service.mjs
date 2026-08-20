@@ -1,4 +1,7 @@
-import { validatePokerState } from '../../../shared/poker-domain/index.js';
+import {
+  POKER_STATE_V2_SCHEMA_VERSION,
+  validatePokerState,
+} from '../../../shared/poker-domain/index.js';
 import {
   SAVED_SPOT_DERIVATIONS,
   SAVED_STUDY_CLASSIFICATIONS,
@@ -213,6 +216,9 @@ export function createSavedStudyObjectApplication({
     const payload = createSavedSpotSnapshot({
       derivation: SAVED_SPOT_DERIVATIONS.HAND,
       decisionContext,
+      rulesSnapshot: pokerState.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION
+        ? pokerState.rulesSnapshot
+        : null,
       handReference: createSavedHandReference({
         savedHandObjectId,
         canonicalHandId: pokerState.handId,
@@ -235,6 +241,7 @@ export function createSavedStudyObjectApplication({
   async function saveScenarioDerivedSpot({
     scenarioInput,
     decisionContext,
+    rulesSnapshot = null,
     sourceSurface = SAVED_STUDY_SOURCE_SURFACES.PLAYBOOK,
     sourceId = null,
     operation = null,
@@ -244,6 +251,7 @@ export function createSavedStudyObjectApplication({
       derivation: SAVED_SPOT_DERIVATIONS.SCENARIO,
       decisionContext,
       scenarioInput,
+      rulesSnapshot,
     });
     return saveObject({
       kind: SAVED_STUDY_KINDS.SPOT,

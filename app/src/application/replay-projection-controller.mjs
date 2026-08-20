@@ -86,7 +86,15 @@ function captureFrame(state, heroPlayerId, operation) {
   }
 
   // The journal owns an immutable value snapshot rather than a mutable or reconstructable delta.
-  const snapshot = deepFreeze(structuredClone(state));
+  // PokerState v2 transitions intentionally share one normalized immutable rules snapshot.
+  let snapshot;
+  if (Object.hasOwn(state, 'rulesSnapshot')) {
+    snapshot = structuredClone(state);
+    snapshot.rulesSnapshot = state.rulesSnapshot;
+    deepFreeze(snapshot);
+  } else {
+    snapshot = deepFreeze(structuredClone(state));
+  }
   const tablePresence = createTablePresenceViewModel({ state: snapshot, heroPlayerId });
   const presentation = framePresentation(operation, snapshot);
   return deepFreeze({
@@ -538,6 +546,7 @@ export function createReplayProjectionController({
 
     replaceFromCanonicalHandReplaySource(source, { readOnly = false } = {}) {
       const durableSource = createCanonicalHandReplaySource({
+        schemaVersion: source?.schemaVersion,
         heroPlayerId: source?.heroPlayerId,
         events: source?.events,
       });

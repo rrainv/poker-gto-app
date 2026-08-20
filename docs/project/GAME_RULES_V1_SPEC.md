@@ -4,7 +4,7 @@
 
 `GameRulesDefinition v1`, `GameRulesPreset v1`, and `GameRulesSnapshot v1` are Riverline's DOM-free mathematical game-rules contracts. They live in `shared/poker-domain/game-rules.js`; the current Home/ClubGG bridge lives in `shared/poker-domain/game-rules-compat.js`.
 
-`GAME-RULES-001B` adopts this contract for new `PokerState v2` initialization at the canonical poker-domain boundary. `PokerState v1`, Replay, Saved Hand/Spot, Scenario, Training, Personal Strategy, UI, persistence, Supabase, and account state remain on their existing contracts until separately approved migrations.
+`GAME-RULES-001B` adopts this contract for new `PokerState v2` initialization at the canonical poker-domain boundary. `GAME-RULES-001C` makes those states durable through versioned Replay and Saved Hand/Spot payloads while retaining the existing outer persistence, export, sync, and account envelopes. `PokerState v1`, Scenario generation/editor, Training, Personal Strategy, and setup UI remain on their existing contracts.
 
 `StrategyProfile` remains the human poker-environment concept. A profile may describe a recognizable lineup or playing environment. Game Rules describe objective mathematical mechanics. Brand/operator names are provenance or presentation only and never select mathematical accounting in the new contract.
 
@@ -162,6 +162,14 @@ The canonical validator, selectors, betting/chance transitions, pot derivation, 
 
 `initializeHand()` remains the legacy `poker-state/v1` API and preserves its Home/ClubGG state shape, brand-specific ledger kind, and behavior. Existing v1 state and history are read as-is and are not rewritten or migrated.
 
+## Replay and Saved durability
+
+Historical `canonical-hand-replay-source/v1` and `canonical-hand-replay-event/v1` retain their exact initialization and transition semantics. A `poker-state/v2` journal instead uses `canonical-hand-replay-source/v2` plus `canonical-hand-replay-event/v2`. Its initialization configuration contains the exact `GameRulesSnapshot v1`, hand/button/player setup, and starting stacks, and reconstruction calls `initializeHandFromGameRulesSnapshot()`. Source provenance never triggers a preset lookup or selects accounting.
+
+The outer `saved-study-object/v1`, `saved-study-library-export/v1`, `remote-saved-study-object/v1`, IndexedDB layout, and sync protocol remain unchanged. A v2 Hand uses `saved-hand-snapshot/v2`; its embedded final/current `poker-state/v2` and v2 Replay source must reconstruct exactly and must carry equal rule semantics and provenance. A rules-aware standalone or Hand-derived Spot uses `saved-spot-snapshot/v2`, retaining its existing `DecisionContext v1`/Scenario facts plus the immutable snapshot; the saved accounting projection and seated-player setup must agree with that snapshot. V1 Hand and Spot payloads remain strict v1 readers, and unknown nested versions fail explicitly.
+
+Export/import and Saved sync transport complete validated nested payloads as opaque JSON. A cold device can import or pull a v2 object and open detached Replay without a preset repository or network lookup. Existing historical v1 bytes are validated and read without an automatic rewrite.
+
 ## Semantic identity
 
 `serializeGameRulesSemantics()` validates and rewrites a definition into one fixed field order before JSON serialization. It is therefore independent of JavaScript insertion order. `parseGameRulesSemanticSerialization()` validates imported serialized definitions and recreates the immutable normalized form.
@@ -204,7 +212,7 @@ Additive metadata does not justify changing mathematical identity, but this stri
 
 The following belong to another separately approved consumer migration:
 
-- Replay, Saved Hand/Spot, Scenario, Training, DecisionContext, StrategyProvider, and Personal Strategy adoption;
+- Scenario generation/editor beyond rules-aware Saved Spot portability, Training, broader DecisionContext consumers, StrategyProvider, and Personal Strategy adoption;
 - semantic-fingerprint indexing or IndexedDB migration;
 - preset storage, editing, ownership, account, sync, or Supabase work;
 - any new collection, straddle, tournament, blind-schedule, or poker-variant behavior.

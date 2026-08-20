@@ -67,6 +67,8 @@ Identity/authentication changes immediately hide the previous rendered account c
 
 Recent is limited to six items; Review Later and Mistakes are limited to three items each. Each item retains kind, title, useful tags/annotations, timestamp, truthful derivation facts, and canonical reopen behavior.
 
+For nested v2 Saved payloads, Home keeps the existing summary shape and derives neutral `off` or fixed-per-player accounting from the immutable rules snapshot. It never requires `game.mode`, infers an operator from provenance, or performs a preset lookup. V1 summaries retain their existing game-mode projection.
+
 There is no `View all` destination because a full Saved Library does not yet exist. HOME-002A does not fake one.
 
 ## Personal Strategy truth

@@ -7,7 +7,9 @@ import {
   CHANCE_TYPES,
   GAME_MODES,
   applyChance,
+  createGameRulesSnapshotFromLegacyGameConfiguration,
   initializeHand,
+  initializeHandFromGameRulesSnapshot,
 } from '../shared/poker-domain/index.js';
 import { createSavedStudyObjectOpenController } from '../app/src/application/saved-study-object-open-controller.mjs';
 import { createSavedStudyObjectApplication } from '../app/src/application/saved-study-object-service.mjs';
@@ -168,6 +170,46 @@ function savedHandInput() {
     operation: REPLAY_FRAME_OPERATIONS.DEAL_HOLE_OBSERVED,
   });
   return { pokerState: state, heroPlayerId: 'Hero', replaySource: replay.createCanonicalHandReplaySource() };
+}
+
+function savedV2HandInput() {
+  const game = {
+    mode: GAME_MODES.HOME,
+    smallBlindMilliBb: 500,
+    bigBlindMilliBb: 1000,
+    chipUnitMilliBb: 100,
+    ante: { type: ANTE_TYPES.NONE, amountMilliBb: 0 },
+  };
+  let state = initializeHandFromGameRulesSnapshot({
+    handId: 'cloud-cold-replay-hand-v2',
+    rulesSnapshot: createGameRulesSnapshotFromLegacyGameConfiguration(game, 2),
+    buttonSeat: 0,
+    players: [
+      { playerId: 'Hero', seat: 0, startingStackMilliBb: 100_000 },
+      { playerId: 'Villain', seat: 1, startingStackMilliBb: 100_000 },
+    ],
+  });
+  const replay = createReplayProjectionController();
+  replay.replaceHand({
+    state,
+    heroPlayerId: 'Hero',
+    operation: REPLAY_FRAME_OPERATIONS.INITIALIZE_HAND,
+  });
+  state = applyChance(state, {
+    type: CHANCE_TYPES.DEAL_HOLE,
+    cardsByPlayer: { Hero: ['As', 'Kh'] },
+    hiddenPlayerIds: ['Villain'],
+  });
+  replay.recordTransition({
+    state,
+    heroPlayerId: 'Hero',
+    operation: REPLAY_FRAME_OPERATIONS.DEAL_HOLE_OBSERVED,
+  });
+  return {
+    pokerState: state,
+    heroPlayerId: 'Hero',
+    replaySource: replay.createCanonicalHandReplaySource(),
+  };
 }
 
 async function activate(deviceHarness) {
@@ -428,6 +470,67 @@ test('cold remote Saved Hand reconstructs the canonical source and opens detache
   assert.equal(opened.projection.readOnly, true);
   assert.equal(openedInput.replaySource.schemaVersion, 'canonical-hand-replay-source/v1');
   assert.deepEqual(openedInput.replaySource, hand.object.payload.replaySource);
+});
+
+test('v2 Hand and standalone Spot sync opaquely to a fresh device with rules and tombstones intact', async () => {
+  const backend = createFakeRemoteSyncBackend();
+  const a = device({ label: 'rules-v2-a', backend });
+  const b = device({ label: 'rules-v2-b', backend });
+  await activate(a);
+
+  const handInput = savedV2HandInput();
+  const savedHand = await a.application.saveHand({
+    ...handInput,
+    operation: { id: 'synced-rules-v2-hand', createdAt: '2026-08-17T12:00:00.000Z' },
+  });
+  const scenarioInput = scenario();
+  const rulesSnapshot = createGameRulesSnapshotFromLegacyGameConfiguration({
+    mode: GAME_MODES.HOME,
+    smallBlindMilliBb: 500,
+    bigBlindMilliBb: 1000,
+    chipUnitMilliBb: 100,
+    ante: { type: ANTE_TYPES.NONE, amountMilliBb: 0 },
+  }, 6);
+  const savedSpot = await a.application.saveScenarioDerivedSpot({
+    ...scenarioInput,
+    rulesSnapshot,
+    operation: { id: 'synced-rules-v2-spot', createdAt: '2026-08-17T12:00:00.000Z' },
+  });
+
+  await a.coordinator.enable();
+  await a.coordinator.syncNow();
+  assert.equal(
+    a.remote.get(IDENTITY, savedHand.object.id).object.payload.schemaVersion,
+    'saved-hand-snapshot/v2',
+  );
+  assert.equal(
+    a.remote.get(IDENTITY, savedSpot.object.id).object.payload.schemaVersion,
+    'saved-spot-snapshot/v2',
+  );
+
+  await activate(b);
+  await b.coordinator.enable();
+  await b.coordinator.syncNow();
+  const coldHand = await b.application.getById(savedHand.object.id);
+  const coldSpot = await b.application.getById(savedSpot.object.id);
+  assert.deepEqual(coldHand.payload.pokerState.rulesSnapshot, handInput.pokerState.rulesSnapshot);
+  assert.deepEqual(coldSpot.payload.rulesSnapshot, rulesSnapshot);
+  const coldReplay = createReplayProjectionController();
+  const projection = coldReplay.replaceFromCanonicalHandReplaySource(
+    coldHand.payload.replaySource,
+    { readOnly: true },
+  );
+  assert.equal(projection.mode, 'saved');
+  assert.equal(
+    projection.tablePresence.seats.find((seat) => seat.playerId === 'Villain').cardVisibility,
+    'hidden',
+  );
+
+  await a.application.archive(savedSpot.object.id);
+  await a.coordinator.syncNow();
+  await b.coordinator.syncNow();
+  assert.equal((await b.application.getById(savedSpot.object.id)).lifecycle.state, 'archived');
+  assert.equal(b.coordinator.getState().conflictCount, 0);
 });
 
 test('import adopts locally, enqueues after commit, and export excludes sync internals', async () => {

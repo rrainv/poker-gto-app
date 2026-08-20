@@ -55,6 +55,9 @@ export function createSavedStudyObjectOpenController({ application, playbookBrid
           decisionContext: object.payload.decisionContext,
           truth: object.payload.truth,
           handReference: object.payload.handReference,
+          ...(Object.hasOwn(object.payload, 'rulesSnapshot')
+            ? { rulesSnapshot: object.payload.rulesSnapshot }
+            : {}),
         });
       }
       throw new RangeError(`Unsupported saved study item kind: ${object.kind}`);

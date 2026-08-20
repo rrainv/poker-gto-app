@@ -1,6 +1,8 @@
 import {
   ACTION_TYPES,
+  GAME_RULES_COLLECTION_TYPES,
   GAME_MODES,
+  POKER_STATE_V2_SCHEMA_VERSION,
   getLegalActionSpec,
   PHASES,
   STREETS,
@@ -66,6 +68,28 @@ function requireActorDecision(state, heroPlayerId) {
   return hero;
 }
 
+function accountingFromPokerState(state) {
+  if (state.schemaVersion !== POKER_STATE_V2_SCHEMA_VERSION) {
+    const amountMilliBb = state.game.forcedContributionPerPlayerMilliBb;
+    return {
+      rakeMode: state.game.mode === GAME_MODES.CLUBGG ? 'fixed' : 'off',
+      forcedContributionPerPlayerBb: amountMilliBb / 1000,
+      totalForcedContributionBb: (state.players.length * amountMilliBb) / 1000,
+    };
+  }
+
+  const policy = state.rulesSnapshot.definition.collectionPolicy;
+  const amountMilliBb = policy.type
+    === GAME_RULES_COLLECTION_TYPES.FIXED_PER_SEATED_PLAYER
+    ? policy.amountMilliBb
+    : 0;
+  return {
+    rakeMode: amountMilliBb > 0 ? 'fixed' : 'off',
+    forcedContributionPerPlayerBb: amountMilliBb / 1000,
+    totalForcedContributionBb: (state.players.length * amountMilliBb) / 1000,
+  };
+}
+
 /**
  * Project an actor-only application strategy snapshot from canonical PokerState.
  * tableSize is the seated-player count. The additive opponentCount fact is the
@@ -88,8 +112,7 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
   // contract in integer milliBb and converted only at this boundary.
   const callAmountBb = legalActions.call.commitMilliBb / 1000;
   const heroStreetContributionBb = hero.streetContributionMilliBb / 1000;
-  const forcedContributionPerPlayerBb = state.game.forcedContributionPerPlayerMilliBb / 1000;
-  const rakeMode = state.game.mode === GAME_MODES.CLUBGG ? 'fixed' : 'off';
+  const accounting = accountingFromPokerState(state);
   const opponentCount = state.players.filter((player) => (
     player.playerId !== hero.playerId && isPlayerLive(player)
   )).length;
@@ -112,10 +135,8 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
     facingSizeBb,
     callAmountBb,
     heroStreetContributionBb,
-    rakeMode,
-    forcedContributionPerPlayerBb,
-    totalForcedContributionBb: (
-      state.players.length * state.game.forcedContributionPerPlayerMilliBb
-    ) / 1000,
+    rakeMode: accounting.rakeMode,
+    forcedContributionPerPlayerBb: accounting.forcedContributionPerPlayerBb,
+    totalForcedContributionBb: accounting.totalForcedContributionBb,
   };
 }

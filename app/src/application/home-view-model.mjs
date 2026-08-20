@@ -1,3 +1,9 @@
+import {
+  GAME_RULES_COLLECTION_TYPES,
+  POKER_STATE_SCHEMA_VERSION,
+  POKER_STATE_V2_SCHEMA_VERSION,
+} from '../../../shared/poker-domain/index.js';
+
 export const HOME_VIEW_MODEL_SCHEMA_VERSION = 'home-view-model/v2';
 export const HOME_RECENT_LIMIT = 6;
 export const HOME_REVIEW_LIMIT = 3;
@@ -21,6 +27,20 @@ function bbFromMilli(value) {
   return Number.isSafeInteger(value) ? value / 1000 : null;
 }
 
+function neutralSavedHandGameMode(state) {
+  if (state.schemaVersion === POKER_STATE_SCHEMA_VERSION
+    || (state.schemaVersion === undefined && typeof state.game?.mode === 'string')) {
+    return state.game.mode;
+  }
+  if (state.schemaVersion !== POKER_STATE_V2_SCHEMA_VERSION) {
+    throw new TypeError(`Unsupported Saved Hand PokerState version: ${String(state.schemaVersion)}`);
+  }
+  const policyType = state.rulesSnapshot.definition.collectionPolicy.type;
+  if (policyType === GAME_RULES_COLLECTION_TYPES.FIXED_PER_SEATED_PLAYER) return 'fixed';
+  if (policyType === GAME_RULES_COLLECTION_TYPES.NONE) return 'off';
+  throw new RangeError(`Unsupported Saved Hand collection policy: ${String(policyType)}`);
+}
+
 function savedHandItem(object) {
   const snapshot = object.payload;
   const state = snapshot.pokerState;
@@ -30,7 +50,7 @@ function savedHandItem(object) {
     kind: 'hand',
     derivation: 'canonical_hand',
     tableSize: state.players.length,
-    gameMode: state.game.mode,
+    gameMode: neutralSavedHandGameMode(state),
     heroPosition: hero.position,
     street: state.street,
     phase: state.phase,

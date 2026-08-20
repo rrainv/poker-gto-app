@@ -1,6 +1,6 @@
 # Saved Study Objects Foundation
 
-Status: implemented through `SAVED-OBJECTS-002`, with optional account sync added by `ACCOUNT-002B-A`
+Status: implemented through `SAVED-OBJECTS-002` and `GAME-RULES-001C`, with optional account sync added by `ACCOUNT-002B-A`
 
 Date: August 16, 2026
 
@@ -47,10 +47,10 @@ SavedStudyObject
 
 Object creation starts at revision `1`. Annotation and archive mutations increment the revision. Repository updates can require `expectedRevision`, preventing silent last-writer overwrite. Creation is idempotent when an identical object is retried with the same ID and timestamps; conflicting ID reuse fails.
 
-Known v1 kinds are:
+Known outer-v1 kinds and nested payloads are:
 
-- `hand` with `saved-hand-snapshot/v1`
-- `spot` with `saved-spot-snapshot/v1`
+- `hand` with `saved-hand-snapshot/v1` or `saved-hand-snapshot/v2`
+- `spot` with `saved-spot-snapshot/v1` or `saved-spot-snapshot/v2`
 
 Future `range`, `drill`, `session_review`, and other payloads are not implemented prematurely. An older client can validate, preserve, query, export, and re-import an unknown future kind as opaque versioned JSON, but does not interpret it.
 
@@ -82,9 +82,9 @@ Source records deliberately contain no UI route or DOM state. A future navigator
 
 ## Saved Hand snapshot
 
-Schema: `saved-hand-snapshot/v1`
+Schemas: `saved-hand-snapshot/v1`, `saved-hand-snapshot/v2`
 
-A Hand payload stores one validated observer-level `poker-state/v1` value snapshot, the Hero player ID, privacy metadata, and a `canonical-hand-replay-source/v1`. The PokerState contains the stable terminal/current view facts required for an independent read-only view:
+A v1 Hand payload stores one validated observer-level `poker-state/v1` value snapshot, the Hero player ID, privacy metadata, and a `canonical-hand-replay-source/v1`. A v2 Hand has the same outer fields with `poker-state/v2` and `canonical-hand-replay-source/v2`; the immutable `GameRulesSnapshot v1` is owned by the PokerState and Replay initialization rather than duplicated as another payload field. The PokerState contains the stable terminal/current view facts required for an independent read-only view:
 
 - game/table configuration, seats, button, positions, and starting/current stacks;
 - canonical board and dead cards;
@@ -96,9 +96,9 @@ A Hand payload stores one validated observer-level `poker-state/v1` value snapsh
 
 ### Canonical Hand Replay source
 
-Source schema: `canonical-hand-replay-source/v1`
+Source schemas: `canonical-hand-replay-source/v1`, `canonical-hand-replay-source/v2`
 
-Event schema: `canonical-hand-replay-event/v1`
+Event schemas: `canonical-hand-replay-event/v1`, `canonical-hand-replay-event/v2`
 
 The source contains the fixed observer/Hero player ID and a contiguous, zero-based event sequence. Each event stores one canonical transition input:
 
@@ -111,6 +111,8 @@ The source contains the fixed observer/Hero player ID and a contiguous, zero-bas
 | `deal_board` | exact pending `deal_flop`, `deal_turn`, or `deal_river` chance input and cards | `applyChance` |
 | `reveal_hole` | exact player ID and two revealed cards | `applyPrivateReveal` |
 | `showdown` | no payload | `resolveShowdown` |
+
+V1 initialization remains byte- and behavior-compatible. V2 initialization replaces the legacy `game` configuration with the exact `rulesSnapshot` and calls `initializeHandFromGameRulesSnapshot`; later operations retain the existing canonical transition inputs. A source version and all of its event versions must agree. Unknown or mixed versions, malformed snapshots/fingerprints, and missing v2 rules fail explicitly.
 
 The Replay projection controller derives an event only from adjacent successful canonical states. It immediately reapplies the derived input through the canonical poker domain and requires exact equality with the recorded next PokerState. On save, the complete source is replayed again; its observer must equal the Saved Hand Hero and its final state must equal the embedded PokerState. Event envelopes and operation-specific payloads use strict keys.
 
@@ -130,9 +132,11 @@ Saved data remains local by default. `ACCOUNT-002B-A` adds a separate explicit a
 
 ## Saved Spot snapshot
 
-Schema: `saved-spot-snapshot/v1`
+Schemas: `saved-spot-snapshot/v1`, `saved-spot-snapshot/v2`
 
 Both spot derivations store a validated `DecisionContext v1`, but their truth boundaries remain distinct.
+
+The v1 payload remains unchanged. A rules-aware Hand-derived or standalone Spot uses v2 and adds one validated immutable `rulesSnapshot`. Its seated-player setup and neutral `off`/`fixed` accounting facts must agree with the DecisionContext and, when present, the Scenario input. It does not embed a PokerState or require live preset lookup.
 
 ### Hand-derived spot
 
@@ -240,7 +244,7 @@ The envelope contains only:
 - owner reference;
 - deterministically ordered SavedStudyObjects.
 
-Serialization recursively sorts object keys. Import parses and validates the complete envelope before one transaction. Malformed JSON, old/unsupported envelope versions, invalid known payloads, unsafe non-JSON values, duplicate envelope IDs, and conflicting durable IDs fail atomically. Re-importing identical IDs is an idempotent skip. Unknown future kinds remain opaque and round-trippable.
+Serialization recursively sorts object keys. Import parses and validates the complete envelope before one transaction. Malformed JSON, old/unsupported envelope versions, unknown Hand/Spot nested versions, invalid known payloads, unsafe non-JSON values, duplicate envelope IDs, and conflicting durable IDs fail atomically. Re-importing identical IDs is an idempotent skip. Unknown future kinds remain opaque and round-trippable.
 
 There are no IndexedDB store names, index keys, routes, DOM objects, or runtime controller instances in an export.
 
@@ -284,4 +288,4 @@ These figures establish comfortable thousands-of-objects behavior; they are not 
 
 `SAVED-OBJECTS-001/001R/002` add no Dashboard, Home redesign, saved-hand browser, global search, Training auto-save, Range integration, sharing, or backend. Optional account cloud sync is now owned exclusively by `ACCOUNT-002B-A` and `SAVED_OBJECT_SYNC_SPEC.md`; it does not change the Saved object/export schemas. `SAVED-OBJECTS-002` intentionally adds no temporary recent-items list; the current-source reference proves bounded reopen behavior without building UI that Home will replace.
 
-`SAVED-OBJECTS-003` (or the ticket owning saved-hand Replay reopening) should load a Saved Hand, validate/reconstruct `payload.replaySource`, and feed the reconstruction to the existing Replay projection/playback controllers. It may then build navigation and failure UX, but must not persist or invent renderer frames, playback cursor/timers, or hidden cards.
+The existing Saved opener loads a Hand, version-validates and reconstructs `payload.replaySource`, and feeds the reconstruction to the Replay projection/playback controllers. Both supported Hand versions open through that detached read-only path; it never persists or invents renderer frames, playback cursor/timers, or hidden cards.

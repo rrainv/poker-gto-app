@@ -1,9 +1,12 @@
 import {
+  GAME_RULES_COLLECTION_TYPES,
   POKER_STATE_SCHEMA_VERSION,
+  POKER_STATE_V2_SCHEMA_VERSION,
   STREETS,
   assertCardArray,
   assertUniqueKnownCards,
   isHiddenHoleCards,
+  validateGameRulesSnapshot,
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
 import {
@@ -17,8 +20,10 @@ export const SAVED_STUDY_SOURCE_SCHEMA_VERSION = 'saved-study-source/v1';
 export const SAVED_STUDY_ANNOTATIONS_SCHEMA_VERSION = 'saved-study-annotations/v1';
 export const SAVED_STUDY_TAG_SCHEMA_VERSION = 'saved-study-tag/v1';
 export const SAVED_HAND_SNAPSHOT_SCHEMA_VERSION = 'saved-hand-snapshot/v1';
+export const SAVED_HAND_SNAPSHOT_V2_SCHEMA_VERSION = 'saved-hand-snapshot/v2';
 export const SAVED_HAND_PRIVACY_SCHEMA_VERSION = 'saved-hand-privacy/v1';
 export const SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION = 'saved-spot-snapshot/v1';
+export const SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION = 'saved-spot-snapshot/v2';
 export const SAVED_HAND_REFERENCE_SCHEMA_VERSION = 'saved-hand-reference/v1';
 export const SAVED_SPOT_TRUTH_SCHEMA_VERSION = 'saved-spot-truth/v1';
 
@@ -403,7 +408,9 @@ export function createSavedHandSnapshot({ pokerState, heroPlayerId, replaySource
     throw new RangeError('SavedHandSnapshot Replay source must reconstruct its canonical PokerState exactly');
   }
   const snapshot = {
-    schemaVersion: SAVED_HAND_SNAPSHOT_SCHEMA_VERSION,
+    schemaVersion: pokerState.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION
+      ? SAVED_HAND_SNAPSHOT_V2_SCHEMA_VERSION
+      : SAVED_HAND_SNAPSHOT_SCHEMA_VERSION,
     heroPlayerId,
     pokerState: state,
     privacy: {
@@ -419,15 +426,24 @@ export function createSavedHandSnapshot({ pokerState, heroPlayerId, replaySource
 }
 
 export function validateSavedHandSnapshot(snapshot) {
-  requireSchema(snapshot, SAVED_HAND_SNAPSHOT_SCHEMA_VERSION, 'SavedHandSnapshot');
+  requireObject(snapshot, 'SavedHandSnapshot');
+  const expectedStateSchemaVersion = {
+    [SAVED_HAND_SNAPSHOT_SCHEMA_VERSION]: POKER_STATE_SCHEMA_VERSION,
+    [SAVED_HAND_SNAPSHOT_V2_SCHEMA_VERSION]: POKER_STATE_V2_SCHEMA_VERSION,
+  }[snapshot.schemaVersion];
+  if (!expectedStateSchemaVersion) {
+    throw new TypeError(
+      `Unsupported SavedHandSnapshot version: ${String(snapshot.schemaVersion)}; supported: ${SAVED_HAND_SNAPSHOT_SCHEMA_VERSION}, ${SAVED_HAND_SNAPSHOT_V2_SCHEMA_VERSION}`,
+    );
+  }
   requireExactKeys(
     snapshot,
     ['schemaVersion', 'heroPlayerId', 'pokerState', 'privacy', 'replaySource'],
     'SavedHandSnapshot',
   );
   requireString(snapshot.heroPlayerId, 'SavedHandSnapshot.heroPlayerId', 240);
-  if (snapshot.pokerState?.schemaVersion !== POKER_STATE_SCHEMA_VERSION) {
-    throw new TypeError(`Expected ${POKER_STATE_SCHEMA_VERSION}`);
+  if (snapshot.pokerState?.schemaVersion !== expectedStateSchemaVersion) {
+    throw new TypeError(`Expected ${expectedStateSchemaVersion}`);
   }
   validatePokerState(snapshot.pokerState);
   const hero = snapshot.pokerState.players.find((player) => player.playerId === snapshot.heroPlayerId);
@@ -454,6 +470,16 @@ export function validateSavedHandSnapshot(snapshot) {
   const reconstruction = reconstructCanonicalHandReplaySource(snapshot.replaySource);
   if (reconstruction.heroPlayerId !== snapshot.heroPlayerId) {
     throw new RangeError('SavedHandSnapshot Replay observer perspective must be Hero');
+  }
+  if (reconstruction.finalState.schemaVersion !== expectedStateSchemaVersion) {
+    throw new RangeError('SavedHandSnapshot Replay and PokerState versions must agree');
+  }
+  if (expectedStateSchemaVersion === POKER_STATE_V2_SCHEMA_VERSION
+    && !canonicalPokerStatesEqual(
+      reconstruction.finalState.rulesSnapshot,
+      snapshot.pokerState.rulesSnapshot,
+    )) {
+    throw new RangeError('SavedHandSnapshot PokerState and Replay rules snapshots must agree');
   }
   if (!canonicalPokerStatesEqual(reconstruction.finalState, snapshot.pokerState)) {
     throw new RangeError('SavedHandSnapshot Replay source must reconstruct its canonical PokerState exactly');
@@ -605,6 +631,7 @@ export function createSavedSpotSnapshot({
   decisionContext,
   scenarioInput = null,
   handReference = null,
+  rulesSnapshot = null,
 } = {}) {
   if (!SPOT_DERIVATION_VALUES.has(derivation)) {
     throw new RangeError(`Unsupported saved spot derivation: ${derivation}`);
@@ -620,29 +647,48 @@ export function createSavedSpotSnapshot({
       completeness: 'lossy_scenario',
       historyStatus: 'not_available',
     };
+  const durableRulesSnapshot = rulesSnapshot === null
+    ? null
+    : cloneSavedStudyData(validateGameRulesSnapshot(rulesSnapshot));
   const snapshot = {
-    schemaVersion: SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION,
+    schemaVersion: durableRulesSnapshot === null
+      ? SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION
+      : SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION,
     derivation,
     decisionContext: cloneSavedStudyData(decisionContext),
     scenarioInput: scenarioInput === null ? null : cloneSavedStudyData(scenarioInput),
     handReference: handReference === null ? null : cloneSavedStudyData(handReference),
     truth,
+    ...(durableRulesSnapshot === null ? {} : { rulesSnapshot: durableRulesSnapshot }),
   };
   validateSavedSpotSnapshot(snapshot);
   return deepFreezeSavedStudyData(snapshot);
 }
 
 export function validateSavedSpotSnapshot(snapshot) {
-  requireSchema(snapshot, SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION, 'SavedSpotSnapshot');
+  requireObject(snapshot, 'SavedSpotSnapshot');
+  if (![SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION, SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION]
+    .includes(snapshot.schemaVersion)) {
+    throw new TypeError(
+      `Unsupported SavedSpotSnapshot version: ${String(snapshot.schemaVersion)}; supported: ${SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION}, ${SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION}`,
+    );
+  }
+  const isV2 = snapshot.schemaVersion === SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION;
   requireExactKeys(
     snapshot,
-    ['schemaVersion', 'derivation', 'decisionContext', 'scenarioInput', 'handReference', 'truth'],
+    isV2
+      ? [
+        'schemaVersion', 'derivation', 'decisionContext', 'scenarioInput', 'handReference',
+        'truth', 'rulesSnapshot',
+      ]
+      : ['schemaVersion', 'derivation', 'decisionContext', 'scenarioInput', 'handReference', 'truth'],
     'SavedSpotSnapshot',
   );
   if (!SPOT_DERIVATION_VALUES.has(snapshot.derivation)) {
     throw new RangeError(`Unsupported saved spot derivation: ${snapshot.derivation}`);
   }
   validateDecisionContextSnapshot(snapshot.decisionContext, snapshot.derivation);
+  if (isV2) validateSavedSpotRulesConsistency(snapshot);
   requireSchema(snapshot.truth, SAVED_SPOT_TRUTH_SCHEMA_VERSION, 'SavedSpotSnapshot.truth');
   requireExactKeys(snapshot.truth, ['schemaVersion', 'completeness', 'historyStatus'], 'SavedSpotSnapshot.truth');
   if (snapshot.derivation === SAVED_SPOT_DERIVATIONS.HAND) {
@@ -661,6 +707,35 @@ export function validateSavedSpotSnapshot(snapshot) {
     validateScenarioInput(snapshot.scenarioInput);
   }
   return snapshot;
+}
+
+function validateSavedSpotRulesConsistency(snapshot) {
+  const rulesSnapshot = validateGameRulesSnapshot(snapshot.rulesSnapshot);
+  const context = snapshot.decisionContext;
+  if (rulesSnapshot.setup.seatedPlayers !== context.tableSize) {
+    throw new RangeError('SavedSpotSnapshot rules seated-player setup must match DecisionContext');
+  }
+  const policy = rulesSnapshot.definition.collectionPolicy;
+  const fixed = policy.type === GAME_RULES_COLLECTION_TYPES.FIXED_PER_SEATED_PLAYER;
+  const expectedPerPlayerBb = fixed ? policy.amountMilliBb / 1000 : 0;
+  const expectedTotalBb = fixed ? (policy.amountMilliBb * context.tableSize) / 1000 : 0;
+  const expectedRakeMode = fixed ? 'fixed' : 'off';
+  if (context.rakeMode !== expectedRakeMode
+    || context.forcedContributionPerPlayerBb !== expectedPerPlayerBb
+    || context.totalForcedContributionBb !== expectedTotalBb) {
+    throw new RangeError('SavedSpotSnapshot DecisionContext accounting must match its rules snapshot');
+  }
+  if (snapshot.scenarioInput !== null) {
+    const scenario = snapshot.scenarioInput;
+    if (scenario.tableSize !== context.tableSize
+      || scenario.rakeMode !== expectedRakeMode
+      || scenario.forcedContributionPerPlayerBb !== expectedPerPlayerBb
+      || scenario.totalForcedContributionBb !== expectedTotalBb
+      || scenario.anteBb !== rulesSnapshot.definition.ante.amountMilliBb / 1000
+      || scenario.straddleBb !== 0) {
+      throw new RangeError('SavedSpotSnapshot Scenario accounting must match its rules snapshot');
+    }
+  }
 }
 
 function validatePayload(kind, payload) {

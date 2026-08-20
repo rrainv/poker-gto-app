@@ -1,6 +1,6 @@
 # Saved Study Object cloud sync
 
-Status: `ACCOUNT-002B-A` implemented; live Supabase migration and two-browser Firefox acceptance remain required
+Status: `ACCOUNT-002B-A` implemented with `GAME-RULES-001C` nested v2 payload compatibility; live Supabase migration and two-browser Firefox acceptance remain required
 
 Date: August 17, 2026
 
@@ -152,7 +152,7 @@ Every run captures an identity/generation token. Sign-out, Guest transition, acc
 
 ## Saved Hand replay
 
-The remote Hand document contains the complete validated `saved-hand-snapshot/v1`, including `canonical-hand-replay-source/v1`. A cold pull onto an empty device validates and materializes that complete object. The existing Saved opener reconstructs the source only through the canonical poker domain and opens detached read-only Replay. No renderer frames, animation state, playback cursor, or hidden-card data outside the observer snapshot are added by sync.
+The remote Hand document contains a complete validated `saved-hand-snapshot/v1` or `saved-hand-snapshot/v2`, including the matching versioned canonical Replay source. A v2 document therefore transports its self-contained `GameRulesSnapshot v1` inside the PokerState and Replay initialization without changing `remote-saved-study-object/v1`, the SQL schema, cursor, outbox, or reconciliation policy. A cold pull onto an empty device validates and materializes that complete object. The existing Saved opener reconstructs the source only through the canonical poker domain and opens detached read-only Replay; it never looks up a live preset. No renderer frames, animation state, playback cursor, or hidden-card data outside the observer snapshot are added by sync.
 
 ## Security and privacy
 

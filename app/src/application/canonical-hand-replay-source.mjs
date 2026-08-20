@@ -1,17 +1,32 @@
 import {
   CHANCE_TYPES,
+  POKER_STATE_SCHEMA_VERSION,
+  POKER_STATE_V2_SCHEMA_VERSION,
   applyAction,
   applyChance,
   applyPrivateReveal,
   initializeHand,
+  initializeHandFromGameRulesSnapshot,
   isHiddenHoleCards,
   resolveShowdown,
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
 
 export const CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION = 'canonical-hand-replay-source/v1';
+export const CANONICAL_HAND_REPLAY_SOURCE_V2_SCHEMA_VERSION = 'canonical-hand-replay-source/v2';
 export const CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSION = 'canonical-hand-replay-event/v1';
+export const CANONICAL_HAND_REPLAY_EVENT_V2_SCHEMA_VERSION = 'canonical-hand-replay-event/v2';
 export const CANONICAL_HAND_REPLAY_RECONSTRUCTION_SCHEMA_VERSION = 'canonical-hand-replay-reconstruction/v1';
+
+export const CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSIONS = Object.freeze([
+  CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION,
+  CANONICAL_HAND_REPLAY_SOURCE_V2_SCHEMA_VERSION,
+]);
+
+export const CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSIONS = Object.freeze([
+  CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSION,
+  CANONICAL_HAND_REPLAY_EVENT_V2_SCHEMA_VERSION,
+]);
 
 export const REPLAY_FRAME_OPERATIONS = Object.freeze({
   INITIALIZE_HAND: 'initialize_hand',
@@ -24,6 +39,33 @@ export const REPLAY_FRAME_OPERATIONS = Object.freeze({
 });
 
 const SUPPORTED_OPERATIONS = new Set(Object.values(REPLAY_FRAME_OPERATIONS));
+const REPLAY_VERSION_CONTRACTS = Object.freeze({
+  [CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION]: Object.freeze({
+    sourceSchemaVersion: CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION,
+    eventSchemaVersion: CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSION,
+    pokerStateSchemaVersion: POKER_STATE_SCHEMA_VERSION,
+    initialize: initializeHand,
+  }),
+  [CANONICAL_HAND_REPLAY_SOURCE_V2_SCHEMA_VERSION]: Object.freeze({
+    sourceSchemaVersion: CANONICAL_HAND_REPLAY_SOURCE_V2_SCHEMA_VERSION,
+    eventSchemaVersion: CANONICAL_HAND_REPLAY_EVENT_V2_SCHEMA_VERSION,
+    pokerStateSchemaVersion: POKER_STATE_V2_SCHEMA_VERSION,
+    initialize: initializeHandFromGameRulesSnapshot,
+  }),
+});
+const REPLAY_VERSION_CONTRACT_VALUES = Object.freeze(Object.values(REPLAY_VERSION_CONTRACTS));
+
+function replayContractForPokerStateVersion(schemaVersion) {
+  return REPLAY_VERSION_CONTRACT_VALUES.find((contract) => (
+    contract.pokerStateSchemaVersion === schemaVersion
+  )) || null;
+}
+
+function replayContractForEventVersion(schemaVersion) {
+  return REPLAY_VERSION_CONTRACT_VALUES.find((contract) => (
+    contract.eventSchemaVersion === schemaVersion
+  )) || null;
+}
 
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
@@ -76,22 +118,26 @@ function requireSameState(actual, expected, label) {
   }
 }
 
-function validateInitialConfigurationShape(configuration) {
+function validateInitialConfigurationShape(configuration, contract) {
   requireExactKeys(
     configuration,
-    ['handId', 'game', 'buttonSeat', 'players'],
+    contract.pokerStateSchemaVersion === POKER_STATE_SCHEMA_VERSION
+      ? ['handId', 'game', 'buttonSeat', 'players']
+      : ['handId', 'rulesSnapshot', 'buttonSeat', 'players'],
     'Replay initialization configuration',
   );
-  requireExactKeys(
-    configuration.game,
-    ['mode', 'smallBlindMilliBb', 'bigBlindMilliBb', 'chipUnitMilliBb', 'ante'],
-    'Replay initialization game',
-  );
-  requireExactKeys(
-    configuration.game.ante,
-    ['type', 'amountMilliBb'],
-    'Replay initialization ante',
-  );
+  if (contract.pokerStateSchemaVersion === POKER_STATE_SCHEMA_VERSION) {
+    requireExactKeys(
+      configuration.game,
+      ['mode', 'smallBlindMilliBb', 'bigBlindMilliBb', 'chipUnitMilliBb', 'ante'],
+      'Replay initialization game',
+    );
+    requireExactKeys(
+      configuration.game.ante,
+      ['type', 'amountMilliBb'],
+      'Replay initialization ante',
+    );
+  }
   if (!Array.isArray(configuration.players)) {
     throw new TypeError('Replay initialization players must be an array');
   }
@@ -104,24 +150,37 @@ function validateInitialConfigurationShape(configuration) {
 
 function initialConfigurationFromState(state) {
   validatePokerState(state);
-  const configuration = {
-    handId: state.handId,
-    game: {
-      mode: state.game.mode,
-      smallBlindMilliBb: state.game.smallBlindMilliBb,
-      bigBlindMilliBb: state.game.bigBlindMilliBb,
-      chipUnitMilliBb: state.game.chipUnitMilliBb,
-      ante: clone(state.game.ante),
-    },
-    buttonSeat: state.buttonSeat,
-    players: state.players.map((player) => ({
-      playerId: player.playerId,
-      seat: player.seat,
-      startingStackMilliBb: player.startingStackMilliBb,
-    })),
-  };
+  const contract = replayContractForPokerStateVersion(state.schemaVersion);
+  if (!contract) throw new TypeError(`Unsupported PokerState version: ${state.schemaVersion}`);
+  const configuration = state.schemaVersion === POKER_STATE_SCHEMA_VERSION
+    ? {
+      handId: state.handId,
+      game: {
+        mode: state.game.mode,
+        smallBlindMilliBb: state.game.smallBlindMilliBb,
+        bigBlindMilliBb: state.game.bigBlindMilliBb,
+        chipUnitMilliBb: state.game.chipUnitMilliBb,
+        ante: clone(state.game.ante),
+      },
+      buttonSeat: state.buttonSeat,
+      players: state.players.map((player) => ({
+        playerId: player.playerId,
+        seat: player.seat,
+        startingStackMilliBb: player.startingStackMilliBb,
+      })),
+    }
+    : {
+      handId: state.handId,
+      rulesSnapshot: state.rulesSnapshot,
+      buttonSeat: state.buttonSeat,
+      players: state.players.map((player) => ({
+        playerId: player.playerId,
+        seat: player.seat,
+        startingStackMilliBb: player.startingStackMilliBb,
+      })),
+    };
   requireSameState(
-    initializeHand(configuration),
+    contract.initialize(configuration),
     state,
     'Replay initialization configuration',
   );
@@ -185,25 +244,28 @@ function revealEventFromStates(previousState, state) {
   };
 }
 
-function createEvent(sequence, operation, payload) {
+function createEvent(sequence, operation, payload, eventSchemaVersion) {
   const event = {
-    schemaVersion: CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSION,
+    schemaVersion: eventSchemaVersion,
     sequence,
     operation,
     payload,
   };
-  validateEventEnvelope(event, sequence);
+  validateEventEnvelope(event, sequence, eventSchemaVersion);
   return event;
 }
 
-function validateEventEnvelope(event, expectedSequence) {
+function validateEventEnvelope(event, expectedSequence, expectedSchemaVersion) {
   requireExactKeys(
     event,
     ['schemaVersion', 'sequence', 'operation', 'payload'],
     `CanonicalHandReplayEvent[${expectedSequence}]`,
   );
-  if (event.schemaVersion !== CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSION) {
-    throw new TypeError(`Expected ${CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSION}`);
+  if (!CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSIONS.includes(event.schemaVersion)) {
+    throw new TypeError(`Unsupported CanonicalHandReplayEvent version: ${String(event.schemaVersion)}`);
+  }
+  if (event.schemaVersion !== expectedSchemaVersion) {
+    throw new TypeError(`Expected ${expectedSchemaVersion}`);
   }
   if (event.sequence !== expectedSequence) {
     throw new RangeError('Canonical Hand Replay event sequence must be contiguous');
@@ -213,14 +275,14 @@ function validateEventEnvelope(event, expectedSequence) {
   }
 }
 
-function applyReplayEvent(previousState, event) {
+function applyReplayEvent(previousState, event, contract) {
   if (event.operation === REPLAY_FRAME_OPERATIONS.INITIALIZE_HAND) {
     if (previousState !== null || event.sequence !== 0) {
       throw new RangeError('Canonical Hand Replay must initialize exactly once at sequence 0');
     }
     requireExactKeys(event.payload, ['configuration'], 'Replay initialize payload');
-    validateInitialConfigurationShape(event.payload.configuration);
-    return initializeHand(event.payload.configuration);
+    validateInitialConfigurationShape(event.payload.configuration, contract);
+    return contract.initialize(event.payload.configuration);
   }
   if (previousState === null) {
     throw new RangeError('Canonical Hand Replay must begin with initialization');
@@ -270,8 +332,9 @@ function applyReplayEvent(previousState, event) {
 
 function reconstruct(source) {
   requireExactKeys(source, ['schemaVersion', 'heroPlayerId', 'events'], 'CanonicalHandReplaySource');
-  if (source.schemaVersion !== CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION) {
-    throw new TypeError(`Expected ${CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION}`);
+  const contract = REPLAY_VERSION_CONTRACTS[source.schemaVersion];
+  if (!contract) {
+    throw new TypeError(`Unsupported CanonicalHandReplaySource version: ${String(source.schemaVersion)}`);
   }
   if (typeof source.heroPlayerId !== 'string' || !source.heroPlayerId.trim()) {
     throw new TypeError('CanonicalHandReplaySource.heroPlayerId is required');
@@ -282,9 +345,12 @@ function reconstruct(source) {
 
   let state = null;
   const frames = source.events.map((event, sequence) => {
-    validateEventEnvelope(event, sequence);
-    state = applyReplayEvent(state, event);
+    validateEventEnvelope(event, sequence, contract.eventSchemaVersion);
+    state = applyReplayEvent(state, event, contract);
     validatePokerState(state);
+    if (state.schemaVersion !== contract.pokerStateSchemaVersion) {
+      throw new RangeError('Canonical Hand Replay state version does not match its source version');
+    }
     if (!state.players.some((player) => player.playerId === source.heroPlayerId)) {
       throw new RangeError('Canonical Hand Replay Hero must remain seated in every state');
     }
@@ -321,6 +387,8 @@ export function deriveCanonicalHandReplayEvent({
   if (previousState !== null) validatePokerState(previousState);
 
   let payload;
+  const contract = replayContractForPokerStateVersion(state.schemaVersion);
+  if (!contract) throw new TypeError(`Unsupported PokerState version: ${state.schemaVersion}`);
   if (operation === REPLAY_FRAME_OPERATIONS.INITIALIZE_HAND) {
     if (previousState !== null || sequence !== 0) {
       throw new RangeError('Replay initialization must be the first event');
@@ -341,18 +409,31 @@ export function deriveCanonicalHandReplayEvent({
     throw new RangeError(`Unsupported canonical Replay operation: ${operation}`);
   }
 
-  const event = createEvent(sequence, operation, payload);
+  if (previousState !== null && previousState.schemaVersion !== contract.pokerStateSchemaVersion) {
+    throw new RangeError('Canonical Hand Replay cannot mix PokerState versions');
+  }
+  const event = createEvent(sequence, operation, payload, contract.eventSchemaVersion);
   requireSameState(
-    applyReplayEvent(previousState, event),
+    applyReplayEvent(previousState, event, contract),
     state,
     `Canonical Hand Replay event ${sequence}`,
   );
   return deepFreeze(event);
 }
 
-export function createCanonicalHandReplaySource({ heroPlayerId, events } = {}) {
+export function createCanonicalHandReplaySource({ schemaVersion = null, heroPlayerId, events } = {}) {
+  const inferredContract = replayContractForEventVersion(events?.[0]?.schemaVersion);
+  const contract = schemaVersion === null
+    ? inferredContract
+    : REPLAY_VERSION_CONTRACTS[schemaVersion];
+  if (!contract) {
+    throw new TypeError(`Unsupported Canonical Hand Replay version: ${String(schemaVersion ?? events?.[0]?.schemaVersion)}`);
+  }
+  if (inferredContract !== contract) {
+    throw new RangeError('Canonical Hand Replay source and event versions must agree');
+  }
   const source = clone({
-    schemaVersion: CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION,
+    schemaVersion: contract.sourceSchemaVersion,
     heroPlayerId,
     events,
   });
