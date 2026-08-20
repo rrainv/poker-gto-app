@@ -266,9 +266,18 @@ test('Teacher architecture and UI seam contain no Training grading or strategy-p
   assert.match(workspaceSource, /requestRangeTeacherSession/);
   assert.doesNotMatch(workspaceSource, /StrategyProvider|TrainingResult|gradeAnswer/);
   assert.match(html, /role="tab"[^>]+aria-controls="calibrationTeacherPanel"/);
+  assert.match(html, /class="calibration-personal-column"[\s\S]*class="calibration-personal-tabs"[\s\S]*id="calibrationTeacherPanel"[\s\S]*id="calibrationMatrixPanel"/);
   assert.match(html, /id="calibrationTeacherStatus"[^>]+aria-live="polite"/);
+  assert.match(html, /class="calibration-teacher-sections"[^>]+role="region"[^>]+aria-labelledby="calibrationTeacherTitle"[^>]+tabindex="0"/);
   assert.match(html, /data-teacher-preset="boundaries"/);
   assert.match(css, /\.calibration-teacher-summary/);
+  assert.match(css, /\.calibration-personal-column\s*\{[^}]*display:\s*grid[^}]*align-content:\s*start/);
+  assert.match(css, /@media \(min-width: 1280px\)[\s\S]*?\.calibration-question-view\s*\{[^}]*grid-column:\s*1[^}]*grid-row:\s*1[\s\S]*?\.calibration-personal-column\s*\{[^}]*grid-column:\s*2[^}]*grid-row:\s*1/);
+  assert.match(css, /\.calibration-teacher-panel\s*\{[^}]*gap:\s*var\(--space-3\)[^}]*padding:\s*clamp\(var\(--space-3\), 1\.1vw, var\(--space-4\)\)[^}]*overflow:\s*visible/);
+  assert.match(css, /\.calibration-teacher-sections\s*\{[^}]*gap:\s*var\(--space-2\)[^}]*align-items:\s*start/);
+  assert.match(css, /\.calibration-teacher-sections > section\s*\{[^}]*padding:\s*var\(--space-2\)/);
+  assert.doesNotMatch(css, /\.calibration-teacher-sections\s*\{[^}]*overflow:\s*auto/);
+  assert.match(css, /@media \(min-width: 1500px\)[\s\S]*?\.calibration-matrix-grid\s*\{[^}]*--personal-matrix-cell:\s*clamp\(34px, 2\.05vw, 40px\)/);
   assert.match(localeSource, /Range Teacher/);
   assert.match(tutorialSource, /range-teacher-tab/);
 });

@@ -17,8 +17,8 @@ test('known cards share Riverline presentation hooks across primary, Training, p
   assert.match(logic, /class="deck-card[^"`]*riverline-card/);
   assert.match(table, /poker-card-svg riverline-card card--known/);
   assert.match(table, /riverline-card-face table-card-face/);
-  assert.match(table, /riverline-card-rank table-card-rank/);
-  assert.match(table, /riverline-card-suit table-card-suit/);
+  assert.match(table, /riverline-card-corner-rank table-card-corner-rank/);
+  assert.match(table, /riverline-card-corner-suit table-card-corner-suit/);
   assert.match(css, /\.riverline-card\s*\{[^}]*--riverline-card-face:\s*var\(--card-face\)[^}]*--riverline-card-border:\s*var\(--card-border\)/);
 });
 
@@ -39,6 +39,10 @@ test('T and 10 remain presentation-only and do not affect A K Q or J sizing', ()
   assert.match(logic, /const rankClass = rank === '10' \? ' rank--ten' : ''/);
   assert.match(table, /const rankClass = visualRank === '10' \? ' table-card-rank--ten' : ''/);
   assert.doesNotMatch(css, /\[data-card-rank-style="full-ten"\][^{]*\.(?:rank|table-card-rank)/);
+  for (const [, selector, declarations] of css.matchAll(/(?:^|})([^{}]*(?:rank--ten|table-card-rank--ten)[^{}]*)\{([^{}]*)\}/g)) {
+    assert.doesNotMatch(declarations, /\bfont(?:-size)?\s*:/, `${selector} must inherit the normal rank font-size`);
+    assert.doesNotMatch(declarations, /scaleY\s*\(|\bscale\s*\(/, `${selector} must not vertically compress 10`);
+  }
 });
 
 test('unknown table card backs retain their semantic and privacy presentation', () => {

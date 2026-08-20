@@ -99,14 +99,20 @@ test('T and 10 are presentation choices while canonical IDs and face ranks stay 
   }
 });
 
-test('DESIGN-005 card proportions remain canonical and only 10 gets compact typography', () => {
+test('DESIGN-005 card proportions remain canonical and full 10 keeps comparable typography', () => {
   assert.match(css, /--poker-card-width:\s*48px/);
   assert.match(css, /--poker-card-height:\s*68px/);
   assert.match(css, /\.card-slot \.rank\s*\{[^}]*font-family:\s*Georgia[^}]*font-size:\s*18px[^}]*line-height:\s*17px/);
   assert.match(css, /\.card-slot \.suit\s*\{[^}]*font-size:\s*19px[^}]*line-height:\s*20px/);
-  assert.match(repairCss, /\.card-slot \.rank\.rank--ten\s*\{[^}]*font-size:\s*16px/);
+  const fullTenRules = [...css.matchAll(/(?:^|})([^{}]*rank--ten[^{}]*)\{([^{}]*)\}/g)];
+  assert.ok(fullTenRules.length > 0);
+  for (const [, selector, declarations] of fullTenRules) {
+    assert.doesNotMatch(declarations, /\bfont(?:-size)?\s*:/, `${selector} must inherit the corresponding rank size`);
+    assert.doesNotMatch(declarations, /scaleY\s*\(|\bscale\s*\(/, `${selector} may only compress horizontally`);
+  }
+  assert.match(css, /\.card-slot \.card-corner \.rank--ten,[\s\S]*?width:\s*28px[\s\S]*?min-inline-size:\s*28px[\s\S]*?transform:\s*scaleX\(\.82\)/);
   assert.doesNotMatch(repairCss, /\[data-card-rank-style="full-ten"\] \.card-slot \.rank/);
-  assert.match(table, /table-card-rank\$\{rankClass\}/);
+  assert.match(table, /table-card-corner-rank\$\{rankClass\}/);
 });
 
 test('sidebar collapse control remains in-flow with reserved accessible geometry', () => {

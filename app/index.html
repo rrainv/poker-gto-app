@@ -1691,10 +1691,11 @@
             </div>
           </section>
 
-          <nav class="calibration-personal-tabs" role="tablist" aria-label="Personal Strategy views" data-i18n-aria-label="Personal Strategy views">
-            <button id="calibrationTeacherTab" class="ui-button ui-button--tertiary" type="button" role="tab" aria-selected="false" aria-controls="calibrationTeacherPanel" data-i18n="Range Teacher" data-tutorial-anchor="range-teacher-tab">Range Teacher</button>
-            <button id="calibrationMatrixTab" class="ui-button ui-button--tertiary" type="button" role="tab" aria-selected="true" aria-controls="calibrationMatrixPanel" data-i18n="Matrix">Matrix</button>
-          </nav>
+          <div class="calibration-personal-column">
+            <nav class="calibration-personal-tabs" role="tablist" aria-label="Personal Strategy views" data-i18n-aria-label="Personal Strategy views">
+              <button id="calibrationTeacherTab" class="ui-button ui-button--tertiary" type="button" role="tab" aria-selected="false" aria-controls="calibrationTeacherPanel" data-i18n="Range Teacher" data-tutorial-anchor="range-teacher-tab">Range Teacher</button>
+              <button id="calibrationMatrixTab" class="ui-button ui-button--tertiary" type="button" role="tab" aria-selected="true" aria-controls="calibrationMatrixPanel" data-i18n="Matrix">Matrix</button>
+            </nav>
 
           <section id="calibrationTeacherPanel" class="panel calibration-teacher-panel" role="tabpanel" aria-labelledby="calibrationTeacherTitle" data-tutorial-anchor="range-teacher" hidden>
             <header class="calibration-teacher-header">
@@ -1739,7 +1740,7 @@
               </div>
             </section>
 
-            <div class="calibration-teacher-sections">
+            <div class="calibration-teacher-sections" role="region" aria-labelledby="calibrationTeacherTitle" tabindex="0">
               <section aria-labelledby="calibrationTeacherBoundariesTitle"><h3 id="calibrationTeacherBoundariesTitle" data-i18n="Important boundaries">Important boundaries</h3><div id="calibrationTeacherBoundaries" class="calibration-teacher-list"></div></section>
               <section aria-labelledby="calibrationTeacherConflictsTitle"><h3 id="calibrationTeacherConflictsTitle" data-i18n="Conflicting answers">Conflicting answers</h3><div id="calibrationTeacherConflicts" class="calibration-teacher-list"></div></section>
               <section aria-labelledby="calibrationTeacherSparseTitle"><h3 id="calibrationTeacherSparseTitle" data-i18n="Unknown regions">Unknown regions</h3><div id="calibrationTeacherSparse" class="calibration-teacher-list"></div></section>
@@ -1754,7 +1755,7 @@
             <p id="calibrationTeacherStatus" role="status" aria-live="polite"></p>
           </section>
 
-          <section id="calibrationMatrixPanel" class="panel calibration-personal-matrix" role="tabpanel" aria-labelledby="calibrationMatrixTitle" data-tutorial-anchor="calibration-personal-matrix">
+            <section id="calibrationMatrixPanel" class="panel calibration-personal-matrix" role="tabpanel" aria-labelledby="calibrationMatrixTitle" data-tutorial-anchor="calibration-personal-matrix">
             <header class="calibration-matrix-header">
               <div>
                 <p class="calibration-eyebrow" data-i18n="Personal Strategy">Personal Strategy</p>
@@ -1897,7 +1898,8 @@
                 </div>
               </aside>
             </div>
-          </section>
+            </section>
+          </div>
 
           <div id="calibrationMixDialog" class="modal-overlay calibration-mix-dialog" role="dialog" aria-modal="true" aria-labelledby="calibrationMixTitle" hidden>
             <form id="calibrationMixForm" class="modal calibration-mix-modal" novalidate>

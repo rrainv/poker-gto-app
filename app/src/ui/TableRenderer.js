@@ -195,15 +195,14 @@ class TableRenderer {
       : 'tournament';
     const cardStep = isCommunity ? 50 : 45;
     const finalX = ((index - ((totalCards - 1) / 2)) * cardStep) - 20;
+    const cornerText = `
+          <text class="riverline-card-corner-rank table-card-corner-rank${rankClass}" x="10" y="14" text-anchor="middle">${visualRank}</text>
+          <text class="riverline-card-corner-suit table-card-corner-suit" x="10" y="27" text-anchor="middle">${presentation.symbol}</text>`;
     const secondaryCorner = cardStyle === 'clean-corner' ? '' : `
-        <g class="table-card-corner table-card-corner--bottom table-card-corner--${cardStyle === 'clarity-corner' ? 'subdued' : 'full'}" aria-hidden="true" transform="translate(40 57) rotate(180)">
-          <text class="riverline-card-corner-rank table-card-corner-rank${rankClass}" x="5" y="13">${visualRank}</text>
-          <text class="riverline-card-corner-suit table-card-corner-suit" x="5" y="25">${presentation.symbol}</text>
+        <g class="table-card-corner table-card-corner--bottom table-card-corner--${cardStyle === 'clarity-corner' ? 'subdued' : 'full'}" aria-hidden="true" transform="translate(40 57) rotate(180)">${cornerText}
         </g>`;
     const cornerMarkup = cardStyle === 'tournament' ? '' : `
-        <g class="table-card-corner table-card-corner--top" aria-hidden="true">
-          <text class="riverline-card-rank table-card-rank${rankClass}" x="6" y="15">${visualRank}</text>
-          <text class="riverline-card-suit table-card-suit" x="6" y="28">${presentation.symbol}</text>
+        <g class="table-card-corner table-card-corner--top" aria-hidden="true">${cornerText}
         </g>${secondaryCorner}`;
 
     return `
