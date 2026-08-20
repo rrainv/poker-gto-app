@@ -1,4 +1,5 @@
 import { createTrainingSessionController } from './training-session-controller.mjs';
+import { createTrainingConfigFromLegacyCompatibility } from './training-generator.mjs';
 import { createTrainingPresentationModel } from './training-presentation.mjs';
 
 export function installTrainingModeBridge(browserWindow, {
@@ -6,6 +7,9 @@ export function installTrainingModeBridge(browserWindow, {
 } = {}) {
   if (!browserWindow) return null;
   const bridge = Object.freeze({
+    createConfigFromLegacyCompatibility(input) {
+      return createTrainingConfigFromLegacyCompatibility(input);
+    },
     generate(config, options) {
       return controller.generate(config, options);
     },

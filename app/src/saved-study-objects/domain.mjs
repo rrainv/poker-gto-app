@@ -562,8 +562,26 @@ function validateDecisionContextSnapshot(context, derivation) {
 
 function validateScenarioInput(input) {
   requireObject(input, 'SavedSpotSnapshot.scenarioInput');
-  if (input.schemaVersion !== 'playbook-scenario/v1') throw new TypeError('Expected playbook-scenario/v1');
-  requireExactKeys(input, [
+  const isV2 = input.schemaVersion === 'playbook-scenario/v2';
+  if (!isV2 && input.schemaVersion !== 'playbook-scenario/v1') {
+    throw new TypeError(`Unsupported PlaybookScenario version: ${String(input.schemaVersion)}`);
+  }
+  requireExactKeys(input, isV2 ? [
+    'schemaVersion',
+    'rulesSnapshot',
+    'tableSize',
+    'heroPosition',
+    'street',
+    'heroCards',
+    'board',
+    'deadCards',
+    'stackBb',
+    'stackMode',
+    'potBb',
+    'lastAction',
+    'lastActionLabel',
+    'facingSizeBb',
+  ] : [
     'schemaVersion',
     'tableSize',
     'heroPosition',
@@ -583,6 +601,12 @@ function validateScenarioInput(input) {
     'anteBb',
     'straddleBb',
   ], 'SavedSpotSnapshot.scenarioInput');
+  if (isV2) {
+    const rulesSnapshot = validateGameRulesSnapshot(input.rulesSnapshot);
+    if (rulesSnapshot.setup.seatedPlayers !== input.tableSize) {
+      throw new RangeError('PlaybookScenario v2 tableSize must match its rules snapshot');
+    }
+  }
   assertPortableSavedStudyValue(input, 'SavedSpotSnapshot.scenarioInput');
   for (const forbidden of ['actionHistory', 'history', 'pokerState', 'replayFrames']) {
     if (Object.hasOwn(input, forbidden)) {
@@ -705,6 +729,9 @@ export function validateSavedSpotSnapshot(snapshot) {
       throw new RangeError('Scenario-derived saved spot truth fields are inconsistent');
     }
     validateScenarioInput(snapshot.scenarioInput);
+    if (!isV2 && snapshot.scenarioInput.schemaVersion === 'playbook-scenario/v2') {
+      throw new RangeError('PlaybookScenario v2 requires saved-spot-snapshot/v2');
+    }
   }
   return snapshot;
 }
@@ -727,12 +754,21 @@ function validateSavedSpotRulesConsistency(snapshot) {
   }
   if (snapshot.scenarioInput !== null) {
     const scenario = snapshot.scenarioInput;
+    const scenarioRulesMatch = scenario.schemaVersion !== 'playbook-scenario/v2'
+      || canonicalPokerStatesEqual(
+        validateGameRulesSnapshot(scenario.rulesSnapshot),
+        rulesSnapshot,
+      );
+    const scenarioAccountingMatches = scenario.schemaVersion === 'playbook-scenario/v2'
+      ? true
+      : scenario.rakeMode === expectedRakeMode
+        && scenario.forcedContributionPerPlayerBb === expectedPerPlayerBb
+        && scenario.totalForcedContributionBb === expectedTotalBb
+        && scenario.anteBb === rulesSnapshot.definition.ante.amountMilliBb / 1000
+        && scenario.straddleBb === 0;
     if (scenario.tableSize !== context.tableSize
-      || scenario.rakeMode !== expectedRakeMode
-      || scenario.forcedContributionPerPlayerBb !== expectedPerPlayerBb
-      || scenario.totalForcedContributionBb !== expectedTotalBb
-      || scenario.anteBb !== rulesSnapshot.definition.ante.amountMilliBb / 1000
-      || scenario.straddleBb !== 0) {
+      || !scenarioRulesMatch
+      || !scenarioAccountingMatches) {
       throw new RangeError('SavedSpotSnapshot Scenario accounting must match its rules snapshot');
     }
   }

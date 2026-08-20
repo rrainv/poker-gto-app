@@ -88,8 +88,8 @@ test('street is derived from explicit board cards for flop, turn, and river', ()
   }
 });
 
-test('invalid and edge inputs use current production bounds and explicit defaults', () => {
-  const context = qa.deriveDecisionContext({
+test('invalid and edge inputs use current production bounds while unknown accounting fails', () => {
+  const edgeInput = {
     tableSize: 99,
     heroPosition: '',
     heroCards: null,
@@ -100,8 +100,11 @@ test('invalid and edge inputs use current production bounds and explicit default
     potBb: Number.NaN,
     lastAction: '',
     facingSizeBb: 999,
-    rakeMode: 'unknown',
-  });
+    rakeMode: 'off',
+  };
+  assert.throws(() => qa.deriveDecisionContext({ ...edgeInput, rakeMode: 'unknown' }),
+    /Unsupported legacy Scenario rakeMode/);
+  const context = qa.deriveDecisionContext(edgeInput);
   assert.deepEqual({
     tableSize: context.tableSize,
     heroPosition: context.heroPosition,

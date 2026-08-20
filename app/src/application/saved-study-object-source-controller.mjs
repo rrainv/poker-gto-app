@@ -34,7 +34,8 @@ function fnv1a64(value) {
 }
 
 function scenarioIdentityInput(scenarioInput) {
-  if (!scenarioInput || scenarioInput.schemaVersion !== 'playbook-scenario/v1') {
+  if (!scenarioInput || !['playbook-scenario/v1', 'playbook-scenario/v2']
+    .includes(scenarioInput.schemaVersion)) {
     throw new TypeError('A canonical Playbook Scenario input is required');
   }
   // lastActionLabel is localized presentation copy; the canonical action value owns identity.
@@ -222,6 +223,9 @@ export function createSavedStudyObjectSourceController({
     return application.saveScenarioDerivedSpot({
       scenarioInput,
       decisionContext,
+      rulesSnapshot: scenarioInput.schemaVersion === 'playbook-scenario/v2'
+        ? scenarioInput.rulesSnapshot
+        : null,
       sourceSurface: SAVED_STUDY_SOURCE_SURFACES.PLAYBOOK,
       sourceId: identity.sourceId,
       operation: { id: reference.objectId, createdAt: reference.createdAt },

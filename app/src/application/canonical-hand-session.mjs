@@ -3,6 +3,7 @@ import {
   applyChance as applyPokerChance,
   applyPrivateReveal as applyPokerPrivateReveal,
   initializeHand,
+  initializeHandFromGameRulesSnapshot,
   resolveShowdown as resolvePokerShowdown,
 } from '../../../shared/poker-domain/index.js';
 
@@ -21,6 +22,12 @@ export function createCanonicalHandSession(initialConfiguration) {
 
     initialize(configuration) {
       const nextState = initializeHand(configuration);
+      state = nextState;
+      return state;
+    },
+
+    initializeFromGameRulesSnapshot(configuration) {
+      const nextState = initializeHandFromGameRulesSnapshot(configuration);
       state = nextState;
       return state;
     },

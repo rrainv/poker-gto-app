@@ -247,11 +247,15 @@ export function createSavedStudyObjectApplication({
     operation = null,
     ...annotations
   } = {}) {
+    const durableRulesSnapshot = rulesSnapshot
+      ?? (scenarioInput?.schemaVersion === 'playbook-scenario/v2'
+        ? scenarioInput.rulesSnapshot
+        : null);
     const payload = createSavedSpotSnapshot({
       derivation: SAVED_SPOT_DERIVATIONS.SCENARIO,
       decisionContext,
       scenarioInput,
-      rulesSnapshot,
+      rulesSnapshot: durableRulesSnapshot,
     });
     return saveObject({
       kind: SAVED_STUDY_KINDS.SPOT,

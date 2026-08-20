@@ -383,7 +383,9 @@ test('browser bridge exposes only the canonical session lifecycle operations', (
   };
   const bridge = installTrainingModeBridge(browserWindow, { controller });
   assert.equal(browserWindow.RiverlineTraining, bridge);
-  assert.deepEqual(Object.keys(bridge).sort(), ['answer', 'generate', 'getSnapshot', 'reset']);
+  assert.deepEqual(Object.keys(bridge).sort(), [
+    'answer', 'createConfigFromLegacyCompatibility', 'generate', 'getSnapshot', 'reset',
+  ]);
   assert.equal(bridge.getSnapshot(), snapshot);
   assert.equal(Object.getOwnPropertyDescriptor(browserWindow, 'RiverlineTraining').writable, false);
 });

@@ -147,7 +147,8 @@ The v1 payload remains unchanged. A rules-aware Hand-derived or standalone Spot 
 
 ### Scenario-derived spot
 
-- The application accepts the established `playbook-scenario/v1` input and its DecisionContext.
+- The application accepts historical `playbook-scenario/v1` or snapshot-authoritative `playbook-scenario/v2` plus its DecisionContext.
+- A Scenario v2 spot uses the existing `saved-spot-snapshot/v2` payload, and its nested Scenario snapshot must exactly equal the outer Saved Spot rules snapshot, including provenance and setup. No new SavedStudyObject, export, IndexedDB, or sync schema is introduced.
 - Exact live-opponent count and Hero historical contribution remain `null`; a zero call amount is permitted only as the existing lossless free-check fact.
 - No hand reference, PokerState, action history, or replay frames are allowed.
 - The spot declares `lossy_scenario` and `not_available` history.
@@ -220,7 +221,7 @@ No renderer constructs persistence wrappers or raw IndexedDB records.
 `SAVED-OBJECTS-002` adds `saved-study-source-controller/v1` between the Playbook renderer and the Saved Study application service. The controller, not DOM copy, owns whether the current source is already saved.
 
 - Every newly initialized live Hand receives an application-session source ID. Replay keeps that same ID because it is a historical projection of the same live Hand. Starting another Hand receives a new source ID even though the current canonical Hand controller uses a stable internal PokerState hand ID.
-- A Scenario spot uses a deterministic fingerprint of `playbook-scenario/v1`. The localized `lastActionLabel` is excluded; the canonical action value and remaining Scenario facts own identity. Editing a Scenario fact therefore identifies a different spot, while changing language does not.
+- A Scenario spot uses a deterministic fingerprint of its supported `playbook-scenario/v1` or `playbook-scenario/v2` value. The localized `lastActionLabel` is excluded; the canonical action value, immutable rules snapshot for v2, and remaining Scenario facts own identity. Editing a Scenario/rules fact therefore identifies a different spot, while changing language does not.
 - The local source reference stores only source key, SavedStudyObject ID, and original creation timestamp under `riverline.savedStudyObjects.sourceRef.v1:*`. It is application/session navigation state, not a second saved-object schema, and it is not exported.
 - The first save establishes a stable operation ID/timestamp before the repository write. Concurrent clicks share one in-flight promise; a retry reuses the operation identity. A resolved source reference is reopened with one bounded `getById` call and never with a recent/full-library query.
 - Metadata mutations target the referenced SavedStudyObject with `expectedRevision`. Archive writes the existing v1 tombstone and clears the active source reference. It does not delete durable bytes or make an archived object mutable.

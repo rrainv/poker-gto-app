@@ -77,7 +77,10 @@ const postflopContext = calibrationDecisionContext({
   callAmountBb: 0,
   heroStreetContributionBb: 0,
 });
-const scenarioInput = createPlaybookScenarioInput(preflopContext);
+const scenarioInput = createPlaybookScenarioInput({
+  ...preflopContext,
+  schemaVersion: 'playbook-scenario/v1',
+});
 
 function resolveScenario() {
   const result = resolvePlaybookDecisionContext({

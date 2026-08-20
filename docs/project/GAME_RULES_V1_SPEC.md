@@ -4,7 +4,7 @@
 
 `GameRulesDefinition v1`, `GameRulesPreset v1`, and `GameRulesSnapshot v1` are Riverline's DOM-free mathematical game-rules contracts. They live in `shared/poker-domain/game-rules.js`; the current Home/ClubGG bridge lives in `shared/poker-domain/game-rules-compat.js`.
 
-`GAME-RULES-001B` adopts this contract for new `PokerState v2` initialization at the canonical poker-domain boundary. `GAME-RULES-001C` makes those states durable through versioned Replay and Saved Hand/Spot payloads while retaining the existing outer persistence, export, sync, and account envelopes. `PokerState v1`, Scenario generation/editor, Training, Personal Strategy, and setup UI remain on their existing contracts.
+`GAME-RULES-001B` adopts this contract for new `PokerState v2` initialization at the canonical poker-domain boundary. `GAME-RULES-001C` makes those states durable through versioned Replay and Saved Hand/Spot payloads while retaining the existing outer persistence, export, sync, and account envelopes. `GAME-RULES-001D` adopts snapshots in the production live Hand path, `playbook-scenario/v2`, and `training-config/v2` while preserving historical PokerState, Scenario, Training, Replay, and Saved readers. Personal Strategy remains on its existing scope contract.
 
 `StrategyProfile` remains the human poker-environment concept. A profile may describe a recognizable lineup or playing environment. Game Rules describe objective mathematical mechanics. Brand/operator names are provenance or presentation only and never select mathematical accounting in the new contract.
 
@@ -206,13 +206,26 @@ Legacy ClubGG maps to the non-brand fixed-collection preset. Its definition uses
 
 Unknown modes, unknown extra rule fields, invalid blinds/chip units/antes, unsupported table sizes, and all unsupported rule vocabulary fail explicitly. There is no compatibility fallback to Home/no-rake.
 
+## Production application adoption
+
+The current setup UI may continue to display Home and ClubGG as temporary compatibility choices. Those labels are not mathematical authority. The live Playbook controller resolves the selected value exactly once through `createGameRulesSnapshotFromLegacyGameConfiguration()` and initializes through `initializeHandFromGameRulesSnapshot()`. New live Hands are therefore `poker-state/v2`; their `game` projection has no brand mode or forced-contribution compatibility field. Home remains 2–10 players with no collection. ClubGG remains 7–10 players with exactly 100 milliBB collected from every configured player before antes and blinds, outside the contestable pot.
+
+`playbook-scenario/v2` is a strict, immutable lossy study contract. It contains the existing Scenario decision facts plus one `GameRulesSnapshot v1`; it contains no canonical action history and does not invent call price, Hero prior contribution, or live-opponent count. Its table size must match the snapshot setup. DecisionContext accounting projection reads collection authority from the snapshot definition only; the snapshot also retains the exact ante semantics for other rules-aware consumers. Snapshot source, preset ID/revision, legacy-mode provenance, and display labels do not affect projection. The resulting `rakeMode`, `forcedContributionPerPlayerBb`, and `totalForcedContributionBb` fields are DecisionContext v1 compatibility vocabulary, not canonical rules authority.
+
+Historical `playbook-scenario/v1` remains readable through an explicit compatibility projector. Known `off` and `fixed` modes preserve their exact established facts. Unknown accounting modes, inconsistent legacy accounting facts, missing/malformed v2 snapshots, fingerprint mismatches, and unknown Scenario versions fail explicitly; none normalize to Home/no-rake. A Hand-derived Scenario remains intentionally lossy but copies the Hand v2 rules snapshot unchanged.
+
+`training-config/v1` and `training-exercise/v1` remain exact legacy/replay contracts. New `training-config/v2` replaces `gameMode` with an immutable `GameRulesSnapshot v1` and otherwise retains the current table, stack, position, street, target, difficulty/assistance, and seed controls. A generated v2 exercise is `training-exercise/v2`, uses `poker-state/v2`, and stores the exact snapshot initialization plus canonical event sequence in its generation metadata, so exact-seed regeneration and trajectory reconstruction require no preset lookup.
+
+`training-rules-capability/v1` distinguishes canonical Hand support from current Training generator/reference support. A validated no-collection NLHE snapshot is supported. A validated fixed-per-seated-player snapshot is supported by the canonical Hand engine but is currently unsupported by Training and its reference-strategy capability, returning stable `fixed_collection_training_unsupported` without invoking StrategyProvider. Malformed or unknown rules return `invalid_rules_snapshot`. Training never substitutes a no-rake snapshot. StrategyProvider behavior is unchanged: equivalent legacy and snapshot-projected DecisionContexts produce the same StrategyResult, and no collection adjustment is claimed.
+
 ## Versioning and deferred work
 
 Additive metadata does not justify changing mathematical identity, but this strict v1 shape does not accept unknown fields. A new rule mechanic, enum value, or breaking field change requires a new schema version and an explicit compatibility path. Historical records are not rewritten by this contract ticket.
 
-The following belong to another separately approved consumer migration:
+The following remain deferred to separately approved work:
 
-- Scenario generation/editor beyond rules-aware Saved Spot portability, Training, broader DecisionContext consumers, StrategyProvider, and Personal Strategy adoption;
+- broader setup/preset UX, preset persistence, and Personal Strategy adoption;
+- Training Practice Planner, varied sampling, named RNG streams, coverage/recency, sizing families, and board targeting;
 - semantic-fingerprint indexing or IndexedDB migration;
 - preset storage, editing, ownership, account, sync, or Supabase work;
 - any new collection, straddle, tournament, blind-schedule, or poker-variant behavior.

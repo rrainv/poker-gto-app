@@ -44,12 +44,11 @@ test('repeated context refresh does not accumulate ClubGG contribution', async (
   assert.deepEqual(capture.decisionContexts.map((context) => context.forcedContributionPerPlayerBb), [0.1, 0.1, 0.1, 0.1]);
 });
 
-test('unsupported rake modes normalize to Home accounting', () => {
-  assert.deepEqual(qa.strategyAccountingContext('percent', 9), {
-    rakeMode: 'off',
-    forcedContributionPerPlayerBb: 0,
-    totalForcedContributionBb: 0,
-  });
+test('unsupported legacy rake modes fail instead of normalizing to Home accounting', () => {
+  assert.throws(
+    () => qa.strategyAccountingContext('percent', 9),
+    /Unsupported legacy rakeMode: percent/,
+  );
 });
 
 test('removed manual flatDrop penalty cannot mutate ClubGG accounting or postflop strategy', () => {

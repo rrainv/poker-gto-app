@@ -159,7 +159,8 @@ test('ClubGG hand initialization exposes exact deduction outside the pot', () =>
   const { bridge } = browserBridge();
   bridge.initializeHand(configuration({ tableSize: 7, gameMode: 'clubgg' }));
   const state = bridge.getState();
-  assert.equal(state.game.forcedContributionPerPlayerMilliBb, 100);
+  assert.equal(state.schemaVersion, 'poker-state/v2');
+  assert.equal(state.rulesSnapshot.definition.collectionPolicy.amountMilliBb, 100);
   assert.equal(state.deductionTotalMilliBb, 700);
   assert.equal(state.potMilliBb, 1500);
   assert.match(logic, /ClubGG · 0\.1 bb per seated player/);

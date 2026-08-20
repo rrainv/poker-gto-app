@@ -972,7 +972,10 @@ const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
 
 function strategyAccountingContext(rakeMode, seatedPlayerCount) {
 
-  const mode = rakeMode || 'off';
+  const mode = rakeMode;
+  if (!['off', 'fixed'].includes(mode)) {
+    throw new RangeError(`Unsupported legacy rakeMode: ${String(rakeMode)}`);
+  }
   const players = Math.max(0, Math.trunc(Number(seatedPlayerCount) || 0));
   const isClubGg = mode === 'fixed';
   const forcedContributionPerPlayerBb = isClubGg ? CLUBGG_FORCED_CONTRIBUTION_PER_PLAYER_BB : 0;
@@ -1038,10 +1041,19 @@ function readPlaybookScenarioInput() {
     straddleBb: numericValue('#straddle', 0)
   };
 
+  const hasRulesCompatibilityBridge = Boolean(
+    globalThis.RiverlinePlaybookState
+    && typeof globalThis.RiverlinePlaybookState.createScenarioInputFromLegacyCompatibility === 'function'
+  );
   const bridged = typeof callPlaybookStateBridge === 'function'
-    ? callPlaybookStateBridge('createScenarioInput', rawInput)
+    ? callPlaybookStateBridge('createScenarioInputFromLegacyCompatibility', rawInput)
     : null;
   if (bridged) return bridged;
+  if (hasRulesCompatibilityBridge) {
+    // The adapter already rejected this live input. Preserve it only as an
+    // explicit unsupported v1 read so no renderer path can reinterpret it as Home.
+    rawInput.rakeMode = 'unsupported_rules_compatibility_input';
+  }
   rawInput.heroCards = Object.freeze(rawInput.heroCards);
   rawInput.board = Object.freeze(rawInput.board);
   rawInput.deadCards = Object.freeze(rawInput.deadCards);
@@ -2401,7 +2413,10 @@ function deriveDecisionContext(snapshot = {}) {
   const callAmountBb = (lastAction === 'check'
     || (lastAction === 'unopened' && heroPosition === 'BB')) ? 0 : null;
   const supportedRakeModes = ['off', 'fixed'];
-  const rakeMode = supportedRakeModes.includes(snapshot.rakeMode) ? snapshot.rakeMode : 'off';
+  if (!supportedRakeModes.includes(snapshot.rakeMode)) {
+    throw new RangeError(`Unsupported legacy Scenario rakeMode: ${String(snapshot.rakeMode)}`);
+  }
+  const rakeMode = snapshot.rakeMode;
   const accounting = strategyAccountingContext(rakeMode, tableSize);
 
   return {
@@ -3545,7 +3560,7 @@ async function updateContext(reason = 'Context updated') {
   const inputSnapshot = readPlaybookInputSnapshot();
   const playbookBridge = globalThis.RiverlinePlaybookState;
   const playbookResolution = resolutionOverride || (playbookBridge && typeof playbookBridge.resolveDecisionContext === 'function'
-    ? playbookBridge.resolveDecisionContext(inputSnapshot, deriveDecisionContext)
+    ? playbookBridge.resolveDecisionContext(inputSnapshot)
     : {
         schemaVersion: 'playbook-decision-resolution/v1',
         mode: 'scenario',
@@ -4953,15 +4968,18 @@ function scheduleHomeRefresh({ clearPrivateState = false } = {}) {
 function restoreSavedSpotPresentation(result) {
   const source = result.scenarioInput || result.decisionContext;
   const context = result.decisionContext;
+  const rulesDefinition = result.scenarioInput?.rulesSnapshot?.definition
+    || result.object?.payload?.rulesSnapshot?.definition
+    || null;
   const values = {
     players: source.tableSize,
     playersNum: source.tableSize,
     stack: source.stackBb,
     stackNum: source.stackBb,
     stackMode: source.stackMode,
-    rakeMode: source.rakeMode,
-    ante: source.anteBb ?? 0,
-    anteNum: source.anteBb ?? 0,
+    rakeMode: source.rakeMode ?? context.rakeMode,
+    ante: source.anteBb ?? (rulesDefinition?.ante?.amountMilliBb ?? 0) / 1000,
+    anteNum: source.anteBb ?? (rulesDefinition?.ante?.amountMilliBb ?? 0) / 1000,
     straddle: source.straddleBb ?? 0,
     lastAction: source.lastAction,
     facingSize: source.facingSizeBb,
@@ -7189,6 +7207,7 @@ function formatHand(cards) {
 
 
 const TRAINING_CONFIG_SCHEMA_VERSION = 'training-config/v1';
+const TRAINING_CONFIG_V2_SCHEMA_VERSION = 'training-config/v2';
 
 const TRAINING_TARGETS = Object.freeze({
   PREFLOP_UNOPENED: 'preflop_unopened',
@@ -7229,7 +7248,7 @@ function readTrainingConfig(seed) {
     : street === 'preflop'
       ? preflopTargets
       : street === 'any' ? [...preflopTargets, ...postflopTargets] : postflopTargets;
-  return {
+  const legacyCompatibilityInput = {
     schemaVersion: TRAINING_CONFIG_SCHEMA_VERSION,
     tableSize,
     stackBb,
@@ -7240,6 +7259,10 @@ function readTrainingConfig(seed) {
     difficulty: $('#trainingDifficulty')?.value || 'hard',
     seed: seed >>> 0
   };
+  return callTrainingServiceBridge(
+    'createConfigFromLegacyCompatibility',
+    legacyCompatibilityInput
+  ) || legacyCompatibilityInput;
 }
 
 function trainingStrategyResultToPresentation(strategyResult) {
@@ -7549,7 +7572,8 @@ async function newRandomTrainingHand(options = {}) {
   const explicitSeed = Number.isInteger(options?.seed) ? options.seed >>> 0 : null;
   const seed = explicitSeed === null ? app.training.nextSeed >>> 0 : explicitSeed;
   if (explicitSeed === null) app.training.nextSeed = nextTrainingSeed(seed);
-  const config = options?.config?.schemaVersion === TRAINING_CONFIG_SCHEMA_VERSION
+  const config = [TRAINING_CONFIG_SCHEMA_VERSION, TRAINING_CONFIG_V2_SCHEMA_VERSION]
+    .includes(options?.config?.schemaVersion)
     ? { ...structuredClone(options.config), seed }
     : readTrainingConfig(seed);
 

@@ -4,6 +4,7 @@ import {
   CARD_RANKS,
   CARD_SUITS,
   CHANCE_TYPES,
+  GAME_RULES_COLLECTION_TYPES,
   GAME_MODES,
   PHASES,
   POSITIONS_BY_TABLE_SIZE,
@@ -12,24 +13,48 @@ import {
   applyChance,
   bbToMilliBb,
   createAction,
+  createGameRulesSnapshotFromLegacyGameConfiguration,
   getLegalActionSpec,
   initializeHand,
+  initializeHandFromGameRulesSnapshot,
+  validateGameRulesSnapshot,
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
 import { deriveDecisionContextFromPokerState } from './decision-context-from-poker-state.mjs';
 import { isStrategyResultV1 } from './strategy-result.mjs';
 
-export const TRAINING_CONFIG_SCHEMA_VERSION = 'training-config/v1';
-export const TRAINING_EXERCISE_SCHEMA_VERSION = 'training-exercise/v1';
+export const TRAINING_CONFIG_V1_SCHEMA_VERSION = 'training-config/v1';
+export const TRAINING_CONFIG_V2_SCHEMA_VERSION = 'training-config/v2';
+// Compatibility aliases retain the historical v1 API for exact-seed replay.
+export const TRAINING_CONFIG_SCHEMA_VERSION = TRAINING_CONFIG_V1_SCHEMA_VERSION;
+export const TRAINING_CONFIG_SCHEMA_VERSIONS = Object.freeze([
+  TRAINING_CONFIG_V1_SCHEMA_VERSION,
+  TRAINING_CONFIG_V2_SCHEMA_VERSION,
+]);
+export const TRAINING_EXERCISE_V1_SCHEMA_VERSION = 'training-exercise/v1';
+export const TRAINING_EXERCISE_V2_SCHEMA_VERSION = 'training-exercise/v2';
+export const TRAINING_EXERCISE_SCHEMA_VERSION = TRAINING_EXERCISE_V1_SCHEMA_VERSION;
+export const TRAINING_EXERCISE_SCHEMA_VERSIONS = Object.freeze([
+  TRAINING_EXERCISE_V1_SCHEMA_VERSION,
+  TRAINING_EXERCISE_V2_SCHEMA_VERSION,
+]);
+export const TRAINING_RULES_CAPABILITY_SCHEMA_VERSION = 'training-rules-capability/v1';
 export const TRAINING_GENERATION_ERROR_SCHEMA_VERSION = 'training-generation-error/v1';
 
 export const TRAINING_GENERATION_ERROR_CODES = Object.freeze({
   INVALID_CONFIG: 'invalid_config',
+  UNSUPPORTED_RULES: 'unsupported_rules',
   UNSUPPORTED_TARGET: 'unsupported_target',
   GENERATION_EXHAUSTED: 'generation_exhausted',
   DECISION_PROJECTION_UNAVAILABLE: 'decision_projection_unavailable',
   STRATEGY_UNAVAILABLE: 'strategy_unavailable',
   INTERNAL_ERROR: 'internal_error',
+});
+
+export const TRAINING_RULES_CAPABILITY_REASON_CODES = Object.freeze({
+  INVALID_RULES_SNAPSHOT: 'invalid_rules_snapshot',
+  TABLE_SIZE_MISMATCH: 'rules_table_size_mismatch',
+  FIXED_COLLECTION_UNSUPPORTED: 'fixed_collection_training_unsupported',
 });
 
 export const TRAINING_DECISION_TYPES = Object.freeze({
@@ -60,6 +85,17 @@ const POSTFLOP_TARGETS = new Set([
 ]);
 const MAX_GENERATION_ATTEMPTS = 64;
 const MAX_TRAJECTORY_ACTIONS = 160;
+const TRAINING_CONFIG_V2_KEYS = Object.freeze([
+  'schemaVersion',
+  'rulesSnapshot',
+  'tableSize',
+  'stackBb',
+  'streets',
+  'heroPositions',
+  'allowedDecisionTypes',
+  'difficulty',
+  'seed',
+]);
 const FULL_DECK = Object.freeze(
   [...CARD_RANKS].flatMap((rank) => [...CARD_SUITS].map((suit) => `${rank}${suit}`)),
 );
@@ -153,6 +189,15 @@ function uniqueStrings(values, allowed, label) {
   return normalized;
 }
 
+function requireExactKeys(value, expected, label) {
+  const actual = Object.keys(value).sort();
+  const wanted = [...expected].sort();
+  if (actual.length !== wanted.length
+    || actual.some((key, index) => key !== wanted[index])) {
+    throw new RangeError(`${label} must contain exactly: ${wanted.join(', ')}`);
+  }
+}
+
 function targetSupportsStreet(target, street) {
   return street === STREETS.PREFLOP ? PREFLOP_TARGETS.has(target) : POSTFLOP_TARGETS.has(target);
 }
@@ -161,17 +206,24 @@ export function createTrainingConfig(input = {}) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new TypeError('TrainingConfig must be an object');
   }
-  if (input.schemaVersion !== TRAINING_CONFIG_SCHEMA_VERSION) {
-    throw new TypeError(`Expected ${TRAINING_CONFIG_SCHEMA_VERSION}`);
+  if (!TRAINING_CONFIG_SCHEMA_VERSIONS.includes(input.schemaVersion)) {
+    throw new TypeError(`Unsupported TrainingConfig version: ${String(input.schemaVersion)}`);
   }
+  const isV2 = input.schemaVersion === TRAINING_CONFIG_V2_SCHEMA_VERSION;
+  if (isV2) requireExactKeys(input, TRAINING_CONFIG_V2_KEYS, 'TrainingConfig v2');
   const tableSize = requireInteger(input.tableSize, 2, 10, 'tableSize');
+  const rulesSnapshot = isV2 ? validateGameRulesSnapshot(input.rulesSnapshot) : null;
+  if (rulesSnapshot !== null && rulesSnapshot.setup.seatedPlayers !== tableSize) {
+    throw new RangeError('training-config/v2 tableSize must match GameRulesSnapshot setup');
+  }
   const stackBb = Number(input.stackBb);
   if (!Number.isFinite(stackBb) || stackBb < 10 || stackBb > 500) {
     throw new RangeError('stackBb must be from 10 through 500');
   }
   const startingStackMilliBb = bbToMilliBb(stackBb, 'stackBb');
-  if (startingStackMilliBb % 100 !== 0) {
-    throw new RangeError('stackBb must align to the canonical 0.1bb chip unit');
+  const chipUnitMilliBb = rulesSnapshot?.definition.blinds.chipUnitMilliBb ?? 100;
+  if (startingStackMilliBb % chipUnitMilliBb !== 0) {
+    throw new RangeError('stackBb must align to the configured Game Rules chip unit');
   }
   const streets = uniqueStrings(input.streets, STREET_VALUES, 'streets');
   const positions = POSITIONS_BY_TABLE_SIZE[tableSize];
@@ -190,8 +242,8 @@ export function createTrainingConfig(input = {}) {
     DECISION_TYPE_VALUES,
     'allowedDecisionTypes',
   );
-  const gameMode = input.gameMode ?? GAME_MODES.HOME;
-  if (gameMode !== GAME_MODES.HOME) {
+  const gameMode = isV2 ? null : input.gameMode ?? GAME_MODES.HOME;
+  if (!isV2 && gameMode !== GAME_MODES.HOME) {
     throw new RangeError('training-config/v1 currently supports Home mode only');
   }
   const difficulty = input.difficulty ?? 'hard';
@@ -200,15 +252,105 @@ export function createTrainingConfig(input = {}) {
   }
   const seed = requireInteger(input.seed, 0, 0xffffffff, 'seed');
   return deepFreeze({
-    schemaVersion: TRAINING_CONFIG_SCHEMA_VERSION,
+    schemaVersion: input.schemaVersion,
     tableSize,
     stackBb,
     streets,
-    gameMode,
+    ...(isV2 ? { rulesSnapshot } : { gameMode }),
     heroPositions,
     allowedDecisionTypes,
     difficulty,
     seed: seed >>> 0,
+  });
+}
+
+function rulesCapability({
+  supported,
+  reasonCode = null,
+  canonicalHandSupported,
+  generatorSupported,
+  strategyProviderSupported,
+}) {
+  return deepFreeze({
+    schemaVersion: TRAINING_RULES_CAPABILITY_SCHEMA_VERSION,
+    supported,
+    reasonCode,
+    canonicalHandSupported,
+    generatorSupported,
+    strategyProviderSupported,
+  });
+}
+
+export function resolveTrainingRulesCapability(rulesSnapshot, { tableSize = null } = {}) {
+  let normalized;
+  try {
+    normalized = validateGameRulesSnapshot(rulesSnapshot);
+  } catch (_) {
+    return rulesCapability({
+      supported: false,
+      reasonCode: TRAINING_RULES_CAPABILITY_REASON_CODES.INVALID_RULES_SNAPSHOT,
+      canonicalHandSupported: false,
+      generatorSupported: false,
+      strategyProviderSupported: false,
+    });
+  }
+  if (tableSize !== null && normalized.setup.seatedPlayers !== Number(tableSize)) {
+    return rulesCapability({
+      supported: false,
+      reasonCode: TRAINING_RULES_CAPABILITY_REASON_CODES.TABLE_SIZE_MISMATCH,
+      canonicalHandSupported: false,
+      generatorSupported: false,
+      strategyProviderSupported: false,
+    });
+  }
+  if (normalized.definition.collectionPolicy.type
+    === GAME_RULES_COLLECTION_TYPES.FIXED_PER_SEATED_PLAYER) {
+    return rulesCapability({
+      supported: false,
+      reasonCode: TRAINING_RULES_CAPABILITY_REASON_CODES.FIXED_COLLECTION_UNSUPPORTED,
+      canonicalHandSupported: true,
+      generatorSupported: false,
+      strategyProviderSupported: false,
+    });
+  }
+  if (normalized.definition.collectionPolicy.type !== GAME_RULES_COLLECTION_TYPES.NONE) {
+    return rulesCapability({
+      supported: false,
+      reasonCode: TRAINING_RULES_CAPABILITY_REASON_CODES.INVALID_RULES_SNAPSHOT,
+      canonicalHandSupported: false,
+      generatorSupported: false,
+      strategyProviderSupported: false,
+    });
+  }
+  return rulesCapability({
+    supported: true,
+    canonicalHandSupported: true,
+    generatorSupported: true,
+    strategyProviderSupported: true,
+  });
+}
+
+export function createTrainingConfigFromLegacyCompatibility(input = {}) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    throw new TypeError('Legacy Training compatibility input must be an object');
+  }
+  const rulesSnapshot = createGameRulesSnapshotFromLegacyGameConfiguration({
+    mode: input.gameMode ?? GAME_MODES.HOME,
+    smallBlindMilliBb: 500,
+    bigBlindMilliBb: 1000,
+    chipUnitMilliBb: 100,
+    ante: { type: ANTE_TYPES.NONE, amountMilliBb: 0 },
+  }, Number(input.tableSize));
+  return createTrainingConfig({
+    schemaVersion: TRAINING_CONFIG_V2_SCHEMA_VERSION,
+    rulesSnapshot,
+    tableSize: input.tableSize,
+    stackBb: input.stackBb,
+    streets: input.streets,
+    heroPositions: input.heroPositions,
+    allowedDecisionTypes: input.allowedDecisionTypes,
+    difficulty: input.difficulty,
+    seed: input.seed,
   });
 }
 
@@ -227,6 +369,19 @@ function availableActionTypes(spec) {
 }
 
 function buildConfiguration(config, buttonSeat, handId) {
+  const players = Array.from({ length: config.tableSize }, (_, seat) => ({
+    playerId: `seat-${seat}`,
+    seat,
+    startingStackMilliBb: bbToMilliBb(config.stackBb, 'stackBb'),
+  }));
+  if (config.schemaVersion === TRAINING_CONFIG_V2_SCHEMA_VERSION) {
+    return {
+      handId,
+      rulesSnapshot: config.rulesSnapshot,
+      buttonSeat,
+      players,
+    };
+  }
   return {
     handId,
     game: {
@@ -237,11 +392,7 @@ function buildConfiguration(config, buttonSeat, handId) {
       ante: { type: ANTE_TYPES.NONE, amountMilliBb: 0 },
     },
     buttonSeat,
-    players: Array.from({ length: config.tableSize }, (_, seat) => ({
-      playerId: `seat-${seat}`,
-      seat,
-      startingStackMilliBb: bbToMilliBb(config.stackBb, 'stackBb'),
-    })),
+    players,
   };
 }
 
@@ -489,7 +640,9 @@ function createEnvironment(config, random, attempt, street, target) {
   const buttonSeat = random.nextInt(config.tableSize);
   const handId = `training-${config.seed.toString(16)}-${attempt}`;
   const initialConfiguration = buildConfiguration(config, buttonSeat, handId);
-  let state = initializeHand(initialConfiguration);
+  let state = config.schemaVersion === TRAINING_CONFIG_V2_SCHEMA_VERSION
+    ? initializeHandFromGameRulesSnapshot(initialConfiguration)
+    : initializeHand(initialConfiguration);
   const heroPosition = random.choose(config.heroPositions);
   const hero = state.players.find((player) => player.position === heroPosition);
   if (!hero) throw new RetryGenerationError('hero_position_not_seated');
@@ -593,7 +746,9 @@ function buildExercise(config, random, attempt, pair, strategyProvider) {
   return deepFreeze({
     ok: true,
     exercise: {
-      schemaVersion: TRAINING_EXERCISE_SCHEMA_VERSION,
+      schemaVersion: config.schemaVersion === TRAINING_CONFIG_V2_SCHEMA_VERSION
+        ? TRAINING_EXERCISE_V2_SCHEMA_VERSION
+        : TRAINING_EXERCISE_V1_SCHEMA_VERSION,
       id: exerciseId,
       seed: config.seed,
       pokerState: environment.state,
@@ -641,15 +796,39 @@ function buildExercise(config, random, attempt, pair, strategyProvider) {
 export function generateTrainingExercise(input, {
   strategyProvider,
 } = {}) {
+  const requestedRulesCapability = input?.schemaVersion === TRAINING_CONFIG_V2_SCHEMA_VERSION
+    ? resolveTrainingRulesCapability(input.rulesSnapshot, { tableSize: input.tableSize })
+    : null;
   let config;
   try {
     config = createTrainingConfig(input);
   } catch (error) {
+    if (requestedRulesCapability && !requestedRulesCapability.supported
+      && requestedRulesCapability.reasonCode
+        === TRAINING_RULES_CAPABILITY_REASON_CODES.INVALID_RULES_SNAPSHOT) {
+      return failure(
+        TRAINING_GENERATION_ERROR_CODES.UNSUPPORTED_RULES,
+        'Training does not support the supplied Game Rules.',
+        { capability: requestedRulesCapability, error: serializedError(error) },
+      );
+    }
     return failure(
       TRAINING_GENERATION_ERROR_CODES.INVALID_CONFIG,
       'Training configuration is invalid.',
       { error: serializedError(error) },
     );
+  }
+  if (config.schemaVersion === TRAINING_CONFIG_V2_SCHEMA_VERSION) {
+    const capability = resolveTrainingRulesCapability(config.rulesSnapshot, {
+      tableSize: config.tableSize,
+    });
+    if (!capability.supported) {
+      return failure(
+        TRAINING_GENERATION_ERROR_CODES.UNSUPPORTED_RULES,
+        'Training does not support the supplied Game Rules.',
+        { capability },
+      );
+    }
   }
   if (!strategyProvider || typeof strategyProvider.resolve !== 'function') {
     return failure(

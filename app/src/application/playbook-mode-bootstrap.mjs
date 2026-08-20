@@ -3,6 +3,7 @@ import {
   PLAYBOOK_MODES,
   createPlaybookModeController,
   createPlaybookScenarioInput,
+  createPlaybookScenarioInputFromLegacyCompatibility,
   createPlaybookViewModel,
 } from './playbook-state-source.mjs';
 import { createTablePresenceViewModel } from './table-presence-view-model.mjs';
@@ -88,6 +89,8 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     },
 
     createScenarioInput: createPlaybookScenarioInput,
+
+    createScenarioInputFromLegacyCompatibility: createPlaybookScenarioInputFromLegacyCompatibility,
 
     resolveDecisionContext(scenarioInput, deriveScenarioDecisionContext) {
       return modeController.resolve({ scenarioInput, deriveScenarioDecisionContext });

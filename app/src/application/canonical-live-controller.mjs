@@ -8,6 +8,7 @@ import {
   assertUniqueKnownCards,
   bbToMilliBb,
   createAction,
+  createGameRulesSnapshotFromLegacyGameConfiguration,
   getLegalActionSpec,
 } from '../../../shared/poker-domain/index.js';
 import { createCanonicalHandSession } from './canonical-hand-session.mjs';
@@ -56,12 +57,6 @@ function normalizeConfiguration(configuration) {
 
   const tableSize = requireInteger(configuration.tableSize, 2, 10, 'tableSize');
   const gameMode = configuration.gameMode ?? GAME_MODES.HOME;
-  if (![GAME_MODES.HOME, GAME_MODES.CLUBGG].includes(gameMode)) {
-    throw new RangeError(`Unsupported canonical gameMode: ${gameMode}`);
-  }
-  if (gameMode === GAME_MODES.CLUBGG && tableSize < 7) {
-    throw new RangeError('ClubGG canonical sessions require 7 through 10 players');
-  }
 
   const hasHeroSeat = configuration.heroSeat !== undefined
     && configuration.heroSeat !== null
@@ -112,15 +107,16 @@ function normalizeConfiguration(configuration) {
     seat,
     startingStackMilliBb,
   }));
+  const rulesSnapshot = createGameRulesSnapshotFromLegacyGameConfiguration({
+    mode: gameMode,
+    smallBlindMilliBb: 500,
+    bigBlindMilliBb: 1000,
+    chipUnitMilliBb: 100,
+    ante: { type: anteType, amountMilliBb: anteMilliBb },
+  }, tableSize);
   const pokerConfiguration = {
     handId: 'playbook-canonical',
-    game: {
-      mode: gameMode,
-      smallBlindMilliBb: 500,
-      bigBlindMilliBb: 1000,
-      chipUnitMilliBb: 100,
-      ante: { type: anteType, amountMilliBb: anteMilliBb },
-    },
+    rulesSnapshot,
     buttonSeat,
     players,
   };
@@ -204,7 +200,7 @@ export function createCanonicalLiveController({
       stagedHeroCards = Object.freeze([]);
       try {
         const normalized = normalizeConfiguration(configuration);
-        const state = session.initialize(normalized.pokerConfiguration);
+        const state = session.initializeFromGameRulesSnapshot(normalized.pokerConfiguration);
         const hero = normalized.requestedHeroSeat === null
           ? state.players.find((player) => (
             player.position === normalized.requestedHeroPosition

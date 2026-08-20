@@ -90,13 +90,15 @@ function curriculumTags(exercise) {
 }
 
 export function createTrainingPresentationModel(exercise) {
-  if (exercise?.schemaVersion !== 'training-exercise/v1') {
-    throw new TypeError('Expected TrainingExercise v1');
+  if (!['training-exercise/v1', 'training-exercise/v2'].includes(exercise?.schemaVersion)) {
+    throw new TypeError(
+      `Expected TrainingExercise v1 or v2; received: ${String(exercise?.schemaVersion)}`,
+    );
   }
   const context = exercise.decisionContext;
   const state = exercise.pokerState;
   if (!context || !state || !Array.isArray(state.players) || !Array.isArray(state.actionHistory)) {
-    throw new TypeError('TrainingExercise v1 is missing canonical presentation facts');
+    throw new TypeError('TrainingExercise is missing canonical presentation facts');
   }
   const playersById = new Map(state.players.map((player) => [player.playerId, player]));
   const actionHistory = [...state.actionHistory]
