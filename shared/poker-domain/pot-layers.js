@@ -4,13 +4,15 @@ import {
   LEDGER_KINDS,
   POKER_POT_LAYER_SCHEMA_VERSION,
   POKER_STATE_SCHEMA_VERSION,
+  POKER_STATE_SCHEMA_VERSIONS,
+  POKER_STATE_V2_SCHEMA_VERSION,
   POKER_UNMATCHED_CONTRIBUTION_SCHEMA_VERSION,
 } from './schema.js';
 import { isPlayerLive } from './selectors.js';
 
 function requireContributionState(state) {
-  if (!state || state.schemaVersion !== POKER_STATE_SCHEMA_VERSION) {
-    throw new TypeError(`Expected ${POKER_STATE_SCHEMA_VERSION}`);
+  if (!state || !POKER_STATE_SCHEMA_VERSIONS.includes(state.schemaVersion)) {
+    throw new TypeError(`Expected ${POKER_STATE_SCHEMA_VERSION} or ${POKER_STATE_V2_SCHEMA_VERSION}`);
   }
   if (!Array.isArray(state.players) || !Array.isArray(state.ledger)) {
     throw new TypeError('Pot derivation requires canonical players and ledger arrays');

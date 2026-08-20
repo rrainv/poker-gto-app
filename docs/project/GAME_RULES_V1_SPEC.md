@@ -4,7 +4,7 @@
 
 `GameRulesDefinition v1`, `GameRulesPreset v1`, and `GameRulesSnapshot v1` are Riverline's DOM-free mathematical game-rules contracts. They live in `shared/poker-domain/game-rules.js`; the current Home/ClubGG bridge lives in `shared/poker-domain/game-rules-compat.js`.
 
-This foundation does not change `PokerState v1`, hand initialization, ledger movement kinds, Replay, Saved Hand/Spot, Scenario, Training, Personal Strategy, UI, persistence, Supabase, or account state. Those consumers continue to use their current contracts until a separately approved migration.
+`GAME-RULES-001B` adopts this contract for new `PokerState v2` initialization at the canonical poker-domain boundary. `PokerState v1`, Replay, Saved Hand/Spot, Scenario, Training, Personal Strategy, UI, persistence, Supabase, and account state remain on their existing contracts until separately approved migrations.
 
 `StrategyProfile` remains the human poker-environment concept. A profile may describe a recognizable lineup or playing environment. Game Rules describe objective mathematical mechanics. Brand/operator names are provenance or presentation only and never select mathematical accounting in the new contract.
 
@@ -131,6 +131,37 @@ Legacy source mode is exactly `home` or `clubgg`. Brand appears only there as co
 
 Snapshot validation normalizes and freezes a new copy, validates source and setup, revalidates the definition, and rejects a fingerprint that does not exactly match the copied definition.
 
+## PokerState v2 adoption
+
+Schema version: `poker-state/v2`.
+
+New snapshot-authoritative hands use:
+
+```js
+initializeHandFromGameRulesSnapshot({
+  handId, // optional string or null
+  rulesSnapshot,
+  buttonSeat,
+  players,
+})
+```
+
+The initializer validates and copies the supplied `GameRulesSnapshot v1`; it never performs a live preset lookup and never chooses accounting from source, preset, operator, or legacy-mode provenance. `rulesSnapshot.setup.seatedPlayers` must equal the configured player count, and that count must fit `rulesSnapshot.definition.tableSize`. Unsupported variants, formats, straddles, collections, or other future mechanics fail through the strict snapshot contract.
+
+`PokerState v2` contains the immutable `rulesSnapshot` plus a brand-free `game` projection of the resolved variant, format, table size, blinds, chip unit, and ante used by canonical transitions. It does not contain the v1 `game.mode` or `forcedContributionPerPlayerMilliBb` compatibility fields.
+
+Initialization executes one shared posting path in this exact order:
+
+1. fixed collection, when configured;
+2. ante;
+3. small blind and big blind.
+
+`collectionPolicy.type: none` produces no deduction. `fixed_per_seated_player` requires full payment by every configured player before state construction proceeds, deducts the exact snapshot amount once per player, and records `fixed_player_collection` / `stack_to_deduction` entries on the hand-start ledger. Collection never changes the contestable pot, street contribution, pot layers, refunds, awards, or payouts. Antes and blinds retain the existing stack-capped short-post behavior after a successful collection.
+
+The canonical validator, selectors, betting/chance transitions, pot derivation, private reveal, and showdown accept both supported state versions. V1 states retain `clubgg_forced_contribution`; v2 states require `fixed_player_collection`. Deduction totals, per-player deduction selection, and conservation use ledger movement semantics rather than brand switching.
+
+`initializeHand()` remains the legacy `poker-state/v1` API and preserves its Home/ClubGG state shape, brand-specific ledger kind, and behavior. Existing v1 state and history are read as-is and are not rewritten or migrated.
+
 ## Semantic identity
 
 `serializeGameRulesSemantics()` validates and rewrites a definition into one fixed field order before JSON serialization. It is therefore independent of JavaScript insertion order. `parseGameRulesSemanticSerialization()` validates imported serialized definitions and recreates the immutable normalized form.
@@ -171,10 +202,8 @@ Unknown modes, unknown extra rule fields, invalid blinds/chip units/antes, unsup
 
 Additive metadata does not justify changing mathematical identity, but this strict v1 shape does not accept unknown fields. A new rule mechanic, enum value, or breaking field change requires a new schema version and an explicit compatibility path. Historical records are not rewritten by this contract ticket.
 
-The following belong to `GAME-RULES-001B` or another separately approved consumer migration:
+The following belong to another separately approved consumer migration:
 
-- PokerState schema adoption and general initialization/accounting execution;
-- generic ledger movement/kind migration away from legacy ClubGG names;
 - Replay, Saved Hand/Spot, Scenario, Training, DecisionContext, StrategyProvider, and Personal Strategy adoption;
 - semantic-fingerprint indexing or IndexedDB migration;
 - preset storage, editing, ownership, account, sync, or Supabase work;

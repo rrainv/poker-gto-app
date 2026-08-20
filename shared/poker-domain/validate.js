@@ -1,7 +1,11 @@
 import { assertCardArray, assertUniqueKnownCards } from './cards.js';
 import { assertMilliBbAlignment, assertPositiveMilliBb } from './amounts.js';
 import { validateAction } from './action.js';
+import {
+  GAME_RULES_COLLECTION_TYPES,
+} from './game-rules.js';
 import { derivePotLayers } from './pot-layers.js';
+import { normalizePokerStateRulesSnapshot } from './poker-state-rules.js';
 import {
   areHoleCardsDealt,
   isHiddenHoleCards,
@@ -26,6 +30,7 @@ import {
   POKER_HAND_RANK_SCHEMA_VERSION,
   POKER_SHOWDOWN_LAYER_RESULT_SCHEMA_VERSION,
   POKER_STATE_SCHEMA_VERSION,
+  POKER_STATE_V2_SCHEMA_VERSION,
   POKER_VARIANT,
   STREETS,
 } from './schema.js';
@@ -42,6 +47,32 @@ const CHANCE_CARD_COUNT = Object.freeze({
   [CHANCE_TYPES.DEAL_TURN]: 1,
   [CHANCE_TYPES.DEAL_RIVER]: 1,
 });
+const POKER_STATE_V2_GAME_KEYS = Object.freeze([
+  'variant',
+  'format',
+  'tableSize',
+  'smallBlindMilliBb',
+  'bigBlindMilliBb',
+  'chipUnitMilliBb',
+  'ante',
+]);
+const POKER_STATE_V2_ANTE_KEYS = Object.freeze(['type', 'amountMilliBb']);
+const COMMON_LEDGER_KINDS = Object.freeze([
+  LEDGER_KINDS.ANTE,
+  LEDGER_KINDS.SMALL_BLIND,
+  LEDGER_KINDS.BIG_BLIND,
+  LEDGER_KINDS.ACTION,
+  LEDGER_KINDS.UNCALLED_REFUND,
+  LEDGER_KINDS.POT_AWARD,
+]);
+const POKER_STATE_V1_LEDGER_KINDS = new Set([
+  LEDGER_KINDS.CLUBGG_FORCED_CONTRIBUTION,
+  ...COMMON_LEDGER_KINDS,
+]);
+const POKER_STATE_V2_LEDGER_KINDS = new Set([
+  LEDGER_KINDS.FIXED_PLAYER_COLLECTION,
+  ...COMMON_LEDGER_KINDS,
+]);
 
 function sameNumericRecord(left, right) {
   if (!left || typeof left !== 'object' || Array.isArray(left)
@@ -50,6 +81,89 @@ function sameNumericRecord(left, right) {
   const rightKeys = Object.keys(right);
   return leftKeys.length === rightKeys.length
     && leftKeys.every((key) => Object.hasOwn(right, key) && left[key] === right[key]);
+}
+
+function requireExactKeys(value, expected, label) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new TypeError(`${label} must be an object`);
+  }
+  const actual = Object.keys(value).sort();
+  const wanted = [...expected].sort();
+  if (actual.length !== wanted.length
+    || actual.some((key, index) => key !== wanted[index])) {
+    throw new RangeError(`${label} must contain exactly: ${wanted.join(', ')}`);
+  }
+}
+
+function validatePokerStateV2Rules(state) {
+  const rulesSnapshot = normalizePokerStateRulesSnapshot(state.rulesSnapshot);
+
+  requireExactKeys(state.game, POKER_STATE_V2_GAME_KEYS, 'PokerState v2 game');
+  requireExactKeys(state.game.ante, POKER_STATE_V2_ANTE_KEYS, 'PokerState v2 game.ante');
+  const { definition } = rulesSnapshot;
+  if (rulesSnapshot.setup.seatedPlayers !== state.players.length) {
+    throw new RangeError('GameRulesSnapshot.setup.seatedPlayers must match players');
+  }
+  if (state.players.length < definition.tableSize.minimumSeated
+    || state.players.length > definition.tableSize.maximumSeated) {
+    throw new RangeError('PokerState v2 players must fit the rules table-size policy');
+  }
+  if (state.game.variant !== definition.variant
+    || state.game.format !== definition.format
+    || state.game.tableSize !== state.players.length
+    || state.game.smallBlindMilliBb !== definition.blinds.smallBlindMilliBb
+    || state.game.bigBlindMilliBb !== definition.blinds.bigBlindMilliBb
+    || state.game.chipUnitMilliBb !== definition.blinds.chipUnitMilliBb
+    || state.game.ante.type !== definition.ante.type
+    || state.game.ante.amountMilliBb !== definition.ante.amountMilliBb) {
+    throw new RangeError('PokerState v2 game must exactly project its GameRulesSnapshot');
+  }
+  return rulesSnapshot;
+}
+
+function validatePokerStateV2Collection(state, rulesSnapshot) {
+  const collectionEntries = state.ledger.filter((entry) => (
+    entry.kind === LEDGER_KINDS.FIXED_PLAYER_COLLECTION
+  ));
+  const { collectionPolicy } = rulesSnapshot.definition;
+  if (collectionPolicy.type === GAME_RULES_COLLECTION_TYPES.NONE) {
+    if (collectionEntries.length !== 0 || state.deductionTotalMilliBb !== 0) {
+      throw new RangeError('No-collection PokerState v2 cannot contain non-pot deductions');
+    }
+    return;
+  }
+  if (collectionPolicy.type !== GAME_RULES_COLLECTION_TYPES.FIXED_PER_SEATED_PLAYER) {
+    throw new RangeError(`Unsupported PokerState v2 collection policy: ${collectionPolicy.type}`);
+  }
+  if (collectionEntries.length !== state.players.length) {
+    throw new RangeError('Fixed collection must occur exactly once per seated player');
+  }
+
+  const collectedPlayerIds = new Set();
+  for (let index = 0; index < collectionEntries.length; index += 1) {
+    const entry = collectionEntries[index];
+    if (entry.sequence !== index
+      || state.ledger[index] !== entry
+      || entry.street !== 'hand'
+      || entry.movement !== LEDGER_MOVEMENTS.STACK_TO_DEDUCTION
+      || entry.amountMilliBb !== collectionPolicy.amountMilliBb) {
+      throw new RangeError('Fixed collection must be exact and precede antes and blinds');
+    }
+    if (collectedPlayerIds.has(entry.playerId)) {
+      throw new RangeError('Fixed collection cannot be applied more than once to a player');
+    }
+    collectedPlayerIds.add(entry.playerId);
+  }
+  if (state.players.some((player) => (
+    !collectedPlayerIds.has(player.playerId)
+      || player.totalDeductionMilliBb !== collectionPolicy.amountMilliBb
+  ))) {
+    throw new RangeError('Fixed collection ledger must agree with every player deduction');
+  }
+  const expectedTotal = collectionPolicy.amountMilliBb * state.players.length;
+  if (!Number.isSafeInteger(expectedTotal) || state.deductionTotalMilliBb !== expectedTotal) {
+    throw new RangeError('Fixed collection total must equal amount times seated players');
+  }
 }
 
 export function validateGameConfiguration(game, tableSize) {
@@ -91,18 +205,27 @@ export function validateGameConfiguration(game, tableSize) {
 }
 
 export function validatePokerState(state) {
-  if (!state || state.schemaVersion !== POKER_STATE_SCHEMA_VERSION) {
-    throw new TypeError(`Expected ${POKER_STATE_SCHEMA_VERSION}`);
+  if (!state || ![
+    POKER_STATE_SCHEMA_VERSION,
+    POKER_STATE_V2_SCHEMA_VERSION,
+  ].includes(state.schemaVersion)) {
+    throw new TypeError(`Expected ${POKER_STATE_SCHEMA_VERSION} or ${POKER_STATE_V2_SCHEMA_VERSION}`);
   }
+  const isV2 = state.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION;
   if (!state.game || state.game.variant !== POKER_VARIANT) throw new RangeError('Unsupported poker variant');
   if (!VALUES(PHASES).includes(state.phase)) throw new RangeError('Invalid phase');
   if (!VALUES(STREETS).includes(state.street)) throw new RangeError('Invalid street');
   if (!Array.isArray(state.players)) throw new TypeError('state.players must be an array');
 
-  const expectedForcedContribution = validateGameConfiguration(state.game, state.players.length);
-  if (state.game.tableSize !== state.players.length) throw new RangeError('game.tableSize must match players');
-  if (state.game.forcedContributionPerPlayerMilliBb !== expectedForcedContribution) {
-    throw new RangeError('forcedContributionPerPlayerMilliBb does not match the game mode');
+  let rulesSnapshot = null;
+  if (isV2) {
+    rulesSnapshot = validatePokerStateV2Rules(state);
+  } else {
+    const expectedForcedContribution = validateGameConfiguration(state.game, state.players.length);
+    if (state.game.tableSize !== state.players.length) throw new RangeError('game.tableSize must match players');
+    if (state.game.forcedContributionPerPlayerMilliBb !== expectedForcedContribution) {
+      throw new RangeError('forcedContributionPerPlayerMilliBb does not match the game mode');
+    }
   }
   if (!POSITIONS_BY_TABLE_SIZE[state.players.length]) throw new RangeError('Unsupported table size');
 
@@ -121,7 +244,9 @@ export function validatePokerState(state) {
     if (!Number.isInteger(player.seat) || player.seat < 0 || player.seat > 9) throw new RangeError('seat must be an integer from 0 through 9');
     if (seats.has(player.seat)) throw new RangeError(`Duplicate seat: ${player.seat}`);
     seats.add(player.seat);
-    if (player.seated !== true || player.dealtIn !== true) throw new RangeError('Sitting-out players are deferred in poker-state/v1 initialization');
+    if (player.seated !== true || player.dealtIn !== true) {
+      throw new RangeError(`Sitting-out players are deferred in ${state.schemaVersion} initialization`);
+    }
     if (typeof player.folded !== 'boolean') throw new TypeError('player.folded must be boolean');
     if (typeof player.actedThisStreet !== 'boolean') throw new TypeError('player.actedThisStreet must be boolean');
     if (Object.hasOwn(player, 'allIn')) throw new RangeError('allIn must be derived, not stored');
@@ -198,13 +323,23 @@ export function validatePokerState(state) {
   state.ledger.forEach((entry, index) => {
     if (entry.sequence !== index) throw new RangeError('Ledger sequence must be contiguous');
     if (!ids.has(entry.playerId)) throw new RangeError('Ledger entry refers to an unknown player');
-    if (!VALUES(LEDGER_KINDS).includes(entry.kind)) throw new RangeError('Invalid ledger kind');
+    const allowedLedgerKinds = isV2
+      ? POKER_STATE_V2_LEDGER_KINDS
+      : POKER_STATE_V1_LEDGER_KINDS;
+    if (!allowedLedgerKinds.has(entry.kind)) throw new RangeError('Invalid ledger kind');
     if (!VALUES(LEDGER_MOVEMENTS).includes(entry.movement)) throw new RangeError('Invalid ledger movement');
     assertPositiveMilliBb(entry.amountMilliBb, 'ledger.amountMilliBb');
     assertMilliBbAlignment(entry.amountMilliBb, state.game.chipUnitMilliBb, 'ledger.amountMilliBb');
     if (entry.kind === LEDGER_KINDS.CLUBGG_FORCED_CONTRIBUTION
       && entry.movement !== LEDGER_MOVEMENTS.STACK_TO_DEDUCTION) {
       throw new RangeError('ClubGG contributions must be non-pot deductions');
+    }
+    if (entry.kind === LEDGER_KINDS.FIXED_PLAYER_COLLECTION
+      && entry.movement !== LEDGER_MOVEMENTS.STACK_TO_DEDUCTION) {
+      throw new RangeError('Fixed player collections must be non-pot deductions');
+    }
+    if (entry.kind === LEDGER_KINDS.FIXED_PLAYER_COLLECTION && entry.street !== 'hand') {
+      throw new RangeError('Fixed player collections must occur at hand start');
     }
     if ([LEDGER_KINDS.ANTE, LEDGER_KINDS.SMALL_BLIND, LEDGER_KINDS.BIG_BLIND, LEDGER_KINDS.ACTION].includes(entry.kind)
       && entry.movement !== LEDGER_MOVEMENTS.STACK_TO_POT) {
@@ -249,6 +384,7 @@ export function validatePokerState(state) {
       throw new RangeError(`Ledger does not agree with player totals for ${player.playerId}`);
     }
   }
+  if (isV2) validatePokerStateV2Collection(state, rulesSnapshot);
 
   const startingStacks = state.players.reduce((sum, player) => sum + player.startingStackMilliBb, 0);
   const currentStacks = state.players.reduce((sum, player) => sum + player.currentStackMilliBb, 0);

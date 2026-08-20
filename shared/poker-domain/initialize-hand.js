@@ -1,21 +1,25 @@
 import { assertMilliBbAlignment } from './amounts.js';
 import { deepFreeze } from './freeze.js';
+import {
+  GAME_RULES_COLLECTION_TYPES,
+} from './game-rules.js';
+import { normalizePokerStateRulesSnapshot } from './poker-state-rules.js';
 import { deriveSeatAssignments, playersBySeat, playersClockwiseAfterSeat } from './positions.js';
 import {
   ANTE_TYPES,
   CHANCE_TYPES,
   CLUBGG_FORCED_CONTRIBUTION_MILLI_BB,
-  GAME_MODES,
   LEDGER_KINDS,
   LEDGER_MOVEMENTS,
   PHASES,
   POKER_STATE_SCHEMA_VERSION,
+  POKER_STATE_V2_SCHEMA_VERSION,
   POKER_VARIANT,
   STREETS,
 } from './schema.js';
 import { validateGameConfiguration, validateInitializedPokerState } from './validate.js';
 
-function validatePlayerSeeds(players, chipUnitMilliBb) {
+function validatePlayerSeeds(players, chipUnitMilliBb, stateSchemaVersion) {
   if (!Array.isArray(players)) throw new TypeError('players must be an array');
   const ids = new Set();
   const seats = new Set();
@@ -29,7 +33,7 @@ function validatePlayerSeeds(players, chipUnitMilliBb) {
     seats.add(player.seat);
     if ((Object.hasOwn(player, 'seated') && player.seated !== true)
       || (Object.hasOwn(player, 'dealtIn') && player.dealtIn !== true)) {
-      throw new RangeError('Sitting-out players are deferred in poker-state/v1 initialization');
+      throw new RangeError(`Sitting-out players are deferred in ${stateSchemaVersion} initialization`);
     }
     assertMilliBbAlignment(player.startingStackMilliBb, chipUnitMilliBb, `players[${index}].startingStackMilliBb`);
     return {
@@ -40,11 +44,8 @@ function validatePlayerSeeds(players, chipUnitMilliBb) {
   });
 }
 
-export function initializeHand(configuration) {
-  if (!configuration || typeof configuration !== 'object') throw new TypeError('configuration is required');
-  const { game, buttonSeat } = configuration;
-  const playerSeeds = validatePlayerSeeds(configuration.players, game && game.chipUnitMilliBb);
-  const forcedContributionPerPlayerMilliBb = validateGameConfiguration(game, playerSeeds.length);
+function initializeResolvedHand(configuration, playerSeeds, resolved) {
+  const { buttonSeat } = configuration;
   const aggregateStartingStack = playerSeeds.reduce((sum, player) => sum + player.startingStackMilliBb, 0);
   if (!Number.isSafeInteger(aggregateStartingStack)) {
     throw new RangeError('Aggregate starting stacks must fit in a safe integer');
@@ -57,10 +58,10 @@ export function initializeHand(configuration) {
     throw new TypeError('handId must be a string or null');
   }
 
-  if (game.mode === GAME_MODES.CLUBGG) {
+  if (resolved.collectionAmountMilliBb > 0) {
     for (const player of playerSeeds) {
-      if (player.startingStackMilliBb < CLUBGG_FORCED_CONTRIBUTION_MILLI_BB) {
-        throw new RangeError(`ClubGG player ${player.playerId} cannot pay exactly 100 milliBb`);
+      if (player.startingStackMilliBb < resolved.collectionAmountMilliBb) {
+        throw new RangeError(resolved.insufficientCollectionMessage(player));
       }
     }
   }
@@ -105,7 +106,7 @@ export function initializeHand(configuration) {
     ledger.push({
       sequence: ledger.length,
       playerId: player.playerId,
-      street: kind === LEDGER_KINDS.CLUBGG_FORCED_CONTRIBUTION ? 'hand' : STREETS.PREFLOP,
+      street: movement === LEDGER_MOVEMENTS.STACK_TO_DEDUCTION ? 'hand' : STREETS.PREFLOP,
       kind,
       movement,
       amountMilliBb,
@@ -113,12 +114,12 @@ export function initializeHand(configuration) {
     return amountMilliBb;
   };
 
-  if (forcedContributionPerPlayerMilliBb > 0) {
+  if (resolved.collectionAmountMilliBb > 0) {
     for (const player of players) {
       debit(
         player,
-        forcedContributionPerPlayerMilliBb,
-        LEDGER_KINDS.CLUBGG_FORCED_CONTRIBUTION,
+        resolved.collectionAmountMilliBb,
+        resolved.collectionLedgerKind,
         LEDGER_MOVEMENTS.STACK_TO_DEDUCTION,
         false,
       );
@@ -128,17 +129,17 @@ export function initializeHand(configuration) {
   const smallBlind = players.find((player) => assignmentById.get(player.playerId).isSmallBlind);
   const bigBlind = players.find((player) => assignmentById.get(player.playerId).isBigBlind);
 
-  if (game.ante.type === ANTE_TYPES.PER_PLAYER) {
+  if (resolved.ante.type === ANTE_TYPES.PER_PLAYER) {
     for (const player of players) {
-      debit(player, game.ante.amountMilliBb, LEDGER_KINDS.ANTE, LEDGER_MOVEMENTS.STACK_TO_POT, true);
+      debit(player, resolved.ante.amountMilliBb, LEDGER_KINDS.ANTE, LEDGER_MOVEMENTS.STACK_TO_POT, true);
     }
-  } else if (game.ante.type === ANTE_TYPES.BIG_BLIND) {
-    debit(bigBlind, game.ante.amountMilliBb, LEDGER_KINDS.ANTE, LEDGER_MOVEMENTS.STACK_TO_POT, true);
+  } else if (resolved.ante.type === ANTE_TYPES.BIG_BLIND) {
+    debit(bigBlind, resolved.ante.amountMilliBb, LEDGER_KINDS.ANTE, LEDGER_MOVEMENTS.STACK_TO_POT, true);
   }
 
   const smallBlindPosted = debit(
     smallBlind,
-    game.smallBlindMilliBb,
+    resolved.smallBlindMilliBb,
     LEDGER_KINDS.SMALL_BLIND,
     LEDGER_MOVEMENTS.STACK_TO_POT,
     true,
@@ -147,7 +148,7 @@ export function initializeHand(configuration) {
 
   const bigBlindPosted = debit(
     bigBlind,
-    game.bigBlindMilliBb,
+    resolved.bigBlindMilliBb,
     LEDGER_KINDS.BIG_BLIND,
     LEDGER_MOVEMENTS.STACK_TO_POT,
     true,
@@ -158,21 +159,10 @@ export function initializeHand(configuration) {
     .concat(players.find((player) => player.seat === buttonSeat))
     .map((player) => player.playerId);
   const state = {
-    schemaVersion: POKER_STATE_SCHEMA_VERSION,
+    schemaVersion: resolved.schemaVersion,
     handId: configuration.handId ?? null,
-    game: {
-      variant: POKER_VARIANT,
-      mode: game.mode,
-      tableSize: players.length,
-      smallBlindMilliBb: game.smallBlindMilliBb,
-      bigBlindMilliBb: game.bigBlindMilliBb,
-      chipUnitMilliBb: game.chipUnitMilliBb,
-      ante: {
-        type: game.ante.type,
-        amountMilliBb: game.ante.amountMilliBb,
-      },
-      forcedContributionPerPlayerMilliBb,
-    },
+    ...(resolved.rulesSnapshot === null ? {} : { rulesSnapshot: resolved.rulesSnapshot }),
+    game: resolved.game,
     phase: PHASES.CHANCE,
     street: STREETS.PREFLOP,
     buttonSeat,
@@ -182,8 +172,8 @@ export function initializeHand(configuration) {
     players,
     potMilliBb,
     deductionTotalMilliBb,
-    currentBetMilliBb: game.bigBlindMilliBb,
-    lastFullRaiseIncrementMilliBb: game.bigBlindMilliBb,
+    currentBetMilliBb: resolved.bigBlindMilliBb,
+    lastFullRaiseIncrementMilliBb: resolved.bigBlindMilliBb,
     lastAggressorPlayerId: null,
     actionHistory: [],
     ledger,
@@ -210,4 +200,109 @@ export function initializeHand(configuration) {
 
   validateInitializedPokerState(state);
   return deepFreeze(state);
+}
+
+export function initializeHand(configuration) {
+  if (!configuration || typeof configuration !== 'object') throw new TypeError('configuration is required');
+  const { game } = configuration;
+  const playerSeeds = validatePlayerSeeds(
+    configuration.players,
+    game && game.chipUnitMilliBb,
+    POKER_STATE_SCHEMA_VERSION,
+  );
+  const forcedContributionPerPlayerMilliBb = validateGameConfiguration(
+    game,
+    playerSeeds.length,
+  );
+
+  return initializeResolvedHand(configuration, playerSeeds, {
+    schemaVersion: POKER_STATE_SCHEMA_VERSION,
+    rulesSnapshot: null,
+    game: {
+      variant: POKER_VARIANT,
+      mode: game.mode,
+      tableSize: playerSeeds.length,
+      smallBlindMilliBb: game.smallBlindMilliBb,
+      bigBlindMilliBb: game.bigBlindMilliBb,
+      chipUnitMilliBb: game.chipUnitMilliBb,
+      ante: {
+        type: game.ante.type,
+        amountMilliBb: game.ante.amountMilliBb,
+      },
+      forcedContributionPerPlayerMilliBb,
+    },
+    smallBlindMilliBb: game.smallBlindMilliBb,
+    bigBlindMilliBb: game.bigBlindMilliBb,
+    ante: game.ante,
+    collectionAmountMilliBb: forcedContributionPerPlayerMilliBb,
+    collectionLedgerKind: LEDGER_KINDS.CLUBGG_FORCED_CONTRIBUTION,
+    insufficientCollectionMessage: (player) => (
+      `ClubGG player ${player.playerId} cannot pay exactly ${CLUBGG_FORCED_CONTRIBUTION_MILLI_BB} milliBb`
+    ),
+  });
+}
+
+const SNAPSHOT_INITIALIZATION_KEYS = new Set([
+  'handId',
+  'rulesSnapshot',
+  'buttonSeat',
+  'players',
+]);
+
+export function initializeHandFromGameRulesSnapshot(configuration) {
+  if (!configuration || typeof configuration !== 'object' || Array.isArray(configuration)) {
+    throw new TypeError('configuration is required');
+  }
+  const unknownKeys = Object.keys(configuration)
+    .filter((key) => !SNAPSHOT_INITIALIZATION_KEYS.has(key));
+  if (unknownKeys.length > 0) {
+    throw new RangeError(`Snapshot hand configuration has unsupported fields: ${unknownKeys.join(', ')}`);
+  }
+
+  const rulesSnapshot = normalizePokerStateRulesSnapshot(configuration.rulesSnapshot);
+  const { definition } = rulesSnapshot;
+  const playerSeeds = validatePlayerSeeds(
+    configuration.players,
+    definition.blinds.chipUnitMilliBb,
+    POKER_STATE_V2_SCHEMA_VERSION,
+  );
+  if (rulesSnapshot.setup.seatedPlayers !== playerSeeds.length) {
+    throw new RangeError('GameRulesSnapshot.setup.seatedPlayers must match the configured player count');
+  }
+  if (playerSeeds.length < definition.tableSize.minimumSeated
+    || playerSeeds.length > definition.tableSize.maximumSeated) {
+    throw new RangeError('Configured player count must fit the GameRulesSnapshot table-size policy');
+  }
+
+  let collectionAmountMilliBb = 0;
+  if (definition.collectionPolicy.type === GAME_RULES_COLLECTION_TYPES.FIXED_PER_SEATED_PLAYER) {
+    collectionAmountMilliBb = definition.collectionPolicy.amountMilliBb;
+  } else if (definition.collectionPolicy.type !== GAME_RULES_COLLECTION_TYPES.NONE) {
+    throw new RangeError(`Unsupported collection policy: ${definition.collectionPolicy.type}`);
+  }
+
+  return initializeResolvedHand(configuration, playerSeeds, {
+    schemaVersion: POKER_STATE_V2_SCHEMA_VERSION,
+    rulesSnapshot,
+    game: {
+      variant: definition.variant,
+      format: definition.format,
+      tableSize: playerSeeds.length,
+      smallBlindMilliBb: definition.blinds.smallBlindMilliBb,
+      bigBlindMilliBb: definition.blinds.bigBlindMilliBb,
+      chipUnitMilliBb: definition.blinds.chipUnitMilliBb,
+      ante: {
+        type: definition.ante.type,
+        amountMilliBb: definition.ante.amountMilliBb,
+      },
+    },
+    smallBlindMilliBb: definition.blinds.smallBlindMilliBb,
+    bigBlindMilliBb: definition.blinds.bigBlindMilliBb,
+    ante: definition.ante,
+    collectionAmountMilliBb,
+    collectionLedgerKind: LEDGER_KINDS.FIXED_PLAYER_COLLECTION,
+    insufficientCollectionMessage: (player) => (
+      `Player ${player.playerId} cannot pay fixed collection of ${collectionAmountMilliBb} milliBb`
+    ),
+  });
 }

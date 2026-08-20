@@ -1,5 +1,6 @@
 import { assertCardArray, assertUniqueKnownCards } from './cards.js';
 import { deepFreeze } from './freeze.js';
+import { clonePokerState } from './poker-state-rules.js';
 import { isHiddenHoleCards } from './private-cards.js';
 import { PHASES } from './schema.js';
 import { isPlayerLive } from './selectors.js';
@@ -36,7 +37,7 @@ export function applyPrivateReveal(state, revealEvent) {
     { label: `reveal.${player.playerId}`, cards },
   ]);
 
-  const nextState = structuredClone(state);
+  const nextState = clonePokerState(state);
   nextState.players.find((candidate) => candidate.playerId === player.playerId).holeCards = [...cards];
 
   if (nextState.phase === PHASES.SHOWDOWN

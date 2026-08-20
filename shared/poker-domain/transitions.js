@@ -1,5 +1,6 @@
 import { validateAction } from './action.js';
 import { deepFreeze } from './freeze.js';
+import { clonePokerState } from './poker-state-rules.js';
 import { getLegalActionSpec } from './legal-actions.js';
 import {
   amountToCallMilliBb,
@@ -70,7 +71,7 @@ export function applyAction(state, action) {
   if (action.playerId !== state.actingPlayerId) throw new RangeError('Action player is not the current actor');
   validateConcreteAction(action, spec);
 
-  const nextState = structuredClone(state);
+  const nextState = clonePokerState(state);
   const actor = mutablePlayerById(nextState, action.playerId);
   const currentBetBeforeMilliBb = nextState.currentBetMilliBb;
   const toCallBeforeMilliBb = amountToCallMilliBb(nextState, actor.playerId);

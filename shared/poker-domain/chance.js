@@ -1,5 +1,6 @@
 import { assertCardArray, assertUniqueKnownCards } from './cards.js';
 import { deepFreeze } from './freeze.js';
+import { clonePokerState } from './poker-state-rules.js';
 import { createHiddenHoleCards } from './private-cards.js';
 import { firstPreflopActorId } from './selectors.js';
 import { CHANCE_TYPES, PHASES } from './schema.js';
@@ -61,7 +62,7 @@ function applyHoleDeal(state, chanceEvent) {
   }
   assertUniqueKnownCards(cardGroups);
 
-  const nextState = structuredClone(state);
+  const nextState = clonePokerState(state);
   for (const player of nextState.players) {
     player.holeCards = Object.hasOwn(chanceEvent.cardsByPlayer, player.playerId)
       ? [...chanceEvent.cardsByPlayer[player.playerId]]
@@ -92,7 +93,7 @@ function applyBoardDeal(state, chanceEvent, transition) {
   ];
   assertUniqueKnownCards(cardGroups);
 
-  const nextState = structuredClone(state);
+  const nextState = clonePokerState(state);
   initializeStreetAfterBoardDeal(nextState, transition, cards);
   return nextState;
 }

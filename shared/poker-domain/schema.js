@@ -1,4 +1,9 @@
 export const POKER_STATE_SCHEMA_VERSION = 'poker-state/v1';
+export const POKER_STATE_V2_SCHEMA_VERSION = 'poker-state/v2';
+export const POKER_STATE_SCHEMA_VERSIONS = Object.freeze([
+  POKER_STATE_SCHEMA_VERSION,
+  POKER_STATE_V2_SCHEMA_VERSION,
+]);
 export const POKER_ACTION_SCHEMA_VERSION = 'poker-action/v1';
 export const POKER_ACTION_RECORD_SCHEMA_VERSION = 'poker-action-record/v1';
 export const POKER_POT_LAYER_SCHEMA_VERSION = 'poker-pot-layer/v1';
@@ -55,6 +60,7 @@ export const HOLE_CARD_STATES = Object.freeze({
 
 export const LEDGER_KINDS = Object.freeze({
   CLUBGG_FORCED_CONTRIBUTION: 'clubgg_forced_contribution',
+  FIXED_PLAYER_COLLECTION: 'fixed_player_collection',
   ANTE: 'ante',
   SMALL_BLIND: 'small_blind',
   BIG_BLIND: 'big_blind',

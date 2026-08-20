@@ -1,9 +1,14 @@
-import { LEDGER_MOVEMENTS, POKER_STATE_SCHEMA_VERSION } from './schema.js';
+import {
+  LEDGER_MOVEMENTS,
+  POKER_STATE_SCHEMA_VERSION,
+  POKER_STATE_SCHEMA_VERSIONS,
+  POKER_STATE_V2_SCHEMA_VERSION,
+} from './schema.js';
 import { deriveSeatAssignments, playersClockwiseAfterSeat } from './positions.js';
 
 function requirePokerState(state) {
-  if (!state || state.schemaVersion !== POKER_STATE_SCHEMA_VERSION) {
-    throw new TypeError(`Expected ${POKER_STATE_SCHEMA_VERSION}`);
+  if (!state || !POKER_STATE_SCHEMA_VERSIONS.includes(state.schemaVersion)) {
+    throw new TypeError(`Expected ${POKER_STATE_SCHEMA_VERSION} or ${POKER_STATE_V2_SCHEMA_VERSION}`);
   }
   return state;
 }
@@ -130,6 +135,17 @@ export function ledgerTotals(state) {
     if (entry.movement === LEDGER_MOVEMENTS.STACK_TO_DEDUCTION) deductionMilliBb += entry.amountMilliBb;
   }
   return Object.freeze({ potMilliBb, deductionMilliBb });
+}
+
+export function deductionTotalsByPlayer(state) {
+  requirePokerState(state);
+  const totals = Object.fromEntries(state.players.map((player) => [player.playerId, 0]));
+  for (const entry of state.ledger) {
+    if (entry.movement === LEDGER_MOVEMENTS.STACK_TO_DEDUCTION) {
+      totals[entry.playerId] += entry.amountMilliBb;
+    }
+  }
+  return Object.freeze(totals);
 }
 
 export function stackTotals(state) {

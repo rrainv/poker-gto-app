@@ -1,5 +1,6 @@
 import { assertCardArray } from './cards.js';
 import { deepFreeze } from './freeze.js';
+import { clonePokerState } from './poker-state-rules.js';
 import { compareHandRanks, evaluateSeven } from './evaluator.js';
 import { derivePotAccounting } from './pot-layers.js';
 import { playersClockwiseAfterSeat } from './positions.js';
@@ -49,7 +50,7 @@ export function resolveShowdown(state) {
   assertCardArray(state.board, 'state.board');
   if (state.board.length !== 5) throw new RangeError('Showdown requires a complete five-card board');
 
-  const nextState = structuredClone(state);
+  const nextState = clonePokerState(state);
   const preSettlementPotMilliBb = nextState.potMilliBb;
   let accounting = derivePotAccounting(nextState);
   let refund = null;
