@@ -4,6 +4,8 @@ export * from './cards.js';
 export * from './chance.js';
 export * from './evaluator.js';
 export * from './equity.js';
+export * from './game-rules.js';
+export * from './game-rules-compat.js';
 export * from './hand-class.js';
 export * from './holdem-combos.js';
 export * from './holdem-range.js';
