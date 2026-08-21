@@ -149,7 +149,7 @@ test('action-set validation rejects duplicate, unknown, and illegal RFI actions'
   assert.throws(() => createPersonalStrategyActionSet({
     decisionFamily: 'preflop_rfi',
     legalActions: [ACTION_TYPES.FOLD, ACTION_TYPES.CALL, ACTION_TYPES.RAISE],
-  }), /exactly Fold and Raise/);
+  }), /require Fold and Raise/);
 });
 
 test('dominant-only guidance remains qualitative and never manufactures exact frequencies', () => {
@@ -198,20 +198,20 @@ test('three-action exact distributions normalize in canonical action order', () 
 
 test('four-action exact distributions preserve explicit zero and All-in as a distinct identity', () => {
   const actionSet = createPersonalStrategyActionSet({
-    decisionFamily: 'preflop_bb_option',
-    legalActions: [ACTION_TYPES.ALL_IN, ACTION_TYPES.RAISE, ACTION_TYPES.CHECK, ACTION_TYPES.FOLD],
+    decisionFamily: 'preflop_facing_open',
+    legalActions: [ACTION_TYPES.ALL_IN, ACTION_TYPES.RAISE, ACTION_TYPES.CALL, ACTION_TYPES.FOLD],
   });
   const estimate = actionEstimate({
     actionSet,
     exactDistribution: {
-      [ACTION_TYPES.CHECK]: 0.4,
+      [ACTION_TYPES.CALL]: 0.4,
       [ACTION_TYPES.RAISE]: 0.4,
       [ACTION_TYPES.ALL_IN]: 0.2,
     },
   });
   assert.deepEqual(estimate.exactDistribution.map((entry) => entry.action.type), [
     ACTION_TYPES.FOLD,
-    ACTION_TYPES.CHECK,
+    ACTION_TYPES.CALL,
     ACTION_TYPES.RAISE,
     ACTION_TYPES.ALL_IN,
   ]);

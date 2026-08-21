@@ -9,6 +9,7 @@ import {
 export const STRATEGY_PROFILE_SCHEMA_VERSION = 'strategy-profile/v1';
 export const STRATEGY_MODE_SCHEMA_VERSION = 'strategy-mode/v1';
 export const CALIBRATION_CONTEXT_SCHEMA_VERSION = 'calibration-context/v1';
+export const CALIBRATION_CONTEXT_V2_SCHEMA_VERSION = 'calibration-context/v2';
 export const RANGE_OBSERVATION_SCHEMA_VERSION = 'range-observation/v1';
 export const TRAINING_OBSERVATION_SCHEMA_VERSION = 'training-observation/v1';
 export const CALIBRATION_SESSION_SCHEMA_VERSION = 'calibration-session/v1';
@@ -24,6 +25,29 @@ export const PROFILE_OWNER_KINDS = Object.freeze({
 
 export const CALIBRATION_DECISION_FAMILIES = Object.freeze({
   PREFLOP_RFI: 'preflop_rfi',
+  PREFLOP_FACING_LIMP: 'preflop_facing_limp',
+  PREFLOP_FACING_OPEN: 'preflop_facing_open',
+  PREFLOP_FACING_3BET: 'preflop_facing_3bet',
+  PREFLOP_FACING_4BET: 'preflop_facing_4bet',
+  PREFLOP_BB_OPTION: 'preflop_bb_option',
+});
+
+export const CALIBRATION_CONTEXT_GAME_RULES_IDENTITY_KINDS = Object.freeze({
+  SEMANTIC_FINGERPRINT: 'semantic_fingerprint',
+  LEGACY_OPAQUE_ID: 'legacy_opaque_id',
+});
+
+export const CALIBRATION_CONTEXT_STACK_BASES = Object.freeze({
+  EFFECTIVE_LIVE_POT_CAPACITY: 'effective_live_pot_capacity',
+  LEGACY_CALIBRATION_EFFECTIVE: 'legacy_calibration_effective',
+});
+
+export const CALIBRATION_PRIOR_ACTION_FAMILIES = Object.freeze({
+  UNOPENED: 'unopened',
+  LIMPED: 'limped',
+  OPEN: 'open',
+  THREE_BET: 'three_bet',
+  FOUR_BET: 'four_bet',
 });
 
 export const PROFILE_EVIDENCE_TYPES = Object.freeze({
@@ -61,6 +85,25 @@ const SESSION_STATE_VALUES = Object.freeze(Object.values(CALIBRATION_SESSION_STA
 const COMPARISON_RELATION_VALUES = Object.freeze(Object.values(DIRECT_COMPARISON_RELATIONS));
 const DIRECT_EVIDENCE_SOURCE_VALUES = Object.freeze(Object.values(DIRECT_EVIDENCE_SOURCES));
 const FREQUENCY_TOLERANCE = 1e-12;
+const PERSONAL_STRATEGY_ACTION_ORDER = Object.freeze([
+  ACTION_TYPES.FOLD,
+  ACTION_TYPES.CHECK,
+  ACTION_TYPES.CALL,
+  ACTION_TYPES.RAISE,
+  ACTION_TYPES.ALL_IN,
+]);
+const PERSONAL_STRATEGY_ACTION_INDEX = new Map(
+  PERSONAL_STRATEGY_ACTION_ORDER.map((type, index) => [type, index]),
+);
+const CALIBRATION_DECISION_FAMILY_VALUES = Object.freeze(
+  Object.values(CALIBRATION_DECISION_FAMILIES),
+);
+const CALIBRATION_STACK_BASIS_VALUES = Object.freeze(
+  Object.values(CALIBRATION_CONTEXT_STACK_BASES),
+);
+const PRIOR_ACTION_FAMILY_VALUES = Object.freeze(
+  Object.values(CALIBRATION_PRIOR_ACTION_FAMILIES),
+);
 
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
@@ -74,9 +117,26 @@ function cloneData(value) {
   return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, cloneData(entry)]));
 }
 
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, stableValue(value[key])]));
+}
+
 function requireObject(value, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new TypeError(`${label} must be an object`);
+  }
+  return value;
+}
+
+function requireExactKeys(value, expected, label) {
+  requireObject(value, label);
+  const actual = Object.keys(value).sort();
+  const canonical = [...expected].sort();
+  if (actual.length !== canonical.length
+    || actual.some((key, index) => key !== canonical[index])) {
+    throw new RangeError(`${label} contains unsupported or missing fields`);
   }
   return value;
 }
@@ -124,6 +184,11 @@ function requireFinitePositive(value, label) {
   return numeric;
 }
 
+function requireNullableFiniteNonNegative(value, label) {
+  if (value === null) return null;
+  return requireFiniteNonNegative(value, label);
+}
+
 function requireUniqueStrings(values, label, expectedLength = null) {
   if (!Array.isArray(values)) throw new TypeError(`${label} must be an array`);
   const normalized = values.map((value, index) => requireString(value, `${label}[${index}]`));
@@ -163,6 +228,73 @@ function validateAccounting(accounting) {
     throw new RangeError('No-ante CalibrationContext must use anteBb 0');
   }
   return accounting;
+}
+
+function normalizedPersonalStrategyLegalActions(legalActions, label = 'CalibrationContext.legalActions') {
+  if (!Array.isArray(legalActions) || legalActions.length === 0) {
+    throw new RangeError(`${label} must be a non-empty array`);
+  }
+  const types = legalActions.map((entry, index) => {
+    const type = typeof entry === 'string' ? entry : entry?.type;
+    if (!PERSONAL_STRATEGY_ACTION_INDEX.has(type)) {
+      throw new RangeError(`${label}[${index}] must be a canonical Personal Strategy action`);
+    }
+    return type;
+  });
+  if (new Set(types).size !== types.length) {
+    throw new RangeError(`${label} must not repeat an action identity`);
+  }
+  return [...types].sort(
+    (left, right) => PERSONAL_STRATEGY_ACTION_INDEX.get(left) - PERSONAL_STRATEGY_ACTION_INDEX.get(right),
+  );
+}
+
+function sameStrings(left, right) {
+  return left.length === right.length && left.every((entry, index) => entry === right[index]);
+}
+
+export function validatePersonalStrategyLegalActionsForDecisionFamily(
+  decisionFamily,
+  legalActions,
+) {
+  if (!CALIBRATION_DECISION_FAMILY_VALUES.includes(decisionFamily)) {
+    throw new RangeError(`Unsupported CalibrationContext family: ${decisionFamily}`);
+  }
+  const types = normalizedPersonalStrategyLegalActions(legalActions);
+  const canonical = normalizedPersonalStrategyLegalActions(types);
+  if (!sameStrings(types, canonical)) {
+    throw new RangeError('CalibrationContext legal actions must use canonical identity order');
+  }
+  const includes = (type) => types.includes(type);
+  if (decisionFamily === CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI) {
+    const valid = includes(ACTION_TYPES.FOLD)
+      && includes(ACTION_TYPES.RAISE)
+      && !includes(ACTION_TYPES.CHECK)
+      && !includes(ACTION_TYPES.CALL)
+      && types.every((type) => [ACTION_TYPES.FOLD, ACTION_TYPES.RAISE, ACTION_TYPES.ALL_IN].includes(type));
+    if (!valid) {
+      throw new RangeError('preflop_rfi legal actions require Fold and Raise, with optional All-in');
+    }
+    return types;
+  }
+  if (decisionFamily === CALIBRATION_DECISION_FAMILIES.PREFLOP_BB_OPTION) {
+    const valid = includes(ACTION_TYPES.CHECK)
+      && !includes(ACTION_TYPES.FOLD)
+      && !includes(ACTION_TYPES.CALL)
+      && types.every((type) => [ACTION_TYPES.CHECK, ACTION_TYPES.RAISE, ACTION_TYPES.ALL_IN].includes(type));
+    if (!valid) {
+      throw new RangeError('preflop_bb_option legal actions require Check, with optional Raise and All-in');
+    }
+    return types;
+  }
+  const valid = includes(ACTION_TYPES.FOLD)
+    && includes(ACTION_TYPES.CALL)
+    && !includes(ACTION_TYPES.CHECK)
+    && types.every((type) => [ACTION_TYPES.FOLD, ACTION_TYPES.CALL, ACTION_TYPES.RAISE, ACTION_TYPES.ALL_IN].includes(type));
+  if (!valid) {
+    throw new RangeError(`${decisionFamily} legal actions require Fold and Call, with optional Raise and All-in`);
+  }
+  return types;
 }
 
 export function createLocalOwnerRef(id) {
@@ -337,7 +469,7 @@ export function createStrategyProfileBundle({
   return deepFreeze({ profile, modes: strategyModes });
 }
 
-export function validateCalibrationContext(context) {
+function validateCalibrationContextV1(context) {
   requireSchema(context, CALIBRATION_CONTEXT_SCHEMA_VERSION, 'CalibrationContext');
   if (context.decisionFamily !== CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI) {
     throw new RangeError(`Unsupported CalibrationContext family: ${context.decisionFamily}`);
@@ -355,6 +487,356 @@ export function validateCalibrationContext(context) {
   requireFinitePositive(context.effectiveStackBb, 'CalibrationContext.effectiveStackBb');
   validateAccounting(context.accounting);
   return context;
+}
+
+function calibrationContextV1Key(context) {
+  validateCalibrationContextV1(context);
+  return JSON.stringify({
+    schemaVersion: context.schemaVersion,
+    decisionFamily: context.decisionFamily,
+    gameVariant: context.gameVariant,
+    gameRulesId: context.gameRulesId,
+    tableSize: context.tableSize,
+    heroPosition: context.heroPosition,
+    effectiveStackBb: context.effectiveStackBb,
+    accounting: {
+      anteType: context.accounting.anteType,
+      anteBb: context.accounting.anteBb,
+      forcedContributionPerPlayerBb: context.accounting.forcedContributionPerPlayerBb,
+      rakeMode: context.accounting.rakeMode,
+    },
+  });
+}
+
+function validateCalibrationGameRulesV2(gameRules) {
+  requireExactKeys(gameRules, ['identity', 'ante', 'collection'], 'CalibrationContext.gameRules');
+  requireExactKeys(gameRules.identity, ['kind', 'value'], 'CalibrationContext.gameRules.identity');
+  const identityKind = gameRules.identity.kind;
+  if (!Object.values(CALIBRATION_CONTEXT_GAME_RULES_IDENTITY_KINDS).includes(identityKind)) {
+    throw new RangeError('CalibrationContext.gameRules identity kind is unsupported');
+  }
+  requireString(gameRules.identity.value, 'CalibrationContext.gameRules.identity.value');
+  if (identityKind === CALIBRATION_CONTEXT_GAME_RULES_IDENTITY_KINDS.SEMANTIC_FINGERPRINT
+    && !gameRules.identity.value.startsWith('game-rules-semantic/v1:')) {
+    throw new RangeError('CalibrationContext requires a canonical Game Rules semantic fingerprint');
+  }
+  requireExactKeys(gameRules.ante, ['type', 'amountBb'], 'CalibrationContext.gameRules.ante');
+  if (!ANTE_TYPE_VALUES.includes(gameRules.ante.type)) {
+    throw new RangeError('CalibrationContext.gameRules.ante.type is unsupported');
+  }
+  requireFiniteNonNegative(gameRules.ante.amountBb, 'CalibrationContext.gameRules.ante.amountBb');
+  if (gameRules.ante.type === ANTE_TYPES.NONE && gameRules.ante.amountBb !== 0) {
+    throw new RangeError('No-ante CalibrationContext v2 must use amountBb 0');
+  }
+  requireObject(gameRules.collection, 'CalibrationContext.gameRules.collection');
+  if (gameRules.collection.type === 'legacy_accounting') {
+    requireExactKeys(
+      gameRules.collection,
+      ['type', 'amountPerPlayerBb', 'rakeMode'],
+      'CalibrationContext.gameRules.collection',
+    );
+    if (identityKind !== CALIBRATION_CONTEXT_GAME_RULES_IDENTITY_KINDS.LEGACY_OPAQUE_ID) {
+      throw new RangeError('Legacy accounting requires a legacy opaque Game Rules identity');
+    }
+    requireString(gameRules.collection.rakeMode, 'CalibrationContext.gameRules.collection.rakeMode');
+  } else {
+    requireExactKeys(
+      gameRules.collection,
+      ['type', 'amountPerPlayerBb'],
+      'CalibrationContext.gameRules.collection',
+    );
+    if (!['none', 'fixed_per_seated_player'].includes(gameRules.collection.type)) {
+      throw new RangeError('CalibrationContext.gameRules.collection.type is unsupported');
+    }
+    if (identityKind !== CALIBRATION_CONTEXT_GAME_RULES_IDENTITY_KINDS.SEMANTIC_FINGERPRINT) {
+      throw new RangeError('Canonical collection facts require semantic Game Rules identity');
+    }
+  }
+  requireFiniteNonNegative(
+    gameRules.collection.amountPerPlayerBb,
+    'CalibrationContext.gameRules.collection.amountPerPlayerBb',
+  );
+  if (gameRules.collection.type === 'none' && gameRules.collection.amountPerPlayerBb !== 0) {
+    throw new RangeError('No-collection CalibrationContext v2 must use amountPerPlayerBb 0');
+  }
+  if (gameRules.collection.type === 'fixed_per_seated_player'
+    && gameRules.collection.amountPerPlayerBb <= 0) {
+    throw new RangeError('Fixed collection requires a positive amountPerPlayerBb');
+  }
+  return gameRules;
+}
+
+function validatePriorActionV2(priorAction, decisionFamily) {
+  requireExactKeys(priorAction, [
+    'family', 'actionCount', 'foldCount', 'callCount', 'aggressionCount', 'lastAggression',
+  ], 'CalibrationContext.priorAction');
+  if (!PRIOR_ACTION_FAMILY_VALUES.includes(priorAction.family)) {
+    throw new RangeError('CalibrationContext.priorAction.family is unsupported');
+  }
+  for (const field of ['actionCount', 'foldCount', 'callCount', 'aggressionCount']) {
+    if (!Number.isInteger(priorAction[field]) || priorAction[field] < 0) {
+      throw new RangeError(`CalibrationContext.priorAction.${field} must be a non-negative integer`);
+    }
+  }
+  if (priorAction.actionCount
+    !== priorAction.foldCount + priorAction.callCount + priorAction.aggressionCount) {
+    throw new RangeError('CalibrationContext.priorAction counts must cover every summarized action');
+  }
+  const expected = {
+    [CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI]: [CALIBRATION_PRIOR_ACTION_FAMILIES.UNOPENED, 0],
+    [CALIBRATION_DECISION_FAMILIES.PREFLOP_FACING_LIMP]: [CALIBRATION_PRIOR_ACTION_FAMILIES.LIMPED, 0],
+    [CALIBRATION_DECISION_FAMILIES.PREFLOP_BB_OPTION]: [CALIBRATION_PRIOR_ACTION_FAMILIES.LIMPED, 0],
+    [CALIBRATION_DECISION_FAMILIES.PREFLOP_FACING_OPEN]: [CALIBRATION_PRIOR_ACTION_FAMILIES.OPEN, 1],
+    [CALIBRATION_DECISION_FAMILIES.PREFLOP_FACING_3BET]: [CALIBRATION_PRIOR_ACTION_FAMILIES.THREE_BET, 2],
+    [CALIBRATION_DECISION_FAMILIES.PREFLOP_FACING_4BET]: [CALIBRATION_PRIOR_ACTION_FAMILIES.FOUR_BET, 3],
+  }[decisionFamily];
+  if (!expected || priorAction.family !== expected[0]
+    || priorAction.aggressionCount !== expected[1]) {
+    throw new RangeError('CalibrationContext decision family and prior-action summary disagree');
+  }
+  if (priorAction.family === CALIBRATION_PRIOR_ACTION_FAMILIES.UNOPENED
+    && priorAction.callCount !== 0) {
+    throw new RangeError('An unopened CalibrationContext cannot contain prior calls');
+  }
+  if (priorAction.family === CALIBRATION_PRIOR_ACTION_FAMILIES.LIMPED
+    && priorAction.callCount < 1) {
+    throw new RangeError('A limped CalibrationContext requires at least one prior call');
+  }
+  if (priorAction.aggressionCount === 0) {
+    if (priorAction.lastAggression !== null) {
+      throw new RangeError('A non-aggressive prior-action summary cannot contain lastAggression');
+    }
+    return priorAction;
+  }
+  requireExactKeys(priorAction.lastAggression, [
+    'level', 'actionType', 'raiseToBb', 'incrementBb', 'wasFullRaise',
+  ], 'CalibrationContext.priorAction.lastAggression');
+  if (priorAction.lastAggression.level !== priorAction.family) {
+    throw new RangeError('CalibrationContext last aggression level must match its prior-action family');
+  }
+  if (![ACTION_TYPES.RAISE, ACTION_TYPES.ALL_IN].includes(priorAction.lastAggression.actionType)) {
+    throw new RangeError('CalibrationContext last aggression must be Raise or All-in');
+  }
+  requireFinitePositive(
+    priorAction.lastAggression.raiseToBb,
+    'CalibrationContext.priorAction.lastAggression.raiseToBb',
+  );
+  requireFinitePositive(
+    priorAction.lastAggression.incrementBb,
+    'CalibrationContext.priorAction.lastAggression.incrementBb',
+  );
+  if (typeof priorAction.lastAggression.wasFullRaise !== 'boolean') {
+    throw new TypeError('CalibrationContext.priorAction.lastAggression.wasFullRaise must be boolean');
+  }
+  return priorAction;
+}
+
+function calibrationContextV2SerializationValue(context) {
+  return {
+    schemaVersion: context.schemaVersion,
+    decisionFamily: context.decisionFamily,
+    gameVariant: context.gameVariant,
+    gameRules: stableValue(cloneData(context.gameRules)),
+    tableSize: context.tableSize,
+    heroPosition: context.heroPosition,
+    opponentCount: context.opponentCount,
+    stack: stableValue(cloneData(context.stack)),
+    priorAction: stableValue(cloneData(context.priorAction)),
+    facing: stableValue(cloneData(context.facing)),
+    sizing: stableValue(cloneData(context.sizing)),
+    legalActions: context.legalActions.map((entry) => ({ type: entry.type })),
+    compatibility: stableValue(cloneData(context.compatibility)),
+  };
+}
+
+function projectCalibrationContextV1Data(context) {
+  validateCalibrationContextV1(context);
+  return {
+    schemaVersion: CALIBRATION_CONTEXT_V2_SCHEMA_VERSION,
+    decisionFamily: CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI,
+    gameVariant: context.gameVariant,
+    gameRules: {
+      identity: {
+        kind: CALIBRATION_CONTEXT_GAME_RULES_IDENTITY_KINDS.LEGACY_OPAQUE_ID,
+        value: context.gameRulesId,
+      },
+      ante: {
+        type: context.accounting.anteType,
+        amountBb: context.accounting.anteBb,
+      },
+      collection: {
+        type: 'legacy_accounting',
+        amountPerPlayerBb: context.accounting.forcedContributionPerPlayerBb,
+        rakeMode: context.accounting.rakeMode,
+      },
+    },
+    tableSize: context.tableSize,
+    heroPosition: context.heroPosition,
+    opponentCount: null,
+    stack: {
+      valueBb: context.effectiveStackBb,
+      basis: CALIBRATION_CONTEXT_STACK_BASES.LEGACY_CALIBRATION_EFFECTIVE,
+    },
+    priorAction: {
+      family: CALIBRATION_PRIOR_ACTION_FAMILIES.UNOPENED,
+      actionCount: 0,
+      foldCount: 0,
+      callCount: 0,
+      aggressionCount: 0,
+      lastAggression: null,
+    },
+    facing: {
+      sizeBb: 0,
+      callAmountBb: null,
+      heroStreetContributionBb: null,
+    },
+    sizing: {
+      currentBetBb: null,
+      lastFullRaiseIncrementBb: null,
+      minimumRaiseToBb: null,
+      maximumNonAllInRaiseToBb: null,
+      allInToBb: null,
+    },
+    legalActions: [
+      { type: ACTION_TYPES.FOLD },
+      { type: ACTION_TYPES.RAISE },
+    ],
+    compatibility: {
+      sourceSchemaVersion: CALIBRATION_CONTEXT_SCHEMA_VERSION,
+      sourceContextKey: calibrationContextV1Key(context),
+    },
+  };
+}
+
+function validateCalibrationContextV2(context) {
+  requireSchema(context, CALIBRATION_CONTEXT_V2_SCHEMA_VERSION, 'CalibrationContext');
+  requireExactKeys(context, [
+    'schemaVersion', 'decisionFamily', 'gameVariant', 'gameRules', 'tableSize',
+    'heroPosition', 'opponentCount', 'stack', 'priorAction', 'facing', 'sizing',
+    'legalActions', 'compatibility',
+  ], 'CalibrationContext v2');
+  if (!CALIBRATION_DECISION_FAMILY_VALUES.includes(context.decisionFamily)) {
+    throw new RangeError(`Unsupported CalibrationContext family: ${context.decisionFamily}`);
+  }
+  if (context.gameVariant !== POKER_VARIANT) {
+    throw new RangeError(`CalibrationContext.gameVariant must be ${POKER_VARIANT}`);
+  }
+  validateCalibrationGameRulesV2(context.gameRules);
+  if (!Number.isInteger(context.tableSize) || !POSITIONS_BY_TABLE_SIZE[context.tableSize]) {
+    throw new RangeError('CalibrationContext.tableSize must be an integer from 2 through 10');
+  }
+  if (!POSITIONS_BY_TABLE_SIZE[context.tableSize].includes(context.heroPosition)) {
+    throw new RangeError('CalibrationContext.heroPosition does not belong to tableSize');
+  }
+  if (context.opponentCount !== null
+    && (!Number.isInteger(context.opponentCount)
+      || context.opponentCount < 1 || context.opponentCount >= context.tableSize)) {
+    throw new RangeError('CalibrationContext.opponentCount must be null or a live-opponent count');
+  }
+  requireExactKeys(context.stack, ['valueBb', 'basis'], 'CalibrationContext.stack');
+  requireFinitePositive(context.stack.valueBb, 'CalibrationContext.stack.valueBb');
+  if (!CALIBRATION_STACK_BASIS_VALUES.includes(context.stack.basis)) {
+    throw new RangeError('CalibrationContext.stack.basis is unsupported');
+  }
+  validatePriorActionV2(context.priorAction, context.decisionFamily);
+  requireExactKeys(
+    context.facing,
+    ['sizeBb', 'callAmountBb', 'heroStreetContributionBb'],
+    'CalibrationContext.facing',
+  );
+  requireFiniteNonNegative(context.facing.sizeBb, 'CalibrationContext.facing.sizeBb');
+  requireNullableFiniteNonNegative(
+    context.facing.callAmountBb,
+    'CalibrationContext.facing.callAmountBb',
+  );
+  requireNullableFiniteNonNegative(
+    context.facing.heroStreetContributionBb,
+    'CalibrationContext.facing.heroStreetContributionBb',
+  );
+  requireExactKeys(context.sizing, [
+    'currentBetBb', 'lastFullRaiseIncrementBb', 'minimumRaiseToBb',
+    'maximumNonAllInRaiseToBb', 'allInToBb',
+  ], 'CalibrationContext.sizing');
+  for (const field of Object.keys(context.sizing)) {
+    requireNullableFiniteNonNegative(context.sizing[field], `CalibrationContext.sizing.${field}`);
+  }
+  const types = context.legalActions.map((entry) => entry?.type);
+  const canonicalTypes = validatePersonalStrategyLegalActionsForDecisionFamily(
+    context.decisionFamily,
+    context.legalActions,
+  );
+  if (!sameStrings(types, canonicalTypes)) {
+    throw new RangeError('CalibrationContext legal actions must use canonical identity order');
+  }
+  const hasRaise = types.includes(ACTION_TYPES.RAISE);
+  const hasAllIn = types.includes(ACTION_TYPES.ALL_IN);
+  if (context.compatibility === null) {
+    if (context.gameRules.identity.kind
+      !== CALIBRATION_CONTEXT_GAME_RULES_IDENTITY_KINDS.SEMANTIC_FINGERPRINT
+      || context.opponentCount === null
+      || context.stack.basis !== CALIBRATION_CONTEXT_STACK_BASES.EFFECTIVE_LIVE_POT_CAPACITY
+      || context.facing.callAmountBb === null
+      || context.facing.heroStreetContributionBb === null
+      || context.sizing.currentBetBb === null
+      || context.sizing.lastFullRaiseIncrementBb === null) {
+      throw new RangeError('Canonical CalibrationContext v2 facts must be complete and semantically identified');
+    }
+    if (hasRaise !== (context.sizing.minimumRaiseToBb !== null
+      && context.sizing.maximumNonAllInRaiseToBb !== null)) {
+      throw new RangeError('CalibrationContext Raise legality and sizing bounds disagree');
+    }
+    if (hasAllIn !== (context.sizing.allInToBb !== null)) {
+      throw new RangeError('CalibrationContext All-in legality and sizing disagree');
+    }
+    const isFacingAggression = context.priorAction.aggressionCount > 0;
+    if (context.facing.sizeBb !== (isFacingAggression
+      ? context.priorAction.lastAggression.raiseToBb : 0)) {
+      throw new RangeError('CalibrationContext facing size must be the last aggressive raise-to amount');
+    }
+    if (context.decisionFamily === CALIBRATION_DECISION_FAMILIES.PREFLOP_BB_OPTION) {
+      if (context.facing.callAmountBb !== 0) {
+        throw new RangeError('A preflop BB option must have zero incremental call amount');
+      }
+    } else if (context.decisionFamily !== CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI
+      && context.facing.callAmountBb <= 0) {
+      throw new RangeError('A facing preflop family requires a positive incremental call amount');
+    }
+  } else {
+    requireExactKeys(
+      context.compatibility,
+      ['sourceSchemaVersion', 'sourceContextKey'],
+      'CalibrationContext.compatibility',
+    );
+    if (context.compatibility.sourceSchemaVersion !== CALIBRATION_CONTEXT_SCHEMA_VERSION) {
+      throw new RangeError('CalibrationContext v2 compatibility source is unsupported');
+    }
+    requireString(context.compatibility.sourceContextKey, 'CalibrationContext.compatibility.sourceContextKey');
+    let legacy;
+    try {
+      legacy = JSON.parse(context.compatibility.sourceContextKey);
+    } catch (error) {
+      throw new TypeError(`CalibrationContext legacy compatibility key is invalid JSON: ${error.message}`);
+    }
+    validateCalibrationContextV1(legacy);
+    const expected = projectCalibrationContextV1Data(legacy);
+    if (JSON.stringify(calibrationContextV2SerializationValue(context))
+      !== JSON.stringify(calibrationContextV2SerializationValue(expected))) {
+      throw new RangeError('CalibrationContext v2 is not the deterministic projection of its v1 source');
+    }
+  }
+  return context;
+}
+
+export function validateCalibrationContext(context) {
+  if (context?.schemaVersion === CALIBRATION_CONTEXT_SCHEMA_VERSION) {
+    return validateCalibrationContextV1(context);
+  }
+  if (context?.schemaVersion === CALIBRATION_CONTEXT_V2_SCHEMA_VERSION) {
+    return validateCalibrationContextV2(context);
+  }
+  throw new TypeError(
+    `Expected ${CALIBRATION_CONTEXT_SCHEMA_VERSION} or ${CALIBRATION_CONTEXT_V2_SCHEMA_VERSION}`,
+  );
 }
 
 export function createRfiCalibrationContext({
@@ -383,23 +865,104 @@ export function createRfiCalibrationContext({
   return deepFreeze(context);
 }
 
+export function createPreflopCalibrationContextV2({
+  decisionFamily,
+  gameRules,
+  tableSize,
+  heroPosition,
+  opponentCount,
+  stack,
+  priorAction,
+  facing,
+  sizing,
+  legalActions,
+  compatibility = null,
+} = {}) {
+  const orderedTypes = normalizedPersonalStrategyLegalActions(legalActions);
+  const context = {
+    schemaVersion: CALIBRATION_CONTEXT_V2_SCHEMA_VERSION,
+    decisionFamily,
+    gameVariant: POKER_VARIANT,
+    gameRules: cloneData(gameRules),
+    tableSize,
+    heroPosition,
+    opponentCount,
+    stack: cloneData(stack),
+    priorAction: cloneData(priorAction),
+    facing: cloneData(facing),
+    sizing: cloneData(sizing),
+    legalActions: orderedTypes.map((type) => ({ type })),
+    compatibility: cloneData(compatibility),
+  };
+  validateCalibrationContextV2(context);
+  return deepFreeze(context);
+}
+
+export function projectCalibrationContextV1ToV2(context) {
+  return deepFreeze(projectCalibrationContextV1Data(context));
+}
+
 export function calibrationContextKey(context) {
   validateCalibrationContext(context);
-  return JSON.stringify({
-    schemaVersion: context.schemaVersion,
-    decisionFamily: context.decisionFamily,
-    gameVariant: context.gameVariant,
-    gameRulesId: context.gameRulesId,
-    tableSize: context.tableSize,
-    heroPosition: context.heroPosition,
-    effectiveStackBb: context.effectiveStackBb,
-    accounting: {
-      anteType: context.accounting.anteType,
-      anteBb: context.accounting.anteBb,
-      forcedContributionPerPlayerBb: context.accounting.forcedContributionPerPlayerBb,
-      rakeMode: context.accounting.rakeMode,
-    },
-  });
+  return context.schemaVersion === CALIBRATION_CONTEXT_SCHEMA_VERSION
+    ? calibrationContextV1Key(context)
+    : JSON.stringify(calibrationContextV2SerializationValue(context));
+}
+
+export function calibrationContextIdentityKey(context) {
+  if (context.schemaVersion === CALIBRATION_CONTEXT_SCHEMA_VERSION) {
+    return `calibration-context-equivalence/v1:${calibrationContextV1Key(context)}`;
+  }
+  validateCalibrationContextV2(context);
+  if (context.compatibility !== null) {
+    return `calibration-context-equivalence/v1:${context.compatibility.sourceContextKey}`;
+  }
+  return JSON.stringify(calibrationContextV2SerializationValue(context));
+}
+
+export function calibrationContextKeyAliases(context) {
+  let keys;
+  if (context.schemaVersion === CALIBRATION_CONTEXT_SCHEMA_VERSION) {
+    const legacyKey = calibrationContextV1Key(context);
+    keys = [legacyKey, JSON.stringify(calibrationContextV2SerializationValue(
+      projectCalibrationContextV1Data(context),
+    ))];
+  } else {
+    validateCalibrationContextV2(context);
+    const currentKey = JSON.stringify(calibrationContextV2SerializationValue(context));
+    keys = context.compatibility === null
+      ? [currentKey]
+      : [currentKey, context.compatibility.sourceContextKey];
+  }
+  return deepFreeze([...new Set(keys)]);
+}
+
+export function calibrationContextsEquivalent(left, right) {
+  if (left.schemaVersion === right.schemaVersion) {
+    return left.schemaVersion === CALIBRATION_CONTEXT_SCHEMA_VERSION
+      ? calibrationContextV1Key(left) === calibrationContextV1Key(right)
+      : calibrationContextKey(left) === calibrationContextKey(right);
+  }
+  const legacy = left.schemaVersion === CALIBRATION_CONTEXT_SCHEMA_VERSION ? left : right;
+  const current = left.schemaVersion === CALIBRATION_CONTEXT_V2_SCHEMA_VERSION ? left : right;
+  validateCalibrationContextV2(current);
+  return current.compatibility !== null
+    && current.compatibility.sourceContextKey === calibrationContextV1Key(legacy);
+}
+
+export function serializeCalibrationContext(context) {
+  return calibrationContextKey(context);
+}
+
+export function parseCalibrationContextSerialization(value) {
+  let parsed;
+  try {
+    parsed = JSON.parse(value);
+  } catch (error) {
+    throw new TypeError(`CalibrationContext serialization is invalid JSON: ${error.message}`);
+  }
+  validateCalibrationContext(parsed);
+  return deepFreeze(cloneData(parsed));
 }
 
 function normalizeFrequencies(entries) {
@@ -492,6 +1055,24 @@ export function rangeObservationKey(observation) {
   ].join('|');
 }
 
+export function rangeObservationIdentityKey(observation) {
+  return [
+    observation.profileId,
+    observation.modeId,
+    calibrationContextIdentityKey(observation.context),
+    observation.handClass,
+  ].join('|');
+}
+
+export function rangeObservationKeyAliases(observation) {
+  return deepFreeze(calibrationContextKeyAliases(observation.context).map((contextKey) => [
+    observation.profileId,
+    observation.modeId,
+    contextKey,
+    observation.handClass,
+  ].join('|')));
+}
+
 export function validateRangeObservation(observation) {
   requireSchema(observation, RANGE_OBSERVATION_SCHEMA_VERSION, 'RangeObservation');
   requireString(observation.id, 'RangeObservation.id');
@@ -514,6 +1095,16 @@ export function validateRangeObservation(observation) {
       requireActionIdentity(observation.dominantAction, 'RangeObservation.dominantAction');
       if (observation.frequencies !== null) {
         throw new RangeError('Absent frequency detail must be stored as null');
+      }
+    }
+    if (observation.context.schemaVersion === CALIBRATION_CONTEXT_V2_SCHEMA_VERSION) {
+      const legalTypes = new Set(observation.context.legalActions.map((entry) => entry.type));
+      const suppliedTypes = [
+        observation.dominantAction?.type,
+        ...(observation.frequencies ?? []).map((entry) => entry.action.type),
+      ].filter(Boolean);
+      if (suppliedTypes.some((type) => !legalTypes.has(type))) {
+        throw new RangeError('RangeObservation action is illegal for its CalibrationContext');
       }
     }
   } else if (observation.dominantAction !== null
@@ -608,6 +1199,10 @@ export function validateTrainingObservation(observation) {
   requireString(observation.profileId, 'TrainingObservation.profileId');
   requireString(observation.modeId, 'TrainingObservation.modeId');
   validateCalibrationContext(observation.context);
+  if (observation.context.schemaVersion !== CALIBRATION_CONTEXT_SCHEMA_VERSION
+    || observation.context.decisionFamily !== CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI) {
+    throw new RangeError('TrainingObservation v1 supports only legacy preflop_rfi context');
+  }
   if (!isPreflopHandClass(observation.handClass)) {
     throw new RangeError(`Unsupported preflop hand class: ${observation.handClass}`);
   }

@@ -1,12 +1,12 @@
 # Personal Strategy action-aware contract
 
-Status: implemented by `PERSONAL-STRATEGY-ACTION-CONTRACT-001`
+Status: implemented by `PERSONAL-STRATEGY-ACTION-CONTRACT-001`; durable preflop context expanded by `PREFLOP-ACTION-SPACE-001`
 
 Date: August 21, 2026
 
 ## 1. Scope and authority
 
-This specification defines the action-aware read-contract seam for Personal Strategy. It does not replace the durable `RangeObservation v1`, `TrainingObservation v1`, `CalibrationContext v1`, repository, IndexedDB layout, export envelope, or Personal Strategy sync schema.
+This specification defines the action-aware contract seam for Personal Strategy. `PREFLOP-ACTION-SPACE-001` adds `CalibrationContext v2` while retaining `CalibrationContext v1` as the exact historical RFI contract. It does not replace `RangeObservation v1`, `TrainingObservation v1`, the repository, IndexedDB layout, export envelope, or Personal Strategy sync schema.
 
 The bounded dependency path is:
 
@@ -60,13 +60,18 @@ legalActions[]
 
 An action set belongs to one decision family. It is not a universal list of every poker action. `actionSetId` is derived from the schema, decision family, and canonical legal-action identity order. Supplied legal actions are unique and normalized into that canonical identity order.
 
-The only registered production family is:
+The registered preflop family set is:
 
 ```text
-preflop_rfi -> [fold, raise]
+preflop_rfi
+preflop_facing_limp
+preflop_facing_open
+preflop_facing_3bet
+preflop_facing_4bet
+preflop_bb_option
 ```
 
-The contract can validate explicitly supplied future-family sets so 3- and 4-action distributions can be tested without implementing those decision families. Names such as `preflop_facing_open` and `preflop_bb_option` are seams only: they do not create Calibration UI, context validation, repository keys, or inference behavior.
+`CalibrationContext v2` carries the exact legal Personal Strategy action set derived from canonical preflop legality. Facing families require Fold/Call and may add Raise and All-in when canonical legality permits them. BB option requires Check and may add Raise and All-in. Canonical-state RFI retains Fold/Raise, adds All-in only when it is a distinct canonical legal aggression, and continues to exclude Limp/Complete (`call`) from the RFI family. The v1 compatibility projection remains exactly Fold/Raise.
 
 Canonical identity order and display order are separate. `getPersonalStrategyActionPresentationOrder(...)` validates an explicit presentation order without changing the action set or its serialized identity. JavaScript object-key order is never action order.
 
@@ -189,7 +194,7 @@ Presentation order remains outside semantic serialization.
 
 ## 9. v1 RFI compatibility
 
-Existing durable RFI records remain `range-observation/v1` and retain their bytes and meaning.
+Existing durable RFI records remain `range-observation/v1` and retain their bytes and meaning. `CalibrationContext v1` maps deterministically to a `CalibrationContext v2` RFI compatibility context with an honest legacy opaque rules identity, `opponentCount = null`, and unknown call/contribution/sizing facts. No missing fact is fabricated.
 
 | Existing v1 input | Action-aware read | Current RFI projection |
 |---|---|---|
@@ -206,7 +211,7 @@ The compatibility projection deliberately retains compact positive-only v1 exact
 
 ## 10. Inference compatibility
 
-`deterministic-rfi-local-graph/v1` remains the sole current inference implementation. It still reasons only over Fold/Raise RFI evidence. Its supported action set now comes from `PersonalStrategyActionSet v1`.
+`deterministic-rfi-local-graph/v1` remains the sole current inference implementation. It still reasons only over Fold/Raise RFI evidence. Its supported action set now comes from `PersonalStrategyActionSet v1`. Every new family, and a canonical-state RFI context whose action set includes All-in, returns an explicit `unavailable` action-aware inference result with no fabricated action or frequency.
 
 The current estimate path validates/projects through `personal-strategy-estimate/v2` and then returns `personal-strategy-estimate/v1` to existing consumers. Numerical results, categorical abstention, direct precedence, exact mixes, tied mixes, uncertainty facts, evidence IDs, reason codes, and 002A compatibility results remain unchanged.
 
@@ -225,7 +230,7 @@ No new action buttons, columns, labels, questions, or visible behavior are intro
 
 ## 12. Repository, export, and sync impact
 
-There is no IndexedDB migration, new object store, index, repository key, export version, Supabase migration, or remote entity version.
+There is no IndexedDB migration, new object store, index, export version, Supabase migration, or remote entity version.
 
 Repository logical keys remain:
 
@@ -233,23 +238,25 @@ Repository logical keys remain:
 profile + mode + CalibrationContext v1 key + hand class
 ```
 
-Sync continues to send immutable `range-observation/v1` and `training-observation/v1` JSON payloads. It does not sync action-aware evidence, action-aware estimates, normalized distributions, inference, contradiction projections, or action sets. No old evidence is rewritten or re-keyed.
+The physical key remains the record's versioned serialized context. Repository reads use deterministic v1/v2 compatibility aliases, so a projected v2 RFI query resolves existing v1 history without rewriting it. Semantic graph validation treats the deterministic pair as one identity. Sync continues to send immutable `range-observation/v1` JSON payloads. It does not sync action-aware evidence, action-aware estimates, normalized distributions, inference, or contradiction projections. No old evidence is rewritten or re-keyed.
 
-## 13. Deferred to PREFLOP-ACTION-SPACE-001
+## 13. `PREFLOP-ACTION-SPACE-001` context contract
 
-The follow-up ticket must own these exact requirements before broader preflop Personal Strategy can ship:
+`CalibrationContext v2` is the strict durable action-aware preflop context. Canonical contexts contain:
 
-1. versioned durable context contracts and canonical serializers for each approved decision family;
-2. proven legal action-set resolution from canonical poker facts, including when Check, Call, Raise, and All-in are legal;
-3. a deliberate decision on whether `call` remains sufficient for Limp/Complete in durable evidence;
-4. action-history and price semantics that preserve raise-to amount versus incremental call amount;
-5. context/repository key compatibility without reinterpreting `CalibrationContext v1` RFI evidence;
-6. new direct-evidence schema only if a new durable family cannot be expressed without changing v1 meaning;
-7. complete repository/export/import/IndexedDB and sync/Supabase handling for any newly persisted schema;
-8. family-specific Calibration, Matrix, Builder, and Teacher application contracts and presentation order;
-9. family-specific contradiction, retraction, exact-mix, and unsupported-legacy behavior;
-10. action-aware inference or explicit abstention per family, with RFI parity retained behind its adapter;
-11. no dominant-only-to-pure conversion in any provider, Training, Analysis, or range-conditioning consumer;
-12. focused legal-state, action-order, exact-distribution, compatibility, persistence, sync, and consumer tests.
+- Game Rules semantic fingerprint plus exact ante/collection facts;
+- seated table size, Hero position, exact live-opponent count;
+- effective live pot-capacity stack value with an explicit basis;
+- bounded prior-action family, action/fold/call/aggression counts, and exact last-aggression raise-to/increment/full-raise facts;
+- facing raise-to size, incremental stack-capped call amount, and Hero street contribution;
+- current bet, last full-raise increment, non-all-in raise bounds, and distinct all-in-to amount;
+- the canonical ordered legal Personal Strategy action set;
+- a nullable compatibility marker used only by the deterministic v1 RFI projection.
 
-Postflop action families, `bet`, sizing abstractions, cross-context inference, StrategyProvider integration, Training evidence UI, and range propagation remain outside this contract and require their own approved boundaries.
+The serializer fixes top-level and nested semantic order and never depends on display labels, object insertion order, preset/brand names, or live preset lookup. Canonical construction is available only from an active preflop `PokerState`; lossy Scenario and DecisionContext inputs cannot manufacture history, price, or legality.
+
+Existing `RangeObservation v1` can carry a validated v2 context without changing its immutable evidence meaning. V2 observations reject actions outside the context action set. `TrainingObservation v1` remains restricted to legacy RFI, so this ticket does not create Training evidence for new families.
+
+## 14. Remaining deferred work
+
+Family-specific Calibration, Matrix, Builder, and Teacher UI/application flows; cross-context inference; Training evidence opt-in; StrategyProvider integration; postflop families/`bet`; sizing abstractions beyond exact canonical preflop facts; and range propagation remain outside this contract and require their own approved boundaries.

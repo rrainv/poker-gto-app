@@ -1,8 +1,13 @@
 import {
   DIRECT_COMPARISON_RELATIONS,
   RANGE_OBSERVATION_STATES,
+  calibrationContextIdentityKey,
   calibrationContextKey,
+  calibrationContextKeyAliases,
+  calibrationContextsEquivalent,
   rangeObservationKey,
+  rangeObservationIdentityKey,
+  rangeObservationKeyAliases,
   sameOwnerRef,
   validateCalibrationContext,
   validateCalibrationSession,
@@ -106,14 +111,14 @@ function validateDirectRevisionGraph(store) {
   const byId = new Map(store.rangeObservations.map((entry) => [entry.id, entry]));
   const byKey = new Map();
   for (const observation of store.rangeObservations) {
-    const key = rangeObservationKey(observation);
+    const key = rangeObservationIdentityKey(observation);
     if (!byKey.has(key)) byKey.set(key, []);
     byKey.get(key).push(observation);
     const parentId = observation.revision.supersedesObservationId;
     if (parentId === null) continue;
     const parent = byId.get(parentId);
     if (!parent) throw new RangeError('RangeObservation supersedes an unknown observation');
-    if (rangeObservationKey(parent) !== key) {
+    if (rangeObservationIdentityKey(parent) !== key) {
       throw new RangeError('RangeObservation revisions must preserve profile, mode, context, and hand');
     }
     if (Date.parse(observation.createdAt) < Date.parse(parent.createdAt)) {
@@ -162,8 +167,10 @@ function validateProfileGraph(store) {
 }
 
 function latestDirectRevision(store, candidate) {
-  const key = rangeObservationKey(candidate);
-  const matching = store.rangeObservations.filter((entry) => rangeObservationKey(entry) === key);
+  const key = rangeObservationIdentityKey(candidate);
+  const matching = store.rangeObservations.filter(
+    (entry) => rangeObservationIdentityKey(entry) === key,
+  );
   return directRevisionLeaves(matching)[0] ?? null;
 }
 
@@ -179,7 +186,7 @@ function validateTrainingComparisons(store) {
     if (comparison === null) continue;
     const direct = directById.get(comparison.observationId);
     if (!direct || direct.state !== RANGE_OBSERVATION_STATES.ACTIVE
-      || rangeObservationKey(direct) !== rangeObservationKey(training)) {
+      || rangeObservationIdentityKey(direct) !== rangeObservationIdentityKey(training)) {
       throw new RangeError('TrainingObservation comparison must reference matching direct evidence');
     }
     if (direct.dominantAction === null) {
@@ -202,7 +209,7 @@ function validateSessions(store) {
       const observation = directById.get(observationId);
       if (!observation || observation.profileId !== session.profileId
         || observation.modeId !== session.modeId
-        || calibrationContextKey(observation.context) !== calibrationContextKey(session.contextScope)) {
+        || !calibrationContextsEquivalent(observation.context, session.contextScope)) {
         throw new RangeError('CalibrationSession observationIds must reference its own context evidence');
       }
     }
@@ -214,7 +221,7 @@ function validateSessions(store) {
     const session = sessionsById.get(sessionId);
     if (!session || session.profileId !== observation.profileId
       || session.modeId !== observation.modeId
-      || calibrationContextKey(session.contextScope) !== calibrationContextKey(observation.context)) {
+      || !calibrationContextsEquivalent(session.contextScope, observation.context)) {
       throw new RangeError('RangeObservation calibrationSessionId is inconsistent');
     }
   }
@@ -408,6 +415,24 @@ function scopeKey({ profileId, modeId, context, contextScope }) {
   return `${profileId}|${modeId}|${calibrationContextKey(context ?? contextScope)}`;
 }
 
+function scopeKeyAliases({ profileId, modeId, context, contextScope }) {
+  return calibrationContextKeyAliases(context ?? contextScope).map(
+    (contextKey) => `${profileId}|${modeId}|${contextKey}`,
+  );
+}
+
+async function recordsByIndexAliases(transaction, storeName, indexName, keys) {
+  const batches = await Promise.all(
+    [...new Set(keys)].map((key) => transaction.getAllByIndex(storeName, indexName, key)),
+  );
+  const records = new Map();
+  for (const record of batches.flat()) {
+    const identity = record.id ?? record.observationId ?? record.logicalKey;
+    records.set(identity, record);
+  }
+  return [...records.values()];
+}
+
 function rangeRecord(observation) {
   return {
     id: observation.id,
@@ -443,7 +468,7 @@ function rangeHeadsByLogicalKey(observations) {
   const leaves = directRevisionLeaves(observations);
   const groups = new Map();
   for (const observation of leaves) {
-    const key = rangeObservationKey(observation);
+    const key = rangeObservationIdentityKey(observation);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(observation);
   }
@@ -570,7 +595,7 @@ async function requireProfileAndMode(transaction, profileId, modeId, label) {
 function validateSessionReplacement(previous, session) {
   if (session.profileId !== previous.profileId || session.modeId !== previous.modeId
     || session.startedAt !== previous.startedAt
-    || calibrationContextKey(session.contextScope) !== calibrationContextKey(previous.contextScope)) {
+    || !calibrationContextsEquivalent(session.contextScope, previous.contextScope)) {
     throw new RangeError('CalibrationSession update cannot change identity or context scope');
   }
 }
@@ -814,7 +839,13 @@ export function createPersonalStrategyRepository({
   async function saveRangeInTransaction(transaction, observation) {
     await assertUnusedId(transaction, observation.id);
     await requireProfileAndMode(transaction, observation.profileId, observation.modeId, 'RangeObservation');
-    const current = await transaction.get(STORES.CURRENT_RANGE_OBSERVATIONS, rangeObservationKey(observation));
+    const currentMatches = (await Promise.all(rangeObservationKeyAliases(observation).map(
+      (key) => transaction.get(STORES.CURRENT_RANGE_OBSERVATIONS, key),
+    ))).filter(Boolean);
+    if (currentMatches.length > 1) {
+      throw new RangeError('RangeObservation compatibility scope has multiple selected revisions');
+    }
+    const current = currentMatches[0] ?? null;
     const supersedes = observation.revision.supersedesObservationId;
     if ((!current && supersedes !== null) || (current && supersedes !== current.observationId)) {
       throw new RangeError('RangeObservation must supersede the current direct revision');
@@ -825,11 +856,14 @@ export function createPersonalStrategyRepository({
       const session = storedSession?.value;
       if (!session || session.profileId !== observation.profileId
         || session.modeId !== observation.modeId
-        || calibrationContextKey(session.contextScope) !== calibrationContextKey(observation.context)) {
+        || !calibrationContextsEquivalent(session.contextScope, observation.context)) {
         throw new RangeError('RangeObservation references an incompatible CalibrationSession');
       }
     }
     await transaction.add(STORES.RANGE_OBSERVATIONS, rangeRecord(observation));
+    if (current && current.logicalKey !== rangeObservationKey(observation)) {
+      await transaction.delete(STORES.CURRENT_RANGE_OBSERVATIONS, current.logicalKey);
+    }
     await transaction.put(STORES.CURRENT_RANGE_OBSERVATIONS, currentRangeRecord(observation));
   }
 
@@ -909,7 +943,7 @@ export function createPersonalStrategyRepository({
         throw new TypeError('Personal Strategy evidence scope modeId is required');
       }
       validateCalibrationContext(context);
-      const selectedScopeKey = scopeKey({ profileId, modeId, context });
+      const selectedScopeKeys = scopeKeyAliases({ profileId, modeId, context });
       return readTransaction([
         STORES.METADATA,
         STORES.RANGE_OBSERVATIONS,
@@ -917,14 +951,19 @@ export function createPersonalStrategyRepository({
       ], async (transaction) => {
         const [metadata, rangeRecords, profileTrainingRecords] = await Promise.all([
           metadataIn(transaction),
-          transaction.getAllByIndex(STORES.RANGE_OBSERVATIONS, 'scopeKey', selectedScopeKey),
+          recordsByIndexAliases(
+            transaction,
+            STORES.RANGE_OBSERVATIONS,
+            'scopeKey',
+            selectedScopeKeys,
+          ),
           transaction.getAllByIndex(STORES.TRAINING_OBSERVATIONS, 'profileId', profileId),
         ]);
         const rangeObservations = rangeRecords.map((entry) => entry.value);
         const trainingObservations = profileTrainingRecords
           .map((entry) => entry.value)
           .filter((entry) => entry.modeId === modeId
-            && calibrationContextKey(entry.context) === calibrationContextKey(context));
+            && calibrationContextsEquivalent(entry.context, context));
         rangeObservations.forEach(validateRangeObservation);
         trainingObservations.forEach(validateTrainingObservation);
         return deepFreeze({
@@ -947,14 +986,24 @@ export function createPersonalStrategyRepository({
         throw new TypeError('Personal Strategy head scope modeId is required');
       }
       validateCalibrationContext(context);
-      const selectedScopeKey = scopeKey({ profileId, modeId, context });
+      const selectedScopeKeys = scopeKeyAliases({ profileId, modeId, context });
       return readTransaction([
         STORES.CURRENT_RANGE_OBSERVATIONS,
         STORES.CONFLICTING_RANGE_OBSERVATIONS,
       ], async (transaction) => {
         const [current, conflicting] = await Promise.all([
-          transaction.getAllByIndex(STORES.CURRENT_RANGE_OBSERVATIONS, 'scopeKey', selectedScopeKey),
-          transaction.getAllByIndex(STORES.CONFLICTING_RANGE_OBSERVATIONS, 'scopeKey', selectedScopeKey),
+          recordsByIndexAliases(
+            transaction,
+            STORES.CURRENT_RANGE_OBSERVATIONS,
+            'scopeKey',
+            selectedScopeKeys,
+          ),
+          recordsByIndexAliases(
+            transaction,
+            STORES.CONFLICTING_RANGE_OBSERVATIONS,
+            'scopeKey',
+            selectedScopeKeys,
+          ),
         ]);
         return deepFreeze({
           schemaVersion: 'personal-strategy-range-heads/v1',
@@ -1011,11 +1060,26 @@ export function createPersonalStrategyRepository({
         }
         validateStrategyProfile(selectedProfile);
         validateStrategyMode(selectedMode);
-        const selectedScopeKey = scopeKey({ profileId, modeId, context });
+        const selectedScopeKeys = scopeKeyAliases({ profileId, modeId, context });
         const [currentRecords, conflictingRecords, sessionRecords] = await Promise.all([
-          transaction.getAllByIndex(STORES.CURRENT_RANGE_OBSERVATIONS, 'scopeKey', selectedScopeKey),
-          transaction.getAllByIndex(STORES.CONFLICTING_RANGE_OBSERVATIONS, 'scopeKey', selectedScopeKey),
-          transaction.getAllByIndex(STORES.CALIBRATION_SESSIONS, 'scopeKey', selectedScopeKey),
+          recordsByIndexAliases(
+            transaction,
+            STORES.CURRENT_RANGE_OBSERVATIONS,
+            'scopeKey',
+            selectedScopeKeys,
+          ),
+          recordsByIndexAliases(
+            transaction,
+            STORES.CONFLICTING_RANGE_OBSERVATIONS,
+            'scopeKey',
+            selectedScopeKeys,
+          ),
+          recordsByIndexAliases(
+            transaction,
+            STORES.CALIBRATION_SESSIONS,
+            'scopeKey',
+            selectedScopeKeys,
+          ),
         ]);
         const observations = [...conflictingRecords, ...currentRecords].map((entry) => entry.value);
         observations.forEach(validateRangeObservation);
@@ -1144,15 +1208,15 @@ export function createPersonalStrategyRepository({
       requireArray(observations, 'RangeObservation batch').forEach(validateRangeObservation);
       if (observations.length === 0) throw new RangeError('RangeObservation batch cannot be empty');
       const ids = observations.map((entry) => entry.id);
-      const keys = observations.map(rangeObservationKey);
+      const keys = observations.map(rangeObservationIdentityKey);
       if (new Set(ids).size !== ids.length || new Set(keys).size !== keys.length) {
         throw new RangeError('RangeObservation batch requires unique IDs and strategic points');
       }
       const first = observations[0];
-      const contextKey = calibrationContextKey(first.context);
+      const contextKey = calibrationContextIdentityKey(first.context);
       if (observations.some((entry) => entry.profileId !== first.profileId
         || entry.modeId !== first.modeId
-        || calibrationContextKey(entry.context) !== contextKey)) {
+        || calibrationContextIdentityKey(entry.context) !== contextKey)) {
         throw new RangeError('RangeObservation batch must share one Personal Strategy scope');
       }
       return writeTransaction([
@@ -1179,7 +1243,7 @@ export function createPersonalStrategyRepository({
       if (observation.provenance.calibrationSessionId !== session.id
         || observation.profileId !== session.profileId
         || observation.modeId !== session.modeId
-        || calibrationContextKey(observation.context) !== calibrationContextKey(session.contextScope)) {
+        || !calibrationContextsEquivalent(observation.context, session.contextScope)) {
         throw new RangeError('Calibration answer observation and session must share one scope');
       }
       if (!session.observationIds.includes(observation.id)) {
@@ -1227,7 +1291,13 @@ export function createPersonalStrategyRepository({
         const metadata = await metadataIn(transaction);
         await assertUnusedId(transaction, observation.id);
         await requireProfileAndMode(transaction, observation.profileId, observation.modeId, 'TrainingObservation');
-        const current = await transaction.get(STORES.CURRENT_RANGE_OBSERVATIONS, rangeObservationKey(observation));
+        const currentMatches = (await Promise.all(rangeObservationKeyAliases(observation).map(
+          (key) => transaction.get(STORES.CURRENT_RANGE_OBSERVATIONS, key),
+        ))).filter(Boolean);
+        if (currentMatches.length > 1) {
+          throw new RangeError('TrainingObservation compatibility scope has multiple selected revisions');
+        }
+        const current = currentMatches[0] ?? null;
         const direct = current?.value?.state === RANGE_OBSERVATION_STATES.ACTIVE ? current.value : null;
         const comparison = observation.directCalibrationComparison;
         if (direct === null && comparison !== null) {
@@ -1259,9 +1329,16 @@ export function createPersonalStrategyRepository({
     },
 
     async getCurrentRangeObservation({ profileId, modeId, context, handClass } = {}) {
-      const key = rangeObservationKey({ profileId, modeId, context, handClass });
+      validateCalibrationContext(context);
+      const keys = rangeObservationKeyAliases({ profileId, modeId, context, handClass });
       return readTransaction([STORES.CURRENT_RANGE_OBSERVATIONS], async (transaction) => {
-        const record = await transaction.get(STORES.CURRENT_RANGE_OBSERVATIONS, key);
+        const matches = (await Promise.all(keys.map(
+          (key) => transaction.get(STORES.CURRENT_RANGE_OBSERVATIONS, key),
+        ))).filter(Boolean);
+        if (matches.length > 1) {
+          throw new RangeError('Personal Strategy compatibility scope has multiple selected revisions');
+        }
+        const record = matches[0] ?? null;
         return record?.value?.state === RANGE_OBSERVATION_STATES.ACTIVE
           ? deepFreeze(cloneData(record.value))
           : null;
@@ -1409,14 +1486,25 @@ export function createPersonalStrategyRepository({
           throw new RangeError('Synced RangeObservation references an unavailable CalibrationSession');
         }
         const logicalKey = rangeObservationKey(entity);
-        const selected = await transaction.get(STORES.CURRENT_RANGE_OBSERVATIONS, logicalKey);
-        const conflicts = await transaction.getAllByIndex(
-          STORES.CONFLICTING_RANGE_OBSERVATIONS, 'logicalKey', logicalKey,
+        const logicalKeys = rangeObservationKeyAliases(entity);
+        const selectedMatches = (await Promise.all(logicalKeys.map(
+          (key) => transaction.get(STORES.CURRENT_RANGE_OBSERVATIONS, key),
+        ))).filter(Boolean);
+        if (selectedMatches.length > 1) {
+          throw new RangeError('Synced RangeObservation compatibility scope has multiple selected revisions');
+        }
+        const selected = selectedMatches[0] ?? null;
+        const conflicts = await recordsByIndexAliases(
+          transaction,
+          STORES.CONFLICTING_RANGE_OBSERVATIONS,
+          'logicalKey',
+          logicalKeys,
         );
         const parentId = entity.revision.supersedesObservationId;
         if (parentId) {
           const parent = await transaction.get(STORES.RANGE_OBSERVATIONS, parentId);
-          if (!parent || parent.logicalKey !== logicalKey) {
+          if (!parent || rangeObservationIdentityKey(parent.value)
+            !== rangeObservationIdentityKey(entity)) {
             throw new RangeError('Synced RangeObservation supersedes unavailable matching evidence');
           }
         }
@@ -1424,6 +1512,9 @@ export function createPersonalStrategyRepository({
         if (!selected) {
           await transaction.put(STORES.CURRENT_RANGE_OBSERVATIONS, currentRangeRecord(entity));
         } else if (parentId === selected.observationId) {
+          if (selected.logicalKey !== logicalKey) {
+            await transaction.delete(STORES.CURRENT_RANGE_OBSERVATIONS, selected.logicalKey);
+          }
           await transaction.put(STORES.CURRENT_RANGE_OBSERVATIONS, currentRangeRecord(entity));
         } else {
           const conflictingParent = conflicts.find((entry) => entry.observationId === parentId);
@@ -1444,12 +1535,19 @@ export function createPersonalStrategyRepository({
             ...records.map((entry) => entry.id),
             entity.id,
           ])];
+          const storedSessionScopeKeys = scopeKeyAliases(storedSession.value);
           const scopeHeads = [
-            ...(await transaction.getAllByIndex(
-              STORES.CONFLICTING_RANGE_OBSERVATIONS, 'scopeKey', storedSession.scopeKey,
+            ...(await recordsByIndexAliases(
+              transaction,
+              STORES.CONFLICTING_RANGE_OBSERVATIONS,
+              'scopeKey',
+              storedSessionScopeKeys,
             )),
-            ...(await transaction.getAllByIndex(
-              STORES.CURRENT_RANGE_OBSERVATIONS, 'scopeKey', storedSession.scopeKey,
+            ...(await recordsByIndexAliases(
+              transaction,
+              STORES.CURRENT_RANGE_OBSERVATIONS,
+              'scopeKey',
+              storedSessionScopeKeys,
             )),
           ].map((entry) => entry.value);
           if (!scopeHeads.some((entry) => entry.id === entity.id)) scopeHeads.push(entity);
@@ -1538,7 +1636,10 @@ export function createPersonalStrategyRepository({
         const metadata = await metadataIn(transaction);
         for (const id of idsForStore(portableAsStore(portable))) await assertUnusedId(transaction, id);
         for (const observation of portable.rangeObservations.filter((entry) => entry.revision.supersedesObservationId === null)) {
-          if (await transaction.get(STORES.CURRENT_RANGE_OBSERVATIONS, rangeObservationKey(observation))) {
+          const collisions = await Promise.all(rangeObservationKeyAliases(observation).map(
+            (key) => transaction.get(STORES.CURRENT_RANGE_OBSERVATIONS, key),
+          ));
+          if (collisions.some(Boolean)) {
             throw new RangeError('Portable import collides with an existing direct-calibration history');
           }
         }

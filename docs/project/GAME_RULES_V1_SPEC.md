@@ -4,7 +4,7 @@
 
 `GameRulesDefinition v1`, `GameRulesPreset v1`, and `GameRulesSnapshot v1` are Riverline's DOM-free mathematical game-rules contracts. They live in `shared/poker-domain/game-rules.js`; the current Home/ClubGG bridge lives in `shared/poker-domain/game-rules-compat.js`.
 
-`GAME-RULES-001B` adopts this contract for new `PokerState v2` initialization at the canonical poker-domain boundary. `GAME-RULES-001C` makes those states durable through versioned Replay and Saved Hand/Spot payloads while retaining the existing outer persistence, export, sync, and account envelopes. `GAME-RULES-001D` adopts snapshots in the production live Hand path, `playbook-scenario/v2`, and `training-config/v2` while preserving historical PokerState, Scenario, Training, Replay, and Saved readers. Personal Strategy remains on its existing scope contract.
+`GAME-RULES-001B` adopts this contract for new `PokerState v2` initialization at the canonical poker-domain boundary. `GAME-RULES-001C` makes those states durable through versioned Replay and Saved Hand/Spot payloads while retaining the existing outer persistence, export, sync, and account envelopes. `GAME-RULES-001D` adopts snapshots in the production live Hand path, `playbook-scenario/v2`, and `training-config/v2` while preserving historical PokerState, Scenario, Training, Replay, and Saved readers. `PREFLOP-ACTION-SPACE-001` lets canonical Personal Strategy preflop contexts retain the snapshot's semantic fingerprint and exact relevant ante/collection facts; old Personal Strategy RFI contexts keep their opaque legacy rules identity.
 
 `StrategyProfile` remains the human poker-environment concept. A profile may describe a recognizable lineup or playing environment. Game Rules describe objective mathematical mechanics. Brand/operator names are provenance or presentation only and never select mathematical accounting in the new contract.
 
@@ -224,7 +224,7 @@ Additive metadata does not justify changing mathematical identity, but this stri
 
 The following remain deferred to separately approved work:
 
-- broader setup/preset UX, preset persistence, and Personal Strategy adoption;
+- broader setup/preset UX and preset persistence; Personal Strategy preset selection/display UX remains deferred even though canonical preflop contexts now retain semantic rules identity;
 - Training Practice Planner, varied sampling, named RNG streams, coverage/recency, sizing families, and board targeting;
 - semantic-fingerprint indexing or IndexedDB migration;
 - preset storage, editing, ownership, account, sync, or Supabase work;

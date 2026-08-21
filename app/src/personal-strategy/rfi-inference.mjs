@@ -12,12 +12,16 @@ import {
   validatePersonalStrategyEvidenceView,
 } from './evidence-view.mjs';
 import {
+  CALIBRATION_DECISION_FAMILIES,
   calibrationContextKey,
   validateCalibrationContext,
   validateRangeObservation,
 } from './domain.mjs';
 import {
+  PERSONAL_STRATEGY_ACTION_VALUE_STATES,
   PERSONAL_STRATEGY_RFI_ACTION_SET,
+  createPersonalStrategyActionEstimateV2,
+  getPersonalStrategyActionSetForContext,
   projectActionEstimateV2ToRfiEstimateV1,
   projectPersonalStrategyEstimateV1ToActionEstimateV2,
 } from './action-contract.mjs';
@@ -30,6 +34,8 @@ export const RFI_INFERENCE_MODEL_VERSION = 'deterministic-rfi-local-graph/v1';
 export const RFI_CONFLICT_POLICY_VERSION = 'personal-strategy-direct-conflicts/v1';
 export const RFI_UNCERTAINTY_SEMANTICS_VERSION = 'rfi-ordinal-uncertainty/v1';
 export const RFI_SNAPSHOT_PROJECTION_VERSION = 'rfi-personal-strategy-snapshot/v1';
+export const PERSONAL_STRATEGY_UNAVAILABLE_INFERENCE_VERSION =
+  'personal-strategy-family-inference-unavailable/v1';
 
 export const PERSONAL_STRATEGY_ESTIMATE_STATUSES = Object.freeze({
   DIRECTLY_KNOWN: 'directly_known',
@@ -519,6 +525,7 @@ export function validatePersonalStrategyEstimate(estimate) {
 
 export function estimatePersonalStrategyHand(evidenceView, handClass, preparedContext = null) {
   validatePersonalStrategyEvidenceView(evidenceView);
+  requireRfiInferenceContext(evidenceView.scope.context);
   if (!isPreflopHandClass(handClass)) throw new RangeError(`Unsupported preflop hand class: ${handClass}`);
   const context = preparedContext ?? modelContext(evidenceView);
   const point = context.pointsByHand.get(handClass);
@@ -597,6 +604,7 @@ export function estimatePersonalStrategyHand(evidenceView, handClass, preparedCo
 
 export function createPersonalStrategySnapshot(evidenceView) {
   validatePersonalStrategyEvidenceView(evidenceView);
+  requireRfiInferenceContext(evidenceView.scope.context);
   const context = modelContext(evidenceView);
   const estimates = PREFLOP_HAND_CLASSES.map((handClass) => (
     estimatePersonalStrategyHand(evidenceView, handClass, context)
@@ -679,6 +687,18 @@ export const RFI_INFERENCE_ABSTENTION_REASONS = Object.freeze({
   UNSUPPORTED_DIRECT_ACTION: 'unsupported_direct_action',
 });
 
+function requireRfiInferenceContext(context) {
+  const actionSet = getPersonalStrategyActionSetForContext(context);
+  const types = actionSet.legalActions.map((entry) => entry.type);
+  if (context.decisionFamily !== CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI
+    || types.length !== 2
+    || types[0] !== ACTION_TYPES.FOLD
+    || types[1] !== ACTION_TYPES.RAISE) {
+    throw new RangeError('Current Personal Strategy inference supports only Fold/Raise preflop_rfi');
+  }
+  return actionSet;
+}
+
 export function validateRfiInferenceRequest(request) {
   requireObject(request, 'RFI inference request');
   if (request.schemaVersion !== RFI_INFERENCE_REQUEST_SCHEMA_VERSION) {
@@ -687,6 +707,7 @@ export function validateRfiInferenceRequest(request) {
   requireString(request.profileId, 'RFI inference request.profileId');
   requireString(request.modeId, 'RFI inference request.modeId');
   validateCalibrationContext(request.context);
+  requireRfiInferenceContext(request.context);
   if (!isPreflopHandClass(request.requestedHandClass)) {
     throw new RangeError(`Unsupported preflop hand class: ${request.requestedHandClass}`);
   }
@@ -723,6 +744,54 @@ export function createRfiInferenceRequest({
   };
   validateRfiInferenceRequest(request);
   return deepFreeze(request);
+}
+
+export function inferPersonalStrategyActionHand({
+  profileId,
+  modeId,
+  context,
+  directObservations = [],
+  requestedHandClass,
+} = {}) {
+  requireString(profileId, 'Personal Strategy inference profileId');
+  requireString(modeId, 'Personal Strategy inference modeId');
+  validateCalibrationContext(context);
+  if (!isPreflopHandClass(requestedHandClass)) {
+    throw new RangeError(`Unsupported preflop hand class: ${requestedHandClass}`);
+  }
+  if (!Array.isArray(directObservations)) {
+    throw new TypeError('Personal Strategy inference directObservations must be an array');
+  }
+  directObservations.forEach(validateRangeObservation);
+  const actionSet = getPersonalStrategyActionSetForContext(context);
+  try {
+    requireRfiInferenceContext(context);
+  } catch {
+    return createPersonalStrategyActionEstimateV2({
+      actionSet,
+      target: { kind: 'hand_class', id: requestedHandClass },
+      valueState: PERSONAL_STRATEGY_ACTION_VALUE_STATES.UNAVAILABLE,
+      provenance: {
+        type: 'unavailable',
+        reason: 'unsupported_decision_family',
+        inferenceModelVersion: PERSONAL_STRATEGY_UNAVAILABLE_INFERENCE_VERSION,
+      },
+      sourceType: 'unavailable',
+      sourceEvidenceIds: [],
+    });
+  }
+  const evidenceView = createPersonalStrategyEvidenceView({
+    profileId,
+    modeId,
+    context,
+    rangeObservations: directObservations,
+  });
+  const estimate = estimatePersonalStrategyHand(evidenceView, requestedHandClass);
+  return projectPersonalStrategyEstimateV1ToActionEstimateV2(estimate, {
+    contradictions: estimate.status === PERSONAL_STRATEGY_ESTIMATE_STATUSES.CONFLICTING
+      ? evidenceView.conflicts.filter((conflict) => conflict.target.id === requestedHandClass)
+      : [],
+  });
 }
 
 function compatibilityAbstentionReason(estimate, evidenceView) {

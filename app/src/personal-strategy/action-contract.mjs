@@ -1,7 +1,10 @@
 import { ACTION_TYPES } from '../../../shared/poker-domain/index.js';
 import {
+  CALIBRATION_CONTEXT_SCHEMA_VERSION,
   CALIBRATION_DECISION_FAMILIES,
   RANGE_OBSERVATION_STATES,
+  validateCalibrationContext,
+  validatePersonalStrategyLegalActionsForDecisionFamily,
   validateRangeObservation,
   validateTrainingObservation,
 } from './domain.mjs';
@@ -114,10 +117,7 @@ export function createPersonalStrategyActionSet({ decisionFamily, legalActions }
     throw new RangeError('A Personal Strategy action set cannot repeat an action identity');
   }
   const ordered = [...types].sort((left, right) => ACTION_INDEX.get(left) - ACTION_INDEX.get(right));
-  if (decisionFamily === CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI
-    && !sameActionTypes(ordered, [ACTION_TYPES.FOLD, ACTION_TYPES.RAISE])) {
-    throw new RangeError('The preflop_rfi Personal Strategy action set is exactly Fold and Raise');
-  }
+  validatePersonalStrategyLegalActionsForDecisionFamily(decisionFamily, ordered);
   const actionSet = {
     schemaVersion: PERSONAL_STRATEGY_ACTION_SET_SCHEMA_VERSION,
     actionSetId: exactActionSetId(decisionFamily, ordered),
@@ -147,10 +147,7 @@ export function validatePersonalStrategyActionSet(actionSet) {
   if (!sameActionTypes(types, ordered)) {
     throw new RangeError('PersonalStrategyActionSet legal actions must use canonical identity order');
   }
-  if (actionSet.decisionFamily === CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI
-    && !sameActionTypes(types, [ACTION_TYPES.FOLD, ACTION_TYPES.RAISE])) {
-    throw new RangeError('The preflop_rfi Personal Strategy action set is exactly Fold and Raise');
-  }
+  validatePersonalStrategyLegalActionsForDecisionFamily(actionSet.decisionFamily, types);
   if (actionSet.actionSetId !== exactActionSetId(actionSet.decisionFamily, types)) {
     throw new RangeError('PersonalStrategyActionSet.actionSetId is not canonical');
   }
@@ -162,11 +159,26 @@ export const PERSONAL_STRATEGY_RFI_ACTION_SET = createPersonalStrategyActionSet(
   legalActions: [ACTION_TYPES.FOLD, ACTION_TYPES.RAISE],
 });
 
-export function getPersonalStrategyActionSetForDecisionFamily(decisionFamily) {
-  if (decisionFamily === CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI) {
+export function getPersonalStrategyActionSetForDecisionFamily(decisionFamily, legalActions = null) {
+  if (decisionFamily === CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI
+    && legalActions === null) {
     return PERSONAL_STRATEGY_RFI_ACTION_SET;
   }
-  throw new RangeError(`No implemented Personal Strategy action set for ${decisionFamily}`);
+  if (legalActions === null) {
+    throw new RangeError(`Personal Strategy action set for ${decisionFamily} requires context legality`);
+  }
+  return createPersonalStrategyActionSet({ decisionFamily, legalActions });
+}
+
+export function getPersonalStrategyActionSetForContext(context) {
+  validateCalibrationContext(context);
+  if (context.schemaVersion === CALIBRATION_CONTEXT_SCHEMA_VERSION) {
+    return PERSONAL_STRATEGY_RFI_ACTION_SET;
+  }
+  return getPersonalStrategyActionSetForDecisionFamily(
+    context.decisionFamily,
+    context.legalActions,
+  );
 }
 
 export function getPersonalStrategyActionPresentationOrder(actionSet, preferredOrder = null) {
@@ -533,13 +545,14 @@ export function validatePersonalStrategyActionEvidenceV2(evidence) {
 
 export function projectRangeObservationV1ToActionEvidenceV2(observation) {
   validateRangeObservation(observation);
+  const actionSet = getPersonalStrategyActionSetForContext(observation.context);
   const active = observation.state === RANGE_OBSERVATION_STATES.ACTIVE;
   const actionTypes = active
     ? [observation.dominantAction?.type, ...(observation.frequencies ?? []).map((entry) => entry.action.type)]
       .filter(Boolean)
     : [];
   const supported = actionTypes.every((type) => personalStrategyActionSetHas(
-    PERSONAL_STRATEGY_RFI_ACTION_SET,
+    actionSet,
     type,
   ));
   const claimKind = !active
@@ -551,7 +564,7 @@ export function projectRangeObservationV1ToActionEvidenceV2(observation) {
       : PERSONAL_STRATEGY_ACTION_EVIDENCE_CLAIMS.DOMINANT_ACTION;
   return createPersonalStrategyActionEvidenceV2({
     evidenceId: observation.id,
-    actionSet: getPersonalStrategyActionSetForDecisionFamily(observation.context.decisionFamily),
+    actionSet,
     target: { kind: 'hand_class', id: observation.handClass },
     claimKind,
     dominantAction: active && supported ? observation.dominantAction : undefined,
@@ -672,8 +685,10 @@ export function projectActionEstimateV2ToRfiEstimateV1(actionEstimate, legacyEst
 
 export function projectActionEvidenceV2ToRfiValue(evidence, legacyFrequencies = null) {
   validatePersonalStrategyActionEvidenceV2(evidence);
-  if (evidence.actionSet.decisionFamily !== CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI) {
-    throw new RangeError('Only preflop_rfi evidence has a current RFI compatibility value');
+  const legalTypes = evidence.actionSet.legalActions.map((entry) => entry.type);
+  if (evidence.actionSet.decisionFamily !== CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI
+    || !sameActionTypes(legalTypes, [ACTION_TYPES.FOLD, ACTION_TYPES.RAISE])) {
+    throw new RangeError('Only Fold/Raise preflop_rfi evidence has a current RFI compatibility value');
   }
   if (evidence.claimKind === PERSONAL_STRATEGY_ACTION_EVIDENCE_CLAIMS.RETRACTION) return null;
   if (evidence.claimKind === PERSONAL_STRATEGY_ACTION_EVIDENCE_CLAIMS.UNSUPPORTED_LEGACY_ACTION) {

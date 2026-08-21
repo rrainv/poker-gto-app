@@ -3,10 +3,12 @@ import {
   isPreflopHandClass,
 } from '../../../shared/poker-domain/index.js';
 import {
+  CALIBRATION_CONTEXT_SCHEMA_VERSION,
   RANGE_OBSERVATION_STATES,
   DIRECT_EVIDENCE_SOURCES,
   calibrationContextKey,
-  rangeObservationKey,
+  calibrationContextsEquivalent,
+  rangeObservationIdentityKey,
   validateCalibrationContext,
   validateRangeObservation,
   validateTrainingObservation,
@@ -124,6 +126,9 @@ function directObservationSignature(observation) {
 
 export function createRfiStrategySpotContext(context) {
   validateCalibrationContext(context);
+  if (context.schemaVersion !== CALIBRATION_CONTEXT_SCHEMA_VERSION) {
+    throw new RangeError('RFI StrategySpotContext compatibility requires CalibrationContext v1');
+  }
   return deepFreeze({
     schemaVersion: STRATEGY_SPOT_CONTEXT_SCHEMA_VERSION,
     gameVariant: context.gameVariant,
@@ -144,12 +149,20 @@ export function createRfiStrategySpotContext(context) {
   });
 }
 
-function directEvidenceRecord(observation, headState) {
+function strategySpotContext(context) {
+  return context.schemaVersion === CALIBRATION_CONTEXT_SCHEMA_VERSION
+    ? createRfiStrategySpotContext(context)
+    : deepFreeze(cloneData(context));
+}
+
+function directEvidenceRecord(observation, headState, contextKey) {
   const actionAwareEvidence = projectRangeObservationV1ToActionEvidenceV2(observation);
-  const compatibilityValue = projectActionEvidenceV2ToRfiValue(
-    actionAwareEvidence,
-    observation.frequencies,
-  );
+  const compatibilityValue = observation.context.schemaVersion === CALIBRATION_CONTEXT_SCHEMA_VERSION
+    ? projectActionEvidenceV2ToRfiValue(actionAwareEvidence, observation.frequencies)
+    : {
+      dominantAction: cloneData(actionAwareEvidence.dominantAction),
+      exactFrequencies: cloneData(actionAwareEvidence.exactDistribution),
+    };
   const claimKind = observation.state === RANGE_OBSERVATION_STATES.RETRACTED
     ? PERSONAL_STRATEGY_EVIDENCE_CLAIM_KINDS.RETRACTION
     : observation.hasExplicitFrequencies
@@ -170,7 +183,7 @@ function directEvidenceRecord(observation, headState) {
     scope: {
       profileId: observation.profileId,
       modeId: observation.modeId,
-      contextKey: calibrationContextKey(observation.context),
+      contextKey,
     },
     target: { kind: 'hand_class', id: observation.handClass },
     claim: {
@@ -193,7 +206,7 @@ function directEvidenceRecord(observation, headState) {
   };
 }
 
-function trainingEvidenceRecord(observation) {
+function trainingEvidenceRecord(observation, contextKey) {
   const actionAwareEvidence = projectTrainingObservationV1ToActionEvidenceV2(observation);
   const compatibilityValue = projectActionEvidenceV2ToRfiValue(actionAwareEvidence);
   return {
@@ -209,7 +222,7 @@ function trainingEvidenceRecord(observation) {
     scope: {
       profileId: observation.profileId,
       modeId: observation.modeId,
-      contextKey: calibrationContextKey(observation.context),
+      contextKey,
     },
     target: { kind: 'hand_class', id: observation.handClass },
     claim: {
@@ -234,7 +247,7 @@ function assertDirectLineage(observations) {
     if (!parent) {
       throw new RangeError(`Personal Strategy evidence lineage parent is missing: ${parentId}`);
     }
-    if (rangeObservationKey(parent) !== rangeObservationKey(observation)) {
+    if (rangeObservationIdentityKey(parent) !== rangeObservationIdentityKey(observation)) {
       throw new RangeError('Personal Strategy evidence lineage cannot cross a strategic point');
     }
   }
@@ -331,10 +344,10 @@ function directPointFor(handClass, observations, trainingEvidenceIds) {
   };
 }
 
-function matchingScope(record, profileId, modeId, contextKey) {
+function matchingScope(record, profileId, modeId, context) {
   return record.profileId === profileId
     && record.modeId === modeId
-    && calibrationContextKey(record.context) === contextKey;
+    && calibrationContextsEquivalent(record.context, context);
 }
 
 export function validatePersonalStrategyEvidenceView(view) {
@@ -375,8 +388,8 @@ export function createPersonalStrategyEvidenceView({
   rangeObservations.forEach(validateRangeObservation);
   trainingObservations.forEach(validateTrainingObservation);
   const contextKey = calibrationContextKey(context);
-  const direct = rangeObservations.filter((entry) => matchingScope(entry, profileId, modeId, contextKey));
-  const training = trainingObservations.filter((entry) => matchingScope(entry, profileId, modeId, contextKey));
+  const direct = rangeObservations.filter((entry) => matchingScope(entry, profileId, modeId, context));
+  const training = trainingObservations.filter((entry) => matchingScope(entry, profileId, modeId, context));
   const sourceIds = [...direct, ...training].map((entry) => entry.id);
   if (new Set(sourceIds).size !== sourceIds.length) {
     throw new RangeError('Personal Strategy source evidence IDs must be unique');
@@ -397,14 +410,16 @@ export function createPersonalStrategyEvidenceView({
       : observation.state === RANGE_OBSERVATION_STATES.ACTIVE
         ? PERSONAL_STRATEGY_DIRECT_HEAD_STATES.ACTIVE
         : PERSONAL_STRATEGY_DIRECT_HEAD_STATES.RETRACTED;
-    return directEvidenceRecord(observation, headState);
+    return directEvidenceRecord(observation, headState, contextKey);
   });
   const sortedTraining = [...training].sort((left, right) => (
     HAND_INDEX.get(left.handClass) - HAND_INDEX.get(right.handClass)
     || left.createdAt.localeCompare(right.createdAt)
     || left.id.localeCompare(right.id, 'en')
   ));
-  const trainingEvidence = sortedTraining.map(trainingEvidenceRecord);
+  const trainingEvidence = sortedTraining.map((observation) => (
+    trainingEvidenceRecord(observation, contextKey)
+  ));
   const directByHand = new Map(PREFLOP_HAND_CLASSES.map((handClass) => [handClass, []]));
   const trainingByHand = new Map(PREFLOP_HAND_CLASSES.map((handClass) => [handClass, []]));
   sortedDirect.forEach((entry) => directByHand.get(entry.handClass).push(entry));
@@ -425,7 +440,7 @@ export function createPersonalStrategyEvidenceView({
       modeId,
       context: cloneData(context),
       contextKey,
-      strategySpotContext: createRfiStrategySpotContext(context),
+      strategySpotContext: strategySpotContext(context),
     },
     directEvidence,
     trainingEvidence,

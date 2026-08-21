@@ -1,6 +1,6 @@
 # Personal Strategy Foundation Specification
 
-Status: durable evidence/persistence authority through `RANGE-BUILDER-001`
+Status: durable evidence/persistence authority through `PREFLOP-ACTION-SPACE-001`
 
 Schema generation: v1
 
@@ -45,7 +45,7 @@ The mode is the v1 range anchor; there is no separate empty `RangeAnchor` object
 
 ### Calibration Context / Spot Context
 
-A `CalibrationContext` contains objective facts that give an answer strategic meaning. The first supported family is `preflop_rfi`: preflop, unopened, raise-first-in calibration.
+A `CalibrationContext` contains objective facts that give an answer strategic meaning. V1 is the original unopened preflop RFI context. V2 adds the bounded preflop RFI, facing-limp, facing-open, facing-3bet, facing-4bet, and BB-option families using canonical history, price, sizing, rules identity, and legal actions.
 
 V1 context contains:
 
@@ -81,7 +81,7 @@ It is an immutable behavioral observation, not a direct range edit. It has its o
 |---|---|---|
 | `StrategyProfile` | `strategy-profile/v1` | Stable local-owned environment/identity and its three mode IDs |
 | `StrategyMode` | `strategy-mode/v1` | User-named discrete anchor belonging to one profile |
-| `CalibrationContext` | `calibration-context/v1` | Objective RFI spot facts |
+| `CalibrationContext` | `calibration-context/v1`, `calibration-context/v2` | Objective RFI compatibility facts and strict action-aware preflop spot facts |
 | `RangeObservation` | `range-observation/v1` | Direct preferred-action evidence and its revision link |
 | `TrainingObservation` | `training-observation/v1` | Actual Training choice and direct-answer comparison |
 | `CalibrationSession` | `calibration-session/v1` | Resumable elicitation scope and cursor |
@@ -140,13 +140,17 @@ Profile and mode lifecycle state does not delete evidence. Archival only control
 
 `DecisionContext v1` is an application strategy snapshot for one concrete decision. It contains cards, board, dead cards, pot, prior action projection, price facts, and a compatibility `stackBb`. It is the input to `StrategyProvider v1`.
 
-`CalibrationContext v1` is a durable key for a family of direct answers. It stores the smaller set of objective facts required to distinguish one RFI range. In particular:
+`CalibrationContext v1` is the retained durable key for existing Fold/Raise RFI answers. `CalibrationContext v2` is the action-aware preflop key. It is derived from canonical `PokerState` when complete history/legality is required; the v1 compatibility adapter preserves unknown facts as null and retains the opaque legacy rules ID rather than inventing Game Rules semantics. In particular:
 
 - `effectiveStackBb` is explicitly effective stack; it must not be copied from `DecisionContext.stackBb` unless the caller has separately proved the equivalence;
 - `preflop_rfi` implies a preflop/unopened decision, but it does not synthesize a legal PokerState or a StrategyProvider input;
 - `gameRulesId` is a durable rules identity; accounting fields preserve the strategic distinctions currently known to matter;
 - hand class is the observation's 169-class key, not representative hole cards;
 - profile and mode remain outside both objective context and PokerState.
+- `facingSizeBb`/raise-to context remains distinct from incremental `callAmountBb` and Hero street contribution;
+- canonical contexts store the Game Rules semantic fingerprint and exact relevant ante/collection facts without preset or brand authority;
+- legal actions use Fold/Check/Call/Raise/All-in identities in canonical order, and v2 evidence rejects actions outside its context;
+- physical repository keys remain versioned, while deterministic compatibility aliases let projected v2 RFI reads resolve v1 evidence without rewriting IDs, provenance, history, exports, or sync payloads.
 
 A future adapter may project a proven RFI decision into a CalibrationContext or construct a DecisionContext from a complete legal source plus calibration facts. Such an adapter must be versioned and tested. This ticket provides no StrategyProvider integration and does not feed personal answers into production strategy.
 
@@ -427,7 +431,7 @@ Follow-on work must also preserve the unified architecture gates in `UNIFIED_RAN
 - Training integration, profile-learning opt-in UI, or grading changes;
 - StrategyProvider personal source or fallback changes;
 - Range Builder, Range Teacher, mistake drilling, or saved spots;
-- postflop calibration families or generalized decision-family machinery;
+- postflop calibration families or an unbounded decision-family taxonomy;
 - accounts, authentication, permissions, friends, sync, sharing, backend, or cloud;
 - solver/model/reference imports;
 - telemetry or network behavior.
