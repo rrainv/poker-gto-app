@@ -42,6 +42,21 @@ Use `--quick` for a smaller local sample. The report deliberately excludes DOM,
 layout, paint, and browser interaction timing; those require a browser harness
 and must not be inferred from Node measurements.
 
+## Training practice sampler
+
+TRAINING-SAMPLER-002A's planner-only benchmark measures deterministic structural
+selection without generating PokerState, calling StrategyProvider, or touching
+the DOM:
+
+```powershell
+node tests/tooling/benchmark-training-sampler.mjs --count 1000
+node tests/tooling/benchmark-training-sampler.mjs --count 10000
+node tests/tooling/benchmark-training-sampler.mjs --count 100000
+```
+
+Add `--verify-determinism` to repeat the selected count and compare sequence
+digests. The 100,000-selection run is a manual development gate, not normal CI.
+
 ## Bounded-HU reference boundary
 
 The current repository does not contain a solved or sufficiently converged
