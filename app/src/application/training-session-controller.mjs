@@ -1,6 +1,15 @@
 import { ACTION_TYPES } from '../../../shared/poker-domain/index.js';
 import { evaluateTrainingAnswer } from './training-answer-evaluation.mjs';
-import { generateTrainingExercise } from './training-generator.mjs';
+import {
+  generateTrainingExercise,
+  generateTrainingExerciseFromScenarioRequest,
+} from './training-generator.mjs';
+import {
+  createTrainingPracticePlannerState,
+  createTrainingSessionIntent,
+  planTrainingScenario,
+  recordServedTrainingScenario,
+} from './training-practice-planner.mjs';
 
 export const TRAINING_SESSION_SCHEMA_VERSION = 'training-session/v1';
 export const TRAINING_SESSION_ERROR_SCHEMA_VERSION = 'training-session-error/v1';
@@ -61,13 +70,16 @@ function legalAnswerTypes(exercise) {
 
 export function createTrainingSessionController({
   generateExercise = generateTrainingExercise,
+  generateScenarioRequestExercise = generateTrainingExerciseFromScenarioRequest,
   evaluateAnswer = evaluateTrainingAnswer,
 } = {}) {
   let sequence = 0;
   let snapshot = initialSnapshot();
+  let practiceSession = null;
 
   const controller = {
     async generate(config, { strategyProvider } = {}) {
+      practiceSession = null;
       const requestId = `training-request-${++sequence}`;
       snapshot = deepFreeze({
         schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
@@ -111,6 +123,141 @@ export function createTrainingSessionController({
         return result;
       }
 
+      snapshot = deepFreeze({
+        schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
+        status: 'ready',
+        requestId,
+        exercise: result.exercise,
+        evaluation: null,
+        error: null,
+      });
+      return result;
+    },
+
+    startPracticeSession(intent) {
+      const normalizedIntent = createTrainingSessionIntent(intent);
+      sequence += 1;
+      snapshot = initialSnapshot();
+      practiceSession = Object.freeze({
+        intent: normalizedIntent,
+        plannerState: createTrainingPracticePlannerState(normalizedIntent),
+      });
+      return practiceSession.plannerState;
+    },
+
+    async generatePlanned({ strategyProvider } = {}) {
+      if (!practiceSession) {
+        return sessionFailure(
+          TRAINING_SESSION_ERROR_CODES.NOT_READY,
+          'No Training practice session has been started.',
+        );
+      }
+
+      const activePracticeSession = practiceSession;
+      const requestId = `training-request-${++sequence}`;
+      snapshot = deepFreeze({
+        schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
+        status: 'generating',
+        requestId,
+        exercise: null,
+        evaluation: null,
+        error: null,
+      });
+
+      let planned;
+      try {
+        planned = planTrainingScenario(
+          activePracticeSession.intent,
+          activePracticeSession.plannerState,
+          activePracticeSession.plannerState.servedCount,
+        );
+      } catch (error) {
+        planned = sessionFailure(
+          TRAINING_SESSION_ERROR_CODES.GENERATION_FAILED,
+          'Training practice planning failed unexpectedly.',
+          { message: error instanceof Error ? error.message : String(error) },
+        );
+      }
+
+      if (!planned?.ok) {
+        if (snapshot.requestId === requestId && snapshot.status === 'generating') {
+          snapshot = deepFreeze({
+            schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
+            status: 'error',
+            requestId,
+            exercise: null,
+            evaluation: null,
+            error: planned?.error ?? null,
+          });
+        }
+        return planned;
+      }
+
+      let result;
+      try {
+        result = await Promise.resolve().then(() => (
+          generateScenarioRequestExercise(planned.request, {
+            rulesSnapshot: activePracticeSession.intent.rulesSnapshot,
+            strategyProvider,
+          })
+        ));
+      } catch (error) {
+        result = sessionFailure(
+          TRAINING_SESSION_ERROR_CODES.GENERATION_FAILED,
+          'Training generation failed unexpectedly.',
+          { message: error instanceof Error ? error.message : String(error) },
+        );
+      }
+
+      if (snapshot.requestId !== requestId
+        || snapshot.status !== 'generating'
+        || practiceSession !== activePracticeSession) {
+        return sessionFailure(
+          TRAINING_SESSION_ERROR_CODES.STALE_GENERATION,
+          'A newer Training request replaced this generation.',
+          { requestId },
+        );
+      }
+
+      if (!result?.ok) {
+        snapshot = deepFreeze({
+          schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
+          status: 'error',
+          requestId,
+          exercise: null,
+          evaluation: null,
+          error: result?.error ?? null,
+        });
+        return result;
+      }
+
+      let plannerState;
+      try {
+        plannerState = recordServedTrainingScenario(
+          activePracticeSession.plannerState,
+          planned.request,
+        );
+      } catch (error) {
+        const failed = sessionFailure(
+          TRAINING_SESSION_ERROR_CODES.GENERATION_FAILED,
+          'The served Training exercise could not update planner coverage.',
+          { message: error instanceof Error ? error.message : String(error) },
+        );
+        snapshot = deepFreeze({
+          schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
+          status: 'error',
+          requestId,
+          exercise: null,
+          evaluation: null,
+          error: failed.error,
+        });
+        return failed;
+      }
+
+      practiceSession = Object.freeze({
+        intent: activePracticeSession.intent,
+        plannerState,
+      });
       snapshot = deepFreeze({
         schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
         status: 'ready',
@@ -179,8 +326,13 @@ export function createTrainingSessionController({
       return snapshot;
     },
 
+    getPracticePlannerState() {
+      return practiceSession?.plannerState ?? null;
+    },
+
     reset() {
       sequence += 1;
+      practiceSession = null;
       snapshot = initialSnapshot();
       return snapshot;
     },

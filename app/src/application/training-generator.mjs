@@ -13,6 +13,7 @@ import {
   applyChance,
   bbToMilliBb,
   createAction,
+  createGameRulesSnapshot,
   createGameRulesSnapshotFromLegacyGameConfiguration,
   getLegalActionSpec,
   initializeHand,
@@ -22,6 +23,10 @@ import {
 } from '../../../shared/poker-domain/index.js';
 import { deriveDecisionContextFromPokerState } from './decision-context-from-poker-state.mjs';
 import { isStrategyResultV1 } from './strategy-result.mjs';
+import {
+  TRAINING_PLANNER_TARGET_DECISION_TYPES,
+  createTrainingScenarioRequest,
+} from './training-practice-planner.mjs';
 
 export const TRAINING_CONFIG_V1_SCHEMA_VERSION = 'training-config/v1';
 export const TRAINING_CONFIG_V2_SCHEMA_VERSION = 'training-config/v2';
@@ -40,9 +45,12 @@ export const TRAINING_EXERCISE_SCHEMA_VERSIONS = Object.freeze([
 ]);
 export const TRAINING_RULES_CAPABILITY_SCHEMA_VERSION = 'training-rules-capability/v1';
 export const TRAINING_GENERATION_ERROR_SCHEMA_VERSION = 'training-generation-error/v1';
+export const TRAINING_SCENARIO_REQUEST_ADAPTER_POLICY_VERSION =
+  'training-scenario-request-adapter-policy/v1';
 
 export const TRAINING_GENERATION_ERROR_CODES = Object.freeze({
   INVALID_CONFIG: 'invalid_config',
+  INVALID_SCENARIO_REQUEST: 'invalid_scenario_request',
   UNSUPPORTED_RULES: 'unsupported_rules',
   UNSUPPORTED_TARGET: 'unsupported_target',
   GENERATION_EXHAUSTED: 'generation_exhausted',
@@ -66,6 +74,25 @@ export const TRAINING_DECISION_TYPES = Object.freeze({
   POSTFLOP_FIRST_ACTION: 'postflop_first_action',
   POSTFLOP_FACING_BET: 'postflop_facing_bet',
   POSTFLOP_FACING_RAISE: 'postflop_facing_raise',
+});
+
+export const TRAINING_SCENARIO_REQUEST_TARGET_MAP = Object.freeze({
+  [TRAINING_PLANNER_TARGET_DECISION_TYPES.PREFLOP_UNOPENED]:
+    TRAINING_DECISION_TYPES.PREFLOP_UNOPENED,
+  [TRAINING_PLANNER_TARGET_DECISION_TYPES.PREFLOP_FACING_OPEN]:
+    TRAINING_DECISION_TYPES.PREFLOP_FACING_OPEN,
+  [TRAINING_PLANNER_TARGET_DECISION_TYPES.PREFLOP_FACING_3BET]:
+    TRAINING_DECISION_TYPES.PREFLOP_FACING_3BET,
+  [TRAINING_PLANNER_TARGET_DECISION_TYPES.PREFLOP_FACING_4BET]:
+    TRAINING_DECISION_TYPES.PREFLOP_FACING_4BET,
+  [TRAINING_PLANNER_TARGET_DECISION_TYPES.PREFLOP_BB_OPTION]:
+    TRAINING_DECISION_TYPES.PREFLOP_BB_OPTION,
+  [TRAINING_PLANNER_TARGET_DECISION_TYPES.POSTFLOP_FIRST_ACTION]:
+    TRAINING_DECISION_TYPES.POSTFLOP_FIRST_ACTION,
+  [TRAINING_PLANNER_TARGET_DECISION_TYPES.POSTFLOP_FACING_BET]:
+    TRAINING_DECISION_TYPES.POSTFLOP_FACING_BET,
+  [TRAINING_PLANNER_TARGET_DECISION_TYPES.POSTFLOP_FACING_RAISE]:
+    TRAINING_DECISION_TYPES.POSTFLOP_FACING_RAISE,
 });
 
 const STREET_VALUES = Object.freeze(Object.values(STREETS));
@@ -168,6 +195,36 @@ export function createSeededTrainingRandom(seed) {
       return shuffled;
     },
   });
+}
+
+function avalancheTrainingSeed(value) {
+  let hash = value >>> 0;
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x7feb352d);
+  hash ^= hash >>> 15;
+  hash = Math.imul(hash, 0x846ca68b);
+  hash ^= hash >>> 16;
+  return hash >>> 0;
+}
+
+export function deriveTrainingScenarioGenerationSeed(exerciseSeed, attempt, stream) {
+  requireInteger(exerciseSeed, 0, 0xffffffff, 'exerciseSeed');
+  requireInteger(attempt, 1, MAX_GENERATION_ATTEMPTS, 'attempt');
+  if (typeof stream !== 'string' || !stream) {
+    throw new TypeError('Training generation seed stream must be a non-empty string');
+  }
+  let hash = 0x811c9dc5;
+  const serialized = [
+    TRAINING_SCENARIO_REQUEST_ADAPTER_POLICY_VERSION,
+    `seed:${exerciseSeed >>> 0}`,
+    `attempt:${attempt}`,
+    `stream:${stream}`,
+  ].join('|');
+  for (let index = 0; index < serialized.length; index += 1) {
+    hash ^= serialized.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return avalancheTrainingSeed(hash);
 }
 
 function requireInteger(value, minimum, maximum, label) {
@@ -351,6 +408,47 @@ export function createTrainingConfigFromLegacyCompatibility(input = {}) {
     allowedDecisionTypes: input.allowedDecisionTypes,
     difficulty: input.difficulty,
     seed: input.seed,
+  });
+}
+
+function generatorTargetForScenarioRequest(request) {
+  const mapped = TRAINING_SCENARIO_REQUEST_TARGET_MAP[request.targetDecisionType];
+  if (!mapped || mapped !== request.targetDecisionType) {
+    throw new RangeError(
+      `Training planner/generator target vocabulary drift: ${request.targetDecisionType}`,
+    );
+  }
+  return mapped;
+}
+
+function createScenarioRequestRulesSnapshot(request, rulesSnapshot) {
+  const sourceSnapshot = validateGameRulesSnapshot(rulesSnapshot);
+  if (sourceSnapshot.semanticFingerprint !== request.rulesSemanticFingerprint) {
+    throw new RangeError(
+      'TrainingScenarioRequest rules fingerprint does not match the supplied Game Rules snapshot',
+    );
+  }
+  return createGameRulesSnapshot({
+    source: sourceSnapshot.source,
+    setup: { seatedPlayers: request.tableSize },
+    definition: sourceSnapshot.definition,
+  });
+}
+
+export function createTrainingConfigFromScenarioRequest(input, rulesSnapshot) {
+  const request = createTrainingScenarioRequest(input);
+  const targetDecisionType = generatorTargetForScenarioRequest(request);
+  const candidateRulesSnapshot = createScenarioRequestRulesSnapshot(request, rulesSnapshot);
+  return createTrainingConfig({
+    schemaVersion: TRAINING_CONFIG_V2_SCHEMA_VERSION,
+    rulesSnapshot: candidateRulesSnapshot,
+    tableSize: request.tableSize,
+    stackBb: request.startingStackBb,
+    streets: [request.street],
+    heroPositions: [request.heroPosition],
+    allowedDecisionTypes: [targetDecisionType],
+    difficulty: request.difficulty,
+    seed: request.exerciseSeed,
   });
 }
 
@@ -637,17 +735,20 @@ function exerciseIdentifier(seed, attempt, target, state) {
 }
 
 function createEnvironment(config, random, attempt, street, target) {
-  const buttonSeat = random.nextInt(config.tableSize);
+  const buttonRandom = random.button ?? random;
+  const heroRandom = random.hero ?? random;
+  const cardsRandom = random.cards ?? random;
+  const buttonSeat = buttonRandom.nextInt(config.tableSize);
   const handId = `training-${config.seed.toString(16)}-${attempt}`;
   const initialConfiguration = buildConfiguration(config, buttonSeat, handId);
   let state = config.schemaVersion === TRAINING_CONFIG_V2_SCHEMA_VERSION
     ? initializeHandFromGameRulesSnapshot(initialConfiguration)
     : initializeHand(initialConfiguration);
-  const heroPosition = random.choose(config.heroPositions);
+  const heroPosition = heroRandom.choose(config.heroPositions);
   const hero = state.players.find((player) => player.position === heroPosition);
   if (!hero) throw new RetryGenerationError('hero_position_not_seated');
 
-  const shuffledDeck = random.shuffle(FULL_DECK);
+  const shuffledDeck = cardsRandom.shuffle(FULL_DECK);
   const realizationByPlayer = Object.fromEntries(
     state.pendingChance.playerOrder.map((playerId) => [playerId, []]),
   );
@@ -680,7 +781,57 @@ function createEnvironment(config, random, attempt, street, target) {
   return { environment, heroPlayerId: hero.playerId, heroPosition };
 }
 
-function buildExercise(config, random, attempt, pair, strategyProvider) {
+function requestedStructure(request) {
+  return {
+    tableSize: request.tableSize,
+    heroPosition: request.heroPosition,
+    startingStackBb: request.startingStackBb,
+    street: request.street,
+    targetDecisionType: request.targetDecisionType,
+    rulesSemanticFingerprint: request.rulesSemanticFingerprint,
+    exerciseSeed: request.exerciseSeed,
+  };
+}
+
+function scenarioRequestGenerationMetadata(context, environment, decisionContext, pair, attempt) {
+  if (!context) return null;
+  const hero = environment.state.players.find(
+    (player) => player.playerId === environment.state.actingPlayerId,
+  );
+  return {
+    request: structuredClone(context.request),
+    policyVersions: {
+      planner: context.request.plannerPolicyVersion,
+      adapter: TRAINING_SCENARIO_REQUEST_ADAPTER_POLICY_VERSION,
+      generator: 'bounded_legal_trajectory_v1',
+    },
+    requestedStructure: requestedStructure(context.request),
+    realizedStructure: {
+      tableSize: decisionContext.tableSize,
+      heroPosition: decisionContext.heroPosition,
+      startingStackBb: hero.startingStackMilliBb / 1000,
+      street: decisionContext.street,
+      targetDecisionType: pair.target,
+      rulesSemanticFingerprint: environment.state.rulesSnapshot.semanticFingerprint,
+      exerciseSeed: context.request.exerciseSeed,
+    },
+    construction: {
+      attemptCount: attempt,
+      maximumAttempts: MAX_GENERATION_ATTEMPTS,
+      retryDiagnostics: context.retryDiagnostics.map((diagnostic) => ({ ...diagnostic })),
+      namedSeeds: { ...context.namedSeeds },
+    },
+  };
+}
+
+function buildExercise(
+  config,
+  random,
+  attempt,
+  pair,
+  strategyProvider,
+  scenarioRequestContext = null,
+) {
   const { environment, heroPlayerId } = createEnvironment(
     config,
     random,
@@ -742,6 +893,13 @@ function buildExercise(config, random, attempt, pair, strategyProvider) {
       : pair.target.includes('bb_option') ? 'limped' : 'unopened';
   const stackBucket = config.stackBb <= 30 ? 'short'
     : config.stackBb <= 100 ? 'standard' : 'deep';
+  const requestMetadata = scenarioRequestGenerationMetadata(
+    scenarioRequestContext,
+    environment,
+    decisionContext,
+    pair,
+    attempt,
+  );
 
   return deepFreeze({
     ok: true,
@@ -788,6 +946,7 @@ function buildExercise(config, random, attempt, pair, strategyProvider) {
         },
         policy: 'bounded_legal_trajectory_v1',
         policyIsStrategy: false,
+        ...(requestMetadata ? { scenarioRequest: requestMetadata } : {}),
       },
     },
   });
@@ -871,5 +1030,135 @@ export function generateTrainingExercise(input, {
     TRAINING_GENERATION_ERROR_CODES.GENERATION_EXHAUSTED,
     'No reachable Training decision satisfied the configured target.',
     { attempts: MAX_GENERATION_ATTEMPTS, lastRetryReason },
+  );
+}
+
+function namedScenarioRequestStreams(exerciseSeed, attempt) {
+  const constructionAttempt = deriveTrainingScenarioGenerationSeed(
+    exerciseSeed,
+    attempt,
+    'construction-attempt',
+  );
+  const namedSeeds = {
+    constructionAttempt,
+    seatsButton: deriveTrainingScenarioGenerationSeed(constructionAttempt, 1, 'seats-button'),
+    cards: deriveTrainingScenarioGenerationSeed(constructionAttempt, 1, 'cards'),
+    trajectory: deriveTrainingScenarioGenerationSeed(constructionAttempt, 1, 'trajectory'),
+  };
+  const seatsButton = createSeededTrainingRandom(namedSeeds.seatsButton);
+  return {
+    namedSeeds,
+    random: {
+      button: seatsButton,
+      hero: seatsButton,
+      cards: createSeededTrainingRandom(namedSeeds.cards),
+    },
+  };
+}
+
+export function generateTrainingExerciseFromScenarioRequest(input, {
+  rulesSnapshot,
+  strategyProvider,
+} = {}) {
+  let request;
+  let config;
+  try {
+    request = createTrainingScenarioRequest(input);
+    config = createTrainingConfigFromScenarioRequest(request, rulesSnapshot);
+  } catch (error) {
+    const capability = resolveTrainingRulesCapability(rulesSnapshot);
+    if (!capability.supported
+      && capability.reasonCode
+        === TRAINING_RULES_CAPABILITY_REASON_CODES.INVALID_RULES_SNAPSHOT) {
+      return failure(
+        TRAINING_GENERATION_ERROR_CODES.UNSUPPORTED_RULES,
+        'Training does not support the supplied Game Rules.',
+        { capability, error: serializedError(error) },
+      );
+    }
+    return failure(
+      TRAINING_GENERATION_ERROR_CODES.INVALID_SCENARIO_REQUEST,
+      'TrainingScenarioRequest could not be mapped exactly to the canonical generator.',
+      { error: serializedError(error) },
+    );
+  }
+
+  const capability = resolveTrainingRulesCapability(config.rulesSnapshot, {
+    tableSize: config.tableSize,
+  });
+  if (!capability.supported) {
+    return failure(
+      TRAINING_GENERATION_ERROR_CODES.UNSUPPORTED_RULES,
+      'Training does not support the supplied Game Rules.',
+      { capability, request: structuredClone(request) },
+    );
+  }
+  if (!strategyProvider || typeof strategyProvider.resolve !== 'function') {
+    return failure(
+      TRAINING_GENERATION_ERROR_CODES.STRATEGY_UNAVAILABLE,
+      'A StrategyProvider v1 resolver is required.',
+    );
+  }
+
+  const pair = {
+    street: request.street,
+    target: generatorTargetForScenarioRequest(request),
+  };
+  const retryDiagnostics = [];
+  for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) {
+    const streams = namedScenarioRequestStreams(request.exerciseSeed, attempt);
+    try {
+      const result = buildExercise(
+        config,
+        streams.random,
+        attempt,
+        pair,
+        strategyProvider,
+        {
+          request,
+          retryDiagnostics,
+          namedSeeds: streams.namedSeeds,
+        },
+      );
+      if (result.ok) return result;
+      if ([
+        TRAINING_GENERATION_ERROR_CODES.DECISION_PROJECTION_UNAVAILABLE,
+        TRAINING_GENERATION_ERROR_CODES.STRATEGY_UNAVAILABLE,
+      ].includes(result.error.code)) return result;
+    } catch (error) {
+      if (error instanceof RetryGenerationError) {
+        retryDiagnostics.push({
+          attempt,
+          reason: error.message,
+          namedSeeds: { ...streams.namedSeeds },
+        });
+        continue;
+      }
+      return failure(
+        TRAINING_GENERATION_ERROR_CODES.INTERNAL_ERROR,
+        'Canonical Training generation failed unexpectedly.',
+        {
+          error: serializedError(error),
+          request: structuredClone(request),
+          attempt,
+        },
+      );
+    }
+  }
+  return failure(
+    TRAINING_GENERATION_ERROR_CODES.GENERATION_EXHAUSTED,
+    'The requested Training structural envelope could not be constructed.',
+    {
+      attempts: MAX_GENERATION_ATTEMPTS,
+      lastRetryReason: retryDiagnostics.at(-1)?.reason ?? null,
+      retryDiagnostics,
+      request: structuredClone(request),
+      policyVersions: {
+        planner: request.plannerPolicyVersion,
+        adapter: TRAINING_SCENARIO_REQUEST_ADAPTER_POLICY_VERSION,
+        generator: 'bounded_legal_trajectory_v1',
+      },
+      requestedStructure: requestedStructure(request),
+    },
   );
 }
