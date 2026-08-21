@@ -14,6 +14,7 @@ import {
 } from '../shared/poker-domain/index.js';
 import {
   COMPLETED_HAND_RESULT_SCHEMA_VERSION,
+  HERO_DECISION_ACTION_RESULT_SCHEMA_VERSION,
   HERO_DECISION_JOURNAL_SCHEMA_VERSION,
   HERO_DECISION_RECORD_SCHEMA_VERSION,
 } from '../app/src/application/canonical-hand-lifecycle.mjs';
@@ -141,6 +142,7 @@ test('Hero decisions have stable ordinals, immutable updates, deduplication, and
   assert.equal(firstRecord.schemaVersion, HERO_DECISION_RECORD_SCHEMA_VERSION);
   assert.equal(firstRecord.decisionOrdinal, 0);
   assert.equal(firstRecord.chosenAction, null);
+  assert.equal(firstRecord.chosenActionResult, null);
   assert.equal(firstRecord.evaluation, null);
   assert.equal(Object.isFrozen(firstRecord), true);
   session.captureCurrentHeroDecision();
@@ -149,7 +151,14 @@ test('Hero decisions have stable ordinals, immutable updates, deduplication, and
 
   apply(session, ACTION_TYPES.CALL);
   assert.equal(firstRecord.chosenAction, null);
-  assert.equal(session.getHeroDecisionJournal().decisions[0].chosenAction.type, ACTION_TYPES.CALL);
+  const answeredFirstRecord = session.getHeroDecisionJournal().decisions[0];
+  assert.equal(answeredFirstRecord.chosenAction.type, ACTION_TYPES.CALL);
+  assert.equal(
+    answeredFirstRecord.chosenActionResult.schemaVersion,
+    HERO_DECISION_ACTION_RESULT_SCHEMA_VERSION,
+  );
+  assert.equal(answeredFirstRecord.chosenActionResult.committedMilliBb, 500);
+  assert.equal(answeredFirstRecord.chosenActionResult.streetContributionAfterMilliBb, 1000);
   minimumRaise(session);
   session.captureCurrentHeroDecision();
   session.captureCurrentHeroDecision();

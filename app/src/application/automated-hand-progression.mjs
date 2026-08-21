@@ -23,10 +23,15 @@ export const AUTOMATED_HAND_CHANCE_PROVENANCE_SCHEMA_VERSION =
   'automated-hand-chance-provenance/v1';
 export const AUTOMATED_HAND_PROGRESSION_RESULT_SCHEMA_VERSION =
   'automated-hand-progression-result/v1';
+export const AUTOMATED_HAND_STEP_RESULT_SCHEMA_VERSION =
+  'automated-hand-step-result/v1';
+export const AUTOMATED_HAND_VISIBLE_EVENT_SCHEMA_VERSION =
+  'automated-hand-visible-event/v1';
 export const AUTOMATED_COMPLETED_HAND_RESULT_SCHEMA_VERSION =
   'automated-completed-hand-result/v1';
 
 export const AUTOMATED_HAND_PROGRESSION_STATUSES = Object.freeze({
+  ADVANCING: 'advancing',
   HERO_DECISION: 'hero_decision',
   TERMINAL: 'terminal',
   ERROR: 'error',
@@ -381,6 +386,15 @@ export function createAutomatedHandProgression({
     error,
   });
 
+  const stepResult = (status, event = null, error = null) => Object.freeze({
+    schemaVersion: AUTOMATED_HAND_STEP_RESULT_SCHEMA_VERSION,
+    status,
+    event,
+    state: session.getState(),
+    automatedTransitionCount,
+    error,
+  });
+
   const fail = (code, message, details = {}) => {
     const error = deepFreeze({ code, message, details: frozenClone(details) });
     // Mark failure before projecting the journal so the returned snapshot is
@@ -407,6 +421,8 @@ export function createAutomatedHandProgression({
   };
 
   const dealPendingChance = (state) => {
+    const pendingChanceType = state.pendingChance?.type ?? null;
+    const boardCountBefore = state.board.length;
     try {
       if (state.pendingChance?.type === CHANCE_TYPES.DEAL_HOLE) {
         recordTransition(() => session.applyChance({
@@ -416,7 +432,18 @@ export function createAutomatedHandProgression({
             .filter((player) => player.playerId !== heroPlayerId)
             .map((player) => player.playerId),
         }));
-        return;
+        const nextState = session.getState();
+        return deepFreeze({
+          schemaVersion: AUTOMATED_HAND_VISIBLE_EVENT_SCHEMA_VERSION,
+          kind: 'chance',
+          transitionKind: 'private_deal',
+          pendingChanceType,
+          actor: null,
+          chosenAction: null,
+          streetBefore: state.street,
+          streetAfter: nextState.street,
+          boardCardIds: [],
+        });
       }
       const pending = state.pendingChance;
       if (!pending || !Number.isSafeInteger(pending.cardCount) || pending.cardCount < 1) {
@@ -436,6 +463,23 @@ export function createAutomatedHandProgression({
         );
       }
       recordTransition(() => session.applyChance({ type: pending.type, cards }));
+      const nextState = session.getState();
+      const transitionKind = {
+        [CHANCE_TYPES.DEAL_FLOP]: 'flop_deal',
+        [CHANCE_TYPES.DEAL_TURN]: 'turn_deal',
+        [CHANCE_TYPES.DEAL_RIVER]: 'river_deal',
+      }[pending.type];
+      return deepFreeze({
+        schemaVersion: AUTOMATED_HAND_VISIBLE_EVENT_SCHEMA_VERSION,
+        kind: 'chance',
+        transitionKind,
+        pendingChanceType,
+        actor: null,
+        chosenAction: null,
+        streetBefore: state.street,
+        streetAfter: nextState.street,
+        boardCardIds: nextState.board.slice(boardCountBefore),
+      });
     } catch (error) {
       if (error instanceof AutomatedProgressionError) throw error;
       throw new AutomatedProgressionError(
@@ -464,9 +508,34 @@ export function createAutomatedHandProgression({
           playerId: hiddenLivePlayer.playerId,
           cards,
         }));
-        return;
+        return deepFreeze({
+          schemaVersion: AUTOMATED_HAND_VISIBLE_EVENT_SCHEMA_VERSION,
+          kind: 'showdown',
+          transitionKind: 'private_reveal',
+          pendingChanceType: null,
+          actor: {
+            playerId: hiddenLivePlayer.playerId,
+            seat: hiddenLivePlayer.seat,
+            position: hiddenLivePlayer.position,
+          },
+          chosenAction: null,
+          streetBefore: state.street,
+          streetAfter: session.getState().street,
+          boardCardIds: [],
+        });
       }
       recordTransition(() => session.resolveShowdown());
+      return deepFreeze({
+        schemaVersion: AUTOMATED_HAND_VISIBLE_EVENT_SCHEMA_VERSION,
+        kind: 'showdown',
+        transitionKind: 'showdown_resolution',
+        pendingChanceType: null,
+        actor: null,
+        chosenAction: null,
+        streetBefore: state.street,
+        streetAfter: session.getState().street,
+        boardCardIds: [],
+      });
     } catch (error) {
       if (error instanceof AutomatedProgressionError) throw error;
       throw new AutomatedProgressionError(
@@ -558,6 +627,53 @@ export function createAutomatedHandProgression({
     });
     botDecisions = [...botDecisions, record];
     seatDecisionOrdinals.set(actor.seat, seatDecisionOrdinal + 1);
+    return deepFreeze({
+      schemaVersion: AUTOMATED_HAND_VISIBLE_EVENT_SCHEMA_VERSION,
+      kind: 'bot_action',
+      transitionKind: 'action',
+      pendingChanceType: null,
+      actor: record.actor,
+      chosenAction: record.chosenAction,
+      streetBefore: state.street,
+      streetAfter: transition.state.street,
+      boardCardIds: [],
+    });
+  };
+
+  const validatedState = () => {
+    const state = session.getState();
+    validatePokerState(state);
+    if (state.handId !== initialState.handId) {
+      throw new AutomatedProgressionError(
+        AUTOMATED_HAND_PROGRESSION_ERROR_CODES.SESSION_STATE_DIVERGED,
+        'CanonicalHandSession changed to a different Hand',
+        { expectedHandId: initialState.handId, actualHandId: state.handId },
+      );
+    }
+    return state;
+  };
+
+  const boundaryResult = (state) => {
+    if (state.phase === PHASES.TERMINAL) {
+      terminalResult = result(AUTOMATED_HAND_PROGRESSION_STATUSES.TERMINAL);
+      return terminalResult;
+    }
+    if (state.phase === PHASES.BETTING && state.actingPlayerId === heroPlayerId) {
+      session.captureCurrentHeroDecision();
+      return result(AUTOMATED_HAND_PROGRESSION_STATUSES.HERO_DECISION);
+    }
+    return null;
+  };
+
+  const advanceOneTransition = (state) => {
+    if (state.phase === PHASES.CHANCE) return dealPendingChance(state);
+    if (state.phase === PHASES.SHOWDOWN) return finishShowdown(state);
+    if (state.phase === PHASES.BETTING) return applyBotAction(state);
+    throw new AutomatedProgressionError(
+      AUTOMATED_HAND_PROGRESSION_ERROR_CODES.UNSUPPORTED_CANONICAL_PHASE,
+      `Unsupported canonical Hand phase: ${state.phase}`,
+      { phase: state.phase },
+    );
   };
 
   const controller = {
@@ -602,45 +718,44 @@ export function createAutomatedHandProgression({
       return session.applyAction(action);
     },
 
+    advanceOneAutomatedEvent() {
+      if (failedResult !== null) {
+        return stepResult(
+          AUTOMATED_HAND_PROGRESSION_STATUSES.ERROR,
+          null,
+          failedResult.error,
+        );
+      }
+      if (terminalResult !== null) {
+        return stepResult(AUTOMATED_HAND_PROGRESSION_STATUSES.TERMINAL);
+      }
+      try {
+        const state = validatedState();
+        const boundary = boundaryResult(state);
+        if (boundary !== null) return stepResult(boundary.status, null, boundary.error);
+        const event = advanceOneTransition(state);
+        return stepResult(AUTOMATED_HAND_PROGRESSION_STATUSES.ADVANCING, event);
+      } catch (error) {
+        const failed = error instanceof AutomatedProgressionError
+          ? fail(error.code, error.message, error.details)
+          : fail(
+            AUTOMATED_HAND_PROGRESSION_ERROR_CODES.SESSION_STATE_DIVERGED,
+            'Automated Hand progression failed unexpectedly',
+            { error: errorDetails(error) },
+          );
+        return stepResult(AUTOMATED_HAND_PROGRESSION_STATUSES.ERROR, null, failed.error);
+      }
+    },
+
     advanceUntilHeroOrTerminal() {
       if (failedResult !== null) return failedResult;
       if (terminalResult !== null) return terminalResult;
       try {
         while (true) {
-          const state = session.getState();
-          validatePokerState(state);
-          if (state.handId !== initialState.handId) {
-            throw new AutomatedProgressionError(
-              AUTOMATED_HAND_PROGRESSION_ERROR_CODES.SESSION_STATE_DIVERGED,
-              'CanonicalHandSession changed to a different Hand',
-              { expectedHandId: initialState.handId, actualHandId: state.handId },
-            );
-          }
-          if (state.phase === PHASES.TERMINAL) {
-            terminalResult = result(AUTOMATED_HAND_PROGRESSION_STATUSES.TERMINAL);
-            return terminalResult;
-          }
-          if (state.phase === PHASES.BETTING && state.actingPlayerId === heroPlayerId) {
-            session.captureCurrentHeroDecision();
-            return result(AUTOMATED_HAND_PROGRESSION_STATUSES.HERO_DECISION);
-          }
-          if (state.phase === PHASES.CHANCE) {
-            dealPendingChance(state);
-            continue;
-          }
-          if (state.phase === PHASES.SHOWDOWN) {
-            finishShowdown(state);
-            continue;
-          }
-          if (state.phase === PHASES.BETTING) {
-            applyBotAction(state);
-            continue;
-          }
-          throw new AutomatedProgressionError(
-            AUTOMATED_HAND_PROGRESSION_ERROR_CODES.UNSUPPORTED_CANONICAL_PHASE,
-            `Unsupported canonical Hand phase: ${state.phase}`,
-            { phase: state.phase },
-          );
+          const state = validatedState();
+          const boundary = boundaryResult(state);
+          if (boundary !== null) return boundary;
+          advanceOneTransition(state);
         }
       } catch (error) {
         if (error instanceof AutomatedProgressionError) {

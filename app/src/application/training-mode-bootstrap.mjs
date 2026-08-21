@@ -1,13 +1,30 @@
 import { createTrainingSessionController } from './training-session-controller.mjs';
 import {
+  createFullHandTrainingStartConfigurationFromTrainingConfig,
+  createFullHandTrainingSessionController,
+} from './full-hand-training-session-controller.mjs';
+import {
   createTrainingConfigFromLegacyCompatibility,
   resolveTrainingRulesCapability,
 } from './training-generator.mjs';
 import { createTrainingPresentationModel } from './training-presentation.mjs';
 import { createTrainingSessionIntent } from './training-practice-planner.mjs';
+import { createTablePresenceViewModel } from './table-presence-view-model.mjs';
+import { createTablePresenceTransitionMotion } from './replay-projection-controller.mjs';
+import {
+  createFullHandTrainingPresentationOrchestrator,
+} from './full-hand-training-presentation-orchestrator.mjs';
+import {
+  createFullHandTrainingSizingModel,
+  validateFullHandTrainingSizingInput,
+} from './full-hand-training-sizing.mjs';
+
+export const FULL_HAND_TABLE_TRANSITION_PRESENTATION_SCHEMA_VERSION =
+  'full-hand-table-transition-presentation/v1';
 
 export function installTrainingModeBridge(browserWindow, {
   controller = createTrainingSessionController(),
+  fullHandController = createFullHandTrainingSessionController(),
 } = {}) {
   if (!browserWindow) return null;
   const bridge = Object.freeze({
@@ -35,6 +52,87 @@ export function installTrainingModeBridge(browserWindow, {
     getPracticePlannerState() {
       return controller.getPracticePlannerState();
     },
+    createFullHandStartConfiguration(input) {
+      return createFullHandTrainingStartConfigurationFromTrainingConfig(input);
+    },
+    startFullHand(input, options) {
+      controller.reset();
+      return fullHandController.start(input, options);
+    },
+    answerFullHand(decisionId, actionInput) {
+      return fullHandController.answer(decisionId, actionInput);
+    },
+    advanceFullHandOneEvent() {
+      return fullHandController.advanceOneAutomatedEvent();
+    },
+    getFullHandSnapshot() {
+      return fullHandController.getSnapshot();
+    },
+    getFullHandReview() {
+      return fullHandController.getReview();
+    },
+    getFullHandSizingModel() {
+      const snapshot = fullHandController.getSnapshot();
+      return snapshot?.status === 'awaiting_hero' && snapshot.currentDecision
+        ? createFullHandTrainingSizingModel(snapshot.state)
+        : null;
+    },
+    validateFullHandSizingInput(actionType, inputValue) {
+      const snapshot = fullHandController.getSnapshot();
+      return snapshot?.status === 'awaiting_hero' && snapshot.currentDecision
+        ? validateFullHandTrainingSizingInput(snapshot.state, actionType, inputValue)
+        : null;
+    },
+    createFullHandTablePresence(snapshot = fullHandController.getSnapshot()) {
+      return createTablePresenceViewModel({
+        state: snapshot?.state ?? null,
+        heroPlayerId: snapshot?.heroPlayerId ?? null,
+      });
+    },
+    createFullHandTableTransition({
+      previousSnapshot,
+      snapshot: nextSnapshot,
+      event,
+      token,
+      motionEnabled = true,
+    } = {}) {
+      const tablePresence = createTablePresenceViewModel({
+        state: nextSnapshot?.state ?? null,
+        heroPlayerId: nextSnapshot?.heroPlayerId ?? null,
+      });
+      const previousTablePresence = previousSnapshot?.state
+        ? createTablePresenceViewModel({
+          state: previousSnapshot.state,
+          heroPlayerId: previousSnapshot.heroPlayerId,
+        })
+        : null;
+      const motion = motionEnabled && previousTablePresence && event
+        ? createTablePresenceTransitionMotion({
+          previousTablePresence,
+          tablePresence,
+          token,
+          transitionKind: event.transitionKind,
+          actorPlayerId: event.actor?.playerId ?? null,
+          actionType: event.chosenAction?.type ?? null,
+          wasAllIn: event.chosenAction?.type === 'all_in',
+          boardCards: event.boardCardIds ?? [],
+        })
+        : null;
+      return Object.freeze({
+        schemaVersion: FULL_HAND_TABLE_TRANSITION_PRESENTATION_SCHEMA_VERSION,
+        tablePresence,
+        motion,
+      });
+    },
+    createFullHandPresentationOrchestrator(options) {
+      return createFullHandTrainingPresentationOrchestrator(options);
+    },
+    createFullHandAnalysisHandoff(decisionOrdinal) {
+      return fullHandController.createAnalysisHandoff(decisionOrdinal);
+    },
+    resetFullHand() {
+      return fullHandController.reset();
+    },
     answer(exerciseId, chosenActionType) {
       return controller.answer(exerciseId, chosenActionType);
     },
@@ -42,6 +140,7 @@ export function installTrainingModeBridge(browserWindow, {
       return controller.getSnapshot();
     },
     reset() {
+      fullHandController.reset();
       return controller.reset();
     },
   });

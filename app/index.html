@@ -1936,7 +1936,7 @@
     </section>
 
     <section id="trainingMode" class="mode-view" style="display:none;">
-      <div class="training-workspace" data-training-state="idle" aria-labelledby="trainingWorkspaceTitle">
+      <div id="trainingWorkspace" class="training-workspace" data-training-state="idle" data-training-full-hand-phase="off" aria-labelledby="trainingWorkspaceTitle">
         <main class="training-decision-column">
           <section class="panel training-decision-panel" id="trainingRecommendation" aria-labelledby="trainingWorkspaceTitle" data-tutorial-anchor="training-decision">
             <header class="training-decision-head">
@@ -1948,6 +1948,7 @@
 
               </div>
               <div class="training-state-cluster">
+                <span id="trainingDecisionNumber" class="badge status-badge status-badge--info" hidden></span>
                 <span id="trainingStateBadge" class="badge status-badge status-badge--info" data-i18n="Idle">Idle</span>
                 <span id="trainingStrategySource" class="badge status-badge status-badge--info" data-i18n="Source unavailable">Source unavailable</span>
               </div>
@@ -1960,7 +1961,7 @@
             </div>
             <div id="trainingGenerating" class="training-state-message" hidden aria-live="polite">
               <span class="training-spinner" aria-hidden="true"></span>
-              <div><strong data-i18n="Generating exercise">Generating exercise</strong><span data-i18n="Replaying a bounded legal hand trajectory.">Replaying a bounded legal hand trajectory.</span></div>
+              <div><strong id="trainingGeneratingTitle" data-i18n="Generating exercise">Generating exercise</strong><span id="trainingGeneratingText" data-i18n="Replaying a bounded legal hand trajectory.">Replaying a bounded legal hand trajectory.</span></div>
             </div>
             <div id="trainingError" class="training-state-message training-state-message--error" role="alert" hidden>
               <div><strong id="trainingErrorTitle" data-i18n="Exercise unavailable">Exercise unavailable</strong><span id="trainingErrorText" data-i18n="Try again or adjust the drill.">Try again or adjust the drill.</span></div>
@@ -1968,13 +1969,16 @@
             </div>
 
             <div id="trainingExerciseSurface" class="training-exercise-surface" hidden>
-              <div class="training-table-summary" aria-label="Read-only exercise cards" data-i18n-aria-label="Read-only exercise cards">
+              <div id="trainingFullHandTableMount" class="table-wrapper training-full-hand-table-wrapper" data-replay-mode="live" hidden aria-label="Live Full Hand table" data-i18n-aria-label="Live Full Hand table"></div>
+              <p id="trainingFullHandActionStatus" class="training-full-hand-action-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+              <div id="trainingCardSummary" class="training-table-summary" aria-label="Read-only exercise cards" data-i18n-aria-label="Read-only exercise cards">
                 <div class="training-board-zone"><span class="training-zone-label" data-i18n="Board">Board</span><div id="trainingBoardCards" class="training-card-row" aria-label="Board cards" data-i18n-aria-label="Board cards"></div></div>
                 <div class="training-table-divider" aria-hidden="true"></div>
                 <div class="training-hero-zone">
                   <div><span class="training-zone-label" data-i18n="Hero">Hero</span><strong id="trainingHandDisplay">—</strong></div>
                   <div id="trainingHeroCards" class="training-card-row" aria-label="Hero cards" data-i18n-aria-label="Hero cards"></div>
                 </div>
+                <div id="trainingFullHandStacks" class="training-full-hand-stacks" hidden aria-label="Current stacks" data-i18n-aria-label="Current stacks"></div>
               </div>
               <div id="trainingPotInfo" class="training-context-strip" data-state-surface="derived">
                 <div><span data-i18n="Street">Street</span><strong id="trainingStreetLabel" class="training-context-value--atomic">—</strong></div>
@@ -1996,8 +2000,16 @@
                 </div>
                 <div id="trainingStudyHintContent" class="training-study-hint-content" aria-live="polite"></div>
               </section>
-              <div class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
+              <div id="trainingDecisionPrompt" class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
               <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions" data-i18n-aria-label="Available actions" data-tutorial-anchor="training-answer-actions"></div>
+              <section id="trainingFullHandSizing" class="training-full-hand-sizing" hidden aria-labelledby="trainingFullHandSizingTitle">
+                <div class="training-full-hand-sizing-head">
+                  <div><span class="training-zone-label" data-i18n="Concrete sizing">Concrete sizing</span><strong id="trainingFullHandSizingTitle" data-i18n="Choose an amount to">Choose an amount to</strong></div>
+                  <small data-i18n="Amount-to · not raise-by">Amount-to · not raise-by</small>
+                </div>
+                <div id="trainingFullHandSizingActions"></div>
+                <p class="training-reference-note" data-i18n="Exact sizing is recorded. The grade compares the action family only; sizing is not graded.">Exact sizing is recorded. The grade compares the action family only; sizing is not graded.</p>
+              </section>
               <p class="training-shortcut-help"><span data-i18n="Keyboard:">Keyboard:</span> <span class="poker-data-token" dir="ltr"><kbd>1</kbd>–<kbd>6</kbd></span> <span data-i18n="choose a visible action">choose a visible action</span></p>
             </div>
 
@@ -2012,6 +2024,53 @@
               </dl>
               <section class="training-analysis-region" aria-labelledby="trainingAnalysisTitle" data-tutorial-anchor="training-analysis"><h4 id="trainingAnalysisTitle" data-i18n="Analysis">Analysis</h4><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></section>
             </div>
+            <section id="trainingFullHandCompletion" class="training-full-hand-completion" hidden aria-labelledby="trainingFullHandCompletionTitle" aria-live="polite">
+              <p class="training-eyebrow" data-i18n="Full Hand">Full Hand</p>
+              <h3 id="trainingFullHandCompletionTitle" data-i18n="Hand Complete">Hand Complete</h3>
+              <p id="trainingFullHandResult"></p>
+              <dl class="training-full-hand-summary">
+                <div><dt data-i18n="Decisions answered">Decisions answered</dt><dd id="trainingFullHandDecisionCount" class="poker-data-token">0</dd></div>
+                <div><dt data-i18n="Grade summary">Grade summary</dt><dd id="trainingFullHandGradeSummary"></dd></div>
+              </dl>
+              <div class="training-full-hand-completion-actions">
+                <button id="trainingReviewHand" class="ui-button ui-button--primary" type="button" aria-expanded="false" data-i18n="Review Hand">Review Hand</button>
+                <button id="trainingFullHandNewHand" class="ui-button ui-button--secondary" type="button" data-i18n="New Hand">New Hand</button>
+              </div>
+              <section id="trainingFullHandReview" class="training-full-hand-review" hidden aria-labelledby="trainingFullHandReviewTitle">
+                <div class="training-full-hand-review-head">
+                  <div><p class="training-eyebrow" data-i18n="Play first · review afterward">Play first · review afterward</p><h4 id="trainingFullHandReviewTitle" data-i18n="Post-Hand Review">Post-Hand Review</h4></div>
+                  <span id="trainingFullHandReviewProgress" class="badge status-badge status-badge--info"></span>
+                </div>
+                <div class="training-full-hand-review-navigation" aria-label="Hero decision navigation" data-i18n-aria-label="Hero decision navigation">
+                  <button id="trainingFullHandReviewPrevious" class="ui-button ui-button--secondary" type="button" data-i18n="Previous decision">Previous decision</button>
+                  <strong id="trainingFullHandReviewDecisionTitle"></strong>
+                  <button id="trainingFullHandReviewNext" class="ui-button ui-button--secondary" type="button" data-i18n="Next decision">Next decision</button>
+                </div>
+                <div class="training-full-hand-review-cards">
+                  <div><span class="training-zone-label" data-i18n="Hero cards">Hero cards</span><div id="trainingFullHandReviewHeroCards" class="training-card-row"></div></div>
+                  <div><span class="training-zone-label" data-i18n="Board">Board</span><div id="trainingFullHandReviewBoardCards" class="training-card-row"></div></div>
+                </div>
+                <dl class="training-full-hand-review-facts">
+                  <div><dt data-i18n="Chosen action">Chosen action</dt><dd id="trainingFullHandReviewAction"></dd></div>
+                  <div><dt data-i18n="Grade">Grade</dt><dd id="trainingFullHandReviewGrade"></dd></div>
+                  <div id="trainingFullHandReviewSizingGradeFact"><dt data-i18n="Sizing grade">Sizing grade</dt><dd id="trainingFullHandReviewSizingGrade" data-i18n="Not graded">Not graded</dd></div>
+                  <div><dt data-i18n="Chips committed">Chips committed</dt><dd id="trainingFullHandReviewCommitted" class="poker-data-token"></dd></div>
+                  <div><dt data-i18n="Pot">Pot</dt><dd id="trainingFullHandReviewPot" class="poker-data-token"></dd></div>
+                  <div><dt data-i18n="Hero stack">Hero stack</dt><dd id="trainingFullHandReviewStack" class="poker-data-token"></dd></div>
+                  <div><dt data-i18n="Facing">Facing</dt><dd id="trainingFullHandReviewFacing"></dd></div>
+                  <div><dt data-i18n="Call price">Call price</dt><dd id="trainingFullHandReviewCallPrice" class="poker-data-token"></dd></div>
+                  <div><dt data-i18n="Exact Replay point">Exact Replay point</dt><dd id="trainingFullHandReviewReplay" class="poker-data-token"></dd></div>
+                </dl>
+                <section class="training-full-hand-review-reference" aria-labelledby="trainingFullHandReviewReferenceTitle">
+                  <div class="training-full-hand-review-reference-head"><div><p class="training-eyebrow" data-i18n="Decision reference">Decision reference</p><h5 id="trainingFullHandReviewReferenceTitle" data-i18n="Strategy frequencies">Strategy frequencies</h5></div><span id="trainingFullHandReviewSource" class="badge status-badge status-badge--info"></span></div>
+                  <p class="training-reference-note" data-i18n="Probabilities from the displayed strategy source; no EV is implied.">Probabilities from the displayed strategy source; no EV is implied.</p>
+                  <p id="trainingFullHandReviewSizingNote" class="training-reference-note" data-i18n="The action-family grade does not evaluate the exact bet or raise size.">The action-family grade does not evaluate the exact bet or raise size.</p>
+                  <div id="trainingFullHandReviewFrequencyStack" class="training-frequency-stack frequency-stack is-empty" role="img" aria-label="Strategy frequencies unavailable"></div>
+                  <div id="trainingFullHandReviewFrequencyRows" class="training-frequency-rows"></div>
+                </section>
+                <button id="trainingFullHandOpenAnalysis" class="ui-button ui-button--primary" type="button" data-i18n="Open in Analysis">Open in Analysis</button>
+              </section>
+            </section>
             <div id="trainingSessionCompletion" class="training-session-completion" hidden aria-live="polite">
               <strong data-i18n="Session complete">Session complete</strong>
               <span id="trainingSessionCompletionText"></span>
@@ -2034,8 +2093,8 @@
               <div id="trainingFrequencyRows" class="training-frequency-rows"></div>
             </div>
           </section>
-          <details class="panel training-history-panel" aria-labelledby="trainingHistoryTitle">
-            <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="Canonical replay">Canonical replay</p><h2 id="trainingHistoryTitle" data-i18n="Action history">Action history</h2></div></summary>
+          <details id="trainingHistoryPanel" class="panel training-history-panel" aria-labelledby="trainingHistoryTitle">
+            <summary class="panel-head"><div><p id="trainingHistoryEyebrow" class="training-eyebrow" data-i18n="Canonical replay">Canonical replay</p><h2 id="trainingHistoryTitle" data-i18n="Action history">Action history</h2></div></summary>
             <div class="panel-body"><ol id="trainingActionHistory" class="training-action-history"><li class="is-empty" data-i18n="Generate an exercise to view its chronological action history.">Generate an exercise to view its chronological action history.</li></ol><p id="trainingCurrentActor" class="training-current-actor" data-i18n="No decision loaded.">No decision loaded.</p></div>
           </details>
           <section class="panel training-session-panel" aria-labelledby="trainingSessionTitle">
@@ -2050,12 +2109,17 @@
         </aside>
 
         <aside class="training-setup-column" id="trainingSetupColumn">
-          <section class="panel" aria-labelledby="trainingSetupTitle" data-tutorial-anchor="training-setup">
+          <section id="trainingSetupPanel" class="panel" aria-labelledby="trainingSetupTitle" data-tutorial-anchor="training-setup">
             <div class="panel-head"><div><p class="training-eyebrow" data-i18n="Drill setup">Drill setup</p><h2 id="trainingSetupTitle" data-i18n="Choose a decision family">Choose a decision family</h2></div><span class="badge status-badge status-badge--available" data-i18n="Home · no rake">Home · no rake</span></div>
             <div class="panel-body training-setup-fields">
               <div id="trainingModeSwitch" class="training-mode-switch" role="group" aria-label="Training mode" data-i18n-aria-label="Training mode">
                 <button class="ui-button is-active" type="button" data-training-session-mode="varied" aria-pressed="true" data-i18n="Varied Session">Varied Session</button>
                 <button class="ui-button" type="button" data-training-session-mode="focused" aria-pressed="false" data-i18n="Focused Drill">Focused Drill</button>
+                <button class="ui-button" type="button" data-training-session-mode="full_hand" aria-pressed="false" data-i18n="Full Hand">Full Hand</button>
+              </div>
+              <div id="trainingFullHandCompactControls" class="training-full-hand-compact-controls" hidden>
+                <div><span data-i18n="Live Hand">Live Hand</span><strong id="trainingFullHandCompactStatus"></strong><small><span data-i18n="Seed">Seed</span> <span id="trainingFullHandCompactSeed" class="poker-data-token">—</span></small></div>
+                <div><button id="trainingFullHandLiveNewHand" class="ui-button ui-button--secondary" type="button" data-i18n="New Hand">New Hand</button><button id="trainingFullHandEndHand" class="ui-button ui-button-ghost ui-button--destructive" type="button" data-i18n="End Hand">End Hand</button></div>
               </div>
               <div id="trainingVariedControls" class="training-mode-controls">
                 <label class="ui-field"><span data-i18n="Session length">Session length</span><select id="trainingSessionLength" class="control-select"><option value="10" selected>10</option><option value="20">20</option><option value="50">50</option><option value="open" data-i18n="Open">Open</option></select></label>
@@ -2063,6 +2127,7 @@
                 <label class="ui-field"><span data-i18n="Stack preference">Stack preference</span><select id="trainingVariedStackPreference" class="control-select"><option value="balanced" selected data-i18n="Balanced">Balanced</option><option value="short" data-i18n="Shallower">Shallower</option><option value="standard" data-i18n="Standard">Standard</option><option value="deep" data-i18n="Deeper">Deeper</option></select></label>
               </div>
               <div id="trainingFocusedControls" class="training-mode-controls" hidden>
+              <p id="trainingFullHandSetupNote" class="training-full-hand-setup-note" hidden data-i18n="Play one continuous canonical Hand against automatic opponents. Riverline pauses only for Hero decisions.">Play one continuous canonical Hand against automatic opponents. Riverline pauses only for Hero decisions.</p>
               <label class="ui-field"><span data-i18n="Street">Street</span><select id="trainingStreet" class="control-select"><option value="any" selected data-i18n="Any street">Any street</option><option value="preflop" data-i18n="Preflop">Preflop</option><option value="flop" data-i18n="Flop">Flop</option><option value="turn" data-i18n="Turn">Turn</option><option value="river" data-i18n="River">River</option></select></label>
               <label class="ui-field"><span data-i18n="Decision target">Decision target</span><select id="trainingDecisionTarget" class="control-select"><option value="any" selected data-i18n="Any compatible target">Any compatible target</option><optgroup label="Preflop" data-i18n-label="Preflop"><option value="preflop_unopened" data-i18n="Unopened / RFI">Unopened / RFI</option><option value="preflop_facing_open" data-i18n="Facing an open">Facing an open</option><option value="preflop_facing_3bet" data-i18n="Facing a 3-bet">Facing a 3-bet</option><option value="preflop_facing_4bet" data-i18n="Facing a 4-bet">Facing a 4-bet</option><option value="preflop_bb_option" data-i18n="Big blind check option">Big blind check option</option></optgroup><optgroup label="Postflop" data-i18n-label="Postflop"><option value="postflop_first_action" data-i18n="First action / checked to">First action / checked to</option><option value="postflop_facing_bet" data-i18n="Facing a bet">Facing a bet</option><option value="postflop_facing_raise" data-i18n="Facing a raise">Facing a raise</option></optgroup></select></label>
               <label class="ui-field"><span data-i18n="Hero position">Hero position</span><select id="trainingHeroPos" class="control-select poker-data-token"><option value="UTG" selected>UTG</option><option value="HJ">HJ</option><option value="CO">CO</option><option value="BTN">BTN</option><option value="SB">SB</option><option value="BB">BB</option></select></label>

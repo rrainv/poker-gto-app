@@ -372,7 +372,7 @@ test('session lifecycle rejects stale generations, stale exercises, illegal acti
   assert.equal(controller.getSnapshot().evaluation, null);
 });
 
-test('browser bridge exposes only the canonical session lifecycle operations', () => {
+test('browser bridge exposes only canonical decision-practice and full-Hand lifecycle operations', () => {
   const browserWindow = {};
   const snapshot = { schemaVersion: 'training-session/v1', status: 'idle' };
   const controller = {
@@ -384,7 +384,30 @@ test('browser bridge exposes only the canonical session lifecycle operations', (
   const bridge = installTrainingModeBridge(browserWindow, { controller });
   assert.equal(browserWindow.RiverlineTraining, bridge);
   assert.deepEqual(Object.keys(bridge).sort(), [
-    'answer', 'createConfigFromLegacyCompatibility', 'generate', 'getSnapshot', 'reset',
+    'advanceFullHandOneEvent',
+    'answer',
+    'answerFullHand',
+    'createConfigFromLegacyCompatibility',
+    'createFullHandAnalysisHandoff',
+    'createFullHandPresentationOrchestrator',
+    'createFullHandStartConfiguration',
+    'createFullHandTablePresence',
+    'createFullHandTableTransition',
+    'createPracticeIntent',
+    'generate',
+    'generatePlanned',
+    'getFullHandReview',
+    'getFullHandSizingModel',
+    'getFullHandSnapshot',
+    'getPracticePlannerState',
+    'getSnapshot',
+    'replay',
+    'reset',
+    'resetFullHand',
+    'resolveRulesCapability',
+    'startFullHand',
+    'startPracticeSession',
+    'validateFullHandSizingInput',
   ]);
   assert.equal(bridge.getSnapshot(), snapshot);
   assert.equal(Object.getOwnPropertyDescriptor(browserWindow, 'RiverlineTraining').writable, false);

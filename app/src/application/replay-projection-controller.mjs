@@ -117,33 +117,29 @@ function changedCards(previousSeat, nextSeat) {
   return JSON.stringify(cardIds(previousSeat?.cards)) !== JSON.stringify(cardIds(nextSeat.cards));
 }
 
-function createReplayMotion({
-  atLive,
-  frame,
-  frameIndex,
-  previousFrame,
+/**
+ * Projects lightweight motion facts between two authoritative Table Presence
+ * snapshots. Replay and live Full-Hand pacing share this presentation contract;
+ * neither consumer infers poker state transitions in its renderer.
+ */
+export function createTablePresenceTransitionMotion({
+  previousTablePresence = null,
   tablePresence,
-  timeline,
-  selectionDirection,
-  selectionRevision,
-}) {
-  const active = !atLive
-    && ['forward', 'restart'].includes(selectionDirection)
-    && frame.kind !== 'initialization';
-  if (!active) {
-    return deepFreeze({
-      schemaVersion: REPLAY_MOTION_SCHEMA_VERSION,
-      active: false,
-      token: selectionRevision,
-      direction: selectionDirection,
-      transitionKind: frame.kind,
-      frameIndex,
-    });
+  token,
+  direction = 'forward',
+  transitionKind,
+  frameIndex = null,
+  actorPlayerId = null,
+  actionType = null,
+  actionFamily = null,
+  wasAllIn = false,
+  boardCards = [],
+} = {}) {
+  if (tablePresence?.schemaVersion !== 'table-presence/v1') {
+    throw new TypeError('A Table Presence v1 destination is required for motion');
   }
-
-  const previousPresence = previousFrame?.tablePresence || null;
   const previousSeats = new Map(
-    (previousPresence?.seats || []).map((seat) => [seat.playerId, seat]),
+    (previousTablePresence?.seats || []).map((seat) => [seat.playerId, seat]),
   );
   const seatChanges = tablePresence.seats.map((seat) => {
     const previous = previousSeats.get(seat.playerId);
@@ -171,28 +167,67 @@ function createReplayMotion({
     || change.allInChanged
     || change.cardsChanged
     || change.cardVisibilityChanged);
-  const selectedAction = timeline.selectedAction;
   const nextActor = tablePresence.seats.find((seat) => seat.isCurrentActor) || null;
 
   return deepFreeze({
     schemaVersion: REPLAY_MOTION_SCHEMA_VERSION,
     active: true,
+    token,
+    direction,
+    transitionKind,
+    frameIndex,
+    actorPlayerId,
+    nextActorPlayerId: nextActor?.playerId || null,
+    actionType,
+    actionFamily,
+    wasAllIn,
+    boardCards: [...boardCards],
+    seatChanges,
+    pot: {
+      changed: previousTablePresence?.potMilliBb !== tablePresence.potMilliBb,
+      previousMilliBb: previousTablePresence?.potMilliBb ?? null,
+      nextMilliBb: tablePresence.potMilliBb,
+    },
+  });
+}
+
+function createReplayMotion({
+  atLive,
+  frame,
+  frameIndex,
+  previousFrame,
+  tablePresence,
+  timeline,
+  selectionDirection,
+  selectionRevision,
+}) {
+  const active = !atLive
+    && ['forward', 'restart'].includes(selectionDirection)
+    && frame.kind !== 'initialization';
+  if (!active) {
+    return deepFreeze({
+      schemaVersion: REPLAY_MOTION_SCHEMA_VERSION,
+      active: false,
+      token: selectionRevision,
+      direction: selectionDirection,
+      transitionKind: frame.kind,
+      frameIndex,
+    });
+  }
+
+  const selectedAction = timeline.selectedAction;
+  return createTablePresenceTransitionMotion({
+    previousTablePresence: previousFrame?.tablePresence || null,
+    tablePresence,
     token: selectionRevision,
     direction: selectionDirection,
     transitionKind: frame.kind,
     frameIndex,
     actorPlayerId: selectedAction?.playerId || null,
-    nextActorPlayerId: nextActor?.playerId || null,
     actionType: selectedAction?.actionType || null,
     actionFamily: selectedAction?.actionFamily || null,
     wasAllIn: selectedAction?.wasAllIn === true,
     boardCards: frame.publicBoardCards.map((card) => card.id),
-    seatChanges,
-    pot: {
-      changed: previousPresence?.potMilliBb !== tablePresence.potMilliBb,
-      previousMilliBb: previousPresence?.potMilliBb ?? null,
-      nextMilliBb: tablePresence.potMilliBb,
-    },
   });
 }
 

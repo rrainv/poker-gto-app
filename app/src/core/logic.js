@@ -145,7 +145,11 @@ const app = {
 
     sessionMode: 'varied',
 
-    practiceSession: null
+    practiceSession: null,
+
+    fullHandSnapshot: null,
+
+    fullHandReviewIndex: 0
 
   },
 
@@ -1216,7 +1220,7 @@ function renderCanonicalDecisionCards(group, cards, count) {
 }
 
 function syncCanonicalDecisionDisplay(decisionContext) {
-  if (!decisionContext) return;
+  if (!decisionContext) return null;
   const values = {
     players: decisionContext.tableSize,
     playersNum: decisionContext.tableSize,
@@ -1241,6 +1245,7 @@ function syncCanonicalDecisionDisplay(decisionContext) {
   renderCanonicalDecisionCards('board', decisionContext.board, 5);
   renderCanonicalDecisionCards('dead', decisionContext.deadCards, Math.min(52, decisionContext.deadCards.length + 1));
   renderPlaybookCardStateSummary(remainingCards('hand'));
+  return decisionContext;
 }
 
 function renderUnavailableStrategy(resolution) {
@@ -5256,6 +5261,7 @@ function bindEvents() {
     clearToast();
     window.RiverlineTutorials?.workspaceChanged?.(mode);
     if (mode !== 'gto') callPlaybookStateBridge('cancelReplayPlayback');
+    if (mode !== 'training') restoreSharedPokerTable();
 
     const shell = $('.riverline-shell');
     if (shell) shell.dataset.activeMode = mode;
@@ -5290,6 +5296,11 @@ function bindEvents() {
 
     if (mode !== 'gto') playbookUpdateScheduler.cancel();
     renderAllCards({ mode });
+    if (mode === 'training'
+      && trainingSessionMode() === 'full_hand'
+      && app.training.fullHandSnapshot) {
+      renderFullHandTrainingSnapshot(app.training.fullHandSnapshot);
+    }
     if (mode === 'equity') updateEquityReadiness();
     if (mode === 'home') void refreshHomeWorkspace();
     if (mode === 'gto') {
@@ -5821,6 +5832,10 @@ function refreshLocalizedTrainingRuntime() {
   updateTrainingPositions();
   updateTrainingFilterAvailability();
   updateTrainingStats();
+  if (trainingSessionMode() === 'full_hand' && app.training.fullHandSnapshot) {
+    renderFullHandTrainingSnapshot(app.training.fullHandSnapshot);
+    return;
+  }
   renderTrainingCards();
   const exercise = app.training.currentExercise;
   if (!exercise) return;
@@ -6675,6 +6690,10 @@ function selectedTrainingSeed() {
 }
 
 function updateTrainingFilterAvailability() {
+  if (trainingSessionMode() === 'full_hand') {
+    if ($('#trainingFilterMessage')) $('#trainingFilterMessage').textContent = '';
+    return;
+  }
   const street = $('#trainingStreet')?.value || 'any';
   const target = $('#trainingDecisionTarget');
   if (!target) return;
@@ -6775,7 +6794,9 @@ function initSidebar() {
 }
 
 async function copyCurrentTrainingSeed() {
-  const seed = app.training.currentExercise?.seed;
+  const seed = trainingSessionMode() === 'full_hand'
+    ? app.training.fullHandSnapshot?.handSeed
+    : app.training.currentExercise?.seed;
   if (!Number.isInteger(seed)) return;
   try {
     await navigator.clipboard.writeText(String(seed));
@@ -6812,10 +6833,11 @@ function handleTrainingKeyboardShortcut(event) {
     $('#trainingNextHandBtn')?.click();
     return;
   }
-  if (event.key.toLowerCase() === 'r' && app.training.currentExercise) {
+  if (event.key.toLowerCase() === 'r'
+    && (app.training.currentExercise || app.training.fullHandSnapshot)) {
     event.preventDefault();
     event.stopImmediatePropagation();
-    replayTrainingExercise(app.training.currentExercise.seed);
+    replayCurrentTrainingSeed();
   }
 }
 
@@ -6837,20 +6859,25 @@ function initTrainingMode() {
     button.addEventListener('click', () => setTrainingSessionMode(button.dataset.trainingSessionMode));
   });
   bind('#trainingRestartSession', 'click', () => startConfiguredTrainingSession());
-  bind('#trainingReplayBtn', 'click', () => app.training.currentExercise
-    && replayTrainingExercise(app.training.currentExercise.seed));
-  bind('#trainingReplayDecisionBtn', 'click', () => app.training.currentExercise
-    && replayTrainingExercise(app.training.currentExercise.seed));
+  bind('#trainingReplayBtn', 'click', replayCurrentTrainingSeed);
+  bind('#trainingReplayDecisionBtn', 'click', replayCurrentTrainingSeed);
   bind('#trainingGenerateSeed', 'click', () => {
     const seed = selectedTrainingSeed();
     if (seed !== null) startConfiguredTrainingSession({ seed });
   });
   bind('#trainingCopySeed', 'click', copyCurrentTrainingSeed);
+  bind('#trainingFullHandNewHand', 'click', () => startConfiguredTrainingSession());
+  bind('#trainingFullHandLiveNewHand', 'click', () => startConfiguredTrainingSession());
+  bind('#trainingFullHandEndHand', 'click', endFullHandTraining);
+  bind('#trainingReviewHand', 'click', toggleFullHandTrainingReview);
+  bind('#trainingFullHandReviewPrevious', 'click', () => stepFullHandTrainingReview(-1));
+  bind('#trainingFullHandReviewNext', 'click', () => stepFullHandTrainingReview(1));
+  bind('#trainingFullHandOpenAnalysis', 'click', openFullHandDecisionInAnalysis);
   bind('#trainingAdjustDrill', 'click', () => {
     $('#trainingAdvanced')?.removeAttribute('open');
     const selector = trainingSessionMode() === 'varied'
       ? '#trainingSessionLength'
-      : '#trainingStreet';
+      : trainingSessionMode() === 'full_hand' ? '#trainingHeroPos' : '#trainingStreet';
     $(selector)?.focus({ preventScroll: false });
   });
 
@@ -7024,6 +7051,68 @@ function showTrainingFeedback(feedback, isCorrect) {
 
 }
 
+function renderTrainingFrequencyReference(stack, rows, solution, evaluation) {
+  const actionsList = (Array.isArray(solution) ? solution : []).map((entry) => ({
+    action: entry.action,
+    name: entry.name,
+    pct: entry.value,
+    kind: visualActionKind(entry),
+    color: actionVisualColor(entry)
+  }));
+
+  actionsList.sort((a, b) => b.pct - a.pct);
+
+  if (typeof renderFrequencyStack === 'function') {
+    renderFrequencyStack(stack, actionsList.map((action) => ({
+      name: action.name,
+      value: action.pct,
+      kind: action.kind,
+      action: action.action
+    })));
+  }
+
+  if (rows) {
+    rows.innerHTML = '';
+    actionsList.forEach((action) => {
+      const isChosen = evaluation
+        && action.action?.type === evaluation.mappedStrategyAction?.type;
+      const isBest = evaluation
+        && action.action?.type === evaluation.bestStrategyAction?.type;
+      const row = document.createElement('div');
+      row.className = 'training-frequency-row';
+      row.dataset.actionKind = action.kind;
+      row.classList.toggle('is-chosen', Boolean(isChosen));
+      row.classList.toggle('is-best', Boolean(isBest));
+      const label = document.createElement('span');
+      label.className = 'training-frequency-label';
+      const name = document.createElement('span');
+      name.className = 'training-frequency-name';
+      name.textContent = t(action.name);
+      const markers = document.createElement('span');
+      markers.className = 'training-frequency-markers';
+      if (isChosen) markers.append(Object.assign(document.createElement('em'), {
+        className: 'training-frequency-marker training-frequency-marker--chosen',
+        textContent: t('Chosen')
+      }));
+      if (isBest) markers.append(Object.assign(document.createElement('em'), {
+        className: 'training-frequency-marker training-frequency-marker--highest',
+        textContent: t('Highest')
+      }));
+      label.append(name, markers);
+      const track = document.createElement('span');
+      track.className = 'training-frequency-track';
+      const fill = document.createElement('i');
+      fill.style.width = `${action.pct}%`;
+      track.appendChild(fill);
+      const value = document.createElement('strong');
+      value.textContent = `${action.pct}%`;
+      row.setAttribute('aria-label', `${t(action.name)}: ${action.pct}%${isChosen ? `, ${t('chosen action')}` : ''}${isBest ? `, ${t('highest frequency')}` : ''}`);
+      row.append(label, track, value);
+      rows.appendChild(row);
+    });
+  }
+  return actionsList;
+}
 
 
 function showTrainingSolution(solution) {
@@ -7049,20 +7138,15 @@ function showTrainingSolution(solution) {
     kind: visualActionKind(entry),
     color: actionVisualColor(entry)
   }));
-
   actionsList.sort((a, b) => b.pct - a.pct);
-
-  if (typeof renderFrequencyStack === 'function') {
-    renderFrequencyStack($('#trainingFrequencyStack'), actionsList.map((action) => ({
-      name: action.name,
-      value: action.pct,
-      kind: action.kind,
-      action: action.action
-    })));
-  }
-
-  const rows = $('#trainingFrequencyRows');
+  renderFrequencyStack($('#trainingFrequencyStack'), actionsList.map((action) => ({
+    name: action.name,
+    value: action.pct,
+    kind: action.kind,
+    action: action.action
+  })));
   const evaluation = app.training.currentEvaluation;
+  const rows = $('#trainingFrequencyRows');
   if (rows) {
     rows.innerHTML = '';
     actionsList.forEach((action) => {
@@ -7234,12 +7318,97 @@ const TRAINING_TARGETS = Object.freeze({
   POSTFLOP_FACING_RAISE: 'postflop_facing_raise'
 });
 
+let fullHandPresentationOrchestrator = null;
+let fullHandPresentationMotionToken = 0;
+
 function nextTrainingSeed(seed) {
   return (Math.imul(seed >>> 0, 1664525) + 1013904223) >>> 0;
 }
 
 function trainingSessionMode() {
-  return app.training.sessionMode === 'focused' ? 'focused' : 'varied';
+  return ['varied', 'focused', 'full_hand'].includes(app.training.sessionMode)
+    ? app.training.sessionMode
+    : 'varied';
+}
+
+function restoreSharedPokerTable() {
+  const table = $('#visual-table-container');
+  const playbookMount = $('#table-wrapper');
+  if (!table || !playbookMount || table.parentElement === playbookMount) return false;
+  playbookMount.appendChild(table);
+  return true;
+}
+
+function dispatchFullHandTrainingTable(snapshot, {
+  previousSnapshot = null,
+  event = null,
+  motionEnabled = true,
+} = {}) {
+  if (activeWorkspaceMode() !== 'training' || !trainingModeIsVisible()) return false;
+  const table = $('#visual-table-container');
+  const mount = $('#trainingFullHandTableMount');
+  if (!table || !mount || !snapshot?.state) return false;
+  if (table.parentElement !== mount) mount.appendChild(table);
+  mount.hidden = false;
+  mount.dataset.replayMode = 'live';
+  const transition = previousSnapshot && event
+    ? callTrainingServiceBridge('createFullHandTableTransition', {
+      previousSnapshot,
+      snapshot,
+      event,
+      token: ++fullHandPresentationMotionToken,
+      motionEnabled,
+    })
+    : null;
+  const tablePresence = transition?.tablePresence
+    || callTrainingServiceBridge('createFullHandTablePresence', snapshot);
+  if (!tablePresence) return false;
+  table.dataset.trainingHeroTurn = String(
+    snapshot.status === 'awaiting_hero'
+    && snapshot.state?.actingPlayerId === snapshot.heroPlayerId,
+  );
+  mount.dataset.presentationEvent = event?.transitionKind || 'state';
+  window.dispatchEvent(new CustomEvent('riverline:replay-motion', {
+    detail: transition?.motion || null,
+  }));
+  window.dispatchEvent(new CustomEvent('gameStateUpdate', { detail: tablePresence }));
+  return true;
+}
+
+function invalidateFullHandPresentation() {
+  fullHandPresentationOrchestrator?.invalidate();
+}
+
+function setFullHandTrainingPhase(phase = 'setup') {
+  const workspace = $('#trainingWorkspace');
+  if (!workspace) return;
+  const nextPhase = trainingSessionMode() === 'full_hand' ? phase : 'off';
+  workspace.dataset.trainingFullHandPhase = nextPhase;
+  const active = ['live', 'complete', 'review'].includes(nextPhase);
+  const compact = $('#trainingFullHandCompactControls');
+  if (compact) compact.hidden = !active;
+  if ($('#trainingFullHandCompactSeed')) {
+    $('#trainingFullHandCompactSeed').textContent = Number.isInteger(app.training.fullHandSnapshot?.handSeed)
+      ? String(app.training.fullHandSnapshot.handSeed)
+      : '—';
+  }
+  if ($('#trainingFullHandCompactStatus')) {
+    const statusKey = nextPhase === 'live' ? 'Playing to Hero'
+      : nextPhase === 'review' ? 'Post-Hand Review'
+        : nextPhase === 'complete' ? 'Hand Complete' : 'Ready';
+    $('#trainingFullHandCompactStatus').textContent = t(statusKey);
+  }
+  const history = $('#trainingHistoryPanel');
+  if (history && ['live', 'complete'].includes(nextPhase)) history.open = true;
+  if ($('#trainingHistoryEyebrow')) {
+    const key = active ? 'Recent actions' : 'Canonical replay';
+    $('#trainingHistoryEyebrow').dataset.i18n = key;
+    $('#trainingHistoryEyebrow').textContent = t(key);
+  }
+  if (!active) {
+    if ($('#trainingFullHandTableMount')) $('#trainingFullHandTableMount').hidden = true;
+    restoreSharedPokerTable();
+  }
 }
 
 function trainingSessionLength() {
@@ -7249,8 +7418,13 @@ function trainingSessionLength() {
 
 function clearTrainingSessionCompletion() {
   app.training.practiceSession = null;
+  app.training.fullHandSnapshot = null;
   if ($('#trainingSessionCompletion')) $('#trainingSessionCompletion').hidden = true;
   if ($('#trainingSessionCompletionText')) $('#trainingSessionCompletionText').textContent = '';
+  if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = true;
+  if ($('#trainingFullHandReview')) $('#trainingFullHandReview').hidden = true;
+  if ($('#trainingReviewHand')) $('#trainingReviewHand').setAttribute('aria-expanded', 'false');
+  app.training.fullHandReviewIndex = 0;
   const nextBtn = $('#trainingNextHandBtn');
   if (nextBtn) nextBtn.hidden = false;
 }
@@ -7269,6 +7443,7 @@ function updateTrainingSessionProgress() {
 }
 
 function clearTrainingSessionState() {
+  invalidateFullHandPresentation();
   callTrainingServiceBridge('reset');
   clearTrainingSessionCompletion();
   app.training.stats = { totalHands: 0, correct: 0, streak: 0 };
@@ -7280,6 +7455,9 @@ function clearTrainingSessionState() {
   app.training.currentPresentation = null;
   app.training.currentSolution = null;
   app.training.currentHand = null;
+  app.training.fullHandSnapshot = null;
+  app.training.fullHandReviewIndex = 0;
+  fullHandPresentationMotionToken = 0;
   app.training.hero = [];
   app.training.board = [];
   clearTrainingExercisePresentation();
@@ -7287,10 +7465,11 @@ function clearTrainingSessionState() {
   updateTrainingSessionProgress();
   if ($('#trainingFilterMessage')) $('#trainingFilterMessage').textContent = t('Training session reset.');
   setTrainingWorkspaceState('idle');
+  setFullHandTrainingPhase(trainingSessionMode() === 'full_hand' ? 'setup' : 'off');
 }
 
 function setTrainingSessionMode(mode, { reset = true } = {}) {
-  const nextMode = mode === 'focused' ? 'focused' : 'varied';
+  const nextMode = ['varied', 'focused', 'full_hand'].includes(mode) ? mode : 'varied';
   app.training.sessionMode = nextMode;
   document.querySelectorAll('[data-training-session-mode]').forEach((button) => {
     const selected = button.dataset.trainingSessionMode === nextMode;
@@ -7298,26 +7477,37 @@ function setTrainingSessionMode(mode, { reset = true } = {}) {
     button.setAttribute('aria-pressed', String(selected));
   });
   if ($('#trainingVariedControls')) $('#trainingVariedControls').hidden = nextMode !== 'varied';
-  if ($('#trainingFocusedControls')) $('#trainingFocusedControls').hidden = nextMode !== 'focused';
+  if ($('#trainingFocusedControls')) $('#trainingFocusedControls').hidden = nextMode === 'varied';
+  const focusedOnlyHidden = nextMode !== 'focused';
+  $('#trainingStreet')?.closest('.ui-field')?.toggleAttribute('hidden', focusedOnlyHidden);
+  $('#trainingDecisionTarget')?.closest('.ui-field')?.toggleAttribute('hidden', focusedOnlyHidden);
+  if ($('#trainingFullHandSetupNote')) $('#trainingFullHandSetupNote').hidden = nextMode !== 'full_hand';
   if ($('#trainingSetupTitle')) {
-    const key = nextMode === 'varied' ? 'Plan a varied session' : 'Choose a decision family';
+    const key = nextMode === 'varied' ? 'Plan a varied session'
+      : nextMode === 'full_hand' ? 'Configure a full hand' : 'Choose a decision family';
     $('#trainingSetupTitle').dataset.i18n = key;
     $('#trainingSetupTitle').textContent = t(key);
   }
   if ($('#trainingNewHand')) {
-    const key = nextMode === 'varied' ? 'Start varied session' : 'Generate exercise';
+    const key = nextMode === 'varied' ? 'Start varied session'
+      : nextMode === 'full_hand' ? 'Start Full Hand' : 'Generate exercise';
     $('#trainingNewHand').dataset.i18n = key;
     $('#trainingNewHand').textContent = t(key);
   }
   if (reset) clearTrainingSessionState();
+  else setFullHandTrainingPhase(nextMode === 'full_hand' ? 'setup' : 'off');
 }
 
 function readTrainingConfig(seed) {
   const tableSize = numericValue('#trainingPlayers', 6);
   const stackBb = numericValue('#trainingStack', 30);
   const heroPosition = $('#trainingHeroPos')?.value || POSITIONS[tableSize]?.[0] || 'BTN';
-  const street = $('#trainingStreet')?.value || 'any';
-  const target = $('#trainingDecisionTarget')?.value || 'any';
+  const street = trainingSessionMode() === 'full_hand'
+    ? 'any'
+    : $('#trainingStreet')?.value || 'any';
+  const target = trainingSessionMode() === 'full_hand'
+    ? 'any'
+    : $('#trainingDecisionTarget')?.value || 'any';
   const streets = street === 'any' ? ['preflop', 'flop', 'turn', 'river'] : [street];
   const preflopTargets = [
     TRAINING_TARGETS.PREFLOP_UNOPENED,
@@ -7421,9 +7611,18 @@ function setTrainingWorkspaceState(state) {
   const workspace = document.querySelector('.training-workspace');
   if (!workspace) return;
   workspace.dataset.trainingState = state;
-  workspace.setAttribute('aria-busy', String(state === 'generating'));
+  workspace.setAttribute('aria-busy', String(['generating', 'automating'].includes(state)));
   const stateBadge = $('#trainingStateBadge');
-  const labels = { idle: 'Idle', generating: 'Generating', ready: 'Decision ready', feedback: 'Feedback', error: 'Error' };
+  const labels = {
+    idle: 'Idle',
+    generating: 'Generating',
+    automating: 'Automating',
+    ready: 'Decision ready',
+    grading: 'Decision recorded',
+    feedback: 'Feedback',
+    terminal: 'Hand Complete',
+    error: 'Error'
+  };
   if (stateBadge) {
     stateBadge.textContent = t(labels[state] || state);
     stateBadge.className = `badge status-badge status-badge--${state === 'error' ? 'warning' : state === 'ready' ? 'available' : 'info'}`;
@@ -7431,8 +7630,14 @@ function setTrainingWorkspaceState(state) {
   if ($('#trainingIdle')) $('#trainingIdle').hidden = state !== 'idle';
   if ($('#trainingGenerating')) $('#trainingGenerating').hidden = state !== 'generating';
   if ($('#trainingError')) $('#trainingError').hidden = state !== 'error';
-  if ($('#trainingExerciseSurface')) $('#trainingExerciseSurface').hidden = !['ready', 'feedback'].includes(state);
-  if ($('#trainingFeedback')) $('#trainingFeedback').hidden = state !== 'feedback';
+  if ($('#trainingExerciseSurface')) {
+    $('#trainingExerciseSurface').hidden = !['automating', 'ready', 'grading', 'feedback']
+      .includes(state);
+  }
+  if ($('#trainingFeedback')) {
+    $('#trainingFeedback').hidden = trainingSessionMode() === 'full_hand' || state !== 'feedback';
+  }
+  if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = state !== 'terminal';
 }
 
 function clearTrainingExercisePresentation() {
@@ -7448,6 +7653,13 @@ function clearTrainingExercisePresentation() {
     .forEach((selector) => { if ($(selector)) $(selector).textContent = '—'; });
   if ($('#trainingCopySeed')) $('#trainingCopySeed').disabled = true;
   if ($('#trainingReplayBtn')) $('#trainingReplayBtn').disabled = true;
+  if ($('#trainingDecisionNumber')) $('#trainingDecisionNumber').hidden = true;
+  if ($('#trainingFullHandStacks')) $('#trainingFullHandStacks').hidden = true;
+  if ($('#trainingFullHandActionStatus')) {
+    $('#trainingFullHandActionStatus').hidden = true;
+    $('#trainingFullHandActionStatus').textContent = '';
+  }
+  clearFullHandTrainingSizingControls();
 }
 
 function renderTrainingPresentation(exercise) {
@@ -7505,19 +7717,197 @@ function renderTrainingPresentation(exercise) {
   if ($('#trainingReplayDecisionBtn')) $('#trainingReplayDecisionBtn').hidden = false;
 }
 
+function fullHandTrainingActionDetail(type, legalActions) {
+  if (!legalActions) return '';
+  if (type === 'call') return fullHandBbLabel(legalActions.call.commitMilliBb);
+  if (type === 'all_in') return fullHandBbLabel(legalActions.allIn.amountToMilliBb);
+  return '';
+}
+
+function fullHandBbLabel(amountMilliBb) {
+  if (!Number.isSafeInteger(amountMilliBb)) return t('Unavailable');
+  const value = (amountMilliBb / 1000).toFixed(3).replace(/\.?0+$/, '');
+  return `${value} bb`;
+}
+
+function clearFullHandTrainingSizingControls() {
+  const surface = $('#trainingFullHandSizing');
+  if (surface) surface.hidden = true;
+  $('#trainingFullHandSizingActions')?.replaceChildren();
+}
+
+function fullHandSizingValidationCopy(validation, actionLabel, sizingModel) {
+  const amount = fullHandBbLabel(validation?.amountToMilliBb);
+  const messages = {
+    required: () => t('Enter an amount-to.'),
+    invalid_format: () => t('Use a numeric amount-to in bb.'),
+    unsupported_precision: () => t('Use no more than three decimal places.'),
+    action_unavailable: () => t('This action is no longer available.'),
+    below_minimum: () => t('Minimum amount-to is {amount}.', {
+      amount: fullHandBbLabel(sizingModel.minToMilliBb),
+    }),
+    above_maximum: () => t('Maximum amount-to is {amount}.', {
+      amount: fullHandBbLabel(sizingModel.maxToMilliBb),
+    }),
+    chip_unit_misaligned: () => t('Amount-to must use {step} increments.', {
+      step: `${sizingModel.stepValueBb} bb`,
+    }),
+  };
+  if (validation?.valid) {
+    return t('Legal amount-to: {amount}. Press Enter or choose {action}.', {
+      amount,
+      action: actionLabel,
+    });
+  }
+  return (messages[validation?.errorCode] || messages.invalid_format)();
+}
+
+function renderFullHandTrainingSizingControls() {
+  if (trainingSessionMode() !== 'full_hand') {
+    clearFullHandTrainingSizingControls();
+    return null;
+  }
+  const model = callTrainingServiceBridge('getFullHandSizingModel');
+  const sizing = model?.actions?.bet || model?.actions?.raise;
+  const surface = $('#trainingFullHandSizing');
+  const mount = $('#trainingFullHandSizingActions');
+  if (!surface || !mount || !sizing) {
+    clearFullHandTrainingSizingControls();
+    return null;
+  }
+
+  mount.replaceChildren();
+  const actionType = sizing.actionType;
+  const semanticLabel = trainingActionLabel(actionType, app.training.currentExercise?.decisionContext);
+  const actionLabel = t(semanticLabel) || semanticLabel;
+  const controlId = `trainingFullHand${actionType === 'bet' ? 'Bet' : 'Raise'}AmountTo`;
+  const boundsId = `${controlId}Bounds`;
+  const validationId = `${controlId}Validation`;
+  const action = document.createElement('div');
+  action.className = 'training-full-hand-sizing-action';
+
+  const entry = document.createElement('div');
+  entry.className = 'training-full-hand-sizing-entry';
+  const label = document.createElement('label');
+  label.htmlFor = controlId;
+  label.textContent = t('{action} to', { action: actionLabel });
+  const amountControl = document.createElement('div');
+  amountControl.className = 'training-full-hand-amount-control';
+  const input = document.createElement('input');
+  input.id = controlId;
+  input.name = `${actionType}AmountToBb`;
+  input.type = 'number';
+  input.inputMode = 'decimal';
+  input.autocomplete = 'off';
+  input.min = sizing.minValueBb;
+  input.max = sizing.maxValueBb;
+  input.step = sizing.stepValueBb;
+  input.value = sizing.initialValueBb;
+  input.setAttribute('aria-label', t('{action} amount-to in big blinds', { action: actionLabel }));
+  input.setAttribute('aria-describedby', `${boundsId} ${validationId}`);
+  const unit = document.createElement('span');
+  unit.textContent = 'bb';
+  amountControl.append(input, unit);
+  const submit = document.createElement('button');
+  submit.type = 'button';
+  submit.className = `ui-button ui-button--primary training-full-hand-sizing-submit training-action-button--${actionType}`;
+  submit.textContent = actionLabel;
+  entry.append(label, amountControl, submit);
+
+  const bounds = document.createElement('p');
+  bounds.id = boundsId;
+  bounds.className = 'training-full-hand-sizing-bounds';
+  bounds.textContent = t('Min {min} · Max {max} · Step {step}', {
+    min: fullHandBbLabel(sizing.minToMilliBb),
+    max: fullHandBbLabel(sizing.maxToMilliBb),
+    step: fullHandBbLabel(model.chipUnitMilliBb),
+  });
+  const validationStatus = document.createElement('p');
+  validationStatus.id = validationId;
+  validationStatus.className = 'training-full-hand-sizing-validation';
+  validationStatus.setAttribute('role', 'status');
+  validationStatus.setAttribute('aria-live', 'polite');
+
+  let currentValidation = null;
+  const refreshValidation = () => {
+    currentValidation = callTrainingServiceBridge(
+      'validateFullHandSizingInput',
+      actionType,
+      input.value,
+    );
+    const valid = currentValidation?.valid === true;
+    input.setAttribute('aria-invalid', String(!valid));
+    submit.disabled = !valid || app.training.lifecycle !== 'ready';
+    validationStatus.dataset.valid = String(valid);
+    validationStatus.textContent = fullHandSizingValidationCopy(
+      currentValidation,
+      actionLabel,
+      sizing,
+    );
+    return currentValidation;
+  };
+  input.addEventListener('input', refreshValidation);
+  input.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.repeat) return;
+    if (!refreshValidation()?.valid) return;
+    event.preventDefault();
+    submit.click();
+  });
+  submit.addEventListener('click', () => {
+    const validation = refreshValidation();
+    if (validation?.valid) {
+      handleFullHandTrainingGuess(actionType, validation.amountToMilliBb);
+    }
+  });
+
+  const presets = document.createElement('div');
+  presets.className = 'training-full-hand-presets';
+  presets.setAttribute('aria-label', t('Quick sizing shortcuts'));
+  sizing.presets.forEach((preset) => {
+    const presetButton = document.createElement('button');
+    presetButton.type = 'button';
+    presetButton.className = 'training-full-hand-preset';
+    presetButton.dataset.presetId = preset.presetId;
+    presetButton.dataset.action = preset.actionType;
+    presetButton.dataset.amountToMilliBb = String(preset.amountToMilliBb);
+    presetButton.textContent = `${t(preset.label)} · ${fullHandBbLabel(preset.amountToMilliBb)}`;
+    presetButton.addEventListener('click', () => {
+      if (preset.kind === 'all_in') {
+        handleFullHandTrainingGuess('all_in');
+        return;
+      }
+      input.value = preset.valueBb;
+      refreshValidation();
+      input.focus({ preventScroll: true });
+    });
+    presets.appendChild(presetButton);
+  });
+
+  action.append(entry, bounds, validationStatus, presets);
+  mount.appendChild(action);
+  surface.hidden = false;
+  refreshValidation();
+  return model;
+}
+
 function updateTrainingButtons(exercise) {
   const container = $('#trainingGuessButtons');
   if (!container) return;
   container.innerHTML = '';
+  const fullHand = trainingSessionMode() === 'full_hand';
   const presentationByType = new Map((app.training.currentPresentation?.legalActions || []).map((entry) => [entry.type, entry]));
-  canonicalTrainingLegalActionTypes(exercise).forEach((type, index) => {
+  canonicalTrainingLegalActionTypes(exercise).forEach((type) => {
+    if (fullHand && (type === 'bet' || type === 'raise')) return;
+    const index = container.childElementCount;
     const semanticLabel = trainingActionLabel(type, exercise.decisionContext);
     const label = t(semanticLabel) || semanticLabel;
     const sizing = presentationByType.get(type);
     const boundsLabel = sizing?.boundsLabel?.endsWith(' to')
       ? t('to {range}', { range: sizing.boundsLabel.slice(0, -3) })
       : sizing?.boundsLabel;
-    const sizingLabel = boundsLabel || sizing?.amountLabel || '';
+    const sizingLabel = fullHand
+      ? fullHandTrainingActionDetail(type, exercise.legalActions)
+      : boundsLabel || sizing?.amountLabel || '';
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `ui-button training-action-button training-action-button--${type}`;
@@ -7538,6 +7928,8 @@ function updateTrainingButtons(exercise) {
     container.appendChild(button);
   });
   container.hidden = false;
+  if (fullHand) renderFullHandTrainingSizingControls();
+  else clearFullHandTrainingSizingControls();
 }
 
 function renderTrainingSource(exercise) {
@@ -7556,6 +7948,7 @@ function renderTrainingGenerationError(error) {
   console.error('[Riverline Training generation]', error);
   app.training.currentPresentation = null;
   setTrainingWorkspaceState('error');
+  if (trainingSessionMode() === 'full_hand') setFullHandTrainingPhase('setup');
   const errorCopy = {
     invalid_config: [t('Check the drill setup'), t('One or more filters are outside the supported TrainingConfig range.')],
     unsupported_rules: [t('Unsupported rules'), t('This Game Rules mode cannot generate Training exercises. Choose a supported rules mode and try again.')],
@@ -7565,6 +7958,9 @@ function renderTrainingGenerationError(error) {
     generation_exhausted: [t('No matching exercise found'), t('The bounded generator could not reach this exact combination. Broaden a filter and try again.')],
     decision_projection_unavailable: [t('Decision context unavailable'), t('The generated hand could not be projected safely for the strategy path.')],
     strategy_unavailable: [t('Strategy reference unavailable'), t('The current strategy path did not return a gradeable StrategyResult.')],
+    invalid_configuration: [t('Full Hand unavailable'), t('Check the table, stack, Hero position, and Game Rules setup.')],
+    progression_failed: [t('Full Hand could not continue'), t('Canonical bot or chance progression stopped safely. Start a new Hand.')],
+    strategy_evaluation_failed: [t('Decision could not be graded'), t('The Hero action was not continued without a valid StrategyProvider evaluation.')],
     service_unavailable: [t('Training service unavailable'), t('Reload Riverline and try again. The canonical Training bridge did not load.')],
     internal_error: [t('Training could not continue'), t('An internal generation error occurred. Try another seed or adjust the drill.')]
   };
@@ -7574,6 +7970,7 @@ function renderTrainingGenerationError(error) {
   if ($('#trainingInstruction')) $('#trainingInstruction').textContent = message;
   const guessButtons = $('#trainingGuessButtons');
   if (guessButtons) guessButtons.hidden = true;
+  clearFullHandTrainingSizingControls();
   const nextBtn = $('#trainingNextHandBtn');
   if (nextBtn) {
     nextBtn.disabled = false;
@@ -7667,6 +8064,8 @@ function prepareTrainingGeneration({ preserveSession = false } = {}) {
   else if ($('#trainingSessionCompletion')) $('#trainingSessionCompletion').hidden = true;
   app.training.lifecycle = 'generating';
   setTrainingWorkspaceState('generating');
+  setFullHandTrainingPhase('starting');
+  setFullHandTrainingLoadingCopy('Generating exercise', 'Replaying a bounded legal hand trajectory.');
   clearTrainingExercisePresentation();
   app.training.currentExercise = null;
   app.training.currentStrategyResult = null;
@@ -7743,9 +8142,788 @@ async function generatePlannedTrainingExercise() {
   return result;
 }
 
+function setFullHandTrainingLoadingCopy(titleKey, messageKey) {
+  if ($('#trainingGeneratingTitle')) {
+    $('#trainingGeneratingTitle').dataset.i18n = titleKey;
+    $('#trainingGeneratingTitle').textContent = t(titleKey);
+  }
+  if ($('#trainingGeneratingText')) {
+    $('#trainingGeneratingText').dataset.i18n = messageKey;
+    $('#trainingGeneratingText').textContent = t(messageKey);
+  }
+}
+
+function fullHandTrainingHistory(snapshot, actionLimit = null) {
+  const records = actionLimit === null
+    ? snapshot?.state?.actionHistory || []
+    : (snapshot?.state?.actionHistory || []).slice(0, actionLimit);
+  const players = new Map((snapshot?.state?.players || []).map((player) => [player.playerId, player]));
+  return records.map((record) => {
+    const player = players.get(record.playerId);
+    const type = record.submittedAction.type;
+    const amountMilliBb = ['bet', 'raise', 'all_in'].includes(type)
+      ? record.currentBetAfterMilliBb
+      : type === 'call' ? record.committedMilliBb : null;
+    return {
+      sequence: record.sequence,
+      street: record.street,
+      actorLabel: record.playerId === snapshot.heroPlayerId
+        ? 'Hero'
+        : player?.position || t('Seat {number}', { number: (player?.seat ?? 0) + 1 }),
+      position: player?.position || null,
+      actionType: type,
+      actionLabel: trainingActionLabel(type, {
+        street: record.street,
+        lastAction: null,
+      }),
+      amountBb: amountMilliBb === null ? null : amountMilliBb / 1000,
+      amountLabel: amountMilliBb === null ? '' : fullHandBbLabel(amountMilliBb),
+      isHero: record.playerId === snapshot.heroPlayerId,
+    };
+  });
+}
+
+function fullHandActorLabel(snapshot, playerId) {
+  const player = snapshot?.state?.players?.find((candidate) => candidate.playerId === playerId);
+  if (playerId === snapshot?.heroPlayerId) return t('Hero');
+  return player?.position || t('Seat {number}', { number: (player?.seat ?? 0) + 1 });
+}
+
+function fullHandActionAnnouncement(snapshot) {
+  const entry = fullHandTrainingHistory(snapshot).at(-1);
+  if (!entry) return t('Hand continues.');
+  const player = t(entry.actorLabel);
+  const amount = entry.amountLabel;
+  const messages = {
+    fold: () => t('{player} folds', { player }),
+    check: () => t('{player} checks', { player }),
+    call: () => t('{player} calls {amount}', { player, amount }),
+    bet: () => t('{player} bets to {amount}', { player, amount }),
+    raise: () => t('{player} raises to {amount}', { player, amount }),
+    all_in: () => t('{player} moves all-in to {amount}', { player, amount }),
+  };
+  return (messages[entry.actionType] || (() => `${player} ${t(entry.actionLabel)}`))();
+}
+
+function fullHandPresentationStatus(cue, snapshot) {
+  const actorLabel = cue?.actor?.playerId
+    ? fullHandActorLabel(snapshot, cue.actor.playerId)
+    : null;
+  const pendingCopy = {
+    deal_hole: 'Dealing private cards…',
+    deal_flop: 'Dealing the flop…',
+    deal_turn: 'Dealing the turn…',
+    deal_river: 'Dealing the river…',
+  };
+  const messages = {
+    bot_thinking: () => t('{player} is thinking…', { player: actorLabel }),
+    dealing_private_cards: () => t('Dealing private cards…'),
+    dealing_street: () => t(pendingCopy[cue.pendingChanceType] || 'Dealing the next street…'),
+    resolving_showdown: () => t('Resolving showdown…'),
+    bot_action: () => fullHandActionAnnouncement(snapshot),
+    hero_action: () => fullHandActionAnnouncement(snapshot),
+    private_cards_dealt: () => t('Private cards dealt'),
+    flop_dealt: () => t('Flop dealt'),
+    turn_dealt: () => t('Turn dealt'),
+    river_dealt: () => t('River dealt'),
+    showdown_cards_revealed: () => t('{player} reveals', { player: actorLabel }),
+    showdown_resolved: () => t('Showdown resolved'),
+    hero_boundary: () => t('Your turn'),
+    terminal_boundary: () => t('Hand complete'),
+    hero_turn: () => t('Your turn · Hero ({position}) to act', {
+      position: snapshot?.currentDecision?.currentActor?.position || t('position unavailable'),
+    }),
+    hand_complete: () => t('Hand complete'),
+    error: () => t('Hand progression stopped'),
+    waiting: () => t('Hand continues…'),
+  };
+  return (messages[cue?.kind] || messages.waiting)();
+}
+
+function setFullHandTrainingInputLocked(locked) {
+  const workspace = $('#trainingWorkspace');
+  if (workspace) workspace.dataset.fullHandInputState = locked ? 'automating' : 'hero';
+  const actions = $('#trainingGuessButtons');
+  if (actions) {
+    actions.classList.toggle('is-hero-turn', !locked);
+    actions.setAttribute('aria-disabled', String(locked));
+    if (locked) actions.hidden = true;
+  }
+  actions?.querySelectorAll('button').forEach((button) => {
+    button.disabled = locked;
+  });
+  const sizing = $('#trainingFullHandSizing');
+  if (sizing) {
+    sizing.setAttribute('aria-disabled', String(locked));
+    if (locked) sizing.hidden = true;
+  }
+  sizing?.querySelectorAll('button, input').forEach((control) => {
+    control.disabled = locked;
+  });
+  $('#trainingDecisionPrompt')?.classList.toggle('is-hero-turn', !locked);
+}
+
+function renderFullHandPresentationStatus(cue, snapshot) {
+  const message = fullHandPresentationStatus(cue, snapshot);
+  const actionStatus = $('#trainingFullHandActionStatus');
+  if (actionStatus) {
+    actionStatus.hidden = false;
+    actionStatus.dataset.presentationState = cue?.kind || 'waiting';
+    actionStatus.textContent = message;
+  }
+  if ($('#trainingCurrentActor')) $('#trainingCurrentActor').textContent = message;
+  if ($('#trainingInstruction')) $('#trainingInstruction').textContent = message;
+  if ($('#trainingFullHandCompactStatus')) {
+    $('#trainingFullHandCompactStatus').textContent = cue?.kind === 'hero_turn'
+      ? t('Your turn')
+      : cue?.kind === 'hand_complete' ? t('Hand Complete') : message;
+  }
+
+  const prompt = $('#trainingDecisionPrompt');
+  const promptEyebrow = prompt?.querySelector('span');
+  const promptTitle = prompt?.querySelector('strong');
+  const promptDetail = prompt?.querySelector('small');
+  const heroTurn = cue?.kind === 'hero_turn';
+  if (promptEyebrow) promptEyebrow.textContent = heroTurn ? t('Your turn') : t('Hand in progress');
+  if (promptTitle) promptTitle.textContent = heroTurn ? t('Hero to act') : message;
+  if (promptDetail) {
+    promptDetail.textContent = heroTurn
+      ? t('Choose one legal action.')
+      : t('Actions unlock when it is Hero\'s turn.');
+  }
+}
+
+function renderFullHandAutomationSnapshot(snapshot, {
+  cue,
+  previousSnapshot = null,
+  event = null,
+  motionEnabled = true,
+} = {}) {
+  app.training.fullHandSnapshot = snapshot;
+  app.training.lifecycle = 'automating';
+  renderFullHandTrainingHistory(snapshot);
+  renderFullHandTrainingStacks(snapshot);
+  renderFullHandTrainingMetadata(snapshot, null);
+  renderFullHandTrainingTags(snapshot, null);
+  dispatchFullHandTrainingTable(snapshot, { previousSnapshot, event, motionEnabled });
+  setFullHandTrainingPhase('live');
+  setTrainingWorkspaceState('automating');
+  setFullHandTrainingInputLocked(true);
+  if ($('#trainingFeedback')) $('#trainingFeedback').hidden = true;
+  if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
+  if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = true;
+  if ($('#trainingFullHandReview')) $('#trainingFullHandReview').hidden = true;
+  renderFullHandPresentationStatus(cue, snapshot);
+}
+
+function ensureFullHandPresentationOrchestrator() {
+  if (fullHandPresentationOrchestrator) return fullHandPresentationOrchestrator;
+  fullHandPresentationOrchestrator = callTrainingServiceBridge(
+    'createFullHandPresentationOrchestrator',
+    {
+      getSnapshot: () => callTrainingServiceBridge('getFullHandSnapshot'),
+      advanceOne: () => callTrainingServiceBridge('advanceFullHandOneEvent'),
+      renderCue: ({ cue, snapshot }) => renderFullHandAutomationSnapshot(snapshot, { cue }),
+      renderTransition: ({ cue, snapshot, previousSnapshot, event, motionEnabled }) => (
+        renderFullHandAutomationSnapshot(snapshot, {
+          cue,
+          previousSnapshot,
+          event,
+          motionEnabled,
+        })
+      ),
+      renderBoundary: ({ cue, snapshot }) => {
+        renderFullHandTrainingSnapshot(snapshot);
+        if (snapshot.status === 'awaiting_hero') renderFullHandPresentationStatus(cue, snapshot);
+      },
+      setInputLocked: (locked) => setFullHandTrainingInputLocked(locked),
+      prefersReducedMotion: () => window.matchMedia?.('(prefers-reduced-motion: reduce)')
+        .matches === true,
+    },
+  );
+  return fullHandPresentationOrchestrator;
+}
+
+async function runFullHandPresentation(options = {}) {
+  const orchestrator = ensureFullHandPresentationOrchestrator();
+  if (!orchestrator) {
+    renderTrainingGenerationError({
+      code: 'service_unavailable',
+      message: 'Full-Hand presentation orchestration is unavailable.',
+    });
+    return null;
+  }
+  try {
+    return await orchestrator.run(options);
+  } catch (error) {
+    if (trainingSessionMode() === 'full_hand') {
+      renderTrainingGenerationError({
+        code: 'presentation_failed',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+    return null;
+  }
+}
+
+function fullHandHeroActionPresentationEvent(previousSnapshot, answered) {
+  const chosenAction = answered?.decision?.chosenAction;
+  return Object.freeze({
+    schemaVersion: 'automated-hand-visible-event/v1',
+    kind: 'hero_action',
+    transitionKind: 'action',
+    pendingChanceType: null,
+    actor: previousSnapshot?.currentDecision?.currentActor ?? null,
+    chosenAction,
+    streetBefore: previousSnapshot?.state?.street ?? null,
+    streetAfter: answered?.snapshot?.state?.street ?? null,
+    boardCardIds: [],
+  });
+}
+
+function renderFullHandTrainingHistory(snapshot) {
+  const history = $('#trainingActionHistory');
+  if (!history) return;
+  const entries = fullHandTrainingHistory(snapshot);
+  history.replaceChildren();
+  if (entries.length === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'is-empty';
+    empty.textContent = t('No voluntary action precedes this decision.');
+    history.appendChild(empty);
+  } else {
+    entries.forEach((entry, index) => {
+      const item = document.createElement('li');
+      item.dataset.street = entry.street;
+      item.classList.toggle('is-hero', entry.isHero);
+      item.classList.toggle('is-street-start', index === 0 || entries[index - 1].street !== entry.street);
+      const street = document.createElement('span');
+      street.className = 'training-history-street';
+      street.textContent = t(entry.street.charAt(0).toUpperCase() + entry.street.slice(1));
+      const action = document.createElement('span');
+      action.className = 'training-history-action';
+      action.textContent = `${t(entry.actorLabel)} · ${t(entry.actionLabel)}${entry.amountLabel ? ` ${entry.amountLabel}` : ''}`;
+      item.append(street, action);
+      history.appendChild(item);
+    });
+  }
+  if ($('#trainingCurrentActor')) {
+    $('#trainingCurrentActor').textContent = snapshot.status === 'terminal'
+      ? t('Hand Complete')
+      : snapshot.status === 'grading'
+        ? t('Decision recorded. Continuing automatically.')
+        : snapshot.status === 'awaiting_hero'
+          ? t('Your turn · Hero ({position}) to act', {
+            position: snapshot.currentDecision?.currentActor?.position || t('position unavailable'),
+          })
+          : snapshot.state?.actingPlayerId
+            ? t('{player} is next to act.', {
+              player: fullHandActorLabel(snapshot, snapshot.state.actingPlayerId),
+            })
+            : t('Hand continues…');
+  }
+}
+
+function renderFullHandTrainingStacks(snapshot) {
+  const target = $('#trainingFullHandStacks');
+  if (!target) return;
+  target.replaceChildren();
+  (snapshot?.state?.players || []).forEach((player) => {
+    const item = document.createElement('span');
+    const label = document.createElement('span');
+    label.textContent = player.playerId === snapshot.heroPlayerId
+      ? t('Hero')
+      : player.position || t('Seat {number}', { number: player.seat + 1 });
+    const amount = document.createElement('strong');
+    amount.textContent = `${(player.currentStackMilliBb / 1000).toFixed(1)} bb`;
+    item.append(label, amount);
+    target.appendChild(item);
+  });
+  target.hidden = false;
+}
+
+function updateFullHandTrainingStats(snapshot) {
+  const decisions = snapshot?.review?.decisions || [];
+  const accepted = decisions.filter((decision) => decision.grade !== 'mistake' && decision.grade !== null);
+  let currentStreak = 0;
+  let bestStreak = 0;
+  for (const decision of decisions) {
+    currentStreak = decision.grade && decision.grade !== 'mistake' ? currentStreak + 1 : 0;
+    bestStreak = Math.max(bestStreak, currentStreak);
+  }
+  app.training.stats = {
+    totalHands: snapshot?.summary?.decisionsAnswered || 0,
+    correct: accepted.length,
+    streak: currentStreak,
+  };
+  app.training.gradeStats = { ...(snapshot?.gradeCounts || { optimal: 0, acceptable: 0, mistake: 0 }) };
+  app.training.bestStreak = bestStreak;
+  updateTrainingStats();
+}
+
+function fullHandTrainingExercise(snapshot) {
+  const decision = snapshot.currentDecision;
+  if (!decision) return null;
+  const strategyResult = decision.evaluation?.strategyResult || null;
+  return {
+    id: decision.decisionId,
+    seed: snapshot.handSeed,
+    decisionContext: decision.decisionContext,
+    legalActions: decision.legalActions,
+    strategyResult,
+    presentation: {
+      heroCards: [...decision.heroCards],
+      board: [...decision.board],
+      actionHistory: fullHandTrainingHistory(
+        snapshot,
+        decision.occurrence.replayPoint.actionSequence,
+      ),
+    },
+  };
+}
+
+function renderFullHandTrainingMetadata(snapshot, decision) {
+  if ($('#trainingCurrentSeed')) $('#trainingCurrentSeed').textContent = String(snapshot.handSeed);
+  if ($('#trainingExerciseId')) $('#trainingExerciseId').textContent = decision?.decisionId || snapshot.state?.handId || '—';
+  if ($('#trainingGenerationAttempts')) $('#trainingGenerationAttempts').textContent = '1';
+  if ($('#trainingTrajectoryLength')) $('#trainingTrajectoryLength').textContent = String(snapshot.state?.actionHistory?.length || 0);
+  if ($('#trainingGenerationPolicy')) {
+    const assignment = snapshot.opponentAssignments?.[0];
+    $('#trainingGenerationPolicy').textContent = assignment
+      ? `${assignment.policyId}@${assignment.policyVersion}`
+      : '—';
+  }
+  if ($('#trainingCopySeed')) $('#trainingCopySeed').disabled = false;
+  if ($('#trainingReplayBtn')) $('#trainingReplayBtn').disabled = false;
+  if ($('#trainingReplayDecisionBtn')) $('#trainingReplayDecisionBtn').hidden = true;
+}
+
+function renderFullHandTrainingTags(snapshot, decision) {
+  const tags = $('#trainingExerciseTags');
+  if (!tags) return;
+  tags.replaceChildren();
+  [
+    t('Full Hand'),
+    decision ? t(decision.street.charAt(0).toUpperCase() + decision.street.slice(1)) : t('Hand Complete'),
+    t('analysis.value.tableSize', { count: snapshot.state?.players?.length || 0 }),
+  ].forEach((label) => {
+    const tag = document.createElement('span');
+    tag.className = 'badge training-curriculum-tag';
+    tag.textContent = label;
+    tags.appendChild(tag);
+  });
+}
+
+function prepareFullHandTrainingDecision(snapshot, exercise) {
+  app.training.fullHandSnapshot = snapshot;
+  app.training.currentExercise = exercise;
+  app.training.currentStrategyResult = exercise.strategyResult;
+  app.training.currentEvaluation = exercise.strategyResult
+    ? snapshot.currentDecision.evaluation.answerEvaluation
+    : null;
+  app.training.currentPresentation = exercise.presentation;
+  app.training.currentHand = [...exercise.presentation.heroCards];
+  app.training.hero = [...exercise.presentation.heroCards];
+  app.training.board = [...exercise.presentation.board];
+  app.training.currentContext = trainingContextPresentationAdapter(exercise.decisionContext);
+  app.training.currentSolution = exercise.strategyResult
+    ? trainingStrategyResultToPresentation(exercise.strategyResult)
+    : null;
+  renderTrainingCards();
+  renderTrainingDecisionContextSummary(exercise);
+  renderFullHandTrainingHistory(snapshot);
+  renderFullHandTrainingStacks(snapshot);
+  renderFullHandTrainingMetadata(snapshot, snapshot.currentDecision);
+  renderFullHandTrainingTags(snapshot, snapshot.currentDecision);
+  updateAssistanceDisplay();
+  dispatchFullHandTrainingTable(snapshot);
+  setFullHandTrainingPhase('live');
+  if ($('#trainingDecisionNumber')) {
+    $('#trainingDecisionNumber').hidden = false;
+    $('#trainingDecisionNumber').textContent = t('Decision {number}', {
+      number: snapshot.currentDecision.decisionOrdinal + 1,
+    });
+  }
+}
+
+function renderFullHandAwaitingHero(snapshot) {
+  const exercise = fullHandTrainingExercise(snapshot);
+  if (!exercise) return renderTrainingGenerationError({ code: 'internal_error' });
+  prepareFullHandTrainingDecision(snapshot, exercise);
+  app.training.lifecycle = 'ready';
+  setTrainingWorkspaceState('ready');
+  if ($('#trainingInstruction')) {
+    $('#trainingInstruction').textContent = t('Hero to act. Choose one legal action; the same Hand continues automatically.');
+  }
+  if ($('#trainingStrategySource')) {
+    $('#trainingStrategySource').textContent = t('Hidden until review');
+    $('#trainingStrategySource').className = 'badge status-badge status-badge--info';
+  }
+  if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
+  if ($('#trainingFeedback')) $('#trainingFeedback').hidden = true;
+  if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = true;
+  if ($('#trainingFullHandReview')) $('#trainingFullHandReview').hidden = true;
+  const nextBtn = $('#trainingNextHandBtn');
+  if (nextBtn) nextBtn.hidden = true;
+  updateTrainingButtons(exercise);
+  setFullHandTrainingInputLocked(false);
+  renderFullHandPresentationStatus({
+    kind: 'hero_turn',
+    actor: {
+      playerId: snapshot.heroPlayerId,
+      position: snapshot.currentDecision.currentActor.position,
+      isHero: true,
+    },
+  }, snapshot);
+}
+
+function renderFullHandGrading(snapshot) {
+  app.training.fullHandSnapshot = snapshot;
+  app.training.lifecycle = 'grading';
+  app.training.currentEvaluation = null;
+  app.training.currentStrategyResult = null;
+  app.training.currentSolution = null;
+  renderFullHandTrainingHistory(snapshot);
+  renderFullHandTrainingMetadata(snapshot, snapshot.currentDecision);
+  renderFullHandTrainingTags(snapshot, snapshot.currentDecision);
+  dispatchFullHandTrainingTable(snapshot);
+  setFullHandTrainingPhase('live');
+  setTrainingWorkspaceState('grading');
+  setFullHandTrainingInputLocked(true);
+  if ($('#trainingFeedback')) $('#trainingFeedback').hidden = true;
+  if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
+  renderFullHandPresentationStatus({
+    kind: 'hero_action',
+    actor: snapshot.currentDecision?.currentActor ?? null,
+  }, snapshot);
+}
+
+function fullHandTerminalResultCopy(snapshot) {
+  const result = snapshot.completedHandResult;
+  const heroDelta = result?.stackDeltasMilliBbByPlayer?.[snapshot.heroPlayerId] ?? 0;
+  const signed = `${heroDelta >= 0 ? '+' : ''}${(heroDelta / 1000).toFixed(1)} bb`;
+  return result?.terminalReason === 'showdown'
+    ? t('Showdown complete. Hero result: {result}.', { result: signed })
+    : t('Hand ended by fold. Hero result: {result}.', { result: signed });
+}
+
+function fullHandReviewGradeLabel(grade) {
+  return {
+    optimal: t('Correct'),
+    acceptable: t('Acceptable'),
+    mistake: t('Mistake'),
+  }[grade] || t('Review');
+}
+
+function renderFullHandReviewCards(target, cards, emptyLabel) {
+  if (!target) return;
+  target.replaceChildren();
+  if (!Array.isArray(cards) || cards.length === 0) {
+    const empty = document.createElement('span');
+    empty.className = 'training-no-board';
+    empty.textContent = t(emptyLabel);
+    target.appendChild(empty);
+    return;
+  }
+  cards.forEach((card) => {
+    const item = document.createElement('span');
+    item.className = 'training-readonly-card riverline-card';
+    item.setAttribute('role', 'img');
+    item.setAttribute('aria-label', displayCard(card));
+    item.innerHTML = cardMarkup(card);
+    target.appendChild(item);
+  });
+}
+
+function renderFullHandReviewDecision(review, requestedIndex = app.training.fullHandReviewIndex) {
+  const decisions = review?.decisions || [];
+  if (decisions.length === 0) return null;
+  const index = Math.min(decisions.length - 1, Math.max(0, requestedIndex));
+  const decision = decisions[index];
+  const context = decision.decisionContext;
+  const evaluation = decision.evaluation?.answerEvaluation || null;
+  app.training.fullHandReviewIndex = index;
+  if ($('#trainingFullHandReviewProgress')) {
+    $('#trainingFullHandReviewProgress').textContent = `${index + 1} / ${decisions.length}`;
+  }
+  if ($('#trainingFullHandReviewDecisionTitle')) {
+    $('#trainingFullHandReviewDecisionTitle').textContent = t('Hero Decision {number} · {street}', {
+      number: index + 1,
+      street: t(decision.street.charAt(0).toUpperCase() + decision.street.slice(1)),
+    });
+  }
+  if ($('#trainingFullHandReviewPrevious')) $('#trainingFullHandReviewPrevious').disabled = index === 0;
+  if ($('#trainingFullHandReviewNext')) $('#trainingFullHandReviewNext').disabled = index === decisions.length - 1;
+  renderFullHandReviewCards($('#trainingFullHandReviewHeroCards'), decision.heroCards, 'Cards unavailable');
+  renderFullHandReviewCards($('#trainingFullHandReviewBoardCards'), decision.board, 'No board cards yet');
+  const actionType = decision.chosenAction?.type;
+  const actionLabel = actionType ? trainingActionLabel(actionType, context) : 'Unavailable';
+  const actionAmount = ['bet', 'raise'].includes(actionType)
+    ? decision.chosenAction.amountToMilliBb
+    : actionType === 'all_in'
+      ? decision.chosenActionResult?.streetContributionAfterMilliBb
+      : actionType === 'call' ? decision.chosenActionResult?.committedMilliBb : null;
+  if ($('#trainingFullHandReviewAction')) {
+    $('#trainingFullHandReviewAction').textContent = ['bet', 'raise'].includes(actionType)
+      ? t('{action} to {amount}', {
+          action: t(actionLabel),
+          amount: fullHandBbLabel(actionAmount),
+        })
+      : Number.isSafeInteger(actionAmount)
+        ? t('{action} {amount}', {
+            action: t(actionLabel),
+            amount: fullHandBbLabel(actionAmount),
+          })
+        : t(actionLabel);
+  }
+  if ($('#trainingFullHandReviewGrade')) $('#trainingFullHandReviewGrade').textContent = fullHandReviewGradeLabel(decision.grade);
+  const sizingWasChosen = ['bet', 'raise'].includes(actionType);
+  if ($('#trainingFullHandReviewSizingGradeFact')) {
+    $('#trainingFullHandReviewSizingGradeFact').hidden = !sizingWasChosen;
+  }
+  if ($('#trainingFullHandReviewSizingGrade')) {
+    $('#trainingFullHandReviewSizingGrade').textContent = t('Not graded');
+  }
+  if ($('#trainingFullHandReviewSizingNote')) {
+    $('#trainingFullHandReviewSizingNote').hidden = !sizingWasChosen;
+  }
+  if ($('#trainingFullHandReviewCommitted')) {
+    $('#trainingFullHandReviewCommitted').textContent = fullHandBbLabel(
+      decision.chosenActionResult?.committedMilliBb,
+    );
+  }
+  if ($('#trainingFullHandReviewPot')) $('#trainingFullHandReviewPot').textContent = `${context.potBb.toFixed(1)} bb`;
+  if ($('#trainingFullHandReviewStack')) {
+    $('#trainingFullHandReviewStack').textContent = `${(decision.canonicalFacts.heroCurrentStackMilliBb / 1000).toFixed(1)} bb`;
+  }
+  if ($('#trainingFullHandReviewFacing')) $('#trainingFullHandReviewFacing').textContent = formatTrainingFacingCopy(context);
+  if ($('#trainingFullHandReviewCallPrice')) {
+    $('#trainingFullHandReviewCallPrice').textContent = Number.isFinite(context.callAmountBb)
+      ? `${context.callAmountBb.toFixed(1)} bb` : t('Unavailable');
+  }
+  if ($('#trainingFullHandReviewReplay')) {
+    $('#trainingFullHandReviewReplay').textContent = t('Event {event} · action {action}', {
+      event: decision.replayPoint.eventSequence,
+      action: decision.replayPoint.actionSequence,
+    });
+  }
+  if ($('#trainingFullHandReviewSource')) {
+    $('#trainingFullHandReviewSource').textContent = strategySourceDisplayLabel(
+      decision.strategyResult?.source,
+    );
+  }
+  renderTrainingFrequencyReference(
+    $('#trainingFullHandReviewFrequencyStack'),
+    $('#trainingFullHandReviewFrequencyRows'),
+    trainingStrategyResultToPresentation(decision.strategyResult),
+    evaluation,
+  );
+  if ($('#trainingFullHandOpenAnalysis')) {
+    $('#trainingFullHandOpenAnalysis').dataset.decisionOrdinal = String(decision.decisionOrdinal);
+  }
+  return decision;
+}
+
+function renderFullHandTerminal(snapshot) {
+  app.training.fullHandSnapshot = snapshot;
+  app.training.lifecycle = 'terminal';
+  app.training.currentEvaluation = null;
+  const hero = snapshot.state?.players?.find((player) => player.playerId === snapshot.heroPlayerId);
+  app.training.hero = Array.isArray(hero?.holeCards) ? [...hero.holeCards] : [];
+  app.training.board = [...(snapshot.state?.board || [])];
+  renderTrainingCards();
+  renderFullHandTrainingHistory(snapshot);
+  renderFullHandTrainingMetadata(snapshot, null);
+  renderFullHandTrainingTags(snapshot, null);
+  updateFullHandTrainingStats(snapshot);
+  setTrainingWorkspaceState('terminal');
+  setFullHandTrainingPhase('complete');
+  if ($('#trainingInstruction')) $('#trainingInstruction').textContent = t('The canonical Hand is complete and ready for review.');
+  if ($('#trainingFullHandResult')) $('#trainingFullHandResult').textContent = fullHandTerminalResultCopy(snapshot);
+  if ($('#trainingFullHandDecisionCount')) {
+    $('#trainingFullHandDecisionCount').textContent = String(snapshot.summary.decisionsAnswered);
+  }
+  if ($('#trainingFullHandGradeSummary')) {
+    $('#trainingFullHandGradeSummary').textContent = t('{correct} correct · {acceptable} acceptable · {mistakes} mistakes', {
+      correct: snapshot.gradeCounts.optimal,
+      acceptable: snapshot.gradeCounts.acceptable,
+      mistakes: snapshot.gradeCounts.mistake,
+    });
+  }
+  if ($('#trainingDecisionNumber')) $('#trainingDecisionNumber').hidden = true;
+  if ($('#trainingNextHandBtn')) $('#trainingNextHandBtn').hidden = true;
+  if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
+  if ($('#trainingFullHandReview')) $('#trainingFullHandReview').hidden = true;
+  if ($('#trainingReviewHand')) $('#trainingReviewHand').setAttribute('aria-expanded', 'false');
+  app.training.fullHandReviewIndex = 0;
+}
+
+function renderFullHandTrainingSnapshot(snapshot) {
+  if (!snapshot) return null;
+  app.training.fullHandSnapshot = snapshot;
+  if (snapshot.status === 'awaiting_hero') return renderFullHandAwaitingHero(snapshot);
+  if (snapshot.status === 'grading') return renderFullHandGrading(snapshot);
+  if (snapshot.status === 'terminal') return renderFullHandTerminal(snapshot);
+  if (snapshot.status === 'error') return renderTrainingGenerationError(snapshot.error);
+  return null;
+}
+
+async function startFullHandTraining(options = {}) {
+  const seed = variedSessionSeed(options);
+  invalidateFullHandPresentation();
+  callTrainingServiceBridge('resetFullHand');
+  fullHandPresentationMotionToken = 0;
+  clearTrainingSessionCompletion();
+  resetTrainingStats();
+  app.training.lifecycle = 'generating';
+  setTrainingWorkspaceState('generating');
+  setFullHandTrainingLoadingCopy(
+    'Starting Full Hand',
+    'Dealing cards and advancing automatic opponents to Hero.',
+  );
+  clearTrainingExercisePresentation();
+  try {
+    const trainingConfig = readTrainingConfig(seed);
+    const startConfiguration = callTrainingServiceBridge('createFullHandStartConfiguration', {
+      trainingConfig,
+      handSeed: seed,
+      heroPosition: $('#trainingHeroPos')?.value || null,
+    });
+    const result = callTrainingServiceBridge(
+      'startFullHand',
+      startConfiguration,
+      { strategyProvider, progressionMode: 'stepwise' },
+    );
+    if (!result?.ok) {
+      renderTrainingGenerationError(result?.error || { code: 'service_unavailable' });
+      return result;
+    }
+    if (result.snapshot.status === 'advancing') await runFullHandPresentation();
+    else renderFullHandTrainingSnapshot(result.snapshot);
+    return result;
+  } catch (error) {
+    renderTrainingGenerationError({
+      code: 'invalid_config',
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+async function handleFullHandTrainingGuess(userAction, amountToMilliBb = null) {
+  const snapshot = app.training.fullHandSnapshot;
+  const decision = snapshot?.currentDecision;
+  if (app.training.lifecycle !== 'ready' || !decision) return null;
+  const concreteAmountToMilliBb = ['bet', 'raise'].includes(userAction)
+    ? amountToMilliBb
+    : null;
+  app.training.lifecycle = 'grading';
+  const request = callTrainingServiceBridge('answerFullHand', decision.decisionId, {
+    type: userAction,
+    amountToMilliBb: concreteAmountToMilliBb,
+  });
+  if (!request || typeof request.then !== 'function') {
+    return renderTrainingGenerationError({ code: 'service_unavailable' });
+  }
+  const appliedSnapshot = callTrainingServiceBridge('getFullHandSnapshot');
+  if (appliedSnapshot?.status === 'grading') renderFullHandGrading(appliedSnapshot);
+  const result = await request;
+  if (trainingSessionMode() !== 'full_hand') return result;
+  if (!result?.ok) {
+    if (result?.error?.code !== 'stale_evaluation') renderTrainingGenerationError(result?.error);
+    return result;
+  }
+  if (result.snapshot.status === 'advancing') {
+    await runFullHandPresentation({
+      initialTransition: {
+        previousSnapshot: snapshot,
+        event: fullHandHeroActionPresentationEvent(snapshot, result),
+      },
+    });
+  } else {
+    renderFullHandTrainingSnapshot(result.snapshot);
+  }
+  return result;
+}
+
+function toggleFullHandTrainingReview() {
+  if (trainingSessionMode() !== 'full_hand') return;
+  const review = callTrainingServiceBridge('getFullHandReview');
+  if (!review || review.status !== 'ready') return;
+  const surface = $('#trainingFullHandReview');
+  const button = $('#trainingReviewHand');
+  if (!surface || !button) return;
+  surface.hidden = false;
+  button.setAttribute('aria-expanded', 'true');
+  renderFullHandReviewDecision(review, app.training.fullHandReviewIndex);
+  setFullHandTrainingPhase('review');
+  surface.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+}
+
+function stepFullHandTrainingReview(delta) {
+  const review = callTrainingServiceBridge('getFullHandReview');
+  if (!review || review.status !== 'ready') return null;
+  return renderFullHandReviewDecision(review, app.training.fullHandReviewIndex + delta);
+}
+
+async function openFullHandDecisionInAnalysis() {
+  const handoff = callTrainingServiceBridge(
+    'createFullHandAnalysisHandoff',
+    app.training.fullHandReviewIndex,
+  );
+  if (!handoff?.scenarioInput || !handoff?.decisionContext) return null;
+  callPlaybookStateBridge('setMode', PLAYBOOK_MODES.SCENARIO, handoff.scenarioInput);
+  app.playbookMode = PLAYBOOK_MODES.SCENARIO;
+  setPlaybookControlAuthority(PLAYBOOK_MODES.SCENARIO);
+  const viewerContext = {
+    derivation: handoff.derivation,
+    scenarioInput: handoff.scenarioInput,
+    decisionContext: handoff.decisionContext,
+    object: { annotations: { title: t('Full Hand · Hero Decision {number}', {
+      number: handoff.decisionOrdinal + 1,
+    }) } },
+  };
+  restoreSavedSpotPresentation(viewerContext);
+  activeSavedSpotContext = viewerContext;
+  renderSavedSpotViewer(viewerContext);
+  restoreSharedPokerTable();
+  navigateToWorkspace('gto');
+  await updateContext('Full-Hand review decision opened', {
+    schemaVersion: 'playbook-decision-resolution/v1',
+    mode: PLAYBOOK_MODES.SCENARIO,
+    status: 'available',
+    reason: 'full_hand_review_decision',
+    error: null,
+    decisionContext: handoff.decisionContext,
+  });
+  const teacher = $('#teacherContent');
+  if (teacher && teacher.style.display !== 'block') $('#toggleTeacher')?.click();
+  teacher?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  return handoff;
+}
+
+function endFullHandTraining() {
+  if (trainingSessionMode() !== 'full_hand') return;
+  clearTrainingSessionState();
+  if ($('#trainingFilterMessage')) {
+    $('#trainingFilterMessage').textContent = t('Full Hand ended. Configure the next Hand when ready.');
+  }
+}
+
+function replayCurrentTrainingSeed() {
+  if (trainingSessionMode() === 'full_hand') {
+    const seed = app.training.fullHandSnapshot?.handSeed;
+    return Number.isInteger(seed) ? startConfiguredTrainingSession({ seed }) : null;
+  }
+  return app.training.currentExercise
+    ? replayTrainingExercise(app.training.currentExercise.seed)
+    : null;
+}
+
 async function startConfiguredTrainingSession(options = {}) {
   const seed = variedSessionSeed(options);
   if ($('#trainingFilterMessage')) $('#trainingFilterMessage').textContent = '';
+  if (trainingSessionMode() === 'full_hand') return startFullHandTraining({ seed });
   if (trainingSessionMode() === 'focused') {
     clearTrainingSessionCompletion();
     return newRandomTrainingHand({ seed });
@@ -7792,6 +8970,9 @@ function completeVariedTrainingSession() {
 }
 
 function requestNextTrainingExercise() {
+  if (trainingSessionMode() === 'full_hand') {
+    return startConfiguredTrainingSession();
+  }
   if (trainingSessionMode() === 'varied') {
     if (app.training.practiceSession?.completed) return null;
     if (completeVariedTrainingSession()) return null;
@@ -7923,6 +9104,10 @@ function renderTrainingEvaluationSummary(evaluation, exercise) {
 }
 
 function handleTrainingGuess(userAction) {
+  if (trainingSessionMode() === 'full_hand') {
+    handleFullHandTrainingGuess(userAction);
+    return;
+  }
   const exercise = app.training.currentExercise;
   if (app.training.lifecycle !== 'ready' || !exercise) return;
   const result = callTrainingServiceBridge('answer', exercise.id, userAction);

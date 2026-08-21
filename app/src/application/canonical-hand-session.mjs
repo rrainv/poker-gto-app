@@ -93,6 +93,10 @@ export function createCanonicalHandSession(initialConfiguration) {
       return lifecycle.evaluateHeroDecision(requireState(state), options);
     },
 
+    attachHeroDecisionEvaluation(options) {
+      return lifecycle.attachHeroDecisionEvaluation(requireState(state), options);
+    },
+
     createCanonicalHandReplaySource() {
       return lifecycle.createCanonicalHandReplaySource();
     },

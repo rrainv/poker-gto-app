@@ -19,12 +19,17 @@ import {
   STRATEGY_PROVIDER_SCHEMA_VERSION,
 } from './strategy-provider.mjs';
 import { STRATEGY_SOURCES, isStrategyResultV1 } from './strategy-result.mjs';
-import { evaluateTrainingAnswer } from './training-answer-evaluation.mjs';
+import {
+  TRAINING_ANSWER_EVALUATION_SCHEMA_VERSION,
+  evaluateTrainingAnswer,
+} from './training-answer-evaluation.mjs';
 
 export const COMPLETED_HAND_RESULT_SCHEMA_VERSION = 'canonical-completed-hand-result/v1';
 export const HERO_DECISION_RECORD_SCHEMA_VERSION = 'hero-decision-record/v1';
 export const HERO_DECISION_JOURNAL_SCHEMA_VERSION = 'hero-decision-journal/v1';
 export const HERO_DECISION_EVALUATION_SCHEMA_VERSION = 'hero-decision-evaluation/v1';
+export const HERO_DECISION_ACTION_RESULT_SCHEMA_VERSION =
+  'hero-decision-action-result/v1';
 export const CANONICAL_REPLAY_POINT_SCHEMA_VERSION = 'canonical-hand-replay-point/v1';
 
 function deepFreeze(value) {
@@ -221,34 +226,67 @@ function createDecisionRecord({ state, heroPlayerId, decisionOrdinal, eventSeque
     rulesSnapshot,
     rulesSemanticFingerprint: rulesSnapshot.semanticFingerprint,
     chosenAction: null,
+    chosenActionResult: null,
     evaluation: null,
   });
 }
 
-function withChosenAction(record, action) {
+function withChosenAction(record, canonicalActionRecord) {
   return deepFreeze({
     ...record,
-    chosenAction: frozenClone(action),
+    chosenAction: frozenClone(canonicalActionRecord.submittedAction),
+    chosenActionResult: {
+      schemaVersion: HERO_DECISION_ACTION_RESULT_SCHEMA_VERSION,
+      actionSequence: record.occurrence.replayPoint.actionSequence,
+      committedMilliBb: canonicalActionRecord.committedMilliBb,
+      streetContributionAfterMilliBb:
+        canonicalActionRecord.streetContributionAfterMilliBb,
+      currentBetBeforeMilliBb: canonicalActionRecord.currentBetBeforeMilliBb,
+      currentBetAfterMilliBb: canonicalActionRecord.currentBetAfterMilliBb,
+      wasAllIn: canonicalActionRecord.wasAllIn,
+      wasFullRaise: canonicalActionRecord.wasFullRaise,
+      reopenedBetting: canonicalActionRecord.reopenedBetting,
+    },
   });
 }
 
-function withEvaluation(record, strategyProvider) {
+function requireStrategyProvider(strategyProvider) {
   if (!strategyProvider || strategyProvider.schemaVersion !== STRATEGY_PROVIDER_SCHEMA_VERSION
     || typeof strategyProvider.resolve !== 'function') {
     throw new TypeError(`Hero decision evaluation requires ${STRATEGY_PROVIDER_SCHEMA_VERSION}`);
   }
-  const strategyResult = strategyProvider.resolve(record.decisionContext);
+  return strategyProvider;
+}
+
+function requireResolvedEvaluation(record, strategyResult, answerEvaluation) {
   if (!isStrategyResultV1(strategyResult)) {
     throw new TypeError('Hero decision evaluation requires StrategyResult v1');
   }
-  const answerEvaluation = strategyResult.source === STRATEGY_SOURCES.UNAVAILABLE
-    ? null
-    : evaluateTrainingAnswer({
-      exerciseId: record.decisionId,
-      chosenActionType: record.chosenAction.type,
-      strategyResult,
-      decisionContext: record.decisionContext,
-    });
+  if (strategyResult.source === STRATEGY_SOURCES.UNAVAILABLE) {
+    if (answerEvaluation !== null) {
+      throw new RangeError('Unavailable strategy results require a null answer evaluation');
+    }
+    return;
+  }
+  if (!answerEvaluation
+    || answerEvaluation.schemaVersion !== TRAINING_ANSWER_EVALUATION_SCHEMA_VERSION) {
+    throw new TypeError(
+      `Hero decision evaluation requires ${TRAINING_ANSWER_EVALUATION_SCHEMA_VERSION}`,
+    );
+  }
+  if (answerEvaluation.exerciseId !== record.decisionId
+    || answerEvaluation.chosenAction?.type !== record.chosenAction.type
+    || answerEvaluation.explanationData?.source !== strategyResult.source) {
+    throw new RangeError('Hero decision answer evaluation does not match its canonical record');
+  }
+}
+
+function withResolvedEvaluation(
+  record,
+  { strategyProvider, strategyResult, answerEvaluation },
+) {
+  requireStrategyProvider(strategyProvider);
+  requireResolvedEvaluation(record, strategyResult, answerEvaluation);
 
   return deepFreeze({
     ...record,
@@ -263,6 +301,27 @@ function withEvaluation(record, strategyProvider) {
       strategyResult,
       answerEvaluation,
     },
+  });
+}
+
+function withEvaluation(record, strategyProvider) {
+  requireStrategyProvider(strategyProvider);
+  const strategyResult = strategyProvider.resolve(record.decisionContext);
+  if (!isStrategyResultV1(strategyResult)) {
+    throw new TypeError('Hero decision evaluation requires StrategyResult v1');
+  }
+  const answerEvaluation = strategyResult.source === STRATEGY_SOURCES.UNAVAILABLE
+    ? null
+    : evaluateTrainingAnswer({
+      exerciseId: record.decisionId,
+      chosenActionType: record.chosenAction.type,
+      strategyResult,
+      decisionContext: record.decisionContext,
+    });
+  return withResolvedEvaluation(record, {
+    strategyProvider,
+    strategyResult,
+    answerEvaluation,
   });
 }
 
@@ -395,12 +454,13 @@ export function createCanonicalHandLifecycleRecorder() {
           nextDecisions.push(decision);
         }
         const index = nextDecisions.indexOf(decision);
-        const canonicalAction = state.actionHistory.at(-1)?.submittedAction;
-        if (index < 0 || !canonicalAction || canonicalAction.playerId !== heroPlayerId) {
+        const canonicalActionRecord = state.actionHistory.at(-1);
+        if (index < 0 || !canonicalActionRecord
+          || canonicalActionRecord.submittedAction.playerId !== heroPlayerId) {
           throw new RangeError('Hero action could not be matched to its decision boundary');
         }
         nextDecisions = nextDecisions.map((record, recordIndex) => (
-          recordIndex === index ? withChosenAction(record, canonicalAction) : record
+          recordIndex === index ? withChosenAction(record, canonicalActionRecord) : record
         ));
       }
 
@@ -446,6 +506,33 @@ export function createCanonicalHandLifecycleRecorder() {
       }
       if (record.evaluation !== null) return record;
       const evaluated = withEvaluation(record, strategyProvider);
+      decisions = decisions.map((candidate, index) => (
+        index === decisionOrdinal ? evaluated : candidate
+      ));
+      return evaluated;
+    },
+
+    attachHeroDecisionEvaluation(
+      state,
+      { decisionOrdinal, strategyProvider, strategyResult, answerEvaluation } = {},
+    ) {
+      validatePokerState(state);
+      if (!Number.isSafeInteger(decisionOrdinal) || decisionOrdinal < 0) {
+        throw new RangeError('decisionOrdinal must be a nonnegative safe integer');
+      }
+      const record = decisions[decisionOrdinal];
+      if (!record || record.decisionOrdinal !== decisionOrdinal) {
+        throw new RangeError(`Unknown Hero decision ordinal: ${decisionOrdinal}`);
+      }
+      if (record.chosenAction === null) {
+        throw new RangeError('Hero decision must have a chosen canonical action before evaluation');
+      }
+      if (record.evaluation !== null) return record;
+      const evaluated = withResolvedEvaluation(record, {
+        strategyProvider,
+        strategyResult,
+        answerEvaluation,
+      });
       decisions = decisions.map((candidate, index) => (
         index === decisionOrdinal ? evaluated : candidate
       ));
