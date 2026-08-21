@@ -87,6 +87,16 @@ test('Training presentation is a read-only projection of canonical exercise fact
   assert.ok(Object.isFrozen(model.actionHistory));
 });
 
+test('Training presentation includes realized sizing-family metadata when a planned exercise has it', () => {
+  const exercise = fixtureExercise();
+  exercise.generationMetadata.scenarioRequest = {
+    request: { requestedSizingFamily: 'large' },
+    sizing: { realizedSizingFamily: 'large' },
+  };
+
+  assert.ok(createTrainingPresentationModel(exercise).tags.includes('LARGE SIZING'));
+});
+
 test('Training presentation uses chronological ActionRecords without inventing history', () => {
   const model = createTrainingPresentationModel(fixtureExercise());
 

@@ -726,6 +726,24 @@
   Object.assign(ru, rangeTeacherTutorial.ru);
   Object.assign(he, rangeTeacherTutorial.he);
 
+  const trainingVariedTutorial = {
+    en: {
+      'Choose a session style': 'Choose a session style',
+      'Varied Session chooses useful legal variety across streets, positions, tables, stacks, and facing sizes. Focused Drill keeps the exact controls when you want one decision family.': 'Varied Session chooses useful legal variety across streets, positions, tables, stacks, and facing sizes. Focused Drill keeps the exact controls when you want one decision family.',
+    },
+    ru: {
+      'Choose a session style': 'Выберите стиль сессии',
+      'Varied Session chooses useful legal variety across streets, positions, tables, stacks, and facing sizes. Focused Drill keeps the exact controls when you want one decision family.': 'Разнообразная сессия подбирает полезное легальное разнообразие по улицам, позициям, столам, стекам и размерам ставок. Целевой тренажёр сохраняет точные настройки, когда нужна одна семья решений.',
+    },
+    he: {
+      'Choose a session style': 'בחרו סגנון סשן',
+      'Varied Session chooses useful legal variety across streets, positions, tables, stacks, and facing sizes. Focused Drill keeps the exact controls when you want one decision family.': 'סשן מגוון בוחר גיוון חוקי ושימושי בין רחובות, עמדות, שולחנות, סטאקים וגדלי הימור. תרגול ממוקד שומר את הבקרים המדויקים כשרוצים משפחת החלטות אחת.',
+    },
+  };
+  Object.assign(en, trainingVariedTutorial.en);
+  Object.assign(ru, trainingVariedTutorial.ru);
+  Object.assign(he, trainingVariedTutorial.he);
+
   global.riverlineTutorialTranslations = Object.freeze({
     en: Object.freeze(en),
     ru: Object.freeze(ru),

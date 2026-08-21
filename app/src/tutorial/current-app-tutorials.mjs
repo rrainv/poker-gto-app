@@ -91,7 +91,7 @@ export const TRAINING_BASIC_TUTORIAL_DEFINITION = definition({
   titleKey: 'Your first Training spot',
   descriptionKey: 'Generate a legal decision, answer before feedback, and continue the drill.',
   steps: [
-    { id: 'setup', anchor: 'training-setup', titleKey: 'Choose a focused drill', bodyKey: 'Select the important decision family, street, position, and assistance level, then generate a reachable legal spot. Filters shape the drill without changing poker rules.', placement: 'left' },
+    { id: 'setup', anchor: 'training-setup', titleKey: 'Choose a session style', bodyKey: 'Varied Session chooses useful legal variety across streets, positions, tables, stacks, and facing sizes. Focused Drill keeps the exact controls when you want one decision family.', placement: 'left' },
     { id: 'decision', anchor: 'training-decision', titleKey: 'Read the spot before answering', bodyKey: 'Hero cards, board, pot, stack, position, and facing action come from the generated canonical trajectory. Form your answer before Riverline reveals its reference.', placement: 'right' },
     { id: 'actions', anchor: 'training-decision', titleKey: 'Choose one legal action', bodyKey: 'Only legal actions are offered. Your answer is compared once with Riverline’s current StrategyResult according to the Training contract.', placement: 'bottom' },
     { id: 'hints', anchor: 'training-decision', titleKey: 'Use hints as coaching prompts', bodyKey: 'Optional hints reveal one prompt at a time without exposing the full reference strategy before your answer.', placement: 'bottom' },

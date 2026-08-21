@@ -134,6 +134,61 @@ export function createTrainingSessionController({
       return result;
     },
 
+    async replay(config, { strategyProvider } = {}) {
+      const requestId = `training-request-${++sequence}`;
+      snapshot = deepFreeze({
+        schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
+        status: 'generating',
+        requestId,
+        exercise: null,
+        evaluation: null,
+        error: null,
+      });
+
+      let result;
+      try {
+        result = await Promise.resolve().then(() => (
+          generateExercise(config, { strategyProvider })
+        ));
+      } catch (error) {
+        result = sessionFailure(
+          TRAINING_SESSION_ERROR_CODES.GENERATION_FAILED,
+          'Training replay failed unexpectedly.',
+          { message: error instanceof Error ? error.message : String(error) },
+        );
+      }
+
+      if (snapshot.requestId !== requestId || snapshot.status !== 'generating') {
+        return sessionFailure(
+          TRAINING_SESSION_ERROR_CODES.STALE_GENERATION,
+          'A newer Training request replaced this replay.',
+          { requestId },
+        );
+      }
+
+      if (!result?.ok) {
+        snapshot = deepFreeze({
+          schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
+          status: 'error',
+          requestId,
+          exercise: null,
+          evaluation: null,
+          error: result?.error ?? null,
+        });
+        return result;
+      }
+
+      snapshot = deepFreeze({
+        schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
+        status: 'ready',
+        requestId,
+        exercise: result.exercise,
+        evaluation: null,
+        error: null,
+      });
+      return result;
+    },
+
     startPracticeSession(intent) {
       const normalizedIntent = createTrainingSessionIntent(intent);
       sequence += 1;

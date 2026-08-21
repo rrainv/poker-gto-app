@@ -1,6 +1,10 @@
 import { createTrainingSessionController } from './training-session-controller.mjs';
-import { createTrainingConfigFromLegacyCompatibility } from './training-generator.mjs';
+import {
+  createTrainingConfigFromLegacyCompatibility,
+  resolveTrainingRulesCapability,
+} from './training-generator.mjs';
 import { createTrainingPresentationModel } from './training-presentation.mjs';
+import { createTrainingSessionIntent } from './training-practice-planner.mjs';
 
 export function installTrainingModeBridge(browserWindow, {
   controller = createTrainingSessionController(),
@@ -12,6 +16,24 @@ export function installTrainingModeBridge(browserWindow, {
     },
     generate(config, options) {
       return controller.generate(config, options);
+    },
+    replay(config, options) {
+      return controller.replay(config, options);
+    },
+    createPracticeIntent(input) {
+      return createTrainingSessionIntent(input);
+    },
+    resolveRulesCapability(rulesSnapshot) {
+      return resolveTrainingRulesCapability(rulesSnapshot);
+    },
+    startPracticeSession(intent) {
+      return controller.startPracticeSession(intent);
+    },
+    generatePlanned(options) {
+      return controller.generatePlanned(options);
+    },
+    getPracticePlannerState() {
+      return controller.getPracticePlannerState();
     },
     answer(exerciseId, chosenActionType) {
       return controller.answer(exerciseId, chosenActionType);

@@ -141,7 +141,11 @@ const app = {
 
     lifecycle: 'idle',
 
-    nextSeed: Date.now() >>> 0
+    nextSeed: Date.now() >>> 0,
+
+    sessionMode: 'varied',
+
+    practiceSession: null
 
   },
 
@@ -6824,21 +6828,30 @@ function initTrainingMode() {
   };
 
   bind('#trainingResetStats', 'click', resetTrainingStats);
-  bind('#trainingNewHand', 'click', () => newRandomTrainingHand());
-  bind('#trainingNextHandBtn', 'click', () => newRandomTrainingHand());
-  bind('#trainingRetryButton', 'click', () => newRandomTrainingHand());
+  bind('#trainingNewHand', 'click', () => startConfiguredTrainingSession());
+  bind('#trainingNextHandBtn', 'click', () => requestNextTrainingExercise());
+  bind('#trainingRetryButton', 'click', () => requestNextTrainingExercise({ retry: true }));
+  document.querySelectorAll('[data-training-session-mode]').forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = 'true';
+    button.addEventListener('click', () => setTrainingSessionMode(button.dataset.trainingSessionMode));
+  });
+  bind('#trainingRestartSession', 'click', () => startConfiguredTrainingSession());
   bind('#trainingReplayBtn', 'click', () => app.training.currentExercise
     && replayTrainingExercise(app.training.currentExercise.seed));
   bind('#trainingReplayDecisionBtn', 'click', () => app.training.currentExercise
     && replayTrainingExercise(app.training.currentExercise.seed));
   bind('#trainingGenerateSeed', 'click', () => {
     const seed = selectedTrainingSeed();
-    if (seed !== null) newRandomTrainingHand({ seed });
+    if (seed !== null) startConfiguredTrainingSession({ seed });
   });
   bind('#trainingCopySeed', 'click', copyCurrentTrainingSeed);
   bind('#trainingAdjustDrill', 'click', () => {
     $('#trainingAdvanced')?.removeAttribute('open');
-    $('#trainingStreet')?.focus({ preventScroll: false });
+    const selector = trainingSessionMode() === 'varied'
+      ? '#trainingSessionLength'
+      : '#trainingStreet';
+    $(selector)?.focus({ preventScroll: false });
   });
 
   bind('#trainingRevealHint', 'click', revealNextTrainingStudyHint);
@@ -6870,6 +6883,7 @@ function initTrainingMode() {
   }
   updateTrainingPositions();
   updateTrainingFilterAvailability();
+  setTrainingSessionMode('varied', { reset: false });
   setTrainingWorkspaceState('idle');
   updateTrainingStats();
 }
@@ -7224,6 +7238,80 @@ function nextTrainingSeed(seed) {
   return (Math.imul(seed >>> 0, 1664525) + 1013904223) >>> 0;
 }
 
+function trainingSessionMode() {
+  return app.training.sessionMode === 'focused' ? 'focused' : 'varied';
+}
+
+function trainingSessionLength() {
+  const value = $('#trainingSessionLength')?.value || '10';
+  return value === 'open' ? null : Number.parseInt(value, 10);
+}
+
+function clearTrainingSessionCompletion() {
+  app.training.practiceSession = null;
+  if ($('#trainingSessionCompletion')) $('#trainingSessionCompletion').hidden = true;
+  if ($('#trainingSessionCompletionText')) $('#trainingSessionCompletionText').textContent = '';
+  const nextBtn = $('#trainingNextHandBtn');
+  if (nextBtn) nextBtn.hidden = false;
+}
+
+function updateTrainingSessionProgress() {
+  const progress = $('#trainingSessionProgress');
+  const session = app.training.practiceSession;
+  if (!progress || !session || session.mode !== 'varied' || session.isOpen) {
+    if (progress) progress.hidden = true;
+    return;
+  }
+  const plannerState = callTrainingServiceBridge('getPracticePlannerState');
+  const served = plannerState?.servedCount || 0;
+  progress.hidden = false;
+  progress.textContent = `${served} / ${session.length}`;
+}
+
+function clearTrainingSessionState() {
+  callTrainingServiceBridge('reset');
+  clearTrainingSessionCompletion();
+  app.training.stats = { totalHands: 0, correct: 0, streak: 0 };
+  app.training.gradeStats = { optimal: 0, acceptable: 0, mistake: 0 };
+  app.training.bestStreak = 0;
+  app.training.currentExercise = null;
+  app.training.currentStrategyResult = null;
+  app.training.currentEvaluation = null;
+  app.training.currentPresentation = null;
+  app.training.currentSolution = null;
+  app.training.currentHand = null;
+  app.training.hero = [];
+  app.training.board = [];
+  clearTrainingExercisePresentation();
+  updateTrainingStats();
+  updateTrainingSessionProgress();
+  if ($('#trainingFilterMessage')) $('#trainingFilterMessage').textContent = t('Training session reset.');
+  setTrainingWorkspaceState('idle');
+}
+
+function setTrainingSessionMode(mode, { reset = true } = {}) {
+  const nextMode = mode === 'focused' ? 'focused' : 'varied';
+  app.training.sessionMode = nextMode;
+  document.querySelectorAll('[data-training-session-mode]').forEach((button) => {
+    const selected = button.dataset.trainingSessionMode === nextMode;
+    button.classList.toggle('is-active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  if ($('#trainingVariedControls')) $('#trainingVariedControls').hidden = nextMode !== 'varied';
+  if ($('#trainingFocusedControls')) $('#trainingFocusedControls').hidden = nextMode !== 'focused';
+  if ($('#trainingSetupTitle')) {
+    const key = nextMode === 'varied' ? 'Plan a varied session' : 'Choose a decision family';
+    $('#trainingSetupTitle').dataset.i18n = key;
+    $('#trainingSetupTitle').textContent = t(key);
+  }
+  if ($('#trainingNewHand')) {
+    const key = nextMode === 'varied' ? 'Start varied session' : 'Generate exercise';
+    $('#trainingNewHand').dataset.i18n = key;
+    $('#trainingNewHand').textContent = t(key);
+  }
+  if (reset) clearTrainingSessionState();
+}
+
 function readTrainingConfig(seed) {
   const tableSize = numericValue('#trainingPlayers', 6);
   const stackBb = numericValue('#trainingStack', 30);
@@ -7470,6 +7558,9 @@ function renderTrainingGenerationError(error) {
   setTrainingWorkspaceState('error');
   const errorCopy = {
     invalid_config: [t('Check the drill setup'), t('One or more filters are outside the supported TrainingConfig range.')],
+    unsupported_rules: [t('Unsupported rules'), t('This Game Rules mode cannot generate Training exercises. Choose a supported rules mode and try again.')],
+    no_eligible_candidates: [t('No eligible exercise'), t('The selected Varied Session preferences have no eligible Training candidate.')],
+    impossible_focused_request: [t('No matching exercise found'), t('The Focused Drill constraints cannot be planned together. Adjust the drill and try again.')],
     unsupported_target: [t('Unsupported filter combination'), t('Choose a street and decision target that belong to the same decision family.')],
     generation_exhausted: [t('No matching exercise found'), t('The bounded generator could not reach this exact combination. Broaden a filter and try again.')],
     decision_projection_unavailable: [t('Decision context unavailable'), t('The generated hand could not be projected safely for the strategy path.')],
@@ -7509,7 +7600,9 @@ function renderTrainingDecisionContextSummary(exercise) {
   if ($('#trainingMdfVal')) $('#trainingMdfVal').textContent = legacyContext.mdf === null
     ? t('— (range reference)')
     : t('{value}% (range reference)', { value: legacyContext.mdf.toFixed(1) });
-  if ($('#trainingHeroPos')) $('#trainingHeroPos').value = context.heroPosition;
+  if (trainingSessionMode() === 'focused' && $('#trainingHeroPos')) {
+    $('#trainingHeroPos').value = context.heroPosition;
+  }
   if ($('#trainingPositionVal')) $('#trainingPositionVal').textContent = context.heroPosition;
   if ($('#trainingStackVal')) $('#trainingStackVal').textContent = `${context.stackBb.toFixed(1)}bb`;
   if ($('#trainingTableVal')) $('#trainingTableVal').textContent = t('analysis.value.tableSize', { count: context.tableSize });
@@ -7558,6 +7651,7 @@ function renderCanonicalTrainingExercise(exercise) {
   updateAssistanceDisplay();
   resetTrainingStudyHints(exercise);
   renderTrainingSource(exercise);
+  updateTrainingSessionProgress();
   renderAllCards();
   document.querySelectorAll('#trainingHeroCards .training-readonly-card, #trainingBoardCards .training-readonly-card')
     .forEach((card, index) => {
@@ -7568,15 +7662,9 @@ function renderCanonicalTrainingExercise(exercise) {
 
 }
 
-async function newRandomTrainingHand(options = {}) {
-  const explicitSeed = Number.isInteger(options?.seed) ? options.seed >>> 0 : null;
-  const seed = explicitSeed === null ? app.training.nextSeed >>> 0 : explicitSeed;
-  if (explicitSeed === null) app.training.nextSeed = nextTrainingSeed(seed);
-  const config = [TRAINING_CONFIG_SCHEMA_VERSION, TRAINING_CONFIG_V2_SCHEMA_VERSION]
-    .includes(options?.config?.schemaVersion)
-    ? { ...structuredClone(options.config), seed }
-    : readTrainingConfig(seed);
-
+function prepareTrainingGeneration({ preserveSession = false } = {}) {
+  if (!preserveSession) clearTrainingSessionCompletion();
+  else if ($('#trainingSessionCompletion')) $('#trainingSessionCompletion').hidden = true;
   app.training.lifecycle = 'generating';
   setTrainingWorkspaceState('generating');
   clearTrainingExercisePresentation();
@@ -7599,6 +7687,130 @@ async function newRandomTrainingHand(options = {}) {
   if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
   if ($('#trainingReplayDecisionBtn')) $('#trainingReplayDecisionBtn').hidden = true;
   renderAllCards();
+}
+
+function variedSessionSeed(options = {}) {
+  const explicitSeed = Number.isInteger(options?.seed) ? options.seed >>> 0 : null;
+  const seed = explicitSeed === null ? app.training.nextSeed >>> 0 : explicitSeed;
+  if (explicitSeed === null) app.training.nextSeed = nextTrainingSeed(seed);
+  return seed;
+}
+
+function createVariedTrainingIntent(seed) {
+  const config = readTrainingConfig(seed);
+  if (!config || config.schemaVersion !== TRAINING_CONFIG_V2_SCHEMA_VERSION || !config.rulesSnapshot) {
+    throw new Error('The canonical Training rules snapshot is unavailable.');
+  }
+  const length = trainingSessionLength();
+  const rulesCapability = callTrainingServiceBridge('resolveRulesCapability', config.rulesSnapshot);
+  const intent = callTrainingServiceBridge('createPracticeIntent', {
+    schemaVersion: 'training-session-intent/v1',
+    mode: 'varied',
+    sessionSeed: seed,
+    sessionLength: length === null ? 100000 : length,
+    difficulty: $('#trainingDifficulty')?.value || 'hard',
+    focusPreferences: {
+      profile: $('#trainingVariedEmphasis')?.value || 'balanced',
+      streetEmphasis: null,
+      stackPreference: $('#trainingVariedStackPreference')?.value || 'balanced',
+      allowedTableSizeFamilies: ['heads_up', 'short_handed', 'full_ring'],
+    },
+    rulesSnapshot: config.rulesSnapshot,
+    rulesCapability,
+    plannerPolicyVersion: 'training-practice-planner-policy/v2',
+  });
+  if (!intent) throw new Error('The canonical Training planner is unavailable.');
+  return { intent, isOpen: length === null, length };
+}
+
+async function generatePlannedTrainingExercise() {
+  prepareTrainingGeneration({ preserveSession: true });
+  const request = callTrainingServiceBridge('generatePlanned', { strategyProvider });
+  if (!request || typeof request.then !== 'function') {
+    renderTrainingGenerationError({
+      code: 'service_unavailable',
+      message: 'The canonical Training service is unavailable.',
+    });
+    return null;
+  }
+  const result = await request;
+  if (!result?.ok) {
+    if (result?.error?.code !== 'stale_generation') renderTrainingGenerationError(result?.error);
+    return result;
+  }
+  renderCanonicalTrainingExercise(result.exercise);
+  updateTrainingSessionProgress();
+  return result;
+}
+
+async function startConfiguredTrainingSession(options = {}) {
+  const seed = variedSessionSeed(options);
+  if ($('#trainingFilterMessage')) $('#trainingFilterMessage').textContent = '';
+  if (trainingSessionMode() === 'focused') {
+    clearTrainingSessionCompletion();
+    return newRandomTrainingHand({ seed });
+  }
+  try {
+    const session = createVariedTrainingIntent(seed);
+    const plannerState = callTrainingServiceBridge('startPracticeSession', session.intent);
+    if (!plannerState) throw new Error('The canonical Training planner session could not start.');
+    app.training.practiceSession = {
+      mode: 'varied',
+      sessionSeed: seed,
+      length: session.length,
+      isOpen: session.isOpen,
+      completed: false,
+    };
+    resetTrainingStats();
+    updateTrainingSessionProgress();
+    return generatePlannedTrainingExercise();
+  } catch (error) {
+    renderTrainingGenerationError({
+      code: 'invalid_config',
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+function completeVariedTrainingSession() {
+  const session = app.training.practiceSession;
+  if (!session || session.mode !== 'varied' || session.isOpen || session.completed) return false;
+  const plannerState = callTrainingServiceBridge('getPracticePlannerState');
+  if ((plannerState?.servedCount || 0) < session.length) return false;
+  session.completed = true;
+  updateTrainingSessionProgress();
+  if ($('#trainingSessionCompletion')) $('#trainingSessionCompletion').hidden = false;
+  if ($('#trainingSessionCompletionText')) {
+    $('#trainingSessionCompletionText').textContent = t('{accepted} accepted from {attempts} attempts.', {
+      accepted: app.training.stats.correct,
+      attempts: app.training.stats.totalHands,
+    });
+  }
+  if ($('#trainingNextHandBtn')) $('#trainingNextHandBtn').hidden = true;
+  return true;
+}
+
+function requestNextTrainingExercise() {
+  if (trainingSessionMode() === 'varied') {
+    if (app.training.practiceSession?.completed) return null;
+    if (completeVariedTrainingSession()) return null;
+    if (app.training.practiceSession?.mode === 'varied') return generatePlannedTrainingExercise();
+    return startConfiguredTrainingSession();
+  }
+  return newRandomTrainingHand();
+}
+
+async function newRandomTrainingHand(options = {}) {
+  const explicitSeed = Number.isInteger(options?.seed) ? options.seed >>> 0 : null;
+  const seed = explicitSeed === null ? app.training.nextSeed >>> 0 : explicitSeed;
+  if (explicitSeed === null) app.training.nextSeed = nextTrainingSeed(seed);
+  const config = [TRAINING_CONFIG_SCHEMA_VERSION, TRAINING_CONFIG_V2_SCHEMA_VERSION]
+    .includes(options?.config?.schemaVersion)
+    ? { ...structuredClone(options.config), seed }
+    : readTrainingConfig(seed);
+
+  prepareTrainingGeneration();
 
   const request = callTrainingServiceBridge('generate', config, { strategyProvider });
   if (!request || typeof request.then !== 'function') {
@@ -7748,6 +7960,7 @@ function handleTrainingGuess(userAction) {
   }
   app.training.lifecycle = 'feedback';
   setTrainingWorkspaceState('feedback');
+  completeVariedTrainingSession();
 }
 
 function replayTrainingExercise(seed) {
@@ -7759,6 +7972,22 @@ function replayTrainingExercise(seed) {
   const config = currentExercise?.seed === numericSeed
     ? currentExercise.generationMetadata?.trainingConfig
     : null;
+  if (trainingSessionMode() === 'varied' && config) {
+    prepareTrainingGeneration({ preserveSession: true });
+    const request = callTrainingServiceBridge('replay', config, { strategyProvider });
+    if (!request || typeof request.then !== 'function') {
+      renderTrainingGenerationError({ code: 'service_unavailable' });
+      return null;
+    }
+    return request.then((result) => {
+      if (!result?.ok) {
+        if (result?.error?.code !== 'stale_generation') renderTrainingGenerationError(result?.error);
+        return result;
+      }
+      renderCanonicalTrainingExercise(result.exercise);
+      return result;
+    });
+  }
   return newRandomTrainingHand({ seed: numericSeed, config });
 }
 

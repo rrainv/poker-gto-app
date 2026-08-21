@@ -80,12 +80,17 @@ function curriculumTags(exercise) {
       : context.street === 'preflop' && context.heroPosition === 'BB'
         ? 'CHECK OPTION'
         : context.street === 'preflop' ? 'UNOPENED' : 'FIRST ACTION');
+  const scenarioRequest = exercise.generationMetadata?.scenarioRequest;
+  const sizingFamily = scenarioRequest?.sizing?.realizedSizingFamily
+    || scenarioRequest?.request?.requestedSizingFamily
+    || null;
   return [
     String(context.street || '').toUpperCase(),
     context.heroPosition,
     `${context.tableSize}-MAX`,
     facing,
     curriculum.stackBucket ? `${String(curriculum.stackBucket).toUpperCase()} STACK` : null,
+    sizingFamily ? `${String(sizingFamily).replaceAll('_', ' ').toUpperCase()} SIZING` : null,
   ].filter(Boolean);
 }
 
