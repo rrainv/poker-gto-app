@@ -229,7 +229,7 @@ export function createGuestHomeViewModel({ continuation = null } = {}) {
         mistakes: { status: 'unavailable', items: [] },
       },
       personalStrategy: { status: 'unavailable' },
-      quickStart: { status: 'ready', destinations: ['gto', 'training', 'equity'] },
+      quickStart: { status: 'ready', destinations: ['hand', 'analyze', 'training', 'equity'] },
       history: futureHistorySeams(),
     },
   });
@@ -284,7 +284,7 @@ export function createHomeViewModelController({
       const personalStrategy = personalStrategySection(personalResult);
       const continuation = continuationResult.status === 'fulfilled' ? continuationResult.value : null;
       const identity = identitySection(profileQueries ? profileResult : null, accountQueries ? accountResult : null);
-      const quickStartDestinations = ['gto', 'training', 'equity', 'calibration'];
+      const quickStartDestinations = ['hand', 'analyze', 'training', 'personal-strategy', 'equity'];
       if (mistakes.status === 'ready' && mistakes.items.length > 0) {
         quickStartDestinations.push('review_mistakes');
       }

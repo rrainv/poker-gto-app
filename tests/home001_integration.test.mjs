@@ -14,15 +14,16 @@ const [html, css, logic, homeSource, homeBootstrap, personalRepository, translat
 
 test('Home is the real landing workspace with the five bounded information sections', () => {
   assert.match(html, /data-active-mode="home"/);
-  assert.match(html, /data-mode="home"[\s\S]*?aria-current="page"/);
+  assert.match(html, /data-navigation-id="home"[^>]*aria-current="page"/);
   assert.match(html, /id="homeMode" class="mode-view active"/);
   for (const id of ['homeContinueTitle', 'homeRecentTitle', 'homeReviewTitle', 'homeStrategyTitle', 'homeQuickStartTitle']) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
-  assert.match(html, /data-home-destination="gto"/);
+  assert.match(html, /data-home-destination="hand"/);
+  assert.match(html, /data-home-destination="analyze"/);
   assert.match(html, /data-home-destination="training"/);
   assert.match(html, /data-home-destination="equity"/);
-  assert.match(html, /data-home-destination="calibration"/);
+  assert.match(html, /data-home-destination="personal-strategy"/);
 });
 
 test('Home queries are bounded and contain no compute or full-library authority', () => {
@@ -52,6 +53,6 @@ test('Home and saved viewers expose accessible actions, error states, RTL copy, 
 
 test('Home initialization stays cheap and Playbook initializes only when opened', () => {
   assert.match(logic, /if \(activeWorkspaceMode\(\) === 'home'\) void refreshHomeWorkspace\(\);[\s\S]*?else updateContext\('Ready'\)/);
-  assert.match(logic, /if \(mode === 'home'\) void refreshHomeWorkspace\(\)/);
+  assert.match(logic, /if \(mode === 'home'\) \{[\s\S]*?refreshHomeWorkspace\(\)/);
   assert.match(logic, /else if \(!app\.playbookResolution && !activeSavedSpotContext\)[\s\S]*?updateContext\('Playbook opened'\)/);
 });

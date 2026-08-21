@@ -16,7 +16,7 @@
 
   <title data-i18n="Riverline — Poker Strategy &amp; Analysis">Riverline — Poker Strategy &amp; Analysis</title>
 
-  <link rel="stylesheet" href="styles.css?v=22">
+  <link rel="stylesheet" href="styles.css?v=24">
 
   <link rel="icon"
 
@@ -26,7 +26,7 @@
   <script src="src/locales/account-translations.js?v=1" defer></script>
   <script src="src/locales/analysis-translations.js?v=1" defer></script>
   <script src="src/locales/range-calibration-translations.js?v=1" defer></script>
-  <script src="src/locales/home-translations.js?v=1" defer></script>
+  <script src="src/locales/home-translations.js?v=3" defer></script>
   <script src="src/locales/home-game-translations.js?v=1" defer></script>
   <script src="src/locales/tutorial-translations.js?v=1" defer></script>
   <script src="src/locales/i18n.js?v=4" defer></script>
@@ -336,7 +336,7 @@
 
 <body data-density="comfortable">
 
-  <div class="riverline-shell" data-active-mode="home">
+  <div class="riverline-shell" data-active-mode="home" data-active-destination="home">
   <aside id="modeRail" class="mode-rail" aria-label="Riverline application" data-i18n-aria-label="Riverline application">
       <div class="rail-brand">
         <div class="brand-mark" aria-hidden="true">
@@ -351,35 +351,50 @@
         </button>
       </div>
 
-      <nav class="mode-navigation" aria-label="Primary mode" data-i18n-aria-label="Primary mode">
-        <button class="mode-nav-item active" type="button" data-mode="home" data-mode-title="Home dashboard" data-mode-subtitle="Your saved study, review queue, and next useful action." aria-label="Home" data-i18n-aria-label="Home dashboard" title="Home" data-i18n-title="Home dashboard" data-tooltip="Home" aria-current="page">
-          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7v9h-6v-6h-4v6H4v-9Z"/></svg>
-          <span data-i18n="Home dashboard">Home</span>
-        </button>
-        <button class="mode-nav-item" type="button" data-mode="gto" data-mode-title="Playbook" data-mode-subtitle="Strategy guidance with explicit source provenance." aria-label="Playbook" data-i18n-aria-label="Playbook" title="Playbook" data-i18n-title="Playbook" data-tooltip="Playbook" aria-current="false">
-          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="11" height="14" rx="2"/><path d="m9 9 2-2 2 2-2 2-2-2Zm7-1h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8"/></svg>
-          <span data-i18n="Playbook">Playbook</span>
-        </button>
-        <button class="mode-nav-item" type="button" data-mode="equity" data-mode-title="Equity" data-mode-subtitle="Exact enumeration and Monte Carlo win probability." aria-label="Equity" data-i18n-aria-label="Equity" title="Equity" data-i18n-title="Equity" data-tooltip="Equity" aria-current="false">
-          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15V3.6Z"/></svg>
-          <span data-i18n="Equity">Equity</span>
-        </button>
-        <button class="mode-nav-item" type="button" data-mode="training" data-mode-title="Training" data-mode-subtitle="Practice decisions against the current strategy sources." aria-label="Training" data-i18n-aria-label="Training" title="Training" data-i18n-title="Training" data-tooltip="Training" aria-current="false">
-          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m16.5 7.5 3-3m0 0v3m0-3h-3"/></svg>
-          <span data-i18n="Training">Training</span>
-        </button>
-        <button class="mode-nav-item" type="button" data-mode="calibration" data-mode-title="Range Calibration" data-mode-subtitle="Teach Riverline how you play in a specific poker environment." aria-label="Range Calibration" data-i18n-aria-label="Range Calibration" title="Range Calibration" data-i18n-title="Range Calibration" data-tooltip="Range Calibration" aria-current="false">
-          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 5v14m4-14v14m4-14v14M4 9h16m-16 5h16"/><circle cx="16" cy="9" r="2"/></svg>
-          <span data-i18n="Range Calibration">Range Calibration</span>
-        </button>
-        <button class="mode-nav-item" type="button" data-mode="info" data-mode-title="Guide" data-mode-subtitle="Product guidance, poker terms, and control reference." aria-label="Guide" data-i18n-aria-label="Guide" title="Guide" data-i18n-title="Guide" data-tooltip="Guide" aria-current="false">
-          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
-          <span data-i18n="Guide">Guide</span>
-        </button>
-        <button class="mode-nav-item" type="button" data-mode="homegame" data-mode-title="Home Game" data-mode-subtitle="Run a real poker night with exact buy-ins, cash-outs, and settlement." aria-label="Home Game" data-i18n-aria-label="Home Game" title="Home Game" data-i18n-title="Home Game" data-tooltip="Home Game" aria-current="false">
-          <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20v-2a5 5 0 0 1 10 0v2m1-6a4 4 0 0 1 7 2.6V20"/><circle cx="17" cy="17" r="3"/><path d="M17 15.5v3m-1.5-1.5h3"/></svg>
-          <span data-i18n="Home Game">Home Game</span>
-        </button>
+      <nav class="mode-navigation" aria-label="Riverline navigation" data-i18n-aria-label="Riverline navigation">
+        <section class="mode-nav-group mode-nav-group--core" aria-labelledby="coreNavigationLabel">
+          <p id="coreNavigationLabel" class="mode-nav-group-label" data-i18n="Core study">Core study</p>
+          <button class="mode-nav-item mode-nav-item--hand" type="button" data-mode="gto" data-navigation-id="hand" data-workspace-eyebrow="Core study" data-mode-title="Hand" data-mode-subtitle="Play or continue a canonical Hand, then analyze, save, and study it." aria-label="Hand" data-i18n-aria-label="Hand" title="Hand" data-i18n-title="Hand" data-tooltip="Hand" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="11" height="15" rx="2"/><path d="M9 8h3m-3 4h3m6-5h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-8"/></svg>
+            <span data-i18n="Hand">Hand</span>
+          </button>
+          <button class="mode-nav-item" type="button" data-mode="gto" data-navigation-id="analyze" data-workspace-eyebrow="Core study" data-mode-title="Analyze" data-mode-subtitle="Review the current Hand or build a study spot with source-aware guidance." aria-label="Analyze" data-i18n-aria-label="Analyze" title="Analyze" data-i18n-title="Analyze" data-tooltip="Analyze" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m14.5 14.5 5 5M7 11l2-2 2 2 3-4"/></svg>
+            <span data-i18n="Analyze">Analyze</span>
+          </button>
+          <button class="mode-nav-item" type="button" data-mode="training" data-navigation-id="training" data-workspace-eyebrow="Core study" data-mode-title="Training" data-mode-subtitle="Practice poker decisions without losing the current Hand." aria-label="Training" data-i18n-aria-label="Training" title="Training" data-i18n-title="Training" data-tooltip="Training" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m16.5 7.5 3-3m0 0v3m0-3h-3"/></svg>
+            <span data-i18n="Training">Training</span>
+          </button>
+          <button class="mode-nav-item" type="button" data-mode="calibration" data-navigation-id="personal-strategy" data-workspace-eyebrow="Core study" data-mode-title="Personal Strategy" data-mode-subtitle="Calibration, Matrix, Teacher, and Builder for the way you play." aria-label="Personal Strategy" data-i18n-aria-label="Personal Strategy" title="Personal Strategy" data-i18n-title="Personal Strategy" data-tooltip="Personal Strategy" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 5v14m4-14v14m4-14v14M4 9h16m-16 5h16"/><circle cx="16" cy="9" r="2"/></svg>
+            <span data-i18n="Personal Strategy">Personal Strategy</span>
+          </button>
+          <button class="mode-nav-item" type="button" data-mode="equity" data-navigation-id="equity" data-workspace-eyebrow="Core study" data-mode-title="Equity" data-mode-subtitle="Calculate exact or simulated win chances for known and unknown hands." aria-label="Equity" data-i18n-aria-label="Equity" title="Equity" data-i18n-title="Equity" data-tooltip="Equity" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15V3.6Z"/></svg>
+            <span data-i18n="Equity">Equity</span>
+          </button>
+          <button class="mode-nav-item" type="button" data-mode="home" data-navigation-id="saved" data-workspace-eyebrow="Core study" data-mode-title="Saved study" data-mode-subtitle="Open saved Hands and Spots for replay, review, and continued study." aria-label="Saved" data-i18n-aria-label="Saved study" title="Saved" data-i18n-title="Saved study" data-tooltip="Saved" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12a2 2 0 0 1 2 2v14l-8-4-8 4V6a2 2 0 0 1 2-2Z"/><path d="M8 8h8"/></svg>
+            <span data-i18n="Saved study">Saved</span>
+          </button>
+        </section>
+
+        <section class="mode-nav-group mode-nav-group--support" aria-labelledby="supportNavigationLabel">
+          <p id="supportNavigationLabel" class="mode-nav-group-label" data-i18n="Riverline">Riverline</p>
+          <button class="mode-nav-item active" type="button" data-mode="home" data-navigation-id="home" data-workspace-eyebrow="Riverline" data-mode-title="Home" data-mode-subtitle="Continue recent work and choose the next useful action." aria-label="Home" data-i18n-aria-label="Home" title="Home" data-i18n-title="Home" data-tooltip="Home" aria-current="page">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7v9h-6v-6h-4v6H4v-9Z"/></svg>
+            <span data-i18n="Home">Home</span>
+          </button>
+          <button class="mode-nav-item" type="button" data-mode="homegame" data-navigation-id="home-game" data-workspace-eyebrow="Riverline" data-mode-title="Home Game" data-mode-subtitle="Run a real poker night with exact buy-ins, cash-outs, and settlement." aria-label="Home Game" data-i18n-aria-label="Home Game" title="Home Game" data-i18n-title="Home Game" data-tooltip="Home Game" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20v-2a5 5 0 0 1 10 0v2m1-6a4 4 0 0 1 7 2.6V20"/><circle cx="17" cy="17" r="3"/><path d="M17 15.5v3m-1.5-1.5h3"/></svg>
+            <span data-i18n="Home Game">Home Game</span>
+          </button>
+          <button class="mode-nav-item" type="button" data-mode="info" data-navigation-id="guide" data-workspace-eyebrow="Riverline" data-mode-title="Guide" data-mode-subtitle="Product guidance, poker terms, and control reference." aria-label="Guide" data-i18n-aria-label="Guide" title="Guide" data-i18n-title="Guide" data-tooltip="Guide" aria-current="false">
+            <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
+            <span data-i18n="Guide">Guide</span>
+          </button>
+        </section>
       </nav>
 
         <div class="rail-utilities" aria-label="Global utilities" data-i18n-aria-label="Global utilities">
@@ -405,15 +420,14 @@
         </button>
       </div>
 
-      <div class="rail-footer" data-i18n="Analysis workspace">Analysis workspace</div>
     </aside>
 
     <div class="workspace-shell">
       <header class="workspace-header">
         <div class="workspace-heading" data-tutorial-anchor="home-overview">
-          <div class="workspace-eyebrow" data-i18n="Riverline workspace">Riverline workspace</div>
-          <h1 id="workspaceTitle" data-i18n="Home dashboard">Home</h1>
-          <p id="workspaceSubtitle" data-i18n="Your saved study, review queue, and next useful action.">Your saved study, review queue, and next useful action.</p>
+          <div id="workspaceEyebrow" class="workspace-eyebrow" data-i18n="Riverline">Riverline</div>
+          <h1 id="workspaceTitle" data-i18n="Home">Home</h1>
+          <p id="workspaceSubtitle" data-i18n="Continue recent work and choose the next useful action.">Continue recent work and choose the next useful action.</p>
         </div>
 
         <div class="workspace-utilities" aria-label="Strategy source status" data-i18n-aria-label="Strategy source status">
@@ -454,13 +468,17 @@
       <div class="shell workspace-canvas">
 
 
-    <section id="homeMode" class="mode-view active" aria-label="Home" data-i18n-aria-label="Home dashboard">
+    <section id="homeMode" class="mode-view active" data-product-destination="home" aria-label="Home" data-i18n-aria-label="Home dashboard">
       <div id="homeWorkspace" class="home-workspace" aria-busy="true">
         <div id="homeLoadingState" class="home-loading-state" role="status">
           <span class="home-loading-spinner" aria-hidden="true"></span>
           <span data-i18n="Opening your study workspace">Opening your study workspace</span>
         </div>
-        <div id="homeWorkspaceContent" class="home-dashboard-grid" hidden>
+        <div id="homeWorkspaceContent" class="home-dashboard-grid" data-product-destination="home" hidden>
+          <section id="homeSavedOverview" class="panel home-section home-section--saved-overview" aria-labelledby="homeSavedOverviewTitle" hidden>
+            <header class="home-section-head"><div><p data-i18n="Saved study">Saved study</p><h2 id="homeSavedOverviewTitle" data-i18n="Saved Hands &amp; Spots">Saved Hands &amp; Spots</h2></div></header>
+            <p class="home-saved-overview-copy" data-i18n="Reopen saved Hands and Spots for replay, review, and continued study.">Reopen saved Hands and Spots for replay, review, and continued study.</p>
+          </section>
           <section id="homeAccountOverview" class="panel home-section home-section--overview" aria-labelledby="homeAccountOverviewTitle" hidden>
             <div class="home-account-overview">
               <div class="home-account-identity">
@@ -478,10 +496,10 @@
             </div>
           </section>
           <section id="homeGuestAccount" class="panel home-section home-section--guest-account" aria-labelledby="homeGuestAccountTitle" hidden>
-            <header class="home-section-head"><div><p data-i18n="Guest Mode">Guest Mode</p><h2 id="homeGuestAccountTitle" data-i18n="Welcome to Riverline">Welcome to Riverline</h2></div></header>
+            <header class="home-section-head"><div><p id="homeGuestAccountEyebrow" data-i18n="Guest Mode">Guest Mode</p><h2 id="homeGuestAccountTitle" data-i18n="Welcome to Riverline">Welcome to Riverline</h2></div></header>
             <div class="home-guest-account-copy">
-              <p data-i18n="Analyze hands, train decisions, and calculate Equity without an account.">Analyze hands, train decisions, and calculate Equity without an account.</p>
-              <p data-i18n="Sign in to save hands, build Personal Strategy, and sync study progress.">Sign in to save hands, build Personal Strategy, and sync study progress.</p>
+              <p id="homeGuestAccountPrimary" data-i18n="Analyze hands, train decisions, and calculate Equity without an account.">Analyze hands, train decisions, and calculate Equity without an account.</p>
+              <p id="homeGuestAccountSecondary" data-i18n="Sign in to save hands, build Personal Strategy, and sync study progress.">Sign in to save hands, build Personal Strategy, and sync study progress.</p>
               <button id="homeGuestSignIn" class="ui-button ui-button--primary" type="button" data-i18n="Sign in or create account">Sign in or create account</button>
             </div>
           </section>
@@ -495,7 +513,7 @@
             <div id="homeReviewContent" class="home-review-groups"></div>
           </section>
 
-          <section class="panel home-section home-section--recent" aria-labelledby="homeRecentTitle" data-tutorial-anchor="home-recent">
+          <section class="panel home-section home-section--recent" aria-labelledby="homeRecentTitle" data-home-surface="saved" data-tutorial-anchor="home-recent" tabindex="-1">
             <header class="home-section-head"><div><p data-i18n="Your latest saved study items">Your latest saved study items</p><h2 id="homeRecentTitle" data-i18n="Recent">Recent</h2></div></header>
             <div id="homeRecentContent" class="home-saved-list"></div>
           </section>
@@ -508,10 +526,11 @@
           <section class="panel home-section home-section--quick" aria-labelledby="homeQuickStartTitle" data-tutorial-anchor="home-quick-start">
             <header class="home-section-head"><div><p data-i18n="Go straight to a workspace">Go straight to a workspace</p><h2 id="homeQuickStartTitle" data-i18n="Quick Start">Quick Start</h2></div></header>
             <nav class="home-quick-links" aria-label="Quick Start" data-i18n-aria-label="Quick Start">
-              <button type="button" class="home-quick-link" data-home-destination="gto"><strong data-i18n="Playbook">Playbook</strong><span data-i18n="Build or play a spot">Build or play a spot</span></button>
+              <button type="button" class="home-quick-link home-quick-link--hand" data-home-destination="hand"><strong data-i18n="Hand">Hand</strong><span data-i18n="Play or continue a Hand">Play or continue a Hand</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="analyze"><strong data-i18n="Analyze">Analyze</strong><span data-i18n="Review a Hand or build a spot">Review a Hand or build a spot</span></button>
               <button type="button" class="home-quick-link" data-home-destination="training"><strong data-i18n="Training">Training</strong><span data-i18n="Practice a decision">Practice a decision</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="personal-strategy"><strong data-i18n="Personal Strategy">Personal Strategy</strong><span data-i18n="Calibrate, inspect, and build your ranges">Calibrate, inspect, and build your ranges</span></button>
               <button type="button" class="home-quick-link" data-home-destination="equity"><strong data-i18n="Equity">Equity</strong><span data-i18n="Calculate win chances">Calculate win chances</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="calibration"><strong data-i18n="Range Calibration">Range Calibration</strong><span data-i18n="Build your ranges">Build your ranges</span></button>
               <button type="button" class="home-quick-link" data-home-destination="review_mistakes" hidden><strong data-i18n="Review Mistakes">Review Mistakes</strong><span data-i18n="Revisit marked decisions">Revisit marked decisions</span></button>
             </nav>
           </section>
@@ -561,12 +580,12 @@
 
 
 
-    <section id="gtoMode" class="mode-view">
+    <section id="gtoMode" class="mode-view" data-product-destination="analyze" aria-label="Analyze" data-i18n-aria-label="Analyze">
 
       <div class="playbook-state-source" aria-label="Playbook workflow" data-i18n-aria-label="Playbook workflow" data-interaction-surface="interactive" data-tutorial-anchor="playbook-workflow">
         <div class="playbook-workflow-copy">
-          <span class="playbook-workflow-kicker" data-i18n="Analysis workflow">Analysis workflow</span>
-          <strong data-i18n="Choose how this poker spot is built">Choose how this poker spot is built</strong>
+          <span id="playbookWorkflowKicker" class="playbook-workflow-kicker" data-i18n="Analysis source">Analysis source</span>
+          <strong id="playbookWorkflowTitle" data-i18n="Analyze the current Hand or a study spot">Analyze the current Hand or a study spot</strong>
         </div>
         <div id="playbookModeControl" class="ui-segments" role="group" aria-label="Choose Playbook workflow" data-i18n-aria-label="Choose Playbook workflow">
           <button id="playbookScenarioMode" class="ui-tab active" type="button" data-playbook-mode="scenario" aria-pressed="true"><strong data-i18n="Scenario Analysis">Scenario Analysis</strong><small data-i18n="Build any study spot">Build any study spot</small></button>
@@ -1485,14 +1504,14 @@
       <div id="rangeCalibrationWorkspace" class="range-calibration-workspace" data-calibration-state="loading" aria-busy="true">
         <section id="calibrationLoadingState" class="panel calibration-loading-state" aria-live="polite">
           <span class="calibration-spinner" aria-hidden="true"></span>
-          <strong data-i18n="Opening Range Calibration">Opening Range Calibration</strong>
+          <strong data-i18n="Opening Personal Strategy">Opening Personal Strategy</strong>
         </section>
 
         <section id="calibrationGuestState" class="panel calibration-account-required-state" aria-labelledby="calibrationGuestTitle" hidden>
           <div>
             <p class="calibration-eyebrow" data-i18n="Account required">Account required</p>
             <h2 id="calibrationGuestTitle" data-i18n="Sign in to build and save your Personal Strategy">Sign in to build and save your Personal Strategy</h2>
-            <p data-i18n="Range Calibration creates persistent profiles, sessions, and direct answers. Sign in or create an account before starting.">Range Calibration creates persistent profiles, sessions, and direct answers. Sign in or create an account before starting.</p>
+            <p data-i18n="Personal Strategy stores profiles, calibration sessions, and direct answers. Sign in or create an account before starting.">Personal Strategy stores profiles, calibration sessions, and direct answers. Sign in or create an account before starting.</p>
           </div>
           <div class="calibration-account-required-actions">
             <button class="ui-button ui-button--primary" type="button" data-calibration-account-action="sign-in" data-i18n="Sign in">Sign in</button>
@@ -1504,7 +1523,7 @@
         <section id="calibrationErrorState" class="panel calibration-error-state" role="alert" hidden>
           <div>
             <p class="calibration-eyebrow" data-i18n="Personal strategy data">Personal strategy data</p>
-            <h2 data-i18n="Range Calibration could not be opened">Range Calibration could not be opened</h2>
+            <h2 data-i18n="Personal Strategy could not be opened">Personal Strategy could not be opened</h2>
             <p id="calibrationErrorMessage" data-i18n="Your stored data was left untouched. Try reopening this workspace.">Your stored data was left untouched. Try reopening this workspace.</p>
           </div>
           <button id="calibrationRetry" class="ui-button ui-button--secondary" type="button" data-i18n="Try again">Try again</button>
@@ -1954,7 +1973,7 @@
         </div>
       </div>
     </template>
-    <section id="calibrationMode" class="mode-view range-calibration-mode" style="display:none;" aria-label="Range Calibration" data-i18n-aria-label="Range Calibration" data-tutorial-anchor="calibration-overview">
+    <section id="calibrationMode" class="mode-view range-calibration-mode" style="display:none;" aria-label="Personal Strategy" data-i18n-aria-label="Personal Strategy" data-tutorial-anchor="calibration-overview">
       <div id="rangeCalibrationMount"></div>
     </section>
 
@@ -2282,7 +2301,7 @@
           <div class="panel-body">
             <div class="info-section">
               <h3 style="margin-top:0; color:var(--primary);" data-i18n="Getting started">Getting started</h3>
-              <p data-i18n="Choose a workspace from the rail: Playbook to build or progress a spot, Training for generated decisions, and Equity to calculate win chances. Select cards from a card slot; unavailable cards are already in use in that workspace.">Choose a workspace from the rail: Playbook to build or progress a spot, Training for generated decisions, and Equity to calculate win chances. Select cards from a card slot; unavailable cards are already in use in that workspace.</p>
+              <p data-i18n="Use Hand to play or continue a canonical Hand, Analyze to review a Hand or build a study spot, and Training to practice decisions. Personal Strategy, Equity, and Saved support deeper study; Home Game, Guide, and Settings stay in the Riverline support area.">Use Hand to play or continue a canonical Hand, Analyze to review a Hand or build a study spot, and Training to practice decisions. Personal Strategy, Equity, and Saved support deeper study; Home Game, Guide, and Settings stay in the Riverline support area.</p>
               <p><strong data-i18n="Common terms:">Common terms:</strong> <span data-i18n="Unopened means no voluntary raise has occurred. Facing a raise, 3-bet, or 4-bet describes the action you must respond to. SPR is the effective stack divided by the pot.">Unopened means no voluntary raise has occurred. Facing a raise, 3-bet, or 4-bet describes the action you must respond to. SPR is the effective stack divided by the pot.</span></p>
             </div>
             <div class="divider"></div>
@@ -2731,7 +2750,7 @@
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>
-  <script src="src/core/logic.js?v=22" defer></script>
+  <script src="src/core/logic.js?v=24" defer></script>
   <script src="src/ui/teacher.js" defer></script>
   <script src="src/ui/PokerPrimitives.js" defer></script>
   <script src="src/ui/TableRenderer.js" defer></script>

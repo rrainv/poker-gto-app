@@ -20,18 +20,19 @@ test('the application opens directly into the workstation', () => {
   assert.doesNotMatch(html, /id="enterWorkstationBtn"/);
   assert.doesNotMatch(html, /valorant-menu-overlay/);
   assert.doesNotMatch(css, /valorant-menu-overlay|valorant-btn/);
-  assert.match(html, /<div class="riverline-shell" data-active-mode="home">/);
+  assert.match(html, /<div class="riverline-shell" data-active-mode="home" data-active-destination="home">/);
   assert.match(html, /<section id="homeMode" class="mode-view active"/);
 });
 
-test('the shell exposes every current mode with structural active semantics', () => {
+test('the shell exposes a deliberate core and support hierarchy with structural active semantics', () => {
   const shell = shellMarkup();
-  for (const mode of ['home', 'gto', 'equity', 'training', 'calibration', 'info']) {
-    assert.match(shell, new RegExp(`class="mode-nav-item(?: active)?"[^>]*data-mode="${mode}"`));
+  for (const destination of ['hand', 'analyze', 'training', 'personal-strategy', 'equity', 'saved', 'home', 'home-game', 'guide']) {
+    assert.match(shell, new RegExp(`data-navigation-id="${destination}"`));
   }
-  assert.match(shell, /data-mode="home"[^>]*aria-current="page"/);
-  assert.match(shell, /data-mode="gto"[^>]*aria-current="false"/);
-  assert.match(shell, /data-mode="equity"[^>]*aria-current="false"/);
+  assert.match(shell, /mode-nav-group--core[\s\S]*?data-navigation-id="hand"[\s\S]*?data-navigation-id="saved"/);
+  assert.match(shell, /mode-nav-group--support[\s\S]*?data-navigation-id="home"[\s\S]*?data-navigation-id="guide"/);
+  assert.match(shell, /data-navigation-id="home"[^>]*aria-current="page"/);
+  assert.match(shell, /data-navigation-id="hand"[^>]*aria-current="false"/);
   assert.match(logic, /\$\$\('\.mode-nav-item\[data-mode\]'\)/);
   assert.match(logic, /item\.setAttribute\('aria-current', isActive \? 'page' : 'false'\)/);
   assert.match(logic, /activeView\.style\.display = 'block'/);
@@ -40,9 +41,10 @@ test('the shell exposes every current mode with structural active semantics', ()
 test('mode switching updates workspace context without touching poker state', () => {
   assert.match(html, /id="workspaceTitle"[^>]*>Home</);
   assert.match(html, /id="workspaceSubtitle"/);
-  assert.match(logic, /shell\.dataset\.activeMode = mode/);
-  assert.match(logic, /workspaceTitle\.textContent = t\(modeTitle\)/);
-  assert.match(logic, /workspaceSubtitle\.textContent = t\(modeSubtitle\)/);
+  assert.match(logic, /shell\.dataset\.activeMode = button\.dataset\.mode/);
+  assert.match(logic, /shell\.dataset\.activeDestination = button\.dataset\.navigationId/);
+  assert.match(logic, /workspaceTitle\.textContent = t\(titleKey\)/);
+  assert.match(logic, /workspaceSubtitle\.textContent = t\(subtitleKey\)/);
   assert.doesNotMatch(logic.slice(logic.indexOf("$$('.mode-nav-item[data-mode]')"), logic.indexOf("$$('.sub-tab')")), /DecisionContext|StrategyResult|calculateEquity|calculatePreflop/);
 });
 
@@ -82,7 +84,7 @@ test('strategy source status is truthful, noninteractive fallback copy', () => {
 
 test('mobile navigation and utilities remain visible and reachable', () => {
   const uiQaCss = css.slice(css.indexOf('UI-QA-001: responsive shell'));
-  assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation\s*\{\s*grid-template-columns: repeat\(5/);
+  assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation\s*\{[^}]*display:\s*flex[^}]*overflow-x:\s*auto/);
   assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.rail-utilities[\s\S]*?grid-template-columns: repeat\(3/);
   assert.doesNotMatch(uiQaCss, /\.mode-navigation\s*\{[^}]*display:\s*none/);
   assert.doesNotMatch(uiQaCss, /\.rail-utilities\s*\{[^}]*display:\s*none/);

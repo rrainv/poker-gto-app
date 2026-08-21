@@ -11,16 +11,16 @@ const service = fs.readFileSync(new URL('../app/src/application/range-calibratio
 const browserStorage = fs.readFileSync(new URL('../app/src/personal-strategy/browser-storage.mjs', import.meta.url), 'utf8');
 const visualAudit = fs.readFileSync(new URL('./tooling/audit_range_cal001a.cjs', import.meta.url), 'utf8');
 
-test('Range Calibration is reachable without reordering or removing existing workspaces', () => {
-  const modes = [...html.matchAll(/data-mode="([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(modes.slice(0, 6), ['home', 'gto', 'equity', 'training', 'calibration', 'info']);
-  assert.match(html, /data-mode="calibration"[^>]*data-mode-title="Range Calibration"/);
+test('Personal Strategy is the top-level destination while its existing workspace remains canonical', () => {
+  const destinations = [...html.matchAll(/data-navigation-id="([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(destinations.slice(0, 9), ['hand', 'analyze', 'training', 'personal-strategy', 'equity', 'saved', 'home', 'home-game', 'guide']);
+  assert.match(html, /data-mode="calibration"[^>]*data-navigation-id="personal-strategy"[^>]*data-mode-title="Personal Strategy"/);
   assert.match(html, /id="calibrationMode" class="mode-view range-calibration-mode"/);
-  for (const mode of ['gto', 'equity', 'training', 'info']) assert.ok(modes.includes(mode));
+  for (const destination of ['hand', 'analyze', 'training', 'equity', 'guide']) assert.ok(destinations.includes(destination));
   assert.match(logic, /const activeView = \$\(`#\$\{mode\}Mode`\)/);
 });
 
-test('the full Personal Strategy workspace remains dormant until Range Calibration is opened', () => {
+test('the full Personal Strategy workspace remains dormant until Personal Strategy is opened', () => {
   assert.match(html, /<template id="rangeCalibrationTemplate">/);
   assert.match(html, /<template id="calibrationProfileModalTemplate">/);
   assert.match(html, /id="rangeCalibrationMount"><\/div>/);
@@ -76,8 +76,8 @@ test('context builder remains truthful while the bounded RFI question loop is op
   }
   assert.match(template, /Ready to calibrate this range/);
   assert.match(template, /id="calibrationStartQuestions"[^>]+data-i18n="Start questions"/);
-  assert.match(template, /data-calibration-action="fold"/);
-  assert.match(template, /data-calibration-action="raise"/);
+  assert.match(workspace, /button\.dataset\.calibrationAction = action\.type/);
+  assert.match(service, /RFI calibration supports only canonical fold and raise actions/);
   assert.match(template, /data-i18n="Inferred high">Inferred high/);
   assert.doesNotMatch(template, /confidence|data-calibration-action="call"/i);
   assert.doesNotMatch(workspace, /saveRangeObservation|createRangeObservation|StrategyProvider|from ['"][^'"]*training/i);
@@ -85,7 +85,8 @@ test('context builder remains truthful while the bounded RFI question loop is op
 
 test('workspace localization and RTL preserve poker notation as LTR data islands', () => {
   assert.match(html, /range-calibration-translations\.js/);
-  assert.match(html, /data-i18n="Range Calibration"|data-i18n-aria-label="Range Calibration"/);
+  assert.match(html, /data-i18n="Personal Strategy"|data-i18n-aria-label="Personal Strategy"/);
+  assert.match(html, /data-i18n-aria-label="How Range Calibration works"/);
   assert.match(css, /\[dir="rtl"\] \.calibration-context-preview div[\s\S]*?direction: ltr/);
   assert.match(html, /id="calibrationPreviewSpot" class="poker-data-token"/);
   assert.match(html, /id="calibrationStackHelp" class="poker-data-token"/);
@@ -99,7 +100,7 @@ test('desktop responsive rules reflow context and session controls without page 
   assert.match(ticketCss, /@media \(max-width: 1180px\)[\s\S]*?\.calibration-main-grid \{ grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(ticketCss, /@media \(max-width: 820px\)[\s\S]*?\.calibration-empty-state \{ grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(ticketCss, /#calibrationMode[\s\S]*?overflow-x: hidden/);
-  assert.match(css, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation \{ grid-template-columns: repeat\(5/);
+  assert.match(css, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation \{[^}]*display: flex;[^}]*overflow-x: auto/);
 });
 
 test('profile dialog and mode controls have keyboard and focus-management fundamentals', () => {

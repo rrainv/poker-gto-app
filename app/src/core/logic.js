@@ -582,6 +582,11 @@ function activeWorkspaceMode() {
   return $('.riverline-shell')?.dataset.activeMode || 'gto';
 }
 
+function activeNavigationDestination() {
+  const shell = $('.riverline-shell');
+  return shell?.dataset.activeDestination || shell?.dataset.activeMode || 'home';
+}
+
 function renderPlaybookCards() {
   if (typeof isHandMode === 'function' && isHandMode()) {
     const canonicalState = callPlaybookStateBridge('getState');
@@ -1291,6 +1296,7 @@ async function requestPlaybookMode(mode) {
   const previousMode = callPlaybookStateBridge('getMode') || PLAYBOOK_MODES.SCENARIO;
   if (mode === previousMode) {
     if (mode === PLAYBOOK_MODES.HAND) syncHandSeatSelectors();
+    syncPlaybookNavigationDestination(mode);
     return updateContext('Playbook mode unchanged');
   }
 
@@ -1302,6 +1308,7 @@ async function requestPlaybookMode(mode) {
   if (!modeResult || modeResult.mode !== mode) {
     renderPlaybookModeStatus(modeResult);
     if (mode === PLAYBOOK_MODES.HAND) savedPlaybookScenarioPresentation = null;
+    syncPlaybookNavigationDestination(previousMode);
     return modeResult;
   }
 
@@ -1313,6 +1320,7 @@ async function requestPlaybookMode(mode) {
     savedPlaybookScenarioPresentation = null;
   }
   const result = await updateContext(mode === PLAYBOOK_MODES.HAND ? 'Hand workflow selected' : 'Scenario workflow selected');
+  syncPlaybookNavigationDestination(mode);
   window.RiverlineTutorials?.offerForWorkspace?.('gto', $('#gtoMode'));
   return result;
 }
@@ -4544,15 +4552,192 @@ let homeRefreshSequence = 0;
 let homeRefreshTimer = null;
 let activeSavedSpotContext = null;
 
-function navigateToWorkspace(mode) {
-  document.querySelector(`.mode-nav-item[data-mode="${mode}"]`)?.click();
+function activateNavigationItem(button) {
+  if (!button) return false;
+  $$('.mode-nav-item[data-mode][data-navigation-id]').forEach((item) => {
+    const isActive = item === button;
+    item.classList.toggle('active', isActive);
+    item.setAttribute('aria-current', isActive ? 'page' : 'false');
+  });
+
+  const shell = $('.riverline-shell');
+  if (shell) {
+    shell.dataset.activeMode = button.dataset.mode;
+    shell.dataset.activeDestination = button.dataset.navigationId;
+  }
+
+  const eyebrowKey = button.dataset.workspaceEyebrow || 'Riverline';
+  const titleKey = button.dataset.modeTitle || button.textContent.trim();
+  const subtitleKey = button.dataset.modeSubtitle || '';
+  const workspaceEyebrow = $('#workspaceEyebrow');
+  const workspaceTitle = $('#workspaceTitle');
+  const workspaceSubtitle = $('#workspaceSubtitle');
+  if (workspaceEyebrow) {
+    workspaceEyebrow.dataset.i18n = eyebrowKey;
+    workspaceEyebrow.textContent = t(eyebrowKey);
+  }
+  if (workspaceTitle) {
+    workspaceTitle.dataset.i18n = titleKey;
+    workspaceTitle.textContent = t(titleKey);
+  }
+  if (workspaceSubtitle) {
+    workspaceSubtitle.dataset.i18n = subtitleKey;
+    workspaceSubtitle.textContent = t(subtitleKey);
+  }
+  if (button.dataset.mode === 'home') applyHomeDestinationPresentation(button.dataset.navigationId);
+  if (button.dataset.mode === 'gto') applyPlaybookDestinationPresentation(button.dataset.navigationId);
+  return true;
+}
+
+function resolveHomeDestinationPresentation(destination, {
+  sessionMode = 'account',
+  hasContinuation = false,
+} = {}) {
+  const normalizedDestination = destination === 'saved' ? 'saved' : 'home';
+  const guest = sessionMode === 'guest';
+  const visibleSections = normalizedDestination === 'saved'
+    ? guest
+      ? ['guest']
+      : ['saved-overview', 'recent', 'review']
+    : guest
+      ? ['guest', ...(hasContinuation ? ['continue'] : []), 'quick']
+      : ['overview', 'continue', 'review', 'recent', 'strategy', 'quick'];
+  return Object.freeze({
+    destination: normalizedDestination,
+    visibleSections: Object.freeze(visibleSections),
+    guestCopy: normalizedDestination === 'saved'
+      ? Object.freeze({
+        eyebrow: 'Saved study',
+        title: 'Saved Hands & Spots',
+        primary: 'Sign in to view saved Hands and Spots on this device.',
+        secondary: 'No saved study is available in Guest Mode.',
+      })
+      : Object.freeze({
+        eyebrow: 'Guest Mode',
+        title: 'Welcome to Riverline',
+        primary: 'Analyze hands, train decisions, and calculate Equity without an account.',
+        secondary: 'Sign in to save hands, build Personal Strategy, and sync study progress.',
+      }),
+  });
+}
+
+function setTranslatedElement(element, key) {
+  if (!element) return;
+  element.dataset.i18n = key;
+  element.textContent = t(key);
+}
+
+function applyHomeDestinationPresentation(destination = activeNavigationDestination()) {
+  const content = $('#homeWorkspaceContent');
+  const state = resolveHomeDestinationPresentation(destination, {
+    sessionMode: content?.dataset.sessionMode || homeViewModel?.sessionMode || 'account',
+    hasContinuation: content?.dataset.hasContinuation === 'true',
+  });
+  const homeMode = $('#homeMode');
+  if (homeMode) {
+    homeMode.dataset.productDestination = state.destination;
+    const labelKey = state.destination === 'saved' ? 'Saved study' : 'Home dashboard';
+    homeMode.dataset.i18nAriaLabel = labelKey;
+    homeMode.setAttribute('aria-label', t(labelKey));
+  }
+  if (content) content.dataset.productDestination = state.destination;
+
+  const sections = {
+    'saved-overview': $('#homeSavedOverview'),
+    overview: $('#homeAccountOverview'),
+    guest: $('#homeGuestAccount'),
+    continue: $('#homeContinueContent')?.closest('.home-section'),
+    review: $('#homeReviewContent')?.closest('.home-section'),
+    recent: $('#homeRecentContent')?.closest('.home-section'),
+    strategy: $('#homeStrategyContent')?.closest('.home-section'),
+    quick: $('#homeQuickStartTitle')?.closest('.home-section'),
+  };
+  const visible = new Set(state.visibleSections);
+  Object.entries(sections).forEach(([key, section]) => {
+    if (section) section.hidden = !visible.has(key);
+  });
+
+  setTranslatedElement($('#homeGuestAccountEyebrow'), state.guestCopy.eyebrow);
+  setTranslatedElement($('#homeGuestAccountTitle'), state.guestCopy.title);
+  setTranslatedElement($('#homeGuestAccountPrimary'), state.guestCopy.primary);
+  setTranslatedElement($('#homeGuestAccountSecondary'), state.guestCopy.secondary);
+  return state;
+}
+
+function resolvePlaybookDestinationPresentation(destination, playbookMode) {
+  const normalizedDestination = destination === 'hand' ? 'hand' : 'analyze';
+  return Object.freeze({
+    destination: normalizedDestination,
+    requestedMode: normalizedDestination === 'hand' && playbookMode !== PLAYBOOK_MODES.HAND
+      ? PLAYBOOK_MODES.HAND
+      : null,
+    primarySurface: normalizedDestination === 'hand' ? 'hand-controls-and-table' : 'decision-analysis',
+  });
+}
+
+function applyPlaybookDestinationPresentation(destination = activeNavigationDestination()) {
+  const state = resolvePlaybookDestinationPresentation(
+    destination,
+    callPlaybookStateBridge('getMode') || app.playbookMode || PLAYBOOK_MODES.SCENARIO,
+  );
+  const modeView = $('#gtoMode');
+  if (modeView) {
+    modeView.dataset.productDestination = state.destination;
+    const labelKey = state.destination === 'hand' ? 'Hand' : 'Analyze';
+    modeView.dataset.i18nAriaLabel = labelKey;
+    modeView.setAttribute('aria-label', t(labelKey));
+  }
+  const handDestination = state.destination === 'hand';
+  setTranslatedElement($('#playbookWorkflowKicker'), handDestination ? 'Hand workflow' : 'Analysis source');
+  setTranslatedElement(
+    $('#playbookWorkflowTitle'),
+    handDestination ? 'Play or continue the canonical Hand' : 'Analyze the current Hand or a study spot',
+  );
+  return state;
+}
+
+function syncPlaybookNavigationDestination(mode) {
+  if (activeWorkspaceMode() !== 'gto') return;
+  const destination = mode === PLAYBOOK_MODES.HAND ? 'hand' : 'analyze';
+  const button = document.querySelector(`.mode-nav-item[data-navigation-id="${destination}"]`);
+  activateNavigationItem(button);
+}
+
+function navigateToWorkspace(mode, destination = null) {
+  const navigationId = destination || {
+    gto: isHandMode() ? 'hand' : 'analyze',
+    calibration: 'personal-strategy',
+    homegame: 'home-game',
+    info: 'guide',
+  }[mode] || mode;
+  document.querySelector(`.mode-nav-item[data-navigation-id="${navigationId}"]`)?.click();
+}
+
+function navigateToProductDestination(destination) {
+  const route = {
+    hand: ['gto', 'hand'],
+    analyze: ['gto', 'analyze'],
+    training: ['training', 'training'],
+    'personal-strategy': ['calibration', 'personal-strategy'],
+    equity: ['equity', 'equity'],
+    saved: ['home', 'saved'],
+    home: ['home', 'home'],
+    'home-game': ['homegame', 'home-game'],
+    guide: ['info', 'guide'],
+  }[destination];
+  if (route) navigateToWorkspace(route[0], route[1]);
+}
+
+function revealHomeDestination() {
+  if (activeWorkspaceMode() !== 'home') return;
+  $('#homeWorkspace')?.scrollIntoView?.({ behavior: 'auto', block: 'start' });
 }
 
 async function returnToHomeLiveHand() {
   activeSavedSpotContext = null;
   renderSavedSpotViewer(null);
   callPlaybookStateBridge('closeSavedHand');
-  navigateToWorkspace('gto');
+  navigateToWorkspace('gto', 'hand');
   await requestPlaybookMode(PLAYBOOK_MODES.HAND);
   renderCanonicalHandWorkspace();
   await updateContext('Returned to live hand');
@@ -4701,7 +4886,7 @@ function renderHomeContinue(section) {
       ? 'home-calibration-card home-live-hand-card'
       : 'home-calibration-card';
     const title = document.createElement('strong');
-    title.textContent = t(item.kind === 'live_hand' ? 'Live Hand' : 'Range Calibration');
+    title.textContent = t(item.kind === 'live_hand' ? 'Live Hand' : 'Personal Strategy');
     const context = document.createElement('p');
     context.dir = 'auto';
     if (item.kind === 'live_hand') {
@@ -4725,7 +4910,7 @@ function renderHomeContinue(section) {
     resume.type = 'button';
     resume.className = 'ui-button ui-button--primary';
     if (item.kind === 'live_hand') resume.dataset.homeAction = 'return-live-hand';
-    else resume.dataset.homeDestination = 'calibration';
+    else resume.dataset.homeDestination = 'personal-strategy';
     resume.textContent = t(item.kind === 'live_hand' ? 'Return to live hand' : 'Resume calibration');
     actions.appendChild(resume);
     card.append(title, context);
@@ -4745,7 +4930,7 @@ function renderHomeRecent(section) {
     return;
   }
   if (!section?.items?.length) {
-    root.appendChild(homeEmptyAction('No saved study yet.', 'Analyze a Hand', 'gto'));
+    root.appendChild(homeEmptyAction('No saved study yet.', 'Analyze a Hand', 'analyze'));
     return;
   }
   section.items.forEach((item) => root.appendChild(createHomeSavedItemElement(item)));
@@ -4786,14 +4971,14 @@ function renderHomePersonalStrategy(section) {
   const action = document.createElement('button');
   action.type = 'button';
   action.className = 'ui-button ui-button--secondary';
-  action.dataset.homeDestination = 'calibration';
+  action.dataset.homeDestination = 'personal-strategy';
   if (!section?.selectedProfile) {
     const empty = document.createElement('p');
     empty.textContent = t(section?.profileCount > 0
       ? 'Open Personal Strategy to choose a profile.'
       : 'Create a profile to start building your ranges.');
     action.textContent = t(section?.profileCount > 0
-      ? 'Open Range Calibration'
+      ? 'Open Personal Strategy'
       : 'Create your first strategy profile');
     card.append(empty, action);
     root.appendChild(card);
@@ -4826,7 +5011,7 @@ function renderHomePersonalStrategy(section) {
     });
     facts.appendChild(contradiction);
   }
-  action.textContent = t(section.resumable ? 'Resume calibration' : 'Open Range Calibration');
+  action.textContent = t(section.resumable ? 'Resume calibration' : 'Open Personal Strategy');
   card.append(title, progress, facts, action);
   root.appendChild(card);
 }
@@ -4873,18 +5058,12 @@ function renderHomeQuickStart(model) {
   const allowed = new Set(model.sections.quickStart?.destinations || []);
   document.querySelectorAll('[data-home-destination]').forEach((control) => {
     const destination = control.dataset.homeDestination;
-    if (!['gto', 'training', 'equity', 'calibration', 'review_mistakes'].includes(destination)) return;
+    if (!['hand', 'analyze', 'training', 'personal-strategy', 'equity', 'review_mistakes'].includes(destination)) return;
     if (!control.closest('.home-quick-links')) return;
     control.hidden = !allowed.has(destination);
   });
   const guest = model.sessionMode === 'guest';
-  const playbookLabel = document.querySelector('.home-quick-link[data-home-destination="gto"] strong');
   const trainingLabel = document.querySelector('.home-quick-link[data-home-destination="training"] strong');
-  if (playbookLabel) {
-    const key = guest ? 'Playbook' : 'Analyze a Hand';
-    playbookLabel.dataset.i18n = key;
-    playbookLabel.textContent = t(key);
-  }
   if (trainingLabel) {
     const key = guest ? 'Training' : 'Train';
     trainingLabel.dataset.i18n = key;
@@ -4905,7 +5084,7 @@ function renderHomeWorkspace(model) {
   if (guestAccount) guestAccount.hidden = !guest;
   renderHomeAccountOverview(model);
   const subtitle = $('#workspaceSubtitle');
-  if (activeWorkspaceMode() === 'home' && subtitle) {
+  if (activeNavigationDestination() === 'home' && subtitle) {
     const subtitleKey = guest
       ? 'Analyze and train without saving account history.'
       : 'Your saved study, review queue, and next useful action.';
@@ -4929,6 +5108,8 @@ function renderHomeWorkspace(model) {
   if (workspace) workspace.setAttribute('aria-busy', 'false');
   if (loading) loading.hidden = true;
   if (content) content.hidden = false;
+  applyHomeDestinationPresentation();
+  window.requestAnimationFrame(revealHomeDestination);
   window.RiverlineTutorials?.offerForWorkspace?.('home', workspace);
 }
 
@@ -4941,9 +5122,9 @@ function beginHomeLoading() {
   if (content) content.hidden = true;
 }
 
-async function refreshHomeWorkspace() {
+async function refreshHomeWorkspace({ preserveVisible = false } = {}) {
   const sequence = ++homeRefreshSequence;
-  beginHomeLoading();
+  if (!preserveVisible || !homeViewModel) beginHomeLoading();
   try {
     const model = await callHomeBridge('load');
     if (sequence !== homeRefreshSequence || activeWorkspaceMode() !== 'home') return;
@@ -5044,7 +5225,7 @@ async function openHomeSavedItem(id, control) {
       app.strategyResult = null;
       setPlaybookControlAuthority(PLAYBOOK_MODES.HAND);
       renderUnavailableStrategy(app.playbookResolution);
-      navigateToWorkspace('gto');
+      navigateToWorkspace('gto', 'hand');
       renderCanonicalHandWorkspace();
       return;
     }
@@ -5055,7 +5236,7 @@ async function openHomeSavedItem(id, control) {
     restoreSavedSpotPresentation(result);
     activeSavedSpotContext = result;
     renderSavedSpotViewer(result);
-    navigateToWorkspace('gto');
+    navigateToWorkspace('gto', 'analyze');
     await updateContext('Saved spot opened', {
       schemaVersion: 'playbook-decision-resolution/v1',
       mode: PLAYBOOK_MODES.SCENARIO,
@@ -5134,7 +5315,7 @@ function bindEvents() {
           behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
           block: 'start'
         });
-      } else navigateToWorkspace(destination);
+      } else navigateToProductDestination(destination);
       return;
     }
 
@@ -5252,32 +5433,13 @@ function bindEvents() {
 
 
   $$('.mode-nav-item[data-mode]').forEach((button) => button.addEventListener('click', () => {
-    $$('.mode-nav-item[data-mode]').forEach((item) => {
-      const isActive = item === button;
-      item.classList.toggle('active', isActive);
-      item.setAttribute('aria-current', isActive ? 'page' : 'false');
-    });
     const mode = button.dataset.mode;
+    const destination = button.dataset.navigationId || mode;
+    activateNavigationItem(button);
     clearToast();
     window.RiverlineTutorials?.workspaceChanged?.(mode);
     if (mode !== 'gto') callPlaybookStateBridge('cancelReplayPlayback');
     if (mode !== 'training') restoreSharedPokerTable();
-
-    const shell = $('.riverline-shell');
-    if (shell) shell.dataset.activeMode = mode;
-
-    const modeTitle = button.dataset.modeTitle || button.textContent.trim();
-    const modeSubtitle = button.dataset.modeSubtitle || '';
-    const workspaceTitle = $('#workspaceTitle');
-    const workspaceSubtitle = $('#workspaceSubtitle');
-    if (workspaceTitle) {
-      workspaceTitle.dataset.i18n = modeTitle;
-      workspaceTitle.textContent = t(modeTitle);
-    }
-    if (workspaceSubtitle) {
-      workspaceSubtitle.dataset.i18n = modeSubtitle;
-      workspaceSubtitle.textContent = t(modeSubtitle);
-    }
     
     // Explicitly hide all mode views
     $$('.mode-view').forEach(view => {
@@ -5302,16 +5464,32 @@ function bindEvents() {
       renderFullHandTrainingSnapshot(app.training.fullHandSnapshot);
     }
     if (mode === 'equity') updateEquityReadiness();
-    if (mode === 'home') void refreshHomeWorkspace();
+    if (mode === 'home') {
+      applyHomeDestinationPresentation(destination);
+      void refreshHomeWorkspace({ preserveVisible: Boolean(homeViewModel) });
+      window.requestAnimationFrame(revealHomeDestination);
+    }
     if (mode === 'gto') {
-      const savedHandProjection = callPlaybookStateBridge('createReplayProjectionViewModel');
-      if (savedHandProjection?.viewerContext?.kind === 'saved_hand') {
-        renderCanonicalHandWorkspace();
-        renderVisiblePlaybookDerivedSurfaces();
-      } else if (!app.playbookResolution && !activeSavedSpotContext) {
-        void updateContext('Playbook opened');
+      const destinationState = resolvePlaybookDestinationPresentation(
+        destination,
+        callPlaybookStateBridge('getMode') || app.playbookMode || PLAYBOOK_MODES.SCENARIO,
+      );
+      if (destinationState.requestedMode) {
+        void requestPlaybookMode(destinationState.requestedMode);
       } else {
-        renderVisiblePlaybookDerivedSurfaces();
+        const savedHandProjection = callPlaybookStateBridge('createReplayProjectionViewModel');
+        if (savedHandProjection?.viewerContext?.kind === 'saved_hand') {
+          renderCanonicalHandWorkspace();
+          renderVisiblePlaybookDerivedSurfaces();
+        } else if (!app.playbookResolution && !activeSavedSpotContext) {
+          void updateContext('Playbook opened');
+        } else {
+          renderVisiblePlaybookDerivedSurfaces();
+        }
+      }
+      if (destination === 'analyze') {
+        const decisionView = document.querySelector('[data-gto-view="context"]');
+        if (decisionView) selectPlaybookAnalysisView(decisionView);
       }
     }
     
@@ -8887,7 +9065,7 @@ async function openFullHandDecisionInAnalysis() {
   activeSavedSpotContext = viewerContext;
   renderSavedSpotViewer(viewerContext);
   restoreSharedPokerTable();
-  navigateToWorkspace('gto');
+  navigateToWorkspace('gto', 'analyze');
   await updateContext('Full-Hand review decision opened', {
     schemaVersion: 'playbook-decision-resolution/v1',
     mode: PLAYBOOK_MODES.SCENARIO,
