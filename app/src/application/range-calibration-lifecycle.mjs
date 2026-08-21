@@ -112,7 +112,7 @@ export function createRangeCalibrationLifecycle({
 
   function reconcile({ force = false } = {}) {
     const version = ++requestVersion;
-    if (isSelected()) showLoading();
+    if (isSelected() && (force || surfaceKind !== 'authenticated')) showLoading();
     const task = queue.catch(() => null).then(() => applyRequest(version, { force }));
     queue = task;
     return task;

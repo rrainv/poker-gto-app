@@ -71,7 +71,7 @@ preflop_facing_4bet
 preflop_bb_option
 ```
 
-`CalibrationContext v2` carries the exact legal Personal Strategy action set derived from canonical preflop legality. Facing families require Fold/Call and may add Raise and All-in when canonical legality permits them. BB option requires Check and may add Raise and All-in. Canonical-state RFI retains Fold/Raise, adds All-in only when it is a distinct canonical legal aggression, and continues to exclude Limp/Complete (`call`) from the RFI family. The v1 compatibility projection remains exactly Fold/Raise.
+`CalibrationContext v2` carries the exact legal Personal Strategy action set derived from canonical preflop legality. Facing families require Fold/Call and may add Raise and All-in when canonical legality permits them. BB option requires Check and may add Raise and All-in. Canonical-state first-in includes Fold/Call/Raise and adds All-in only when it is a distinct canonical legal aggression; the UI presents canonical `call` as Limp/Complete in this family. The v1 compatibility projection remains exactly Fold/Raise.
 
 Canonical identity order and display order are separate. `getPersonalStrategyActionPresentationOrder(...)` validates an explicit presentation order without changing the action set or its serialized identity. JavaScript object-key order is never action order.
 
@@ -211,7 +211,7 @@ The compatibility projection deliberately retains compact positive-only v1 exact
 
 ## 10. Inference compatibility
 
-`deterministic-rfi-local-graph/v1` remains the sole current inference implementation. It still reasons only over Fold/Raise RFI evidence. Its supported action set now comes from `PersonalStrategyActionSet v1`. Every new family, and a canonical-state RFI context whose action set includes All-in, returns an explicit `unavailable` action-aware inference result with no fabricated action or frequency.
+`deterministic-rfi-regional-graph/v2` remains the sole current inference implementation. It still reasons only over Fold/Raise RFI evidence. Expanded canonical-state First-in scopes reuse that engine only as a qualitative Fold/Raise subspace: compatible Fold/raise dominant evidence and exact mixes whose additional-action frequencies are explicitly zero may support local inference, while Limp/Complete and All-in evidence remains direct-only and authoritative. Subspace inference never supplies an exact distribution and explicitly leaves the additional action dimensions unmodeled. Every non-RFI family still returns an explicit `unavailable` action-aware inference result with no fabricated action or frequency.
 
 The current estimate path validates/projects through `personal-strategy-estimate/v2` and then returns `personal-strategy-estimate/v1` to existing consumers. Numerical results, categorical abstention, direct precedence, exact mixes, tied mixes, uncertainty facts, evidence IDs, reason codes, and 002A compatibility results remain unchanged.
 

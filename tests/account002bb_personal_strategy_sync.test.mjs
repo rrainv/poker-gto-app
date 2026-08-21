@@ -199,8 +199,16 @@ test('offline contradictory direct answers both survive and deterministic infere
   const resumedA = await resume(a, created.bundle.profile.id, created.bundle.modes[0].id);
   const resumedB = await resume(b, created.bundle.profile.id, created.bundle.modes[0].id);
   assert.equal(resumedA.progress.answered, 2);
-  assert.equal(resumedA.prompt.handClass, resumedB.prompt.handClass);
-  assert.notEqual(resumedA.prompt.handClass, conflictingHand);
+  assert.equal(resumedA.prompt, null);
+  assert.equal(resumedB.prompt, null);
+  assert.equal(resumedA.progressAssessment.profileReadiness.state, 'conflicted');
+  assert.equal(resumedB.progressAssessment.profileReadiness.state, 'conflicted');
+  assert.equal(resumedA.progressAssessment.stopReason, 'conflict_resolution_needed');
+  assert.equal(
+    resumedA.candidateRanking.find((entry) => entry.handClass === conflictingHand)
+      .ordinaryQuestionEligible,
+    false,
+  );
   assert.equal(Object.hasOwn(resumedA.session.cursor, 'rankedCandidates'), false);
   assert.equal(Object.hasOwn(resumedA.session.cursor, 'questionValueScore'), false);
 

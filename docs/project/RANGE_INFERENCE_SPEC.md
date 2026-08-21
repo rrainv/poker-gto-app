@@ -15,7 +15,7 @@ immutable RangeObservation / TrainingObservation source records
           PersonalStrategyEvidenceView v1
                          |
                          v
-      direct/conflict projection + local graph inference
+ direct/conflict projection + local graph / bounded regional inference
                          |
                          v
  PersonalStrategyEstimate v1 / PersonalStrategySnapshot v1
@@ -37,7 +37,7 @@ The inference authority does not integrate Personal Strategy with StrategyProvid
 | Uncertainty | `personal-strategy-uncertainty/v1` / `rfi-ordinal-uncertainty/v1` | Versioned ordinal band metadata; never numeric confidence |
 | Inference support | `personal-strategy-inference-support/v1` | 002C-ready density, direction, disagreement, boundary, conflict, and neighbor facts |
 | Snapshot | `personal-strategy-snapshot/v1` | Recomputable canonical-order 169-estimate scope read model with an empty sparse combo-override seam |
-| Model | `deterministic-rfi-local-graph/v1` | Sole active inference algorithm; 002A API delegates through a compatibility adapter |
+| Model | `deterministic-rfi-regional-graph/v2` | Sole active inference algorithm; 002A API delegates through a compatibility adapter |
 
 No durable evidence or IndexedDB schema version changed.
 
@@ -106,22 +106,35 @@ The graph uses canonical 169 hand-class identity and no global poker-strength or
 
 Influence is an integer vote coefficient, not confidence, action frequency, range weight, probability, EV, or poker strength. Pair and non-pair families do not vote across one another.
 
+## Evidence-bounded regional interpolation
+
+Version 2 adds a second, still-derived support path over the same direct points. Pair, suited, and offsuit shapes are evaluated separately using canonical rank order, pair rank, suitedness, and connectivity/gap structure. This ordinal is an interpolation coordinate only; it is not Equity, EV, hand strength, a solved range, or a poker prescription.
+
+A regional run activates only when direct categorical evidence is distributed enough to test that shape: two distinct pair ranks, or at least three non-pair points spanning at least two high ranks and two low ranks. For an evidence-consistent run:
+
+- an observed weaker Raise may support stronger interior hands as Raise;
+- an observed stronger Fold may support weaker interior hands as Fold;
+- the interval between the weakest observed Raise and strongest observed Fold remains an explicit boundary;
+- a one-action run extrapolates only in the direction implied by that action and never invents the unseen opposite boundary.
+
+A stronger Fold followed by a weaker Raise is an observed discontinuity, not an error to correct. Version 2 disables broad interpolation for that shape and marks only the affected order corridor uncertain. Direct gap/island points remain absolute authority; unrelated unsupported shapes remain unknown. Local tied mixes, local conflicts, or local/regional disagreement also force abstention.
+
 ## Boundary and instability facts
 
 Exact tied mixes and exact mixes whose top two action frequencies differ by at most `0.20` are boundary evidence rather than categorical votes about a neighbor. Direct conflict is also a boundary/conflict signal.
 
-The model measures observed local instability only among directly known points connected by a primary relation:
+The model measures observed local instability only among directly known points connected by a primary relation. A normal stronger-Raise to weaker-Fold transition is an action boundary, not instability. Only the reversed stronger-Fold to weaker-Raise ordering counts as a discontinuity:
 
 - fewer than four comparable direct pairs: `unknown` stability;
 - disagreements at or below 25% of comparable pairs: `stable`;
 - disagreements above 25% and at or below 50%: `mixed`;
 - disagreements above 50%: `unstable`.
 
-This is not a monotonic constraint. Direct anomalies remain authoritative. The band determines whether sparse local patterns are safe enough to extrapolate; unstable scopes abstain instead of forcing a smooth chart.
+This is not a universal monotonic constraint. Direct anomalies remain authoritative. The band and per-shape discontinuity corridors determine whether sparse patterns are safe enough to interpolate; irregular scopes abstain instead of forcing a smooth chart.
 
 ## Ordinal uncertainty rules
 
-All thresholds below are deterministic and versioned by `deterministic-rfi-local-graph/v1`.
+All thresholds below are deterministic and versioned by `deterministic-rfi-regional-graph/v2`.
 
 `directly_known`:
 
@@ -135,6 +148,7 @@ All thresholds below are deterministic and versioned by `deterministic-rfi-local
 - at least two supporting neighbors are primary;
 - there are no opposing categorical neighbors, nearby exact-boundary points, or nearby conflicts;
 - supporting evidence spans at least two relation types.
+- or an eligible, evidence-consistent regional run supplies at least two directional witnesses from at least five categorical points, with no local boundary, conflict, or disagreement.
 
 `inferred_medium`:
 
@@ -143,6 +157,7 @@ All thresholds below are deterministic and versioned by `deterministic-rfi-local
 - at least one supporting neighbor is primary and no primary neighbor opposes it;
 - boundary likelihood is not high;
 - either opposition is absent or winning integer influence is at least three times opposing influence.
+- or an eligible evidence-consistent regional run supplies a directional witness but does not meet the high regional-support gate.
 
 `uncertain`:
 
@@ -160,7 +175,7 @@ Synthetic fixture validation is recorded as the band cohort, but it is not real-
 
 ## Reasons and 002C support facts
 
-Machine-readable reasons include direct dominant/exact/tied, multiple consistent neighbors, adjacent-family, pair, suited-run, connectivity, cross-shape, boundary-nearby, conflicting-neighbor, locally unstable scope, insufficient support, no relevant evidence, unsupported action, and Training-excluded.
+Machine-readable reasons include direct dominant/exact/tied, multiple consistent neighbors, adjacent-family, pair, suited-run, connectivity, cross-shape, bounded regional interpolation, observed regional boundary, regional discontinuity, boundary-nearby, conflicting-neighbor, locally unstable scope, insufficient support, no relevant evidence, unsupported action, and Training-excluded.
 
 For every class, `support` exposes:
 
@@ -173,6 +188,7 @@ For every class, `support` exposes:
 - nearby boundary/conflict counts;
 - local stability band and pair counts;
 - deterministic influential neighbors, relation types/tiers, point state, and source evidence IDs.
+- the regional shape state, directional support, reliability band, evidence spread, and whether local evidence permits the regional result.
 
 These facts are reusable inputs for 002C. They do not rank or choose a next question in 002B.
 
@@ -206,7 +222,7 @@ Cloud sync continues to serialize source profiles, modes, direct observations, o
 
 ## Validation and performance
 
-The deterministic harness uses three fixed seeds and answer budgets 10, 20, 30, 40, 50, and 75 over eight synthetic mechanics fixtures: smooth tight/loose, reproducible irregular, islands/gaps, suited/offsuit anomaly, pair anomaly, contradictory direct heads, and sparse exact-frequency boundary.
+The historical 002B harness uses three fixed seeds and answer budgets 10, 20, 30, 40, 50, and 75 over eight synthetic mechanics fixtures: smooth tight/loose, reproducible irregular, islands/gaps, suited/offsuit anomaly, pair anomaly, contradictory direct heads, and sparse exact-frequency boundary. Its checked-in validation report records the v1 local-graph baseline.
 
 Hidden labels are used only after estimates are produced. Tests verify a held-out label change cannot change source observations or output. Metrics include direct/attempted coverage, attempted/high/medium accuracy, abstention, false-high errors, boundary localization mismatch, stability under nested additional evidence, reasons, and runtime. Full results are in `RANGE_CAL_002B_VALIDATION_REPORT.md` and reproducible with:
 
@@ -214,7 +230,7 @@ Hidden labels are used only after estimates are produced. Tests verify a held-ou
 node tests/tooling/evaluate_range_cal002b.mjs
 ```
 
-Observed implementation-machine timings were approximately 0.47 ms median for one estimate, 7–20 ms for a 169 snapshot after graph warmup, about 1.35 ms for a repeated cached snapshot, and about 11 ms for invalidation plus recomputation. These are regression evidence, not universal latency promises.
+`PLAYSTYLE-QUICK-PROFILE-001` adds focused v2 evidence in `tests/playstyle_quick_profile001.test.mjs`: the smooth fixtures form broad modeled coverage from 15 adaptive direct answers, while the reproducible irregular fixture and an explicit unusual-hole fixture abstain. The full historical harness was not rerun for this bounded manual-QA correction.
 
 ## Limitations and next gate
 

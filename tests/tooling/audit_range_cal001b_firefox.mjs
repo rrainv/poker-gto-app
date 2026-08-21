@@ -161,12 +161,15 @@ try {
   await page.click('#calibrationOpenMix');
   await page.waitForFunction(() => !document.querySelector('#calibrationMixDialog')?.hidden);
   const beforeInputShortcut = await page.evaluate(() => window.RiverlineRangeCalibration.getState().calibrationState.progress.answered);
-  await page.focus('#calibrationMixFold');
+  await page.focus('#calibrationMixSlider');
   await page.keyboard.press('r');
   await settle(page);
   const afterInputShortcut = await page.evaluate(() => window.RiverlineRangeCalibration.getState().calibrationState.progress.answered);
   states.push(await capture(page, 'B-mix-editor-1920x1080', 'Detailed mix editor 1920x1080'));
-  await setValues(page, { '#calibrationMixFold': '50', '#calibrationMixRaise': '50' });
+  await page.$eval('#calibrationMixSlider', (slider) => {
+    slider.value = '50';
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+  });
   await page.evaluate(() => document.querySelector('#calibrationMixForm').requestSubmit());
   await page.waitForFunction(() => document.querySelector('#calibrationMixDialog')?.hidden === true);
   const tiedState = await page.evaluate(() => {

@@ -137,6 +137,7 @@ function legalActionsForFamily(family, legal) {
   };
   if (family === CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI) {
     add(ACTION_TYPES.FOLD, legal.fold.available);
+    add(ACTION_TYPES.CALL, legal.call.available);
     add(ACTION_TYPES.RAISE, legal.raise.available);
     add(ACTION_TYPES.ALL_IN, legal.allIn.available);
     return available;

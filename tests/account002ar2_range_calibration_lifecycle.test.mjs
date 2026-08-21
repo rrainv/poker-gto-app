@@ -127,6 +127,29 @@ test('authenticated account with an existing session renders and resumes owner-s
   assert.deepEqual(app.controller.records, ['profile-a', 'paused-session-a']);
 });
 
+test('leaving and returning during an active question reuses the mounted workspace without loading', async () => {
+  const app = fixture({
+    dataByIdentity: {
+      'account-a': { state: 'configured', records: ['profile-a', 'active-question-a'] },
+    },
+  });
+  const controller = await app.lifecycle.activate();
+  assert.equal(app.visible, 'configured');
+
+  app.setSelected(false);
+  app.setSelected(true);
+  for (let visit = 0; visit < 3; visit += 1) {
+    const restored = await app.lifecycle.activate();
+    assert.equal(restored, controller);
+    assert.equal(app.visible, 'configured');
+    assert.deepEqual(restored.records, ['profile-a', 'active-question-a']);
+  }
+
+  assert.equal(app.history.filter((entry) => entry.startsWith('mount:')).length, 1);
+  assert.equal(app.history.filter((entry) => entry.startsWith('dispose:')).length, 0);
+  assert.equal(app.lifecycle.getState().status, 'authenticated');
+});
+
 test('reload-selected and navigation activation both reconcile to a visible workspace', async () => {
   const reload = fixture();
   assert.equal(reload.lifecycle.start(), true);

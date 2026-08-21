@@ -13,6 +13,7 @@ import {
   RFI_QUESTION_SELECTION_POLICY_VERSION,
 } from '../app/src/personal-strategy/rfi-question-selection.mjs';
 import { createMemoryPersonalStrategyDatabase } from '../app/src/personal-strategy/indexeddb-storage.mjs';
+import { rangeCal002bFixtureById } from './fixtures/range_cal002b_synthetic_truth.mjs';
 
 function memoryStorage() {
   const values = new Map();
@@ -136,6 +137,54 @@ test('explicit Stop for now remains resumable without changing any evidence', as
   assert.equal((await application.repository.loadSnapshot()).rangeObservations.length, 0);
 });
 
+test('profile-ready completion interrupts flow and refinement returns after one bounded batch', async () => {
+  const { application, selection } = await configured();
+  const fixture = rangeCal002bFixtureById('smooth-tight');
+  let state = await application.startOrResumeSession({
+    ...selection,
+    intent: RFI_CALIBRATION_INTENTS.STANDARD,
+  });
+  while (state.prompt && state.progressAssessment.directCount < 30) {
+    state = await application.answerCalibrationQuestion(state, {
+      actionType: fixture.labels[state.prompt.handClass],
+    });
+  }
+  assert.equal(state.prompt, null);
+  assert.equal(state.progressAssessment.stopReason, RFI_CALIBRATION_STOP_REASONS.PROFILE_READY);
+  assert.equal(state.progressAssessment.profileReadiness.profileReady, true);
+  assert.ok(state.progressAssessment.directCount >= 15);
+  assert.ok(state.progressAssessment.directCount <= 30);
+  const directAtCheckpoint = state.progressAssessment.directCount;
+  const recommendedAtCheckpoint = state.progressAssessment.recommendedClarificationCount;
+  assert.ok(recommendedAtCheckpoint > 0);
+  assert.ok(recommendedAtCheckpoint <= 6);
+
+  state = await application.requestAdditionalQuestion(state);
+  assert.equal(state.session.cursor.refinementActive, true);
+  assert.equal(state.session.cursor.refinementBatchSize, recommendedAtCheckpoint);
+  assert.equal(state.session.cursor.refinementBatchRemaining, recommendedAtCheckpoint);
+  assert.ok(state.prompt);
+  let refinementAnswers = 0;
+  while (state.prompt && refinementAnswers < recommendedAtCheckpoint) {
+    const remainingBefore = state.session.cursor.refinementBatchRemaining;
+    state = await application.answerCalibrationQuestion(state, {
+      actionType: fixture.labels[state.prompt.handClass],
+    });
+    refinementAnswers += 1;
+    assert.equal(
+      state.session.cursor.refinementBatchRemaining,
+      Math.max(0, remainingBefore - 1),
+    );
+  }
+  assert.ok(refinementAnswers <= recommendedAtCheckpoint);
+  assert.equal(state.prompt, null, 'the batch returns to a deliberate summary checkpoint');
+  assert.ok([
+    RFI_CALIBRATION_STOP_REASONS.REFINEMENT_BATCH_COMPLETE,
+    RFI_CALIBRATION_STOP_REASONS.NO_USEFUL_CANDIDATES,
+  ].includes(state.progressAssessment.stopReason));
+  assert.ok(state.progressAssessment.directCount <= directAtCheckpoint + recommendedAtCheckpoint);
+});
+
 test('advanced exhaustive mode preserves the canonical all-169 fallback', async () => {
   const { application, selection } = await configured();
   let state = await application.startOrResumeSession({
@@ -152,4 +201,3 @@ test('advanced exhaustive mode preserves the canonical all-169 fallback', async 
   assert.equal(state.progressAssessment.stopReason, RFI_CALIBRATION_STOP_REASONS.FULL_DIRECT_COVERAGE);
   assert.deepEqual(state.progress, { answered: 169, remaining: 0, total: 169 });
 });
-

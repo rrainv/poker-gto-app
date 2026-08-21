@@ -191,22 +191,23 @@ test('stopping uses truthful category counts, deterministic budgets, pause, low 
   assert.equal(paused.stopReason, RFI_CALIBRATION_STOP_REASONS.USER_PAUSED);
 });
 
-test('stopping distinguishes low value, no candidates, full direct coverage, and conflict resolution', () => {
+test('stopping avoids premature low-value completion and distinguishes terminal conditions', () => {
   const firstFifteen = PREFLOP_HAND_CLASSES.slice(0, 15).map((handClass, index) => (
     direct(handClass, index % 2 ? ACTION_TYPES.FOLD : ACTION_TYPES.RAISE)
   ));
   const developing = snapshot(firstFifteen);
   const ranked = rankCalibrationCandidates(developing);
-  const lowValue = assessCalibrationProgress(developing, {
+  const stillBuilding = assessCalibrationProgress(developing, {
     intent: RFI_CALIBRATION_INTENTS.STANDARD,
     rankedCandidates: [{ ...ranked[0], questionValueScore: 0 }],
   });
-  assert.equal(lowValue.stopReason, RFI_CALIBRATION_STOP_REASONS.LOW_REMAINING_QUESTION_VALUE);
-  assert.equal(lowValue.directCount, developing.summary.directlyKnownCount);
-  assert.equal(lowValue.inferredHighCount, developing.summary.inferredHighCount);
-  assert.equal(lowValue.inferredMediumCount, developing.summary.inferredMediumCount);
-  assert.equal(lowValue.uncertainCount, developing.summary.uncertainCount);
-  assert.equal(lowValue.unknownCount, developing.summary.unknownCount);
+  assert.equal(stillBuilding.stopReason, null);
+  assert.equal(stillBuilding.profileReadiness.state, 'building');
+  assert.equal(stillBuilding.directCount, developing.summary.directlyKnownCount);
+  assert.equal(stillBuilding.inferredHighCount, developing.summary.inferredHighCount);
+  assert.equal(stillBuilding.inferredMediumCount, developing.summary.inferredMediumCount);
+  assert.equal(stillBuilding.uncertainCount, developing.summary.uncertainCount);
+  assert.equal(stillBuilding.unknownCount, developing.summary.unknownCount);
 
   const noCandidates = assessCalibrationProgress(snapshot(), {
     skippedHandClasses: PREFLOP_HAND_CLASSES,

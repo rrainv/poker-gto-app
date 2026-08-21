@@ -4,6 +4,8 @@ Date: August 18, 2026
 
 Model: `deterministic-rfi-local-graph/v1`
 
+Historical note: this report is the v1 local-neighborhood baseline. The current bounded regional v2 authority and its focused quick-profile correction evidence are documented in `RANGE_INFERENCE_SPEC.md`; this historical full harness was not rerun by `PLAYSTYLE-QUICK-PROFILE-001` manual-QA correction.
+
 Fixture version: `range-cal002b-hard-fixtures/v1`
 
 All fixtures are synthetic user-strategy mechanics tests. They are not GTO, solver, Nash, EV, exploitability, or poker-reference truth.

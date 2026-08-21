@@ -66,7 +66,7 @@ This ticket creates no production schema, runtime, provider, UI, or persistence 
 - `app/src/personal-strategy/repository.mjs` owns current local durability, immutable history, selected and conflicting direct heads, export/import, and sync application.
 - `app/src/application/range-calibration-service.mjs` owns adaptive answer/session orchestration, one atomic answer commit, pause/stop/skip/resume, and the explicit sequential exhaustive fallback.
 - `app/src/application/range-calibration-workspace.mjs` is a UI consumer of that application service and does not implement inference.
-- `app/src/personal-strategy/evidence-view.mjs` owns the source-preserving `personal-strategy-evidence-view/v1` and derived conflict projection. `app/src/personal-strategy/rfi-inference.mjs` owns the sole `deterministic-rfi-local-graph/v1` estimate/snapshot authority; its 002A request/result exports are compatibility adapters over that authority. `app/src/personal-strategy/projection-service.mjs` owns scope caching, answer preview through the same authority, and the repository-facing query API. `app/src/personal-strategy/rfi-question-selection.mjs` owns the DOM-free 002C ranking, explanation, and stopping policies.
+- `app/src/personal-strategy/evidence-view.mjs` owns the source-preserving `personal-strategy-evidence-view/v1` and derived conflict projection. `app/src/personal-strategy/rfi-inference.mjs` owns the sole `deterministic-rfi-regional-graph/v2` estimate/snapshot authority; its 002A request/result exports are compatibility adapters over that authority. `app/src/personal-strategy/projection-service.mjs` owns scope caching, answer preview through the same authority, and the repository-facing query API. `app/src/personal-strategy/rfi-question-selection.mjs` owns the DOM-free 002C ranking, explanation, and stopping policies.
 - `app/src/application/range-builder-service.mjs` owns DOM-free Builder selection summaries/previews plus grouped apply/undo orchestration; `saveRangeObservationBatch(...)` in the canonical repository owns its all-or-nothing write. Builder UI remains a mode over the Personal Strategy Matrix and never accesses persistence directly.
 - `shared/poker-domain/holdem-combos.js` and `holdem-range.js` own the 1,326-combo registry and `HoldemWeightedRange v1`.
 - the current production Matrix in `app/src/core/logic.js` resolves one representative available combo per 169 class through `StrategyProvider v1`. It is not a Personal Strategy Matrix or range authority.
@@ -536,7 +536,7 @@ Until that contract lands, 002B may detect conflicts and 002C may prioritize the
 
 ## 11. `RANGE-CAL-002B` — inference and uncertainty
 
-Implementation checkpoint: completed by `deterministic-rfi-local-graph/v1`, with exact semantics and fixture/budget results in `RANGE_INFERENCE_SPEC.md` and `RANGE_CAL_002B_VALIDATION_REPORT.md`. Sections 11.1–11.5 remain the normative design constraints.
+Implementation checkpoint: the current authority is `deterministic-rfi-regional-graph/v2`, with exact semantics and focused quick-profile fixture results in `RANGE_INFERENCE_SPEC.md`. `RANGE_CAL_002B_VALIDATION_REPORT.md` remains the historical v1 local-graph baseline. Sections 11.1–11.5 remain the normative design constraints.
 
 ### 11.1 Scope
 

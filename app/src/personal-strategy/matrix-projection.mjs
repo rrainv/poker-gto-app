@@ -140,6 +140,7 @@ export function createPersonalStrategyMatrixProjection({
   transferProjection = null,
   candidateRanking = [],
   highValueQuestionCount = 0,
+  profileReadiness = null,
 } = {}) {
   validatePersonalStrategySnapshot(snapshot);
   validatePersonalStrategyEvidenceView(evidenceView);
@@ -165,10 +166,14 @@ export function createPersonalStrategyMatrixProjection({
   const candidatesByHand = new Map(candidateRanking.map((candidate) => [candidate.handClass, candidate]));
   const transfersByHand = new Map((transferProjection?.estimates ?? [])
     .map((estimate) => [estimate.handClass, estimate]));
-  const highValueHandClasses = new Set(candidateRanking
-    .filter((candidate) => candidate.ordinaryQuestionEligible)
-    .slice(0, highValueQuestionCount)
-    .map((candidate) => candidate.handClass));
+  const highValueHandClasses = new Set(profileReadiness?.nextClarificationPriorities
+    ? profileReadiness.nextClarificationPriorities
+      .filter((priority) => priority.questionKind === 'ordinary_observation')
+      .map((priority) => priority.handClass)
+    : candidateRanking
+      .filter((candidate) => candidate.ordinaryQuestionEligible && candidate.recommendedClarification)
+      .slice(0, highValueQuestionCount)
+      .map((candidate) => candidate.handClass));
   const cells = snapshot.estimates.map((estimate, index) => {
     const transfer = transfersByHand.get(estimate.handClass) ?? null;
     const isTransferred = transfer?.state === RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.TRANSFERRED;
@@ -221,6 +226,7 @@ export function createPersonalStrategyMatrixProjection({
         nearbyBoundaryCount: estimate.support.nearbyBoundaryCount,
         nearbyConflictCount: estimate.support.nearbyConflictCount,
         scopeLocalStability: cloneData(estimate.support.scopeLocalStability),
+        regionalInterpolation: cloneData(estimate.support.regionalInterpolation),
         selectedNeighbors,
         supportingNeighbors: selectedNeighbors.filter((neighbor) => (
           dominantType !== null && neighbor.observedDominantAction?.type === dominantType
@@ -258,6 +264,7 @@ export function createPersonalStrategyMatrixProjection({
       transferUncertainCount: transferProjection?.summary.uncertainCount ?? 0,
     },
     localSummary: cloneData(snapshot.summary),
+    profileReadiness: cloneData(profileReadiness),
     comboOverrideCount: snapshot.comboOverrides.length,
   };
   validatePersonalStrategyMatrixProjection(projection);

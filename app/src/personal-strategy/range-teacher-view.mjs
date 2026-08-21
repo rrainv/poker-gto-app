@@ -348,7 +348,7 @@ function selectedHandDetails(
   };
 }
 
-function suggestedActions({ boundaries, conflicts, sparse, exactMix, candidateRanking }) {
+function suggestedActions({ boundaries, conflicts, sparse, exactMix, candidateRanking, profileReady }) {
   const actions = [];
   if (conflicts[0]) actions.push({
     suggestionId: `inspect:${conflicts[0].hotspotId}`,
@@ -381,13 +381,15 @@ function suggestedActions({ boundaries, conflicts, sparse, exactMix, candidateRa
     titleKey: 'Refine exact mix',
     whyKey: exactMix[0].whyKey,
   });
-  const next = candidateRanking.find((candidate) => candidate.ordinaryQuestionEligible);
+  const next = candidateRanking.find((candidate) => (
+    candidate.ordinaryQuestionEligible && (!profileReady || candidate.recommendedClarification)
+  ));
   if (next) actions.push({
     suggestionId: `ask-next:${next.handClass}`,
     kind: 'ask_next',
     handClass: next.handClass,
     preset: RANGE_TEACHER_SESSION_PRESETS.QUICK_PROFILE,
-    titleKey: 'Ask next high-value question',
+    titleKey: profileReady ? 'Recommended clarification' : 'Ask next high-value question',
     whyKey: 'Riverline selected this from current uncertainty and question value.',
   });
   return actions;
@@ -436,7 +438,14 @@ export function createRangeTeacherView({
   const transferred = transferInsights(transferProjection);
   const transfersByHand = new Map((transferProjection?.estimates ?? [])
     .map((estimate) => [estimate.handClass, estimate]));
-  const actions = suggestedActions({ boundaries, conflicts, sparse, exactMix, candidateRanking })
+  const actions = suggestedActions({
+    boundaries,
+    conflicts,
+    sparse,
+    exactMix,
+    candidateRanking,
+    profileReady: progressAssessment.profileReadiness.profileReady,
+  })
     .filter((action) => !dismissed.has(action.suggestionId));
   const selected = selectedHandClass
     ?? actions[0]?.handClass
@@ -464,12 +473,18 @@ export function createRangeTeacherView({
       localUnknownCount: progressAssessment.unknownCount,
       transferredCount: transferred.length,
       highValueQuestionCount: progressAssessment.highValueQuestionCount,
+      recommendedClarificationCount: progressAssessment.recommendedClarificationCount,
+      readinessState: progressAssessment.profileReadiness.state,
+      profileReady: progressAssessment.profileReadiness.profileReady,
+      modeledOrTransferredCount: progressAssessment.modeledOrTransferredCount,
       progressBand: progressAssessment.progressBand,
     },
     importantBoundaries: boundaries,
     contradictionHotspots: conflicts,
     sparseRegions: sparse,
-    highValueNextQuestions: candidateRanking.filter((candidate) => candidate.ordinaryQuestionEligible).slice(0, 6),
+    highValueNextQuestions: candidateRanking.filter((candidate) => (
+      candidate.ordinaryQuestionEligible && candidate.recommendedClarification
+    )).slice(0, 6),
     exactMixRefinementCandidates: exactMix,
     recentChanges: recentChanges(evidenceView),
     transferredInsights: transferred,

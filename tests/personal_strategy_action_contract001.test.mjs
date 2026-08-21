@@ -148,8 +148,8 @@ test('action-set validation rejects duplicate, unknown, and illegal RFI actions'
   }), /supported Personal Strategy action identity/);
   assert.throws(() => createPersonalStrategyActionSet({
     decisionFamily: 'preflop_rfi',
-    legalActions: [ACTION_TYPES.FOLD, ACTION_TYPES.CALL, ACTION_TYPES.RAISE],
-  }), /require Fold and Raise/);
+    legalActions: [ACTION_TYPES.FOLD, ACTION_TYPES.CHECK, ACTION_TYPES.RAISE],
+  }), /require Fold, Call, and Raise/);
 });
 
 test('dominant-only guidance remains qualitative and never manufactures exact frequencies', () => {
@@ -414,6 +414,7 @@ test('Matrix, Builder, and Teacher continue consuming the current RFI compatibil
       unknownCount: snapshot.summary.unknownCount,
       highValueQuestionCount: 0,
       progressBand: 'starting',
+      profileReadiness: { profileReady: false },
     },
     selectedHandClass: pure.handClass,
   });

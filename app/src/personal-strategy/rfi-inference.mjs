@@ -30,7 +30,7 @@ export const PERSONAL_STRATEGY_ESTIMATE_SCHEMA_VERSION = 'personal-strategy-esti
 export const PERSONAL_STRATEGY_SNAPSHOT_SCHEMA_VERSION = 'personal-strategy-snapshot/v1';
 export const PERSONAL_STRATEGY_UNCERTAINTY_SCHEMA_VERSION = 'personal-strategy-uncertainty/v1';
 export const PERSONAL_STRATEGY_INFERENCE_SUPPORT_SCHEMA_VERSION = 'personal-strategy-inference-support/v1';
-export const RFI_INFERENCE_MODEL_VERSION = 'deterministic-rfi-local-graph/v1';
+export const RFI_INFERENCE_MODEL_VERSION = 'deterministic-rfi-regional-graph/v2';
 export const RFI_CONFLICT_POLICY_VERSION = 'personal-strategy-direct-conflicts/v1';
 export const RFI_UNCERTAINTY_SEMANTICS_VERSION = 'rfi-ordinal-uncertainty/v1';
 export const RFI_SNAPSHOT_PROJECTION_VERSION = 'rfi-personal-strategy-snapshot/v1';
@@ -64,6 +64,9 @@ export const RFI_INFERENCE_REASON_CODES = Object.freeze({
   SUITED_RUN: 'suited_run_support',
   CONNECTIVITY: 'connectivity_shift_support',
   CROSS_SHAPE: 'suited_offsuit_counterpart_support',
+  REGIONAL_INTERPOLATION: 'bounded_regional_interpolation',
+  OBSERVED_ACTION_BOUNDARY: 'observed_regional_action_boundary',
+  REGIONAL_IRREGULARITY: 'regional_order_discontinuity',
   BOUNDARY_NEARBY: 'boundary_nearby',
   CONFLICTING_NEIGHBOR: 'conflicting_neighbor',
   SCOPE_UNSTABLE: 'scope_locally_unstable',
@@ -81,6 +84,8 @@ export const RFI_NEIGHBOR_RELATION_TYPES = Object.freeze({
   CONNECTIVITY_SHIFT: 'connectivity_shift',
   SAME_FAMILY_NEAR: 'same_family_near',
   SUITED_OFFSUIT_COUNTERPART: 'suited_offsuit_counterpart',
+  REGIONAL_STRENGTH_ORDER: 'regional_strength_order',
+  OBSERVED_ACTION_BOUNDARY: 'observed_action_boundary',
 });
 
 const STATUS_VALUES = new Set(Object.values(PERSONAL_STRATEGY_ESTIMATE_STATUSES));
@@ -141,6 +146,25 @@ export function describeRfiHandClass(handClass) {
     lowRankIndex,
     gap: kind === 'pair' ? 0 : Math.max(0, lowRankIndex - highRankIndex - 1),
   });
+}
+
+// A deterministic structural order used only to test evidence-supported runs.
+// It is not hand equity, EV, a solved range, or a universal poker prescription.
+export function rfiRegionalOrderScore(handClass) {
+  const feature = describeRfiHandClass(handClass);
+  if (feature.kind === 'pair') {
+    return Number((31 - feature.highRankIndex * 1.9).toFixed(12));
+  }
+  const highRankStrength = 12 - feature.highRankIndex;
+  const lowRankStrength = 12 - feature.lowRankIndex;
+  const suitedShape = feature.kind === 'suited' ? 2.2 : 0;
+  const connectivityShape = Math.max(0, 4 - feature.gap) * 0.6;
+  return Number((
+    highRankStrength * 1.3
+    + lowRankStrength * 0.7
+    + suitedShape
+    + connectivityShape
+  ).toFixed(12));
 }
 
 export function rfiHandClassDistance(leftHandClass, rightHandClass) {
@@ -258,6 +282,7 @@ function scopeLocalStability(evidenceView) {
   ));
   let comparablePairCount = 0;
   let disagreementPairCount = 0;
+  let actionTransitionPairCount = 0;
   for (let leftIndex = 0; leftIndex < directPoints.length; leftIndex += 1) {
     for (let rightIndex = leftIndex + 1; rightIndex < directPoints.length; rightIndex += 1) {
       const relation = relationBetween(
@@ -266,8 +291,17 @@ function scopeLocalStability(evidenceView) {
       );
       if (relation?.tier !== 'primary') continue;
       comparablePairCount += 1;
-      if (supportedDominantType(directPoints[leftIndex])
-        !== supportedDominantType(directPoints[rightIndex])) disagreementPairCount += 1;
+      const leftAction = supportedDominantType(directPoints[leftIndex]);
+      const rightAction = supportedDominantType(directPoints[rightIndex]);
+      if (leftAction === rightAction) continue;
+      actionTransitionPairCount += 1;
+      const leftScore = rfiRegionalOrderScore(directPoints[leftIndex].handClass);
+      const rightScore = rfiRegionalOrderScore(directPoints[rightIndex].handClass);
+      const strongerAction = leftScore >= rightScore ? leftAction : rightAction;
+      const weakerAction = leftScore >= rightScore ? rightAction : leftAction;
+      if (strongerAction === ACTION_TYPES.FOLD && weakerAction === ACTION_TYPES.RAISE) {
+        disagreementPairCount += 1;
+      }
     }
   }
   let band = 'unknown';
@@ -276,7 +310,19 @@ function scopeLocalStability(evidenceView) {
     else if (disagreementPairCount * 2 <= comparablePairCount) band = 'mixed';
     else band = 'unstable';
   }
-  return deepFreeze({ band, comparablePairCount, disagreementPairCount });
+  let localAgreementBand = 'unknown';
+  if (comparablePairCount >= 4) {
+    if (actionTransitionPairCount * 4 <= comparablePairCount) localAgreementBand = 'stable';
+    else if (actionTransitionPairCount * 2 <= comparablePairCount) localAgreementBand = 'mixed';
+    else localAgreementBand = 'unstable';
+  }
+  return deepFreeze({
+    band,
+    localAgreementBand,
+    comparablePairCount,
+    disagreementPairCount,
+    actionTransitionPairCount,
+  });
 }
 
 function relationReason(relationType) {
@@ -292,6 +338,12 @@ function relationReason(relationType) {
   if (relationType === RFI_NEIGHBOR_RELATION_TYPES.SUITED_OFFSUIT_COUNTERPART) {
     return RFI_INFERENCE_REASON_CODES.CROSS_SHAPE;
   }
+  if (relationType === RFI_NEIGHBOR_RELATION_TYPES.REGIONAL_STRENGTH_ORDER) {
+    return RFI_INFERENCE_REASON_CODES.REGIONAL_INTERPOLATION;
+  }
+  if (relationType === RFI_NEIGHBOR_RELATION_TYPES.OBSERVED_ACTION_BOUNDARY) {
+    return RFI_INFERENCE_REASON_CODES.OBSERVED_ACTION_BOUNDARY;
+  }
   return RFI_INFERENCE_REASON_CODES.ADJACENT_SAME_FAMILY;
 }
 
@@ -304,7 +356,203 @@ function modelContext(evidenceView) {
   return {
     pointsByHand: new Map(evidenceView.points.map((point) => [point.handClass, point])),
     scopeStability: scopeLocalStability(evidenceView),
+    regionalModels: regionalEvidenceModels(evidenceView),
   };
+}
+
+function regionalEvidenceModels(evidenceView) {
+  const byKind = new Map(['pair', 'suited', 'offsuit'].map((kind) => [kind, {
+    categorical: [],
+    boundaries: [],
+    conflicts: [],
+  }]));
+  for (const point of evidenceView.points) {
+    const feature = describeRfiHandClass(point.handClass);
+    const bucket = byKind.get(feature.kind);
+    const entry = {
+      point,
+      feature,
+      score: rfiRegionalOrderScore(point.handClass),
+      actionType: supportedDominantType(point),
+    };
+    if (point.resolution === PERSONAL_STRATEGY_DIRECT_POINT_STATES.CONFLICTING) {
+      bucket.conflicts.push(entry);
+      continue;
+    }
+    if (![PERSONAL_STRATEGY_DIRECT_POINT_STATES.DIRECT_DOMINANT,
+      PERSONAL_STRATEGY_DIRECT_POINT_STATES.DIRECT_EXACT].includes(point.resolution)
+      || !isSupportedRfiStrategyValue(point)) continue;
+    const mixMargin = exactMixMargin(point.strategyValue);
+    if (entry.actionType === null || (mixMargin !== null && mixMargin <= 0.2)) {
+      bucket.boundaries.push(entry);
+    } else bucket.categorical.push(entry);
+  }
+
+  return new Map([...byKind].map(([kind, bucket]) => {
+    const raises = bucket.categorical.filter((entry) => entry.actionType === ACTION_TYPES.RAISE);
+    const folds = bucket.categorical.filter((entry) => entry.actionType === ACTION_TYPES.FOLD);
+    const highRankSpread = new Set(bucket.categorical
+      .map((entry) => entry.feature.highRankIndex)).size;
+    const lowRankSpread = new Set(bucket.categorical
+      .map((entry) => entry.feature.lowRankIndex)).size;
+    const evidenceEligible = kind === 'pair'
+      ? bucket.categorical.length >= 2 && highRankSpread >= 2
+      : bucket.categorical.length >= 3 && highRankSpread >= 2 && lowRankSpread >= 2;
+    const violationPairs = [];
+    for (const fold of folds) {
+      for (const raise of raises) {
+        if (fold.score + 0.000001 < raise.score) continue;
+        violationPairs.push({ fold, raise });
+      }
+    }
+    return [kind, deepFreeze({
+      kind,
+      categorical: bucket.categorical,
+      boundaries: bucket.boundaries,
+      conflicts: bucket.conflicts,
+      raises,
+      folds,
+      evidenceEligible,
+      highRankSpread,
+      lowRankSpread,
+      violationPairs,
+      weakestRaise: raises.length === 0 ? null : [...raises]
+        .sort((left, right) => left.score - right.score
+          || HAND_INDEX.get(left.point.handClass) - HAND_INDEX.get(right.point.handClass))[0],
+      strongestFold: folds.length === 0 ? null : [...folds]
+        .sort((left, right) => right.score - left.score
+          || HAND_INDEX.get(left.point.handClass) - HAND_INDEX.get(right.point.handClass))[0],
+    })];
+  }));
+}
+
+function regionalSelectedEntry(entry, relationType, supportRole) {
+  return {
+    handClass: entry.point.handClass,
+    relationType,
+    relationTier: 'regional',
+    supportRole,
+    observedDominantAction: actionIdentity(supportedDominantType(entry.point)),
+    pointResolution: entry.point.resolution,
+    sourceEvidenceIds: [...entry.point.sourceEvidenceIds],
+  };
+}
+
+function regionalInterpolationFor(handClass, context) {
+  const feature = describeRfiHandClass(handClass);
+  const model = context.regionalModels.get(feature.kind);
+  const targetScore = rfiRegionalOrderScore(handClass);
+  const base = {
+    kind: feature.kind,
+    state: 'insufficient_evidence',
+    supportDirection: 'none',
+    reliability: 'none',
+    directEvidenceCount: model.categorical.length,
+    supportingEvidenceCount: 0,
+    opposingEvidenceCount: 0,
+    evidenceSpread: {
+      highRankCount: model.highRankSpread,
+      lowRankCount: model.lowRankSpread,
+    },
+    selectedNeighbors: [],
+  };
+  if (!model.evidenceEligible) return deepFreeze(base);
+
+  const nearbyBoundary = [...model.boundaries, ...model.conflicts]
+    .filter((entry) => Math.abs(entry.score - targetScore) <= 1.5)
+    .sort((left, right) => Math.abs(left.score - targetScore) - Math.abs(right.score - targetScore)
+      || HAND_INDEX.get(left.point.handClass) - HAND_INDEX.get(right.point.handClass));
+  if (nearbyBoundary.length > 0) {
+    return deepFreeze({
+      ...base,
+      state: 'observed_boundary',
+      selectedNeighbors: nearbyBoundary.slice(0, 4).map((entry) => regionalSelectedEntry(
+        entry,
+        RFI_NEIGHBOR_RELATION_TYPES.OBSERVED_ACTION_BOUNDARY,
+        'boundary',
+      )),
+    });
+  }
+
+  if (model.violationPairs.length > 0) {
+    const relevantViolations = model.violationPairs.filter(({ fold, raise }) => (
+      targetScore >= raise.score - 0.000001 && targetScore <= fold.score + 0.000001
+    ));
+    if (relevantViolations.length === 0) {
+      return deepFreeze({ ...base, state: 'irregular_abstention' });
+    }
+    const entries = relevantViolations.flatMap(({ fold, raise }) => [fold, raise])
+      .sort((left, right) => Math.abs(left.score - targetScore) - Math.abs(right.score - targetScore)
+        || HAND_INDEX.get(left.point.handClass) - HAND_INDEX.get(right.point.handClass));
+    return deepFreeze({
+      ...base,
+      state: 'irregular_boundary',
+      selectedNeighbors: unique(entries.map((entry) => entry.point.handClass))
+        .slice(0, 6)
+        .map((candidate) => regionalSelectedEntry(
+          entries.find((entry) => entry.point.handClass === candidate),
+          RFI_NEIGHBOR_RELATION_TYPES.OBSERVED_ACTION_BOUNDARY,
+          'discontinuity',
+        )),
+    });
+  }
+
+  const raiseSupported = model.weakestRaise !== null
+    && targetScore > model.weakestRaise.score + 0.000001;
+  const foldSupported = model.strongestFold !== null
+    && targetScore < model.strongestFold.score - 0.000001;
+  if (raiseSupported && foldSupported) {
+    return deepFreeze({ ...base, state: 'observed_boundary' });
+  }
+  const supportDirection = raiseSupported
+    ? ACTION_TYPES.RAISE : foldSupported ? ACTION_TYPES.FOLD : null;
+  if (supportDirection === null) {
+    const betweenObservedActions = model.weakestRaise !== null && model.strongestFold !== null
+      && targetScore <= model.weakestRaise.score + 0.000001
+      && targetScore >= model.strongestFold.score - 0.000001;
+    if (!betweenObservedActions) return deepFreeze({ ...base, state: 'outside_supported_run' });
+    return deepFreeze({
+      ...base,
+      state: 'observed_boundary',
+      selectedNeighbors: [model.weakestRaise, model.strongestFold]
+        .filter(Boolean)
+        .map((entry) => regionalSelectedEntry(
+          entry,
+          RFI_NEIGHBOR_RELATION_TYPES.OBSERVED_ACTION_BOUNDARY,
+          'boundary',
+        )),
+    });
+  }
+
+  const supporting = (supportDirection === ACTION_TYPES.RAISE ? model.raises : model.folds)
+    .filter((entry) => supportDirection === ACTION_TYPES.RAISE
+      ? entry.score < targetScore : entry.score > targetScore)
+    .sort((left, right) => Math.abs(left.score - targetScore) - Math.abs(right.score - targetScore)
+      || HAND_INDEX.get(left.point.handClass) - HAND_INDEX.get(right.point.handClass));
+  const opposingBoundary = supportDirection === ACTION_TYPES.RAISE
+    ? model.strongestFold : model.weakestRaise;
+  const reliability = supporting.length >= 2 && model.categorical.length >= 5
+    ? 'high' : 'medium';
+  return deepFreeze({
+    ...base,
+    state: 'supported_run',
+    supportDirection,
+    reliability,
+    supportingEvidenceCount: supporting.length,
+    opposingEvidenceCount: opposingBoundary === null ? 0 : 1,
+    selectedNeighbors: [
+      ...supporting.slice(0, 5).map((entry) => regionalSelectedEntry(
+        entry,
+        RFI_NEIGHBOR_RELATION_TYPES.REGIONAL_STRENGTH_ORDER,
+        'support',
+      )),
+      ...(opposingBoundary === null ? [] : [regionalSelectedEntry(
+        opposingBoundary,
+        RFI_NEIGHBOR_RELATION_TYPES.OBSERVED_ACTION_BOUNDARY,
+        'boundary',
+      )]),
+    ],
+  });
 }
 
 function inferenceSupportFor(evidenceView, handClass, context) {
@@ -364,8 +612,24 @@ function inferenceSupportFor(evidenceView, handClass, context) {
     : conflicts.length > 0 ? 'near' : 'none';
   const evidenceDensity = selected.length >= 5
     ? 'dense' : selected.length >= 3 ? 'moderate' : selected.length > 0 ? 'sparse' : 'none';
-  const supportDirection = winner ?? (selected.length > 0 ? 'balanced' : 'none');
-  const selectedNeighbors = [...selected, ...boundaries, ...conflicts]
+  const regionalInterpolation = regionalInterpolationFor(handClass, context);
+  const regionalDirection = regionalInterpolation.state === 'supported_run'
+    ? regionalInterpolation.supportDirection : null;
+  const regionalLocalDisagreement = winner !== null && regionalDirection !== null
+    && winner !== regionalDirection;
+  const regionalBoundary = ['observed_boundary', 'irregular_boundary']
+    .includes(regionalInterpolation.state);
+  if (regionalLocalDisagreement || regionalBoundary) boundaryLikelihood = 'high';
+  else if (regionalDirection !== null && boundaryLikelihood === 'unknown') boundaryLikelihood = 'low';
+  const localOpposesWinner = winner !== null && supportCounts[loser] > 0;
+  const regionalUsable = regionalDirection !== null
+    && !immediateBoundary
+    && !localOpposesWinner
+    && !regionalLocalDisagreement;
+  const supportDirection = regionalLocalDisagreement
+    ? 'balanced'
+    : winner ?? (regionalUsable ? regionalDirection : selected.length > 0 ? 'balanced' : 'none');
+  const localSelectedNeighbors = [...selected, ...boundaries, ...conflicts]
     .sort((left, right) => (
       TIER_PRIORITY[left.relation.tier] - TIER_PRIORITY[right.relation.tier]
       || right.relation.influence - left.relation.influence
@@ -379,10 +643,20 @@ function inferenceSupportFor(evidenceView, handClass, context) {
       pointResolution: entry.point.resolution,
       sourceEvidenceIds: [...entry.point.sourceEvidenceIds],
     }));
+  const selectedNeighbors = unique([
+    ...localSelectedNeighbors.map((entry) => entry.handClass),
+    ...regionalInterpolation.selectedNeighbors.map((entry) => entry.handClass),
+  ]).map((candidate) => (
+    localSelectedNeighbors.find((entry) => entry.handClass === candidate)
+      ?? regionalInterpolation.selectedNeighbors.find((entry) => entry.handClass === candidate)
+  ));
+  const totalSupportCount = selected.length + regionalInterpolation.supportingEvidenceCount;
+  const combinedEvidenceDensity = totalSupportCount >= 5
+    ? 'dense' : totalSupportCount >= 3 ? 'moderate' : totalSupportCount > 0 ? 'sparse' : evidenceDensity;
   return deepFreeze({
     schemaVersion: PERSONAL_STRATEGY_INFERENCE_SUPPORT_SCHEMA_VERSION,
     targetHandClass: handClass,
-    evidenceDensity,
+    evidenceDensity: combinedEvidenceDensity,
     supportDirection,
     supportCounts,
     primarySupportCounts: primaryCounts,
@@ -397,6 +671,13 @@ function inferenceSupportFor(evidenceView, handClass, context) {
     nearbyConflictCount: conflicts.length,
     unsupportedNearbyDirectCount: unsupported.length,
     scopeLocalStability: cloneData(context.scopeStability),
+    regionalInterpolation: cloneData({
+      ...regionalInterpolation,
+      selectedEvidenceCount: regionalInterpolation.selectedNeighbors.length,
+      selectedNeighbors: undefined,
+      localDisagreement: regionalLocalDisagreement,
+      usable: regionalUsable,
+    }),
     selectedNeighbors,
   });
 }
@@ -405,7 +686,17 @@ function inferredStatus(support) {
   const winner = SUPPORTED_ACTIONS.has(support.supportDirection) ? support.supportDirection : null;
   if (winner === null) return PERSONAL_STRATEGY_ESTIMATE_STATUSES.UNCERTAIN;
   const loser = winner === ACTION_TYPES.RAISE ? ACTION_TYPES.FOLD : ACTION_TYPES.RAISE;
-  const high = support.scopeLocalStability.band === 'stable'
+  const regional = support.regionalInterpolation;
+  const regionalBlocked = support.boundaryLikelihood === 'high'
+    || support.nearbyBoundaryCount > 0
+    || support.nearbyConflictCount > 0
+    || regional.localDisagreement === true;
+  if (regional.usable && regional.supportDirection === winner && !regionalBlocked) {
+    return regional.reliability === 'high'
+      ? PERSONAL_STRATEGY_ESTIMATE_STATUSES.INFERRED_HIGH
+      : PERSONAL_STRATEGY_ESTIMATE_STATUSES.INFERRED_MEDIUM;
+  }
+  const high = support.scopeLocalStability.localAgreementBand === 'stable'
     && support.supportCounts[winner] >= 4
     && support.primarySupportCounts[winner] >= 2
     && support.supportCounts[loser] === 0
@@ -415,7 +706,7 @@ function inferredStatus(support) {
       .filter((entry) => entry.observedDominantAction?.type === winner)
       .map((entry) => entry.relationType)).size >= 2;
   if (high) return PERSONAL_STRATEGY_ESTIMATE_STATUSES.INFERRED_HIGH;
-  const medium = support.scopeLocalStability.band !== 'unstable'
+  const medium = support.scopeLocalStability.localAgreementBand !== 'unstable'
     && support.supportCounts[winner] >= 3
     && support.primarySupportCounts[winner] >= 1
     && support.primarySupportCounts[loser] === 0
@@ -575,12 +866,19 @@ export function estimatePersonalStrategyHand(evidenceView, handClass, preparedCo
       dominantAction: support.supportDirection,
       provenance: PERSONAL_STRATEGY_ESTIMATE_PROVENANCE.INFERRED,
       sourceEvidenceIds: support.selectedNeighbors.flatMap((entry) => entry.sourceEvidenceIds),
-      reasons: [RFI_INFERENCE_REASON_CODES.MULTIPLE_CONSISTENT_NEIGHBORS, ...relationReasons],
+      reasons: [
+        RFI_INFERENCE_REASON_CODES.MULTIPLE_CONSISTENT_NEIGHBORS,
+        ...(support.regionalInterpolation.usable
+          ? [RFI_INFERENCE_REASON_CODES.REGIONAL_INTERPOLATION] : []),
+        ...relationReasons,
+      ],
       support,
     });
   }
   const relevantEvidenceCount = support.selectedCategoricalNeighborCount
-    + support.nearbyBoundaryCount + support.nearbyConflictCount;
+    + support.nearbyBoundaryCount
+    + support.nearbyConflictCount
+    + support.regionalInterpolation.selectedEvidenceCount;
   const noEvidence = relevantEvidenceCount === 0;
   const reasons = [];
   if (noEvidence) reasons.push(RFI_INFERENCE_REASON_CODES.NO_EVIDENCE);
@@ -589,6 +887,12 @@ export function estimatePersonalStrategyHand(evidenceView, handClass, preparedCo
     reasons.push(RFI_INFERENCE_REASON_CODES.BOUNDARY_NEARBY);
   }
   if (support.nearbyConflictCount > 0) reasons.push(RFI_INFERENCE_REASON_CODES.CONFLICTING_NEIGHBOR);
+  if (support.regionalInterpolation.state === 'observed_boundary') {
+    reasons.push(RFI_INFERENCE_REASON_CODES.OBSERVED_ACTION_BOUNDARY);
+  }
+  if (support.regionalInterpolation.state === 'irregular_boundary') {
+    reasons.push(RFI_INFERENCE_REASON_CODES.REGIONAL_IRREGULARITY);
+  }
   if (support.scopeLocalStability.band === 'unstable') reasons.push(RFI_INFERENCE_REASON_CODES.SCOPE_UNSTABLE);
   if (point.trainingEvidenceIds.length > 0) reasons.push(RFI_INFERENCE_REASON_CODES.TRAINING_EXCLUDED);
   return estimateResult(evidenceView, handClass, {

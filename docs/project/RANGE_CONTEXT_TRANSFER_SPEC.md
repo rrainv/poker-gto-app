@@ -20,14 +20,14 @@ same-context PersonalStrategySnapshot v1 per donor
 personal-strategy-rfi-transfer-relationship/v1
                     |
                     v
-personal-strategy-rfi-transfer-projection/v1 for one target
+personal-strategy-rfi-transfer-projection/v2 for one target
                     |
              +------+------+
              |             |
            Matrix        Teacher
 ```
 
-The transfer projection is a recomputable overlay. It is not an observation, correction, snapshot replacement, sync entity, export entity, StrategyProvider result, or Range Core weight. `deterministic-rfi-local-graph/v1` remains the sole same-context inference authority and its output is unchanged.
+The transfer projection is a recomputable overlay. It is not an observation, correction, snapshot replacement, sync entity, export entity, StrategyProvider result, or Range Core weight. `deterministic-rfi-regional-graph/v2` remains the sole same-context inference authority; transfer still fills only after that local authority abstains.
 
 ## Relationship contract
 
@@ -37,7 +37,7 @@ The transfer projection is a recomputable overlay. It is not an observation, cor
 - explicit `eligible` state and rejection reason;
 - profile, mode, decision-family, action-set, Game Rules, table-size, position/order, stack, and opponent-count dimensions;
 - integer relationship strength from 0 through 100 and `strong`, `moderate`, `weak`, or `none` band;
-- machine-readable reasons and `bounded-rfi-context-transfer/v1` provenance.
+- machine-readable reasons and `bounded-rfi-context-transfer/v2` provenance.
 
 Relationship strength is a deterministic similarity coefficient. It is not confidence, probability, action frequency, EV, range weight, or poker strength.
 
@@ -67,11 +67,13 @@ Profile and Mode display names never participate. Renaming either object while r
 
 ## Estimate and combination semantics
 
-`personal-strategy-rfi-transfer-estimate/v1` is projected for all 169 canonical classes. A donor context can contribute at most once per hand, even when it contains multiple compatible direct heads. Only a `directly_known` donor point or its explicit donor conflict is considered. Donor local inference is never recursively transferred.
+`personal-strategy-rfi-transfer-estimate/v2` is projected for all 169 canonical classes. A donor context can contribute at most once per hand, even when it contains multiple compatible direct heads. Only a `directly_known` donor point or its explicit donor conflict is considered. Donor local inference is never recursively transferred.
 
 Donors are ordered by relationship strength and canonical context key. At most four donor contexts are loaded and at most three contribute to one hand. Input order cannot change output.
 
 Agreeing donors produce qualitative Fold or Raise transfer. The strongest relationship band is retained; multiple donors never invent numeric confidence. Opposing donor actions, a conflicting donor point, or a tied exact donor mix forces abstention for that target. Transfer fills only a locally `unknown` point. Direct, local inferred-high/medium, local uncertain, and local conflicting states all retain precedence.
+
+Version 2 adds a derived `donorSignal` diagnostic on every target estimate. It records bounded donor agreement/conflict facts even when a local direct/inferred/uncertain/conflicting estimate retains precedence. `ACTIVE-CLARIFICATION-001` may use that diagnostic to prioritize a still-unanswered local/donor disagreement. The primary estimate state, dominant action, exact-frequency rules, and local-precedence behavior are unchanged; a direct target hand remains excluded from ordinary calibration questions.
 
 ## Precision
 

@@ -19,10 +19,11 @@ test('question UI exposes one dominant hand-class prompt with canonical RFI acti
   for (const id of [
     'calibrationStartQuestions',
     'calibrationQuestionTitle',
-    'calibrationActionFold',
-    'calibrationActionRaise',
+    'calibrationActionGrid',
     'calibrationOpenMix',
-    'calibrationProgressBar',
+    'calibrationReadinessState',
+    'calibrationReadinessReason',
+    'calibrationRecommendedClarifications',
     'calibrationUndoAnswer',
     'calibrationPauseQuestions',
     'calibrationStopQuestions',
@@ -31,12 +32,16 @@ test('question UI exposes one dominant hand-class prompt with canonical RFI acti
     'calibrationQuestionReason',
     'calibrationAskAnother',
     'calibrationCompleteState',
+    'calibrationCompleteOpenMatrix',
+    'calibrationCompleteDirectCount',
+    'calibrationCompleteModeledCount',
+    'calibrationCompleteUncertainRegionCount',
+    'calibrationCompleteClarificationCount',
     'calibrationRetryAnswer',
     'calibrationMixRetry',
   ]) assert.match(template, new RegExp(`id="${id}"`));
-  assert.match(template, /data-calibration-action="fold"/);
-  assert.match(template, /data-calibration-action="raise"/);
-  assert.doesNotMatch(template, /data-calibration-action="(?:call|all_in|check|bet)"/);
+  assert.match(workspace, /button\.dataset\.calibrationAction = action\.type/);
+  assert.match(workspace, /calibrationState\?\.availableActions/);
   assert.doesNotMatch(template, />\s*(?:Correct|Optimal|Mistake|EV lost)\s*</i);
 });
 
@@ -49,8 +54,15 @@ test('adaptive setup, transparent question value, truthful model progress, and c
   assert.match(template, /Riverline chooses informative hands first/);
   assert.match(template, /data-tutorial-anchor="calibration-question-reason"/);
   for (const category of [
-    'Direct', 'Inferred high', 'Inferred medium', 'Uncertain', 'Unknown', 'Conflicting',
+    'Direct', 'Locally inferred', 'Transferred', 'Uncertain', 'Unknown', 'Conflicting',
   ]) assert.match(template, new RegExp(`>${category}<`));
+  assert.doesNotMatch(template, /id="calibrationProgressBar"|high-value questions remain/);
+  assert.match(template, /Your starter profile is ready/);
+  assert.match(template, /Review profile/);
+  assert.doesNotMatch(template.slice(
+    template.indexOf('id="calibrationCompleteState"'),
+    template.indexOf('<div class="calibration-personal-column">'),
+  ), /169|remaining cells/i);
   assert.doesNotMatch(template, /confidence percentage|GTO confidence|solved range/i);
   assert.match(workspace, /application\.skipCalibrationQuestion/);
   assert.match(workspace, /skipQuestion\(true\)/);
@@ -62,16 +74,21 @@ test('keyboard shortcuts are question-scoped, ignore editable targets, and retai
   assert.match(workspace, /query\('#calibrationQuestionView'\)\.contains\(target\)/);
   assert.match(workspace, /target\.matches\('input, textarea, select, \[contenteditable="true"\]'\)/);
   assert.match(workspace, /event\.ctrlKey \|\| event\.metaKey \|\| event\.altKey \|\| event\.repeat/);
-  assert.match(workspace, /RFI_CALIBRATION_ACTIONS\.find/);
-  assert.match(html, /<kbd>F<\/kbd>/);
-  assert.match(html, /<kbd>R<\/kbd>/);
+  assert.match(workspace, /calibrationState\.availableActions\.find/);
+  assert.match(service, /\[ACTION_TYPES\.FOLD\]: 'F'/);
+  assert.match(service, /\[ACTION_TYPES\.RAISE\]: 'R'/);
 });
 
 test('explicit mix editor is labeled, focus-trapped, cancellable, and validated by application semantics', () => {
   const template = calibrationTemplate();
   assert.match(template, /id="calibrationMixDialog"[^>]+role="dialog"[^>]+aria-modal="true"/);
-  assert.match(template, /id="calibrationMixFold"[^>]+min="0" max="100"/);
-  assert.match(template, /id="calibrationMixRaise"[^>]+min="0" max="100"/);
+  assert.match(template, /id="calibrationMixSlider"[^>]+type="range"[^>]+min="0" max="100"/);
+  assert.match(template, /id="calibrationMultiMix"/);
+  assert.doesNotMatch(template, /id="calibrationMix(?:Fold|Raise)"[^>]+type="number"/);
+  assert.match(template, /id="calibrationMixFoldValue"/);
+  assert.match(template, /id="calibrationMixRaiseValue"/);
+  assert.match(workspace, /complementaryRfiMixFromFold/);
+  assert.match(workspace, /setMultiMixValue/);
   assert.match(workspace, /mixFocusableElements/);
   assert.match(workspace, /if \(event\.key === 'Escape'\)/);
   assert.match(service, /Fold and Raise frequencies must total 100%/);
@@ -86,7 +103,9 @@ test('question state locks configuration, preserves LTR poker data in RTL, and f
   assert.match(css, /data-session-view="questions"[^\n]+\.calibration-configuration-view[^\n]+display: none/);
   assert.match(css, /\[dir="rtl"\] \.calibration-hand-class[\s\S]*?direction: ltr/);
   assert.match(css, /@media \(max-height: 800px\) and \(min-width: 821px\)/);
-  assert.match(css, /font: 850 clamp\(4\.2rem, 8vw, 6\.5rem\)/);
+  assert.match(html, /id="calibrationQuestionCards"[^>]+role="img"/);
+  assert.match(css, /\.calibration-question-cards[^{]*\{[^}]*--poker-card-width/);
+  assert.match(workspace, /representativeCardsForHandClass/);
   assert.match(workspace, /calibrationReturnToContext[^\n]+focus/);
 });
 
@@ -108,13 +127,20 @@ test('new elicitation strings have Russian and Hebrew catalog coverage', () => {
     'What is your dominant action?',
     'Set frequencies',
     'Undo previous answer',
-    'Direct RFI calibration complete for this spot.',
+    'Building your profile',
+    'Profile ready',
+    'Profile needs conflict review',
     'Fold and Raise frequencies must total 100%.',
+    'Move one slider to set Fold; Raise updates automatically so the exact mix always totals 100%.',
+    'Fold percentage; Raise updates automatically',
+    'Selected from your Matrix',
     'An exact tie is stored as a tied mix with no dominant action.',
     'Why this hand?',
     'Near a Raise/Fold boundary',
-    'Most of this range is mapped. {count} high-value questions remain.',
-    'Ask another',
+    'Riverline has a useful first approximation.',
+    '{count} recommended clarifications',
+    'Continue refining',
+    'Open Teacher',
     'Question counts are session goals, not time promises.',
   ]) {
     assert.equal(translations.split(`'${key}':`).length, 3, `${key} must exist once in RU and once in HE`);

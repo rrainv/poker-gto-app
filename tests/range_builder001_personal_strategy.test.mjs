@@ -198,16 +198,21 @@ test('Builder skips conflicting heads and active Calibration immediately reranks
   assert.equal(cell(result.matrixProjection, 'K8s').status, 'conflicting');
   assert.equal(local.acceptedObservation.id !== remote.id, true);
 
-  let state = await application.startOrResumeSession({
-    selectedProfileId: scope.profileId,
-    activeModeId: scope.modeId,
-    context: contextSelection,
+  const activeFixture = await configured('range-builder-active-calibration-rerank');
+  let state = await activeFixture.application.startOrResumeSession({
+    selectedProfileId: activeFixture.scope.profileId,
+    activeModeId: activeFixture.scope.modeId,
+    context: activeFixture.contextSelection,
   });
   const prompted = state.prompt.handClass;
-  const applied = await application.applyRangeBuilderOperation(state, scope, {
-    handClasses: [prompted],
-    operationKind: RANGE_BUILDER_OPERATION_KINDS.DOMINANT_FOLD,
-  });
+  const applied = await activeFixture.application.applyRangeBuilderOperation(
+    state,
+    activeFixture.scope,
+    {
+      handClasses: [prompted],
+      operationKind: RANGE_BUILDER_OPERATION_KINDS.DOMINANT_FOLD,
+    },
+  );
   state = applied.calibrationState;
   assert.equal(state.personalStrategySnapshot.estimates.find((entry) => entry.handClass === prompted).status, 'directly_known');
   assert.notEqual(state.prompt?.handClass, prompted);

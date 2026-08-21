@@ -19,10 +19,10 @@ import {
 export const RFI_CONTEXT_TRANSFER_RELATIONSHIP_SCHEMA_VERSION =
   'personal-strategy-rfi-transfer-relationship/v1';
 export const RFI_CONTEXT_TRANSFER_ESTIMATE_SCHEMA_VERSION =
-  'personal-strategy-rfi-transfer-estimate/v1';
+  'personal-strategy-rfi-transfer-estimate/v2';
 export const RFI_CONTEXT_TRANSFER_PROJECTION_SCHEMA_VERSION =
-  'personal-strategy-rfi-transfer-projection/v1';
-export const RFI_CONTEXT_TRANSFER_MODEL_VERSION = 'bounded-rfi-context-transfer/v1';
+  'personal-strategy-rfi-transfer-projection/v2';
+export const RFI_CONTEXT_TRANSFER_MODEL_VERSION = 'bounded-rfi-context-transfer/v2';
 
 export const MAX_RFI_TRANSFER_DONOR_CONTEXTS = 4;
 export const MAX_RFI_TRANSFER_CONTRIBUTORS_PER_HAND = 3;
@@ -38,6 +38,12 @@ export const RFI_CONTEXT_TRANSFER_ESTIMATE_STATES = Object.freeze({
   LOCAL_PRECEDENCE: 'local_precedence',
   TRANSFERRED: 'transferred',
   UNCERTAIN: 'uncertain',
+  UNAVAILABLE: 'unavailable',
+});
+
+export const RFI_CONTEXT_TRANSFER_DONOR_SIGNAL_STATES = Object.freeze({
+  CONSISTENT: 'consistent',
+  CONFLICTING: 'conflicting',
   UNAVAILABLE: 'unavailable',
 });
 
@@ -83,6 +89,7 @@ export const RFI_CONTEXT_TRANSFER_REASON_CODES = Object.freeze({
 
 const BAND_VALUES = new Set(Object.values(RFI_CONTEXT_TRANSFER_BANDS));
 const ESTIMATE_STATE_VALUES = new Set(Object.values(RFI_CONTEXT_TRANSFER_ESTIMATE_STATES));
+const DONOR_SIGNAL_STATE_VALUES = new Set(Object.values(RFI_CONTEXT_TRANSFER_DONOR_SIGNAL_STATES));
 const FOLD_RAISE = Object.freeze([ACTION_TYPES.FOLD, ACTION_TYPES.RAISE]);
 const LOCAL_PRECEDENCE_STATUSES = new Set([
   PERSONAL_STRATEGY_ESTIMATE_STATUSES.DIRECTLY_KNOWN,
@@ -478,20 +485,7 @@ function estimateFor(targetEstimate, options) {
   return deepFreeze(estimate);
 }
 
-function projectHand(targetEstimate, donors) {
-  if (LOCAL_PRECEDENCE_STATUSES.has(targetEstimate.status)) {
-    return estimateFor(targetEstimate, {
-      state: RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.LOCAL_PRECEDENCE,
-      transferBand: RFI_CONTEXT_TRANSFER_BANDS.NONE,
-      dominantAction: null,
-      exactFrequencies: null,
-      sourceEvidenceIds: [],
-      donorContributions: [],
-      relationshipStrengthByAction: { fold: 0, raise: 0 },
-      reasons: [RFI_CONTEXT_TRANSFER_REASON_CODES.TARGET_LOCAL_PRECEDENCE],
-    });
-  }
-
+function donorSignalForHand(targetEstimate, donors) {
   const relevant = donors.map((donor) => ({
     donor,
     estimate: donor.snapshot.estimates.find((entry) => entry.handClass === targetEstimate.handClass),
@@ -506,11 +500,10 @@ function projectHand(targetEstimate, donors) {
     )).slice(0, MAX_RFI_TRANSFER_CONTRIBUTORS_PER_HAND);
 
   if (relevant.length === 0) {
-    return estimateFor(targetEstimate, {
-      state: RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.UNAVAILABLE,
+    return deepFreeze({
+      state: RFI_CONTEXT_TRANSFER_DONOR_SIGNAL_STATES.UNAVAILABLE,
       transferBand: RFI_CONTEXT_TRANSFER_BANDS.NONE,
       dominantAction: null,
-      exactFrequencies: null,
       sourceEvidenceIds: [],
       donorContributions: [],
       relationshipStrengthByAction: { fold: 0, raise: 0 },
@@ -547,11 +540,10 @@ function projectHand(targetEstimate, donors) {
   }
   const sourceEvidenceIds = [...new Set(contributions.flatMap((entry) => entry.sourceEvidenceIds))].sort();
   if (blocked) {
-    return estimateFor(targetEstimate, {
-      state: RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.UNCERTAIN,
-      transferBand: RFI_CONTEXT_TRANSFER_BANDS.WEAK,
+    return deepFreeze({
+      state: RFI_CONTEXT_TRANSFER_DONOR_SIGNAL_STATES.CONFLICTING,
+      transferBand: contributions[0]?.relationshipBand ?? RFI_CONTEXT_TRANSFER_BANDS.NONE,
       dominantAction: null,
-      exactFrequencies: null,
       sourceEvidenceIds,
       donorContributions: contributions,
       relationshipStrengthByAction: byAction,
@@ -560,11 +552,10 @@ function projectHand(targetEstimate, donors) {
   }
   const action = byAction.raise > 0 ? ACTION_TYPES.RAISE : byAction.fold > 0 ? ACTION_TYPES.FOLD : null;
   if (action === null) {
-    return estimateFor(targetEstimate, {
-      state: RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.UNAVAILABLE,
+    return deepFreeze({
+      state: RFI_CONTEXT_TRANSFER_DONOR_SIGNAL_STATES.UNAVAILABLE,
       transferBand: RFI_CONTEXT_TRANSFER_BANDS.NONE,
       dominantAction: null,
-      exactFrequencies: null,
       sourceEvidenceIds,
       donorContributions: contributions,
       relationshipStrengthByAction: byAction,
@@ -572,15 +563,69 @@ function projectHand(targetEstimate, donors) {
     });
   }
   if (contributions.length > 1) reasons.push(RFI_CONTEXT_TRANSFER_REASON_CODES.MULTIPLE_AGREEING_DONORS);
-  return estimateFor(targetEstimate, {
-    state: RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.TRANSFERRED,
+  return deepFreeze({
+    state: RFI_CONTEXT_TRANSFER_DONOR_SIGNAL_STATES.CONSISTENT,
     transferBand: contributions[0].relationshipBand,
     dominantAction: { type: action },
-    exactFrequencies: null,
     sourceEvidenceIds,
     donorContributions: contributions,
     relationshipStrengthByAction: byAction,
     reasons: [...new Set(reasons)],
+  });
+}
+
+function projectHand(targetEstimate, donors) {
+  const donorSignal = donorSignalForHand(targetEstimate, donors);
+  if (LOCAL_PRECEDENCE_STATUSES.has(targetEstimate.status)) {
+    return estimateFor(targetEstimate, {
+      state: RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.LOCAL_PRECEDENCE,
+      transferBand: RFI_CONTEXT_TRANSFER_BANDS.NONE,
+      dominantAction: null,
+      exactFrequencies: null,
+      sourceEvidenceIds: [],
+      donorContributions: [],
+      relationshipStrengthByAction: { fold: 0, raise: 0 },
+      donorSignal,
+      reasons: [RFI_CONTEXT_TRANSFER_REASON_CODES.TARGET_LOCAL_PRECEDENCE],
+    });
+  }
+
+  if (donorSignal.state === RFI_CONTEXT_TRANSFER_DONOR_SIGNAL_STATES.UNAVAILABLE) {
+    return estimateFor(targetEstimate, {
+      state: RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.UNAVAILABLE,
+      transferBand: RFI_CONTEXT_TRANSFER_BANDS.NONE,
+      dominantAction: null,
+      exactFrequencies: null,
+      sourceEvidenceIds: donorSignal.sourceEvidenceIds,
+      donorContributions: donorSignal.donorContributions,
+      relationshipStrengthByAction: donorSignal.relationshipStrengthByAction,
+      donorSignal,
+      reasons: donorSignal.reasons,
+    });
+  }
+  if (donorSignal.state === RFI_CONTEXT_TRANSFER_DONOR_SIGNAL_STATES.CONFLICTING) {
+    return estimateFor(targetEstimate, {
+      state: RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.UNCERTAIN,
+      transferBand: RFI_CONTEXT_TRANSFER_BANDS.WEAK,
+      dominantAction: null,
+      exactFrequencies: null,
+      sourceEvidenceIds: donorSignal.sourceEvidenceIds,
+      donorContributions: donorSignal.donorContributions,
+      relationshipStrengthByAction: donorSignal.relationshipStrengthByAction,
+      donorSignal,
+      reasons: donorSignal.reasons,
+    });
+  }
+  return estimateFor(targetEstimate, {
+    state: RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.TRANSFERRED,
+    transferBand: donorSignal.transferBand,
+    dominantAction: cloneData(donorSignal.dominantAction),
+    exactFrequencies: null,
+    sourceEvidenceIds: donorSignal.sourceEvidenceIds,
+    donorContributions: donorSignal.donorContributions,
+    relationshipStrengthByAction: donorSignal.relationshipStrengthByAction,
+    donorSignal,
+    reasons: donorSignal.reasons,
   });
 }
 
@@ -693,6 +738,27 @@ export function validateRfiContextTransferEstimate(estimate) {
   }
   if (!Array.isArray(estimate.sourceEvidenceIds) || !Array.isArray(estimate.reasons)) {
     throw new TypeError('RFI transfer evidence IDs and reasons must be arrays');
+  }
+  requireObject(estimate.donorSignal, 'RFI transfer donor signal');
+  if (!DONOR_SIGNAL_STATE_VALUES.has(estimate.donorSignal.state)) {
+    throw new RangeError('Unsupported RFI transfer donor signal state');
+  }
+  if (!BAND_VALUES.has(estimate.donorSignal.transferBand)
+    || !Array.isArray(estimate.donorSignal.donorContributions)
+    || !Array.isArray(estimate.donorSignal.sourceEvidenceIds)
+    || !Array.isArray(estimate.donorSignal.reasons)) {
+    throw new TypeError('RFI transfer donor signal is malformed');
+  }
+  if (estimate.donorSignal.donorContributions.length > MAX_RFI_TRANSFER_CONTRIBUTORS_PER_HAND) {
+    throw new RangeError('RFI transfer donor signal exceeds its bounded contributor contract');
+  }
+  if (estimate.donorSignal.state === RFI_CONTEXT_TRANSFER_DONOR_SIGNAL_STATES.CONSISTENT
+    && !FOLD_RAISE.includes(estimate.donorSignal.dominantAction?.type)) {
+    throw new RangeError('A consistent RFI transfer donor signal requires Fold or Raise');
+  }
+  if (estimate.donorSignal.state !== RFI_CONTEXT_TRANSFER_DONOR_SIGNAL_STATES.CONSISTENT
+    && estimate.donorSignal.dominantAction !== null) {
+    throw new RangeError('An unavailable or conflicting donor signal cannot contain an action');
   }
   return estimate;
 }

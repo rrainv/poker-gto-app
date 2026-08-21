@@ -1,22 +1,30 @@
 import {
   CALIBRATION_ENVIRONMENTS,
+  PREFLOP_CALIBRATION_DECISION_FAMILIES,
   RANGE_CALIBRATION_STACK_LIMITS,
   RFI_CALIBRATION_ACTIONS,
   RFI_CALIBRATION_INTENTS,
   RFI_CALIBRATION_STOP_REASONS,
+  complementaryRfiMixFromFold,
   countCurrentDirectObservations,
   createContextFromSelection,
   createIdentityScopedRangeCalibrationApplication,
+  isInvalidRfiMixError,
+  normalizeRfiMix,
   normalizeRfiContextSelection,
   profileDefaultEnvironment,
-  rfiPositionsForTableSize,
+  positionsForPreflopCalibrationFamily,
   tableSizesForEnvironment,
 } from './range-calibration-service.mjs';
+import { representativeCardsForHandClass } from '../ui/representative-hand-cards.mjs';
 import { createPersonalStrategyScopeLifecycle } from './personal-strategy-scope-lifecycle.mjs';
 import {
   RIVERLINE_OWNED_DOMAINS,
 } from '../account-identity/index.mjs';
-import { RANGE_TEACHER_SESSION_PRESETS } from '../personal-strategy/index.mjs';
+import {
+  CALIBRATION_DECISION_FAMILIES,
+  RANGE_TEACHER_SESSION_PRESETS,
+} from '../personal-strategy/index.mjs';
 
 let mountedWorkspace = null;
 
@@ -41,16 +49,29 @@ const MATRIX_REASON_KEYS = Object.freeze({
   suited_run_support: 'Supported by nearby suited hands',
   connectivity_shift_support: 'Supported by nearby connected hands',
   suited_offsuit_counterpart_support: 'Supported by the suited or offsuit counterpart',
+  bounded_regional_interpolation: 'Supported by an evidence-consistent regional run',
+  observed_regional_action_boundary: 'Between observed Raise/Fold boundaries',
+  regional_order_discontinuity: 'Direct answers reveal an unusual gap',
   boundary_nearby: 'Near a Raise/Fold boundary',
   conflicting_neighbor: 'Conflicting nearby answers',
   scope_locally_unstable: 'Nearby direct answers are locally unstable',
   insufficient_support: 'Not enough nearby direct evidence',
   no_structurally_relevant_evidence: 'No relevant direct evidence yet',
   unsupported_direct_action: 'The direct action is outside this Fold/Raise model',
+  additional_first_in_actions_unmodeled: 'Fold/Raise is modeled here; Limp and All-in remain unmodeled.',
   training_evidence_excluded_from_002b_inference: 'Training evidence is shown separately and does not drive this inference',
   direct_donor_evidence: 'Transferred from direct evidence in a compatible nearby RFI context',
   multiple_agreeing_donor_contexts: 'Multiple compatible donor contexts agree',
   exact_donor_preserved_but_target_transfer_is_qualitative: 'Exact donor mix is preserved at its source; this target transfer stays qualitative',
+  cold_start_anchor: 'Samples a new hand family',
+  uncertainty_reduction: 'Reduces uncertainty here',
+  near_action_boundary: 'Near a Raise/Fold boundary',
+  pair_boundary: 'High-value pair boundary',
+  transferred_estimate_check: 'Checks a transferred estimate',
+  transfer_disagreement: 'Checks a transferred estimate that disagrees locally',
+  unknown_pair_region: 'Maps an unknown pocket-pair region',
+  offsuit_broadway_boundary: 'Clarifies your offsuit Broadway boundary',
+  modeled_region_redundancy_penalty: 'Already modeled by a supported regional run',
 });
 
 const MATRIX_FILTER_STATUSES = Object.freeze({
@@ -60,6 +81,19 @@ const MATRIX_FILTER_STATUSES = Object.freeze({
   uncertain: new Set(['uncertain', 'unknown']),
   conflicts: new Set(['conflicting']),
 });
+
+const DECISION_FAMILY_LABELS = Object.freeze({
+  [CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI]: 'First in / Unopened pot',
+  [CALIBRATION_DECISION_FAMILIES.PREFLOP_FACING_LIMP]: 'Facing limp',
+  [CALIBRATION_DECISION_FAMILIES.PREFLOP_FACING_OPEN]: 'Facing open',
+  [CALIBRATION_DECISION_FAMILIES.PREFLOP_FACING_3BET]: 'Facing 3-bet',
+  [CALIBRATION_DECISION_FAMILIES.PREFLOP_FACING_4BET]: 'Facing 4-bet',
+  [CALIBRATION_DECISION_FAMILIES.PREFLOP_BB_OPTION]: 'BB option',
+});
+
+function decisionFamilyLabel(decisionFamily) {
+  return translated(DECISION_FAMILY_LABELS[decisionFamily] ?? decisionFamily);
+}
 
 function now() {
   return globalThis.performance?.now?.() ?? Date.now();
@@ -74,6 +108,47 @@ function setTranslatedText(element, key, parameters) {
   element.dataset.i18n = key;
   if (parameters) delete element.dataset.i18n;
   element.textContent = translated(key, parameters);
+}
+
+export function rebalanceCalibrationMixPercentages(currentValues, changedAction, rawValue) {
+  const actions = Object.keys(currentValues ?? {});
+  if (actions.length < 3 || !actions.includes(changedAction)) {
+    throw new RangeError('Multi-action mix rebalancing requires at least three legal actions');
+  }
+  const changedValue = Math.max(0, Math.min(100, Number(rawValue) || 0));
+  const others = actions.filter((action) => action !== changedAction);
+  const remaining = 100 - changedValue;
+  const otherTotal = others.reduce((sum, action) => {
+    const value = Number(currentValues[action]);
+    return sum + (Number.isFinite(value) && value > 0 ? value : 0);
+  }, 0);
+  const result = { [changedAction]: Number(changedValue.toFixed(6)) };
+  let assigned = 0;
+  others.forEach((action, index) => {
+    const next = index === others.length - 1
+      ? remaining - assigned
+      : otherTotal > 0
+        ? remaining * Math.max(0, Number(currentValues[action]) || 0) / otherTotal
+        : remaining / others.length;
+    const rounded = Number(next.toFixed(6));
+    result[action] = rounded;
+    assigned += rounded;
+  });
+  return Object.freeze(Object.fromEntries(actions.map((action) => [action, result[action]])));
+}
+
+export async function openCalibrationProfileReview({
+  leaveCheckpoint,
+  openMatrix,
+  matrixPanel = null,
+  matrixTab = null,
+} = {}) {
+  const leftCheckpoint = await leaveCheckpoint({ restoreFocus: false });
+  if (!leftCheckpoint) return false;
+  await openMatrix('matrix');
+  matrixPanel?.scrollIntoView?.({ block: 'start' });
+  matrixTab?.focus?.({ preventScroll: true });
+  return true;
 }
 
 function cloneCalibrationDom() {
@@ -127,7 +202,7 @@ function initialSelection(workspace) {
   if (!entry) return null;
   const preference = workspace.preferences.byProfile[entry.profile.id];
   const activeMode = entry.modes.find((mode) => mode.id === preference?.activeModeId) || entry.modes[0];
-  const context = normalizeRfiContextSelection(preference?.context, {
+  const context = normalizeRfiContextSelection({ ...preference?.context, actionAware: true }, {
     environmentDefault: profileDefaultEnvironment(entry.profile),
   });
   return { profileId: entry.profile.id, modeId: activeMode.id, context };
@@ -316,7 +391,10 @@ function createController(root, application, initialWorkspace, activationStarted
   function matrixActionToken(cell) {
     if (cell.action.precision === 'tied_exact_mix') return translated('Mix');
     if (cell.action.dominantAction === 'fold') return 'F';
+    if (cell.action.dominantAction === 'check') return 'K';
+    if (cell.action.dominantAction === 'call') return 'C';
     if (cell.action.dominantAction === 'raise') return 'R';
+    if (cell.action.dominantAction === 'all_in') return 'A';
     return '—';
   }
 
@@ -459,12 +537,13 @@ function createController(root, application, initialWorkspace, activationStarted
           : cell.support.boundaryLikelihood === 'low' ? 'Low boundary likelihood' : 'Unknown',
     );
     query('#calibrationInspectorQuestionRank').textContent = cell.question
-      ? `${translated('Rank')} #${cell.question.rank}${cell.question.isHighValue ? ` · ${translated('High value')}` : ''}`
+      ? `${translated('Rank')} #${cell.question.rank}${cell.question.isHighValue ? ` · ${translated('Recommended clarification')}` : ''}`
       : translated('Not ranked');
 
     const reasons = query('#calibrationInspectorReasons');
     const reasonKeys = [...new Set([
       ...cell.reasons.map((code) => MATRIX_REASON_KEYS[code] ?? code),
+      ...(cell.question?.priorityReasons ?? []).map((code) => MATRIX_REASON_KEYS[code] ?? code),
       ...(cell.support.boundaryLikelihood === 'high' ? ['Near a Raise/Fold boundary'] : []),
       ...(cell.support.evidenceDensity === 'sparse' ? ['Sparse evidence in this region'] : []),
     ])];
@@ -505,9 +584,21 @@ function createController(root, application, initialWorkspace, activationStarted
       || cell.status === 'inferred_medium'
       || cell.status === 'transferred';
     query('#calibrationMatrixConfirm').hidden = !inferred || !cell.action.dominantAction;
-    query('#calibrationMatrixAskNext').hidden = !(
-      calibrationState && cell.question?.ordinaryQuestionEligible && cell.question?.isHighValue
-    );
+    query('#calibrationMatrixAskNext').hidden = true;
+    const legalActions = new Set(matrixProjection.actionUniverse.map((action) => action.type));
+    query('#calibrationMatrixFold').hidden = !legalActions.has('fold');
+    query('#calibrationMatrixRaise').hidden = !legalActions.has('raise');
+    query('#calibrationMatrixContextActions').replaceChildren(...['check', 'call', 'all_in']
+      .filter((actionType) => legalActions.has(actionType))
+      .map((actionType) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'ui-button ui-button--secondary';
+        button.dataset.matrixAction = actionType;
+        button.textContent = translated('Change to {action}', { action: actionLabel(actionType) });
+        button.disabled = matrixWritePending;
+        return button;
+      }));
     [
       '#calibrationMatrixConfirm',
       '#calibrationMatrixFold',
@@ -613,6 +704,14 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   function renderBuilderMode() {
+    const builderSupported = matrixProjection?.actionUniverse?.length === 2
+      && matrixProjection.actionUniverse[0]?.type === 'fold'
+      && matrixProjection.actionUniverse[1]?.type === 'raise';
+    if (!builderSupported) builderActive = false;
+    query('#calibrationBuilderToggle').disabled = !builderSupported;
+    query('#calibrationBuilderToggle').title = builderSupported
+      ? '' : translated('Builder is unavailable for this action family; use Matrix corrections or Calibration.');
+    query('#calibrationTeacherOpenBuilder').disabled = !builderSupported;
     query('#calibrationBuilderToggle').setAttribute('aria-pressed', String(builderActive));
     query('#calibrationBuilderToolbar').hidden = !builderActive;
     query('#calibrationMatrixFollow').hidden = builderActive;
@@ -633,6 +732,7 @@ function createController(root, application, initialWorkspace, activationStarted
     const startedAt = now();
     const previous = matrixSelectedHand;
     matrixSelectedHand = handClass;
+    teacherSelectedHand = handClass;
     if (manual) matrixFollowQuestion = false;
     query('#calibrationMatrixFollow').setAttribute('aria-pressed', String(matrixFollowQuestion));
     updateMatrixSelectionDom(previous, handClass);
@@ -647,9 +747,10 @@ function createController(root, application, initialWorkspace, activationStarted
     const entry = activeEntry();
     const mode = activeMode();
     query('#calibrationMatrixScope').textContent = entry && mode
-      ? `${entry.profile.displayName} · ${mode.displayName} · ${selection.context.tableSize}-max · ${selection.context.heroPosition} · ${selection.context.effectiveStackBb}bb · RFI`
+      ? `${entry.profile.displayName} · ${mode.displayName} · ${contextSpotLabel()}`
       : '';
     const summary = matrixProjection.summary;
+    renderConfiguredReadiness(matrixProjection.profileReadiness);
     query('#calibrationMatrixSummary').textContent = translated(
       '{direct} direct · {high} inferred high · {medium} inferred medium · {uncertain} uncertain · {unknown} unknown · {conflicting} conflicting',
       {
@@ -660,6 +761,17 @@ function createController(root, application, initialWorkspace, activationStarted
         unknown: summary.unknownCount,
         conflicting: summary.conflictingCount,
       },
+    );
+    query('#calibrationMatrixActionLegend').replaceChildren(
+      ...matrixProjection.actionUniverse.flatMap((action) => {
+        const swatch = document.createElement('span');
+        const label = document.createElement('span');
+        swatch.className = 'calibration-action-swatch';
+        swatch.dataset.action = action.type;
+        swatch.setAttribute('aria-hidden', 'true');
+        label.textContent = actionLabel(action.type);
+        return [swatch, label];
+      }),
     );
     renderMatrixGrid();
     renderMatrixInspector();
@@ -774,9 +886,13 @@ function createController(root, application, initialWorkspace, activationStarted
     const entry = activeEntry();
     const mode = activeMode();
     query('#calibrationTeacherScope').textContent = entry && mode
-      ? `${entry.profile.displayName} · ${mode.displayName} · ${selection.context.tableSize}-max · ${selection.context.heroPosition} · ${selection.context.effectiveStackBb}bb · RFI`
+      ? `${entry.profile.displayName} · ${mode.displayName} · ${contextSpotLabel()}`
       : '';
     const summary = rangeTeacherView.summary;
+    renderConfiguredReadiness({
+      state: summary.readinessState,
+      profileReady: summary.profileReady,
+    });
     query('#calibrationTeacherDirect').textContent = String(summary.directCount);
     query('#calibrationTeacherHigh').textContent = String(summary.inferredHighCount);
     query('#calibrationTeacherMedium').textContent = String(summary.inferredMediumCount);
@@ -997,10 +1113,12 @@ function createController(root, application, initialWorkspace, activationStarted
   function renderContextControls() {
     const context = selection.context;
     const environment = query('#calibrationEnvironment');
+    const family = query('#calibrationDecisionFamily');
     const table = query('#calibrationTableSize');
     const position = query('#calibrationHeroPosition');
     const stack = query('#calibrationEffectiveStack');
     environment.value = context.environment;
+    family.value = context.decisionFamily;
 
     table.replaceChildren(...tableSizesForEnvironment(context.environment).map((size) => {
       const option = document.createElement('option');
@@ -1009,7 +1127,10 @@ function createController(root, application, initialWorkspace, activationStarted
       option.selected = size === context.tableSize;
       return option;
     }));
-    position.replaceChildren(...rfiPositionsForTableSize(context.tableSize).map((name) => {
+    position.replaceChildren(...positionsForPreflopCalibrationFamily(
+      context.tableSize,
+      context.decisionFamily,
+    ).map((name) => {
       const option = document.createElement('option');
       option.value = name;
       option.textContent = name;
@@ -1021,17 +1142,63 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationStackError').textContent = '';
   }
 
+  function contextSpotLabel(contextSelection = selection.context) {
+    return `${contextSelection.tableSize}-max · ${contextSelection.heroPosition} · ${contextSelection.effectiveStackBb}bb · ${decisionFamilyLabel(contextSelection.decisionFamily)}`;
+  }
+
+  function contextFact(label, value) {
+    const item = document.createElement('div');
+    const term = document.createElement('dt');
+    const detail = document.createElement('dd');
+    term.textContent = translated(label);
+    detail.textContent = value;
+    item.append(term, detail);
+    return item;
+  }
+
+  function priorAggressionLabel(aggression) {
+    const key = {
+      open: 'Open to {size}bb',
+      three_bet: '3-bet to {size}bb',
+      four_bet: '4-bet to {size}bb',
+    }[aggression.level] ?? '{level} to {size}bb';
+    return translated(key, {
+      level: aggression.level,
+      size: aggression.raiseToBb,
+    });
+  }
+
+  function renderContextFacts(context, target = '#calibrationContextFacts') {
+    const facts = [
+      contextFact('Table size', translated('analysis.value.tableSize', { count: context.tableSize })),
+      contextFact('Hero position', context.heroPosition),
+      contextFact('Effective stack', `${context.stack.valueBb}bb`),
+      contextFact('Decision family', decisionFamilyLabel(context.decisionFamily)),
+    ];
+    if (context.priorAction.lastAggression) {
+      facts.push(contextFact('Prior aggression', priorAggressionLabel(
+        context.priorAction.lastAggression,
+      )));
+      facts.push(contextFact('Facing size', `${context.facing.sizeBb}bb`));
+    }
+    if (context.facing.callAmountBb > 0) {
+      facts.push(contextFact('Call amount', `${context.facing.callAmountBb}bb`));
+    }
+    query(target).replaceChildren(...facts);
+  }
+
   function renderDerivedContext() {
     const entry = activeEntry();
     const mode = activeMode();
     if (!entry || !mode) return;
     const context = createContextFromSelection(selection.context);
-    const totalDeduction = context.accounting.forcedContributionPerPlayerBb * context.tableSize;
+    const totalDeduction = context.gameRules.collection.amountPerPlayerBb * context.tableSize;
     query('#calibrationAccounting').textContent = selection.context.environment === CALIBRATION_ENVIRONMENTS.CLUBGG
       ? translated('ClubGG · 0.1 bb per seated player · {total} bb total deduction', { total: totalDeduction.toFixed(1) })
       : translated('Home · no rake or deduction');
     query('#calibrationPreviewIdentity').textContent = `${entry.profile.displayName} · ${mode.displayName}`;
-    query('#calibrationPreviewSpot').textContent = `${selection.context.tableSize}-max · ${selection.context.heroPosition} · ${selection.context.effectiveStackBb}bb · RFI`;
+    query('#calibrationPreviewSpot').textContent = contextSpotLabel();
+    renderContextFacts(context);
     query('#calibrationProfileCount').textContent = String(workspace.profiles.length);
     query('#calibrationProgressMode').textContent = mode.displayName;
     const observationCount = countCurrentDirectObservations(workspace.snapshot, {
@@ -1040,13 +1207,29 @@ function createController(root, application, initialWorkspace, activationStarted
       context,
     });
     query('#calibrationObservationCount').textContent = String(observationCount);
-    setTranslatedText(query('#calibrationStartQuestions'), observationCount > 0 && observationCount < 169
+    setTranslatedText(query('#calibrationStartQuestions'), observationCount > 0
       ? 'Resume questions'
       : 'Start questions');
+    setTranslatedText(query('#calibrationProfileReadiness'), 'Checking profile');
     const noteKey = observationCount === 0
       ? 'No direct answers have been recorded for this range yet.'
       : '{count} direct answers are already recorded for this range.';
     setTranslatedText(query('#calibrationObservationNote'), noteKey, { count: observationCount });
+  }
+
+  function readinessStateKey(readiness) {
+    if (readiness?.state === 'conflicted') return 'Profile needs conflict review';
+    if (readiness?.state === 'refining') return 'Refining your profile';
+    if (readiness?.profileReady || readiness?.state === 'ready') return 'Profile ready';
+    return 'Building your profile';
+  }
+
+  function renderConfiguredReadiness(readiness) {
+    if (!readiness) return;
+    setTranslatedText(query('#calibrationProfileReadiness'), readinessStateKey(readiness));
+    if (readiness.profileReady || readiness.state === 'ready' || readiness.state === 'refining') {
+      setTranslatedText(query('#calibrationStartQuestions'), 'Continue refining');
+    }
   }
 
   function renderConfigured({ controls = true } = {}) {
@@ -1063,8 +1246,40 @@ function createController(root, application, initialWorkspace, activationStarted
     else void loadMatrixProjection({ scopeSwitchStartedAt });
   }
 
-  function actionLabel(actionType) {
-    return translated(actionType === 'raise' ? 'Raise' : 'Fold');
+  function actionLabel(
+    actionType,
+    decisionFamily = selection?.context?.decisionFamily,
+    heroPosition = selection?.context?.heroPosition,
+  ) {
+    const key = actionType === 'call'
+      && decisionFamily === CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI
+      ? heroPosition === 'SB' ? 'Complete' : 'Limp'
+      : {
+        fold: 'Fold',
+        check: 'Check',
+        call: 'Call',
+        raise: 'Raise',
+        all_in: 'All-in',
+      }[actionType] ?? actionType;
+    return translated(key);
+  }
+
+  function renderQuestionActions() {
+    const actions = calibrationState?.availableActions ?? RFI_CALIBRATION_ACTIONS;
+    const grid = query('#calibrationActionGrid');
+    grid.style.setProperty('--calibration-action-count', String(actions.length));
+    grid.replaceChildren(...actions.map((action) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `calibration-action-button calibration-action-button--${action.type.replace('_', '-')}`;
+      button.dataset.calibrationAction = action.type;
+      const label = document.createElement('span');
+      label.textContent = actionLabel(action.type);
+      const shortcut = document.createElement('kbd');
+      shortcut.textContent = action.shortcut;
+      button.append(label, shortcut);
+      return button;
+    }));
   }
 
   function previousAnswerLabel(observation) {
@@ -1075,34 +1290,28 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   function completionCopy(assessment) {
-    if (assessment.stopReason === RFI_CALIBRATION_STOP_REASONS.FULL_DIRECT_COVERAGE) {
+    if (assessment.profileReadiness.state === 'conflicted') {
       return {
-        title: 'Direct RFI calibration complete for this spot.',
-        summary: 'All 169 hand classes have direct answers.',
+        title: 'Profile needs conflict review',
+        summary: 'Direct answers conflict; review them before relying on this approximation.',
       };
     }
-    if (assessment.stopReason === RFI_CALIBRATION_STOP_REASONS.CONFLICT_RESOLUTION_NEEDED) {
+    if (assessment.profileReadiness.profileReady
+      || assessment.stopReason === RFI_CALIBRATION_STOP_REASONS.FULL_DIRECT_COVERAGE) {
       return {
-        title: 'Conflict review is needed',
-        summary: 'Ordinary answers cannot resolve the remaining direct contradiction.',
-      };
-    }
-    if (assessment.stopReason === RFI_CALIBRATION_STOP_REASONS.USER_TIME_BUDGET_REACHED) {
-      return {
-        title: 'Session goal reached',
-        summary: 'Your saved answers are already part of this model. Continue now or resume later.',
+        title: 'Your starter profile is ready',
+        summary: 'Review this useful approximation, continue with a bounded clarification batch, or stop for now.',
       };
     }
     if (assessment.stopReason === RFI_CALIBRATION_STOP_REASONS.NO_USEFUL_CANDIDATES) {
       return {
-        title: 'No useful ordinary questions remain',
+        title: 'Building your profile',
         summary: 'You can review this range or continue later after the evidence changes.',
       };
     }
     return {
-      title: 'Range mapped enough for this session',
-      summary: 'Most of this range is mapped. {count} high-value questions remain.',
-      parameters: { count: assessment.highValueQuestionCount },
+      title: 'Building your profile',
+      summary: 'Your answers are saved. Continue questions for broader evidence, or stop for now.',
     };
   }
 
@@ -1115,12 +1324,22 @@ function createController(root, application, initialWorkspace, activationStarted
     setSessionView('questions');
     root.dataset.sessionState = calibrationState.session.state;
     query('#calibrationQuestionIdentity').textContent = `${entry.profile.displayName} · ${mode.displayName}`;
-    query('#calibrationQuestionSpot').textContent = `${selection.context.tableSize}-max · ${selection.context.heroPosition} · ${selection.context.effectiveStackBb}bb · RFI`;
+    query('#calibrationQuestionSpot').textContent = contextSpotLabel();
+    renderContextFacts(calibrationState.session.contextScope, '#calibrationQuestionContextFacts');
+    const contextChanged = query('#calibrationContextChanged');
+    const transition = calibrationState.contextTransition;
+    contextChanged.hidden = !transition;
+    if (transition) {
+      query('#calibrationContextChangedFacts').textContent = contextSpotLabel(transition.toSelection);
+      query('#calibrationContextChangedReason').textContent = translated(
+        transition.reasonKey ?? 'Checking whether your range differs in this context.',
+        transition.reasonParameters,
+      );
+    }
     query('#calibrationFirstUseEducation').hidden = !educationVisible;
 
     const {
       prompt,
-      progress,
       previousAnswer,
       progressAssessment,
       questionExplanation,
@@ -1129,7 +1348,9 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationActiveQuestion').hidden = complete;
     query('#calibrationCompleteState').hidden = !complete;
     if (!complete) {
+      renderQuestionActions();
       query('#calibrationQuestionTitle').textContent = prompt.handClass;
+      renderQuestionCards(prompt.handClass);
       const kindKey = prompt.handClass.length === 2 ? 'Pair' : (prompt.handClass.endsWith('s') ? 'Suited' : 'Offsuit');
       setTranslatedText(query('#calibrationQuestionKind'), kindKey);
       setTranslatedText(
@@ -1138,20 +1359,31 @@ function createController(root, application, initialWorkspace, activationStarted
       );
       query('#calibrationAnswerError').textContent = '';
     }
-    setTranslatedText(query('#calibrationQuestionProgress'), '{count} direct', {
-      count: progressAssessment.directCount,
+    const readiness = progressAssessment.profileReadiness;
+    setTranslatedText(query('#calibrationReadinessState'), readinessStateKey(readiness));
+    const readinessReason = readiness.state === 'conflicted'
+      ? 'Direct answers conflict; review them before relying on this approximation.'
+      : readiness.partialActionModel
+        ? 'Fold/Raise patterns are modeled; Limp/Complete and All-in remain uncertain unless answered directly.'
+      : readiness.profileReady && readiness.state === 'refining'
+        ? 'Your profile is usable; questions now target uncertainty, boundaries, and conflicts.'
+        : readiness.profileReady
+          ? 'Riverline has a useful first approximation.'
+          : readiness.reasons[0]?.messageKey
+            ?? 'Riverline still needs evidence across a few important regions.';
+    setTranslatedText(query('#calibrationReadinessReason'), readinessReason);
+    setTranslatedText(query('#calibrationQuestionProgress'), '{direct} direct · {modeled} modeled hands', {
+      direct: progressAssessment.directCount,
+      modeled: progressAssessment.modeledHandCount,
     });
-    setTranslatedText(query('#calibrationQuestionRemaining'), '{count} high-value questions remain', {
-      count: progressAssessment.highValueQuestionCount,
+    setTranslatedText(query('#calibrationRecommendedClarifications'), '{count} recommended clarifications', {
+      count: progressAssessment.recommendedClarificationCount,
     });
-    query('#calibrationProgressBar').value = progress.answered;
-    query('#calibrationProgressBar').max = progress.total;
-    query('#calibrationProgressBar').setAttribute('aria-valuetext', translated('{answered} of {total} directly answered', progress));
     query('#calibrationDirectCount').textContent = String(progressAssessment.directCount);
-    query('#calibrationInferredHighCount').textContent = String(progressAssessment.inferredHighCount);
-    query('#calibrationInferredMediumCount').textContent = String(progressAssessment.inferredMediumCount);
+    query('#calibrationLocallyInferredCount').textContent = String(progressAssessment.locallyInferredCount);
+    query('#calibrationTransferredCount').textContent = String(progressAssessment.transferredCount);
     query('#calibrationUncertainCount').textContent = String(progressAssessment.uncertainCount);
-    query('#calibrationUnknownCount').textContent = String(progressAssessment.unknownCount);
+    query('#calibrationUnknownCount').textContent = String(progressAssessment.visibleUnknownCount);
     query('#calibrationConflictingCount').textContent = String(progressAssessment.conflictingCount);
     query('#calibrationPreviousAnswer').hidden = !previousAnswer;
     if (previousAnswer) {
@@ -1162,20 +1394,24 @@ function createController(root, application, initialWorkspace, activationStarted
       const copy = completionCopy(progressAssessment);
       setTranslatedText(query('#calibrationCompleteTitle'), copy.title);
       setTranslatedText(query('#calibrationCompleteSummary'), copy.summary, copy.parameters);
-      query('#calibrationCompleteCounts').textContent = translated(
-        '{direct} direct · {high} inferred high · {medium} inferred medium · {uncertain} uncertain · {unknown} unknown · {conflicting} conflicting',
-        {
-          direct: progressAssessment.directCount,
-          high: progressAssessment.inferredHighCount,
-          medium: progressAssessment.inferredMediumCount,
-          uncertain: progressAssessment.uncertainCount,
-          unknown: progressAssessment.unknownCount,
-          conflicting: progressAssessment.conflictingCount,
-        },
+      query('#calibrationCompleteDirectCount').textContent = String(progressAssessment.directCount);
+      query('#calibrationCompleteModeledCount').textContent = String(progressAssessment.modeledHandCount);
+      query('#calibrationCompleteUncertainRegionCount').textContent = String(
+        readiness.uncertainRegionCount,
       );
-      query('#calibrationAskAnother').hidden = progressAssessment.stopReason
-        === RFI_CALIBRATION_STOP_REASONS.FULL_DIRECT_COVERAGE
-        || !calibrationState.candidateRanking.some((candidate) => candidate.ordinaryQuestionEligible);
+      query('#calibrationCompleteClarificationCount').textContent = String(
+        progressAssessment.recommendedClarificationCount,
+      );
+      const canContinue = readiness.profileReady
+        ? calibrationState.candidateRanking.some((candidate) => (
+          candidate.ordinaryQuestionEligible && candidate.recommendedClarification
+        ))
+        : calibrationState.candidateRanking.some((candidate) => candidate.ordinaryQuestionEligible);
+      query('#calibrationAskAnother').hidden = !canContinue;
+      setTranslatedText(
+        query('#calibrationAskAnother'),
+        readiness.profileReady ? 'Continue refining' : 'Continue questions',
+      );
     }
     if (personalStrategySubview === 'teacher') {
       if (dismissedTeacherSuggestions.size) void loadRangeTeacher({ force: true });
@@ -1184,9 +1420,53 @@ function createController(root, application, initialWorkspace, activationStarted
     else adoptCalibrationMatrix();
   }
 
+  function renderQuestionCards(handClass) {
+    const target = query('#calibrationQuestionCards');
+    const rankStyle = document.documentElement.dataset.cardRankStyle ?? 'poker';
+    if (target.dataset.handClass === handClass && target.dataset.rankStyle === rankStyle) return;
+    const representative = representativeCardsForHandClass(handClass);
+    const cards = representative.cards.map((card) => {
+      const element = document.createElement('span');
+      element.className = `training-readonly-card riverline-card card--suit-${card.suitId}`;
+      element.setAttribute('role', 'img');
+      element.setAttribute('aria-label', card.accessibleLabel);
+      const displayRank = card.rank === 'T' && rankStyle === 'full-ten' ? '10' : card.rank;
+      const rankClass = displayRank === '10' ? ' rank--ten' : '';
+      for (const position of ['top', 'bottom']) {
+        const corner = document.createElement('span');
+        corner.className = `card-corner card-corner--${position}`;
+        corner.setAttribute('aria-hidden', 'true');
+        const rank = document.createElement('span');
+        rank.className = `rank${rankClass} s-${card.suitId}`;
+        rank.textContent = displayRank;
+        const suit = document.createElement('span');
+        suit.className = `suit s-${card.suitId}`;
+        suit.textContent = card.suitSymbol;
+        corner.append(rank, suit);
+        element.append(corner);
+      }
+      return element;
+    });
+    target.dataset.handClass = handClass;
+    target.dataset.rankStyle = rankStyle;
+    target.setAttribute('aria-label', representative.accessibleLabel);
+    target.replaceChildren(...cards);
+  }
+
+  function renderUserDirectedQuestionPreview(handClass) {
+    query('#calibrationActiveQuestion').hidden = false;
+    query('#calibrationCompleteState').hidden = true;
+    query('#calibrationQuestionTitle').textContent = handClass;
+    renderQuestionCards(handClass);
+    const kindKey = handClass.length === 2 ? 'Pair' : (handClass.endsWith('s') ? 'Suited' : 'Offsuit');
+    setTranslatedText(query('#calibrationQuestionKind'), kindKey);
+    setTranslatedText(query('#calibrationQuestionReason'), 'Selected from your Matrix');
+    query('#calibrationAnswerError').textContent = '';
+  }
+
   function setAnswerControlsDisabled(disabled) {
-    query('#calibrationActionFold').disabled = disabled;
-    query('#calibrationActionRaise').disabled = disabled;
+    query('#calibrationActionGrid').querySelectorAll('[data-calibration-action]')
+      .forEach((button) => { button.disabled = disabled; });
     query('#calibrationOpenMix').disabled = disabled;
     query('#calibrationSkipQuestion').disabled = disabled;
     query('#calibrationNotSure').disabled = disabled;
@@ -1201,8 +1481,10 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationRetryAnswer').disabled = pending;
     query('#calibrationMixRetry').disabled = pending;
     query('#calibrationMixSave').disabled = pending || Boolean(failedAnswer);
-    query('#calibrationMixFold').disabled = pending || Boolean(failedAnswer);
-    query('#calibrationMixRaise').disabled = pending || Boolean(failedAnswer);
+    query('#calibrationMixSlider').disabled = pending || Boolean(failedAnswer);
+    query('#calibrationMultiMix').querySelectorAll('input').forEach((input) => {
+      input.disabled = pending || Boolean(failedAnswer);
+    });
     query('#calibrationQuestionRegion')?.setAttribute('aria-busy', String(pending));
     root.dataset.persistenceState = pending ? 'pending' : (failedAnswer ? 'failed' : 'ready');
   }
@@ -1225,7 +1507,7 @@ function createController(root, application, initialWorkspace, activationStarted
       if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
       calibrationState = nextState;
       syncSnapshot(calibrationState.snapshot);
-      educationVisible = calibrationState.progress.answered === 0;
+      educationVisible = calibrationState.progressAssessment.directCount === 0;
       renderQuestion();
       window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
     } catch (error) {
@@ -1281,7 +1563,7 @@ function createController(root, application, initialWorkspace, activationStarted
       if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
       calibrationState = nextState;
       syncSnapshot(calibrationState.snapshot);
-      educationVisible = calibrationState.progress.answered === 0;
+      educationVisible = calibrationState.progressAssessment.directCount === 0;
       metrics.teacher.actionToQuestionMs.push(now() - startedAt);
       renderQuestion();
       window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
@@ -1356,11 +1638,12 @@ function createController(root, application, initialWorkspace, activationStarted
     } catch (error) {
       if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
         lastAnswerError = error;
-        failedAnswer = command;
+        const invalidDistribution = isInvalidRfiMixError(error);
+        failedAnswer = invalidDistribution ? null : command;
         query('#calibrationAnswerError').textContent = friendlyError(error);
         const mixVisible = !query('#calibrationMixDialog').hidden;
-        query('#calibrationRetryAnswer').hidden = mixVisible;
-        query('#calibrationMixRetry').hidden = !mixVisible;
+        query('#calibrationRetryAnswer').hidden = invalidDistribution || mixVisible;
+        query('#calibrationMixRetry').hidden = invalidDistribution || !mixVisible;
       }
       return false;
     } finally {
@@ -1392,23 +1675,34 @@ function createController(root, application, initialWorkspace, activationStarted
     }
   }
 
-  async function pauseQuestions() {
-    if (!calibrationState || answerPending) return;
+  async function pauseQuestions({ restoreFocus = true } = {}) {
+    if (!calibrationState || answerPending) return false;
     const scope = currentMatrixScope();
     const lifecycleToken = scope ? beginPersonalStrategyMutation(scope) : null;
-    if (!lifecycleToken) return;
+    if (!lifecycleToken) return false;
     try {
       const nextState = await application.pauseSession(calibrationState);
-      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return false;
       syncSnapshot(nextState.snapshot);
       calibrationState = null;
       renderConfigured();
-      query('#calibrationStartQuestions')?.focus?.({ preventScroll: true });
+      if (restoreFocus) query('#calibrationStartQuestions')?.focus?.({ preventScroll: true });
+      return true;
     } catch (error) {
       if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
         query('#calibrationAnswerError').textContent = friendlyError(error);
       }
+      return false;
     }
+  }
+
+  function reviewCompletedProfile() {
+    return openCalibrationProfileReview({
+      leaveCheckpoint: pauseQuestions,
+      openMatrix: setPersonalStrategySubview,
+      matrixPanel: query('#calibrationMatrixPanel'),
+      matrixTab: query('#calibrationMatrixTab'),
+    });
   }
 
   async function stopQuestions() {
@@ -1654,16 +1948,19 @@ function createController(root, application, initialWorkspace, activationStarted
     }
   }
 
-  async function askSelectedMatrixHandNext() {
-    if (!calibrationState || !matrixSelectedHand || matrixWritePending) return;
+  async function askSelectedMatrixHandNext(handClass = matrixSelectedHand) {
+    if (!calibrationState || !handClass || matrixWritePending) return;
     const scope = currentMatrixScope();
     if (!scope) return;
     const lifecycleToken = beginPersonalStrategyMutation(scope);
     setMatrixWritePending(true, lifecycleToken.generation);
+    setAnswerControlsDisabled(true);
+    query('#calibrationQuestionRegion').setAttribute('aria-busy', 'true');
+    renderUserDirectedQuestionPreview(handClass);
     try {
       const nextState = await application.requestPersonalStrategyMatrixQuestion(
         calibrationState,
-        matrixSelectedHand,
+        handClass,
       );
       if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
       calibrationState = nextState;
@@ -1673,12 +1970,129 @@ function createController(root, application, initialWorkspace, activationStarted
       query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true });
     } catch (error) {
       if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        renderQuestion();
         query('#calibrationMatrixError').hidden = false;
         query('#calibrationMatrixError').textContent = friendlyError(error);
       }
     } finally {
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
+        setAnswerControlsDisabled(answerPending || Boolean(failedAnswer));
+        query('#calibrationQuestionRegion').setAttribute('aria-busy', String(answerPending));
+      }
       setMatrixWritePending(false, lifecycleToken.generation);
     }
+  }
+
+  async function switchCalibrationContext(context, {
+    reasonKey = 'Checking whether your range differs in this context.',
+    reasonParameters = null,
+  } = {}) {
+    if (!calibrationState || answerPending || matrixWritePending) return false;
+    const fromScope = currentMatrixScope();
+    if (!fromScope) return false;
+    const lifecycleToken = beginPersonalStrategyMutation(fromScope);
+    try {
+      const nextState = await application.switchCalibrationContext(calibrationState, {
+        context,
+        reasonKey,
+        reasonParameters,
+      });
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, fromScope)) return false;
+      await application.saveWorkspaceSelection({
+        selectedProfileId: selection.profileId,
+        activeModeId: selection.modeId,
+        context: nextState.contextTransition.toSelection,
+      });
+      if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, fromScope)) return false;
+      selection.context = { ...nextState.contextTransition.toSelection };
+      activateCurrentPersonalStrategyScope();
+      calibrationState = nextState;
+      syncSnapshot(nextState.snapshot);
+      renderContextControls();
+      renderQuestion();
+      window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
+      return true;
+    } catch (error) {
+      if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, fromScope)) {
+        notify(friendlyError(error), 'error');
+      }
+      return false;
+    }
+  }
+
+  function percentageLabel(value) {
+    return `${Number(Number(value).toFixed(6))}%`;
+  }
+
+  function currentMixActions() {
+    const actions = calibrationState?.availableActions
+      ?? matrixProjection?.actionUniverse?.map((action) => ({ type: action.type, shortcut: '' }))
+      ?? RFI_CALIBRATION_ACTIONS;
+    return actions.map((action) => action.type);
+  }
+
+  function multiMixValues() {
+    return Object.fromEntries([...query('#calibrationMultiMix').querySelectorAll('[data-mix-action]')]
+      .map((input) => [input.dataset.mixAction, Number(input.value)]));
+  }
+
+  function setMultiMixValue(actionType, rawValue) {
+    const inputs = [...query('#calibrationMultiMix').querySelectorAll('[data-mix-action]')];
+    const changed = inputs.find((input) => input.dataset.mixAction === actionType);
+    if (!changed) return;
+    const nextValues = rebalanceCalibrationMixPercentages(multiMixValues(), actionType, rawValue);
+    inputs.forEach((input) => {
+      const value = nextValues[input.dataset.mixAction];
+      input.value = String(value);
+      input.closest('label').querySelector('output').textContent = percentageLabel(value);
+    });
+    query('#calibrationMixError').textContent = '';
+  }
+
+  function renderMultiMix(actions, initial = null) {
+    const defaultShare = 100 / actions.length;
+    const values = Object.fromEntries(actions.map((action) => [
+      action,
+      initial?.[action] ?? defaultShare,
+    ]));
+    const total = Object.values(values).reduce((sum, value) => sum + value, 0);
+    if (total !== 100) {
+      actions.forEach((action) => { values[action] = values[action] * 100 / total; });
+    }
+    const rows = actions.map((action, index) => {
+      const label = document.createElement('label');
+      const name = document.createElement('span');
+      const input = document.createElement('input');
+      const output = document.createElement('output');
+      name.textContent = actionLabel(action);
+      input.type = 'number';
+      input.min = '0';
+      input.max = '100';
+      input.step = '1';
+      input.inputMode = 'decimal';
+      input.dataset.mixAction = action;
+      const value = index === actions.length - 1
+        ? 100 - actions.slice(0, -1).reduce((sum, type) => sum + Number(values[type].toFixed(6)), 0)
+        : Number(values[action].toFixed(6));
+      input.value = String(value);
+      output.textContent = percentageLabel(value);
+      label.append(name, input, output);
+      return label;
+    });
+    query('#calibrationMultiMix').replaceChildren(...rows);
+  }
+
+  function setMixSliderFold(value) {
+    const mix = complementaryRfiMixFromFold(value);
+    query('#calibrationMixSlider').value = String(mix.fold);
+    query('#calibrationMixFoldValue').textContent = percentageLabel(mix.fold);
+    query('#calibrationMixRaiseValue').textContent = percentageLabel(mix.raise);
+    query('#calibrationMixSlider').setAttribute(
+      'aria-valuetext',
+      `Fold ${percentageLabel(mix.fold)}, Raise ${percentageLabel(mix.raise)}`,
+    );
+    query('#calibrationMixError').textContent = '';
+    return mix;
   }
 
   function mixFocusableElements() {
@@ -1696,15 +2110,36 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationMixForm').reset();
     query('#calibrationMixError').textContent = '';
     query('#calibrationMixRetry').hidden = true;
-    const selectedCell = target === 'matrix' ? matrixCell(handClass) : null;
+    const actions = currentMixActions();
+    const multiAction = actions.length > 2;
+    let initialFold = 50;
+    let initialDistribution = null;
+    let initialError = '';
+    const selectedCell = target === 'builder' ? null : matrixCell(handClass);
     if (selectedCell?.action.exactFrequencies) {
       const byAction = Object.fromEntries(selectedCell.action.exactFrequencies.map((entry) => [
         entry.action.type,
         Number((entry.probability * 100).toFixed(6)),
       ]));
-      query('#calibrationMixFold').value = String(byAction.fold ?? 0);
-      query('#calibrationMixRaise').value = String(byAction.raise ?? 0);
+      initialDistribution = byAction;
+      try {
+        const savedMix = { fold: byAction.fold ?? 0, raise: byAction.raise ?? 0 };
+        normalizeRfiMix(savedMix);
+        initialFold = savedMix.fold;
+      } catch (error) {
+        initialError = friendlyError(error);
+      }
     }
+    query('#calibrationTwoActionMix').hidden = multiAction;
+    query('#calibrationMultiMix').hidden = !multiAction;
+    if (multiAction) {
+      renderMultiMix(actions, initialDistribution);
+      setTranslatedText(query('#calibrationMixHelp'), 'Adjust any action; the remaining actions rebalance so the total stays 100%.');
+    } else {
+      setMixSliderFold(initialFold);
+      setTranslatedText(query('#calibrationMixHelp'), 'Move one slider to set Fold; Raise updates automatically so the exact mix always totals 100%.');
+    }
+    query('#calibrationMixError').textContent = initialError;
     if (target === 'builder') {
       setTranslatedText(query('#calibrationMixTitle'), 'Set exact mix for {count} selected hands', {
         count: builderSelection.size,
@@ -1713,7 +2148,9 @@ function createController(root, application, initialWorkspace, activationStarted
     setTranslatedText(query('#calibrationMixSave'), target === 'question' ? 'Save mix and continue' : 'Save exact mix');
     query('#calibrationMixDialog').hidden = false;
     document.body.classList.add('has-modal-open');
-    window.requestAnimationFrame(() => query('#calibrationMixFold').focus());
+    window.requestAnimationFrame(() => (multiAction
+      ? query('#calibrationMultiMix [data-mix-action]')
+      : query('#calibrationMixSlider')).focus());
   }
 
   function closeMixEditor({ restoreFocus = true } = {}) {
@@ -1730,10 +2167,19 @@ function createController(root, application, initialWorkspace, activationStarted
 
   async function submitMix(event) {
     event.preventDefault();
-    const mix = {
-      fold: Number(query('#calibrationMixFold').value),
-      raise: Number(query('#calibrationMixRaise').value),
-    };
+    let mix;
+    try {
+      if (!query('#calibrationMultiMix').hidden) {
+        mix = Object.entries(multiMixValues()).map(([type, percentage]) => ({
+          action: { type },
+          probability: percentage / 100,
+        }));
+      } else mix = setMixSliderFold(query('#calibrationMixSlider').value);
+    }
+    catch (error) {
+      query('#calibrationMixError').textContent = friendlyError(error);
+      return;
+    }
     const saved = mixTarget?.kind === 'matrix'
       ? await recordMatrixAnswer({ mix })
       : mixTarget?.kind === 'builder'
@@ -1771,7 +2217,7 @@ function createController(root, application, initialWorkspace, activationStarted
       selection = {
         profileId: entry.profile.id,
         modeId: entry.modes.find((mode) => mode.id === preference?.activeModeId)?.id || entry.modes[0].id,
-        context: normalizeRfiContextSelection(preference?.context, {
+        context: normalizeRfiContextSelection({ ...preference?.context, actionAware: true }, {
           environmentDefault: profileDefaultEnvironment(entry.profile),
         }),
       };
@@ -1793,7 +2239,7 @@ function createController(root, application, initialWorkspace, activationStarted
     selection = {
       profileId,
       modeId: entry.modes.find((mode) => mode.id === preference?.activeModeId)?.id || entry.modes[0].id,
-      context: normalizeRfiContextSelection(preference?.context, {
+      context: normalizeRfiContextSelection({ ...preference?.context, actionAware: true }, {
         environmentDefault: profileDefaultEnvironment(entry.profile),
       }),
     };
@@ -1811,6 +2257,8 @@ function createController(root, application, initialWorkspace, activationStarted
     pendingMatrixScopeSwitchStartedAt = now();
     const candidate = {
       environment: query('#calibrationEnvironment').value,
+      actionAware: true,
+      decisionFamily: query('#calibrationDecisionFamily').value,
       tableSize: Number(query('#calibrationTableSize').value),
       heroPosition: query('#calibrationHeroPosition').value,
       effectiveStackBb: Number(query('#calibrationEffectiveStack').value),
@@ -1910,7 +2358,7 @@ function createController(root, application, initialWorkspace, activationStarted
         selection = {
           profileId,
           modeId: bundle.modes[0].id,
-          context: normalizeRfiContextSelection({}, { environmentDefault: profileDefaultEnvironment(bundle.profile) }),
+          context: normalizeRfiContextSelection({ actionAware: true }, { environmentDefault: profileDefaultEnvironment(bundle.profile) }),
         };
         notify(translated('Profile created.'), 'success');
       }
@@ -1973,8 +2421,13 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationStopQuestions').addEventListener('click', stopQuestions);
     query('#calibrationReturnToContext').addEventListener('click', pauseQuestions);
     query('#calibrationAskAnother').addEventListener('click', askAnotherQuestion);
-    query('#calibrationActionFold').addEventListener('click', () => acceptAnswer({ actionType: 'fold' }));
-    query('#calibrationActionRaise').addEventListener('click', () => acceptAnswer({ actionType: 'raise' }));
+    query('#calibrationCompleteOpenMatrix').addEventListener('click', () => {
+      void reviewCompletedProfile();
+    });
+    query('#calibrationActionGrid').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-calibration-action]');
+      if (button) acceptAnswer({ actionType: button.dataset.calibrationAction });
+    });
     query('#calibrationRetryAnswer').addEventListener('click', () => acceptAnswer({}, { retry: true }));
     query('#calibrationUndoAnswer').addEventListener('click', undoAnswer);
     query('#calibrationSkipQuestion').addEventListener('click', () => skipQuestion(false));
@@ -1991,11 +2444,29 @@ function createController(root, application, initialWorkspace, activationStarted
       if (event.target === query('#calibrationMixDialog')) closeMixEditor();
     });
     query('#calibrationMixDialog').addEventListener('click', (event) => {
-      const preset = event.target.closest('[data-mix-fold][data-mix-raise]');
+      const preset = event.target.closest('[data-mix-fold]');
       if (!preset) return;
-      query('#calibrationMixFold').value = preset.dataset.mixFold;
-      query('#calibrationMixRaise').value = preset.dataset.mixRaise;
-      query('#calibrationMixFold').focus();
+      setMixSliderFold(preset.dataset.mixFold);
+      query('#calibrationMixSlider').focus();
+    });
+    query('#calibrationMixSlider').addEventListener('input', (event) => {
+      setMixSliderFold(event.target.value);
+    });
+    query('#calibrationMultiMix').addEventListener('input', (event) => {
+      const input = event.target.closest('[data-mix-action]');
+      if (input) setMultiMixValue(input.dataset.mixAction, input.value);
+    });
+    query('#calibrationMixSlider').addEventListener('keydown', (event) => {
+      const current = Number(event.currentTarget.value);
+      const next = event.key === 'Home' ? 0
+        : event.key === 'End' ? 100
+          : ['ArrowRight', 'ArrowUp'].includes(event.key) ? current + 1
+            : ['ArrowLeft', 'ArrowDown'].includes(event.key) ? current - 1
+              : event.key === 'PageUp' ? current + 10
+                : event.key === 'PageDown' ? current - 10 : null;
+      if (next === null) return;
+      event.preventDefault();
+      setMixSliderFold(Math.max(0, Math.min(100, next)));
     });
     query('#calibrationBuilderToggle').addEventListener('click', () => {
       builderActive = !builderActive;
@@ -2058,7 +2529,8 @@ function createController(root, application, initialWorkspace, activationStarted
       const cell = event.target.closest('[data-hand-class]');
       if (!cell) return;
       if (!builderActive) {
-        selectMatrixHand(cell.dataset.handClass, { manual: true });
+        selectMatrixHand(cell.dataset.handClass);
+        void askSelectedMatrixHandNext(cell.dataset.handClass);
         return;
       }
       if (suppressBuilderClick) {
@@ -2126,7 +2598,8 @@ function createController(root, application, initialWorkspace, activationStarted
       const activatesMatrixCell = event.key === 'Enter' || event.key === ' ';
       if (activatesMatrixCell && (!builderActive || event.key === 'Enter')) {
         event.preventDefault();
-        selectMatrixHand(current.handClass, { manual: true });
+        selectMatrixHand(current.handClass);
+        if (!builderActive) void askSelectedMatrixHandNext(current.handClass);
         return;
       }
       const movements = {
@@ -2161,6 +2634,10 @@ function createController(root, application, initialWorkspace, activationStarted
     });
     query('#calibrationMatrixFold').addEventListener('click', () => recordMatrixAnswer({ actionType: 'fold' }));
     query('#calibrationMatrixRaise').addEventListener('click', () => recordMatrixAnswer({ actionType: 'raise' }));
+    query('#calibrationMatrixContextActions').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-matrix-action]');
+      if (button) recordMatrixAnswer({ actionType: button.dataset.matrixAction });
+    });
     query('#calibrationMatrixMix').addEventListener('click', () => openMixEditor('matrix'));
     query('#calibrationMatrixAskNext').addEventListener('click', askSelectedMatrixHandNext);
     root.addEventListener('keydown', (event) => {
@@ -2169,7 +2646,9 @@ function createController(root, application, initialWorkspace, activationStarted
       if (!query('#calibrationQuestionView').contains(target)
         || target.matches('input, textarea, select, [contenteditable="true"]')
         || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
-      const action = RFI_CALIBRATION_ACTIONS.find((entry) => entry.shortcut.toLowerCase() === event.key.toLowerCase());
+      const action = calibrationState.availableActions.find((entry) => (
+        entry.shortcut.toLowerCase() === event.key.toLowerCase()
+      ));
       if (!action) return;
       event.preventDefault();
       acceptAnswer({ actionType: action.type });
@@ -2214,6 +2693,13 @@ function createController(root, application, initialWorkspace, activationStarted
       renderContextControls();
       renderConfigured({ controls: false });
       query('#calibrationPositionNotice').textContent = '';
+    });
+    query('#calibrationDecisionFamily').addEventListener('change', async () => {
+      try {
+        await updateContextFromControls({ announceCorrection: true });
+      } catch (error) {
+        notify(friendlyError(error), 'error');
+      }
     });
     query('#calibrationTableSize').addEventListener('change', async () => {
       try { await updateContextFromControls({ announceCorrection: true }); } catch (error) { notify(friendlyError(error), 'error'); }
@@ -2326,6 +2812,9 @@ function createController(root, application, initialWorkspace, activationStarted
         else renderMatrix();
       }
     }, { signal: lifecycle.signal });
+    window.addEventListener('riverlineCardRankStyleChanged', () => {
+      if (calibrationState?.prompt) renderQuestionCards(calibrationState.prompt.handClass);
+    }, { signal: lifecycle.signal });
   }
 
   personalStrategyScopeLifecycle = createPersonalStrategyScopeLifecycle({
@@ -2344,6 +2833,7 @@ function createController(root, application, initialWorkspace, activationStarted
   return Object.freeze({
     render,
     openCreateProfile: () => openProfileEditor('create'),
+    switchCalibrationContext,
     async dispose() {
       lifecycle.abort();
       personalStrategyScopeLifecycle.invalidate();

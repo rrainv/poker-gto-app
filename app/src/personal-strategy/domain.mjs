@@ -267,13 +267,19 @@ export function validatePersonalStrategyLegalActionsForDecisionFamily(
   }
   const includes = (type) => types.includes(type);
   if (decisionFamily === CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI) {
-    const valid = includes(ACTION_TYPES.FOLD)
+    const legacyCompatibility = sameStrings(types, [ACTION_TYPES.FOLD, ACTION_TYPES.RAISE]);
+    const canonical = includes(ACTION_TYPES.FOLD)
+      && includes(ACTION_TYPES.CALL)
       && includes(ACTION_TYPES.RAISE)
       && !includes(ACTION_TYPES.CHECK)
-      && !includes(ACTION_TYPES.CALL)
-      && types.every((type) => [ACTION_TYPES.FOLD, ACTION_TYPES.RAISE, ACTION_TYPES.ALL_IN].includes(type));
-    if (!valid) {
-      throw new RangeError('preflop_rfi legal actions require Fold and Raise, with optional All-in');
+      && types.every((type) => [
+        ACTION_TYPES.FOLD,
+        ACTION_TYPES.CALL,
+        ACTION_TYPES.RAISE,
+        ACTION_TYPES.ALL_IN,
+      ].includes(type));
+    if (!legacyCompatibility && !canonical) {
+      throw new RangeError('preflop_rfi legal actions require Fold, Call, and Raise, with optional All-in');
     }
     return types;
   }
@@ -780,6 +786,10 @@ function validateCalibrationContextV2(context) {
       || context.sizing.currentBetBb === null
       || context.sizing.lastFullRaiseIncrementBb === null) {
       throw new RangeError('Canonical CalibrationContext v2 facts must be complete and semantically identified');
+    }
+    if (context.decisionFamily === CALIBRATION_DECISION_FAMILIES.PREFLOP_RFI
+      && !types.includes(ACTION_TYPES.CALL)) {
+      throw new RangeError('Canonical preflop_rfi context must retain legal Call for Limp presentation');
     }
     if (hasRaise !== (context.sizing.minimumRaiseToBb !== null
       && context.sizing.maximumNonAllInRaiseToBb !== null)) {
@@ -1306,11 +1316,20 @@ export function validateCalibrationSession(session) {
       throw new RangeError(`CalibrationSession.cursor.${field} must contain canonical hand classes`);
     }
   }
-  for (const field of ['sessionQuestionCount', 'additionalQuestionAllowance']) {
+  for (const field of [
+    'sessionQuestionCount',
+    'additionalQuestionAllowance',
+    'refinementBatchSize',
+    'refinementBatchRemaining',
+  ]) {
     if (session.cursor[field] !== undefined
       && (!Number.isInteger(session.cursor[field]) || session.cursor[field] < 0)) {
       throw new RangeError(`CalibrationSession.cursor.${field} must be non-negative`);
     }
+  }
+  if (session.cursor.refinementActive !== undefined
+    && typeof session.cursor.refinementActive !== 'boolean') {
+    throw new TypeError('CalibrationSession.cursor.refinementActive must be a boolean');
   }
   if (session.cursor.lastStopReason !== undefined
     && session.cursor.lastStopReason !== null

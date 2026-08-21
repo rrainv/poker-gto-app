@@ -8,7 +8,7 @@ Last updated: August 18, 2026.
 
 The Personal Strategy Matrix is the compact inspection and correction surface for one exact Personal Strategy scope: Profile, Mode, and objective RFI context. It consumes the accepted `RANGE-CAL-002B` evidence view and `PersonalStrategySnapshot v1`, plus `RANGE-CAL-002C` candidate and boundary facts. Sparse immutable evidence remains durable truth; the Matrix is a derived read model and never a second strategy or range store.
 
-`RANGE-INTELLIGENCE-003A` may additionally supply a matching `personal-strategy-rfi-transfer-projection/v1`. A transferred cell retains its underlying local status, uses a distinct `T`/Transferred provenance state, carries donor relationship/evidence facts, and remains qualitative. Local direct, inferred, uncertain, and conflicting states take precedence. See `RANGE_CONTEXT_TRANSFER_SPEC.md`.
+`RANGE-INTELLIGENCE-003A` may additionally supply a matching `personal-strategy-rfi-transfer-projection/v2`. A transferred cell retains its underlying local status, uses a distinct `T`/Transferred provenance state, carries donor relationship/evidence facts, and remains qualitative. Local direct, inferred, uncertain, and conflicting states take precedence. See `RANGE_CONTEXT_TRANSFER_SPEC.md`.
 
 The existing Playbook Matrix is intentionally separate. It samples a representative available combo from `StrategyProvider v1` and presents provider-backed preflop reference context. The Personal Strategy Matrix neither reads those cells nor calls StrategyProvider. The two surfaces answer different questions and must not be labelled or wired as the same authority.
 

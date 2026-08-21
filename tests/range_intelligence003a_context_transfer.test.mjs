@@ -110,6 +110,7 @@ function canonicalContext({
     },
     legalActions: [
       { type: ACTION_TYPES.FOLD },
+      { type: ACTION_TYPES.CALL },
       { type: ACTION_TYPES.RAISE },
       ...(allIn ? [{ type: ACTION_TYPES.ALL_IN }] : []),
     ],
@@ -239,21 +240,26 @@ test('relationship model distinguishes position, table, stack, rules, profile, a
     RFI_CONTEXT_TRANSFER_REJECTION_REASONS.MODE_MISMATCH);
 });
 
-test('canonical semantic Game Rules and exact action sets gate transfer independently of labels', () => {
+test('canonical expanded action sets expose semantic compatibility but remain outside direct transfer', () => {
   const target = canonicalContext();
   const sameMathematics = canonicalContext({ effectiveStackBb: 110 });
   const compatible = createRfiContextTransferRelationship(scope(sameMathematics), scope(target));
-  assert.equal(compatible.eligible, true);
+  assert.equal(compatible.eligible, false);
+  assert.equal(compatible.rejectionReason,
+    RFI_CONTEXT_TRANSFER_REJECTION_REASONS.ACTION_SET_INCOMPATIBLE);
+  assert.equal(compatible.dimensions.actionSet.compatible, true);
   assert.equal(compatible.dimensions.gameRules.compatible, true);
   assert.equal(compatible.dimensions.gameRules.donor.identity.kind, 'semantic_fingerprint');
 
   const anteDifference = canonicalContext({ effectiveStackBb: 110, anteAmountMilliBb: 100 });
   const incompatibleRules = createRfiContextTransferRelationship(scope(anteDifference), scope(target));
+  assert.equal(incompatibleRules.dimensions.gameRules.compatible, false);
   assert.equal(incompatibleRules.rejectionReason,
-    RFI_CONTEXT_TRANSFER_REJECTION_REASONS.GAME_RULES_INCOMPATIBLE);
+    RFI_CONTEXT_TRANSFER_REJECTION_REASONS.ACTION_SET_INCOMPATIBLE);
 
   const allInActionSet = canonicalContext({ effectiveStackBb: 110, allIn: true });
   const incompatibleActions = createRfiContextTransferRelationship(scope(allInActionSet), scope(target));
+  assert.equal(incompatibleActions.dimensions.actionSet.compatible, false);
   assert.equal(incompatibleActions.rejectionReason,
     RFI_CONTEXT_TRANSFER_REJECTION_REASONS.ACTION_SET_INCOMPATIBLE);
 });

@@ -196,7 +196,9 @@ test('derived legal Personal Strategy actions follow canonical legality and cont
   const limp = derivePreflopCalibrationContextFromPokerState(act(dealtState(), ACTION_TYPES.CALL));
   const facingOpen = derivePreflopCalibrationContextFromPokerState(facingAggressionCount(1));
   const bbOption = derivePreflopCalibrationContextFromPokerState(bbOptionState());
-  assert.deepEqual(actionTypes(rfi), [ACTION_TYPES.FOLD, ACTION_TYPES.RAISE, ACTION_TYPES.ALL_IN]);
+  assert.deepEqual(actionTypes(rfi), [
+    ACTION_TYPES.FOLD, ACTION_TYPES.CALL, ACTION_TYPES.RAISE, ACTION_TYPES.ALL_IN,
+  ]);
   assert.deepEqual(actionTypes(limp), [
     ACTION_TYPES.FOLD, ACTION_TYPES.CALL, ACTION_TYPES.RAISE, ACTION_TYPES.ALL_IN,
   ]);
