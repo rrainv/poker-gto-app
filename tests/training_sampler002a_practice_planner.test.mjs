@@ -336,6 +336,42 @@ test('coverage advances only after served success and updates both justified joi
     ),
     1,
   );
+  assert.equal(
+    counterMap(next, 'sizingFamilies').get(request.requestedSizingFamily ?? 'none'),
+    1,
+  );
+});
+
+test('sizing-family recency discourages repeating the same family', () => {
+  const intent = createTrainingSessionIntent(focusedIntentInput({
+    targetDecisionType: TRAINING_PLANNER_TARGET_DECISION_TYPES.PREFLOP_FACING_OPEN,
+    requestedSizingFamily: 'large',
+  }));
+  const initial = createTrainingPracticePlannerState(intent);
+  const first = requirePlan(intent, initial, 0);
+  const served = recordServedTrainingScenario(initial, first, {
+    realizedSizingFamily: 'large',
+  });
+  const base = {
+    ...first,
+    tableSize: 10,
+    heroPosition: 'UTG+2',
+    startingStackBb: 250,
+    stackBucket: 'deep',
+    street: 'river',
+    targetDecisionType: TRAINING_PLANNER_TARGET_DECISION_TYPES.POSTFLOP_FACING_RAISE,
+    facingCategory: 'raise',
+  };
+  const repeatedFamily = calculateTrainingPracticeRecencyPenalty(served, {
+    ...base,
+    requestedSizingFamily: 'large',
+  });
+  const differentFamily = calculateTrainingPracticeRecencyPenalty(served, {
+    ...base,
+    requestedSizingFamily: 'medium',
+  });
+  assert.ok(repeatedFamily > differentFamily);
+  assert.equal(repeatedFamily - differentFamily, 60);
 });
 
 test('recent structural history and exact fingerprint memory remain bounded', () => {
@@ -380,6 +416,7 @@ test('exact and structural recency receive bounded penalties without becoming il
     street: 'river',
     targetDecisionType: TRAINING_PLANNER_TARGET_DECISION_TYPES.POSTFLOP_FACING_RAISE,
     facingCategory: 'raise',
+    requestedSizingFamily: 'large',
   };
   const unrelatedPenalty = calculateTrainingPracticeRecencyPenalty(served, unrelated);
 
@@ -524,7 +561,7 @@ test('Varied mode records controlled recency relaxation when a broad candidate s
   );
   const intent = createTrainingSessionIntent(variedIntentInput({
     sessionSeed: 7,
-    sessionLength: 20,
+    sessionLength: 300,
     rulesSnapshot: constrainedSnapshot,
     rulesCapability: resolveTrainingRulesCapability(constrainedSnapshot),
     focusPreferences: {
@@ -534,7 +571,7 @@ test('Varied mode records controlled recency relaxation when a broad candidate s
       allowedTableSizeFamilies: ['heads_up'],
     },
   }));
-  const { requests, state } = runSequence(intent, 20);
+  const { requests, state } = runSequence(intent, 300);
   const relaxed = requests.filter((request) => request.planning.relaxations.length > 0);
   assert.ok(relaxed.length > 0);
   assert.ok(relaxed.some((request) => (
@@ -595,6 +632,10 @@ test('deterministic 10k distribution covers every eligible marginal category wit
   }
   assert.equal(state.coverage.tableSizeHeroPositions.length, 54);
   assert.ok(state.coverage.tableSizeHeroPositions.every((entry) => entry.count > 0));
+  assert.deepEqual(
+    state.coverage.sizingFamilies.map((entry) => entry.key),
+    ['all_in', 'large', 'medium', 'minimum', 'none', 'overbet', 'small'],
+  );
   assert.equal(state.servedCount, 10000);
   assert.equal(state.recentStructuralRecords.length, 32);
   assert.equal(state.recentExactFingerprints.length, 64);
@@ -608,10 +649,11 @@ test('planner module imports no DOM, StrategyProvider, PokerState, or generator 
     'utf8',
   );
   const importLines = source.split(/\r?\n/).filter((line) => line.startsWith('import '));
-  assert.equal(importLines.length, 3);
-  assert.ok(importLines.every((line) => /shared\/poker-domain\/(?:game-rules|positions|schema)\.js/.test(
-    line,
+  assert.equal(importLines.length, 4);
+  assert.ok(importLines.slice(0, 3).every((line) => (
+    /shared\/poker-domain\/(?:game-rules|positions|schema)\.js/.test(line)
   )));
+  assert.match(source, /from '\.\/training-sizing-policy\.mjs'/);
   assert.doesNotMatch(source, /training-generator|strategy-provider|initializeHand|initialize-hand/);
   assert.doesNotMatch(source, /\bdocument\b|\bwindow\b|querySelector|createElement/);
   assert.doesNotMatch(source, /Math\.random|Date\.now|performance\.now/);

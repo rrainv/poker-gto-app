@@ -57,7 +57,9 @@ The strict immutable request contains the session/mode/ordinal identity,
 planner-only `exerciseSeed`, legal table/position target, starting stack and
 bucket, street, target decision type, derived facing category, difficulty,
 exact Game Rules semantic fingerprint, planner policy version, and transparent
-planning reason/relaxation/score metadata.
+planning reason/relaxation/score metadata. Under planner policy v2 it also
+contains a generation-only `requestedSizingFamily` for facing-size targets;
+legacy-default Focused requests and targets without a facing size use `null`.
 
 It contains no concrete action, amount-to, pot, button seat, card, board,
 fabricated history, PokerState, DecisionContext, StrategyResult, or grade.
@@ -120,6 +122,7 @@ Coverage tracks these marginals:
 - canonical Hero position
 - stack bucket
 - derived facing category
+- realized sizing family (`none` when sizing does not apply)
 
 Only these justified joints are tracked:
 
@@ -158,7 +161,28 @@ ignores recency for its fixed dimensions.
 Exact and structural fingerprints use fixed field order and a compact derived
 rules identity. They exclude cards, generated actions, and StrategyResult. The
 exact envelope fingerprint also excludes ordinal/exercise seed so repetition
-measurement remains meaningful.
+measurement remains meaningful. Planner policy v2 includes the requested
+sizing family in both fingerprints and applies a bounded sizing-family recency
+penalty.
+
+## Facing-size generation policy
+
+`TRAINING-SIZING-DIVERSITY-001` adds the `training-sizing-family/v1`
+vocabulary and `training-sizing-policy/v1` realization policy behind the
+planner/request boundary. Preflop facing targets use `minimum`, `small`,
+`medium`, `large`, and structurally eligible `all_in`. Postflop facing targets
+use `small`, `medium`, `large`, `overbet`, and structurally eligible `all_in`.
+These values describe legal scenario construction only; they are not answer
+controls, grades, strategy recommendations, GTO claims, or solver evidence.
+
+The planner proposes only families that are structurally eligible and
+distinct under its rules/stack/table envelope. The generator remains the
+authority for actual realization: it rounds through the configured chip unit,
+uses canonical legal-action minimum/maximum specifications, deduplicates
+families that collapse to one legal amount, and uses the canonical `ALL_IN`
+action. An unrealizable requested family fails explicitly and is never
+substituted. Retries keep the request's family fixed. Served coverage advances
+the marginal realized-family counter only after successful generation.
 
 Planner-only seed mixing hashes the session seed, ordinal, candidate key,
 policy/stream name, and then avalanches the result. Seed `0` remains distinct;
@@ -183,6 +207,6 @@ mixed unsigned value and then the fixed candidate key.
 6. integrate the planner with the canonical Training session lifecycle before
    any Varied Session UI is exposed.
 
-UI, persistence, mistake history, spaced repetition, board/sizing families,
+UI, persistence, mistake history, spaced repetition, board families,
 opponent-count targeting, generator RNG redesign, and Training grading changes
 remain outside 002A.

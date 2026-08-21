@@ -236,6 +236,11 @@ export function createTrainingSessionController({
         plannerState = recordServedTrainingScenario(
           activePracticeSession.plannerState,
           planned.request,
+          {
+            realizedSizingFamily: result.exercise.generationMetadata
+              ?.scenarioRequest?.sizing?.realizedSizingFamily
+              ?? null,
+          },
         );
       } catch (error) {
         const failed = sessionFailure(

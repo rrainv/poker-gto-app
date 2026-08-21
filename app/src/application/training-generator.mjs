@@ -27,6 +27,13 @@ import {
   TRAINING_PLANNER_TARGET_DECISION_TYPES,
   createTrainingScenarioRequest,
 } from './training-practice-planner.mjs';
+import {
+  TRAINING_SIZING_FAMILIES,
+  TRAINING_SIZING_FAMILY_SCHEMA_VERSION,
+  TRAINING_SIZING_POLICY_VERSION,
+  realizeCanonicalTrainingSizing,
+  trainingSizingFamiliesForStructure,
+} from './training-sizing-policy.mjs';
 
 export const TRAINING_CONFIG_V1_SCHEMA_VERSION = 'training-config/v1';
 export const TRAINING_CONFIG_V2_SCHEMA_VERSION = 'training-config/v2';
@@ -46,7 +53,8 @@ export const TRAINING_EXERCISE_SCHEMA_VERSIONS = Object.freeze([
 export const TRAINING_RULES_CAPABILITY_SCHEMA_VERSION = 'training-rules-capability/v1';
 export const TRAINING_GENERATION_ERROR_SCHEMA_VERSION = 'training-generation-error/v1';
 export const TRAINING_SCENARIO_REQUEST_ADAPTER_POLICY_VERSION =
-  'training-scenario-request-adapter-policy/v1';
+  'training-scenario-request-adapter-policy/v2';
+const TRAINING_SCENARIO_GENERATOR_POLICY_VERSION = 'bounded_legal_trajectory_v2';
 
 export const TRAINING_GENERATION_ERROR_CODES = Object.freeze({
   INVALID_CONFIG: 'invalid_config',
@@ -195,6 +203,14 @@ export function createSeededTrainingRandom(seed) {
       return shuffled;
     },
   });
+}
+
+class SizingFamilyRealizationError extends Error {
+  constructor(reason, details = {}) {
+    super(reason);
+    this.name = 'SizingFamilyRealizationError';
+    this.details = details;
+  }
 }
 
 function avalancheTrainingSeed(value) {
@@ -515,12 +531,10 @@ function actionFromSpec(state, spec, type, sizing = 'minimum') {
   return createAction(state.actingPlayerId, type, amountToMilliBb);
 }
 
-function recordAction(environment, type, sizing = 'minimum') {
+function recordPreparedAction(environment, legalActionSpec, action) {
   if (environment.actionCount >= MAX_TRAJECTORY_ACTIONS) {
     throw new RetryGenerationError('trajectory_limit_exceeded');
   }
-  const legalActionSpec = getLegalActionSpec(environment.state);
-  const action = actionFromSpec(environment.state, legalActionSpec, type, sizing);
   environment.state = applyAction(environment.state, action);
   environment.actionCount += 1;
   environment.events.push(deepFreeze({
@@ -528,6 +542,102 @@ function recordAction(environment, type, sizing = 'minimum') {
     action: structuredClone(action),
     legalActionSpec: structuredClone(legalActionSpec),
   }));
+}
+
+function recordAction(environment, type, sizing = 'minimum') {
+  const legalActionSpec = getLegalActionSpec(environment.state);
+  const action = actionFromSpec(environment.state, legalActionSpec, type, sizing);
+  recordPreparedAction(environment, legalActionSpec, action);
+}
+
+function actualPostflopAllInIsEligible(state, spec, defaultActionType) {
+  const actor = state.players.find((player) => player.playerId === state.actingPlayerId);
+  const committedMilliBb = spec.allIn.amountToMilliBb - actor.streetContributionMilliBb;
+  if (defaultActionType === ACTION_TYPES.BET) {
+    return committedMilliBb <= state.potMilliBb * 2;
+  }
+  const toCallMilliBb = state.currentBetMilliBb - actor.streetContributionMilliBb;
+  const potAfterCallMilliBb = state.potMilliBb + toCallMilliBb;
+  return committedMilliBb <= potAfterCallMilliBb * 2;
+}
+
+function recordFacingSizedAction(environment, defaultActionType, sizingContext) {
+  if (!sizingContext || sizingContext.requestedSizingFamily === null) {
+    recordAction(environment, defaultActionType);
+    if (sizingContext) {
+      environment.sizingRealization = {
+        vocabularyVersion: TRAINING_SIZING_FAMILY_SCHEMA_VERSION,
+        policyVersion: TRAINING_SIZING_POLICY_VERSION,
+        requestedSizingFamily: null,
+        realizedSizingFamily: null,
+        actionType: defaultActionType,
+        rawTargetMilliBb: null,
+        roundedTargetMilliBb: null,
+        realizedLegalAmountToMilliBb: null,
+        adjustmentReason: 'focused_legacy_default',
+        deduplicationReason: null,
+      };
+    }
+    return;
+  }
+  const state = environment.state;
+  const spec = getLegalActionSpec(state);
+  const hero = state.players.find((player) => player.playerId === sizingContext.heroPlayerId);
+  const eligibleSizingFamilies = trainingSizingFamiliesForStructure({
+    street: state.street,
+    targetDecisionType: sizingContext.targetDecisionType,
+    startingStackBb: hero.startingStackMilliBb / 1000,
+    tableSize: state.players.length,
+    chipUnitMilliBb: state.game.chipUnitMilliBb,
+  });
+  if (!eligibleSizingFamilies.includes(sizingContext.requestedSizingFamily)) {
+    throw new SizingFamilyRealizationError('requested_sizing_family_structurally_ineligible', {
+      requestedSizingFamily: sizingContext.requestedSizingFamily,
+      eligibleSizingFamilies,
+    });
+  }
+  if (sizingContext.requestedSizingFamily === TRAINING_SIZING_FAMILIES.ALL_IN
+    && state.street !== STREETS.PREFLOP
+    && !actualPostflopAllInIsEligible(state, spec, defaultActionType)) {
+    throw new SizingFamilyRealizationError('requested_all_in_exceeds_generation_policy', {
+      requestedSizingFamily: sizingContext.requestedSizingFamily,
+      canonicalAllInAmountToMilliBb: spec.allIn.amountToMilliBb,
+    });
+  }
+  let realizationSet;
+  try {
+    realizationSet = realizeCanonicalTrainingSizing({
+      state,
+      legalActionSpec: spec,
+      actionType: defaultActionType,
+      requestedSizingFamily: sizingContext.requestedSizingFamily,
+      eligibleSizingFamilies,
+    });
+  } catch (error) {
+    throw new SizingFamilyRealizationError('requested_sizing_family_unrealizable', {
+      requestedSizingFamily: sizingContext.requestedSizingFamily,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+  const realization = realizationSet.requested;
+  if (!realization?.realizedSizingFamily) {
+    throw new SizingFamilyRealizationError('requested_sizing_family_collapsed', {
+      requestedSizingFamily: sizingContext.requestedSizingFamily,
+      deduplicationReason: realization?.deduplicationReason ?? null,
+      realizedLegalAmountToMilliBb: realization?.realizedLegalAmountToMilliBb ?? null,
+      distinctFamilies: realizationSet.distinctFamilies,
+    });
+  }
+  const amountToMilliBb = realization.actionType === ACTION_TYPES.ALL_IN
+    ? null
+    : realization.realizedLegalAmountToMilliBb;
+  const action = createAction(state.actingPlayerId, realization.actionType, amountToMilliBb);
+  recordPreparedAction(environment, spec, action);
+  environment.sizingRealization = {
+    vocabularyVersion: TRAINING_SIZING_FAMILY_SCHEMA_VERSION,
+    policyVersion: TRAINING_SIZING_POLICY_VERSION,
+    ...realization,
+  };
 }
 
 function passiveAction(environment) {
@@ -560,7 +670,7 @@ function advanceToStreet(environment, targetStreet) {
   }
 }
 
-function stopAtPreflopTarget(environment, heroPlayerId, target) {
+function stopAtPreflopTarget(environment, heroPlayerId, target, sizingContext = null) {
   const initialActorId = environment.state.actingPlayerId;
   if (target === TRAINING_DECISION_TYPES.PREFLOP_UNOPENED) {
     if (environment.state.players.find((player) => player.playerId === heroPlayerId)?.position === 'BB') {
@@ -592,7 +702,7 @@ function stopAtPreflopTarget(environment, heroPlayerId, target) {
     let opened = false;
     while (environment.state.actingPlayerId !== heroPlayerId) {
       if (!opened) {
-        recordAction(environment, ACTION_TYPES.RAISE);
+        recordFacingSizedAction(environment, ACTION_TYPES.RAISE, sizingContext);
         opened = true;
       } else {
         passiveAction(environment);
@@ -610,7 +720,7 @@ function stopAtPreflopTarget(environment, heroPlayerId, target) {
     while (environment.state.actingPlayerId !== heroPlayerId) {
       const spec = getLegalActionSpec(environment.state);
       if (!reraised && spec.raise.available) {
-        recordAction(environment, ACTION_TYPES.RAISE);
+        recordFacingSizedAction(environment, ACTION_TYPES.RAISE, sizingContext);
         reraised = true;
       } else {
         passiveAction(environment);
@@ -642,7 +752,7 @@ function stopAtPreflopTarget(environment, heroPlayerId, target) {
     while (environment.state.actingPlayerId !== heroPlayerId) {
       const spec = getLegalActionSpec(environment.state);
       if (!fourBet && spec.raise.available) {
-        recordAction(environment, ACTION_TYPES.RAISE);
+        recordFacingSizedAction(environment, ACTION_TYPES.RAISE, sizingContext);
         fourBet = true;
       } else {
         passiveAction(environment);
@@ -657,7 +767,7 @@ function stopAtPreflopTarget(environment, heroPlayerId, target) {
   throw new RetryGenerationError('unsupported_preflop_target');
 }
 
-function stopAtPostflopTarget(environment, heroPlayerId, target) {
+function stopAtPostflopTarget(environment, heroPlayerId, target, sizingContext = null) {
   if (target === TRAINING_DECISION_TYPES.POSTFLOP_FIRST_ACTION) {
     while (environment.state.actingPlayerId !== heroPlayerId) {
       recordAction(environment, ACTION_TYPES.CHECK);
@@ -673,7 +783,7 @@ function stopAtPostflopTarget(environment, heroPlayerId, target) {
     while (environment.state.actingPlayerId !== heroPlayerId) {
       const spec = getLegalActionSpec(environment.state);
       if (!betMade && spec.bet.available) {
-        recordAction(environment, ACTION_TYPES.BET);
+        recordFacingSizedAction(environment, ACTION_TYPES.BET, sizingContext);
         betMade = true;
       } else {
         passiveAction(environment);
@@ -696,7 +806,7 @@ function stopAtPostflopTarget(environment, heroPlayerId, target) {
     while (environment.state.actingPlayerId !== heroPlayerId) {
       const spec = getLegalActionSpec(environment.state);
       if (!raised && spec.raise.available) {
-        recordAction(environment, ACTION_TYPES.RAISE);
+        recordFacingSizedAction(environment, ACTION_TYPES.RAISE, sizingContext);
         raised = true;
       } else {
         passiveAction(environment);
@@ -734,7 +844,7 @@ function exerciseIdentifier(seed, attempt, target, state) {
   ].join('-');
 }
 
-function createEnvironment(config, random, attempt, street, target) {
+function createEnvironment(config, random, attempt, street, target, sizingRequest = undefined) {
   const buttonRandom = random.button ?? random;
   const heroRandom = random.hero ?? random;
   const cardsRandom = random.cards ?? random;
@@ -772,11 +882,16 @@ function createEnvironment(config, random, attempt, street, target) {
     initialConfiguration,
   };
   recordChance(environment, holeEvent);
+  const sizingContext = sizingRequest === undefined ? null : {
+    requestedSizingFamily: sizingRequest.requestedSizingFamily,
+    targetDecisionType: target,
+    heroPlayerId: hero.playerId,
+  };
   if (street === STREETS.PREFLOP) {
-    stopAtPreflopTarget(environment, hero.playerId, target);
+    stopAtPreflopTarget(environment, hero.playerId, target, sizingContext);
   } else {
     advanceToStreet(environment, street);
-    stopAtPostflopTarget(environment, hero.playerId, target);
+    stopAtPostflopTarget(environment, hero.playerId, target, sizingContext);
   }
   return { environment, heroPlayerId: hero.playerId, heroPosition };
 }
@@ -788,6 +903,7 @@ function requestedStructure(request) {
     startingStackBb: request.startingStackBb,
     street: request.street,
     targetDecisionType: request.targetDecisionType,
+    requestedSizingFamily: request.requestedSizingFamily,
     rulesSemanticFingerprint: request.rulesSemanticFingerprint,
     exerciseSeed: request.exerciseSeed,
   };
@@ -798,12 +914,24 @@ function scenarioRequestGenerationMetadata(context, environment, decisionContext
   const hero = environment.state.players.find(
     (player) => player.playerId === environment.state.actingPlayerId,
   );
+  const sizing = environment.sizingRealization ?? {
+    vocabularyVersion: TRAINING_SIZING_FAMILY_SCHEMA_VERSION,
+    policyVersion: TRAINING_SIZING_POLICY_VERSION,
+    requestedSizingFamily: context.request.requestedSizingFamily,
+    realizedSizingFamily: null,
+    actionType: null,
+    rawTargetMilliBb: null,
+    roundedTargetMilliBb: null,
+    realizedLegalAmountToMilliBb: null,
+    adjustmentReason: 'not_applicable',
+    deduplicationReason: null,
+  };
   return {
     request: structuredClone(context.request),
     policyVersions: {
       planner: context.request.plannerPolicyVersion,
       adapter: TRAINING_SCENARIO_REQUEST_ADAPTER_POLICY_VERSION,
-      generator: 'bounded_legal_trajectory_v1',
+      generator: TRAINING_SCENARIO_GENERATOR_POLICY_VERSION,
     },
     requestedStructure: requestedStructure(context.request),
     realizedStructure: {
@@ -812,6 +940,7 @@ function scenarioRequestGenerationMetadata(context, environment, decisionContext
       startingStackBb: hero.startingStackMilliBb / 1000,
       street: decisionContext.street,
       targetDecisionType: pair.target,
+      requestedSizingFamily: context.request.requestedSizingFamily,
       rulesSemanticFingerprint: environment.state.rulesSnapshot.semanticFingerprint,
       exerciseSeed: context.request.exerciseSeed,
     },
@@ -821,6 +950,7 @@ function scenarioRequestGenerationMetadata(context, environment, decisionContext
       retryDiagnostics: context.retryDiagnostics.map((diagnostic) => ({ ...diagnostic })),
       namedSeeds: { ...context.namedSeeds },
     },
+    sizing: structuredClone(sizing),
   };
 }
 
@@ -838,6 +968,7 @@ function buildExercise(
     attempt,
     pair.street,
     pair.target,
+    scenarioRequestContext?.request,
   );
   validatePokerState(environment.state);
   if (environment.state.phase !== PHASES.BETTING
@@ -1126,6 +1257,18 @@ export function generateTrainingExerciseFromScenarioRequest(input, {
         TRAINING_GENERATION_ERROR_CODES.STRATEGY_UNAVAILABLE,
       ].includes(result.error.code)) return result;
     } catch (error) {
+      if (error instanceof SizingFamilyRealizationError) {
+        return failure(
+          TRAINING_GENERATION_ERROR_CODES.UNSUPPORTED_TARGET,
+          'The requested Training sizing family cannot be realized distinctly and legally.',
+          {
+            reason: error.message,
+            ...error.details,
+            request: structuredClone(request),
+            attempt,
+          },
+        );
+      }
       if (error instanceof RetryGenerationError) {
         retryDiagnostics.push({
           attempt,
@@ -1156,7 +1299,7 @@ export function generateTrainingExerciseFromScenarioRequest(input, {
       policyVersions: {
         planner: request.plannerPolicyVersion,
         adapter: TRAINING_SCENARIO_REQUEST_ADAPTER_POLICY_VERSION,
-        generator: 'bounded_legal_trajectory_v1',
+        generator: TRAINING_SCENARIO_GENERATOR_POLICY_VERSION,
       },
       requestedStructure: requestedStructure(request),
     },

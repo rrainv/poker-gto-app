@@ -302,7 +302,7 @@ test('002B retains exact stack, rules, request, ordinal, policies, and named see
   assert.deepEqual(metadata.policyVersions, {
     planner: TRAINING_PRACTICE_PLANNER_POLICY_VERSION,
     adapter: TRAINING_SCENARIO_REQUEST_ADAPTER_POLICY_VERSION,
-    generator: 'bounded_legal_trajectory_v1',
+    generator: 'bounded_legal_trajectory_v2',
   });
   assert.deepEqual(
     Object.keys(metadata.construction.namedSeeds).sort(),
@@ -367,6 +367,7 @@ test('002B impossible request fails stably without target, street, or position s
     street: 'preflop',
     targetDecisionType: TRAINING_PLANNER_TARGET_DECISION_TYPES.PREFLOP_FACING_4BET,
     facingCategory: 'four_bet',
+    requestedSizingFamily: 'large',
   });
   let resolutions = 0;
   const provider = {
@@ -394,12 +395,14 @@ test('002B impossible request fails stably without target, street, or position s
     (diagnostic) => diagnostic.namedSeeds.cards,
   )).size, 64);
   assert.deepEqual(first.error.details.request, impossible);
+  assert.equal(first.error.details.request.requestedSizingFamily, 'large');
   assert.deepEqual(first.error.details.requestedStructure, {
     tableSize: 2,
     heroPosition: 'BTN',
     startingStackBb: 10,
     street: 'preflop',
     targetDecisionType: 'preflop_facing_4bet',
+    requestedSizingFamily: 'large',
     rulesSemanticFingerprint: rulesSnapshot.semanticFingerprint,
     exerciseSeed: impossible.exerciseSeed,
   });

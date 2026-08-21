@@ -1,12 +1,20 @@
 import { validateGameRulesSnapshot } from '../../../shared/poker-domain/game-rules.js';
 import { POSITIONS_BY_TABLE_SIZE } from '../../../shared/poker-domain/positions.js';
 import { STREETS } from '../../../shared/poker-domain/schema.js';
+import {
+  TRAINING_POSTFLOP_SIZING_FAMILIES,
+  TRAINING_PREFLOP_SIZING_FAMILIES,
+  TRAINING_SIZING_FAMILIES,
+  trainingSizingFamiliesForStructure,
+  trainingSizingFamilyAppliesToTarget,
+  validateTrainingSizingFamily,
+} from './training-sizing-policy.mjs';
 
 export const TRAINING_SESSION_INTENT_SCHEMA_VERSION = 'training-session-intent/v1';
 export const TRAINING_SCENARIO_REQUEST_SCHEMA_VERSION = 'training-scenario-request/v1';
 export const TRAINING_PRACTICE_PLANNER_STATE_SCHEMA_VERSION = 'training-practice-planner-state/v1';
 export const TRAINING_PRACTICE_PLANNING_ERROR_SCHEMA_VERSION = 'training-practice-planning-error/v1';
-export const TRAINING_PRACTICE_PLANNER_POLICY_VERSION = 'training-practice-planner-policy/v1';
+export const TRAINING_PRACTICE_PLANNER_POLICY_VERSION = 'training-practice-planner-policy/v2';
 
 export const TRAINING_PRACTICE_MODES = Object.freeze({
   VARIED: 'varied',
@@ -84,6 +92,7 @@ const STACK_BUCKET_VALUES = Object.freeze([
 const FACING_CATEGORY_VALUES = Object.freeze([
   'none', 'open', 'three_bet', 'four_bet', 'bb_option', 'bet', 'raise',
 ]);
+const SIZING_FAMILY_VALUES = Object.freeze(Object.values(TRAINING_SIZING_FAMILIES));
 const PREFLOP_TARGETS = new Set([
   TRAINING_PLANNER_TARGET_DECISION_TYPES.PREFLOP_UNOPENED,
   TRAINING_PLANNER_TARGET_DECISION_TYPES.PREFLOP_FACING_OPEN,
@@ -143,6 +152,7 @@ const COVERAGE_COMPONENT_WEIGHTS = Object.freeze({
   heroPositions: 2,
   stackBuckets: 2,
   facingCategories: 1,
+  sizingFamilies: 1,
   tableSizeHeroPositions: 3,
   streetTargetDecisionTypes: 3,
 });
@@ -161,8 +171,11 @@ const INTENT_KEYS = Object.freeze([
 const VARIED_FOCUS_KEYS = Object.freeze([
   'profile', 'streetEmphasis', 'stackPreference', 'allowedTableSizeFamilies',
 ]);
-const FOCUSED_FOCUS_KEYS = Object.freeze([
+const LEGACY_FOCUSED_FOCUS_KEYS = Object.freeze([
   'tableSize', 'heroPosition', 'startingStackBb', 'street', 'targetDecisionType',
+]);
+const FOCUSED_FOCUS_KEYS = Object.freeze([
+  ...LEGACY_FOCUSED_FOCUS_KEYS, 'requestedSizingFamily',
 ]);
 const CAPABILITY_KEYS = Object.freeze([
   'schemaVersion',
@@ -185,6 +198,7 @@ const REQUEST_KEYS = Object.freeze([
   'street',
   'targetDecisionType',
   'facingCategory',
+  'requestedSizingFamily',
   'difficulty',
   'rulesSemanticFingerprint',
   'plannerPolicyVersion',
@@ -227,6 +241,7 @@ const RECENT_RECORD_KEYS = Object.freeze([
   'street',
   'targetDecisionType',
   'facingCategory',
+  'sizingFamily',
 ]);
 const COUNTER_ENTRY_KEYS = Object.freeze(['key', 'count']);
 const GENERAL_PROPOSAL_COUNT = 8;
@@ -452,7 +467,14 @@ function normalizeVariedFocusPreferences(preferences) {
 }
 
 function normalizeFocusedPreferences(preferences) {
-  requireExactKeys(preferences, FOCUSED_FOCUS_KEYS, 'Focused focusPreferences');
+  const actualKeys = Object.keys(preferences).sort();
+  const legacyKeys = [...LEGACY_FOCUSED_FOCUS_KEYS].sort();
+  const sizedKeys = [...FOCUSED_FOCUS_KEYS].sort();
+  const matches = (expected) => actualKeys.length === expected.length
+    && actualKeys.every((key, index) => key === expected[index]);
+  if (!matches(legacyKeys) && !matches(sizedKeys)) {
+    throw new RangeError(`Focused focusPreferences must contain exactly: ${sizedKeys.join(', ')}`);
+  }
   const startingStackBb = Number(preferences.startingStackBb);
   if (!Number.isFinite(startingStackBb) || startingStackBb <= 0) {
     throw new RangeError('Focused startingStackBb must be a positive finite number');
@@ -467,6 +489,9 @@ function normalizeFocusedPreferences(preferences) {
       TARGET_VALUES,
       'Focused targetDecisionType',
     ),
+    requestedSizingFamily: Object.hasOwn(preferences, 'requestedSizingFamily')
+      ? validateTrainingSizingFamily(preferences.requestedSizingFamily, { nullable: true })
+      : null,
   };
 }
 
@@ -539,6 +564,7 @@ function intentFingerprintValue(intent) {
           startingStackBb: intent.focusPreferences.startingStackBb,
           street: intent.focusPreferences.street,
           targetDecisionType: intent.focusPreferences.targetDecisionType,
+          requestedSizingFamily: intent.focusPreferences.requestedSizingFamily,
         },
     rulesSemanticFingerprint: intent.rulesSnapshot.semanticFingerprint,
     rulesCapability: {
@@ -641,6 +667,27 @@ export function validateTrainingScenarioRequest(request) {
   if (request.facingCategory !== TARGET_FACING_CATEGORY[request.targetDecisionType]) {
     throw new RangeError('TrainingScenarioRequest facingCategory does not match targetDecisionType');
   }
+  const sizingApplies = trainingSizingFamilyAppliesToTarget(
+    request.street,
+    request.targetDecisionType,
+  );
+  if (sizingApplies) {
+    if (request.requestedSizingFamily === null) {
+      if (request.mode !== TRAINING_PRACTICE_MODES.FOCUSED) {
+        throw new RangeError('Varied TrainingScenarioRequest requires a sizing family');
+      }
+    } else {
+      validateTrainingSizingFamily(request.requestedSizingFamily);
+      const streetFamilies = request.street === STREETS.PREFLOP
+        ? TRAINING_PREFLOP_SIZING_FAMILIES
+        : TRAINING_POSTFLOP_SIZING_FAMILIES;
+      if (!streetFamilies.includes(request.requestedSizingFamily)) {
+        throw new RangeError('TrainingScenarioRequest sizing family does not support street');
+      }
+    }
+  } else if (request.requestedSizingFamily !== null) {
+    throw new RangeError('TrainingScenarioRequest sizing family requires a facing-size target');
+  }
   requireEnum(request.difficulty, DIFFICULTY_VALUES, 'TrainingScenarioRequest difficulty');
   requireNonEmptyString(request.rulesSemanticFingerprint, 'rulesSemanticFingerprint');
   if (request.plannerPolicyVersion !== TRAINING_PRACTICE_PLANNER_POLICY_VERSION) {
@@ -665,6 +712,7 @@ function counterKeyIsValid(coverageKey, key) {
   if (coverageKey === 'heroPositions') return POSITION_VALUES.includes(key);
   if (coverageKey === 'stackBuckets') return STACK_BUCKET_VALUES.includes(key);
   if (coverageKey === 'facingCategories') return FACING_CATEGORY_VALUES.includes(key);
+  if (coverageKey === 'sizingFamilies') return key === 'none' || SIZING_FAMILY_VALUES.includes(key);
   if (coverageKey === 'tableSizeHeroPositions') {
     const separator = key.indexOf(':');
     if (separator < 0) return false;
@@ -729,6 +777,9 @@ function validateRecentStructuralRecord(record, index) {
   requireEnum(record.street, STREET_VALUES, 'recent street');
   requireEnum(record.targetDecisionType, TARGET_VALUES, 'recent targetDecisionType');
   requireEnum(record.facingCategory, FACING_CATEGORY_VALUES, 'recent facingCategory');
+  if (record.sizingFamily !== null) {
+    validateTrainingSizingFamily(record.sizingFamily);
+  }
 }
 
 export function validateTrainingPracticePlannerState(state) {
@@ -809,6 +860,7 @@ function scenarioIdentityParts(scenario) {
     targetDecisionType: scenario.targetDecisionType,
     facingCategory: scenario.facingCategory
       ?? TARGET_FACING_CATEGORY[scenario.targetDecisionType],
+    requestedSizingFamily: scenario.requestedSizingFamily ?? null,
   };
 }
 
@@ -822,6 +874,7 @@ function exactIdentitySerialization(scenario) {
     `street:${parts.street}`,
     `target:${parts.targetDecisionType}`,
     `facing:${parts.facingCategory}`,
+    `sizing:${parts.requestedSizingFamily ?? 'none'}`,
   ].join('|');
 }
 
@@ -835,6 +888,7 @@ function structuralIdentitySerialization(scenario) {
     `street:${parts.street}`,
     `target:${parts.targetDecisionType}`,
     `facing:${parts.facingCategory}`,
+    `sizing:${parts.requestedSizingFamily ?? 'none'}`,
   ].join('|');
 }
 
@@ -878,6 +932,9 @@ function recentRecordForScenario(scenario) {
     street: scenario.street,
     targetDecisionType: scenario.targetDecisionType,
     facingCategory: scenario.facingCategory ?? TARGET_FACING_CATEGORY[scenario.targetDecisionType],
+    sizingFamily: scenario.realizedSizingFamily
+      ?? scenario.requestedSizingFamily
+      ?? null,
   };
 }
 
@@ -893,6 +950,7 @@ function createRecencyIndex(state) {
     heroPosition: new Map(),
     tableSize: new Map(),
     stackBucket: new Map(),
+    sizingFamily: new Map(),
   };
   state.recentExactFingerprints.forEach((fingerprint, fingerprintIndex) => {
     const recencyWeight = fingerprintIndex + 1;
@@ -906,6 +964,7 @@ function createRecencyIndex(state) {
     addPenalty(index.heroPosition, record.heroPosition, 30 * recencyWeight);
     addPenalty(index.tableSize, String(record.tableSize), 20 * recencyWeight);
     addPenalty(index.stackBucket, record.stackBucket, 20 * recencyWeight);
+    addPenalty(index.sizingFamily, record.sizingFamily ?? 'none', 60 * recencyWeight);
   });
   return index;
 }
@@ -916,7 +975,8 @@ function recencyPenaltyForRecord(index, record) {
     + (index.targetFamily.get(record.targetFamily) ?? 0)
     + (index.heroPosition.get(record.heroPosition) ?? 0)
     + (index.tableSize.get(String(record.tableSize)) ?? 0)
-    + (index.stackBucket.get(record.stackBucket) ?? 0);
+    + (index.stackBucket.get(record.stackBucket) ?? 0)
+    + (index.sizingFamily.get(record.sizingFamily ?? 'none') ?? 0);
 }
 
 export function calculateTrainingPracticeRecencyPenalty(state, scenario) {
@@ -932,6 +992,9 @@ function coverageKeyValues(scenario) {
     heroPositions: scenario.heroPosition,
     stackBuckets: scenario.stackBucket,
     facingCategories: scenario.facingCategory,
+    sizingFamilies: scenario.realizedSizingFamily
+      ?? scenario.requestedSizingFamily
+      ?? 'none',
     tableSizeHeroPositions: `${scenario.tableSize}:${scenario.heroPosition}`,
     streetTargetDecisionTypes: `${scenario.street}:${scenario.targetDecisionType}`,
   };
@@ -945,14 +1008,21 @@ function incrementCounterEntries(entries, key) {
     .map(([entryKey, count]) => ({ key: entryKey, count }));
 }
 
-export function recordServedTrainingScenario(state, request) {
+export function recordServedTrainingScenario(state, request, realization = {}) {
   validateTrainingPracticePlannerState(state);
   validateTrainingScenarioRequest(request);
   if (state.sessionIntentFingerprint !== request.sessionIntentFingerprint) {
     throw new RangeError('TrainingScenarioRequest does not belong to this planner state');
   }
-  const keys = coverageKeyValues(request);
-  const record = recentRecordForScenario(request);
+  const realizedSizingFamily = Object.hasOwn(realization, 'realizedSizingFamily')
+    ? realization.realizedSizingFamily
+    : request.requestedSizingFamily;
+  if (realizedSizingFamily !== request.requestedSizingFamily) {
+    throw new RangeError('Served Training sizing family must match the requested family');
+  }
+  const realizedRequest = { ...request, realizedSizingFamily };
+  const keys = coverageKeyValues(realizedRequest);
+  const record = recentRecordForScenario(realizedRequest);
   const coverage = Object.fromEntries(COVERAGE_KEYS.map((coverageKey) => [
     coverageKey,
     incrementCounterEntries(state.coverage[coverageKey], keys[coverageKey]),
@@ -1043,6 +1113,55 @@ function deriveVariedEligibility(intent) {
   }
   const possibleStructuralPairCount = tablePositionPairs.length * streetTargets.length;
   const streetWeights = STREET_CURRICULUM_WEIGHTS[intent.focusPreferences.profile];
+  const sizingStructuresByFamily = new Map();
+  const addSizingStructure = (family, structure) => {
+    const key = family ?? 'none';
+    if (!sizingStructuresByFamily.has(key)) sizingStructuresByFamily.set(key, []);
+    sizingStructuresByFamily.get(key).push(structure);
+  };
+  for (const streetTarget of streetTargets) {
+    for (const stack of stackAnchors) {
+      const compatibleTablePositions = compatibleTablePositionsByTarget.get(
+        `${streetTarget.street}:${streetTarget.targetDecisionType}`,
+      ) ?? [];
+      if (!trainingSizingFamilyAppliesToTarget(
+        streetTarget.street,
+        streetTarget.targetDecisionType,
+      )) {
+        addSizingStructure(null, {
+          streetTarget,
+          stack,
+          tablePositions: compatibleTablePositions,
+        });
+        continue;
+      }
+      const tablePositionsByFamily = new Map();
+      for (const tablePosition of compatibleTablePositions) {
+        const families = trainingSizingFamiliesForStructure({
+          street: streetTarget.street,
+          targetDecisionType: streetTarget.targetDecisionType,
+          startingStackBb: stack,
+          tableSize: tablePosition.tableSize,
+          chipUnitMilliBb: intent.rulesSnapshot.definition.blinds.chipUnitMilliBb,
+        });
+        for (const family of families) {
+          if (!tablePositionsByFamily.has(family)) tablePositionsByFamily.set(family, []);
+          tablePositionsByFamily.get(family).push(tablePosition);
+        }
+      }
+      for (const [family, compatible] of tablePositionsByFamily) {
+        addSizingStructure(family, {
+          streetTarget,
+          stack,
+          tablePositions: compatible,
+        });
+      }
+    }
+  }
+  const sizingFamilies = [
+    null,
+    ...SIZING_FAMILY_VALUES,
+  ].filter((family) => sizingStructuresByFamily.has(family ?? 'none'));
   const coverageWeights = {
     streets: createWeightMap(streetTargets.map((entry) => [
       entry.street,
@@ -1056,6 +1175,7 @@ function deriveVariedEligibility(intent) {
     heroPositions: createWeightMap(tablePositionPairs.map((entry) => [entry.heroPosition, 1])),
     stackBuckets: createWeightMap(stackAnchors.map((stack) => [trainingStackBucket(stack), 1])),
     facingCategories: createWeightMap(streetTargets.map((entry) => [entry.facingCategory, 1])),
+    sizingFamilies: createWeightMap(sizingFamilies.map((family) => [family ?? 'none', 1])),
     tableSizeHeroPositions: createWeightMap(tablePositionPairs.map((entry) => [
       `${entry.tableSize}:${entry.heroPosition}`,
       1,
@@ -1071,6 +1191,8 @@ function deriveVariedEligibility(intent) {
     stackAnchors,
     streetTargets,
     compatibleTablePositionsByTarget,
+    sizingFamilies,
+    sizingStructuresByFamily,
     coverageWeights,
     coverageWeightTotals: Object.fromEntries(COVERAGE_KEYS.map((key) => [
       key,
@@ -1103,6 +1225,7 @@ function candidateKey(candidate, rulesIdentityKey) {
     candidate.startingStackBb,
     candidate.street,
     candidate.targetDecisionType,
+    candidate.requestedSizingFamily ?? 'none',
   ].join('|');
 }
 
@@ -1127,6 +1250,7 @@ function completeCandidate(
   tablePosition,
   streetTarget,
   startingStackBb,
+  requestedSizingFamily,
   eligibility,
   rulesSemanticFingerprint,
 ) {
@@ -1138,6 +1262,7 @@ function completeCandidate(
     street: streetTarget.street,
     targetDecisionType: streetTarget.targetDecisionType,
     facingCategory: streetTarget.facingCategory,
+    requestedSizingFamily,
     rulesSemanticFingerprint,
     rulesIdentityKey: eligibility.rulesIdentityKey,
   };
@@ -1151,13 +1276,44 @@ function completeCandidate(
 
 function proposalPool(intent, sessionOrdinal, eligibility) {
   const proposals = new Map();
-  const add = (tablePosition, streetTarget, stack) => {
+  const add = (tablePosition, streetTarget, stack, requestedSizingFamily = undefined) => {
     if (!tablePosition || !streetTarget || stack === null) return;
     if (structuralCompatibilityReason(tablePosition, streetTarget) !== null) return;
+    const availableSizingFamilies = trainingSizingFamilyAppliesToTarget(
+      streetTarget.street,
+      streetTarget.targetDecisionType,
+    )
+      ? trainingSizingFamiliesForStructure({
+          street: streetTarget.street,
+          targetDecisionType: streetTarget.targetDecisionType,
+          startingStackBb: stack,
+          tableSize: tablePosition.tableSize,
+          chipUnitMilliBb: intent.rulesSnapshot.definition.blinds.chipUnitMilliBb,
+        })
+      : [null];
+    if (availableSizingFamilies.length === 0) return;
+    const sizingLabel = [
+      tablePosition.tableSize,
+      tablePosition.heroPosition,
+      stack,
+      streetTarget.street,
+      streetTarget.targetDecisionType,
+    ].join(':');
+    const sizingFamily = requestedSizingFamily === undefined
+      ? stableChoice(
+          availableSizingFamilies,
+          intent,
+          sessionOrdinal,
+          sizingLabel,
+          'candidate-sizing-family',
+        )
+      : requestedSizingFamily;
+    if (!availableSizingFamilies.includes(sizingFamily)) return;
     const candidate = completeCandidate(
       tablePosition,
       streetTarget,
       stack,
+      sizingFamily,
       eligibility,
       intent.rulesSnapshot.semanticFingerprint,
     );
@@ -1211,6 +1367,33 @@ function proposalPool(intent, sessionOrdinal, eligibility) {
       ),
       streetTarget,
       stack,
+    );
+  });
+
+  eligibility.sizingFamilies.forEach((sizingFamily, index) => {
+    const label = `sizing-family:${sizingFamily ?? 'none'}:${index}`;
+    const compatibleStructures = eligibility.sizingStructuresByFamily.get(
+      sizingFamily ?? 'none',
+    ) ?? [];
+    const structure = stableChoice(
+      compatibleStructures,
+      intent,
+      sessionOrdinal,
+      label,
+      'sizing-family-structure',
+    );
+    if (!structure) return;
+    add(
+      stableChoice(
+        structure.tablePositions,
+        intent,
+        sessionOrdinal,
+        label,
+        'sizing-family-table-position',
+      ),
+      structure.streetTarget,
+      structure.stack,
+      sizingFamily,
     );
   });
 
@@ -1345,6 +1528,25 @@ function focusedImpossibilityReasons(intent) {
       reasons.push('stack_not_aligned_to_rules_chip_unit');
     }
   }
+  const sizingApplies = trainingSizingFamilyAppliesToTarget(
+    focus.street,
+    focus.targetDecisionType,
+  );
+  if (!sizingApplies && focus.requestedSizingFamily !== null) {
+    reasons.push('sizing_family_requires_facing_target');
+  } else if (sizingApplies && focus.requestedSizingFamily !== null
+    && focus.startingStackBb >= 10 && focus.startingStackBb <= 500) {
+    const eligible = trainingSizingFamiliesForStructure({
+      street: focus.street,
+      targetDecisionType: focus.targetDecisionType,
+      startingStackBb: focus.startingStackBb,
+      tableSize: focus.tableSize,
+      chipUnitMilliBb: intent.rulesSnapshot.definition.blinds.chipUnitMilliBb,
+    });
+    if (!eligible.includes(focus.requestedSizingFamily)) {
+      reasons.push('sizing_family_not_distinct_or_structurally_eligible');
+    }
+  }
   return [...new Set(reasons)].sort(compareStrings);
 }
 
@@ -1366,6 +1568,7 @@ function focusedPlan(intent, state, sessionOrdinal) {
     street: focus.street,
     targetDecisionType: focus.targetDecisionType,
     facingCategory: TARGET_FACING_CATEGORY[focus.targetDecisionType],
+    requestedSizingFamily: focus.requestedSizingFamily,
     rulesSemanticFingerprint: intent.rulesSnapshot.semanticFingerprint,
   };
   const compactKey = candidateKey(candidate, digest64(intent.rulesSnapshot.semanticFingerprint));
@@ -1477,6 +1680,7 @@ function variedPlan(intent, state, sessionOrdinal) {
     street: selected.street,
     targetDecisionType: selected.targetDecisionType,
     facingCategory: selected.facingCategory,
+    requestedSizingFamily: selected.requestedSizingFamily,
     difficulty: intent.difficulty,
     rulesSemanticFingerprint: intent.rulesSnapshot.semanticFingerprint,
     plannerPolicyVersion: intent.plannerPolicyVersion,
