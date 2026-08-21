@@ -1,4 +1,5 @@
 export * from './domain.mjs';
+export * from './action-contract.mjs';
 export * from './repository.mjs';
 export * from './browser-storage.mjs';
 export * from './indexeddb-storage.mjs';

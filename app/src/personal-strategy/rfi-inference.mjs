@@ -16,6 +16,11 @@ import {
   validateCalibrationContext,
   validateRangeObservation,
 } from './domain.mjs';
+import {
+  PERSONAL_STRATEGY_RFI_ACTION_SET,
+  projectActionEstimateV2ToRfiEstimateV1,
+  projectPersonalStrategyEstimateV1ToActionEstimateV2,
+} from './action-contract.mjs';
 
 export const PERSONAL_STRATEGY_ESTIMATE_SCHEMA_VERSION = 'personal-strategy-estimate/v1';
 export const PERSONAL_STRATEGY_SNAPSHOT_SCHEMA_VERSION = 'personal-strategy-snapshot/v1';
@@ -74,7 +79,9 @@ export const RFI_NEIGHBOR_RELATION_TYPES = Object.freeze({
 
 const STATUS_VALUES = new Set(Object.values(PERSONAL_STRATEGY_ESTIMATE_STATUSES));
 const PROVENANCE_VALUES = new Set(Object.values(PERSONAL_STRATEGY_ESTIMATE_PROVENANCE));
-const SUPPORTED_ACTIONS = new Set([ACTION_TYPES.FOLD, ACTION_TYPES.RAISE]);
+const SUPPORTED_ACTIONS = new Set(
+  PERSONAL_STRATEGY_RFI_ACTION_SET.legalActions.map((action) => action.type),
+);
 const HAND_INDEX = new Map(PREFLOP_HAND_CLASSES.map((handClass, index) => [handClass, index]));
 const TIER_PRIORITY = Object.freeze({ primary: 0, secondary: 1, tertiary: 2 });
 const NEIGHBORHOOD_CACHE = new Map();
@@ -442,7 +449,7 @@ function estimateResult(evidenceView, handClass, {
   reasons,
   support,
 }) {
-  const estimate = {
+  const legacyEstimate = {
     schemaVersion: PERSONAL_STRATEGY_ESTIMATE_SCHEMA_VERSION,
     profileId: evidenceView.scope.profileId,
     modeId: evidenceView.scope.modeId,
@@ -461,6 +468,14 @@ function estimateResult(evidenceView, handClass, {
     support: cloneData(support),
     comboOverrides: [],
   };
+  const contradictions = status === PERSONAL_STRATEGY_ESTIMATE_STATUSES.CONFLICTING
+    ? evidenceView.conflicts.filter((conflict) => conflict.target.id === handClass)
+    : [];
+  const actionAwareEstimate = projectPersonalStrategyEstimateV1ToActionEstimateV2(
+    legacyEstimate,
+    { contradictions },
+  );
+  const estimate = projectActionEstimateV2ToRfiEstimateV1(actionAwareEstimate, legacyEstimate);
   validatePersonalStrategyEstimate(estimate);
   return deepFreeze(estimate);
 }
@@ -590,7 +605,7 @@ export function createPersonalStrategySnapshot(evidenceView) {
   const snapshot = {
     schemaVersion: PERSONAL_STRATEGY_SNAPSHOT_SCHEMA_VERSION,
     scope: cloneData(evidenceView.scope),
-    actionUniverse: [actionIdentity(ACTION_TYPES.FOLD), actionIdentity(ACTION_TYPES.RAISE)],
+    actionUniverse: cloneData(PERSONAL_STRATEGY_RFI_ACTION_SET.legalActions),
     evidenceRevision: {
       activeHeadIds: [...evidenceView.activeHeadIds],
       fingerprint: evidenceView.evidenceFingerprint,

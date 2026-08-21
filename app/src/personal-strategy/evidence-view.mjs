@@ -1,5 +1,4 @@
 import {
-  ACTION_TYPES,
   PREFLOP_HAND_CLASSES,
   isPreflopHandClass,
 } from '../../../shared/poker-domain/index.js';
@@ -12,6 +11,14 @@ import {
   validateRangeObservation,
   validateTrainingObservation,
 } from './domain.mjs';
+import {
+  PERSONAL_STRATEGY_RFI_ACTION_SET,
+  normalizePersonalStrategyExactDistribution,
+  personalStrategyActionSetHas,
+  projectActionEvidenceV2ToRfiValue,
+  projectRangeObservationV1ToActionEvidenceV2,
+  projectTrainingObservationV1ToActionEvidenceV2,
+} from './action-contract.mjs';
 
 export const STRATEGY_SPOT_CONTEXT_SCHEMA_VERSION = 'strategy-spot-context/v1';
 export const PERSONAL_STRATEGY_EVIDENCE_SCHEMA_VERSION = 'personal-strategy-evidence/v1';
@@ -50,7 +57,6 @@ export const PERSONAL_STRATEGY_DIRECT_HEAD_STATES = Object.freeze({
   SUPERSEDED: 'superseded',
 });
 
-const SUPPORTED_RFI_ACTIONS = new Set([ACTION_TYPES.FOLD, ACTION_TYPES.RAISE]);
 const HAND_INDEX = new Map(PREFLOP_HAND_CLASSES.map((handClass, index) => [handClass, index]));
 
 function deepFreeze(value) {
@@ -139,6 +145,11 @@ export function createRfiStrategySpotContext(context) {
 }
 
 function directEvidenceRecord(observation, headState) {
+  const actionAwareEvidence = projectRangeObservationV1ToActionEvidenceV2(observation);
+  const compatibilityValue = projectActionEvidenceV2ToRfiValue(
+    actionAwareEvidence,
+    observation.frequencies,
+  );
   const claimKind = observation.state === RANGE_OBSERVATION_STATES.RETRACTED
     ? PERSONAL_STRATEGY_EVIDENCE_CLAIM_KINDS.RETRACTION
     : observation.hasExplicitFrequencies
@@ -167,10 +178,8 @@ function directEvidenceRecord(observation, headState) {
       value: claimKind === PERSONAL_STRATEGY_EVIDENCE_CLAIM_KINDS.RETRACTION
         ? null
         : {
-          dominantAction: actionIdentity(observation.dominantAction),
-          exactFrequencies: observation.frequencies === null
-            ? null
-            : cloneData(observation.frequencies),
+          dominantAction: cloneData(compatibilityValue.dominantAction),
+          exactFrequencies: cloneData(compatibilityValue.exactFrequencies),
         },
     },
     lineage: {
@@ -185,6 +194,8 @@ function directEvidenceRecord(observation, headState) {
 }
 
 function trainingEvidenceRecord(observation) {
+  const actionAwareEvidence = projectTrainingObservationV1ToActionEvidenceV2(observation);
+  const compatibilityValue = projectActionEvidenceV2ToRfiValue(actionAwareEvidence);
   return {
     schemaVersion: PERSONAL_STRATEGY_EVIDENCE_SCHEMA_VERSION,
     evidenceId: observation.id,
@@ -203,7 +214,7 @@ function trainingEvidenceRecord(observation) {
     target: { kind: 'hand_class', id: observation.handClass },
     claim: {
       kind: PERSONAL_STRATEGY_EVIDENCE_CLAIM_KINDS.OBSERVED_ACTION,
-      value: { chosenAction: actionIdentity(observation.chosenAction) },
+      value: { chosenAction: cloneData(compatibilityValue.chosenAction) },
     },
     lineage: { supersedesEvidenceId: null, resolvesEvidenceIds: [] },
     occurredAt: observation.createdAt,
@@ -447,9 +458,18 @@ export function isSupportedRfiStrategyValue(point) {
   if (![PERSONAL_STRATEGY_DIRECT_POINT_STATES.DIRECT_DOMINANT,
     PERSONAL_STRATEGY_DIRECT_POINT_STATES.DIRECT_EXACT].includes(point?.resolution)) return false;
   const frequencies = point.strategyValue.exactFrequencies;
-  return frequencies === null
-    ? SUPPORTED_RFI_ACTIONS.has(point.strategyValue.dominantAction?.type)
-    : frequencies.every((entry) => SUPPORTED_RFI_ACTIONS.has(entry.action.type));
+  if (frequencies === null) {
+    return personalStrategyActionSetHas(
+      PERSONAL_STRATEGY_RFI_ACTION_SET,
+      point.strategyValue.dominantAction,
+    );
+  }
+  try {
+    normalizePersonalStrategyExactDistribution(PERSONAL_STRATEGY_RFI_ACTION_SET, frequencies);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function directObservationSemanticSignature(observation) {
