@@ -137,7 +137,25 @@ export function installPlaybookStateSourceBridge(browserWindow, {
 
     createCanonicalHandReplaySource() {
       return modeController.getMode() === PLAYBOOK_MODES.HAND && !savedHandViewer
-        ? replayController.createCanonicalHandReplaySource()
+        ? canonicalController.createCanonicalHandReplaySource()
+        : null;
+    },
+
+    getHeroDecisionJournal() {
+      return modeController.getMode() === PLAYBOOK_MODES.HAND && !savedHandViewer
+        ? canonicalController.getHeroDecisionJournal()
+        : null;
+    },
+
+    evaluateHeroDecision(options) {
+      return modeController.getMode() === PLAYBOOK_MODES.HAND && !savedHandViewer
+        ? canonicalController.evaluateHeroDecision(options)
+        : null;
+    },
+
+    getCompletedHandResult() {
+      return modeController.getMode() === PLAYBOOK_MODES.HAND && !savedHandViewer
+        ? canonicalController.getCompletedHandResult()
         : null;
     },
 
@@ -246,8 +264,12 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     initializeHand(configuration) {
       playbackController.cancel();
       closeSavedHandViewer();
-      const result = canonicalController.initialize(configuration);
-      canonicalHandSourceId = handSourceIdFactory();
+      const nextHandSourceId = handSourceIdFactory();
+      const result = canonicalController.initialize({
+        ...configuration,
+        handId: nextHandSourceId,
+      });
+      canonicalHandSourceId = result?.handId ?? null;
       replayController.replaceHand({
         state: result,
         heroPlayerId: canonicalController.getHeroPlayerId(),

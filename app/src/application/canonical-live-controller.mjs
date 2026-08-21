@@ -17,6 +17,14 @@ export const CANONICAL_LIVE_DEFAULT_ENABLED = false;
 
 const SUPPORTED_ACTIONS = Object.freeze(new Set(Object.values(ACTION_TYPES)));
 const SUPPORTED_STACK_MODES = Object.freeze(new Set(['hero', 'effective', 'custom']));
+let liveHandSequence = 0;
+
+function defaultLiveHandIdFactory() {
+  const uuid = globalThis.crypto?.randomUUID?.();
+  if (uuid) return `canonical-hand-${uuid}`;
+  liveHandSequence += 1;
+  return `canonical-hand-${Date.now().toString(36)}-${liveHandSequence.toString(36)}`;
+}
 
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
@@ -50,12 +58,16 @@ function requireInteger(value, minimum, maximum, label) {
   return numeric;
 }
 
-function normalizeConfiguration(configuration) {
+function normalizeConfiguration(configuration, handIdFactory) {
   if (!configuration || typeof configuration !== 'object' || Array.isArray(configuration)) {
     throw new TypeError('Canonical Playbook configuration is required');
   }
 
   const tableSize = requireInteger(configuration.tableSize, 2, 10, 'tableSize');
+  const handId = configuration.handId ?? handIdFactory();
+  if (typeof handId !== 'string' || !handId.trim()) {
+    throw new TypeError('handId must be a non-empty string');
+  }
   const gameMode = configuration.gameMode ?? GAME_MODES.HOME;
 
   const hasHeroSeat = configuration.heroSeat !== undefined
@@ -115,7 +127,7 @@ function normalizeConfiguration(configuration) {
     ante: { type: anteType, amountMilliBb: anteMilliBb },
   }, tableSize);
   const pokerConfiguration = {
-    handId: 'playbook-canonical',
+    handId,
     rulesSnapshot,
     buttonSeat,
     players,
@@ -138,7 +150,9 @@ function validateStagedCards(cards) {
 
 export function createCanonicalLiveController({
   enabled = CANONICAL_LIVE_DEFAULT_ENABLED,
+  handIdFactory = defaultLiveHandIdFactory,
 } = {}) {
+  if (typeof handIdFactory !== 'function') throw new TypeError('handIdFactory must be a function');
   const session = createCanonicalHandSession();
   let featureEnabled = enabled === true;
   let heroPlayerId = null;
@@ -199,7 +213,7 @@ export function createCanonicalLiveController({
       heroPlayerId = null;
       stagedHeroCards = Object.freeze([]);
       try {
-        const normalized = normalizeConfiguration(configuration);
+        const normalized = normalizeConfiguration(configuration, handIdFactory);
         const state = session.initializeFromGameRulesSnapshot(normalized.pokerConfiguration);
         const hero = normalized.requestedHeroSeat === null
           ? state.players.find((player) => (
@@ -216,6 +230,10 @@ export function createCanonicalLiveController({
         }
         heroPlayerId = hero.playerId;
         projectionOptions = Object.freeze({ ...normalized.projectionOptions });
+        session.configureHero({
+          heroPlayerId,
+          decisionContextOptions: projectionOptions,
+        });
         setUnavailable('awaiting_hole_cards');
         return state;
       } catch (error) {
@@ -254,6 +272,30 @@ export function createCanonicalLiveController({
 
     getDiagnostics() {
       return diagnostics;
+    },
+
+    getHeroDecisionJournal() {
+      return session.getHeroDecisionJournal();
+    },
+
+    evaluateHeroDecision(options) {
+      try {
+        return session.evaluateHeroDecision(options);
+      } catch (error) {
+        return setError(error);
+      }
+    },
+
+    createCanonicalHandReplaySource() {
+      try {
+        return session.createCanonicalHandReplaySource();
+      } catch (error) {
+        return setError(error);
+      }
+    },
+
+    getCompletedHandResult() {
+      return session.getCompletedHandResult();
     },
 
     getLegalActions() {
@@ -364,7 +406,9 @@ export function createCanonicalLiveController({
           : bbToMilliBb(Number(amountToBb), 'amountToBb');
         const action = createAction(state.actingPlayerId, type, amountToMilliBb);
         const nextState = session.applyAction(action);
-        setUnavailable(nextState.phase === PHASES.BETTING ? 'active_decision' : 'chance_state');
+        setUnavailable(nextState.phase === PHASES.BETTING
+          ? 'active_decision'
+          : nextState.phase === PHASES.TERMINAL ? 'terminal_state' : 'chance_state');
         return nextState;
       } catch (error) {
         return setError(error);
