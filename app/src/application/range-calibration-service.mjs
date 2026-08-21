@@ -523,12 +523,14 @@ async function calibrationState(
   const personalStrategyMatrixProjection = createPersonalStrategyMatrixProjection({
     snapshot: personalStrategySnapshot,
     evidenceView: projectionBundle.evidenceView,
+    transferProjection: projectionBundle.transferProjection,
     candidateRanking,
     highValueQuestionCount: progressAssessment.highValueQuestionCount,
   });
   const rangeTeacherView = createRangeTeacherView({
     snapshot: personalStrategySnapshot,
     evidenceView: projectionBundle.evidenceView,
+    transferProjection: projectionBundle.transferProjection,
     candidateRanking,
     progressAssessment,
     selectedHandClass: prompt?.handClass ?? null,
@@ -1371,6 +1373,7 @@ export function createRangeCalibrationApplication({
     return createRangeTeacherView({
       snapshot: projectionBundle.snapshot,
       evidenceView: projectionBundle.evidenceView,
+      transferProjection: projectionBundle.transferProjection,
       candidateRanking,
       progressAssessment,
       selectedHandClass,
@@ -1395,6 +1398,7 @@ export function createRangeCalibrationApplication({
     return createPersonalStrategyMatrixProjection({
       snapshot: projectionBundle.snapshot,
       evidenceView: projectionBundle.evidenceView,
+      transferProjection: projectionBundle.transferProjection,
       candidateRanking,
       highValueQuestionCount: progressAssessment.highValueQuestionCount,
     });
@@ -1605,6 +1609,7 @@ export function createRangeCalibrationApplication({
       projectionService.getStrategyEstimate(scope, handClass)
     ),
     getStrategySnapshot: (scope) => projectionService.getStrategySnapshot(scope),
+    getTransferProjection: (scope) => projectionService.getTransferProjection(scope),
     getInferenceSupport: (scope, handClass) => (
       projectionService.getInferenceSupport(scope, handClass)
     ),

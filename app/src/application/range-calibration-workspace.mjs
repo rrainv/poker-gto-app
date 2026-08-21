@@ -24,6 +24,7 @@ const MATRIX_STATUS_KEYS = Object.freeze({
   directly_known: 'Direct',
   inferred_high: 'Inferred high',
   inferred_medium: 'Inferred medium',
+  transferred: 'Transferred',
   uncertain: 'Uncertain',
   conflicting: 'Conflict',
   unknown: 'Unknown',
@@ -47,12 +48,15 @@ const MATRIX_REASON_KEYS = Object.freeze({
   no_structurally_relevant_evidence: 'No relevant direct evidence yet',
   unsupported_direct_action: 'The direct action is outside this Fold/Raise model',
   training_evidence_excluded_from_002b_inference: 'Training evidence is shown separately and does not drive this inference',
+  direct_donor_evidence: 'Transferred from direct evidence in a compatible nearby RFI context',
+  multiple_agreeing_donor_contexts: 'Multiple compatible donor contexts agree',
+  exact_donor_preserved_but_target_transfer_is_qualitative: 'Exact donor mix is preserved at its source; this target transfer stays qualitative',
 });
 
 const MATRIX_FILTER_STATUSES = Object.freeze({
   all: null,
   direct: new Set(['directly_known']),
-  inferred: new Set(['inferred_high', 'inferred_medium']),
+  inferred: new Set(['inferred_high', 'inferred_medium', 'transferred']),
   uncertain: new Set(['uncertain', 'unknown']),
   conflicts: new Set(['conflicting']),
 });
@@ -431,6 +435,12 @@ function createController(root, application, initialWorkspace, activationStarted
     } else if (cell.status === 'inferred_high' || cell.status === 'inferred_medium') {
       explanationKey = 'Riverline inferred {action} from nearby direct answers.';
       parameters = { action: actionLabel(cell.action.dominantAction) };
+    } else if (cell.status === 'transferred') {
+      explanationKey = 'Riverline transferred {action} from {count} compatible nearby RFI contexts. This is derived, not direct evidence.';
+      parameters = {
+        action: actionLabel(cell.action.dominantAction),
+        count: cell.transfer?.donorContributions.length ?? 0,
+      };
     } else if (cell.status === 'uncertain') {
       explanationKey = 'Nearby evidence exists, but Riverline is abstaining here.';
     } else if (cell.status === 'conflicting') {
@@ -439,7 +449,9 @@ function createController(root, application, initialWorkspace, activationStarted
     setTranslatedText(query('#calibrationInspectorExplanation'), explanationKey, parameters);
     query('#calibrationInspectorProvenance').textContent = matrixStatusLabel(cell.status);
     query('#calibrationInspectorEvidenceCount').textContent = translated('{count} records', {
-      count: cell.evidence.directHistory.length + cell.evidence.training.length,
+      count: cell.status === 'transferred'
+        ? cell.sourceEvidenceCount
+        : cell.evidence.directHistory.length + cell.evidence.training.length,
     });
     query('#calibrationInspectorBoundary').textContent = translated(
       cell.support.boundaryLikelihood === 'high' ? 'High boundary likelihood'
@@ -489,7 +501,9 @@ function createController(root, application, initialWorkspace, activationStarted
     if (cell.status === 'conflicting') {
       setTranslatedText(conflictNote, 'Keep both leaves the contradiction unresolved. A change corrects one active branch and preserves the other evidence.');
     }
-    const inferred = cell.status === 'inferred_high' || cell.status === 'inferred_medium';
+    const inferred = cell.status === 'inferred_high'
+      || cell.status === 'inferred_medium'
+      || cell.status === 'transferred';
     query('#calibrationMatrixConfirm').hidden = !inferred || !cell.action.dominantAction;
     query('#calibrationMatrixAskNext').hidden = !(
       calibrationState && cell.question?.ordinaryQuestionEligible && cell.question?.isHighValue
@@ -526,7 +540,9 @@ function createController(root, application, initialWorkspace, activationStarted
     selected.forEach((handClass) => {
       const status = matrixCell(handClass)?.status;
       if (status === 'directly_known') counts.direct += 1;
-      else if (status === 'inferred_high' || status === 'inferred_medium') counts.inferred += 1;
+      else if (status === 'inferred_high' || status === 'inferred_medium' || status === 'transferred') {
+        counts.inferred += 1;
+      }
       else if (status === 'uncertain') counts.uncertain += 1;
       else if (status === 'conflicting') counts.conflict += 1;
       else counts.unknown += 1;
@@ -712,6 +728,7 @@ function createController(root, application, initialWorkspace, activationStarted
       explore_boundary: 'Explore this boundary',
       explore_sparse_region: 'Explore this region',
       inspect_conflict: 'Inspect',
+      inspect_transfer: 'Inspect',
       refine_exact_mix: 'Refine exact mix',
     }[action?.kind] ?? 'Open';
   }
@@ -763,6 +780,7 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationTeacherDirect').textContent = String(summary.directCount);
     query('#calibrationTeacherHigh').textContent = String(summary.inferredHighCount);
     query('#calibrationTeacherMedium').textContent = String(summary.inferredMediumCount);
+    query('#calibrationTeacherTransferred').textContent = String(summary.transferredCount);
     query('#calibrationTeacherUncertain').textContent = String(summary.uncertainCount);
     query('#calibrationTeacherUnknown').textContent = String(summary.unknownCount);
     query('#calibrationTeacherConflicting').textContent = String(summary.conflictingCount);
@@ -807,6 +825,15 @@ function createController(root, application, initialWorkspace, activationStarted
     }));
     query('#calibrationTeacherConflicts').replaceChildren(...(conflicts.length
       ? conflicts : [teacherEmpty('No unresolved direct conflicts here.') ]));
+
+    const transferred = rangeTeacherView.transferredInsights.slice(0, 6).map((insight) => teacherItem({
+      title: `${insight.handClass} · ${actionLabel(insight.dominantAction.type)}`,
+      reason: translated(insight.whyKey),
+      hands: `${translated(insight.transferBand)} · ${insight.donorContextKeys.length} ${translated('donor contexts')}`,
+      action: { kind: 'inspect_transfer', handClass: insight.handClass },
+    }));
+    query('#calibrationTeacherTransferredList').replaceChildren(...(transferred.length
+      ? transferred : [teacherEmpty('No compatible nearby context is transferring here.') ]));
 
     const sparse = rangeTeacherView.sparseRegions.map((region) => teacherItem({
       title: translated(region.familyLabel),
@@ -1267,7 +1294,7 @@ function createController(root, application, initialWorkspace, activationStarted
 
   async function performTeacherAction({ kind, handClass = null, preset = null } = {}) {
     teacherSelectedHand = handClass ?? teacherSelectedHand;
-    if (kind === 'inspect_conflict') {
+    if (kind === 'inspect_conflict' || kind === 'inspect_transfer') {
       await openTeacherMatrix(handClass);
       return;
     }

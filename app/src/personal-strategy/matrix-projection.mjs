@@ -10,6 +10,10 @@ import {
   PERSONAL_STRATEGY_ESTIMATE_STATUSES,
   validatePersonalStrategySnapshot,
 } from './rfi-inference.mjs';
+import {
+  RFI_CONTEXT_TRANSFER_ESTIMATE_STATES,
+  validateRfiContextTransferProjection,
+} from './rfi-context-transfer.mjs';
 
 export const PERSONAL_STRATEGY_MATRIX_PROJECTION_SCHEMA_VERSION =
   'personal-strategy-matrix-projection/v1';
@@ -22,7 +26,13 @@ export const PERSONAL_STRATEGY_MATRIX_PRECISIONS = Object.freeze({
   TIED_EXACT_MIX: 'tied_exact_mix',
 });
 
+export const PERSONAL_STRATEGY_MATRIX_STATUSES = Object.freeze({
+  ...PERSONAL_STRATEGY_ESTIMATE_STATUSES,
+  TRANSFERRED: 'transferred',
+});
+
 export const PERSONAL_STRATEGY_MATRIX_STATUS_MARKERS = Object.freeze({
+  [PERSONAL_STRATEGY_MATRIX_STATUSES.TRANSFERRED]: 'T',
   [PERSONAL_STRATEGY_ESTIMATE_STATUSES.DIRECTLY_KNOWN]: 'D',
   [PERSONAL_STRATEGY_ESTIMATE_STATUSES.INFERRED_HIGH]: 'H',
   [PERSONAL_STRATEGY_ESTIMATE_STATUSES.INFERRED_MEDIUM]: 'M',
@@ -127,11 +137,13 @@ function validateCandidateRanking(candidateRanking) {
 export function createPersonalStrategyMatrixProjection({
   snapshot,
   evidenceView,
+  transferProjection = null,
   candidateRanking = [],
   highValueQuestionCount = 0,
 } = {}) {
   validatePersonalStrategySnapshot(snapshot);
   validatePersonalStrategyEvidenceView(evidenceView);
+  if (transferProjection !== null) validateRfiContextTransferProjection(transferProjection);
   validateCandidateRanking(candidateRanking);
   if (snapshot.scope.profileId !== evidenceView.scope.profileId
     || snapshot.scope.modeId !== evidenceView.scope.modeId
@@ -142,14 +154,33 @@ export function createPersonalStrategyMatrixProjection({
   if (!Number.isInteger(highValueQuestionCount) || highValueQuestionCount < 0) {
     throw new RangeError('Matrix high-value question count must be a non-negative integer');
   }
+  if (transferProjection !== null
+    && (transferProjection.scope.profileId !== snapshot.scope.profileId
+      || transferProjection.scope.modeId !== snapshot.scope.modeId
+      || transferProjection.scope.contextKey !== snapshot.scope.contextKey
+      || transferProjection.targetEvidenceFingerprint !== snapshot.evidenceRevision.fingerprint)) {
+    throw new RangeError('Matrix transfer projection must describe the current target scope revision');
+  }
 
   const candidatesByHand = new Map(candidateRanking.map((candidate) => [candidate.handClass, candidate]));
+  const transfersByHand = new Map((transferProjection?.estimates ?? [])
+    .map((estimate) => [estimate.handClass, estimate]));
   const highValueHandClasses = new Set(candidateRanking
     .filter((candidate) => candidate.ordinaryQuestionEligible)
     .slice(0, highValueQuestionCount)
     .map((candidate) => candidate.handClass));
   const cells = snapshot.estimates.map((estimate, index) => {
-    const precision = precisionFor(estimate);
+    const transfer = transfersByHand.get(estimate.handClass) ?? null;
+    const isTransferred = transfer?.state === RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.TRANSFERRED;
+    const status = isTransferred
+      ? PERSONAL_STRATEGY_MATRIX_STATUSES.TRANSFERRED : estimate.status;
+    const presentedEstimate = isTransferred ? {
+      ...estimate,
+      status,
+      dominantAction: transfer.dominantAction,
+      exactFrequencies: null,
+    } : estimate;
+    const precision = precisionFor(presentedEstimate);
     const evidence = evidenceForHand(evidenceView, estimate.handClass);
     const selectedNeighbors = estimate.support.selectedNeighbors.map((neighbor) => ({
       ...cloneData(neighbor),
@@ -158,20 +189,29 @@ export function createPersonalStrategyMatrixProjection({
         .filter(Boolean)
         .map(cloneData),
     }));
-    const dominantType = estimate.dominantAction?.type ?? null;
+    const dominantType = presentedEstimate.dominantAction?.type ?? null;
     return {
       handClass: estimate.handClass,
       canonicalIndex: index,
       row: Math.floor(index / 13),
       column: index % 13,
-      status: estimate.status,
-      statusMarker: PERSONAL_STRATEGY_MATRIX_STATUS_MARKERS[estimate.status],
-      provenance: estimate.provenance,
-      action: actionPresentation(estimate, precision),
-      sourceEvidenceIds: [...estimate.sourceEvidenceIds],
-      sourceEvidenceCount: estimate.sourceEvidenceIds.length,
-      reasons: [...estimate.reasons],
-      uncertainty: cloneData(estimate.uncertainty),
+      status,
+      localStatus: estimate.status,
+      statusMarker: PERSONAL_STRATEGY_MATRIX_STATUS_MARKERS[status],
+      provenance: isTransferred ? 'transferred' : estimate.provenance,
+      action: actionPresentation(presentedEstimate, precision),
+      sourceEvidenceIds: [...(isTransferred ? transfer.sourceEvidenceIds : estimate.sourceEvidenceIds)],
+      sourceEvidenceCount: isTransferred
+        ? transfer.sourceEvidenceIds.length : estimate.sourceEvidenceIds.length,
+      reasons: [...(isTransferred ? transfer.reasons : estimate.reasons)],
+      uncertainty: isTransferred ? {
+        semanticsVersion: 'rfi-context-transfer-band/v1',
+        band: transfer.transferBand,
+        algorithmVersion: transfer.modelVersion,
+        validationCohortId: null,
+        policyThresholdId: null,
+        reasons: [...transfer.reasons],
+      } : cloneData(estimate.uncertainty),
       support: {
         evidenceDensity: estimate.support.evidenceDensity,
         supportDirection: estimate.support.supportDirection,
@@ -192,6 +232,7 @@ export function createPersonalStrategyMatrixProjection({
         )),
       },
       evidence,
+      transfer: cloneData(transfer),
       question: questionForHand(candidatesByHand.get(estimate.handClass), highValueHandClasses),
       comboOverrides: cloneData(estimate.comboOverrides),
       hasComboOverrides: estimate.comboOverrides.length > 0,
@@ -205,10 +246,18 @@ export function createPersonalStrategyMatrixProjection({
     evidenceRevision: cloneData(snapshot.evidenceRevision),
     derivation: {
       ...cloneData(snapshot.derivation),
+      transferModelVersion: transferProjection?.modelVersion ?? null,
       matrixProjectionVersion: PERSONAL_STRATEGY_MATRIX_PROJECTION_SCHEMA_VERSION,
     },
     cells,
-    summary: cloneData(snapshot.summary),
+    summary: {
+      ...cloneData(snapshot.summary),
+      unknownCount: snapshot.summary.unknownCount
+        - (transferProjection?.summary.transferredCount ?? 0),
+      transferredCount: transferProjection?.summary.transferredCount ?? 0,
+      transferUncertainCount: transferProjection?.summary.uncertainCount ?? 0,
+    },
+    localSummary: cloneData(snapshot.summary),
     comboOverrideCount: snapshot.comboOverrides.length,
   };
   validatePersonalStrategyMatrixProjection(projection);
@@ -232,7 +281,7 @@ export function validatePersonalStrategyMatrixProjection(projection) {
       || cell.column !== index % 13) {
       throw new RangeError('Personal Strategy Matrix cells must use canonical 13 by 13 ordering');
     }
-    if (!Object.values(PERSONAL_STRATEGY_ESTIMATE_STATUSES).includes(cell.status)) {
+    if (!Object.values(PERSONAL_STRATEGY_MATRIX_STATUSES).includes(cell.status)) {
       throw new RangeError('Personal Strategy Matrix cell status is unsupported');
     }
     if (Object.hasOwn(cell, 'weight') || Object.hasOwn(cell.action, 'weight')) {

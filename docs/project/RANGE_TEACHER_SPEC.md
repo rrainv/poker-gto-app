@@ -20,6 +20,8 @@ immutable Personal Strategy evidence
 
 Teacher introduces no repository, evidence schema, sync entity, inferred truth, or second range format. Its view model and recommendation order are recomputed from one current scope revision.
 
+`RANGE-INTELLIGENCE-003A` adds an optional matching derived transfer overlay. Teacher exposes transferred coverage and donor/relation explanations without treating them as direct evidence or changing the canonical 002C question ranking. See `RANGE_CONTEXT_TRANSFER_SPEC.md`.
+
 ## View-model contract
 
 `createRangeTeacherView(...)` is a pure, DOM-free projection requiring a matching evidence view, snapshot, ranked candidates, and progress assessment. `range-teacher-view/v1` exposes:

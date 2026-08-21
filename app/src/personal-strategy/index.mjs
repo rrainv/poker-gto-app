@@ -6,6 +6,7 @@ export * from './browser-storage.mjs';
 export * from './indexeddb-storage.mjs';
 export * from './evidence-view.mjs';
 export * from './rfi-inference.mjs';
+export * from './rfi-context-transfer.mjs';
 export * from './projection-service.mjs';
 export * from './rfi-question-selection.mjs';
 export * from './matrix-projection.mjs';

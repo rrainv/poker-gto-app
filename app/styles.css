@@ -9612,7 +9612,7 @@ body.has-modal-open { overflow: hidden; }
 .calibration-teacher-header h2 { margin: 0; color: var(--text-primary); font-size: clamp(1.15rem, 2vw, 1.5rem); }
 .calibration-teacher-header p:not(.calibration-eyebrow) { max-width: 74ch; margin: var(--space-1) 0 0; color: var(--text-secondary); font-size: var(--text-label-size); line-height: 1.45; }
 .calibration-teacher-scope { color: var(--text-muted) !important; font-size: var(--text-micro-size) !important; overflow-wrap: anywhere; }
-.calibration-teacher-summary { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; margin: 0; overflow: hidden; background: var(--border-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-cell); }
+.calibration-teacher-summary { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; margin: 0; overflow: hidden; background: var(--border-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-cell); }
 .calibration-teacher-summary > div { min-width: 0; display: grid; gap: 1px; padding: var(--space-1) var(--space-2); background: var(--surface-inset); text-align: center; }
 .calibration-teacher-summary dt { overflow: hidden; color: var(--text-muted); font-size: .58rem; text-overflow: ellipsis; white-space: nowrap; }
 .calibration-teacher-summary dd { margin: 0; color: var(--text-primary); font: 800 var(--text-label-size)/1.2 var(--font-data); }
@@ -9667,6 +9667,7 @@ body.has-modal-open { overflow: hidden; }
 .calibration-status-legend > span { min-width: 0; display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-micro-size); }
 .calibration-status-legend i { width: 22px; height: 22px; display: grid; place-items: center; flex: 0 0 auto; color: var(--text-primary); background: var(--surface-inset); border: 1px solid var(--border-default); border-radius: 50%; font: 800 .65rem/1 var(--font-data); font-style: normal; }
 .calibration-status-legend [data-matrix-status="inferred_medium"] i { border-style: dashed; }
+.calibration-status-legend [data-matrix-status="transferred"] i { border-style: ridge; }
 .calibration-status-legend [data-matrix-status="uncertain"] i { border-style: dotted; }
 .calibration-status-legend [data-matrix-status="conflicting"] i { color: var(--status-danger); border: 2px double var(--status-danger); }
 .calibration-matrix-legend-content p { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; font-size: var(--text-micro-size); }
@@ -9726,6 +9727,7 @@ body.has-modal-open { overflow: hidden; }
 .calibration-matrix-cell[data-matrix-status="directly_known"] { border-style: solid; border-width: 2px; }
 .calibration-matrix-cell[data-matrix-status="inferred_high"] { border-style: double; border-width: 2px; }
 .calibration-matrix-cell[data-matrix-status="inferred_medium"] { border-style: dashed; }
+.calibration-matrix-cell[data-matrix-status="transferred"] { border-style: ridge; border-width: 2px; }
 .calibration-matrix-cell[data-matrix-status="uncertain"] { border-style: dotted; }
 .calibration-matrix-cell[data-matrix-status="unknown"] { color: var(--text-muted); border-color: var(--border-subtle); }
 .calibration-matrix-cell[data-matrix-status="conflicting"] { border: 2px double var(--status-danger); background-image: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--status-danger) 12%, transparent) 5px 8px); }

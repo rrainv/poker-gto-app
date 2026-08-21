@@ -117,7 +117,9 @@ function sourceSummary(matrixProjection, handClasses) {
   handClasses.forEach((handClass) => {
     const status = cells.get(handClass)?.status;
     if (status === 'directly_known') summary.direct += 1;
-    else if (status === 'inferred_high' || status === 'inferred_medium') summary.inferred += 1;
+    else if (status === 'inferred_high' || status === 'inferred_medium' || status === 'transferred') {
+      summary.inferred += 1;
+    }
     else if (status === 'uncertain') summary.uncertain += 1;
     else if (status === 'conflicting') summary.conflicting += 1;
     else summary.unknown += 1;

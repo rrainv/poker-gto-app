@@ -5,6 +5,11 @@ import {
   createPersonalStrategySnapshot,
   estimatePersonalStrategyHand,
 } from './rfi-inference.mjs';
+import {
+  MAX_RFI_TRANSFER_DONOR_CONTEXTS,
+  createRfiContextTransferProjection,
+  createRfiContextTransferRelationship,
+} from './rfi-context-transfer.mjs';
 
 export const PERSONAL_STRATEGY_PROJECTION_SERVICE_SCHEMA_VERSION = 'personal-strategy-projection-service/v1';
 
@@ -30,6 +35,11 @@ export function createPersonalStrategyProjectionService({ repository } = {}) {
     evidenceViewBuilds: 0,
     estimateBuilds: 0,
     snapshotBuilds: 0,
+    transferCatalogLoads: 0,
+    transferRelationshipBuilds: 0,
+    transferDonorScopeLoads: 0,
+    transferProjectionBuilds: 0,
+    transferCacheHits: 0,
     cacheHits: 0,
     invalidations: 0,
   };
@@ -52,9 +62,82 @@ export function createPersonalStrategyProjectionService({ repository } = {}) {
       return current;
     }
     metrics.evidenceViewBuilds += 1;
-    const next = { evidenceView: view, estimates: new Map(), snapshot: null, source };
+    const next = {
+      evidenceView: view,
+      estimates: new Map(),
+      snapshot: null,
+      transferProjection: null,
+      transferCatalogFingerprint: null,
+      source,
+    };
     cache.set(key, next);
     return next;
+  }
+
+  function ensureSnapshot(entry) {
+    if (!entry.snapshot) {
+      entry.snapshot = createPersonalStrategySnapshot(entry.evidenceView);
+      entry.snapshot.estimates.forEach((estimate) => entry.estimates.set(estimate.handClass, estimate));
+      metrics.snapshotBuilds += 1;
+    }
+    return entry.snapshot;
+  }
+
+  async function transferProjectionFor(scope, entry) {
+    const targetSnapshot = ensureSnapshot(entry);
+    if (typeof repository.loadEvidenceScopeCatalog !== 'function') {
+      if (entry.transferProjection) {
+        metrics.transferCacheHits += 1;
+        return entry.transferProjection;
+      }
+      entry.transferProjection = createRfiContextTransferProjection({ targetSnapshot });
+      metrics.transferProjectionBuilds += 1;
+      return entry.transferProjection;
+    }
+    const catalog = await repository.loadEvidenceScopeCatalog({
+      profileId: scope.profileId,
+      modeId: scope.modeId,
+    });
+    metrics.transferCatalogLoads += 1;
+    if (entry.transferProjection
+      && entry.transferCatalogFingerprint === catalog.catalogFingerprint) {
+      metrics.transferCacheHits += 1;
+      return entry.transferProjection;
+    }
+    const relationships = catalog.scopes.map((candidate) => createRfiContextTransferRelationship({
+      profileId: scope.profileId,
+      modeId: scope.modeId,
+      context: candidate.context,
+    }, scope));
+    metrics.transferRelationshipBuilds += relationships.length;
+    const eligible = relationships.filter((relationship) => relationship.eligible)
+      .sort((left, right) => (
+        right.transferStrength - left.transferStrength
+        || left.donorScope.contextKey.localeCompare(right.donorScope.contextKey, 'en')
+      )).slice(0, MAX_RFI_TRANSFER_DONOR_CONTEXTS);
+    const contextByKey = new Map(catalog.scopes.map((candidate) => [candidate.contextKey, candidate.context]));
+    const donors = await Promise.all(eligible.map(async (relationship) => {
+      const donorScope = {
+        profileId: scope.profileId,
+        modeId: scope.modeId,
+        context: contextByKey.get(relationship.donorScope.contextKey),
+      };
+      const donorEntry = await entryFor(donorScope);
+      metrics.transferDonorScopeLoads += 1;
+      return {
+        relationship,
+        snapshot: ensureSnapshot(donorEntry),
+      };
+    }));
+    entry.transferProjection = createRfiContextTransferProjection({
+      targetSnapshot,
+      relationships,
+      donors,
+      donorCatalogFingerprint: catalog.catalogFingerprint,
+    });
+    entry.transferCatalogFingerprint = catalog.catalogFingerprint;
+    metrics.transferProjectionBuilds += 1;
+    return entry.transferProjection;
   }
 
   async function getEvidenceView(scope) {
@@ -82,22 +165,18 @@ export function createPersonalStrategyProjectionService({ repository } = {}) {
       metrics.cacheHits += 1;
       return entry.snapshot;
     }
-    entry.snapshot = createPersonalStrategySnapshot(entry.evidenceView);
-    entry.snapshot.estimates.forEach((estimate) => entry.estimates.set(estimate.handClass, estimate));
-    metrics.snapshotBuilds += 1;
-    return entry.snapshot;
+    return ensureSnapshot(entry);
   }
 
   async function getProjectionBundle(scope) {
     const entry = await entryFor(scope);
-    if (!entry.snapshot) {
-      entry.snapshot = createPersonalStrategySnapshot(entry.evidenceView);
-      entry.snapshot.estimates.forEach((estimate) => entry.estimates.set(estimate.handClass, estimate));
-      metrics.snapshotBuilds += 1;
-    } else metrics.cacheHits += 1;
+    if (entry.snapshot) metrics.cacheHits += 1;
+    const snapshot = ensureSnapshot(entry);
+    const transferProjection = await transferProjectionFor(scope, entry);
     return Object.freeze({
       evidenceView: entry.evidenceView,
-      snapshot: entry.snapshot,
+      snapshot,
+      transferProjection,
       source: Object.freeze({
         rangeObservations: Object.freeze([...entry.source.rangeObservations]),
         trainingObservations: Object.freeze([...entry.source.trainingObservations]),
@@ -133,6 +212,10 @@ export function createPersonalStrategyProjectionService({ repository } = {}) {
     getStrategyEstimate,
     getStrategySnapshot,
     getProjectionBundle,
+    async getTransferProjection(scope) {
+      const entry = await entryFor(scope);
+      return transferProjectionFor(scope, entry);
+    },
     previewStrategySnapshot,
     async getInferenceSupport(scope, handClass) {
       return (await getStrategyEstimate(scope, handClass)).support;

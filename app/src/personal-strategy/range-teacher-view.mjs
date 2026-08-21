@@ -13,6 +13,10 @@ import {
   RFI_CALIBRATION_INTENTS,
   RFI_SELECTION_INTENTS,
 } from './rfi-question-selection.mjs';
+import {
+  RFI_CONTEXT_TRANSFER_ESTIMATE_STATES,
+  validateRfiContextTransferProjection,
+} from './rfi-context-transfer.mjs';
 
 export const RANGE_TEACHER_VIEW_SCHEMA_VERSION = 'range-teacher-view/v1';
 export const RANGE_TEACHER_BOUNDARY_CLUSTER_SCHEMA_VERSION = 'boundary-cluster/v1';
@@ -305,7 +309,29 @@ function recentChanges(evidenceView) {
     || left.changeId.localeCompare(right.changeId, 'en')).slice(0, 5);
 }
 
-function selectedHandDetails(snapshot, evidenceView, candidateRanking, handClass) {
+function transferInsights(transferProjection) {
+  if (transferProjection === null) return [];
+  return transferProjection.estimates.filter((estimate) => (
+    estimate.state === RFI_CONTEXT_TRANSFER_ESTIMATE_STATES.TRANSFERRED
+  )).map((estimate) => ({
+    handClass: estimate.handClass,
+    dominantAction: cloneData(estimate.dominantAction),
+    transferBand: estimate.transferBand,
+    donorContextKeys: estimate.donorContributions.map((entry) => entry.donorContextKey),
+    donorContributions: cloneData(estimate.donorContributions),
+    sourceEvidenceIds: [...estimate.sourceEvidenceIds],
+    reasonCodes: [...estimate.reasons],
+    whyKey: 'Riverline transferred this qualitative action from compatible nearby RFI contexts.',
+  })).sort((left, right) => HAND_INDEX.get(left.handClass) - HAND_INDEX.get(right.handClass));
+}
+
+function selectedHandDetails(
+  snapshot,
+  evidenceView,
+  candidateRanking,
+  handClass,
+  transfersByHand = new Map(),
+) {
   if (!handClass || !HAND_INDEX.has(handClass)) return null;
   const estimate = snapshot.estimates[HAND_INDEX.get(handClass)];
   const candidate = candidateRanking.find((entry) => entry.handClass === handClass) ?? null;
@@ -318,6 +344,7 @@ function selectedHandDetails(snapshot, evidenceView, candidateRanking, handClass
     support: cloneData(estimate.support),
     candidate: cloneData(candidate),
     directEvidence: currentDirectEvidence(evidenceView, handClass).map(cloneData),
+    transfer: cloneData(transfersByHand.get(handClass) ?? null),
   };
 }
 
@@ -375,6 +402,7 @@ export function resolveRangeTeacherSessionPreset(preset) {
 export function createRangeTeacherView({
   snapshot,
   evidenceView,
+  transferProjection = null,
   candidateRanking,
   progressAssessment,
   selectedHandClass = null,
@@ -382,6 +410,7 @@ export function createRangeTeacherView({
 } = {}) {
   validatePersonalStrategySnapshot(snapshot);
   validatePersonalStrategyEvidenceView(evidenceView);
+  if (transferProjection !== null) validateRfiContextTransferProjection(transferProjection);
   if (!Array.isArray(candidateRanking)) throw new TypeError('Range Teacher candidate ranking is required');
   if (!progressAssessment || typeof progressAssessment !== 'object') {
     throw new TypeError('Range Teacher progress assessment is required');
@@ -392,11 +421,21 @@ export function createRangeTeacherView({
     || snapshot.evidenceRevision.fingerprint !== evidenceView.evidenceFingerprint) {
     throw new RangeError('Range Teacher inputs must describe one current scope revision');
   }
+  if (transferProjection !== null
+    && (transferProjection.scope.profileId !== snapshot.scope.profileId
+      || transferProjection.scope.modeId !== snapshot.scope.modeId
+      || transferProjection.scope.contextKey !== snapshot.scope.contextKey
+      || transferProjection.targetEvidenceFingerprint !== snapshot.evidenceRevision.fingerprint)) {
+    throw new RangeError('Range Teacher transfer projection must describe the current target revision');
+  }
   const dismissed = new Set(dismissedSuggestionIds);
   const boundaries = boundaryClusters(snapshot, candidateRanking);
   const conflicts = contradictionHotspots(snapshot, evidenceView);
   const sparse = sparseRegions(candidateRanking);
   const exactMix = exactMixOpportunities(snapshot, evidenceView, candidateRanking);
+  const transferred = transferInsights(transferProjection);
+  const transfersByHand = new Map((transferProjection?.estimates ?? [])
+    .map((estimate) => [estimate.handClass, estimate]));
   const actions = suggestedActions({ boundaries, conflicts, sparse, exactMix, candidateRanking })
     .filter((action) => !dismissed.has(action.suggestionId));
   const selected = selectedHandClass
@@ -411,6 +450,7 @@ export function createRangeTeacherView({
       boundaryClusterVersion: RANGE_TEACHER_BOUNDARY_CLUSTER_SCHEMA_VERSION,
       sessionPresetVersion: RANGE_TEACHER_SESSION_PRESET_VERSION,
       snapshotVersions: cloneData(snapshot.derivation),
+      transferModelVersion: transferProjection?.modelVersion ?? null,
     },
     scope: cloneData(snapshot.scope),
     evidenceRevision: cloneData(snapshot.evidenceRevision),
@@ -420,7 +460,9 @@ export function createRangeTeacherView({
       inferredMediumCount: progressAssessment.inferredMediumCount,
       uncertainCount: progressAssessment.uncertainCount,
       conflictingCount: progressAssessment.conflictingCount,
-      unknownCount: progressAssessment.unknownCount,
+      unknownCount: progressAssessment.unknownCount - transferred.length,
+      localUnknownCount: progressAssessment.unknownCount,
+      transferredCount: transferred.length,
       highValueQuestionCount: progressAssessment.highValueQuestionCount,
       progressBand: progressAssessment.progressBand,
     },
@@ -430,13 +472,21 @@ export function createRangeTeacherView({
     highValueNextQuestions: candidateRanking.filter((candidate) => candidate.ordinaryQuestionEligible).slice(0, 6),
     exactMixRefinementCandidates: exactMix,
     recentChanges: recentChanges(evidenceView),
-    selectedHand: selectedHandDetails(snapshot, evidenceView, candidateRanking, selected),
+    transferredInsights: transferred,
+    selectedHand: selectedHandDetails(
+      snapshot,
+      evidenceView,
+      candidateRanking,
+      selected,
+      transfersByHand,
+    ),
     suggestedActions: actions,
     recommendedAction: actions[0] ?? null,
     dismissedSuggestionIds: [...dismissed].sort(),
     limitations: [
       'preflop_rfi_fold_raise_only',
       'categorical_inference_only',
+      'cross_context_transfer_is_qualitative_and_derived',
       'no_reference_grading',
       'multi_head_resolution_requires_matrix_inspection',
     ],

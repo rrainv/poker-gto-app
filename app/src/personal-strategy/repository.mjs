@@ -29,6 +29,8 @@ import { PREFLOP_HAND_CLASSES } from '../../../shared/poker-domain/index.js';
 export const PERSONAL_STRATEGY_STORE_SCHEMA_VERSION = 'personal-strategy-store/v1';
 export const PERSONAL_STRATEGY_EXPORT_SCHEMA_VERSION = 'personal-strategy-export/v1';
 export const PERSONAL_STRATEGY_STORAGE_KEY = 'riverline.personalStrategy.v1';
+export const PERSONAL_STRATEGY_EVIDENCE_SCOPE_CATALOG_SCHEMA_VERSION =
+  'personal-strategy-evidence-scope-catalog/v1';
 
 const LEGACY_STORE_SCHEMA_VERSION = 'personal-strategy-store/v0';
 const LEGACY_BACKEND_SCHEMA_VERSION = 'personal-strategy-indexeddb/v1';
@@ -413,6 +415,16 @@ const METADATA_KEY = 'state';
 
 function scopeKey({ profileId, modeId, context, contextScope }) {
   return `${profileId}|${modeId}|${calibrationContextKey(context ?? contextScope)}`;
+}
+
+function compactFingerprint(value) {
+  const text = JSON.stringify(value);
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fnv1a32:${(hash >>> 0).toString(16).padStart(8, '0')}`;
 }
 
 function scopeKeyAliases({ profileId, modeId, context, contextScope }) {
@@ -974,6 +986,64 @@ export function createPersonalStrategyRepository({
           context: cloneData(context),
           rangeObservations: cloneData(rangeObservations),
           trainingObservations: cloneData(trainingObservations),
+        });
+      });
+    },
+
+    /**
+     * Discover only contexts with active direct heads for one Profile x Mode.
+     * The current/conflicting profile indexes bound this read without scanning
+     * immutable history or other profiles. Callers may rank the objective
+     * contexts, then load full history for only a capped donor set.
+     */
+    async loadEvidenceScopeCatalog({ profileId, modeId } = {}) {
+      if (typeof profileId !== 'string' || !profileId.trim()) {
+        throw new TypeError('Personal Strategy evidence catalog profileId is required');
+      }
+      if (typeof modeId !== 'string' || !modeId.trim()) {
+        throw new TypeError('Personal Strategy evidence catalog modeId is required');
+      }
+      return readTransaction([
+        STORES.CURRENT_RANGE_OBSERVATIONS,
+        STORES.CONFLICTING_RANGE_OBSERVATIONS,
+      ], async (transaction) => {
+        const [current, conflicting] = await Promise.all([
+          transaction.getAllByIndex(STORES.CURRENT_RANGE_OBSERVATIONS, 'profileId', profileId),
+          transaction.getAllByIndex(STORES.CONFLICTING_RANGE_OBSERVATIONS, 'profileId', profileId),
+        ]);
+        const active = [...current, ...conflicting]
+          .map((entry) => entry.value)
+          .filter((entry) => entry.modeId === modeId
+            && entry.state === RANGE_OBSERVATION_STATES.ACTIVE);
+        active.forEach(validateRangeObservation);
+        const grouped = new Map();
+        active.forEach((observation) => {
+          const identityKey = calibrationContextIdentityKey(observation.context);
+          if (!grouped.has(identityKey)) grouped.set(identityKey, []);
+          grouped.get(identityKey).push(observation);
+        });
+        const scopes = [...grouped.entries()].map(([identityKey, observations]) => {
+          const ordered = [...observations].sort((left, right) => (
+            calibrationContextKey(left.context).localeCompare(calibrationContextKey(right.context), 'en')
+            || left.id.localeCompare(right.id, 'en')
+          ));
+          const context = ordered[0].context;
+          return {
+            identityKey,
+            contextKey: calibrationContextKey(context),
+            context: cloneData(context),
+            activeHeadIds: [...new Set(ordered.map((entry) => entry.id))].sort(),
+          };
+        }).sort((left, right) => left.identityKey.localeCompare(right.identityKey, 'en'));
+        return deepFreeze({
+          schemaVersion: PERSONAL_STRATEGY_EVIDENCE_SCOPE_CATALOG_SCHEMA_VERSION,
+          profileId,
+          modeId,
+          catalogFingerprint: compactFingerprint(scopes.map((entry) => ({
+            identityKey: entry.identityKey,
+            activeHeadIds: entry.activeHeadIds,
+          }))),
+          scopes,
         });
       });
     },

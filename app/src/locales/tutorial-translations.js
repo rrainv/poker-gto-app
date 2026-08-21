@@ -711,15 +711,15 @@
   const rangeTeacherTutorial = {
     en: {
       'Learn from your own strategy': 'Learn from your own strategy',
-      'Range Teacher explains boundaries, conflicts, and unknown regions in your own Personal Strategy evidence. Its suggestions are optional and never grade you against GTO or a reference strategy.': 'Range Teacher explains boundaries, conflicts, and unknown regions in your own Personal Strategy evidence. Its suggestions are optional and never grade you against GTO or a reference strategy.',
+      'Range Teacher explains boundaries, conflicts, unknown regions, and qualitative transfers from compatible nearby RFI contexts in your own Personal Strategy evidence. Transfers remain derived, and its suggestions never grade you against GTO or a reference strategy.': 'Range Teacher explains boundaries, conflicts, unknown regions, and qualitative transfers from compatible nearby RFI contexts in your own Personal Strategy evidence. Transfers remain derived, and its suggestions never grade you against GTO or a reference strategy.',
     },
     ru: {
       'Learn from your own strategy': 'Изучайте собственную стратегию',
-      'Range Teacher explains boundaries, conflicts, and unknown regions in your own Personal Strategy evidence. Its suggestions are optional and never grade you against GTO or a reference strategy.': 'Учитель диапазонов объясняет границы, противоречия и неизвестные области в данных вашей личной стратегии. Его рекомендации необязательны и никогда не оценивают вас относительно GTO или эталонной стратегии.',
+      'Range Teacher explains boundaries, conflicts, unknown regions, and qualitative transfers from compatible nearby RFI contexts in your own Personal Strategy evidence. Transfers remain derived, and its suggestions never grade you against GTO or a reference strategy.': 'Учитель диапазонов объясняет границы, противоречия, неизвестные области и качественный перенос из совместимых соседних RFI-контекстов в данных вашей личной стратегии. Перенос остаётся производным, а рекомендации никогда не оценивают вас относительно GTO или эталонной стратегии.',
     },
     he: {
       'Learn from your own strategy': 'למדו מהאסטרטגיה שלכם',
-      'Range Teacher explains boundaries, conflicts, and unknown regions in your own Personal Strategy evidence. Its suggestions are optional and never grade you against GTO or a reference strategy.': 'מורה הטווחים מסביר גבולות, סתירות ואזורים לא ידועים בראיות האסטרטגיה האישית שלכם. ההמלצות שלו אופציונליות ולעולם אינן מדרגות אתכם מול GTO או אסטרטגיית ייחוס.',
+      'Range Teacher explains boundaries, conflicts, unknown regions, and qualitative transfers from compatible nearby RFI contexts in your own Personal Strategy evidence. Transfers remain derived, and its suggestions never grade you against GTO or a reference strategy.': 'מורה הטווחים מסביר גבולות, סתירות, אזורים לא ידועים והעברות איכותניות מהקשרי RFI סמוכים ותואמים בראיות האסטרטגיה האישית שלכם. ההעברות נשארות נגזרות, וההמלצות לעולם אינן מדרגות אתכם מול GTO או אסטרטגיית ייחוס.',
     },
   };
   Object.assign(en, rangeTeacherTutorial.en);

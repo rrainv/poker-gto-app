@@ -1,6 +1,6 @@
 # Personal Strategy deterministic RFI inference
 
-Status: implementation authority for `RANGE-CAL-002B`
+Status: same-context implementation authority for `RANGE-CAL-002B`; bounded cross-context overlay specified in `RANGE_CONTEXT_TRANSFER_SPEC.md`
 
 Date: August 18, 2026
 
@@ -226,3 +226,5 @@ Observed implementation-machine timings were approximately 0.47 ms median for on
 - adaptive selection/stopping is implemented by `RANGE-CAL-002C` in `rfi-question-selection.mjs`; it consumes this authority, persists no inferred output, and is specified in `ADAPTIVE_RANGE_CALIBRATION_SPEC.md`.
 
 `RANGE-CAL-002D` may consume the same snapshot/support/provenance API together with 002C question-value and boundary facts for Matrix inspection. It must not create another inference authority.
+
+`RANGE-INTELLIGENCE-003A` leaves this same-context model and snapshot contract unchanged. Its versioned RFI transfer relationship/projection is a separate derived overlay over direct donor points. See `RANGE_CONTEXT_TRANSFER_SPEC.md`.

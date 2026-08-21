@@ -259,4 +259,4 @@ Existing `RangeObservation v1` can carry a validated v2 context without changing
 
 ## 14. Remaining deferred work
 
-Family-specific Calibration, Matrix, Builder, and Teacher UI/application flows; cross-context inference; Training evidence opt-in; StrategyProvider integration; postflop families/`bet`; sizing abstractions beyond exact canonical preflop facts; and range propagation remain outside this contract and require their own approved boundaries.
+Family-specific Calibration flows; cross-mode or non-RFI cross-context inference; Training evidence opt-in; StrategyProvider integration; postflop families/`bet`; sizing abstractions beyond exact canonical preflop facts; and range propagation remain outside this contract and require their own approved boundaries. Bounded same-profile/same-mode Fold/Raise RFI context transfer is owned separately by `RANGE_CONTEXT_TRANSFER_SPEC.md`.
