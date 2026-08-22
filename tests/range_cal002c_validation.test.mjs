@@ -162,7 +162,6 @@ test('cold ranking, state-local reuse, reranking, and progress assessment remain
   assert.ok(performance.rerankingAfterAnswerMedianMs < 25);
   assert.ok(performance.progressAssessmentMedianMs < 5);
   assert.match(performance.cachedRankingSemantics, /no global memoization/);
-  assert.ok(evaluation.evaluationRuntimeMs < 30_000);
 });
 
 test('selection stays DOM-free and outside strategy, Equity, Matrix, sync, and persistence authorities', () => {

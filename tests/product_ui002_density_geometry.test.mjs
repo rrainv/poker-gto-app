@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
@@ -97,6 +98,36 @@ test('Settings and collapsed table use viewport-safe responsive layout contracts
   assert.match(density, /\.settings-modal \.modal-body \{ min-width: 0; overflow: auto; overscroll-behavior: contain; \}/);
   assert.match(density, /grid-template-columns: minmax\(0, 1\.55fr\) minmax\(220px, \.75fr\)/);
   assert.match(density, /\.playbook-decision-workspace\.is-table-collapsed \.playbook-table-toggle/);
-  assert.match(logic, /closest\('\.playbook-decision-workspace'\)\?\.classList\.toggle\('is-table-collapsed', collapsed\)/);
+  const functionStart = logic.indexOf('function setCanonicalTableExpanded(expanded)');
+  const functionEnd = logic.indexOf('\nfunction renderCanonicalHandSetupState', functionStart);
+  assert.ok(functionStart >= 0 && functionEnd > functionStart);
+  const classState = new Map();
+  const classList = {
+    toggle(name, force) { classState.set(name, Boolean(force)); },
+    contains(name) { return classState.get(name) === true; },
+  };
+  const workspace = { classList };
+  const attributes = new Map();
+  const wrapper = { classList };
+  const button = {
+    classList,
+    dataset: {},
+    textContent: '',
+    closest: (selector) => selector === '.playbook-decision-workspace' ? workspace : null,
+    setAttribute: (name, value) => attributes.set(name, value),
+  };
+  const sandbox = {
+    $: (selector) => selector === '#table-wrapper' ? wrapper : button,
+    t: (key) => key,
+    playbookSurfaceInvalidator: { renderIfNeeded() {} },
+  };
+  vm.runInNewContext(`${logic.slice(functionStart, functionEnd)}\nsetCanonicalTableExpanded(false);`, sandbox);
+  assert.equal(classState.get('collapsed'), true);
+  assert.equal(classState.get('is-table-collapsed'), true);
+  assert.equal(attributes.get('aria-expanded'), 'false');
+  vm.runInNewContext('setCanonicalTableExpanded(true);', sandbox);
+  assert.equal(classState.get('collapsed'), false);
+  assert.equal(classState.get('is-table-collapsed'), false);
+  assert.equal(attributes.get('aria-expanded'), 'true');
   assert.doesNotMatch(density, /(?:^|\n)\s*width:\s*(?:1024|1280|1440|1600)px/);
 });

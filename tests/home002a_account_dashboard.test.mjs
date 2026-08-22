@@ -44,7 +44,7 @@ function emptyStrategy() {
 test('Guest Home exposes useful tools and only a genuine in-memory continuation', () => {
   const empty = createGuestHomeViewModel();
   assert.equal(empty.sessionMode, 'guest');
-  assert.deepEqual(empty.sections.quickStart.destinations, ['gto', 'training', 'equity']);
+  assert.deepEqual(empty.sections.quickStart.destinations, ['hand', 'analyze', 'training', 'equity']);
   assert.deepEqual(empty.sections.continue.items, []);
   assert.equal(empty.sections.personalStrategy.status, 'unavailable');
 

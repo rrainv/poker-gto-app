@@ -298,7 +298,7 @@ test('Guest Saved and Home boundaries do not query durable account-owned data', 
   const model = await home.load();
   assert.equal(model.sessionMode, 'guest');
   assert.equal(model.sections.recent.status, 'unavailable');
-  assert.deepEqual(model.sections.quickStart.destinations, ['gto', 'training', 'equity']);
+  assert.deepEqual(model.sections.quickStart.destinations, ['hand', 'analyze', 'training', 'equity']);
   assert.equal(durableCalls, 0);
 });
 

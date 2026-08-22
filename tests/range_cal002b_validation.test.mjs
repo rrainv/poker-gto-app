@@ -146,7 +146,6 @@ test('one estimate, 169 snapshot, cache hit, and relevant-scope invalidation rem
   assert.ok(performance.invalidatedSnapshotMs < 100);
   assert.equal(performance.cacheMetrics.snapshotBuilds, 2);
   assert.equal(performance.cacheMetrics.invalidations, 1);
-  assert.ok(evaluation.evaluationRuntimeMs < 15_000);
 });
 
 test('inference core remains DOM-free and outside StrategyProvider, Equity, Matrix, sync, and persistence', () => {

@@ -14,7 +14,9 @@ const cardPresentation = fs.readFileSync(new URL('../app/src/application/card-pr
 const matrixHtml = html.slice(html.indexOf('id="chartView"'), html.indexOf('id="rangeView"'));
 const uiQaStart = css.indexOf('UI-QA-002B: dense range analysis');
 assert.ok(uiQaStart > 0, 'UI-QA-002B stylesheet section must exist');
-const uiQaCss = css.slice(uiQaStart);
+const uiQaEnd = css.indexOf('PRODUCT-UI-002: density, geometry, and component fit', uiQaStart);
+assert.ok(uiQaEnd > uiQaStart, 'UI-QA-002B stylesheet section must remain bounded');
+const uiQaCss = css.slice(uiQaStart, uiQaEnd);
 const renderChart = logic.slice(logic.indexOf('function renderChart()'), logic.indexOf('function visualActionKind'));
 
 test('Range Matrix keeps the exact 13 by 13 hand-class mapping', () => {

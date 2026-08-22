@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
+import { createRangeCalibrationLifecycle } from '../app/src/application/range-calibration-lifecycle.mjs';
+
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
@@ -20,13 +22,36 @@ test('Personal Strategy is the top-level destination while its existing workspac
   assert.match(logic, /const activeView = \$\(`#\$\{mode\}Mode`\)/);
 });
 
-test('the full Personal Strategy workspace remains dormant until Personal Strategy is opened', () => {
+test('the full Personal Strategy workspace remains dormant until Personal Strategy is opened', async () => {
   assert.match(html, /<template id="rangeCalibrationTemplate">/);
   assert.match(html, /<template id="calibrationProfileModalTemplate">/);
-  assert.match(html, /id="rangeCalibrationMount"><\/div>/);
   assert.doesNotMatch(bootstrap, /from ['"].*personal-strategy/);
   assert.match(bootstrap, /import\('\.\/range-calibration-workspace\.mjs'\)/);
   assert.doesNotMatch(logic, /rangeCalibrationRepository|loadSnapshot/);
+
+  let selected = false;
+  let mountCalls = 0;
+  const lifecycle = createRangeCalibrationLifecycle({
+    authentication: {
+      ready: async () => {},
+      getState: () => ({ status: 'signed_in' }),
+    },
+    accountIdentity: { getActiveIdentityId: async () => 'range-cal-owner' },
+    surface: {
+      showLoading() {},
+      showGuest() {},
+      showError() {},
+      async mountAuthenticated() { mountCalls += 1; return {}; },
+      async disposeAuthenticated() {},
+    },
+    isSelected: () => selected,
+  });
+  assert.equal(lifecycle.start(), true);
+  await Promise.resolve();
+  assert.equal(mountCalls, 0);
+  selected = true;
+  await lifecycle.activate();
+  assert.equal(mountCalls, 1);
 });
 
 test('profile editor requires exactly three text-named modes and contains no interpolation controls', () => {

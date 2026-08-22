@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { performance } from 'node:perf_hooks';
 
 import {
   FIXED_PER_SEATED_PLAYER_LEGACY_GAME_RULES_PRESET,
@@ -602,20 +601,16 @@ test('planner state serializes, round-trips, and remains deterministic without m
   );
 });
 
-test('deterministic 10k distribution covers every eligible marginal category without starvation', {
-  timeout: 30000,
-}, () => {
+test('deterministic 10k distribution covers every eligible marginal category without starvation', () => {
   const intent = createTrainingSessionIntent(variedIntentInput({
     sessionSeed: 0xdecafbad,
     sessionLength: 10000,
   }));
   let state = createTrainingPracticePlannerState(intent);
-  const startedAt = performance.now();
   for (let ordinal = 0; ordinal < 10000; ordinal += 1) {
     const request = requirePlan(intent, state, ordinal);
     state = recordServedTrainingScenario(state, request);
   }
-  const elapsedMs = performance.now() - startedAt;
 
   const expectedCategoryCounts = {
     streets: 4,
@@ -640,7 +635,6 @@ test('deterministic 10k distribution covers every eligible marginal category wit
   assert.equal(state.recentStructuralRecords.length, 32);
   assert.equal(state.recentExactFingerprints.length, 64);
   assert.ok(JSON.stringify(state).length < 50000);
-  assert.ok(elapsedMs < 20000, `10k planning took ${elapsedMs.toFixed(1)}ms`);
 });
 
 test('planner module imports no DOM, StrategyProvider, PokerState, or generator authority', () => {

@@ -148,7 +148,14 @@ test('selected mode and exact context persist separately from profile defaults',
   const reconstructed = await appFor(storage).readWorkspace();
   const preference = reconstructed.preferences.byProfile[bundle.profile.id];
   assert.equal(preference.activeModeId, bundle.modes[2].id);
-  assert.deepEqual(preference.context, { environment: 'clubgg', tableSize: 9, heroPosition: 'CO', effectiveStackBb: 30 });
+  assert.deepEqual({
+    environment: preference.context.environment,
+    tableSize: preference.context.tableSize,
+    heroPosition: preference.context.heroPosition,
+    effectiveStackBb: preference.context.effectiveStackBb,
+  }, { environment: 'clubgg', tableSize: 9, heroPosition: 'CO', effectiveStackBb: 30 });
+  assert.equal(preference.context.decisionFamily, 'preflop_rfi');
+  assert.equal(preference.context.actionAware, false);
   assert.equal(reconstructed.profiles[0].profile.tags.includes('riverline:environment:home'), true);
   assert.ok(storage.writes.includes(RANGE_CALIBRATION_PREFERENCES_KEY));
 });

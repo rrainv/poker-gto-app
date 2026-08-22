@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 18, 2026 (`RANGE-TEACHER-001` implementation checkpoint).
+Last refreshed: August 22, 2026 (global Node baseline and CI checkpoint).
 
 Code, tests, accepted tags/ticket reports, new manual QA, and explicit user decisions override this snapshot. Detailed future capability is preserved in `PRODUCT_BACKLOG.md`; subsystem contracts remain authoritative for implementation semantics.
 
@@ -15,6 +15,12 @@ Code, tests, accepted tags/ticket reports, new manual QA, and explicit user deci
 - **OPEN PRODUCT DECISION** — requires a later explicit product choice.
 
 ## Current checkpoint / resume map
+
+### Global Node baseline and CI — COMPLETED
+
+The Premium Card System v1 checkpoint remains intact, including its separately tracked Firefox visual acceptance. The canonical global Node suite is green at **1,636/1,636 tests**, and `.github/workflows/node-ci.yml` now runs the two canonical syntax checks plus the full suite on Node 24 for pushes, pull requests, and manual dispatches.
+
+Correctness and interaction performance remain distinct gates. Range Calibration keeps operation-level selection/cache/rerank/progress thresholds in the canonical suite; full synthetic evaluator wall-clock reporting belongs to `node tests/tooling/evaluate_range_cal002b.mjs` and `node tests/tooling/evaluate_range_cal002c.mjs`. Training keeps deterministic 10,000-sample correctness/distribution coverage in the suite; machine-sensitive throughput is reported separately with `node tests/tooling/benchmark-training-sampler.mjs --count 10000`. This separation does not relax semantic, distribution, cache, invalidation, or interaction-latency assertions.
 
 ### Core, strategy, and stabilization — COMPLETED
 

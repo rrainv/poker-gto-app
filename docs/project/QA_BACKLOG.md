@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 18, 2026 (`RANGE-TEACHER-001` implementation checkpoint).
+Last consolidated: August 22, 2026 (global Node baseline and CI checkpoint).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -15,6 +15,13 @@ This is the authoritative issue-routing file for historical and current QA. Code
 - `REGRESSION`: previously better/closed behavior broke
 
 A visual issue is not `CLOSED` without manual/browser confirmation.
+
+## Global Node baseline and CI
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-NODE-BASELINE-001 | CLOSED | After the Premium Card System v1 checkpoint, the canonical global Node suite is green at 1,636/1,636. Accepted Core Flow, Guest privacy, action-aware Personal Strategy metadata, localized poker terminology, lazy workspace behavior, and Premium Card structural coverage remain represented. Machine-sensitive macro runtime reporting is separated from correctness and operation-level interaction thresholds. | Global Node baseline checkpoint |
+| QA-CI-001 | CLOSED | Minimal GitHub Actions automation runs the canonical syntax checks and full Node suite on Node 24 for pushes, pull requests, and manual dispatches. This records repository automation presence; the first hosted run remains externally observable in GitHub rather than being inferred locally. | `.github/workflows/node-ci.yml` |
 
 ## Home / My Riverline
 
