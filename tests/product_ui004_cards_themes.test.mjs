@@ -4,6 +4,7 @@ import fs from 'node:fs';
 
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+const themes = fs.readFileSync(new URL('../app/src/application/presentation-theme.mjs', import.meta.url), 'utf8');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 const teacher = fs.readFileSync(new URL('../app/src/ui/teacher.js', import.meta.url), 'utf8');
 
@@ -153,12 +154,11 @@ test('four-color semantics and Daylight controls retain their semantic tokens', 
   assert.doesNotMatch(css.match(/select, input\[type=number\] \{[\s\S]*?\n\}/)?.[0] || '', /#0b1120/);
 });
 
-test('theme names are user-facing descriptions without geometry/debug labels', () => {
-  const themes = logic.match(/const THEME_PREVIEWS = \[[\s\S]*?\n\];/)?.[0] || '';
-  const swatches = logic.match(/const renderBtn = \(tItem\) => \{[\s\S]*?\n  \};/)?.[0] || '';
-  assert.doesNotMatch(themes, /name: '[^']*\(0px\)/);
-  assert.doesNotMatch(swatches, /theme-swatch-sharp|>0px</);
-  assert.match(themes, /name: 'Discord Dark'/);
-  assert.match(themes, /name: 'Discord Sharp'/);
-  assert.match(themes, /name: 'Rose Luxe'/);
+test('theme names are curated user-facing descriptions without legacy or debug labels', () => {
+  assert.doesNotMatch(themes, /name: '[^']*\(0px\)|legacy:\s*true/);
+  assert.doesNotMatch(themes, /Discord|Terminal|Brutalist|Casino|Cyberpunk|Luxury/);
+  assert.match(themes, /name: 'Riverline Midnight'/);
+  assert.match(themes, /name: 'Riverline Graphite'/);
+  assert.match(themes, /name: 'Riverline Daylight'/);
+  assert.doesNotMatch(logic, /THEME_PREVIEWS|initThemeSwatches/);
 });

@@ -63,13 +63,13 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | RL-05 | OPEN | Playbook long-page / analysis-location composition | PRODUCT-UI-005 |
 | RL-06 | OPEN | 169 unavailable postflop Matrix cells | PRODUCT-UI-005 |
 | RL-07 | OPEN | Range comparison stacking / long-page comparison | PRODUCT-UI-005 |
-| RL-12 | OPEN | theme/debug labels | PRODUCT-UI-004 |
+| RL-12 | PARTIAL | supported theme catalog now exposes only polished product labels; human visual acceptance pending | PRODUCT-THEME-001 |
 | RL-13 | PARTIAL | One-at-a-time coaching hints replace pre-answer reference disclosure; manual acceptance pending | PRODUCT-UI-003R2 |
 | RL-14 | PARTIAL | Training result uses the refined Hero/board-first hierarchy; manual acceptance pending | PRODUCT-UI-003R2 |
 | RL-16 | PARTIAL | Equity UX accepted except card-back containment and small 1080p fit regressions; correction implemented and test-verified, final renderer acceptance pending | EQUITY-UX-001R visual acceptance |
 | RL-17 | PARTIAL | Guide terminology/content refresh is implemented and test-verified; final human Guide review is pending | GUIDE-001 human review |
 | RL-18 | CLOSED | current DOM remeasured; card-picker deck now detaches on close while Matrix/Range caches retain PERF-001 behavior | PERF-RL18 |
-| RL-20 | OPEN | theme semantics / Daylight contrast | PRODUCT-UI-004 |
+| RL-20 | PARTIAL | semantic theme authority and Daylight contrast checks are implemented; human visual acceptance pending | PRODUCT-THEME-001 |
 
 ## Cards, themes, and micro-polish
 
@@ -79,11 +79,11 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | QA-CARD-001 | OPEN | table/DOM card corner rank and suit can clip | PRODUCT-UI-004 |
 | QA-CARD-002 | OPEN | full `10` mirrored bottom-corner centering/geometry looks wrong | PRODUCT-UI-004 |
 | QA-CARD-003 | OPEN | DOM and SVG card-face geometry need final consistency pass | PRODUCT-UI-004 |
-| QA-THEME-001 | OPEN | Daylight still has dark/black inputs in some states | PRODUCT-UI-004 |
-| QA-THEME-002 | OPEN | Daylight small muted text needs contrast verification | PRODUCT-UI-004 |
-| QA-THEME-003 | OPEN | legacy/experimental theme labels expose `(0px)`/debug-like text | PRODUCT-UI-004 |
-| QA-THEME-004 | OPEN | duplicate/confusing Discord Dark entries | PRODUCT-UI-004 |
-| QA-THEME-005 | OPEN | Luxury Gold name does not match its palette | PRODUCT-UI-004 |
+| QA-THEME-001 | PARTIAL | Daylight controls now use semantic light surfaces; human visual acceptance pending | PRODUCT-THEME-001 |
+| QA-THEME-002 | PARTIAL | Daylight muted text passes structural contrast checks; human visual acceptance pending | PRODUCT-THEME-001 |
+| QA-THEME-003 | PARTIAL | legacy/experimental labels are retired from the supported theme catalog; human visual acceptance pending | PRODUCT-THEME-001 |
+| QA-THEME-004 | PARTIAL | duplicate Discord entries are retired from the supported theme catalog; human visual acceptance pending | PRODUCT-THEME-001 |
+| QA-THEME-005 | PARTIAL | Luxury Gold is retired from the supported theme catalog; human visual acceptance pending | PRODUCT-THEME-001 |
 | QA-MICRO-001 | OPEN | Settings/current utility icon alignment needs final pass | PRODUCT-UI-004 |
 | QA-MICRO-002 | OPEN | action-color palette needs final restrained consistency review | PRODUCT-UI-004 |
 | QA-MICRO-003 | OPEN | awkward near-black inset surfaces need final token review | PRODUCT-UI-004 |

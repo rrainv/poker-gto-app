@@ -5984,16 +5984,6 @@ function bindEvents() {
     });
   }
 
-  if ($('#themeColor')) $('#themeColor').addEventListener('change', (event) => {
-
-    document.documentElement.dataset.theme = event.target.value;
-
-    localStorage.setItem('appTheme', event.target.value);
-
-    initThemeSwatches();
-
-  });
-
   // === TIGHTNESS SLIDER ===
   const tightnessSlider = document.getElementById('tightnessSlider');
   const tightnessLabel = document.getElementById('tightnessLabel');
@@ -6096,122 +6086,9 @@ function bindEvents() {
       const currentTheme = document.documentElement.dataset.theme || 'midnight';
       const newTheme = currentTheme === 'daylight' ? 'midnight' : 'daylight';
       
-      document.documentElement.dataset.theme = newTheme;
-      localStorage.setItem('appTheme', newTheme);
-      
-      if ($('#themeColor')) $('#themeColor').value = newTheme;
+      window.RiverlinePresentationTheme?.apply(newTheme);
       
     }
-
-  });
-
-}
-
-
-
-const THEME_PREVIEWS = [
-  { id: 'midnight', name: 'Riverline Midnight', color: '#42ad7b', bg: '#101311', sharp: false, legacy: false },
-  { id: 'graphite', name: 'Riverline Graphite', color: '#4aa77b', bg: '#151716', sharp: false, legacy: false },
-  { id: 'daylight', name: 'Riverline Daylight', color: '#2f8b65', bg: '#f2eee6', sharp: false, legacy: false },
-
-  // Preserved for existing preferences; these are not part of the new supported visual foundation.
-  { id: 'discord', name: 'Discord Dark', color: '#5865f2', bg: '#1e1f22', sharp: false, legacy: true },
-  { id: 'monochrome', name: 'Carbon Slate', color: '#94a3b8', bg: '#121824', sharp: false, legacy: true },
-  { id: 'blue', name: 'Riverline Blue', color: '#3b82f6', bg: '#0b1329', sharp: false, legacy: true },
-  { id: 'green', name: 'Matrix Green', color: '#10b981', bg: '#061912', sharp: false, legacy: true },
-  { id: 'purple', name: 'Solver Purple', color: '#8b5cf6', bg: '#160d29', sharp: false, legacy: true },
-  { id: 'red', name: 'Action Red', color: '#ef4444', bg: '#1a0b0b', sharp: false, legacy: true },
-  { id: 'orange', name: 'Home Game Orange', color: '#f97316', bg: '#18110c', sharp: false, legacy: true },
-  { id: 'legacy-midnight-cyan', name: 'Midnight Cyan', color: '#06b6d4', bg: '#08171e', sharp: false, legacy: true },
-  { id: 'cyberpunk', name: 'Cyberpunk Neon', color: '#ec4899', bg: '#1a0916', sharp: false, legacy: true },
-  { id: 'felt', name: 'Casino Felt', color: '#4caf50', bg: '#0a2e1a', sharp: false, legacy: true },
-  { id: 'luxury', name: 'Rose Luxe', color: '#e94560', bg: '#1a1a2e', sharp: false, legacy: true },
-  { id: 'discord-0px', name: 'Discord Sharp', color: '#5865f2', bg: '#1e1f22', sharp: true, legacy: true },
-  { id: 'serious-pio', name: 'PioSolver Sharp', color: '#6a8c7a', bg: '#12161a', sharp: true, legacy: true },
-  { id: 'terminal', name: 'Terminal Dark CRT', color: '#00ff66', bg: '#040906', sharp: true, legacy: true },
-  { id: 'brutalist-slate', name: 'Brutalist Slate', color: '#94a3b8', bg: '#0f172a', sharp: true, legacy: true },
-  { id: 'brutalist-cyan', name: 'Brutalist Cyan', color: '#06b6d4', bg: '#0a1a1a', sharp: true, legacy: true },
-  { id: 'brutalist-purple', name: 'Brutalist Purple', color: '#a855f7', bg: '#1a0a1a', sharp: true, legacy: true },
-  { id: 'brutalist-amber', name: 'Brutalist Amber', color: '#f59e0b', bg: '#140c04', sharp: true, legacy: true },
-  { id: 'brutalist-emerald', name: 'Brutalist Emerald', color: '#10b981', bg: '#051410', sharp: true, legacy: true },
-  { id: 'brutalist-rose', name: 'Brutalist Rose', color: '#f43f5e', bg: '#1a0a10', sharp: true, legacy: true },
-  { id: 'brutalist-red', name: 'Brutalist Red', color: '#ef4444', bg: '#1a0a0a', sharp: true, legacy: true }
-
-];
-
-
-
-function initThemeSwatches() {
-
-  const grid = $('#themeSwatchGrid');
-
-  if (!grid) return;
-
-  const currentTheme = document.documentElement.dataset.theme || 'midnight';
-
-  
-
-  const riverlineThemes = THEME_PREVIEWS.filter(t => !t.legacy);
-
-  const legacyThemes = THEME_PREVIEWS.filter(t => t.legacy);
-
-
-
-  const renderBtn = (tItem) => {
-
-    const isSelected = currentTheme === tItem.id;
-
-    return `
-
-      <button type="button" class="theme-swatch-btn ${isSelected ? 'active' : ''}" data-theme-id="${tItem.id}" aria-pressed="${isSelected}"
-
-        style="--swatch-bg:${tItem.bg}; --swatch-accent:${tItem.color}; --swatch-radius:${tItem.sharp ? '0px' : 'var(--radius-cell)'}; --swatch-border-width:${isSelected ? '2px' : '1px'};">
-
-        <div class="theme-swatch-copy">
-
-          <span class="theme-swatch-dot"></span>
-
-          <span class="theme-swatch-name">${t(tItem.name)}</span>
-
-        </div>
-
-      </button>
-
-    `;
-
-  };
-
-
-
-  grid.innerHTML = `
-
-    <div class="theme-swatch-heading">${t('Riverline Themes')}</div>
-
-    ${riverlineThemes.map(renderBtn).join('')}
-
-    <div class="theme-swatch-heading theme-swatch-heading--legacy">${t('Legacy / Experimental')}</div>
-
-    ${legacyThemes.map(renderBtn).join('')}
-
-  `;
-
-  
-
-  $$('.theme-swatch-btn').forEach(btn => {
-
-    btn.addEventListener('click', () => {
-
-      const themeId = btn.dataset.themeId;
-
-      document.documentElement.dataset.theme = themeId;
-
-      localStorage.setItem('appTheme', themeId);
-
-      if ($('#themeColor')) $('#themeColor').value = themeId;
-
-      initThemeSwatches();
-
-    });
 
   });
 
@@ -6316,7 +6193,6 @@ function refreshLocalizedRuntime() {
   const shell = $('.riverline-shell');
   applySidebarState(Boolean(shell?.classList.contains('is-sidebar-collapsed')));
   updateActionPathDisclosure();
-  initThemeSwatches();
   updatePositions();
   renderAllCards();
   if (activeWorkspaceMode() === 'home' && homeViewModel) renderHomeWorkspace(homeViewModel);
@@ -6384,17 +6260,6 @@ function init() {
     document.documentElement.lang = selectedLanguage;
     document.documentElement.dir = selectedLanguage === 'he' ? 'rtl' : 'ltr';
     if ($('#langToggle')) $('#langToggle').value = selectedLanguage;
-
-    const defaultTheme = 'midnight';
-    const persistedTheme = localStorage.getItem('appTheme');
-    const selectedTheme = THEME_PREVIEWS.some(theme => theme.id === persistedTheme)
-      ? persistedTheme
-      : defaultTheme;
-    if (selectedTheme !== persistedTheme) localStorage.setItem('appTheme', selectedTheme);
-    document.documentElement.dataset.theme = selectedTheme;
-    if ($('#themeColor')) $('#themeColor').value = selectedTheme;
-
-    initThemeSwatches();
 
     initTrainingMode();
 

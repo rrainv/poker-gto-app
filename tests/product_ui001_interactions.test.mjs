@@ -25,14 +25,14 @@ test('toast lifecycle supersedes, expires, and clears stale accessible text', ()
 });
 
 test('mode and modal transitions clear workflow-scoped transient feedback', () => {
-  const events = between('function bindEvents()', 'const THEME_PREVIEWS');
-  assert.match(events, /const mode = button\.dataset\.mode;\s*clearToast\(\)/);
+  const events = between('function bindEvents()', 'const localizedStrategyProfile');
+  assert.match(events, /const mode = button\.dataset\.mode;[\s\S]{0,240}?clearToast\(\)/);
   assert.match(events, /#openSettings[\s\S]*?clearToast\(\)/);
   assert.match(logic, /function applyCanonicalHandAction[\s\S]*?else \{\s*clearToast\(\)/);
 });
 
 test('analysis navigation selects, reveals, and focuses its actual destination', () => {
-  const events = between('function bindEvents()', 'const THEME_PREVIEWS');
+  const events = between('function bindEvents()', 'const localizedStrategyProfile');
   assert.match(events, /const revealPlaybookDestination/);
   assert.match(events, /destination\.scrollIntoView/);
   assert.match(events, /control\?\.focus\?\.\(\{ preventScroll: true \}\)/);

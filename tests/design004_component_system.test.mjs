@@ -98,7 +98,7 @@ test('modal, tooltip, and toast primitives share semantic surfaces', () => {
 });
 
 test('comfortable and compact density share one token mechanism', () => {
-  assert.match(html, /<body data-density="comfortable">/);
+  assert.match(html, /<html[^>]*data-density="comfortable"/);
   assert.match(components, /\[data-density="compact"\]/);
   assert.match(components, /--control-height-compact:\s*34px/);
   assert.match(components, /--component-padding:/);

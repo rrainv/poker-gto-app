@@ -2554,9 +2554,35 @@
               </select>
             </label>
 
-            <div id="themeSwatchGrid" class="theme-swatch-grid section-inset">
-              <!-- Dynamically populated theme swatch buttons in JS -->
-            </div>
+            <section class="field settings-preference-field theme-preference-field" aria-labelledby="themePreferenceTitle">
+              <div class="settings-preference-copy">
+                <strong id="themePreferenceTitle" data-i18n="Workstation theme">Workstation theme</strong>
+                <span class="panel-note" data-i18n="Choose a restrained built-in palette, then optionally tune three guarded colors.">Choose a restrained built-in palette, then optionally tune three guarded colors.</span>
+              </div>
+              <div id="themeSwatchGrid" class="theme-swatch-grid" role="group" aria-label="Built-in themes" data-i18n-aria-label="Built-in themes"></div>
+              <fieldset class="theme-customization section-inset" aria-describedby="themeCustomizationHelp themeCustomizationStatus">
+                <legend data-i18n="Custom colors">Custom colors</legend>
+                <div class="theme-color-controls">
+                  <label class="theme-color-field" for="themeAccentColor">
+                    <span data-i18n="Accent color">Accent color</span>
+                    <input id="themeAccentColor" type="color" value="#42ad7b">
+                  </label>
+                  <label class="theme-color-field" for="themeSurfaceColor">
+                    <span data-i18n="Surface tone">Surface tone</span>
+                    <input id="themeSurfaceColor" type="color" value="#101311">
+                  </label>
+                  <label class="theme-color-field" for="themeFeltColor">
+                    <span data-i18n="Table accent">Table accent</span>
+                    <input id="themeFeltColor" type="color" value="#285a45">
+                  </label>
+                </div>
+                <p id="themeCustomizationHelp" class="panel-note" data-i18n="Surface and table colors stay inside theme-safe ranges. Poker suits and action meanings do not change.">Surface and table colors stay inside theme-safe ranges. Poker suits and action meanings do not change.</p>
+                <div class="theme-customization-actions">
+                  <p id="themeCustomizationStatus" class="theme-customization-status" role="status" aria-live="polite" data-i18n="Using built-in theme defaults.">Using built-in theme defaults.</p>
+                  <button id="resetThemeCustomization" class="ui-button ui-button--secondary" type="button" data-i18n="Reset theme colors">Reset theme colors</button>
+                </div>
+              </fieldset>
+            </section>
         </div>
 
         <div id="settingsAccountProfile" class="settings-group settings-account-group" data-account-state="loading" aria-busy="true" data-tutorial-anchor="settings-account">

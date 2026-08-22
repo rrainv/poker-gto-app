@@ -120,7 +120,7 @@ test('hidden dirty surfaces defer work and render exactly once when opened', () 
 });
 
 test('Facing and Pot each have one slider binding and no duplicate delayed input path', () => {
-  const events = sourceBetween('function bindEvents()', 'const THEME_PREVIEWS');
+  const events = sourceBetween('function bindEvents()', 'const localizedStrategyProfile');
   assert.equal((events.match(/bindSliderPair\('facingSize'/g) || []).length, 1);
   assert.equal((events.match(/bindSliderPair\('potSize'/g) || []).length, 1);
   assert.match(events, /schedulePlaybookUpdate\('Facing size changed'\)/);

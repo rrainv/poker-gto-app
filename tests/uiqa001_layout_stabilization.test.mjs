@@ -156,8 +156,8 @@ test('stabilization uses semantic stepped surfaces and softened Daylight tokens'
   assert.match(uiQaCss, /background:\s*var\(--surface-section\)/);
   assert.doesNotMatch(uiQaCss, /background(?:-color)?:\s*(?:#000(?:000)?|rgb\(0\s*,\s*0\s*,\s*0\))/i);
   const daylight = css.match(/\[data-theme="daylight"\]\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
-  assert.match(daylight, /--surface-canvas:\s*#e8e2d8/);
-  assert.match(daylight, /--surface-panel:\s*#f1ede5/);
+  assert.match(daylight, /--surface-canvas:\s*#ebe7df/);
+  assert.match(daylight, /--surface-panel:\s*#f5f2ec/);
   assert.doesNotMatch(daylight, /--surface-(?:canvas|shell|panel|elevated|interactive|inset):\s*#fff(?:fff)?\b/i);
 });
 

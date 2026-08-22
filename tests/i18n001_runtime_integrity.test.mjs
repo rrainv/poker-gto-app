@@ -17,6 +17,7 @@ const rangeCalibrationTranslationsSource = fs.readFileSync(path.join(repoRoot, '
 const homeTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/home-translations.js'), 'utf8');
 const homeGameTranslationsSource = fs.readFileSync(path.join(repoRoot, 'app/src/locales/home-game-translations.js'), 'utf8');
 const logicSource = fs.readFileSync(path.join(repoRoot, 'app/src/core/logic.js'), 'utf8');
+const themeSource = fs.readFileSync(path.join(repoRoot, 'app/src/application/presentation-theme.mjs'), 'utf8');
 const heuristicStrategySource = fs.readFileSync(path.join(repoRoot, 'app/src/strategy/heuristic-strategy.mjs'), 'utf8');
 const strategyBootstrapSource = fs.readFileSync(path.join(repoRoot, 'app/src/application/strategy-provider-bootstrap.mjs'), 'utf8');
 const teacherSource = fs.readFileSync(path.join(repoRoot, 'app/src/ui/teacher.js'), 'utf8');
@@ -267,20 +268,20 @@ test('theme display names and Equity seed placeholder localize without changing 
   const runtime = createRuntime();
   for (const language of ['ru', 'he']) {
     runtime.context.window.setLanguage(language);
-    for (const name of ['Riverline Midnight', 'Discord Dark', 'Terminal Dark CRT']) {
+    for (const name of ['Riverline Midnight', 'Riverline Graphite', 'Riverline Daylight']) {
       assert.notEqual(runtime.context.window.t(name), name, `${language} retained theme display name ${name}`);
     }
-    assert.equal(runtime.context.window.t('Carbon Slate'), 'Carbon Slate');
     const placeholder = runtime.context.window.t('Generated automatically');
     assert.notEqual(placeholder, 'Generated automatically');
     assert.match(placeholder, language === 'ru' ? /[\u0400-\u04FF]{2,}/u : /[\u0590-\u05FF]{2,}/u);
   }
   assert.match(html, /id="equitySeed"[^>]*data-i18n-placeholder="Generated automatically"/);
-  for (const id of ['midnight', 'graphite', 'daylight', 'discord', 'terminal', 'brutalist-red']) {
-    assert.match(logicSource, new RegExp(`id: '${id}'`));
+  for (const id of ['midnight', 'graphite', 'daylight']) {
+    assert.match(themeSource, new RegExp(`id: '${id}'`));
   }
-  assert.match(logicSource, /data-theme-id="\$\{tItem\.id\}"/);
-  assert.match(logicSource, /theme-swatch-name">\$\{t\(tItem\.name\)\}/);
+  assert.doesNotMatch(themeSource, /discord|terminal|brutalist/i);
+  assert.match(themeSource, /button\.dataset\.themeId = theme\.id/);
+  assert.match(themeSource, /name\.textContent = translate\(theme\.name\)/);
 });
 
 test('Analysis renderer consumes structured keys and rendered audit covers live RU/HE states', () => {

@@ -1,5 +1,6 @@
 import { createPresentationDensityController } from './presentation-density.mjs';
 import { createPresentationLayoutController } from './presentation-layout.mjs';
+import { createPresentationThemeController } from './presentation-theme.mjs';
 
 function activeLayoutWorkspace() {
   return document.querySelector('.mode-nav-item.active[data-navigation-id]')?.dataset.navigationId
@@ -7,6 +8,18 @@ function activeLayoutWorkspace() {
 }
 
 function initializePresentationPreferences() {
+  const themeController = createPresentationThemeController({
+    root: document.documentElement,
+    storage: window.localStorage,
+    themeGrid: document.querySelector('#themeSwatchGrid'),
+    accentInput: document.querySelector('#themeAccentColor'),
+    surfaceInput: document.querySelector('#themeSurfaceColor'),
+    feltInput: document.querySelector('#themeFeltColor'),
+    resetButton: document.querySelector('#resetThemeCustomization'),
+    status: document.querySelector('#themeCustomizationStatus'),
+    translate: (key) => window.t?.(key) ?? key,
+  }).init();
+
   const densityController = createPresentationDensityController({
     root: document.documentElement,
     storage: window.localStorage,
@@ -43,6 +56,8 @@ function initializePresentationPreferences() {
 
   window.RiverlinePresentationDensity = densityController;
   window.RiverlinePresentationLayout = layoutController;
+  window.RiverlinePresentationTheme = themeController;
+  window.addEventListener('riverline:languagechange', () => themeController.refreshLabels());
 }
 
 if (document.readyState === 'loading') {
