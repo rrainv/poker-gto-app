@@ -228,7 +228,7 @@ test('price, style, and multiway diagnostics preserve their bounded invariants',
 
 test('objective preflop action and sizing semantics are projected coherently', () => {
   const provider = createCalibrationStrategyProvider();
-  for (const stackBb of [1, 1.999, 2]) {
+  for (const stackBb of [10, 30, 100, 200, 500]) {
     const result = evaluateDecisionContext(provider, preflopContextFor('AA', {
       tableSize: 6,
       opponentCount: 5,
@@ -236,10 +236,8 @@ test('objective preflop action and sizing semantics are projected coherently', (
       stackBb,
       facing: 'unopened',
     }));
-    const aggressive = result.actions.find((action) => action.type === 'all_in');
-    assert.ok(aggressive, String(stackBb));
-    assert.equal(aggressive.amountBb, null);
-    assert.equal(aggressive.label, 'All-In');
+    assert.equal(result.actionVector.all_in, 0, String(stackBb));
+    assert.ok(result.actions.some((action) => action.type === 'raise'), String(stackBb));
   }
 
   const huRootContext = preflopContextFor('AKs', {

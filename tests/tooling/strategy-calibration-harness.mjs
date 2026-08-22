@@ -3,20 +3,28 @@ import { performance } from 'node:perf_hooks';
 import { createStrategyProvider } from '../../app/src/application/strategy-provider.mjs';
 import { isStrategyResultV1 } from '../../app/src/application/strategy-result.mjs';
 import { resolveHeuristicStrategy } from '../../app/src/strategy/heuristic-strategy.mjs';
+import { getHoldemCombosForHandClass } from '../../shared/poker-domain/holdem-combos.js';
 import {
   ALL_POSITIONS,
   MULTIWAY_SPOT,
   NON_BLIND_POSITIONS,
+  POSTFLOP_COUNTERFACTUAL_CORPUS,
   POSTFLOP_NAMED_CORPUS,
   PREFLOP_FACING_CATEGORIES,
   PREFLOP_HAND_CLASSES,
   PRICE_RESPONSE_SPOTS,
+  RFI_ACCEPTANCE_INVARIANTS,
+  RFI_EXTERNAL_SANITY_REFERENCES,
+  RFI_METRIC_ASSUMPTIONS,
   REPRESENTATIVE_PREFLOP_CONFIGURATIONS,
+  STRATEGY_QUALITY_BOUNDARY_HANDS,
   calibrationDecisionContext,
   representativeCardsForClass,
 } from './strategy-calibration-corpora.mjs';
 
 export const CALIBRATION_REPORT_SCHEMA_VERSION = 'riverline-strategy-calibration-report/v1';
+export const STRATEGY_QUALITY_SNAPSHOT_SCHEMA_VERSION =
+  'riverline-heuristic-strategy-quality-snapshot/v1';
 export const CALIBRATION_REFERENCE_SCHEMA_VERSION = 'riverline-hu-preflop-calibration-reference/v1';
 export const BOUNDED_HU_GAME_VERSION = 'riverline-hu-preflop-100bb/v1';
 export const NEAR_PURE_THRESHOLD = 0.95;
@@ -86,6 +94,12 @@ function rounded(value, digits = 12) {
 
 function average(values) {
   return values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function weightedAverage(rows, selector, weightForRow) {
+  const totalWeight = rows.reduce((sum, row) => sum + weightForRow(row), 0);
+  if (!(totalWeight > 0)) return 0;
+  return rows.reduce((sum, row) => sum + selector(row) * weightForRow(row), 0) / totalWeight;
 }
 
 function clone(value) {
@@ -223,6 +237,18 @@ export function summarizePreflopConfiguration(provider, configuration, { include
     || right.passiveProbability - left.passiveProbability
     || left.handClass.localeCompare(right.handClass)
   ));
+  const physicalComboWeight = (row) => getHoldemCombosForHandClass(row.handClass).length;
+  const actionMass = (weighting, weightForRow) => Object.freeze({
+    weighting,
+    totalWeight: rows.reduce((sum, row) => sum + weightForRow(row), 0),
+    aggression: rounded(weightedAverage(rows, (row) => row.aggressiveProbability, weightForRow)),
+    passive: rounded(weightedAverage(rows, (row) => row.passiveProbability, weightForRow)),
+    fold: rounded(weightedAverage(rows, (row) => row.foldProbability, weightForRow)),
+  });
+  const actionMassByWeighting = Object.freeze({
+    physicalCombo: actionMass('physical_combo_count', physicalComboWeight),
+    equalClass: actionMass('equal_weight_per_169_hand_class', () => 1),
+  });
   const summary = {
     id: configuration.id ?? null,
     tableSize: configuration.tableSize,
@@ -231,9 +257,10 @@ export function summarizePreflopConfiguration(provider, configuration, { include
     facing: configuration.facing,
     weighting: 'equal_weight_per_169_hand_class',
     classCount: rows.length,
-    averageAggression: rounded(average(rows.map((row) => row.aggressiveProbability))),
-    averagePassive: rounded(average(rows.map((row) => row.passiveProbability))),
-    averageFold: rounded(average(rows.map((row) => row.foldProbability))),
+    actionMassByWeighting,
+    averageAggression: actionMassByWeighting.equalClass.aggression,
+    averagePassive: actionMassByWeighting.equalClass.passive,
+    averageFold: actionMassByWeighting.equalClass.fold,
     nearPureAggressionCount: rows.filter((row) => (
       row.aggressiveProbability >= NEAR_PURE_THRESHOLD
     )).length,
@@ -267,6 +294,154 @@ function maximumActionDelta(left, right) {
   return Math.max(...ACTION_TYPES.map((type) => (
     Math.abs((left.actionVector[type] || 0) - (right.actionVector[type] || 0))
   )));
+}
+
+function counterfactualObservation(provider, decisionContext) {
+  const result = provider.resolve(decisionContext);
+  if (!isStrategyResultV1(result)) throw new TypeError('Counterfactual requires StrategyResult v1');
+  return {
+    source: result.source,
+    sourceVersion: result.sourceVersion,
+    coverage: result.contextCoverage,
+    actionVector: actionVectorForResult(result),
+    actions: clone(result.actions),
+    heuristicSample: clone(result.details?.heuristicSample ?? null),
+    sampledEquity: result.details?.sampledEquity ?? null,
+    explanation: result.explanation,
+    warnings: [...result.warnings],
+  };
+}
+
+export function evaluatePostflopCounterfactuals(options = {}) {
+  const provider = createCalibrationStrategyProvider(options);
+  return Object.fromEntries(Object.entries(POSTFLOP_COUNTERFACTUAL_CORPUS).map(
+    ([id, fixture]) => {
+      const baseline = counterfactualObservation(provider, fixture.baseline);
+      const counterfactual = counterfactualObservation(provider, fixture.counterfactual);
+      return [id, {
+        label: fixture.label,
+        baseline,
+        counterfactual,
+        sameSource: baseline.source === counterfactual.source,
+        sameActions: JSON.stringify(baseline.actions) === JSON.stringify(counterfactual.actions),
+        sameSample: JSON.stringify(baseline.heuristicSample)
+          === JSON.stringify(counterfactual.heuristicSample),
+        maximumActionDelta: rounded(maximumActionDelta(baseline, counterfactual)),
+      }];
+    },
+  ));
+}
+
+function compactPreflopQualitySummary(provider, configuration) {
+  const aggregate = summarizePreflopConfiguration(provider, configuration);
+  return {
+    id: configuration.id,
+    tableSize: configuration.tableSize,
+    heroPosition: configuration.heroPosition,
+    stackBb: configuration.stackBb,
+    facing: configuration.facing,
+    actionMassByWeighting: aggregate.actionMassByWeighting,
+    averageAggression: aggregate.averageAggression,
+    averagePassive: aggregate.averagePassive,
+    averageFold: aggregate.averageFold,
+    boundaryHands: Object.fromEntries(STRATEGY_QUALITY_BOUNDARY_HANDS.map((handClass) => {
+      const result = evaluateDecisionContext(
+        provider,
+        preflopContextFor(handClass, configuration),
+      );
+      return [handClass, {
+        actionVector: result.actionVector,
+        dominantAction: result.dominantAction,
+      }];
+    })),
+  };
+}
+
+export function buildStrategyQualitySnapshot(options = {}) {
+  const provider = createCalibrationStrategyProvider(options);
+  const configurations = REPRESENTATIVE_PREFLOP_CONFIGURATIONS.map((configuration) => (
+    compactPreflopQualitySummary(provider, configuration)
+  ));
+  const configurationById = new Map(configurations.map((configuration) => (
+    [configuration.id, configuration]
+  )));
+  const physicalAggression = (id) => (
+    configurationById.get(id).actionMassByWeighting.physicalCombo.aggression
+  );
+  const progressionIsMonotonic = (ids) => ids.every((id, index) => (
+    index === 0 || physicalAggression(id) + 1e-12 >= physicalAggression(ids[index - 1])
+  ));
+  const structuralDiagnostics = Object.freeze({
+    weighting: 'physical_combo_count',
+    huMinusSixMaxButtonAggression: rounded(
+      physicalAggression('hu_100_btn_unopened')
+        - physicalAggression('six_max_100_btn_unopened'),
+    ),
+    sixMaxMinusNineMaxFirstAggression: rounded(
+      physicalAggression('six_max_100_utg_unopened')
+        - physicalAggression('nine_max_100_utg_unopened'),
+    ),
+    sixMaxMinusNineMaxButtonAggression: rounded(
+      physicalAggression('six_max_100_btn_unopened')
+        - physicalAggression('nine_max_100_btn_unopened'),
+    ),
+    sixMaxProgressionMonotonic: progressionIsMonotonic([
+      'six_max_100_utg_unopened',
+      'six_max_100_hj_unopened',
+      'six_max_100_co_unopened',
+      'six_max_100_btn_unopened',
+    ]),
+    nineMaxProgressionMonotonic: progressionIsMonotonic([
+      'nine_max_100_utg_unopened',
+      'nine_max_100_utg_plus_1_unopened',
+      'nine_max_100_mp_unopened',
+      'nine_max_100_lj_unopened',
+      'nine_max_100_hj_unopened',
+      'nine_max_100_co_unopened',
+      'nine_max_100_btn_unopened',
+    ]),
+    externalPercentageAssertions: false,
+  });
+  const allInRows = [10, 30, 100, 200, 500].flatMap((stackBb) => (
+    PREFLOP_HAND_CLASSES.map((handClass) => evaluateDecisionContext(
+      provider,
+      preflopContextFor(handClass, {
+        tableSize: 6,
+        opponentCount: 5,
+        heroPosition: 'BTN',
+        stackBb,
+        facing: 'unopened',
+      }),
+    ))
+  ));
+  return {
+    schemaVersion: STRATEGY_QUALITY_SNAPSHOT_SCHEMA_VERSION,
+    scope: 'heuristic_calibration_metrics_not_solved_truth',
+    claims: {
+      solvedGto: false,
+      exactSolverAgreement: false,
+      safeForFrequencyRetuning: false,
+    },
+    preflop: {
+      configurations,
+      boundaryHands: [...STRATEGY_QUALITY_BOUNDARY_HANDS],
+      metricAssumptions: clone(RFI_METRIC_ASSUMPTIONS),
+      externalSanityReferences: clone(RFI_EXTERNAL_SANITY_REFERENCES),
+      acceptanceInvariants: [...RFI_ACCEPTANCE_INVARIANTS],
+      structuralDiagnostics,
+      allInReachability: {
+        supportedStackDepthsBb: [10, 30, 100, 200, 500],
+        evaluatedResultCount: allInRows.length,
+        positiveAllInResultCount: allInRows.filter((row) => (
+          row.actionVector.all_in > 0
+        )).length,
+      },
+    },
+    postflop: {
+      namedCorpus: evaluatePostflopCorpus(options),
+      counterfactuals: evaluatePostflopCounterfactuals(options),
+    },
+  };
 }
 
 export function diagnosePreflopSanity(provider) {
@@ -782,7 +957,7 @@ function labelMatchesType(label, type) {
 export function diagnoseSizing() {
   const provider = createCalibrationStrategyProvider();
   const contexts = [];
-  for (const stackBb of [0, 1, 1.999, 2, 2.001, 10, 30, 100, 200]) {
+  for (const stackBb of [10, 30, 100, 200, 500]) {
     for (const handClass of ['AA', 'AKs', '76s', '72o']) {
       contexts.push({
         id: `unopened_${stackBb}_${handClass}`,
@@ -901,8 +1076,8 @@ export function buildCalibrationReport({ reference = null, includeClasses = fals
             && left.averageFold === right.averageFold
             && left.aggressionOrdering.join(',') === right.aggressionOrdering.join(',');
         }),
-        codeAudit: 'The preflop heuristic does not consume tableSize or opponentCount.',
-        implication: 'One global parameterization cannot express table-size-specific range shape.',
+        codeAudit: 'Unopened preflop position adjustment consumes canonical tableSize/position facts.',
+        implication: 'Table families can now express distinct positional opening baselines without changing facing-aggression anchors.',
       },
     },
     postflop: {

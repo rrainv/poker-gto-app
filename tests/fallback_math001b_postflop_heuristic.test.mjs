@@ -276,15 +276,14 @@ test('price, action-family, sizing, MDF, and flat-drop semantics stay structural
   assert.deepEqual(Object.keys(free).filter((key) => key !== 'context').sort(), ['Bet', 'Check']);
   assert.equal(free.context.facesWager, false);
 
-  const unknown = calculatePostflopStrategyFromSample(
-    context({ lastAction: 'raise', facingSizeBb: 8, callAmountBb: null }),
-    options(),
-    { eq: 0.5 },
+  assert.throws(
+    () => calculatePostflopStrategyFromSample(
+      context({ lastAction: 'raise', facingSizeBb: 8, callAmountBb: null }),
+      options(),
+      { eq: 0.5 },
+    ),
+    /requires an exact callAmountBb/,
   );
-  assert.deepEqual(Object.keys(unknown).filter((key) => key !== 'context').sort(), ['Call', 'Fold', 'Raise']);
-  assert.equal(unknown.context.requiredRawEquity, null);
-  assert.equal(unknown.context.priceDependentAdjustmentApplied, false);
-  assert.equal(unknown.context.priceSource, 'unavailable_scenario_price');
 
   const priced = calculatePostflopStrategyFromSample(
     context({ lastAction: 'bet', facingSizeBb: 5, callAmountBb: 5, potBb: 5 }),
@@ -305,9 +304,14 @@ test('price, action-family, sizing, MDF, and flat-drop semantics stay structural
   assert.doesNotMatch(POSTFLOP_SOURCE, /\bmdf\b|minimum defen[cs]e|requiredDefense/i);
 
   const result = resolvedResult(context({ lastAction: 'raise', facingSizeBb: 8, callAmountBb: null }));
-  assert.ok(result.actions.every((entry) => (
-    entry.action.amountBb === null && entry.action.potFraction === null
-  )));
+  assert.equal(result.source, 'unavailable');
+  assert.deepEqual(result.actions, []);
+  assert.equal(result.recommendation, null);
+  assert.equal(result.contextCoverage.kind, 'unsupported');
+  assert.equal(result.contextCoverage.basis, 'missing_trusted_call_price');
+  assert.deepEqual(result.contextCoverage.limitationCodes, [
+    'heuristic_exact_call_price_unavailable',
+  ]);
 });
 
 test('small sampled-strength changes around heuristic boundaries cannot cause extreme strategy jumps', () => {

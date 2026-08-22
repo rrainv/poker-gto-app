@@ -241,7 +241,7 @@ const HEURISTIC_CAPABILITIES = Object.freeze({
 export const STRATEGY_SOURCE_REGISTRY = deepFreeze({
   heuristic_preflop: createStrategySourceDescriptor({
     id: 'heuristic_preflop',
-    version: 'riverline-preflop-heuristic/v1',
+    version: 'riverline-preflop-heuristic/v2',
     displayName: 'Heuristic fallback',
     family: STRATEGY_SOURCE_FAMILIES.HEURISTIC,
     authority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
@@ -251,7 +251,7 @@ export const STRATEGY_SOURCE_REGISTRY = deepFreeze({
   }),
   heuristic_postflop: createStrategySourceDescriptor({
     id: 'heuristic_postflop',
-    version: 'riverline-postflop-heuristic/v1',
+    version: 'riverline-postflop-heuristic/v2',
     displayName: 'Heuristic fallback',
     family: STRATEGY_SOURCE_FAMILIES.HEURISTIC,
     authority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
@@ -329,16 +329,6 @@ export function heuristicContextLimitationCodes(decisionContext) {
   const lastAction = String(decisionContext.lastAction || '').toLowerCase();
   const codes = [];
   if (street === 'preflop') {
-    if (decisionContext.tableSize === 2
-      && decisionContext.heroPosition === 'BTN'
-      && lastAction === 'unopened') {
-      codes.push('heuristic_hu_rfi_shared_baseline');
-    }
-    if (decisionContext.tableSize === 6
-      && decisionContext.heroPosition === 'UTG'
-      && lastAction === 'unopened') {
-      codes.push('heuristic_six_max_first_position_coarse');
-    }
     if (lastAction === 'check'
       || (decisionContext.heroPosition === 'BB'
         && lastAction === 'unopened'

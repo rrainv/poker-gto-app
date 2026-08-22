@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   CALIBRATION_SUPPORTED_DIMENSIONS,
+  buildStrategyQualitySnapshot,
   buildCalibrationReport,
   measureCalibrationRuntime,
 } from './strategy-calibration-harness.mjs';
@@ -25,10 +26,13 @@ const isMain = process.argv[1]
 if (isMain) {
   const pretty = process.argv.includes('--pretty');
   const runtime = process.argv.includes('--runtime');
+  const quality = process.argv.includes('--quality');
   const includeClasses = process.argv.includes('--full');
   const reference = readReference(argumentValue('--reference'));
   const runs = Number(argumentValue('--runs') ?? 1);
-  const output = runtime
+  const output = quality
+    ? buildStrategyQualitySnapshot()
+    : runtime
     ? measureCalibrationRuntime({ runs })
     : {
       supportedDimensions: CALIBRATION_SUPPORTED_DIMENSIONS,
@@ -36,4 +40,3 @@ if (isMain) {
     };
   process.stdout.write(`${JSON.stringify(output, null, pretty ? 2 : 0)}\n`);
 }
-

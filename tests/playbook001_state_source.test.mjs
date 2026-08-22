@@ -349,14 +349,17 @@ test('flop first-action parity and facing-bet pricing authority remain explicit'
   assert.equal(facingBet.decisionContext.callAmountBb, 2);
   const scenarioFacingBet = resolveScenario(projectedScenario(facingBet.decisionContext));
   assert.equal(scenarioFacingBet.decisionContext.callAmountBb, null);
-  for (const result of [
-    legacy.strategyResult(scenarioFacingBet.decisionContext),
-    legacy.strategyResult(facingBet.decisionContext),
-  ]) {
-    assert.equal(result.schemaVersion, 'strategy-result/v1');
-    assert.equal(result.source, 'heuristic_postflop');
-    assert.ok(result.actions.every((entry) => Number.isFinite(entry.probability)));
-  }
+  const scenarioResult = legacy.strategyResult(scenarioFacingBet.decisionContext);
+  assert.equal(scenarioResult.schemaVersion, 'strategy-result/v1');
+  assert.equal(scenarioResult.source, 'unavailable');
+  assert.deepEqual(scenarioResult.actions, []);
+  assert.equal(scenarioResult.contextCoverage.kind, 'unsupported');
+  assert.equal(scenarioResult.contextCoverage.basis, 'missing_trusted_call_price');
+
+  const handResult = legacy.strategyResult(facingBet.decisionContext);
+  assert.equal(handResult.schemaVersion, 'strategy-result/v1');
+  assert.equal(handResult.source, 'heuristic_postflop');
+  assert.ok(handResult.actions.every((entry) => Number.isFinite(entry.probability)));
 });
 
 test('ClubGG Scenario preserves its nominal configuration without copying canonical price facts', () => {

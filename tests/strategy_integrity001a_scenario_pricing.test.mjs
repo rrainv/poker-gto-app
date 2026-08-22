@@ -62,6 +62,38 @@ function assertAvailableScenarioStrategy(context, expectedSource) {
   return result;
 }
 
+function assertUnavailablePostflopScenarioStrategy(context) {
+  assert.equal(context.schemaVersion, 'decision-context/v1');
+  assert.equal(context.callAmountBb, null);
+  assert.equal(context.heroStreetContributionBb, null);
+  assert.ok(context.facingSizeBb > 0);
+
+  const result = qa.strategyResult(context);
+  assert.equal(result.schemaVersion, 'strategy-result/v1');
+  assert.equal(result.source, 'unavailable');
+  assert.equal(result.sourceDescriptor.authority, 'none');
+  assert.deepEqual(result.actions, []);
+  assert.equal(result.recommendation, null);
+  assert.equal(result.details.providerReason, 'exact_call_price_unavailable');
+  assert.equal(result.contextCoverage.kind, 'unsupported');
+  assert.equal(result.contextCoverage.basis, 'missing_trusted_call_price');
+  assert.deepEqual(result.contextCoverage.limitationCodes, [
+    'heuristic_exact_call_price_unavailable',
+  ]);
+
+  const explanation = createAnalysisExplanation({
+    decisionContext: context,
+    strategyResult: result,
+    authority: 'scenario',
+  });
+  assert.equal(explanation.availability, 'unavailable');
+  assert.equal(explanation.unavailableReason, 'strategy_unavailable');
+  const potOdds = explanation.sections.find((section) => section.key === 'pot_odds');
+  assert.equal(potOdds.facts.find((fact) => fact.key === 'call_price_availability')?.value,
+    'unavailable');
+  return result;
+}
+
 test('Scenario BTN facing a 3bb open retains an available normalized preflop strategy', () => {
   const context = scenario();
   assert.equal(context.lastAction, 'raise');
@@ -81,7 +113,7 @@ test('Scenario facing a 3-bet retains an available normalized preflop strategy',
   assertAvailableScenarioStrategy(context, 'heuristic_preflop');
 });
 
-test('Scenario facing a postflop bet retains an available normalized strategy', () => {
+test('Scenario facing a postflop bet abstains when exact call price is unavailable', () => {
   const context = scenario({
     board: ['Qs', '7d', '2c'],
     potBb: 10,
@@ -91,10 +123,10 @@ test('Scenario facing a postflop bet retains an available normalized strategy', 
   assert.equal(context.street, 'flop');
   assert.equal(context.lastAction, 'bet');
   assert.equal(context.facingSizeBb, 5);
-  assertAvailableScenarioStrategy(context, 'heuristic_postflop');
+  assertUnavailablePostflopScenarioStrategy(context);
 });
 
-test('Scenario facing a postflop raise retains an available normalized strategy', () => {
+test('Scenario facing a postflop raise abstains when exact call price is unavailable', () => {
   const context = scenario({
     board: ['Qs', '7d', '2c'],
     potBb: 20,
@@ -104,7 +136,7 @@ test('Scenario facing a postflop raise retains an available normalized strategy'
   assert.equal(context.street, 'flop');
   assert.equal(context.lastAction, 'raise');
   assert.equal(context.facingSizeBb, 15);
-  assertAvailableScenarioStrategy(context, 'heuristic_postflop');
+  assertUnavailablePostflopScenarioStrategy(context);
 });
 
 test('fallback price mathematics never defaults missing call price to nominal facing size', () => {

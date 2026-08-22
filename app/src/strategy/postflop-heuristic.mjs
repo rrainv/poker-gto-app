@@ -38,6 +38,13 @@ function opponentCountFor({ opponentCount, tableSize }) {
   return { count: seatedPlayers - 1, source: 'table_size_approximation' };
 }
 
+export function postflopOpponentRangeAssumption({ facingSizeBb, lastAction } = {}) {
+  return Number(facingSizeBb) > 0
+    || String(lastAction || '').toLowerCase().includes('raise')
+    ? 'aggression_conditioned'
+    : 'unconditioned';
+}
+
 function preflopComboScore(card1, card2) {
   const rank1 = HEURISTIC_RANK_VALUES[card1[0]] || 0;
   const rank2 = HEURISTIC_RANK_VALUES[card2[0]] || 0;
@@ -55,8 +62,7 @@ function preflopComboScore(card1, card2) {
 
 function buildOpponentCandidateRange(deck, {
   opponentStyle,
-  facingSizeBb,
-  lastAction,
+  rangeAssumption,
   totalPlayers,
 }) {
   const allCombos = [];
@@ -75,7 +81,7 @@ function buildOpponentCandidateRange(deck, {
   // This is deliberately a crude, uniform candidate range rather than a
   // weighted or solved range. A higher opponentStyle means a looser range.
   let targetFraction = 0.15 + 0.3 * clampUnit(opponentStyle);
-  if (Number(facingSizeBb) > 0 || String(lastAction || '').toLowerCase().includes('raise')) {
+  if (rangeAssumption === 'aggression_conditioned') {
     targetFraction *= 0.7;
   }
   if (totalPlayers >= 6) targetFraction *= 0.9;
@@ -158,8 +164,7 @@ export function simulateHeuristicEquity({
   }
   const range = buildOpponentCandidateRange(deck, {
     opponentStyle,
-    facingSizeBb,
-    lastAction,
+    rangeAssumption: postflopOpponentRangeAssumption({ facingSizeBb, lastAction }),
     totalPlayers: opponents.count + 1,
   });
 
@@ -226,6 +231,7 @@ export function simulateHeuristicEquity({
     rangeTargetFraction: range.targetFraction,
     rangeDistribution: 'uniform_over_selected_legal_combos',
     sharedRangeAssumption: true,
+    opponentRangeAssumption: postflopOpponentRangeAssumption({ facingSizeBb, lastAction }),
     soleWins,
     splitPotTrials,
   };
@@ -257,8 +263,13 @@ function closedHeadsUpMix(aggressiveName, passiveName, aggressivePercent) {
   };
 }
 
-function actionContextFacesWager(decisionContext, trustedCallAmount) {
-  if (trustedCallAmount === 0) return false;
+export function postflopContextFacesWager(decisionContext, trustedCallAmount = undefined) {
+  const resolvedCallAmount = trustedCallAmount === undefined
+    ? Number.isFinite(decisionContext?.callAmountBb) && decisionContext.callAmountBb >= 0
+      ? decisionContext.callAmountBb
+      : null
+    : trustedCallAmount;
+  if (resolvedCallAmount === 0) return false;
   return Number(decisionContext.facingSizeBb) > 0
     || ['bet', 'raise'].includes(String(decisionContext.lastAction || '').toLowerCase());
 }
@@ -362,7 +373,10 @@ export function calculatePostflopStrategyFromSample(decisionContext, options, si
   const requiredRawEquity = trustedCallAmount !== null && trustedCallAmount > 0
     ? trustedCallAmount / (potSize + trustedCallAmount)
     : null;
-  const facesWager = actionContextFacesWager(decisionContext, trustedCallAmount);
+  const facesWager = postflopContextFacesWager(decisionContext, trustedCallAmount);
+  if (facesWager && trustedCallAmount === null) {
+    throw new RangeError('Postflop facing-wager strategy requires an exact callAmountBb');
+  }
   let strategy;
 
   if (!facesWager) {
@@ -382,7 +396,7 @@ export function calculatePostflopStrategyFromSample(decisionContext, options, si
     betPercent = Math.max(categoryFloor, betPercent);
     strategy = closedHeadsUpMix('Bet', 'Check', betPercent);
   } else {
-    const continueBoundary = requiredRawEquity ?? 0.5;
+    const continueBoundary = requiredRawEquity;
     const defendPercent = smoothBoundary(sampledEquity, continueBoundary, 0.1) * 100;
     const raiseShare = linearAt(aggressionScore, [
       [0, 0], [0.6, 0], [0.75, 0.25], [0.9, 1], [1, 1],

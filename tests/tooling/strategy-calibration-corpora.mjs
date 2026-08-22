@@ -113,10 +113,34 @@ export const REPRESENTATIVE_PREFLOP_CONFIGURATIONS = Object.freeze([
     facing: 'unopened',
   }),
   Object.freeze({
+    id: 'six_max_100_hj_unopened',
+    tableSize: 6,
+    opponentCount: 5,
+    heroPosition: 'HJ',
+    stackBb: 100,
+    facing: 'unopened',
+  }),
+  Object.freeze({
+    id: 'six_max_100_co_unopened',
+    tableSize: 6,
+    opponentCount: 5,
+    heroPosition: 'CO',
+    stackBb: 100,
+    facing: 'unopened',
+  }),
+  Object.freeze({
     id: 'six_max_100_btn_unopened',
     tableSize: 6,
     opponentCount: 5,
     heroPosition: 'BTN',
+    stackBb: 100,
+    facing: 'unopened',
+  }),
+  Object.freeze({
+    id: 'six_max_100_sb_unopened',
+    tableSize: 6,
+    opponentCount: 5,
+    heroPosition: 'SB',
     stackBb: 100,
     facing: 'unopened',
   }),
@@ -128,11 +152,27 @@ export const REPRESENTATIVE_PREFLOP_CONFIGURATIONS = Object.freeze([
     stackBb: 100,
     facing: 'unopened',
   }),
+  ...['UTG+1', 'MP', 'LJ', 'HJ', 'CO'].map((heroPosition) => Object.freeze({
+    id: `nine_max_100_${heroPosition.toLowerCase().replace('+', '_plus_')}_unopened`,
+    tableSize: 9,
+    opponentCount: 8,
+    heroPosition,
+    stackBb: 100,
+    facing: 'unopened',
+  })),
   Object.freeze({
     id: 'nine_max_100_btn_unopened',
     tableSize: 9,
     opponentCount: 8,
     heroPosition: 'BTN',
+    stackBb: 100,
+    facing: 'unopened',
+  }),
+  Object.freeze({
+    id: 'nine_max_100_sb_unopened',
+    tableSize: 9,
+    opponentCount: 8,
+    heroPosition: 'SB',
     stackBb: 100,
     facing: 'unopened',
   }),
@@ -168,6 +208,113 @@ export const REPRESENTATIVE_PREFLOP_CONFIGURATIONS = Object.freeze([
     stackBb: 100,
     facing: 'facing_3bet',
   }),
+  Object.freeze({
+    id: 'six_max_100_btn_facing_4bet',
+    tableSize: 6,
+    opponentCount: 5,
+    heroPosition: 'BTN',
+    stackBb: 100,
+    facing: 'facing_4bet',
+  }),
+]);
+
+export const RFI_METRIC_ASSUMPTIONS = Object.freeze({
+  physicalCombo: Object.freeze({
+    weighting: 'physical_combo_count',
+    pairClassCombos: 6,
+    suitedClassCombos: 4,
+    offsuitClassCombos: 12,
+    totalCombos: 1326,
+    blockerConditioning: 'none',
+    classStrategyProjection: 'each physical combo receives its 169-class action vector',
+  }),
+  equalClass: Object.freeze({
+    weighting: 'equal_weight_per_169_hand_class',
+    classWeight: 1,
+    totalClasses: 169,
+  }),
+});
+
+export const RFI_EXTERNAL_SANITY_REFERENCES = Object.freeze([
+  Object.freeze({
+    publisher: 'PokerCoaching',
+    url: 'https://pokercoaching.com/preflop-charts',
+    accessCheckedOn: '2026-08-23',
+    verification: 'figures_and_assumptions_visible_in_public_page_text',
+    gameType: 'No-Limit Holdem cash, 6-max',
+    rake: 'not stated in accessible public text',
+    stackBb: 100,
+    openSizeBb: 2.5,
+    terminology: 'first position is LJ; BTN is button',
+    simplification: 'one implementable action per class; mixed solver strategies are collapsed',
+    advisoryRfiPercent: Object.freeze({ LJ: 17.6, BTN: 43.5 }),
+  }),
+  Object.freeze({
+    publisher: 'PokerCoaching',
+    url: 'https://pokercoaching.com/preflop-charts',
+    accessCheckedOn: '2026-08-23',
+    verification: 'figures_and_assumptions_visible_in_public_page_text',
+    gameType: 'No-Limit Holdem cash, public full-ring material is 8-max',
+    rake: 'not stated in accessible public text',
+    stackBb: 100,
+    openSizeBb: 2.5,
+    terminology: 'UTG and BTN',
+    simplification: 'one implementable action per class; mixed solver strategies are collapsed',
+    advisoryRfiPercent: Object.freeze({ UTG: 11.4, BTN: 40.3 }),
+  }),
+  Object.freeze({
+    publisher: 'Upswing Poker',
+    url: 'https://upswingpoker.com/preflop/',
+    accessCheckedOn: '2026-08-23',
+    verification: 'game families verified publicly; quoted figures were not exposed without chart-viewer login',
+    gameType: 'Online Cash Games (6-Max)',
+    rake: 'not verified for quoted figures',
+    stackBb: 'selectable; exact quoted-figure depth not publicly verified',
+    openSizeBb: 'not publicly verified for quoted figures',
+    terminology: 'UTG and BTN as quoted in ticket evidence',
+    simplification: 'not publicly verified for quoted figures',
+    advisoryRfiPercent: Object.freeze({ UTG: 18.5, BTN: 43.1 }),
+  }),
+  Object.freeze({
+    publisher: 'Upswing Poker',
+    url: 'https://upswingpoker.com/preflop/',
+    accessCheckedOn: '2026-08-23',
+    verification: 'game families verified publicly; quoted figures were not exposed without chart-viewer login',
+    gameType: 'Live Cash (9-handed)',
+    rake: 'not verified for quoted figures',
+    stackBb: 'selectable; exact quoted-figure depth not publicly verified',
+    openSizeBb: 'not publicly verified for quoted figures',
+    terminology: 'UTG and BTN as quoted in ticket evidence',
+    simplification: 'not publicly verified for quoted figures',
+    advisoryRfiPercent: Object.freeze({ UTG: 10.2, BTN: 40.8 }),
+  }),
+  Object.freeze({
+    publisher: 'Upswing Poker',
+    url: 'https://upswingpoker.com/heads-up-poker-strategy/',
+    accessCheckedOn: '2026-08-23',
+    verification: 'public directional sanity only; no numeric target adopted',
+    gameType: 'Heads-up No-Limit Holdem',
+    rake: 'not used for the directional comparison',
+    stackBb: 'no exact target depth adopted',
+    openSizeBb: 'no exact target size adopted',
+    terminology: 'BTN/SB acts first preflop against one big blind',
+    simplification: 'directional table-family evidence only',
+    advisoryDirection: 'HU BTN opening should be materially distinct from ring-game BTN',
+  }),
+]);
+
+export const RFI_ACCEPTANCE_INVARIANTS = Object.freeze([
+  'HU BTN differs materially from ring-game BTN without an exact external target.',
+  'Six-max first position is wider than full-ring first position.',
+  'Six-max and nine-max non-blind RFI progressions are monotonic.',
+  'Ring-game BTN remains stable across the table families.',
+  'Table-family adjustment does not affect facing-action or BB-option outputs.',
+  'All action vectors remain finite, normalized, and deterministic.',
+]);
+
+export const STRATEGY_QUALITY_BOUNDARY_HANDS = Object.freeze([
+  'AA', 'QQ', 'AJs', 'AQs', 'KQs', 'K8s',
+  'AJo', 'KJo', 'KQo', 'T9o', '98o', '76s', '72o',
 ]);
 
 function postflopSpot(id, label, overrides) {
@@ -244,4 +391,68 @@ export const MULTIWAY_SPOT = postflopSpot('multiway_top_pair', 'Top pair multiwa
   board: ['Ah', '7d', '2c'],
   stackBb: 100,
   potBb: 10,
+});
+
+const CONTROLLED_TOP_PAIR_FACING_BET = calibrationDecisionContext({
+  tableSize: 2,
+  opponentCount: 1,
+  heroPosition: 'BTN',
+  heroCards: ['As', 'Kd'],
+  board: ['Ah', '7d', '2c'],
+  potBb: 10,
+  lastAction: 'bet',
+  facingSizeBb: 2,
+  callAmountBb: 2,
+  heroStreetContributionBb: 0,
+});
+
+export const POSTFLOP_COUNTERFACTUAL_CORPUS = Object.freeze({
+  nominalSizeInvariant: Object.freeze({
+    label: 'Dry top pair; nominal wager-to changes while exact call price stays fixed',
+    baseline: Object.freeze(CONTROLLED_TOP_PAIR_FACING_BET),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      facingSizeBb: 8,
+    }),
+  }),
+  betRaiseEquivalentRange: Object.freeze({
+    label: 'Bet versus raise label with the same aggression-conditioned range assumption',
+    baseline: Object.freeze(CONTROLLED_TOP_PAIR_FACING_BET),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      lastAction: 'raise',
+    }),
+  }),
+  multiwaySensitivity: Object.freeze({
+    label: 'Exact live-opponent count changes a non-saturated sampled population',
+    baseline: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      heroCards: ['Ks', 'Qd'],
+      board: ['Ah', 'Kc', '7d'],
+      lastAction: 'check',
+      facingSizeBb: 0,
+      callAmountBb: 0,
+    }),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      heroCards: ['Ks', 'Qd'],
+      board: ['Ah', 'Kc', '7d'],
+      tableSize: 3,
+      opponentCount: 2,
+      lastAction: 'check',
+      facingSizeBb: 0,
+      callAmountBb: 0,
+    }),
+  }),
+  missingCallPrice: Object.freeze({
+    label: 'Scenario-facing wager without a trusted incremental call price',
+    baseline: Object.freeze(CONTROLLED_TOP_PAIR_FACING_BET),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      callAmountBb: null,
+      heroStreetContributionBb: null,
+      opponentCount: null,
+      tableSize: 6,
+    }),
+  }),
 });

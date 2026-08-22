@@ -1,4 +1,5 @@
 import { HEURISTIC_RANK_VALUES } from './heuristic-evaluator.mjs';
+import { POSITIONS_BY_TABLE_SIZE } from '../../../shared/poker-domain/positions.js';
 
 // Non-blind values progress from earlier/tighter to later/looser. Blind
 // contexts receive explicit overrides below because they are not RFI seats.
@@ -19,6 +20,11 @@ const NON_BLIND_POSITIONS = Object.freeze([
   'UTG', 'UTG+1', 'UTG+2', 'MP', 'LJ', 'HJ', 'CO', 'BTN',
 ]);
 const AGGRESSIVE_PRIOR_ACTIONS = Object.freeze(new Set(['raise', '3bet', '4bet']));
+const FULL_RING_MINIMUM_TABLE_SIZE = 8;
+const FULL_RING_EARLY_POSITION_ADJUSTMENT = Number((
+  PREFLOP_FALLBACK_POSITION_MODIFIERS.UTG
+  - PREFLOP_FALLBACK_POSITION_MODIFIERS['UTG+1']
+).toFixed(12));
 
 function bounded(value, minimum, maximum) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -82,11 +88,72 @@ function strategyForStrength(handStrength, isPair) {
   return lastAnchor[1].slice();
 }
 
-function positionAdjustment(position, priorAction, isFreeCheckOption) {
+export function preflopTableFamilyPositionFacts(tableSize, position, priorAction = 'unopened') {
+  const normalizedAction = String(priorAction || 'unopened').toLowerCase();
+  const vocabulary = POSITIONS_BY_TABLE_SIZE[Number(tableSize)];
+  if (normalizedAction !== 'unopened'
+    || !vocabulary
+    || !vocabulary.includes(position)
+    || !NON_BLIND_POSITIONS.includes(position)) {
+    return Object.freeze({
+      applied: false,
+      adjustment: 0,
+      playersLeftToAct: null,
+      equivalentPosition: position,
+      basis: 'not_applicable',
+    });
+  }
+
+  const earlyPositions = vocabulary.filter((entry) => !['BTN', 'SB', 'BB'].includes(entry));
+  const earlyIndex = earlyPositions.indexOf(position);
+  const playersLeftToAct = position === 'BTN'
+    ? Number(tableSize) === 2 ? 1 : 2
+    : 3 + (earlyPositions.length - earlyIndex - 1);
+  if (Number(tableSize) === 2 && position === 'BTN') {
+    // Heads-up BTN has one player left to act instead of the ring-game BTN's
+    // two blinds. Extend the heuristic's existing CO-to-BTN late-position step
+    // once; this uses its own structural ladder, not an external target rate.
+    const adjustment = PREFLOP_FALLBACK_POSITION_MODIFIERS.BTN
+      - PREFLOP_FALLBACK_POSITION_MODIFIERS.CO;
+    return Object.freeze({
+      applied: adjustment !== 0,
+      adjustment,
+      playersLeftToAct,
+      equivalentPosition: 'BTN/SB',
+      basis: 'canonical_one_player_left_to_act_late_position_step',
+    });
+  }
+
+  // The legacy position modifiers were calibrated as named-position inputs,
+  // not as one calibrated step per player left to act. Preserve their existing
+  // short-handed magnitude and use only their smallest early-position step as
+  // a bounded table-family correction for the full-ring first position.
+  const isFullRingFirstPosition = Number(tableSize) >= FULL_RING_MINIMUM_TABLE_SIZE
+    && earlyIndex === 0;
+  const adjustment = isFullRingFirstPosition
+    ? FULL_RING_EARLY_POSITION_ADJUSTMENT
+    : 0;
+  return Object.freeze({
+    applied: adjustment !== 0,
+    adjustment,
+    playersLeftToAct,
+    equivalentPosition: position,
+    basis: adjustment === 0
+      ? 'canonical_named_position_baseline'
+      : 'bounded_full_ring_first_position_step',
+  });
+}
+
+function positionAdjustment(position, priorAction, isFreeCheckOption, tableSize) {
   const configured = PREFLOP_FALLBACK_POSITION_MODIFIERS[position];
   let adjustment = configured ?? PREFLOP_FALLBACK_POSITION_MODIFIERS.UTG;
 
   if (isFreeCheckOption) return -1;
+  adjustment += preflopTableFamilyPositionFacts(
+    tableSize,
+    position,
+    priorAction,
+  ).adjustment;
   if (priorAction === 'unopened' && (position === 'BTN' || position === 'SB')) {
     adjustment += 0.5;
   }
@@ -175,6 +242,7 @@ export function calculatePreflopFallbackStrategy(
   potSize = 1.5,
   stack = 30,
   callAmountBb = null,
+  tableSize = null,
 ) {
   const r1 = HEURISTIC_RANK_VALUES[r1str] || 0;
   const r2 = HEURISTIC_RANK_VALUES[r2str] || 0;
@@ -216,7 +284,12 @@ export function calculatePreflopFallbackStrategy(
     : (configuredStack > 0 ? trustedCallAmount / configuredStack : 1);
   const actionTightness = responseTightness(normalizedAction, commitment);
   let handStrength = score
-    + positionAdjustment(canonicalPosition, normalizedAction, isFreeCheckOption)
+    + positionAdjustment(
+      canonicalPosition,
+      normalizedAction,
+      isFreeCheckOption,
+      tableSize,
+    )
     + stackDepthAdjustment({
       stackBb: configuredStack,
       isPair,
@@ -291,7 +364,10 @@ function preflopAggressiveAction(decisionContext) {
   const stackBb = Number.isFinite(decisionContext.stackBb)
     ? Math.max(0, decisionContext.stackBb)
     : 0;
-  if (stackBb <= 2) return strategyAction('all_in');
+  // DecisionContext v1 is bounded to 10-500bb and does not expose complete
+  // legal raise/all-in sizing. Do not retain an unreachable sub-2bb all-in
+  // branch or manufacture an all-in outside the supported context.
+  if (stackBb < 10) return strategyAction('raise');
   const openToBb = 2 + 0.5 * smoothstep(20, 80, stackBb);
   return strategyAction('raise', Math.min(stackBb, Number(openToBb.toFixed(3))));
 }
@@ -313,6 +389,7 @@ export function calculatePreflopHeuristic(decisionContext) {
     decisionContext.potBb,
     decisionContext.stackBb,
     decisionContext.callAmountBb,
+    decisionContext.tableSize,
   );
   const { open, call, fold } = fallback;
   const isFreeCheckOption = decisionContext.heroPosition === 'BB'
@@ -368,6 +445,11 @@ export function calculatePreflopHeuristic(decisionContext) {
     lowRank,
     facingAggression: facingSizeBb > 0 || AGGRESSIVE_PRIOR_ACTIONS.has(lastAction),
   });
+  const tableFamilyPosition = preflopTableFamilyPositionFacts(
+    decisionContext.tableSize,
+    decisionContext.heroPosition,
+    lastAction,
+  );
   return {
     source: 'heuristic_preflop',
     actions: actions.map(({ order: _order, ...entry }) => entry),
@@ -384,6 +466,7 @@ export function calculatePreflopHeuristic(decisionContext) {
       forcedContributionAdjustmentApplied: false,
       stackCapActionProjectionApplied: callReachesStackCap,
       dominatedFoldSuppressionApplied,
+      tableFamilyPosition,
     },
   };
 }

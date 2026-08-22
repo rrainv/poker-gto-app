@@ -1,5 +1,9 @@
 import { calculatePreflopHeuristic } from './preflop-heuristic.mjs';
-import { calculatePostflopHeuristicStrategy } from './postflop-heuristic.mjs';
+import {
+  calculatePostflopHeuristicStrategy,
+  postflopContextFacesWager,
+  postflopOpponentRangeAssumption,
+} from './postflop-heuristic.mjs';
 
 export const DEFAULT_HEURISTIC_OPTIONS = Object.freeze({
   playStyle: 0,
@@ -27,16 +31,18 @@ export function decisionContextStrategySeed(decisionContext, rawOptions = {}) {
     && decisionContext.opponentCount >= 1
     ? decisionContext.opponentCount
     : Math.max(1, (Number(decisionContext?.tableSize) || 2) - 1);
-  // Only sampled-strength inputs participate. Presentation/accounting fields
-  // that do not change the opponent/runout sampler cannot perturb it.
+  const canonicalCards = (cards) => (
+    Array.isArray(cards) ? cards.filter(Boolean).map(String).sort() : []
+  );
+  // Only facts that define the sampled population participate. Nominal wager
+  // labels/amounts collapse to the exact opponent-range assumption consumed by
+  // the sampler, so equivalent assumptions receive the same sample.
   const input = JSON.stringify({
-    tableSize: decisionContext?.tableSize,
     opponentCount: effectiveOpponentCount,
-    heroCards: decisionContext?.heroCards,
-    board: decisionContext?.board,
-    deadCards: decisionContext?.deadCards,
-    facingSizeBb: decisionContext?.facingSizeBb,
-    lastAction: decisionContext?.lastAction,
+    heroCards: canonicalCards(decisionContext?.heroCards),
+    board: canonicalCards(decisionContext?.board),
+    deadCards: canonicalCards(decisionContext?.deadCards),
+    opponentRangeAssumption: postflopOpponentRangeAssumption(decisionContext),
     opponentStyle: options.opponentStyle,
   });
   let hash = 2166136261;
@@ -66,12 +72,14 @@ function hasValidHeroHand(cards) {
   ));
 }
 
-function unavailableCandidate(reason) {
+function unavailableCandidate(reason, details = null, contextCoverage = null) {
   return {
     source: 'unavailable',
     actions: [],
     explanation: reason || null,
     warnings: reason ? [String(reason)] : [],
+    details,
+    contextCoverage,
   };
 }
 
@@ -159,6 +167,19 @@ export function resolveHeuristicStrategy(
     );
   }
   if (decisionContext.street === 'preflop') return preflopCandidate(decisionContext);
+  const trustedCallPrice = Number.isFinite(decisionContext.callAmountBb)
+    && decisionContext.callAmountBb >= 0;
+  if (postflopContextFacesWager(decisionContext) && !trustedCallPrice) {
+    return unavailableCandidate(
+      'Exact call price is required for a postflop facing-wager heuristic strategy.',
+      { providerReason: 'exact_call_price_unavailable' },
+      {
+        kind: 'unsupported',
+        basis: 'missing_trusted_call_price',
+        limitationCodes: ['heuristic_exact_call_price_unavailable'],
+      },
+    );
+  }
   return postflopCandidate(
     decisionContext,
     options,

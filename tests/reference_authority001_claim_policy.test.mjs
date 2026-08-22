@@ -201,8 +201,6 @@ test('distribution, sizing, EV, and normative authority remain independent capab
 
 test('high-risk heuristic contexts use one structured limitation-code path', () => {
   const cases = [
-    [context({ tableSize: 2, opponentCount: 1 }), 'heuristic_hu_rfi_shared_baseline'],
-    [context({ heroPosition: 'UTG' }), 'heuristic_six_max_first_position_coarse'],
     [context({ heroPosition: 'BB', lastAction: 'check', callAmountBb: 0 }), 'heuristic_limp_context_coarse'],
     [context({ lastAction: '3bet', facingSizeBb: 9, callAmountBb: 6 }), 'heuristic_facing_3bet_coarse'],
     [context({ lastAction: '4bet', facingSizeBb: 22, callAmountBb: 13 }), 'heuristic_facing_4bet_coarse'],
@@ -215,6 +213,16 @@ test('high-risk heuristic contexts use one structured limitation-code path', () 
   for (const [decisionContext, expectedCode] of cases) {
     assert.ok(heuristicContextLimitationCodes(decisionContext).includes(expectedCode), expectedCode);
   }
+  assert.equal(
+    heuristicContextLimitationCodes(context({ tableSize: 2, opponentCount: 1 }))
+      .includes('heuristic_hu_rfi_shared_baseline'),
+    false,
+  );
+  assert.equal(
+    heuristicContextLimitationCodes(context({ heroPosition: 'UTG' }))
+      .includes('heuristic_six_max_first_position_coarse'),
+    false,
+  );
 });
 
 test('Training grading mathematics and heuristic action probabilities are unchanged', () => {
@@ -257,13 +265,13 @@ test('Training grading mathematics and heuristic action probabilities are unchan
 
 test('Analysis, Training, and Matrix consume structured policy without adding authorities', () => {
   const provider = createStrategyProvider({ fallbackResolver: resolveHeuristicStrategy });
-  const decisionContext = context({ tableSize: 2, opponentCount: 1 });
+  const decisionContext = context({ lastAction: '3bet', facingSizeBb: 9, callAmountBb: 6 });
   const strategyResult = provider.resolve(decisionContext);
   const explanation = createAnalysisExplanation({ decisionContext, strategyResult });
   assert.equal(explanation.claimPolicy.mode, 'comparative');
   assert.equal(explanation.provenance.authority, STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE);
   assert.ok(explanation.warnings.some((entry) => (
-    entry.code === 'heuristic_hu_rfi_shared_baseline'
+    entry.code === 'heuristic_facing_3bet_coarse'
   )));
 
   const trainingMarkup = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="equityMode"'));

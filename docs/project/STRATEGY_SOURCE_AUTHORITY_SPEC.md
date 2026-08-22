@@ -134,6 +134,8 @@ The built-in heuristic is deterministic, versioned, known-provenance, generalize
 - action-price practice;
 - deterministic reproduction while the same source version is available.
 
+The v2 preflop source consumes canonical table-size/position facts for unopened pots. The v2 postflop source conditions its assumed opponent range on a causal aggression family, and it abstains rather than manufacturing a price-sensitive strategy when an exact call price is unavailable.
+
 It does not authorize solved GTO, Nash, equilibrium, proven optimality, objective correctness, exact exploitability, exact EV loss, calibrated confidence, or validated population-truth claims.
 
 The policy does not hide or shame the heuristic. Normal UI uses concise source, precision, coverage, and one relevant limitation. Detailed structured facts remain available to Analysis.
@@ -144,8 +146,6 @@ Known audit risks use one path: context classification → coverage limitation c
 
 Codes cover:
 
-- heads-up BTN RFI shared baseline;
-- coarse six-max first-position opening;
 - limped preflop action-history semantics;
 - facing 3-bet and facing 4-bet fallbacks;
 - postflop position not applied;
@@ -153,7 +153,7 @@ Codes cover:
 - multiway postflop shared-range fallback;
 - facing a wager without an exact call price.
 
-These codes do not change heuristic probabilities or grading math. Training shows a compact high-priority context note. Analyze exposes the limitation through provenance/warnings. Matrix keeps one workspace-level precision/coverage summary rather than cell disclaimers.
+The remaining generalized-context codes do not retune heuristic probabilities or grading math. The missing-price code instead accompanies an unsupported, unavailable result. Training shows a compact high-priority context note. Analyze exposes the limitation through provenance/warnings. Matrix keeps one workspace-level precision/coverage summary rather than cell disclaimers.
 
 ## 9. Consumer audit and resulting semantics
 
@@ -228,4 +228,3 @@ Before enabling a new production source:
 5. prove unsupported contexts fall through without extrapolation;
 6. run claim-policy consumer tests without adding source-ID UI conditions;
 7. decide separately whether durable historical reproduction is required.
-

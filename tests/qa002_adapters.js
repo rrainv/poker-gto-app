@@ -29,6 +29,9 @@ const POSTFLOP_HEURISTIC_PATH = path.join(
 const HEURISTIC_STRATEGY_PATH = path.join(
   REPO_ROOT, 'app', 'src', 'strategy', 'heuristic-strategy.mjs',
 );
+const POKER_POSITIONS_PATH = path.join(
+  REPO_ROOT, 'shared', 'poker-domain', 'positions.js',
+);
 
 function sliceBetween(source, startMarker, endMarker) {
   const start = source.indexOf(startMarker);
@@ -75,6 +78,7 @@ function createHarness() {
   const preflopHeuristicSource = moduleSource(PREFLOP_HEURISTIC_PATH);
   const postflopHeuristicSource = moduleSource(POSTFLOP_HEURISTIC_PATH);
   const heuristicStrategySource = moduleSource(HEURISTIC_STRATEGY_PATH);
+  const pokerPositionsSource = moduleSource(POKER_POSITIONS_PATH);
   const positions = source.match(/const POSITIONS\s*=\s*\{[\s\S]*?\n\};/);
   const ranks = source.match(/const RANKS\s*=\s*\[[^\n]+\];/);
   const rankValue = source.match(/const RANK_VALUE\s*=\s*\{[^\n]+\};/);
@@ -164,6 +168,7 @@ function createHarness() {
     const ACTION_TYPES = Object.freeze({
       FOLD: 'fold', CHECK: 'check', CALL: 'call', BET: 'bet', RAISE: 'raise', ALL_IN: 'all_in'
     });
+    ${pokerPositionsSource}
     const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
     ${strategySourceAuthoritySource}
     ${strategyContractSource}
@@ -307,7 +312,7 @@ function createHarness() {
       return calculatePreflopFallbackStrategy(
         cards[0][0], cards[1][0], cards[0][0] === cards[1][0], cards[0][1] === cards[1][1],
         context.heroPosition, context.lastAction, context.facingSizeBb, context.potBb,
-        context.stackBb, context.callAmountBb
+        context.stackBb, context.callAmountBb, context.tableSize
       );
     }
     function preflopHeuristicCandidate(fallback, presentation = {}) {

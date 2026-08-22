@@ -151,7 +151,9 @@ test('updateContext follows snapshot to DecisionContext to fallback StrategyResu
   assert.equal(capture.snapshot.tableSize, 10);
   assert.equal(capture.decisionContext.schemaVersion, 'decision-context/v1');
   assert.equal(capture.strategyResult.schemaVersion, 'strategy-result/v1');
-  assert.equal(capture.strategyResult.source, 'heuristic_postflop');
+  assert.equal(capture.strategyResult.source, 'unavailable');
+  assert.equal(capture.strategyResult.contextCoverage.kind, 'unsupported');
+  assert.equal(capture.strategyResult.contextCoverage.basis, 'missing_trusted_call_price');
 });
 
 test('fallback recommendations use the same cards and fields through DecisionContext', () => {
@@ -168,7 +170,7 @@ test('fallback recommendations use the same cards and fields through DecisionCon
     const direct = qa.fallback(
       firstCard[0], secondCard[0], firstCard[0] === secondCard[0], firstCard[1] === secondCard[1],
       input.heroPosition, input.lastAction, input.facingSizeBb, input.potBb, input.stackBb,
-      context.callAmountBb,
+      context.callAmountBb, context.tableSize,
     );
     const throughContext = qa.fallbackForDecisionContext(context);
     assert.deepEqual(throughContext, direct);
