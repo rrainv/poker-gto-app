@@ -1225,6 +1225,25 @@
     "Hero Decision {number}": "החלטת Hero {number}"
   });
 
+  Object.assign(ru, {
+    "Workspace density": "Плотность интерфейса",
+    "Changes information packing and supporting detail only. Poker state, controls, and available tools stay the same.": "Меняет только компоновку информации и отображение вспомогательных деталей. Состояние покера, элементы управления и доступные инструменты не меняются.",
+    "Comfortable": "Комфортно",
+    "Compact": "Компактно",
+    "Details": "Подробнее",
+    "Keyboard shortcuts": "Сочетания клавиш",
+    "Calculation guidance": "Справка по расчёту"
+  });
+  Object.assign(he, {
+    "Workspace density": "צפיפות הממשק",
+    "Changes information packing and supporting detail only. Poker state, controls, and available tools stay the same.": "משנה רק את ארגון המידע ואת הצגת הפרטים התומכים. מצב הפוקר, הפקדים והכלים הזמינים אינם משתנים.",
+    "Comfortable": "מרווחת",
+    "Compact": "קומפקטית",
+    "Details": "פרטים",
+    "Keyboard shortcuts": "קיצורי מקלדת",
+    "Calculation guidance": "הנחיות לחישוב"
+  });
+
   const allProductKeys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineProductTranslations = {
     en: Object.fromEntries([...allProductKeys].map((key) => [key, key])),

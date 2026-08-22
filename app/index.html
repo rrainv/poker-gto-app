@@ -1,6 +1,6 @@
 <!doctype html>
 
-<html lang="en" data-theme="midnight" data-card-style="tournament">
+<html lang="en" data-theme="midnight" data-card-style="tournament" data-density="comfortable">
 
 
 
@@ -16,7 +16,7 @@
 
   <title data-i18n="Riverline — Poker Strategy &amp; Analysis">Riverline — Poker Strategy &amp; Analysis</title>
 
-  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="styles.css?v=25">
 
   <link rel="icon"
 
@@ -334,7 +334,7 @@
 
 
 
-<body data-density="comfortable">
+<body>
 
   <div class="riverline-shell" data-active-mode="home" data-active-destination="home">
   <aside id="modeRail" class="mode-rail" aria-label="Riverline application" data-i18n-aria-label="Riverline application">
@@ -1880,7 +1880,10 @@
             <section id="calibrationBuilderToolbar" class="calibration-builder-toolbar" aria-labelledby="calibrationBuilderTitle" data-tutorial-anchor="range-builder-toolbar" hidden>
               <div class="calibration-builder-intro">
                 <div><p class="calibration-eyebrow" data-i18n="Advanced editor">Advanced editor</p><h3 id="calibrationBuilderTitle" data-i18n="Range Builder">Range Builder</h3></div>
-                <p data-i18n="Builder and Calibration edit the same Personal Strategy evidence for this scope.">Builder and Calibration edit the same Personal Strategy evidence for this scope.</p>
+                <details class="density-support-disclosure calibration-builder-guidance" data-density-collapse-in-compact open>
+                  <summary data-i18n="Details">Details</summary>
+                  <p data-i18n="Builder and Calibration edit the same Personal Strategy evidence for this scope.">Builder and Calibration edit the same Personal Strategy evidence for this scope.</p>
+                </details>
               </div>
               <div class="calibration-builder-row" role="toolbar" aria-label="Range Builder tools" data-i18n-aria-label="Range Builder tools">
                 <span class="calibration-builder-group-label" data-i18n="Brush">Brush</span>
@@ -1917,7 +1920,10 @@
                 <summary data-i18n="Builder session history">Builder session history</summary>
                 <ol id="calibrationBuilderHistory"></ol>
               </details>
-              <p class="calibration-builder-shortcuts" data-i18n="Shortcuts: arrows move; Space toggles selection; F/R apply dominant action; Enter inspects; Ctrl/Cmd+Z undoes; Escape cancels or clears selection.">Shortcuts: arrows move; Space toggles selection; F/R apply dominant action; Enter inspects; Ctrl/Cmd+Z undoes; Escape cancels or clears selection.</p>
+              <details class="density-support-disclosure calibration-builder-shortcuts" data-density-collapse-in-compact open>
+                <summary data-i18n="Keyboard shortcuts">Keyboard shortcuts</summary>
+                <p data-i18n="Shortcuts: arrows move; Space toggles selection; F/R apply dominant action; Enter inspects; Ctrl/Cmd+Z undoes; Escape cancels or clears selection.">Shortcuts: arrows move; Space toggles selection; F/R apply dominant action; Enter inspects; Ctrl/Cmd+Z undoes; Escape cancels or clears selection.</p>
+              </details>
             </section>
 
             <div id="calibrationMatrixLoading" class="calibration-matrix-loading" role="status" aria-live="polite">
@@ -2038,7 +2044,10 @@
               <div>
                 <p class="training-eyebrow" data-i18n="Training workspace">Training workspace</p>
                 <h2 id="trainingWorkspaceTitle" data-i18n="Make the decision">Make the decision</h2>
-                <p id="trainingInstruction" class="muted" data-i18n="Generate a reachable canonical decision, then choose one legal action.">Generate a reachable canonical decision, then choose one legal action.</p>
+                <details class="density-support-disclosure training-instruction-disclosure" data-density-collapse-in-compact open>
+                  <summary data-i18n="Details">Details</summary>
+                  <p id="trainingInstruction" class="muted" data-i18n="Generate a reachable canonical decision, then choose one legal action.">Generate a reachable canonical decision, then choose one legal action.</p>
+                </details>
               </aside>
 
               </div>
@@ -2193,15 +2202,15 @@
             <summary class="panel-head"><div><p id="trainingHistoryEyebrow" class="training-eyebrow" data-i18n="Canonical replay">Canonical replay</p><h2 id="trainingHistoryTitle" data-i18n="Action history">Action history</h2></div></summary>
             <div class="panel-body"><ol id="trainingActionHistory" class="training-action-history"><li class="is-empty" data-i18n="Generate an exercise to view its chronological action history.">Generate an exercise to view its chronological action history.</li></ol><p id="trainingCurrentActor" class="training-current-actor" data-i18n="No decision loaded.">No decision loaded.</p></div>
           </details>
-          <section class="panel training-session-panel" aria-labelledby="trainingSessionTitle">
-            <div class="panel-head"><div><p class="training-eyebrow" data-i18n="This browser session">This browser session</p><h2 id="trainingSessionTitle" data-i18n="Session progress">Session progress</h2></div></div>
+          <details class="panel training-session-panel" aria-labelledby="trainingSessionTitle" data-density-collapse-in-compact open>
+            <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="This browser session">This browser session</p><h2 id="trainingSessionTitle" data-i18n="Session progress">Session progress</h2></div></summary>
             <div class="panel-body">
               <p id="trainingSessionProgress" class="training-session-progress" hidden aria-live="polite"></p>
               <div class="training-stat-grid" role="list" aria-label="Session summary" data-i18n-aria-label="Session summary"><div class="training-stat-cell" data-training-stat="attempts" role="listitem"><span data-i18n="Attempts">Attempts</span><strong id="trainingTotalHands">0</strong></div><div class="training-stat-cell" data-training-stat="accepted" role="listitem"><span data-i18n="Accepted">Accepted</span><strong id="trainingCorrect">0</strong></div><div class="training-stat-cell" data-training-stat="acceptance" role="listitem"><span data-i18n="Acceptance">Acceptance</span><strong id="trainingAccuracy" class="poker-data-token">0%</strong></div><div class="training-stat-cell" data-training-stat="streak" role="listitem"><span data-i18n="Streak">Streak</span><strong id="trainingStreak">0</strong></div><div class="training-stat-cell" data-training-stat="best-streak" role="listitem"><span data-i18n="Best streak">Best streak</span><strong id="trainingBestStreak">0</strong></div></div>
               <div class="training-grade-counts" aria-label="Answer grades" data-i18n-aria-label="Answer grades"><span><i data-grade="optimal"></i><span data-i18n="Correct">Correct</span> <strong id="trainingOptimalCount">0</strong></span><span><i data-grade="acceptable"></i><span data-i18n="Acceptable">Acceptable</span> <strong id="trainingAcceptableCount">0</strong></span><span><i data-grade="mistake"></i><span data-i18n="Mistake">Mistake</span> <strong id="trainingMistakeCount">0</strong></span></div>
               <button class="ui-button ui-button-ghost ui-button--destructive" type="button" id="trainingResetStats" data-i18n="Reset session stats">Reset session stats</button>
             </div>
-          </section>
+          </details>
         </aside>
 
         <aside class="training-setup-column" id="trainingSetupColumn">
@@ -2263,7 +2272,10 @@
               <div>
                 <p class="equity-eyebrow" data-i18n="Equity workspace">Equity workspace</p>
                 <h2 id="equityPlayersTitle" data-i18n="Player Hands">Player Hands</h2>
-                <p class="muted" data-i18n="Mark each hand as known or unknown. Known hands require exactly two cards.">Mark each hand as known or unknown. Known hands require exactly two cards.</p>
+                <details class="density-support-disclosure" data-density-collapse-in-compact open>
+                  <summary data-i18n="Details">Details</summary>
+                  <p class="muted" data-i18n="Mark each hand as known or unknown. Known hands require exactly two cards.">Mark each hand as known or unknown. Known hands require exactly two cards.</p>
+                </details>
               </div>
               <button id="resetEquity" class="ui-button ui-button-ghost equity-reset" type="button" data-i18n="Reset">Reset</button>
             </div>
@@ -2289,7 +2301,10 @@
               <div>
                 <p class="equity-eyebrow" data-i18n="Shared cards">Shared cards</p>
                 <h2 id="equityCardsTitle" data-i18n="Board & Dead Cards">Board &amp; Dead Cards</h2>
-                <p class="muted" data-i18n="Enter any board from zero to five cards. Street labels are visual guides only.">Enter any board from zero to five cards. Street labels are visual guides only.</p>
+                <details class="density-support-disclosure" data-density-collapse-in-compact open>
+                  <summary data-i18n="Details">Details</summary>
+                  <p class="muted" data-i18n="Enter any board from zero to five cards. Street labels are visual guides only.">Enter any board from zero to five cards. Street labels are visual guides only.</p>
+                </details>
               </div>
             </div>
             <div class="equity-card-group">
@@ -2320,11 +2335,14 @@
               <label class="ui-field"><span data-i18n="Method">Method</span><select id="calcStyle"><option value="auto" data-i18n="Auto (recommended)">Auto (recommended)</option><option value="exact" data-i18n="Exact enumeration">Exact enumeration</option><option value="sim" data-i18n="Monte Carlo">Monte Carlo</option></select></label>
               <label class="ui-field"><span data-i18n="Monte Carlo samples">Monte Carlo samples</span><select id="trials"><option value="10000">10,000</option><option value="50000">50,000</option><option value="100000">100,000</option><option value="250000">250,000</option></select></label>
             </div>
-            <p class="equity-method-help">
-              <strong data-i18n="Auto">Auto</strong> <span data-i18n="uses exact enumeration when practical, otherwise simulation.">uses exact enumeration when practical, otherwise simulation.</span>
-              <strong data-i18n="Exact">Exact</strong> <span data-i18n="enumerates every realization and rejects oversized spaces.">enumerates every realization and rejects oversized spaces.</span>
-              <strong data-i18n="Monte Carlo">Monte Carlo</strong> <span data-i18n="is a seeded simulation.">is a seeded simulation.</span>
-            </p>
+            <details class="density-support-disclosure equity-method-disclosure" data-density-collapse-in-compact open>
+              <summary data-i18n="Calculation guidance">Calculation guidance</summary>
+              <p class="equity-method-help">
+                <strong data-i18n="Auto">Auto</strong> <span data-i18n="uses exact enumeration when practical, otherwise simulation.">uses exact enumeration when practical, otherwise simulation.</span>
+                <strong data-i18n="Exact">Exact</strong> <span data-i18n="enumerates every realization and rejects oversized spaces.">enumerates every realization and rejects oversized spaces.</span>
+                <strong data-i18n="Monte Carlo">Monte Carlo</strong> <span data-i18n="is a seeded simulation.">is a seeded simulation.</span>
+              </p>
+            </details>
             <div id="equityEstimate" class="equity-estimate" aria-live="polite" data-i18n="Add complete known hands or mark them unknown to estimate the calculation.">Add complete known hands or mark them unknown to estimate the calculation.</div>
             <div id="equityReadiness" class="equity-readiness" data-state="blocked" role="status" aria-live="polite" data-i18n="Complete Hero's known hand or mark it unknown.">Complete Hero's known hand or mark it unknown.</div>
             <div class="equity-calculate-row" data-tutorial-anchor="equity-calculate"><button id="calculate" class="primary equity-calculate" type="button" aria-describedby="equityReadiness equityEstimate" disabled data-i18n="Calculate equity">Calculate equity</button><button id="cancelEquity" class="ui-button ui-button-danger equity-cancel" type="button" hidden data-i18n="Cancel">Cancel</button></div>
@@ -2486,6 +2504,17 @@
                 <button class="switch ui-switch on" id="fourColorDeckToggle" type="button" aria-label="Use four-color deck" data-i18n-aria-label="Use four-color deck" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
               <div class="panel-note" style="margin-top: 4px;" data-i18n="Use distinct colors for all four suits.">Use distinct colors for all four suits.</div>
+            </div>
+
+            <div class="field settings-preference-field density-preference-field">
+              <div class="settings-preference-copy">
+                <strong data-i18n="Workspace density">Workspace density</strong>
+                <span class="panel-note" data-i18n="Changes information packing and supporting detail only. Poker state, controls, and available tools stay the same.">Changes information packing and supporting detail only. Poker state, controls, and available tools stay the same.</span>
+              </div>
+              <div id="densityControl" class="ui-segments density-control" role="group" aria-label="Workspace density" data-i18n-aria-label="Workspace density">
+                <button class="ui-tab active" type="button" data-density-option="comfortable" aria-pressed="true" data-i18n="Comfortable">Comfortable</button>
+                <button class="ui-tab" type="button" data-density-option="compact" aria-pressed="false" data-i18n="Compact">Compact</button>
+              </div>
             </div>
 
             <div class="field settings-preference-field">
@@ -2804,6 +2833,7 @@
   <script type="module" src="src/application/home-workspace-bootstrap.mjs"></script>
   <script type="module" src="src/application/home-game-bootstrap.mjs"></script>
   <script type="module" src="src/application/tutorial-bootstrap.mjs"></script>
+  <script type="module" src="src/application/presentation-density-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>

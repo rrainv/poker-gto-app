@@ -11762,3 +11762,245 @@ body.has-modal-open { overflow: hidden; }
   #gtoMode .playbook-support-rail,
   .training-setup-column { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* PRODUCT-DENSITY-001: first-class presentation density ----------------
+   Compact changes information hierarchy and composition first, with modest
+   supporting rhythm changes. It does not alter poker state, Matrix geometry,
+   card typography, primary control sizing, or feature availability. */
+
+:root,
+[data-density="comfortable"] {
+  --density-canvas-block-start: var(--space-7);
+  --density-canvas-block-end: var(--space-9);
+  --density-canvas-inline: var(--space-8);
+  --density-panel-inline: 17px;
+  --density-panel-head-block-start: 16px;
+  --density-panel-head-block-end: 12px;
+  --density-panel-body-block-start: 15px;
+  --density-panel-body-block-end: 17px;
+  --density-stack-gap: var(--space-4);
+  --density-section-gap: var(--space-5);
+  --density-row-block: var(--space-3);
+  --density-row-inline: var(--space-4);
+  --density-rail-gap: var(--space-8);
+  --density-header-height: 78px;
+  --density-header-block: var(--space-4);
+}
+
+[data-density="compact"] {
+  --control-height: 40px;
+  --control-height-compact: 34px;
+  --control-padding-inline: var(--space-5);
+  --control-gap: var(--space-2);
+  --component-padding: var(--space-5);
+  --component-gap: var(--space-4);
+  --workspace-gutter: clamp(var(--space-4), 1vw, var(--space-6));
+  --workspace-column-gap: clamp(var(--space-4), .8vw, var(--space-5));
+  --workspace-section-gap: var(--space-4);
+  --density-canvas-block-start: var(--space-5);
+  --density-canvas-block-end: var(--space-7);
+  --density-canvas-inline: var(--workspace-gutter);
+  --density-panel-inline: var(--space-4);
+  --density-panel-head-block-start: var(--space-4);
+  --density-panel-head-block-end: var(--space-4);
+  --density-panel-body-block-start: var(--space-4);
+  --density-panel-body-block-end: var(--space-4);
+  --density-stack-gap: var(--space-3);
+  --density-section-gap: var(--space-4);
+  --density-row-block: var(--space-2);
+  --density-row-inline: var(--space-4);
+  --density-rail-gap: var(--space-6);
+  --density-header-height: 74px;
+  --density-header-block: var(--space-3);
+}
+
+.workspace-canvas {
+  padding-block: var(--density-canvas-block-start) var(--density-canvas-block-end);
+  padding-inline: var(--density-canvas-inline);
+}
+.workspace-header {
+  min-height: var(--density-header-height);
+  padding-block: var(--density-header-block);
+}
+.mode-rail { gap: var(--density-rail-gap); }
+.panel-head {
+  padding-block: var(--density-panel-head-block-start) var(--density-panel-head-block-end);
+  padding-inline: var(--density-panel-inline);
+}
+.panel-body {
+  padding-block: var(--density-panel-body-block-start) var(--density-panel-body-block-end);
+  padding-inline: var(--density-panel-inline);
+}
+
+.density-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.density-control .ui-tab { min-height: 44px; }
+
+/* Comfortable presents supporting copy inline. Compact turns that same copy
+   into a native, keyboard-operable disclosure and closes it on entry. */
+[data-density="comfortable"] .density-support-disclosure > summary { display: none; }
+.density-support-disclosure > :not(summary) { margin-block-end: 0; }
+[data-density="compact"] .density-support-disclosure > summary {
+  width: fit-content;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 700;
+}
+[data-density="compact"] .density-support-disclosure > summary:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 3px;
+}
+[data-density="compact"] .equity-method-disclosure { margin: var(--space-3) var(--space-4) 0; }
+[data-density="compact"] .equity-method-disclosure .equity-method-help { margin-inline: 0; }
+
+[data-density="compact"] :is(#homeMode, #homegameMode, #trainingMode, #calibrationMode, #equityMode, .guide-mode) {
+  padding: var(--space-3) var(--space-4) var(--space-5);
+}
+[data-density="compact"] :is(
+  .side-stack,
+  .home-game-workspace,
+  .home-game-sidebar,
+  .home-dashboard-grid,
+  .home-section-content,
+  .home-review-groups,
+  .home-saved-list,
+  .home-quick-links,
+  .training-workspace,
+  .training-insight-column,
+  .training-setup-column,
+  .training-exercise-surface,
+  .training-setup-fields,
+  .equity-input-stack,
+  .equity-output-stack,
+  .equity-player-list,
+  .range-calibration-workspace,
+  .calibration-personal-column
+) { gap: var(--density-stack-gap); }
+[data-density="compact"] :is(
+  .home-section,
+  .home-game-form,
+  .home-game-player-card,
+  .training-decision-panel,
+  .training-study-hints,
+  .equity-player-card,
+  .equity-result-card,
+  .calibration-progress-panel,
+  .calibration-teacher-panel,
+  .calibration-matrix-inspector
+) { padding: var(--component-padding); }
+[data-density="compact"] :is(
+  .home-saved-item,
+  .home-quick-link,
+  .training-context-strip > div,
+  .training-action-history li,
+  .training-metadata-grid > div,
+  .replay-action-body,
+  .home-game-list-card,
+  .home-game-recent-button
+) { padding-block: var(--density-row-block); padding-inline: var(--density-row-inline); }
+[data-density="compact"] :is(
+  .playbook-state-source,
+  .playbook-analysis-switcher,
+  .playbook-betting-context,
+  .hand-live-stage-header,
+  .equity-player-toolbar,
+  .equity-card-group,
+  .equity-control-grid
+) { gap: var(--density-section-gap); }
+[data-density="compact"] .home-game-player-grid { gap: var(--density-stack-gap); padding: var(--component-padding); }
+[data-density="compact"] .home-game-session-actions { gap: var(--control-gap); padding: 0 var(--component-padding) var(--component-padding); }
+[data-density="compact"] .equity-card-group { margin-inline: var(--space-3); padding: var(--component-padding); }
+[data-density="compact"] .equity-player-list { padding: var(--component-padding); }
+[data-density="compact"] .settings-preference-field { margin-top: var(--space-5); }
+[data-density="compact"] .theme-swatch-grid { margin-top: var(--space-5); padding: var(--space-3); gap: var(--space-3); }
+
+/* Shell and Home/Saved: fewer repeated overlines, denser composition, and
+   unchanged navigation/button targets. */
+[data-density="compact"] .mode-navigation { gap: var(--space-3); }
+[data-density="compact"] :is(.home-section-head, .home-account-identity) > :is(div, p) > p,
+[data-density="compact"] .home-account-identity > p { display: none; }
+[data-density="compact"] .home-section-head { margin-block-end: var(--space-3); }
+[data-density="compact"] .home-quick-link span { display: none; }
+[data-density="compact"] .home-quick-link { min-height: 64px; }
+[data-density="compact"] .home-empty-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+[data-density="compact"] .home-empty-state .ui-button { margin-top: 0; }
+
+/* Hand and Analyze: remove repeated context labels and devote the saved row to
+   the actual controls/status. Legal actions, sizing, cards, and Matrix stay put. */
+[data-density="compact"] .playbook-workflow-kicker,
+[data-density="compact"] #playbookModeControl .ui-tab small,
+[data-density="compact"] .playbook-analysis-switcher-copy,
+[data-density="compact"] .playbook-table-label small,
+[data-density="compact"] .hand-live-stage-copy > :is(.label, small),
+[data-density="compact"] .hand-current-section-head > :first-child,
+[data-density="compact"] #handSetupSection .hand-section-head small,
+[data-density="compact"] #matrixPanelDescription { display: none; }
+[data-density="compact"] .playbook-analysis-switcher { grid-template-columns: minmax(0, 1fr); }
+[data-density="compact"] .hand-current-section-head { justify-content: flex-end; }
+[data-density="compact"] .hand-live-stage-copy { align-content: center; }
+
+/* Training: the prompt and legal actions carry the hierarchy; explanatory
+   instruction and session history remain one disclosure away. */
+[data-density="compact"] .training-decision-head .training-eyebrow,
+[data-density="compact"] .training-session-panel .training-eyebrow,
+[data-density="compact"] .training-decision-prompt small { display: none; }
+.training-session-panel > summary { position: relative; display: block; list-style: none; cursor: pointer; }
+.training-session-panel > summary::-webkit-details-marker { display: none; }
+.training-session-panel > summary::after {
+  content: '+';
+  position: absolute;
+  inset-inline-end: var(--space-4);
+  inset-block-start: 50%;
+  color: var(--text-muted);
+  font-weight: 800;
+  transform: translateY(-50%);
+}
+.training-session-panel[open] > summary::after { content: '−'; }
+.training-session-panel > summary.panel-head { padding-inline-end: var(--space-8); }
+
+/* Personal Strategy: preserve Matrix cells while secondary instruction and an
+   empty inspector stop consuming a full rail. */
+[data-density="compact"] .calibration-matrix-header .calibration-eyebrow { display: none; }
+[data-density="compact"] .calibration-inspector-empty {
+  min-height: 0;
+  place-content: start;
+  text-align: start;
+}
+[data-density="compact"] .calibration-builder-shortcuts > p { margin: var(--space-2) 0 0; }
+
+/* Equity: section titles remain, while repeated overlines and method prose move
+   behind native Details controls. Card slots and calculation targets do not. */
+[data-density="compact"] .equity-section-head .equity-eyebrow { display: none; }
+
+@media (min-width: 1101px) {
+  [data-density="compact"] .home-quick-links { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1100px) {
+  [data-density="compact"] {
+    --workspace-gutter: var(--space-4);
+    --workspace-column-gap: var(--space-4);
+    --workspace-section-gap: var(--space-4);
+  }
+}
+
+@media (max-width: 820px) {
+  /* Existing touch-oriented navigation targets stay at their larger size. */
+  [data-density="comfortable"] {
+    --density-canvas-block-start: var(--space-5);
+    --density-canvas-inline: var(--space-4);
+  }
+  [data-density="compact"] {
+    --density-canvas-block-start: var(--space-4);
+    --density-canvas-inline: var(--space-4);
+  }
+  [data-density="compact"] .mode-nav-item { min-height: 48px; }
+  [data-density="compact"] .workspace-header { min-height: 0; }
+}
