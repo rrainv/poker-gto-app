@@ -13,7 +13,9 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const translations = fs.readFileSync(new URL('../app/src/locales/product-translations.js', import.meta.url), 'utf8');
 const bootstrap = fs.readFileSync(new URL('../app/src/application/presentation-density-bootstrap.mjs', import.meta.url), 'utf8');
-const densityCss = css.slice(css.indexOf('PRODUCT-DENSITY-001: first-class presentation density'));
+const densityStart = css.indexOf('PRODUCT-DENSITY-001: first-class presentation density');
+const densityEnd = css.indexOf('LAYOUT-PRESETS-001: first-class workspace composition', densityStart);
+const densityCss = css.slice(densityStart, densityEnd);
 
 class MemoryStorage {
   constructor(initial = {}) {

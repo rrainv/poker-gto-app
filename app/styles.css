@@ -12004,3 +12004,120 @@ body.has-modal-open { overflow: hidden; }
   [data-density="compact"] .mode-nav-item { min-height: 48px; }
   [data-density="compact"] .workspace-header { min-height: 0; }
 }
+
+/* LAYOUT-PRESETS-001: first-class workspace composition ----------------
+   Presets change emphasis and ordering independently from density. They do
+   not hide workspace capabilities or alter poker/application state. Narrow
+   desktop widths deliberately retain the canonical safe stacked layouts. */
+
+.layout-preset-field[hidden] { display: none; }
+.layout-preset-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.layout-preset-control .ui-tab {
+  min-width: 0;
+  min-height: 44px;
+  padding-inline: var(--space-3);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 1320px) {
+  /* Hand: Table Focus makes the live stage the leading, widest surface.
+     Controls First keeps the stage visible while moving the action dock above
+     the table and giving setup/history a deliberate working rail. */
+  html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .workspace-frame--wide {
+    --workspace-frame-max: var(--workspace-frame-dense);
+  }
+  html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .playbook-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(230px, 270px);
+  }
+  html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .playbook-decision-workspace {
+    grid-column: 1;
+    order: 1;
+  }
+  html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .playbook-context-rail {
+    grid-column: 2;
+    order: 2;
+  }
+  html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] #visual-table-container {
+    width: min(100%, 1100px);
+    max-width: 1100px;
+  }
+
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-workspace {
+    grid-template-columns: minmax(380px, 430px) minmax(0, 1fr);
+  }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] #handStageDock:not([hidden]) {
+    order: 3;
+  }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-table-toggle {
+    order: 4;
+  }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] #table-wrapper {
+    order: 5;
+  }
+
+  /* Training: the same three surfaces compose around either the table/decision
+     stage or the setup controls; insight remains present in both cases. */
+  html[data-layout-preset="table-focus"] .training-workspace {
+    grid-template-columns: minmax(600px, 1fr) minmax(235px, 270px) minmax(210px, 240px);
+    grid-template-areas: "decision setup insight";
+  }
+  html[data-layout-preset="controls-first"] .training-workspace {
+    grid-template-columns: minmax(300px, 340px) minmax(560px, 1fr) minmax(220px, 250px);
+    grid-template-areas: "setup decision insight";
+  }
+
+  /* Personal Strategy exposes Analysis Focus only when its Matrix/Teacher
+     surfaces can meaningfully lead the configured workspace. */
+  html[data-layout-preset="analysis-focus"] #calibrationMode .workspace-frame--wide {
+    --workspace-frame-max: var(--workspace-frame-dense);
+  }
+  html[data-layout-preset="analysis-focus"] .range-calibration-workspace:not([data-session-view="questions"]) .calibration-personal-column {
+    order: -1;
+  }
+
+  /* Equity: Analysis Focus gives results a real reading/inspection column.
+     Controls First keeps results visible but promotes method and execution
+     controls ahead of secondary board guidance. */
+  html[data-layout-preset="analysis-focus"] #equityMode .workspace-frame--standard {
+    --workspace-frame-max: var(--workspace-frame-dense);
+  }
+  html[data-layout-preset="analysis-focus"] .equity-workspace {
+    grid-template-columns: minmax(420px, .82fr) minmax(620px, 1.18fr);
+  }
+  html[data-layout-preset="analysis-focus"] .equity-output-stack {
+    grid-column: 1;
+    grid-row: 1;
+    max-width: none;
+    justify-self: stretch;
+  }
+  html[data-layout-preset="analysis-focus"] .equity-input-stack {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  html[data-layout-preset="controls-first"] .equity-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 300px);
+  }
+  html[data-layout-preset="controls-first"] .equity-shared-flow .equity-controls-panel {
+    order: -1;
+    border-top: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+}
+
+@media (min-width: 1500px) {
+  /* Analyze: Analysis Focus expands the decision/range surface while keeping
+     prose on its existing readable measure. Controls First instead widens the
+     configuration rail without turning it into the whole workspace. */
+  html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] .workspace-frame--wide {
+    --workspace-frame-max: var(--workspace-frame-dense);
+  }
+  html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] .playbook-workspace {
+    grid-template-columns: minmax(230px, 250px) minmax(0, 1fr) minmax(210px, 235px);
+  }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="analyze"] .playbook-workspace {
+    grid-template-columns: minmax(340px, 380px) minmax(0, 1fr) minmax(210px, 235px);
+  }
+}

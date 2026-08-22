@@ -1226,6 +1226,12 @@
   });
 
   Object.assign(ru, {
+    "Workspace layout": "Компоновка рабочей области",
+    "Changes emphasis and composition only. Density, poker state, and available tools stay the same.": "Меняет только акцент и компоновку. Плотность, состояние покера и доступные инструменты остаются прежними.",
+    "Balanced": "Сбалансированная",
+    "Table Focus": "Фокус на столе",
+    "Analysis Focus": "Фокус на анализе",
+    "Controls First": "Сначала управление",
     "Workspace density": "Плотность интерфейса",
     "Changes information packing and supporting detail only. Poker state, controls, and available tools stay the same.": "Меняет только компоновку информации и отображение вспомогательных деталей. Состояние покера, элементы управления и доступные инструменты не меняются.",
     "Comfortable": "Комфортно",
@@ -1235,6 +1241,12 @@
     "Calculation guidance": "Справка по расчёту"
   });
   Object.assign(he, {
+    "Workspace layout": "פריסת סביבת העבודה",
+    "Changes emphasis and composition only. Density, poker state, and available tools stay the same.": "משנה רק את הדגש והסידור. הצפיפות, מצב הפוקר והכלים הזמינים נשארים ללא שינוי.",
+    "Balanced": "מאוזנת",
+    "Table Focus": "מיקוד בשולחן",
+    "Analysis Focus": "מיקוד בניתוח",
+    "Controls First": "פקדים תחילה",
     "Workspace density": "צפיפות הממשק",
     "Changes information packing and supporting detail only. Poker state, controls, and available tools stay the same.": "משנה רק את ארגון המידע ואת הצגת הפרטים התומכים. מצב הפוקר, הפקדים והכלים הזמינים אינם משתנים.",
     "Comfortable": "מרווחת",

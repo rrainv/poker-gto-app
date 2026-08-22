@@ -115,7 +115,7 @@ The exact first shipped scope remains an **OPEN PRODUCT DECISION** at ticket pla
 
 | Capability | Status | Preserved scope |
 |---|---|---|
-| layout presets | PRESERVED FUTURE | Cards First, Controls First, Table Focus, Analysis Focus, Compact, Configuration First |
+| layout presets | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Balanced plus workspace-curated Table Focus, Analysis Focus, and Controls First are implemented as density-independent per-workspace presentation preferences with safe 1024 convergence and no custom layout serializer; final human Firefox acceptance remains open |
 | density and sizing | PRESERVED FUTURE | Comfortable/Compact density and card sizing |
 | beginner/expert modes | PRESERVED FUTURE | simpler guided presentation vs denser provenance/frequency/keyboard workflow |
 | themes/preferences | PRESERVED FUTURE | curated themes and safe workspace persistence/reset; no arbitrary drag/drop serializer |

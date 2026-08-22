@@ -114,6 +114,7 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | QA-LAYOUT-001 | OPEN | Decision/Matrix/Range tabs sit too low and feel disconnected | PRODUCT-UI-005 |
 | QA-LAYOUT-002 | PARTIAL | Core Flow now separates Hand setup from the live stage, places the canonical table and current action dock before secondary details at narrow desktop widths, and keeps Analysis a distinct destination; Firefox acceptance at the target desktop viewports remains open | CORE-FLOW-001B Firefox acceptance / PRODUCT-UI-005 |
 | QA-LAYOUT-003 | OPEN | card-first versus configuration-first ordering needs product decision | PRODUCT-UI-005 / Product Lab |
+| QA-LAYOUT-PRESETS-001 | PARTIAL | Balanced, Table Focus, Analysis Focus, and Controls First are implemented through one density-independent per-workspace preference path with curated availability, safe fallback, EN/RU/HE/RTL structure, and focused Firefox 154 geometry/screenshots at 1024, 1920, and 2560 widths; final human Firefox composition acceptance remains open | LAYOUT-PRESETS-001 human Firefox acceptance |
 | QA-MATRIX-001 | PARTIAL | Matrix now has dominant-action tint, a full-mix band, and exact hover/focus cues; final live acceptance pending | PRODUCT-UI-005R |
 | QA-MATRIX-002 | OPEN | postflop unavailable state should not render 169 inactive cells | PRODUCT-UI-005 |
 | QA-RANGE-001 | OPEN | two Range Category grids create an extremely long comparison page | PRODUCT-UI-005 |
