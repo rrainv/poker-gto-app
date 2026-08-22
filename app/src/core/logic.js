@@ -72,6 +72,7 @@ const ACTION_COLORS = {
 const RANK_VALUE = { 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, T: 10, J: 11, Q: 12, K: 13, A: 14 };
 
 const PLAYBOOK_SCENARIO_SCHEMA_VERSION = 'playbook-scenario/v1';
+const PLAYBOOK_SCENARIO_V2_SCHEMA_VERSION = 'playbook-scenario/v2';
 const PLAYBOOK_MODES = Object.freeze({ SCENARIO: 'scenario', HAND: 'hand' });
 
 
@@ -1415,6 +1416,11 @@ function renderSavedStudySourceState(state, object = savedStudyCurrentObject) {
     saveButton.setAttribute('aria-busy', String(busy));
     saveButton.disabled = saved || busy || !canSave;
   }
+  const completedSaveButton = $('#handCompletedSaveButton');
+  if (completedSaveButton && hand) {
+    completedSaveButton.textContent = saved ? t('Saved') : t('Save hand');
+    completedSaveButton.disabled = saved || busy || !canSave;
+  }
   if (editButton) editButton.hidden = !saved;
   if (status) status.textContent = savedStudySourceCopy(state, input.mode);
 }
@@ -1691,6 +1697,10 @@ function canonicalHandFailureMessage() {
 }
 
 function startCanonicalPlaybookHand() {
+  if (callPlaybookStateBridge('getState')) {
+    toast(t('End the current hand before changing its setup.'), 'warning');
+    return null;
+  }
   syncHandSeatSelectors();
   resetCanonicalHandDraft();
   const state = callPlaybookStateBridge('initializeHand', readCanonicalHandConfiguration());
@@ -1701,9 +1711,12 @@ function startCanonicalPlaybookHand() {
 }
 
 function resetCanonicalPlaybookHand() {
+  if (callPlaybookStateBridge('getState')
+    && !window.confirm(t('End the current hand and return to setup?'))) return null;
   callPlaybookStateBridge('resetHand');
   resetCanonicalHandDraft();
   renderCanonicalHandWorkspace();
+  return null;
 }
 
 function commitCanonicalHoleDeal() {
@@ -1796,6 +1809,17 @@ function chooseCanonicalSizedAction(type, option) {
   input.max = String(max);
   input.step = String(step);
   input.value = String(min);
+  const minimumPreset = $('#handSizingMinPreset');
+  const maximumPreset = $('#handSizingMaxPreset');
+  if (minimumPreset) {
+    minimumPreset.dataset.amountToBb = String(min);
+    minimumPreset.textContent = `${t('Minimum')} · ${formatCanonicalBb(option.minToMilliBb)}`;
+  }
+  if (maximumPreset) {
+    maximumPreset.dataset.amountToBb = String(max);
+    maximumPreset.textContent = `${t('Maximum non-all-in')} · ${formatCanonicalBb(option.maxToMilliBb)}`;
+    maximumPreset.hidden = max === min;
+  }
   if (label) label.textContent = t(type === 'bet' ? 'Bet to' : 'Raise to');
   if (bounds) bounds.textContent = t('{min}–{max} bb · amount-to', { min, max });
   if ($('#handCommitSizedAction')) $('#handCommitSizedAction').hidden = false;
@@ -1822,11 +1846,13 @@ function commitCanonicalSizedAction() {
   return applyCanonicalHandAction(type, Number(selectedValue('#handActionAmountBb')));
 }
 
-function renderCanonicalLegalActions(state) {
+function renderCanonicalLegalActions(state, legalActionSpec = undefined) {
   const root = $('#handLegalActions');
   const section = $('#handActionSection');
   if (!root || !section) return;
-  const spec = callPlaybookStateBridge('getLegalActions');
+  const spec = legalActionSpec === undefined
+    ? callPlaybookStateBridge('getLegalActions')
+    : legalActionSpec;
   section.hidden = !spec;
   root.innerHTML = '';
   if (!spec) return;
@@ -1881,6 +1907,184 @@ function canonicalHandStatus(state) {
   if (state.pendingChance?.type === 'deal_hole') return { label: t('Set Hero cards'), tone: 'loading', summary: t('Choose Hero cards. Opponents may remain hidden.') };
   if (state.phase === 'chance') return { label: t('Board chance'), tone: 'loading', summary: t('Waiting for {cards}.', { cards: t(state.pendingChance?.type?.replace('deal_', '') || 'board cards') }) };
   return { label: t('In progress'), tone: 'available', summary: t('Only canonical legal actions can advance this hand.') };
+}
+
+function canonicalHandStageKey(state, replayProjection) {
+  if (replayProjection?.readOnly) return 'replay';
+  if (!state) return 'setup';
+  if (state.terminal?.isTerminal || state.phase === 'terminal') return 'complete';
+  if (state.showdown?.status === 'awaiting_private_reveal') return 'reveal';
+  if (state.phase === 'showdown') return 'showdown';
+  if (state.pendingChance?.type === 'deal_hole') return 'private-cards';
+  if (state.phase === 'chance') return 'chance';
+  if (state.phase === 'betting') return 'action';
+  return 'active';
+}
+
+function canonicalActionHistoryLabel(record, state, heroPlayerId) {
+  if (!record) return t('No action yet');
+  const player = state?.players?.find((candidate) => candidate.playerId === record.playerId);
+  const type = record.submittedAction?.type || record.type;
+  const actionKey = {
+    fold: 'Fold', check: 'Check', call: 'Call', bet: 'Bet', raise: 'Raise', all_in: 'All-in'
+  }[type] || type || 'Action';
+  let action = t(actionKey);
+  if (type === 'call' && Number.isFinite(record.committedMilliBb)) {
+    action = `${action} · ${formatCanonicalBb(record.committedMilliBb)}`;
+  } else if (['bet', 'raise', 'all_in'].includes(type)
+    && Number.isFinite(record.currentBetAfterMilliBb)) {
+    action = `${action} · ${t('to')} ${formatCanonicalBb(record.currentBetAfterMilliBb)}`;
+  }
+  return t('{player}: {action}', {
+    player: canonicalPlayerLabel(player, heroPlayerId),
+    action
+  });
+}
+
+function setCanonicalTableExpanded(expanded) {
+  const wrapper = $('#table-wrapper');
+  const button = $('#toggleTableBtn');
+  if (!wrapper || !button) return;
+  wrapper.classList.toggle('collapsed', !expanded);
+  button.closest('.playbook-decision-workspace')?.classList.toggle('is-table-collapsed', !expanded);
+  button.setAttribute('aria-expanded', String(expanded));
+  const labelKey = expanded ? 'Collapse Table' : 'Expand Table';
+  button.dataset.i18n = labelKey;
+  button.textContent = t(labelKey);
+  if (expanded) playbookSurfaceInvalidator.renderIfNeeded('table');
+}
+
+function renderCanonicalHandSetupState(state, stage, replayProjection) {
+  const disclosure = $('#handSetupDisclosure');
+  const workspace = $('#playbookHandWorkspace');
+  const savedViewer = replayProjection?.viewerContext?.kind === 'saved_hand';
+  const immutable = Boolean(state) || savedViewer;
+  const previousStage = workspace?.dataset.handStage || null;
+
+  if (workspace) workspace.dataset.handStage = stage;
+  if ($('#gtoMode')) $('#gtoMode').dataset.handStage = stage;
+  if (disclosure && previousStage !== stage) {
+    if (stage === 'setup') disclosure.open = true;
+    else if (previousStage === 'setup' || previousStage === null) disclosure.open = false;
+  }
+  if (previousStage === 'setup' && stage !== 'setup') setCanonicalTableExpanded(true);
+
+  const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
+  const hero = state?.players?.find((player) => player.playerId === heroPlayerId);
+  const compactSummary = state
+    ? t('{count} players · Hero {position} · {stack}', {
+      count: state.players.length,
+      position: hero?.position || t('Seat {number}', { number: (hero?.seat ?? 0) + 1 }),
+      stack: formatCanonicalBb(hero?.startingStackMilliBb)
+    })
+    : t('Configure before the hand starts');
+  if ($('#handSetupCompactSummary')) $('#handSetupCompactSummary').textContent = compactSummary;
+  if ($('#handSetupDisclosureState')) {
+    $('#handSetupDisclosureState').textContent = t(immutable ? 'Locked for this hand' : 'Configure');
+    $('#handSetupDisclosureState').className = `badge status-badge status-badge--${immutable ? 'neutral' : 'info'}`;
+  }
+
+  ['handTableSize', 'handGameMode', 'handStackBb', 'handButtonSeat', 'handHeroSeat', 'handAnteType', 'handAnteBb']
+    .forEach((id) => {
+      const control = $('#' + id);
+      if (control) control.disabled = immutable;
+    });
+  if (!immutable && $('#handAnteBb')) {
+    $('#handAnteBb').disabled = selectedValue('#handAnteType') === 'none';
+  }
+  const start = $('#handStartButton');
+  if (start) {
+    start.hidden = immutable;
+    start.disabled = immutable;
+  }
+  const reset = $('#handResetButton');
+  if (reset) {
+    reset.hidden = !state || savedViewer;
+    reset.disabled = !state || savedViewer;
+    reset.textContent = t('End hand');
+    reset.dataset.i18n = 'End hand';
+  }
+}
+
+function renderCanonicalHandStage(state, legalActions, replayProjection) {
+  const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
+  const stage = canonicalHandStageKey(state, replayProjection);
+  const actor = state?.players?.find((player) => player.playerId === state.actingPlayerId);
+  const actorLabel = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '—';
+  const status = canonicalHandStatus(state);
+  const stageHeader = $('#handLiveStageHeader');
+  const stageDock = $('#handStageDock');
+  const terminal = Boolean(state?.terminal?.isTerminal || state?.phase === 'terminal');
+
+  renderCanonicalHandSetupState(state, stage, replayProjection);
+  if ($('#handStateSection')) $('#handStateSection').hidden = !state;
+  if ($('#handHistoryDisclosure')) $('#handHistoryDisclosure').hidden = !state;
+  if (stageHeader) {
+    stageHeader.hidden = false;
+    stageHeader.dataset.handStage = stage;
+  }
+  if (stageDock) stageDock.dataset.handStage = stage;
+
+  let title = t('Configure a hand');
+  if (stage === 'replay') title = t(replayProjection?.viewerContext?.kind === 'saved_hand'
+    ? 'Reviewing saved hand'
+    : 'Reviewing earlier hand state');
+  else if (terminal) title = t('Hand complete');
+  else if (state?.showdown?.status === 'awaiting_private_reveal') title = t('Reveal hands');
+  else if (state?.phase === 'showdown') title = t('Resolve showdown');
+  else if (state?.pendingChance?.type === 'deal_hole') title = t('Set Hero cards');
+  else if (state?.phase === 'chance') {
+    const street = String(state.pendingChance?.type || 'deal_board').replace('deal_', '');
+    title = t('Deal {street}', {
+      street: t(street.charAt(0).toUpperCase() + street.slice(1))
+    });
+  }
+  else if (actor) title = actor.playerId === heroPlayerId
+    ? t('Hero to act')
+    : t('{player} to act', { player: actorLabel });
+
+  if ($('#handLiveStageTitle')) $('#handLiveStageTitle').textContent = title;
+  if ($('#handLiveStageProgress')) $('#handLiveStageProgress').textContent = stage === 'replay'
+    ? t('Replay is read-only; the canonical live Hand is unchanged.')
+    : status.summary;
+  if ($('#handLiveStageLastAction')) {
+    $('#handLiveStageLastAction').textContent = canonicalActionHistoryLabel(
+      state?.actionHistory?.at(-1),
+      state,
+      heroPlayerId
+    );
+  }
+  if ($('#handLiveActor')) $('#handLiveActor').textContent = actorLabel;
+  if ($('#handLivePot')) $('#handLivePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '—';
+  if ($('#handLiveFacing')) $('#handLiveFacing').textContent = legalActions
+    ? formatCanonicalBb(state.currentBetMilliBb)
+    : '—';
+  if ($('#handLiveCall')) $('#handLiveCall').textContent = legalActions
+    ? formatCanonicalBb(legalActions.call.available ? legalActions.call.commitMilliBb : 0)
+    : '—';
+
+  const historyCount = replayProjection?.timeline?.entryCount || 0;
+  if ($('#handHistoryCompactSummary')) $('#handHistoryCompactSummary').textContent = historyCount > 0
+    ? t('{count} canonical actions', { count: historyCount })
+    : t('History and replay controls');
+
+  const completed = $('#handCompletedSection');
+  if (completed) completed.hidden = !terminal || replayProjection?.readOnly === true;
+  const replayButton = $('#handCompletedReplayButton');
+  if (replayButton) replayButton.disabled = !replayProjection?.canPlayback;
+  const analysisButton = $('#handCompletedAnalysisButton');
+  const journal = state ? callPlaybookStateBridge('getHeroDecisionJournal') : null;
+  if (analysisButton) analysisButton.disabled = !(journal?.decisions?.length > 0);
+  const completionSave = $('#handCompletedSaveButton');
+  const canonicalSave = $('#savedStudySaveButton');
+  if (completionSave) {
+    completionSave.disabled = !canonicalSave || canonicalSave.disabled;
+    completionSave.textContent = t(canonicalSave?.getAttribute('aria-pressed') === 'true' ? 'Saved' : 'Save hand');
+  }
+  if (stageDock) {
+    const hasVisibleMainStage = Boolean(stageDock.querySelector('.hand-control-section:not([hidden])'));
+    stageDock.hidden = !state || replayProjection?.readOnly === true || !hasVisibleMainStage;
+  }
 }
 
 function renderCanonicalPrivateDeal(state) {
@@ -2247,7 +2451,7 @@ function renderCanonicalReplayTimeline() {
   keepReplaySelectionVisible(root);
 }
 
-function setCanonicalReplayReadOnly(projection) {
+function setCanonicalReplayReadOnly(projection, state = callPlaybookStateBridge('getState')) {
   const workspace = $('#playbookHandWorkspace');
   if (!workspace) return;
   const readOnly = projection?.readOnly === true;
@@ -2267,11 +2471,8 @@ function setCanonicalReplayReadOnly(projection) {
   const savedViewer = projection?.viewerContext?.kind === 'saved_hand';
   const setup = $('#handSetupSection');
   if (setup) {
-    if (savedViewer) setup.setAttribute('aria-disabled', 'true');
+    if (savedViewer || state) setup.setAttribute('aria-disabled', 'true');
     else setup.removeAttribute('aria-disabled');
-    setup.querySelectorAll('button, input, select').forEach((control) => {
-      control.disabled = savedViewer;
-    });
   }
   if (readOnly && $('#handResolveShowdownButton')) $('#handResolveShowdownButton').disabled = true;
 }
@@ -2313,6 +2514,7 @@ function renderCanonicalHandWorkspace() {
   if (!workspace) return;
   const state = callPlaybookStateBridge('getState');
   const replayProjection = callPlaybookStateBridge('createReplayProjectionViewModel');
+  const legalActions = state ? callPlaybookStateBridge('getLegalActions') : null;
   placeSavedStudySourceActions(replayProjection);
   renderSavedHandViewerContext(replayProjection);
   workspace.classList.toggle('is-hand-in-progress', Boolean(state));
@@ -2329,7 +2531,7 @@ function renderCanonicalHandWorkspace() {
   if ($('#handStateActor')) $('#handStateActor').textContent = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '—';
   if ($('#handStatePot')) $('#handStatePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '—';
   if ($('#handStateDeduction')) $('#handStateDeduction').textContent = state ? formatCanonicalBb(state.deductionTotalMilliBb) : '—';
-  if ($('#handStartButton')) $('#handStartButton').textContent = t(state ? 'Start new hand' : 'Start hand');
+  if ($('#handStartButton')) $('#handStartButton').textContent = t('Start hand');
 
   const seats = $('#handSeatList');
   if (seats) seats.innerHTML = state?.players?.map((player) => `
@@ -2340,7 +2542,7 @@ function renderCanonicalHandWorkspace() {
 
   renderCanonicalPrivateDeal(state);
   renderCanonicalChance(state);
-  renderCanonicalLegalActions(state || { players: [] });
+  renderCanonicalLegalActions(state || { players: [] }, legalActions);
   ['handDealSection', 'handChanceSection', 'handActionSection'].forEach((id) => {
     const section = $('#' + id);
     if (section) section.classList.toggle('is-current-hand-step', !section.hidden);
@@ -2352,8 +2554,78 @@ function renderCanonicalHandWorkspace() {
     $('#handResolveShowdownButton').hidden = !canResolveShowdown;
     $('#handResolveShowdownButton').disabled = !canResolveShowdown;
   }
-  setCanonicalReplayReadOnly(replayProjection);
+  setCanonicalReplayReadOnly(replayProjection, state);
+  renderCanonicalHandStage(state, legalActions, replayProjection);
   dispatchCanonicalTableState();
+}
+
+function revealCanonicalHandHistory({ replay = false } = {}) {
+  const disclosure = $('#handHistoryDisclosure');
+  if (disclosure) disclosure.open = true;
+  if (replay) callPlaybookStateBridge('startReplayPlayback');
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  $('#handHistorySection')?.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'nearest' });
+}
+
+function scenarioInputFromHeroDecisionRecord(record) {
+  const context = record?.decisionContext;
+  if (!context || !record?.rulesSnapshot) return null;
+  return {
+    schemaVersion: PLAYBOOK_SCENARIO_V2_SCHEMA_VERSION,
+    rulesSnapshot: record.rulesSnapshot,
+    tableSize: context.tableSize,
+    heroPosition: context.heroPosition,
+    street: context.street,
+    heroCards: [...context.heroCards],
+    board: [...context.board],
+    deadCards: [...context.deadCards],
+    stackBb: context.stackBb,
+    stackMode: context.stackMode,
+    potBb: context.potBb,
+    lastAction: context.lastAction,
+    lastActionLabel: null,
+    facingSizeBb: context.facingSizeBb
+  };
+}
+
+async function openCanonicalHandDecisionInAnalysis() {
+  const journal = callPlaybookStateBridge('getHeroDecisionJournal');
+  const record = journal?.decisions?.at(-1) || null;
+  const scenarioInput = scenarioInputFromHeroDecisionRecord(record);
+  if (!record || !scenarioInput) {
+    toast(t('No recorded Hero decision is available for Analysis.'), 'warning');
+    return null;
+  }
+
+  const result = callPlaybookStateBridge('setMode', PLAYBOOK_MODES.SCENARIO, scenarioInput);
+  if (!result || result.mode !== PLAYBOOK_MODES.SCENARIO) {
+    toast(t('The recorded Hero decision could not be opened.'), 'error');
+    return null;
+  }
+  app.playbookMode = PLAYBOOK_MODES.SCENARIO;
+  callPlaybookStateBridge('resolveDecisionContext', scenarioInput);
+  savedPlaybookScenarioPresentation = null;
+  activeSavedSpotContext = null;
+  renderSavedSpotViewer(null);
+  setPlaybookControlAuthority(PLAYBOOK_MODES.SCENARIO);
+  restoreSavedSpotPresentation({
+    scenarioInput,
+    decisionContext: record.decisionContext,
+    object: { annotations: { title: t('Hero Decision {number}', { number: record.decisionOrdinal + 1 }) } }
+  });
+  restoreSharedPokerTable();
+  navigateToWorkspace('gto', 'analyze');
+  await updateContext('Completed Hand decision opened', {
+    schemaVersion: 'playbook-decision-resolution/v1',
+    mode: PLAYBOOK_MODES.SCENARIO,
+    status: 'available',
+    reason: 'completed_hand_hero_decision',
+    error: null,
+    decisionContext: record.decisionContext
+  });
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  $('#contextView')?.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+  return record;
 }
 
 function bindCanonicalHandWorkspace() {
@@ -2363,6 +2635,15 @@ function bindCanonicalHandWorkspace() {
   });
   if ($('#handStartButton')) $('#handStartButton').addEventListener('click', startCanonicalPlaybookHand);
   if ($('#handResetButton')) $('#handResetButton').addEventListener('click', resetCanonicalPlaybookHand);
+  ['handSizingMinPreset', 'handSizingMaxPreset'].forEach((id) => {
+    $('#' + id)?.addEventListener('click', (event) => {
+      const value = Number(event.currentTarget.dataset.amountToBb);
+      const input = $('#handActionAmountBb');
+      if (!input || !Number.isFinite(value)) return;
+      input.value = String(value);
+      $('#handCommitSizedAction')?.focus();
+    });
+  });
   if ($('#handDealHoleButton')) $('#handDealHoleButton').addEventListener('click', commitCanonicalPrivateCards);
   if ($('#handDealBoardButton')) $('#handDealBoardButton').addEventListener('click', commitCanonicalBoardDeal);
   if ($('#handReplayPlaybackButton')) $('#handReplayPlaybackButton').addEventListener('click', () => {
@@ -2402,6 +2683,10 @@ function bindCanonicalHandWorkspace() {
     if (!next) toast(canonicalHandFailureMessage(), 'error');
     renderCanonicalHandWorkspace();
   });
+  $('#handCompletedReviewButton')?.addEventListener('click', () => revealCanonicalHandHistory());
+  $('#handCompletedReplayButton')?.addEventListener('click', () => revealCanonicalHandHistory({ replay: true }));
+  $('#handCompletedAnalysisButton')?.addEventListener('click', openCanonicalHandDecisionInAnalysis);
+  $('#handCompletedSaveButton')?.addEventListener('click', () => $('#savedStudySaveButton')?.click());
 }
 
 
@@ -4666,11 +4951,12 @@ function applyHomeDestinationPresentation(destination = activeNavigationDestinat
 
 function resolvePlaybookDestinationPresentation(destination, playbookMode) {
   const normalizedDestination = destination === 'hand' ? 'hand' : 'analyze';
+  const requestedMode = normalizedDestination === 'hand'
+    ? (playbookMode === PLAYBOOK_MODES.HAND ? null : PLAYBOOK_MODES.HAND)
+    : (playbookMode === PLAYBOOK_MODES.SCENARIO ? null : PLAYBOOK_MODES.SCENARIO);
   return Object.freeze({
     destination: normalizedDestination,
-    requestedMode: normalizedDestination === 'hand' && playbookMode !== PLAYBOOK_MODES.HAND
-      ? PLAYBOOK_MODES.HAND
-      : null,
+    requestedMode,
     primarySurface: normalizedDestination === 'hand' ? 'hand-controls-and-table' : 'decision-analysis',
   });
 }
@@ -5673,16 +5959,9 @@ function bindEvents() {
   if ($('#cardStyleSelect')) $('#cardStyleSelect').addEventListener('change', (event) => applyCardStyle(event.target.value));
 
   if ($('#toggleTableBtn')) {
-    $('#toggleTableBtn').addEventListener('click', (e) => {
+    $('#toggleTableBtn').addEventListener('click', () => {
       const wrapper = $('#table-wrapper');
-      if (wrapper) {
-        wrapper.classList.toggle('collapsed');
-        const collapsed = wrapper.classList.contains('collapsed');
-        e.currentTarget.closest('.playbook-decision-workspace')?.classList.toggle('is-table-collapsed', collapsed);
-        e.currentTarget.setAttribute('aria-expanded', String(!collapsed));
-        e.currentTarget.textContent = collapsed ? 'Expand Table' : 'Collapse Table';
-        if (!collapsed) playbookSurfaceInvalidator.renderIfNeeded('table');
-      }
+      if (wrapper) setCanonicalTableExpanded(wrapper.classList.contains('collapsed'));
     });
   }
 

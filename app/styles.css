@@ -11339,3 +11339,269 @@ body.has-modal-open { overflow: hidden; }
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* CORE-FLOW-001B: canonical Hand live stage ----------------------------- */
+
+.hand-disclosure {
+  overflow: hidden;
+  background: var(--surface-section);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.hand-disclosure > summary,
+.hand-inline-disclosure > summary {
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-weight: 750;
+}
+
+.hand-disclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  list-style-position: inside;
+}
+
+.hand-disclosure > summary > span:first-child { min-width: 0; }
+.hand-disclosure > summary strong,
+.hand-disclosure > summary small { display: block; }
+.hand-disclosure > summary strong { color: var(--text-primary); }
+.hand-disclosure > summary small {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--text-label-size);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.hand-disclosure > .hand-control-section {
+  margin: 0 var(--space-3) var(--space-3);
+}
+.hand-inline-disclosure { margin-top: var(--space-3); }
+.hand-inline-disclosure > summary { padding: var(--space-2) 0; }
+
+.playbook-hand-workspace.is-hand-in-progress #handSetupSection {
+  opacity: 1;
+}
+.playbook-hand-workspace.is-hand-in-progress #handSetupDisclosure[open] #handSetupSection .hand-setup-grid {
+  display: grid;
+}
+.playbook-hand-workspace.is-hand-in-progress #handSetupDisclosure[open] #handSetupSection .hand-accounting-preview {
+  display: block;
+}
+.playbook-hand-workspace.is-hand-in-progress #handSetupDisclosure[open] #handSetupSection .hand-button-row {
+  margin-top: var(--space-4);
+}
+#handSetupSection[aria-disabled="true"] .hand-setup-grid { opacity: .72; }
+
+#gtoMode[data-product-destination="hand"] .playbook-decision-workspace {
+  gap: var(--space-3);
+}
+
+#gtoMode[data-product-destination="hand"] #handLiveStageHeader:not([hidden]) {
+  order: 2;
+  display: grid !important;
+}
+#gtoMode[data-product-destination="hand"] .playbook-table-toggle { order: 3; }
+#gtoMode[data-product-destination="hand"] #table-wrapper { order: 4; }
+#gtoMode[data-product-destination="hand"] #handStageDock:not([hidden]) {
+  order: 5;
+  display: grid !important;
+}
+
+.hand-live-stage-header {
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, .75fr);
+  gap: var(--space-4);
+  align-items: stretch;
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-panel);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 38%, var(--border-default));
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-sm);
+}
+.hand-live-stage-copy {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+}
+.hand-live-stage-copy > strong {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+  letter-spacing: -.02em;
+}
+.hand-live-stage-copy > span:not(.label) { color: var(--text-secondary); }
+.hand-live-stage-copy > small {
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.hand-live-stage-header[data-hand-stage="action"] {
+  border-color: color-mix(in srgb, var(--accent-primary) 68%, var(--border-default));
+  box-shadow: inset 3px 0 0 var(--accent-primary), var(--shadow-sm);
+}
+[dir="rtl"] .hand-live-stage-header[data-hand-stage="action"] {
+  box-shadow: inset -3px 0 0 var(--accent-primary), var(--shadow-sm);
+}
+.hand-live-facts {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  background: var(--border-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+.hand-live-facts > div {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: var(--space-3);
+  background: var(--surface-inset);
+}
+.hand-live-facts span,
+.hand-live-facts strong { display: block; }
+.hand-live-facts span {
+  color: var(--text-muted);
+  font-size: var(--text-overline-size);
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.hand-live-facts strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#gtoMode[data-product-destination="hand"] #table-wrapper:not(.collapsed) {
+  padding: clamp(var(--space-2), 1.2vw, var(--space-4));
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-md);
+}
+#gtoMode[data-product-destination="hand"] #visual-table-container {
+  width: min(100%, 860px);
+  max-width: 860px;
+  margin: 0 auto;
+  padding-block: 0;
+}
+
+@media (min-width: 2200px) {
+  #gtoMode[data-product-destination="hand"] #visual-table-container {
+    width: min(100%, 980px);
+    max-width: 980px;
+  }
+}
+
+.hand-stage-dock { gap: var(--space-3); }
+.hand-stage-dock .hand-control-section {
+  background: var(--surface-panel);
+  border-color: color-mix(in srgb, var(--accent-primary) 34%, var(--border-default));
+  box-shadow: var(--shadow-sm);
+}
+.hand-stage-dock .is-current-hand-step {
+  border-color: color-mix(in srgb, var(--accent-primary) 58%, var(--border-default));
+  box-shadow: inset 3px 0 0 var(--accent-primary), var(--shadow-sm);
+}
+[dir="rtl"] .hand-stage-dock .is-current-hand-step {
+  box-shadow: inset -3px 0 0 var(--accent-primary), var(--shadow-sm);
+}
+.hand-action-dock .hand-legal-actions { gap: var(--space-3); }
+.hand-action-dock .hand-legal-actions .ui-button {
+  min-height: 48px;
+  flex-basis: 112px;
+  font-size: var(--text-body-size);
+}
+.hand-action-dock .hand-legal-actions [data-canonical-action="check"],
+.hand-action-dock .hand-legal-actions [data-canonical-action="call"],
+.hand-action-dock .hand-legal-actions [data-canonical-action="bet"],
+.hand-action-dock .hand-legal-actions [data-canonical-action="raise"] {
+  border-color: color-mix(in srgb, var(--accent-primary) 54%, var(--border-default));
+}
+.hand-action-sizing {
+  grid-template-columns: minmax(150px, .7fr) minmax(220px, 1fr) minmax(190px, .8fr);
+  gap: var(--space-3);
+  align-items: end;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+}
+.hand-action-sizing:not([hidden]) { display: grid; }
+.hand-sizing-heading span,
+.hand-sizing-heading small { display: block; }
+.hand-sizing-heading span { color: var(--text-primary); font-weight: 800; }
+.hand-sizing-heading small { margin-top: 2px; color: var(--text-muted); font-weight: 500; }
+.hand-sizing-presets { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.hand-sizing-presets .ui-button { flex: 1 1 110px; }
+.hand-custom-sizing { display: grid; gap: var(--space-2); color: var(--text-secondary); }
+.hand-action-sizing > #handActionAmountBounds {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+}
+.hand-completed-action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.hand-completed-actions .panel-note { margin: var(--space-3) 0 0; }
+
+#gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"]) .playbook-workspace {
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+}
+#gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"]) .playbook-hand-workspace {
+  box-shadow: var(--shadow-sm);
+}
+#gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"]) .playbook-hand-head {
+  padding-block: var(--space-3);
+}
+#gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"]) .playbook-hand-head .panel-note {
+  display: none;
+}
+#gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"]) .playbook-hand-body {
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+@media (max-width: 1450px) {
+  .hand-live-stage-header { grid-template-columns: minmax(0, 1fr) minmax(300px, .85fr); }
+  .hand-live-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1100px) {
+  #gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"]) .playbook-decision-workspace {
+    order: 1;
+    width: 100%;
+  }
+  #gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"]) .playbook-context-rail {
+    order: 2;
+    width: 100%;
+  }
+  .hand-live-stage-header { grid-template-columns: minmax(0, 1fr); }
+  .hand-live-facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #gtoMode[data-product-destination="hand"] #handStageDock:not([hidden]) { order: 4; }
+  #gtoMode[data-product-destination="hand"] #table-wrapper { order: 5; }
+  .hand-action-sizing { grid-template-columns: minmax(160px, .7fr) minmax(220px, 1fr); }
+  .hand-custom-sizing { grid-column: 1 / -1; }
+
+  #gtoMode[data-product-destination="hand"][data-hand-stage="private-cards"] .playbook-context-rail,
+  #gtoMode[data-product-destination="hand"][data-hand-stage="reveal"] .playbook-context-rail { order: 1; }
+  #gtoMode[data-product-destination="hand"][data-hand-stage="private-cards"] .playbook-decision-workspace,
+  #gtoMode[data-product-destination="hand"][data-hand-stage="reveal"] .playbook-decision-workspace { order: 2; }
+}
+
+@media (max-width: 820px) {
+  .hand-live-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hand-action-sizing { grid-template-columns: minmax(0, 1fr); }
+  .hand-custom-sizing,
+  .hand-action-sizing > #handActionAmountBounds { grid-column: 1; }
+  .hand-completed-action-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

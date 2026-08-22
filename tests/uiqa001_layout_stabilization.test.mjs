@@ -30,7 +30,7 @@ test('sidebar has explicit expanded and collapsed states with accessible control
   assert.match(logic, /function applySidebarState\(collapsed\)/);
   assert.match(logic, /riverline_sidebar_collapsed/);
   assert.match(uiQaCss, /\.riverline-shell\.is-sidebar-collapsed/);
-  assert.match(uiQaCss, /--sidebar-expanded-width:\s*196px/);
+  assert.match(uiQaCss, /--sidebar-expanded-width:\s*208px/);
   assert.match(uiQaCss, /--sidebar-collapsed-width:\s*64px/);
 });
 
@@ -47,7 +47,7 @@ test('global utilities live in the lower sidebar and not the workspace header', 
 
 test('collapsed utility access and mobile navigation remain structural', () => {
   assert.match(uiQaCss, /\.is-sidebar-collapsed \.rail-language select[^{]*\{[^}]*opacity:\s*0/);
-  assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation\s*\{\s*grid-template-columns:\s*repeat\(5/);
+  assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation\s*\{[^}]*display:\s*flex[^}]*overflow-x:\s*auto/);
   assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.rail-utilities[\s\S]*?grid-template-columns:\s*repeat\(3/);
   assert.doesNotMatch(uiQaCss, /@media \(max-width: (?:820|700|520)px\)[\s\S]*?\.mode-navigation\s*\{[^}]*display:\s*none/);
 });
@@ -81,7 +81,8 @@ test('Playbook workflow and betting context use compact structural strips', () =
 test('Playbook table collapse releases its entire layout region', () => {
   assert.match(playbookHtml, /id="toggleTableBtn"[^>]+aria-expanded="true"[^>]+aria-controls="table-wrapper"/);
   assert.match(playbookHtml, /id="table-wrapper"[^>]+data-collapsible-region="poker-table"/);
-  assert.match(logic, /e\.currentTarget\.setAttribute\('aria-expanded', String\(!collapsed\)\)/);
+  assert.match(logic, /function setCanonicalTableExpanded\(expanded\)[\s\S]*?button\.setAttribute\('aria-expanded', String\(expanded\)\)/);
+  assert.match(logic, /toggleTableBtn[\s\S]*?setCanonicalTableExpanded\(wrapper\.classList\.contains\('collapsed'\)\)/);
   assert.match(uiQaCss, /\.table-wrapper\.collapsed\s*\{[^}]*height:\s*0[^}]*min-height:\s*0[^}]*max-height:\s*0/);
 });
 

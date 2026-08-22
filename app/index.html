@@ -855,9 +855,9 @@
           <section id="playbookHandWorkspace" class="panel playbook-hand-workspace" data-playbook-hand hidden aria-hidden="true">
             <div class="panel-head playbook-hand-head">
               <div>
-                <div class="label" data-i18n="Canonical Hand">Canonical Hand</div>
-                <div class="panel-title" data-i18n="Legal hand controls">Legal hand controls</div>
-                <div class="panel-note" data-i18n="Actions and cards advance the real hand state.">Actions and cards advance the real hand state.</div>
+                <div class="label" data-i18n="Hand details">Hand details</div>
+                <div class="panel-title" data-i18n="Setup, save, and replay">Setup, save, and replay</div>
+                <div class="panel-note" data-i18n="Live play stays at the table.">Live play stays at the table.</div>
               </div>
               <span id="handSessionBadge" class="badge status-badge status-badge--info" data-i18n="Not started">Not started</span>
             </div>
@@ -874,7 +874,12 @@
               </div>
             </div>
 
-            <div class="panel-body playbook-hand-body" data-tutorial-anchor="hand-action-controls">
+            <div class="panel-body playbook-hand-body">
+              <details id="handSetupDisclosure" class="hand-disclosure hand-setup-disclosure" open>
+                <summary>
+                  <span><strong data-i18n="Hand setup">Hand setup</strong><small id="handSetupCompactSummary" data-i18n="Configure before the hand starts">Configure before the hand starts</small></span>
+                  <span id="handSetupDisclosureState" class="badge status-badge status-badge--info" data-i18n="Configure">Configure</span>
+                </summary>
               <section id="handSetupSection" class="hand-control-section" aria-labelledby="handSetupTitle" data-tutorial-anchor="hand-setup">
                 <div class="hand-section-head">
                   <div><strong id="handSetupTitle" data-i18n="Start a hand">Start a hand</strong><small data-i18n="Choose seats and forced contributions">Choose seats and forced contributions</small></div>
@@ -894,6 +899,7 @@
                   <button id="handResetButton" class="ui-button ui-button--quiet" type="button" data-i18n="Reset hand">Reset hand</button>
                 </div>
               </section>
+              </details>
 
               <section id="handStateSection" class="hand-control-section" aria-labelledby="handStateTitle" data-tutorial-anchor="hand-state">
                 <div class="hand-section-head hand-current-section-head">
@@ -906,31 +912,23 @@
                   <div><span data-i18n="Pot">Pot</span><strong id="handStatePot">—</strong></div>
                   <div><span data-i18n="Deduction">Deduction</span><strong id="handStateDeduction">—</strong></div>
                 </div>
-              <div id="handSeatList" class="hand-seat-list" aria-label="Canonical players" data-i18n-aria-label="Canonical players"></div>
+                <details id="handPlayerDetails" class="hand-inline-disclosure">
+                  <summary data-i18n="Players and contributions">Players and contributions</summary>
+                  <div id="handSeatList" class="hand-seat-list" aria-label="Canonical players" data-i18n-aria-label="Canonical players"></div>
+                </details>
               </section>
 
-              <section id="handDealSection" class="hand-control-section" aria-labelledby="handDealTitle" hidden>
+              <section id="handDealSection" class="hand-control-section hand-stage-step" aria-labelledby="handDealTitle" hidden>
                 <div class="hand-section-head"><div><strong id="handDealTitle" data-i18n="Set private cards">Set private cards</strong><small id="handDealHelp" data-i18n="Choose Hero's cards. Opponents remain hidden unless you set them explicitly.">Choose Hero's cards. Opponents remain hidden unless you set them explicitly.</small></div></div>
                 <div id="handPrivateCards" class="hand-private-cards"></div>
                 <button id="handDealHoleButton" class="ui-button ui-button--primary" type="button" data-i18n="Start betting">Start betting</button>
               </section>
 
-              <section id="handChanceSection" class="hand-control-section" aria-labelledby="handChanceTitle" hidden>
-                  <div class="hand-section-head"><div><strong id="handChanceTitle" data-i18n="Deal board">Deal board</strong><small id="handChanceHelp" data-i18n="Choose the next legal board cards.">Choose the next legal board cards.</small></div></div>
-                <div class="card-slots" data-slots="hand-board-chance"></div>
-                <button id="handDealBoardButton" class="ui-button ui-button--primary" type="button" data-i18n="Commit board cards">Commit board cards</button>
-              </section>
-
-              <section id="handActionSection" class="hand-control-section" aria-labelledby="handActionTitle" hidden>
-                <div class="hand-section-head"><div><strong id="handActionTitle" data-i18n="Legal actions">Legal actions</strong><small id="handActionActor">Waiting for a betting decision</small></div></div>
-                  <div id="handLegalActions" class="hand-legal-actions" role="group" aria-label="Canonical legal actions" data-i18n-aria-label="Canonical legal actions"></div>
-                <label id="handActionSizing" class="hand-action-sizing" hidden>
-                      <span id="handActionSizingLabel" data-i18n="Raise to">Raise to</span>
-                  <span class="input-with-unit"><input id="handActionAmountBb" class="control-input" type="number" step="0.1"><em>bb</em></span>
-                  <small id="handActionAmountBounds"></small>
-                </label>
-              </section>
-
+              <details id="handHistoryDisclosure" class="hand-disclosure hand-history-disclosure">
+                <summary>
+                  <span><strong data-i18n="replay.title">Hand replay</strong><small id="handHistoryCompactSummary" data-i18n="History and replay controls">History and replay controls</small></span>
+                  <span data-i18n="Review">Review</span>
+                </summary>
               <section id="handHistorySection" class="hand-control-section" aria-labelledby="handHistoryTitle" data-tutorial-anchor="hand-replay">
                 <div class="hand-section-head"><div><strong id="handHistoryTitle" data-i18n="replay.title">Hand replay</strong><small data-i18n="replay.subtitle">Read-only timeline</small></div></div>
                 <div id="handReplayControls" class="replay-control-bar" data-replay-mode="empty" data-tutorial-anchor="replay-controls">
@@ -954,6 +952,7 @@
                   <button id="handResolveShowdownButton" class="ui-button ui-button--primary" type="button" hidden data-i18n="Resolve showdown">Resolve showdown</button>
                 </div>
               </section>
+              </details>
             </div>
           </section>
 
@@ -1221,13 +1220,62 @@
 
 
 
+          <section id="handLiveStageHeader" class="hand-live-stage-header" data-playbook-hand hidden aria-labelledby="handLiveStageTitle" data-tutorial-anchor="hand-live-stage">
+            <div class="hand-live-stage-copy" role="status" aria-live="polite" aria-atomic="true">
+              <span class="label" data-i18n="Current hand stage">Current hand stage</span>
+              <strong id="handLiveStageTitle" data-i18n="Configure a hand">Configure a hand</strong>
+              <span id="handLiveStageProgress" data-i18n="The table becomes active when the hand starts.">The table becomes active when the hand starts.</span>
+              <small><span data-i18n="Last event">Last event</span>: <span id="handLiveStageLastAction" data-i18n="No action yet">No action yet</span></small>
+            </div>
+            <div class="hand-live-facts" aria-label="Current decision facts" data-i18n-aria-label="Current decision facts">
+              <div><span data-i18n="Actor">Actor</span><strong id="handLiveActor">&mdash;</strong></div>
+              <div><span data-i18n="Pot">Pot</span><strong id="handLivePot">&mdash;</strong></div>
+              <div><span data-i18n="Facing">Facing</span><strong id="handLiveFacing">&mdash;</strong></div>
+              <div><span data-i18n="To call">To call</span><strong id="handLiveCall">&mdash;</strong></div>
+            </div>
+          </section>
+
           <div class="playbook-table-toggle">
-          <span class="playbook-table-label"><strong data-i18n="Spot table">Spot table</strong><small data-i18n="Seats, stacks, cards, and current action">Seats, stacks, cards, and current action</small></span>
+          <span class="playbook-table-label" data-playbook-scenario><strong data-i18n="Spot table">Spot table</strong><small data-i18n="Seats, stacks, cards, and current action">Seats, stacks, cards, and current action</small></span>
+          <span class="playbook-table-label" data-playbook-hand hidden><strong data-i18n="Hand table">Hand table</strong><small data-i18n="Canonical cards, stacks, contributions, and actor">Canonical cards, stacks, contributions, and actor</small></span>
           <button id="toggleTableBtn" class="ui-button ui-button--quiet" type="button" aria-expanded="true" aria-controls="table-wrapper" data-i18n="Collapse Table">Collapse Table</button>
           </div>
           <div id="table-wrapper" class="table-wrapper" data-collapsible-region="poker-table">
             <div id="visual-table-container"></div>
           </div>
+
+          <section id="handStageDock" class="hand-stage-dock" data-playbook-hand hidden data-tutorial-anchor="hand-action-controls">
+            <section id="handChanceSection" class="hand-control-section hand-stage-step" aria-labelledby="handChanceTitle" hidden>
+              <div class="hand-section-head"><div><strong id="handChanceTitle" data-i18n="Deal board">Deal board</strong><small id="handChanceHelp" data-i18n="Choose the next legal board cards.">Choose the next legal board cards.</small></div></div>
+              <div class="card-slots" data-slots="hand-board-chance"></div>
+              <button id="handDealBoardButton" class="ui-button ui-button--primary" type="button" data-i18n="Commit board cards">Commit board cards</button>
+            </section>
+
+            <section id="handActionSection" class="hand-control-section hand-stage-step hand-action-dock" aria-labelledby="handActionTitle" hidden>
+              <div class="hand-section-head"><div><strong id="handActionTitle" data-i18n="Current legal actions">Current legal actions</strong><small id="handActionActor">Waiting for a betting decision</small></div></div>
+              <div id="handLegalActions" class="hand-legal-actions" role="group" aria-label="Canonical legal actions" data-i18n-aria-label="Canonical legal actions"></div>
+              <div id="handActionSizing" class="hand-action-sizing" hidden>
+                <div class="hand-sizing-heading"><span id="handActionSizingLabel" data-i18n="Raise to">Raise to</span><small data-i18n="Canonical amount-to sizing">Canonical amount-to sizing</small></div>
+                <div id="handSizingPresets" class="hand-sizing-presets" role="group" aria-label="Sizing presets" data-i18n-aria-label="Sizing presets">
+                  <button id="handSizingMinPreset" class="ui-button ui-button--secondary" type="button" data-hand-sizing-preset="min" data-i18n="Minimum">Minimum</button>
+                  <button id="handSizingMaxPreset" class="ui-button ui-button--secondary" type="button" data-hand-sizing-preset="max" data-i18n="Maximum non-all-in">Maximum non-all-in</button>
+                </div>
+                <label class="hand-custom-sizing"><span data-i18n="Custom amount-to">Custom amount-to</span><span class="input-with-unit"><input id="handActionAmountBb" class="control-input" type="number" step="0.1"><em>bb</em></span></label>
+                <small id="handActionAmountBounds"></small>
+              </div>
+            </section>
+
+            <section id="handCompletedSection" class="hand-control-section hand-completed-actions" aria-labelledby="handCompletedTitle" hidden>
+              <div class="hand-section-head"><div><strong id="handCompletedTitle" data-i18n="Hand complete">Hand complete</strong><small data-i18n="Continue with the canonical hand history.">Continue with the canonical hand history.</small></div></div>
+              <div class="hand-completed-action-grid">
+                <button id="handCompletedReviewButton" class="ui-button ui-button--primary" type="button" data-i18n="Review">Review</button>
+                <button id="handCompletedAnalysisButton" class="ui-button ui-button--secondary" type="button" data-i18n="Analysis">Analysis</button>
+                <button id="handCompletedReplayButton" class="ui-button ui-button--secondary" type="button" data-i18n="Replay">Replay</button>
+                <button id="handCompletedSaveButton" class="ui-button ui-button--secondary" type="button" data-i18n="Save hand">Save hand</button>
+              </div>
+              <p id="handCompletedAnalysisNote" class="panel-note" data-i18n="Analysis opens the latest recorded Hero decision and keeps this completed Hand available.">Analysis opens the latest recorded Hero decision and keeps this completed Hand available.</p>
+            </section>
+          </section>
 
           <nav id="playbookAnalysisNavigation" class="playbook-analysis-switcher" aria-labelledby="playbookAnalysisNavigationTitle" data-tutorial-anchor="playbook-analysis-navigation">
             <div class="playbook-analysis-switcher-copy">
@@ -2042,6 +2090,7 @@
                 </div>
                 <div id="trainingStudyHintContent" class="training-study-hint-content" aria-live="polite"></div>
               </section>
+              </details>
               <div id="trainingDecisionPrompt" class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
               <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions" data-i18n-aria-label="Available actions" data-tutorial-anchor="training-answer-actions"></div>
               <section id="trainingFullHandSizing" class="training-full-hand-sizing" hidden aria-labelledby="trainingFullHandSizingTitle">

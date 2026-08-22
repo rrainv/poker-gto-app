@@ -112,7 +112,7 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | ID | Status | Issue | Owner |
 |---|---|---|---|
 | QA-LAYOUT-001 | OPEN | Decision/Matrix/Range tabs sit too low and feel disconnected | PRODUCT-UI-005 |
-| QA-LAYOUT-002 | OPEN | Playbook table/configuration pushes analysis far below the fold | PRODUCT-UI-005 |
+| QA-LAYOUT-002 | PARTIAL | Core Flow now separates Hand setup from the live stage, places the canonical table and current action dock before secondary details at narrow desktop widths, and keeps Analysis a distinct destination; Firefox acceptance at the target desktop viewports remains open | CORE-FLOW-001B Firefox acceptance / PRODUCT-UI-005 |
 | QA-LAYOUT-003 | OPEN | card-first versus configuration-first ordering needs product decision | PRODUCT-UI-005 / Product Lab |
 | QA-MATRIX-001 | PARTIAL | Matrix now has dominant-action tint, a full-mix band, and exact hover/focus cues; final live acceptance pending | PRODUCT-UI-005R |
 | QA-MATRIX-002 | OPEN | postflop unavailable state should not render 169 inactive cells | PRODUCT-UI-005 |
@@ -124,8 +124,8 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | QA-TRAIN-LAYOUT-002 | OPEN | idle/no-board surfaces waste vertical space | PRODUCT-UI-005 |
 | FQA-002 | CLOSED | Training context values use the real grid, reflow to two columns at 1024, and remain atomic in Firefox EN/RU/HE with no global overflow or inaccessible action controls | PRELABS-FIX-001 |
 | FQA-004 | DEFERRED | Settings column imbalance is accepted low-priority Labs-era debt; no redesign is justified before Labs | Product Lab |
-| QA-TABLE-001 | OPEN | support rails/Action Path should be visible where useful without excessive scroll | PRODUCT-UI-005 |
-| QA-COLLAPSE-001 | PARTIAL | collapsed table control should remain compact and integrated | PRODUCT-UI-002R acceptance / UI-005 |
+| QA-TABLE-001 | PARTIAL | The active Hand now centers canonical table facts, actor/price status, and legal controls while setup, players, and Replay use progressive disclosure; final table/support-rail composition and Firefox scroll acceptance remain open | CORE-FLOW-001B Firefox acceptance / PRODUCT-UI-005 |
+| QA-COLLAPSE-001 | PARTIAL | Starting a Hand restores the table to expanded state and keeps the collapse control integrated; Firefox compact-state acceptance remains open | CORE-FLOW-001B Firefox acceptance / UI-005 |
 
 ## Equity UX
 

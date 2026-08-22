@@ -124,15 +124,19 @@ test('Hand and Analyze resolve to observably different presentation modes', () =
   const handFromScenario = resolvePlaybookDestination('hand', 'scenario');
   const hand = resolvePlaybookDestination('hand', 'hand');
   const analyzeHand = resolvePlaybookDestination('analyze', 'hand');
+  const analyze = resolvePlaybookDestination('analyze', 'scenario');
   assert.equal(handFromScenario.requestedMode, 'hand');
+  assert.equal(hand.requestedMode, null);
   assert.equal(hand.primarySurface, 'hand-controls-and-table');
-  assert.equal(analyzeHand.requestedMode, null);
+  assert.equal(analyzeHand.requestedMode, 'scenario');
+  assert.equal(analyze.requestedMode, null);
   assert.equal(analyzeHand.primarySurface, 'decision-analysis');
   assert.match(css, /data-product-destination="hand"[\s\S]*?#contextView[\s\S]*?display: none !important/);
-  assert.match(css, /data-product-destination="analyze"\]\[data-playbook-mode="hand"\][\s\S]*?\.playbook-context-rail[\s\S]*?display: none/);
+  assert.match(logic, /modeView\.dataset\.playbookMode = mode/);
+  assert.match(logic, /\$\$\('\[data-playbook-scenario\]'\)[\s\S]*?element\.hidden = handMode/);
 });
 
-test('Hand to Analyze to Hand preserves the canonical controller and does not request a duplicate mount', () => {
+test('Hand to Analyze to Hand enters the matching internal mode and preserves the exact canonical Hand', () => {
   const canonicalState = Object.freeze({ handId: 'core-flow-preserved-hand' });
   const canonicalController = Object.freeze({
     getState: () => canonicalState,
@@ -164,8 +168,9 @@ test('Hand to Analyze to Hand preserves the canonical controller and does not re
   for (const destination of ['analyze', 'hand', 'analyze', 'hand']) {
     const transition = resolvePlaybookDestination(destination, controller.getMode());
     if (transition.requestedMode) controller.setMode(transition.requestedMode, scenario);
+    assert.equal(controller.getMode(), destination === 'hand' ? 'hand' : 'scenario');
     assert.equal(controller, controllerIdentity);
-    assert.equal(canonicalController.getState(), canonicalState);
+    assert.strictEqual(canonicalController.getState(), canonicalState);
   }
   assert.equal(controller.getMode(), 'hand');
 });
