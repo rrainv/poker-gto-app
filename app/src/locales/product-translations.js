@@ -1256,6 +1256,39 @@
     "Calculation guidance": "הנחיות לחישוב"
   });
 
+  Object.assign(ru, {
+    "Four-color deck": "Четырёхцветная колода",
+    "Uses a stable color and suit glyph for each suit. Card identity never changes.": "Для каждой масти используются стабильный цвет и отдельный символ. Идентичность карты не меняется.",
+    "Card face style": "Стиль лицевой стороны",
+    "Applies immediately to card faces across every workspace.": "Сразу применяется к лицевым сторонам карт во всех разделах.",
+    "Classic": "Классический",
+    "Minimal": "Минималистичный",
+    "High Contrast": "Высокий контраст",
+    "Card-back style": "Стиль рубашки",
+    "Hidden cards stay distinct from empty card slots.": "Скрытые карты визуально отличаются от пустых мест для карт.",
+    "Solid": "Однотонная",
+    "Geometric": "Геометрическая",
+    "Choose {card}": "Выбрать {card}",
+    "{card}, unavailable": "{card}, недоступна",
+    "Settings includes theme, language, audio, and card presentation. Choose Classic, Minimal, or High Contrast faces and Riverline, Solid, or Geometric backs. Rank style displays ten as T or 10; presentation never changes card identity.": "В настройках доступны тема, язык, звук и оформление карт. Выберите классический, минималистичный или высококонтрастный стиль лицевой стороны и рубашку Riverline, однотонную или геометрическую. Десятка может отображаться как T или 10; оформление не меняет идентичность карты."
+  });
+  Object.assign(he, {
+    "Four-color deck": "חפיסה בארבעה צבעים",
+    "Uses a stable color and suit glyph for each suit. Card identity never changes.": "לכל סדרה יש צבע וסמל קבועים. זהות הקלף לעולם אינה משתנה.",
+    "Card face style": "סגנון פני הקלף",
+    "Applies immediately to card faces across every workspace.": "חל מיד על פני הקלפים בכל סביבות העבודה.",
+    "Classic": "קלאסי",
+    "Minimal": "מינימלי",
+    "High Contrast": "ניגודיות גבוהה",
+    "Card-back style": "סגנון גב הקלף",
+    "Hidden cards stay distinct from empty card slots.": "קלפים מוסתרים נשארים מובחנים ממקומות ריקים לקלפים.",
+    "Solid": "אחיד",
+    "Geometric": "גאומטרי",
+    "Choose {card}": "בחירת {card}",
+    "{card}, unavailable": "{card}, אינו זמין",
+    "Settings includes theme, language, audio, and card presentation. Choose Classic, Minimal, or High Contrast faces and Riverline, Solid, or Geometric backs. Rank style displays ten as T or 10; presentation never changes card identity.": "ההגדרות כוללות ערכת נושא, שפה, שמע ומראה קלפים. אפשר לבחור פני קלף קלאסיים, מינימליים או בניגודיות גבוהה, וגב Riverline, אחיד או גאומטרי. סגנון הדרגה מציג עשר כ־T או 10; המראה אינו משנה את זהות הקלף."
+  });
+
   const allProductKeys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineProductTranslations = {
     en: Object.fromEntries([...allProductKeys].map((key) => [key, key])),

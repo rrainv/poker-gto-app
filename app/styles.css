@@ -131,10 +131,10 @@
   --orange: #d18a43;
   --red: #d0646b;
   --purple: #8b78ad;
-  --heart: #c83e48;
-  --spade: #18201c;
-  --diamond: #326fb5;
-  --club: #328755;
+  --heart: var(--suit-heart);
+  --spade: var(--suit-spade);
+  --diamond: var(--suit-diamond);
+  --club: var(--suit-club);
   --shadow: var(--shadow-panel);
   --transition-fast: var(--duration-fast) var(--ease-standard);
   --transition-normal: var(--duration-normal) var(--ease-standard);
@@ -934,8 +934,8 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 .training-card-row { min-height: 78px; display: flex; align-items: center; justify-content: center; gap: var(--space-3); direction: ltr; }
 .training-no-board { color: var(--text-muted); font-size: var(--text-label-size); }
 .training-readonly-card { position: relative; width: var(--poker-card-width, 52px); height: var(--poker-card-height, 74px); flex: 0 0 auto; display: block; padding: var(--space-2); overflow: hidden; color: var(--suit-spade); background: var(--riverline-card-face, var(--card-face)); border: 1px solid var(--riverline-card-border, var(--card-border)); border-radius: var(--riverline-card-radius, var(--radius-card)); box-shadow: var(--riverline-card-shadow, var(--shadow-control)); font-family: Georgia, "Times New Roman", serif; }
-.training-readonly-card .rank { display: block; font-size: 1.15rem; font-weight: 850; line-height: 1; }
-.training-readonly-card .suit { display: block; font-size: 1.25rem; line-height: 1.1; }
+.training-readonly-card > .rank { display: block; font-size: 1.15rem; font-weight: 850; line-height: 1; }
+.training-readonly-card > .suit { display: block; font-size: 1.25rem; line-height: 1.1; }
 .training-readonly-card .corner-rank { position: absolute; inset-inline-end: var(--space-2); inset-block-end: var(--space-2); font-weight: 800; }
 
 .training-context-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border: 1px solid var(--border-subtle); border-radius: var(--radius-control); overflow: hidden; }
@@ -3708,13 +3708,10 @@ input[type=range]::-moz-range-thumb {
 
 
 
-.s-h { color: var(--heart) !important; font-weight: 900; }
-
-.s-s { color: var(--spade) !important; font-weight: 900; }
-
-.s-d { color: var(--diamond) !important; font-weight: 900; }
-
-.s-c { color: var(--club) !important; font-weight: 900; }
+.s-h,
+.s-s,
+.s-d,
+.s-c { font-weight: 900; }
 
 
 
@@ -5528,7 +5525,7 @@ html[data-four-color="false"] .s-c,
 html[data-four-color="false"] .suit-s,
 html[data-four-color="false"] .suit-c,
 html[data-four-color="false"] .card.black {
-  color: #111827 !important;
+  color: var(--suit-spade) !important;
 }
 
 /* Collapsible Table */
@@ -5543,8 +5540,8 @@ html[data-four-color="false"] .card.black {
   opacity: 0;
 }
 
-html[data-four-color="false"] .suit-s { color: #111827 !important; }
-html[data-four-color="false"] .suit-c { color: #111827 !important; }
+html[data-four-color="false"] .suit-s { color: var(--suit-spade) !important; }
+html[data-four-color="false"] .suit-c { color: var(--suit-spade) !important; }
 
 /* --------------------------------------------------------------------------
    DESIGN-003: Riverline application shell
@@ -7028,9 +7025,27 @@ input[type="range"]:disabled::-moz-range-thumb { background: var(--text-disabled
 /* DESIGN-005: poker visual system --------------------------------------- */
 
 :root {
-  --poker-card-width: 48px;
-  --poker-card-height: 68px;
-  --poker-card-aspect: 0.7059;
+  --poker-card-aspect: 0.701754;
+  --card-size-mini-width: 28px;
+  --card-size-mini-height: 40px;
+  --card-size-result-width: 38px;
+  --card-size-result-height: 54px;
+  --card-size-table-width: 40px;
+  --card-size-table-height: 57px;
+  --card-size-picker-width: 36px;
+  --card-size-picker-height: 51px;
+  --card-size-compact-width: 42px;
+  --card-size-compact-height: 60px;
+  --card-size-slot-width: 48px;
+  --card-size-slot-height: 68px;
+  --card-size-standard-width: 52px;
+  --card-size-standard-height: 74px;
+  --card-size-representative-width: 52px;
+  --card-size-representative-height: 74px;
+  --card-size-full-width: 56px;
+  --card-size-full-height: 80px;
+  --poker-card-width: var(--card-size-slot-width);
+  --poker-card-height: var(--card-size-slot-height);
   --poker-card-shadow: 0 3px 9px rgba(0, 0, 0, 0.24);
   --poker-table-rail-start: color-mix(in srgb, var(--surface-elevated) 74%, var(--border-strong));
   --poker-table-rail-end: color-mix(in srgb, var(--surface-inset) 82%, #000000);
@@ -7083,9 +7098,37 @@ html[data-four-color="false"] {
   --riverline-card-border: var(--card-border);
   --riverline-card-radius: var(--radius-card);
   --riverline-card-shadow: var(--poker-card-shadow);
+  --riverline-card-rank-font: Georgia, "Times New Roman", serif;
+  --card-corner-inline: 5px;
+  --card-corner-block: 5px;
+  --card-corner-width: 22px;
+  --card-corner-rank-size: 15px;
+  --card-corner-suit-size: 14px;
+  --card-center-rank-size: 25px;
+  --card-center-suit-size: 19px;
+  --card-rank-ten-inline-size: 1.45em;
+  --card-rank-ten-scale-x: .82;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  direction: ltr;
+  unicode-bidi: isolate;
   font-family: Georgia, "Times New Roman", serif;
 }
-.card-slots { gap: var(--space-4); align-items: center; }
+
+.riverline-card[data-card-size="mini"] { --card-corner-inline: 2px; --card-corner-block: 3px; --card-corner-width: 15px; --card-corner-rank-size: 10px; --card-corner-suit-size: 9px; --card-center-rank-size: 16px; --card-center-suit-size: 13px; width: var(--card-size-mini-width); height: var(--card-size-mini-height); border-radius: 4px; }
+.riverline-card[data-card-size="result"] { --card-corner-inline: 3px; --card-corner-block: 4px; --card-corner-width: 17px; --card-corner-rank-size: 12px; --card-corner-suit-size: 11px; --card-center-rank-size: 20px; --card-center-suit-size: 16px; width: var(--card-size-result-width); height: var(--card-size-result-height); border-radius: 5px; }
+.riverline-card[data-card-size="picker"] { --card-corner-inline: 3px; --card-corner-block: 4px; --card-corner-width: 17px; --card-corner-rank-size: 12px; --card-corner-suit-size: 11px; --card-center-rank-size: 19px; --card-center-suit-size: 15px; width: var(--card-size-picker-width); height: var(--card-size-picker-height); border-radius: 5px; }
+.riverline-card[data-card-size="compact"] { --card-corner-inline: 4px; --card-corner-block: 4px; --card-corner-width: 19px; --card-corner-rank-size: 13px; --card-corner-suit-size: 12px; --card-center-rank-size: 22px; --card-center-suit-size: 17px; width: var(--card-size-compact-width); height: var(--card-size-compact-height); border-radius: 5px; }
+.riverline-card[data-card-size="standard"] { width: var(--card-size-standard-width); height: var(--card-size-standard-height); border-radius: var(--radius-card); }
+.riverline-card[data-card-size="representative"] { width: var(--card-size-representative-width); height: var(--card-size-representative-height); border-radius: var(--radius-card); }
+.riverline-card[data-card-size="full"] { width: var(--card-size-full-width); height: var(--card-size-full-height); border-radius: var(--radius-card); }
+.riverline-card.card-slot[data-card-size="slot"] { width: var(--poker-card-width) !important; min-width: var(--poker-card-width) !important; height: var(--poker-card-height) !important; min-height: var(--poker-card-height) !important; }
+.riverline-card-back[data-card-size="mini"] { width: var(--card-size-mini-width); height: var(--card-size-mini-height); border-radius: 4px; }
+.riverline-card-back[data-card-size="result"] { width: var(--card-size-result-width); height: var(--card-size-result-height); border-radius: 5px; }
+.riverline-card-back[data-card-size="picker"] { width: var(--card-size-picker-width); height: var(--card-size-picker-height); border-radius: 5px; }
+.riverline-card-back[data-card-size="standard"] { width: var(--card-size-standard-width); height: var(--card-size-standard-height); border-radius: var(--radius-card); }
+.card-slots { gap: var(--space-4); align-items: center; overflow: visible; }
 
 .card-slot {
   width: var(--poker-card-width) !important;
@@ -7096,7 +7139,7 @@ html[data-four-color="false"] {
   position: relative;
   display: block;
   padding: 0 !important;
-  overflow: visible;
+  overflow: hidden;
   color: var(--suit-spade);
   background: var(--riverline-card-face, var(--card-face)) !important;
   border: 1px solid var(--riverline-card-border, var(--card-border)) !important;
@@ -7107,112 +7150,130 @@ html[data-four-color="false"] {
 }
 
 .card-slot:hover { transform: none !important; border-color: var(--border-focus) !important; }
+.card-slot:focus-visible,
+.deck-card:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 3px; }
 .card-slot.filled { animation: poker-card-enter var(--duration-normal) var(--ease-standard) both; }
 .card-slot .rank { font-family: Georgia, "Times New Roman", serif; font-size: 18px; line-height: 17px; }
 .card-slot .suit { font-size: 19px; line-height: 20px; transform: none !important; }
 .card-slot .corner { inset-inline-end: 5px; inset-block-end: 4px; font-size: 14px; }
 
-/* Every rendered face uses the same paired, in-bounds corner geometry. */
-.card-corner,
-.training-readonly-card .card-corner,
-.deck-card .card-corner {
+/* Every face owns two complete corner units and one center pair. Corner glyphs
+   come from data on the unit, so hidden duplicate rank/suit nodes cannot leak. */
+.card-corner {
   position: absolute;
   display: grid;
   justify-items: center;
   align-content: start;
   gap: 0;
-  width: 22px;
+  width: var(--card-corner-width);
   text-align: center;
   line-height: 1;
   pointer-events: none;
 }
-.card-corner--top { inset-inline-start: 5px; inset-block-start: 5px; }
+.card-corner::before,
+.card-corner::after { display: block; width: 100%; text-align: center; }
+.card-corner::before {
+  content: attr(data-card-rank);
+  font: 800 var(--card-corner-rank-size)/.9 var(--riverline-card-rank-font);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.card-corner::after {
+  content: attr(data-card-suit);
+  font: 700 var(--card-corner-suit-size)/.9 var(--riverline-card-rank-font);
+}
+.card-corner[data-card-rank-width="wide"]::before {
+  letter-spacing: normal;
+  transform: scaleX(var(--card-rank-ten-scale-x));
+  transform-origin: center;
+}
+.card-corner--top { inset-inline-start: var(--card-corner-inline); inset-block-start: var(--card-corner-block); }
 .card-corner--bottom {
-  inset-inline-end: 5px;
-  inset-block-end: 5px;
-  justify-items: end;
+  inset-inline-end: var(--card-corner-inline);
+  inset-block-end: var(--card-corner-block);
   transform: rotate(180deg);
   transform-origin: center;
 }
-.card-slot .card-corner .rank,
-.training-readonly-card .card-corner .rank,
-.deck-card .card-corner .rank {
-  display: block;
-  width: 100%;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 15px;
-  font-weight: 800;
-  line-height: .9;
+.card-center {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-content: center;
+  justify-items: center;
+  pointer-events: none;
 }
-.card-slot .card-corner .suit,
-.training-readonly-card .card-corner .suit,
-.deck-card .card-corner .suit {
-  display: block;
-  width: 100%;
-  font-size: 14px;
-  line-height: .9;
-  transform: none !important;
-}
-.card-slot .card-corner .rank--ten,
-.training-readonly-card .card-corner .rank--ten,
-.deck-card .card-corner .rank--ten {
-  display: inline-block;
-  width: 28px;
-  min-inline-size: 28px;
-  letter-spacing: -.035em;
+.card-center .rank,
+.card-center .suit { display: block; width: auto; line-height: .9; }
+.card-center .rank { font-size: var(--card-center-rank-size); }
+.card-center .suit { font-size: var(--card-center-suit-size); }
+.card-center .rank--ten {
+  inline-size: var(--card-rank-ten-inline-size);
+  display: grid;
+  place-items: center;
+  letter-spacing: normal;
   text-align: center;
-  transform: scaleX(.82);
+  transform: scaleX(var(--card-rank-ten-scale-x));
   transform-origin: center;
 }
-.deck-card { position: relative; padding: 0 !important; overflow: visible; }
-.deck-card .card-corner--top { inset-inline-start: 4px; inset-block-start: 4px; }
-.deck-card .card-corner--bottom { inset-inline-end: 4px; inset-block-end: 4px; }
-.deck-card .card-corner .rank { font-size: 13px; }
-.deck-card .card-corner .suit { font-size: 12px; }
-.training-readonly-card { overflow: visible; padding: 0; }
-.training-readonly-card .card-corner--top { inset-inline-start: var(--space-2); inset-block-start: var(--space-2); }
-.training-readonly-card .card-corner--bottom { inset-inline-end: var(--space-2); inset-block-end: var(--space-2); }
-.training-readonly-card .card-corner .rank { font-size: 1rem; }
-.training-readonly-card .card-corner .suit { font-size: 1rem; }
+.deck-card { position: relative; padding: 0 !important; overflow: hidden; }
+.training-readonly-card { overflow: hidden; padding: 0; }
 
-/* Card Style is independent from Poker T / full-10 notation. Tournament is
-   the default because the table face is only 40 by 57 units. */
-[data-card-style="tournament"] .card-corner--top {
-  inset: 0;
-  width: auto;
-  align-content: center;
-  justify-items: center;
+/* Preview faces are excluded from the selected global face, then opt into one
+   explicit style. This keeps Settings truthful when previewing all three. */
+:is(html[data-card-face-style="classic"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="classic"]) {
+  --riverline-card-face: color-mix(in srgb, var(--card-face) 94%, #fff6df);
+  --riverline-card-border: color-mix(in srgb, var(--card-border) 84%, #8c826f);
+  --riverline-card-rank-font: Georgia, "Times New Roman", serif;
 }
-[data-card-style="tournament"] .card-corner--top .rank { font-size: 25px; line-height: .88; }
-[data-card-style="tournament"] .card-corner--top .suit { font-size: 20px; line-height: .9; }
-[data-card-style="tournament"] .card-corner--top .rank--ten { width: 1.18em; min-inline-size: 1.18em; letter-spacing: -.035em; transform: scaleX(.82); transform-origin: center; }
-[data-card-style="tournament"] .card-corner--bottom,
-[data-card-style="tournament"] .table-card-corner { display: none; }
-[data-card-style="clean-corner"] .card-corner--bottom,
-[data-card-style="clean-corner"] .table-card-corner--bottom { display: none; }
-[data-card-style="tournament"] .table-card-tournament { display: block; }
-[data-card-style="classic-mirrored"] .table-card-tournament,
-[data-card-style="clean-corner"] .table-card-tournament,
-[data-card-style="clarity-corner"] .table-card-tournament { display: none; }
-[data-card-style="clarity-corner"] .card-corner--bottom { inset-inline-end: 7px; inset-block-end: 7px; opacity: .34; }
-[data-card-style="clarity-corner"] .card-corner--bottom .rank { font-size: 9px; font-weight: 700; }
-[data-card-style="clarity-corner"] .card-corner--bottom .suit { font-size: 8px; }
-[data-card-style="classic-mirrored"] .card-corner--bottom { opacity: 1; }
-[data-card-style="classic-mirrored"] .card-corner--bottom .rank { font-size: 15px; font-weight: 800; }
-[data-card-style="classic-mirrored"] .card-corner--bottom .suit { font-size: 14px; }
+:is(html[data-card-face-style="minimal"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="minimal"]) {
+  --riverline-card-face: var(--card-face);
+  --riverline-card-border: color-mix(in srgb, var(--card-border) 88%, var(--text-secondary));
+  --riverline-card-rank-font: var(--font-ui);
+}
+:is(html[data-card-face-style="high-contrast"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="high-contrast"]) {
+  --riverline-card-face: #ffffff;
+  --riverline-card-border: #111714;
+  --riverline-card-shadow: 0 3px 8px rgba(0, 0, 0, .32);
+  --riverline-card-rank-font: Arial, "Segoe UI", sans-serif;
+}
+
+:is(html[data-card-face-style="minimal"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="minimal"]) .card-corner { display: none; }
+:is(html[data-card-face-style="minimal"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="minimal"]) .card-center { display: grid; }
+:is(html[data-card-face-style="minimal"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="minimal"]) .card-center .rank { font: 850 var(--card-center-rank-size)/.88 var(--riverline-card-rank-font); }
+
+:is(html[data-card-face-style="high-contrast"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="high-contrast"]) .card-corner--bottom { display: none; }
+:is(html[data-card-face-style="high-contrast"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="high-contrast"]) .card-corner--top::before,
+:is(html[data-card-face-style="high-contrast"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="high-contrast"]) .card-corner--top::after { font-weight: 900; }
+:is(html[data-card-face-style="high-contrast"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="high-contrast"]) .card-center { display: grid; place-content: end center; padding-block-end: var(--card-corner-block); }
+:is(html[data-card-face-style="high-contrast"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="high-contrast"]) .card-center .rank { display: none; }
+:is(html[data-card-face-style="high-contrast"] .riverline-card:not([data-card-preview-face-style]), .riverline-card[data-card-preview-face-style="high-contrast"]) .card-center .suit { font-size: var(--card-center-rank-size); font-weight: 900; }
+
+.riverline-card .rank { font-family: var(--riverline-card-rank-font); font-variant-numeric: lining-nums tabular-nums; }
+
 
 .card--suit-h,
-.card-slot .s-h,
-.deck-card.card--suit-h { color: var(--suit-heart) !important; }
+.s-h,
+[data-card-suit-id="h"] { --riverline-card-suit-color: var(--suit-heart); }
 .card--suit-d,
-.card-slot .s-d,
-.deck-card.card--suit-d { color: var(--suit-diamond) !important; }
+.s-d,
+[data-card-suit-id="d"] { --riverline-card-suit-color: var(--suit-diamond); }
 .card--suit-c,
-.card-slot .s-c,
-.deck-card.card--suit-c { color: var(--suit-club) !important; }
+.s-c,
+[data-card-suit-id="c"] { --riverline-card-suit-color: var(--suit-club); }
 .card--suit-s,
-.card-slot .s-s,
-.deck-card.card--suit-s { color: var(--suit-spade) !important; }
+.s-s,
+[data-card-suit-id="s"] { --riverline-card-suit-color: var(--suit-spade); }
+
+/* The renderer emits canonical suit metadata on every visible face unit. This
+   explicit internal color defeats legacy card-container rules without relying
+   on a workspace-specific wrapper class. SVG groups consume the same token. */
+.riverline-card:is(.card--suit-h, .card--suit-d, .card--suit-c, .card--suit-s),
+.riverline-card[data-card-suit-id],
+.riverline-card [data-card-suit-id],
+.replay-transition-card[data-card-suit-id],
+.deck-suit-label:is(.s-h, .s-d, .s-c, .s-s),
+.riverline-card [data-card-suit-id] :is(.rank, .suit) {
+  color: var(--riverline-card-suit-color) !important;
+}
 
 .card-slot.card--empty,
 .card-slot:not(.filled) {
@@ -7259,26 +7320,75 @@ html[data-four-color="false"] {
   position: relative;
   display: block;
   box-sizing: border-box;
+  overflow: hidden;
   color: transparent !important;
   background-color: var(--card-back) !important;
-  background-image:
-    linear-gradient(135deg, transparent 44%, rgba(255,255,255,.12) 45% 48%, transparent 49%),
-    repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 2px, transparent 2px 8px) !important;
-  background-size: 28px 28px, 12px 12px !important;
+  background-image: none !important;
+  background-position: center !important;
+  background-origin: border-box;
   border: 3px double color-mix(in srgb, var(--card-back) 40%, white) !important;
+  border-radius: var(--riverline-card-radius, var(--radius-card));
 }
 .card-slot.facedown::after,
 .riverline-card-back::after {
-  content: "R";
+  content: "";
   position: absolute;
-  inset: 25% 20%;
+  inset: 12%;
   display: grid;
   place-items: center;
   color: rgba(255,255,255,.6);
   border: 1px solid rgba(255,255,255,.28);
-  border-radius: 50%;
+  border-radius: calc(var(--radius-card) - 2px);
   font: 700 15px/1 Georgia, serif;
+  transform: none;
+  transform-origin: center;
 }
+
+:is(
+  html[data-card-back-style="riverline"] .card-slot.facedown,
+  html[data-card-back-style="riverline"] .riverline-card-back:not([data-card-preview-back-style]),
+  .riverline-card-back[data-card-preview-back-style="riverline"]
+) {
+  background-image:
+    radial-gradient(120% 55% at 50% 8%, transparent 56%, rgba(255,255,255,.15) 57% 60%, transparent 61%),
+    radial-gradient(120% 55% at 50% 92%, transparent 56%, rgba(255,255,255,.12) 57% 60%, transparent 61%) !important;
+}
+:is(
+  html[data-card-back-style="riverline"] .card-slot.facedown,
+  html[data-card-back-style="riverline"] .riverline-card-back:not([data-card-preview-back-style]),
+  .riverline-card-back[data-card-preview-back-style="riverline"]
+)::after {
+  content: "R";
+  inset: 25% 20%;
+  border-radius: 50%;
+}
+:is(
+  html[data-card-back-style="solid"] .card-slot.facedown,
+  html[data-card-back-style="solid"] .riverline-card-back:not([data-card-preview-back-style]),
+  .riverline-card-back[data-card-preview-back-style="solid"]
+) {
+  background-image: linear-gradient(155deg, rgba(255,255,255,.08), transparent 52%) !important;
+}
+:is(
+  html[data-card-back-style="solid"] .card-slot.facedown,
+  html[data-card-back-style="solid"] .riverline-card-back:not([data-card-preview-back-style]),
+  .riverline-card-back[data-card-preview-back-style="solid"]
+)::after { inset: 10%; border-width: 2px; }
+:is(
+  html[data-card-back-style="geometric"] .card-slot.facedown,
+  html[data-card-back-style="geometric"] .riverline-card-back:not([data-card-preview-back-style]),
+  .riverline-card-back[data-card-preview-back-style="geometric"]
+) {
+  background-image:
+    linear-gradient(45deg, transparent 43%, rgba(255,255,255,.14) 44% 48%, transparent 49%),
+    linear-gradient(-45deg, transparent 43%, rgba(255,255,255,.10) 44% 48%, transparent 49%) !important;
+  background-size: 18px 18px !important;
+}
+:is(
+  html[data-card-back-style="geometric"] .card-slot.facedown,
+  html[data-card-back-style="geometric"] .riverline-card-back:not([data-card-preview-back-style]),
+  .riverline-card-back[data-card-preview-back-style="geometric"]
+)::after { inset: 24%; border-radius: 2px; transform: rotate(45deg); }
 
 .card-slot.is-selected,
 .deck-card.is-selected { outline: 2px solid var(--border-focus); outline-offset: 2px; }
@@ -7307,8 +7417,8 @@ html[data-four-color="false"] {
   filter: saturate(.35);
 }
 
-.card-slot--compact { --poker-card-width: 38px; --poker-card-height: 54px; }
-.card-slot--full { --poker-card-width: 56px; --poker-card-height: 80px; }
+.card-slot--compact { --poker-card-width: var(--card-size-compact-width); --poker-card-height: var(--card-size-compact-height); }
+.card-slot--full { --poker-card-width: var(--card-size-full-width); --poker-card-height: var(--card-size-full-height); }
 
 @keyframes poker-card-enter {
   from { opacity: 0; translate: 0 4px; }
@@ -7514,30 +7624,35 @@ html[data-four-color="false"] {
 .table-dealer-button text { fill: var(--suit-spade); font: 800 10px/1 var(--font-ui); }
 .card-group { transition: transform var(--duration-normal) var(--ease-standard); }
 .table-card-face { fill: var(--riverline-card-face, var(--card-face)); stroke: var(--riverline-card-border, var(--card-border)); stroke-width: 1; filter: url(#riverlineCardShadow); }
-.table-card-rank { font: 700 15px/1 Georgia, "Times New Roman", serif; fill: currentColor; }
-.table-card-suit { font: 700 13px/1 Georgia, "Times New Roman", serif; fill: currentColor; }
-.table-card-corner-rank { font: 700 9px/1 Georgia, "Times New Roman", serif; fill: currentColor; }
-.table-card-corner-suit { font: 700 8px/1 Georgia, "Times New Roman", serif; fill: currentColor; }
-.table-card-corner--top .table-card-corner-rank { font-size: 15px; }
-.table-card-corner--top .table-card-corner-suit { font-size: 13px; }
-.table-card-tournament { display: none; }
-.riverline-card-tournament-rank { font: 800 23px/1 Georgia, "Times New Roman", serif; fill: currentColor; }
-.riverline-card-tournament-rank.table-card-rank--ten { letter-spacing: -.07em; transform-box: fill-box; transform-origin: center; transform: scaleX(.82); }
-.riverline-card-tournament-suit { font: 700 16px/1 Georgia, "Times New Roman", serif; fill: currentColor; }
-.poker-card-svg.card--style-clarity-corner .table-card-corner--subdued { opacity: .34; }
-.poker-card-svg.card--style-clarity-corner .table-card-corner--subdued .table-card-corner-rank { font-size: 7px; font-weight: 650; }
-.poker-card-svg.card--style-clarity-corner .table-card-corner--subdued .table-card-corner-suit { font-size: 7px; }
-.poker-card-svg.card--style-classic-mirrored .table-card-corner--full { opacity: 1; }
-.poker-card-svg.card--style-classic-mirrored .table-card-corner--full .table-card-corner-rank { font-size: 10px; font-weight: 800; }
-.poker-card-svg.card--style-classic-mirrored .table-card-corner--full .table-card-corner-suit { font-size: 9px; }
-.table-card-back-face { fill: var(--card-back); stroke: color-mix(in srgb, var(--card-back) 35%, white); stroke-width: 2; }
-.table-card-back-line { fill: none; stroke: rgba(255,255,255,.25); stroke-width: 1; }
-.table-card-back-mark { fill: rgba(255,255,255,.62); font: 700 15px/1 Georgia, serif; }
-.poker-card-svg.card--suit-h { color: var(--suit-heart); }
-.poker-card-svg.card--suit-d { color: var(--suit-diamond); }
-.poker-card-svg.card--suit-c { color: var(--suit-club); }
-.poker-card-svg.card--suit-s { color: var(--suit-spade); }
+.table-card-rank { font: 700 15px/1 var(--riverline-card-rank-font); fill: currentColor; }
+.table-card-suit { font: 700 13px/1 var(--riverline-card-rank-font); fill: currentColor; }
+.table-card-corner-rank { font: 800 11px/1 var(--riverline-card-rank-font); fill: currentColor; font-variant-numeric: lining-nums tabular-nums; }
+.table-card-corner-suit { font: 700 9px/1 var(--riverline-card-rank-font); fill: currentColor; }
+.table-card-center { display: none; }
+.table-card-center-rank { font: 900 23px/1 var(--riverline-card-rank-font); fill: currentColor; font-variant-numeric: lining-nums tabular-nums; }
+.table-card-center-suit { font: 800 16px/1 var(--riverline-card-rank-font); fill: currentColor; }
+.table-card-rank--ten { letter-spacing: normal; }
+.poker-card-svg { overflow: visible; }
 
+.poker-card-svg.card--style-classic .table-card-center { display: none; }
+.poker-card-svg.card--style-minimal .table-card-corner { display: none; }
+.poker-card-svg.card--style-minimal .table-card-center { display: block; }
+.poker-card-svg.card--style-high-contrast .table-card-corner--bottom { display: none; }
+.poker-card-svg.card--style-high-contrast .table-card-corner-rank { font: 900 14px/1 Arial, "Segoe UI", sans-serif; }
+.poker-card-svg.card--style-high-contrast .table-card-corner-suit { font-size: 12px; font-weight: 900; }
+.poker-card-svg.card--style-high-contrast .table-card-center { display: block; }
+.poker-card-svg.card--style-high-contrast .table-card-center-rank { display: none; }
+.poker-card-svg.card--style-high-contrast .table-card-center-suit { font: 900 23px/1 Arial, "Segoe UI", sans-serif; transform: translateY(7px); }
+
+.table-card-back-face { fill: var(--card-back); stroke: color-mix(in srgb, var(--card-back) 35%, white); stroke-width: 2; }
+.table-card-back-inner { fill: none; stroke: rgba(255,255,255,.28); stroke-width: 1; }
+.table-card-back-river,
+.table-card-back-geometric { display: none; fill: none; stroke: rgba(255,255,255,.28); stroke-width: 1; }
+.table-card-back-mark { display: none; fill: rgba(255,255,255,.68); font: 800 15px/1 Georgia, serif; }
+html[data-card-back-style="riverline"] .table-card-back-river,
+html[data-card-back-style="riverline"] .table-card-back-mark { display: block; }
+html[data-card-back-style="solid"] .table-card-back-inner { stroke-width: 2; }
+html[data-card-back-style="geometric"] .table-card-back-geometric { display: block; }
 /* Standard visualization legends and honest empty states. */
 .visualization-legend,
 .key { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-5); color: var(--text-muted); font-size: var(--text-micro-size); }
@@ -7557,6 +7672,7 @@ html[data-four-color="false"] {
 }
 
 @media (max-width: 768px) {
+  .card-slot { --poker-card-width: var(--card-size-compact-width); --poker-card-height: var(--card-size-compact-height); }
   .deck { display: grid; grid-template-columns: minmax(0, 1fr); }
   .deck-suit-row { grid-template-columns: 24px minmax(0, 1fr); }
   .deck-ranks { overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
@@ -8128,9 +8244,6 @@ html[data-four-color="false"] {
   text-align: center;
   white-space: nowrap;
 }
-.replay-transition-card--heart { color: var(--suit-heart); }
-.replay-transition-card--diamond { color: var(--suit-diamond); }
-.replay-transition-card--club { color: var(--suit-club); }
 .replay-action-list { min-width: 0; margin: 0; padding-inline-start: 27px; border-inline-start: 2px solid var(--border-subtle); }
 .replay-action-entry {
   --replay-action-color: var(--border-strong);
@@ -8554,8 +8667,8 @@ html[data-four-color="false"] {
 .equity-unknown-hand { display: flex; align-items: center; gap: var(--space-2); color: var(--text-muted); font-size: var(--text-label-size); }
 .equity-unknown-hand .poker-card-back {
   position: relative;
-  width: var(--poker-card-width, 52px);
-  height: var(--poker-card-height, 74px);
+  width: var(--card-size-standard-width);
+  height: var(--card-size-standard-height);
   flex: 0 0 auto;
   border-radius: var(--radius-card);
 }
@@ -8637,14 +8750,10 @@ html[data-four-color="false"] {
 .equity-context-row--dead { padding-top: var(--space-3); border-top: 1px solid var(--border-subtle); }
 .equity-readonly-cards { min-width: 0; display: flex; gap: var(--space-2); overflow-x: auto; padding: 2px; direction: ltr; }
 .equity-scenario .training-readonly-card,
-.equity-result-card .training-readonly-card { width: 38px; height: 54px; flex-basis: 38px; }
-.equity-scenario .training-readonly-card .card-corner .rank,
-.equity-result-card .training-readonly-card .card-corner .rank { font-size: .78rem; }
-.equity-scenario .training-readonly-card .card-corner .suit,
-.equity-result-card .training-readonly-card .card-corner .suit { font-size: .75rem; }
+.equity-result-card .training-readonly-card { width: var(--card-size-result-width); height: var(--card-size-result-height); flex-basis: var(--card-size-result-width); }
 .equity-context-empty { color: var(--text-muted); font-size: var(--text-micro-size); }
 .equity-result-unknown { min-width: 0; display: flex; align-items: center; gap: var(--space-2); color: var(--text-muted); font-size: var(--text-micro-size); }
-.equity-result-unknown .poker-card-back { width: 30px; height: 42px; flex: 0 0 30px; }
+.equity-result-unknown .poker-card-back { width: var(--card-size-result-width); height: var(--card-size-result-height); flex: 0 0 var(--card-size-result-width); }
 .equity-results-panel .equity-bars { padding: var(--space-5); border-block: 1px solid var(--border-subtle); }
 .equity-result-card { --series-color: var(--series-0); display: grid; gap: var(--space-3); padding: var(--space-4); background: var(--surface-inset); border: 1px solid var(--border-subtle); border-inline-start: 3px solid var(--series-color); border-radius: var(--radius-control); }
 .equity-result-card[data-player-series="1"] { --series-color: var(--series-1); }
@@ -8739,7 +8848,7 @@ html[data-four-color="false"] {
   .equity-player-body { gap: var(--space-3); }
   .equity-hand-mode { width: 100%; }
   .equity-hand-mode button { flex: 1; min-height: 40px; }
-  .equity-unknown-hand .poker-card-back { width: 42px; height: 60px; }
+  .equity-unknown-hand .poker-card-back { width: var(--card-size-compact-width); height: var(--card-size-compact-height); }
   .equity-card-group,
   .equity-control-grid { margin-inline: var(--space-3); padding-inline: 0; }
   .equity-card-group { padding: var(--space-4); }
@@ -9105,7 +9214,6 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .playbook-table-toggle { margin: 0; }
 #visual-table-container { margin-bottom: var(--space-4); padding-block: var(--space-2); overflow: visible; }
 .riverline-poker-table { aspect-ratio: 4 / 3; }
-.table-card-corner-rank.table-card-rank--ten { letter-spacing: -.06em; transform-box: fill-box; transform-origin: center; transform: scaleX(.82); }
 .playbook-decision-workspace .matrix-wrap { max-width: 100%; }
 
 @media (min-width: 1200px) {
@@ -9251,13 +9359,64 @@ button.rail-utility { width: 100%; cursor: pointer; }
 
 .settings-grid { align-items: start; gap: var(--space-7); }
 .settings-preference-field { display: grid; gap: var(--space-3); margin-top: var(--space-6); }
+.settings-preference-field:is(fieldset) { min-width: 0; margin-inline: 0; padding: 0; border: 0; }
+.settings-preference-field:is(fieldset) > legend { width: 100%; padding: 0; }
 .settings-preference-copy { display: grid; gap: var(--space-1); }
 .settings-preference-copy strong { color: var(--text-primary); font-size: var(--text-label-size); }
+.card-color-preference-field { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.card-color-preference-field .switchrow { margin: 0; }
 .card-rank-style-control { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .card-rank-style-control .ui-tab { min-height: 46px; display: grid; gap: 1px; align-content: center; }
 .card-rank-style-control .ui-tab strong { font-family: var(--font-data); }
 .card-rank-style-control .ui-tab small { color: var(--text-muted); font-size: var(--text-micro-size); }
-#cardStyleSelect { min-height: 40px; }
+.card-style-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); direction: ltr; }
+.card-style-choice {
+  position: relative;
+  min-width: 0;
+  min-height: 86px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  color: var(--text-secondary);
+  background: var(--surface-inset);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.card-style-choice:hover { color: var(--text-primary); border-color: var(--border-strong); background: var(--surface-interactive-hover); }
+.card-style-choice:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.card-style-choice.active,
+.card-style-choice[aria-pressed="true"] { color: var(--text-primary); border-color: var(--border-focus); box-shadow: inset 0 0 0 1px var(--border-focus); }
+.card-style-choice[aria-pressed="true"]::after {
+  content: "✓";
+  position: absolute;
+  inset-inline-end: 5px;
+  inset-block-start: 5px;
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  color: var(--text-on-accent);
+  background: var(--accent-primary);
+  border-radius: 50%;
+  font: 900 10px/1 var(--font-ui);
+}
+.card-style-choice > strong { max-width: 100%; font-size: var(--text-micro-size); text-align: center; }
+.settings-card-face {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  color: var(--suit-spade);
+  background: var(--riverline-card-face, var(--card-face));
+  border: 1px solid var(--riverline-card-border, var(--card-border));
+  box-shadow: var(--riverline-card-shadow, var(--poker-card-shadow));
+}
+.settings-card-back { width: var(--card-size-picker-width); height: var(--card-size-picker-height); border-radius: 5px; }
+[dir="rtl"] .card-style-options,
+[dir="rtl"] .settings-card-face,
+[dir="rtl"] .settings-card-back { direction: ltr; }
 
 .ui-switch,
 .switch { background: var(--surface-section); border-color: var(--border-strong); }
@@ -9788,10 +9947,8 @@ body.has-modal-open { overflow: hidden; }
 .calibration-question-region:focus-visible { border-radius: var(--radius-control); box-shadow: 0 0 0 2px var(--border-focus); }
 .calibration-question-region { container: calibration-question / inline-size; }
 .calibration-hand-kind { color: var(--accent-secondary); font: 750 var(--text-micro-size)/1.2 var(--font-data); letter-spacing: .1em; text-transform: uppercase; }
-.calibration-question-cards { --poker-card-width: clamp(60px, 5vw, 70px); --poker-card-height: clamp(86px, 7.2vw, 100px); min-height: var(--poker-card-height); display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin: var(--space-2) 0 var(--space-1); direction: ltr; }
+.calibration-question-cards { --poker-card-width: var(--card-size-representative-width); --poker-card-height: var(--card-size-representative-height); min-height: var(--poker-card-height); display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin: var(--space-2) 0 var(--space-1); direction: ltr; }
 .calibration-question-cards .training-readonly-card { width: var(--poker-card-width); height: var(--poker-card-height); }
-.calibration-question-cards .training-readonly-card .card-corner .rank { font-size: 1.2rem; }
-.calibration-question-cards .training-readonly-card .card-corner .suit { font-size: 1.18rem; }
 .calibration-hand-class { margin: var(--space-1) 0 var(--space-2); color: var(--text-primary); font: 850 clamp(1.3rem, 2.5vw, 1.75rem)/1 var(--font-data); letter-spacing: -.04em; text-shadow: 0 6px 20px color-mix(in srgb, var(--accent-primary) 14%, transparent); }
 .calibration-question-reason { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin: 0 0 var(--space-3); padding: var(--space-2) var(--space-3); color: var(--text-muted); background: color-mix(in srgb, var(--accent-primary) 7%, var(--surface-inset)); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); font-size: var(--text-micro-size); }
 .calibration-question-reason strong { color: var(--text-secondary); font-weight: 750; }
@@ -11359,19 +11516,17 @@ body.has-modal-open { overflow: hidden; }
   align-items: center;
 }
 .analysis-mini-card {
-  min-height: 1.45rem;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 5px 2px 4px;
-  background: color-mix(in srgb, var(--card-face) 96%, var(--surface-panel));
-  border: 1px solid color-mix(in srgb, var(--card-border) 88%, var(--border-strong));
+  position: relative;
+  flex: 0 0 var(--card-size-mini-width);
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  color: var(--suit-spade);
+  background: var(--riverline-card-face, var(--card-face));
+  border: 1px solid var(--riverline-card-border, var(--card-border));
   border-radius: 4px;
-  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .18);
-  font-size: .9rem;
-  line-height: 1;
+  box-shadow: var(--riverline-card-shadow, var(--poker-card-shadow));
 }
-.analysis-mini-card-rank { font-weight: 850; }
-.analysis-mini-card-suit { font-size: 1.12em; line-height: 1; }
 
 /* Feedback remains immediate and textual; motion only softens its arrival. */
 .training-feedback {

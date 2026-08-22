@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 import { installPlaybookStateSourceBridge } from '../app/src/application/playbook-mode-bootstrap.mjs';
+import { tableCardBackSvgMarkup, tableCardSvgMarkup } from '../app/src/application/card-presentation.mjs';
 
 const bridgeSource = fs.readFileSync(
   new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url),
@@ -105,7 +106,11 @@ test('theme, RTL, reduced motion, collapse, and shared-card contracts remain in 
   assert.match(css, /\[dir="rtl"\] \.table-seat-stack/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css, /\.table-wrapper\.collapsed/);
-  assert.match(renderer, /poker-card-svg riverline-card card--known/);
-  assert.match(renderer, /table-card-back poker-card-svg poker-card-back/);
+  const faceMarkup = tableCardSvgMarkup({ rank: 'A', suit: 's' });
+  const backMarkup = tableCardBackSvgMarkup();
+  assert.match(renderer, /presentation\.tableCardSvgMarkup/);
+  assert.match(renderer, /presentation\.tableCardBackSvgMarkup/);
+  assert.match(faceMarkup, /poker-card-svg riverline-card card--known/);
+  assert.match(backMarkup, /table-card-back poker-card-svg poker-card-back/);
   assert.match(html, /id="toggleTableBtn"[^>]*aria-expanded="true"[^>]*aria-controls="table-wrapper"/);
 });

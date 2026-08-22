@@ -10,13 +10,14 @@ const strategy = [
   '../app/src/strategy/postflop-heuristic.mjs',
 ].map((url) => fs.readFileSync(new URL(url, import.meta.url), 'utf8')).join('\n');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
+const cardPresentation = fs.readFileSync(new URL('../app/src/application/card-presentation.mjs', import.meta.url), 'utf8');
 
 const designStart = css.indexOf('DESIGN-005: poker visual system');
 assert.ok(designStart >= 0, 'DESIGN-005 visual-system section must exist');
 const visualSystem = css.slice(designStart);
 
 test('playing cards share one ratio and all four stable suit classes', () => {
-  assert.match(visualSystem, /--poker-card-aspect:\s*0\.7059/);
+  assert.match(visualSystem, /--poker-card-aspect:\s*0\.701754/);
   assert.match(visualSystem, /--riverline-card-face:\s*var\(--card-face\)/);
   assert.match(visualSystem, /background:\s*var\(--riverline-card-face,\s*var\(--card-face\)\)\s*!important/);
   for (const [suit, token] of [
@@ -42,10 +43,11 @@ test('card states use explicit classes and dead or invalid states do not rely on
 
 test('unknown cards use the Riverline jade and graphite card-back treatment', () => {
   assert.match(visualSystem, /\.riverline-card-back[\s\S]*?var\(--card-back\)/);
-  assert.match(visualSystem, /\.riverline-card-back::after[\s\S]*?content:\s*"R"/);
+  assert.match(visualSystem, /\.riverline-card-back\[data-card-preview-back-style="riverline"\][\s\S]*?\)::after\s*\{[\s\S]*?content:\s*"R"/);
   assert.match(table, /renderCardBack\(index\)/);
-  assert.match(table, /data-card-state="unknown"/);
-  assert.match(table, /table-card-back-line/);
+  assert.match(table, /tableCardBackSvgMarkup/);
+  assert.match(cardPresentation, /data-card-state="unknown"/);
+  assert.match(cardPresentation, /table-card-back-river/);
 });
 
 test('the card picker renders four explicit suit rows with unchanged card identities', () => {
@@ -139,11 +141,10 @@ test('table markup fixes the invalid height attribute and remains presentation-o
 });
 
 test('table cards use shared semantic suit classes without inline casino colors', () => {
-  assert.match(table, /TABLE_SUIT_PRESENTATION/);
-  for (const suit of ['h', 's', 'd', 'c']) {
-    assert.match(table, new RegExp(`${suit}: \\{ id: '${suit}'`));
-  }
-  assert.match(table, /card--suit-\$\{presentation\.id\}/);
+  assert.match(cardPresentation, /const SUITS = Object\.freeze/);
+  for (const suit of ['h', 's', 'd', 'c']) assert.match(cardPresentation, new RegExp(`${suit}: Object\\.freeze`));
+  assert.match(cardPresentation, /card--suit-\$\{escapeMarkup\(presentation\.id\)\}/);
+  assert.match(table, /presentation\.tableCardSvgMarkup/);
   assert.doesNotMatch(table, /#e74c3c|#3498db|#2ecc71|#3a1e04|#1e4c31|#0d2617/);
 });
 

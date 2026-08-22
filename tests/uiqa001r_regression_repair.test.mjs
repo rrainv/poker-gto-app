@@ -3,6 +3,15 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 import {
+  CARD_GEOMETRY,
+  CARD_PRESENTATION_STORAGE_KEY,
+  CARD_RANK_GEOMETRY,
+  cardFaceMarkup,
+  createCardPresentationController,
+  tableCardSvgMarkup,
+} from '../app/src/application/card-presentation.mjs';
+
+import {
   createProductionPickerHarness,
   delegatedCardSlotClick,
 } from './uiqa001r_card_picker_adapter.mjs';
@@ -23,9 +32,28 @@ test('root rank preference no longer consumes delegated Playbook card clicks', (
   assert.equal(calls.picker.length, 1);
   assert.equal(calls.picker[0][0], 'hero');
   assert.equal(calls.picker[0][1], 0);
-  assert.equal(calls.rankStyle.length, 0);
-  assert.match(logic, /closest\('button\[data-card-rank-style\]'\)/);
-  assert.doesNotMatch(logic, /closest\('\[data-card-rank-style\]'\)/);
+
+  const values = new Map();
+  let chooseFullTen = null;
+  const fullTenButton = {
+    dataset: { cardRankStyle: 'full-ten' },
+    classList: { toggle() {} },
+    setAttribute() {},
+    querySelector() { return null; },
+    addEventListener(type, listener) { if (type === 'click') chooseFullTen = listener; },
+  };
+  const controller = createCardPresentationController({
+    root: { dataset: {} },
+    storage: {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key),
+    },
+    rankStyleButtons: [fullTenButton],
+  }).init();
+  chooseFullTen();
+  assert.equal(controller.get().rankStyle, 'full-ten');
+  assert.equal(JSON.parse(values.get(CARD_PRESENTATION_STORAGE_KEY)).rankStyle, 'full-ten');
 });
 
 for (const [label, group, card, handMode] of [
@@ -89,7 +117,7 @@ test('T and 10 are presentation choices while canonical IDs and face ranks stay 
   fullTen.openPicker('hero', 0);
   fullTen.selectCard('Th');
   assert.equal(fullTen.groupCards('hero')[0], 'Th');
-  assert.match(fullTen.slotMarkup('hero'), /class="rank rank--ten s-h">10</);
+  assert.match(fullTen.slotMarkup('hero'), /class="rank rank--ten s-h" data-card-rank-width="wide">10</);
   for (const card of ['As', 'Kh', 'Qd', 'Jc']) {
     const next = createProductionPickerHarness({ rankStyle: 'full-ten' });
     next.openPicker('hero', 0);
@@ -99,20 +127,24 @@ test('T and 10 are presentation choices while canonical IDs and face ranks stay 
   }
 });
 
-test('DESIGN-005 card proportions remain canonical and full 10 keeps comparable typography', () => {
-  assert.match(css, /--poker-card-width:\s*48px/);
-  assert.match(css, /--poker-card-height:\s*68px/);
-  assert.match(css, /\.card-slot \.rank\s*\{[^}]*font-family:\s*Georgia[^}]*font-size:\s*18px[^}]*line-height:\s*17px/);
-  assert.match(css, /\.card-slot \.suit\s*\{[^}]*font-size:\s*19px[^}]*line-height:\s*20px/);
-  const fullTenRules = [...css.matchAll(/(?:^|})([^{}]*rank--ten[^{}]*)\{([^{}]*)\}/g)];
-  assert.ok(fullTenRules.length > 0);
-  for (const [, selector, declarations] of fullTenRules) {
-    assert.doesNotMatch(declarations, /\bfont(?:-size)?\s*:/, `${selector} must inherit the corresponding rank size`);
-    assert.doesNotMatch(declarations, /scaleY\s*\(|\bscale\s*\(/, `${selector} may only compress horizontally`);
-  }
-  assert.match(css, /\.card-slot \.card-corner \.rank--ten,[\s\S]*?width:\s*28px[\s\S]*?min-inline-size:\s*28px[\s\S]*?transform:\s*scaleX\(\.82\)/);
-  assert.doesNotMatch(repairCss, /\[data-card-rank-style="full-ten"\] \.card-slot \.rank/);
-  assert.match(table, /table-card-corner-rank\$\{rankClass\}/);
+test('DESIGN-005 card proportions remain canonical and full 10 uses shared rank geometry', () => {
+  assert.deepEqual(CARD_GEOMETRY.slot, { width: 48, height: 68, radius: 6 });
+  assert.ok(Math.abs((CARD_GEOMETRY.slot.width / CARD_GEOMETRY.slot.height) - CARD_GEOMETRY.ratio) < 0.005);
+  assert.equal(CARD_RANK_GEOMETRY.tenScaleX, 0.82);
+
+  const domTen = cardFaceMarkup({ rank: 'T', suit: 'h', rankStyle: 'full-ten' });
+  assert.equal((domTen.match(/data-card-rank="10"/g) || []).length, 2);
+  assert.equal((domTen.match(/>10<\/span>/g) || []).length, 1);
+  assert.equal((domTen.match(/data-card-rank-width="wide"/g) || []).length, 3);
+
+  const tableTen = tableCardSvgMarkup({ rank: 'T', suit: 'h', rankStyle: 'full-ten' });
+  assert.match(tableTen, /width="40" height="57" rx="5" ry="5"/);
+  assert.match(tableTen, /table-card-rank--ten/);
+  assert.match(tableTen, /data-card-rank-width="wide"/);
+  assert.match(tableTen, /scale\(0\.82 1\)/);
+  assert.match(css, /--card-size-slot-width:\s*48px/);
+  assert.match(css, /--card-size-slot-height:\s*68px/);
+  assert.match(css, /--card-rank-ten-scale-x:\s*\.82/);
 });
 
 test('sidebar collapse control remains in-flow with reserved accessible geometry', () => {

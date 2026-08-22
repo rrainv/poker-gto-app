@@ -78,7 +78,13 @@ const PLAYBOOK_MODES = Object.freeze({ SCENARIO: 'scenario', HAND: 'hand' });
 
 
 const app = {
-  settings: { tightness: 0, fourColorDeck: true, cardRankStyle: 'poker', cardStyle: 'tournament' },
+  settings: {
+    tightness: 0,
+    fourColorDeck: true,
+    cardRankStyle: 'poker',
+    cardStyle: 'minimal',
+    cardBackStyle: 'riverline'
+  },
 
   gto: { hero: [], board: [], dead: [] },
 
@@ -278,7 +284,9 @@ const allDeck = () => SUITS.flatMap((suit) => RANKS.map((rank) => rank + suit.id
 
 const getSuit = (card) => SUITS.find((suit) => suit.id === (card && card[1]));
 
-const displayCardRank = (rank) => rank === 'T' && app.settings.cardRankStyle === 'full-ten' ? '10' : rank;
+const displayCardRank = (rank) => globalThis.RiverlineCardPresentation
+  ? globalThis.RiverlineCardPresentation.displayCardRank(rank, app.settings.cardRankStyle)
+  : rank;
 
 const displayCard = (card) => card ? displayCardRank(card[0]) + getSuit(card).symbol : '';
 
@@ -389,12 +397,13 @@ function cardMarkup(card) {
 
   if (!card) return '';
 
-  const suit = getSuit(card);
-  
-  const rank = displayCardRank(card[0]);
-  const rankClass = rank === '10' ? ' rank--ten' : '';
-  const face = `<span class="rank${rankClass} s-${suit.id}">${rank}</span><span class="suit s-${suit.id}">${suit.symbol}</span>`;
-  return `<span class="card-corner card-corner--top" aria-hidden="true">${face}</span><span class="card-corner card-corner--bottom" aria-hidden="true">${face}</span>`;
+  const presentation = globalThis.RiverlineCardPresentation;
+  if (!presentation) throw new Error('Riverline card presentation must initialize before cards render');
+  return presentation.cardFaceMarkup({
+    rank: card[0],
+    suit: card[1],
+    rankStyle: app.settings.cardRankStyle
+  });
 
 }
 
@@ -437,7 +446,7 @@ function renderSlots(group, count) {
     const ariaLabel = card
       ? t('Replace {card}{dead}', { card: displayCard(card), dead: state === 'dead' ? `, ${t('dead card')}` : '' })
       : t('Choose card {number}', { number: index + 1 });
-    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-group="${group}" data-index="${index}" aria-label="${ariaLabel}">${cardMarkup(card)}</button>`;
+    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-card-size="slot" data-group="${group}" data-index="${index}" aria-label="${ariaLabel}">${cardMarkup(card)}</button>`;
 
   }).join('');
 
@@ -504,7 +513,7 @@ function renderEquityPlayers() {
           </div>
           ${mode === 'known'
             ? `<div class="card-slots equity-known-hand" data-slots="player-${playerIndex}"></div>`
-            : `<div class="equity-unknown-hand" aria-label="${t('{player} unknown cards', { player: label })}"><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span>${t('Random legal hand')}</span></div>`}
+            : `<div class="equity-unknown-hand" aria-label="${t('{player} unknown cards', { player: label })}"><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span>${t('Random legal hand')}</span></div>`}
         </div>
         <div class="equity-hand-message" id="equityHandMessage-${playerIndex}">${status}</div>
         <section id="outsPanel-${playerIndex}" class="equity-player-outs" aria-label="Outs" aria-live="polite">
@@ -736,14 +745,12 @@ function renderDeck() {
         const card = rank + suit.id;
         const isUnavailable = unavailable.has(card);
         const isSelected = current === card;
-        const visualRank = rank === 'T'
-          && typeof document !== 'undefined'
-          && document.documentElement?.dataset?.cardRankStyle === 'full-ten'
-          ? '10'
-          : rank;
-        const rankClass = visualRank === '10' ? ' rank--ten' : '';
-        const face = `<span class="rank${rankClass} s-${suit.id}">${visualRank}</span><span class="suit s-${suit.id}">${suit.symbol}</span>`;
-        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''} riverline-card" aria-label="Choose ${visualRank}${suit.symbol}${isUnavailable ? ', unavailable' : ''}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}><span class="card-corner card-corner--top" aria-hidden="true">${face}</span><span class="card-corner card-corner--bottom" aria-hidden="true">${face}</span></button>`;
+        const visualRank = displayCardRank(rank);
+        const accessibleCard = `${visualRank}${suit.symbol}`;
+        const accessibleLabel = isUnavailable
+          ? t('{card}, unavailable', { card: accessibleCard })
+          : t('Choose {card}', { card: accessibleCard });
+        return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''} riverline-card" data-card-size="picker" aria-label="${accessibleLabel}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}>${globalThis.RiverlineCardPresentation.cardFaceMarkup({ rank, suit: suit.id, rankStyle: app.settings.cardRankStyle })}</button>`;
       }).join('');
       return `<div class="deck-suit-row" data-picker-suit="${suit.id}"><div class="deck-suit-label s-${suit.id}" aria-hidden="true">${suit.symbol}</div><div class="deck-ranks">${cards}</div></div>`;
     }).join('');
@@ -1221,7 +1228,7 @@ function renderCanonicalDecisionCards(group, cards, count) {
     const label = card
       ? t('{card}, canonical hand card', { card: displayCard(card) })
       : t('No canonical card {number}', { number: index + 1 });
-    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-group="${group}" data-index="${index}" data-playbook-canonical-display disabled aria-label="${label}">${cardMarkup(card)}</button>`;
+    return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-card-size="slot" data-group="${group}" data-index="${index}" data-playbook-canonical-display disabled aria-label="${label}">${cardMarkup(card)}</button>`;
   }).join('');
 }
 
@@ -2117,7 +2124,7 @@ function renderCanonicalPrivateDeal(state) {
     if ($('#handDealHelp')) $('#handDealHelp').textContent = t("Choose Hero's cards. Opponents remain hidden unless you set them explicitly.");
     if ($('#handDealHoleButton')) $('#handDealHoleButton').textContent = t('Start betting');
     root.innerHTML = `${privateRow(hero, t('Required'))}
-      <div class="hand-hidden-summary" role="status"><span class="hand-card-backs" aria-hidden="true"><i></i><i></i></span><strong>${t('{count} opponents hidden by default', { count: opponents.length })}</strong></div>
+      <div class="hand-hidden-summary" role="status"><span class="hand-card-backs" aria-hidden="true"><i class="riverline-card-back" data-card-size="mini"></i><i class="riverline-card-back" data-card-size="mini"></i></span><strong>${t('{count} opponents hidden by default', { count: opponents.length })}</strong></div>
       <details class="hand-known-opponents"><summary>${t('Set known opponent cards (optional)')}</summary>
         <div class="hand-known-opponent-list">${opponents.map((player) => privateRow(player, t('Optional · otherwise Hidden'))).join('')}</div>
       </details>`;
@@ -2261,8 +2268,10 @@ function createReplayTransitionEntry(event) {
     cards.dir = 'ltr';
     event.cards.forEach((card) => {
       const token = document.createElement('span');
-      token.className = `replay-transition-card replay-transition-card--${card.tone}`;
-      token.textContent = card.token;
+      const suit = globalThis.RiverlineCardPresentation?.cardSuitPresentation(card.suit);
+      token.className = 'replay-transition-card';
+      token.dataset.cardSuitId = suit?.id ?? 's';
+      token.textContent = `${displayCardRank(card.rank)}${suit?.symbol ?? card.suit}`;
       cards.appendChild(token);
     });
     item.appendChild(cards);
@@ -4527,10 +4536,10 @@ function equityStreetLabel(boardCount) {
 
 function equityReadOnlyCardsMarkup(cards, label) {
   if (cards === null) {
-    return `<span class="equity-result-unknown" aria-label="${t('{player}: unknown hand', { player: label })}"><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" aria-hidden="true"></span><span>${t('Unknown hand')}</span></span>`;
+    return `<span class="equity-result-unknown" aria-label="${t('{player}: unknown hand', { player: label })}"><span class="poker-card-back riverline-card-back" data-card-size="result" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" data-card-size="result" aria-hidden="true"></span><span>${t('Unknown hand')}</span></span>`;
   }
   if (!cards?.length) return `<span class="equity-context-empty">${t('No cards')}</span>`;
-  return `<span class="equity-readonly-cards">${cards.map((card) => `<span class="training-readonly-card riverline-card" role="img" aria-label="${displayCard(card)}">${cardMarkup(card)}</span>`).join('')}</span>`;
+  return `<span class="equity-readonly-cards">${cards.map((card) => `<span class="training-readonly-card riverline-card" data-card-size="result" role="img" aria-label="${displayCard(card)}">${cardMarkup(card)}</span>`).join('')}</span>`;
 }
 
 function renderEquityScenarioContext(request = equityRequestFromCurrentInputs()) {
@@ -5546,18 +5555,7 @@ async function openHomeSavedItem(id, control) {
 
 function applyDeckStyle(is4Color) {
   if (typeof is4Color === 'string') is4Color = (is4Color === '4-color' || is4Color === 'true');
-  app.settings.fourColorDeck = is4Color;
-  localStorage.setItem('riverline_4color', is4Color);
-  document.documentElement.style.setProperty('--heart', '#ff0000');
-  document.documentElement.style.setProperty('--spade', '#111827');
-  document.documentElement.style.setProperty('--diamond', is4Color ? '#0044ff' : '#ff0000');
-  document.documentElement.style.setProperty('--club', is4Color ? '#00b300' : '#111827');
-  document.documentElement.dataset.fourColor = is4Color;
-  const toggle = document.getElementById('fourColorDeckToggle');
-  if (toggle) {
-    if (is4Color) { toggle.classList.add('on'); toggle.setAttribute('aria-pressed', 'true'); }
-    else { toggle.classList.remove('on'); toggle.setAttribute('aria-pressed', 'false'); }
-  }
+  return globalThis.RiverlineCardPresentation?.apply({ fourColor: Boolean(is4Color) });
 }
 
 
@@ -5636,12 +5634,6 @@ function bindEvents() {
     if (playerCountStep) {
       return setEquityPlayerCount(app.equity.players.length + Number(playerCountStep.dataset.equityPlayerDelta));
     }
-
-    // The root element also carries the active presentation preference. Limit
-    // routing to the actual Settings buttons so unrelated clicks continue to
-    // their production handlers.
-    const cardRankStyle = event.target.closest('button[data-card-rank-style]');
-    if (cardRankStyle) return applyCardRankStyle(cardRankStyle.dataset.cardRankStyle);
 
     const slot = event.target.closest('.card-slot');
 
@@ -5954,9 +5946,12 @@ function bindEvents() {
 
   if ($('#settingsModal')) $('#settingsModal').addEventListener('click', (event) => { if (event.target === $('#settingsModal')) closeSettings(); });
 
-  if ($('#fourColorDeckToggle')) $('#fourColorDeckToggle').addEventListener('click', () => applyDeckStyle(!app.settings.fourColorDeck));
-
-  if ($('#cardStyleSelect')) $('#cardStyleSelect').addEventListener('change', (event) => applyCardStyle(event.target.value));
+  if (!document.documentElement.dataset.cardPresentationLogicBound) {
+    document.documentElement.dataset.cardPresentationLogicBound = 'true';
+    window.addEventListener('riverline:cardpresentationchange', (event) => {
+      syncCardPresentationState(event.detail, { refresh: true });
+    });
+  }
 
   if ($('#toggleTableBtn')) {
     $('#toggleTableBtn').addEventListener('click', () => {
@@ -6214,14 +6209,11 @@ function init() {
       }
     });
 
-    const saved4Color = localStorage.getItem('riverline_4color');
-    applyDeckStyle(saved4Color !== 'false'); // true by default
-
-    const savedCardRankStyle = localStorage.getItem('riverline_card_rank_style');
-    applyCardRankStyle(savedCardRankStyle, false);
-
-    const savedCardStyle = localStorage.getItem('riverline_card_style');
-    applyCardStyle(savedCardStyle, false);
+    const cardPresentation = globalThis.RiverlineCardPresentation;
+    if (!cardPresentation || cardPresentation.schemaVersion !== 'card-presentation/v1') {
+      throw new Error('Riverline card presentation authority is unavailable');
+    }
+    syncCardPresentationState(cardPresentation.get(), { refresh: false });
 
     initSidebar();
 
@@ -7046,16 +7038,12 @@ function updateTrainingFilterAvailability() {
   }
 }
 
-function applyCardRankStyle(style, refresh = true) {
-  const nextStyle = style === 'full-ten' ? 'full-ten' : 'poker';
-  app.settings.cardRankStyle = nextStyle;
-  localStorage.setItem('riverline_card_rank_style', nextStyle);
-  document.documentElement.dataset.cardRankStyle = nextStyle;
-  $$('button[data-card-rank-style]').forEach((button) => {
-    const selected = button.dataset.cardRankStyle === nextStyle;
-    button.classList.toggle('active', selected);
-    button.setAttribute('aria-pressed', String(selected));
-  });
+function syncCardPresentationState(presentation, { refresh = true } = {}) {
+  if (!presentation) return;
+  app.settings.fourColorDeck = presentation.fourColor;
+  app.settings.cardRankStyle = presentation.rankStyle;
+  app.settings.cardStyle = presentation.faceStyle;
+  app.settings.cardBackStyle = presentation.backStyle;
   if (!refresh) return;
   renderAllCards();
   if (activeWorkspaceMode() === 'gto' && playbookSurfaceIsVisible('analysis')) {
@@ -7071,20 +7059,33 @@ function applyCardRankStyle(style, refresh = true) {
   if (activeWorkspaceMode() === 'training' && app.training.currentExercise && !$('#trainingAnalysis')?.hidden) {
     renderTrainingDecisionAnalysis(app.training.currentExercise);
   }
-  window.dispatchEvent(new CustomEvent('riverlineCardRankStyleChanged', { detail: { style: nextStyle } }));
 }
 
-const CARD_STYLES = Object.freeze(['classic-mirrored', 'tournament', 'clean-corner', 'clarity-corner']);
+function applyCardRankStyle(style, refresh = true) {
+  const presentation = globalThis.RiverlineCardPresentation?.apply(
+    { rankStyle: style },
+    { emit: refresh }
+  );
+  if (!refresh) syncCardPresentationState(presentation, { refresh: false });
+  return presentation;
+}
 
 function applyCardStyle(style, refresh = true) {
-  const nextStyle = CARD_STYLES.includes(style) ? style : 'tournament';
-  app.settings.cardStyle = nextStyle;
-  localStorage.setItem('riverline_card_style', nextStyle);
-  document.documentElement.dataset.cardStyle = nextStyle;
-  if ($('#cardStyleSelect')) $('#cardStyleSelect').value = nextStyle;
-  if (!refresh) return;
-  renderAllCards();
-  window.dispatchEvent(new CustomEvent('riverlineCardStyleChanged', { detail: { style: nextStyle } }));
+  const presentation = globalThis.RiverlineCardPresentation?.apply(
+    { faceStyle: style },
+    { emit: refresh }
+  );
+  if (!refresh) syncCardPresentationState(presentation, { refresh: false });
+  return presentation;
+}
+
+function applyCardBackStyle(style, refresh = true) {
+  const presentation = globalThis.RiverlineCardPresentation?.apply(
+    { backStyle: style },
+    { emit: refresh }
+  );
+  if (!refresh) syncCardPresentationState(presentation, { refresh: false });
+  return presentation;
 }
 
 function applySidebarState(collapsed) {
@@ -7247,7 +7248,7 @@ function renderTrainingCards() {
   const heroCards = app.training.hero || [];
   const boardCards = app.training.board || [];
   const readOnlyCard = (card) =>
-    `<span class="training-readonly-card riverline-card" role="img" aria-label="${displayCard(card)}">${cardMarkup(card)}</span>`;
+    `<span class="training-readonly-card riverline-card" data-card-size="standard" role="img" aria-label="${displayCard(card)}">${cardMarkup(card)}</span>`;
   const heroTarget = $('#trainingHeroCards');
   const boardTarget = $('#trainingBoardCards');
   const tableSummary = document.querySelector('.training-table-summary');
@@ -8950,6 +8951,7 @@ function renderFullHandReviewCards(target, cards, emptyLabel) {
   cards.forEach((card) => {
     const item = document.createElement('span');
     item.className = 'training-readonly-card riverline-card';
+    item.dataset.cardSize = 'standard';
     item.setAttribute('role', 'img');
     item.setAttribute('aria-label', displayCard(card));
     item.innerHTML = cardMarkup(card);

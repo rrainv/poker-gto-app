@@ -76,9 +76,9 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | ID | Status | Issue | Owner |
 |---|---|---|---|
 | QA-POLISH-001 | PARTIAL | Visual/motion polish is manually accepted; PRELABS-FIX-001 now proves Firefox 153 creates/resumes one lazy AudioContext before starting the first cue, with card/correct/mistake/hint and off/re-enable paths clean; subjective Firefox audibility still needs human listening acceptance | PRELABS-FIX-001 human Firefox listening acceptance |
-| QA-CARD-001 | OPEN | table/DOM card corner rank and suit can clip | PRODUCT-UI-004 |
-| QA-CARD-002 | OPEN | full `10` mirrored bottom-corner centering/geometry looks wrong | PRODUCT-UI-004 |
-| QA-CARD-003 | OPEN | DOM and SVG card-face geometry need final consistency pass | PRODUCT-UI-004 |
+| QA-CARD-001 | PARTIAL | Premium Card System v1 unifies table/DOM rank and suit placement with size-aware corners; Firefox visual acceptance at 1920×1080 remains | PREMIUM-CARD-001 human Firefox acceptance |
+| QA-CARD-002 | PARTIAL | `10` now has an explicit optical-width treatment in DOM and SVG faces across all three styles; Firefox visual acceptance remains | PREMIUM-CARD-001 human Firefox acceptance |
+| QA-CARD-003 | PARTIAL | DOM and SVG cards now share one presentation authority, named geometry, face semantics, and back variants; representative workspace and theme visual acceptance remains | PREMIUM-CARD-001 human Firefox acceptance |
 | QA-THEME-001 | PARTIAL | Daylight controls now use semantic light surfaces; human visual acceptance pending | PRODUCT-THEME-001 |
 | QA-THEME-002 | PARTIAL | Daylight muted text passes structural contrast checks; human visual acceptance pending | PRODUCT-THEME-001 |
 | QA-THEME-003 | PARTIAL | legacy/experimental labels are retired from the supported theme catalog; human visual acceptance pending | PRODUCT-THEME-001 |

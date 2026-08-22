@@ -45,8 +45,8 @@ test('Guide states accounting, presentation, and heuristic provenance truthfully
   for (const concept of [
     'Home has no Riverline rake or deduction',
     'each seated player contributes 0.1 bb once per hand outside the contestable pot',
-    'Classic Mirrored, Tournament, Clean Corner, or Clarity Corner',
-    'display ten as T or 10',
+    'Classic, Minimal, or High Contrast faces and Riverline, Solid, or Geometric backs',
+    'Rank style displays ten as T or 10',
     'deterministic heuristic strategy source',
     'Exact-hand postflop recommendations are heuristic',
     'preflop Matrix reflects the same source',

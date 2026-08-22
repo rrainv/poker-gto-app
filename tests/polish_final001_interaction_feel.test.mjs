@@ -10,13 +10,14 @@ const teacher = fs.readFileSync(new URL('../app/src/ui/teacher.js', import.meta.
 const polishCss = css.slice(css.indexOf('POLISH-FINAL-001: restrained product-feel language'));
 
 test('shared analysis card notation has a compact explicit contrast surface', () => {
-  assert.match(teacher, /analysis-mini-card card--suit-\$\{suitId\}/);
-  assert.match(teacher, /document\.documentElement\.dataset\.cardRankStyle === 'full-ten'/);
+  assert.match(teacher, /analysis-mini-card riverline-card card--suit-\$\{suitId\}/);
+  assert.match(teacher, /presentation\.displayCardRank/);
+  assert.match(teacher, /presentation\.appendCardFaceContents/);
   assert.match(teacher, /unicode-bidi|analysis-card-token/);
-  assert.match(polishCss, /\.analysis-mini-card\s*\{[^}]*background:[^}]*--card-face/);
-  assert.match(polishCss, /\.analysis-mini-card\s*\{[^}]*border:[^}]*--card-border/);
+  assert.match(polishCss, /\.analysis-mini-card\s*\{[^}]*background:[^}]*--riverline-card-face/);
+  assert.match(polishCss, /\.analysis-mini-card\s*\{[^}]*border:[^}]*--riverline-card-border/);
   assert.match(polishCss, /\.analysis-mini-card\s*\{[^}]*box-shadow:/);
-  assert.match(polishCss, /\.analysis-mini-card-rank\s*\{[^}]*font-weight:\s*850/);
+  assert.match(teacher, /token\.dataset\.cardSize = 'mini'/);
   assert.doesNotMatch(teacher, /replace\(['"]T['"],\s*['"]10['"]\)/);
 });
 

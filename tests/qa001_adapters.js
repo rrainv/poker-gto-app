@@ -50,13 +50,18 @@ function createLogicHarness() {
       { id: 'c', symbol: 'c' }
     ];
 
-    let app = { equity: { board: [], dead: [], players: [] }, gto: {}, training: {} };
+    let app = { equity: { board: [], dead: [], players: [] }, gto: {}, training: {}, settings: { cardRankStyle: 'poker' } };
     let config = {};
     let deckNode = { innerHTML: '' };
 
     const $ = (selector) => selector === '#deck' ? deckNode : null;
     const allDeck = () => SUITS.flatMap((suit) => RANKS.map((rank) => rank + suit.id));
     const getSuit = (card) => SUITS.find((suit) => suit.id === (card && card[1]));
+    const displayCardRank = (rank) => rank;
+    const t = (copy, values = {}) => String(copy).replace(/\{([A-Za-z0-9_]+)\}/g, (token, name) => values[name] ?? token);
+    globalThis.RiverlineCardPresentation = {
+      cardFaceMarkup: ({ rank, suit }) => '<span class="rank">' + rank + '</span><span class="suit">' + suit + '</span>'
+    };
     ${cardStateSource}
     ${renderDeckSource}
     ${evaluatorEquitySource}

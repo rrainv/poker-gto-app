@@ -6,6 +6,7 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
+const cardPresentation = fs.readFileSync(new URL('../app/src/application/card-presentation.mjs', import.meta.url), 'utf8');
 const trainingPresentation = fs.readFileSync(new URL('../app/src/application/training-presentation.mjs', import.meta.url), 'utf8');
 
 const trainingHtml = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="equityMode"'));
@@ -15,29 +16,30 @@ test('known cards share Riverline presentation hooks across primary, Training, p
   assert.match(logic, /class="card-slot[^"`]*riverline-card/);
   assert.match(logic, /class="training-readonly-card riverline-card"/);
   assert.match(logic, /class="deck-card[^"`]*riverline-card/);
-  assert.match(table, /poker-card-svg riverline-card card--known/);
-  assert.match(table, /riverline-card-face table-card-face/);
-  assert.match(table, /riverline-card-corner-rank table-card-corner-rank/);
-  assert.match(table, /riverline-card-corner-suit table-card-corner-suit/);
+  assert.match(table, /presentation\.tableCardSvgMarkup/);
+  assert.match(cardPresentation, /poker-card-svg riverline-card card--known/);
+  assert.match(cardPresentation, /riverline-card-face table-card-face/);
+  assert.match(cardPresentation, /riverline-card-corner-rank table-card-corner-rank/);
+  assert.match(cardPresentation, /riverline-card-corner-suit table-card-corner-suit/);
   assert.match(css, /\.riverline-card\s*\{[^}]*--riverline-card-face:\s*var\(--card-face\)[^}]*--riverline-card-border:\s*var\(--card-border\)/);
 });
 
 test('table known cards use the DESIGN-005 face family and approximately 0.70 proportions', () => {
-  assert.match(table, /class="riverline-card-face table-card-face"[^>]+width="40" height="57" rx="5" ry="5"/);
-  assert.match(table, /class="riverline-card-corner-rank table-card-corner-rank/);
+  assert.match(cardPresentation, /class="riverline-card-face table-card-face"[^>]+width="\$\{geometry\.width\}" height="\$\{geometry\.height\}" rx="\$\{geometry\.radius\}"/);
+  assert.match(cardPresentation, /class="riverline-card-corner-rank table-card-corner-rank/);
   assert.match(css, /\.table-card-face\s*\{[^}]*fill:\s*var\(--riverline-card-face/);
-  assert.match(css, /\.table-card-rank\s*\{[^}]*Georgia/);
-  assert.match(css, /\.table-card-suit\s*\{[^}]*Georgia/);
+  assert.match(css, /\.table-card-rank\s*\{[^}]*var\(--riverline-card-rank-font\)/);
+  assert.match(css, /\.table-card-suit\s*\{[^}]*var\(--riverline-card-rank-font\)/);
   assert.ok(Math.abs((40 / 57) - 0.70) < 0.01);
 });
 
 test('T and 10 remain presentation-only and do not affect A K Q or J sizing', () => {
-  assert.match(table, /const visualRank = rank === 'T'/);
-  assert.match(table, /document\.documentElement\.dataset\.cardRankStyle === 'full-ten'/);
+  assert.match(cardPresentation, /rank === 'T'[\s\S]*?full-ten/);
+  assert.match(table, /rankStyle:\s*document\.documentElement\.dataset\.cardRankStyle/);
   assert.match(logic, /const card = rank \+ suit\.id/);
   assert.match(logic, /data-deck-card="\$\{card\}"/);
-  assert.match(logic, /const rankClass = rank === '10' \? ' rank--ten' : ''/);
-  assert.match(table, /const rankClass = visualRank === '10' \? ' table-card-rank--ten' : ''/);
+  assert.match(cardPresentation, /cardRankClass\(visualRank\)/);
+  assert.match(cardPresentation, /cardRankClass\(visualRank, 'table-card-'\)/);
   assert.doesNotMatch(css, /\[data-card-rank-style="full-ten"\][^{]*\.(?:rank|table-card-rank)/);
   for (const [, selector, declarations] of css.matchAll(/(?:^|})([^{}]*(?:rank--ten|table-card-rank--ten)[^{}]*)\{([^{}]*)\}/g)) {
     assert.doesNotMatch(declarations, /\bfont(?:-size)?\s*:/, `${selector} must inherit the normal rank font-size`);
@@ -47,12 +49,13 @@ test('T and 10 remain presentation-only and do not affect A K Q or J sizing', ()
 
 test('unknown table card backs retain their semantic and privacy presentation', () => {
   const back = table.match(/renderCardBack\(index\)\s*\{[\s\S]*?\n  \}/)?.[0] ?? '';
-  assert.match(back, /poker-card-back/);
-  assert.match(back, /data-card-state="unknown"/);
-  assert.match(back, /table-card-back-face/);
-  assert.match(back, /table-card-back-line/);
-  assert.match(back, /table-card-back-mark/);
-  assert.doesNotMatch(back, /data-card-state="known"/);
+  assert.match(back, /tableCardBackSvgMarkup/);
+  assert.match(cardPresentation, /poker-card-back/);
+  assert.match(cardPresentation, /data-card-state="unknown"/);
+  assert.match(cardPresentation, /table-card-back-face/);
+  assert.match(cardPresentation, /table-card-back-river/);
+  assert.match(cardPresentation, /table-card-back-geometric/);
+  assert.doesNotMatch(cardPresentation.match(/tableCardBackSvgMarkup[\s\S]*?\n\}/)?.[0] ?? '', /data-card-state="known"/);
 });
 
 test('Training after-answer keeps the analytical stack and both textual state markers without a wheel', () => {

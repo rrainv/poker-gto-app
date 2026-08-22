@@ -17,6 +17,7 @@ import {
   tableSizesForEnvironment,
 } from './range-calibration-service.mjs';
 import { representativeCardsForHandClass } from '../ui/representative-hand-cards.mjs';
+import { appendCardFaceContents } from './card-presentation.mjs';
 import { createPersonalStrategyScopeLifecycle } from './personal-strategy-scope-lifecycle.mjs';
 import {
   RIVERLINE_OWNED_DOMAINS,
@@ -1428,23 +1429,14 @@ function createController(root, application, initialWorkspace, activationStarted
     const cards = representative.cards.map((card) => {
       const element = document.createElement('span');
       element.className = `training-readonly-card riverline-card card--suit-${card.suitId}`;
+      element.dataset.cardSize = 'representative';
       element.setAttribute('role', 'img');
       element.setAttribute('aria-label', card.accessibleLabel);
-      const displayRank = card.rank === 'T' && rankStyle === 'full-ten' ? '10' : card.rank;
-      const rankClass = displayRank === '10' ? ' rank--ten' : '';
-      for (const position of ['top', 'bottom']) {
-        const corner = document.createElement('span');
-        corner.className = `card-corner card-corner--${position}`;
-        corner.setAttribute('aria-hidden', 'true');
-        const rank = document.createElement('span');
-        rank.className = `rank${rankClass} s-${card.suitId}`;
-        rank.textContent = displayRank;
-        const suit = document.createElement('span');
-        suit.className = `suit s-${card.suitId}`;
-        suit.textContent = card.suitSymbol;
-        corner.append(rank, suit);
-        element.append(corner);
-      }
+      appendCardFaceContents(element, {
+        rank: card.rank,
+        suit: card.suitId,
+        rankStyle,
+      });
       return element;
     });
     target.dataset.handClass = handClass;
@@ -2812,7 +2804,7 @@ function createController(root, application, initialWorkspace, activationStarted
         else renderMatrix();
       }
     }, { signal: lifecycle.signal });
-    window.addEventListener('riverlineCardRankStyleChanged', () => {
+    window.addEventListener('riverline:cardpresentationchange', () => {
       if (calibrationState?.prompt) renderQuestionCards(calibrationState.prompt.handClass);
     }, { signal: lifecycle.signal });
   }

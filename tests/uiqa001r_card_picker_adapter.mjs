@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 
+import * as RiverlineCardPresentation from '../app/src/application/card-presentation.mjs';
+
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 
 function extractFunction(name) {
@@ -49,9 +51,10 @@ function classList() {
 
 export function delegatedCardSlotClick(group = 'hero', index = 0) {
   const listeners = {};
-  const calls = { picker: [], rankStyle: [] };
+  const calls = { picker: [] };
   const sandbox = {
     console,
+    RiverlineCardPresentation,
     localStorage: { getItem() { return null; }, setItem() {} },
     window: { addEventListener() {} },
     document: {
@@ -71,7 +74,6 @@ export function delegatedCardSlotClick(group = 'hero', index = 0) {
     const $$ = (selector) => [...document.querySelectorAll(selector)];
     function isHandMode() { return false; }
     function groupCards() { return []; }
-    function applyCardRankStyle(style) { globalThis.__calls.rankStyle.push(style); }
     function openPicker(nextGroup, nextIndex) { globalThis.__calls.picker.push([nextGroup, nextIndex]); }
     function setEquityHandMode() {}
     function setEquityPlayerCount() {}
@@ -127,6 +129,7 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
 
   const sandbox = {
     console,
+    RiverlineCardPresentation,
     CustomEvent: class CustomEvent {},
     localStorage: { getItem() { return null; }, setItem() {} },
     document: {
@@ -159,7 +162,7 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
     const $ = (selector) => document.querySelector(selector);
     const $$ = (selector) => [...document.querySelectorAll(selector)];
     const getSuit = (card) => SUITS.find((suit) => suit.id === (card && card[1]));
-    const displayCardRank = (rank) => rank === 'T' && app.settings.cardRankStyle === 'full-ten' ? '10' : rank;
+    const displayCardRank = (rank) => globalThis.RiverlineCardPresentation.displayCardRank(rank, app.settings.cardRankStyle);
     const displayCard = (card) => card ? displayCardRank(card[0]) + getSuit(card).symbol : '';
     const t = (value, variables = {}) => String(value).replace(/\\{(\\w+)\\}/g, (_, key) => variables[key] ?? '{' + key + '}');
     function isHandMode() { return app.playbookMode === PLAYBOOK_MODES.HAND; }

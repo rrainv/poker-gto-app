@@ -508,30 +508,25 @@ function analysisFactSecondaryText(analysisFact) {
   return null;
 }
 
-const ANALYSIS_CARD_SUITS = Object.freeze({
-  h: { symbol: '♥' },
-  d: { symbol: '♦' },
-  c: { symbol: '♣' },
-  s: { symbol: '♠' },
-});
-
 function analysisCardTokenElement(card) {
   const value = String(card || '');
   const match = value.match(/^([2-9TJQKA])([hdcs])$/i);
   if (!match) return null;
   const suitId = match[2].toLowerCase();
-  const rank = match[1].toUpperCase() === 'T' && document.documentElement.dataset.cardRankStyle === 'full-ten'
-    ? '10'
-    : match[1].toUpperCase();
-  const token = analysisElement('span', `analysis-mini-card card--suit-${suitId}`);
-  const suit = ANALYSIS_CARD_SUITS[suitId];
+  const canonicalRank = match[1].toUpperCase();
+  const presentation = globalThis.RiverlineCardPresentation;
+  if (!presentation) return null;
+  const rank = presentation.displayCardRank(canonicalRank, document.documentElement.dataset.cardRankStyle);
+  const suit = presentation.cardSuitPresentation(suitId);
+  const token = analysisElement('span', `analysis-mini-card riverline-card card--suit-${suitId}`);
+  token.dataset.cardSize = 'mini';
   token.setAttribute('role', 'img');
   token.setAttribute('aria-label', `${rank}${suit.symbol}`);
-  const rankElement = analysisElement('span', 'analysis-mini-card-rank', rank);
-  const suitElement = analysisElement('span', 'analysis-mini-card-suit', suit.symbol);
-  rankElement.setAttribute('aria-hidden', 'true');
-  suitElement.setAttribute('aria-hidden', 'true');
-  token.append(rankElement, suitElement);
+  presentation.appendCardFaceContents(token, {
+    rank: canonicalRank,
+    suit: suitId,
+    rankStyle: document.documentElement.dataset.cardRankStyle,
+  });
   return token;
 }
 

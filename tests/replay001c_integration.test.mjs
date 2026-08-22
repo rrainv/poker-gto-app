@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
+import { CARD_GEOMETRY, tableCardSvgMarkup } from '../app/src/application/card-presentation.mjs';
+
 const playbackSource = fs.readFileSync(
   new URL('../app/src/application/replay-playback-controller.mjs', import.meta.url),
   'utf8',
@@ -178,7 +180,13 @@ test('one compact centered seat/card anchor supports every table size without HU
   assert.match(renderer, /seatsLayer\.dataset\.tableSize = String\(activePlayers\)/);
   assert.match(renderer, /for \(let i = 0; i < activePlayers; i\+\+\)/);
   assert.match(renderer, /width="100" height="70"/);
-  assert.match(renderer, /\(index - \(\(totalCards - 1\) \/ 2\)\)/);
+  const cardCenters = [0, 1].map((index) => {
+    const markup = tableCardSvgMarkup({ rank: 'A', suit: 's', index, totalCards: 2 });
+    const finalX = Number(markup.match(/--card-final-x:([-\d.]+)px/)?.[1]);
+    assert.equal(Number.isFinite(finalX), true);
+    return finalX + (CARD_GEOMETRY.table.width / 2);
+  });
+  assert.equal((cardCenters[0] + cardCenters[1]) / 2, 0);
   assert.doesNotMatch(renderer, /activePlayers\s*===?\s*2|activePlayers\s*\?\s*2|isHeadsUp|headsUp/i);
   assert.match(css, /\.table-seat-surface \{ transform-box: fill-box; transform-origin: center; \}/);
 });

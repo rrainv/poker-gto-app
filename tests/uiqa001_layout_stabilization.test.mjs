@@ -2,6 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
+import {
+  CARD_PRESENTATION_STORAGE_KEY,
+  createCardPresentationController,
+  displayCardRank,
+  tableCardSvgMarkup,
+} from '../app/src/application/card-presentation.mjs';
+
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
@@ -10,7 +17,6 @@ const strategy = [
   '../app/src/strategy/postflop-heuristic.mjs',
 ].map((url) => fs.readFileSync(new URL(url, import.meta.url), 'utf8')).join('\n');
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
-const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 
 const uiQaStart = css.indexOf('UI-QA-001: responsive shell');
 assert.ok(uiQaStart >= 0, 'UI-QA-001 stabilization section must exist');
@@ -130,19 +136,32 @@ test('Settings expose clearer switches, aligned solver icon, and persisted T ver
   assert.match(html, /id="cardRankStyleControl"/);
   assert.match(html, /data-card-rank-style="poker"/);
   assert.match(html, /data-card-rank-style="full-ten"/);
-  assert.match(logic, /riverline_card_rank_style/);
-  assert.match(logic, /document\.documentElement\.dataset\.cardRankStyle = nextStyle/);
+  const values = new Map();
+  const controller = createCardPresentationController({
+    root: { dataset: {} },
+    storage: {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key),
+    },
+  });
+  const state = controller.apply({ rankStyle: 'full-ten' });
+  assert.equal(state.rankStyle, 'full-ten');
+  assert.equal(JSON.parse(values.get(CARD_PRESENTATION_STORAGE_KEY)).rankStyle, 'full-ten');
   assert.match(uiQaCss, /\.ui-switch b,[\s\S]*?background:\s*var\(--text-secondary\)/);
   assert.match(uiQaCss, /\.solver-import-btn \.button-icon\s*\{[^}]*width:\s*18px[^}]*display:\s*block/);
   assert.match(sound, /settingsBtn\.setAttribute\('aria-pressed', String\(soundEnabled\)\)/);
 });
 
 test('full-ten preference changes presentation but preserves canonical card identities', () => {
-  assert.match(logic, /displayCardRank = \(rank\) => rank === 'T'/);
+  assert.equal(displayCardRank('T', 'poker'), 'T');
+  assert.equal(displayCardRank('T', 'full-ten'), '10');
   assert.match(logic, /const card = rank \+ suit\.id/);
   assert.match(logic, /data-deck-card="\$\{card\}"/);
-  assert.match(table, /const visualRank = rank === 'T'/);
-  assert.doesNotMatch(logic.match(/function applyCardRankStyle[\s\S]*?\n\}/)?.[0] ?? '', /RANKS\s*=|RANK_VALUE|heroCards\s*=|board\s*=/);
+  const tableTen = tableCardSvgMarkup({ rank: 'T', suit: 'h', rankStyle: 'full-ten' });
+  assert.match(tableTen, /table-card-rank--ten/);
+  assert.match(tableTen, />10<\/text>/);
+  assert.doesNotMatch(tableTen, />T<\/text>/);
 });
 
 test('broken free-form layout editor is no longer presented or bootstrapped', () => {

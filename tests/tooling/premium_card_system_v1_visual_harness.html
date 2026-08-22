@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en" data-theme="midnight" data-card-face-style="classic" data-card-back-style="riverline" data-card-rank-style="full-ten" data-four-color="true">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Premium Card System v1 visual harness</title>
+  <script>
+    const harnessParams = new URLSearchParams(location.search);
+    const root = document.documentElement;
+    root.dataset.theme = harnessParams.get('theme') || 'midnight';
+    root.dataset.density = harnessParams.get('density') || 'comfortable';
+    root.dataset.layoutPreset = harnessParams.get('layout') || 'balanced';
+    root.dataset.fourColor = harnessParams.get('fourColor') || 'true';
+    root.lang = harnessParams.get('lang') || 'en';
+    root.dir = harnessParams.get('dir') || 'ltr';
+    if (root.dataset.theme === 'custom-river') {
+      root.style.setProperty('--surface-shell', '#172023');
+      root.style.setProperty('--surface-panel', '#223034');
+      root.style.setProperty('--surface-inset', '#152023');
+      root.style.setProperty('--text-primary', '#f4f0e8');
+      root.style.setProperty('--card-face', '#f7f1dd');
+      root.style.setProperty('--card-border', '#746b5a');
+      root.style.setProperty('--card-back', '#6b4aa0');
+    }
+  </script>
+  <link rel="stylesheet" href="../../app/styles.css">
+  <style>
+    body { margin: 0; padding: 16px; color: var(--text-primary); background: var(--surface-shell); font-family: var(--font-ui); }
+    h1 { margin: 0 0 12px; font-size: 18px; }
+    h2 { margin: 0 0 8px; font-size: 14px; }
+    .face-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .face-panel, .preview-panel, .geometry-panel { padding: 10px; background: var(--surface-panel); border: 1px solid var(--border-subtle); border-radius: var(--radius-control); }
+    .rank-suit-grid { display: grid; grid-template-columns: repeat(13, 28px); grid-auto-rows: 40px; gap: 4px; direction: ltr; }
+    .harness-card { position: relative; display: block; overflow: hidden; padding: 0; background: var(--riverline-card-face); border: 1px solid var(--riverline-card-border); box-shadow: var(--riverline-card-shadow); }
+    .preview-grid { display: flex; align-items: flex-start; gap: 18px; margin-top: 12px; }
+    .preview-row { display: flex; align-items: center; gap: 8px; direction: ltr; }
+    .geometry-panel { margin-top: 12px; }
+    .geometry-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; direction: ltr; }
+    .geometry-row { min-height: 92px; display: flex; align-items: end; gap: 10px; }
+    .geometry-sample { display: grid; justify-items: center; gap: 4px; color: var(--text-muted); font-size: 10px; }
+    .table-sample { display: block; width: 56px; height: 80px; overflow: visible; }
+    .runtime-color-grid { display: grid; grid-template-columns: repeat(3, max-content); gap: 14px; direction: ltr; }
+    .runtime-color-row { display: flex; gap: 6px; overflow: visible; padding: 4px; }
+    .settings-card-face, .settings-card-back { position: relative; display: block; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <h1>Premium Card System v1 — Firefox render matrix</h1>
+  <p id="harnessContext"></p>
+  <main>
+    <div id="faceGrid" class="face-grid"></div>
+    <div class="preview-grid">
+      <section class="preview-panel"><h2>Settings face previews</h2><div id="facePreviews" class="preview-row"></div></section>
+      <section class="preview-panel"><h2>Runtime / Settings backs</h2><div id="backPreviews" class="preview-row"></div></section>
+    </div>
+    <section class="geometry-panel"><h2>Shared named geometry</h2><div id="geometryGrid" class="geometry-grid"></div></section>
+    <section class="geometry-panel"><h2>Runtime card-slot suit colors</h2><div id="runtimeColorGrid" class="runtime-color-grid"></div></section>
+  </main>
+  <script type="module">
+    import { appendCardFaceContents, cardFaceMarkup, tableCardSvgMarkup } from '../../app/src/application/card-presentation.mjs';
+
+    const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+    const suits = ['h', 'd', 'c', 's'];
+    const faceStyles = ['classic', 'minimal', 'high-contrast'];
+    const faceGrid = document.querySelector('#faceGrid');
+    document.querySelector('#harnessContext').textContent = [
+      document.documentElement.dataset.theme,
+      document.documentElement.dataset.density,
+      `four-color:${document.documentElement.dataset.fourColor}`,
+      document.documentElement.lang,
+      document.documentElement.dir,
+    ].join(' / ');
+    faceStyles.forEach((faceStyle) => {
+      const panel = document.createElement('section');
+      panel.className = 'face-panel';
+      panel.innerHTML = `<h2>${faceStyle}</h2><div class="rank-suit-grid"></div>`;
+      const grid = panel.querySelector('.rank-suit-grid');
+      suits.forEach((suit) => ranks.forEach((rank) => {
+        const card = document.createElement('span');
+        card.className = `harness-card training-readonly-card riverline-card card--suit-${suit}`;
+        card.dataset.cardSize = 'mini';
+        card.dataset.cardPreviewFaceStyle = faceStyle;
+        appendCardFaceContents(card, { rank, suit, rankStyle: 'full-ten' });
+        grid.append(card);
+      }));
+      faceGrid.append(panel);
+    });
+
+    [
+      ['classic', 'T', 'h'],
+      ['minimal', 'T', 's'],
+      ['high-contrast', 'T', 'c'],
+    ].forEach(([faceStyle, rank, suit]) => {
+      const card = document.createElement('span');
+      card.className = `settings-card-face riverline-card card--suit-${suit}`;
+      card.dataset.cardSize = 'picker';
+      card.dataset.cardPreviewFaceStyle = faceStyle;
+      appendCardFaceContents(card, { rank, suit, rankStyle: 'full-ten' });
+      document.querySelector('#facePreviews').append(card);
+    });
+
+    ['riverline', 'solid', 'geometric'].forEach((backStyle) => {
+      const card = document.createElement('span');
+      card.className = 'settings-card-back riverline-card-back';
+      card.dataset.cardSize = 'picker';
+      card.dataset.cardPreviewBackStyle = backStyle;
+      document.querySelector('#backPreviews').append(card);
+    });
+
+    faceStyles.forEach((faceStyle) => {
+      const row = document.createElement('section');
+      row.innerHTML = `<h2>${faceStyle}</h2><div class="geometry-row"></div>`;
+      const samples = row.querySelector('.geometry-row');
+      ['mini', 'picker', 'compact', 'standard', 'representative'].forEach((cardSize, index) => {
+        const wrapper = document.createElement('span');
+        wrapper.className = 'geometry-sample';
+        const card = document.createElement('span');
+        card.className = 'harness-card riverline-card card--suit-h';
+        card.dataset.cardSize = cardSize;
+        card.dataset.cardPreviewFaceStyle = faceStyle;
+        appendCardFaceContents(card, { rank: 'T', suit: 'h', rankStyle: 'full-ten' });
+        wrapper.append(card, cardSize);
+        samples.append(wrapper);
+      });
+      const tableWrapper = document.createElement('span');
+      tableWrapper.className = 'geometry-sample';
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'table-sample');
+      svg.setAttribute('viewBox', '-28 -8 56 73');
+      svg.innerHTML = tableCardSvgMarkup({ rank: 'T', suit: 'h', rankStyle: 'full-ten', faceStyle });
+      tableWrapper.append(svg, 'table');
+      samples.append(tableWrapper);
+      document.querySelector('#geometryGrid').append(row);
+    });
+
+    faceStyles.forEach((faceStyle) => {
+      const group = document.createElement('section');
+      group.innerHTML = `<h2>${faceStyle}</h2><div class="runtime-color-row card-slots" data-slots="board"></div>`;
+      suits.forEach((suit) => {
+        const card = document.createElement('span');
+        card.className = `card-slot card--known filled riverline-card card--suit-${suit}`;
+        card.dataset.cardSize = 'slot';
+        card.dataset.cardPreviewFaceStyle = faceStyle;
+        card.innerHTML = cardFaceMarkup({ rank: 'T', suit, rankStyle: 'full-ten' });
+        group.querySelector('.runtime-color-row').append(card);
+      });
+      document.querySelector('#runtimeColorGrid').append(group);
+    });
+  </script>
+</body>
+</html>

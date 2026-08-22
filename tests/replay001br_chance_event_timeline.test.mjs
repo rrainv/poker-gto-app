@@ -259,7 +259,9 @@ test('renderer consumes projected event facts without reconstructing transitions
   assert.ok(start >= 0 && end > start);
   assert.match(renderer, /event\.transitionKind/);
   assert.match(renderer, /event\.cards/);
-  assert.match(renderer, /card\.token/);
+  assert.match(renderer, /cardSuitPresentation\(card\.suit\)/);
+  assert.match(renderer, /dataset\.cardSuitId/);
+  assert.match(renderer, /displayCardRank\(card\.rank\)/);
   assert.doesNotMatch(renderer, /actionHistory|\.board|querySelector|previousElementSibling|slice\(|filter\(/);
 });
 

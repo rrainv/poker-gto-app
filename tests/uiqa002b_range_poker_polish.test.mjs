@@ -9,6 +9,7 @@ const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
+const cardPresentation = fs.readFileSync(new URL('../app/src/application/card-presentation.mjs', import.meta.url), 'utf8');
 
 const matrixHtml = html.slice(html.indexOf('id="chartView"'), html.indexOf('id="rangeView"'));
 const uiQaStart = css.indexOf('UI-QA-002B: dense range analysis');
@@ -147,7 +148,7 @@ test('sound hooks fire only from user-perceived deals, actions, and one Training
 
 test('deal and feedback motion are event-scoped, restrained, and reduced-motion safe', () => {
   assert.match(table, /previous\[index\] !== signatures\[index\]/);
-  assert.match(table, /isDealing \? ' is-card-dealt'/);
+  assert.match(cardPresentation, /isDealing \? ' is-card-dealt'/);
   assert.doesNotMatch(table, /setTimeout/);
   assert.match(uiQaCss, /@keyframes riverline-card-deal[\s\S]*?translate:\s*0 -8px[\s\S]*?translate:\s*0 0/);
   assert.match(uiQaCss, /animation-delay:\s*calc\(var\(--card-deal-order, 0\) \* 22ms\)/);

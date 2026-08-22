@@ -2,6 +2,7 @@ import { createPresentationDensityController } from './presentation-density.mjs'
 import { createPresentationLayoutController } from './presentation-layout.mjs';
 import { createPresentationThemeController } from './presentation-theme.mjs';
 import { createRiverlineColorPicker } from './riverline-color-picker.mjs';
+import { createCardPresentationController } from './card-presentation.mjs';
 
 function activeLayoutWorkspace() {
   return document.querySelector('.mode-nav-item.active[data-navigation-id]')?.dataset.navigationId
@@ -54,6 +55,16 @@ function initializePresentationPreferences() {
     compactDisclosures: document.querySelectorAll('[data-density-collapse-in-compact]'),
   }).init();
 
+  const cardPresentationController = createCardPresentationController({
+    root: document.documentElement,
+    storage: window.localStorage,
+    eventTarget: window,
+    fourColorToggle: document.querySelector('#fourColorDeckToggle'),
+    faceStyleButtons: document.querySelectorAll('[data-card-face-style]'),
+    backStyleButtons: document.querySelectorAll('[data-card-back-style]'),
+    rankStyleButtons: document.querySelectorAll('[data-card-rank-style]'),
+  }).init();
+
   const layoutController = createPresentationLayoutController({
     root: document.documentElement,
     storage: window.localStorage,
@@ -84,6 +95,7 @@ function initializePresentationPreferences() {
   window.RiverlinePresentationDensity = densityController;
   window.RiverlinePresentationLayout = layoutController;
   window.RiverlinePresentationTheme = themeController;
+  window.RiverlineCardPresentation = cardPresentationController;
   window.RiverlineColorPicker = colorPicker;
   document.documentElement.addEventListener('riverline:themechange', () => {
     if (colorPicker.isOpen()) colorPicker.cancel();

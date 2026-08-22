@@ -1,14 +1,3 @@
-const TABLE_SUIT_PRESENTATION = Object.freeze({
-  h: { id: 'h', symbol: '♥' },
-  '♥': { id: 'h', symbol: '♥' },
-  d: { id: 'd', symbol: '♦' },
-  '♦': { id: 'd', symbol: '♦' },
-  c: { id: 'c', symbol: '♣' },
-  '♣': { id: 'c', symbol: '♣' },
-  s: { id: 's', symbol: '♠' },
-  '♠': { id: 's', symbol: '♠' },
-});
-
 function tableMessage(key, fallback, values = {}) {
   const runtime = globalThis.RiverlineI18n;
   if (runtime && typeof runtime.resolveTranslation === 'function') {
@@ -69,11 +58,9 @@ class TableRenderer {
       if (!this.pendingReplayMotion) this.lastReplayMotionToken = null;
     });
     window.addEventListener('gameStateUpdate', (event) => this.renderState(event.detail));
-    window.addEventListener('riverlineCardRankStyleChanged', () => {
+    window.addEventListener('riverline:cardpresentationchange', () => {
       if (this.lastState) this.renderState(this.lastState);
-    });
-    window.addEventListener('riverlineCardStyleChanged', () => {
-      if (this.lastState) this.renderState(this.lastState);
+      else this.drawSeats(this.currentActivePlayers);
     });
     window.addEventListener('riverline:languagechange', () => {
       if (this.lastState) this.renderState(this.lastState);
@@ -187,34 +174,18 @@ class TableRenderer {
   }
 
   renderCard(rank, suit, index, totalCards = 1, isCommunity = false, isDealing = false) {
-    const presentation = TABLE_SUIT_PRESENTATION[suit] || { id: 'unknown', symbol: suit || '?' };
-    const visualRank = rank === 'T' && document.documentElement.dataset.cardRankStyle === 'full-ten' ? '10' : rank;
-    const rankClass = visualRank === '10' ? ' table-card-rank--ten' : '';
-    const cardStyle = ['classic-mirrored', 'tournament', 'clean-corner', 'clarity-corner'].includes(document.documentElement.dataset.cardStyle)
-      ? document.documentElement.dataset.cardStyle
-      : 'tournament';
-    const cardStep = isCommunity ? 50 : 45;
-    const finalX = ((index - ((totalCards - 1) / 2)) * cardStep) - 20;
-    const cornerText = `
-          <text class="riverline-card-corner-rank table-card-corner-rank${rankClass}" x="10" y="14" text-anchor="middle">${visualRank}</text>
-          <text class="riverline-card-corner-suit table-card-corner-suit" x="10" y="27" text-anchor="middle">${presentation.symbol}</text>`;
-    const secondaryCorner = cardStyle === 'clean-corner' ? '' : `
-        <g class="table-card-corner table-card-corner--bottom table-card-corner--${cardStyle === 'clarity-corner' ? 'subdued' : 'full'}" aria-hidden="true" transform="translate(40 57) rotate(180)">${cornerText}
-        </g>`;
-    const cornerMarkup = cardStyle === 'tournament' ? '' : `
-        <g class="table-card-corner table-card-corner--top" aria-hidden="true">${cornerText}
-        </g>${secondaryCorner}`;
-
-    return `
-      <g class="card-group poker-card-svg riverline-card card--known card--style-${cardStyle} card--suit-${presentation.id}${isDealing ? ' is-card-dealt' : ''}" data-card-state="known" data-card-style="${cardStyle}" style="--card-final-x:${finalX}px; --card-deal-order:${Math.min(index, 4)}; transform:translate(${finalX}px, 0px);">
-        <rect class="riverline-card-face table-card-face" x="0" y="0" width="40" height="57" rx="5" ry="5" />
-        ${cornerMarkup}
-        <g class="table-card-tournament" aria-hidden="true">
-          <text class="riverline-card-tournament-rank${rankClass}" x="20" y="25" text-anchor="middle">${visualRank}</text>
-          <text class="riverline-card-tournament-suit" x="20" y="42" text-anchor="middle">${presentation.symbol}</text>
-        </g>
-      </g>
-    `;
+    const presentation = globalThis.RiverlineCardPresentation;
+    if (!presentation) throw new Error('Riverline card presentation must load before TableRenderer');
+    return presentation.tableCardSvgMarkup({
+      rank,
+      suit,
+      index,
+      totalCards,
+      isCommunity,
+      isDealing,
+      rankStyle: document.documentElement.dataset.cardRankStyle,
+      faceStyle: document.documentElement.dataset.cardFaceStyle,
+    });
   }
 
   pokerAmountMarkup(options) {
@@ -240,14 +211,9 @@ class TableRenderer {
   }
 
   renderCardBack(index) {
-    const finalX = ((index - 0.5) * 25) - 20;
-    return `
-      <g class="table-card-back poker-card-svg poker-card-back" data-card-state="unknown" transform="translate(${finalX}, 0)">
-        <rect class="table-card-back-face" x="0" y="0" width="40" height="58" rx="4" ry="4" />
-        <path class="table-card-back-line" d="M7 17 C15 11 25 11 33 17 M7 41 C15 47 25 47 33 41" />
-        <text class="table-card-back-mark" x="20" y="34" text-anchor="middle">R</text>
-      </g>
-    `;
+    const presentation = globalThis.RiverlineCardPresentation;
+    if (!presentation) throw new Error('Riverline card presentation must load before TableRenderer');
+    return presentation.tableCardBackSvgMarkup({ index });
   }
 
   renderKnownCards(container, cards, key, isCommunity = false, replayDealCardIds = null) {

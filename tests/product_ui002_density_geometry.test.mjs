@@ -6,6 +6,7 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
+const cardPresentation = fs.readFileSync(new URL('../app/src/application/card-presentation.mjs', import.meta.url), 'utf8');
 
 const densityStart = css.indexOf('PRODUCT-UI-002: density, geometry, and component fit');
 assert.ok(densityStart >= 0, 'PRODUCT-UI-002 CSS section must exist');
@@ -66,8 +67,9 @@ test('table seats use one centered compact player-unit anchor for cards and iden
   assert.match(table, /class="table-seat table-player-unit\$\{[^}]+\}"[^>]*data-card-anchor="center"/);
   assert.match(table, /class="table-hole-cards" transform="translate\(0, -94\)"/);
   assert.match(table, /class="table-seat-surface" x="-50" y="-34" width="100" height="70"/);
-  assert.match(table, /const finalX = \(\(index - \(\(totalCards - 1\) \/ 2\)\) \* cardStep\) - 20/);
-  assert.match(table, /renderCardBack\(index\)[\s\S]*const finalX = \(\(index - 0\.5\) \* 25\) - 20/);
+  assert.match(cardPresentation, /const step = isCommunity \? 50 : 45/);
+  assert.match(cardPresentation, /const finalX = \(\(index - \(\(totalCards - 1\) \/ 2\)\) \* step\) - \(geometry\.width \/ 2\)/);
+  assert.match(cardPresentation, /tableCardBackSvgMarkup[\s\S]*const finalX = \(\(index - 0\.5\) \* 25\) - \(geometry\.width \/ 2\)/);
   const cardIndex = table.indexOf('class="table-hole-cards"');
   const infoIndex = table.indexOf('class="table-seat-info"');
   assert.ok(cardIndex >= 0 && infoIndex > cardIndex, 'seat information must paint above cards');

@@ -1,6 +1,6 @@
 <!doctype html>
 
-<html lang="en" data-theme="midnight" data-card-style="tournament" data-density="comfortable" data-layout-preset="balanced" data-layout-preset-preference="balanced" data-layout-workspace="home">
+<html lang="en" data-theme="midnight" data-card-face-style="minimal" data-card-style="minimal" data-card-back-style="riverline" data-card-rank-style="poker" data-four-color="true" data-density="comfortable" data-layout-preset="balanced" data-layout-preset-preference="balanced" data-layout-workspace="home">
 
 
 
@@ -2417,7 +2417,7 @@
             <div class="divider"></div>
             <div class="info-section">
               <h3 style="color:var(--primary);" data-i18n="Settings and presentation">Settings and presentation</h3>
-              <p data-i18n="Settings includes the current theme choices, language, audio, and card presentation. Choose Card Style from Classic Mirrored, Tournament, Clean Corner, or Clarity Corner. Rank Style lets you display ten as T or 10; it changes presentation only.">Settings includes the current theme choices, language, audio, and card presentation. Choose Card Style from Classic Mirrored, Tournament, Clean Corner, or Clarity Corner. Rank Style lets you display ten as T or 10; it changes presentation only.</p>
+              <p data-i18n="Settings includes theme, language, audio, and card presentation. Choose Classic, Minimal, or High Contrast faces and Riverline, Solid, or Geometric backs. Rank style displays ten as T or 10; presentation never changes card identity.">Settings includes theme, language, audio, and card presentation. Choose Classic, Minimal, or High Contrast faces and Riverline, Solid, or Geometric backs. Rank style displays ten as T or 10; presentation never changes card identity.</p>
             </div>
             <div class="divider"></div>
             <div class="info-section">
@@ -2498,12 +2498,14 @@
         <div class="settings-group settings-appearance-group" data-tutorial-anchor="settings-appearance">
             <h3 class="settings-section-title" data-i18n="Appearance & Themes">Appearance & Themes</h3>
             
-            <div class="field" style="margin-top: 16px;">
-              <div class="switchrow" style="margin: 0;">
-                <span style="font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;" data-i18n="4-Color Deck (Pro)">4-Color Deck (Pro)</span>
+            <div class="field settings-preference-field card-color-preference-field">
+              <div class="settings-preference-copy">
+                <strong data-i18n="Four-color deck">Four-color deck</strong>
+                <span class="panel-note" data-i18n="Uses a stable color and suit glyph for each suit. Card identity never changes.">Uses a stable color and suit glyph for each suit. Card identity never changes.</span>
+              </div>
+              <div class="switchrow">
                 <button class="switch ui-switch on" id="fourColorDeckToggle" type="button" aria-label="Use four-color deck" data-i18n-aria-label="Use four-color deck" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
-              <div class="panel-note" style="margin-top: 4px;" data-i18n="Use distinct colors for all four suits.">Use distinct colors for all four suits.</div>
             </div>
 
             <div class="field settings-preference-field density-preference-field">
@@ -2541,18 +2543,38 @@
               </div>
             </div>
 
-            <label class="field settings-preference-field" for="cardStyleSelect">
-              <span class="settings-preference-copy">
-                <strong data-i18n="Card style">Card style</strong>
-                <span class="panel-note" data-i18n="Changes card presentation only.">Changes card presentation only.</span>
-              </span>
-              <select id="cardStyleSelect" class="control-select" aria-label="Card style" data-i18n-aria-label="Card style">
-                <option value="classic-mirrored" data-i18n="Classic Mirrored">Classic Mirrored</option>
-                <option value="tournament" selected data-i18n="Tournament">Tournament</option>
-                <option value="clean-corner" data-i18n="Clean Corner">Clean Corner</option>
-                <option value="clarity-corner" data-i18n="Clarity Corner">Clarity Corner</option>
-              </select>
-            </label>
+            <fieldset class="field settings-preference-field card-style-preference-field">
+              <legend class="settings-preference-copy">
+                <strong data-i18n="Card face style">Card face style</strong>
+                <span class="panel-note" data-i18n="Applies immediately to card faces across every workspace.">Applies immediately to card faces across every workspace.</span>
+              </legend>
+              <div id="cardFaceStyleControl" class="card-style-options" role="group" aria-label="Card face style" data-i18n-aria-label="Card face style">
+                <button class="card-style-choice" type="button" data-card-face-style="classic" aria-pressed="false">
+                  <span class="settings-card-face riverline-card card--suit-h" data-card-preview-face-style="classic" data-card-preview-rank="T" data-card-preview-suit="h" data-card-size="picker" aria-hidden="true" dir="ltr"></span>
+                  <strong data-i18n="Classic">Classic</strong>
+                </button>
+                <button class="card-style-choice active" type="button" data-card-face-style="minimal" aria-pressed="true">
+                  <span class="settings-card-face riverline-card card--suit-s" data-card-preview-face-style="minimal" data-card-preview-rank="T" data-card-preview-suit="s" data-card-size="picker" aria-hidden="true" dir="ltr"></span>
+                  <strong data-i18n="Minimal">Minimal</strong>
+                </button>
+                <button class="card-style-choice" type="button" data-card-face-style="high-contrast" aria-pressed="false">
+                  <span class="settings-card-face riverline-card card--suit-c" data-card-preview-face-style="high-contrast" data-card-preview-rank="T" data-card-preview-suit="c" data-card-size="picker" aria-hidden="true" dir="ltr"></span>
+                  <strong data-i18n="High Contrast">High Contrast</strong>
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset class="field settings-preference-field card-style-preference-field">
+              <legend class="settings-preference-copy">
+                <strong data-i18n="Card-back style">Card-back style</strong>
+                <span class="panel-note" data-i18n="Hidden cards stay distinct from empty card slots.">Hidden cards stay distinct from empty card slots.</span>
+              </legend>
+              <div id="cardBackStyleControl" class="card-style-options" role="group" aria-label="Card-back style" data-i18n-aria-label="Card-back style">
+                <button class="card-style-choice active" type="button" data-card-back-style="riverline" aria-pressed="true"><span class="settings-card-back riverline-card-back" data-card-preview-back-style="riverline" data-card-size="picker" aria-hidden="true"></span><strong data-i18n="Riverline">Riverline</strong></button>
+                <button class="card-style-choice" type="button" data-card-back-style="solid" aria-pressed="false"><span class="settings-card-back riverline-card-back" data-card-preview-back-style="solid" data-card-size="picker" aria-hidden="true"></span><strong data-i18n="Solid">Solid</strong></button>
+                <button class="card-style-choice" type="button" data-card-back-style="geometric" aria-pressed="false"><span class="settings-card-back riverline-card-back" data-card-preview-back-style="geometric" data-card-size="picker" aria-hidden="true"></span><strong data-i18n="Geometric">Geometric</strong></button>
+              </div>
+            </fieldset>
 
             <section class="field settings-preference-field theme-preference-field" aria-labelledby="themePreferenceTitle">
               <div class="settings-preference-copy">
@@ -2927,7 +2949,7 @@
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>
-  <script src="src/core/logic.js?v=24" defer></script>
+  <script src="src/core/logic.js?v=25" defer></script>
   <script src="src/ui/teacher.js" defer></script>
   <script src="src/ui/PokerPrimitives.js" defer></script>
   <script src="src/ui/TableRenderer.js" defer></script>
