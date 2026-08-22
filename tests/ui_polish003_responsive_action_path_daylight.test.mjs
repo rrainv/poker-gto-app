@@ -66,20 +66,20 @@ test('details disclosure is localized, keyboard-native, and not globally persist
   }
 });
 
-test('Daylight table uses semantic theme-derived tokens while Midnight token values remain unchanged', () => {
+test('Daylight and Midnight tables keep the semantic felt-driven token grammar', () => {
   const daylightBlocks = [...css.matchAll(/\[data-theme="daylight"\]\s*\{([\s\S]*?)\n\}/g)].map((match) => match[1]);
   const pokerDaylight = daylightBlocks.find((block) => block.includes('--poker-table-rail-start')) || '';
   assert.match(pokerDaylight, /--poker-table-rail-start: color-mix\(in srgb, var\(--surface-shell\)/);
-  assert.match(pokerDaylight, /--poker-table-surface-start: color-mix\(in srgb, var\(--accent-secondary\)/);
-  assert.match(pokerDaylight, /--poker-table-surface-end: color-mix\(in srgb, var\(--accent-primary\)/);
+  assert.match(pokerDaylight, /--poker-table-surface-start: color-mix\(in srgb, var\(--poker-felt-accent\)/);
+  assert.match(pokerDaylight, /--poker-table-surface-end: color-mix\(in srgb, var\(--poker-felt-accent\)/);
   assert.match(pokerDaylight, /--poker-table-seat: var\(--surface-elevated\)/);
   assert.match(pokerDaylight, /--poker-table-shadow-opacity: 0\.14/);
 
   const rootPoker = css.slice(css.indexOf('/* DESIGN-005: poker visual system'), css.indexOf('[data-theme="graphite"]', css.indexOf('/* DESIGN-005: poker visual system')));
-  assert.match(rootPoker, /--poker-table-rail-start: #29312d/);
-  assert.match(rootPoker, /--poker-table-rail-end: #101512/);
-  assert.match(rootPoker, /--poker-table-surface-start: #204b3a/);
-  assert.match(rootPoker, /--poker-table-surface-end: #112c22/);
+  assert.match(rootPoker, /--poker-table-rail-start: color-mix\(in srgb, var\(--surface-elevated\)/);
+  assert.match(rootPoker, /--poker-table-rail-end: color-mix\(in srgb, var\(--surface-inset\)/);
+  assert.match(rootPoker, /--poker-table-surface-start: color-mix\(in srgb, var\(--poker-felt-accent\)/);
+  assert.match(rootPoker, /--poker-table-surface-end: color-mix\(in srgb, var\(--poker-felt-accent\)/);
   assert.match(rootPoker, /--poker-table-shadow-opacity: 0\.28/);
 });
 

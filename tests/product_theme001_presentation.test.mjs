@@ -28,6 +28,7 @@ class MemoryStorage {
     this.values.set(key, String(value));
     this.writes.push([key, String(value)]);
   }
+  removeItem(key) { this.values.delete(key); }
 }
 
 function fixture(initial = {}) {
@@ -69,12 +70,14 @@ test('built-in switching is live, persistent, announced, and limited to three se
 
   view.controller.apply('graphite');
   assert.equal(view.root.dataset.theme, 'graphite');
-  assert.equal(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY), 'graphite');
-  assert.deepEqual(view.events.at(-1).detail, { theme: 'graphite', customized: false });
+  assert.equal(JSON.parse(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY)).activeThemeId, 'graphite');
+  assert.deepEqual(view.events.at(-1).detail, {
+    theme: 'graphite', themeId: 'graphite', customized: false, customTheme: false,
+  });
 
   view.controller.apply('daylight');
   assert.equal(view.root.dataset.theme, 'daylight');
-  assert.equal(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY), 'daylight');
+  assert.equal(JSON.parse(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY)).activeThemeId, 'daylight');
 });
 
 test('custom accent, surface, and felt persist per built-in theme and restore', () => {
@@ -116,8 +119,8 @@ test('reset removes only the current theme customization and restores CSS defaul
   assert.ok(view.controller.getCustomization()?.accent);
   const record = JSON.parse(view.storage.getItem(PRESENTATION_THEME_CUSTOMIZATION_STORAGE_KEY));
   assert.equal(record.schemaVersion, PRESENTATION_THEME_SCHEMA_VERSION);
-  assert.ok(record.byTheme.midnight);
-  assert.equal(record.byTheme.graphite, undefined);
+  assert.ok(record.draftsByTheme.midnight);
+  assert.equal(record.draftsByTheme.graphite, undefined);
 });
 
 test('invalid and legacy storage values repair to Midnight without leaking raw CSS', () => {
@@ -129,30 +132,54 @@ test('invalid and legacy storage values repair to Midnight without leaking raw C
     }),
   } });
   assert.equal(view.controller.getTheme(), 'midnight');
-  assert.equal(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY), 'midnight');
+  assert.equal(JSON.parse(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY)).activeThemeId, 'midnight');
   assert.equal(view.controller.getCustomization(), null);
   assert.equal(view.properties.size, 0);
 
   assert.equal(normalizeHexColor('red'), null);
   assert.equal(normalizeThemeCustomization({ accent: 'var(--danger)' }, 'midnight'), null);
   const repaired = JSON.parse(view.storage.getItem(PRESENTATION_THEME_CUSTOMIZATION_STORAGE_KEY));
-  assert.deepEqual(repaired, { schemaVersion: PRESENTATION_THEME_SCHEMA_VERSION, byTheme: {} });
+  assert.deepEqual(repaired, {
+    schemaVersion: PRESENTATION_THEME_SCHEMA_VERSION,
+    activeThemeId: 'midnight',
+    customThemes: [],
+    draftsByTheme: {},
+  });
 });
 
-test('custom guardrails preserve focus and foreground contrast', () => {
+test('exact extreme custom colors are preserved while dependent foreground, focus, and borders stay readable', () => {
   for (const theme of PRESENTATION_THEMES) {
-    const normalized = normalizeThemeCustomization({
-      accent: theme.tone === 'light' ? '#ffffff' : '#000000',
-      surface: theme.tone === 'light' ? '#ffffff' : '#000000',
-      felt: '#ff00ff',
-    }, theme.id);
-    assert.ok(normalized);
-    assert.ok(contrastRatio(normalized.accent, normalized.surface) >= 3, `${theme.id} custom focus contrast`);
-    const readable = Math.max(
-      contrastRatio('#07120d', normalized.accent),
-      contrastRatio('#ffffff', normalized.accent),
-    );
-    assert.ok(readable >= 4.5, `${theme.id} custom accent foreground`);
+    for (const selected of ['#ff00ff', '#000000', '#ffffff']) {
+      const view = fixture();
+      view.controller.apply(theme.id);
+      const normalized = normalizeThemeCustomization({ accent: selected, surface: selected, felt: selected }, theme.id);
+      assert.deepEqual(normalized, { accent: selected, surface: selected, felt: selected });
+      view.controller.customize(normalized);
+
+      assert.equal(view.controller.getColors().accent, selected);
+      assert.equal(view.controller.getColors().surface, selected);
+      assert.equal(view.controller.getColors().felt, selected);
+      assert.equal(view.properties.get('--accent-primary'), selected);
+      assert.equal(view.properties.get('--surface-canvas'), selected);
+      assert.equal(view.properties.get('--poker-felt-accent'), selected);
+      if (selected === '#000000') assert.equal(view.properties.get('color-scheme'), 'dark');
+      if (selected === '#ffffff') assert.equal(view.properties.get('color-scheme'), 'light');
+
+      const backgrounds = [
+        view.properties.get('--surface-canvas'),
+        view.properties.get('--surface-panel'),
+        view.properties.get('--surface-interactive'),
+      ];
+      for (const background of backgrounds) {
+        assert.ok(contrastRatio(view.properties.get('--text-primary'), background) >= 4.5, `${theme.id} ${selected} primary text`);
+        assert.ok(contrastRatio(view.properties.get('--text-secondary'), background) >= 4.5, `${theme.id} ${selected} secondary text`);
+        assert.ok(contrastRatio(view.properties.get('--text-muted'), background) >= 4.5, `${theme.id} ${selected} muted text`);
+        assert.ok(contrastRatio(view.properties.get('--border-focus'), background) >= 3, `${theme.id} ${selected} focus`);
+        assert.ok(contrastRatio(view.properties.get('--border-default'), background) >= 3, `${theme.id} ${selected} border`);
+      }
+      assert.ok(contrastRatio(view.properties.get('--text-on-accent'), selected) >= 4.5, `${theme.id} ${selected} accent foreground`);
+      assert.equal(view.properties.get('--selection-border'), view.properties.get('--border-focus'));
+    }
   }
 });
 
@@ -209,8 +236,9 @@ test('major workspaces consume the shared semantic surface grammar', () => {
 
 test('theme Settings copy is localized for EN RU HE and remains RTL-neutral', () => {
   for (const key of [
-    'Workstation theme', 'Built-in themes', 'Custom colors', 'Accent color', 'Surface tone',
-    'Table accent', 'Reset theme colors', 'Using built-in theme defaults.',
+    'Workstation theme', 'Built-in themes', 'Custom themes', 'Custom colors', 'Accent color', 'Surface tone',
+    'Table accent', 'Reset theme to base', 'Using built-in theme defaults.',
+    'Custom colors are preserved exactly. Foreground, focus, and borders adapt for readability; poker suits and action meanings do not change.',
   ]) {
     assert.match(translations, new RegExp(`'${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`));
   }

@@ -85,11 +85,14 @@ test('poker action and suit meanings do not vary by supported theme', () => {
   assert.match(css, /--matrix-mix:\s*var\(--action-mixed\)/);
 });
 
-test('Settings exposes only supported themes plus three guarded custom colors', () => {
+test('Settings exposes immutable built-ins, a custom library, and three exact Riverline color triggers', () => {
   assert.match(html, /id="themeSwatchGrid"[^>]+role="group"/);
-  assert.match(html, /id="themeAccentColor"[^>]+type="color"/);
-  assert.match(html, /id="themeSurfaceColor"[^>]+type="color"/);
-  assert.match(html, /id="themeFeltColor"[^>]+type="color"/);
+  assert.match(html, /id="customThemeGrid"[^>]+role="group"/);
+  assert.match(html, /id="themeAccentColor"[^>]+data-theme-color-token="accent"/);
+  assert.match(html, /id="themeSurfaceColor"[^>]+data-theme-color-token="surface"/);
+  assert.match(html, /id="themeFeltColor"[^>]+data-theme-color-token="felt"/);
+  assert.match(html, /id="riverlineColorPicker"[^>]+role="dialog"/);
+  assert.doesNotMatch(html, /type="color"/);
   assert.match(html, /id="resetThemeCustomization"/);
   assert.doesNotMatch(html, /Legacy \/ Experimental|discord-0px|Casino Felt/);
 });

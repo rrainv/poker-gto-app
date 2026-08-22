@@ -49,8 +49,19 @@ async function closeSettings(page) {
 async function setTheme(page, theme) {
   await openSettings(page);
   await page.click(`[data-theme-id="${theme}"]`);
-  await page.waitForFunction((expected) => document.documentElement.dataset.theme === expected, {}, theme);
+  await page.waitForFunction((expected) => document.documentElement.dataset.presentationThemeId === expected, {}, theme);
   await settle(page);
+}
+
+async function setPickerColor(page, trigger, color) {
+  await page.click(trigger);
+  await page.waitForFunction(() => !document.querySelector('#riverlineColorPicker')?.hidden);
+  await page.$eval('#themeColorHex', (input, value) => {
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }, color);
+  await page.click('#themeColorApply');
+  await page.waitForFunction(() => document.querySelector('#riverlineColorPicker')?.hidden);
 }
 
 async function setLanguage(page, language) {
@@ -93,6 +104,8 @@ async function inspect(page, label) {
       language: document.documentElement.lang,
       direction: document.documentElement.dir || 'ltr',
       theme: document.documentElement.dataset.theme,
+      themeId: document.documentElement.dataset.presentationThemeId,
+      themeKind: document.documentElement.dataset.themeKind,
       customized: document.documentElement.dataset.themeCustomized,
       density: document.documentElement.dataset.density,
       layout: document.documentElement.dataset.layoutPreset,
@@ -100,7 +113,8 @@ async function inspect(page, label) {
       documentOverflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       activeOverflow: overflow,
       selectedThemes,
-      themeButtonCount: document.querySelectorAll('[data-theme-id]').length,
+      builtInThemeCount: document.querySelectorAll('#themeSwatchGrid [data-theme-id]').length,
+      customThemeCount: document.querySelectorAll('#customThemeGrid [data-theme-id]').length,
       colors: {
         canvas: rootStyle.getPropertyValue('--surface-canvas').trim(),
         panel: rootStyle.getPropertyValue('--surface-panel').trim(),
@@ -109,8 +123,8 @@ async function inspect(page, label) {
         accent: rootStyle.getPropertyValue('--accent-primary').trim(),
         felt: rootStyle.getPropertyValue('--poker-felt-accent').trim(),
       },
-      storedTheme: localStorage.getItem('appTheme'),
-      storedCustom: localStorage.getItem('riverline_presentation_theme_customization'),
+      storedThemeLibrary: localStorage.getItem('riverline_presentation_theme_customization'),
+      storedLegacyTheme: localStorage.getItem('appTheme'),
     };
   }, label);
 }
@@ -143,27 +157,115 @@ try {
     findings.push(state);
   }
 
-  await setTheme(page, 'midnight');
-  await page.evaluate(() => {
-    const values = {
-      themeAccentColor: '#347fca',
-      themeSurfaceColor: '#16283a',
-      themeFeltColor: '#75405d',
-    };
-    Object.entries(values).forEach(([id, value]) => {
-      const input = document.getElementById(id);
-      input.value = value;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-    });
+  await setTheme(page, 'graphite');
+  const accentBeforeCancel = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim());
+  await page.click('#themeAccentColor');
+  await page.$eval('#themeColorHex', (input) => {
+    input.value = '#ff00ff';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
   });
+  await settle(page, 0);
+  const exactPickerState = await page.evaluate(() => {
+    const parseHex = (value) => {
+      const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(value);
+      return match ? match.slice(1).map((part) => Number.parseInt(part, 16) / 255) : null;
+    };
+    const rgb = parseHex(window.RiverlineColorPicker.getColor());
+    const maximum = Math.max(...rgb);
+    const minimum = Math.min(...rgb);
+    const delta = maximum - minimum;
+    const saturation = maximum === 0 ? 0 : (delta / maximum) * 100;
+    const valueTop = 100 - (maximum * 100);
+    const handle = document.querySelector('#themeColorSaturationValueHandle');
+    return {
+      picker: window.RiverlineColorPicker.getColor(),
+      input: document.querySelector('#themeColorHex').value.toLowerCase(),
+      preview: getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim(),
+      handleSaturation: Number.parseFloat(handle.style.getPropertyValue('--picker-saturation')),
+      handleValueTop: Number.parseFloat(handle.style.getPropertyValue('--picker-value')),
+      expectedSaturation: saturation,
+      expectedValueTop: valueTop,
+    };
+  });
+  const accentDuringPreview = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim());
+  const pickerScreenshot = await screenshot(page, 'settings-riverline-picker-1920x1080-en');
+  await page.evaluate(() => {
+    const scroller = document.querySelector('#settingsModal .modal-body');
+    if (scroller) scroller.scrollTop += 48;
+  });
+  const svBounds = await page.$eval('#themeColorSaturationValue', (element) => {
+    const bounds = element.getBoundingClientRect();
+    return { x: bounds.left, y: bounds.top, width: bounds.width, height: bounds.height };
+  });
+  await page.mouse.click(svBounds.x + (svBounds.width / 2), svBounds.y + (svBounds.height / 2));
+  await settle(page, 0);
+  const pointerPickerState = await page.evaluate(() => ({
+    picker: window.RiverlineColorPicker.getColor(),
+    input: document.querySelector('#themeColorHex').value.toLowerCase(),
+    preview: getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim(),
+  }));
+  await page.click('#themeSurfaceColor');
+  const tokenSwitchState = await page.evaluate(() => ({
+    token: window.RiverlineColorPicker.getToken(),
+    accent: getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim(),
+    input: document.querySelector('#themeColorHex').value.toLowerCase(),
+    surface: window.RiverlinePresentationTheme.getColors().surface,
+  }));
+  await page.click('#themeColorCancel');
+  const accentAfterCancel = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim());
+  await page.click('#themeAccentColor');
+  await page.keyboard.press('Escape');
+  const pickerClosedOnEscape = await page.$eval('#riverlineColorPicker', (element) => element.hidden);
+  await page.click('#themeAccentColor');
+  await page.$eval('#themeColorHex', (input) => {
+    input.value = '#abcdef';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.click('[data-theme-id="daylight"]');
+  const themeSwitchState = await page.evaluate(() => ({
+    pickerClosed: document.querySelector('#riverlineColorPicker').hidden,
+    themeId: window.RiverlinePresentationTheme.getTheme(),
+    accent: getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim(),
+    controllerAccent: window.RiverlinePresentationTheme.getColors().accent,
+  }));
+  await setTheme(page, 'graphite');
+  await setPickerColor(page, '#themeAccentColor', '#b46f38');
+  const appliedAccentState = await page.evaluate(() => ({
+    controller: window.RiverlinePresentationTheme.getColors().accent,
+    rendered: getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim(),
+  }));
+  await setPickerColor(page, '#themeSurfaceColor', '#202936');
+  await setPickerColor(page, '#themeFeltColor', '#6b4b62');
+  await page.type('#customThemeName', 'Graphite Study');
+  await page.click('#saveCustomTheme');
   await settle(page);
-  const customState = await inspect(page, 'custom Midnight settings');
-  customState.screenshot = await screenshot(page, 'settings-midnight-custom-1920x1080-en');
+  const customThemeId = await page.evaluate(() => window.RiverlinePresentationTheme.getTheme());
+  const customState = await inspect(page, 'saved Graphite custom theme');
+  customState.screenshot = await screenshot(page, 'settings-graphite-custom-1920x1080-en');
   findings.push(customState);
 
-  await page.click('#resetThemeCustomization');
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => Boolean(window.app) && Boolean(window.RiverlinePresentationTheme));
+  await openSettings(page);
+  findings.push(await inspect(page, 'reloaded Graphite custom theme'));
+  await page.$eval('#customThemeName', (input) => {
+    input.value = 'Graphite Focus';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.click('#renameCustomTheme');
+  await page.click('#duplicateTheme');
   await settle(page);
-  findings.push(await inspect(page, 'reset Midnight settings'));
+  findings.push(await inspect(page, 'renamed and duplicated Graphite custom theme'));
+  await page.click('#deleteCustomTheme');
+  await settle(page);
+  findings.push(await inspect(page, 'deleted active duplicate with fallback'));
+
+  await closeSettings(page);
+  await page.click('.mode-nav-item[data-navigation-id="hand"]');
+  await openSettings(page);
+  await page.click('[data-density-option="compact"]');
+  await page.click('[data-layout-preset-option="table-focus"]');
+  findings.push(await inspect(page, 'custom Graphite Compact Table Focus'));
 
   await setLanguage(page, 'he');
   await setTheme(page, 'daylight');
@@ -183,7 +285,6 @@ try {
   }
 
   await page.evaluate(() => {
-    localStorage.setItem('appTheme', 'discord-0px');
     localStorage.setItem('riverline_presentation_theme_customization', '{bad json');
   });
   await page.reload({ waitUntil: 'load' });
@@ -194,21 +295,54 @@ try {
   for (const finding of findings) {
     if (finding.documentOverflowX > 1) failures.push(`${finding.label}: document overflow ${finding.documentOverflowX}px`);
     if (finding.activeOverflow.length) failures.push(`${finding.label}: active overflow ${finding.activeOverflow.join(', ')}`);
-    if (finding.themeButtonCount && finding.themeButtonCount !== 3) failures.push(`${finding.label}: expected 3 themes`);
+    if (finding.builtInThemeCount !== 3) failures.push(`${finding.label}: expected 3 immutable built-ins`);
     if (finding.selectedThemes.length > 1) failures.push(`${finding.label}: multiple selected themes`);
   }
   const firstThree = findings.slice(0, 3);
   if (new Set(firstThree.map((finding) => finding.colors.canvas)).size !== 3) failures.push('built-in canvas colors are not distinct');
   if (new Set(firstThree.map((finding) => finding.colors.accent)).size !== 3) failures.push('built-in accents are not distinct');
-  if (customState.customized !== 'true' || !customState.storedCustom?.includes('midnight')) failures.push('custom theme did not persist');
-  const resetState = findings.find((finding) => finding.label === 'reset Midnight settings');
-  if (resetState?.customized !== 'false') failures.push('reset did not restore defaults');
+  if (customState.customized !== 'true' || customState.themeKind !== 'custom'
+    || !customState.storedThemeLibrary?.includes(customThemeId)) failures.push('named custom theme did not persist');
+  const reloaded = findings.find((finding) => finding.label === 'reloaded Graphite custom theme');
+  if (reloaded?.themeId !== customThemeId || reloaded?.customThemeCount !== 1) failures.push('reload did not restore the active custom theme');
+  const duplicated = findings.find((finding) => finding.label === 'renamed and duplicated Graphite custom theme');
+  if (duplicated?.customThemeCount !== 2) failures.push('duplicate did not create a second custom theme');
+  const deleted = findings.find((finding) => finding.label === 'deleted active duplicate with fallback');
+  if (deleted?.themeId !== customThemeId || deleted?.customThemeCount !== 1) failures.push('active deletion did not fall back to the base custom theme');
+  const independent = findings.find((finding) => finding.label === 'custom Graphite Compact Table Focus');
+  if (independent?.density !== 'compact' || independent?.layout !== 'table-focus' || independent?.themeId !== customThemeId) failures.push('theme/density/layout independence failed');
   if (hebrewState.direction !== 'rtl' || hebrewState.language !== 'he') failures.push('Hebrew theme Settings did not render RTL');
   const fallback = findings.at(-1);
-  if (fallback.theme !== 'midnight' || fallback.storedTheme !== 'midnight' || fallback.customized !== 'false') failures.push('legacy fallback did not repair to Midnight');
+  if (fallback.theme !== 'midnight' || fallback.themeId !== 'midnight'
+    || fallback.customized !== 'false' || fallback.storedLegacyTheme !== null) failures.push('malformed fallback did not repair to the single Midnight record');
   failures.push(...errors.map((error) => `page error: ${error}`));
 
-  const report = { artifactRoot, findings, failures };
+  if (accentDuringPreview === accentBeforeCancel || accentAfterCancel !== accentBeforeCancel) failures.push('picker Cancel did not provide and then restore live preview');
+  if (exactPickerState.picker !== '#ff00ff'
+    || exactPickerState.picker !== exactPickerState.input
+    || exactPickerState.picker !== exactPickerState.preview
+    || Math.abs(exactPickerState.handleSaturation - exactPickerState.expectedSaturation) > 0.01
+    || Math.abs(exactPickerState.handleValueTop - exactPickerState.expectedValueTop) > 0.01) {
+    failures.push('exact picker color did not match marker, hex, and rendered preview');
+  }
+  if (pointerPickerState.picker !== pointerPickerState.input || pointerPickerState.picker !== pointerPickerState.preview) {
+    failures.push('scrolled pointer selection did not keep picker, hex, and preview aligned');
+  }
+  if (tokenSwitchState.token !== 'surface' || tokenSwitchState.accent !== accentBeforeCancel
+    || tokenSwitchState.input !== tokenSwitchState.surface) failures.push('picker token switch retained stale preview state');
+  if (!themeSwitchState.pickerClosed || themeSwitchState.themeId !== 'daylight'
+    || themeSwitchState.accent !== themeSwitchState.controllerAccent) failures.push('theme switch retained a stale open picker preview');
+  if (appliedAccentState.controller !== appliedAccentState.rendered) failures.push('picker Apply did not commit the rendered color exactly');
+  if (!pickerClosedOnEscape) failures.push('picker did not close on Escape');
+  const report = {
+    artifactRoot,
+    pickerScreenshot,
+    pickerChecks: {
+      exactPickerState, pointerPickerState, tokenSwitchState, themeSwitchState, appliedAccentState,
+    },
+    findings,
+    failures,
+  };
   fs.writeFileSync(path.join(artifactRoot, 'report.json'), JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
   if (failures.length) process.exitCode = 1;

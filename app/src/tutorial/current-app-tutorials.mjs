@@ -147,7 +147,7 @@ export const SETTINGS_TUTORIAL_DEFINITION = definition({
   descriptionKey: 'Adjust language, theme, cards, and sound without touring every toggle.',
   steps: [
     { id: 'overview', anchor: 'settings-overview', titleKey: 'Preferences change presentation', bodyKey: 'Settings controls presentation rather than poker state. Language is available from the global rail; this dialog groups theme, card, and sound preferences.', placement: 'bottom' },
-    { id: 'appearance', anchor: 'settings-appearance', titleKey: 'Choose theme and card presentation', bodyKey: 'Select a supported theme, four-color deck, rank notation, and card style for comfortable reading. Card IDs and poker calculations do not change.', placement: 'right' },
+    { id: 'appearance', anchor: 'settings-appearance', titleKey: 'Choose theme and card presentation', bodyKey: 'Choose an immutable built-in theme or a named custom theme. Riverline preserves exact accent, surface, and table colors while deriving readable dependent colors; density, layout, card IDs, and poker calculations stay independent.', placement: 'right' },
     { id: 'account', anchor: 'settings-account', titleKey: 'Saved Study sync is always opt-in', bodyKey: 'Sign-in does not upload study data. In Account / Profile, choose Saved Hands and Spots and Personal Strategy / Range Calibration separately; each remains local-first.', placement: 'left' },
     { id: 'audio', anchor: 'settings-audio', titleKey: 'Keep sound under your control', bodyKey: 'Sound effects can be disabled here or from the rail. Tutorial motion continues to respect the system reduced-motion preference.', placement: 'left' },
   ],

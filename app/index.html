@@ -2557,29 +2557,80 @@
             <section class="field settings-preference-field theme-preference-field" aria-labelledby="themePreferenceTitle">
               <div class="settings-preference-copy">
                 <strong id="themePreferenceTitle" data-i18n="Workstation theme">Workstation theme</strong>
-                <span class="panel-note" data-i18n="Choose a restrained built-in palette, then optionally tune three guarded colors.">Choose a restrained built-in palette, then optionally tune three guarded colors.</span>
+                <span class="panel-note" data-i18n="Choose a built-in theme or create a named custom theme with three exact custom colors.">Choose a built-in theme or create a named custom theme with three exact custom colors.</span>
               </div>
-              <div id="themeSwatchGrid" class="theme-swatch-grid" role="group" aria-label="Built-in themes" data-i18n-aria-label="Built-in themes"></div>
+              <div class="theme-library" aria-label="Theme library" data-i18n-aria-label="Theme library">
+                <section class="theme-library-section" aria-labelledby="builtInThemeHeading">
+                  <h4 id="builtInThemeHeading" class="theme-library-heading" data-i18n="Built-in">Built-in</h4>
+                  <div id="themeSwatchGrid" class="theme-swatch-grid" role="group" aria-label="Built-in themes" data-i18n-aria-label="Built-in themes"></div>
+                </section>
+                <section class="theme-library-section" aria-labelledby="customThemeHeading">
+                  <h4 id="customThemeHeading" class="theme-library-heading" data-i18n="Custom">Custom</h4>
+                  <p id="customThemeEmpty" class="theme-library-empty panel-note" data-i18n="No saved custom themes yet.">No saved custom themes yet.</p>
+                  <div id="customThemeGrid" class="theme-swatch-grid theme-swatch-grid--custom" role="group" aria-label="Custom themes" data-i18n-aria-label="Custom themes"></div>
+                </section>
+              </div>
               <fieldset class="theme-customization section-inset" aria-describedby="themeCustomizationHelp themeCustomizationStatus">
                 <legend data-i18n="Custom colors">Custom colors</legend>
                 <div class="theme-color-controls">
-                  <label class="theme-color-field" for="themeAccentColor">
+                  <div class="theme-color-field">
                     <span data-i18n="Accent color">Accent color</span>
-                    <input id="themeAccentColor" type="color" value="#42ad7b">
-                  </label>
-                  <label class="theme-color-field" for="themeSurfaceColor">
+                    <button id="themeAccentColor" class="theme-color-trigger" type="button" data-theme-color-token="accent" data-label-key="Accent color" aria-haspopup="dialog" aria-expanded="false"><span class="theme-color-chip" aria-hidden="true"></span><span data-theme-color-value>#42AD7B</span></button>
+                    <button class="theme-token-reset ui-button ui-button--icon" type="button" data-reset-theme-token="accent" aria-label="Reset accent color" data-i18n-aria-label="Reset accent color" title="Reset accent color" data-i18n-title="Reset accent color">↺</button>
+                  </div>
+                  <div class="theme-color-field">
                     <span data-i18n="Surface tone">Surface tone</span>
-                    <input id="themeSurfaceColor" type="color" value="#101311">
-                  </label>
-                  <label class="theme-color-field" for="themeFeltColor">
+                    <button id="themeSurfaceColor" class="theme-color-trigger" type="button" data-theme-color-token="surface" data-label-key="Surface tone" aria-haspopup="dialog" aria-expanded="false"><span class="theme-color-chip" aria-hidden="true"></span><span data-theme-color-value>#101311</span></button>
+                    <button class="theme-token-reset ui-button ui-button--icon" type="button" data-reset-theme-token="surface" aria-label="Reset surface tone" data-i18n-aria-label="Reset surface tone" title="Reset surface tone" data-i18n-title="Reset surface tone">↺</button>
+                  </div>
+                  <div class="theme-color-field">
                     <span data-i18n="Table accent">Table accent</span>
-                    <input id="themeFeltColor" type="color" value="#285a45">
-                  </label>
+                    <button id="themeFeltColor" class="theme-color-trigger" type="button" data-theme-color-token="felt" data-label-key="Table accent" aria-haspopup="dialog" aria-expanded="false"><span class="theme-color-chip" aria-hidden="true"></span><span data-theme-color-value>#285A45</span></button>
+                    <button class="theme-token-reset ui-button ui-button--icon" type="button" data-reset-theme-token="felt" aria-label="Reset table accent" data-i18n-aria-label="Reset table accent" title="Reset table accent" data-i18n-title="Reset table accent">↺</button>
+                  </div>
                 </div>
-                <p id="themeCustomizationHelp" class="panel-note" data-i18n="Surface and table colors stay inside theme-safe ranges. Poker suits and action meanings do not change.">Surface and table colors stay inside theme-safe ranges. Poker suits and action meanings do not change.</p>
+                <div id="riverlineColorPicker" class="riverline-color-picker" role="dialog" aria-modal="false" aria-labelledby="riverlineColorPickerTitle" hidden>
+                  <div class="riverline-color-picker-head">
+                    <strong id="riverlineColorPickerTitle" data-i18n="Choose color">Choose color</strong>
+                    <span class="panel-note" data-i18n="Preview is temporary until Apply.">Preview is temporary until Apply.</span>
+                  </div>
+                  <div id="themeColorSaturationValue" class="theme-color-sv" role="slider" tabindex="0" aria-label="Saturation and brightness" data-i18n-aria-label="Saturation and brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+                    <span id="themeColorSaturationValueHandle" class="theme-color-sv-handle" aria-hidden="true"></span>
+                  </div>
+                  <label class="theme-color-hue-field" for="themeColorHue"><span data-i18n="Hue">Hue</span><input id="themeColorHue" type="range" min="0" max="360" step="0.1" value="0"></label>
+                  <div class="theme-color-picker-row">
+                    <label class="theme-color-hex-field" for="themeColorHex"><span data-i18n="Hex color">Hex color</span><input id="themeColorHex" class="control-input" type="text" inputmode="text" maxlength="7" autocomplete="off" spellcheck="false" dir="ltr" value="#42AD7B"></label>
+                    <div class="theme-color-previews" aria-label="Current and new color" data-i18n-aria-label="Current and new color">
+                      <span><i id="themeColorCurrentPreview" aria-hidden="true"></i><small data-i18n="Current">Current</small></span>
+                      <span><i id="themeColorNewPreview" aria-hidden="true"></i><small data-i18n="New">New</small></span>
+                    </div>
+                  </div>
+                  <div class="theme-color-presets" role="group" aria-label="Preset colors" data-i18n-aria-label="Preset colors">
+                    <button type="button" data-color-picker-preset="#42ad7b" style="--preset-color:#42ad7b" aria-label="#42AD7B"></button>
+                    <button type="button" data-color-picker-preset="#7897c8" style="--preset-color:#7897c8" aria-label="#7897C8"></button>
+                    <button type="button" data-color-picker-preset="#c18a46" style="--preset-color:#c18a46" aria-label="#C18A46"></button>
+                    <button type="button" data-color-picker-preset="#9a668f" style="--preset-color:#9a668f" aria-label="#9A668F"></button>
+                    <button type="button" data-color-picker-preset="#285a45" style="--preset-color:#285a45" aria-label="#285A45"></button>
+                    <button type="button" data-color-picker-preset="#477765" style="--preset-color:#477765" aria-label="#477765"></button>
+                  </div>
+                  <div class="theme-color-picker-actions">
+                    <button id="themeColorCancel" class="ui-button ui-button--secondary" type="button" data-i18n="Cancel">Cancel</button>
+                    <button id="themeColorApply" class="ui-button ui-button--primary" type="button" data-i18n="Apply">Apply</button>
+                  </div>
+                </div>
+                <p id="themeCustomizationHelp" class="panel-note" data-i18n="Custom colors are preserved exactly. Foreground, focus, and borders adapt for readability; poker suits and action meanings do not change.">Custom colors are preserved exactly. Foreground, focus, and borders adapt for readability; poker suits and action meanings do not change.</p>
+                <div class="theme-name-row">
+                  <label for="customThemeName"><span data-i18n="Theme name">Theme name</span><input id="customThemeName" class="control-input" type="text" maxlength="48" autocomplete="off" dir="auto" placeholder="Name this theme" data-i18n-placeholder="Name this theme"></label>
+                  <button id="saveCustomTheme" class="ui-button ui-button--primary" type="button" data-i18n="Save as new">Save as new</button>
+                </div>
+                <div class="theme-library-actions" role="group" aria-label="Theme operations" data-i18n-aria-label="Theme operations">
+                  <button id="duplicateTheme" class="ui-button ui-button--secondary" type="button" data-i18n="Duplicate">Duplicate</button>
+                  <button id="renameCustomTheme" class="ui-button ui-button--secondary" type="button" data-i18n="Rename">Rename</button>
+                  <button id="deleteCustomTheme" class="ui-button ui-button--secondary ui-button--danger" type="button" data-i18n="Delete">Delete</button>
+                </div>
                 <div class="theme-customization-actions">
                   <p id="themeCustomizationStatus" class="theme-customization-status" role="status" aria-live="polite" data-i18n="Using built-in theme defaults.">Using built-in theme defaults.</p>
-                  <button id="resetThemeCustomization" class="ui-button ui-button--secondary" type="button" data-i18n="Reset theme colors">Reset theme colors</button>
+                  <button id="resetThemeCustomization" class="ui-button ui-button--secondary" type="button" data-i18n="Reset theme to base">Reset theme to base</button>
                 </div>
               </fieldset>
             </section>

@@ -84,6 +84,7 @@ These identifiers are the current live-audit baseline. They remain distinct from
 | QA-THEME-003 | PARTIAL | legacy/experimental labels are retired from the supported theme catalog; human visual acceptance pending | PRODUCT-THEME-001 |
 | QA-THEME-004 | PARTIAL | duplicate Discord entries are retired from the supported theme catalog; human visual acceptance pending | PRODUCT-THEME-001 |
 | QA-THEME-005 | PARTIAL | Luxury Gold is retired from the supported theme catalog; human visual acceptance pending | PRODUCT-THEME-001 |
+| QA-THEME-006 | PARTIAL | Named custom themes, v1→v2 single-record migration/repair, create/duplicate/rename/edit/delete/reset/fallback operations, exact accent/surface/felt overrides with derived readable dependent tokens, a pointer/keyboard HSV + hex Riverline picker, EN/RU/HE/RTL structure, and theme × density × layout independence are automated. Remaining acceptance: human Firefox at 1920×1080 for Graphite create → three picker edits → save/reload → rename → duplicate → delete, built-in immutability, exact picker marker/hex/preview identity, focus/Escape/Cancel, and Compact + Table Focus composition. | PRODUCT-THEME-002 human Firefox acceptance |
 | QA-MICRO-001 | OPEN | Settings/current utility icon alignment needs final pass | PRODUCT-UI-004 |
 | QA-MICRO-002 | OPEN | action-color palette needs final restrained consistency review | PRODUCT-UI-004 |
 | QA-MICRO-003 | OPEN | awkward near-black inset surfaces need final token review | PRODUCT-UI-004 |

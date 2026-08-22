@@ -118,7 +118,7 @@ The exact first shipped scope remains an **OPEN PRODUCT DECISION** at ticket pla
 | layout presets | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Balanced plus workspace-curated Table Focus, Analysis Focus, and Controls First are implemented as density-independent per-workspace presentation preferences with safe 1024 convergence and no custom layout serializer; final human Firefox acceptance remains open |
 | density and sizing | PRESERVED FUTURE | Comfortable/Compact density and card sizing |
 | beginner/expert modes | PRESERVED FUTURE | simpler guided presentation vs denser provenance/frequency/keyboard workflow |
-| themes/preferences | PRESERVED FUTURE | curated themes and safe workspace persistence/reset; no arbitrary drag/drop serializer |
+| themes/preferences | CHECKPOINTED / INTENTIONALLY INCOMPLETE | immutable Midnight/Daylight/Graphite built-ins, named local custom themes, three exact semantic color overrides with derived readable dependent tokens, one versioned persistence record, and a keyboard/pointer Riverline picker are implemented; export/import remains future and final 1920×1080 Firefox acceptance is tracked in QA |
 | expert keyboard workflow | PRESERVED FUTURE | deliberate shortcuts and fast study operation |
 | richer table visuals | SHELVED FOR LATER | richer dealer/marker, physical dealing/card paths, stack-to-bet and pot-collection chip motion, denominations/stacks, table depth/3D, showdown/reveal motion, restrained ambience |
 | mobile composition | PRESERVED FUTURE | deliberate mobile product, not compressed desktop |

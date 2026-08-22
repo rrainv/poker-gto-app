@@ -1,7 +1,9 @@
-export const PRESENTATION_THEME_SCHEMA_VERSION = 'presentation-theme-customization/v1';
-export const PRESENTATION_THEME_STORAGE_KEY = 'appTheme';
-export const PRESENTATION_THEME_CUSTOMIZATION_STORAGE_KEY = 'riverline_presentation_theme_customization';
+export const PRESENTATION_THEME_SCHEMA_VERSION = 'presentation-theme-library/v2';
+export const PRESENTATION_THEME_STORAGE_KEY = 'riverline_presentation_theme_customization';
+export const PRESENTATION_THEME_CUSTOMIZATION_STORAGE_KEY = PRESENTATION_THEME_STORAGE_KEY;
+export const LEGACY_PRESENTATION_THEME_STORAGE_KEY = 'appTheme';
 export const DEFAULT_PRESENTATION_THEME = 'midnight';
+export const CUSTOM_THEME_VERSION = 1;
 
 export const PRESENTATION_THEMES = Object.freeze([
   Object.freeze({
@@ -25,10 +27,17 @@ export const PRESENTATION_THEMES = Object.freeze([
 ]);
 
 const THEME_BY_ID = new Map(PRESENTATION_THEMES.map((theme) => [theme.id, theme]));
+const SUPPORTED_COLOR_TOKENS = Object.freeze(['accent', 'surface', 'felt']);
+const CUSTOM_THEME_ID_PATTERN = /^custom-[a-z0-9_-]{1,72}$/i;
+const CUSTOM_THEME_NAME_LIMIT = 48;
+const CUSTOM_THEME_LIMIT = 64;
+const LEGACY_SCHEMA_VERSION = 'presentation-theme-customization/v1';
 const CUSTOM_PROPERTY_NAMES = Object.freeze([
+  'color-scheme',
   '--accent-primary', '--accent-primary-hover', '--accent-secondary',
   '--border-focus', '--selection-background', '--selection-border',
   '--text-on-accent', '--primary', '--primary-hover', '--primary-rgb',
+  '--text-primary', '--text-secondary', '--text-muted', '--text-disabled', '--text', '--muted',
   '--surface-canvas', '--surface-shell', '--surface-panel', '--surface-elevated',
   '--surface-interactive', '--surface-interactive-hover', '--surface-inset',
   '--border-subtle', '--border-default', '--border-strong', '--bg', '--panel', '--panel2',
@@ -37,6 +46,7 @@ const CUSTOM_PROPERTY_NAMES = Object.freeze([
 
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 const roundByte = (value) => Math.round(clamp(value, 0, 255));
+const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 
 export function normalizePresentationTheme(value) {
   return THEME_BY_ID.has(value) ? value : DEFAULT_PRESENTATION_THEME;
@@ -133,55 +143,51 @@ export function contrastRatio(first, second) {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-function ensureContrast(color, background, target, tone) {
-  if (contrastRatio(color, background) >= target) return color;
-  const destination = tone === 'light' ? '#000000' : '#ffffff';
-  for (let step = 1; step <= 20; step += 1) {
-    const candidate = mixHexColors(color, destination, step * 0.05);
-    if (contrastRatio(candidate, background) >= target) return candidate;
-  }
-  return destination;
-}
-
 function readableTextOn(background) {
   const dark = '#07120d';
   const light = '#ffffff';
   return contrastRatio(dark, background) >= contrastRatio(light, background) ? dark : light;
 }
 
-function guardedAccent(value, theme, surface) {
-  const normalized = normalizeHexColor(value);
-  if (!normalized) return null;
-  const hsl = rgbToHsl(hexToRgb(normalized));
-  const restrained = hslToHex({ h: hsl.h, s: clamp(hsl.s, 18, 72), l: clamp(hsl.l, 28, 68) });
-  return ensureContrast(restrained, surface, 3, theme.tone);
+function surfaceTone(background) {
+  return readableTextOn(background) === '#07120d' ? 'light' : 'dark';
 }
 
-function guardedSurface(value, theme) {
-  const normalized = normalizeHexColor(value);
-  if (!normalized) return null;
-  const hsl = rgbToHsl(hexToRgb(normalized));
-  const range = theme.tone === 'light' ? [86, 94] : [6, 16];
-  return hslToHex({ h: hsl.h, s: clamp(hsl.s, 0, 24), l: clamp(hsl.l, range[0], range[1]) });
+function ensureContrastAcross(color, backgrounds, target, tone) {
+  const validBackgrounds = backgrounds.filter((background) => normalizeHexColor(background));
+  if (validBackgrounds.every((background) => contrastRatio(color, background) >= target)) return color;
+  const destination = tone === 'light' ? '#07120d' : '#ffffff';
+  for (let step = 1; step <= 20; step += 1) {
+    const candidate = mixHexColors(color, destination, step * 0.05);
+    if (validBackgrounds.every((background) => contrastRatio(candidate, background) >= target)) return candidate;
+  }
+  return destination;
 }
 
-function guardedFelt(value, theme) {
-  const normalized = normalizeHexColor(value);
-  if (!normalized) return null;
-  const hsl = rgbToHsl(hexToRgb(normalized));
-  const lightness = theme.tone === 'light' ? clamp(hsl.l, 27, 54) : clamp(hsl.l, 18, 46);
-  return hslToHex({ h: hsl.h, s: clamp(hsl.s, 16, 58), l: lightness });
+function deriveTextPalette(palette) {
+  const backgrounds = [palette.canvas, palette.panel, palette.elevated, palette.interactive, palette.inset];
+  const dark = '#07120d';
+  const light = '#ffffff';
+  const minimumContrast = (color) => Math.min(...backgrounds.map((background) => contrastRatio(color, background)));
+  const primary = minimumContrast(dark) >= minimumContrast(light) ? dark : light;
+  return {
+    primary,
+    secondary: ensureContrastAcross(mixHexColors(primary, palette.canvas, 0.18), backgrounds, 4.5, palette.tone),
+    muted: ensureContrastAcross(mixHexColors(primary, palette.canvas, 0.34), backgrounds, 4.5, palette.tone),
+    disabled: ensureContrastAcross(mixHexColors(primary, palette.canvas, 0.48), backgrounds, 3, palette.tone),
+  };
 }
 
-function deriveSurfacePalette(surface, theme) {
+function deriveSurfacePalette(surface) {
   const hsl = rgbToHsl(hexToRgb(surface));
+  const tone = surfaceTone(surface);
   const colorAt = (lightness, saturation = hsl.s) => hslToHex({
     h: hsl.h,
     s: saturation,
     l: clamp(lightness, 2, 98),
   });
-  if (theme.tone === 'light') {
-    return {
+  const palette = tone === 'light'
+    ? {
       canvas: surface,
       shell: colorAt(hsl.l - 4),
       panel: colorAt(hsl.l + 3, hsl.s * 0.78),
@@ -192,34 +198,56 @@ function deriveSurfacePalette(surface, theme) {
       borderDefault: colorAt(hsl.l - 18, hsl.s * 0.62),
       borderStrong: colorAt(hsl.l - 30, hsl.s * 0.55),
       glow: colorAt(hsl.l - 3),
+    }
+    : {
+      canvas: surface,
+      shell: colorAt(hsl.l + 2),
+      panel: colorAt(hsl.l + 4),
+      elevated: colorAt(hsl.l + 7),
+      interactive: colorAt(hsl.l + 8),
+      hover: colorAt(hsl.l + 12),
+      inset: colorAt(hsl.l + 3),
+      borderDefault: colorAt(hsl.l + 18, hsl.s * 0.62),
+      borderStrong: colorAt(hsl.l + 28, hsl.s * 0.55),
+      glow: colorAt(hsl.l + 9),
     };
-  }
+  const borderBackgrounds = [palette.canvas, palette.panel, palette.interactive];
   return {
-    canvas: surface,
-    shell: colorAt(hsl.l + 2),
-    panel: colorAt(hsl.l + 4),
-    elevated: colorAt(hsl.l + 7),
-    interactive: colorAt(hsl.l + 8),
-    hover: colorAt(hsl.l + 12),
-    inset: colorAt(hsl.l + 3),
-    borderDefault: colorAt(hsl.l + 18, hsl.s * 0.62),
-    borderStrong: colorAt(hsl.l + 28, hsl.s * 0.55),
-    glow: colorAt(hsl.l + 9),
+    ...palette,
+    tone,
+    borderDefault: ensureContrastAcross(palette.borderDefault, borderBackgrounds, 3, tone),
+    borderStrong: ensureContrastAcross(palette.borderStrong, borderBackgrounds, 4.5, tone),
   };
 }
 
 export function normalizeThemeCustomization(value, themeId) {
-  const theme = THEME_BY_ID.get(normalizePresentationTheme(themeId));
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  const surface = guardedSurface(value.surface, theme);
-  const background = surface ?? theme.preview.surface;
-  const accent = guardedAccent(value.accent, theme, background);
-  const felt = guardedFelt(value.felt, theme);
   const customization = {};
-  if (accent) customization.accent = accent;
-  if (surface) customization.surface = surface;
-  if (felt) customization.felt = felt;
+  for (const token of SUPPORTED_COLOR_TOKENS) {
+    const normalized = normalizeHexColor(value[token]);
+    if (normalized) customization[token] = normalized;
+  }
   return Object.keys(customization).length ? Object.freeze(customization) : null;
+}
+
+export function normalizeCustomThemeName(value, fallback = 'Custom theme') {
+  const normalized = typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+  const safeFallback = typeof fallback === 'string' && fallback.trim() ? fallback.trim() : 'Custom theme';
+  return (normalized || safeFallback).slice(0, CUSTOM_THEME_NAME_LIMIT);
+}
+
+export function uniqueCustomThemeName(value, themes = [], excludeId = null) {
+  const requested = normalizeCustomThemeName(value);
+  const used = new Set(themes
+    .filter((theme) => theme.id !== excludeId)
+    .map((theme) => normalizeCustomThemeName(theme.name).toLocaleLowerCase()));
+  if (!used.has(requested.toLocaleLowerCase())) return requested;
+  for (let index = 2; index < 1000; index += 1) {
+    const suffix = ` (${index})`;
+    const candidate = `${requested.slice(0, CUSTOM_THEME_NAME_LIMIT - suffix.length)}${suffix}`;
+    if (!used.has(candidate.toLocaleLowerCase())) return candidate;
+  }
+  return `${requested.slice(0, CUSTOM_THEME_NAME_LIMIT - 7)} (copy)`;
 }
 
 function readStorage(storage, key) {
@@ -238,38 +266,163 @@ function writeStorage(storage, key, value) {
   }
 }
 
-function readCustomizations(storage) {
-  const stored = readStorage(storage, PRESENTATION_THEME_CUSTOMIZATION_STORAGE_KEY);
-  if (stored === null) return { byTheme: {}, repair: false };
+function removeStorage(storage, key) {
+  try {
+    storage?.removeItem?.(key);
+  } catch {
+    // A stale legacy preference is harmless when storage is read-only.
+  }
+}
+
+function defaultLibrary(activeThemeId = DEFAULT_PRESENTATION_THEME) {
+  return { activeThemeId: normalizePresentationTheme(activeThemeId), customThemes: [], draftsByTheme: {} };
+}
+
+function validIsoDate(value) {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value)) ? value : null;
+}
+
+function builtInBaseFor(themeId, themeMap, seen = new Set()) {
+  if (THEME_BY_ID.has(themeId)) return THEME_BY_ID.get(themeId);
+  if (seen.has(themeId)) return THEME_BY_ID.get(DEFAULT_PRESENTATION_THEME);
+  seen.add(themeId);
+  const custom = themeMap.get(themeId);
+  return custom
+    ? builtInBaseFor(custom.baseThemeId, themeMap, seen)
+    : THEME_BY_ID.get(DEFAULT_PRESENTATION_THEME);
+}
+
+function effectiveOverridesFor(themeId, themeMap, seen = new Set()) {
+  if (THEME_BY_ID.has(themeId)) return {};
+  if (seen.has(themeId)) return {};
+  seen.add(themeId);
+  const custom = themeMap.get(themeId);
+  if (!custom) return {};
+  const inherited = effectiveOverridesFor(custom.baseThemeId, themeMap, seen);
+  return normalizeThemeCustomization(
+    { ...inherited, ...custom.overrides },
+    builtInBaseFor(themeId, themeMap).id,
+  ) ?? {};
+}
+
+function repairCustomThemes(rawThemes, now) {
+  if (!Array.isArray(rawThemes)) return { customThemes: [], repair: true };
+  const customThemes = [];
+  const ids = new Set();
+  let repair = rawThemes.length > CUSTOM_THEME_LIMIT;
+  rawThemes.slice(0, CUSTOM_THEME_LIMIT).forEach((raw) => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)
+      || !CUSTOM_THEME_ID_PATTERN.test(raw.id ?? '') || ids.has(raw.id)) {
+      repair = true;
+      return;
+    }
+    ids.add(raw.id);
+    const createdAt = validIsoDate(raw.createdAt) ?? now;
+    const updatedAt = validIsoDate(raw.updatedAt) ?? createdAt;
+    const name = uniqueCustomThemeName(raw.name, customThemes);
+    const theme = {
+      id: raw.id,
+      name,
+      baseThemeId: typeof raw.baseThemeId === 'string' ? raw.baseThemeId : DEFAULT_PRESENTATION_THEME,
+      overrides: raw.overrides,
+      version: CUSTOM_THEME_VERSION,
+      createdAt,
+      updatedAt,
+    };
+    if (name !== raw.name || raw.version !== CUSTOM_THEME_VERSION
+      || createdAt !== raw.createdAt || updatedAt !== raw.updatedAt) repair = true;
+    customThemes.push(theme);
+  });
+
+  const themeMap = new Map(customThemes.map((theme) => [theme.id, theme]));
+  customThemes.forEach((theme) => {
+    if (!THEME_BY_ID.has(theme.baseThemeId) && !themeMap.has(theme.baseThemeId)) {
+      theme.baseThemeId = DEFAULT_PRESENTATION_THEME;
+      repair = true;
+    }
+    const visited = new Set([theme.id]);
+    let cursor = themeMap.get(theme.baseThemeId);
+    while (cursor) {
+      if (visited.has(cursor.id)) {
+        theme.baseThemeId = DEFAULT_PRESENTATION_THEME;
+        repair = true;
+        break;
+      }
+      visited.add(cursor.id);
+      cursor = themeMap.get(cursor.baseThemeId);
+    }
+  });
+  customThemes.forEach((theme) => {
+    const normalized = normalizeThemeCustomization(theme.overrides, builtInBaseFor(theme.id, themeMap).id) ?? {};
+    if (JSON.stringify(normalized) !== JSON.stringify(theme.overrides)) repair = true;
+    theme.overrides = normalized;
+  });
+  return { customThemes, repair };
+}
+
+function readThemeLibrary(storage, now) {
+  const stored = readStorage(storage, PRESENTATION_THEME_STORAGE_KEY);
+  const legacyActive = readStorage(storage, LEGACY_PRESENTATION_THEME_STORAGE_KEY);
+  if (stored === null) {
+    return { library: defaultLibrary(legacyActive), repair: legacyActive !== null };
+  }
   let candidate;
   try {
     candidate = JSON.parse(stored);
   } catch {
-    return { byTheme: {}, repair: true };
+    return { library: defaultLibrary(), repair: true };
   }
-  if (candidate?.schemaVersion !== PRESENTATION_THEME_SCHEMA_VERSION
-    || !candidate.byTheme || typeof candidate.byTheme !== 'object' || Array.isArray(candidate.byTheme)) {
-    return { byTheme: {}, repair: true };
+
+  if (candidate?.schemaVersion === LEGACY_SCHEMA_VERSION
+    && candidate.byTheme && typeof candidate.byTheme === 'object' && !Array.isArray(candidate.byTheme)) {
+    const draftsByTheme = {};
+    PRESENTATION_THEMES.forEach((theme) => {
+      const normalized = normalizeThemeCustomization(candidate.byTheme[theme.id], theme.id);
+      if (normalized) draftsByTheme[theme.id] = normalized;
+    });
+    return {
+      library: { ...defaultLibrary(legacyActive), draftsByTheme },
+      repair: true,
+    };
   }
-  const byTheme = {};
-  let repair = false;
-  Object.entries(candidate.byTheme).forEach(([themeId, value]) => {
+
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)
+    || candidate.schemaVersion !== PRESENTATION_THEME_SCHEMA_VERSION) {
+    return { library: defaultLibrary(), repair: true };
+  }
+
+  const repairedThemes = repairCustomThemes(candidate.customThemes, now);
+  const themeMap = new Map(repairedThemes.customThemes.map((theme) => [theme.id, theme]));
+  const draftsByTheme = {};
+  let repair = repairedThemes.repair;
+  if (!candidate.draftsByTheme || typeof candidate.draftsByTheme !== 'object'
+    || Array.isArray(candidate.draftsByTheme)) repair = true;
+  Object.entries(candidate.draftsByTheme ?? {}).forEach(([themeId, raw]) => {
     if (!THEME_BY_ID.has(themeId)) {
       repair = true;
       return;
     }
-    const normalized = normalizeThemeCustomization(value, themeId);
-    if (normalized) byTheme[themeId] = normalized;
-    if (!normalized || JSON.stringify(value) !== JSON.stringify(normalized)) repair = true;
+    const normalized = normalizeThemeCustomization(raw, themeId);
+    if (normalized) draftsByTheme[themeId] = normalized;
+    if (!normalized || JSON.stringify(normalized) !== JSON.stringify(raw)) repair = true;
   });
-  return { byTheme, repair };
+  const activeThemeId = THEME_BY_ID.has(candidate.activeThemeId) || themeMap.has(candidate.activeThemeId)
+    ? candidate.activeThemeId
+    : DEFAULT_PRESENTATION_THEME;
+  if (activeThemeId !== candidate.activeThemeId) repair = true;
+  return {
+    library: { activeThemeId, customThemes: repairedThemes.customThemes, draftsByTheme },
+    repair,
+  };
 }
 
-function persistCustomizations(storage, byTheme) {
-  writeStorage(storage, PRESENTATION_THEME_CUSTOMIZATION_STORAGE_KEY, JSON.stringify({
+function serializeThemeLibrary(library) {
+  return JSON.stringify({
     schemaVersion: PRESENTATION_THEME_SCHEMA_VERSION,
-    byTheme,
-  }));
+    activeThemeId: library.activeThemeId,
+    customThemes: library.customThemes,
+    draftsByTheme: library.draftsByTheme,
+  });
 }
 
 function setCustomProperty(root, name, value) {
@@ -283,8 +436,11 @@ function clearCustomProperties(root) {
 function applyCustomProperties(root, theme, customization) {
   clearCustomProperties(root);
   if (!customization) return;
+  const activeSurface = customization.surface ?? theme.preview.surface;
+  const surfacePalette = deriveSurfacePalette(activeSurface);
   if (customization.surface) {
-    const palette = deriveSurfacePalette(customization.surface, theme);
+    const palette = surfacePalette;
+    const text = deriveTextPalette(palette);
     setCustomProperty(root, '--surface-canvas', palette.canvas);
     setCustomProperty(root, '--surface-shell', palette.shell);
     setCustomProperty(root, '--surface-panel', palette.panel);
@@ -301,51 +457,106 @@ function applyCustomProperties(root, theme, customization) {
     setCustomProperty(root, '--line', palette.borderDefault);
     setCustomProperty(root, '--theme-gradient', palette.elevated);
     setCustomProperty(root, '--page-glow', palette.glow);
+    setCustomProperty(root, '--text-primary', text.primary);
+    setCustomProperty(root, '--text-secondary', text.secondary);
+    setCustomProperty(root, '--text-muted', text.muted);
+    setCustomProperty(root, '--text-disabled', text.disabled);
+    setCustomProperty(root, '--text', text.primary);
+    setCustomProperty(root, '--muted', text.muted);
+    setCustomProperty(root, 'color-scheme', palette.tone);
   }
   if (customization.accent) {
-    const hoverTarget = theme.tone === 'light' ? '#000000' : '#ffffff';
+    const hoverTarget = readableTextOn(customization.accent);
     const hover = mixHexColors(customization.accent, hoverTarget, 0.14);
-    const secondary = mixHexColors(customization.accent, theme.tone === 'light' ? '#5d6963' : '#b9c7c0', 0.44);
+    const secondary = mixHexColors(customization.accent, hoverTarget, 0.44);
     const rgb = hexToRgb(customization.accent);
     setCustomProperty(root, '--accent-primary', customization.accent);
     setCustomProperty(root, '--accent-primary-hover', hover);
     setCustomProperty(root, '--accent-secondary', secondary);
-    setCustomProperty(root, '--border-focus', customization.accent);
-    setCustomProperty(root, '--selection-background', `color-mix(in srgb, ${customization.accent} 22%, transparent)`);
-    setCustomProperty(root, '--selection-border', customization.accent);
     setCustomProperty(root, '--text-on-accent', readableTextOn(customization.accent));
     setCustomProperty(root, '--primary', customization.accent);
     setCustomProperty(root, '--primary-hover', hover);
     setCustomProperty(root, '--primary-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
   }
+  if (customization.accent || customization.surface) {
+    const activeAccent = customization.accent ?? theme.preview.accent;
+    const focusBackgrounds = [surfacePalette.canvas, surfacePalette.panel, surfacePalette.interactive];
+    const focus = ensureContrastAcross(activeAccent, focusBackgrounds, 3, surfacePalette.tone);
+    setCustomProperty(root, '--border-focus', focus);
+    setCustomProperty(root, '--selection-background', `color-mix(in srgb, ${focus} 24%, transparent)`);
+    setCustomProperty(root, '--selection-border', focus);
+  }
   if (customization.felt) setCustomProperty(root, '--poker-felt-accent', customization.felt);
+}
+
+function makeThemeId(createId) {
+  const candidate = String(createId?.() ?? '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  return `custom-${candidate || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`}`;
+}
+
+function defaultIdFactory() {
+  return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export function createPresentationThemeController({
   root,
   storage,
-  themeGrid = null,
-  accentInput = null,
-  surfaceInput = null,
-  feltInput = null,
+  builtInGrid = null,
+  customGrid = null,
+  customEmpty = null,
+  colorTriggers = [],
+  resetTokenButtons = [],
+  nameInput = null,
+  saveButton = null,
+  duplicateButton = null,
+  renameButton = null,
+  deleteButton = null,
   resetButton = null,
   status = null,
   translate = (key) => key,
+  now = () => new Date().toISOString(),
+  createId = defaultIdFactory,
 } = {}) {
   if (!root?.dataset) throw new TypeError('A theme root element is required');
 
-  const inputs = { accent: accentInput, surface: surfaceInput, felt: feltInput };
+  const triggers = [...colorTriggers];
+  const tokenResetButtons = [...resetTokenButtons];
   const listeners = [];
   let gridListeners = [];
-  let byTheme = {};
-  let currentThemeId = DEFAULT_PRESENTATION_THEME;
+  let library = defaultLibrary();
+  let nameInputDirty = false;
 
-  function currentTheme() {
-    return THEME_BY_ID.get(currentThemeId);
+  function themeMap() {
+    return new Map(library.customThemes.map((theme) => [theme.id, theme]));
+  }
+
+  function customTheme(themeId = library.activeThemeId) {
+    return library.customThemes.find((theme) => theme.id === themeId) ?? null;
+  }
+
+  function baseTheme(themeId = library.activeThemeId) {
+    return builtInBaseFor(themeId, themeMap());
+  }
+
+  function ownOverrides(themeId = library.activeThemeId) {
+    const custom = customTheme(themeId);
+    return custom?.overrides ?? library.draftsByTheme[themeId] ?? {};
   }
 
   function currentCustomization() {
-    return byTheme[currentThemeId] ?? null;
+    const custom = customTheme();
+    if (!custom) return library.draftsByTheme[library.activeThemeId] ?? null;
+    const effective = effectiveOverridesFor(custom.id, themeMap());
+    return Object.keys(effective).length ? Object.freeze({ ...effective }) : null;
+  }
+
+  function currentColors() {
+    return Object.freeze({ ...baseTheme().preview, ...(currentCustomization() ?? {}) });
+  }
+
+  function persistLibrary() {
+    writeStorage(storage, PRESENTATION_THEME_STORAGE_KEY, serializeThemeLibrary(library));
+    removeStorage(storage, LEGACY_PRESENTATION_THEME_STORAGE_KEY);
   }
 
   function announce() {
@@ -354,124 +565,329 @@ export function createPresentationThemeController({
     if (typeof root.dispatchEvent !== 'function' || typeof ThemeEvent !== 'function') return;
     root.dispatchEvent(new ThemeEvent('riverline:themechange', {
       bubbles: true,
-      detail: Object.freeze({ theme: currentThemeId, customized: Boolean(currentCustomization()) }),
+      detail: Object.freeze({
+        theme: baseTheme().id,
+        themeId: library.activeThemeId,
+        customized: Boolean(currentCustomization()),
+        customTheme: Boolean(customTheme()),
+      }),
     }));
   }
 
+  function renderThemeButton(documentRef, theme, isCustom) {
+    const colors = isCustom
+      ? { ...builtInBaseFor(theme.id, themeMap()).preview, ...effectiveOverridesFor(theme.id, themeMap()) }
+      : theme.preview;
+    const button = documentRef.createElement('button');
+    button.type = 'button';
+    button.className = `theme-swatch-btn${isCustom ? ' theme-swatch-btn--custom' : ''}`;
+    button.dataset.themeId = theme.id;
+    button.style.setProperty('--swatch-bg', colors.surface);
+    button.style.setProperty('--swatch-accent', colors.accent);
+    button.setAttribute('aria-pressed', 'false');
+    const copy = documentRef.createElement('span');
+    copy.className = 'theme-swatch-copy';
+    const dot = documentRef.createElement('span');
+    dot.className = 'theme-swatch-dot';
+    const name = documentRef.createElement('span');
+    name.className = 'theme-swatch-name';
+    name.dir = 'auto';
+    if (isCustom) name.textContent = theme.name;
+    else name.textContent = translate(theme.name);
+    copy.append(dot, name);
+    button.append(copy);
+    const listener = () => apply(theme.id);
+    button.addEventListener('click', listener);
+    gridListeners.push([button, 'click', listener]);
+    return button;
+  }
+
+  function renderThemeLibrary() {
+    gridListeners.forEach(([target, type, listener]) => target.removeEventListener?.(type, listener));
+    gridListeners = [];
+    const builtInDocument = builtInGrid?.ownerDocument;
+    if (builtInGrid && builtInDocument?.createElement) {
+      builtInGrid.replaceChildren(...PRESENTATION_THEMES.map((theme) => renderThemeButton(builtInDocument, theme, false)));
+    }
+    const customDocument = customGrid?.ownerDocument;
+    if (customGrid && customDocument?.createElement) {
+      customGrid.replaceChildren(...library.customThemes.map((theme) => renderThemeButton(customDocument, theme, true)));
+    }
+    if (customEmpty) customEmpty.hidden = library.customThemes.length > 0;
+  }
+
   function syncControls() {
-    const theme = currentTheme();
-    const customization = currentCustomization();
-    if (inputs.accent) inputs.accent.value = customization?.accent ?? theme.preview.accent;
-    if (inputs.surface) inputs.surface.value = customization?.surface ?? theme.preview.surface;
-    if (inputs.felt) inputs.felt.value = customization?.felt ?? theme.preview.felt;
-    if (resetButton) resetButton.disabled = !customization;
-    if (status) status.textContent = customization
-      ? translate('Custom theme colors are active. Contrast guardrails are applied automatically.')
-      : translate('Using built-in theme defaults.');
-    root.dataset.themeCustomized = String(Boolean(customization));
-    themeGrid?.querySelectorAll?.('[data-theme-id]').forEach((button) => {
-      const selected = button.dataset.themeId === currentThemeId;
+    const colors = currentColors();
+    triggers.forEach((trigger) => {
+      const token = trigger.dataset.themeColorToken;
+      const value = colors[token];
+      if (!value) return;
+      trigger.style?.setProperty?.('--theme-color-value', value);
+      trigger.dataset.colorValue = value;
+      trigger.setAttribute?.('aria-label', `${translate(trigger.dataset.labelKey ?? token)}: ${value}`);
+      const valueElement = trigger.querySelector?.('[data-theme-color-value]');
+      if (valueElement) valueElement.textContent = value.toUpperCase();
+    });
+    const own = ownOverrides();
+    tokenResetButtons.forEach((button) => {
+      button.disabled = !hasOwn(own, button.dataset.resetThemeToken);
+    });
+    const custom = customTheme();
+    if (renameButton) renameButton.disabled = !custom;
+    if (deleteButton) deleteButton.disabled = !custom;
+    if (resetButton) resetButton.disabled = Object.keys(own).length === 0;
+    if (nameInput && !nameInputDirty) nameInput.value = custom?.name ?? '';
+    root.dataset.themeCustomized = String(Boolean(currentCustomization()));
+    builtInGrid?.querySelectorAll?.('[data-theme-id]').forEach((button) => {
+      const selected = button.dataset.themeId === library.activeThemeId;
       button.classList?.toggle?.('active', selected);
       button.setAttribute?.('aria-pressed', String(selected));
     });
-  }
-
-  function renderThemeGrid() {
-    const documentRef = themeGrid?.ownerDocument;
-    if (!themeGrid || !documentRef?.createElement) return;
-    gridListeners.forEach(([target, type, listener]) => target.removeEventListener?.(type, listener));
-    gridListeners = [];
-    themeGrid.replaceChildren();
-    PRESENTATION_THEMES.forEach((theme) => {
-      const button = documentRef.createElement('button');
-      button.type = 'button';
-      button.className = 'theme-swatch-btn';
-      button.dataset.themeId = theme.id;
-      button.style.setProperty('--swatch-bg', theme.preview.surface);
-      button.style.setProperty('--swatch-accent', theme.preview.accent);
-      button.setAttribute('aria-pressed', 'false');
-      const dot = documentRef.createElement('span');
-      dot.className = 'theme-swatch-dot';
-      const name = documentRef.createElement('span');
-      name.className = 'theme-swatch-name';
-      name.textContent = translate(theme.name);
-      button.append(dot, name);
-      const listener = () => apply(theme.id);
-      button.addEventListener('click', listener);
-      gridListeners.push([button, 'click', listener]);
-      themeGrid.append(button);
+    customGrid?.querySelectorAll?.('[data-theme-id]').forEach((button) => {
+      const selected = button.dataset.themeId === library.activeThemeId;
+      button.classList?.toggle?.('active', selected);
+      button.setAttribute?.('aria-pressed', String(selected));
     });
+    if (status) {
+      status.textContent = custom
+        ? translate('Editing a saved custom theme. Exact colors are preserved and readable dependent colors update automatically.')
+        : currentCustomization()
+          ? translate('Unsaved theme colors are active. Save them as a named custom theme.')
+          : translate('Using built-in theme defaults.');
+    }
   }
 
-  function commit({ persist = true, announce: shouldAnnounce = true } = {}) {
-    const customization = currentCustomization();
-    root.dataset.theme = currentThemeId;
-    applyCustomProperties(root, currentTheme(), customization);
+  function commit({ persist = true, announce: shouldAnnounce = true, render = true } = {}) {
+    const base = baseTheme();
+    root.dataset.theme = base.id;
+    root.dataset.presentationThemeId = library.activeThemeId;
+    root.dataset.themeKind = customTheme() ? 'custom' : 'built-in';
+    delete root.dataset.themePreview;
+    applyCustomProperties(root, base, currentCustomization());
+    if (render) renderThemeLibrary();
     syncControls();
-    if (persist) {
-      writeStorage(storage, PRESENTATION_THEME_STORAGE_KEY, currentThemeId);
-      persistCustomizations(storage, byTheme);
-    }
+    if (persist) persistLibrary();
     if (shouldAnnounce) announce();
-    return currentThemeId;
+    return library.activeThemeId;
   }
 
   function apply(value, options = {}) {
-    currentThemeId = normalizePresentationTheme(value);
+    const exists = THEME_BY_ID.has(value) || Boolean(customTheme(value));
+    library.activeThemeId = exists ? value : DEFAULT_PRESENTATION_THEME;
+    nameInputDirty = false;
     return commit(options);
   }
 
+  function normalizedProspective(partial) {
+    const accepted = Object.fromEntries(Object.entries(partial ?? {})
+      .filter(([key]) => SUPPORTED_COLOR_TOKENS.includes(key)));
+    const effective = { ...(currentCustomization() ?? {}), ...accepted };
+    return normalizeThemeCustomization(effective, baseTheme().id) ?? {};
+  }
+
+  function preview(partial) {
+    const prospective = normalizedProspective(partial);
+    root.dataset.themePreview = 'true';
+    applyCustomProperties(root, baseTheme(), prospective);
+    return Object.freeze({ ...baseTheme().preview, ...prospective });
+  }
+
+  function cancelPreview() {
+    delete root.dataset.themePreview;
+    applyCustomProperties(root, baseTheme(), currentCustomization());
+    return currentColors();
+  }
+
   function customize(partial, options = {}) {
-    const merged = { ...(currentCustomization() ?? {}), ...partial };
-    const normalized = normalizeThemeCustomization(merged, currentThemeId);
-    if (normalized) byTheme[currentThemeId] = normalized;
-    else delete byTheme[currentThemeId];
+    const accepted = Object.fromEntries(Object.entries(partial ?? {})
+      .filter(([key]) => SUPPORTED_COLOR_TOKENS.includes(key)));
+    if (Object.keys(accepted).length === 0) return currentCustomization();
+    const normalized = normalizedProspective(accepted);
+    const custom = customTheme();
+    if (custom) {
+      custom.overrides = normalized;
+      custom.version += 1;
+      custom.updatedAt = now();
+    } else if (Object.keys(normalized).length) {
+      library.draftsByTheme[library.activeThemeId] = normalized;
+    } else {
+      delete library.draftsByTheme[library.activeThemeId];
+    }
+    commit(options);
+    return currentCustomization();
+  }
+
+  function resetToken(token, options = {}) {
+    if (!SUPPORTED_COLOR_TOKENS.includes(token)) return currentCustomization();
+    const custom = customTheme();
+    if (custom) {
+      const next = { ...custom.overrides };
+      delete next[token];
+      custom.overrides = next;
+      custom.version += 1;
+      custom.updatedAt = now();
+    } else {
+      const next = { ...(library.draftsByTheme[library.activeThemeId] ?? {}) };
+      delete next[token];
+      if (Object.keys(next).length) library.draftsByTheme[library.activeThemeId] = next;
+      else delete library.draftsByTheme[library.activeThemeId];
+    }
     commit(options);
     return currentCustomization();
   }
 
   function reset(options = {}) {
-    delete byTheme[currentThemeId];
+    const custom = customTheme();
+    if (custom) {
+      custom.overrides = {};
+      custom.version += 1;
+      custom.updatedAt = now();
+    } else {
+      delete library.draftsByTheme[library.activeThemeId];
+    }
     commit(options);
-    return null;
+    return currentCustomization();
+  }
+
+  function nextThemeId() {
+    const used = new Set(library.customThemes.map((theme) => theme.id));
+    let candidate = makeThemeId(createId);
+    let attempt = 2;
+    while (used.has(candidate)) {
+      candidate = `${makeThemeId(createId)}-${attempt}`;
+      attempt += 1;
+    }
+    return candidate;
+  }
+
+  function addCustomTheme(name, { sourceThemeId = library.activeThemeId, clearBuiltInDraft = false } = {}) {
+    if (library.customThemes.length >= CUSTOM_THEME_LIMIT) return null;
+    const sourceCustom = customTheme(sourceThemeId);
+    const sourceBase = builtInBaseFor(sourceThemeId, themeMap());
+    const sourceOverrides = sourceCustom
+      ? effectiveOverridesFor(sourceThemeId, themeMap())
+      : library.draftsByTheme[sourceThemeId] ?? {};
+    const timestamp = now();
+    const theme = {
+      id: nextThemeId(),
+      name: uniqueCustomThemeName(name, library.customThemes),
+      baseThemeId: THEME_BY_ID.has(sourceThemeId) || sourceCustom ? sourceThemeId : sourceBase.id,
+      overrides: normalizeThemeCustomization(sourceOverrides, sourceBase.id) ?? {},
+      version: CUSTOM_THEME_VERSION,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    library.customThemes.push(theme);
+    if (clearBuiltInDraft && THEME_BY_ID.has(sourceThemeId)) delete library.draftsByTheme[sourceThemeId];
+    library.activeThemeId = theme.id;
+    nameInputDirty = false;
+    commit();
+    return Object.freeze({ ...theme, overrides: Object.freeze({ ...theme.overrides }) });
+  }
+
+  function saveAsNew(name = nameInput?.value) {
+    return addCustomTheme(name, { clearBuiltInDraft: true });
+  }
+
+  function duplicateTheme(themeId = library.activeThemeId, name = null) {
+    const source = customTheme(themeId) ?? THEME_BY_ID.get(themeId);
+    if (!source) return null;
+    const proposed = name || `${source.name.replace(/^Riverline /, '')} ${translate('Copy')}`;
+    return addCustomTheme(proposed, { sourceThemeId: themeId });
+  }
+
+  function renameTheme(themeId = library.activeThemeId, name = nameInput?.value) {
+    const custom = customTheme(themeId);
+    if (!custom) return null;
+    custom.name = uniqueCustomThemeName(name, library.customThemes, custom.id);
+    custom.version += 1;
+    custom.updatedAt = now();
+    nameInputDirty = false;
+    commit();
+    return custom.name;
+  }
+
+  function deleteTheme(themeId = library.activeThemeId) {
+    const target = customTheme(themeId);
+    if (!target) return false;
+    const beforeMap = themeMap();
+    const childAppearances = new Map(library.customThemes
+      .filter((theme) => theme.baseThemeId === target.id)
+      .map((theme) => [theme.id, effectiveOverridesFor(theme.id, beforeMap)]));
+    library.customThemes = library.customThemes.filter((theme) => theme.id !== target.id);
+    const afterMap = themeMap();
+    library.customThemes.forEach((theme) => {
+      if (theme.baseThemeId !== target.id) return;
+      theme.baseThemeId = THEME_BY_ID.has(target.baseThemeId) || afterMap.has(target.baseThemeId)
+        ? target.baseThemeId
+        : DEFAULT_PRESENTATION_THEME;
+      theme.overrides = normalizeThemeCustomization(
+        childAppearances.get(theme.id),
+        builtInBaseFor(theme.id, afterMap).id,
+      ) ?? {};
+      theme.version += 1;
+      theme.updatedAt = now();
+    });
+    if (library.activeThemeId === target.id) {
+      library.activeThemeId = THEME_BY_ID.has(target.baseThemeId) || afterMap.has(target.baseThemeId)
+        ? target.baseThemeId
+        : DEFAULT_PRESENTATION_THEME;
+    }
+    nameInputDirty = false;
+    commit();
+    return true;
   }
 
   function restore() {
-    const storedTheme = readStorage(storage, PRESENTATION_THEME_STORAGE_KEY);
-    currentThemeId = normalizePresentationTheme(storedTheme);
-    const storedCustomizations = readCustomizations(storage);
-    byTheme = storedCustomizations.byTheme;
+    const stored = readThemeLibrary(storage, now());
+    library = stored.library;
     commit({ persist: false, announce: false });
-    if (storedTheme !== null && storedTheme !== currentThemeId) {
-      writeStorage(storage, PRESENTATION_THEME_STORAGE_KEY, currentThemeId);
-    }
-    if (storedCustomizations.repair) persistCustomizations(storage, byTheme);
-    return currentThemeId;
-  }
-
-  function bindInput(name, input) {
-    if (!input) return;
-    const listener = () => customize({ [name]: input.value });
-    input.addEventListener?.('input', listener);
-    listeners.push([input, 'input', listener]);
+    if (stored.repair) persistLibrary();
+    return library.activeThemeId;
   }
 
   function init() {
-    renderThemeGrid();
     restore();
-    bindInput('accent', inputs.accent);
-    bindInput('surface', inputs.surface);
-    bindInput('felt', inputs.felt);
+    if (nameInput) {
+      const listener = () => { nameInputDirty = true; };
+      nameInput.addEventListener?.('input', listener);
+      listeners.push([nameInput, 'input', listener]);
+    }
+    if (saveButton) {
+      const listener = () => saveAsNew();
+      saveButton.addEventListener?.('click', listener);
+      listeners.push([saveButton, 'click', listener]);
+    }
+    if (duplicateButton) {
+      const listener = () => duplicateTheme(library.activeThemeId, nameInputDirty ? nameInput?.value : null);
+      duplicateButton.addEventListener?.('click', listener);
+      listeners.push([duplicateButton, 'click', listener]);
+    }
+    if (renameButton) {
+      const listener = () => renameTheme();
+      renameButton.addEventListener?.('click', listener);
+      listeners.push([renameButton, 'click', listener]);
+    }
+    if (deleteButton) {
+      const listener = () => deleteTheme();
+      deleteButton.addEventListener?.('click', listener);
+      listeners.push([deleteButton, 'click', listener]);
+    }
     if (resetButton) {
       const listener = () => reset();
       resetButton.addEventListener?.('click', listener);
       listeners.push([resetButton, 'click', listener]);
     }
+    tokenResetButtons.forEach((button) => {
+      const listener = () => resetToken(button.dataset.resetThemeToken);
+      button.addEventListener?.('click', listener);
+      listeners.push([button, 'click', listener]);
+    });
     return controller;
   }
 
   function refreshLabels() {
-    renderThemeGrid();
+    renderThemeLibrary();
     syncControls();
   }
 
@@ -482,14 +898,31 @@ export function createPresentationThemeController({
 
   const controller = Object.freeze({
     apply,
+    cancelPreview,
     customize,
+    deleteTheme,
     destroy,
+    duplicateTheme,
+    getBaseTheme: () => baseTheme().id,
+    getColors: currentColors,
     getCustomization: currentCustomization,
-    getTheme: () => currentThemeId,
+    getLibrary: () => Object.freeze({
+      activeThemeId: library.activeThemeId,
+      customThemes: Object.freeze(library.customThemes.map((theme) => Object.freeze({
+        ...theme,
+        overrides: Object.freeze({ ...theme.overrides }),
+      }))),
+      draftsByTheme: Object.freeze({ ...library.draftsByTheme }),
+    }),
+    getTheme: () => library.activeThemeId,
     init,
+    preview,
     refreshLabels,
+    renameTheme,
     reset,
+    resetToken,
     restore,
+    saveAsNew,
   });
   return controller;
 }
