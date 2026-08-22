@@ -192,6 +192,9 @@ test('Settings uses the existing presentation bootstrap with localized four-pres
   assert.match(bootstrap, /storage: window\.localStorage/g);
   assert.match(bootstrap, /MutationObserver/);
   assert.doesNotMatch(bootstrap, /PokerState|StrategyProvider|Equity|Training/);
+  assert.match(presetCss, /\.layout-preset-control\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*nowrap/s);
+  assert.match(presetCss, /\.layout-preset-control \.ui-tab\s*\{[^}]*flex:\s*1 1 0[^}]*white-space:\s*nowrap/s);
+  assert.match(presetCss, /@media \(max-width: 620px\)[\s\S]*?\.layout-preset-control\s*\{[^}]*grid-template-columns:\s*repeat\(2,/);
 
   for (const key of [
     'Workspace layout',
@@ -208,17 +211,21 @@ test('Settings uses the existing presentation bootstrap with localized four-pres
 });
 
 test('Hand and Analyze presets change composition rather than only maximum width', () => {
-  assert.match(presetCss, /data-layout-preset="table-focus"[\s\S]*?data-product-destination="hand"[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) minmax\(230px, 270px\)/);
-  assert.match(presetCss, /data-layout-preset="table-focus"[\s\S]*?#visual-table-container[\s\S]*?max-width:\s*1100px/);
-  assert.match(presetCss, /data-layout-preset="controls-first"[\s\S]*?#handStageDock:not\(\[hidden\]\)[\s\S]*?order:\s*3/);
-  assert.match(presetCss, /data-layout-preset="analysis-focus"[\s\S]*?data-product-destination="analyze"[\s\S]*?grid-template-columns:\s*minmax\(230px, 250px\) minmax\(0, 1fr\) minmax\(210px, 235px\)/);
-  assert.match(presetCss, /data-layout-preset="controls-first"[\s\S]*?data-product-destination="analyze"[\s\S]*?minmax\(340px, 380px\)/);
+  assert.match(presetCss, /data-layout-preset="table-focus"[^}]*data-product-destination="hand"[^}]*\.playbook-workspace\s*\{[^}]*grid-template-areas:\s*"decision context"/s);
+  assert.match(presetCss, /data-layout-preset="table-focus"[^}]*data-product-destination="hand"[^}]*#handStageDock\s*\{\s*order:\s*2/s);
+  assert.match(presetCss, /data-layout-preset="table-focus"[^}]*data-product-destination="hand"[^}]*#table-wrapper\s*\{\s*order:\s*4/s);
+  assert.match(presetCss, /data-layout-preset="controls-first"[^}]*data-product-destination="hand"[^}]*\.playbook-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(380px, 420px\) minmax\(0, 1fr\)[^}]*grid-template-areas:\s*"context decision"/s);
+  assert.match(presetCss, /data-layout-preset="controls-first"[^}]*data-product-destination="hand"[^}]*data-hand-stage[^}]*:not\(\[data-hand-stage="setup"\]\)[^}]*\.playbook-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(270px, 300px\) minmax\(0, 1fr\)/s);
+  assert.doesNotMatch(presetCss, /data-layout-preset="controls-first"[^}]*data-product-destination="hand"[^}]*\.hand-setup-grid/s);
+  assert.match(presetCss, /data-layout-preset="analysis-focus"[^}]*data-product-destination="analyze"[^}]*\.playbook-workspace\s*\{[^}]*"decision context"\s*"decision support"/s);
+  assert.match(presetCss, /data-layout-preset="analysis-focus"[^}]*data-product-destination="analyze"[^}]*\.playbook-support-rail\s*\{[^}]*grid-area:\s*support[^}]*position:\s*static/s);
+  assert.match(presetCss, /data-layout-preset="controls-first"[^}]*data-product-destination="analyze"[^}]*\.playbook-workspace\s*\{[^}]*"context decision"\s*"support decision"/s);
   assert.doesNotMatch(presetCss, /playbook[^\n{]*\{[^}]*display:\s*none/s);
 });
 
 test('Training, Personal Strategy, and Equity use meaningful supported compositions', () => {
-  assert.match(presetCss, /grid-template-areas:\s*"decision setup insight"/);
-  assert.match(presetCss, /grid-template-areas:\s*"setup decision insight"/);
+  assert.match(presetCss, /data-layout-preset="table-focus"[^}]*\.training-workspace\s*\{[^}]*"decision setup"\s*"decision insight"/s);
+  assert.match(presetCss, /data-layout-preset="controls-first"[^}]*\.training-workspace\s*\{[^}]*"setup decision"\s*"insight decision"/s);
   assert.match(presetCss, /calibration-personal-column[\s\S]*?order:\s*-1/);
   assert.match(presetCss, /equity-output-stack[\s\S]*?grid-column:\s*1[\s\S]*?max-width:\s*none/);
   assert.match(presetCss, /equity-controls-panel[\s\S]*?order:\s*-1/);
@@ -227,8 +234,12 @@ test('Training, Personal Strategy, and Equity use meaningful supported compositi
 test('1024 uses the established safe stack and preset CSS remains RTL-neutral', () => {
   assert.match(presetCss, /@media \(min-width: 1320px\)/);
   assert.match(presetCss, /@media \(min-width: 1500px\)/);
-  assert.doesNotMatch(presetCss, /@media \(max-width:/);
+  const narrowSelectorRules = presetCss.slice(
+    presetCss.indexOf('@media (max-width: 620px)'),
+    presetCss.indexOf('@media (min-width: 1320px)'),
+  );
+  assert.doesNotMatch(narrowSelectorRules, /data-layout-preset=/);
   assert.match(css, /@media \(max-width: 1100px\)[\s\S]*?#gtoMode \.playbook-workspace[\s\S]*?flex-direction:\s*column/);
   assert.match(css, /@media \(max-width: 1100px\)[\s\S]*?\.training-workspace,[\s\S]*?\.equity-workspace[\s\S]*?flex-direction:\s*column/);
-  assert.doesNotMatch(presetCss, /direction\s*:|margin-left|margin-right|padding-left|padding-right|\bleft\s*:|\bright\s*:/);
+  assert.doesNotMatch(presetCss, /(?:^|\n)\s*direction\s*:|margin-left|margin-right|padding-left|padding-right|\bleft\s*:|\bright\s*:/);
 });

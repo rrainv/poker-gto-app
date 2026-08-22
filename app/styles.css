@@ -12094,61 +12094,109 @@ body.has-modal-open { overflow: hidden; }
 
 .layout-preset-field[hidden] { display: none; }
 .layout-preset-control {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0;
+  padding: 3px;
 }
 .layout-preset-control .ui-tab {
+  flex: 1 1 0;
   min-width: 0;
   min-height: 44px;
   padding-inline: var(--space-3);
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+.layout-preset-control .ui-tab[hidden] { display: none; }
+
+@media (max-width: 620px) {
+  .layout-preset-control {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .layout-preset-control .ui-tab {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }
 
 @media (min-width: 1320px) {
-  /* Hand: Table Focus makes the live stage the leading, widest surface.
-     Controls First keeps the stage visible while moving the action dock above
-     the table and giving setup/history a deliberate working rail. */
+  /* Hand: Balanced keeps the setup rail beside the stage. Table Focus flips
+     that relationship and brings the live facts, legal actions, and table to
+     the start of the primary stage. Controls First gives setup a wider but
+     bounded leading rail, then yields more space to the live stage once play
+     begins. */
   html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .workspace-frame--wide {
     --workspace-frame-max: var(--workspace-frame-dense);
   }
   html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .playbook-workspace {
-    grid-template-columns: minmax(0, 1fr) minmax(230px, 270px);
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 280px);
+    grid-template-areas: "decision context";
   }
   html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .playbook-decision-workspace {
-    grid-column: 1;
-    order: 1;
+    grid-area: decision;
+    display: flex;
+    flex-direction: column;
   }
   html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .playbook-context-rail {
-    grid-column: 2;
-    order: 2;
+    grid-area: context;
+    width: 100%;
   }
   html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] #visual-table-container {
-    width: min(100%, 1100px);
-    max-width: 1100px;
+    width: min(100%, 1120px);
+    max-width: 1120px;
   }
+  html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .playbook-decision-workspace > * { order: 20; }
+  html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] #handLiveStageHeader { order: 1; }
+  html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] #handStageDock { order: 2; }
+  html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .playbook-table-toggle { order: 3; }
+  html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] #table-wrapper { order: 4; }
 
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-workspace {
-    grid-template-columns: minmax(380px, 430px) minmax(0, 1fr);
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .workspace-frame--wide {
+    --workspace-frame-max: var(--workspace-frame-dense);
   }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-workspace {
+    grid-template-columns: minmax(380px, 420px) minmax(0, 1fr);
+    grid-template-areas: "context decision";
+  }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-context-rail {
+    grid-area: context;
+    width: 100%;
+  }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-decision-workspace {
+    grid-area: decision;
+    display: flex;
+    flex-direction: column;
+  }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"]) .playbook-workspace {
+    grid-template-columns: minmax(270px, 300px) minmax(0, 1fr);
+  }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-decision-workspace > * { order: 20; }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] #handLiveStageHeader { order: 1; }
   html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] #handStageDock:not([hidden]) {
-    order: 3;
+    order: 2;
   }
   html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-table-toggle {
-    order: 4;
+    order: 3;
   }
   html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] #table-wrapper {
-    order: 5;
+    order: 4;
   }
 
-  /* Training: the same three surfaces compose around either the table/decision
-     stage or the setup controls; insight remains present in both cases. */
+  /* Training: focused presets use a two-column stage/rail topology instead of
+     simply permuting three similarly sized columns. */
   html[data-layout-preset="table-focus"] .training-workspace {
-    grid-template-columns: minmax(600px, 1fr) minmax(235px, 270px) minmax(210px, 240px);
-    grid-template-areas: "decision setup insight";
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 285px);
+    grid-template-areas:
+      "decision setup"
+      "decision insight";
   }
   html[data-layout-preset="controls-first"] .training-workspace {
-    grid-template-columns: minmax(300px, 340px) minmax(560px, 1fr) minmax(220px, 250px);
-    grid-template-areas: "setup decision insight";
+    grid-template-columns: minmax(310px, 350px) minmax(0, 1fr);
+    grid-template-areas:
+      "setup decision"
+      "insight decision";
   }
 
   /* Personal Strategy exposes Analysis Focus only when its Matrix/Teacher
@@ -12190,16 +12238,41 @@ body.has-modal-open { overflow: hidden; }
 }
 
 @media (min-width: 1500px) {
-  /* Analyze: Analysis Focus expands the decision/range surface while keeping
-     prose on its existing readable measure. Controls First instead widens the
-     configuration rail without turning it into the whole workspace. */
+  /* Analyze uses three genuinely different topologies. Balanced retains
+     context | analysis | action path. Analysis Focus makes analysis the
+     leading spanning stage with both rails stacked opposite. Controls First
+     mirrors that arrangement so configuration leads and analysis stays fully
+     visible on the other side. */
   html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] .workspace-frame--wide {
     --workspace-frame-max: var(--workspace-frame-dense);
   }
   html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] .playbook-workspace {
-    grid-template-columns: minmax(230px, 250px) minmax(0, 1fr) minmax(210px, 235px);
+    grid-template-columns: minmax(0, 1fr) minmax(245px, 280px);
+    grid-template-areas:
+      "decision context"
+      "decision support";
+  }
+  html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] .playbook-decision-workspace { grid-area: decision; }
+  html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] .playbook-context-rail { grid-area: context; }
+  html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] .playbook-support-rail {
+    grid-area: support;
+    position: static;
+  }
+  html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] #visual-table-container {
+    width: min(100%, 760px);
+    max-width: 760px;
   }
   html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="analyze"] .playbook-workspace {
-    grid-template-columns: minmax(340px, 380px) minmax(0, 1fr) minmax(210px, 235px);
+    grid-template-columns: minmax(390px, 430px) minmax(0, 1fr);
+    grid-template-areas:
+      "context decision"
+      "support decision";
+  }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="analyze"] .playbook-context-rail { grid-area: context; }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="analyze"] .playbook-decision-workspace { grid-area: decision; }
+  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="analyze"] .playbook-support-rail {
+    grid-area: support;
+    position: static;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
