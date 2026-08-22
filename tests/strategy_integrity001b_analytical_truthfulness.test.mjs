@@ -53,7 +53,8 @@ test('Matrix uses current context, labels unavailable cells, and discloses fallb
   assert.match(matrix, /actions = strategyResultPresentationActions\(cellStrategyResult\)/);
   assert.doesNotMatch(matrix, /calculatePreflopFallbackStrategy|evaluatePostflopHandStrength/);
   assert.match(matrix, /actions\.length \? `\$\{val \|\| 0\}%` : t\('Unavailable'\)/);
-  assert.match(matrix, /strategySourceDisplayLabel\(matrixSource\)/);
+  assert.match(matrix, /strategyPolicySummary\(matrixClaimPolicy\)/);
+  assert.match(matrix, /dataset\.strategyPrecision/);
   assert.match(matrix, /provider-backed postflop Matrix deferred/);
 });
 
@@ -153,8 +154,9 @@ test('Equity results omit the tautological Total equity summary without touching
 
 test('related analytical surfaces retain explicit truthfulness boundaries', () => {
   assert.match(logic, /MDF \([^)]*\) is a range-level reference, not a threshold for this hand/);
-  assert.match(logic, /No EV estimate is available unless the strategy source supplies one/);
+  assert.match(logic, /no EV loss is implied/);
   const explanation = fs.readFileSync(new URL('../app/src/application/analysis-explanation.mjs', import.meta.url), 'utf8');
+  assert.match(explanation, /claimPolicy\.claims\[STRATEGY_CLAIMS\.ACTION_EV\]/);
   assert.match(explanation, /compatibility stack rather than a guaranteed effective stack/);
   assert.match(explanation, /The strategy source supplies no action EV comparison/);
   const facts = sourceBetween(logic, 'function trustedAnalysisFacts(', 'function renderDecisionAnalysis(');

@@ -154,7 +154,14 @@ test('browser bridge is frozen, narrow, and loaded before classic logic', () => 
   const browserWindow = {};
   const bridge = installStrategyProviderBridge(browserWindow);
   assert.equal(browserWindow.RiverlineStrategy, bridge);
-  assert.deepEqual(Object.keys(bridge), ['schemaVersion', 'createProvider']);
+  assert.deepEqual(Object.keys(bridge), [
+    'schemaVersion',
+    'claimPolicySchemaVersion',
+    'createProvider',
+    'claimsFor',
+    'canClaim',
+    'sourceDescriptorFor',
+  ]);
   assert.ok(Object.isFrozen(bridge));
   assert.deepEqual(
     Object.getOwnPropertyDescriptor(browserWindow, 'RiverlineStrategy'),
@@ -211,8 +218,8 @@ test('provenance remains provider-owned across presentation consumers', () => {
     logic.indexOf('// evaluateHand removed'),
   );
   assert.doesNotMatch(strategyPresentation, /MATH FALLBACK|MONTE CARLO|DEEP CFR MODEL|LOCAL TREE/);
-  assert.match(logic, /exercise\?\.strategyResult\?\.source/);
-  assert.match(logic, /strategySourceDisplayLabel\(matrixSource\)/);
+  assert.match(logic, /strategySourceDisplayLabel\(decision\.strategyResult\)/);
+  assert.match(logic, /strategyPolicySummary\(matrixClaimPolicy\)/);
 });
 
 test('AnalysisExplanation consumes StrategyResult and never becomes a strategy source', () => {

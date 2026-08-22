@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 22, 2026 (global Node baseline and CI checkpoint).
+Last consolidated: August 23, 2026 (`REFERENCE-AUTHORITY-001` implementation checkpoint).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -20,7 +20,7 @@ A visual issue is not `CLOSED` without manual/browser confirmation.
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-NODE-BASELINE-001 | CLOSED | After the Premium Card System v1 checkpoint, the canonical global Node suite is green at 1,636/1,636. Accepted Core Flow, Guest privacy, action-aware Personal Strategy metadata, localized poker terminology, lazy workspace behavior, and Premium Card structural coverage remain represented. Machine-sensitive macro runtime reporting is separated from correctness and operation-level interaction thresholds. | Global Node baseline checkpoint |
+| QA-NODE-BASELINE-001 | CLOSED | After the REFERENCE-AUTHORITY-001 checkpoint, the canonical global Node suite is green at 1,643/1,643. Accepted Core Flow, Guest privacy, action-aware Personal Strategy metadata, localized poker terminology, lazy workspace behavior, Premium Card structural coverage, and centralized strategy claim semantics remain represented. Machine-sensitive macro runtime reporting is separated from correctness and operation-level interaction thresholds. | Global Node baseline checkpoint |
 | QA-CI-001 | CLOSED | Minimal GitHub Actions automation runs the canonical syntax checks and full Node suite on Node 24 for pushes, pull requests, and manual dispatches. This records repository automation presence; the first hosted run remains externally observable in GitHub rather than being inferred locally. | `.github/workflows/node-ci.yml` |
 
 ## Home / My Riverline
@@ -60,6 +60,8 @@ A visual issue is not `CLOSED` without manual/browser confirmation.
 | QA-TRAIN-ANALYSIS-001 | PARTIAL | Training uses the refined shared hierarchy; final manual acceptance pending | PRODUCT-UI-003R2 |
 | QA-TRAIN-ANALYSIS-002 | PARTIAL | Pre-answer assistance is now one-at-a-time coaching hints; final manual acceptance pending | PRODUCT-UI-003R2 |
 | QA-TRAIN-ANALYSIS-003 | PARTIAL | Post-answer reference remains one canonical frequency panel; final manual acceptance pending | PRODUCT-UI-003R2 |
+| QA-REFERENCE-AUTHORITY-001 | PARTIAL | Additive source descriptors, structured coverage/capabilities, central claim policy, comparative heuristic Training language, high-risk limitation path, Playbook/Analyze provenance, Matrix precision, AnalysisExplanation consumption, unchanged grading/probabilities, and EN/RU/HE semantics are automated. Remaining acceptance: Firefox Training pre/after-answer and Full Hand comparison copy, high-risk context notes, Playbook Details/provenance, Matrix workspace precision, Daylight/Midnight, and HE RTL at representative desktop sizes. | REFERENCE-AUTHORITY-001 human Firefox acceptance |
+| QA-REFERENCE-AUTHORITY-002 | DEFERRED | Saved Hand/Spot currently preserve canonical/scenario state but not frozen historical StrategyResult metadata. If durable historical analysis is added, its approved payload must snapshot source ID/version, authority, coverage, capabilities, and limitations rather than reinterpret against today's registry. | future Saved historical-analysis payload ticket |
 
 ## August 13 live audit IDs
 

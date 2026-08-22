@@ -103,9 +103,12 @@ test('recommendations distinguish decision, provenance, metadata, and warnings',
   assert.match(html, /id="sourceBadge"[^>]*>HEURISTIC</);
   assert.match(html, /id="strategyMeta" hidden/);
   assert.match(html, /id="strategyWarnings" role="note" hidden/);
-  assert.match(logic, /strategyResult\.confidence !== null/);
-  assert.match(logic, /strategyResult\.coverage !== null/);
-  assert.match(logic, /localizedStrategyWarnings\(strategyResult\)\.join/);
+  assert.match(logic, /const claimPolicy = strategyClaimPolicy\(strategyResult\)/);
+  assert.match(logic, /claimPolicy\.sourceVersion/);
+  assert.match(logic, /claimPolicy\.coverage\.kind === 'exact'/);
+  assert.match(logic, /localizedStrategyLimitation\(claimPolicy\)/);
+  assert.match(logic, /\.\.\.localizedStrategyWarnings\(strategyResult\)/);
+  assert.match(logic, /\[\.\.\.new Set\(warnings\)\]\.join/);
   assert.doesNotMatch(html, /id="sourceBadge"[^>]*>(?:GTO|DEEP CFR)/i);
 });
 

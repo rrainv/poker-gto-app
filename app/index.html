@@ -2058,6 +2058,8 @@
               </div>
             </header>
 
+            <p id="trainingSourceLimitation" class="training-reference-note" role="note" hidden></p>
+
             <div id="trainingExerciseTags" class="training-tag-row" aria-label="Exercise tags" data-i18n-aria-label="Exercise tags"></div>
             <div id="trainingIdle" class="training-state-message">
               <strong data-i18n="Ready for a drill">Ready for a drill</strong>
@@ -2135,7 +2137,7 @@
               <p id="trainingFullHandResult"></p>
               <dl class="training-full-hand-summary">
                 <div><dt data-i18n="Decisions answered">Decisions answered</dt><dd id="trainingFullHandDecisionCount" class="poker-data-token">0</dd></div>
-                <div><dt data-i18n="Grade summary">Grade summary</dt><dd id="trainingFullHandGradeSummary"></dd></div>
+                <div><dt data-i18n="Reference summary">Reference summary</dt><dd id="trainingFullHandGradeSummary"></dd></div>
               </dl>
               <div class="training-full-hand-completion-actions">
                 <button id="trainingReviewHand" class="ui-button ui-button--primary" type="button" aria-expanded="false" data-i18n="Review Hand">Review Hand</button>
@@ -2157,8 +2159,8 @@
                 </div>
                 <dl class="training-full-hand-review-facts">
                   <div><dt data-i18n="Chosen action">Chosen action</dt><dd id="trainingFullHandReviewAction"></dd></div>
-                  <div><dt data-i18n="Grade">Grade</dt><dd id="trainingFullHandReviewGrade"></dd></div>
-                  <div id="trainingFullHandReviewSizingGradeFact"><dt data-i18n="Sizing grade">Sizing grade</dt><dd id="trainingFullHandReviewSizingGrade" data-i18n="Not graded">Not graded</dd></div>
+                  <div><dt data-i18n="Reference comparison">Reference comparison</dt><dd id="trainingFullHandReviewGrade"></dd></div>
+                  <div id="trainingFullHandReviewSizingGradeFact"><dt data-i18n="Sizing comparison">Sizing comparison</dt><dd id="trainingFullHandReviewSizingGrade" data-i18n="Not compared">Not compared</dd></div>
                   <div><dt data-i18n="Chips committed">Chips committed</dt><dd id="trainingFullHandReviewCommitted" class="poker-data-token"></dd></div>
                   <div><dt data-i18n="Pot">Pot</dt><dd id="trainingFullHandReviewPot" class="poker-data-token"></dd></div>
                   <div><dt data-i18n="Hero stack">Hero stack</dt><dd id="trainingFullHandReviewStack" class="poker-data-token"></dd></div>
@@ -2167,9 +2169,9 @@
                   <div><dt data-i18n="Exact Replay point">Exact Replay point</dt><dd id="trainingFullHandReviewReplay" class="poker-data-token"></dd></div>
                 </dl>
                 <section class="training-full-hand-review-reference" aria-labelledby="trainingFullHandReviewReferenceTitle">
-                  <div class="training-full-hand-review-reference-head"><div><p class="training-eyebrow" data-i18n="Decision reference">Decision reference</p><h5 id="trainingFullHandReviewReferenceTitle" data-i18n="Strategy frequencies">Strategy frequencies</h5></div><span id="trainingFullHandReviewSource" class="badge status-badge status-badge--info"></span></div>
-                  <p class="training-reference-note" data-i18n="Probabilities from the displayed strategy source; no EV is implied.">Probabilities from the displayed strategy source; no EV is implied.</p>
-                  <p id="trainingFullHandReviewSizingNote" class="training-reference-note" data-i18n="The action-family grade does not evaluate the exact bet or raise size.">The action-family grade does not evaluate the exact bet or raise size.</p>
+                  <div class="training-full-hand-review-reference-head"><div><p class="training-eyebrow" data-i18n="Decision reference">Decision reference</p><h5 id="trainingFullHandReviewReferenceTitle" data-i18n="Source frequencies">Source frequencies</h5></div><span id="trainingFullHandReviewSource" class="badge status-badge status-badge--info"></span></div>
+                  <p class="training-reference-note" data-i18n="Frequencies come from the displayed source; they are not automatically validated, and no EV is implied.">Frequencies come from the displayed source; they are not automatically validated, and no EV is implied.</p>
+                  <p id="trainingFullHandReviewSizingNote" class="training-reference-note" data-i18n="The action-family comparison does not evaluate the exact bet or raise size.">The action-family comparison does not evaluate the exact bet or raise size.</p>
                   <div id="trainingFullHandReviewFrequencyStack" class="training-frequency-stack frequency-stack is-empty" role="img" aria-label="Strategy frequencies unavailable"></div>
                   <div id="trainingFullHandReviewFrequencyRows" class="training-frequency-rows"></div>
                 </section>
@@ -2191,9 +2193,9 @@
 
         <aside class="training-insight-column">
           <section id="trainingSolution" class="panel training-solution-panel" hidden aria-labelledby="trainingSolutionTitle" data-tutorial-anchor="training-reference">
-            <div class="panel-head"><div><p id="trainingSolutionEyebrow" class="training-eyebrow" data-i18n="After-answer reference">After-answer reference</p><h2 id="trainingSolutionTitle" data-i18n="Strategy frequencies">Strategy frequencies</h2></div></div>
+            <div class="panel-head"><div><p id="trainingSolutionEyebrow" class="training-eyebrow" data-i18n="After-answer reference">After-answer reference</p><h2 id="trainingSolutionTitle" data-i18n="Source frequencies">Source frequencies</h2></div></div>
             <div class="panel-body">
-              <p class="training-reference-note" data-i18n="Probabilities from the displayed strategy source; no EV is implied.">Probabilities from the displayed strategy source; no EV is implied.</p>
+              <p class="training-reference-note" data-i18n="Frequencies come from the displayed source; they are not automatically validated, and no EV is implied.">Frequencies come from the displayed source; they are not automatically validated, and no EV is implied.</p>
               <div class="training-frequency-stack frequency-stack is-empty" id="trainingFrequencyStack" role="img" aria-label="Strategy frequencies unavailable"></div>
               <div id="trainingFrequencyRows" class="training-frequency-rows"></div>
             </div>
@@ -2206,8 +2208,8 @@
             <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="This browser session">This browser session</p><h2 id="trainingSessionTitle" data-i18n="Session progress">Session progress</h2></div></summary>
             <div class="panel-body">
               <p id="trainingSessionProgress" class="training-session-progress" hidden aria-live="polite"></p>
-              <div class="training-stat-grid" role="list" aria-label="Session summary" data-i18n-aria-label="Session summary"><div class="training-stat-cell" data-training-stat="attempts" role="listitem"><span data-i18n="Attempts">Attempts</span><strong id="trainingTotalHands">0</strong></div><div class="training-stat-cell" data-training-stat="accepted" role="listitem"><span data-i18n="Accepted">Accepted</span><strong id="trainingCorrect">0</strong></div><div class="training-stat-cell" data-training-stat="acceptance" role="listitem"><span data-i18n="Acceptance">Acceptance</span><strong id="trainingAccuracy" class="poker-data-token">0%</strong></div><div class="training-stat-cell" data-training-stat="streak" role="listitem"><span data-i18n="Streak">Streak</span><strong id="trainingStreak">0</strong></div><div class="training-stat-cell" data-training-stat="best-streak" role="listitem"><span data-i18n="Best streak">Best streak</span><strong id="trainingBestStreak">0</strong></div></div>
-              <div class="training-grade-counts" aria-label="Answer grades" data-i18n-aria-label="Answer grades"><span><i data-grade="optimal"></i><span data-i18n="Correct">Correct</span> <strong id="trainingOptimalCount">0</strong></span><span><i data-grade="acceptable"></i><span data-i18n="Acceptable">Acceptable</span> <strong id="trainingAcceptableCount">0</strong></span><span><i data-grade="mistake"></i><span data-i18n="Mistake">Mistake</span> <strong id="trainingMistakeCount">0</strong></span></div>
+              <div class="training-stat-grid" role="list" aria-label="Session summary" data-i18n-aria-label="Session summary"><div class="training-stat-cell" data-training-stat="attempts" role="listitem"><span data-i18n="Attempts">Attempts</span><strong id="trainingTotalHands">0</strong></div><div class="training-stat-cell" data-training-stat="accepted" role="listitem"><span data-i18n="Reference-aligned">Reference-aligned</span><strong id="trainingCorrect">0</strong></div><div class="training-stat-cell" data-training-stat="acceptance" role="listitem"><span data-i18n="Alignment rate">Alignment rate</span><strong id="trainingAccuracy" class="poker-data-token">0%</strong></div><div class="training-stat-cell" data-training-stat="streak" role="listitem"><span data-i18n="Current alignment run">Current alignment run</span><strong id="trainingStreak">0</strong></div><div class="training-stat-cell" data-training-stat="best-streak" role="listitem"><span data-i18n="Best alignment run">Best alignment run</span><strong id="trainingBestStreak">0</strong></div></div>
+              <div class="training-grade-counts" aria-label="Reference comparison" data-i18n-aria-label="Reference comparison"><span><i data-grade="optimal"></i><span data-i18n="Matches reference">Matches reference</span> <strong id="trainingOptimalCount">0</strong></span><span><i data-grade="acceptable"></i><span data-i18n="Close to reference">Close to reference</span> <strong id="trainingAcceptableCount">0</strong></span><span><i data-grade="mistake"></i><span data-i18n="Differs from reference">Differs from reference</span> <strong id="trainingMistakeCount">0</strong></span></div>
               <button class="ui-button ui-button-ghost ui-button--destructive" type="button" id="trainingResetStats" data-i18n="Reset session stats">Reset session stats</button>
             </div>
           </details>
@@ -2423,7 +2425,7 @@
             <div class="info-section">
               <h3 style="color:var(--primary);" data-i18n="Strategy source and limits">Strategy source and limits</h3>
               <p data-i18n="Riverline currently uses a deterministic heuristic strategy source for decision recommendations and Training reference frequencies. Exact-hand postflop recommendations are heuristic, and the preflop Matrix reflects the same source.">Riverline currently uses a deterministic heuristic strategy source for decision recommendations and Training reference frequencies. Exact-hand postflop recommendations are heuristic, and the preflop Matrix reflects the same source.</p>
-              <p data-i18n="Use Riverline to structure study and compare its recommendations with your own review. Its recommendations and Training grades are not proof of an optimal poker strategy.">Use Riverline to structure study and compare its recommendations with your own review. Its recommendations and Training grades are not proof of an optimal poker strategy.</p>
+              <p data-i18n="Use Riverline to structure study and compare its recommendations with your own review. Heuristic recommendations and Training comparisons are not proof of objectively correct or optimal poker strategy.">Use Riverline to structure study and compare its recommendations with your own review. Heuristic recommendations and Training comparisons are not proof of objectively correct or optimal poker strategy.</p>
             </div>
           </div>
         </section>

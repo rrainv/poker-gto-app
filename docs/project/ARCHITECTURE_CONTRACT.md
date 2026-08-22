@@ -22,6 +22,8 @@ Production must not import solver experiments, training scripts, cloud tooling, 
 - Scenario/Hand selection and projection: Playbook application layer
 - Decision strategy entry point: `StrategyProvider v1`
 - Strategy result/provenance: `StrategyResult v1`
+- strategy source identity/authority/coverage/capabilities: `StrategySourceDescriptor v1` and `StrategyContextCoverage v1`
+- permitted strategy claims: `StrategyClaimPolicy v1`
 - current heuristic implementation: `app/src/strategy/`
 - Training generation/session/grading: canonical application modules
 - explanation data: `AnalysisExplanation v1`
@@ -99,7 +101,11 @@ Current source vocabulary:
 
 Actions use structured canonical action types; labels are presentation data. Probabilities normalize through the StrategyResult contract.
 
-A future model/provider must enter behind this boundary with versioned metadata and validation. Do not revive retired loaders.
+`StrategyResult v1` additively carries a source descriptor, source version, provenance, context coverage, and capabilities. Source identity, provenance, authority, coverage, capabilities, and claim policy are distinct facts. Legacy numeric confidence/coverage metadata grants no authority.
+
+All consumers must obtain user-facing claim semantics from `StrategyClaimPolicy v1`. They must not infer correctness, optimality, exactness, EV loss, or normative grading from a source ID, family, solver/model branding, probability distribution, or confidence number. The current heuristic has generalized comparative authority only. See `STRATEGY_SOURCE_AUTHORITY_SPEC.md`.
+
+A future model/reference provider must enter behind this boundary with a versioned descriptor, explicit context matcher, declared capabilities, and validation-backed authority. Exact bounded coverage must not extrapolate. Do not revive retired loaders.
 
 ## 7. Equity
 
@@ -123,13 +129,14 @@ Training must:
 - use deterministic seed/replay behavior
 - call the same StrategyProvider as Playbook
 - grade from StrategyResult
+- interpret internal grades through StrategyClaimPolicy for public wording and statistics
 - avoid Training-only strategy fallbacks
 
 Training modules do not become browser strategy authorities.
 
 ## 10. AnalysisExplanation
 
-AnalysisExplanation consumes DecisionContext, StrategyResult, and trusted facts. Renderers must not recreate poker math or strategy.
+AnalysisExplanation consumes DecisionContext, StrategyResult, StrategyClaimPolicy facts, and trusted facts. It may explain structured authority/limitations but must not invent source semantics. Renderers must not recreate poker math, strategy, or claim policy.
 
 Range-aware Analysis follows this dependency direction:
 

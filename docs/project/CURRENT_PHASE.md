@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 22, 2026 (global Node baseline and CI checkpoint).
+Last refreshed: August 23, 2026 (`REFERENCE-AUTHORITY-001` implementation checkpoint).
 
 Code, tests, accepted tags/ticket reports, new manual QA, and explicit user decisions override this snapshot. Detailed future capability is preserved in `PRODUCT_BACKLOG.md`; subsystem contracts remain authoritative for implementation semantics.
 
@@ -18,7 +18,7 @@ Code, tests, accepted tags/ticket reports, new manual QA, and explicit user deci
 
 ### Global Node baseline and CI — COMPLETED
 
-The Premium Card System v1 checkpoint remains intact, including its separately tracked Firefox visual acceptance. The canonical global Node suite is green at **1,636/1,636 tests**, and `.github/workflows/node-ci.yml` now runs the two canonical syntax checks plus the full suite on Node 24 for pushes, pull requests, and manual dispatches.
+The Premium Card System v1 checkpoint remains intact, including its separately tracked Firefox visual acceptance. After the REFERENCE-AUTHORITY-001 checkpoint, the canonical global Node suite is green at **1,643/1,643 tests**, and `.github/workflows/node-ci.yml` now runs the two canonical syntax checks plus the full suite on Node 24 for pushes, pull requests, and manual dispatches.
 
 Correctness and interaction performance remain distinct gates. Range Calibration keeps operation-level selection/cache/rerank/progress thresholds in the canonical suite; full synthetic evaluator wall-clock reporting belongs to `node tests/tooling/evaluate_range_cal002b.mjs` and `node tests/tooling/evaluate_range_cal002c.mjs`. Training keeps deterministic 10,000-sample correctness/distribution coverage in the suite; machine-sensitive throughput is reported separately with `node tests/tooling/benchmark-training-sampler.mjs --count 10000`. This separation does not relax semantic, distribution, cache, invalidation, or interaction-latency assertions.
 
@@ -36,6 +36,18 @@ Established production authorities and invariants:
 - Home versus ClubGG accounting semantics: no Home deduction; ClubGG-style contribution is exactly `0.1bb` per seated player and is outside the contestable pot.
 
 Do not reopen the retired browser/Electron ONNX runtime, remote strategy API, arbitrary solver-tree upload, synthetic legacy Training, or duplicate Equity architecture. Future solver, reference, model, and imported strategy sources enter only behind validated versioned provider contracts.
+
+### Strategy source authority — CHECKPOINTED / INTENTIONALLY INCOMPLETE
+
+`REFERENCE-AUTHORITY-001` additively extends `StrategyResult v1` with versioned source descriptors, provenance, exact/generalized/unsupported context coverage, and effective result capabilities. One `StrategyClaimPolicy v1` now decides whether a result may support comparative or normative grading, scoped recommendation, exact-frequency, sizing, action-EV, EV-loss, optimality, or curriculum claims. Consumers do not infer those semantics from source IDs or confidence numbers.
+
+The current deterministic heuristic is explicitly a generalized comparative reference. Training retains its internal probability-gap grades and scoring but publicly uses Matches/Close/Differs, alignment rate/run, source-frequency wording, and compact structured context limitations. Playbook/Analyze and Matrix expose descriptor-driven provenance, precision, and coverage. `AnalysisExplanation v1` consumes the structured policy rather than maintaining its own source table. Heuristic probabilities and Training generation are unchanged.
+
+Built-in descriptor metadata lives in a small immutable registry; future provider-owned descriptors travel with their results. A validated bounded pack gains stronger semantics only for an exact covered context and declared capabilities. Learned or solver-derived sources gain no authority from branding alone. Personal Strategy remains a separate intended-strategy/evidence authority until a later approved adapter; observed behavior remains a third semantic role.
+
+Normal Saved Hand/Spot objects do not persist a frozen StrategyResult. Replay resolves the current provider from durable canonical/scenario state, so no schema migration is justified here. A future frozen historical analysis payload must snapshot source ID/version, authority, coverage, and capabilities instead of adopting a newer registry policy retroactively.
+
+Automated contract, consumer, probability, grading, performance, and EN/RU/HE coverage is present. Firefox visual acceptance for Training comparison language, high-risk notes, Playbook provenance, and Matrix precision remains tracked in `QA_BACKLOG.md`. See `STRATEGY_SOURCE_AUTHORITY_SPEC.md`.
 
 ### Personal Strategy — CHECKPOINTED / INTENTIONALLY INCOMPLETE
 

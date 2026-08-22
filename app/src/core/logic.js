@@ -3377,6 +3377,7 @@ function renderChart() {
     ? '' : handClass(decisionContext?.heroCards || app.gto.hero);
   const isPostFlop = matrixModel.isPostFlop;
   const matrixSource = matrixModel.source;
+  const matrixClaimPolicy = matrixModel.claimPolicy;
   const matrixLayout = document.querySelector('.range-matrix-layout');
   const matrixEmptyState = $('#postflopMatrixEmpty');
   const matrixToolbar = document.querySelector('.range-matrix-toolbar');
@@ -3452,6 +3453,8 @@ function renderChart() {
     button.dataset.mixState = mixState;
     button.dataset.state = actions.length ? 'available' : 'unavailable';
     button.dataset.strategySource = matrixSource || 'unavailable';
+    button.dataset.strategyCoverage = matrixClaimPolicy?.coverage?.kind || 'unsupported';
+    button.dataset.strategyPrecision = matrixClaimPolicy?.capabilities?.actionDistribution || 'none';
     button.dataset.strategyCue = detail;
     button.setAttribute('aria-pressed', String(isSelected));
     button.setAttribute('aria-describedby', 'matrixCellCue');
@@ -3564,7 +3567,7 @@ function renderChart() {
       ? t('Strategy unavailable for the current decision context')
       : isPostFlop
         ? t('Use Decision for exact-hand postflop strategy.')
-        : `${positions} · ${matrixStack} bb · ${strategySourceDisplayLabel(matrixSource)}`;
+        : `${positions} · ${matrixStack} bb · ${strategyPolicySummary(matrixClaimPolicy)}`;
   }
 
 }
@@ -3586,6 +3589,7 @@ function prepareMatrixStrategyModel(decisionContext) {
   const isPostFlop = !matrixContextUnavailable
     && (decisionContext.street || currentStreet()) !== 'preflop';
   let matrixSource = null;
+  let matrixClaimPolicy = null;
   const cells = RANKS.flatMap((_, row) => RANKS.map((__, column) => {
     const hand = handCode(row, column);
     let actions = [];
@@ -3601,6 +3605,7 @@ function prepareMatrixStrategyModel(decisionContext) {
         };
         const cellStrategyResult = strategyProvider.resolve(cellDecisionContext);
         matrixSource = matrixSource || cellStrategyResult.source;
+        matrixClaimPolicy = matrixClaimPolicy || strategyClaimPolicy(cellStrategyResult);
         if (cellStrategyResult.source !== strategyProvider.sources.UNAVAILABLE) {
           actions = strategyResultPresentationActions(cellStrategyResult);
         }
@@ -3608,7 +3613,13 @@ function prepareMatrixStrategyModel(decisionContext) {
     }
     return { hand, actions };
   }));
-  app.matrixModel = { key, source: matrixSource, isPostFlop, cells };
+  app.matrixModel = {
+    key,
+    source: matrixSource,
+    claimPolicy: matrixClaimPolicy,
+    isPostFlop,
+    cells
+  };
   return app.matrixModel;
 }
 
@@ -3647,13 +3658,59 @@ function renderFrequencyStack(container, actions) {
 }
 
 function strategySourceDisplayLabel(source) {
-  const labels = {
-    heuristic_preflop: 'Heuristic fallback',
-    heuristic_postflop: 'Heuristic fallback',
-    equity_fallback: 'Equity fallback',
-    unavailable: 'Unavailable'
-  };
-  return t(labels[source] || String(source || 'Unavailable'));
+  const result = source && typeof source === 'object' ? source : null;
+  const sourceId = result?.source || source;
+  const descriptor = result?.sourceDescriptor
+    || requireStrategyProviderBridge().sourceDescriptorFor(sourceId);
+  return t(descriptor?.displayNameKey || descriptor?.displayName || String(sourceId || 'Unavailable'));
+}
+
+function strategyClaimPolicy(strategyResult) {
+  return requireStrategyProviderBridge().claimsFor(strategyResult);
+}
+
+function localizedStrategyLimitation(policy) {
+  const limitation = policy?.primaryLimitation;
+  return limitation ? t(limitation.messageKey || limitation.message) : '';
+}
+
+function strategyPolicySummary(policy) {
+  if (!policy || policy.availability !== 'available') return t('Source unavailable');
+  const precision = policy.claims?.exact_frequencies
+    ? t('Exact source frequencies')
+    : policy.capabilities?.actionDistribution === 'qualitative'
+      ? t('Qualitative strategy information')
+      : t('Source frequencies');
+  const coverage = policy.coverage?.kind === 'exact'
+    ? t('Exact covered context')
+    : t('Broad approximate coverage');
+  return [
+    strategySourceDisplayLabel({
+      source: policy.source.id,
+      sourceDescriptor: policy.source
+    }),
+    precision,
+    coverage
+  ].join(' · ');
+}
+
+function trainingGradePresentation(grade, strategyResult) {
+  const semantics = strategyClaimPolicy(strategyResult).trainingSemantics;
+  if (semantics === 'normative') {
+    return {
+      optimal: t('Correct'),
+      acceptable: t('Acceptable'),
+      mistake: t('Mistake')
+    }[grade] || t('Review');
+  }
+  if (semantics === 'comparative') {
+    return {
+      optimal: t('Matches Riverline reference'),
+      acceptable: t('Close to Riverline reference'),
+      mistake: t('Differs from Riverline reference')
+    }[grade] || t('Review');
+  }
+  return t('Reference unavailable');
 }
 
 function setRecommendationState(state) {
@@ -3909,10 +3966,12 @@ async function updateContext(reason = 'Context updated') {
   }
   
   const strategyResult = strategyProvider.resolve(decisionContext);
+  const claimPolicy = strategyClaimPolicy(strategyResult);
   const profile = strategyResultToLegacyProfile(strategyResult);
   const meaningfulActions = strategyResult.actions.filter((entry) => entry.probability >= 0.05).length;
   if (typeof setRecommendationState === 'function') {
-    setRecommendationState(strategyResult.warnings.length > 0
+    setRecommendationState(claimPolicy.primaryLimitation?.priority >= 70
+      || strategyResult.warnings.length > 0
       ? 'warning'
       : meaningfulActions > 1 ? 'mixed' : 'ready');
   }
@@ -3986,13 +4045,9 @@ async function updateContext(reason = 'Context updated') {
   const sourceBadge = $('#sourceBadge');
 
   if (sourceBadge) {
-    const sourceLabel = typeof strategySourceDisplayLabel === 'function'
-      ? strategySourceDisplayLabel(strategyResult.source)
-      : strategyResult.source;
-    const sourceTone = strategyResult.source.startsWith('heuristic_') ? 'heuristic' : 'info';
-    const provenance = sourceTone === 'heuristic'
-      ? t('Heuristic guidance is active unless another source is named above. Canonical hand state does not imply solved strategy.')
-      : `${t('Strategy source')}: ${sourceLabel}`;
+    const sourceLabel = strategySourceDisplayLabel(strategyResult);
+    const sourceTone = claimPolicy.source.family === 'heuristic' ? 'heuristic' : 'info';
+    const provenance = strategyPolicySummary(claimPolicy);
     sourceBadge.textContent = sourceLabel;
     sourceBadge.title = provenance;
     sourceBadge.setAttribute('aria-label', `${t('Strategy source')}: ${sourceLabel}`);
@@ -4003,18 +4058,24 @@ async function updateContext(reason = 'Context updated') {
 
   const strategyMeta = $('#strategyMeta');
   if (strategyMeta) {
-    const metadata = [];
-    if (strategyResult.confidence !== null) metadata.push(t('Confidence {value}%', { value: (strategyResult.confidence * 100).toFixed(0) }));
-    if (strategyResult.coverage !== null) metadata.push(t('Coverage {value}%', { value: (strategyResult.coverage * 100).toFixed(0) }));
-    if (strategyResult.modelVersion !== null) metadata.push(t('Model {version}', { version: strategyResult.modelVersion }));
+    const metadata = [
+      t('Source version {version}', { version: claimPolicy.sourceVersion }),
+      claimPolicy.coverage.kind === 'exact'
+        ? t('Exact covered context')
+        : t('Broad approximate coverage')
+    ];
     strategyMeta.textContent = metadata.join(' · ');
     strategyMeta.hidden = metadata.length === 0;
   }
 
   const strategyWarnings = $('#strategyWarnings');
   if (strategyWarnings) {
-    strategyWarnings.textContent = localizedStrategyWarnings(strategyResult).join(' · ');
-    strategyWarnings.hidden = strategyResult.warnings.length === 0;
+    const warnings = [
+      localizedStrategyLimitation(claimPolicy),
+      ...localizedStrategyWarnings(strategyResult)
+    ].filter(Boolean);
+    strategyWarnings.textContent = [...new Set(warnings)].join(' · ');
+    strategyWarnings.hidden = warnings.length === 0;
   }
 
   const streetLabel = $('#streetLabel');
@@ -6102,11 +6163,33 @@ function refreshLocalizedPlaybookRuntime() {
   }
   if (app.decisionContext && app.strategyResult) {
     const profile = localizedStrategyProfile(app.strategyResult);
+    const claimPolicy = strategyClaimPolicy(app.strategyResult);
     if ($('#bestAction')) $('#bestAction').textContent = t(profile.best);
     if ($('#bestReason')) $('#bestReason').textContent = profile.reason;
-    if ($('#sourceBadge')) $('#sourceBadge').textContent = strategySourceDisplayLabel(app.strategyResult.source);
+    const sourceLabel = strategySourceDisplayLabel(app.strategyResult);
+    if ($('#sourceBadge')) {
+      $('#sourceBadge').textContent = sourceLabel;
+      $('#sourceBadge').title = strategyPolicySummary(claimPolicy);
+      $('#sourceBadge').setAttribute('aria-label', `${t('Strategy source')}: ${sourceLabel}`);
+    }
+    if ($('#strategySourceProvenance')) {
+      $('#strategySourceProvenance').textContent = strategyPolicySummary(claimPolicy);
+    }
+    if ($('#strategyMeta')) {
+      $('#strategyMeta').textContent = [
+        t('Source version {version}', { version: claimPolicy.sourceVersion }),
+        claimPolicy.coverage.kind === 'exact'
+          ? t('Exact covered context')
+          : t('Broad approximate coverage')
+      ].join(' · ');
+    }
     if ($('#strategyWarnings')) {
-      $('#strategyWarnings').textContent = localizedStrategyWarnings(app.strategyResult).join(' · ');
+      const warnings = [
+        localizedStrategyLimitation(claimPolicy),
+        ...localizedStrategyWarnings(app.strategyResult)
+      ].filter(Boolean);
+      $('#strategyWarnings').textContent = [...new Set(warnings)].join(' · ');
+      $('#strategyWarnings').hidden = warnings.length === 0;
     }
     const displayActions = [...profile.actions];
     while (displayActions.length < 3) displayActions.push({ name: '—', value: 0, kind: 'unavailable' });
@@ -8256,14 +8339,27 @@ function updateTrainingButtons(exercise) {
 }
 
 function renderTrainingSource(exercise) {
-  const source = exercise?.strategyResult?.source || 'unavailable';
+  const strategyResult = exercise?.strategyResult || null;
+  const policy = strategyClaimPolicy(strategyResult);
   const sourceElement = $('#trainingStrategySource');
   if (!sourceElement) return;
-  const label = strategySourceDisplayLabel(source);
+  const label = strategySourceDisplayLabel(strategyResult || 'unavailable');
+  const limitation = policy.primaryLimitation?.priority >= 70
+    ? localizedStrategyLimitation(policy)
+    : '';
   sourceElement.textContent = label;
-  sourceElement.title = t('Strategy source: {source}. Exercise seed {seed}.', { source: label, seed: exercise.seed });
-  const tone = source.startsWith('heuristic_') ? 'heuristic' : 'info';
+  sourceElement.title = [
+    t('Strategy source: {source}. Exercise seed {seed}.', { source: label, seed: exercise.seed }),
+    strategyPolicySummary(policy),
+    limitation
+  ].filter(Boolean).join(' ');
+  const tone = policy.source.family === 'heuristic' ? 'heuristic' : 'info';
   sourceElement.className = `badge status-badge status-badge--${tone}`;
+  const limitationElement = $('#trainingSourceLimitation');
+  if (limitationElement) {
+    limitationElement.textContent = limitation;
+    limitationElement.hidden = !limitation;
+  }
 }
 
 function renderTrainingGenerationError(error) {
@@ -8304,6 +8400,7 @@ function renderTrainingGenerationError(error) {
     sourceElement.textContent = t('Source unavailable');
     sourceElement.className = 'badge status-badge status-badge--warning';
   }
+  if ($('#trainingSourceLimitation')) $('#trainingSourceLimitation').hidden = true;
 }
 
 function renderTrainingDecisionContextSummary(exercise) {
@@ -8882,6 +8979,7 @@ function renderFullHandAwaitingHero(snapshot) {
     $('#trainingStrategySource').textContent = t('Hidden until review');
     $('#trainingStrategySource').className = 'badge status-badge status-badge--info';
   }
+  if ($('#trainingSourceLimitation')) $('#trainingSourceLimitation').hidden = true;
   if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
   if ($('#trainingFeedback')) $('#trainingFeedback').hidden = true;
   if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = true;
@@ -8930,12 +9028,8 @@ function fullHandTerminalResultCopy(snapshot) {
     : t('Hand ended by fold. Hero result: {result}.', { result: signed });
 }
 
-function fullHandReviewGradeLabel(grade) {
-  return {
-    optimal: t('Correct'),
-    acceptable: t('Acceptable'),
-    mistake: t('Mistake'),
-  }[grade] || t('Review');
+function fullHandReviewGradeLabel(grade, strategyResult) {
+  return trainingGradePresentation(grade, strategyResult);
 }
 
 function renderFullHandReviewCards(target, cards, emptyLabel) {
@@ -9000,13 +9094,18 @@ function renderFullHandReviewDecision(review, requestedIndex = app.training.full
           })
         : t(actionLabel);
   }
-  if ($('#trainingFullHandReviewGrade')) $('#trainingFullHandReviewGrade').textContent = fullHandReviewGradeLabel(decision.grade);
+  if ($('#trainingFullHandReviewGrade')) {
+    $('#trainingFullHandReviewGrade').textContent = fullHandReviewGradeLabel(
+      decision.grade,
+      decision.strategyResult,
+    );
+  }
   const sizingWasChosen = ['bet', 'raise'].includes(actionType);
   if ($('#trainingFullHandReviewSizingGradeFact')) {
     $('#trainingFullHandReviewSizingGradeFact').hidden = !sizingWasChosen;
   }
   if ($('#trainingFullHandReviewSizingGrade')) {
-    $('#trainingFullHandReviewSizingGrade').textContent = t('Not graded');
+    $('#trainingFullHandReviewSizingGrade').textContent = t('Not compared');
   }
   if ($('#trainingFullHandReviewSizingNote')) {
     $('#trainingFullHandReviewSizingNote').hidden = !sizingWasChosen;
@@ -9032,9 +9131,12 @@ function renderFullHandReviewDecision(review, requestedIndex = app.training.full
     });
   }
   if ($('#trainingFullHandReviewSource')) {
-    $('#trainingFullHandReviewSource').textContent = strategySourceDisplayLabel(
-      decision.strategyResult?.source,
-    );
+    const reviewPolicy = strategyClaimPolicy(decision.strategyResult);
+    $('#trainingFullHandReviewSource').textContent = strategySourceDisplayLabel(decision.strategyResult);
+    $('#trainingFullHandReviewSource').title = [
+      strategyPolicySummary(reviewPolicy),
+      localizedStrategyLimitation(reviewPolicy),
+    ].filter(Boolean).join(' ');
   }
   renderTrainingFrequencyReference(
     $('#trainingFullHandReviewFrequencyStack'),
@@ -9068,11 +9170,21 @@ function renderFullHandTerminal(snapshot) {
     $('#trainingFullHandDecisionCount').textContent = String(snapshot.summary.decisionsAnswered);
   }
   if ($('#trainingFullHandGradeSummary')) {
-    $('#trainingFullHandGradeSummary').textContent = t('{correct} correct · {acceptable} acceptable · {mistakes} mistakes', {
-      correct: snapshot.gradeCounts.optimal,
-      acceptable: snapshot.gradeCounts.acceptable,
-      mistakes: snapshot.gradeCounts.mistake,
-    });
+    const decisions = snapshot.review?.decisions || [];
+    const normative = decisions.length > 0 && decisions.every((decision) => (
+      strategyClaimPolicy(decision.strategyResult).trainingSemantics === 'normative'
+    ));
+    $('#trainingFullHandGradeSummary').textContent = normative
+      ? t('{correct} correct · {acceptable} acceptable · {mistakes} mistakes', {
+          correct: snapshot.gradeCounts.optimal,
+          acceptable: snapshot.gradeCounts.acceptable,
+          mistakes: snapshot.gradeCounts.mistake,
+        })
+      : t('{matches} matches · {close} close · {differences} differences', {
+          matches: snapshot.gradeCounts.optimal,
+          close: snapshot.gradeCounts.acceptable,
+          differences: snapshot.gradeCounts.mistake,
+        });
   }
   if ($('#trainingDecisionNumber')) $('#trainingDecisionNumber').hidden = true;
   if ($('#trainingNextHandBtn')) $('#trainingNextHandBtn').hidden = true;
@@ -9284,8 +9396,8 @@ function completeVariedTrainingSession() {
   updateTrainingSessionProgress();
   if ($('#trainingSessionCompletion')) $('#trainingSessionCompletion').hidden = false;
   if ($('#trainingSessionCompletionText')) {
-    $('#trainingSessionCompletionText').textContent = t('{accepted} accepted from {attempts} attempts.', {
-      accepted: app.training.stats.correct,
+    $('#trainingSessionCompletionText').textContent = t('{aligned} reference-aligned from {attempts} attempts.', {
+      aligned: app.training.stats.correct,
       attempts: app.training.stats.totalHands,
     });
   }
@@ -9336,31 +9448,56 @@ async function newRandomTrainingHand(options = {}) {
 }
 
 function canonicalTrainingFeedback(evaluation, strategyResult) {
-  const source = strategySourceDisplayLabel(strategyResult.source);
-  const heuristic = String(strategyResult.source || '').startsWith('heuristic_');
+  const policy = strategyClaimPolicy(strategyResult);
+  const source = strategySourceDisplayLabel(strategyResult);
   const chosen = t(evaluation.mappedStrategyAction?.label
     || trainingActionLabel(evaluation.chosenAction.type, app.training.currentExercise.decisionContext));
+  const contextualLimitation = policy.primaryLimitation?.priority >= 70
+    ? localizedStrategyLimitation(policy)
+    : '';
+  const withLimitation = (text) => [text, contextualLimitation].filter(Boolean).join(' ');
+
+  if (policy.trainingSemantics === 'normative') {
+    if (evaluation.grade === 'optimal') {
+      return {
+        title: t('Correct'),
+        text: t('{action} matches the validated reference from {source}. Compare the displayed action frequencies for the full mix.', { action: chosen, source })
+      };
+    }
+    if (evaluation.grade === 'acceptable') {
+      return {
+        title: t('Acceptable'),
+        text: t('{action} is within the accepted mix of the validated reference from {source}.', { action: chosen, source })
+      };
+    }
+    return {
+      title: t('Mistake'),
+      text: t('{action} falls outside the accepted mix of the validated reference from {source}.', { action: chosen, source })
+    };
+  }
+
+  if (policy.trainingSemantics !== 'comparative') {
+    return {
+      title: t('Reference unavailable'),
+      text: t('This source cannot support a Training comparison for the current context.')
+    };
+  }
+
   if (evaluation.grade === 'optimal') {
     return {
-      title: t('Correct'),
-      text: heuristic
-        ? t('{action} matches Riverline\'s current reference. Compare the displayed action frequencies for the full mix.', { action: chosen })
-        : t('{action} matches the current reference from {source}. Compare the displayed action frequencies for the full mix.', { source, action: chosen })
+      title: t('Matches Riverline reference'),
+      text: withLimitation(t('{action} matches the selected Riverline reference. Compare the displayed source frequencies for the full mix.', { action: chosen }))
     };
   }
   if (evaluation.grade === 'acceptable') {
     return {
-      title: t('Acceptable'),
-      text: heuristic
-        ? t('Acceptable mixed-strategy choice. Within the current strategy estimate, {action} remains close enough to the leading action.', { action: chosen })
-        : t('Acceptable mixed-strategy choice from {source}. Compare the displayed reference for the full mix.', { source })
+      title: t('Close to Riverline reference'),
+      text: withLimitation(t('{action} is close to the leading action in the selected Riverline reference. Compare the displayed source frequencies for the full mix.', { action: chosen }))
     };
   }
   return {
-    title: t('Mistake'),
-    text: heuristic
-      ? t('Within the current strategy estimate, {action} is not the highest-frequency action. Compare the displayed action frequencies before the next decision. No EV estimate is available unless the strategy source supplies one.', { action: chosen })
-      : t('{source} does not make {action} the highest-frequency action in the current reference. Compare the displayed action frequencies before the next decision. No EV estimate is available unless the strategy source supplies one.', { source, action: chosen })
+    title: t('Differs from Riverline reference'),
+    text: withLimitation(t('{action} differs from the leading action in the selected Riverline reference. Compare the displayed source frequencies; this does not prove the play is objectively wrong, and no EV loss is implied.', { action: chosen }))
   };
 }
 
@@ -9403,17 +9540,18 @@ function renderTrainingEvaluationSummary(evaluation, exercise) {
   const scoreBadge = $('#trainingScoreBadge');
   if (scoreBadge) {
     scoreBadge.hidden = false;
-    scoreBadge.textContent = `${t(evaluation.accepted ? 'Accepted' : 'Review')} · ${app.training.stats.correct}/${app.training.stats.totalHands}`;
+    scoreBadge.textContent = `${trainingGradePresentation(
+      evaluation.grade,
+      exercise.strategyResult,
+    )} · ${app.training.stats.correct}/${app.training.stats.totalHands}`;
     scoreBadge.dataset.accepted = String(evaluation.accepted);
   }
   const chosenLabel = t(trainingActionLabel(evaluation.chosenAction.type, exercise.decisionContext));
   if ($('#trainingGradeBadge')) {
-    const publicGradeLabels = {
-      optimal: 'Correct',
-      acceptable: 'Acceptable',
-      mistake: 'Mistake'
-    };
-    $('#trainingGradeBadge').textContent = t(publicGradeLabels[evaluation.grade] || 'Review');
+    $('#trainingGradeBadge').textContent = trainingGradePresentation(
+      evaluation.grade,
+      exercise.strategyResult,
+    );
     $('#trainingGradeBadge').className = `badge training-grade-badge training-grade-badge--${evaluation.grade}`;
   }
   if ($('#trainingFeedback')) $('#trainingFeedback').dataset.grade = evaluation.grade;

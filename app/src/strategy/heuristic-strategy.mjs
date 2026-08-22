@@ -80,6 +80,14 @@ function preflopCandidate(decisionContext) {
   const actionLabel = result.recommendedActionLabel;
   return {
     source: result.source,
+    provenance: {
+      origin: 'riverline_builtin',
+      generationMethod: 'deterministic_preflop_heuristic',
+      assumptions: [
+        'broad_position_and_hand_playability_rules',
+        'not_independently_solver_validated',
+      ],
+    },
     actions: result.actions,
     recommendedLabel: actionLabel.toUpperCase(),
     explanation: `Mathematical Fallback suggests ${actionLabel} based on hand playability & position.`,
@@ -113,6 +121,17 @@ function postflopCandidate(decisionContext, options, rng) {
 
   return {
     source: 'heuristic_postflop',
+    provenance: {
+      origin: 'riverline_builtin',
+      generationMethod: 'deterministic_postflop_heuristic_with_seeded_conditional_sampling',
+      assumptions: [
+        'shared_crude_opponent_range',
+        'position_not_applied',
+        'compatibility_stack_not_effective_stack',
+        'action_sizing_not_supplied',
+        'not_independently_solver_validated',
+      ],
+    },
     actions,
     recommendedLabel: recommendedAction.toUpperCase(),
     explanation: `Heuristic sampled equity: ${sampledPercent}% against an assumed opponent range (${candidatePercent}% of unblocked combinations).`,

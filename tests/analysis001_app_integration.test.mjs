@@ -103,13 +103,15 @@ test('Training calls the same service only after answer and retains the grade wr
   assert.match(answer, /showTrainingFeedback/);
 });
 
-test('Training matching-reference verdict is honest about the current reference', () => {
+test('Training verdict vocabulary follows the source claim policy', () => {
   const feedback = sourceBetween('function canonicalTrainingFeedback(', 'function trainingActionHistoryForAnalysis(');
+  assert.match(feedback, /policy\.trainingSemantics === 'normative'/);
   assert.match(feedback, /evaluation\.grade === 'optimal'/);
   assert.match(feedback, /title: t\('Correct'\)/);
   assert.match(feedback, /title: t\('Acceptable'\)/);
   assert.match(feedback, /title: t\('Mistake'\)/);
-  assert.match(feedback, /matches Riverline\\'s current reference/);
+  assert.match(feedback, /title: t\('Matches Riverline reference'\)/);
+  assert.match(feedback, /does not prove the play is objectively wrong, and no EV loss is implied/);
   assert.doesNotMatch(feedback, /title: t\('Optimal'\)|optimal choice|\bGTO\b|\bCFR\b|equilibrium|solver says/i);
 });
 

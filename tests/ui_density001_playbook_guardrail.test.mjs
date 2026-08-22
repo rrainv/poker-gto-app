@@ -15,7 +15,7 @@ test('Playbook retires the standalone guardrail panel while preserving compact s
   assert.match(html, /id="sourceBadge"[^>]+aria-describedby="strategySourceProvenance"/);
   assert.match(html, /id="strategySourceProvenance" class="sr-only"/);
   assert.match(logic, /sourceBadge\.setAttribute\('aria-label'/);
-  assert.match(logic, /Canonical hand state does not imply solved strategy/);
+  assert.match(logic, /strategyPolicySummary\(claimPolicy\)/);
 });
 
 test('dead-card controls expose a compact, canonical available-deck summary', () => {

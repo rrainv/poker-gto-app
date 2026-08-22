@@ -5,6 +5,10 @@ import {
   createStrategyResult,
   createUnavailableStrategyResult,
 } from './strategy-result.mjs';
+import {
+  strategyContextCoverageFor,
+  strategySourceDescriptorFor,
+} from './strategy-source-authority.mjs';
 
 export const STRATEGY_PROVIDER_SCHEMA_VERSION = 'strategy-provider/v1';
 
@@ -62,8 +66,19 @@ export function createStrategyProvider({ fallbackResolver } = {}) {
       }
 
       try {
+        const sourceDescriptor = strategySourceDescriptorFor(
+          candidate?.source,
+          candidate?.sourceDescriptor ?? null,
+        );
         return createStrategyResult({
           ...candidate,
+          sourceDescriptor,
+          contextCoverage: candidate?.contextCoverage
+            ?? strategyContextCoverageFor(
+              candidate?.source,
+              decisionContext,
+              sourceDescriptor,
+            ),
           recommendedLabel: candidate?.recommendedLabel
             ?? candidate?.recommendation?.label
             ?? null,

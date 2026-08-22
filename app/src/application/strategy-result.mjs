@@ -1,4 +1,13 @@
 import { ACTION_TYPES } from '../../../shared/poker-domain/index.js';
+import {
+  STRATEGY_CONTEXT_COVERAGE_SCHEMA_VERSION,
+  STRATEGY_RESULT_CAPABILITIES_SCHEMA_VERSION,
+  STRATEGY_SOURCE_DESCRIPTOR_SCHEMA_VERSION,
+  STRATEGY_COVERAGE_KINDS,
+  deriveStrategyResultCapabilities,
+  normalizeStrategyContextCoverage,
+  strategySourceDescriptorFor,
+} from './strategy-source-authority.mjs';
 
 export const STRATEGY_RESULT_SCHEMA_VERSION = 'strategy-result/v1';
 
@@ -13,7 +22,6 @@ export const STRATEGY_ACTION_TYPES = Object.freeze({ ...ACTION_TYPES });
 
 export const STRATEGY_PROBABILITY_TOLERANCE = 1e-12;
 
-const SOURCE_VALUES = Object.freeze(Object.values(STRATEGY_SOURCES));
 const ACTION_TYPE_VALUES = Object.freeze(Object.values(STRATEGY_ACTION_TYPES));
 
 function deepFreeze(value) {
@@ -137,6 +145,10 @@ function normalizedActions(entries) {
 
 export function createStrategyResult({
   source,
+  sourceDescriptor = null,
+  sourceVersion = null,
+  provenance = null,
+  contextCoverage = null,
   actions = [],
   recommendedLabel = null,
   explanation = null,
@@ -146,8 +158,15 @@ export function createStrategyResult({
   warnings = [],
   details = null,
 } = {}) {
-  if (!SOURCE_VALUES.includes(source)) {
+  const descriptor = strategySourceDescriptorFor(source, sourceDescriptor);
+  if (!descriptor) {
     throw new TypeError(`Unsupported StrategyResult source: ${source}`);
+  }
+  const resolvedSourceVersion = sourceVersion === null || sourceVersion === undefined
+    ? descriptor.version
+    : String(sourceVersion);
+  if (resolvedSourceVersion !== descriptor.version) {
+    throw new RangeError('StrategyResult sourceVersion must match its source descriptor');
   }
 
   const resultActions = normalizedActions(actions);
@@ -162,9 +181,22 @@ export function createStrategyResult({
     (best, entry) => (!best || entry.probability > best.probability ? entry : best),
     null,
   );
+  const resolvedContextCoverage = normalizeStrategyContextCoverage(
+    contextCoverage,
+    descriptor,
+  );
+  if (source === STRATEGY_SOURCES.UNAVAILABLE
+    && resolvedContextCoverage.kind !== STRATEGY_COVERAGE_KINDS.UNSUPPORTED) {
+    throw new RangeError('Unavailable StrategyResult must have unsupported context coverage');
+  }
   return deepFreeze({
     schemaVersion: STRATEGY_RESULT_SCHEMA_VERSION,
     source,
+    sourceDescriptor: descriptor,
+    sourceVersion: resolvedSourceVersion,
+    provenance: provenance === undefined || provenance === null ? null : cloneData(provenance),
+    contextCoverage: resolvedContextCoverage,
+    capabilities: deriveStrategyResultCapabilities(descriptor, resultActions),
     actions: resultActions,
     recommendation: bestAction ? {
       action: { ...bestAction.action },
@@ -192,7 +224,21 @@ export function createUnavailableStrategyResult(reason = null, details = null) {
 
 export function isStrategyResultV1(result) {
   if (!result || result.schemaVersion !== STRATEGY_RESULT_SCHEMA_VERSION
-    || !SOURCE_VALUES.includes(result.source) || !Array.isArray(result.actions)) return false;
+    || !Array.isArray(result.actions)) return false;
+  let descriptor;
+  try {
+    descriptor = strategySourceDescriptorFor(result.source, result.sourceDescriptor ?? null);
+  } catch {
+    return false;
+  }
+  if (!descriptor) return false;
+  if (result.sourceDescriptor !== undefined
+    && result.sourceDescriptor?.schemaVersion !== STRATEGY_SOURCE_DESCRIPTOR_SCHEMA_VERSION) return false;
+  if (result.sourceVersion !== undefined && result.sourceVersion !== descriptor.version) return false;
+  if (result.contextCoverage !== undefined
+    && result.contextCoverage?.schemaVersion !== STRATEGY_CONTEXT_COVERAGE_SCHEMA_VERSION) return false;
+  if (result.capabilities !== undefined
+    && result.capabilities?.schemaVersion !== STRATEGY_RESULT_CAPABILITIES_SCHEMA_VERSION) return false;
   if (result.source === STRATEGY_SOURCES.UNAVAILABLE && result.actions.length !== 0) return false;
   if (result.source !== STRATEGY_SOURCES.UNAVAILABLE && result.actions.length === 0) return false;
   if (result.actions.some((entry) => (

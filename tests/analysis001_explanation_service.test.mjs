@@ -246,23 +246,23 @@ test('StrategyResult sizing is retained without invented rationale or EV', () =>
   assert.doesNotMatch(JSON.stringify(result), /maximi[sz]es|fold equity/i);
 });
 
-test('known EV values pass through without fabricating missing action EVs', () => {
+test('undeclared EV values are withheld and cannot imply an action-EV comparison', () => {
   const result = explanation({
     strategyResult: strategy({
       actions: [action('Call', 'call', 0.8, { evBb: 1.25 }), action('Fold', 'fold', 0.2)],
     }),
   });
-  assert.equal(result.actionAnalysis[0].evBb, 1.25);
+  assert.equal(result.actionAnalysis[0].evBb, null);
   assert.equal(result.actionAnalysis[1].evBb, null);
-  assert.equal(result.warnings.some((entry) => entry.code === 'ev_unavailable'), false);
+  assert.equal(result.warnings.some((entry) => entry.code === 'ev_unavailable'), true);
 });
 
 test('provenance labels remain controlled and never upgrade any source to unsupported language', () => {
   const sources = {
-    heuristic_preflop: 'Heuristic estimate',
-    heuristic_postflop: 'Heuristic estimate',
-    equity_fallback: 'Equity-based fallback',
-    unavailable: 'Source unavailable',
+    heuristic_preflop: 'Heuristic fallback',
+    heuristic_postflop: 'Heuristic fallback',
+    equity_fallback: 'Equity fallback',
+    unavailable: 'Unavailable',
   };
   Object.entries(sources).forEach(([source, label]) => {
     const result = explanation({ strategyResult: strategy({ source }) });

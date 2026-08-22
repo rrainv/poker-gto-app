@@ -3,6 +3,10 @@ import {
   STRATEGY_SOURCES,
 } from './strategy-result.mjs';
 import {
+  STRATEGY_CLAIMS,
+  resolveStrategyClaimPolicy,
+} from './strategy-claim-policy.mjs';
+import {
   RANGE_ANALYSIS_FACTS_SCHEMA_VERSION,
 } from './range-analysis.mjs';
 import {
@@ -21,33 +25,6 @@ export const ANALYSIS_THRESHOLDS = Object.freeze({
 
 const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
 const AUTHORITY_TYPES = Object.freeze(['scenario', 'hand', 'training']);
-
-const SOURCE_PRESENTATION = Object.freeze({
-  [STRATEGY_SOURCES.HEURISTIC_PREFLOP]: Object.freeze({
-    label: 'Heuristic estimate',
-    labelKey: 'analysis.provenance.heuristicPreflop',
-    limitation: 'This is heuristic guidance without validated solver provenance.',
-    warningCode: 'heuristic_source',
-  }),
-  [STRATEGY_SOURCES.HEURISTIC_POSTFLOP]: Object.freeze({
-    label: 'Heuristic estimate',
-    labelKey: 'analysis.provenance.heuristicPostflop',
-    limitation: 'This is an approximate postflop fallback, not solver reasoning.',
-    warningCode: 'heuristic_source',
-  }),
-  [STRATEGY_SOURCES.EQUITY_FALLBACK]: Object.freeze({
-    label: 'Equity-based fallback',
-    labelKey: 'analysis.provenance.equityFallback',
-    limitation: 'Equity alone does not provide a complete strategy or action EV comparison.',
-    warningCode: 'equity_only_source',
-  }),
-  [STRATEGY_SOURCES.UNAVAILABLE]: Object.freeze({
-    label: 'Source unavailable',
-    labelKey: 'analysis.provenance.unavailable',
-    limitation: 'No current strategy recommendation is available.',
-    warningCode: 'strategy_unavailable',
-  }),
-});
 
 const UNAVAILABLE_COPY = Object.freeze({
   missing_hero_cards: 'Select two Hero cards to explain this decision.',
@@ -198,17 +175,22 @@ function normalizeHistory(history, authorityType) {
   }).sort((left, right) => left.sequence - right.sequence);
 }
 
-function provenanceFor(strategyResult) {
-  const source = strategyResult?.source || 'unavailable';
-  const presentation = SOURCE_PRESENTATION[source] || SOURCE_PRESENTATION.unavailable;
+function provenanceFor(strategyResult, claimPolicy) {
+  const descriptor = claimPolicy.source;
   return {
-    source,
-    label: presentation.label,
-    labelKey: presentation.labelKey,
+    source: descriptor.id,
+    sourceVersion: claimPolicy.sourceVersion,
+    sourceFamily: descriptor.family,
+    authority: claimPolicy.authority,
+    contextCoverage: claimPolicy.coverage,
+    capabilities: claimPolicy.capabilities,
+    claimMode: claimPolicy.mode,
+    label: descriptor.displayName,
+    labelKey: descriptor.displayNameKey,
     modelVersion: strategyResult?.modelVersion ?? null,
     confidence: boundedProbability(strategyResult?.confidence),
     coverage: boundedProbability(strategyResult?.coverage),
-    limitations: [presentation.limitation],
+    limitations: claimPolicy.limitations.map((entry) => entry.code),
   };
 }
 
@@ -221,7 +203,7 @@ function strategyShape(actions) {
   return meaningful.length >= 2 ? 'mixed' : 'fragmented';
 }
 
-function normalizeActions(strategyResult) {
+function normalizeActions(strategyResult, includeActionEv = false) {
   return (Array.isArray(strategyResult?.actions) ? strategyResult.actions : [])
     .map((entry, index) => ({
       index,
@@ -232,7 +214,7 @@ function normalizeActions(strategyResult) {
       },
       label: String(entry?.label || entry?.action?.type || 'Unknown action'),
       probability: boundedProbability(entry?.probability) ?? 0,
-      evBb: finiteNumber(entry?.evBb),
+      evBb: includeActionEv ? finiteNumber(entry?.evBb) : null,
     }))
     .filter((entry) => entry.probability > 0)
     .sort((left, right) => right.probability - left.probability || left.index - right.index);
@@ -712,6 +694,9 @@ function analysisFactSources(rangeAnalysisFacts, authority, strategyProvenance) 
     sourceLabel: strategyProvenance.label,
     sourceLabelKey: strategyProvenance.labelKey,
     sourceSchemaVersion: STRATEGY_RESULT_SCHEMA_VERSION,
+    sourceVersion: strategyProvenance.sourceVersion,
+    sourceAuthority: strategyProvenance.authority,
+    sourceCoverage: strategyProvenance.contextCoverage.kind,
   }];
   if (!rangeAnalysisFacts) return sources;
   sources.push(
@@ -1131,11 +1116,18 @@ export function createAnalysisExplanation({
 
   const normalizedAuthority = normalizeAuthority(authority);
   const history = normalizeHistory(trustedFacts?.actionHistory, normalizedAuthority.type);
-  const provenance = provenanceFor(strategyResult);
+  const claimPolicy = resolveStrategyClaimPolicy(strategyResult);
+  const provenance = provenanceFor(strategyResult, claimPolicy);
   const warnings = [];
-  const actions = normalizeActions(strategyResult);
+  const actions = claimPolicy.claims[STRATEGY_CLAIMS.STRATEGY_PRESENTATION]
+    ? normalizeActions(
+      strategyResult,
+      claimPolicy.claims[STRATEGY_CLAIMS.ACTION_EV],
+    )
+    : [];
   const actionAnalysis = makeActionAnalysis(actions);
-  const reason = unavailableReasonFor(decisionContext, strategyResult, unavailableReason);
+  const reason = unavailableReasonFor(decisionContext, strategyResult, unavailableReason)
+    || (claimPolicy.availability === 'unavailable' ? 'strategy_unavailable' : null);
   const sections = [];
 
   if (decisionContext) {
@@ -1163,7 +1155,9 @@ export function createAnalysisExplanation({
     if (strategy) sections.push(strategy);
     const heuristicSample = heuristicSampleSection(strategyResult, warnings);
     if (heuristicSample) sections.push(heuristicSample);
-    const sizing = sizingSection(decisionContext, actions);
+    const sizing = claimPolicy.claims[STRATEGY_CLAIMS.ACTION_SIZING]
+      ? sizingSection(decisionContext, actions)
+      : null;
     if (sizing) sections.push(sizing);
     const equity = equitySection(trustedFacts, warnings);
     if (equity) sections.push(equity);
@@ -1171,10 +1165,14 @@ export function createAnalysisExplanation({
     warnings.push(warning('decision_context_unavailable', 'DecisionContext v1 is unavailable.'));
   }
 
-  const sourcePresentation = SOURCE_PRESENTATION[provenance.source] || SOURCE_PRESENTATION.unavailable;
-  warnings.push(warning(sourcePresentation.warningCode, sourcePresentation.limitation,
-    provenance.source === 'unavailable' ? 'warning' : 'info'));
-  if (actions.length && actions.every((entry) => entry.evBb === null)) {
+  claimPolicy.limitations.forEach((limitation) => warnings.push(warning(
+    limitation.code,
+    limitation.message,
+    limitation.priority >= 70 ? 'warning' : 'info',
+    {},
+    limitation.messageKey,
+  )));
+  if (actions.length && !claimPolicy.claims[STRATEGY_CLAIMS.ACTION_EV]) {
     warnings.push(warning('ev_unavailable', 'The strategy source supplies no action EV comparison.'));
   }
   if (Array.isArray(strategyResult?.warnings) && strategyResult.warnings.length) {
@@ -1212,6 +1210,7 @@ export function createAnalysisExplanation({
     summaryValues,
     sections,
     actionAnalysis,
+    claimPolicy,
     warnings: uniqueWarnings,
     provenance: {
       ...provenance,

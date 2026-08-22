@@ -6,6 +6,7 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const i18n = fs.readFileSync(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8');
+const productTranslations = fs.readFileSync(new URL('../app/src/locales/product-translations.js', import.meta.url), 'utf8');
 const training = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="infoMode"'));
 
 test('Training is a decision-first workspace with compact drill controls', () => {
@@ -28,7 +29,7 @@ test('Training has explicit lifecycle, feedback, history, provenance, and replay
   ]) assert.match(training, new RegExp(`id="${id}"`), id);
   assert.match(training, /aria-live="polite"/);
   assert.match(training, /role="alert"/);
-  assert.match(training, /Correct[\s\S]*Acceptable[\s\S]*Mistake/);
+  assert.match(training, /Matches reference[\s\S]*Close to reference[\s\S]*Differs from reference/);
   assert.doesNotMatch(training, /\bOptimal\b/);
   assert.doesNotMatch(training, /\bGTO\b|Deep CFR/i);
 });
@@ -38,8 +39,10 @@ test('Training controls and feedback remain contract-honest', () => {
   assert.match(logic, /callTrainingServiceBridge\('answer', exercise\.id, userAction\)/);
   assert.match(logic, /callTrainingPresentationBridge\('createViewModel', exercise\)/);
   assert.match(logic, /evaluation\.grade/);
-  assert.match(logic, /optimal: 'Correct'/);
-  assert.match(logic, /publicGradeLabels\[evaluation\.grade\] \|\| 'Review'/);
+  assert.match(logic, /function trainingGradePresentation\(grade, strategyResult\)/);
+  assert.match(logic, /semantics === 'normative'[\s\S]*optimal: t\('Correct'\)/);
+  assert.match(logic, /semantics === 'comparative'[\s\S]*optimal: t\('Matches Riverline reference'\)/);
+  assert.match(logic, /trainingGradePresentation\([\s\S]*evaluation\.grade,[\s\S]*exercise\.strategyResult/);
   assert.doesNotMatch(logic, /t\(evaluation\.grade\.charAt/);
   assert.match(logic, /explanationData\.evAvailable/);
   assert.match(logic, /generationMetadata\?\.trainingConfig/);
@@ -87,8 +90,9 @@ test('new static Training copy is registered for English, Russian, and Hebrew', 
   for (const language of ['en', 'ru', 'he']) {
     assert.match(i18n, new RegExp(`${language}: \\{`), language);
   }
-  for (const key of ['Training workspace', 'Make the decision', 'Action history', 'Strategy frequencies']) {
+  for (const key of ['Training workspace', 'Make the decision', 'Action history']) {
     assert.match(i18n, new RegExp(`"${key}"`), key);
   }
+  assert.match(productTranslations, /"Source frequencies"/);
   assert.match(css, /\[dir="rtl"\][\s\S]*training-history-action/);
 });

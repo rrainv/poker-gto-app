@@ -8,6 +8,12 @@ const HTML_PATH = path.join(REPO_ROOT, 'app', 'index.html');
 const STRATEGY_RESULT_PATH = path.join(
   REPO_ROOT, 'app', 'src', 'application', 'strategy-result.mjs',
 );
+const STRATEGY_SOURCE_AUTHORITY_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'application', 'strategy-source-authority.mjs',
+);
+const STRATEGY_CLAIM_POLICY_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'application', 'strategy-claim-policy.mjs',
+);
 const STRATEGY_PROVIDER_PATH = path.join(
   REPO_ROOT, 'app', 'src', 'application', 'strategy-provider.mjs',
 );
@@ -61,6 +67,8 @@ function createHarness() {
   const moduleSource = (filePath) => fs.readFileSync(filePath, 'utf8')
     .replace(/import[\s\S]*?from\s+['"][^'"]+['"];\s*/g, '')
     .replaceAll('export ', '');
+  const strategySourceAuthoritySource = moduleSource(STRATEGY_SOURCE_AUTHORITY_PATH);
+  const strategyClaimPolicySource = moduleSource(STRATEGY_CLAIM_POLICY_PATH);
   const strategyContractSource = moduleSource(STRATEGY_RESULT_PATH);
   const strategyProviderSource = moduleSource(STRATEGY_PROVIDER_PATH);
   const heuristicEvaluatorSource = moduleSource(HEURISTIC_EVALUATOR_PATH);
@@ -81,6 +89,11 @@ function createHarness() {
   const handClassSource = sliceBetween(source, 'function handClass(cards)', 'function numericValue(id, fallback = 0)');
   const updatePositionsSource = sliceBetween(source, 'function updatePositionSelect(', 'function strategyResultPresentationActions(');
   const presentationSource = sliceBetween(source, 'function strategyResultPresentationActions(', 'function readHeuristicOptions(');
+  const strategyAuthorityPresentationSource = sliceBetween(
+    source,
+    'function strategySourceDisplayLabel(',
+    'function setRecommendationState(',
+  );
   const providerSeamSource = sliceBetween(
     source,
     'function readHeuristicOptions(',
@@ -152,7 +165,9 @@ function createHarness() {
       FOLD: 'fold', CHECK: 'check', CALL: 'call', BET: 'bet', RAISE: 'raise', ALL_IN: 'all_in'
     });
     const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
+    ${strategySourceAuthoritySource}
     ${strategyContractSource}
+    ${strategyClaimPolicySource}
     ${strategyProviderSource}
     ${evaluatorEquitySource}
     const CARD_RANKS = '23456789TJQKA';
@@ -191,6 +206,7 @@ function createHarness() {
     ${heuristicStrategySource}
     const RiverlineStrategy = Object.freeze({
       schemaVersion: STRATEGY_PROVIDER_SCHEMA_VERSION,
+      claimPolicySchemaVersion: STRATEGY_CLAIM_POLICY_SCHEMA_VERSION,
       createProvider(options = {}) {
         if (typeof options.fallbackResolver === 'function') return createStrategyProvider(options);
         const optionResolver = typeof options.heuristicOptionsResolver === 'function'
@@ -204,6 +220,15 @@ function createHarness() {
             { translate }
           )
         });
+      },
+      claimsFor(strategyResult) {
+        return resolveStrategyClaimPolicy(strategyResult);
+      },
+      canClaim(strategyResultOrPolicy, claim) {
+        return canStrategyClaim(strategyResultOrPolicy, claim);
+      },
+      sourceDescriptorFor(source) {
+        return strategySourceDescriptorFor(source);
       }
     });
     window.RiverlineStrategy = RiverlineStrategy;
@@ -316,6 +341,7 @@ function createHarness() {
     ${handClassSource}
     ${updatePositionsSource}
     ${presentationSource}
+    ${strategyAuthorityPresentationSource}
     ${potSource}
     ${sliderSource}
     ${providerSeamSource}

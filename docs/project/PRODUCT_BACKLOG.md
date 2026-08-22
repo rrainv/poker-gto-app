@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 18, 2026 (`RANGE-TEACHER-001` implementation checkpoint).
+Last consolidated: August 23, 2026 (`REFERENCE-AUTHORITY-001` implementation checkpoint).
 
 This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
@@ -27,6 +27,7 @@ This file preserves accepted future capability so it does not depend on chat mem
 | 7 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `ACCOUNT-002B-B` — separately consented Personal Strategy / Range Calibration sync, immutable evidence/contradiction preservation, session reconciliation, relational RLS/RPC schema, and account isolation are implemented; live Supabase and Firefox acceptance remain open |
 | 8 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `HOME-002A` — My Riverline powered by real account, sync, Saved, Personal Strategy, and calibration state; Firefox visual acceptance remains open |
 | 9 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `HOME-GAME-001A` standalone exact-accounting/persistence foundation plus bounded session/settlement workspace; Firefox acceptance and management UX hardening continue in `001B` |
+| 10 | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `REFERENCE-AUTHORITY-001` additive source descriptor/coverage/capability and central claim-policy foundation; automated acceptance is present and Firefox semantic presentation acceptance remains open |
 
 Personal Strategy resumes at independent review `002R`; 002D supplies snapshot-derived Matrix inspection/correction, Builder supplies grouped class-level direct editing/undo, and Teacher supplies deterministic explanation plus focused Calibration routing over the same 002B evidence authority and 002C question/boundary facts. Human Firefox visual acceptance remains tracked separately. Reassess at every clean checkpoint.
 
@@ -42,6 +43,7 @@ Personal Strategy resumes at independent review `002R`; 002D supplies snapshot-d
 | Tutorials foundation/current-app coverage | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Every future meaningful visible feature owns its tutorial update; no broad catch-up epic |
 | `RANGE-CORE-001` | COMPLETED | Adopt deliberately in future combo-aware consumers |
 | `ANALYSIS-RANGE-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Live QA remains in `QA_BACKLOG.md`; deeper range-vs-range/value-bluff work uses new tickets |
+| `REFERENCE-AUTHORITY-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `StrategyResult v1` carries additive source/version/coverage/capability facts and consumers use one claim policy. Resume with a separately validated bounded reference provider or learned provider, never source-ID UI branches; complete Firefox semantic acceptance separately |
 
 ## Bluffing and analysis
 
@@ -61,7 +63,7 @@ Personal Strategy resumes at independent review `002R`; 002D supplies snapshot-d
 | Range Builder | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `RANGE-BUILDER-001` implements the Personal Strategy class editor over shared evidence/snapshots: multi-selection and painting, dominant/pure/exact actions, partial/unknown state, explicit Builder provenance/action groups, conflict skip, atomic undo, adaptive interoperability, and no 1,326-entry write explosion. Human Firefox acceptance remains open; sparse canonical-combo overrides and general Saved Range editing require later approved schemas |
 | Range Teacher / Profiler | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `RANGE-TEACHER-001` implements deterministic boundary/sparse/conflict/exact-mix recommendations, source-derived progress/recent changes, optional session-local dismissal, and focused biases through the existing 002C/Calibration/Matrix/Builder paths. Human Firefox acceptance and future writable conflict resolution/richer history remain open; it does not duplicate Training grading |
 | Range-vs-range tools | PRESERVED FUTURE | combo-aware blockers, weighted category analysis, legitimate Equity integration through an approved versioned weighted-opponent boundary |
-| Personal Strategy integration | PRESERVED FUTURE | sparse evidence is durable authority; derived class baselines plus sparse combo overrides are recomputable and not synced; StrategyProvider source only after quantitative/qualitative result-contract validation; Training evidence remains explicit per-session opt-in; postflop range propagation later |
+| Personal Strategy integration | PRESERVED FUTURE | sparse evidence is durable intended-strategy authority; derived class baselines plus sparse combo overrides are recomputable and not synced; a future StrategyProvider adapter must declare personal authority and qualitative/exact capabilities without normalizing dominant-only evidence to fake 100%; reference and observed roles stay separate; Training evidence remains explicit per-session opt-in; postflop range propagation later |
 | Saved Ranges | PRESERVED FUTURE | versioned SavedStudyObject payload, compare/export/import, later account ownership and sharing |
 
 The canonical range chain remains 52 cards → 1,326 unordered combos → `HoldemWeightedRange v1` → derived blocker/normalization/Matrix views. Personal action strategy is a separate vector-valued read model derived from evidence; an action-conditioned weighted range is valid only from a known prior inclusion range and exact action frequencies. Unknown is not zero, and weight/mass/count/probability/frequency/confidence remain distinct. See `UNIFIED_RANGE_INTELLIGENCE_SPEC.md`.

@@ -47,6 +47,8 @@ The Electron process has no inference, model, IPC strategy, or second poker impl
 - `DecisionContext v1`: application strategy snapshot
 - `StrategyProvider v1`: sole application strategy entry point
 - `StrategyResult v1`: canonical strategy result/provenance contract
+- `StrategySourceDescriptor v1` / `StrategyContextCoverage v1`: source identity, authority, capabilities, and per-decision coverage
+- `StrategyClaimPolicy v1`: sole authority for comparative, normative, exactness, sizing, EV, and limitation claims
 - `app/src/strategy/`: current deterministic heuristic implementation
 - canonical Training modules: legal generated states, seeded replay, grading
 - `AnalysisExplanation v1`: structured explanatory facts; UI renders but does not recompute strategy or poker math
@@ -73,6 +75,8 @@ Current production sources:
 There is no trusted production model and no validated Hold'em strategy reference in the repository. The bounded solver currently serves as isolated infrastructure and a future exact-game oracle/dataset source once it produces validated converged strategies.
 
 Do not tune heuristic frequencies from intuition. The calibration baseline concluded that broad further tuning should wait for trustworthy reference data.
+
+The current heuristic has generalized comparative authority. It may support scoped recommendation, strategy presentation, Matrix frequencies, and comparison, but not objective correctness, optimality, exact-frequency, EV-loss, or normative curriculum claims. Future reference/model/personal sources must provide descriptors and context coverage; consumers must not branch on provider IDs. See `docs/project/STRATEGY_SOURCE_AUTHORITY_SPEC.md`.
 
 ## Equity truth
 

@@ -515,7 +515,7 @@ test('002B failed, stale, and reset-cancelled work never advances served coverag
   assert.equal(resetController.getPracticePlannerState(), null);
 });
 
-test('002B direct legacy generation still reproduces the pre-ticket v1 replay byte-for-byte', () => {
+test('002B direct generation remains deterministic with additive StrategyResult authority metadata', () => {
   const input = {
     schemaVersion: 'training-config/v1',
     tableSize: 8,
@@ -533,10 +533,12 @@ test('002B direct legacy generation still reproduces the pre-ticket v1 replay by
   assert.equal(result.ok, true, result.error?.message);
   assert.equal(result.exercise.schemaVersion, 'training-exercise/v1');
   assert.equal(result.exercise.pokerState.schemaVersion, 'poker-state/v1');
+  assert.equal(result.exercise.strategyResult.sourceVersion, 'riverline-postflop-heuristic/v1');
+  assert.equal(result.exercise.strategyResult.contextCoverage.kind, 'generalized');
   assert.equal(Object.hasOwn(result.exercise.generationMetadata, 'scenarioRequest'), false);
   assert.equal(
     createHash('sha256').update(JSON.stringify(result)).digest('hex'),
-    'b9a390dd9c80546d255fa963e7a3ae8d9d2581df9d128f0c77bed239d685072f',
+    '890b3616b65b411b147fee241f7289cf8ca7177f45439d1a2fe9cefc66b76fe9',
   );
 });
 
