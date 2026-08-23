@@ -134,7 +134,24 @@ The built-in heuristic is deterministic, versioned, known-provenance, generalize
 - action-price practice;
 - deterministic reproduction while the same source version is available.
 
-The v3 preflop source preserves the v2 unopened table-family correction and adds broad, separate response-family curves for limped pots, facing an open, facing a 3-bet, facing a 4-bet-or-more, and the BB option. Canonical v1.1 contexts use `currentPotBb`, live Hero/effective stack facts, `priorActionSummary`, and legal aggression facts; legacy `stackBb`/`potBb` remain base-v1 compatibility only.
+The v4 preflop source preserves the v3 unopened, limped, BB-option, facing-3-bet,
+and facing-4-bet-or-more probability paths. Inside the exact
+`cold_response_to_open` role, its first bounded six-max, roughly 100bb BB versus
+BTN 2–3bb open calibration replaces the former one-scalar facing-open
+allocation with reusable structural hand facts and a separate generalized
+policy. Other cold-response contexts retain the v3 curve until separately
+calibrated. The policy exposes distinct continue value, passive realization,
+and aggression suitability dimensions, so lower-value bluff candidates can
+carry more aggression than stronger calls without a 169-hand chart or
+hand-specific exceptions. The compatibility fallback family remains
+`versus_open`; the numeric owner is reported separately as
+`StrategyResult.details.probabilityPolicy`. Other roles retain the legacy
+single-strength curve byte-for-byte at the probability level.
+
+Canonical v1.1 contexts use `currentPotBb`, live Hero/effective stack facts,
+`priorActionSummary`, and legal aggression facts; legacy `stackBb`/`potBb`
+remain base-v1 compatibility only. The v4 calibration remains generalized,
+comparative, non-EV, and not independently solver-validated.
 
 `PREFLOP-ROLE-001` separates exact decision identity from those numeric curves.
 `StrategyResult.details.decisionRole` / `actualRole` carries one stable role ID,

@@ -369,7 +369,244 @@ function conditionOnContinuingActions(base) {
   return [base[0], base[1], 0];
 }
 
-export function calculatePreflopFallbackStrategy(
+/**
+ * Reusable structural facts for one 169-class preflop hand. These facts do
+ * not select an action and deliberately carry no role, position, EV, or
+ * optimality meaning. Role policies decide how to consume them.
+ */
+export function extractPreflopHandFeatures(
+  r1str,
+  r2str,
+  isPair = r1str === r2str,
+  isSuited = false,
+) {
+  const r1 = HEURISTIC_RANK_VALUES[r1str] || 0;
+  const r2 = HEURISTIC_RANK_VALUES[r2str] || 0;
+  const highRank = Math.max(r1, r2);
+  const lowRank = Math.min(r1, r2);
+  const gap = highRank - lowRank;
+  const normalizedHighRank = bounded((highRank - 2) / 12, 0, 1);
+  const normalizedLowRank = bounded((lowRank - 2) / 12, 0, 1);
+  const hasAce = highRank === HEURISTIC_RANK_VALUES.A;
+  const hasKing = highRank === HEURISTIC_RANK_VALUES.K;
+  const broadwayCardCount = [highRank, lowRank].filter((rank) => rank >= 10).length;
+  const connected = gap <= 1 && !isPair;
+  const connectionQuality = isPair ? 0
+    : gap === 1 ? 1
+      : gap === 2 ? 0.65
+        : gap === 3 ? 0.25
+          : 0;
+  const pairRank = isPair ? highRank : null;
+  const pairStrength = isPair ? normalizedHighRank : 0;
+  const pairSetValue = isPair ? 1 - smoothstep(4, 10, highRank) : 0;
+  const offsuitDominationRisk = !isPair && !isSuited
+    ? smoothstep(2, 7, gap) * (1 - normalizedLowRank)
+    : 0;
+  const blockerPressure = hasAce ? 1 : hasKing ? 0.76 : 0;
+  const normalizedShowdownStrength = bounded(
+    isPair
+      ? 0.45 + 0.55 * pairStrength
+      : 0.55 * normalizedHighRank
+        + 0.35 * normalizedLowRank
+        + (isSuited ? 0.1 : 0),
+    0,
+    1,
+  );
+
+  // This is the exact structural score consumed by the retained v3 family
+  // curves. It is exposed for diagnostics, not promoted to poker truth.
+  let legacyBaseScore = highRank;
+  const pairBonus = isPair ? 6 : 0;
+  legacyBaseScore += pairBonus;
+  const wideGapPenalty = gap > 4 ? gap - 4 : 0;
+  legacyBaseScore -= wideGapPenalty;
+  let offsuitBasePenalty = 0;
+  let offsuitGapPenalty = 0;
+  let offsuitHighRankPenalty = 0;
+  let offsuitLowRankPenalty = 0;
+  if (!isPair && !isSuited) {
+    offsuitBasePenalty = 3;
+    offsuitGapPenalty = gap >= 3 ? gap - 2 : 0;
+    offsuitHighRankPenalty = highRank <= 11 ? (12 - highRank) * 0.8 : 0;
+    offsuitLowRankPenalty = lowRank <= 7 ? (8 - lowRank) * 0.5 : 0;
+    legacyBaseScore -= offsuitBasePenalty;
+    legacyBaseScore -= offsuitGapPenalty;
+    legacyBaseScore -= offsuitHighRankPenalty;
+    legacyBaseScore -= offsuitLowRankPenalty;
+  }
+
+  return Object.freeze({
+    rankStrings: Object.freeze([String(r1str), String(r2str)]),
+    rankValues: Object.freeze([r1, r2]),
+    highRank,
+    lowRank,
+    normalizedHighRank,
+    normalizedLowRank,
+    gap,
+    isPair: Boolean(isPair),
+    pairRank,
+    pairStrength,
+    pairSetValue,
+    isSuited: Boolean(isSuited),
+    connected,
+    connectionQuality,
+    broadwayCardCount,
+    bothBroadway: broadwayCardCount === 2,
+    hasAce,
+    hasKing,
+    blockerPressure,
+    offsuitDominationRisk,
+    normalizedShowdownStrength,
+    legacyBaseScore,
+    legacyScoreComponents: Object.freeze({
+      highRank,
+      pairBonus,
+      wideGapPenalty,
+      offsuitBasePenalty,
+      offsuitGapPenalty,
+      offsuitHighRankPenalty,
+      offsuitLowRankPenalty,
+    }),
+  });
+}
+
+const COLD_RESPONSE_POLICY_ID = 'cold_response_to_open_structural/v1';
+const COLD_RESPONSE_TARGET_POT_ODDS = 1.5 / 5.5;
+
+function coldResponseCalibrationApplies(policyContext) {
+  const startingStackBb = Number(policyContext?.startingStackBb);
+  const facingSizeBb = Number(policyContext?.facingSizeBb);
+  return policyContext?.decisionRole === PREFLOP_DECISION_ROLES.COLD_RESPONSE_TO_OPEN
+    && policyContext?.tableSize === 6
+    && policyContext?.opponentCount === 1
+    && policyContext?.heroPosition === 'BB'
+    && policyContext?.initialAggressorPosition === 'BTN'
+    && Number.isFinite(startingStackBb)
+    && startingStackBb >= 80
+    && startingStackBb <= 120
+    && Number.isFinite(facingSizeBb)
+    && facingSizeBb >= 2
+    && facingSizeBb <= 3;
+}
+
+function coldResponseToOpenPolicy(features, { potSizeBb, callAmountBb } = {}) {
+  const broadwayQuality = features.broadwayCardCount / 2;
+  const passiveRealization = bounded(
+    0.55 * features.normalizedShowdownStrength
+      + 0.25 * features.connectionQuality
+      + 0.18 * (features.isSuited ? 1 : 0)
+      + 0.12 * broadwayQuality
+      + (features.isPair ? 0.2 + 0.25 * features.pairStrength : 0)
+      - 0.22 * features.offsuitDominationRisk,
+    0,
+    1,
+  );
+  const valueAggression = features.isPair
+    ? smoothstep(7, 14, features.pairRank)
+    : features.hasAce
+      ? smoothstep(11.5, 13, features.lowRank) * (features.isSuited ? 1 : 0.85)
+      : 0;
+
+  // Polar pressure is strongest when a hand blocks high-card continuations
+  // but realizes less cleanly as a call. The smooth middle-kicker band keeps
+  // weak offsuit aces from turning into universal bluff candidates.
+  const offsuitAcePressureBand = features.hasAce && !features.isSuited
+    ? smoothstep(4, 7, features.lowRank)
+      * (1 - smoothstep(9, 11, features.lowRank))
+    : 0;
+  const blockerEligibility = features.isSuited
+    ? 1
+    : features.hasAce ? 0.72 * offsuitAcePressureBand : 0;
+  const blockerPressureBase = features.blockerPressure * blockerEligibility * (
+    1.8 * ((1 - passiveRealization) ** 2)
+      + 0.18 * (1 - features.normalizedLowRank)
+  );
+  const blockerPressureTransition = features.blockerPressure
+    * blockerEligibility
+    * smoothstep(0.38, 0.43, 1 - passiveRealization);
+  const blockerPolarization = Math.max(
+    blockerPressureBase,
+    blockerPressureTransition,
+  );
+  const connectedBroadwayPolarization = features.bothBroadway
+    ? features.connectionQuality * 7.5 * ((1 - passiveRealization) ** 2)
+    : 0;
+  const smallPairPolarization = features.isPair
+    ? features.pairSetValue * (0.5 + 0.8 * (1 - passiveRealization))
+    : 0;
+  const polarAggression = bounded(Math.max(
+    blockerPolarization,
+    connectedBroadwayPolarization,
+    smallPairPolarization,
+  ), 0, 1);
+  const aggressionSuitability = Math.max(valueAggression, polarAggression);
+  const continueValue = bounded(
+    0.58 * features.normalizedShowdownStrength
+      + 0.28 * passiveRealization
+      + 0.14 * features.blockerPressure
+      + 0.1 * features.pairSetValue
+      - 0.2 * features.offsuitDominationRisk,
+    0,
+    1,
+  );
+
+  const priceDenominator = Number(potSizeBb) + Number(callAmountBb);
+  const potOdds = Number.isFinite(callAmountBb)
+    && callAmountBb >= 0
+    && priceDenominator > 0
+    ? callAmountBb / priceDenominator
+    : null;
+  const priceScale = potOdds === null
+    ? 1
+    : bounded(1 + (COLD_RESPONSE_TARGET_POT_ODDS - potOdds) * 1.25, 0.78, 1.15);
+
+  let aggressiveProbability = Math.max(
+    0.62 * valueAggression,
+    0.34 * smoothstep(0.3, 0.65, polarAggression),
+  );
+  aggressiveProbability = bounded(
+    aggressiveProbability + 0.015 * smoothstep(0.25, 0.7, continueValue),
+    0,
+    0.98,
+  );
+  const passiveTarget = (
+    0.82 * smoothstep(0.34, 0.78, passiveRealization)
+      + 0.22 * smoothstep(0.3, 0.78, continueValue)
+  ) * priceScale;
+  const passiveProbability = bounded(
+    Math.min(passiveTarget, 0.98 - aggressiveProbability),
+    0,
+    0.98 - aggressiveProbability,
+  );
+  const foldProbability = 1 - aggressiveProbability - passiveProbability;
+
+  return Object.freeze({
+    policyId: COLD_RESPONSE_POLICY_ID,
+    strategy: normalizedStrategy(
+      aggressiveProbability,
+      passiveProbability,
+      foldProbability,
+    ),
+    dimensions: Object.freeze({
+      continueValue,
+      passiveRealization,
+      aggressionSuitability,
+    }),
+    components: Object.freeze({
+      valueAggression,
+      polarAggression,
+      blockerPolarization,
+      connectedBroadwayPolarization,
+      smallPairPolarization,
+      potOdds,
+      priceScale,
+      passiveTarget,
+      aggressiveProbability,
+    }),
+  });
+}
+
+function calculatePreflopFallbackEvaluation(
   r1str,
   r2str,
   isPair,
@@ -384,16 +621,18 @@ export function calculatePreflopFallbackStrategy(
   decisionFamily = null,
   limperCount = 0,
   strategicStackBb = undefined,
+  policyContext = null,
 ) {
-  const r1 = HEURISTIC_RANK_VALUES[r1str] || 0;
-  const r2 = HEURISTIC_RANK_VALUES[r2str] || 0;
-  const highRank = Math.max(r1, r2);
-  const lowRank = Math.min(r1, r2);
-  const gap = highRank - lowRank;
-  const hasAce = highRank === 14;
-  const hasKing = highRank === 13;
-  const bothBroadway = highRank >= 10 && lowRank >= 10;
-  const connected = gap <= 1 && !isPair;
+  const features = extractPreflopHandFeatures(r1str, r2str, isPair, isSuited);
+  const {
+    highRank,
+    lowRank,
+    gap,
+    hasAce,
+    hasKing,
+    bothBroadway,
+    connected,
+  } = features;
   const canonicalPosition = Object.hasOwn(PREFLOP_FALLBACK_POSITION_MODIFIERS, pos)
     ? pos
     : 'UTG';
@@ -411,73 +650,82 @@ export function calculatePreflopFallbackStrategy(
     ? decisionFamily
     : legacyDecisionFamily(normalizedAction, isFreeCheckOption);
 
-  let score = highRank;
-  if (isPair) score += 6;
-  if (gap > 4) score -= gap - 4;
-
-  if (!isPair && !isSuited) {
-    score -= 3;
-    if (gap >= 3) score -= gap - 2;
-    if (highRank <= 11) score -= (12 - highRank) * 0.8;
-    if (lowRank <= 7) score -= (8 - lowRank) * 0.5;
-  }
-
   const configuredStack = Number.isFinite(stack) && stack >= 0 ? stack : 30;
   const depthForStrategy = strategicStackBb === undefined
     ? configuredStack
     : Number.isFinite(strategicStackBb) && strategicStackBb >= 0
       ? strategicStackBb
       : null;
-  let handStrength = score
-    + positionAdjustment(
-      canonicalPosition,
-      normalizedAction,
-      isFreeCheckOption,
-      tableSize,
-    )
-    + stackDepthAdjustment({
-      stackBb: depthForStrategy,
-      isPair,
-      isSuited,
-      connected,
-      highRank,
-      lowRank,
-    });
+  const positionalAdjustment = positionAdjustment(
+    canonicalPosition,
+    normalizedAction,
+    isFreeCheckOption,
+    tableSize,
+  );
+  const depthAdjustment = stackDepthAdjustment({
+    stackBb: depthForStrategy,
+    isPair,
+    isSuited,
+    connected,
+    highRank,
+    lowRank,
+  });
+  let handStrength = features.legacyBaseScore
+    + positionalAdjustment
+    + depthAdjustment;
 
-  if (isSuited) {
-    handStrength += 1.5;
-    if (hasAce) handStrength += 1.2;
-    else if (connected && highRank >= 5) handStrength += 1.2;
-  } else if (connected && highRank >= 7) {
-    handStrength += 0.5;
-  }
-  if (bothBroadway && !isPair) handStrength += 1;
+  const suitedBonus = isSuited ? 1.5 : 0;
+  const suitedAceBonus = isSuited && hasAce ? 1.2 : 0;
+  const suitedConnectorBonus = isSuited && !hasAce && connected && highRank >= 5 ? 1.2 : 0;
+  const offsuitConnectorBonus = !isSuited && connected && highRank >= 7 ? 0.5 : 0;
+  const broadwayBonus = bothBroadway && !isPair ? 1 : 0;
+  handStrength += suitedBonus;
+  handStrength += suitedAceBonus;
+  handStrength += suitedConnectorBonus;
+  handStrength += offsuitConnectorBonus;
+  handStrength += broadwayBonus;
   const facingAggression = [
     PREFLOP_DECISION_FAMILIES.VERSUS_OPEN,
     PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET,
     PREFLOP_DECISION_FAMILIES.VERSUS_FOUR_BET_OR_MORE,
   ].includes(family);
-  if (hasAce && facingAggression) handStrength += 1;
-  else if (hasKing && facingAggression) handStrength += 0.5;
+  const highCardFacingAggressionBonus = hasAce && facingAggression
+    ? 1
+    : hasKing && facingAggression ? 0.5 : 0;
+  handStrength += highCardFacingAggressionBonus;
 
-  // Suited wheel-Ace playability and blocker value are encoded as a smooth
-  // strength input, not as an action-specific replacement strategy.
-  if (hasAce && isSuited) {
-    const wheelAceWeight = 1 - smoothstep(5, 8, lowRank);
-    handStrength += wheelAceWeight * (facingAggression ? 0.8 : 0.35);
-  }
+  const wheelAceWeight = hasAce && isSuited
+    ? 1 - smoothstep(5, 8, lowRank)
+    : 0;
+  const wheelAceBonus = wheelAceWeight * (facingAggression ? 0.8 : 0.35);
+  handStrength += wheelAceBonus;
+  const multipleLimperPenalty = family === PREFLOP_DECISION_FAMILIES.LIMPED
+    ? Math.max(0, Math.min(4, Number(limperCount) - 1)) * 0.35
+    : 0;
+  handStrength -= multipleLimperPenalty;
 
-  if (family === PREFLOP_DECISION_FAMILIES.LIMPED) {
-    handStrength -= Math.max(0, Math.min(4, Number(limperCount) - 1)) * 0.35;
-  }
-  let base = strategyForDecisionFamily(handStrength, isPair, family);
+  const rolePolicy = coldResponseCalibrationApplies(policyContext)
+    ? coldResponseToOpenPolicy(features, {
+      potSizeBb: Math.max(0, Number(potSize) || 0),
+      callAmountBb: trustedCallAmount,
+    })
+    : null;
+  let base = rolePolicy
+    ? [rolePolicy.strategy.open, rolePolicy.strategy.call, rolePolicy.strategy.fold]
+    : strategyForDecisionFamily(handStrength, isPair, family);
 
-  if (family === PREFLOP_DECISION_FAMILIES.RFI
+  if (!rolePolicy
+    && family === PREFLOP_DECISION_FAMILIES.RFI
     && NON_BLIND_POSITIONS.includes(canonicalPosition)) {
     base = collapseUnopenedPassiveMass(base);
   }
-  if (facingAggression && trustedCallAmount !== null) {
-    base = applyKnownCallPrice(base, handStrength, Math.max(0, Number(potSize) || 0), trustedCallAmount);
+  if (!rolePolicy && facingAggression && trustedCallAmount !== null) {
+    base = applyKnownCallPrice(
+      base,
+      handStrength,
+      Math.max(0, Number(potSize) || 0),
+      trustedCallAmount,
+    );
   }
   if (isFreeCheckOption) {
     base[1] += base[2];
@@ -494,7 +742,66 @@ export function calculatePreflopFallbackStrategy(
     base = conditionOnContinuingActions(base);
   }
 
-  return normalizedStrategy(base[0], base[1], base[2]);
+  return Object.freeze({
+    strategy: Object.freeze(normalizedStrategy(base[0], base[1], base[2])),
+    handFeatures: features,
+    policyId: rolePolicy?.policyId ?? 'legacy_single_strength_curve/v3',
+    policyDimensions: rolePolicy?.dimensions ?? null,
+    policyComponents: rolePolicy?.components ?? null,
+    legacyHandStrength: handStrength,
+    legacyStrengthComponents: Object.freeze({
+      ...features.legacyScoreComponents,
+      legacyBaseScore: features.legacyBaseScore,
+      positionalAdjustment,
+      depthAdjustment,
+      suitedBonus,
+      suitedAceBonus,
+      suitedConnectorBonus,
+      offsuitConnectorBonus,
+      broadwayBonus,
+      highCardFacingAggressionBonus,
+      wheelAceWeight,
+      wheelAceBonus,
+      multipleLimperPenalty,
+      finalHandStrength: handStrength,
+    }),
+  });
+}
+
+export function calculatePreflopFallbackStrategy(
+  r1str,
+  r2str,
+  isPair,
+  isSuited,
+  pos = 'UTG',
+  action = 'unopened',
+  facingSize = 0,
+  potSize = 1.5,
+  stack = 30,
+  callAmountBb = null,
+  tableSize = null,
+  decisionFamily = null,
+  limperCount = 0,
+  strategicStackBb = undefined,
+  policyContext = null,
+) {
+  return calculatePreflopFallbackEvaluation(
+    r1str,
+    r2str,
+    isPair,
+    isSuited,
+    pos,
+    action,
+    facingSize,
+    potSize,
+    stack,
+    callAmountBb,
+    tableSize,
+    decisionFamily,
+    limperCount,
+    strategicStackBb,
+    policyContext,
+  ).strategy;
 }
 
 function strategyAction(type, amountBb = null) {
@@ -759,7 +1066,7 @@ export function calculatePreflopHeuristic(decisionContext) {
     && exactCurrentPot === null
     ? null
     : decisionContext.callAmountBb;
-  const fallback = calculatePreflopFallbackStrategy(
+  const fallbackEvaluation = calculatePreflopFallbackEvaluation(
     cards[0][0],
     cards[1][0],
     cards[0][0] === cards[1][0],
@@ -774,7 +1081,17 @@ export function calculatePreflopHeuristic(decisionContext) {
     decisionFamily,
     decisionContext.priorActionSummary?.limperCount ?? 0,
     stackFacts.depthBb,
+    {
+      decisionRole,
+      tableSize: decisionContext.tableSize,
+      opponentCount: decisionContext.opponentCount,
+      heroPosition: decisionContext.heroPosition,
+      initialAggressorPosition: decisionContext.priorActionSummary?.initialAggressorPosition,
+      startingStackBb: decisionContext.startingStackBb ?? decisionContext.stackBb,
+      facingSizeBb,
+    },
   );
+  const fallback = fallbackEvaluation.strategy;
   const { open, call, fold } = fallback;
   const isFreeCheckOption = decisionFamily === PREFLOP_DECISION_FAMILIES.BB_OPTION;
   const passiveType = isFreeCheckOption ? 'check' : 'call';
@@ -869,6 +1186,13 @@ export function calculatePreflopHeuristic(decisionContext) {
       stackCapActionProjectionApplied: callReachesStackCap,
       dominatedFoldSuppressionApplied,
       tableFamilyPosition,
+      handFeatures: fallbackEvaluation.handFeatures,
+      probabilityPolicy: fallbackEvaluation.policyId,
+      roleSpecificPolicyApplied: fallbackEvaluation.policyDimensions !== null,
+      policyDimensions: fallbackEvaluation.policyDimensions,
+      policyComponents: fallbackEvaluation.policyComponents,
+      legacyHandStrength: fallbackEvaluation.legacyHandStrength,
+      legacyStrengthComponents: fallbackEvaluation.legacyStrengthComponents,
       decisionRole,
       actualRole: decisionRole,
       fallbackCalibration,

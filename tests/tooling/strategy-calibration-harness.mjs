@@ -1,10 +1,14 @@
 import { performance } from 'node:perf_hooks';
 
 import { createStrategyProvider } from '../../app/src/application/strategy-provider.mjs';
+import {
+  deriveDecisionContextFromPokerState,
+} from '../../app/src/application/decision-context-from-poker-state.mjs';
 import { isStrategyResultV1 } from '../../app/src/application/strategy-result.mjs';
 import { resolveHeuristicStrategy } from '../../app/src/strategy/heuristic-strategy.mjs';
 import { getHoldemCombosForHandClass } from '../../shared/poker-domain/holdem-combos.js';
 import { buildDecisionContextDiagnostics } from './decision-context-diagnostics.mjs';
+import { createPreflopRoleAuditFixtures } from '../fixtures/preflop-role001-fixtures.mjs';
 import {
   ALL_POSITIONS,
   MULTIWAY_SPOT,
@@ -29,6 +33,8 @@ export const STRATEGY_QUALITY_SNAPSHOT_SCHEMA_VERSION =
   'riverline-heuristic-strategy-quality-snapshot/v1';
 export const CALIBRATION_REFERENCE_SCHEMA_VERSION = 'riverline-hu-preflop-calibration-reference/v1';
 export const BOUNDED_HU_GAME_VERSION = 'riverline-hu-preflop-100bb/v1';
+export const PREFLOP_ROLE_DIAGNOSTIC_SCHEMA_VERSION =
+  'riverline-preflop-role-calibration-diagnostic/v1';
 export const NEAR_PURE_THRESHOLD = 0.95;
 
 const ACTION_TYPES = Object.freeze(['fold', 'check', 'call', 'bet', 'raise', 'all_in']);
@@ -297,6 +303,115 @@ export function summarizePreflopConfiguration(provider, configuration, { include
     }]));
   }
   return summary;
+}
+
+export const COLD_RESPONSE_PAIRWISE_PROBES = Object.freeze([
+  Object.freeze(['K3s', 'K4s']),
+  Object.freeze(['55', '99']),
+  Object.freeze(['QJo', 'AJo']),
+  Object.freeze(['JTo', 'KQo']),
+  Object.freeze(['AJs', 'QJo']),
+  Object.freeze(['76s', 'A7o']),
+]);
+
+/**
+ * Riverline-owned role diagnostic. It resolves the canonical six-max BB
+ * versus BTN 2.5bb-open node and contains no external-reference frequencies.
+ */
+export function buildColdResponseToOpenDiagnostic({
+  provider = createCalibrationStrategyProvider(),
+  includeClasses = true,
+} = {}) {
+  const state = createPreflopRoleAuditFixtures().bbVsButtonOpen;
+  const context = deriveDecisionContextFromPokerState(state, state.actingPlayerId);
+  const rows = PREFLOP_HAND_CLASSES.map((handClass) => {
+    const result = evaluateDecisionContext(provider, {
+      ...context,
+      heroCards: representativeCardsForClass(handClass),
+    });
+    return {
+      handClass,
+      comboWeight: getHoldemCombosForHandClass(handClass).length,
+      legacyHandStrength: result.details?.legacyHandStrength ?? null,
+      handFeatures: clone(result.details?.handFeatures ?? null),
+      decisionRole: result.details?.decisionRole ?? null,
+      fallbackCalibration: result.details?.fallbackCalibration ?? null,
+      probabilityPolicy: result.details?.probabilityPolicy ?? null,
+      policyDimensions: clone(result.details?.policyDimensions ?? null),
+      policyComponents: clone(result.details?.policyComponents ?? null),
+      actionVector: result.actionVector,
+      foldProbability: result.foldProbability,
+      passiveProbability: result.passiveProbability,
+      aggressiveProbability: result.aggressiveProbability,
+      dominantAction: result.dominantAction,
+    };
+  });
+  const byHand = new Map(rows.map((row) => [row.handClass, row]));
+  const aggregate = (weighting, weightForRow) => ({
+    weighting,
+    totalWeight: rows.reduce((sum, row) => sum + weightForRow(row), 0),
+    fold: rounded(weightedAverage(rows, (row) => row.foldProbability, weightForRow)),
+    passive: rounded(weightedAverage(
+      rows,
+      (row) => row.passiveProbability,
+      weightForRow,
+    )),
+    aggression: rounded(weightedAverage(
+      rows,
+      (row) => row.aggressiveProbability,
+      weightForRow,
+    )),
+  });
+  const pairwiseStrategicInversions = COLD_RESPONSE_PAIRWISE_PROBES.map(([left, right]) => {
+    const leftRow = byHand.get(left);
+    const rightRow = byHand.get(right);
+    return {
+      left,
+      right,
+      leftDimensions: clone(leftRow.policyDimensions),
+      rightDimensions: clone(rightRow.policyDimensions),
+      passiveRealizationDelta: rounded(
+        leftRow.policyDimensions.passiveRealization
+          - rightRow.policyDimensions.passiveRealization,
+      ),
+      aggressionSuitabilityDelta: rounded(
+        leftRow.policyDimensions.aggressionSuitability
+          - rightRow.policyDimensions.aggressionSuitability,
+      ),
+      actionDelta: {
+        fold: rounded(leftRow.foldProbability - rightRow.foldProbability),
+        passive: rounded(leftRow.passiveProbability - rightRow.passiveProbability),
+        aggression: rounded(
+          leftRow.aggressiveProbability - rightRow.aggressiveProbability,
+        ),
+      },
+    };
+  });
+  const output = {
+    schemaVersion: PREFLOP_ROLE_DIAGNOSTIC_SCHEMA_VERSION,
+    privateExternalReferenceDataIncluded: false,
+    role: rows[0]?.decisionRole ?? null,
+    fallbackCalibration: rows[0]?.fallbackCalibration ?? null,
+    context: {
+      tableSize: context.tableSize,
+      heroPosition: context.heroPosition,
+      initialAggressorPosition: context.priorActionSummary.initialAggressorPosition,
+      facingSizeBb: context.facingSizeBb,
+      currentPotBb: context.currentPotBb,
+      callAmountBb: context.callAmountBb,
+      startingStackBb: context.startingStackBb,
+      heroStackBb: context.heroStackBb,
+      effectiveStackBb: context.effectiveStackBb,
+    },
+    classCount: rows.length,
+    actionMassByWeighting: {
+      physicalCombo: aggregate('physical_combo_count', (row) => row.comboWeight),
+      equalClass: aggregate('equal_weight_per_169_hand_class', () => 1),
+    },
+    pairwiseStrategicInversions,
+  };
+  if (includeClasses) output.classes = rows;
+  return output;
 }
 
 function maximumActionDelta(left, right) {
@@ -1091,6 +1206,12 @@ export function buildCalibrationReport({ reference = null, includeClasses = fals
     },
     preflop: {
       configurations: preflop,
+      roleDiagnostics: {
+        coldResponseToOpen: buildColdResponseToOpenDiagnostic({
+          provider,
+          includeClasses,
+        }),
+      },
       sanity: diagnosePreflopSanity(provider),
       architectureSignals: {
         tableSizePairsWithIdenticalSummary: [
@@ -1152,6 +1273,8 @@ export const CALIBRATION_SUPPORTED_DIMENSIONS = Object.freeze({
   stackValues: 'caller supplied',
   facingCategories: Object.keys(PREFLOP_FACING_CATEGORIES),
   exactCallAmounts: 'caller supplied by facing category or exact DecisionContext',
+  preflopRoleDiagnostics: ['cold_response_to_open'],
+  preflopRolePairwiseProbeCount: COLD_RESPONSE_PAIRWISE_PROBES.length,
   postflopNamedCorpusSize: POSTFLOP_NAMED_CORPUS.length,
   referenceComparisonSchema: CALIBRATION_REFERENCE_SCHEMA_VERSION,
 });

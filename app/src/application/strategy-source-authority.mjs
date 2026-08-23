@@ -259,7 +259,7 @@ const HEURISTIC_CAPABILITIES = Object.freeze({
 export const STRATEGY_SOURCE_REGISTRY = deepFreeze({
   heuristic_preflop: createStrategySourceDescriptor({
     id: 'heuristic_preflop',
-    version: 'riverline-preflop-heuristic/v3',
+    version: 'riverline-preflop-heuristic/v4',
     displayName: 'Heuristic fallback',
     family: STRATEGY_SOURCE_FAMILIES.HEURISTIC,
     authority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,

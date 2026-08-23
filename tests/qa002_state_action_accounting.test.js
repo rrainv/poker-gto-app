@@ -180,8 +180,8 @@ test('canonical StrategyResult action mapping preserves action families and sizi
 
 test('preflop fallback Ace and King predicates use the production card-rank values', () => {
   assert.deepEqual(['A', 'K', 'Q', 'J'].map(qa.rankValue), [14, 13, 12, 11]);
-  assert.match(qa.fallbackSource, /const hasAce = highRank === 14;/);
-  assert.match(qa.fallbackSource, /const hasKing = highRank === 13;/);
+  assert.match(qa.fallbackSource, /const hasAce = highRank === HEURISTIC_RANK_VALUES\.A;/);
+  assert.match(qa.fallbackSource, /const hasKing = highRank === HEURISTIC_RANK_VALUES\.K;/);
 });
 
 test('suited wheel Aces retain smooth response value without a replacement strategy', () => {

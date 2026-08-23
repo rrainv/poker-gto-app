@@ -171,7 +171,7 @@ test('DecisionContext role facts and classifier distinguish every required prefl
   );
 });
 
-test('exact role metadata survives honest shared fallback calibration without probability changes', () => {
+test('exact role metadata applies only the bounded BB-versus-BTN cold-response policy', () => {
   const strategyProvider = provider();
   for (const [id, state] of Object.entries(createPreflopRoleAuditFixtures())) {
     const decisionContext = context(state);
@@ -184,11 +184,26 @@ test('exact role metadata survives honest shared fallback calibration without pr
       preflopFallbackCalibrationFor(decisionContext),
       id,
     );
-    assert.deepEqual(
-      strategyDistribution(result),
-      strategyDistribution(compatibilityResult),
-      `${id} probability drift`,
-    );
+    if (id === 'bbVsButtonOpen') {
+      assert.notDeepEqual(
+        strategyDistribution(result),
+        strategyDistribution(compatibilityResult),
+        `${id} cold-response policy missing`,
+      );
+      assert.equal(result.details.roleSpecificPolicyApplied, true, id);
+      assert.equal(
+        result.details.probabilityPolicy,
+        'cold_response_to_open_structural/v1',
+        id,
+      );
+    } else {
+      assert.deepEqual(
+        strategyDistribution(result),
+        strategyDistribution(compatibilityResult),
+        `${id} unrelated-role probability drift`,
+      );
+      assert.equal(result.details.roleSpecificPolicyApplied, false, id);
+    }
   }
 
   const contexts = Object.fromEntries(

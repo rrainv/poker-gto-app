@@ -104,7 +104,7 @@ function createHarness() {
     'function setFrequency(index, action)',
   );
   const fallbackSource = preflopHeuristicSource.slice(
-    preflopHeuristicSource.indexOf('function calculatePreflopFallbackStrategy('),
+    preflopHeuristicSource.indexOf('function extractPreflopHandFeatures('),
     preflopHeuristicSource.indexOf('function strategyAction('),
   );
   const potSource = sliceBetween(source, 'function preflopBasePot()', 'function updateMetrics()');

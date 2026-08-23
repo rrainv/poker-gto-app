@@ -197,7 +197,7 @@ test('representative preflop corpus remains finite, normalized, deterministic, a
       const second = provider.resolve(context);
       assert.ok(isStrategyResultV1(first));
       assert.deepEqual(second, first);
-      assert.equal(first.sourceVersion, 'riverline-preflop-heuristic/v3');
+      assert.equal(first.sourceVersion, 'riverline-preflop-heuristic/v4');
       assert.equal(availableProbabilityTotal(first), 1);
       assert.ok(first.actions.every((entry) => Number.isFinite(entry.probability)));
       assert.doesNotMatch(JSON.stringify(first), /solved GTO|Nash|action EV|EV loss/i);

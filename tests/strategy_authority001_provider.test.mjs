@@ -238,7 +238,8 @@ test('production source sweep leaves fallback math only behind the provider seam
   assert.doesNotMatch(logic, /\bactionProfile\s*\(/);
   assert.doesNotMatch(logic, /\bfallbackStrategyResult\s*\(/);
   assert.doesNotMatch(logic, /calculatePreflopFallbackStrategy|calculatePostflopHeuristicStrategy|simulateHeuristicEquity/);
-  assert.equal((preflopHeuristic.match(/calculatePreflopFallbackStrategy\(/g) || []).length, 2);
+  assert.equal((preflopHeuristic.match(/calculatePreflopFallbackStrategy\(/g) || []).length, 1);
+  assert.equal((preflopHeuristic.match(/calculatePreflopFallbackEvaluation\(/g) || []).length, 3);
   assert.equal((postflopHeuristic.match(/calculatePostflopHeuristicStrategy\(/g) || []).length, 1);
   assert.match(heuristicStrategy, /resolveHeuristicStrategy/);
   assert.match(heuristicEvaluator, /from '\.\.\/\.\.\/\.\.\/shared\/poker-domain\/evaluator\.js'/);

@@ -93,6 +93,8 @@ function preflopCandidate(decisionContext) {
       generationMethod: 'deterministic_preflop_heuristic',
       assumptions: [
         'broad_position_and_hand_playability_rules',
+        'separate_structural_hand_features_for_exact_cold_response_role',
+        'role_specific_policy_is_generalized_not_a_hand_chart',
         'not_independently_solver_validated',
       ],
     },

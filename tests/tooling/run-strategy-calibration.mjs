@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   CALIBRATION_SUPPORTED_DIMENSIONS,
+  buildColdResponseToOpenDiagnostic,
   buildStrategyQualitySnapshot,
   buildCalibrationReport,
   measureCalibrationRuntime,
@@ -27,10 +28,13 @@ if (isMain) {
   const pretty = process.argv.includes('--pretty');
   const runtime = process.argv.includes('--runtime');
   const quality = process.argv.includes('--quality');
+  const coldResponse = process.argv.includes('--cold-response');
   const includeClasses = process.argv.includes('--full');
   const reference = readReference(argumentValue('--reference'));
   const runs = Number(argumentValue('--runs') ?? 1);
-  const output = quality
+  const output = coldResponse
+    ? buildColdResponseToOpenDiagnostic({ includeClasses: includeClasses })
+    : quality
     ? buildStrategyQualitySnapshot()
     : runtime
     ? measureCalibrationRuntime({ runs })
