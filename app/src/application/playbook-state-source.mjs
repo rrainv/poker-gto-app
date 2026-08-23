@@ -4,13 +4,20 @@ import {
   GAME_RULES_COLLECTION_TYPES,
   PHASES,
   POKER_STATE_V2_SCHEMA_VERSION,
+  STREETS,
   bbToMilliBb,
   createGameRulesSnapshotFromLegacyGameConfiguration,
   playerById,
   validateGameRulesSnapshot,
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
-import { deriveDecisionContextFromPokerState } from './decision-context-from-poker-state.mjs';
+import {
+  DECISION_CONTEXT_CONTRACT_VERSION,
+  DECISION_CONTEXT_SCHEMA_VERSION,
+  createDecisionContextDerivation,
+  deriveDecisionContextFromPokerState,
+  unavailableDecisionContextField,
+} from './decision-context-from-poker-state.mjs';
 
 export const PLAYBOOK_MODES = Object.freeze({
   SCENARIO: 'scenario',
@@ -202,10 +209,91 @@ export function createPlaybookScenarioInputFromLegacyCompatibility(input = {}) {
   });
 }
 
-function normalizedDecisionNumber(value, fallback, minimum, maximum) {
+function scenarioDerivationEvent(field, quality, code, value, rawValue = undefined) {
+  const event = { field, quality, code };
+  if (rawValue !== undefined && (typeof rawValue !== 'number' || Number.isFinite(rawValue))) {
+    event.rawValue = rawValue;
+  }
+  if (value !== undefined) event.value = value;
+  return event;
+}
+
+function normalizedDecisionNumber(
+  value,
+  fallback,
+  minimum,
+  maximum,
+  field,
+  events,
+  { integer = false } = {},
+) {
   const numeric = Number(value);
-  const finite = Number.isFinite(numeric) ? numeric : fallback;
-  return Math.min(maximum, Math.max(minimum, finite));
+  if (!Number.isFinite(numeric)) {
+    events.push(scenarioDerivationEvent(
+      field,
+      'defaulted',
+      'non_finite_default',
+      fallback,
+      value,
+    ));
+    return fallback;
+  }
+  const clamped = Math.min(maximum, Math.max(minimum, numeric));
+  if (clamped !== numeric) {
+    events.push(scenarioDerivationEvent(
+      field,
+      'clamped',
+      'supported_range_clamp',
+      clamped,
+      numeric,
+    ));
+  }
+  const normalized = integer ? Math.trunc(clamped) : clamped;
+  if (normalized !== clamped) {
+    events.push(scenarioDerivationEvent(
+      field,
+      'normalized',
+      'integer_truncation',
+      normalized,
+      clamped,
+    ));
+  }
+  return normalized;
+}
+
+function scenarioCurrentPotBb(value, events) {
+  if (value === undefined || value === null || value === '') {
+    events.push(unavailableDecisionContextField(
+      'currentPotBb',
+      'scenario_current_pot_unavailable',
+    ));
+    return null;
+  }
+
+  const numeric = typeof value === 'number'
+    ? value
+    : typeof value === 'string' ? Number(value) : Number.NaN;
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    events.push(scenarioDerivationEvent(
+      'currentPotBb',
+      'unavailable',
+      'scenario_current_pot_invalid',
+      null,
+      value,
+    ));
+    return null;
+  }
+
+  events.push(scenarioDerivationEvent(
+    'currentPotBb',
+    typeof value === 'number' ? 'exact' : 'normalized',
+    typeof value === 'number'
+      ? 'scenario_current_pot_explicit'
+      : 'scenario_current_pot_numeric_parse',
+    numeric,
+    typeof value === 'number' ? undefined : value,
+  ));
+  return numeric;
 }
 
 function scenarioStreet(board) {
@@ -217,9 +305,90 @@ function scenarioStreet(board) {
   return 'invalid';
 }
 
-function scenarioFacingSize(lastAction, value) {
-  if (lastAction === 'unopened') return 0;
-  return normalizedDecisionNumber(value, 0, 0, 100);
+function scenarioFacingSize(lastAction, value, events) {
+  const normalized = normalizedDecisionNumber(
+    value,
+    0,
+    0,
+    100,
+    'facingSizeBb',
+    events,
+  );
+  if (lastAction === 'unopened' && normalized !== 0) {
+    events.push(scenarioDerivationEvent(
+      'facingSizeBb',
+      'normalized',
+      'unopened_facing_size_zeroed',
+      0,
+      normalized,
+    ));
+    return 0;
+  }
+  return lastAction === 'unopened' ? 0 : normalized;
+}
+
+function scenarioPriorActionSummary(street, lastAction) {
+  const action = String(lastAction || '').toLowerCase();
+  const lastActionFamily = ({
+    unopened: 'none',
+    check: 'check',
+    bet: 'bet',
+    raise: 'raise',
+    '3bet': 'raise',
+    '4bet': 'raise',
+    limp: 'limp',
+    call: 'call',
+  })[action] ?? 'unknown';
+  const facingActionFamily = ({
+    unopened: 'none',
+    check: 'check',
+    bet: 'bet',
+    raise: 'raise',
+    '3bet': 'raise',
+    '4bet': 'raise',
+    limp: 'limp',
+    call: 'call',
+  })[action] ?? 'unknown';
+
+  let family = 'none';
+  let count = 0;
+  if (street === STREETS.PREFLOP) {
+    if (action === 'raise') {
+      family = 'open';
+      count = 1;
+    } else if (action === '3bet') {
+      family = 'three_bet';
+      count = 2;
+    } else if (action === '4bet') {
+      family = 'four_bet_or_more';
+      count = null;
+    } else if (lastActionFamily === 'unknown') {
+      family = 'unknown';
+      count = null;
+    }
+  } else if (action === 'bet') {
+    family = 'bet';
+    count = 1;
+  } else if (action === 'raise') {
+    family = 'raise';
+    count = 2;
+  } else if (['3bet', '4bet'].includes(action)) {
+    family = 'raise';
+    count = null;
+  } else if (lastActionFamily === 'unknown') {
+    family = 'unknown';
+    count = null;
+  }
+
+  return {
+    lastActionFamily,
+    lastActorPosition: null,
+    facingActionFamily,
+    aggressionFamily: family,
+    aggressionCount: count,
+    limperCount: street === STREETS.PREFLOP && action === 'unopened' ? 0 : null,
+    aggressorPosition: null,
+  };
 }
 
 function legacyScenarioAccounting(input) {
@@ -266,48 +435,207 @@ function snapshotScenarioAccounting(input) {
  */
 export function deriveDecisionContextFromPlaybookScenario(scenarioInput) {
   const input = createPlaybookScenarioInput(scenarioInput);
-  const tableSize = Math.trunc(normalizedDecisionNumber(input.tableSize, 6, 2, 10));
+  const derivationEvents = [];
+  const tableSize = normalizedDecisionNumber(
+    input.tableSize,
+    6,
+    2,
+    10,
+    'tableSize',
+    derivationEvents,
+    { integer: true },
+  );
   const heroPosition = typeof input.heroPosition === 'string' && input.heroPosition
     ? input.heroPosition
     : 'BTN';
+  if (heroPosition !== input.heroPosition) {
+    derivationEvents.push(scenarioDerivationEvent(
+      'heroPosition',
+      'defaulted',
+      'missing_position_default',
+      heroPosition,
+      input.heroPosition,
+    ));
+  }
   const heroCards = copyCards(input.heroCards);
   const board = copyCards(input.board);
   const deadCards = copyCards(input.deadCards);
-  const stackBb = normalizedDecisionNumber(input.stackBb, 100, 10, 500);
+  for (const field of ['heroCards', 'board', 'deadCards']) {
+    derivationEvents.push(scenarioDerivationEvent(
+      field,
+      'normalized',
+      'scenario_card_array_projection',
+      field === 'heroCards' ? heroCards : field === 'board' ? board : deadCards,
+    ));
+  }
+  const stackEventStart = derivationEvents.length;
+  const stackBb = normalizedDecisionNumber(
+    input.stackBb,
+    100,
+    10,
+    500,
+    'stackBb',
+    derivationEvents,
+  );
+  for (const event of derivationEvents.slice(stackEventStart)) {
+    derivationEvents.push({
+      ...event,
+      field: 'startingStackBb',
+      code: `scenario_configured_stack_${event.code}`,
+    });
+  }
   const stackMode = typeof input.stackMode === 'string' && input.stackMode
     ? input.stackMode
     : 'hero';
-  const potBb = normalizedDecisionNumber(input.potBb, 1.5, 0.5, 200);
+  if (stackMode !== input.stackMode) {
+    derivationEvents.push(scenarioDerivationEvent(
+      'stackMode',
+      'defaulted',
+      'missing_stack_mode_default',
+      stackMode,
+      input.stackMode,
+    ));
+  }
+  const currentPotBb = scenarioCurrentPotBb(input.potBb, derivationEvents);
+  const potBb = normalizedDecisionNumber(
+    input.potBb,
+    1.5,
+    0.5,
+    200,
+    'potBb',
+    derivationEvents,
+  );
   const lastAction = typeof input.lastAction === 'string' && input.lastAction
     ? input.lastAction
     : 'unopened';
-  const facingSizeBb = scenarioFacingSize(lastAction, input.facingSizeBb);
+  if (lastAction !== input.lastAction) {
+    derivationEvents.push(scenarioDerivationEvent(
+      'lastAction',
+      'defaulted',
+      'missing_prior_action_default',
+      lastAction,
+      input.lastAction,
+    ));
+  }
+  const street = scenarioStreet(board);
+  derivationEvents.push(scenarioDerivationEvent(
+    'street',
+    'normalized',
+    'derived_from_board_count',
+    street,
+    input.street,
+  ));
+  const facingSizeBb = scenarioFacingSize(lastAction, input.facingSizeBb, derivationEvents);
   const callAmountBb = lastAction === 'check'
     || (lastAction === 'unopened' && heroPosition === 'BB') ? 0 : null;
+  if (callAmountBb === null) {
+    derivationEvents.push(unavailableDecisionContextField(
+      'callAmountBb',
+      'scenario_exact_call_price_unavailable',
+    ));
+  } else {
+    derivationEvents.push(scenarioDerivationEvent(
+      'callAmountBb',
+      'normalized',
+      'scenario_free_price_category',
+      0,
+    ));
+  }
+  const priorActionSummary = scenarioPriorActionSummary(street, lastAction);
+  derivationEvents.push(
+    unavailableDecisionContextField('opponentCount', 'scenario_live_opponents_unavailable'),
+    unavailableDecisionContextField('heroStackBb', 'scenario_live_stack_unavailable'),
+    unavailableDecisionContextField('effectiveStackBb', 'scenario_effective_stack_unavailable'),
+    unavailableDecisionContextField(
+      'effectiveStackByOpponent',
+      'scenario_opponent_stacks_unavailable',
+      [],
+    ),
+    unavailableDecisionContextField(
+      'heroStreetContributionBb',
+      'scenario_street_contribution_unavailable',
+    ),
+    unavailableDecisionContextField('canRaise', 'scenario_legal_actions_unavailable'),
+    unavailableDecisionContextField('minRaiseToBb', 'scenario_legal_actions_unavailable'),
+    unavailableDecisionContextField('maxRaiseToBb', 'scenario_legal_actions_unavailable'),
+    unavailableDecisionContextField('allInToBb', 'scenario_live_stack_unavailable'),
+    unavailableDecisionContextField(
+      'priorActionSummary.lastActorPosition',
+      'scenario_actor_position_unavailable',
+    ),
+    unavailableDecisionContextField(
+      'priorActionSummary.aggressorPosition',
+      'scenario_aggressor_position_unavailable',
+    ),
+  );
+  if (priorActionSummary.aggressionCount === null) {
+    derivationEvents.push(unavailableDecisionContextField(
+      'priorActionSummary.aggressionCount',
+      'scenario_exact_aggression_count_unavailable',
+    ));
+  }
+  if (priorActionSummary.limperCount === null) {
+    derivationEvents.push(unavailableDecisionContextField(
+      'priorActionSummary.limperCount',
+      'scenario_limper_count_unavailable',
+    ));
+  }
+  const positionRelation = street === STREETS.PREFLOP ? 'not_applicable' : 'unknown';
+  const aggressorPositionRelation = street === STREETS.PREFLOP
+    ? 'not_applicable'
+    : 'unknown';
+  if (positionRelation === 'unknown') {
+    derivationEvents.push(
+      unavailableDecisionContextField(
+        'positionRelation',
+        'scenario_seat_order_unavailable',
+        'unknown',
+      ),
+      unavailableDecisionContextField(
+        'aggressorPositionRelation',
+        'scenario_seat_order_unavailable',
+        'unknown',
+      ),
+    );
+  }
   const accounting = input.schemaVersion === PLAYBOOK_SCENARIO_V2_SCHEMA_VERSION
     ? snapshotScenarioAccounting(input)
     : legacyScenarioAccounting(input);
 
   return deepFreeze({
-    schemaVersion: 'decision-context/v1',
+    schemaVersion: DECISION_CONTEXT_SCHEMA_VERSION,
+    contractVersion: DECISION_CONTEXT_CONTRACT_VERSION,
     tableSize,
     opponentCount: null,
     heroPosition,
-    street: scenarioStreet(board),
+    street,
     heroCards,
     board,
     deadCards,
     stackBb,
     stackMode,
+    startingStackBb: stackBb,
+    heroStackBb: null,
+    effectiveStackBb: null,
+    effectiveStackByOpponent: [],
+    positionRelation,
+    aggressorPositionRelation,
+    currentPotBb,
     potBb,
     lastAction,
+    priorActionSummary,
     facingSizeBb,
     callAmountBb,
     heroStreetContributionBb: null,
+    canRaise: null,
+    minRaiseToBb: null,
+    maxRaiseToBb: null,
+    allInToBb: null,
     // These are DecisionContext v1 compatibility facts, not rules authority.
     rakeMode: accounting.rakeMode,
     forcedContributionPerPlayerBb: accounting.forcedContributionPerPlayerBb,
     totalForcedContributionBb: accounting.totalForcedContributionBb,
+    derivation: createDecisionContextDerivation('scenario', derivationEvents),
   });
 }
 
@@ -328,7 +656,7 @@ export function createPlaybookScenarioFromPokerState(state, heroPlayerId, option
     deadCards: context.deadCards,
     stackBb: context.stackBb,
     stackMode: context.stackMode,
-    potBb: context.potBb,
+    potBb: context.currentPotBb,
     lastAction: context.lastAction,
     lastActionLabel: null,
     facingSizeBb: context.facingSizeBb,

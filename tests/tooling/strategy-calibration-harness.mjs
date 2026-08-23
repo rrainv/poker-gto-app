@@ -4,6 +4,7 @@ import { createStrategyProvider } from '../../app/src/application/strategy-provi
 import { isStrategyResultV1 } from '../../app/src/application/strategy-result.mjs';
 import { resolveHeuristicStrategy } from '../../app/src/strategy/heuristic-strategy.mjs';
 import { getHoldemCombosForHandClass } from '../../shared/poker-domain/holdem-combos.js';
+import { buildDecisionContextDiagnostics } from './decision-context-diagnostics.mjs';
 import {
   ALL_POSITIONS,
   MULTIWAY_SPOT,
@@ -81,9 +82,9 @@ export const BOUNDED_HU_OVERLAP = Object.freeze([
   }),
   Object.freeze({
     publicState: 'limp_branch',
-    overlap: 'not_lossless',
+    overlap: 'context_available_comparison_not_implemented',
     usableComparison: null,
-    reason: 'DecisionContext v1 projects a limp to check and does not retain the bounded branch history or 4bb size anchor.',
+    reason: 'DecisionContext v1.1 preserves canonical limp summaries, but the current heuristic and bounded comparison do not consume the branch or retain its prior-action size anchor.',
   }),
 ]);
 
@@ -422,6 +423,7 @@ export function buildStrategyQualitySnapshot(options = {}) {
       exactSolverAgreement: false,
       safeForFrequencyRetuning: false,
     },
+    decisionContext: buildDecisionContextDiagnostics(),
     preflop: {
       configurations,
       boundaryHands: [...STRATEGY_QUALITY_BOUNDARY_HANDS],
@@ -1031,7 +1033,7 @@ export function diagnoseSizing() {
     preflopAmountSemantics: 'amount-to total preflop contribution after acting',
     uniqueExplicitPreflopSizes: uniquePreflopSizes,
     preflopSizedActionCount: emitted.filter((action) => action.amountBb !== null).length,
-    postflopSizingSemantics: 'omitted because complete legal sizing bounds are unavailable',
+    postflopSizingSemantics: 'omitted because the current heuristic does not consume DecisionContext v1.1 legal sizing bounds',
     postflopExplicitSizeCount: postflop.flatMap((spot) => spot.sizes).filter((action) => (
       action.amountBb !== null || action.potFraction !== null
     )).length,
@@ -1054,6 +1056,7 @@ export function buildCalibrationReport({ reference = null, includeClasses = fals
       multiplayerEquilibrium: false,
       postflopSolverValidated: false,
     },
+    decisionContext: buildDecisionContextDiagnostics(),
     boundedSolver: {
       gameVersion: BOUNDED_HU_GAME_VERSION,
       status: 'game_and_validation_harness_only_not_solved',
@@ -1116,6 +1119,8 @@ export function measureCalibrationRuntime({ runs = 1 } = {}) {
 
 export const CALIBRATION_SUPPORTED_DIMENSIONS = Object.freeze({
   exactDecisionContext: true,
+  decisionContextContractVersion: 'decision-context/v1.1',
+  decisionContextDiagnosticFixtureCount: 11,
   preflopHandClasses: PREFLOP_HAND_CLASSES.length,
   positions: ALL_POSITIONS,
   stackValues: 'caller supplied',

@@ -57,11 +57,27 @@ The Electron process has no inference, model, IPC strategy, or second poker impl
 
 ## DecisionContext facts
 
+- extended contexts use `contractVersion: decision-context/v1.1` while retaining
+  the compatible `schemaVersion: decision-context/v1`;
 - `facingSizeBb`: nominal/current wager-to context, not call price
 - `callAmountBb`: actor's incremental stack-capped call amount when known
 - `heroStreetContributionBb`: current-street investment when known
 - `opponentCount`: exact live opponents for canonical state; `null` for lossy Scenario state
 - `tableSize`: seated players; do not reinterpret as live opponents
+- `currentPotBb`: exact unclamped current pot when available; v1.1 current-pot
+  and SPR logic must use it instead of compatibility `potBb`
+- `stackBb`: configured/starting-depth compatibility field, not live/effective stack
+- `heroStackBb` and `effectiveStackByOpponent`: exact current chips behind only
+  for canonical Hand; folded opponents are excluded
+- `effectiveStackBb`: exact only with one live opponent; `null` multiway/Scenario
+- live-stack logic must use `heroStackBb` / the appropriate effective-stack
+  fact and must not fall back to configured compatibility `stackBb`
+- `positionRelation`: postflop seat-order relation including `mixed`; Scenario is unknown
+- `minRaiseToBb` / `maxRaiseToBb` / `allInToBb`: total-to semantics from canonical legality
+- `priorActionSummary`: bounded semantic history; limp and call remain distinct
+- `derivation`: stable compact default/normalize/clamp/unavailable provenance
+
+See `../project/DECISION_CONTEXT_SPEC.md`.
 
 ## Strategy truth
 

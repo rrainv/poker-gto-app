@@ -492,7 +492,7 @@ function validateDecisionContextSnapshot(context, derivation) {
   if (context.schemaVersion !== 'decision-context/v1') {
     throw new TypeError('Expected decision-context/v1');
   }
-  requireExactKeys(context, [
+  const legacyKeys = [
     'schemaVersion',
     'tableSize',
     'opponentCount',
@@ -511,7 +511,25 @@ function validateDecisionContextSnapshot(context, derivation) {
     'rakeMode',
     'forcedContributionPerPlayerBb',
     'totalForcedContributionBb',
-  ], 'SavedSpotSnapshot.decisionContext');
+  ];
+  const extended = context.contractVersion === 'decision-context/v1.1';
+  requireExactKeys(context, extended ? [
+    ...legacyKeys,
+    'contractVersion',
+    'startingStackBb',
+    'heroStackBb',
+    'effectiveStackBb',
+    'effectiveStackByOpponent',
+    'positionRelation',
+    'aggressorPositionRelation',
+    'currentPotBb',
+    'priorActionSummary',
+    'canRaise',
+    'minRaiseToBb',
+    'maxRaiseToBb',
+    'allInToBb',
+    'derivation',
+  ] : legacyKeys, 'SavedSpotSnapshot.decisionContext');
   assertPortableSavedStudyValue(context, 'SavedSpotSnapshot.decisionContext');
   if (!Number.isInteger(context.tableSize) || context.tableSize < 2 || context.tableSize > 10) {
     throw new RangeError('DecisionContext tableSize must be an integer from 2 through 10');
@@ -548,14 +566,134 @@ function validateDecisionContextSnapshot(context, derivation) {
   );
   requireNonNegativeNumber(context.totalForcedContributionBb, 'DecisionContext.totalForcedContributionBb');
 
+  if (extended) {
+    requirePositiveNumber(context.startingStackBb, 'DecisionContext.startingStackBb');
+    requireNonNegativeNumber(context.heroStackBb, 'DecisionContext.heroStackBb', { nullable: true });
+    requireNonNegativeNumber(
+      context.effectiveStackBb,
+      'DecisionContext.effectiveStackBb',
+      { nullable: true },
+    );
+    if (!Array.isArray(context.effectiveStackByOpponent)) {
+      throw new TypeError('DecisionContext.effectiveStackByOpponent must be an array');
+    }
+    context.effectiveStackByOpponent.forEach((entry, index) => {
+      requireObject(entry, `DecisionContext.effectiveStackByOpponent[${index}]`);
+      requireExactKeys(
+        entry,
+        ['position', 'opponentStackBb', 'effectiveStackBb'],
+        `DecisionContext.effectiveStackByOpponent[${index}]`,
+      );
+      requireString(entry.position, `DecisionContext.effectiveStackByOpponent[${index}].position`, 16);
+      requireNonNegativeNumber(
+        entry.opponentStackBb,
+        `DecisionContext.effectiveStackByOpponent[${index}].opponentStackBb`,
+      );
+      requireNonNegativeNumber(
+        entry.effectiveStackBb,
+        `DecisionContext.effectiveStackByOpponent[${index}].effectiveStackBb`,
+      );
+    });
+    const positionRelations = new Set([
+      'in_position', 'out_of_position', 'mixed', 'unknown', 'not_applicable',
+    ]);
+    if (!positionRelations.has(context.positionRelation)
+      || !positionRelations.has(context.aggressorPositionRelation)) {
+      throw new RangeError('DecisionContext position relation is unsupported');
+    }
+    requireNonNegativeNumber(
+      context.currentPotBb,
+      'DecisionContext.currentPotBb',
+      { nullable: true },
+    );
+
+    const summary = requireObject(
+      context.priorActionSummary,
+      'DecisionContext.priorActionSummary',
+    );
+    requireExactKeys(summary, [
+      'lastActionFamily',
+      'lastActorPosition',
+      'facingActionFamily',
+      'aggressionFamily',
+      'aggressionCount',
+      'limperCount',
+      'aggressorPosition',
+    ], 'DecisionContext.priorActionSummary');
+    requireString(summary.lastActionFamily, 'DecisionContext.priorActionSummary.lastActionFamily', 32);
+    requireString(
+      summary.facingActionFamily,
+      'DecisionContext.priorActionSummary.facingActionFamily',
+      32,
+    );
+    requireString(summary.aggressionFamily, 'DecisionContext.priorActionSummary.aggressionFamily', 32);
+    for (const field of ['lastActorPosition', 'aggressorPosition']) {
+      if (summary[field] !== null) {
+        requireString(summary[field], `DecisionContext.priorActionSummary.${field}`, 16);
+      }
+    }
+    for (const field of ['aggressionCount', 'limperCount']) {
+      if (summary[field] !== null
+        && (!Number.isInteger(summary[field]) || summary[field] < 0)) {
+        throw new RangeError(`DecisionContext.priorActionSummary.${field} must be non-negative or null`);
+      }
+    }
+
+    if (context.canRaise !== null && typeof context.canRaise !== 'boolean') {
+      throw new TypeError('DecisionContext.canRaise must be boolean or null');
+    }
+    requireNonNegativeNumber(context.minRaiseToBb, 'DecisionContext.minRaiseToBb', { nullable: true });
+    requireNonNegativeNumber(context.maxRaiseToBb, 'DecisionContext.maxRaiseToBb', { nullable: true });
+    requireNonNegativeNumber(context.allInToBb, 'DecisionContext.allInToBb', { nullable: true });
+
+    const contextDerivation = requireObject(context.derivation, 'DecisionContext.derivation');
+    requireExactKeys(
+      contextDerivation,
+      ['schemaVersion', 'source', 'defaultQuality', 'events'],
+      'DecisionContext.derivation',
+    );
+    if (contextDerivation.schemaVersion !== 'decision-context-derivation/v1') {
+      throw new TypeError('Expected decision-context-derivation/v1');
+    }
+    if (!['canonical_hand', 'scenario'].includes(contextDerivation.source)
+      || contextDerivation.defaultQuality !== 'exact'
+      || !Array.isArray(contextDerivation.events)) {
+      throw new RangeError('DecisionContext derivation metadata is unsupported');
+    }
+    const qualities = new Set(['exact', 'defaulted', 'normalized', 'clamped', 'unavailable']);
+    contextDerivation.events.forEach((event, index) => {
+      requireObject(event, `DecisionContext.derivation.events[${index}]`);
+      if (Object.keys(event).some((key) => !['field', 'quality', 'code', 'rawValue', 'value'].includes(key))) {
+        throw new TypeError(`DecisionContext.derivation.events[${index}] contains unsupported fields`);
+      }
+      requireString(event.field, `DecisionContext.derivation.events[${index}].field`, 96);
+      requireString(event.code, `DecisionContext.derivation.events[${index}].code`, 96);
+      if (!qualities.has(event.quality)) {
+        throw new RangeError(`DecisionContext.derivation.events[${index}].quality is unsupported`);
+      }
+    });
+  }
+
   if (derivation === SAVED_SPOT_DERIVATIONS.SCENARIO) {
     if (context.opponentCount !== null || context.heroStreetContributionBb !== null) {
       throw new RangeError('Scenario-derived saved spots must preserve unknown live/history facts as null');
+    }
+    if (extended && (context.heroStackBb !== null || context.effectiveStackBb !== null
+      || context.effectiveStackByOpponent.length !== 0 || context.canRaise !== null
+      || context.minRaiseToBb !== null || context.maxRaiseToBb !== null
+      || context.allInToBb !== null || context.derivation.source !== 'scenario')) {
+      throw new RangeError('Scenario-derived saved spots must preserve v1.1 unavailable facts');
     }
   } else if (!Number.isInteger(context.opponentCount)
     || context.opponentCount < 1 || context.opponentCount >= context.tableSize
     || context.callAmountBb === null || context.heroStreetContributionBb === null) {
     throw new RangeError('Hand-derived saved spots require exact canonical opponent and pricing facts');
+  } else if (extended && (context.heroStackBb === null
+    || context.currentPotBb === null
+    || context.effectiveStackByOpponent.length !== context.opponentCount
+    || context.canRaise === null || context.allInToBb === null
+    || context.derivation.source !== 'canonical_hand')) {
+    throw new RangeError('Hand-derived saved spots require exact canonical v1.1 facts');
   }
   return context;
 }

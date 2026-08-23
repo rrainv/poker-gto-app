@@ -87,14 +87,24 @@ function legacyEquivalent(projected) {
 }
 
 function assertLegacyParity(projected) {
-  const { callAmountBb, heroStreetContributionBb, opponentCount, ...legacyFields } = projected;
-  const {
-    callAmountBb: ignoredCallAmount,
-    heroStreetContributionBb: ignoredContribution,
-    opponentCount: ignoredOpponentCount,
-    ...expectedLegacyFields
-  } = legacyEquivalent(projected);
-  assert.deepEqual(legacyFields, expectedLegacyFields);
+  const comparable = (value) => ({
+    schemaVersion: value.schemaVersion,
+    tableSize: value.tableSize,
+    heroPosition: value.heroPosition,
+    street: value.street,
+    heroCards: value.heroCards,
+    board: value.board,
+    deadCards: value.deadCards,
+    stackBb: value.stackBb,
+    stackMode: value.stackMode,
+    potBb: value.potBb,
+    lastAction: value.lastAction,
+    facingSizeBb: value.facingSizeBb,
+    rakeMode: value.rakeMode,
+    forcedContributionPerPlayerBb: value.forcedContributionPerPlayerBb,
+    totalForcedContributionBb: value.totalForcedContributionBb,
+  });
+  assert.deepEqual(comparable(projected), comparable(legacyEquivalent(projected)));
 }
 
 function foldUntilPosition(state, position) {
@@ -127,10 +137,29 @@ function reachRiver() {
   return applyChance(state, { type: CHANCE_TYPES.DEAL_RIVER, cards: RIVER });
 }
 
-test('HU unopened PokerState projects the exact DecisionContext v1 shape', () => {
+test('HU unopened PokerState preserves v1 fields and adds exact v1.1 facts', () => {
   const state = createDealtState();
   const projected = context(state);
-  assert.deepEqual(projected, {
+  assert.deepEqual({
+    schemaVersion: projected.schemaVersion,
+    tableSize: projected.tableSize,
+    opponentCount: projected.opponentCount,
+    heroPosition: projected.heroPosition,
+    street: projected.street,
+    heroCards: projected.heroCards,
+    board: projected.board,
+    deadCards: projected.deadCards,
+    stackBb: projected.stackBb,
+    stackMode: projected.stackMode,
+    potBb: projected.potBb,
+    lastAction: projected.lastAction,
+    facingSizeBb: projected.facingSizeBb,
+    callAmountBb: projected.callAmountBb,
+    heroStreetContributionBb: projected.heroStreetContributionBb,
+    rakeMode: projected.rakeMode,
+    forcedContributionPerPlayerBb: projected.forcedContributionPerPlayerBb,
+    totalForcedContributionBb: projected.totalForcedContributionBb,
+  }, {
     schemaVersion: 'decision-context/v1',
     tableSize: 2,
     opponentCount: 1,
@@ -150,6 +179,19 @@ test('HU unopened PokerState projects the exact DecisionContext v1 shape', () =>
     forcedContributionPerPlayerBb: 0,
     totalForcedContributionBb: 0,
   });
+  assert.equal(projected.contractVersion, 'decision-context/v1.1');
+  assert.equal(projected.startingStackBb, 100);
+  assert.equal(projected.heroStackBb, 99.5);
+  assert.equal(projected.effectiveStackBb, 99);
+  assert.deepEqual(projected.effectiveStackByOpponent, [{
+    position: 'BB', opponentStackBb: 99, effectiveStackBb: 99,
+  }]);
+  assert.equal(projected.currentPotBb, 1.5);
+  assert.equal(projected.canRaise, true);
+  assert.equal(projected.minRaiseToBb, 2);
+  assert.equal(projected.maxRaiseToBb, 100);
+  assert.equal(projected.allInToBb, 100);
+  assert.equal(projected.derivation.source, 'canonical_hand');
   assertLegacyParity(projected);
 });
 

@@ -535,10 +535,15 @@ test('002B direct generation remains deterministic with additive StrategyResult 
   assert.equal(result.exercise.pokerState.schemaVersion, 'poker-state/v1');
   assert.equal(result.exercise.strategyResult.sourceVersion, 'riverline-postflop-heuristic/v2');
   assert.equal(result.exercise.strategyResult.contextCoverage.kind, 'generalized');
+  assert.equal(result.exercise.decisionContext.contractVersion, 'decision-context/v1.1');
+  assert.equal(
+    result.exercise.decisionContext.currentPotBb,
+    result.exercise.pokerState.potMilliBb / 1000,
+  );
   assert.equal(Object.hasOwn(result.exercise.generationMetadata, 'scenarioRequest'), false);
   assert.equal(
     createHash('sha256').update(JSON.stringify(result)).digest('hex'),
-    '7771bdb89ebbd1e1e0a793280be5842d6ee607f17cc300ebd95acab53bb04892',
+    '3e7f35f55855f83558c69d14d096c15326e6d96c1222d63749acb9bc4d1321b7',
   );
 });
 

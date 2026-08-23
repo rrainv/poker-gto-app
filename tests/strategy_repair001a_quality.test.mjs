@@ -49,6 +49,23 @@ test('STRATEGY-REPAIR-001A preserves a compact calibration corpus without solved
     exactSolverAgreement: false,
     safeForFrequencyRetuning: false,
   });
+  assert.equal(snapshot.decisionContext.schemaVersion, 'riverline-decision-context-diagnostics/v1');
+  assert.equal(snapshot.decisionContext.fixtures.length, 11);
+  assert.deepEqual(snapshot.decisionContext.potFieldSemantics, {
+    potBb: 'legacy_compatibility_projection',
+    currentPotBb: 'v1.1_current_pot_fact',
+  });
+  const contextFixture = (id) => snapshot.decisionContext.fixtures.find((entry) => entry.id === id);
+  assert.equal(contextFixture('postflop_hu_ip').facts.positionRelation, 'in_position');
+  assert.equal(contextFixture('postflop_hu_oop').facts.positionRelation, 'out_of_position');
+  assert.equal(contextFixture('postflop_multiway_mixed').facts.positionRelation, 'mixed');
+  assert.equal(contextFixture('limped_pot').facts.priorActionSummary.limperCount, 2);
+  assert.equal(contextFixture('short_stack_legal_all_in').facts.minRaiseToBb, null);
+  assert.equal(contextFixture('short_stack_legal_all_in').facts.maxRaiseToBb, 1.5);
+  assert.equal(contextFixture('scenario_missing_exact_call_price').facts.callAmountBb, null);
+  assert.equal(contextFixture('scenario_missing_exact_call_price').facts.potBb, 200);
+  assert.equal(contextFixture('scenario_missing_exact_call_price').facts.currentPotBb, 275);
+  assert.equal(contextFixture('canonical_hand_exact_call_price').facts.callAmountBb, 2);
   assert.equal(
     snapshot.preflop.configurations.length,
     REPRESENTATIVE_PREFLOP_CONFIGURATIONS.length,

@@ -70,7 +70,7 @@ Hand Mode:
 
 Do not merge their state or silently fall back across modes.
 
-## 5. DecisionContext v1
+## 5. DecisionContext v1 / additive v1.1 contract
 
 Key semantics:
 
@@ -80,7 +80,21 @@ Key semantics:
 - `tableSize`: seated players
 - `opponentCount`: exact live opponents for canonical state; `null` in Scenario when unknown
 
+Extended contexts retain `schemaVersion: decision-context/v1` and add
+`contractVersion: decision-context/v1.1`. They expose an unclamped exact
+`currentPotBb`, explicit starting/live and
+bounded per-opponent effective stacks, postflop `in_position` /
+`out_of_position` / `mixed` relation, canonical legal aggressive-to bounds,
+bounded semantic prior-action facts, and compact derivation provenance. Scenario
+keeps facts unavailable when it lacks canonical seat, stack, legality, price, or
+history evidence. Existing providers remain valid and may ignore additive fields.
+
+See `DECISION_CONTEXT_SPEC.md` for precise field and evidence semantics.
+
 Pot-odds or commitment math must use `callAmountBb`, not `facingSizeBb`.
+Current-pot/SPR logic must use `currentPotBb`, not compatibility `potBb`.
+Live-stack logic must use `heroStackBb` and the appropriate effective-stack
+fact, not compatibility `stackBb`.
 
 Additive fields may remain in v1 only when backward-compatible and explicitly documented/tested. Breaking changes require an approved schema migration.
 

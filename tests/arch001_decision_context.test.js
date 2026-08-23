@@ -23,7 +23,27 @@ function snapshot(overrides = {}) {
 }
 
 test('DecisionContext v1 derives a Home unopened spot', () => {
-  assert.deepEqual(qa.deriveDecisionContext(snapshot()), {
+  const context = qa.deriveDecisionContext(snapshot());
+  assert.deepEqual({
+    schemaVersion: context.schemaVersion,
+    tableSize: context.tableSize,
+    opponentCount: context.opponentCount,
+    heroPosition: context.heroPosition,
+    street: context.street,
+    heroCards: context.heroCards,
+    board: context.board,
+    deadCards: context.deadCards,
+    stackBb: context.stackBb,
+    stackMode: context.stackMode,
+    potBb: context.potBb,
+    lastAction: context.lastAction,
+    facingSizeBb: context.facingSizeBb,
+    callAmountBb: context.callAmountBb,
+    heroStreetContributionBb: context.heroStreetContributionBb,
+    rakeMode: context.rakeMode,
+    forcedContributionPerPlayerBb: context.forcedContributionPerPlayerBb,
+    totalForcedContributionBb: context.totalForcedContributionBb,
+  }, {
     schemaVersion: 'decision-context/v1',
     tableSize: 6,
     opponentCount: null,
@@ -43,6 +63,15 @@ test('DecisionContext v1 derives a Home unopened spot', () => {
     forcedContributionPerPlayerBb: 0,
     totalForcedContributionBb: 0,
   });
+  assert.equal(context.contractVersion, 'decision-context/v1.1');
+  assert.equal(context.startingStackBb, 100);
+  assert.equal(context.heroStackBb, null);
+  assert.equal(context.effectiveStackBb, null);
+  assert.deepEqual(context.effectiveStackByOpponent, []);
+  assert.equal(context.positionRelation, 'not_applicable');
+  assert.equal(context.currentPotBb, 1.5);
+  assert.equal(context.canRaise, null);
+  assert.equal(context.derivation.source, 'scenario');
 });
 
 test('DecisionContext v1 derives a ClubGG unopened spot', () => {

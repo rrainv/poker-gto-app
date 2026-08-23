@@ -990,6 +990,8 @@ function normalizeFacingSize(lastAction, facingSize = 0) {
 
 const CLUBGG_FORCED_CONTRIBUTION_PER_PLAYER_BB = 0.1;
 const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
+const DECISION_CONTEXT_CONTRACT_VERSION = 'decision-context/v1.1';
+const DECISION_CONTEXT_DERIVATION_SCHEMA_VERSION = 'decision-context-derivation/v1';
 
 function strategyAccountingContext(rakeMode, seatedPlayerCount) {
 
@@ -1259,6 +1261,104 @@ function syncCanonicalDecisionDisplay(decisionContext) {
   renderCanonicalDecisionCards('dead', decisionContext.deadCards, Math.min(52, decisionContext.deadCards.length + 1));
   renderPlaybookCardStateSummary(remainingCards('hand'));
   return decisionContext;
+}
+
+function coreDecisionDerivationEvent(field, quality, code, value, rawValue) {
+  const event = { field, quality, code };
+  if (rawValue !== undefined && (typeof rawValue !== 'number' || Number.isFinite(rawValue))) {
+    event.rawValue = rawValue;
+  }
+  if (value !== undefined) event.value = value;
+  return event;
+}
+
+function coreDecisionUnavailableField(field, code, value = null) {
+  return coreDecisionDerivationEvent(field, 'unavailable', code, value);
+}
+
+function coreNormalizedDecisionNumber(value, fallback, min, max, field, events, integer = false) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    events.push(coreDecisionDerivationEvent(
+      field, 'defaulted', 'non_finite_default', fallback, value
+    ));
+    return fallback;
+  }
+  const clamped = normalizedDecisionNumber(numeric, fallback, min, max);
+  if (clamped !== numeric) {
+    events.push(coreDecisionDerivationEvent(
+      field, 'clamped', 'supported_range_clamp', clamped, numeric
+    ));
+  }
+  const normalized = integer ? Math.trunc(clamped) : clamped;
+  if (normalized !== clamped) {
+    events.push(coreDecisionDerivationEvent(
+      field, 'normalized', 'integer_truncation', normalized, clamped
+    ));
+  }
+  return normalized;
+}
+
+function coreScenarioCurrentPotBb(value, events) {
+  if (value === undefined || value === null || value === '') {
+    events.push(coreDecisionUnavailableField(
+      'currentPotBb', 'scenario_current_pot_unavailable'
+    ));
+    return null;
+  }
+  const numeric = typeof value === 'number'
+    ? value
+    : typeof value === 'string' ? Number(value) : Number.NaN;
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    events.push(coreDecisionDerivationEvent(
+      'currentPotBb', 'unavailable', 'scenario_current_pot_invalid', null, value
+    ));
+    return null;
+  }
+  events.push(coreDecisionDerivationEvent(
+    'currentPotBb',
+    typeof value === 'number' ? 'exact' : 'normalized',
+    typeof value === 'number'
+      ? 'scenario_current_pot_explicit'
+      : 'scenario_current_pot_numeric_parse',
+    numeric,
+    typeof value === 'number' ? undefined : value
+  ));
+  return numeric;
+}
+
+function coreScenarioPriorActionSummary(street, lastAction) {
+  const action = String(lastAction || '').toLowerCase();
+  const actionFamilies = {
+    unopened: 'none', check: 'check', bet: 'bet', raise: 'raise',
+    '3bet': 'raise', '4bet': 'raise', limp: 'limp', call: 'call'
+  };
+  const lastActionFamily = actionFamilies[action] || 'unknown';
+  let aggressionFamily = 'none';
+  let aggressionCount = 0;
+  if (street === 'preflop') {
+    if (action === 'raise') { aggressionFamily = 'open'; aggressionCount = 1; }
+    else if (action === '3bet') { aggressionFamily = 'three_bet'; aggressionCount = 2; }
+    else if (action === '4bet') { aggressionFamily = 'four_bet_or_more'; aggressionCount = null; }
+    else if (lastActionFamily === 'unknown') { aggressionFamily = 'unknown'; aggressionCount = null; }
+  } else if (action === 'bet') {
+    aggressionFamily = 'bet'; aggressionCount = 1;
+  } else if (action === 'raise') {
+    aggressionFamily = 'raise'; aggressionCount = 2;
+  } else if (action === '3bet' || action === '4bet') {
+    aggressionFamily = 'raise'; aggressionCount = null;
+  } else if (lastActionFamily === 'unknown') {
+    aggressionFamily = 'unknown'; aggressionCount = null;
+  }
+  return {
+    lastActionFamily,
+    lastActorPosition: null,
+    facingActionFamily: actionFamilies[action] || 'unknown',
+    aggressionFamily,
+    aggressionCount,
+    limperCount: street === 'preflop' && action === 'unopened' ? 0 : null,
+    aggressorPosition: null
+  };
 }
 
 function renderUnavailableStrategy(resolution) {
@@ -2590,7 +2690,7 @@ function scenarioInputFromHeroDecisionRecord(record) {
     deadCards: [...context.deadCards],
     stackBb: context.stackBb,
     stackMode: context.stackMode,
-    potBb: context.potBb,
+    potBb: context.currentPotBb ?? context.potBb,
     lastAction: context.lastAction,
     lastActionLabel: null,
     facingSizeBb: context.facingSizeBb
@@ -2702,27 +2802,123 @@ function bindCanonicalHandWorkspace() {
 
 function deriveDecisionContext(snapshot = {}) {
 
-  const tableSize = Math.trunc(normalizedDecisionNumber(snapshot.tableSize, 6, 2, 10));
+  const derivationEvents = [];
+  const tableSize = coreNormalizedDecisionNumber(
+    snapshot.tableSize, 6, 2, 10, 'tableSize', derivationEvents, true
+  );
   const heroPosition = typeof snapshot.heroPosition === 'string' && snapshot.heroPosition
     ? snapshot.heroPosition
     : 'BTN';
+  if (heroPosition !== snapshot.heroPosition) {
+    derivationEvents.push(coreDecisionDerivationEvent(
+      'heroPosition', 'defaulted', 'missing_position_default', heroPosition, snapshot.heroPosition
+    ));
+  }
   const heroCards = normalizedDecisionCards(snapshot.heroCards);
   const board = normalizedDecisionCards(snapshot.board);
   const deadCards = normalizedDecisionCards(snapshot.deadCards);
-  const stackBb = normalizedDecisionNumber(snapshot.stackBb, 100, 10, 500);
+  [
+    ['heroCards', heroCards], ['board', board], ['deadCards', deadCards]
+  ].forEach(([field, value]) => derivationEvents.push(coreDecisionDerivationEvent(
+    field, 'normalized', 'scenario_card_array_projection', value
+  )));
+  const stackEventStart = derivationEvents.length;
+  const stackBb = coreNormalizedDecisionNumber(
+    snapshot.stackBb, 100, 10, 500, 'stackBb', derivationEvents
+  );
+  for (const event of derivationEvents.slice(stackEventStart)) {
+    derivationEvents.push({
+      ...event,
+      field: 'startingStackBb',
+      code: `scenario_configured_stack_${event.code}`
+    });
+  }
   const stackMode = typeof snapshot.stackMode === 'string' && snapshot.stackMode
     ? snapshot.stackMode
     : 'hero';
-  const potBb = normalizedDecisionNumber(snapshot.potBb, 1.5, 0.5, 200);
+  if (stackMode !== snapshot.stackMode) {
+    derivationEvents.push(coreDecisionDerivationEvent(
+      'stackMode', 'defaulted', 'missing_stack_mode_default', stackMode, snapshot.stackMode
+    ));
+  }
+  const currentPotBb = coreScenarioCurrentPotBb(snapshot.potBb, derivationEvents);
+  const potBb = coreNormalizedDecisionNumber(
+    snapshot.potBb, 1.5, 0.5, 200, 'potBb', derivationEvents
+  );
   const lastAction = typeof snapshot.lastAction === 'string' && snapshot.lastAction
     ? snapshot.lastAction
     : 'unopened';
-  const rawFacingSizeBb = normalizedDecisionNumber(snapshot.facingSizeBb, 0, 0, 100);
+  if (lastAction !== snapshot.lastAction) {
+    derivationEvents.push(coreDecisionDerivationEvent(
+      'lastAction', 'defaulted', 'missing_prior_action_default', lastAction, snapshot.lastAction
+    ));
+  }
+  const street = currentStreet(board);
+  derivationEvents.push(coreDecisionDerivationEvent(
+    'street', 'normalized', 'derived_from_board_count', street, snapshot.street
+  ));
+  const rawFacingSizeBb = coreNormalizedDecisionNumber(
+    snapshot.facingSizeBb, 0, 0, 100, 'facingSizeBb', derivationEvents
+  );
   const facingSizeBb = normalizeFacingSize(lastAction, rawFacingSizeBb);
+  if (facingSizeBb !== rawFacingSizeBb) {
+    derivationEvents.push(coreDecisionDerivationEvent(
+      'facingSizeBb', 'normalized', 'unopened_facing_size_zeroed', facingSizeBb, rawFacingSizeBb
+    ));
+  }
   // Scenario mode deliberately does not reconstruct a legal betting history.
   // Only an explicit check, or the BB's unopened check option, proves a free price.
   const callAmountBb = (lastAction === 'check'
     || (lastAction === 'unopened' && heroPosition === 'BB')) ? 0 : null;
+  derivationEvents.push(callAmountBb === null
+    ? coreDecisionUnavailableField('callAmountBb', 'scenario_exact_call_price_unavailable')
+    : coreDecisionDerivationEvent(
+      'callAmountBb', 'normalized', 'scenario_free_price_category', 0
+    ));
+  const priorActionSummary = coreScenarioPriorActionSummary(street, lastAction);
+  derivationEvents.push(
+    coreDecisionUnavailableField('opponentCount', 'scenario_live_opponents_unavailable'),
+    coreDecisionUnavailableField('heroStackBb', 'scenario_live_stack_unavailable'),
+    coreDecisionUnavailableField('effectiveStackBb', 'scenario_effective_stack_unavailable'),
+    coreDecisionUnavailableField(
+      'effectiveStackByOpponent', 'scenario_opponent_stacks_unavailable', []
+    ),
+    coreDecisionUnavailableField(
+      'heroStreetContributionBb', 'scenario_street_contribution_unavailable'
+    ),
+    coreDecisionUnavailableField('canRaise', 'scenario_legal_actions_unavailable'),
+    coreDecisionUnavailableField('minRaiseToBb', 'scenario_legal_actions_unavailable'),
+    coreDecisionUnavailableField('maxRaiseToBb', 'scenario_legal_actions_unavailable'),
+    coreDecisionUnavailableField('allInToBb', 'scenario_live_stack_unavailable'),
+    coreDecisionUnavailableField(
+      'priorActionSummary.lastActorPosition', 'scenario_actor_position_unavailable'
+    ),
+    coreDecisionUnavailableField(
+      'priorActionSummary.aggressorPosition', 'scenario_aggressor_position_unavailable'
+    )
+  );
+  if (priorActionSummary.aggressionCount === null) {
+    derivationEvents.push(coreDecisionUnavailableField(
+      'priorActionSummary.aggressionCount', 'scenario_exact_aggression_count_unavailable'
+    ));
+  }
+  if (priorActionSummary.limperCount === null) {
+    derivationEvents.push(coreDecisionUnavailableField(
+      'priorActionSummary.limperCount', 'scenario_limper_count_unavailable'
+    ));
+  }
+  const positionRelation = street === 'preflop' ? 'not_applicable' : 'unknown';
+  const aggressorPositionRelation = street === 'preflop' ? 'not_applicable' : 'unknown';
+  if (positionRelation === 'unknown') {
+    derivationEvents.push(
+      coreDecisionUnavailableField(
+        'positionRelation', 'scenario_seat_order_unavailable', 'unknown'
+      ),
+      coreDecisionUnavailableField(
+        'aggressorPositionRelation', 'scenario_seat_order_unavailable', 'unknown'
+      )
+    );
+  }
   const supportedRakeModes = ['off', 'fixed'];
   if (!supportedRakeModes.includes(snapshot.rakeMode)) {
     throw new RangeError(`Unsupported legacy Scenario rakeMode: ${String(snapshot.rakeMode)}`);
@@ -2732,24 +2928,43 @@ function deriveDecisionContext(snapshot = {}) {
 
   return {
     schemaVersion: DECISION_CONTEXT_SCHEMA_VERSION,
+    contractVersion: DECISION_CONTEXT_CONTRACT_VERSION,
     tableSize,
     // Scenario mode knows seated players only; it must not claim an exact live count.
     opponentCount: null,
     heroPosition,
-    street: currentStreet(board),
+    street,
     heroCards,
     board,
     deadCards,
     stackBb,
     stackMode,
+    startingStackBb: stackBb,
+    heroStackBb: null,
+    effectiveStackBb: null,
+    effectiveStackByOpponent: [],
+    positionRelation,
+    aggressorPositionRelation,
+    currentPotBb,
     potBb,
     lastAction,
+    priorActionSummary,
     facingSizeBb,
     callAmountBb,
     heroStreetContributionBb: null,
+    canRaise: null,
+    minRaiseToBb: null,
+    maxRaiseToBb: null,
+    allInToBb: null,
     rakeMode: accounting.rakeMode,
     forcedContributionPerPlayerBb: accounting.forcedContributionPerPlayerBb,
-    totalForcedContributionBb: accounting.totalForcedContributionBb
+    totalForcedContributionBb: accounting.totalForcedContributionBb,
+    derivation: {
+      schemaVersion: DECISION_CONTEXT_DERIVATION_SCHEMA_VERSION,
+      source: 'scenario',
+      defaultQuality: 'exact',
+      events: derivationEvents
+    }
   };
 
 }
