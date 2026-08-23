@@ -64,10 +64,10 @@ test('Hand Mode uses a compact post-start setup and highlights the current canon
   assert.match(density, /\.playbook-hand-workspace \.is-current-hand-step/);
 });
 
-test('table seats use one centered compact player-unit anchor for cards and identity', () => {
-  assert.match(table, /class="table-seat table-player-unit\$\{[^}]+\}"[^>]*data-card-anchor="center"/);
-  assert.match(table, /class="table-hole-cards" transform="translate\(0, -94\)"/);
-  assert.match(table, /class="table-seat-surface" x="-50" y="-34" width="100" height="70"/);
+test('table seats use one integrated adaptive player-unit anchor for cards and identity', () => {
+  assert.match(table, /class="table-seat table-player-unit\$\{[^}]+\}"[^>]*data-card-anchor="integrated"/);
+  assert.match(table, /class="table-hole-cards" transform="translate\(0, \$\{holeCardY\}\) scale\(\$\{cardScale\}\)"/);
+  assert.match(table, /class="table-seat-surface"[^>]*width="\$\{unit\.width\}" height="\$\{unit\.height\}"/);
   assert.match(cardPresentation, /const step = isCommunity \? 50 : 45/);
   assert.match(cardPresentation, /const finalX = \(\(index - \(\(totalCards - 1\) \/ 2\)\) \* step\) - \(geometry\.width \/ 2\)/);
   assert.match(cardPresentation, /tableCardBackSvgMarkup[\s\S]*const finalX = \(\(index - 0\.5\) \* 25\) - \(geometry\.width \/ 2\)/);

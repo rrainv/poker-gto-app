@@ -83,10 +83,10 @@ test('Daylight and Midnight tables keep the semantic felt-driven token grammar',
   assert.match(rootPoker, /--poker-table-shadow-opacity: 0\.28/);
 });
 
-test('table geometry and card, chip, seat, dealer, and contribution hooks are unchanged and readable', () => {
-  assert.match(table, /class="table-rail" x="50" y="50" width="700" height="400" rx="200" ry="200"/);
-  assert.match(table, /class="table-surface" x="70" y="70" width="660" height="360" rx="180" ry="180"/);
-  assert.match(table, /class="table-betting-line" x="100" y="100" width="600" height="300" rx="150" ry="150"/);
+test('table physicality and card, chip, seat, dealer, and contribution hooks are readable', () => {
+  assert.match(table, /class="table-rail table-rail--outer" x="90" y="98" width="820" height="416" rx="208" ry="208"/);
+  assert.match(table, /class="table-surface" x="114" y="122" width="772" height="368" rx="184" ry="184"/);
+  assert.match(table, /class="table-betting-line" x="146" y="154" width="708" height="304" rx="152" ry="152"/);
   assert.match(table, /class="table-shadow-effect" dx="0" dy="7" stdDeviation="8" flood-opacity="0\.28"/);
   for (const hook of ['table-seat', 'table-hole-cards', 'table-contribution', 'table-pot', 'table-dealer-button']) {
     assert.match(table, new RegExp(hook));

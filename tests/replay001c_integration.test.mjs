@@ -175,11 +175,12 @@ test('replay cues are perceptible, transition-scoped, and still restrained', () 
   assert.doesNotMatch(css.slice(css.indexOf('/* REPLAY-001C:')), /infinite|alternate|rotate|bounce/i);
 });
 
-test('one compact centered seat/card anchor supports every table size without HU offsets', () => {
-  assert.match(renderer, /data-card-anchor="center"/);
+test('one integrated seat/card unit supports deliberate geometry for every table size', () => {
+  assert.match(renderer, /data-card-anchor="integrated"/);
+  assert.match(renderer, /TABLE_FALLBACK_ANCHORS = Object\.freeze/);
   assert.match(renderer, /seatsLayer\.dataset\.tableSize = String\(activePlayers\)/);
   assert.match(renderer, /for \(let i = 0; i < activePlayers; i\+\+\)/);
-  assert.match(renderer, /width="100" height="70"/);
+  assert.match(renderer, /width="\$\{unit\.width\}" height="\$\{unit\.height\}"/);
   const cardCenters = [0, 1].map((index) => {
     const markup = tableCardSvgMarkup({ rank: 'A', suit: 's', index, totalCards: 2 });
     const finalX = Number(markup.match(/--card-final-x:([-\d.]+)px/)?.[1]);

@@ -78,7 +78,7 @@ test('classic logic renders normalized Replay projection facts and Analysis keep
 test('the existing Hand history surface is upgraded once and Scenario Mode stays inactive', () => {
   assert.equal((html.match(/id="handHistorySection"/g) || []).length, 1);
   assert.equal((html.match(/id="handActionHistory"/g) || []).length, 1);
-  assert.match(html, /id="handActionHistory"[^>]*class="replay-timeline"/);
+  assert.match(html, /id="handActionHistory"[^>]*class="replay-timeline(?:\s|")/);
   assert.match(logic, /function renderCanonicalReplayTimeline\(\)[\s\S]*?if \(!isHandMode\(\)\) \{[\s\S]*?root\.replaceChildren\(\)/);
   assert.match(logic, /if \(event\.detail\?\.operation !== 'mode' && isHandMode\(\)\)/);
   assert.doesNotMatch(modelSource, /scenarioInput|priorAction|DecisionContext|StrategyProvider/);
@@ -128,7 +128,7 @@ test('action families use semantic accents while text stays high contrast', () =
   assert.match(css, /\.replay-action-entry\.is-hero \.replay-actor-name[^{]*\{[^}]*font-weight:\s*900[^}]*text-decoration:\s*underline/);
 });
 
-test('timeline accessibility has no fake controls or empty numbered action row', () => {
+test('timeline accessibility uses explicit direct-seek controls without an empty numbered action row', () => {
   const renderer = sourceBetween(
     logic,
     'function replayActorLabel(',
@@ -145,7 +145,10 @@ test('timeline accessibility has no fake controls or empty numbered action row',
   assert.match(renderer, /actionList\.setAttribute\('aria-labelledby', heading\.id\)/);
   assert.match(renderer, /replay-empty-state/);
   assert.doesNotMatch(historySurface, /<li/);
-  assert.doesNotMatch(renderer, /tabIndex|createElement\('button'\)|addEventListener/);
+  assert.doesNotMatch(renderer, /tabIndex/);
+  assert.match(renderer, /createElement\('button'\)/);
+  assert.match(renderer, /addEventListener\('click', \(\) => seekCanonicalReplayFrame/);
+  assert.match(renderer, /selectReplayFrame/);
   assert.equal((historySurface.match(/id="handResolveShowdownButton"/g) || []).length, 1);
   assert.match(historySurface, /class="replay-resolution-actions"[\s\S]*id="handResolveShowdownButton"/);
 });

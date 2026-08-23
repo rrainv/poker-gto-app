@@ -13,6 +13,12 @@ import {
   createReplayProjectionController,
 } from './replay-projection-controller.mjs';
 import { createReplayPlaybackController } from './replay-playback-controller.mjs';
+import {
+  TABLE_INTERACTIONS,
+  TABLE_PROJECTIONS,
+  TABLE_VISUAL_STATES,
+  createTablePresentation,
+} from './table-presentation.mjs';
 
 export const PLAYBOOK_STATE_CHANGE_EVENT = 'riverline:playbook-state-change';
 
@@ -41,6 +47,16 @@ export function installPlaybookStateSourceBridge(browserWindow, {
   let savedHandViewer = null;
 
   const activeReplayController = () => (savedHandViewer ? savedReplayController : replayController);
+
+  const tableVisualState = (tablePresence, replayProjection) => {
+    if (replayProjection?.readOnly) return TABLE_VISUAL_STATES.POST_HAND_REVIEW;
+    if (!tablePresence || tablePresence.empty) return TABLE_VISUAL_STATES.SETUP;
+    if (tablePresence.status === 'terminal') return TABLE_VISUAL_STATES.HAND_COMPLETE;
+    if (tablePresence.status === 'active') return TABLE_VISUAL_STATES.LIVE_DECISION;
+    if (tablePresence.status === 'awaiting_board') return TABLE_VISUAL_STATES.STREET_TRANSITION;
+    if (tablePresence.status === 'showdown') return TABLE_VISUAL_STATES.STREET_TRANSITION;
+    return TABLE_VISUAL_STATES.SETUP;
+  };
   const closeSavedHandViewer = () => {
     savedHandViewer = null;
     savedReplayController.clear();
@@ -135,6 +151,42 @@ export function installPlaybookStateSourceBridge(browserWindow, {
         : projection;
     },
 
+    createTablePresentationViewModel({
+      projection: requestedProjection = null,
+      visualState: requestedVisualState = null,
+      interaction: requestedInteraction = null,
+      submissionLocked = false,
+    } = {}) {
+      if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
+      const replayProjection = activeReplayController().getProjection();
+      const tablePresence = replayProjection.tablePresence;
+      const visualState = requestedVisualState
+        ?? tableVisualState(tablePresence, replayProjection);
+      const projection = requestedProjection
+        ?? ((replayProjection.readOnly || visualState === TABLE_VISUAL_STATES.HAND_COMPLETE)
+          ? TABLE_PROJECTIONS.REVIEW
+          : TABLE_PROJECTIONS.PLAY);
+      const interaction = requestedInteraction
+        ?? (replayProjection.readOnly
+          ? TABLE_INTERACTIONS.REPLAY
+          : (visualState === TABLE_VISUAL_STATES.LIVE_DECISION
+            ? TABLE_INTERACTIONS.DECISION
+            : TABLE_INTERACTIONS.PASSIVE));
+      const liveState = savedHandViewer ? null : canonicalController.getState();
+      return createTablePresentation({
+        projection,
+        visualState,
+        interaction,
+        tablePresence,
+        timeline: replayProjection.timeline,
+        legalActionSpec: interaction === TABLE_INTERACTIONS.DECISION
+          ? canonicalController.getLegalActions()
+          : null,
+        chipUnitMilliBb: liveState?.game?.chipUnitMilliBb ?? null,
+        submissionLocked,
+      });
+    },
+
     createCanonicalHandReplaySource() {
       return modeController.getMode() === PLAYBOOK_MODES.HAND && !savedHandViewer
         ? canonicalController.createCanonicalHandReplaySource()
@@ -207,6 +259,12 @@ export function installPlaybookStateSourceBridge(browserWindow, {
       if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
       playbackController.pause();
       return publish('replay_next', activeReplayController().next());
+    },
+
+    selectReplayFrame(frameIndex) {
+      if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
+      playbackController.pause();
+      return publish('replay_select_frame', activeReplayController().selectFrame(frameIndex));
     },
 
     returnReplayToLive() {

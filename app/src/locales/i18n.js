@@ -2497,6 +2497,41 @@ Object.assign(trainingWorkspaceTranslations.he, {
   "The canonical Hand is complete and ready for review.": "היד הקנונית הושלמה ומוכנה לסקירה.",
   "The Hero action was not continued without a valid StrategyProvider evaluation.": "היד לא המשיכה ללא הערכת StrategyProvider תקינה לפעולה של Hero."
 });
+const tablePresenceTranslations = {
+  en: {
+    "Hero decision context": "Hero decision context",
+    "To call": "To call",
+    "Exact amount-to range": "Exact amount-to range",
+    "Apply amount-to": "Apply amount-to",
+    "Hero decisions": "Hero decisions",
+    "Review hand": "Review hand",
+    "Full Hand timeline": "Full Hand timeline",
+    "Review replay frame {current}": "Review replay frame {current}"
+  },
+  ru: {
+    "Hero decision context": "Контекст решения Hero",
+    "To call": "Для колла",
+    "Exact amount-to range": "Точная итоговая сумма",
+    "Apply amount-to": "Применить итоговую сумму",
+    "Hero decisions": "Решения Hero",
+    "Review hand": "Разобрать раздачу",
+    "Full Hand timeline": "Хронология полной раздачи",
+    "Review replay frame {current}": "Перейти к кадру повтора {current}"
+  },
+  he: {
+    "Hero decision context": "הקשר ההחלטה של Hero",
+    "To call": "להשוואה",
+    "Exact amount-to range": "טווח סכום כולל מדויק",
+    "Apply amount-to": "החלת הסכום הכולל",
+    "Hero decisions": "החלטות Hero",
+    "Review hand": "סקירת היד",
+    "Full Hand timeline": "ציר הזמן של היד המלאה",
+    "Review replay frame {current}": "מעבר לפריים החזרה {current}"
+  }
+};
+Object.entries(tablePresenceTranslations).forEach(([language, entries]) => {
+  Object.assign(trainingWorkspaceTranslations[language], entries);
+});
 Object.entries(trainingWorkspaceTranslations).forEach(([language, entries]) => {
   Object.assign(appTranslations[language], entries);
 });

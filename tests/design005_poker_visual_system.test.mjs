@@ -132,12 +132,14 @@ test('the poker table retains seat mapping and adds semantic presentation states
   assert.match(table, /classList\.toggle\('is-folded'/);
   assert.match(table, /classList\.toggle\('is-all-in'/);
   assert.match(table, /dealer\.toggleAttribute\('hidden', !isDealer\)/);
-  assert.match(table, /Math\.PI \/ 2/);
+  assert.match(table, /TABLE_FALLBACK_ANCHORS = Object\.freeze/);
+  assert.match(table, /presentation\?\.geometry\?\.playerUnit/);
+  assert.doesNotMatch(table, /Math\.(?:sin|cos)\(/);
 });
 
 test('table markup fixes the invalid height attribute and remains presentation-only', () => {
   assert.doesNotMatch(table, /height="auto"/);
-  assert.match(table, /viewBox="0 -80 800 600" width="100%"/);
+  assert.match(table, /viewBox="0 0 1000 650" width="100%"/);
   assert.match(table, /role="img" aria-labelledby="poker-table-title"/);
   assert.match(table, /Presentation-only state/);
   assert.doesNotMatch(table, /applyAction|legalActions|PokerState|DecisionContext|calculateEquity/);

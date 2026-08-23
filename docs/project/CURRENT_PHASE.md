@@ -1,6 +1,10 @@
 # Current Riverline phase
 
+<<<<<<< Updated upstream
 Last refreshed: August 23, 2026 (`ROADMAP-SYNC-003`, current through `PREFLOP-CALIBRATION-001`).
+=======
+Last refreshed: August 23, 2026 (`TABLE-PRESENCE-002` accepted implementation checkpoint).
+>>>>>>> Stashed changes
 
 Code, tests, accepted ticket reports, manual QA, and explicit product decisions override this snapshot. `PRODUCT_BACKLOG.md` preserves detailed future capability; subsystem specs remain authoritative for implementation semantics.
 
@@ -22,6 +26,7 @@ Code, tests, accepted ticket reports, manual QA, and explicit product decisions 
    - ADOPT / ADAPT / DIFFERENTIATE / REJECT;
    - implementation-grade scope for table/full-hand/post-hand projection.
 
+<<<<<<< Updated upstream
 2. **PLANNED NEXT — `TABLE-PRESENCE-002`**
    - next substantial visible / "fun" build;
    - adaptive HU / sparse / 6-max / full-ring geometry;
@@ -30,6 +35,9 @@ Code, tests, accepted ticket reports, manual QA, and explicit product decisions 
    - cards/chips/contributions/dealer marker;
    - action dock hierarchy;
    - live versus completed-hand composition.
+=======
+The Premium Card System v1 checkpoint remains intact, including its separately tracked Firefox visual acceptance. At the accepted `TABLE-PRESENCE-002` checkpoint, the canonical global Node suite is green at **1,720/1,720 tests**, and `.github/workflows/node-ci.yml` runs the two canonical syntax checks plus the full suite on Node 24 for pushes, pull requests, and manual dispatches.
+>>>>>>> Stashed changes
 
 3. **PLANNED NEXT — `FULL-HAND-REVIEW-001` if 002 does not absorb it**
    - visual hand timeline;
@@ -94,6 +102,7 @@ Do not revive browser/Electron ONNX runtime, remote strategy API, arbitrary solv
 
 Firefox semantic presentation acceptance remains in QA.
 
+<<<<<<< Updated upstream
 ### `STRATEGY-REPAIR-001A` — COMPLETED
 
 - table-size / position structural repair without broad intuition retuning;
@@ -104,6 +113,15 @@ Firefox semantic presentation acceptance remains in QA.
 - permanent strategy-quality calibration corpus established.
 
 ### `DECISION-CONTEXT-001A` — COMPLETED
+=======
+Accepted checkpoints include `TABLE-PRESENCE-001A`, `REPLAY-001A`, `REPLAY-001B` plus chance-event repair, `REPLAY-001C`, `ui-poker-primitives-001`, `TABLE-PRESENCE-REF-001`, and the accepted `TABLE-PRESENCE-002` implementation checkpoint.
+
+`TABLE-PRESENCE-002` adds the pure ephemeral `table-presentation/v1` projection layer over canonical Hand/Table Presence, Replay, and legal-action facts. It supplies deliberate 2–10 player geometry families; stronger Hero, actor, relevant-opponent, live, and folded-seat hierarchy; restrained felt, two-band rail, dealer, pot, and chip physicality; integrated Hero cards and legal-action dock; a canonical-bounds sizing tray; distinct live, completed, Review, and Analyze presentation foundations; a visible canonical Replay timeline; and deterministic `selectFrame(frameIndex)` without mutating the Hand. EN/RU/HE, RTL-stable poker geometry, existing themes, density, layout presets, and Premium Card customization remain intact. Saved Hands still preserve canonical replay sources rather than renderer frames.
+
+Automated acceptance is **1,720/1,720 Node tests** plus a successful bounded installed-Firefox matrix for representative HU, 6-max, 10-max, completed-hand, and Replay states. This checkpoint does not close the independent hands-on Firefox, 4K/zoom, 1024/1366, Graphite/custom-theme, Analysis Focus/Controls First, or broader 3–9-player visual sampling already owned by `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
+
+`FULL-HAND-REVIEW-001` now owns the richer decision-by-decision post-hand learning workflow. It must reuse the accepted table projection, timeline, direct seek, hand-complete composition, and Replay integration rather than rebuilding them. `AUDIO-MOTION-001` follows with restrained, reduced-motion-safe feedback; elaborate casino motion, fake 3D, detailed denominations, and ambience remain outside that bounded ticket unless separately approved.
+>>>>>>> Stashed changes
 
 DecisionContext v1.1-compatible facts now include:
 
@@ -213,12 +231,28 @@ Implemented/checkpointed:
 
 Do not add more theme/layout/density/card variants in the active phase. Integrate the new Table Presence with these systems and finish acceptance.
 
+<<<<<<< Updated upstream
 ## Personal Strategy — CHECKPOINTED / INTENTIONALLY INCOMPLETE
 
 Completed through the automated checkpoints for Calibration 002D, Range Builder and Range Teacher.
+=======
+1. **COMPLETED — `TABLE-PRESENCE-REF-001`.** The competitive reference and bounded implementation contract are accepted.
+2. **COMPLETED — `TABLE-PRESENCE-002` accepted implementation checkpoint.** Premium adaptive Hand/Table presentation, Replay timeline/direct seek, legal Hero decision composition, projection foundation, localization, automated coverage, and bounded Firefox evidence are present; remaining visual sampling stays in QA/return-queue ownership.
+3. **ACTIVE NEXT — `FULL-HAND-REVIEW-001`.** Build the richer decision-by-decision post-hand learning workflow over the accepted table, timeline, direct seek, completion, and Replay seams. Do not create another table or hand-history authority.
+4. **PLANNED NEXT — `AUDIO-MOTION-001`.** Add restrained, purposeful feedback with reduced-motion and no-casino constraints after Full Hand Review.
+5. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`.** Reconcile the remaining bounded premium-product acceptance and closeout after Audio/Motion without absorbing unrelated QA debt.
+6. **PLANNED NEXT — trusted bounded reference pack/provider.** Validate narrow reference data and declared capabilities behind `StrategyProvider`; do not promote heuristic labels to solver/GTO truth.
+7. **PLANNED NEXT — Training Memory / re-drill.** Add canonical persistent mistake/review intelligence and targeted re-drilling before Home consumes it.
+8. **PLANNED NEXT — Personal Strategy integration.** Connect the existing evidence authority through declared provider/Training seams without inventing exactness.
+9. **PLANNED NEXT — `HOME-002B` Saved Study Library.** Build full Saved Study discovery and drilldowns over the canonical repository.
+10. **SHELVED FOR LATER — opponent policies/bots.** Resume only after the higher-priority learning and study-library sequence.
+
+Previously checkpointed account, sync, Home, Home Game, Analysis, and Personal Strategy foundations retain their recorded resume points and external QA debt; they do not displace the explicit sequence above. Reassess at every accepted checkpoint.
+>>>>>>> Stashed changes
 
 Locked model:
 
+<<<<<<< Updated upstream
 - Profile is a recognizable poker environment/identity;
 - exactly three user-named modes per profile;
 - dominant quick answer is not implicit 100%;
@@ -227,6 +261,17 @@ Locked model:
 - sparse immutable evidence is durable truth;
 - inference/uncertainty/conflicts are recomputable read model;
 - Matrix/Builder/Teacher consume one evidence authority.
+=======
+- **Training intelligence:** persistent mistake history, Review Mistakes, targeted/similar-spot re-drilling, spaced/adaptive review, expanded filters, saved drill presets, Concept Mastery, session summaries/trends, Home/Replay integration, profile-aware Training, stated-versus-actual behavior, and explicit per-session opt-in for Training evidence.
+- **Range Builder:** combo-level editing, derived Matrix painting, exact overrides, action/frequency painting, partial/unknown support, save/version/compare/export/import, and later approved sharing/forking.
+- **Range Teacher / Profiler:** sparse boundary-seeking questions, uncertain-cell targeting, direct-versus-inferred provenance, correction/confirmation, disagreement drills, and reuse of Personal Strategy plus Range Core.
+- **Compare Spots:** explain changes in position, stack, pot, call/facing size, board, blockers, hand, opponent count, range assumptions, and profile/mode without unsupported causal claims.
+- **Product Lab / UI personalization:** the accepted table foundation and existing layout/density/theme/card systems remain intact; future work is bounded preference refinement, expert workflow, and later deliberate mobile composition rather than another table rebuild. Strategy/study capability remains the priority over endless visual polish.
+- **Solver/reference/model:** bounded trustworthy problems, reproducible validated reference data, datasets worth learning, model/interpolation only after evidence, and validated providers behind StrategyProvider with fallback elsewhere. Never train on heuristic labels and call the result solver/GTO truth; cloud/desktop runs require bounded budget/runtime/stop criteria.
+- **PLO:** a separate future game domain with four-card hands, exactly-two-hole-card evaluation, its own range/Equity/Training/UI and reference pipeline—not a Hold'em toggle.
+- **Gamification:** optional study streaks, daily study, mastery, and goals/progress; no XP/badges/levels merely for engagement.
+- **Mobile/public release:** deliberate mobile composition, packaging/release, hosting, offline/cache policy, privacy/legal review, and telemetry only if explicitly approved.
+>>>>>>> Stashed changes
 
 **Resume at:** `002R` independent review plus remaining Firefox visual matrices.
 
@@ -340,4 +385,8 @@ This branch is not active until Table/Training/reference foundations are mature 
 
 ## Update rule
 
+<<<<<<< Updated upstream
 After an accepted ticket, update this resume map when checkpoint status, active ticket, or priority order changes. Put detailed future capability in `PRODUCT_BACKLOG.md`; keep implementation semantics in subsystem specs; route visual/manual acceptance through `QA_BACKLOG.md`.
+=======
+After an accepted ticket, update this resume map whenever checkpoint status, the active ticket, or priority order changes. The authoritative roadmap/resume/backlog state moves with the accepted checkpoint; do not create a parallel status system. Put detailed future capability in `PRODUCT_BACKLOG.md`, keep implementation contracts in subsystem specs, and route unresolved visual/manual acceptance through `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
+>>>>>>> Stashed changes

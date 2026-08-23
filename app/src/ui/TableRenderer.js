@@ -9,10 +9,21 @@ function tableMessage(key, fallback, values = {}) {
   ));
 }
 
-function tableContributionPoint({ centerX, centerY, seatX, seatY }) {
-  const radialFraction = 0.5;
-  const idealX = centerX + ((seatX - centerX) * radialFraction);
-  const idealY = centerY + ((seatY - centerY) * radialFraction);
+const TABLE_FALLBACK_ANCHORS = Object.freeze({
+  2: [[0.50, 0.91], [0.50, 0.09]],
+  3: [[0.50, 0.91], [0.18, 0.20], [0.82, 0.20]],
+  4: [[0.50, 0.91], [0.12, 0.48], [0.50, 0.09], [0.88, 0.48]],
+  5: [[0.50, 0.91], [0.16, 0.62], [0.22, 0.18], [0.78, 0.18], [0.84, 0.62]],
+  6: [[0.50, 0.91], [0.17, 0.66], [0.17, 0.23], [0.50, 0.09], [0.83, 0.23], [0.83, 0.66]],
+  7: [[0.50, 0.91], [0.22, 0.76], [0.10, 0.45], [0.24, 0.14], [0.76, 0.14], [0.90, 0.45], [0.78, 0.76]],
+  8: [[0.50, 0.91], [0.22, 0.76], [0.10, 0.47], [0.24, 0.15], [0.50, 0.07], [0.76, 0.15], [0.90, 0.47], [0.78, 0.76]],
+  9: [[0.50, 0.91], [0.25, 0.79], [0.09, 0.56], [0.12, 0.27], [0.34, 0.09], [0.66, 0.09], [0.88, 0.27], [0.91, 0.56], [0.75, 0.79]],
+  10: [[0.50, 0.91], [0.26, 0.80], [0.09, 0.59], [0.09, 0.33], [0.27, 0.13], [0.50, 0.06], [0.73, 0.13], [0.91, 0.33], [0.91, 0.59], [0.74, 0.80]],
+});
+
+function tableContributionPoint({ centerX, centerY, seatX, seatY, radialFraction = 0.5 }) {
+  const idealX = seatX + ((centerX - seatX) * radialFraction);
+  const idealY = seatY + ((centerY - seatY) * radialFraction);
   const rayX = centerX - seatX;
   const rayY = centerY - seatY;
   const rayLength = Math.hypot(rayX, rayY);
@@ -43,6 +54,7 @@ class TableRenderer {
     this.container = document.getElementById(containerId);
     if (!this.container) return;
     this.currentActivePlayers = 10;
+    this.currentGeometrySignature = null;
     this.lastState = null;
     this.renderedCardSignatures = new Map();
     this.pendingReplayMotion = null;
@@ -70,7 +82,7 @@ class TableRenderer {
 
   initSVG() {
     this.container.innerHTML = `
-      <svg id="poker-table-svg" class="riverline-poker-table" viewBox="0 -80 800 600" width="100%" role="img" aria-labelledby="poker-table-title" aria-describedby="poker-table-description" preserveAspectRatio="xMidYMid meet">
+      <svg id="poker-table-svg" class="riverline-poker-table" viewBox="0 0 1000 650" width="100%" role="img" aria-labelledby="poker-table-title" aria-describedby="poker-table-description" preserveAspectRatio="xMidYMid meet" dir="ltr">
         <title id="poker-table-title">${tableMessage('table.title', 'Riverline poker table')}</title>
         <desc id="poker-table-description"></desc>
         <defs>
@@ -82,6 +94,9 @@ class TableRenderer {
             <stop class="table-surface-start" offset="0%" />
             <stop class="table-surface-end" offset="100%" />
           </radialGradient>
+          <pattern id="riverlineFeltTexture" width="12" height="12" patternUnits="userSpaceOnUse">
+            <path class="table-felt-texture-mark" d="M1 2 L2 1 M8 10 L10 8" />
+          </pattern>
           <filter id="riverlineTableShadow" x="-20%" y="-20%" width="140%" height="150%">
             <feDropShadow class="table-shadow-effect" dx="0" dy="7" stdDeviation="8" flood-opacity="0.28" />
           </filter>
@@ -90,17 +105,19 @@ class TableRenderer {
           </filter>
         </defs>
 
-        <rect class="table-rail" x="50" y="50" width="700" height="400" rx="200" ry="200" aria-hidden="true" />
-        <rect class="table-surface" x="70" y="70" width="660" height="360" rx="180" ry="180" aria-hidden="true" />
-        <rect class="table-betting-line" x="100" y="100" width="600" height="300" rx="150" ry="150" aria-hidden="true" />
-        <path class="table-riverline-mark" d="M286 176 C342 146 458 146 514 176" aria-hidden="true" />
+        <rect id="table-rail-outer" class="table-rail table-rail--outer" x="90" y="98" width="820" height="416" rx="208" ry="208" aria-hidden="true" />
+        <rect id="table-rail-inner" class="table-rail table-rail--inner" x="102" y="110" width="796" height="392" rx="196" ry="196" aria-hidden="true" />
+        <rect id="table-surface" class="table-surface" x="114" y="122" width="772" height="368" rx="184" ry="184" aria-hidden="true" />
+        <rect id="table-felt-texture" class="table-felt-texture" x="114" y="122" width="772" height="368" rx="184" ry="184" aria-hidden="true" />
+        <rect id="table-betting-line" class="table-betting-line" x="146" y="154" width="708" height="304" rx="152" ry="152" aria-hidden="true" />
+        <path id="table-riverline-mark" class="table-riverline-mark" d="M360 210 C418 180 582 180 640 210" aria-hidden="true" />
 
-        <text id="table-phase-status" class="table-phase-status" x="400" y="194" text-anchor="middle"></text>
+        <text id="table-phase-status" class="table-phase-status" x="500" y="238" text-anchor="middle"></text>
         ${this.pokerTableAmountMarkup({
-          id: 'table-pot', className: 'table-pot', size: 'normal', x: 400, y: 213,
+          id: 'table-pot', className: 'table-pot', size: 'normal', x: 500, y: 286,
           prefix: tableMessage('table.potLabel', 'Pot'), value: '0', unit: 'bb', ariaHidden: true,
         })}
-        <g id="community-cards" class="table-community-cards" transform="translate(400, 240)"></g>
+        <g id="community-cards" class="table-community-cards" transform="translate(500, 330)"></g>
         <g id="table-contributions-layer" class="table-contributions-layer"></g>
         <g id="seats-layer" class="table-seats-layer"></g>
       </svg>
@@ -108,50 +125,61 @@ class TableRenderer {
     this.drawSeats();
   }
 
-  drawSeats(activePlayers = 10) {
+  drawSeats(activePlayers = 10, presentation = null) {
     const seatsLayer = this.container.querySelector('#seats-layer');
     const contributionsLayer = this.container.querySelector('#table-contributions-layer');
     if (!seatsLayer || !contributionsLayer) return;
 
-    const centerX = 400;
-    const centerY = 250;
-    const rx = 340;
-    const ry = 210;
+    const centerX = (presentation?.geometry?.potAnchor?.x ?? 0.5) * 1000;
+    const centerY = (presentation?.geometry?.potAnchor?.y ?? 0.48) * 650;
+    const fallbackAnchors = TABLE_FALLBACK_ANCHORS[activePlayers] || TABLE_FALLBACK_ANCHORS[10];
+    const unit = presentation?.geometry?.playerUnit || { width: activePlayers >= 7 ? 104 : 122, height: activePlayers >= 7 ? 62 : 70 };
+    const cardScale = presentation?.geometry?.cardScale || (activePlayers < 3 ? 1.25 : activePlayers >= 7 ? 0.88 : 1);
+    const cardOverlapUnits = Math.max(8, Math.round(unit.height * (presentation?.geometry?.cardOverlap ?? 0.24)));
     let seatsHtml = '';
     let contributionsHtml = '';
     seatsLayer.dataset.tableSize = String(activePlayers);
     contributionsLayer.dataset.tableSize = String(activePlayers);
 
     for (let i = 0; i < activePlayers; i++) {
-      // Visual index zero is the stable Hero anchor. Turn order is supplied by the model.
-      const angle = (Math.PI / 2) + (i * (2 * Math.PI / activePlayers));
-      const x = Math.round(centerX + rx * Math.cos(angle));
-      const y = Math.round(centerY + ry * Math.sin(angle));
-      // Contributions sit halfway along the shared radial line from seat to pot.
-      // Any card-box correction remains on that line and moves inward only.
-      const contributionPoint = tableContributionPoint({
-        centerX, centerY, seatX: x, seatY: y,
-      });
+      // Visual index zero is the stable Hero anchor. Turn order and the deliberate
+      // 2-10 geometry are supplied by TablePresentation v1.
+      const seatPresentation = presentation?.seats?.find((seat) => seat.visualSeatIndex === i);
+      const normalizedAnchor = seatPresentation?.anchor || {
+        x: fallbackAnchors[i][0], y: fallbackAnchors[i][1],
+      };
+      const x = Math.round(normalizedAnchor.x * 1000);
+      const y = Math.round(normalizedAnchor.y * 650);
+      const suppliedContribution = seatPresentation?.contributionAnchor;
+      const contributionPoint = suppliedContribution
+        ? { x: suppliedContribution.x * 1000, y: suppliedContribution.y * 650 }
+        : tableContributionPoint({ centerX, centerY, seatX: x, seatY: y });
+      const halfWidth = unit.width / 2;
+      const halfHeight = unit.height / 2;
+      const holeCardY = Math.round(-halfHeight - (57 * cardScale) + cardOverlapUnits);
+      const dealerX = Math.round(halfWidth + 12);
+      const actionY = Math.round(halfHeight + 12);
 
       seatsHtml += `
-        <g id="seat-${i}" class="table-seat table-player-unit${i === 0 ? ' is-hero' : ''}" data-seat-index="${i}" data-card-anchor="center" transform="translate(${x}, ${y})">
-          <g id="hole-cards-${i}" class="table-hole-cards" transform="translate(0, -94)" aria-hidden="true">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
+        <g id="seat-${i}" class="table-seat table-player-unit${i === 0 ? ' is-hero' : ''}" data-seat-index="${i}" data-card-anchor="integrated" transform="translate(${x}, ${y})">
+          <g id="hole-cards-${i}" class="table-hole-cards" transform="translate(0, ${holeCardY}) scale(${cardScale})" aria-hidden="true">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
           <g class="table-seat-info">
-            <rect class="table-seat-surface" x="-50" y="-34" width="100" height="70" rx="10" aria-hidden="true" />
-            <path class="table-actor-indicator" d="M-40 -28 H40" aria-hidden="true" />
-            <text class="table-seat-name" x="0" y="-19" text-anchor="middle">${i === 0 ? tableMessage('Hero', 'Hero') : `P${i + 1}`}</text>
-            <text id="seat-position-${i}" class="table-seat-meta table-seat-position" x="0" y="-7" text-anchor="middle"></text>
+            <rect class="table-seat-surface" x="${-halfWidth}" y="${-halfHeight}" width="${unit.width}" height="${unit.height}" rx="12" aria-hidden="true" />
+            <path class="table-actor-indicator" d="M${Math.round(-halfWidth + 10)} ${Math.round(-halfHeight + 7)} H${Math.round(halfWidth - 10)}" aria-hidden="true" />
+            <text class="table-seat-name" x="0" y="${Math.round(-halfHeight + 18)}" text-anchor="middle">${i === 0 ? tableMessage('Hero', 'Hero') : `P${i + 1}`}</text>
+            <text id="seat-position-${i}" class="table-seat-meta table-seat-position" x="0" y="${Math.round(-halfHeight + 31)}" text-anchor="middle"></text>
             ${this.pokerAmountMarkup({
               id: `seat-stack-${i}`, className: 'table-seat-meta table-seat-stack',
-              size: 'small', x: -38, y: -1, unit: '', ariaHidden: true,
+              size: 'small', x: -38, y: Math.round(-halfHeight + 34), unit: '', ariaHidden: true,
             })}
-            <text id="seat-status-${i}" class="table-seat-meta table-seat-status" x="0" y="19" text-anchor="middle" hidden></text>
+            <text id="seat-status-${i}" class="table-seat-meta table-seat-status" x="0" y="${Math.round(halfHeight - 7)}" text-anchor="middle" hidden></text>
           </g>
-          <g id="dealer-${i}" class="table-dealer-button" transform="translate(43, -27)" hidden>
-            <circle r="10" aria-hidden="true" />
+          <g id="dealer-${i}" class="table-dealer-button" transform="translate(${dealerX}, 0)" hidden>
+            <circle r="12" aria-hidden="true" />
+            <circle class="table-dealer-button-inner" r="8.5" aria-hidden="true" />
             <text id="dealer-txt-${i}" x="0" y="3.5" text-anchor="middle" aria-hidden="true">D</text>
           </g>
-          <g id="action-${i}" class="table-action-badge" transform="translate(0, 27)" hidden aria-hidden="true">
+          <g id="action-${i}" class="table-action-badge" transform="translate(0, ${actionY})" hidden aria-hidden="true">
             <rect class="table-action-surface" x="-44" y="-9" width="88" height="18" rx="9" aria-hidden="true" />
             <text class="table-action-label" x="0" y="3" text-anchor="middle"></text>
           </g>
@@ -447,12 +475,95 @@ class TableRenderer {
     this.settleReplayMotionWhenFinished(motionGeneration);
   }
 
-  renderPresenceState(state, replayMotion = null) {
-    const activePlayers = state.seats.length;
-    if (activePlayers !== this.currentActivePlayers) {
-      this.currentActivePlayers = activePlayers;
-      this.drawSeats(activePlayers);
+  setTableRoundedRect(selector, rect, inset = 0) {
+    const element = this.container.querySelector(selector);
+    if (!element) return;
+    const x = rect.x + inset;
+    const y = rect.y + inset;
+    const width = Math.max(0, rect.width - (inset * 2));
+    const height = Math.max(0, rect.height - (inset * 2));
+    const radius = height / 2;
+    element.setAttribute('x', String(x));
+    element.setAttribute('y', String(y));
+    element.setAttribute('width', String(width));
+    element.setAttribute('height', String(height));
+    element.setAttribute('rx', String(radius));
+    element.setAttribute('ry', String(radius));
+  }
+
+  resetTableGeometry() {
+    this.setTableRoundedRect('#table-rail-outer', { x: 90, y: 98, width: 820, height: 416 });
+    this.setTableRoundedRect('#table-rail-inner', { x: 102, y: 110, width: 796, height: 392 });
+    this.setTableRoundedRect('#table-surface', { x: 114, y: 122, width: 772, height: 368 });
+    this.setTableRoundedRect('#table-felt-texture', { x: 114, y: 122, width: 772, height: 368 });
+    this.setTableRoundedRect('#table-betting-line', { x: 146, y: 154, width: 708, height: 304 });
+    const phase = this.container.querySelector('#table-phase-status');
+    phase?.setAttribute('x', '500');
+    phase?.setAttribute('y', '238');
+    this.container.querySelector('#table-pot')?.setAttribute('transform', 'translate(500 286)');
+    this.container.querySelector('#community-cards')?.setAttribute('transform', 'translate(500, 330)');
+    this.container.querySelector('#table-riverline-mark')
+      ?.setAttribute('d', 'M360 210 C418 180 582 180 640 210');
+  }
+
+  applyPresentationGeometry(presentation) {
+    if (!presentation) return;
+    this.container.dataset.tableProjection = presentation.projection;
+    this.container.dataset.tableVisualState = presentation.visualState;
+    this.container.dataset.tableInteraction = presentation.interaction;
+    this.container.dataset.tableCompleted = String(presentation.completed);
+    if (!presentation.geometry) {
+      this.resetTableGeometry();
+      delete this.container.dataset.tableGeometryFamily;
+      return;
     }
+    const { geometry } = presentation;
+    const bounds = geometry.tableBounds;
+    const potX = geometry.potAnchor.x * 1000;
+    const potY = geometry.potAnchor.y * 650;
+    this.setTableRoundedRect('#table-rail-outer', bounds);
+    this.setTableRoundedRect('#table-rail-inner', bounds, 10);
+    this.setTableRoundedRect('#table-surface', bounds, 20);
+    this.setTableRoundedRect('#table-felt-texture', bounds, 20);
+    this.setTableRoundedRect('#table-betting-line', bounds, 50);
+    const phase = this.container.querySelector('#table-phase-status');
+    if (phase) {
+      phase.setAttribute('x', String(potX));
+      phase.setAttribute('y', String(Math.max(bounds.y + 44, potY - 72)));
+    }
+    this.container.querySelector('#table-pot')
+      ?.setAttribute('transform', `translate(${potX} ${potY})`);
+    this.container.querySelector('#community-cards')
+      ?.setAttribute('transform', `translate(${potX}, ${potY + 34}) scale(${geometry.boardScale})`);
+    const mark = this.container.querySelector('#table-riverline-mark');
+    if (mark) {
+      const left = potX - (bounds.width * 0.15);
+      const right = potX + (bounds.width * 0.15);
+      const y = bounds.y + (bounds.height * 0.28);
+      mark.setAttribute('d', `M${left} ${y} C${potX - 52} ${y - 24} ${potX + 52} ${y - 24} ${right} ${y}`);
+    }
+    this.container.dataset.tableGeometryFamily = presentation.geometryFamily;
+  }
+
+  renderPresenceState(state, replayMotion = null, presentation = null) {
+    const activePlayers = state.seats.length;
+    const geometrySignature = presentation
+      ? `${presentation.geometryTemplate}:${presentation.geometry?.potAnchor?.y}`
+      : `legacy:${activePlayers}`;
+    if (activePlayers !== this.currentActivePlayers
+      || geometrySignature !== this.currentGeometrySignature) {
+      this.currentActivePlayers = activePlayers;
+      this.currentGeometrySignature = geometrySignature;
+      this.drawSeats(activePlayers, presentation);
+      if (!presentation) this.resetTableGeometry();
+    }
+    this.applyPresentationGeometry(presentation);
+    const presentationSeats = new Map(
+      (presentation?.seats || []).map((seat) => [seat.playerId, seat]),
+    );
+    const replayProjected = presentation
+      ? presentation.interaction === 'replay'
+      : this.container.closest('.table-wrapper')?.dataset.replayMode === 'replay';
 
     const phase = this.container.querySelector('#table-phase-status');
     const pot = this.container.querySelector('#table-pot');
@@ -468,7 +579,6 @@ class TableRenderer {
 
     const community = this.container.querySelector('#community-cards');
     if (community) {
-      const replayProjected = this.container.closest('.table-wrapper')?.dataset.replayMode === 'replay';
       const replayBoardCards = replayProjected ? replayMotion?.boardCards || [] : null;
       this.renderKnownCards(community, state.board, 'community', true, replayBoardCards);
       community.setAttribute('role', 'group');
@@ -504,6 +614,10 @@ class TableRenderer {
       const isHero = player.isHero;
       const isDealer = player.isButton;
       const isActor = player.isCurrentActor;
+      const seatPresentation = presentationSeats.get(player.playerId) || null;
+      const prominence = seatPresentation?.prominence || (
+        isHero ? 'hero' : isActor ? 'actor' : player.isFolded ? 'folded' : 'live'
+      );
 
       seat.dataset.canonicalSeat = String(player.seat);
       seat.dataset.playerId = player.playerId;
@@ -514,11 +628,19 @@ class TableRenderer {
       seat.classList.toggle('is-actor', isActor);
       seat.classList.toggle('is-folded', player.isFolded);
       seat.classList.toggle('is-all-in', player.isAllIn);
+      for (const role of ['hero', 'actor', 'relevant', 'live', 'folded', 'empty']) {
+        seat.classList.toggle(`is-prominence-${role}`, prominence === role);
+      }
+      seat.dataset.prominence = prominence;
+      seat.dataset.seatDetail = seatPresentation?.detail || 'standard';
+      seat.style.setProperty('--seat-prominence-opacity', String(seatPresentation?.opacity ?? 1));
+      seat.dataset.cardEmphasis = seatPresentation?.cardEmphasis || 'standard';
+      seat.dataset.contributionEmphasis = seatPresentation?.contributionEmphasis || 'standard';
 
       if (name) {
         name.textContent = this.presenceSeatIdentity(player);
         if (name.textContent.length > 15) {
-          name.setAttribute('textLength', '96');
+          name.setAttribute('textLength', String(Math.max(82, (presentation?.geometry?.playerUnit?.width ?? 104) - 12)));
           name.setAttribute('lengthAdjust', 'spacingAndGlyphs');
         } else {
           name.removeAttribute('textLength');
@@ -539,6 +661,10 @@ class TableRenderer {
         dealer.setAttribute('aria-label', tableMessage('table.a11y.dealer', 'Dealer button'));
       }
       if (contribution) {
+        contribution.dataset.prominence = prominence;
+        contribution.style.setProperty('--contribution-prominence-opacity', String(
+          prominence === 'folded' ? 0.5 : prominence === 'hero' || prominence === 'actor' ? 1 : 0.86
+        ));
         const isVisible = state.showStreetContributions === true
           && player.streetContributionMilliBb > 0;
         contribution.toggleAttribute('hidden', !isVisible);
@@ -584,7 +710,6 @@ class TableRenderer {
         }
       }
       if (holeCards) {
-        const replayProjected = this.container.closest('.table-wrapper')?.dataset.replayMode === 'replay';
         const cardChange = replayMotion?.seatChanges?.find((change) => change.playerId === player.playerId);
         const privateCardTransition = ['private_deal', 'private_reveal'].includes(replayMotion?.transitionKind);
         const privateCardsChanged = cardChange?.cardsChanged || cardChange?.cardVisibilityChanged;
@@ -615,10 +740,18 @@ class TableRenderer {
   renderScenarioState(state) {
     this.clearReplayMotionClasses();
     this.lastReplayMotionToken = null;
-    if (state.activePlayers && state.activePlayers !== this.currentActivePlayers) {
+    const scenarioGeometrySignature = `scenario:${state.activePlayers || this.currentActivePlayers}`;
+    if (state.activePlayers && (state.activePlayers !== this.currentActivePlayers
+      || scenarioGeometrySignature !== this.currentGeometrySignature)) {
       this.currentActivePlayers = state.activePlayers;
+      this.currentGeometrySignature = scenarioGeometrySignature;
       this.drawSeats(this.currentActivePlayers);
+      this.resetTableGeometry();
     }
+    for (const key of [
+      'tableProjection', 'tableVisualState', 'tableGeometryFamily',
+      'tableInteraction', 'tableCompleted',
+    ]) delete this.container.dataset[key];
     const phase = this.container.querySelector('#table-phase-status');
     if (phase) phase.textContent = tableMessage('table.phase.scenario', 'Scenario');
     const description = this.container.querySelector('#poker-table-description');
@@ -690,7 +823,11 @@ class TableRenderer {
     if (title) title.textContent = tableMessage('table.title', 'Riverline poker table');
     const replayMotion = this.pendingReplayMotion;
     this.pendingReplayMotion = null;
-    if (state.schemaVersion === 'table-presence/v1') this.renderPresenceState(state, replayMotion);
+    if (state.schemaVersion === 'table-presentation/v1') {
+      this.renderPresenceState(state.tablePresence, replayMotion, state);
+    } else if (state.schemaVersion === 'table-presence/v1') {
+      this.renderPresenceState(state, replayMotion);
+    }
     else this.renderScenarioState(state);
   }
 }

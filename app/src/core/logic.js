@@ -160,7 +160,9 @@ const app = {
 
   },
 
-  playbookHandDraft: { bySeat: {}, board: [] },
+  playbookHandDraft: {
+    bySeat: {}, board: [], sizedAction: null, actionSubmissionLocked: false
+  },
 
   picker: null,
 
@@ -1796,6 +1798,7 @@ function resetCanonicalHandDraft() {
   app.playbookHandDraft.bySeat = {};
   app.playbookHandDraft.board = [];
   app.playbookHandDraft.sizedAction = null;
+  app.playbookHandDraft.actionSubmissionLocked = false;
 }
 
 function canonicalHandFailureMessage() {
@@ -1902,9 +1905,11 @@ function canonicalActionLabel(type, option) {
 }
 
 function chooseCanonicalSizedAction(type, option) {
+  if (app.playbookHandDraft.actionSubmissionLocked) return;
   app.playbookHandDraft.sizedAction = type;
   const sizing = $('#handActionSizing');
   const input = $('#handActionAmountBb');
+  const range = $('#handActionAmountRange');
   const label = $('#handActionSizingLabel');
   const bounds = $('#handActionAmountBounds');
   if (!sizing || !input) return;
@@ -1916,6 +1921,13 @@ function chooseCanonicalSizedAction(type, option) {
   input.max = String(max);
   input.step = String(step);
   input.value = String(min);
+  if (range) {
+    range.min = String(min);
+    range.max = String(max);
+    range.step = String(step);
+    range.value = String(min);
+    range.hidden = max <= min;
+  }
   const minimumPreset = $('#handSizingMinPreset');
   const maximumPreset = $('#handSizingMaxPreset');
   if (minimumPreset) {
@@ -1936,14 +1948,25 @@ function chooseCanonicalSizedAction(type, option) {
 }
 
 function applyCanonicalHandAction(type, amountToBb = null) {
-  const next = callPlaybookStateBridge('applyAction', type, amountToBb);
-  if (!next) toast(canonicalHandFailureMessage(), 'error');
-  else {
-    clearToast();
-    if (window.SoundFX) window.SoundFX.playPokerAction(type);
+  if (app.playbookHandDraft.actionSubmissionLocked) return null;
+  app.playbookHandDraft.actionSubmissionLocked = true;
+  renderCanonicalLegalActions(
+    callPlaybookStateBridge('getState') || { players: [] },
+    callPlaybookStateBridge('getLegalActions')
+  );
+  let next = null;
+  try {
+    next = callPlaybookStateBridge('applyAction', type, amountToBb);
+    if (!next) toast(canonicalHandFailureMessage(), 'error');
+    else {
+      clearToast();
+      if (window.SoundFX) window.SoundFX.playPokerAction(type);
+    }
+  } finally {
+    app.playbookHandDraft.sizedAction = null;
+    app.playbookHandDraft.actionSubmissionLocked = false;
+    renderCanonicalHandWorkspace();
   }
-  app.playbookHandDraft.sizedAction = null;
-  renderCanonicalHandWorkspace();
   return next;
 }
 
@@ -1965,9 +1988,20 @@ function renderCanonicalLegalActions(state, legalActionSpec = undefined) {
   if (!spec) return;
 
   const actor = state.players.find((player) => player.playerId === state.actingPlayerId);
+  const hero = state.players.find((player) => (
+    player.playerId === callPlaybookStateBridge('getHeroPlayerId')
+  ));
   if ($('#handActionActor')) $('#handActionActor').textContent = t('{player} to act', {
     player: canonicalPlayerLabel(actor, callPlaybookStateBridge('getHeroPlayerId'))
   });
+  if ($('#handActionPot')) $('#handActionPot').textContent = formatCanonicalBb(state.potMilliBb);
+  if ($('#handActionCall')) $('#handActionCall').textContent = formatCanonicalBb(
+    spec.call.available ? spec.call.commitMilliBb : 0
+  );
+  if ($('#handActionHeroStack')) $('#handActionHeroStack').textContent = hero
+    ? formatCanonicalBb(hero.currentStackMilliBb)
+    : t('Unavailable');
+  section.setAttribute('aria-busy', String(app.playbookHandDraft.actionSubmissionLocked));
   const options = [
     ['fold', spec.fold], ['check', spec.check], ['call', spec.call],
     ['bet', spec.bet], ['raise', spec.raise], ['all_in', spec.allIn]
@@ -1980,25 +2014,24 @@ function renderCanonicalLegalActions(state, legalActionSpec = undefined) {
       ? 'ui-button ui-button--primary'
       : 'ui-button ui-button--secondary';
     button.dataset.canonicalAction = type;
+    button.disabled = app.playbookHandDraft.actionSubmissionLocked;
     button.setAttribute('aria-pressed', 'false');
     button.textContent = canonicalActionLabel(type, option);
     button.setAttribute('aria-label', `${button.textContent}${type === 'bet' || type === 'raise' ? `, ${t('choose amount-to sizing')}` : ''}`);
-    button.addEventListener('click', () => {
-      if (type === 'bet' || type === 'raise') chooseCanonicalSizedAction(type, option);
-      else applyCanonicalHandAction(type);
-    });
+    if (type === 'bet' || type === 'raise') {
+      button.addEventListener('click', () => chooseCanonicalSizedAction(type, option));
+    } else {
+      // A queued second click on the same detached control must not advance a
+      // newly rendered decision after the canonical transition completes.
+      button.addEventListener('click', () => applyCanonicalHandAction(type), { once: true });
+    }
     root.appendChild(button);
   });
 
-  if (spec.bet.available || spec.raise.available) {
-    const commit = document.createElement('button');
-    commit.id = 'handCommitSizedAction';
-    commit.type = 'button';
-    commit.className = 'ui-button ui-button--primary';
-    commit.textContent = t('Apply amount-to');
+  const commit = $('#handCommitSizedAction');
+  if (commit) {
+    commit.disabled = app.playbookHandDraft.actionSubmissionLocked;
     commit.hidden = true;
-    commit.addEventListener('click', commitCanonicalSizedAction);
-    root.appendChild(commit);
   }
   const currentType = app.playbookHandDraft.sizedAction;
   const currentOption = currentType === 'bet' ? spec.bet : currentType === 'raise' ? spec.raise : null;
@@ -2121,11 +2154,21 @@ function renderCanonicalHandStage(state, legalActions, replayProjection) {
   const status = canonicalHandStatus(state);
   const stageHeader = $('#handLiveStageHeader');
   const stageDock = $('#handStageDock');
+  const timelineStage = $('#handTimelineStage');
+  const timeline = $('#handActionHistory');
   const terminal = Boolean(state?.terminal?.isTerminal || state?.phase === 'terminal');
 
   renderCanonicalHandSetupState(state, stage, replayProjection);
   if ($('#handStateSection')) $('#handStateSection').hidden = !state;
   if ($('#handHistoryDisclosure')) $('#handHistoryDisclosure').hidden = !state;
+  if (timelineStage) {
+    timelineStage.hidden = !state;
+    timelineStage.dataset.timelineMode = replayProjection?.readOnly || terminal ? 'review' : 'compact';
+  }
+  if (timeline) {
+    timeline.classList.toggle('replay-timeline--compact', !replayProjection?.readOnly && !terminal);
+    timeline.classList.toggle('replay-timeline--review', replayProjection?.readOnly || terminal);
+  }
   if (stageHeader) {
     stageHeader.hidden = false;
     stageHeader.dataset.handStage = stage;
@@ -2181,6 +2224,19 @@ function renderCanonicalHandStage(state, legalActions, replayProjection) {
   if (replayButton) replayButton.disabled = !replayProjection?.canPlayback;
   const analysisButton = $('#handCompletedAnalysisButton');
   const journal = state ? callPlaybookStateBridge('getHeroDecisionJournal') : null;
+  const completedResult = terminal ? callPlaybookStateBridge('getCompletedHandResult') : null;
+  const heroDelta = completedResult?.stackDeltasMilliBbByPlayer?.[heroPlayerId];
+  if ($('#handCompletedResult')) {
+    const result = Number.isSafeInteger(heroDelta)
+      ? `${heroDelta > 0 ? '+' : ''}${formatCanonicalBb(heroDelta)}`
+      : t('Unavailable');
+    $('#handCompletedResult').textContent = completedResult?.terminalReason === 'showdown'
+      ? t('Showdown complete. Hero result: {result}.', { result })
+      : t('Hand ended by fold. Hero result: {result}.', { result });
+  }
+  if ($('#handCompletedDecisionCount')) {
+    $('#handCompletedDecisionCount').textContent = String(journal?.decisions?.length || 0);
+  }
   if (analysisButton) analysisButton.disabled = !(journal?.decisions?.length > 0);
   const completionSave = $('#handCompletedSaveButton');
   const canonicalSave = $('#savedStudySaveButton');
@@ -2310,18 +2366,35 @@ function createReplayCurrentMarker(marker) {
   return current;
 }
 
+function seekCanonicalReplayFrame(frameIndex) {
+  if (!Number.isInteger(frameIndex)) return null;
+  const projection = callPlaybookStateBridge('selectReplayFrame', frameIndex);
+  const selected = [...$$('#handActionHistory .replay-timeline-seek[data-frame-index]')]
+    .find((control) => Number(control.dataset.frameIndex) === frameIndex);
+  selected?.focus();
+  return projection;
+}
+
 function createReplayActionEntry(entry) {
   const item = document.createElement('li');
   item.className = `replay-action-entry replay-action-entry--${entry.actionFamily} is-replay-${entry.presentationState}${entry.isHero ? ' is-hero' : ''}${entry.wasAllIn ? ' is-all-in' : ''}`;
   item.dataset.actionType = entry.actionType;
   item.dataset.amountKind = entry.amountKind;
   item.dataset.sequence = String(entry.sequence);
+  item.dataset.frameIndex = String(entry.frameIndex);
   item.dataset.replayProgress = entry.presentationState;
   item.value = entry.sequence + 1;
   if (entry.presentationState === 'current') item.setAttribute('aria-current', 'step');
 
-  const body = document.createElement('div');
-  body.className = 'replay-action-body';
+  const body = document.createElement('button');
+  body.type = 'button';
+  body.className = 'replay-action-body replay-timeline-seek';
+  body.dataset.frameIndex = String(entry.frameIndex);
+  body.setAttribute('aria-label', t('Review replay frame {current}', {
+    current: entry.frameIndex + 1
+  }));
+  body.addEventListener('click', () => seekCanonicalReplayFrame(entry.frameIndex));
+  if (entry.presentationState === 'current') body.setAttribute('aria-current', 'step');
   body.appendChild(createReplayIdentity(entry, 'replay-action-identity'));
 
   const semantics = document.createElement('div');
@@ -2350,11 +2423,16 @@ function createReplayActionEntry(entry) {
 }
 
 function createReplayTransitionEntry(event) {
-  const item = document.createElement('div');
-  item.className = `replay-transition-entry replay-transition-entry--${event.transitionKind.replaceAll('_', '-')} is-replay-${event.presentationState}`;
+  const item = document.createElement('button');
+  item.type = 'button';
+  item.className = `replay-transition-entry replay-timeline-seek replay-transition-entry--${event.transitionKind.replaceAll('_', '-')} is-replay-${event.presentationState}`;
   item.dataset.transitionKind = event.transitionKind;
   item.dataset.replayProgress = event.presentationState;
   item.dataset.frameIndex = String(event.frameIndex);
+  item.setAttribute('aria-label', t('Review replay frame {current}', {
+    current: event.frameIndex + 1
+  }));
+  item.addEventListener('click', () => seekCanonicalReplayFrame(event.frameIndex));
   if (event.presentationState === 'current') item.setAttribute('aria-current', 'step');
 
   const label = document.createElement('strong');
@@ -2602,13 +2680,21 @@ function renderSavedHandViewerContext(projection) {
 
 function dispatchCanonicalTableState() {
   const projection = callPlaybookStateBridge('createReplayProjectionViewModel');
-  const tableModel = projection?.tablePresence
+  const analyzeProjection = $('#gtoMode')?.dataset.productDestination === 'analyze';
+  const tableModel = callPlaybookStateBridge('createTablePresentationViewModel', {
+    projection: analyzeProjection ? 'analyze' : null,
+    interaction: analyzeProjection ? 'passive' : null,
+    submissionLocked: app.playbookHandDraft.actionSubmissionLocked
+  }) || projection?.tablePresence
     || callPlaybookStateBridge('createTablePresenceViewModel');
   if (!tableModel) return;
   const wrapper = $('#table-wrapper');
   if (wrapper) {
     wrapper.classList.toggle('is-replay-projection', projection?.readOnly === true);
     wrapper.dataset.replayMode = projection?.mode || 'live';
+    wrapper.dataset.tableProjection = tableModel.projection || 'play';
+    wrapper.dataset.tableVisualState = tableModel.visualState || 'setup';
+    wrapper.dataset.tableGeometryFamily = tableModel.geometryFamily || 'empty';
     if (projection?.readOnly) wrapper.setAttribute('aria-describedby', 'handReplayStatus');
     else wrapper.removeAttribute('aria-describedby');
   }
@@ -2750,9 +2836,35 @@ function bindCanonicalHandWorkspace() {
       const input = $('#handActionAmountBb');
       if (!input || !Number.isFinite(value)) return;
       input.value = String(value);
+      if ($('#handActionAmountRange')) $('#handActionAmountRange').value = String(value);
       $('#handCommitSizedAction')?.focus();
     });
   });
+  $('#handActionAmountRange')?.addEventListener('input', (event) => {
+    if ($('#handActionAmountBb')) $('#handActionAmountBb').value = event.currentTarget.value;
+  });
+  $('#handActionAmountBb')?.addEventListener('input', (event) => {
+    const range = $('#handActionAmountRange');
+    const value = Number(event.currentTarget.value);
+    if (range && Number.isFinite(value)) {
+      range.value = String(Math.min(Number(range.max), Math.max(Number(range.min), value)));
+    }
+  });
+  $('#handActionAmountBb')?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') commitCanonicalSizedAction();
+  });
+  $('#handActionSizing')?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    const selectedType = app.playbookHandDraft.sizedAction;
+    app.playbookHandDraft.sizedAction = null;
+    event.currentTarget.hidden = true;
+    const selectedAction = $$('#handLegalActions [data-canonical-action]')
+      .find((button) => button.dataset.canonicalAction === selectedType);
+    selectedAction?.setAttribute('aria-pressed', 'false');
+    selectedAction?.focus();
+  });
+  $('#handCommitSizedAction')?.addEventListener('click', commitCanonicalSizedAction);
   if ($('#handDealHoleButton')) $('#handDealHoleButton').addEventListener('click', commitCanonicalPrivateCards);
   if ($('#handDealBoardButton')) $('#handDealBoardButton').addEventListener('click', commitCanonicalBoardDeal);
   if ($('#handReplayPlaybackButton')) $('#handReplayPlaybackButton').addEventListener('click', () => {
@@ -7960,10 +8072,44 @@ function restoreSharedPokerTable() {
   return true;
 }
 
+function renderFullHandCompactTimeline(tablePresentation) {
+  const root = $('#trainingFullHandTimeline');
+  const timeline = tablePresentation?.timeline;
+  if (!root) return;
+  root.replaceChildren();
+  root.hidden = !timeline || tablePresentation?.tablePresence?.empty === true;
+  if (root.hidden) return;
+  root.dataset.timelineMode = tablePresentation.timelineMode;
+  for (const group of timeline.groups || []) {
+    const section = document.createElement('section');
+    section.className = 'full-hand-timeline-street';
+    section.dataset.street = group.street;
+    const heading = document.createElement('strong');
+    heading.textContent = t(group.headingKey);
+    section.appendChild(heading);
+    for (const entry of group.entries) {
+      const token = document.createElement('span');
+      token.className = `full-hand-timeline-action${entry.isHero ? ' is-hero' : ''}`;
+      const amount = Number.isSafeInteger(entry.amountMilliBb)
+        ? ` ${formatCanonicalBb(entry.amountMilliBb)}`
+        : '';
+      token.textContent = `${entry.position || replayActorLabel(entry)} ${t(entry.actionLabelKey)}${amount}`;
+      section.appendChild(token);
+    }
+    root.appendChild(section);
+  }
+  const marker = document.createElement('span');
+  marker.className = 'full-hand-timeline-marker';
+  marker.setAttribute('aria-current', 'step');
+  marker.textContent = replayMarkerLabel(timeline.currentMarker);
+  root.appendChild(marker);
+}
+
 function dispatchFullHandTrainingTable(snapshot, {
   previousSnapshot = null,
   event = null,
   motionEnabled = true,
+  review = false,
 } = {}) {
   if (activeWorkspaceMode() !== 'training' || !trainingModeIsVisible()) return false;
   const table = $('#visual-table-container');
@@ -7984,15 +8130,24 @@ function dispatchFullHandTrainingTable(snapshot, {
   const tablePresence = transition?.tablePresence
     || callTrainingServiceBridge('createFullHandTablePresence', snapshot);
   if (!tablePresence) return false;
+  const tablePresentation = callTrainingServiceBridge('createFullHandTablePresentation', snapshot, {
+    review,
+    submissionLocked: app.training.lifecycle === 'grading'
+      || app.training.lifecycle === 'automating',
+    tablePresence
+  }) || tablePresence;
   table.dataset.trainingHeroTurn = String(
     snapshot.status === 'awaiting_hero'
     && snapshot.state?.actingPlayerId === snapshot.heroPlayerId,
   );
   mount.dataset.presentationEvent = event?.transitionKind || 'state';
+  mount.dataset.tableProjection = tablePresentation.projection || 'play';
+  mount.dataset.tableVisualState = tablePresentation.visualState || 'live_decision';
+  renderFullHandCompactTimeline(tablePresentation);
   window.dispatchEvent(new CustomEvent('riverline:replay-motion', {
     detail: transition?.motion || null,
   }));
-  window.dispatchEvent(new CustomEvent('gameStateUpdate', { detail: tablePresence }));
+  window.dispatchEvent(new CustomEvent('gameStateUpdate', { detail: tablePresentation }));
   return true;
 }
 
@@ -8028,6 +8183,7 @@ function setFullHandTrainingPhase(phase = 'setup') {
   }
   if (!active) {
     if ($('#trainingFullHandTableMount')) $('#trainingFullHandTableMount').hidden = true;
+    if ($('#trainingFullHandTimeline')) $('#trainingFullHandTimeline').hidden = true;
     restoreSharedPokerTable();
   }
 }
@@ -9379,6 +9535,7 @@ function renderFullHandTerminal(snapshot) {
   updateFullHandTrainingStats(snapshot);
   setTrainingWorkspaceState('terminal');
   setFullHandTrainingPhase('complete');
+  dispatchFullHandTrainingTable(snapshot);
   if ($('#trainingInstruction')) $('#trainingInstruction').textContent = t('The canonical Hand is complete and ready for review.');
   if ($('#trainingFullHandResult')) $('#trainingFullHandResult').textContent = fullHandTerminalResultCopy(snapshot);
   if ($('#trainingFullHandDecisionCount')) {
@@ -9508,6 +9665,7 @@ function toggleFullHandTrainingReview() {
   button.setAttribute('aria-expanded', 'true');
   renderFullHandReviewDecision(review, app.training.fullHandReviewIndex);
   setFullHandTrainingPhase('review');
+  dispatchFullHandTrainingTable(app.training.fullHandSnapshot, { review: true });
   surface.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
 }
 

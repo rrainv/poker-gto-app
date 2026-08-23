@@ -33,7 +33,12 @@ app/index.html
 │  └─ shared/poker-domain Equity/evaluator
 ├─ canonical Training generator/session/grading/presentation
 │  └─ same StrategyProvider
+<<<<<<< Updated upstream
 ├─ TableRenderer / Replay / SoundFX / i18n
+=======
+├─ pure table-presentation/v1 over canonical Table Presence / Replay / legality
+├─ TableRenderer / SoundFX / i18n
+>>>>>>> Stashed changes
 └─ product-performance scheduling and invalidation
 ```
 
@@ -54,6 +59,10 @@ Electron remains a thin BrowserWindow host for the same application. It has no s
 - Personal Strategy evidence/snapshot modules: intended-strategy authority separate from reference/observed behavior
 - `product-performance/v1`: interaction scheduling/invalidation
 - `solver/riverline_solver/`: bounded research only, never production runtime
+
+## Bounded presentation contracts
+
+- `table-presentation/v1`: pure ephemeral geometry, hierarchy, projection, timeline, and decision-dock presentation facts over canonical authorities; never PokerState, legality, accounting, strategy, persistence, or Saved authority
 
 ## DecisionContext facts
 
@@ -208,6 +217,7 @@ Do not let accounts/Supabase cleanup, architecture decomposition, or more heuris
 
 Do not revive without a new approved architecture:
 
+<<<<<<< Updated upstream
 - browser/Electron ONNX strategy runtime;
 - native preload inference bridge;
 - remote strategy API;
@@ -215,6 +225,30 @@ Do not revive without a new approved architecture:
 - legacy training/model directories as production authorities;
 - duplicate Equity authority;
 - arbitrary drag-and-drop layout editor.
+=======
+- browser or Electron ONNX strategy runtime
+- native preload inference bridge
+- remote strategy API
+- arbitrary solver-tree upload
+- root legacy `training/`, `solver-model/`, or checked-in tree data
+- synthetic Training generator/grader
+- duplicate Equity worker/evaluator authority
+- arbitrary drag-and-drop layout editor
+
+## Current Table / Replay checkpoint
+
+`TABLE-PRESENCE-REF-001` and the `TABLE-PRESENCE-002` implementation checkpoint are **COMPLETED**. The accepted foundation includes pure ephemeral `table-presentation/v1`; deliberate 2–10 player geometry families; stronger Hero/current-actor/relevant/live/folded hierarchy; restrained felt, rail, dealer, pot, and chip physicality; integrated Hero cards and legal-action dock; canonical-bounds sizing; distinct live/completed/Review/Analyze presentation foundations; the visible canonical Replay timeline; and deterministic `selectFrame(frameIndex)` without Hand mutation. It preserves EN/RU/HE, RTL poker geometry, themes/custom themes, density, layout presets, and Premium Card settings.
+
+Verification at this checkpoint is 1,720/1,720 Node tests plus a successful bounded installed-Firefox matrix. Do not infer that every manual matrix is closed: independent hands-on Firefox, 4K/zoom, 1024/1366, Graphite/custom-theme, Analysis Focus/Controls First, and broader 3–9-player visual sampling remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
+
+`FULL-HAND-REVIEW-001` is **ACTIVE NEXT**. Its purpose is the richer decision-by-decision post-hand learning workflow over the accepted table projection, timeline, direct seek, hand-complete composition, and Replay integration—not another table or Replay implementation. `AUDIO-MOTION-001` is **PLANNED NEXT**, followed by `PREMIUM-CLOSEOUT-001`; later ordering is trusted bounded reference pack/provider, Training Memory/re-drill, Personal Strategy integration, `HOME-002B`, then opponent policies/bots.
+
+## Current development direction
+
+The project is in the premium full-hand learning-workflow phase. Strategy integrity, authority, extraction, mathematical integrity, calibration baseline, initial performance, and the premium adaptive table foundation are checkpointed.
+
+Read `../project/CURRENT_PHASE.md`, `../project/PRODUCT_BACKLOG.md`, `../project/QA_BACKLOG.md`, `../project/PRODUCT_RETURN_QUEUE.md`, and `../project/ROADMAP.md` for the active ticket, ordered future work, and remaining acceptance debt. When an accepted checkpoint changes priority or subsystem state, update those authoritative roadmap/resume/backlog documents together; never create a parallel status system in prompts or chat memory.
+>>>>>>> Stashed changes
 
 ## Budget and deployment
 

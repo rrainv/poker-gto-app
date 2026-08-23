@@ -620,6 +620,21 @@ export function createReplayProjectionController({
       return projection();
     },
 
+    selectFrame(frameIndex) {
+      if (!Number.isInteger(frameIndex)) {
+        throw new TypeError('Replay frame index must be an integer');
+      }
+      if (frameIndex < 0 || frameIndex >= frames.length) {
+        throw new RangeError(`Replay frame index out of range: ${frameIndex}`);
+      }
+      // The final frame is the existing live/saved endpoint, just as stepping
+      // Next from the preceding frame returns to that endpoint.
+      replayCursor = frameIndex === frames.length - 1 ? null : frameIndex;
+      selectionRevision += 1;
+      selectionDirection = 'jump';
+      return projection();
+    },
+
     beginPlayback() {
       if (frames.length > 1) {
         replayCursor = 0;

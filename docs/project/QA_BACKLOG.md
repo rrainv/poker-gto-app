@@ -65,6 +65,7 @@ A visual issue is not `CLOSED` without manual/browser confirmation.
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
+<<<<<<< Updated upstream
 | QA-UI-001 | PARTIAL | Action Path nodes/connector must share one axis in LTR/RTL; glow must not clip. | premium closeout/manual acceptance |
 | QA-UI-002 | PARTIAL | Ordinary status pills must remain one-line, content-sized and centered. | premium closeout/manual acceptance |
 | QA-UI-003 | PARTIAL | Betting Context still needs confirmed meaningful height reduction/alignment. | premium closeout |
@@ -78,6 +79,28 @@ A visual issue is not `CLOSED` without manual/browser confirmation.
 | QA-TRAIN-ANALYSIS-001 | PARTIAL | Training uses refined shared hierarchy; final manual acceptance pending. | premium closeout |
 | QA-TRAIN-ANALYSIS-002 | PARTIAL | Pre-answer assistance is one-at-a-time coaching hints; final manual acceptance pending. | premium closeout |
 | QA-TRAIN-ANALYSIS-003 | PARTIAL | Post-answer reference remains one canonical frequency panel; final manual acceptance pending. | premium closeout |
+=======
+| QA-UI-001 | PARTIAL | Action Path nodes/connector must share one axis in LTR/RTL; glow must not clip | PRODUCT-UI-002R manual acceptance |
+| QA-UI-002 | PARTIAL | ordinary status pills must remain one-line, content-sized, centered | PRODUCT-UI-002R manual acceptance |
+| QA-UI-003 | PARTIAL | Betting Context still needs confirmed meaningful height reduction/alignment | PRODUCT-UI-002R manual acceptance |
+| QA-UI-004 | PARTIAL | `View all hands` must align with Position/Prior action row | PRODUCT-UI-002R manual acceptance |
+| QA-UI-005 | PARTIAL | `table-presentation/v1` now integrates hole cards with each adaptive 2–10 player unit while preserving name, position, stack, action, and prominence facts; the TABLE-PRESENCE-002 Firefox capture matrix found no seat/card overlap, but independent human interaction acceptance remains required | TABLE-PRESENCE-002 human Firefox acceptance |
+| QA-UI-006 | PARTIAL | Settings modal must remain centered and viewport-safe at smaller desktop sizes | PRODUCT-UI-002R manual acceptance |
+
+## Next: shared analysis presentation
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-ANALYSIS-001 | PARTIAL | Playbook analysis retains its full Decision-grid row; R2 readability needs final manual acceptance | PRODUCT-UI-003R2 |
+| QA-ANALYSIS-002 | PARTIAL | Shared Hero/board, economics, reasons, and context hierarchy refined; final manual acceptance pending | PRODUCT-UI-003R2 |
+| QA-ANALYSIS-RANGE-001 | PARTIAL | exact-hand, board, blocker, supplied-range, provenance, tutorial, and EN/RU/HE integration are structurally tested; final live viewport/theme/language acceptance remains pending | ANALYSIS-RANGE-001 human acceptance |
+| QA-ANALYSIS-BLUFF-001 | PARTIAL | Bluff & Pressure risk/reward, unavailable sizing, semibluff structure, multiway wording, river reference, range-removal boundaries, tutorial, and EN/RU/HE/RTL integration are structurally tested; final human viewport/theme/language acceptance remains pending | BLUFF-001 human acceptance |
+| QA-TRAIN-ANALYSIS-001 | PARTIAL | Training uses the refined shared hierarchy; final manual acceptance pending | PRODUCT-UI-003R2 |
+| QA-TRAIN-ANALYSIS-002 | PARTIAL | Pre-answer assistance is now one-at-a-time coaching hints; final manual acceptance pending | PRODUCT-UI-003R2 |
+| QA-TRAIN-ANALYSIS-003 | PARTIAL | Post-answer reference remains one canonical frequency panel; final manual acceptance pending | PRODUCT-UI-003R2 |
+| QA-REFERENCE-AUTHORITY-001 | PARTIAL | Additive source descriptors, structured coverage/capabilities, central claim policy, comparative heuristic Training language, high-risk limitation path, Playbook/Analyze provenance, Matrix precision, AnalysisExplanation consumption, unchanged grading/probabilities, and EN/RU/HE semantics are automated. Remaining acceptance: Firefox Training pre/after-answer and Full Hand comparison copy, high-risk context notes, Playbook Details/provenance, Matrix workspace precision, Daylight/Midnight, and HE RTL at representative desktop sizes. | REFERENCE-AUTHORITY-001 human Firefox acceptance |
+| QA-REFERENCE-AUTHORITY-002 | DEFERRED | Saved Hand/Spot currently preserve canonical/scenario state but not frozen historical StrategyResult metadata. If durable historical analysis is added, its approved payload must snapshot source ID/version, authority, coverage, capabilities, and limitations rather than reinterpret against today's registry. | future Saved historical-analysis payload ticket |
+>>>>>>> Stashed changes
 
 ## August 13 live audit IDs
 
@@ -100,6 +123,7 @@ These identifiers remain the historical live-audit baseline; current tickets may
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
+<<<<<<< Updated upstream
 | QA-POLISH-001 | PARTIAL | Existing visual/motion polish and lazy AudioContext behavior are automated; subjective Firefox audibility still needs human listening acceptance. | AUDIO-MOTION-001 / human listening acceptance |
 | QA-CARD-001 | PARTIAL | Premium Card System v1 unifies table/DOM rank and suit placement; Firefox visual acceptance remains. | premium closeout |
 | QA-CARD-002 | PARTIAL | `10` optical-width treatment exists across DOM/SVG; Firefox visual acceptance remains. | premium closeout |
@@ -113,6 +137,21 @@ These identifiers remain the historical live-audit baseline; current tickets may
 | QA-MICRO-001 | OPEN | Settings/current utility icon alignment needs final pass. | premium closeout |
 | QA-MICRO-002 | OPEN | action-color palette needs final restrained consistency review. | premium closeout |
 | QA-MICRO-003 | OPEN | awkward near-black inset surfaces need final token review. | premium closeout |
+=======
+| QA-POLISH-001 | PARTIAL | Visual/motion polish is manually accepted; PRELABS-FIX-001 now proves Firefox 153 creates/resumes one lazy AudioContext before starting the first cue, with card/correct/mistake/hint and off/re-enable paths clean; subjective Firefox audibility still needs human listening acceptance | PRELABS-FIX-001 human Firefox listening acceptance |
+| QA-CARD-001 | PARTIAL | Premium Card System v1 remains the shared face authority and now scales inside the adaptive 2–10 player-unit geometry; Firefox visual acceptance at 1920×1080 remains | PREMIUM-CARD-001 / TABLE-PRESENCE-002 human Firefox acceptance |
+| QA-CARD-002 | PARTIAL | `10` keeps its explicit optical-width treatment in the scaled table-card family across all three styles; Firefox visual acceptance remains | PREMIUM-CARD-001 / TABLE-PRESENCE-002 human Firefox acceptance |
+| QA-CARD-003 | PARTIAL | DOM and SVG cards still share one presentation authority, named geometry, face semantics, and back variants; structural tests cover TablePresentation integration, while representative workspace/theme visual acceptance remains | PREMIUM-CARD-001 / TABLE-PRESENCE-002 human Firefox acceptance |
+| QA-THEME-001 | PARTIAL | Daylight controls now use semantic light surfaces; human visual acceptance pending | PRODUCT-THEME-001 |
+| QA-THEME-002 | PARTIAL | Daylight muted text passes structural contrast checks; human visual acceptance pending | PRODUCT-THEME-001 |
+| QA-THEME-003 | PARTIAL | legacy/experimental labels are retired from the supported theme catalog; human visual acceptance pending | PRODUCT-THEME-001 |
+| QA-THEME-004 | PARTIAL | duplicate Discord entries are retired from the supported theme catalog; human visual acceptance pending | PRODUCT-THEME-001 |
+| QA-THEME-005 | PARTIAL | Luxury Gold is retired from the supported theme catalog; human visual acceptance pending | PRODUCT-THEME-001 |
+| QA-THEME-006 | PARTIAL | Named custom-theme lifecycle and independence remain automated; TABLE-PRESENCE-002 adds token-driven felt texture, two-band rail, betting line, seat prominence, and projection sizing without changing persisted theme records. Remaining acceptance: the existing custom-theme lifecycle plus Midnight/Daylight table legibility and Compact + Table Focus composition in Firefox. | PRODUCT-THEME-002 / TABLE-PRESENCE-002 human Firefox acceptance |
+| QA-MICRO-001 | OPEN | Settings/current utility icon alignment needs final pass | PRODUCT-UI-004 |
+| QA-MICRO-002 | OPEN | action-color palette needs final restrained consistency review | PRODUCT-UI-004 |
+| QA-MICRO-003 | OPEN | awkward near-black inset surfaces need final token review | PRODUCT-UI-004 |
+>>>>>>> Stashed changes
 
 Do not expand theme/layout/density/card variant catalogs during the active table phase.
 
@@ -141,6 +180,7 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
+<<<<<<< Updated upstream
 | QA-LAYOUT-001 | OPEN | Decision/Matrix/Range tabs sit too low and feel disconnected. | premium closeout |
 | QA-LAYOUT-002 | PARTIAL | Core Flow separates Hand setup from live stage and places canonical table/action dock before secondary details at narrow desktop widths; Firefox acceptance remains. | TABLE-PRESENCE-002 / premium closeout |
 | QA-LAYOUT-003 | OPEN | Card-first versus configuration-first ordering remains a product decision by state; table vNext should resolve live-Hand behavior without globally rewriting setup. | TABLE-PRESENCE-REF-001 |
@@ -157,6 +197,26 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 | FQA-004 | DEFERRED | Settings column imbalance accepted low-priority debt. | Product Lab later |
 | QA-TABLE-001 | PARTIAL | Active Hand centers canonical table facts, actor/price status and legal controls; next table vNext owns stronger stage/support-rail composition. | TABLE-PRESENCE-002 |
 | QA-COLLAPSE-001 | PARTIAL | Starting a Hand restores expanded table state; Firefox compact-state acceptance remains. | TABLE-PRESENCE-002 / premium closeout |
+=======
+| QA-LAYOUT-001 | OPEN | Decision/Matrix/Range tabs sit too low and feel disconnected | PRODUCT-UI-005 |
+| QA-LAYOUT-002 | PARTIAL | Active Hand now uses a primary compact timeline → adaptive table → Hero action dock sequence before secondary details, while setup remains a bounded rail and Analysis remains separate; Firefox passed the ticket's 1920×1080, 2560×1440, and 2560×1600 capture matrix, while 1024×768, 1366×768, representative zoom, and independent interaction acceptance remain open | TABLE-PRESENCE-002 human Firefox acceptance / PRODUCT-UI-005 |
+| QA-LAYOUT-003 | PARTIAL | TABLE-PRESENCE-002 resolves active play and review as table/card-first while retaining configuration-first setup before a Hand starts; HU, 6-max, and 10-max Firefox captures passed target-width, dock-visibility, overflow, and collision checks, while independent human validation remains open | TABLE-PRESENCE-002 human Firefox acceptance / Product Lab follow-up if rejected |
+| QA-LAYOUT-PRESETS-001 | PARTIAL | Existing workspace-specific layout presets remain the authority; TablePresentation adds Play/Review/Analyze/Saved-preview sizing targets and final responsive convergence without adding a competing preset. Firefox captures passed Balanced/Table Focus with Comfortable/Compact and EN/HE at ticket desktop widths; independent interaction acceptance plus Analysis Focus/Controls First regression sampling remains open. | LAYOUT-PRESETS-001 / TABLE-PRESENCE-002 human Firefox acceptance |
+| QA-MATRIX-001 | PARTIAL | Matrix now has dominant-action tint, a full-mix band, and exact hover/focus cues; final live acceptance pending | PRODUCT-UI-005R |
+| QA-MATRIX-002 | OPEN | postflop unavailable state should not render 169 inactive cells | PRODUCT-UI-005 |
+| QA-RANGE-001 | OPEN | two Range Category grids create an extremely long comparison page | PRODUCT-UI-005 |
+| QA-EQUITY-001 | OPEN | Equity workspace still feels like loosely assembled panels | PRODUCT-UI-005 |
+| QA-EQUITY-002 | OPEN | Equity `Hero / Win / Tie` label spacing/wrapping | PRODUCT-UI-005 |
+| QA-EQUITY-003 | PARTIAL | Flop/Turn/River guides and live board slots now share one five-column LTR grid; Electron geometry is exact across the RESPONSIVE-001 EN/RU/HE viewport matrix, with human visual acceptance still pending | RESPONSIVE-001 human acceptance |
+| QA-TRAIN-LAYOUT-001 | PARTIAL | Training desktop density is reduced for 1920×1080 pre-answer fit; final live acceptance pending | PRODUCT-UI-005R |
+| QA-TRAIN-LAYOUT-002 | OPEN | idle/no-board surfaces waste vertical space | PRODUCT-UI-005 |
+| FQA-002 | CLOSED | Training context values use the real grid, reflow to two columns at 1024, and remain atomic in Firefox EN/RU/HE with no global overflow or inaccessible action controls | PRELABS-FIX-001 |
+| FQA-004 | DEFERRED | Settings column imbalance is accepted low-priority Labs-era debt; no redesign is justified before Labs | Product Lab |
+| QA-TABLE-001 | PARTIAL | The active Hand now renders canonical facts through `table-presentation/v1`: deliberate 2–10 geometry, felt/rail/betting-line physicality, player-unit prominence, integrated cards, dealer/contribution/pot placement, compact timeline, and a legal-action-only Hero dock. Automated Firefox geometry checks and manual screenshot inspection passed the ticket matrix; independent human interaction acceptance remains open. | TABLE-PRESENCE-002 human Firefox acceptance |
+| QA-TABLE-VNEXT-001 | PARTIAL | Pure deterministic tests cover all 2–10 player templates, normalized anchors, Hero-bottom invariance, geometry families, seat prominence, physical table facts, projection sizing targets, RTL-stable poker geometry, and deep immutability. Firefox HU/6-max/10-max captures passed overlap, target-band, density, physicality, EN/HE, and LTR/RTL inspection; independent human acceptance remains open. | TABLE-PRESENCE-002 human Firefox acceptance |
+| QA-TABLE-VNEXT-002 | PARTIAL | Hand and Full Hand Training share the presentation contract; direct frame seeking, live/complete/review states, compact timeline, canonical sizing bounds, and duplicate-submission locking are structurally and deterministically covered. Firefox completion/review captures and keyboard direct seek passed; independent human interaction and action-resolution acceptance remains open. | TABLE-PRESENCE-002 human Firefox acceptance |
+| QA-COLLAPSE-001 | PARTIAL | Starting a Hand restores the table to expanded state and keeps the collapse control integrated; Firefox compact-state acceptance remains open | CORE-FLOW-001B Firefox acceptance / UI-005 |
+>>>>>>> Stashed changes
 
 ## Equity UX
 
@@ -170,6 +230,7 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
+<<<<<<< Updated upstream
 | QA-GUIDE-001 | PARTIAL | Guide terminology/content refresh implemented; final human review pending. | Guide human review |
 | QA-I18N-001 | PARTIAL | Rendered-visible RU/HE audit is structurally clean across representative surfaces; human linguistic acceptance pending. | i18n human acceptance |
 | QA-I18N-002 | PARTIAL | Live locale switching preserves state and re-renders without cross-locale leakage; human acceptance pending. | i18n human acceptance |
@@ -191,6 +252,15 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 | ID | Status | Issue | Owner |
 |---|---|---|---|
 | QA-OPPONENT-POLICY-001 | DEFERRED | Opponent archetypes/custom policies/full-hand bot Training require a separate provenance-aware behavior contract and must not be conflated with reference strategy or real-person certainty. | OPPONENT-POLICY-ARCH-001 |
+=======
+| QA-GUIDE-001 | PARTIAL | Guide terminology/content refresh is implemented and test-verified; final human Guide review is pending | GUIDE-001 human review |
+| QA-I18N-001 | PARTIAL | I18N-001R2 Electron rendered-visible RU/HE audit is clean across Matrix, empty Hand, unavailable Playbook Analysis, answered Training Analysis, localized theme Settings, and Equity advanced seed controls; exact-state screenshots captured, with human linguistic acceptance pending | I18N-001R2 human acceptance |
+| QA-I18N-002 | PARTIAL | one initialized runtime localizes static/dynamic/attribute content; Electron live switching preserves the same Matrix model, Training exercise/ID/seed, and unavailable StrategyResult while RU → HE → EN → RU re-renders both unavailable message surfaces without recomputation or cross-locale script leakage | I18N-001R2 human acceptance |
+| QA-I18N-003 | PARTIAL | static diagnostics report zero missing visible keys, zero mojibake, and zero cross-locale script contamination; the rendered audit covers text, pseudo-content, options, input values, and user-facing attributes with zero unintended English/Cyrillic/Hebrew findings under the narrow poker/technical proper-noun whitelist | I18N-001R2 human acceptance |
+| QA-I18N-004 | PARTIAL | RTL direction and LTR poker-data islands are structurally tested; RESPONSIVE-001's 260-case Electron sweep and exact Equity street geometry cover Hebrew at 1024, 1080p, 1600p, and 90/110/125% zoom, with human visual acceptance still pending | RESPONSIVE-001 human acceptance |
+| QA-RESP-001 | PARTIAL | The prior 260-case Electron matrix remains clean; TABLE-PRESENCE-002 adds height-aware Play/Review/Analyze/Saved-preview bounds plus 1100px/820px table and dock convergence. Human Firefox acceptance is still pending at 1024×768, 1366×768, and 1920×1080 in EN/HE and Midnight/Daylight. | RESPONSIVE-001 / TABLE-PRESENCE-002 human acceptance |
+| QA-MOBILE-001 | DEFERRED | mobile needs a distinct composition, not only stacked desktop panels | MOBILE-001 |
+>>>>>>> Stashed changes
 
 ## Performance and DOM follow-up
 

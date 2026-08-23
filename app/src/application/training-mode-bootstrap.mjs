@@ -11,6 +11,13 @@ import { createTrainingPresentationModel } from './training-presentation.mjs';
 import { createTrainingSessionIntent } from './training-practice-planner.mjs';
 import { createTablePresenceViewModel } from './table-presence-view-model.mjs';
 import { createTablePresenceTransitionMotion } from './replay-projection-controller.mjs';
+import { createReplayTimelineViewModel } from './replay-timeline-view-model.mjs';
+import {
+  TABLE_INTERACTIONS,
+  TABLE_PROJECTIONS,
+  TABLE_VISUAL_STATES,
+  createTablePresentation,
+} from './table-presentation.mjs';
 import {
   createFullHandTrainingPresentationOrchestrator,
 } from './full-hand-training-presentation-orchestrator.mjs';
@@ -87,6 +94,47 @@ export function installTrainingModeBridge(browserWindow, {
       return createTablePresenceViewModel({
         state: snapshot?.state ?? null,
         heroPlayerId: snapshot?.heroPlayerId ?? null,
+      });
+    },
+    createFullHandTablePresentation(snapshot = fullHandController.getSnapshot(), {
+      review = false,
+      submissionLocked = false,
+      tablePresence: suppliedTablePresence = null,
+    } = {}) {
+      const tablePresence = suppliedTablePresence || createTablePresenceViewModel({
+        state: snapshot?.state ?? null,
+        heroPlayerId: snapshot?.heroPlayerId ?? null,
+      });
+      const terminal = snapshot?.status === 'terminal' || tablePresence.status === 'terminal';
+      const heroDecision = snapshot?.status === 'awaiting_hero' && snapshot.currentDecision;
+      const projection = review || terminal ? TABLE_PROJECTIONS.REVIEW : TABLE_PROJECTIONS.PLAY;
+      const visualState = review
+        ? TABLE_VISUAL_STATES.POST_HAND_REVIEW
+        : terminal
+          ? TABLE_VISUAL_STATES.HAND_COMPLETE
+          : heroDecision
+            ? TABLE_VISUAL_STATES.LIVE_DECISION
+            : TABLE_VISUAL_STATES.ACTION_RESOLUTION;
+      const interaction = review
+        ? TABLE_INTERACTIONS.REPLAY
+        : heroDecision
+          ? TABLE_INTERACTIONS.DECISION
+          : TABLE_INTERACTIONS.PASSIVE;
+      const legalActionSpec = heroDecision ? snapshot.currentDecision.legalActions : null;
+      return createTablePresentation({
+        projection,
+        visualState,
+        interaction,
+        tablePresence,
+        timeline: snapshot?.state
+          ? createReplayTimelineViewModel({
+            state: snapshot.state,
+            heroPlayerId: snapshot.heroPlayerId,
+          })
+          : null,
+        legalActionSpec,
+        chipUnitMilliBb: snapshot?.state?.game?.chipUnitMilliBb ?? null,
+        submissionLocked,
       });
     },
     createFullHandTableTransition({

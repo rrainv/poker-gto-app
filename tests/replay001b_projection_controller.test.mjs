@@ -191,6 +191,40 @@ test('initialization and private-deal frames preserve exact visibility and bound
   assert.equal(journal.controller.next().currentStep, 2);
 });
 
+test('direct Replay frame seek is validated, deterministic, and never mutates the live Hand', () => {
+  const journal = harness();
+  const initial = initialized();
+  journal.replace(initial);
+  let dealt = observedDeal(initial);
+  journal.record(dealt, REPLAY_FRAME_OPERATIONS.DEAL_HOLE_OBSERVED);
+  dealt = act(dealt, ACTION_TYPES.CALL);
+  journal.record(dealt, REPLAY_FRAME_OPERATIONS.ACTION);
+  const liveReference = journal.live();
+  const liveSnapshot = structuredClone(liveReference);
+
+  let projection = journal.controller.selectFrame(0);
+  assert.equal(projection.mode, 'replay');
+  assert.equal(projection.selectedFrameIndex, 0);
+  assert.equal(projection.timeline.groups.flatMap((group) => group.items)
+    .find((item) => item.frameIndex === 0).presentationState, 'current');
+
+  projection = journal.controller.selectFrame(1);
+  assert.equal(projection.mode, 'replay');
+  assert.equal(projection.readOnly, true);
+  assert.equal(projection.selectedFrameIndex, 1);
+  assert.strictEqual(journal.live(), liveReference);
+  assert.deepEqual(journal.live(), liveSnapshot);
+
+  projection = journal.controller.selectFrame(2);
+  assert.equal(projection.mode, 'live');
+  assert.equal(projection.atEndpoint, true);
+  assert.equal(projection.selectedFrameIndex, 2);
+
+  assert.throws(() => journal.controller.selectFrame(0.5), /integer/);
+  assert.throws(() => journal.controller.selectFrame(-1), /out of range/);
+  assert.throws(() => journal.controller.selectFrame(3), /out of range/);
+});
+
 test('application-provided timeline progress marks selected actions and chance frames exactly', () => {
   const journal = harness();
   let state = initialized();

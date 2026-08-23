@@ -744,6 +744,21 @@
   Object.assign(ru, trainingVariedTutorial.ru);
   Object.assign(he, trainingVariedTutorial.he);
 
+  const tablePresenceTutorial = {
+    en: {
+      'The compact timeline records actions and chance events by street. Select any event to seek a read-only Replay frame without mutating live PokerState.': 'The compact timeline records actions and chance events by street. Select any event to seek a read-only Replay frame without mutating live PokerState.',
+    },
+    ru: {
+      'The compact timeline records actions and chance events by street. Select any event to seek a read-only Replay frame without mutating live PokerState.': 'Компактная хронология показывает действия и события раздачи по улицам. Выберите любое событие, чтобы перейти к кадру повтора только для чтения, не изменяя текущий PokerState.',
+    },
+    he: {
+      'The compact timeline records actions and chance events by street. Select any event to seek a read-only Replay frame without mutating live PokerState.': 'ציר הזמן הקומפקטי מציג פעולות ואירועי חלוקה לפי רחוב. בחרו אירוע כדי לעבור לפריים חזרה לקריאה בלבד, בלי לשנות את PokerState החי.',
+    },
+  };
+  Object.assign(en, tablePresenceTutorial.en);
+  Object.assign(ru, tablePresenceTutorial.ru);
+  Object.assign(he, tablePresenceTutorial.he);
+
   global.riverlineTutorialTranslations = Object.freeze({
     en: Object.freeze(en),
     ru: Object.freeze(ru),
