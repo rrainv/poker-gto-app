@@ -157,8 +157,9 @@ test('manual flat-drop strategy control is removed and legacy option is ignored'
     { Bet: oneBlindDrop.Bet, Check: oneBlindDrop.Check },
     { Bet: noDrop.Bet, Check: noDrop.Check },
   );
-  assert.equal(noDrop.context.compatibilityStackToPotRatio, 3);
-  assert.equal(oneBlindDrop.context.compatibilityStackToPotRatio, 3);
+  assert.equal(noDrop.context.effectiveSpr.kind, 'base_v1_compatibility_spr');
+  assert.equal(noDrop.context.effectiveSpr.scalar, 3);
+  assert.equal(oneBlindDrop.context.effectiveSpr.scalar, 3);
   assert.equal(oneBlindDrop.context.flatDropApplied, false);
 });
 
@@ -216,5 +217,6 @@ test('Jack is not recognized as King by the fallback', () => {
 test('representative connected hand remains normalized outside rank predicates', () => {
   const tenNineSuited = qa.fallback('T', '9', false, true, 'UTG', 'raise', 2.5, 5, 100, 2.5);
   assertNormalized(tenNineSuited);
-  assert.ok(tenNineSuited.open + tenNineSuited.call > tenNineSuited.fold);
+  assert.ok(tenNineSuited.call > tenNineSuited.open);
+  assert.ok(tenNineSuited.fold > tenNineSuited.call);
 });

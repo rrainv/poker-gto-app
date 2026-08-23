@@ -132,7 +132,12 @@ test('postflop strategy entry uses DecisionContext on flop, turn, and river', ()
     const profile = capture.profile;
     assert.equal(profile.source, 'heuristic_postflop');
     assert.equal(typeof profile.best, 'string');
-    assert.equal(profile.context.compatibilityStackToPotRatio, 3);
+    assert.equal(profile.context.effectiveSpr.kind, 'unavailable');
+    assert.equal(profile.context.effectiveSpr.scalar, null);
+    assert.equal(
+      profile.context.stackSemantics,
+      'live_effective_stack_unavailable_no_compatibility_fallback',
+    );
     assert.deepEqual(capture.equityDecisionContext, context);
   }
 });

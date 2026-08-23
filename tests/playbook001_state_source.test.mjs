@@ -316,7 +316,7 @@ test('3-bet and BB-option contexts preserve nominal facts without fabricating Sc
   assert.equal(option.decisionContext.callAmountBb, 0);
 });
 
-test('flop first-action parity and facing-bet pricing authority remain explicit', () => {
+test('flop first-action live facts and facing-bet pricing authority remain explicit', () => {
   const controller = controllerWithCards({ heroPosition: 'BB' });
   controller.applyAction({ type: ACTION_TYPES.CALL });
   controller.applyAction({ type: ACTION_TYPES.CHECK });
@@ -327,7 +327,7 @@ test('flop first-action parity and facing-bet pricing authority remain explicit'
     resolveScenario(projectedScenario(flop.decisionContext)).decisionContext,
   );
   const handFlop = legacy.strategyResult(flop.decisionContext);
-  assert.deepEqual(scenarioFlop.actions, handFlop.actions);
+  assert.notDeepEqual(scenarioFlop.actions, handFlop.actions);
   assert.equal(
     scenarioFlop.details.heuristicSample.eq,
     handFlop.details.heuristicSample.eq,
@@ -340,6 +340,9 @@ test('flop first-action parity and facing-bet pricing authority remain explicit'
     handFlop.details.heuristicSample.opponentCountSource,
     'decision_context_exact',
   );
+  assert.equal(scenarioFlop.details.positionAdjustmentApplied, false);
+  assert.equal(handFlop.details.positionAdjustmentApplied, true);
+  assert.equal(handFlop.details.effectiveSpr.kind, 'heads_up_exact_effective_spr');
 
   controller.applyAction({ type: ACTION_TYPES.CHECK });
   controller.applyAction({ type: ACTION_TYPES.BET, amountToBb: 2 });
@@ -354,7 +357,7 @@ test('flop first-action parity and facing-bet pricing authority remain explicit'
   assert.equal(scenarioResult.source, 'unavailable');
   assert.deepEqual(scenarioResult.actions, []);
   assert.equal(scenarioResult.contextCoverage.kind, 'unsupported');
-  assert.equal(scenarioResult.contextCoverage.basis, 'missing_trusted_call_price');
+  assert.equal(scenarioResult.contextCoverage.basis, 'missing_trusted_decision_economics');
 
   const handResult = legacy.strategyResult(facingBet.decisionContext);
   assert.equal(handResult.schemaVersion, 'strategy-result/v1');

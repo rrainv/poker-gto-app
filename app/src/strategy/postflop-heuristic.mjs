@@ -38,9 +38,15 @@ function opponentCountFor({ opponentCount, tableSize }) {
   return { count: seatedPlayers - 1, source: 'table_size_approximation' };
 }
 
-export function postflopOpponentRangeAssumption({ facingSizeBb, lastAction } = {}) {
-  return Number(facingSizeBb) > 0
-    || String(lastAction || '').toLowerCase().includes('raise')
+export function postflopOpponentRangeAssumption({
+  facingSizeBb,
+  lastAction,
+  priorActionSummary,
+} = {}) {
+  const aggressionFamily = String(priorActionSummary?.aggressionFamily || '').toLowerCase();
+  return ['bet', 'raise'].includes(aggressionFamily)
+    || Number(facingSizeBb) > 0
+    || ['bet', 'raise'].includes(String(lastAction || '').toLowerCase())
     ? 'aggression_conditioned'
     : 'unconditioned';
 }
@@ -134,6 +140,7 @@ export function simulateHeuristicEquity({
   opponentCount = null,
   facingSizeBb,
   lastAction,
+  priorActionSummary = null,
   opponentStyle = 0,
   iterations = POSTFLOP_HEURISTIC_SAMPLES,
   rng,
@@ -164,7 +171,11 @@ export function simulateHeuristicEquity({
   }
   const range = buildOpponentCandidateRange(deck, {
     opponentStyle,
-    rangeAssumption: postflopOpponentRangeAssumption({ facingSizeBb, lastAction }),
+    rangeAssumption: postflopOpponentRangeAssumption({
+      facingSizeBb,
+      lastAction,
+      priorActionSummary,
+    }),
     totalPlayers: opponents.count + 1,
   });
 
@@ -231,7 +242,11 @@ export function simulateHeuristicEquity({
     rangeTargetFraction: range.targetFraction,
     rangeDistribution: 'uniform_over_selected_legal_combos',
     sharedRangeAssumption: true,
-    opponentRangeAssumption: postflopOpponentRangeAssumption({ facingSizeBb, lastAction }),
+    opponentRangeAssumption: postflopOpponentRangeAssumption({
+      facingSizeBb,
+      lastAction,
+      priorActionSummary,
+    }),
     soleWins,
     splitPotTrials,
   };
@@ -270,8 +285,289 @@ export function postflopContextFacesWager(decisionContext, trustedCallAmount = u
       : null
     : trustedCallAmount;
   if (resolvedCallAmount === 0) return false;
+  const facingActionFamily = String(
+    decisionContext?.priorActionSummary?.facingActionFamily || '',
+  ).toLowerCase();
+  if (['bet', 'raise'].includes(facingActionFamily)) return true;
   return Number(decisionContext.facingSizeBb) > 0
     || ['bet', 'raise'].includes(String(decisionContext.lastAction || '').toLowerCase());
+}
+
+function exactCurrentPotBb(decisionContext) {
+  return decisionContext?.contractVersion === 'decision-context/v1.1'
+    && Number.isFinite(decisionContext.currentPotBb)
+    && decisionContext.currentPotBb >= 0
+    ? decisionContext.currentPotBb
+    : null;
+}
+
+function postflopDecisionPotFacts(decisionContext) {
+  const exact = exactCurrentPotBb(decisionContext);
+  if (exact !== null) {
+    return { value: exact, kind: 'decision_context_v1.1_current_pot' };
+  }
+  if (decisionContext?.contractVersion !== 'decision-context/v1.1'
+    && Number.isFinite(decisionContext?.potBb)
+    && decisionContext.potBb >= 0) {
+    return { value: decisionContext.potBb, kind: 'base_v1_compatibility_pot' };
+  }
+  return { value: null, kind: 'exact_current_pot_unavailable_no_compatibility_fallback' };
+}
+
+export function postflopEffectiveSprFacts(decisionContext) {
+  const potFacts = postflopDecisionPotFacts(decisionContext);
+  const currentPotBb = potFacts.value;
+  if (!(currentPotBb > 0)) {
+    return {
+      kind: 'unavailable',
+      scalar: null,
+      minimum: null,
+      maximum: null,
+      currentPotBb,
+      adjustmentEnabled: false,
+      reason: 'exact_current_pot_unavailable',
+    };
+  }
+  if (potFacts.kind === 'base_v1_compatibility_pot') {
+    const compatibilityStackBb = Number.isFinite(decisionContext?.stackBb)
+      && decisionContext.stackBb >= 0
+      ? decisionContext.stackBb
+      : null;
+    const scalar = compatibilityStackBb === null
+      ? null
+      : compatibilityStackBb / currentPotBb;
+    return {
+      kind: scalar === null ? 'unavailable' : 'base_v1_compatibility_spr',
+      scalar,
+      minimum: scalar,
+      maximum: scalar,
+      currentPotBb: null,
+      compatibilityPotBb: currentPotBb,
+      compatibilityStackBb,
+      adjustmentEnabled: false,
+      reason: scalar === null
+        ? 'base_v1_compatibility_stack_unavailable'
+        : 'base_v1_legacy_score_adjustment_only',
+    };
+  }
+  if (Number(decisionContext?.opponentCount) === 1
+    && Number.isFinite(decisionContext?.effectiveStackBb)
+    && decisionContext.effectiveStackBb >= 0) {
+    const scalar = decisionContext.effectiveStackBb / currentPotBb;
+    return {
+      kind: 'heads_up_exact_effective_spr',
+      scalar,
+      minimum: scalar,
+      maximum: scalar,
+      currentPotBb,
+      effectiveStackBb: decisionContext.effectiveStackBb,
+      adjustmentEnabled: true,
+      reason: null,
+    };
+  }
+  const perOpponent = Array.isArray(decisionContext?.effectiveStackByOpponent)
+    ? decisionContext.effectiveStackByOpponent
+      .map((entry) => Number(entry?.effectiveStackBb))
+      .filter((value) => Number.isFinite(value) && value >= 0)
+      .map((value) => value / currentPotBb)
+    : [];
+  if (Number(decisionContext?.opponentCount) > 1 && perOpponent.length > 0) {
+    return {
+      kind: 'multiway_per_opponent_spr_range',
+      scalar: null,
+      minimum: Math.min(...perOpponent),
+      maximum: Math.max(...perOpponent),
+      currentPotBb,
+      perOpponent,
+      adjustmentEnabled: false,
+      reason: 'multiway_scalar_adjustment_disabled',
+    };
+  }
+  return {
+    kind: 'unavailable',
+    scalar: null,
+    minimum: null,
+    maximum: null,
+    currentPotBb,
+    adjustmentEnabled: false,
+    reason: 'live_effective_stack_unavailable',
+  };
+}
+
+function postflopPositionAdjustment(decisionContext, facesWager) {
+  const relation = String(decisionContext?.positionRelation || 'unknown');
+  const aggressorRelation = String(
+    decisionContext?.aggressorPositionRelation || 'unknown',
+  );
+  // One shared bounded reallocation rule changes only aggression versus the
+  // corresponding passive continuation. It does not claim equilibrium
+  // positional frequencies, and mixed/unknown relations never inherit a
+  // full IP or OOP adjustment.
+  let rate = relation === 'in_position' ? 0.05
+    : relation === 'out_of_position' ? -0.08
+      : 0;
+  if (relation === 'mixed' && facesWager) {
+    if (aggressorRelation === 'in_position') rate += 0.015;
+    if (aggressorRelation === 'out_of_position') rate -= 0.02;
+  }
+  return {
+    relation,
+    aggressorRelation,
+    rate,
+    applied: rate !== 0,
+    semantics: relation === 'unknown'
+      ? 'unknown_relation_no_adjustment'
+      : relation === 'mixed'
+        ? 'mixed_relation_not_collapsed_to_ip_or_oop'
+        : 'bounded_aggression_passive_reallocation',
+  };
+}
+
+function postflopSprAdjustment(evaluation, sprFacts) {
+  if (!sprFacts.adjustmentEnabled || !Number.isFinite(sprFacts.scalar)) {
+    return { rate: 0, applied: false, reason: sprFacts.reason };
+  }
+  // Exact HU effective SPR only. Smooth shallow/deep weights avoid stack
+  // bucket discontinuities; multiway contexts are explicitly disabled above.
+  const shallowWeight = 1 - smoothBoundary(sprFacts.scalar, 2.75, 1.25);
+  const deepWeight = smoothBoundary(sprFacts.scalar, 9, 3);
+  const strongMade = ['monster', 'two_pair', 'overpair', 'top_pair']
+    .includes(evaluation.strategicCategory);
+  const onePair = ['overpair', 'top_pair', 'middle_pair', 'bottom_pair', 'weak_pair']
+    .includes(evaluation.strategicCategory);
+  let rate = strongMade ? 0.06 * shallowWeight : 0;
+  if (onePair) rate -= 0.06 * deepWeight;
+  return {
+    rate,
+    applied: rate !== 0,
+    shallowWeight,
+    deepWeight,
+    reason: rate === 0 ? 'category_has_no_stack_adjustment' : null,
+  };
+}
+
+function baseV1CompatibilityScoreAdjustment(evaluation, sprFacts) {
+  if (sprFacts.kind !== 'base_v1_compatibility_spr'
+    || !Number.isFinite(sprFacts.scalar)) return 0;
+  if (sprFacts.scalar < 2
+    && ['monster', 'two_pair', 'overpair', 'top_pair'].includes(
+      evaluation.strategicCategory,
+    )) return 0.03;
+  if (sprFacts.scalar > 10
+    && evaluation.isWetBoard
+    && evaluation.strategicCategory === 'top_pair') return -0.03;
+  return 0;
+}
+
+function postflopHistoryAdjustment(decisionContext) {
+  const summaryFamily = String(
+    decisionContext?.priorActionSummary?.aggressionFamily || '',
+  ).toLowerCase();
+  const legacyFamily = String(decisionContext?.lastAction || '').toLowerCase();
+  const family = ['bet', 'raise'].includes(summaryFamily) ? summaryFamily
+    : ['bet', 'raise'].includes(legacyFamily) ? legacyFamily
+      : 'none';
+  return {
+    family,
+    rate: family === 'raise' ? -0.04 : 0,
+    applied: family === 'raise',
+    semantics: family === 'raise'
+      ? 'postflop_raise_reallocates_aggression_to_passive_continuation'
+      : 'no_raise_pressure_adjustment',
+  };
+}
+
+function postflopMultiwayAdjustment(decisionContext) {
+  const opponentCount = Number(decisionContext?.opponentCount);
+  if (!Number.isInteger(opponentCount) || opponentCount <= 1) {
+    return { rate: 0, applied: false, opponentCount: opponentCount || null };
+  }
+  // Keep genuine multiway sensitivity independent from SPR so a per-opponent
+  // stack vector is never collapsed into a fake exact scalar.
+  const rate = -Math.min(0.16, (opponentCount - 1) * 0.06);
+  return {
+    rate,
+    applied: true,
+    opponentCount,
+    semantics: 'bounded_multiway_aggression_reallocation_separate_from_spr',
+  };
+}
+
+function reallocateAggressiveMass(strategy, facesWager, rawRate) {
+  const aggressiveName = facesWager ? 'Raise' : 'Bet';
+  const passiveName = facesWager ? 'Call' : 'Check';
+  const rate = Math.min(0.12, Math.max(-0.18, rawRate));
+  const adjusted = { ...strategy };
+  const aggressive = Math.max(0, Number(adjusted[aggressiveName]) || 0);
+  const passive = Math.max(0, Number(adjusted[passiveName]) || 0);
+  if (rate > 0) {
+    const shift = passive * rate;
+    adjusted[aggressiveName] = aggressive + shift;
+    adjusted[passiveName] = passive - shift;
+  } else if (rate < 0) {
+    const shift = aggressive * -rate;
+    adjusted[aggressiveName] = aggressive - shift;
+    adjusted[passiveName] = passive + shift;
+  }
+  return adjusted;
+}
+
+function legalAggressionMode(decisionContext) {
+  if (decisionContext?.canRaise === false) return 'unavailable';
+  if (decisionContext?.canRaise === true
+    && decisionContext.minRaiseToBb === null
+    && Number.isFinite(decisionContext.maxRaiseToBb)) {
+    return 'short_all_in_only';
+  }
+  if (decisionContext?.canRaise === true) return 'regular';
+  return 'unknown';
+}
+
+function normalizePercentStrategy(strategy, fallbackAction) {
+  const positive = Object.entries(strategy).filter(([, value]) => (
+    Number.isFinite(Number(value)) && Number(value) > 0
+  ));
+  const total = positive.reduce((sum, [, value]) => sum + Number(value), 0);
+  if (!(total > 0)) return { [fallbackAction]: 100 };
+  const normalized = Object.fromEntries(positive.map(([name, value]) => (
+    [name, Number(value) * 100 / total]
+  )));
+  const names = Object.keys(normalized);
+  normalized[names.at(-1)] += 100 - Object.values(normalized)
+    .reduce((sum, value) => sum + value, 0);
+  return normalized;
+}
+
+function projectLegalAggression(strategy, decisionContext, facesWager) {
+  const mode = legalAggressionMode(decisionContext);
+  const aggressiveName = facesWager ? 'Raise' : 'Bet';
+  const passiveName = facesWager ? 'Call' : 'Check';
+  const aggressivePercent = Math.max(0, Number(strategy[aggressiveName]) || 0);
+  if (mode === 'unavailable') {
+    const { [aggressiveName]: _removed, ...passiveOnly } = strategy;
+    return {
+      strategy: normalizePercentStrategy(passiveOnly, passiveName),
+      mode,
+      removedAggressionPercent: aggressivePercent,
+      shortAllInProjectionApplied: false,
+    };
+  }
+  if (mode === 'short_all_in_only') {
+    const { [aggressiveName]: _removed, ...withAllIn } = strategy;
+    if (aggressivePercent > 0) withAllIn.AllIn = aggressivePercent;
+    return {
+      strategy: normalizePercentStrategy(withAllIn, passiveName),
+      mode,
+      removedAggressionPercent: 0,
+      shortAllInProjectionApplied: aggressivePercent > 0,
+    };
+  }
+  return {
+    strategy: normalizePercentStrategy(strategy, passiveName),
+    mode,
+    removedAggressionPercent: 0,
+    shortAllInProjectionApplied: false,
+  };
 }
 
 function handClassificationDetails(evaluation) {
@@ -313,6 +609,7 @@ export function calculatePostflopHeuristicStrategy(decisionContext, options, rng
     opponentCount: decisionContext.opponentCount,
     facingSizeBb: decisionContext.facingSizeBb,
     lastAction: decisionContext.lastAction,
+    priorActionSummary: decisionContext.priorActionSummary,
     opponentStyle: options.opponentStyle,
     iterations: POSTFLOP_HEURISTIC_SAMPLES,
     rng,
@@ -330,17 +627,13 @@ export function calculatePostflopStrategyFromSample(decisionContext, options, si
   const sampledEquity = clampUnit(simulation.eq);
   if (!Number.isFinite(sampledEquity)) throw new RangeError('Heuristic sample equity must be finite');
 
-  const potSize = Number.isFinite(Number(decisionContext.potBb))
-    ? Math.max(0, Number(decisionContext.potBb))
-    : 1.5;
+  const potFacts = postflopDecisionPotFacts(decisionContext);
+  const decisionPotBb = potFacts.value;
   const trustedCallAmount = Number.isFinite(decisionContext.callAmountBb)
     && decisionContext.callAmountBb >= 0
     ? decisionContext.callAmountBb
     : null;
-  const compatibilityStack = Number.isFinite(Number(decisionContext.stackBb))
-    ? Math.max(0, Number(decisionContext.stackBb))
-    : 100;
-  const compatibilityStackToPotRatio = potSize > 0 ? compatibilityStack / potSize : null;
+  const effectiveSpr = postflopEffectiveSprFacts(decisionContext);
   const playStyle = clampUnit(options.playStyle);
 
   // These offsets are explicit strategic heuristics, not equity corrections.
@@ -360,22 +653,23 @@ export function calculatePostflopStrategyFromSample(decisionContext, options, si
   else if (evaluation.drawFeatures?.isGutshot) aggressionScore += 0.015;
   if (evaluation.drawFeatures?.nutFlushDraw) aggressionScore += 0.02;
   if (evaluation.isWetBoard && evaluation.strategicCategory === 'top_pair') aggressionScore -= 0.04;
-  if (compatibilityStackToPotRatio !== null && compatibilityStackToPotRatio < 2
-    && ['monster', 'two_pair', 'overpair', 'top_pair'].includes(evaluation.strategicCategory)) {
-    aggressionScore += 0.03;
-  }
-  if (compatibilityStackToPotRatio !== null && compatibilityStackToPotRatio > 10
-    && evaluation.isWetBoard && evaluation.strategicCategory === 'top_pair') {
-    aggressionScore -= 0.03;
-  }
+  const baseV1StackScoreAdjustment = baseV1CompatibilityScoreAdjustment(
+    evaluation,
+    effectiveSpr,
+  );
+  aggressionScore += baseV1StackScoreAdjustment;
   aggressionScore = clampUnit(aggressionScore + playStyle * 0.05);
 
-  const requiredRawEquity = trustedCallAmount !== null && trustedCallAmount > 0
-    ? trustedCallAmount / (potSize + trustedCallAmount)
+  const requiredRawEquity = trustedCallAmount !== null
+    && trustedCallAmount > 0
+    && decisionPotBb !== null
+    ? trustedCallAmount / (decisionPotBb + trustedCallAmount)
     : null;
   const facesWager = postflopContextFacesWager(decisionContext, trustedCallAmount);
-  if (facesWager && trustedCallAmount === null) {
-    throw new RangeError('Postflop facing-wager strategy requires an exact callAmountBb');
+  if (facesWager && (trustedCallAmount === null || decisionPotBb === null)) {
+    throw new RangeError(
+      'Postflop facing-wager strategy requires exact callAmountBb and currentPotBb facts',
+    );
   }
   let strategy;
 
@@ -410,6 +704,22 @@ export function calculatePostflopStrategyFromSample(decisionContext, options, si
     };
   }
 
+  const positionAdjustment = postflopPositionAdjustment(decisionContext, facesWager);
+  const sprAdjustment = postflopSprAdjustment(evaluation, effectiveSpr);
+  const historyAdjustment = postflopHistoryAdjustment(decisionContext);
+  const multiwayAdjustment = postflopMultiwayAdjustment(decisionContext);
+  const combinedAggressionReallocationRate = positionAdjustment.rate
+    + sprAdjustment.rate
+    + historyAdjustment.rate
+    + multiwayAdjustment.rate;
+  strategy = reallocateAggressiveMass(
+    strategy,
+    facesWager,
+    combinedAggressionReallocationRate,
+  );
+  const legalProjection = projectLegalAggression(strategy, decisionContext, facesWager);
+  strategy = legalProjection.strategy;
+
   strategy.context = {
     heuristicSample: {
       ...simulation,
@@ -422,21 +732,62 @@ export function calculatePostflopStrategyFromSample(decisionContext, options, si
     requiredRawEquity,
     priceSource: trustedCallAmount === null
       ? 'unavailable_scenario_price'
+      : decisionPotBb === null && trustedCallAmount > 0
+        ? 'unavailable_current_pot'
       : trustedCallAmount === 0 ? 'trusted_free_action' : 'trusted_call_amount',
     priceDependentAdjustmentApplied: requiredRawEquity !== null,
     facesWager,
-    compatibilityStackToPotRatio,
-    stackSemantics: 'decision_context_compatibility_stack_not_effective_stack',
+    currentPotBbUsed: potFacts.kind === 'decision_context_v1.1_current_pot'
+      ? decisionPotBb
+      : null,
+    compatibilityPotBbUsed: potFacts.kind === 'base_v1_compatibility_pot'
+      ? decisionPotBb
+      : null,
+    potSemantics: potFacts.kind,
+    effectiveSpr,
+    stackSemantics: effectiveSpr.kind === 'heads_up_exact_effective_spr'
+      ? 'decision_context_v1.1_heads_up_effective_stack'
+      : effectiveSpr.kind === 'multiway_per_opponent_spr_range'
+        ? 'per_opponent_multiway_range_scalar_adjustment_disabled'
+        : effectiveSpr.kind === 'base_v1_compatibility_spr'
+          ? 'base_v1_compatibility_stack_not_live_or_effective'
+          : 'live_effective_stack_unavailable_no_compatibility_fallback',
     playStyle,
     opponentStyle: clampUnit(options.opponentStyle),
     playStyleSemantics: 'continuous_aggression_bias',
     opponentStyleSemantics: 'higher_value_samples_a_looser_assumed_range',
-    positionAdjustmentApplied: false,
+    positionAdjustment,
+    positionAdjustmentApplied: positionAdjustment.applied,
+    sprAdjustment,
+    baseV1StackScoreAdjustment,
+    historyAdjustment,
+    multiwayAdjustment,
+    combinedAggressionReallocationRate: Math.min(
+      0.12,
+      Math.max(-0.18, combinedAggressionReallocationRate),
+    ),
+    legalAggression: {
+      mode: legalProjection.mode,
+      canRaise: decisionContext.canRaise ?? null,
+      minRaiseToBb: Number.isFinite(decisionContext.minRaiseToBb)
+        ? decisionContext.minRaiseToBb
+        : null,
+      maxRaiseToBb: Number.isFinite(decisionContext.maxRaiseToBb)
+        ? decisionContext.maxRaiseToBb
+        : null,
+      allInToBb: Number.isFinite(decisionContext.allInToBb)
+        ? decisionContext.allInToBb
+        : null,
+      removedAggressionPercent: legalProjection.removedAggressionPercent,
+      shortAllInProjectionApplied: legalProjection.shortAllInProjectionApplied,
+    },
     flatDropApplied: false,
     flatDropBbIgnored: Number.isFinite(Number(options.flatDropBb))
       ? Math.max(0, Number(options.flatDropBb))
       : 0,
-    sizingSemantics: 'omitted_because_decision_context_lacks_complete_legal_raise_bounds',
+    sizingSemantics: legalProjection.shortAllInProjectionApplied
+      ? 'all_in_action_family_only_legal_bounds_are_not_strategy_sizing'
+      : 'generic_aggressive_action_legal_bounds_are_not_strategy_sizing',
   };
   return strategy;
 }

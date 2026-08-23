@@ -150,7 +150,14 @@ test('v1.1 is additive and legacy v1 provider/saved readers remain compatible', 
   const provider = strategyProvider();
   assert.equal(extended.schemaVersion, 'decision-context/v1');
   assert.equal(extended.contractVersion, DECISION_CONTEXT_CONTRACT_VERSION);
-  assert.deepEqual(provider.resolve(extended), provider.resolve(legacy));
+  const extendedResult = provider.resolve(extended);
+  const legacyResult = provider.resolve(legacy);
+  assert.deepEqual(extendedResult.actions, legacyResult.actions);
+  assert.equal(extendedResult.schemaVersion, legacyResult.schemaVersion);
+  assert.equal(extendedResult.source, legacyResult.source);
+  assert.equal(extendedResult.details.priorActionSummaryApplied, true);
+  assert.equal(legacyResult.details.priorActionSummaryApplied, false);
+  assert.notDeepEqual(extendedResult.details, legacyResult.details);
 
   const legacySnapshot = createSavedSpotSnapshot({
     derivation: SAVED_SPOT_DERIVATIONS.SCENARIO,
@@ -461,16 +468,23 @@ test('provenance records defaults/clamps and serialization is deterministic', ()
   ));
 });
 
-test('existing heuristic probabilities remain unchanged when v1.1 fields are ignored', () => {
+test('v1.1 strategy consumes live facts while a stripped legacy context remains readable', () => {
   const provider = strategyProvider();
   const preflop = context(createDealtState());
-  assert.deepEqual(provider.resolve(preflop), provider.resolve(withoutV11Fields(preflop)));
+  const livePreflop = provider.resolve(preflop);
+  const legacyPreflop = provider.resolve(withoutV11Fields(preflop));
+  assert.equal(livePreflop.schemaVersion, 'strategy-result/v1');
+  assert.equal(legacyPreflop.schemaVersion, 'strategy-result/v1');
+  assert.equal(livePreflop.details.strategicStackSemantics, 'heads_up_exact_effective_stack');
+  assert.equal(legacyPreflop.details.strategicStackSemantics, 'base_v1_compatibility_depth');
 
   let postflop = reachHeadsUpFlop();
   postflop = act(postflop, ACTION_TYPES.CHECK);
   const postflopContext = context(postflop);
-  assert.deepEqual(
-    provider.resolve(postflopContext),
-    provider.resolve(withoutV11Fields(postflopContext)),
-  );
+  const livePostflop = provider.resolve(postflopContext);
+  const legacyPostflop = provider.resolve(withoutV11Fields(postflopContext));
+  assert.equal(livePostflop.source, 'heuristic_postflop');
+  assert.equal(legacyPostflop.source, 'heuristic_postflop');
+  assert.equal(livePostflop.details.effectiveSpr.kind, 'heads_up_exact_effective_spr');
+  assert.equal(legacyPostflop.details.effectiveSpr.kind, 'base_v1_compatibility_spr');
 });

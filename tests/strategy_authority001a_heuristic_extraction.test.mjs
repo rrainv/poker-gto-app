@@ -81,7 +81,7 @@ test('explicit heuristic options normalize without changing their established se
   });
 });
 
-test('preflop characterization survives extraction across action and stack contexts', () => {
+test('preflop structural outputs remain finite across repaired action and stack contexts', () => {
   const fixtures = [
     {
       args: ['A', 'K', false, true, 'BTN', 'unopened', 0, 1.5, 100, null],
@@ -93,7 +93,8 @@ test('preflop characterization survives extraction across action and stack conte
     {
       args: ['A', 'J', false, false, 'BTN', 'raise', 3, 4.5, 100, null],
       assertStrategy(strategy) {
-        assert.ok(strategy.open + strategy.call >= 0.8);
+        assert.ok(strategy.open < strategy.call);
+        assert.ok(strategy.fold < 0.6);
       },
     },
     {
@@ -172,7 +173,11 @@ test('postflop classifier remains qualitative while thresholds are continuous an
     { Bet: withoutDrop.Bet, Check: withoutDrop.Check },
   );
   assert.equal(withDrop.context.flatDropApplied, false);
-  assert.equal(withDrop.context.compatibilityStackToPotRatio, 3);
+  assert.equal(withDrop.context.effectiveSpr.kind, 'base_v1_compatibility_spr');
+  assert.equal(
+    withDrop.context.stackSemantics,
+    'base_v1_compatibility_stack_not_live_or_effective',
+  );
 });
 
 test('provider browser seam injects options and preserves canonical StrategyResult normalization', () => {

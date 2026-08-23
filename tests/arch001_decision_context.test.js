@@ -182,7 +182,7 @@ test('updateContext follows snapshot to DecisionContext to fallback StrategyResu
   assert.equal(capture.strategyResult.schemaVersion, 'strategy-result/v1');
   assert.equal(capture.strategyResult.source, 'unavailable');
   assert.equal(capture.strategyResult.contextCoverage.kind, 'unsupported');
-  assert.equal(capture.strategyResult.contextCoverage.basis, 'missing_trusted_call_price');
+  assert.equal(capture.strategyResult.contextCoverage.basis, 'missing_trusted_decision_economics');
 });
 
 test('fallback recommendations use the same cards and fields through DecisionContext', () => {

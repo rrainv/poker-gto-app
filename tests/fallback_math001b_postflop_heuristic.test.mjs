@@ -37,22 +37,50 @@ const LOGIC_SOURCE = fs.readFileSync(
 
 function context(overrides = {}) {
   const board = overrides.board ?? ['2c', '7d', 'Th'];
+  const stackBb = overrides.stackBb ?? 100;
+  const potBb = overrides.potBb ?? 10;
+  const opponentCount = overrides.opponentCount ?? 1;
+  const lastAction = overrides.lastAction ?? 'check';
+  const aggressionFamily = ['bet', 'raise'].includes(lastAction) ? lastAction : 'none';
   return {
     schemaVersion: 'decision-context/v1',
+    contractVersion: 'decision-context/v1.1',
     tableSize: 2,
-    opponentCount: 1,
+    opponentCount,
     heroPosition: 'BTN',
     street: board.length === 3 ? 'flop' : board.length === 4 ? 'turn' : 'river',
     heroCards: ['As', 'Kd'],
     board,
     deadCards: [],
-    stackBb: 100,
+    stackBb,
     stackMode: 'hero',
-    potBb: 10,
-    lastAction: 'check',
+    startingStackBb: stackBb,
+    heroStackBb: stackBb,
+    effectiveStackBb: opponentCount === 1 ? stackBb : null,
+    effectiveStackByOpponent: opponentCount === 1
+      ? [{ position: 'BB', opponentStackBb: stackBb, effectiveStackBb: stackBb }]
+      : [],
+    potBb,
+    currentPotBb: overrides.currentPotBb ?? potBb,
+    positionRelation: 'unknown',
+    aggressorPositionRelation: 'unknown',
+    lastAction,
+    priorActionSummary: {
+      lastActionFamily: lastAction,
+      lastActorPosition: null,
+      facingActionFamily: aggressionFamily,
+      aggressionFamily,
+      aggressionCount: aggressionFamily === 'none' ? 0 : 1,
+      limperCount: null,
+      aggressorPosition: null,
+    },
     facingSizeBb: 0,
     callAmountBb: 0,
     heroStreetContributionBb: 0,
+    canRaise: true,
+    minRaiseToBb: 2,
+    maxRaiseToBb: stackBb,
+    allInToBb: stackBb,
     rakeMode: 'off',
     forcedContributionPerPlayerBb: 0,
     totalForcedContributionBb: 0,
@@ -282,7 +310,7 @@ test('price, action-family, sizing, MDF, and flat-drop semantics stay structural
       options(),
       { eq: 0.5 },
     ),
-    /requires an exact callAmountBb/,
+    /requires exact callAmountBb and currentPotBb/,
   );
 
   const priced = calculatePostflopStrategyFromSample(
@@ -308,7 +336,7 @@ test('price, action-family, sizing, MDF, and flat-drop semantics stay structural
   assert.deepEqual(result.actions, []);
   assert.equal(result.recommendation, null);
   assert.equal(result.contextCoverage.kind, 'unsupported');
-  assert.equal(result.contextCoverage.basis, 'missing_trusted_call_price');
+  assert.equal(result.contextCoverage.basis, 'missing_trusted_decision_economics');
   assert.deepEqual(result.contextCoverage.limitationCodes, [
     'heuristic_exact_call_price_unavailable',
   ]);

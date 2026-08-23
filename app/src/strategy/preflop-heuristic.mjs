@@ -26,6 +26,15 @@ const FULL_RING_EARLY_POSITION_ADJUSTMENT = Number((
   - PREFLOP_FALLBACK_POSITION_MODIFIERS['UTG+1']
 ).toFixed(12));
 
+export const PREFLOP_DECISION_FAMILIES = Object.freeze({
+  RFI: 'rfi',
+  LIMPED: 'limped',
+  VERSUS_OPEN: 'versus_open',
+  VERSUS_THREE_BET: 'versus_three_bet',
+  VERSUS_FOUR_BET_OR_MORE: 'versus_four_bet_or_more',
+  BB_OPTION: 'bb_option',
+});
+
 function bounded(value, minimum, maximum) {
   return Math.min(maximum, Math.max(minimum, value));
 }
@@ -51,8 +60,26 @@ function normalizedStrategy(open, call, fold) {
   return { open: normalized[0], call: normalized[1], fold: normalized[2] };
 }
 
-function strategyForStrength(handStrength, isPair) {
-  const anchors = isPair
+function strategyAtAnchors(handStrength, anchors) {
+  if (handStrength >= anchors[0][0]) return anchors[0][1].slice();
+  const lastAnchor = anchors[anchors.length - 1];
+  if (handStrength <= lastAnchor[0]) return lastAnchor[1].slice();
+
+  for (let index = 0; index < anchors.length - 1; index += 1) {
+    const [highThreshold, highStrategy] = anchors[index];
+    const [lowThreshold, lowStrategy] = anchors[index + 1];
+    if (handStrength < lowThreshold || handStrength > highThreshold) continue;
+    const interpolation = smoothstep(lowThreshold, highThreshold, handStrength);
+    return [0, 1, 2].map((strategyIndex) => (
+      lowStrategy[strategyIndex]
+      + interpolation * (highStrategy[strategyIndex] - lowStrategy[strategyIndex])
+    ));
+  }
+  return lastAnchor[1].slice();
+}
+
+function rfiAnchors(isPair) {
+  return isPair
     ? [
       [16, [0.9, 0.08, 0.02]],
       [14, [0.8, 0.15, 0.05]],
@@ -70,22 +97,87 @@ function strategyForStrength(handStrength, isPair) {
       [3, [0, 0, 1]],
       [0, [0, 0, 1]],
     ];
+}
 
-  if (handStrength >= anchors[0][0]) return anchors[0][1].slice();
-  const lastAnchor = anchors[anchors.length - 1];
-  if (handStrength <= lastAnchor[0]) return lastAnchor[1].slice();
-
-  for (let index = 0; index < anchors.length - 1; index += 1) {
-    const [highThreshold, highStrategy] = anchors[index];
-    const [lowThreshold, lowStrategy] = anchors[index + 1];
-    if (handStrength < lowThreshold || handStrength > highThreshold) continue;
-    const interpolation = smoothstep(lowThreshold, highThreshold, handStrength);
-    return [0, 1, 2].map((strategyIndex) => (
-      lowStrategy[strategyIndex]
-      + interpolation * (highStrategy[strategyIndex] - lowStrategy[strategyIndex])
-    ));
+function responseFamilyAnchors(family, isPair) {
+  // These are broad, smooth family-shape controls, not hand charts or copied
+  // mixed-frequency targets. Their purpose is structural: the meaning of
+  // aggression changes from opening to isolation to successively narrower
+  // response families, so one raw-strength plateau must not be relabeled as
+  // Open / 3-Bet / 4-Bet without changing its action mix.
+  if (family === PREFLOP_DECISION_FAMILIES.LIMPED) {
+    return isPair
+      ? [
+        [22, [0.7, 0.28, 0.02]], [19, [0.58, 0.36, 0.06]],
+        [16, [0.42, 0.46, 0.12]], [13, [0.25, 0.48, 0.27]],
+        [9, [0.1, 0.42, 0.48]], [5, [0.02, 0.25, 0.73]], [0, [0, 0, 1]],
+      ]
+      : [
+        [22, [0.65, 0.3, 0.05]], [20, [0.55, 0.36, 0.09]],
+        [18, [0.44, 0.4, 0.16]], [15, [0.29, 0.43, 0.28]],
+        [12, [0.15, 0.4, 0.45]], [8, [0.05, 0.28, 0.67]],
+        [4, [0, 0.1, 0.9]], [0, [0, 0, 1]],
+      ];
   }
-  return lastAnchor[1].slice();
+  if (family === PREFLOP_DECISION_FAMILIES.VERSUS_OPEN) {
+    return isPair
+      ? [
+        [23, [0.78, 0.2, 0.02]], [21, [0.68, 0.27, 0.05]],
+        [19, [0.55, 0.36, 0.09]], [17, [0.4, 0.43, 0.17]],
+        [14, [0.22, 0.46, 0.32]], [10, [0.08, 0.36, 0.56]], [0, [0, 0, 1]],
+      ]
+      : [
+        [23, [0.62, 0.34, 0.04]], [21, [0.52, 0.39, 0.09]],
+        [19, [0.4, 0.45, 0.15]], [17, [0.27, 0.46, 0.27]],
+        [14, [0.12, 0.4, 0.48]], [10, [0.03, 0.28, 0.69]],
+        [6, [0, 0.12, 0.88]], [0, [0, 0, 1]],
+      ];
+  }
+  if (family === PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET) {
+    return isPair
+      ? [
+        [23, [0.72, 0.26, 0.02]], [21, [0.58, 0.36, 0.06]],
+        [19, [0.42, 0.45, 0.13]], [17, [0.27, 0.48, 0.25]],
+        [14, [0.11, 0.42, 0.47]], [10, [0.02, 0.28, 0.7]], [0, [0, 0, 1]],
+      ]
+      : [
+        [23, [0.46, 0.47, 0.07]], [21, [0.31, 0.54, 0.15]],
+        [19, [0.17, 0.54, 0.29]], [17, [0.08, 0.48, 0.44]],
+        [14, [0.02, 0.34, 0.64]], [10, [0, 0.17, 0.83]], [0, [0, 0, 1]],
+      ];
+  }
+  if (family === PREFLOP_DECISION_FAMILIES.VERSUS_FOUR_BET_OR_MORE) {
+    return isPair
+      ? [
+        [23, [0.68, 0.3, 0.02]], [22, [0.58, 0.37, 0.05]],
+        [21, [0.46, 0.44, 0.1]], [20, [0.3, 0.5, 0.2]],
+        [18, [0.12, 0.48, 0.4]], [15, [0.03, 0.34, 0.63]],
+        [10, [0, 0.15, 0.85]], [0, [0, 0, 1]],
+      ]
+      : [
+        [23, [0.28, 0.62, 0.1]], [22, [0.2, 0.64, 0.16]],
+        [21, [0.12, 0.58, 0.3]], [20, [0.07, 0.5, 0.43]],
+        [18, [0.02, 0.34, 0.64]], [14, [0, 0.16, 0.84]], [0, [0, 0, 1]],
+      ];
+  }
+  if (family === PREFLOP_DECISION_FAMILIES.BB_OPTION) {
+    return isPair
+      ? [
+        [22, [0.68, 0.32, 0]], [19, [0.56, 0.44, 0]],
+        [16, [0.42, 0.58, 0]], [12, [0.27, 0.73, 0]],
+        [8, [0.12, 0.88, 0]], [0, [0, 1, 0]],
+      ]
+      : [
+        [22, [0.6, 0.4, 0]], [20, [0.5, 0.5, 0]],
+        [18, [0.4, 0.6, 0]], [15, [0.28, 0.72, 0]],
+        [12, [0.17, 0.83, 0]], [8, [0.08, 0.92, 0]], [0, [0, 1, 0]],
+      ];
+  }
+  return rfiAnchors(isPair);
+}
+
+function strategyForDecisionFamily(handStrength, isPair, family) {
+  return strategyAtAnchors(handStrength, responseFamilyAnchors(family, isPair));
 }
 
 export function preflopTableFamilyPositionFacts(tableSize, position, priorAction = 'unopened') {
@@ -166,7 +258,8 @@ function positionAdjustment(position, priorAction, isFreeCheckOption, tableSize)
 }
 
 function stackDepthAdjustment({ stackBb, isPair, isSuited, connected, highRank, lowRank }) {
-  const configuredDepth = Number.isFinite(stackBb) && stackBb >= 0 ? stackBb : 30;
+  if (!Number.isFinite(stackBb) || stackBb < 0) return 0;
+  const configuredDepth = stackBb;
   const shortWeight = 1 - smoothstep(10, 50, configuredDepth);
   const deepWeight = smoothstep(100, 300, configuredDepth);
   let adjustment = 0;
@@ -180,20 +273,6 @@ function stackDepthAdjustment({ stackBb, isPair, isSuited, connected, highRank, 
   return adjustment;
 }
 
-function responseTightness(priorAction, commitmentFraction) {
-  const commitment = commitmentFraction === null ? null : bounded(commitmentFraction, 0, 1);
-  if (priorAction === 'raise') {
-    return commitment === null ? 0 : 3 * commitment / (commitment + 0.2);
-  }
-  if (priorAction === '3bet') {
-    return commitment === null ? 3 : 3 + 3 * commitment / (commitment + 0.2);
-  }
-  if (priorAction === '4bet') {
-    return commitment === null ? 6 : 6 + 4 * commitment / (commitment + 0.2);
-  }
-  return 0;
-}
-
 function collapseUnopenedPassiveMass(base) {
   // Preserve the old heuristic's tendency to convert passive mass into an
   // open for clearly playable hands, but replace its 25% binary gate with a
@@ -201,6 +280,26 @@ function collapseUnopenedPassiveMass(base) {
   const passiveToRaiseShare = smoothstep(0.05, 0.3, base[0]);
   const passiveToRaise = base[1] * passiveToRaiseShare;
   return [base[0] + passiveToRaise, 0, base[2] + base[1] - passiveToRaise];
+}
+
+function applyMultipleLimpAdjustment(base, limperCount, speculative) {
+  const additionalLimpers = Math.max(0, Math.min(4, Number(limperCount) - 1));
+  if (!(additionalLimpers > 0)) return base;
+  const isolationToOverlimp = base[0] * additionalLimpers * 0.055;
+  const foldToOverlimp = speculative ? base[2] * additionalLimpers * 0.025 : 0;
+  return [
+    base[0] - isolationToOverlimp,
+    base[1] + isolationToOverlimp + foldToOverlimp,
+    base[2] - foldToOverlimp,
+  ];
+}
+
+function legacyDecisionFamily(action, isFreeCheckOption) {
+  if (isFreeCheckOption) return PREFLOP_DECISION_FAMILIES.BB_OPTION;
+  if (action === 'raise') return PREFLOP_DECISION_FAMILIES.VERSUS_OPEN;
+  if (action === '3bet') return PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET;
+  if (action === '4bet') return PREFLOP_DECISION_FAMILIES.VERSUS_FOUR_BET_OR_MORE;
+  return PREFLOP_DECISION_FAMILIES.RFI;
 }
 
 function applyKnownCallPrice(base, handStrength, potSizeBb, callAmountBb) {
@@ -243,6 +342,9 @@ export function calculatePreflopFallbackStrategy(
   stack = 30,
   callAmountBb = null,
   tableSize = null,
+  decisionFamily = null,
+  limperCount = 0,
+  strategicStackBb = undefined,
 ) {
   const r1 = HEURISTIC_RANK_VALUES[r1str] || 0;
   const r2 = HEURISTIC_RANK_VALUES[r2str] || 0;
@@ -266,6 +368,9 @@ export function calculatePreflopFallbackStrategy(
   const isFreeCheckOption = canonicalPosition === 'BB'
     && nominalFacingSize === 0
     && !AGGRESSIVE_PRIOR_ACTIONS.has(normalizedAction);
+  const family = Object.values(PREFLOP_DECISION_FAMILIES).includes(decisionFamily)
+    ? decisionFamily
+    : legacyDecisionFamily(normalizedAction, isFreeCheckOption);
 
   let score = highRank;
   if (isPair) score += 6;
@@ -279,10 +384,11 @@ export function calculatePreflopFallbackStrategy(
   }
 
   const configuredStack = Number.isFinite(stack) && stack >= 0 ? stack : 30;
-  const commitment = trustedCallAmount === null
-    ? null
-    : (configuredStack > 0 ? trustedCallAmount / configuredStack : 1);
-  const actionTightness = responseTightness(normalizedAction, commitment);
+  const depthForStrategy = strategicStackBb === undefined
+    ? configuredStack
+    : Number.isFinite(strategicStackBb) && strategicStackBb >= 0
+      ? strategicStackBb
+      : null;
   let handStrength = score
     + positionAdjustment(
       canonicalPosition,
@@ -291,14 +397,13 @@ export function calculatePreflopFallbackStrategy(
       tableSize,
     )
     + stackDepthAdjustment({
-      stackBb: configuredStack,
+      stackBb: depthForStrategy,
       isPair,
       isSuited,
       connected,
       highRank,
       lowRank,
-    })
-    - actionTightness;
+    });
 
   if (isSuited) {
     handStrength += 1.5;
@@ -308,20 +413,28 @@ export function calculatePreflopFallbackStrategy(
     handStrength += 0.5;
   }
   if (bothBroadway && !isPair) handStrength += 1;
-  if (hasAce && actionTightness > 0) handStrength += 1;
-  else if (hasKing && actionTightness > 0) handStrength += 0.5;
+  const facingAggression = [
+    PREFLOP_DECISION_FAMILIES.VERSUS_OPEN,
+    PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET,
+    PREFLOP_DECISION_FAMILIES.VERSUS_FOUR_BET_OR_MORE,
+  ].includes(family);
+  if (hasAce && facingAggression) handStrength += 1;
+  else if (hasKing && facingAggression) handStrength += 0.5;
 
   // Suited wheel-Ace playability and blocker value are encoded as a smooth
   // strength input, not as an action-specific replacement strategy.
   if (hasAce && isSuited) {
     const wheelAceWeight = 1 - smoothstep(5, 8, lowRank);
-    handStrength += wheelAceWeight * (actionTightness > 0 ? 0.8 : 0.35);
+    handStrength += wheelAceWeight * (facingAggression ? 0.8 : 0.35);
   }
 
-  let base = strategyForStrength(handStrength, isPair);
-  const facingAggression = nominalFacingSize > 0 || AGGRESSIVE_PRIOR_ACTIONS.has(normalizedAction);
+  if (family === PREFLOP_DECISION_FAMILIES.LIMPED) {
+    handStrength -= Math.max(0, Math.min(4, Number(limperCount) - 1)) * 0.35;
+  }
+  let base = strategyForDecisionFamily(handStrength, isPair, family);
 
-  if (!facingAggression && NON_BLIND_POSITIONS.includes(canonicalPosition)) {
+  if (family === PREFLOP_DECISION_FAMILIES.RFI
+    && NON_BLIND_POSITIONS.includes(canonicalPosition)) {
     base = collapseUnopenedPassiveMass(base);
   }
   if (facingAggression && trustedCallAmount !== null) {
@@ -330,6 +443,13 @@ export function calculatePreflopFallbackStrategy(
   if (isFreeCheckOption) {
     base[1] += base[2];
     base[2] = 0;
+  }
+  if (family === PREFLOP_DECISION_FAMILIES.LIMPED) {
+    base = applyMultipleLimpAdjustment(
+      base,
+      limperCount,
+      isPair || isSuited || connected,
+    );
   }
   if (isDominatedPremiumFold({ isPair, highRank, lowRank, facingAggression })) {
     base = conditionOnContinuingActions(base);
@@ -342,34 +462,124 @@ function strategyAction(type, amountBb = null) {
   return { type, amountBb, potFraction: null };
 }
 
-function preflopAggressiveLabel(lastAction, facingSizeBb) {
-  if (facingSizeBb <= 0 && !AGGRESSIVE_PRIOR_ACTIONS.has(lastAction)) return 'Open';
-  if (lastAction === 'raise') return '3-Bet';
-  if (lastAction === '3bet') return '4-Bet';
+export function preflopDecisionFamilyFor(decisionContext) {
+  const summary = decisionContext?.priorActionSummary;
+  const aggressionFamily = String(summary?.aggressionFamily || '').toLowerCase();
+  const limperCount = Number(summary?.limperCount);
+  const lastAction = String(decisionContext?.lastAction || 'unopened').toLowerCase();
+  const exactFreeOption = decisionContext?.heroPosition === 'BB'
+    && decisionContext?.callAmountBb === 0
+    && ['none', ''].includes(aggressionFamily);
+
+  if (exactFreeOption) return PREFLOP_DECISION_FAMILIES.BB_OPTION;
+  if (aggressionFamily === 'four_bet_or_more') {
+    return PREFLOP_DECISION_FAMILIES.VERSUS_FOUR_BET_OR_MORE;
+  }
+  if (aggressionFamily === 'three_bet') {
+    return PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET;
+  }
+  if (aggressionFamily === 'open') return PREFLOP_DECISION_FAMILIES.VERSUS_OPEN;
+  if (aggressionFamily === 'none' && Number.isInteger(limperCount) && limperCount > 0) {
+    return PREFLOP_DECISION_FAMILIES.LIMPED;
+  }
+  if (lastAction === '4bet') return PREFLOP_DECISION_FAMILIES.VERSUS_FOUR_BET_OR_MORE;
+  if (lastAction === '3bet') return PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET;
+  if (lastAction === 'raise') return PREFLOP_DECISION_FAMILIES.VERSUS_OPEN;
+  const legacyFreeOption = decisionContext?.heroPosition === 'BB'
+    && Number(decisionContext?.facingSizeBb) === 0
+    && !AGGRESSIVE_PRIOR_ACTIONS.has(lastAction);
+  return legacyFreeOption
+    ? PREFLOP_DECISION_FAMILIES.BB_OPTION
+    : PREFLOP_DECISION_FAMILIES.RFI;
+}
+
+function preflopAggressiveLabel(family) {
+  if (family === PREFLOP_DECISION_FAMILIES.RFI) return 'Open';
+  if (family === PREFLOP_DECISION_FAMILIES.LIMPED) return 'Isolate';
+  if (family === PREFLOP_DECISION_FAMILIES.VERSUS_OPEN) return '3-Bet';
+  if (family === PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET) return '4-Bet';
   return 'Raise';
+}
+
+function legalAggressionMode(decisionContext) {
+  if (decisionContext.canRaise === false) return 'unavailable';
+  if (decisionContext.canRaise === true
+    && decisionContext.minRaiseToBb === null
+    && Number.isFinite(decisionContext.maxRaiseToBb)) {
+    return 'short_all_in_only';
+  }
+  if (decisionContext.canRaise === true) return 'regular';
+  return 'unknown';
 }
 
 /**
  * A finite preflop amountBb is an amount-to: Hero's total preflop
  * contribution after acting. Facing aggression lacks a proven legal minimum
- * in DecisionContext v1, so the heuristic deliberately omits a raise size.
+ * for every response family, so the heuristic deliberately omits a raise
+ * size there. Legal bounds are used for projection, not as recommendations.
  */
-function preflopAggressiveAction(decisionContext) {
-  const lastAction = String(decisionContext.lastAction || 'unopened').toLowerCase();
-  const facingSizeBb = Number(decisionContext.facingSizeBb) || 0;
-  if (facingSizeBb > 0 || AGGRESSIVE_PRIOR_ACTIONS.has(lastAction)) {
-    return strategyAction('raise');
-  }
+function preflopAggressiveAction(decisionContext, family) {
+  const legalMode = legalAggressionMode(decisionContext);
+  if (legalMode === 'unavailable') return null;
+  if (legalMode === 'short_all_in_only') return strategyAction('all_in');
+  if (family !== PREFLOP_DECISION_FAMILIES.RFI) return strategyAction('raise');
 
-  const stackBb = Number.isFinite(decisionContext.stackBb)
-    ? Math.max(0, decisionContext.stackBb)
-    : 0;
-  // DecisionContext v1 is bounded to 10-500bb and does not expose complete
-  // legal raise/all-in sizing. Do not retain an unreachable sub-2bb all-in
-  // branch or manufacture an all-in outside the supported context.
-  if (stackBb < 10) return strategyAction('raise');
-  const openToBb = 2 + 0.5 * smoothstep(20, 80, stackBb);
-  return strategyAction('raise', Math.min(stackBb, Number(openToBb.toFixed(3))));
+  const startingStackBb = Number.isFinite(decisionContext.startingStackBb)
+    ? Math.max(0, decisionContext.startingStackBb)
+    : Number.isFinite(decisionContext.stackBb)
+      ? Math.max(0, decisionContext.stackBb)
+      : 0;
+  if (startingStackBb < 10) return strategyAction('raise');
+  let openToBb = 2 + 0.5 * smoothstep(20, 80, startingStackBb);
+  if (decisionContext.canRaise === true
+    && Number.isFinite(decisionContext.minRaiseToBb)
+    && Number.isFinite(decisionContext.maxRaiseToBb)) {
+    openToBb = bounded(
+      openToBb,
+      decisionContext.minRaiseToBb,
+      decisionContext.maxRaiseToBb,
+    );
+  }
+  return strategyAction('raise', Number(openToBb.toFixed(3)));
+}
+
+function preflopStrategicStackFacts(decisionContext) {
+  if (decisionContext.contractVersion !== 'decision-context/v1.1') {
+    const compatibility = Number.isFinite(decisionContext.stackBb)
+      ? Math.max(0, decisionContext.stackBb)
+      : null;
+    return {
+      depthBb: compatibility,
+      semantics: 'base_v1_compatibility_depth',
+    };
+  }
+  if (Number.isFinite(decisionContext.effectiveStackBb)
+    && decisionContext.effectiveStackBb >= 0) {
+    return {
+      depthBb: decisionContext.effectiveStackBb,
+      semantics: 'heads_up_exact_effective_stack',
+    };
+  }
+  return {
+    depthBb: Number.isFinite(decisionContext.heroStackBb)
+      ? decisionContext.heroStackBb
+      : null,
+    semantics: Number.isFinite(decisionContext.heroStackBb)
+      ? 'multiway_exact_hero_stack_cap_not_effective_stack'
+      : 'live_stack_unavailable_no_compatibility_fallback',
+  };
+}
+
+function projectedPreflopWeights(open, call, fold, aggressiveAction, callReachesStackCap) {
+  let aggressive = callReachesStackCap || aggressiveAction === null ? 0 : open;
+  let passive = call + (callReachesStackCap ? open : 0);
+  let folded = fold;
+  const total = aggressive + passive + folded;
+  if (!(total > 0)) return { aggressive: 0, passive: 1, fold: 0 };
+  aggressive /= total;
+  passive /= total;
+  folded = 1 - aggressive - passive;
+  return { aggressive, passive, fold: folded };
 }
 
 export function calculatePreflopHeuristic(decisionContext) {
@@ -378,6 +588,19 @@ export function calculatePreflopHeuristic(decisionContext) {
 
   const lastAction = String(decisionContext.lastAction || 'unopened').toLowerCase();
   const facingSizeBb = Number(decisionContext.facingSizeBb) || 0;
+  const decisionFamily = preflopDecisionFamilyFor(decisionContext);
+  const stackFacts = preflopStrategicStackFacts(decisionContext);
+  const exactCurrentPot = decisionContext.contractVersion === 'decision-context/v1.1'
+    && Number.isFinite(decisionContext.currentPotBb)
+    && decisionContext.currentPotBb >= 0
+    ? decisionContext.currentPotBb
+    : decisionContext.contractVersion === 'decision-context/v1.1'
+      ? null
+      : decisionContext.potBb;
+  const priceCallAmount = decisionContext.contractVersion === 'decision-context/v1.1'
+    && exactCurrentPot === null
+    ? null
+    : decisionContext.callAmountBb;
   const fallback = calculatePreflopFallbackStrategy(
     cards[0][0],
     cards[1][0],
@@ -386,29 +609,43 @@ export function calculatePreflopHeuristic(decisionContext) {
     decisionContext.heroPosition,
     lastAction,
     facingSizeBb,
-    decisionContext.potBb,
-    decisionContext.stackBb,
-    decisionContext.callAmountBb,
+    exactCurrentPot,
+    decisionContext.startingStackBb ?? decisionContext.stackBb,
+    priceCallAmount,
     decisionContext.tableSize,
+    decisionFamily,
+    decisionContext.priorActionSummary?.limperCount ?? 0,
+    stackFacts.depthBb,
   );
   const { open, call, fold } = fallback;
-  const isFreeCheckOption = decisionContext.heroPosition === 'BB'
-    && facingSizeBb === 0
-    && !AGGRESSIVE_PRIOR_ACTIONS.has(lastAction);
+  const isFreeCheckOption = decisionFamily === PREFLOP_DECISION_FAMILIES.BB_OPTION;
   const passiveType = isFreeCheckOption ? 'check' : 'call';
   const passiveLabel = isFreeCheckOption
     ? 'Check'
+    : decisionFamily === PREFLOP_DECISION_FAMILIES.LIMPED
+      ? 'Overlimp'
     : facingSizeBb === 0 && (
       decisionContext.heroPosition === 'SB'
       || (decisionContext.tableSize === 2 && decisionContext.heroPosition === 'BTN')
     ) ? 'Limp' : 'Call';
-  const aggressiveAction = preflopAggressiveAction(decisionContext);
-  const aggressiveLabel = aggressiveAction.type === 'all_in'
+  const aggressiveAction = preflopAggressiveAction(decisionContext, decisionFamily);
+  const aggressiveLabel = aggressiveAction?.type === 'all_in'
     ? 'All-In'
-    : preflopAggressiveLabel(lastAction, facingSizeBb);
-  const callReachesStackCap = (
-    facingSizeBb > 0 || AGGRESSIVE_PRIOR_ACTIONS.has(lastAction)
-  )
+    : preflopAggressiveLabel(decisionFamily);
+  const facesAggression = [
+    PREFLOP_DECISION_FAMILIES.VERSUS_OPEN,
+    PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET,
+    PREFLOP_DECISION_FAMILIES.VERSUS_FOUR_BET_OR_MORE,
+  ].includes(decisionFamily);
+  const exactLiveCallCap = decisionContext.contractVersion === 'decision-context/v1.1'
+    && facesAggression
+    && Number.isFinite(decisionContext.callAmountBb)
+    && decisionContext.callAmountBb >= 0
+    && Number.isFinite(decisionContext.heroStackBb)
+    && decisionContext.heroStackBb >= 0
+    && decisionContext.callAmountBb >= decisionContext.heroStackBb;
+  const legacyCallCap = decisionContext.contractVersion !== 'decision-context/v1.1'
+    && facesAggression
     && Number.isFinite(decisionContext.callAmountBb)
     && decisionContext.callAmountBb >= 0
     && Number.isFinite(decisionContext.heroStreetContributionBb)
@@ -417,16 +654,23 @@ export function calculatePreflopHeuristic(decisionContext) {
     && decisionContext.stackBb >= 0
     && decisionContext.callAmountBb + decisionContext.heroStreetContributionBb
       >= decisionContext.stackBb;
-  // DecisionContext does not generally prove legal raise bounds. It can prove
-  // this one boundary: on preflop, a stack-capped call plus Hero's existing
-  // street contribution consumes the configured starting stack. Preserve the
-  // heuristic's continue mass while projecting the unavailable raise to call.
-  const aggressiveValue = callReachesStackCap ? 0 : open;
-  const passiveValue = call + (callReachesStackCap ? open : 0);
+  const callReachesStackCap = exactLiveCallCap || legacyCallCap;
+  const weights = projectedPreflopWeights(
+    open,
+    call,
+    fold,
+    aggressiveAction,
+    callReachesStackCap,
+  );
   const actions = [
-    { action: aggressiveAction, label: aggressiveLabel, value: aggressiveValue, order: 0 },
-    { action: strategyAction(passiveType), label: passiveLabel, value: passiveValue, order: 1 },
-    { action: strategyAction('fold'), label: 'Fold', value: fold, order: 2 },
+    ...(aggressiveAction ? [{
+      action: aggressiveAction,
+      label: aggressiveLabel,
+      value: weights.aggressive,
+      order: 0,
+    }] : []),
+    { action: strategyAction(passiveType), label: passiveLabel, value: weights.passive, order: 1 },
+    { action: strategyAction('fold'), label: 'Fold', value: weights.fold, order: 2 },
   ].sort((left, right) => right.value - left.value || left.order - right.order);
 
   const callPriceAvailable = Number.isFinite(decisionContext.callAmountBb)
@@ -443,7 +687,7 @@ export function calculatePreflopHeuristic(decisionContext) {
     isPair: cards[0][0] === cards[1][0],
     highRank,
     lowRank,
-    facingAggression: facingSizeBb > 0 || AGGRESSIVE_PRIOR_ACTIONS.has(lastAction),
+    facingAggression: facesAggression,
   });
   const tableFamilyPosition = preflopTableFamilyPositionFacts(
     decisionContext.tableSize,
@@ -460,13 +704,23 @@ export function calculatePreflopHeuristic(decisionContext) {
       amountSemantics: 'total_preflop_contribution_after_action',
       callPriceAvailable,
       priceAdjustmentApplied: (
-        facingSizeBb > 0 || AGGRESSIVE_PRIOR_ACTIONS.has(lastAction)
-      ) && callPriceAvailable,
+        facesAggression && callPriceAvailable && exactCurrentPot !== null
+      ),
       styleControlsApplied: false,
       forcedContributionAdjustmentApplied: false,
       stackCapActionProjectionApplied: callReachesStackCap,
       dominatedFoldSuppressionApplied,
       tableFamilyPosition,
+      decisionFamily,
+      priorActionSummaryApplied: decisionContext.priorActionSummary !== undefined,
+      limperCount: decisionFamily === PREFLOP_DECISION_FAMILIES.LIMPED
+        ? decisionContext.priorActionSummary?.limperCount ?? null
+        : 0,
+      strategicStackBb: stackFacts.depthBb,
+      strategicStackSemantics: stackFacts.semantics,
+      legalAggressionMode: legalAggressionMode(decisionContext),
+      illegalAggressionRemoved: aggressiveAction === null && open > 0,
+      shortAllInProjectionApplied: aggressiveAction?.type === 'all_in' && weights.aggressive > 0,
     },
   };
 }

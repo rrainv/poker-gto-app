@@ -25,12 +25,27 @@ The importable harness supports:
   categories, and exact call amounts through `evaluatePreflopGrid`;
 - standard 169-class range summaries through `summarizePreflopConfiguration`;
 - named flop/turn/river corpora and price, style, multiway, and sizing sweeps;
+- permanent position, shallow/medium/deep effective-SPR, legality, action-history,
+  price-causality, and HU-versus-multiway counterfactuals;
 - eleven DecisionContext v1.1 fact fixtures covering live/effective stacks,
   legacy `potBb` versus exact `currentPotBb`, position relation, legal
   aggressive-to bounds, prior-action summaries, and Scenario-versus-Hand
   provenance;
 - defined L1, maximum-action-error, dominant-action, aggression, passive, and
   fold comparisons against a bounded-HU reference.
+
+STRATEGY-REPAIR-001B's frozen pre-edit vectors and current deltas are available
+without a reference pack:
+
+```powershell
+node tests/tooling/strategy-repair001b-baseline.mjs --pretty
+```
+
+`measure-strategy-repair001b-training-impact.mjs` accepts
+`--baseline-root=<untouched extracted HEAD>` and compares the old and current
+heuristics on identical canonical Training contexts. The report covers every
+existing Training decision target and explicitly records that no separate
+non-BB limped/isolation Training target exists.
 
 ## Product performance profile
 
@@ -78,12 +93,14 @@ It must use `riverline-hu-preflop-calibration-reference/v1`, identify
 `quality.sufficientForCalibration` to `true`. Each row supplies an exact
 `DecisionContext`, a normalized structural reference action vector, and either
 the `structural` or `strategic_families` projection. The latter collapses explicit
-solver sizes into fold/passive/aggression. DecisionContext v1.1 now exposes legal
-aggressive-to bounds, but the current heuristic and bounded comparison do not
-consume those additive facts.
+solver sizes into fold/passive/aggression. DecisionContext v1.1 legal
+aggressive-to bounds are consumed only to project possible action families;
+they remain context facts, not strategy sizing recommendations. The bounded
+reference comparison still does not treat those bounds as solver sizes.
 
-The limp branch remains excluded from comparison even though DecisionContext
-v1.1 preserves a canonical limp summary: the current heuristic does not consume
-that summary, and the context does not retain the branch's prior-action 4bb size
-anchor. Reference quality metadata is a gate, not an informational label:
+The limp branch remains excluded from bounded-HU reference comparison even
+though the heuristic now consumes DecisionContext v1.1 limp summaries: the
+repository has no trusted limp-branch reference output, and the context does
+not retain the branch's prior-action 4bb size anchor. Reference quality metadata
+is a gate, not an informational label:
 insufficient references produce no calibration metrics.

@@ -111,6 +111,7 @@ function postflopCandidate(decisionContext, options, rng) {
     Raise: 'raise',
     Call: 'call',
     Fold: 'fold',
+    AllIn: 'all_in',
   };
   const actions = Object.entries(strategy)
     .filter(([name, value]) => name !== 'context' && Number.isFinite(Number(value)))
@@ -134,8 +135,9 @@ function postflopCandidate(decisionContext, options, rng) {
       generationMethod: 'deterministic_postflop_heuristic_with_seeded_conditional_sampling',
       assumptions: [
         'shared_crude_opponent_range',
-        'position_not_applied',
-        'compatibility_stack_not_effective_stack',
+        'bounded_position_adjustment_not_equilibrium_frequency',
+        'heads_up_effective_spr_only_multiway_scalar_disabled',
+        'legal_aggression_projection_from_decision_context',
         'action_sizing_not_supplied',
         'not_independently_solver_validated',
       ],
@@ -169,13 +171,17 @@ export function resolveHeuristicStrategy(
   if (decisionContext.street === 'preflop') return preflopCandidate(decisionContext);
   const trustedCallPrice = Number.isFinite(decisionContext.callAmountBb)
     && decisionContext.callAmountBb >= 0;
-  if (postflopContextFacesWager(decisionContext) && !trustedCallPrice) {
+  const trustedCurrentPot = decisionContext.contractVersion === 'decision-context/v1.1'
+    ? Number.isFinite(decisionContext.currentPotBb) && decisionContext.currentPotBb >= 0
+    : Number.isFinite(decisionContext.potBb) && decisionContext.potBb >= 0;
+  if (postflopContextFacesWager(decisionContext)
+    && (!trustedCallPrice || !trustedCurrentPot)) {
     return unavailableCandidate(
-      'Exact call price is required for a postflop facing-wager heuristic strategy.',
-      { providerReason: 'exact_call_price_unavailable' },
+      'Exact call price and current pot are required for a postflop facing-wager heuristic strategy.',
+      { providerReason: 'exact_decision_economics_unavailable' },
       {
         kind: 'unsupported',
-        basis: 'missing_trusted_call_price',
+        basis: 'missing_trusted_decision_economics',
         limitationCodes: ['heuristic_exact_call_price_unavailable'],
       },
     );

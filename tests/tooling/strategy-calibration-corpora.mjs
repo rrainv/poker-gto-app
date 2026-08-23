@@ -30,28 +30,69 @@ export function calibrationDecisionContext(overrides = {}) {
   const inferredStreet = board.length === 0
     ? 'preflop'
     : board.length === 3 ? 'flop' : board.length === 4 ? 'turn' : board.length === 5 ? 'river' : 'invalid';
+  const street = overrides.street ?? inferredStreet;
+  const stackBb = overrides.stackBb ?? 100;
+  const potBb = overrides.potBb ?? (board.length === 0 ? 1.5 : 10);
+  const opponentCount = overrides.opponentCount ?? null;
+  const heroStackBb = overrides.heroStackBb ?? stackBb;
+  const lastAction = overrides.lastAction ?? (board.length === 0 ? 'unopened' : 'check');
+  const aggressionFamily = street === 'preflop'
+    ? lastAction === 'raise' ? 'open'
+      : lastAction === '3bet' ? 'three_bet'
+        : lastAction === '4bet' ? 'four_bet_or_more'
+          : 'none'
+    : lastAction === 'raise' ? 'raise' : lastAction === 'bet' ? 'bet' : 'none';
+  const facingActionFamily = ['raise', '3bet', '4bet'].includes(lastAction)
+    ? 'raise'
+    : ['bet', 'check'].includes(lastAction) ? lastAction : 'none';
+  const defaultSummary = {
+    lastActionFamily: lastAction === '3bet' || lastAction === '4bet' ? 'raise' : lastAction,
+    lastActorPosition: null,
+    facingActionFamily,
+    aggressionFamily,
+    aggressionCount: aggressionFamily === 'none' ? 0
+      : aggressionFamily === 'three_bet' ? 2
+        : aggressionFamily === 'four_bet_or_more' ? 3 : 1,
+    limperCount: street === 'preflop' ? 0 : null,
+    aggressorPosition: null,
+  };
   return {
     schemaVersion: 'decision-context/v1',
+    contractVersion: 'decision-context/v1.1',
     tableSize: 6,
-    opponentCount: null,
+    opponentCount,
     heroPosition: 'BTN',
-    street: inferredStreet,
+    street,
     heroCards: ['As', 'Kd'],
     board,
     deadCards: [],
-    stackBb: 100,
+    stackBb,
     stackMode: 'hero',
-    potBb: board.length === 0 ? 1.5 : 10,
-    lastAction: board.length === 0 ? 'unopened' : 'check',
+    startingStackBb: stackBb,
+    heroStackBb,
+    effectiveStackBb: opponentCount === 1 ? heroStackBb : null,
+    effectiveStackByOpponent: opponentCount === 1
+      ? [{ position: 'BB', opponentStackBb: heroStackBb, effectiveStackBb: heroStackBb }]
+      : [],
+    potBb,
+    currentPotBb: overrides.currentPotBb ?? potBb,
+    positionRelation: street === 'preflop' ? 'not_applicable' : 'unknown',
+    aggressorPositionRelation: street === 'preflop' ? 'not_applicable' : 'unknown',
+    lastAction,
+    priorActionSummary: defaultSummary,
     facingSizeBb: 0,
     callAmountBb: board.length === 0 ? null : 0,
     heroStreetContributionBb: board.length === 0 ? null : 0,
+    canRaise: true,
+    minRaiseToBb: 2,
+    maxRaiseToBb: heroStackBb,
+    allInToBb: heroStackBb,
     rakeMode: 'off',
     forcedContributionPerPlayerBb: 0,
     totalForcedContributionBb: 0,
     ...overrides,
     board,
-    street: overrides.street ?? inferredStreet,
+    street,
   };
 }
 
@@ -453,6 +494,247 @@ export const POSTFLOP_COUNTERFACTUAL_CORPUS = Object.freeze({
       heroStreetContributionBb: null,
       opponentCount: null,
       tableSize: 6,
+    }),
+  }),
+  positionSensitivity: Object.freeze({
+    label: 'Identical HU facts with exact in-position versus out-of-position relation',
+    baseline: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      positionRelation: 'in_position',
+      aggressorPositionRelation: 'in_position',
+    }),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      positionRelation: 'out_of_position',
+      aggressorPositionRelation: 'out_of_position',
+    }),
+  }),
+  effectiveStackSensitivity: Object.freeze({
+    label: 'Identical HU facts at shallow versus deep exact effective SPR',
+    baseline: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      heroStackBb: 8,
+      effectiveStackBb: 8,
+      effectiveStackByOpponent: [
+        { position: 'BB', opponentStackBb: 8, effectiveStackBb: 8 },
+      ],
+      maxRaiseToBb: 8,
+      allInToBb: 8,
+    }),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      heroStackBb: 200,
+      effectiveStackBb: 200,
+      effectiveStackByOpponent: [
+        { position: 'BB', opponentStackBb: 200, effectiveStackBb: 200 },
+      ],
+      maxRaiseToBb: 200,
+      allInToBb: 200,
+    }),
+  }),
+  effectiveStackShallowToMedium: Object.freeze({
+    label: 'Identical HU facts at shallow versus medium exact effective SPR',
+    baseline: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      heroStackBb: 8,
+      effectiveStackBb: 8,
+      effectiveStackByOpponent: [
+        { position: 'BB', opponentStackBb: 8, effectiveStackBb: 8 },
+      ],
+      maxRaiseToBb: 8,
+      allInToBb: 8,
+    }),
+    counterfactual: Object.freeze(CONTROLLED_TOP_PAIR_FACING_BET),
+  }),
+  effectiveStackMediumToDeep: Object.freeze({
+    label: 'Identical HU facts at medium versus deep exact effective SPR',
+    baseline: Object.freeze(CONTROLLED_TOP_PAIR_FACING_BET),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      heroStackBb: 200,
+      effectiveStackBb: 200,
+      effectiveStackByOpponent: [
+        { position: 'BB', opponentStackBb: 200, effectiveStackBb: 200 },
+      ],
+      maxRaiseToBb: 200,
+      allInToBb: 200,
+    }),
+  }),
+  legalAggressionSensitivity: Object.freeze({
+    label: 'Identical strategic facts with regular aggression legal versus unavailable',
+    baseline: Object.freeze(CONTROLLED_TOP_PAIR_FACING_BET),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      canRaise: false,
+      minRaiseToBb: null,
+      maxRaiseToBb: null,
+    }),
+  }),
+  exactPriceSensitivity: Object.freeze({
+    label: 'Identical population facts with different exact incremental call prices',
+    baseline: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      heroCards: ['As', '5s'],
+      board: ['2s', '9s', 'Kd'],
+      callAmountBb: 2,
+    }),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      heroCards: ['As', '5s'],
+      board: ['2s', '9s', 'Kd'],
+      callAmountBb: 10,
+    }),
+  }),
+  postflopRaiseHistorySensitivity: Object.freeze({
+    label: 'Identical cards and economics facing a bet versus a prior raise',
+    baseline: Object.freeze(CONTROLLED_TOP_PAIR_FACING_BET),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_TOP_PAIR_FACING_BET,
+      lastAction: 'raise',
+      priorActionSummary: {
+        ...CONTROLLED_TOP_PAIR_FACING_BET.priorActionSummary,
+        lastActionFamily: 'raise',
+        facingActionFamily: 'raise',
+        aggressionFamily: 'raise',
+        aggressionCount: 2,
+      },
+    }),
+  }),
+});
+
+const CONTROLLED_AJS_PREFLOP = calibrationDecisionContext({
+  tableSize: 6,
+  opponentCount: 5,
+  heroPosition: 'BTN',
+  heroCards: representativeCardsForClass('AJs'),
+  stackBb: 100,
+  startingStackBb: 100,
+  heroStackBb: 100,
+  effectiveStackBb: null,
+  effectiveStackByOpponent: [],
+  currentPotBb: 1.5,
+  lastAction: 'unopened',
+  priorActionSummary: {
+    lastActionFamily: 'none',
+    lastActorPosition: null,
+    facingActionFamily: 'none',
+    aggressionFamily: 'none',
+    aggressionCount: 0,
+    limperCount: 0,
+    aggressorPosition: null,
+  },
+});
+
+function preflopAggressionSummary(aggressionFamily, aggressionCount, aggressorPosition = 'CO') {
+  return {
+    lastActionFamily: 'raise',
+    lastActorPosition: aggressorPosition,
+    facingActionFamily: 'raise',
+    aggressionFamily,
+    aggressionCount,
+    limperCount: 0,
+    aggressorPosition,
+  };
+}
+
+export const PREFLOP_HISTORY_COUNTERFACTUAL_CORPUS = Object.freeze({
+  unopenedVersusOneLimp: Object.freeze({
+    label: 'Unopened versus one canonical limp',
+    baseline: Object.freeze(CONTROLLED_AJS_PREFLOP),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_AJS_PREFLOP,
+      lastAction: 'check',
+      priorActionSummary: {
+        ...CONTROLLED_AJS_PREFLOP.priorActionSummary,
+        lastActionFamily: 'limp',
+        lastActorPosition: 'CO',
+        facingActionFamily: 'limp',
+        limperCount: 1,
+      },
+    }),
+  }),
+  oneVersusMultipleLimps: Object.freeze({
+    label: 'One versus three canonical limpers',
+    baseline: Object.freeze({
+      ...CONTROLLED_AJS_PREFLOP,
+      lastAction: 'check',
+      priorActionSummary: {
+        ...CONTROLLED_AJS_PREFLOP.priorActionSummary,
+        lastActionFamily: 'limp',
+        lastActorPosition: 'CO',
+        facingActionFamily: 'limp',
+        limperCount: 1,
+      },
+    }),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_AJS_PREFLOP,
+      lastAction: 'check',
+      priorActionSummary: {
+        ...CONTROLLED_AJS_PREFLOP.priorActionSummary,
+        lastActionFamily: 'limp',
+        lastActorPosition: 'CO',
+        facingActionFamily: 'limp',
+        limperCount: 3,
+      },
+    }),
+  }),
+  unopenedVersusFacingOpen: Object.freeze({
+    label: 'Representative AJs unopened family versus facing an open',
+    baseline: Object.freeze(CONTROLLED_AJS_PREFLOP),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_AJS_PREFLOP,
+      lastAction: 'raise',
+      facingSizeBb: 2.5,
+      callAmountBb: 2.5,
+      currentPotBb: 4,
+      potBb: 4,
+      priorActionSummary: preflopAggressionSummary('open', 1),
+    }),
+  }),
+  facingOpenVersusThreeBet: Object.freeze({
+    label: 'Representative AJs facing-open versus facing-3-bet families',
+    baseline: Object.freeze({
+      ...CONTROLLED_AJS_PREFLOP,
+      lastAction: 'raise',
+      facingSizeBb: 2.5,
+      callAmountBb: 2.5,
+      currentPotBb: 4,
+      potBb: 4,
+      priorActionSummary: preflopAggressionSummary('open', 1),
+    }),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_AJS_PREFLOP,
+      heroStackBb: 97.5,
+      lastAction: '3bet',
+      facingSizeBb: 8,
+      callAmountBb: 5.5,
+      heroStreetContributionBb: 2.5,
+      currentPotBb: 11.5,
+      potBb: 11.5,
+      priorActionSummary: preflopAggressionSummary('three_bet', 2),
+    }),
+  }),
+  facingThreeBetVersusFourBet: Object.freeze({
+    label: 'Representative AJs response family facing 3-bet versus 4-bet-or-more',
+    baseline: Object.freeze({
+      ...CONTROLLED_AJS_PREFLOP,
+      heroStackBb: 97.5,
+      lastAction: '3bet',
+      facingSizeBb: 8,
+      callAmountBb: 5.5,
+      currentPotBb: 11.5,
+      potBb: 11.5,
+      priorActionSummary: preflopAggressionSummary('three_bet', 2),
+    }),
+    counterfactual: Object.freeze({
+      ...CONTROLLED_AJS_PREFLOP,
+      heroStackBb: 92,
+      lastAction: '4bet',
+      facingSizeBb: 20,
+      callAmountBb: 12,
+      currentPotBb: 31.5,
+      potBb: 31.5,
+      priorActionSummary: preflopAggressionSummary('four_bet_or_more', 3),
     }),
   }),
 });

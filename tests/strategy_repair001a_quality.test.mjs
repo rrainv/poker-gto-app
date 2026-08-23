@@ -197,7 +197,7 @@ test('representative preflop corpus remains finite, normalized, deterministic, a
       const second = provider.resolve(context);
       assert.ok(isStrategyResultV1(first));
       assert.deepEqual(second, first);
-      assert.equal(first.sourceVersion, 'riverline-preflop-heuristic/v2');
+      assert.equal(first.sourceVersion, 'riverline-preflop-heuristic/v3');
       assert.equal(availableProbabilityTotal(first), 1);
       assert.ok(first.actions.every((entry) => Number.isFinite(entry.probability)));
       assert.doesNotMatch(JSON.stringify(first), /solved GTO|Nash|action EV|EV loss/i);
@@ -315,12 +315,12 @@ test('missing trusted postflop call price abstains with unsupported authority me
   assert.equal(result.recommendation, null);
   assert.equal(result.sourceDescriptor.authority, STRATEGY_SOURCE_AUTHORITIES.NONE);
   assert.equal(result.contextCoverage.kind, 'unsupported');
-  assert.equal(result.contextCoverage.basis, 'missing_trusted_call_price');
+  assert.equal(result.contextCoverage.basis, 'missing_trusted_decision_economics');
   assert.deepEqual(
     result.contextCoverage.limitationCodes,
     ['heuristic_exact_call_price_unavailable'],
   );
-  assert.match(result.explanation, /Exact call price is required/);
+  assert.match(result.explanation, /Exact call price and current pot are required/);
   assert.doesNotMatch(
     [result.explanation, ...result.warnings].filter(Boolean).join(' '),
     /GTO|Nash|optimal|EV loss/i,
@@ -328,11 +328,11 @@ test('missing trusted postflop call price abstains with unsupported authority me
 
   assert.throws(
     () => calculatePostflopStrategyFromSample(context, options(), { eq: 0.5 }),
-    /requires an exact callAmountBb/,
+    /requires exact callAmountBb and currentPotBb/,
   );
 });
 
-test('genuine postflop contexts remain v2 deterministic heuristic results with normalized actions', () => {
+test('genuine postflop contexts remain v3 deterministic heuristic results with normalized actions', () => {
   const provider = createCalibrationStrategyProvider();
   const context = calibrationDecisionContext({
     tableSize: 3,
@@ -347,7 +347,7 @@ test('genuine postflop contexts remain v2 deterministic heuristic results with n
   const result = provider.resolve(context);
   assert.ok(isStrategyResultV1(result));
   assert.equal(result.source, 'heuristic_postflop');
-  assert.equal(result.sourceVersion, 'riverline-postflop-heuristic/v2');
+  assert.equal(result.sourceVersion, 'riverline-postflop-heuristic/v3');
   assert.equal(availableProbabilityTotal(result), 1);
   assert.equal(result.details.heuristicSample.completedSamples, 250);
 });

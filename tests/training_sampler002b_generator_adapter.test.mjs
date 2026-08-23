@@ -533,7 +533,7 @@ test('002B direct generation remains deterministic with additive StrategyResult 
   assert.equal(result.ok, true, result.error?.message);
   assert.equal(result.exercise.schemaVersion, 'training-exercise/v1');
   assert.equal(result.exercise.pokerState.schemaVersion, 'poker-state/v1');
-  assert.equal(result.exercise.strategyResult.sourceVersion, 'riverline-postflop-heuristic/v2');
+  assert.equal(result.exercise.strategyResult.sourceVersion, 'riverline-postflop-heuristic/v3');
   assert.equal(result.exercise.strategyResult.contextCoverage.kind, 'generalized');
   assert.equal(result.exercise.decisionContext.contractVersion, 'decision-context/v1.1');
   assert.equal(
@@ -543,7 +543,7 @@ test('002B direct generation remains deterministic with additive StrategyResult 
   assert.equal(Object.hasOwn(result.exercise.generationMetadata, 'scenarioRequest'), false);
   assert.equal(
     createHash('sha256').update(JSON.stringify(result)).digest('hex'),
-    '3e7f35f55855f83558c69d14d096c15326e6d96c1222d63749acb9bc4d1321b7',
+    '1b6ce29f3a83a599e540274aa568950db482fbf062d48cab5b311c8161ca3c37',
   );
 });
 

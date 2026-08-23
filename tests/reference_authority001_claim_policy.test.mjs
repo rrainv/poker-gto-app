@@ -204,7 +204,7 @@ test('high-risk heuristic contexts use one structured limitation-code path', () 
     [context({ heroPosition: 'BB', lastAction: 'check', callAmountBb: 0 }), 'heuristic_limp_context_coarse'],
     [context({ lastAction: '3bet', facingSizeBb: 9, callAmountBb: 6 }), 'heuristic_facing_3bet_coarse'],
     [context({ lastAction: '4bet', facingSizeBb: 22, callAmountBb: 13 }), 'heuristic_facing_4bet_coarse'],
-    [context({ street: 'flop', board: ['2c', '7d', 'Th'], lastAction: 'check', callAmountBb: 0 }), 'heuristic_postflop_position_ignored'],
+    [context({ street: 'flop', board: ['2c', '7d', 'Th'], lastAction: 'check', callAmountBb: 0 }), 'heuristic_postflop_position_coarse'],
     [context({ street: 'flop', board: ['2c', '7d', 'Th'], lastAction: 'bet', facingSizeBb: 4, callAmountBb: 4 }), 'heuristic_postflop_facing_wager_coarse'],
     [context({ street: 'flop', board: ['2c', '7d', 'Th'], lastAction: 'raise', facingSizeBb: 8, callAmountBb: 5 }), 'heuristic_postflop_facing_raise_coarse'],
     [context({ street: 'turn', board: ['2c', '7d', 'Th', 'Js'], opponentCount: 2 }), 'heuristic_postflop_multiway_coarse'],

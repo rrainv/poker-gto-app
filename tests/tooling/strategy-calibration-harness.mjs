@@ -11,6 +11,7 @@ import {
   NON_BLIND_POSITIONS,
   POSTFLOP_COUNTERFACTUAL_CORPUS,
   POSTFLOP_NAMED_CORPUS,
+  PREFLOP_HISTORY_COUNTERFACTUAL_CORPUS,
   PREFLOP_FACING_CATEGORIES,
   PREFLOP_HAND_CLASSES,
   PRICE_RESPONSE_SPOTS,
@@ -84,7 +85,7 @@ export const BOUNDED_HU_OVERLAP = Object.freeze([
     publicState: 'limp_branch',
     overlap: 'context_available_comparison_not_implemented',
     usableComparison: null,
-    reason: 'DecisionContext v1.1 preserves canonical limp summaries, but the current heuristic and bounded comparison do not consume the branch or retain its prior-action size anchor.',
+    reason: 'The heuristic consumes canonical limp summaries, but the bounded reference comparison has no trusted limp-branch output or retained prior-action size anchor.',
   }),
 ]);
 
@@ -172,19 +173,26 @@ export function evaluateDecisionContext(provider, decisionContext) {
 export function preflopContextFor(handClass, configuration) {
   const facing = PREFLOP_FACING_CATEGORIES[configuration.facing ?? 'unopened'];
   if (!facing) throw new RangeError(`Unknown facing category: ${configuration.facing}`);
+  const startingStackBb = configuration.stackBb ?? 100;
+  const heroStreetContributionBb = Object.hasOwn(configuration, 'heroStreetContributionBb')
+    ? configuration.heroStreetContributionBb
+    : facing.heroStreetContributionBb;
+  const heroStackBb = Number.isFinite(heroStreetContributionBb)
+    ? Math.max(0, startingStackBb - heroStreetContributionBb)
+    : startingStackBb;
   return calibrationDecisionContext({
     tableSize: configuration.tableSize ?? 6,
     opponentCount: configuration.opponentCount ?? null,
     heroPosition: configuration.heroPosition ?? 'BTN',
     heroCards: representativeCardsForClass(handClass),
-    stackBb: configuration.stackBb ?? 100,
+    stackBb: startingStackBb,
+    startingStackBb,
+    heroStackBb,
     ...facing,
     ...(Object.hasOwn(configuration, 'callAmountBb')
       ? { callAmountBb: configuration.callAmountBb }
       : {}),
-    ...(Object.hasOwn(configuration, 'heroStreetContributionBb')
-      ? { heroStreetContributionBb: configuration.heroStreetContributionBb }
-      : {}),
+    heroStreetContributionBb,
   });
 }
 
@@ -333,6 +341,23 @@ export function evaluatePostflopCounterfactuals(options = {}) {
   ));
 }
 
+export function evaluatePreflopHistoryCounterfactuals(options = {}) {
+  const provider = createCalibrationStrategyProvider(options);
+  return Object.fromEntries(Object.entries(PREFLOP_HISTORY_COUNTERFACTUAL_CORPUS).map(
+    ([id, fixture]) => {
+      const baseline = counterfactualObservation(provider, fixture.baseline);
+      const counterfactual = counterfactualObservation(provider, fixture.counterfactual);
+      return [id, {
+        label: fixture.label,
+        baseline,
+        counterfactual,
+        sameActions: JSON.stringify(baseline.actions) === JSON.stringify(counterfactual.actions),
+        maximumActionDelta: rounded(maximumActionDelta(baseline, counterfactual)),
+      }];
+    },
+  ));
+}
+
 function compactPreflopQualitySummary(provider, configuration) {
   const aggregate = summarizePreflopConfiguration(provider, configuration);
   return {
@@ -438,6 +463,7 @@ export function buildStrategyQualitySnapshot(options = {}) {
           row.actionVector.all_in > 0
         )).length,
       },
+      historyCounterfactuals: evaluatePreflopHistoryCounterfactuals(options),
     },
     postflop: {
       namedCorpus: evaluatePostflopCorpus(options),
@@ -1033,7 +1059,7 @@ export function diagnoseSizing() {
     preflopAmountSemantics: 'amount-to total preflop contribution after acting',
     uniqueExplicitPreflopSizes: uniquePreflopSizes,
     preflopSizedActionCount: emitted.filter((action) => action.amountBb !== null).length,
-    postflopSizingSemantics: 'omitted because the current heuristic does not consume DecisionContext v1.1 legal sizing bounds',
+    postflopSizingSemantics: 'omitted; legal bounds project action families but are not sizing recommendations',
     postflopExplicitSizeCount: postflop.flatMap((spot) => spot.sizes).filter((action) => (
       action.amountBb !== null || action.potFraction !== null
     )).length,
@@ -1080,7 +1106,7 @@ export function buildCalibrationReport({ reference = null, includeClasses = fals
             && left.aggressionOrdering.join(',') === right.aggressionOrdering.join(',');
         }),
         codeAudit: 'Unopened preflop position adjustment consumes canonical tableSize/position facts.',
-        implication: 'Table families can now express distinct positional opening baselines without changing facing-aggression anchors.',
+        implication: 'Table families retain distinct positional opening baselines while response families use separate broad calibration curves.',
       },
     },
     postflop: {

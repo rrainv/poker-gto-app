@@ -7,7 +7,7 @@ This specification defines how Riverline interprets a strategy result. It does n
 ## 1. Canonical dependency
 
 ```text
-DecisionContext v1
+DecisionContext v1 / additive v1.1 facts
         ↓
 StrategyProvider v1
         ↓
@@ -134,7 +134,9 @@ The built-in heuristic is deterministic, versioned, known-provenance, generalize
 - action-price practice;
 - deterministic reproduction while the same source version is available.
 
-The v2 preflop source consumes canonical table-size/position facts for unopened pots. The v2 postflop source conditions its assumed opponent range on a causal aggression family, and it abstains rather than manufacturing a price-sensitive strategy when an exact call price is unavailable.
+The v3 preflop source preserves the v2 unopened table-family correction and adds broad, separate response-family curves for limped pots, facing an open, facing a 3-bet, facing a 4-bet-or-more, and the BB option. Canonical v1.1 contexts use `currentPotBb`, live Hero/effective stack facts, `priorActionSummary`, and legal aggression facts; legacy `stackBb`/`potBb` remain base-v1 compatibility only.
+
+The v3 postflop source keeps its seeded conditional sampler and existing hand/board signals. It uses exact `currentPotBb` and HU `effectiveStackBb / currentPotBb`, applies one bounded position/SPR/history aggression-to-passive reallocation, disables a fake scalar SPR adjustment in multiway pots, projects away illegal aggression, and abstains rather than manufacturing price-sensitive behavior without exact decision economics. Legal bounds are not sizing recommendations, and postflop actions remain unsized.
 
 It does not authorize solved GTO, Nash, equilibrium, proven optimality, objective correctness, exact exploitability, exact EV loss, calibrated confidence, or validated population-truth claims.
 
@@ -148,10 +150,10 @@ Codes cover:
 
 - limped preflop action-history semantics;
 - facing 3-bet and facing 4-bet fallbacks;
-- postflop position not applied;
+- postflop position covered only by a bounded heuristic adjustment;
 - postflop facing wager and facing raise;
 - multiway postflop shared-range fallback;
-- facing a wager without an exact call price.
+- facing a wager without exact `callAmountBb` and v1.1 `currentPotBb`.
 
 The remaining generalized-context codes do not retune heuristic probabilities or grading math. The missing-price code instead accompanies an unsupported, unavailable result. Training shows a compact high-priority context note. Analyze exposes the limitation through provenance/warnings. Matrix keeps one workspace-level precision/coverage summary rather than cell disclaimers.
 

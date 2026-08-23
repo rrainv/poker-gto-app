@@ -74,9 +74,9 @@ function assertUnavailablePostflopScenarioStrategy(context) {
   assert.equal(result.sourceDescriptor.authority, 'none');
   assert.deepEqual(result.actions, []);
   assert.equal(result.recommendation, null);
-  assert.equal(result.details.providerReason, 'exact_call_price_unavailable');
+  assert.equal(result.details.providerReason, 'exact_decision_economics_unavailable');
   assert.equal(result.contextCoverage.kind, 'unsupported');
-  assert.equal(result.contextCoverage.basis, 'missing_trusted_call_price');
+  assert.equal(result.contextCoverage.basis, 'missing_trusted_decision_economics');
   assert.deepEqual(result.contextCoverage.limitationCodes, [
     'heuristic_exact_call_price_unavailable',
   ]);
@@ -144,9 +144,10 @@ test('fallback price mathematics never defaults missing call price to nominal fa
   assert.doesNotMatch(fallback, /callAmountBb\s*=\s*facingSize/);
   assert.doesNotMatch(fallback, /trustedCallAmount\s*===\s*null\s*\?\s*0/);
   assert.doesNotMatch(fallback, /potSize\s*\/\s*\(potSize\s*\+\s*facingSize\)/);
-  assert.match(POSTFLOP, /requiredRawEquity[\s\S]*trustedCallAmount\s*\/\s*\(potSize\s*\+\s*trustedCallAmount\)/);
+  assert.match(POSTFLOP, /requiredRawEquity[\s\S]*trustedCallAmount\s*\/\s*\(decisionPotBb\s*\+\s*trustedCallAmount\)/);
+  assert.match(POSTFLOP, /decision_context_v1\.1_current_pot/);
   assert.match(PREFLOP, /const potOdds = callAmountBb \/ priceDenominator/);
-  assert.match(PREFLOP, /Facing aggression lacks a proven legal minimum/);
+  assert.match(PREFLOP, /Legal bounds are used for projection, not as recommendations/);
   assert.doesNotMatch(PREFLOP, /facingSizeBb\s*\/\s*|const raiseAmount/);
   assert.doesNotMatch(LOGIC, /requiredRawEquity|cheapOddsDefenseBoost/);
 });

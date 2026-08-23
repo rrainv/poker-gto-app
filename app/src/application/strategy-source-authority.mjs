@@ -126,6 +126,12 @@ export const STRATEGY_LIMITATIONS = deepFreeze({
     message: 'The postflop fallback does not adjust for in-position or out-of-position play.',
     priority: 70,
   },
+  heuristic_postflop_position_coarse: {
+    code: 'heuristic_postflop_position_coarse',
+    messageKey: 'Postflop position uses a bounded heuristic adjustment, not a validated betting tree.',
+    message: 'Postflop position uses a bounded heuristic adjustment, not a validated betting tree.',
+    priority: 70,
+  },
   heuristic_postflop_facing_wager_coarse: {
     code: 'heuristic_postflop_facing_wager_coarse',
     messageKey: 'Postflop responses use a broad fallback rather than a validated betting tree.',
@@ -241,7 +247,7 @@ const HEURISTIC_CAPABILITIES = Object.freeze({
 export const STRATEGY_SOURCE_REGISTRY = deepFreeze({
   heuristic_preflop: createStrategySourceDescriptor({
     id: 'heuristic_preflop',
-    version: 'riverline-preflop-heuristic/v2',
+    version: 'riverline-preflop-heuristic/v3',
     displayName: 'Heuristic fallback',
     family: STRATEGY_SOURCE_FAMILIES.HEURISTIC,
     authority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
@@ -251,7 +257,7 @@ export const STRATEGY_SOURCE_REGISTRY = deepFreeze({
   }),
   heuristic_postflop: createStrategySourceDescriptor({
     id: 'heuristic_postflop',
-    version: 'riverline-postflop-heuristic/v2',
+    version: 'riverline-postflop-heuristic/v3',
     displayName: 'Heuristic fallback',
     family: STRATEGY_SOURCE_FAMILIES.HEURISTIC,
     authority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
@@ -319,6 +325,11 @@ export function createStrategyContextCoverage({
 }
 
 function facesWager(context) {
+  if (context?.callAmountBb === 0) return false;
+  const family = String(
+    context?.priorActionSummary?.facingActionFamily || '',
+  ).toLowerCase();
+  if (['bet', 'raise'].includes(family)) return true;
   return Number(context?.facingSizeBb) > 0
     || ['bet', 'raise', '3bet', '4bet'].includes(String(context?.lastAction || '').toLowerCase());
 }
@@ -327,19 +338,31 @@ export function heuristicContextLimitationCodes(decisionContext) {
   if (!decisionContext || typeof decisionContext !== 'object') return [];
   const street = String(decisionContext.street || '');
   const lastAction = String(decisionContext.lastAction || '').toLowerCase();
+  const prior = decisionContext.priorActionSummary;
+  const aggressionFamily = String(prior?.aggressionFamily || '').toLowerCase();
+  const trustedDecisionPot = decisionContext.contractVersion === 'decision-context/v1.1'
+    ? Number.isFinite(decisionContext.currentPotBb)
+    : Number.isFinite(decisionContext.potBb);
   const codes = [];
   if (street === 'preflop') {
-    if (lastAction === 'check'
+    if ((Number.isInteger(prior?.limperCount) && prior.limperCount > 0)
+      || lastAction === 'check'
       || (decisionContext.heroPosition === 'BB'
         && lastAction === 'unopened'
         && decisionContext.callAmountBb === 0)) {
       codes.push('heuristic_limp_context_coarse');
     }
-    if (lastAction === '3bet') codes.push('heuristic_facing_3bet_coarse');
-    if (lastAction === '4bet') codes.push('heuristic_facing_4bet_coarse');
+    if (aggressionFamily === 'three_bet' || lastAction === '3bet') {
+      codes.push('heuristic_facing_3bet_coarse');
+    }
+    if (aggressionFamily === 'four_bet_or_more' || lastAction === '4bet') {
+      codes.push('heuristic_facing_4bet_coarse');
+    }
   } else if (['flop', 'turn', 'river'].includes(street)) {
-    codes.push('heuristic_postflop_position_ignored');
-    if (lastAction === 'raise') codes.push('heuristic_postflop_facing_raise_coarse');
+    codes.push('heuristic_postflop_position_coarse');
+    if (aggressionFamily === 'raise' || lastAction === 'raise') {
+      codes.push('heuristic_postflop_facing_raise_coarse');
+    }
     else if (facesWager(decisionContext)) codes.push('heuristic_postflop_facing_wager_coarse');
     if (Number.isInteger(decisionContext.opponentCount)
       && decisionContext.opponentCount > 1) {
@@ -347,7 +370,8 @@ export function heuristicContextLimitationCodes(decisionContext) {
     }
   }
   if (facesWager(decisionContext)
-    && !Number.isFinite(decisionContext.callAmountBb)) {
+    && (!Number.isFinite(decisionContext.callAmountBb)
+      || !trustedDecisionPot)) {
     codes.push('heuristic_exact_call_price_unavailable');
   }
   return [...new Set(codes)];
