@@ -4,6 +4,26 @@ This directory contains deterministic, non-production diagnostics for Riverline'
 current `StrategyProvider v1` authority. Nothing under `tests/tooling` is imported
 by the browser or Electron runtime.
 
+## External reference benchmark
+
+`REFERENCE-BENCH-001` adds a source-agnostic local runner for manual, public,
+Riverline-owned, licensed, or independent-solver observations:
+
+```powershell
+node tests/tooling/run-reference-bench.mjs `
+  --input C:\private\riverline\capture.json `
+  --output C:\private\riverline\report.json `
+  --pretty
+```
+
+Start from `reference-bench-capture-template.json`, but copy it outside the
+repository before entering proprietary observations. The CLI accepts any local
+input path; no `.gitignore` change is required. The template contains placeholders,
+not external product values. Schema, match gate, metrics, legal boundary, and the
+first 42-observation capture design are documented in
+`docs/project/REFERENCE_BENCHMARK_SPEC.md` and
+`docs/project/REFERENCE_BENCHMARK_FIRST_CAPTURE_PLAN.md`.
+
 Run the summary report from the repository root:
 
 ```powershell

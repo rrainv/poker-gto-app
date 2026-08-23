@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "riverline-reference-benchmark-input/v1",
+  "packId": "synthetic.reference-bench001",
+  "title": "Synthetic reference benchmark fixture",
+  "source": {
+    "id": "riverline.synthetic.reference-bench001",
+    "productName": "Riverline synthetic test fixture",
+    "sourceType": "riverline_owned",
+    "observationDate": "2026-08-23",
+    "sourceLabel": "synthetic-v1",
+    "provenanceNote": "Invented Riverline-owned frequencies used only to test benchmark mechanics; not poker truth.",
+    "redistributionStatus": "riverline_owned",
+    "storagePolicy": "repository_allowed"
+  },
+  "nodes": [
+    {
+      "id": "hu_btn_rfi_100bb_synthetic",
+      "referenceCoverage": "supported",
+      "coverageNote": "Synthetic exact node for deterministic tests only.",
+      "referenceContext": {
+        "gameType": "no_limit_texas_holdem",
+        "tableSize": 2,
+        "positions": ["BTN", "BB"],
+        "stackDepthBb": 100,
+        "blinds": { "smallBlindBb": 0.5, "bigBlindBb": 1 },
+        "ante": { "kind": "none", "amountBb": 0 },
+        "rake": { "kind": "none", "description": null, "percentage": null, "capBb": null },
+        "format": "cash",
+        "actionTree": [],
+        "availableActionSizes": [
+          { "canonicalType": "raise", "size": { "basis": "amount_to_bb", "value": 2.5 }, "rawLabel": "Raise to 2.5bb" }
+        ],
+        "street": "preflop",
+        "board": [],
+        "currentPotBb": 1.5,
+        "callAmountBb": 0.5,
+        "effectiveStackBb": 99.5,
+        "legalActions": [
+          { "canonicalType": "fold", "size": null, "rawLabel": "Fold" },
+          { "canonicalType": "call", "size": null, "rawLabel": "Limp" },
+          { "canonicalType": "raise", "size": { "basis": "amount_to_bb", "value": 2.5 }, "rawLabel": "Raise to 2.5bb" }
+        ]
+      },
+      "riverline": {
+        "decisionContext": {
+          "schemaVersion": "decision-context/v1",
+          "contractVersion": "decision-context/v1.1",
+          "tableSize": 2,
+          "opponentCount": 1,
+          "heroPosition": "BTN",
+          "street": "preflop",
+          "heroCards": ["As", "Ks"],
+          "board": [],
+          "deadCards": [],
+          "stackBb": 100,
+          "stackMode": "hero",
+          "startingStackBb": 100,
+          "heroStackBb": 99.5,
+          "effectiveStackBb": 99.5,
+          "effectiveStackByOpponent": [
+            { "position": "BB", "opponentStackBb": 99, "effectiveStackBb": 99 }
+          ],
+          "potBb": 1.5,
+          "currentPotBb": 1.5,
+          "positionRelation": "not_applicable",
+          "aggressorPositionRelation": "not_applicable",
+          "lastAction": "unopened",
+          "priorActionSummary": {
+            "lastActionFamily": "unopened",
+            "lastActorPosition": null,
+            "facingActionFamily": "none",
+            "aggressionFamily": "none",
+            "aggressionCount": 0,
+            "limperCount": 0,
+            "aggressorPosition": null
+          },
+          "facingSizeBb": 0,
+          "callAmountBb": 0.5,
+          "heroStreetContributionBb": 0.5,
+          "canRaise": true,
+          "minRaiseToBb": 2,
+          "maxRaiseToBb": 100,
+          "allInToBb": 100,
+          "rakeMode": "off",
+          "forcedContributionPerPlayerBb": 0,
+          "totalForcedContributionBb": 0
+        },
+        "gameAssumptions": {
+          "gameType": "no_limit_texas_holdem",
+          "tableSize": 2,
+          "positions": ["BTN", "BB"],
+          "stackDepthBb": 100,
+          "blinds": { "smallBlindBb": 0.5, "bigBlindBb": 1 },
+          "ante": { "kind": "none", "amountBb": 0 },
+          "rake": { "kind": "none", "description": null, "percentage": null, "capBb": null },
+          "format": "cash",
+          "actionTree": [],
+          "availableActionSizes": [
+            { "canonicalType": "raise", "size": { "basis": "amount_to_bb", "value": 2.5 }, "rawLabel": "Raise to 2.5bb" }
+          ],
+          "street": "preflop",
+          "board": [],
+          "currentPotBb": 1.5,
+          "callAmountBb": 0.5,
+          "effectiveStackBb": 99.5,
+          "legalActions": [
+            { "canonicalType": "fold", "size": null, "rawLabel": "Fold" },
+            { "canonicalType": "call", "size": null, "rawLabel": "Limp" },
+            { "canonicalType": "raise", "size": { "basis": "amount_to_bb", "value": 2.5 }, "rawLabel": "Raise to 2.5bb" }
+          ]
+        }
+      },
+      "contextMatch": { "kind": "exact", "mappings": [], "note": null },
+      "observations": [
+        {
+          "id": "aks",
+          "hand": {
+            "kind": "preflop_169_class",
+            "handClass": "AKs",
+            "combo": ["As", "Ks"],
+            "rangeWeight": 0.75
+          },
+          "reference": {
+            "frequencyUnit": "percent",
+            "rawActions": [
+              { "label": "Fold", "canonicalType": "fold", "frequency": 5, "size": null, "evBb": -0.5 },
+              { "label": "Limp", "canonicalType": "call", "frequency": 20, "size": null, "evBb": 0.4 },
+              { "label": "Raise to 2.5bb", "canonicalType": "raise", "frequency": 75, "size": { "basis": "amount_to_bb", "value": 2.5 }, "evBb": 0.8 }
+            ],
+            "equity": null,
+            "eqr": null
+          },
+          "riverlineEquity": null
+        },
+        {
+          "id": "a5s",
+          "hand": {
+            "kind": "preflop_169_class",
+            "handClass": "A5s",
+            "combo": ["Ah", "5h"],
+            "rangeWeight": 0.25
+          },
+          "reference": {
+            "frequencyUnit": "probability",
+            "rawActions": [
+              { "label": "Fold", "canonicalType": "fold", "frequency": 0.2, "size": null, "evBb": null },
+              { "label": "Limp", "canonicalType": "call", "frequency": 0.3, "size": null, "evBb": null },
+              { "label": "Raise to 2.5bb", "canonicalType": "raise", "frequency": 0.5, "size": { "basis": "amount_to_bb", "value": 2.5 }, "evBb": null }
+            ],
+            "equity": null,
+            "eqr": null
+          },
+          "riverlineEquity": null
+        }
+      ]
+    }
+  ]
+}

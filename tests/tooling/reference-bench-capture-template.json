@@ -1,0 +1,134 @@
+{
+  "schemaVersion": "riverline-reference-benchmark-input/v1",
+  "packId": "local.replace-me",
+  "title": "REPLACE: local manual reference capture",
+  "source": {
+    "id": "replace.reference-product",
+    "productName": "REPLACE_WITH_REFERENCE_PRODUCT",
+    "sourceType": "manually_observed",
+    "observationDate": "2026-08-23",
+    "sourceLabel": null,
+    "provenanceNote": "REPLACE: who observed which visible solution and how; all values below are placeholders, not external-reference facts.",
+    "redistributionStatus": "private_not_for_redistribution",
+    "storagePolicy": "external_local_file"
+  },
+  "nodes": [
+    {
+      "id": "replace.node",
+      "referenceCoverage": "supported",
+      "coverageNote": "REPLACE with visible coverage or unsupported reason.",
+      "referenceContext": {
+        "gameType": "no_limit_texas_holdem",
+        "tableSize": 2,
+        "positions": ["BTN", "BB"],
+        "stackDepthBb": 100,
+        "blinds": { "smallBlindBb": 0.5, "bigBlindBb": 1 },
+        "ante": { "kind": "none", "amountBb": 0 },
+        "rake": { "kind": "unknown", "description": null, "percentage": null, "capBb": null },
+        "format": "cash",
+        "actionTree": [],
+        "availableActionSizes": [],
+        "street": "preflop",
+        "board": [],
+        "currentPotBb": 1.5,
+        "callAmountBb": 0.5,
+        "effectiveStackBb": 99.5,
+        "legalActions": [
+          { "canonicalType": "fold", "size": null, "rawLabel": "REPLACE" },
+          { "canonicalType": "call", "size": null, "rawLabel": "REPLACE" },
+          { "canonicalType": "raise", "size": null, "rawLabel": "REPLACE" }
+        ]
+      },
+      "riverline": {
+        "decisionContext": {
+          "schemaVersion": "decision-context/v1",
+          "contractVersion": "decision-context/v1.1",
+          "tableSize": 2,
+          "opponentCount": 1,
+          "heroPosition": "BTN",
+          "street": "preflop",
+          "heroCards": ["As", "Ks"],
+          "board": [],
+          "deadCards": [],
+          "stackBb": 100,
+          "stackMode": "hero",
+          "startingStackBb": 100,
+          "heroStackBb": 99.5,
+          "effectiveStackBb": 99.5,
+          "effectiveStackByOpponent": [],
+          "potBb": 1.5,
+          "currentPotBb": 1.5,
+          "positionRelation": "not_applicable",
+          "aggressorPositionRelation": "not_applicable",
+          "lastAction": "unopened",
+          "priorActionSummary": {
+            "lastActionFamily": "unopened",
+            "lastActorPosition": null,
+            "facingActionFamily": "none",
+            "aggressionFamily": "none",
+            "aggressionCount": 0,
+            "limperCount": 0,
+            "aggressorPosition": null
+          },
+          "facingSizeBb": 0,
+          "callAmountBb": 0.5,
+          "heroStreetContributionBb": 0.5,
+          "canRaise": true,
+          "minRaiseToBb": 2,
+          "maxRaiseToBb": 100,
+          "allInToBb": 100,
+          "rakeMode": "off",
+          "forcedContributionPerPlayerBb": 0,
+          "totalForcedContributionBb": 0
+        },
+        "gameAssumptions": {
+          "gameType": "no_limit_texas_holdem",
+          "tableSize": 2,
+          "positions": ["BTN", "BB"],
+          "stackDepthBb": 100,
+          "blinds": { "smallBlindBb": 0.5, "bigBlindBb": 1 },
+          "ante": { "kind": "none", "amountBb": 0 },
+          "rake": { "kind": "unknown", "description": null, "percentage": null, "capBb": null },
+          "format": "cash",
+          "actionTree": [],
+          "availableActionSizes": [],
+          "street": "preflop",
+          "board": [],
+          "currentPotBb": 1.5,
+          "callAmountBb": 0.5,
+          "effectiveStackBb": 99.5,
+          "legalActions": [
+            { "canonicalType": "fold", "size": null, "rawLabel": "REPLACE" },
+            { "canonicalType": "call", "size": null, "rawLabel": "REPLACE" },
+            { "canonicalType": "raise", "size": null, "rawLabel": "REPLACE" }
+          ]
+        }
+      },
+      "contextMatch": {
+        "kind": "unknown",
+        "mappings": [],
+        "note": "REPLACE after verifying the reference solution assumptions. Never mark exact while rake or another required fact is unknown."
+      },
+      "observations": [
+        {
+          "id": "replace.hand",
+          "hand": {
+            "kind": "preflop_169_class",
+            "handClass": "AKs",
+            "combo": ["As", "Ks"],
+            "rangeWeight": null
+          },
+          "reference": {
+            "frequencyUnit": "percent",
+            "rawActions": [
+              { "label": "REPLACE", "canonicalType": "fold", "frequency": 100, "size": null, "evBb": null }
+            ],
+            "equity": null,
+            "eqr": null
+          },
+          "riverlineEquity": null
+        }
+      ]
+    }
+  ]
+}
