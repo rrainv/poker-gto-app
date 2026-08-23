@@ -1,205 +1,343 @@
 # Current Riverline phase
 
-Last refreshed: August 23, 2026 (`REFERENCE-AUTHORITY-001` implementation checkpoint).
+Last refreshed: August 23, 2026 (`ROADMAP-SYNC-003`, current through `PREFLOP-CALIBRATION-001`).
 
-Code, tests, accepted tags/ticket reports, new manual QA, and explicit user decisions override this snapshot. Detailed future capability is preserved in `PRODUCT_BACKLOG.md`; subsystem contracts remain authoritative for implementation semantics.
+Code, tests, accepted ticket reports, manual QA, and explicit product decisions override this snapshot. `PRODUCT_BACKLOG.md` preserves detailed future capability; subsystem specs remain authoritative for implementation semantics.
 
 ## Status vocabulary
 
 - **COMPLETED** — accepted bounded implementation; later work must be a new ticket.
-- **CHECKPOINTED / INTENTIONALLY INCOMPLETE** — usable or foundational work is accepted, with an explicit resume point.
+- **CHECKPOINTED / INTENTIONALLY INCOMPLETE** — useful foundation accepted with a defined resume point.
 - **ACTIVE NEXT** — next bounded ticket to execute.
 - **PLANNED NEXT** — accepted work ordered after the active ticket.
-- **PRESERVED FUTURE** — accepted capability with no immediate execution commitment.
-- **SHELVED FOR LATER** — deliberately paused while higher-value foundations proceed.
-- **OPEN PRODUCT DECISION** — requires a later explicit product choice.
+- **PRESERVED FUTURE** — accepted capability without immediate execution commitment.
+- **SHELVED FOR LATER** — deliberately paused.
+- **OPEN PRODUCT DECISION** — requires explicit later choice.
 
-## Current checkpoint / resume map
+## Immediate execution order
 
-### Global Node baseline and CI — COMPLETED
+1. **ACTIVE NEXT — `TABLE-PRESENCE-REF-001`**
+   - short competitive-reference / design brief;
+   - GTO Wizard primary reference, DTO/PokerSnowie/APT secondary where useful;
+   - ADOPT / ADAPT / DIFFERENTIATE / REJECT;
+   - implementation-grade scope for table/full-hand/post-hand projection.
 
-The Premium Card System v1 checkpoint remains intact, including its separately tracked Firefox visual acceptance. After the REFERENCE-AUTHORITY-001 checkpoint, the canonical global Node suite is green at **1,643/1,643 tests**, and `.github/workflows/node-ci.yml` now runs the two canonical syntax checks plus the full suite on Node 24 for pushes, pull requests, and manual dispatches.
+2. **PLANNED NEXT — `TABLE-PRESENCE-002`**
+   - next substantial visible / "fun" build;
+   - adaptive HU / sparse / 6-max / full-ring geometry;
+   - stronger table scale and seat hierarchy;
+   - restrained felt/rail physicality;
+   - cards/chips/contributions/dealer marker;
+   - action dock hierarchy;
+   - live versus completed-hand composition.
 
-Correctness and interaction performance remain distinct gates. Range Calibration keeps operation-level selection/cache/rerank/progress thresholds in the canonical suite; full synthetic evaluator wall-clock reporting belongs to `node tests/tooling/evaluate_range_cal002b.mjs` and `node tests/tooling/evaluate_range_cal002c.mjs`. Training keeps deterministic 10,000-sample correctness/distribution coverage in the suite; machine-sensitive throughput is reported separately with `node tests/tooling/benchmark-training-sampler.mjs --count 10000`. This separation does not relax semantic, distribution, cache, invalidation, or interaction-latency assertions.
+3. **PLANNED NEXT — `FULL-HAND-REVIEW-001` if 002 does not absorb it**
+   - visual hand timeline;
+   - concise hand-complete state;
+   - Review / Replay / Repeat / Save / Next;
+   - source-aware truthful review entry.
 
-### Core, strategy, and stabilization — COMPLETED
+4. **PLANNED NEXT — `AUDIO-MOTION-001`**
+   - semantic poker-world audio/motion events;
+   - application motion separate from poker-world motion;
+   - reduced-motion and no-casino constraints.
 
-Established production authorities and invariants:
+5. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`**
+   - whole-app hierarchy and Core Flow closeout;
+   - desktop responsive / themes / density / cards / EN-RU-HE / RTL acceptance;
+   - resolve high-value UI QA rather than adding more customization variants.
 
-- canonical `PokerState`, structured actions, legality, accounting, evaluator, and Equity separation under `shared/poker-domain/`;
-- Scenario as a truthful lossy study snapshot versus Hand as a canonical legal state/history;
-- `DecisionContext v1`, including distinct `callAmountBb` and `facingSizeBb` semantics;
-- one `StrategyProvider v1` / `StrategyResult v1` strategy path;
-- deterministic, honestly labelled heuristic fallback—not solved GTO, CFR, Nash, EV, or exploitability evidence;
-- converged canonical Training generation, session, grading, and presentation authorities;
-- `PERF-001` invocation-count, hidden-surface, reuse, and invalidation guarantees;
-- Home versus ClubGG accounting semantics: no Home deduction; ClubGG-style contribution is exactly `0.1bb` per seated player and is outside the contestable pot.
+6. **PLANNED NEXT — first trusted bounded reference pack / provider**
+   - exact assumptions, versioning, validation, licensing/provenance, context coverage;
+   - heuristic fallback elsewhere.
 
-Do not reopen the retired browser/Electron ONNX runtime, remote strategy API, arbitrary solver-tree upload, synthetic legacy Training, or duplicate Equity architecture. Future solver, reference, model, and imported strategy sources enter only behind validated versioned provider contracts.
+7. **PLANNED NEXT — Training Memory / re-drill intelligence**
 
-### Strategy source authority — CHECKPOINTED / INTENTIONALLY INCOMPLETE
+8. **PLANNED NEXT — Personal Strategy integration and review comparison**
 
-`REFERENCE-AUTHORITY-001` additively extends `StrategyResult v1` with versioned source descriptors, provenance, exact/generalized/unsupported context coverage, and effective result capabilities. One `StrategyClaimPolicy v1` now decides whether a result may support comparative or normative grading, scoped recommendation, exact-frequency, sizing, action-EV, EV-loss, optimality, or curriculum claims. Consumers do not infer those semantics from source IDs or confidence numbers.
+9. **PLANNED NEXT — `HOME-002B` Saved Study Library / knowledge workspace**
 
-The current deterministic heuristic is explicitly a generalized comparative reference. Training retains its internal probability-gap grades and scoring but publicly uses Matches/Close/Differs, alignment rate/run, source-frequency wording, and compact structured context limitations. Playbook/Analyze and Matrix expose descriptor-driven provenance, precision, and coverage. `AnalysisExplanation v1` consumes the structured policy rather than maintaining its own source table. Heuristic probabilities and Training generation are unchanged.
+10. **PRESERVED FUTURE, high strategic value — OpponentPolicy / bots / full-hand bot learning**
 
-Built-in descriptor metadata lives in a small immutable registry; future provider-owned descriptors travel with their results. A validated bounded pack gains stronger semantics only for an exact covered context and declared capabilities. Learned or solver-derived sources gain no authority from branding alone. Personal Strategy remains a separate intended-strategy/evidence authority until a later approved adapter; observed behavior remains a third semantic role.
+Reassess at every clean checkpoint.
 
-Normal Saved Hand/Spot objects do not persist a frozen StrategyResult. Replay resolves the current provider from durable canonical/scenario state, so no schema migration is justified here. A future frozen historical analysis payload must snapshot source ID/version, authority, coverage, and capabilities instead of adopting a newer registry policy retroactively.
+## Global baseline and CI — COMPLETED
 
-Automated contract, consumer, probability, grading, performance, and EN/RU/HE coverage is present. Firefox visual acceptance for Training comparison language, high-risk notes, Playbook provenance, and Matrix precision remains tracked in `QA_BACKLOG.md`. See `STRATEGY_SOURCE_AUTHORITY_SPEC.md`.
+The canonical Node suite is green at the latest accepted checkpoint: **1,706/1,706 tests** after `PREFLOP-CALIBRATION-001`. Minimal GitHub Actions runs canonical syntax checks plus the full Node suite on Node 24.
 
-### Personal Strategy — CHECKPOINTED / INTENTIONALLY INCOMPLETE
+Correctness and interaction performance remain distinct gates. Machine-sensitive macro timings stay outside semantic correctness assertions.
 
-**COMPLETED through:** `RANGE-CAL-000`, `RANGE-CAL-001A`, `RANGE-CAL-001B/001BR`, `RANGE-CAL-001C-A`, `RANGE-CAL-UI-001R`, `RANGE-CAL-002A`, `RANGE-CAL-002B`, `RANGE-CAL-002C`, and the automated implementation checkpoints for `RANGE-CAL-002D`, `RANGE-BUILDER-001`, and `RANGE-TEACHER-001`.
+## Core product / strategy authorities — COMPLETED foundation
 
-Accepted foundation:
+Established invariants:
 
-- Profile means a recognizable poker environment/strategic identity; objective Spot Context remains separate;
-- exactly three user-named discrete Modes per profile;
-- a quick answer records the dominant/preferred action, never an implicit pure frequency;
-- exact mixes are optional, and a tied exact mix truthfully has `dominantAction = null`;
-- Training evidence later has distinct provenance and explicit per-session opt-in;
-- contradictory direct and Training evidence is preserved rather than silently overwritten;
-- local-first, private, exportable, and structurally account-ready data;
-- isolated sparse-RFI inference baseline with synthetic holdout evidence and abstention.
-- unified source-preserving evidence projection with explicit correction, compatible-head, retraction, and contradiction semantics;
-- one deterministic local-graph RFI inference authority with versioned directly-known/high/medium/uncertain/conflicting/unknown estimates, categorical-only inference, 169-estimate snapshots, 002C support facts, and scope cache/application APIs;
-- hard-fixture validation over smooth, irregular, gapped, suited/offsuit, pair, direct-conflict, and exact-boundary synthetic targets, including false-high safety, abstention, stability, and runtime.
-- deterministic adaptive question value, structurally diverse cold start, boundary/uncertainty/sparsity targeting, repetition control, optional exact-mix refinement facts, truthful category progress, explicit stopping, Skip/Not sure, and resumable Quick/Standard/Deep sessions;
-- adaptive-versus-canonical validation at 10/20/30/40/50/75 questions: materially faster structured-boundary discovery and useful coverage, with irregular abstention and 002B high-band safety preserved.
-- a compact Personal Strategy Matrix over the shared 169-estimate snapshot, with separate action/status encoding, direct/inferred/uncertain/conflict/unknown inspection, actual evidence and neighbor facts, dominant-only confirmation, exact-mix correction lineage, adaptive-question follow/selection, scope isolation, and EN/RU/HE keyboard/RTL structure.
-- a unified class-level Range Builder over that Matrix/evidence authority, with multi-selection, rectangular and paint gestures, dominant/pure/exact bulk commands, explicit Builder provenance/action groups, conflict-safe atomic commits, session history, semantic undo, one-scope invalidation, and immediate adaptive reranking.
-- a compact Range Teacher over the same evidence/snapshot/002C/Matrix/Builder seams, with deterministic boundary clusters, sparse-region and contradiction review, useful exact-mix opportunities, source-derived recent changes, focused session biases, optional recommendations, and no Training/reference grading.
+- canonical `PokerState`, cards, structured actions, legality, accounting, evaluator and Equity under `shared/poker-domain/`;
+- Scenario is a truthful lossy study snapshot; Hand is canonical legal state/history;
+- one `DecisionContext` strategy snapshot path;
+- one `StrategyProvider` / `StrategyResult` strategy path;
+- one `StrategyClaimPolicy` decides permitted claims;
+- deterministic heuristic fallback is generalized/comparative, never solved-GTO/EV/optimality authority;
+- canonical Training generator/session/grading/presentation;
+- canonical Equity is separate from heuristic conditional sampling;
+- Home versus ClubGG-style accounting remains explicit and separate from strategy truth.
 
-`RANGE-CAL-002A` is retained only as a compatibility API and historical evaluator; all decisions delegate to the 002B authority. `RANGE-CAL-002B/002C` synthetic validation proves deterministic mechanics and honest known failure behavior, not poker correctness or real-user uncertainty calibration. Adaptive questioning is the default; the deterministic 169-question loop remains an explicit exhaustive fallback/test path.
+Do not revive browser/Electron ONNX runtime, remote strategy API, arbitrary solver-tree upload, duplicate Equity, or synthetic legacy Training.
 
-`PERSONAL-STRATEGY-ARCH-002` defines the follow-on authority in `UNIFIED_RANGE_INTELLIGENCE_SPEC.md`: immutable sparse evidence remains durable truth; inference/conflicts/uncertainty form a recomputable read model; 169 class baselines plus sparse combo overrides lazily materialize combo action strategies; Range Calibration, Matrix, Builder, and Teacher remain surfaces over that one model. `RANGE-CAL-002D` implements the shared Matrix consumer, `RANGE-BUILDER-001` adds grouped direct editing, and `RANGE-TEACHER-001` adds derived explanation and focused Calibration routing without a database migration, StrategyProvider path, Equity path, Range Core weight write, or eager combo materialization. Human Firefox visual acceptance remains tracked in `QA_BACKLOG.md`.
+## Strategy/reference quality burst — COMPLETED through first evidence-driven calibration
 
-**Resume at:** `002R` independent review of the unified Calibration/Matrix/Builder/Teacher system. Complete the separately tracked 002D, Builder, and Teacher human Firefox visual matrices before final visual acceptance.
+### `REFERENCE-AUTHORITY-001` — COMPLETED
 
-**PRESERVED FUTURE:** evidence-backed mode relationships/interpolation, StrategyProvider integration, Training-to-profile evidence, postflop range propagation, combo overrides, and richer Teacher history/conflict resolution. Do not redesign the accepted foundation when work resumes.
+- source identity, provenance, authority, coverage and capabilities separated;
+- one claim policy controls comparative/normative/exactness/sizing/EV/optimality language;
+- heuristic Training wording is reference-alignment semantics;
+- validated future sources can authorize stronger claims only for covered contexts.
 
-### Table Presence, Replay, and poker physicality — COMPLETED
+Firefox semantic presentation acceptance remains in QA.
 
-Accepted tags/checkpoints: `TABLE-PRESENCE-001A`, `REPLAY-001A`, `REPLAY-001B` plus chance-event repair, `REPLAY-001C`, and `ui-poker-primitives-001`.
+### `STRATEGY-REPAIR-001A` — COMPLETED
 
-Current product includes canonical table presence; a read-only action/chance timeline; deterministic step projection; play/pause and speed; reduced-motion-safe restrained movement; on-felt current-street contributions; truthful contribution-to-pot transitions; and a reusable poker-chip primitive. Saved Hands preserve the canonical replay source, not renderer frames.
+- table-size / position structural repair without broad intuition retuning;
+- HU/ring distinction;
+- causal deterministic postflop sampling seed;
+- missing exact call price no longer fabricates economics;
+- unreachable sub-2bb shove branch removed;
+- permanent strategy-quality calibration corpus established.
 
-**SHELVED FOR LATER:** richer dealer/model or marker presentation, physical card-dealing trajectories, cards traveling from dealer/deck, chips moving from stacks to bets and into the pot, richer chip stacks/denominations, deeper or possibly 3D table treatment, elaborate showdown/reveal motion, and restrained ambience. Preserve the reduced-motion and no-casino aesthetic.
+### `DECISION-CONTEXT-001A` — COMPLETED
 
-### Saved / Noted Study Objects — COMPLETED
+DecisionContext v1.1-compatible facts now include:
 
-`SAVED-OBJECTS-001` established versioned local-first `SavedStudyObject v1` Hand and Spot objects, IndexedDB persistence, shared annotations/tags/review-later/mistake metadata, ownership/version/export/import boundaries, archive tombstones, and canonical Saved Hand replay sources.
+- starting versus live Hero stack;
+- exact current pot (`currentPotBb`) separate from legacy compatibility `potBb`;
+- effective stack / per-opponent effective stack;
+- postflop position relation including mixed/unknown;
+- exact legal call/raise/all-in bounds from canonical legality;
+- bounded prior-action summary;
+- exact/defaulted/normalized/clamped/unavailable derivation provenance.
 
-`SAVED-OBJECTS-002` added visible Save Hand / Save Spot, metadata editing, Review later / Mistake, archive, and truthful source-surface saved state.
+Live strategy logic must not use legacy `stackBb` / `potBb` as exact live facts.
 
-**PRESERVED FUTURE:** Saved Range, Saved Drill, saved sessions/session review, richer tag/filter/search, history/revisions, account/cloud ownership, and sharing/forking. Add folders/collections only if later usage justifies them. Home/Dashboard is a consumer, never the owner.
+### `STRATEGY-REPAIR-001B` — COMPLETED
 
-### Home / Dashboard — CHECKPOINTED / INTENTIONALLY INCOMPLETE
+- postflop consumes live/effective SPR where semantically valid;
+- IP/OOP, legal aggression, exact price and bounded history affect the generalized heuristic;
+- impossible aggression is removed;
+- limp/history and preflop facing families are structurally separated;
+- authority remains generalized/comparative;
+- known postflop saturation remains reference debt rather than hidden by arbitrary caps.
 
-`HOME-001` provides Continue, Recent, Review, Mistakes, Personal Strategy summary, and Quick Start. Saved Hands open in detached read-only Replay; Saved Spots reopen truthfully; a live Hand is preserved while detached saved content is viewed.
+### `REFERENCE-BENCH-001` — COMPLETED research tooling
 
-`HOME-002A` evolves this into **My Riverline** with a distinct private Guest composition; authenticated display name/username and aggregate sync state; truthful calibration/live-Hand Continue; bounded Saved/Review/Mistake previews; direct Personal Strategy evidence/contradiction facts; coalesced account/domain invalidation; intentional empty/error states; responsive EN/RU/HE UI; and explicit unsupported Training/Analysis history seams. Home remains a consumer and performs no poker or range computation. Automated acceptance is present; requested Firefox visual acceptance remains pending because no browser instance was available in the implementation environment.
+Source-agnostic external-reference benchmarking now supports:
 
-**PRESERVED FUTURE / `HOME-002B`:** full Saved Study Library with View all, search/filter/tags, and bounded drilldowns. Persistent Training/re-drill intelligence and Analysis history require their own canonical persistence tickets before Home may consume them. Module personalization remains later. Streak/mastery belongs only after an explicit gamification decision.
+- manual/public/licensed/Riverline-owned/independent-solver observations;
+- exact/mapped/directional/incomparable context gates;
+- raw actions preserved before normalization;
+- TVD/dominant/bias/aggregate metrics;
+- separate equity semantics and diagnostic hints;
+- CLI/manual capture workflow;
+- strict proprietary-data boundary.
 
-### Account identity and authentication — CHECKPOINTED / INTENTIONALLY INCOMPLETE
+GTOW manually observed data remains private/local research evidence, never a production pack.
 
-`ACCOUNT-001` establishes a persistent opaque local `RiverlineIdentity v1`, central active-identity service, reusable ownership reference, non-destructive legacy owner bindings for Saved Study and Personal Strategy, active-identity query/storage scoping, safe import adoption, explicit preference scope/privacy/conflict/sign-out contracts, an additive Home identity seam, and a minimal truthful EN/RU/HE Settings profile surface.
+### `PREFLOP-ROLE-001` — COMPLETED
 
-`ACCOUNT-002A/AR` selects Supabase Auth and adds an injectable provider boundary, email/password sign-in/sign-up, required `AccountProfile v1` (unique normalized username plus Unicode display name), ProviderIdentityMapping v1, explicit rollback-safe legacy-data claim or start-separate flow, Guest sign-out/fail-closed restoration, one persistent-identity action gate, and discoverable header/menu/Account-Profile EN/RU/HE UI. Guest Home issues no account-domain reads; Saved persistence and Range Calibration promote to sign-in and resume only after a validated account. Existing linked Riverline, Saved, Replay, and Personal Strategy IDs remain stable.
+Exact preflop role semantics distinguish, where evidence exists:
 
-Local/offline Riverline remains first-class. Signing in does not upload study data or enable backup. OAuth/magic-link/deep-link recovery, provider-to-provider linking, remote deletion, local forgetting, cross-device preferences, Training-history sync, and later approved sharing/social features remain future. Provider IDs and credentials stay outside user domain objects.
+- unopened RFI;
+- isolation opportunity;
+- BB option after limps;
+- cold response to open;
+- blind-vs-blind response to SB open;
+- opened-facing-3bet;
+- cold-4bet opportunity;
+- three-bettor facing ordinary/cold 4bet;
+- opener facing cold 4bet;
+- limper facing isolation;
+- unclassified deeper aggression.
 
-`ACCOUNT-002B-A` adds explicit identity-scoped opt-in for Saved Hand / Saved Spot sync only: a reusable versioned coordinator/transport boundary, separate IndexedDB sidecar and coalesced outbox, Supabase JSONB schema/RLS/RPC migration, bounded pull cursor, retry/idempotency, archive tombstones, generation-token account isolation, compact account status/manual sync, and explicit keep-device/keep-cloud/keep-both conflict UX. Local writes remain authoritative and cold remote Saved Hands reopen through canonical detached Replay. Deterministic fake-adapter tests are complete; applying `202608170002_saved_study_object_sync.sql` and the full two-browser Firefox lifecycle remain required before acceptance.
+The actual role is preserved separately from any temporary fallback calibration family.
 
-`ACCOUNT-002B-B` adds a separately consented Personal Strategy / Range Calibration sync domain behind the reusable transport. It stores profile/mode metadata relationally, keeps direct range and opted-in Training observations immutable, preserves divergent direct histories, excludes inferred artifacts, merges calibration sessions by stable evidence references, and surfaces only metadata conflicts that require a choice. Guest/account switching cancels work before repositories change. Deterministic cold-device, offline contradiction, metadata conflict, identity-isolation, import/export, RLS-structure, and status-aggregation coverage is complete. Applying `202608170003_personal_strategy_sync.sql` and the requested two-profile Firefox lifecycle remain required before final acceptance.
+### `PREFLOP-CALIBRATION-001` — COMPLETED bounded generalized calibration
 
-The bounded Accounts v1 implementation is now functionally present: Guest Mode, authentication/profile UX, legacy claim, identity isolation, Saved sync, Personal Strategy / Range Calibration sync, offline queues, and conflict-safe reconciliation. Live Supabase migrations/RLS checks and web multi-device acceptance remain tracked in QA, so this checkpoint does not claim those external checks were performed.
+The first real benchmark showed that the legacy preflop heuristic was effectively one-dimensional inside response families. `PREFLOP-CALIBRATION-001` introduced reusable structural hand features and separate role-facing dimensions:
 
-### Tutorials — CHECKPOINTED
+- `continueValue`;
+- `passiveRealization`;
+- `aggressionSuitability`.
 
-`TUTORIAL-001/002` provide the reusable tutorial foundation and current-app coverage for Home, Scenario, Hand, Replay, Matrix, Analysis, Range Comparison, Equity, Training, Range Calibration, Settings, and truthful Saved contexts through reused flows. Guide remains the persistent reference rather than owning a tour.
+A bounded six-max BB-vs-BTN ~100bb / ~2.5bb `cold_response_to_open` policy now uses this richer representation. It improved range composition directionally while leaving other roles byte-stable. Source version is preflop heuristic v4; authority remains generalized/comparative.
 
-Every future meaningful visible feature, mode, or workspace owns its tutorial definition/update, semantic anchors, EN/RU/HE copy, RTL/accessibility/reduced-motion coverage, and relevant acceptance inside that feature ticket. Preserve the what/how/why teaching style, subtle first-use offers, skip, and restart. There should be no future giant tutorial catch-up project.
+Remaining reference needs include exact rake/sizing assumptions, wider role/stack/sizing coverage, independently reviewed data/provenance/licensing and true validated reference packs.
 
-### Canonical Range Core — COMPLETED
+## Competitive Reference Gate — ACTIVE PRODUCT RULE
 
-`RANGE-CORE-001` establishes:
+Before substantial user-facing or strategy features when useful:
 
-```text
-52 canonical cards
-        -> 1,326 canonical unordered combos
-        -> HoldemWeightedRange v1
-        -> blockers / normalization / derived 13x13 Matrix projection
-```
+1. inspect strongest relevant products/references;
+2. identify good interaction/strategy conventions and weaknesses;
+3. record **ADOPT / ADAPT / DIFFERENTIATE / REJECT**;
+4. do not copy proprietary charts, databases, branding, text or assets;
+5. competitor behavior informs product decisions but never grants strategy authority.
 
-Locked semantics: unknown is not known zero; range weight is not probability, action frequency, or confidence; combo mass is not combo count; the Matrix is derived presentation rather than canonical truth; provenance remains explicit.
+GTO Wizard is the default high-end benchmark for many table/trainer/matrix/reference UX questions, with DTO, PokerSnowie, Advanced Poker Training and specialized tools used where relevant.
 
-**PRESERVED FUTURE CONSUMERS:** richer Analysis, Bluffing, Range Builder, Range Teacher, Personal Strategy, Training, Compare Spots, Saved Ranges, validated provider/reference/solver data, and sharing.
+## Table Presence / Replay / poker physicality — foundation COMPLETED, visible vNext ACTIVE
 
-### Richer Analysis — CHECKPOINTED
+Current foundation includes:
 
-`ANALYSIS-RANGE-001`, including its RR/RRR corrections, establishes `RangeAnalysisFacts v1`: exact made-hand relationships, draw taxonomy, board structure, blockers, optional canonical supplied-range composition, explicit complete/partial/unknown state, distinct physical combo count/known combo count/known combo mass, and grouped provenance.
+- canonical table presence;
+- read-only action/chance timeline;
+- deterministic replay projection;
+- play/pause and speed;
+- on-felt contributions and contribution-to-pot transitions;
+- reusable poker-chip primitive;
+- reduced-motion-safe restrained movement.
 
-Structural draw/outs support includes flush and straight outs; gutshot/OESD/double-gutshot; direct straight-flush draws and geometry; Royal, wheel, and Broadway subtypes; de-duplicated overlapping outs; direct-improvement-card union; dead-card removal; and no Equity claim from outs. It does not invent range/nut advantage, EV, solver frequencies, or a missing current range.
+The richer visual branch is **no longer shelved**. It is the active next product phase through `TABLE-PRESENCE-REF-001` then `TABLE-PRESENCE-002`.
 
-Implementation is accepted; `QA-ANALYSIS-RANGE-001` still records final live viewport/theme/language acceptance honestly.
+Preserve the no-casino aesthetic. Richer physical dealing/chip trajectories and deeper/3D treatment remain later unless the bounded vNext proves they are needed.
 
-`BLUFF-001` adds immutable DOM-free `BluffAnalysisFacts v1` after Range Analysis: exact risk/reward and pure-bluff break-even folds when action semantics are trusted; truthful unavailable raise/all-in states; all-opponents-fold multiway wording; structural semibluff classification with unchanged draw outs; neutral range-free removal; exact supplied-range removal; and a simplified heads-up river bluff:value reference. It does not infer opponent fold frequency, action EV, optimal bluffing, solver truth, or strategic blocker quality without an explicit semantic partition. Current postflop heuristic actions remain unsized, so live economics are unavailable until a trusted size is supplied; StrategyProvider behavior is unchanged.
+## Premium UI / customization — CHECKPOINTED, expansion frozen
 
-`QA-ANALYSIS-BLUFF-001` records the remaining human visual/language acceptance.
+Implemented/checkpointed:
 
-**PRESERVED FUTURE:** weighted Hero-range versus Villain-range analysis, legitimate range/nut distribution and advantage, action-conditioned ranges, deeper blocker/unblocker interpretation, richer board interaction, personalized Analysis, Compare Spots, value/bluff composition, and postflop range propagation.
+- coherent Core Flow/navigation;
+- table-centered Hand workspace;
+- premium workspace composition;
+- Comfortable/Compact density;
+- Balanced/Table Focus/Analysis Focus/Controls First layouts;
+- Midnight/Daylight/Graphite and named custom themes;
+- Riverline color picker;
+- Premium Card System v1 including face/back/suit-color variants.
 
-## Active and planned execution
+Do not add more theme/layout/density/card variants in the active phase. Integrate the new Table Presence with these systems and finish acceptance.
 
-1. **COMPLETED — `ANALYSIS-RANGE-001` checkpoint:** range-aware Analysis v1 and RR/RRR corrections are at the accepted `analysis-range-001` tag.
-2. **COMPLETED — `PREFLOP-SANITY-001`: Premium Dominated-Action Suppression.** The bounded premium Fold-leak suppression and invariant corpus are present without broad heuristic retuning or new ICM assumptions.
-3. **CHECKPOINTED — `BLUFF-001`: honest bluff analysis.** The structural fact contract, Analysis UI, EN/RU/HE copy, tutorial update, formula/range/raise/unavailable tests, and documentation are implemented. Final human visual/language acceptance remains tracked separately rather than being inferred from structural tests.
-4. **CHECKPOINTED — `ACCOUNT-001` + `ACCOUNT-002A/AR`: local-first identity and real authentication.** Supabase email/password auth, DB-enforced profiles/RLS migration, Guest semantics, durable-feature gating, atomic link/start-separate, account switching, sign-out, restoration, header/profile UX, and truthful no-sync UI are implemented. Live migration/provider validation and final human Firefox visual/language acceptance remain separate from structural verification. Secure username/password login is the immediate `ACCOUNT-002A2` follow-up, not a client-side lookup.
-5. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `ACCOUNT-002B-A`: Saved Study sync.** Implementation, deterministic fake-adapter coverage, migration, EN/RU/HE structure, and documentation are present. Live migration/RLS verification plus two-profile Firefox lifecycle/manual visual acceptance remain open.
-6. **PLANNED NEXT — `ACCOUNT-002A2`: secure username/password login adapter.** Add a rate-limited trusted server/Edge Function path with private username resolution, enumeration-resistant errors, and no renderer secret or public username-to-email directory. Email/password remains the production sign-in path until that bounded ticket is deployed and verified.
-7. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `ACCOUNT-002B-B`: Personal Strategy / Range Calibration sync.** Domain adapters, relational migration, immutable-history/session reconciliation, separate consent, account cancellation, UI, i18n, documentation, and deterministic coverage are present. Live migration/RLS and two-profile Firefox acceptance remain open.
-8. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `HOME-002A`: My Riverline.** Account-aware Home v2 is implemented with truthful Guest/account composition, sync/identity isolation, bounded study summaries, tutorial/i18n/accessibility coverage, and no fabricated history or heavy computation. Firefox visual/manual acceptance remains open.
-9. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `HOME-GAME-001A`: Home Game foundation.** A separate versioned DOM-free domain now owns players, saved groups, sessions/seats, exact minor-unit money, append-only ledger/corrections, chip snapshots, lifecycle, balance validation, and deterministic settlement. Account-scoped IndexedDB and explicit Guest-memory behavior are implemented behind an application service, with a bounded top-level EN/RU/HE web workspace. It has no `PokerState`, StrategyProvider, Saved Study, or Personal Strategy coupling. Automated invariant/persistence/UI-structure acceptance is present; requested Firefox viewport/language acceptance remains open. Resume at `HOME-GAME-001B` for roster/correction-history/session-management UX hardening and live browser acceptance before cloud/mobile work.
+## Personal Strategy — CHECKPOINTED / INTENTIONALLY INCOMPLETE
 
-Reassess priorities at every clean checkpoint rather than forcing an entire branch through without review.
+Completed through the automated checkpoints for Calibration 002D, Range Builder and Range Teacher.
 
-## Preserved future branches
+Locked model:
 
-- **Training intelligence:** persistent mistake history, Review Mistakes, targeted/similar-spot re-drilling, spaced/adaptive review, expanded filters, saved drill presets, Concept Mastery, session summaries/trends, Home/Replay integration, profile-aware Training, stated-versus-actual behavior, and explicit per-session opt-in for Training evidence.
-- **Range Builder:** combo-level editing, derived Matrix painting, exact overrides, action/frequency painting, partial/unknown support, save/version/compare/export/import, and later approved sharing/forking.
-- **Range Teacher / Profiler:** sparse boundary-seeking questions, uncertain-cell targeting, direct-versus-inferred provenance, correction/confirmation, disagreement drills, and reuse of Personal Strategy plus Range Core.
-- **Compare Spots:** explain changes in position, stack, pot, call/facing size, board, blockers, hand, opponent count, range assumptions, and profile/mode without unsupported causal claims.
-- **Product Lab / UI personalization:** safe layout presets, comfortable/compact density, card sizing, beginner/expert modes, curated themes, workspace persistence/reset, expert keyboard workflow, later deliberate mobile composition, and a richer visual-table branch. Strategy/study capability remains the priority over endless visual polish.
-- **Solver/reference/model:** bounded trustworthy problems, reproducible validated reference data, datasets worth learning, model/interpolation only after evidence, and validated providers behind StrategyProvider with fallback elsewhere. Never train on heuristic labels and call the result solver/GTO truth; cloud/desktop runs require bounded budget/runtime/stop criteria.
-- **PLO:** a separate future game domain with four-card hands, exactly-two-hole-card evaluation, its own range/Equity/Training/UI and reference pipeline—not a Hold'em toggle.
-- **Gamification:** optional study streaks, daily study, mastery, and goals/progress; no XP/badges/levels merely for engagement.
-- **Mobile/public release:** deliberate mobile composition, packaging/release, hosting, offline/cache policy, privacy/legal review, and telemetry only if explicitly approved.
+- Profile is a recognizable poker environment/identity;
+- exactly three user-named modes per profile;
+- dominant quick answer is not implicit 100%;
+- exact mixes optional;
+- direct/Training contradictions preserved;
+- sparse immutable evidence is durable truth;
+- inference/uncertainty/conflicts are recomputable read model;
+- Matrix/Builder/Teacher consume one evidence authority.
 
-## Preserved cross-surface card semantics
+**Resume at:** `002R` independent review plus remaining Firefox visual matrices.
 
-**PRESERVED FUTURE — `UI-CARD-SEMANTICS-001`:** raw internal card IDs such as `As` or `5h` should not normally be user-facing. Visible Analysis outs/blockers, Replay, Saved summaries, Training, Matrix/range inspection, Bluffing, and tutorials should use proper suit notation such as `A♠` / `5♥` or Riverline card tokens/mini-cards.
+After Training/reference maturity: add Personal Strategy provider/comparison adapter, explicit Training evidence opt-in, intended/reference/observed comparison and later postflop propagation.
 
-**PRESERVED FUTURE — Card Outcome Preview:** when a concrete out/completion/combo card is interactive, hover and keyboard focus may open a reusable anchored preview showing the actual resulting canonical best five (including kickers), with the canonical made-hand headline. Evaluate the exact post-card state through the canonical evaluator and consume `bestFiveCards`; renderers must not construct rankings. Touch/click behavior remains an **OPEN PRODUCT DECISION**.
+## Training — canonical base COMPLETED, intelligence PRESERVED/PLANNED
 
-Examples: a `5♥` completion may preview `A♥ 2♥ 3♥ 4♥ 5♥ — Wheel straight flush`; an `A♦` pairing card must show the actual best pair plus its three real kickers rather than a generic pair label.
+Current Training is legal, deterministic and provider-backed.
+
+Next intelligence program after trusted reference work:
+
+- durable DecisionRecord/session history;
+- persistent mistake/review queue;
+- same/similar spot re-drill;
+- spaced/adaptive review;
+- filters/saved drills;
+- truthful session trends;
+- Home/Replay integration;
+- profile-aware Training and opt-in Personal Strategy evidence later.
+
+Do not label comparative heuristic disagreement as objective poker correctness.
+
+## Saved / Home — foundation CHECKPOINTED
+
+Saved Hand/Spot and Replay reopening are established. `HOME-002A` / My Riverline is checkpointed with account/sync composition and bounded study previews.
+
+**Future owner:** `HOME-002B` full Saved Study Library after canonical Training/session payloads exist.
+
+Target direction: dense master-detail knowledge workspace for Hands / Spots / Ranges / Drills / Reviews / Sessions as approved payloads arrive.
+
+## Accounts / sync — CHECKPOINTED / external acceptance incomplete
+
+Present foundation:
+
+- persistent local identity;
+- Guest semantics;
+- Supabase email/password auth/profile;
+- legacy claim/start-separate;
+- Saved Hand/Spot opt-in sync;
+- Personal Strategy/Calibration separate opt-in sync;
+- local-first outbox/retry/conflict foundations.
+
+Open release-quality work:
+
+- live migrations/RLS verification;
+- two-profile Firefox lifecycle;
+- `ACCOUNT-002A2` secure username/password adapter if still desired;
+- later recovery/deletion/cross-device preferences/sharing.
+
+This branch remains important but should not displace the current visible-product sequence unless it becomes a security/release blocker.
+
+## Home Game Organizer — CHECKPOINTED / INTENTIONALLY INCOMPLETE
+
+`HOME-GAME-001A` established the separate exact-accounting/session domain.
+
+**Resume at `HOME-GAME-001B`:** roster/edit/archive, correction history, session management polish, import/export decision, Firefox acceptance.
+
+No StrategyProfile/PokerState/Saved Study coupling.
+
+## Analysis / Range Core / Bluff — CHECKPOINTED
+
+- `RANGE-CORE-001` canonical 1,326-combo weighted-range foundation;
+- `ANALYSIS-RANGE-001` exact structural made/draw/board/blocker/range facts;
+- `BLUFF-001` truthful risk/reward/BE-fold/semibluff/removal facts.
+
+Preserved future: weighted range-vs-range analysis, range/nut distribution/advantage, action-conditioned ranges, deeper blocker/value/bluff interpretation, Compare Spots, postflop propagation.
+
+## Tutorials / i18n / accessibility — CHECKPOINTED foundation
+
+Every future visible feature owns its tutorial update and EN/RU/HE/RTL/accessibility/reduced-motion acceptance. No future giant tutorial catch-up project.
+
+## Opponent policies / bots — PRESERVED FUTURE, elevated product importance
+
+Future architecture should support transparent `OpponentPolicy`-style behavior separate from reference strategy:
+
+- generic archetypes;
+- environment-specific policies;
+- custom opponent policies;
+- Personal Strategy as an opponent mode;
+- full-hand bot Training with post-hand review and re-drill continuity.
+
+This branch is not active until Table/Training/reference foundations are mature enough.
+
+## Preserved long-term branches
+
+- first validated reference packs and provider expansion;
+- richer Training memory/intelligence;
+- Personal Strategy integration;
+- Saved Study knowledge workspace;
+- opponent policies/bots;
+- sharing/social after privacy/versioning maturity;
+- deliberate mobile composition;
+- release/packaging/privacy/legal;
+- optional restrained gamification only if approved;
+- PLO as a separate game domain;
+- learned model/interpolation only after trustworthy data demonstrates value.
 
 ## Open product decisions
 
-- exact Personal Strategy mode naming/order defaults and whether evidence ever supports interpolation;
-- final Training-evidence opt-in placement/default and conflict-clarification UX;
-- ACCOUNT-002A2 secure rate-limited server-side username/password login adapter, with enumeration-resistant errors and no username-to-email directory;
-- ACCOUNT-002B-B Personal Strategy / Range Calibration remote schema and domain-specific conflict-resolution UX;
-- sharing permissions, clone/fork defaults, comments, friends, and study groups;
-- Training grading default when My Strategy and a Riverline reference differ;
-- first Home Game Organizer scope beyond the staged foundation;
-- eventual monetization/public-release timing and PLO priority;
-- whether restrained streak/mastery features are approved;
-- touch/click behavior for reusable card outcome previews.
+- exact first trusted reference-pack family;
+- whether username/password login adapter is needed before release;
+- Training-evidence opt-in placement/default;
+- first OpponentPolicy archetypes and custom-policy UX;
+- Saved folders/collections;
+- sharing/forking/friends/study groups;
+- mobile timing;
+- public release/monetization timing;
+- PLO priority;
+- restrained gamification approval;
+- telemetry approval.
 
 ## Update rule
 
-After an accepted ticket, update this resume map only when checkpoint status, the active ticket, or priority order changes. Put detailed future capability in `PRODUCT_BACKLOG.md`, keep implementation contracts in subsystem specs, and route unresolved visual/manual acceptance through `QA_BACKLOG.md`.
+After an accepted ticket, update this resume map when checkpoint status, active ticket, or priority order changes. Put detailed future capability in `PRODUCT_BACKLOG.md`; keep implementation semantics in subsystem specs; route visual/manual acceptance through `QA_BACKLOG.md`.
