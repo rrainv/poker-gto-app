@@ -40,7 +40,7 @@ test('Full Hand reuses legal action controls and the canonical table presence re
   for (const added of [
     'trainingDecisionNumber', 'trainingFullHandTableMount', 'trainingFullHandCompletion',
     'trainingFullHandResult', 'trainingFullHandDecisionCount', 'trainingFullHandGradeSummary',
-    'trainingReviewHand', 'trainingFullHandReview', 'trainingFullHandActionStatus',
+    'trainingReviewHand', 'trainingHandReviewMount', 'trainingFullHandActionStatus',
     'trainingFullHandSizing', 'trainingFullHandSizingActions',
   ]) assert.match(training, new RegExp(`id="${added}"`), added);
   assert.match(logic, /mount\.appendChild\(table\)/);
@@ -120,20 +120,20 @@ test('terminal surface provides real decision review navigation and exact Analys
   assert.match(training, /id="trainingFullHandCompletion"[^>]+aria-live="polite"/);
   assert.match(training, /id="trainingReviewHand"[^>]+aria-expanded="false"/);
   for (const id of [
-    'trainingFullHandReviewPrevious', 'trainingFullHandReviewNext',
-    'trainingFullHandReviewAction', 'trainingFullHandReviewGrade',
-    'trainingFullHandReviewSizingGrade', 'trainingFullHandReviewCommitted',
-    'trainingFullHandReviewFrequencyRows', 'trainingFullHandOpenAnalysis',
-  ]) assert.match(training, new RegExp(`id="${id}"`), id);
+    'handReviewPreviousDecision', 'handReviewNextDecision',
+    'handReviewChosenAction', 'handReviewComparisonBadge',
+    'handReviewFrequencyRows', 'handReviewAnalyze',
+    'handReviewPreviousEvent', 'handReviewNextEvent',
+  ]) assert.match(html, new RegExp(`id="${id}"`), id);
   assert.match(fullHandLogic, /snapshot\.completedHandResult/);
-  assert.match(fullHandLogic, /decision\.replayPoint\.eventSequence/);
-  assert.match(fullHandLogic, /\{action\} to \{amount\}/);
-  assert.match(fullHandLogic, /decision\.chosenActionResult\?\.committedMilliBb/);
+  assert.match(logic, /decision\.replayFrameTarget\.frameIndex/);
+  assert.match(logic, /\{action\} to \{amount\}/);
+  assert.match(logic, /reviewActionCopy\(decision\.chosenAction, decision\)/);
   assert.match(fullHandLogic, /createFullHandAnalysisHandoff/);
   assert.match(fullHandLogic, /decisionContext: handoff\.decisionContext/);
   assert.match(fullHandLogic, /reason: 'full_hand_review_decision'/);
   assert.match(css, /\.training-full-hand-completion\s*\{[^}]*display:\s*grid/);
-  assert.match(css, /\.training-full-hand-review-facts\s*\{[^}]*grid-template-columns/);
+  assert.match(css, /\.hand-review-decision-facts[\s\S]*grid-template-columns/);
 });
 
 test('Full Hand primary labels are registered in English, Russian, and Hebrew', () => {

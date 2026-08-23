@@ -1,10 +1,6 @@
 # Riverline Product and Feature Backlog
 
-<<<<<<< Updated upstream
-Last consolidated: August 23, 2026 (`ROADMAP-SYNC-003`, current through `PREFLOP-CALIBRATION-001`).
-=======
-Last consolidated: August 23, 2026 (`TABLE-PRESENCE-002` accepted implementation checkpoint).
->>>>>>> Stashed changes
+Last consolidated: August 23, 2026 (`FULL-HAND-REVIEW-001` implementation checkpoint).
 
 This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
@@ -50,7 +46,6 @@ Reference strategy, intended Personal Strategy, and observed behavior remain dis
 
 | Order | Status | Ticket / outcome |
 |---:|---|---|
-<<<<<<< Updated upstream
 | 1 | COMPLETED | Global Node baseline + minimal Node 24 CI |
 | 2 | COMPLETED | Core Flow / coherent navigation / table-centered Hand workspace |
 | 3 | COMPLETED | Premium workspace composition, density, layout presets, themes/custom themes, Premium Card System v1 |
@@ -61,10 +56,10 @@ Reference strategy, intended Personal Strategy, and observed behavior remain dis
 | 8 | COMPLETED | `REFERENCE-BENCH-001` — source-agnostic private/manual external benchmarking harness |
 | 9 | COMPLETED | `PREFLOP-ROLE-001` — exact preflop decision-role semantics and honest fallback mapping |
 | 10 | COMPLETED | `PREFLOP-CALIBRATION-001` — richer BB-vs-BTN hand representation / structural cold-response policy |
-| 11 | ACTIVE NEXT | `TABLE-PRESENCE-REF-001` — competitor/reference design brief for the next full-hand/table experience |
-| 12 | PLANNED NEXT | `TABLE-PRESENCE-002` — adaptive table geometry, stronger table presence, seat/chip/card hierarchy, decision dock, live/completed states |
-| 13 | PLANNED NEXT | `FULL-HAND-REVIEW-001` if needed after 002 — timeline and concise post-hand learning entry |
-| 14 | PLANNED NEXT | `AUDIO-MOTION-001` — semantic poker-world sounds/motion + reduced-motion-safe application motion |
+| 11 | COMPLETED | `TABLE-PRESENCE-REF-001` — accepted competitor/reference design brief for the full-hand/table experience |
+| 12 | COMPLETED | `TABLE-PRESENCE-002` — adaptive table geometry, stronger table presence, seat/chip/card hierarchy, decision dock, timeline/direct seek, live/completed states |
+| 13 | COMPLETED | `FULL-HAND-REVIEW-001` — shared canonical decision-by-decision Hand/Training review with source-gated comparison, Replay synchronization, Analyze/Save, and bounded caching |
+| 14 | ACTIVE NEXT | `AUDIO-MOTION-001` — semantic poker-world sounds/motion + reduced-motion-safe application motion |
 | 15 | PLANNED NEXT | `PREMIUM-CLOSEOUT-001` — whole-app Core Flow/premium/desktop/i18n closeout |
 | 16 | PLANNED NEXT | first bounded trusted reference-pack architecture + validated provider |
 | 17 | PLANNED NEXT | Training Memory / re-drill intelligence |
@@ -72,7 +67,7 @@ Reference strategy, intended Personal Strategy, and observed behavior remain dis
 | 19 | PLANNED NEXT | Home/Saved Study Library knowledge workspace |
 | 20 | PRESERVED FUTURE | Opponent policies / bots / environment models / full-hand bot learning |
 
-The next substantial visible implementation is **`TABLE-PRESENCE-002`**, immediately after the short reference/design ticket.
+The next bounded visible implementation is **`AUDIO-MOTION-001`**, followed by `PREMIUM-CLOSEOUT-001`.
 
 ## Strategy / reference / benchmark program
 
@@ -91,55 +86,6 @@ The next substantial visible implementation is **`TABLE-PRESENCE-002`**, immedia
 | postflop reference quality | PRESERVED FUTURE | Board/range/action/SPR/position reference families after preflop path proves itself |
 | learned model/interpolation | PRESERVED FUTURE | Only after trustworthy datasets show a measurable win; never train on heuristic labels and call it GTO |
 | benchmark UI | PRESERVED FUTURE | Internal/research visualization of discrepancies only if CLI becomes a bottleneck; not user-facing priority |
-=======
-| 1 | COMPLETED | `TABLE-PRESENCE-REF-001` — accepted competitive reference and bounded implementation contract |
-| 2 | COMPLETED | `TABLE-PRESENCE-002` — accepted premium adaptive Hand/Table implementation checkpoint; 1,720/1,720 Node tests and bounded Firefox matrix passed, with remaining manual sampling retained in QA/return-queue ownership |
-| 3 | ACTIVE NEXT | `FULL-HAND-REVIEW-001` — richer decision-by-decision post-hand learning over the accepted table projection, timeline, direct seek, completion composition, and Replay integration |
-| 4 | PLANNED NEXT | `AUDIO-MOTION-001` — restrained purposeful feedback after Full Hand Review, with reduced-motion and no-casino constraints |
-| 5 | PLANNED NEXT | `PREMIUM-CLOSEOUT-001` — bounded premium-product acceptance reconciliation after Audio/Motion |
-| 6 | PLANNED NEXT | trusted bounded reference pack/provider behind `StrategyProvider`, with declared coverage and capabilities |
-| 7 | PLANNED NEXT | Training Memory / re-drill over a canonical persistent learning-history authority |
-| 8 | PLANNED NEXT | Personal Strategy integration through approved provider and Training evidence seams |
-| 9 | PLANNED NEXT | `HOME-002B` Saved Study Library over the canonical Saved Study repository |
-| 10 | SHELVED FOR LATER | opponent policies/bots after the higher-priority learning and study-library sequence |
-
-Personal Strategy's subsystem-local resume point remains independent review `002R`; 002D supplies snapshot-derived Matrix inspection/correction, Builder supplies grouped class-level direct editing/undo, and Teacher supplies deterministic explanation plus focused Calibration routing over the same 002B evidence authority and 002C question/boundary facts. Cross-project execution still places the later Personal Strategy integration ticket after Training Memory/re-drill. Human Firefox visual acceptance remains tracked separately.
-
-## Checkpointed foundations and explicit resume points
-
-| Subsystem | Status | Resume / future owner |
-|---|---|---|
-| Personal Strategy through `RANGE-TEACHER-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Unified evidence/correction/conflict projection, categorical estimates, adaptive questioning/stopping, compact Matrix inspection, atomic class-level Builder editing/undo, and derived Teacher profiling are implemented without a second authority. Resume `002R`; complete 002D/Builder/Teacher human Firefox visual acceptance separately, then evidence-backed mode relationships, provider and Training integration |
-| `PERSONAL-STRATEGY-ARCH-002` | COMPLETED architecture contract | `UNIFIED_RANGE_INTELLIGENCE_SPEC.md` defines one evidence-derived action-strategy model for Calibration, Matrix, Builder, and Teacher; no production implementation or schema migration is implied |
-| Table Presence / Replay / poker-chip primitive through `TABLE-PRESENCE-002` | COMPLETED | Pure ephemeral `table-presentation/v1`, deliberate 2–10 geometry, hierarchy/physicality, integrated Hero/legal-action sizing, live/completed/review/analyze projection foundation, visible canonical timeline, and deterministic direct seek are accepted. Independent hands-on Firefox, 4K/zoom, 1024/1366, Graphite/custom-theme, Analysis Focus/Controls First, and broader 3–9-player sampling remain owned by QA/return queue rather than reopening implementation status |
-| Saved Hands/Spots through `SAVED-OBJECTS-002` | COMPLETED | New payload tickets for Saved Range, Drill, or Session; richer library/history/account/sharing later |
-| Home through `HOME-002A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Firefox acceptance, then `HOME-002B` full Saved Study Library/drilldowns |
-| Tutorials foundation/current-app coverage | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Every future meaningful visible feature owns its tutorial update; no broad catch-up epic |
-| `RANGE-CORE-001` | COMPLETED | Adopt deliberately in future combo-aware consumers |
-| `ANALYSIS-RANGE-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Live QA remains in `QA_BACKLOG.md`; deeper range-vs-range/value-bluff work uses new tickets |
-| `REFERENCE-AUTHORITY-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `StrategyResult v1` carries additive source/version/coverage/capability facts and consumers use one claim policy. Resume with a separately validated bounded reference provider or learned provider, never source-ID UI branches; complete Firefox semantic acceptance separately |
-
-## Bluffing and analysis
-
-| ID | Status | Preserved scope |
-|---|---|---|
-| `PREFLOP-SANITY-001` | COMPLETED | Bounded premium Fold-leak suppression is implemented with invariant coverage; no broad intuition retuning or new ICM/satellite assumptions |
-| `BLUFF-001` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `BluffAnalysisFacts v1`, exact trusted risk/reward and break-even folds, truthful raise/all-in unavailability, multiway joint-fold wording, structural semibluff/outs reuse, neutral blocker facts, exact supplied-range removal, simplified heads-up river reference, compact UI, tutorial, and EN/RU/HE integration are implemented. Human visual/language acceptance remains open; current unsized postflop heuristic actions do not fabricate economics |
-| `ANALYSIS-RANGE-002+` | PRESERVED FUTURE | weighted Hero range vs Villain range; legitimate range/nut distribution and advantage; action-conditioned ranges; deeper blocker/unblocker interpretation; board interaction; personalized Analysis; value/bluff composition; postflop propagation |
-| Compare Spots | PRESERVED FUTURE | compare position, stack, pot, call/facing size, board, blockers, hand, opponents, range assumptions, and profile/mode; explain only relationships supported by trusted facts |
-
-`BLUFF-001` must not derive opponent fold frequency, EV, “optimal bluff,” solver frequency, or good/bad blocker verdicts from a generic range. Blocker quality needs a trustworthy continuing/value/bluff partition or another relevant strategic source.
-
-## Range and Personal Strategy tools
-
-| Capability | Status | Preserved scope |
-|---|---|---|
-| Range Builder | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `RANGE-BUILDER-001` implements the Personal Strategy class editor over shared evidence/snapshots: multi-selection and painting, dominant/pure/exact actions, partial/unknown state, explicit Builder provenance/action groups, conflict skip, atomic undo, adaptive interoperability, and no 1,326-entry write explosion. Human Firefox acceptance remains open; sparse canonical-combo overrides and general Saved Range editing require later approved schemas |
-| Range Teacher / Profiler | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `RANGE-TEACHER-001` implements deterministic boundary/sparse/conflict/exact-mix recommendations, source-derived progress/recent changes, optional session-local dismissal, and focused biases through the existing 002C/Calibration/Matrix/Builder paths. Human Firefox acceptance and future writable conflict resolution/richer history remain open; it does not duplicate Training grading |
-| Range-vs-range tools | PRESERVED FUTURE | combo-aware blockers, weighted category analysis, legitimate Equity integration through an approved versioned weighted-opponent boundary |
-| Personal Strategy integration | PLANNED NEXT | After Training Memory / re-drill: sparse evidence is durable intended-strategy authority; derived class baselines plus sparse combo overrides are recomputable and not synced; a future StrategyProvider adapter must declare personal authority and qualitative/exact capabilities without normalizing dominant-only evidence to fake 100%; reference and observed roles stay separate; Training evidence remains explicit per-session opt-in; postflop range propagation later |
-| Saved Ranges | PRESERVED FUTURE | versioned SavedStudyObject payload, compare/export/import, later account ownership and sharing |
->>>>>>> Stashed changes
 
 ### Known strategy limitations to preserve honestly
 
@@ -156,9 +102,9 @@ Personal Strategy's subsystem-local resume point remains independent review `002
 | Capability | Status | Preserved scope |
 |---|---|---|
 | canonical Table Presence / Replay foundation | COMPLETED | Canonical seats/state, read-only action/chance timeline, deterministic step projection, current-street contributions, contribution-to-pot transitions, poker-chip primitive, reduced-motion-safe motion |
-| `TABLE-PRESENCE-REF-001` | ACTIVE NEXT | Research GTO Wizard primarily plus DTO/PokerSnowie/APT where useful; ADOPT/ADAPT/DIFFERENTIATE/REJECT; implementation-grade geometry/hierarchy/action-dock/timeline/post-hand brief |
-| `TABLE-PRESENCE-002` | PLANNED NEXT | Purpose-built HU / 3–4 / 6-max / 9–10-max geometries; table scale; restrained felt/rail; Hero/current-opponent hierarchy; dealer marker; chip/contribution/pot visuals; card-seat integration; action dock; live/completed distinction |
-| `FULL-HAND-REVIEW-001` | PLANNED NEXT if needed | Visual canonical timeline; concise completed-hand summary; Review/Replay/Repeat/Save/Next; source identity and truthful limitations; important-decision markers through existing seams |
+| `TABLE-PRESENCE-REF-001` | COMPLETED | Accepted GTO Wizard-primary competitive reference with bounded ADOPT/ADAPT/DIFFERENTIATE/REJECT implementation decisions |
+| `TABLE-PRESENCE-002` | COMPLETED | Purpose-built HU/sparse/6-max/full-ring geometry, table hierarchy/physicality, integrated legal action dock, visible canonical timeline, direct seek, and live/completed/review/analyze projection foundation |
+| `FULL-HAND-REVIEW-001` | COMPLETED | Shared Hand/Full-Hand Training `hand-review/v1`; canonical Hero decisions; pre-action Replay synchronization; source-gated mixed-frequency comparison; compact provenance; unavailable continuity; non-EV review priority; Analyze/Save/Repeat/Next seams; no duplicate authority |
 | richer dealing/chip trajectories | PRESERVED FUTURE | Physical deal paths, stack-to-bet, pot collection, showdown/reveal; only if restrained and reduced-motion-safe |
 | deeper table depth/3D | PRESERVED FUTURE | Analytical physicality, not casino realism; validate against clarity/performance before expanding |
 | dealer/avatar richness | PRESERVED FUTURE | Only after table hierarchy works without it |
@@ -177,12 +123,11 @@ The same canonical Hand/state should feed all projections.
 | Capability | Status | Preserved scope |
 |---|---|---|
 | existing basic sound/reduced-motion support | CHECKPOINTED | Existing cues remain; subjective Firefox audibility acceptance still tracked |
-| `AUDIO-MOTION-001` | PLANNED NEXT | Separate poker-world events from app-navigation motion; card/chip/action/street/hand-complete semantic cues; independent controls; reduced-motion; restrained timing |
+| `AUDIO-MOTION-001` | ACTIVE NEXT | Separate poker-world events from app-navigation motion; card/chip/action/street/hand-complete semantic cues; independent controls; reduced-motion; restrained timing |
 | richer ambience | PRESERVED FUTURE | Optional and subtle; no casino noise, celebration loops, or engagement manipulation |
 
 ## Training intelligence
 
-<<<<<<< Updated upstream
 | Capability | Status | Preserved scope |
 |---|---|---|
 | canonical deterministic Training base | COMPLETED | Legal canonical trajectories, StrategyProvider resolution, seeded replay, grading/presentation authority |
@@ -213,18 +158,6 @@ The same canonical Hand/state should feed all projections.
 | postflop Personal Strategy | PRESERVED FUTURE | Separate evidence/model work; no naïve preflop extension |
 | combo overrides | PRESERVED FUTURE | Sparse exact combo overrides over class baseline if use cases justify it |
 | richer Teacher history/conflict resolution | PRESERVED FUTURE | Writable conflict tools only through canonical evidence semantics |
-=======
-| Capability | Status |
-|---|---|
-| persistent Training Memory and Review Mistakes | PLANNED NEXT |
-| targeted re-drilling, similar spots, spaced/adaptive review | PLANNED NEXT |
-| expanded filters and saved drill presets | PRESERVED FUTURE |
-| Concept Mastery, session summaries, and performance trends | PRESERVED FUTURE |
-| Home Review and Replay integration | PRESERVED FUTURE |
-| profile-aware Training and stated-range vs actual-behavior comparison | PRESERVED FUTURE |
-| Training evidence → Personal Strategy with explicit per-session opt-in | PRESERVED FUTURE |
-
-The current legal, deterministic, provider-backed Training base is established; these intelligence and persistence branches are not completed by that foundation. The ordered delivery table places Training Memory/re-drill after the trusted bounded reference pack/provider and before Personal Strategy integration.
 
 ## Saved study, Home, and account platform
 
@@ -268,12 +201,11 @@ The exact first shipped scope remains an **OPEN PRODUCT DECISION** at ticket pla
 | expert keyboard workflow | PRESERVED FUTURE | deliberate shortcuts and fast study operation |
 | `TABLE-PRESENCE-REF-001` | COMPLETED | accepted premium table reference and implementation boundary |
 | `TABLE-PRESENCE-002` | COMPLETED | pure presentation projection; adaptive 2–10 geometry; Hero/actor/folded hierarchy; restrained felt/rail/dealer/chip physicality; integrated legal decision dock and sizing; live/completed/Review/Analyze foundation; canonical timeline/direct seek; EN/RU/HE and RTL-stable poker geometry; existing theme/density/layout/card systems preserved |
-| `FULL-HAND-REVIEW-001` | ACTIVE NEXT | richer decision-by-decision learning workflow over existing table/timeline/seek/completion/Replay seams; no table or Replay rebuild |
-| `AUDIO-MOTION-001` | PLANNED NEXT | restrained purposeful feedback after Full Hand Review; preserve reduced motion and analytical tone |
+| `FULL-HAND-REVIEW-001` | COMPLETED | one shared source-aware decision-by-decision learning workflow over canonical Hand/Training journals, table/timeline/direct seek, and existing Analyze/Saved seams |
+| `AUDIO-MOTION-001` | ACTIVE NEXT | restrained purposeful feedback after Full Hand Review; preserve reduced motion and analytical tone |
 | `PREMIUM-CLOSEOUT-001` | PLANNED NEXT | bounded acceptance reconciliation after Audio/Motion; remaining unrelated QA stays separately owned |
 | elaborate physical/casino motion | SHELVED FOR LATER | physical dealing/card paths, stack-to-bet and pot-collection trajectories, denominations/stacks, fake 3D, elaborate showdown/reveal motion, and ambience |
 | mobile composition | PRESERVED FUTURE | deliberate mobile product, not compressed desktop |
->>>>>>> Stashed changes
 
 Profiles remain recognizable poker environments/identities, with exactly three user-named modes. Quick answers mean dominant/preferred action, never implicit 100% frequency.
 
@@ -389,19 +321,9 @@ This is a separate top-level tab/domain, not `PokerState`, StrategyProfile, Save
 
 | Branch | Status | Preserved path |
 |---|---|---|
-<<<<<<< Updated upstream
 | PLO | PRESERVED FUTURE | Separate four-card domain, exactly-two-hole evaluation, dedicated ranges/Equity/Training/reference/UI; never a Hold'em toggle |
 | tournament/ICM depth | PRESERVED FUTURE | Only with explicit tournament assumptions/reference pipeline |
 | other variants | OPEN PRODUCT DECISION | No generic variant framework until a real product need exists |
-=======
-| trusted bounded reference pack/provider | PLANNED NEXT | After `PREMIUM-CLOSEOUT-001`: bounded trustworthy problem → reproducible reference data → validation → declared coverage/capabilities → validated StrategyProvider → fallback elsewhere |
-| later solver/model research | PRESERVED FUTURE | worthwhile dataset and model/interpolation only after validated reference evidence; no production authority from branding |
-| compute/cloud experiments | PRESERVED FUTURE | explicit budget/runtime/stop criteria; no unapproved spend; approximately US$75 total optional project budget remains the planning cap |
-| PLO | PRESERVED FUTURE | separate four-card domain, exactly-two-hole-card evaluation, range representation, Equity, Training/UI, strategy/reference pipeline |
-| gamification | OPEN PRODUCT DECISION | restrained streaks, daily study, mastery, goals/progress may be useful; no XP/badges/levels merely for engagement |
-| desktop/public release | PRESERVED FUTURE | reproducible packaging, installer/portable assets, hosting, offline/cache policy, release docs, privacy/legal review |
-| telemetry | OPEN PRODUCT DECISION | only if explicitly approved |
->>>>>>> Stashed changes
 
 ## Optional gamification
 
@@ -429,8 +351,4 @@ This is a separate top-level tab/domain, not `PokerState`, StrategyProfile, Save
 
 ## Pull-forward rule
 
-<<<<<<< Updated upstream
-A preserved item moves earlier only when explicitly reprioritized or when its dependencies are ready and a bounded ticket owns it. Do not absorb future capability merely because a touched file makes it convenient.
-=======
 A preserved item moves earlier only when the user explicitly reprioritizes it or its dependencies are ready and a bounded ticket owns it. When an accepted checkpoint changes active priority or subsystem state, this dynamic backlog, `CURRENT_PHASE.md`, and `ROADMAP.md` move together; do not create a parallel status system. Do not absorb future capability merely because a touched file makes it convenient.
->>>>>>> Stashed changes

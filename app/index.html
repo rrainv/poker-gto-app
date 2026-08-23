@@ -1290,6 +1290,107 @@
             </section>
           </section>
 
+          <div id="handReviewMount" class="hand-review-mount" data-playbook-hand>
+            <section id="handReviewSurface" class="hand-review-surface" hidden aria-labelledby="handReviewTitle" data-tutorial-anchor="hand-review">
+              <header class="hand-review-header">
+                <div>
+                  <p class="hand-review-eyebrow" data-i18n="Post-hand learning">Post-hand learning</p>
+                  <h2 id="handReviewTitle" data-i18n="Hand Review">Hand Review</h2>
+                  <p id="handReviewSubtitle" data-i18n="Inspect each Hero decision against the selected reference without changing the completed Hand.">Inspect each Hero decision against the selected reference without changing the completed Hand.</p>
+                </div>
+                <span id="handReviewProgress" class="badge status-badge status-badge--info poker-data-token"></span>
+              </header>
+
+              <section class="hand-review-overview" aria-labelledby="handReviewOverviewTitle">
+                <div class="hand-review-section-heading">
+                  <div><span data-i18n="Hand overview">Hand overview</span><h3 id="handReviewOverviewTitle" data-i18n="What happened">What happened</h3></div>
+                  <div id="handReviewFinalBoard" class="hand-review-card-row" aria-label="Final board" data-i18n-aria-label="Final board"></div>
+                </div>
+                <dl class="hand-review-overview-facts">
+                  <div><dt data-i18n="Result">Result</dt><dd id="handReviewResult">&mdash;</dd></div>
+                  <div><dt data-i18n="Hero decisions">Hero decisions</dt><dd id="handReviewDecisionCount" class="poker-data-token">0</dd></div>
+                  <div><dt data-i18n="Comparable decisions">Comparable decisions</dt><dd id="handReviewComparableCount" class="poker-data-token">0</dd></div>
+                  <div><dt data-i18n="Reference unavailable">Reference unavailable</dt><dd id="handReviewUnavailableCount" class="poker-data-token">0</dd></div>
+                  <div><dt data-i18n="Selected reference">Selected reference</dt><dd id="handReviewOverviewSource">&mdash;</dd></div>
+                </dl>
+                <p id="handReviewAlignmentSummary" class="hand-review-overview-summary"></p>
+                <p id="handReviewPrioritySummary" class="hand-review-priority-summary"></p>
+              </section>
+
+              <div class="hand-review-workspace">
+                <nav class="hand-review-decision-navigation" aria-labelledby="handReviewDecisionNavigationTitle">
+                  <div class="hand-review-section-heading"><div><span data-i18n="Hero decisions">Hero decisions</span><h3 id="handReviewDecisionNavigationTitle" data-i18n="Decision navigation">Decision navigation</h3></div></div>
+                  <div id="handReviewDecisionList" class="hand-review-decision-list" aria-label="Hero decision navigation" data-i18n-aria-label="Hero decision navigation"></div>
+                  <div class="hand-review-decision-step-controls">
+                    <button id="handReviewPreviousDecision" class="ui-button ui-button--secondary" type="button" data-i18n="Previous decision">Previous decision</button>
+                    <button id="handReviewNextDecision" class="ui-button ui-button--secondary" type="button" data-i18n="Next decision">Next decision</button>
+                  </div>
+                </nav>
+
+                <article class="hand-review-decision-detail" aria-labelledby="handReviewDecisionTitle">
+                  <header class="hand-review-decision-header">
+                    <div><span id="handReviewDecisionStreet" class="hand-review-street poker-data-token"></span><h3 id="handReviewDecisionTitle"></h3><p id="handReviewDecisionContext"></p></div>
+                    <span id="handReviewComparisonBadge" class="badge status-badge status-badge--info"></span>
+                  </header>
+
+                  <div class="hand-review-cards">
+                    <div><span data-i18n="Hero cards">Hero cards</span><div id="handReviewHeroCards" class="hand-review-card-row"></div></div>
+                    <div><span data-i18n="Board">Board</span><div id="handReviewBoardCards" class="hand-review-card-row"></div></div>
+                  </div>
+
+                  <section class="hand-review-comparison" aria-labelledby="handReviewComparisonTitle">
+                    <div class="hand-review-section-heading">
+                      <div><span data-i18n="Observed action vs reference">Observed action vs reference</span><h4 id="handReviewComparisonTitle" data-i18n="Chosen action and selected reference">Chosen action and selected reference</h4></div>
+                      <span id="handReviewSourceBadge" class="badge status-badge status-badge--info"></span>
+                    </div>
+                    <div class="hand-review-chosen-row"><span data-i18n="Hero chose">Hero chose</span><strong id="handReviewChosenAction"></strong></div>
+                    <div id="handReviewFrequencyStack" class="hand-review-frequency-stack" role="img" aria-label="Strategy frequencies unavailable"></div>
+                    <div id="handReviewFrequencyRows" class="hand-review-frequency-rows"></div>
+                    <p id="handReviewComparisonNote" class="panel-note"></p>
+                  </section>
+
+                  <dl class="hand-review-decision-facts">
+                    <div><dt data-i18n="Position">Position</dt><dd id="handReviewPosition" class="poker-data-token"></dd></div>
+                    <div><dt data-i18n="Pot">Pot</dt><dd id="handReviewPot" class="poker-data-token"></dd></div>
+                    <div><dt data-i18n="Hero stack">Hero stack</dt><dd id="handReviewStack" class="poker-data-token"></dd></div>
+                    <div><dt data-i18n="Active opponents">Active opponents</dt><dd id="handReviewOpponents" class="poker-data-token"></dd></div>
+                    <div><dt data-i18n="Facing">Facing</dt><dd id="handReviewFacing"></dd></div>
+                    <div><dt data-i18n="Call price">Call price</dt><dd id="handReviewCallPrice" class="poker-data-token"></dd></div>
+                    <div><dt data-i18n="Legal alternatives">Legal alternatives</dt><dd id="handReviewLegalAlternatives"></dd></div>
+                    <div><dt data-i18n="Effective stack">Effective stack</dt><dd id="handReviewEffectiveStack" class="poker-data-token"></dd></div>
+                    <div><dt data-i18n="Replay frame">Replay frame</dt><dd id="handReviewReplayPoint" class="poker-data-token"></dd></div>
+                  </dl>
+
+                  <details class="hand-review-provenance">
+                    <summary data-i18n="Reference details">Reference details</summary>
+                    <dl>
+                      <div><dt data-i18n="Source">Source</dt><dd id="handReviewSourceDetail"></dd></div>
+                      <div><dt data-i18n="Coverage">Coverage</dt><dd id="handReviewCoverage"></dd></div>
+                      <div><dt data-i18n="Precision">Precision</dt><dd id="handReviewPrecision"></dd></div>
+                      <div><dt data-i18n="Limitations">Limitations</dt><dd id="handReviewLimitations"></dd></div>
+                    </dl>
+                  </details>
+
+                  <div class="hand-review-replay-controls" aria-label="Replay around selected decision" data-i18n-aria-label="Replay around selected decision">
+                    <button id="handReviewPreviousEvent" class="ui-button ui-button--quiet" type="button" data-i18n="Previous Replay event">Previous Replay event</button>
+                    <span id="handReviewReplayStatus" role="status" aria-live="polite"></span>
+                    <button id="handReviewSelectedFrame" class="ui-button ui-button--quiet" type="button" data-i18n="Return to decision">Return to decision</button>
+                    <button id="handReviewNextEvent" class="ui-button ui-button--quiet" type="button" data-i18n="Next Replay event">Next Replay event</button>
+                  </div>
+
+                  <div class="hand-review-actions">
+                    <button id="handReviewAnalyze" class="ui-button ui-button--primary" type="button" data-i18n="Analyze this decision">Analyze this decision</button>
+                    <button id="handReviewSaveSpot" class="ui-button ui-button--secondary" type="button" data-i18n="Save this decision">Save this decision</button>
+                    <button id="handReviewSaveHand" class="ui-button ui-button--secondary" type="button" data-i18n="Save hand">Save hand</button>
+                    <button id="handReviewRepeat" class="ui-button ui-button--secondary" type="button" data-i18n="Repeat hand">Repeat hand</button>
+                    <button id="handReviewNext" class="ui-button ui-button--secondary" type="button" data-i18n="Next hand">Next hand</button>
+                    <button id="handReviewReturn" class="ui-button ui-button--quiet" type="button" data-i18n="Return to completed table">Return to completed table</button>
+                  </div>
+                </article>
+              </div>
+            </section>
+          </div>
+
           <nav id="playbookAnalysisNavigation" class="playbook-analysis-switcher" aria-labelledby="playbookAnalysisNavigationTitle" data-tutorial-anchor="playbook-analysis-navigation">
             <div class="playbook-analysis-switcher-copy">
               <strong id="playbookAnalysisNavigationTitle" data-i18n="Current spot views">Current spot views</strong>
@@ -2154,40 +2255,7 @@
                 <button id="trainingReviewHand" class="ui-button ui-button--primary" type="button" aria-expanded="false" data-i18n="Review Hand">Review Hand</button>
                 <button id="trainingFullHandNewHand" class="ui-button ui-button--secondary" type="button" data-i18n="New Hand">New Hand</button>
               </div>
-              <section id="trainingFullHandReview" class="training-full-hand-review" hidden aria-labelledby="trainingFullHandReviewTitle">
-                <div class="training-full-hand-review-head">
-                  <div><p class="training-eyebrow" data-i18n="Play first · review afterward">Play first · review afterward</p><h4 id="trainingFullHandReviewTitle" data-i18n="Post-Hand Review">Post-Hand Review</h4></div>
-                  <span id="trainingFullHandReviewProgress" class="badge status-badge status-badge--info"></span>
-                </div>
-                <div class="training-full-hand-review-navigation" aria-label="Hero decision navigation" data-i18n-aria-label="Hero decision navigation">
-                  <button id="trainingFullHandReviewPrevious" class="ui-button ui-button--secondary" type="button" data-i18n="Previous decision">Previous decision</button>
-                  <strong id="trainingFullHandReviewDecisionTitle"></strong>
-                  <button id="trainingFullHandReviewNext" class="ui-button ui-button--secondary" type="button" data-i18n="Next decision">Next decision</button>
-                </div>
-                <div class="training-full-hand-review-cards">
-                  <div><span class="training-zone-label" data-i18n="Hero cards">Hero cards</span><div id="trainingFullHandReviewHeroCards" class="training-card-row"></div></div>
-                  <div><span class="training-zone-label" data-i18n="Board">Board</span><div id="trainingFullHandReviewBoardCards" class="training-card-row"></div></div>
-                </div>
-                <dl class="training-full-hand-review-facts">
-                  <div><dt data-i18n="Chosen action">Chosen action</dt><dd id="trainingFullHandReviewAction"></dd></div>
-                  <div><dt data-i18n="Reference comparison">Reference comparison</dt><dd id="trainingFullHandReviewGrade"></dd></div>
-                  <div id="trainingFullHandReviewSizingGradeFact"><dt data-i18n="Sizing comparison">Sizing comparison</dt><dd id="trainingFullHandReviewSizingGrade" data-i18n="Not compared">Not compared</dd></div>
-                  <div><dt data-i18n="Chips committed">Chips committed</dt><dd id="trainingFullHandReviewCommitted" class="poker-data-token"></dd></div>
-                  <div><dt data-i18n="Pot">Pot</dt><dd id="trainingFullHandReviewPot" class="poker-data-token"></dd></div>
-                  <div><dt data-i18n="Hero stack">Hero stack</dt><dd id="trainingFullHandReviewStack" class="poker-data-token"></dd></div>
-                  <div><dt data-i18n="Facing">Facing</dt><dd id="trainingFullHandReviewFacing"></dd></div>
-                  <div><dt data-i18n="Call price">Call price</dt><dd id="trainingFullHandReviewCallPrice" class="poker-data-token"></dd></div>
-                  <div><dt data-i18n="Exact Replay point">Exact Replay point</dt><dd id="trainingFullHandReviewReplay" class="poker-data-token"></dd></div>
-                </dl>
-                <section class="training-full-hand-review-reference" aria-labelledby="trainingFullHandReviewReferenceTitle">
-                  <div class="training-full-hand-review-reference-head"><div><p class="training-eyebrow" data-i18n="Decision reference">Decision reference</p><h5 id="trainingFullHandReviewReferenceTitle" data-i18n="Source frequencies">Source frequencies</h5></div><span id="trainingFullHandReviewSource" class="badge status-badge status-badge--info"></span></div>
-                  <p class="training-reference-note" data-i18n="Frequencies come from the displayed source; they are not automatically validated, and no EV is implied.">Frequencies come from the displayed source; they are not automatically validated, and no EV is implied.</p>
-                  <p id="trainingFullHandReviewSizingNote" class="training-reference-note" data-i18n="The action-family comparison does not evaluate the exact bet or raise size.">The action-family comparison does not evaluate the exact bet or raise size.</p>
-                  <div id="trainingFullHandReviewFrequencyStack" class="training-frequency-stack frequency-stack is-empty" role="img" aria-label="Strategy frequencies unavailable"></div>
-                  <div id="trainingFullHandReviewFrequencyRows" class="training-frequency-rows"></div>
-                </section>
-                <button id="trainingFullHandOpenAnalysis" class="ui-button ui-button--primary" type="button" data-i18n="Open in Analysis">Open in Analysis</button>
-              </section>
+              <div id="trainingHandReviewMount" class="hand-review-mount hand-review-mount--training"></div>
             </section>
             <div id="trainingSessionCompletion" class="training-session-completion" hidden aria-live="polite">
               <strong data-i18n="Session complete">Session complete</strong>
@@ -2961,6 +3029,7 @@
   <script type="module" src="src/application/presentation-density-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
+  <script type="module" src="src/application/hand-review-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>
   <script src="src/core/logic.js?v=25" defer></script>
   <script src="src/ui/teacher.js" defer></script>

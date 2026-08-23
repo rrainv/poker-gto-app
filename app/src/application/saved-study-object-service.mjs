@@ -98,6 +98,7 @@ export function createSavedStudyObjectApplication({
   }
   let fixedActivationPromise = null;
   const scopedActivations = new Map();
+  const reviewedDecisionOperations = new Map();
 
   async function activateFixed() {
     if (fixedActivationPromise) return fixedActivationPromise;
@@ -238,6 +239,57 @@ export function createSavedStudyObjectApplication({
     });
   }
 
+  async function saveReviewedDecisionSpot({
+    decisionId,
+    canonicalHandId,
+    actionSequenceCount,
+    decisionContext,
+    rulesSnapshot = null,
+    savedHandObjectId = null,
+    sourceSurface = SAVED_STUDY_SOURCE_SURFACES.REPLAY,
+    sourceId = null,
+    operation = null,
+    ...annotations
+  } = {}) {
+    if (typeof decisionId !== 'string' || !decisionId.trim()) {
+      throw new TypeError('A reviewed Hero decision ID is required');
+    }
+    if (typeof canonicalHandId !== 'string' || !canonicalHandId.trim()) {
+      throw new TypeError('A reviewed canonical Hand ID is required');
+    }
+    if (!Number.isSafeInteger(actionSequenceCount) || actionSequenceCount < 0) {
+      throw new RangeError('A reviewed action sequence count must be nonnegative');
+    }
+    const operationKey = `${sourceSurface}:${canonicalHandId}:${decisionId}`;
+    if (!reviewedDecisionOperations.has(operationKey)) {
+      reviewedDecisionOperations.set(
+        operationKey,
+        operationIdentity(operation, idFactory, clock),
+      );
+    }
+    const payload = createSavedSpotSnapshot({
+      derivation: SAVED_SPOT_DERIVATIONS.HAND,
+      decisionContext,
+      rulesSnapshot,
+      handReference: createSavedHandReference({
+        savedHandObjectId,
+        canonicalHandId,
+        actionSequenceCount,
+      }),
+    });
+    return saveObject({
+      kind: SAVED_STUDY_KINDS.SPOT,
+      payload,
+      source: createSavedStudySource({
+        surface: sourceSurface,
+        sourceId: sourceId ?? `${canonicalHandId}:${decisionId}`,
+        parentObjectId: savedHandObjectId,
+      }),
+      annotations: createSavedStudyAnnotations(annotationInput(annotations)),
+      operation: reviewedDecisionOperations.get(operationKey),
+    });
+  }
+
   async function saveScenarioDerivedSpot({
     scenarioInput,
     decisionContext,
@@ -275,6 +327,7 @@ export function createSavedStudyObjectApplication({
       throw new RangeError(`Unsupported saved spot derivation: ${input.derivation}`);
     },
     saveHandDerivedSpot,
+    saveReviewedDecisionSpot,
     saveScenarioDerivedSpot,
     async updateAnnotations(id, changes, options = {}) {
       const activated = await activate();

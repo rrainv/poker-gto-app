@@ -177,7 +177,9 @@ function gradeCounts(decisions) {
 function createReview({ journal, replaySource, botDecisionJournal, completedHandResult }) {
   if (!journal || !replaySource) return null;
   const decisions = journal.decisions.map((decision) => deepFreeze({
+    schemaVersion: decision.schemaVersion,
     decisionId: decision.decisionId,
+    handId: decision.handId,
     decisionOrdinal: decision.decisionOrdinal,
     street: decision.street,
     replayPoint: decision.occurrence.replayPoint,
@@ -198,6 +200,7 @@ function createReview({ journal, replaySource, botDecisionJournal, completedHand
   return deepFreeze({
     schemaVersion: FULL_HAND_TRAINING_REVIEW_SCHEMA_VERSION,
     handId: journal.handId,
+    heroPlayerId: journal.heroPlayerId,
     status: completedHandResult === null ? 'open' : 'ready',
     replaySource,
     decisions,
@@ -230,7 +233,7 @@ export function createFullHandTrainingAnalysisHandoff(review, decisionOrdinal) {
     deadCards: [...context.deadCards],
     stackBb: context.stackBb,
     stackMode: context.stackMode,
-    potBb: context.potBb,
+    potBb: context.currentPotBb ?? context.potBb,
     lastAction: context.lastAction,
     lastActionLabel: null,
     facingSizeBb: context.facingSizeBb,

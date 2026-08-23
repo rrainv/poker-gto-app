@@ -712,3 +712,31 @@ The implementer must inspect current HEAD again. This list identifies seams, not
 The ticket is ready for implementation after human review of this brief. The canonical data seams needed for adaptive table facts, exact legal actions, current contributions, Replay frames/timeline, Full-Hand phase cues, cards, chips, themes, density, layouts, and reduced motion already exist.
 
 No schema migration or architecture rewrite is required. The only new contract is an ephemeral application presentation model, and the only Replay extension is bounded direct frame navigation over already canonical frames.
+
+## 21. `FULL-HAND-REVIEW-001` bounded workflow delta
+
+The Table Presence brief remained the primary competitive reference. No additional market survey was needed: current Head already contained the GTO Wizard Full Hand Drill observations required to choose the review workflow.
+
+### ADOPT
+
+- A chronological, decision-by-decision post-hand path with an obvious optional Review entry after completion.
+- One compact Hero-decision navigator, a selected-decision comparison, and direct movement through the surrounding canonical Replay.
+- Mixed action frequencies kept visible, with both the observed action and the source's highest-frequency action clearly marked.
+
+### ADAPT
+
+- Use Riverline's immutable Hero decision journal and pre-action Replay event sequence instead of reconstructing decisions from presentation text.
+- Treat the strongest source-probability disagreement as a transparent review priority only. It is neither monetary importance nor EV loss.
+- Keep the table as supporting context while the decision navigator and comparison remain the learning hierarchy.
+
+### DIFFERENTIATE
+
+- Preserve a useful canonical Hand, context, chosen action, and Replay when the selected strategy source is unavailable or generalized.
+- Keep source identity, coverage, precision, and limitations accessible in compact progressive disclosure.
+- Reuse the same Review projection and presentation for normal Hand and Full-Hand Training, with source-specific terminal actions rather than duplicate review implementations.
+
+### REJECT
+
+- Solver-score, hand-grade, exploitability, accuracy, `bb`-loss, or “biggest mistake” theater without an authority that can support it.
+- `Correct`, `Mistake`, or objective-GTO wording for generalized comparative heuristic results.
+- A second timeline, Replay cursor, poker-state authority, Saved schema, or Analysis implementation.

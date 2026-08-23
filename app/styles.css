@@ -9355,6 +9355,202 @@ button.rail-utility { width: 100%; cursor: pointer; }
   }
 }
 
+/* FULL-HAND-REVIEW-001: one post-hand decision review for Hand and Training. */
+.hand-review-mount { min-width: 0; width: 100%; }
+.hand-review-mount--training { margin-top: var(--space-4); }
+.hand-review-surface {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+  scroll-margin-block-start: 88px;
+  padding: clamp(var(--space-4), 1.4vw, var(--space-6));
+  color: var(--text-primary);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-panel);
+}
+.hand-review-surface h2,
+.hand-review-surface h3,
+.hand-review-surface h4,
+.hand-review-surface p { margin: 0; }
+.hand-review-header,
+.hand-review-section-heading,
+.hand-review-decision-header,
+.hand-review-comparison-header,
+.hand-review-replay-controls,
+.hand-review-actions,
+.hand-review-decision-step-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.hand-review-header > div,
+.hand-review-decision-header > div { display: grid; gap: var(--space-1); min-width: 0; }
+.hand-review-header p,
+.hand-review-decision-header p,
+.hand-review-overview-summary,
+.hand-review-comparison .panel-note { color: var(--text-secondary); line-height: 1.5; }
+.hand-review-overview,
+.hand-review-decision-navigation,
+.hand-review-decision-detail,
+.hand-review-comparison,
+.hand-review-provenance,
+.hand-review-replay-controls {
+  min-width: 0;
+  padding: var(--space-4);
+  background: var(--surface-section);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+.hand-review-section-heading > div:not(.hand-review-card-row),
+.hand-review-comparison-header > div { display: grid; gap: 2px; min-width: 0; }
+.hand-review-section-heading span,
+.hand-review-comparison-header span,
+.hand-review-street,
+.hand-review-card-groups > div > span {
+  color: var(--text-muted);
+  font-size: var(--text-micro-size);
+  font-weight: 750;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+.hand-review-overview-facts,
+.hand-review-decision-facts,
+.hand-review-provenance dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: var(--space-3) 0 0;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+.hand-review-overview-facts > div,
+.hand-review-decision-facts > div,
+.hand-review-provenance dl > div {
+  min-width: 0;
+  padding: var(--space-3);
+  background: var(--surface-inset);
+  border-inline-end: 1px solid var(--border-subtle);
+  border-block-end: 1px solid var(--border-subtle);
+}
+.hand-review-overview-facts dt,
+.hand-review-decision-facts dt,
+.hand-review-provenance dt { color: var(--text-muted); font-size: var(--text-micro-size); }
+.hand-review-overview-facts dd,
+.hand-review-decision-facts dd,
+.hand-review-provenance dd { margin: var(--space-1) 0 0; font-weight: 720; overflow-wrap: anywhere; }
+.hand-review-priority-summary {
+  margin-top: var(--space-3) !important;
+  padding: var(--space-3);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--status-info) 8%, var(--surface-inset));
+  border-inline-start: 3px solid var(--status-info);
+  border-radius: var(--radius-cell);
+  line-height: 1.45;
+}
+.hand-review-workspace { display: grid; grid-template-columns: minmax(240px, .72fr) minmax(0, 1.65fr); gap: var(--space-4); min-width: 0; }
+.hand-review-decision-navigation { align-self: start; }
+.hand-review-decision-list { display: grid; gap: var(--space-2); margin: var(--space-3) 0; }
+.hand-review-decision-button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3);
+  color: var(--text-secondary);
+  text-align: start;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 3px solid transparent;
+  border-radius: var(--radius-control);
+}
+.hand-review-decision-button:hover { color: var(--text-primary); background: var(--surface-interactive-hover); border-color: var(--border-default); }
+.hand-review-decision-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--border-focus) 45%, transparent); outline-offset: 2px; }
+.hand-review-decision-button.is-selected { color: var(--text-primary); background: var(--surface-interactive); border-inline-start-color: var(--accent-primary); }
+.hand-review-decision-button.is-review-priority:not(.is-selected) { border-inline-start-color: var(--status-info); }
+.hand-review-decision-number { display: grid; place-items: center; inline-size: 28px; block-size: 28px; color: var(--text-primary); background: var(--surface-interactive); border-radius: 50%; font: 800 var(--text-label-size)/1 var(--font-data); }
+.hand-review-decision-copy,
+.hand-review-decision-state { display: grid; gap: 2px; min-width: 0; }
+.hand-review-decision-copy > span,
+.hand-review-decision-state { color: var(--text-muted); font-size: var(--text-micro-size); }
+.hand-review-decision-state { justify-items: end; text-align: end; }
+.hand-review-decision-state small { color: var(--status-info); font-weight: 750; }
+.hand-review-detail-stack { display: grid; gap: var(--space-4); min-width: 0; }
+.hand-review-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+.hand-review-cards > div { display: grid; gap: var(--space-2); padding: var(--space-3); background: var(--surface-inset); border-radius: var(--radius-control); }
+.hand-review-card-row { display: flex; flex-wrap: wrap; gap: var(--space-2); direction: ltr; }
+.hand-review-card { width: 52px; height: 74px; }
+.hand-review-no-cards,
+.hand-review-reference-unavailable { color: var(--text-muted); font-size: var(--text-label-size); }
+.hand-review-comparison { display: grid; gap: var(--space-3); }
+.hand-review-chosen-row { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-3); background: var(--surface-inset); border-radius: var(--radius-control); }
+.hand-review-frequency-stack { min-height: 16px; display: flex; overflow: hidden; direction: ltr; background: var(--surface-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); }
+.hand-review-frequency-stack.is-empty { border-style: dashed; }
+.hand-review-frequency-segment { min-width: 1px; background: var(--action-visual, var(--border-strong)); }
+.hand-review-frequency-segment + .hand-review-frequency-segment { border-inline-start: 1px solid var(--surface-inset); }
+.hand-review-frequency-rows { display: grid; gap: var(--space-2); }
+.hand-review-frequency-row { display: grid; grid-template-columns: minmax(90px, auto) minmax(0, auto) minmax(80px, 1fr) 48px; gap: var(--space-3); align-items: center; padding: var(--space-2) var(--space-3); border-inline-start: 3px solid transparent; border-radius: var(--radius-cell); }
+.hand-review-frequency-row.is-chosen { background: color-mix(in srgb, var(--accent-primary) 7%, transparent); border-inline-start-color: var(--action-visual); }
+.hand-review-frequency-row.is-highest .hand-review-frequency-name { color: var(--text-primary); font-weight: 850; }
+.hand-review-frequency-markers { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.hand-review-frequency-markers em { padding: 2px var(--space-2); color: var(--text-secondary); background: var(--surface-interactive); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); font-size: 10px; font-style: normal; font-weight: 750; }
+.hand-review-frequency-track { height: 8px; overflow: hidden; direction: ltr; background: var(--surface-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); }
+.hand-review-frequency-track i { display: block; height: 100%; background: var(--action-visual, var(--border-strong)); }
+.hand-review-frequency-row > strong { font: 780 var(--text-label-size)/1 var(--font-data); font-variant-numeric: tabular-nums; text-align: end; }
+.hand-review-replay-controls { flex-wrap: wrap; }
+.hand-review-replay-controls [role="status"] { flex: 1 1 230px; color: var(--text-secondary); text-align: center; }
+.hand-review-actions { flex-wrap: wrap; justify-content: flex-start; }
+.hand-review-actions .ui-button { min-height: 42px; }
+.hand-review-actions > [hidden] { display: none !important; }
+.status-badge--neutral { color: var(--text-secondary); background: var(--surface-interactive); border-color: var(--border-default); }
+.full-hand-timeline-action.is-review-decision { box-shadow: inset 0 -2px color-mix(in srgb, var(--accent-primary) 60%, transparent); }
+.full-hand-timeline-action.is-selected-review-decision { color: var(--text-primary); border-color: var(--accent-primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 25%, transparent); }
+
+[dir="rtl"] .hand-review-card-row,
+[dir="rtl"] .hand-review-frequency-stack,
+[dir="rtl"] .hand-review-frequency-track,
+[dir="rtl"] .full-hand-compact-timeline { direction: ltr; }
+[dir="rtl"] .hand-review-card-row { justify-content: flex-end; }
+
+[data-density="compact"] .hand-review-surface { gap: var(--space-3); padding: var(--space-4); }
+[data-density="compact"] :is(.hand-review-overview, .hand-review-decision-navigation, .hand-review-decision-detail, .hand-review-comparison, .hand-review-provenance, .hand-review-replay-controls) { padding: var(--space-3); }
+[data-density="compact"] .hand-review-decision-button { padding: var(--space-2); }
+[data-density="compact"] .hand-review-card { width: 46px; height: 66px; }
+
+@media (max-width: 1080px) {
+  .hand-review-workspace { grid-template-columns: 1fr; }
+  .hand-review-decision-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hand-review-overview-facts,
+  .hand-review-decision-facts,
+  .hand-review-provenance dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .hand-review-header,
+  .hand-review-decision-header,
+  .hand-review-comparison-header { align-items: flex-start; flex-direction: column; }
+  .hand-review-decision-list,
+  .hand-review-cards,
+  .hand-review-overview-facts,
+  .hand-review-decision-facts,
+  .hand-review-provenance dl { grid-template-columns: 1fr; }
+  .hand-review-frequency-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .hand-review-frequency-markers { justify-content: flex-end; }
+  .hand-review-frequency-track { grid-column: 1; }
+  .hand-review-frequency-row > strong { grid-column: 2; }
+  .hand-review-replay-controls .ui-button,
+  .hand-review-actions .ui-button { flex: 1 1 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hand-review-surface *,
+  .hand-review-surface *::before,
+  .hand-review-surface *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
+}
+
 /* Settings, Guide, and card presentation -------------------------------- */
 
 .settings-grid { align-items: start; gap: var(--space-7); }

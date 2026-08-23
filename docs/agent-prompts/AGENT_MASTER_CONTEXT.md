@@ -33,12 +33,9 @@ app/index.html
 │  └─ shared/poker-domain Equity/evaluator
 ├─ canonical Training generator/session/grading/presentation
 │  └─ same StrategyProvider
-<<<<<<< Updated upstream
-├─ TableRenderer / Replay / SoundFX / i18n
-=======
 ├─ pure table-presentation/v1 over canonical Table Presence / Replay / legality
+├─ hand-review/v1 over canonical Hero decisions / Replay / strategy claims
 ├─ TableRenderer / SoundFX / i18n
->>>>>>> Stashed changes
 └─ product-performance scheduling and invalidation
 ```
 
@@ -190,11 +187,11 @@ The strategy-integrity burst is complete through `PREFLOP-CALIBRATION-001`.
 
 Active sequence:
 
-1. `TABLE-PRESENCE-REF-001` — short competitive/design brief;
-2. `TABLE-PRESENCE-002` — next substantial visible/fun implementation;
-3. post-hand/timeline closeout if needed;
-4. audio/motion semantic layer;
-5. whole-app premium/Core Flow closeout;
+1. `TABLE-PRESENCE-REF-001` — completed competitive/design brief;
+2. `TABLE-PRESENCE-002` — completed adaptive table implementation checkpoint;
+3. `FULL-HAND-REVIEW-001` — completed shared Hand/Training review implementation checkpoint;
+4. `AUDIO-MOTION-001` — active next semantic audio/motion layer;
+5. `PREMIUM-CLOSEOUT-001` — planned whole-app premium/Core Flow closeout;
 6. first bounded trusted reference pack/provider;
 7. Training Memory/re-drill;
 8. Personal Strategy integration;
@@ -217,15 +214,6 @@ Do not let accounts/Supabase cleanup, architecture decomposition, or more heuris
 
 Do not revive without a new approved architecture:
 
-<<<<<<< Updated upstream
-- browser/Electron ONNX strategy runtime;
-- native preload inference bridge;
-- remote strategy API;
-- arbitrary solver-tree upload;
-- legacy training/model directories as production authorities;
-- duplicate Equity authority;
-- arbitrary drag-and-drop layout editor.
-=======
 - browser or Electron ONNX strategy runtime
 - native preload inference bridge
 - remote strategy API
@@ -241,14 +229,15 @@ Do not revive without a new approved architecture:
 
 Verification at this checkpoint is 1,720/1,720 Node tests plus a successful bounded installed-Firefox matrix. Do not infer that every manual matrix is closed: independent hands-on Firefox, 4K/zoom, 1024/1366, Graphite/custom-theme, Analysis Focus/Controls First, and broader 3–9-player visual sampling remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
-`FULL-HAND-REVIEW-001` is **ACTIVE NEXT**. Its purpose is the richer decision-by-decision post-hand learning workflow over the accepted table projection, timeline, direct seek, hand-complete composition, and Replay integration—not another table or Replay implementation. `AUDIO-MOTION-001` is **PLANNED NEXT**, followed by `PREMIUM-CLOSEOUT-001`; later ordering is trusted bounded reference pack/provider, Training Memory/re-drill, Personal Strategy integration, `HOME-002B`, then opponent policies/bots.
+`FULL-HAND-REVIEW-001` is **COMPLETED**. Normal Hand and Full-Hand Training now share a decision-by-decision post-hand Review derived from the canonical Hero journal, Replay, StrategyResult, and StrategyClaimPolicy. It uses the explicit pre-action frame convention, source-gated comparison language, non-EV review priority, exact Analyze/Save seams, and cached strategy resolution without introducing a second Hand, Replay, grading, or Saved authority.
+
+`AUDIO-MOTION-001` is **ACTIVE NEXT**, followed by `PREMIUM-CLOSEOUT-001`; later ordering is trusted bounded reference pack/provider, Training Memory/re-drill, Personal Strategy integration, `HOME-002B`, then opponent policies/bots.
 
 ## Current development direction
 
-The project is in the premium full-hand learning-workflow phase. Strategy integrity, authority, extraction, mathematical integrity, calibration baseline, initial performance, and the premium adaptive table foundation are checkpointed.
+The project is in the bounded audio/motion phase. Strategy integrity, authority, extraction, mathematical integrity, calibration baseline, initial performance, the premium adaptive table foundation, and the shared full-hand learning workflow are checkpointed.
 
 Read `../project/CURRENT_PHASE.md`, `../project/PRODUCT_BACKLOG.md`, `../project/QA_BACKLOG.md`, `../project/PRODUCT_RETURN_QUEUE.md`, and `../project/ROADMAP.md` for the active ticket, ordered future work, and remaining acceptance debt. When an accepted checkpoint changes priority or subsystem state, update those authoritative roadmap/resume/backlog documents together; never create a parallel status system in prompts or chat memory.
->>>>>>> Stashed changes
 
 ## Budget and deployment
 

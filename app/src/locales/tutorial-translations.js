@@ -759,6 +759,24 @@
   Object.assign(ru, tablePresenceTutorial.ru);
   Object.assign(he, tablePresenceTutorial.he);
 
+  const handReviewTutorial = {
+    en: {
+      'Review every Hero decision after the Hand': 'Review every Hero decision after the Hand',
+      'After completion, Hand Review keeps the canonical result and Replay intact while comparing each recorded Hero action with the displayed source. Source limitations remain visible, and review priority is a probability disagreement—not EV loss.': 'After completion, Hand Review keeps the canonical result and Replay intact while comparing each recorded Hero action with the displayed source. Source limitations remain visible, and review priority is a probability disagreement—not EV loss.',
+    },
+    ru: {
+      'Review every Hero decision after the Hand': 'Разберите каждое решение Hero после раздачи',
+      'After completion, Hand Review keeps the canonical result and Replay intact while comparing each recorded Hero action with the displayed source. Source limitations remain visible, and review priority is a probability disagreement—not EV loss.': 'После завершения разбор сохраняет канонический результат и повтор, сравнивая каждое записанное действие Hero с показанным источником. Ограничения источника остаются видимыми, а приоритет означает расхождение вероятностей, а не потерю EV.',
+    },
+    he: {
+      'Review every Hero decision after the Hand': 'סקרו כל החלטה של Hero לאחר היד',
+      'After completion, Hand Review keeps the canonical result and Replay intact while comparing each recorded Hero action with the displayed source. Source limitations remain visible, and review priority is a probability disagreement—not EV loss.': 'לאחר השלמת היד, הסקירה שומרת על התוצאה הקנונית ועל החזרה ומשווה כל פעולה מתועדת של Hero למקור המוצג. מגבלות המקור נשארות גלויות, ועדיפות הסקירה היא פער הסתברויות ולא הפסד EV.',
+    },
+  };
+  Object.assign(en, handReviewTutorial.en);
+  Object.assign(ru, handReviewTutorial.ru);
+  Object.assign(he, handReviewTutorial.he);
+
   global.riverlineTutorialTranslations = Object.freeze({
     en: Object.freeze(en),
     ru: Object.freeze(ru),

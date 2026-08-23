@@ -67,6 +67,10 @@ export function installSavedStudyObjectBridge(browserWindow, options = {}) {
     ...controller,
     getCurrentStatus: (...args) => (signedIn() ? controller.getCurrentStatus(...args) : guestStatus()),
     saveCurrent: (...args) => requireIdentity('save-study-object', () => controller.saveCurrent(...args)),
+    saveReviewedDecisionSpot: (...args) => requireIdentity(
+      'save-study-object',
+      () => application.saveReviewedDecisionSpot(...args),
+    ),
     updateAnnotations: (...args) => requireIdentity('update-saved-study-object', () => (
       controller.updateAnnotations(...args)
     )),

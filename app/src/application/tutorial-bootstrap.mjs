@@ -26,6 +26,7 @@ export function installTutorialBridge(browserWindow, options = {}) {
     'saved-spot-open': () => elementShown('#savedSpotViewerBanner'),
     'saved-hand-open': () => elementShown('#savedHandViewerBanner'),
     'hand-action-ready': () => elementShown('#handDealSection') || elementShown('#handChanceSection') || elementShown('#handActionSection'),
+    'hand-review-ready': () => elementShown('#handReviewSurface'),
     'hand-save-ready': () => Boolean(document.querySelector('#handSavedStudyActionMount button')),
     'training-question-ready': () => elementShown('#trainingExerciseSurface'),
     'training-answered': () => elementShown('#trainingFeedback'),

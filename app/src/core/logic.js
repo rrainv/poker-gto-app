@@ -184,7 +184,14 @@ const app = {
 
   playbookResolution: null,
 
-  playbookViewModel: null
+  playbookViewModel: null,
+
+  handReview: {
+    source: null,
+    selectedDecisionIndex: null,
+    model: null,
+    savedDecisionIds: new Set()
+  }
 
 };
 
@@ -266,6 +273,17 @@ function requireStrategyProviderBridge() {
   }
   return bridge;
 }
+
+function requireHandReviewBridge() {
+  const bridge = globalThis.RiverlineHandReview;
+  if (!bridge || bridge.schemaVersion !== 'hand-review/v1'
+    || typeof bridge.createProjector !== 'function') {
+    throw new Error('Riverline Hand Review bridge is unavailable');
+  }
+  return bridge;
+}
+
+let handReviewProjector = null;
 
 function requireProductPerformanceBridge() {
   const bridge = globalThis.RiverlineProductPerformance;
@@ -1812,6 +1830,9 @@ function startCanonicalPlaybookHand() {
     return null;
   }
   syncHandSeatSelectors();
+  if (app.handReview.source === 'canonical_hand') {
+    closeActiveHandReview({ returnToEndpoint: false });
+  }
   resetCanonicalHandDraft();
   const state = callPlaybookStateBridge('initializeHand', readCanonicalHandConfiguration());
   if (!state) toast(canonicalHandFailureMessage(), 'error');
@@ -1823,6 +1844,9 @@ function startCanonicalPlaybookHand() {
 function resetCanonicalPlaybookHand() {
   if (callPlaybookStateBridge('getState')
     && !window.confirm(t('End the current hand and return to setup?'))) return null;
+  if (app.handReview.source === 'canonical_hand') {
+    closeActiveHandReview({ returnToEndpoint: false });
+  }
   callPlaybookStateBridge('resetHand');
   resetCanonicalHandDraft();
   renderCanonicalHandWorkspace();
@@ -2376,13 +2400,22 @@ function seekCanonicalReplayFrame(frameIndex) {
 }
 
 function createReplayActionEntry(entry) {
+  const reviewDecision = app.handReview.model?.decisions?.find((decision) => (
+    decision.replayFrameTarget.actionSequence === entry.sequence
+  )) || null;
+  const selectedReviewDecision = reviewDecision?.decisionId
+    === app.handReview.model?.selectedDecision?.decisionId;
   const item = document.createElement('li');
-  item.className = `replay-action-entry replay-action-entry--${entry.actionFamily} is-replay-${entry.presentationState}${entry.isHero ? ' is-hero' : ''}${entry.wasAllIn ? ' is-all-in' : ''}`;
+  item.className = `replay-action-entry replay-action-entry--${entry.actionFamily} is-replay-${entry.presentationState}${entry.isHero ? ' is-hero' : ''}${entry.wasAllIn ? ' is-all-in' : ''}${reviewDecision ? ' is-review-decision' : ''}${selectedReviewDecision ? ' is-selected-review-decision' : ''}`;
   item.dataset.actionType = entry.actionType;
   item.dataset.amountKind = entry.amountKind;
   item.dataset.sequence = String(entry.sequence);
   item.dataset.frameIndex = String(entry.frameIndex);
   item.dataset.replayProgress = entry.presentationState;
+  if (reviewDecision) {
+    item.dataset.reviewDecisionId = reviewDecision.decisionId;
+    item.dataset.reviewComparison = reviewDecision.comparison.state;
+  }
   item.value = entry.sequence + 1;
   if (entry.presentationState === 'current') item.setAttribute('aria-current', 'step');
 
@@ -2390,9 +2423,14 @@ function createReplayActionEntry(entry) {
   body.type = 'button';
   body.className = 'replay-action-body replay-timeline-seek';
   body.dataset.frameIndex = String(entry.frameIndex);
-  body.setAttribute('aria-label', t('Review replay frame {current}', {
-    current: entry.frameIndex + 1
-  }));
+  body.setAttribute('aria-label', reviewDecision
+    ? t('Hero Decision {number}: {action}, {comparison}. Replay action frame {frame}.', {
+      number: reviewDecision.decisionNumber,
+      action: reviewActionCopy(reviewDecision.chosenAction, reviewDecision),
+      comparison: reviewComparisonLabel(reviewDecision.comparison),
+      frame: entry.frameIndex + 1
+    })
+    : t('Review replay frame {current}', { current: entry.frameIndex + 1 }));
   body.addEventListener('click', () => seekCanonicalReplayFrame(entry.frameIndex));
   if (entry.presentationState === 'current') body.setAttribute('aria-current', 'step');
   body.appendChild(createReplayIdentity(entry, 'replay-action-identity'));
@@ -2709,6 +2747,7 @@ function renderCanonicalHandWorkspace() {
   if (!workspace) return;
   const state = callPlaybookStateBridge('getState');
   const replayProjection = callPlaybookStateBridge('createReplayProjectionViewModel');
+  if (app.handReview.source === 'canonical_hand') refreshActiveHandReviewModel();
   const legalActions = state ? callPlaybookStateBridge('getLegalActions') : null;
   placeSavedStudySourceActions(replayProjection);
   renderSavedHandViewerContext(replayProjection);
@@ -2752,6 +2791,611 @@ function renderCanonicalHandWorkspace() {
   setCanonicalReplayReadOnly(replayProjection, state);
   renderCanonicalHandStage(state, legalActions, replayProjection);
   dispatchCanonicalTableState();
+  if (app.handReview.source === 'canonical_hand') renderActiveHandReview();
+}
+
+function activeHandReviewInput() {
+  if (app.handReview.source === 'canonical_hand') {
+    const journal = callPlaybookStateBridge('getHeroDecisionJournal');
+    const completedHandResult = callPlaybookStateBridge('getCompletedHandResult');
+    const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
+    if (!journal || journal.status !== 'complete' || !completedHandResult || !heroPlayerId) return null;
+    return {
+      source: 'canonical_hand',
+      handId: journal.handId,
+      heroPlayerId,
+      decisions: journal.decisions,
+      completedHandResult,
+      replayProjection: callPlaybookStateBridge('createReplayProjectionViewModel'),
+      providerCacheKey: JSON.stringify({
+        provider: strategyProvider.schemaVersion,
+        options: readHeuristicOptions()
+      }),
+      actions: {
+        analyze: true,
+        saveHand: true,
+        saveSpot: true,
+        returnToCompleted: true
+      }
+    };
+  }
+  if (app.handReview.source === 'training_full_hand') {
+    const review = callTrainingServiceBridge('getFullHandReview');
+    const snapshot = app.training.fullHandSnapshot
+      || callTrainingServiceBridge('getFullHandSnapshot');
+    if (!review || review.status !== 'ready' || !snapshot?.completedHandResult) return null;
+    return {
+      source: 'training_full_hand',
+      handId: review.handId,
+      heroPlayerId: review.heroPlayerId || snapshot.heroPlayerId,
+      decisions: review.decisions,
+      completedHandResult: snapshot.completedHandResult,
+      replayProjection: callTrainingServiceBridge('getFullHandReviewReplayProjection'),
+      providerCacheKey: 'training-resolved-results',
+      actions: {
+        analyze: true,
+        saveHand: false,
+        saveSpot: true,
+        repeat: true,
+        next: true,
+        returnToCompleted: true
+      }
+    };
+  }
+  return null;
+}
+
+function refreshActiveHandReviewModel() {
+  const input = activeHandReviewInput();
+  if (!input) {
+    app.handReview.model = null;
+    return null;
+  }
+  try {
+    if (!handReviewProjector) {
+      handReviewProjector = requireHandReviewBridge().createProjector({
+        resolveStrategy: (decisionContext) => strategyProvider.resolve(decisionContext)
+      });
+    }
+    const model = handReviewProjector.project({
+      ...input,
+      selectedDecisionIndex: app.handReview.selectedDecisionIndex
+    });
+    app.handReview.model = model;
+    app.handReview.selectedDecisionIndex = model.selectedDecisionIndex;
+    return model;
+  } catch (error) {
+    console.error('[Riverline Hand Review]', error);
+    app.handReview.model = null;
+    return null;
+  }
+}
+
+function activeHandReviewReplayOperation(operation, ...args) {
+  if (app.handReview.source === 'canonical_hand') {
+    const methods = {
+      select: 'selectReplayFrame',
+      previous: 'previousReplayFrame',
+      next: 'nextReplayFrame',
+      endpoint: 'returnReplayToEndpoint'
+    };
+    return callPlaybookStateBridge(methods[operation], ...args);
+  }
+  if (app.handReview.source === 'training_full_hand') {
+    const methods = {
+      select: 'selectFullHandReviewFrame',
+      previous: 'previousFullHandReviewFrame',
+      next: 'nextFullHandReviewFrame',
+      endpoint: 'returnFullHandReviewToEndpoint'
+    };
+    return callTrainingServiceBridge(methods[operation], ...args);
+  }
+  return null;
+}
+
+function mountActiveHandReview() {
+  const surface = $('#handReviewSurface');
+  const mount = app.handReview.source === 'training_full_hand'
+    ? $('#trainingHandReviewMount')
+    : $('#handReviewMount');
+  if (!surface || !mount) return null;
+  if (surface.parentElement !== mount) mount.appendChild(surface);
+  surface.hidden = false;
+  surface.dataset.reviewSource = app.handReview.source;
+  return surface;
+}
+
+function closeActiveHandReview({ returnToEndpoint = true } = {}) {
+  const priorSource = app.handReview.source;
+  if (returnToEndpoint) activeHandReviewReplayOperation('endpoint');
+  app.handReview.source = null;
+  app.handReview.selectedDecisionIndex = null;
+  app.handReview.model = null;
+  const surface = $('#handReviewSurface');
+  if (surface) surface.hidden = true;
+  if (priorSource === 'training_full_hand') {
+    setFullHandTrainingPhase('complete');
+    dispatchFullHandTrainingTable(app.training.fullHandSnapshot);
+    if ($('#trainingExerciseSurface')) $('#trainingExerciseSurface').hidden = true;
+    $('#trainingReviewHand')?.setAttribute('aria-expanded', 'false');
+    $('#trainingFullHandCompletion')?.scrollIntoView?.({ behavior: 'auto', block: 'nearest' });
+  }
+}
+
+function reviewStreetLabel(street) {
+  const normalized = String(street || 'preflop');
+  return t(normalized.charAt(0).toUpperCase() + normalized.slice(1));
+}
+
+function reviewActionLabel(type, decisionContext) {
+  return t(trainingActionLabel(type, decisionContext));
+}
+
+function reviewActionCopy(action, decision) {
+  if (!action) return t('Unavailable');
+  const label = reviewActionLabel(action.type, decision?.durable?.decisionContext || {});
+  if (Number.isSafeInteger(action.amountMilliBb)) {
+    return action.amountKind === 'amount_to'
+      ? t('{action} to {amount}', { action: label, amount: formatCanonicalBb(action.amountMilliBb) })
+      : t('{action} {amount}', { action: label, amount: formatCanonicalBb(action.amountMilliBb) });
+  }
+  return label;
+}
+
+function reviewComparisonLabel(comparison) {
+  if (!comparison || comparison.state === 'unavailable') return t('Reference unavailable');
+  if (comparison.semantics === 'normative') {
+    return {
+      matches: t('Correct'),
+      close: t('Acceptable'),
+      differs: t('Mistake')
+    }[comparison.state] || t('Review');
+  }
+  return {
+    matches: t('Matches Riverline reference'),
+    close: t('Close to Riverline reference'),
+    differs: t('Differs from Riverline reference')
+  }[comparison.state] || t('Reference unavailable');
+}
+
+function reviewComparisonTone(comparison) {
+  return {
+    matches: 'success',
+    close: 'info',
+    differs: 'warning',
+    unavailable: 'neutral'
+  }[comparison?.state] || 'neutral';
+}
+
+function reviewContextCopy(decision) {
+  const context = decision.context;
+  const actor = decision.durable.heroPosition || t('position unavailable');
+  if (Number.isFinite(context.callAmountBb) && context.callAmountBb > 0) {
+    return t('{position} facing {facing} · {call} to call', {
+      position: actor,
+      facing: Number.isFinite(context.facingSizeBb) ? `${context.facingSizeBb} bb` : t('action'),
+      call: `${context.callAmountBb} bb`
+    });
+  }
+  const family = String(context.facingActionFamily || 'none').replaceAll('_', ' ');
+  return t('{position} · {context}', { position: actor, context: t(family) });
+}
+
+function renderHandReviewCards(target, cards, emptyKey) {
+  if (!target) return;
+  target.replaceChildren();
+  if (!Array.isArray(cards) || cards.length === 0) {
+    const empty = document.createElement('span');
+    empty.className = 'hand-review-no-cards';
+    empty.textContent = t(emptyKey);
+    target.appendChild(empty);
+    return;
+  }
+  cards.forEach((card) => {
+    const item = document.createElement('span');
+    item.className = 'hand-review-card training-readonly-card riverline-card';
+    item.dataset.cardSize = 'standard';
+    item.setAttribute('role', 'img');
+    item.setAttribute('aria-label', displayCard(card));
+    item.innerHTML = cardMarkup(card);
+    target.appendChild(item);
+  });
+}
+
+function formatReviewFrequency(probability) {
+  const percent = Number(probability) * 100;
+  if (!Number.isFinite(percent)) return t('Unavailable');
+  if (percent > 0 && percent < 0.1) return '<0.1%';
+  const rounded = Math.round(percent * 10) / 10;
+  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
+}
+
+function renderHandReviewFrequencyComparison(decision) {
+  const stack = $('#handReviewFrequencyStack');
+  const rows = $('#handReviewFrequencyRows');
+  if (!stack || !rows) return;
+  stack.replaceChildren();
+  rows.replaceChildren();
+  const distribution = [...decision.distribution].sort((left, right) => (
+    right.probability - left.probability
+  ));
+  if (distribution.length === 0) {
+    stack.classList.add('is-empty');
+    stack.setAttribute('aria-label', t('Strategy frequencies unavailable'));
+    const unavailable = document.createElement('p');
+    unavailable.className = 'hand-review-reference-unavailable';
+    unavailable.textContent = t('The hand and chosen action remain available even though this reference cannot compare the decision.');
+    rows.appendChild(unavailable);
+    return;
+  }
+  stack.classList.remove('is-empty');
+  const highestProbability = Math.max(...distribution.map((entry) => entry.probability));
+  const accessible = [];
+  distribution.forEach((entry) => {
+    const chosen = entry.type === decision.chosenAction.type;
+    const highest = Math.abs(entry.probability - highestProbability) <= Number.EPSILON;
+    const label = t(entry.label || trainingActionLabel(entry.type, decision.durable.decisionContext));
+    const frequency = formatReviewFrequency(entry.probability);
+    const kind = visualActionKind({ action: { type: entry.type } });
+    accessible.push(`${label} ${frequency}${chosen ? `, ${t('chosen action')}` : ''}${highest ? `, ${t('highest frequency')}` : ''}`);
+
+    const segment = document.createElement('span');
+    segment.className = 'hand-review-frequency-segment';
+    segment.dataset.actionKind = kind;
+    segment.style.width = `${entry.probability * 100}%`;
+    stack.appendChild(segment);
+
+    const row = document.createElement('div');
+    row.className = 'hand-review-frequency-row';
+    row.dataset.actionKind = kind;
+    row.classList.toggle('is-chosen', chosen);
+    row.classList.toggle('is-highest', highest);
+    const name = document.createElement('span');
+    name.className = 'hand-review-frequency-name';
+    name.textContent = label;
+    const markers = document.createElement('span');
+    markers.className = 'hand-review-frequency-markers';
+    if (chosen) {
+      const marker = document.createElement('em');
+      marker.textContent = t('Chosen');
+      markers.appendChild(marker);
+    }
+    if (highest) {
+      const marker = document.createElement('em');
+      marker.textContent = t('Highest');
+      markers.appendChild(marker);
+    }
+    const track = document.createElement('span');
+    track.className = 'hand-review-frequency-track';
+    const fill = document.createElement('i');
+    fill.style.width = `${entry.probability * 100}%`;
+    track.appendChild(fill);
+    const value = document.createElement('strong');
+    value.textContent = frequency;
+    row.setAttribute('aria-label', accessible.at(-1));
+    row.append(name, markers, track, value);
+    rows.appendChild(row);
+  });
+  stack.setAttribute('aria-label', accessible.join(', '));
+}
+
+function reviewLimitationLabel(code, decision) {
+  const policyEntry = decision.claimPolicy?.limitations?.find((entry) => entry.code === code);
+  if (policyEntry) return t(policyEntry.messageKey || policyEntry.message);
+  const keys = {
+    reference_unavailable: 'Reference unavailable for this decision.',
+    generalized_context: 'This is a generalized reference for the current context.',
+    missing_exact_call_price: 'Exact call price is unavailable.',
+    sizing_not_compared: 'The action-family comparison does not evaluate the exact bet or raise size.',
+    legal_action_not_represented: 'The selected source does not represent this legal action family.',
+    multiway_effective_stacks: 'Multiway effective stacks are shown per opponent; no single effective stack is implied.'
+  };
+  return t(keys[code] || code.replaceAll('_', ' '));
+}
+
+function renderHandReviewDecisionList(model) {
+  const list = $('#handReviewDecisionList');
+  if (!list) return;
+  const focusedDecisionId = document.activeElement?.dataset?.reviewDecisionId || null;
+  list.replaceChildren();
+  model.decisions.forEach((decision, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'hand-review-decision-button';
+    button.dataset.reviewDecisionId = decision.decisionId;
+    button.dataset.reviewDecisionIndex = String(index);
+    button.dataset.comparison = decision.comparison.state;
+    const selected = index === model.selectedDecisionIndex;
+    const priority = index === model.priorityDecisionIndex;
+    button.classList.toggle('is-selected', selected);
+    button.classList.toggle('is-review-priority', priority);
+    button.setAttribute('aria-current', selected ? 'true' : 'false');
+    const number = document.createElement('span');
+    number.className = 'hand-review-decision-number';
+    number.textContent = String(decision.decisionNumber);
+    const copy = document.createElement('span');
+    copy.className = 'hand-review-decision-copy';
+    const street = document.createElement('strong');
+    street.textContent = reviewStreetLabel(decision.street);
+    const context = document.createElement('span');
+    context.textContent = reviewContextCopy(decision);
+    const action = document.createElement('span');
+    action.textContent = reviewActionCopy(decision.chosenAction, decision);
+    copy.append(street, context, action);
+    const state = document.createElement('span');
+    state.className = 'hand-review-decision-state';
+    state.textContent = reviewComparisonLabel(decision.comparison);
+    if (priority) {
+      const priorityLabel = document.createElement('small');
+      priorityLabel.textContent = t('Review priority');
+      state.appendChild(priorityLabel);
+    }
+    button.setAttribute('aria-label', t('Decision {number}: {street}, {context}, Hero chose {action}, {comparison}', {
+      number: decision.decisionNumber,
+      street: reviewStreetLabel(decision.street),
+      context: reviewContextCopy(decision),
+      action: reviewActionCopy(decision.chosenAction, decision),
+      comparison: reviewComparisonLabel(decision.comparison)
+    }));
+    button.addEventListener('click', () => selectActiveHandReviewDecision(index, { preserveFocus: true }));
+    button.append(number, copy, state);
+    list.appendChild(button);
+  });
+  if (focusedDecisionId) {
+    list.querySelector(`[data-review-decision-id="${CSS.escape(focusedDecisionId)}"]`)?.focus({ preventScroll: true });
+  }
+}
+
+function renderActiveHandReview() {
+  const model = app.handReview.model || refreshActiveHandReviewModel();
+  const surface = model ? mountActiveHandReview() : null;
+  if (!surface || !model?.selectedDecision) {
+    if ($('#handReviewSurface')) $('#handReviewSurface').hidden = true;
+    return null;
+  }
+  const decision = model.selectedDecision;
+  surface.dataset.comparison = decision.comparison.state;
+  $('#trainingReviewHand')?.setAttribute('aria-expanded', String(model.source === 'training_full_hand'));
+
+  if ($('#handReviewProgress')) $('#handReviewProgress').textContent = `${model.selectedDecisionIndex + 1} / ${model.decisions.length}`;
+  renderHandReviewCards($('#handReviewFinalBoard'), model.overview.finalBoard, 'No final board');
+  const heroDelta = model.overview.heroStackDeltaMilliBb;
+  const result = Number.isSafeInteger(heroDelta)
+    ? `${heroDelta > 0 ? '+' : ''}${formatCanonicalBb(heroDelta)}`
+    : t('Unavailable');
+  if ($('#handReviewResult')) {
+    $('#handReviewResult').textContent = model.overview.terminalReason === 'showdown'
+      ? t('Showdown · Hero {result}', { result })
+      : t('Ended by fold · Hero {result}', { result });
+  }
+  if ($('#handReviewDecisionCount')) $('#handReviewDecisionCount').textContent = String(model.overview.decisionCount);
+  if ($('#handReviewComparableCount')) $('#handReviewComparableCount').textContent = String(model.overview.comparableDecisionCount);
+  if ($('#handReviewUnavailableCount')) $('#handReviewUnavailableCount').textContent = String(model.overview.unavailableDecisionCount);
+  if ($('#handReviewOverviewSource')) $('#handReviewOverviewSource').textContent = strategySourceDisplayLabel({
+    source: model.overview.selectedReference?.id,
+    sourceDescriptor: decision.claimPolicy.source
+  });
+  if ($('#handReviewAlignmentSummary')) {
+    const counts = model.overview.alignmentCounts;
+    $('#handReviewAlignmentSummary').textContent = model.overview.alignmentSummaryPermitted
+      ? t('{matches} matches · {close} close · {differences} differences', {
+        matches: counts.matches,
+        close: counts.close,
+        differences: counts.differs
+      })
+      : t('No decisions can be compared with the selected reference; canonical replay remains available.');
+  }
+  if ($('#handReviewPrioritySummary')) {
+    const priority = model.decisions[model.priorityDecisionIndex];
+    $('#handReviewPrioritySummary').textContent = priority?.reviewPriority
+      ? t('Review priority: Decision {number} has the strongest probability disagreement with this reference. This is not EV loss.', {
+        number: priority.decisionNumber
+      })
+      : t('Review priority is unavailable because this reference cannot compare the decisions.');
+  }
+
+  renderHandReviewDecisionList(model);
+  if ($('#handReviewPreviousDecision')) $('#handReviewPreviousDecision').disabled = !model.navigation.canPreviousDecision;
+  if ($('#handReviewNextDecision')) $('#handReviewNextDecision').disabled = !model.navigation.canNextDecision;
+  if ($('#handReviewDecisionStreet')) $('#handReviewDecisionStreet').textContent = reviewStreetLabel(decision.street);
+  if ($('#handReviewDecisionTitle')) $('#handReviewDecisionTitle').textContent = t('Hero Decision {number}', { number: decision.decisionNumber });
+  if ($('#handReviewDecisionContext')) $('#handReviewDecisionContext').textContent = reviewContextCopy(decision);
+  const comparisonBadge = $('#handReviewComparisonBadge');
+  if (comparisonBadge) {
+    comparisonBadge.textContent = reviewComparisonLabel(decision.comparison);
+    comparisonBadge.className = `badge status-badge status-badge--${reviewComparisonTone(decision.comparison)}`;
+  }
+  renderHandReviewCards($('#handReviewHeroCards'), decision.durable.heroCards, 'Cards unavailable');
+  renderHandReviewCards($('#handReviewBoardCards'), decision.durable.board, 'No board cards yet');
+  if ($('#handReviewChosenAction')) $('#handReviewChosenAction').textContent = reviewActionCopy(decision.chosenAction, decision);
+  const sourceLabel = decision.strategyResult
+    ? strategySourceDisplayLabel(decision.strategyResult)
+    : strategySourceDisplayLabel(decision.source.id);
+  if ($('#handReviewSourceBadge')) $('#handReviewSourceBadge').textContent = sourceLabel;
+  renderHandReviewFrequencyComparison(decision);
+  if ($('#handReviewComparisonNote')) {
+    $('#handReviewComparisonNote').textContent = decision.source.coverage === 'generalized'
+      ? t('Riverline reference mixes are generalized for this context; they support comparison, not objective GTO truth.')
+      : decision.comparison.state === 'unavailable'
+        ? t('Reference comparison is unavailable. The canonical decision and replay remain fully usable.')
+        : t('The chosen action is highlighted inside the full source mix; no pure strategy is implied.');
+  }
+
+  if ($('#handReviewPosition')) $('#handReviewPosition').textContent = decision.durable.heroPosition || t('Unavailable');
+  if ($('#handReviewPot')) $('#handReviewPot').textContent = Number.isFinite(decision.context.potBb) ? `${decision.context.potBb} bb` : t('Unavailable');
+  if ($('#handReviewStack')) $('#handReviewStack').textContent = Number.isFinite(decision.context.heroStackBb) ? `${decision.context.heroStackBb} bb` : t('Unavailable');
+  if ($('#handReviewOpponents')) {
+    const opponentPositions = decision.context.effectiveStackByOpponent
+      .map((entry) => entry.position)
+      .filter(Boolean);
+    $('#handReviewOpponents').textContent = Number.isSafeInteger(decision.context.opponentCount)
+      ? `${decision.context.opponentCount}${opponentPositions.length > 0 ? ` · ${opponentPositions.join(' · ')}` : ''}`
+      : t('Unavailable');
+  }
+  if ($('#handReviewFacing')) $('#handReviewFacing').textContent = reviewContextCopy(decision);
+  if ($('#handReviewCallPrice')) $('#handReviewCallPrice').textContent = Number.isFinite(decision.context.callAmountBb) ? `${decision.context.callAmountBb} bb` : t('Unavailable');
+  if ($('#handReviewLegalAlternatives')) {
+    $('#handReviewLegalAlternatives').textContent = decision.legalAlternatives.length > 0
+      ? decision.legalAlternatives.map((entry) => reviewActionLabel(entry.type, decision.durable.decisionContext)).join(' · ')
+      : t('Unavailable');
+  }
+  if ($('#handReviewEffectiveStack')) {
+    $('#handReviewEffectiveStack').textContent = Number.isFinite(decision.context.effectiveStackBb)
+      ? `${decision.context.effectiveStackBb} bb`
+      : decision.context.effectiveStackByOpponent.length > 0
+        ? decision.context.effectiveStackByOpponent.map((entry) => `${entry.position}: ${entry.effectiveStackBb} bb`).join(' · ')
+        : t('Unavailable');
+  }
+  if ($('#handReviewReplayPoint')) {
+    $('#handReviewReplayPoint').textContent = t('Frame {frame} · before Hero acts', {
+      frame: decision.replayFrameTarget.frameIndex + 1
+    });
+  }
+  if ($('#handReviewSourceDetail')) $('#handReviewSourceDetail').textContent = `${sourceLabel}${decision.source.version ? ` · ${decision.source.version}` : ''}`;
+  if ($('#handReviewCoverage')) $('#handReviewCoverage').textContent = t({ exact: 'Exact covered context', generalized: 'Generalized context', unsupported: 'Unsupported context' }[decision.source.coverage] || 'Unsupported context');
+  if ($('#handReviewPrecision')) $('#handReviewPrecision').textContent = decision.source.exactFrequencies ? t('Exact source frequencies') : decision.distribution.length > 0 ? t('Approximate source frequencies') : t('Frequencies unavailable');
+  if ($('#handReviewLimitations')) $('#handReviewLimitations').textContent = decision.limitations.length > 0
+    ? decision.limitations.map((code) => reviewLimitationLabel(code, decision)).join(' ')
+    : t('No source limitation is declared for this covered context.');
+
+  const replayStatus = $('#handReviewReplayStatus');
+  if (replayStatus) replayStatus.textContent = model.replay.synchronizedToSelectedDecision
+    ? t('Table is at the pre-action decision frame.')
+    : t('Replay moved to frame {current} of {total}; the selected decision remains marked.', {
+      current: model.replay.currentStep,
+      total: model.replay.totalSteps
+    });
+  if ($('#handReviewPreviousEvent')) $('#handReviewPreviousEvent').disabled = !model.replay.canPrevious;
+  if ($('#handReviewNextEvent')) $('#handReviewNextEvent').disabled = !model.replay.canNext;
+  if ($('#handReviewSelectedFrame')) $('#handReviewSelectedFrame').hidden = model.replay.synchronizedToSelectedDecision;
+
+  const actionVisibility = {
+    handReviewAnalyze: model.actions.analyze,
+    handReviewSaveSpot: model.actions.saveSpot,
+    handReviewSaveHand: model.actions.saveHand,
+    handReviewRepeat: model.actions.repeat,
+    handReviewNext: model.actions.next,
+    handReviewReturn: model.actions.returnToCompleted
+  };
+  Object.entries(actionVisibility).forEach(([id, visible]) => {
+    const button = $('#' + id);
+    if (button) button.hidden = !visible;
+  });
+  if ($('#handReviewSaveSpot')) {
+    const saved = app.handReview.savedDecisionIds.has(decision.decisionId);
+    $('#handReviewSaveSpot').disabled = saved;
+    $('#handReviewSaveSpot').textContent = t(saved ? 'Saved decision' : 'Save this decision');
+  }
+  if ($('#handReviewSaveHand') && model.actions.saveHand) {
+    const canonicalSave = $('#savedStudySaveButton');
+    $('#handReviewSaveHand').disabled = !canonicalSave || canonicalSave.disabled;
+    $('#handReviewSaveHand').textContent = t(canonicalSave?.getAttribute('aria-pressed') === 'true' ? 'Saved' : 'Save hand');
+  }
+  return model;
+}
+
+function selectActiveHandReviewDecision(index, { preserveFocus = false } = {}) {
+  const model = app.handReview.model || refreshActiveHandReviewModel();
+  if (!model || !Number.isSafeInteger(index) || index < 0 || index >= model.decisions.length) return null;
+  app.handReview.selectedDecisionIndex = index;
+  const target = model.decisions[index].replayFrameTarget.frameIndex;
+  activeHandReviewReplayOperation('select', target);
+  refreshActiveHandReviewModel();
+  if (app.handReview.source === 'training_full_hand') {
+    dispatchFullHandTrainingTable(app.training.fullHandSnapshot, { review: true });
+    renderActiveHandReview();
+  }
+  if (preserveFocus) {
+    $('#handReviewDecisionList')?.querySelector(`[data-review-decision-index="${index}"]`)?.focus({ preventScroll: true });
+  }
+  return app.handReview.model;
+}
+
+function stepActiveHandReviewDecision(delta) {
+  const model = app.handReview.model || refreshActiveHandReviewModel();
+  if (!model?.selectedDecision) return null;
+  return selectActiveHandReviewDecision(model.selectedDecisionIndex + delta);
+}
+
+function stepActiveHandReviewReplay(operation, ...args) {
+  activeHandReviewReplayOperation(operation, ...args);
+  refreshActiveHandReviewModel();
+  if (app.handReview.source === 'training_full_hand') {
+    dispatchFullHandTrainingTable(app.training.fullHandSnapshot, { review: true });
+  }
+  return renderActiveHandReview();
+}
+
+function openCanonicalHandReview() {
+  const journal = callPlaybookStateBridge('getHeroDecisionJournal');
+  if (!journal || journal.status !== 'complete' || journal.decisions.length === 0) {
+    toast(t('No recorded Hero decision is available for review.'), 'warning');
+    return null;
+  }
+  app.handReview.source = 'canonical_hand';
+  app.handReview.selectedDecisionIndex = null;
+  const model = refreshActiveHandReviewModel();
+  if (!model?.selectedDecision) return null;
+  selectActiveHandReviewDecision(model.selectedDecisionIndex);
+  const rendered = renderActiveHandReview();
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  $('#handReviewSurface')?.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+  return rendered;
+}
+
+async function saveActiveHandReviewDecision() {
+  const model = app.handReview.model || refreshActiveHandReviewModel();
+  const decision = model?.selectedDecision;
+  if (!decision || app.handReview.savedDecisionIds.has(decision.decisionId)) return null;
+  const button = $('#handReviewSaveSpot');
+  if (button) button.disabled = true;
+  try {
+    const result = await callSavedStudyBridge('saveReviewedDecisionSpot', {
+      decisionId: decision.decisionId,
+      canonicalHandId: model.handId,
+      actionSequenceCount: decision.replayFrameTarget.actionSequence,
+      decisionContext: decision.durable.decisionContext,
+      rulesSnapshot: decision.durable.rulesSnapshot,
+      savedHandObjectId: model.source === 'canonical_hand' ? savedStudyCurrentObject?.id ?? null : null,
+      sourceSurface: model.source === 'training_full_hand' ? 'training' : 'replay',
+      sourceId: `${model.handId}:${decision.decisionId}`,
+      title: t('Hero Decision {number} · {street}', {
+        number: decision.decisionNumber,
+        street: reviewStreetLabel(decision.street)
+      })
+    });
+    app.handReview.savedDecisionIds.add(decision.decisionId);
+    renderActiveHandReview();
+    toast(t('Saved decision.'), 'success');
+    return result;
+  } catch (error) {
+    if (error?.code !== 'persistent_identity_cancelled') {
+      console.error('[Riverline Hand Review save]', error);
+      toast(t('Save failed'), 'error');
+    }
+    renderActiveHandReview();
+    return null;
+  }
+}
+
+function bindHandReviewWorkspace() {
+  $('#handReviewPreviousDecision')?.addEventListener('click', () => stepActiveHandReviewDecision(-1));
+  $('#handReviewNextDecision')?.addEventListener('click', () => stepActiveHandReviewDecision(1));
+  $('#handReviewPreviousEvent')?.addEventListener('click', () => stepActiveHandReviewReplay('previous'));
+  $('#handReviewNextEvent')?.addEventListener('click', () => stepActiveHandReviewReplay('next'));
+  $('#handReviewSelectedFrame')?.addEventListener('click', () => {
+    const frameIndex = app.handReview.model?.selectedDecision?.replayFrameTarget.frameIndex;
+    if (Number.isSafeInteger(frameIndex)) stepActiveHandReviewReplay('select', frameIndex);
+  });
+  $('#handReviewAnalyze')?.addEventListener('click', () => {
+    if (app.handReview.source === 'training_full_hand') openFullHandDecisionInAnalysis();
+    else openCanonicalHandDecisionInAnalysis(app.handReview.model?.selectedDecisionIndex);
+  });
+  $('#handReviewSaveSpot')?.addEventListener('click', saveActiveHandReviewDecision);
+  $('#handReviewSaveHand')?.addEventListener('click', () => $('#savedStudySaveButton')?.click());
+  $('#handReviewRepeat')?.addEventListener('click', replayCurrentTrainingSeed);
+  $('#handReviewNext')?.addEventListener('click', () => startConfiguredTrainingSession());
+  $('#handReviewReturn')?.addEventListener('click', () => closeActiveHandReview());
 }
 
 function revealCanonicalHandHistory({ replay = false } = {}) {
@@ -2783,9 +3427,11 @@ function scenarioInputFromHeroDecisionRecord(record) {
   };
 }
 
-async function openCanonicalHandDecisionInAnalysis() {
+async function openCanonicalHandDecisionInAnalysis(decisionIndex = null) {
   const journal = callPlaybookStateBridge('getHeroDecisionJournal');
-  const record = journal?.decisions?.at(-1) || null;
+  const record = Number.isSafeInteger(decisionIndex)
+    ? journal?.decisions?.[decisionIndex] || null
+    : journal?.decisions?.at(-1) || null;
   const scenarioInput = scenarioInputFromHeroDecisionRecord(record);
   if (!record || !scenarioInput) {
     toast(t('No recorded Hero decision is available for Analysis.'), 'warning');
@@ -2904,10 +3550,11 @@ function bindCanonicalHandWorkspace() {
     if (!next) toast(canonicalHandFailureMessage(), 'error');
     renderCanonicalHandWorkspace();
   });
-  $('#handCompletedReviewButton')?.addEventListener('click', () => revealCanonicalHandHistory());
+  $('#handCompletedReviewButton')?.addEventListener('click', openCanonicalHandReview);
   $('#handCompletedReplayButton')?.addEventListener('click', () => revealCanonicalHandHistory({ replay: true }));
   $('#handCompletedAnalysisButton')?.addEventListener('click', openCanonicalHandDecisionInAnalysis);
   $('#handCompletedSaveButton')?.addEventListener('click', () => $('#savedStudySaveButton')?.click());
+  bindHandReviewWorkspace();
 }
 
 
@@ -7603,9 +8250,6 @@ function initTrainingMode() {
   bind('#trainingFullHandLiveNewHand', 'click', () => startConfiguredTrainingSession());
   bind('#trainingFullHandEndHand', 'click', endFullHandTraining);
   bind('#trainingReviewHand', 'click', toggleFullHandTrainingReview);
-  bind('#trainingFullHandReviewPrevious', 'click', () => stepFullHandTrainingReview(-1));
-  bind('#trainingFullHandReviewNext', 'click', () => stepFullHandTrainingReview(1));
-  bind('#trainingFullHandOpenAnalysis', 'click', openFullHandDecisionInAnalysis);
   bind('#trainingAdjustDrill', 'click', () => {
     $('#trainingAdvanced')?.removeAttribute('open');
     const selector = trainingSessionMode() === 'varied'
@@ -8080,6 +8724,8 @@ function renderFullHandCompactTimeline(tablePresentation) {
   root.hidden = !timeline || tablePresentation?.tablePresence?.empty === true;
   if (root.hidden) return;
   root.dataset.timelineMode = tablePresentation.timelineMode;
+  const reviewMode = tablePresentation.timelineMode === 'review'
+    && app.handReview.source === 'training_full_hand';
   for (const group of timeline.groups || []) {
     const section = document.createElement('section');
     section.className = 'full-hand-timeline-street';
@@ -8087,22 +8733,45 @@ function renderFullHandCompactTimeline(tablePresentation) {
     const heading = document.createElement('strong');
     heading.textContent = t(group.headingKey);
     section.appendChild(heading);
-    for (const entry of group.entries) {
-      const token = document.createElement('span');
-      token.className = `full-hand-timeline-action${entry.isHero ? ' is-hero' : ''}`;
-      const amount = Number.isSafeInteger(entry.amountMilliBb)
-        ? ` ${formatCanonicalBb(entry.amountMilliBb)}`
-        : '';
-      token.textContent = `${entry.position || replayActorLabel(entry)} ${t(entry.actionLabelKey)}${amount}`;
+    const items = reviewMode ? group.items : group.entries;
+    for (const entry of items) {
+      const token = document.createElement(reviewMode ? 'button' : 'span');
+      if (reviewMode) token.type = 'button';
+      const reviewDecision = entry.itemKind === 'action'
+        ? app.handReview.model?.decisions?.find((decision) => (
+          decision.replayFrameTarget.actionSequence === entry.sequence
+        ))
+        : null;
+      const selected = reviewDecision?.decisionId === app.handReview.model?.selectedDecision?.decisionId;
+      token.className = `full-hand-timeline-action${entry.isHero ? ' is-hero' : ''}${reviewDecision ? ' is-review-decision' : ''}${selected ? ' is-selected-review-decision' : ''}${entry.presentationState === 'current' ? ' is-current' : ''}`;
+      token.dataset.frameIndex = String(entry.frameIndex ?? '');
+      if (entry.presentationState === 'current') token.setAttribute('aria-current', 'step');
+      if (entry.itemKind === 'transition') {
+        const cards = (entry.cards || []).map((card) => card.token).join(' ');
+        token.textContent = `${t(entry.labelKey)}${cards ? ` ${cards}` : ''}`;
+      } else {
+        const amount = Number.isSafeInteger(entry.amountMilliBb)
+          ? ` ${formatCanonicalBb(entry.amountMilliBb)}`
+          : '';
+        token.textContent = `${entry.position || replayActorLabel(entry)} ${t(entry.actionLabelKey)}${amount}`;
+      }
+      if (reviewMode) {
+        token.setAttribute('aria-label', t('Review replay frame {current}', {
+          current: entry.frameIndex + 1
+        }));
+        token.addEventListener('click', () => stepActiveHandReviewReplay('select', entry.frameIndex));
+      }
       section.appendChild(token);
     }
     root.appendChild(section);
   }
-  const marker = document.createElement('span');
-  marker.className = 'full-hand-timeline-marker';
-  marker.setAttribute('aria-current', 'step');
-  marker.textContent = replayMarkerLabel(timeline.currentMarker);
-  root.appendChild(marker);
+  if (!reviewMode || timeline.showCurrentMarker) {
+    const marker = document.createElement('span');
+    marker.className = 'full-hand-timeline-marker';
+    marker.setAttribute('aria-current', 'step');
+    marker.textContent = replayMarkerLabel(timeline.currentMarker);
+    root.appendChild(marker);
+  }
 }
 
 function dispatchFullHandTrainingTable(snapshot, {
@@ -8117,7 +8786,8 @@ function dispatchFullHandTrainingTable(snapshot, {
   if (!table || !mount || !snapshot?.state) return false;
   if (table.parentElement !== mount) mount.appendChild(table);
   mount.hidden = false;
-  mount.dataset.replayMode = 'live';
+  const reviewActive = review || app.handReview.source === 'training_full_hand';
+  mount.dataset.replayMode = reviewActive ? 'review' : 'live';
   const transition = previousSnapshot && event
     ? callTrainingServiceBridge('createFullHandTableTransition', {
       previousSnapshot,
@@ -8131,7 +8801,7 @@ function dispatchFullHandTrainingTable(snapshot, {
     || callTrainingServiceBridge('createFullHandTablePresence', snapshot);
   if (!tablePresence) return false;
   const tablePresentation = callTrainingServiceBridge('createFullHandTablePresentation', snapshot, {
-    review,
+    review: reviewActive,
     submissionLocked: app.training.lifecycle === 'grading'
       || app.training.lifecycle === 'automating',
     tablePresence
@@ -8194,12 +8864,14 @@ function trainingSessionLength() {
 }
 
 function clearTrainingSessionCompletion() {
+  if (app.handReview.source === 'training_full_hand') {
+    closeActiveHandReview({ returnToEndpoint: false });
+  }
   app.training.practiceSession = null;
   app.training.fullHandSnapshot = null;
   if ($('#trainingSessionCompletion')) $('#trainingSessionCompletion').hidden = true;
   if ($('#trainingSessionCompletionText')) $('#trainingSessionCompletionText').textContent = '';
   if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = true;
-  if ($('#trainingFullHandReview')) $('#trainingFullHandReview').hidden = true;
   if ($('#trainingReviewHand')) $('#trainingReviewHand').setAttribute('aria-expanded', 'false');
   app.training.fullHandReviewIndex = 0;
   const nextBtn = $('#trainingNextHandBtn');
@@ -8408,8 +9080,12 @@ function setTrainingWorkspaceState(state) {
   if ($('#trainingGenerating')) $('#trainingGenerating').hidden = state !== 'generating';
   if ($('#trainingError')) $('#trainingError').hidden = state !== 'error';
   if ($('#trainingExerciseSurface')) {
-    $('#trainingExerciseSurface').hidden = !['automating', 'ready', 'grading', 'feedback']
-      .includes(state);
+    const activeFullHandReview = state === 'terminal'
+      && app.handReview.source === 'training_full_hand';
+    $('#trainingExerciseSurface').hidden = !(
+      ['automating', 'ready', 'grading', 'feedback'].includes(state)
+      || activeFullHandReview
+    );
   }
   if ($('#trainingFeedback')) {
     $('#trainingFeedback').hidden = trainingSessionMode() === 'full_hand' || state !== 'feedback';
@@ -9103,7 +9779,6 @@ function renderFullHandAutomationSnapshot(snapshot, {
   if ($('#trainingFeedback')) $('#trainingFeedback').hidden = true;
   if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
   if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = true;
-  if ($('#trainingFullHandReview')) $('#trainingFullHandReview').hidden = true;
   renderFullHandPresentationStatus(cue, snapshot);
 }
 
@@ -9354,7 +10029,6 @@ function renderFullHandAwaitingHero(snapshot) {
   if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
   if ($('#trainingFeedback')) $('#trainingFeedback').hidden = true;
   if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = true;
-  if ($('#trainingFullHandReview')) $('#trainingFullHandReview').hidden = true;
   const nextBtn = $('#trainingNextHandBtn');
   if (nextBtn) nextBtn.hidden = true;
   updateTrainingButtons(exercise);
@@ -9399,128 +10073,6 @@ function fullHandTerminalResultCopy(snapshot) {
     : t('Hand ended by fold. Hero result: {result}.', { result: signed });
 }
 
-function fullHandReviewGradeLabel(grade, strategyResult) {
-  return trainingGradePresentation(grade, strategyResult);
-}
-
-function renderFullHandReviewCards(target, cards, emptyLabel) {
-  if (!target) return;
-  target.replaceChildren();
-  if (!Array.isArray(cards) || cards.length === 0) {
-    const empty = document.createElement('span');
-    empty.className = 'training-no-board';
-    empty.textContent = t(emptyLabel);
-    target.appendChild(empty);
-    return;
-  }
-  cards.forEach((card) => {
-    const item = document.createElement('span');
-    item.className = 'training-readonly-card riverline-card';
-    item.dataset.cardSize = 'standard';
-    item.setAttribute('role', 'img');
-    item.setAttribute('aria-label', displayCard(card));
-    item.innerHTML = cardMarkup(card);
-    target.appendChild(item);
-  });
-}
-
-function renderFullHandReviewDecision(review, requestedIndex = app.training.fullHandReviewIndex) {
-  const decisions = review?.decisions || [];
-  if (decisions.length === 0) return null;
-  const index = Math.min(decisions.length - 1, Math.max(0, requestedIndex));
-  const decision = decisions[index];
-  const context = decision.decisionContext;
-  const evaluation = decision.evaluation?.answerEvaluation || null;
-  app.training.fullHandReviewIndex = index;
-  if ($('#trainingFullHandReviewProgress')) {
-    $('#trainingFullHandReviewProgress').textContent = `${index + 1} / ${decisions.length}`;
-  }
-  if ($('#trainingFullHandReviewDecisionTitle')) {
-    $('#trainingFullHandReviewDecisionTitle').textContent = t('Hero Decision {number} · {street}', {
-      number: index + 1,
-      street: t(decision.street.charAt(0).toUpperCase() + decision.street.slice(1)),
-    });
-  }
-  if ($('#trainingFullHandReviewPrevious')) $('#trainingFullHandReviewPrevious').disabled = index === 0;
-  if ($('#trainingFullHandReviewNext')) $('#trainingFullHandReviewNext').disabled = index === decisions.length - 1;
-  renderFullHandReviewCards($('#trainingFullHandReviewHeroCards'), decision.heroCards, 'Cards unavailable');
-  renderFullHandReviewCards($('#trainingFullHandReviewBoardCards'), decision.board, 'No board cards yet');
-  const actionType = decision.chosenAction?.type;
-  const actionLabel = actionType ? trainingActionLabel(actionType, context) : 'Unavailable';
-  const actionAmount = ['bet', 'raise'].includes(actionType)
-    ? decision.chosenAction.amountToMilliBb
-    : actionType === 'all_in'
-      ? decision.chosenActionResult?.streetContributionAfterMilliBb
-      : actionType === 'call' ? decision.chosenActionResult?.committedMilliBb : null;
-  if ($('#trainingFullHandReviewAction')) {
-    $('#trainingFullHandReviewAction').textContent = ['bet', 'raise'].includes(actionType)
-      ? t('{action} to {amount}', {
-          action: t(actionLabel),
-          amount: fullHandBbLabel(actionAmount),
-        })
-      : Number.isSafeInteger(actionAmount)
-        ? t('{action} {amount}', {
-            action: t(actionLabel),
-            amount: fullHandBbLabel(actionAmount),
-          })
-        : t(actionLabel);
-  }
-  if ($('#trainingFullHandReviewGrade')) {
-    $('#trainingFullHandReviewGrade').textContent = fullHandReviewGradeLabel(
-      decision.grade,
-      decision.strategyResult,
-    );
-  }
-  const sizingWasChosen = ['bet', 'raise'].includes(actionType);
-  if ($('#trainingFullHandReviewSizingGradeFact')) {
-    $('#trainingFullHandReviewSizingGradeFact').hidden = !sizingWasChosen;
-  }
-  if ($('#trainingFullHandReviewSizingGrade')) {
-    $('#trainingFullHandReviewSizingGrade').textContent = t('Not compared');
-  }
-  if ($('#trainingFullHandReviewSizingNote')) {
-    $('#trainingFullHandReviewSizingNote').hidden = !sizingWasChosen;
-  }
-  if ($('#trainingFullHandReviewCommitted')) {
-    $('#trainingFullHandReviewCommitted').textContent = fullHandBbLabel(
-      decision.chosenActionResult?.committedMilliBb,
-    );
-  }
-  if ($('#trainingFullHandReviewPot')) $('#trainingFullHandReviewPot').textContent = `${context.potBb.toFixed(1)} bb`;
-  if ($('#trainingFullHandReviewStack')) {
-    $('#trainingFullHandReviewStack').textContent = `${(decision.canonicalFacts.heroCurrentStackMilliBb / 1000).toFixed(1)} bb`;
-  }
-  if ($('#trainingFullHandReviewFacing')) $('#trainingFullHandReviewFacing').textContent = formatTrainingFacingCopy(context);
-  if ($('#trainingFullHandReviewCallPrice')) {
-    $('#trainingFullHandReviewCallPrice').textContent = Number.isFinite(context.callAmountBb)
-      ? `${context.callAmountBb.toFixed(1)} bb` : t('Unavailable');
-  }
-  if ($('#trainingFullHandReviewReplay')) {
-    $('#trainingFullHandReviewReplay').textContent = t('Event {event} · action {action}', {
-      event: decision.replayPoint.eventSequence,
-      action: decision.replayPoint.actionSequence,
-    });
-  }
-  if ($('#trainingFullHandReviewSource')) {
-    const reviewPolicy = strategyClaimPolicy(decision.strategyResult);
-    $('#trainingFullHandReviewSource').textContent = strategySourceDisplayLabel(decision.strategyResult);
-    $('#trainingFullHandReviewSource').title = [
-      strategyPolicySummary(reviewPolicy),
-      localizedStrategyLimitation(reviewPolicy),
-    ].filter(Boolean).join(' ');
-  }
-  renderTrainingFrequencyReference(
-    $('#trainingFullHandReviewFrequencyStack'),
-    $('#trainingFullHandReviewFrequencyRows'),
-    trainingStrategyResultToPresentation(decision.strategyResult),
-    evaluation,
-  );
-  if ($('#trainingFullHandOpenAnalysis')) {
-    $('#trainingFullHandOpenAnalysis').dataset.decisionOrdinal = String(decision.decisionOrdinal);
-  }
-  return decision;
-}
-
 function renderFullHandTerminal(snapshot) {
   app.training.fullHandSnapshot = snapshot;
   app.training.lifecycle = 'terminal';
@@ -9561,7 +10113,6 @@ function renderFullHandTerminal(snapshot) {
   if ($('#trainingDecisionNumber')) $('#trainingDecisionNumber').hidden = true;
   if ($('#trainingNextHandBtn')) $('#trainingNextHandBtn').hidden = true;
   if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
-  if ($('#trainingFullHandReview')) $('#trainingFullHandReview').hidden = true;
   if ($('#trainingReviewHand')) $('#trainingReviewHand').setAttribute('aria-expanded', 'false');
   app.training.fullHandReviewIndex = 0;
 }
@@ -9658,27 +10209,30 @@ function toggleFullHandTrainingReview() {
   if (trainingSessionMode() !== 'full_hand') return;
   const review = callTrainingServiceBridge('getFullHandReview');
   if (!review || review.status !== 'ready') return;
-  const surface = $('#trainingFullHandReview');
-  const button = $('#trainingReviewHand');
-  if (!surface || !button) return;
-  surface.hidden = false;
-  button.setAttribute('aria-expanded', 'true');
-  renderFullHandReviewDecision(review, app.training.fullHandReviewIndex);
+  app.handReview.source = 'training_full_hand';
+  app.handReview.selectedDecisionIndex = null;
+  const model = refreshActiveHandReviewModel();
+  if (!model?.selectedDecision) return null;
+  selectActiveHandReviewDecision(model.selectedDecisionIndex);
   setFullHandTrainingPhase('review');
+  if ($('#trainingExerciseSurface')) $('#trainingExerciseSurface').hidden = false;
   dispatchFullHandTrainingTable(app.training.fullHandSnapshot, { review: true });
-  surface.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
-}
-
-function stepFullHandTrainingReview(delta) {
-  const review = callTrainingServiceBridge('getFullHandReview');
-  if (!review || review.status !== 'ready') return null;
-  return renderFullHandReviewDecision(review, app.training.fullHandReviewIndex + delta);
+  const rendered = renderActiveHandReview();
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  $('#handReviewSurface')?.scrollIntoView?.({
+    behavior: reducedMotion ? 'auto' : 'smooth',
+    block: 'start'
+  });
+  return rendered;
 }
 
 async function openFullHandDecisionInAnalysis() {
+  const selectedIndex = app.handReview.source === 'training_full_hand'
+    ? app.handReview.model?.selectedDecisionIndex
+    : app.training.fullHandReviewIndex;
   const handoff = callTrainingServiceBridge(
     'createFullHandAnalysisHandoff',
-    app.training.fullHandReviewIndex,
+    selectedIndex,
   );
   if (!handoff?.scenarioInput || !handoff?.decisionContext) return null;
   callPlaybookStateBridge('setMode', PLAYBOOK_MODES.SCENARIO, handoff.scenarioInput);

@@ -10,7 +10,10 @@ import {
 import { createTrainingPresentationModel } from './training-presentation.mjs';
 import { createTrainingSessionIntent } from './training-practice-planner.mjs';
 import { createTablePresenceViewModel } from './table-presence-view-model.mjs';
-import { createTablePresenceTransitionMotion } from './replay-projection-controller.mjs';
+import {
+  createReplayProjectionController,
+  createTablePresenceTransitionMotion,
+} from './replay-projection-controller.mjs';
 import { createReplayTimelineViewModel } from './replay-timeline-view-model.mjs';
 import {
   TABLE_INTERACTIONS,
@@ -34,6 +37,20 @@ export function installTrainingModeBridge(browserWindow, {
   fullHandController = createFullHandTrainingSessionController(),
 } = {}) {
   if (!browserWindow) return null;
+  const fullHandReviewReplayController = createReplayProjectionController();
+  let fullHandReviewReplayHandId = null;
+  const ensureFullHandReviewReplay = () => {
+    const review = fullHandController.getReview();
+    if (!review || review.status !== 'ready' || !review.replaySource) return null;
+    if (fullHandReviewReplayHandId !== review.handId) {
+      fullHandReviewReplayController.replaceFromCanonicalHandReplaySource(
+        review.replaySource,
+        { readOnly: true },
+      );
+      fullHandReviewReplayHandId = review.handId;
+    }
+    return fullHandReviewReplayController.getProjection();
+  };
   const bridge = Object.freeze({
     createConfigFromLegacyCompatibility(input) {
       return createTrainingConfigFromLegacyCompatibility(input);
@@ -64,6 +81,8 @@ export function installTrainingModeBridge(browserWindow, {
     },
     startFullHand(input, options) {
       controller.reset();
+      fullHandReviewReplayController.clear();
+      fullHandReviewReplayHandId = null;
       return fullHandController.start(input, options);
     },
     answerFullHand(decisionId, actionInput) {
@@ -77,6 +96,25 @@ export function installTrainingModeBridge(browserWindow, {
     },
     getFullHandReview() {
       return fullHandController.getReview();
+    },
+    getFullHandReviewReplayProjection() {
+      return ensureFullHandReviewReplay();
+    },
+    selectFullHandReviewFrame(frameIndex) {
+      if (!ensureFullHandReviewReplay()) return null;
+      return fullHandReviewReplayController.selectFrame(frameIndex);
+    },
+    previousFullHandReviewFrame() {
+      if (!ensureFullHandReviewReplay()) return null;
+      return fullHandReviewReplayController.previous();
+    },
+    nextFullHandReviewFrame() {
+      if (!ensureFullHandReviewReplay()) return null;
+      return fullHandReviewReplayController.next();
+    },
+    returnFullHandReviewToEndpoint() {
+      if (!ensureFullHandReviewReplay()) return null;
+      return fullHandReviewReplayController.returnToEndpoint();
     },
     getFullHandSizingModel() {
       const snapshot = fullHandController.getSnapshot();
@@ -101,10 +139,13 @@ export function installTrainingModeBridge(browserWindow, {
       submissionLocked = false,
       tablePresence: suppliedTablePresence = null,
     } = {}) {
-      const tablePresence = suppliedTablePresence || createTablePresenceViewModel({
-        state: snapshot?.state ?? null,
-        heroPlayerId: snapshot?.heroPlayerId ?? null,
-      });
+      const reviewReplayProjection = review ? ensureFullHandReviewReplay() : null;
+      const tablePresence = reviewReplayProjection?.tablePresence
+        || suppliedTablePresence
+        || createTablePresenceViewModel({
+          state: snapshot?.state ?? null,
+          heroPlayerId: snapshot?.heroPlayerId ?? null,
+        });
       const terminal = snapshot?.status === 'terminal' || tablePresence.status === 'terminal';
       const heroDecision = snapshot?.status === 'awaiting_hero' && snapshot.currentDecision;
       const projection = review || terminal ? TABLE_PROJECTIONS.REVIEW : TABLE_PROJECTIONS.PLAY;
@@ -126,12 +167,12 @@ export function installTrainingModeBridge(browserWindow, {
         visualState,
         interaction,
         tablePresence,
-        timeline: snapshot?.state
+        timeline: reviewReplayProjection?.timeline || (snapshot?.state
           ? createReplayTimelineViewModel({
             state: snapshot.state,
             heroPlayerId: snapshot.heroPlayerId,
           })
-          : null,
+          : null),
         legalActionSpec,
         chipUnitMilliBb: snapshot?.state?.game?.chipUnitMilliBb ?? null,
         submissionLocked,
@@ -179,6 +220,8 @@ export function installTrainingModeBridge(browserWindow, {
       return fullHandController.createAnalysisHandoff(decisionOrdinal);
     },
     resetFullHand() {
+      fullHandReviewReplayController.clear();
+      fullHandReviewReplayHandId = null;
       return fullHandController.reset();
     },
     answer(exerciseId, chosenActionType) {
@@ -188,6 +231,8 @@ export function installTrainingModeBridge(browserWindow, {
       return controller.getSnapshot();
     },
     reset() {
+      fullHandReviewReplayController.clear();
+      fullHandReviewReplayHandId = null;
       fullHandController.reset();
       return controller.reset();
     },

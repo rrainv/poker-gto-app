@@ -1,18 +1,15 @@
 # Riverline Roadmap
 
-<<<<<<< Updated upstream
-Last refreshed: August 23, 2026 (`ROADMAP-SYNC-003`).
-=======
-Last refreshed: August 23, 2026 (`TABLE-PRESENCE-002` accepted implementation checkpoint).
->>>>>>> Stashed changes
+Last refreshed: August 23, 2026 (`FULL-HAND-REVIEW-001` implementation checkpoint).
 
 This roadmap is directional, not a rigid waterfall. `CURRENT_PHASE.md` is the authoritative current checkpoint/resume map; `PRODUCT_BACKLOG.md` preserves detailed future capability; code, tests, accepted ticket reports, manual QA, and explicit product decisions override planning prose.
 
 ## Product north star
 
-<<<<<<< Updated upstream
 Riverline is becoming a **personal poker learning workstation** rather than a generic solver shell.
-=======
+
+Its established product foundation includes:
+
 - canonical PokerState/action/evaluator/Equity authority and Scenario-versus-Hand separation;
 - `DecisionContext v1`, one `StrategyProvider v1` / `StrategyResult v1`, and an honestly labelled deterministic heuristic fallback;
 - canonical Training convergence and `PERF-001`;
@@ -22,8 +19,8 @@ Riverline is becoming a **personal poker learning workstation** rather than a ge
 - `HOME-002A` account-aware My Riverline foundation and detached Saved Hand Replay reopening;
 - reusable tutorial foundation and current-app coverage;
 - `RANGE-CORE-001` canonical combo-level weighted range foundation;
-- `ANALYSIS-RANGE-001` range-aware Analysis/structural outs checkpoint.
->>>>>>> Stashed changes
+- `ANALYSIS-RANGE-001` range-aware Analysis/structural outs checkpoint;
+- one shared decision-by-decision completed-hand review workflow through `FULL-HAND-REVIEW-001`, with exact pre-action Replay frames, source-gated comparisons, truthful limitations, and exact Analyze/Save handoffs.
 
 The long-term loop is:
 
@@ -39,15 +36,13 @@ Play a hand
   -> return to play with better context
 ```
 
-<<<<<<< Updated upstream
 Reference strategy, Personal Strategy, and observed behavior remain distinct semantic roles.
 
 ## Established foundation — COMPLETED / CHECKPOINTED
-=======
 1. **COMPLETED — `TABLE-PRESENCE-REF-001`.** Competitive reference and implementation boundaries are accepted.
 2. **COMPLETED — `TABLE-PRESENCE-002` accepted implementation checkpoint.** The premium adaptive table, Hero decision composition, canonical sizing tray, completed/review foundation, Replay timeline/direct seek, localization, 1,720/1,720 Node baseline, and bounded Firefox matrix are present. Remaining visual/browser sampling stays open in QA and the return queue.
-3. **ACTIVE NEXT — `FULL-HAND-REVIEW-001`.** Deliver the richer decision-by-decision post-hand learning workflow by reusing the accepted table projection, timeline, direct seek, hand-complete composition, and Replay integration—not by rebuilding them.
-4. **PLANNED NEXT — `AUDIO-MOTION-001`.** Add restrained purposeful feedback after Full Hand Review, preserving reduced motion and the analytical no-casino aesthetic.
+3. **COMPLETED — `FULL-HAND-REVIEW-001` implementation checkpoint.** Hand and Full Hand Training converge on one derived review model and surface with exact pre-action Replay synchronization, truthful source semantics, Analyze/Save/Repeat/Next routing, responsive EN/RU/HE/RTL presentation, and focused automated coverage. Independent human Firefox acceptance remains routed through QA and the return queue.
+4. **ACTIVE NEXT — `AUDIO-MOTION-001`.** Add restrained purposeful feedback after Full Hand Review, preserving reduced motion and the analytical no-casino aesthetic.
 5. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`.** Close the bounded premium-product checkpoint after Audio/Motion without silently absorbing unrelated manual QA.
 6. **PLANNED NEXT — trusted bounded reference pack/provider.** Validate a narrow reference source and declared capabilities behind `StrategyProvider`.
 7. **PLANNED NEXT — Training Memory / re-drill.** Establish canonical persistent learning history and targeted review.
@@ -56,11 +51,9 @@ Reference strategy, Personal Strategy, and observed behavior remain distinct sem
 10. **SHELVED FOR LATER — opponent policies/bots.** Keep automated opponents behind the higher-priority learning sequence.
 
 Reassess after every accepted checkpoint; when priority or subsystem state changes, the authoritative roadmap/resume/backlog documents move together.
->>>>>>> Stashed changes
 
 The project now has a materially stronger foundation than the August 17 roadmap reflected:
 
-<<<<<<< Updated upstream
 - canonical PokerState/action/legality/accounting/evaluator/Equity authority;
 - Scenario-versus-Hand separation;
 - one `DecisionContext` / `StrategyProvider` / `StrategyResult` path;
@@ -83,7 +76,6 @@ The project now has a materially stronger foundation than the August 17 roadmap 
 The deterministic heuristic remains generalized comparative fallback, not solved GTO.
 
 ## Near-term priority sequence
-=======
 - **Personal Strategy — CHECKPOINTED / INTENTIONALLY INCOMPLETE:** `002B`, `002C`, `002D`, Builder, and Teacher foundations are present; resume at independent review `002R`, then the ordered Personal Strategy integration ticket after Training Memory/re-drill.
 - **Training intelligence — PLANNED NEXT:** after the trusted bounded reference pack/provider, add persistent mistakes, review/re-drill, adaptive/spaced study, expanded filters, saved drills, mastery, session summaries/trends, Home/Replay integration, and opt-in profile evidence.
 - **Range tools — PRESERVED FUTURE:** canonical combo-level Range Builder, sparse Range Teacher/Profiler, range-vs-range tools, Compare Spots, and Saved Ranges.
@@ -94,19 +86,17 @@ The deterministic heuristic remains generalized comparative fallback, not solved
 
 ## Premium presentation branch
 
-The premium adaptive table, dealer/chip physicality, Hero action dock, and projection foundation are completed by `TABLE-PRESENCE-002`. `AUDIO-MOTION-001` is planned after Full Hand Review and must remain restrained and reduced-motion-safe. Physical card trajectories, stack-to-bet and pot-collection animation, detailed denominations, fake 3D table treatment, elaborate showdown/reveal motion, and ambience remain **SHELVED FOR LATER** unless a later bounded ticket explicitly approves them.
->>>>>>> Stashed changes
+The premium adaptive table, dealer/chip physicality, Hero action dock, projection foundation, and completed-hand review workflow are completed by `TABLE-PRESENCE-002` and `FULL-HAND-REVIEW-001`. `AUDIO-MOTION-001` is active next and must remain restrained and reduced-motion-safe. Physical card trajectories, stack-to-bet and pot-collection animation, detailed denominations, fake 3D table treatment, elaborate showdown/reveal motion, and ambience remain **SHELVED FOR LATER** unless a later bounded ticket explicitly approves them.
 
-### Phase A — visible full-hand / table experience burst — ACTIVE NEXT
+### Phase A — visible full-hand / table experience burst
 
-<<<<<<< Updated upstream
-1. **`TABLE-PRESENCE-REF-001` — ACTIVE NEXT**
+1. **`TABLE-PRESENCE-REF-001` — COMPLETED**
    - bounded competitive-reference/design pass;
    - GTO Wizard primary benchmark, DTO/PokerSnowie/APT secondary where useful;
    - ADOPT / ADAPT / DIFFERENTIATE / REJECT decisions;
    - implementation-grade design for adaptive HU/short-handed/6-max/full-ring table projection, action dock, hand timeline, completed-hand state, and post-hand review entry.
 
-2. **`TABLE-PRESENCE-002` — PLANNED NEXT / FUN BUILD**
+2. **`TABLE-PRESENCE-002` — COMPLETED IMPLEMENTATION CHECKPOINT**
    - adaptive table geometry by player count;
    - stronger table scale/presence and seat hierarchy;
    - restrained felt/rail physicality;
@@ -116,14 +106,14 @@ The premium adaptive table, dealer/chip physicality, Hero action dock, and proje
    - distinct live versus completed-hand composition;
    - first-pass timeline integration where canonical seams already support it.
 
-3. **`FULL-HAND-REVIEW-001` — PLANNED NEXT if not fully absorbed by 002**
+3. **`FULL-HAND-REVIEW-001` — COMPLETED IMPLEMENTATION CHECKPOINT**
    - promote canonical hand timeline;
    - concise hand-complete state;
    - review/replay/repeat/save/next actions;
    - selected-reference identity and truthful limitations;
    - no fake EV or unsupported correctness.
 
-4. **`AUDIO-MOTION-001` — PLANNED NEXT**
+4. **`AUDIO-MOTION-001` — ACTIVE NEXT**
    - semantic poker-world event layer versus application-motion layer;
    - restrained card/chip/action/street cues;
    - actor/street/hand-complete motion;
@@ -137,7 +127,7 @@ The premium adaptive table, dealer/chip physicality, Hero action dock, and proje
    - EN/RU/HE + RTL + themes/density/cards;
    - resolve high-value remaining UI QA instead of introducing more customization systems.
 
-**The next "fun stuff" starts immediately after `TABLE-PRESENCE-REF-001`.** The reference ticket is intentionally short; `TABLE-PRESENCE-002` is the next substantial visible implementation.
+The table/reference/review sequence is checkpointed. Remaining independent visual acceptance stays in QA and the return queue; it is not silently treated as closed.
 
 ### Phase B — trusted reference strategy
 
@@ -270,6 +260,5 @@ Do not allow:
 - preserved future ideas to sneak into active tickets without explicit scope.
 
 Reassess after every clean checkpoint.
-=======
-The current explicit priority is: Full Hand Review, then restrained Audio/Motion, then Premium Closeout; afterward come a trusted bounded reference pack/provider, Training Memory/re-drill, Personal Strategy integration, `HOME-002B`, and only later opponent policies/bots. Detailed accepted ideas remain in `PRODUCT_BACKLOG.md` and must not depend on chat memory. This roadmap is not a parallel status system: accepted checkpoint changes must be reflected here, in `CURRENT_PHASE.md`, and in the dynamic backlog together.
->>>>>>> Stashed changes
+
+The current explicit priority is: restrained Audio/Motion, then Premium Closeout; afterward come a trusted bounded reference pack/provider, Training Memory/re-drill, Personal Strategy integration, `HOME-002B`, and only later opponent policies/bots. Detailed accepted ideas remain in `PRODUCT_BACKLOG.md` and must not depend on chat memory. This roadmap is not a parallel status system: accepted checkpoint changes must be reflected here, in `CURRENT_PHASE.md`, and in the dynamic backlog together.
