@@ -51,6 +51,17 @@ When applicable:
 - compute time and spend are recorded
 - no unsupported GTO/equilibrium claim is made
 
+## Checkpoint / return-queue discipline
+
+A checkpoint may be accepted before a subsystem is fully finished, but unfinished work must be durable and owned.
+
+- any `CHECKPOINTED / INTENTIONALLY INCOMPLETE` outcome must create or update a row in `PRODUCT_RETURN_QUEUE.md` unless the report explicitly proves there is no remaining acceptance/debt
+- known bugs accepted at checkpoint must stay open in `QA_BACKLOG.md` and be summarized in the return queue when they materially affect subsystem completion or release
+- unavailable manual/browser/live-provider validation must not disappear from planning simply because structural tests are green
+- deliberate temporary strategy/reference limitations need an explicit future owner/trigger when they matter to product quality
+- the return queue is reconciled against `QA_BACKLOG.md`, `CURRENT_PHASE.md`, and `PRODUCT_BACKLOG.md` at roadmap syncs and before beta/release planning
+- return items close only with accepted implementation, human/manual acceptance, live-provider validation, or explicit product-scope removal
+
 ## Report and Git
 
 - significant files changed are listed
@@ -58,5 +69,6 @@ When applicable:
 - manual/browser result is listed
 - backlog IDs are marked closed/partial/deferred/regressed
 - known limitations and next owner are stated
+- checkpoint/return-queue items are created, updated, closed, or explicitly declared unaffected
 - Git diff/status distinguishes ticket and pre-existing changes
 - nothing was staged or committed by the agent unless explicitly authorized
