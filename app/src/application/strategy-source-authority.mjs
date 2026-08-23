@@ -120,6 +120,18 @@ export const STRATEGY_LIMITATIONS = deepFreeze({
     message: 'Facing a 4-bet uses a broad fallback estimate rather than a validated reference tree.',
     priority: 89,
   },
+  heuristic_preflop_role_shared_fallback: {
+    code: 'heuristic_preflop_role_shared_fallback',
+    messageKey: 'The exact preflop role is preserved, but its frequencies use a shared generalized fallback.',
+    message: 'The exact preflop role is preserved, but its frequencies use a shared generalized fallback.',
+    priority: 91,
+  },
+  heuristic_preflop_role_unknown: {
+    code: 'heuristic_preflop_role_unknown',
+    messageKey: 'The exact preflop role is unavailable in this lossy context, so a broad fallback is used.',
+    message: 'The exact preflop role is unavailable in this lossy context, so a broad fallback is used.',
+    priority: 93,
+  },
   heuristic_postflop_position_ignored: {
     code: 'heuristic_postflop_position_ignored',
     messageKey: 'The postflop fallback does not adjust for in-position or out-of-position play.',
@@ -345,6 +357,40 @@ export function heuristicContextLimitationCodes(decisionContext) {
     : Number.isFinite(decisionContext.potBb);
   const codes = [];
   if (street === 'preflop') {
+    const heroPrevious = String(
+      prior?.heroPreviousVoluntaryActionFamily || '',
+    ).toLowerCase();
+    const exactRoleFacts = Number.isInteger(prior?.distinctAggressorCount)
+      && Number.isInteger(prior?.aggressionCount)
+      && Number.isInteger(prior?.limperCount)
+      && !['', 'unknown', 'not_applicable'].includes(heroPrevious);
+    if (!exactRoleFacts) {
+      codes.push('heuristic_preflop_role_unknown');
+    } else {
+      const blindVersusBlind = prior.aggressionCount === 1
+        && decisionContext.heroPosition === 'BB'
+        && (prior.initialAggressorPosition === 'SB'
+          || (decisionContext.tableSize === 2
+            && prior.initialAggressorPosition === 'BTN'));
+      const coldFourBetOpportunity = prior.aggressionCount === 2
+        && heroPrevious === 'none'
+        && prior.heroActionWouldBeCold === true;
+      const openerFacingColdFourBet = prior.aggressionCount === 3
+        && heroPrevious === 'open'
+        && prior.latestAggressionWasCold === true
+        && prior.distinctAggressorCount === 3;
+      const threeBettorFacingColdFourBet = prior.aggressionCount === 3
+        && heroPrevious === 'three_bet'
+        && prior.latestAggressionWasCold === true
+        && prior.distinctAggressorCount === 3;
+      const limperFacingIsolation = prior.aggressionCount === 1
+        && heroPrevious === 'limp';
+      if (blindVersusBlind || coldFourBetOpportunity
+        || openerFacingColdFourBet || threeBettorFacingColdFourBet
+        || limperFacingIsolation) {
+        codes.push('heuristic_preflop_role_shared_fallback');
+      }
+    }
     if ((Number.isInteger(prior?.limperCount) && prior.limperCount > 0)
       || lastAction === 'check'
       || (decisionContext.heroPosition === 'BB'

@@ -611,7 +611,7 @@ function validateDecisionContextSnapshot(context, derivation) {
       context.priorActionSummary,
       'DecisionContext.priorActionSummary',
     );
-    requireExactKeys(summary, [
+    const baseSummaryKeys = [
       'lastActionFamily',
       'lastActorPosition',
       'facingActionFamily',
@@ -619,7 +619,20 @@ function validateDecisionContextSnapshot(context, derivation) {
       'aggressionCount',
       'limperCount',
       'aggressorPosition',
-    ], 'DecisionContext.priorActionSummary');
+    ];
+    const roleSummaryKeys = [
+      'heroPreviousVoluntaryActionFamily',
+      'initialAggressorPosition',
+      'distinctAggressorCount',
+      'latestAggressionWasCold',
+      'heroActionWouldBeCold',
+    ];
+    const carriesRoleFacts = roleSummaryKeys.some((key) => Object.hasOwn(summary, key));
+    requireExactKeys(
+      summary,
+      carriesRoleFacts ? [...baseSummaryKeys, ...roleSummaryKeys] : baseSummaryKeys,
+      'DecisionContext.priorActionSummary',
+    );
     requireString(summary.lastActionFamily, 'DecisionContext.priorActionSummary.lastActionFamily', 32);
     requireString(
       summary.facingActionFamily,
@@ -627,15 +640,37 @@ function validateDecisionContextSnapshot(context, derivation) {
       32,
     );
     requireString(summary.aggressionFamily, 'DecisionContext.priorActionSummary.aggressionFamily', 32);
-    for (const field of ['lastActorPosition', 'aggressorPosition']) {
+    for (const field of [
+      'lastActorPosition',
+      'aggressorPosition',
+      ...(carriesRoleFacts ? ['initialAggressorPosition'] : []),
+    ]) {
       if (summary[field] !== null) {
         requireString(summary[field], `DecisionContext.priorActionSummary.${field}`, 16);
       }
     }
-    for (const field of ['aggressionCount', 'limperCount']) {
+    for (const field of [
+      'aggressionCount',
+      'limperCount',
+      ...(carriesRoleFacts ? ['distinctAggressorCount'] : []),
+    ]) {
       if (summary[field] !== null
         && (!Number.isInteger(summary[field]) || summary[field] < 0)) {
         throw new RangeError(`DecisionContext.priorActionSummary.${field} must be non-negative or null`);
+      }
+    }
+    if (carriesRoleFacts) {
+      requireString(
+        summary.heroPreviousVoluntaryActionFamily,
+        'DecisionContext.priorActionSummary.heroPreviousVoluntaryActionFamily',
+        32,
+      );
+      for (const field of ['latestAggressionWasCold', 'heroActionWouldBeCold']) {
+        if (summary[field] !== null && typeof summary[field] !== 'boolean') {
+          throw new TypeError(
+            `DecisionContext.priorActionSummary.${field} must be boolean or null`,
+          );
+        }
       }
     }
 

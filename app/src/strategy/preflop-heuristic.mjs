@@ -35,6 +35,45 @@ export const PREFLOP_DECISION_FAMILIES = Object.freeze({
   BB_OPTION: 'bb_option',
 });
 
+export const PREFLOP_DECISION_ROLES = Object.freeze({
+  UNOPENED_RFI: 'unopened_rfi',
+  ISOLATION_OPPORTUNITY: 'isolation_opportunity',
+  BB_OPTION_AFTER_LIMPS: 'bb_option_after_limps',
+  COLD_RESPONSE_TO_OPEN: 'cold_response_to_open',
+  BLIND_VS_BLIND_RESPONSE_TO_SB_OPEN: 'blind_vs_blind_response_to_sb_open',
+  OPENED_FACING_THREE_BET: 'opened_facing_three_bet',
+  COLD_FOUR_BET_OPPORTUNITY: 'cold_four_bet_opportunity',
+  THREE_BETTOR_FACING_FOUR_BET: 'three_bettor_facing_four_bet',
+  THREE_BETTOR_FACING_COLD_FOUR_BET: 'three_bettor_facing_cold_four_bet',
+  OPENER_FACING_COLD_FOUR_BET: 'opener_facing_cold_four_bet',
+  LIMPER_FACING_ISOLATION: 'limper_facing_isolation',
+  FOUR_BET_OR_MORE_UNCLASSIFIED: 'four_bet_or_more_unclassified',
+  UNKNOWN: 'unknown',
+});
+
+export const PREFLOP_ROLE_FALLBACK_CALIBRATIONS = Object.freeze({
+  [PREFLOP_DECISION_ROLES.UNOPENED_RFI]: PREFLOP_DECISION_FAMILIES.RFI,
+  [PREFLOP_DECISION_ROLES.ISOLATION_OPPORTUNITY]: PREFLOP_DECISION_FAMILIES.LIMPED,
+  [PREFLOP_DECISION_ROLES.BB_OPTION_AFTER_LIMPS]: PREFLOP_DECISION_FAMILIES.BB_OPTION,
+  [PREFLOP_DECISION_ROLES.COLD_RESPONSE_TO_OPEN]: PREFLOP_DECISION_FAMILIES.VERSUS_OPEN,
+  [PREFLOP_DECISION_ROLES.BLIND_VS_BLIND_RESPONSE_TO_SB_OPEN]:
+    PREFLOP_DECISION_FAMILIES.VERSUS_OPEN,
+  [PREFLOP_DECISION_ROLES.OPENED_FACING_THREE_BET]:
+    PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET,
+  [PREFLOP_DECISION_ROLES.COLD_FOUR_BET_OPPORTUNITY]:
+    PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET,
+  [PREFLOP_DECISION_ROLES.THREE_BETTOR_FACING_FOUR_BET]:
+    PREFLOP_DECISION_FAMILIES.VERSUS_FOUR_BET_OR_MORE,
+  [PREFLOP_DECISION_ROLES.THREE_BETTOR_FACING_COLD_FOUR_BET]:
+    PREFLOP_DECISION_FAMILIES.VERSUS_FOUR_BET_OR_MORE,
+  [PREFLOP_DECISION_ROLES.OPENER_FACING_COLD_FOUR_BET]:
+    PREFLOP_DECISION_FAMILIES.VERSUS_FOUR_BET_OR_MORE,
+  [PREFLOP_DECISION_ROLES.LIMPER_FACING_ISOLATION]:
+    PREFLOP_DECISION_FAMILIES.VERSUS_OPEN,
+  [PREFLOP_DECISION_ROLES.FOUR_BET_OR_MORE_UNCLASSIFIED]:
+    PREFLOP_DECISION_FAMILIES.VERSUS_FOUR_BET_OR_MORE,
+});
+
 function bounded(value, minimum, maximum) {
   return Math.min(maximum, Math.max(minimum, value));
 }
@@ -462,7 +501,7 @@ function strategyAction(type, amountBb = null) {
   return { type, amountBb, potFraction: null };
 }
 
-export function preflopDecisionFamilyFor(decisionContext) {
+function legacyPreflopDecisionFamilyFor(decisionContext) {
   const summary = decisionContext?.priorActionSummary;
   const aggressionFamily = String(summary?.aggressionFamily || '').toLowerCase();
   const limperCount = Number(summary?.limperCount);
@@ -493,9 +532,123 @@ export function preflopDecisionFamilyFor(decisionContext) {
     : PREFLOP_DECISION_FAMILIES.RFI;
 }
 
-function preflopAggressiveLabel(family) {
+function hasExactPreflopRoleFacts(decisionContext) {
+  const summary = decisionContext?.priorActionSummary;
+  if (decisionContext?.street !== 'preflop'
+    || !summary
+    || !Number.isInteger(summary.aggressionCount)
+    || summary.aggressionCount < 0
+    || !Number.isInteger(summary.limperCount)
+    || summary.limperCount < 0
+    || !Number.isInteger(summary.distinctAggressorCount)
+    || summary.distinctAggressorCount < 0
+    || ['unknown', 'not_applicable', ''].includes(
+      String(summary.heroPreviousVoluntaryActionFamily || '').toLowerCase(),
+    )) {
+    return false;
+  }
+  if (summary.aggressionCount === 0) {
+    return summary.distinctAggressorCount === 0
+      && summary.initialAggressorPosition === null
+      && summary.latestAggressionWasCold === null
+      && summary.heroActionWouldBeCold === null;
+  }
+  return typeof summary.initialAggressorPosition === 'string'
+    && summary.initialAggressorPosition.length > 0
+    && typeof summary.aggressorPosition === 'string'
+    && summary.aggressorPosition.length > 0
+    && summary.distinctAggressorCount > 0
+    && typeof summary.latestAggressionWasCold === 'boolean'
+    && typeof summary.heroActionWouldBeCold === 'boolean';
+}
+
+export function preflopDecisionRoleFor(decisionContext) {
+  if (!hasExactPreflopRoleFacts(decisionContext)) {
+    return PREFLOP_DECISION_ROLES.UNKNOWN;
+  }
+
+  const summary = decisionContext.priorActionSummary;
+  const aggressionCount = summary.aggressionCount;
+  const heroPrevious = String(summary.heroPreviousVoluntaryActionFamily).toLowerCase();
+  const heroPosition = String(decisionContext.heroPosition || '');
+
+  if (aggressionCount === 0) {
+    if (summary.limperCount > 0) {
+      const exactFreeOption = heroPosition === 'BB' && decisionContext.callAmountBb === 0;
+      return exactFreeOption
+        ? PREFLOP_DECISION_ROLES.BB_OPTION_AFTER_LIMPS
+        : PREFLOP_DECISION_ROLES.ISOLATION_OPPORTUNITY;
+    }
+    return PREFLOP_DECISION_ROLES.UNOPENED_RFI;
+  }
+
+  if (aggressionCount === 1) {
+    if (heroPrevious === 'limp') {
+      return PREFLOP_DECISION_ROLES.LIMPER_FACING_ISOLATION;
+    }
+    if (heroPrevious === 'none' && summary.heroActionWouldBeCold) {
+      const blindVersusBlindOpen = heroPosition === 'BB'
+        && (summary.initialAggressorPosition === 'SB'
+          || (decisionContext.tableSize === 2
+            && summary.initialAggressorPosition === 'BTN'));
+      return blindVersusBlindOpen
+        ? PREFLOP_DECISION_ROLES.BLIND_VS_BLIND_RESPONSE_TO_SB_OPEN
+        : PREFLOP_DECISION_ROLES.COLD_RESPONSE_TO_OPEN;
+    }
+    return PREFLOP_DECISION_ROLES.UNKNOWN;
+  }
+
+  if (aggressionCount === 2) {
+    if (heroPrevious === 'open' && summary.initialAggressorPosition === heroPosition) {
+      return PREFLOP_DECISION_ROLES.OPENED_FACING_THREE_BET;
+    }
+    if (heroPrevious === 'none'
+      && summary.heroActionWouldBeCold
+      && summary.distinctAggressorCount === 2) {
+      return PREFLOP_DECISION_ROLES.COLD_FOUR_BET_OPPORTUNITY;
+    }
+    return PREFLOP_DECISION_ROLES.UNKNOWN;
+  }
+
+  if (aggressionCount === 3) {
+    if (heroPrevious === 'open'
+      && summary.initialAggressorPosition === heroPosition
+      && summary.latestAggressionWasCold
+      && summary.distinctAggressorCount === 3) {
+      return PREFLOP_DECISION_ROLES.OPENER_FACING_COLD_FOUR_BET;
+    }
+    if (heroPrevious === 'three_bet'
+      && summary.latestAggressionWasCold === false
+      && summary.distinctAggressorCount === 2) {
+      return PREFLOP_DECISION_ROLES.THREE_BETTOR_FACING_FOUR_BET;
+    }
+    if (heroPrevious === 'three_bet'
+      && summary.latestAggressionWasCold
+      && summary.distinctAggressorCount === 3) {
+      return PREFLOP_DECISION_ROLES.THREE_BETTOR_FACING_COLD_FOUR_BET;
+    }
+  }
+
+  return PREFLOP_DECISION_ROLES.FOUR_BET_OR_MORE_UNCLASSIFIED;
+}
+
+export function preflopFallbackCalibrationFor(decisionContext, decisionRole = null) {
+  const role = decisionRole ?? preflopDecisionRoleFor(decisionContext);
+  return PREFLOP_ROLE_FALLBACK_CALIBRATIONS[role]
+    ?? legacyPreflopDecisionFamilyFor(decisionContext);
+}
+
+// Compatibility export: historical callers use "decision family" to mean the
+// numeric fallback curve. Exact strategic identity is exposed separately by
+// preflopDecisionRoleFor() and StrategyResult.details.decisionRole.
+export function preflopDecisionFamilyFor(decisionContext) {
+  return preflopFallbackCalibrationFor(decisionContext);
+}
+
+function preflopAggressiveLabel(family, decisionRole) {
   if (family === PREFLOP_DECISION_FAMILIES.RFI) return 'Open';
   if (family === PREFLOP_DECISION_FAMILIES.LIMPED) return 'Isolate';
+  if (decisionRole === PREFLOP_DECISION_ROLES.LIMPER_FACING_ISOLATION) return 'Raise';
   if (family === PREFLOP_DECISION_FAMILIES.VERSUS_OPEN) return '3-Bet';
   if (family === PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET) return '4-Bet';
   return 'Raise';
@@ -588,7 +741,12 @@ export function calculatePreflopHeuristic(decisionContext) {
 
   const lastAction = String(decisionContext.lastAction || 'unopened').toLowerCase();
   const facingSizeBb = Number(decisionContext.facingSizeBb) || 0;
-  const decisionFamily = preflopDecisionFamilyFor(decisionContext);
+  const decisionRole = preflopDecisionRoleFor(decisionContext);
+  const fallbackCalibration = preflopFallbackCalibrationFor(
+    decisionContext,
+    decisionRole,
+  );
+  const decisionFamily = fallbackCalibration;
   const stackFacts = preflopStrategicStackFacts(decisionContext);
   const exactCurrentPot = decisionContext.contractVersion === 'decision-context/v1.1'
     && Number.isFinite(decisionContext.currentPotBb)
@@ -631,7 +789,7 @@ export function calculatePreflopHeuristic(decisionContext) {
   const aggressiveAction = preflopAggressiveAction(decisionContext, decisionFamily);
   const aggressiveLabel = aggressiveAction?.type === 'all_in'
     ? 'All-In'
-    : preflopAggressiveLabel(decisionFamily);
+    : preflopAggressiveLabel(decisionFamily, decisionRole);
   const facesAggression = [
     PREFLOP_DECISION_FAMILIES.VERSUS_OPEN,
     PREFLOP_DECISION_FAMILIES.VERSUS_THREE_BET,
@@ -711,6 +869,9 @@ export function calculatePreflopHeuristic(decisionContext) {
       stackCapActionProjectionApplied: callReachesStackCap,
       dominatedFoldSuppressionApplied,
       tableFamilyPosition,
+      decisionRole,
+      actualRole: decisionRole,
+      fallbackCalibration,
       decisionFamily,
       priorActionSummaryApplied: decisionContext.priorActionSummary !== undefined,
       limperCount: decisionFamily === PREFLOP_DECISION_FAMILIES.LIMPED

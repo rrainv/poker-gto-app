@@ -104,6 +104,13 @@ effective stack, and legal-action sizes. Every mapped discrepancy must carry the
 actual Riverline value, reference solution value, and a note. An unverified or
 incomplete mapping falls back to `DIRECTIONAL_ONLY`.
 
+For canonical preflop nodes, the DecisionContext also preserves Hero's previous
+voluntary action family, initial/latest aggressor position, distinct aggressor
+count, and cold-action semantics. Collectors and future benchmark comparisons
+must not treat a shared superficial label such as "facing 3-bet" or "facing
+4-bet" as sufficient tree identity when these facts differ. A lossy Scenario
+with unavailable role facts cannot be upgraded to exact by matching sizes alone.
+
 Unknown rake, pot, price, or effective stack prevents an exact result. A reference
 node explicitly marked unsupported is `INCOMPARABLE`; the runner never fills it
 from another game family.
@@ -300,7 +307,23 @@ EQUITY: no comparable observations
 DIAGNOSIS EQUITY_UNAVAILABLE_STRATEGY_FAR=2
 ```
 
-## 12. Proprietary-data and production-reference boundaries
+`tests/fixtures/preflop-role001-fixtures.mjs` separately provides Riverline-owned
+canonical semantic fixtures for BB versus BTN open 2.5, BB versus SB open 3.5,
+cold-4-bet opportunity, opener facing a cold 4-bet, and limper facing isolation.
+They contain no external frequencies and are not a reference pack.
+
+## 12. Strategic identity lesson
+
+Two nodes can share a superficial action label while representing different
+ranges, player roles, and action trees. BB versus BTN open is not BB versus SB
+open; an opener responding to a 3-bet is not a cold-4-bet actor; an ordinary
+heads-up four-bet response is not an opener facing a third player's cold 4-bet;
+and a limper responding to isolation is not an uninvested player facing an open.
+Riverline must preserve these distinctions before reference calibration. Similar
+aggregate range width or reuse of a generalized fallback never proves that the
+nodes are strategically interchangeable.
+
+## 13. Proprietary-data and production-reference boundaries
 
 The tooling must not automate login, scrape, crawl, bulk-export paid matrices, or
 reconstruct a proprietary strategy database. This ticket does not change the
@@ -315,4 +338,3 @@ redistribution, fallback, and claim-policy review.
 
 The first recommended manual collection is specified in
 `REFERENCE_BENCHMARK_FIRST_CAPTURE_PLAN.md`.
-

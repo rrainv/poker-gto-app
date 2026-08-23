@@ -388,6 +388,13 @@ function scenarioPriorActionSummary(street, lastAction) {
     aggressionCount: count,
     limperCount: street === STREETS.PREFLOP && action === 'unopened' ? 0 : null,
     aggressorPosition: null,
+    heroPreviousVoluntaryActionFamily: street === STREETS.PREFLOP
+      ? 'unknown'
+      : 'not_applicable',
+    initialAggressorPosition: null,
+    distinctAggressorCount: null,
+    latestAggressionWasCold: null,
+    heroActionWouldBeCold: null,
   };
 }
 
@@ -568,6 +575,31 @@ export function deriveDecisionContextFromPlaybookScenario(scenarioInput) {
       'scenario_aggressor_position_unavailable',
     ),
   );
+  if (street === STREETS.PREFLOP) {
+    derivationEvents.push(
+      unavailableDecisionContextField(
+        'priorActionSummary.heroPreviousVoluntaryActionFamily',
+        'scenario_hero_preflop_action_role_unavailable',
+        'unknown',
+      ),
+      unavailableDecisionContextField(
+        'priorActionSummary.initialAggressorPosition',
+        'scenario_initial_aggressor_position_unavailable',
+      ),
+      unavailableDecisionContextField(
+        'priorActionSummary.distinctAggressorCount',
+        'scenario_distinct_aggressor_count_unavailable',
+      ),
+      unavailableDecisionContextField(
+        'priorActionSummary.latestAggressionWasCold',
+        'scenario_cold_aggression_semantics_unavailable',
+      ),
+      unavailableDecisionContextField(
+        'priorActionSummary.heroActionWouldBeCold',
+        'scenario_cold_aggression_semantics_unavailable',
+      ),
+    );
+  }
   if (priorActionSummary.aggressionCount === null) {
     derivationEvents.push(unavailableDecisionContextField(
       'priorActionSummary.aggressionCount',

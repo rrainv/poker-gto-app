@@ -136,6 +136,33 @@ The built-in heuristic is deterministic, versioned, known-provenance, generalize
 
 The v3 preflop source preserves the v2 unopened table-family correction and adds broad, separate response-family curves for limped pots, facing an open, facing a 3-bet, facing a 4-bet-or-more, and the BB option. Canonical v1.1 contexts use `currentPotBb`, live Hero/effective stack facts, `priorActionSummary`, and legal aggression facts; legacy `stackBb`/`potBb` remain base-v1 compatibility only.
 
+`PREFLOP-ROLE-001` separates exact decision identity from those numeric curves.
+`StrategyResult.details.decisionRole` / `actualRole` carries one stable role ID,
+while `fallbackCalibration` (and the compatibility `decisionFamily`) names the
+existing generalized curve used for probabilities:
+
+| Exact role | Fallback calibration |
+|---|---|
+| `unopened_rfi` | `rfi` |
+| `isolation_opportunity` | `limped` |
+| `bb_option_after_limps` | `bb_option` |
+| `cold_response_to_open` | `versus_open` |
+| `blind_vs_blind_response_to_sb_open` | `versus_open` |
+| `opened_facing_three_bet` | `versus_three_bet` |
+| `cold_four_bet_opportunity` | `versus_three_bet` |
+| `three_bettor_facing_four_bet` | `versus_four_bet_or_more` |
+| `three_bettor_facing_cold_four_bet` | `versus_four_bet_or_more` |
+| `opener_facing_cold_four_bet` | `versus_four_bet_or_more` |
+| `limper_facing_isolation` | `versus_open` |
+| `four_bet_or_more_unclassified` | `versus_four_bet_or_more` |
+| `unknown` | legacy compatible family route |
+
+The shared mapping is explicit and limitation-coded. In particular, BB versus a
+BTN open and BB versus an SB open remain numerically shared for now but no longer
+have the same semantic identity. A cold 4-bet opportunity retains that role even
+while using the broad facing-3-bet curve. No row is a calibrated chart or solver
+claim.
+
 The v3 postflop source keeps its seeded conditional sampler and existing hand/board signals. It uses exact `currentPotBb` and HU `effectiveStackBb / currentPotBb`, applies one bounded position/SPR/history aggression-to-passive reallocation, disables a fake scalar SPR adjustment in multiway pots, projects away illegal aggression, and abstains rather than manufacturing price-sensitive behavior without exact decision economics. Legal bounds are not sizing recommendations, and postflop actions remain unsized.
 
 It does not authorize solved GTO, Nash, equilibrium, proven optimality, objective correctness, exact exploitability, exact EV loss, calibrated confidence, or validated population-truth claims.
@@ -154,8 +181,17 @@ Codes cover:
 - postflop facing wager and facing raise;
 - multiway postflop shared-range fallback;
 - facing a wager without exact `callAmountBb` and v1.1 `currentPotBb`.
+- an exact preflop role using a shared generalized calibration;
+- exact preflop role facts being unavailable in a lossy context.
 
 The remaining generalized-context codes do not retune heuristic probabilities or grading math. The missing-price code instead accompanies an unsupported, unavailable result. Training shows a compact high-priority context note. Analyze exposes the limitation through provenance/warnings. Matrix keeps one workspace-level precision/coverage summary rather than cell disclaimers.
+
+Training continues to generate the same legal target distribution, but its
+curriculum metadata now records the realized exact role and fallback calibration
+separately from generic target labels such as `preflop_facing_4bet`. The current
+generic facing-4-bet trajectory can realize
+`three_bettor_facing_cold_four_bet`; it is not relabeled as an ordinary heads-up
+four-bet response.
 
 ## 9. Consumer audit and resulting semantics
 

@@ -151,11 +151,34 @@ as unavailable rather than recomputing betting rules.
   `null`;
 - `aggressorPosition`: latest canonical current-street aggressor position or
   `null`.
+- `heroPreviousVoluntaryActionFamily`: canonical preflop Hero role before the
+  current decision: `none`, `check`, `limp`, `call`, `open`, `three_bet`, or
+  `four_bet_or_more`; postflop is `not_applicable`. An aggressive all-in uses
+  its aggression-depth family and a non-aggressive all-in uses `limp`/`call`.
+- `initialAggressorPosition`: first canonical preflop aggressor position or
+  `null` when there has been no voluntary aggression.
+- `distinctAggressorCount`: exact number of distinct canonical preflop
+  aggressors. This differs from `aggressionCount`, which counts wager
+  increases.
+- `latestAggressionWasCold`: for a canonical preflop re-raise, whether its actor
+  had no earlier non-fold action in the street; the first open is `false`, and
+  no aggression/postflop is `null`.
+- `heroActionWouldBeCold`: when Hero faces preflop aggression, whether Hero has
+  no earlier non-fold action in the street; no aggression/postflop is `null`.
 
 A preflop call before voluntary aggression is a limp. A call after aggression,
 and every postflop call, remains a call. The legacy `lastAction` field is not
 redefined, so existing probabilities stay unchanged until a later strategy
 ticket consumes this summary.
+
+These additive facts are the bounded `PREFLOP-ROLE-001` representation. They do
+not embed action records, provider labels, solver node IDs, or a second history
+authority. Canonical Hand derives them only from current-street
+`PokerState.actionHistory`. Scenario cannot establish Hero action role,
+aggressor identity/count, or cold-action semantics from its single prior-action
+category, so it uses `unknown`/`null` plus `unavailable` derivation events. A
+Scenario's legacy category may still select the same generalized compatibility
+fallback, but it does not become exact role evidence.
 
 ## 7. Scenario versus Hand evidence
 
@@ -165,6 +188,11 @@ bounds, and action summary. Scenario provides only its explicit snapshot
 categories, configured stack, cards, board, explicitly supplied pot, and
 compatible rules projection. It does not gain
 canonical history by having the same visible values.
+
+For preflop role identity specifically, only canonical Hand provides exact Hero
+prior-action, initial/latest aggressor, distinct-aggressor, and cold-action
+facts. Scenario keeps all five unavailable even when `lastAction` proves a
+bounded aggression-depth category.
 
 When both sources genuinely contain the same fact, their value is semantically
 equivalent. A missing Scenario current pot, call price, live stacks, opponent
@@ -194,10 +222,12 @@ is diagnostic metadata; normal UI does not render it yet.
 
 ## 9. Current consumer behavior
 
-StrategyProvider v1 accepts both base v1 and v1.1. The current preflop and
-postflop heuristics intentionally continue to consume only legacy fields, so
-existing supported-context probabilities and deterministic postflop samples do
-not change. Playbook/Analyze, Matrix clones, canonical Hand and Full Hand review,
+StrategyProvider v1 accepts both base v1 and v1.1. The preflop heuristic uses
+the additive role facts for exact role identity and maps each role to an honest
+existing generalized calibration family; it does not add or tune frequencies.
+Base-v1 and lossy Scenario inputs retain their legacy family route with an
+`unknown` exact role. The postflop heuristic remains unchanged. Playbook/Analyze,
+Matrix clones, canonical Hand and Full Hand review,
 regular Training, Saved Spot, Replay-resolved review, Range Analysis, Bluff
 Analysis, and AnalysisExplanation receive or preserve the additive context.
 Personal Strategy remains a separate evidence authority and receives no new

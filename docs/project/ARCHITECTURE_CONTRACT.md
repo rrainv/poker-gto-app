@@ -89,6 +89,11 @@ bounded semantic prior-action facts, and compact derivation provenance. Scenario
 keeps facts unavailable when it lacks canonical seat, stack, legality, price, or
 history evidence. Existing providers remain valid and may ignore additive fields.
 
+The bounded history includes additive preflop-role facts for Hero's prior
+voluntary action, initial/latest aggressor identity, distinct aggressor count,
+and cold-action semantics. These facts come only from canonical Hand history;
+lossy Scenario inputs must not infer them from a broad prior-action label.
+
 See `DECISION_CONTEXT_SPEC.md` for precise field and evidence semantics.
 
 Pot-odds or commitment math must use `callAmountBb`, not `facingSizeBb`.

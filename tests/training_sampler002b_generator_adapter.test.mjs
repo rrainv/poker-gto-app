@@ -543,7 +543,7 @@ test('002B direct generation remains deterministic with additive StrategyResult 
   assert.equal(Object.hasOwn(result.exercise.generationMetadata, 'scenarioRequest'), false);
   assert.equal(
     createHash('sha256').update(JSON.stringify(result)).digest('hex'),
-    '1b6ce29f3a83a599e540274aa568950db482fbf062d48cab5b311c8161ca3c37',
+    'df1f0d77baf3a6cfbb8d63ac3288e457f727a4a65c04621714db1072ad084a11',
   );
 });
 

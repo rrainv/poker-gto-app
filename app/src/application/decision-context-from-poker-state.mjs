@@ -121,18 +121,41 @@ function aggressionFamily(street, count) {
   return 'raise';
 }
 
+function preflopVoluntaryActionFamily(record, aggressionBefore) {
+  if (!record) return 'none';
+  if (isAggressiveRecord(record)) {
+    if (aggressionBefore === 0) return 'open';
+    if (aggressionBefore === 1) return 'three_bet';
+    return 'four_bet_or_more';
+  }
+  if (record.submittedAction.type === ACTION_TYPES.ALL_IN) {
+    return aggressionBefore === 0 ? 'limp' : 'call';
+  }
+  return semanticActionFamily(record, aggressionBefore);
+}
+
 function priorActionSummary(state, legalActions) {
   const records = currentStreetRecords(state);
   let aggressionCount = 0;
   let limperCount = 0;
+  let initialAggressive = null;
   let latestAggressive = null;
+  let latestAggressionWasCold = null;
   let lastFamily = 'none';
+  let heroPreviousVoluntaryActionFamily = 'none';
+  const voluntaryActorIds = new Set();
+  const aggressiveActorIds = new Set();
 
   for (const record of records) {
     const aggressionBefore = aggressionCount;
     if (isAggressiveRecord(record)) {
+      if (initialAggressive === null) initialAggressive = record;
+      latestAggressionWasCold = aggressionBefore === 0
+        ? false
+        : !voluntaryActorIds.has(record.playerId);
       aggressionCount += 1;
       latestAggressive = record;
+      aggressiveActorIds.add(record.playerId);
     }
     if (record.street === STREETS.PREFLOP
       && record.submittedAction.type === ACTION_TYPES.CALL
@@ -140,6 +163,15 @@ function priorActionSummary(state, legalActions) {
       limperCount += 1;
     }
     lastFamily = semanticActionFamily(record, aggressionBefore);
+    if (state.street === STREETS.PREFLOP && record.playerId === state.actingPlayerId) {
+      heroPreviousVoluntaryActionFamily = preflopVoluntaryActionFamily(
+        record,
+        aggressionBefore,
+      );
+    }
+    if (record.submittedAction.type !== ACTION_TYPES.FOLD) {
+      voluntaryActorIds.add(record.playerId);
+    }
   }
 
   const latestRecord = records.at(-1) ?? null;
@@ -153,6 +185,26 @@ function priorActionSummary(state, legalActions) {
     facingActionFamily = lastFamily;
   }
 
+  const preflopRoleFacts = state.street === STREETS.PREFLOP
+    ? {
+      heroPreviousVoluntaryActionFamily,
+      initialAggressorPosition: initialAggressive
+        ? playerById(state, initialAggressive.playerId)?.position ?? null
+        : null,
+      distinctAggressorCount: aggressiveActorIds.size,
+      latestAggressionWasCold,
+      heroActionWouldBeCold: aggressionCount > 0
+        ? heroPreviousVoluntaryActionFamily === 'none'
+        : null,
+    }
+    : {
+      heroPreviousVoluntaryActionFamily: 'not_applicable',
+      initialAggressorPosition: null,
+      distinctAggressorCount: null,
+      latestAggressionWasCold: null,
+      heroActionWouldBeCold: null,
+    };
+
   return {
     lastActionFamily: lastFamily,
     lastActorPosition: latestRecord
@@ -165,6 +217,7 @@ function priorActionSummary(state, legalActions) {
     aggressorPosition: latestAggressive
       ? playerById(state, latestAggressive.playerId)?.position ?? null
       : null,
+    ...preflopRoleFacts,
   };
 }
 

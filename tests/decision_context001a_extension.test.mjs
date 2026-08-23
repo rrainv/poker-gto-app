@@ -369,6 +369,11 @@ test('bounded prior-action summary preserves limp, call, aggressor, and raise de
     aggressionCount: 0,
     limperCount: 2,
     aggressorPosition: null,
+    heroPreviousVoluntaryActionFamily: 'none',
+    initialAggressorPosition: null,
+    distinctAggressorCount: 0,
+    latestAggressionWasCold: null,
+    heroActionWouldBeCold: null,
   });
 
   let threeBet = createDealtState();

@@ -876,7 +876,14 @@ function requestedStructure(request) {
   };
 }
 
-function scenarioRequestGenerationMetadata(context, environment, decisionContext, pair, attempt) {
+function scenarioRequestGenerationMetadata(
+  context,
+  environment,
+  decisionContext,
+  strategyResult,
+  pair,
+  attempt,
+) {
   if (!context) return null;
   const hero = environment.state.players.find(
     (player) => player.playerId === environment.state.actingPlayerId,
@@ -907,6 +914,10 @@ function scenarioRequestGenerationMetadata(context, environment, decisionContext
       startingStackBb: hero.startingStackMilliBb / 1000,
       street: decisionContext.street,
       targetDecisionType: pair.target,
+      ...(decisionContext.street === STREETS.PREFLOP ? {
+        decisionRole: strategyResult.details?.decisionRole ?? 'unknown',
+        fallbackCalibration: strategyResult.details?.fallbackCalibration ?? null,
+      } : {}),
       requestedSizingFamily: context.request.requestedSizingFamily,
       rulesSemanticFingerprint: environment.state.rulesSnapshot.semanticFingerprint,
       exerciseSeed: context.request.exerciseSeed,
@@ -995,6 +1006,7 @@ function buildExercise(
     scenarioRequestContext,
     environment,
     decisionContext,
+    strategyResult,
     pair,
     attempt,
   );
@@ -1038,6 +1050,10 @@ function buildExercise(
           tableSize: decisionContext.tableSize,
           facingCategory,
           actionCategory: pair.target,
+          ...(decisionContext.street === STREETS.PREFLOP ? {
+            decisionRole: strategyResult.details?.decisionRole ?? 'unknown',
+            fallbackCalibration: strategyResult.details?.fallbackCalibration ?? null,
+          } : {}),
           potType,
           stackBucket,
           handClass: null,
