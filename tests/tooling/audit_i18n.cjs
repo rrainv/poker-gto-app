@@ -13,6 +13,7 @@ const analysisTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'a
 const rangeCalibrationTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'range-calibration-translations.js');
 const homeTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'home-translations.js');
 const homeGameTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'home-game-translations.js');
+const welcomeTranslationsPath = path.join(repoRoot, 'app', 'src', 'locales', 'welcome-translations.js');
 const productSources = [
   path.join(repoRoot, 'app', 'index.html'),
   path.join(repoRoot, 'app', 'src', 'core', 'logic.js'),
@@ -61,6 +62,9 @@ function loadTranslations(
   }
   if (includeProductCatalog && fs.existsSync(homeGameTranslationsPath)) {
     vm.runInNewContext(fs.readFileSync(homeGameTranslationsPath, 'utf8'), context, { filename: homeGameTranslationsPath });
+  }
+  if (includeProductCatalog && fs.existsSync(welcomeTranslationsPath)) {
+    vm.runInNewContext(fs.readFileSync(welcomeTranslationsPath, 'utf8'), context, { filename: welcomeTranslationsPath });
   }
   vm.runInNewContext(source, context, { filename: i18nPath });
   return context.window.appTranslations;

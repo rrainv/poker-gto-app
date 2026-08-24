@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 24, 2026 (`UX-REGRESSION-001` accepted; `WELCOME-INTRO-001` active next).
+Last consolidated: August 24, 2026 (`WELCOME-INTRO-001` completed at an accepted implementation checkpoint; `WORKSPACE-COMPOSITION-002` active next).
 
 This is the one accepted capability/status record for each product domain. `CURRENT_PHASE.md` owns exact execution order; subsystem specifications own implementation semantics; `QA_BACKLOG.md` owns issue-level defects; `PRODUCT_RETURN_QUEUE.md` owns compact must-return debt.
 
@@ -25,26 +25,26 @@ Reference strategy, intended Personal Strategy, observed behavior, and opponent 
 
 ## Current delivery order
 
-`DOCS-INTEGRITY-001` and `UX-REGRESSION-001` are completed and accepted. `WELCOME-INTRO-001` is active next:
+`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, and `WELCOME-INTRO-001` are completed and accepted. `WORKSPACE-COMPOSITION-002` is active next:
 
 | Order | Status | Ticket / outcome |
 |---:|---|---|
 | checkpoint | COMPLETED | `UX-REGRESSION-001` |
-| 1 | ACTIVE NEXT | `WELCOME-INTRO-001` |
-| 2 | PLANNED NEXT | `WORKSPACE-COMPOSITION-002` |
-| 3 | PLANNED NEXT | `TABLE-PHYSICALITY-003` |
-| 4 | PLANNED NEXT | `HOME-GAME-001B` |
-| 5 | PLANNED NEXT | `SETTINGS-IA-001` |
-| 6 | PLANNED NEXT | `PREMIUM-CLOSEOUT-001` |
-| 7 | PLANNED NEXT | first trusted bounded reference pack/provider |
-| 8 | PLANNED NEXT | Training Memory / re-drill |
-| 9 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
-| 10 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
-| 11 | PLANNED LATER | `PERSONAL-INSIGHTS-001` |
-| 12 | PLANNED LATER | `RANGE-EVOLUTION-001` |
-| 13 | PLANNED LATER | `HOME-002B` Saved Study Library |
-| 14 | PRESERVED FUTURE | OpponentPolicy / bots |
-| 15 | PRESERVED FUTURE | release/mobile/social/PLO later |
+| checkpoint | COMPLETED | `WELCOME-INTRO-001` — accepted implementation checkpoint |
+| 1 | ACTIVE NEXT | `WORKSPACE-COMPOSITION-002` |
+| 2 | PLANNED NEXT | `TABLE-PHYSICALITY-003` |
+| 3 | PLANNED NEXT | `HOME-GAME-001B` |
+| 4 | PLANNED NEXT | `SETTINGS-IA-001` |
+| 5 | PLANNED NEXT | `PREMIUM-CLOSEOUT-001` |
+| 6 | PLANNED NEXT | first trusted bounded reference pack/provider |
+| 7 | PLANNED NEXT | Training Memory / re-drill |
+| 8 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
+| 9 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
+| 10 | PLANNED LATER | `PERSONAL-INSIGHTS-001` |
+| 11 | PLANNED LATER | `RANGE-EVOLUTION-001` |
+| 12 | PLANNED LATER | `HOME-002B` Saved Study Library |
+| 13 | PRESERVED FUTURE | OpponentPolicy / bots |
+| 14 | PRESERVED FUTURE | release/mobile/social/PLO later |
 
 The order is directional and may move after later accepted checkpoints. Reprioritization updates `CURRENT_PHASE.md`, `ROADMAP.md`, and affected backlog entries together.
 
@@ -174,8 +174,8 @@ Riverline remains useful offline; authentication never silently enables upload.
 | Capability | Status | Accepted scope |
 |---|---|---|
 | `UX-REGRESSION-001` | COMPLETED | Eleven owned functional, semantic, persistence, and legibility regressions closed with focused/full-suite coverage and bounded Firefox 154 acceptance; no unrelated audio or composition debt absorbed. |
-| `WELCOME-INTRO-001` | ACTIVE NEXT | Concise first-use product introduction and obvious Hand/Analyze/Train/Equity/Personal Strategy/Guide actions; first-use friendly, dismissible/remembered, non-nagging for experienced users, EN/RU/HE, accessible, not a recurring modal or giant splash. Separate from workspace tutorials. |
-| `WORKSPACE-COMPOSITION-002` | PLANNED NEXT | Whole-workspace hierarchy, dead space, presets, density, Training facts, Equity, table balance; may redesign/rename/consolidate/remove weak presets. |
+| `WELCOME-INTRO-001` | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT | Versioned local-first first-use introduction with no-flash startup selection, Hand/Analyze/Training/Equity/Personal Strategy/Home/Guide routing through existing navigation, remembered completion/dismissal, manual `Learn Riverline` reopen, EN/RU/HE, RTL, accessibility, and responsive structure. Automated gates and human Firefox/manual visual acceptance are complete, including confirmation that help discovery is obvious outside Settings. Separate from workspace tutorials and Home data. |
+| `WORKSPACE-COMPOSITION-002` | ACTIVE NEXT | Whole-workspace hierarchy, dead space, presets, density, Training facts, Equity, table balance; may redesign/rename/consolidate/remove weak presets. |
 | `TABLE-PHYSICALITY-003` | PLANNED NEXT | Better felt/table proportions, rail/depth, seat/card integration, chip stacks, contributions, central pot, restrained physical motion, and table readability over existing authorities. Reject casino scene, spectacle, confetti, fake 3D, and avatars by default. |
 | `SETTINGS-IA-001` | PLANNED NEXT | Split Settings god-menu concerns and improve help/tutorial discovery; transactional editing and immutable built-ins are already accepted. |
 | `PREMIUM-CLOSEOUT-001` | PLANNED NEXT | Whole-app hierarchy/Core Flow, Guide, desktop, themes/density/cards, EN/RU/HE/RTL, accessibility and human visual closeout. |

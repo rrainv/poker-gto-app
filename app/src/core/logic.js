@@ -7409,7 +7409,7 @@ function init() {
     
 
     if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
-    else updateContext('Ready');
+    else if (activeWorkspaceMode() !== 'welcome') updateContext('Ready');
 
   } catch (error) {
 

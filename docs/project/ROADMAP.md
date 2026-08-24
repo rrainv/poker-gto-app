@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 24, 2026 (`UX-REGRESSION-001` accepted; `WELCOME-INTRO-001` active next).
+Last refreshed: August 24, 2026 (`WELCOME-INTRO-001` completed at an accepted implementation checkpoint; `WORKSPACE-COMPOSITION-002` active next).
 
 This roadmap explains directional sequencing. `CURRENT_PHASE.md` owns the exact current checkpoint and execution order; `PRODUCT_BACKLOG.md` owns detailed accepted capability/status. The order may move after later accepted checkpoints.
 
@@ -43,12 +43,12 @@ Riverline therefore should not immediately return to deep reference/math work. I
 
 ## Current directional sequence
 
-`DOCS-INTEGRITY-001` and `UX-REGRESSION-001` are completed/accepted. `WELCOME-INTRO-001` is active next:
+`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, and `WELCOME-INTRO-001` are completed/accepted. The later roadmap order is preserved:
 
 1. **COMPLETED — `UX-REGRESSION-001`** — eleven immediate functional, semantic, persistence, and legibility regressions repaired without changing poker authority or absorbing subjective audio debt.
-2. **ACTIVE NEXT — `WELCOME-INTRO-001`** — concise first-use product orientation and obvious entry actions without a recurring modal or giant marketing splash.
-3. **`WORKSPACE-COMPOSITION-002`** — repair hierarchy, dead space, control grouping, density value, weak presets, Training facts, Equity composition, and table balance.
-4. **`TABLE-PHYSICALITY-003`** — improve the default table/felt/rail/seat/card/chip/contribution/pot/readability composition over the existing presentation/experience seams.
+2. **COMPLETED — `WELCOME-INTRO-001`** — the bounded local-first orientation passed automated gates and human Firefox/manual visual acceptance, including obvious `Learn Riverline` discovery outside Settings.
+3. **ACTIVE NEXT — `WORKSPACE-COMPOSITION-002`** — repair hierarchy, dead space, control grouping, density value, weak presets, Training facts, Equity composition, and table balance.
+4. **PLANNED NEXT — `TABLE-PHYSICALITY-003`** — improve the default table/felt/rail/seat/card/chip/contribution/pot/readability composition over the existing presentation/experience seams.
 5. **`HOME-GAME-001B`** — continue organizer management, correction history, lifecycle, import/export decision, and Firefox acceptance.
 6. **`SETTINGS-IA-001`** — decompose the Settings god menu and improve help/tutorial discovery; transactional theme editing and immutable built-ins are already repaired.
 7. **`PREMIUM-CLOSEOUT-001`** — whole-app Core Flow, Guide, responsive/theme/density/card, EN/RU/HE/RTL, accessibility, and human visual closeout.

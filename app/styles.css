@@ -13294,3 +13294,256 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"] .table-wrappe
 @media (min-width: 1600px) {
   .training-action-grid[data-action-count="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* WELCOME-INTRO-001 -------------------------------------------------------
+   Product orientation is an ephemeral projection over the existing shell.
+   Its actions delegate to the navigation registry and never own workspace
+   state, tutorial persistence, or Home dashboard data. */
+html[data-welcome-orientation="unseen"] .workspace-header,
+html[data-welcome-orientation="unseen"] .workspace-canvas,
+html[data-welcome-orientation="visible"] .workspace-header,
+html[data-welcome-orientation="visible"] .workspace-canvas {
+  display: none;
+}
+
+#welcomeOrientation[hidden] { display: none; }
+html[data-welcome-orientation="unseen"] #welcomeOrientation[hidden] { display: block; }
+
+.workspace-learn-button {
+  min-height: 38px;
+  gap: var(--space-2);
+  padding-inline: var(--space-3);
+  white-space: nowrap;
+}
+.workspace-learn-button svg,
+.welcome-job-icon svg,
+.welcome-close svg {
+  inline-size: 20px;
+  block-size: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.welcome-orientation {
+  position: relative;
+  min-width: 0;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: auto;
+  padding: clamp(var(--space-5), 3.2vh, var(--space-9)) clamp(var(--space-5), 3vw, var(--space-10));
+  background:
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--accent-primary) 13%, transparent), transparent 32%),
+    linear-gradient(145deg, color-mix(in srgb, var(--surface-elevated) 46%, var(--surface-canvas)), var(--surface-canvas) 62%);
+}
+
+.welcome-orientation-inner {
+  position: relative;
+  display: grid;
+  width: min(100%, 1420px);
+  min-height: calc(100dvh - clamp(40px, 6.4vh, 96px));
+  margin-inline: auto;
+  align-content: center;
+  gap: clamp(var(--space-5), 2.4vh, var(--space-8));
+}
+
+.welcome-close {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+}
+
+.welcome-intro {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  max-width: 1040px;
+  gap: var(--space-5);
+}
+.welcome-brand {
+  display: grid;
+  inline-size: clamp(52px, 5vw, 72px);
+  block-size: clamp(52px, 5vw, 72px);
+  place-items: center;
+  color: var(--accent-primary);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 34%, var(--border-default));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent-primary) 10%, var(--surface-panel));
+  box-shadow: var(--shadow-sm);
+}
+.welcome-brand svg { inline-size: 64%; block-size: 64%; fill: currentColor; }
+.welcome-eyebrow,
+.welcome-jobs-heading > p {
+  margin: 0 0 var(--space-2);
+  color: var(--accent-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.welcome-intro h1 {
+  max-width: 900px;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.75rem, 3vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -.035em;
+}
+.welcome-intro h1:focus { outline: none; }
+.welcome-intro h1:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--border-focus);
+  outline-offset: 5px;
+}
+.welcome-intro #welcomeDescription {
+  max-width: 920px;
+  margin: var(--space-3) 0 0;
+  color: var(--text-secondary);
+  font-size: clamp(.96rem, 1.15vw, 1.1rem);
+  line-height: 1.55;
+}
+
+.welcome-jobs { display: grid; gap: var(--space-4); }
+.welcome-jobs-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-6);
+}
+.welcome-jobs-heading h2 {
+  order: -1;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.2rem, 1.8vw, 1.55rem);
+}
+.welcome-jobs-heading > p {
+  max-width: 530px;
+  margin: 0;
+  color: var(--text-muted);
+  letter-spacing: 0;
+  line-height: 1.45;
+  text-align: end;
+  text-transform: none;
+}
+
+.welcome-job-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(var(--space-3), 1.2vw, var(--space-5));
+}
+.welcome-job-card {
+  display: grid;
+  grid-column: span 2;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 132px;
+  padding: clamp(var(--space-4), 1.25vw, var(--space-6));
+  gap: var(--space-3) var(--space-4);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-panel) 92%, transparent);
+  box-shadow: var(--shadow-sm);
+  text-align: start;
+  transition: border-color var(--motion-fast), background var(--motion-fast), transform var(--motion-fast), box-shadow var(--motion-fast);
+}
+.welcome-job-card:nth-child(n + 4) { grid-column: span 3; }
+.welcome-job-card:hover {
+  border-color: color-mix(in srgb, var(--accent-primary) 62%, var(--border-strong));
+  background: color-mix(in srgb, var(--accent-primary) 7%, var(--surface-elevated));
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.welcome-job-card:focus-visible {
+  border-color: var(--border-focus);
+  outline: 3px solid color-mix(in srgb, var(--border-focus) 32%, transparent);
+  outline-offset: 2px;
+}
+.welcome-job-icon {
+  display: grid;
+  inline-size: 38px;
+  block-size: 38px;
+  place-items: center;
+  color: var(--accent-primary);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent-primary) 10%, var(--surface-interactive));
+}
+.welcome-job-copy { display: grid; align-content: start; gap: var(--space-2); min-width: 0; }
+.welcome-job-copy strong { font-size: 1rem; line-height: 1.25; }
+.welcome-job-copy small { color: var(--text-secondary); font-size: .85rem; line-height: 1.42; }
+.welcome-job-action {
+  grid-column: 2;
+  align-self: end;
+  color: var(--accent-primary);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.welcome-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+  padding-block-start: var(--space-2);
+  border-block-start: 1px solid var(--border-subtle);
+}
+.welcome-secondary-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.welcome-preference {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 42px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.welcome-preference input { inline-size: 18px; block-size: 18px; accent-color: var(--accent-primary); }
+.welcome-preference:focus-within {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--border-focus);
+  outline-offset: 3px;
+}
+.welcome-manual-note {
+  max-width: 680px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: .88rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 1180px) {
+  .welcome-job-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .welcome-job-card,
+  .welcome-job-card:nth-child(n + 4) { grid-column: auto; min-height: 112px; }
+  .welcome-job-card:last-child { grid-column: 1 / -1; }
+  .welcome-footer { align-items: flex-start; }
+}
+
+@media (max-height: 800px) and (min-width: 821px) {
+  .welcome-orientation { padding-block: var(--space-4); }
+  .welcome-orientation-inner {
+    min-height: calc(100dvh - (2 * var(--space-4)));
+    gap: var(--space-4);
+  }
+  .welcome-intro h1 { font-size: clamp(1.6rem, 2.4vw, 2.3rem); }
+  .welcome-job-card { min-height: 100px; padding: var(--space-4); }
+  .welcome-job-copy small { font-size: .8rem; }
+}
+
+@media (max-width: 820px) {
+  .workspace-learn-button span { display: none; }
+  .workspace-learn-button { inline-size: 40px; padding: 0; justify-content: center; }
+  .welcome-orientation { padding: var(--space-5) var(--space-4); }
+  .welcome-orientation-inner { align-content: start; }
+  .welcome-jobs-heading { display: grid; }
+  .welcome-jobs-heading > p { text-align: start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-job-card { transition: none; }
+  .welcome-job-card:hover { transform: none; }
+}

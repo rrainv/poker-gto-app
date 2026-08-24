@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 24, 2026 (`UX-REGRESSION-001` accepted; `WELCOME-INTRO-001` active next).
+Last refreshed: August 24, 2026 (`WELCOME-INTRO-001` completed at an accepted implementation checkpoint; `WORKSPACE-COMPOSITION-002` active next).
 
 Code, tests, accepted ticket reports, manual QA, and explicit product decisions override this snapshot. `PRODUCT_BACKLOG.md` preserves detailed future capability; subsystem specs remain authoritative for implementation semantics.
 
@@ -49,9 +49,9 @@ Code, tests, accepted ticket reports, manual QA, and explicit product decisions 
    - readable picker/known cards, one-row board, balanced Training actions, and materially larger Table Focus targets are durable presentation invariants;
    - no unrelated audio, workspace-composition, Settings IA, or table-physicality work was absorbed.
 
-7. **ACTIVE NEXT — `WELCOME-INTRO-001`** — concise first-use product orientation and obvious major-job entry actions; not a recurring modal or per-workspace tutorial replacement.
+7. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT — `WELCOME-INTRO-001`** — versioned local-first first-use orientation, five canonical major-job routes, remembered completion/dismissal, no-flash startup selection, manual `Learn Riverline` reopen, Guide continuity, EN/RU/HE, RTL, accessibility, and responsive structure passed the 1,784/1,784 Node gate and human Firefox/manual visual acceptance. Human acceptance also confirmed that `Learn Riverline` help discovery is genuinely obvious outside Settings.
 
-8. **PLANNED NEXT — `WORKSPACE-COMPOSITION-002`** — hierarchy, dead space, presets, density, scanability, Equity/Training/table composition.
+8. **ACTIVE NEXT — `WORKSPACE-COMPOSITION-002`** — hierarchy, dead space, presets, density, scanability, Equity/Training/table composition.
 
 9. **PLANNED NEXT — `TABLE-PHYSICALITY-003`** — improve default table/felt/rail/seat/card/chip/pot/readability quality over existing presentation/experience authorities; no casino spectacle.
 
@@ -224,7 +224,7 @@ Current foundation includes:
 - reusable poker-chip primitive;
 - reduced-motion-safe restrained movement.
 
-The richer visual branch is checkpointed through `TABLE-PRESENCE-REF-001`, `TABLE-PRESENCE-002`, `FULL-HAND-REVIEW-001`, `AUDIO-MOTION-001`, and the accepted `UX-REGRESSION-001` repair. `WELCOME-INTRO-001` is active next; the ordered visible sequence then runs from `WORKSPACE-COMPOSITION-002` through `PREMIUM-CLOSEOUT-001` before trusted reference work resumes.
+The richer visual branch is checkpointed through `TABLE-PRESENCE-REF-001`, `TABLE-PRESENCE-002`, `FULL-HAND-REVIEW-001`, `AUDIO-MOTION-001`, the accepted `UX-REGRESSION-001` repair, and the accepted `WELCOME-INTRO-001` orientation. The active ordered visible sequence now runs from `WORKSPACE-COMPOSITION-002` through `PREMIUM-CLOSEOUT-001` before trusted reference work resumes.
 
 Preserve the no-casino aesthetic. `TABLE-PHYSICALITY-003` is real planned work for better default proportions, rail/depth, seat/card integration, chip stacks, contributions, pot composition, restrained motion, and readability. It does not authorize detailed denomination claims, fake cinematic 3D, avatars by default, casino scenery, spectacle, or confetti. Default quality comes before more customization.
 

@@ -51,8 +51,8 @@ test('Home and saved viewers expose accessible actions, error states, RTL copy, 
   }
 });
 
-test('Home initialization stays cheap and Playbook initializes only when opened', () => {
-  assert.match(logic, /if \(activeWorkspaceMode\(\) === 'home'\) void refreshHomeWorkspace\(\);[\s\S]*?else updateContext\('Ready'\)/);
+test('Home initialization stays cheap, Welcome does no hidden workspace work, and Playbook initializes only when opened', () => {
+  assert.match(logic, /if \(activeWorkspaceMode\(\) === 'home'\) void refreshHomeWorkspace\(\);[\s\S]*?else if \(activeWorkspaceMode\(\) !== 'welcome'\) updateContext\('Ready'\)/);
   assert.match(logic, /if \(mode === 'home'\) \{[\s\S]*?refreshHomeWorkspace\(\)/);
   assert.match(logic, /else if \(!app\.playbookResolution && !activeSavedSpotContext\)[\s\S]*?updateContext\('Playbook opened'\)/);
 });

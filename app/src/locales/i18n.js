@@ -1945,6 +1945,12 @@ if (window.riverlineTutorialTranslations) {
   });
 }
 
+if (window.riverlineWelcomeTranslations) {
+  Object.entries(window.riverlineWelcomeTranslations).forEach(([language, entries]) => {
+    if (appTranslations[language]) Object.assign(appTranslations[language], entries);
+  });
+}
+
 // DESIGN-008 static Training workspace copy. Dynamic exercise facts remain
 // presentation data and are translated only where an existing poker term is available.
 const trainingWorkspaceTranslations = {

@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 24, 2026 (`UX-REGRESSION-001` accepted; `WELCOME-INTRO-001` active next).
+Last refreshed: August 24, 2026 (`WELCOME-INTRO-001` completed at an accepted implementation checkpoint; `WORKSPACE-COMPOSITION-002` active next).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -53,23 +53,22 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 
 ## Current execution snapshot
 
-`DOCS-INTEGRITY-001` and `UX-REGRESSION-001` are completed/accepted. The directional order is:
+`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, and `WELCOME-INTRO-001` are completed/accepted. The directional order is:
 
-1. **ACTIVE NEXT — `WELCOME-INTRO-001`**
-2. `WORKSPACE-COMPOSITION-002`
-3. `TABLE-PHYSICALITY-003`
-4. `HOME-GAME-001B`
-5. `SETTINGS-IA-001`
-6. `PREMIUM-CLOSEOUT-001`
-7. first trusted bounded reference pack/provider
-8. Training Memory / re-drill
-9. `PERSONAL-STRATEGY-002R`
-10. Personal Strategy provider/reference/observed integration
-11. `PERSONAL-INSIGHTS-001`
-12. `RANGE-EVOLUTION-001`
-13. `HOME-002B` Saved Study Library
-14. OpponentPolicy / bots
-15. release/mobile/social/PLO later
+1. **ACTIVE NEXT — `WORKSPACE-COMPOSITION-002`**
+2. **PLANNED NEXT — `TABLE-PHYSICALITY-003`**
+3. `HOME-GAME-001B`
+4. `SETTINGS-IA-001`
+5. `PREMIUM-CLOSEOUT-001`
+6. first trusted bounded reference pack/provider
+7. Training Memory / re-drill
+8. `PERSONAL-STRATEGY-002R`
+9. Personal Strategy provider/reference/observed integration
+10. `PERSONAL-INSIGHTS-001`
+11. `RANGE-EVOLUTION-001`
+12. `HOME-002B` Saved Study Library
+13. OpponentPolicy / bots
+14. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
