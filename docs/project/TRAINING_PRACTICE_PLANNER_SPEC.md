@@ -1,8 +1,10 @@
 # Training Practice Planner specification
 
+Status: implemented through `TRAINING-SAMPLER-002A`, `TRAINING-SAMPLER-002B`, `TRAINING-SIZING-DIVERSITY-001`, and the Varied/Focused Training foundation.
+
 ## Purpose and authority boundary
 
-`TRAINING-SAMPLER-002A` adds a DOM-free deterministic planning layer that asks:
+The Training sampler program adds a DOM-free deterministic planning layer that asks:
 
 > What kind of Training decision should Riverline ask next?
 
@@ -12,15 +14,16 @@ The authority chain is:
 TrainingSessionIntent v1
         -> TrainingPracticePlanner
         -> TrainingScenarioRequest v1
-        -> deferred 002B generator adapter
+        -> strict 002B generator adapter
         -> canonical Training generator
 ```
 
 The planner selects only a structural target envelope. It does not construct
 cards, actions, button/seat assignments, bets, raises, pots, stacks after
-actions, PokerState, DecisionContext, StrategyResult, or grades. The existing
-canonical Training generator remains the only legal-trajectory authority and
-is unchanged by 002A.
+actions, PokerState, DecisionContext, StrategyResult, or grades. The canonical
+Training generator remains the only legal-trajectory authority. Current Varied
+and Focused sessions consume this planner/adapter foundation; Full Hand Training
+remains a separate visible-hand mode.
 
 ## Contracts
 
@@ -190,23 +193,24 @@ there is no wall clock; adjacent seeds do not share the generator's weak first
 draw; and no canonical generator RNG value is consumed. Final ties use the
 mixed unsigned value and then the fixed candidate key.
 
-## Deferred to TRAINING-SAMPLER-002B
+## Implemented generator adapter and product integration
 
-002B must own all integration work:
+`TRAINING-SAMPLER-002B` owns the integration boundary and now:
 
-1. map every planner target value exactly to the canonical generator target
-   vocabulary and fail on drift;
-2. create a candidate-specific validated Game Rules snapshot whose setup table
+1. maps every planner target value exactly to the canonical generator target
+   vocabulary and fails on drift;
+2. creates a candidate-specific validated Game Rules snapshot whose setup table
    size matches the request while preserving semantic identity/provenance;
-3. adapt one request to `training-config/v2` without changing generator RNG or
+3. adapts one request to `training-config/v2` without changing generator RNG or
    legal-trajectory behavior;
-4. coordinate bounded generation failures/retries without incrementing served
+4. coordinates bounded generation failures/retries without incrementing served
    coverage until an exercise is actually delivered;
-5. retain session/request/policy/fingerprint metadata needed for deterministic
+5. retains session/request/policy/fingerprint metadata needed for deterministic
    replay and diagnostics;
-6. integrate the planner with the canonical Training session lifecycle before
-   any Varied Session UI is exposed.
+6. integrates the planner with the canonical Training session lifecycle used by
+   the current Varied/Focused surfaces.
 
-UI, persistence, mistake history, spaced repetition, board families,
-opponent-count targeting, generator RNG redesign, and Training grading changes
-remain outside 002A.
+Training Memory/DecisionRecord persistence, mistake/review history, same/similar
+re-drill, spaced repetition, board-family expansion, opponent-count targeting,
+generator RNG redesign, and Training grading changes remain separate future
+work. No planner sizing family is a strategy recommendation.

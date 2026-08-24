@@ -17,7 +17,7 @@ git branch --show-current
 git diff --stat
 ```
 
-Do not create an automatic `git add .` checkpoint when unrelated files are dirty.
+Never use `git add .`, `git add -A`, or `git add --all` for Riverline ticket staging. Inspect first and stage exact ticket-owned paths only.
 
 Use a branch for risky/long work when helpful:
 
@@ -30,8 +30,10 @@ git switch -c product-ui-003-analysis-presentation
 Unless explicitly owned by the ticket, do not stage, revert, or commit:
 
 - `.codex/config.toml`
+- `.gitignore`
 - `repo_dump.py`
 - `repo_dump.txt`
+- user/helper artifacts and unrelated generated files
 
 Other pre-existing dirty paths must be identified in the report.
 
@@ -47,14 +49,17 @@ The report must separate:
 
 ## Human review and staging
 
-After acceptance, stage the ticket while excluding protected files:
+After acceptance, stage exact ticket-owned files. Example for a documentation ticket:
 
 ```powershell
-git add -A -- . `
-  ':(exclude).codex/config.toml' `
-  ':(exclude)repo_dump.py' `
-  ':(exclude)repo_dump.txt'
+git add -- `
+  AGENTS.md `
+  README.md `
+  docs/README.md `
+  docs/project/DOCUMENTATION_GOVERNANCE.md
 ```
+
+Add every other owned path explicitly. Do not use an exclusion-based broad add: a newly created helper or user artifact may not be on the exclusion list.
 
 Then inspect:
 
@@ -64,7 +69,7 @@ git --no-pager diff --cached --stat
 git --no-pager diff --cached --check
 
 git diff --cached --name-only |
-  Select-String '\.codex/config\.toml|repo_dump\.py|repo_dump\.txt'
+  Select-String '\.codex/config\.toml|\.gitignore|repo_dump\.py|repo_dump\.txt'
 ```
 
 The protected-file check should return no output.

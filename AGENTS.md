@@ -14,6 +14,8 @@ Before significant work, read:
 4. the relevant project specification
 5. `docs/project/QA_BACKLOG.md` for UI, UX, accessibility, i18n, or product work
 6. `docs/project/PRODUCT_BACKLOG.md` when a ticket affects future extensibility
+7. `docs/project/PRODUCT_RETURN_QUEUE.md` for checkpointed debt or incomplete acceptance
+8. `docs/project/DOCUMENTATION_GOVERNANCE.md` for documentation ownership and coordinated-update rules
 
 Use `docs/agent-prompts/README.md` to choose the correct prompt or subsystem document.
 
@@ -22,7 +24,7 @@ Use `docs/agent-prompts/README.md` to choose the correct prompt or subsystem doc
 ```text
 Scenario input OR canonical PokerState
                 ↓
-        DecisionContext v1
+ DecisionContext v1 / additive v1.1
                 ↓
         StrategyProvider v1
                 ↓
@@ -33,12 +35,15 @@ Scenario input OR canonical PokerState
 
 Canonical authorities:
 
-- poker rules, state, actions, evaluator, and Equity: `shared/poker-domain/`
+- mathematical rules: `GameRulesDefinition v1` / `GameRulesSnapshot v1` under `shared/poker-domain/`; provenance never selects accounting
+- poker state (including snapshot-authoritative v2), actions, evaluator, and Equity: `shared/poker-domain/`
 - Scenario/Hand state selection: Playbook application controllers
 - strategy entry point: `StrategyProvider v1`
 - current production strategy: deterministic heuristic fallback under `app/src/strategy/`
-- Training generation and grading: canonical Training application modules
+- Training structural targets: `TrainingPracticePlanner` / intent / request; legal generation and grading: canonical Training application modules
 - explanations: `AnalysisExplanation v1`; renderers are consumers only
+- presentation/review: ephemeral `table-presentation/v1` and `hand-review/v1`
+- experience consequences: `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1`; never poker/strategy authority
 - performance scheduling/invalidation: `product-performance/v1`
 - desktop: `app/main.js`, a thin Electron host
 - bounded solver research: `solver/`, isolated from production runtime
@@ -67,6 +72,7 @@ Deliberately absent:
 12. Do not stage or commit unless the ticket explicitly says otherwise. Normal agent work remains unstaged and uncommitted for human review.
 13. Do not touch `.codex/config.toml`, `repo_dump.py`, or `repo_dump.txt` unless the ticket explicitly owns them.
 14. Stop and report if the requested change requires an unapproved schema migration, architecture rewrite, or substantial scope expansion.
+15. A tiny patch with no product-state change does not require Roadmap churn. An accepted checkpoint or reprioritization updates every affected live planning document in the same ticket.
 
 ## Ticket lifecycle
 

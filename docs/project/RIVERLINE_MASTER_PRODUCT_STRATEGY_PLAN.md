@@ -1,11 +1,11 @@
-# Riverline — Master Product, Strategy, and Platform Plan
+# Riverline — Historical Strategy / Product Rationale and Decision Archive
 
-**Status:** Living planning authority — v1.3
+**Status:** HISTORICAL STRATEGY / PRODUCT RATIONALE AND DECISION ARCHIVE — formerly the v1.3 master plan
 
-**Date:** 2026-08-17
-**Purpose:** Preserve Riverline’s product vision, strategy/mathematical direction, architecture, user priorities, constraints, accepted ideas, candidate ideas, and long-term implementation path in one place.
+**Archive date:** 2026-08-17; relabelled 2026-08-24 by `DOCS-INTEGRITY-001`
+**Purpose:** Preserve valuable product, strategy, architecture, and decision rationale from the repository state at that date.
 
-> This is a planning authority, not code truth. The current repository remains the authority for implementation details. New manual QA and explicit product decisions override older planning assumptions.
+> **Not current status authority.** Old `ACTIVE NEXT`, `PLANNED`, `DEFERRED`, checkpoint, and execution-order statements below are historical. `CURRENT_PHASE.md` owns current execution order, `PRODUCT_BACKLOG.md` owns current accepted capability/status, and `ROADMAP.md` owns current directional sequencing. Executable code and passing tests remain final implementation truth. See `DOCUMENTATION_GOVERNANCE.md`.
 
 ## Current checkpoint — August 17, 2026
 

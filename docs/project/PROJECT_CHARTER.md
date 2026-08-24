@@ -1,6 +1,6 @@
 # Riverline Project Charter
 
-Last refreshed: August 23, 2026 (`ROADMAP-SYNC-003`).
+Last refreshed: August 24, 2026 (`DOCS-INTEGRITY-001`).
 
 ## 1. Product
 
@@ -113,25 +113,16 @@ Accuracy is not uniform across configurations. Configuration support is not a so
 - explicit provenance and limitations;
 - Scenario remains a lossy snapshot; Hand remains canonical history;
 - structural tests do not replace human visual acceptance;
+- functional correctness is necessary but not sufficient for visible product work: a technically non-overflowing but visibly sloppy composition is not finished;
 - Git history is the archive; obsolete runtime paths are removed rather than kept as misleading legacy;
 - user-facing complexity should be progressively disclosed;
 - visible premium work and strategy quality should alternate deliberately so the project does not become an endless infrastructure program.
 
 ## 8. Current development priority
 
-The immediate strategy-integrity burst is complete through `PREFLOP-CALIBRATION-001`.
+This charter does not own ticket-by-ticket execution order. `CURRENT_PHASE.md` owns the active ticket and exact directional sequence; `ROADMAP.md` explains major phase ordering; `PRODUCT_BACKLOG.md` owns accepted capability/status.
 
-The next priority is a **visible full-hand/table experience burst**:
-
-1. competitive-reference/design brief for Table Presence;
-2. adaptive Table Presence / Full-Hand implementation;
-3. post-hand/timeline closeout where not already covered;
-4. restrained audio/motion event architecture and first implementation;
-5. whole-app premium/Core Flow closeout.
-
-After that visible burst, return to **trusted bounded reference strategy**, then persistent Training learning, Personal Strategy integration, and Saved/Home study continuity.
-
-Accounts/live sync hardening, Home Game Organizer follow-up, and architecture decomposition remain important but must not displace the active product sequence unless they become a release/security blocker.
+The durable sequencing principle is to alternate visible product quality with trusted strategy/reference and learning-intelligence work. Accounts/live sync hardening, Home Game Organizer follow-up, and architecture decomposition remain important but should displace that sequence only when they become real release, security, or data-integrity blockers.
 
 ## 9. Overall long-term scope
 

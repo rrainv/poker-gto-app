@@ -4,7 +4,7 @@
 
 A ticket owns one coherent result. Do not mix UI redesign, poker math, solver work, i18n, cleanup, and new features unless the ticket explicitly combines them.
 
-Use issue IDs from `../project/QA_BACKLOG.md` and `../project/PRODUCT_BACKLOG.md` instead of repeating the full project history.
+Use issue IDs from `../project/QA_BACKLOG.md`, `../project/PRODUCT_RETURN_QUEUE.md`, and `../project/PRODUCT_BACKLOG.md` instead of repeating the full project history.
 
 ## 2. Chat lifecycle
 
@@ -42,8 +42,10 @@ Normal agent behavior:
 Protected unless explicitly owned by the ticket:
 
 - `.codex/config.toml`
+- `.gitignore`
 - `repo_dump.py`
 - `repo_dump.txt`
+- user/helper artifacts
 
 Before work, inspect:
 
@@ -55,6 +57,8 @@ git diff --stat
 After work, report ticket files separately from pre-existing changes.
 
 The human reviews and commits after acceptance. See `../project/GIT_WORKFLOW.md`.
+
+Documentation movement follows `../project/DOCUMENTATION_GOVERNANCE.md`: a tiny patch with no product-state change needs no Roadmap churn, while an accepted checkpoint or reprioritization updates every affected live planning document in the same ticket.
 
 ## 5. Tests
 
@@ -129,6 +133,8 @@ Ticket prompts should reference these documents instead of repeating them:
 - current phase: `../project/CURRENT_PHASE.md`
 - QA: `../project/QA_BACKLOG.md`
 - product ideas: `../project/PRODUCT_BACKLOG.md`
+- checkpoint debt: `../project/PRODUCT_RETURN_QUEUE.md`
 - definition of done: `../project/DEFINITION_OF_DONE.md`
+- documentation ownership: `../project/DOCUMENTATION_GOVERNANCE.md`
 
 Repeat only high-risk invariants directly relevant to the ticket.

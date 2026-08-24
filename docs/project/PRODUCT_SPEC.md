@@ -1,102 +1,96 @@
-# Product and UI Specification
+# Riverline Product and UI Specification
+
+Last refreshed: August 24, 2026 (`DOCS-INTEGRITY-001`).
 
 ## 1. Product principle
 
-Riverline should feel like a serious poker analysis workstation.
+Riverline is a serious personal poker learning workstation. Premium means consistency, reliability, clear hierarchy, honest provenance, restrained interaction, and excellent composition—not visual excess or casino-game styling.
 
-Premium means consistency, reliability, clear hierarchy, honest provenance, and restrained interaction—not visual excess or casino-game styling.
+**Functionally correct but visibly sloppy is a product defect.** No clipping, no overlap, and valid responsive geometry are necessary but do not by themselves establish product quality.
 
-## 2. Core surfaces
+## 2. Current product surfaces
 
-- Playbook Scenario Analysis
-- canonical Hand Mode
-- Range Matrix and descriptive range-category comparison
-- Equity
-- Training
-- Guide
-- Settings
+- **Home:** account/Guest-aware study hub, Continue, Saved/Recent/Review/Mistakes, Personal Strategy facts, and quick starts.
+- **Hand:** canonical legal full-hand play, Table Presence, action dock, timeline, completion, and Replay.
+- **Review:** shared decision-by-decision Hand and Full Hand Training review over canonical history.
+- **Analyze:** Scenario or Hand decision analysis, explanation, evidence, provenance, Matrix, ranges, and structural board/blocker facts.
+- **Training:** Varied, Focused, and Full Hand practice over canonical legal generation and source-aware grading/presentation.
+- **Personal Strategy:** profile/mode Calibration, Matrix, Range Builder, and Range Teacher over one sparse evidence authority.
+- **Equity:** canonical exact or seeded Monte Carlo Hold'em outcomes.
+- **Saved:** local-first versioned Hand/Spot objects, annotations, review state, and detached Replay reopening.
+- **Home Game:** separate exact-money cash-game organizer.
+- **Guide:** durable current-product help.
+- **Settings:** localization, accessibility, audio/motion, themes, density, layouts, cards, and account/profile entry points.
 
-## 3. Visual system
+## 3. State-aware projection model
 
-Use canonical tokens/components for:
+One canonical Hand/state may support different ephemeral compositions:
 
-- typography and line height
-- spacing and density
-- radii, borders, surfaces, and shadows
-- controls, buttons, badges, pills, tabs, and focus
-- status and poker-action colors
-- cards and table visuals
+- **Play:** table, actor, legal decision, pot, stacks, and card state dominate.
+- **Review:** timeline, selected Hero decision, comparison, and learning actions dominate.
+- **Analyze:** ranges, explanation, evidence, provenance, and limitations dominate; table is supporting context.
+- **Saved inspection:** compact passive preview supports a dense library/inspector workflow.
+- **Calibration/Builder:** Personal Strategy evidence, uncertainty, editing, and correction dominate.
 
-Avoid one-off inline styles when an existing shared component can own the rule. Do not begin a stylesheet rewrite during bounded tickets.
+Presentation projections never become poker state, legality, accounting, strategy, Training, Replay, or persistence authority.
 
-## 4. Information hierarchy
+## 4. Visual system
 
-Every workspace should make the next action and primary result obvious.
+Use canonical tokens and components for typography, spacing, density, radii, borders, surfaces, shadows, controls, buttons, badges, focus, poker actions, cards, and table visuals. Avoid one-off inline styles when an existing component owns the rule. Do not begin a stylesheet rewrite during a bounded ticket.
 
-Analysis should generally present:
+The no-casino aesthetic rejects avatars by default, spectacle, confetti, fake cinematic 3D, reward loops, and decorative casino clutter.
 
-1. answer/verdict
-2. concise reason
-3. key facts/numbers
-4. deeper detail
-5. provenance and limitations
+## 5. Information hierarchy and composition
 
-Do not duplicate the same strategy evidence across several equally prominent panels.
+Every workspace must make its primary job, next action, and principal result obvious. Analysis should generally present answer/verdict, concise reason, key facts, deeper detail, then provenance/limitations. Do not duplicate the same evidence across equally prominent panels.
 
-## 5. UI states
+A visible composition may fail acceptance despite technically valid geometry when it has obvious:
 
-Every meaningful feature defines as applicable:
+- orphan controls or almost-empty second rows;
+- giant unexplained dead space;
+- tiny controls inside oversized regions;
+- poor visual balance or awkward alignment;
+- unnecessary wrapping;
+- weak information hierarchy or task emphasis;
+- excessive equal-weight dark boxes;
+- low-information panels consuming excessive area;
+- dense critical information rendered too small;
+- a layout preset that is materially worse than the default.
 
-- idle/default
-- loading/generating
-- empty/incomplete input
-- blocked/invalid
-- unavailable source
-- error/cancelled
-- success/result
+Whitespace must express hierarchy, not merely consume canvas. Density must materially change useful information rhythm or be simplified. A named layout preset must materially improve its named task.
 
-Controls must visually and accessibly reflect actual state.
+## 6. Durable visible-product invariants
 
-## 6. Responsive behavior
+- **Card picker:** default cards are readable at 1080p without browser zoom; fix the default before adding micro-settings.
+- **Board:** five board cards remain one horizontal row on supported desktop layouts. Street grouping labels may sit above slots.
+- **Card identity:** every visible known card exposes rank and suit identity across Hero/opponent cards, 2/4-color modes, T/10, themes, and RTL.
+- **Sizing display:** presentation uses human poker precision rather than leaking internal floating-point decimals; canonical stored amounts remain exact.
+- **Tutorial:** a completed/skipped tutorial version does not nag again unless explicitly restarted or intentionally versioned.
+- **Save:** durable Save actions use one accessible bookmark affordance and an active saved state that is not color-only.
+- **Layout preset:** each preset must improve task hierarchy; weak presets may be redesigned, renamed, consolidated, or removed.
+- **Table Focus:** materially improves table and decision-relevant readability over Balanced; extra empty canvas around a small table is not success.
+- **Density:** each mode has coherent visible value; do not add more modes to avoid fixing the existing choice.
+- **Training hint:** content is relevant to the actual street and state.
+- **Control grid:** avoid orphan near-empty rows; four readable controls prefer 4×1 or 2×2 over 3+1.
 
-Desktop repair targets:
+## 7. UI states
 
-- 1024×768
-- 1280×900
-- 1440×900
-- 1600×900
-- 1920×1080
-- 2560×1440
-- 2560×1600
-- 4K and common zoom levels
+Every meaningful feature defines default, loading/generating, empty/incomplete, blocked/invalid, unavailable-source, error/cancelled, and success/result states as applicable. Controls must visually and accessibly reflect actual state.
 
-Critical information must not disappear. Mobile will later use a distinct composition rather than merely stacking every desktop panel.
+## 8. Responsive behavior
 
-## 7. Localization and RTL
+Desktop repair targets include 1024×768, 1280×900, 1440×900, 1600×900, 1920×1080, 2560×1440, 2560×1600, 4K, and representative zoom. Critical information must not disappear. Mobile later receives a distinct composition rather than stacked desktop panels.
 
-- all stable user-facing strings should enter the translation system
-- dynamic errors/loading/result copy needs interpolation and unit support
-- use logical CSS properties
-- poker cards/matrices/amount sequences may remain naturally LTR inside RTL UI
-- translation work must not alter poker logic
+Structural CSS/no-overlap checks are evidence, not visual acceptance. Real-browser/human review remains required where hierarchy, balance, density, legibility, or aesthetics require judgment.
 
-## 8. Accessibility
+## 9. Localization, RTL, and accessibility
 
-Maintain:
+- stable visible copy enters the EN/RU/HE translation system;
+- dynamic copy supports interpolation and units;
+- use logical CSS properties while keeping deliberate poker-data LTR islands;
+- preserve semantic controls/headings, visible focus, keyboard workflows, truthful ARIA state, contrast, non-color cues, reduced motion, and readable status/error announcements;
+- translation/presentation code never alters poker logic.
 
-- semantic controls and headings
-- visible focus
-- keyboard workflows
-- truthful ARIA state
-- adequate contrast
-- non-color cues
-- reduced-motion support
-- readable error/status announcements
+## 10. Change boundary
 
-## 9. UI change policy
-
-A UI ticket must not modify poker math, StrategyProvider semantics, Training grading, Equity math, state schemas, solver, or models unless explicitly approved.
-
-## 10. Product Lab boundary
-
-Repair tickets fix current defects and hierarchy. Product Lab later adds layouts, themes, density modes, richer table presentation, and personalization. Feature Lab adds replay, persistence, Training review, ranges, and session tools.
+A UI ticket must not modify poker math, Game Rules, StrategyProvider semantics, Training generation/grading, Equity math, state schemas, solver, or models unless explicitly approved. Visible feature tickets own their tutorial, localization, accessibility, responsive, reduced-motion, and visual-acceptance updates.

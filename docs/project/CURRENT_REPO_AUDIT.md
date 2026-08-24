@@ -1,105 +1,105 @@
 # Current Repository Audit
 
-Snapshot refreshed August 17, 2026 from executable code, accepted tags through `analysis-range-001`, focused specifications, and accepted ticket reports. Verify against executable code, tests, and Git history.
+Snapshot refreshed August 24, 2026 by `DOCS-INTEGRITY-001` against commit `e38c4e4` (`AUDIO-MOTION-001`). This is a dated evidence snapshot, not planning authority. Executable code and passing tests are final implementation truth; `CURRENT_PHASE.md` owns execution order.
 
-## 1. Browser runtime
+No browser/manual acceptance was performed for this documentation audit. Existing manual and live-provider gaps remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
-Production loads one browser application from `app/index.html`.
+## 1. Runtime and canonical poker domain
 
-Major paths:
+Production loads one browser application from `app/index.html`; `app/main.js` is a thin Electron `BrowserWindow` host with no preload strategy bridge, model runtime, or second poker implementation. Classic application/UI orchestration remains concentrated in `app/src/core/logic.js` with extracted versioned application seams.
 
-- Playbook Scenario and canonical Hand state controllers
-- DecisionContext v1 projection
-- one StrategyProvider / StrategyResult authority
-- deterministic heuristic strategy under `app/src/strategy/`
-- AnalysisExplanation v1
-- canonical Equity controller/worker backed by `shared/poker-domain`
-- canonical 52-card / 1,326-combo Hold'em registry and immutable weighted/partial range foundation under `shared/poker-domain`; Analysis can condition an explicitly attached range, but no current production decision source attaches one
-- canonical Training generator/session/grading/presentation
-- product-performance scheduling and hidden-surface invalidation
-- lazy local-first SavedStudyObject v1 domain/repository for saved Hands, Spots, annotations, review state, and portable export/import; Saved Hands include an exact observer-safe canonical event source for cold deterministic Replay reconstruction
-- canonical Table Presence plus Replay timeline, chance-event projection, previous/next, playback/speed, reduced-motion-safe restrained motion, truthful on-felt contribution/pot transitions, and reusable poker-chip visuals
-- persistent Home consumer for Continue, Recent, Review, Mistakes, Personal Strategy, Quick Start, detached Saved Hand Replay, and truthful Saved Spot reopening
-- reusable tutorial definition/controller/presentation foundation with current-app EN/RU/HE coverage and contextual Saved-flow reuse
-- classic UI/application orchestration in `app/src/core/logic.js`
+`shared/poker-domain/` is canonical for cards, structured actions, betting/chance transitions, legality, accounting, evaluator, Equity, Hold'em combo identity, and weighted range math.
 
-## 2. Desktop
+`GameRulesDefinition v1`, preset validation, and immutable self-contained `GameRulesSnapshot v1` live in `shared/poker-domain/game-rules.js`; the legacy Home/ClubGG compatibility bridge is separate. Mathematical behavior comes from snapshot definitions, never brand/operator/preset provenance. New production Hand initialization uses snapshot-authoritative `poker-state/v2`; historical v1 state remains readable without rewrite.
 
-`app/main.js` is a thin Electron BrowserWindow host. No preload, IPC strategy, ONNX, model, or second poker implementation remains.
+## 2. Versioned Scenario, Training, Replay, and Saved rules durability
 
-Packaging layout/version reproducibility still requires a later Desktop ticket.
+Current snapshot-aware paths are present and tested:
 
-## 3. Strategy
+- `playbook-scenario/v2` remains a strict lossy study snapshot with `GameRulesSnapshot v1` and no invented legal history;
+- `training-config/v2` / `training-exercise/v2` use snapshot-authoritative generation where supported;
+- `canonical-hand-replay-source/v2` / events reconstruct `poker-state/v2` through canonical transitions;
+- `saved-hand-snapshot/v2` and `saved-spot-snapshot/v2` preserve matching rules semantics inside the unchanged outer `saved-study-object/v1` envelope;
+- historical v1 Scenario, Replay, Saved, and Training readers remain explicit and strict.
 
-The deterministic heuristic fallback is the only current production strategy source. Playbook, Training, and preflop Matrix consume it through the same provider.
+Cold Replay/import does not require a live preset repository or operator lookup. Presentation frames, playback cursors, DOM state, and animation timing are never persisted.
 
-Preflop/postflop mathematical-integrity work is complete. A calibration harness exists, but the repository has no validated general Hold'em strategy reference. Further broad tuning is paused pending reference data.
+## 3. Decision and strategy authority
 
-Postflop Matrix remains unavailable rather than using a second fast heuristic.
+The production decision path is:
 
-## 4. Equity
+```text
+Scenario or canonical PokerState
+  -> DecisionContext v1 + additive contractVersion decision-context/v1.1
+  -> StrategyProvider v1
+  -> StrategyResult v1
+  -> StrategyClaimPolicy v1
+  -> Playbook / Training / Matrix / Analysis / in-memory Review
+```
 
-Canonical Equity is singular at product-service level and supports exact enumeration or seeded Monte Carlo, 2–10 players, unknown hands, dead cards, progress, and cancellation.
+DecisionContext v1.1 exposes exact current pot, starting/live Hero stack, HU or per-opponent effective stacks, postflop position relation, canonical legal raise/all-in bounds, bounded action history, and derivation quality. Live logic uses `currentPotBb` and live/effective stack fields; legacy `potBb` and `stackBb` remain compatibility values. Scenario preserves unavailable facts instead of manufacturing canonical evidence.
 
-A separate legacy evaluator remains in `logic.js` only for the current Outs display. It is not canonical Equity and is an extraction/migration candidate if Outs is redesigned.
+Exact preflop role semantics distinguish unopened RFI, isolation, BB option after limps, cold response to open, blind-vs-blind response, opened-facing-3bet, cold-4bet opportunity, ordinary/cold four-bet response roles, opener facing cold 4bet, limper facing isolation, deeper unclassified aggression, and unknown. Actual semantic role stays separate from any generalized fallback calibration family.
 
-## 4.1 Hold'em range core
+The only current production strategy is the deterministic heuristic under `app/src/strategy/`. The v4 preflop source adds a bounded six-max BB-vs-BTN, roughly 80–120bb, 2–3bb-open cold-response policy using distinct `continueValue`, `passiveRealization`, and `aggressionSuitability`; other contexts retain explicitly generalized fallbacks. Postflop remains a source-aware generalized approximation. No validated general Hold'em reference pack exists in production.
 
-`shared/poker-domain/holdem-combos.js` is the production authority for all 1,326 unordered Hold'em hole-card combos and their exact mapping to the canonical 169 hand classes. `shared/poker-domain/holdem-range.js` defines `HoldemWeightedRange v1`, explicit known/unknown combo entries, provenance, combo mass, blocker conditioning, complete positive-mass normalization, deterministic portability, and a DOM-free 169-cell projection.
+Source identity, version/provenance, authority, exact/generalized/unsupported coverage, capabilities, and claim policy remain distinct. The heuristic has generalized comparative authority only and cannot authorize solved-GTO, Nash, exact-frequency, EV-loss, exploitability, or optimality claims.
 
-The current production Matrix, fixed Range Comparison samples, Personal Strategy action evidence, postflop heuristic candidate subset, and isolated solver combo utilities retain their existing bounded meanings; none is a second canonical weighted-range format. `equity-request/v1` cannot express weighted opponents, so no lossy adapter or Equity behavior change was introduced.
+## 4. Training
 
-## 4.2 Range-aware Analysis
+The canonical Training generator/session/grading/presentation path generates legal deterministic trajectories and resolves the same StrategyProvider as other consumers.
 
-`app/src/application/range-analysis.mjs` owns immutable `RangeAnalysisRequest v1` and `RangeAnalysisFacts v1`. It reuses the canonical evaluator and `HoldemWeightedRange v1` to derive exact-hand and draw structure, board structure, raw Hero-card removal, and conditioned composition for any explicitly supplied named range. Partial ranges stay partial and are never normalized into invented whole-range shares. Provenance for strategy, cards, board, and each range remains separate.
+The implemented `TrainingPracticePlanner` foundation includes immutable `TrainingSessionIntent v1`, `TrainingScenarioRequest v1`, serializable planner state, Varied and Focused planning, coverage/recency accounting, the 002B generator adapter, and generation sizing-family diversity. The planner owns only the structural target envelope. The canonical generator owns cards, actions, amounts, PokerState, DecisionContext, and legal trajectories; served coverage advances only after successful delivery. Sizing families are generation targets, not poker recommendations.
 
-The Playbook Analysis render seam computes these facts only while Analysis is requested. The explanation layer consumes them and the presentation layer only localizes/formats them. Current production callers attach no range, so the UI truthfully shows structural blockers and an unavailable supplied-range state; Matrix representatives and heuristic strategy samples are not promoted into range truth.
+Varied and Focused Training are live current UI foundations; Full Hand Training uses the shared table/review path. Persistent Training Memory, mistake history, re-drill, and spaced/adaptive scheduling remain future work.
 
-## 5. Training
+## 5. Presentation, Replay, Review, audio, and motion
 
-Training uses legal canonical trajectories, deterministic seeds, replay metadata, one StrategyProvider, and one grading path. Session persistence, mistake review, adaptive curriculum, and range profiling remain future features.
+`table-presentation/v1` is an immutable, DOM-free, non-persisted projection over canonical table/replay/legality facts. It supplies deliberate HU, sparse, six-max, and full-ring geometry; prominence; table projection; timeline; and decision-dock presentation without becoming PokerState or legality authority.
 
-## 5.1 Saved Study Objects
+`hand-review/v1` derives one shared canonical Hand/Full Hand Training review from the Hero decision journal, Replay, recorded StrategyResults, and StrategyClaimPolicy. It uses explicit pre-action Replay frames, source-gated comparisons, compact provenance/limitations, and existing Analyze/Save/Repeat/Next routes. It is not a second Hand, Replay history, grader, Analysis implementation, or Saved schema.
 
-`app/src/saved-study-objects/` is the canonical user-owned Saved / Noted Study Object authority. V1 supports strict Hand and Spot snapshots, shared title/note/tag/review/mistake metadata, local ownership, archive tombstones, Dashboard-ready queries, and deterministic portable export/import behind native IndexedDB. Hand snapshots retain observer-level PokerState privacy markers; Scenario spots remain lossy and contain no invented history. `SAVED-OBJECTS-002` exposes bounded Save Hand/Save Spot and metadata/review/archive UX, while `HOME-001` consumes recent/review/mistake queries and the open controller. Neither surface owns persistence.
+`experience-event/v1` separates poker-world from study/application events and records origin so direct seek, hydration, initial render, and review selection do not replay historical physical consequences. `riverline-motion/v1` is a compact reduced-motion-safe intent policy over TablePresentation anchors.
 
-## 6. Analysis, Replay, Home, Tutorials, and UI
+`riverline-audio/v1` is the one audio authority. Physical visible poker-world actions use recorded CC0 Ogg foley as primary material; procedural Web Audio is limited to mixing/presentation and restrained study/UI feedback. The repository records fifteen provenance-documented CC0 assets, with eleven selected for coherent production use, explicit hashes/trims/windows/gain, bounded variation, caching, cooldowns, polyphony, sound-off, and graceful silence. `AUDIO-MOTION-001` is an accepted implementation checkpoint; subjective Study/UI/Check polish and unperformed Firefox acceptance remain open debt.
 
-AnalysisExplanation consumes canonical range-analysis facts and presents compact Hand & Board, Blockers, Supplied Range, and fact-source sections. Structural and localization tests are complete; final human viewport/theme/language acceptance remains tracked in `QA_BACKLOG.md`.
+## 6. Analysis, ranges, and Equity
 
-Table Presence and Replay are accepted through `REPLAY-001C`, including the chance-event repair and the poker-chip/physical-contribution checkpoint. Replay projection is read-only and keeps live versus replay state distinct. Saved Hand reopening reconstructs from the canonical replay source and presents a detached read-only viewer without replacing the live Hand.
+Canonical Equity remains one product service backed by the shared evaluator, supporting exact enumeration where practical and seeded Monte Carlo for larger incomplete multiway states. Heuristic conditional samples are not canonical Equity.
 
-`HOME-001` is an application consumer of Saved Study Objects and the Personal Strategy query seam. Tutorial foundation/current-app coverage is checkpointed; every future meaningful visible feature owns its own tutorial update rather than relying on a later catch-up project.
+`HoldemWeightedRange v1` owns canonical known/unknown weights over all 1,326 Hold'em combos; the 169-cell Matrix is derived presentation. `RangeAnalysisFacts v1` reuses canonical evaluator/range facts for exact hand, draws, board structure, raw card removal, and explicitly supplied range composition. It never selects strategy, invokes Equity, infers a missing range, or claims range/nut advantage.
 
-PERF-001 removed duplicate slider updates, hidden Matrix computation, unnecessary theme recomputation, duplicate Training init, duplicate Equity readiness, and forced layout reads.
+Personal Strategy remains a separate intended-strategy evidence authority. Calibration, deterministic inference/uncertainty, Matrix, Range Builder, Range Teacher, context transfer, and optional sync foundations are present through their automated checkpoints. Provider/reference/observed integration and independent `PERSONAL-STRATEGY-002R` review remain future work.
 
-`QA_BACKLOG.md` remains the authoritative unresolved visual/manual acceptance map. The active product ticket sequence is maintained in `CURRENT_PHASE.md`, not in this architecture audit.
+## 7. Saved, Home, accounts, and sync
 
-## 7. Deliberately absent
+`app/src/saved-study-objects/` owns local-first `SavedStudyObject v1`, strict Hand/Spot nested payloads, shared annotations/tags/review/mistake metadata, archive tombstones, deterministic export/import, IndexedDB repository behavior, and optional sync adaptation. Saved Hand v2 retains exact observer-safe Replay reconstruction; Saved Spot v2 remains explicitly lossy where Scenario-derived.
 
-- browser/Electron ONNX strategy runtime
-- model artifacts and loaders
-- remote strategy API
-- uploaded solver-tree authority
-- root legacy Training/model/tree prototypes
-- duplicate Equity worker
-- arbitrary drag-and-drop layout editor
+`HOME-002A` / My Riverline is a consumer checkpoint for Guest/account composition, Continue, Saved/Recent/Review/Mistakes, Personal Strategy facts, and sync status. It does not invent Training/Analysis history or own persistence. `HOME-002B` full Saved Study Library does not yet exist.
 
-## 8. Research
+Account foundations include persistent opaque local identity, Guest semantics, Supabase email/password auth/profile mapping, claim/start-separate behavior, account switching/sign-out, local-first Saved Hand/Spot opt-in sync, separate Personal Strategy/Calibration opt-in sync, durable outbox/retry/tombstones/conflict foundations, and fail-closed ownership. Live Supabase migrations/RLS and two-profile Firefox lifecycle acceptance remain incomplete; no live-provider acceptance is claimed here.
 
-The bounded HU 100bb no-rake preflop solver is isolated under `solver/riverline_solver/`. It is useful infrastructure, not current production strategy and not a universal calibration source.
+## 8. Home Game Organizer
 
-## 9. Current debt and intentionally incomplete branches
+`HOME-GAME-001A` is a separate domain under `app/src/home-game/`: players/groups/sessions, exact integer minor-unit ledger, immutable transactions, append-only corrections, chip snapshots separate from money, lifecycle/reopen, exact balance rejection, deterministic settlement, account-scoped IndexedDB, and Guest runtime memory. It does not depend on PokerState, strategy, Equity, Training, Personal Strategy, or Saved Study.
 
-- `logic.js` remains a large classic orchestration/rendering file;
-- final human visual/language acceptance remains open for items explicitly marked partial in `QA_BACKLOG.md`;
-- settings/theme catalog and some workspace composition retain tracked presentation debt;
-- hidden DOM was remeasured by PERF-RL18: cold Decision is 1,423 elements/91 buttons; a warmed Decision retaining Matrix and Range caches is 2,575/598, and the 52-button picker deck detaches on close;
-- Electron clean install/package flow needs a later repair;
-- Personal Strategy inference/integration resumes at `RANGE-CAL-002B`;
-- current production decisions still supply no canonical weighted range to Analysis;
-- Training intelligence, richer Home/account state, and new Saved payloads remain future branches rather than hidden implementation claims.
+Player management polish, visible correction history, session archive/delete, import/export decision, and Firefox acceptance remain for `HOME-GAME-001B`. The currently reported Create Game routing blocker is open QA; this audit does not claim the flow is usable end to end.
 
-## 10. Documentation rule
+## 9. Verification baselines
 
-Current contracts, code, tests, and accepted ticket reports override historical DeepCFR/model/ONNX documents. Claims require executable evidence.
+The accepted `AUDIO-MOTION-001` checkpoint reports the canonical Node suite green at **1,759/1,759**. This documentation-only audit did not rerun the full Node suite and does not convert that accepted checkpoint count into a new test claim.
+
+The current solver research baseline remains the isolated `solver/riverline_solver/` bounded HU 100bb no-rake preflop game/validation harness with public-tree, parity, exact small-fixture best-response/exploitability, and independent Kuhn validation tests. It is not solved full-game Hold'em, a production provider, a dataset, or a model. No later accepted solver implementation checkpoint was found after `SOLVER-001`; this documentation ticket did not rerun the Python solver suite.
+
+## 10. Deliberately absent and current debt
+
+Deliberately absent:
+
+- production ONNX/model runtime or remote strategy API;
+- arbitrary solver-tree upload authority;
+- synthetic legacy Training generator/grader;
+- duplicate Equity worker/evaluator authority;
+- renderer-owned PokerState, Replay, review, Saved, or audio semantics;
+- arbitrary drag-and-drop layout editor.
+
+Current material debt includes large `logic.js` orchestration, unperformed visual/language/live-provider acceptance, known strategy/reference limitations, missing Training Memory, incomplete Saved Library/Home Game follow-ups, and the stable hands-on issues in `QA_BACKLOG.md`. Historical plans and old audits do not change these facts.

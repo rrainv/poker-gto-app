@@ -4,9 +4,12 @@ Compatibility filename retained. Riverline already has a bounded HU preflop solv
 
 Do not design a new solver from scratch without first reading:
 
-- `docs/solver/HU_PREFLOP_100BB_V1.md`
-- current solver tests and characterization tools
+- the current package under `solver/riverline_solver/`
+- current `tests/solver/`, `solver/tools/`, and parity fixtures
+- `docs/project/CURRENT_REPO_AUDIT.md` for the dated current boundary
 - calibration baseline documents
+
+The former `docs/solver/HU_PREFLOP_100BB_V1.md` was removed during documentation consolidation. Git history preserves it as historical rationale; it is not a current live authority.
 
 Any extension must preserve isolation from production runtime and document:
 

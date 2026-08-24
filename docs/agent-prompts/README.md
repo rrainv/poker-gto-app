@@ -8,12 +8,13 @@ Use these files to keep ticket prompts concise and consistent.
 - `AGENT_MASTER_CONTEXT.md`
 - `CODEX_WORKFLOW.md`
 - `../project/CURRENT_PHASE.md`
+- `../project/DOCUMENTATION_GOVERNANCE.md` for documentation or checkpoint-state changes
 
 ## Choose by task
 
 | Task | Read additionally |
 |---|---|
-| UI/UX/Product repair | `../project/QA_BACKLOG.md`, `../project/PRODUCT_SPEC.md`, `UI_STABILIZATION_PROMPT.md` |
+| UI/UX/Product repair | `../project/QA_BACKLOG.md`, `../project/PRODUCT_RETURN_QUEUE.md`, `../project/PRODUCT_SPEC.md`, `UI_STABILIZATION_PROMPT.md` |
 | New product feature | `../project/PRODUCT_BACKLOG.md`, relevant subsystem spec |
 | Poker rules/Equity | `../project/POKER_ENGINE_SPEC.md`, `../project/QA_AND_REGRESSION_SPEC.md` |
 | Strategy/fallback/reference authority | `../project/STRATEGY_SOURCE_AUTHORITY_SPEC.md`, calibration docs |
@@ -56,6 +57,9 @@ Update:
 
 - `CURRENT_PHASE.md` after accepted tickets or phase changes
 - `QA_BACKLOG.md` when an issue is reported, regresses, closes, or changes owner
+- `PRODUCT_RETURN_QUEUE.md` when accepted checkpoint debt or material incomplete acceptance changes
 - `PRODUCT_BACKLOG.md` when a future capability is accepted or reprioritized
 - `CURRENT_REPO_AUDIT.md` after major architecture changes
-- `ROADMAP.md` at phase boundaries, not after every small patch
+- `ROADMAP.md` when directional sequencing changes, not after a tiny patch with no product-state change
+
+If an accepted checkpoint or reprioritization changes priority, subsystem status, architecture, known debt, or future ownership, update every affected live document together. See `../project/DOCUMENTATION_GOVERNANCE.md`.

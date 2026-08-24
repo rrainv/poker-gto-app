@@ -18,7 +18,8 @@ Production must not import solver experiments, training scripts, cloud tooling, 
 
 ## 2. Canonical production authorities
 
-- PokerState, Action, legality, accounting, evaluator, canonical Equity, canonical Hold'em combos, and weighted range math: `shared/poker-domain/`
+- `GameRulesDefinition v1` / `GameRulesSnapshot v1`: mathematical game-rules authority under `shared/poker-domain/`; brand/operator/preset provenance never selects accounting semantics
+- PokerState v1/v2, Action, legality, accounting, evaluator, canonical Equity, canonical Hold'em combos, and weighted range math: `shared/poker-domain/`
 - Scenario/Hand selection and projection: Playbook application layer
 - Decision strategy entry point: `StrategyProvider v1`
 - Strategy result/provenance: `StrategyResult v1`
@@ -35,6 +36,8 @@ Production must not import solver experiments, training scripts, cloud tooling, 
 A consumer must not bypass these authorities to compute its own alternative answer.
 
 Home/Dashboard, Hand/Replay, Training review, Matrix, and future Range tools are consumers of the Saved Study application/repository boundary. They must not define parallel bookmark, note, review, or saved-object persistence models. Saved Hand payloads preserve canonical observer-level PokerState facts plus a versioned canonical transition source that replays only through `shared/poker-domain`; they never persist Replay presentation frames. Saved Scenario spots remain explicitly lossy and cannot claim canonical history.
+
+New live Hands use the snapshot-authoritative `poker-state/v2` path. Versioned `playbook-scenario/v2`, `training-config/v2`, `canonical-hand-replay-source/v2`, `saved-hand-snapshot/v2`, and `saved-spot-snapshot/v2` carry or preserve the exact immutable rules snapshot where their specifications require it. Historical v1 readers remain strict and are not silently rewritten. See `GAME_RULES_V1_SPEC.md` and `SAVED_STUDY_OBJECTS_SPEC.md`.
 
 ## 3. UI boundary
 
@@ -69,6 +72,12 @@ Hand Mode:
 - exact actor/legal-action/accounting facts when available
 
 Do not merge their state or silently fall back across modes.
+
+## 4.1 Game Rules and PokerState
+
+`GameRulesDefinition v1` and self-contained `GameRulesSnapshot v1` own mathematical game mechanics. Preset IDs, display names, operator/brand provenance, and legacy compatibility labels cannot choose deductions, antes, blinds, collection, or accounting behavior.
+
+`PokerState v2` consumes a validated copied snapshot and projects resolved brand-free game mechanics into canonical transitions. Unsupported mechanics fail explicitly. `PokerState v1` remains a historical compatibility reader, not the initialization path for new live Hands.
 
 ## 5. DecisionContext v1 / additive v1.1 contract
 
@@ -153,6 +162,8 @@ Training must:
 
 Training modules do not become browser strategy authorities.
 
+`TrainingPracticePlanner`, `TrainingSessionIntent v1`, and `TrainingScenarioRequest v1` own structural curriculum/target planning only. They select a target envelope, including generation sizing families where applicable, but never construct cards, actions, bets, pots, PokerState, DecisionContext, StrategyResult, or grades. Sizing families are generation targets, not recommendations. The canonical Training generator remains the only legal-trajectory authority and advances planner coverage only after an exercise is successfully served. See `TRAINING_PRACTICE_PLANNER_SPEC.md`.
+
 ## 10. AnalysisExplanation
 
 AnalysisExplanation consumes DecisionContext, StrategyResult, StrategyClaimPolicy facts, and trusted facts. It may explain structured authority/limitations but must not invent source semantics. Renderers must not recreate poker math, strategy, or claim policy.
@@ -180,6 +191,14 @@ Preserve PERF-001 guarantees:
 - no forced-layout animation restart
 - Training and Equity do not rerender inactive workspaces unnecessarily
 - range analysis runs only for a visible/requested Analysis surface and never causes an additional StrategyProvider or Equity invocation
+
+## 11.1 Presentation and experience contracts
+
+- `table-presentation/v1` is a pure ephemeral table geometry/hierarchy/projection over canonical state, Replay, legality, and surface context.
+- `hand-review/v1` is a pure ephemeral selected-decision/review projection over the canonical Hero journal, Replay, StrategyResult, and StrategyClaimPolicy.
+- `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1` translate completed canonical transitions or explicit study actions into presentation consequences.
+
+These contracts may format, project, animate, or sound already-established facts. They never become poker state, Game Rules, legality, accounting, strategy, grading, Replay history, Saved, or persistence authority. Direct seek, hydration, initial render, and review selection must not recreate historical poker-world consequences. See `TABLE_PRESENCE_COMPETITIVE_REFERENCE.md` and `AUDIO_MOTION_001_SPEC.md`.
 
 ## 12. Research isolation and legacy policy
 

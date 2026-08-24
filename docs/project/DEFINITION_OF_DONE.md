@@ -24,7 +24,11 @@ A ticket is complete only when all applicable items are satisfied.
 - changed states cover default/loading/empty/error/unavailable/result as applicable
 - keyboard, focus, ARIA, RTL/logical properties, and long-copy behavior were considered when owned
 - requested viewports/themes/languages were inspected when browser tooling exists
+- visible work explicitly reviews hierarchy, whitespace, control grouping, orphan rows, density, scanability, task emphasis, information priority, visual balance, and obvious aesthetic regressions
+- named layout/density modes prove useful composition rather than merely redistributing empty space
 - structural CSS tests alone do not close a visual issue
+- no-overlap and responsive-geometry checks cannot close hierarchy, balance, legibility, density, or aesthetic acceptance alone
+- human/real-browser acceptance remains required wherever visual judgment matters
 - when browser/manual QA is unavailable, status is `UNVERIFIED`, `PARTIAL`, or `STRUCTURAL ONLY`
 
 ## Localization

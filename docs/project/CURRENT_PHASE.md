@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 24, 2026 (`AUDIO-MOTION-001` accepted implementation checkpoint; `DOCS-INTEGRITY-001` active next).
+Last refreshed: August 24, 2026 (`DOCS-INTEGRITY-001` active; `AUDIO-MOTION-001` accepted implementation checkpoint).
 
 Code, tests, accepted ticket reports, manual QA, and explicit product decisions override this snapshot. `PRODUCT_BACKLOG.md` preserves detailed future capability; subsystem specs remain authoritative for implementation semantics.
 
@@ -8,7 +8,7 @@ Code, tests, accepted ticket reports, manual QA, and explicit product decisions 
 
 - **COMPLETED** — accepted bounded implementation; later work must be a new ticket.
 - **CHECKPOINTED / INTENTIONALLY INCOMPLETE** — useful foundation accepted with a defined resume point.
-- **ACTIVE NEXT** — next bounded ticket to execute.
+- **ACTIVE** — current bounded ticket.
 - **ACTIVE / FINAL QA CORRECTION** — the current ticket remains the sole active implementation scope pending final human acceptance.
 - **PLANNED NEXT** — accepted work ordered after the active ticket.
 - **PLANNED LATER** — ordered work that remains behind the immediate planned-next ticket.
@@ -39,28 +39,39 @@ Code, tests, accepted ticket reports, manual QA, and explicit product decisions 
    - subjective Study/UI and Check refinement remains known polish debt rather than a claim of sound-design perfection;
    - reduced motion, sound off, no-casino, no-reward, and no-proprietary-asset constraints are automated.
 
-5. **ACTIVE NEXT — `DOCS-INTEGRITY-001`**
+5. **ACTIVE — `DOCS-INTEGRITY-001`**
 
-6. **PLANNED NEXT — `UX-REGRESSION-001`**
-   - execute immediately after `DOCS-INTEGRITY-001`;
-   - retain its existing unrelated regression scope rather than absorbing audio polish debt.
+6. **PLANNED NEXT — `UX-REGRESSION-001`** — immediate functional, semantic, persistence, card-identity, board, sizing-display, and legibility regressions; do not absorb audio polish.
 
-7. **PLANNED LATER — `PREMIUM-CLOSEOUT-001`**
-   - whole-app hierarchy and Core Flow closeout;
-   - desktop responsive / themes / density / cards / EN-RU-HE / RTL acceptance;
-   - resolve high-value UI QA rather than adding more customization variants.
+7. **PLANNED NEXT — `WELCOME-INTRO-001`** — concise first-use product orientation and obvious major-job entry actions; not a recurring modal or per-workspace tutorial replacement.
 
-8. **PLANNED NEXT — first trusted bounded reference pack / provider**
-   - exact assumptions, versioning, validation, licensing/provenance, context coverage;
-   - heuristic fallback elsewhere.
+8. **PLANNED NEXT — `WORKSPACE-COMPOSITION-002`** — hierarchy, dead space, presets, density, scanability, Equity/Training/table composition.
 
-9. **PLANNED NEXT — Training Memory / re-drill intelligence**
+9. **PLANNED NEXT — `TABLE-PHYSICALITY-003`** — improve default table/felt/rail/seat/card/chip/pot/readability quality over existing presentation/experience authorities; no casino spectacle.
 
-10. **PLANNED NEXT — Personal Strategy integration and review comparison**
+10. **PLANNED NEXT — `HOME-GAME-001B`** — organizer management continuation after the immediate Create Game blocker is repaired by UX Regression.
 
-11. **PLANNED NEXT — `HOME-002B` Saved Study Library / knowledge workspace**
+11. **PLANNED NEXT — `SETTINGS-IA-001`** — Settings information architecture, tutorial/help discovery, and transactional theme editing.
 
-12. **PRESERVED FUTURE, high strategic value — OpponentPolicy / bots / full-hand bot learning**
+12. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`** — whole-app Core Flow, desktop, themes/density/cards, Guide, EN/RU/HE/RTL, accessibility, and human visual closeout.
+
+13. **PLANNED NEXT — first trusted bounded reference pack/provider** — exact assumptions, versioning, validation, licensing/provenance, context coverage, and fallback elsewhere.
+
+14. **PLANNED NEXT — Training Memory / re-drill intelligence**
+
+15. **PLANNED NEXT — `PERSONAL-STRATEGY-002R` independent review**
+
+16. **PLANNED NEXT — Personal Strategy provider/reference/observed integration**
+
+17. **PLANNED LATER — `PERSONAL-INSIGHTS-001`** — cross-profile Teach Riverline Next queue plus evidence/provenance/uncertainty-aware natural-language summaries.
+
+18. **PLANNED LATER — `RANGE-EVOLUTION-001`** — action-conditioned canonical combo-level range propagation by street.
+
+19. **PLANNED LATER — `HOME-002B` Saved Study Library / knowledge workspace**
+
+20. **PRESERVED FUTURE, high strategic value — OpponentPolicy / bots / full-hand bot learning**
+
+21. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
 
 Reassess at every clean checkpoint.
 
@@ -74,13 +85,15 @@ Correctness and interaction performance remain distinct gates. Machine-sensitive
 
 Established invariants:
 
+- canonical `GameRulesDefinition v1` / `GameRulesSnapshot v1` mathematical rules authority; brand/operator provenance never selects accounting;
+- snapshot-authoritative `PokerState v2` for new live Hands, with strict versioned Scenario/Training/Replay/Saved paths and historical v1 readers;
 - canonical `PokerState`, cards, structured actions, legality, accounting, evaluator and Equity under `shared/poker-domain/`;
 - Scenario is a truthful lossy study snapshot; Hand is canonical legal state/history;
 - one `DecisionContext` strategy snapshot path;
 - one `StrategyProvider` / `StrategyResult` strategy path;
 - one `StrategyClaimPolicy` decides permitted claims;
 - deterministic heuristic fallback is generalized/comparative, never solved-GTO/EV/optimality authority;
-- canonical Training generator/session/grading/presentation;
+- Training Practice Planner/intent/request own structural targets only; canonical Training generator/session/grading/presentation owns legal trajectories and outcomes;
 - canonical Equity is separate from heuristic conditional sampling;
 - Home versus ClubGG-style accounting remains explicit and separate from strategy truth.
 
@@ -205,9 +218,9 @@ Current foundation includes:
 - reusable poker-chip primitive;
 - reduced-motion-safe restrained movement.
 
-The richer visual branch is checkpointed through `TABLE-PRESENCE-REF-001`, `TABLE-PRESENCE-002`, `FULL-HAND-REVIEW-001`, and the accepted `AUDIO-MOTION-001` implementation. `DOCS-INTEGRITY-001` is active next; `UX-REGRESSION-001` is planned immediately afterward, while `PREMIUM-CLOSEOUT-001` remains later.
+The richer visual branch is checkpointed through `TABLE-PRESENCE-REF-001`, `TABLE-PRESENCE-002`, `FULL-HAND-REVIEW-001`, and the accepted `AUDIO-MOTION-001` implementation. `DOCS-INTEGRITY-001` is active; the ordered visible repair sequence begins with `UX-REGRESSION-001` and runs through `PREMIUM-CLOSEOUT-001` before trusted reference work resumes.
 
-Preserve the no-casino aesthetic. The bounded semantic card/chip/pot paths are implemented; detailed denominations, elaborate card physics/showdown choreography, ambience, and deeper/3D treatment remain later unless a new bounded ticket proves they are needed.
+Preserve the no-casino aesthetic. `TABLE-PHYSICALITY-003` is real planned work for better default proportions, rail/depth, seat/card integration, chip stacks, contributions, pot composition, restrained motion, and readability. It does not authorize detailed denomination claims, fake cinematic 3D, avatars by default, casino scenery, spectacle, or confetti. Default quality comes before more customization.
 
 ## Premium UI / customization — CHECKPOINTED, expansion frozen
 
@@ -245,7 +258,7 @@ After Training/reference maturity: add Personal Strategy provider/comparison ada
 
 ## Training — canonical base COMPLETED, intelligence PRESERVED/PLANNED
 
-Current Training is legal, deterministic and provider-backed.
+Current Training is legal, deterministic and provider-backed. The implemented Training Practice Planner drives Varied/Focused structural target envelopes through `TrainingSessionIntent v1` and `TrainingScenarioRequest v1`; the canonical generator remains legal-trajectory authority. Sizing families are generation targets, not recommendations.
 
 Next intelligence program after trusted reference work:
 
@@ -321,17 +334,20 @@ Future architecture should support transparent `OpponentPolicy`-style behavior s
 
 This branch is not active until Table/Training/reference foundations are mature enough.
 
-## Preserved long-term branches
+## Preserved and planned long-term branches
 
 - first validated reference packs and provider expansion;
 - richer Training memory/intelligence;
 - Personal Strategy integration;
+- `PERSONAL-INSIGHTS-001` after integration: global uncertainty queue and evidence-aware summaries;
+- `RANGE-EVOLUTION-001`: action-conditioned combo-level preflop-to-river propagation;
 - Saved Study knowledge workspace;
 - opponent policies/bots;
 - sharing/social after privacy/versioning maturity;
 - deliberate mobile composition;
 - release/packaging/privacy/legal;
-- optional restrained gamification only if approved;
+- profile snapshots/experiments/rollback, study goals, friend challenges/shared drills, and user-visible personal-data export/import;
+- restrained study streaks/goals only if approved; mastery only after valid history; XP/badges/levels/achievements rejected by default;
 - PLO as a separate game domain;
 - learned model/interpolation only after trustworthy data demonstrates value.
 
@@ -347,8 +363,9 @@ This branch is not active until Table/Training/reference foundations are mature 
 - public release/monetization timing;
 - PLO priority;
 - restrained gamification approval;
+- restrained felt/table/chip customization only after default quality is strong;
 - telemetry approval.
 
 ## Update rule
 
-After an accepted ticket, update this resume map whenever checkpoint status, the active ticket, or priority order changes. The authoritative roadmap/resume/backlog state moves with the accepted checkpoint; do not create a parallel status system. Put detailed future capability in `PRODUCT_BACKLOG.md`, keep implementation contracts in subsystem specs, and route unresolved visual/manual acceptance through `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
+After an accepted ticket, update this resume map whenever checkpoint status, the active ticket, or priority order changes. The affected roadmap/resume/backlog state moves with the accepted checkpoint; do not create a parallel status system. A tiny patch that changes no product state does not require Roadmap churn. Put detailed future capability in `PRODUCT_BACKLOG.md`, keep implementation contracts in subsystem specs, route unresolved visual/manual acceptance through `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`, and follow `DOCUMENTATION_GOVERNANCE.md`.

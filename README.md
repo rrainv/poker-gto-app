@@ -1,93 +1,61 @@
 # Riverline
 
-Riverline is a browser-first Texas Hold'em analysis application. It combines a configurable strategy Playbook, multiway equity calculations, and practice hands in one interface, with an optional Electron desktop wrapper.
+Riverline is a browser-first Texas Hold'em analysis, training, and personal-study workstation with an optional thin Electron host. It is under active development.
 
-Riverline is under active development. Its current strategy output is primarily heuristic and should not be treated as solved GTO.
+## What Riverline does today
 
-## What it does today
+- **Hand:** play complete legal 2–10-player hands through canonical poker state and actions.
+- **Full Hand Review and Replay:** inspect the hand timeline and each recorded Hero decision, with source-aware comparison and direct Analyze/Save routes.
+- **Analyze:** study Scenario snapshots or canonical Hand decisions through structured explanation, Matrix, range/board/blocker facts, provenance, and limitations.
+- **Training:** use deterministic legal Varied, Focused, and Full Hand practice. The Training Practice Planner chooses structural targets; the canonical generator remains legal-trajectory authority.
+- **Personal Strategy:** teach intended preflop strategy by profile and user-named mode through Calibration, Matrix, Range Builder, and Range Teacher. Intended strategy remains distinct from reference truth and observed behavior.
+- **Equity:** calculate canonical exact or seeded Monte Carlo Hold'em outcomes, including ties and multiway pots.
+- **Saved and Home:** save versioned Hands and Spots locally, reopen canonical Replay, annotate/review them, and use the My Riverline hub.
+- **Home Game:** track a separate exact-money cash-game organizer domain with append-only corrections and deterministic settlement.
+- **Guide and Settings:** access product help and shared presentation, accessibility, localization, audio, motion, theme, density, layout, and card preferences.
 
-- **Playbook:** enter hole cards, board cards, position, stack, pot, and prior action to receive a strategy mix and supporting hand metrics.
-- **Win Probability / Equity:** estimate outcomes for known hands and board states, including ties and multiway pots. The current Equity UI supports up to eight players.
-- **Training:** generate practice spots and compare a chosen action with Riverline's current recommendation.
-- **Game configuration:** Playbook and Training support tables from 2 to 10 players, full-ring positions, and configurable stack depths.
-- **Game modes:** Home games have no deduction; ClubGG deducts exactly 0.1bb from each seated player once per hand, outside the contestable pot.
-- **Strategy:** the deterministic heuristic fallback is the browser's only current production strategy authority. Future solver-backed providers must enter through a new validated, versioned contract.
+## Strategy truth
 
-The Playbook's current application boundary is deliberately small: a versioned `DecisionContext` is passed to a strategy source, which returns a versioned `StrategyResult`. This provides a stable seam for future solver- and model-backed work without presenting today's heuristics as equilibrium solutions.
+Riverline is not a validated general Hold'em solver. Its only current production strategy is a deterministic generalized heuristic fallback behind `DecisionContext` → `StrategyProvider` → `StrategyResult` → `StrategyClaimPolicy`. It supports honest comparative study, not solved-GTO, Nash, exact-EV, exploitability, or optimality claims. Future trusted sources must be versioned, validated, provenance-aware, and exact about context coverage.
 
-For pricing, `facingSizeBb` means the nominal wager-to level. The trusted
-incremental price to call is `callAmountBb` when available; Scenario mode
-intentionally leaves it unavailable when no legal history establishes it.
+For pricing, `facingSizeBb` is the nominal wager-to context. The trusted incremental call price is `callAmountBb` when canonical history establishes it. Scenario mode intentionally preserves missing legal-history facts as unavailable.
+
+## Current direction
+
+The accepted table, Full Hand Review, and audio/motion checkpoints are followed by documentation reconciliation and a focused visible-product sequence: regression repair, first-use orientation, workspace composition, table physicality, Home Game continuation, Settings information architecture, and premium closeout. Trusted reference strategy and learning-intelligence work then resume. [Current phase](docs/project/CURRENT_PHASE.md) owns exact execution order.
 
 ## Run Riverline
 
-### Browser
+Browser mode uses the checked-in dependency-free Node development server:
 
-Browser mode uses a checked-in dependency-free Node development server and does not require a Python package installation.
-
-```bash
+```powershell
 node tools/dev-web-server.mjs
 ```
 
-Open `http://127.0.0.1:3000/` and configure your browser with `--port` or, if needed, `RIVERLINE_DEV_PORT`:
+Open `http://127.0.0.1:3000/`. Use `--port` or `RIVERLINE_DEV_PORT` when needed. Run from the repository root so application and canonical Equity worker assets are served correctly.
 
-```bash
-node tools/dev-web-server.mjs --port 4000
-$env:RIVERLINE_DEV_PORT='4000'
-# optional fallback for compatibility:
-$env:PORT='4000'
-node tools/dev-web-server.mjs
-```
+For Electron:
 
-`RIVERLINE_DEV_PORT` takes precedence over `PORT` when both are set.
-
-Run this command from the repository root so application and canonical Equity worker assets are served correctly.
-
-### Canonical dev/test commands
-
-```bash
-node --test tests/*.test.js tests/*.test.mjs
-$env:PYTHONPATH='solver;.'
-py -3.12 -B -m unittest discover -s tests/solver -p 'test_*.py'
-```
-
-### Electron desktop app
-
-Install a current Node.js/npm release, then run:
-
-```bash
+```powershell
 cd app
 npm install
 npm start
 ```
 
-The Electron app loads `app/index.html` directly. A Python backend is not required.
-
-Install app dependencies from:
-
-```bash
-cd app
-npm install
-```
-
 Firefox is the primary browser acceptance target.
 
-## Current status and limitations
+## Canonical verification
 
-- Riverline is a pre-beta analysis and study tool, not a validated poker solver.
-- Heuristic recommendations are not solved GTO, CFR output, or evidence of low exploitability.
-- Riverline has no trusted production model and does not load model/ONNX assets in either browser or Electron mode.
-- Multiway equity analysis is supported; solver-backed multiway equilibrium is not.
-- Equity uses exact enumeration where practical and Monte Carlo simulation for larger incomplete states.
-
-## Development direction
-
-Current work focuses on stabilizing shared poker state and action contracts, consolidating evaluator paths, and strengthening regression coverage. The longer-term aim is to create reproducible solver-generated data, introduce a new validated strategy-provider contract, and improve preflop first before extending postflop approximations.
+```powershell
+node --test tests/*.test.js tests/*.test.mjs
+$env:PYTHONPATH='solver;.'
+py -3.12 -B -m unittest discover -s tests/solver -p 'test_*.py'
+```
 
 ## Documentation
 
 - [Documentation index](docs/README.md)
 - [Project charter](docs/project/PROJECT_CHARTER.md)
 - [Architecture contract](docs/project/ARCHITECTURE_CONTRACT.md)
-- [Roadmap](docs/project/ROADMAP.md)
+- [Current phase](docs/project/CURRENT_PHASE.md)
 - [Contributing](CONTRIBUTING.md)
