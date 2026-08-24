@@ -12,6 +12,10 @@ import {
 import {
   BLUFF_ANALYSIS_FACTS_SCHEMA_VERSION,
 } from './bluff-analysis.mjs';
+import {
+  formatExactPokerAmountBb,
+  formatSuggestedSizingBb,
+} from './poker-sizing-presentation.mjs';
 
 export { deriveBoardStructureFacts as deriveBoardTextureFacts } from './range-analysis.mjs';
 
@@ -169,7 +173,9 @@ function normalizeHistory(history, authorityType) {
       actionType: String(entry?.actionType || 'unknown'),
       actionLabel: String(entry?.actionLabel || entry?.actionType || 'Action'),
       amountBb,
-      amountLabel: entry?.amountLabel ? String(entry.amountLabel) : (amountBb === null ? null : bb(amountBb)),
+      amountLabel: entry?.amountLabel
+        ? String(entry.amountLabel)
+        : (amountBb === null ? null : formatExactPokerAmountBb(amountBb)),
       isHero: Boolean(entry?.isHero),
     };
   }).sort((left, right) => left.sequence - right.sequence);
@@ -970,7 +976,7 @@ function sizingSection(context, actions) {
     const fraction = explicitFraction ?? derivedFraction;
     const values = {
       action: entry.label,
-      amount: amount === null ? 'not supplied' : bb(amount),
+      amount: amount === null ? 'not supplied' : formatSuggestedSizingBb(amount),
       potShare: fraction === null ? 'not supplied' : percent(fraction, 0),
     };
     return fact(`sizing_${entry.action.type}_${index}`, {

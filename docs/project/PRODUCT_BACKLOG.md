@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 24, 2026 (`DOCS-INTEGRITY-001`; `AUDIO-MOTION-001` accepted checkpoint).
+Last consolidated: August 24, 2026 (`UX-REGRESSION-001` accepted; `WELCOME-INTRO-001` active next).
 
 This is the one accepted capability/status record for each product domain. `CURRENT_PHASE.md` owns exact execution order; subsystem specifications own implementation semantics; `QA_BACKLOG.md` owns issue-level defects; `PRODUCT_RETURN_QUEUE.md` owns compact must-return debt.
 
@@ -9,6 +9,7 @@ This is the one accepted capability/status record for each product domain. `CURR
 - **COMPLETED** — accepted bounded implementation.
 - **CHECKPOINTED / INTENTIONALLY INCOMPLETE** — accepted foundation with explicit remaining work.
 - **ACTIVE** — current bounded ticket.
+- **ACTIVE NEXT** — accepted next bounded ticket; implementation starts in its own chat.
 - **PLANNED NEXT** — ordered accepted work.
 - **PLANNED LATER** — accepted and ordered behind nearer work.
 - **PRESERVED FUTURE** — accepted capability without immediate commitment.
@@ -24,26 +25,26 @@ Reference strategy, intended Personal Strategy, observed behavior, and opponent 
 
 ## Current delivery order
 
-`AUDIO-MOTION-001` is completed and accepted. `DOCS-INTEGRITY-001` is active. After this ticket:
+`DOCS-INTEGRITY-001` and `UX-REGRESSION-001` are completed and accepted. `WELCOME-INTRO-001` is active next:
 
 | Order | Status | Ticket / outcome |
 |---:|---|---|
-| 1 | PLANNED NEXT | `UX-REGRESSION-001` |
-| 2 | PLANNED NEXT | `WELCOME-INTRO-001` |
-| 3 | PLANNED NEXT | `WORKSPACE-COMPOSITION-002` |
-| 4 | PLANNED NEXT | `TABLE-PHYSICALITY-003` |
-| 5 | PLANNED NEXT | `HOME-GAME-001B` |
-| 6 | PLANNED NEXT | `SETTINGS-IA-001` |
-| 7 | PLANNED NEXT | `PREMIUM-CLOSEOUT-001` |
-| 8 | PLANNED NEXT | first trusted bounded reference pack/provider |
-| 9 | PLANNED NEXT | Training Memory / re-drill |
-| 10 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
-| 11 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
-| 12 | PLANNED LATER | `PERSONAL-INSIGHTS-001` |
-| 13 | PLANNED LATER | `RANGE-EVOLUTION-001` |
-| 14 | PLANNED LATER | `HOME-002B` Saved Study Library |
-| 15 | PRESERVED FUTURE | OpponentPolicy / bots |
-| 16 | PRESERVED FUTURE | release/mobile/social/PLO later |
+| checkpoint | COMPLETED | `UX-REGRESSION-001` |
+| 1 | ACTIVE NEXT | `WELCOME-INTRO-001` |
+| 2 | PLANNED NEXT | `WORKSPACE-COMPOSITION-002` |
+| 3 | PLANNED NEXT | `TABLE-PHYSICALITY-003` |
+| 4 | PLANNED NEXT | `HOME-GAME-001B` |
+| 5 | PLANNED NEXT | `SETTINGS-IA-001` |
+| 6 | PLANNED NEXT | `PREMIUM-CLOSEOUT-001` |
+| 7 | PLANNED NEXT | first trusted bounded reference pack/provider |
+| 8 | PLANNED NEXT | Training Memory / re-drill |
+| 9 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
+| 10 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
+| 11 | PLANNED LATER | `PERSONAL-INSIGHTS-001` |
+| 12 | PLANNED LATER | `RANGE-EVOLUTION-001` |
+| 13 | PLANNED LATER | `HOME-002B` Saved Study Library |
+| 14 | PRESERVED FUTURE | OpponentPolicy / bots |
+| 15 | PRESERVED FUTURE | release/mobile/social/PLO later |
 
 The order is directional and may move after later accepted checkpoints. Reprioritization updates `CURRENT_PHASE.md`, `ROADMAP.md`, and affected backlog entries together.
 
@@ -163,7 +164,7 @@ Riverline remains useful offline; authentication never silently enables upload.
 | Capability | Status | Accepted scope |
 |---|---|---|
 | `HOME-GAME-001A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Separate players/groups/sessions, exact minor-unit ledger, append-only corrections, chip snapshots, lifecycle, balance rejection, deterministic settlement, account IndexedDB/Guest memory. |
-| Create Game routing blocker | PLANNED NEXT | Immediate broken route owned by `UX-REGRESSION-001`; broader flow stays `HOME-GAME-001B`. |
+| Create Game routing blocker | COMPLETED | Primary creation stays in Home Game Organizer and opens the intended active session; broader flow stays `HOME-GAME-001B`. |
 | `HOME-GAME-001B` | PLANNED NEXT | Player reuse/edit/archive, visible correction history, session archive/delete, group/session management polish, import/export decision, Firefox acceptance. |
 | richer organizer tools | PRESERVED FUTURE | Blind timer/button advance, richer chips, player history, recurring games, payments; tournament only with separate accounting semantics. |
 | live/mobile sharing | PRESERVED FUTURE | After accounts and organizer foundations. |
@@ -172,11 +173,11 @@ Riverline remains useful offline; authentication never silently enables upload.
 
 | Capability | Status | Accepted scope |
 |---|---|---|
-| `UX-REGRESSION-001` | PLANNED NEXT | Immediate functional/semantic/legibility regressions enumerated in QA; no unrelated audio debt. |
-| `WELCOME-INTRO-001` | PLANNED NEXT | Concise first-use product introduction and obvious Hand/Analyze/Train/Equity/Personal Strategy/Guide actions; first-use friendly, dismissible/remembered, non-nagging for experienced users, EN/RU/HE, accessible, not a recurring modal or giant splash. Separate from workspace tutorials. |
+| `UX-REGRESSION-001` | COMPLETED | Eleven owned functional, semantic, persistence, and legibility regressions closed with focused/full-suite coverage and bounded Firefox 154 acceptance; no unrelated audio or composition debt absorbed. |
+| `WELCOME-INTRO-001` | ACTIVE NEXT | Concise first-use product introduction and obvious Hand/Analyze/Train/Equity/Personal Strategy/Guide actions; first-use friendly, dismissible/remembered, non-nagging for experienced users, EN/RU/HE, accessible, not a recurring modal or giant splash. Separate from workspace tutorials. |
 | `WORKSPACE-COMPOSITION-002` | PLANNED NEXT | Whole-workspace hierarchy, dead space, presets, density, Training facts, Equity, table balance; may redesign/rename/consolidate/remove weak presets. |
 | `TABLE-PHYSICALITY-003` | PLANNED NEXT | Better felt/table proportions, rail/depth, seat/card integration, chip stacks, contributions, central pot, restrained physical motion, and table readability over existing authorities. Reject casino scene, spectacle, confetti, fake 3D, and avatars by default. |
-| `SETTINGS-IA-001` | PLANNED NEXT | Split Settings god-menu concerns, improve help/tutorial discovery, and make theme editing transactional with immutable built-ins. |
+| `SETTINGS-IA-001` | PLANNED NEXT | Split Settings god-menu concerns and improve help/tutorial discovery; transactional editing and immutable built-ins are already accepted. |
 | `PREMIUM-CLOSEOUT-001` | PLANNED NEXT | Whole-app hierarchy/Core Flow, Guide, desktop, themes/density/cards, EN/RU/HE/RTL, accessibility and human visual closeout. |
 | themes/layout/density/cards | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Midnight/Daylight/Graphite + custom themes; Balanced/Table Focus/Analysis Focus/Controls First; Comfortable/Compact; shared Premium Cards. Freeze expansion and fix value/defaults. |
 | restrained felt/table/chip customization | OPEN PRODUCT DECISION | Later product-design question only. **Default quality first**; customization cannot compensate for a bad default. |

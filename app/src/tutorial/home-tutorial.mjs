@@ -4,7 +4,9 @@ export const HOME_TUTORIAL_ID = 'home.first-use';
 
 export const HOME_TUTORIAL_DEFINITION = createTutorialDefinition({
   id: HOME_TUTORIAL_ID,
-  version: 2,
+  // The expanded Home tour remains the released v1 experience. Only an
+  // intentional content migration may bump this and re-offer first use.
+  version: 1,
   workspace: 'home',
   titleKey: 'A quick tour of Home',
   descriptionKey: 'See how Home keeps useful study work close without turning it into another task list.',

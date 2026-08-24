@@ -560,7 +560,7 @@
                 <label class="ui-field" for="homeGameInitialBuyIn"><span data-i18n="Initial buy-in per player">Initial buy-in per player</span><input id="homeGameInitialBuyIn" class="control-input" type="number" min="0" step="0.01" value="0" inputmode="decimal"></label>
                 <label class="home-game-check"><input id="homeGameSaveGroup" type="checkbox"><span data-i18n="Save Group">Save Group</span></label>
                 <label class="ui-field" for="homeGameGroupName"><span data-i18n="Group name">Group name</span><input id="homeGameGroupName" class="control-input" type="text" maxlength="100" disabled placeholder="Friday Game" data-i18n-placeholder="Friday Game"></label>
-                <button class="ui-button ui-button--primary" type="submit" data-i18n="Start session">Start session</button>
+                <button id="homeGameCreateButton" class="ui-button ui-button--primary" type="submit" disabled data-i18n="Start session">Start session</button>
               </form>
             </section>
 
@@ -822,7 +822,14 @@
 
               </div>
 
-              <div class="card-slots" data-slots="board"></div>
+              <div class="playbook-board-layout" dir="ltr">
+                <div class="playbook-board-street-guide" aria-hidden="true">
+                  <span data-playbook-street="flop" data-i18n="Flop">Flop</span>
+                  <span data-playbook-street="turn" data-i18n="Turn">Turn</span>
+                  <span data-playbook-street="river" data-i18n="River">River</span>
+                </div>
+                <div class="card-slots playbook-board-cards" data-slots="board"></div>
+              </div>
 
               <div class="divider"></div>
 
@@ -970,7 +977,7 @@
               <div class="playbook-inline-actions">
                 <div id="scenarioSavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--scenario" data-tutorial-anchor="scenario-save">
                   <div id="savedStudySourceActions" class="saved-study-source-actions">
-                    <button id="savedStudySaveButton" class="ui-button ui-button--secondary" type="button" aria-pressed="false" aria-describedby="savedStudySourceStatus" data-i18n="Save spot">Save spot</button>
+                    <button id="savedStudySaveButton" class="ui-button ui-button--secondary saved-study-bookmark-action" type="button" aria-pressed="false" data-bookmark-state="unsaved" aria-describedby="savedStudySourceStatus" data-i18n="Save spot">Save spot</button>
                     <button id="savedStudyEditButton" class="ui-button ui-button--quiet" type="button" hidden data-i18n="Edit saved item">Edit saved item</button>
                     <span id="savedStudySourceStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-i18n="This spot is not saved.">This spot is not saved.</span>
                   </div>
@@ -1284,7 +1291,7 @@
                 <button id="handCompletedReviewButton" class="ui-button ui-button--primary" type="button" data-i18n="Review hand">Review hand</button>
                 <button id="handCompletedAnalysisButton" class="ui-button ui-button--secondary" type="button" data-i18n="Analysis">Analysis</button>
                 <button id="handCompletedReplayButton" class="ui-button ui-button--secondary" type="button" data-i18n="Replay">Replay</button>
-                <button id="handCompletedSaveButton" class="ui-button ui-button--secondary" type="button" data-i18n="Save hand">Save hand</button>
+                <button id="handCompletedSaveButton" class="ui-button ui-button--secondary saved-study-bookmark-action" type="button" aria-pressed="false" data-bookmark-state="unsaved" data-i18n="Save hand">Save hand</button>
               </div>
               <p id="handCompletedAnalysisNote" class="panel-note" data-i18n="Analysis opens the latest recorded Hero decision and keeps this completed Hand available.">Analysis opens the latest recorded Hero decision and keeps this completed Hand available.</p>
             </section>
@@ -1380,8 +1387,8 @@
 
                   <div class="hand-review-actions">
                     <button id="handReviewAnalyze" class="ui-button ui-button--primary" type="button" data-i18n="Analyze this decision">Analyze this decision</button>
-                    <button id="handReviewSaveSpot" class="ui-button ui-button--secondary" type="button" data-i18n="Save this decision">Save this decision</button>
-                    <button id="handReviewSaveHand" class="ui-button ui-button--secondary" type="button" data-i18n="Save hand">Save hand</button>
+                    <button id="handReviewSaveSpot" class="ui-button ui-button--secondary saved-study-bookmark-action" type="button" aria-pressed="false" data-bookmark-state="unsaved" data-i18n="Save this decision">Save this decision</button>
+                    <button id="handReviewSaveHand" class="ui-button ui-button--secondary saved-study-bookmark-action" type="button" aria-pressed="false" data-bookmark-state="unsaved" data-i18n="Save hand">Save hand</button>
                     <button id="handReviewRepeat" class="ui-button ui-button--secondary" type="button" data-i18n="Repeat hand">Repeat hand</button>
                     <button id="handReviewNext" class="ui-button ui-button--secondary" type="button" data-i18n="Next hand">Next hand</button>
                     <button id="handReviewReturn" class="ui-button ui-button--quiet" type="button" data-i18n="Return to completed table">Return to completed table</button>
@@ -2675,6 +2682,11 @@
               </div>
               <fieldset class="theme-customization section-inset" aria-describedby="themeCustomizationHelp themeCustomizationStatus">
                 <legend data-i18n="Custom colors">Custom colors</legend>
+                <div class="theme-edit-actions" role="group" aria-label="Theme edit session" data-i18n-aria-label="Theme edit session">
+                  <button id="editTheme" class="ui-button ui-button--secondary" type="button" data-i18n="Edit theme">Edit theme</button>
+                  <button id="saveThemeChanges" class="ui-button ui-button--primary" type="button" disabled data-i18n="Save changes">Save changes</button>
+                  <button id="cancelThemeEdit" class="ui-button ui-button--quiet" type="button" disabled data-i18n="Cancel">Cancel</button>
+                </div>
                 <div class="theme-color-controls">
                   <div class="theme-color-field">
                     <span data-i18n="Accent color">Accent color</span>
@@ -2728,7 +2740,6 @@
                 </div>
                 <div class="theme-library-actions" role="group" aria-label="Theme operations" data-i18n-aria-label="Theme operations">
                   <button id="duplicateTheme" class="ui-button ui-button--secondary" type="button" data-i18n="Duplicate">Duplicate</button>
-                  <button id="renameCustomTheme" class="ui-button ui-button--secondary" type="button" data-i18n="Rename">Rename</button>
                   <button id="deleteCustomTheme" class="ui-button ui-button--secondary ui-button--danger" type="button" data-i18n="Delete">Delete</button>
                 </div>
                 <div class="theme-customization-actions">

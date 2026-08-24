@@ -653,13 +653,21 @@ function analysisFactByKey(explanation, key) {
   return explanation.sections.flatMap((entry) => entry.facts).find((entry) => entry.key === key) || null;
 }
 
-function studyHintDefinition(explanation, step) {
+function studyHintDefinition(explanation, step, { street = null } = {}) {
+  const preflopHandClass = analysisFactByKey(explanation, 'preflop_hand_class');
+  const preflop = street === 'preflop' || (!street && Boolean(preflopHandClass));
   if (step === 1) {
-    const facts = ['made_hand', 'draws', 'preflop_hand_class']
+    const facts = (preflop
+      ? ['preflop_hand_class', 'hero_cards', 'hero_position']
+      : ['made_hand', 'draws', 'hero_cards'])
       .map((key) => analysisFactByKey(explanation, key)).filter(Boolean);
     return {
-      title: analysisMessage('analysis.hint.hand.title', 'Hand'),
-      prompt: analysisMessage('analysis.hint.hand.prompt', 'What made hand does Hero have here? Are there meaningful draws?'),
+      title: preflop
+        ? analysisMessage('analysis.hint.startingHand.title', 'Starting hand')
+        : analysisMessage('analysis.hint.hand.title', 'Hand'),
+      prompt: preflop
+        ? analysisMessage('analysis.hint.startingHand.prompt', 'How does Hero\'s starting-hand class fit this preflop position and action?')
+        : analysisMessage('analysis.hint.hand.prompt', 'What made hand does Hero have here? Are there meaningful draws?'),
       facts: facts.length ? facts : [analysisFactByKey(explanation, 'hero_cards')].filter(Boolean),
     };
   }
@@ -675,19 +683,25 @@ function studyHintDefinition(explanation, step) {
     };
   }
   return {
-    title: analysisMessage('analysis.hint.board.title', 'Board & field'),
-    prompt: analysisMessage('analysis.hint.board.prompt', 'How should the board texture and number of opponents affect the strength of this hand?'),
-    facts: ['board_pairing', 'board_suits', 'board_connectivity', 'heuristic_opponent_count', 'table_size', 'postflop_position_relation']
+    title: preflop
+      ? analysisMessage('analysis.hint.position.title', 'Position & field')
+      : analysisMessage('analysis.hint.board.title', 'Board & field'),
+    prompt: preflop
+      ? analysisMessage('analysis.hint.position.prompt', 'How should Hero\'s position, table size, and prior action shape this preflop decision?')
+      : analysisMessage('analysis.hint.board.prompt', 'How should the board texture and number of opponents affect the strength of this hand?'),
+    facts: (preflop
+      ? ['hero_position', 'table_size', 'big_blind_check_option', 'heuristic_opponent_count']
+      : ['board_pairing', 'board_suits', 'board_connectivity', 'heuristic_opponent_count', 'table_size', 'postflop_position_relation'])
       .map((key) => analysisFactByKey(explanation, key)).filter(Boolean),
   };
 }
 
-function renderAnalysisStudyHints(container, explanation, step = 0) {
+function renderAnalysisStudyHints(container, explanation, step = 0, options = {}) {
   if (!container) return null;
   container.replaceChildren();
   if (!explanation || explanation.schemaVersion !== 'analysis-explanation/v1' || step < 1) return null;
   const currentStep = Math.min(3, step);
-  const hint = studyHintDefinition(explanation, currentStep);
+  const hint = studyHintDefinition(explanation, currentStep, options);
   const article = analysisElement('article', 'analysis-study-hint');
   article.dataset.hintStep = String(step);
   article.append(

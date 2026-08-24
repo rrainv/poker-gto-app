@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 24, 2026 (`DOCS-INTEGRITY-001`; `AUDIO-MOTION-001` accepted checkpoint).
+Last refreshed: August 24, 2026 (`UX-REGRESSION-001` accepted; `WELCOME-INTRO-001` active next).
 
 This roadmap explains directional sequencing. `CURRENT_PHASE.md` owns the exact current checkpoint and execution order; `PRODUCT_BACKLOG.md` owns detailed accepted capability/status. The order may move after later accepted checkpoints.
 
@@ -33,7 +33,7 @@ The current checkpoint includes:
 - Saved Hand/Spot, My Riverline, account/Guest/sync foundations, and Home Game Organizer `001A`;
 - adaptive Table Presence, canonical Replay, shared Full Hand Review, and accepted audio/motion architecture.
 
-The accepted Node baseline at `AUDIO-MOTION-001` is 1,759/1,759. This roadmap does not convert implementation tests into visual sign-off; manual/live-provider debt remains in QA and the Return Queue.
+The accepted Node baseline at `UX-REGRESSION-001` is 1,773/1,773. The ticket also completed bounded Firefox 154 acceptance for its owned states; this does not convert unrelated implementation tests into visual sign-off, and remaining manual/live-provider debt stays in QA and the Return Queue.
 
 ## Why visible product work was extended
 
@@ -43,14 +43,14 @@ Riverline therefore should not immediately return to deep reference/math work. I
 
 ## Current directional sequence
 
-`AUDIO-MOTION-001` is completed/accepted and `DOCS-INTEGRITY-001` is the active documentation reconciliation. After Docs Integrity:
+`DOCS-INTEGRITY-001` and `UX-REGRESSION-001` are completed/accepted. `WELCOME-INTRO-001` is active next:
 
-1. **`UX-REGRESSION-001`** — repair immediate functional/semantic/persistence/legibility regressions, including known-card identity and Home Game routing; do not absorb subjective audio debt.
-2. **`WELCOME-INTRO-001`** — concise first-use product orientation and obvious entry actions without a recurring modal or giant marketing splash.
+1. **COMPLETED — `UX-REGRESSION-001`** — eleven immediate functional, semantic, persistence, and legibility regressions repaired without changing poker authority or absorbing subjective audio debt.
+2. **ACTIVE NEXT — `WELCOME-INTRO-001`** — concise first-use product orientation and obvious entry actions without a recurring modal or giant marketing splash.
 3. **`WORKSPACE-COMPOSITION-002`** — repair hierarchy, dead space, control grouping, density value, weak presets, Training facts, Equity composition, and table balance.
 4. **`TABLE-PHYSICALITY-003`** — improve the default table/felt/rail/seat/card/chip/contribution/pot/readability composition over the existing presentation/experience seams.
 5. **`HOME-GAME-001B`** — continue organizer management, correction history, lifecycle, import/export decision, and Firefox acceptance.
-6. **`SETTINGS-IA-001`** — decompose the Settings god menu, improve help/tutorial discovery, and make theme editing transactional with immutable built-ins.
+6. **`SETTINGS-IA-001`** — decompose the Settings god menu and improve help/tutorial discovery; transactional theme editing and immutable built-ins are already repaired.
 7. **`PREMIUM-CLOSEOUT-001`** — whole-app Core Flow, Guide, responsive/theme/density/card, EN/RU/HE/RTL, accessibility, and human visual closeout.
 8. **First trusted bounded reference pack/provider** — exact assumptions, versioning, validation, licensing/provenance, capabilities, exact coverage, fallback elsewhere.
 9. **Training Memory / re-drill** — canonical DecisionRecord/session history, review queue, same/similar spot, spaced/adaptive study, filters and truthful trends.

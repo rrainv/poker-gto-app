@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 24, 2026 (`DOCS-INTEGRITY-001` active; `AUDIO-MOTION-001` accepted implementation checkpoint).
+Last refreshed: August 24, 2026 (`UX-REGRESSION-001` accepted; `WELCOME-INTRO-001` active next).
 
 Code, tests, accepted ticket reports, manual QA, and explicit product decisions override this snapshot. `PRODUCT_BACKLOG.md` preserves detailed future capability; subsystem specs remain authoritative for implementation semantics.
 
@@ -9,6 +9,7 @@ Code, tests, accepted ticket reports, manual QA, and explicit product decisions 
 - **COMPLETED** — accepted bounded implementation; later work must be a new ticket.
 - **CHECKPOINTED / INTENTIONALLY INCOMPLETE** — useful foundation accepted with a defined resume point.
 - **ACTIVE** — current bounded ticket.
+- **ACTIVE NEXT** — accepted next bounded ticket; implementation starts in its own chat.
 - **ACTIVE / FINAL QA CORRECTION** — the current ticket remains the sole active implementation scope pending final human acceptance.
 - **PLANNED NEXT** — accepted work ordered after the active ticket.
 - **PLANNED LATER** — ordered work that remains behind the immediate planned-next ticket.
@@ -39,19 +40,24 @@ Code, tests, accepted ticket reports, manual QA, and explicit product decisions 
    - subjective Study/UI and Check refinement remains known polish debt rather than a claim of sound-design perfection;
    - reduced motion, sound off, no-casino, no-reward, and no-proprietary-asset constraints are automated.
 
-5. **ACTIVE — `DOCS-INTEGRITY-001`**
+5. **COMPLETED — `DOCS-INTEGRITY-001`**
 
-6. **PLANNED NEXT — `UX-REGRESSION-001`** — immediate functional, semantic, persistence, card-identity, board, sizing-display, and legibility regressions; do not absorb audio polish.
+6. **COMPLETED — `UX-REGRESSION-001` accepted checkpoint**
+   - the eleven owned hands-on regressions are closed with focused tests and Firefox 154 acceptance;
+   - suggested strategy sizing now has one human-readable presentation authority while canonical actual amounts remain exact;
+   - tutorial lifecycle, Home Game Create, transactional theme editing, Saved bookmark state, and street-aware Training hints preserve their existing domain authorities;
+   - readable picker/known cards, one-row board, balanced Training actions, and materially larger Table Focus targets are durable presentation invariants;
+   - no unrelated audio, workspace-composition, Settings IA, or table-physicality work was absorbed.
 
-7. **PLANNED NEXT — `WELCOME-INTRO-001`** — concise first-use product orientation and obvious major-job entry actions; not a recurring modal or per-workspace tutorial replacement.
+7. **ACTIVE NEXT — `WELCOME-INTRO-001`** — concise first-use product orientation and obvious major-job entry actions; not a recurring modal or per-workspace tutorial replacement.
 
 8. **PLANNED NEXT — `WORKSPACE-COMPOSITION-002`** — hierarchy, dead space, presets, density, scanability, Equity/Training/table composition.
 
 9. **PLANNED NEXT — `TABLE-PHYSICALITY-003`** — improve default table/felt/rail/seat/card/chip/pot/readability quality over existing presentation/experience authorities; no casino spectacle.
 
-10. **PLANNED NEXT — `HOME-GAME-001B`** — organizer management continuation after the immediate Create Game blocker is repaired by UX Regression.
+10. **PLANNED NEXT — `HOME-GAME-001B`** — organizer management continuation; the immediate Create Game routing blocker is already repaired.
 
-11. **PLANNED NEXT — `SETTINGS-IA-001`** — Settings information architecture, tutorial/help discovery, and transactional theme editing.
+11. **PLANNED NEXT — `SETTINGS-IA-001`** — Settings information architecture and tutorial/help discovery; transactional theme editing is already repaired.
 
 12. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`** — whole-app Core Flow, desktop, themes/density/cards, Guide, EN/RU/HE/RTL, accessibility, and human visual closeout.
 
@@ -77,7 +83,7 @@ Reassess at every clean checkpoint.
 
 ## Global baseline and CI — COMPLETED
 
-The `AUDIO-MOTION-001` correction finished with the canonical 1,759/1,759 Node suite green. Human QA accepted the implementation checkpoint while retaining subjective audio polish debt; automated success is not presented as subjective perfection. Minimal GitHub Actions runs canonical syntax checks plus the full Node suite on Node 24.
+The `UX-REGRESSION-001` checkpoint finished with the canonical 1,773/1,773 Node suite green, changed JavaScript syntax checks green, and Firefox 154 acceptance for the owned visual and interaction matrix. Human visual acceptance is recorded only for those bounded states; unrelated manual/live-provider debt remains open. Minimal GitHub Actions runs canonical syntax checks plus the full Node suite on Node 24.
 
 Correctness and interaction performance remain distinct gates. Machine-sensitive macro timings stay outside semantic correctness assertions.
 
@@ -218,7 +224,7 @@ Current foundation includes:
 - reusable poker-chip primitive;
 - reduced-motion-safe restrained movement.
 
-The richer visual branch is checkpointed through `TABLE-PRESENCE-REF-001`, `TABLE-PRESENCE-002`, `FULL-HAND-REVIEW-001`, and the accepted `AUDIO-MOTION-001` implementation. `DOCS-INTEGRITY-001` is active; the ordered visible repair sequence begins with `UX-REGRESSION-001` and runs through `PREMIUM-CLOSEOUT-001` before trusted reference work resumes.
+The richer visual branch is checkpointed through `TABLE-PRESENCE-REF-001`, `TABLE-PRESENCE-002`, `FULL-HAND-REVIEW-001`, `AUDIO-MOTION-001`, and the accepted `UX-REGRESSION-001` repair. `WELCOME-INTRO-001` is active next; the ordered visible sequence then runs from `WORKSPACE-COMPOSITION-002` through `PREMIUM-CLOSEOUT-001` before trusted reference work resumes.
 
 Preserve the no-casino aesthetic. `TABLE-PHYSICALITY-003` is real planned work for better default proportions, rail/depth, seat/card integration, chip stacks, contributions, pot composition, restrained motion, and readability. It does not authorize detailed denomination claims, fake cinematic 3D, avatars by default, casino scenery, spectacle, or confetti. Default quality comes before more customization.
 

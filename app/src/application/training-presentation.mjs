@@ -1,3 +1,5 @@
+import { formatExactPokerAmountBb } from './poker-sizing-presentation.mjs';
+
 export const TRAINING_PRESENTATION_SCHEMA_VERSION = 'training-presentation/v1';
 
 const ACTION_ORDER = Object.freeze(['fold', 'check', 'call', 'bet', 'raise', 'all_in']);
@@ -10,7 +12,7 @@ function deepFreeze(value) {
 
 function bbLabel(milliBb) {
   if (!Number.isSafeInteger(milliBb) || milliBb < 0) return null;
-  return `${Number((milliBb / 1000).toFixed(3))}bb`;
+  return formatExactPokerAmountBb(milliBb / 1000);
 }
 
 function words(value) {

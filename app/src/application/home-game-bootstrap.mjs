@@ -4,6 +4,7 @@ import {
   formatMinorUnits,
   parseMoneyToMinorUnits,
 } from '../home-game/index.mjs';
+import './authentication-bootstrap.mjs';
 import { createHomeGameApplication } from './home-game-service.mjs';
 
 function translate(browserWindow, key, parameters = {}) {
@@ -62,6 +63,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     notice: document.getElementById('homeGamePersistenceNotice'),
     error: document.getElementById('homeGameError'),
     form: document.getElementById('homeGameNewSessionForm'),
+    createButton: document.getElementById('homeGameCreateButton'),
     title: document.getElementById('homeGameSessionTitle'),
     currency: document.getElementById('homeGameCurrency'),
     playerNames: document.getElementById('homeGamePlayerNames'),
@@ -346,6 +348,10 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
       saveGroupName: refs.saveGroup.checked ? refs.groupName.value : null,
     }));
   });
+
+  // The primary submit starts disabled in markup so an early click cannot
+  // perform a native form navigation before this organizer handler exists.
+  if (refs.createButton) refs.createButton.disabled = false;
 
   const refresh = () => perform(() => bridge.load());
   browserWindow.addEventListener('riverline:languagechange', () => render());

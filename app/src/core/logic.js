@@ -1554,6 +1554,13 @@ function savedStudySourceCopy(state, mode) {
   return t(hand ? 'This hand is not saved.' : 'This spot is not saved.');
 }
 
+function setSavedStudyBookmarkState(button, saved) {
+  if (!button) return;
+  button.classList.add('saved-study-bookmark-action');
+  button.dataset.bookmarkState = saved ? 'saved' : 'unsaved';
+  button.setAttribute('aria-pressed', String(saved));
+}
+
 function renderSavedStudySourceState(state, object = savedStudyCurrentObject) {
   savedStudySourceState = state;
   savedStudyCurrentObject = state === 'saved' ? object : null;
@@ -1575,7 +1582,7 @@ function renderSavedStudySourceState(state, object = savedStudyCurrentObject) {
       ? 'Saving…'
       : saved ? 'Saved' : hand ? 'Save hand' : 'Save spot';
     saveButton.dataset.saveState = state;
-    saveButton.setAttribute('aria-pressed', String(saved));
+    setSavedStudyBookmarkState(saveButton, saved);
     saveButton.setAttribute('aria-busy', String(busy));
     saveButton.disabled = saved || busy || !canSave;
   }
@@ -1583,6 +1590,13 @@ function renderSavedStudySourceState(state, object = savedStudyCurrentObject) {
   if (completedSaveButton && hand) {
     completedSaveButton.textContent = saved ? t('Saved') : t('Save hand');
     completedSaveButton.disabled = saved || busy || !canSave;
+    setSavedStudyBookmarkState(completedSaveButton, saved);
+  }
+  const reviewSaveHandButton = $('#handReviewSaveHand');
+  if (reviewSaveHandButton && hand) {
+    reviewSaveHandButton.textContent = saved ? t('Saved') : t('Save hand');
+    reviewSaveHandButton.disabled = saved || busy || !canSave;
+    setSavedStudyBookmarkState(reviewSaveHandButton, saved);
   }
   if (editButton) editButton.hidden = !saved;
   if (status) status.textContent = savedStudySourceCopy(state, input.mode);
@@ -3320,11 +3334,16 @@ function renderActiveHandReview() {
     const saved = app.handReview.savedDecisionIds.has(decision.decisionId);
     $('#handReviewSaveSpot').disabled = saved;
     $('#handReviewSaveSpot').textContent = t(saved ? 'Saved decision' : 'Save this decision');
+    setSavedStudyBookmarkState($('#handReviewSaveSpot'), saved);
   }
   if ($('#handReviewSaveHand') && model.actions.saveHand) {
     const canonicalSave = $('#savedStudySaveButton');
     $('#handReviewSaveHand').disabled = !canonicalSave || canonicalSave.disabled;
     $('#handReviewSaveHand').textContent = t(canonicalSave?.getAttribute('aria-pressed') === 'true' ? 'Saved' : 'Save hand');
+    setSavedStudyBookmarkState(
+      $('#handReviewSaveHand'),
+      canonicalSave?.getAttribute('aria-pressed') === 'true',
+    );
   }
   return model;
 }
@@ -5022,7 +5041,9 @@ async function updateContext(reason = 'Context updated') {
   const bestSizing = $('#bestSizing');
   if (bestSizing) {
     if (Number.isFinite(recommendationSizing?.amountBb)) {
-      bestSizing.textContent = `${recommendationSizing.amountBb} bb`;
+      bestSizing.textContent = globalThis.RiverlineAnalysisExplanation
+        ?.formatSuggestedSizingBb?.(recommendationSizing.amountBb)
+        ?? `${recommendationSizing.amountBb} bb`;
       bestSizing.hidden = false;
     } else if (Number.isFinite(recommendationSizing?.potFraction)) {
       bestSizing.textContent = t('{value}% pot', { value: (recommendationSizing.potFraction * 100).toFixed(0) });
@@ -8427,7 +8448,9 @@ function revealNextTrainingStudyHint() {
   if (!explanation) return;
   app.training.studyHintExplanation = explanation;
   app.training.studyHintStep = Math.min(3, app.training.studyHintStep + 1);
-  renderAnalysisStudyHints($('#trainingStudyHintContent'), explanation, app.training.studyHintStep);
+  renderAnalysisStudyHints($('#trainingStudyHintContent'), explanation, app.training.studyHintStep, {
+    street: exercise.decisionContext.street,
+  });
   emitStudyExperience('reference_comparison_revealed', {
     source: 'training_hint',
     payload: { step: app.training.studyHintStep, feedbackSemantics: 'neutral_hint' },
@@ -9413,6 +9436,7 @@ function updateTrainingButtons(exercise) {
     button.addEventListener('click', () => handleTrainingGuess(type));
     container.appendChild(button);
   });
+  container.dataset.actionCount = String(container.childElementCount);
   container.hidden = false;
   if (fullHand) renderFullHandTrainingSizingControls();
   else clearFullHandTrainingSizingControls();

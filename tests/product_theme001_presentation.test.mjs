@@ -80,8 +80,9 @@ test('built-in switching is live, persistent, announced, and limited to three se
   assert.equal(JSON.parse(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY)).activeThemeId, 'daylight');
 });
 
-test('custom accent, surface, and felt persist per built-in theme and restore', () => {
+test('built-in theme edits are runtime-only drafts and switching restores immutable sources', () => {
   const view = fixture();
+  const before = view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY);
   const customization = view.controller.customize({
     accent: '#2f7fd1',
     surface: '#10253b',
@@ -92,35 +93,38 @@ test('custom accent, surface, and felt persist per built-in theme and restore', 
   assert.equal(view.properties.get('--accent-primary'), customization.accent);
   assert.equal(view.properties.get('--surface-canvas'), customization.surface);
   assert.equal(view.properties.get('--poker-felt-accent'), customization.felt);
+  assert.equal(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY), before);
 
   view.controller.apply('graphite');
   assert.equal(view.controller.getCustomization(), null);
-  view.controller.customize({ accent: '#a77731' });
   view.controller.apply('midnight');
-  assert.deepEqual(view.controller.getCustomization(), customization);
+  assert.equal(view.controller.getCustomization(), null);
 
   const restored = fixture({ storage: Object.fromEntries(view.storage.values) });
   assert.equal(restored.controller.getTheme(), 'midnight');
-  assert.deepEqual(restored.controller.getCustomization(), customization);
-  assert.equal(restored.properties.get('--surface-canvas'), customization.surface);
+  assert.equal(restored.controller.getCustomization(), null);
+  assert.deepEqual(JSON.parse(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY)).draftsByTheme, {});
 });
 
-test('reset removes only the current theme customization and restores CSS defaults', () => {
+test('reset and Cancel operate inside a draft without changing the saved custom source', () => {
   const view = fixture();
-  view.controller.customize({ accent: '#3d78c5' });
-  view.controller.apply('graphite');
-  view.controller.customize({ felt: '#6b4b39' });
+  const original = view.controller.customize({ accent: '#3d78c5', felt: '#6b4b39' });
+  const saved = view.controller.saveAsNew('Saved source');
+  const persistedBefore = view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY);
+
+  view.controller.beginEdit();
   view.controller.reset();
   assert.equal(view.controller.getCustomization(), null);
   assert.equal(view.root.dataset.themeCustomized, 'false');
   assert.equal(view.properties.size, 0);
-
-  view.controller.apply('midnight');
-  assert.ok(view.controller.getCustomization()?.accent);
+  assert.equal(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY), persistedBefore);
+  assert.equal(view.controller.cancelEdit(), true);
+  assert.deepEqual(view.controller.getCustomization(), original);
+  assert.equal(view.controller.getTheme(), saved.id);
   const record = JSON.parse(view.storage.getItem(PRESENTATION_THEME_CUSTOMIZATION_STORAGE_KEY));
   assert.equal(record.schemaVersion, PRESENTATION_THEME_SCHEMA_VERSION);
-  assert.ok(record.draftsByTheme.midnight);
-  assert.equal(record.draftsByTheme.graphite, undefined);
+  assert.deepEqual(record.customThemes[0].overrides, original);
+  assert.deepEqual(record.draftsByTheme, {});
 });
 
 test('invalid and legacy storage values repair to Midnight without leaking raw CSS', () => {

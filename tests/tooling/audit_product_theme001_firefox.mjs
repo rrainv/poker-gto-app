@@ -158,6 +158,8 @@ try {
   }
 
   await setTheme(page, 'graphite');
+  await page.click('#editTheme');
+  await page.waitForFunction(() => document.documentElement.dataset.themeEditing === 'true');
   const accentBeforeCancel = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim());
   await page.click('#themeAccentColor');
   await page.$eval('#themeColorHex', (input) => {
@@ -229,6 +231,25 @@ try {
     controllerAccent: window.RiverlinePresentationTheme.getColors().accent,
   }));
   await setTheme(page, 'graphite');
+  const themeCancelBefore = await page.evaluate(() => ({
+    accent: getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim(),
+    storage: localStorage.getItem('riverline_presentation_theme_customization'),
+  }));
+  await page.click('#editTheme');
+  await page.waitForFunction(() => document.documentElement.dataset.themeEditing === 'true');
+  await setPickerColor(page, '#themeAccentColor', '#abcdef');
+  const themeCancelDraftAccent = await page.evaluate(() => (
+    getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim()
+  ));
+  await page.click('#cancelThemeEdit');
+  await page.waitForFunction(() => document.documentElement.dataset.themeEditing === 'false');
+  const themeCancelAfter = await page.evaluate(() => ({
+    accent: getComputedStyle(document.documentElement).getPropertyValue('--accent-primary').trim(),
+    storage: localStorage.getItem('riverline_presentation_theme_customization'),
+  }));
+  await setTheme(page, 'graphite');
+  await page.click('#editTheme');
+  await page.waitForFunction(() => document.documentElement.dataset.themeEditing === 'true');
   await setPickerColor(page, '#themeAccentColor', '#b46f38');
   const appliedAccentState = await page.evaluate(() => ({
     controller: window.RiverlinePresentationTheme.getColors().accent,
@@ -248,11 +269,14 @@ try {
   await page.waitForFunction(() => Boolean(window.app) && Boolean(window.RiverlinePresentationTheme));
   await openSettings(page);
   findings.push(await inspect(page, 'reloaded Graphite custom theme'));
+  await page.click('#editTheme');
+  await page.waitForFunction(() => document.documentElement.dataset.themeEditing === 'true');
   await page.$eval('#customThemeName', (input) => {
     input.value = 'Graphite Focus';
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
-  await page.click('#renameCustomTheme');
+  await page.click('#saveThemeChanges');
+  await page.waitForFunction(() => document.documentElement.dataset.themeEditing === 'false');
   await page.click('#duplicateTheme');
   await settle(page);
   findings.push(await inspect(page, 'renamed and duplicated Graphite custom theme'));
@@ -332,13 +356,19 @@ try {
     || tokenSwitchState.input !== tokenSwitchState.surface) failures.push('picker token switch retained stale preview state');
   if (!themeSwitchState.pickerClosed || themeSwitchState.themeId !== 'daylight'
     || themeSwitchState.accent !== themeSwitchState.controllerAccent) failures.push('theme switch retained a stale open picker preview');
+  if (themeCancelDraftAccent === themeCancelBefore.accent
+    || themeCancelAfter.accent !== themeCancelBefore.accent
+    || themeCancelAfter.storage !== themeCancelBefore.storage) {
+    failures.push('theme-session Cancel did not restore the source without persistence');
+  }
   if (appliedAccentState.controller !== appliedAccentState.rendered) failures.push('picker Apply did not commit the rendered color exactly');
   if (!pickerClosedOnEscape) failures.push('picker did not close on Escape');
   const report = {
     artifactRoot,
     pickerScreenshot,
     pickerChecks: {
-      exactPickerState, pointerPickerState, tokenSwitchState, themeSwitchState, appliedAccentState,
+      exactPickerState, pointerPickerState, tokenSwitchState, themeSwitchState,
+      themeCancelBefore, themeCancelDraftAccent, themeCancelAfter, appliedAccentState,
     },
     findings,
     failures,

@@ -26,7 +26,7 @@ export const CARD_GEOMETRY = Object.freeze({
   mini: Object.freeze({ width: 28, height: 40, radius: 4 }),
   result: Object.freeze({ width: 38, height: 54, radius: 5 }),
   table: Object.freeze({ width: 40, height: 57, radius: 5 }),
-  picker: Object.freeze({ width: 36, height: 51, radius: 5 }),
+  picker: Object.freeze({ width: 42, height: 60, radius: 5 }),
   compact: Object.freeze({ width: 42, height: 60, radius: 5 }),
   slot: Object.freeze({ width: 48, height: 68, radius: 6 }),
   standard: Object.freeze({ width: 52, height: 74, radius: 7 }),

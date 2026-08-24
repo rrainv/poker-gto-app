@@ -63,7 +63,7 @@ test('localized key validation covers definition and step references', () => {
 
 test('the production Home tour advances for the account-aware study dashboard', () => {
   assert.equal(HOME_TUTORIAL_DEFINITION.id, 'home.first-use');
-  assert.equal(HOME_TUTORIAL_DEFINITION.version, 2);
+  assert.equal(HOME_TUTORIAL_DEFINITION.version, 1);
   assert.equal(HOME_TUTORIAL_DEFINITION.steps.length, 5);
   assert.deepEqual(HOME_TUTORIAL_DEFINITION.steps.map((step) => step.anchor), [
     'home-overview', 'home-recent', 'home-review', 'home-personal-strategy', 'home-quick-start',

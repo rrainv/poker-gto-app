@@ -16,6 +16,11 @@ import {
   BLUFF_ANALYSIS_FACTS_SCHEMA_VERSION,
   createBluffAnalysisFacts,
 } from './bluff-analysis.mjs';
+import {
+  formatExactPokerAmountBb,
+  formatSuggestedSizingBb,
+  roundSuggestedSizingBb,
+} from './poker-sizing-presentation.mjs';
 
 export function installAnalysisExplanationBridge(browserWindow) {
   if (!browserWindow) return null;
@@ -32,6 +37,9 @@ export function installAnalysisExplanationBridge(browserWindow) {
     deriveExactHandFacts,
     deriveBoardTextureFacts,
     formatTemplate: formatAnalysisTemplate,
+    formatExactPokerAmountBb,
+    formatSuggestedSizingBb,
+    roundSuggestedSizingBb,
   });
   Object.defineProperty(browserWindow, 'RiverlineAnalysisExplanation', {
     configurable: true,

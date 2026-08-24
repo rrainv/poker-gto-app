@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 24, 2026 (`DOCS-INTEGRITY-001`; `AUDIO-MOTION-001` accepted checkpoint).
+Last refreshed: August 24, 2026 (`UX-REGRESSION-001` accepted; `WELCOME-INTRO-001` active next).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -53,35 +53,35 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 
 ## Current execution snapshot
 
-`DOCS-INTEGRITY-001` is the active documentation ticket. After it, the directional order is:
+`DOCS-INTEGRITY-001` and `UX-REGRESSION-001` are completed/accepted. The directional order is:
 
-1. `UX-REGRESSION-001`
-2. `WELCOME-INTRO-001`
-3. `WORKSPACE-COMPOSITION-002`
-4. `TABLE-PHYSICALITY-003`
-5. `HOME-GAME-001B`
-6. `SETTINGS-IA-001`
-7. `PREMIUM-CLOSEOUT-001`
-8. first trusted bounded reference pack/provider
-9. Training Memory / re-drill
-10. `PERSONAL-STRATEGY-002R`
-11. Personal Strategy provider/reference/observed integration
-12. `PERSONAL-INSIGHTS-001`
-13. `RANGE-EVOLUTION-001`
-14. `HOME-002B` Saved Study Library
-15. OpponentPolicy / bots
-16. release/mobile/social/PLO later
+1. **ACTIVE NEXT — `WELCOME-INTRO-001`**
+2. `WORKSPACE-COMPOSITION-002`
+3. `TABLE-PHYSICALITY-003`
+4. `HOME-GAME-001B`
+5. `SETTINGS-IA-001`
+6. `PREMIUM-CLOSEOUT-001`
+7. first trusted bounded reference pack/provider
+8. Training Memory / re-drill
+9. `PERSONAL-STRATEGY-002R`
+10. Personal Strategy provider/reference/observed integration
+11. `PERSONAL-INSIGHTS-001`
+12. `RANGE-EVOLUTION-001`
+13. `HOME-002B` Saved Study Library
+14. OpponentPolicy / bots
+15. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
 ## Current checkpoint boundaries
 
 - `AUDIO-MOTION-001` is accepted; subjective Study/UI/Check polish remains `RET-AUDIO-001` debt, not current scope.
+- `UX-REGRESSION-001` is accepted: the eleven owned hands-on IDs are closed with a 1,773/1,773 Node baseline and bounded Firefox 154 acceptance; unowned composition/product debt remains open.
 - Training Varied/Focused and the Practice Planner are implemented foundations; Training Memory/re-drill is separate future work.
 - Personal Strategy is checkpointed through Calibration/Matrix/Builder/Teacher; resume at independent `002R`, then integration, then Personal Insights.
 - Saved Hand/Spot and `HOME-002A` exist; the full `HOME-002B` library does not.
-- Home Game `001A` exists; `001B` owns management continuation while `UX-REGRESSION-001` owns the immediate Create Game routing blocker.
-- Table/Review/audio architecture is checkpointed, but hands-on visual/composition/card issues remain open in QA and the Return Queue.
+- Home Game `001A` exists; its immediate Create Game routing blocker is repaired, while `001B` still owns management continuation.
+- Table/Review/audio architecture and the immediate Table Focus/known-card repairs are checkpointed, but broader composition, physicality, and independent Full Hand visual acceptance remain open in QA and the Return Queue.
 
 ## Deliberately retired
 

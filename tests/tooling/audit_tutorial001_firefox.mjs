@@ -105,7 +105,12 @@ try {
   await page.click('[data-tutorial-action="next"]');
   await settle(page);
   await inspect(page, 'Firefox HE RTL scrolled target');
-  await page.keyboard.press('Escape');
+  await page.click('[data-tutorial-action="finish"]');
+  await page.waitForFunction(() => window.RiverlineTutorials.getState().status === 'completed');
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => Boolean(window.RiverlineTutorials)
+    && document.querySelector('#homeWorkspace')?.getAttribute('aria-busy') === 'false');
+  if (await page.$('[data-tutorial-offer]')) throw new Error('Firefox completion persistence nagged after reload');
 
   if (errors.length) throw new Error(`Firefox page errors: ${JSON.stringify(errors)}`);
   process.stdout.write(`${JSON.stringify({ browser: await browser.version(), samples, errors }, null, 2)}\n`);

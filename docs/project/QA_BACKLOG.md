@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 24, 2026 (`DOCS-INTEGRITY-001`; 21 current hands-on findings durably routed).
+Last consolidated: August 24, 2026 (`UX-REGRESSION-001` accepted; eleven owned hands-on regressions closed).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -50,31 +50,31 @@ A visual issue is not `CLOSED` without manual/browser confirmation.
 
 ## August 24 hands-on product findings
 
-These IDs are current product defects or accepted polish debt. They are not a generic “premium polish” bucket and may close only with the named owner plus appropriate real-browser/human acceptance.
+These IDs are durable hands-on findings: open rows are current product defects or accepted polish debt, while closed rows preserve repaired invariants. They are not a generic “premium polish” bucket and may close only with the named owner plus appropriate real-browser/human acceptance.
 
 | ID | Status | Issue / durable invariant | Owner |
 |---|---|---|---|
-| QA-HANDSON-001 | REGRESSION | Default card picker/cards became too small to read comfortably. The default must be readable at 1080p without browser zoom; fix it before adding a micro-setting. | `UX-REGRESSION-001` |
-| QA-HANDSON-002 | OPEN | Strategy/open-size presentation leaks excessive decimal precision such as `2.037bb`. Presentation should normally use human poker increments (for example 0.5bb) while canonical actual amounts remain exact. | `UX-REGRESSION-001` |
+| QA-HANDSON-001 | CLOSED | Default picker cards now use a readable 42×60 target with prominent rank/suit and comfortable hit areas; Firefox verified all 52 cards without extreme shrink or viewport overflow. | `UX-REGRESSION-001` accepted checkpoint |
+| QA-HANDSON-002 | CLOSED | One presentation authority rounds generated/suggested strategy sizing to human 0.5bb increments while canonical, historical, user-entered, legal, and accounting amounts remain exact. | `UX-REGRESSION-001` accepted checkpoint |
 | QA-HANDSON-003 | OPEN | Controls First gives tiny controls an oversized left region and unexplained dead space. | `WORKSPACE-COMPOSITION-002` |
-| QA-HANDSON-004 | REGRESSION | Analysis Focus can wrap the board. Five board cards must remain one horizontal row on supported desktop layouts; FLOP/TURN/RIVER labels may sit above slots. | `UX-REGRESSION-001` |
+| QA-HANDSON-004 | CLOSED | Five board cards remain one horizontal LTR poker-order row with semantic Flop/Turn/River guides across supported desktop presets, including 1024px and HE RTL chrome. | `UX-REGRESSION-001` accepted checkpoint |
 | QA-HANDSON-005 | OPEN | Some layout presets mostly redistribute whitespace/width and reduce usability. Weak presets may be redesigned, renamed, consolidated, or removed. | `WORKSPACE-COMPOSITION-002` |
-| QA-HANDSON-006 | REGRESSION | Established users receive repeated first-use tutorial prompts. Completed/skipped tutorial versions must not nag unless manually restarted or intentionally versioned. | `UX-REGRESSION-001` |
+| QA-HANDSON-006 | CLOSED | The released tutorial version no longer re-nags after skip or completion; reload/navigation persistence, manual restart, and intentional version re-offer remain covered. | `UX-REGRESSION-001` accepted checkpoint |
 | QA-HANDSON-007 | OPEN | Guide needs a current-product content review. | `PREMIUM-CLOSEOUT-001` Guide closeout |
-| QA-HANDSON-008 | REGRESSION | Home Game **Create Game** routes to Home instead of starting/opening the game flow. This is a functional blocker. | immediate: `UX-REGRESSION-001`; broader: `HOME-GAME-001B` |
+| QA-HANDSON-008 | CLOSED | Home Game Create binds only after its authentication dependency is ready, stays in the Organizer, and opens the intended active session; broader organizer work remains `HOME-GAME-001B`. | `UX-REGRESSION-001` accepted checkpoint |
 | QA-HANDSON-009 | PARTIAL | Audio volume is implemented by `AUDIO-MOTION-001`; retain subjective Study/UI/Check/fatigue/Firefox polish debt without reopening accepted architecture. | `RET-AUDIO-001` later polish |
 | QA-HANDSON-010 | OPEN | Settings is a god menu containing too many unrelated concerns. | `SETTINGS-IA-001` |
 | QA-HANDSON-011 | OPEN | Tutorial/help discovery is buried at the bottom of Settings. | `WELCOME-INTRO-001` / `SETTINGS-IA-001` |
-| QA-HANDSON-012 | OPEN | Theme editing semantics are confusing. Built-ins should be immutable; edits should be explicit and transactional with Save/Cancel plus Duplicate/Save as New. | `UX-REGRESSION-001` if regression/root bug; otherwise `SETTINGS-IA-001` |
+| QA-HANDSON-012 | CLOSED | Built-ins are immutable and custom themes use explicit Edit, Save, Cancel, Duplicate, and Save as New transactions; draft changes do not persist or mutate the source before commit. | `UX-REGRESSION-001` accepted checkpoint; broader IA remains `SETTINGS-IA-001` |
 | QA-HANDSON-013 | OPEN | Comfortable/Compact does not consistently create enough value. Strengthen, simplify, or remove the weak distinction; do not add more density modes. | `WORKSPACE-COMPOSITION-002` |
 | QA-HANDSON-014 | OPEN | Training Facing/Position/Pot/Stack/Players facts render as equal-weight dark boxes and are hard to scan. Critical decision context needs stronger hierarchy. | `WORKSPACE-COMPOSITION-002` |
 | QA-HANDSON-015 | OPEN | Table visuals still feel weird/unfinished despite stronger architecture. Improve composition and physical presentation without casino spectacle. | `WORKSPACE-COMPOSITION-002` / `TABLE-PHYSICALITY-003` |
-| QA-HANDSON-016 | OPEN | Durable Save actions need one consistent accessible bookmark affordance; an exact saved object/context shows an active/filled state that is not color-only and reuses SavedStudyObject authority. | `UX-REGRESSION-001` / `PREMIUM-CLOSEOUT-001` consistency |
+| QA-HANDSON-016 | CLOSED | Existing durable Save actions share an accessible outline/filled bookmark state backed by exact SavedStudyObject detection; repeated exact saves remain idempotent and no unsupported unsave/delete was invented. | `UX-REGRESSION-001` accepted checkpoint |
 | QA-HANDSON-017 | OPEN | Equity wastes a large amount of canvas/dead space. | `WORKSPACE-COMPOSITION-002` |
-| QA-HANDSON-018 | OPEN | Desktop Training can render a visibly sloppy 3+1 action row. Four controls should prefer readable 4×1 or 2×2 and avoid an orphan near-empty row. | `UX-REGRESSION-001` |
-| QA-HANDSON-019 | REGRESSION | Training can show postflop made-hand/draw hints for preflop spots. Hint selection must be street/state-aware rather than patching one string. | `UX-REGRESSION-001` |
-| QA-HANDSON-020 | OPEN | Table Focus leaves a small/unreadable table inside ample canvas. It must materially improve table and decision-relevant readability over Balanced. | `UX-REGRESSION-001` / `WORKSPACE-COMPOSITION-002` / `TABLE-PHYSICALITY-003` |
-| QA-HANDSON-021 | REGRESSION | Known held/revealed cards may omit suit identity. Every visible known card must expose rank + suit across Hero/opponents, 2/4-color, T/10, themes, and RTL. | `UX-REGRESSION-001` |
+| QA-HANDSON-018 | CLOSED | Four legal Training actions render as a balanced 2×2 constrained-desktop grid or readable 4×1 wide grid, preserving source/keyboard order and avoiding an orphan row. | `UX-REGRESSION-001` accepted checkpoint |
+| QA-HANDSON-019 | CLOSED | Hint selection is street-aware: preflop uses starting-hand/position concepts and cannot select postflop made-hand/draw/board prompts; postflop may use those existing facts. | `UX-REGRESSION-001` accepted checkpoint |
+| QA-HANDSON-020 | CLOSED | Table Focus now materially increases the presentation target over Balanced while retaining canonical HU/sparse/6-max/full-ring geometry, usable timeline/action dock, and density-independent layout. Broader composition/physicality remains separately open. | `UX-REGRESSION-001` accepted checkpoint |
+| QA-HANDSON-021 | CLOSED | Every visible known compact/table card exposes rank plus suit across current card styles, color modes, themes, densities, table sizes, and RTL; hidden opponent cards remain backs with no identity leak. | `UX-REGRESSION-001` accepted checkpoint |
 
 ## Home / My Riverline
 

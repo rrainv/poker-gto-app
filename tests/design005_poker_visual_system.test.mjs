@@ -56,7 +56,9 @@ test('the card picker renders four explicit suit rows with unchanged card identi
   assert.match(logic, /class="deck-ranks"/);
   assert.match(logic, /aria-pressed="\$\{isSelected\}"/);
   assert.match(logic, /data-deck-card="\$\{card\}" \$\{isUnavailable \? 'disabled' : ''\}/);
-  assert.match(visualSystem, /grid-template-columns:\s*repeat\(13, minmax\(36px, 1fr\)\)/);
+  assert.match(visualSystem, /--card-size-picker-width:\s*42px/);
+  assert.match(visualSystem, /--card-size-picker-height:\s*60px/);
+  assert.match(visualSystem, /grid-template-columns:\s*repeat\(13, minmax\(42px, 1fr\)\)/);
 });
 
 test('the range matrix remains a dense 13 by 13 LTR poker matrix', () => {

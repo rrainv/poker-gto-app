@@ -375,13 +375,8 @@ function readThemeLibrary(storage, now) {
 
   if (candidate?.schemaVersion === LEGACY_SCHEMA_VERSION
     && candidate.byTheme && typeof candidate.byTheme === 'object' && !Array.isArray(candidate.byTheme)) {
-    const draftsByTheme = {};
-    PRESENTATION_THEMES.forEach((theme) => {
-      const normalized = normalizeThemeCustomization(candidate.byTheme[theme.id], theme.id);
-      if (normalized) draftsByTheme[theme.id] = normalized;
-    });
     return {
-      library: { ...defaultLibrary(legacyActive), draftsByTheme },
+      library: defaultLibrary(legacyActive),
       repair: true,
     };
   }
@@ -398,13 +393,9 @@ function readThemeLibrary(storage, now) {
   if (!candidate.draftsByTheme || typeof candidate.draftsByTheme !== 'object'
     || Array.isArray(candidate.draftsByTheme)) repair = true;
   Object.entries(candidate.draftsByTheme ?? {}).forEach(([themeId, raw]) => {
-    if (!THEME_BY_ID.has(themeId)) {
-      repair = true;
-      return;
-    }
-    const normalized = normalizeThemeCustomization(raw, themeId);
-    if (normalized) draftsByTheme[themeId] = normalized;
-    if (!normalized || JSON.stringify(normalized) !== JSON.stringify(raw)) repair = true;
+    // v2 once persisted mutable drafts against built-in IDs. Built-ins are now
+    // immutable, and unsaved editor state is deliberately runtime-only.
+    if (themeId || raw) repair = true;
   });
   const activeThemeId = THEME_BY_ID.has(candidate.activeThemeId) || themeMap.has(candidate.activeThemeId)
     ? candidate.activeThemeId
@@ -508,6 +499,9 @@ export function createPresentationThemeController({
   resetTokenButtons = [],
   nameInput = null,
   saveButton = null,
+  editButton = null,
+  saveChangesButton = null,
+  cancelEditButton = null,
   duplicateButton = null,
   renameButton = null,
   deleteButton = null,
@@ -525,6 +519,7 @@ export function createPresentationThemeController({
   let gridListeners = [];
   let library = defaultLibrary();
   let nameInputDirty = false;
+  let editSession = null;
 
   function themeMap() {
     return new Map(library.customThemes.map((theme) => [theme.id, theme]));
@@ -540,14 +535,28 @@ export function createPresentationThemeController({
 
   function ownOverrides(themeId = library.activeThemeId) {
     const custom = customTheme(themeId);
-    return custom?.overrides ?? library.draftsByTheme[themeId] ?? {};
+    if (editSession?.themeId === themeId) return editSession.overrides;
+    return custom?.overrides ?? {};
+  }
+
+  function storedCustomization(themeId = library.activeThemeId) {
+    const custom = customTheme(themeId);
+    if (!custom) return null;
+    const effective = effectiveOverridesFor(custom.id, themeMap());
+    return Object.keys(effective).length ? Object.freeze({ ...effective }) : null;
   }
 
   function currentCustomization() {
-    const custom = customTheme();
-    if (!custom) return library.draftsByTheme[library.activeThemeId] ?? null;
-    const effective = effectiveOverridesFor(custom.id, themeMap());
-    return Object.keys(effective).length ? Object.freeze({ ...effective }) : null;
+    if (editSession?.themeId === library.activeThemeId) {
+      const effective = normalizeThemeCustomization(
+        { ...editSession.inheritedOverrides, ...editSession.overrides },
+        baseTheme().id,
+      ) ?? {};
+      return Object.keys(effective).length
+        ? Object.freeze(effective)
+        : null;
+    }
+    return storedCustomization();
   }
 
   function currentColors() {
@@ -618,6 +627,7 @@ export function createPresentationThemeController({
 
   function syncControls() {
     const colors = currentColors();
+    const editing = editSession?.themeId === library.activeThemeId;
     triggers.forEach((trigger) => {
       const token = trigger.dataset.themeColorToken;
       const value = colors[token];
@@ -625,19 +635,29 @@ export function createPresentationThemeController({
       trigger.style?.setProperty?.('--theme-color-value', value);
       trigger.dataset.colorValue = value;
       trigger.setAttribute?.('aria-label', `${translate(trigger.dataset.labelKey ?? token)}: ${value}`);
+      trigger.disabled = !editing;
       const valueElement = trigger.querySelector?.('[data-theme-color-value]');
       if (valueElement) valueElement.textContent = value.toUpperCase();
     });
     const own = ownOverrides();
     tokenResetButtons.forEach((button) => {
-      button.disabled = !hasOwn(own, button.dataset.resetThemeToken);
+      button.disabled = !editing || !hasOwn(own, button.dataset.resetThemeToken);
     });
     const custom = customTheme();
-    if (renameButton) renameButton.disabled = !custom;
-    if (deleteButton) deleteButton.disabled = !custom;
-    if (resetButton) resetButton.disabled = Object.keys(own).length === 0;
-    if (nameInput && !nameInputDirty) nameInput.value = custom?.name ?? '';
+    if (editButton) editButton.disabled = editing;
+    if (saveChangesButton) saveChangesButton.disabled = !editing;
+    if (cancelEditButton) cancelEditButton.disabled = !editing;
+    if (saveButton) saveButton.disabled = !editing;
+    if (duplicateButton) duplicateButton.disabled = editing;
+    if (renameButton) renameButton.disabled = !editing || !custom;
+    if (deleteButton) deleteButton.disabled = editing || !custom;
+    if (resetButton) resetButton.disabled = !editing || Object.keys(own).length === 0;
+    if (nameInput) {
+      nameInput.disabled = !editing;
+      if (!nameInputDirty) nameInput.value = editSession?.name ?? custom?.name ?? '';
+    }
     root.dataset.themeCustomized = String(Boolean(currentCustomization()));
+    root.dataset.themeEditing = String(editing);
     builtInGrid?.querySelectorAll?.('[data-theme-id]').forEach((button) => {
       const selected = button.dataset.themeId === library.activeThemeId;
       button.classList?.toggle?.('active', selected);
@@ -649,11 +669,11 @@ export function createPresentationThemeController({
       button.setAttribute?.('aria-pressed', String(selected));
     });
     if (status) {
-      status.textContent = custom
-        ? translate('Editing a saved custom theme. Exact colors are preserved and readable dependent colors update automatically.')
-        : currentCustomization()
-          ? translate('Unsaved theme colors are active. Save them as a named custom theme.')
-          : translate('Using built-in theme defaults.');
+      status.textContent = editing
+        ? translate(custom
+          ? 'Editing a saved custom theme. Changes remain temporary until Save.'
+          : 'Editing a built-in preview. Save creates a new custom theme; the built-in stays unchanged.')
+        : translate(custom ? 'Using a saved custom theme.' : 'Using built-in theme defaults.');
     }
   }
 
@@ -673,9 +693,34 @@ export function createPresentationThemeController({
 
   function apply(value, options = {}) {
     const exists = THEME_BY_ID.has(value) || Boolean(customTheme(value));
+    editSession = null;
     library.activeThemeId = exists ? value : DEFAULT_PRESENTATION_THEME;
     nameInputDirty = false;
     return commit(options);
+  }
+
+  function beginEdit() {
+    if (editSession?.themeId === library.activeThemeId) return getEditState();
+    const custom = customTheme();
+    editSession = {
+      themeId: library.activeThemeId,
+      inheritedOverrides: custom
+        ? { ...effectiveOverridesFor(custom.baseThemeId, themeMap()) }
+        : {},
+      overrides: { ...(custom?.overrides ?? {}) },
+      name: custom?.name ?? '',
+    };
+    nameInputDirty = false;
+    commit({ persist: false, render: false });
+    return getEditState();
+  }
+
+  function cancelEdit() {
+    if (!editSession) return false;
+    editSession = null;
+    nameInputDirty = false;
+    commit({ persist: false, render: false });
+    return true;
   }
 
   function normalizedProspective(partial) {
@@ -702,50 +747,29 @@ export function createPresentationThemeController({
     const accepted = Object.fromEntries(Object.entries(partial ?? {})
       .filter(([key]) => SUPPORTED_COLOR_TOKENS.includes(key)));
     if (Object.keys(accepted).length === 0) return currentCustomization();
-    const normalized = normalizedProspective(accepted);
-    const custom = customTheme();
-    if (custom) {
-      custom.overrides = normalized;
-      custom.version += 1;
-      custom.updatedAt = now();
-    } else if (Object.keys(normalized).length) {
-      library.draftsByTheme[library.activeThemeId] = normalized;
-    } else {
-      delete library.draftsByTheme[library.activeThemeId];
-    }
-    commit(options);
+    if (!editSession || editSession.themeId !== library.activeThemeId) beginEdit();
+    editSession.overrides = normalizeThemeCustomization(
+      { ...editSession.overrides, ...accepted },
+      baseTheme().id,
+    ) ?? {};
+    commit({ ...options, persist: false, render: false });
     return currentCustomization();
   }
 
   function resetToken(token, options = {}) {
     if (!SUPPORTED_COLOR_TOKENS.includes(token)) return currentCustomization();
-    const custom = customTheme();
-    if (custom) {
-      const next = { ...custom.overrides };
-      delete next[token];
-      custom.overrides = next;
-      custom.version += 1;
-      custom.updatedAt = now();
-    } else {
-      const next = { ...(library.draftsByTheme[library.activeThemeId] ?? {}) };
-      delete next[token];
-      if (Object.keys(next).length) library.draftsByTheme[library.activeThemeId] = next;
-      else delete library.draftsByTheme[library.activeThemeId];
-    }
-    commit(options);
+    if (!editSession || editSession.themeId !== library.activeThemeId) return currentCustomization();
+    const next = { ...editSession.overrides };
+    delete next[token];
+    editSession.overrides = next;
+    commit({ ...options, persist: false, render: false });
     return currentCustomization();
   }
 
   function reset(options = {}) {
-    const custom = customTheme();
-    if (custom) {
-      custom.overrides = {};
-      custom.version += 1;
-      custom.updatedAt = now();
-    } else {
-      delete library.draftsByTheme[library.activeThemeId];
-    }
-    commit(options);
+    if (!editSession || editSession.themeId !== library.activeThemeId) return currentCustomization();
+    editSession.overrides = {};
+    commit({ ...options, persist: false, render: false });
     return currentCustomization();
   }
 
@@ -760,33 +784,37 @@ export function createPresentationThemeController({
     return candidate;
   }
 
-  function addCustomTheme(name, { sourceThemeId = library.activeThemeId, clearBuiltInDraft = false } = {}) {
+  function addCustomTheme(name, { sourceThemeId = library.activeThemeId, sourceOverrides = null } = {}) {
     if (library.customThemes.length >= CUSTOM_THEME_LIMIT) return null;
     const sourceCustom = customTheme(sourceThemeId);
     const sourceBase = builtInBaseFor(sourceThemeId, themeMap());
-    const sourceOverrides = sourceCustom
+    const resolvedOverrides = sourceOverrides ?? (sourceCustom
       ? effectiveOverridesFor(sourceThemeId, themeMap())
-      : library.draftsByTheme[sourceThemeId] ?? {};
+      : {});
     const timestamp = now();
     const theme = {
       id: nextThemeId(),
       name: uniqueCustomThemeName(name, library.customThemes),
       baseThemeId: THEME_BY_ID.has(sourceThemeId) || sourceCustom ? sourceThemeId : sourceBase.id,
-      overrides: normalizeThemeCustomization(sourceOverrides, sourceBase.id) ?? {},
+      overrides: normalizeThemeCustomization(resolvedOverrides, sourceBase.id) ?? {},
       version: CUSTOM_THEME_VERSION,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
     library.customThemes.push(theme);
-    if (clearBuiltInDraft && THEME_BY_ID.has(sourceThemeId)) delete library.draftsByTheme[sourceThemeId];
     library.activeThemeId = theme.id;
+    editSession = null;
     nameInputDirty = false;
     commit();
     return Object.freeze({ ...theme, overrides: Object.freeze({ ...theme.overrides }) });
   }
 
   function saveAsNew(name = nameInput?.value) {
-    return addCustomTheme(name, { clearBuiltInDraft: true });
+    if (!editSession || editSession.themeId !== library.activeThemeId) return null;
+    return addCustomTheme(name || editSession.name, {
+      sourceThemeId: library.activeThemeId,
+      sourceOverrides: currentCustomization() ?? {},
+    });
   }
 
   function duplicateTheme(themeId = library.activeThemeId, name = null) {
@@ -796,15 +824,27 @@ export function createPresentationThemeController({
     return addCustomTheme(proposed, { sourceThemeId: themeId });
   }
 
-  function renameTheme(themeId = library.activeThemeId, name = nameInput?.value) {
-    const custom = customTheme(themeId);
-    if (!custom) return null;
-    custom.name = uniqueCustomThemeName(name, library.customThemes, custom.id);
+  function saveEdit(name = nameInput?.value) {
+    if (!editSession || editSession.themeId !== library.activeThemeId) return null;
+    const custom = customTheme();
+    if (!custom) return saveAsNew(name);
+    custom.overrides = normalizeThemeCustomization(editSession.overrides, baseTheme().id) ?? {};
+    custom.name = uniqueCustomThemeName(name || editSession.name, library.customThemes, custom.id);
     custom.version += 1;
     custom.updatedAt = now();
+    editSession = null;
     nameInputDirty = false;
     commit();
-    return custom.name;
+    return Object.freeze({ ...custom, overrides: Object.freeze({ ...custom.overrides }) });
+  }
+
+  function renameTheme(themeId = library.activeThemeId, name = nameInput?.value) {
+    const custom = customTheme(themeId);
+    if (!custom || editSession?.themeId !== themeId) return null;
+    editSession.name = uniqueCustomThemeName(name, library.customThemes, custom.id);
+    nameInputDirty = false;
+    syncControls();
+    return editSession.name;
   }
 
   function deleteTheme(themeId = library.activeThemeId) {
@@ -833,6 +873,7 @@ export function createPresentationThemeController({
         ? target.baseThemeId
         : DEFAULT_PRESENTATION_THEME;
     }
+    editSession = null;
     nameInputDirty = false;
     commit();
     return true;
@@ -841,6 +882,7 @@ export function createPresentationThemeController({
   function restore() {
     const stored = readThemeLibrary(storage, now());
     library = stored.library;
+    editSession = null;
     commit({ persist: false, announce: false });
     if (stored.repair) persistLibrary();
     return library.activeThemeId;
@@ -849,9 +891,27 @@ export function createPresentationThemeController({
   function init() {
     restore();
     if (nameInput) {
-      const listener = () => { nameInputDirty = true; };
+      const listener = () => {
+        nameInputDirty = true;
+        if (editSession?.themeId === library.activeThemeId) editSession.name = nameInput.value;
+      };
       nameInput.addEventListener?.('input', listener);
       listeners.push([nameInput, 'input', listener]);
+    }
+    if (editButton) {
+      const listener = () => beginEdit();
+      editButton.addEventListener?.('click', listener);
+      listeners.push([editButton, 'click', listener]);
+    }
+    if (saveChangesButton) {
+      const listener = () => saveEdit();
+      saveChangesButton.addEventListener?.('click', listener);
+      listeners.push([saveChangesButton, 'click', listener]);
+    }
+    if (cancelEditButton) {
+      const listener = () => cancelEdit();
+      cancelEditButton.addEventListener?.('click', listener);
+      listeners.push([cancelEditButton, 'click', listener]);
     }
     if (saveButton) {
       const listener = () => saveAsNew();
@@ -896,8 +956,20 @@ export function createPresentationThemeController({
     gridListeners.splice(0).forEach(([element, type, listener]) => element.removeEventListener?.(type, listener));
   }
 
+  function getEditState() {
+    if (!editSession) return null;
+    return Object.freeze({
+      themeId: editSession.themeId,
+      name: editSession.name,
+      overrides: Object.freeze({ ...editSession.overrides }),
+      effectiveOverrides: Object.freeze({ ...(currentCustomization() ?? {}) }),
+    });
+  }
+
   const controller = Object.freeze({
     apply,
+    beginEdit,
+    cancelEdit,
     cancelPreview,
     customize,
     deleteTheme,
@@ -906,6 +978,7 @@ export function createPresentationThemeController({
     getBaseTheme: () => baseTheme().id,
     getColors: currentColors,
     getCustomization: currentCustomization,
+    getEditState,
     getLibrary: () => Object.freeze({
       activeThemeId: library.activeThemeId,
       customThemes: Object.freeze(library.customThemes.map((theme) => Object.freeze({
@@ -922,6 +995,7 @@ export function createPresentationThemeController({
     reset,
     resetToken,
     restore,
+    saveEdit,
     saveAsNew,
   });
   return controller;

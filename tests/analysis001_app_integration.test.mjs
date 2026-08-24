@@ -206,7 +206,8 @@ test('Study hints coach one step at a time and omit implementation-oriented safe
   assert.match(hintRenderer, /What made hand does Hero have here\?/);
   assert.match(hintRenderer, /How much are you being asked to call relative to the pot\?/);
   assert.match(hintRenderer, /How should the board texture and number of opponents affect/);
-  assert.match(hintRenderer, /const hint = studyHintDefinition\(explanation, currentStep\)/);
+  assert.match(hintRenderer, /const hint = studyHintDefinition\(explanation, currentStep, options\)/);
+  assert.match(logic, /street: exercise\.decisionContext\.street/);
   assert.doesNotMatch(hintRenderer, /slice\(0, step\)|strategy_mix|actionAnalysis|recommendation|probability/);
   assert.match(logic, /button\.textContent = t\('Get a hint'\)/);
   assert.match(logic, /t\(complete \? 'All hints viewed' : 'Another hint'\)/);

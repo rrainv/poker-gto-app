@@ -72,7 +72,7 @@ test('an exact Graphite customization saves as a named stable custom theme and s
   assert.ok(PRESENTATION_THEMES.every((theme) => Object.isFrozen(theme) && Object.isFrozen(theme.preview)));
 });
 
-test('duplicate, rename, edit, individual reset, and base reset preserve independent custom values', () => {
+test('Duplicate leaves its source unchanged and custom edits commit only on explicit Save', () => {
   const view = fixture();
   view.controller.apply('daylight');
   view.controller.customize({ accent: '#336699', surface: '#f0eadf', felt: '#6f5260' });
@@ -81,16 +81,27 @@ test('duplicate, rename, edit, individual reset, and base reset preserve indepen
 
   assert.equal(duplicate.name, 'Day Study (2)');
   assert.equal(duplicate.baseThemeId, original.id);
+  const sourceBefore = view.controller.getLibrary().customThemes.find((theme) => theme.id === original.id);
+  const duplicateBefore = view.controller.getLibrary().customThemes.find((theme) => theme.id === duplicate.id);
+  const storageBefore = view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY);
+  view.controller.beginEdit();
   assert.equal(view.controller.renameTheme(duplicate.id, 'Reading'), 'Reading');
   const beforeEdit = view.controller.getColors();
   view.controller.customize({ accent: '#8751a2' });
   assert.notEqual(view.controller.getColors().accent, beforeEdit.accent);
+  assert.equal(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY), storageBefore);
+  assert.deepEqual(view.controller.getLibrary().customThemes.find((theme) => theme.id === original.id), sourceBefore);
+  assert.deepEqual(view.controller.getLibrary().customThemes.find((theme) => theme.id === duplicate.id), duplicateBefore);
 
   view.controller.resetToken('accent');
   assert.equal(view.controller.getColors().accent, beforeEdit.accent);
   assert.ok(view.controller.getCustomization()?.surface);
   view.controller.reset();
   assert.deepEqual(view.controller.getColors(), beforeEdit);
+  view.controller.customize({ accent: '#8751a2' });
+  const committed = view.controller.saveEdit('Reading');
+  assert.equal(committed.name, 'Reading');
+  assert.equal(committed.overrides.accent, '#8751a2');
 
   view.controller.apply(original.id);
   assert.equal(view.controller.getColors().accent, beforeEdit.accent);
@@ -149,7 +160,7 @@ test('malformed v2 records repair invalid IDs, duplicate names, cycles, raw CSS,
   assert.doesNotMatch(JSON.stringify(repaired), /arbitraryCss|var\(|url\(/);
 });
 
-test('legacy split preferences migrate once into the single versioned library record', () => {
+test('legacy mutable built-in drafts repair to immutable built-in defaults', () => {
   const legacy = JSON.stringify({
     schemaVersion: 'presentation-theme-customization/v1',
     byTheme: { graphite: { accent: '#976531' } },
@@ -162,11 +173,12 @@ test('legacy split preferences migrate once into the single versioned library re
 
   assert.equal(record.schemaVersion, PRESENTATION_THEME_SCHEMA_VERSION);
   assert.equal(record.activeThemeId, 'graphite');
-  assert.ok(record.draftsByTheme.graphite.accent);
+  assert.deepEqual(record.draftsByTheme, {});
+  assert.equal(view.controller.getCustomization(), null);
   assert.equal(view.storage.getItem(LEGACY_PRESENTATION_THEME_STORAGE_KEY), null);
 });
 
-test('controller preview is non-persistent, Cancel restores, and Apply-style customization commits', () => {
+test('controller preview and draft are non-persistent, Cancel restores, and Save creates a custom theme', () => {
   const view = fixture();
   view.controller.apply('graphite');
   const before = view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY);
@@ -180,12 +192,20 @@ test('controller preview is non-persistent, Cancel restores, and Apply-style cus
   assert.equal(view.properties.has('--accent-primary'), false);
   assert.equal(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY), before);
 
-  const committed = view.controller.customize({ accent: '#9a668f' });
-  assert.equal(view.properties.get('--accent-primary'), committed.accent);
+  const draft = view.controller.customize({ accent: '#9a668f' });
+  assert.equal(view.properties.get('--accent-primary'), draft.accent);
+  assert.equal(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY), before);
+  assert.equal(view.controller.cancelEdit(), true);
+  assert.equal(view.properties.has('--accent-primary'), false);
+
+  view.controller.beginEdit();
+  view.controller.customize({ accent: '#9a668f' });
+  const committed = view.controller.saveEdit('Graphite violet');
+  assert.equal(committed.name, 'Graphite violet');
   assert.notEqual(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY), before);
 });
 
-test('controller preview, Apply, storage, and reload preserve extreme valid colors exactly', () => {
+test('controller preview, Save as New, storage, and reload preserve extreme valid colors exactly', () => {
   const view = fixture();
   view.controller.apply('graphite');
   const exact = { accent: '#ff00ff', surface: '#000000', felt: '#ffffff' };
@@ -197,9 +217,11 @@ test('controller preview, Apply, storage, and reload preserve extreme valid colo
   assert.equal(view.properties.get('--poker-felt-accent'), exact.felt);
   view.controller.customize(exact);
   assert.deepEqual(view.controller.getColors(), exact);
+  const saved = view.controller.saveAsNew('Extreme');
 
   const record = JSON.parse(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY));
-  assert.deepEqual(record.draftsByTheme.graphite, exact);
+  assert.deepEqual(record.draftsByTheme, {});
+  assert.deepEqual(record.customThemes.find((theme) => theme.id === saved.id).overrides, exact);
   const restored = fixture({ storage: Object.fromEntries(view.storage.values) });
   assert.deepEqual(restored.controller.getColors(), exact);
 });
