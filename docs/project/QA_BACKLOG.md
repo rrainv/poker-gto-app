@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 23, 2026 (`FULL-HAND-REVIEW-001` implementation checkpoint).
+Last consolidated: August 24, 2026 (`AUDIO-MOTION-001` accepted implementation checkpoint with known subjective audio polish debt).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -45,7 +45,8 @@ A visual issue is not `CLOSED` without manual/browser confirmation.
 | QA-TABLE-VNEXT-001 | PARTIAL | Pure deterministic tests cover all 2–10 player templates, normalized anchors, Hero-bottom invariance, geometry families, seat prominence, physical table facts, projection sizing targets, RTL-stable poker geometry, and deep immutability. The TABLE-PRESENCE-002 Firefox matrix passed its bounded checks; independent human acceptance remains open. | TABLE-PRESENCE-002 human Firefox acceptance |
 | QA-TABLE-VNEXT-002 | PARTIAL | Hand and Full Hand Training share the presentation and derived review contracts; direct pre-action frame seeking, complete/review states, decision navigation, canonical source semantics, and exact Analyze/Save routes are structurally covered. Independent human interaction and requested Firefox A–H visual acceptance remain open. | FULL-HAND-REVIEW-001 human Firefox acceptance |
 | QA-FULL-HAND-REVIEW-001 | PARTIAL | One shared review surface now covers the hand overview, every recorded Hero decision, mixed-reference comparison only when source capabilities permit it, provenance/limitations, exact Replay synchronization, Analyze, existing-schema Save Spot/Hand, Repeat/Next/Return, multiway facts, accessibility, responsive rules, EN/RU/HE, RTL, themes, cards, and provider-result caching. Focused automated coverage is present; independent human Firefox acceptance of exact states A–H at 1920×1080, 2560×1440, and 2560×1600 in Midnight and Daylight remains open. | FULL-HAND-REVIEW-001 human Firefox acceptance |
-| QA-TABLE-VNEXT-003 | DEFERRED | Richer physical dealing/chip trajectories, deeper/3D table treatment and ambience remain later; no casino excess and reduced-motion behavior are mandatory. | later audio/motion/table physicality |
+| QA-TABLE-VNEXT-003 | PARTIAL | `AUDIO-MOTION-001` implements the first bounded TablePresentation-based stack-to-contribution, contribution-to-pot, pot-to-winner, fold, street, actor, and hand-complete consequences with direct-seek suppression and reduced-motion safety. Human Firefox visual interaction remains open; detailed denominations, elaborate card/showdown choreography, deeper/3D treatment, and ambience remain deferred. | `RET-AUDIO-001` Firefox acceptance / later explicit physicality ticket |
+| QA-AUDIO-MOTION-001 | PARTIAL | Accepted implementation checkpoint: the overall audio system, materially improved physical foley, routing architecture, and ordinary-Training Study/UI versus visible poker-world distinction are accepted as sufficient to move on. Subjective Study/UI polish, optional Check refinement, fatigue review, and any unperformed Firefox visual/audio acceptance remain known debt; do not claim subjective perfection. | `RET-AUDIO-001` later subjective refinement / Firefox acceptance if prioritized |
 
 ## Home / My Riverline
 
@@ -106,7 +107,7 @@ These identifiers remain the historical live-audit baseline; current tickets may
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-POLISH-001 | PARTIAL | Visual/motion polish is manually accepted; PRELABS-FIX-001 now proves Firefox 153 creates/resumes one lazy AudioContext before starting the first cue, with card/correct/mistake/hint and off/re-enable paths clean; subjective Firefox audibility still needs human listening acceptance | PRELABS-FIX-001 human Firefox listening acceptance |
+| QA-POLISH-001 | PARTIAL | PRELABS-FIX-001 established the lazy Firefox AudioContext seam and `AUDIO-MOTION-001` is now an accepted implementation checkpoint. Remaining subjective Study/UI and Check refinement plus unperformed Firefox audio/visual acceptance stay open as later polish debt rather than blocking the next ticket. | `RET-AUDIO-001` / later prioritized polish |
 | QA-CARD-001 | PARTIAL | Premium Card System v1 remains the shared face authority and now scales inside the adaptive 2–10 player-unit geometry; Firefox visual acceptance at 1920×1080 remains | PREMIUM-CARD-001 / TABLE-PRESENCE-002 human Firefox acceptance |
 | QA-CARD-002 | PARTIAL | `10` keeps its explicit optical-width treatment in the scaled table-card family across all three styles; Firefox visual acceptance remains | PREMIUM-CARD-001 / TABLE-PRESENCE-002 human Firefox acceptance |
 | QA-CARD-003 | PARTIAL | DOM and SVG cards still share one presentation authority, named geometry, face semantics, and back variants; structural tests cover TablePresentation integration, while representative workspace/theme visual acceptance remains | PREMIUM-CARD-001 / TABLE-PRESENCE-002 human Firefox acceptance |

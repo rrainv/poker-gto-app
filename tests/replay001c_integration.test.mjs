@@ -112,8 +112,10 @@ test('semantic motion facts cover action, values, fold, all-in, board, actor, po
 test('table stays authoritative immediately and card motion uses trusted event card IDs', () => {
   const dispatch = sourceBetween(logic, 'function dispatchCanonicalTableState()', 'function renderCanonicalHandWorkspace()');
   assert.match(dispatch, /projection\?\.tablePresence/);
-  assert.match(dispatch, /'riverline:replay-motion'/);
+  assert.doesNotMatch(dispatch, /'riverline:replay-motion'/);
   assert.match(dispatch, /new CustomEvent\('gameStateUpdate', \{ detail: tableModel \}\)/);
+  assert.match(bridgeSource, /emitBatch\(createPokerWorldExperienceEvents/);
+  assert.match(renderer, /'riverline:experience-event'/);
   assert.match(renderer, /trustedReplayDealCards\.has\(card\.id\)/);
   assert.match(renderer, /replayMotion\?\.boardCards \|\| \[\]/);
   assert.match(renderer, /\['private_deal', 'private_reveal'\]/);
@@ -163,11 +165,13 @@ test('motion has a paintable, cancellable lifecycle and settles without a timer 
   assert.doesNotMatch(`${logic}\n${renderer}`, /offsetWidth|offsetHeight|getBoundingClientRect\(/);
 });
 
-test('replay cues are perceptible, transition-scoped, and still restrained', () => {
-  assert.match(css, /--replay-motion-action:\s*560ms/);
-  assert.match(css, /--replay-motion-deal:\s*680ms/);
-  assert.match(css, /--replay-motion-showdown:\s*760ms/);
-  assert.match(css, /--replay-motion-ease:\s*cubic-bezier\(\.25, \.1, \.25, 1\)/);
+test('replay cues share the bounded semantic motion scale and stay restrained', () => {
+  assert.match(css, /--motion-fast-semantic:\s*110ms/);
+  assert.match(css, /--motion-normal-semantic:\s*170ms/);
+  assert.match(css, /--motion-poker-settle:\s*240ms/);
+  assert.match(css, /--motion-poker-ease:\s*cubic-bezier\(\.2, \.72, \.25, 1\)/);
+  assert.match(css, /--replay-motion-action:\s*var\(--motion-normal-semantic\)/);
+  assert.match(css, /--replay-motion-deal:\s*var\(--motion-poker-settle\)/);
   assert.match(css, /@keyframes replay-action-badge-a \{ from \{ opacity: 0; translate: 0 7px/);
   assert.match(css, /@keyframes replay-card-deal \{ from \{ opacity: 0; translate: 0 -14px/);
   assert.match(css, /\.table-hole-cards\.is-replay-card-motion/);

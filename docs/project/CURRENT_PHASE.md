@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 23, 2026 (`FULL-HAND-REVIEW-001` implementation checkpoint).
+Last refreshed: August 24, 2026 (`AUDIO-MOTION-001` accepted implementation checkpoint; `DOCS-INTEGRITY-001` active next).
 
 Code, tests, accepted ticket reports, manual QA, and explicit product decisions override this snapshot. `PRODUCT_BACKLOG.md` preserves detailed future capability; subsystem specs remain authoritative for implementation semantics.
 
@@ -9,7 +9,9 @@ Code, tests, accepted ticket reports, manual QA, and explicit product decisions 
 - **COMPLETED** — accepted bounded implementation; later work must be a new ticket.
 - **CHECKPOINTED / INTENTIONALLY INCOMPLETE** — useful foundation accepted with a defined resume point.
 - **ACTIVE NEXT** — next bounded ticket to execute.
+- **ACTIVE / FINAL QA CORRECTION** — the current ticket remains the sole active implementation scope pending final human acceptance.
 - **PLANNED NEXT** — accepted work ordered after the active ticket.
+- **PLANNED LATER** — ordered work that remains behind the immediate planned-next ticket.
 - **PRESERVED FUTURE** — accepted capability without immediate execution commitment.
 - **SHELVED FOR LATER** — deliberately paused.
 - **OPEN PRODUCT DECISION** — requires explicit later choice.
@@ -27,33 +29,44 @@ Code, tests, accepted ticket reports, manual QA, and explicit product decisions 
    - exact existing Analyze, Save Hand/Spot, Replay, Repeat, and Next seams;
    - EN/RU/HE, RTL, responsive/density, accessibility, reduced-motion, and bounded strategy cache coverage.
 
-4. **ACTIVE NEXT — `AUDIO-MOTION-001`**
-   - semantic poker-world audio/motion events;
-   - application motion separate from poker-world motion;
-   - reduced-motion and no-casino constraints.
+4. **COMPLETED — `AUDIO-MOTION-001` accepted implementation checkpoint**
+   - one deterministic, immutable `experience-event/v1` boundary separates poker-world and study/application events;
+   - audio follows the interaction metaphor: ordinary Varied/Focused Training emits one canonical study-result cue, while visible Hand, Full Hand Training, Replay, card, chip, and pot actions retain physical foley;
+   - eleven coherent production recordings are selected from fifteen provenance-documented CC0 assets; explicit gain/window/tail trims and very small variation replace semantically divergent variants;
+   - one compact motion policy drives restrained card, fold, chip, pot, actor, street, hand-complete, and Review-selection consequences from TablePresentation anchors;
+   - live Hand, Replay playback, and Training Full Hand share the path, while direct seek, initial render, hydration, and review selection never replay historical poker events;
+   - human accepted the overall audio system, materially improved physical foley, semantic routing, and the ordinary-Training Study/UI versus visible poker-world distinction as sufficient to move on;
+   - subjective Study/UI and Check refinement remains known polish debt rather than a claim of sound-design perfection;
+   - reduced motion, sound off, no-casino, no-reward, and no-proprietary-asset constraints are automated.
 
-5. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`**
+5. **ACTIVE NEXT — `DOCS-INTEGRITY-001`**
+
+6. **PLANNED NEXT — `UX-REGRESSION-001`**
+   - execute immediately after `DOCS-INTEGRITY-001`;
+   - retain its existing unrelated regression scope rather than absorbing audio polish debt.
+
+7. **PLANNED LATER — `PREMIUM-CLOSEOUT-001`**
    - whole-app hierarchy and Core Flow closeout;
    - desktop responsive / themes / density / cards / EN-RU-HE / RTL acceptance;
    - resolve high-value UI QA rather than adding more customization variants.
 
-6. **PLANNED NEXT — first trusted bounded reference pack / provider**
+8. **PLANNED NEXT — first trusted bounded reference pack / provider**
    - exact assumptions, versioning, validation, licensing/provenance, context coverage;
    - heuristic fallback elsewhere.
 
-7. **PLANNED NEXT — Training Memory / re-drill intelligence**
+9. **PLANNED NEXT — Training Memory / re-drill intelligence**
 
-8. **PLANNED NEXT — Personal Strategy integration and review comparison**
+10. **PLANNED NEXT — Personal Strategy integration and review comparison**
 
-9. **PLANNED NEXT — `HOME-002B` Saved Study Library / knowledge workspace**
+11. **PLANNED NEXT — `HOME-002B` Saved Study Library / knowledge workspace**
 
-10. **PRESERVED FUTURE, high strategic value — OpponentPolicy / bots / full-hand bot learning**
+12. **PRESERVED FUTURE, high strategic value — OpponentPolicy / bots / full-hand bot learning**
 
 Reassess at every clean checkpoint.
 
 ## Global baseline and CI — COMPLETED
 
-The canonical Node suite is green at the latest accepted checkpoint: **1,706/1,706 tests** after `PREFLOP-CALIBRATION-001`. Minimal GitHub Actions runs canonical syntax checks plus the full Node suite on Node 24.
+The `AUDIO-MOTION-001` correction finished with the canonical 1,759/1,759 Node suite green. Human QA accepted the implementation checkpoint while retaining subjective audio polish debt; automated success is not presented as subjective perfection. Minimal GitHub Actions runs canonical syntax checks plus the full Node suite on Node 24.
 
 Correctness and interaction performance remain distinct gates. Machine-sensitive macro timings stay outside semantic correctness assertions.
 
@@ -192,9 +205,9 @@ Current foundation includes:
 - reusable poker-chip primitive;
 - reduced-motion-safe restrained movement.
 
-The richer visual branch is checkpointed through `TABLE-PRESENCE-REF-001`, `TABLE-PRESENCE-002`, and `FULL-HAND-REVIEW-001`. Requested independent human Firefox acceptance remains open in QA and the return queue; `AUDIO-MOTION-001` is active next.
+The richer visual branch is checkpointed through `TABLE-PRESENCE-REF-001`, `TABLE-PRESENCE-002`, `FULL-HAND-REVIEW-001`, and the accepted `AUDIO-MOTION-001` implementation. `DOCS-INTEGRITY-001` is active next; `UX-REGRESSION-001` is planned immediately afterward, while `PREMIUM-CLOSEOUT-001` remains later.
 
-Preserve the no-casino aesthetic. Richer physical dealing/chip trajectories and deeper/3D treatment remain later unless the bounded vNext proves they are needed.
+Preserve the no-casino aesthetic. The bounded semantic card/chip/pot paths are implemented; detailed denominations, elaborate card physics/showdown choreography, ambience, and deeper/3D treatment remain later unless a new bounded ticket proves they are needed.
 
 ## Premium UI / customization — CHECKPOINTED, expansion frozen
 

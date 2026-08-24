@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 23, 2026 (`ROADMAP-SYNC-003`).
+Last refreshed: August 24, 2026 (`AUDIO-MOTION-001` accepted checkpoint; `DOCS-INTEGRITY-001` active next).
 
 ## Product
 
@@ -190,13 +190,15 @@ Active sequence:
 1. `TABLE-PRESENCE-REF-001` — completed competitive/design brief;
 2. `TABLE-PRESENCE-002` — completed adaptive table implementation checkpoint;
 3. `FULL-HAND-REVIEW-001` — completed shared Hand/Training review implementation checkpoint;
-4. `AUDIO-MOTION-001` — active next semantic audio/motion layer;
-5. `PREMIUM-CLOSEOUT-001` — planned whole-app premium/Core Flow closeout;
-6. first bounded trusted reference pack/provider;
-7. Training Memory/re-drill;
-8. Personal Strategy integration;
-9. Saved/Home study knowledge workspace;
-10. opponent policies/bots later.
+4. `AUDIO-MOTION-001` — completed accepted implementation checkpoint with known subjective audio polish debt;
+5. `DOCS-INTEGRITY-001` — active next;
+6. `UX-REGRESSION-001` — planned immediately after Docs Integrity;
+7. `PREMIUM-CLOSEOUT-001` — planned later;
+8. first bounded trusted reference pack/provider;
+9. Training Memory/re-drill;
+10. Personal Strategy integration;
+11. Saved/Home study knowledge workspace;
+12. opponent policies/bots later.
 
 Do not let accounts/Supabase cleanup, architecture decomposition, or more heuristic tuning displace this sequence unless they become actual blockers.
 
@@ -227,15 +229,17 @@ Do not revive without a new approved architecture:
 
 `TABLE-PRESENCE-REF-001` and the `TABLE-PRESENCE-002` implementation checkpoint are **COMPLETED**. The accepted foundation includes pure ephemeral `table-presentation/v1`; deliberate 2–10 player geometry families; stronger Hero/current-actor/relevant/live/folded hierarchy; restrained felt, rail, dealer, pot, and chip physicality; integrated Hero cards and legal-action dock; canonical-bounds sizing; distinct live/completed/Review/Analyze presentation foundations; the visible canonical Replay timeline; and deterministic `selectFrame(frameIndex)` without Hand mutation. It preserves EN/RU/HE, RTL poker geometry, themes/custom themes, density, layout presets, and Premium Card settings.
 
-Verification at this checkpoint is 1,720/1,720 Node tests plus a successful bounded installed-Firefox matrix. Do not infer that every manual matrix is closed: independent hands-on Firefox, 4K/zoom, 1024/1366, Graphite/custom-theme, Analysis Focus/Controls First, and broader 3–9-player visual sampling remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
+Verification at the current checkpoint keeps the full canonical Node suite green, including focused semantic audio/motion coverage. Do not infer that every manual matrix is closed: independent hands-on Firefox, subjective listening, 4K/zoom, 1024/1366, Graphite/custom-theme, Analysis Focus/Controls First, and broader 3–9-player visual sampling remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
 `FULL-HAND-REVIEW-001` is **COMPLETED**. Normal Hand and Full-Hand Training now share a decision-by-decision post-hand Review derived from the canonical Hero journal, Replay, StrategyResult, and StrategyClaimPolicy. It uses the explicit pre-action frame convention, source-gated comparison language, non-EV review priority, exact Analyze/Save seams, and cached strategy resolution without introducing a second Hand, Replay, grading, or Saved authority.
 
-`AUDIO-MOTION-001` is **ACTIVE NEXT**, followed by `PREMIUM-CLOSEOUT-001`; later ordering is trusted bounded reference pack/provider, Training Memory/re-drill, Personal Strategy integration, `HOME-002B`, then opponent policies/bots.
+`AUDIO-MOTION-001` is **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT**. Human QA accepts the overall audio system, materially improved physical foley, semantic routing, and ordinary-Training Study/UI versus visible physical poker-world audio as sufficient to move on. Event origins, reduced-motion separation, one audio authority, production previews, physical configuration, and motion remain intact. Subjective Study/UI refinement, optional Check refinement, fatigue review, and unperformed Firefox acceptance remain in `QA-AUDIO-MOTION-001` and `RET-AUDIO-001`; do not claim perfection.
+
+`DOCS-INTEGRITY-001` is **ACTIVE NEXT**. `UX-REGRESSION-001` is planned immediately afterward; `PREMIUM-CLOSEOUT-001` remains later.
 
 ## Current development direction
 
-The project is in the bounded audio/motion phase. Strategy integrity, authority, extraction, mathematical integrity, calibration baseline, initial performance, the premium adaptive table foundation, and the shared full-hand learning workflow are checkpointed.
+The project has accepted `AUDIO-MOTION-001` as an implementation checkpoint with known subjective audio polish debt. `DOCS-INTEGRITY-001` is active next, followed immediately by planned `UX-REGRESSION-001`.
 
 Read `../project/CURRENT_PHASE.md`, `../project/PRODUCT_BACKLOG.md`, `../project/QA_BACKLOG.md`, `../project/PRODUCT_RETURN_QUEUE.md`, and `../project/ROADMAP.md` for the active ticket, ordered future work, and remaining acceptance debt. When an accepted checkpoint changes priority or subsystem state, update those authoritative roadmap/resume/backlog documents together; never create a parallel status system in prompts or chat memory.
 

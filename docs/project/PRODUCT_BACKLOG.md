@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 23, 2026 (`FULL-HAND-REVIEW-001` implementation checkpoint).
+Last consolidated: August 24, 2026 (`AUDIO-MOTION-001` accepted implementation checkpoint; `DOCS-INTEGRITY-001` active next).
 
 This file preserves accepted future capability so it does not depend on chat memory and is not implemented opportunistically. `CURRENT_PHASE.md` is the authoritative checkpoint/resume map and delivery order; subsystem specifications own implementation semantics.
 
@@ -9,6 +9,7 @@ This file preserves accepted future capability so it does not depend on chat mem
 - **COMPLETED**
 - **CHECKPOINTED / INTENTIONALLY INCOMPLETE**
 - **ACTIVE NEXT**
+- **ACTIVE / FINAL QA CORRECTION**
 - **PLANNED NEXT**
 - **PRESERVED FUTURE**
 - **SHELVED FOR LATER**
@@ -59,15 +60,17 @@ Reference strategy, intended Personal Strategy, and observed behavior remain dis
 | 11 | COMPLETED | `TABLE-PRESENCE-REF-001` — accepted competitor/reference design brief for the full-hand/table experience |
 | 12 | COMPLETED | `TABLE-PRESENCE-002` — adaptive table geometry, stronger table presence, seat/chip/card hierarchy, decision dock, timeline/direct seek, live/completed states |
 | 13 | COMPLETED | `FULL-HAND-REVIEW-001` — shared canonical decision-by-decision Hand/Training review with source-gated comparison, Replay synchronization, Analyze/Save, and bounded caching |
-| 14 | ACTIVE NEXT | `AUDIO-MOTION-001` — semantic poker-world sounds/motion + reduced-motion-safe application motion |
-| 15 | PLANNED NEXT | `PREMIUM-CLOSEOUT-001` — whole-app Core Flow/premium/desktop/i18n closeout |
-| 16 | PLANNED NEXT | first bounded trusted reference-pack architecture + validated provider |
-| 17 | PLANNED NEXT | Training Memory / re-drill intelligence |
-| 18 | PLANNED NEXT | Personal Strategy integration into reference/review/Training |
-| 19 | PLANNED NEXT | Home/Saved Study Library knowledge workspace |
-| 20 | PRESERVED FUTURE | Opponent policies / bots / environment models / full-hand bot learning |
+| 14 | COMPLETED | `AUDIO-MOTION-001` — accepted semantic audio/motion implementation checkpoint with known subjective Study/UI and Check polish debt |
+| 15 | ACTIVE NEXT | `DOCS-INTEGRITY-001` |
+| 16 | PLANNED NEXT | `UX-REGRESSION-001` — execute immediately after Docs Integrity |
+| 17 | PLANNED LATER | `PREMIUM-CLOSEOUT-001` — whole-app Core Flow/premium/desktop/i18n closeout |
+| 18 | PLANNED NEXT | first bounded trusted reference-pack architecture + validated provider |
+| 19 | PLANNED NEXT | Training Memory / re-drill intelligence |
+| 20 | PLANNED NEXT | Personal Strategy integration into reference/review/Training |
+| 21 | PLANNED NEXT | Home/Saved Study Library knowledge workspace |
+| 22 | PRESERVED FUTURE | Opponent policies / bots / environment models / full-hand bot learning |
 
-The next bounded visible implementation is **`AUDIO-MOTION-001`**, followed by `PREMIUM-CLOSEOUT-001`.
+`AUDIO-MOTION-001` is an accepted implementation checkpoint. The active-next ticket is **`DOCS-INTEGRITY-001`**, followed immediately by planned `UX-REGRESSION-001`.
 
 ## Strategy / reference / benchmark program
 
@@ -105,7 +108,7 @@ The next bounded visible implementation is **`AUDIO-MOTION-001`**, followed by `
 | `TABLE-PRESENCE-REF-001` | COMPLETED | Accepted GTO Wizard-primary competitive reference with bounded ADOPT/ADAPT/DIFFERENTIATE/REJECT implementation decisions |
 | `TABLE-PRESENCE-002` | COMPLETED | Purpose-built HU/sparse/6-max/full-ring geometry, table hierarchy/physicality, integrated legal action dock, visible canonical timeline, direct seek, and live/completed/review/analyze projection foundation |
 | `FULL-HAND-REVIEW-001` | COMPLETED | Shared Hand/Full-Hand Training `hand-review/v1`; canonical Hero decisions; pre-action Replay synchronization; source-gated mixed-frequency comparison; compact provenance; unavailable continuity; non-EV review priority; Analyze/Save/Repeat/Next seams; no duplicate authority |
-| richer dealing/chip trajectories | PRESERVED FUTURE | Physical deal paths, stack-to-bet, pot collection, showdown/reveal; only if restrained and reduced-motion-safe |
+| advanced dealing/chip trajectories | PRESERVED FUTURE | The bounded stack-to-bet, pot collection/award, fold, and street paths exist; preserve only more elaborate card physics, denominations, and showdown/reveal choreography, and only if restrained and reduced-motion-safe |
 | deeper table depth/3D | PRESERVED FUTURE | Analytical physicality, not casino realism; validate against clarity/performance before expanding |
 | dealer/avatar richness | PRESERVED FUTURE | Only after table hierarchy works without it |
 
@@ -122,8 +125,8 @@ The same canonical Hand/state should feed all projections.
 
 | Capability | Status | Preserved scope |
 |---|---|---|
-| existing basic sound/reduced-motion support | CHECKPOINTED | Existing cues remain; subjective Firefox audibility acceptance still tracked |
-| `AUDIO-MOTION-001` | ACTIVE NEXT | Separate poker-world events from app-navigation motion; card/chip/action/street/hand-complete semantic cues; independent controls; reduced-motion; restrained timing |
+| semantic audio/motion foundation | COMPLETED CHECKPOINT | `experience-event/v1`, one audio authority, one bounded motion policy, independent controls, and origin suppression are accepted; visible poker interactions use recorded foley while abstract Training uses one authority-safe study result |
+| `AUDIO-MOTION-001` subjective polish | PARTIAL / RETURN LATER | Overall implementation is accepted without claiming perfection. Study/UI sound refinement, optional Check refinement, fatigue review, and unperformed Firefox visual/audio acceptance remain tracked in QA and the return queue |
 | richer ambience | PRESERVED FUTURE | Optional and subtle; no casino noise, celebration loops, or engagement manipulation |
 
 ## Training intelligence
@@ -202,9 +205,11 @@ The exact first shipped scope remains an **OPEN PRODUCT DECISION** at ticket pla
 | `TABLE-PRESENCE-REF-001` | COMPLETED | accepted premium table reference and implementation boundary |
 | `TABLE-PRESENCE-002` | COMPLETED | pure presentation projection; adaptive 2–10 geometry; Hero/actor/folded hierarchy; restrained felt/rail/dealer/chip physicality; integrated legal decision dock and sizing; live/completed/Review/Analyze foundation; canonical timeline/direct seek; EN/RU/HE and RTL-stable poker geometry; existing theme/density/layout/card systems preserved |
 | `FULL-HAND-REVIEW-001` | COMPLETED | one shared source-aware decision-by-decision learning workflow over canonical Hand/Training journals, table/timeline/direct seek, and existing Analyze/Saved seams |
-| `AUDIO-MOTION-001` | ACTIVE NEXT | restrained purposeful feedback after Full Hand Review; preserve reduced motion and analytical tone |
-| `PREMIUM-CLOSEOUT-001` | PLANNED NEXT | bounded acceptance reconciliation after Audio/Motion; remaining unrelated QA stays separately owned |
-| elaborate physical/casino motion | SHELVED FOR LATER | physical dealing/card paths, stack-to-bet and pot-collection trajectories, denominations/stacks, fake 3D, elaborate showdown/reveal motion, and ambience |
+| `AUDIO-MOTION-001` | COMPLETED | accepted implementation checkpoint; subjective Study/UI and Check refinement remains separately tracked debt |
+| `DOCS-INTEGRITY-001` | ACTIVE NEXT | current bounded ticket |
+| `UX-REGRESSION-001` | PLANNED NEXT | execute immediately after Docs Integrity |
+| `PREMIUM-CLOSEOUT-001` | PLANNED LATER | bounded acceptance reconciliation after the ordered Docs Integrity and UX Regression work; remaining unrelated QA stays separately owned |
+| elaborate physical/casino motion | SHELVED FOR LATER | detailed denominations/stacks, elaborate card/showdown choreography, fake 3D, ambience, and any reward/casino treatment beyond the completed bounded semantic paths |
 | mobile composition | PRESERVED FUTURE | deliberate mobile product, not compressed desktop |
 
 Profiles remain recognizable poker environments/identities, with exactly three user-named modes. Quick answers mean dominant/preferred action, never implicit 100% frequency.

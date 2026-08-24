@@ -759,6 +759,21 @@
   Object.assign(ru, tablePresenceTutorial.ru);
   Object.assign(he, tablePresenceTutorial.he);
 
+  const audioMotionTutorial = {
+    en: {
+      'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.': 'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.',
+    },
+    ru: {
+      'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.': 'Звук необязателен: задайте общую громкость, затем отдельно включите сигналы «Стол / Покер» и «Обучение / Интерфейс». Анимация настраивается независимо и учитывает системное предпочтение уменьшенного движения.',
+    },
+    he: {
+      'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.': 'הצליל הוא אופציונלי: הגדירו עוצמה כללית, ולאחר מכן הפעילו בנפרד צלילי שולחן / פוקר ולימוד / ממשק. התנועה נשלטת בנפרד ומכבדת את העדפת המערכת להפחתת תנועה.',
+    },
+  };
+  Object.assign(en, audioMotionTutorial.en);
+  Object.assign(ru, audioMotionTutorial.ru);
+  Object.assign(he, audioMotionTutorial.he);
+
   const handReviewTutorial = {
     en: {
       'Review every Hero decision after the Hand': 'Review every Hero decision after the Hand',

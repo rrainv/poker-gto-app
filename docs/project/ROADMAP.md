@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 23, 2026 (`FULL-HAND-REVIEW-001` implementation checkpoint).
+Last refreshed: August 24, 2026 (`AUDIO-MOTION-001` accepted checkpoint; `DOCS-INTEGRITY-001` active next, then `UX-REGRESSION-001`).
 
 This roadmap is directional, not a rigid waterfall. `CURRENT_PHASE.md` is the authoritative current checkpoint/resume map; `PRODUCT_BACKLOG.md` preserves detailed future capability; code, tests, accepted ticket reports, manual QA, and explicit product decisions override planning prose.
 
@@ -21,6 +21,7 @@ Its established product foundation includes:
 - `RANGE-CORE-001` canonical combo-level weighted range foundation;
 - `ANALYSIS-RANGE-001` range-aware Analysis/structural outs checkpoint;
 - one shared decision-by-decision completed-hand review workflow through `FULL-HAND-REVIEW-001`, with exact pre-action Replay frames, source-gated comparisons, truthful limitations, and exact Analyze/Save handoffs.
+- one origin-aware semantic audio/motion foundation through `AUDIO-MOTION-001`, with one audio authority, recorded physical poker-world foley, procedural Study/UI feedback, compact motion policy, TablePresentation paths, and explicit direct-seek/reduced-motion suppression.
 
 The long-term loop is:
 
@@ -42,13 +43,15 @@ Reference strategy, Personal Strategy, and observed behavior remain distinct sem
 1. **COMPLETED — `TABLE-PRESENCE-REF-001`.** Competitive reference and implementation boundaries are accepted.
 2. **COMPLETED — `TABLE-PRESENCE-002` accepted implementation checkpoint.** The premium adaptive table, Hero decision composition, canonical sizing tray, completed/review foundation, Replay timeline/direct seek, localization, 1,720/1,720 Node baseline, and bounded Firefox matrix are present. Remaining visual/browser sampling stays open in QA and the return queue.
 3. **COMPLETED — `FULL-HAND-REVIEW-001` implementation checkpoint.** Hand and Full Hand Training converge on one derived review model and surface with exact pre-action Replay synchronization, truthful source semantics, Analyze/Save/Repeat/Next routing, responsive EN/RU/HE/RTL presentation, and focused automated coverage. Independent human Firefox acceptance remains routed through QA and the return queue.
-4. **ACTIVE NEXT — `AUDIO-MOTION-001`.** Add restrained purposeful feedback after Full Hand Review, preserving reduced motion and the analytical no-casino aesthetic.
-5. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`.** Close the bounded premium-product checkpoint after Audio/Motion without silently absorbing unrelated manual QA.
-6. **PLANNED NEXT — trusted bounded reference pack/provider.** Validate a narrow reference source and declared capabilities behind `StrategyProvider`.
-7. **PLANNED NEXT — Training Memory / re-drill.** Establish canonical persistent learning history and targeted review.
-8. **PLANNED NEXT — Personal Strategy integration.** Connect existing evidence through approved provider/Training boundaries.
-9. **PLANNED NEXT — `HOME-002B` Saved Study Library.** Expand Saved Study discovery and drilldowns over the existing repository.
-10. **SHELVED FOR LATER — opponent policies/bots.** Keep automated opponents behind the higher-priority learning sequence.
+4. **COMPLETED — `AUDIO-MOTION-001` accepted implementation checkpoint.** Human QA accepts the overall audio system, materially improved physical foley, routing architecture, and the Study/UI versus visible poker-world distinction as sufficient to move on. Subjective Study/UI and Check polish debt remains tracked without claiming perfection.
+5. **ACTIVE NEXT — `DOCS-INTEGRITY-001`.**
+6. **PLANNED NEXT — `UX-REGRESSION-001`.** Execute immediately after Docs Integrity.
+7. **PLANNED LATER — `PREMIUM-CLOSEOUT-001`.** Close the bounded premium-product checkpoint after the ordered Docs Integrity and UX Regression work.
+8. **PLANNED NEXT — trusted bounded reference pack/provider.** Validate a narrow reference source and declared capabilities behind `StrategyProvider`.
+9. **PLANNED NEXT — Training Memory / re-drill.** Establish canonical persistent learning history and targeted review.
+10. **PLANNED NEXT — Personal Strategy integration.** Connect existing evidence through approved provider/Training boundaries.
+11. **PLANNED NEXT — `HOME-002B` Saved Study Library.** Expand Saved Study discovery and drilldowns over the existing repository.
+12. **SHELVED FOR LATER — opponent policies/bots.** Keep automated opponents behind the higher-priority learning sequence.
 
 Reassess after every accepted checkpoint; when priority or subsystem state changes, the authoritative roadmap/resume/backlog documents move together.
 
@@ -86,7 +89,7 @@ The deterministic heuristic remains generalized comparative fallback, not solved
 
 ## Premium presentation branch
 
-The premium adaptive table, dealer/chip physicality, Hero action dock, projection foundation, and completed-hand review workflow are completed by `TABLE-PRESENCE-002` and `FULL-HAND-REVIEW-001`. `AUDIO-MOTION-001` is active next and must remain restrained and reduced-motion-safe. Physical card trajectories, stack-to-bet and pot-collection animation, detailed denominations, fake 3D table treatment, elaborate showdown/reveal motion, and ambience remain **SHELVED FOR LATER** unless a later bounded ticket explicitly approves them.
+The premium adaptive table, dealer/chip physicality, Hero action dock, projection foundation, completed-hand review workflow, and first semantic audio/motion layer are accepted implementation checkpoints. Subjective audio refinement and unperformed Firefox acceptance remain in QA and the return queue. Bounded stack-to-bet, pot collection/award, fold, and street paths are reduced-motion-safe. Detailed denominations, elaborate card/showdown choreography, fake 3D table treatment, ambience, and any casino/reward treatment remain **SHELVED FOR LATER** unless a later bounded ticket explicitly approves them.
 
 ### Phase A — visible full-hand / table experience burst
 
@@ -113,14 +116,21 @@ The premium adaptive table, dealer/chip physicality, Hero action dock, projectio
    - selected-reference identity and truthful limitations;
    - no fake EV or unsupported correctness.
 
-4. **`AUDIO-MOTION-001` — ACTIVE NEXT**
+4. **`AUDIO-MOTION-001` — COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT**
    - semantic poker-world event layer versus application-motion layer;
    - restrained card/chip/action/street cues;
    - actor/street/hand-complete motion;
    - reduced-motion and sound-off guarantees;
-   - no casino celebration effects.
+   - no casino celebration effects;
+   - ordinary Training uses authority-safe study feedback; visible Hand/Full Hand/Replay interactions use recorded physical foley;
+   - subjective Study/UI and Check refinement remains later debt in `RET-AUDIO-001`.
 
-5. **`PREMIUM-CLOSEOUT-001` — PLANNED NEXT**
+5. **`DOCS-INTEGRITY-001` — ACTIVE NEXT**
+
+6. **`UX-REGRESSION-001` — PLANNED NEXT**
+   - execute immediately after Docs Integrity.
+
+7. **`PREMIUM-CLOSEOUT-001` — PLANNED LATER**
    - whole-app hierarchy/panel/chrome review;
    - Hand → Review → Analyze → Save → Training/Personal Strategy continuity;
    - desktop responsive acceptance at 1920×1080, 2560×1440, 2560×1600, 4K;
@@ -131,7 +141,7 @@ The table/reference/review sequence is checkpointed. Remaining independent visua
 
 ### Phase B — trusted reference strategy
 
-6. **`REFERENCE-PACK-ARCH-001` / first bounded reference problem**
+8. **`REFERENCE-PACK-ARCH-001` / first bounded reference problem**
    - choose one exact, reproducible preflop family;
    - define validation, assumptions, sizing tree, rake/rules, licensing and versioning;
    - likely start with a compact HU or tightly bounded heads-up preflop family rather than claiming general 6-max coverage.
@@ -261,4 +271,4 @@ Do not allow:
 
 Reassess after every clean checkpoint.
 
-The current explicit priority is: restrained Audio/Motion, then Premium Closeout; afterward come a trusted bounded reference pack/provider, Training Memory/re-drill, Personal Strategy integration, `HOME-002B`, and only later opponent policies/bots. Detailed accepted ideas remain in `PRODUCT_BACKLOG.md` and must not depend on chat memory. This roadmap is not a parallel status system: accepted checkpoint changes must be reflected here, in `CURRENT_PHASE.md`, and in the dynamic backlog together.
+The current explicit priority is: `DOCS-INTEGRITY-001`, then `UX-REGRESSION-001`, then later `PREMIUM-CLOSEOUT-001`; afterward come a trusted bounded reference pack/provider, Training Memory/re-drill, Personal Strategy integration, `HOME-002B`, and only later opponent policies/bots. Detailed accepted ideas remain in `PRODUCT_BACKLOG.md` and must not depend on chat memory. This roadmap is not a parallel status system: accepted checkpoint changes must be reflected here, in `CURRENT_PHASE.md`, and in the dynamic backlog together.

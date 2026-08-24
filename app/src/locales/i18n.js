@@ -2750,6 +2750,80 @@ const tablePresenceTranslations = {
 Object.entries(tablePresenceTranslations).forEach(([language, entries]) => {
   Object.assign(trainingWorkspaceTranslations[language], entries);
 });
+const audioMotionTranslations = {
+  en: {
+    "Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.": "Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.",
+    "Sound enabled": "Sound enabled",
+    "Mute or enable all Riverline cues.": "Mute or enable all Riverline cues.",
+    "Master volume": "Master volume",
+    "Table / Poker sounds": "Table / Poker sounds",
+    "Cards, checks, folds, chips, streets, and pot movement.": "Cards, checks, folds, chips, streets, and pot movement.",
+    "Study / UI feedback": "Study / UI feedback",
+    "Hints and neutral UI acknowledgement; never win/loss grading.": "Hints and neutral UI acknowledgement; never win/loss grading.",
+    "Preview sounds": "Preview sounds",
+    "Audition the same production cues used during poker actions.": "Audition the same production cues used during poker actions.",
+    "Canonical study-result acknowledgement and hints; never casino rewards.": "Canonical study-result acknowledgement and hints; never casino rewards.",
+    "Audition the exact production cues for physical poker and study feedback.": "Audition the exact production cues for physical poker and study feedback.",
+    "Physical poker": "Physical poker",
+    "Study feedback": "Study feedback",
+    "Positive": "Positive",
+    "Neutral": "Neutral",
+    "Corrective": "Corrective",
+    "Hint": "Hint",
+    "Card": "Card",
+    "Enable sound": "Enable sound",
+    "Mute sound": "Mute sound"
+  },
+  ru: {
+    "Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.": "Звуки покера и учебная обратная связь настраиваются отдельно. Анимация независимо учитывает настройку уменьшения движения.",
+    "Sound enabled": "Звук включён",
+    "Mute or enable all Riverline cues.": "Отключить или включить все звуки Riverline.",
+    "Master volume": "Общая громкость",
+    "Table / Poker sounds": "Звуки стола и покера",
+    "Cards, checks, folds, chips, streets, and pot movement.": "Карты, чеки, фолды, фишки, улицы и движение банка.",
+    "Study / UI feedback": "Учебная обратная связь",
+    "Hints and neutral UI acknowledgement; never win/loss grading.": "Подсказки и нейтральное подтверждение интерфейса — без оценки выигрыша или проигрыша.",
+    "Preview sounds": "Прослушать звуки",
+    "Audition the same production cues used during poker actions.": "Прослушайте те же звуки, которые используются во время покерных действий.",
+    "Canonical study-result acknowledgement and hints; never casino rewards.": "Каноническая обратная связь по результатам обучения и подсказки; никаких наград казино.",
+    "Audition the exact production cues for physical poker and study feedback.": "Прослушайте точные рабочие звуки физического покера и учебной обратной связи.",
+    "Physical poker": "Физический покер",
+    "Study feedback": "Учебная обратная связь",
+    "Positive": "Положительный",
+    "Neutral": "Нейтральный",
+    "Corrective": "Корректирующий",
+    "Hint": "Подсказка",
+    "Card": "Карта",
+    "Enable sound": "Включить звук",
+    "Mute sound": "Отключить звук"
+  },
+  he: {
+    "Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.": "צלילי הפוקר ומשוב הלימוד נשלטים בנפרד. התנועה מכבדת באופן עצמאי את העדפת צמצום התנועה.",
+    "Sound enabled": "צליל מופעל",
+    "Mute or enable all Riverline cues.": "השתקה או הפעלה של כל צלילי Riverline.",
+    "Master volume": "עוצמת שמע כללית",
+    "Table / Poker sounds": "צלילי שולחן ופוקר",
+    "Cards, checks, folds, chips, streets, and pot movement.": "קלפים, צ׳קים, פולדים, ז׳יטונים, רחובות ותנועת הקופה.",
+    "Study / UI feedback": "משוב לימודי וממשק",
+    "Hints and neutral UI acknowledgement; never win/loss grading.": "רמזים ואישור ניטרלי של הממשק, ללא דירוג של ניצחון או הפסד.",
+    "Preview sounds": "תצוגה מקדימה של צלילים",
+    "Audition the same production cues used during poker actions.": "האזינו לאותם צלילי הפקה המשמשים במהלך פעולות פוקר.",
+    "Canonical study-result acknowledgement and hints; never casino rewards.": "משוב לימודי קנוני ורמזים; ללא תגמולי קזינו.",
+    "Audition the exact production cues for physical poker and study feedback.": "האזינו לצלילי ההפקה המדויקים של פעולות פוקר פיזיות ושל משוב לימודי.",
+    "Physical poker": "פוקר פיזי",
+    "Study feedback": "משוב לימודי",
+    "Positive": "חיובי",
+    "Neutral": "ניטרלי",
+    "Corrective": "מתקן",
+    "Hint": "רמז",
+    "Card": "קלף",
+    "Enable sound": "הפעלת צליל",
+    "Mute sound": "השתקת צליל"
+  }
+};
+Object.entries(audioMotionTranslations).forEach(([language, entries]) => {
+  Object.assign(trainingWorkspaceTranslations[language], entries);
+});
 Object.entries(trainingWorkspaceTranslations).forEach(([language, entries]) => {
   Object.assign(appTranslations[language], entries);
 });

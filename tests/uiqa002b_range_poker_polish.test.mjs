@@ -8,8 +8,12 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
+const foleyManifest = fs.readFileSync(new URL('../app/src/core/AudioFoleyManifest.js', import.meta.url), 'utf8');
 const table = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
 const cardPresentation = fs.readFileSync(new URL('../app/src/application/card-presentation.mjs', import.meta.url), 'utf8');
+const experienceEvents = fs.readFileSync(new URL('../app/src/application/experience-events.mjs', import.meta.url), 'utf8');
+const playbookBootstrap = fs.readFileSync(new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url), 'utf8');
+const trainingBootstrap = fs.readFileSync(new URL('../app/src/application/training-mode-bootstrap.mjs', import.meta.url), 'utf8');
 
 const matrixHtml = html.slice(html.indexOf('id="chartView"'), html.indexOf('id="rangeView"'));
 const uiQaStart = css.indexOf('UI-QA-002B: dense range analysis');
@@ -98,6 +102,7 @@ test('polished exact-card fallbacks use displayCard while analytical hand classe
 
 function createSoundHarness() {
   let oscillatorCount = 0;
+  let sampleStartCount = 0;
   const context = {
     currentTime: 1,
     state: 'running',
@@ -111,6 +116,19 @@ function createSoundHarness() {
         connect() {}, start() {}, stop() {},
       };
     },
+    createBufferSource() {
+      return {
+        buffer: null,
+        playbackRate: { setValueAtTime() {} },
+        connect() {},
+        start() { sampleStartCount += 1; },
+      };
+    },
+    decodeAudioData(arrayBuffer, success) {
+      const buffer = { duration: 0.5, byteLength: arrayBuffer.byteLength };
+      success?.(buffer);
+      return Promise.resolve(buffer);
+    },
     createGain() {
       return { gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} };
     },
@@ -119,31 +137,38 @@ function createSoundHarness() {
   const storage = new Map();
   const sandbox = {
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, String(value)) },
-    document: { getElementById: () => null },
-    window: { AudioContext, addEventListener() {} },
+    document: { hidden: false, baseURI: 'http://riverline.test/app/index.html', getElementById: () => null, querySelectorAll: () => [] },
+    fetch: async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(16) }),
+    URL,
+    ArrayBuffer,
+    window: { AudioContext, location: { href: 'http://riverline.test/app/index.html' }, addEventListener() {} },
   };
-  vm.runInNewContext(`${sound}\nthis.exposedSoundFX = SoundFX;`, sandbox);
-  return { soundFx: sandbox.exposedSoundFX, context, oscillatorCount: () => oscillatorCount };
+  vm.runInNewContext(`${foleyManifest}\n${sound}\nthis.exposedSoundFX = SoundFX;`, sandbox);
+  return { soundFx: sandbox.exposedSoundFX, context, oscillatorCount: () => oscillatorCount, sampleStartCount: () => sampleStartCount };
 }
 
 test('card-deal sound is combined, throttled, and controlled by the global Audio toggle', async () => {
   const harness = createSoundHarness();
   await harness.soundFx.playCardDeal(5);
-  assert.equal(harness.oscillatorCount(), 2, 'a multi-card deal uses one two-stroke cue');
+  assert.equal(harness.sampleStartCount(), 1, 'a grouped deal uses one recorded card placement cue');
+  assert.equal(harness.oscillatorCount(), 0, 'poker cards never use the procedural oscillator');
   await harness.soundFx.playCardDeal(5);
-  assert.equal(harness.oscillatorCount(), 2, 'same-frame rerenders do not create audio spam');
+  assert.equal(harness.sampleStartCount(), 1, 'same-frame rerenders do not create audio spam');
   harness.soundFx.toggle();
   harness.context.currentTime += 1;
   await harness.soundFx.playCardDeal(2);
-  assert.equal(harness.oscillatorCount(), 2, 'muted playback is silent');
+  assert.equal(harness.sampleStartCount(), 1, 'muted playback is silent');
 });
 
-test('sound hooks fire only from user-perceived deals, actions, and one Training result', () => {
-  assert.match(logic, /dealObservedHoleCards[\s\S]*?playCardDeal/);
-  assert.match(logic, /dealBoardCards[\s\S]*?playCardDeal\(expected\)/);
-  assert.match(logic, /applyCanonicalHandAction[\s\S]*?playPokerAction\(type\)/);
-  assert.match(logic, /playTrainingResult\(evaluation\.grade\)/);
-  assert.equal((logic.match(/playTrainingResult\(evaluation\.grade\)/g) || []).length, 1);
+test('sound hooks are selected only at the semantic event boundary', () => {
+  assert.equal((logic.match(/SoundFX\.play/g) || []).length, 0);
+  assert.match(experienceEvents, /SoundFX\?\.consumeExperienceEvent\?\.\(event\)/);
+  assert.match(playbookBootstrap, /createPokerWorldExperienceEvents/);
+  assert.match(trainingBootstrap, /createPokerWorldExperienceEvents/);
+  assert.match(experienceEvents, /emitPokerAction/);
+  assert.match(experienceEvents, /emitTrainingDecisionResult/);
+  assert.match(logic, /emitTrainingDecisionResultExperience/);
+  assert.doesNotMatch(logic, /emitTrainingActionExperience|emitPokerAction/);
   assert.doesNotMatch(logic, /bindSliderPair[\s\S]{0,800}playChip/);
   assert.doesNotMatch(table, /SoundFX|playCardDeal/);
 });

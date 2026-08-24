@@ -27,6 +27,44 @@ const SUITS = [
 
 window.SoundFX = SoundFX;
 
+let applicationExperienceSequence = 0;
+function emitStudyExperience(type, {
+  origin = 'live',
+  source = 'application',
+  payload = {},
+} = {}) {
+  const authority = window.RiverlineExperienceEvents;
+  if (!authority?.emitStudy) return null;
+  applicationExperienceSequence += 1;
+  return authority.emitStudy({
+    type,
+    origin,
+    source,
+    token: applicationExperienceSequence,
+    payload,
+  });
+}
+
+function emitTrainingDecisionResultExperience({
+  comparisonState,
+  feedbackSemantics,
+  accepted,
+  chosenActionType,
+} = {}) {
+  const authority = window.RiverlineExperienceEvents;
+  if (!authority?.emitTrainingDecisionResult) return null;
+  applicationExperienceSequence += 1;
+  return authority.emitTrainingDecisionResult({
+    origin: 'live',
+    source: 'training_decision',
+    token: applicationExperienceSequence,
+    comparisonState,
+    feedbackSemantics,
+    accepted,
+    chosenActionType,
+  });
+}
+
 
 
 
@@ -838,8 +876,6 @@ function selectCard(card) {
 
 
   if (group === 'hero') app.selectedHand = null;
-
-  if (window.SoundFX) SoundFX.playCardDeal();
 
   closePicker({ restoreFocus: false });
 
@@ -1870,7 +1906,6 @@ function commitCanonicalHoleDeal() {
   if (!next) toast(canonicalHandFailureMessage(), 'error');
   else {
     clearToast();
-    if (window.SoundFX) window.SoundFX.playCardDeal(Math.max(2, Object.keys(cardsByPlayer).length * 2));
   }
   renderCanonicalHandWorkspace();
   return next;
@@ -1915,7 +1950,6 @@ function commitCanonicalBoardDeal() {
   else {
     clearToast();
     app.playbookHandDraft.board = [];
-    if (window.SoundFX) window.SoundFX.playCardDeal(expected);
   }
   renderCanonicalHandWorkspace();
   return next;
@@ -1984,7 +2018,6 @@ function applyCanonicalHandAction(type, amountToBb = null) {
     if (!next) toast(canonicalHandFailureMessage(), 'error');
     else {
       clearToast();
-      if (window.SoundFX) window.SoundFX.playPokerAction(type);
     }
   } finally {
     app.playbookHandDraft.sizedAction = null;
@@ -2392,6 +2425,11 @@ function createReplayCurrentMarker(marker) {
 
 function seekCanonicalReplayFrame(frameIndex) {
   if (!Number.isInteger(frameIndex)) return null;
+  emitStudyExperience('review_decision_selected', {
+    origin: 'direct_seek',
+    source: 'canonical_replay',
+    payload: { frameIndex },
+  });
   const projection = callPlaybookStateBridge('selectReplayFrame', frameIndex);
   const selected = [...$$('#handActionHistory .replay-timeline-seek[data-frame-index]')]
     .find((control) => Number(control.dataset.frameIndex) === frameIndex);
@@ -2736,9 +2774,6 @@ function dispatchCanonicalTableState() {
     if (projection?.readOnly) wrapper.setAttribute('aria-describedby', 'handReplayStatus');
     else wrapper.removeAttribute('aria-describedby');
   }
-  window.dispatchEvent(new CustomEvent('riverline:replay-motion', {
-    detail: projection?.motion?.active ? projection.motion : null
-  }));
   window.dispatchEvent(new CustomEvent('gameStateUpdate', { detail: tableModel }));
 }
 
@@ -3299,6 +3334,15 @@ function selectActiveHandReviewDecision(index, { preserveFocus = false } = {}) {
   if (!model || !Number.isSafeInteger(index) || index < 0 || index >= model.decisions.length) return null;
   app.handReview.selectedDecisionIndex = index;
   const target = model.decisions[index].replayFrameTarget.frameIndex;
+  emitStudyExperience('review_decision_selected', {
+    origin: 'review_selection',
+    source: model.source || 'hand_review',
+    payload: {
+      decisionId: model.decisions[index].decisionId,
+      decisionIndex: index,
+      frameIndex: target,
+    },
+  });
   activeHandReviewReplayOperation('select', target);
   refreshActiveHandReviewModel();
   if (app.handReview.source === 'training_full_hand') {
@@ -4305,7 +4349,6 @@ function bindMatrixGridInteractions(grid) {
   grid.addEventListener('click', (event) => {
     const cell = event.target.closest('.hand-cell');
     if (!cell || !cell.dataset.hand) return;
-    if (window.SoundFX) SoundFX.playClick();
     app.selectedHand = cell.dataset.hand;
     const selectedHand = $('#selectedHand');
     if (selectedHand) selectedHand.textContent = app.selectedHand;
@@ -7242,6 +7285,7 @@ function refreshLocalizedTrainingRuntime() {
 }
 
 function refreshLocalizedRuntime() {
+  window.SoundFX?.refreshControls?.();
   const shell = $('.riverline-shell');
   applySidebarState(Boolean(shell?.classList.contains('is-sidebar-collapsed')));
   updateActionPathDisclosure();
@@ -7361,14 +7405,6 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => setTimeout(init, 10));
 
 } else {
-  const audioToggle = $('#audioToggle');
-  if (audioToggle) {
-    audioToggle.addEventListener('change', (e) => {
-      if(window.SoundFX) window.SoundFX.enabled = e.target.checked;
-    });
-  }
-
-
   setTimeout(init, 10);
 
 }
@@ -7999,7 +8035,6 @@ function renderBettingTree() {
     const row = container.querySelector(`[data-piotree-id="${node.id}"]`);
     if (row) {
       row.addEventListener('click', () => {
-        if (window.SoundFX) SoundFX.playClick();
         selectNode(node);
       });
     }
@@ -8021,7 +8056,6 @@ function renderBettingTree() {
 
   if ($('#treeExpandAll')) {
     $('#treeExpandAll').onclick = () => {
-      if (window.SoundFX) SoundFX.playClick();
       container.querySelectorAll('.piotree-children').forEach(el => el.classList.remove('collapsed'));
       container.querySelectorAll('.piotree-chevron').forEach(el => el.classList.add('open'));
     };
@@ -8029,7 +8063,6 @@ function renderBettingTree() {
 
   if ($('#treeCollapseAll')) {
     $('#treeCollapseAll').onclick = () => {
-      if (window.SoundFX) SoundFX.playClick();
       container.querySelectorAll('.piotree-children').forEach(el => el.classList.add('collapsed'));
       container.querySelectorAll('.piotree-chevron').forEach(el => el.classList.remove('open'));
     };
@@ -8395,7 +8428,10 @@ function revealNextTrainingStudyHint() {
   app.training.studyHintExplanation = explanation;
   app.training.studyHintStep = Math.min(3, app.training.studyHintStep + 1);
   renderAnalysisStudyHints($('#trainingStudyHintContent'), explanation, app.training.studyHintStep);
-  if (window.SoundFX) window.SoundFX.playHint();
+  emitStudyExperience('reference_comparison_revealed', {
+    source: 'training_hint',
+    payload: { step: app.training.studyHintStep, feedbackSemantics: 'neutral_hint' },
+  });
   const button = $('#trainingRevealHint');
   if (button) {
     const complete = app.training.studyHintStep >= 3;
@@ -8814,9 +8850,6 @@ function dispatchFullHandTrainingTable(snapshot, {
   mount.dataset.tableProjection = tablePresentation.projection || 'play';
   mount.dataset.tableVisualState = tablePresentation.visualState || 'live_decision';
   renderFullHandCompactTimeline(tablePresentation);
-  window.dispatchEvent(new CustomEvent('riverline:replay-motion', {
-    detail: transition?.motion || null,
-  }));
   window.dispatchEvent(new CustomEvent('gameStateUpdate', { detail: tablePresentation }));
   return true;
 }
@@ -9522,8 +9555,6 @@ function renderCanonicalTrainingExercise(exercise) {
       card.classList.add('is-card-dealt');
       card.style.setProperty('--card-deal-order', String(Math.min(index, 4)));
     });
-  if (window.SoundFX) window.SoundFX.playCardDeal(presentation.heroCards.length + presentation.board.length);
-
 }
 
 function prepareTrainingGeneration({ preserveSession = false } = {}) {
@@ -10128,6 +10159,10 @@ function renderFullHandTrainingSnapshot(snapshot) {
 }
 
 async function startFullHandTraining(options = {}) {
+  emitStudyExperience('session_started', {
+    source: 'training_full_hand',
+    payload: { audioSemantics: 'silent_user_gesture_prepare' },
+  });
   const seed = variedSessionSeed(options);
   invalidateFullHandPresentation();
   callTrainingServiceBridge('resetFullHand');
@@ -10200,6 +10235,10 @@ async function handleFullHandTrainingGuess(userAction, amountToMilliBb = null) {
       },
     });
   } else {
+    dispatchFullHandTrainingTable(result.snapshot, {
+      previousSnapshot: snapshot,
+      event: fullHandHeroActionPresentationEvent(snapshot, result),
+    });
     renderFullHandTrainingSnapshot(result.snapshot);
   }
   return result;
@@ -10516,7 +10555,7 @@ function handleTrainingGuess(userAction) {
   app.training.stats.streak = evaluation.accepted ? app.training.stats.streak + 1 : 0;
   app.training.bestStreak = Math.max(app.training.bestStreak || 0, app.training.stats.streak);
   app.training.gradeStats[evaluation.grade] = (app.training.gradeStats[evaluation.grade] || 0) + 1;
-  if (window.SoundFX) window.SoundFX.playTrainingResult(evaluation.grade);
+  const feedbackSemantics = strategyClaimPolicy(exercise.strategyResult).trainingSemantics;
   updateTrainingStats();
 
   renderTrainingEvaluationSummary(evaluation, exercise);
@@ -10534,6 +10573,12 @@ function handleTrainingGuess(userAction) {
   }
   app.training.lifecycle = 'feedback';
   setTrainingWorkspaceState('feedback');
+  emitTrainingDecisionResultExperience({
+    comparisonState: evaluation.grade,
+    feedbackSemantics,
+    accepted: evaluation.accepted,
+    chosenActionType: userAction,
+  });
   completeVariedTrainingSession();
 }
 

@@ -6,6 +6,7 @@ import vm from 'node:vm';
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
+const foleyManifest = fs.readFileSync(new URL('../app/src/core/AudioFoleyManifest.js', import.meta.url), 'utf8');
 const teacher = fs.readFileSync(new URL('../app/src/ui/teacher.js', import.meta.url), 'utf8');
 const polishCss = css.slice(css.indexOf('POLISH-FINAL-001: restrained product-feel language'));
 
@@ -53,6 +54,7 @@ function createSoundHarness(initialSound = null) {
   let contextCount = 0;
   const listeners = [];
   const gainEnvelopes = [];
+  const sampleStarts = [];
   const context = {
     currentTime: 1,
     state: 'running',
@@ -65,6 +67,19 @@ function createSoundHarness(initialSound = null) {
         frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} },
         connect() {}, start() {}, stop() {},
       };
+    },
+    createBufferSource() {
+      return {
+        buffer: null,
+        playbackRate: { value: 1, setValueAtTime(value) { this.value = value; } },
+        connect() {},
+        start(time) { sampleStarts.push({ buffer: this.buffer, playbackRate: this.playbackRate.value, time }); },
+      };
+    },
+    decodeAudioData(arrayBuffer, success) {
+      const buffer = { duration: 0.5, byteLength: arrayBuffer.byteLength };
+      success?.(buffer);
+      return Promise.resolve(buffer);
     },
     createGain() {
       const events = [];
@@ -90,16 +105,20 @@ function createSoundHarness(initialSound = null) {
       getItem: (key) => storage.get(key) ?? null,
       setItem: (key, value) => storage.set(key, String(value)),
     },
-    document: { getElementById: () => null },
-    window: { AudioContext, addEventListener: (_event, listener) => listeners.push(listener) },
+    document: { hidden: false, baseURI: 'http://riverline.test/app/index.html', getElementById: () => null, querySelectorAll: () => [] },
+    fetch: async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(16) }),
+    URL,
+    ArrayBuffer,
+    window: { AudioContext, location: { href: 'http://riverline.test/app/index.html' }, addEventListener: (_event, listener) => listeners.push(listener) },
   };
-  vm.runInNewContext(`${sound}\nthis.exposedSoundFX = SoundFX;`, sandbox);
+  vm.runInNewContext(`${foleyManifest}\n${sound}\nthis.exposedSoundFX = SoundFX;`, sandbox);
   return {
     soundFx: sandbox.exposedSoundFX,
     context,
     listeners,
     storage,
     gainEnvelopes,
+    sampleStarts,
     contextCount: () => contextCount,
     oscillatorCount: () => oscillatorCount,
   };
@@ -115,32 +134,49 @@ test('disabled audio persists, stays uninitialized, and blocks playback', async 
   assert.equal(harness.soundFx.isEnabled(), false);
 });
 
-test('audio profiles make results clearest while card and hint cues remain subordinate', async () => {
-  assert.match(sound, /hint:\s*Object\.freeze\(\{ gain:\s*0\.055, attack:\s*0\.004, duration:\s*0\.105 \}\)/);
-  assert.match(sound, /card:\s*Object\.freeze\(\{ gain:\s*0\.08, attack:\s*0\.002, duration:\s*0\.085 \}\)/);
-  assert.match(sound, /result:\s*Object\.freeze\(\{ gain:\s*0\.11, attack:\s*0\.006, duration:\s*0\.18 \}\)/);
+test('recorded foley supplies Card, Call, Raise, and All-in physical weight', async () => {
+  assert.match(foleyManifest, /sourcePolicy:\s*'recorded_foley_primary'/);
+  assert.match(foleyManifest, /call:[\s\S]*layer\('chips_small'/);
+  assert.match(foleyManifest, /raise:[\s\S]*layer\('chips_medium'/);
+  assert.match(foleyManifest, /all_in:[\s\S]*layer\('chips_large'/);
 
   const peak = (harness) => Math.max(...harness.gainEnvelopes.flatMap((events) => events.map((event) => event.value)));
   const hintHarness = createSoundHarness();
   await hintHarness.soundFx.playHint();
   const cardHarness = createSoundHarness();
   await cardHarness.soundFx.playCardDeal(1);
-  const mistakeHarness = createSoundHarness();
-  await mistakeHarness.soundFx.playTrainingResult('mistake');
-  assert.ok(peak(mistakeHarness) > peak(cardHarness));
+  const callHarness = createSoundHarness();
+  await callHarness.soundFx.playPokerAction('call');
+  const raiseHarness = createSoundHarness();
+  await raiseHarness.soundFx.playPokerAction('raise');
+  const allInHarness = createSoundHarness();
+  await allInHarness.soundFx.playPokerAction('all_in');
+  const correctiveHarness = createSoundHarness();
+  await correctiveHarness.soundFx.playWrong();
+  assert.ok(peak(correctiveHarness) > 0);
+  assert.ok(peak(cardHarness) > 0);
+  assert.ok(peak(hintHarness) > 0);
   assert.ok(peak(cardHarness) > peak(hintHarness));
-  assert.ok(peak(mistakeHarness) > 0.04, 'result peak is stronger than the pre-correction level');
+  assert.equal(callHarness.sampleStarts.length, 1);
+  assert.equal(raiseHarness.sampleStarts.length, 2);
+  assert.equal(allInHarness.sampleStarts.length, 1, 'All-in uses one authored large-stack push');
+  assert.equal(callHarness.oscillatorCount(), 0);
+  assert.equal(raiseHarness.oscillatorCount(), 0);
+  assert.equal(allInHarness.oscillatorCount(), 0);
 
-  const correctHarness = createSoundHarness();
-  await correctHarness.soundFx.playTrainingResult('optimal');
-  const correctPeaks = correctHarness.gainEnvelopes.map((events) => Math.max(...events.map((event) => event.value)));
-  const correctCombinedLevel = Math.sqrt(correctPeaks.reduce((sum, value) => sum + value ** 2, 0));
-  assert.ok(Math.abs(correctCombinedLevel - peak(mistakeHarness)) < 0.01, 'correct and mistake have similar combined level');
+  const positiveHarness = createSoundHarness();
+  await positiveHarness.soundFx.playCorrect();
+  assert.notDeepEqual(positiveHarness.gainEnvelopes, correctiveHarness.gainEnvelopes,
+    'aligned and corrective meanings use distinct restrained envelopes');
+  assert.match(sound, /decision_submitted[\s\S]*STUDY_RESULT_CUES/,
+    'Training comparison meaning resolves dynamically from the canonical event payload');
+  assert.match(sound, /error_buzz:\s*'study_corrective'[\s\S]*wrong:\s*'study_corrective'/,
+    'legacy corrective aliases remain calm study feedback');
 });
 
-test('cue envelopes have a short attack and decay instead of an inaudible instantaneous peak', async () => {
+test('procedural Study/UI envelopes retain a short bounded attack and decay', async () => {
   const harness = createSoundHarness();
-  await harness.soundFx.playCardDeal(1);
+  await harness.soundFx.playHint();
   const envelope = harness.gainEnvelopes[0];
   assert.deepEqual(envelope.map((event) => event.type), ['set', 'exponential', 'exponential']);
   assert.equal(envelope[0].value, 0.001);
@@ -153,11 +189,11 @@ test('hint sound remains throttled and triggered once per revealed hint', async 
   const harness = createSoundHarness();
   await harness.soundFx.playHint();
   await harness.soundFx.playHint();
-  assert.equal(harness.oscillatorCount(), 1);
-  assert.equal((logic.match(/playHint\(\)/g) || []).length, 1);
-  assert.match(logic, /renderAnalysisStudyHints[\s\S]{0,180}playHint\(\)/);
-  assert.equal((logic.match(/playTrainingResult\(evaluation\.grade\)/g) || []).length, 1);
-  assert.doesNotMatch(logic, /(?:hover|progress|bindSliderPair)[\s\S]{0,120}playHint/);
+  assert.equal(harness.oscillatorCount(), 2);
+  assert.equal((logic.match(/SoundFX\.play/g) || []).length, 0);
+  assert.match(logic, /renderAnalysisStudyHints[\s\S]{0,420}emitStudyExperience\('reference_comparison_revealed'/);
+  assert.equal((logic.match(/emitTrainingDecisionResultExperience\(/g) || []).length, 2);
+  assert.doesNotMatch(logic, /(?:hover|progress|bindSliderPair)[\s\S]{0,120}emitStudyExperience/);
 });
 
 test('audio preference persistence and enabled default remain unchanged', () => {

@@ -19,6 +19,7 @@ import {
 } from '../app/src/application/full-hand-training-session-controller.mjs';
 import { createStrategyProvider } from '../app/src/application/strategy-provider.mjs';
 import { STRATEGY_SOURCES } from '../app/src/application/strategy-result.mjs';
+import { installTrainingModeBridge } from '../app/src/application/training-mode-bootstrap.mjs';
 
 function handConfiguration({
   handId = 'training-full-hand',
@@ -232,6 +233,80 @@ test('stepwise continuation grades once and exposes Hero only on a later boundar
   assert.equal(calls.calls, 1);
   assert.equal(startResult.snapshot.summary.decisionsAnswered, 0);
   assert.equal(snapshot.summary.decisionsAnswered, 1);
+});
+
+test('Full Hand Training transitions retain exact Hero poker-action sound identity', async () => {
+  const cases = [
+    ACTION_TYPES.FOLD,
+    ACTION_TYPES.CALL,
+    ACTION_TYPES.RAISE,
+    ACTION_TYPES.ALL_IN,
+  ];
+
+  for (const actionType of cases) {
+    const consumed = [];
+    const fullHandController = createFullHandTrainingSessionController();
+    const browserWindow = {
+      SoundFX: { consumeExperienceEvent: (event) => consumed.push(event) },
+    };
+    const bridge = installTrainingModeBridge(browserWindow, { fullHandController });
+    const initial = start(fullHandController, strategyProvider(), {
+      handSeed: 1900 + cases.indexOf(actionType),
+      progressionMode: FULL_HAND_TRAINING_PROGRESSION_MODES.STEPWISE,
+    });
+    const previousSnapshot = advanceStepwiseToBoundary(fullHandController);
+    assert.equal(initial.ok, true);
+    const legalKey = actionType === ACTION_TYPES.ALL_IN ? 'allIn' : actionType;
+    assert.equal(previousSnapshot.currentDecision.legalActions[legalKey].available, true);
+
+    const answered = await fullHandController.answer(
+      previousSnapshot.currentDecision.decisionId,
+      actionInput(actionType, previousSnapshot.currentDecision.legalActions),
+    );
+    assert.equal(answered.ok, true);
+    bridge.createFullHandTableTransition({
+      previousSnapshot,
+      snapshot: answered.snapshot,
+      event: {
+        kind: 'hero_action',
+        transitionKind: 'action',
+        actor: previousSnapshot.currentDecision.currentActor,
+        chosenAction: answered.decision.chosenAction,
+        boardCardIds: [],
+      },
+      token: 2000 + cases.indexOf(actionType),
+    });
+
+    const actionEvents = consumed.filter((event) => event.type.startsWith('action_'));
+    assert.deepEqual(actionEvents.map((event) => event.type), [`action_${actionType}`]);
+  }
+
+  const checkEvents = [];
+  const checkController = createFullHandTrainingSessionController();
+  const checkBridge = installTrainingModeBridge({
+    SoundFX: { consumeExperienceEvent: (event) => checkEvents.push(event) },
+  }, { fullHandController: checkController });
+  start(checkController, strategyProvider(), {
+    handSeed: 1999,
+    progressionMode: FULL_HAND_TRAINING_PROGRESSION_MODES.STEPWISE,
+  });
+  const checkSnapshot = advanceStepwiseToBoundary(checkController);
+  checkBridge.createFullHandTableTransition({
+    previousSnapshot: checkSnapshot,
+    snapshot: checkSnapshot,
+    event: {
+      kind: 'hero_action',
+      transitionKind: 'action',
+      actor: checkSnapshot.currentDecision.currentActor,
+      chosenAction: { type: ACTION_TYPES.CHECK },
+      boardCardIds: [],
+    },
+    token: 2099,
+  });
+  assert.deepEqual(
+    checkEvents.filter((event) => event.type.startsWith('action_')).map((event) => event.type),
+    ['action_check'],
+  );
 });
 
 test('legal answer grades once, applies once, and automatically resumes the same Hand', async () => {

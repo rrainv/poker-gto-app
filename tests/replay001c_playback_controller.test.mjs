@@ -233,7 +233,7 @@ test('generation invalidates a callback even if a cancelled timeout is forced to
 });
 
 test('Play begins at the first recorded frame and stops at the final frame in REPLAY', () => {
-  const { bridge, timers } = initializedBridge();
+  const { bridge, timers, browserWindow } = initializedBridge();
   const liveState = bridge.getState();
   const liveSnapshot = structuredClone(liveState);
 
@@ -252,6 +252,12 @@ test('Play begins at the first recorded frame and stops at the final frame in RE
   assert.equal(bridge.createReplayPlaybackViewModel().hasPendingTick, false);
   assert.strictEqual(bridge.getState(), liveState);
   assert.deepEqual(bridge.getState(), liveSnapshot);
+  const replayExperienceEvents = browserWindow.events
+    .filter((event) => event.type === 'riverline:experience-event'
+      && event.detail.event.origin === 'replay_playback')
+    .map((event) => event.detail.event.type);
+  assert.ok(replayExperienceEvents.includes('card_dealt'));
+  assert.ok(replayExperienceEvents.includes('action_call'));
 
   bridge.returnReplayToLive();
   assert.equal(bridge.createReplayProjectionViewModel().atLive, true);
@@ -381,6 +387,7 @@ test('forward projection publishes truthful action, fold, all-in, board, pot, ac
   assert.equal(allIn.seatChanges.some((change) => change.allInChanged), true);
   assert.equal(actions.some((motion) => motion.pot.changed), true);
   assert.equal(recorded.at(-1).transitionKind, 'showdown_resolution');
+  assert.deepEqual(recorded.at(-1).winnerPlayerIds, state.terminal.winnerPlayerIds);
 
   let foldedState = initializeHand({
     handId: 'replay-001c-fold-motion',

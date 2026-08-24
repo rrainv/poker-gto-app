@@ -58,16 +58,25 @@ class TableRenderer {
     this.lastState = null;
     this.renderedCardSignatures = new Map();
     this.pendingReplayMotion = null;
+    this.pendingExperienceMotions = [];
     this.lastReplayMotionToken = null;
     this.replayMotionGeneration = 0;
     this.activeReplayAnimations = [];
     this.replayMotionFallbackCleanups = [];
     this.initSVG();
-    window.addEventListener('riverline:replay-motion', (event) => {
-      this.pendingReplayMotion = event.detail?.schemaVersion === 'replay-motion/v1'
-        ? event.detail
-        : null;
-      if (!this.pendingReplayMotion) this.lastReplayMotionToken = null;
+    window.addEventListener('riverline:experience-event', (customEvent) => {
+      const experienceEvent = customEvent.detail?.event;
+      const motionIntent = customEvent.detail?.motion;
+      if (experienceEvent?.schemaVersion !== 'experience-event/v1'
+        || motionIntent?.schemaVersion !== 'riverline-motion/v1'
+        || motionIntent.active !== true) return;
+      this.pendingExperienceMotions.push({ event: experienceEvent, motion: motionIntent });
+      const transitionMotion = experienceEvent.payload?.motion;
+      if (experienceEvent.family === 'poker_world'
+        && transitionMotion?.schemaVersion === 'replay-motion/v1'
+        && transitionMotion.active === true) {
+        this.pendingReplayMotion = transitionMotion;
+      }
     });
     window.addEventListener('gameStateUpdate', (event) => this.renderState(event.detail));
     window.addEventListener('riverline:cardpresentationchange', () => {
@@ -361,13 +370,16 @@ class TableRenderer {
       'is-replay-action-motion', 'is-replay-next-actor-motion',
       'is-replay-value-motion', 'is-replay-fold-motion',
       'is-replay-all-in-motion', 'is-replay-pot-motion',
-      'is-replay-showdown-motion',
+      'is-replay-showdown-motion', 'is-experience-fold-motion',
+      'is-experience-hand-complete', 'is-experience-review-selection',
+      'is-experience-street-advance',
     ];
     this.container.querySelectorAll(`.${motionClasses.join(',.')}`)
       .forEach((element) => element.classList.remove(...motionClasses));
     this.container.querySelectorAll('.is-replay-card-motion').forEach((element) => {
       element.classList.remove('is-replay-card-motion', 'is-card-dealt');
     });
+    this.container.querySelectorAll('.table-chip-flight').forEach((element) => element.remove());
     delete this.container.dataset.replayMotionCycle;
     delete this.container.dataset.replayTransition;
   }
@@ -433,7 +445,11 @@ class TableRenderer {
 
   applyReplayMotion(state, motion) {
     this.clearReplayMotionClasses();
-    if (!motion?.active || motion.token === this.lastReplayMotionToken) return;
+    if (!motion?.active) {
+      this.lastReplayMotionToken = null;
+      return;
+    }
+    if (motion.token === this.lastReplayMotionToken) return;
     this.lastReplayMotionToken = motion.token;
     const motionGeneration = this.replayMotionGeneration;
     this.container.dataset.replayMotionCycle = motion.token % 2 === 0 ? 'a' : 'b';
@@ -473,6 +489,87 @@ class TableRenderer {
       this.container.querySelector('#poker-table-svg')?.classList.add('is-replay-showdown-motion');
     }
     this.settleReplayMotionWhenFinished(motionGeneration);
+  }
+
+  createChipFlight({ from, to, kind, order = 0 }) {
+    if (!from || !to) return null;
+    const layer = this.container.querySelector('#table-contributions-layer');
+    if (!layer || typeof document.createElementNS !== 'function') return null;
+    const flight = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    flight.classList.add('table-chip-flight', `table-chip-flight--${kind}`);
+    flight.setAttribute('transform', `translate(${to.x} ${to.y})`);
+    flight.style.setProperty('--chip-flight-from-x', `${from.x - to.x}px`);
+    flight.style.setProperty('--chip-flight-from-y', `${from.y - to.y}px`);
+    flight.style.setProperty('--chip-flight-order', String(order));
+    flight.innerHTML = this.pokerChipVisualMarkup({ className: 'table-chip-flight-visual' });
+    const remove = (event) => {
+      if (event.target === flight) flight.remove();
+    };
+    flight.addEventListener('animationend', remove, { once: true });
+    flight.addEventListener('animationcancel', remove, { once: true });
+    layer.appendChild(flight);
+    return flight;
+  }
+
+  applyExperienceMotions(state, presentation, transitions) {
+    if (!Array.isArray(transitions) || transitions.length === 0) return;
+    const seats = new Map((presentation?.seats || []).map((seat) => [seat.playerId, seat]));
+    const pot = presentation?.geometry?.potAnchor
+      ? { x: presentation.geometry.potAnchor.x * 1000, y: presentation.geometry.potAnchor.y * 650 }
+      : { x: 500, y: 312 };
+    const point = (anchor) => anchor ? { x: anchor.x * 1000, y: anchor.y * 650 } : null;
+
+    transitions.forEach(({ event, motion }) => {
+      const payload = event.payload || {};
+      if (motion.kind === 'chips_commit' && motion.travel) {
+        const seat = seats.get(payload.actorPlayerId);
+        this.createChipFlight({
+          from: point(seat?.anchor),
+          to: point(seat?.contributionAnchor),
+          kind: 'commit',
+        });
+      }
+      if (motion.kind === 'pot_collect' && motion.travel) {
+        const contributors = state.seats
+          .filter((seat) => Number(seat.streetContributionMilliBb) > 0)
+          .slice(0, 10)
+          .map((seat) => seat.playerId);
+        const participantIds = contributors.length > 0
+          ? contributors
+          : (payload.motion?.seatChanges || [])
+            .filter((change) => Number(change.contribution?.previousMilliBb) > 0)
+            .slice(0, 10)
+            .map((change) => change.playerId);
+        participantIds.forEach((playerId, order) => this.createChipFlight({
+          from: point(seats.get(playerId)?.contributionAnchor),
+          to: pot,
+          kind: 'collect',
+          order,
+        }));
+      }
+      if (motion.kind === 'pot_award' && motion.travel) {
+        (payload.winnerPlayerIds || []).slice(0, 10).forEach((playerId, order) => {
+          this.createChipFlight({
+            from: pot,
+            to: point(seats.get(playerId)?.anchor),
+            kind: 'award',
+            order,
+          });
+        });
+      }
+      if (motion.kind === 'fold_retreat') {
+        const actor = state.seats.find((seat) => seat.playerId === payload.actorPlayerId);
+        if (Number.isInteger(actor?.visualSeatIndex)) {
+          this.container.querySelector(`#hole-cards-${actor.visualSeatIndex}`)
+            ?.classList.add('is-experience-fold-motion');
+        }
+      }
+      if (motion.kind === 'street_advance') {
+        this.container.querySelector('#community-cards')?.classList.add('is-experience-street-advance');
+      }
+      if (motion.kind === 'hand_complete') this.container.classList.add('is-experience-hand-complete');
+      if (motion.kind === 'review_selection') this.container.classList.add('is-experience-review-selection');
+    });
   }
 
   setTableRoundedRect(selector, rect, inset = 0) {
@@ -545,7 +642,7 @@ class TableRenderer {
     this.container.dataset.tableGeometryFamily = presentation.geometryFamily;
   }
 
-  renderPresenceState(state, replayMotion = null, presentation = null) {
+  renderPresenceState(state, replayMotion = null, presentation = null, experienceMotions = []) {
     const activePlayers = state.seats.length;
     const geometrySignature = presentation
       ? `${presentation.geometryTemplate}:${presentation.geometry?.potAnchor?.y}`
@@ -564,6 +661,17 @@ class TableRenderer {
     const replayProjected = presentation
       ? presentation.interaction === 'replay'
       : this.container.closest('.table-wrapper')?.dataset.replayMode === 'replay';
+    const experienceTypes = new Set(
+      experienceMotions.map((transition) => transition.event?.type).filter(Boolean),
+    );
+    const livePrivateDeal = !replayProjected && (
+      experienceTypes.has('card_dealt') || experienceTypes.has('hole_cards_revealed')
+    );
+    const liveBoardDealCards = !replayProjected && experienceTypes.has('board_revealed')
+      ? experienceMotions
+        .filter((transition) => transition.event?.type === 'board_revealed')
+        .flatMap((transition) => transition.event.payload?.boardCardIds || [])
+      : [];
 
     const phase = this.container.querySelector('#table-phase-status');
     const pot = this.container.querySelector('#table-pot');
@@ -579,8 +687,10 @@ class TableRenderer {
 
     const community = this.container.querySelector('#community-cards');
     if (community) {
-      const replayBoardCards = replayProjected ? replayMotion?.boardCards || [] : null;
-      this.renderKnownCards(community, state.board, 'community', true, replayBoardCards);
+      const boardDealCards = replayProjected
+        ? replayMotion?.boardCards || []
+        : liveBoardDealCards;
+      this.renderKnownCards(community, state.board, 'community', true, boardDealCards);
       community.setAttribute('role', 'group');
       community.setAttribute('aria-label', state.board.length
         ? tableMessage('table.a11y.boardCards', 'Board {cards}', {
@@ -719,13 +829,15 @@ class TableRenderer {
             ? (privateCardTransition && privateCardsChanged
               ? player.cards.map((card) => card.id)
               : [])
-            : null;
+            : (livePrivateDeal ? player.cards.map((card) => card.id) : []);
           this.renderKnownCards(holeCards, player.cards, `hole-${player.seat}`, false, replayPrivateCards);
         } else {
-          const hiddenCardsDealt = replayProjected
-            && replayMotion?.transitionKind === 'private_deal'
-            && player.cardVisibility === 'hidden'
-            && cardChange?.cardVisibilityChanged;
+          const hiddenCardsDealt = player.cardVisibility === 'hidden' && (
+            livePrivateDeal
+            || (replayProjected
+              && replayMotion?.transitionKind === 'private_deal'
+              && cardChange?.cardVisibilityChanged)
+          );
           holeCards.classList.toggle('is-card-dealt', hiddenCardsDealt);
           holeCards.innerHTML = player.cardVisibility === 'hidden'
             ? `${this.renderCardBack(0)}${this.renderCardBack(1)}`
@@ -735,6 +847,7 @@ class TableRenderer {
       }
     }
     this.applyReplayMotion(state, replayMotion);
+    this.applyExperienceMotions(state, presentation, experienceMotions);
   }
 
   renderScenarioState(state) {
@@ -823,10 +936,12 @@ class TableRenderer {
     if (title) title.textContent = tableMessage('table.title', 'Riverline poker table');
     const replayMotion = this.pendingReplayMotion;
     this.pendingReplayMotion = null;
+    const experienceMotions = this.pendingExperienceMotions;
+    this.pendingExperienceMotions = [];
     if (state.schemaVersion === 'table-presentation/v1') {
-      this.renderPresenceState(state.tablePresence, replayMotion, state);
+      this.renderPresenceState(state.tablePresence, replayMotion, state, experienceMotions);
     } else if (state.schemaVersion === 'table-presence/v1') {
-      this.renderPresenceState(state, replayMotion);
+      this.renderPresenceState(state, replayMotion, null, experienceMotions);
     }
     else this.renderScenarioState(state);
   }

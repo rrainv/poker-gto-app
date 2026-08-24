@@ -14,6 +14,11 @@ import {
   createReplayProjectionController,
   createTablePresenceTransitionMotion,
 } from './replay-projection-controller.mjs';
+import {
+  EXPERIENCE_EVENT_ORIGINS,
+  createPokerWorldExperienceEvents,
+  installExperienceEventsBridge,
+} from './experience-events.mjs';
 import { createReplayTimelineViewModel } from './replay-timeline-view-model.mjs';
 import {
   TABLE_INTERACTIONS,
@@ -37,6 +42,7 @@ export function installTrainingModeBridge(browserWindow, {
   fullHandController = createFullHandTrainingSessionController(),
 } = {}) {
   if (!browserWindow) return null;
+  const experienceBridge = installExperienceEventsBridge(browserWindow);
   const fullHandReviewReplayController = createReplayProjectionController();
   let fullHandReviewReplayHandId = null;
   const ensureFullHandReviewReplay = () => {
@@ -195,7 +201,7 @@ export function installTrainingModeBridge(browserWindow, {
           heroPlayerId: previousSnapshot.heroPlayerId,
         })
         : null;
-      const motion = motionEnabled && previousTablePresence && event
+      const transitionMotion = previousTablePresence && event
         ? createTablePresenceTransitionMotion({
           previousTablePresence,
           tablePresence,
@@ -207,10 +213,28 @@ export function installTrainingModeBridge(browserWindow, {
           boardCards: event.boardCardIds ?? [],
         })
         : null;
+      if (transitionMotion && event) {
+        experienceBridge.emitBatch(createPokerWorldExperienceEvents({
+          origin: EXPERIENCE_EVENT_ORIGINS.LIVE,
+          source: `${nextSnapshot?.state?.handId || 'training_full_hand'}:training`,
+          token,
+          operation: event.transitionKind === 'action' ? 'action' : null,
+          transitionKind: event.transitionKind,
+          motion: transitionMotion,
+          previousState: previousSnapshot?.state ?? null,
+          state: nextSnapshot?.state ?? null,
+          actorPlayerId: event.actor?.playerId ?? null,
+          actionType: event.chosenAction?.type ?? null,
+          boardCardIds: event.boardCardIds ?? [],
+          holeCardCount: event.transitionKind === 'private_deal'
+            ? nextSnapshot?.state?.players?.length * 2
+            : null,
+        }));
+      }
       return Object.freeze({
         schemaVersion: FULL_HAND_TABLE_TRANSITION_PRESENTATION_SCHEMA_VERSION,
         tablePresence,
-        motion,
+        motion: motionEnabled ? transitionMotion : null,
       });
     },
     createFullHandPresentationOrchestrator(options) {

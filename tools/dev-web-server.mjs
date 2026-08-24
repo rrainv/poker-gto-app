@@ -21,6 +21,7 @@ export const MIME_TYPES = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.ogg': 'audio/ogg',
   '.map': 'application/json; charset=utf-8',
 };
 

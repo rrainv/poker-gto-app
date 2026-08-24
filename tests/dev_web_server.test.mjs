@@ -8,6 +8,7 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const styles = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const appMjs = fs.readFileSync(new URL('../app/src/strategy/heuristic-strategy.mjs', import.meta.url), 'utf8');
 const sharedIndex = fs.readFileSync(new URL('../shared/poker-domain/index.js', import.meta.url), 'utf8');
+const foleySample = fs.readFileSync(new URL('../app/assets/audio/foley/cards/deal_01.ogg', import.meta.url));
 
 function assertNoStoreCache(response) {
   assert.match(response.headers.get('cache-control') || '', /no-store/i);
@@ -75,6 +76,16 @@ test('CSS assets are served with CSS MIME', async () => {
     assertNoStoreCache(response);
     assert.match(response.headers.get('content-type') || '', /text\/css/i);
     assert.equal(await response.text(), styles);
+  });
+});
+
+test('recorded poker foley is served with Ogg audio MIME and exact bytes', async () => {
+  await withServer(async ({ url }) => {
+    const response = await fetch(`${url}/assets/audio/foley/cards/deal_01.ogg`);
+    assert.equal(response.status, 200);
+    assertNoStoreCache(response);
+    assert.match(response.headers.get('content-type') || '', /audio\/ogg/i);
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), foleySample);
   });
 });
 

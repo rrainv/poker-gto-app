@@ -405,12 +405,21 @@ test('product browser bridge owns a separate persistent canonical controller and
   assert.ok(bridge.dealHoleCards(Object.fromEntries(
     state.players.map((player, index) => [player.playerId, CARDS[index]]),
   )));
+  assert.ok(bridge.applyAction(ACTION_TYPES.CALL));
   const preserved = bridge.getState();
   bridge.setMode('scenario', scenario({ potBb: 25 }));
   bridge.setMode('hand', scenario());
   assert.equal(bridge.getState(), preserved);
-  assert.deepEqual(events.map((event) => event.detail.operation),
-    ['mode', 'initialize_hand', 'deal_hole', 'mode', 'mode']);
+  assert.deepEqual(events
+    .filter((event) => event.type === 'riverline:playbook-state-change')
+    .map((event) => event.detail.operation),
+    ['mode', 'initialize_hand', 'deal_hole', 'action', 'mode', 'mode']);
+  const experienceTypes = events
+    .filter((event) => event.type === 'riverline:experience-event')
+    .map((event) => event.detail.event.type);
+  assert.ok(experienceTypes.includes('card_dealt'));
+  assert.ok(experienceTypes.includes('action_call'));
+  assert.ok(experienceTypes.includes('chips_committed'));
 });
 
 test('mode UI defaults to Scenario, is semantic, keyboard-native, and does not persist mode', () => {

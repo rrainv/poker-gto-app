@@ -134,6 +134,7 @@ export function createTablePresenceTransitionMotion({
   actionFamily = null,
   wasAllIn = false,
   boardCards = [],
+  winnerPlayerIds = [],
 } = {}) {
   if (tablePresence?.schemaVersion !== 'table-presence/v1') {
     throw new TypeError('A Table Presence v1 destination is required for motion');
@@ -182,6 +183,7 @@ export function createTablePresenceTransitionMotion({
     actionFamily,
     wasAllIn,
     boardCards: [...boardCards],
+    winnerPlayerIds: [...winnerPlayerIds],
     seatChanges,
     pot: {
       changed: previousTablePresence?.potMilliBb !== tablePresence.potMilliBb,
@@ -202,7 +204,7 @@ function createReplayMotion({
   selectionRevision,
 }) {
   const active = !atLive
-    && ['forward', 'restart'].includes(selectionDirection)
+    && ['playback', 'restart'].includes(selectionDirection)
     && frame.kind !== 'initialization';
   if (!active) {
     return deepFreeze({
@@ -228,6 +230,7 @@ function createReplayMotion({
     actionFamily: selectedAction?.actionFamily || null,
     wasAllIn: selectedAction?.wasAllIn === true,
     boardCards: frame.publicBoardCards.map((card) => card.id),
+    winnerPlayerIds: frame.state?.terminal?.winnerPlayerIds || [],
   });
 }
 
@@ -615,7 +618,7 @@ export function createReplayProjectionController({
       if (replayCursor !== null) {
         replayCursor = replayCursor >= frames.length - 2 ? null : replayCursor + 1;
         selectionRevision += 1;
-        selectionDirection = 'forward';
+        selectionDirection = 'direct_step';
       }
       return projection();
     },
@@ -648,7 +651,7 @@ export function createReplayProjectionController({
       if (replayCursor !== null && replayCursor < frames.length - 1) {
         replayCursor += 1;
         selectionRevision += 1;
-        selectionDirection = 'forward';
+        selectionDirection = 'playback';
       }
       return projection();
     },

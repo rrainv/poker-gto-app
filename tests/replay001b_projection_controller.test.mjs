@@ -205,8 +205,14 @@ test('direct Replay frame seek is validated, deterministic, and never mutates th
   let projection = journal.controller.selectFrame(0);
   assert.equal(projection.mode, 'replay');
   assert.equal(projection.selectedFrameIndex, 0);
+  assert.equal(projection.motion.active, false, 'direct seek never replays historical motion');
   assert.equal(projection.timeline.groups.flatMap((group) => group.items)
     .find((item) => item.frameIndex === 0).presentationState, 'current');
+
+  projection = journal.controller.next();
+  assert.equal(projection.selectedFrameIndex, 1);
+  assert.equal(projection.motion.active, false, 'direct Next never replays historical motion');
+  assert.equal(projection.motion.direction, 'direct_step');
 
   projection = journal.controller.selectFrame(1);
   assert.equal(projection.mode, 'replay');
@@ -473,7 +479,8 @@ test('historical cursor never mutates or invisibly advances the live canonical h
   assert.ok(bridge.applyAction(ACTION_TYPES.CALL));
   assert.equal(bridge.createReplayProjectionViewModel().totalFrameCount, 3);
   assert.deepEqual(
-    fake.events.filter((event) => event.detail.operation.startsWith('replay_'))
+    fake.events.filter((event) => event.type === 'riverline:playbook-state-change'
+        && event.detail.operation.startsWith('replay_'))
       .map((event) => event.detail.operation),
     ['replay_previous', 'replay_live'],
   );

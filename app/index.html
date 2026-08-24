@@ -2760,13 +2760,48 @@
 
         <div class="settings-group settings-audio-group" data-tutorial-anchor="settings-audio">
             <h3 class="settings-section-title" data-i18n="Audio">Audio</h3>
-
-            <div class="field" style="margin-top: 16px;">
-              <div class="switchrow" style="margin: 0;">
-                <span style="font-size: 13px; font-weight: 600; color: var(--text);" data-i18n="Audio Sound FX">Audio Sound FX</span>
-                <button class="switch ui-switch on" id="audioSettingsSwitch" type="button" aria-label="Enable audio sound effects" data-i18n-aria-label="Enable audio sound effects" aria-pressed="true"><b aria-hidden="true"></b></button>
+            <p class="panel-note" data-i18n="Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.">Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.</p>
+            <div class="settings-audio-controls">
+              <div class="switchrow audio-setting-row">
+                <span><strong data-i18n="Sound enabled">Sound enabled</strong><small data-i18n="Mute or enable all Riverline cues.">Mute or enable all Riverline cues.</small></span>
+                <button class="switch ui-switch on" id="audioSettingsSwitch" type="button" aria-label="Sound enabled" data-i18n-aria-label="Sound enabled" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
-              <div class="panel-note" style="margin-top: 4px;" data-i18n="Play UI sound effects.">Play UI sound effects.</div>
+              <label class="audio-volume-field" for="audioMasterVolume">
+                <span><strong data-i18n="Master volume">Master volume</strong><output id="audioMasterVolumeValue" for="audioMasterVolume">72%</output></span>
+                <input id="audioMasterVolume" type="range" min="0" max="100" step="1" value="72" aria-label="Master volume" data-i18n-aria-label="Master volume">
+              </label>
+              <div class="switchrow audio-setting-row">
+                <span><strong data-i18n="Table / Poker sounds">Table / Poker sounds</strong><small data-i18n="Cards, checks, folds, chips, streets, and pot movement.">Cards, checks, folds, chips, streets, and pot movement.</small></span>
+                <button class="switch ui-switch on" id="audioPokerSwitch" type="button" aria-label="Table / Poker sounds" data-i18n-aria-label="Table / Poker sounds" aria-pressed="true"><b aria-hidden="true"></b></button>
+              </div>
+              <div class="switchrow audio-setting-row">
+                <span><strong data-i18n="Study / UI feedback">Study / UI feedback</strong><small data-i18n="Canonical study-result acknowledgement and hints; never casino rewards.">Canonical study-result acknowledgement and hints; never casino rewards.</small></span>
+                <button class="switch ui-switch on" id="audioStudySwitch" type="button" aria-label="Study / UI feedback" data-i18n-aria-label="Study / UI feedback" aria-pressed="true"><b aria-hidden="true"></b></button>
+              </div>
+              <div class="audio-preview-field">
+                <span><strong data-i18n="Preview sounds">Preview sounds</strong><small data-i18n="Audition the exact production cues for physical poker and study feedback.">Audition the exact production cues for physical poker and study feedback.</small></span>
+                <div class="audio-preview-group">
+                  <small class="audio-preview-label" data-i18n="Physical poker">Physical poker</small>
+                  <div class="audio-preview-actions" role="group" aria-label="Physical poker" data-i18n-aria-label="Physical poker">
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="card_deal" data-i18n="Card">Card</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="check" data-i18n="Check">Check</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="fold" data-i18n="Fold">Fold</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="call" data-i18n="Call">Call</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="raise" data-i18n="Raise">Raise</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="all_in" data-i18n="All-in">All-in</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="pot_collect" data-i18n="Pot">Pot</button>
+                  </div>
+                </div>
+                <div class="audio-preview-group">
+                  <small class="audio-preview-label" data-i18n="Study feedback">Study feedback</small>
+                  <div class="audio-preview-actions" role="group" aria-label="Study feedback" data-i18n-aria-label="Study feedback">
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="study_positive" data-i18n="Positive">Positive</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="study_neutral" data-i18n="Neutral">Neutral</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="study_corrective" data-i18n="Corrective">Corrective</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="hint" data-i18n="Hint">Hint</button>
+                  </div>
+                </div>
+              </div>
             </div>
         </div>
 
@@ -3014,6 +3049,7 @@
 
   </div> <!-- /.shell -->
 
+  <script src="src/core/AudioFoleyManifest.js" defer></script>
   <script src="src/core/SoundFX.js" defer></script>
   <script type="module" src="src/application/product-performance.mjs"></script>
   <script type="module" src="src/application/strategy-provider-bootstrap.mjs"></script>

@@ -9355,6 +9355,123 @@ button.rail-utility { width: 100%; cursor: pointer; }
   }
 }
 
+/* AUDIO-MOTION-001: semantic physical consequence, calm application motion. */
+:root {
+  --motion-instant: 1ms;
+  --motion-fast-semantic: 110ms;
+  --motion-normal-semantic: 170ms;
+  --motion-poker-settle: 240ms;
+  --motion-poker-ease: cubic-bezier(.2, .72, .25, 1);
+}
+
+.settings-audio-controls {
+  display: grid;
+  gap: var(--space-3);
+  margin-block-start: var(--space-4);
+}
+.audio-setting-row,
+.audio-volume-field,
+.audio-preview-field {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--surface-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+.audio-setting-row > span,
+.audio-volume-field > span,
+.audio-preview-field > span { min-width: 0; display: grid; gap: var(--space-1); }
+.audio-setting-row strong,
+.audio-volume-field strong,
+.audio-preview-field strong { color: var(--text-primary); font-size: var(--text-label-size); }
+.audio-setting-row small,
+.audio-preview-field small { color: var(--text-muted); line-height: 1.4; }
+.audio-volume-field { display: grid; gap: var(--space-3); }
+.audio-volume-field > span { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.audio-volume-field output {
+  color: var(--text-secondary);
+  font: 750 var(--text-label-size)/1 var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+.audio-volume-field input { inline-size: 100%; accent-color: var(--accent-primary); }
+.audio-preview-field { display: grid; gap: var(--space-3); }
+.audio-preview-group { display: grid; gap: var(--space-2); }
+.audio-preview-label {
+  color: var(--text-secondary);
+  font-size: var(--text-caption-size);
+  font-weight: 750;
+}
+.audio-preview-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.audio-preview-actions .ui-button {
+  min-block-size: 32px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-caption-size);
+}
+
+.table-chip-flight {
+  pointer-events: none;
+  opacity: 0;
+  animation: riverline-experience-chip-flight var(--motion-poker-settle) var(--motion-poker-ease) both;
+  animation-delay: calc(var(--chip-flight-order, 0) * 16ms);
+}
+.table-chip-flight--award {
+  animation-name: riverline-experience-pot-award;
+}
+.table-chip-flight .poker-chip-visual {
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .2));
+}
+@keyframes riverline-experience-chip-flight {
+  0% { opacity: 0; translate: var(--chip-flight-from-x) var(--chip-flight-from-y); scale: .82; }
+  24% { opacity: .78; }
+  100% { opacity: 0; translate: 0 0; scale: 1; }
+}
+@keyframes riverline-experience-pot-award {
+  0% { opacity: 0; translate: var(--chip-flight-from-x) var(--chip-flight-from-y); scale: .9; }
+  28% { opacity: .72; }
+  100% { opacity: 0; translate: 0 0; scale: .96; }
+}
+
+.table-hole-cards.is-experience-fold-motion {
+  animation: riverline-experience-fold-retreat var(--motion-fast-semantic) var(--motion-poker-ease) both;
+}
+@keyframes riverline-experience-fold-retreat {
+  from { opacity: 1; translate: 0 0; }
+  to { opacity: .22; translate: 0 7px; }
+}
+.table-community-cards.is-experience-street-advance {
+  animation: riverline-experience-board-settle var(--motion-poker-settle) var(--motion-poker-ease) both;
+}
+@keyframes riverline-experience-board-settle {
+  from { opacity: .68; translate: 0 -5px; }
+  to { opacity: 1; translate: 0 0; }
+}
+#visual-table-container.is-experience-hand-complete .riverline-poker-table {
+  animation: riverline-experience-hand-complete var(--motion-normal-semantic) var(--motion-poker-ease) both;
+}
+@keyframes riverline-experience-hand-complete {
+  from { filter: contrast(1.04); }
+  to { filter: contrast(1); }
+}
+#visual-table-container.is-experience-review-selection .riverline-poker-table {
+  animation: riverline-experience-review-selection var(--motion-fast-semantic) var(--ease-standard) both;
+}
+@keyframes riverline-experience-review-selection {
+  from { opacity: .92; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-chip-flight { display: none !important; }
+  .table-hole-cards.is-experience-fold-motion,
+  .table-community-cards.is-experience-street-advance,
+  #visual-table-container.is-experience-hand-complete .riverline-poker-table,
+  #visual-table-container.is-experience-review-selection .riverline-poker-table {
+    animation: none !important;
+    translate: none !important;
+  }
+}
+
 /* FULL-HAND-REVIEW-001: one post-hand decision review for Hand and Training. */
 .hand-review-mount { min-width: 0; width: 100%; }
 .hand-review-mount--training { margin-top: var(--space-4); }
@@ -11246,10 +11363,10 @@ body.has-modal-open { overflow: hidden; }
 
 /* REPLAY-001C: bounded semantic motion over authoritative Table Presence facts. */
 #visual-table-container {
-  --replay-motion-action: 560ms;
-  --replay-motion-deal: 680ms;
-  --replay-motion-showdown: 760ms;
-  --replay-motion-ease: cubic-bezier(.25, .1, .25, 1);
+  --replay-motion-action: var(--motion-normal-semantic);
+  --replay-motion-deal: var(--motion-poker-settle);
+  --replay-motion-showdown: var(--motion-poker-settle);
+  --replay-motion-ease: var(--motion-poker-ease);
 }
 #visual-table-container[data-replay-motion-cycle="a"] .table-seat.is-replay-action-motion .table-seat-surface { animation: replay-seat-action-a var(--replay-motion-action) var(--replay-motion-ease) both; }
 #visual-table-container[data-replay-motion-cycle="b"] .table-seat.is-replay-action-motion .table-seat-surface { animation: replay-seat-action-b var(--replay-motion-action) var(--replay-motion-ease) both; }

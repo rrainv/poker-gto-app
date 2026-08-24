@@ -10,9 +10,17 @@ import { createTablePresenceViewModel } from './table-presence-view-model.mjs';
 import { createReplayTimelineViewModel } from './replay-timeline-view-model.mjs';
 import {
   REPLAY_FRAME_OPERATIONS,
+  createTablePresenceTransitionMotion,
   createReplayProjectionController,
 } from './replay-projection-controller.mjs';
 import { createReplayPlaybackController } from './replay-playback-controller.mjs';
+import {
+  EXPERIENCE_EVENT_ORIGINS,
+  EXPERIENCE_EVENT_TYPES,
+  createPokerWorldExperienceEvents,
+  createStudyExperienceEvent,
+  installExperienceEventsBridge,
+} from './experience-events.mjs';
 import {
   TABLE_INTERACTIONS,
   TABLE_PROJECTIONS,
@@ -45,6 +53,8 @@ export function installPlaybookStateSourceBridge(browserWindow, {
   });
   const savedReplayController = createReplayProjectionController();
   let savedHandViewer = null;
+  let experienceSequence = 0;
+  const experienceBridge = installExperienceEventsBridge(browserWindow);
 
   const activeReplayController = () => (savedHandViewer ? savedReplayController : replayController);
 
@@ -73,24 +83,141 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     return result;
   };
 
-  const publishLiveTransition = (operation, frameOperation, transition) => {
+  const transitionKindForOperation = (operation) => ({
+    [REPLAY_FRAME_OPERATIONS.DEAL_HOLE]: 'private_deal',
+    [REPLAY_FRAME_OPERATIONS.DEAL_HOLE_OBSERVED]: 'private_deal',
+    [REPLAY_FRAME_OPERATIONS.REVEAL_HOLE]: 'private_reveal',
+    [REPLAY_FRAME_OPERATIONS.ACTION]: 'action',
+    [REPLAY_FRAME_OPERATIONS.DEAL_BOARD]: 'board_deal',
+    [REPLAY_FRAME_OPERATIONS.SHOWDOWN]: 'showdown_resolution',
+  }[operation] || operation);
+
+  const emitPokerTransition = ({
+    origin,
+    source,
+    token,
+    operation,
+    transitionKind,
+    motion,
+    previousState,
+    state,
+    actorPlayerId,
+    actionType,
+    boardCardIds,
+    holeCardCount,
+    frameIndex,
+    winnerPlayerIds,
+    streetClosedOverride = false,
+    streetAdvancedOverride = false,
+    showdownStartedOverride = false,
+    terminalOverride = false,
+    potAwardedOverride = false,
+  }) => experienceBridge.emitBatch(createPokerWorldExperienceEvents({
+    origin,
+    source,
+    token,
+    operation,
+    transitionKind,
+    motion,
+    previousState,
+    state,
+    actorPlayerId,
+    actionType,
+    boardCardIds,
+    holeCardCount,
+    frameIndex,
+    winnerPlayerIds,
+    streetClosedOverride,
+    streetAdvancedOverride,
+    showdownStartedOverride,
+    terminalOverride,
+    potAwardedOverride,
+  }));
+
+  const publishLiveTransition = (operation, frameOperation, transition, metadata = {}) => {
     if (savedHandViewer || replayController.isReplayActive()) return null;
+    const previousState = canonicalController.getState();
+    const heroPlayerId = canonicalController.getHeroPlayerId();
+    const previousTablePresence = previousState
+      ? createTablePresenceViewModel({ state: previousState, heroPlayerId })
+      : null;
     const result = transition();
     if (result) {
       replayController.recordTransition({
         state: result,
-        heroPlayerId: canonicalController.getHeroPlayerId(),
+        heroPlayerId,
         operation: frameOperation,
+      });
+      const tablePresence = createTablePresenceViewModel({ state: result, heroPlayerId });
+      const token = ++experienceSequence;
+      const transitionKind = transitionKindForOperation(frameOperation);
+      const boardCardIds = frameOperation === REPLAY_FRAME_OPERATIONS.DEAL_BOARD
+        ? result.board.slice(previousState?.board?.length || 0)
+        : [];
+      const motion = createTablePresenceTransitionMotion({
+        previousTablePresence,
+        tablePresence,
+        token,
+        transitionKind,
+        actorPlayerId: metadata.actorPlayerId ?? previousState?.actingPlayerId ?? null,
+        actionType: metadata.actionType ?? null,
+        wasAllIn: metadata.actionType === 'all_in',
+        boardCards: boardCardIds,
+      });
+      emitPokerTransition({
+        origin: EXPERIENCE_EVENT_ORIGINS.LIVE,
+        source: canonicalHandSourceId || 'canonical_hand',
+        token,
+        operation,
+        transitionKind,
+        motion,
+        previousState,
+        state: result,
+        actorPlayerId: metadata.actorPlayerId ?? previousState?.actingPlayerId ?? null,
+        actionType: metadata.actionType ?? null,
+        boardCardIds,
+        holeCardCount: metadata.holeCardCount ?? null,
       });
     }
     return publish(operation, result);
+  };
+
+  const emitReplayProjection = (projection) => {
+    if (!projection?.motion?.active || !projection.selectedFrame) return;
+    const selectedAction = projection.timeline?.selectedAction;
+    const transitionKind = projection.selectedFrame.kind;
+    const terminal = projection.tablePresence?.status === 'terminal';
+    emitPokerTransition({
+      origin: EXPERIENCE_EVENT_ORIGINS.REPLAY_PLAYBACK,
+      source: `${savedHandViewer?.objectId || canonicalHandSourceId || 'canonical_hand'}:replay`,
+      token: projection.selectionRevision,
+      operation: projection.selectedFrame.operation,
+      transitionKind,
+      motion: projection.motion,
+      previousState: null,
+      state: null,
+      actorPlayerId: selectedAction?.playerId ?? projection.motion.actorPlayerId ?? null,
+      actionType: selectedAction?.actionType ?? projection.motion.actionType ?? null,
+      boardCardIds: projection.motion.boardCards || [],
+      frameIndex: projection.selectedFrameIndex,
+      winnerPlayerIds: projection.motion.winnerPlayerIds || [],
+      streetClosedOverride: transitionKind === 'action'
+        && projection.tablePresence?.status === 'awaiting_board',
+      streetAdvancedOverride: ['flop_deal', 'turn_deal', 'river_deal'].includes(transitionKind),
+      showdownStartedOverride: transitionKind === 'private_reveal',
+      terminalOverride: terminal,
+      potAwardedOverride: terminal,
+    });
   };
 
   const playbackController = createReplayPlaybackController({
     ...replayPlaybackOptions,
     getProjection: () => activeReplayController().getProjection(),
     advance: () => activeReplayController().advancePlayback(),
-    onAdvance: (projection) => publish('replay_playback_tick', projection),
+    onAdvance: (projection) => {
+      emitReplayProjection(projection);
+      publish('replay_playback_tick', projection);
+    },
   });
 
   const bridge = Object.freeze({
@@ -224,6 +351,12 @@ export function installPlaybookStateSourceBridge(browserWindow, {
       const activeController = activeReplayController();
       if (!activeController.isReplayActive()) activeController.beginPlayback();
       const playback = playbackController.start();
+      experienceBridge.emit(createStudyExperienceEvent({
+        type: EXPERIENCE_EVENT_TYPES.REPLAY_STARTED,
+        origin: EXPERIENCE_EVENT_ORIGINS.REPLAY_PLAYBACK,
+        source: savedHandViewer?.objectId || canonicalHandSourceId || 'canonical_hand',
+        token: ++experienceSequence,
+      }));
       return publish('replay_playback_start', {
         playback,
         projection: activeController.getProjection(),
@@ -233,6 +366,12 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     pauseReplayPlayback() {
       if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
       const playback = playbackController.pause();
+      experienceBridge.emit(createStudyExperienceEvent({
+        type: EXPERIENCE_EVENT_TYPES.REPLAY_PAUSED,
+        origin: EXPERIENCE_EVENT_ORIGINS.DIRECT_SEEK,
+        source: savedHandViewer?.objectId || canonicalHandSourceId || 'canonical_hand',
+        token: ++experienceSequence,
+      }));
       return publish('replay_playback_pause', {
         playback,
         projection: activeReplayController().getProjection(),
@@ -350,6 +489,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
         'deal_hole',
         REPLAY_FRAME_OPERATIONS.DEAL_HOLE,
         () => canonicalController.dealHoleCards(cardsByPlayer),
+        { holeCardCount: Object.keys(cardsByPlayer || {}).length * 2 },
       );
     },
 
@@ -358,6 +498,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
         'deal_hole_observed',
         REPLAY_FRAME_OPERATIONS.DEAL_HOLE_OBSERVED,
         () => canonicalController.dealObservedHoleCards(cardsByPlayer),
+        { holeCardCount: Object.keys(cardsByPlayer || {}).length * 2 },
       );
     },
 
@@ -366,6 +507,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
         'reveal_hole',
         REPLAY_FRAME_OPERATIONS.REVEAL_HOLE,
         () => canonicalController.revealHoleCards(playerId, cards),
+        { actorPlayerId: playerId, holeCardCount: Array.isArray(cards) ? cards.length : null },
       );
     },
 
@@ -382,6 +524,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
         'action',
         REPLAY_FRAME_OPERATIONS.ACTION,
         () => canonicalController.applyAction({ type, amountToBb }),
+        { actionType: type },
       );
     },
 

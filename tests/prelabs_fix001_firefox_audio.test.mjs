@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
+const manifest = fs.readFileSync(new URL('../app/src/core/AudioFoleyManifest.js', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 
 function deferred() {
@@ -24,6 +25,7 @@ function createContext(initialState = 'running', resumeGate = null) {
     resumeCalls: 0,
     closeCalls: 0,
     oscillators: [],
+    bufferSources: [],
     gains: [],
     async resume() {
       this.resumeCalls += 1;
@@ -46,6 +48,23 @@ function createContext(initialState = 'running', resumeGate = null) {
       };
       this.oscillators.push(oscillator);
       return oscillator;
+    },
+    createBufferSource() {
+      const source = {
+        buffer: null,
+        startState: null,
+        sourceConnected: false,
+        playbackRate: { setValueAtTime() {} },
+        connect() { this.sourceConnected = true; },
+        start: () => { source.startState = context.state; },
+      };
+      this.bufferSources.push(source);
+      return source;
+    },
+    decodeAudioData(arrayBuffer, success) {
+      const buffer = { duration: 0.5, byteLength: arrayBuffer.byteLength };
+      success?.(buffer);
+      return Promise.resolve(buffer);
     },
     createGain() {
       const gain = {
@@ -76,10 +95,13 @@ function createHarness({ initialSound = null, contexts = [createContext()] } = {
       getItem: (key) => storage.get(key) ?? null,
       setItem: (key, value) => storage.set(key, String(value))
     },
-    document: { getElementById: () => null },
-    window: { AudioContext }
+    document: { hidden: false, baseURI: 'http://riverline.test/app/index.html', getElementById: () => null, querySelectorAll: () => [] },
+    fetch: async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(16) }),
+    URL,
+    ArrayBuffer,
+    window: { AudioContext, location: { href: 'http://riverline.test/app/index.html' } }
   };
-  vm.runInNewContext(`${sound}\nthis.exposedSoundFX = SoundFX;`, sandbox);
+  vm.runInNewContext(`${manifest}\n${sound}\nthis.exposedSoundFX = SoundFX;`, sandbox);
   return {
     soundFx: sandbox.exposedSoundFX,
     storage,
@@ -106,9 +128,10 @@ test('the first suspended-context cue waits for one resume and then plays that c
 
   resumeGate.resolve();
   await cue;
-  assert.equal(context.oscillators.length, 1, 'the first requested cue is retained');
-  assert.equal(context.oscillators[0].startState, 'running');
-  assert.equal(context.oscillators[0].sourceConnected, true);
+  assert.equal(context.oscillators.length, 0, 'poker foley never falls back to an oscillator');
+  assert.equal(context.bufferSources.length, 1, 'one recorded card placement is retained');
+  assert.ok(context.bufferSources.every((source) => source.startState === 'running'));
+  assert.ok(context.bufferSources.every((source) => source.sourceConnected === true));
   assert.equal(context.gains[0].destination, context.destination);
 });
 
@@ -121,7 +144,7 @@ test('concurrent cues share one suspended-context resume and one context', async
   assert.equal(harness.contextCount(), 1);
   resumeGate.resolve();
   await Promise.all(cues);
-  assert.equal(context.oscillators.length, 2);
+  assert.equal(context.oscillators.length, 3);
   assert.ok(context.oscillators.every((oscillator) => oscillator.startState === 'running'));
 });
 
@@ -136,7 +159,7 @@ test('a running context is reused and a closed context is recreated on a later c
   first.state = 'closed';
   await harness.soundFx.playTrainingResult('mistake');
   assert.equal(harness.contextCount(), 2);
-  assert.equal(second.oscillators.length, 1);
+  assert.equal(second.oscillators.length, 2);
 });
 
 test('disabled audio creates nothing, closes an existing context, and re-enable plays normally', async () => {
@@ -151,9 +174,9 @@ test('disabled audio creates nothing, closes an existing context, and re-enable 
   harness.soundFx.toggle();
   await Promise.resolve();
   assert.equal(first.closeCalls, 1);
-  const startsWhileDisabled = first.oscillators.length;
+  const startsWhileDisabled = first.bufferSources.length;
   await harness.soundFx.playCardDeal();
-  assert.equal(first.oscillators.length, startsWhileDisabled);
+  assert.equal(first.bufferSources.length, startsWhileDisabled);
   assert.equal(harness.storage.get('appSoundEnabled'), 'false');
 
   harness.soundFx.toggle();
@@ -164,9 +187,9 @@ test('disabled audio creates nothing, closes an existing context, and re-enable 
 });
 
 test('audio remains event-owned with no hover, slider, Matrix, progress, or tab cues', () => {
-  assert.equal((logic.match(/playCardDeal\(/g) || []).length, 4);
-  assert.equal((logic.match(/playTrainingResult\(evaluation\.grade\)/g) || []).length, 1);
-  assert.equal((logic.match(/playHint\(\)/g) || []).length, 1);
+  assert.equal((logic.match(/SoundFX\.play/g) || []).length, 0);
+  assert.equal((logic.match(/emitTrainingDecisionResultExperience\(/g) || []).length, 2);
+  assert.equal((logic.match(/emitStudyExperience\('reference_comparison_revealed'/g) || []).length, 1);
   assert.doesNotMatch(logic, /(?:hover|progress|bindSliderPair|sub-tab|matrix)[\s\S]{0,120}SoundFX\.play/i);
   assert.doesNotMatch(sound, /window\.addEventListener/);
   assert.doesNotMatch(sound, /electron|BrowserWindow|ipcRenderer/i);
