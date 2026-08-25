@@ -3,20 +3,51 @@ export const PRESENTATION_LAYOUT_PRESETS = Object.freeze([
   'balanced',
   'table-focus',
   'analysis-focus',
-  'controls-first',
 ]);
 export const DEFAULT_PRESENTATION_LAYOUT = 'balanced';
 
 const BALANCED_ONLY = Object.freeze([DEFAULT_PRESENTATION_LAYOUT]);
 
+function freezeDefinitions(definitions) {
+  return Object.freeze(definitions.map((definition) => Object.freeze(definition)));
+}
+
+/**
+ * Product meaning for every layout choice that survives in a workspace.
+ * These definitions are presentation metadata only: they never select poker,
+ * strategy, Training, Equity, Replay, or persistence behavior.
+ */
+export const WORKSPACE_LAYOUT_DEFINITIONS = Object.freeze({
+  hand: freezeDefinitions([
+    { preset: 'balanced', job: 'Keep setup available while the table and current Hand remain the general-purpose stage.' },
+    { preset: 'table-focus', job: 'Maximize table, actor, cards, and legal-decision readability with setup in a compact supporting rail.' },
+  ]),
+  analyze: freezeDefinitions([
+    { preset: 'balanced', job: 'Balance spot construction, recommendation, evidence, and supporting action-path context.' },
+    { preset: 'analysis-focus', job: 'Give explanation, ranges, evidence, and provenance the primary reading width while the table remains supporting context.' },
+  ]),
+  training: freezeDefinitions([
+    { preset: 'balanced', job: 'Let Training state choose the hierarchy: setup when idle, spot and actions before answer, feedback after answer, and table during Full Hand.' },
+  ]),
+  'personal-strategy': freezeDefinitions([
+    { preset: 'balanced', job: 'Balance profile controls, evidence, Matrix, and teaching surfaces.' },
+  ]),
+  equity: freezeDefinitions([
+    { preset: 'balanced', job: 'Keep editable player tiles stable while calculation state and results appear inside those same tiles.' },
+  ]),
+  home: freezeDefinitions([
+    { preset: 'balanced', job: 'Use the single task-appropriate Home composition.' },
+  ]),
+  saved: freezeDefinitions([
+    { preset: 'balanced', job: 'Use the single task-appropriate Saved composition.' },
+  ]),
+});
+
 export const WORKSPACE_LAYOUT_PRESETS = Object.freeze({
-  hand: Object.freeze(['balanced', 'table-focus', 'controls-first']),
-  analyze: Object.freeze(['balanced', 'analysis-focus', 'controls-first']),
-  training: Object.freeze(['balanced', 'table-focus', 'controls-first']),
-  'personal-strategy': Object.freeze(['balanced', 'analysis-focus']),
-  equity: Object.freeze(['balanced', 'analysis-focus', 'controls-first']),
-  home: BALANCED_ONLY,
-  saved: BALANCED_ONLY,
+  ...Object.fromEntries(Object.entries(WORKSPACE_LAYOUT_DEFINITIONS).map(([workspace, definitions]) => [
+    workspace,
+    Object.freeze(definitions.map(({ preset }) => preset)),
+  ])),
 });
 
 export function normalizePresentationLayout(value) {
@@ -31,6 +62,11 @@ export function normalizeLayoutWorkspace(value) {
 
 export function getWorkspaceLayoutPresets(workspace) {
   return WORKSPACE_LAYOUT_PRESETS[normalizeLayoutWorkspace(workspace)] ?? BALANCED_ONLY;
+}
+
+export function getWorkspaceLayoutDefinitions(workspace) {
+  return WORKSPACE_LAYOUT_DEFINITIONS[normalizeLayoutWorkspace(workspace)]
+    ?? WORKSPACE_LAYOUT_DEFINITIONS.home;
 }
 
 export function resolveWorkspaceLayoutPreset(value, workspace) {

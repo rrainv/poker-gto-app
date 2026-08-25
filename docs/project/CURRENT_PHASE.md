@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 24, 2026 (`WELCOME-INTRO-001` completed at an accepted implementation checkpoint; `WORKSPACE-COMPOSITION-002` active next).
+Last refreshed: August 25, 2026 (`WORKSPACE-COMPOSITION-002` completed at an accepted implementation checkpoint with known composition debt; `DOCS-CAPABILITY-DOSSIERS-001` is active next).
 
 Code, tests, accepted ticket reports, manual QA, and explicit product decisions override this snapshot. `PRODUCT_BACKLOG.md` preserves detailed future capability; subsystem specs remain authoritative for implementation semantics.
 
@@ -10,6 +10,7 @@ Code, tests, accepted ticket reports, manual QA, and explicit product decisions 
 - **CHECKPOINTED / INTENTIONALLY INCOMPLETE** — useful foundation accepted with a defined resume point.
 - **ACTIVE** — current bounded ticket.
 - **ACTIVE NEXT** — accepted next bounded ticket; implementation starts in its own chat.
+- **ACTIVE / HUMAN QA CORRECTION** — current bounded ticket remains open after failed human acceptance; correction and re-review stay in the same ticket.
 - **ACTIVE / FINAL QA CORRECTION** — the current ticket remains the sole active implementation scope pending final human acceptance.
 - **PLANNED NEXT** — accepted work ordered after the active ticket.
 - **PLANNED LATER** — ordered work that remains behind the immediate planned-next ticket.
@@ -51,33 +52,35 @@ Code, tests, accepted ticket reports, manual QA, and explicit product decisions 
 
 7. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT — `WELCOME-INTRO-001`** — versioned local-first first-use orientation, five canonical major-job routes, remembered completion/dismissal, no-flash startup selection, manual `Learn Riverline` reopen, Guide continuity, EN/RU/HE, RTL, accessibility, and responsive structure passed the 1,784/1,784 Node gate and human Firefox/manual visual acceptance. Human acceptance also confirmed that `Learn Riverline` help discovery is genuinely obvious outside Settings.
 
-8. **ACTIVE NEXT — `WORKSPACE-COMPOSITION-002`** — hierarchy, dead space, presets, density, scanability, Equity/Training/table composition.
+8. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN DEBT — `WORKSPACE-COMPOSITION-002`** — the simplified preset model, removal of Controls First and the ineffective density selector, state-aware Hand composition, improved Training decision/context hierarchy, persistent Equity player/result tiles, Analyze anchoring, safe preset fallback, and known-card suit implementation repair are accepted. This is not a claim of complete visual polish: Training Session Progress/support distribution, bounded left-anchored Equity allocation, surviving specialized-layout polish, and independent known-card suit verification remain `RET-COMPOSITION-002` debt.
 
-9. **PLANNED NEXT — `TABLE-PHYSICALITY-003`** — improve default table/felt/rail/seat/card/chip/pot/readability quality over existing presentation/experience authorities; no casino spectacle.
+9. **ACTIVE NEXT — `DOCS-CAPABILITY-DOSSIERS-001`** — bounded documentation-architecture migration in its own ticket. It is an intentional temporary detour; no dossier restructure or dossier files were started in the composition checkpoint.
 
-10. **PLANNED NEXT — `HOME-GAME-001B`** — organizer management continuation; the immediate Create Game routing blocker is already repaired.
+10. **PLANNED NEXT — `TABLE-PHYSICALITY-003`** — immediately after the documentation checkpoint, improve default table/felt/rail/seat/card/chip/pot/readability quality over existing presentation/experience authorities; no casino spectacle.
 
-11. **PLANNED NEXT — `SETTINGS-IA-001`** — Settings information architecture and tutorial/help discovery; transactional theme editing is already repaired.
+11. **PLANNED NEXT — `HOME-GAME-001B`** — organizer management continuation; the immediate Create Game routing blocker is already repaired.
 
-12. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`** — whole-app Core Flow, desktop, themes/density/cards, Guide, EN/RU/HE/RTL, accessibility, and human visual closeout.
+12. **PLANNED NEXT — `SETTINGS-IA-001`** — Settings information architecture and tutorial/help discovery; transactional theme editing is already repaired.
 
-13. **PLANNED NEXT — first trusted bounded reference pack/provider** — exact assumptions, versioning, validation, licensing/provenance, context coverage, and fallback elsewhere.
+13. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`** — whole-app Core Flow, desktop, themes/density/cards, Guide, EN/RU/HE/RTL, accessibility, and human visual closeout.
 
-14. **PLANNED NEXT — Training Memory / re-drill intelligence**
+14. **PLANNED NEXT — first trusted bounded reference pack/provider** — exact assumptions, versioning, validation, licensing/provenance, context coverage, and fallback elsewhere.
 
-15. **PLANNED NEXT — `PERSONAL-STRATEGY-002R` independent review**
+15. **PLANNED NEXT — Training Memory / re-drill intelligence**
 
-16. **PLANNED NEXT — Personal Strategy provider/reference/observed integration**
+16. **PLANNED NEXT — `PERSONAL-STRATEGY-002R` independent review**
 
-17. **PLANNED LATER — `PERSONAL-INSIGHTS-001`** — cross-profile Teach Riverline Next queue plus evidence/provenance/uncertainty-aware natural-language summaries.
+17. **PLANNED NEXT — Personal Strategy provider/reference/observed integration**
 
-18. **PLANNED LATER — `RANGE-EVOLUTION-001`** — action-conditioned canonical combo-level range propagation by street.
+18. **PLANNED LATER — `PERSONAL-INSIGHTS-001`** — cross-profile Teach Riverline Next queue plus evidence/provenance/uncertainty-aware natural-language summaries.
 
-19. **PLANNED LATER — `HOME-002B` Saved Study Library / knowledge workspace**
+19. **PLANNED LATER — `RANGE-EVOLUTION-001`** — action-conditioned canonical combo-level range propagation by street.
 
-20. **PRESERVED FUTURE, high strategic value — OpponentPolicy / bots / full-hand bot learning**
+20. **PLANNED LATER — `HOME-002B` Saved Study Library / knowledge workspace**
 
-21. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
+21. **PRESERVED FUTURE, high strategic value — OpponentPolicy / bots / full-hand bot learning**
+
+22. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
 
 Reassess at every clean checkpoint.
 
@@ -224,7 +227,7 @@ Current foundation includes:
 - reusable poker-chip primitive;
 - reduced-motion-safe restrained movement.
 
-The richer visual branch is checkpointed through `TABLE-PRESENCE-REF-001`, `TABLE-PRESENCE-002`, `FULL-HAND-REVIEW-001`, `AUDIO-MOTION-001`, the accepted `UX-REGRESSION-001` repair, and the accepted `WELCOME-INTRO-001` orientation. The active ordered visible sequence now runs from `WORKSPACE-COMPOSITION-002` through `PREMIUM-CLOSEOUT-001` before trusted reference work resumes.
+The richer visual branch is checkpointed through `TABLE-PRESENCE-REF-001`, `TABLE-PRESENCE-002`, `FULL-HAND-REVIEW-001`, `AUDIO-MOTION-001`, the accepted `UX-REGRESSION-001` repair, the accepted `WELCOME-INTRO-001` orientation, and the accepted-with-debt `WORKSPACE-COMPOSITION-002` implementation. `DOCS-CAPABILITY-DOSSIERS-001` is the immediate bounded documentation detour; `TABLE-PHYSICALITY-003` follows it and has not advanced in this ticket. The ordered visible sequence still runs through `PREMIUM-CLOSEOUT-001` before trusted reference work resumes.
 
 Preserve the no-casino aesthetic. `TABLE-PHYSICALITY-003` is real planned work for better default proportions, rail/depth, seat/card integration, chip stacks, contributions, pot composition, restrained motion, and readability. It does not authorize detailed denomination claims, fake cinematic 3D, avatars by default, casino scenery, spectacle, or confetti. Default quality comes before more customization.
 
@@ -235,8 +238,8 @@ Implemented/checkpointed:
 - coherent Core Flow/navigation;
 - table-centered Hand workspace;
 - premium workspace composition;
-- Comfortable/Compact density;
-- Balanced/Table Focus/Analysis Focus/Controls First layouts;
+- one stable user-facing density default; the ineffective Comfortable/Compact control is removed while safe internal compatibility remains;
+- Balanced everywhere, with Table Focus only for Hand and Analysis Focus only for Analyze; Controls First is removed;
 - Midnight/Daylight/Graphite and named custom themes;
 - Riverline color picker;
 - Premium Card System v1 including face/back/suit-color variants.

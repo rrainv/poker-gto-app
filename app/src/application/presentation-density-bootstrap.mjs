@@ -56,6 +56,11 @@ function initializePresentationPreferences() {
     buttons: document.querySelectorAll('[data-density-option]'),
     compactDisclosures: document.querySelectorAll('[data-density-collapse-in-compact]'),
   }).init();
+  // Compact remains an internal presentation capability, but it is no longer
+  // a product choice. Repair legacy preferences to the one supported default.
+  if (densityController.getDensity() !== 'comfortable') {
+    densityController.apply('comfortable', { announce: false });
+  }
 
   const cardPresentationController = createCardPresentationController({
     root: document.documentElement,

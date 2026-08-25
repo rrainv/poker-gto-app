@@ -228,7 +228,7 @@ test('controller preview, Save as New, storage, and reload preserve extreme vali
 
 test('custom themes remain independent across theme, density, and every layout preference', () => {
   for (const density of ['comfortable', 'compact']) {
-    for (const layout of ['balanced', 'table-focus', 'analysis-focus', 'controls-first']) {
+    for (const layout of ['balanced', 'table-focus', 'analysis-focus']) {
       const view = fixture({ density, layout });
       view.controller.apply('graphite');
       view.controller.customize({ felt: '#71506a' });

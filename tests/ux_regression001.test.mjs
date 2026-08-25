@@ -126,11 +126,13 @@ test('Training hint concept selection is street-aware', () => {
 });
 
 test('Table Focus owns a lower stage reserve and known table cards keep readable rank plus suit', () => {
-  assert.match(css, /data-layout-preset="table-focus"[^}]*#visual-table-container[\s\S]*?--play-stage-reserve:\s*280px/);
+  assert.match(css, /data-layout-preset="table-focus"[^}]*#visual-table-container[\s\S]*?--play-stage-reserve:\s*350px/);
   const known = tableCardSvgMarkup({ rank: 'A', suit: 'h' });
   assert.match(known, /table-card-corner-rank[^>]*>A</);
   assert.match(known, /table-card-corner-suit[^>]*>[^<]+</);
-  assert.match(css, /\.table-card-corner-suit \{ font: 800 11px/);
+  assert.match(css, /\.table-card-corner-rank \{ font: 850 15px/);
+  assert.match(css, /\.table-card-corner-suit \{ font: 850 14px/);
+  assert.match(css, /card--style-classic \.table-card-center \{ display: block/);
   assert.doesNotMatch(tableCardBackSvgMarkup(), /table-card-corner-(?:rank|suit)/);
   assert.deepEqual(CARD_GEOMETRY.picker, { width: 42, height: 60, radius: 5 });
 });

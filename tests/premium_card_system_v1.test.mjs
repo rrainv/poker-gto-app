@@ -388,7 +388,7 @@ test('two-color and four-color preference changes apply live through root suit t
 test('card presentation preserves theme, density, and layout datasets in every supported combination', () => {
   const themes = ['midnight', 'daylight', 'graphite', 'custom-river'];
   const densities = ['comfortable', 'compact'];
-  const layouts = ['balanced', 'table-focus', 'analysis-focus', 'controls-first'];
+  const layouts = ['balanced', 'table-focus', 'analysis-focus'];
   for (const theme of themes) {
     for (const density of densities) {
       for (const layoutPreset of layouts) {

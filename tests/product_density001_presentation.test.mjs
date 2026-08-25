@@ -122,13 +122,11 @@ test('Compact restores through the same presentation preference authority', () =
   assert.doesNotMatch(bootstrap, /PokerState|StrategyProvider|Equity|Training/);
 });
 
-test('Settings exposes one simple first-class density control with EN RU HE labels', () => {
+test('density remains an internal capability while Settings exposes no density choice', () => {
   assert.match(html, /<html[^>]+data-density="comfortable"/);
-  assert.match(html, /id="densityControl"[^>]+role="group"/);
-  assert.equal((html.match(/data-density-option=/g) || []).length, 2);
-  assert.match(html, /data-density-option="comfortable"[^>]+aria-pressed="true"/);
-  assert.match(html, /data-density-option="compact"[^>]+aria-pressed="false"/);
+  assert.doesNotMatch(html, /id="densityControl"|data-density-option=/);
   assert.match(html, /presentation-density-bootstrap\.mjs/);
+  assert.match(bootstrap, /getDensity\(\) !== 'comfortable'[\s\S]*densityController\.apply\('comfortable', \{ announce: false \}\)/);
 
   for (const key of ['Workspace density', 'Comfortable', 'Compact', 'Details', 'Keyboard shortcuts', 'Calculation guidance']) {
     assert.match(translations, new RegExp(`"${key}"`));

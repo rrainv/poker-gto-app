@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 24, 2026 (`WELCOME-INTRO-001` completed at an accepted implementation checkpoint; `WORKSPACE-COMPOSITION-002` active next).
+Last refreshed: August 25, 2026 (`WORKSPACE-COMPOSITION-002` accepted as an implementation checkpoint with known composition debt; `DOCS-CAPABILITY-DOSSIERS-001` is active next).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -53,9 +53,9 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 
 ## Current execution snapshot
 
-`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, and `WELCOME-INTRO-001` are completed/accepted. The directional order is:
+`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, and `WORKSPACE-COMPOSITION-002` are completed/accepted checkpoints. The directional order is:
 
-1. **ACTIVE NEXT — `WORKSPACE-COMPOSITION-002`**
+1. **ACTIVE NEXT — `DOCS-CAPABILITY-DOSSIERS-001`** — bounded documentation-architecture migration in a new ticket; no dossier work belongs to the accepted composition checkpoint.
 2. **PLANNED NEXT — `TABLE-PHYSICALITY-003`**
 3. `HOME-GAME-001B`
 4. `SETTINGS-IA-001`
@@ -80,7 +80,8 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - Personal Strategy is checkpointed through Calibration/Matrix/Builder/Teacher; resume at independent `002R`, then integration, then Personal Insights.
 - Saved Hand/Spot and `HOME-002A` exist; the full `HOME-002B` library does not.
 - Home Game `001A` exists; its immediate Create Game routing blocker is repaired, while `001B` still owns management continuation.
-- Table/Review/audio architecture and the immediate Table Focus/known-card repairs are checkpointed, but broader composition, physicality, and independent Full Hand visual acceptance remain open in QA and the Return Queue.
+- Workspace composition is accepted as a useful implementation checkpoint, not a visual-polish closeout: Training support distribution/Session Progress, bounded left-anchored Equity allocation, surviving specialized-layout polish, and independent known-card suit verification remain `RET-COMPOSITION-002` debt.
+- Table/Review/audio architecture is checkpointed; deeper physicality remains `TABLE-PHYSICALITY-003` after the documentation detour, and independent Full Hand visual acceptance remains open in QA and the Return Queue.
 
 ## Deliberately retired
 

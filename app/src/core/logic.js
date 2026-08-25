@@ -526,6 +526,38 @@ function createEquityPlayer() {
   };
 }
 
+function equityPlayerResultMarkup(player, playerIndex) {
+  const result = app.equity.lastResult?.players?.find(({ id }) => id === player.id);
+  const complete = app.equity.lifecycle === 'complete' && result;
+  const running = app.equity.lifecycle === 'running';
+  const state = complete ? 'complete' : (running ? 'running' : 'pending');
+  const pendingValue = running ? '&hellip;' : '&mdash;';
+  const equityValue = complete ? `${(result.equity * 100).toFixed(1)}%` : pendingValue;
+  const winValue = complete ? `${(result.winProbability * 100).toFixed(1)}%` : pendingValue;
+  const tieValue = complete ? `${(result.tieProbability * 100).toFixed(1)}%` : pendingValue;
+  const equityWidth = complete ? result.equity * 100 : 0;
+  const label = equityPlayerLabel(playerIndex);
+  return `
+    <section class="equity-player-results" data-result-state="${state}" aria-label="${t('{player} equity', { player: label })}" aria-live="polite">
+      <div class="equity-result-metrics">
+        <div class="equity-result-primary"><span>${t('Equity')}</span><strong class="poker-data-token">${equityValue}</strong></div>
+        <div><span>${t('Win')}</span><strong class="poker-data-token">${winValue}</strong></div>
+        <div><span>${t('Tie')}</span><strong class="poker-data-token">${tieValue}</strong></div>
+      </div>
+      <div class="eqbar" ${complete ? `role="progressbar" aria-label="${t('{player} equity', { player: label })}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${equityWidth.toFixed(1)}"` : 'aria-hidden="true"'}><div class="eqfill player-series" style="width:${equityWidth}%"></div></div>
+    </section>`;
+}
+
+function renderEquityPlayerResults() {
+  const root = $('#equityPlayers');
+  if (!root) return;
+  root.querySelectorAll('.equity-player-card').forEach((card, playerIndex) => {
+    const player = app.equity.players[playerIndex];
+    const current = card.querySelector('.equity-player-results');
+    if (player && current) current.outerHTML = equityPlayerResultMarkup(player, playerIndex);
+  });
+}
+
 function setEquityPlayerCount(requestedCount) {
   const count = Math.max(2, Math.min(10, Number(requestedCount) || 2));
   while (app.equity.players.length < count) app.equity.players.push(createEquityPlayer());
@@ -574,6 +606,7 @@ function renderEquityPlayers() {
             : `<div class="equity-unknown-hand" aria-label="${t('{player} unknown cards', { player: label })}"><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span>${t('Random legal hand')}</span></div>`}
         </div>
         <div class="equity-hand-message" id="equityHandMessage-${playerIndex}">${status}</div>
+        ${equityPlayerResultMarkup(player, playerIndex)}
         <section id="outsPanel-${playerIndex}" class="equity-player-outs" aria-label="Outs" aria-live="polite">
           <div class="outs-panel-head"><span class="outs-panel-title" data-i18n="Outs">Outs</span><span id="outsCount-${playerIndex}" class="outs-total"></span></div>
           <div id="outsSummary-${playerIndex}" class="outs-summary"></div>
@@ -5475,6 +5508,7 @@ function setEquityCalculationRunning(running) {
     }
   }
   if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = running ? 'running' : $('#equityResultsPanel').dataset.resultState;
+  setEquityCompositionState(running ? 'running' : $('#equityResultsPanel')?.dataset.resultState);
   if ($('#equityDetailExecution')) $('#equityDetailExecution').textContent = running
     ? t(callEquityServiceBridge('isWorkerBacked') ? 'Web Worker' : 'In-process fallback')
     : t('Ready');
@@ -5609,6 +5643,8 @@ async function calculateEquity() {
     $('#equityStatus').textContent = message;
     $('#methodBadge').textContent = t(response.error.code === 'aborted' ? 'CANCELLED' : 'ERROR');
     $('#equityResultsPanel').dataset.resultState = response.error.code === 'aborted' ? 'empty' : 'error';
+    setEquityCompositionState($('#equityResultsPanel').dataset.resultState);
+    renderEquityPlayerResults();
     toast(message, response.error.code === 'aborted' ? 'info' : 'warning');
     return response;
   }
@@ -5625,6 +5661,8 @@ function cancelEquityCalculation() {
   $('#equityStatus').textContent = t('Equity calculation cancelled.');
   $('#methodBadge').textContent = t('CANCELLED');
   if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = 'empty';
+  setEquityCompositionState('empty');
+  renderEquityPlayerResults();
   return true;
 }
 
@@ -5645,10 +5683,6 @@ function renderEquityScenarioContext(request = equityRequestFromCurrentInputs())
   const root = $('#equityScenarioContext');
   if (!root) return;
   const board = request.board || [];
-  const handRows = request.players.map((player, index) => {
-    const label = equityPlayerLabel(index);
-    return `<div class="equity-context-row"><span class="equity-context-label">${label}</span>${equityReadOnlyCardsMarkup(player.cards, label)}</div>`;
-  }).join('');
   const boardMarkup = board.length
     ? equityReadOnlyCardsMarkup(board, t('Board'))
     : `<span class="equity-context-empty">${t('No board cards')}</span>`;
@@ -5657,48 +5691,29 @@ function renderEquityScenarioContext(request = equityRequestFromCurrentInputs())
     : '';
   root.innerHTML = `
     <div class="equity-context-street"><span>${t('Street')}</span><strong>${equityStreetLabel(board.length)}</strong></div>
-    <div class="equity-context-hands">${handRows}</div>
+    <div class="equity-context-street"><span>${t('Players')}</span><strong>${t('{count} players', { count: request.players.length })}</strong></div>
     <div class="equity-context-row"><span class="equity-context-label">${t('Board')}</span>${boardMarkup}</div>
     ${deadMarkup}`;
 }
 
-function equityResultCardMarkup(player, index, requestPlayer) {
-  const hasResult = Number.isFinite(player?.equity);
-  const name = player?.name || equityPlayerLabel(index);
-  const equity = hasResult ? `${player.equity.toFixed(1)}%` : '—';
-  const win = Number.isFinite(player?.win) ? `${player.win.toFixed(1)}%` : '—';
-  const tie = Number.isFinite(player?.tie) ? `${player.tie.toFixed(1)}%` : '—';
-  const hand = requestPlayer?.cards === null ? null : (requestPlayer?.cards || []);
-  const ariaValue = hasResult ? player.equity.toFixed(1) : '0';
-  return `
-    <article class="equity-result-card" data-player-series="${index}">
-      <header class="equity-result-player">
-        <span class="equity-result-identity"><i class="series-marker" aria-hidden="true"></i><strong>${name}</strong></span>
-        ${equityReadOnlyCardsMarkup(hand, name)}
-      </header>
-      <div class="equity-result-metrics">
-        <div class="equity-result-primary"><span>${t('Equity')}</span><strong class="poker-data-token">${equity}</strong></div>
-        <div><span>${t('Win')}</span><strong class="poker-data-token">${win}</strong></div>
-        <div><span>${t('Tie')}</span><strong class="poker-data-token">${tie}</strong></div>
-      </div>
-      <div class="eqbar" role="progressbar" aria-label="${t('{player} equity', { player: name })}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${ariaValue}"><div class="eqfill player-series" style="width:${hasResult ? player.equity : 0}%"></div></div>
-    </article>`;
+function setEquityCompositionState(state) {
+  const workspace = document.querySelector('.equity-workspace');
+  if (!workspace) return 'empty';
+  const supported = new Set(['empty', 'running', 'complete', 'error']);
+  const resolved = supported.has(state) ? state : 'empty';
+  workspace.dataset.equityState = resolved;
+  return resolved;
 }
 
 function clearEquityResults(state = 'empty', status = t('Results update after calculation.')) {
   const panel = $('#equityResultsPanel');
   if (panel) panel.dataset.resultState = state;
+  setEquityCompositionState(state);
   if ($('#headlineEquity')) $('#headlineEquity').textContent = '—';
   if ($('#equityStatus')) $('#equityStatus').textContent = status;
   if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = '—';
   if ($('#equityDetailActual')) $('#equityDetailActual').textContent = '—';
-  if ($('#equityBars')) {
-    $('#equityBars').innerHTML = app.equity.players.map((player, index) => equityResultCardMarkup(
-      { name: equityPlayerLabel(index) },
-      index,
-      { cards: player.handMode === 'unknown' ? null : player.cards.filter(Boolean) },
-    )).join('');
-  }
+  renderEquityPlayerResults();
   renderEquityScenarioContext();
 }
 
@@ -5708,7 +5723,6 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
   app.equity.lastRequest = structuredClone(request);
   app.equity.lastError = null;
   const namesById = new Map(app.equity.players.map((player, index) => [player.id, equityPlayerLabel(index)]));
-  const requestById = new Map(request.players.map((player) => [player.id, player]));
   const result = equityResult.players.map((player) => ({
     id: player.id,
     name: namesById.get(player.id) || player.id,
@@ -5734,14 +5748,11 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
 
   $('#methodBadge').textContent = request.method === 'auto' ? `${requestedLabel} → ${actualLabel}` : actualLabel;
 
-  $('#equityBars').innerHTML = result.map((player, index) => equityResultCardMarkup(
-    player,
-    index,
-    requestById.get(player.id),
-  )).join('');
+  renderEquityPlayerResults();
   renderEquityScenarioContext(request);
 
   if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = 'complete';
+  setEquityCompositionState('complete');
   if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = `${equityResult.metadata.splitPotTrials.toLocaleString()} · ${splitRate.toFixed(1)}%`;
   if ($('#equityDetailActual')) $('#equityDetailActual').textContent = t(exact ? 'Exact enumeration' : 'Monte Carlo simulation');
   if ($('#equityDetailEstimate')) $('#equityDetailEstimate').textContent = t('{count} combinations', { count: equityResult.metadata.estimatedCombinationsText });

@@ -29,7 +29,7 @@ test('motion language is tokenized, event-scoped, and avoids large animated tree
   assert.match(logic, /classList\.toggle\('is-analysis-entering', isHidden\)/);
   assert.match(logic, /classList\.toggle\('is-view-entering', item === destination\)/);
   assert.match(polishCss, /training-study-hint-content \.analysis-study-hint[\s\S]*riverline-hint-enter/);
-  assert.match(polishCss, /data-result-state="complete"[^\n]*\.equity-result-card/);
+  assert.match(polishCss, /\.equity-player-results\[data-result-state="complete"\]/);
   assert.match(polishCss, /visibility 0s linear var\(--motion-standard\)/);
   assert.doesNotMatch(polishCss, /bounce|spin|flash|infinite/i);
 });

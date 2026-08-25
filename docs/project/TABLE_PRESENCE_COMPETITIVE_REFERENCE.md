@@ -740,3 +740,31 @@ The Table Presence brief remained the primary competitive reference. No addition
 - Solver-score, hand-grade, exploitability, accuracy, `bb`-loss, or “biggest mistake” theater without an authority that can support it.
 - `Correct`, `Mistake`, or objective-GTO wording for generalized comparative heuristic results.
 - A second timeline, Replay cursor, poker-state authority, Saved schema, or Analysis implementation.
+
+## 22. `WORKSPACE-COMPOSITION-002` bounded composition delta
+
+This ticket reused the first-party GTO Wizard observations already recorded in this brief and attempted a fresh public pass. The connected in-app Browser had no available browser instance, so no new proprietary screen capture or unsupported market claim was introduced. Current Riverline was instead checked in real Firefox 154 across the ticket's workspace, viewport, theme, language, and state matrix.
+
+### ADOPT
+
+- Let the current job determine prominence: table/decision in Play, evidence and explanation in Analyze, spot/actions/feedback in Training, and inputs/results in Equity.
+- Use desktop width for useful peer surfaces while keeping card controls, important facts, and primary actions readable.
+- Make trainer pre-answer and post-answer states visibly different without creating a large preset catalog.
+
+### ADAPT
+
+- Keep Riverline's Balanced default, but curate specialized availability per workspace and attach a precise product job to every surviving choice.
+- Use existing Hand, Training, and Equity lifecycle attributes plus CSS grid/flex rules for bounded state awareness; do not create a second state authority.
+- Preserve Riverline's source/provenance disclosure and canonical table/card components while changing only presentation hierarchy.
+
+### DIFFERENTIATE
+
+- Repair stale per-workspace preferences deterministically through the existing storage key and schema instead of requiring a migration prompt or version bump.
+- Keep logical DOM and keyboard order stable while CSS-led state changes promote Hand controls, Training setup/progress, or Equity metrics inside their existing components.
+- Treat selectively dense composition as task-specific grouping and readable hierarchy, not uniformly smaller type or a dashboard of equal panels.
+
+### REJECT
+
+- Global presets shown everywhere for symmetry, weak Controls First/Equity/Personal Strategy variants, a low-value user-facing density switch, fixed-percentage control columns, arbitrary drag/drop layout editing, or additional density modes.
+- Solver-terminal imitation, proprietary branding/layout cloning, or claims that heuristic output is solved GTO evidence.
+- Visual spectacle or table physical-art changes; felt, rail, chip, and seat aesthetics remain `TABLE-PHYSICALITY-003` work.

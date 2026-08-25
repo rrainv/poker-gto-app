@@ -2277,13 +2277,13 @@
                 </div>
                 <div id="trainingFullHandStacks" class="training-full-hand-stacks" hidden aria-label="Current stacks" data-i18n-aria-label="Current stacks"></div>
               </div>
-              <div id="trainingPotInfo" class="training-context-strip" data-state-surface="derived">
-                <div><span data-i18n="Street">Street</span><strong id="trainingStreetLabel" class="training-context-value--atomic">—</strong></div>
-                <div><span data-i18n="Position">Position</span><strong id="trainingPositionVal" class="training-context-value--atomic poker-data-token">—</strong></div>
-                <div><span data-i18n="Stack">Stack</span><strong id="trainingStackVal" class="training-context-value--atomic poker-data-token">—</strong></div>
-                <div><span data-i18n="Pot">Pot</span><strong id="trainingPotVal" class="training-context-value--atomic poker-data-token">—</strong></div>
-                <div><span data-i18n="Facing">Facing</span><strong id="trainingFacingVal">—</strong></div>
-                <div><span data-i18n="Players">Players</span><strong id="trainingTableVal" class="training-context-value--atomic poker-data-token">—</strong></div>
+              <div id="trainingPotInfo" class="training-context-strip" data-state-surface="derived" role="group" aria-label="Decision context" data-i18n-aria-label="Decision context">
+                <div class="training-context-fact training-context-fact--headline" data-context-priority="headline"><span data-i18n="Facing">Facing</span><strong id="trainingFacingVal">—</strong></div>
+                <div class="training-context-fact" data-context-priority="primary"><span data-i18n="Position">Position</span><strong id="trainingPositionVal" class="training-context-value--atomic poker-data-token">—</strong></div>
+                <div class="training-context-fact" data-context-priority="primary"><span data-i18n="Stack">Stack</span><strong id="trainingStackVal" class="training-context-value--atomic poker-data-token">—</strong></div>
+                <div class="training-context-fact" data-context-priority="primary"><span data-i18n="Pot">Pot</span><strong id="trainingPotVal" class="training-context-value--atomic poker-data-token">—</strong></div>
+                <div class="training-context-fact" data-context-priority="secondary"><span data-i18n="Players">Players</span><strong id="trainingTableVal" class="training-context-value--atomic poker-data-token">—</strong></div>
+                <div class="training-context-fact" data-context-priority="secondary"><span data-i18n="Street">Street</span><strong id="trainingStreetLabel" class="training-context-value--atomic">—</strong></div>
               </div>
               <div id="trainingAssistance" class="training-assistance">
                 <div class="pot-math-detail"><span data-i18n="Pot Odds">Pot odds</span><strong id="trainingPotOddsVal">—</strong></div>
@@ -2404,7 +2404,7 @@
               <button class="ui-button ui-button--primary training-generate" type="button" id="trainingNewHand" data-i18n="Start varied session">Start varied session</button>
             </div>
           </section>
-          <section class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle"><div class="panel-head"><div><h2 id="trainingAssistanceTitle" data-i18n="Assistance">Assistance</h2><p class="panel-note" data-i18n="Difficulty controls automatic help.">Difficulty controls automatic help.</p></div></div><div class="panel-body"><p class="training-study-hints-note"><strong data-i18n="Study hints">Study hints</strong><span data-i18n="Ask for a coaching prompt in the decision panel.">Ask for a coaching prompt in the decision panel.</span></p></div></section>
+          <details class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle"><summary class="panel-head"><div><h2 id="trainingAssistanceTitle" data-i18n="Assistance">Assistance</h2><p class="panel-note" data-i18n="Difficulty controls automatic help.">Difficulty controls automatic help.</p></div></summary><div class="panel-body"><p class="training-study-hints-note"><strong data-i18n="Study hints">Study hints</strong><span data-i18n="Ask for a coaching prompt in the decision panel.">Ask for a coaching prompt in the decision panel.</span></p></div></details>
           <details class="panel training-advanced" id="trainingAdvanced">
             <summary data-i18n="Seed, replay & diagnostics">Seed, replay & diagnostics</summary>
             <div class="panel-body">
@@ -2425,7 +2425,7 @@
     <!-- Equity workspace -->
     <section id="equityMode" class="mode-view equity-mode" style="display: none;">
       <div class="workspace-frame workspace-frame--standard">
-      <div class="equity-workspace">
+      <div class="equity-workspace" data-equity-state="empty">
         <div class="equity-input-stack">
           <section class="panel equity-player-panel" aria-labelledby="equityPlayersTitle" data-tutorial-anchor="equity-player-hands">
             <div class="panel-head equity-section-head">
@@ -2517,7 +2517,6 @@
             <div class="panel-head equity-result-head"><div><p class="equity-eyebrow" data-i18n="Results">Results</p><h2 id="equityResultsTitle" data-i18n="Equity">Equity</h2></div><span id="methodBadge" class="equity-method-badge" data-i18n="Awaiting input">Awaiting input</span></div>
             <div class="equity-headline"><span class="equity-headline-label" data-i18n="Result overview">Result overview</span><strong id="headlineEquity" class="poker-data-token">—</strong><span id="equityStatus" class="muted" role="status" aria-live="polite" aria-atomic="true" data-i18n="Results update after calculation.">Results update after calculation.</span></div>
             <section class="equity-scenario" aria-labelledby="equityScenarioTitle"><h3 id="equityScenarioTitle" data-i18n="Scenario">Scenario</h3><div id="equityScenarioContext" class="equity-scenario-context"></div></section>
-            <div id="equityBars" class="equity-bars" aria-live="polite"></div>
             <div class="equity-result-summary"><div><span data-i18n="Split-pot trials">Split-pot trials</span><strong id="equitySplitSummary">—</strong></div><div><span data-i18n="Remaining deck">Remaining deck</span><strong id="eqDeckCount">52</strong></div></div>
           </section>
           <details id="equityDetails" class="panel equity-details-panel">
@@ -2668,17 +2667,6 @@
               </div>
             </div>
 
-            <div class="field settings-preference-field density-preference-field">
-              <div class="settings-preference-copy">
-                <strong data-i18n="Workspace density">Workspace density</strong>
-                <span class="panel-note" data-i18n="Changes information packing and supporting detail only. Poker state, controls, and available tools stay the same.">Changes information packing and supporting detail only. Poker state, controls, and available tools stay the same.</span>
-              </div>
-              <div id="densityControl" class="ui-segments density-control" role="group" aria-label="Workspace density" data-i18n-aria-label="Workspace density">
-                <button class="ui-tab active" type="button" data-density-option="comfortable" aria-pressed="true" data-i18n="Comfortable">Comfortable</button>
-                <button class="ui-tab" type="button" data-density-option="compact" aria-pressed="false" data-i18n="Compact">Compact</button>
-              </div>
-            </div>
-
             <div class="field settings-preference-field layout-preset-field" data-layout-preset-field hidden>
               <div class="settings-preference-copy">
                 <strong data-i18n="Workspace layout">Workspace layout</strong>
@@ -2688,7 +2676,6 @@
                 <button class="ui-tab active" type="button" data-layout-preset-option="balanced" aria-pressed="true" data-i18n="Balanced">Balanced</button>
                 <button class="ui-tab" type="button" data-layout-preset-option="table-focus" aria-pressed="false" data-i18n="Table Focus">Table Focus</button>
                 <button class="ui-tab" type="button" data-layout-preset-option="analysis-focus" aria-pressed="false" data-i18n="Analysis Focus">Analysis Focus</button>
-                <button class="ui-tab" type="button" data-layout-preset-option="controls-first" aria-pressed="false" data-i18n="Controls First">Controls First</button>
               </div>
             </div>
 

@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 24, 2026 (`WELCOME-INTRO-001` completed at an accepted implementation checkpoint; `WORKSPACE-COMPOSITION-002` active next).
+Last consolidated: August 25, 2026 (`WORKSPACE-COMPOSITION-002` accepted as an implementation checkpoint with known composition debt; `DOCS-CAPABILITY-DOSSIERS-001` is active next).
 
 This is the one accepted capability/status record for each product domain. `CURRENT_PHASE.md` owns exact execution order; subsystem specifications own implementation semantics; `QA_BACKLOG.md` owns issue-level defects; `PRODUCT_RETURN_QUEUE.md` owns compact must-return debt.
 
@@ -10,6 +10,7 @@ This is the one accepted capability/status record for each product domain. `CURR
 - **CHECKPOINTED / INTENTIONALLY INCOMPLETE** — accepted foundation with explicit remaining work.
 - **ACTIVE** — current bounded ticket.
 - **ACTIVE NEXT** — accepted next bounded ticket; implementation starts in its own chat.
+- **ACTIVE / HUMAN QA CORRECTION** — current bounded ticket remains open after failed human acceptance.
 - **PLANNED NEXT** — ordered accepted work.
 - **PLANNED LATER** — accepted and ordered behind nearer work.
 - **PRESERVED FUTURE** — accepted capability without immediate commitment.
@@ -25,13 +26,14 @@ Reference strategy, intended Personal Strategy, observed behavior, and opponent 
 
 ## Current delivery order
 
-`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, and `WELCOME-INTRO-001` are completed and accepted. `WORKSPACE-COMPOSITION-002` is active next:
+`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, and `WORKSPACE-COMPOSITION-002` are completed/accepted checkpoints. A bounded documentation-architecture migration is the intentional immediate detour before table physicality:
 
 | Order | Status | Ticket / outcome |
 |---:|---|---|
 | checkpoint | COMPLETED | `UX-REGRESSION-001` |
 | checkpoint | COMPLETED | `WELCOME-INTRO-001` — accepted implementation checkpoint |
-| 1 | ACTIVE NEXT | `WORKSPACE-COMPOSITION-002` |
+| checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN DEBT | `WORKSPACE-COMPOSITION-002` |
+| 1 | ACTIVE NEXT | `DOCS-CAPABILITY-DOSSIERS-001` |
 | 2 | PLANNED NEXT | `TABLE-PHYSICALITY-003` |
 | 3 | PLANNED NEXT | `HOME-GAME-001B` |
 | 4 | PLANNED NEXT | `SETTINGS-IA-001` |
@@ -175,11 +177,12 @@ Riverline remains useful offline; authentication never silently enables upload.
 |---|---|---|
 | `UX-REGRESSION-001` | COMPLETED | Eleven owned functional, semantic, persistence, and legibility regressions closed with focused/full-suite coverage and bounded Firefox 154 acceptance; no unrelated audio or composition debt absorbed. |
 | `WELCOME-INTRO-001` | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT | Versioned local-first first-use introduction with no-flash startup selection, Hand/Analyze/Training/Equity/Personal Strategy/Home/Guide routing through existing navigation, remembered completion/dismissal, manual `Learn Riverline` reopen, EN/RU/HE, RTL, accessibility, and responsive structure. Automated gates and human Firefox/manual visual acceptance are complete, including confirmation that help discovery is obvious outside Settings. Separate from workspace tutorials and Home data. |
-| `WORKSPACE-COMPOSITION-002` | ACTIVE NEXT | Whole-workspace hierarchy, dead space, presets, density, Training facts, Equity, table balance; may redesign/rename/consolidate/remove weak presets. |
-| `TABLE-PHYSICALITY-003` | PLANNED NEXT | Better felt/table proportions, rail/depth, seat/card integration, chip stacks, contributions, central pot, restrained physical motion, and table readability over existing authorities. Reject casino scene, spectacle, confetti, fake 3D, and avatars by default. |
+| `WORKSPACE-COMPOSITION-002` | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN DEBT | Controls First and weak specialized variants are removed; only Hand Table Focus and Analyze Analysis Focus survive beside Balanced; density is no longer user-facing; Balanced Hand is state-aware; Training's main decision/context hierarchy is materially improved; Equity keeps compact player/result tiles through input, running, and completion; Analyze anchoring, safe preset fallback, accessibility/RTL/performance foundations, and the known-card suit implementation repair are retained. This is not complete visual polish: `RET-COMPOSITION-002` owns Training Session Progress/support distribution, bounded left-anchored Equity allocation, surviving specialized-layout polish, and independent known-card suit verification. |
+| `DOCS-CAPABILITY-DOSSIERS-001` | ACTIVE NEXT | Bounded documentation-architecture migration under `DOCUMENTATION_GOVERNANCE.md`. It is an intentional temporary detour after the Workspace Composition checkpoint; start it in a new ticket and do not mix in product implementation. |
+| `TABLE-PHYSICALITY-003` | PLANNED NEXT | Immediately after `DOCS-CAPABILITY-DOSSIERS-001`, improve felt/table proportions, rail/depth, seat/card integration, chip stacks, contributions, central pot, restrained physical motion, and table readability over existing authorities. Reject casino scene, spectacle, confetti, fake 3D, and avatars by default. |
 | `SETTINGS-IA-001` | PLANNED NEXT | Split Settings god-menu concerns and improve help/tutorial discovery; transactional editing and immutable built-ins are already accepted. |
 | `PREMIUM-CLOSEOUT-001` | PLANNED NEXT | Whole-app hierarchy/Core Flow, Guide, desktop, themes/density/cards, EN/RU/HE/RTL, accessibility and human visual closeout. |
-| themes/layout/density/cards | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Midnight/Daylight/Graphite + custom themes; Balanced/Table Focus/Analysis Focus/Controls First; Comfortable/Compact; shared Premium Cards. Freeze expansion and fix value/defaults. |
+| themes/layout/density/cards | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Midnight/Daylight/Graphite plus custom themes; Balanced everywhere with Hand-only Table Focus and Analyze-only Analysis Focus; no Controls First; one stable user-facing density default with internal compatibility retained; shared Premium Cards. Freeze expansion and preserve the accepted simplification. |
 | restrained felt/table/chip customization | OPEN PRODUCT DECISION | Later product-design question only. **Default quality first**; customization cannot compensate for a bad default. |
 | beginner/expert presentation + keyboard workflow | PRESERVED FUTURE | Guided vs denser provenance/shortcut experience after core surfaces stabilize. |
 | arbitrary layout editor | REJECTED / REMOVED | Do not revive. |

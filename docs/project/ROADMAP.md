@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 24, 2026 (`WELCOME-INTRO-001` completed at an accepted implementation checkpoint; `WORKSPACE-COMPOSITION-002` active next).
+Last refreshed: August 25, 2026 (`WORKSPACE-COMPOSITION-002` accepted as an implementation checkpoint with known debt; `DOCS-CAPABILITY-DOSSIERS-001` is the immediate documentation detour before `TABLE-PHYSICALITY-003`).
 
 This roadmap explains directional sequencing. `CURRENT_PHASE.md` owns the exact current checkpoint and execution order; `PRODUCT_BACKLOG.md` owns detailed accepted capability/status. The order may move after later accepted checkpoints.
 
@@ -43,28 +43,29 @@ Riverline therefore should not immediately return to deep reference/math work. I
 
 ## Current directional sequence
 
-`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, and `WELCOME-INTRO-001` are completed/accepted. The later roadmap order is preserved:
+`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, and `WORKSPACE-COMPOSITION-002` are completed/accepted checkpoints. The later roadmap order is preserved around one intentional documentation detour:
 
 1. **COMPLETED — `UX-REGRESSION-001`** — eleven immediate functional, semantic, persistence, and legibility regressions repaired without changing poker authority or absorbing subjective audio debt.
 2. **COMPLETED — `WELCOME-INTRO-001`** — the bounded local-first orientation passed automated gates and human Firefox/manual visual acceptance, including obvious `Learn Riverline` discovery outside Settings.
-3. **ACTIVE NEXT — `WORKSPACE-COMPOSITION-002`** — repair hierarchy, dead space, control grouping, density value, weak presets, Training facts, Equity composition, and table balance.
-4. **PLANNED NEXT — `TABLE-PHYSICALITY-003`** — improve the default table/felt/rail/seat/card/chip/contribution/pot/readability composition over the existing presentation/experience seams.
-5. **`HOME-GAME-001B`** — continue organizer management, correction history, lifecycle, import/export decision, and Firefox acceptance.
-6. **`SETTINGS-IA-001`** — decompose the Settings god menu and improve help/tutorial discovery; transactional theme editing and immutable built-ins are already repaired.
-7. **`PREMIUM-CLOSEOUT-001`** — whole-app Core Flow, Guide, responsive/theme/density/card, EN/RU/HE/RTL, accessibility, and human visual closeout.
-8. **First trusted bounded reference pack/provider** — exact assumptions, versioning, validation, licensing/provenance, capabilities, exact coverage, fallback elsewhere.
-9. **Training Memory / re-drill** — canonical DecisionRecord/session history, review queue, same/similar spot, spaced/adaptive study, filters and truthful trends.
-10. **`PERSONAL-STRATEGY-002R`** — independent real-user review of Calibration/Matrix/Builder/Teacher.
-11. **Personal Strategy provider/reference/observed integration** — preserve intended/reference/observed semantic roles and explicit Training evidence opt-in.
-12. **`PERSONAL-INSIGHTS-001`** — cross-profile Teach Riverline Next uncertainty queue and evidence/provenance/uncertainty-aware natural-language summaries.
-13. **`RANGE-EVOLUTION-001`** — canonical combo-level action-conditioned preflop-to-flop-to-turn-to-river range propagation.
-14. **`HOME-002B` Saved Study Library** — dense master-detail library over approved payloads.
-15. **OpponentPolicy / bots** — separate provenance-aware behavior contract and later full-hand bot learning.
-16. **Release/mobile/social/PLO later** — deliberate platform and separate game-domain work after foundations are ready.
+3. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN DEBT — `WORKSPACE-COMPOSITION-002`** — simplified weak presentation options, improved Training hierarchy and Equity tile continuity, preserved Analyze anchoring and known-card implementation repair, and retained exact composition/manual-verification debt in `RET-COMPOSITION-002` without claiming visual-polish closeout.
+4. **ACTIVE NEXT — `DOCS-CAPABILITY-DOSSIERS-001`** — bounded documentation-architecture migration under the existing governance model, performed in a new ticket without product implementation.
+5. **PLANNED NEXT — `TABLE-PHYSICALITY-003`** — immediately after the documentation checkpoint, improve the default table/felt/rail/seat/card/chip/contribution/pot/readability composition over the existing presentation/experience seams.
+6. **`HOME-GAME-001B`** — continue organizer management, correction history, lifecycle, import/export decision, and Firefox acceptance.
+7. **`SETTINGS-IA-001`** — decompose the Settings god menu and improve help/tutorial discovery; transactional theme editing and immutable built-ins are already repaired.
+8. **`PREMIUM-CLOSEOUT-001`** — whole-app Core Flow, Guide, responsive/theme/density/card, EN/RU/HE/RTL, accessibility, and human visual closeout.
+9. **First trusted bounded reference pack/provider** — exact assumptions, versioning, validation, licensing/provenance, capabilities, exact coverage, fallback elsewhere.
+10. **Training Memory / re-drill** — canonical DecisionRecord/session history, review queue, same/similar spot, spaced/adaptive study, filters and truthful trends.
+11. **`PERSONAL-STRATEGY-002R`** — independent real-user review of Calibration/Matrix/Builder/Teacher.
+12. **Personal Strategy provider/reference/observed integration** — preserve intended/reference/observed semantic roles and explicit Training evidence opt-in.
+13. **`PERSONAL-INSIGHTS-001`** — cross-profile Teach Riverline Next uncertainty queue and evidence/provenance/uncertainty-aware natural-language summaries.
+14. **`RANGE-EVOLUTION-001`** — canonical combo-level action-conditioned preflop-to-flop-to-turn-to-river range propagation.
+15. **`HOME-002B` Saved Study Library** — dense master-detail library over approved payloads.
+16. **OpponentPolicy / bots** — separate provenance-aware behavior contract and later full-hand bot learning.
+17. **Release/mobile/social/PLO later** — deliberate platform and separate game-domain work after foundations are ready.
 
 ## Phase A — visible product repair and closeout
 
-The phase owns the seven visible tickets above. Permanent constraints:
+The phase owns the visible tickets above. `DOCS-CAPABILITY-DOSSIERS-001` is a temporary documentation-architecture detour between the accepted Workspace Composition checkpoint and Table Physicality; it does not begin or redefine product implementation. Permanent constraints:
 
 - functional correctness is necessary but not sufficient;
 - card picker/known-card/board/sizing/tutorial/save/control-grid invariants remain durable;

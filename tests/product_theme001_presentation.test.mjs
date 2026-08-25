@@ -208,7 +208,7 @@ test('built-in primary, muted, status, and accent foreground contrast is safe', 
 test('theme, density, and layout stay independent for every supported combination', () => {
   for (const theme of PRESENTATION_THEMES.map((entry) => entry.id)) {
     for (const density of ['comfortable', 'compact']) {
-      for (const layout of ['balanced', 'table-focus', 'analysis-focus', 'controls-first']) {
+      for (const layout of ['balanced', 'table-focus', 'analysis-focus']) {
         const view = fixture({ density, layout });
         view.controller.apply(theme);
         assert.equal(view.root.dataset.theme, theme);

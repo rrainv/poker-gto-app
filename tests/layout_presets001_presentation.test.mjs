@@ -5,8 +5,10 @@ import fs from 'node:fs';
 import {
   DEFAULT_PRESENTATION_LAYOUT,
   PRESENTATION_LAYOUT_STORAGE_KEY,
+  WORKSPACE_LAYOUT_DEFINITIONS,
   WORKSPACE_LAYOUT_PRESETS,
   createPresentationLayoutController,
+  getWorkspaceLayoutDefinitions,
   getWorkspaceLayoutPresets,
   normalizePresentationLayout,
   resolveWorkspaceLayoutPreset,
@@ -60,7 +62,6 @@ function fixture({ stored, workspace = 'hand', density = 'comfortable' } = {}) {
     'balanced',
     'table-focus',
     'analysis-focus',
-    'controls-first',
   ].map((preset) => [preset, fakeButton(preset)]));
   const control = { dataset: {}, hidden: true };
   const events = [];
@@ -114,17 +115,19 @@ test('preset switching applies immediately, persists, restores, and announces', 
   });
 
   const restored = fixture({ stored: { training: 'table-focus' }, workspace: 'training' });
-  assert.equal(restored.controller.getPreset(), 'table-focus');
-  assert.equal(restored.buttons['table-focus'].classes.has('active'), true);
+  assert.equal(restored.controller.getPreset(), 'balanced');
+  assert.equal(restored.buttons.balanced.classes.has('active'), true);
+  assert.equal(restored.control.hidden, true);
+  assert.equal(restored.storage.getItem(PRESENTATION_LAYOUT_STORAGE_KEY), '{}');
   assert.equal(restored.events.length, 0);
 });
 
 test('workspace support is curated and unsupported preferences fall back safely', () => {
-  assert.deepEqual(getWorkspaceLayoutPresets('hand'), ['balanced', 'table-focus', 'controls-first']);
-  assert.deepEqual(getWorkspaceLayoutPresets('analyze'), ['balanced', 'analysis-focus', 'controls-first']);
-  assert.deepEqual(getWorkspaceLayoutPresets('training'), ['balanced', 'table-focus', 'controls-first']);
-  assert.deepEqual(getWorkspaceLayoutPresets('personal-strategy'), ['balanced', 'analysis-focus']);
-  assert.deepEqual(getWorkspaceLayoutPresets('equity'), ['balanced', 'analysis-focus', 'controls-first']);
+  assert.deepEqual(getWorkspaceLayoutPresets('hand'), ['balanced', 'table-focus']);
+  assert.deepEqual(getWorkspaceLayoutPresets('analyze'), ['balanced', 'analysis-focus']);
+  assert.deepEqual(getWorkspaceLayoutPresets('training'), ['balanced']);
+  assert.deepEqual(getWorkspaceLayoutPresets('personal-strategy'), ['balanced']);
+  assert.deepEqual(getWorkspaceLayoutPresets('equity'), ['balanced']);
   assert.deepEqual(getWorkspaceLayoutPresets('home'), ['balanced']);
   assert.deepEqual(getWorkspaceLayoutPresets('saved'), ['balanced']);
   assert.equal(resolveWorkspaceLayoutPreset('analysis-focus', 'hand'), 'balanced');
@@ -154,18 +157,17 @@ test('each workspace restores its own preset from one preference record', () => 
   assert.equal(view.controller.getPreset(), 'balanced');
   view.buttons['analysis-focus'].click();
   view.controller.setWorkspace('equity');
-  view.buttons['controls-first'].click();
+  assert.equal(view.controller.getPreset(), 'balanced');
 
   view.controller.setWorkspace('hand');
   assert.equal(view.controller.getPreset(), 'table-focus');
   view.controller.setWorkspace('analyze');
   assert.equal(view.controller.getPreset(), 'analysis-focus');
   view.controller.setWorkspace('equity');
-  assert.equal(view.controller.getPreset(), 'controls-first');
+  assert.equal(view.controller.getPreset(), 'balanced');
   assert.deepEqual(JSON.parse(view.storage.getItem(PRESENTATION_LAYOUT_STORAGE_KEY)), {
     hand: 'table-focus',
     analyze: 'analysis-focus',
-    equity: 'controls-first',
   });
 });
 
@@ -176,17 +178,33 @@ test('layout and density remain independent presentation axes', () => {
   assert.equal(compact.root.dataset.layoutPreset, 'table-focus');
 
   compact.root.dataset.density = 'comfortable';
-  compact.buttons['controls-first'].click();
+  compact.buttons.balanced.click();
   assert.equal(compact.root.dataset.density, 'comfortable');
-  assert.equal(compact.root.dataset.layoutPreset, 'controls-first');
-  assert.doesNotMatch(presetCss, /data-density|density-collapse|control-height/);
+  assert.equal(compact.root.dataset.layoutPreset, 'balanced');
+  assert.equal(PRESENTATION_LAYOUT_STORAGE_KEY, 'riverline_presentation_layout');
+  assert.doesNotMatch(fs.readFileSync(new URL('../app/src/application/presentation-layout.mjs', import.meta.url), 'utf8'), /PRESENTATION_DENSITY|density-collapse/);
 });
 
-test('Settings uses the existing presentation bootstrap with localized four-preset UX', () => {
+test('surviving presets have immutable, workspace-specific product jobs', () => {
+  assert.equal(Object.isFrozen(WORKSPACE_LAYOUT_DEFINITIONS), true);
+  for (const [workspace, definitions] of Object.entries(WORKSPACE_LAYOUT_DEFINITIONS)) {
+    assert.equal(Object.isFrozen(definitions), true, `${workspace} definitions are immutable`);
+    assert.deepEqual(definitions.map(({ preset }) => preset), getWorkspaceLayoutPresets(workspace));
+    assert.equal(new Set(definitions.map(({ job }) => job)).size, definitions.length);
+    for (const definition of definitions) {
+      assert.equal(Object.isFrozen(definition), true);
+      assert.ok(definition.job.length >= 40, `${workspace}/${definition.preset} has a precise job`);
+    }
+  }
+  assert.deepEqual(getWorkspaceLayoutDefinitions('unsupported'), WORKSPACE_LAYOUT_DEFINITIONS.home);
+});
+
+test('Settings exposes only the three globally relevant preset labels', () => {
   assert.match(html, /data-layout-preset="balanced"/);
   assert.match(html, /data-layout-preset-field hidden/);
   assert.match(html, /id="layoutPresetControl"[^>]+role="group"/);
-  assert.equal((html.match(/data-layout-preset-option=/g) || []).length, 4);
+  assert.equal((html.match(/data-layout-preset-option=/g) || []).length, 3);
+  assert.doesNotMatch(html, /data-layout-preset-option="controls-first"/);
   assert.match(bootstrap, /createPresentationDensityController/);
   assert.match(bootstrap, /createPresentationLayoutController/);
   assert.match(bootstrap, /storage: window\.localStorage/g);
@@ -202,7 +220,6 @@ test('Settings uses the existing presentation bootstrap with localized four-pres
     'Balanced',
     'Table Focus',
     'Analysis Focus',
-    'Controls First',
   ]) {
     assert.ok((translations.match(new RegExp(`"${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'g')) || []).length >= 2, `${key} is localized`);
   }
@@ -214,21 +231,23 @@ test('Hand and Analyze presets change composition rather than only maximum width
   assert.match(presetCss, /data-layout-preset="table-focus"[^}]*data-product-destination="hand"[^}]*\.playbook-workspace\s*\{[^}]*grid-template-areas:\s*"decision context"/s);
   assert.match(presetCss, /data-layout-preset="table-focus"[^}]*data-product-destination="hand"[^}]*#handStageDock\s*\{\s*order:\s*2/s);
   assert.match(presetCss, /data-layout-preset="table-focus"[^}]*data-product-destination="hand"[^}]*#table-wrapper\s*\{\s*order:\s*4/s);
-  assert.match(presetCss, /data-layout-preset="controls-first"[^}]*data-product-destination="hand"[^}]*\.playbook-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(380px, 420px\) minmax\(0, 1fr\)[^}]*grid-template-areas:\s*"context decision"/s);
-  assert.match(presetCss, /data-layout-preset="controls-first"[^}]*data-product-destination="hand"[^}]*data-hand-stage[^}]*:not\(\[data-hand-stage="setup"\]\)[^}]*\.playbook-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(270px, 300px\) minmax\(0, 1fr\)/s);
-  assert.doesNotMatch(presetCss, /data-layout-preset="controls-first"[^}]*data-product-destination="hand"[^}]*\.hand-setup-grid/s);
   assert.match(presetCss, /data-layout-preset="analysis-focus"[^}]*data-product-destination="analyze"[^}]*\.playbook-workspace\s*\{[^}]*"decision context"\s*"decision support"/s);
   assert.match(presetCss, /data-layout-preset="analysis-focus"[^}]*data-product-destination="analyze"[^}]*\.playbook-support-rail\s*\{[^}]*grid-area:\s*support[^}]*position:\s*static/s);
-  assert.match(presetCss, /data-layout-preset="controls-first"[^}]*data-product-destination="analyze"[^}]*\.playbook-workspace\s*\{[^}]*"context decision"\s*"support decision"/s);
+  assert.doesNotMatch(html, /Controls First/);
   assert.doesNotMatch(presetCss, /playbook[^\n{]*\{[^}]*display:\s*none/s);
 });
 
-test('Training, Personal Strategy, and Equity use meaningful supported compositions', () => {
-  assert.match(presetCss, /data-layout-preset="table-focus"[^}]*\.training-workspace\s*\{[^}]*"decision setup"\s*"decision insight"/s);
-  assert.match(presetCss, /data-layout-preset="controls-first"[^}]*\.training-workspace\s*\{[^}]*"setup decision"\s*"insight decision"/s);
-  assert.match(presetCss, /calibration-personal-column[\s\S]*?order:\s*-1/);
-  assert.match(presetCss, /equity-output-stack[\s\S]*?grid-column:\s*1[\s\S]*?max-width:\s*none/);
-  assert.match(presetCss, /equity-controls-panel[\s\S]*?order:\s*-1/);
+test('Training and Equity use meaningful Balanced compositions without hidden layout variants', () => {
+  assert.doesNotMatch(presetCss, /data-layout-preset="(?:table-focus|controls-first)"[^}]*\.training-workspace/s);
+  assert.match(presetCss, /\.training-workspace\[data-training-full-hand-phase="off"\]\s*\{[^}]*grid-template-columns:\s*repeat\(12, minmax\(0, 1fr\)\)/s);
+  assert.match(presetCss, /training-full-hand-phase="off"[^}]*> :is\(\.training-insight-column, \.training-setup-column\)\s*\{[^}]*display:\s*contents/s);
+  assert.match(presetCss, /#trainingHistoryPanel\s*\{[^}]*grid-column:\s*1 \/ span 4[^}]*grid-row:\s*3/s);
+  assert.match(presetCss, /#trainingSetupPanel\s*\{[^}]*grid-column:\s*9 \/ -1[^}]*grid-row:\s*1/s);
+  assert.match(presetCss, /\.training-session-panel\s*\{[^}]*grid-column:\s*9 \/ -1[^}]*grid-row:\s*2/s);
+  assert.match(presetCss, /data-training-state="feedback"[^}]*#trainingSolution\s*\{[^}]*grid-column:\s*9 \/ -1/s);
+  assert.doesNotMatch(presetCss, /data-layout-preset="(?:table-focus|analysis-focus|controls-first)"[^}]*\.calibration-personal/s);
+  assert.doesNotMatch(presetCss, /data-layout-preset="analysis-focus"[^}]*\.equity-workspace/s);
+  assert.doesNotMatch(presetCss, /data-layout-preset="controls-first"[^}]*\.equity-workspace/s);
 });
 
 test('1024 uses the established safe stack and preset CSS remains RTL-neutral', () => {

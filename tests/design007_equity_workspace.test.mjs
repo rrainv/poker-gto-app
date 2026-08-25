@@ -105,21 +105,23 @@ test('seed is optional, validated as uint32, and forwarded without changing requ
 
 test('results prioritize equity while preserving per-player win and tie detail and order', () => {
   assert.match(equityHtml, /id="headlineEquity"/);
+  assert.doesNotMatch(equityHtml, /id="equityBars"|class="equity-result-card"/);
   assert.doesNotMatch(equityHtml, /id="equitySum"|Total equity/);
   assert.match(equityHtml, /id="equitySplitSummary"/);
   assert.match(equityLogic, /equityResult\.players\.map/);
-  assert.match(equityLogic, /class="equity-result-primary"><span>\$\{t\('Equity'\)\}<\/span>/);
-  assert.match(equityLogic, /<span>\$\{t\('Win'\)\}<\/span><strong class="poker-data-token">\$\{win\}<\/strong>/);
-  assert.match(equityLogic, /<span>\$\{t\('Tie'\)\}<\/span><strong class="poker-data-token">\$\{tie\}<\/strong>/);
-  assert.match(equityLogic, /equityReadOnlyCardsMarkup\(hand, name\)/);
+  assert.match(logic, /function equityPlayerResultMarkup\(player, playerIndex\)/);
+  assert.match(logic, /class="equity-result-primary"><span>\$\{t\('Equity'\)\}<\/span>/);
+  assert.match(logic, /<span>\$\{t\('Win'\)\}<\/span><strong class="poker-data-token">\$\{winValue\}<\/strong>/);
+  assert.match(logic, /<span>\$\{t\('Tie'\)\}<\/span><strong class="poker-data-token">\$\{tieValue\}<\/strong>/);
+  assert.match(logic, /equityPlayerResultMarkup\(player, playerIndex\)/);
   assert.doesNotMatch(equityLogic, /equityTotal|#equitySum/);
-  assert.match(equityLogic, /data-player-series="\$\{index\}"/);
+  assert.match(logic, /data-player-series="\$\{playerIndex\}"/);
 });
 
-test('result context preserves hands, board street, and dead-card presentation', () => {
+test('shared result context stays compact while preserving board street and dead cards', () => {
   assert.match(equityHtml, /id="equityScenarioContext"/);
   assert.match(equityLogic, /0: 'Preflop', 3: 'Flop', 4: 'Turn', 5: 'River'/);
-  assert.match(equityLogic, /request\.players\.map/);
+  assert.match(equityLogic, /request\.players\.length/);
   assert.match(equityLogic, /request\.deadCards\?\.length/);
   assert.match(equityLogic, /training-readonly-card riverline-card/);
 });

@@ -115,14 +115,15 @@ test('recommendations distinguish decision, provenance, metadata, and warnings',
 });
 
 test('Equity uses reusable multiway series while retaining separate win and tie values', () => {
-  assert.match(logic, /data-player-series="\$\{index\}"/);
-  assert.match(logic, /<span>\$\{t\('Win'\)\}<\/span><strong[^>]*>\$\{win\}<\/strong>/);
-  assert.match(logic, /<span>\$\{t\('Tie'\)\}<\/span><strong[^>]*>\$\{tie\}<\/strong>/);
-  assert.match(logic, /aria-valuenow="\$\{ariaValue\}"/);
-  assert.match(visualSystem, /equity-result-card \{ --series-color: var\(--series-0\)/);
+  assert.match(logic, /data-player-series="\$\{playerIndex\}"/);
+  assert.match(logic, /<span>\$\{t\('Win'\)\}<\/span><strong[^>]*>\$\{winValue\}<\/strong>/);
+  assert.match(logic, /<span>\$\{t\('Tie'\)\}<\/span><strong[^>]*>\$\{tieValue\}<\/strong>/);
+  assert.match(logic, /aria-valuenow="\$\{equityWidth\.toFixed\(1\)\}"/);
+  assert.match(visualSystem, /equity-player-card \{\s*--series-color: var\(--series-0\)/);
   for (let index = 1; index < 10; index += 1) {
-    assert.match(visualSystem, new RegExp(`equity-result-card\\[data-player-series="${index}"\\]`));
+    assert.match(visualSystem, new RegExp(`equity-player-card\\[data-player-series="${index}"\\]`));
   }
+  assert.match(logic, /class="equity-player-results" data-result-state="\$\{state\}"/);
   assert.match(html, /id="equitySplitSummary"/);
 });
 

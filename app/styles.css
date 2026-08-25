@@ -4190,8 +4190,6 @@ input[type=range]::-moz-range-thumb {
 
 
 
-.equity-bars { margin-top: 18px; display: grid; gap: 10px }
-
 .equity-row { display: grid; grid-template-columns: 76px 1fr 48px; gap: 8px; align-items: center; font-size: 12px }
 
 .eqbar { height: 9px; border-radius: var(--radius-pill); background: var(--surface-inset); overflow: hidden }
@@ -7570,7 +7568,6 @@ html[data-four-color="false"] {
 .strategy-warning[hidden] { display: none; }
 
 /* Equity and EV: repeatable multiway series, explicit win/tie detail. */
-.equity-bars { display: grid; gap: var(--space-5); }
 .equity-row { grid-template-columns: minmax(112px, 160px) minmax(120px, 1fr) 56px; gap: var(--space-4); }
 .equity-player-label { min-width: 0; display: grid; grid-template-columns: 8px minmax(0, 1fr); column-gap: var(--space-3); align-items: center; }
 .equity-player-label small { grid-column: 2; color: var(--text-muted); font: 600 9px/1.3 var(--font-data); }
@@ -7629,15 +7626,18 @@ html[data-four-color="false"] {
 .table-card-face { fill: var(--riverline-card-face, var(--card-face)); stroke: var(--riverline-card-border, var(--card-border)); stroke-width: 1; filter: url(#riverlineCardShadow); }
 .table-card-rank { font: 700 15px/1 var(--riverline-card-rank-font); fill: currentColor; }
 .table-card-suit { font: 700 13px/1 var(--riverline-card-rank-font); fill: currentColor; }
-.table-card-corner-rank { font: 800 12px/1 var(--riverline-card-rank-font); fill: currentColor; font-variant-numeric: lining-nums tabular-nums; }
-.table-card-corner-suit { font: 800 11px/1 var(--riverline-card-rank-font); fill: currentColor; }
+.table-card-corner-rank { font: 850 15px/1 var(--riverline-card-rank-font); fill: currentColor; font-variant-numeric: lining-nums tabular-nums; }
+.table-card-corner-suit { font: 850 14px/1 var(--riverline-card-rank-font); fill: currentColor; }
 .table-card-center { display: none; }
-.table-card-center-rank { font: 900 23px/1 var(--riverline-card-rank-font); fill: currentColor; font-variant-numeric: lining-nums tabular-nums; }
-.table-card-center-suit { font: 800 16px/1 var(--riverline-card-rank-font); fill: currentColor; }
+.table-card-center-rank { font: 900 25px/1 var(--riverline-card-rank-font); fill: currentColor; font-variant-numeric: lining-nums tabular-nums; }
+.table-card-center-suit { font: 850 24px/1 var(--riverline-card-rank-font); fill: currentColor; }
 .table-card-rank--ten { letter-spacing: normal; }
 .poker-card-svg { overflow: visible; }
 
-.poker-card-svg.card--style-classic .table-card-center { display: none; }
+.poker-card-svg.card--style-classic .table-card-corner--bottom { display: none; }
+.poker-card-svg.card--style-classic .table-card-center { display: block; }
+.poker-card-svg.card--style-classic .table-card-center-rank { display: none; }
+.poker-card-svg.card--style-classic .table-card-center-suit { font-size: 22px; transform: translateY(-4px); }
 .poker-card-svg.card--style-minimal .table-card-corner { display: none; }
 .poker-card-svg.card--style-minimal .table-card-center { display: block; }
 .poker-card-svg.card--style-high-contrast .table-card-corner--bottom { display: none; }
@@ -8645,6 +8645,7 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 
 .equity-player-card {
   --series-color: var(--series-0);
+  display: grid;
   padding: var(--space-4);
   background: var(--surface-inset);
   border: 1px solid var(--border-subtle);
@@ -8733,6 +8734,18 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   font-size: var(--text-micro-size);
 }
 
+.equity-player-results {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+.equity-player-results[data-result-state="pending"] { opacity: .72; }
+.equity-player-results[data-result-state="running"] { color: var(--accent-primary); }
+.equity-player-results .eqbar { height: 6px; overflow: hidden; background: var(--surface-panel); border-radius: var(--radius-pill); }
+.equity-player-results .eqfill { height: 100%; background: var(--series-color); border-radius: inherit; }
+
 .equity-player-card[data-hand-state="incomplete"] .equity-hand-message { color: var(--status-warning); }
 .equity-player-outs { display: none; }
 .equity-player-list > .add-player { width: 100%; min-height: 42px; margin-top: var(--space-1); }
@@ -8803,32 +8816,15 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 .equity-context-row { min-width: 0; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: var(--space-3); align-items: center; }
 .equity-context-row--dead { padding-top: var(--space-3); border-top: 1px solid var(--border-subtle); }
 .equity-readonly-cards { min-width: 0; display: flex; gap: var(--space-2); overflow-x: auto; padding: 2px; direction: ltr; }
-.equity-scenario .training-readonly-card,
-.equity-result-card .training-readonly-card { width: var(--card-size-result-width); height: var(--card-size-result-height); flex-basis: var(--card-size-result-width); }
+.equity-scenario .training-readonly-card { width: var(--card-size-result-width); height: var(--card-size-result-height); flex-basis: var(--card-size-result-width); }
 .equity-context-empty { color: var(--text-muted); font-size: var(--text-micro-size); }
 .equity-result-unknown { min-width: 0; display: flex; align-items: center; gap: var(--space-2); color: var(--text-muted); font-size: var(--text-micro-size); }
 .equity-result-unknown .poker-card-back { width: var(--card-size-result-width); height: var(--card-size-result-height); flex: 0 0 var(--card-size-result-width); }
-.equity-results-panel .equity-bars { padding: var(--space-5); border-block: 1px solid var(--border-subtle); }
-.equity-result-card { --series-color: var(--series-0); display: grid; gap: var(--space-3); padding: var(--space-4); background: var(--surface-inset); border: 1px solid var(--border-subtle); border-inline-start: 3px solid var(--series-color); border-radius: var(--radius-control); }
-.equity-result-card[data-player-series="1"] { --series-color: var(--series-1); }
-.equity-result-card[data-player-series="2"] { --series-color: var(--series-2); }
-.equity-result-card[data-player-series="3"] { --series-color: var(--series-3); }
-.equity-result-card[data-player-series="4"] { --series-color: var(--series-4); }
-.equity-result-card[data-player-series="5"] { --series-color: var(--series-5); }
-.equity-result-card[data-player-series="6"] { --series-color: var(--series-6); }
-.equity-result-card[data-player-series="7"] { --series-color: var(--series-7); }
-.equity-result-card[data-player-series="8"] { --series-color: var(--series-8); }
-.equity-result-card[data-player-series="9"] { --series-color: var(--series-9); }
-.equity-result-player { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
-.equity-result-identity { min-width: 0; display: flex; align-items: center; gap: var(--space-2); }
-.equity-result-identity .series-marker { background: var(--series-color); }
 .equity-result-metrics { display: grid; grid-template-columns: minmax(92px, 1.2fr) repeat(2, minmax(58px, .8fr)); gap: var(--space-2); }
 .equity-result-metrics > div { min-width: 0; display: grid; gap: 2px; padding: var(--space-2) var(--space-3); background: var(--surface-panel); border-radius: var(--radius-control); }
 .equity-result-metrics span { color: var(--text-muted); font-size: var(--text-micro-size); }
 .equity-result-metrics strong { color: var(--text-secondary); font: 750 var(--text-label-size)/1.15 var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .equity-result-metrics .equity-result-primary strong { color: var(--text-primary); font-size: 1.35rem; }
-.equity-result-card .eqbar { height: 6px; overflow: hidden; background: var(--surface-panel); border-radius: var(--radius-pill); }
-.equity-result-card .eqfill { height: 100%; background: var(--series-color); border-radius: inherit; }
 .equity-result-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .equity-result-summary > div { min-width: 0; display: grid; gap: var(--space-1); padding: var(--space-4); }
 .equity-result-summary > div + div { border-inline-start: 1px solid var(--border-subtle); }
@@ -8876,8 +8872,6 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   .equity-results-panel .equity-scenario h3 { margin-bottom: var(--space-2); }
   .equity-results-panel .equity-scenario-context { gap: var(--space-2); padding: var(--space-3); }
   .equity-results-panel .equity-context-street { padding-bottom: var(--space-2); }
-  .equity-results-panel .equity-bars { gap: var(--space-3); padding: var(--space-4); }
-  .equity-results-panel .equity-result-card { gap: var(--space-2); padding: var(--space-3); }
   .equity-results-panel .equity-result-summary > div { padding: var(--space-3) var(--space-4); }
 }
 
@@ -9350,7 +9344,6 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .equity-readiness { margin-top: var(--space-3); margin-inline: var(--space-4); }
 .equity-calculate-row { padding: var(--space-3) var(--space-4) 0; }
 .equity-advanced { margin: var(--space-3) var(--space-4) 0; }
-.equity-results-panel .equity-bars { background: var(--surface-section); }
 
 @media (min-width: 1280px) {
   .equity-input-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
@@ -9541,6 +9534,7 @@ button.rail-utility { width: 100%; cursor: pointer; }
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-panel);
 }
+.hand-review-surface[hidden] { display: none !important; }
 .hand-review-surface h2,
 .hand-review-surface h3,
 .hand-review-surface h4,
@@ -11933,7 +11927,7 @@ body.has-modal-open { overflow: hidden; }
 /* Event-scoped entrances avoid animating computation or large DOM trees. */
 .gto-view.is-view-entering,
 .analysis-panel-content.is-analysis-entering,
-.equity-results-panel[data-result-state="complete"] .equity-result-card {
+.equity-player-results[data-result-state="complete"] {
   animation: riverline-panel-enter var(--motion-standard) var(--ease-standard) both;
 }
 @keyframes riverline-panel-enter {
@@ -11984,7 +11978,7 @@ body.has-modal-open { overflow: hidden; }
   .training-study-hint-content .analysis-study-hint,
   .gto-view.is-view-entering,
   .analysis-panel-content.is-analysis-entering,
-  .equity-results-panel[data-result-state="complete"] .equity-result-card,
+  .equity-player-results[data-result-state="complete"],
   .modal-backdrop.show > .modal { animation: none !important; }
   .replay-timeline .is-replay-motion-current,
   #visual-table-container .table-seat.is-replay-action-motion .table-seat-surface,
@@ -12401,7 +12395,7 @@ body.has-modal-open { overflow: hidden; }
 /* TABLE-PRESENCE-002: adaptive premium Hand presentation. The normalized
    poker canvas remains LTR even when surrounding application chrome is RTL. */
 #visual-table-container {
-  --play-stage-reserve: 460px;
+  --play-stage-reserve: 430px;
   --table-inline-target: 1180px;
   --table-inline-max: 1320px;
   inline-size: min(100%, var(--table-inline-max));
@@ -12411,7 +12405,7 @@ body.has-modal-open { overflow: hidden; }
   direction: ltr;
 }
 
-[data-density="compact"] #visual-table-container { --play-stage-reserve: 410px; }
+[data-density="compact"] #visual-table-container { --play-stage-reserve: 390px; }
 
 #gtoMode[data-product-destination="hand"] .table-wrapper[data-table-projection="play"] #visual-table-container,
 .training-full-hand-table-wrapper[data-table-projection="play"] #visual-table-container {
@@ -12423,7 +12417,7 @@ body.has-modal-open { overflow: hidden; }
   inline-size: min(100%, 980px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
 }
 
-#visual-table-container[data-table-projection="analyze"] { inline-size: min(100%, 760px); }
+#visual-table-container[data-table-projection="analyze"] { inline-size: min(100%, 980px); }
 #visual-table-container[data-table-projection="saved_preview"] { inline-size: min(100%, 520px); }
 
 .riverline-poker-table {
@@ -12951,7 +12945,6 @@ body.has-modal-open { overflow: hidden; }
   .training-decision-panel,
   .training-study-hints,
   .equity-player-card,
-  .equity-result-card,
   .calibration-progress-panel,
   .calibration-teacher-panel,
   .calibration-matrix-inspector
@@ -13108,9 +13101,7 @@ body.has-modal-open { overflow: hidden; }
 @media (min-width: 1320px) {
   /* Hand: Balanced keeps the setup rail beside the stage. Table Focus flips
      that relationship and brings the live facts, legal actions, and table to
-     the start of the primary stage. Controls First gives setup a wider but
-     bounded leading rail, then yields more space to the live stage once play
-     begins. */
+     the start of the primary stage. */
   html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .workspace-frame--wide {
     --workspace-frame-max: var(--workspace-frame-dense);
   }
@@ -13137,96 +13128,11 @@ body.has-modal-open { overflow: hidden; }
   html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .playbook-table-toggle { order: 3; }
   html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] #table-wrapper { order: 4; }
 
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .workspace-frame--wide {
-    --workspace-frame-max: var(--workspace-frame-dense);
-  }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-workspace {
-    grid-template-columns: minmax(380px, 420px) minmax(0, 1fr);
-    grid-template-areas: "context decision";
-  }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-context-rail {
-    grid-area: context;
-    width: 100%;
-  }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-decision-workspace {
-    grid-area: decision;
-    display: flex;
-    flex-direction: column;
-  }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"][data-hand-stage]:not([data-hand-stage="setup"]) .playbook-workspace {
-    grid-template-columns: minmax(270px, 300px) minmax(0, 1fr);
-  }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-decision-workspace > * { order: 20; }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] #handLiveStageHeader { order: 1; }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] #handStageDock:not([hidden]) {
-    order: 2;
-  }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] .playbook-table-toggle {
-    order: 3;
-  }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="hand"] #table-wrapper {
-    order: 4;
-  }
-
-  /* Training: focused presets use a two-column stage/rail topology instead of
-     simply permuting three similarly sized columns. */
-  html[data-layout-preset="table-focus"] .training-workspace {
-    grid-template-columns: minmax(0, 1fr) minmax(250px, 285px);
-    grid-template-areas:
-      "decision setup"
-      "decision insight";
-  }
-  html[data-layout-preset="controls-first"] .training-workspace {
-    grid-template-columns: minmax(310px, 350px) minmax(0, 1fr);
-    grid-template-areas:
-      "setup decision"
-      "insight decision";
-  }
-
-  /* Personal Strategy exposes Analysis Focus only when its Matrix/Teacher
-     surfaces can meaningfully lead the configured workspace. */
-  html[data-layout-preset="analysis-focus"] #calibrationMode .workspace-frame--wide {
-    --workspace-frame-max: var(--workspace-frame-dense);
-  }
-  html[data-layout-preset="analysis-focus"] .range-calibration-workspace:not([data-session-view="questions"]) .calibration-personal-column {
-    order: -1;
-  }
-
-  /* Equity: Analysis Focus gives results a real reading/inspection column.
-     Controls First keeps results visible but promotes method and execution
-     controls ahead of secondary board guidance. */
-  html[data-layout-preset="analysis-focus"] #equityMode .workspace-frame--standard {
-    --workspace-frame-max: var(--workspace-frame-dense);
-  }
-  html[data-layout-preset="analysis-focus"] .equity-workspace {
-    grid-template-columns: minmax(420px, .82fr) minmax(620px, 1.18fr);
-  }
-  html[data-layout-preset="analysis-focus"] .equity-output-stack {
-    grid-column: 1;
-    grid-row: 1;
-    max-width: none;
-    justify-self: stretch;
-  }
-  html[data-layout-preset="analysis-focus"] .equity-input-stack {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  html[data-layout-preset="controls-first"] .equity-workspace {
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 300px);
-  }
-  html[data-layout-preset="controls-first"] .equity-shared-flow .equity-controls-panel {
-    order: -1;
-    border-top: 0;
-    border-bottom: 1px solid var(--border-subtle);
-  }
 }
 
 @media (min-width: 1500px) {
-  /* Analyze uses three genuinely different topologies. Balanced retains
-     context | analysis | action path. Analysis Focus makes analysis the
-     leading spanning stage with both rails stacked opposite. Controls First
-     mirrors that arrangement so configuration leads and analysis stays fully
-     visible on the other side. */
+  /* Analyze keeps one specialized topology. Analysis Focus makes analysis the
+     leading spanning stage with both supporting rails stacked opposite. */
   html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] .workspace-frame--wide {
     --workspace-frame-max: var(--workspace-frame-dense);
   }
@@ -13242,22 +13148,17 @@ body.has-modal-open { overflow: hidden; }
     grid-area: support;
     position: static;
   }
+  html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] #table-wrapper {
+    padding: var(--space-4);
+    background: var(--surface-section);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-panel);
+  }
   html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] #visual-table-container {
-    width: min(100%, 760px);
-    max-width: 760px;
-  }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="analyze"] .playbook-workspace {
-    grid-template-columns: minmax(390px, 430px) minmax(0, 1fr);
-    grid-template-areas:
-      "context decision"
-      "support decision";
-  }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="analyze"] .playbook-context-rail { grid-area: context; }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="analyze"] .playbook-decision-workspace { grid-area: decision; }
-  html[data-layout-preset="controls-first"] #gtoMode[data-product-destination="analyze"] .playbook-support-rail {
-    grid-area: support;
-    position: static;
-    grid-template-columns: minmax(0, 1fr);
+    width: min(100%, 980px);
+    max-width: 980px;
+    margin-inline-start: 0;
+    margin-inline-end: auto;
   }
 }
 
@@ -13287,12 +13188,287 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"] .table-wrappe
   }
   html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] #visual-table-container,
   html[data-layout-preset="table-focus"] .training-full-hand-table-wrapper #visual-table-container {
-    --play-stage-reserve: 280px;
+    --play-stage-reserve: 350px;
   }
 }
 
 @media (min-width: 1600px) {
   .training-action-grid[data-action-count="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* WORKSPACE-COMPOSITION-002 ---------------------------------------------
+   Balanced is the quality baseline. Specialized choices survive only where
+   they materially change the current job; small state-aware rules handle
+   Training and Equity without adding persisted layout variants. */
+
+/* Balanced Hand is state-aware by default: once a Hand is live, the current
+   stage controls precede the large poker canvas. This keeps private-card,
+   action, and completion work in the initial viewport without another preset. */
+@media (min-width: 1101px) {
+  html[data-layout-preset] #gtoMode[data-product-destination="hand"]:not(
+    [data-hand-stage="setup"]
+  ):not([data-hand-stage="replay"]) .playbook-decision-workspace > #handStageDock:not([hidden]) {
+    order: 2;
+  }
+  html[data-layout-preset] #gtoMode[data-product-destination="hand"]:not(
+    [data-hand-stage="setup"]
+  ):not([data-hand-stage="replay"]) .playbook-decision-workspace > #handTimelineStage {
+    order: 3;
+  }
+  html[data-layout-preset] #gtoMode[data-product-destination="hand"]:not(
+    [data-hand-stage="setup"]
+  ):not([data-hand-stage="replay"]) .playbook-decision-workspace > .playbook-table-toggle {
+    order: 4;
+  }
+  html[data-layout-preset] #gtoMode[data-product-destination="hand"]:not(
+    [data-hand-stage="setup"]
+  ):not([data-hand-stage="replay"]) .playbook-decision-workspace > #table-wrapper {
+    order: 5;
+  }
+}
+
+/* Training uses one composition choice and lets its existing state authority
+   decide whether setup, the decision, or feedback is primary. Supporting
+   panels occupy a two-dimensional field instead of one overflowing rail.
+   DOM and keyboard order remain decision -> insight -> setup. */
+@media (min-width: 1101px) {
+  .training-workspace[data-training-full-hand-phase="off"] {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-areas: none;
+  }
+  .training-workspace[data-training-full-hand-phase="off"] > :is(.training-insight-column, .training-setup-column) {
+    display: contents;
+  }
+  .training-workspace[data-training-full-hand-phase="off"] > .training-decision-column {
+    grid-column: 1 / span 8;
+    grid-row: 1 / span 2;
+  }
+  .training-workspace[data-training-full-hand-phase="off"] #trainingHistoryPanel {
+    grid-column: 1 / span 4;
+    grid-row: 3;
+  }
+  .training-workspace[data-training-full-hand-phase="off"] .training-session-panel {
+    grid-column: 9 / -1;
+    grid-row: 2;
+  }
+  .training-workspace[data-training-full-hand-phase="off"] #trainingSetupPanel {
+    grid-column: 9 / -1;
+    grid-row: 1;
+  }
+  .training-workspace[data-training-full-hand-phase="off"] .training-assistance-panel {
+    grid-column: 5 / span 4;
+    grid-row: 3;
+  }
+  .training-workspace[data-training-full-hand-phase="off"] #trainingAdvanced {
+    grid-column: 9 / -1;
+    grid-row: 3;
+  }
+  .training-workspace[data-training-full-hand-phase="off"] #trainingSolution {
+    grid-column: 9 / -1;
+    grid-row: 1;
+  }
+  .training-workspace[data-training-full-hand-phase="off"]:is(
+    [data-training-state="idle"],
+    [data-training-state="generating"],
+    [data-training-state="error"]
+  ) > .training-decision-column {
+    grid-column: 1 / span 8;
+  }
+  .training-workspace[data-training-full-hand-phase="off"]:is(
+    [data-training-state="idle"],
+    [data-training-state="generating"],
+    [data-training-state="error"]
+  ) #trainingSetupPanel {
+    grid-column: 9 / -1;
+    grid-row: 1;
+  }
+  .training-workspace[data-training-full-hand-phase="off"]:is(
+    [data-training-state="idle"],
+    [data-training-state="generating"],
+    [data-training-state="error"]
+  ) .training-session-panel {
+    grid-column: 9 / -1;
+    grid-row: 2;
+  }
+  .training-workspace[data-training-full-hand-phase="off"]:is(
+    [data-training-state="idle"],
+    [data-training-state="generating"],
+    [data-training-state="error"]
+  ) .training-assistance-panel {
+    grid-column: 5 / span 4;
+    grid-row: 3;
+  }
+  .training-workspace[data-training-full-hand-phase="off"]:is(
+    [data-training-state="idle"],
+    [data-training-state="generating"],
+    [data-training-state="error"]
+  ) #trainingAdvanced {
+    grid-column: 9 / -1;
+    grid-row: 4;
+  }
+  .training-workspace[data-training-full-hand-phase="off"][data-training-state="feedback"] > .training-decision-column {
+    grid-column: 1 / span 8;
+  }
+  .training-workspace[data-training-full-hand-phase="off"][data-training-state="feedback"] #trainingSolution {
+    grid-column: 9 / -1;
+  }
+  .training-workspace[data-training-full-hand-phase="off"][data-training-state="feedback"] #trainingSetupPanel {
+    grid-column: 1 / span 4;
+    grid-row: 3;
+  }
+  .training-workspace[data-training-full-hand-phase="off"][data-training-state="feedback"] .training-session-panel {
+    grid-column: 9 / -1;
+    grid-row: 2;
+  }
+  .training-workspace[data-training-full-hand-phase="off"] .training-session-panel > .panel-body {
+    padding: var(--space-4);
+  }
+  .training-workspace[data-training-full-hand-phase="off"] .training-session-panel .training-stat-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .training-workspace[data-training-full-hand-phase="off"] .training-session-panel .training-stat-grid > div {
+    grid-column: auto;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-2);
+  }
+  .training-workspace[data-training-full-hand-phase="off"] .training-session-panel .training-grade-counts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin-block: var(--space-3);
+    padding-top: var(--space-3);
+  }
+  .training-workspace[data-training-full-hand-phase="off"] .training-session-panel .training-grade-counts > span {
+    grid-template-columns: 8px minmax(0, 1fr) auto;
+    gap: var(--space-1);
+    align-content: start;
+    font-size: var(--text-micro-size);
+  }
+  .training-workspace[data-training-full-hand-phase="off"] #trainingResetStats {
+    width: 100%;
+    min-height: 34px;
+  }
+}
+.training-workspace[data-training-full-hand-phase="off"][data-training-state="idle"] .training-state-message {
+  min-block-size: 128px;
+  padding-block: var(--space-5);
+}
+
+/* One grouped context surface replaces six equal-weight boxes. Facing is the
+   spot headline; Position, Stack, and Pot are primary; table size and street
+   remain immediately available as supporting metadata. */
+.training-context-strip {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  background: var(--surface-section);
+  border-color: color-mix(in srgb, var(--accent-primary) 24%, var(--border-subtle));
+}
+.training-context-strip > .training-context-fact {
+  align-content: center;
+  gap: var(--space-2);
+  min-block-size: 66px;
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  border-inline-start: 1px solid var(--border-subtle);
+}
+.training-context-strip > .training-context-fact:first-child { border-inline-start: 0; }
+.training-context-fact--headline {
+  grid-column: span 2;
+  border-inline-start: 3px solid var(--accent-primary) !important;
+  background: color-mix(in srgb, var(--accent-primary) 7%, transparent) !important;
+}
+.training-context-strip .training-context-fact > span {
+  font-weight: 750;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+.training-context-strip .training-context-fact[data-context-priority="headline"] > strong {
+  color: var(--text-primary);
+  font: 850 clamp(.92rem, 1.2vw, 1.08rem)/1.25 var(--font-ui);
+}
+.training-context-strip .training-context-fact[data-context-priority="primary"] > strong {
+  color: var(--text-primary);
+  font-size: max(var(--text-label-size), .8rem);
+  font-weight: 850;
+}
+.training-context-strip .training-context-fact[data-context-priority="secondary"] > strong {
+  color: var(--text-secondary);
+  font-size: var(--text-label-size);
+}
+
+/* Equity keeps one persistent player-tile surface from input through results.
+   The shared result rail stays compact, so completing a calculation does not
+   replace the editable tiles with a second horizontal result dashboard. */
+#equityMode .workspace-frame--standard {
+  --workspace-frame-max: var(--workspace-frame-dense);
+}
+.equity-workspace {
+  width: min(100%, var(--workspace-frame-dense));
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 320px);
+}
+.equity-output-stack {
+  width: 100%;
+  max-width: 320px;
+}
+.equity-player-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.equity-player-list > .add-player { grid-column: 1 / -1; }
+
+@media (min-width: 1280px) {
+  .equity-input-stack {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1500px) {
+  .equity-shared-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .equity-shared-flow .equity-controls-panel {
+    border-top: 0;
+    border-inline-start: 1px solid var(--border-subtle);
+  }
+}
+
+/* Compact tightens rhythm and ordinary controls while explicit readability
+   floors continue to protect cards, critical facts, and primary decisions. */
+[data-density="compact"] {
+  --control-height: 38px;
+  --density-panel-inline: 14px;
+}
+[data-density="compact"] :is(
+  .training-context-strip > .training-context-fact,
+  .hand-action-context > span,
+  .equity-result-metrics > div
+) { padding-block: var(--space-2); }
+[data-density="compact"] .training-context-strip > .training-context-fact { min-block-size: 58px; }
+[data-density="compact"] .training-context-strip .training-context-fact[data-context-priority="headline"] > strong {
+  font-size: max(.875rem, var(--text-body-size));
+}
+[data-density="compact"] .equity-player-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+}
+[data-density="compact"] .equity-player-body { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1500px) {
+  [data-density="compact"] .equity-player-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .training-context-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .training-context-strip > .training-context-fact:nth-child(odd) { border-inline-start: 0; }
+  .training-context-strip > .training-context-fact:nth-child(n + 3) { border-top: 1px solid var(--border-subtle); }
+  .training-context-fact--headline { grid-column: 1 / -1; }
+  .equity-workspace,
+  .equity-workspace[data-equity-state="running"],
+  .equity-workspace[data-equity-state="complete"] { display: flex; flex-direction: column; }
+  .equity-input-stack,
+  .equity-output-stack { width: 100%; max-width: none; }
+}
+
+@media (max-width: 620px) {
+  .training-context-strip { grid-template-columns: minmax(0, 1fr); }
+  .training-context-fact--headline { grid-column: auto; }
+  .training-context-strip > .training-context-fact { border-inline-start: 0; border-top: 1px solid var(--border-subtle); }
+  .training-context-strip > .training-context-fact:first-child { border-top: 0; }
 }
 
 /* WELCOME-INTRO-001 -------------------------------------------------------
