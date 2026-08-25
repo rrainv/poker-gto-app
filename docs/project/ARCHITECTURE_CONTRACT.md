@@ -179,6 +179,23 @@ trusted cards / DecisionContext / optional HoldemWeightedRange v1
 
 `RangeAnalysisFacts v1` reuses the canonical evaluator and range core. It may classify exact hands, draws, board structure, raw exact-card removal, and the conditioned composition of explicitly supplied ranges. It must not select actions, call StrategyProvider or Equity, infer a missing range, claim range/nut advantage, or label a blocker as strategically good or bad. `AnalysisExplanation v1` consumes these facts; it does not recompute them. See `ANALYSIS_RANGE_SPEC.md`.
 
+### 10.1 Natural-language projection boundary
+
+Natural-language consumers are presentation and synthesis only. They never become poker, legality, accounting, strategy, Equity, range, opponent-model, Personal Strategy, or Training-grading authority.
+
+The permitted direction is:
+
+```text
+canonical state and evidence
+        -> approved structured factual analysis
+        -> role-separated reference / Personal / observed / opponent evidence
+        -> provenance and uncertainty
+        -> structured explanation model
+        -> user-facing facts, explanation, or synthesis
+```
+
+There is no permitted `cards -> language model guesses poker -> plausible advice` path. Missing or unsupported evidence remains unknown or unavailable. A language model or other narrative component may summarize only the approved structured facts and claims supplied to it, and its output must retain the relevant evidence roles, source/version identity, and uncertainty.
+
 ## 11. Performance contract
 
 Preserve PERF-001 guarantees:

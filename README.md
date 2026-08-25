@@ -22,7 +22,7 @@ For pricing, `facingSizeBb` is the nominal wager-to context. The trusted increme
 
 ## Current direction
 
-The accepted table, Full Hand Review, and audio/motion checkpoints are followed by documentation reconciliation and a focused visible-product sequence: regression repair, first-use orientation, workspace composition, table physicality, Home Game continuation, Settings information architecture, and premium closeout. Trusted reference strategy and learning-intelligence work then resume. [Current phase](docs/project/CURRENT_PHASE.md) owns exact execution order.
+The one-time capability-documentation recovery is complete. Table physicality is active next, followed by Home Game continuation, Settings information architecture, and premium closeout. Trusted reference strategy and learning-intelligence work then resume without changing their preserved order. [Current phase](docs/project/CURRENT_PHASE.md) owns exact execution order; the [capability dossiers](docs/project/capabilities/README.md) preserve detailed long-term intent without setting priority.
 
 ## Run Riverline
 

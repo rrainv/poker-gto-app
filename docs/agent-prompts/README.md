@@ -16,7 +16,7 @@ Use these files to keep ticket prompts concise and consistent.
 |---|---|
 | UI/UX/Product repair | `../project/QA_BACKLOG.md`, `../project/PRODUCT_RETURN_QUEUE.md`, `../project/PRODUCT_SPEC.md`, `UI_STABILIZATION_PROMPT.md` |
 | New product feature | `../project/PRODUCT_BACKLOG.md`, relevant subsystem spec |
-| Poker rules/Equity | `../project/POKER_ENGINE_SPEC.md`, `../project/QA_AND_REGRESSION_SPEC.md` |
+| Poker rules/Equity | `../project/GAME_RULES_V1_SPEC.md`, `../project/ARCHITECTURE_CONTRACT.md`, `../project/QA_AND_REGRESSION_SPEC.md` |
 | Strategy/fallback/reference authority | `../project/STRATEGY_SOURCE_AUTHORITY_SPEC.md`, calibration docs |
 | Solver research | `PRELFLOP_SOLVER_DESIGN.md`, `../solver/` specifications |
 | Model work | `PREFLOP_MODEL_PROMPT.md`; only after validated data exists |
@@ -59,6 +59,7 @@ Update:
 - `QA_BACKLOG.md` when an issue is reported, regresses, closes, or changes owner
 - `PRODUCT_RETURN_QUEUE.md` when accepted checkpoint debt or material incomplete acceptance changes
 - `PRODUCT_BACKLOG.md` when a future capability is accepted or reprioritized
+- the owning `../project/capabilities/` dossier when durable long-term intent or a recovered microfeature changes
 - `CURRENT_REPO_AUDIT.md` after major architecture changes
 - `ROADMAP.md` when directional sequencing changes, not after a tiny patch with no product-state change
 

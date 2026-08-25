@@ -1,6 +1,6 @@
 # Riverline Product and UI Specification
 
-Last refreshed: August 24, 2026 (`DOCS-INTEGRITY-001`).
+Last refreshed: August 25, 2026 (`DOCS-CAPABILITY-DOSSIERS-001`).
 
 ## 1. Product principle
 
@@ -58,6 +58,22 @@ A visible composition may fail acceptance despite technically valid geometry whe
 - a layout preset that is materially worse than the default.
 
 Whitespace must express hierarchy, not merely consume canvas. Density must materially change useful information rhythm or be simplified. A named layout preset must materially improve its named task.
+
+### 5.1 Progressive explanation depth
+
+Where a surface supports explanation, use one coherent depth model:
+
+- **Facts:** dense structured facts, statistics, provenance, and uncertainty for direct inspection.
+- **Explain:** concise, supported interpretation of what matters and why.
+- **Coach / Summary:** cross-decision, cross-session, cross-range, or cross-profile synthesis only when enough structured evidence exists.
+
+Advanced users may prefer a facts-only presentation. Natural-language explanation must not become mandatory filler, hide the underlying statistic, or imply evidence that the source does not supply. Changing depth changes presentation, never poker, strategy, Equity, range, opponent-model, or grading truth.
+
+### 5.2 Shared interaction integrity
+
+A reusable semantic feature has one semantic owner and one interaction language across every surface where it meaningfully applies. Each surface classifies the feature as applicable, intentionally deferred with an owner, or not applicable with a reason; consistency does not mean placing every feature everywhere.
+
+Hover/focus inspection, hypothetical states, Save/bookmark, Randomize/Lock, card identity, Facts/Explain/Coach, provenance/uncertainty, unknown/unavailable, and expandable detail follow the [Interaction Grammar](INTERACTION_GRAMMAR.md). Consumers may adapt composition to their job but must not redefine the concept or reimplement poker mathematics.
 
 ## 6. Durable visible-product invariants
 

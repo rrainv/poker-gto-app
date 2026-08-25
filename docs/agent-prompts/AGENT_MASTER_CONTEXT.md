@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 25, 2026 (`WORKSPACE-COMPOSITION-002` accepted as an implementation checkpoint with known composition debt; `DOCS-CAPABILITY-DOSSIERS-001` is active next).
+Last refreshed: August 25, 2026 (`DOCS-CAPABILITY-DOSSIERS-001` completed as the accepted documentation-architecture checkpoint; `TABLE-PHYSICALITY-003` is active next).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -53,22 +53,21 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 
 ## Current execution snapshot
 
-`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, and `WORKSPACE-COMPOSITION-002` are completed/accepted checkpoints. The directional order is:
+`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, `WORKSPACE-COMPOSITION-002`, and `DOCS-CAPABILITY-DOSSIERS-001` are completed/accepted checkpoints. Detailed future intent now lives in `../project/capabilities/`; status remains in `PRODUCT_BACKLOG.md`. The directional order is:
 
-1. **ACTIVE NEXT — `DOCS-CAPABILITY-DOSSIERS-001`** — bounded documentation-architecture migration in a new ticket; no dossier work belongs to the accepted composition checkpoint.
-2. **PLANNED NEXT — `TABLE-PHYSICALITY-003`**
-3. `HOME-GAME-001B`
-4. `SETTINGS-IA-001`
-5. `PREMIUM-CLOSEOUT-001`
-6. first trusted bounded reference pack/provider
-7. Training Memory / re-drill
-8. `PERSONAL-STRATEGY-002R`
-9. Personal Strategy provider/reference/observed integration
-10. `PERSONAL-INSIGHTS-001`
-11. `RANGE-EVOLUTION-001`
-12. `HOME-002B` Saved Study Library
-13. OpponentPolicy / bots
-14. release/mobile/social/PLO later
+1. **ACTIVE NEXT — `TABLE-PHYSICALITY-003`**
+2. `HOME-GAME-001B`
+3. `SETTINGS-IA-001`
+4. `PREMIUM-CLOSEOUT-001`
+5. first trusted bounded reference pack/provider
+6. Training Memory / re-drill
+7. `PERSONAL-STRATEGY-002R`
+8. Personal Strategy provider/reference/observed integration
+9. `PERSONAL-INSIGHTS-001`
+10. `RANGE-EVOLUTION-001`
+11. `HOME-002B` Saved Study Library
+12. OpponentPolicy / bots
+13. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
@@ -81,7 +80,7 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - Saved Hand/Spot and `HOME-002A` exist; the full `HOME-002B` library does not.
 - Home Game `001A` exists; its immediate Create Game routing blocker is repaired, while `001B` still owns management continuation.
 - Workspace composition is accepted as a useful implementation checkpoint, not a visual-polish closeout: Training support distribution/Session Progress, bounded left-anchored Equity allocation, surviving specialized-layout polish, and independent known-card suit verification remain `RET-COMPOSITION-002` debt.
-- Table/Review/audio architecture is checkpointed; deeper physicality remains `TABLE-PHYSICALITY-003` after the documentation detour, and independent Full Hand visual acceptance remains open in QA and the Return Queue.
+- Table/Review/audio architecture is checkpointed; deeper physicality is now active next as `TABLE-PHYSICALITY-003` after the completed documentation detour, and independent Full Hand visual acceptance remains open in QA and the Return Queue.
 
 ## Deliberately retired
 

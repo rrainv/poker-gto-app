@@ -30,6 +30,21 @@ A ticket is complete only when all applicable items are satisfied.
 - no-overlap and responsive-geometry checks cannot close hierarchy, balance, legibility, density, or aesthetic acceptance alone
 - human/real-browser acceptance remains required wherever visual judgment matters
 - when browser/manual QA is unavailable, status is `UNVERIFIED`, `PARTIAL`, or `STRUCTURAL ONLY`
+- reusable semantic interactions follow `INTERACTION_GRAMMAR.md`, including keyboard/pointer equivalence and truthful hypothetical, unknown, unavailable, provenance, and uncertainty states where applicable
+
+## Human acceptance and correction loops
+
+Repeated human rejection can reveal a product-concept problem rather than another isolated implementation defect.
+
+After approximately two rejections for the same underlying reason, explicitly reassess before another correction pass. Consider whether to simplify, remove a weak option, merge concepts, change the concept, split the true root cause, or accept a useful checkpoint with explicit Return Queue debt. This is a reassessment trigger, not a hard maximum on correction passes.
+
+Report acceptance at the correct level:
+
+- **Foundation acceptance:** architecture, correctness, or a reusable seam is useful.
+- **Product acceptance:** the core interaction is genuinely useful to the user.
+- **Polish debt:** the direction is worth preserving, but remaining refinement should not keep a bounded ticket open forever.
+
+Foundation acceptance alone must not be reported as product acceptance. Accepted polish debt remains owned by `PRODUCT_RETURN_QUEUE.md` and, where issue-level evidence is required, `QA_BACKLOG.md`.
 
 ## Localization
 

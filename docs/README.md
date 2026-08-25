@@ -18,6 +18,14 @@ Executable code and passing tests are final implementation truth. Documentation 
 - [Architecture contract](project/ARCHITECTURE_CONTRACT.md)
 - [Definition of done](project/DEFINITION_OF_DONE.md)
 - [Git workflow](project/GIT_WORKFLOW.md)
+- [Cross-surface interaction grammar](project/INTERACTION_GRAMMAR.md)
+
+## Long-term capability intent
+
+- [Capability dossier index](project/capabilities/README.md)
+- [Legacy and recovered capability ID index](project/capabilities/LEGACY_ID_INDEX.md)
+
+Capability dossiers preserve detailed long-term intent and recovered microfeatures. They do not own capability status, execution sequence, current implementation truth, QA, or checkpoint debt.
 
 ## Dated repository evidence
 

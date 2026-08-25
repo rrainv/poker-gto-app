@@ -1,6 +1,6 @@
 # Riverline Project Charter
 
-Last refreshed: August 24, 2026 (`DOCS-INTEGRITY-001`).
+Last refreshed: August 25, 2026 (`DOCS-CAPABILITY-DOSSIERS-001`).
 
 ## 1. Product
 
@@ -32,6 +32,8 @@ Primary current product areas include:
 - thin Electron desktop wrapper.
 
 The product should feel like a serious, coherent analytical poker workstation. Premium means calm, fast, deliberate, readable, and state-aware, not visually excessive or casino-like.
+
+Riverline's intended differentiation is the combination of broad poker study tooling, deeply integrated evidence-grounded explanation, and personal learning continuity. Explanation connects trustworthy facts across the user's work; it does not replace poker or strategy authority.
 
 ## 2. Product experience principle
 
