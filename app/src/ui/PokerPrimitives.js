@@ -7,8 +7,8 @@
   });
 
   const TABLE_AMOUNT_SIZES = Object.freeze({
-    small: Object.freeze({ stackTransform: 'translate(-37 -10) scale(1)', textX: -8, textY: 4 }),
-    normal: Object.freeze({ stackTransform: 'translate(-50 -12) scale(1.2)', textX: -17, textY: 5 }),
+    small: Object.freeze({ stackTransform: 'translate(-37 -10) scale(1)', textX: -8, textY: 4, surfaceX: -43, surfaceY: -13, surfaceWidth: 89, surfaceHeight: 25 }),
+    normal: Object.freeze({ stackTransform: 'translate(-50 -12) scale(1.2)', textX: -17, textY: 5, surfaceX: -58, surfaceY: -17, surfaceWidth: 128, surfaceHeight: 33 }),
   });
 
   function escapeMarkup(value) {
@@ -51,13 +51,20 @@
       </svg>`;
   }
 
-  function pokerChipStackSvg({ className = '', transform = '' } = {}) {
-    const classes = `poker-chip-stack${className ? ` ${className}` : ''}`;
+  function pokerChipStackSvg({ className = '', transform = '', variant = 'pair' } = {}) {
+    const supportedVariant = ['pair', 'remaining', 'pot'].includes(variant) ? variant : 'pair';
+    const classes = `poker-chip-stack poker-chip-stack--${supportedVariant}${className ? ` ${className}` : ''}`;
     const transformAttribute = transform ? ` transform="${escapeMarkup(transform)}"` : '';
+    const extraChips = supportedVariant === 'pot'
+      ? `${pokerChipVisualSvg({ className: 'poker-chip-stack-side', transform: 'translate(10 4)' })}${pokerChipVisualSvg({ className: 'poker-chip-stack-top', transform: 'translate(5 -4)' })}`
+      : (supportedVariant === 'remaining'
+        ? pokerChipVisualSvg({ className: 'poker-chip-stack-top', transform: 'translate(2 -4)' })
+        : '');
     return `
       <g class="${escapeMarkup(classes)}"${transformAttribute} aria-hidden="true">
         ${pokerChipVisualSvg({ className: 'poker-chip-stack-back', transform: 'translate(0 3)' })}
         ${pokerChipVisualSvg({ className: 'poker-chip-stack-front', transform: 'translate(5 0)' })}
+        ${extraChips}
       </g>`;
   }
 
@@ -72,6 +79,7 @@
     unit = 'bb',
     ariaLabel = '',
     ariaHidden = false,
+    chipStyle = 'glyph',
   } = {}) {
     const resolvedSize = supportedSize(size);
     const layout = AMOUNT_SIZES[resolvedSize];
@@ -82,10 +90,13 @@
     const idAttribute = id ? ` id="${escapeMarkup(id)}"` : '';
     const prefixText = prefix ? `${escapeMarkup(prefix)} ` : '';
     const unitText = unit ? ` ${escapeMarkup(unit)}` : '';
+    const chipMarkup = chipStyle === 'stack'
+      ? pokerChipStackSvg({ variant: 'remaining', transform: resolvedSize === 'small' ? 'translate(2 1) scale(.64)' : 'translate(5 2) scale(.82)' })
+      : pokerChipGlyphSvg({ size: resolvedSize, x: layout.chipX, y: layout.chipY });
 
     return `
       <svg${idAttribute} class="${escapeMarkup(classes)}" data-poker-amount-size="${resolvedSize}" dir="ltr" x="${escapeMarkup(x)}" y="${escapeMarkup(y)}" width="${layout.width}" height="${layout.height}" viewBox="0 0 ${layout.width} ${layout.height}"${accessibility}>
-        ${pokerChipGlyphSvg({ size: resolvedSize, x: layout.chipX, y: layout.chipY })}
+        ${chipMarkup}
         <text class="poker-amount-text" x="${layout.textX}" y="${layout.textY}" text-anchor="start"><tspan class="poker-amount-prefix">${prefixText}</tspan><tspan class="poker-amount-value">${escapeMarkup(value)}</tspan><tspan class="poker-amount-unit">${unitText}</tspan></text>
       </svg>`;
   }
@@ -102,10 +113,12 @@
     ariaLabel = '',
     ariaHidden = false,
     hidden = false,
+    visualVariant = 'contribution',
   } = {}) {
     const resolvedSize = supportedSize(size);
     const layout = TABLE_AMOUNT_SIZES[resolvedSize];
-    const classes = `poker-table-amount poker-table-amount--${resolvedSize}${className ? ` ${className}` : ''}`;
+    const resolvedVariant = visualVariant === 'pot' ? 'pot' : 'contribution';
+    const classes = `poker-table-amount poker-table-amount--${resolvedSize} poker-table-amount--${resolvedVariant}${className ? ` ${className}` : ''}`;
     const accessibility = ariaHidden
       ? ' aria-hidden="true"'
       : (ariaLabel ? ` role="group" aria-label="${escapeMarkup(ariaLabel)}"` : '');
@@ -116,7 +129,8 @@
 
     return `
       <g${idAttribute} class="${escapeMarkup(classes)}" data-poker-amount-size="${resolvedSize}" dir="ltr" transform="translate(${escapeMarkup(x)} ${escapeMarkup(y)})"${accessibility}${hiddenAttribute}>
-        ${pokerChipStackSvg({ className: 'poker-table-amount-chip-stack', transform: layout.stackTransform })}
+        <rect class="poker-table-amount-surface" x="${layout.surfaceX}" y="${layout.surfaceY}" width="${layout.surfaceWidth}" height="${layout.surfaceHeight}" rx="${layout.surfaceHeight / 2}" aria-hidden="true" />
+        ${pokerChipStackSvg({ className: 'poker-table-amount-chip-stack', transform: layout.stackTransform, variant: resolvedVariant === 'pot' ? 'pot' : 'pair' })}
         <text class="poker-table-amount-text poker-amount-text" x="${layout.textX}" y="${layout.textY}" text-anchor="start"><tspan class="poker-amount-prefix">${prefixText}</tspan><tspan class="poker-amount-value">${escapeMarkup(value)}</tspan><tspan class="poker-amount-unit">${unitText}</tspan></text>
       </g>`;
   }

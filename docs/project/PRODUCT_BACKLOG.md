@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 25, 2026 (`DOCS-CAPABILITY-DOSSIERS-001` completed; `TABLE-PHYSICALITY-003` is active next).
+Last consolidated: August 26, 2026 (`TABLE-PHYSICALITY-003` completed as an accepted implementation checkpoint with explicit presentation debt; `HOME-GAME-001B` is active next).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -29,19 +29,19 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | checkpoint | COMPLETED | `DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001` |
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN DEBT | `WORKSPACE-COMPOSITION-002` |
 | checkpoint | COMPLETED / ACCEPTED DOCUMENTATION ARCHITECTURE CHECKPOINT | `DOCS-CAPABILITY-DOSSIERS-001` |
-| 1 | ACTIVE NEXT | `TABLE-PHYSICALITY-003` |
-| 2 | PLANNED NEXT | `HOME-GAME-001B` |
-| 3 | PLANNED NEXT | `SETTINGS-IA-001` |
-| 4 | PLANNED NEXT | `PREMIUM-CLOSEOUT-001` |
-| 5 | PLANNED NEXT | first trusted bounded reference pack/provider |
-| 6 | PLANNED NEXT | Training Memory / re-drill |
-| 7 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
-| 8 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
-| 9 | PLANNED LATER | `PERSONAL-INSIGHTS-001` |
-| 10 | PLANNED LATER | `RANGE-EVOLUTION-001` |
-| 11 | PLANNED LATER | `HOME-002B` Saved Study Library |
-| 12 | PRESERVED FUTURE | OpponentPolicy / bots |
-| 13 | PRESERVED FUTURE | release/mobile/social/PLO later |
+| checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT | `TABLE-PHYSICALITY-003` |
+| 1 | ACTIVE NEXT | `HOME-GAME-001B` |
+| 2 | PLANNED NEXT | `SETTINGS-IA-001` |
+| 3 | PLANNED NEXT | `PREMIUM-CLOSEOUT-001` |
+| 4 | PLANNED NEXT | first trusted bounded reference pack/provider |
+| 5 | PLANNED NEXT | Training Memory / re-drill |
+| 6 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
+| 7 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
+| 8 | PLANNED LATER | `PERSONAL-INSIGHTS-001` |
+| 9 | PLANNED LATER | `RANGE-EVOLUTION-001` |
+| 10 | PLANNED LATER | `HOME-002B` Saved Study Library |
+| 11 | PRESERVED FUTURE | OpponentPolicy / bots |
+| 12 | PRESERVED FUTURE | release/mobile/social/PLO later |
 
 Documented Equity, bluff, opponent, natural-language, Home Game, sharing, and randomization depth remains in its existing status; the dossier migration does not pull it forward.
 
@@ -61,7 +61,7 @@ Known limitations remain explicit: no validated general reference, coarse postfl
 | Capability | Status | Accepted scope |
 |---|---|---|
 | canonical Hand, Table Presence, Replay, and shared Full Hand Review | COMPLETED FOUNDATION | Legal Hand history, deterministic read-only Replay, `table-presentation/v1`, `hand-review/v1`, Hero decisions, pre-action frames, source-gated comparison, provenance, Analyze/Save/Repeat/Next continuity. |
-| deeper evidence-rich Hand Review | PRESERVED FUTURE / dependency-gated | Street-by-street Equity/hand/range/reference/Personal/observed/opponent evidence and supported synthesis without another history or grader. See [Deep Hand Review](capabilities/DEEP_HAND_REVIEW.md). |
+| deeper evidence-rich Hand Review | PRESERVED FUTURE / dependency-gated | Street-by-street Equity/hand/range/reference/Personal/observed/opponent evidence and supported synthesis without another history or grader. Chronology/navigation orientation remains an explicit Riverline product-fit question, not a permanently accepted horizontal pattern. See [Deep Hand Review](capabilities/DEEP_HAND_REVIEW.md). |
 
 Independent visual/interaction acceptance remains in QA and the Return Queue; implementation checkpoints are not visual sign-off.
 
@@ -135,7 +135,7 @@ Authentication never silently enables upload; Riverline remains useful offline.
 |---|---|---|
 | `HOME-GAME-001A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Separate players/groups/sessions, exact integer money, append-only corrections, chips separate from money, lifecycle/reopen, balance rejection, deterministic settlement, account IndexedDB/Guest memory. |
 | Create Game routing blocker | COMPLETED | Creation stays in Home Game and opens the intended active session. |
-| `HOME-GAME-001B` | PLANNED NEXT | Player reuse/edit/archive, visible correction history, session/group management, archive/delete confirmation, import/export decision, and Firefox acceptance. |
+| `HOME-GAME-001B` | ACTIVE NEXT | Player reuse/edit/archive, visible correction history, session/group management, archive/delete confirmation, import/export decision, and Firefox acceptance. |
 | settlement/history/Hand-link/mobile evolution | PRESERVED FUTURE / decisions open | Fewest Transfers vs Banker/preferred banker, payment tracking, recurring games, stable Hand linkage, reconciliation, and later sharing. See [Home Game Evolution](capabilities/HOME_GAME_EVOLUTION.md). |
 
 The current settlement algorithm is deterministic; it is not a selected Fewest Transfers or Banker product preference.
@@ -147,7 +147,7 @@ The current settlement algorithm is deterministic; it is not a selected Fewest T
 | `UX-REGRESSION-001` and `WELCOME-INTRO-001` | COMPLETED | Repaired owned functional/semantic/legibility regressions and established versioned first-use orientation with human acceptance. |
 | `WORKSPACE-COMPOSITION-002` | COMPLETED / ACCEPTED CHECKPOINT WITH KNOWN DEBT | Stronger state-aware composition; Controls First and ineffective density selector removed; only useful specialized presets survive; debt remains `RET-COMPOSITION-002`. |
 | `DOCS-CAPABILITY-DOSSIERS-001` | COMPLETED / ACCEPTED DOCUMENTATION ARCHITECTURE CHECKPOINT | Durable dossier layer, Legacy ID Index, Interaction Grammar, recovered intent, anti-loop governance, and concise live planning; no runtime feature work. |
-| `TABLE-PHYSICALITY-003` | ACTIVE NEXT | Improve the default table/felt/rail/seat/card/chip/contribution/pot/readability composition without casino spectacle. |
+| `TABLE-PHYSICALITY-003` | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT | Human acceptance passed table scale, HU/normal Hand composition, felt/rail coherence, Hero-card readability, and contribution-to-pot presentation as sufficient to move on. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt; no perfect-polish claim is made. |
 | `SETTINGS-IA-001` | PLANNED NEXT | Simplify Settings concerns and help/tutorial discovery. |
 | `PREMIUM-CLOSEOUT-001` | PLANNED NEXT | Whole-app hierarchy/Core Flow, Guide, desktop, themes/cards, EN/RU/HE/RTL, accessibility, and human visual closeout. |
 | evidence-grounded natural-language intelligence | PRESERVED FUTURE / first concrete slice `PERSONAL-INSIGHTS-001` | Facts / Explain / Coach depth over approved structured evidence, with facts-only use always available. See [Natural-Language Intelligence](capabilities/NATURAL_LANGUAGE_INTELLIGENCE.md). |

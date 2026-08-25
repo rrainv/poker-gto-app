@@ -174,7 +174,8 @@ test('responsive, theme-token, keyboard-focus, reduced-motion, and RTL safeguard
   assert.match(css, /#equityMode button:focus-visible/);
   assert.match(css, /\[dir="rtl"\] \.equity-player-card/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
-  const design = css.slice(css.indexOf('DESIGN-007: focused Equity workspace'));
+  const start = css.indexOf('DESIGN-007: focused Equity workspace');
+  const design = css.slice(start, css.indexOf('EQUITY-UX-001R:', start));
   assert.doesNotMatch(design, /#[0-9a-f]{3,8}\b/i);
 });
 

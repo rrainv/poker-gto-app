@@ -85,7 +85,7 @@ test('Daylight and Midnight tables keep the semantic felt-driven token grammar',
 
 test('table physicality and card, chip, seat, dealer, and contribution hooks are readable', () => {
   assert.match(table, /class="table-rail table-rail--outer" x="90" y="98" width="820" height="416" rx="208" ry="208"/);
-  assert.match(table, /class="table-surface" x="114" y="122" width="772" height="368" rx="184" ry="184"/);
+  assert.match(table, /class="table-surface" x="120" y="128" width="760" height="356" rx="178" ry="178"/);
   assert.match(table, /class="table-betting-line" x="146" y="154" width="708" height="304" rx="152" ry="152"/);
   assert.match(table, /class="table-shadow-effect" dx="0" dy="7" stdDeviation="8" flood-opacity="0\.28"/);
   for (const hook of ['table-seat', 'table-hole-cards', 'table-contribution', 'table-pot', 'table-dealer-button']) {

@@ -100,7 +100,7 @@ The review projection should request only the evidence needed for the visible de
 
 ## Preserved interactions and microfeatures
 
-- One compact Hero-decision navigator linked to direct pre-action Replay seeking.
+- One compact Hero-decision navigator linked to direct pre-action Replay seeking. Its orientation is deliberately open: current horizontal Action Path/timeline and a vertical chronological navigator must be compared for Riverline's actual workspace rather than treating competitive inspiration as permanent acceptance.
 - Previous/next decision, street jumps, Replay playback, and selected-event context without duplicate cursors.
 - Clearly mark observed action and source's highest-frequency action while retaining full supported mixes.
 - Expand provenance, coverage, precision, and limitations without overwhelming the first layer.
@@ -130,7 +130,7 @@ The review projection should request only the evidence needed for the visible de
 - **Explain:** concise account of why the selected decision is interesting within its source/reference frame.
 - **Coach / Summary:** supported cross-street or whole-hand synthesis, recurring-pattern link, and next study action only when enough evidence exists.
 
-The table remains supporting context while the timeline/decision navigator and comparison lead Review. Users can remain in facts-only mode and avoid narrative entirely.
+The table remains supporting context while the timeline/decision navigator and comparison lead Review. That hierarchy does not require a horizontal navigator: a future product-design pass must compare horizontal and vertical chronology for scanability, street grouping, current-action visibility, Replay seek usability, space efficiency, long-hand behavior, 1080p desktop, EN/RU/HE, RTL, and keyboard access. Users can remain in facts-only mode and avoid narrative entirely.
 
 ## Dependencies
 
@@ -162,7 +162,7 @@ These are possible future boundaries, not roadmap priority:
 
 The existing [Table Presence competitive reference](../TABLE_PRESENCE_COMPETITIVE_REFERENCE.md) is the approved evidence base. It records these durable decisions:
 
-- **ADOPT:** chronological decision-by-decision review, an obvious optional Review transition, compact decision navigator, and direct Replay movement.
+- **ADOPT:** chronological decision-by-decision review, an obvious optional Review transition, compact decision navigation, and direct Replay movement. This adopts the user job and semantics, not the current navigator orientation.
 - **ADAPT:** use Riverline's immutable Hero journal and pre-action Replay convention; treat strongest source disagreement as review priority only; keep table as context rather than the learning hierarchy.
 - **DIFFERENTIATE:** remain useful when a source is unavailable/generalized, retain compact provenance/limitations, and reuse one Review for Hand and Full-Hand Training.
 - **REJECT:** unsupported solver scores, objective mistake language, exploitability/EV-loss theater, or duplicate state/timeline/Analysis/Saved authorities.
@@ -184,6 +184,7 @@ No new competitive research was performed for this dossier.
 
 ## Open product questions
 
+- Should Riverline retain the current horizontal Action Path/timeline or return to a vertical chronological navigator? Compare scanability, street grouping, decision navigation, current-action visibility, direct Replay seeking, space efficiency, long-hand behavior, 1080p desktop, Hand Review/Deep Hand Review fit, EN/RU/HE, RTL, and keyboard access while preserving one canonical Replay cursor.
 - What transparent rule identifies a turning point without implying EV importance?
 - Which analysis layers should load by default versus only on request?
 - Should historical Review freeze selected strategy results, or compare the recorded decision with the current selected source by default?
@@ -212,4 +213,3 @@ No new competitive research was performed for this dossier.
 - [Personal Strategy Intelligence](PERSONAL_STRATEGY_INTELLIGENCE.md)
 - [Range Evolution](RANGE_EVOLUTION.md)
 - [Saved Knowledge and Sharing](SAVED_KNOWLEDGE_AND_SHARING.md)
-

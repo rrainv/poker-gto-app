@@ -32,9 +32,9 @@ Durable Save uses the `SavedStudyObject` application authority and the shared ac
 
 `Lock` means preserve that exact known component while a requested randomization changes only unlocked components. Randomization respects canonical card identity, exclusions, visibility, and legality. A consumer cannot interpret Lock as persistence, Saved state, or a strategy constraint.
 
-### Card identity
+### Card identity and inspectability
 
-Known cards retain one rank-plus-suit identity across DOM cards, SVG cards, text, previews, themes, 2/4-color choices, `T`/`10`, localization, and RTL. Internal IDs may travel through contracts but should not normally be raw user-facing prose.
+Known cards retain one rank-plus-suit identity across DOM cards, SVG cards, text, previews, themes, 2/4-color choices, `T`/`10`, localization, and RTL. When a private card is legitimately known or revealed, its full rank+suit identity remains comfortably inspectable and is not substantially covered by seat panels, action treatments, card cradles, or other local chrome. Equivalent known-card consumers preserve that inspection floor while adapting composition to their surface. Hidden private cards remain hidden; presentation debt never weakens privacy. Internal IDs may travel through contracts but should not normally be raw user-facing prose.
 
 ### Facts, Explain, and Coach / Summary
 

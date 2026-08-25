@@ -176,6 +176,13 @@ test('dealer, contribution, board, and pot presentation retain canonical mapping
   assert.equal(presentation.seats.filter((seat) => seat.dealer).length, 1);
   assert.equal(presentation.seats.find((seat) => seat.dealer).canonicalSeat, 7);
   assert.equal(presentation.geometry.potAnchor.y, 0.43);
+  assert.deepEqual(presentation.geometry.physicality, {
+    baseDepth: 12,
+    railInnerInset: 9,
+    cushionInset: 20,
+    feltInset: 30,
+    bettingLineInset: 52,
+  });
   assert.equal(presentation.tablePresence.potMilliBb, canonical.potMilliBb);
   for (const seat of presentation.seats) {
     assert.equal(seat.showContribution, true);
@@ -183,6 +190,9 @@ test('dealer, contribution, board, and pot presentation retain canonical mapping
     assert.ok(seat.contributionAnchor.x <= Math.max(seat.anchor.x, 0.5));
     assert.ok(seat.contributionAnchor.y >= Math.min(seat.anchor.y, 0.43));
     assert.ok(seat.contributionAnchor.y <= Math.max(seat.anchor.y, 0.43));
+    const distanceToPot = (anchor) => Math.hypot(anchor.x - 0.5, anchor.y - 0.43);
+    assert.ok(distanceToPot(seat.dealerAnchor) < distanceToPot(seat.anchor));
+    assert.ok(distanceToPot(seat.dealerAnchor) > distanceToPot(seat.contributionAnchor));
   }
 });
 

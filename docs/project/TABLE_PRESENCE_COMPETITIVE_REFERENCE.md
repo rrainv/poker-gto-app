@@ -126,7 +126,7 @@ Patterns to reject:
 | Current actor | ADOPT | Use a stable focus treatment and `To act` status, with a non-color cue. No pulsing loop is required. |
 | Action dock | ADAPT | Attach the dock compositionally to Hero below the table. Legal actions remain canonical; the renderer never manufactures actions. |
 | Sizing controls | ADAPT | Reveal presets, range input, and exact amount only after Bet/Raise selection. Use canonical min/max/chip unit; add no pot-size semantics that do not exist. |
-| Hand timeline | ADOPT | Give the chronological street/action story a first-class horizontal composition and a more detailed review form. |
+| Hand timeline | ADAPT | Give the chronological street/action story first-class navigation and a more detailed review form. The current horizontal composition is implemented, but Riverline must compare it with a vertical chronological navigator before treating orientation as accepted product fit. |
 | Completed-hand transition | ADOPT | Remove legal controls, keep the resolved table, and replace the decision dock with a concise result/next-step layer. |
 | Post-hand feedback | ADAPT | Show only supported result, decision count, comparison summary, source, and review actions. Do not fabricate a most-important mistake. |
 | Replay | ADAPT | Reuse the canonical frame projection and add bounded direct seeking; do not rewrite playback or store renderer frames. |
@@ -620,7 +620,7 @@ Targets:
 
 - At main-stage inline size below about 980px, reduce table family scale before hiding facts.
 - At about 820px, context rails follow the stage; the decision dock remains directly after the table/Hero region.
-- Horizontal timeline overflow scrolls; it does not wrap into a long column during Play.
+- Until the orientation review occurs, the current horizontal timeline overflow scrolls; it does not wrap into a long column during Play. This responsive rule describes current implementation, not permanent rejection of a deliberately designed vertical navigator.
 - Full-ring secondary seat detail reduces before card/stack legibility does.
 - RTL mirrors app chrome and logical layout, but poker seat order, cards, board, amounts, and timeline chronology remain deliberate LTR islands where already specified.
 - Test 90%, 110%, and 125% zoom for no global horizontal overflow, unreachable legal action, clipped Hero cards, or hidden selected timeline item.
@@ -641,7 +641,7 @@ Implement an adaptive, task-aware Table Presence v2 presentation for canonical H
 5. Apply the restrained felt, rail, depth, seat integration, dealer, pot/contribution, actor, and showdown changes listed as `Implement now` in section 9. Reuse/enhance poker primitives without denomination claims.
 6. Recompose Play so the shared table and Hero-aligned decision dock form one stage. Keep legal actions canonical and implement the secondary sizing tray, synchronized canonical range/exact input, focus behavior, and submission lock from section 10.
 7. Map current canonical Hand stages and Full-Hand presentation cues to the visual states in section 11. Legal actions disappear at terminal state.
-8. Add the compact horizontal timeline backed by `replay-projection/v1.timeline`, the bounded Replay `selectFrame(frameIndex)` navigation operation, Hero/current/result cues, and review form in section 12. Do not create a second action-history model.
+8. The implemented slice added a compact horizontal timeline backed by `replay-projection/v1.timeline`, the bounded Replay `selectFrame(frameIndex)` navigation operation, Hero/current/result cues, and the review form in section 12. Orientation remains `RET-REVIEW-NAV-001` product-design debt; any vertical alternative must reuse the same history and cursor rather than creating a second action-history model.
 9. Implement the concise canonical Hand and Full-Hand Training completion layers in section 13 using only data each surface already supports.
 10. Route live Hand/Training to Play projection and earlier/saved/terminal review states to Review projection. Add renderer-level passive Analyze/Saved projection variants, but do not redesign those workspaces.
 11. Preserve table collapse, all current layout presets, both density modes, built-in/custom themes, all card customization, EN/RU/HE/RTL, accessibility, reduced motion, and PERF-001 invalidation/invocation guarantees.
@@ -767,4 +767,4 @@ This ticket reused the first-party GTO Wizard observations already recorded in t
 
 - Global presets shown everywhere for symmetry, weak Controls First/Equity/Personal Strategy variants, a low-value user-facing density switch, fixed-percentage control columns, arbitrary drag/drop layout editing, or additional density modes.
 - Solver-terminal imitation, proprietary branding/layout cloning, or claims that heuristic output is solved GTO evidence.
-- Visual spectacle or table physical-art changes; felt, rail, chip, and seat aesthetics remain `TABLE-PHYSICALITY-003` work.
+- Visual spectacle or table physical-art expansion remains rejected. `TABLE-PHYSICALITY-003` is an accepted checkpoint; its known revealed-card presentation debt is routed through `RET-CARDS-THEMES-001`, not another table correction loop.

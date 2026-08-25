@@ -66,7 +66,10 @@ test('Hand Mode uses a compact post-start setup and highlights the current canon
 
 test('table seats use one integrated adaptive player-unit anchor for cards and identity', () => {
   assert.match(table, /class="table-seat table-player-unit\$\{[^}]+\}"[^>]*data-card-anchor="integrated"/);
-  assert.match(table, /class="table-hole-cards" transform="translate\(0, \$\{holeCardY\}\) scale\(\$\{cardScale\}\)"/);
+  assert.match(table, /const cardCenterDistance = seatVector\.radialExtent \+ cardHalfHeight - cardOverlapUnits/);
+  assert.match(table, /const cardCenterX = Math\.round\(seatVector\.unitX \* cardCenterDistance\)/);
+  assert.match(table, /const cardCenterY = Math\.round\(seatVector\.unitY \* cardCenterDistance\)/);
+  assert.match(table, /class="table-hole-cards" style="[^"]*--card-deal-from-x:[^"]*--card-fold-to-x:[^"]*" transform="translate\(\$\{holeCardX\}, \$\{holeCardY\}\) scale\(\$\{cardScale\}\)"/);
   assert.match(table, /class="table-seat-surface"[^>]*width="\$\{unit\.width\}" height="\$\{unit\.height\}"/);
   assert.match(cardPresentation, /const step = isCommunity \? 50 : 45/);
   assert.match(cardPresentation, /const finalX = \(\(index - \(\(totalCards - 1\) \/ 2\)\) \* step\) - \(geometry\.width \/ 2\)/);

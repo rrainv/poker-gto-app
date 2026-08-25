@@ -7050,6 +7050,10 @@ html[data-theme-editing="false"] .theme-color-controls { opacity: .62; }
   --poker-card-shadow: 0 3px 9px rgba(0, 0, 0, 0.24);
   --poker-table-rail-start: color-mix(in srgb, var(--surface-elevated) 74%, var(--border-strong));
   --poker-table-rail-end: color-mix(in srgb, var(--surface-inset) 82%, #000000);
+  --poker-table-base-start: color-mix(in srgb, var(--surface-inset) 88%, #000000);
+  --poker-table-base-end: color-mix(in srgb, var(--surface-shell) 72%, #000000);
+  --poker-table-cushion-start: color-mix(in srgb, var(--poker-table-rail-start) 74%, var(--surface-elevated));
+  --poker-table-cushion-end: color-mix(in srgb, var(--poker-table-rail-end) 86%, #000000);
   --poker-table-surface-start: color-mix(in srgb, var(--poker-felt-accent) 78%, var(--surface-elevated));
   --poker-table-surface-end: color-mix(in srgb, var(--poker-felt-accent) 48%, var(--surface-inset));
   --poker-table-line: rgba(231, 240, 234, 0.15);
@@ -7079,6 +7083,10 @@ html[data-theme-editing="false"] .theme-color-controls { opacity: .62; }
 [data-theme="daylight"] {
   --poker-table-rail-start: color-mix(in srgb, var(--surface-shell) 70%, var(--accent-secondary));
   --poker-table-rail-end: color-mix(in srgb, var(--surface-inset) 62%, var(--text-secondary));
+  --poker-table-base-start: color-mix(in srgb, var(--surface-inset) 82%, var(--text-secondary));
+  --poker-table-base-end: color-mix(in srgb, var(--surface-shell) 68%, var(--text-secondary));
+  --poker-table-cushion-start: color-mix(in srgb, var(--surface-elevated) 76%, var(--accent-secondary));
+  --poker-table-cushion-end: color-mix(in srgb, var(--surface-inset) 72%, var(--text-secondary));
   --poker-table-surface-start: color-mix(in srgb, var(--poker-felt-accent) 82%, var(--surface-elevated));
   --poker-table-surface-end: color-mix(in srgb, var(--poker-felt-accent) 64%, var(--text-secondary));
   --poker-table-line: color-mix(in srgb, var(--surface-elevated) 28%, transparent);
@@ -7601,10 +7609,16 @@ html[data-four-color="false"] {
 .riverline-poker-table { display: block; height: auto; overflow: visible; }
 .table-rail-start { stop-color: var(--poker-table-rail-start); }
 .table-rail-end { stop-color: var(--poker-table-rail-end); }
+.table-base-start { stop-color: var(--poker-table-base-start); }
+.table-base-end { stop-color: var(--poker-table-base-end); }
+.table-cushion-start { stop-color: var(--poker-table-cushion-start); }
+.table-cushion-end { stop-color: var(--poker-table-cushion-end); }
 .table-surface-start { stop-color: var(--poker-table-surface-start); }
 .table-surface-end { stop-color: var(--poker-table-surface-end); }
 .table-shadow-effect { flood-opacity: var(--poker-table-shadow-opacity); }
+.table-base { fill: url(#riverlineTableBase); stroke: color-mix(in srgb, var(--poker-table-rail-stroke) 64%, #000000); stroke-width: 2; filter: url(#riverlineTableShadow); }
 .table-rail { fill: url(#riverlineTableRail); filter: url(#riverlineTableShadow); stroke: var(--poker-table-rail-stroke); stroke-width: 2; }
+.table-cushion { fill: url(#riverlineTableCushion); stroke: color-mix(in srgb, var(--poker-table-rail-stroke) 68%, var(--text-primary)); stroke-width: 1.5; }
 .table-surface { fill: url(#riverlineTableSurface); stroke: var(--poker-table-line); stroke-width: 2; }
 .table-betting-line { fill: none; stroke: var(--poker-table-line); stroke-width: 2; stroke-dasharray: 4 7; }
 .table-riverline-mark { fill: none; stroke: var(--poker-table-line); stroke-width: 2; }
@@ -9484,7 +9498,7 @@ button.rail-utility { width: 100%; cursor: pointer; }
 }
 @keyframes riverline-experience-fold-retreat {
   from { opacity: 1; translate: 0 0; }
-  to { opacity: .22; translate: 0 7px; }
+  to { opacity: .22; translate: var(--fold-retreat-x, 0) var(--fold-retreat-y, 7px); }
 }
 .table-community-cards.is-experience-street-advance {
   animation: riverline-experience-board-settle var(--motion-poker-settle) var(--motion-poker-ease) both;
@@ -10928,7 +10942,7 @@ body.has-modal-open { overflow: hidden; }
   animation-delay: calc(var(--card-deal-order, 0) * 22ms);
 }
 @keyframes riverline-card-deal {
-  from { opacity: 0; translate: 0 -8px; }
+  from { opacity: 0; translate: var(--card-deal-from-x, 0) var(--card-deal-from-y, -8px); }
   to { opacity: 1; translate: 0 0; }
 }
 #trainingGuessButtons .animate-deal { animation: none; }
@@ -11426,6 +11440,8 @@ body.has-modal-open { overflow: hidden; }
 #visual-table-container[data-replay-motion-cycle="b"] .is-replay-value-motion { animation: replay-value-settle-b var(--replay-motion-action) var(--replay-motion-ease) both; }
 #visual-table-container[data-replay-motion-cycle="a"] .table-seat.is-replay-fold-motion .table-seat-surface { animation: replay-fold-settle-a var(--replay-motion-action) var(--replay-motion-ease) both; }
 #visual-table-container[data-replay-motion-cycle="b"] .table-seat.is-replay-fold-motion .table-seat-surface { animation: replay-fold-settle-b var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="a"] .table-seat.is-replay-fold-motion .table-hole-cards { animation: replay-fold-cards-a var(--replay-motion-action) var(--replay-motion-ease) both; }
+#visual-table-container[data-replay-motion-cycle="b"] .table-seat.is-replay-fold-motion .table-hole-cards { animation: replay-fold-cards-b var(--replay-motion-action) var(--replay-motion-ease) both; }
 #visual-table-container[data-replay-motion-cycle="a"] .table-seat.is-replay-all-in-motion .table-seat-surface { animation: replay-all-in-settle-a var(--replay-motion-action) var(--replay-motion-ease) both; }
 #visual-table-container[data-replay-motion-cycle="b"] .table-seat.is-replay-all-in-motion .table-seat-surface { animation: replay-all-in-settle-b var(--replay-motion-action) var(--replay-motion-ease) both; }
 #visual-table-container[data-replay-motion-cycle="a"] .table-pot.is-replay-pot-motion { animation: replay-pot-settle-a var(--replay-motion-action) var(--replay-motion-ease) both; }
@@ -11447,9 +11463,11 @@ body.has-modal-open { overflow: hidden; }
 @keyframes replay-next-actor-b { from { opacity: 0; stroke-dasharray: 80; stroke-dashoffset: 80; } to { opacity: 1; stroke-dasharray: 80; stroke-dashoffset: 0; } }
 @keyframes replay-value-settle-a { from { opacity: .28; translate: 0 -5px; } to { opacity: 1; translate: 0 0; } }
 @keyframes replay-value-settle-b { from { opacity: .28; translate: 0 -5px; } to { opacity: 1; translate: 0 0; } }
-@keyframes replay-card-deal { from { opacity: 0; translate: 0 -14px; filter: brightness(1.18); } to { opacity: 1; translate: 0 0; filter: brightness(1); } }
+@keyframes replay-card-deal { from { opacity: 0; translate: var(--card-deal-from-x, 0) var(--card-deal-from-y, -14px); filter: brightness(1.18); } to { opacity: 1; translate: 0 0; filter: brightness(1); } }
 @keyframes replay-fold-settle-a { from { opacity: 1; filter: saturate(1); } to { opacity: .68; filter: saturate(.35); } }
 @keyframes replay-fold-settle-b { from { opacity: 1; filter: saturate(1); } to { opacity: .68; filter: saturate(.35); } }
+@keyframes replay-fold-cards-a { from { opacity: 1; translate: 0 0; } to { opacity: .18; translate: var(--card-fold-to-x, 0) var(--card-fold-to-y, 12px); } }
+@keyframes replay-fold-cards-b { from { opacity: 1; translate: 0 0; } to { opacity: .18; translate: var(--card-fold-to-x, 0) var(--card-fold-to-y, 12px); } }
 @keyframes replay-all-in-settle-a { from { filter: brightness(1.48); stroke-width: 4; } to { filter: brightness(1); } }
 @keyframes replay-all-in-settle-b { from { filter: brightness(1.48); stroke-width: 4; } to { filter: brightness(1); } }
 @keyframes replay-pot-settle-a { from { opacity: .25; translate: 0 -5px; } to { opacity: 1; translate: 0 0; } }
@@ -12395,7 +12413,7 @@ body.has-modal-open { overflow: hidden; }
 /* TABLE-PRESENCE-002: adaptive premium Hand presentation. The normalized
    poker canvas remains LTR even when surrounding application chrome is RTL. */
 #visual-table-container {
-  --play-stage-reserve: 430px;
+  --play-stage-reserve: 455px;
   --table-inline-target: 1180px;
   --table-inline-max: 1320px;
   inline-size: min(100%, var(--table-inline-max));
@@ -12405,11 +12423,17 @@ body.has-modal-open { overflow: hidden; }
   direction: ltr;
 }
 
-[data-density="compact"] #visual-table-container { --play-stage-reserve: 390px; }
+[data-density="compact"] #visual-table-container { --play-stage-reserve: 420px; }
 
 #gtoMode[data-product-destination="hand"] .table-wrapper[data-table-projection="play"] #visual-table-container,
 .training-full-hand-table-wrapper[data-table-projection="play"] #visual-table-container {
   inline-size: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
+}
+
+/* Normal Hand consumes its allocated table region. Training retains its own
+   height-aware composition because it shares the renderer in a different UI. */
+#gtoMode[data-product-destination="hand"] .table-wrapper[data-table-projection="play"] #visual-table-container {
+  inline-size: min(100%, var(--table-inline-max));
 }
 
 #gtoMode[data-product-destination="hand"] .table-wrapper[data-table-projection="review"] #visual-table-container,
@@ -12428,23 +12452,49 @@ body.has-modal-open { overflow: hidden; }
   isolation: isolate;
 }
 
-.table-rail--outer { stroke-width: 3; }
+.table-base { filter: drop-shadow(0 13px 12px rgba(0, 0, 0, .26)); }
+.table-rail--outer {
+  stroke-width: 3;
+  filter: drop-shadow(0 5px 5px rgba(0, 0, 0, .18));
+}
 .table-rail--inner {
   fill: color-mix(in srgb, var(--poker-table-rail-end) 84%, var(--surface-inset));
   stroke: color-mix(in srgb, var(--poker-table-rail-stroke) 78%, var(--text-primary));
   stroke-width: 1.5;
   filter: none;
 }
-.table-surface { stroke-width: 2.5; }
-.table-felt-texture { fill: url(#riverlineFeltTexture); opacity: .035; pointer-events: none; }
+.table-cushion { filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .16)); }
+.table-surface {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 2px 2px rgba(255, 255, 255, .04));
+}
+.table-felt-texture { fill: url(#riverlineFeltTexture); opacity: .045; pointer-events: none; }
 .table-felt-texture-mark { fill: none; stroke: var(--text-primary); stroke-width: .7; opacity: .72; }
 .table-betting-line { stroke-width: 1.5; stroke-dasharray: 3 9; opacity: .52; }
 .table-riverline-mark { opacity: .38; }
 .table-phase-status { letter-spacing: .08em; text-transform: uppercase; }
+.table-pot-zone {
+  fill: color-mix(in srgb, var(--surface-overlay) 28%, transparent);
+  stroke: color-mix(in srgb, var(--poker-table-line) 72%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 2 5;
+}
 
 .table-player-unit {
   opacity: var(--seat-prominence-opacity, 1);
   transition: opacity var(--motion-fast) var(--ease-standard);
+}
+.table-seat-connector {
+  fill: none;
+  stroke: color-mix(in srgb, var(--poker-table-rail-start) 58%, var(--poker-table-rail-end));
+  stroke-width: 23;
+  stroke-linecap: round;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .2));
+}
+.table-seat-base {
+  fill: color-mix(in srgb, var(--poker-table-seat) 70%, #000000);
+  stroke: color-mix(in srgb, var(--border-strong) 56%, #000000);
+  stroke-width: 1;
 }
 .table-player-unit .table-seat-surface {
   filter: drop-shadow(0 5px 8px rgba(0, 0, 0, .22));
@@ -12453,10 +12503,20 @@ body.has-modal-open { overflow: hidden; }
     stroke-width var(--motion-fast) var(--ease-standard),
     opacity var(--motion-fast) var(--ease-standard);
 }
+.table-card-cradle {
+  fill: color-mix(in srgb, var(--poker-table-seat) 76%, var(--poker-table-rail-end));
+  stroke: color-mix(in srgb, var(--border-strong) 68%, var(--poker-table-rail-stroke));
+  stroke-width: 1.5;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .2));
+}
 .table-player-unit.is-prominence-hero .table-seat-surface {
   fill: color-mix(in srgb, var(--poker-table-seat-hero) 90%, var(--surface-panel));
   stroke: var(--accent-primary);
   stroke-width: 3;
+}
+.table-player-unit.is-prominence-hero .table-seat-base,
+.table-player-unit.is-prominence-actor .table-seat-base {
+  stroke: color-mix(in srgb, var(--accent-primary) 48%, var(--border-strong));
 }
 .table-player-unit.is-prominence-actor:not(.is-hero) .table-seat-surface {
   fill: color-mix(in srgb, var(--poker-table-seat) 82%, var(--status-warning));
@@ -12480,8 +12540,46 @@ body.has-modal-open { overflow: hidden; }
 .table-player-unit[data-seat-detail="minimal"] .table-action-badge:not(.is-action-fold) { opacity: .58; }
 .table-player-unit[data-seat-detail="compact"] .table-seat-status { font-size: 7px; }
 .table-hole-cards { transform-box: fill-box; transform-origin: center top; }
+.table-contribution-lane[hidden] { display: none; }
+.table-contribution-lane-path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent-primary) 24%, var(--poker-table-line));
+  stroke-linecap: round;
+}
+.table-contribution-lane-path--owner { stroke-width: 2.4; stroke-dasharray: 2 5; opacity: .82; }
+.table-contribution-lane-path--pot { stroke-width: 1.2; stroke-dasharray: 2 8; opacity: .48; }
 .table-contribution { opacity: var(--contribution-prominence-opacity, 1); }
-.table-pot { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .18)); }
+.poker-table-amount-surface {
+  fill: color-mix(in srgb, var(--surface-overlay) 86%, transparent);
+  stroke: color-mix(in srgb, currentColor 28%, var(--border-default));
+  stroke-width: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .18));
+}
+.poker-table-amount--pot .poker-table-amount-surface {
+  fill: color-mix(in srgb, var(--surface-overlay) 92%, var(--poker-table-surface-end));
+  stroke-width: 1.5;
+}
+.poker-table-amount--contribution .poker-table-amount-surface {
+  fill: color-mix(in srgb, var(--poker-table-surface-end) 22%, transparent);
+  stroke: color-mix(in srgb, currentColor 18%, transparent);
+  filter: none;
+}
+.poker-table-amount--contribution .poker-table-amount-text {
+  paint-order: stroke fill;
+  stroke: color-mix(in srgb, var(--poker-table-surface-end) 88%, transparent);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+[data-theme="daylight"] .poker-table-amount-surface {
+  fill: color-mix(in srgb, var(--surface-elevated) 90%, var(--poker-table-surface-start));
+  stroke: color-mix(in srgb, currentColor 36%, var(--border-strong));
+}
+[data-theme="daylight"] .poker-table-amount--pot .poker-table-amount-surface {
+  fill: color-mix(in srgb, var(--surface-elevated) 94%, var(--poker-table-surface-start));
+}
+.poker-chip-stack--remaining .poker-chip-stack-back { opacity: .62; }
+.poker-chip-stack--pot .poker-chip-stack-side { color: color-mix(in srgb, var(--accent-primary) 74%, var(--status-warning)); }
+.table-pot { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .22)); }
 .table-dealer-button circle:first-child {
   fill: color-mix(in srgb, var(--card-face) 90%, var(--accent-primary));
   stroke: color-mix(in srgb, var(--card-border) 72%, var(--accent-primary));
@@ -13169,7 +13267,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"] .playbook-dec
 html[data-layout-preset] #gtoMode[data-product-destination="hand"] .playbook-decision-workspace > #table-wrapper { order: 4; }
 html[data-layout-preset] #gtoMode[data-product-destination="hand"] .playbook-decision-workspace > #handStageDock { order: 5; }
 html[data-layout-preset] #gtoMode[data-product-destination="hand"] .table-wrapper[data-table-projection="play"] #visual-table-container {
-  inline-size: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
+  inline-size: min(100%, var(--table-inline-max));
   max-inline-size: none;
   max-width: none;
 }

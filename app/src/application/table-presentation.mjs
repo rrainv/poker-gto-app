@@ -47,12 +47,13 @@ const ANCHORS_BY_PLAYER_COUNT = Object.freeze({
 
 const FAMILY_SPECIFICATIONS = Object.freeze({
   [TABLE_GEOMETRY_FAMILIES.HU]: Object.freeze({
-    tableBounds: Object.freeze([0.13, 0.18, 0.74, 0.58]),
+    tableBounds: Object.freeze([0.07, 0.14, 0.86, 0.66]),
     playerUnit: Object.freeze({ width: 150, height: 78 }),
     cardScale: 1.25,
-    cardOverlap: 0.18,
+    cardOverlap: 0.36,
     boardScale: 1.12,
-    contributionFraction: 0.46,
+    contributionFraction: 0.44,
+    dealerFraction: 0.22,
   }),
   sparse_large: Object.freeze({
     tableBounds: Object.freeze([0.11, 0.16, 0.78, 0.62]),
@@ -61,6 +62,7 @@ const FAMILY_SPECIFICATIONS = Object.freeze({
     cardOverlap: 0.22,
     boardScale: 1.08,
     contributionFraction: 0.46,
+    dealerFraction: 0.22,
   }),
   sparse_five: Object.freeze({
     tableBounds: Object.freeze([0.09, 0.15, 0.82, 0.64]),
@@ -69,23 +71,34 @@ const FAMILY_SPECIFICATIONS = Object.freeze({
     cardOverlap: 0.28,
     boardScale: 1,
     contributionFraction: 0.46,
+    dealerFraction: 0.20,
   }),
   [TABLE_GEOMETRY_FAMILIES.SIX_MAX]: Object.freeze({
-    tableBounds: Object.freeze([0.09, 0.15, 0.82, 0.64]),
+    tableBounds: Object.freeze([0.07, 0.14, 0.86, 0.66]),
     playerUnit: Object.freeze({ width: 122, height: 70 }),
     cardScale: 1,
-    cardOverlap: 0.28,
+    cardOverlap: 0.24,
     boardScale: 1,
-    contributionFraction: 0.50,
+    contributionFraction: 0.40,
+    dealerFraction: 0.20,
   }),
   [TABLE_GEOMETRY_FAMILIES.FULL_RING]: Object.freeze({
     tableBounds: Object.freeze([0.07, 0.13, 0.86, 0.67]),
     playerUnit: Object.freeze({ width: 104, height: 62 }),
     cardScale: 0.88,
-    cardOverlap: 0.34,
+    cardOverlap: 0.14,
     boardScale: 0.94,
-    contributionFraction: 0.54,
+    contributionFraction: 0.44,
+    dealerFraction: 0.18,
   }),
+});
+
+const TABLE_PHYSICALITY = Object.freeze({
+  baseDepth: 12,
+  railInnerInset: 9,
+  cushionInset: 20,
+  feltInset: 30,
+  bettingLineInset: 52,
 });
 
 const PROJECTION_SIZING = Object.freeze({
@@ -309,6 +322,11 @@ export function createTablePresentation({
         potAnchor,
         specification.contributionFraction,
       ),
+      dealerAnchor: contributionAnchor(
+        anchor,
+        potAnchor,
+        specification.dealerFraction,
+      ),
       dealer: seat.isButton === true,
       actorCue: seat.isCurrentActor === true,
       showContribution: tablePresence.showStreetContributions === true
@@ -340,6 +358,7 @@ export function createTablePresentation({
       cardOverlap: specification.cardOverlap,
       boardScale: specification.boardScale,
       contributionFraction: specification.contributionFraction,
+      physicality: TABLE_PHYSICALITY,
       potAnchor,
     },
     decisionDock: {

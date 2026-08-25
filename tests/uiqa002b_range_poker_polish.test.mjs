@@ -177,7 +177,7 @@ test('deal and feedback motion are event-scoped, restrained, and reduced-motion 
   assert.match(table, /previous\[index\] !== signatures\[index\]/);
   assert.match(cardPresentation, /isDealing \? ' is-card-dealt'/);
   assert.doesNotMatch(table, /setTimeout/);
-  assert.match(uiQaCss, /@keyframes riverline-card-deal[\s\S]*?translate:\s*0 -8px[\s\S]*?translate:\s*0 0/);
+  assert.match(uiQaCss, /@keyframes riverline-card-deal[\s\S]*?translate:\s*var\(--card-deal-from-x, 0\) var\(--card-deal-from-y, -8px\)[\s\S]*?translate:\s*0 0/);
   assert.match(uiQaCss, /animation-delay:\s*calc\(var\(--card-deal-order, 0\) \* 22ms\)/);
   assert.match(uiQaCss, /\.card-slot\.filled\s*\{\s*animation:\s*none/);
   assert.match(uiQaCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.card-group\.is-card-dealt[\s\S]*?animation:\s*none/);

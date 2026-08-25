@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 25, 2026 (`DOCS-CAPABILITY-DOSSIERS-001` completed as the accepted documentation-architecture checkpoint; `TABLE-PHYSICALITY-003` is active next).
+Last refreshed: August 26, 2026 (`TABLE-PHYSICALITY-003` completed as an accepted implementation checkpoint with explicit presentation debt; `HOME-GAME-001B` is active next).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -22,12 +22,12 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - returned live planning to concise status and sequence ownership;
    - changed no runtime, CSS, poker math, schema, or product feature.
 
-2. **ACTIVE NEXT — `TABLE-PHYSICALITY-003`**
-   - improve the default felt/table proportions, rail/depth, seat/card integration, chip stacks, contributions, central pot, restrained motion, and readability;
-   - preserve existing PokerState, TablePresentation, card, chip, audio/motion, accessibility, and performance authorities;
-   - no casino scenery, spectacle, fake cinematic 3D, detailed denomination claims, avatars by default, or customization used to excuse a weak default.
+2. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT — `TABLE-PHYSICALITY-003`**
+   - human acceptance passed table scale, HU/normal Hand composition, felt/rail/table coherence, Hero-card readability, and contribution-to-pot presentation as sufficient to move on;
+   - no claim of perfect physical-table polish: revealed opponent cards can still be obscured by seat/action/cradle chrome and remain `RET-CARDS-THEMES-001` debt;
+   - existing PokerState, TablePresentation, card, chip, audio/motion, accessibility, privacy, and performance authorities remain unchanged.
 
-3. **PLANNED NEXT — `HOME-GAME-001B`**
+3. **ACTIVE NEXT — `HOME-GAME-001B`**
 
 4. **PLANNED NEXT — `SETTINGS-IA-001`**
 
@@ -73,9 +73,9 @@ Do not revive browser/Electron ONNX inference, remote strategy APIs, arbitrary s
 
 ### Visible product and table
 
-Completed/checkpointed work includes adaptive Table Presence, canonical Replay, shared Full Hand Review, accepted audio/motion architecture, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, and the accepted-with-debt `WORKSPACE-COMPOSITION-002` simplification.
+Completed/checkpointed work includes adaptive Table Presence, canonical Replay, shared Full Hand Review, accepted audio/motion architecture, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, the accepted-with-debt `WORKSPACE-COMPOSITION-002` simplification, and `TABLE-PHYSICALITY-003` with explicit presentation debt.
 
-`TABLE-PHYSICALITY-003` is now the sole active-next product ticket. Independent Full Hand Firefox acceptance, surviving composition/card verification, and broader premium QA remain separately owned by the QA Backlog and Return Queue. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
+`HOME-GAME-001B` is now the active-next product ticket. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt, while the horizontal-versus-vertical Review chronology comparison remains `RET-REVIEW-NAV-001` debt. Full Hand Firefox acceptance, surviving composition verification, and broader premium QA remain separately owned by the QA Backlog and Return Queue. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
 
 ### Home Game
 

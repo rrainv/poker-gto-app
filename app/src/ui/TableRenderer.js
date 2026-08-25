@@ -49,6 +49,18 @@ function tableContributionPoint({ centerX, centerY, seatX, seatY, radialFraction
   return { x: idealX, y: idealY };
 }
 
+function tableSeatVector({ centerX, centerY, seatX, seatY, halfWidth, halfHeight }) {
+  const rayX = centerX - seatX;
+  const rayY = centerY - seatY;
+  const rayLength = Math.hypot(rayX, rayY) || 1;
+  const unitX = rayX / rayLength;
+  const unitY = rayY / rayLength;
+  const radialExtent = 1 / Math.sqrt(
+    ((unitX / halfWidth) ** 2) + ((unitY / halfHeight) ** 2),
+  );
+  return { unitX, unitY, radialExtent };
+}
+
 class TableRenderer {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
@@ -99,6 +111,14 @@ class TableRenderer {
             <stop class="table-rail-start" offset="0%" />
             <stop class="table-rail-end" offset="100%" />
           </linearGradient>
+          <linearGradient id="riverlineTableBase" x1="0" y1="0" x2="0" y2="1">
+            <stop class="table-base-start" offset="0%" />
+            <stop class="table-base-end" offset="100%" />
+          </linearGradient>
+          <linearGradient id="riverlineTableCushion" x1="0" y1="0" x2="0" y2="1">
+            <stop class="table-cushion-start" offset="0%" />
+            <stop class="table-cushion-end" offset="100%" />
+          </linearGradient>
           <radialGradient id="riverlineTableSurface" cx="50%" cy="45%" r="62%">
             <stop class="table-surface-start" offset="0%" />
             <stop class="table-surface-end" offset="100%" />
@@ -114,19 +134,23 @@ class TableRenderer {
           </filter>
         </defs>
 
+        <rect id="table-base" class="table-base" x="90" y="110" width="820" height="416" rx="208" ry="208" aria-hidden="true" />
         <rect id="table-rail-outer" class="table-rail table-rail--outer" x="90" y="98" width="820" height="416" rx="208" ry="208" aria-hidden="true" />
-        <rect id="table-rail-inner" class="table-rail table-rail--inner" x="102" y="110" width="796" height="392" rx="196" ry="196" aria-hidden="true" />
-        <rect id="table-surface" class="table-surface" x="114" y="122" width="772" height="368" rx="184" ry="184" aria-hidden="true" />
-        <rect id="table-felt-texture" class="table-felt-texture" x="114" y="122" width="772" height="368" rx="184" ry="184" aria-hidden="true" />
+        <rect id="table-rail-inner" class="table-rail table-rail--inner" x="99" y="107" width="802" height="398" rx="199" ry="199" aria-hidden="true" />
+        <rect id="table-cushion" class="table-cushion" x="110" y="118" width="780" height="376" rx="188" ry="188" aria-hidden="true" />
+        <rect id="table-surface" class="table-surface" x="120" y="128" width="760" height="356" rx="178" ry="178" aria-hidden="true" />
+        <rect id="table-felt-texture" class="table-felt-texture" x="120" y="128" width="760" height="356" rx="178" ry="178" aria-hidden="true" />
         <rect id="table-betting-line" class="table-betting-line" x="146" y="154" width="708" height="304" rx="152" ry="152" aria-hidden="true" />
         <path id="table-riverline-mark" class="table-riverline-mark" d="M360 210 C418 180 582 180 640 210" aria-hidden="true" />
 
         <text id="table-phase-status" class="table-phase-status" x="500" y="238" text-anchor="middle"></text>
+        <ellipse id="table-pot-zone" class="table-pot-zone" cx="500" cy="286" rx="72" ry="23" aria-hidden="true" />
         ${this.pokerTableAmountMarkup({
           id: 'table-pot', className: 'table-pot', size: 'normal', x: 500, y: 286,
           prefix: tableMessage('table.potLabel', 'Pot'), value: '0', unit: 'bb', ariaHidden: true,
+          visualVariant: 'pot',
         })}
-        <g id="community-cards" class="table-community-cards" transform="translate(500, 330)"></g>
+        <g id="community-cards" class="table-community-cards" style="--card-deal-from-x:0px; --card-deal-from-y:-18px" transform="translate(500, 330)"></g>
         <g id="table-contributions-layer" class="table-contributions-layer"></g>
         <g id="seats-layer" class="table-seats-layer"></g>
       </svg>
@@ -165,14 +189,42 @@ class TableRenderer {
         : tableContributionPoint({ centerX, centerY, seatX: x, seatY: y });
       const halfWidth = unit.width / 2;
       const halfHeight = unit.height / 2;
-      const holeCardY = Math.round(-halfHeight - (57 * cardScale) + cardOverlapUnits);
-      const dealerX = Math.round(halfWidth + 12);
+      const seatVector = tableSeatVector({
+        centerX, centerY, seatX: x, seatY: y, halfWidth, halfHeight,
+      });
+      const connectorStart = seatVector.radialExtent - 10;
+      const connectorEnd = seatVector.radialExtent + 16;
+      const cardHalfHeight = (57 * cardScale) / 2;
+      const cardCenterDistance = seatVector.radialExtent + cardHalfHeight - cardOverlapUnits;
+      const cardCenterX = Math.round(seatVector.unitX * cardCenterDistance);
+      const cardCenterY = Math.round(seatVector.unitY * cardCenterDistance);
+      const holeCardX = cardCenterX;
+      const holeCardY = Math.round(cardCenterY - cardHalfHeight);
+      const cradleWidth = Math.round(88 * cardScale);
+      const cradleHeight = Math.round(62 * cardScale);
+      const suppliedDealer = seatPresentation?.dealerAnchor;
+      const dealerBaseX = suppliedDealer
+        ? Math.round((suppliedDealer.x * 1000) - x)
+        : Math.round(seatVector.unitX * (seatVector.radialExtent + 18));
+      const dealerBaseY = suppliedDealer
+        ? Math.round((suppliedDealer.y * 650) - y)
+        : Math.round(seatVector.unitY * (seatVector.radialExtent + 18));
+      const dealerTangentialOffset = (cradleWidth / 2) + 12;
+      const dealerX = Math.round(dealerBaseX - (seatVector.unitY * dealerTangentialOffset));
+      const dealerY = Math.round(dealerBaseY + (seatVector.unitX * dealerTangentialOffset));
       const actionY = Math.round(halfHeight + 12);
+      const contributionLaneStart = {
+        x: x + (seatVector.unitX * (seatVector.radialExtent + 4)),
+        y: y + (seatVector.unitY * (seatVector.radialExtent + 4)),
+      };
 
       seatsHtml += `
         <g id="seat-${i}" class="table-seat table-player-unit${i === 0 ? ' is-hero' : ''}" data-seat-index="${i}" data-card-anchor="integrated" transform="translate(${x}, ${y})">
-          <g id="hole-cards-${i}" class="table-hole-cards" transform="translate(0, ${holeCardY}) scale(${cardScale})" aria-hidden="true">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
+          <path class="table-seat-connector" d="M${seatVector.unitX * connectorStart} ${seatVector.unitY * connectorStart} L${seatVector.unitX * connectorEnd} ${seatVector.unitY * connectorEnd}" aria-hidden="true" />
+          <rect class="table-card-cradle" x="${cardCenterX - (cradleWidth / 2)}" y="${cardCenterY - (cradleHeight / 2)}" width="${cradleWidth}" height="${cradleHeight}" rx="9" aria-hidden="true" />
+          <g id="hole-cards-${i}" class="table-hole-cards" style="--card-deal-from-x:${Math.round(seatVector.unitX * 24)}px; --card-deal-from-y:${Math.round(seatVector.unitY * 24)}px; --card-fold-to-x:${Math.round(seatVector.unitX * 38)}px; --card-fold-to-y:${Math.round(seatVector.unitY * 38)}px" transform="translate(${holeCardX}, ${holeCardY}) scale(${cardScale})" aria-hidden="true">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
           <g class="table-seat-info">
+            <rect class="table-seat-base" x="${-halfWidth}" y="${-halfHeight + 4}" width="${unit.width}" height="${unit.height}" rx="12" aria-hidden="true" />
             <rect class="table-seat-surface" x="${-halfWidth}" y="${-halfHeight}" width="${unit.width}" height="${unit.height}" rx="12" aria-hidden="true" />
             <path class="table-actor-indicator" d="M${Math.round(-halfWidth + 10)} ${Math.round(-halfHeight + 7)} H${Math.round(halfWidth - 10)}" aria-hidden="true" />
             <text class="table-seat-name" x="0" y="${Math.round(-halfHeight + 18)}" text-anchor="middle">${i === 0 ? tableMessage('Hero', 'Hero') : `P${i + 1}`}</text>
@@ -180,10 +232,11 @@ class TableRenderer {
             ${this.pokerAmountMarkup({
               id: `seat-stack-${i}`, className: 'table-seat-meta table-seat-stack',
               size: 'small', x: -38, y: Math.round(-halfHeight + 34), unit: '', ariaHidden: true,
+              chipStyle: 'stack',
             })}
             <text id="seat-status-${i}" class="table-seat-meta table-seat-status" x="0" y="${Math.round(halfHeight - 7)}" text-anchor="middle" hidden></text>
           </g>
-          <g id="dealer-${i}" class="table-dealer-button" transform="translate(${dealerX}, 0)" hidden>
+          <g id="dealer-${i}" class="table-dealer-button" data-anchor="seat-to-pot" transform="translate(${dealerX}, ${dealerY})" hidden>
             <circle r="12" aria-hidden="true" />
             <circle class="table-dealer-button-inner" r="8.5" aria-hidden="true" />
             <text id="dealer-txt-${i}" x="0" y="3.5" text-anchor="middle" aria-hidden="true">D</text>
@@ -194,17 +247,23 @@ class TableRenderer {
           </g>
         </g>
       `;
-      contributionsHtml += this.pokerTableAmountMarkup({
-        id: `contribution-${i}`,
-        className: 'table-contribution',
-        size: 'small',
-        x: contributionPoint.x,
-        y: contributionPoint.y,
-        value: '',
-        unit: 'bb',
-        ariaHidden: true,
-        hidden: true,
-      });
+      contributionsHtml += `
+        <g id="contribution-lane-${i}" class="table-contribution-lane" data-player-anchor="${i}" hidden>
+          <path class="table-contribution-lane-path table-contribution-lane-path--owner" d="M${contributionLaneStart.x} ${contributionLaneStart.y} L${contributionPoint.x} ${contributionPoint.y}" aria-hidden="true" />
+          <path class="table-contribution-lane-path table-contribution-lane-path--pot" d="M${contributionPoint.x} ${contributionPoint.y} L${centerX} ${centerY}" aria-hidden="true" />
+          ${this.pokerTableAmountMarkup({
+            id: `contribution-${i}`,
+            className: 'table-contribution',
+            size: 'small',
+            x: contributionPoint.x,
+            y: contributionPoint.y,
+            value: '',
+            unit: 'bb',
+            ariaHidden: true,
+            hidden: true,
+            visualVariant: 'contribution',
+          })}
+        </g>`;
     }
     seatsLayer.innerHTML = seatsHtml;
     contributionsLayer.innerHTML = contributionsHtml;
@@ -560,8 +619,16 @@ class TableRenderer {
       if (motion.kind === 'fold_retreat') {
         const actor = state.seats.find((seat) => seat.playerId === payload.actorPlayerId);
         if (Number.isInteger(actor?.visualSeatIndex)) {
-          this.container.querySelector(`#hole-cards-${actor.visualSeatIndex}`)
-            ?.classList.add('is-experience-fold-motion');
+          const holeCards = this.container.querySelector(`#hole-cards-${actor.visualSeatIndex}`);
+          const actorAnchor = seats.get(actor.playerId)?.anchor;
+          if (holeCards && actorAnchor) {
+            const towardPotX = pot.x - (actorAnchor.x * 1000);
+            const towardPotY = pot.y - (actorAnchor.y * 650);
+            const distance = Math.hypot(towardPotX, towardPotY) || 1;
+            holeCards.style.setProperty('--fold-retreat-x', `${Math.round((towardPotX / distance) * 16)}px`);
+            holeCards.style.setProperty('--fold-retreat-y', `${Math.round((towardPotY / distance) * 16)}px`);
+          }
+          holeCards?.classList.add('is-experience-fold-motion');
         }
       }
       if (motion.kind === 'street_advance') {
@@ -589,15 +656,20 @@ class TableRenderer {
   }
 
   resetTableGeometry() {
+    this.setTableRoundedRect('#table-base', { x: 90, y: 110, width: 820, height: 416 });
     this.setTableRoundedRect('#table-rail-outer', { x: 90, y: 98, width: 820, height: 416 });
-    this.setTableRoundedRect('#table-rail-inner', { x: 102, y: 110, width: 796, height: 392 });
-    this.setTableRoundedRect('#table-surface', { x: 114, y: 122, width: 772, height: 368 });
-    this.setTableRoundedRect('#table-felt-texture', { x: 114, y: 122, width: 772, height: 368 });
+    this.setTableRoundedRect('#table-rail-inner', { x: 99, y: 107, width: 802, height: 398 });
+    this.setTableRoundedRect('#table-cushion', { x: 110, y: 118, width: 780, height: 376 });
+    this.setTableRoundedRect('#table-surface', { x: 120, y: 128, width: 760, height: 356 });
+    this.setTableRoundedRect('#table-felt-texture', { x: 120, y: 128, width: 760, height: 356 });
     this.setTableRoundedRect('#table-betting-line', { x: 146, y: 154, width: 708, height: 304 });
     const phase = this.container.querySelector('#table-phase-status');
     phase?.setAttribute('x', '500');
     phase?.setAttribute('y', '238');
     this.container.querySelector('#table-pot')?.setAttribute('transform', 'translate(500 286)');
+    const potZone = this.container.querySelector('#table-pot-zone');
+    potZone?.setAttribute('cx', '500');
+    potZone?.setAttribute('cy', '286');
     this.container.querySelector('#community-cards')?.setAttribute('transform', 'translate(500, 330)');
     this.container.querySelector('#table-riverline-mark')
       ?.setAttribute('d', 'M360 210 C418 180 582 180 640 210');
@@ -616,13 +688,23 @@ class TableRenderer {
     }
     const { geometry } = presentation;
     const bounds = geometry.tableBounds;
+    const physicality = geometry.physicality || {
+      baseDepth: 12, railInnerInset: 9, cushionInset: 20, feltInset: 30, bettingLineInset: 58,
+    };
     const potX = geometry.potAnchor.x * 1000;
     const potY = geometry.potAnchor.y * 650;
+    this.setTableRoundedRect('#table-base', {
+      x: bounds.x,
+      y: bounds.y + physicality.baseDepth,
+      width: bounds.width,
+      height: bounds.height,
+    });
     this.setTableRoundedRect('#table-rail-outer', bounds);
-    this.setTableRoundedRect('#table-rail-inner', bounds, 10);
-    this.setTableRoundedRect('#table-surface', bounds, 20);
-    this.setTableRoundedRect('#table-felt-texture', bounds, 20);
-    this.setTableRoundedRect('#table-betting-line', bounds, 50);
+    this.setTableRoundedRect('#table-rail-inner', bounds, physicality.railInnerInset);
+    this.setTableRoundedRect('#table-cushion', bounds, physicality.cushionInset);
+    this.setTableRoundedRect('#table-surface', bounds, physicality.feltInset);
+    this.setTableRoundedRect('#table-felt-texture', bounds, physicality.feltInset);
+    this.setTableRoundedRect('#table-betting-line', bounds, physicality.bettingLineInset);
     const phase = this.container.querySelector('#table-phase-status');
     if (phase) {
       phase.setAttribute('x', String(potX));
@@ -630,6 +712,12 @@ class TableRenderer {
     }
     this.container.querySelector('#table-pot')
       ?.setAttribute('transform', `translate(${potX} ${potY})`);
+    const potZone = this.container.querySelector('#table-pot-zone');
+    if (potZone) {
+      potZone.setAttribute('cx', String(potX));
+      potZone.setAttribute('cy', String(potY));
+      potZone.setAttribute('rx', String(Math.max(62, bounds.width * 0.085)));
+    }
     this.container.querySelector('#community-cards')
       ?.setAttribute('transform', `translate(${potX}, ${potY + 34}) scale(${geometry.boardScale})`);
     const mark = this.container.querySelector('#table-riverline-mark');
@@ -719,6 +807,7 @@ class TableRenderer {
       const stack = this.container.querySelector(`#seat-stack-${i}`);
       const status = this.container.querySelector(`#seat-status-${i}`);
       const contribution = this.container.querySelector(`#contribution-${i}`);
+      const contributionLane = this.container.querySelector(`#contribution-lane-${i}`);
       const action = this.container.querySelector(`#action-${i}`);
       const holeCards = this.container.querySelector(`#hole-cards-${i}`);
       const isHero = player.isHero;
@@ -777,6 +866,7 @@ class TableRenderer {
         ));
         const isVisible = state.showStreetContributions === true
           && player.streetContributionMilliBb > 0;
+        contributionLane?.toggleAttribute('hidden', !isVisible);
         contribution.toggleAttribute('hidden', !isVisible);
         const amount = isVisible ? this.formatMilliBb(player.streetContributionMilliBb) : '';
         this.setPokerAmount(contribution, {
@@ -885,6 +975,7 @@ class TableRenderer {
       const stack = this.container.querySelector(`#seat-stack-${i}`);
       const status = this.container.querySelector(`#seat-status-${i}`);
       const contribution = this.container.querySelector(`#contribution-${i}`);
+      const contributionLane = this.container.querySelector(`#contribution-lane-${i}`);
       const action = this.container.querySelector(`#action-${i}`);
       const holeCards = this.container.querySelector(`#hole-cards-${i}`);
       const playerState = Array.isArray(state.players)
@@ -904,6 +995,7 @@ class TableRenderer {
       });
       if (status) status.setAttribute('hidden', '');
       if (contribution) contribution.setAttribute('hidden', '');
+      if (contributionLane) contributionLane.setAttribute('hidden', '');
       if (action) action.setAttribute('hidden', '');
       if (seat) {
         seat.removeAttribute('aria-label');

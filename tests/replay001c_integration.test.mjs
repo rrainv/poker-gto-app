@@ -141,7 +141,7 @@ test('motion is bounded, reduced-motion safe, theme-token based, and has no soun
     assert.match(css, new RegExp(className), className);
   }
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?#visual-table-container \.is-replay-action-motion[\s\S]*?animation: none !important/);
-  const replayMotionCss = css.slice(css.indexOf('/* REPLAY-001C:'));
+  const replayMotionCss = sourceBetween(css, '/* REPLAY-001C:', '[dir="rtl"] .table-seat-stack');
   assert.doesNotMatch(replayMotionCss, /#[0-9a-f]{3,8}/i);
   assert.doesNotMatch(`${playbackSource}\n${bridgeSource}\n${logic.slice(logic.indexOf('function replayActorLabel('), logic.indexOf('function deriveDecisionContext('))}`, /SoundFX/);
 });
@@ -173,7 +173,8 @@ test('replay cues share the bounded semantic motion scale and stay restrained', 
   assert.match(css, /--replay-motion-action:\s*var\(--motion-normal-semantic\)/);
   assert.match(css, /--replay-motion-deal:\s*var\(--motion-poker-settle\)/);
   assert.match(css, /@keyframes replay-action-badge-a \{ from \{ opacity: 0; translate: 0 7px/);
-  assert.match(css, /@keyframes replay-card-deal \{ from \{ opacity: 0; translate: 0 -14px/);
+  assert.match(css, /@keyframes replay-card-deal \{ from \{ opacity: 0; translate: var\(--card-deal-from-x, 0\) var\(--card-deal-from-y, -14px\)/);
+  assert.match(css, /@keyframes replay-fold-cards-a[\s\S]*?translate: var\(--card-fold-to-x, 0\) var\(--card-fold-to-y, 12px\)/);
   assert.match(css, /\.table-hole-cards\.is-replay-card-motion/);
   assert.match(css, /@keyframes replay-next-actor-a[\s\S]*stroke-dashoffset: 80[\s\S]*stroke-dashoffset: 0/);
   assert.doesNotMatch(css.slice(css.indexOf('/* REPLAY-001C:')), /infinite|alternate|rotate|bounce/i);

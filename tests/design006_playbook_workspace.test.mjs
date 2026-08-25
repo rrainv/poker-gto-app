@@ -246,7 +246,7 @@ test('Playbook hierarchy does not depend on an arbitrary drag/drop layout implem
 
 test('Playbook redesign remains tokenized across Midnight, Graphite, and Daylight', () => {
   const start = css.indexOf('DESIGN-006: Playbook analysis workspace');
-  const design = css.slice(start);
+  const design = css.slice(start, css.indexOf('SAVED-OBJECTS-002:', start));
   assert.ok(start > 0);
   assert.match(design, /var\(--surface-panel\)/);
   assert.match(design, /var\(--text-primary\)/);

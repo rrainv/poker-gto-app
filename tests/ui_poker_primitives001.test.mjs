@@ -53,7 +53,7 @@ test('one scalable chip visual authority serves inline glyphs and physical table
   }
   assert.match(small, /width="14" height="14"/);
   assert.match(normal, /width="18" height="18"/);
-  assert.match(stack, /class="poker-chip-stack" transform="scale\(1\.25\)"/);
+  assert.match(stack, /class="poker-chip-stack poker-chip-stack--pair" transform="scale\(1\.25\)"/);
   assert.equal((stack.match(/class="poker-chip-visual poker-chip-stack-/g) || []).length, 2);
   assert.equal((stack.match(/class="poker-chip-body"/g) || []).length, 2);
   assert.doesNotMatch(primitiveSource, /emoji|icon-font|fontawesome|material-icons|lucide|coin|\p{Extended_Pictographic}/iu);
@@ -112,13 +112,16 @@ test('physical table amount groups have no nested viewport that can clip chip or
     value: '123.5',
     unit: 'bb',
     ariaHidden: true,
+    visualVariant: 'pot',
   });
-  assert.match(markup, /<g id="table-pot" class="poker-table-amount poker-table-amount--normal table-pot"/);
+  assert.match(markup, /<g id="table-pot" class="poker-table-amount poker-table-amount--normal poker-table-amount--pot table-pot"/);
   assert.match(markup, /transform="translate\(400 213\)"/);
   assert.match(markup, /poker-table-amount-chip-stack/);
+  assert.match(markup, /class="poker-table-amount-surface"/);
+  assert.equal((markup.match(/class="poker-chip-body"/g) || []).length, 4);
   assert.match(markup, /text-anchor="start"/);
   assert.match(markup, /poker-amount-prefix">Pot <\/tspan><tspan class="poker-amount-value">123\.5/);
-  assert.doesNotMatch(markup, /<svg|viewBox=|width=|height=/);
+  assert.doesNotMatch(markup, /<svg|viewBox=/);
 });
 
 test('Hebrew keeps each amount as an LTR poker-data island', () => {
@@ -147,13 +150,17 @@ test('chip color and amount typography are token-driven in Midnight and Daylight
 test('table keeps inline stacks while pot and contributions use physical chip groups', () => {
   assert.match(renderer, /id: 'table-pot',[\s\S]*?className: 'table-pot'[\s\S]*?size: 'normal'/);
   assert.match(renderer, /id: `seat-stack-\$\{i\}`[\s\S]*?className: 'table-seat-meta table-seat-stack'[\s\S]*?size: 'small'/);
+  assert.match(renderer, /id: `seat-stack-\$\{i\}`[\s\S]*?chipStyle: 'stack'/);
   assert.match(renderer, /id: `contribution-\$\{i\}`,[\s\S]*?className: 'table-contribution',[\s\S]*?size: 'small'/);
+  assert.match(renderer, /visualVariant: 'pot'/);
+  assert.match(renderer, /visualVariant: 'contribution'/);
   assert.match(renderer, /id="table-contributions-layer" class="table-contributions-layer"/);
   assert.match(renderer, /contributionsLayer\.innerHTML = contributionsHtml/);
   assert.match(renderer, /this\.setPokerAmount\(stack/);
   assert.match(renderer, /this\.setPokerAmount\(contribution/);
   assert.match(renderer, /this\.setPokerAmount\(pot/);
-  assert.doesNotMatch(renderer, /table-contribution-surface|table-contribution-chip-visual|translate\(0, 46\)/);
+  assert.match(renderer, /id="contribution-lane-\$\{i\}" class="table-contribution-lane"/);
+  assert.match(primitiveSource, /poker-table-amount-surface/);
   assert.equal((translations.match(/'table\.potLabel':/g) || []).length, 3);
 });
 
@@ -233,6 +240,7 @@ test('every trusted non-zero contribution renders once and zero or reset values 
     renderer.indexOf('if (action) {', renderer.indexOf('if (contribution) {')),
   );
   assert.match(contributionRender, /const isVisible = state\.showStreetContributions === true[\s\S]*?player\.streetContributionMilliBb > 0/);
+  assert.match(contributionRender, /contributionLane\?\.toggleAttribute\('hidden', !isVisible\)/);
   assert.match(contributionRender, /contribution\.toggleAttribute\('hidden', !isVisible\)/);
   assert.match(contributionRender, /this\.setPokerAmount\(contribution/);
   assert.doesNotMatch(contributionRender, /isHero|visualSeatIndex\s*===?\s*0|position|isButton/);

@@ -52,7 +52,7 @@ test('every surviving preset has a distinct job and removed choices are unavaila
 
   const balancedReserve = Number(css.match(/#visual-table-container\s*\{\s*--play-stage-reserve:\s*(\d+)px/)?.[1]);
   const tableFocusReserve = Number(css.match(/data-layout-preset="table-focus"[^}]*#visual-table-container[\s\S]*?--play-stage-reserve:\s*(\d+)px/)?.[1]);
-  assert.equal(balancedReserve, 430);
+  assert.equal(balancedReserve, 455);
   assert.equal(tableFocusReserve, 350);
   assert.ok(tableFocusReserve < balancedReserve, 'Table Focus has a materially larger vertical table target');
   assert.match(css, /data-layout-preset="analysis-focus"[^}]*data-product-destination="analyze"[^}]*\.playbook-workspace\s*\{[^}]*minmax\(0, 1fr\) minmax\(245px, 280px\)/s);
