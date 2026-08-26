@@ -133,7 +133,16 @@ Actions use structured canonical action types; labels are presentation data. Pro
 
 All consumers must obtain user-facing claim semantics from `StrategyClaimPolicy v1`. They must not infer correctness, optimality, exactness, EV loss, or normative grading from a source ID, family, solver/model branding, probability distribution, or confidence number. The current heuristic has generalized comparative authority only. See `STRATEGY_SOURCE_AUTHORITY_SPEC.md`.
 
-A future model/reference provider must enter behind this boundary with a versioned descriptor, explicit context matcher, declared capabilities, and validation-backed authority. Exact bounded coverage must not extrapolate. Do not revive retired loaders.
+`reference-pack/v1` is the accepted declarative bounded-provider foundation.
+It validates source/licensing facts, complete data, capabilities, integrity, and
+exact assumptions before registration; its v1 matcher requires canonical
+DecisionContext v1.1 history and exact Game Rules, positions, stack, tree,
+price, and legality. A match emits a normal StrategyResult; a mismatch invokes
+the separately labelled existing fallback without blending. No production pack
+is currently registered because no production-safe source has been accepted.
+See `REFERENCE_PACK_V1_SPEC.md`.
+
+Any future model/reference provider must enter behind this boundary with a versioned descriptor, explicit context matcher, declared capabilities, and validation-backed authority. Exact bounded coverage must not extrapolate. Do not revive retired loaders.
 
 ## 7. Equity
 

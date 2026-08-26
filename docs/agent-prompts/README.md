@@ -17,7 +17,7 @@ Use these files to keep ticket prompts concise and consistent.
 | UI/UX/Product repair | `../project/QA_BACKLOG.md`, `../project/PRODUCT_RETURN_QUEUE.md`, `../project/PRODUCT_SPEC.md`, `UI_STABILIZATION_PROMPT.md` |
 | New product feature | `../project/PRODUCT_BACKLOG.md`, relevant subsystem spec |
 | Poker rules/Equity | `../project/GAME_RULES_V1_SPEC.md`, `../project/ARCHITECTURE_CONTRACT.md`, `../project/QA_AND_REGRESSION_SPEC.md` |
-| Strategy/fallback/reference authority | `../project/STRATEGY_SOURCE_AUTHORITY_SPEC.md`, calibration docs |
+| Strategy/fallback/reference authority | `../project/STRATEGY_SOURCE_AUTHORITY_SPEC.md`, `../project/REFERENCE_PACK_V1_SPEC.md`, calibration docs |
 | Solver research | `PRELFLOP_SOLVER_DESIGN.md`, `../solver/` specifications |
 | Model work | `PREFLOP_MODEL_PROMPT.md`; only after validated data exists |
 | i18n | `I18N_AUDIT_PROMPT.md`, QA backlog i18n section |

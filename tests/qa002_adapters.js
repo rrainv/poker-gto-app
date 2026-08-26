@@ -23,6 +23,9 @@ const HEURISTIC_EVALUATOR_PATH = path.join(
 const PREFLOP_HEURISTIC_PATH = path.join(
   REPO_ROOT, 'app', 'src', 'strategy', 'preflop-heuristic.mjs',
 );
+const PREFLOP_DECISION_ROLE_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'application', 'preflop-decision-role.mjs',
+);
 const POSTFLOP_HEURISTIC_PATH = path.join(
   REPO_ROOT, 'app', 'src', 'strategy', 'postflop-heuristic.mjs',
 );
@@ -69,12 +72,14 @@ function createHarness() {
   const source = fs.readFileSync(LOGIC_PATH, 'utf8');
   const moduleSource = (filePath) => fs.readFileSync(filePath, 'utf8')
     .replace(/import[\s\S]*?from\s+['"][^'"]+['"];\s*/g, '')
+    .replace(/export\s+\{[\s\S]*?\}\s+from\s+['"][^'"]+['"];\s*/g, '')
     .replaceAll('export ', '');
   const strategySourceAuthoritySource = moduleSource(STRATEGY_SOURCE_AUTHORITY_PATH);
   const strategyClaimPolicySource = moduleSource(STRATEGY_CLAIM_POLICY_PATH);
   const strategyContractSource = moduleSource(STRATEGY_RESULT_PATH);
   const strategyProviderSource = moduleSource(STRATEGY_PROVIDER_PATH);
   const heuristicEvaluatorSource = moduleSource(HEURISTIC_EVALUATOR_PATH);
+  const preflopDecisionRoleSource = moduleSource(PREFLOP_DECISION_ROLE_PATH);
   const preflopHeuristicSource = moduleSource(PREFLOP_HEURISTIC_PATH);
   const postflopHeuristicSource = moduleSource(POSTFLOP_HEURISTIC_PATH);
   const heuristicStrategySource = moduleSource(HEURISTIC_STRATEGY_PATH);
@@ -206,6 +211,7 @@ function createHarness() {
       return seen;
     }
     ${heuristicEvaluatorSource}
+    ${preflopDecisionRoleSource}
     ${preflopHeuristicSource}
     ${postflopHeuristicSource}
     ${heuristicStrategySource}

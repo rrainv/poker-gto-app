@@ -123,6 +123,7 @@ function scenario(overrides = {}) {
 function withoutV11Fields(value) {
   const omitted = new Set([
     'contractVersion',
+    'gameRules',
     'startingStackBb',
     'heroStackBb',
     'effectiveStackBb',

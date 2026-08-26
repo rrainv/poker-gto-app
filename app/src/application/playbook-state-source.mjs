@@ -15,6 +15,7 @@ import {
   DECISION_CONTEXT_CONTRACT_VERSION,
   DECISION_CONTEXT_SCHEMA_VERSION,
   createDecisionContextDerivation,
+  createDecisionContextGameRulesProjection,
   deriveDecisionContextFromPokerState,
   unavailableDecisionContextField,
 } from './decision-context-from-poker-state.mjs';
@@ -436,6 +437,28 @@ function snapshotScenarioAccounting(input) {
   throw new RangeError(`Unsupported Scenario collection policy: ${String(policy.type)}`);
 }
 
+function scenarioRulesSnapshot(input, tableSize) {
+  if (input.schemaVersion === PLAYBOOK_SCENARIO_V2_SCHEMA_VERSION) {
+    return input.rulesSnapshot;
+  }
+  if (input.rakeMode === 'fixed' && tableSize < 7) return null;
+  const straddleBb = Number(input.straddleBb ?? 0);
+  if (!Number.isFinite(straddleBb) || straddleBb !== 0) return null;
+  const anteBb = Number(input.anteBb ?? 0);
+  if (!Number.isFinite(anteBb) || anteBb < 0) return null;
+  const anteMilliBb = bbToMilliBb(anteBb, 'Scenario anteBb');
+  return createGameRulesSnapshotFromLegacyGameConfiguration({
+    mode: input.rakeMode === 'fixed' ? GAME_MODES.CLUBGG : GAME_MODES.HOME,
+    smallBlindMilliBb: 500,
+    bigBlindMilliBb: 1000,
+    chipUnitMilliBb: 100,
+    ante: {
+      type: anteMilliBb === 0 ? ANTE_TYPES.NONE : ANTE_TYPES.PER_PLAYER,
+      amountMilliBb: anteMilliBb,
+    },
+  }, tableSize);
+}
+
 /**
  * Project compatibility accounting vocabulary from the Scenario's authority.
  * V1 is an explicit legacy reader; v2 reads only its immutable rules snapshot.
@@ -633,11 +656,22 @@ export function deriveDecisionContextFromPlaybookScenario(scenarioInput) {
   const accounting = input.schemaVersion === PLAYBOOK_SCENARIO_V2_SCHEMA_VERSION
     ? snapshotScenarioAccounting(input)
     : legacyScenarioAccounting(input);
+  const projectedRulesSnapshot = scenarioRulesSnapshot(input, tableSize);
+  const gameRules = projectedRulesSnapshot === null
+    ? null
+    : createDecisionContextGameRulesProjection(projectedRulesSnapshot, tableSize);
+  if (gameRules === null) {
+    derivationEvents.push(unavailableDecisionContextField(
+      'gameRules',
+      'scenario_game_rules_unavailable',
+    ));
+  }
 
   return deepFreeze({
     schemaVersion: DECISION_CONTEXT_SCHEMA_VERSION,
     contractVersion: DECISION_CONTEXT_CONTRACT_VERSION,
     tableSize,
+    gameRules,
     opponentCount: null,
     heroPosition,
     street,

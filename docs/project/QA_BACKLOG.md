@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; the first trusted bounded reference pack/provider is active next; `PREMIUM-CLOSEOUT-001` is the later pre-release quality gate).
+Last consolidated: August 26, 2026 (`REFERENCE-PACK-001` checkpointed its provider foundation with source acquisition intentionally incomplete; Training Memory / re-drill is active next; `PREMIUM-CLOSEOUT-001` is the later pre-release quality gate).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -33,9 +33,10 @@ A visual issue is not `CLOSED` without manual/browser confirmation.
 | QA-DECISION-CONTEXT-001A | CLOSED | v1.1 live/current stack, unclamped current pot, effective stack, position relation, canonical legal sizing, bounded prior-action facts, Scenario lossiness and derivation provenance accepted; legacy compatibility stack/pot remain explicitly non-live. | DECISION-CONTEXT-001A |
 | QA-STRATEGY-REPAIR-001B | CLOSED | Live SPR, exact price, legality, bounded position/history and separated response-family structure accepted without authority upgrade; known postflop saturation remains explicit reference debt. | STRATEGY-REPAIR-001B |
 | QA-REFERENCE-BENCH-001 | CLOSED | Source-agnostic private/manual benchmark schema, context gate, raw/normalized action projections, TVD/bias/equity semantics, CLI and proprietary-data boundary accepted. | REFERENCE-BENCH-001 |
+| QA-REFERENCE-PACK-001 | PARTIAL / ACCEPTED FOUNDATION CHECKPOINT | `reference-pack/v1` now validates exact assumptions, complete 169-class structure, legality, probability mass, capabilities, source/license/redistribution fields, validation identity, and deterministic integrity; strict canonical matching, provider selection, truthful fallback, claim policy, and generic Playbook/Training/Matrix/Analyze/Review paths are automated. No production-safe corpus was available, synthetic fixtures are test-gated, and browser discovery exposed no Firefox/browser for manual covered/near-miss acceptance. | `RET-REFERENCE-PACK-001` production source acquisition/review; later Firefox acceptance when a real pack exists |
 | QA-PREFLOP-ROLE-001 | CLOSED | Canonical histories now preserve exact preflop decision role, Hero prior voluntary action, initial/latest aggressors, distinct aggressor count and cold-action semantics; actual role remains distinct from fallback calibration. | PREFLOP-ROLE-001 |
 | QA-PREFLOP-CALIBRATION-001 | CLOSED | Bounded six-max BB-vs-BTN cold-response policy now separates continue value, passive realization and aggression suitability; all non-target role distributions and postflop corpus remain byte-stable; source remains generalized comparative v4. | PREFLOP-CALIBRATION-001 |
-| QA-PREFLOP-REFERENCE-001 | DEFERRED | Exact rake/sizing, wider position/stack/open-size validation and independently reviewed provenance/licensing are still required before any reference-grade preflop frequencies or stronger claims. | first trusted reference-pack program |
+| QA-PREFLOP-REFERENCE-001 | PARTIAL / DEPENDENCY-GATED | The preferred six-max BB-versus-BTN 2.5bb no-rake/no-ante family now has an exact contract/matcher and synthetic architecture coverage, but no production frequencies, accepted sizing tree, independently reviewed validation corpus, or production-safe provenance/licensing. Neighboring positions/stacks/open sizes remain unsupported rather than inferred. | `RET-REFERENCE-PACK-001` / future bounded source review |
 | QA-POSTFLOP-REFERENCE-001 | DEFERRED | Strong-made-hand aggression saturation, coarse opponent-range construction and unsized postflop strategy remain known generalized-heuristic debt. | future trusted postflop reference/calibration |
 
 ## Active Table Presence / full-hand vNext

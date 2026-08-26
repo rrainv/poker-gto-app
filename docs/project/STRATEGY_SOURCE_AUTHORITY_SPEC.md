@@ -264,6 +264,15 @@ Personal dominant-only evidence remains qualitative/dominant-only; it must not b
 
 The provider supplies a versioned descriptor and exact coverage only after matching every bounded assumption. Exact match may enable declared normative claims. Mismatch returns unsupported so another provider/fallback handles it. No consumer receives pack-specific branches.
 
+`REFERENCE-PACK-001` implements this path as `reference-pack/v1` with a strict
+declarative validator, exact canonical matcher, provider adapter, and unchanged
+heuristic fallback. Production registration requires an accepted validation
+status plus explicit permitted redistribution/repository inclusion. Synthetic
+fixtures require a test-only gate and cannot claim `validated_reference`.
+There is currently no registered production pack, accepted frequency corpus, or
+normative/EV/optimality upgrade. Contract and current source blocker are owned
+by `REFERENCE_PACK_V1_SPEC.md`.
+
 ### Learned provider
 
 The model supplies a versioned descriptor, explicit evaluation/validation basis, coverage, and actual capabilities. Being learned grants no authority. Generalized coverage cannot become exact merely because a confidence score is high.

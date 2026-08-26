@@ -174,6 +174,30 @@ export const STRATEGY_LIMITATIONS = deepFreeze({
     message: 'This source does not cover the current decision context.',
     priority: 100,
   },
+  reference_pack_bounded_node: {
+    code: 'reference_pack_bounded_node',
+    messageKey: 'This reference covers only its exact declared node; nearby contexts use another source.',
+    message: 'This reference covers only its exact declared node; nearby contexts use another source.',
+    priority: 60,
+  },
+  reference_pack_no_action_ev: {
+    code: 'reference_pack_no_action_ev',
+    messageKey: 'This reference pack does not supply per-action EV.',
+    message: 'This reference pack does not supply per-action EV.',
+    priority: 40,
+  },
+  reference_pack_not_optimality_evidence: {
+    code: 'reference_pack_not_optimality_evidence',
+    messageKey: 'This reference pack does not prove optimality.',
+    message: 'This reference pack does not prove optimality.',
+    priority: 50,
+  },
+  reference_pack_synthetic_test_only: {
+    code: 'reference_pack_synthetic_test_only',
+    messageKey: 'Synthetic reference-pack data is test-only and is not production poker truth.',
+    message: 'Synthetic reference-pack data is test-only and is not production poker truth.',
+    priority: 100,
+  },
 });
 
 export function strategyLimitationForCode(code) {

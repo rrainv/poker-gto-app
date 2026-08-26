@@ -30,6 +30,32 @@ This capability is an evidence and product-authority program. It is not a promis
 
 These foundations do not establish a validated general reference provider. Current capability and limitation status remains in the [Product Backlog](../PRODUCT_BACKLOG.md).
 
+## Durable accepted decisions from `REFERENCE-PACK-001`
+
+- `reference-pack/v1` is the declarative bounded pack contract; its first
+  representation is exactly the canonical 169 preflop classes.
+- Exact pack selection is centralized in StrategyProvider through
+  `reference-pack-context-matcher/v1`; consumers remain source-agnostic.
+- The matcher requires canonical DecisionContext v1.1 history plus an additive
+  exact Game Rules projection, stacks, positions, tree, economics, cold-action
+  semantics, legality, and hand class. It never interpolates.
+- A validated pack is indexed by canonical hand class and returns a normal
+  StrategyResult. Any mismatch uses the separately labelled existing heuristic
+  fallback without mixing data.
+- Synthetic fixtures require an explicit test gate and never become production
+  truth. Production registration requires accepted validation and explicit
+  permitted redistribution/repository inclusion.
+- V1 never grants optimality. Normative grading requires an independently
+  accepted `validated_reference`; distribution, sizing, EV, grading, and
+  optimality remain separate capabilities.
+- The preferred first intake remains six-max BB cold response to a BTN 2.5bb
+  open at exact no-rake/no-ante 100bb assumptions, but no production source has
+  been accepted. Source acquisition resumes only with defensible legal rights,
+  exact assumptions, immutable data, and predeclared independent validation.
+
+The implementation contract and current blocker are owned by
+[Reference Pack v1](../REFERENCE_PACK_V1_SPEC.md).
+
 ## Desired future behavior
 
 ### Trusted bounded reference first
@@ -150,13 +176,15 @@ Advanced users must be able to inspect the facts without mandatory narrative.
 
 ## Suggested implementation slices
 
-These are possible future boundaries, not execution priority:
+These are capability boundaries, not execution priority. Slices 2 through 5
+are checkpointed as architecture with synthetic tests; production source review
+within slices 1/2 remains open:
 
 1. Versioned research-intake manifest and validation hardening around the existing benchmark path.
-2. Selection of one exact first reference family and an implementation-ready coverage contract.
-3. Pack descriptor, integrity/provenance manifest, and exact context matcher.
-4. Provider adapter behind `StrategyProvider v1`, with unsupported fallback and no consumer-specific branches.
-5. Validation and claim-policy acceptance across Playbook, Training, Matrix, Analysis, and Review.
+2. Selection of one exact first intake family and an implementation-ready coverage contract; production data remains source-blocked.
+3. Pack descriptor, integrity/provenance manifest, and exact context matcher — checkpointed.
+4. Provider adapter behind `StrategyProvider v1`, with unsupported fallback and no consumer-specific branches — checkpointed.
+5. Validation and claim-policy acceptance across Playbook, Training, Matrix, Analysis, and Review — checkpointed with synthetic data only.
 6. Bounded expansion to neighboring contexts only when independently validated.
 7. Dataset feasibility study with licensing, label quality, baseline, metrics, and stop criteria.
 8. Learned-provider experiment only if it beats an appropriate deterministic baseline on trustworthy held-out evidence.
@@ -181,7 +209,9 @@ No new web research is introduced by this dossier.
 
 ## Open product questions
 
-- Which exact bounded family should become the first trusted production reference pack?
+- Can the preferred exact BB-versus-BTN family acquire a production-safe,
+  independently defensible source, or should a better licensed/reproducible
+  bounded family replace it?
 - What licensing and redistribution model is acceptable for that family?
 - Which validation evidence and acceptance thresholds justify each declared capability?
 - How should users select a source, and when should fallback selection be automatic versus explicit?
@@ -194,7 +224,9 @@ No new web research is introduced by this dossier.
 
 - `POKER-SOURCE-INTAKE-001` — **SUPERSEDED** by validated research intake, source authority, benchmark evidence, and a separately approved bounded provider; arbitrary tree upload stays rejected.
 - `PROD-IMPORT-001` — **PRESERVED / EVOLVED** as that validated, provenance-aware intake path; unlike arbitrary upload, the historical idea already required validation.
-- `REFERENCE-PACK-001` — **PRESERVED** as the trusted bounded pack/provider direction.
+- `REFERENCE-PACK-001` — **CHECKPOINTED / INTENTIONALLY INCOMPLETE**: contract,
+  validation, strict matcher, provider adapter, fallback, and consumer path are
+  implemented; production source acquisition remains open.
 - `FALLBACK-CALIBRATION-002` — **PRESERVED** as systematic evidence-driven family calibration; completed narrow repairs do not imply broad completion.
 - `DATASET-001` — **PRESERVED**, dependency-gated by trustworthy labels, licensing, and a measurable evaluation purpose.
 - `MODEL-PROVIDER-001` — **PRESERVED**, dependency-gated; the provider contract exists, but no production learned provider is implied.
@@ -208,6 +240,7 @@ No new web research is introduced by this dossier.
 - [Reference Benchmark First Capture Plan](../REFERENCE_BENCHMARK_FIRST_CAPTURE_PLAN.md)
 - [DecisionContext](../DECISION_CONTEXT_SPEC.md)
 - [Architecture Contract](../ARCHITECTURE_CONTRACT.md)
+- [Reference Pack v1](../REFERENCE_PACK_V1_SPEC.md)
 - [Learning Evidence Foundation](LEARNING_EVIDENCE_FOUNDATION.md)
 - [Natural-Language Intelligence](NATURAL_LANGUAGE_INTELLIGENCE.md)
 - [Personal Strategy Intelligence](PERSONAL_STRATEGY_INTELLIGENCE.md)

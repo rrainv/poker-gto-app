@@ -2,10 +2,13 @@ import {
   GAME_RULES_COLLECTION_TYPES,
   POKER_STATE_SCHEMA_VERSION,
   POKER_STATE_V2_SCHEMA_VERSION,
+  POSITIONS_BY_TABLE_SIZE,
   STREETS,
   assertCardArray,
   assertUniqueKnownCards,
+  getGameRulesSemanticFingerprint,
   isHiddenHoleCards,
+  validateGameRulesDefinition,
   validateGameRulesSnapshot,
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
@@ -513,9 +516,11 @@ function validateDecisionContextSnapshot(context, derivation) {
     'totalForcedContributionBb',
   ];
   const extended = context.contractVersion === 'decision-context/v1.1';
+  const carriesGameRules = Object.hasOwn(context, 'gameRules');
   requireExactKeys(context, extended ? [
     ...legacyKeys,
     'contractVersion',
+    ...(carriesGameRules ? ['gameRules'] : []),
     'startingStackBb',
     'heroStackBb',
     'effectiveStackBb',
@@ -567,6 +572,33 @@ function validateDecisionContextSnapshot(context, derivation) {
   requireNonNegativeNumber(context.totalForcedContributionBb, 'DecisionContext.totalForcedContributionBb');
 
   if (extended) {
+    if (carriesGameRules && context.gameRules !== null) {
+      requireObject(context.gameRules, 'DecisionContext.gameRules');
+      requireExactKeys(
+        context.gameRules,
+        ['schemaVersion', 'semanticFingerprint', 'seatedPlayers', 'orderedPositions', 'definition'],
+        'DecisionContext.gameRules',
+      );
+      if (context.gameRules.schemaVersion !== 'decision-context-game-rules/v1') {
+        throw new TypeError('Expected decision-context-game-rules/v1');
+      }
+      if (context.gameRules.seatedPlayers !== context.tableSize
+        || !Array.isArray(context.gameRules.orderedPositions)
+        || JSON.stringify(context.gameRules.orderedPositions)
+          !== JSON.stringify(POSITIONS_BY_TABLE_SIZE[context.tableSize])) {
+        throw new RangeError('DecisionContext game-rules table facts must match tableSize');
+      }
+      requireString(
+        context.gameRules.semanticFingerprint,
+        'DecisionContext.gameRules.semanticFingerprint',
+        4096,
+      );
+      const gameRulesDefinition = validateGameRulesDefinition(context.gameRules.definition);
+      if (getGameRulesSemanticFingerprint(gameRulesDefinition)
+        !== context.gameRules.semanticFingerprint) {
+        throw new RangeError('DecisionContext game-rules definition must match its fingerprint');
+      }
+    }
     requirePositiveNumber(context.startingStackBb, 'DecisionContext.startingStackBb');
     requireNonNegativeNumber(context.heroStackBb, 'DecisionContext.heroStackBb', { nullable: true });
     requireNonNegativeNumber(
@@ -920,6 +952,10 @@ function validateSavedSpotRulesConsistency(snapshot) {
   const expectedPerPlayerBb = fixed ? policy.amountMilliBb / 1000 : 0;
   const expectedTotalBb = fixed ? (policy.amountMilliBb * context.tableSize) / 1000 : 0;
   const expectedRakeMode = fixed ? 'fixed' : 'off';
+  if (context.gameRules != null
+    && context.gameRules.semanticFingerprint !== rulesSnapshot.semanticFingerprint) {
+    throw new RangeError('SavedSpotSnapshot DecisionContext game rules must match its rules snapshot');
+  }
   if (context.rakeMode !== expectedRakeMode
     || context.forcedContributionPerPlayerBb !== expectedPerPlayerBb
     || context.totalForcedContributionBb !== expectedTotalBb) {

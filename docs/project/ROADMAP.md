@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; the first trusted bounded reference pack/provider is active next; `PREMIUM-CLOSEOUT-001` is deferred to the pre-release quality gate).
+Last refreshed: August 26, 2026 (`REFERENCE-PACK-001` checkpointed its provider foundation with source acquisition intentionally incomplete; Training Memory / re-drill is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
 
 This roadmap explains major directional sequencing and why phases are ordered. [Current Phase](CURRENT_PHASE.md) owns the exact current checkpoint and execution order; [Product Backlog](PRODUCT_BACKLOG.md) owns concise capability/status. The [capability dossiers](capabilities/README.md) preserve detailed long-term intent without setting priority.
 
@@ -23,7 +23,7 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 ## Sequencing principles
 
 1. Keep the visible product usable and record non-blocking visual debt, but do not repeatedly polish intermediate surfaces ahead of higher-value reference and learning work.
-2. Establish one trusted bounded reference provider before treating Training disagreement as normative or expanding model ambitions.
+2. Use the checkpointed bounded-provider gate before treating Training disagreement as normative or expanding model ambitions; no accepted source means comparative semantics only.
 3. Preserve durable learning evidence before building longitudinal summaries, re-drill, or mastery claims.
 4. Review the unified Personal Strategy experience before integrating it into provider and Training paths.
 5. Propagate ranges and expand Saved object types only through approved combo/evidence/persistence contracts.
@@ -38,8 +38,8 @@ The completed dossier migration records more possibilities; it does not promote 
 2. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT — `TABLE-PHYSICALITY-003`** — human acceptance passed scale and overall table coherence as sufficient to move on; revealed-opponent card inspectability remains explicit return debt.
 3. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX/PROVIDER DEBT — `HOME-GAME-001B`** — organizer management, visible correction/lifecycle history, safe archive semantics, and export-only portability are implemented; unavailable live acceptance remains routed debt.
 4. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT — `SETTINGS-IA-001`** — four focused Settings categories, preserved preference authorities, and secondary help/tutorial discovery; live Firefox acceptance remains routed debt.
-5. **ACTIVE NEXT — First trusted bounded reference pack/provider** — exact assumptions, coverage, validation, licensing/provenance, capabilities, and fallback.
-6. **PLANNED NEXT — Training Memory / re-drill** — durable history, review queue, same/similar spot, scheduling, filters, and truthful trends.
+5. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `REFERENCE-PACK-001`** — pack contract, validation, strict matcher, provider/fallback, and generic consumers are implemented; production-safe source data and independent acceptance remain a named return dependency.
+6. **ACTIVE NEXT — Training Memory / re-drill** — durable history, review queue, same/similar spot, scheduling, filters, and truthful source-aware trends.
 7. **PLANNED NEXT — `PERSONAL-STRATEGY-002R`** — independent real-user review.
 8. **PLANNED NEXT — Personal Strategy integration** — preserve intended/reference/observed roles and explicit Training-evidence opt-in.
 9. **NEXT INTELLIGENCE / PRODUCT WAVE; ORDER TO REASSESS —** accepted candidates include `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, later Opponent Intelligence / OpponentPolicy, and `HOME-002B`.
@@ -56,7 +56,7 @@ Real-browser/human judgment remains required for hierarchy, balance, readability
 
 ## Phase B — trusted reference strategy
 
-Choose one reproducible bounded preflop family and prove exact Game Rules/rake, stacks, sizing tree, coverage matching, provenance/licensing, validation, and unsupported fallback. Source branding never grants authority; private benchmark observations never become production packs. Broader coverage and learned models follow only when measured evidence justifies them.
+The `reference-pack/v1` checkpoint proves exact Game Rules/stack/tree/legality matching, declarative validation and integrity, provider selection, policy-gated consumers, and unsupported heuristic fallback for a preferred six-max BB-versus-BTN 2.5bb intake family. No production-safe frequency corpus has been accepted, so production registration and all stronger authority/capability claims remain blocked. Resume only when exact immutable source data, compatible license/redistribution rights, reproducible or strong provenance, and independent validation evidence are available. Source branding never grants authority; private benchmark observations never become production packs. Broader coverage and learned models follow only when measured evidence justifies them.
 
 Detailed direction: [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md).
 

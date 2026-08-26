@@ -16,6 +16,7 @@ Executable code and passing tests are final implementation truth. Documentation 
 - [Project charter](project/PROJECT_CHARTER.md)
 - [Product and UI specification](project/PRODUCT_SPEC.md)
 - [Architecture contract](project/ARCHITECTURE_CONTRACT.md)
+- [Reference Pack v1 specification](project/REFERENCE_PACK_V1_SPEC.md)
 - [Definition of done](project/DEFINITION_OF_DONE.md)
 - [Git workflow](project/GIT_WORKFLOW.md)
 - [Cross-surface interaction grammar](project/INTERACTION_GRAMMAR.md)

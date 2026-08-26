@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; the first trusted bounded reference pack/provider is active next; `PREMIUM-CLOSEOUT-001` is deferred to the pre-release quality gate).
+Last refreshed: August 26, 2026 (`REFERENCE-PACK-001` checkpointed its provider foundation with production source acquisition intentionally incomplete; Training Memory / re-drill is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -37,11 +37,12 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - the existing theme, card, layout, audio, language, tutorial, and account/profile authorities remain intact, while preview/test actions and OS reduced-motion status are not misrepresented as stored preferences;
    - automated inventory, localization, keyboard, authority, and runtime-boundary coverage is complete; the requested real Firefox viewport/theme/language matrix remains explicitly unverified.
 
-5. **ACTIVE NEXT — first trusted bounded reference pack/provider**
-   - establish defensible strategy truth for one narrow covered family with exact rules/rake, stacks, sizing tree, source/version/licensing/provenance, validation, capabilities, coverage matching, and unsupported fallback;
-   - validate the source/provider architecture and give Training and Review a stronger comparison target before richer learning and explanation work.
+5. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `REFERENCE-PACK-001`**
+   - implemented `reference-pack/v1`, deterministic validation/integrity, an exact canonical matcher, a provider adapter, unchanged labelled fallback, and source-agnostic Playbook/Training/Matrix/Analyze/Review consumption;
+   - retained all repository frequencies as explicit synthetic test data behind a test-only gate; no production pack or authority upgrade is registered;
+   - resume source acquisition only with exact immutable assumptions/data, explicit compatible license and redistribution rights, reproducible or strong provenance, and predeclared independent validation evidence.
 
-6. **PLANNED NEXT — Training Memory / re-drill intelligence**
+6. **ACTIVE NEXT — Training Memory / re-drill intelligence**
 
 7. **PLANNED NEXT — `PERSONAL-STRATEGY-002R` independent review**
 
@@ -65,6 +66,7 @@ The following architecture is established and must not be duplicated:
 - `shared/poker-domain/` owns cards, state, actions, legality, accounting, evaluator, canonical Equity, Hold'em combos, and weighted ranges.
 - Scenario remains a truthful lossy snapshot; Hand remains canonical legal history.
 - `DecisionContext v1` plus additive v1.1 facts feeds one `StrategyProvider v1` → `StrategyResult v1` → `StrategyClaimPolicy v1` path.
+- `reference-pack/v1` validates declarative bounded packs and can select an exact pack behind that same provider path; no production pack is currently registered.
 - The current deterministic heuristic is generalized/comparative fallback, never solved-GTO, Nash, exact-EV, exploitability, or optimality authority.
 - Training Practice Planner/intent/request own structural curriculum targets; the canonical Training generator owns legal trajectories and grading.
 - `AnalysisExplanation v1`, `RangeAnalysisFacts v1`, and `BluffAnalysisFacts v1` consume trusted facts without becoming poker, Equity, range, or strategy authorities.
@@ -91,13 +93,13 @@ Completed/checkpointed work includes adaptive Table Presence, canonical Replay, 
 
 ### Strategy and references
 
-Source authority, DecisionContext v1.1, exact preflop role semantics, research-only reference benchmarking, and the bounded v4 BB-vs-BTN cold-response calibration are complete foundations. No validated general Hold'em production reference exists.
+Source authority, DecisionContext v1.1, exact preflop role semantics, research-only reference benchmarking, the bounded v4 BB-vs-BTN cold-response calibration, and the `reference-pack/v1` provider foundation are complete/checkpointed foundations. No production reference pack or validated general Hold'em production reference exists.
 
-The first trusted bounded provider is active next because Riverline's visible shell is currently ahead of the trustworthiness and coverage of its strategy reference. It must define exact rules/rake, stacks, sizing tree, source/version/licensing/provenance, validation, declared capabilities, coverage matching, and unsupported fallback, giving Training and Review a defensible narrow comparison target and grounding later natural-language analysis. See the [Reference Strategy dossier](capabilities/REFERENCE_STRATEGY_EVOLUTION.md).
+`REFERENCE-PACK-001` proves the strict pack/provider/claim/fallback architecture for the preferred six-max BB-versus-BTN 2.5bb intake family, but a bounded browser pass found no available browser and no production-safe corpus was otherwise supplied. The exact resume point is source acquisition and independent review; synthetic architecture fixtures must never be promoted. Training Memory can proceed because its durable evidence model can preserve the actual heuristic source/version and comparative semantics without pretending reference completion. See the [Reference Pack v1 spec](REFERENCE_PACK_V1_SPEC.md) and [Reference Strategy dossier](capabilities/REFERENCE_STRATEGY_EVOLUTION.md).
 
 ### Training
 
-Varied, Focused, and Full Hand Training are legal, deterministic, provider-backed foundations. The next intelligence program adds durable DecisionRecord/session history, review/mistake queues, same/similar re-drill, spaced/adaptive review, filters/saved drills, truthful trends, and Home/Replay continuity. Comparative heuristic disagreement is not objective poker correctness. See the [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md) and [Learning Evidence](capabilities/LEARNING_EVIDENCE_FOUNDATION.md) dossiers.
+Varied, Focused, and Full Hand Training are legal, deterministic, provider-backed foundations. Training Memory / re-drill is active next: add durable DecisionRecord/session history, review/mistake queues, same/similar re-drill, spaced/adaptive review, filters/saved drills, truthful trends, and Home/Replay continuity. Comparative heuristic disagreement is not objective poker correctness; records must preserve the actual source/version/coverage/capabilities. See the [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md) and [Learning Evidence](capabilities/LEARNING_EVIDENCE_FOUNDATION.md) dossiers.
 
 ### Personal Strategy
 

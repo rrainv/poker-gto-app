@@ -65,6 +65,36 @@ integer milliBB and converts only at this application boundary.
 Heuristic style/profile controls are deliberately absent. They remain explicit
 StrategyProvider fallback options rather than poker-state facts.
 
+### Additive exact Game Rules projection
+
+New v1.1 contexts add `gameRules` as a bounded rules identity for exact
+provider matching:
+
+```js
+gameRules: {
+  schemaVersion: 'decision-context-game-rules/v1',
+  semanticFingerprint,
+  seatedPlayers,
+  orderedPositions,
+  definition // canonical validated GameRulesDefinition v1
+} | null
+```
+
+This is a read-only application projection, not a second rules authority.
+Canonical Hand derives it from the authoritative v2 `rulesSnapshot`. Historical
+PokerState v1 reconstructs the exact legacy-compatibility snapshot before
+projection, preserving v1/v2 provider parity. Scenario v2 projects its supplied
+snapshot; Scenario v1 can project only a valid exact legacy compatibility
+configuration. Otherwise it uses `null` plus
+`scenario_game_rules_unavailable` provenance. A null/unknown projection cannot
+satisfy an exact reference-pack matcher.
+
+The projection retains the complete definition and semantic fingerprint because
+the older `rakeMode`/fixed-collection compatibility fields do not express every
+material rule assumption. It is additive and optional for historical v1.1 Saved
+Spot payloads; new saved contexts validate it when present and require its
+fingerprint to agree with the Saved rules snapshot.
+
 ## 3. Additive current-pot and live-stack fields
 
 - `currentPotBb`: exact current canonical pot converted from integer milliBB at
@@ -232,6 +262,12 @@ regular Training, Saved Spot, Replay-resolved review, Range Analysis, Bluff
 Analysis, and AnalysisExplanation receive or preserve the additive context.
 Personal Strategy remains a separate evidence authority and receives no new
 inference path.
+
+`REFERENCE-PACK-001` uses the additive `gameRules` projection, canonical
+history, live stacks, exact price/pot, exact role, and legal bounds in one strict
+matcher. Missing or mismatched facts make that pack unsupported; the provider
+then uses its separately labelled fallback. See
+`REFERENCE_PACK_V1_SPEC.md`.
 
 STRATEGY-REPAIR-001B may consume the new facts. It must do so explicitly and
 must not reinterpret the compatibility fields. Exact current-pot/SPR logic uses

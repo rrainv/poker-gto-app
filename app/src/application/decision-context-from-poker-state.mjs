@@ -3,6 +3,8 @@ import {
   GAME_RULES_COLLECTION_TYPES,
   GAME_MODES,
   POKER_STATE_V2_SCHEMA_VERSION,
+  POSITIONS_BY_TABLE_SIZE,
+  createGameRulesSnapshotFromLegacyGameConfiguration,
   getLegalActionSpec,
   maximumAmountToMilliBb,
   PHASES,
@@ -10,6 +12,7 @@ import {
   isPlayerLive,
   playerById,
   playersClockwiseAfterSeat,
+  validateGameRulesSnapshot,
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
 
@@ -17,6 +20,8 @@ export const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
 export const DECISION_CONTEXT_CONTRACT_VERSION = 'decision-context/v1.1';
 export const DECISION_CONTEXT_DERIVATION_SCHEMA_VERSION =
   'decision-context-derivation/v1';
+export const DECISION_CONTEXT_GAME_RULES_SCHEMA_VERSION =
+  'decision-context-game-rules/v1';
 
 const STACK_MODES = Object.freeze(new Set(['hero', 'effective', 'custom']));
 const PREFLOP_AGGRESSION_ACTIONS = Object.freeze(['raise', '3bet', '4bet']);
@@ -41,6 +46,36 @@ export function createDecisionContextDerivation(source, events = []) {
 
 export function unavailableDecisionContextField(field, code, value = null) {
   return derivationEvent(field, 'unavailable', code, value);
+}
+
+/**
+ * Exact, read-only projection of canonical GameRulesSnapshot semantics for
+ * strategy coverage matching. The snapshot remains the mathematical authority;
+ * DecisionContext only carries the bounded facts a provider must compare.
+ */
+export function createDecisionContextGameRulesProjection(rulesSnapshot, seatedPlayers) {
+  const snapshot = validateGameRulesSnapshot(rulesSnapshot);
+  const orderedPositions = POSITIONS_BY_TABLE_SIZE[seatedPlayers];
+  if (!orderedPositions) {
+    throw new RangeError('DecisionContext game-rules projection requires 2 through 10 seats');
+  }
+  if (snapshot.setup.seatedPlayers !== seatedPlayers) {
+    throw new RangeError('DecisionContext game-rules projection must match seated players');
+  }
+  return {
+    schemaVersion: DECISION_CONTEXT_GAME_RULES_SCHEMA_VERSION,
+    semanticFingerprint: snapshot.semanticFingerprint,
+    seatedPlayers,
+    orderedPositions: [...orderedPositions],
+    definition: {
+      ...snapshot.definition,
+      tableSize: { ...snapshot.definition.tableSize },
+      blinds: { ...snapshot.definition.blinds },
+      ante: { ...snapshot.definition.ante },
+      straddle: { ...snapshot.definition.straddle },
+      collectionPolicy: { ...snapshot.definition.collectionPolicy },
+    },
+  };
 }
 
 function normalizedDecisionNumber(value, fallback, min, max, field, events) {
@@ -328,6 +363,19 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
   const callAmountBb = legalActions.call.commitMilliBb / 1000;
   const heroStreetContributionBb = hero.streetContributionMilliBb / 1000;
   const accounting = accountingFromPokerState(state);
+  const gameRulesSnapshot = state.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION
+    ? state.rulesSnapshot
+    : createGameRulesSnapshotFromLegacyGameConfiguration({
+      mode: state.game.mode,
+      smallBlindMilliBb: state.game.smallBlindMilliBb,
+      bigBlindMilliBb: state.game.bigBlindMilliBb,
+      chipUnitMilliBb: state.game.chipUnitMilliBb,
+      ante: state.game.ante,
+    }, state.players.length);
+  const gameRules = createDecisionContextGameRulesProjection(
+    gameRulesSnapshot,
+    state.players.length,
+  );
   const currentPotBb = state.potMilliBb / 1000;
   derivationEvents.push(derivationEvent(
     'currentPotBb',
@@ -385,6 +433,7 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
     schemaVersion: DECISION_CONTEXT_SCHEMA_VERSION,
     contractVersion: DECISION_CONTEXT_CONTRACT_VERSION,
     tableSize: state.players.length,
+    gameRules,
     opponentCount,
     heroPosition: hero.position,
     street: state.street,

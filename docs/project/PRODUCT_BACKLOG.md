@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; the first trusted bounded reference pack/provider is active next; `PREMIUM-CLOSEOUT-001` is deferred to the pre-release quality gate).
+Last consolidated: August 26, 2026 (`REFERENCE-PACK-001` checkpointed its provider foundation with source acquisition intentionally incomplete; Training Memory / re-drill is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -32,10 +32,10 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT | `TABLE-PHYSICALITY-003` |
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX/PROVIDER DEBT | `HOME-GAME-001B` |
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT | `SETTINGS-IA-001` |
-| 1 | ACTIVE NEXT | first trusted bounded reference pack/provider |
-| 2 | PLANNED NEXT | Training Memory / re-drill |
-| 3 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
-| 4 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
+| 1 | ACTIVE NEXT | Training Memory / re-drill |
+| return dependency | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `REFERENCE-PACK-001` production source acquisition and acceptance |
+| 2 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
+| 3 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
 | wave | ORDER REASSESS AT CLEAN CHECKPOINT | `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, Opponent Intelligence / OpponentPolicy, `HOME-002B` |
 | later gate | PLANNED LATER / PRE-RELEASE QUALITY GATE | `PREMIUM-CLOSEOUT-001` |
 | future | PRESERVED FUTURE | release/mobile/social/PLO later |
@@ -47,11 +47,11 @@ Documented Equity, bluff, opponent, natural-language, Home Game, sharing, and ra
 | Capability | Status | Accepted scope |
 |---|---|---|
 | source authority, DecisionContext, fallback repair, role semantics, benchmark, and bounded calibration | COMPLETED FOUNDATION | One `DecisionContext → StrategyProvider → StrategyResult → StrategyClaimPolicy` path; current v4 remains generalized/comparative and narrowly calibrated. |
-| first trusted bounded reference pack/provider | ACTIVE NEXT | Establish defensible strategy truth for one narrow covered family; validate source/provider/coverage architecture; strengthen Training and Review comparison; ground later natural-language analysis. Exact rules/rake/stacks/sizing tree, version, licensing/provenance, validation, declared capabilities, coverage matcher, and unsupported fallback remain required. See [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
+| `REFERENCE-PACK-001` bounded reference pack/provider | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `reference-pack/v1`, exact rules/history/stack/legality matcher, deterministic validation/integrity, provider adapter, unchanged labelled fallback, and generic Playbook/Training/Matrix/Analyze/Review consumption are implemented with synthetic test-only data. No production corpus is registered; resume with exact immutable source data, compatible license/redistribution, reproducible or strong provenance, and independent validation evidence. See [Reference Pack v1](REFERENCE_PACK_V1_SPEC.md) and [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
 | broader preflop/postflop reference and evidence-driven fallback calibration | PRESERVED FUTURE | Expand only through measurable validation; exact coverage never extrapolates. See [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
 | trustworthy datasets and learned/model providers | PRESERVED FUTURE / dependency-gated | Only after validated anchors demonstrate value; never train on heuristic labels and market the result as GTO. See [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
 
-Known limitations remain explicit: no validated general reference, coarse postflop opponent ranges, no trustworthy general sizing strategy, no solved multiway equilibrium, and narrow v4 calibration.
+Known limitations remain explicit: no production reference pack or validated general reference, coarse postflop opponent ranges, no trustworthy general sizing strategy, no solved multiway equilibrium, and narrow v4 calibration.
 
 ## 2. Full Hand / Replay / Review
 
@@ -75,7 +75,7 @@ Independent visual/interaction acceptance remains in QA and the Return Queue; im
 | Capability | Status | Accepted scope |
 |---|---|---|
 | deterministic Training and Practice Planner | COMPLETED FOUNDATION | Legal canonical generator, shared provider/grading path, Varied/Focused structural planning, Full Hand mode, reproducible seeds, and generation-only sizing families. |
-| Training Memory / DecisionRecord / review and re-drill | PLANNED NEXT | Durable shown/answered/source/version/context/session history, mistake/review queue, same/similar re-drill, spaced/adaptive review, filters, saved drills, truthful trends, and Home/Replay continuity. See [Learning Evidence Foundation](capabilities/LEARNING_EVIDENCE_FOUNDATION.md) and [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
+| Training Memory / DecisionRecord / review and re-drill | ACTIVE NEXT | Durable shown/answered/source/version/context/session history, mistake/review queue, same/similar re-drill, spaced/adaptive review, filters, saved drills, truthful trends, and Home/Replay continuity. It must preserve actual comparative heuristic semantics while production reference acquisition remains open. See [Learning Evidence Foundation](capabilities/LEARNING_EVIDENCE_FOUNDATION.md) and [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
 | profile-aware Training evidence and opponent-policy drills | PLANNED LATER / dependency-gated | Explicit opt-in, immutable observed provenance, no overwrite of intended strategy, later explicit opponent policy. |
 | study goals | PRESERVED FUTURE / mechanics open | Restrained goals derived from real history; XP/badges/levels/achievements remain rejected by default. See [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
 
@@ -180,7 +180,7 @@ The current settlement algorithm is deterministic; it is not a selected Fewest T
 
 ## 14. Open Product Decisions
 
-- exact first trusted reference-pack family;
+- whether the preferred exact BB-versus-BTN family can acquire a production-safe source or must yield to a better licensed/reproducible bounded family;
 - Training `Not sure` behavior, Training-evidence opt-in placement/default, and future default comparison source;
 - first OpponentPolicy archetypes and custom-policy UX;
 - Saved folders/collections and sharing/forking permissions, read-only-first scope, comments, friends, study groups, and shared drills;

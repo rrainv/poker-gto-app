@@ -537,13 +537,17 @@ test('002B direct generation remains deterministic with additive StrategyResult 
   assert.equal(result.exercise.strategyResult.contextCoverage.kind, 'generalized');
   assert.equal(result.exercise.decisionContext.contractVersion, 'decision-context/v1.1');
   assert.equal(
+    result.exercise.decisionContext.gameRules.schemaVersion,
+    'decision-context-game-rules/v1',
+  );
+  assert.equal(
     result.exercise.decisionContext.currentPotBb,
     result.exercise.pokerState.potMilliBb / 1000,
   );
   assert.equal(Object.hasOwn(result.exercise.generationMetadata, 'scenarioRequest'), false);
   assert.equal(
     createHash('sha256').update(JSON.stringify(result)).digest('hex'),
-    'df1f0d77baf3a6cfbb8d63ac3288e457f727a4a65c04621714db1072ad084a11',
+    '952dc2627f387a4a01ba3e8350537c222c9239d09afc12e07d95b77139fe1ee0',
   );
 });
 
