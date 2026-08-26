@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 26, 2026 (`TABLE-PHYSICALITY-003` completed as an accepted implementation checkpoint with explicit presentation debt; `HOME-GAME-001B` is active next).
+Last consolidated: August 26, 2026 (`HOME-GAME-001B` completed as an accepted implementation checkpoint with explicit manual Firefox/provider debt; `SETTINGS-IA-001` is active next).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -89,8 +89,8 @@ These IDs are durable hands-on findings: open rows are current product defects o
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-HOME-GAME-001A-001 | PARTIAL | Standalone boundary, exact money, append-only corrections, balance rejection, deterministic settlement, lifecycle/reopen, account isolation, Guest memory, groups/session-from-group, atomic persistence, EN/RU/HE structure, RTL/logical CSS and accessible forms are automated; requested Firefox checks at 1024×768, 1366×768 and 1920×1080 remain open. | HOME-GAME-001A human Firefox acceptance / HOME-GAME-001B |
-| QA-HOME-GAME-001A-002 | DEFERRED | Saved-player editing/archive, visible reversal history, session archive/delete confirmation and richer organizer management remain outside the foundation proof surface. | HOME-GAME-001B |
+| QA-HOME-GAME-001A-001 | PARTIAL / ACCEPTED IMPLEMENTATION CHECKPOINT | Standalone/accounting boundaries plus 001B player/group/session management, atomic correction/replacement projection, lifecycle/archive/export behavior, Guest restrictions, EN/RU/HE structure, RTL/logical CSS and accessible dialogs/forms are automated. Browser discovery exposed no available browser, so the requested real Firefox matrix and real authenticated provider path remain open. | dedicated Home Game human Firefox/provider acceptance / `RET-HOMEGAME-001` |
+| QA-HOME-GAME-001A-002 | CLOSED / BOUNDED DECISION | Saved-player edit/archive/restore, ordered group management, visible reversal/replacement history, session archive/restore confirmation, and richer organizer UX are implemented. Hard delete is not exposed; import is deferred because safe retention, validation, version, ownership-adoption and conflict semantics do not exist. Canonical account-only export is implemented. | `HOME-GAME-001B` accepted implementation checkpoint |
 
 ## Product UI / shared presentation
 

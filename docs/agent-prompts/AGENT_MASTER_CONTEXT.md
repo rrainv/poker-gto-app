@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 26, 2026 (`TABLE-PHYSICALITY-003` completed as an accepted implementation checkpoint with explicit presentation debt; `HOME-GAME-001B` is active next).
+Last refreshed: August 26, 2026 (`HOME-GAME-001B` completed as an accepted implementation checkpoint with explicit manual Firefox/provider debt; `SETTINGS-IA-001` is active next).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -53,20 +53,19 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 
 ## Current execution snapshot
 
-`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, `WORKSPACE-COMPOSITION-002`, `DOCS-CAPABILITY-DOSSIERS-001`, and `TABLE-PHYSICALITY-003` are completed/accepted checkpoints. Table scale, HU/normal Hand composition, felt/rail coherence, Hero-card readability, and contribution-to-pot presentation passed human acceptance without claiming perfect physical-table polish. Detailed future intent now lives in `../project/capabilities/`; status remains in `PRODUCT_BACKLOG.md`. The directional order is:
+`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, `WORKSPACE-COMPOSITION-002`, `DOCS-CAPABILITY-DOSSIERS-001`, `TABLE-PHYSICALITY-003`, and `HOME-GAME-001B` are completed/accepted checkpoints. Home Game now has bounded reusable-player/group/session management, visible correction/lifecycle history, safe archive semantics, and export-only portability; its unavailable live Firefox/provider acceptance remains routed debt. Detailed future intent now lives in `../project/capabilities/`; status remains in `PRODUCT_BACKLOG.md`. The directional order is:
 
-1. **ACTIVE NEXT — `HOME-GAME-001B`**
-2. **PLANNED NEXT — `SETTINGS-IA-001`**
-3. `PREMIUM-CLOSEOUT-001`
-4. first trusted bounded reference pack/provider
-5. Training Memory / re-drill
-6. `PERSONAL-STRATEGY-002R`
-7. Personal Strategy provider/reference/observed integration
-8. `PERSONAL-INSIGHTS-001`
-9. `RANGE-EVOLUTION-001`
-10. `HOME-002B` Saved Study Library
-11. OpponentPolicy / bots
-12. release/mobile/social/PLO later
+1. **ACTIVE NEXT — `SETTINGS-IA-001`**
+2. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`**
+3. first trusted bounded reference pack/provider
+4. Training Memory / re-drill
+5. `PERSONAL-STRATEGY-002R`
+6. Personal Strategy provider/reference/observed integration
+7. `PERSONAL-INSIGHTS-001`
+8. `RANGE-EVOLUTION-001`
+9. `HOME-002B` Saved Study Library
+10. OpponentPolicy / bots
+11. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
@@ -77,7 +76,7 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - Training Varied/Focused and the Practice Planner are implemented foundations; Training Memory/re-drill is separate future work.
 - Personal Strategy is checkpointed through Calibration/Matrix/Builder/Teacher; resume at independent `002R`, then integration, then Personal Insights.
 - Saved Hand/Spot and `HOME-002A` exist; the full `HOME-002B` library does not.
-- Home Game `001A` exists; its immediate Create Game routing blocker is repaired, while `001B` still owns management continuation.
+- Home Game `001B` is an accepted implementation checkpoint over the separate 001A accounting authority; hard delete/import remain deliberately deferred and real Firefox/provider acceptance remains `RET-HOMEGAME-001` debt.
 - Workspace composition is accepted as a useful implementation checkpoint, not a visual-polish closeout: Training support distribution/Session Progress, bounded left-anchored Equity allocation, and surviving specialized-layout polish remain `RET-COMPOSITION-002` debt. Known-card inspectability is separately owned by `RET-CARDS-THEMES-001`.
 - `TABLE-PHYSICALITY-003` is accepted with explicit presentation debt: legitimately revealed opponent cards can be obscured by seat/action/cradle chrome, owned by `RET-CARDS-THEMES-001`; Review timeline orientation remains an open Riverline product-fit comparison owned by `RET-REVIEW-NAV-001`, not a permanent horizontal-layout decision.
 

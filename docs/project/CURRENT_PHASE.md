@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 26, 2026 (`TABLE-PHYSICALITY-003` completed as an accepted implementation checkpoint with explicit presentation debt; `HOME-GAME-001B` is active next).
+Last refreshed: August 26, 2026 (`HOME-GAME-001B` completed as an accepted implementation checkpoint with explicit manual Firefox/provider debt; `SETTINGS-IA-001` is active next).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -27,9 +27,12 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - no claim of perfect physical-table polish: revealed opponent cards can still be obscured by seat/action/cradle chrome and remain `RET-CARDS-THEMES-001` debt;
    - existing PokerState, TablePresentation, card, chip, audio/motion, accessibility, privacy, and performance authorities remain unchanged.
 
-3. **ACTIVE NEXT — `HOME-GAME-001B`**
+3. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX/PROVIDER DEBT — `HOME-GAME-001B`**
+   - reusable account players/groups, reorderable session rosters, archive/restore, correction and lifecycle history, completed-session inspection, and export-only portability are implemented without changing accounting authority;
+   - hard delete and import are deliberately not exposed because retention, validation, ownership-adoption, and conflict semantics are not accepted;
+   - automated coverage is complete for the bounded slice; the requested real Firefox matrix and real authenticated provider path remain explicitly unverified.
 
-4. **PLANNED NEXT — `SETTINGS-IA-001`**
+4. **ACTIVE NEXT — `SETTINGS-IA-001`**
 
 5. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`**
 
@@ -75,13 +78,11 @@ Do not revive browser/Electron ONNX inference, remote strategy APIs, arbitrary s
 
 Completed/checkpointed work includes adaptive Table Presence, canonical Replay, shared Full Hand Review, accepted audio/motion architecture, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, the accepted-with-debt `WORKSPACE-COMPOSITION-002` simplification, and `TABLE-PHYSICALITY-003` with explicit presentation debt.
 
-`HOME-GAME-001B` is now the active-next product ticket. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt, while the horizontal-versus-vertical Review chronology comparison remains `RET-REVIEW-NAV-001` debt. Full Hand Firefox acceptance, surviving composition verification, and broader premium QA remain separately owned by the QA Backlog and Return Queue. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
+`HOME-GAME-001B` is completed at an accepted implementation checkpoint with its unavailable real Firefox/provider acceptance retained as `RET-HOMEGAME-001`. `SETTINGS-IA-001` is now active next. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt, while the horizontal-versus-vertical Review chronology comparison remains `RET-REVIEW-NAV-001` debt. Full Hand Firefox acceptance, surviving composition verification, and broader premium QA remain separately owned by the QA Backlog and Return Queue. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
 
 ### Home Game
 
-`HOME-GAME-001A` is a separate exact-money organizer with append-only corrections, chip snapshots separate from money, lifecycle/reopen, balance rejection, and deterministic settlement. The Create Game routing blocker is repaired.
-
-Resume at `HOME-GAME-001B` for player reuse/edit/archive, visible correction history, session/group management, archive/delete confirmation, import/export decision, and Firefox acceptance. Long-term settlement, history, and optional Hand-link intent is preserved in the [Home Game dossier](capabilities/HOME_GAME_EVOLUTION.md), not sequenced here.
+`HOME-GAME-001B` completes the bounded organizer-management continuation over the separate 001A exact-money domain: stable reusable players, editable ordered groups, roster reuse, completed-session archive/restore, atomic visible correction/replacement history, lifecycle revisions, and canonical account-only export. Hard delete and import are explicitly deferred for missing safety contracts. Guest remains runtime-only. Long-term settlement and optional Hand-link intent remain preserved in the [Home Game dossier](capabilities/HOME_GAME_EVOLUTION.md), not sequenced here. Real Firefox and authenticated provider-path acceptance remain routed through the QA Backlog/Return Queue rather than reopening implementation scope.
 
 ### Settings and premium closeout
 

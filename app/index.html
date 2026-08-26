@@ -624,11 +624,18 @@
         <div class="home-game-layout">
           <aside class="home-game-sidebar">
             <section class="panel home-game-create" aria-labelledby="homeGameNewSessionTitle" data-tutorial-anchor="home-game-new-session">
-              <div class="panel-head"><div><div class="panel-title" id="homeGameNewSessionTitle" data-i18n="New Session">New Session</div><div class="panel-note" data-i18n="Create players, assign seats, and start accounting.">Create players, assign seats, and start accounting.</div></div></div>
+              <div class="panel-head"><div><div class="panel-title" id="homeGameNewSessionTitle" data-i18n="New Session">New Session</div><div class="panel-note" data-i18n="Reuse a roster, adjust seats, then start accounting.">Reuse a roster, adjust seats, then start accounting.</div></div></div>
               <form id="homeGameNewSessionForm" class="home-game-form">
                 <label class="ui-field" for="homeGameSessionTitle"><span data-i18n="Session name">Session name</span><input id="homeGameSessionTitle" class="control-input" type="text" maxlength="120" required placeholder="Friday Game" data-i18n-placeholder="Friday Game"></label>
                 <label class="ui-field" for="homeGameCurrency"><span data-i18n="Currency">Currency</span><select id="homeGameCurrency" class="control-select"><option value="ILS" data-label="₪">ILS · ₪</option><option value="USD" data-label="$">USD · $</option><option value="EUR" data-label="€">EUR · €</option></select></label>
-                <label class="ui-field" for="homeGamePlayerNames"><span data-i18n="Players">Players</span><textarea id="homeGamePlayerNames" class="control-input" rows="5" required placeholder="Dana&#10;Alex&#10;Maya" data-i18n-placeholder="One player per line"></textarea><small data-i18n="One player per line; seats follow this order.">One player per line; seats follow this order.</small></label>
+                <div id="homeGameAccountRoster" class="home-game-roster-builder" hidden>
+                  <label class="ui-field" for="homeGameRosterGroup"><span data-i18n="Start from group">Start from group</span><select id="homeGameRosterGroup" class="control-select"><option value="" data-i18n="Choose a group">Choose a group</option></select></label>
+                  <div class="home-game-inline-field"><label class="ui-field" for="homeGameRosterPlayer"><span data-i18n="Add saved player">Add saved player</span><select id="homeGameRosterPlayer" class="control-select"></select></label><button id="homeGameRosterAddSaved" class="ui-button ui-button--quiet" type="button" data-i18n="Add">Add</button></div>
+                  <div class="home-game-inline-field"><label class="ui-field" for="homeGameRosterNewName"><span data-i18n="Add new player">Add new player</span><input id="homeGameRosterNewName" class="control-input" type="text" maxlength="80"></label><button id="homeGameRosterAddNew" class="ui-button ui-button--quiet" type="button" data-i18n="Add">Add</button></div>
+                  <div id="homeGameRoster" class="home-game-roster" role="list" aria-label="Session roster" data-i18n-aria-label="Session roster"></div>
+                </div>
+                <label id="homeGameGuestRoster" class="ui-field" for="homeGamePlayerNames"><span data-i18n="Temporary players">Temporary players</span><textarea id="homeGamePlayerNames" class="control-input" rows="5" placeholder="Dana&#10;Alex&#10;Maya" data-i18n-placeholder="One player per line"></textarea><small data-i18n="One player per line; seats follow this order.">One player per line; seats follow this order.</small></label>
+                <fieldset class="home-game-fieldset"><legend data-i18n="Blinds (optional)">Blinds (optional)</legend><div class="home-game-blinds"><label class="ui-field" for="homeGameSmallBlind"><span data-i18n="Small blind">Small blind</span><input id="homeGameSmallBlind" class="control-input" type="number" min="0" step="0.01" inputmode="decimal"></label><label class="ui-field" for="homeGameBigBlind"><span data-i18n="Big blind">Big blind</span><input id="homeGameBigBlind" class="control-input" type="number" min="0" step="0.01" inputmode="decimal"></label><label class="ui-field" for="homeGameAnte"><span data-i18n="Ante">Ante</span><input id="homeGameAnte" class="control-input" type="number" min="0" step="0.01" inputmode="decimal"></label></div></fieldset>
                 <label class="ui-field" for="homeGameInitialBuyIn"><span data-i18n="Initial buy-in per player">Initial buy-in per player</span><input id="homeGameInitialBuyIn" class="control-input" type="number" min="0" step="0.01" value="0" inputmode="decimal"></label>
                 <label class="home-game-check"><input id="homeGameSaveGroup" type="checkbox"><span data-i18n="Save Group">Save Group</span></label>
                 <label class="ui-field" for="homeGameGroupName"><span data-i18n="Group name">Group name</span><input id="homeGameGroupName" class="control-input" type="text" maxlength="100" disabled placeholder="Friday Game" data-i18n-placeholder="Friday Game"></label>
@@ -637,18 +644,26 @@
             </section>
 
             <section class="panel home-game-library" aria-labelledby="homeGameGroupsTitle" data-tutorial-anchor="home-game-groups">
-              <div class="panel-head"><div><div class="panel-title" id="homeGameGroupsTitle" data-i18n="Saved Groups">Saved Groups</div><div class="panel-note" data-i18n="Reusable ordered player rosters.">Reusable ordered player rosters.</div></div></div>
+              <div class="panel-head"><div><div class="panel-title" id="homeGameGroupsTitle" data-i18n="Saved Groups">Saved Groups</div><div class="panel-note" data-i18n="Reusable ordered player rosters.">Reusable ordered player rosters.</div></div><div class="home-game-row-actions"><label class="home-game-check"><input id="homeGameShowArchivedGroups" type="checkbox"><span data-i18n="Show archived">Show archived</span></label><button id="homeGameNewGroup" class="ui-button ui-button--quiet" type="button" data-i18n="New group">New group</button></div></div>
               <div id="homeGameGroups" class="home-game-list"></div>
             </section>
 
             <section class="panel home-game-library" aria-labelledby="homeGameRecentTitle">
-              <div class="panel-head"><div><div class="panel-title" id="homeGameRecentTitle" data-i18n="Recent Sessions">Recent Sessions</div></div></div>
+              <div class="panel-head"><div><div class="panel-title" id="homeGameRecentTitle" data-i18n="Recent Sessions">Recent Sessions</div></div><label class="home-game-check"><input id="homeGameShowArchivedSessions" type="checkbox"><span data-i18n="Show archived">Show archived</span></label></div>
               <div id="homeGameRecent" class="home-game-list"></div>
             </section>
+
+            <details class="panel home-game-library home-game-management">
+              <summary><span data-i18n="Player Library">Player Library</span><small data-i18n="Manage reusable people">Manage reusable people</small></summary>
+              <div class="home-game-library-tools"><label class="ui-field" for="homeGamePlayerSearch"><span data-i18n="Search players">Search players</span><input id="homeGamePlayerSearch" class="control-input" type="search"></label><label class="home-game-check"><input id="homeGameShowArchivedPlayers" type="checkbox"><span data-i18n="Show archived">Show archived</span></label><button id="homeGameNewPlayer" class="ui-button ui-button--quiet" type="button" data-i18n="New player">New player</button></div>
+              <div id="homeGamePlayers" class="home-game-list"></div>
+            </details>
           </aside>
 
           <div id="homeGameSession" class="home-game-session-surface" role="region" aria-label="Current Home Game session" data-i18n-aria-label="Current Home Game session" data-tutorial-anchor="home-game-session"></div>
         </div>
+        <dialog id="homeGameEditorDialog" class="home-game-dialog" aria-labelledby="homeGameEditorTitle"><form id="homeGameEditorForm" method="dialog"><header><h2 id="homeGameEditorTitle"></h2><button class="ui-button ui-button--quiet" type="button" data-home-game-close data-i18n="Close">Close</button></header><div id="homeGameEditorBody" class="home-game-dialog-body"></div><footer><button class="ui-button ui-button--quiet" type="button" data-home-game-close data-i18n="Cancel">Cancel</button><button id="homeGameEditorSubmit" class="ui-button ui-button--primary" type="submit" data-i18n="Save">Save</button></footer></form></dialog>
+        <dialog id="homeGameConfirmDialog" class="home-game-dialog" aria-labelledby="homeGameConfirmTitle"><form method="dialog"><header><h2 id="homeGameConfirmTitle"></h2></header><p id="homeGameConfirmMessage"></p><footer><button class="ui-button ui-button--quiet" value="cancel" data-i18n="Cancel">Cancel</button><button id="homeGameConfirmSubmit" class="ui-button ui-button--danger" value="confirm" data-i18n="Confirm">Confirm</button></footer></form></dialog>
       </div>
     </section>
 

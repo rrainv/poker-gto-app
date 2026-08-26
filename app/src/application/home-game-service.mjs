@@ -8,6 +8,7 @@ import {
   createHomeGameOwnerRef,
   createHomeGameParticipant,
   createHomeGameRepository,
+  createHomeGameSessionExport,
   createMemoryHomeGameDatabase,
 } from '../home-game/index.mjs';
 
@@ -71,14 +72,15 @@ export function createHomeGameApplication({
   async function load() {
     const active = await context();
     const [players, groups, recentSessions] = await Promise.all([
-      active.repository.listPlayers(),
-      active.repository.listGroups(),
-      active.repository.listRecentSessions({ limit: 12 }),
+      active.repository.listPlayers({ includeArchived: true }),
+      active.repository.listGroups({ includeArchived: true }),
+      active.repository.listRecentSessions({ limit: 40, includeArchived: true }),
     ]);
+    const visibleSessions = recentSessions.filter((entry) => !entry.archived);
     let currentSessionId = currentSessionByScope.get(active.scope) || null;
-    if (!currentSessionId || !recentSessions.some((entry) => entry.sessionId === currentSessionId)) {
-      currentSessionId = recentSessions.find((entry) => entry.status !== HOME_GAME_SESSION_STATUS.COMPLETED)?.sessionId
-        || recentSessions[0]?.sessionId
+    if (!currentSessionId || !visibleSessions.some((entry) => entry.sessionId === currentSessionId)) {
+      currentSessionId = visibleSessions.find((entry) => entry.status !== HOME_GAME_SESSION_STATUS.COMPLETED)?.sessionId
+        || visibleSessions[0]?.sessionId
         || null;
     }
     if (currentSessionId) currentSessionByScope.set(active.scope, currentSessionId);
@@ -88,8 +90,11 @@ export function createHomeGameApplication({
       persistence: active.mode === 'account' ? 'account_local' : 'guest_memory',
       ownerId: active.mode === 'account' ? active.scope : null,
       players,
-      groups,
-      recentSessions,
+      availablePlayers: players.filter((entry) => !entry.archived),
+      groups: groups.filter((entry) => !entry.archived),
+      archivedGroups: groups.filter((entry) => entry.archived),
+      recentSessions: visibleSessions.slice(0, 12),
+      archivedSessions: recentSessions.filter((entry) => entry.archived),
       current,
     });
   }
@@ -99,15 +104,37 @@ export function createHomeGameApplication({
     currencyCode = 'ILS',
     currencyLabel = currencyCode,
     minorUnit = 2,
-    playerNames,
+    playerNames = [],
+    playerIds = [],
+    roster = null,
     buyInMinor = 0,
     saveGroupName = null,
+    blinds = null,
+    sourceGroupId = null,
   } = {}) {
     const active = await context();
-    const names = normalizePlayerNames(playerNames);
+    if (!Array.isArray(playerIds) || (roster !== null && !Array.isArray(roster))) throw new TypeError('Home Game roster must be an array');
+    const savedPlayers = await active.repository.listPlayers();
+    const savedById = new Map(savedPlayers.map((entry) => [entry.playerId, entry]));
+    const rosterValues = roster || [
+      ...playerIds.map((playerId) => ({ playerId })),
+      ...playerNames.map((displayName) => ({ displayName })),
+    ];
+    const selectedIds = rosterValues.filter((entry) => entry?.playerId).map((entry) => entry.playerId);
+    const selectedPlayers = selectedIds.map((playerId) => {
+      const player = savedById.get(playerId);
+      if (!player) throw new RangeError('A selected Home Game player is unavailable or archived');
+      return player;
+    });
+    if (new Set(selectedIds).size !== selectedIds.length) throw new RangeError('A player can only appear once in a session');
+    const newNames = rosterValues.filter((entry) => !entry?.playerId).map((entry) => String(entry?.displayName || '').trim()).filter(Boolean);
+    const rosterNames = rosterValues.map((entry) => entry?.playerId ? savedById.get(entry.playerId)?.displayName : String(entry?.displayName || '').trim()).filter(Boolean);
+    const names = normalizePlayerNames(rosterNames);
     requireAmount(buyInMinor, { allowZero: true });
-    const players = names.map((displayName) => active.repository.createPlayer({ displayName }));
-    for (const player of players) await active.repository.savePlayer(player);
+    const createdPlayers = newNames.map((displayName) => active.repository.createPlayer({ displayName }));
+    for (const player of createdPlayers) await active.repository.savePlayer(player);
+    const createdQueue = [...createdPlayers];
+    const players = rosterValues.map((entry) => entry?.playerId ? savedById.get(entry.playerId) : createdQueue.shift()).filter(Boolean);
     if (saveGroupName && active.mode !== 'account') throw new RangeError('Sign in to save a reusable player group');
     if (saveGroupName) {
       await active.repository.saveGroup(active.repository.createGroup({
@@ -118,6 +145,8 @@ export function createHomeGameApplication({
     const session = active.repository.createSession({
       title: String(title || '').trim() || 'Home Game',
       currency: createHomeGameCurrency({ code: currencyCode, label: currencyLabel, minorUnit }),
+      blinds,
+      sourceGroupId,
       participants: players.map((player, index) => createHomeGameParticipant({ playerId: player.playerId, seatNumber: index + 1 })),
     });
     await active.repository.saveSession(session);
@@ -136,13 +165,14 @@ export function createHomeGameApplication({
     return load();
   }
 
-  async function createSessionFromGroup({ groupId, title, currencyCode = 'ILS', currencyLabel = currencyCode, minorUnit = 2, buyInMinor = 0 } = {}) {
+  async function createSessionFromGroup({ groupId, title, currencyCode = 'ILS', currencyLabel = currencyCode, minorUnit = 2, buyInMinor = 0, blinds = null } = {}) {
     const active = await context();
     requireAmount(buyInMinor, { allowZero: true });
     const session = await active.repository.createSessionFromGroup({
       groupId,
       title,
       currency: createHomeGameCurrency({ code: currencyCode, label: currencyLabel, minorUnit }),
+      blinds,
     });
     await active.repository.startSession(session.sessionId);
     if (buyInMinor > 0) {
@@ -197,17 +227,19 @@ export function createHomeGameApplication({
       createdAt: new Date(clock()).toISOString(),
       note,
     });
-    await active.repository.appendTransaction(correction);
+    let replacement = null;
     if (replacementAmountMinor !== null) {
       requireAmount(replacementAmountMinor);
-      await active.repository.appendTransaction(active.repository.createTransaction({
+      replacement = active.repository.createTransaction({
         sessionId,
         playerId: original.playerId,
         type: original.type,
         amountMinor: replacementAmountMinor,
+        replacementOfTransactionId: original.transactionId,
         note: note ? `Replacement: ${note}` : 'Replacement entry',
-      }));
+      });
     }
+    await active.repository.appendCorrection({ correction, replacement });
     currentSessionByScope.set(active.scope, sessionId);
     return load();
   }
@@ -242,6 +274,63 @@ export function createHomeGameApplication({
     return load();
   }
 
+  async function requireAccount() {
+    const active = await context();
+    if (active.mode !== 'account') throw new RangeError('Sign in to manage a durable player and group library');
+    return active;
+  }
+
+  async function createPlayer(values) {
+    const active = await requireAccount();
+    await active.repository.savePlayer(active.repository.createPlayer(values));
+    return load();
+  }
+
+  async function updatePlayer(playerId, values) {
+    const active = await requireAccount();
+    await active.repository.updatePlayer(playerId, values);
+    return load();
+  }
+
+  async function setPlayerArchived(playerId, archived) {
+    return updatePlayer(playerId, { archived: Boolean(archived) });
+  }
+
+  async function createGroup(values) {
+    const active = await requireAccount();
+    await active.repository.saveGroup(active.repository.createGroup(values));
+    return load();
+  }
+
+  async function updateGroup(groupId, values) {
+    const active = await requireAccount();
+    await active.repository.updateGroup(groupId, values);
+    return load();
+  }
+
+  async function setGroupArchived(groupId, archived) {
+    return updateGroup(groupId, { archived: Boolean(archived) });
+  }
+
+  async function setSessionArchived(sessionId, archived) {
+    const active = await requireAccount();
+    await active.repository.setSessionArchived(sessionId, Boolean(archived));
+    if (archived) currentSessionByScope.delete(active.scope);
+    return load();
+  }
+
+  async function exportSession(sessionId) {
+    const active = await requireAccount();
+    const bundle = await active.repository.getSessionBundle(sessionId);
+    if (!bundle) throw new RangeError('Home Game session is unavailable');
+    return createHomeGameSessionExport({
+      session: bundle.session,
+      transactions: bundle.transactions,
+      snapshots: bundle.snapshots,
+      exportedAt: new Date(clock()).toISOString(),
+    });
+  }
+
   return Object.freeze({
     load,
     createSession,
@@ -253,6 +342,14 @@ export function createHomeGameApplication({
     recordChipCount,
     completeSession,
     reopenSession,
+    createPlayer,
+    updatePlayer,
+    setPlayerArchived,
+    createGroup,
+    updateGroup,
+    setGroupArchived,
+    setSessionArchived,
+    exportSession,
     async close() {
       await guestRepository.close();
       await Promise.all([...accountRepositories.values()].map((repository) => repository.close()));

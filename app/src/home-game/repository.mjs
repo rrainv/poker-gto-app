@@ -10,6 +10,7 @@ import {
   completeHomeGameSession,
   createHomeGameChipSnapshot,
   createHomeGameGroup,
+  createHomeGameLedgerHistory,
   createHomeGamePlayer,
   createHomeGameSession,
   createHomeGameSettlement,
@@ -17,7 +18,10 @@ import {
   createSessionFromGroup,
   reopenHomeGameSession,
   startHomeGameSession,
+  setHomeGameSessionArchived,
+  updateHomeGameGroup,
   updateHomeGameParticipant,
+  updateHomeGamePlayer,
   validateHomeGameLedger,
 } from './domain.mjs';
 import {
@@ -222,7 +226,8 @@ export function createHomeGameRepository({
 
   async function sessionLedger(transaction, sessionId) {
     const records = await transaction.getAllByIndex(STORES.TRANSACTIONS, HOME_GAME_INDEXES.OWNER_SESSION, [ownerRef.ownerId, sessionId]);
-    return sortLedger(records.filter((entry) => sameOwner(entry.ownerRef, ownerRef))).map(withoutPhysicalFields);
+    return sortLedger(records.filter((entry) => sameOwner(entry.ownerRef, ownerRef)))
+      .map((entry) => normalizeTransaction(withoutPhysicalFields(entry)));
   }
 
   async function sessionSnapshots(transaction, sessionId) {
@@ -254,6 +259,18 @@ export function createHomeGameRepository({
     return saveCreated(STORES.PLAYERS, normalizePlayer(player), 'playerId', 'Home Game player');
   }
 
+  async function updatePlayer(playerId, patch) {
+    return write([STORES.PLAYERS], async (transaction, metadata) => {
+      const existing = await transaction.get(STORES.PLAYERS, playerId);
+      if (!existing || !sameOwner(existing.ownerRef, ownerRef)) throw new RangeError('Home Game player is missing');
+      const updatedAt = timestampNotBefore(clock, existing.updatedAt);
+      const record = updateHomeGamePlayer(normalizePlayer(existing), patch, updatedAt);
+      await transaction.put(STORES.PLAYERS, record);
+      const repositoryRevision = await touchMetadata(transaction, metadata, updatedAt);
+      return immutable({ record, repositoryRevision });
+    });
+  }
+
   async function saveGroup(group) {
     const normalized = normalizeGroup(group);
     assertOwner(normalized, ownerRef, 'Home Game group');
@@ -270,6 +287,22 @@ export function createHomeGameRepository({
       await transaction.add(STORES.GROUPS, normalized);
       const repositoryRevision = await touchMetadata(transaction, metadata, normalized.updatedAt);
       return immutable({ record: normalized, idempotent: false, repositoryRevision });
+    });
+  }
+
+  async function updateGroup(groupId, patch) {
+    return write([STORES.GROUPS, STORES.PLAYERS], async (transaction, metadata) => {
+      const existing = await transaction.get(STORES.GROUPS, groupId);
+      if (!existing || !sameOwner(existing.ownerRef, ownerRef)) throw new RangeError('Home Game group is missing');
+      const updatedAt = timestampNotBefore(clock, existing.updatedAt);
+      const record = updateHomeGameGroup(normalizeGroup(existing), patch, updatedAt);
+      for (const playerId of record.playerIds) {
+        const player = await transaction.get(STORES.PLAYERS, playerId);
+        if (!player || !sameOwner(player.ownerRef, ownerRef)) throw new RangeError(`Group references missing player ${playerId}`);
+      }
+      await transaction.put(STORES.GROUPS, record);
+      const repositoryRevision = await touchMetadata(transaction, metadata, updatedAt);
+      return immutable({ record, repositoryRevision });
     });
   }
 
@@ -317,6 +350,33 @@ export function createHomeGameRepository({
       await storage.put(STORES.SESSIONS, touchedSession);
       const repositoryRevision = await touchMetadata(storage, metadata, updatedAt);
       return immutable({ transaction: normalized, session: touchedSession, idempotent: false, repositoryRevision });
+    });
+  }
+
+  async function appendCorrection({ correction, replacement = null } = {}) {
+    const normalizedCorrection = normalizeTransaction(correction);
+    const normalizedReplacement = replacement === null ? null : normalizeTransaction(replacement);
+    assertOwner(normalizedCorrection, ownerRef, 'Home Game correction');
+    if (normalizedReplacement) assertOwner(normalizedReplacement, ownerRef, 'Home Game replacement');
+    return write([STORES.TRANSACTIONS, STORES.SESSIONS], async (storage, metadata) => {
+      const session = await storage.get(STORES.SESSIONS, normalizedCorrection.sessionId);
+      if (!session || !sameOwner(session.ownerRef, ownerRef)) throw new RangeError('Correction session is missing');
+      if (session.status === HOME_GAME_SESSION_STATUS.COMPLETED) throw new RangeError('Completed session must be reopened before correcting ledger entries');
+      const additions = [normalizedCorrection, ...(normalizedReplacement ? [normalizedReplacement] : [])];
+      if (normalizedReplacement?.sessionId !== session.sessionId) throw new RangeError('Replacement belongs to another session');
+      for (const entry of additions) {
+        if (await storage.get(STORES.TRANSACTIONS, entry.transactionId)) throw new RangeError('Home Game transaction ID collision');
+      }
+      const ledger = await sessionLedger(storage, session.sessionId);
+      validateHomeGameLedger(normalizeSession(session), [...ledger, ...additions]);
+      for (const [index, entry] of additions.entries()) {
+        await storage.add(STORES.TRANSACTIONS, { ...entry, ledgerSequence: ledger.length + index + 1 });
+      }
+      const updatedAt = timestampNotBefore(clock, session.updatedAt);
+      const touchedSession = createHomeGameSession({ ...normalizeSession(session), updatedAt, revision: session.revision + 1 });
+      await storage.put(STORES.SESSIONS, touchedSession);
+      const repositoryRevision = await touchMetadata(storage, metadata, updatedAt);
+      return immutable({ correction: normalizedCorrection, replacement: normalizedReplacement, session: touchedSession, repositoryRevision });
     });
   }
 
@@ -386,6 +446,19 @@ export function createHomeGameRepository({
     });
   }
 
+  async function setSessionArchived(sessionId, archived) {
+    return write([STORES.SESSIONS], async (storage, metadata) => {
+      const existing = await storage.get(STORES.SESSIONS, sessionId);
+      if (!existing || !sameOwner(existing.ownerRef, ownerRef)) throw new RangeError('Home Game session is missing');
+      const at = timestampNotBefore(clock, existing.updatedAt);
+      const session = setHomeGameSessionArchived(normalizeSession(existing), archived, at);
+      if (session === existing) return immutable({ session, repositoryRevision: metadata.revision });
+      await storage.put(STORES.SESSIONS, session);
+      const repositoryRevision = await touchMetadata(storage, metadata, at);
+      return immutable({ session, repositoryRevision });
+    });
+  }
+
   return Object.freeze({
     ownerRef: immutable(ownerRef),
     initialize,
@@ -394,59 +467,71 @@ export function createHomeGameRepository({
       return immutable({ ...metadata, ownerRef });
     },
     savePlayer,
+    updatePlayer,
     saveGroup,
+    updateGroup,
     saveSession,
     appendTransaction,
+    appendCorrection,
     recordCashOut,
     saveSnapshot,
     startSession: (sessionId) => transitionSession(sessionId, (session, _ledger, at) => startHomeGameSession(session, at)),
     completeSession: (sessionId) => transitionSession(sessionId, (session, ledger, at) => completeHomeGameSession(session, ledger, at)),
     reopenSession: (sessionId) => transitionSession(sessionId, (session, _ledger, at) => reopenHomeGameSession(session, at)),
+    setSessionArchived,
     async getPlayer(playerId) {
       return read([STORES.PLAYERS], async (transaction) => {
         const record = await transaction.get(STORES.PLAYERS, playerId);
-        return record && sameOwner(record.ownerRef, ownerRef) ? immutable(record) : null;
+        return record && sameOwner(record.ownerRef, ownerRef) ? immutable(normalizePlayer(record)) : null;
       });
     },
     async listPlayers({ includeArchived = false } = {}) {
       return read([STORES.PLAYERS], async (transaction) => {
         const records = await ownerRecords(transaction, STORES.PLAYERS);
-        return immutable(records.filter((entry) => includeArchived || !entry.archived).sort((a, b) => a.displayName.localeCompare(b.displayName)));
+        return immutable(records.map(normalizePlayer).filter((entry) => includeArchived || !entry.archived).sort((a, b) => a.displayName.localeCompare(b.displayName)));
       });
     },
     async getGroup(groupId) {
       return read([STORES.GROUPS], async (transaction) => {
         const record = await transaction.get(STORES.GROUPS, groupId);
-        return record && sameOwner(record.ownerRef, ownerRef) ? immutable(record) : null;
+        return record && sameOwner(record.ownerRef, ownerRef) ? immutable(normalizeGroup(record)) : null;
       });
     },
-    async listGroups() {
-      return read([STORES.GROUPS], async (transaction) => immutable(sortUpdatedDescending(await ownerRecords(transaction, STORES.GROUPS))));
+    async listGroups({ includeArchived = false } = {}) {
+      return read([STORES.GROUPS], async (transaction) => immutable(sortUpdatedDescending((await ownerRecords(transaction, STORES.GROUPS))
+        .map(normalizeGroup).filter((entry) => includeArchived || !entry.archived))));
     },
     async getSession(sessionId) {
       return read([STORES.SESSIONS], async (transaction) => {
         const record = await transaction.get(STORES.SESSIONS, sessionId);
-        return record && sameOwner(record.ownerRef, ownerRef) ? immutable(record) : null;
+        return record && sameOwner(record.ownerRef, ownerRef) ? immutable(normalizeSession(record)) : null;
       });
     },
-    async listRecentSessions({ limit = 20 } = {}) {
+    async listRecentSessions({ limit = 20, includeArchived = false } = {}) {
       if (!Number.isSafeInteger(limit) || limit < 1 || limit > 200) throw new RangeError('Recent session limit must be 1-200');
-      return read([STORES.SESSIONS], async (transaction) => immutable(sortUpdatedDescending(await ownerRecords(transaction, STORES.SESSIONS)).slice(0, limit)));
+      return read([STORES.SESSIONS], async (transaction) => immutable(sortUpdatedDescending((await ownerRecords(transaction, STORES.SESSIONS))
+        .map(normalizeSession).filter((entry) => includeArchived || !entry.archived)).slice(0, limit)));
     },
     async getSessionBundle(sessionId) {
       return read([STORES.SESSIONS, STORES.TRANSACTIONS, STORES.SNAPSHOTS], async (transaction) => {
         const session = await transaction.get(STORES.SESSIONS, sessionId);
         if (!session || !sameOwner(session.ownerRef, ownerRef)) return null;
+        const normalizedSession = normalizeSession(session);
         const transactions = await sessionLedger(transaction, sessionId);
         const snapshots = await sessionSnapshots(transaction, sessionId);
-        const accounting = calculateHomeGameAccounting(session, transactions);
-        const settlement = accounting.balanced ? createHomeGameSettlement(session, transactions) : null;
-        return immutable({ session, transactions, snapshots, accounting, settlement });
+        const accounting = calculateHomeGameAccounting(normalizedSession, transactions);
+        const settlement = accounting.balanced ? createHomeGameSettlement(normalizedSession, transactions) : null;
+        const ledgerHistory = createHomeGameLedgerHistory(normalizedSession, transactions);
+        return immutable({ session: normalizedSession, transactions, snapshots, accounting, settlement, ledgerHistory });
       });
     },
     async createSessionFromGroup({ groupId, sessionId = idFactory('home-game-session'), title, currency, blinds = null } = {}) {
       const [group, players] = await Promise.all([this.getGroup(groupId), this.listPlayers({ includeArchived: true })]);
       if (!group) throw new RangeError('Home Game group is missing');
+      if (group.archived) throw new RangeError('Restore this group before starting a session');
+      if (players.some((player) => group.playerIds.includes(player.playerId) && player.archived)) {
+        throw new RangeError('Restore archived group players before starting a session');
+      }
       const session = createSessionFromGroup({ sessionId, ownerRef, title, currency, blinds, group, players, createdAt: timestampFrom(clock) });
       await saveSession(session);
       return session;
@@ -472,4 +557,3 @@ export function createHomeGameRepository({
     },
   });
 }
-

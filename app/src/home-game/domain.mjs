@@ -8,6 +8,7 @@ export const HOME_GAME_TRANSACTION_SCHEMA_VERSION = 'home-game-transaction/v1';
 export const HOME_GAME_CHIP_SNAPSHOT_SCHEMA_VERSION = 'home-game-chip-snapshot/v1';
 export const HOME_GAME_SETTLEMENT_SCHEMA_VERSION = 'home-game-settlement/v1';
 export const HOME_GAME_SESSION_EXPORT_SCHEMA_VERSION = 'home-game-session-export/v1';
+export const HOME_GAME_LEDGER_HISTORY_SCHEMA_VERSION = 'home-game-ledger-history/v1';
 
 export const HOME_GAME_OWNER_TYPES = Object.freeze({
   ACCOUNT: 'account_identity',
@@ -202,6 +203,7 @@ export function createHomeGameGroup({
   ownerRef,
   name,
   playerIds = [],
+  archived = false,
   createdAt,
   updatedAt = createdAt,
   revision = 1,
@@ -215,6 +217,7 @@ export function createHomeGameGroup({
     ownerRef: cloneData(requireOwnerRef(ownerRef)),
     name: requireText(name, 'Group name', { max: 100 }),
     playerIds: normalizedPlayerIds,
+    archived: Boolean(archived),
     createdAt: requireTimestamp(createdAt, 'Group createdAt'),
     updatedAt: requireTimestamp(updatedAt, 'Group updatedAt'),
     revision: requireRevision(revision),
@@ -277,6 +280,8 @@ export function createHomeGameSession({
   blinds = null,
   participants,
   notes = null,
+  archived = false,
+  lifecycleEvents = null,
   status = HOME_GAME_SESSION_STATUS.DRAFT,
   startedAt = null,
   endedAt = null,
@@ -288,6 +293,9 @@ export function createHomeGameSession({
   if (!SESSION_STATUSES.has(status)) throw new RangeError('Unsupported Home Game session status');
   const normalizedCurrency = createHomeGameCurrency(currency);
   const normalizedParticipants = validateParticipants(participants);
+  const normalizedLifecycleEvents = lifecycleEvents === null
+    ? inferLifecycleEvents({ status, createdAt, startedAt, endedAt, revision })
+    : normalizeLifecycleEvents(lifecycleEvents, revision);
   const result = {
     schemaVersion: HOME_GAME_SESSION_SCHEMA_VERSION,
     sessionId: requireId(sessionId, 'Session ID'),
@@ -298,6 +306,8 @@ export function createHomeGameSession({
     blinds: normalizeBlinds(blinds, normalizedCurrency),
     participants: cloneData(normalizedParticipants),
     notes: requireText(notes, 'Session notes', { max: 2000, nullable: true }),
+    archived: Boolean(archived),
+    lifecycleEvents: normalizedLifecycleEvents,
     sourceGroupId: sourceGroupId === null ? null : requireId(sourceGroupId, 'Source group ID'),
     startedAt: requireTimestamp(startedAt, 'Session startedAt', { nullable: true }),
     endedAt: requireTimestamp(endedAt, 'Session endedAt', { nullable: true }),
@@ -348,12 +358,14 @@ export function createHomeGameTransaction({
   createdAt,
   note = null,
   correctionOfTransactionId = null,
+  replacementOfTransactionId = null,
 }) {
   if (!TRANSACTION_TYPES.has(type)) throw new RangeError('Unsupported Home Game transaction type');
   const correction = type === HOME_GAME_TRANSACTION_TYPES.CORRECTION;
   if (correction !== (correctionOfTransactionId !== null)) {
     throw new RangeError('Only correction entries may reference a corrected transaction');
   }
+  if (correction && replacementOfTransactionId !== null) throw new RangeError('A correction cannot be a replacement entry');
   return immutable({
     schemaVersion: HOME_GAME_TRANSACTION_SCHEMA_VERSION,
     transactionId: requireId(transactionId, 'Transaction ID'),
@@ -365,6 +377,9 @@ export function createHomeGameTransaction({
     createdAt: requireTimestamp(createdAt, 'Transaction createdAt'),
     note: requireText(note, 'Transaction note', { max: 500, nullable: true }),
     correctionOfTransactionId: correction ? requireId(correctionOfTransactionId, 'Corrected transaction ID') : null,
+    replacementOfTransactionId: replacementOfTransactionId === null
+      ? null
+      : requireId(replacementOfTransactionId, 'Replaced transaction ID'),
   });
 }
 
@@ -403,6 +418,15 @@ export function validateHomeGameLedger(session, transactions) {
       }
       if (corrected.has(original.transactionId)) throw new RangeError('A transaction cannot be corrected twice');
       corrected.add(original.transactionId);
+    } else if (normalized.replacementOfTransactionId !== null) {
+      const original = byId.get(normalized.replacementOfTransactionId);
+      if (!original) throw new RangeError('Replacement must reference an earlier transaction');
+      if (!corrected.has(original.transactionId)) throw new RangeError('Replacement requires an earlier correction');
+      if (original.type === HOME_GAME_TRANSACTION_TYPES.CORRECTION
+        || original.playerId !== normalized.playerId
+        || original.type !== normalized.type) {
+        throw new RangeError('Replacement must preserve the original player and transaction type');
+      }
     }
     byId.set(normalized.transactionId, normalized);
   }
@@ -459,9 +483,51 @@ function lifecycleUpdate(session, patch, updatedAt) {
   });
 }
 
+function lifecycleEvent(type, at, revision) {
+  return immutable({ type, at: requireTimestamp(at, `Session ${type} timestamp`), revision: requireRevision(revision) });
+}
+
+function normalizeLifecycleEvents(events, sessionRevision) {
+  if (!Array.isArray(events) || events.length < 1) throw new RangeError('Session lifecycle history must contain at least one event');
+  let previousRevision = 0;
+  let previousTimestamp = null;
+  return events.map((entry) => {
+    requireObject(entry, 'Session lifecycle event');
+    const normalized = lifecycleEvent(
+      requireText(entry.type, 'Session lifecycle event type', { max: 24 }),
+      entry.at,
+      entry.revision,
+    );
+    if (normalized.revision <= previousRevision || normalized.revision > sessionRevision) {
+      throw new RangeError('Session lifecycle event revisions must be ordered and within the session revision');
+    }
+    if (previousTimestamp && normalized.at < previousTimestamp) throw new RangeError('Session lifecycle timestamps must be ordered');
+    previousRevision = normalized.revision;
+    previousTimestamp = normalized.at;
+    return normalized;
+  });
+}
+
+function inferLifecycleEvents({ status, createdAt, startedAt, endedAt, revision }) {
+  const events = [lifecycleEvent('created', createdAt, 1)];
+  if (startedAt && revision >= 2) events.push(lifecycleEvent('started', startedAt, 2));
+  if (status === HOME_GAME_SESSION_STATUS.COMPLETED && endedAt && revision > events.at(-1).revision) {
+    events.push(lifecycleEvent('completed', endedAt, revision));
+  }
+  return events;
+}
+
+function lifecycleTransition(session, patch, updatedAt, type) {
+  const revision = session.revision + 1;
+  return lifecycleUpdate(session, {
+    ...patch,
+    lifecycleEvents: [...session.lifecycleEvents, lifecycleEvent(type, updatedAt, revision)],
+  }, updatedAt);
+}
+
 export function startHomeGameSession(session, startedAt) {
   if (session.status !== HOME_GAME_SESSION_STATUS.DRAFT) throw new RangeError('Only a draft session can start');
-  return lifecycleUpdate(session, { status: HOME_GAME_SESSION_STATUS.ACTIVE, startedAt, endedAt: null }, startedAt);
+  return lifecycleTransition(session, { status: HOME_GAME_SESSION_STATUS.ACTIVE, startedAt, endedAt: null }, startedAt, 'started');
 }
 
 export function updateHomeGameParticipant(session, playerId, patch, updatedAt) {
@@ -487,12 +553,75 @@ export function completeHomeGameSession(session, transactions, endedAt) {
     throw error;
   }
   createHomeGameSettlement(session, transactions);
-  return lifecycleUpdate(session, { status: HOME_GAME_SESSION_STATUS.COMPLETED, endedAt }, endedAt);
+  return lifecycleTransition(session, { status: HOME_GAME_SESSION_STATUS.COMPLETED, endedAt }, endedAt, 'completed');
 }
 
 export function reopenHomeGameSession(session, reopenedAt) {
   if (session.status !== HOME_GAME_SESSION_STATUS.COMPLETED) throw new RangeError('Only a completed session can reopen');
-  return lifecycleUpdate(session, { status: HOME_GAME_SESSION_STATUS.ACTIVE, endedAt: null }, reopenedAt);
+  if (session.archived) throw new RangeError('Restore an archived session before reopening it');
+  return lifecycleTransition(session, { status: HOME_GAME_SESSION_STATUS.ACTIVE, endedAt: null }, reopenedAt, 'reopened');
+}
+
+export function updateHomeGamePlayer(player, patch, updatedAt) {
+  requireObject(patch, 'Player update');
+  return createHomeGamePlayer({
+    ...player,
+    displayName: patch.displayName ?? player.displayName,
+    nickname: Object.hasOwn(patch, 'nickname') ? patch.nickname : player.nickname,
+    notes: Object.hasOwn(patch, 'notes') ? patch.notes : player.notes,
+    archived: Object.hasOwn(patch, 'archived') ? patch.archived : player.archived,
+    playerId: player.playerId,
+    ownerRef: player.ownerRef,
+    createdAt: player.createdAt,
+    updatedAt,
+    revision: player.revision + 1,
+  });
+}
+
+export function updateHomeGameGroup(group, patch, updatedAt) {
+  requireObject(patch, 'Group update');
+  return createHomeGameGroup({
+    ...group,
+    name: patch.name ?? group.name,
+    playerIds: patch.playerIds ?? group.playerIds,
+    archived: Object.hasOwn(patch, 'archived') ? patch.archived : group.archived,
+    groupId: group.groupId,
+    ownerRef: group.ownerRef,
+    createdAt: group.createdAt,
+    updatedAt,
+    revision: group.revision + 1,
+  });
+}
+
+export function setHomeGameSessionArchived(session, archived, updatedAt) {
+  if (session.status !== HOME_GAME_SESSION_STATUS.COMPLETED) throw new RangeError('Only a completed session can be archived');
+  if (session.archived === Boolean(archived)) return session;
+  return lifecycleTransition(session, { archived: Boolean(archived) }, updatedAt, archived ? 'archived' : 'restored');
+}
+
+export function createHomeGameLedgerHistory(session, transactions) {
+  const ledger = validateHomeGameLedger(session, transactions);
+  const correctionByOriginal = new Map();
+  const replacementByOriginal = new Map();
+  ledger.transactions.forEach((entry) => {
+    if (entry.correctionOfTransactionId) correctionByOriginal.set(entry.correctionOfTransactionId, entry);
+    if (entry.replacementOfTransactionId) replacementByOriginal.set(entry.replacementOfTransactionId, entry);
+  });
+  const items = ledger.transactions
+    .map((entry, index) => ({ entry, index }))
+    .filter(({ entry }) => entry.type !== HOME_GAME_TRANSACTION_TYPES.CORRECTION && !entry.replacementOfTransactionId)
+    .map(({ entry, index }) => immutable({
+      order: index + 1,
+      original: entry,
+      corrected: correctionByOriginal.has(entry.transactionId),
+      correction: correctionByOriginal.get(entry.transactionId) || null,
+      replacement: replacementByOriginal.get(entry.transactionId) || null,
+    }));
+  return immutable({
+    schemaVersion: HOME_GAME_LEDGER_HISTORY_SCHEMA_VERSION,
+    sessionId: session.sessionId,
+    items,
+  });
 }
 
 export function createHomeGameSettlement(session, transactions) {
@@ -578,4 +707,3 @@ export function createHomeGameSessionExport({ session, transactions, snapshots =
     snapshots: cloneData(normalizedSnapshots),
   });
 }
-

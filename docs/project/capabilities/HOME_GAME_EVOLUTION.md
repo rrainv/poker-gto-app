@@ -26,6 +26,8 @@ Home Game is useful supporting capability. This dossier does not imply that it o
 ## Existing foundation
 
 - [Home Game Organizer Specification](../HOME_GAME_ORGANIZER_SPEC.md) owns the current standalone domain, exact minor-unit ledger, immutable transactions, append-only corrections, optional chip snapshots, lifecycle, balance checks, deterministic settlement, ownership, persistence, and bounded workspace.
+- `HOME-GAME-001B` adds account-scoped player edit/nickname/notes/archive/restore, ordered group management, reusable New Session rosters with blinds metadata, completed-session archive/restore, visible linked correction history, lifecycle-event history, and canonical account-only JSON export. Guest remains runtime-only with no durable library or export claim.
+- Hard delete is not exposed because v1 has no safe retention semantics for referenced players/groups or immutable financial history. Import is also deferred because validation, version adoption, owner adoption, conflict, and duplicate-ledger behavior are not accepted. These are deliberate safety decisions, not invitations for a renderer-side workaround.
 - Current settlement is a deterministic stable-order debtor-to-creditor two-pointer pass. It is not an exposed “Fewest Transfers” versus “Banker” preference system.
 - [Account Identity](../ACCOUNT_IDENTITY_SPEC.md) owns opaque Riverline identity. Home Game does not derive ownership from username, email, display name, or provider subject.
 - [Architecture Contract](../ARCHITECTURE_CONTRACT.md) keeps poker mathematics, PokerState, strategy, Equity, Training, Saved Study, and Home Game accounting under separate authorities.
@@ -36,11 +38,8 @@ The current Home Game specification explicitly has no PokerState or Saved Study 
 
 ### Players, groups, and sessions
 
-- Reuse saved players across groups and sessions.
-- Edit display metadata without changing stable player identity or rewriting past sessions.
-- Archive players and groups without erasing historical references.
-- Manage recurring groups, seating defaults, and session templates where useful.
-- Provide explicit session archive/delete semantics, with confirmation and retention rules.
+- Extend the accepted player/group/session management only when recurring-game defaults, richer templates, or factual history materially improve the organizer.
+- Define hard-delete retention semantics before any destructive session/player/group deletion is introduced; archive remains the accepted safe default.
 - Show player and recurring-game history as factual accounting/session history, not a skill rating.
 - Keep account identity, Home Game player identity, and a poker Hand seat/actor identity separate unless an explicit mapping exists.
 
@@ -248,4 +247,3 @@ No new web research is introduced by this dossier.
 - [Learning Evidence Foundation](LEARNING_EVIDENCE_FOUNDATION.md)
 - [Deep Hand Review](DEEP_HAND_REVIEW.md)
 - [Interaction Grammar](../INTERACTION_GRAMMAR.md)
-
