@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 26, 2026 (`HOME-GAME-001B` completed as an accepted implementation checkpoint with explicit manual Firefox/provider debt; `SETTINGS-IA-001` is active next).
+Last refreshed: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; `PREMIUM-CLOSEOUT-001` is active next).
 
 This roadmap explains major directional sequencing and why phases are ordered. [Current Phase](CURRENT_PHASE.md) owns the exact current checkpoint and execution order; [Product Backlog](PRODUCT_BACKLOG.md) owns concise capability/status. The [capability dossiers](capabilities/README.md) preserve detailed long-term intent without setting priority.
 
@@ -37,9 +37,9 @@ The completed dossier migration records more possibilities; it does not promote 
 1. **COMPLETED — `DOCS-CAPABILITY-DOSSIERS-001`** — one-time recovery, dossier architecture, interaction grammar, and planning simplification; no product implementation.
 2. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT — `TABLE-PHYSICALITY-003`** — human acceptance passed scale and overall table coherence as sufficient to move on; revealed-opponent card inspectability remains explicit return debt.
 3. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX/PROVIDER DEBT — `HOME-GAME-001B`** — organizer management, visible correction/lifecycle history, safe archive semantics, and export-only portability are implemented; unavailable live acceptance remains routed debt.
-4. **ACTIVE NEXT — `SETTINGS-IA-001`** — simplify Settings information architecture and help discovery.
-5. **`PREMIUM-CLOSEOUT-001`** — whole-app visual, responsive, localization, accessibility, Guide, and human closeout.
-6. **First trusted bounded reference pack/provider** — exact assumptions, coverage, validation, licensing/provenance, capabilities, and fallback.
+4. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT — `SETTINGS-IA-001`** — four focused Settings categories, preserved preference authorities, and secondary help/tutorial discovery; live Firefox acceptance remains routed debt.
+5. **ACTIVE NEXT — `PREMIUM-CLOSEOUT-001`** — whole-app visual, responsive, localization, accessibility, Guide, and human closeout.
+6. **PLANNED NEXT — First trusted bounded reference pack/provider** — exact assumptions, coverage, validation, licensing/provenance, capabilities, and fallback.
 7. **Training Memory / re-drill** — durable history, review queue, same/similar spot, scheduling, filters, and truthful trends.
 8. **`PERSONAL-STRATEGY-002R`** — independent real-user review.
 9. **Personal Strategy integration** — preserve intended/reference/observed roles and explicit Training-evidence opt-in.
@@ -51,7 +51,7 @@ The completed dossier migration records more possibilities; it does not promote 
 
 ## Phase A — visible product closeout
 
-Completed `TABLE-PHYSICALITY-003` and `HOME-GAME-001B`, followed by active-next `SETTINGS-IA-001` and then `PREMIUM-CLOSEOUT-001`, form the current visible-product sequence. Accepted Home Game live-browser/provider debt, table/card debt, and Review-navigation debt stay routed through the Return Queue rather than reopening completed implementation tickets. The default must be strong before more customization. Controls First, the ineffective density selector, arbitrary layout editing, casino spectacle, fake cinematic 3D, avatars by default, and reward theater remain rejected.
+Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, and `SETTINGS-IA-001`, followed by active-next `PREMIUM-CLOSEOUT-001`, form the current visible-product sequence. Accepted Home Game live-browser/provider debt, Settings Firefox debt, table/card debt, and Review-navigation debt stay routed through the Return Queue rather than reopening completed implementation tickets. The default must be strong before more customization. Controls First, the ineffective density selector, arbitrary layout editing, casino spectacle, fake cinematic 3D, avatars by default, and reward theater remain rejected.
 
 Real-browser/human judgment remains required for hierarchy, balance, readability, and aesthetics. Known acceptance debt stays in the QA Backlog and Return Queue rather than expanding this roadmap.
 

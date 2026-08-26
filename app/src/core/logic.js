@@ -7042,7 +7042,7 @@ function bindEvents() {
     if ($('#settingsModal')) {
       $('#settingsModal').classList.add('show');
       window.RiverlineTutorials?.workspaceChanged?.('settings');
-      window.RiverlineTutorials?.offerForWorkspace?.('settings', $('#settingsModal .settings-grid'));
+      window.RiverlineTutorials?.offerForWorkspace?.('settings', $('#settingsTutorialOfferHost'));
     }
   });
 

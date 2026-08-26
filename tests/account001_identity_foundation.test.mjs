@@ -365,7 +365,8 @@ test('account initialization remains local while the ACCOUNT-002A surface distin
   assert.match(html, /Cloud sync is not enabled/);
   assert.match(html, /id="accountSignIn"[^>]*data-i18n="Sign in"/);
   assert.match(html, /Signing in does not create a cloud backup/);
-  assert.match(css, /grid-template-areas:[\s\S]*"appearance account"/);
+  assert.match(css, /\.settings-layout\s*\{[\s\S]*grid-template-columns: minmax\(190px, \.38fr\) minmax\(0, 1fr\)/);
+  assert.match(html, /id="settingsAccountProfile"[^>]+role="tabpanel"[^>]+data-settings-panel="account"/);
   assert.match(css, /account-display-name-form/);
   assert.match(specification, /Saved Hand \/ Spot objects[\s\S]*?\| user\/identity \|/);
   assert.match(specification, /Personal Strategy profiles[\s\S]*?\| user\/identity \|/);

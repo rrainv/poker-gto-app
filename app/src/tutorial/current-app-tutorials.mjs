@@ -143,14 +143,15 @@ export const CALIBRATION_ANSWERS_TUTORIAL_DEFINITION = definition({
 });
 
 export const SETTINGS_TUTORIAL_DEFINITION = definition({
-  id: 'settings.preferences', workspace: 'settings', firstUsePolicy: 'prompt',
+  id: 'settings.preferences', version: 2, workspace: 'settings', firstUsePolicy: 'prompt',
   titleKey: 'Settings essentials',
   descriptionKey: 'Adjust language, theme, cards, and sound without touring every toggle.',
   steps: [
-    { id: 'overview', anchor: 'settings-overview', titleKey: 'Preferences change presentation', bodyKey: 'Settings controls presentation rather than poker state. Language is available from the global rail; this dialog groups theme, card, and sound preferences.', placement: 'bottom' },
-    { id: 'appearance', anchor: 'settings-appearance', titleKey: 'Choose theme and card presentation', bodyKey: 'Choose an immutable built-in theme or a named custom theme. Riverline preserves exact accent, surface, and table colors while deriving readable dependent colors; density, layout, card IDs, and poker calculations stay independent.', placement: 'right' },
+    { id: 'overview', anchor: 'settings-overview', titleKey: 'Preferences change presentation', bodyKey: 'Settings groups device preferences by type. Use the category list to move between appearance, audio and motion, language and help, and account and data.', placement: 'bottom' },
+    { id: 'appearance', anchor: 'settings-appearance', titleKey: 'Appearance', bodyKey: 'Choose how Riverline looks without changing cards, poker state, or study results.', placement: 'right' },
+    { id: 'audio', anchor: 'settings-audio', titleKey: 'Keep sound under your control', bodyKey: 'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.', placement: 'right' },
+    { id: 'language', anchor: 'settings-language-help', titleKey: 'Language & Help', bodyKey: 'Language remains available from the global sidebar. This is the same device preference, plus secondary learning routes.', placement: 'right' },
     { id: 'account', anchor: 'settings-account', titleKey: 'Saved Study sync is always opt-in', bodyKey: 'Sign-in does not upload study data. In Account / Profile, choose Saved Hands and Spots and Personal Strategy / Range Calibration separately; each remains local-first.', placement: 'left' },
-    { id: 'audio', anchor: 'settings-audio', titleKey: 'Keep sound under your control', bodyKey: 'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.', placement: 'left' },
   ],
 });
 

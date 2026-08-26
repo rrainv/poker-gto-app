@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 26, 2026 (`HOME-GAME-001B` completed as an accepted implementation checkpoint with explicit manual Firefox/provider debt; `SETTINGS-IA-001` is active next).
+Last consolidated: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; `PREMIUM-CLOSEOUT-001` is active next).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -31,17 +31,17 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | checkpoint | COMPLETED / ACCEPTED DOCUMENTATION ARCHITECTURE CHECKPOINT | `DOCS-CAPABILITY-DOSSIERS-001` |
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT | `TABLE-PHYSICALITY-003` |
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX/PROVIDER DEBT | `HOME-GAME-001B` |
-| 1 | ACTIVE NEXT | `SETTINGS-IA-001` |
-| 2 | PLANNED NEXT | `PREMIUM-CLOSEOUT-001` |
-| 3 | PLANNED NEXT | first trusted bounded reference pack/provider |
-| 4 | PLANNED NEXT | Training Memory / re-drill |
-| 5 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
-| 6 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
-| 7 | PLANNED LATER | `PERSONAL-INSIGHTS-001` |
-| 8 | PLANNED LATER | `RANGE-EVOLUTION-001` |
-| 9 | PLANNED LATER | `HOME-002B` Saved Study Library |
-| 10 | PRESERVED FUTURE | OpponentPolicy / bots |
-| 11 | PRESERVED FUTURE | release/mobile/social/PLO later |
+| checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT | `SETTINGS-IA-001` |
+| 1 | ACTIVE NEXT | `PREMIUM-CLOSEOUT-001` |
+| 2 | PLANNED NEXT | first trusted bounded reference pack/provider |
+| 3 | PLANNED NEXT | Training Memory / re-drill |
+| 4 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
+| 5 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
+| 6 | PLANNED LATER | `PERSONAL-INSIGHTS-001` |
+| 7 | PLANNED LATER | `RANGE-EVOLUTION-001` |
+| 8 | PLANNED LATER | `HOME-002B` Saved Study Library |
+| 9 | PRESERVED FUTURE | OpponentPolicy / bots |
+| 10 | PRESERVED FUTURE | release/mobile/social/PLO later |
 
 Documented Equity, bluff, opponent, natural-language, Home Game, sharing, and randomization depth remains in its existing status; the dossier migration does not pull it forward.
 
@@ -148,8 +148,8 @@ The current settlement algorithm is deterministic; it is not a selected Fewest T
 | `WORKSPACE-COMPOSITION-002` | COMPLETED / ACCEPTED CHECKPOINT WITH KNOWN DEBT | Stronger state-aware composition; Controls First and ineffective density selector removed; only useful specialized presets survive; debt remains `RET-COMPOSITION-002`. |
 | `DOCS-CAPABILITY-DOSSIERS-001` | COMPLETED / ACCEPTED DOCUMENTATION ARCHITECTURE CHECKPOINT | Durable dossier layer, Legacy ID Index, Interaction Grammar, recovered intent, anti-loop governance, and concise live planning; no runtime feature work. |
 | `TABLE-PHYSICALITY-003` | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT | Human acceptance passed table scale, HU/normal Hand composition, felt/rail coherence, Hero-card readability, and contribution-to-pot presentation as sufficient to move on. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt; no perfect-polish claim is made. |
-| `SETTINGS-IA-001` | ACTIVE NEXT | Simplify Settings concerns and help/tutorial discovery. |
-| `PREMIUM-CLOSEOUT-001` | PLANNED NEXT | Whole-app hierarchy/Core Flow, Guide, desktop, themes/cards, EN/RU/HE/RTL, accessibility, and human visual closeout. |
+| `SETTINGS-IA-001` | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT | Replaced the god menu with Appearance, Audio & Motion, Language & Help, and Account & Data categories; retained one authority per existing preference, demoted previews to actions, exposed truthful OS motion status, and kept Learn Riverline primary. Automated coverage is complete; live Firefox acceptance remains routed debt. |
+| `PREMIUM-CLOSEOUT-001` | ACTIVE NEXT | Whole-app hierarchy/Core Flow, Guide, desktop, themes/cards, EN/RU/HE/RTL, accessibility, Settings Firefox verification, and human visual closeout. |
 | evidence-grounded natural-language intelligence | PRESERVED FUTURE / first concrete slice `PERSONAL-INSIGHTS-001` | Facts / Explain / Coach depth over approved structured evidence, with facts-only use always available. See [Natural-Language Intelligence](capabilities/NATURAL_LANGUAGE_INTELLIGENCE.md). |
 | shared interaction integrity | COMPLETED | Accepted product rule: one semantic owner and interaction language across applicable surfaces; see [Interaction Grammar](INTERACTION_GRAMMAR.md). |
 | restrained felt/table/chip customization | OPEN PRODUCT DECISION | Default quality first; customization cannot compensate for a bad default. |

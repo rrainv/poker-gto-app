@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 26, 2026 (`HOME-GAME-001B` completed as an accepted implementation checkpoint with explicit manual Firefox/provider debt; `SETTINGS-IA-001` is active next).
+Last consolidated: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; `PREMIUM-CLOSEOUT-001` is active next).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -64,9 +64,9 @@ These IDs are durable hands-on findings: open rows are current product defects o
 | QA-HANDSON-007 | OPEN | Guide needs a current-product content review. | `PREMIUM-CLOSEOUT-001` Guide closeout |
 | QA-HANDSON-008 | CLOSED | Home Game Create binds only after its authentication dependency is ready, stays in the Organizer, and opens the intended active session; broader organizer work remains `HOME-GAME-001B`. | `UX-REGRESSION-001` accepted checkpoint |
 | QA-HANDSON-009 | PARTIAL | Audio volume is implemented by `AUDIO-MOTION-001`; retain subjective Study/UI/Check/fatigue/Firefox polish debt without reopening accepted architecture. | `RET-AUDIO-001` later polish |
-| QA-HANDSON-010 | OPEN | Settings is a god menu containing too many unrelated concerns. | `SETTINGS-IA-001` |
+| QA-HANDSON-010 | PARTIAL / ACCEPTED IMPLEMENTATION CHECKPOINT | The Settings god menu is replaced by four focused categories with a tested one-category-per-preference inventory, shared authorities, keyboard/RTL structure, and secondary Guide/tutorial discovery. Browser discovery exposed no available browser, so the requested EN/RU/HE, Midnight/Daylight, 1920×1080, 1366×768, and narrow/small-height real Firefox matrix remains open. | `PREMIUM-CLOSEOUT-001` human Firefox closeout / `RET-PREMIUM-001` |
 | QA-HANDSON-011 | CLOSED | Human Firefox/manual acceptance confirmed that the labelled `Learn Riverline` action is genuinely obvious outside Settings and that first-use/manual orientation routes cleanly to Guide and existing contextual tutorial affordances. Welcome remains separate from tutorial persistence and Guide content. | `WELCOME-INTRO-001` accepted checkpoint |
-| QA-HANDSON-012 | CLOSED | Built-ins are immutable and custom themes use explicit Edit, Save, Cancel, Duplicate, and Save as New transactions; draft changes do not persist or mutate the source before commit. | `UX-REGRESSION-001` accepted checkpoint; broader IA remains `SETTINGS-IA-001` |
+| QA-HANDSON-012 | CLOSED | Built-ins are immutable and custom themes use explicit Edit, Save, Cancel, Duplicate, and Save as New transactions; draft changes do not persist or mutate the source before commit. | `UX-REGRESSION-001` and `SETTINGS-IA-001` accepted checkpoints |
 | QA-HANDSON-013 | CLOSED | The ineffective Comfortable/Compact user-facing control is removed rather than represented as useful. Internal density tokens/controller compatibility remain, and bootstrap repairs old Compact preferences to the stable Comfortable default. | `WORKSPACE-COMPOSITION-002` accepted implementation checkpoint |
 | QA-HANDSON-014 | PARTIAL / ACCEPTED CHECKPOINT | Training's redesigned main decision/context hierarchy is accepted: preserve Facing, Position/Stack/Pot, Players/Street, four-action, Study Hint, and accessible Drill Setup/Progress. Session Progress still feels visually cramped, while Action History, Assistance, and diagnostics still read as below-fold footer content; improve their distribution later without reverting the hierarchy or creating a skinny filing-cabinet rail. | `RET-COMPOSITION-002` later Training composition refinement |
 | QA-HANDSON-015 | PARTIAL / ACCEPTED CHECKPOINT WITH KNOWN DEBT | Human acceptance passed corrected table scale, HU/normal Hand composition, felt/rail/table coherence, Hero-card readability, and contribution-to-pot relationships as sufficient to move on. Perfect physical-table polish is not claimed; revealed-opponent card crowding remains separately owned. | `TABLE-PHYSICALITY-003` accepted checkpoint / `RET-CARDS-THEMES-001` |
@@ -101,7 +101,7 @@ These IDs are durable hands-on findings: open rows are current product defects o
 | QA-UI-003 | PARTIAL | Betting Context still needs confirmed meaningful height reduction/alignment | PRODUCT-UI-002R manual acceptance |
 | QA-UI-004 | PARTIAL | `View all hands` must align with Position/Prior action row | PRODUCT-UI-002R manual acceptance |
 | QA-UI-005 | PARTIAL / ACCEPTED CHECKPOINT DEBT | `table-presentation/v1` integrates hole cards with each adaptive 2–10 player unit while preserving name, position, stack, action, and prominence facts. Overall table integration passed human acceptance; legitimately revealed opponent cards can still be too covered for comfortable inspection. | `RET-CARDS-THEMES-001` / `QA-HANDSON-021` |
-| QA-UI-006 | PARTIAL | Settings modal must remain centered and viewport-safe at smaller desktop sizes | PRODUCT-UI-002R manual acceptance |
+| QA-UI-006 | PARTIAL / ACCEPTED IMPLEMENTATION CHECKPOINT | Settings now uses a bounded modal with one independently scrolling category panel and responsive horizontal category navigation at narrow widths; real Firefox centering, clipping, and small-height acceptance remain open. | `PREMIUM-CLOSEOUT-001` / `QA-HANDSON-010` |
 
 ## Next: shared analysis presentation
 
@@ -190,7 +190,7 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 | QA-TRAIN-LAYOUT-001 | PARTIAL | Training desktop density is reduced for 1920×1080 pre-answer fit; final live acceptance pending | PRODUCT-UI-005R |
 | QA-TRAIN-LAYOUT-002 | OPEN | idle/no-board surfaces waste vertical space | PRODUCT-UI-005 |
 | FQA-002 | CLOSED | Training context values use the real grid, reflow to two columns at 1024, and remain atomic in Firefox EN/RU/HE with no global overflow or inaccessible action controls | PRELABS-FIX-001 |
-| FQA-004 | DEFERRED | Settings column imbalance is accepted low-priority Labs-era debt; no redesign is justified before Labs | Product Lab |
+| FQA-004 | CLOSED / SUPERSEDED | The former all-at-once multi-column Settings composition was removed by `SETTINGS-IA-001`; any remaining live viewport issue belongs to the new category IA acceptance matrix rather than the retired column layout. | `SETTINGS-IA-001` accepted implementation checkpoint / `QA-HANDSON-010` |
 | QA-TABLE-001 | PARTIAL / ACCEPTED CHECKPOINT DEBT | The active Hand renders canonical facts through `table-presentation/v1`; human acceptance passed default Balanced occupancy, HU composition, layered-table coherence, Hero readability, and contribution/pot relationships. No perfect-polish claim is made, and revealed-opponent card inspectability remains shared presentation debt. | `RET-CARDS-THEMES-001` / `QA-HANDSON-021` |
 | QA-COLLAPSE-001 | PARTIAL | Starting a Hand restores the table to expanded state and keeps the collapse control integrated; Firefox compact-state acceptance remains open | CORE-FLOW-001B Firefox acceptance / UI-005 |
 

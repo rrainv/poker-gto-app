@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 26, 2026 (`HOME-GAME-001B` completed as an accepted implementation checkpoint with explicit manual Firefox/provider debt; `SETTINGS-IA-001` is active next).
+Last refreshed: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; `PREMIUM-CLOSEOUT-001` is active next).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -32,9 +32,12 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - hard delete and import are deliberately not exposed because retention, validation, ownership-adoption, and conflict semantics are not accepted;
    - automated coverage is complete for the bounded slice; the requested real Firefox matrix and real authenticated provider path remain explicitly unverified.
 
-4. **ACTIVE NEXT — `SETTINGS-IA-001`**
+4. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT — `SETTINGS-IA-001`**
+   - the all-at-once god menu is replaced by four focused categories: Appearance, Audio & Motion, Language & Help, and Account & Data;
+   - the existing theme, card, layout, audio, language, tutorial, and account/profile authorities remain intact, while preview/test actions and OS reduced-motion status are not misrepresented as stored preferences;
+   - automated inventory, localization, keyboard, authority, and runtime-boundary coverage is complete; the requested real Firefox viewport/theme/language matrix remains explicitly unverified.
 
-5. **PLANNED NEXT — `PREMIUM-CLOSEOUT-001`**
+5. **ACTIVE NEXT — `PREMIUM-CLOSEOUT-001`**
 
 6. **PLANNED NEXT — first trusted bounded reference pack/provider**
 
@@ -78,7 +81,7 @@ Do not revive browser/Electron ONNX inference, remote strategy APIs, arbitrary s
 
 Completed/checkpointed work includes adaptive Table Presence, canonical Replay, shared Full Hand Review, accepted audio/motion architecture, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, the accepted-with-debt `WORKSPACE-COMPOSITION-002` simplification, and `TABLE-PHYSICALITY-003` with explicit presentation debt.
 
-`HOME-GAME-001B` is completed at an accepted implementation checkpoint with its unavailable real Firefox/provider acceptance retained as `RET-HOMEGAME-001`. `SETTINGS-IA-001` is now active next. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt, while the horizontal-versus-vertical Review chronology comparison remains `RET-REVIEW-NAV-001` debt. Full Hand Firefox acceptance, surviving composition verification, and broader premium QA remain separately owned by the QA Backlog and Return Queue. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
+`HOME-GAME-001B` is completed at an accepted implementation checkpoint with its unavailable real Firefox/provider acceptance retained as `RET-HOMEGAME-001`. `SETTINGS-IA-001` is also completed at an accepted implementation checkpoint; its unavailable real Firefox matrix is retained under `QA-HANDSON-010` and `RET-PREMIUM-001`. `PREMIUM-CLOSEOUT-001` is now active next. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt, while the horizontal-versus-vertical Review chronology comparison remains `RET-REVIEW-NAV-001` debt. Full Hand Firefox acceptance, surviving composition verification, and broader premium QA remain separately owned by the QA Backlog and Return Queue. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
 
 ### Home Game
 
@@ -86,7 +89,7 @@ Completed/checkpointed work includes adaptive Table Presence, canonical Replay, 
 
 ### Settings and premium closeout
 
-`SETTINGS-IA-001` owns decomposition of the Settings god menu and help/tutorial discovery. `PREMIUM-CLOSEOUT-001` owns whole-app hierarchy, Core Flow, Guide, desktop matrix, themes/cards, EN/RU/HE/RTL, accessibility, and human visual closeout. Existing transactional custom-theme editing and immutable built-ins are already accepted.
+`SETTINGS-IA-001` replaced the Settings god menu with four focused categories, kept Learn Riverline as the primary global help entry, and added a secondary Guide/restart path inside Settings without creating new preference authorities. `PREMIUM-CLOSEOUT-001` now owns whole-app hierarchy, Core Flow, Guide, desktop matrix, themes/cards, EN/RU/HE/RTL, accessibility, and the outstanding Settings human Firefox closeout. Existing transactional custom-theme editing and immutable built-ins remain accepted.
 
 ### Strategy and references
 

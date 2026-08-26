@@ -98,8 +98,9 @@ test('Settings and collapsed table use viewport-safe responsive layout contracts
   assert.match(density, /width: min\(940px, calc\(100vw - \(var\(--space-7\) \* 2\)\)\)/);
   assert.match(density, /max-width: calc\(100vw - \(var\(--space-7\) \* 2\)\)/);
   assert.match(density, /height: min\(760px, calc\(100dvh - \(var\(--space-6\) \* 2\)\)\)/);
-  assert.match(density, /\.settings-modal \.modal-body \{ min-width: 0; overflow: auto; overscroll-behavior: contain; \}/);
-  assert.match(density, /grid-template-columns: minmax\(0, 1\.55fr\) minmax\(220px, \.75fr\)/);
+  assert.match(density, /\.settings-modal \.modal-body \{ min-width: 0; min-height: 0; overflow: hidden; overscroll-behavior: contain; \}/);
+  assert.match(density, /\.settings-layout\s*\{[\s\S]*grid-template-columns: minmax\(190px, \.38fr\) minmax\(0, 1fr\)/);
+  assert.match(density, /\.settings-content\s*\{[\s\S]*overflow: auto;[\s\S]*overscroll-behavior: contain/);
   assert.match(density, /\.playbook-decision-workspace\.is-table-collapsed \.playbook-table-toggle/);
   const functionStart = logic.indexOf('function setCanonicalTableExpanded(expanded)');
   const functionEnd = logic.indexOf('\nfunction renderCanonicalHandSetupState', functionStart);

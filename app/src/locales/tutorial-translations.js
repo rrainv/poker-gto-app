@@ -759,6 +759,33 @@
   Object.assign(ru, tablePresenceTutorial.ru);
   Object.assign(he, tablePresenceTutorial.he);
 
+  const settingsIaTutorial = {
+    en: {
+      'Settings groups device preferences by type. Use the category list to move between appearance, audio and motion, language and help, and account and data.': 'Settings groups device preferences by type. Use the category list to move between appearance, audio and motion, language and help, and account and data.',
+      'Appearance': 'Appearance',
+      'Choose how Riverline looks without changing cards, poker state, or study results.': 'Choose how Riverline looks without changing cards, poker state, or study results.',
+      'Language & Help': 'Language & Help',
+      'Language remains available from the global sidebar. This is the same device preference, plus secondary learning routes.': 'Language remains available from the global sidebar. This is the same device preference, plus secondary learning routes.',
+    },
+    ru: {
+      'Settings groups device preferences by type. Use the category list to move between appearance, audio and motion, language and help, and account and data.': 'Настройки устройства сгруппированы по типу. Используйте список категорий, чтобы переходить между внешним видом, звуком и движением, языком и помощью, а также аккаунтом и данными.',
+      'Appearance': 'Внешний вид',
+      'Choose how Riverline looks without changing cards, poker state, or study results.': 'Настройте внешний вид Riverline, не меняя карты, состояние покера или результаты обучения.',
+      'Language & Help': 'Язык и помощь',
+      'Language remains available from the global sidebar. This is the same device preference, plus secondary learning routes.': 'Язык по-прежнему можно выбрать на глобальной боковой панели. Здесь используется та же настройка устройства и доступны дополнительные пути к обучению.',
+    },
+    he: {
+      'Settings groups device preferences by type. Use the category list to move between appearance, audio and motion, language and help, and account and data.': 'העדפות המכשיר מקובצות לפי סוג. השתמשו ברשימת הקטגוריות כדי לעבור בין מראה, שמע ותנועה, שפה ועזרה, וחשבון ונתונים.',
+      'Appearance': 'מראה',
+      'Choose how Riverline looks without changing cards, poker state, or study results.': 'בחרו כיצד Riverline תיראה בלי לשנות קלפים, מצב פוקר או תוצאות לימוד.',
+      'Language & Help': 'שפה ועזרה',
+      'Language remains available from the global sidebar. This is the same device preference, plus secondary learning routes.': 'בחירת השפה נשארת זמינה בסרגל הצד הכללי. כאן נעשה שימוש באותה העדפת מכשיר, לצד נתיבי למידה משניים.',
+    },
+  };
+  Object.assign(en, settingsIaTutorial.en);
+  Object.assign(ru, settingsIaTutorial.ru);
+  Object.assign(he, settingsIaTutorial.he);
+
   const audioMotionTutorial = {
     en: {
       'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.': 'Sound is optional: set the master level, then enable Table / Poker and Study / UI cues separately. Motion is controlled independently and respects the system reduced-motion preference.',

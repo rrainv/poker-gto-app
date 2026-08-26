@@ -1,6 +1,6 @@
 # Riverline Product and UI Specification
 
-Last refreshed: August 25, 2026 (`DOCS-CAPABILITY-DOSSIERS-001`).
+Last refreshed: August 26, 2026 (`SETTINGS-IA-001`).
 
 ## 1. Product principle
 
@@ -20,7 +20,7 @@ Riverline is a serious personal poker learning workstation. Premium means consis
 - **Saved:** local-first versioned Hand/Spot objects, annotations, review state, and detached Replay reopening.
 - **Home Game:** separate exact-money cash-game organizer.
 - **Guide:** durable current-product help.
-- **Settings:** localization, accessibility, audio/motion, themes, density, layouts, cards, and account/profile entry points.
+- **Settings:** four focused categories—Appearance, Audio & Motion, Language & Help, and Account & Data—over the existing layout, card, theme, audio, localization, tutorial, and account/profile authorities.
 
 ## 3. State-aware projection model
 
@@ -86,6 +86,7 @@ Hover/focus inspection, hypothetical states, Save/bookmark, Randomize/Lock, card
 - **Layout preset:** each preset must improve task hierarchy; weak presets may be redesigned, renamed, consolidated, or removed.
 - **Table Focus:** materially improves table and decision-relevant readability over Balanced; extra empty canvas around a small table is not success.
 - **Density:** each mode has coherent visible value; do not add more modes to avoid fixing the existing choice.
+- **Settings:** every actual preference appears in exactly one focused category; preview/test actions and system-derived status are not represented as stored preferences, and Learn Riverline remains the primary global help entry.
 - **Training hint:** content is relevant to the actual street and state.
 - **Control grid:** avoid orphan near-empty rows; four readable controls prefer 4×1 or 2×2 over 3+1.
 

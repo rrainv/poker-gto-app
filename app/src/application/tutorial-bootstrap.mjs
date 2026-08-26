@@ -160,8 +160,8 @@ export function installTutorialBridge(browserWindow, options = {}) {
     button.title = browserWindow.t?.('Tutorial') ?? 'Tutorial';
     const settingsButton = document.querySelector('#settingsTutorialButton');
     if (settingsButton) {
-      settingsButton.setAttribute('aria-label', browserWindow.t?.('Tutorials') ?? 'Tutorials');
-      settingsButton.title = browserWindow.t?.('Tutorials') ?? 'Tutorials';
+      settingsButton.setAttribute('aria-label', browserWindow.t?.('Restart Settings tour') ?? 'Restart Settings tour');
+      settingsButton.title = browserWindow.t?.('Restart Settings tour') ?? 'Restart Settings tour';
     }
   }
 

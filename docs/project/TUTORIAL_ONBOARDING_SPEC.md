@@ -120,7 +120,7 @@ One compact `?` action in the workspace header opens the currently useful tutori
 | `training.feedback` | answered Training state | manual when available | grading authority, source frequencies, shared explanation, next/replay workflow |
 | `calibration.setup` | Range Calibration | prompt | direct-observation boundary, Profile and exactly three Modes, objective RFI context, bounded session start |
 | `calibration.answers` | active calibration question | manual when available | dominant-action semantics, explicit exact mixes and ties, direct progress, pause/resume/undo |
-| `settings.preferences` | open Settings dialog | prompt | language relationship, theme and card presentation, sound and reduced-motion relationship |
+| `settings.preferences` | open Settings dialog | prompt | v2 category model; theme/card presentation, audio/system reduced-motion relationship, shared language/help routes, and truthful account/data entry |
 
 Guide intentionally has no dedicated tutorial. It is already the persistent reference surface that contextual tutorials complement. Saved Scenario spots reuse the Scenario definition and never gain invented history; Saved Hands reuse the Replay definition and retain their distinct read-only context.
 

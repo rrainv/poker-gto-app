@@ -2662,27 +2662,45 @@
           <h2 id="settingsTitle" data-i18n="Settings">Settings</h2>
           <p data-i18n="Customize your workstation.">Customize your workstation.</p>
         </div>
-        <div class="settings-head-actions"><button id="settingsTutorialButton" class="ui-button ui-button--icon" type="button" aria-label="Tutorials" title="Tutorials">?</button>
+        <div class="settings-head-actions">
         <button class="close ui-button ui-button--icon" id="closeSettingsModal" type="button" aria-label="Close settings" data-i18n-aria-label="Close settings" title="Close settings" data-i18n-title="Close settings">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
         </button></div>
       </div>
-      <div class="panel-body modal-body settings-grid">
-        
-        <div class="settings-group settings-appearance-group" data-tutorial-anchor="settings-appearance">
-            <h3 class="settings-section-title" data-i18n="Appearance & Themes">Appearance & Themes</h3>
-            
-            <div class="field settings-preference-field card-color-preference-field">
-              <div class="settings-preference-copy">
-                <strong data-i18n="Four-color deck">Four-color deck</strong>
-                <span class="panel-note" data-i18n="Uses a stable color and suit glyph for each suit. Card identity never changes.">Uses a stable color and suit glyph for each suit. Card identity never changes.</span>
-              </div>
-              <div class="switchrow">
-                <button class="switch ui-switch on" id="fourColorDeckToggle" type="button" aria-label="Use four-color deck" data-i18n-aria-label="Use four-color deck" aria-pressed="true"><b aria-hidden="true"></b></button>
-              </div>
-            </div>
+      <div class="panel-body modal-body settings-layout">
+        <nav class="settings-category-nav" aria-label="Settings categories" data-i18n-aria-label="Settings categories">
+          <div class="settings-category-list" role="tablist" aria-orientation="vertical">
+            <button id="settingsTabAppearance" class="settings-category-tab active" type="button" role="tab" aria-selected="true" aria-controls="settingsPanelAppearance" tabindex="0" data-settings-category="appearance" data-tutorial-anchor="settings-appearance">
+              <strong data-i18n="Appearance">Appearance</strong>
+              <small data-i18n="Theme, cards, and workspace layout">Theme, cards, and workspace layout</small>
+            </button>
+            <button id="settingsTabAudio" class="settings-category-tab" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelAudio" tabindex="-1" data-settings-category="audio" data-tutorial-anchor="settings-audio">
+              <strong data-i18n="Audio & Motion">Audio &amp; Motion</strong>
+              <small data-i18n="Sound hierarchy and motion status">Sound hierarchy and motion status</small>
+            </button>
+            <button id="settingsTabLanguage" class="settings-category-tab" type="button" role="tab" aria-selected="false" aria-controls="settingsPanelLanguage" tabindex="-1" data-settings-category="language" data-tutorial-anchor="settings-language-help">
+              <strong data-i18n="Language & Help">Language &amp; Help</strong>
+              <small data-i18n="Language, Guide, and tutorials">Language, Guide, and tutorials</small>
+            </button>
+            <button id="settingsTabAccount" class="settings-category-tab" type="button" role="tab" aria-selected="false" aria-controls="settingsAccountProfile" tabindex="-1" data-settings-category="account" data-tutorial-anchor="settings-account">
+              <strong data-i18n="Account & Data">Account &amp; Data</strong>
+              <small data-i18n="Identity, local data, and sync status">Identity, local data, and sync status</small>
+            </button>
+          </div>
+          <p class="settings-scope-note"><strong data-i18n="Preference scope">Preference scope</strong><span data-i18n="Presentation and audio preferences stay on this device.">Presentation and audio preferences stay on this device.</span></p>
+        </nav>
 
-            <div class="field settings-preference-field layout-preset-field" data-layout-preset-field hidden>
+        <div class="settings-content">
+        <div id="settingsTutorialOfferHost" class="settings-tutorial-offer-host"></div>
+        
+        <div id="settingsPanelAppearance" class="settings-group settings-panel settings-appearance-group" role="tabpanel" aria-labelledby="settingsTabAppearance" data-settings-panel="appearance">
+            <header class="settings-panel-head">
+              <p class="settings-panel-kicker" data-i18n="This device">This device</p>
+              <h3 class="settings-section-title" data-i18n="Appearance">Appearance</h3>
+              <p class="panel-note" data-i18n="Choose how Riverline looks without changing cards, poker state, or study results.">Choose how Riverline looks without changing cards, poker state, or study results.</p>
+            </header>
+
+            <div class="field settings-preference-field layout-preset-field" data-setting-id="workspace-layout" data-layout-preset-field hidden>
               <div class="settings-preference-copy">
                 <strong data-i18n="Workspace layout">Workspace layout</strong>
                 <span class="panel-note" data-i18n="Changes emphasis and composition only. Density, poker state, and available tools stay the same.">Changes emphasis and composition only. Density, poker state, and available tools stay the same.</span>
@@ -2694,7 +2712,23 @@
               </div>
             </div>
 
-            <div class="field settings-preference-field">
+            <section class="settings-subsection" aria-labelledby="settingsCardPresentationTitle">
+              <div class="settings-subsection-head">
+                <h4 id="settingsCardPresentationTitle" data-i18n="Card presentation">Card presentation</h4>
+                <p class="panel-note" data-i18n="These choices apply immediately across every workspace.">These choices apply immediately across every workspace.</p>
+              </div>
+
+            <div class="field settings-preference-field card-color-preference-field" data-setting-id="card-suit-colors">
+              <div class="settings-preference-copy">
+                <strong data-i18n="Four-color deck">Four-color deck</strong>
+                <span class="panel-note" data-i18n="Uses a stable color and suit glyph for each suit. Card identity never changes.">Uses a stable color and suit glyph for each suit. Card identity never changes.</span>
+              </div>
+              <div class="switchrow">
+                <button class="switch ui-switch on" id="fourColorDeckToggle" type="button" aria-label="Use four-color deck" data-i18n-aria-label="Use four-color deck" aria-pressed="true"><b aria-hidden="true"></b></button>
+              </div>
+            </div>
+
+            <div class="field settings-preference-field" data-setting-id="card-rank-style">
               <div class="settings-preference-copy">
                 <strong data-i18n="Card rank style">Card rank style</strong>
                 <span class="panel-note" data-i18n="Changes visual playing cards only. Canonical card IDs still use T.">Changes visual playing cards only. Canonical card IDs still use T.</span>
@@ -2705,7 +2739,7 @@
               </div>
             </div>
 
-            <fieldset class="field settings-preference-field card-style-preference-field">
+            <fieldset class="field settings-preference-field card-style-preference-field" data-setting-id="card-face-style">
               <legend class="settings-preference-copy">
                 <strong data-i18n="Card face style">Card face style</strong>
                 <span class="panel-note" data-i18n="Applies immediately to card faces across every workspace.">Applies immediately to card faces across every workspace.</span>
@@ -2726,7 +2760,7 @@
               </div>
             </fieldset>
 
-            <fieldset class="field settings-preference-field card-style-preference-field">
+            <fieldset class="field settings-preference-field card-style-preference-field" data-setting-id="card-back-style">
               <legend class="settings-preference-copy">
                 <strong data-i18n="Card-back style">Card-back style</strong>
                 <span class="panel-note" data-i18n="Hidden cards stay distinct from empty card slots.">Hidden cards stay distinct from empty card slots.</span>
@@ -2738,7 +2772,9 @@
               </div>
             </fieldset>
 
-            <section class="field settings-preference-field theme-preference-field" aria-labelledby="themePreferenceTitle">
+            </section>
+
+            <section class="settings-subsection field settings-preference-field theme-preference-field" aria-labelledby="themePreferenceTitle" data-setting-id="workstation-theme">
               <div class="settings-preference-copy">
                 <strong id="themePreferenceTitle" data-i18n="Workstation theme">Workstation theme</strong>
                 <span class="panel-note" data-i18n="Choose a built-in theme or create a named custom theme with three exact custom colors.">Choose a built-in theme or create a named custom theme with three exact custom colors.</span>
@@ -2824,8 +2860,12 @@
             </section>
         </div>
 
-        <div id="settingsAccountProfile" class="settings-group settings-account-group" data-account-state="loading" aria-busy="true" data-tutorial-anchor="settings-account">
-          <h3 class="settings-section-title" data-i18n="Account & Profile">Account &amp; Profile</h3>
+        <div id="settingsAccountProfile" class="settings-group settings-panel settings-account-group" role="tabpanel" aria-labelledby="settingsTabAccount" data-settings-panel="account" data-account-state="loading" aria-busy="true" hidden>
+          <header class="settings-panel-head">
+            <p class="settings-panel-kicker" data-i18n="Account and local storage">Account and local storage</p>
+            <h3 class="settings-section-title" data-i18n="Account & Data">Account &amp; Data</h3>
+            <p class="panel-note" data-i18n="Review identity and storage truth here; manage sign-in and opt-in sync in Account / Profile.">Review identity and storage truth here; manage sign-in and opt-in sync in Account / Profile.</p>
+          </header>
           <div class="account-profile-summary">
             <div class="account-profile-heading">
               <div>
@@ -2843,28 +2883,32 @@
           </dl>
         </div>
 
-        <div class="settings-group settings-audio-group" data-tutorial-anchor="settings-audio">
-            <h3 class="settings-section-title" data-i18n="Audio">Audio</h3>
+        <div id="settingsPanelAudio" class="settings-group settings-panel settings-audio-group" role="tabpanel" aria-labelledby="settingsTabAudio" data-settings-panel="audio" hidden>
+            <header class="settings-panel-head">
+              <p class="settings-panel-kicker" data-i18n="This device">This device</p>
+              <h3 class="settings-section-title" data-i18n="Audio & Motion">Audio &amp; Motion</h3>
+            </header>
             <p class="panel-note" data-i18n="Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.">Poker sounds and study feedback stay separate. Motion follows your reduced-motion preference independently.</p>
             <div class="settings-audio-controls">
-              <div class="switchrow audio-setting-row">
+              <div class="switchrow audio-setting-row" data-setting-id="audio-enabled">
                 <span><strong data-i18n="Sound enabled">Sound enabled</strong><small data-i18n="Mute or enable all Riverline cues.">Mute or enable all Riverline cues.</small></span>
                 <button class="switch ui-switch on" id="audioSettingsSwitch" type="button" aria-label="Sound enabled" data-i18n-aria-label="Sound enabled" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
-              <label class="audio-volume-field" for="audioMasterVolume">
+              <label class="audio-volume-field" for="audioMasterVolume" data-setting-id="audio-volume">
                 <span><strong data-i18n="Master volume">Master volume</strong><output id="audioMasterVolumeValue" for="audioMasterVolume">72%</output></span>
                 <input id="audioMasterVolume" type="range" min="0" max="100" step="1" value="72" aria-label="Master volume" data-i18n-aria-label="Master volume">
               </label>
-              <div class="switchrow audio-setting-row">
+              <div class="switchrow audio-setting-row" data-setting-id="audio-poker">
                 <span><strong data-i18n="Table / Poker sounds">Table / Poker sounds</strong><small data-i18n="Cards, checks, folds, chips, streets, and pot movement.">Cards, checks, folds, chips, streets, and pot movement.</small></span>
                 <button class="switch ui-switch on" id="audioPokerSwitch" type="button" aria-label="Table / Poker sounds" data-i18n-aria-label="Table / Poker sounds" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
-              <div class="switchrow audio-setting-row">
+              <div class="switchrow audio-setting-row" data-setting-id="audio-study">
                 <span><strong data-i18n="Study / UI feedback">Study / UI feedback</strong><small data-i18n="Canonical study-result acknowledgement and hints; never casino rewards.">Canonical study-result acknowledgement and hints; never casino rewards.</small></span>
                 <button class="switch ui-switch on" id="audioStudySwitch" type="button" aria-label="Study / UI feedback" data-i18n-aria-label="Study / UI feedback" aria-pressed="true"><b aria-hidden="true"></b></button>
               </div>
-              <div class="audio-preview-field">
-                <span><strong data-i18n="Preview sounds">Preview sounds</strong><small data-i18n="Audition the exact production cues for physical poker and study feedback.">Audition the exact production cues for physical poker and study feedback.</small></span>
+              <details class="audio-preview-field settings-detail-disclosure">
+                <summary><span><strong data-i18n="Test sounds">Test sounds</strong><small data-i18n="Optional previews; these actions do not change a preference.">Optional previews; these actions do not change a preference.</small></span></summary>
+                <div class="settings-detail-body">
                 <div class="audio-preview-group">
                   <small class="audio-preview-label" data-i18n="Physical poker">Physical poker</small>
                   <div class="audio-preview-actions" role="group" aria-label="Physical poker" data-i18n-aria-label="Physical poker">
@@ -2886,10 +2930,48 @@
                     <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="hint" data-i18n="Hint">Hint</button>
                   </div>
                 </div>
-              </div>
+                </div>
+              </details>
             </div>
+
+            <section class="settings-system-status" aria-labelledby="settingsMotionTitle">
+              <div class="settings-system-status-head">
+                <div><strong id="settingsMotionTitle" data-i18n="Reduced motion">Reduced motion</strong><small data-i18n="Uses this device's operating-system preference.">Uses this device's operating-system preference.</small></div>
+                <output id="settingsReducedMotionStatus" class="badge status-badge status-badge--neutral" aria-live="polite" data-i18n="System preference: Off">System preference: Off</output>
+              </div>
+              <p class="panel-note" data-i18n="Change reduced motion in system settings. Riverline applies it immediately and keeps sound independent.">Change reduced motion in system settings. Riverline applies it immediately and keeps sound independent.</p>
+            </section>
         </div>
 
+        <div id="settingsPanelLanguage" class="settings-group settings-panel settings-language-group" role="tabpanel" aria-labelledby="settingsTabLanguage" data-settings-panel="language" hidden>
+          <header class="settings-panel-head">
+            <p class="settings-panel-kicker" data-i18n="Language and learning">Language and learning</p>
+            <h3 class="settings-section-title" data-i18n="Language & Help">Language &amp; Help</h3>
+            <p class="panel-note" data-i18n="Language remains available from the global sidebar. This is the same device preference, plus secondary learning routes.">Language remains available from the global sidebar. This is the same device preference, plus secondary learning routes.</p>
+          </header>
+
+          <label class="settings-language-field" for="settingsLanguageSelect" data-setting-id="language">
+            <span><strong data-i18n="Language">Language</strong><small data-i18n="Applies immediately and uses the same preference as the sidebar.">Applies immediately and uses the same preference as the sidebar.</small></span>
+            <select id="settingsLanguageSelect" class="control-select" aria-label="Language" data-i18n-aria-label="Language">
+              <option value="en">English</option>
+              <option value="ru">Русский</option>
+              <option value="he">עברית</option>
+            </select>
+          </label>
+
+          <section class="settings-learning-actions" aria-labelledby="settingsLearningTitle">
+            <div>
+              <h4 id="settingsLearningTitle" data-i18n="Help & Learning">Help &amp; Learning</h4>
+              <p class="panel-note" data-i18n="Learn Riverline remains the primary global entry. Use these secondary routes when you are already in Settings.">Learn Riverline remains the primary global entry. Use these secondary routes when you are already in Settings.</p>
+            </div>
+            <div class="settings-action-row">
+              <button id="settingsOpenGuide" class="ui-button ui-button--secondary" type="button" data-i18n="Open Guide">Open Guide</button>
+              <button id="settingsTutorialButton" class="ui-button ui-button--quiet" type="button" aria-label="Restart Settings tour" data-i18n-aria-label="Restart Settings tour" data-i18n="Restart Settings tour">Restart Settings tour</button>
+            </div>
+          </section>
+        </div>
+
+        </div>
       </div>
     </div>
   </div>
@@ -3147,6 +3229,7 @@
   <script type="module" src="src/application/home-workspace-bootstrap.mjs"></script>
   <script type="module" src="src/application/home-game-bootstrap.mjs"></script>
   <script type="module" src="src/application/welcome-orientation-bootstrap.mjs"></script>
+  <script type="module" src="src/application/settings-ia-bootstrap.mjs"></script>
   <script type="module" src="src/application/tutorial-bootstrap.mjs"></script>
   <script type="module" src="src/application/presentation-density-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
