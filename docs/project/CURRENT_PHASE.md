@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 26, 2026 (`TRAINING-MEMORY-001` completed the accepted local-first learning-memory foundation with manual Firefox debt; `PERSONAL-STRATEGY-002R` is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
+Last refreshed: August 26, 2026 (`PERSONAL-STRATEGY-002R` human product review is accepted; `PERSONAL-STRATEGY-003A` is active next; provider/reference/observed integration follows 003A acceptance; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -10,6 +10,7 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
 - **CHECKPOINTED / INTENTIONALLY INCOMPLETE:** useful foundation accepted with a named resume point.
 - **ACTIVE NEXT:** accepted next bounded ticket, started in its own chat.
 - **PLANNED NEXT:** ordered work after the active-next ticket.
+- **COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED:** an independent product review and its explicit human decisions are complete; accepted implementation still requires its own ticket.
 - **PLANNED LATER:** ordered behind nearer work.
 - **PRESERVED FUTURE:** accepted direction without an immediate execution commitment.
 - **OPEN PRODUCT DECISION:** requires a later explicit choice.
@@ -47,17 +48,26 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - bounded indexed recent history, transparent review reasons/lifecycle, exact historical Same Spot, and planner/generator-backed current Similar Spot are implemented without creating new poker, Training, strategy, Replay, Saved, or identity authorities;
    - advanced scheduling, filters/trends, Saved/Home/Replay/Analyze continuity, Personal Strategy opt-in, sync/export, and `Not sure` remain later work; real Firefox EN/HE/RU and viewport acceptance is `RET-TRAINING-MEMORY-001`.
 
-7. **ACTIVE NEXT — `PERSONAL-STRATEGY-002R` independent review**
+7. **COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED — `PERSONAL-STRATEGY-002R`**
+   - the [independent review](PERSONAL_STRATEGY_002R_REVIEW.md) and human disposition preserve the immutable intended-evidence architecture while accepting Game setup/Approach, local-first Guest use, an RFI-first five-question path, What Riverline understands, Teach Riverline Next, Matrix Edit consolidation, and bounded versioning direction;
+   - selected reference, personal intent, source-labelled observed behavior, and opponent policy remain separate; live Firefox/real-user acceptance remains routed debt.
 
-8. **PLANNED NEXT — Personal Strategy provider/reference/observed integration**
+8. **ACTIVE NEXT — `PERSONAL-STRATEGY-003A` first-value product-model reset**
+   - own the versioned legacy Profile/Mode to Game setup/Approach product/storage migration without evidence or stable-identity loss;
+   - deliver durable local-first setup, one initial Approach, an honestly supported first-in/RFI five-question path, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit;
+   - preserve dominant-only ≠ pure, provenance, conflicts, exact mixes, owner isolation, optional account sync governance, and street/role extensibility; do not implement Training/reference/observed integration.
 
-9. **NEXT INTELLIGENCE / PRODUCT WAVE — exact order reassessed at a clean checkpoint**
+9. **PLANNED NEXT / AFTER 003A ACCEPTANCE — Personal Strategy provider/reference/observed integration**
+   - preserve selected reference, personal intent, source-labelled observed behavior, and opponent policy as separate roles;
+   - Training comparison uses an explicit frozen Game setup/Approach selection, while adoption into intent requires a separate explicit action.
+
+10. **NEXT INTELLIGENCE / PRODUCT WAVE — exact order reassessed at a clean checkpoint**
    - accepted candidates include `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, later Opponent Intelligence / OpponentPolicy, and `HOME-002B`;
    - capability documentation does not activate any candidate or pre-commit their order.
 
-10. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+11. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
 
-11. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
+12. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
 
 Reassess only at clean checkpoints. Documenting a capability does not pull it forward.
 
@@ -109,7 +119,7 @@ Varied, Focused, and Full Hand Training are legal, deterministic, provider-backe
 
 Calibration, deterministic inference, Matrix, Range Builder, Range Teacher, bounded RFI context transfer, and optional sync are checkpointed over one sparse immutable intended-strategy evidence authority.
 
-Resume at independent `PERSONAL-STRATEGY-002R`, then provider/reference/observed integration, then `PERSONAL-INSIGHTS-001`. Direct intent, inference, reference, and observed behavior remain distinct; dominant-only evidence never becomes a fake 100% mix. See the [Personal Strategy dossier](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md).
+The independent [`PERSONAL-STRATEGY-002R` review](PERSONAL_STRATEGY_002R_REVIEW.md) is completed and human-accepted. `PERSONAL-STRATEGY-003A` is active next and owns the versioned Game setup/Approach migration plus the bounded local-first first-value reset before provider integration. Direct intent, inference, selected reference, source-labelled observed behavior, and opponent policy remain distinct; dominant-only evidence never becomes a fake 100% mix. Accepted durable direction lives in the [Personal Strategy dossier](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md).
 
 ### Analysis, Equity, bluff, and ranges
 

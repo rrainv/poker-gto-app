@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 26, 2026 (`TRAINING-MEMORY-001` completed the accepted learning-memory foundation with manual Firefox debt; `PERSONAL-STRATEGY-002R` is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
+Last consolidated: August 26, 2026 (`PERSONAL-STRATEGY-002R` human product review is accepted; `PERSONAL-STRATEGY-003A` is active next; provider/reference/observed integration follows 003A acceptance; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -34,8 +34,9 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT | `SETTINGS-IA-001` |
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT | `TRAINING-MEMORY-001` |
 | return dependency | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `REFERENCE-PACK-001` production source acquisition and acceptance |
-| 1 | ACTIVE NEXT | `PERSONAL-STRATEGY-002R` |
-| 2 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
+| checkpoint | COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED | `PERSONAL-STRATEGY-002R` |
+| 1 | ACTIVE NEXT | `PERSONAL-STRATEGY-003A` first-value product-model reset |
+| 2 | PLANNED NEXT / AFTER 003A ACCEPTANCE | Personal Strategy provider/reference/observed integration |
 | wave | ORDER REASSESS AT CLEAN CHECKPOINT | `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, Opponent Intelligence / OpponentPolicy, `HOME-002B` |
 | later gate | PLANNED LATER / PRE-RELEASE QUALITY GATE | `PREMIUM-CLOSEOUT-001` |
 | future | PRESERVED FUTURE | release/mobile/social/PLO later |
@@ -87,10 +88,11 @@ Training `Not sure` behavior remains an open product question; Calibration's exi
 | Capability | Status | Accepted scope |
 |---|---|---|
 | Foundation / Calibration / inference / Matrix / Builder / Teacher | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Three user-named modes per profile, sparse immutable intended evidence, dominant-only ≠ pure, contradictions, categorical uncertainty, adaptive questions, and one shared evidence authority. |
-| `PERSONAL-STRATEGY-002R` | ACTIVE NEXT | Independent real-user review before provider integration or more inference machinery. |
-| provider/reference/observed integration | PLANNED NEXT | Keep intended Personal Strategy, selected reference, and observed play explicit; Training evidence is opt-in. |
+| `PERSONAL-STRATEGY-002R` | COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED | The [independent review and human disposition](PERSONAL_STRATEGY_002R_REVIEW.md) preserve the intended-evidence authority and accept the Game setup/Approach, local-first, RFI-first, first-value product reset before integration. Browser/real-user acceptance remains routed debt. |
+| `PERSONAL-STRATEGY-003A` | ACTIVE NEXT | Own the versioned legacy migration and deliver one Game setup, one initial Approach, approximately five supported RFI questions, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit. No provider/reference/observed integration. |
+| provider/reference/observed integration | PLANNED NEXT / AFTER 003A ACCEPTANCE | Keep intended Personal Strategy, selected reference, source-labelled observed behavior, and opponent policy explicit; Training comparison/adoption is opt-in and Training Memory remains the observed authority. |
 | `PERSONAL-INSIGHTS-001` | PLANNED LATER after integration | Cross-profile Teach Riverline Next queue and evidence/provenance/uncertainty-aware summaries. See [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md). |
-| profile snapshots/experiments/rollback and later postflop/combo depth | PRESERVED FUTURE | Preserve evidence history, uncertainty, discrete mode semantics, and source roles. See [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md). |
+| bounded versioning and later postflop/combo depth | ACCEPTED DIRECTION / LATER SLICES | Duplicate Approach, immutable material Game setup versions, and restore-through-new-correction/version are accepted; branches, arbitrary rollback, and Git-like management are deferred. Postflop remains exact-fact future work. See [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md). |
 
 ## 6. Analysis / Matrix / Ranges / Equity
 

@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 26, 2026 (`TRAINING-MEMORY-001` completed the accepted learning-memory foundation with manual Firefox debt; `PERSONAL-STRATEGY-002R` is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
+Last refreshed: August 26, 2026 (`PERSONAL-STRATEGY-002R` human product review is accepted; `PERSONAL-STRATEGY-003A` is active next; provider/reference/observed integration follows 003A acceptance; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
 
 This roadmap explains major directional sequencing and why phases are ordered. [Current Phase](CURRENT_PHASE.md) owns the exact current checkpoint and execution order; [Product Backlog](PRODUCT_BACKLOG.md) owns concise capability/status. The [capability dossiers](capabilities/README.md) preserve detailed long-term intent without setting priority.
 
@@ -40,11 +40,12 @@ The completed dossier migration records more possibilities; it does not promote 
 4. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT — `SETTINGS-IA-001`** — four focused Settings categories, preserved preference authorities, and secondary help/tutorial discovery; live Firefox acceptance remains routed debt.
 5. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `REFERENCE-PACK-001`** — pack contract, validation, strict matcher, provider/fallback, and generic consumers are implemented; production-safe source data and independent acceptance remain a named return dependency.
 6. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT — `TRAINING-MEMORY-001`** — durable source-aware decision/session evidence, bounded recent history, transparent review lifecycle, exact historical Same Spot, and planner/generator-backed current Similar Spot; advanced scheduling and cross-surface continuity remain later work.
-7. **ACTIVE NEXT — `PERSONAL-STRATEGY-002R`** — independent real-user review.
-8. **PLANNED NEXT — Personal Strategy integration** — preserve intended/reference/observed roles and explicit Training-evidence opt-in.
-9. **NEXT INTELLIGENCE / PRODUCT WAVE; ORDER TO REASSESS —** accepted candidates include `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, later Opponent Intelligence / OpponentPolicy, and `HOME-002B`.
-10. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`** — whole-product manual QA, high-value visual-debt burn, Guide finalization, responsive desktop matrix, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings/theme polish, and release-quality Core Flow acceptance.
-11. **Release/mobile/social/PLO later** — only after their prerequisites and explicit decisions.
+7. **COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED — `PERSONAL-STRATEGY-002R`** — accepted Game setup/Approach, local-first Guest use, RFI-first five-question value, understanding vocabulary, surface consolidation, permanent source-role separation, and bounded versioning direction; live browser/real-user acceptance remains routed debt.
+8. **ACTIVE NEXT — `PERSONAL-STRATEGY-003A`** — own the versioned legacy migration and first-value product reset: one setup/initial Approach, supported RFI questions, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit, without reference/observed integration.
+9. **PLANNED NEXT / AFTER 003A ACCEPTANCE — Personal Strategy provider/reference/observed integration** — preserve source roles, frozen explicit Training comparison selection, separate intent adoption, and reference source/version/coverage/capability truth.
+10. **NEXT INTELLIGENCE / PRODUCT WAVE; ORDER TO REASSESS —** accepted candidates include `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, later Opponent Intelligence / OpponentPolicy, and `HOME-002B`.
+11. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`** — whole-product manual QA, high-value visual-debt burn, Guide finalization, responsive desktop matrix, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings/theme polish, and release-quality Core Flow acceptance.
+12. **Release/mobile/social/PLO later** — only after their prerequisites and explicit decisions.
 
 ## Phase A — usable visible-product foundation
 

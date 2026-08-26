@@ -4,23 +4,54 @@
 
 Planning navigation: [PRODUCT_BACKLOG.md](../PRODUCT_BACKLOG.md), [CURRENT_PHASE.md](../CURRENT_PHASE.md), and [ROADMAP.md](../ROADMAP.md).
 
+## Accepted product direction — August 26, 2026
+
+The human product review for [`PERSONAL-STRATEGY-002R`](../PERSONAL_STRATEGY_002R_REVIEW.md) is accepted. The durable user job is:
+
+> Teach Riverline how I intend to play in a recognizable poker setup, inspect what Riverline knows versus estimates, and later compare that intent separately with reference strategy and observed behavior.
+
+The accepted user-facing model is:
+
+```text
+Personal Strategy
+  Game setup: recognizable environment plus exact rules assumptions
+    Approach: one discrete way the user intends to play
+```
+
+Accepted product rules:
+
+- **Game setup** replaces Profile in user-facing language. Home Game, club game, cash game, MTT, and Heads-Up may be templates/examples, never hardcoded product identities. Users can name their own setup, and exact rules assumptions remain inspectable.
+- **Approach** replaces Mode in user-facing language. A new Game setup starts with one Approach and may gain more when useful. Exactly three is not the future product model, and legacy three-Mode data must migrate without evidence or stable-identity loss.
+- **Teach Riverline** replaces Calibration; **Teach Riverline Next** replaces Teacher; Builder is no longer a standalone product noun, while its useful grouped editing capability moves under **Matrix Edit**.
+- First value is one lightweight Game setup, one Approach, one clearly supported first-in/RFI preflop context, approximately five dominant-action questions, then **What Riverline understands** and a **Teach Riverline Next** continuation. Strategy Matrix and Matrix Edit remain secondary/expert surfaces.
+- The primary `003A` product scope is intentionally preflop first-in/RFI. Other contexts must be labelled supported or not-yet-supported honestly; architecture remains street/role extensible.
+- One-click input means preferred/dominant intended action, never a manufactured 100% pure frequency. Exact/mixed frequency remains explicit refinement.
+- The visible understanding vocabulary is **Specified — dominant**, **Specified — exact**, **Supported estimate**, **Tentative estimate**, **Unknown**, and **Conflict**. Supported/Tentative are not statistically calibrated numeric confidence.
+- Personal Strategy is durable on-device without mandatory sign-in through Riverline's existing local owner/identity authority. Accounts retain isolated ownership and existing opt-in sync governance; no implicit cloud upload or second identity system is allowed.
+- Training Memory remains observed Training evidence. Future comparison against a frozen Game setup/Approach snapshot is explicit opt-in, and adopting an observed answer as intent is a separate explicit action. This integration is not part of `003A`.
+- Selected reference, personal intent, source-labelled observed behavior, and opponent policy remain separate roles. Reference/observed integration follows `003A`; disagreement is not automatically a mistake.
+- With fewer than five compatible observed decisions, future observed comparison may show individual history only. Stronger pattern thresholds and compatibility rules are deliberately deferred to the analytics implementation ticket.
+- Append-only evidence history, grouped undo/corrections, Duplicate Approach, immutable material Game setup versions, and restore-through-new-correction/version are accepted. Branches, arbitrary historical rollback, and Git-like version management are deferred.
+
+`PERSONAL-STRATEGY-003A` owns the new versioned product/storage migration and first-value reset. Until that implementation is accepted, current Profile/Mode schemas and legacy internal names remain implementation truth only where compatibility requires them.
+
 ## Product purpose
 
-Personal Strategy lets Riverline understand and preserve what the user intends to play in a named poker environment without relabelling that intent as objective poker truth. Its long-term intelligence should help the user inspect strategy boundaries, find sparse or contradictory evidence, compare Profiles and Modes, decide what to teach Riverline next, and connect intended strategy with selected references and observed behavior.
+Personal Strategy lets Riverline understand and preserve what the user intends to play in a recognizable Game setup without relabelling that intent as objective poker truth. Its long-term intelligence should help the user inspect what is specified versus estimated, find sparse or contradictory evidence, compare Game setups and Approaches, decide what to teach Riverline next, and connect intended strategy with selected references and source-labelled observed behavior.
 
 The durable foundation is user evidence. Inference, summaries, comparisons, teaching queues, and future provider projections are derived views over that evidence and must remain reversible, provenance-aware, and honest about uncertainty.
 
 ## User jobs / why it matters
 
-- Describe an intended strategy for a recognizable environment and one of its user-named Modes.
+- Describe an intended strategy for a recognizable Game setup and one of its user-named Approaches.
 - Answer quickly with a dominant action without falsely claiming a pure 100% frequency.
 - Enter exact mixes only when the user actually knows them.
-- Inspect direct, inferred, uncertain, conflicting, transferred, and unknown regions separately.
+- Inspect specified-dominant, specified-exact, supported-estimate, tentative-estimate, unknown, and conflict regions separately.
 - Understand why Riverline inferred or abstained and which evidence contributed.
 - Correct individual hands or groups without losing history or hiding contradictions.
 - Ask Riverline which boundary, sparse region, or conflict is most useful to teach next.
-- Compare Profiles, Modes, selected reference strategy, and observed behavior without semantic collapse.
-- Experiment with a strategy safely and return to an earlier state without rewriting historical evidence.
+- Compare Game setups, Approaches, selected reference strategy, and source-labelled observed behavior without semantic collapse.
+- Duplicate an Approach, make intentional changes, and restore through a new correction/version without rewriting historical evidence.
 - Receive evidence-grounded summaries rather than invented personality prose.
 
 ## Existing foundation
@@ -38,7 +69,7 @@ Current implemented contracts remain in:
 - [PERSONAL_STRATEGY_SYNC_SPEC.md](../PERSONAL_STRATEGY_SYNC_SPEC.md): explicit opt-in sync of source profiles, Modes, evidence, and sessions while inferred output remains local/recomputable;
 - [UNIFIED_RANGE_INTELLIGENCE_SPEC.md](../UNIFIED_RANGE_INTELLIGENCE_SPEC.md): the shared authority and consumer-adapter direction.
 
-The current implemented scope is primarily preflop RFI Fold/Raise over canonical 169 hand classes. Class-level Matrix, Builder, Teacher, categorical inference, adaptive Calibration, context transfer, and optional sync are automated checkpoints with human Firefox acceptance still separately tracked. There is no current Personal Strategy provider in StrategyProvider, live Training evidence opt-in, postflop model, combo editor, writable multi-head resolution, profile experiment/rollback system, or narrative Personal Insights runtime.
+The current implemented scope is primarily preflop RFI Fold/Raise over canonical 169 hand classes. Class-level Matrix, Builder, Teacher, categorical inference, adaptive Calibration, context transfer, and optional sync are automated legacy-named checkpoints with human Firefox acceptance still separately tracked. The wider action contract can store additional direct preflop roles, but the accepted primary product must not imply equally mature inference outside first-in/RFI. There is no current Personal Strategy provider in StrategyProvider, live Training evidence opt-in, postflop model, combo editor, writable multi-head resolution, accepted Game setup/Approach migration, or narrative Personal Insights runtime.
 
 ## Desired future behavior
 
@@ -52,15 +83,15 @@ intended Personal Strategy
   versus observed action or behavior
 ```
 
-An opponent model, when present, is another separate role. Intended strategy is what the user says the Profile/Mode should do. A reference describes a named source under its coverage. Observed behavior records what happened. None silently overwrites another.
+An opponent model, when present, is another separate role. Intended strategy is what the user says the Game setup/Approach should do. A reference describes a named source under its coverage. Observed behavior records what happened and remains source-labelled. None silently overwrites another.
 
 Direct evidence remains stronger evidence of intent than observed behavior. Repeated Training actions must not vote the user's stated strategy away merely through volume.
 
-### Profile and Mode comparisons
+### Game setup and Approach comparisons
 
 Future comparison may identify evidence-supported differences such as:
 
-> This BTN mode is wider in suited Kings than Standard.
+> This BTN Approach is wider in suited Kings than Usual.
 
 or:
 
@@ -68,19 +99,19 @@ or:
 
 The comparison must state:
 
-- the exact Profiles, Modes, and objective contexts compared;
+- the exact Game setups, Approaches, and objective contexts compared;
 - whether each point is direct, exact-mix, inferred, transferred, conflicting, or unknown;
 - the evidence/snapshot and derivation versions;
 - which hands, regions, or combo facts support the statement;
 - uncertainty and coverage limitations.
 
-Do not infer a personality such as `fearful`, `aggressive`, `creative`, or `disciplined` from range shape. Names supplied by the user are presentation identity, not behavioral proof.
+Do not infer a personality such as `fearful`, `aggressive`, `creative`, or `disciplined` from range shape. Names supplied by the user are presentation identity, not behavioral proof. Approaches remain discrete and unordered in the user model; no hidden tight-to-loose continuum may force their meaning.
 
-### Natural-language StrategyProfile summaries
+### Natural-language Personal Strategy summaries
 
 Evidence-grounded summaries may eventually explain:
 
-- the largest well-supported differences between Modes or Profiles;
+- the largest well-supported differences between Approaches or Game setups;
 - clearly established range boundaries;
 - sparse, uncertain, conflicting, or unusual regions;
 - exact-mix evidence where explicitly supplied;
@@ -115,20 +146,20 @@ A future cross-profile `Teach Riverline Next` queue should rank useful clarifica
 - important reference-versus-intent gaps that still lack direct evidence;
 - observed-versus-intended disagreement only after explicit collection consent.
 
-Every item should show why it matters, which scope it affects, what evidence is missing or contradictory, and the expected kind of clarification. Selecting an item should route directly into the existing Calibration/Matrix/Builder flow for that exact Profile, Mode, context, and hand. Queue ranking is derived and never becomes durable strategy evidence.
+Every item should show why it matters, which scope it affects, what evidence is missing or contradictory, and the expected kind of clarification. Selecting an item should route directly into Teach Riverline or Matrix Edit for that exact Game setup, Approach, context, and hand. Queue ranking is derived and never becomes durable strategy evidence.
 
-### Profile snapshots, experiments, and rollback
+### Approach duplication, Game setup versions, and restoration
 
-Future experiments may allow a user to duplicate or snapshot a Profile/Mode, make intentional changes, compare versions, and roll back. This must preserve:
+The accepted smallest useful versioning model lets a user duplicate an Approach, create immutable material Game setup versions, inspect grouped corrections, and restore by appending a new correction/version. It must preserve:
 
-- stable source Profile/Mode/evidence identities;
+- stable source Game setup/Approach/evidence identities, including migrated legacy Profile/Mode IDs;
 - immutable evidence and correction history;
-- explicit parent/fork/snapshot provenance;
+- explicit duplication/version/restore provenance;
 - the algorithm/model versions used for derived views;
 - conflicts rather than a silent winner;
 - the distinction between reverting a presentation selection and appending a durable correction.
 
-Rollback must not delete history or silently rewrite old observations. The exact durable model—snapshot marker, evidence fork, branch, or new Profile/Mode—requires a future versioned design.
+Restore must not delete history or silently rewrite old observations. Branches, arbitrary historical rollback, and Git-like strategy management are deferred. `003A` owns the exact migration and storage design needed for the accepted bounded model.
 
 ### Later postflop Personal Strategy
 
@@ -148,7 +179,7 @@ Lossy board/action abstractions may be separately versioned inference indexes, b
 After a semantics-safe combo/action-strategy projection exists, summaries may describe:
 
 - categories or regions that gain/lose action mass;
-- exact differences across Profiles/Modes/contexts;
+- exact differences across Game setups/Approaches/contexts;
 - direct versus inferred sources for the change;
 - postflop range evolution;
 - value/bluff or showdown-role composition only where separate factual authorities support it.
@@ -157,16 +188,16 @@ After a semantics-safe combo/action-strategy projection exists, summaries may de
 
 ## Structured facts / evidence required
 
-- Stable Profile and Mode IDs, names, lifecycle, version, and exactly scoped objective context.
+- Stable Game setup and Approach IDs, names, lifecycle, material version, exactly scoped objective context, and lossless identity mapping from legacy Profile/Mode records.
 - Immutable `RangeObservation` or future evidence IDs, timestamps, source, correction/supersession lineage, and active/conflicting heads.
 - Dominant-only versus exact-frequency precision, including exact ties with no fabricated dominant action.
-- Direct, Training-observed, imported, transferred, inferred, or other source type with explicit authority semantics.
+- Direct intended, imported intended, transferred, inferred, selected-reference, or source-labelled observed role with explicit authority semantics; observed Training records remain owned by Training Memory rather than copied into Personal Strategy truth.
 - Evidence view/snapshot fingerprint, inference model/configuration version, uncertainty policy, reasons, support neighbors, and abstention/conflict facts.
 - Game Rules semantic identity and exact relevant action/price/history facts.
 - Strategy source descriptor, version, coverage, capabilities, and claim policy for a selected reference.
 - Observed action, DecisionContext, session/source version, and explicit Personal Strategy collection consent.
 - Canonical combo IDs and quantitative action frequencies before deriving action-conditioned range mass.
-- Snapshot/experiment parentage, branch identity, comparison basis, and rollback operation if that capability is introduced.
+- Approach-duplication parentage, material Game setup version, comparison basis, and restore-through-correction/version operation.
 
 ## Authority, provenance and uncertainty rules
 
@@ -184,21 +215,22 @@ After a semantics-safe combo/action-strategy projection exists, summaries may de
 
 ## Preserved interactions and microfeatures
 
-- Keep one exact-scope Matrix as the shared inspection/correction surface for Calibration, Builder, and Teacher.
-- Preserve separate visual and accessible semantics for direct, inferred-high, inferred-medium, transferred, uncertain, conflicting, and unknown states.
+- Keep one exact-scope Strategy Matrix as the shared expert inspection/correction surface for Teach Riverline, Matrix Edit, and Teach Riverline Next.
+- Preserve separate visual and accessible semantics for Specified — dominant, Specified — exact, Supported estimate, Tentative estimate, Unknown, and Conflict. Transfer remains inspectable derivation detail rather than another confidence level.
 - Keep exact-frequency bands limited to explicit exact mixes.
 - Let `Teach Riverline Next` items route directly to the existing exact scope and explanation for why the item was selected.
 - Preserve source evidence/history in inspectors; do not reduce a conflict to one latest value.
-- Profile/Mode comparison should allow facts-only hand/region inspection behind every summary.
-- Experiment comparison should make base, branch, changed evidence, and rollback consequence explicit before mutation.
+- Game setup/Approach comparison should allow facts-only hand/region inspection behind every summary.
+- Approach/version comparison should make the source, changed evidence, and restore consequence explicit before mutation.
 - Keep Skip and `I'm not sure` distinct as session history while neither creates poker evidence; current exact semantics remain owned by [ADAPTIVE_RANGE_CALIBRATION_SPEC.md](../ADAPTIVE_RANGE_CALIBRATION_SPEC.md).
 
 ## Cross-surface applicability
 
-- **Calibration:** canonical evidence elicitation and direct Teach Riverline Next destination.
-- **Personal Strategy Matrix:** exact-scope inspection and correction.
-- **Range Builder:** grouped direct action-evidence editing, not generic inclusion-range painting.
-- **Range Teacher:** derived explanation and focused elicitation over the same scope.
+- **Teach Riverline:** canonical intended-evidence elicitation and direct Teach Riverline Next destination.
+- **What Riverline understands:** primary compact separation of specified intent, supported/tentative estimates, unknowns, and conflicts.
+- **Strategy Matrix:** secondary/expert exact-scope inspection and correction.
+- **Matrix Edit:** grouped direct action-evidence editing, preserving current Builder capabilities without a separate product identity or generic inclusion-range semantics.
+- **Teach Riverline Next:** derived explanation and focused elicitation over the same authority.
 - **Home/My Riverline:** compact direct facts and resume routes; no invented mastery or inference-heavy dashboard.
 - **Training:** intended/reference comparison and observed evidence only after explicit session opt-in.
 - **Analyze:** named Personal Strategy attachment after a versioned action-strategy comparison boundary exists.
@@ -207,9 +239,9 @@ After a semantics-safe combo/action-strategy projection exists, summaries may de
 
 ## Presentation depth
 
-- **Facts:** exact scope, direct/inferred/transferred/conflicting/unknown points, frequencies where exact, evidence IDs/history, reasons, reference/observed comparisons, and derivation versions.
+- **Facts:** exact scope, specified/supported-estimate/tentative-estimate/unknown/conflict points, frequencies where exact, evidence IDs/history, transfer reasons, reference/observed comparisons, and derivation versions.
 - **Explain:** concise evidence-grounded descriptions of meaningful boundaries, differences, sparse regions, or contradictions.
-- **Coach / Summary:** Teach Riverline Next and cross-profile/cross-session synthesis only when enough evidence exists.
+- **Coach / Summary:** Teach Riverline Next and cross-setup/cross-session synthesis only when enough evidence exists.
 
 Facts-only Matrix/range presentation remains a first-class advanced-user choice. Natural-language prose must never be mandatory or invent a personality.
 
@@ -222,17 +254,17 @@ Facts-only Matrix/range presentation remains a first-class advanced-user choice.
 - [TRAINING_INTELLIGENCE.md](./TRAINING_INTELLIGENCE.md) for durable observed decisions and explicit evidence opt-in.
 - [LEARNING_EVIDENCE_FOUNDATION.md](./LEARNING_EVIDENCE_FOUNDATION.md) for historical source/version continuity.
 - [NATURAL_LANGUAGE_INTELLIGENCE.md](./NATURAL_LANGUAGE_INTELLIGENCE.md) for evidence-grounded summaries.
-- Independent `PERSONAL-STRATEGY-002R` real-user review remains an acceptance gate before further inference/provider integration; this dossier does not schedule that work.
+- The independent `PERSONAL-STRATEGY-002R` human review is accepted. Live sequencing is owned by the planning documents; the accepted `003A` migration/first-value reset precedes provider/reference/observed integration.
 
 ## Suggested implementation slices
 
-These are possible future ticket boundaries, not roadmap priority:
+These are capability slices; live priority remains owned by `CURRENT_PHASE.md` and `ROADMAP.md`:
 
-1. Independent system review and correction of current Calibration/Matrix/Builder/Teacher acceptance gaps.
+1. `PERSONAL-STRATEGY-003A`: versioned legacy Profile/Mode migration, local-first Game setup/Approach model, bounded first-in/RFI first value, What Riverline understands, Teach Riverline Next hierarchy, and Matrix Edit consolidation.
 2. Versioned Personal Strategy comparison/attachment contract preserving dominant-only precision and role identity.
-3. Explicit Training observed-evidence opt-in and intended/reference/observed comparison.
-4. `PERSONAL-INSIGHTS-001`: Teach Riverline Next plus evidence-grounded Profile/Mode summaries.
-5. Profile snapshot/experiment/fork/rollback semantics and migration design.
+3. Explicit Training observed-evidence opt-in and intended/reference/observed comparison, with stronger pattern thresholds specified when analytics are implemented.
+4. `PERSONAL-INSIGHTS-001`: Teach Riverline Next plus evidence-grounded Game setup/Approach summaries.
+5. Complete Duplicate Approach, immutable material Game setup version, and restore-through-correction/version UX not included in the bounded 003A slice; branches and arbitrary rollback remain deferred.
 6. Combo-aware action-strategy projection where evidence is quantitatively sufficient.
 7. Exact-fact postflop evidence contract and separately versioned inference indexes.
 8. Range-level and cross-session summaries over approved evidence.
@@ -250,29 +282,32 @@ No new market research is performed by this dossier. Existing Riverline lessons 
 - Do not treat transferred context output as direct evidence.
 - Do not conflate inclusion range weight, action frequency, and inference uncertainty.
 - Do not describe Personal Strategy as GTO, correct, optimal, or a model of a real opponent.
-- Do not infer personality prose from range shape or Profile/Mode names.
+- Do not infer personality prose from range shape or Game setup/Approach names.
 - Do not compare scopes as equivalent when Game Rules, position, stack, action tree, price, or action set differ materially.
 - Do not key postflop history only by a lossy texture abstraction.
 - Do not create a second Matrix, profile repository, inference engine, range format, or provider path.
-- Do not introduce snapshots/rollback by deleting or rewriting immutable history.
+- Do not introduce setup versions or restore by deleting or rewriting immutable history.
+- Do not force exactly three Approaches, hide mandatory legacy anchors, expose anchor as normal product language, or hardcode example environments as identities.
+- Do not require sign-in for durable on-device Personal Strategy or imply cloud sync without explicit account-governed opt-in.
+- Do not imply that all preflop decision roles have equally mature Personal Strategy inference.
 
 ## Open product questions
 
 - How should dominant-only Personal Strategy enter provider consumers without fabricating probabilities: exact-frequency-only v1 behavior or a future precision-aware result contract?
-- Should opted-in Training behavior remain only a disagreement/question signal or ever participate in inference after separate validation?
+- What versioned attachment and consent record should freeze a future Training-to-Personal comparison without copying Training Memory evidence?
 - What is the durable postflop evidence key and which abstractions are safe only as derived indexes?
-- What minimum evidence permits a natural-language Profile/Mode claim?
-- How should Teach Riverline Next rank across Profiles without letting one large profile crowd out another?
-- What durable model best supports experiments and rollback: evidence forks, snapshot markers, new Modes, or new Profiles?
-- Are any Mode relationships genuinely supported, or should Modes remain entirely discrete?
+- What minimum evidence permits a natural-language Game setup/Approach claim?
+- How should Teach Riverline Next rank across Game setups without letting one large setup crowd out another?
+- What stronger compatibility and sample thresholds should govern future observed-pattern claims beyond the accepted fewer-than-five history-only rule?
+- Is any internal Approach relationship mathematically useful and evidence-supported without forcing a user-facing continuum?
 - How should a future writable multi-head resolution preserve every source branch and sync safely?
 - Which exact range-level summaries are useful without implying reference correctness or causal poker advice?
 
 ## Legacy/recovered IDs and ideas
 
-- Current Personal Strategy Foundation, Calibration, Matrix, `RANGE-BUILDER-001`, and `RANGE-TEACHER-001` — **IMPLEMENTED/CHECKPOINTED FOUNDATION**.
+- Current Personal Strategy Foundation, Calibration, Matrix, `RANGE-BUILDER-001`, and `RANGE-TEACHER-001` — **IMPLEMENTED/CHECKPOINTED LEGACY-NAMED FOUNDATION**; accepted user-facing evolution is Teach Riverline, Strategy Matrix/Matrix Edit, and Teach Riverline Next.
 - `PERSONAL-INSIGHTS-001` / `PROFILE-SUMMARY-001` — **PRESERVED** as evidence/provenance/uncertainty-aware summaries and Teach Riverline Next.
-- `PROFILE-SNAPSHOT-001` — **PRESERVED** as experiments, comparison, and rollback with immutable history.
+- `PROFILE-SNAPSHOT-001` — **EVOLVED/BOUNDED** into Duplicate Approach, immutable material Game setup versions, and restore-through-new-correction/version; branches and arbitrary rollback are deferred.
 - `ANALYSIS-PERSONALIZED-001` — **PRESERVED** as a future named Personal Strategy attachment/comparison, not a hidden provider override.
 - `RANGE-BUILDER-002` — **PRESERVED/EVOLVED** beyond the implemented class-level action editor; combo overrides, generic inclusion ranges, imports, and Saved Range workflows remain separate future contracts.
 - Beginner/expert personality-style presentation — **SUPERSEDED** by evidence depth, strong defaults, and Facts/Explain/Coach rather than invented global user types.

@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 26, 2026 (`TRAINING-MEMORY-001` completed the accepted learning-memory foundation with manual Firefox debt; `PERSONAL-STRATEGY-002R` is active next; `PREMIUM-CLOSEOUT-001` is the later pre-release quality gate).
+Last consolidated: August 26, 2026 (`PERSONAL-STRATEGY-002R` human product review is accepted; `PERSONAL-STRATEGY-003A` owns the active first-value reset; Personal Strategy live Firefox/real-user acceptance remains open; `PREMIUM-CLOSEOUT-001` is the later pre-release quality gate).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -172,7 +172,7 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 | QA-RANGE-CAL-002D | PARTIAL | Snapshot-derived Matrix, truthful statuses, filters, evidence/history inspector, conflict preservation, corrections, adaptive follow/selection, keyboard/RTL and performance are automated; human Firefox matrix acceptance remains. | RANGE-CAL-002D human acceptance |
 | QA-RANGE-BUILDER-001 | PARTIAL | Builder selection/painting, grouped direct/exact edits, conflict-safe commits, undo, adaptive reranking, i18n and tutorial are automated; human Firefox editing acceptance remains. | RANGE-BUILDER-001 human acceptance |
 | QA-RANGE-TEACHER-001 | PARTIAL | Boundary/sparse/conflict/exact-mix recommendations, focused Calibration routing, scope isolation, i18n/tutorial and performance are automated; human Firefox compactness/truthfulness acceptance remains. | RANGE-TEACHER-001 human acceptance |
-| QA-PERSONAL-002R | DEFERRED | Unified Calibration/Matrix/Builder/Teacher system still needs independent real-user review before more inference machinery or provider integration. | PERSONAL-STRATEGY-002R |
+| QA-PERSONAL-002R | PARTIAL | The [independent product/architecture review and human disposition](PERSONAL_STRATEGY_002R_REVIEW.md) are complete and accepted. `003A` owns the Game setup/Approach, local-first, RFI-first first-value reset before provider/reference/observed integration. No browser was available during 002R, so current and future-migrated empty/existing/setup/Teach Riverline/Matrix Edit/Teach Riverline Next/settings/save-reopen EN/HE/RU 1920x1080 visual acceptance and real-user validation remain unperformed. | `PERSONAL-STRATEGY-003A` implementation and Personal Strategy Firefox acceptance |
 
 ## Workspace composition and responsive fit
 
