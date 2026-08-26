@@ -6,7 +6,9 @@ Date: August 26, 2026
 
 Implementation state: **unchanged**
 
-Accepted next implementation: **`PERSONAL-STRATEGY-003A` / ACTIVE NEXT**
+Accepted next implementation at this review's checkpoint: **`PERSONAL-STRATEGY-003A` / ACTIVE NEXT AT ACCEPTANCE**
+
+Current planning note: this document preserves the August 26 `002R` rationale and then-current disposition. [Current Phase](CURRENT_PHASE.md) now places `HANDS-ON-DEFECTS-001` active next and `PERSONAL-STRATEGY-003A` planned next. That sequencing update does not change the accepted `002R` product direction.
 
 Human disposition: The product owner accepted the Game setup/Approach model, first-value reset, RFI-first scope, local-first Guest use, understanding vocabulary, surface consolidation, role boundaries, and bounded versioning direction on August 26, 2026. The review's stronger observed-pattern thresholds were not frozen; only the fewer-than-five history-only boundary was accepted. Provider/reference/observed integration remains planned after 003A.
 
@@ -420,7 +422,7 @@ Do not build Git for ranges.
 
 Recommended ticket: **`PERSONAL-STRATEGY-003A — first-value product-model reset`**
 
-State: **ACTIVE NEXT / HUMAN PRODUCT DIRECTION ACCEPTED**
+State at `002R` acceptance: **ACTIVE NEXT / HUMAN PRODUCT DIRECTION ACCEPTED**. Current live status: **PLANNED NEXT**; see [Current Phase](CURRENT_PHASE.md).
 
 ### One bounded outcome
 
@@ -472,6 +474,6 @@ The accepted state is:
 
 > `PERSONAL-STRATEGY-002R` — **COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED**
 >
-> `PERSONAL-STRATEGY-003A` — **ACTIVE NEXT**
+> `PERSONAL-STRATEGY-003A` — **ACTIVE NEXT AT `002R` ACCEPTANCE; CURRENTLY PLANNED NEXT**
 >
 > Provider/reference/observed integration — **PLANNED NEXT / AFTER 003A ACCEPTANCE**

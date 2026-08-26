@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 26, 2026 (`PERSONAL-STRATEGY-002R` human product review is accepted; `PERSONAL-STRATEGY-003A` is active next; provider/reference/observed integration follows 003A acceptance; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
+Last refreshed: August 26, 2026 (`HANDS-ON-PRODUCT-REVIEW-001` captured 59 confirmed hands-on findings; `HANDS-ON-DEFECTS-001` is active next; `PERSONAL-STRATEGY-003A` is planned next; a human-visible checkpoint follows; `PREMIUM-CLOSEOUT-001` remains the later pre-release quality gate).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -52,22 +52,37 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - the [independent review](PERSONAL_STRATEGY_002R_REVIEW.md) and human disposition preserve the immutable intended-evidence architecture while accepting Game setup/Approach, local-first Guest use, an RFI-first five-question path, What Riverline understands, Teach Riverline Next, Matrix Edit consolidation, and bounded versioning direction;
    - selected reference, personal intent, source-labelled observed behavior, and opponent policy remain separate; live Firefox/real-user acceptance remains routed debt.
 
-8. **ACTIVE NEXT — `PERSONAL-STRATEGY-003A` first-value product-model reset**
+8. **COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED — `HANDS-ON-PRODUCT-REVIEW-001`**
+   - an independent outside-user review originated 59 findings, and the product owner manually reproduced and confirmed every one in the current build;
+   - the [durable review artifact](HANDS_ON_PRODUCT_REVIEW_2026_08.md) preserves every finding, its user problem, desired outcome, classification, priority, and owner;
+   - no runtime or tests changed, and no finding was closed by documentation.
+
+9. **ACTIVE NEXT — `HANDS-ON-DEFECTS-001` bounded confirmed-defect repair**
+   - own navigation truth, Home Game completion feedback, action-bar legibility, poker-sound overlap, card-removal/impossible-range correctness, clipped Analyze content, Training empty/progress/session-transition states, authentication errors, and raw internal labels;
+   - include only bounded Replay/Training geometry regressions and a local Current Legal Actions placement correction if inspection proves they do not require workspace/rail redesign;
+   - preserve canonical poker/range/Training/auth/Replay/audio authorities, localization, accessibility, and PERF-001.
+
+10. **PLANNED NEXT — `PERSONAL-STRATEGY-003A` first-value product-model reset**
    - own the versioned legacy Profile/Mode to Game setup/Approach product/storage migration without evidence or stable-identity loss;
    - deliver durable local-first setup, one initial Approach, an honestly supported first-in/RFI five-question path, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit;
+   - seek broad sparse/high-information coverage before repeatedly refining narrow boundaries;
    - preserve dominant-only ≠ pure, provenance, conflicts, exact mixes, owner isolation, optional account sync governance, and street/role extensibility; do not implement Training/reference/observed integration.
 
-9. **PLANNED NEXT / AFTER 003A ACCEPTANCE — Personal Strategy provider/reference/observed integration**
+11. **HUMAN-VISIBLE CHECKPOINT / REASSESSMENT — after defects and 003A**
+   - perform hands-on use, product discussion, correction/acceptance, and roadmap reassessment before automatically launching several more user-facing redesign tickets.
+
+12. **PLANNED LATER / AFTER 003A ACCEPTANCE AND CHECKPOINT — Personal Strategy provider/reference/observed integration**
    - preserve selected reference, personal intent, source-labelled observed behavior, and opponent policy as separate roles;
    - Training comparison uses an explicit frozen Game setup/Approach selection, while adoption into intent requires a separate explicit action.
 
-10. **NEXT INTELLIGENCE / PRODUCT WAVE — exact order reassessed at a clean checkpoint**
-   - accepted candidates include `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, later Opponent Intelligence / OpponentPolicy, and `HOME-002B`;
+13. **NAMED REDESIGN / INTELLIGENCE WAVE — exact order reassessed at the human checkpoint**
+   - confirmed redesign owners include `FIRST-USE-HOME-001`, `REPLAY-RAIL-NAV-001`, `TRAINING-COMPOSITION-001`, `EQUITY-COMPOSITION-001`, `GUIDE-CONTENT-001`, `GAME-SETUP-EVOLUTION-001`, `HOME-GAME-PRESENTATION-001`, `RANDOM-SPOT-GENERATOR-001`, `ANALYZE-RANGE-UX-001`, `PERSONAL-STRATEGY-TEACHING-001`, and `SAVED-VISUAL-KNOWLEDGE-001`;
+   - accepted candidates also include `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, later Opponent Intelligence / OpponentPolicy, and `HOME-002B`;
    - capability documentation does not activate any candidate or pre-commit their order.
 
-11. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+14. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
 
-12. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
+15. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
 
 Reassess only at clean checkpoints. Documenting a capability does not pull it forward.
 
@@ -95,7 +110,7 @@ Do not revive browser/Electron ONNX inference, remote strategy APIs, arbitrary s
 
 Completed/checkpointed work includes adaptive Table Presence, canonical Replay, shared Full Hand Review, accepted audio/motion architecture, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, the accepted-with-debt `WORKSPACE-COMPOSITION-002` simplification, and `TABLE-PHYSICALITY-003` with explicit presentation debt.
 
-`HOME-GAME-001B` is completed at an accepted implementation checkpoint with its unavailable real Firefox/provider acceptance retained as `RET-HOMEGAME-001`. `SETTINGS-IA-001` is also completed at an accepted implementation checkpoint; its unavailable real Firefox matrix is retained under `QA-HANDSON-010` and `RET-PREMIUM-001`. No known visual issue currently blocks substantive reference or learning work. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt, while the horizontal-versus-vertical Review chronology comparison remains `RET-REVIEW-NAV-001` debt. Full Hand Firefox acceptance, surviving composition verification, and broader premium QA remain separately owned by the QA Backlog and Return Queue. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
+`HOME-GAME-001B` is completed at an accepted implementation checkpoint with its unavailable real Firefox/provider acceptance retained as `RET-HOMEGAME-001`. `SETTINGS-IA-001` is also completed at an accepted implementation checkpoint; its unavailable real Firefox matrix is retained under `QA-HANDSON-010` and `RET-PREMIUM-001`. The confirmed August review now establishes 59 additional current product findings: the bounded high-impact repair cluster blocks `003A`, while larger redesign and quality debt has named owners and does not invalidate the underlying architecture checkpoints. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt, while Review chronology/rails now belong to `REPLAY-RAIL-NAV-001`. Full Hand Firefox acceptance, surviving composition verification, and broader premium QA remain separately owned by the QA Backlog and Return Queue. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
 
 ### Home Game
 
@@ -103,7 +118,7 @@ Completed/checkpointed work includes adaptive Table Presence, canonical Replay, 
 
 ### Settings and premium closeout
 
-`SETTINGS-IA-001` replaced the Settings god menu with four focused categories, kept Learn Riverline as the primary global help entry, and added a secondary Guide/restart path inside Settings without creating new preference authorities. `PREMIUM-CLOSEOUT-001` remains the later pre-release whole-product manual QA, high-value visual-debt burn, Guide finalization, desktop matrix, themes/cards/table/replay/Settings polish, EN/RU/HE/RTL, accessibility, and release-quality Core Flow gate. It is intentionally deferred until upcoming substantive features have matured the affected surfaces. Existing transactional custom-theme editing and immutable built-ins remain accepted.
+`SETTINGS-IA-001` replaced the Settings god menu with four focused categories, kept Learn Riverline as the primary global help entry, and added a secondary Guide/restart path inside Settings without creating new preference authorities. The confirmed review preserves additional Settings/content/customization debt under `GUIDE-CONTENT-001`, `GLOBAL-PRODUCT-QUALITY-001`, and `CUSTOMIZATION-UX-001`, including clearer theme creation, Daylight comfort, richer card backs, compact controls, and a manual reduced-motion override. Existing transactional theme safety and immutable built-ins remain accepted foundations, not proof that creation/discovery is finished. `PREMIUM-CLOSEOUT-001` remains the later pre-release whole-product gate and is not the sole owner of these findings.
 
 ### Strategy and references
 
@@ -119,7 +134,7 @@ Varied, Focused, and Full Hand Training are legal, deterministic, provider-backe
 
 Calibration, deterministic inference, Matrix, Range Builder, Range Teacher, bounded RFI context transfer, and optional sync are checkpointed over one sparse immutable intended-strategy evidence authority.
 
-The independent [`PERSONAL-STRATEGY-002R` review](PERSONAL_STRATEGY_002R_REVIEW.md) is completed and human-accepted. `PERSONAL-STRATEGY-003A` is active next and owns the versioned Game setup/Approach migration plus the bounded local-first first-value reset before provider integration. Direct intent, inference, selected reference, source-labelled observed behavior, and opponent policy remain distinct; dominant-only evidence never becomes a fake 100% mix. Accepted durable direction lives in the [Personal Strategy dossier](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md).
+The independent [`PERSONAL-STRATEGY-002R` review](PERSONAL_STRATEGY_002R_REVIEW.md) is completed and human-accepted. `PERSONAL-STRATEGY-003A` is planned next after the active defect repair and owns the versioned Game setup/Approach migration plus the bounded local-first first-value reset before provider integration. The confirmed hands-on evidence strengthens broad sparse/high-information coverage before fine boundary refinement and confirms that exactly-three/environment restrictions and standalone Teacher/Builder complexity are painful. Direct intent, inference, selected reference, source-labelled observed behavior, and opponent policy remain distinct; dominant-only evidence never becomes a fake 100% mix. Accepted durable direction lives in the [Personal Strategy dossier](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md).
 
 ### Analysis, Equity, bluff, and ranges
 
@@ -138,6 +153,7 @@ Detailed intent lives in the [Saved Knowledge](capabilities/SAVED_KNOWLEDGE_AND_
 - Shared semantics follow `INTERACTION_GRAMMAR.md`; unknown/unavailable never silently become zero/false.
 - PERF-001 invocation, reuse, and invalidation guarantees remain binding.
 - Repeated human rejection triggers product-concept reassessment before another mechanical correction loop.
+- For user-facing work, use implementation → automated verification → human hands-on use → product discussion → correction/acceptance → checkpoint. After roughly two or three substantial user-facing tickets, run a short freeform whole-product hands-on pass; backend-only foundations do not need artificial browser QA.
 
 ## Update rule
 

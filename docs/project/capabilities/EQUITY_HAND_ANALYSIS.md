@@ -276,6 +276,12 @@ Redraw: Straight Flush · 2 direct cards
 
 Expanded Hand Details may expose the deeper facts in this dossier. Avoid badge soup, repeated labels, or presenting every structural fact at equal visual weight.
 
+### Workspace composition
+
+Player inputs should use a bounded composition that scales from two through ten players without pushing Board, Dead Cards, method, progress, or the principal result out of practical reach. Side rails or stacked groups are valid candidates when they improve the job. Optional player names should follow one consistent identity/display rule where useful.
+
+After calculation, the Equity result is the primary output and should visually dominate supporting configuration. Expanding result detail must not make every player tile grow or unnecessarily recompose the workspace. Input, running, result, and expanded-detail states should preserve orientation and direct access to method/provenance.
+
 ## Cross-surface applicability
 
 - **Equity:** applicable for current hands, exact results, split-pot explanation, and runout inspection.

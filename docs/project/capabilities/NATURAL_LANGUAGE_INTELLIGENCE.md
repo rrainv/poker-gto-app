@@ -137,6 +137,8 @@ Cross-decision, cross-session, cross-profile, or cross-opponent synthesis only w
 
 Facts/Explain/Coach is progressive depth, not a global Beginner/Expert identity. Advanced users must be able to tell Riverline to get out of the way and show the facts.
 
+Confirmed hands-on evidence shows that both extremes fail: important decision facts hidden behind weak discovery and a fully expanded explanation that overwhelms the workspace. Each consumer should keep its principal result visible, expose concise local depth near the affected object, and let the user move between Facts, Explain, and Coach/Summary without a large unrelated recomposition.
+
 ## Dependencies
 
 - [Learning Evidence Foundation](LEARNING_EVIDENCE_FOUNDATION.md);
@@ -208,4 +210,3 @@ Riverline's differentiation is evidence-grounded explanation plus personal learn
 - [Opponent Intelligence](OPPONENT_INTELLIGENCE.md)
 - [Range Evolution](RANGE_EVOLUTION.md)
 - [Saved Knowledge and Sharing](SAVED_KNOWLEDGE_AND_SHARING.md)
-

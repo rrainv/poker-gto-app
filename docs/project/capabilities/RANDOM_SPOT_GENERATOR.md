@@ -10,6 +10,8 @@ Riverline should eventually offer a small, reusable randomization utility for co
 
 Randomization is input assistance. It is not a new poker-state authority, strategy source, opponent model, range sampler, or claim that a generated spot is representative.
 
+The August 2026 confirmed hands-on product review strengthens the user demand for this capability across card- and spot-driven study surfaces. It does not select an implementation order or relax the canonical legality, lock, privacy, and reproducibility boundaries below.
+
 ## User jobs / why it matters
 
 - Keep a specific Hero hand and generate a legal random Flop.
@@ -242,4 +244,3 @@ No new web research is introduced by this dossier.
 - [Saved Knowledge and Sharing](SAVED_KNOWLEDGE_AND_SHARING.md)
 - [Learning Evidence Foundation](LEARNING_EVIDENCE_FOUNDATION.md)
 - [Interaction Grammar](../INTERACTION_GRAMMAR.md)
-

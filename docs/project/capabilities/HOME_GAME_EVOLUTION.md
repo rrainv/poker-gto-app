@@ -36,6 +36,12 @@ The current Home Game specification explicitly has no PokerState or Saved Study 
 
 ## Desired future behavior
 
+### Organizer composition and session feedback
+
+The organizer should use available space according to the active session job rather than stretching low-information inputs and outputs across the canvas. A table-oriented roster/session projection is worth investigating when it makes seats, participants, activity, or completion easier to understand, but it remains a presentation over Home Game facts and never becomes PokerState.
+
+Lifecycle actions such as Complete, Reopen, Recomplete, Archive, and Restore must communicate their effect through deliberate confirmation and a clear resulting summary/state. Fields should not merely clear or change in a way that resembles lost data. This presentation requirement complements, and does not replace, the immutable ledger and lifecycle history.
+
 ### Players, groups, and sessions
 
 - Extend the accepted player/group/session management only when recurring-game defaults, richer templates, or factual history materially improve the organizer.
@@ -150,6 +156,8 @@ Derived accounting totals and settlement transfers should remain recomputable fr
 - Run a later blind timer/button tool without mixing it with ledger math.
 - Share a privacy-safe live-session or settlement view only with explicit permission.
 - Keep money, chips, Hand facts, and operational state visually and semantically distinct.
+- Keep the active roster/session representation compact and Riverline-integrated; use a table-oriented view only where it improves organizer understanding.
+- Make completion and other lifecycle transitions visibly explain their resulting state and retained history.
 
 ## Cross-surface applicability
 

@@ -14,6 +14,22 @@ This does not mean every feature appears everywhere. Each consumer classifies th
 
 A consumer may adapt composition, density, and disclosure to its job. It may not redefine the concept, create a parallel store, or reimplement poker mathematics.
 
+### Importance, proximity, and interaction space
+
+Space follows the importance of the information, action, or result; panels do not receive equal weight merely because they exist. Primary results and decision controls remain near the poker object or state they affect. Supporting configuration yields space after the primary action completes.
+
+Side rails are first-class interaction space when they let users operate while preserving the central poker object. A rail is not automatically correct: it must keep controls readable, logically ordered, keyboard accessible, and useful at supported widths rather than becoming a narrow filing cabinet.
+
+### Stable state transitions
+
+Entering Replay, answering a Training decision, completing a Home Game session, expanding explanation, or producing an Equity result should preserve orientation and coherent geometry wherever the user job has not changed. A state change must make its effect visible through the resulting state, guarded confirmation, status, error, toast, or summary as appropriate.
+
+Functionally correct state mutation is product-incomplete when the user cannot understand what changed, loses the primary object or controls, or experiences an unnecessary workspace recomposition.
+
+### User-facing language
+
+Explanatory copy must earn its space. Do not present obvious invariants as product benefits, use defensive filler to compensate for unclear interaction, or expose raw enum, schema, state, or code-derived identifiers to users. Stable product vocabulary, capitalization, localization, and accessible error language are part of the interaction contract.
+
 ## Shared semantic vocabulary
 
 ### Hover, focus, tap, and inspect

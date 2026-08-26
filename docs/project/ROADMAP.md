@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 26, 2026 (`PERSONAL-STRATEGY-002R` human product review is accepted; `PERSONAL-STRATEGY-003A` is active next; provider/reference/observed integration follows 003A acceptance; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
+Last refreshed: August 26, 2026 (`HANDS-ON-PRODUCT-REVIEW-001` captured 59 confirmed hands-on findings; `HANDS-ON-DEFECTS-001` is active next; `PERSONAL-STRATEGY-003A` is planned next; a human-visible checkpoint follows; `PREMIUM-CLOSEOUT-001` remains the later pre-release quality gate).
 
 This roadmap explains major directional sequencing and why phases are ordered. [Current Phase](CURRENT_PHASE.md) owns the exact current checkpoint and execution order; [Product Backlog](PRODUCT_BACKLOG.md) owns concise capability/status. The [capability dossiers](capabilities/README.md) preserve detailed long-term intent without setting priority.
 
@@ -25,10 +25,12 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 1. Keep the visible product usable and record non-blocking visual debt, but do not repeatedly polish intermediate surfaces ahead of higher-value reference and learning work.
 2. Use the checkpointed bounded-provider gate before treating Training disagreement as normative or expanding model ambitions; no accepted source means comparative semantics only.
 3. Preserve durable learning evidence before building longitudinal summaries, re-drill, or mastery claims.
-4. Review the unified Personal Strategy experience before integrating it into provider and Training paths.
-5. Propagate ranges and expand Saved object types only through approved combo/evidence/persistence contracts.
-6. Add opponent policies after Hand, Review, Training, and reference foundations can use them truthfully.
-7. Keep release/mobile/social/PLO behind product, privacy, data, and game-domain maturity.
+4. Repair confirmed high-impact visible defects before expanding another user-facing product surface.
+5. Review the unified Personal Strategy experience before integrating it into provider and Training paths.
+6. Do not accumulate a long run of user-facing implementation tickets without human whole-product inspection; after roughly two or three substantial visible tickets, perform a short hands-on pass and checkpoint discussion.
+7. Propagate ranges and expand Saved object types only through approved combo/evidence/persistence contracts.
+8. Add opponent policies after Hand, Review, Training, and reference foundations can use them truthfully.
+9. Keep release/mobile/social/PLO behind product, privacy, data, and game-domain maturity.
 
 The completed dossier migration records more possibilities; it does not promote them.
 
@@ -41,15 +43,18 @@ The completed dossier migration records more possibilities; it does not promote 
 5. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `REFERENCE-PACK-001`** — pack contract, validation, strict matcher, provider/fallback, and generic consumers are implemented; production-safe source data and independent acceptance remain a named return dependency.
 6. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT — `TRAINING-MEMORY-001`** — durable source-aware decision/session evidence, bounded recent history, transparent review lifecycle, exact historical Same Spot, and planner/generator-backed current Similar Spot; advanced scheduling and cross-surface continuity remain later work.
 7. **COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED — `PERSONAL-STRATEGY-002R`** — accepted Game setup/Approach, local-first Guest use, RFI-first five-question value, understanding vocabulary, surface consolidation, permanent source-role separation, and bounded versioning direction; live browser/real-user acceptance remains routed debt.
-8. **ACTIVE NEXT — `PERSONAL-STRATEGY-003A`** — own the versioned legacy migration and first-value product reset: one setup/initial Approach, supported RFI questions, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit, without reference/observed integration.
-9. **PLANNED NEXT / AFTER 003A ACCEPTANCE — Personal Strategy provider/reference/observed integration** — preserve source roles, frozen explicit Training comparison selection, separate intent adoption, and reference source/version/coverage/capability truth.
-10. **NEXT INTELLIGENCE / PRODUCT WAVE; ORDER TO REASSESS —** accepted candidates include `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, later Opponent Intelligence / OpponentPolicy, and `HOME-002B`.
-11. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`** — whole-product manual QA, high-value visual-debt burn, Guide finalization, responsive desktop matrix, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings/theme polish, and release-quality Core Flow acceptance.
-12. **Release/mobile/social/PLO later** — only after their prerequisites and explicit decisions.
+8. **COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED — `HANDS-ON-PRODUCT-REVIEW-001`** — all 59 independently originated findings were manually reproduced by the product owner, preserved in one [durable evidence artifact](HANDS_ON_PRODUCT_REVIEW_2026_08.md), and routed without implementation or false closure.
+9. **ACTIVE NEXT — `HANDS-ON-DEFECTS-001`** — bounded correctness/usability repair across navigation truth, feedback, legibility, card removal, clipping, Training states, auth errors, raw labels, and regression-sized state geometry; no workspace redesign.
+10. **PLANNED NEXT — `PERSONAL-STRATEGY-003A`** — own the versioned legacy migration and first-value product reset, including broad sparse/high-information coverage before fine boundary refinement, without reference/observed integration.
+11. **HUMAN-VISIBLE CHECKPOINT / REASSESSMENT** — hands-on use, product discussion, correction/acceptance, and explicit ordering of the named redesign/intelligence owners.
+12. **PLANNED LATER / AFTER 003A AND CHECKPOINT — Personal Strategy provider/reference/observed integration** — preserve source roles, frozen explicit Training comparison selection, separate intent adoption, and reference source/version/coverage/capability truth.
+13. **NAMED REDESIGN / INTELLIGENCE WAVE; ORDER TO REASSESS —** Replay/rail, Training composition, Equity composition, Analyze/Range UX, Guide/content, Game Setup, Home Game presentation, Random Spot Generator, Saved visual knowledge, quality/customization, plus the existing intelligence candidates.
+14. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`** — whole-product manual QA, high-value visual-debt burn, Guide finalization, responsive desktop matrix, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings/theme polish, and release-quality Core Flow acceptance; it is not the sole evidence or owner for the 59 findings.
+15. **Release/mobile/social/PLO later** — only after their prerequisites and explicit decisions.
 
 ## Phase A — usable visible-product foundation
 
-Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, and `SETTINGS-IA-001` establish a visible-product foundation that is usable enough for continued substantive development. No known visual issue currently blocks reference or learning work. Accepted Home Game live-browser/provider debt, Settings Firefox debt, workspace-composition debt, table/card debt, and Review-navigation debt stay explicit in the QA Backlog and Return Queue rather than being closed or reopening completed implementation tickets.
+Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, and `SETTINGS-IA-001` remain useful visible-product foundations. The confirmed August review changes the immediate priority: its bounded high-impact repair cluster runs before the next substantive Personal Strategy implementation, while broader composition, content, customization, and capability work receives named future owners. The new evidence does not erase accepted architecture checkpoints, and those checkpoints do not close the new findings.
 
 Several upcoming intelligence features will materially change Training, Review, Personal Strategy, Equity, and Analysis. A release-quality polish pass therefore has higher value after those features exist. Riverline's anti-loop rule applies: repeated subjective polish must not indefinitely delay the core learning/intelligence product. `PREMIUM-CLOSEOUT-001` is deferred, not cancelled, and remains the later pre-release quality gate. Controls First, the ineffective density selector, arbitrary layout editing, casino spectacle, fake cinematic 3D, avatars by default, and reward theater remain rejected.
 

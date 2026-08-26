@@ -24,6 +24,7 @@ Accepted product rules:
 - **Approach** replaces Mode in user-facing language. A new Game setup starts with one Approach and may gain more when useful. Exactly three is not the future product model, and legacy three-Mode data must migrate without evidence or stable-identity loss.
 - **Teach Riverline** replaces Calibration; **Teach Riverline Next** replaces Teacher; Builder is no longer a standalone product noun, while its useful grouped editing capability moves under **Matrix Edit**.
 - First value is one lightweight Game setup, one Approach, one clearly supported first-in/RFI preflop context, approximately five dominant-action questions, then **What Riverline understands** and a **Teach Riverline Next** continuation. Strategy Matrix and Matrix Edit remain secondary/expert surfaces.
+- Initial question selection seeks broad sparse/high-information coverage across useful regions before repeatedly refining narrow boundaries. Boundary and exact-mix refinement follows broad useful coverage or an explicit user request; ranking remains derived and must not become durable strategy evidence.
 - The primary `003A` product scope is intentionally preflop first-in/RFI. Other contexts must be labelled supported or not-yet-supported honestly; architecture remains street/role extensible.
 - One-click input means preferred/dominant intended action, never a manufactured 100% pure frequency. Exact/mixed frequency remains explicit refinement.
 - The visible understanding vocabulary is **Specified — dominant**, **Specified — exact**, **Supported estimate**, **Tentative estimate**, **Unknown**, and **Conflict**. Supported/Tentative are not statistically calibrated numeric confidence.
@@ -148,6 +149,8 @@ A future cross-profile `Teach Riverline Next` queue should rank useful clarifica
 
 Every item should show why it matters, which scope it affects, what evidence is missing or contradictory, and the expected kind of clarification. Selecting an item should route directly into Teach Riverline or Matrix Edit for that exact Game setup, Approach, context, and hand. Queue ranking is derived and never becomes durable strategy evidence.
 
+The immediate first-value queue and the longer-term teaching experience are distinct. The current system may truthfully identify sparse, uncertain, or conflicting regions; it must not claim to teach poker concepts merely because it selects another question. A later teaching slice should connect compatible reference evidence, supported poker concepts, and traceable explanation while retaining facts-only inspection and explicit source limitations.
+
 ### Approach duplication, Game setup versions, and restoration
 
 The accepted smallest useful versioning model lets a user duplicate an Approach, create immutable material Game setup versions, inspect grouped corrections, and restore by appending a new correction/version. It must preserve:
@@ -216,6 +219,7 @@ After a semantics-safe combo/action-strategy projection exists, summaries may de
 ## Preserved interactions and microfeatures
 
 - Keep one exact-scope Strategy Matrix as the shared expert inspection/correction surface for Teach Riverline, Matrix Edit, and Teach Riverline Next.
+- Prefer broad useful coverage before fine boundary refinement in first-value flows; expose a focused boundary question when it is genuinely the highest-value next input or the user asks for refinement.
 - Preserve separate visual and accessible semantics for Specified — dominant, Specified — exact, Supported estimate, Tentative estimate, Unknown, and Conflict. Transfer remains inspectable derivation detail rather than another confidence level.
 - Keep exact-frequency bands limited to explicit exact mixes.
 - Let `Teach Riverline Next` items route directly to the existing exact scope and explanation for why the item was selected.

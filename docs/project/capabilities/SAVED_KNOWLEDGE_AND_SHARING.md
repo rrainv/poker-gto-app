@@ -43,7 +43,7 @@ The Saved Study Library should provide a dense, calm master-detail workspace rat
 - filters for kind, source, review state, mistake state, lifecycle, date, and supported poker dimensions;
 - stable sorting and bounded pagination/query behavior;
 - a selected-object inspector with explicit Open, Study, Review, Export, Share, Archive, and other applicable actions;
-- compact previews that consume payload-owned projections rather than reconstructing poker facts in the library;
+- compact previews that consume payload-owned projections rather than reconstructing poker facts in the library; for a Saved Spot this may be an observer-safe miniature table/board/Hero/pot representation available through hover, keyboard focus, tap, or detail without making essential facts pointer-only;
 - clear unavailable states when an older client cannot interpret a future payload.
 
 Folders or collections may be useful, but tags and search should be proven insufficient before another organizational hierarchy is introduced.
@@ -140,6 +140,7 @@ If a historical review stores strategy, Personal Strategy, opponent, Equity, or 
 - Review Later, Mistake, resolved state, and archive with accessible confirmation.
 - Search with normalized tags and explicit active filters.
 - Master-detail selection that never mutates a live Hand until the user chooses an applicable Open/Study action.
+- Rich visual preview for supported objects through their payload-owned projection, preserving observer safety, rank+suit inspectability, keyboard/touch access, and truthful unavailable states.
 - Version history, compare, and restore-as-new-revision.
 - User-visible export/import with dry-run or summary-quality feedback where useful.
 - Share action with explicit object version, visibility, permission, and privacy preview.
@@ -248,4 +249,3 @@ No new web research is introduced by this dossier.
 - [Personal Strategy Intelligence](PERSONAL_STRATEGY_INTELLIGENCE.md)
 - [Range Evolution](RANGE_EVOLUTION.md)
 - [Interaction Grammar](../INTERACTION_GRAMMAR.md)
-

@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 26, 2026 (`PERSONAL-STRATEGY-002R` human product review is accepted; `PERSONAL-STRATEGY-003A` is active next; provider/reference/observed integration follows 003A acceptance; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
+Last refreshed: August 26, 2026 (`HANDS-ON-PRODUCT-REVIEW-001` captured 59 product-owner-confirmed findings; `HANDS-ON-DEFECTS-001` is active next; `PERSONAL-STRATEGY-003A` is planned next; a human-visible checkpoint follows; `PREMIUM-CLOSEOUT-001` remains the later pre-release quality gate).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -53,14 +53,18 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 
 ## Current execution snapshot
 
-`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, `WORKSPACE-COMPOSITION-002`, `DOCS-CAPABILITY-DOSSIERS-001`, `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and `TRAINING-MEMORY-001` are completed/accepted checkpoints. `REFERENCE-PACK-001` is checkpointed/intentionally incomplete: its contract, strict matcher, provider/fallback, and synthetic consumer tests are accepted, while production source acquisition remains `RET-REFERENCE-PACK-001`. Training Memory manual Firefox acceptance remains `RET-TRAINING-MEMORY-001`. Detailed future intent now lives in `../project/capabilities/`; status remains in `PRODUCT_BACKLOG.md`. The directional order is:
+`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, `WORKSPACE-COMPOSITION-002`, `DOCS-CAPABILITY-DOSSIERS-001`, `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and `TRAINING-MEMORY-001` are completed/accepted checkpoints. `REFERENCE-PACK-001` is checkpointed/intentionally incomplete: its contract, strict matcher, provider/fallback, and synthetic consumer tests are accepted, while production source acquisition remains `RET-REFERENCE-PACK-001`. Training Memory manual Firefox acceptance remains `RET-TRAINING-MEMORY-001`.
 
-1. **ACTIVE NEXT — `PERSONAL-STRATEGY-003A` first-value product-model reset**
-2. **RETURN DEPENDENCIES — `REFERENCE-PACK-001` production source acquisition/review and `TRAINING-MEMORY-001` manual Firefox acceptance**
-3. **PLANNED NEXT / AFTER 003A ACCEPTANCE — Personal Strategy provider/reference/observed integration**
-4. **NEXT INTELLIGENCE WAVE / ORDER TO REASSESS —** `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, Opponent Intelligence / OpponentPolicy, and `HOME-002B`
-5. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
-6. release/mobile/social/PLO later
+`HANDS-ON-PRODUCT-REVIEW-001` is completed documentation/product triage. An independent outside-user review originated 59 findings, and the product owner manually reproduced all 59 in the current build. [The durable review](../project/HANDS_ON_PRODUCT_REVIEW_2026_08.md) owns detailed evidence and row-level ownership; no finding is closed by the review. Detailed future intent lives in `../project/capabilities/`; status remains in `PRODUCT_BACKLOG.md`. The directional order is:
+
+1. **ACTIVE NEXT — `HANDS-ON-DEFECTS-001` bounded confirmed correctness/usability repairs**
+2. **PLANNED NEXT — `PERSONAL-STRATEGY-003A` first-value product-model reset**
+3. **CHECKPOINT — human hands-on use, product discussion, and roadmap reassessment**
+4. **RETURN DEPENDENCIES — `REFERENCE-PACK-001` production source acquisition/review and `TRAINING-MEMORY-001` manual Firefox acceptance**
+5. **PLANNED LATER / AFTER 003A AND CHECKPOINT — Personal Strategy provider/reference/observed integration**
+6. **NAMED REDESIGN / INTELLIGENCE OWNERS; ORDER TO REASSESS —** Replay/rail, Training composition, Equity composition, Analyze/Range UX, Guide/content, Game Setup, Home Game presentation, Random Spot Generator, Saved visual knowledge, quality/customization, plus the existing intelligence candidates
+7. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+8. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
@@ -77,6 +81,11 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - Home Game `001B` is an accepted implementation checkpoint over the separate 001A accounting authority; hard delete/import remain deliberately deferred and real Firefox/provider acceptance remains `RET-HOMEGAME-001` debt.
 - Workspace composition is accepted as a useful implementation checkpoint, not a visual-polish closeout: Training support distribution/Session Progress, bounded left-anchored Equity allocation, and surviving specialized-layout polish remain `RET-COMPOSITION-002` debt. Known-card inspectability is separately owned by `RET-CARDS-THEMES-001`.
 - `TABLE-PHYSICALITY-003` is accepted with explicit presentation debt: legitimately revealed opponent cards can be obscured by seat/action/cradle chrome, owned by `RET-CARDS-THEMES-001`; Review timeline orientation remains an open Riverline product-fit comparison owned by `RET-REVIEW-NAV-001`, not a permanent horizontal-layout decision.
+- The 59 confirmed August findings supersede any broad claim that accepted UI checkpoints equal current whole-product visual acceptance. Existing foundations remain accepted; newly confirmed problems stay open under `HANDS-ON-DEFECTS-001` or the named redesign/quality owners in the review artifact.
+
+## Hands-on product workflow
+
+For user-facing feature work, use: agent implementation → automated verification → human hands-on use → product discussion → correction/acceptance → checkpoint. After roughly two or three substantial user-facing tickets, perform a short freeform whole-product hands-on pass even if ticket-level automation passed. Backend/foundation tickets with no meaningful visible surface may be checkpointed without artificial browser QA.
 
 ## Deliberately retired
 

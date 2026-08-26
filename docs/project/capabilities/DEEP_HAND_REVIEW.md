@@ -101,6 +101,8 @@ The review projection should request only the evidence needed for the visible de
 ## Preserved interactions and microfeatures
 
 - One compact Hero-decision navigator linked to direct pre-action Replay seeking. Its orientation is deliberately open: current horizontal Action Path/timeline and a vertical chronological navigator must be compared for Riverline's actual workspace rather than treating competitive inspiration as permanent acceptance.
+- Treat side rails as first-class candidates for chronological navigation, Current Legal Actions, and compact stage/control placement when they preserve the central table and remain readable at supported widths.
+- Preserve coherent table, rail, title, and control geometry when moving among live Hand, Replay, and selected-decision states; the selected history point may change without making the workspace feel unrelated.
 - Previous/next decision, street jumps, Replay playback, and selected-event context without duplicate cursors.
 - Clearly mark observed action and source's highest-frequency action while retaining full supported mixes.
 - Expand provenance, coverage, precision, and limitations without overwhelming the first layer.
@@ -130,7 +132,7 @@ The review projection should request only the evidence needed for the visible de
 - **Explain:** concise account of why the selected decision is interesting within its source/reference frame.
 - **Coach / Summary:** supported cross-street or whole-hand synthesis, recurring-pattern link, and next study action only when enough evidence exists.
 
-The table remains supporting context while the timeline/decision navigator and comparison lead Review. That hierarchy does not require a horizontal navigator: a future product-design pass must compare horizontal and vertical chronology for scanability, street grouping, current-action visibility, Replay seek usability, space efficiency, long-hand behavior, 1080p desktop, EN/RU/HE, RTL, and keyboard access. Users can remain in facts-only mode and avoid narrative entirely.
+The table remains supporting context while the timeline/decision navigator and comparison lead Review. That hierarchy does not require a horizontal navigator: a future product-design pass must compare horizontal and vertical chronology, including collapsible street groups and useful side-rail placement, for scanability, current-action visibility, Replay seek usability, space efficiency, long-hand behavior, 1080p desktop, EN/RU/HE, RTL, and keyboard access. State transitions should retain coherent table/control geometry. Users can remain in facts-only mode and avoid narrative entirely.
 
 ## Dependencies
 

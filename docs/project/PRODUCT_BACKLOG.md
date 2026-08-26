@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 26, 2026 (`PERSONAL-STRATEGY-002R` human product review is accepted; `PERSONAL-STRATEGY-003A` is active next; provider/reference/observed integration follows 003A acceptance; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
+Last consolidated: August 26, 2026 (`HANDS-ON-PRODUCT-REVIEW-001` captured 59 confirmed hands-on findings; `HANDS-ON-DEFECTS-001` is active next; `PERSONAL-STRATEGY-003A` is planned next; a human-visible checkpoint follows; `PREMIUM-CLOSEOUT-001` remains the later pre-release quality gate).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -35,13 +35,37 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT | `TRAINING-MEMORY-001` |
 | return dependency | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `REFERENCE-PACK-001` production source acquisition and acceptance |
 | checkpoint | COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED | `PERSONAL-STRATEGY-002R` |
-| 1 | ACTIVE NEXT | `PERSONAL-STRATEGY-003A` first-value product-model reset |
-| 2 | PLANNED NEXT / AFTER 003A ACCEPTANCE | Personal Strategy provider/reference/observed integration |
-| wave | ORDER REASSESS AT CLEAN CHECKPOINT | `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, Opponent Intelligence / OpponentPolicy, `HOME-002B` |
+| checkpoint | COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED | `HANDS-ON-PRODUCT-REVIEW-001` / all 59 findings preserved and owned |
+| 1 | ACTIVE NEXT | `HANDS-ON-DEFECTS-001` bounded confirmed correctness/usability repair |
+| 2 | PLANNED NEXT | `PERSONAL-STRATEGY-003A` first-value product-model reset |
+| 3 | HUMAN-VISIBLE CHECKPOINT | hands-on use, product discussion, correction/acceptance, roadmap reassessment |
+| later | PLANNED LATER / AFTER 003A AND CHECKPOINT | Personal Strategy provider/reference/observed integration |
+| wave | ORDER REASSESS AT HUMAN CHECKPOINT | confirmed redesign owners below plus `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, Opponent Intelligence / OpponentPolicy, `HOME-002B` |
 | later gate | PLANNED LATER / PRE-RELEASE QUALITY GATE | `PREMIUM-CLOSEOUT-001` |
 | future | PRESERVED FUTURE | release/mobile/social/PLO later |
 
 Documented Equity, bluff, opponent, natural-language, Home Game, sharing, and randomization depth remains in its existing status; the dossier migration does not pull it forward.
+
+## Confirmed August 2026 product-review owners
+
+Detailed evidence and row-level traceability remain in [Hands-On Product Review — August 2026](HANDS_ON_PRODUCT_REVIEW_2026_08.md). This registry records only accepted owners and status.
+
+| Ticket / owner | Status | Concise accepted outcome |
+|---|---|---|
+| `HANDS-ON-DEFECTS-001` | ACTIVE NEXT | Bounded high-impact correctness, legibility, feedback, card-removal, empty/error, transition-safety, and regression-sized geometry repairs. |
+| `FIRST-USE-HOME-001` | PLANNED LATER / REASSESS AT CHECKPOINT | Recurring launch/home model, onboarding separation, and useful Guest Home density. |
+| `REPLAY-RAIL-NAV-001` | PLANNED LATER / REASSESS AT CHECKPOINT | Vertical chronology exploration, collapsible streets, first-class rail controls, compact stage, coherent live/replay geometry. |
+| `TRAINING-COMPOSITION-001` | PLANNED LATER / REASSESS AT CHECKPOINT | Stable answer transition, useful rails, and primary feedback/progress hierarchy. |
+| `EQUITY-COMPOSITION-001` | PLANNED LATER / REASSESS AT CHECKPOINT | Bounded player tiles, optional names, central Board/Dead/Method, and dominant results. |
+| `GUIDE-CONTENT-001` | PLANNED LATER / REASSESS AT CHECKPOINT | Current interactive/visual Guide and concise human content design across explanatory surfaces. |
+| `GAME-SETUP-EVOLUTION-001` | PLANNED LATER / REASSESS AT CHECKPOINT | Reusable configurable game setups/presets and physical seat/button/Dealer interaction. |
+| `HOME-GAME-PRESENTATION-001` | PLANNED LATER / REASSESS AT CHECKPOINT | Denser Riverline-integrated organizer, useful table/session representation, and lifecycle feedback. |
+| `RANDOM-SPOT-GENERATOR-001` | PRESERVED FUTURE / REASSESS AT CHECKPOINT | Shared legal Randomize/Lock capability with card-removal truth and later reproduction. |
+| `ANALYZE-RANGE-UX-001` | PLANNED LATER / REASSESS AT CHECKPOINT | Local Matrix inspection, clearer comparison, card-removal presentation, legend, and progressive decision facts. |
+| `PERSONAL-STRATEGY-TEACHING-001` | PRESERVED FUTURE / REASSESS AT CHECKPOINT | Evidence-grounded concepts/reference/reasoning that genuinely teach; not a claim about the current Teacher. |
+| `SAVED-VISUAL-KNOWLEDGE-001` | PRESERVED FUTURE / REASSESS AT CHECKPOINT | Observer-safe payload-owned visual previews for Saved Spots and later approved objects. |
+| `GLOBAL-PRODUCT-QUALITY-001` | PLANNED LATER / ACCEPTED QUALITY DEBT | Spacing, sizing, typography/casing, iconography, account hierarchy, intro/logo, non-poker audio, Royal Flush presentation. |
+| `CUSTOMIZATION-UX-001` | PLANNED LATER / ACCEPTED CUSTOMIZATION DEBT | Card backs, custom-theme creation, Daylight comfort, compact controls, and manual reduced-motion override. |
 
 ## 1. Strategy / Reference
 
@@ -89,8 +113,8 @@ Training `Not sure` behavior remains an open product question; Calibration's exi
 |---|---|---|
 | Foundation / Calibration / inference / Matrix / Builder / Teacher | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Three user-named modes per profile, sparse immutable intended evidence, dominant-only ≠ pure, contradictions, categorical uncertainty, adaptive questions, and one shared evidence authority. |
 | `PERSONAL-STRATEGY-002R` | COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED | The [independent review and human disposition](PERSONAL_STRATEGY_002R_REVIEW.md) preserve the intended-evidence authority and accept the Game setup/Approach, local-first, RFI-first, first-value product reset before integration. Browser/real-user acceptance remains routed debt. |
-| `PERSONAL-STRATEGY-003A` | ACTIVE NEXT | Own the versioned legacy migration and deliver one Game setup, one initial Approach, approximately five supported RFI questions, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit. No provider/reference/observed integration. |
-| provider/reference/observed integration | PLANNED NEXT / AFTER 003A ACCEPTANCE | Keep intended Personal Strategy, selected reference, source-labelled observed behavior, and opponent policy explicit; Training comparison/adoption is opt-in and Training Memory remains the observed authority. |
+| `PERSONAL-STRATEGY-003A` | PLANNED NEXT | Own the versioned legacy migration and deliver one Game setup, one initial Approach, approximately five supported RFI questions, broad sparse/high-information coverage before fine boundary refinement, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit. No provider/reference/observed integration. |
+| provider/reference/observed integration | PLANNED LATER / AFTER 003A AND HUMAN CHECKPOINT | Keep intended Personal Strategy, selected reference, source-labelled observed behavior, and opponent policy explicit; Training comparison/adoption is opt-in and Training Memory remains the observed authority. |
 | `PERSONAL-INSIGHTS-001` | PLANNED LATER after integration | Cross-profile Teach Riverline Next queue and evidence/provenance/uncertainty-aware summaries. See [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md). |
 | bounded versioning and later postflop/combo depth | ACCEPTED DIRECTION / LATER SLICES | Duplicate Approach, immutable material Game setup versions, and restore-through-new-correction/version are accepted; branches, arbitrary rollback, and Git-like management are deferred. Postflop remains exact-fact future work. See [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md). |
 
@@ -149,6 +173,8 @@ The current settlement algorithm is deterministic; it is not a selected Fewest T
 | `DOCS-CAPABILITY-DOSSIERS-001` | COMPLETED / ACCEPTED DOCUMENTATION ARCHITECTURE CHECKPOINT | Durable dossier layer, Legacy ID Index, Interaction Grammar, recovered intent, anti-loop governance, and concise live planning; no runtime feature work. |
 | `TABLE-PHYSICALITY-003` | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT | Human acceptance passed table scale, HU/normal Hand composition, felt/rail coherence, Hero-card readability, and contribution-to-pot presentation as sufficient to move on. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt; no perfect-polish claim is made. |
 | `SETTINGS-IA-001` | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT | Replaced the god menu with Appearance, Audio & Motion, Language & Help, and Account & Data categories; retained one authority per existing preference, demoted previews to actions, exposed truthful OS motion status, and kept Learn Riverline primary. Automated coverage is complete; live Firefox acceptance remains routed debt. |
+| `HANDS-ON-PRODUCT-REVIEW-001` | COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED | An independent outside-user review originated 59 findings; the product owner manually reproduced all 59; detailed evidence and ownership live in the review artifact. No finding is closed. |
+| `HANDS-ON-DEFECTS-001` | ACTIVE NEXT | Bounded repair cluster only; broader workspace, content, customization, and capability redesigns remain with their named owners. |
 | `PREMIUM-CLOSEOUT-001` | PLANNED LATER / PRE-RELEASE QUALITY GATE | Whole-product manual QA, final high-value visual-debt burn, Guide finalization, responsive desktop matrix, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings polish, theme consistency, applicable Return Queue debt, and release-quality Core Flow acceptance after the feature set is materially more mature. |
 | evidence-grounded natural-language intelligence | PRESERVED FUTURE / first concrete slice `PERSONAL-INSIGHTS-001` | Facts / Explain / Coach depth over approved structured evidence, with facts-only use always available. See [Natural-Language Intelligence](capabilities/NATURAL_LANGUAGE_INTELLIGENCE.md). |
 | shared interaction integrity | COMPLETED | Accepted product rule: one semantic owner and interaction language across applicable surfaces; see [Interaction Grammar](INTERACTION_GRAMMAR.md). |
