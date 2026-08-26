@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 26, 2026 (`REFERENCE-PACK-001` checkpointed its provider foundation with source acquisition intentionally incomplete; Training Memory / re-drill is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
+Last refreshed: August 26, 2026 (`TRAINING-MEMORY-001` completed the accepted learning-memory foundation with manual Firefox debt; `PERSONAL-STRATEGY-002R` is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
 
 This roadmap explains major directional sequencing and why phases are ordered. [Current Phase](CURRENT_PHASE.md) owns the exact current checkpoint and execution order; [Product Backlog](PRODUCT_BACKLOG.md) owns concise capability/status. The [capability dossiers](capabilities/README.md) preserve detailed long-term intent without setting priority.
 
@@ -39,8 +39,8 @@ The completed dossier migration records more possibilities; it does not promote 
 3. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX/PROVIDER DEBT — `HOME-GAME-001B`** — organizer management, visible correction/lifecycle history, safe archive semantics, and export-only portability are implemented; unavailable live acceptance remains routed debt.
 4. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT — `SETTINGS-IA-001`** — four focused Settings categories, preserved preference authorities, and secondary help/tutorial discovery; live Firefox acceptance remains routed debt.
 5. **CHECKPOINTED / INTENTIONALLY INCOMPLETE — `REFERENCE-PACK-001`** — pack contract, validation, strict matcher, provider/fallback, and generic consumers are implemented; production-safe source data and independent acceptance remain a named return dependency.
-6. **ACTIVE NEXT — Training Memory / re-drill** — durable history, review queue, same/similar spot, scheduling, filters, and truthful source-aware trends.
-7. **PLANNED NEXT — `PERSONAL-STRATEGY-002R`** — independent real-user review.
+6. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT — `TRAINING-MEMORY-001`** — durable source-aware decision/session evidence, bounded recent history, transparent review lifecycle, exact historical Same Spot, and planner/generator-backed current Similar Spot; advanced scheduling and cross-surface continuity remain later work.
+7. **ACTIVE NEXT — `PERSONAL-STRATEGY-002R`** — independent real-user review.
 8. **PLANNED NEXT — Personal Strategy integration** — preserve intended/reference/observed roles and explicit Training-evidence opt-in.
 9. **NEXT INTELLIGENCE / PRODUCT WAVE; ORDER TO REASSESS —** accepted candidates include `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, later Opponent Intelligence / OpponentPolicy, and `HOME-002B`.
 10. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`** — whole-product manual QA, high-value visual-debt burn, Guide finalization, responsive desktop matrix, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings/theme polish, and release-quality Core Flow acceptance.
@@ -62,7 +62,7 @@ Detailed direction: [Reference Strategy Evolution](capabilities/REFERENCE_STRATE
 
 ## Phase C — persistent learning
 
-Training evolves from legal deterministic exercises into a history-aware learning loop. Durable decision/session evidence enables review queues, same/similar re-drill, spaced/adaptive scheduling, Saved/Home continuity, and summaries that remain honest about the selected source.
+Training has evolved from isolated legal deterministic exercises into a first history-aware learning loop. `TRAINING-MEMORY-001` durably preserves exact decision/session and answer-time source/claim evidence, derives bounded recent/review views, and supports historical Same Spot plus current Similar Spot without creating new poker or strategy authority. Advanced spaced/adaptive scheduling, Saved/Home/Replay/Analyze continuity, rich filters/trends, sync/export, and Personal Strategy observation remain later slices.
 
 Detailed direction: [Learning Evidence Foundation](capabilities/LEARNING_EVIDENCE_FOUNDATION.md), [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md), and [Deep Hand Review](capabilities/DEEP_HAND_REVIEW.md).
 

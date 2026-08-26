@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 26, 2026 (`REFERENCE-PACK-001` checkpointed its provider foundation with source acquisition intentionally incomplete; Training Memory / re-drill is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
+Last refreshed: August 26, 2026 (`TRAINING-MEMORY-001` completed the accepted learning-memory foundation with manual Firefox debt; `PERSONAL-STRATEGY-002R` is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -31,7 +31,7 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 - **Poker:** `shared/poker-domain/` owns PokerState v1/v2, cards, actions, legality, accounting, evaluator, Equity, combos, and weighted ranges.
 - **Decision strategy:** `DecisionContext v1` with additive `decision-context/v1.1` -> `StrategyProvider v1` -> `StrategyResult v1` -> `StrategyClaimPolicy v1`.
 - **Current strategy:** deterministic generalized heuristic under `app/src/strategy/`; `reference-pack/v1` validation/matching/provider infrastructure exists, but no production pack or validated general Hold'em production reference is registered.
-- **Training:** planner/intents/requests own structural curriculum targets only; canonical generator owns legal trajectories; sizing families are generation targets, not recommendations.
+- **Training:** planner/intents/requests own structural curriculum targets only; canonical generator owns legal trajectories; sizing families are generation targets, not recommendations. Training Memory v1 owns durable encountered-decision/session evidence and frozen answer-time source/claim snapshots, not grading or Saved intent.
 - **Analysis:** `AnalysisExplanation v1` and `RangeAnalysisFacts v1` consume trusted facts without recreating poker/strategy/Equity.
 - **Presentation:** `table-presentation/v1` and `hand-review/v1` are ephemeral projections only.
 - **Experience:** `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1` create presentation consequences only.
@@ -53,15 +53,14 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 
 ## Current execution snapshot
 
-`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, `WORKSPACE-COMPOSITION-002`, `DOCS-CAPABILITY-DOSSIERS-001`, `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, and `SETTINGS-IA-001` are completed/accepted checkpoints. `REFERENCE-PACK-001` is checkpointed/intentionally incomplete: its contract, strict matcher, provider/fallback, and synthetic consumer tests are accepted, while production source acquisition remains `RET-REFERENCE-PACK-001`. Detailed future intent now lives in `../project/capabilities/`; status remains in `PRODUCT_BACKLOG.md`. The directional order is:
+`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, `WORKSPACE-COMPOSITION-002`, `DOCS-CAPABILITY-DOSSIERS-001`, `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and `TRAINING-MEMORY-001` are completed/accepted checkpoints. `REFERENCE-PACK-001` is checkpointed/intentionally incomplete: its contract, strict matcher, provider/fallback, and synthetic consumer tests are accepted, while production source acquisition remains `RET-REFERENCE-PACK-001`. Training Memory manual Firefox acceptance remains `RET-TRAINING-MEMORY-001`. Detailed future intent now lives in `../project/capabilities/`; status remains in `PRODUCT_BACKLOG.md`. The directional order is:
 
-1. **ACTIVE NEXT — Training Memory / re-drill**
-2. **RETURN DEPENDENCY — `REFERENCE-PACK-001` production source acquisition/review**
-3. **PLANNED NEXT — `PERSONAL-STRATEGY-002R`**
-4. **PLANNED NEXT — Personal Strategy provider/reference/observed integration**
-5. **NEXT INTELLIGENCE WAVE / ORDER TO REASSESS —** `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, Opponent Intelligence / OpponentPolicy, and `HOME-002B`
-6. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
-7. release/mobile/social/PLO later
+1. **ACTIVE NEXT — `PERSONAL-STRATEGY-002R`**
+2. **RETURN DEPENDENCIES — `REFERENCE-PACK-001` production source acquisition/review and `TRAINING-MEMORY-001` manual Firefox acceptance**
+3. **PLANNED NEXT — Personal Strategy provider/reference/observed integration**
+4. **NEXT INTELLIGENCE WAVE / ORDER TO REASSESS —** `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, Opponent Intelligence / OpponentPolicy, and `HOME-002B`
+5. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+6. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
@@ -71,7 +70,7 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - `SETTINGS-IA-001` is accepted structurally; its unavailable real Firefox category/viewport/theme/language matrix remains `QA-HANDSON-010` / `RET-PREMIUM-001` debt.
 - `PREMIUM-CLOSEOUT-001` is not cancelled: it is the later whole-product manual, visual, responsive, localization, accessibility, Guide, Core Flow, and release-quality gate after the feature set is materially more mature.
 - `UX-REGRESSION-001` is accepted: the eleven owned hands-on IDs are closed with a 1,773/1,773 Node baseline and bounded Firefox 154 acceptance; unowned composition/product debt remains open.
-- Training Varied/Focused and the Practice Planner are implemented foundations; Training Memory/re-drill is separate future work.
+- Training Varied/Focused/Full Hand, the Practice Planner, and Training Memory v1 are implemented foundations. Advanced scheduling/cross-surface memory work and `Not sure` remain future; exact source/claim snapshots and historical/current labels are binding.
 - `reference-pack/v1` has no production data registration. Never promote its synthetic test fixture, benchmark observations, or generalized heuristic curves into trusted reference truth.
 - Personal Strategy is checkpointed through Calibration/Matrix/Builder/Teacher; resume at independent `002R`, then integration, then Personal Insights.
 - Saved Hand/Spot and `HOME-002A` exist; the full `HOME-002B` library does not.

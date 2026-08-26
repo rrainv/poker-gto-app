@@ -33,8 +33,9 @@ Users should eventually be able to:
 - [Personal Strategy Foundation](../PERSONAL_STRATEGY_FOUNDATION_SPEC.md) separates direct intended evidence from an explicitly opted-in immutable Training observation.
 - [Home Dashboard](../HOME_DASHBOARD_SPEC.md) exposes unsupported Training-history seams rather than inventing accuracy, mastery, or resumable history.
 - [Tutorial and onboarding](../TUTORIAL_ONBOARDING_SPEC.md) owns current help lifecycle; Training Intelligence does not create another tutorial system.
+- [Training Memory v1](../TRAINING_MEMORY_V1_SPEC.md) now owns durable profile-scoped DecisionRecord/session evidence, frozen answer-time source/claim snapshots, bounded recent/review queries, exact historical Same Spot, and planner/generator-backed current Similar Spot.
 
-Current Training is legal, deterministic, planner/provider-backed, and source-aware. Persistent DecisionRecord/session history, mistake/review queues, same/similar re-drill, spaced/adaptive review, saved drills, and truthful longitudinal summaries remain future work.
+Current Training is legal, deterministic, planner/provider-backed, source-aware, and durably remembers Varied, Focused, and Full Hand Hero decisions. The v1 queue uses transparent comparative/user-study reasons and reversible reviewed/snoozed lifecycle; it does not claim heuristic disagreement is a mistake. Advanced spaced/adaptive scheduling, rich filters/trends, Saved Drill payloads, Home/Replay/Analyze continuity, and Personal Strategy observation remain future work.
 
 ## Desired future behavior
 
@@ -151,9 +152,9 @@ Facts-only history and dense filters remain available. Coach/Summary should neve
 
 These are possible future boundaries, not roadmap priority:
 
-1. Define the smallest durable DecisionRecord/session history with exact source/context/reproduction identity.
-2. Add bounded History and Review Later queries plus same-spot re-drill.
-3. Define explainable similar-spot dimensions and a versioned candidate policy.
+1. **Implemented by Training Memory v1:** smallest durable DecisionRecord/session history with exact source/context/reproduction identity.
+2. **Implemented by Training Memory v1:** bounded History and Review queries plus exact same-spot re-drill.
+3. **Implemented by Training Memory v1:** explainable similarity dimensions and planner/generator-backed bounded generation.
 4. Add spaced/adaptive scheduling over durable review events with explicit reason and override.
 5. Add Saved Drill definitions and Home/Replay continuity through approved payload owners.
 6. Add truthful session summaries/trends with evidence thresholds and facts drill-down.
@@ -188,10 +189,9 @@ The durable lesson is a short, truthful practice-review-repractice loop with evi
 ## Open product questions
 
 - **Training “Not sure” behavior — OPEN PRODUCT QUESTION:** Does “Not sure” abstain without grading, reveal the selected reference then queue review, count as an answered decision with explicit uncertainty, repeat immediately, or follow another exact rule? Its effect on session progress, planner served coverage, history, summaries, Personal Strategy observation, and re-drill must be decided together. It must not be silently equated with Fold, Skip, incorrect, or missing data.
-- What is the minimum DecisionRecord payload and retention period?
-- Which events qualify for the review queue: user choice, source disagreement, explicit uncertainty, spaced schedule, or a transparent combination?
-- Which dimensions define same versus similar spots, and which may relax?
-- How should source-version changes affect historical alignment and scheduled re-drills?
+- Retention duration/export remains open; the minimum v1 DecisionRecord payload is specified in `TRAINING_MEMORY_V1_SPEC.md`.
+- V1 review reasons and Same/Similar dimensions are specified; later contradiction, Personal Strategy, uncertainty, and relaxed-dimension policy require new versions.
+- Source-version handling is resolved for v1: original evidence remains frozen/historical and Similar Spot uses a separately labelled current provider.
 - What scheduling policy is understandable, user-controllable, and resistant to reward-loop pressure?
 - Which session trends are meaningful before trusted reference coverage broadens?
 - Where should Personal Strategy evidence opt-in live, and what should its default be?
@@ -201,8 +201,8 @@ The durable lesson is a short, truthful practice-review-repractice loop with evi
 
 ## Legacy/recovered IDs and ideas
 
-- **Training Memory / DecisionRecord:** preserved as durable shown/answered/source/version/context/session evidence; current planner state is not this history.
-- **same-spot / similar-spot re-drill and spaced/adaptive review:** preserved with reproducible identity and transparent selection/scheduling policies.
+- **Training Memory / DecisionRecord:** implemented in v1 as durable shown/answered/source/version/context/session evidence; planner state remains structurally separate.
+- **same-spot / similar-spot re-drill:** implemented in v1 with reproducible historical identity and transparent current-generation dimensions; sophisticated spaced/adaptive scheduling remains preserved future work.
 - **exact Training “Not sure” behavior:** preserved as an open product question; it must not disappear into generic Skip semantics.
 - **STUDY-GOALS-001:** preserved as a restrained future capability requiring real study history and explicit product approval.
 - **GUIDED-TUTORIALS-002:** evolved into the current tutorial/onboarding authority plus future context-specific learning guidance; Training Intelligence does not create a parallel help lifecycle.
@@ -218,4 +218,3 @@ The durable lesson is a short, truthful practice-review-repractice loop with evi
 - [Saved Knowledge and Sharing](SAVED_KNOWLEDGE_AND_SHARING.md)
 - [Reference Strategy Evolution](REFERENCE_STRATEGY_EVOLUTION.md)
 - [Range Evolution](RANGE_EVOLUTION.md)
-

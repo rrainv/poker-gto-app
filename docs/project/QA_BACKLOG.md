@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 26, 2026 (`REFERENCE-PACK-001` checkpointed its provider foundation with source acquisition intentionally incomplete; Training Memory / re-drill is active next; `PREMIUM-CLOSEOUT-001` is the later pre-release quality gate).
+Last consolidated: August 26, 2026 (`TRAINING-MEMORY-001` completed the accepted learning-memory foundation with manual Firefox debt; `PERSONAL-STRATEGY-002R` is active next; `PREMIUM-CLOSEOUT-001` is the later pre-release quality gate).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -219,8 +219,8 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-TRAINING-MEMORY-001 | DEFERRED | No canonical persistent DecisionRecord/mistake/review queue yet; Home must not invent accuracy/mastery/history. | TRAINING-MEMORY-001 |
-| QA-TRAINING-REDRILL-001 | DEFERRED | Same/similar spot re-drill, spaced/adaptive review and saved drill presets remain future. | TRAINING-REDRILL-001 |
+| QA-TRAINING-MEMORY-001 | PARTIAL / ACCEPTED IMPLEMENTATION CHECKPOINT | Owner-scoped `training-decision-record/v1` and `training-session-record/v1`, frozen source/claim evidence, atomic/versioned IndexedDB, bounded recent/session/review queries, factual summaries, manual Review/Difficult, reversible review lifecycle, and Full Hand replay sharing are focused-test covered. No Home history was fabricated. Real Firefox EN/HE/RU and viewport acceptance remains open. | `RET-TRAINING-MEMORY-001` manual Firefox acceptance |
+| QA-TRAINING-REDRILL-001 | PARTIAL / ACCEPTED V1 CHECKPOINT | Same Spot reproduces exact state with explicitly historical frozen comparison; Similar Spot uses `training-similarity/v1`, Practice Planner, TrainingScenarioRequest, canonical generator, current provider, and named dimensions. Sophisticated spaced/adaptive scheduling, Saved Drill presets, richer filters, and cross-surface continuity remain future. | `RET-TRAINING-MEMORY-001`; future `TRAINING-MEMORY-002` when prioritized |
 | QA-SAVED-LIBRARY-001 | DEFERRED | Full dense master-detail Saved Study Library and Hand/Spot/Range/Drill/Review/Session taxonomy are not implemented. | HOME-002B + payload tickets |
 
 ## Opponent policy / bots future QA

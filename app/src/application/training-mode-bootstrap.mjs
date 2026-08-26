@@ -67,6 +67,9 @@ export function installTrainingModeBridge(browserWindow, {
     replay(config, options) {
       return controller.replay(config, options);
     },
+    loadExercise(exercise) {
+      return controller.loadExercise(exercise);
+    },
     createPracticeIntent(input) {
       return createTrainingSessionIntent(input);
     },

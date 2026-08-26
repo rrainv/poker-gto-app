@@ -27,6 +27,7 @@ Production must not import solver experiments, training scripts, cloud tooling, 
 - permitted strategy claims: `StrategyClaimPolicy v1`
 - current heuristic implementation: `app/src/strategy/`
 - Training generation/session/grading: canonical application modules
+- durable encountered-decision/session learning evidence, review lifecycle, and re-drill identity: `training-decision-record/v1` / `training-session-record/v1` under `app/src/training-memory/`
 - explanation data: `AnalysisExplanation v1`
 - exact-hand, board-structure, blocker, and optional supplied-range facts for Analysis: `RangeAnalysisFacts v1`
 - user-owned saved hands/spots/notes/review metadata: `SavedStudyObject v1` under `app/src/saved-study-objects/`
@@ -172,6 +173,8 @@ Training must:
 Training modules do not become browser strategy authorities.
 
 `TrainingPracticePlanner`, `TrainingSessionIntent v1`, and `TrainingScenarioRequest v1` own structural curriculum/target planning only. They select a target envelope, including generation sizing families where applicable, but never construct cards, actions, bets, pots, PokerState, DecisionContext, StrategyResult, or grades. Sizing families are generation targets, not recommendations. The canonical Training generator remains the only legal-trajectory authority and advances planner coverage only after an exercise is successfully served. See `TRAINING_PRACTICE_PLANNER_SPEC.md`.
+
+`training-decision-record/v1` and `training-session-record/v1` are the durable Training Memory authority for what an owner was shown and answered. They preserve canonical reproduction identity plus the frozen StrategyResult/StrategyClaimPolicy at answer time; they do not re-grade history with today's provider. Review reasons, summaries, priority, and `training-similarity/v1` are deterministic projections. Exact Same Spot uses frozen historical comparison; Similar Spot must route a versioned envelope through the Practice Planner and canonical generator and is labelled current. SavedStudyObject remains intentional bookmarking, while Training Memory remains encountered-decision evidence. Full Hand stores one session-level replay source with per-decision replay references. See `TRAINING_MEMORY_V1_SPEC.md`.
 
 ## 10. AnalysisExplanation
 

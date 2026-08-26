@@ -1,8 +1,8 @@
 # Current Repository Audit
 
-Snapshot refreshed August 24, 2026 by `DOCS-INTEGRITY-001` against commit `e38c4e4` (`AUDIO-MOTION-001`). This is a dated evidence snapshot, not planning authority. Executable code and passing tests are final implementation truth; `CURRENT_PHASE.md` owns execution order.
+Snapshot refreshed August 26, 2026 by `TRAINING-MEMORY-001` from the `DOCS-INTEGRITY-001` audit baseline. This is a dated evidence snapshot, not planning authority. Executable code and passing tests are final implementation truth; `CURRENT_PHASE.md` owns execution order.
 
-No browser/manual acceptance was performed for this documentation audit. Existing manual and live-provider gaps remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
+No browser/manual acceptance was performed for the Training Memory checkpoint because browser discovery returned no available browser. Existing manual and live-provider gaps remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
 ## 1. Runtime and canonical poker domain
 
@@ -51,7 +51,7 @@ The canonical Training generator/session/grading/presentation path generates leg
 
 The implemented `TrainingPracticePlanner` foundation includes immutable `TrainingSessionIntent v1`, `TrainingScenarioRequest v1`, serializable planner state, Varied and Focused planning, coverage/recency accounting, the 002B generator adapter, and generation sizing-family diversity. The planner owns only the structural target envelope. The canonical generator owns cards, actions, amounts, PokerState, DecisionContext, and legal trajectories; served coverage advances only after successful delivery. Sizing families are generation targets, not poker recommendations.
 
-Varied and Focused Training are live current UI foundations; Full Hand Training uses the shared table/review path. Persistent Training Memory, mistake history, re-drill, and spaced/adaptive scheduling remain future work.
+Varied and Focused Training are live current UI foundations; Full Hand Training uses the shared table/review path. `app/src/training-memory/` now owns versioned, owner-scoped durable encountered-decision/session evidence, frozen source/claim snapshots, indexed recent/review queries, explicit review lifecycle, and versioned similarity. `training-memory-service.mjs` integrates exact historical Same Spot and current-provider Similar Spot through the existing planner/generator. Saved remains intentional bookmarking, and advanced spaced/adaptive scheduling remains future work.
 
 ## 5. Presentation, Replay, Review, audio, and motion
 
@@ -87,9 +87,9 @@ Player management polish, visible correction history, session archive/delete, im
 
 ## 9. Verification baselines
 
-The accepted `AUDIO-MOTION-001` checkpoint reports the canonical Node suite green at **1,759/1,759**. This documentation-only audit did not rerun the full Node suite and does not convert that accepted checkpoint count into a new test claim.
+`TRAINING-MEMORY-001` reports its focused suite green at **10/10** and the complete Node suite green at **1,844/1,844** with bounded concurrency. The first default-parallel run reached **1,843/1,844** with only the already-routed load-sensitive Range Calibration wall-clock assertion failing; no threshold was changed.
 
-The current solver research baseline remains the isolated `solver/riverline_solver/` bounded HU 100bb no-rake preflop game/validation harness with public-tree, parity, exact small-fixture best-response/exploitability, and independent Kuhn validation tests. It is not solved full-game Hold'em, a production provider, a dataset, or a model. No later accepted solver implementation checkpoint was found after `SOLVER-001`; this documentation ticket did not rerun the Python solver suite.
+The current solver research baseline remains the isolated `solver/riverline_solver/` bounded HU 100bb no-rake preflop game/validation harness with public-tree, parity, exact small-fixture best-response/exploitability, and independent Kuhn validation tests. It is not solved full-game Hold'em, a production provider, a dataset, or a model. The Python solver suite is green at **26/26** for this checkpoint when `solver/` is supplied on the Python import path.
 
 ## 10. Deliberately absent and current debt
 
@@ -102,4 +102,4 @@ Deliberately absent:
 - renderer-owned PokerState, Replay, review, Saved, or audio semantics;
 - arbitrary drag-and-drop layout editor.
 
-Current material debt includes large `logic.js` orchestration, unperformed visual/language/live-provider acceptance, known strategy/reference limitations, missing Training Memory, incomplete Saved Library/Home Game follow-ups, and the stable hands-on issues in `QA_BACKLOG.md`. Historical plans and old audits do not change these facts.
+Current material debt includes large `logic.js` orchestration, unperformed visual/language/live-provider acceptance, known strategy/reference limitations, advanced Training Memory scheduling/cross-surface continuity, incomplete Saved Library/Home Game follow-ups, and the stable hands-on issues in `QA_BACKLOG.md`. Historical plans and old audits do not change these facts.

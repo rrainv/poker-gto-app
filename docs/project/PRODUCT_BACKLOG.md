@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 26, 2026 (`REFERENCE-PACK-001` checkpointed its provider foundation with source acquisition intentionally incomplete; Training Memory / re-drill is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
+Last consolidated: August 26, 2026 (`TRAINING-MEMORY-001` completed the accepted learning-memory foundation with manual Firefox debt; `PERSONAL-STRATEGY-002R` is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -32,10 +32,10 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT | `TABLE-PHYSICALITY-003` |
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX/PROVIDER DEBT | `HOME-GAME-001B` |
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT | `SETTINGS-IA-001` |
-| 1 | ACTIVE NEXT | Training Memory / re-drill |
+| checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT | `TRAINING-MEMORY-001` |
 | return dependency | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `REFERENCE-PACK-001` production source acquisition and acceptance |
-| 2 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
-| 3 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
+| 1 | ACTIVE NEXT | `PERSONAL-STRATEGY-002R` |
+| 2 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
 | wave | ORDER REASSESS AT CLEAN CHECKPOINT | `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, Opponent Intelligence / OpponentPolicy, `HOME-002B` |
 | later gate | PLANNED LATER / PRE-RELEASE QUALITY GATE | `PREMIUM-CLOSEOUT-001` |
 | future | PRESERVED FUTURE | release/mobile/social/PLO later |
@@ -75,7 +75,8 @@ Independent visual/interaction acceptance remains in QA and the Return Queue; im
 | Capability | Status | Accepted scope |
 |---|---|---|
 | deterministic Training and Practice Planner | COMPLETED FOUNDATION | Legal canonical generator, shared provider/grading path, Varied/Focused structural planning, Full Hand mode, reproducible seeds, and generation-only sizing families. |
-| Training Memory / DecisionRecord / review and re-drill | ACTIVE NEXT | Durable shown/answered/source/version/context/session history, mistake/review queue, same/similar re-drill, spaced/adaptive review, filters, saved drills, truthful trends, and Home/Replay continuity. It must preserve actual comparative heuristic semantics while production reference acquisition remains open. See [Learning Evidence Foundation](capabilities/LEARNING_EVIDENCE_FOUNDATION.md) and [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
+| Training Memory / DecisionRecord / review and re-drill | COMPLETED / ACCEPTED V1 CHECKPOINT WITH MANUAL FIREFOX DEBT | Durable shown/answered/source/version/context/session evidence, owner-isolated IndexedDB, bounded recent history, transparent Review lifecycle, exact historical Same Spot, current planner/generator-backed Similar Spot, factual source-aware summaries, and Full Hand replay sharing are implemented. The heuristic remains comparative. See [Training Memory v1](TRAINING_MEMORY_V1_SPEC.md), [Learning Evidence Foundation](capabilities/LEARNING_EVIDENCE_FOUNDATION.md), and [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
+| Training Memory scheduling and cross-surface continuation | PLANNED LATER | Principled spaced/adaptive scheduling, rich filters/trends, Saved Drill payloads, Home/Replay/Analyze continuity, export/import, sync, and explicit Personal Strategy observation require later bounded tickets; `Not sure` remains open. |
 | profile-aware Training evidence and opponent-policy drills | PLANNED LATER / dependency-gated | Explicit opt-in, immutable observed provenance, no overwrite of intended strategy, later explicit opponent policy. |
 | study goals | PRESERVED FUTURE / mechanics open | Restrained goals derived from real history; XP/badges/levels/achievements remain rejected by default. See [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
 
@@ -86,7 +87,7 @@ Training `Not sure` behavior remains an open product question; Calibration's exi
 | Capability | Status | Accepted scope |
 |---|---|---|
 | Foundation / Calibration / inference / Matrix / Builder / Teacher | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Three user-named modes per profile, sparse immutable intended evidence, dominant-only ≠ pure, contradictions, categorical uncertainty, adaptive questions, and one shared evidence authority. |
-| `PERSONAL-STRATEGY-002R` | PLANNED NEXT | Independent real-user review before provider integration or more inference machinery. |
+| `PERSONAL-STRATEGY-002R` | ACTIVE NEXT | Independent real-user review before provider integration or more inference machinery. |
 | provider/reference/observed integration | PLANNED NEXT | Keep intended Personal Strategy, selected reference, and observed play explicit; Training evidence is opt-in. |
 | `PERSONAL-INSIGHTS-001` | PLANNED LATER after integration | Cross-profile Teach Riverline Next queue and evidence/provenance/uncertainty-aware summaries. See [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md). |
 | profile snapshots/experiments/rollback and later postflop/combo depth | PRESERVED FUTURE | Preserve evidence history, uncertainty, discrete mode semantics, and source roles. See [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md). |

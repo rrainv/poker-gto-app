@@ -194,7 +194,25 @@ const app = {
 
     fullHandSnapshot: null,
 
-    fullHandReviewIndex: 0
+    fullHandReviewIndex: 0,
+
+    memorySessionPromise: null,
+
+    memoryWritePromise: Promise.resolve(),
+
+    memoryCurrentRecordPromise: null,
+
+    memoryCurrentRecordId: null,
+
+    memoryFullHandDecisionRecords: new Map(),
+
+    memoryPendingOrigin: null,
+
+    memoryView: 'review',
+
+    memoryLastItems: [],
+
+    memoryRedrillNote: ''
 
   },
 
@@ -288,6 +306,17 @@ function callTrainingServiceBridge(method, ...args) {
     return bridge[method](...args);
   } catch (error) {
     console.error('[Riverline Training service]', error);
+    return null;
+  }
+}
+
+function callTrainingMemoryBridge(method, ...args) {
+  try {
+    const bridge = window.RiverlineTrainingMemory;
+    if (!bridge || typeof bridge[method] !== 'function') return null;
+    return bridge[method](...args);
+  } catch (error) {
+    console.error('[Riverline Training Memory]', error);
     return null;
   }
 }
@@ -7293,6 +7322,7 @@ function refreshLocalizedTrainingRuntime() {
   updateTrainingPositions();
   updateTrainingFilterAvailability();
   updateTrainingStats();
+  if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
   if (trainingSessionMode() === 'full_hand' && app.training.fullHandSnapshot) {
     renderFullHandTrainingSnapshot(app.training.fullHandSnapshot);
     return;
@@ -7403,6 +7433,11 @@ function init() {
     window.addEventListener('riverline:languagechange', refreshLocalizedRuntime);
     window.addEventListener('riverline:identitychange', () => {
       scheduleHomeRefresh({ clearPrivateState: true });
+      app.training.memorySessionPromise = null;
+      app.training.memoryWritePromise = Promise.resolve();
+      app.training.memoryFullHandDecisionRecords = new Map();
+      resetTrainingMemoryDecisionState();
+      if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
     });
     window.addEventListener('riverline:authchange', () => {
       scheduleHomeRefresh({ clearPrivateState: true });
@@ -8315,6 +8350,17 @@ function initTrainingMode() {
   bind('#trainingFullHandLiveNewHand', 'click', () => startConfiguredTrainingSession());
   bind('#trainingFullHandEndHand', 'click', endFullHandTraining);
   bind('#trainingReviewHand', 'click', toggleFullHandTrainingReview);
+  bind('#trainingMemoryPanel', 'toggle', (event) => {
+    if (event.currentTarget.open) void refreshTrainingMemoryPanel();
+  });
+  document.querySelectorAll('[data-memory-view]').forEach((button) => {
+    if (button.dataset.bound) return;
+    button.dataset.bound = 'true';
+    button.addEventListener('click', () => setTrainingMemoryView(button.dataset.memoryView));
+    button.addEventListener('keydown', handleTrainingMemoryTabKey);
+  });
+  bind('#trainingMarkReview', 'click', () => toggleCurrentTrainingMemoryMetadata('review'));
+  bind('#trainingMarkDifficult', 'click', () => toggleCurrentTrainingMemoryMetadata('difficult'));
   bind('#trainingAdjustDrill', 'click', () => {
     $('#trainingAdvanced')?.removeAttribute('open');
     const selector = trainingSessionMode() === 'varied'
@@ -8930,6 +8976,565 @@ function trainingSessionLength() {
   return value === 'open' ? null : Number.parseInt(value, 10);
 }
 
+function setTrainingMemoryStatus(messageKey, variables = {}, { error = false } = {}) {
+  const status = $('#trainingMemoryStatus');
+  if (!status) return;
+  status.textContent = messageKey ? t(messageKey, variables) : '';
+  status.dataset.error = String(error);
+}
+
+function queueTrainingMemoryWrite(operation) {
+  const queued = Promise.resolve(app.training.memoryWritePromise)
+    .catch(() => null)
+    .then(operation);
+  const handled = queued.catch((error) => {
+    console.error('[Riverline Training Memory]', error);
+    setTrainingMemoryStatus(
+      'Training Memory is unavailable. Existing history was left untouched.',
+      {},
+      { error: true },
+    );
+    return null;
+  });
+  app.training.memoryWritePromise = handled;
+  return handled;
+}
+
+function resetTrainingMemoryDecisionState() {
+  app.training.memoryCurrentRecordPromise = null;
+  app.training.memoryCurrentRecordId = null;
+  app.training.memoryPendingOrigin = null;
+  const actions = $('#trainingMemoryDecisionActions');
+  if (actions) actions.hidden = true;
+  ['#trainingMarkReview', '#trainingMarkDifficult'].forEach((selector) => {
+    $(selector)?.setAttribute('aria-pressed', 'false');
+  });
+}
+
+function updateTrainingMemoryDecisionActions(record) {
+  if (!record || record.id !== app.training.memoryCurrentRecordId) return;
+  const actions = $('#trainingMemoryDecisionActions');
+  if (actions) actions.hidden = record.status !== 'answered';
+  $('#trainingMarkReview')?.setAttribute('aria-pressed', String(Boolean(record.studyMetadata?.review)));
+  $('#trainingMarkDifficult')?.setAttribute('aria-pressed', String(Boolean(record.studyMetadata?.difficult)));
+}
+
+function startTrainingMemorySession(input) {
+  const priorSessionPromise = app.training.memorySessionPromise;
+  resetTrainingMemoryDecisionState();
+  app.training.memoryRedrillNote = '';
+  app.training.memoryFullHandDecisionRecords = new Map();
+  const sessionPromise = queueTrainingMemoryWrite(async () => {
+    const prior = await priorSessionPromise;
+    if (prior?.id) await callTrainingMemoryBridge('finishSession', prior.id, 'abandoned');
+    return callTrainingMemoryBridge('startSession', input);
+  });
+  app.training.memorySessionPromise = sessionPromise;
+  return sessionPromise;
+}
+
+function finishTrainingMemorySession(status = 'completed', finishOptions = {}) {
+  const sessionPromise = app.training.memorySessionPromise;
+  if (!sessionPromise) return Promise.resolve(null);
+  app.training.memorySessionPromise = null;
+  app.training.memoryFullHandDecisionRecords = new Map();
+  return queueTrainingMemoryWrite(async () => {
+    const session = await sessionPromise;
+    if (!session?.id) return null;
+    const finished = await callTrainingMemoryBridge(
+      'finishSession',
+      session.id,
+      status,
+      finishOptions,
+    );
+    if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
+    return finished;
+  });
+}
+
+function recordTrainingExerciseShown(exercise) {
+  const sessionPromise = app.training.memorySessionPromise;
+  if (!sessionPromise || !exercise) return null;
+  const origin = app.training.memoryPendingOrigin;
+  app.training.memoryPendingOrigin = null;
+  resetTrainingMemoryDecisionState();
+  const recordPromise = queueTrainingMemoryWrite(async () => {
+    const session = await sessionPromise;
+    if (!session?.id) return null;
+    const record = await callTrainingMemoryBridge('recordExerciseShown', {
+      sessionId: session.id,
+      exercise,
+      parentDecisionRecordId: origin?.parentDecisionRecordId ?? null,
+      redrillKind: origin?.redrillKind ?? null,
+    });
+    if (record && app.training.currentExercise?.id === exercise.id) {
+      app.training.memoryCurrentRecordId = record.id;
+    }
+    return record;
+  });
+  app.training.memoryCurrentRecordPromise = recordPromise;
+  return recordPromise;
+}
+
+function recordTrainingExerciseAnswered({ evaluation, exercise, actionType, amountToMilliBb = null }) {
+  const recordPromise = app.training.memoryCurrentRecordPromise;
+  if (!recordPromise) return null;
+  return queueTrainingMemoryWrite(async () => {
+    const record = await recordPromise;
+    if (!record?.id) return null;
+    const answered = await callTrainingMemoryBridge('recordExerciseAnswered', {
+      recordId: record.id,
+      evaluation,
+      strategyResult: exercise.strategyResult,
+      actionType,
+      amountToMilliBb,
+    });
+    if (answered && app.training.memoryCurrentRecordId === answered.id) {
+      app.training.memoryCurrentRecordPromise = Promise.resolve(answered);
+      updateTrainingMemoryDecisionActions(answered);
+    }
+    if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
+    return answered;
+  });
+}
+
+function recordFullHandTrainingDecisionShown(snapshot) {
+  const decision = snapshot?.currentDecision;
+  const sessionPromise = app.training.memorySessionPromise;
+  if (!decision || !sessionPromise) return null;
+  const existing = app.training.memoryFullHandDecisionRecords.get(decision.decisionId);
+  if (existing) {
+    app.training.memoryCurrentRecordPromise = existing;
+    void existing.then((record) => {
+      if (record) app.training.memoryCurrentRecordId = record.id;
+    });
+    return existing;
+  }
+  resetTrainingMemoryDecisionState();
+  const recordPromise = queueTrainingMemoryWrite(async () => {
+    const session = await sessionPromise;
+    if (!session?.id) return null;
+    const record = await callTrainingMemoryBridge('recordFullHandDecisionShown', {
+      sessionId: session.id,
+      decision,
+      replaySource: snapshot.replaySource,
+      handSeed: snapshot.handSeed,
+    });
+    if (record && app.training.fullHandSnapshot?.currentDecision?.decisionId === decision.decisionId) {
+      app.training.memoryCurrentRecordId = record.id;
+    }
+    return record;
+  });
+  app.training.memoryFullHandDecisionRecords.set(decision.decisionId, recordPromise);
+  app.training.memoryCurrentRecordPromise = recordPromise;
+  return recordPromise;
+}
+
+function recordFullHandTrainingDecisionAnswered(result) {
+  const decision = result?.decision;
+  const recordPromise = decision
+    ? app.training.memoryFullHandDecisionRecords.get(decision.decisionId)
+    : null;
+  if (!decision || !recordPromise) return Promise.resolve(null);
+  return queueTrainingMemoryWrite(async () => {
+    const record = await recordPromise;
+    if (!record?.id) return null;
+    const answered = await callTrainingMemoryBridge('recordFullHandDecisionAnswered', {
+      recordId: record.id,
+      decision,
+      replaySource: result.snapshot.replaySource,
+      handSeed: result.snapshot.handSeed,
+    });
+    if (answered && app.training.memoryCurrentRecordId === answered.id) {
+      app.training.memoryCurrentRecordPromise = Promise.resolve(answered);
+      updateTrainingMemoryDecisionActions(answered);
+    }
+    if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
+    return answered;
+  });
+}
+
+const TRAINING_MEMORY_REASON_LABELS = Object.freeze({
+  differs_from_reference: 'Differs from Riverline reference',
+  close_to_reference: 'Close to Riverline reference',
+  source_unavailable: 'Source comparison unavailable',
+  manual_review: 'Manually marked Review',
+  manual_difficult: 'Manually marked Difficult',
+  manual_important: 'Manually marked Important',
+  manual_my_mistake: 'User label: My mistake',
+});
+
+function trainingMemoryDate(isoTimestamp) {
+  try {
+    return new Intl.DateTimeFormat(window.appLang || 'en', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date(isoTimestamp));
+  } catch (_) {
+    return String(isoTimestamp || '');
+  }
+}
+
+function trainingMemoryModeLabel(mode) {
+  return t({
+    varied: 'Varied',
+    focused: 'Focused',
+    full_hand: 'Full Hand',
+    review: 'Review',
+  }[mode] || mode);
+}
+
+function trainingMemoryComparisonLabel(comparison) {
+  return t({
+    matches_reference: 'Matches reference',
+    close_to_reference: 'Close to reference',
+    differs_from_reference: 'Differs from reference',
+    unsupported: 'Unsupported',
+    unavailable: 'Unavailable',
+  }[comparison] || 'Unavailable');
+}
+
+function trainingMemoryButton(labelKey, className, handler) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  button.textContent = t(labelKey);
+  button.addEventListener('click', handler);
+  return button;
+}
+
+function trainingMemoryDecisionSummary(record) {
+  const context = record.decisionContext;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'training-memory-decision-summary';
+  const cards = document.createElement('strong');
+  cards.className = 'poker-data-token training-memory-cards';
+  cards.dir = 'ltr';
+  const board = context.board?.length ? context.board.join(' ') : t('Preflop');
+  cards.textContent = `${context.heroCards.join(' ')} · ${board}`;
+  const spot = document.createElement('span');
+  spot.textContent = [
+    t(context.street.charAt(0).toUpperCase() + context.street.slice(1)),
+    context.heroPosition,
+    Number.isFinite(context.effectiveStackBb)
+      ? `${t('Effective stack')} ${context.effectiveStackBb} bb`
+      : null,
+    Number.isFinite(context.currentPotBb) ? `${t('Pot')} ${context.currentPotBb} bb` : null,
+    Number.isFinite(context.callAmountBb) && context.callAmountBb > 0
+      ? `${t('Facing')} ${context.callAmountBb} bb`
+      : null,
+  ].filter(Boolean).join(' · ');
+  wrapper.append(cards, spot);
+  return wrapper;
+}
+
+function renderTrainingMemoryDecisionItem(record, { reviewItem = null } = {}) {
+  const item = document.createElement('li');
+  item.className = 'training-memory-item training-memory-decision-item';
+  item.dataset.recordId = record.id;
+  item.appendChild(trainingMemoryDecisionSummary(record));
+
+  const facts = document.createElement('div');
+  facts.className = 'training-memory-facts';
+  const chosen = document.createElement('span');
+  chosen.textContent = record.userResponse?.action?.type
+    ? `${t('Chosen action')}: ${t(trainingActionLabel(record.userResponse.action.type, record.decisionContext))}`
+    : t('No answer recorded');
+  const source = document.createElement('span');
+  source.className = 'poker-data-token';
+  source.dir = 'ltr';
+  const result = record.strategyEvidence?.strategyResult;
+  source.textContent = result
+    ? `${result.source}@${result.sourceVersion}`
+    : t('Source unavailable');
+  const comparison = document.createElement('span');
+  comparison.textContent = trainingMemoryComparisonLabel(
+    record.strategyEvidence?.comparisonState ?? 'unavailable',
+  );
+  const coverage = document.createElement('span');
+  coverage.textContent = record.strategyEvidence?.claimPolicy?.coverage?.kind
+    ? `${t('Coverage')}: ${record.strategyEvidence.claimPolicy.coverage.kind}`
+    : t('Coverage unavailable');
+  facts.append(chosen, source, coverage, comparison);
+  item.appendChild(facts);
+
+  if (reviewItem?.reasons?.length) {
+    const reasons = document.createElement('div');
+    reasons.className = 'training-memory-reasons';
+    const label = document.createElement('strong');
+    label.textContent = t('Review because:');
+    const list = document.createElement('ul');
+    reviewItem.reasons.forEach((reason) => {
+      const entry = document.createElement('li');
+      entry.textContent = t(TRAINING_MEMORY_REASON_LABELS[reason] || reason);
+      list.appendChild(entry);
+    });
+    reasons.append(label, list);
+    item.appendChild(reasons);
+  }
+
+  if (record.status === 'answered') {
+    const actions = document.createElement('div');
+    actions.className = 'training-memory-item-actions';
+    if (reviewItem) {
+      actions.append(
+        trainingMemoryButton('Done', 'ui-button ui-button--secondary', async () => {
+          await queueTrainingMemoryWrite(() => callTrainingMemoryBridge('markReviewed', record.id));
+          void refreshTrainingMemoryPanel();
+        }),
+        trainingMemoryButton('Review tomorrow', 'ui-button ui-button-ghost', async () => {
+          await queueTrainingMemoryWrite(() => callTrainingMemoryBridge('snooze', record.id, 1));
+          void refreshTrainingMemoryPanel();
+        }),
+      );
+    } else if (record.reviewState?.state !== 'pending') {
+      actions.append(trainingMemoryButton('Review again', 'ui-button ui-button--secondary', async () => {
+        await queueTrainingMemoryWrite(() => (
+          record.studyMetadata?.review
+            ? callTrainingMemoryBridge('reviewAgain', record.id)
+            : callTrainingMemoryBridge('updateStudyMetadata', record.id, { review: true })
+        ));
+        void refreshTrainingMemoryPanel();
+      }));
+    }
+    actions.append(
+      trainingMemoryButton('Same Spot', 'ui-button ui-button--secondary', () => {
+        void openTrainingMemoryRedrill(record.id, 'same_spot');
+      }),
+      trainingMemoryButton('Similar Spot', 'ui-button ui-button-ghost', () => {
+        void openTrainingMemoryRedrill(record.id, 'similar_spot');
+      }),
+    );
+    item.appendChild(actions);
+  }
+  return item;
+}
+
+async function populateTrainingMemorySessionDecisions(container, sessionId) {
+  container.replaceChildren();
+  const decisions = await callTrainingMemoryBridge('listSessionDecisions', sessionId, { limit: 25 });
+  if (!Array.isArray(decisions) || decisions.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'training-memory-empty';
+    empty.textContent = t('No decisions recorded in this session.');
+    container.appendChild(empty);
+    return;
+  }
+  const list = document.createElement('ul');
+  list.className = 'training-memory-session-decisions';
+  decisions.forEach((record) => list.appendChild(renderTrainingMemoryDecisionItem(record)));
+  container.appendChild(list);
+}
+
+function renderTrainingMemorySessionItem(entry) {
+  const { session, summary } = entry;
+  const item = document.createElement('li');
+  item.className = 'training-memory-item training-memory-session-item';
+  const details = document.createElement('details');
+  const head = document.createElement('summary');
+  const title = document.createElement('strong');
+  title.textContent = `${trainingMemoryModeLabel(session.mode)} · ${trainingMemoryDate(session.startedAt)}`;
+  const status = document.createElement('span');
+  const statusKey = session.status === 'completed'
+    ? 'Completed'
+    : session.status === 'active' ? 'Open session' : 'Incomplete';
+  status.textContent = t(statusKey);
+  const counts = document.createElement('small');
+  counts.textContent = t('{answered} answered; {review} review', {
+    answered: summary.answeredCount,
+    review: summary.reviewCount,
+  });
+  head.append(title, status, counts);
+  const source = document.createElement('p');
+  source.className = 'poker-data-token training-memory-session-source';
+  source.dir = summary.sourceIds.length ? 'ltr' : 'auto';
+  source.textContent = summary.sourceIds.length
+    ? summary.sourceIds.join(', ')
+    : t('Source unavailable');
+  const comparison = document.createElement('p');
+  comparison.className = 'training-memory-session-comparisons';
+  comparison.textContent = Object.entries(summary.comparisonCounts)
+    .filter(([, count]) => count > 0)
+    .map(([key, count]) => `${trainingMemoryComparisonLabel(key)}: ${count}`)
+    .join(' · ') || t('No answer recorded');
+  const decisions = document.createElement('div');
+  decisions.className = 'training-memory-session-decision-mount';
+  let loaded = false;
+  details.addEventListener('toggle', () => {
+    if (!details.open || loaded) return;
+    loaded = true;
+    void populateTrainingMemorySessionDecisions(decisions, session.id).catch((error) => {
+      console.error('[Riverline Training Memory]', error);
+      decisions.textContent = t('Training Memory is unavailable. Existing history was left untouched.');
+    });
+  });
+  details.append(head, source, comparison, decisions);
+  item.appendChild(details);
+  return item;
+}
+
+async function refreshTrainingMemoryPanel() {
+  const list = $('#trainingMemoryList');
+  if (!list) return null;
+  setTrainingMemoryStatus('Loading Training Memory…');
+  list.replaceChildren();
+  try {
+    const due = await callTrainingMemoryBridge('listDueReview', { limit: 12 });
+    if (!Array.isArray(due)) throw new Error('Training Memory review query is unavailable');
+    if ($('#trainingMemoryDueBadge')) $('#trainingMemoryDueBadge').textContent = String(due.length);
+    let items;
+    if (app.training.memoryView === 'recent') {
+      items = await callTrainingMemoryBridge('listRecentSessions', { limit: 10 });
+      if (!Array.isArray(items)) throw new Error('Training Memory session query is unavailable');
+      items.forEach((entry) => list.appendChild(renderTrainingMemorySessionItem(entry)));
+      if (items.length === 0) setTrainingMemoryStatus('No Training sessions recorded yet.');
+      else setTrainingMemoryStatus('');
+    } else {
+      items = due;
+      items.forEach((entry) => list.appendChild(
+        renderTrainingMemoryDecisionItem(entry.record, { reviewItem: entry }),
+      ));
+      if (items.length === 0) setTrainingMemoryStatus('No decisions are due for review.');
+      else setTrainingMemoryStatus('');
+    }
+    app.training.memoryLastItems = items;
+    return items;
+  } catch (error) {
+    console.error('[Riverline Training Memory]', error);
+    setTrainingMemoryStatus(
+      'Training Memory is unavailable. Existing history was left untouched.',
+      {},
+      { error: true },
+    );
+    return null;
+  }
+}
+
+function setTrainingMemoryView(view) {
+  app.training.memoryView = view === 'recent' ? 'recent' : 'review';
+  document.querySelectorAll('[data-memory-view]').forEach((button) => {
+    const selected = button.dataset.memoryView === app.training.memoryView;
+    button.classList.toggle('is-active', selected);
+    button.setAttribute('aria-selected', String(selected));
+    button.tabIndex = selected ? 0 : -1;
+  });
+  const panel = $('#trainingMemoryList');
+  if (panel) {
+    panel.setAttribute('aria-labelledby', app.training.memoryView === 'recent'
+      ? 'trainingMemoryRecentTab'
+      : 'trainingMemoryReviewTab');
+  }
+  void refreshTrainingMemoryPanel();
+}
+
+function handleTrainingMemoryTabKey(event) {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  const buttons = [...document.querySelectorAll('[data-memory-view]')];
+  const current = buttons.indexOf(event.currentTarget);
+  if (current < 0) return;
+  let next = current;
+  if (event.key === 'Home') next = 0;
+  else if (event.key === 'End') next = buttons.length - 1;
+  else {
+    const rtl = document.documentElement.dir === 'rtl';
+    const delta = event.key === 'ArrowRight' ? (rtl ? -1 : 1) : (rtl ? 1 : -1);
+    next = (current + delta + buttons.length) % buttons.length;
+  }
+  event.preventDefault();
+  setTrainingMemoryView(buttons[next].dataset.memoryView);
+  buttons[next].focus();
+}
+
+async function toggleCurrentTrainingMemoryMetadata(field) {
+  const recordPromise = app.training.memoryCurrentRecordPromise;
+  if (!recordPromise) return null;
+  return queueTrainingMemoryWrite(async () => {
+    const record = await recordPromise;
+    if (!record?.id || record.status !== 'answered') return null;
+    const updated = await callTrainingMemoryBridge('updateStudyMetadata', record.id, {
+      [field]: !record.studyMetadata[field],
+    });
+    if (updated) {
+      app.training.memoryCurrentRecordPromise = Promise.resolve(updated);
+      app.training.memoryCurrentRecordId = updated.id;
+      updateTrainingMemoryDecisionActions(updated);
+      setTrainingMemoryStatus('Memory saved.');
+      if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
+    }
+    return updated;
+  });
+}
+
+async function openTrainingMemoryRedrill(recordId, kind) {
+  setTrainingMemoryStatus('Loading Training Memory…');
+  try {
+    await app.training.memoryWritePromise;
+    const result = kind === 'same_spot'
+      ? await callTrainingMemoryBridge('createSameSpot', recordId)
+      : await callTrainingMemoryBridge('generateSimilarSpot', recordId, {
+          strategyProvider,
+          attempt: 1,
+        });
+    if (!result || (kind === 'similar_spot' && !result.ok)) {
+      setTrainingMemoryStatus('Similar Spot is unavailable for this record.', {}, { error: true });
+      return null;
+    }
+    clearTrainingSessionState();
+    setTrainingSessionMode('focused', { reset: false });
+    prepareTrainingGeneration();
+    startTrainingMemorySession({
+      mode: 'review',
+      requestedLength: 1,
+      sessionSeed: result.exercise.seed,
+      plannerIntent: null,
+      focus: {
+        redrillKind: kind,
+        sourceDecisionRecordId: recordId,
+        comparison: kind === 'same_spot' ? 'historical' : 'current',
+        similarity: result.similarity ?? null,
+      },
+    });
+    app.training.memoryPendingOrigin = {
+      parentDecisionRecordId: recordId,
+      redrillKind: kind,
+    };
+    const similarityLabels = {
+      game_rules: 'Same game rules',
+      decision_role: 'Same decision role',
+      street: 'Same street',
+      position_relation: 'Same position relation',
+      prior_action_family: 'Same prior-action family',
+      effective_stack_bucket: 'Similar effective stack',
+    };
+    app.training.memoryRedrillNote = kind === 'same_spot'
+      ? t('Historical comparison')
+      : [
+          t('Similar because:'),
+          ...(result.similarity?.dimensions || [])
+            .filter((dimension) => dimension.quality !== 'unavailable'
+              && similarityLabels[dimension.dimension])
+            .map((dimension) => t(similarityLabels[dimension.dimension])),
+        ].join(' ');
+    const loaded = callTrainingServiceBridge('loadExercise', result.exercise);
+    if (!loaded?.ok) throw new Error(loaded?.error?.message || 'Training re-drill could not load');
+    renderCanonicalTrainingExercise(result.exercise);
+    setTrainingMemoryStatus(kind === 'same_spot' ? 'Historical comparison' : 'Current comparison');
+    $('#trainingExerciseSurface')?.scrollIntoView?.({
+      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
+    return result;
+  } catch (error) {
+    console.error('[Riverline Training Memory re-drill]', error);
+    setTrainingMemoryStatus(
+      'Training Memory is unavailable. Existing history was left untouched.',
+      {},
+      { error: true },
+    );
+    return null;
+  }
+}
+
 function clearTrainingSessionCompletion() {
   if (app.handReview.source === 'training_full_hand') {
     closeActiveHandReview({ returnToEndpoint: false });
@@ -8959,6 +9564,9 @@ function updateTrainingSessionProgress() {
 }
 
 function clearTrainingSessionState() {
+  void finishTrainingMemorySession('abandoned');
+  resetTrainingMemoryDecisionState();
+  app.training.memoryRedrillNote = '';
   invalidateFullHandPresentation();
   callTrainingServiceBridge('reset');
   clearTrainingSessionCompletion();
@@ -9459,9 +10067,18 @@ function renderTrainingSource(exercise) {
   const sourceElement = $('#trainingStrategySource');
   if (!sourceElement) return;
   const label = strategySourceDisplayLabel(strategyResult || 'unavailable');
-  const limitation = policy.primaryLimitation?.priority >= 70
+  const policyLimitation = policy.primaryLimitation?.priority >= 70
     ? localizedStrategyLimitation(policy)
     : '';
+  const memoryComparison = exercise?.generationMetadata?.memoryRedrill?.comparison;
+  const comparisonLabel = memoryComparison === 'historical'
+    ? t('Historical comparison')
+    : memoryComparison === 'current' ? t('Current comparison') : '';
+  const limitation = [
+    comparisonLabel,
+    app.training.memoryRedrillNote,
+    policyLimitation,
+  ].filter(Boolean).join(' ');
   sourceElement.textContent = label;
   sourceElement.title = [
     t('Strategy source: {source}. Exercise seed {seed}.', { source: label, seed: exercise.seed }),
@@ -9590,6 +10207,7 @@ function renderCanonicalTrainingExercise(exercise) {
       card.classList.add('is-card-dealt');
       card.style.setProperty('--card-deal-order', String(Math.min(index, 4)));
     });
+  recordTrainingExerciseShown(exercise);
 }
 
 function prepareTrainingGeneration({ preserveSession = false } = {}) {
@@ -10107,6 +10725,7 @@ function renderFullHandAwaitingHero(snapshot) {
       isHero: true,
     },
   }, snapshot);
+  recordFullHandTrainingDecisionShown(snapshot);
 }
 
 function renderFullHandGrading(snapshot) {
@@ -10181,6 +10800,13 @@ function renderFullHandTerminal(snapshot) {
   if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
   if ($('#trainingReviewHand')) $('#trainingReviewHand').setAttribute('aria-expanded', 'false');
   app.training.fullHandReviewIndex = 0;
+  void finishTrainingMemorySession('completed', {
+    fullHandSource: {
+      handId: snapshot.state.handId,
+      heroPlayerId: snapshot.heroPlayerId,
+      replaySource: snapshot.replaySource,
+    },
+  });
 }
 
 function renderFullHandTrainingSnapshot(snapshot) {
@@ -10213,6 +10839,18 @@ async function startFullHandTraining(options = {}) {
   clearTrainingExercisePresentation();
   try {
     const trainingConfig = readTrainingConfig(seed);
+    startTrainingMemorySession({
+      mode: 'full_hand',
+      requestedLength: null,
+      sessionSeed: seed,
+      plannerIntent: null,
+      focus: {
+        tableSize: trainingConfig.tableSize,
+        heroPosition: $('#trainingHeroPos')?.value || null,
+        stackBb: trainingConfig.stackBb,
+        rulesSnapshotVersion: trainingConfig.rulesSnapshot?.schemaVersion ?? null,
+      },
+    });
     const startConfiguration = callTrainingServiceBridge('createFullHandStartConfiguration', {
       trainingConfig,
       handSeed: seed,
@@ -10224,6 +10862,7 @@ async function startFullHandTraining(options = {}) {
       { strategyProvider, progressionMode: 'stepwise' },
     );
     if (!result?.ok) {
+      void finishTrainingMemorySession('abandoned');
       renderTrainingGenerationError(result?.error || { code: 'service_unavailable' });
       return result;
     }
@@ -10231,6 +10870,7 @@ async function startFullHandTraining(options = {}) {
     else renderFullHandTrainingSnapshot(result.snapshot);
     return result;
   } catch (error) {
+    void finishTrainingMemorySession('abandoned');
     renderTrainingGenerationError({
       code: 'invalid_config',
       message: error instanceof Error ? error.message : String(error),
@@ -10262,6 +10902,7 @@ async function handleFullHandTrainingGuess(userAction, amountToMilliBb = null) {
     if (result?.error?.code !== 'stale_evaluation') renderTrainingGenerationError(result?.error);
     return result;
   }
+  await recordFullHandTrainingDecisionAnswered(result);
   if (result.snapshot.status === 'advancing') {
     await runFullHandPresentation({
       initialTransition: {
@@ -10362,11 +11003,31 @@ async function startConfiguredTrainingSession(options = {}) {
   if ($('#trainingFilterMessage')) $('#trainingFilterMessage').textContent = '';
   if (trainingSessionMode() === 'full_hand') return startFullHandTraining({ seed });
   if (trainingSessionMode() === 'focused') {
+    startTrainingMemorySession({
+      mode: 'focused',
+      requestedLength: null,
+      sessionSeed: seed,
+      plannerIntent: null,
+      focus: {
+        street: $('#trainingStreet')?.value || 'any',
+        targetDecisionType: $('#trainingDecisionTarget')?.value || 'any',
+        heroPosition: $('#trainingHeroPos')?.value || null,
+        tableSize: numericValue('#trainingPlayers', 6),
+        stackBb: numericValue('#trainingStack', 30),
+      },
+    });
     clearTrainingSessionCompletion();
     return newRandomTrainingHand({ seed });
   }
   try {
     const session = createVariedTrainingIntent(seed);
+    startTrainingMemorySession({
+      mode: 'varied',
+      requestedLength: session.length,
+      sessionSeed: seed,
+      plannerIntent: session.intent,
+      focus: session.intent.focusPreferences,
+    });
     const plannerState = callTrainingServiceBridge('startPracticeSession', session.intent);
     if (!plannerState) throw new Error('The canonical Training planner session could not start.');
     app.training.practiceSession = {
@@ -10403,6 +11064,7 @@ function completeVariedTrainingSession() {
     });
   }
   if ($('#trainingNextHandBtn')) $('#trainingNextHandBtn').hidden = true;
+  void finishTrainingMemorySession('completed');
   return true;
 }
 
@@ -10416,7 +11078,9 @@ function requestNextTrainingExercise() {
     if (app.training.practiceSession?.mode === 'varied') return generatePlannedTrainingExercise();
     return startConfiguredTrainingSession();
   }
-  return newRandomTrainingHand();
+  return app.training.memorySessionPromise
+    ? newRandomTrainingHand()
+    : startConfiguredTrainingSession();
 }
 
 async function newRandomTrainingHand(options = {}) {
@@ -10600,6 +11264,14 @@ function handleTrainingGuess(userAction) {
   );
   renderTrainingDecisionAnalysis(exercise);
   showTrainingSolution(app.training.currentSolution);
+  recordTrainingExerciseAnswered({
+    evaluation,
+    exercise,
+    actionType: userAction,
+  });
+  if (exercise.generationMetadata?.memoryRedrill) {
+    void finishTrainingMemorySession('completed');
+  }
   const guessButtons = $('#trainingGuessButtons');
   if (guessButtons) guessButtons.hidden = true;
   const nextBtn = $('#trainingNextHandBtn');

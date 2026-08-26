@@ -1,6 +1,6 @@
 # Riverline Product and UI Specification
 
-Last refreshed: August 26, 2026 (`SETTINGS-IA-001`).
+Last refreshed: August 26, 2026 (`TRAINING-MEMORY-001`).
 
 ## 1. Product principle
 
@@ -14,7 +14,7 @@ Riverline is a serious personal poker learning workstation. Premium means consis
 - **Hand:** canonical legal full-hand play, Table Presence, action dock, timeline, completion, and Replay.
 - **Review:** shared decision-by-decision Hand and Full Hand Training review over canonical history.
 - **Analyze:** Scenario or Hand decision analysis, explanation, evidence, provenance, Matrix, ranges, and structural board/blocker facts.
-- **Training:** Varied, Focused, and Full Hand practice over canonical legal generation and source-aware grading/presentation.
+- **Training:** Varied, Focused, and Full Hand practice over canonical legal generation and source-aware grading/presentation, with local-first encountered-decision history, review, and re-drill.
 - **Personal Strategy:** profile/mode Calibration, Matrix, Range Builder, and Range Teacher over one sparse evidence authority.
 - **Equity:** canonical exact or seeded Monte Carlo Hold'em outcomes.
 - **Saved:** local-first versioned Hand/Spot objects, annotations, review state, and detached Replay reopening.

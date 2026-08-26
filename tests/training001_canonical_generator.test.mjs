@@ -403,6 +403,7 @@ test('browser bridge exposes only canonical decision-practice and full-Hand life
     'getFullHandSnapshot',
     'getPracticePlannerState',
     'getSnapshot',
+    'loadExercise',
     'nextFullHandReviewFrame',
     'previousFullHandReviewFrame',
     'replay',

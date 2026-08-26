@@ -41,6 +41,7 @@ Canonical authorities:
 - strategy entry point: `StrategyProvider v1`
 - current production strategy: deterministic heuristic fallback under `app/src/strategy/`
 - Training structural targets: `TrainingPracticePlanner` / intent / request; legal generation and grading: canonical Training application modules
+- durable Training evidence/review: `training-memory/v1` under `app/src/training-memory/`, separate from Saved intent and Personal Strategy
 - explanations: `AnalysisExplanation v1`; renderers are consumers only
 - presentation/review: ephemeral `table-presentation/v1` and `hand-review/v1`
 - experience consequences: `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1`; never poker/strategy authority

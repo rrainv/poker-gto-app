@@ -22,6 +22,7 @@ export const TRAINING_SESSION_ERROR_CODES = Object.freeze({
   ILLEGAL_ANSWER: 'illegal_answer',
   GENERATION_FAILED: 'generation_failed',
   EVALUATION_FAILED: 'evaluation_failed',
+  INVALID_EXERCISE: 'invalid_exercise',
 });
 
 function deepFreeze(value) {
@@ -187,6 +188,31 @@ export function createTrainingSessionController({
         error: null,
       });
       return result;
+    },
+
+    loadExercise(exercise) {
+      if (!exercise || !['training-exercise/v1', 'training-exercise/v2']
+        .includes(exercise.schemaVersion)
+        || typeof exercise.id !== 'string'
+        || exercise.decisionContext?.schemaVersion !== 'decision-context/v1'
+        || !exercise.strategyResult
+        || legalAnswerTypes(exercise).length < 2) {
+        return sessionFailure(
+          TRAINING_SESSION_ERROR_CODES.INVALID_EXERCISE,
+          'The supplied Training exercise is not a valid canonical decision.',
+        );
+      }
+      practiceSession = null;
+      const requestId = `training-request-${++sequence}`;
+      snapshot = deepFreeze({
+        schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
+        status: 'ready',
+        requestId,
+        exercise,
+        evaluation: null,
+        error: null,
+      });
+      return deepFreeze({ ok: true, exercise });
     },
 
     startPracticeSession(intent) {

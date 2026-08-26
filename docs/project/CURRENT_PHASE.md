@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 26, 2026 (`REFERENCE-PACK-001` checkpointed its provider foundation with production source acquisition intentionally incomplete; Training Memory / re-drill is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
+Last refreshed: August 26, 2026 (`TRAINING-MEMORY-001` completed the accepted local-first learning-memory foundation with manual Firefox debt; `PERSONAL-STRATEGY-002R` is active next; `PREMIUM-CLOSEOUT-001` remains the pre-release quality gate).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -42,9 +42,12 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - retained all repository frequencies as explicit synthetic test data behind a test-only gate; no production pack or authority upgrade is registered;
    - resume source acquisition only with exact immutable assumptions/data, explicit compatible license and redistribution rights, reproducible or strong provenance, and predeclared independent validation evidence.
 
-6. **ACTIVE NEXT — Training Memory / re-drill intelligence**
+6. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT — `TRAINING-MEMORY-001`**
+   - durable owner-scoped DecisionRecord/session evidence now covers Varied, Focused, and Full Hand decisions with frozen answer-time source/version/coverage/capability/claim semantics;
+   - bounded indexed recent history, transparent review reasons/lifecycle, exact historical Same Spot, and planner/generator-backed current Similar Spot are implemented without creating new poker, Training, strategy, Replay, Saved, or identity authorities;
+   - advanced scheduling, filters/trends, Saved/Home/Replay/Analyze continuity, Personal Strategy opt-in, sync/export, and `Not sure` remain later work; real Firefox EN/HE/RU and viewport acceptance is `RET-TRAINING-MEMORY-001`.
 
-7. **PLANNED NEXT — `PERSONAL-STRATEGY-002R` independent review**
+7. **ACTIVE NEXT — `PERSONAL-STRATEGY-002R` independent review**
 
 8. **PLANNED NEXT — Personal Strategy provider/reference/observed integration**
 
@@ -69,6 +72,7 @@ The following architecture is established and must not be duplicated:
 - `reference-pack/v1` validates declarative bounded packs and can select an exact pack behind that same provider path; no production pack is currently registered.
 - The current deterministic heuristic is generalized/comparative fallback, never solved-GTO, Nash, exact-EV, exploitability, or optimality authority.
 - Training Practice Planner/intent/request own structural curriculum targets; the canonical Training generator owns legal trajectories and grading.
+- `training-decision-record/v1` / `training-session-record/v1` own durable encountered-decision/session evidence; historical source/claim snapshots are immutable, and Full Hand decisions share one session replay authority.
 - `AnalysisExplanation v1`, `RangeAnalysisFacts v1`, and `BluffAnalysisFacts v1` consume trusted facts without becoming poker, Equity, range, or strategy authorities.
 - `table-presentation/v1` and `hand-review/v1` are ephemeral projections; `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1` create presentation consequences only.
 - `SavedStudyObject v1`, Personal Strategy evidence, account/sync, and Home Game each retain their separate application/persistence authorities.
@@ -99,7 +103,7 @@ Source authority, DecisionContext v1.1, exact preflop role semantics, research-o
 
 ### Training
 
-Varied, Focused, and Full Hand Training are legal, deterministic, provider-backed foundations. Training Memory / re-drill is active next: add durable DecisionRecord/session history, review/mistake queues, same/similar re-drill, spaced/adaptive review, filters/saved drills, truthful trends, and Home/Replay continuity. Comparative heuristic disagreement is not objective poker correctness; records must preserve the actual source/version/coverage/capabilities. See the [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md) and [Learning Evidence](capabilities/LEARNING_EVIDENCE_FOUNDATION.md) dossiers.
+Varied, Focused, and Full Hand Training are legal, deterministic, provider-backed foundations. `TRAINING-MEMORY-001` now adds durable DecisionRecord/session evidence, indexed recent history, a transparent Review queue, reversible review lifecycle, exact historical Same Spot, and conservative planner/generator-backed current Similar Spot. Comparative heuristic disagreement remains `differs_from_reference`, never objective poker correctness; old evidence retains its exact source/version/coverage/capabilities/claim snapshot. Advanced scheduling, filters/trends, Saved/Home/Replay/Analyze continuity, Personal Strategy opt-in, sync/export, and `Not sure` remain later slices. See [Training Memory v1](TRAINING_MEMORY_V1_SPEC.md), [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md), and [Learning Evidence](capabilities/LEARNING_EVIDENCE_FOUNDATION.md).
 
 ### Personal Strategy
 

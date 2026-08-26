@@ -2336,6 +2336,10 @@
                 <div id="trainingEvFact" hidden><dt data-i18n="EV comparison">EV comparison</dt><dd id="trainingEvValue" class="poker-data-token">—</dd></div>
               </dl>
               <section class="training-analysis-region" aria-labelledby="trainingAnalysisTitle" data-tutorial-anchor="training-analysis"><h4 id="trainingAnalysisTitle" data-i18n="Analysis">Analysis</h4><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></section>
+              <div id="trainingMemoryDecisionActions" class="training-memory-decision-actions" hidden aria-label="Study labels" data-i18n-aria-label="Study labels">
+                <button id="trainingMarkReview" class="ui-button ui-button--secondary" type="button" aria-pressed="false" data-i18n="Review">Review</button>
+                <button id="trainingMarkDifficult" class="ui-button ui-button-ghost" type="button" aria-pressed="false" data-i18n="Difficult">Difficult</button>
+              </div>
             </div>
             <section id="trainingFullHandCompletion" class="training-full-hand-completion" hidden aria-labelledby="trainingFullHandCompletionTitle" aria-live="polite">
               <p class="training-eyebrow" data-i18n="Full Hand">Full Hand</p>
@@ -2384,6 +2388,18 @@
               <div class="training-stat-grid" role="list" aria-label="Session summary" data-i18n-aria-label="Session summary"><div class="training-stat-cell" data-training-stat="attempts" role="listitem"><span data-i18n="Attempts">Attempts</span><strong id="trainingTotalHands">0</strong></div><div class="training-stat-cell" data-training-stat="accepted" role="listitem"><span data-i18n="Reference-aligned">Reference-aligned</span><strong id="trainingCorrect">0</strong></div><div class="training-stat-cell" data-training-stat="acceptance" role="listitem"><span data-i18n="Alignment rate">Alignment rate</span><strong id="trainingAccuracy" class="poker-data-token">0%</strong></div><div class="training-stat-cell" data-training-stat="streak" role="listitem"><span data-i18n="Current alignment run">Current alignment run</span><strong id="trainingStreak">0</strong></div><div class="training-stat-cell" data-training-stat="best-streak" role="listitem"><span data-i18n="Best alignment run">Best alignment run</span><strong id="trainingBestStreak">0</strong></div></div>
               <div class="training-grade-counts" aria-label="Reference comparison" data-i18n-aria-label="Reference comparison"><span><i data-grade="optimal"></i><span data-i18n="Matches reference">Matches reference</span> <strong id="trainingOptimalCount">0</strong></span><span><i data-grade="acceptable"></i><span data-i18n="Close to reference">Close to reference</span> <strong id="trainingAcceptableCount">0</strong></span><span><i data-grade="mistake"></i><span data-i18n="Differs from reference">Differs from reference</span> <strong id="trainingMistakeCount">0</strong></span></div>
               <button class="ui-button ui-button-ghost ui-button--destructive" type="button" id="trainingResetStats" data-i18n="Reset session stats">Reset session stats</button>
+            </div>
+          </details>
+          <details id="trainingMemoryPanel" class="panel training-memory-panel" aria-labelledby="trainingMemoryTitle">
+            <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="On this profile">On this profile</p><h2 id="trainingMemoryTitle" data-i18n="Training Memory">Training Memory</h2></div><span id="trainingMemoryDueBadge" class="badge status-badge status-badge--info">0</span></summary>
+            <div class="panel-body">
+              <p class="training-reference-note" data-i18n="History stays on this device and is isolated to the active profile.">History stays on this device and is isolated to the active profile.</p>
+              <div class="training-memory-tabs" role="tablist" aria-label="Training Memory view" data-i18n-aria-label="Training Memory view">
+                <button id="trainingMemoryReviewTab" class="ui-button ui-button--secondary is-active" type="button" role="tab" aria-selected="true" aria-controls="trainingMemoryList" tabindex="0" data-memory-view="review" data-i18n="Review queue">Review queue</button>
+                <button id="trainingMemoryRecentTab" class="ui-button ui-button-ghost" type="button" role="tab" aria-selected="false" aria-controls="trainingMemoryList" tabindex="-1" data-memory-view="recent" data-i18n="Recent sessions">Recent sessions</button>
+              </div>
+              <p id="trainingMemoryStatus" class="training-memory-status" role="status" aria-live="polite"></p>
+              <ul id="trainingMemoryList" class="training-memory-list" role="tabpanel" aria-labelledby="trainingMemoryReviewTab" tabindex="0"></ul>
             </div>
           </details>
         </aside>
@@ -3233,6 +3249,7 @@
   <script type="module" src="src/application/tutorial-bootstrap.mjs"></script>
   <script type="module" src="src/application/presentation-density-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
+  <script type="module" src="src/application/training-memory-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/hand-review-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>

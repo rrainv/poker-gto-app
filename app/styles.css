@@ -9459,6 +9459,91 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .training-history-panel[open] > summary::after { content: '−'; }
 .training-history-panel > summary.panel-head { position: relative; padding-inline-end: var(--space-8); }
 
+.training-memory-panel > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  list-style: none;
+  cursor: pointer;
+}
+.training-memory-panel > summary::-webkit-details-marker { display: none; }
+.training-memory-panel > summary > .badge { margin-inline-start: auto; }
+.training-memory-panel > summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.training-memory-tabs,
+.training-memory-decision-actions,
+.training-memory-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.training-memory-tabs { margin-block-end: var(--space-3); }
+.training-memory-tabs .ui-button { flex: 1 1 8rem; }
+.training-memory-status {
+  min-block-size: 1.4em;
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-label-size);
+}
+.training-memory-status[data-error="true"] { color: var(--status-danger); }
+.training-memory-list,
+.training-memory-session-decisions,
+.training-memory-reasons ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.training-memory-list,
+.training-memory-session-decisions { display: grid; gap: var(--space-3); }
+.training-memory-item {
+  min-inline-size: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+}
+.training-memory-decision-summary,
+.training-memory-facts { display: grid; gap: var(--space-1); }
+.training-memory-decision-summary { margin-block-end: var(--space-2); }
+.training-memory-decision-summary > span,
+.training-memory-facts,
+.training-memory-session-item summary > span,
+.training-memory-session-item summary > small { color: var(--text-muted); font-size: var(--text-label-size); }
+.training-memory-cards { overflow-wrap: anywhere; }
+.training-memory-facts > .poker-data-token,
+.training-memory-session-source { overflow-wrap: anywhere; }
+.training-memory-reasons {
+  margin-block: var(--space-3);
+  padding-inline-start: var(--space-3);
+  border-inline-start: 3px solid var(--status-warning);
+  font-size: var(--text-label-size);
+}
+.training-memory-reasons ul { display: grid; gap: var(--space-1); margin-block-start: var(--space-1); }
+.training-memory-reasons li::before { content: "• "; }
+.training-memory-item-actions { margin-block-start: var(--space-3); }
+.training-memory-item-actions .ui-button { flex: 1 1 7.5rem; }
+.training-memory-session-item > details > summary {
+  display: grid;
+  gap: var(--space-1);
+  list-style: none;
+  cursor: pointer;
+}
+.training-memory-session-item > details > summary::-webkit-details-marker { display: none; }
+.training-memory-session-item > details > summary::after {
+  content: "+";
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  justify-self: end;
+  color: var(--text-muted);
+  font-family: var(--font-data);
+}
+.training-memory-session-item > details[open] > summary::after { content: "−"; }
+.training-memory-session-item > details > summary > :not(:last-child) { min-inline-size: 0; }
+.training-memory-session-source,
+.training-memory-session-comparisons { margin: var(--space-2) 0 0; font-size: var(--text-label-size); }
+.training-memory-session-decision-mount { margin-block-start: var(--space-3); }
+.training-memory-empty { margin: 0; color: var(--text-muted); }
+
 @media (min-width: 1320px) {
   .training-workspace {
     grid-template-columns: minmax(230px, .7fr) minmax(540px, 1.55fr) minmax(250px, .72fr);
