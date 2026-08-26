@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; `PREMIUM-CLOSEOUT-001` is active next).
+Last refreshed: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; the first trusted bounded reference pack/provider is active next; `PREMIUM-CLOSEOUT-001` is deferred to the pre-release quality gate).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -55,16 +55,13 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 
 `DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, `WORKSPACE-COMPOSITION-002`, `DOCS-CAPABILITY-DOSSIERS-001`, `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, and `SETTINGS-IA-001` are completed/accepted checkpoints. Settings now has four focused categories over the existing preference authorities, with its unavailable live Firefox acceptance retained as routed debt. Detailed future intent now lives in `../project/capabilities/`; status remains in `PRODUCT_BACKLOG.md`. The directional order is:
 
-1. **ACTIVE NEXT — `PREMIUM-CLOSEOUT-001`**
-2. **PLANNED NEXT — first trusted bounded reference pack/provider**
-3. Training Memory / re-drill
-4. `PERSONAL-STRATEGY-002R`
-5. Personal Strategy provider/reference/observed integration
-6. `PERSONAL-INSIGHTS-001`
-7. `RANGE-EVOLUTION-001`
-8. `HOME-002B` Saved Study Library
-9. OpponentPolicy / bots
-10. release/mobile/social/PLO later
+1. **ACTIVE NEXT — first trusted bounded reference pack/provider**
+2. **PLANNED NEXT — Training Memory / re-drill**
+3. **PLANNED NEXT — `PERSONAL-STRATEGY-002R`**
+4. **PLANNED NEXT — Personal Strategy provider/reference/observed integration**
+5. **NEXT INTELLIGENCE WAVE / ORDER TO REASSESS —** `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, Opponent Intelligence / OpponentPolicy, and `HOME-002B`
+6. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+7. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
@@ -72,6 +69,7 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 
 - `AUDIO-MOTION-001` is accepted; subjective Study/UI/Check polish remains `RET-AUDIO-001` debt, not current scope.
 - `SETTINGS-IA-001` is accepted structurally; its unavailable real Firefox category/viewport/theme/language matrix remains `QA-HANDSON-010` / `RET-PREMIUM-001` debt.
+- `PREMIUM-CLOSEOUT-001` is not cancelled: it is the later whole-product manual, visual, responsive, localization, accessibility, Guide, Core Flow, and release-quality gate after the feature set is materially more mature.
 - `UX-REGRESSION-001` is accepted: the eleven owned hands-on IDs are closed with a 1,773/1,773 Node baseline and bounded Firefox 154 acceptance; unowned composition/product debt remains open.
 - Training Varied/Focused and the Practice Planner are implemented foundations; Training Memory/re-drill is separate future work.
 - Personal Strategy is checkpointed through Calibration/Matrix/Builder/Teacher; resume at independent `002R`, then integration, then Personal Insights.

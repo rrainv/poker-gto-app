@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; `PREMIUM-CLOSEOUT-001` is active next).
+Last consolidated: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; the first trusted bounded reference pack/provider is active next; `PREMIUM-CLOSEOUT-001` is deferred to the pre-release quality gate).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -32,16 +32,13 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT | `TABLE-PHYSICALITY-003` |
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX/PROVIDER DEBT | `HOME-GAME-001B` |
 | checkpoint | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT | `SETTINGS-IA-001` |
-| 1 | ACTIVE NEXT | `PREMIUM-CLOSEOUT-001` |
-| 2 | PLANNED NEXT | first trusted bounded reference pack/provider |
-| 3 | PLANNED NEXT | Training Memory / re-drill |
-| 4 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
-| 5 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
-| 6 | PLANNED LATER | `PERSONAL-INSIGHTS-001` |
-| 7 | PLANNED LATER | `RANGE-EVOLUTION-001` |
-| 8 | PLANNED LATER | `HOME-002B` Saved Study Library |
-| 9 | PRESERVED FUTURE | OpponentPolicy / bots |
-| 10 | PRESERVED FUTURE | release/mobile/social/PLO later |
+| 1 | ACTIVE NEXT | first trusted bounded reference pack/provider |
+| 2 | PLANNED NEXT | Training Memory / re-drill |
+| 3 | PLANNED NEXT | `PERSONAL-STRATEGY-002R` |
+| 4 | PLANNED NEXT | Personal Strategy provider/reference/observed integration |
+| wave | ORDER REASSESS AT CLEAN CHECKPOINT | `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, Opponent Intelligence / OpponentPolicy, `HOME-002B` |
+| later gate | PLANNED LATER / PRE-RELEASE QUALITY GATE | `PREMIUM-CLOSEOUT-001` |
+| future | PRESERVED FUTURE | release/mobile/social/PLO later |
 
 Documented Equity, bluff, opponent, natural-language, Home Game, sharing, and randomization depth remains in its existing status; the dossier migration does not pull it forward.
 
@@ -50,7 +47,7 @@ Documented Equity, bluff, opponent, natural-language, Home Game, sharing, and ra
 | Capability | Status | Accepted scope |
 |---|---|---|
 | source authority, DecisionContext, fallback repair, role semantics, benchmark, and bounded calibration | COMPLETED FOUNDATION | One `DecisionContext → StrategyProvider → StrategyResult → StrategyClaimPolicy` path; current v4 remains generalized/comparative and narrowly calibrated. |
-| first trusted bounded reference pack/provider | PLANNED NEXT after visible closeout | Exact rules/rake/stacks/sizing tree, version, licensing/provenance, validation, declared capabilities, coverage matcher, and unsupported fallback. See [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
+| first trusted bounded reference pack/provider | ACTIVE NEXT | Establish defensible strategy truth for one narrow covered family; validate source/provider/coverage architecture; strengthen Training and Review comparison; ground later natural-language analysis. Exact rules/rake/stacks/sizing tree, version, licensing/provenance, validation, declared capabilities, coverage matcher, and unsupported fallback remain required. See [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
 | broader preflop/postflop reference and evidence-driven fallback calibration | PRESERVED FUTURE | Expand only through measurable validation; exact coverage never extrapolates. See [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
 | trustworthy datasets and learned/model providers | PRESERVED FUTURE / dependency-gated | Only after validated anchors demonstrate value; never train on heuristic labels and market the result as GTO. See [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
 
@@ -149,7 +146,7 @@ The current settlement algorithm is deterministic; it is not a selected Fewest T
 | `DOCS-CAPABILITY-DOSSIERS-001` | COMPLETED / ACCEPTED DOCUMENTATION ARCHITECTURE CHECKPOINT | Durable dossier layer, Legacy ID Index, Interaction Grammar, recovered intent, anti-loop governance, and concise live planning; no runtime feature work. |
 | `TABLE-PHYSICALITY-003` | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT | Human acceptance passed table scale, HU/normal Hand composition, felt/rail coherence, Hero-card readability, and contribution-to-pot presentation as sufficient to move on. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt; no perfect-polish claim is made. |
 | `SETTINGS-IA-001` | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT | Replaced the god menu with Appearance, Audio & Motion, Language & Help, and Account & Data categories; retained one authority per existing preference, demoted previews to actions, exposed truthful OS motion status, and kept Learn Riverline primary. Automated coverage is complete; live Firefox acceptance remains routed debt. |
-| `PREMIUM-CLOSEOUT-001` | ACTIVE NEXT | Whole-app hierarchy/Core Flow, Guide, desktop, themes/cards, EN/RU/HE/RTL, accessibility, Settings Firefox verification, and human visual closeout. |
+| `PREMIUM-CLOSEOUT-001` | PLANNED LATER / PRE-RELEASE QUALITY GATE | Whole-product manual QA, final high-value visual-debt burn, Guide finalization, responsive desktop matrix, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings polish, theme consistency, applicable Return Queue debt, and release-quality Core Flow acceptance after the feature set is materially more mature. |
 | evidence-grounded natural-language intelligence | PRESERVED FUTURE / first concrete slice `PERSONAL-INSIGHTS-001` | Facts / Explain / Coach depth over approved structured evidence, with facts-only use always available. See [Natural-Language Intelligence](capabilities/NATURAL_LANGUAGE_INTELLIGENCE.md). |
 | shared interaction integrity | COMPLETED | Accepted product rule: one semantic owner and interaction language across applicable surfaces; see [Interaction Grammar](INTERACTION_GRAMMAR.md). |
 | restrained felt/table/chip customization | OPEN PRODUCT DECISION | Default quality first; customization cannot compensate for a bad default. |

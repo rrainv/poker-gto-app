@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; `PREMIUM-CLOSEOUT-001` is active next).
+Last refreshed: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; the first trusted bounded reference pack/provider is active next; `PREMIUM-CLOSEOUT-001` is deferred to the pre-release quality gate).
 
 This roadmap explains major directional sequencing and why phases are ordered. [Current Phase](CURRENT_PHASE.md) owns the exact current checkpoint and execution order; [Product Backlog](PRODUCT_BACKLOG.md) owns concise capability/status. The [capability dossiers](capabilities/README.md) preserve detailed long-term intent without setting priority.
 
@@ -22,7 +22,7 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 
 ## Sequencing principles
 
-1. Finish visible product quality before returning to deep reference work; structural correctness alone did not satisfy human acceptance.
+1. Keep the visible product usable and record non-blocking visual debt, but do not repeatedly polish intermediate surfaces ahead of higher-value reference and learning work.
 2. Establish one trusted bounded reference provider before treating Training disagreement as normative or expanding model ambitions.
 3. Preserve durable learning evidence before building longitudinal summaries, re-drill, or mastery claims.
 4. Review the unified Personal Strategy experience before integrating it into provider and Training paths.
@@ -38,20 +38,19 @@ The completed dossier migration records more possibilities; it does not promote 
 2. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH KNOWN PRESENTATION DEBT — `TABLE-PHYSICALITY-003`** — human acceptance passed scale and overall table coherence as sufficient to move on; revealed-opponent card inspectability remains explicit return debt.
 3. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX/PROVIDER DEBT — `HOME-GAME-001B`** — organizer management, visible correction/lifecycle history, safe archive semantics, and export-only portability are implemented; unavailable live acceptance remains routed debt.
 4. **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX DEBT — `SETTINGS-IA-001`** — four focused Settings categories, preserved preference authorities, and secondary help/tutorial discovery; live Firefox acceptance remains routed debt.
-5. **ACTIVE NEXT — `PREMIUM-CLOSEOUT-001`** — whole-app visual, responsive, localization, accessibility, Guide, and human closeout.
-6. **PLANNED NEXT — First trusted bounded reference pack/provider** — exact assumptions, coverage, validation, licensing/provenance, capabilities, and fallback.
-7. **Training Memory / re-drill** — durable history, review queue, same/similar spot, scheduling, filters, and truthful trends.
-8. **`PERSONAL-STRATEGY-002R`** — independent real-user review.
-9. **Personal Strategy integration** — preserve intended/reference/observed roles and explicit Training-evidence opt-in.
-10. **`PERSONAL-INSIGHTS-001`** — evidence-aware Teach Riverline Next and supported summaries.
-11. **`RANGE-EVOLUTION-001`** — canonical combo-level action-conditioned range propagation.
-12. **`HOME-002B`** — Saved Study Library over approved versioned payloads.
-13. **OpponentPolicy / bots** — provenance-aware behavior contracts and later full-hand practice.
-14. **Release/mobile/social/PLO later** — only after their prerequisites and explicit decisions.
+5. **ACTIVE NEXT — First trusted bounded reference pack/provider** — exact assumptions, coverage, validation, licensing/provenance, capabilities, and fallback.
+6. **PLANNED NEXT — Training Memory / re-drill** — durable history, review queue, same/similar spot, scheduling, filters, and truthful trends.
+7. **PLANNED NEXT — `PERSONAL-STRATEGY-002R`** — independent real-user review.
+8. **PLANNED NEXT — Personal Strategy integration** — preserve intended/reference/observed roles and explicit Training-evidence opt-in.
+9. **NEXT INTELLIGENCE / PRODUCT WAVE; ORDER TO REASSESS —** accepted candidates include `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, later Opponent Intelligence / OpponentPolicy, and `HOME-002B`.
+10. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`** — whole-product manual QA, high-value visual-debt burn, Guide finalization, responsive desktop matrix, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings/theme polish, and release-quality Core Flow acceptance.
+11. **Release/mobile/social/PLO later** — only after their prerequisites and explicit decisions.
 
-## Phase A — visible product closeout
+## Phase A — usable visible-product foundation
 
-Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, and `SETTINGS-IA-001`, followed by active-next `PREMIUM-CLOSEOUT-001`, form the current visible-product sequence. Accepted Home Game live-browser/provider debt, Settings Firefox debt, table/card debt, and Review-navigation debt stay routed through the Return Queue rather than reopening completed implementation tickets. The default must be strong before more customization. Controls First, the ineffective density selector, arbitrary layout editing, casino spectacle, fake cinematic 3D, avatars by default, and reward theater remain rejected.
+Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, and `SETTINGS-IA-001` establish a visible-product foundation that is usable enough for continued substantive development. No known visual issue currently blocks reference or learning work. Accepted Home Game live-browser/provider debt, Settings Firefox debt, workspace-composition debt, table/card debt, and Review-navigation debt stay explicit in the QA Backlog and Return Queue rather than being closed or reopening completed implementation tickets.
+
+Several upcoming intelligence features will materially change Training, Review, Personal Strategy, Equity, and Analysis. A release-quality polish pass therefore has higher value after those features exist. Riverline's anti-loop rule applies: repeated subjective polish must not indefinitely delay the core learning/intelligence product. `PREMIUM-CLOSEOUT-001` is deferred, not cancelled, and remains the later pre-release quality gate. Controls First, the ineffective density selector, arbitrary layout editing, casino spectacle, fake cinematic 3D, avatars by default, and reward theater remain rejected.
 
 Real-browser/human judgment remains required for hierarchy, balance, readability, and aesthetics. Known acceptance debt stays in the QA Backlog and Return Queue rather than expanding this roadmap.
 
@@ -96,10 +95,12 @@ Equity/hand/runout depth, range-aware bluff/exploit work, and shared legal rando
 
 ## Parallel maintenance and release gates
 
-Security, data-integrity, or release blockers may interrupt the sequence. These include live Supabase migrations/RLS and multi-profile acceptance, targeted architecture extraction when real work touches the seam, privacy/legal/packaging/offline/observability decisions, and human EN/RU/HE/RTL/responsive/accessibility acceptance.
+Security, data-integrity, or release blockers may interrupt the sequence. These include live Supabase migrations/RLS and multi-profile acceptance, targeted architecture extraction when real work touches the seam, and privacy/legal/packaging/offline/observability decisions.
+
+`PREMIUM-CLOSEOUT-001` is the planned-later pre-release quality gate for whole-product manual QA, final high-value visual debt, Guide, responsive desktop, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings/theme consistency, Return Queue visual debt, and release-quality Core Flow acceptance. It should run when the product feature set is materially more mature, before a public or equivalent release-quality milestone.
 
 Mobile receives a deliberate composition, not stacked desktop panels. PLO remains a separate game/evaluator/range/reference domain. Public release, monetization, telemetry, restrained study goals/streaks, sharing permissions, and table customization remain explicit product decisions.
 
 ## Priority rule
 
-Alternate visible product progress with trustworthy intelligence/foundation work. A dossier, audit, competitor, or attractive microfeature cannot become priority by documentation alone. Reprioritization updates Current Phase, this Roadmap, and the affected Backlog record together.
+Advance the highest-value trustworthy product foundation while keeping visible debt explicit and non-blocking unless evidence proves otherwise. A dossier, audit, competitor, or attractive microfeature cannot become priority by documentation alone, and subjective polish cannot become an indefinite loop. Reprioritization updates Current Phase, this Roadmap, and the affected Backlog record together.

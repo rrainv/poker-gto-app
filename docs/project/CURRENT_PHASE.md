@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; `PREMIUM-CLOSEOUT-001` is active next).
+Last refreshed: August 26, 2026 (`SETTINGS-IA-001` completed as an accepted implementation checkpoint with explicit manual Firefox debt; the first trusted bounded reference pack/provider is active next; `PREMIUM-CLOSEOUT-001` is deferred to the pre-release quality gate).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -37,25 +37,23 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - the existing theme, card, layout, audio, language, tutorial, and account/profile authorities remain intact, while preview/test actions and OS reduced-motion status are not misrepresented as stored preferences;
    - automated inventory, localization, keyboard, authority, and runtime-boundary coverage is complete; the requested real Firefox viewport/theme/language matrix remains explicitly unverified.
 
-5. **ACTIVE NEXT — `PREMIUM-CLOSEOUT-001`**
+5. **ACTIVE NEXT — first trusted bounded reference pack/provider**
+   - establish defensible strategy truth for one narrow covered family with exact rules/rake, stacks, sizing tree, source/version/licensing/provenance, validation, capabilities, coverage matching, and unsupported fallback;
+   - validate the source/provider architecture and give Training and Review a stronger comparison target before richer learning and explanation work.
 
-6. **PLANNED NEXT — first trusted bounded reference pack/provider**
+6. **PLANNED NEXT — Training Memory / re-drill intelligence**
 
-7. **PLANNED NEXT — Training Memory / re-drill intelligence**
+7. **PLANNED NEXT — `PERSONAL-STRATEGY-002R` independent review**
 
-8. **PLANNED NEXT — `PERSONAL-STRATEGY-002R` independent review**
+8. **PLANNED NEXT — Personal Strategy provider/reference/observed integration**
 
-9. **PLANNED NEXT — Personal Strategy provider/reference/observed integration**
+9. **NEXT INTELLIGENCE / PRODUCT WAVE — exact order reassessed at a clean checkpoint**
+   - accepted candidates include `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, later Opponent Intelligence / OpponentPolicy, and `HOME-002B`;
+   - capability documentation does not activate any candidate or pre-commit their order.
 
-10. **PLANNED LATER — `PERSONAL-INSIGHTS-001`**
+10. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
 
-11. **PLANNED LATER — `RANGE-EVOLUTION-001`**
-
-12. **PLANNED LATER — `HOME-002B` Saved Study Library**
-
-13. **PRESERVED FUTURE — OpponentPolicy / bots / full-hand bot learning**
-
-14. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
+11. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
 
 Reassess only at clean checkpoints. Documenting a capability does not pull it forward.
 
@@ -81,7 +79,7 @@ Do not revive browser/Electron ONNX inference, remote strategy APIs, arbitrary s
 
 Completed/checkpointed work includes adaptive Table Presence, canonical Replay, shared Full Hand Review, accepted audio/motion architecture, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, the accepted-with-debt `WORKSPACE-COMPOSITION-002` simplification, and `TABLE-PHYSICALITY-003` with explicit presentation debt.
 
-`HOME-GAME-001B` is completed at an accepted implementation checkpoint with its unavailable real Firefox/provider acceptance retained as `RET-HOMEGAME-001`. `SETTINGS-IA-001` is also completed at an accepted implementation checkpoint; its unavailable real Firefox matrix is retained under `QA-HANDSON-010` and `RET-PREMIUM-001`. `PREMIUM-CLOSEOUT-001` is now active next. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt, while the horizontal-versus-vertical Review chronology comparison remains `RET-REVIEW-NAV-001` debt. Full Hand Firefox acceptance, surviving composition verification, and broader premium QA remain separately owned by the QA Backlog and Return Queue. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
+`HOME-GAME-001B` is completed at an accepted implementation checkpoint with its unavailable real Firefox/provider acceptance retained as `RET-HOMEGAME-001`. `SETTINGS-IA-001` is also completed at an accepted implementation checkpoint; its unavailable real Firefox matrix is retained under `QA-HANDSON-010` and `RET-PREMIUM-001`. No known visual issue currently blocks substantive reference or learning work. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt, while the horizontal-versus-vertical Review chronology comparison remains `RET-REVIEW-NAV-001` debt. Full Hand Firefox acceptance, surviving composition verification, and broader premium QA remain separately owned by the QA Backlog and Return Queue. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
 
 ### Home Game
 
@@ -89,13 +87,13 @@ Completed/checkpointed work includes adaptive Table Presence, canonical Replay, 
 
 ### Settings and premium closeout
 
-`SETTINGS-IA-001` replaced the Settings god menu with four focused categories, kept Learn Riverline as the primary global help entry, and added a secondary Guide/restart path inside Settings without creating new preference authorities. `PREMIUM-CLOSEOUT-001` now owns whole-app hierarchy, Core Flow, Guide, desktop matrix, themes/cards, EN/RU/HE/RTL, accessibility, and the outstanding Settings human Firefox closeout. Existing transactional custom-theme editing and immutable built-ins remain accepted.
+`SETTINGS-IA-001` replaced the Settings god menu with four focused categories, kept Learn Riverline as the primary global help entry, and added a secondary Guide/restart path inside Settings without creating new preference authorities. `PREMIUM-CLOSEOUT-001` remains the later pre-release whole-product manual QA, high-value visual-debt burn, Guide finalization, desktop matrix, themes/cards/table/replay/Settings polish, EN/RU/HE/RTL, accessibility, and release-quality Core Flow gate. It is intentionally deferred until upcoming substantive features have matured the affected surfaces. Existing transactional custom-theme editing and immutable built-ins remain accepted.
 
 ### Strategy and references
 
 Source authority, DecisionContext v1.1, exact preflop role semantics, research-only reference benchmarking, and the bounded v4 BB-vs-BTN cold-response calibration are complete foundations. No validated general Hold'em production reference exists.
 
-After visible closeout, the first trusted bounded provider must define exact rules/rake, stacks, sizing tree, source/version/licensing/provenance, validation, declared capabilities, coverage matching, and unsupported fallback. See the [Reference Strategy dossier](capabilities/REFERENCE_STRATEGY_EVOLUTION.md).
+The first trusted bounded provider is active next because Riverline's visible shell is currently ahead of the trustworthiness and coverage of its strategy reference. It must define exact rules/rake, stacks, sizing tree, source/version/licensing/provenance, validation, declared capabilities, coverage matching, and unsupported fallback, giving Training and Review a defensible narrow comparison target and grounding later natural-language analysis. See the [Reference Strategy dossier](capabilities/REFERENCE_STRATEGY_EVOLUTION.md).
 
 ### Training
 
