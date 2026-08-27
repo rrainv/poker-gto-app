@@ -100,8 +100,8 @@ The review projection should request only the evidence needed for the visible de
 
 ## Preserved interactions and microfeatures
 
-- One compact Hero-decision navigator linked to direct pre-action Replay seeking. Its orientation is deliberately open: current horizontal Action Path/timeline and a vertical chronological navigator must be compared for Riverline's actual workspace rather than treating competitive inspiration as permanent acceptance.
-- Treat side rails as first-class candidates for chronological navigation, Current Legal Actions, and compact stage/control placement when they preserve the central table and remain readable at supported widths.
+- One vertical, street-grouped Hero-decision navigator linked to direct pre-action Replay seeking. Human product evidence selects this direction over the current horizontal Action Path; `REPLAY-RAIL-NAV-001` owns the bounded implementation design.
+- Treat the Replay rail as first-class interaction space for chronology, Current Legal Actions, compact Hand Stage, and return-to-live control when it preserves the central table and remains readable at supported widths.
 - Preserve coherent table, rail, title, and control geometry when moving among live Hand, Replay, and selected-decision states; the selected history point may change without making the workspace feel unrelated.
 - Previous/next decision, street jumps, Replay playback, and selected-event context without duplicate cursors.
 - Clearly mark observed action and source's highest-frequency action while retaining full supported mixes.
@@ -132,7 +132,7 @@ The review projection should request only the evidence needed for the visible de
 - **Explain:** concise account of why the selected decision is interesting within its source/reference frame.
 - **Coach / Summary:** supported cross-street or whole-hand synthesis, recurring-pattern link, and next study action only when enough evidence exists.
 
-The table remains supporting context while the timeline/decision navigator and comparison lead Review. That hierarchy does not require a horizontal navigator: a future product-design pass must compare horizontal and vertical chronology, including collapsible street groups and useful side-rail placement, for scanability, current-action visibility, Replay seek usability, space efficiency, long-hand behavior, 1080p desktop, EN/RU/HE, RTL, and keyboard access. State transitions should retain coherent table/control geometry. Users can remain in facts-only mode and avoid narrative entirely.
+The table remains supporting context while the vertical street-grouped timeline/decision rail and comparison lead Review. The rail must support scanability, current-action visibility, direct seeking, compact Hand Stage and legal actions, long hands, 1920×1080 at 100% zoom, larger desktop canvases, functional 1366×768, EN/RU/HE, RTL, and keyboard access. State transitions retain coherent table/control geometry, and an in-progress live Hand exposes an obvious immediate return from an earlier Replay frame. Users can remain in facts-only mode and avoid narrative entirely.
 
 ## Dependencies
 
@@ -186,7 +186,7 @@ No new competitive research was performed for this dossier.
 
 ## Open product questions
 
-- Should Riverline retain the current horizontal Action Path/timeline or return to a vertical chronological navigator? Compare scanability, street grouping, decision navigation, current-action visibility, direct Replay seeking, space efficiency, long-hand behavior, 1080p desktop, Hand Review/Deep Hand Review fit, EN/RU/HE, RTL, and keyboard access while preserving one canonical Replay cursor.
+- Which vertical street-grouping, collapse, current-action, and timeline-typography details best preserve scanability, direct seeking, RTL, keyboard access, and one canonical Replay cursor?
 - What transparent rule identifies a turning point without implying EV importance?
 - Which analysis layers should load by default versus only on request?
 - Should historical Review freeze selected strategy results, or compare the recorded decision with the current selected source by default?

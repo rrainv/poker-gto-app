@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 26, 2026 (`HANDS-ON-PRODUCT-REVIEW-001` captured 59 product-owner-confirmed findings; `HANDS-ON-DEFECTS-001` is active next; `PERSONAL-STRATEGY-003A` is planned next; a human-visible checkpoint follows; `PREMIUM-CLOSEOUT-001` remains the later pre-release quality gate).
+Last refreshed: August 27, 2026 (`HANDS-ON-DEFECTS-001` is a completed/accepted bounded repair checkpoint with explicit structural and newly discovered debt; `CORE-FLOW-CORRECTNESS-001` is active next, followed by Replay rail, Training composition, `PERSONAL-STRATEGY-003A`, then a whole-app mini-pass; `PREMIUM-CLOSEOUT-001` remains a later pre-release quality gate).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -57,14 +57,16 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 
 `HANDS-ON-PRODUCT-REVIEW-001` is completed documentation/product triage. An independent outside-user review originated 59 findings, and the product owner manually reproduced all 59 in the current build. [The durable review](../project/HANDS_ON_PRODUCT_REVIEW_2026_08.md) owns detailed evidence and row-level ownership; no finding is closed by the review. Detailed future intent lives in `../project/capabilities/`; status remains in `PRODUCT_BACKLOG.md`. The directional order is:
 
-1. **ACTIVE NEXT — `HANDS-ON-DEFECTS-001` bounded confirmed correctness/usability repairs**
-2. **PLANNED NEXT — `PERSONAL-STRATEGY-003A` first-value product-model reset**
-3. **CHECKPOINT — human hands-on use, product discussion, and roadmap reassessment**
-4. **RETURN DEPENDENCIES — `REFERENCE-PACK-001` production source acquisition/review and `TRAINING-MEMORY-001` manual Firefox acceptance**
-5. **PLANNED LATER / AFTER 003A AND CHECKPOINT — Personal Strategy provider/reference/observed integration**
-6. **NAMED REDESIGN / INTELLIGENCE OWNERS; ORDER TO REASSESS —** Replay/rail, Training composition, Equity composition, Analyze/Range UX, Guide/content, Game Setup, Home Game presentation, Random Spot Generator, Saved visual knowledge, quality/customization, plus the existing intelligence candidates
-7. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
-8. release/mobile/social/PLO later
+1. **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT — `HANDS-ON-DEFECTS-001`**
+2. **ACTIVE NEXT — `CORE-FLOW-CORRECTNESS-001`**
+3. **PLANNED NEXT — `REPLAY-RAIL-NAV-001`**
+4. **PLANNED NEXT — `TRAINING-COMPOSITION-001`**
+5. **PLANNED NEXT — `PERSONAL-STRATEGY-003A`**
+6. **CHECKPOINT — short freeform whole-app mini-pass after those visible tickets**
+7. **LIKELY NEXT; EXACT ORDER REASSESS — `EQUITY-COMPOSITION-001`, `ANALYZE-RANGE-UX-001`, `GAME-SETUP-EVOLUTION-001`**
+8. **RETURN DEPENDENCIES — `REFERENCE-PACK-001` production source acquisition/review and `TRAINING-MEMORY-001` manual Firefox acceptance**
+9. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+10. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
@@ -80,8 +82,10 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - Saved Hand/Spot and `HOME-002A` exist; the full `HOME-002B` library does not.
 - Home Game `001B` is an accepted implementation checkpoint over the separate 001A accounting authority; hard delete/import remain deliberately deferred and real Firefox/provider acceptance remains `RET-HOMEGAME-001` debt.
 - Workspace composition is accepted as a useful implementation checkpoint, not a visual-polish closeout: Training support distribution/Session Progress, bounded left-anchored Equity allocation, and surviving specialized-layout polish remain `RET-COMPOSITION-002` debt. Known-card inspectability is separately owned by `RET-CARDS-THEMES-001`.
-- `TABLE-PHYSICALITY-003` is accepted with explicit presentation debt: legitimately revealed opponent cards can be obscured by seat/action/cradle chrome, owned by `RET-CARDS-THEMES-001`; Review timeline orientation remains an open Riverline product-fit comparison owned by `RET-REVIEW-NAV-001`, not a permanent horizontal-layout decision.
-- The 59 confirmed August findings supersede any broad claim that accepted UI checkpoints equal current whole-product visual acceptance. Existing foundations remain accepted; newly confirmed problems stay open under `HANDS-ON-DEFECTS-001` or the named redesign/quality owners in the review artifact.
+- `HANDS-ON-DEFECTS-001` is accepted only as a bounded repair checkpoint. Welcome title focus/Escape, clearer Home Game completion state, Return to live, auth feedback, card-removal parity, Analyze clipping, Personal Strategy vocabulary, and Replay geometry are accepted; this is not whole-product or Hand/Training composition acceptance.
+- `CORE-FLOW-CORRECTNESS-001` owns the obvious post-terminal Start new Hand lifecycle, discoverable append-only Home Game reversal/correction, two-card opponent picker completion, and canonical min-raise verification. A 7bb to 13bb reraise may be legal because the last full increment is 6bb; change legality only if reconstructed canonical history proves a defect.
+- `TABLE-PHYSICALITY-003` remains an accepted foundation, but repeated local card-layer work did not solve card/seat ownership: revealed cards can now overlap player identity. `REPLAY-RAIL-NAV-001` owns coherent cards/seats/actions, folded-seat readability, Dealer physicality, contribution-line comprehension, and the table/rail/timeline relationship without another isolated z-index patch.
+- The 59 confirmed August findings supersede any broad claim that accepted UI checkpoints equal current whole-product visual acceptance. Existing foundations remain accepted; remaining problems stay open under their named correctness, redesign, and quality owners in the review artifact.
 
 ## Hands-on product workflow
 

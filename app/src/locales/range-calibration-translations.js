@@ -869,6 +869,23 @@
     'Fold/Raise patterns are modeled; Limp/Complete and All-in remain uncertain unless answered directly.': 'דפוסי Fold/Raise ממודלים; ‏Limp/Complete ו־All-in נשארים לא ודאיים ללא תשובה ישירה.'
   };
 
+  Object.assign(ru, {
+    'Specified': 'Задано',
+    'Supported': 'Подтверждено',
+    'Tentative': 'Предварительно',
+    'Additional supporting evidence': 'Дополнительные подтверждающие данные',
+    'Review a supported estimate': 'Проверьте подтверждённую оценку',
+    'Review a tentative estimate': 'Проверьте предварительную оценку',
+  });
+  Object.assign(he, {
+    'Specified': 'מוגדר',
+    'Supported': 'נתמך',
+    'Tentative': 'משוער',
+    'Additional supporting evidence': 'ראיות תומכות נוספות',
+    'Review a supported estimate': 'בדיקת הערכה נתמכת',
+    'Review a tentative estimate': 'בדיקת הערכה משוערת',
+  });
+
   const keys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineRangeCalibrationTranslations = {
     en: Object.fromEntries([...keys].map((key) => [key, key])),

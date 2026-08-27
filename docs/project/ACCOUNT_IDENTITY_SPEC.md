@@ -227,6 +227,8 @@ Stable IDs, timestamps, revisions, domain-specific tombstones/history, and the o
 
 ACCOUNT-002AR makes the top-right header control the primary discovery surface. Guest sees Guest/Sign in/Create account. Signed-in users see an initial/display name; the menu and modal expose `@username`, status, Account/Profile, use-another-account, and sign-out. The Account/Profile modal owns email/password sign-in, required username/display-name signup/recovery, display-name editing, and explicit legacy claim/start-separate consent. Settings retains only a truthful secondary summary and launcher.
 
+Authentication failures are presented in a persistent visible status region and become an assertive alert when actionable. Provider errors map to stable privacy-safe notice codes for invalid credentials, signup conflict, expired session, and provider unavailability; raw provider messages and account-existence details are not rendered. Signup password confirmation is validated locally, marks the confirmation input invalid, announces the mismatch, and does not call the provider until the values match.
+
 The form uses semantic labels, a live status region, keyboard submission, visible existing focus styles, `dir=auto` for user-authored names, and `textContent`/input values rather than HTML injection. Stable copy is localized in EN/RU/HE; account status layout uses logical CSS and normal RTL inheritance.
 
 ## Performance and activation

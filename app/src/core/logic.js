@@ -2031,11 +2031,15 @@ function commitCanonicalBoardDeal() {
   return next;
 }
 
-function canonicalActionLabel(type, option) {
-  if (type === 'all_in') return `${t('All-in')} · ${formatCanonicalBb(option.amountToMilliBb)}`;
-  if (type === 'call') return `${t('Call')} · ${formatCanonicalBb(option.commitMilliBb)}`;
+function canonicalActionPresentation(type, option) {
   const labels = { fold: 'Fold', check: 'Check', bet: 'Bet', raise: 'Raise' };
-  return t(labels[type] || type);
+  const label = t(type === 'all_in' ? 'All-in' : type === 'call' ? 'Call' : labels[type] || type);
+  const amount = type === 'all_in'
+    ? formatCanonicalBb(option.amountToMilliBb)
+    : type === 'call'
+      ? formatCanonicalBb(option.commitMilliBb)
+      : '';
+  return { label, amount, accessibleLabel: amount ? `${label}, ${amount}` : label };
 }
 
 function chooseCanonicalSizedAction(type, option) {
@@ -2149,8 +2153,19 @@ function renderCanonicalLegalActions(state, legalActionSpec = undefined) {
     button.dataset.canonicalAction = type;
     button.disabled = app.playbookHandDraft.actionSubmissionLocked;
     button.setAttribute('aria-pressed', 'false');
-    button.textContent = canonicalActionLabel(type, option);
-    button.setAttribute('aria-label', `${button.textContent}${type === 'bet' || type === 'raise' ? `, ${t('choose amount-to sizing')}` : ''}`);
+    const presentation = canonicalActionPresentation(type, option);
+    const label = document.createElement('span');
+    label.className = 'hand-action-label';
+    label.textContent = presentation.label;
+    button.appendChild(label);
+    if (presentation.amount) {
+      const amount = document.createElement('span');
+      amount.className = 'hand-action-amount poker-data-token';
+      amount.dir = 'ltr';
+      amount.textContent = presentation.amount;
+      button.appendChild(amount);
+    }
+    button.setAttribute('aria-label', `${presentation.accessibleLabel}${type === 'bet' || type === 'raise' ? `, ${t('choose amount-to sizing')}` : ''}`);
     if (type === 'bet' || type === 'raise') {
       button.addEventListener('click', () => chooseCanonicalSizedAction(type, option));
     } else {
@@ -2695,15 +2710,23 @@ function renderCanonicalReplayControls(projection) {
   if (previous) previous.disabled = !projection.canPrevious;
   if (next) next.disabled = !projection.canNext;
   if (live) {
-    const endpointKey = projection.endpointLabelKey || 'replay.control.returnToLive';
+    const liveState = callPlaybookStateBridge('getState');
+    const liveHandInProgress = Boolean(liveState
+      && liveState.phase !== 'terminal'
+      && liveState.terminal?.isTerminal !== true);
+    const canExitReplayToLive = projection.mode === 'replay'
+      && projection.canReturnToLive === true
+      && liveHandInProgress;
+    const endpointKey = 'replay.control.returnToLive';
     live.textContent = t(endpointKey);
     live.dataset.i18n = endpointKey;
     live.setAttribute('aria-label', t(endpointKey));
-    live.disabled = !projection.canReturnToEndpoint;
+    live.hidden = !canExitReplayToLive;
+    live.disabled = !canExitReplayToLive;
   }
   if (focusedControl?.disabled) {
     [playbackButton, previous, next, live]
-      .find((button) => button && !button.disabled)?.focus();
+      .find((button) => button && !button.hidden && !button.disabled)?.focus();
   }
 }
 
@@ -4318,82 +4341,12 @@ function handCode(row, column) {
 
 
 
-function getFirstValidCombo(handClassStr, excludeCards) {
-
-  const ranks = ['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
-
-  const suits = ['s','h','d','c'];
-
-  
-
-  if (!handClassStr) return null;
-
-  
-
-  const r1 = handClassStr[0];
-
-  const r2 = handClassStr[1];
-
-  const isPair = r1 === r2;
-
-  const isSuited = handClassStr.length === 3 && handClassStr[2] === 's';
-
-  const isOffsuit = handClassStr.length === 3 && handClassStr[2] === 'o';
-
-  
-
-  if (isPair) {
-
-    for (let i = 0; i < suits.length; i++) {
-
-      for (let j = i + 1; j < suits.length; j++) {
-
-        const c1 = r1 + suits[i];
-
-        const c2 = r2 + suits[j];
-
-        if (!excludeCards.includes(c1) && !excludeCards.includes(c2)) return [c1, c2];
-
-      }
-
-    }
-
-  } else if (isSuited) {
-
-    for (let s of suits) {
-
-      const c1 = r1 + s;
-
-      const c2 = r2 + s;
-
-      if (!excludeCards.includes(c1) && !excludeCards.includes(c2)) return [c1, c2];
-
-    }
-
-  } else {
-
-    for (let i = 0; i < suits.length; i++) {
-
-      for (let j = 0; j < suits.length; j++) {
-
-        if (i === j) continue;
-
-        const c1 = r1 + suits[i];
-
-        const c2 = r2 + suits[j];
-
-        if (!excludeCards.includes(c1) && !excludeCards.includes(c2)) return [c1, c2];
-
-      }
-
-    }
-
-  }
-
-  return null;
-
+function projectHandClassesAfterCardRemoval(handClasses, blockers) {
+  const authority = globalThis.RiverlineRangeCardRemoval;
+  if (authority?.schemaVersion !== 'range-card-removal-projection/v1'
+    || typeof authority.projectHandClasses !== 'function') return null;
+  return authority.projectHandClasses({ handClasses, blockers });
 }
-
 
 
 function hideMatrixCellCue() {
@@ -4526,7 +4479,8 @@ function renderChart() {
   RANKS.forEach((_, row) => RANKS.forEach((__, column) => {
 
     const hand = handCode(row, column);
-    const actions = matrixModel.cells[row * 13 + column]?.actions || [];
+    const matrixCell = matrixModel.cells[row * 13 + column];
+    const actions = matrixCell?.actions || [];
     const dominantAction = actions.reduce((highest, action) =>
       Number(action.value) > Number(highest?.value ?? -1) ? action : highest, null);
 
@@ -4534,7 +4488,9 @@ function renderChart() {
     const handKind = row === column ? 'pair' : hand.endsWith('s') ? 'suited' : 'offsuit';
     const mixState = matrixMixState(actions, dominantAction);
 
-    const detail = actions.length
+    const detail = matrixCell?.cardRemovalState === 'fully_removed'
+      ? t('Unavailable after known-card removal')
+      : actions.length
       ? actions.map((action) => `${t(action.name)} ${action.value}%`).join(' · ')
       : isPostFlop
         ? t('Unavailable · provider-backed postflop Matrix deferred')
@@ -4553,6 +4509,7 @@ function renderChart() {
     button.dataset.strategySource = matrixSource || 'unavailable';
     button.dataset.strategyCoverage = matrixClaimPolicy?.coverage?.kind || 'unsupported';
     button.dataset.strategyPrecision = matrixClaimPolicy?.capabilities?.actionDistribution || 'none';
+    button.dataset.cardRemovalState = matrixCell?.cardRemovalState || 'unavailable';
     button.dataset.strategyCue = detail;
     button.setAttribute('aria-pressed', String(isSelected));
     button.setAttribute('aria-describedby', 'matrixCellCue');
@@ -4688,14 +4645,18 @@ function prepareMatrixStrategyModel(decisionContext) {
     && (decisionContext.street || currentStreet()) !== 'preflop';
   let matrixSource = null;
   let matrixClaimPolicy = null;
+  const handClasses = RANKS.flatMap((_, row) => RANKS.map((__, column) => handCode(row, column)));
+  const cardRemoval = !isPostFlop && !matrixContextUnavailable
+    ? projectHandClassesAfterCardRemoval(
+      handClasses,
+      [...decisionContext.board, ...decisionContext.deadCards],
+    )
+    : null;
   const cells = RANKS.flatMap((_, row) => RANKS.map((__, column) => {
     const hand = handCode(row, column);
     let actions = [];
     if (!isPostFlop && !matrixContextUnavailable) {
-      const representativeCards = getFirstValidCombo(
-        hand,
-        [...decisionContext.board, ...decisionContext.deadCards]
-      );
+      const representativeCards = cardRemoval?.cells[hand]?.firstEligibleCombo ?? null;
       if (representativeCards) {
         const cellDecisionContext = {
           ...decisionContext,
@@ -4709,7 +4670,13 @@ function prepareMatrixStrategyModel(decisionContext) {
         }
       }
     }
-    return { hand, actions };
+    return {
+      hand,
+      actions,
+      cardRemovalState: !cardRemoval
+        ? 'unavailable'
+        : cardRemoval.cells[hand]?.fullyRemoved ? 'fully_removed' : 'eligible',
+    };
   }));
   app.matrixModel = {
     key,
@@ -5987,6 +5954,19 @@ let activeSavedSpotContext = null;
 
 function activateNavigationItem(button) {
   if (!button) return false;
+  const welcomeState = document.documentElement.dataset.welcomeOrientation;
+  if (welcomeState === 'unseen' || welcomeState === 'visible') {
+    $$('.mode-nav-item[data-mode][data-navigation-id]').forEach((item) => {
+      item.classList.remove('active');
+      item.setAttribute('aria-current', 'false');
+    });
+    const welcomeShell = $('.riverline-shell');
+    if (welcomeShell) {
+      welcomeShell.dataset.activeMode = 'welcome';
+      welcomeShell.dataset.activeDestination = 'welcome';
+    }
+    return false;
+  }
   $$('.mode-nav-item[data-mode][data-navigation-id]').forEach((item) => {
     const isActive = item === button;
     item.classList.toggle('active', isActive);
@@ -6042,8 +6022,8 @@ function resolveHomeDestinationPresentation(destination, {
       ? Object.freeze({
         eyebrow: 'Saved study',
         title: 'Saved Hands & Spots',
-        primary: 'Sign in to view saved Hands and Spots on this device.',
-        secondary: 'No saved study is available in Guest Mode.',
+        primary: 'Saved study belongs to a signed-in Riverline profile. Sign in to open that profile\'s Hands and Spots.',
+        secondary: 'Signing in does not enable sync or cloud backup.',
       })
       : Object.freeze({
         eyebrow: 'Guest Mode',
@@ -6544,7 +6524,8 @@ function renderHomeWorkspace(model) {
   if (content) content.hidden = false;
   applyHomeDestinationPresentation();
   window.requestAnimationFrame(revealHomeDestination);
-  window.RiverlineTutorials?.offerForWorkspace?.('home', workspace);
+  const tutorialWorkspace = activeNavigationDestination() === 'saved' ? 'saved' : 'home';
+  window.RiverlineTutorials?.offerForWorkspace?.(tutorialWorkspace, workspace);
 }
 
 function beginHomeLoading() {
@@ -6854,7 +6835,8 @@ function bindEvents() {
     const destination = button.dataset.navigationId || mode;
     activateNavigationItem(button);
     clearToast();
-    window.RiverlineTutorials?.workspaceChanged?.(mode);
+    const tutorialWorkspace = mode === 'home' && destination === 'saved' ? 'saved' : mode;
+    window.RiverlineTutorials?.workspaceChanged?.(tutorialWorkspace);
     if (mode !== 'gto') callPlaybookStateBridge('cancelReplayPlayback');
     if (mode !== 'training') restoreSharedPokerTable();
     
@@ -7077,7 +7059,10 @@ function bindEvents() {
 
   const closeSettings = () => {
     if ($('#settingsModal')) $('#settingsModal').classList.remove('show');
-    const workspace = $('.riverline-shell')?.dataset.activeMode ?? null;
+    const shell = $('.riverline-shell');
+    const workspace = shell?.dataset.activeMode === 'home' && shell?.dataset.activeDestination === 'saved'
+      ? 'saved'
+      : shell?.dataset.activeMode ?? null;
     window.RiverlineTutorials?.workspaceChanged?.(workspace);
   };
 
@@ -7682,72 +7667,16 @@ function scoreSevenJs(hole, board) {
 
 
 
-function getValidComboForRange(handCode, boardCards) {
-
-  const boardSet = new Set(boardCards);
-
-  const SUITS = ['s','h','d','c'];
-
-  const r1 = handCode[0], r2 = handCode[1];
-
-  const isSuited = handCode[2] === 's';
-
-  const isPair   = handCode.length === 2;
-
-
-
-  if (isPair) {
-
-    for (let i = 0; i < SUITS.length; i++)
-
-      for (let j = i+1; j < SUITS.length; j++) {
-
-        const c1 = r1+SUITS[i], c2 = r2+SUITS[j];
-
-        if (!boardSet.has(c1) && !boardSet.has(c2)) return [c1, c2];
-
-      }
-
-  } else if (isSuited) {
-
-    for (const s of SUITS) {
-
-      const c1 = r1+s, c2 = r2+s;
-
-      if (!boardSet.has(c1) && !boardSet.has(c2)) return [c1, c2];
-
-    }
-
-  } else {
-
-    for (const s1 of SUITS) for (const s2 of SUITS) {
-
-      if (s1 === s2) continue;
-
-      const c1 = r1+s1, c2 = r2+s2;
-
-      if (!boardSet.has(c1) && !boardSet.has(c2)) return [c1, c2];
-
-    }
-
-  }
-
-  return null;
-
-}
-
-
-
 // Categorize one representative available combo: 0=air, 1=marginal/draw,
 // 2=strong made, 3=very strong made, -1=not in the fixed sample.
 
-function scoreRangeHand(handCode, boardCards, range) {
+function scoreRangeHand(handCode, boardCards, range, cardRemoval) {
 
   if (!range.has(handCode)) return -1;
 
-  const combo = getValidComboForRange(handCode, boardCards);
+  const combo = cardRemoval?.cells[handCode]?.firstEligibleCombo ?? null;
 
-  if (!combo) return -1; // blocked by board
+  if (!combo) return -1;
 
 
 
@@ -7793,7 +7722,7 @@ function scoreRangeHand(handCode, boardCards, range) {
 
 
 
-function renderRangeGrid(gridId, hoverInfoId, range, board, statIds) {
+function renderRangeGrid(gridId, hoverInfoId, range, board, cardRemoval, statIds) {
   const grid = $('#' + gridId);
   if (!grid) return { veryStrong:0, strongMade:0, marginal:0, air:0, total:0 };
   
@@ -7837,12 +7766,14 @@ function renderRangeGrid(gridId, hoverInfoId, range, board, statIds) {
 
   RANKS.forEach((_, row) => RANKS.forEach((__, col) => {
     const hand = handCode(row, col);
-    const tier = scoreRangeHand(hand, board, range);
+    const tier = scoreRangeHand(hand, board, range, cardRemoval);
     const idx = row * 13 + col;
     const btn = grid.children[idx];
+    const fullyRemoved = range.has(hand) && cardRemoval?.cells[hand]?.fullyRemoved === true;
     
     btn.textContent = hand;
-    btn.title = LABEL[tier] || t('Not in sample');
+    btn.title = fullyRemoved ? t('Unavailable after known-card removal') : LABEL[tier] || t('Not in sample');
+    btn.dataset.cardRemovalState = fullyRemoved ? 'fully-removed' : tier === -1 ? 'not-in-sample' : 'eligible';
 
     if (tier === -1) {
       btn.style.background = 'transparent';
@@ -7911,6 +7842,24 @@ function renderRangeAdvantage() {
     return { status: 'waiting_for_board', mode: PLAYBOOK_MODES.SCENARIO, heroPos, villainPos };
   }
 
+  const decisionContext = app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
+    ? app.decisionContext
+    : deriveDecisionContext(readPlaybookScenarioInput());
+  const commonBlockers = [...decisionContext.board, ...decisionContext.deadCards];
+  const heroCardRemoval = projectHandClassesAfterCardRemoval([...heroRange], commonBlockers);
+  const villainCardRemoval = projectHandClassesAfterCardRemoval(
+    [...villainRange],
+    [...commonBlockers, ...decisionContext.heroCards],
+  );
+  if (!heroCardRemoval || !villainCardRemoval) {
+    if (analysis) analysis.hidden = true;
+    if (status) {
+      status.dataset.state = 'unavailable';
+      status.textContent = t('Range comparison is unavailable because canonical card removal could not be loaded.');
+    }
+    return { status: 'card_removal_unavailable', mode: PLAYBOOK_MODES.SCENARIO, heroPos, villainPos };
+  }
+
   if (analysis) analysis.hidden = false;
   if (status) {
     status.dataset.state = 'available';
@@ -7921,8 +7870,8 @@ function renderRangeAdvantage() {
     hero: { veryStrong:'heroStatVeryStrong', strongMade:'heroStatStrongMade', marginal:'heroStatMarginal', air:'heroStatAir' },
     villain: { veryStrong:'vilStatVeryStrong', strongMade:'vilStatStrongMade', marginal:'vilStatMarginal', air:'vilStatAir' }
   };
-  const heroStats = renderRangeGrid('heroRangeGrid', 'heroHoverInfo', heroRange, board, statIds.hero);
-  const villainStats = renderRangeGrid('villainRangeGrid', 'villainHoverInfo', villainRange, board, statIds.villain);
+  const heroStats = renderRangeGrid('heroRangeGrid', 'heroHoverInfo', heroRange, board, heroCardRemoval, statIds.hero);
+  const villainStats = renderRangeGrid('villainRangeGrid', 'villainHoverInfo', villainRange, board, villainCardRemoval, statIds.villain);
 
   const heroStrongShare = heroStats.total
     ? (heroStats.veryStrong + heroStats.strongMade) / heroStats.total : 0;
@@ -8330,7 +8279,8 @@ function initTrainingMode() {
   };
 
   bind('#trainingResetStats', 'click', resetTrainingStats);
-  bind('#trainingNewHand', 'click', () => startConfiguredTrainingSession());
+  bind('#trainingNewHand', 'click', () => startConfiguredTrainingSessionWithGuard());
+  bind('#trainingIdleStart', 'click', () => startConfiguredTrainingSessionWithGuard());
   bind('#trainingNextHandBtn', 'click', () => requestNextTrainingExercise());
   bind('#trainingRetryButton', 'click', () => requestNextTrainingExercise({ retry: true }));
   document.querySelectorAll('[data-training-session-mode]').forEach((button) => {
@@ -8338,16 +8288,16 @@ function initTrainingMode() {
     button.dataset.bound = 'true';
     button.addEventListener('click', () => setTrainingSessionMode(button.dataset.trainingSessionMode));
   });
-  bind('#trainingRestartSession', 'click', () => startConfiguredTrainingSession());
+  bind('#trainingRestartSession', 'click', () => startConfiguredTrainingSessionWithGuard());
   bind('#trainingReplayBtn', 'click', replayCurrentTrainingSeed);
   bind('#trainingReplayDecisionBtn', 'click', replayCurrentTrainingSeed);
   bind('#trainingGenerateSeed', 'click', () => {
     const seed = selectedTrainingSeed();
-    if (seed !== null) startConfiguredTrainingSession({ seed });
+    if (seed !== null) startConfiguredTrainingSessionWithGuard({ seed });
   });
   bind('#trainingCopySeed', 'click', copyCurrentTrainingSeed);
-  bind('#trainingFullHandNewHand', 'click', () => startConfiguredTrainingSession());
-  bind('#trainingFullHandLiveNewHand', 'click', () => startConfiguredTrainingSession());
+  bind('#trainingFullHandNewHand', 'click', () => startConfiguredTrainingSessionWithGuard());
+  bind('#trainingFullHandLiveNewHand', 'click', () => startConfiguredTrainingSessionWithGuard());
   bind('#trainingFullHandEndHand', 'click', endFullHandTraining);
   bind('#trainingReviewHand', 'click', toggleFullHandTrainingReview);
   bind('#trainingMemoryPanel', 'toggle', (event) => {
@@ -9766,6 +9716,15 @@ function setTrainingWorkspaceState(state) {
     $('#trainingFeedback').hidden = trainingSessionMode() === 'full_hand' || state !== 'feedback';
   }
   if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = state !== 'terminal';
+  const beforeSession = state === 'idle';
+  for (const selector of ['#trainingHistoryPanel', '.training-assistance-panel']) {
+    const panel = document.querySelector(selector);
+    if (panel) panel.dataset.trainingAvailability = beforeSession ? 'before-session' : 'available';
+  }
+  for (const selector of ['#trainingHistoryAvailability', '#trainingAssistanceAvailability']) {
+    const note = $(selector);
+    if (note) note.hidden = !beforeSession;
+  }
 }
 
 function clearTrainingExercisePresentation() {
@@ -10996,6 +10955,19 @@ function replayCurrentTrainingSeed() {
   return app.training.currentExercise
     ? replayTrainingExercise(app.training.currentExercise.seed)
     : null;
+}
+
+function trainingSessionIsActive() {
+  const state = document.querySelector('.training-workspace')?.dataset.trainingState;
+  return Boolean(app.training.memorySessionPromise)
+    || ['generating', 'automating', 'ready', 'grading', 'feedback'].includes(state);
+}
+
+function startConfiguredTrainingSessionWithGuard(options = {}) {
+  if (trainingSessionIsActive() && !window.confirm(t(
+    'Start a new Training session? The active session will be marked incomplete, and its recorded decisions will remain in Training Memory.',
+  ))) return null;
+  return startConfiguredTrainingSession(options);
 }
 
 async function startConfiguredTrainingSession(options = {}) {

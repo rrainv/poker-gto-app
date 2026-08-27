@@ -409,6 +409,45 @@ test('official Supabase adapter uses only public config, validates restored user
   );
 });
 
+test('Supabase failures map to stable privacy-safe auth notice codes', async () => {
+  const adapter = createSupabaseAuthProviderAdapter({
+    config: {
+      supabaseUrl: 'https://riverline-test.supabase.co',
+      supabasePublishableKey: 'sb_publishable_test',
+    },
+    client: {
+      auth: {
+        async signInWithPassword() {
+          return { data: null, error: { status: 400, message: 'Invalid login credentials for provider subject 123' } };
+        },
+        async signUp() {
+          return { data: null, error: { status: 422, message: 'User already registered: provider subject 123' } };
+        },
+        async getSession() {
+          return { data: null, error: { status: 0, message: 'Failed to fetch provider tenant internals' } };
+        },
+        async refreshSession() {
+          return { data: null, error: { status: 401, message: 'refresh_token_not_found provider subject 123' } };
+        },
+        async signOut() { return { error: null }; },
+      },
+    },
+  });
+
+  await assert.rejects(
+    adapter.signInWithPassword({ email: 'player@example.com', password: 'not-recorded' }),
+    (error) => error.code === 'invalid_credentials'
+      && error.message === 'The supplied sign-in credentials were not accepted.',
+  );
+  await assert.rejects(
+    adapter.signUpWithPassword({ email: 'player@example.com', password: 'not-recorded' }),
+    (error) => error.code === 'signup_conflict'
+      && error.message === 'Account creation could not use the supplied details.',
+  );
+  await assert.rejects(adapter.restoreSession(), { code: 'provider_unavailable' });
+  await assert.rejects(adapter.refreshSession(), { code: 'session_expired' });
+});
+
 test('auth mappings and credentials never enter study exports; UI owns accessible explicit linking and remount seams', async () => {
   const [html, bootstrap, translations, accountSpec, rangeBootstrap, rangeLifecycle, rangeWorkspace, preload, exampleConfig] = await Promise.all([
     readFile(new URL('../app/index.html', import.meta.url), 'utf8'),

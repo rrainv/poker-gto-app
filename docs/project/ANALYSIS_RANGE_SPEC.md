@@ -171,6 +171,8 @@ Visible blocker facts keep three quantities distinct: physical combo count, know
 
 A supplied Hero range represents alternative Hero holdings and is conditioned by board/dead cards, not by the one exact Hero holding. This prevents the exact hand from deleting alternatives from its own range.
 
+The Matrix and sample range-comparison presentation use the same canonical Range Core conditioning through one application projection. Matrix and Hero-range alternatives use `DecisionContext.board + DecisionContext.deadCards`; an opponent comparison additionally uses the exact Hero cards because those cards are unavailable to the opponent. Scenario-known burned or otherwise excluded physical cards participate only when the canonical scenario represents them in `DecisionContext.deadCards`; these presentation surfaces do not define a second burn-card field or removal rule. Fully removed 169 classes remain visibly unavailable, and the presentation does not invent a new frequency-normalization policy.
+
 Blocker output is labelled `structural_only`. Bluff quality and profitability belong to `BLUFF-001`.
 
 ## 7. Range composition

@@ -19,6 +19,11 @@ function setTranslatedText(element, key) {
 }
 
 function authNoticeKey(state) {
+  if (state.noticeCode === 'invalid_credentials') return 'Email or password is incorrect. For privacy, Riverline does not confirm whether an account exists.';
+  if (state.noticeCode === 'signup_conflict') return 'An account could not be created with these details. Try signing in or use another email.';
+  if (state.noticeCode === 'signup_failed') return 'Account creation failed. Check the details and try again.';
+  if (state.noticeCode === 'provider_unavailable') return 'Sign-in is temporarily unavailable. Check the connection and try again.';
+  if (state.noticeCode === 'session_expired') return 'Your sign-in session expired. Sign in again.';
   if (state.noticeCode === 'username_unavailable') return 'That username is unavailable.';
   if (state.noticeCode === 'invalid_profile') return 'Check the username and display name.';
   if (state.noticeCode === 'profile_identity_conflict') return 'This account is bound to a different Riverline identity. No local data was changed.';
@@ -40,6 +45,14 @@ function authNoticeKey(state) {
     link_required: 'Choose whether to claim existing data or start separately.',
   };
   return keys[state.status] ?? '';
+}
+
+function authNoticeIsError(state) {
+  return state.status === 'authentication_failed'
+    || state.status === 'identity_conflict'
+    || ['invalid_credentials', 'signup_conflict', 'signup_failed', 'provider_unavailable',
+      'session_expired', 'username_unavailable', 'invalid_profile', 'profile_identity_conflict',
+      'signout_incomplete', 'link_failed'].includes(state.noticeCode);
 }
 
 function focusableIn(element) {
@@ -77,6 +90,15 @@ function bindAuthenticationUi(browserWindow, service, gate) {
   let focusBeforeAccount = null;
   let focusBeforeLink = null;
   let openedForGate = false;
+
+  function setAuthStatus(key, { error = false } = {}) {
+    const status = document.querySelector('#accountAuthStatus');
+    setTranslatedText(status, key);
+    if (!status) return;
+    status.dataset.tone = error ? 'error' : 'neutral';
+    status.setAttribute('role', error ? 'alert' : 'status');
+    status.setAttribute('aria-live', error ? 'assertive' : 'polite');
+  }
 
   function closeMenu({ restoreFocus = false } = {}) {
     if (!menu || menu.hidden) return;
@@ -197,7 +219,7 @@ function bindAuthenticationUi(browserWindow, service, gate) {
         document.querySelector('#accountDisplayName').value = profile.displayName;
       }
     }
-    setTranslatedText(document.querySelector('#accountAuthStatus'), authNoticeKey(state));
+    setAuthStatus(authNoticeKey(state), { error: authNoticeIsError(state) });
     setBusy(busy);
     if (state.status === 'link_required') openLink(state);
     else if (state.status !== 'linking') closeLink({ restoreFocus: false });
@@ -222,6 +244,16 @@ function bindAuthenticationUi(browserWindow, service, gate) {
     event.preventDefault();
     if (!signUpForm.reportValidity()) return;
     const password = document.querySelector('#accountSignUpPassword');
+    const confirmation = document.querySelector('#accountSignUpPasswordConfirm');
+    if (password.value !== confirmation?.value) {
+      password.setAttribute('aria-invalid', 'true');
+      confirmation?.setAttribute('aria-invalid', 'true');
+      setAuthStatus('Passwords do not match.', { error: true });
+      confirmation?.focus();
+      return;
+    }
+    password.removeAttribute('aria-invalid');
+    confirmation?.removeAttribute('aria-invalid');
     const credentials = {
       email: document.querySelector('#accountSignUpEmail').value.trim(),
       username: document.querySelector('#accountSignUpUsername').value,
@@ -229,6 +261,7 @@ function bindAuthenticationUi(browserWindow, service, gate) {
       password: password.value,
     };
     password.value = '';
+    if (confirmation) confirmation.value = '';
     await service.signUpWithPassword(credentials);
   });
 
@@ -247,7 +280,7 @@ function bindAuthenticationUi(browserWindow, service, gate) {
     try {
       await service.updateDisplayName(document.querySelector('#accountDisplayName').value);
     } catch (error) {
-      setTranslatedText(document.querySelector('#accountAuthStatus'), 'Display name could not be saved.');
+      setAuthStatus('Display name could not be saved.', { error: true });
     }
   });
 

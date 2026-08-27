@@ -428,6 +428,7 @@ function createAudioHarness({
     },
     URL,
     ArrayBuffer,
+    setTimeout,
     window: audioAvailable ? {
       AudioContext,
       location: { href: 'http://riverline.test/app/index.html' },
@@ -830,6 +831,20 @@ test('audio deduplication, stale-token rejection, cooldown, and fast-Replay poli
   assert.equal((await polyphonyHarness.sound.playPokerAction('all_in')).played, true);
   assert.equal((await polyphonyHarness.sound.playCardDeal(2)).played, true);
   assert.ok(polyphonyHarness.sampleStarts.length <= 12);
+});
+
+test('immediate poker events keep distinct cue onsets instead of colliding', async () => {
+  const harness = createAudioHarness();
+  const startedAt = Date.now();
+  const check = harness.sound.consumeExperienceEvent(audioEvent({ type: 'action_check', token: 20 }));
+  const call = harness.sound.consumeExperienceEvent(audioEvent({ type: 'action_call', token: 21 }));
+
+  assert.equal((await check).cueName, 'check');
+  assert.equal(harness.sampleStarts.length, 1, 'the following cue waits for the first cue separation');
+  assert.equal((await call).cueName, 'call');
+  assert.equal(harness.sampleStarts.length, 2);
+  assert.ok(Date.now() - startedAt >= 90, 'the second onset is audibly separated from Check');
+  assert.match(soundSource, /MAX_QUEUED_POKER_EVENTS = 8/);
 });
 
 test('visible poker-action bridge preserves Fold, Call, Bet, Raise, and All-in physical identity', async () => {

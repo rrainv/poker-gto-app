@@ -58,6 +58,7 @@ It provides:
 - Web Audio buffer decoding, caching, master gain, explicit per-asset gain/window/tail trims, ±0.2% playback-rate movement, ±1% gain movement, at most 1.5 ms timing jitter, and physical-mass layering; oscillators and generated noise are limited to subtle Study/UI cues;
 - master enabled, master volume, Table/Poker, and Study/UI preferences;
 - a 12-voice polyphony ceiling, per-family cooldowns, event deduplication, hidden-tab suppression, zero-volume silence, and graceful unavailable-audio behavior;
+- a bounded eight-event production poker queue with deterministic short per-cue separation, so an immediate next poker-world transition cannot synchronously mask the preceding action cue; the existing category/master/hidden/volume checks are evaluated at playback, and lifecycle release cancels queued work;
 - coherent recorded card placement/fold families; one restrained isolated table/knuckle Check; one-impact small chips; one shared medium-chip source for Bet and layered Raise; trimmed same-author all-in pushes; and one multi-impact pot-gathering recording;
 - clearly perceptible `study_positive`, `study_neutral`, `study_corrective`, and `hint` cues whose meaning is derived from canonical grading plus `StrategyClaimPolicy`, never raw StrategyResult probabilities;
 - direct Settings previews for Card, Check, Fold, Call, Raise, All-in, Pot, Positive, Neutral, Corrective, and Hint that invoke the exact production cue renderer and obey the matching category policy;

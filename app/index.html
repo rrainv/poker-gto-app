@@ -472,7 +472,7 @@
         </div>
       </header>
 
-      <section id="welcomeOrientation" class="welcome-orientation" aria-labelledby="welcomeTitle" aria-describedby="welcomeDescription" hidden>
+      <section id="welcomeOrientation" class="welcome-orientation" aria-labelledby="welcomeTitle" aria-describedby="welcomeDescription" tabindex="-1" hidden>
         <div class="welcome-orientation-inner">
           <button id="welcomeCloseButton" class="ui-button ui-button--icon welcome-close" type="button" aria-label="Close Welcome" data-i18n-aria-label="Close Welcome" title="Close Welcome" data-i18n-title="Close Welcome" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
@@ -484,7 +484,7 @@
             </div>
             <div>
               <p class="welcome-eyebrow" data-i18n="Welcome to Riverline">Welcome to Riverline</p>
-              <h1 id="welcomeTitle" tabindex="-1" data-i18n="Your personal poker learning workstation">Your personal poker learning workstation</h1>
+              <h1 id="welcomeTitle" data-i18n="Your personal poker learning workstation">Your personal poker learning workstation</h1>
               <p id="welcomeDescription" data-i18n="Play and review hands, analyze decisions, train, calculate Equity, build Personal Strategy, and revisit saved study material.">Play and review hands, analyze decisions, train, calculate Equity, build Personal Strategy, and revisit saved study material.</p>
             </div>
           </header>
@@ -542,13 +542,13 @@
 
     <section id="homeMode" class="mode-view active" data-product-destination="home" aria-label="Home" data-i18n-aria-label="Home dashboard">
       <div class="workspace-frame workspace-frame--standard">
-      <div id="homeWorkspace" class="home-workspace" aria-busy="true">
+      <div id="homeWorkspace" class="home-workspace" aria-busy="true" data-tutorial-anchor="saved-workspace">
         <div id="homeLoadingState" class="home-loading-state" role="status">
           <span class="home-loading-spinner" aria-hidden="true"></span>
           <span data-i18n="Opening your study workspace">Opening your study workspace</span>
         </div>
         <div id="homeWorkspaceContent" class="home-dashboard-grid" data-product-destination="home" hidden>
-          <section id="homeSavedOverview" class="panel home-section home-section--saved-overview" aria-labelledby="homeSavedOverviewTitle" hidden>
+          <section id="homeSavedOverview" class="panel home-section home-section--saved-overview" aria-labelledby="homeSavedOverviewTitle" data-tutorial-anchor="saved-overview" hidden>
             <header class="home-section-head"><div><p data-i18n="Saved study">Saved study</p><h2 id="homeSavedOverviewTitle" data-i18n="Saved Hands &amp; Spots">Saved Hands &amp; Spots</h2></div></header>
             <p class="home-saved-overview-copy" data-i18n="Reopen saved Hands and Spots for replay, review, and continued study.">Reopen saved Hands and Spots for replay, review, and continued study.</p>
           </section>
@@ -620,6 +620,7 @@
           <p id="homeGamePersistenceNotice"></p>
         </div>
         <p id="homeGameError" class="home-game-error" role="alert" aria-live="assertive" hidden></p>
+        <p id="homeGameActionStatus" class="home-game-action-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
 
         <div class="home-game-layout">
           <aside class="home-game-sidebar">
@@ -1038,7 +1039,7 @@
                     <button id="handReplayPlaybackButton" class="ui-button ui-button--primary replay-playback-button" type="button" aria-pressed="false" disabled data-i18n="replay.control.play">Play</button>
                     <button id="handReplayPreviousButton" class="ui-button ui-button--secondary" type="button" disabled data-i18n="replay.control.previous">Previous</button>
                     <button id="handReplayNextButton" class="ui-button ui-button--secondary" type="button" disabled data-i18n="replay.control.next">Next</button>
-                    <button id="handReplayLiveButton" class="ui-button ui-button--quiet" type="button" disabled data-i18n="replay.control.returnToLive" data-tutorial-anchor="replay-return">Return to live</button>
+                    <button id="handReplayLiveButton" class="ui-button ui-button--primary replay-return-live-action" type="button" hidden disabled data-i18n="replay.control.returnToLive" data-tutorial-anchor="replay-return">Return to live</button>
                   </div>
                   <div id="replaySavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--replay"></div>
                 </div>
@@ -2253,8 +2254,6 @@
                   <summary data-i18n="Details">Details</summary>
                   <p id="trainingInstruction" class="muted" data-i18n="Generate a reachable canonical decision, then choose one legal action.">Generate a reachable canonical decision, then choose one legal action.</p>
                 </details>
-              </aside>
-
               </div>
               <div class="training-state-cluster">
                 <span id="trainingDecisionNumber" class="badge status-badge status-badge--info" hidden></span>
@@ -2269,6 +2268,7 @@
             <div id="trainingIdle" class="training-state-message">
               <strong data-i18n="Ready for a drill">Ready for a drill</strong>
               <span data-i18n="Use the setup controls to generate a legal poker decision.">Use the setup controls to generate a legal poker decision.</span>
+              <button id="trainingIdleStart" class="ui-button ui-button--primary" type="button" data-i18n="Start Training">Start Training</button>
             </div>
             <div id="trainingGenerating" class="training-state-message" hidden aria-live="polite">
               <span class="training-spinner" aria-hidden="true"></span>
@@ -2312,7 +2312,6 @@
                 </div>
                 <div id="trainingStudyHintContent" class="training-study-hint-content" aria-live="polite"></div>
               </section>
-              </details>
               <div id="trainingDecisionPrompt" class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
               <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions" data-i18n-aria-label="Available actions" data-tutorial-anchor="training-answer-actions"></div>
               <section id="trainingFullHandSizing" class="training-full-hand-sizing" hidden aria-labelledby="trainingFullHandSizingTitle">
@@ -2335,7 +2334,7 @@
                 <div class="training-verdict-frequency" hidden><dt data-i18n="Highest frequency">Highest frequency</dt><dd id="trainingBestProbability" class="poker-data-token">—</dd></div>
                 <div id="trainingEvFact" hidden><dt data-i18n="EV comparison">EV comparison</dt><dd id="trainingEvValue" class="poker-data-token">—</dd></div>
               </dl>
-              <section class="training-analysis-region" aria-labelledby="trainingAnalysisTitle" data-tutorial-anchor="training-analysis"><h4 id="trainingAnalysisTitle" data-i18n="Analysis">Analysis</h4><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></section>
+              <details class="training-analysis-region" data-tutorial-anchor="training-analysis"><summary id="trainingAnalysisTitle" data-i18n="Analysis">Analysis</summary><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></details>
               <div id="trainingMemoryDecisionActions" class="training-memory-decision-actions" hidden aria-label="Study labels" data-i18n-aria-label="Study labels">
                 <button id="trainingMarkReview" class="ui-button ui-button--secondary" type="button" aria-pressed="false" data-i18n="Review">Review</button>
                 <button id="trainingMarkDifficult" class="ui-button ui-button-ghost" type="button" aria-pressed="false" data-i18n="Difficult">Difficult</button>
@@ -2377,8 +2376,8 @@
               <div id="trainingFrequencyRows" class="training-frequency-rows"></div>
             </div>
           </section>
-          <details id="trainingHistoryPanel" class="panel training-history-panel" aria-labelledby="trainingHistoryTitle">
-            <summary class="panel-head"><div><p id="trainingHistoryEyebrow" class="training-eyebrow" data-i18n="Canonical replay">Canonical replay</p><h2 id="trainingHistoryTitle" data-i18n="Action history">Action history</h2></div></summary>
+          <details id="trainingHistoryPanel" class="panel training-history-panel" aria-labelledby="trainingHistoryTitle" data-training-availability="before-session">
+            <summary class="panel-head"><div><p id="trainingHistoryEyebrow" class="training-eyebrow" data-i18n="Canonical replay">Canonical replay</p><h2 id="trainingHistoryTitle" data-i18n="Action history">Action history</h2><p id="trainingHistoryAvailability" class="panel-note" data-i18n="Available after you start Training.">Available after you start Training.</p></div></summary>
             <div class="panel-body"><ol id="trainingActionHistory" class="training-action-history"><li class="is-empty" data-i18n="Generate an exercise to view its chronological action history.">Generate an exercise to view its chronological action history.</li></ol><p id="trainingCurrentActor" class="training-current-actor" data-i18n="No decision loaded.">No decision loaded.</p></div>
           </details>
           <details class="panel training-session-panel" aria-labelledby="trainingSessionTitle" data-density-collapse-in-compact open>
@@ -2390,16 +2389,16 @@
               <button class="ui-button ui-button-ghost ui-button--destructive" type="button" id="trainingResetStats" data-i18n="Reset session stats">Reset session stats</button>
             </div>
           </details>
-          <details id="trainingMemoryPanel" class="panel training-memory-panel" aria-labelledby="trainingMemoryTitle">
-            <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="On this profile">On this profile</p><h2 id="trainingMemoryTitle" data-i18n="Training Memory">Training Memory</h2></div><span id="trainingMemoryDueBadge" class="badge status-badge status-badge--info">0</span></summary>
+          <details id="trainingMemoryPanel" class="panel training-memory-panel" aria-labelledby="trainingMemoryTitle" data-training-availability="ready-to-load">
+            <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="On this profile">On this profile</p><h2 id="trainingMemoryTitle" data-i18n="Training Memory">Training Memory</h2><p id="trainingMemoryAvailability" class="panel-note" data-i18n="Open to load saved review history for this profile.">Open to load saved review history for this profile.</p></div><span id="trainingMemoryDueBadge" class="badge status-badge status-badge--info">0</span></summary>
             <div class="panel-body">
               <p class="training-reference-note" data-i18n="History stays on this device and is isolated to the active profile.">History stays on this device and is isolated to the active profile.</p>
               <div class="training-memory-tabs" role="tablist" aria-label="Training Memory view" data-i18n-aria-label="Training Memory view">
                 <button id="trainingMemoryReviewTab" class="ui-button ui-button--secondary is-active" type="button" role="tab" aria-selected="true" aria-controls="trainingMemoryList" tabindex="0" data-memory-view="review" data-i18n="Review queue">Review queue</button>
                 <button id="trainingMemoryRecentTab" class="ui-button ui-button-ghost" type="button" role="tab" aria-selected="false" aria-controls="trainingMemoryList" tabindex="-1" data-memory-view="recent" data-i18n="Recent sessions">Recent sessions</button>
               </div>
-              <p id="trainingMemoryStatus" class="training-memory-status" role="status" aria-live="polite"></p>
-              <ul id="trainingMemoryList" class="training-memory-list" role="tabpanel" aria-labelledby="trainingMemoryReviewTab" tabindex="0"></ul>
+              <p id="trainingMemoryStatus" class="training-memory-status" role="status" aria-live="polite" data-i18n="Open this panel to load saved review history. New answers appear here after a decision.">Open this panel to load saved review history. New answers appear here after a decision.</p>
+              <ul id="trainingMemoryList" class="training-memory-list" role="tabpanel" aria-labelledby="trainingMemoryReviewTab" tabindex="0"><li class="is-empty" data-i18n="Saved review history loads when this panel opens.">Saved review history loads when this panel opens.</li></ul>
             </div>
           </details>
         </aside>
@@ -2435,7 +2434,7 @@
               <button class="ui-button ui-button--primary training-generate" type="button" id="trainingNewHand" data-i18n="Start varied session">Start varied session</button>
             </div>
           </section>
-          <details class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle"><summary class="panel-head"><div><h2 id="trainingAssistanceTitle" data-i18n="Assistance">Assistance</h2><p class="panel-note" data-i18n="Difficulty controls automatic help.">Difficulty controls automatic help.</p></div></summary><div class="panel-body"><p class="training-study-hints-note"><strong data-i18n="Study hints">Study hints</strong><span data-i18n="Ask for a coaching prompt in the decision panel.">Ask for a coaching prompt in the decision panel.</span></p></div></details>
+          <details class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle" data-training-availability="before-session"><summary class="panel-head"><div><h2 id="trainingAssistanceTitle" data-i18n="Assistance">Assistance</h2><p class="panel-note" data-i18n="Difficulty controls automatic help.">Difficulty controls automatic help.</p><p id="trainingAssistanceAvailability" class="panel-note" data-i18n="Hints become available after a decision is generated.">Hints become available after a decision is generated.</p></div></summary><div class="panel-body"><p class="training-study-hints-note"><strong data-i18n="Study hints">Study hints</strong><span data-i18n="Ask for a coaching prompt in the decision panel.">Ask for a coaching prompt in the decision panel.</span></p></div></details>
           <details class="panel training-advanced" id="trainingAdvanced">
             <summary data-i18n="Seed, replay & diagnostics">Seed, replay & diagnostics</summary>
             <div class="panel-body">
@@ -3113,6 +3112,7 @@
             <small id="accountUsernameHelp" data-i18n="3–24 lowercase letters, digits, or underscores; start with a letter or digit.">3–24 lowercase letters, digits, or underscores; start with a letter or digit.</small>
             <label for="accountSignUpDisplayName"><span data-i18n="Display name">Display name</span><input id="accountSignUpDisplayName" class="control-input" type="text" maxlength="80" autocomplete="name" dir="auto" required></label>
             <label for="accountSignUpPassword"><span data-i18n="Password">Password</span><input id="accountSignUpPassword" class="control-input" type="password" minlength="6" autocomplete="new-password" required></label>
+            <label for="accountSignUpPasswordConfirm"><span data-i18n="Confirm password">Confirm password</span><input id="accountSignUpPasswordConfirm" class="control-input" type="password" minlength="6" autocomplete="new-password" aria-describedby="accountAuthStatus" required></label>
             <button id="accountSignUp" class="ui-button ui-button--secondary" type="submit" data-i18n="Create account">Create account</button>
           </form>
         </div>
@@ -3252,6 +3252,7 @@
   <script type="module" src="src/application/training-memory-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/hand-review-bootstrap.mjs"></script>
+  <script type="module" src="src/application/range-card-removal-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>
   <script src="src/core/logic.js?v=26" defer></script>
   <script src="src/ui/teacher.js" defer></script>

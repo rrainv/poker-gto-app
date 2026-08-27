@@ -2,7 +2,7 @@
 
 Status: **COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED**
 
-Planning consequence: `HANDS-ON-DEFECTS-001` is **ACTIVE NEXT**; `PERSONAL-STRATEGY-003A` is **PLANNED NEXT**; a human-visible checkpoint and roadmap reassessment follow those tickets.
+Planning consequence: `HANDS-ON-DEFECTS-001` is **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT**. `CORE-FLOW-CORRECTNESS-001` is active next, followed by Replay rail, Training composition, `PERSONAL-STRATEGY-003A`, and a whole-app mini-pass.
 
 This is the durable evidence and triage artifact for `HANDS-ON-PRODUCT-REVIEW-001`. It is not another roadmap, backlog, QA system, or implementation specification. Current status and sequence remain owned by [Current Phase](CURRENT_PHASE.md), [Roadmap](ROADMAP.md), and [Product Backlog](PRODUCT_BACKLOG.md). Issue routing and deferred checkpoint debt remain owned by [QA Backlog](QA_BACKLOG.md) and [Product Return Queue](PRODUCT_RETURN_QUEUE.md).
 
@@ -51,7 +51,7 @@ Classification uses the established product meanings: **BUG / CORRECTNESS**, **U
 | 1 | Intro title appears unintentionally selected or focused on entry. | Intro | VISUAL POLISH; ACCESSIBILITY | Low | The first frame looks accidental and unfinished. | A deliberate, calm entry state with focus shown only when meaningful. | `GLOBAL-PRODUCT-QUALITY-001` | P2 | Preserve keyboard focus visibility while removing accidental-looking initial treatment. |
 | 2 | Intro spade mark reads as an upside-down heart because its stem is missing. | Intro / brand | VISUAL POLISH | Medium | The primary mark is visually ambiguous. | A complete, recognizable, restrained Riverline spade mark. | `GLOBAL-PRODUCT-QUALITY-001` | P2 | Visual correction only; no brand-system expansion implied. |
 | 3 | Welcome, buttons, and green-link treatments use inconsistent or excessive padding. | Global UI | LAYOUT / COMPOSITION; VISUAL POLISH | Medium | Similar controls do not share a coherent rhythm. | Consistent spacing tokens and compact control geometry. | `GLOBAL-PRODUCT-QUALITY-001` | P2 | Coordinate with #9 rather than applying isolated margins. |
-| 4 | Intro falsely shows Hand as the selected main destination. | Intro / navigation | BUG / CORRECTNESS; USABILITY | High | Navigation communicates a state the user has not entered. | Main navigation reflects the actual current destination. | `HANDS-ON-DEFECTS-001` | P0 | Bounded state-selection repair. |
+| 4 | Intro falsely shows Hand as the selected main destination. | Intro / navigation | BUG / CORRECTNESS; USABILITY | High | Navigation communicates a state the user has not entered. | Main navigation reflects the actual current destination. | `FIRST-USE-HOME-001` | P1 | Two bounded repair attempts failed; resolve launch/sidebar/active-workspace semantics structurally. |
 | 5 | The start experience is awkward inside the normal sidebar shell. | Launch / home | INFORMATION ARCHITECTURE; FUTURE PRODUCT CAPABILITY | Medium | First use lacks a useful launch model and clear destinations. | Explore a recurring start/home menu with relevant destinations and settings. | `FIRST-USE-HOME-001` | P1 | Preserve the outcome; exact shell/menu mechanism remains open. |
 | 6 | The Settings “THIS DEVICE” box adds little value. | Settings | CONTENT / COPY; INFORMATION ARCHITECTURE | Low | Low-value explanation consumes attention and space. | Remove or replace it with information needed for an actual decision. | `GUIDE-CONTENT-001` | P1 | Coordinate with the global copy audit. |
 | 7 | Defensive copy explains obvious invariants such as not changing study results. | Settings / global copy | CONTENT / COPY | Medium | The product sounds uncertain and makes users read unnecessary assurances. | Concise copy that explains only non-obvious effects and risks. | `GUIDE-CONTENT-001` | P1 | Preserve true safety boundaries without overselling them. |
@@ -110,7 +110,7 @@ Classification uses the established product meanings: **BUG / CORRECTNESS**, **U
 
 ## Immediate repair cluster — `HANDS-ON-DEFECTS-001`
 
-Status: **ACTIVE NEXT**
+Status: **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT**
 
 This ticket owns a bounded correctness/usability repair pass, not a workspace redesign:
 
@@ -129,19 +129,53 @@ The ticket must preserve canonical poker, Range Core card removal and unknown se
 
 If #28 or the broad part of #46 cannot be solved inside that boundary, the finding remains open under its named design owner; it is not forced into a cosmetic patch.
 
+Implementation checkpoint, August 26, 2026: the bounded repairs are implemented with focused automated coverage. Replay table-size continuity and Training explanation flow received local stabilization; Current Legal Actions (#28), broader Replay composition (#33), and broader Training result composition (#46) remain assigned to their named owners. Firefox automation was unavailable in the agent environment. Every referenced finding remains open pending product-owner hands-on acceptance; this checkpoint does not mark any review row closed or advance `PERSONAL-STRATEGY-003A`.
+
+### Final human-evidence correction addendum — August 27, 2026
+
+The first acceptance attempt did not pass. A deeper product-owner Firefox pass with screenshots at 100% zoom refined the evidence instead of reopening every accepted repair.
+
+The final local correction remains bounded to: zero selected Core Study destinations and no programmatic title focus ring while Welcome is open; prominent exact imbalance feedback beside Home Game completion; unobscured full rank+suit identity for legitimately known opponent cards; an obvious return-to-live action only while an in-progress canonical Hand is replayed; Saved-specific tutorial identity; and truthful Guest copy that says Saved belongs to a signed-in Riverline profile and that sign-in alone does not enable sync or cloud backup.
+
+The correction does not reopen accepted card-removal parity, Analyze clipping, Personal Strategy vocabulary, bounded Replay geometry improvement, Training state repairs, audio sequencing, or authentication feedback except for regression. It also does not cosmetically patch the horizontal Action Flow, Current Legal Actions placement, full Replay rail, Training pre/post composition, Equity composition, `PERSONAL-STRATEGY-003A`, Guide/Home content, or global audio.
+
+The structural evidence is now directional rather than an open comparison:
+
+- `REPLAY-RAIL-NAV-001` owns vertical street-grouped history, first-class rail actions and Current Legal Actions, compact Hand Stage, table/history/action integration, and timeline typography.
+- `TRAINING-COMPOSITION-001` owns one primary start CTA, a stable pre/post-answer skeleton, top-packed useful content, Action History, Assistance, Training Memory, setup/status, and progressive Facts → Explain → Coach depth.
+- supported desktop acceptance uses 1920×1080 at 100% zoom as the primary state, 2560×1440 and 2560×1600 coverage, and functional 1366×768 support; reducing zoom is not an acceptance workaround.
+
+At that checkpoint, one short final acceptance remained required before advancing. The resulting second-pass disposition is recorded below.
+
+### Second human disposition and anti-loop closeout — August 27, 2026
+
+The second product-owner acceptance pass completes `HANDS-ON-DEFECTS-001` as a bounded repair checkpoint. No third correction cycle is authorized, and the checkpoint is not full HPR, Hand-composition, Training-composition, or whole-product visual acceptance.
+
+Human-accepted repairs are: removal of the Welcome title focus/selection rectangle; correct Escape dismissal; materially clearer Home Game completion state; working Return to live; intended authentication failure feedback; preserved dead-card/range parity; preserved Analyze clipping; stable user-facing Personal Strategy vocabulary; and materially improved Replay geometry.
+
+Repeated or structural failures remain open:
+
+- Hand still appears selected on Welcome; `FIRST-USE-HOME-001` owns launch/sidebar/active-workspace semantics and first- versus returning-launch behavior.
+- Home Game imbalance is visible but insufficiently proximate/prominent; `HOME-GAME-PRESENTATION-001` owns stronger presentation.
+- Fully visible opponent cards can overlap player identity/stack. `REPLAY-RAIL-NAV-001` owns one coherent cards/seat/player/action grammar across HU through full ring, folded-seat readability, physical Dealer/gap treatment, and the table/rail/timeline relationship. No further isolated z-index/card-offset patch is accepted.
+- The dotted lines are the existing seat → street-contribution → pot lanes. Their semantic intent is real, but their unexplained-artifact appearance is valid UX debt; the Hand redesign must clarify, simplify, or remove them according to comprehension.
+- Home and Saved remain under-composed and visually stale under `FIRST-USE-HOME-001` and `SAVED-VISUAL-KNOWLEDGE-001`.
+
+New functional evidence activates `CORE-FLOW-CORRECTNESS-001`: provide an obvious fresh-Hand lifecycle after terminal state without mutating completed history; expose the canonical append-only Home Game correction/reversal flow after accidental cash-out; keep known-opponent-card entry open through two legal selections or explicit dismissal; and reconstruct the reported min-raise history before any legality change. A 7bb → 13bb reraise may be exactly legal because the last full raise increment can be 6bb. Verification must cover opening bet, ordinary raise, reraise, short all-in, and action reopening.
+
 ## Near-term redesign owners
 
-These are accepted owners, not permission to start every ticket automatically. Exact order is reassessed at the human-visible checkpoint after `HANDS-ON-DEFECTS-001` and `PERSONAL-STRATEGY-003A`.
+These are accepted owners, not permission to start every ticket automatically. Exact order is reassessed at the whole-app mini-pass after Core Flow correctness, Replay rail, Training composition, and `PERSONAL-STRATEGY-003A`.
 
 | Owner | Durable scope | Review evidence |
 |---|---|---|
-| `FIRST-USE-HOME-001` | Recurring launch/home model, separation from one-time onboarding, useful Guest Home density. | #5, #16–17 |
-| `REPLAY-RAIL-NAV-001` | Vertical chronological timeline exploration, collapsible streets, first-class side-rail controls, compact Hand Stage, live/replay geometry. | #28–29, #33–34 |
+| `FIRST-USE-HOME-001` | Recurring launch/home model, separation from one-time onboarding, sidebar/active-workspace semantics, first- versus returning-launch behavior, useful Guest Home density. | #4–5, #16–17 plus second-pass Welcome evidence |
+| `REPLAY-RAIL-NAV-001` | Vertical chronological timeline exploration, collapsible streets, first-class side-rail controls, compact Hand Stage, live/replay geometry, coherent card/seat/player ownership, folded-seat readability, physical Dealer treatment, and contribution-line clarity. | #28–29, #33–34 plus second-pass table evidence |
 | `TRAINING-COMPOSITION-001` | Stable answer transition, useful rail allocation, feedback hierarchy, above-fold practice controls and results. | #46 |
 | `EQUITY-COMPOSITION-001` | Bounded player tiles, optional player naming, central Board/Dead/Method, dominant result composition. | #56–57 |
 | `GUIDE-CONTENT-001` | Interactive/visual Guide, current content, human copy, content hierarchy, removal of obvious/defensive filler. | #6–7, #14, #22–24 |
 | `GAME-SETUP-EVOLUTION-001` | Reusable configurable game setups/presets plus direct physical seat, button, Dealer, and empty-seat interactions. | #25–26, #35 |
-| `HOME-GAME-PRESENTATION-001` | Denser Riverline-integrated organizer, useful table/session representation, and lifecycle feedback beyond the bounded P0 repair. | #19–21 |
+| `HOME-GAME-PRESENTATION-001` | Denser Riverline-integrated organizer, useful table/session representation, and stronger proximate imbalance/toast feedback beyond the accepted bounded clarity repair. | #19–21 plus second-pass warning evidence |
 | `RANDOM-SPOT-GENERATOR-001` | Shared legal randomization and locks for supported consumers, card-removal truth, and later deterministic reproduction. | #30 |
 | `ANALYZE-RANGE-UX-001` | Matrix locality, comparison visualization, card-removal presentation, persistent legend, explanation discoverability/depth, supporting panels. | #36–42, #53 |
 | `PERSONAL-STRATEGY-003A` | First-value reset plus broad sparse/high-information question selection before fine boundary refinement. | #49–51, #54 |
@@ -188,14 +222,17 @@ Selected reference, intended Personal Strategy, source-labelled observed behavio
 
 ## Roadmap consequences
 
-The confirmed review changes the immediate sequence to:
+The confirmed review and second human disposition set the immediate sequence to:
 
-1. `HANDS-ON-PRODUCT-REVIEW-001` — **COMPLETED / confirmed evidence captured**.
-2. `HANDS-ON-DEFECTS-001` — **ACTIVE NEXT**.
-3. `PERSONAL-STRATEGY-003A` — **PLANNED NEXT**.
-4. Human-visible checkpoint and roadmap reassessment.
+1. `HANDS-ON-DEFECTS-001` — **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT DEBT**.
+2. `CORE-FLOW-CORRECTNESS-001` — **ACTIVE NEXT**.
+3. `REPLAY-RAIL-NAV-001` — **PLANNED NEXT**.
+4. `TRAINING-COMPOSITION-001` — **PLANNED NEXT**.
+5. `PERSONAL-STRATEGY-003A` — **PLANNED NEXT**.
+6. Human whole-app mini-pass.
+7. Likely `EQUITY-COMPOSITION-001`, `ANALYZE-RANGE-UX-001`, and `GAME-SETUP-EVOLUTION-001`, with exact order reassessed at that mini-pass.
 
-Later work remains preserved: Personal Strategy provider/reference/observed integration, Replay/rail redesign, Training composition, Equity composition, Analyze/Range UX, Guide/content, Game Setup evolution, Home Game presentation, Random Spot Generator, launch/home evolution, Saved visual knowledge, global quality/customization, and `PREMIUM-CLOSEOUT-001` as the pre-release quality gate.
+Later work remains preserved: Personal Strategy provider/reference/observed integration, Guide/content, Home Game presentation, Random Spot Generator, launch/home evolution, Saved visual knowledge, customization, audio design, global product quality, and `PREMIUM-CLOSEOUT-001` as the later pre-release quality gate.
 
 The workflow lesson is binding for user-facing work:
 

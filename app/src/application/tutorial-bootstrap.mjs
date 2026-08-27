@@ -3,9 +3,14 @@ import { createCoachMarkSurface } from '../tutorial/coach-mark.mjs';
 import { createTutorialController } from '../tutorial/controller.mjs';
 import { CURRENT_APP_TUTORIAL_DEFINITIONS } from '../tutorial/current-app-tutorials.mjs';
 import { HOME_TUTORIAL_DEFINITION } from '../tutorial/home-tutorial.mjs';
+import { SAVED_TUTORIAL_DEFINITION } from '../tutorial/saved-tutorial.mjs';
 import { createTutorialPersistence } from '../tutorial/persistence.mjs';
 
-const DEFINITIONS = Object.freeze([HOME_TUTORIAL_DEFINITION, ...CURRENT_APP_TUTORIAL_DEFINITIONS]);
+const DEFINITIONS = Object.freeze([
+  HOME_TUTORIAL_DEFINITION,
+  SAVED_TUTORIAL_DEFINITION,
+  ...CURRENT_APP_TUTORIAL_DEFINITIONS,
+]);
 
 export function installTutorialBridge(browserWindow, options = {}) {
   if (!browserWindow?.document) return null;
@@ -33,10 +38,14 @@ export function installTutorialBridge(browserWindow, options = {}) {
     'calibration-empty': () => elementShown('#calibrationEmptyState'),
     'calibration-configured': () => elementShown('#calibrationConfiguredState'),
     'calibration-question-ready': () => elementShown('#calibrationQuestionView'),
+    'saved-library-ready': () => elementShown('#homeSavedOverview'),
   };
   const currentWorkspace = () => (
     document.querySelector('#settingsModal.show') ? 'settings'
-      : document.querySelector('.riverline-shell')?.dataset.activeMode ?? null
+      : document.querySelector('.riverline-shell')?.dataset.activeMode === 'home'
+        && document.querySelector('.riverline-shell')?.dataset.activeDestination === 'saved'
+        ? 'saved'
+        : document.querySelector('.riverline-shell')?.dataset.activeMode ?? null
   );
   const controller = createTutorialController({
     definitions: options.definitions ?? DEFINITIONS,

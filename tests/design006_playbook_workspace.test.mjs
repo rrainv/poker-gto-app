@@ -235,7 +235,9 @@ test('workflow, legal actions, status, and card inputs expose accessible semanti
   assert.match(html, /id="playbookModeStatus"[^>]+role="status"[^>]+aria-live="polite"/);
   assert.match(html, /id="handLegalActions"[^>]+role="group"[^>]+aria-label=/);
   assert.match(html, /id="handStateSection"[^>]+aria-labelledby=/);
-  assert.match(logic, /button\.setAttribute\('aria-label', `\$\{button\.textContent\}/);
+  assert.match(logic, /label\.className = 'hand-action-label'/);
+  assert.match(logic, /amount\.className = 'hand-action-amount poker-data-token'/);
+  assert.match(logic, /button\.setAttribute\('aria-label', `\$\{presentation\.accessibleLabel\}/);
   assert.match(logic, /data-playbook-canonical-display disabled aria-label/);
 });
 

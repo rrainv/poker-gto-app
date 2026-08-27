@@ -474,9 +474,10 @@ test('repository discovery, Matrix, and Teacher expose transfer without durable 
   assert.equal(metrics.cachedScopeCount <= 2, true);
 });
 
-test('Matrix and Teacher visible seams label transferred provenance in EN, RU, and HE structure', async () => {
-  const [workspace, html, css, translations] = await Promise.all([
+test('Matrix and Teacher visible seams label transferred provenance with accepted EN, RU, and HE vocabulary', async () => {
+  const [workspace, presentation, html, css, translations] = await Promise.all([
     readFile(new URL('../app/src/application/range-calibration-workspace.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../app/src/application/personal-strategy-presentation.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/range-calibration-translations.js', import.meta.url), 'utf8'),
@@ -485,9 +486,10 @@ test('Matrix and Teacher visible seams label transferred provenance in EN, RU, a
   assert.match(html, /id="calibrationTeacherTransferred"/);
   assert.match(html, /id="calibrationTeacherTransferredList"/);
   assert.match(css, /data-matrix-status="transferred"/);
-  assert.match(workspace, /transferred:\s*'Transferred'/);
+  assert.match(workspace, /personalStrategyStatusLabelKey/);
+  assert.match(presentation, /transferred:\s*'Supported'/);
   assert.match(workspace, /cell\.status === 'transferred'/);
   assert.match(workspace, /rangeTeacherView\.transferredInsights/);
-  assert.match(translations, /'Transferred':\s*'Перенесено'/);
-  assert.match(translations, /'Transferred':\s*'מועבר'/);
+  assert.match(translations, /'Supported':\s*'Подтверждено'/);
+  assert.match(translations, /'Supported':\s*'נתמך'/);
 });

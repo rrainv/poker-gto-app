@@ -1461,6 +1461,27 @@ Object.assign(he, {
     "Settings groups device preferences by type. Use the category list to move between appearance, audio and motion, language and help, and account and data.": "העדפות המכשיר מקובצות לפי סוג. השתמשו ברשימת הקטגוריות כדי לעבור בין מראה, שמע ותנועה, שפה ועזרה, וחשבון ונתונים."
   });
 
+  Object.assign(ru, {
+    'Available after you start Training.': 'Доступно после начала тренировки.',
+    'Hints become available after a decision is generated.': 'Подсказки станут доступны после создания решения.',
+    'Open to load saved review history for this profile.': 'Откройте, чтобы загрузить сохранённую историю повторения этого профиля.',
+    'Open this panel to load saved review history. New answers appear here after a decision.': 'Откройте панель, чтобы загрузить сохранённую историю повторения. Новые ответы появятся здесь после решения.',
+    'Saved review history loads when this panel opens.': 'Сохранённая история повторения загрузится при открытии панели.',
+    'Start a new Training session? The active session will be marked incomplete, and its recorded decisions will remain in Training Memory.': 'Начать новую тренировочную сессию? Активная сессия будет отмечена как незавершённая, а записанные решения останутся в памяти тренировок.',
+    'Unavailable after known-card removal': 'Недоступно после исключения известных карт',
+    'Range comparison is unavailable because canonical card removal could not be loaded.': 'Сравнение диапазонов недоступно: не удалось загрузить каноническое исключение карт.',
+  });
+  Object.assign(he, {
+    'Available after you start Training.': 'זמין לאחר התחלת האימון.',
+    'Hints become available after a decision is generated.': 'רמזים יהיו זמינים לאחר יצירת החלטה.',
+    'Open to load saved review history for this profile.': 'פתחו כדי לטעון את היסטוריית החזרה השמורה של הפרופיל.',
+    'Open this panel to load saved review history. New answers appear here after a decision.': 'פתחו את הלוח כדי לטעון היסטוריית חזרה שמורה. תשובות חדשות יופיעו כאן לאחר החלטה.',
+    'Saved review history loads when this panel opens.': 'היסטוריית החזרה השמורה תיטען עם פתיחת הלוח.',
+    'Start a new Training session? The active session will be marked incomplete, and its recorded decisions will remain in Training Memory.': 'להתחיל סשן אימון חדש? הסשן הפעיל יסומן כלא הושלם, וההחלטות שנרשמו בו יישארו בזיכרון האימון.',
+    'Unavailable after known-card removal': 'לא זמין לאחר הסרת קלפים ידועים',
+    'Range comparison is unavailable because canonical card removal could not be loaded.': 'השוואת הטווחים אינה זמינה כי לא ניתן היה לטעון את הסרת הקלפים הקנונית.',
+  });
+
   const allProductKeys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineProductTranslations = {
     en: Object.fromEntries([...allProductKeys].map((key) => [key, key])),

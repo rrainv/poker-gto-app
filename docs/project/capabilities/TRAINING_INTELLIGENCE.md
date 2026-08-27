@@ -37,6 +37,8 @@ Users should eventually be able to:
 
 Current Training is legal, deterministic, planner/provider-backed, source-aware, and durably remembers Varied, Focused, and Full Hand Hero decisions. The v1 queue uses transparent comparative/user-study reasons and reversible reviewed/snoozed lifecycle; it does not claim heuristic disagreement is a mistake. Advanced spaced/adaptive scheduling, rich filters/trends, Saved Drill payloads, Home/Replay/Analyze continuity, and Personal Strategy observation remain future work.
 
+Human product evidence also establishes a durable composition direction for `TRAINING-COMPOSITION-001`: one conceptual session start has one primary CTA; useful setup and status are top-packed; the pre-answer and post-answer states retain one stable workspace skeleton; and Action History, Assistance, Training Memory, feedback, and explanation receive explicit roles instead of appearing as competing or empty panels. This is presentation ownership only and does not change Training generation, grading, session, or memory authority.
+
 ## Desired future behavior
 
 Training Intelligence should preserve:
@@ -132,7 +134,7 @@ The first implementation should store only what its user job cannot truthfully r
 - **Explain:** concise supported account of why this decision entered review, how the source comparison applies, or what changed in a similar re-drill.
 - **Coach / Summary:** recurring session/cross-session pattern and recommended next study scope only with enough comparable evidence and explicit limitations.
 
-Facts-only history and dense filters remain available. Coach/Summary should never be mandatory fluff or replace exact decision access.
+Facts-only history and dense filters remain available. In the practice workspace, Facts stay closest to the decision/result, Explain follows through concise disclosure, and Coach/Summary occupies later/deeper space only when evidence supports it. Coach/Summary should never be mandatory bulk or replace exact decision access.
 
 ## Dependencies
 

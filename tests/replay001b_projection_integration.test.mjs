@@ -74,7 +74,7 @@ test('Scenario Mode receives neither Replay projection state nor active cursor o
   assert.match(html, /id="playbookHandWorkspace"[^>]*data-playbook-hand[^>]*hidden/);
 });
 
-test('Previous, Next, and Live controls consume projection flags without poker inference', () => {
+test('Previous, Next, and Return-to-live controls consume projection and canonical lifecycle flags', () => {
   const controls = sourceBetween(
     logic,
     'function renderCanonicalReplayControls(',
@@ -87,8 +87,10 @@ test('Previous, Next, and Live controls consume projection flags without poker i
   );
   assert.match(controls, /projection\.canPrevious/);
   assert.match(controls, /projection\.canNext/);
-  assert.match(controls, /projection\.canReturnToEndpoint/);
-  assert.match(controls, /projection\.endpointLabelKey/);
+  assert.match(controls, /projection\.mode === 'replay'/);
+  assert.match(controls, /projection\.canReturnToLive === true/);
+  assert.match(controls, /liveState\.terminal\?\.isTerminal !== true/);
+  assert.match(controls, /live\.hidden = !canExitReplayToLive/);
   assert.match(controls, /projection\.modeLabelKey/);
   assert.match(controls, /projection\.selectedFrame\?\.labelKey/);
   assert.match(bindings, /callPlaybookStateBridge\('previousReplayFrame'\)/);

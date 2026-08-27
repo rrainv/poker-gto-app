@@ -819,6 +819,42 @@
   Object.assign(ru, handReviewTutorial.ru);
   Object.assign(he, handReviewTutorial.he);
 
+  const savedTutorial = {
+    en: {
+      'Using Saved study': 'Using Saved study',
+      'Reopen profile-scoped Hands and Spots without mixing Saved with the Home dashboard.': 'Reopen profile-scoped Hands and Spots without mixing Saved with the Home dashboard.',
+      'Saved has its own study job': 'Saved has its own study job',
+      'Saved belongs to the signed-in Riverline profile. Signing in selects that profile on this device; it does not enable sync or cloud backup.': 'Saved belongs to the signed-in Riverline profile. Signing in selects that profile on this device; it does not enable sync or cloud backup.',
+      'Reopen the exact study object': 'Reopen the exact study object',
+      'Open a Saved Hand for canonical Replay or a Saved Spot for its supplied study context. Saved does not invent missing history.': 'Open a Saved Hand for canonical Replay or a Saved Spot for its supplied study context. Saved does not invent missing history.',
+      'Return to items you marked': 'Return to items you marked',
+      'Review and Mistake group the same Saved objects you explicitly classified; they are study intent, not an objective strategy grade.': 'Review and Mistake group the same Saved objects you explicitly classified; they are study intent, not an objective strategy grade.',
+    },
+    ru: {
+      'Using Saved study': '\u0420\u0430\u0431\u043e\u0442\u0430 \u0441 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u043c\u0438 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430\u043c\u0438',
+      'Reopen profile-scoped Hands and Spots without mixing Saved with the Home dashboard.': '\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0439\u0442\u0435 \u0440\u0430\u0437\u0434\u0430\u0447\u0438 \u0438 \u0441\u043f\u043e\u0442\u044b \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0433\u043e \u043f\u0440\u043e\u0444\u0438\u043b\u044f \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e \u043e\u0442 Home.',
+      'Saved has its own study job': '\u0423 Saved \u0441\u0432\u043e\u044f \u0443\u0447\u0435\u0431\u043d\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430',
+      'Saved belongs to the signed-in Riverline profile. Signing in selects that profile on this device; it does not enable sync or cloud backup.': '\u0421\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u0435 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b \u043f\u0440\u0438\u043d\u0430\u0434\u043b\u0435\u0436\u0430\u0442 \u0432\u043e\u0448\u0435\u0434\u0448\u0435\u043c\u0443 \u043f\u0440\u043e\u0444\u0438\u043b\u044e Riverline. \u0412\u0445\u043e\u0434 \u0432\u044b\u0431\u0438\u0440\u0430\u0435\u0442 \u043f\u0440\u043e\u0444\u0438\u043b\u044c \u043d\u0430 \u044d\u0442\u043e\u043c \u0443\u0441\u0442\u0440\u043e\u0439\u0441\u0442\u0432\u0435, \u043d\u043e \u043d\u0435 \u0432\u043a\u043b\u044e\u0447\u0430\u0435\u0442 \u0441\u0438\u043d\u0445\u0440\u043e\u043d\u0438\u0437\u0430\u0446\u0438\u044e \u0438\u043b\u0438 \u043e\u0431\u043b\u0430\u0447\u043d\u0443\u044e \u0440\u0435\u0437\u0435\u0440\u0432\u043d\u0443\u044e \u043a\u043e\u043f\u0438\u044e.',
+      'Reopen the exact study object': '\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0442\u043e\u0447\u043d\u044b\u0439 \u0443\u0447\u0435\u0431\u043d\u044b\u0439 \u043e\u0431\u044a\u0435\u043a\u0442',
+      'Open a Saved Hand for canonical Replay or a Saved Spot for its supplied study context. Saved does not invent missing history.': '\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u0443\u044e \u0440\u0430\u0437\u0434\u0430\u0447\u0443 \u0434\u043b\u044f \u043a\u0430\u043d\u043e\u043d\u0438\u0447\u0435\u0441\u043a\u043e\u0433\u043e Replay \u0438\u043b\u0438 \u0441\u043f\u043e\u0442 \u0434\u043b\u044f \u0435\u0433\u043e \u0438\u0441\u0445\u043e\u0434\u043d\u043e\u0433\u043e \u043a\u043e\u043d\u0442\u0435\u043a\u0441\u0442\u0430. Saved \u043d\u0435 \u0432\u044b\u0434\u0443\u043c\u044b\u0432\u0430\u0435\u0442 \u043e\u0442\u0441\u0443\u0442\u0441\u0442\u0432\u0443\u044e\u0449\u0443\u044e \u0438\u0441\u0442\u043e\u0440\u0438\u044e.',
+      'Return to items you marked': '\u0412\u0435\u0440\u043d\u0438\u0442\u0435\u0441\u044c \u043a \u043e\u0442\u043c\u0435\u0447\u0435\u043d\u043d\u044b\u043c \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430\u043c',
+      'Review and Mistake group the same Saved objects you explicitly classified; they are study intent, not an objective strategy grade.': 'Review \u0438 Mistake \u0433\u0440\u0443\u043f\u043f\u0438\u0440\u0443\u044e\u0442 \u0442\u0435 \u0436\u0435 \u043e\u0431\u044a\u0435\u043a\u0442\u044b Saved, \u043a\u043e\u0442\u043e\u0440\u044b\u0435 \u0432\u044b \u044f\u0432\u043d\u043e \u043e\u0442\u043c\u0435\u0442\u0438\u043b\u0438; \u044d\u0442\u043e \u0446\u0435\u043b\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f, \u0430 \u043d\u0435 \u043e\u0431\u044a\u0435\u043a\u0442\u0438\u0432\u043d\u0430\u044f \u043e\u0446\u0435\u043d\u043a\u0430 \u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u0438.',
+    },
+    he: {
+      'Using Saved study': '\u05e9\u05d9\u05de\u05d5\u05e9 \u05d1\u05dc\u05d9\u05de\u05d5\u05d3 \u05e9\u05de\u05d5\u05e8',
+      'Reopen profile-scoped Hands and Spots without mixing Saved with the Home dashboard.': '\u05e4\u05ea\u05d7\u05d5 \u05d9\u05d3\u05d9\u05d9\u05dd \u05d5\u05e1\u05e4\u05d5\u05d8\u05d9\u05dd \u05e9\u05dc \u05d4\u05e4\u05e8\u05d5\u05e4\u05d9\u05dc \u05d1\u05dc\u05d9 \u05dc\u05e2\u05e8\u05d1\u05d1 \u05d0\u05ea Saved \u05e2\u05dd \u05dc\u05d5\u05d7 Home.',
+      'Saved has its own study job': '\u05dc-Saved \u05d9\u05e9 \u05ea\u05e4\u05e7\u05d9\u05d3 \u05dc\u05d9\u05de\u05d5\u05d3\u05d9 \u05de\u05e9\u05dc\u05d5',
+      'Saved belongs to the signed-in Riverline profile. Signing in selects that profile on this device; it does not enable sync or cloud backup.': '\u05d4\u05dc\u05d9\u05de\u05d5\u05d3 \u05d4\u05e9\u05de\u05d5\u05e8 \u05e9\u05d9\u05d9\u05da \u05dc\u05e4\u05e8\u05d5\u05e4\u05d9\u05dc Riverline \u05d4\u05de\u05d7\u05d5\u05d1\u05e8. \u05d4\u05d4\u05ea\u05d7\u05d1\u05e8\u05d5\u05ea \u05d1\u05d5\u05d7\u05e8\u05ea \u05d0\u05ea \u05d4\u05e4\u05e8\u05d5\u05e4\u05d9\u05dc \u05d1\u05de\u05db\u05e9\u05d9\u05e8 \u05d4\u05d6\u05d4; \u05d4\u05d9\u05d0 \u05d0\u05d9\u05e0\u05d4 \u05de\u05e4\u05e2\u05d9\u05dc\u05d4 \u05e1\u05e0\u05db\u05e8\u05d5\u05df \u05d0\u05d5 \u05d2\u05d9\u05d1\u05d5\u05d9 \u05d1\u05e2\u05e0\u05df.',
+      'Reopen the exact study object': '\u05e4\u05ea\u05d7\u05d5 \u05d0\u05ea \u05e4\u05e8\u05d9\u05d8 \u05d4\u05dc\u05d9\u05de\u05d5\u05d3 \u05d4\u05de\u05d3\u05d5\u05d9\u05e7',
+      'Open a Saved Hand for canonical Replay or a Saved Spot for its supplied study context. Saved does not invent missing history.': '\u05e4\u05ea\u05d7\u05d5 \u05d9\u05d3 \u05e9\u05de\u05d5\u05e8\u05d4 \u05dc-Replay \u05e7\u05e0\u05d5\u05e0\u05d9 \u05d0\u05d5 \u05e1\u05e4\u05d5\u05d8 \u05e9\u05de\u05d5\u05e8 \u05dc\u05d4\u05e7\u05e9\u05e8 \u05d4\u05dc\u05d9\u05de\u05d5\u05d3 \u05e9\u05e1\u05d5\u05e4\u05e7. Saved \u05d0\u05d9\u05e0\u05d5 \u05de\u05de\u05e6\u05d9\u05d0 \u05d4\u05d9\u05e1\u05d8\u05d5\u05e8\u05d9\u05d4 \u05d7\u05e1\u05e8\u05d4.',
+      'Return to items you marked': '\u05d7\u05d6\u05e8\u05d5 \u05dc\u05e4\u05e8\u05d9\u05d8\u05d9\u05dd \u05e9\u05e1\u05d9\u05de\u05e0\u05ea\u05dd',
+      'Review and Mistake group the same Saved objects you explicitly classified; they are study intent, not an objective strategy grade.': 'Review \u05d5-Mistake \u05de\u05e7\u05d1\u05e6\u05d9\u05dd \u05d0\u05ea \u05d0\u05d5\u05ea\u05dd \u05e4\u05e8\u05d9\u05d8\u05d9 Saved \u05e9\u05e1\u05d9\u05d5\u05d5\u05d2\u05ea\u05dd \u05d1\u05de\u05e4\u05d5\u05e8\u05e9; \u05d6\u05d5\u05d4\u05d9 \u05db\u05d5\u05d5\u05e0\u05ea \u05dc\u05d9\u05de\u05d5\u05d3 \u05d5\u05dc\u05d0 \u05d4\u05e6\u05d9\u05d5\u05df \u05d0\u05d5\u05d1\u05d9\u05d9\u05e7\u05d8\u05d9\u05d1\u05d9 \u05dc\u05d0\u05e1\u05d8\u05e8\u05d8\u05d2\u05d9\u05d4.',
+    },
+  };
+  Object.assign(en, savedTutorial.en);
+  Object.assign(ru, savedTutorial.ru);
+  Object.assign(he, savedTutorial.he);
+
   global.riverlineTutorialTranslations = Object.freeze({
     en: Object.freeze(en),
     ru: Object.freeze(ru),

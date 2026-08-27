@@ -115,7 +115,8 @@ test('Saved guest and empty presentation remains intentionally Saved instead of 
   assert.deepEqual(Array.from(savedGuest.visibleSections), ['guest']);
   assert.equal(savedGuest.guestCopy.eyebrow, 'Saved study');
   assert.equal(savedGuest.guestCopy.title, 'Saved Hands & Spots');
-  assert.equal(savedGuest.guestCopy.secondary, 'No saved study is available in Guest Mode.');
+  assert.equal(savedGuest.guestCopy.primary, 'Saved study belongs to a signed-in Riverline profile. Sign in to open that profile\'s Hands and Spots.');
+  assert.equal(savedGuest.guestCopy.secondary, 'Signing in does not enable sync or cloud backup.');
   assert.match(logic, /renderHomeRecent\(model\.sections\.recent\)/);
   assert.match(logic, /homeEmptyAction\('No saved study yet\.', 'Analyze a Hand', 'analyze'\)/);
 });

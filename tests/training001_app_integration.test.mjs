@@ -13,7 +13,10 @@ test('production Training route uses the canonical bridge and shared StrategyPro
   assert.match(canonicalTraining, /callTrainingServiceBridge\('generate', config, \{ strategyProvider \}\)/);
   assert.doesNotMatch(canonicalTraining, /actionProfile\(|Math\.random\s*=/);
   assert.match(canonicalTraining, /callTrainingServiceBridge\('answer', exercise\.id, userAction\)/);
-  assert.match(logic, /bind\('#trainingNewHand', 'click', \(\) => startConfiguredTrainingSession\(\)\)/);
+  assert.match(logic, /bind\('#trainingNewHand', 'click', \(\) => startConfiguredTrainingSessionWithGuard\(\)\)/);
+  assert.match(canonicalTraining, /function trainingSessionIsActive\(\)/);
+  assert.match(canonicalTraining, /window\.confirm\(t\(/);
+  assert.match(canonicalTraining, /finishTrainingMemorySession\('abandoned'\)/);
   assert.match(canonicalTraining, /callTrainingServiceBridge\('generatePlanned', \{ strategyProvider \}\)/);
   assert.match(logic, /button\.addEventListener\('click', \(\) => handleTrainingGuess\(type\)\)/);
   assert.doesNotMatch(logic, /window\.(?:newRandomTrainingHand|handleTrainingGuess|replayTrainingExercise|resetTrainingStats)\s*=/);

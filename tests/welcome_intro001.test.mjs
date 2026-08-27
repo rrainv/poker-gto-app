@@ -114,7 +114,7 @@ test('manual reopen preserves terminal status and closes back to its invoking wo
   assert.deepEqual(routes, []);
   assert.equal(localPreference.getState().status, 'completed');
   assert.match(html, /id="workspaceLearnButton"[^>]*data-i18n-aria-label="Learn Riverline"/);
-  assert.match(bootstrap, /heading\?\.focus\?\.\(\{ preventScroll: true \}\)/);
+  assert.match(bootstrap, /\(manual \? closeButton : surface\)\?\.focus\?\.\(\{ preventScroll: true \}\)/);
   assert.match(bootstrap, /invoker\?\.focus\?\.\(\{ preventScroll: true \}\)/);
 });
 
@@ -214,10 +214,15 @@ test('Welcome uses semantic headings, native buttons and checkbox, visible focus
   assert.equal((welcome.match(/class="welcome-job-card" type="button"/g) ?? []).length, 5);
   assert.match(welcome, /id="welcomeRememberChoice" type="checkbox"/);
   assert.match(welcome, /aria-labelledby="welcomeTitle" aria-describedby="welcomeDescription"/);
+  assert.match(welcome, /id="welcomeOrientation"[^>]+tabindex="-1"/);
+  assert.doesNotMatch(welcome, /id="welcomeTitle"[^>]+tabindex/);
   assert.match(css, /welcome-job-card:focus-visible/);
   assert.match(css, /welcome-preference:focus-within/);
   assert.match(bootstrap, /event\.key !== 'Escape'/);
   assert.match(bootstrap, /session\.dismiss/);
+  assert.match(bootstrap, /clearNavigationSelection/);
+  assert.match(bootstrap, /setAttribute\('aria-current', 'false'\)/);
+  assert.doesNotMatch(bootstrap, /heading\?\.focus/);
 });
 
 test('five primary cards keep deliberate 3+2 wide and 2+2+1 constrained-desktop balance', () => {

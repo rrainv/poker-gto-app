@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 26, 2026 (`HANDS-ON-PRODUCT-REVIEW-001` captured 59 confirmed hands-on findings; `HANDS-ON-DEFECTS-001` is active next; `PERSONAL-STRATEGY-003A` is planned next; a human-visible checkpoint follows; `PREMIUM-CLOSEOUT-001` remains the later pre-release quality gate).
+Last refreshed: August 27, 2026 (`HANDS-ON-DEFECTS-001` is a completed/accepted bounded repair checkpoint with explicit structural and newly discovered debt; `CORE-FLOW-CORRECTNESS-001` is active next, followed by Replay rail, Training composition, and `PERSONAL-STRATEGY-003A`; no broad visual or composition acceptance is implied).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -57,32 +57,49 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - the [durable review artifact](HANDS_ON_PRODUCT_REVIEW_2026_08.md) preserves every finding, its user problem, desired outcome, classification, priority, and owner;
    - no runtime or tests changed, and no finding was closed by documentation.
 
-9. **ACTIVE NEXT — `HANDS-ON-DEFECTS-001` bounded confirmed-defect repair**
-   - own navigation truth, Home Game completion feedback, action-bar legibility, poker-sound overlap, card-removal/impossible-range correctness, clipped Analyze content, Training empty/progress/session-transition states, authentication errors, and raw internal labels;
-   - include only bounded Replay/Training geometry regressions and a local Current Legal Actions placement correction if inspection proves they do not require workspace/rail redesign;
-   - preserve canonical poker/range/Training/auth/Replay/audio authorities, localization, accessibility, and PERF-001.
+9. **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT — `HANDS-ON-DEFECTS-001`**
+   - the second product-owner acceptance pass closes the bounded ticket under the anti-loop rule; no third local correction cycle is authorized;
+   - accepted repairs are Welcome title focus/Escape, materially clearer Home Game completion state, Return to live, privacy-safe auth feedback, dead-card/range parity, Analyze clipping, stable Personal Strategy vocabulary, and materially improved Replay geometry;
+   - Hand still appears selected on Welcome, Home Game imbalance prominence remains weak, and revealed cards can overlap player identity; these move to `FIRST-USE-HOME-001`, `HOME-GAME-PRESENTATION-001`, and `REPLAY-RAIL-NAV-001` respectively;
+   - the checkpoint does not claim all HPR issues fixed or accept Hand, Training, Home, Saved, or whole-product composition.
 
-10. **PLANNED NEXT — `PERSONAL-STRATEGY-003A` first-value product-model reset**
+10. **ACTIVE NEXT — `CORE-FLOW-CORRECTNESS-001`**
+   - expose an obvious completed-Hand to fresh canonical Hand lifecycle without mutating the completed historical record;
+   - expose the canonical append-only correction/reversal flow for accidental Home Game cash-outs and other correction-eligible transactions;
+   - keep known-opponent-card entry open until both legal cards are selected or the user explicitly dismisses it;
+   - reconstruct reported min-raise history and verify opening bet, ordinary raise, reraise, short all-in, and action-reopening semantics; 7bb to 13bb may be legal from a 6bb last full increment, so change runtime only if canonical legality is wrong.
+
+11. **PLANNED NEXT — `REPLAY-RAIL-NAV-001`**
+   - own vertical street-grouped chronology, first-class rail action placement including Current Legal Actions, compact Hand Stage, table/history/action integration, and timeline typography;
+   - own coherent cards/seat/player ownership without overlap, folded-seat readability, physical Dealer placement/gap explanation, and contribution-line clarity while preserving one canonical Replay cursor/history and the accepted return-to-live invariant.
+
+12. **PLANNED NEXT — `TRAINING-COMPOSITION-001`**
+   - own one primary start CTA, stable pre/post-answer skeleton, top packing, Action History, Assistance, Training Memory, setup/status, and progressive explanation depth.
+
+13. **PLANNED NEXT — `PERSONAL-STRATEGY-003A` first-value product-model reset**
    - own the versioned legacy Profile/Mode to Game setup/Approach product/storage migration without evidence or stable-identity loss;
    - deliver durable local-first setup, one initial Approach, an honestly supported first-in/RFI five-question path, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit;
    - seek broad sparse/high-information coverage before repeatedly refining narrow boundaries;
    - preserve dominant-only ≠ pure, provenance, conflicts, exact mixes, owner isolation, optional account sync governance, and street/role extensibility; do not implement Training/reference/observed integration.
 
-11. **HUMAN-VISIBLE CHECKPOINT / REASSESSMENT — after defects and 003A**
-   - perform hands-on use, product discussion, correction/acceptance, and roadmap reassessment before automatically launching several more user-facing redesign tickets.
+14. **HUMAN WHOLE-APP MINI-PASS — after Core Flow correctness, Replay, Training composition, and `003A`**
+   - perform a short freeform whole-product pass before continuing the visible queue.
 
-12. **PLANNED LATER / AFTER 003A ACCEPTANCE AND CHECKPOINT — Personal Strategy provider/reference/observed integration**
+15. **LIKELY NEXT / EXACT ORDER REASSESSED AT THE MINI-PASS — composition and setup**
+   - `EQUITY-COMPOSITION-001`, `ANALYZE-RANGE-UX-001`, and `GAME-SETUP-EVOLUTION-001` are the leading candidates.
+
+16. **PLANNED LATER / AFTER 003A ACCEPTANCE AND CHECKPOINT — Personal Strategy provider/reference/observed integration**
    - preserve selected reference, personal intent, source-labelled observed behavior, and opponent policy as separate roles;
    - Training comparison uses an explicit frozen Game setup/Approach selection, while adoption into intent requires a separate explicit action.
 
-13. **NAMED REDESIGN / INTELLIGENCE WAVE — exact order reassessed at the human checkpoint**
+17. **NAMED REDESIGN / INTELLIGENCE WAVE — exact order reassessed at visible checkpoints**
    - confirmed redesign owners include `FIRST-USE-HOME-001`, `REPLAY-RAIL-NAV-001`, `TRAINING-COMPOSITION-001`, `EQUITY-COMPOSITION-001`, `GUIDE-CONTENT-001`, `GAME-SETUP-EVOLUTION-001`, `HOME-GAME-PRESENTATION-001`, `RANDOM-SPOT-GENERATOR-001`, `ANALYZE-RANGE-UX-001`, `PERSONAL-STRATEGY-TEACHING-001`, and `SAVED-VISUAL-KNOWLEDGE-001`;
    - accepted candidates also include `PERSONAL-INSIGHTS-001`, `EQUITY-HAND-ANALYSIS-001A`, `RANGE-EVOLUTION-001`, deeper Bluff/Exploit analysis, later Opponent Intelligence / OpponentPolicy, and `HOME-002B`;
    - capability documentation does not activate any candidate or pre-commit their order.
 
-14. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+18. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
 
-15. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
+19. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
 
 Reassess only at clean checkpoints. Documenting a capability does not pull it forward.
 
@@ -110,11 +127,11 @@ Do not revive browser/Electron ONNX inference, remote strategy APIs, arbitrary s
 
 Completed/checkpointed work includes adaptive Table Presence, canonical Replay, shared Full Hand Review, accepted audio/motion architecture, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, the accepted-with-debt `WORKSPACE-COMPOSITION-002` simplification, and `TABLE-PHYSICALITY-003` with explicit presentation debt.
 
-`HOME-GAME-001B` is completed at an accepted implementation checkpoint with its unavailable real Firefox/provider acceptance retained as `RET-HOMEGAME-001`. `SETTINGS-IA-001` is also completed at an accepted implementation checkpoint; its unavailable real Firefox matrix is retained under `QA-HANDSON-010` and `RET-PREMIUM-001`. The confirmed August review now establishes 59 additional current product findings: the bounded high-impact repair cluster blocks `003A`, while larger redesign and quality debt has named owners and does not invalidate the underlying architecture checkpoints. Revealed-opponent card inspectability remains `RET-CARDS-THEMES-001` debt, while Review chronology/rails now belong to `REPLAY-RAIL-NAV-001`. Full Hand Firefox acceptance, surviving composition verification, and broader premium QA remain separately owned by the QA Backlog and Return Queue. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
+`HOME-GAME-001B` is completed at an accepted implementation checkpoint with its unavailable real Firefox/provider acceptance retained as `RET-HOMEGAME-001`. `SETTINGS-IA-001` is also completed at an accepted implementation checkpoint; its unavailable real Firefox matrix is retained under `QA-HANDSON-010` and `RET-PREMIUM-001`. `HANDS-ON-DEFECTS-001` is now an accepted bounded repair checkpoint, not whole-product visual acceptance. The remaining Welcome selection, Home Game warning presentation, cards/seat overlap, fold opacity, Dealer placement, contribution-line comprehension, horizontal Action Flow, and Current Legal Actions debt has named structural owners. The newly discovered terminal-Hand, transaction-correction, and opponent-card-entry defects plus min-raise verification are active next under `CORE-FLOW-CORRECTNESS-001`. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
 
 ### Home Game
 
-`HOME-GAME-001B` completes the bounded organizer-management continuation over the separate 001A exact-money domain: stable reusable players, editable ordered groups, roster reuse, completed-session archive/restore, atomic visible correction/replacement history, lifecycle revisions, and canonical account-only export. Hard delete and import are explicitly deferred for missing safety contracts. Guest remains runtime-only. Long-term settlement and optional Hand-link intent remain preserved in the [Home Game dossier](capabilities/HOME_GAME_EVOLUTION.md), not sequenced here. Real Firefox and authenticated provider-path acceptance remain routed through the QA Backlog/Return Queue rather than reopening implementation scope.
+`HOME-GAME-001B` completes the bounded organizer-management continuation over the separate 001A exact-money domain: stable reusable players, editable ordered groups, roster reuse, completed-session archive/restore, atomic visible correction/replacement history, lifecycle revisions, and canonical account-only export. Human review now shows that the existing append-only reversal/correction capability is not conveniently reachable after an accidental cash-out; `CORE-FLOW-CORRECTNESS-001` owns that accessibility bug without destructive editing. Stronger imbalance prominence and broader organizer physicality remain `HOME-GAME-PRESENTATION-001`. Hard delete and import stay deferred for missing safety contracts. Guest remains runtime-only.
 
 ### Settings and premium closeout
 
@@ -134,7 +151,7 @@ Varied, Focused, and Full Hand Training are legal, deterministic, provider-backe
 
 Calibration, deterministic inference, Matrix, Range Builder, Range Teacher, bounded RFI context transfer, and optional sync are checkpointed over one sparse immutable intended-strategy evidence authority.
 
-The independent [`PERSONAL-STRATEGY-002R` review](PERSONAL_STRATEGY_002R_REVIEW.md) is completed and human-accepted. `PERSONAL-STRATEGY-003A` is planned next after the active defect repair and owns the versioned Game setup/Approach migration plus the bounded local-first first-value reset before provider integration. The confirmed hands-on evidence strengthens broad sparse/high-information coverage before fine boundary refinement and confirms that exactly-three/environment restrictions and standalone Teacher/Builder complexity are painful. Direct intent, inference, selected reference, source-labelled observed behavior, and opponent policy remain distinct; dominant-only evidence never becomes a fake 100% mix. Accepted durable direction lives in the [Personal Strategy dossier](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md).
+The independent [`PERSONAL-STRATEGY-002R` review](PERSONAL_STRATEGY_002R_REVIEW.md) is completed and human-accepted. `PERSONAL-STRATEGY-003A` follows Core Flow correctness, Replay rail, and Training composition; it owns the versioned Game setup/Approach migration plus the bounded local-first first-value reset before provider integration. The confirmed hands-on evidence strengthens broad sparse/high-information coverage before fine boundary refinement and confirms that exactly-three/environment restrictions and standalone Teacher/Builder complexity are painful. Direct intent, inference, selected reference, source-labelled observed behavior, and opponent policy remain distinct; dominant-only evidence never becomes a fake 100% mix. Accepted durable direction lives in the [Personal Strategy dossier](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md).
 
 ### Analysis, Equity, bluff, and ranges
 

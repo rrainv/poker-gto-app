@@ -37,7 +37,8 @@ test('postflop Matrix uses one compact truthful empty state and no 169 unavailab
 test('preflop Matrix retains the provider-backed 13 by 13 model and readable local overflow', () => {
   assert.match(renderChart, /RANKS\.forEach\(\(_?, row\) => RANKS\.forEach/);
   assert.match(renderChart, /grid\.appendChild\(btn\)/);
-  assert.match(renderChart, /matrixModel\.cells\[row \* 13 \+ column\]\?\.actions/);
+  assert.match(renderChart, /const matrixCell = matrixModel\.cells\[row \* 13 \+ column\]/);
+  assert.match(renderChart, /const actions = matrixCell\?\.actions \|\| \[\]/);
   assert.match(ticketCss, /--range-matrix-cell:\s*clamp\(42px, 2\.75vw, 46px\)/);
   assert.match(css, /\.range-matrix-panel \.matrix-wrap\s*\{[^}]*overflow-x:\s*auto/);
   assert.match(ticketCss, /@container \(max-width: 900px\)/);
@@ -81,7 +82,8 @@ test('Training compacts only an actually empty board while retaining Hero cards'
 });
 
 test('desktop composition contains wide content inside local scrollers rather than the page', () => {
-  assert.match(ticketCss, /\.range-comparison-panel\s*\{[^}]*overflow:\s*hidden/);
+  assert.match(ticketCss, /\.range-comparison-panel\s*\{[^}]*overflow:\s*visible/);
+  assert.match(ticketCss, /\.range-comparison-panel > \.panel-body\s*\{[^}]*max-block-size:\s*none;[^}]*overflow:\s*visible/);
   assert.match(ticketCss, /\.range-comparison-scroll\s*\{[\s\S]*?max-width:\s*100%/);
   assert.match(ticketCss, /\.range-matrix-panel \.strategy-grid\s*\{[^}]*min-width:\s*max-content/);
   assert.doesNotMatch(ticketCss, /(?:^|\n)\s*(?:html|body)\s*\{[^}]*overflow-x:\s*(?:auto|scroll)/);

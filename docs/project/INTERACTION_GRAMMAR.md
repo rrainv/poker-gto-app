@@ -20,6 +20,14 @@ Space follows the importance of the information, action, or result; panels do no
 
 Side rails are first-class interaction space when they let users operate while preserving the central poker object. A rail is not automatically correct: it must keep controls readable, logically ordered, keyboard accessible, and useful at supported widths rather than becoming a narrow filing cabinet.
 
+Useful content follows an upside-down-gravity rule: pack the primary object, current state, and next meaningful action toward the top before distributing secondary explanation or empty support regions below. The primary object appears before its supporting controls and prose in both visual and logical reading order.
+
+One conceptual action has one primary call to action. Repeated buttons that start the same Training session, complete the same workflow, or submit the same state do not become more discoverable by competing with one another. Secondary routes may remain available, but they must be visibly secondary and preserve the same authority.
+
+Inputs and results have separate spatial roles. Inputs stay coherent while work is being configured; after an action produces an output, the output gains hierarchy without destroying the user's input context. Broad information gathering comes before boundary precision: establish useful coverage and the main result before spending central space on narrow refinements.
+
+Desktop acceptance uses browser zoom at 100%, not zoom reduction as a layout workaround. The primary acceptance viewport is 1920×1080, with 2560×1440 and 2560×1600 coverage and functional 1366×768 support. A specialized composition may adapt across those sizes, but it may not require sub-100% zoom to expose the primary object or action.
+
 ### Stable state transitions
 
 Entering Replay, answering a Training decision, completing a Home Game session, expanding explanation, or producing an Equity result should preserve orientation and coherent geometry wherever the user job has not changed. A state change must make its effect visible through the resulting state, guarded confirmation, status, error, toast, or summary as appropriate.
@@ -59,6 +67,8 @@ Known cards retain one rank-plus-suit identity across DOM cards, SVG cards, text
 - **Coach / Summary:** cross-decision, cross-session, cross-range, or cross-profile synthesis only when sufficient structured evidence exists.
 
 Facts-only use remains available. Explanation depth changes presentation, not underlying truth or authority.
+
+When all three depths are available, they progress spatially from Facts to Explain to Coach rather than appearing as equal competing panels. The concise factual result stays closest to the primary object; deeper narrative and cross-context synthesis yield space and use explicit disclosure.
 
 ### Provenance and uncertainty
 

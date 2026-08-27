@@ -11,6 +11,7 @@ const SoundFX = (function() {
   const ALLOWED_AUDIO_ORIGINS = new Set(['live', 'replay_playback']);
   const MAX_POLYPHONY = 12;
   const MAX_REMEMBERED_EVENTS = 256;
+  const MAX_QUEUED_POKER_EVENTS = 8;
 
   let audioCtx = null;
   let resumeContext = null;
@@ -28,6 +29,9 @@ const SoundFX = (function() {
   const latestNumericTokenBySource = new Map();
   const sampleBufferPromises = new Map();
   const sampleBufferResults = new Map();
+  let pokerEventQueue = Promise.resolve();
+  let pokerEventQueueGeneration = 0;
+  let queuedPokerEventCount = 0;
 
   // Procedural synthesis is intentionally limited to subtle Study/UI cues.
   const CUE_PROFILE = Object.freeze({
@@ -62,6 +66,19 @@ const SoundFX = (function() {
     study_corrective: Object.freeze({ category: CATEGORIES.STUDY, family: 'study_result', cooldown: 0.09, layers: 2, character: 'clear calm downward corrective acknowledgement' }),
     hint: Object.freeze({ category: CATEGORIES.STUDY, family: 'hint', cooldown: 0.1, layers: 2, character: 'light audible study disclosure' }),
     click: Object.freeze({ category: CATEGORIES.STUDY, family: 'selection', cooldown: 0.045, layers: 1, character: 'neutral selection tick' })
+  });
+
+  const POKER_CUE_SEPARATION_MS = Object.freeze({
+    card_deal: 90,
+    board_reveal: 180,
+    card_reveal: 90,
+    check: 120,
+    fold: 110,
+    call: 120,
+    bet: 145,
+    raise: 190,
+    all_in: 260,
+    pot_collect: 180,
   });
 
   const EVENT_CUES = Object.freeze({
@@ -170,6 +187,9 @@ const SoundFX = (function() {
     resumePromise = null;
     activeVoiceEnds = [];
     lastCueTimes.clear();
+    pokerEventQueueGeneration += 1;
+    pokerEventQueue = Promise.resolve();
+    queuedPokerEventCount = 0;
     if (contextToClose && contextToClose.state !== 'closed' && typeof contextToClose.close === 'function') {
       Promise.resolve(contextToClose.close()).catch(() => {});
     }
@@ -497,6 +517,32 @@ const SoundFX = (function() {
     }
   }
 
+  function queuePokerEventCue(cueName) {
+    if (queuedPokerEventCount >= MAX_QUEUED_POKER_EVENTS) {
+      return Promise.resolve(Object.freeze({ played: false, reason: 'queue_full' }));
+    }
+    queuedPokerEventCount += 1;
+    const generation = pokerEventQueueGeneration;
+    const result = pokerEventQueue.then(() => (
+      generation === pokerEventQueueGeneration
+        ? playCue(cueName)
+        : Object.freeze({ played: false, reason: 'queue_cancelled' })
+    ));
+    pokerEventQueue = result
+      .then((playback) => (
+        playback.played && generation === pokerEventQueueGeneration
+          ? new Promise((resolve) => setTimeout(resolve, POKER_CUE_SEPARATION_MS[cueName] ?? 100))
+          : null
+      ))
+      .catch(() => null)
+      .finally(() => {
+        if (generation === pokerEventQueueGeneration) {
+          queuedPokerEventCount = Math.max(0, queuedPokerEventCount - 1);
+        }
+      });
+    return result;
+  }
+
   async function prepareAudio() {
     if (!soundEnabled || (!pokerSoundsEnabled && !studySoundsEnabled)) {
       return Object.freeze({ prepared: false, reason: 'disabled' });
@@ -661,7 +707,9 @@ const SoundFX = (function() {
         && ['check', 'card_reveal'].includes(cueName)) {
         return Promise.resolve(Object.freeze({ played: false, reason: 'replay_speed' }));
       }
-      return playCue(cueName);
+      return CUE_DEFINITIONS[cueName]?.category === CATEGORIES.POKER
+        ? queuePokerEventCue(cueName)
+        : playCue(cueName);
     },
     prepareForUserGesture: prepareAudio,
     previewCue(cueName) {

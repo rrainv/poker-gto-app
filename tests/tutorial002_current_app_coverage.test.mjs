@@ -5,6 +5,7 @@ import vm from 'node:vm';
 
 import { createTutorialController } from '../app/src/tutorial/controller.mjs';
 import { HOME_TUTORIAL_DEFINITION } from '../app/src/tutorial/home-tutorial.mjs';
+import { SAVED_TUTORIAL_DEFINITION } from '../app/src/tutorial/saved-tutorial.mjs';
 import { CURRENT_APP_TUTORIAL_DEFINITIONS } from '../app/src/tutorial/current-app-tutorials.mjs';
 
 const [html, bootstrap, logic, css, translationSource] = await Promise.all([
@@ -15,7 +16,7 @@ const [html, bootstrap, logic, css, translationSource] = await Promise.all([
   readFile(new URL('../app/src/locales/tutorial-translations.js', import.meta.url), 'utf8'),
 ]);
 
-const definitions = [HOME_TUTORIAL_DEFINITION, ...CURRENT_APP_TUTORIAL_DEFINITIONS];
+const definitions = [HOME_TUTORIAL_DEFINITION, SAVED_TUTORIAL_DEFINITION, ...CURRENT_APP_TUTORIAL_DEFINITIONS];
 const byId = new Map(definitions.map((definition) => [definition.id, definition]));
 
 function translationCatalog() {
@@ -25,10 +26,11 @@ function translationCatalog() {
 }
 
 test('current tutorial inventory has stable unique IDs and bounded tours', () => {
-  assert.equal(definitions.length, 13);
+  assert.equal(definitions.length, 14);
   assert.equal(byId.size, definitions.length);
   assert.deepEqual([...byId.keys()], [
     'home.first-use',
+    'saved.library',
     'playbook.scenario-basics',
     'playbook.hand-mode',
     'playbook.replay',
@@ -48,6 +50,9 @@ test('current tutorial inventory has stable unique IDs and bounded tours', () =>
     assert.equal(new Set(definition.steps.map((step) => step.id)).size, definition.steps.length, definition.id);
   }
   assert.equal(definitions.some((definition) => definition.workspace === 'info'), false, 'Guide is persistent reference, not a redundant tour');
+  assert.equal(SAVED_TUTORIAL_DEFINITION.workspace, 'saved');
+  assert.equal(SAVED_TUTORIAL_DEFINITION.version, 1);
+  assert.doesNotMatch(JSON.stringify(SAVED_TUTORIAL_DEFINITION), /A quick tour of Home|My Riverline shows/);
 });
 
 test('all definition copy is complete in EN, RU, and HE with no runtime fallback', () => {

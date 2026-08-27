@@ -398,6 +398,34 @@
     'Cloud study sync is enabled': 'סנכרון לימוד בענן פעיל',
     'Enabled study domains sync across signed-in devices. Each domain remains local-first and can be turned off separately.': 'תחומי הלימוד שהופעלו מסתנכרנים בין מכשירים מחוברים. כל תחום נשאר מקומי תחילה וניתן לכבות אותו בנפרד.',
   };
+  Object.assign(en, {
+    'Confirm password': 'Confirm password',
+    'Passwords do not match.': 'Passwords do not match.',
+    'Email or password is incorrect. For privacy, Riverline does not confirm whether an account exists.': 'Email or password is incorrect. For privacy, Riverline does not confirm whether an account exists.',
+    'An account could not be created with these details. Try signing in or use another email.': 'An account could not be created with these details. Try signing in or use another email.',
+    'Account creation failed. Check the details and try again.': 'Account creation failed. Check the details and try again.',
+    'Sign-in is temporarily unavailable. Check the connection and try again.': 'Sign-in is temporarily unavailable. Check the connection and try again.',
+    'Your sign-in session expired. Sign in again.': 'Your sign-in session expired. Sign in again.',
+  });
+  Object.assign(ru, {
+    'Confirm password': 'Подтвердите пароль',
+    'Passwords do not match.': 'Пароли не совпадают.',
+    'Email or password is incorrect. For privacy, Riverline does not confirm whether an account exists.': 'Адрес электронной почты или пароль неверны. В целях конфиденциальности Riverline не сообщает, существует ли аккаунт.',
+    'An account could not be created with these details. Try signing in or use another email.': 'Не удалось создать аккаунт с этими данными. Попробуйте войти или укажите другой адрес электронной почты.',
+    'Account creation failed. Check the details and try again.': 'Не удалось создать аккаунт. Проверьте данные и повторите попытку.',
+    'Sign-in is temporarily unavailable. Check the connection and try again.': 'Вход временно недоступен. Проверьте подключение и повторите попытку.',
+    'Your sign-in session expired. Sign in again.': 'Сеанс входа истёк. Войдите снова.',
+  });
+  Object.assign(he, {
+    'Confirm password': 'אימות סיסמה',
+    'Passwords do not match.': 'הסיסמאות אינן תואמות.',
+    'Email or password is incorrect. For privacy, Riverline does not confirm whether an account exists.': 'כתובת הדוא״ל או הסיסמה שגויות. לשמירה על הפרטיות, Riverline אינה מאשרת אם החשבון קיים.',
+    'An account could not be created with these details. Try signing in or use another email.': 'לא ניתן ליצור חשבון עם הפרטים האלה. נסו להתחבר או השתמשו בכתובת דוא״ל אחרת.',
+    'Account creation failed. Check the details and try again.': 'יצירת החשבון נכשלה. בדקו את הפרטים ונסו שוב.',
+    'Sign-in is temporarily unavailable. Check the connection and try again.': 'ההתחברות אינה זמינה זמנית. בדקו את החיבור ונסו שוב.',
+    'Your sign-in session expired. Sign in again.': 'תוקף סשן ההתחברות פג. התחברו מחדש.',
+  });
+
   global.riverlineAccountTranslations = Object.freeze({
     en: Object.freeze(en),
     ru: Object.freeze(ru),

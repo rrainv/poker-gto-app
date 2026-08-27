@@ -32,6 +32,8 @@ Sharing should extend that same object model deliberately. It must remain local-
 
 Current implemented payloads and UI remain bounded. Saved Range, Drill, Session, Review, comments, social sharing, and a complete library experience require their own approved payload or application owners.
 
+Current authentication policy scopes Saved inspection and persistence to a signed-in Riverline profile. Account-owned cached objects may remain local to the device and invisible while signed out. This is compatible with a local-first repository: signing in selects the permitted owner scope and does not by itself enable sync, cloud backup, sharing, or upload. Guest copy must state that boundary rather than implying anonymous access to account-owned device data.
+
 ## Desired future behavior
 
 ### Saved Study Library

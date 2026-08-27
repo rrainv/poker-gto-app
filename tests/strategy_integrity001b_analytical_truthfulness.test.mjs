@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import { projectPreflopHandClassesAfterCardRemoval } from '../app/src/application/range-card-removal.mjs';
 
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
@@ -85,19 +86,31 @@ function rangeHarness() {
     ['villainRangeScore', fakeElement()],
     ['rangeConclusion', fakeElement()],
   ]);
+  const range = (stats) => Object.assign(new Set(['AA']), { stats });
   const ranges = {
-    BTN: { stats: { veryStrong: 20, strongMade: 20, marginal: 10, air: 50, total: 100 } },
-    UTG: { stats: { veryStrong: 5, strongMade: 10, marginal: 20, air: 65, total: 100 } },
-    BB: { stats: { veryStrong: 10, strongMade: 15, marginal: 25, air: 50, total: 100 } },
-    CO: { stats: { veryStrong: 15, strongMade: 20, marginal: 20, air: 45, total: 100 } },
+    BTN: range({ veryStrong: 20, strongMade: 20, marginal: 10, air: 50, total: 100 }),
+    UTG: range({ veryStrong: 5, strongMade: 10, marginal: 20, air: 65, total: 100 }),
+    BB: range({ veryStrong: 10, strongMade: 15, marginal: 25, air: 50, total: 100 }),
+    CO: range({ veryStrong: 15, strongMade: 20, marginal: 20, air: 45, total: 100 }),
   };
   const context = {
-    app: { playbookMode: 'scenario', gto: { board: ['As', 'Kd', '2c'] } },
+    app: {
+      playbookMode: 'scenario',
+      gto: { board: ['As', 'Kd', '2c'] },
+      decisionContext: {
+        schemaVersion: 'decision-context/v1',
+        board: ['As', 'Kd', '2c'],
+        deadCards: [],
+        heroCards: [],
+      },
+    },
     PLAYBOOK_MODES: { SCENARIO: 'scenario', HAND: 'hand' },
+    DECISION_CONTEXT_SCHEMA_VERSION: 'decision-context/v1',
     PREFLOP_RANGES: ranges,
     $: (selector) => elements.get(selector.slice(1)) || null,
     t: (text) => text,
     renderRangeGrid: (_gridId, _hoverId, range) => ({ ...range.stats }),
+    projectHandClassesAfterCardRemoval: projectPreflopHandClassesAfterCardRemoval,
     document: { createElement: () => fakeElement() },
   };
   const rangeFunction = sourceBetween(logic, 'function renderRangeAdvantage()', 'function renderBettingTree()');

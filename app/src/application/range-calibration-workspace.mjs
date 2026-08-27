@@ -26,54 +26,13 @@ import {
   CALIBRATION_DECISION_FAMILIES,
   RANGE_TEACHER_SESSION_PRESETS,
 } from '../personal-strategy/index.mjs';
+import {
+  personalStrategyActionLabelKey,
+  personalStrategyReasonLabelKey,
+  personalStrategyStatusLabelKey,
+} from './personal-strategy-presentation.mjs';
 
 let mountedWorkspace = null;
-
-const MATRIX_STATUS_KEYS = Object.freeze({
-  directly_known: 'Direct',
-  inferred_high: 'Inferred high',
-  inferred_medium: 'Inferred medium',
-  transferred: 'Transferred',
-  uncertain: 'Uncertain',
-  conflicting: 'Conflict',
-  unknown: 'Unknown',
-});
-
-const MATRIX_REASON_KEYS = Object.freeze({
-  direct_dominant_observation: 'Direct dominant action recorded',
-  direct_exact_frequency_observation: 'Direct exact mix recorded',
-  direct_tied_exact_mix: 'Direct tied exact mix recorded',
-  conflicting_direct_evidence: 'Active direct answers conflict',
-  multiple_consistent_neighbors: 'Multiple consistent direct neighbors',
-  adjacent_same_family_support: 'Supported by nearby hands in the same family',
-  pair_neighbor_support: 'Supported by nearby pairs',
-  suited_run_support: 'Supported by nearby suited hands',
-  connectivity_shift_support: 'Supported by nearby connected hands',
-  suited_offsuit_counterpart_support: 'Supported by the suited or offsuit counterpart',
-  bounded_regional_interpolation: 'Supported by an evidence-consistent regional run',
-  observed_regional_action_boundary: 'Between observed Raise/Fold boundaries',
-  regional_order_discontinuity: 'Direct answers reveal an unusual gap',
-  boundary_nearby: 'Near a Raise/Fold boundary',
-  conflicting_neighbor: 'Conflicting nearby answers',
-  scope_locally_unstable: 'Nearby direct answers are locally unstable',
-  insufficient_support: 'Not enough nearby direct evidence',
-  no_structurally_relevant_evidence: 'No relevant direct evidence yet',
-  unsupported_direct_action: 'The direct action is outside this Fold/Raise model',
-  additional_first_in_actions_unmodeled: 'Fold/Raise is modeled here; Limp and All-in remain unmodeled.',
-  training_evidence_excluded_from_002b_inference: 'Training evidence is shown separately and does not drive this inference',
-  direct_donor_evidence: 'Transferred from direct evidence in a compatible nearby RFI context',
-  multiple_agreeing_donor_contexts: 'Multiple compatible donor contexts agree',
-  exact_donor_preserved_but_target_transfer_is_qualitative: 'Exact donor mix is preserved at its source; this target transfer stays qualitative',
-  cold_start_anchor: 'Samples a new hand family',
-  uncertainty_reduction: 'Reduces uncertainty here',
-  near_action_boundary: 'Near a Raise/Fold boundary',
-  pair_boundary: 'High-value pair boundary',
-  transferred_estimate_check: 'Checks a transferred estimate',
-  transfer_disagreement: 'Checks a transferred estimate that disagrees locally',
-  unknown_pair_region: 'Maps an unknown pocket-pair region',
-  offsuit_broadway_boundary: 'Clarifies your offsuit Broadway boundary',
-  modeled_region_redundancy_penalty: 'Already modeled by a supported regional run',
-});
 
 const MATRIX_FILTER_STATUSES = Object.freeze({
   all: null,
@@ -360,7 +319,7 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   function matrixStatusLabel(status) {
-    return translated(MATRIX_STATUS_KEYS[status] ?? 'Unknown');
+    return translated(personalStrategyStatusLabelKey(status));
   }
 
   function matrixActionDescription(cell) {
@@ -543,8 +502,8 @@ function createController(root, application, initialWorkspace, activationStarted
 
     const reasons = query('#calibrationInspectorReasons');
     const reasonKeys = [...new Set([
-      ...cell.reasons.map((code) => MATRIX_REASON_KEYS[code] ?? code),
-      ...(cell.question?.priorityReasons ?? []).map((code) => MATRIX_REASON_KEYS[code] ?? code),
+      ...cell.reasons.map(personalStrategyReasonLabelKey),
+      ...(cell.question?.priorityReasons ?? []).map(personalStrategyReasonLabelKey),
       ...(cell.support.boundaryLikelihood === 'high' ? ['Near a Raise/Fold boundary'] : []),
       ...(cell.support.evidenceDensity === 'sparse' ? ['Sparse evidence in this region'] : []),
     ])];
@@ -836,14 +795,7 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   function teacherActionLabel(action) {
-    return {
-      ask_next: 'Ask next',
-      explore_boundary: 'Explore this boundary',
-      explore_sparse_region: 'Explore this region',
-      inspect_conflict: 'Inspect',
-      inspect_transfer: 'Inspect',
-      refine_exact_mix: 'Refine exact mix',
-    }[action?.kind] ?? 'Open';
+    return personalStrategyActionLabelKey(action?.kind);
   }
 
   function teacherItem({ title, reason, hands, action }) {

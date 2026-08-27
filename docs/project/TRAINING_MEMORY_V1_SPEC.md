@@ -44,6 +44,8 @@ Study metadata is user-authored and distinct from source truth: `review`, `diffi
 
 A session record stores its stable ID and owner, future-compatible mode, start/end timestamps, active/completed/abandoned status, requested length, uint32 session seed, exact planner intent and stable intent identity where present, Focused/re-drill facts, selected-provider runtime semantics, ordered decision IDs, and at most one Full Hand replay source.
 
+When a user requests a new Training session while the current session is active or otherwise unfinished, presentation must confirm the transition. Acceptance finishes the existing canonical session as `abandoned` before starting the replacement; recorded decisions remain in Training Memory. Cancellation leaves the active session untouched. No UI-only abandoned flag or destructive reset is permitted.
+
 Accuracy is not a session field. Session summaries are derived from ordered DecisionRecords. The storage wrapper maintains a replaceable summary cache containing shown/answered counts, public comparison counts, source-and-version identities, and review count.
 
 ## Store, derive, and cache classification

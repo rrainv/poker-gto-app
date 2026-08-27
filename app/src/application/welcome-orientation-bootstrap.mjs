@@ -17,19 +17,41 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
   const remember = surface.querySelector('#welcomeRememberChoice');
   const closeButton = surface.querySelector('#welcomeCloseButton');
   const manualNote = surface.querySelector('#welcomeManualNote');
-  const heading = surface.querySelector('#welcomeTitle');
   const learnButton = document.querySelector('#workspaceLearnButton');
   let invoker = null;
+  let suspendedNavigation = null;
 
   const findNavigationControl = (destination) => [...document.querySelectorAll('.mode-nav-item[data-navigation-id]')]
     .find((control) => control.dataset.navigationId === destination) ?? null;
 
-  function hideSurface({ restoreFocus = false } = {}) {
+  function clearNavigationSelection() {
+    const selected = [...document.querySelectorAll('.mode-nav-item[data-navigation-id]')]
+      .find((control) => control.classList.contains('active') || control.getAttribute('aria-current') === 'page') ?? null;
+    suspendedNavigation ??= selected;
+    document.querySelectorAll('.mode-nav-item[data-navigation-id]').forEach((control) => {
+      control.classList.remove('active');
+      control.setAttribute('aria-current', 'false');
+    });
+    shell.dataset.activeMode = 'welcome';
+    shell.dataset.activeDestination = 'welcome';
+  }
+
+  function restoreNavigationSelection() {
+    if (!suspendedNavigation?.isConnected) return;
+    suspendedNavigation.classList.add('active');
+    suspendedNavigation.setAttribute('aria-current', 'page');
+    shell.dataset.activeMode = suspendedNavigation.dataset.mode;
+    shell.dataset.activeDestination = suspendedNavigation.dataset.navigationId;
+  }
+
+  function hideSurface({ restoreFocus = false, restoreNavigation = false } = {}) {
     surface.hidden = true;
     surface.setAttribute('aria-hidden', 'true');
     root.dataset.welcomeOrientation = 'inactive';
+    if (restoreNavigation) restoreNavigationSelection();
     if (restoreFocus) invoker?.focus?.({ preventScroll: true });
     invoker = null;
+    suspendedNavigation = null;
   }
 
   const session = createWelcomeOrientationSession({
@@ -49,13 +71,16 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
     surface.removeAttribute('aria-hidden');
     surface.dataset.entryKind = manual ? 'manual' : 'startup';
     root.dataset.welcomeOrientation = 'visible';
+    clearNavigationSelection();
     if (remember) {
       remember.checked = true;
       remember.closest('.welcome-preference')?.toggleAttribute('hidden', manual);
     }
     if (manualNote) manualNote.hidden = !manual;
     if (closeButton) closeButton.hidden = !manual;
-    browserWindow.requestAnimationFrame(() => heading?.focus?.({ preventScroll: true }));
+    browserWindow.requestAnimationFrame(() => {
+      (manual ? closeButton : surface)?.focus?.({ preventScroll: true });
+    });
     return true;
   }
 
@@ -68,7 +93,7 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
   });
 
   closeButton?.addEventListener('click', () => {
-    if (session.closeManual()) hideSurface({ restoreFocus: true });
+    if (session.closeManual()) hideSurface({ restoreFocus: true, restoreNavigation: true });
   });
 
   learnButton?.addEventListener('click', () => open({ manual: true, invokingControl: learnButton }));
@@ -88,7 +113,7 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
     event.preventDefault();
     if (session.getState().entryKind === 'manual') {
       session.closeManual();
-      hideSurface({ restoreFocus: true });
+      hideSurface({ restoreFocus: true, restoreNavigation: true });
     } else {
       session.dismiss({ remember: remember?.checked !== false });
     }

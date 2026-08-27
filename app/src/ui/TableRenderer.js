@@ -810,6 +810,7 @@ class TableRenderer {
       const contributionLane = this.container.querySelector(`#contribution-lane-${i}`);
       const action = this.container.querySelector(`#action-${i}`);
       const holeCards = this.container.querySelector(`#hole-cards-${i}`);
+      const seatInfo = seat.querySelector('.table-seat-info');
       const isHero = player.isHero;
       const isDealer = player.isButton;
       const isActor = player.isCurrentActor;
@@ -910,6 +911,18 @@ class TableRenderer {
         }
       }
       if (holeCards) {
+        const cardsAreKnown = player.cardVisibility === 'known';
+        seat.dataset.cardVisibility = player.cardVisibility;
+        seat.classList.toggle('has-known-cards', cardsAreKnown);
+        // In SVG, DOM order is paint order. Keep known rank+suit faces above
+        // seat chrome, then restore the dealer above them; hidden identities
+        // remain behind the seat panel and render only card backs.
+        if (cardsAreKnown) {
+          seat.append(holeCards);
+          if (dealer) seat.append(dealer);
+        } else {
+          seatInfo?.before(holeCards);
+        }
         const cardChange = replayMotion?.seatChanges?.find((change) => change.playerId === player.playerId);
         const privateCardTransition = ['private_deal', 'private_reveal'].includes(replayMotion?.transitionKind);
         const privateCardsChanged = cardChange?.cardsChanged || cardChange?.cardVisibilityChanged;

@@ -23,7 +23,7 @@
     'Buy-in': 'Бай-ин', 'Rebuy': 'Ребай', 'Add-on': 'Аддон', 'Record chips': 'Записать фишки', 'Final cash-out recorded': 'Итоговый кэшаут записан',
     'Receives {amount}': 'Получает {amount}', 'Owes {amount}': 'Должен {amount}', 'Even': 'В ноль',
     'Session balance': 'Баланс сессии', 'Balanced': 'Сходится', 'Unbalanced by {amount}': 'Расхождение: {amount}',
-    'Session is off by {amount}': 'Баланс сессии не сходится на {amount}', 'Complete session': 'Завершить сессию', 'Reopen': 'Открыть снова',
+    'Session is off by {amount}': 'Баланс сессии не сходится на {amount}', 'Cannot complete: session is unbalanced by {amount}. Record or correct cash-outs before completing.': 'Нельзя завершить сессию: баланс не сходится на {amount}. Запишите или исправьте кэшауты перед завершением.', 'Complete session': 'Завершить сессию', 'Reopen': 'Открыть снова',
     'Settlement': 'Расчёты', 'No transfers are needed.': 'Переводы не требуются.',
     '{payer} owes {recipient} {amount}': '{payer} должен игроку {recipient}: {amount}',
     'Enter a valid amount.': 'Введите корректную сумму.', 'Enter a whole chip count.': 'Введите целое количество фишек.',
@@ -60,7 +60,7 @@
     'Buy-in': 'כניסה', 'Rebuy': 'ריביי', 'Add-on': 'אד-און', 'Record chips': 'רישום צ׳יפים', 'Final cash-out recorded': 'הפדיון הסופי נרשם',
     'Receives {amount}': 'מקבל {amount}', 'Owes {amount}': 'חייב {amount}', 'Even': 'מאוזן',
     'Session balance': 'מאזן הסשן', 'Balanced': 'מאוזן', 'Unbalanced by {amount}': 'פער של {amount}',
-    'Session is off by {amount}': 'מאזן הסשן אינו תואם ב־{amount}', 'Complete session': 'סיום הסשן', 'Reopen': 'פתיחה מחדש',
+    'Session is off by {amount}': 'מאזן הסשן אינו תואם ב־{amount}', 'Cannot complete: session is unbalanced by {amount}. Record or correct cash-outs before completing.': 'לא ניתן להשלים: מאזן הסשן אינו תואם ב־{amount}. יש לרשום או לתקן פדיונות לפני ההשלמה.', 'Complete session': 'סיום הסשן', 'Reopen': 'פתיחה מחדש',
     'Settlement': 'התחשבנות', 'No transfers are needed.': 'אין צורך בהעברות.',
     '{payer} owes {recipient} {amount}': '{payer} חייב ל־{recipient} {amount}',
     'Enter a valid amount.': 'הזינו סכום תקין.', 'Enter a whole chip count.': 'הזינו מספר שלם של צ׳יפים.',
@@ -120,6 +120,21 @@
     'Reopen session?': 'לפתוח את הסשן מחדש?', 'Reopen {name}? Ledger and lifecycle history stay intact; no transactions are duplicated.': 'לפתוח מחדש את {name}? היומן והיסטוריית מחזור החיים יישמרו, ולא ישוכפלו עסקאות.',
     'Export JSON': 'ייצוא JSON', 'Archive session': 'העברת הסשן לארכיון',
   });
+  Object.assign(ru, {
+    'Completed Home Game session': 'Завершённая сессия домашней игры',
+    'Session completed': 'Сессия завершена',
+    'This session is now read-only and remains in Recent Sessions. Review settlement and histories below, export it, or reopen it deliberately to make a correction.': 'Сессия теперь доступна только для чтения и остаётся в разделе «Недавние сессии». Проверьте расчёты и историю ниже, экспортируйте сессию или намеренно откройте её снова для исправления.',
+    'Session completed. It is read-only and remains available in Recent Sessions.': 'Сессия завершена. Она доступна только для чтения и остаётся в разделе «Недавние сессии».',
+    'Session reopened. Ledger and lifecycle history remain intact.': 'Сессия открыта снова. Журнал и история жизненного цикла сохранены.',
+  });
+  Object.assign(he, {
+    'Completed Home Game session': 'סשן משחק ביתי שהושלם',
+    'Session completed': 'הסשן הושלם',
+    'This session is now read-only and remains in Recent Sessions. Review settlement and histories below, export it, or reopen it deliberately to make a correction.': 'הסשן כעת לקריאה בלבד ונשאר ברשימת הסשנים האחרונים. אפשר לבדוק למטה את ההתחשבנות וההיסטוריה, לייצא אותו או לפתוח אותו מחדש במפורש לצורך תיקון.',
+    'Session completed. It is read-only and remains available in Recent Sessions.': 'הסשן הושלם. הוא לקריאה בלבד ונשאר זמין ברשימת הסשנים האחרונים.',
+    'Session reopened. Ledger and lifecycle history remain intact.': 'הסשן נפתח מחדש. היומן והיסטוריית מחזור החיים נשמרו.',
+  });
+
   const keys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineHomeGameTranslations = { en: Object.fromEntries([...keys].map((key) => [key, key])), ru, he };
 }(window));

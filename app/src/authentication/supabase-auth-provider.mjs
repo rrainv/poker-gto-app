@@ -65,11 +65,21 @@ function timeout(promise, timeoutMs) {
 }
 
 function errorCode(error, fallback = 'authentication_failed') {
+  const message = String(error?.message || '');
+  if (fallback === 'authentication_failed'
+    && (error?.status === 400 || error?.status === 401 || error?.status === 403
+      || /invalid.*credentials|invalid.*login|email.*password|user.*not.*found/i.test(message))) {
+    return 'invalid_credentials';
+  }
+  if (fallback === 'signup_failed'
+    && /already.*registered|already.*exists|user.*exists|email.*taken/i.test(message)) {
+    return 'signup_conflict';
+  }
   if (error?.status === 401 || error?.status === 403
-    || /expired|invalid.*token|session.*missing|refresh_token_not_found/i.test(String(error?.message || ''))) {
+    || /expired|invalid.*token|session.*missing|refresh_token_not_found/i.test(message)) {
     return 'session_expired';
   }
-  if (/network|fetch|offline|timeout|failed to fetch/i.test(String(error?.message || ''))) {
+  if (/network|fetch|offline|timeout|failed to fetch/i.test(message)) {
     return 'provider_unavailable';
   }
   return fallback;
@@ -79,9 +89,11 @@ function sanitizedFailure(error, fallback = 'authentication_failed') {
   const code = errorCode(error, fallback);
   const messages = {
     authentication_failed: 'Authentication failed. Check the credentials and try again.',
+    invalid_credentials: 'The supplied sign-in credentials were not accepted.',
     session_expired: 'The authentication session expired.',
     provider_unavailable: 'Sign-in is unavailable while the provider cannot be reached.',
     signup_failed: 'Account creation failed. Check the details and try again.',
+    signup_conflict: 'Account creation could not use the supplied details.',
     signout_failed: 'The provider session could not be fully closed.',
   };
   return providerFailure(code, messages[code] ?? messages.authentication_failed, error);

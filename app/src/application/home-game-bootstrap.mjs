@@ -70,6 +70,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     persistence: document.getElementById('homeGamePersistence'),
     notice: document.getElementById('homeGamePersistenceNotice'),
     error: document.getElementById('homeGameError'),
+    actionStatus: document.getElementById('homeGameActionStatus'),
     form: document.getElementById('homeGameNewSessionForm'),
     createButton: document.getElementById('homeGameCreateButton'),
     title: document.getElementById('homeGameSessionTitle'),
@@ -136,12 +137,20 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     });
   }
 
-  async function perform(operation) {
+  function setActionStatus(messageKey = null, parameters = {}) {
+    if (!refs.actionStatus) return;
+    refs.actionStatus.hidden = !messageKey;
+    refs.actionStatus.textContent = messageKey ? translate(browserWindow, messageKey, parameters) : '';
+  }
+
+  async function perform(operation, { successKey = null, successParameters = {} } = {}) {
     if (busy) return;
     setError();
+    setActionStatus();
     setBusy(true);
     try {
       state = await operation();
+      if (successKey) setActionStatus(successKey, successParameters);
       render();
     } catch (error) {
       setError(error);
@@ -683,14 +692,39 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
       : translate(browserWindow, 'Unbalanced by {amount}', { amount: money(Math.abs(bundle.accounting.balanceMinor), bundle.session.currency) })));
     header.append(heading, balance);
     panel.append(header);
+    if (bundle.session.status === HOME_GAME_SESSION_STATUS.COMPLETED) {
+      const completion = element(document, 'section', 'home-game-completion-state');
+      completion.setAttribute('role', 'status');
+      completion.setAttribute('aria-label', translate(browserWindow, 'Completed Home Game session'));
+      completion.append(element(document, 'h3', null, translate(browserWindow, 'Session completed')));
+      completion.append(element(document, 'p', null, translate(browserWindow,
+        'This session is now read-only and remains in Recent Sessions. Review settlement and histories below, export it, or reopen it deliberately to make a correction.')));
+      panel.append(completion);
+    }
     const grid = element(document, 'div', 'home-game-player-grid');
     bundle.session.participants.forEach((participant) => grid.append(renderParticipant(participant, bundle)));
     panel.append(grid);
     const footer = element(document, 'footer', 'home-game-session-actions');
     if (bundle.session.status === HOME_GAME_SESSION_STATUS.ACTIVE) {
+      if (!bundle.accounting.balanced) {
+        const warning = element(document, 'p', 'home-game-completion-warning', translate(
+          browserWindow,
+          'Cannot complete: session is unbalanced by {amount}. Record or correct cash-outs before completing.',
+          { amount: money(Math.abs(bundle.accounting.balanceMinor), bundle.session.currency) },
+        ));
+        warning.id = 'homeGameCompletionWarning';
+        warning.setAttribute('role', 'alert');
+        warning.setAttribute('aria-live', 'assertive');
+        warning.setAttribute('aria-atomic', 'true');
+        footer.append(warning);
+      }
       const complete = element(document, 'button', 'ui-button ui-button--primary', translate(browserWindow, 'Complete session'));
       complete.type = 'button';
-      complete.addEventListener('click', () => perform(() => bridge.completeSession(bundle.session.sessionId)));
+      if (!bundle.accounting.balanced) complete.setAttribute('aria-describedby', 'homeGameCompletionWarning');
+      complete.addEventListener('click', () => perform(
+        () => bridge.completeSession(bundle.session.sessionId),
+        { successKey: 'Session completed. It is read-only and remains available in Recent Sessions.' },
+      ));
       footer.append(complete);
     } else if (!bundle.session.archived) {
       const reopen = element(document, 'button', 'ui-button ui-button--secondary', translate(browserWindow, 'Reopen'));
@@ -701,7 +735,10 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
           message: translate(browserWindow, 'Reopen {name}? Ledger and lifecycle history stay intact; no transactions are duplicated.', { name: bundle.session.title }),
           confirmLabel: 'Reopen',
         });
-        if (accepted) perform(() => bridge.reopenSession(bundle.session.sessionId));
+        if (accepted) perform(
+          () => bridge.reopenSession(bundle.session.sessionId),
+          { successKey: 'Session reopened. Ledger and lifecycle history remain intact.' },
+        );
       });
       footer.append(reopen);
     } else {

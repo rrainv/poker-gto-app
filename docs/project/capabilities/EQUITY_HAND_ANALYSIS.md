@@ -278,9 +278,9 @@ Expanded Hand Details may expose the deeper facts in this dossier. Avoid badge s
 
 ### Workspace composition
 
-Player inputs should use a bounded composition that scales from two through ten players without pushing Board, Dead Cards, method, progress, or the principal result out of practical reach. Side rails or stacked groups are valid candidates when they improve the job. Optional player names should follow one consistent identity/display rule where useful.
+Player inputs should use a bounded composition that scales from two through ten players without pushing Board, Dead Cards, method, progress, or the principal result out of practical reach. Player identity/hand inputs and detailed calculated outcomes are separate spatial roles: result detail must not be simulated by expanding every input tile. Side rails or stacked groups are valid candidates when they improve the job. Optional player names should follow one consistent identity/display rule where useful.
 
-After calculation, the Equity result is the primary output and should visually dominate supporting configuration. Expanding result detail must not make every player tile grow or unnecessarily recompose the workspace. Input, running, result, and expanded-detail states should preserve orientation and direct access to method/provenance.
+After calculation, the Equity result is the primary output and gains clear visual hierarchy over supporting configuration. Expanding result detail must not make every player tile grow or unnecessarily recompose the workspace. Input, running, result, and expanded-detail states should preserve orientation and direct access to method/provenance at 100% browser zoom across the supported desktop matrix.
 
 ## Cross-surface applicability
 
