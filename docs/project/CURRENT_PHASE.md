@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 27, 2026 (`HANDS-ON-DEFECTS-001` is a completed/accepted bounded repair checkpoint with explicit structural and newly discovered debt; `CORE-FLOW-CORRECTNESS-001` is active next, followed by Replay rail, Training composition, and `PERSONAL-STRATEGY-003A`; no broad visual or composition acceptance is implied).
+Last refreshed: August 27, 2026 (`CORE-FLOW-CORRECTNESS-001` completed human-QA correction #1 and requires final human acceptance; `REPLAY-RAIL-NAV-001` remains planned next but is blocked on that acceptance, followed by Training composition and `PERSONAL-STRATEGY-003A`; no broad visual or composition acceptance is implied).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -8,8 +8,10 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
 
 - **COMPLETED:** accepted bounded outcome; later changes require a new ticket.
 - **CHECKPOINTED / INTENTIONALLY INCOMPLETE:** useful foundation accepted with a named resume point.
+- **IMPLEMENTATION COMPLETE / FINAL HUMAN ACCEPTANCE REQUIRED:** the bounded implementation, human-QA correction, and agent verification are complete, but the product owner has not issued final acceptance.
 - **ACTIVE NEXT:** accepted next bounded ticket, started in its own chat.
 - **PLANNED NEXT:** ordered work after the active-next ticket.
+- **PLANNED NEXT / BLOCKED ON HUMAN ACCEPTANCE:** ordered next work that must not start until the named human checkpoint is accepted.
 - **COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED:** an independent product review and its explicit human decisions are complete; accepted implementation still requires its own ticket.
 - **PLANNED LATER:** ordered behind nearer work.
 - **PRESERVED FUTURE:** accepted direction without an immediate execution commitment.
@@ -63,13 +65,14 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - Hand still appears selected on Welcome, Home Game imbalance prominence remains weak, and revealed cards can overlap player identity; these move to `FIRST-USE-HOME-001`, `HOME-GAME-PRESENTATION-001`, and `REPLAY-RAIL-NAV-001` respectively;
    - the checkpoint does not claim all HPR issues fixed or accept Hand, Training, Home, Saved, or whole-product composition.
 
-10. **ACTIVE NEXT — `CORE-FLOW-CORRECTNESS-001`**
-   - expose an obvious completed-Hand to fresh canonical Hand lifecycle without mutating the completed historical record;
-   - expose the canonical append-only correction/reversal flow for accidental Home Game cash-outs and other correction-eligible transactions;
-   - keep known-opponent-card entry open until both legal cards are selected or the user explicitly dismisses it;
-   - reconstruct reported min-raise history and verify opening bet, ordinary raise, reraise, short all-in, and action-reopening semantics; 7bb to 13bb may be legal from a 6bb last full increment, so change runtime only if canonical legality is wrong.
+10. **IMPLEMENTATION COMPLETE / FINAL HUMAN ACCEPTANCE REQUIRED — `CORE-FLOW-CORRECTNESS-001`**
+   - completed Hand exposes Review and `Start new hand` as the two primary actions while Replay, Analysis, and Save remain secondary; lifecycle behavior and fresh source/Hand identity are unchanged;
+   - active sessions expose `Correct entries` over every uncorrected buy-in, rebuy, add-on, and cash-out, while the local cash-out shortcut remains; reason is optional and absence persists as `null`, confirmation remains operable, and reversal-only plus atomic replacement preserve the original ledger fact;
+   - private-card entry continues from the first to second card for every Hand seat; the first Escape closes only the card picker while preserving the expanded known-opponent disclosure, selected first card, logical focus, and canonical cross-seat duplicate-card exclusion;
+   - canonical no-limit sizing was verified without a poker-domain change: 1→3 has minimum 5, 1→7 has minimum 13, 1→3→8 has minimum 13, postflop 5→15 has minimum 25, and short/cumulative all-in reopening plus stack-bounded all-in behavior remain correct;
+   - focused Node coverage and targeted Firefox 154 EN/RU/HE/RTL interaction verification pass with no page errors; final human product-owner acceptance remains required before checkpoint or follow-on work.
 
-11. **PLANNED NEXT — `REPLAY-RAIL-NAV-001`**
+11. **PLANNED NEXT / BLOCKED ON CORE FLOW HUMAN ACCEPTANCE — `REPLAY-RAIL-NAV-001`**
    - own vertical street-grouped chronology, first-class rail action placement including Current Legal Actions, compact Hand Stage, table/history/action integration, and timeline typography;
    - own coherent cards/seat/player ownership without overlap, folded-seat readability, physical Dealer placement/gap explanation, and contribution-line clarity while preserving one canonical Replay cursor/history and the accepted return-to-live invariant.
 
@@ -127,11 +130,11 @@ Do not revive browser/Electron ONNX inference, remote strategy APIs, arbitrary s
 
 Completed/checkpointed work includes adaptive Table Presence, canonical Replay, shared Full Hand Review, accepted audio/motion architecture, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, the accepted-with-debt `WORKSPACE-COMPOSITION-002` simplification, and `TABLE-PHYSICALITY-003` with explicit presentation debt.
 
-`HOME-GAME-001B` is completed at an accepted implementation checkpoint with its unavailable real Firefox/provider acceptance retained as `RET-HOMEGAME-001`. `SETTINGS-IA-001` is also completed at an accepted implementation checkpoint; its unavailable real Firefox matrix is retained under `QA-HANDSON-010` and `RET-PREMIUM-001`. `HANDS-ON-DEFECTS-001` is now an accepted bounded repair checkpoint, not whole-product visual acceptance. The remaining Welcome selection, Home Game warning presentation, cards/seat overlap, fold opacity, Dealer placement, contribution-line comprehension, horizontal Action Flow, and Current Legal Actions debt has named structural owners. The newly discovered terminal-Hand, transaction-correction, and opponent-card-entry defects plus min-raise verification are active next under `CORE-FLOW-CORRECTNESS-001`. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
+`HOME-GAME-001B` is completed at an accepted implementation checkpoint with broader real Firefox/provider acceptance retained as `RET-HOMEGAME-001`; the targeted Core Flow correction path now includes the accepted generalized session-entry model and requires final human acceptance. `SETTINGS-IA-001` is also completed at an accepted implementation checkpoint; its unavailable real Firefox matrix is retained under `QA-HANDSON-010` and `RET-PREMIUM-001`. `HANDS-ON-DEFECTS-001` is an accepted bounded repair checkpoint, not whole-product visual acceptance. The remaining Welcome selection, Home Game warning presentation, cards/seat overlap, fold opacity, Dealer placement, contribution-line comprehension, horizontal Action Flow, and Current Legal Actions debt has named structural owners. The terminal-Hand, transaction-correction, opponent-card-entry, and min-raise verification slice is implementation complete under `CORE-FLOW-CORRECTNESS-001` and requires final human acceptance. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
 
 ### Home Game
 
-`HOME-GAME-001B` completes the bounded organizer-management continuation over the separate 001A exact-money domain: stable reusable players, editable ordered groups, roster reuse, completed-session archive/restore, atomic visible correction/replacement history, lifecycle revisions, and canonical account-only export. Human review now shows that the existing append-only reversal/correction capability is not conveniently reachable after an accidental cash-out; `CORE-FLOW-CORRECTNESS-001` owns that accessibility bug without destructive editing. Stronger imbalance prominence and broader organizer physicality remain `HOME-GAME-PRESENTATION-001`. Hard delete and import stay deferred for missing safety contracts. Guest remains runtime-only.
+`HOME-GAME-001B` completes the bounded organizer-management continuation over the separate 001A exact-money domain: stable reusable players, editable ordered groups, roster reuse, completed-session archive/restore, atomic visible correction/replacement history, lifecycle revisions, and canonical account-only export. `CORE-FLOW-CORRECTNESS-001` now exposes that append-only reversal/correction capability at session level across eligible ledger types, retains the cash-out shortcut, makes the reason optional, and repairs reversal-only/confirmation operability without destructive editing; final human acceptance remains open. Stronger imbalance prominence and broader organizer physicality remain `HOME-GAME-PRESENTATION-001`. Hard delete and import stay deferred for missing safety contracts. Guest remains runtime-only.
 
 ### Settings and premium closeout
 

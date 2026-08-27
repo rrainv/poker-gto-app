@@ -1,7 +1,7 @@
 # Riverline Home Game Organizer specification
 
-Status: `HOME-GAME-001B` accepted implementation checkpoint with explicit manual Firefox/provider acceptance debt
-Date: August 26, 2026
+Status: `HOME-GAME-001B` accepted implementation checkpoint; Core Flow cash-out correction is implementation complete and awaiting human acceptance; broader manual Firefox/provider acceptance debt remains
+Date: August 27, 2026
 
 ## Purpose and boundary
 
@@ -77,6 +77,8 @@ Home Game financial data is private and local. There is no upload, telemetry, pu
 
 The top-level workspace provides Guest/account storage status; New Session with reusable players/groups, reorderable seats, currency, optional blinds/ante, initial buy-in and optional account-only group; Saved Groups and Recent Sessions; participant Total in/Cash out/Chips plus textual Receives/Owes/Even; Rebuy, Add-on, Cash out and chip snapshots; balance status; guarded completion; settlement; and deliberate reopen.
 
+An active session exposes `Correct entries` as the obvious ledger-level entry point over every still-eligible buy-in, rebuy, add-on, and cash-out. The user selects an existing transaction and reaches the same correction editor and explicit immutable-reversal confirmation; the local `Correct cash-out` shortcut may remain beside `Final cash-out recorded`. Replacement amount and user reason/note are independently optional: a supplied replacement appends atomically with the reversal, an omitted replacement appends only the reversal, a supplied reason persists normally, and an omitted reason remains `null` without invented canonical prose. The original entry remains visible in ledger history, corrected transactions are not offered again, and completed sessions remain read-only until deliberate reopen. This is presentation/application routing over the existing ledger authority, not a second correction model.
+
 Completion has an explicit visible transition and persistent completed-state summary. The selected session remains inspectable as read-only, the user is directed to settlement/history/export and Recent Sessions, and deliberate Reopen remains available through the existing lifecycle command. Presentation feedback never changes accounting or creates a second lifecycle state.
 
 Authenticated accounts have one reusable player library with stable-ID edit, nickname/notes, search, archive and restore. Groups remain ordered player references and support create, rename, add/remove/reorder, archive/restore, and roster reuse. Existing sessions and groups retain player IDs across edits/archive; no action rewrites historical ledger or participant references. Completed sessions expose read-only accounting, settlement, ledger/correction history, lifecycle revisions, archive/restore, and canonical JSON export.
@@ -99,6 +101,6 @@ The domain performs deterministic integer arithmetic over one ledger. IndexedDB 
 - hard delete and import until explicit retention/validation/ownership contracts exist;
 - dealer/button advancement, photos, recurring games, group defaults;
 - Guest-to-account adoption;
-- completed Firefox visual/language acceptance and real authenticated provider-path acceptance.
+- human acceptance of the Core Flow cash-out correction interaction; broader completed Firefox visual/language acceptance and real authenticated provider-path acceptance.
 
 Tournament sessions must not reuse this cash-game contract as though chip counts were money. They require separate versioned accounting semantics.

@@ -2,7 +2,7 @@
 
 Status: **COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED**
 
-Planning consequence: `HANDS-ON-DEFECTS-001` is **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT**. `CORE-FLOW-CORRECTNESS-001` is active next, followed by Replay rail, Training composition, `PERSONAL-STRATEGY-003A`, and a whole-app mini-pass.
+Planning consequence: `HANDS-ON-DEFECTS-001` is **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT**. `CORE-FLOW-CORRECTNESS-001` is **IMPLEMENTATION COMPLETE / FINAL HUMAN ACCEPTANCE REQUIRED** after human-QA correction #1. Replay rail remains planned next but blocked on that acceptance, followed by Training composition, `PERSONAL-STRATEGY-003A`, and a whole-app mini-pass.
 
 This is the durable evidence and triage artifact for `HANDS-ON-PRODUCT-REVIEW-001`. It is not another roadmap, backlog, QA system, or implementation specification. Current status and sequence remain owned by [Current Phase](CURRENT_PHASE.md), [Roadmap](ROADMAP.md), and [Product Backlog](PRODUCT_BACKLOG.md). Issue routing and deferred checkpoint debt remain owned by [QA Backlog](QA_BACKLOG.md) and [Product Return Queue](PRODUCT_RETURN_QUEUE.md).
 
@@ -163,6 +163,8 @@ Repeated or structural failures remain open:
 
 New functional evidence activates `CORE-FLOW-CORRECTNESS-001`: provide an obvious fresh-Hand lifecycle after terminal state without mutating completed history; expose the canonical append-only Home Game correction/reversal flow after accidental cash-out; keep known-opponent-card entry open through two legal selections or explicit dismissal; and reconstruct the reported min-raise history before any legality change. A 7bb → 13bb reraise may be exactly legal because the last full raise increment can be 6bb. Verification must cover opening bet, ordinary raise, reraise, short all-in, and action reopening.
 
+Human-QA correction #1 checkpoint, August 27, 2026: the bounded Core Flow repair is implementation complete and requires final human acceptance. Review and `Start new hand` now share primary terminal priority without lifecycle changes; `Correct entries` exposes the existing immutable reversal/replacement workflow at session level across eligible buy-in, rebuy, add-on, and cash-out facts, with optional reason stored as `null` when absent and no invented placeholder note; first Escape dismisses only the nested opponent-card picker while preserving the disclosure, first card, and focus; and canonical minimum-raise/reopening behavior remains closed with no canonical defect or poker-domain change. Focused Node and Firefox 154 EN/RU/HE/RTL interaction checks pass with no page errors. This evidence does not checkpoint final acceptance or activate Replay rail.
+
 ## Near-term redesign owners
 
 These are accepted owners, not permission to start every ticket automatically. Exact order is reassessed at the whole-app mini-pass after Core Flow correctness, Replay rail, Training composition, and `PERSONAL-STRATEGY-003A`.
@@ -225,8 +227,8 @@ Selected reference, intended Personal Strategy, source-labelled observed behavio
 The confirmed review and second human disposition set the immediate sequence to:
 
 1. `HANDS-ON-DEFECTS-001` — **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT DEBT**.
-2. `CORE-FLOW-CORRECTNESS-001` — **ACTIVE NEXT**.
-3. `REPLAY-RAIL-NAV-001` — **PLANNED NEXT**.
+2. `CORE-FLOW-CORRECTNESS-001` — **IMPLEMENTATION COMPLETE / FINAL HUMAN ACCEPTANCE REQUIRED**.
+3. `REPLAY-RAIL-NAV-001` — **PLANNED NEXT / BLOCKED ON CORE FLOW HUMAN ACCEPTANCE**.
 4. `TRAINING-COMPOSITION-001` — **PLANNED NEXT**.
 5. `PERSONAL-STRATEGY-003A` — **PLANNED NEXT**.
 6. Human whole-app mini-pass.

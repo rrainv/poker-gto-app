@@ -118,13 +118,17 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
     innerHTML: '',
     textContent: '',
     checked: false,
+    getClientRects() { return [{}]; },
     ...overrides,
   });
 
   for (const id of ['deck', 'cardModal', 'modalTitle', 'modalCopy', 'burnControl', 'markBurn', 'deckCount', 'deadCardCount', 'eqDeckCount', 'equityBoardCount', 'equityDeadCount']) {
     elements.set(`#${id}`, makeElement());
   }
-  const groups = ['hero', 'board', 'dead', 'eqboard', 'eqdead', 'player-0', 'hand-seat-0'];
+  const groups = [
+    'hero', 'board', 'dead', 'eqboard', 'eqdead', 'player-0',
+    ...Array.from({ length: 10 }, (_, seat) => `hand-seat-${seat}`),
+  ];
   groups.forEach((group) => slotElements.set(`[data-slots="${group}"]`, makeElement()));
 
   const sandbox = {
@@ -172,7 +176,9 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
     function notifyCanonicalHeroCardsChanged() {}
     function notifyCanonicalBoardCardsChanged() {}
     function setEquityPending() {}
-    function renderCanonicalHandWorkspace() {}
+    function renderCanonicalHandWorkspace() {
+      for (let seat = 0; seat < 10; seat += 1) renderSlots('hand-seat-' + seat, 2);
+    }
     function updateContext() {}
     function updateActionOptions() {}
     function updateEquityReadiness() {}
@@ -190,7 +196,7 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
     function renderAllCards() {
       renderPlaybookCards();
       renderSlots('eqboard', 5); renderSlots('eqdead', 52); renderSlots('player-0', 2);
-      renderSlots('hand-seat-0', 2);
+      renderCanonicalHandWorkspace();
     }
     ${extractFunction('openPicker')}
     ${extractFunction('renderDeck')}
@@ -205,6 +211,7 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
       renderAllCards,
       groupCards,
       slotMarkup(group) { return document.querySelector('[data-slots="' + group + '"]').innerHTML; },
+      deckMarkup() { return document.querySelector('#deck').innerHTML; },
       cardStateSummary() {
         return {
           available: String(document.querySelector('#deckCount').textContent),

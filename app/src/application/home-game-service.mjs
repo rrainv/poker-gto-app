@@ -236,7 +236,7 @@ export function createHomeGameApplication({
         type: original.type,
         amountMinor: replacementAmountMinor,
         replacementOfTransactionId: original.transactionId,
-        note: note ? `Replacement: ${note}` : 'Replacement entry',
+        note: note ? `Replacement: ${note}` : null,
       });
     }
     await active.repository.appendCorrection({ correction, replacement });

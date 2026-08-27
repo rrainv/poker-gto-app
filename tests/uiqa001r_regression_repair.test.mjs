@@ -63,7 +63,6 @@ for (const [label, group, card, handMode] of [
   ['Equity known hand', 'player-0', 'Th', false],
   ['Equity board', 'eqboard', 'Jd', false],
   ['Equity dead cards', 'eqdead', '9s', false],
-  ['Hand Mode private cards', 'hand-seat-0', 'Ad', true],
 ]) {
   test(`${label} uses the production picker open/select/close path`, () => {
     const picker = createProductionPickerHarness({ handMode });
@@ -77,6 +76,68 @@ for (const [label, group, card, handMode] of [
     assert.match(picker.slotMarkup(group), group.includes('dead') ? /card--dead/ : /card--known/);
   });
 }
+
+test('Hand private-card picker stays open for two cards, then closes', () => {
+  const picker = createProductionPickerHarness({ handMode: true });
+  picker.openPicker('hand-seat-0', 0);
+  picker.selectCard('Ad');
+
+  assert.deepEqual([...picker.groupCards('hand-seat-0')], ['Ad']);
+  assert.equal(picker.app.picker.group, 'hand-seat-0');
+  assert.equal(picker.app.picker.index, 1);
+  assert.equal(picker.modalOpen(), true);
+  assert.match(picker.deckMarkup(), /data-deck-card="Ad"[^>]*disabled/);
+
+  picker.selectCard('Kh');
+  assert.deepEqual([...picker.groupCards('hand-seat-0')], ['Ad', 'Kh']);
+  assert.equal(picker.app.picker, null);
+  assert.equal(picker.modalOpen(), false);
+  assert.match(picker.slotMarkup('hand-seat-0'), /data-index="0"/);
+  assert.match(picker.slotMarkup('hand-seat-0'), /data-index="1"/);
+  assert.equal((picker.slotMarkup('hand-seat-0').match(/card--known/g) || []).length, 2);
+});
+
+test('Hand private-card picker supports cancel after one card and multiple known opponents', () => {
+  const picker = createProductionPickerHarness({ handMode: true });
+  picker.openPicker('hand-seat-0', 0);
+  picker.selectCard('As');
+  picker.closePicker();
+  assert.deepEqual([...picker.groupCards('hand-seat-0')], ['As']);
+  assert.equal(picker.modalOpen(), false);
+
+  picker.openPicker('hand-seat-1', 0);
+  assert.match(picker.deckMarkup(), /data-deck-card="As"[^>]*disabled/);
+  picker.selectCard('Kd');
+  assert.equal(picker.app.picker.group, 'hand-seat-1');
+  assert.equal(picker.app.picker.index, 1);
+  picker.selectCard('Qc');
+
+  picker.openPicker('hand-seat-2', 0);
+  for (const card of ['As', 'Kd', 'Qc']) {
+    assert.match(picker.deckMarkup(), new RegExp(`data-deck-card="${card}"[^>]*disabled`));
+  }
+  picker.selectCard('Jh');
+  picker.selectCard('Ts');
+
+  assert.deepEqual([...picker.groupCards('hand-seat-1')], ['Kd', 'Qc']);
+  assert.deepEqual([...picker.groupCards('hand-seat-2')], ['Jh', 'Ts']);
+  assert.equal(picker.modalOpen(), false);
+});
+
+test('Hand private-card picker keeps the same two-card flow from heads-up through ten-handed seats', () => {
+  for (let tableSize = 2; tableSize <= 10; tableSize += 1) {
+    const picker = createProductionPickerHarness({ handMode: true });
+    const group = `hand-seat-${tableSize - 1}`;
+    picker.openPicker(group, 0);
+    picker.selectCard('7c');
+    assert.equal(picker.app.picker.group, group);
+    assert.equal(picker.app.picker.index, 1);
+    assert.equal(picker.modalOpen(), true);
+    picker.selectCard('6d');
+    assert.deepEqual([...picker.groupCards(group)], ['7c', '6d']);
+    assert.equal(picker.modalOpen(), false);
+  }
+});
 
 test('picker can close one target and open the next board or dead-card target', () => {
   const picker = createProductionPickerHarness();

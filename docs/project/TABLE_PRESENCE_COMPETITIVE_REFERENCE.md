@@ -510,9 +510,9 @@ Do not show in the first layer unless a future authority supplies it:
 
 Canonical Hand:
 
-- Primary: `Review hand`.
-- Secondary: `Replay`, `Analyze latest Hero decision` when one exists, `Save hand`.
-- Keep `End hand`/new setup outside the result card to avoid accidental loss of the completed context.
+- Primary: `Review hand` and `Start new hand`.
+- Secondary: `Replay`, `Analyze latest Hero decision` when one exists, and `Save hand`.
+- `Start new hand` is a deliberate terminal-only semantic transition: completion actions and the frozen completed record remain unchanged until the user chooses it, then fresh setup opens with focus and the next initialized Hand receives a new identity. It is not the generic destructive `End hand` reset, does not mutate Replay/history evidence, and does not automatically advance or silently reuse the prior Hand.
 
 Full-Hand Training:
 

@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 27, 2026 (`HANDS-ON-DEFECTS-001` is a completed/accepted bounded repair checkpoint with explicit structural and newly discovered debt; `CORE-FLOW-CORRECTNESS-001` is active next, followed by Replay rail, Training composition, `PERSONAL-STRATEGY-003A`, then a whole-app mini-pass; `PREMIUM-CLOSEOUT-001` remains a later pre-release quality gate).
+Last refreshed: August 27, 2026 (`CORE-FLOW-CORRECTNESS-001` completed human-QA correction #1 and requires final human acceptance; Replay rail remains planned next but blocked on that acceptance, followed by Training composition, `PERSONAL-STRATEGY-003A`, then a whole-app mini-pass; `PREMIUM-CLOSEOUT-001` remains a later pre-release quality gate).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -58,8 +58,8 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 `HANDS-ON-PRODUCT-REVIEW-001` is completed documentation/product triage. An independent outside-user review originated 59 findings, and the product owner manually reproduced all 59 in the current build. [The durable review](../project/HANDS_ON_PRODUCT_REVIEW_2026_08.md) owns detailed evidence and row-level ownership; no finding is closed by the review. Detailed future intent lives in `../project/capabilities/`; status remains in `PRODUCT_BACKLOG.md`. The directional order is:
 
 1. **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT — `HANDS-ON-DEFECTS-001`**
-2. **ACTIVE NEXT — `CORE-FLOW-CORRECTNESS-001`**
-3. **PLANNED NEXT — `REPLAY-RAIL-NAV-001`**
+2. **IMPLEMENTATION COMPLETE / FINAL HUMAN ACCEPTANCE REQUIRED — `CORE-FLOW-CORRECTNESS-001`**
+3. **PLANNED NEXT / BLOCKED ON CORE FLOW HUMAN ACCEPTANCE — `REPLAY-RAIL-NAV-001`**
 4. **PLANNED NEXT — `TRAINING-COMPOSITION-001`**
 5. **PLANNED NEXT — `PERSONAL-STRATEGY-003A`**
 6. **CHECKPOINT — short freeform whole-app mini-pass after those visible tickets**
@@ -83,7 +83,7 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - Home Game `001B` is an accepted implementation checkpoint over the separate 001A accounting authority; hard delete/import remain deliberately deferred and real Firefox/provider acceptance remains `RET-HOMEGAME-001` debt.
 - Workspace composition is accepted as a useful implementation checkpoint, not a visual-polish closeout: Training support distribution/Session Progress, bounded left-anchored Equity allocation, and surviving specialized-layout polish remain `RET-COMPOSITION-002` debt. Known-card inspectability is separately owned by `RET-CARDS-THEMES-001`.
 - `HANDS-ON-DEFECTS-001` is accepted only as a bounded repair checkpoint. Welcome title focus/Escape, clearer Home Game completion state, Return to live, auth feedback, card-removal parity, Analyze clipping, Personal Strategy vocabulary, and Replay geometry are accepted; this is not whole-product or Hand/Training composition acceptance.
-- `CORE-FLOW-CORRECTNESS-001` owns the obvious post-terminal Start new Hand lifecycle, discoverable append-only Home Game reversal/correction, two-card opponent picker completion, and canonical min-raise verification. A 7bb to 13bb reraise may be legal because the last full increment is 6bb; change legality only if reconstructed canonical history proves a defect.
+- `CORE-FLOW-CORRECTNESS-001` is implementation complete after human-QA correction #1 and requires final human acceptance. Review and Start new hand are the two primary terminal actions; the active-session `Correct entries` entry point surfaces all correction-eligible buy-in/rebuy/add-on/cash-out facts, with optional reason and unchanged append-only reversal/replacement semantics; nested picker Escape preserves the expanded known-opponent workflow, first card, and logical focus. Canonical minimum raises remain correct—including 7bb to 13bb from a 6bb last full increment—so no poker-domain rule changed. Focused Node and Firefox 154 EN/RU/HE/RTL evidence pass; do not start `REPLAY-RAIL-NAV-001` before final human acceptance.
 - `TABLE-PHYSICALITY-003` remains an accepted foundation, but repeated local card-layer work did not solve card/seat ownership: revealed cards can now overlap player identity. `REPLAY-RAIL-NAV-001` owns coherent cards/seats/actions, folded-seat readability, Dealer physicality, contribution-line comprehension, and the table/rail/timeline relationship without another isolated z-index patch.
 - The 59 confirmed August findings supersede any broad claim that accepted UI checkpoints equal current whole-product visual acceptance. Existing foundations remain accepted; remaining problems stay open under their named correctness, redesign, and quality owners in the review artifact.
 

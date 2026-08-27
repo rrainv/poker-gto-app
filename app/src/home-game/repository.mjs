@@ -363,7 +363,9 @@ export function createHomeGameRepository({
       if (!session || !sameOwner(session.ownerRef, ownerRef)) throw new RangeError('Correction session is missing');
       if (session.status === HOME_GAME_SESSION_STATUS.COMPLETED) throw new RangeError('Completed session must be reopened before correcting ledger entries');
       const additions = [normalizedCorrection, ...(normalizedReplacement ? [normalizedReplacement] : [])];
-      if (normalizedReplacement?.sessionId !== session.sessionId) throw new RangeError('Replacement belongs to another session');
+      if (normalizedReplacement && normalizedReplacement.sessionId !== session.sessionId) {
+        throw new RangeError('Replacement belongs to another session');
+      }
       for (const entry of additions) {
         if (await storage.get(STORES.TRANSACTIONS, entry.transactionId)) throw new RangeError('Home Game transaction ID collision');
       }

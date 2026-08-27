@@ -177,6 +177,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     refs.editorTitle.textContent = translate(browserWindow, title);
     refs.editorBody.replaceChildren(body);
     refs.editorSubmit.textContent = translate(browserWindow, submitLabel);
+    refs.editorSubmit.hidden = typeof operation !== 'function';
     editorOperation = operation;
     refs.editorDialog.showModal();
     refs.editorBody.querySelector('input, textarea, select, button')?.focus();
@@ -187,6 +188,8 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     refs.confirmMessage.textContent = message;
     refs.confirmSubmit.textContent = translate(browserWindow, confirmLabel);
     refs.confirmDialog.showModal();
+    refs.confirmDialog.querySelectorAll('[data-home-game-was-disabled="false"]')
+      .forEach((control) => { control.disabled = false; });
     return new Promise((resolve) => {
       refs.confirmDialog.addEventListener('close', () => resolve(refs.confirmDialog.returnValue === 'confirm'), { once: true });
     });
@@ -201,6 +204,17 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
 
   function transactionType(type) {
     return translate(browserWindow, ({ buy_in: 'Buy-in', rebuy: 'Rebuy', add_on: 'Add-on', cash_out: 'Cash out', correction: 'Correction' })[type] || type);
+  }
+
+  function correctionEligibleEntries(bundle) {
+    return bundle.ledgerHistory.items.filter((item) => !item.corrected);
+  }
+
+  function correctionEligibleCashOut(bundle, playerId) {
+    return correctionEligibleEntries(bundle).find((item) => (
+      item.original.playerId === playerId
+      && item.original.type === HOME_GAME_TRANSACTION_TYPES.CASH_OUT
+    )) || null;
   }
 
   function parseOptionalMoney(input, minorUnit = 2) {
@@ -540,7 +554,16 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
       actions.append(chipField);
       card.append(actions);
     } else if (participant.status === 'cashed_out') {
-      card.append(element(document, 'p', 'home-game-final-state', translate(browserWindow, 'Final cash-out recorded')));
+      const finalState = element(document, 'div', 'home-game-final-state-actions');
+      finalState.append(element(document, 'p', 'home-game-final-state', translate(browserWindow, 'Final cash-out recorded')));
+      const cashOut = correctionEligibleCashOut(bundle, participant.playerId);
+      if (bundle.session.status === HOME_GAME_SESSION_STATUS.ACTIVE && cashOut) {
+        const correct = element(document, 'button', 'ui-button ui-button--secondary', translate(browserWindow, 'Correct cash-out'));
+        correct.type = 'button';
+        correct.addEventListener('click', () => openCorrectionEditor(cashOut, bundle));
+        finalState.append(correct);
+      }
+      card.append(finalState);
     }
     return card;
   }
@@ -573,8 +596,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     replacement.input.type = 'number';
     replacement.input.min = '0';
     replacement.input.step = bundle.session.currency.minorUnit === 0 ? '1' : `0.${'0'.repeat(bundle.session.currency.minorUnit - 1)}1`;
-    const reason = translatedLabel('Reason', 'homeGameCorrectionReason');
-    reason.input.required = true;
+    const reason = translatedLabel('Reason (optional)', 'homeGameCorrectionReason');
     reason.input.maxLength = 500;
     body.append(summary, replacement.label, reason.label);
     openEditor('Correct ledger entry', body, async () => {
@@ -591,9 +613,39 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
         sessionId: bundle.session.sessionId,
         transactionId: item.original.transactionId,
         replacementAmountMinor,
-        note: reason.input.value,
+        note: reason.input.value.trim() || null,
       });
     }, 'Correct entry');
+  }
+
+  function openCorrectionEntryChooser(bundle) {
+    const body = element(document, 'div', 'home-game-editor-fields');
+    body.append(element(document, 'p', 'home-game-correction-summary', translate(
+      browserWindow,
+      'Choose a ledger entry to reverse or replace. The original remains visible.',
+    )));
+    const list = element(document, 'div', 'home-game-correction-entry-list');
+    list.setAttribute('role', 'list');
+    for (const item of correctionEligibleEntries(bundle)) {
+      const row = element(document, 'div', 'home-game-correction-entry-row');
+      row.setAttribute('role', 'listitem');
+      const choose = element(document, 'button', 'ui-button ui-button--secondary home-game-correction-entry');
+      choose.type = 'button';
+      choose.append(
+        element(document, 'strong', null, `${transactionType(item.original.type)} · ${playerName(state, item.original.playerId)}`),
+        element(document, 'span', 'home-game-money', money(item.original.amountMinor, bundle.session.currency)),
+        element(document, 'small', null, `${timestamp(item.original.createdAt)} · #${item.order}`),
+      );
+      choose.addEventListener('click', () => {
+        editorOperation = null;
+        refs.editorDialog.close('select');
+        openCorrectionEditor(item, bundle);
+      });
+      row.append(choose);
+      list.append(row);
+    }
+    body.append(list);
+    openEditor('Correct entries', body, null);
   }
 
   function renderLedgerHistory(bundle, container) {
@@ -718,6 +770,10 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
         warning.setAttribute('aria-atomic', 'true');
         footer.append(warning);
       }
+      const correctEntries = element(document, 'button', 'ui-button ui-button--secondary', translate(browserWindow, 'Correct entries'));
+      correctEntries.type = 'button';
+      correctEntries.disabled = correctionEligibleEntries(bundle).length === 0;
+      correctEntries.addEventListener('click', () => openCorrectionEntryChooser(bundle));
       const complete = element(document, 'button', 'ui-button ui-button--primary', translate(browserWindow, 'Complete session'));
       complete.type = 'button';
       if (!bundle.accounting.balanced) complete.setAttribute('aria-describedby', 'homeGameCompletionWarning');
@@ -725,7 +781,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
         () => bridge.completeSession(bundle.session.sessionId),
         { successKey: 'Session completed. It is read-only and remains available in Recent Sessions.' },
       ));
-      footer.append(complete);
+      footer.append(correctEntries, complete);
     } else if (!bundle.session.archived) {
       const reopen = element(document, 'button', 'ui-button ui-button--secondary', translate(browserWindow, 'Reopen'));
       reopen.type = 'button';

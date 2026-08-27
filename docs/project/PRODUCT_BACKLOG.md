@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 27, 2026 (`HANDS-ON-DEFECTS-001` is a completed/accepted bounded repair checkpoint with explicit debt; `CORE-FLOW-CORRECTNESS-001` is active next, followed by Replay rail, Training composition, and `PERSONAL-STRATEGY-003A` before a whole-app mini-pass).
+Last consolidated: August 27, 2026 (`CORE-FLOW-CORRECTNESS-001` completed human-QA correction #1 and requires final human acceptance; Replay rail remains planned next but blocked on that acceptance, followed by Training composition and `PERSONAL-STRATEGY-003A` before a whole-app mini-pass).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -37,8 +37,8 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | checkpoint | COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED | `PERSONAL-STRATEGY-002R` |
 | checkpoint | COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED | `HANDS-ON-PRODUCT-REVIEW-001` / all 59 findings preserved and owned |
 | checkpoint | COMPLETED / ACCEPTED BOUNDED REPAIR WITH EXPLICIT DEBT | `HANDS-ON-DEFECTS-001`; no whole-product, Hand-composition, or Training-composition acceptance claim |
-| 1 | ACTIVE NEXT | `CORE-FLOW-CORRECTNESS-001` bounded lifecycle/input correctness and canonical min-raise verification |
-| 2 | PLANNED NEXT | `REPLAY-RAIL-NAV-001` vertical street-grouped rail and coherent Hand/table action integration |
+| 1 | IMPLEMENTATION COMPLETE / FINAL HUMAN ACCEPTANCE REQUIRED | `CORE-FLOW-CORRECTNESS-001` bounded lifecycle/input correctness and canonical min-raise verification |
+| 2 | PLANNED NEXT / BLOCKED ON CORE FLOW HUMAN ACCEPTANCE | `REPLAY-RAIL-NAV-001` vertical street-grouped rail and coherent Hand/table action integration |
 | 3 | PLANNED NEXT | `TRAINING-COMPOSITION-001` stable practice workspace and one primary start action |
 | 4 | PLANNED NEXT | `PERSONAL-STRATEGY-003A` first-value product-model reset |
 | checkpoint | HUMAN WHOLE-APP MINI-PASS | short freeform pass after the four visible tickets |
@@ -56,9 +56,9 @@ Detailed evidence and row-level traceability remain in [Hands-On Product Review 
 | Ticket / owner | Status | Concise accepted outcome |
 |---|---|---|
 | `HANDS-ON-DEFECTS-001` | COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT | Accept Welcome title focus/Escape, clearer Home Game completion state, Return to live, auth feedback, card-removal parity, Analyze clipping, Personal Strategy vocabulary, and Replay geometry. Repeated Welcome selection, warning prominence, and card/seat visual failures remain with structural owners; no third correction cycle. |
-| `CORE-FLOW-CORRECTNESS-001` | ACTIVE NEXT | Obvious completed-Hand to fresh-Hand lifecycle; accessible canonical Home Game correction/reversal for cash-outs and other eligible transactions; two-card opponent picker completion; canonical no-limit min-raise history verification including short-all-in/reopening semantics, with correction only if wrong. No Hand/rail/table visual redesign. |
+| `CORE-FLOW-CORRECTNESS-001` | IMPLEMENTATION COMPLETE / FINAL HUMAN ACCEPTANCE REQUIRED | Review and `Start new hand` are the two primary terminal actions while lifecycle/new identity remains unchanged; `Correct entries` surfaces every eligible buy-in, rebuy, add-on, and cash-out with optional reason and append-only replacement or reversal-only atomicity; nested picker Escape preserves the expanded known-opponent workflow, first card, and focus; canonical minimum-raise and short-all-in reopening rules remain verified correct without poker-math changes. Focused Node and Firefox 154 EN/RU/HE/RTL evidence pass; final human acceptance remains open. No Hand/rail/table redesign. |
 | `FIRST-USE-HOME-001` | PLANNED LATER / NAMED STRUCTURAL OWNER | Recurring launch/home model, onboarding separation, sidebar/active-workspace semantics, first-launch versus returning-launch behavior, and useful Guest Home density; owns the still-selected Hand appearance on Welcome. |
-| `REPLAY-RAIL-NAV-001` | PLANNED NEXT / AFTER CORE FLOW CORRECTNESS | Vertical street-grouped chronology, first-class rail actions including Current Legal Actions, compact Hand Stage, coherent card/seat/player ownership, folded-seat readability, physical Dealer treatment, contribution-line clarity, table/history/action integration, and timeline typography. |
+| `REPLAY-RAIL-NAV-001` | PLANNED NEXT / BLOCKED ON CORE FLOW HUMAN ACCEPTANCE | Vertical street-grouped chronology, first-class rail actions including Current Legal Actions, compact Hand Stage, coherent card/seat/player ownership, folded-seat readability, physical Dealer treatment, contribution-line clarity, table/history/action integration, and timeline typography. |
 | `TRAINING-COMPOSITION-001` | PLANNED NEXT | One primary start CTA, stable pre/post skeleton, top packing, Action History, Assistance, Memory, setup/status, and progressive explanation depth. |
 | `EQUITY-COMPOSITION-001` | LIKELY NEXT / REASSESS AT MINI-PASS | Bounded player tiles, optional names, central Board/Dead/Method, and dominant results. |
 | `GUIDE-CONTENT-001` | PLANNED LATER / REASSESS AT CHECKPOINT | Current interactive/visual Guide and concise human content design across explanatory surfaces. |

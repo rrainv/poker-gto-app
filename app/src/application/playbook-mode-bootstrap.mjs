@@ -458,6 +458,23 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     getResolution: () => modeController.getResolution(),
     getScenarioInput: () => modeController.getLastScenarioInput(),
 
+    prepareNewHand() {
+      if (modeController.getMode() !== PLAYBOOK_MODES.HAND || savedHandViewer) return null;
+      const completedState = canonicalController.getState();
+      if (!completedState
+        || (completedState.phase !== 'terminal' && completedState.terminal?.isTerminal !== true)) {
+        return null;
+      }
+      playbackController.cancel();
+      canonicalController.reset();
+      canonicalHandSourceId = null;
+      replayController.clear();
+      return publish('prepare_new_hand', Object.freeze({
+        previousHandId: completedState.handId,
+        status: 'ready_for_setup',
+      }));
+    },
+
     initializeHand(configuration) {
       playbackController.cancel();
       closeSavedHandViewer();

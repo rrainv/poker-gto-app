@@ -939,6 +939,19 @@ function selectCard(card) {
 
   if (group === 'hero') app.selectedHand = null;
 
+  const nextPrivateCardIndex = !markBurn && group.startsWith('hand-seat-')
+    ? firstEmptyIndex(target, 2)
+    : -1;
+  if (nextPrivateCardIndex >= 0) {
+    renderCanonicalHandWorkspace();
+    const appearedCard = document.querySelector(
+      `[data-slots="${appearanceGroup}"] [data-index="${appearanceIndex}"]`
+    );
+    appearedCard?.classList.add('is-card-dealt');
+    openPicker(group, nextPrivateCardIndex);
+    return;
+  }
+
   closePicker({ restoreFocus: false });
 
   renderAllCards();
@@ -955,6 +968,41 @@ function selectCard(card) {
     appearedCard.focus({ preventScroll: true });
   }
 
+}
+
+
+
+function cardPickerFocusableElements() {
+  return $$('#cardModal button:not([disabled]), #cardModal input:not([disabled])')
+    .filter((element) => (
+      !element.hidden
+      && element.getAttribute('aria-hidden') !== 'true'
+      && element.getClientRects().length > 0
+    ));
+}
+
+
+
+function handleCardPickerKeydown(event) {
+  if (!$('#cardModal')?.classList.contains('show')) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    event.stopPropagation();
+    closePicker();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const focusable = cardPickerFocusableElements();
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 
@@ -1965,6 +2013,26 @@ function resetCanonicalPlaybookHand() {
   return null;
 }
 
+function prepareCanonicalNewHand() {
+  const state = callPlaybookStateBridge('getState');
+  if (!state || (state.phase !== 'terminal' && state.terminal?.isTerminal !== true)) return null;
+  if (app.handReview.source === 'canonical_hand') {
+    closeActiveHandReview({ returnToEndpoint: false });
+  }
+  const transition = callPlaybookStateBridge('prepareNewHand');
+  if (!transition) {
+    toast(t('The completed Hand could not transition to fresh setup.'), 'error');
+    return null;
+  }
+  resetCanonicalHandDraft();
+  renderCanonicalHandWorkspace();
+  const setup = $('#handSetupDisclosure');
+  if (setup) setup.open = true;
+  $('#handStartButton')?.focus();
+  toast(t('Fresh setup is ready. The completed Hand was not changed.'), 'success');
+  return transition;
+}
+
 function commitCanonicalHoleDeal() {
   const state = callPlaybookStateBridge('getState');
   if (!state?.players?.length) return toast(t('Start a canonical hand first.'), 'warning');
@@ -2404,6 +2472,7 @@ function renderCanonicalPrivateDeal(state) {
   const isHoleDeal = state?.pendingChance?.type === 'deal_hole';
   const isAwaitingReveal = state?.showdown?.status === 'awaiting_private_reveal';
   if (!section || !root) return;
+  const knownOpponentsOpen = root.querySelector('.hand-known-opponents')?.open === true;
   section.hidden = !isHoleDeal && !isAwaitingReveal;
   if (!isHoleDeal && !isAwaitingReveal) return;
   const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
@@ -2432,6 +2501,8 @@ function renderCanonicalPrivateDeal(state) {
       <details class="hand-known-opponents"><summary>${t('Set known opponent cards (optional)')}</summary>
         <div class="hand-known-opponent-list">${opponents.map((player) => privateRow(player, t('Optional · otherwise Hidden'))).join('')}</div>
       </details>`;
+    const knownOpponents = root.querySelector('.hand-known-opponents');
+    if (knownOpponents) knownOpponents.open = knownOpponentsOpen;
   }
   renderedPlayers.forEach((player) => renderSlots(`hand-seat-${player.seat}`, 2));
   const complete = isAwaitingReveal
@@ -3702,6 +3773,7 @@ function bindCanonicalHandWorkspace() {
   $('#handCompletedReplayButton')?.addEventListener('click', () => revealCanonicalHandHistory({ replay: true }));
   $('#handCompletedAnalysisButton')?.addEventListener('click', openCanonicalHandDecisionInAnalysis);
   $('#handCompletedSaveButton')?.addEventListener('click', () => $('#savedStudySaveButton')?.click());
+  $('#handCompletedNewHandButton')?.addEventListener('click', prepareCanonicalNewHand);
   bindHandReviewWorkspace();
 }
 
@@ -6824,9 +6896,10 @@ function bindEvents() {
 
   });
 
-  if ($('#cardModal')) $('#cardModal').addEventListener('click', (event) => { if (event.target === $('#cardModal')) closePicker(); });
-
-  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePicker(); });
+  if ($('#cardModal')) {
+    $('#cardModal').addEventListener('click', (event) => { if (event.target === $('#cardModal')) closePicker(); });
+    $('#cardModal').addEventListener('keydown', handleCardPickerKeydown);
+  }
 
 
 

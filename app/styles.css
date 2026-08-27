@@ -273,6 +273,16 @@
 .home-game-amount-field > span { grid-column: 1 / -1; color: var(--text-muted); font-size: var(--text-micro-size); }
 .home-game-amount-field .control-input { min-width: 0; }
 .home-game-final-state { margin: var(--space-3) 0 0; color: var(--text-muted); font-size: var(--text-label-size); }
+.home-game-final-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--border-default);
+}
+.home-game-final-state-actions .home-game-final-state { margin: 0; }
 .home-game-session-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3); padding: 0 var(--space-5) var(--space-5); }
 .home-game-completion-warning {
   flex: 1 0 100%;
@@ -338,6 +348,11 @@
 .home-game-dialog p { margin: 0; }
 .home-game-dialog footer { justify-content: flex-end; }
 .home-game-dialog-body { min-height: 0; overflow: auto; }
+.home-game-correction-entry-list { display: grid; gap: var(--space-2); }
+.home-game-correction-entry { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); width: 100%; text-align: start; }
+.home-game-correction-entry strong,
+.home-game-correction-entry small { grid-column: 1; }
+.home-game-correction-entry .home-game-money { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
 .home-game-correction-summary { padding: var(--space-3); border-inline-start: 3px solid var(--warning); background: var(--surface-subtle); }
 
 @media (max-width: 1280px) {
