@@ -102,6 +102,16 @@ The same supported version, input, locks, exclusions, targets, and seed should r
 
 “Random simple spot” should be introduced only when its scope is explicit. Cards alone do not establish legal actions, pots, stacks, price, or history. A simple-spot action must call an approved canonical Scenario or Hand/Training builder for supported fields and leave unsupported facts unknown. It must not assemble a plausible-looking `DecisionContext` directly in the renderer.
 
+### Bounded effective-stack randomization
+
+Future spot construction may offer bounded effective-stack randomization, but only through the shared randomization contract and an owning canonical Scenario, Hand, or legal Training generator. It must not introduce a Training-specific stack randomizer or let presentation code invent stack state.
+
+- The request must use an explicit legal minimum and maximum or named, documented buckets such as short / medium / standard / deep. Generated values must satisfy the owning Game Rules, table/player configuration, chip unit, and builder constraints; visually plausible but nonsensical values are unavailable results, not valid samples.
+- An explicit Stack lock excludes effective stack from the next randomization request. Randomizing cards or any other unlocked component must not alter a locked stack.
+- Reproduction requires the deterministic seed, algorithm/version, normalized input fingerprint, requested bounds or bucket, exact locks, relevant Game Rules identity, and resulting canonical stack facts.
+- One future shared generator may serve Training, Analyze, Equity, and study-Hand setup through their existing application boundaries. Each consumer may request or display the result, but none becomes a parallel stack, legality, or randomization authority.
+- Exact controls, defaults, bucket edges, supported consumers, and sampling distribution remain future product decisions. Bounded effective-stack randomization is documented here for later work; it is not implemented or activated by `TRAINING-COMPOSITION-001`.
+
 ## Structured facts / evidence required
 
 A reusable randomization request/result may need:
@@ -158,6 +168,7 @@ For durable reproduction, store the compact recipe plus any source/version ident
 - **Runout Explorer:** natural future consumer for legal Turn/River card or class exploration.
 - **Deep Hand Review:** may generate an explicitly hypothetical alternate runout or branch without altering the historical Hand.
 - **Training:** not automatically a consumer. Canonical Training generation already owns legal exercise trajectories; a later study-facing random action must not bypass curriculum/generator authority.
+- **Training stack variation:** a future planner/generator request may consume the shared bounded-stack contract, honor Stack lock, and retain deterministic reproduction facts. Training UI/runtime must not implement local stack sampling.
 - **Saved knowledge:** may persist a random recipe only after a payload owner defines reproduction, versioning, and privacy semantics.
 
 A random control should appear only where the owning source can validate and consume its output without creating a second state path.
@@ -190,7 +201,8 @@ These are possible future boundaries, not execution priority:
 6. Versioned deterministic seed/recipe and reproduction tests.
 7. Privacy-safe hypothetical opponent-hand handling.
 8. Runout Explorer integration.
-9. Separately specified simple-spot generation only for a proven supported state family.
+9. Bounded, lockable effective-stack variation through one shared canonical generator contract.
+10. Separately specified simple-spot generation only for a proven supported state family.
 
 ## Competitive/reference lessons
 

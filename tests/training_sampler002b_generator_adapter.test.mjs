@@ -571,3 +571,26 @@ test('002B session answer grading remains the existing legal StrategyResult flow
   assert.equal(answered.ok, true, answered.error?.message);
   assert.equal(answered.evaluation.schemaVersion, 'training-answer-evaluation/v1');
 });
+
+test('exact replay remounts the served canonical exercise without advancing its practice planner', async () => {
+  const controller = createTrainingSessionController();
+  controller.startPracticeSession(focusedIntent({}, { sessionLength: 3 }));
+  const first = await controller.generatePlanned({ strategyProvider: strategyProvider() });
+  assert.equal(first.ok, true, first.error?.message);
+  const chosen = first.exercise.strategyResult.recommendation.action.type;
+  assert.equal(controller.answer(first.exercise.id, chosen).ok, true);
+
+  const plannerBeforeReplay = controller.getPracticePlannerState();
+  const replay = controller.replayExercise(first.exercise);
+  assert.equal(replay.ok, true);
+  assert.strictEqual(replay.exercise, first.exercise);
+  assert.strictEqual(controller.getSnapshot().exercise, first.exercise);
+  assert.deepEqual(controller.getPracticePlannerState(), plannerBeforeReplay);
+  assert.equal(controller.answer(first.exercise.id, chosen).ok, true);
+  assert.deepEqual(controller.getPracticePlannerState(), plannerBeforeReplay);
+
+  const next = await controller.generatePlanned({ strategyProvider: strategyProvider() });
+  assert.equal(next.ok, true, next.error?.message);
+  assert.equal(controller.getPracticePlannerState().servedCount, 2);
+  assert.notEqual(next.exercise.id, first.exercise.id);
+});

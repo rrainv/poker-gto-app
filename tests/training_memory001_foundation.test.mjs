@@ -42,6 +42,7 @@ import {
   TRAINING_SIMILARITY_SCHEMA_VERSION,
   deriveTrainingSimilarity,
   deriveTrainingSessionSummary,
+  reviewReasonsForDecision,
   validateTrainingDecisionRecord,
   validateTrainingSessionRecord,
 } from '../app/src/training-memory/domain.mjs';
@@ -368,6 +369,33 @@ test('Review queue exposes narrow reasons and reversible lifecycle transitions',
   })).length, 1);
 });
 
+test('manual study flags can add and remove review lifecycle on a reference-aligned decision', async () => {
+  const { service } = serviceFixture();
+  const { answered } = await answeredExerciseRecord({
+    service,
+    actionType: ACTION_TYPES.RAISE,
+  });
+  assert.equal(answered.strategyEvidence.comparisonState, 'matches_reference');
+  assert.equal(answered.reviewState.state, TRAINING_REVIEW_LIFECYCLE_STATES.NONE);
+
+  const marked = await service.updateStudyMetadata(answered.id, {
+    review: true,
+    difficult: true,
+  });
+  assert.equal(marked.reviewState.state, TRAINING_REVIEW_LIFECYCLE_STATES.PENDING);
+  assert.deepEqual(new Set(reviewReasonsForDecision(marked)), new Set([
+    TRAINING_REVIEW_REASON_CODES.MANUAL_REVIEW,
+    TRAINING_REVIEW_REASON_CODES.MANUAL_DIFFICULT,
+  ]));
+
+  const cleared = await service.updateStudyMetadata(answered.id, {
+    review: false,
+    difficult: false,
+  });
+  assert.equal(cleared.reviewState.state, TRAINING_REVIEW_LIFECYCLE_STATES.NONE);
+  assert.deepEqual(reviewReasonsForDecision(cleared), []);
+});
+
 test('Same Spot exactly reproduces state and keeps the historical frozen source explicit', async () => {
   const { service } = serviceFixture();
   const fixture = await answeredExerciseRecord({ service });
@@ -514,6 +542,46 @@ test('Full Hand decisions share one session replay authority and reference exact
   assert.equal(deriveTrainingSimilarity(incompleteEvidence).available, false);
   assert.equal(deriveTrainingSimilarity(incompleteEvidence).unavailableReason,
     'insufficient_canonical_dimensions');
+});
+
+test('abandoning Full Hand preserves answered evidence without fabricating completion', async () => {
+  const { service } = serviceFixture();
+  const controller = createFullHandTrainingSessionController();
+  const started = controller.start({
+    handSeed: 808,
+    heroPosition: 'BTN',
+    handConfiguration: fullHandConfiguration(),
+    decisionContextOptions: { stackMode: 'hero' },
+  }, { strategyProvider: strategyProvider() });
+  assert.equal(started.ok, true);
+  const memorySession = await service.startSession({ mode: 'full_hand', sessionSeed: 808 });
+  const shown = await service.recordFullHandDecisionShown({
+    sessionId: memorySession.id,
+    decision: started.snapshot.currentDecision,
+    replaySource: started.snapshot.replaySource,
+    handSeed: started.snapshot.handSeed,
+  });
+  const result = await controller.answer(
+    started.snapshot.currentDecision.decisionId,
+    passiveFullHandAction(started.snapshot),
+  );
+  assert.equal(result.ok, true, result.error?.message);
+  const answered = await service.recordFullHandDecisionAnswered({
+    recordId: shown.id,
+    decision: result.decision,
+    replaySource: result.snapshot.replaySource,
+    handSeed: result.snapshot.handSeed,
+  });
+  const abandoned = await service.finishSession(memorySession.id, 'abandoned');
+  const decisions = await service.listSessionDecisions(memorySession.id, { limit: 10 });
+
+  assert.equal(abandoned.status, 'abandoned');
+  assert.deepEqual(abandoned.decisionRecordIds, [shown.id]);
+  assert.equal(abandoned.fullHandSource.handId, 'memory-full-hand');
+  assert.deepEqual(decisions.map((record) => record.id), [answered.id]);
+  assert.equal(decisions[0].status, 'answered');
+  assert.notEqual(result.snapshot.status, FULL_HAND_TRAINING_STATUSES.TERMINAL);
+  assert.equal(result.snapshot.completedHandResult, null);
 });
 
 test('history queries are indexed/bounded and do not resolve strategy at startup or list time', async () => {

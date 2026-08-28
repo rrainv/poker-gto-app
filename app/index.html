@@ -2275,8 +2275,7 @@
             <div id="trainingExerciseTags" class="training-tag-row" aria-label="Exercise tags" data-i18n-aria-label="Exercise tags"></div>
             <div id="trainingIdle" class="training-state-message">
               <strong data-i18n="Ready for a drill">Ready for a drill</strong>
-              <span data-i18n="Use the setup controls to generate a legal poker decision.">Use the setup controls to generate a legal poker decision.</span>
-              <button id="trainingIdleStart" class="ui-button ui-button--primary" type="button" data-i18n="Start Training">Start Training</button>
+              <span data-i18n="Choose a mode in Session setup, then start Training.">Choose a mode in Session setup, then start Training.</span>
             </div>
             <div id="trainingGenerating" class="training-state-message" hidden aria-live="polite">
               <span class="training-spinner" aria-hidden="true"></span>
@@ -2320,33 +2319,42 @@
                 </div>
                 <div id="trainingStudyHintContent" class="training-study-hint-content" aria-live="polite"></div>
               </section>
-              <div id="trainingDecisionPrompt" class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
-              <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions" data-i18n-aria-label="Available actions" data-tutorial-anchor="training-answer-actions"></div>
-              <section id="trainingFullHandSizing" class="training-full-hand-sizing" hidden aria-labelledby="trainingFullHandSizingTitle">
-                <div class="training-full-hand-sizing-head">
-                  <div><span class="training-zone-label" data-i18n="Concrete sizing">Concrete sizing</span><strong id="trainingFullHandSizingTitle" data-i18n="Choose an amount to">Choose an amount to</strong></div>
-                  <small data-i18n="Amount-to · not raise-by">Amount-to · not raise-by</small>
+              <div id="trainingDecisionActionMount">
+                <div id="trainingDecisionControls" class="training-decision-controls">
+                  <div id="trainingDecisionPrompt" class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
+                  <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions" data-i18n-aria-label="Available actions" data-tutorial-anchor="training-answer-actions"></div>
+                  <section id="trainingFullHandSizing" class="training-full-hand-sizing" hidden aria-labelledby="trainingFullHandSizingTitle">
+                    <div class="training-full-hand-sizing-head">
+                      <div><span class="training-zone-label" data-i18n="Concrete sizing">Concrete sizing</span><strong id="trainingFullHandSizingTitle" data-i18n="Choose an amount to">Choose an amount to</strong></div>
+                      <small data-i18n="Amount-to · not raise-by">Amount-to · not raise-by</small>
+                    </div>
+                    <div id="trainingFullHandSizingActions"></div>
+                    <p class="training-reference-note" data-i18n="Exact sizing is recorded. The grade compares the action family only; sizing is not graded.">Exact sizing is recorded. The grade compares the action family only; sizing is not graded.</p>
+                  </section>
+                  <p class="training-shortcut-help"><span data-i18n="Keyboard:">Keyboard:</span> <span class="poker-data-token" dir="ltr"><kbd>1</kbd>–<kbd>6</kbd></span> <span data-i18n="choose a visible action">choose a visible action</span></p>
                 </div>
-                <div id="trainingFullHandSizingActions"></div>
-                <p class="training-reference-note" data-i18n="Exact sizing is recorded. The grade compares the action family only; sizing is not graded.">Exact sizing is recorded. The grade compares the action family only; sizing is not graded.</p>
-              </section>
-              <p class="training-shortcut-help"><span data-i18n="Keyboard:">Keyboard:</span> <span class="poker-data-token" dir="ltr"><kbd>1</kbd>–<kbd>6</kbd></span> <span data-i18n="choose a visible action">choose a visible action</span></p>
+              </div>
             </div>
 
-            <div id="trainingFeedback" class="training-feedback" data-grade="none" aria-live="polite" hidden data-tutorial-anchor="training-feedback">
+            <div id="trainingFeedback" class="training-feedback" data-grade="none" hidden data-tutorial-anchor="training-feedback">
               <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info" data-i18n="Feedback">Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
-              <div class="training-verdict"><h3 id="feedbackTitle" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
+              <div class="training-verdict" role="status" aria-live="polite" aria-atomic="true"><h3 id="feedbackTitle" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
+              <div id="trainingFeedbackProgressionMount"></div>
+              <div id="trainingMemoryDecisionActions" class="training-memory-decision-actions" hidden aria-label="Study labels" data-i18n-aria-label="Study labels">
+                <button id="trainingMarkReview" class="ui-button ui-button--secondary" type="button" aria-pressed="false" data-i18n="Review later">Review later</button>
+                <button id="trainingMarkDifficult" class="ui-button ui-button-ghost" type="button" aria-pressed="false" data-i18n="Mark difficult">Mark difficult</button>
+              </div>
+              <p id="trainingMemoryDecisionStatus" class="training-memory-decision-status" role="status" aria-live="polite" aria-atomic="true"></p>
+              <p class="training-facts-label" data-i18n="Facts">Facts</p>
+              <div id="trainingRelevantFacts" class="training-relevant-facts" hidden></div>
               <dl class="training-verdict-facts">
                 <div><dt data-i18n="Chosen action">Chosen action</dt><dd id="trainingChosenAction">—</dd></div>
                 <div class="training-verdict-frequency" hidden><dt data-i18n="Chosen frequency">Chosen frequency</dt><dd id="trainingChosenProbability" class="poker-data-token">—</dd></div>
                 <div class="training-verdict-frequency" hidden><dt data-i18n="Highest frequency">Highest frequency</dt><dd id="trainingBestProbability" class="poker-data-token">—</dd></div>
                 <div id="trainingEvFact" hidden><dt data-i18n="EV comparison">EV comparison</dt><dd id="trainingEvValue" class="poker-data-token">—</dd></div>
               </dl>
-              <details class="training-analysis-region" data-tutorial-anchor="training-analysis"><summary id="trainingAnalysisTitle" data-i18n="Analysis">Analysis</summary><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></details>
-              <div id="trainingMemoryDecisionActions" class="training-memory-decision-actions" hidden aria-label="Study labels" data-i18n-aria-label="Study labels">
-                <button id="trainingMarkReview" class="ui-button ui-button--secondary" type="button" aria-pressed="false" data-i18n="Review">Review</button>
-                <button id="trainingMarkDifficult" class="ui-button ui-button-ghost" type="button" aria-pressed="false" data-i18n="Difficult">Difficult</button>
-              </div>
+              <div id="trainingFeedbackReferenceMount"></div>
+              <details class="training-analysis-region" data-tutorial-anchor="training-analysis"><summary id="trainingAnalysisTitle" data-i18n="Explain">Explain</summary><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></details>
             </div>
             <section id="trainingFullHandCompletion" class="training-full-hand-completion" hidden aria-labelledby="trainingFullHandCompletionTitle" aria-live="polite">
               <p class="training-eyebrow" data-i18n="Full Hand">Full Hand</p>
@@ -2365,17 +2373,42 @@
             <div id="trainingSessionCompletion" class="training-session-completion" hidden aria-live="polite">
               <strong data-i18n="Session complete">Session complete</strong>
               <span id="trainingSessionCompletionText"></span>
-              <button id="trainingRestartSession" class="ui-button ui-button--secondary" type="button" data-i18n="Start a new session">Start a new session</button>
+              <div class="training-session-completion-actions">
+                <button id="trainingCompletionReview" class="ui-button ui-button--secondary" type="button" data-i18n="Review due items">Review due items</button>
+                <button id="trainingCompletionRecent" class="ui-button ui-button-ghost" type="button" data-i18n="Recent sessions">Recent sessions</button>
+                <button id="trainingRestartSession" class="ui-button ui-button--primary" type="button" data-i18n="Start another session">Start another session</button>
+              </div>
             </div>
-            <div class="training-completion-actions" data-tutorial-anchor="training-next">
-              <button class="ui-button ui-button--primary training-primary-next" type="button" id="trainingNextHandBtn" aria-keyshortcuts="Enter" data-i18n="Generate exercise">Generate exercise</button>
-              <button class="ui-button ui-button--secondary" type="button" id="trainingReplayDecisionBtn" hidden data-i18n="Replay this decision">Replay this decision</button>
-              <button class="ui-button ui-button-ghost" type="button" id="trainingAdjustDrill" data-i18n="Adjust drill">Adjust drill</button>
+            <div id="trainingDecisionProgressionMount">
+              <div id="trainingContinuationRow" class="training-completion-actions" data-tutorial-anchor="training-next">
+                <button class="ui-button ui-button--primary training-primary-next" type="button" id="trainingNextHandBtn" aria-keyshortcuts="Enter" data-i18n="Generate exercise">Generate exercise</button>
+                <button class="ui-button ui-button--secondary" type="button" id="trainingReplayDecisionBtn" hidden data-i18n="Replay this decision">Replay this decision</button>
+                <button class="ui-button ui-button-ghost" type="button" id="trainingAdjustDrill" data-i18n="Adjust drill">Adjust drill</button>
+              </div>
             </div>
           </section>
         </main>
 
         <aside class="training-insight-column">
+          <section id="trainingFullHandActionDock" class="panel training-full-hand-action-dock" aria-labelledby="trainingFullHandActionDockTitle" hidden>
+            <div class="panel-head"><div><p class="training-eyebrow" data-i18n="Full Hand">Full Hand</p><h2 id="trainingFullHandActionDockTitle" data-i18n="Current legal actions">Current legal actions</h2></div></div>
+            <div class="panel-body">
+              <div id="trainingFullHandActionDockMount"></div>
+              <section id="trainingFullHandDecisionFeedback" class="training-full-hand-decision-feedback" aria-labelledby="trainingFullHandDecisionFeedbackTitle" hidden>
+                <div class="training-full-hand-decision-feedback-head"><span data-i18n="Last decision">Last decision</span><strong id="trainingFullHandDecisionFeedbackTitle"></strong></div>
+                <p id="trainingFullHandDecisionFeedbackText" role="status" aria-live="polite" aria-atomic="true"></p>
+                <div id="trainingFullHandDecisionFacts" class="training-relevant-facts" hidden></div>
+                <details class="training-full-hand-decision-explain"><summary data-i18n="Explain last decision">Explain last decision</summary><div id="trainingFullHandDecisionAnalysis" class="training-shared-analysis"></div></details>
+              </section>
+            </div>
+          </section>
+          <section id="trainingReferenceSummary" class="panel training-reference-summary" aria-labelledby="trainingReferenceSummaryTitle">
+            <div class="panel-body">
+              <span id="trainingReferenceSummaryTitle" class="training-rail-label" data-i18n="Reference source">Reference source</span>
+              <strong id="trainingReferenceSummaryValue" data-i18n="Source unavailable">Source unavailable</strong>
+              <small id="trainingReferenceSummaryNote" data-i18n="A source summary appears with each exercise.">A source summary appears with each exercise.</small>
+            </div>
+          </section>
           <section id="trainingSolution" class="panel training-solution-panel" hidden aria-labelledby="trainingSolutionTitle" data-tutorial-anchor="training-reference">
             <div class="panel-head"><div><p id="trainingSolutionEyebrow" class="training-eyebrow" data-i18n="After-answer reference">After-answer reference</p><h2 id="trainingSolutionTitle" data-i18n="Source frequencies">Source frequencies</h2></div></div>
             <div class="panel-body">
@@ -2398,7 +2431,7 @@
             </div>
           </details>
           <details id="trainingMemoryPanel" class="panel training-memory-panel" aria-labelledby="trainingMemoryTitle" data-training-availability="ready-to-load">
-            <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="On this profile">On this profile</p><h2 id="trainingMemoryTitle" data-i18n="Training Memory">Training Memory</h2><p id="trainingMemoryAvailability" class="panel-note" data-i18n="Open to load saved review history for this profile.">Open to load saved review history for this profile.</p></div><span id="trainingMemoryDueBadge" class="badge status-badge status-badge--info">0</span></summary>
+            <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="On this profile">On this profile</p><h2 id="trainingMemoryTitle" data-i18n="Training Memory">Training Memory</h2><p id="trainingMemoryAvailability" class="panel-note" data-i18n="Open to load saved review history for this profile.">Open to load saved review history for this profile.</p></div><span id="trainingMemoryDueBadge" class="badge status-badge status-badge--info" hidden>0</span></summary>
             <div class="panel-body">
               <p class="training-reference-note" data-i18n="History stays on this device and is isolated to the active profile.">History stays on this device and is isolated to the active profile.</p>
               <div class="training-memory-tabs" role="tablist" aria-label="Training Memory view" data-i18n-aria-label="Training Memory view">
@@ -2412,7 +2445,11 @@
         </aside>
 
         <aside class="training-setup-column" id="trainingSetupColumn">
-          <section id="trainingSetupPanel" class="panel" aria-labelledby="trainingSetupTitle" data-tutorial-anchor="training-setup">
+          <details id="trainingSetupPanel" class="panel training-setup-panel" aria-labelledby="trainingSetupTitle" data-tutorial-anchor="training-setup" open>
+            <summary class="training-setup-summary">
+              <span><strong data-i18n="Session setup">Session setup</strong><small id="trainingSetupSummary" data-i18n="Varied Session · 10 decisions · Hard assistance">Varied Session · 10 decisions · Hard assistance</small></span>
+              <span class="training-setup-summary-action" data-i18n="Adjust drill">Adjust drill</span>
+            </summary>
             <div class="panel-head"><div><p class="training-eyebrow" data-i18n="Drill setup">Drill setup</p><h2 id="trainingSetupTitle" data-i18n="Choose a decision family">Choose a decision family</h2></div><span class="badge status-badge status-badge--available" data-i18n="Home · no rake">Home · no rake</span></div>
             <div class="panel-body training-setup-fields">
               <div id="trainingModeSwitch" class="training-mode-switch" role="group" aria-label="Training mode" data-i18n-aria-label="Training mode">
@@ -2422,7 +2459,7 @@
               </div>
               <div id="trainingFullHandCompactControls" class="training-full-hand-compact-controls" hidden>
                 <div><span data-i18n="Live Hand">Live Hand</span><strong id="trainingFullHandCompactStatus"></strong><small><span data-i18n="Seed">Seed</span> <span id="trainingFullHandCompactSeed" class="poker-data-token">—</span></small></div>
-                <div><button id="trainingFullHandLiveNewHand" class="ui-button ui-button--secondary" type="button" data-i18n="New Hand">New Hand</button><button id="trainingFullHandEndHand" class="ui-button ui-button-ghost ui-button--destructive" type="button" data-i18n="End Hand">End Hand</button></div>
+                <div><button id="trainingFullHandLiveNewHand" class="ui-button ui-button--secondary" type="button" data-i18n="New Hand">New Hand</button><button id="trainingFullHandEndHand" class="ui-button ui-button-ghost ui-button--destructive" type="button" hidden data-i18n="Abort hand">Abort hand</button></div>
               </div>
               <div id="trainingVariedControls" class="training-mode-controls">
                 <label class="ui-field"><span data-i18n="Session length">Session length</span><select id="trainingSessionLength" class="control-select"><option value="10" selected>10</option><option value="20">20</option><option value="50">50</option><option value="open" data-i18n="Open">Open</option></select></label>
@@ -2439,10 +2476,10 @@
               </div>
               <label class="ui-field"><span data-i18n="Assistance">Assistance</span><select id="trainingDifficulty" class="control-select"><option value="hard" selected data-i18n="Hard · no odds shown">Hard · no odds shown</option><option value="easy" data-i18n="Easy · pot odds and MDF">Easy · pot odds and MDF</option><option value="guided" data-i18n="Guided · odds and prompt">Guided · odds and prompt</option></select></label>
               <div id="trainingFilterMessage" class="training-filter-message" role="status"></div>
-              <button class="ui-button ui-button--primary training-generate" type="button" id="trainingNewHand" data-i18n="Start varied session">Start varied session</button>
+              <button class="ui-button ui-button--primary training-generate" type="button" id="trainingNewHand" data-i18n="Start Training">Start Training</button>
             </div>
-          </section>
-          <details class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle" data-training-availability="before-session"><summary class="panel-head"><div><h2 id="trainingAssistanceTitle" data-i18n="Assistance">Assistance</h2><p class="panel-note" data-i18n="Difficulty controls automatic help.">Difficulty controls automatic help.</p><p id="trainingAssistanceAvailability" class="panel-note" data-i18n="Hints become available after a decision is generated.">Hints become available after a decision is generated.</p></div></summary><div class="panel-body"><p class="training-study-hints-note"><strong data-i18n="Study hints">Study hints</strong><span data-i18n="Ask for a coaching prompt in the decision panel.">Ask for a coaching prompt in the decision panel.</span></p></div></details>
+          </details>
+          <details class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle" data-training-availability="before-session"><summary class="panel-head"><div><h2 id="trainingAssistanceTitle" data-i18n="Assistance">Assistance</h2><p class="panel-note" data-i18n="Difficulty controls automatic help.">Difficulty controls automatic help.</p><p id="trainingAssistanceAvailability" class="panel-note" data-i18n="Hints become available after a decision is generated.">Hints become available after a decision is generated.</p></div><span id="trainingAssistanceLevel" class="badge status-badge status-badge--info" data-i18n="Hard">Hard</span></summary><div class="panel-body"><p class="training-study-hints-note"><strong data-i18n="Study hints">Study hints</strong><span data-i18n="Ask for a coaching prompt in the decision panel.">Ask for a coaching prompt in the decision panel.</span></p></div></details>
           <details class="panel training-advanced" id="trainingAdvanced">
             <summary data-i18n="Seed, replay & diagnostics">Seed, replay & diagnostics</summary>
             <div class="panel-body">

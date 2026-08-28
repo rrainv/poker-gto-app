@@ -18,7 +18,7 @@ test('production Training route uses the canonical bridge and shared StrategyPro
   assert.match(canonicalTraining, /window\.confirm\(t\(/);
   assert.match(canonicalTraining, /finishTrainingMemorySession\('abandoned'\)/);
   assert.match(canonicalTraining, /callTrainingServiceBridge\('generatePlanned', \{ strategyProvider \}\)/);
-  assert.match(logic, /button\.addEventListener\('click', \(\) => handleTrainingGuess\(type\)\)/);
+  assert.match(logic, /button\.addEventListener\('click', \(\) => \{[\s\S]*?if \(fullHand && \['bet', 'raise'\]\.includes\(type\)\) chooseFullHandTrainingSizedAction\(type\);[\s\S]*?else handleTrainingGuess\(type\);[\s\S]*?\}\)/);
   assert.doesNotMatch(logic, /window\.(?:newRandomTrainingHand|handleTrainingGuess|replayTrainingExercise|resetTrainingStats)\s*=/);
 });
 

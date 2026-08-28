@@ -2,7 +2,7 @@
 
 Status: **COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED**
 
-Planning consequence: `HANDS-ON-DEFECTS-001` is **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT**. `CORE-FLOW-CORRECTNESS-001` is **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT**. `REPLAY-RAIL-NAV-001` is **COMPLETED / HUMAN ACCEPTED HAND-REPLAY COMPOSITION CHECKPOINT WITH MINOR TABLE-PHYSICALITY DEBT**. `TRAINING-COMPOSITION-001` is **ACTIVE NEXT**, followed by visible closure and September Alpha whole-app/docs/audit gates before another major feature; `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision.
+Planning consequence: `HANDS-ON-DEFECTS-001` is **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT**. `CORE-FLOW-CORRECTNESS-001` is **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT**. `REPLAY-RAIL-NAV-001` is **COMPLETED / HUMAN ACCEPTED HAND-REPLAY COMPOSITION CHECKPOINT WITH MINOR TABLE-PHYSICALITY DEBT**. `TRAINING-COMPOSITION-001` is **COMPLETED / HUMAN ACCEPTED**; `EQUITY-COMPOSITION-001` is **NEXT / READY**, followed by visible closure and September Alpha whole-app/docs/audit gates before another major feature. `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision.
 
 This is the durable evidence and triage artifact for `HANDS-ON-PRODUCT-REVIEW-001`. It is not another roadmap, backlog, QA system, or implementation specification. Current status and sequence remain owned by [Current Phase](CURRENT_PHASE.md), [Roadmap](ROADMAP.md), and [Product Backlog](PRODUCT_BACKLOG.md). Issue routing and deferred checkpoint debt remain owned by [QA Backlog](QA_BACKLOG.md) and [Product Return Queue](PRODUCT_RETURN_QUEUE.md).
 
@@ -142,8 +142,14 @@ The correction does not reopen accepted card-removal parity, Analyze clipping, P
 The structural evidence is now directional rather than an open comparison:
 
 - The completed `REPLAY-RAIL-NAV-001` checkpoint preserves vertical street-grouped history, first-class rail actions and Current Legal Actions, compact Hand Stage, table/history/action integration, and accepted chronology; bounded History typography/density polish remains later debt.
-- Active-next `TRAINING-COMPOSITION-001` owns one primary start CTA, a stable pre/post-answer skeleton, top-packed useful content, Action History, Assistance, Training Memory, setup/status, and progressive Facts → Explain → Coach depth.
+- `TRAINING-COMPOSITION-001` is completed and human accepted. Its normal pre/post-answer decision + study-rail skeleton, Correction #1, and final hardening remain preserved. No unsupported Coach capability was added.
 - supported desktop acceptance uses 1920×1080 at 100% zoom as the primary state, 2560×1440 and 2560×1600 coverage, and functional 1366×768 support; reducing zoom is not an acceptance workaround.
+
+Implementation evidence, August 28, 2026: the Training workspace now keeps a persistent decision region beside one bounded study rail, uses one selected-configuration `Start Training` action, collapses setup during practice, keeps Progress/source/support access near the exercise, transforms the answer area into compact source-aware Facts with optional bounded Explain, and gives lazy Training Memory a normal rail width. Firefox 154 automation passed the requested state/language/theme/viewport matrix, including completion, Focused, Full Hand, and visible Same/Similar Spot actions. This records implementation evidence only; the product owner has not yet accepted finding #46.
+
+Human QA Correction #1 evidence, August 28, 2026: the first pass accepts and freezes the normal Training skeleton above. The corrected pre-session state hides zero Progress, unavailable Source, empty History, and full Assistance; the idle main shrinks naturally. Review later/Difficult now show persisted reversible state and Review-queue reasons, including a repaired reference-aligned `none ↔ pending` domain transition. Immediate Facts prioritize decision-relevant hand/draw/board/economics evidence while generic blockers remain under Explain/Supporting detail. Full Hand keeps the shared table large beside Hand-grammar legal actions, reveals canonical amount-to sizing only after Bet/Raise, and retains compact last-decision feedback/history. Prepared Study audio schedules before deep rendering, and clean-start Personal Strategy opens its truthful Guest surface. Corrected Firefox 154 and automated evidence pass; this is not the second product-owner acceptance.
+
+Final product-owner acceptance hardening evidence, August 28, 2026: live Full Hand answers now expose neutral recording confirmation only; comparison, source, Facts, Explain, decision navigation, and history remain available through the existing shared terminal Review. A distinct live-only Abort control outside poker actions confirms intent, leaves cancel unchanged, and on confirmation abandons the Memory session while preserving recorded decisions, clears transient/replay/controller state, avoids fake completion/showdown, and returns to setup. Normal answered drills keep the primary progression row before study labels, Facts, reference, and optional Explain; expanding Explain does not move Next. Sparse normal modes use content-driven height while Full Hand retains its table floor. Firefox 154 passes the requested EN/RU/HE RTL, Midnight/Graphite/Daylight, 1366×768, 1920×1080, 2560×1440, and 2560×1600 matrix with no Training console errors. This is implementation evidence, not final product-owner acceptance.
 
 At that checkpoint, one short final acceptance remained required before advancing. The resulting second-pass disposition is recorded below.
 
@@ -239,8 +245,8 @@ The newer product decision supersedes the earlier Training → Personal Strategy
 1. `HANDS-ON-DEFECTS-001` — **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT DEBT**.
 2. `CORE-FLOW-CORRECTNESS-001` — **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT**.
 3. `REPLAY-RAIL-NAV-001` — **COMPLETED / HUMAN ACCEPTED HAND-REPLAY COMPOSITION CHECKPOINT WITH MINOR TABLE-PHYSICALITY DEBT**.
-4. `TRAINING-COMPOSITION-001` — **ACTIVE NEXT**.
-5. `EQUITY-COMPOSITION-001` → `ANALYZE-RANGE-UX-001` → `FIRST-USE-HOME-001` — **VISIBLE-PRODUCT CLOSURE**.
+4. `TRAINING-COMPOSITION-001` — **COMPLETED / HUMAN ACCEPTED**.
+5. `EQUITY-COMPOSITION-001` — **NEXT / READY**, then `ANALYZE-RANGE-UX-001` → `FIRST-USE-HOME-001` — **VISIBLE-PRODUCT CLOSURE**.
 6. `GUIDE-CONTENT-001`, `SAVED-VISUAL-KNOWLEDGE-001`, `CUSTOMIZATION-UX-001`, and `GLOBAL-PRODUCT-QUALITY-001` — **BOUNDED SECONDARY POLISH / EXACT ORDER REASSESSED**; `HOME-GAME-PRESENTATION-001` and `AUDIO-DESIGN-001` remain conditional on time and impact.
 7. Human whole-app pass → documentation integrity/continuity freeze → human clean commit/audit tag.
 8. Independent cross-model blind hands-on product audit plus white-box theoretical/architecture audit → human triage → serious P0/P1 fixes.

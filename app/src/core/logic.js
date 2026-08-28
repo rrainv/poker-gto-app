@@ -184,6 +184,10 @@ const app = {
 
     currentAnalysisExplanation: null,
 
+    currentAttemptKind: 'primary',
+
+    replaySourceRecordPromise: null,
+
     lifecycle: 'idle',
 
     nextSeed: Date.now() >>> 0,
@@ -196,6 +200,8 @@ const app = {
 
     fullHandReviewIndex: 0,
 
+    fullHandSizedAction: null,
+
     memorySessionPromise: null,
 
     memoryWritePromise: Promise.resolve(),
@@ -207,6 +213,8 @@ const app = {
     memoryFullHandDecisionRecords: new Map(),
 
     memoryPendingOrigin: null,
+
+    memoryPendingOriginPromise: null,
 
     memoryView: 'review',
 
@@ -3539,6 +3547,25 @@ function renderActiveHandReview() {
     ? strategySourceDisplayLabel(decision.strategyResult)
     : strategySourceDisplayLabel(decision.source.id);
   if ($('#handReviewSourceBadge')) $('#handReviewSourceBadge').textContent = sourceLabel;
+  if (model.source === 'training_full_hand') {
+    if ($('#trainingStrategySource')) {
+      $('#trainingStrategySource').textContent = sourceLabel;
+      $('#trainingStrategySource').className = 'badge status-badge status-badge--info';
+    }
+    if ($('#trainingReferenceSummaryValue')) {
+      $('#trainingReferenceSummaryValue').textContent = sourceLabel;
+    }
+    if ($('#trainingReferenceSummaryNote')) {
+      $('#trainingReferenceSummaryNote').textContent = [
+        reviewComparisonLabel(decision.comparison),
+        t({
+          exact: 'Exact covered context',
+          generalized: 'Generalized context',
+          unsupported: 'Unsupported context',
+        }[decision.source.coverage] || 'Unsupported context'),
+      ].join(' · ');
+    }
+  }
   renderHandReviewFrequencyComparison(decision);
   if ($('#handReviewComparisonNote')) {
     $('#handReviewComparisonNote').textContent = decision.source.coverage === 'generalized'
@@ -7511,6 +7538,14 @@ function refreshLocalizedTrainingRuntime() {
   updateTrainingPositions();
   updateTrainingFilterAvailability();
   updateTrainingStats();
+  updateTrainingSessionProgress();
+  updateTrainingSetupSummary();
+  if (app.training.practiceSession?.completed && $('#trainingSessionCompletionText')) {
+    $('#trainingSessionCompletionText').textContent = t('{aligned} reference-aligned from {attempts} attempts.', {
+      aligned: app.training.stats.correct,
+      attempts: app.training.stats.totalHands,
+    });
+  }
   if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
   if (trainingSessionMode() === 'full_hand' && app.training.fullHandSnapshot) {
     renderFullHandTrainingSnapshot(app.training.fullHandSnapshot);
@@ -8474,6 +8509,106 @@ function handleTrainingKeyboardShortcut(event) {
   }
 }
 
+function composeTrainingWorkspace() {
+  const rail = document.querySelector('.training-insight-column');
+  const setupColumn = document.querySelector('.training-setup-column');
+  const feedbackReferenceMount = $('#trainingFeedbackReferenceMount');
+  const solution = $('#trainingSolution');
+  if (!rail || rail.dataset.composed === 'true') return;
+
+  rail.dataset.composed = 'true';
+  rail.classList.add('training-study-rail');
+  rail.setAttribute('aria-label', t('Session and study tools'));
+  if (feedbackReferenceMount && solution) feedbackReferenceMount.append(solution);
+  const fullHandDock = $('#trainingFullHandActionDock');
+  const fullHandLifecycle = $('#trainingFullHandCompactControls');
+  if (fullHandDock && fullHandLifecycle && fullHandLifecycle.parentElement !== fullHandDock) {
+    fullHandDock.insertBefore(fullHandLifecycle, fullHandDock.querySelector('.panel-body'));
+  }
+
+  const orderedRailSurfaces = [
+    $('#trainingSetupPanel'),
+    $('#trainingFullHandActionDock'),
+    document.querySelector('.training-session-panel'),
+    $('#trainingReferenceSummary'),
+    $('#trainingHistoryPanel'),
+    document.querySelector('.training-assistance-panel'),
+    $('#trainingMemoryPanel'),
+    $('#trainingAdvanced'),
+  ];
+  orderedRailSurfaces.forEach((surface) => {
+    if (surface) rail.append(surface);
+  });
+  setupColumn?.remove();
+}
+
+function projectTrainingDecisionControls(fullHandActive = false) {
+  const controls = $('#trainingDecisionControls');
+  const destination = fullHandActive
+    ? $('#trainingFullHandActionDockMount')
+    : $('#trainingDecisionActionMount');
+  const dock = $('#trainingFullHandActionDock');
+  if (controls && destination && controls.parentElement !== destination) destination.append(controls);
+  if (dock) dock.hidden = !fullHandActive;
+  controls?.classList.toggle('is-full-hand-action-grammar', fullHandActive);
+}
+
+function projectTrainingContinuationControls(answered = false) {
+  const row = $('#trainingContinuationRow');
+  const destination = answered
+    ? $('#trainingFeedbackProgressionMount')
+    : $('#trainingDecisionProgressionMount');
+  if (row && destination && row.parentElement !== destination) destination.append(row);
+}
+
+function selectedTrainingControlLabel(selector) {
+  const control = $(selector);
+  const option = control?.selectedOptions?.[0];
+  return option ? t(option.dataset.i18n || option.textContent.trim()) : '';
+}
+
+function updateTrainingSetupSummary() {
+  const summary = $('#trainingSetupSummary');
+  if (!summary) return;
+  const mode = trainingSessionMode();
+  const modeLabel = t(mode === 'varied' ? 'Varied Session' : mode === 'focused' ? 'Focused Drill' : 'Full Hand');
+  const assistance = selectedTrainingControlLabel('#trainingDifficulty');
+  const configuration = mode === 'varied'
+    ? `${$('#trainingSessionLength')?.value || 10} ${t('decisions')}`
+    : mode === 'focused'
+      ? [selectedTrainingControlLabel('#trainingStreet'), selectedTrainingControlLabel('#trainingDecisionTarget')].filter(Boolean).join(' / ')
+      : `${$('#trainingHeroPos')?.value || 'UTG'} · ${$('#trainingPlayers')?.value || 8}-max · ${$('#trainingStack')?.value || 30} bb`;
+  summary.textContent = [modeLabel, configuration, assistance].filter(Boolean).join(' · ');
+}
+
+function setTrainingSetupExpanded(expanded, { focus = false } = {}) {
+  const setup = $('#trainingSetupPanel');
+  if (!setup) return;
+  setup.open = Boolean(expanded);
+  if (!expanded || !focus) return;
+  const selector = trainingSessionMode() === 'varied'
+    ? '#trainingSessionLength'
+    : trainingSessionMode() === 'full_hand' ? '#trainingHeroPos' : '#trainingStreet';
+  $(selector)?.focus({ preventScroll: false });
+}
+
+function requestTrainingSessionModeChange(mode) {
+  if (mode === trainingSessionMode()) return;
+  if (trainingSessionIsActive() && !window.confirm(t(
+    'Change Training mode? The active session will be marked incomplete, and its recorded decisions will remain in Training Memory.',
+  ))) return;
+  setTrainingSessionMode(mode);
+}
+
+function openTrainingMemoryView(view) {
+  const panel = $('#trainingMemoryPanel');
+  if (!panel) return;
+  setTrainingMemoryView(view);
+  panel.open = true;
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  panel.scrollIntoView({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
+}
+
 function initTrainingMode() {
   const bind = (selector, eventName, handler) => {
     const element = $(selector);
@@ -8484,17 +8619,18 @@ function initTrainingMode() {
 
   bind('#trainingResetStats', 'click', resetTrainingStats);
   bind('#trainingNewHand', 'click', () => startConfiguredTrainingSessionWithGuard());
-  bind('#trainingIdleStart', 'click', () => startConfiguredTrainingSessionWithGuard());
   bind('#trainingNextHandBtn', 'click', () => requestNextTrainingExercise());
   bind('#trainingRetryButton', 'click', () => requestNextTrainingExercise({ retry: true }));
   document.querySelectorAll('[data-training-session-mode]').forEach((button) => {
     if (button.dataset.bound) return;
     button.dataset.bound = 'true';
-    button.addEventListener('click', () => setTrainingSessionMode(button.dataset.trainingSessionMode));
+    button.addEventListener('click', () => requestTrainingSessionModeChange(button.dataset.trainingSessionMode));
   });
   bind('#trainingRestartSession', 'click', () => startConfiguredTrainingSessionWithGuard());
+  bind('#trainingCompletionReview', 'click', () => openTrainingMemoryView('review'));
+  bind('#trainingCompletionRecent', 'click', () => openTrainingMemoryView('recent'));
   bind('#trainingReplayBtn', 'click', replayCurrentTrainingSeed);
-  bind('#trainingReplayDecisionBtn', 'click', replayCurrentTrainingSeed);
+  bind('#trainingReplayDecisionBtn', 'click', replayCurrentTrainingDecision);
   bind('#trainingGenerateSeed', 'click', () => {
     const seed = selectedTrainingSeed();
     if (seed !== null) startConfiguredTrainingSessionWithGuard({ seed });
@@ -8502,7 +8638,7 @@ function initTrainingMode() {
   bind('#trainingCopySeed', 'click', copyCurrentTrainingSeed);
   bind('#trainingFullHandNewHand', 'click', () => startConfiguredTrainingSessionWithGuard());
   bind('#trainingFullHandLiveNewHand', 'click', () => startConfiguredTrainingSessionWithGuard());
-  bind('#trainingFullHandEndHand', 'click', endFullHandTraining);
+  bind('#trainingFullHandEndHand', 'click', abortFullHandTraining);
   bind('#trainingReviewHand', 'click', toggleFullHandTrainingReview);
   bind('#trainingMemoryPanel', 'toggle', (event) => {
     if (event.currentTarget.open) void refreshTrainingMemoryPanel();
@@ -8517,39 +8653,58 @@ function initTrainingMode() {
   bind('#trainingMarkDifficult', 'click', () => toggleCurrentTrainingMemoryMetadata('difficult'));
   bind('#trainingAdjustDrill', 'click', () => {
     $('#trainingAdvanced')?.removeAttribute('open');
-    const selector = trainingSessionMode() === 'varied'
-      ? '#trainingSessionLength'
-      : trainingSessionMode() === 'full_hand' ? '#trainingHeroPos' : '#trainingStreet';
-    $(selector)?.focus({ preventScroll: false });
+    setTrainingSetupExpanded(true, { focus: true });
   });
 
   bind('#trainingRevealHint', 'click', revealNextTrainingStudyHint);
-  bind('#trainingDifficulty', 'change', updateAssistanceDisplay);
-  bind('#trainingStreet', 'change', updateTrainingFilterAvailability);
-  bind('#trainingDecisionTarget', 'change', updateTrainingFilterAvailability);
-  bind('#trainingHeroPos', 'change', updateTrainingFilterAvailability);
+  bind('#trainingDifficulty', 'change', () => {
+    updateAssistanceDisplay();
+    updateTrainingSetupSummary();
+  });
+  bind('#trainingStreet', 'change', () => {
+    updateTrainingFilterAvailability();
+    updateTrainingSetupSummary();
+  });
+  bind('#trainingDecisionTarget', 'change', () => {
+    updateTrainingFilterAvailability();
+    updateTrainingSetupSummary();
+  });
+  bind('#trainingHeroPos', 'change', () => {
+    updateTrainingFilterAvailability();
+    updateTrainingSetupSummary();
+  });
+  for (const selector of [
+    '#trainingSessionLength',
+    '#trainingVariedEmphasis',
+    '#trainingVariedStackPreference',
+  ]) bind(selector, 'change', updateTrainingSetupSummary);
 
   bind('#trainingPlayers', 'input', function syncTrainingPlayers() {
     $('#trainingPlayersNum').value = this.value;
     updateTrainingPositions();
     updateTrainingFilterAvailability();
+    updateTrainingSetupSummary();
   });
   bind('#trainingPlayersNum', 'input', function syncTrainingPlayersNumber() {
     $('#trainingPlayers').value = this.value;
     updateTrainingPositions();
     updateTrainingFilterAvailability();
+    updateTrainingSetupSummary();
   });
   bind('#trainingStack', 'input', function syncTrainingStack() {
     $('#trainingStackNum').value = this.value;
+    updateTrainingSetupSummary();
   });
   bind('#trainingStackNum', 'input', function syncTrainingStackNumber() {
     $('#trainingStack').value = this.value;
+    updateTrainingSetupSummary();
   });
 
   if (!document.documentElement.dataset.trainingKeyboardBound) {
     document.documentElement.dataset.trainingKeyboardBound = 'true';
     document.addEventListener('keydown', handleTrainingKeyboardShortcut);
   }
+  composeTrainingWorkspace();
   updateTrainingPositions();
   updateTrainingFilterAvailability();
   setTrainingSessionMode('varied', { reset: false });
@@ -8589,6 +8744,12 @@ function renderTrainingCards() {
 function updateAssistanceDisplay() {
   const diffSelect = $('#trainingDifficulty');
   const level = diffSelect ? diffSelect.value : 'hard';
+  const levelBadge = $('#trainingAssistanceLevel');
+  if (levelBadge) {
+    const label = level === 'guided' ? 'Guided' : level === 'easy' ? 'Easy' : 'Hard';
+    levelBadge.dataset.i18n = label;
+    levelBadge.textContent = t(label);
+  }
 
   const details = document.querySelectorAll('#trainingMode .pot-math-detail');
   const hintBox = $('#trainingHintBox');
@@ -8996,6 +9157,10 @@ function renderFullHandCompactTimeline(tablePresentation) {
   root.dataset.timelineMode = tablePresentation.timelineMode;
   const reviewMode = tablePresentation.timelineMode === 'review'
     && app.handReview.source === 'training_full_hand';
+  if (reviewMode) {
+    root.hidden = true;
+    return;
+  }
   for (const group of timeline.groups || []) {
     const section = document.createElement('section');
     section.className = 'full-hand-timeline-street';
@@ -9003,17 +9168,9 @@ function renderFullHandCompactTimeline(tablePresentation) {
     const heading = document.createElement('strong');
     heading.textContent = t(group.headingKey);
     section.appendChild(heading);
-    const items = reviewMode ? group.items : group.entries;
-    for (const entry of items) {
-      const token = document.createElement(reviewMode ? 'button' : 'span');
-      if (reviewMode) token.type = 'button';
-      const reviewDecision = entry.itemKind === 'action'
-        ? app.handReview.model?.decisions?.find((decision) => (
-          decision.replayFrameTarget.actionSequence === entry.sequence
-        ))
-        : null;
-      const selected = reviewDecision?.decisionId === app.handReview.model?.selectedDecision?.decisionId;
-      token.className = `full-hand-timeline-action${entry.isHero ? ' is-hero' : ''}${reviewDecision ? ' is-review-decision' : ''}${selected ? ' is-selected-review-decision' : ''}${entry.presentationState === 'current' ? ' is-current' : ''}`;
+    for (const entry of group.entries) {
+      const token = document.createElement('span');
+      token.className = `full-hand-timeline-action${entry.isHero ? ' is-hero' : ''}${entry.presentationState === 'current' ? ' is-current' : ''}`;
       token.dataset.frameIndex = String(entry.frameIndex ?? '');
       if (entry.presentationState === 'current') token.setAttribute('aria-current', 'step');
       if (entry.itemKind === 'transition') {
@@ -9025,17 +9182,11 @@ function renderFullHandCompactTimeline(tablePresentation) {
           : '';
         token.textContent = `${entry.position || replayActorLabel(entry)} ${t(entry.actionLabelKey)}${amount}`;
       }
-      if (reviewMode) {
-        token.setAttribute('aria-label', t('Review replay frame {current}', {
-          current: entry.frameIndex + 1
-        }));
-        token.addEventListener('click', () => stepActiveHandReviewReplay('select', entry.frameIndex));
-      }
       section.appendChild(token);
     }
     root.appendChild(section);
   }
-  if (!reviewMode || timeline.showCurrentMarker) {
+  if (timeline.showCurrentMarker) {
     const marker = document.createElement('span');
     marker.className = 'full-hand-timeline-marker';
     marker.setAttribute('aria-current', 'step');
@@ -9098,8 +9249,11 @@ function setFullHandTrainingPhase(phase = 'setup') {
   const nextPhase = trainingSessionMode() === 'full_hand' ? phase : 'off';
   workspace.dataset.trainingFullHandPhase = nextPhase;
   const active = ['live', 'complete', 'review'].includes(nextPhase);
+  projectTrainingDecisionControls(nextPhase === 'live');
   const compact = $('#trainingFullHandCompactControls');
   if (compact) compact.hidden = !active;
+  const abort = $('#trainingFullHandEndHand');
+  if (abort) abort.hidden = nextPhase !== 'live';
   if ($('#trainingFullHandCompactSeed')) {
     $('#trainingFullHandCompactSeed').textContent = Number.isInteger(app.training.fullHandSnapshot?.handSeed)
       ? String(app.training.fullHandSnapshot.handSeed)
@@ -9112,7 +9266,11 @@ function setFullHandTrainingPhase(phase = 'setup') {
     $('#trainingFullHandCompactStatus').textContent = t(statusKey);
   }
   const history = $('#trainingHistoryPanel');
-  if (history && ['live', 'complete'].includes(nextPhase)) history.open = true;
+  if (history && nextPhase === 'live' && phase !== workspace.dataset.previousFullHandPhase) {
+    history.open = false;
+  }
+  if (history && nextPhase === 'review') history.open = true;
+  workspace.dataset.previousFullHandPhase = nextPhase;
   if ($('#trainingHistoryEyebrow')) {
     const key = active ? 'Recent actions' : 'Canonical replay';
     $('#trainingHistoryEyebrow').dataset.i18n = key;
@@ -9158,19 +9316,55 @@ function resetTrainingMemoryDecisionState() {
   app.training.memoryCurrentRecordPromise = null;
   app.training.memoryCurrentRecordId = null;
   app.training.memoryPendingOrigin = null;
+  app.training.memoryPendingOriginPromise = null;
   const actions = $('#trainingMemoryDecisionActions');
   if (actions) actions.hidden = true;
-  ['#trainingMarkReview', '#trainingMarkDifficult'].forEach((selector) => {
-    $(selector)?.setAttribute('aria-pressed', 'false');
-  });
+  const review = $('#trainingMarkReview');
+  const difficult = $('#trainingMarkDifficult');
+  if (review) {
+    review.setAttribute('aria-pressed', 'false');
+    review.dataset.i18n = 'Review later';
+    review.textContent = t('Review later');
+    review.removeAttribute('aria-label');
+  }
+  if (difficult) {
+    difficult.setAttribute('aria-pressed', 'false');
+    difficult.dataset.i18n = 'Mark difficult';
+    difficult.textContent = t('Mark difficult');
+    difficult.removeAttribute('aria-label');
+  }
+  if ($('#trainingMemoryDecisionStatus')) $('#trainingMemoryDecisionStatus').textContent = '';
 }
 
 function updateTrainingMemoryDecisionActions(record) {
   if (!record || record.id !== app.training.memoryCurrentRecordId) return;
   const actions = $('#trainingMemoryDecisionActions');
   if (actions) actions.hidden = record.status !== 'answered';
-  $('#trainingMarkReview')?.setAttribute('aria-pressed', String(Boolean(record.studyMetadata?.review)));
-  $('#trainingMarkDifficult')?.setAttribute('aria-pressed', String(Boolean(record.studyMetadata?.difficult)));
+  const toggles = [
+    {
+      selector: '#trainingMarkReview',
+      active: Boolean(record.studyMetadata?.review),
+      inactiveKey: 'Review later',
+      activeKey: 'Added to review',
+      undoKey: 'Remove from review',
+    },
+    {
+      selector: '#trainingMarkDifficult',
+      active: Boolean(record.studyMetadata?.difficult),
+      inactiveKey: 'Mark difficult',
+      activeKey: 'Marked difficult',
+      undoKey: 'Clear difficult mark',
+    },
+  ];
+  toggles.forEach(({ selector, active, inactiveKey, activeKey, undoKey }) => {
+    const button = $(selector);
+    if (!button) return;
+    const visibleKey = active ? activeKey : inactiveKey;
+    button.setAttribute('aria-pressed', String(active));
+    button.setAttribute('aria-label', t(active ? undoKey : inactiveKey));
+    button.dataset.i18n = visibleKey;
+    button.textContent = t(visibleKey);
+  });
 }
 
 function startTrainingMemorySession(input) {
@@ -9210,16 +9404,19 @@ function recordTrainingExerciseShown(exercise) {
   const sessionPromise = app.training.memorySessionPromise;
   if (!sessionPromise || !exercise) return null;
   const origin = app.training.memoryPendingOrigin;
+  const originPromise = app.training.memoryPendingOriginPromise;
   app.training.memoryPendingOrigin = null;
+  app.training.memoryPendingOriginPromise = null;
   resetTrainingMemoryDecisionState();
   const recordPromise = queueTrainingMemoryWrite(async () => {
     const session = await sessionPromise;
     if (!session?.id) return null;
+    const resolvedOrigin = origin || await Promise.resolve(originPromise).catch(() => null);
     const record = await callTrainingMemoryBridge('recordExerciseShown', {
       sessionId: session.id,
       exercise,
-      parentDecisionRecordId: origin?.parentDecisionRecordId ?? null,
-      redrillKind: origin?.redrillKind ?? null,
+      parentDecisionRecordId: resolvedOrigin?.parentDecisionRecordId ?? null,
+      redrillKind: resolvedOrigin?.redrillKind ?? null,
     });
     if (record && app.training.currentExercise?.id === exercise.id) {
       app.training.memoryCurrentRecordId = record.id;
@@ -9535,7 +9732,12 @@ async function refreshTrainingMemoryPanel() {
   try {
     const due = await callTrainingMemoryBridge('listDueReview', { limit: 12 });
     if (!Array.isArray(due)) throw new Error('Training Memory review query is unavailable');
-    if ($('#trainingMemoryDueBadge')) $('#trainingMemoryDueBadge').textContent = String(due.length);
+    const memoryPanel = $('#trainingMemoryPanel');
+    if (memoryPanel) memoryPanel.dataset.memoryLoaded = 'true';
+    if ($('#trainingMemoryDueBadge')) {
+      $('#trainingMemoryDueBadge').textContent = String(due.length);
+      $('#trainingMemoryDueBadge').hidden = due.length === 0;
+    }
     let items;
     if (app.training.memoryView === 'recent') {
       items = await callTrainingMemoryBridge('listRecentSessions', { limit: 10 });
@@ -9602,20 +9804,36 @@ function handleTrainingMemoryTabKey(event) {
 async function toggleCurrentTrainingMemoryMetadata(field) {
   const recordPromise = app.training.memoryCurrentRecordPromise;
   if (!recordPromise) return null;
-  return queueTrainingMemoryWrite(async () => {
+  const actions = $('#trainingMemoryDecisionActions');
+  actions?.setAttribute('aria-busy', 'true');
+  actions?.querySelectorAll('button').forEach((button) => { button.disabled = true; });
+  const operation = queueTrainingMemoryWrite(async () => {
     const record = await recordPromise;
     if (!record?.id || record.status !== 'answered') return null;
+    const enabled = !record.studyMetadata[field];
     const updated = await callTrainingMemoryBridge('updateStudyMetadata', record.id, {
-      [field]: !record.studyMetadata[field],
+      [field]: enabled,
     });
     if (updated) {
       app.training.memoryCurrentRecordPromise = Promise.resolve(updated);
       app.training.memoryCurrentRecordId = updated.id;
       updateTrainingMemoryDecisionActions(updated);
-      setTrainingMemoryStatus('Memory saved.');
+      const statusKey = field === 'review'
+        ? enabled
+          ? 'Added to review. Training Memory review queue updated.'
+          : 'Removed from review.'
+        : enabled ? 'Marked difficult.' : 'Difficult mark removed.';
+      if ($('#trainingMemoryDecisionStatus')) {
+        $('#trainingMemoryDecisionStatus').textContent = t(statusKey);
+      }
+      setTrainingMemoryStatus(statusKey);
       if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
     }
     return updated;
+  });
+  return operation.finally(() => {
+    actions?.setAttribute('aria-busy', 'false');
+    actions?.querySelectorAll('button').forEach((button) => { button.disabled = false; });
   });
 }
 
@@ -9699,6 +9917,7 @@ function clearTrainingSessionCompletion() {
   if ($('#trainingSessionCompletionText')) $('#trainingSessionCompletionText').textContent = '';
   if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = true;
   if ($('#trainingReviewHand')) $('#trainingReviewHand').setAttribute('aria-expanded', 'false');
+  document.querySelector('.training-workspace')?.removeAttribute('data-training-session-complete');
   app.training.fullHandReviewIndex = 0;
   const nextBtn = $('#trainingNextHandBtn');
   if (nextBtn) nextBtn.hidden = false;
@@ -9714,7 +9933,11 @@ function updateTrainingSessionProgress() {
   const plannerState = callTrainingServiceBridge('getPracticePlannerState');
   const served = plannerState?.servedCount || 0;
   progress.hidden = false;
-  progress.textContent = `${served} / ${session.length}`;
+  progress.textContent = t('Exercise {current} of {total}', {
+    current: served,
+    total: session.length,
+  });
+  progress.setAttribute('aria-label', progress.textContent);
 }
 
 function clearTrainingSessionState() {
@@ -9732,6 +9955,8 @@ function clearTrainingSessionState() {
   app.training.currentEvaluation = null;
   app.training.currentPresentation = null;
   app.training.currentSolution = null;
+  app.training.currentAttemptKind = 'primary';
+  app.training.replaySourceRecordPromise = null;
   app.training.currentHand = null;
   app.training.fullHandSnapshot = null;
   app.training.fullHandReviewIndex = 0;
@@ -9743,6 +9968,7 @@ function clearTrainingSessionState() {
   updateTrainingSessionProgress();
   if ($('#trainingFilterMessage')) $('#trainingFilterMessage').textContent = t('Training session reset.');
   setTrainingWorkspaceState('idle');
+  setTrainingSetupExpanded(true);
   setFullHandTrainingPhase(trainingSessionMode() === 'full_hand' ? 'setup' : 'off');
 }
 
@@ -9767,11 +9993,11 @@ function setTrainingSessionMode(mode, { reset = true } = {}) {
     $('#trainingSetupTitle').textContent = t(key);
   }
   if ($('#trainingNewHand')) {
-    const key = nextMode === 'varied' ? 'Start varied session'
-      : nextMode === 'full_hand' ? 'Start Full Hand' : 'Generate exercise';
+    const key = 'Start Training';
     $('#trainingNewHand').dataset.i18n = key;
     $('#trainingNewHand').textContent = t(key);
   }
+  updateTrainingSetupSummary();
   if (reset) clearTrainingSessionState();
   else setFullHandTrainingPhase(nextMode === 'full_hand' ? 'setup' : 'off');
 }
@@ -9889,6 +10115,9 @@ function setTrainingWorkspaceState(state) {
   const workspace = document.querySelector('.training-workspace');
   if (!workspace) return;
   workspace.dataset.trainingState = state;
+  projectTrainingContinuationControls(
+    trainingSessionMode() !== 'full_hand' && state === 'feedback',
+  );
   workspace.setAttribute('aria-busy', String(['generating', 'automating'].includes(state)));
   const stateBadge = $('#trainingStateBadge');
   const labels = {
@@ -9898,6 +10127,7 @@ function setTrainingWorkspaceState(state) {
     ready: 'Decision ready',
     grading: 'Decision recorded',
     feedback: 'Feedback',
+    complete: 'Session complete',
     terminal: 'Hand Complete',
     error: 'Error'
   };
@@ -9912,14 +10142,20 @@ function setTrainingWorkspaceState(state) {
     const activeFullHandReview = state === 'terminal'
       && app.handReview.source === 'training_full_hand';
     $('#trainingExerciseSurface').hidden = !(
-      ['automating', 'ready', 'grading', 'feedback'].includes(state)
+      ['automating', 'ready', 'grading', 'feedback', 'complete'].includes(state)
       || activeFullHandReview
     );
   }
   if ($('#trainingFeedback')) {
     $('#trainingFeedback').hidden = trainingSessionMode() === 'full_hand' || state !== 'feedback';
   }
+  const nextButton = $('#trainingNextHandBtn');
+  if (nextButton && trainingSessionMode() !== 'full_hand') {
+    nextButton.hidden = !['ready', 'feedback'].includes(state)
+      || Boolean(app.training.practiceSession?.completed);
+  }
   if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = state !== 'terminal';
+  if (state === 'idle' || state === 'error') setTrainingSetupExpanded(true);
   const beforeSession = state === 'idle';
   for (const selector of ['#trainingHistoryPanel', '.training-assistance-panel']) {
     const panel = document.querySelector(selector);
@@ -10021,10 +10257,11 @@ function fullHandBbLabel(amountMilliBb) {
   return `${value} bb`;
 }
 
-function clearFullHandTrainingSizingControls() {
+function clearFullHandTrainingSizingControls({ clearSelection = true } = {}) {
   const surface = $('#trainingFullHandSizing');
   if (surface) surface.hidden = true;
   $('#trainingFullHandSizingActions')?.replaceChildren();
+  if (clearSelection) app.training.fullHandSizedAction = null;
 }
 
 function fullHandSizingValidationCopy(validation, actionLabel, sizingModel) {
@@ -10053,13 +10290,15 @@ function fullHandSizingValidationCopy(validation, actionLabel, sizingModel) {
   return (messages[validation?.errorCode] || messages.invalid_format)();
 }
 
-function renderFullHandTrainingSizingControls() {
+function renderFullHandTrainingSizingControls(actionType = app.training.fullHandSizedAction) {
   if (trainingSessionMode() !== 'full_hand') {
     clearFullHandTrainingSizingControls();
     return null;
   }
   const model = callTrainingServiceBridge('getFullHandSizingModel');
-  const sizing = model?.actions?.bet || model?.actions?.raise;
+  const sizing = ['bet', 'raise'].includes(actionType)
+    ? model?.actions?.[actionType]
+    : null;
   const surface = $('#trainingFullHandSizing');
   const mount = $('#trainingFullHandSizingActions');
   if (!surface || !mount || !sizing) {
@@ -10068,9 +10307,12 @@ function renderFullHandTrainingSizingControls() {
   }
 
   mount.replaceChildren();
-  const actionType = sizing.actionType;
+  app.training.fullHandSizedAction = sizing.actionType;
+  actionType = sizing.actionType;
+  const option = app.training.currentExercise?.legalActions?.[actionType] || {};
   const semanticLabel = trainingActionLabel(actionType, app.training.currentExercise?.decisionContext);
-  const actionLabel = t(semanticLabel) || semanticLabel;
+  const actionLabel = canonicalActionPresentation(actionType, option)?.label
+    || t(semanticLabel) || semanticLabel;
   const controlId = `trainingFullHand${actionType === 'bet' ? 'Bet' : 'Raise'}AmountTo`;
   const boundsId = `${controlId}Bounds`;
   const validationId = `${controlId}Validation`;
@@ -10102,7 +10344,7 @@ function renderFullHandTrainingSizingControls() {
   const submit = document.createElement('button');
   submit.type = 'button';
   submit.className = `ui-button ui-button--primary training-full-hand-sizing-submit training-action-button--${actionType}`;
-  submit.textContent = actionLabel;
+  submit.textContent = t('Apply amount-to');
   entry.append(label, amountControl, submit);
 
   const bounds = document.createElement('p');
@@ -10154,19 +10396,18 @@ function renderFullHandTrainingSizingControls() {
   const presets = document.createElement('div');
   presets.className = 'training-full-hand-presets';
   presets.setAttribute('aria-label', t('Quick sizing shortcuts'));
-  sizing.presets.forEach((preset) => {
+  sizing.presets.filter((preset) => preset.kind !== 'all_in').forEach((preset) => {
     const presetButton = document.createElement('button');
     presetButton.type = 'button';
     presetButton.className = 'training-full-hand-preset';
     presetButton.dataset.presetId = preset.presetId;
     presetButton.dataset.action = preset.actionType;
     presetButton.dataset.amountToMilliBb = String(preset.amountToMilliBb);
-    presetButton.textContent = `${t(preset.label)} · ${fullHandBbLabel(preset.amountToMilliBb)}`;
+    const presetLabel = t(preset.label);
+    presetButton.textContent = /\bbb\s*$/i.test(presetLabel)
+      ? presetLabel
+      : `${presetLabel} · ${fullHandBbLabel(preset.amountToMilliBb)}`;
     presetButton.addEventListener('click', () => {
-      if (preset.kind === 'all_in') {
-        handleFullHandTrainingGuess('all_in');
-        return;
-      }
       input.value = preset.valueBb;
       refreshValidation();
       input.focus({ preventScroll: true });
@@ -10181,28 +10422,80 @@ function renderFullHandTrainingSizingControls() {
   return model;
 }
 
+function chooseFullHandTrainingSizedAction(actionType) {
+  if (!['bet', 'raise'].includes(actionType) || app.training.lifecycle !== 'ready') return null;
+  app.training.fullHandSizedAction = actionType;
+  $('#trainingGuessButtons')?.querySelectorAll('[data-action]').forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.action === actionType));
+  });
+  const model = renderFullHandTrainingSizingControls(actionType);
+  $('#trainingFullHandSizingActions input')?.focus({ preventScroll: true });
+  return model;
+}
+
+function clearFullHandDecisionFeedback() {
+  const surface = $('#trainingFullHandDecisionFeedback');
+  if (surface) surface.hidden = true;
+  if ($('#trainingFullHandDecisionFeedbackTitle')) $('#trainingFullHandDecisionFeedbackTitle').textContent = '';
+  if ($('#trainingFullHandDecisionFeedbackText')) $('#trainingFullHandDecisionFeedbackText').textContent = '';
+  for (const selector of ['#trainingFullHandDecisionFacts', '#trainingFullHandDecisionAnalysis']) {
+    const target = $(selector);
+    target?.replaceChildren();
+    if (selector.endsWith('Facts') && target) target.hidden = true;
+  }
+  $('#trainingFullHandDecisionFeedback details')?.removeAttribute('open');
+}
+
+function renderFullHandDecisionRecorded(result) {
+  const decision = result?.decision;
+  const surface = $('#trainingFullHandDecisionFeedback');
+  if (!surface || !decision) return null;
+  surface.hidden = false;
+  if ($('#trainingFullHandDecisionFeedbackTitle')) {
+    $('#trainingFullHandDecisionFeedbackTitle').textContent = t('Decision recorded');
+  }
+  if ($('#trainingFullHandDecisionFeedbackText')) {
+    $('#trainingFullHandDecisionFeedbackText').textContent = t('Decision recorded. Continuing automatically.');
+  }
+  const facts = $('#trainingFullHandDecisionFacts');
+  facts?.replaceChildren();
+  if (facts) facts.hidden = true;
+  $('#trainingFullHandDecisionAnalysis')?.replaceChildren();
+  const explain = $('#trainingFullHandDecisionFeedback details');
+  explain?.removeAttribute('open');
+  if (explain) explain.hidden = true;
+  return decision;
+}
+
 function updateTrainingButtons(exercise) {
   const container = $('#trainingGuessButtons');
   if (!container) return;
   container.innerHTML = '';
   const fullHand = trainingSessionMode() === 'full_hand';
+  if (fullHand) clearFullHandTrainingSizingControls();
   const presentationByType = new Map((app.training.currentPresentation?.legalActions || []).map((entry) => [entry.type, entry]));
   canonicalTrainingLegalActionTypes(exercise).forEach((type) => {
-    if (fullHand && (type === 'bet' || type === 'raise')) return;
     const index = container.childElementCount;
+    const option = type === 'all_in' ? exercise.legalActions?.allIn : exercise.legalActions?.[type];
     const semanticLabel = trainingActionLabel(type, exercise.decisionContext);
-    const label = t(semanticLabel) || semanticLabel;
+    const actionPresentation = fullHand
+      ? canonicalActionPresentation(type, option || {})
+      : null;
+    const label = actionPresentation?.label || t(semanticLabel) || semanticLabel;
     const sizing = presentationByType.get(type);
     const boundsLabel = sizing?.boundsLabel?.endsWith(' to')
       ? t('to {range}', { range: sizing.boundsLabel.slice(0, -3) })
       : sizing?.boundsLabel;
     const sizingLabel = fullHand
-      ? fullHandTrainingActionDetail(type, exercise.legalActions)
+      ? ['bet', 'raise'].includes(type)
+        ? t('Choose amount-to')
+        : actionPresentation?.amount || fullHandTrainingActionDetail(type, exercise.legalActions)
       : boundsLabel || sizing?.amountLabel || '';
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `ui-button training-action-button training-action-button--${type}`;
     button.dataset.action = type;
+    button.setAttribute('aria-pressed', 'false');
     button.setAttribute('aria-keyshortcuts', String(index + 1));
     button.setAttribute('aria-label', `${label}${sizingLabel ? `, ${sizingLabel}` : ''}`);
     const copy = document.createElement('span');
@@ -10215,13 +10508,15 @@ function updateTrainingButtons(exercise) {
     const shortcut = document.createElement('kbd');
     shortcut.textContent = String(index + 1);
     button.append(copy, shortcut);
-    button.addEventListener('click', () => handleTrainingGuess(type));
+    button.addEventListener('click', () => {
+      if (fullHand && ['bet', 'raise'].includes(type)) chooseFullHandTrainingSizedAction(type);
+      else handleTrainingGuess(type);
+    });
     container.appendChild(button);
   });
   container.dataset.actionCount = String(container.childElementCount);
   container.hidden = false;
-  if (fullHand) renderFullHandTrainingSizingControls();
-  else clearFullHandTrainingSizingControls();
+  clearFullHandTrainingSizingControls({ clearSelection: !fullHand });
 }
 
 function renderTrainingSource(exercise) {
@@ -10250,6 +10545,19 @@ function renderTrainingSource(exercise) {
   ].filter(Boolean).join(' ');
   const tone = policy.source.family === 'heuristic' ? 'heuristic' : 'info';
   sourceElement.className = `badge status-badge status-badge--${tone}`;
+  if ($('#trainingReferenceSummaryTitle')) {
+    $('#trainingReferenceSummaryTitle').dataset.i18n = 'Reference source';
+    $('#trainingReferenceSummaryTitle').textContent = t('Reference source');
+  }
+  const referenceValue = $('#trainingReferenceSummaryValue');
+  const referenceNote = $('#trainingReferenceSummaryNote');
+  if (referenceValue) {
+    referenceValue.textContent = label;
+    referenceValue.dataset.sourceFamily = policy.source.family;
+  }
+  if (referenceNote) {
+    referenceNote.textContent = [strategyPolicySummary(policy), comparisonLabel].filter(Boolean).join(' · ');
+  }
   const limitationElement = $('#trainingSourceLimitation');
   if (limitationElement) {
     limitationElement.textContent = limitation;
@@ -10320,7 +10628,10 @@ function renderTrainingDecisionContextSummary(exercise) {
   if ($('#trainingTableVal')) $('#trainingTableVal').textContent = t('analysis.value.tableSize', { count: context.tableSize });
 }
 
-function renderCanonicalTrainingExercise(exercise) {
+function renderCanonicalTrainingExercise(exercise, {
+  attemptKind = 'primary',
+  replaySourceRecordPromise = null,
+} = {}) {
   const context = exercise.decisionContext;
   const presentation = exercise.presentation;
   const legacyContext = trainingContextPresentationAdapter(context);
@@ -10332,6 +10643,10 @@ function renderCanonicalTrainingExercise(exercise) {
   app.training.board = [...presentation.board];
   app.training.currentContext = legacyContext;
   app.training.currentSolution = trainingStrategyResultToPresentation(exercise.strategyResult);
+  app.training.currentAttemptKind = attemptKind === 'replay' ? 'replay' : 'primary';
+  app.training.replaySourceRecordPromise = app.training.currentAttemptKind === 'replay'
+    ? replaySourceRecordPromise
+    : null;
   app.training.lifecycle = 'ready';
   setTrainingWorkspaceState('ready');
   renderTrainingPresentation(exercise);
@@ -10343,6 +10658,11 @@ function renderCanonicalTrainingExercise(exercise) {
   if (trainingAnalysis) {
     trainingAnalysis.replaceChildren();
     trainingAnalysis.hidden = true;
+  }
+  const relevantFacts = $('#trainingRelevantFacts');
+  if (relevantFacts) {
+    relevantFacts.replaceChildren();
+    relevantFacts.hidden = true;
   }
   app.training.currentAnalysisExplanation = null;
   const solutionDiv = $('#trainingSolution');
@@ -10872,6 +11192,16 @@ function renderFullHandAwaitingHero(snapshot) {
     $('#trainingStrategySource').textContent = t('Hidden until review');
     $('#trainingStrategySource').className = 'badge status-badge status-badge--info';
   }
+  if ($('#trainingReferenceSummaryTitle')) {
+    $('#trainingReferenceSummaryTitle').dataset.i18n = 'Reference source';
+    $('#trainingReferenceSummaryTitle').textContent = t('Reference source');
+  }
+  if ($('#trainingReferenceSummaryValue')) {
+    $('#trainingReferenceSummaryValue').textContent = t('Hidden until review');
+  }
+  if ($('#trainingReferenceSummaryNote')) {
+    $('#trainingReferenceSummaryNote').textContent = t('Comparison and source details are available after the Hand in Review.');
+  }
   if ($('#trainingSourceLimitation')) $('#trainingSourceLimitation').hidden = true;
   if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
   if ($('#trainingFeedback')) $('#trainingFeedback').hidden = true;
@@ -10988,6 +11318,8 @@ async function startFullHandTraining(options = {}) {
     payload: { audioSemantics: 'silent_user_gesture_prepare' },
   });
   const seed = variedSessionSeed(options);
+  clearFullHandDecisionFeedback();
+  clearFullHandTrainingSizingControls();
   invalidateFullHandPresentation();
   callTrainingServiceBridge('resetFullHand');
   fullHandPresentationMotionToken = 0;
@@ -11049,6 +11381,7 @@ async function handleFullHandTrainingGuess(userAction, amountToMilliBb = null) {
   const concreteAmountToMilliBb = ['bet', 'raise'].includes(userAction)
     ? amountToMilliBb
     : null;
+  clearFullHandTrainingSizingControls();
   app.training.lifecycle = 'grading';
   const request = callTrainingServiceBridge('answerFullHand', decision.decisionId, {
     type: userAction,
@@ -11060,11 +11393,14 @@ async function handleFullHandTrainingGuess(userAction, amountToMilliBb = null) {
   const appliedSnapshot = callTrainingServiceBridge('getFullHandSnapshot');
   if (appliedSnapshot?.status === 'grading') renderFullHandGrading(appliedSnapshot);
   const result = await request;
-  if (trainingSessionMode() !== 'full_hand') return result;
+  if (trainingSessionMode() !== 'full_hand'
+    || app.training.fullHandSnapshot?.state?.handId !== snapshot.state?.handId
+    || app.training.lifecycle === 'idle') return result;
   if (!result?.ok) {
     if (result?.error?.code !== 'stale_evaluation') renderTrainingGenerationError(result?.error);
     return result;
   }
+  renderFullHandDecisionRecorded(result);
   await recordFullHandTrainingDecisionAnswered(result);
   if (result.snapshot.status === 'advancing') {
     await runFullHandPresentation({
@@ -11097,7 +11433,7 @@ function toggleFullHandTrainingReview() {
   dispatchFullHandTrainingTable(app.training.fullHandSnapshot, { review: true });
   const rendered = renderActiveHandReview();
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  $('#handReviewSurface')?.scrollIntoView?.({
+  $('#trainingRecommendation')?.scrollIntoView?.({
     behavior: reducedMotion ? 'auto' : 'smooth',
     block: 'start'
   });
@@ -11143,12 +11479,21 @@ async function openFullHandDecisionInAnalysis() {
   return handoff;
 }
 
-function endFullHandTraining() {
-  if (trainingSessionMode() !== 'full_hand') return;
+function abortFullHandTraining() {
+  const workspace = $('#trainingWorkspace');
+  if (trainingSessionMode() !== 'full_hand'
+    || workspace?.dataset.trainingFullHandPhase !== 'live'
+    || !app.training.fullHandSnapshot) return false;
+  if (!window.confirm(t(
+    'Abort this Full Hand? The Training hand will end before completion. Recorded decisions will remain in Training Memory.',
+  ))) return false;
   clearTrainingSessionState();
   if ($('#trainingFilterMessage')) {
-    $('#trainingFilterMessage').textContent = t('Full Hand ended. Configure the next Hand when ready.');
+    $('#trainingFilterMessage').textContent = t(
+      'Full Hand aborted. Recorded decisions remain in Training Memory.',
+    );
   }
+  return true;
 }
 
 function replayCurrentTrainingSeed() {
@@ -11161,8 +11506,34 @@ function replayCurrentTrainingSeed() {
     : null;
 }
 
+function replayCurrentTrainingDecision() {
+  if (trainingSessionMode() === 'full_hand') return null;
+  const exercise = app.training.currentExercise;
+  if (!exercise) return null;
+  const sourceRecordPromise = app.training.currentAttemptKind === 'replay'
+    ? app.training.replaySourceRecordPromise
+    : app.training.memoryCurrentRecordPromise;
+  app.training.memoryPendingOriginPromise = Promise.resolve(sourceRecordPromise)
+    .then((record) => record?.id ? {
+      parentDecisionRecordId: record.id,
+      redrillKind: 'same_spot',
+    } : null);
+  const result = callTrainingServiceBridge('replayExercise', exercise);
+  if (!result?.ok) {
+    app.training.memoryPendingOriginPromise = null;
+    renderTrainingGenerationError(result?.error || { code: 'service_unavailable' });
+    return result;
+  }
+  renderCanonicalTrainingExercise(result.exercise, {
+    attemptKind: 'replay',
+    replaySourceRecordPromise: sourceRecordPromise,
+  });
+  return result;
+}
+
 function trainingSessionIsActive() {
   const state = document.querySelector('.training-workspace')?.dataset.trainingState;
+  if (app.training.practiceSession?.completed) return false;
   return Boolean(app.training.memorySessionPromise)
     || ['generating', 'automating', 'ready', 'grading', 'feedback'].includes(state);
 }
@@ -11177,6 +11548,7 @@ function startConfiguredTrainingSessionWithGuard(options = {}) {
 async function startConfiguredTrainingSession(options = {}) {
   const seed = variedSessionSeed(options);
   if ($('#trainingFilterMessage')) $('#trainingFilterMessage').textContent = '';
+  setTrainingSetupExpanded(false);
   if (trainingSessionMode() === 'full_hand') return startFullHandTraining({ seed });
   if (trainingSessionMode() === 'focused') {
     startTrainingMemorySession({
@@ -11231,6 +11603,8 @@ function completeVariedTrainingSession() {
   const plannerState = callTrainingServiceBridge('getPracticePlannerState');
   if ((plannerState?.servedCount || 0) < session.length) return false;
   session.completed = true;
+  document.querySelector('.training-workspace')?.setAttribute('data-training-session-complete', 'true');
+  setTrainingWorkspaceState('complete');
   updateTrainingSessionProgress();
   if ($('#trainingSessionCompletion')) $('#trainingSessionCompletion').hidden = false;
   if ($('#trainingSessionCompletionText')) {
@@ -11372,6 +11746,9 @@ function renderTrainingDecisionAnalysis(exercise) {
     surface: 'training'
   });
   container.hidden = !explanation;
+  if (typeof renderTrainingRelevantFacts === 'function') {
+    renderTrainingRelevantFacts($('#trainingRelevantFacts'), explanation);
+  }
   app.training.currentAnalysisExplanation = explanation;
   return explanation;
 }
@@ -11422,14 +11799,17 @@ function handleTrainingGuess(userAction) {
   }
 
   const evaluation = result.evaluation;
+  const countsTowardSession = app.training.currentAttemptKind !== 'replay';
   app.training.lifecycle = 'answered';
   app.training.currentEvaluation = evaluation;
   resetTrainingStudyHints();
-  app.training.stats.totalHands += 1;
-  app.training.stats.correct += evaluation.scoreDelta;
-  app.training.stats.streak = evaluation.accepted ? app.training.stats.streak + 1 : 0;
-  app.training.bestStreak = Math.max(app.training.bestStreak || 0, app.training.stats.streak);
-  app.training.gradeStats[evaluation.grade] = (app.training.gradeStats[evaluation.grade] || 0) + 1;
+  if (countsTowardSession) {
+    app.training.stats.totalHands += 1;
+    app.training.stats.correct += evaluation.scoreDelta;
+    app.training.stats.streak = evaluation.accepted ? app.training.stats.streak + 1 : 0;
+    app.training.bestStreak = Math.max(app.training.bestStreak || 0, app.training.stats.streak);
+    app.training.gradeStats[evaluation.grade] = (app.training.gradeStats[evaluation.grade] || 0) + 1;
+  }
   const feedbackSemantics = strategyClaimPolicy(exercise.strategyResult).trainingSemantics;
   updateTrainingStats();
 
@@ -11438,7 +11818,17 @@ function handleTrainingGuess(userAction) {
     canonicalTrainingFeedback(evaluation, exercise.strategyResult),
     evaluation.accepted
   );
+  // Schedule study feedback before the deeper synchronous analysis render so
+  // the cue remains perceptually attached to the submitted answer. Study cues
+  // bypass the independent poker-foley queue in riverline-audio/v1.
+  emitTrainingDecisionResultExperience({
+    comparisonState: evaluation.grade,
+    feedbackSemantics,
+    accepted: evaluation.accepted,
+    chosenActionType: userAction,
+  });
   renderTrainingDecisionAnalysis(exercise);
+  $('#trainingAnalysisTitle')?.closest('details')?.removeAttribute('open');
   showTrainingSolution(app.training.currentSolution);
   recordTrainingExerciseAnswered({
     evaluation,
@@ -11456,13 +11846,7 @@ function handleTrainingGuess(userAction) {
   }
   app.training.lifecycle = 'feedback';
   setTrainingWorkspaceState('feedback');
-  emitTrainingDecisionResultExperience({
-    comparisonState: evaluation.grade,
-    feedbackSemantics,
-    accepted: evaluation.accepted,
-    chosenActionType: userAction,
-  });
-  completeVariedTrainingSession();
+  if (countsTowardSession) completeVariedTrainingSession();
 }
 
 function replayTrainingExercise(seed) {

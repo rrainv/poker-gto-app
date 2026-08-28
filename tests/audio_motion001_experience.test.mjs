@@ -589,6 +589,17 @@ test('Study family is one rounded tonal language with an explicit audible hierar
   }
 });
 
+test('prepared Training feedback schedules its Study cue before the returned promise yields', async () => {
+  const harness = createAudioHarness();
+  await harness.sound.prepareForUserGesture();
+  harness.context.currentTime += 1;
+  const before = harness.envelopes.length;
+  const scheduled = harness.sound.playCorrect();
+  assert.equal(harness.envelopes.length, before + 2,
+    'a running context schedules both Study oscillators synchronously');
+  assert.equal((await scheduled).cueName, 'study_positive');
+});
+
 test('every poker cue resolves only to physical sample families with mass-based layering', () => {
   const sound = createAudioHarness().sound;
   const manifest = sound.getFoleyManifest();

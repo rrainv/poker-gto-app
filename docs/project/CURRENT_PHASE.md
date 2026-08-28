@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 28, 2026 (`CORE-FLOW-CORRECTNESS-001` and `REPLAY-RAIL-NAV-001` are completed and human accepted; `TRAINING-COMPOSITION-001` is active next, followed by the visible-product closure wave and September Alpha whole-app/docs/audit gates; `PERSONAL-STRATEGY-003A` is preserved but is not immediately next).
+Last refreshed: August 28, 2026 (`TRAINING-COMPOSITION-001` is **COMPLETED / HUMAN ACCEPTED**; `EQUITY-COMPOSITION-001` is **NEXT / READY**, followed by the remaining visible-product closure wave and September Alpha whole-app/docs/audit gates; `PERSONAL-STRATEGY-003A` is preserved but is not immediately next).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -84,10 +84,17 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - final hands-on acceptance at 1920×1080 / 100% confirms the left compact Hand context/state, center primary poker table, and right legal/chance + distinct Replay + bounded vertical History product model; table-first hierarchy, live/Replay stability, chronology, collapse/scroll, seeking, Return to live, actions, no-dongle cards, contributions, Abort, Raise, all-in, invalid-size handling, EN/RU/HE/RTL, Daylight contrast, and Review are accepted;
    - this is not perfect-polish acceptance. Non-blocking debt remains explicit: in dense/10-max geometry the lower side panels sit slightly too far inward and the top player slightly too far outward/high; hidden backs may later tuck under/behind their owning player only while privacy, ownership, inspectability, non-obstruction, known-card readability, and no-dongle presentation remain intact; full-ring Dealer presence/explainability belongs to table physicality/Game Setup without adding a fake dealer; and History padding, font weight, contrast, density, and event-row polish belong to global/premium quality. None reopens the accepted composition or chronology architecture.
 
-12. **ACTIVE NEXT — `TRAINING-COMPOSITION-001`**
-   - own one primary start CTA, stable pre/post-answer skeleton, top packing, Action History, Assistance, Training Memory, setup/status, and progressive explanation depth.
+12. **COMPLETED / HUMAN ACCEPTED — `TRAINING-COMPOSITION-001`**
+   - one `Start Training` CTA now owns selected-configuration start; a persistent decision region plus bounded study rail retain the same skeleton through ready, feedback, completion, Focused, and Full Hand projections;
+   - setup collapses during practice and reopens through Adjust Drill; Session Progress, source truth, History, Assistance, and lazy bounded Memory remain top-packed; answer feedback defaults to compact Facts with optional bounded Explain depth;
+   - the first hands-on pass accepted this normal Training skeleton and returned bounded correction debt: pre-session support now hides meaningless zero/unavailable cards, Review later/Difficult expose durable reversible feedback, immediate Facts prioritize decision-relevant evidence while generic card-removal detail remains under Explain, and Full Hand now projects the large shared table beside Hand-grammar legal actions with sizing revealed only after Bet/Raise;
+   - prompt Study audio schedules before deep answer rendering on a prepared context, and a clean-start Firefox gate opens Personal Strategy in its truthful Guest state rather than the error surface;
+   - final acceptance hardening defers every normative Full Hand verdict, source, Fact, and deep explanation until the existing shared terminal Review; live Hero answers receive neutral recording confirmation only, while Varied and Focused retain immediate feedback;
+   - live Full Hand now exposes confirmed Abort outside poker actions, preserves already-recorded Training Memory evidence as abandoned, clears transient/replay/controller state without fabricating completion, and returns to setup; normal answered drills keep primary progression above study labels, Facts, and Explain, and sparse normal states use content-driven height while Full Hand retains table scale;
+   - focused semantic/domain tests and the Firefox 154 matrix pass at 1920×1080, 1366×768, 2560×1440, and 2560×1600 across EN/RU/HE RTL and Midnight/Graphite/Daylight.
+   - lean closeout evidence at Firefox 154 / 1920×1080 proves `Replay this decision` remounts the exact canonical exercise, replay answers do not change headline session counters or planner progress, Next advances exactly one exercise, and terminal Full Hand Review retains the live-scale shared table with vertical canonical History and no horizontal timeline. The product owner human accepted the checkpoint.
 
-13. **PLANNED AFTER TRAINING — `EQUITY-COMPOSITION-001`**
+13. **NEXT / READY — `EQUITY-COMPOSITION-001`**
    - own bounded player tiles, optional useful names, central Board/Dead/Method controls, and dominant result presentation without changing canonical Equity.
 
 14. **PLANNED AFTER EQUITY — `ANALYZE-RANGE-UX-001`**

@@ -159,7 +159,7 @@ test('Hero state makes trusted made-hand, draw, and board facts primary without 
   assert.match(teacher, /hero: new Set\(\['hero_cards', 'preflop_hand_class', 'made_hand', 'hand_components', 'draws', 'draw_outs', 'hero_overcards'\]\)/);
   assert.match(teacher, /board: new Set\(\['board_pairing', 'board_suits', 'board_connectivity', 'board_broadway_count', 'board_flush_state', 'board_straight_state'\]\)/);
   assert.match(teacher, /const heroRegion = analysisHeroState\(explanation\)/);
-  assert.match(teacher, /standaloneSections = \['bluff_pressure', 'blockers', 'range'\]/);
+  assert.match(teacher, /surface === 'training'[\s\S]*\? \['bluff_pressure', 'range'\][\s\S]*: \['bluff_pressure', 'blockers', 'range'\]/);
   assert.match(teacher, /analysisFactSourcesElement/);
   assert.match(css, /\.analysis-hero-state \{[^}]*border-inline-start: 4px solid var\(--accent-primary\)/);
   assert.doesNotMatch(teacher, /evaluatePostflopHand|deriveBoardTextureFacts|scoreSeven|calculateEquity/);
@@ -224,7 +224,7 @@ test('Playbook and Training compose the same renderer without a second strategy 
   assert.match(teacher, /analysisSection\.key === 'strategy_mix'\) return/);
   assert.doesNotMatch(teacher, /renderFrequencyStack|frequency-stack|training-frequency-row/);
   assert.match(trainingMarkup, /class="training-verdict-facts"/);
-  assert.match(trainingMarkup, /id="trainingAnalysisTitle"[^>]*>Analysis/);
+  assert.match(trainingMarkup, /id="trainingAnalysisTitle"[^>]*>Explain/);
   assert.doesNotMatch(trainingMarkup, /class="training-feedback-facts"/);
   assert.match(trainingMarkup, /class="training-verdict-frequency" hidden><dt[^>]*>Chosen frequency/);
   assert.ok(trainingMarkup.indexOf('id="trainingSolution"') < trainingMarkup.indexOf('training-history-panel'));

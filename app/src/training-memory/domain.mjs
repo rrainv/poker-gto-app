@@ -655,7 +655,11 @@ export function updateTrainingStudyMetadata(record, changes, updatedAt) {
   next.studyMetadata = cloneTrainingMemoryData(metadata);
   next.updatedAt = requireIsoTimestamp(updatedAt, 'Training study metadata updatedAt');
   const reasonsBefore = reviewReasonsForDecision(record);
-  const provisional = deepFreezeTrainingMemoryData(next);
+  // Review-reason derivation consumes immutable evidence, but `next` still
+  // needs to receive the resulting lifecycle transition below. Freeze an
+  // isolated projection so a manual flag can move an otherwise aligned
+  // decision from none -> pending (and back) in every runtime.
+  const provisional = deepFreezeTrainingMemoryData(cloneTrainingMemoryData(next));
   const reasonsAfter = reviewReasonsForDecision(provisional);
   if (reasonsAfter.length > 0
     && (record.reviewState.state === TRAINING_REVIEW_LIFECYCLE_STATES.NONE

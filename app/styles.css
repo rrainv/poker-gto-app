@@ -1178,6 +1178,11 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 .training-full-hand-compact-controls small { color: var(--text-muted); font-size: var(--text-micro-size); }
 .training-full-hand-compact-controls strong { color: var(--text-primary); }
 
+.training-full-hand-action-dock > .training-full-hand-compact-controls {
+  margin-inline: var(--space-3);
+  margin-block-end: var(--space-3);
+}
+
 @media (min-width: 1101px) {
   .training-workspace[data-training-full-hand-phase="live"],
   .training-workspace[data-training-full-hand-phase="complete"],
@@ -12751,7 +12756,8 @@ body.has-modal-open { overflow: hidden; }
   inline-size: min(100%, var(--table-inline-max));
 }
 .training-full-hand-table-wrapper[data-table-projection="review"] #visual-table-container {
-  inline-size: min(100%, 980px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
+  --play-stage-reserve: 310px;
+  inline-size: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
 }
 
 #visual-table-container[data-table-projection="analyze"] { inline-size: min(100%, 980px); }
@@ -13577,6 +13583,36 @@ body.has-modal-open { overflow: hidden; }
     max-width: 980px;
     margin-inline-start: 0;
     margin-inline-end: auto;
+  }
+}
+
+/* TRAINING-COMPOSITION-001 FINAL ACCEPTANCE HARDENING ------------------
+   Normal drills keep progression above optional study depth, while sparse
+   Varied/Focused content no longer inherits table-sized vertical reserve. */
+
+#trainingFeedbackProgressionMount:not(:empty) {
+  margin-block-start: var(--space-3);
+  padding-block: var(--space-3);
+  border-block: 1px solid var(--border-subtle);
+}
+
+#trainingFeedbackProgressionMount .training-completion-actions {
+  margin: 0;
+}
+
+#trainingDecisionProgressionMount:empty,
+#trainingFeedbackProgressionMount:empty {
+  display: none;
+}
+
+@media (min-width: 701px) {
+  .training-workspace[data-training-full-hand-phase="off"] > .training-decision-column {
+    align-self: start;
+  }
+
+  .training-workspace[data-training-full-hand-phase="off"] .training-decision-panel,
+  .training-workspace[data-training-full-hand-phase="off"] .training-table-summary {
+    min-block-size: 0;
   }
 }
 
@@ -14729,5 +14765,604 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
 
   #gtoMode[data-product-destination="hand"] #handActionHistory .replay-action-body {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* TRAINING-COMPOSITION-001 ----------------------------------------------
+   One persistent practice surface and one bounded study rail. The current
+   decision retains spatial priority while setup and longitudinal evidence
+   progressively disclose without changing the workspace skeleton. */
+#trainingMode {
+  padding: clamp(var(--space-3), 1.25vw, var(--space-5));
+}
+
+.training-workspace {
+  width: min(100%, 1680px);
+  margin-inline: auto;
+  align-items: start;
+}
+
+.training-decision-column,
+.training-study-rail,
+.training-study-rail > * {
+  min-inline-size: 0;
+}
+
+.training-study-rail {
+  display: grid !important;
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.training-study-rail > .panel,
+.training-study-rail > details {
+  width: 100%;
+  margin: 0;
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-xs);
+}
+
+.training-setup-summary {
+  min-block-size: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-primary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.training-setup-summary::-webkit-details-marker { display: none; }
+.training-setup-summary > span:first-child { min-width: 0; display: grid; gap: 2px; }
+.training-setup-summary strong { font-size: var(--text-label-size); }
+.training-setup-summary small {
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: var(--text-micro-size);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.training-setup-summary-action {
+  flex: 0 0 auto;
+  color: var(--accent-primary);
+  font-size: var(--text-micro-size);
+  font-weight: 750;
+}
+.training-setup-panel[open] > .training-setup-summary { border-bottom: 1px solid var(--border-subtle); }
+.training-setup-panel > .panel-head { display: none; }
+.training-setup-panel > .training-setup-fields { padding: var(--space-4); }
+
+.training-reference-summary .panel-body {
+  min-block-size: 68px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px var(--space-3);
+  align-items: baseline;
+  padding: var(--space-3) var(--space-4);
+}
+.training-reference-summary .training-rail-label {
+  color: var(--text-muted);
+  font-size: var(--text-micro-size);
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.training-reference-summary strong {
+  color: var(--text-primary);
+  font-size: var(--text-label-size);
+  text-align: end;
+}
+.training-reference-summary small {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-size: var(--text-micro-size);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.training-decision-panel { padding: clamp(var(--space-4), 1.25vw, var(--space-5)); }
+.training-decision-head { margin-bottom: var(--space-3); }
+.training-workspace:not([data-training-state="idle"]):not([data-training-state="error"]) .training-instruction-disclosure {
+  display: none;
+}
+.training-workspace:not([data-training-state="idle"]) .training-decision-head h2 {
+  font-size: clamp(1.15rem, 1.5vw, 1.4rem);
+}
+.training-workspace:not([data-training-state="idle"]) .training-eyebrow { margin-bottom: 2px; }
+.training-tag-row { margin-block: var(--space-2); }
+.training-exercise-surface { gap: var(--space-3); }
+.training-table-summary {
+  grid-template-columns: minmax(0, 1.35fr) 1px minmax(240px, .65fr);
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+}
+.training-board-zone,
+.training-hero-zone { min-width: 0; }
+.training-context-strip > .training-context-fact {
+  min-block-size: 58px;
+  padding: var(--space-2) var(--space-3);
+}
+.training-decision-prompt {
+  padding: var(--space-3) var(--space-4);
+}
+.training-action-grid { gap: var(--space-2); }
+.training-action-button { min-block-size: 54px; padding: var(--space-3); }
+.training-shortcut-help { margin-top: calc(var(--space-1) * -1); }
+
+.training-feedback {
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+}
+.training-facts-label {
+  margin: var(--space-3) 0 var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-micro-size);
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.training-verdict h3 { margin-top: var(--space-2); }
+.training-verdict-facts { margin-top: var(--space-2); }
+#trainingFeedbackReferenceMount { margin-top: var(--space-3); }
+#trainingFeedbackReferenceMount .training-solution-panel {
+  margin: 0;
+  padding-top: var(--space-3);
+  background: transparent;
+  border: 0 !important;
+  border-top: 1px solid var(--border-subtle) !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+#trainingFeedbackReferenceMount .training-solution-panel > .panel-head {
+  padding: 0 0 var(--space-2);
+  border: 0;
+}
+#trainingFeedbackReferenceMount .training-solution-panel > .panel-body {
+  padding: 0;
+}
+#trainingFeedbackReferenceMount .training-solution-panel .training-reference-note { display: none; }
+#trainingFeedbackReferenceMount .training-frequency-rows {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+#trainingFeedbackReferenceMount .training-frequency-row {
+  grid-template-columns: minmax(92px, auto) minmax(32px, 1fr) 42px;
+  padding: var(--space-2) var(--space-3);
+}
+.training-analysis-region {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+}
+.training-analysis-region > summary {
+  min-block-size: 38px;
+  display: flex;
+  align-items: center;
+  color: var(--accent-primary);
+}
+.training-analysis-region[open] #trainingAnalysis {
+  max-block-size: min(62dvh, 680px);
+  overflow: auto;
+  padding-inline-end: var(--space-2);
+}
+.training-memory-decision-actions { margin-top: var(--space-3); }
+.training-completion-actions { margin-top: var(--space-3); }
+.training-session-completion { margin-top: var(--space-3); }
+.training-session-completion-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.training-study-rail > details > summary.panel-head {
+  min-block-size: 52px;
+  padding: var(--space-3) var(--space-4);
+}
+.training-study-rail > details > .panel-body { padding: var(--space-3) var(--space-4); }
+.training-study-rail .panel-head h2 { font-size: 1rem; }
+.training-study-rail .training-eyebrow { margin-bottom: 1px; }
+.training-session-panel > .panel-body { padding: var(--space-3) var(--space-4); }
+.training-session-progress {
+  margin: 0 0 var(--space-2);
+  color: var(--accent-primary);
+  font: 800 var(--text-label-size)/1.2 var(--font-data);
+}
+.training-workspace .training-study-rail .training-session-panel .training-stat-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.training-workspace .training-study-rail .training-session-panel .training-stat-grid > div {
+  grid-column: auto;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+}
+.training-workspace .training-study-rail .training-session-panel .training-stat-grid > div:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.training-session-panel .training-stat-grid strong { font-size: 1rem; }
+.training-session-panel .training-grade-counts {
+  gap: var(--space-1);
+  margin-block: var(--space-3);
+  padding-top: var(--space-3);
+}
+.training-session-panel .training-grade-counts > span { font-size: var(--text-micro-size); }
+.training-session-panel #trainingResetStats { width: 100%; min-block-size: 34px; }
+.training-history-panel .panel-note,
+.training-assistance-panel .panel-note { margin-top: 2px; }
+.training-history-panel .panel-body,
+.training-memory-panel .panel-body { max-block-size: min(48dvh, 440px); overflow: auto; }
+.training-memory-panel { min-inline-size: 0; }
+.training-memory-panel .training-memory-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.training-memory-panel .training-memory-tabs .ui-button,
+.training-memory-panel .training-memory-item-actions .ui-button {
+  min-width: 0;
+  overflow-wrap: normal;
+}
+.training-memory-item { overflow-wrap: break-word; }
+.training-advanced > summary { padding: var(--space-3) var(--space-4); }
+
+.training-workspace[data-training-state="feedback"] :is(#trainingDecisionPrompt, .training-shortcut-help) {
+  display: none;
+}
+.training-workspace[data-training-session-complete="true"] :is(
+  #trainingDecisionPrompt,
+  #trainingGuessButtons,
+  #trainingFullHandSizing,
+  .training-shortcut-help,
+  #trainingStudyHints,
+  #trainingAssistance,
+  .training-completion-actions
+) {
+  display: none !important;
+}
+.training-workspace:is([data-training-state="idle"], [data-training-state="generating"], [data-training-state="error"]) .training-completion-actions {
+  display: none;
+}
+
+@media (min-width: 1101px) {
+  .training-workspace,
+  .training-workspace[data-training-full-hand-phase="off"],
+  .training-workspace[data-training-full-hand-phase="live"],
+  .training-workspace[data-training-full-hand-phase="complete"],
+  .training-workspace[data-training-full-hand-phase="review"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 360px) !important;
+    grid-template-areas: "decision insight" !important;
+    gap: clamp(var(--space-3), 1.25vw, var(--space-5));
+  }
+  .training-workspace > .training-decision-column,
+  .training-workspace[data-training-full-hand-phase="off"] > .training-decision-column,
+  .training-workspace[data-training-state="feedback"] > .training-decision-column {
+    grid-area: decision !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+  .training-workspace > .training-study-rail {
+    grid-area: insight !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+  .training-workspace > .training-study-rail > * {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .training-workspace,
+  .training-workspace[data-training-full-hand-phase] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .training-decision-column,
+  .training-study-rail { width: 100%; }
+  .training-study-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .training-study-rail > :is(.training-setup-panel, .training-session-panel, .training-reference-summary) { grid-column: 1 / -1; }
+}
+
+@media (max-width: 700px) {
+  .training-study-rail { grid-template-columns: minmax(0, 1fr); }
+  .training-study-rail > * { grid-column: auto !important; }
+  .training-table-summary { grid-template-columns: minmax(0, 1fr); }
+  .training-table-divider { display: none; }
+  #trainingFeedbackReferenceMount .training-frequency-rows { grid-template-columns: minmax(0, 1fr); }
+  .training-verdict-facts { grid-template-columns: minmax(0, 1fr); }
+  .training-verdict-facts > div + div { border-inline-start: 0; border-top: 1px solid var(--border-subtle); }
+}
+
+.training-workspace[data-training-full-hand-phase="live"] .training-study-rail,
+.training-workspace[data-training-full-hand-phase="complete"] .training-study-rail,
+.training-workspace[data-training-full-hand-phase="review"] .training-study-rail {
+  display: grid !important;
+}
+.training-workspace[data-training-full-hand-phase="live"] :is(.training-session-panel, .training-assistance-panel),
+.training-workspace[data-training-full-hand-phase="complete"] :is(.training-session-panel, .training-assistance-panel),
+.training-workspace[data-training-full-hand-phase="review"] :is(.training-session-panel, .training-assistance-panel) {
+  display: block !important;
+}
+
+/* TRAINING-COMPOSITION-001 HUMAN QA CORRECTION #1 ----------------------
+   The accepted Varied skeleton remains intact. Idle support yields space when
+   it has no state, study mutations visibly acknowledge persistence, and Full
+   Hand projects the shared table beside the existing canonical actions. */
+
+.training-workspace[data-training-state="idle"] .training-decision-panel {
+  min-block-size: 0;
+  padding-block-end: var(--space-4);
+}
+
+.training-workspace[data-training-state="idle"] .training-tag-row:empty {
+  display: none;
+}
+
+.training-workspace[data-training-state="idle"] .training-state-message {
+  min-block-size: 0;
+  padding: var(--space-5);
+}
+
+.training-workspace[data-training-state="idle"] #trainingStrategySource,
+.training-workspace[data-training-state="idle"] :is(
+  .training-session-panel,
+  .training-reference-summary,
+  .training-history-panel,
+  .training-assistance-panel
+) {
+  display: none !important;
+}
+
+.training-workspace[data-training-state="idle"] .training-memory-panel > summary.panel-head,
+.training-workspace[data-training-state="idle"] .training-advanced > summary {
+  min-block-size: 46px;
+  padding-block: var(--space-2);
+}
+
+.training-decision-controls {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.training-relevant-facts {
+  margin-block: var(--space-2);
+}
+
+.training-relevant-fact-list.analysis-key-facts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.training-relevant-fact-list .analysis-key-fact {
+  min-block-size: 0;
+  padding: var(--space-2) var(--space-3);
+}
+
+.training-memory-decision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.training-memory-decision-actions .ui-button[aria-pressed="true"] {
+  color: var(--text-primary);
+  background: var(--accent-soft);
+  border-color: var(--accent-primary);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-primary) 24%, transparent);
+}
+
+.training-memory-decision-status {
+  min-block-size: 1.35em;
+  margin: var(--space-2) 0 0;
+  color: var(--status-success);
+  font-size: var(--text-micro-size);
+  font-weight: 700;
+}
+
+.training-memory-decision-status:empty {
+  display: none;
+}
+
+@media (min-width: 1101px) {
+  .training-workspace[data-training-state="feedback"][data-training-full-hand-phase="off"] .training-feedback {
+    padding: var(--space-3);
+  }
+
+  .training-workspace[data-training-state="feedback"][data-training-full-hand-phase="off"] :is(
+    .training-facts-label,
+    .training-verdict-facts,
+    #trainingFeedbackReferenceMount,
+    .training-analysis-region,
+    .training-memory-decision-actions
+  ) {
+    margin-top: var(--space-2);
+  }
+
+  .training-workspace[data-training-state="feedback"][data-training-full-hand-phase="off"] :is(
+    #trainingFeedbackReferenceMount .training-solution-panel,
+    .training-analysis-region
+  ) {
+    padding-top: var(--space-2);
+  }
+
+  .training-workspace[data-training-state="feedback"][data-training-full-hand-phase="off"] .training-analysis-region > summary {
+    min-block-size: 32px;
+  }
+}
+
+.training-full-hand-action-dock > .panel-body {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.training-full-hand-action-dock .training-decision-prompt {
+  padding: var(--space-2) var(--space-3);
+}
+
+.training-full-hand-action-dock .training-action-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.training-full-hand-action-dock .training-action-button {
+  min-block-size: 48px;
+  padding: var(--space-2) var(--space-3);
+}
+
+.training-full-hand-action-dock .training-full-hand-sizing {
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.training-full-hand-action-dock .training-full-hand-sizing-entry {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2);
+}
+
+.training-full-hand-action-dock .training-full-hand-sizing-entry > label {
+  grid-column: 1 / -1;
+}
+
+.training-full-hand-action-dock .training-full-hand-presets {
+  gap: var(--space-1);
+}
+
+.training-full-hand-action-dock .training-full-hand-preset {
+  min-block-size: 30px;
+  padding: var(--space-1) var(--space-2);
+}
+
+.training-full-hand-decision-feedback {
+  display: grid;
+  gap: var(--space-2);
+  padding-block-start: var(--space-3);
+  border-block-start: 1px solid var(--border-subtle);
+}
+
+.training-full-hand-decision-feedback-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-micro-size);
+}
+
+.training-full-hand-decision-feedback-head strong {
+  color: var(--text-primary);
+}
+
+.training-full-hand-decision-feedback > p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-label-size);
+}
+
+.training-full-hand-decision-feedback .training-relevant-fact-list.analysis-key-facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.training-full-hand-decision-explain > summary {
+  min-block-size: 36px;
+  display: flex;
+  align-items: center;
+  color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.training-full-hand-decision-explain[open] .training-shared-analysis {
+  max-block-size: min(46dvh, 480px);
+  overflow: auto;
+}
+
+@media (min-width: 1101px) {
+  #trainingMode .workspace-frame--wide:has(.training-workspace[data-training-full-hand-phase="live"]),
+  #trainingMode .workspace-frame--wide:has(.training-workspace[data-training-full-hand-phase="complete"]),
+  #trainingMode .workspace-frame--wide:has(.training-workspace[data-training-full-hand-phase="review"]) {
+    --workspace-frame-max: 1740px;
+  }
+
+  .training-workspace[data-training-full-hand-phase="live"],
+  .training-workspace[data-training-full-hand-phase="review"] {
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 410px) !important;
+  }
+
+  .training-workspace[data-training-full-hand-phase="live"] > .training-study-rail,
+  .training-workspace[data-training-full-hand-phase="review"] > .training-study-rail {
+    position: sticky;
+    inset-block-start: var(--space-3);
+    max-block-size: calc(100dvh - (2 * var(--space-3)));
+    overflow-y: auto;
+    overscroll-behavior-block: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .training-workspace[data-training-full-hand-phase="live"] .training-full-hand-action-dock { order: 1; }
+  .training-workspace[data-training-full-hand-phase="live"] .training-session-panel { order: 2; }
+  .training-workspace[data-training-full-hand-phase="live"] .training-reference-summary { order: 3; }
+  .training-workspace[data-training-full-hand-phase="live"] .training-history-panel { order: 4; }
+  .training-workspace[data-training-full-hand-phase="live"] .training-assistance-panel { order: 5; }
+  .training-workspace[data-training-full-hand-phase="live"] .training-memory-panel { order: 6; }
+  .training-workspace[data-training-full-hand-phase="live"] .training-setup-panel { order: 7; }
+  .training-workspace[data-training-full-hand-phase="live"] .training-advanced { order: 8; }
+
+  .training-workspace[data-training-full-hand-phase="review"] .training-history-panel { order: 1; }
+  .training-workspace[data-training-full-hand-phase="review"] .training-reference-summary { order: 2; }
+  .training-workspace[data-training-full-hand-phase="review"] .training-session-panel { order: 3; }
+  .training-workspace[data-training-full-hand-phase="review"] .training-assistance-panel { order: 4; }
+  .training-workspace[data-training-full-hand-phase="review"] .training-memory-panel { order: 5; }
+  .training-workspace[data-training-full-hand-phase="review"] .training-setup-panel { order: 6; }
+  .training-workspace[data-training-full-hand-phase="review"] .training-advanced { order: 7; }
+
+  .training-workspace[data-training-full-hand-phase="live"] .training-decision-panel {
+    padding: var(--space-3);
+  }
+
+  .training-workspace[data-training-full-hand-phase="live"] :is(
+    #trainingFullHandTimeline,
+    #trainingCardSummary,
+    #trainingPotInfo,
+    #trainingAssistance,
+    #trainingStudyHints,
+    #trainingExerciseTags
+  ) {
+    display: none !important;
+  }
+
+  .training-workspace[data-training-full-hand-phase="live"] .training-decision-head {
+    margin-block-end: var(--space-1);
+  }
+
+  .training-workspace[data-training-full-hand-phase="live"] .training-full-hand-table-wrapper #visual-table-container {
+    --play-stage-reserve: 310px;
+    inline-size: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
+    width: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
+    max-inline-size: none;
+    max-width: none;
+    margin-block-end: 0;
+  }
+
+  .training-workspace[data-training-full-hand-phase="review"] .training-full-hand-table-wrapper #visual-table-container {
+    --play-stage-reserve: 310px;
+    inline-size: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
+    width: min(100%, 1320px, calc((100dvh - var(--play-stage-reserve)) * 1.538));
+    max-inline-size: none;
+    max-width: none;
+    margin-block-end: 0;
+  }
+
+  .training-workspace[data-training-full-hand-phase="live"] .training-full-hand-action-status {
+    margin-block-start: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .training-relevant-fact-list.analysis-key-facts,
+  .training-full-hand-decision-feedback .training-relevant-fact-list.analysis-key-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .training-full-hand-action-dock .training-action-grid,
+  .training-full-hand-action-dock .training-full-hand-sizing-entry {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .training-full-hand-action-dock .training-full-hand-sizing-entry > label {
+    grid-column: auto;
   }
 }

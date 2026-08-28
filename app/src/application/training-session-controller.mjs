@@ -69,6 +69,15 @@ function legalAnswerTypes(exercise) {
   ));
 }
 
+function validCanonicalExercise(exercise) {
+  return Boolean(exercise
+    && ['training-exercise/v1', 'training-exercise/v2'].includes(exercise.schemaVersion)
+    && typeof exercise.id === 'string'
+    && exercise.decisionContext?.schemaVersion === 'decision-context/v1'
+    && exercise.strategyResult
+    && legalAnswerTypes(exercise).length >= 2);
+}
+
 export function createTrainingSessionController({
   generateExercise = generateTrainingExercise,
   generateScenarioRequestExercise = generateTrainingExerciseFromScenarioRequest,
@@ -191,18 +200,32 @@ export function createTrainingSessionController({
     },
 
     loadExercise(exercise) {
-      if (!exercise || !['training-exercise/v1', 'training-exercise/v2']
-        .includes(exercise.schemaVersion)
-        || typeof exercise.id !== 'string'
-        || exercise.decisionContext?.schemaVersion !== 'decision-context/v1'
-        || !exercise.strategyResult
-        || legalAnswerTypes(exercise).length < 2) {
+      if (!validCanonicalExercise(exercise)) {
         return sessionFailure(
           TRAINING_SESSION_ERROR_CODES.INVALID_EXERCISE,
           'The supplied Training exercise is not a valid canonical decision.',
         );
       }
       practiceSession = null;
+      const requestId = `training-request-${++sequence}`;
+      snapshot = deepFreeze({
+        schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,
+        status: 'ready',
+        requestId,
+        exercise,
+        evaluation: null,
+        error: null,
+      });
+      return deepFreeze({ ok: true, exercise });
+    },
+
+    replayExercise(exercise) {
+      if (!validCanonicalExercise(exercise)) {
+        return sessionFailure(
+          TRAINING_SESSION_ERROR_CODES.INVALID_EXERCISE,
+          'The supplied Training replay is not a valid canonical decision.',
+        );
+      }
       const requestId = `training-request-${++sequence}`;
       snapshot = deepFreeze({
         schemaVersion: TRAINING_SESSION_SCHEMA_VERSION,

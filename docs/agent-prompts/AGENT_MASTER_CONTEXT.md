@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 28, 2026 (`CORE-FLOW-CORRECTNESS-001` and `REPLAY-RAIL-NAV-001` are completed and human accepted; `TRAINING-COMPOSITION-001` is active next, followed by the visible-product closure wave and September Alpha whole-app/docs/audit gates before any major new feature; `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision and `PREMIUM-CLOSEOUT-001` remains a later pre-release quality gate).
+Last refreshed: August 28, 2026 (`CORE-FLOW-CORRECTNESS-001`, `REPLAY-RAIL-NAV-001`, and `TRAINING-COMPOSITION-001` are completed and human accepted; `EQUITY-COMPOSITION-001` is next and ready, followed by the visible-product closure wave and September Alpha whole-app/docs/audit gates before any major new feature; `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision and `PREMIUM-CLOSEOUT-001` remains a later pre-release quality gate).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -53,15 +53,15 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 
 ## Current execution snapshot
 
-`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, `WORKSPACE-COMPOSITION-002`, `DOCS-CAPABILITY-DOSSIERS-001`, `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and `TRAINING-MEMORY-001` are completed/accepted checkpoints. `REFERENCE-PACK-001` is checkpointed/intentionally incomplete: its contract, strict matcher, provider/fallback, and synthetic consumer tests are accepted, while production source acquisition remains `RET-REFERENCE-PACK-001`. Training Memory manual Firefox acceptance remains `RET-TRAINING-MEMORY-001`.
+`DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, `WORKSPACE-COMPOSITION-002`, `DOCS-CAPABILITY-DOSSIERS-001`, `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and `TRAINING-MEMORY-001` are completed/accepted checkpoints. `REFERENCE-PACK-001` is checkpointed/intentionally incomplete: its contract, strict matcher, provider/fallback, and synthetic consumer tests are accepted, while production source acquisition remains `RET-REFERENCE-PACK-001`.
 
 `HANDS-ON-PRODUCT-REVIEW-001` is completed documentation/product triage. An independent outside-user review originated 59 findings, and the product owner manually reproduced all 59 in the current build. [The durable review](../project/HANDS_ON_PRODUCT_REVIEW_2026_08.md) owns detailed evidence and row-level ownership; no finding is closed by the review. Detailed future intent lives in `../project/capabilities/`; status remains in `PRODUCT_BACKLOG.md`. The directional order is:
 
 1. **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT — `HANDS-ON-DEFECTS-001`**
 2. **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT — `CORE-FLOW-CORRECTNESS-001`**
 3. **COMPLETED / HUMAN ACCEPTED HAND-REPLAY COMPOSITION CHECKPOINT WITH MINOR TABLE-PHYSICALITY DEBT — `REPLAY-RAIL-NAV-001`**
-4. **ACTIVE NEXT — `TRAINING-COMPOSITION-001`**
-5. **VISIBLE CLOSURE — `EQUITY-COMPOSITION-001` → `ANALYZE-RANGE-UX-001` → `FIRST-USE-HOME-001`**
+4. **COMPLETED / HUMAN ACCEPTED — `TRAINING-COMPOSITION-001`**
+5. **ACTIVE NEXT / READY — `EQUITY-COMPOSITION-001`**, then **VISIBLE CLOSURE — `ANALYZE-RANGE-UX-001` → `FIRST-USE-HOME-001`**
 6. **BOUNDED SECONDARY POLISH / EXACT ORDER REASSESSED — `GUIDE-CONTENT-001`, `SAVED-VISUAL-KNOWLEDGE-001`, `CUSTOMIZATION-UX-001`, `GLOBAL-PRODUCT-QUALITY-001`; `HOME-GAME-PRESENTATION-001` and `AUDIO-DESIGN-001` remain conditional on time and impact**
 7. **SEPTEMBER ALPHA CLOSURE — human whole-app pass → documentation integrity/continuity freeze → human clean commit/audit tag → cross-model blind hands-on and white-box architecture audits → human triage → P0/P1 fixes**
 8. **PRESERVED MAJOR FEATURES / ACTIVATE ONLY FROM POST-AUDIT EVIDENCE — `PERSONAL-STRATEGY-003A`, `GAME-SETUP-EVOLUTION-001`, `RANGE-EVOLUTION-001`, and the documented capability roadmap**

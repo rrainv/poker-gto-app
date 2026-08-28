@@ -684,7 +684,7 @@ test('range analysis is invoked only inside the visible Analysis render path and
 });
 
 test('renderer exposes compact blocker/range sections, readable partial coverage, and separate fact sources', () => {
-  assert.match(RENDERER, /standaloneSections = \['bluff_pressure', 'blockers', 'range'\]/);
+  assert.match(RENDERER, /surface === 'training'[\s\S]*\? \['bluff_pressure', 'range'\][\s\S]*: \['bluff_pressure', 'blockers', 'range'\]/);
   assert.match(RENDERER, /analysis-primary-structural-section/);
   assert.match(RENDERER, /known combo mass/);
   assert.match(RENDERER, /known coverage/);

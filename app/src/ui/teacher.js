@@ -653,6 +653,44 @@ function analysisFactByKey(explanation, key) {
   return explanation.sections.flatMap((entry) => entry.facts).find((entry) => entry.key === key) || null;
 }
 
+const TRAINING_RELEVANT_FACT_PRIORITY = Object.freeze([
+  'preflop_hand_class',
+  'made_hand',
+  'draws',
+  'draw_outs',
+  'hero_overcards',
+  'board_pairing',
+  'board_suits',
+  'board_connectivity',
+  'call_amount',
+  'pot_before_action',
+  'required_raw_equity',
+  'spr',
+]);
+
+/**
+ * Project already-authoritative AnalysisExplanation facts into Training's
+ * immediate answer layer. This deliberately excludes generic card-removal
+ * facts; exhaustive evidence remains in the shared Explain renderer.
+ */
+function renderTrainingRelevantFacts(container, explanation, { limit = 6 } = {}) {
+  if (!container) return null;
+  container.replaceChildren();
+  const available = explanation?.schemaVersion === 'analysis-explanation/v1';
+  const facts = available
+    ? TRAINING_RELEVANT_FACT_PRIORITY
+      .map((key) => analysisFactByKey(explanation, key))
+      .filter(Boolean)
+      .slice(0, limit)
+    : [];
+  container.hidden = facts.length === 0;
+  if (!facts.length) return null;
+  const list = analysisElement('dl', 'analysis-key-facts training-relevant-fact-list');
+  facts.forEach((analysisFact) => list.appendChild(analysisFactElement(analysisFact)));
+  container.appendChild(list);
+  return list;
+}
+
 function studyHintDefinition(explanation, step, { street = null } = {}) {
   const preflopHandClass = analysisFactByKey(explanation, 'preflop_hand_class');
   const preflop = street === 'preflop' || (!street && Boolean(preflopHandClass));
@@ -802,7 +840,9 @@ function renderAnalysisExplanation(container, explanation, options = {}) {
   if (heroRegion) article.appendChild(heroRegion);
   const economicsRegion = analysisFactGroup(analysisMessage('analysis.ui.decisionEconomics', 'Decision economics'), 'economics', economicsFacts);
   if (economicsRegion) article.appendChild(economicsRegion);
-  const standaloneSections = ['bluff_pressure', 'blockers', 'range']
+  const standaloneSections = (surface === 'training'
+    ? ['bluff_pressure', 'range']
+    : ['bluff_pressure', 'blockers', 'range'])
     .map((key) => explanation.sections.find((entry) => entry.key === key))
     .filter(Boolean);
   standaloneSections.forEach((entry) => {
@@ -925,3 +965,4 @@ function renderAnalysisExplanation(container, explanation, options = {}) {
 
 window.renderAnalysisExplanation = renderAnalysisExplanation;
 window.renderAnalysisStudyHints = renderAnalysisStudyHints;
+window.renderTrainingRelevantFacts = renderTrainingRelevantFacts;

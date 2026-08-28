@@ -493,7 +493,13 @@ const SoundFX = (function() {
     }
     if (masterVolume <= 0) return Object.freeze({ played: false, reason: 'volume_zero' });
     if (document.hidden === true) return Object.freeze({ played: false, reason: 'hidden' });
-    const ctx = await ensureAudioReady();
+    // A prepared running context is the ordinary live-play path. Keep that
+    // path synchronous through node scheduling so prompt Study feedback is not
+    // deferred behind unrelated main-thread rendering after an answer.
+    const preparedContext = createAudioContext();
+    const ctx = preparedContext?.state === 'running'
+      ? preparedContext
+      : await ensureAudioReady();
     if (!ctx) return Object.freeze({ played: false, reason: 'unavailable' });
     const serial = ++cueSerial;
     const lastTime = lastCueTimes.get(definition.family) ?? -Infinity;

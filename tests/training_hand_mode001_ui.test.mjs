@@ -53,7 +53,7 @@ test('Full Hand reuses legal action controls and the canonical table presence re
   assert.match(fullHandLogic, /renderFullHandTrainingHistory\(snapshot\)/);
 });
 
-test('Full Hand exposes keyboard-usable amount-to controls and canonical preset projections only', () => {
+test('Full Hand reveals keyboard-usable canonical amount-to controls only after Bet or Raise', () => {
   assert.match(training, /id="trainingFullHandSizing"[^>]+aria-labelledby="trainingFullHandSizingTitle"/);
   assert.match(training, /Amount-to · not raise-by/);
   assert.match(logic, /input\.type = 'number'/);
@@ -61,12 +61,15 @@ test('Full Hand exposes keyboard-usable amount-to controls and canonical preset 
   assert.match(logic, /input\.max = sizing\.maxValueBb/);
   assert.match(logic, /input\.step = sizing\.stepValueBb/);
   assert.match(logic, /event\.key !== 'Enter'/);
-  assert.match(logic, /sizing\.presets\.forEach/);
+  assert.match(logic, /sizing\.presets\.filter\(\(preset\) => preset\.kind !== 'all_in'\)\.forEach/);
   assert.match(sizing, /getLegalActionSpec\(state\)/);
   assert.match(sizing, /kind: 'all_in',[\s\S]*actionType: ACTION_TYPES\.ALL_IN/);
   assert.match(sizing, /seenActions\.has\(identity\)/);
   assert.match(sizing, /roundToChipUnit/);
-  assert.match(logic, /if \(fullHand\) renderFullHandTrainingSizingControls\(\);[\s\S]*else clearFullHandTrainingSizingControls\(\);/);
+  assert.match(logic, /function chooseFullHandTrainingSizedAction\(actionType\)[\s\S]*\['bet', 'raise'\]\.includes\(actionType\)/);
+  assert.match(logic, /\['bet', 'raise'\]\.includes\(type\)[\s\S]*chooseFullHandTrainingSizedAction\(type\)/);
+  assert.match(logic, /const sizing = \['bet', 'raise'\]\.includes\(actionType\)[\s\S]*model\?\.actions\?\.\[actionType\]/);
+  assert.doesNotMatch(logic, /if \(fullHand\) renderFullHandTrainingSizingControls\(\)/);
 });
 
 test('Hero answer resumes through stepwise automation with no Continue Hand UI', () => {
@@ -104,16 +107,27 @@ test('live pacing communicates actor, action, street, and the Hero boundary with
   assert.match(css, /prefers-reduced-motion: reduce[\s\S]*training-full-hand-action-status/);
 });
 
-test('live Full Hand hides quiz grading surfaces and collapses setup while other modes retain them', () => {
+test('live Full Hand hides the Varied report, defers verdicts, and exposes live-only Abort', () => {
   assert.match(training, /id="trainingFeedback"/);
   assert.match(training, /id="trainingSolution"[\s\S]*Strategy frequencies/);
   assert.doesNotMatch(fullHandLogic, /showTrainingFeedback|showTrainingSolution|renderTrainingEvaluationSummary/);
   assert.match(css, /data-training-full-hand-phase="live"[\s\S]*#trainingFeedback/);
-  assert.match(css, /data-training-full-hand-phase="live"[\s\S]*\.training-session-panel/);
+  assert.match(training, /id="trainingFullHandActionDock"/);
+  assert.match(logic, /projectTrainingDecisionControls\(nextPhase === 'live'\)/);
+  assert.match(css, /data-training-full-hand-phase="live"[\s\S]*\.training-session-panel \{ order: 2; \}/);
   assert.match(css, /#trainingSetupPanel \.training-setup-fields > :not\(#trainingModeSwitch\):not\(#trainingFullHandCompactControls\)/);
   for (const id of ['trainingFullHandCompactControls', 'trainingFullHandLiveNewHand', 'trainingFullHandEndHand']) {
     assert.match(training, new RegExp(`id="${id}"`), id);
   }
+  assert.match(training, /id="trainingFullHandEndHand"[^>]+hidden[^>]+data-i18n="Abort hand"/);
+  const recorded = logic.slice(
+    logic.indexOf('function renderFullHandDecisionRecorded('),
+    logic.indexOf('function updateTrainingButtons('),
+  );
+  assert.match(recorded, /Decision recorded/);
+  assert.doesNotMatch(recorded, /canonicalTrainingFeedback|renderDecisionAnalysis|strategyResult/);
+  assert.match(logic, /abort\.hidden = nextPhase !== 'live'/);
+  assert.match(logic, /function abortFullHandTraining\(\)[\s\S]*window\.confirm[\s\S]*clearTrainingSessionState\(\)/);
 });
 
 test('terminal surface provides real decision review navigation and exact Analysis handoff', () => {

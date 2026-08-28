@@ -119,7 +119,8 @@ test('welcome, Home Game, action, Analyze, Replay, and Training repairs retain a
 
   assert.match(css, /data-table-projection="play"[^}]*\{[^}]*var\(--table-inline-max\)/);
   assert.match(css, /data-table-projection="review"[^}]*\{[^}]*var\(--table-inline-max\)/);
-  assert.match(html, /id="trainingIdleStart"[^>]+ui-button--primary[^>]*>[\s\S]*?Start Training/);
+  assert.match(html, /id="trainingNewHand"[^>]+data-i18n="Start Training"[^>]*>Start Training/);
+  assert.doesNotMatch(html, /id="trainingIdleStart"/);
   assert.match(html, /<details class="training-analysis-region"/);
   assert.match(html, /data-training-availability="ready-to-load"/);
   assert.match(logic, /function startConfiguredTrainingSessionWithGuard/);
