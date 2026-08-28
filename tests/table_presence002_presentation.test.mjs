@@ -135,7 +135,10 @@ test('all normalized anchors are safe, unique, and keep Hero at the bottom', () 
       anchorKeys.add(`${seat.anchor.x}:${seat.anchor.y}`);
     }
     assert.equal(anchorKeys.size, playerCount);
-    assert.deepEqual(presentation.seats[0].anchor, { x: 0.5, y: 0.91 });
+    assert.deepEqual(presentation.seats[0].anchor, {
+      x: 0.5,
+      y: playerCount <= 6 ? 0.85 : 0.84,
+    });
   }
 });
 
@@ -155,8 +158,8 @@ test('seat prominence resolves Hero, actor, relevant aggressor, live, and folded
   assert.equal(presentation.seats[0].actorCue, true);
   assert.equal(presentation.seats[3].prominence, 'relevant');
   assert.equal(presentation.seats[4].prominence, 'folded');
-  assert.equal(presentation.seats[4].opacity, 0.42);
-  assert.equal(presentation.seats[4].detail, 'minimal');
+  assert.equal(presentation.seats[4].opacity, 1);
+  assert.equal(presentation.seats[4].detail, 'compact');
   assert.equal(presentation.seats[2].prominence, 'live');
 
   const actorNotHero = createTablePresentation({

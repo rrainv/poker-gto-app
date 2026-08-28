@@ -33,7 +33,7 @@ Users should eventually be able to:
 - [Bluff Analysis](../BLUFF_ANALYSIS_SPEC.md) owns current structural risk/reward, semibluff, outs, and removal facts.
 - [Product Specification](../PRODUCT_SPEC.md) defines Review as a state-aware projection in which timeline, selected decision, comparison, and learning actions dominate.
 
-The current implementation provides a shared Hand/Full-Hand Training review, canonical Hero-decision journal, direct pre-action Replay synchronization, source-aware comparison, provenance/limitations, and existing Analyze/Save/Repeat/Next routes. It does not yet provide durable Training history, full Equity/range evolution, opponent-model analysis, or a frozen historical `StrategyResult` payload.
+The current implementation provides a shared Hand/Full-Hand Training review, canonical Hero-decision journal, direct pre-action Replay synchronization, source-aware comparison, provenance/limitations, and existing Analyze/Save/Repeat/Next routes. `REPLAY-RAIL-NAV-001` is completed and human accepted as the Hand/Replay composition checkpoint: compact Hand context/state sits left, the primary table remains central, and legal/chance controls, distinct Replay, and bounded vertical street-grouped History sit right; exact seeking, Return to live, adjacent canonical actions, and the desktop overview/navigation + selected decision/analysis + Replay/history Review are accepted. Minor table-physicality and History micro-polish debt remains explicitly routed and does not reopen that architecture. The product still does not provide full Equity/range evolution, opponent-model analysis, or a frozen historical `StrategyResult` payload.
 
 ## Desired future behavior
 
@@ -100,7 +100,7 @@ The review projection should request only the evidence needed for the visible de
 
 ## Preserved interactions and microfeatures
 
-- One vertical, street-grouped Hero-decision navigator linked to direct pre-action Replay seeking. Human product evidence selects this direction over the current horizontal Action Path; `REPLAY-RAIL-NAV-001` owns the bounded implementation design.
+- One vertical, street-grouped Hero-decision navigator linked to direct pre-action Replay seeking. Human product evidence selected and accepted this direction over the horizontal Action Path, and `REPLAY-RAIL-NAV-001` final hands-on acceptance checkpointed the resulting Hand/Replay composition with named minor debt.
 - Treat the Replay rail as first-class interaction space for chronology, Current Legal Actions, compact Hand Stage, and return-to-live control when it preserves the central table and remains readable at supported widths.
 - Preserve coherent table, rail, title, and control geometry when moving among live Hand, Replay, and selected-decision states; the selected history point may change without making the workspace feel unrelated.
 - Previous/next decision, street jumps, Replay playback, and selected-event context without duplicate cursors.
@@ -186,7 +186,7 @@ No new competitive research was performed for this dossier.
 
 ## Open product questions
 
-- Which vertical street-grouping, collapse, current-action, and timeline-typography details best preserve scanability, direct seeking, RTL, keyboard access, and one canonical Replay cursor?
+- Which bounded History padding, font-weight, contrast, density, and event-row refinements improve scanability without changing the accepted selected-street-open grouping, collapsible non-selected streets, direct seeking, RTL/keyboard behavior, or one-canonical-cursor architecture?
 - What transparent rule identifies a turning point without implying EV importance?
 - Which analysis layers should load by default versus only on request?
 - Should historical Review freeze selected strategy results, or compare the recorded decision with the current selected source by default?

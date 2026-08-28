@@ -159,7 +159,8 @@ test('table keeps inline stacks while pot and contributions use physical chip gr
   assert.match(renderer, /this\.setPokerAmount\(stack/);
   assert.match(renderer, /this\.setPokerAmount\(contribution/);
   assert.match(renderer, /this\.setPokerAmount\(pot/);
-  assert.match(renderer, /id="contribution-lane-\$\{i\}" class="table-contribution-lane"/);
+  assert.match(renderer, /id="contribution-lane-\$\{i\}" class="table-contribution-lane table-contribution-anchor"/);
+  assert.doesNotMatch(renderer, /class="table-contribution-path/);
   assert.match(primitiveSource, /poker-table-amount-surface/);
   assert.equal((translations.match(/'table\.potLabel':/g) || []).length, 3);
 });
@@ -224,14 +225,12 @@ test('bottom, top, and side contributions share one symmetric radial seat-to-pot
   assert.doesNotMatch(tableContributionPoint.toString(), /hero|button|position|dealer|isHero/i);
 });
 
-test('a real card collision receives only the minimum inward correction on the same ray', () => {
-  const corrected = tableContributionPoint({
+test('contributions stay on their independent seat-to-pot ray without card-box correction', () => {
+  const point = tableContributionPoint({
     centerX: 400, centerY: 250, seatX: 400, seatY: 400,
   });
-  assert.deepEqual({ ...corrected }, { x: 400, y: 295 });
-  assert.equal(corrected.x, 400);
-  assert.ok(corrected.y < 325);
-  assert.doesNotMatch(tableContributionPoint.toString(), /ClearanceX|directionAway|mirroredPoint/);
+  assert.deepEqual({ ...point }, { x: 400, y: 325 });
+  assert.doesNotMatch(tableContributionPoint.toString(), /ClearanceX|directionAway|mirroredPoint|intersectsHoleCards|inwardCorrection/);
 });
 
 test('every trusted non-zero contribution renders once and zero or reset values hide it', () => {

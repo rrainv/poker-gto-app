@@ -19,15 +19,19 @@ function sourceBetween(source, start, end) {
   return source.slice(source.indexOf(start), source.indexOf(end, source.indexOf(start)));
 }
 
-test('visible Hand composition is timeline, table, then a bounded Hero decision dock', () => {
-  const timeline = html.indexOf('id="handTimelineStage"');
-  const table = html.indexOf('id="table-wrapper"', timeline);
-  const dock = html.indexOf('id="handStageDock"', table);
-  assert.ok(timeline > 0 && timeline < table && table < dock);
+test('visible Hand composition is table-first with one adjacent action and replay rail', () => {
+  const table = html.indexOf('id="table-wrapper"');
+  const rail = html.indexOf('id="handInteractionRail"', table);
+  const dock = html.indexOf('id="handStageDock"', rail);
+  const history = html.indexOf('id="handHistorySection"', dock);
+  const timeline = html.indexOf('id="handTimelineStage"', history);
+  assert.ok(table > 0 && table < rail && rail < dock && dock < history && history < timeline);
   assert.match(html, /id="handActionAmountRange"[^>]*type="range"/);
   assert.match(html, /id="handActionAmountBb"[^>]*type="number"/);
   assert.match(html, /id="handCommitSizedAction"[^>]*type="button"/);
-  assert.match(css, /\.hand-stage-dock\s*\{[\s\S]*?inline-size:\s*min\(100%, 900px\)/);
+  assert.match(css, /REPLAY-RAIL-NAV-001[\s\S]*?#handInteractionRail:not\(\[hidden\]\)[\s\S]*?display:\s*grid\s*!important/);
+  assert.match(css, /#handActionHistory:is\(\.replay-timeline--compact, \.replay-timeline--review\)[\s\S]*?overflow-y:\s*auto/);
+  assert.match(css, /html:has\(#gtoMode\.active\[data-product-destination="hand"\]\)\s*\{[^}]*scrollbar-gutter:\s*stable/);
   assert.match(css, /\.hand-action-sizing\s*\{[\s\S]*?background:\s*var\(--surface-inset\)/);
 });
 

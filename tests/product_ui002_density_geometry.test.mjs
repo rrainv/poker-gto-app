@@ -64,12 +64,14 @@ test('Hand Mode uses a compact post-start setup and highlights the current canon
   assert.match(density, /\.playbook-hand-workspace \.is-current-hand-step/);
 });
 
-test('table seats use one integrated adaptive player-unit anchor for cards and identity', () => {
-  assert.match(table, /class="table-seat table-player-unit\$\{[^}]+\}"[^>]*data-card-anchor="integrated"/);
-  assert.match(table, /const cardCenterDistance = seatVector\.radialExtent \+ cardHalfHeight - cardOverlapUnits/);
+test('table seats use one adaptive radial-felt player-unit anchor for cards and identity', () => {
+  assert.match(table, /class="table-seat table-player-unit\$\{[^}]+\}"[^>]*data-card-lane="radial-felt"/);
+  assert.match(table, /const cardRadialExtent = \(Math\.abs\(seatVector\.unitX\) \* cardHalfWidth\)/);
+  assert.match(table, /const cardCenterDistance = Math\.max\([\s\S]*?seatVector\.radialExtent \+ cardRadialExtent \+ cardSeatGap,[\s\S]*?feltEntryDistance \+ 1/);
+  assert.doesNotMatch(table, /cardFeltInset|table-seat-connector|table-card-cradle/);
   assert.match(table, /const cardCenterX = Math\.round\(seatVector\.unitX \* cardCenterDistance\)/);
   assert.match(table, /const cardCenterY = Math\.round\(seatVector\.unitY \* cardCenterDistance\)/);
-  assert.match(table, /class="table-hole-cards" style="[^"]*--card-deal-from-x:[^"]*--card-fold-to-x:[^"]*" transform="translate\(\$\{holeCardX\}, \$\{holeCardY\}\) scale\(\$\{cardScale\}\)"/);
+  assert.match(table, /class="table-hole-cards"[^>]*data-card-lane="radial-felt"[^>]*style="[^"]*--card-deal-from-x:[^"]*--card-fold-to-x:[^"]*" transform="translate\(\$\{holeCardX\}, \$\{holeCardY\}\) scale\(\$\{cardScale\}\)"/);
   assert.match(table, /class="table-seat-surface"[^>]*width="\$\{unit\.width\}" height="\$\{unit\.height\}"/);
   assert.match(cardPresentation, /const step = isCommunity \? 50 : 45/);
   assert.match(cardPresentation, /const finalX = \(\(index - \(\(totalCards - 1\) \/ 2\)\) \* step\) - \(geometry\.width \/ 2\)/);

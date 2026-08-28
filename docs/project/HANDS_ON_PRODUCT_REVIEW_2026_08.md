@@ -2,7 +2,7 @@
 
 Status: **COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED**
 
-Planning consequence: `HANDS-ON-DEFECTS-001` is **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT**. `CORE-FLOW-CORRECTNESS-001` is **IMPLEMENTATION COMPLETE / FINAL HUMAN ACCEPTANCE REQUIRED** after human-QA correction #1. Replay rail remains planned next but blocked on that acceptance, followed by Training composition, `PERSONAL-STRATEGY-003A`, and a whole-app mini-pass.
+Planning consequence: `HANDS-ON-DEFECTS-001` is **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT**. `CORE-FLOW-CORRECTNESS-001` is **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT**. `REPLAY-RAIL-NAV-001` is **COMPLETED / HUMAN ACCEPTED HAND-REPLAY COMPOSITION CHECKPOINT WITH MINOR TABLE-PHYSICALITY DEBT**. `TRAINING-COMPOSITION-001` is **ACTIVE NEXT**, followed by visible closure and September Alpha whole-app/docs/audit gates before another major feature; `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision.
 
 This is the durable evidence and triage artifact for `HANDS-ON-PRODUCT-REVIEW-001`. It is not another roadmap, backlog, QA system, or implementation specification. Current status and sequence remain owned by [Current Phase](CURRENT_PHASE.md), [Roadmap](ROADMAP.md), and [Product Backlog](PRODUCT_BACKLOG.md). Issue routing and deferred checkpoint debt remain owned by [QA Backlog](QA_BACKLOG.md) and [Product Return Queue](PRODUCT_RETURN_QUEUE.md).
 
@@ -141,8 +141,8 @@ The correction does not reopen accepted card-removal parity, Analyze clipping, P
 
 The structural evidence is now directional rather than an open comparison:
 
-- `REPLAY-RAIL-NAV-001` owns vertical street-grouped history, first-class rail actions and Current Legal Actions, compact Hand Stage, table/history/action integration, and timeline typography.
-- `TRAINING-COMPOSITION-001` owns one primary start CTA, a stable pre/post-answer skeleton, top-packed useful content, Action History, Assistance, Training Memory, setup/status, and progressive Facts → Explain → Coach depth.
+- The completed `REPLAY-RAIL-NAV-001` checkpoint preserves vertical street-grouped history, first-class rail actions and Current Legal Actions, compact Hand Stage, table/history/action integration, and accepted chronology; bounded History typography/density polish remains later debt.
+- Active-next `TRAINING-COMPOSITION-001` owns one primary start CTA, a stable pre/post-answer skeleton, top-packed useful content, Action History, Assistance, Training Memory, setup/status, and progressive Facts → Explain → Coach depth.
 - supported desktop acceptance uses 1920×1080 at 100% zoom as the primary state, 2560×1440 and 2560×1600 coverage, and functional 1366×768 support; reducing zoom is not an acceptance workaround.
 
 At that checkpoint, one short final acceptance remained required before advancing. The resulting second-pass disposition is recorded below.
@@ -157,7 +157,7 @@ Repeated or structural failures remain open:
 
 - Hand still appears selected on Welcome; `FIRST-USE-HOME-001` owns launch/sidebar/active-workspace semantics and first- versus returning-launch behavior.
 - Home Game imbalance is visible but insufficiently proximate/prominent; `HOME-GAME-PRESENTATION-001` owns stronger presentation.
-- Fully visible opponent cards can overlap player identity/stack. `REPLAY-RAIL-NAV-001` owns one coherent cards/seat/player/action grammar across HU through full ring, folded-seat readability, physical Dealer/gap treatment, and the table/rail/timeline relationship. No further isolated z-index/card-offset patch is accepted.
+- At the second defect pass, fully visible opponent cards could overlap player identity/stack; that evidence was routed to `REPLAY-RAIL-NAV-001`. Final Replay acceptance now checkpoints one no-dongle cards/seat/player/action grammar across HU through full ring, folded-seat readability, physical Dealer-button treatment, and the table/rail/timeline relationship. A possible later hidden-back tuck remains constrained by privacy, ownership, inspectability, and non-obstruction; no isolated z-index/card-offset patch is accepted.
 - The dotted lines are the existing seat → street-contribution → pot lanes. Their semantic intent is real, but their unexplained-artifact appearance is valid UX debt; the Hand redesign must clarify, simplify, or remove them according to comprehension.
 - Home and Saved remain under-composed and visually stale under `FIRST-USE-HOME-001` and `SAVED-VISUAL-KNOWLEDGE-001`.
 
@@ -167,7 +167,7 @@ Human-QA correction #1 checkpoint, August 27, 2026: the bounded Core Flow repair
 
 ## Near-term redesign owners
 
-These are accepted owners, not permission to start every ticket automatically. Exact order is reassessed at the whole-app mini-pass after Core Flow correctness, Replay rail, Training composition, and `PERSONAL-STRATEGY-003A`.
+These are accepted owners, not permission to start every ticket automatically. The current execution subset is Training → Equity → Analyze/Range → First Use/Home, followed by bounded secondary polish and the September Alpha whole-app/docs/audit gates. `PERSONAL-STRATEGY-003A`, Game Setup evolution, Range Evolution, and other major capabilities remain preserved post-audit activation candidates.
 
 | Owner | Durable scope | Review evidence |
 |---|---|---|
@@ -222,19 +222,33 @@ Selected reference, intended Personal Strategy, source-labelled observed behavio
 | Primary outputs should dominate secondary configuration after an action completes. | [Product Specification §5](PRODUCT_SPEC.md#5-information-hierarchy-and-composition) |
 | A functionally correct feature remains product-incomplete when its transitions make the workflow hard to understand. | [Interaction Grammar](INTERACTION_GRAMMAR.md) and [Definition of Done](DEFINITION_OF_DONE.md) |
 
+### Replay rail implementation follow-through
+
+`REPLAY-RAIL-NAV-001` now implements the bounded response to #28, #29, #33, #34, and the second-pass table evidence: the table is the first workspace object; compact Hand Stage, canonical legal/terminal controls, Replay transport, and a vertically scrolling street-grouped chronology occupy distinct adjacent rail regions; Replay uses exact existing frame seeking and an in-progress Return to live; table geometry stays stable through live/Replay transitions; cards sit on each seat's felt side without covering the player panel; folded identity remains readable; Dealer buttons read as felt objects near their owning seats; and unexplained always-visible contribution paths are removed while exact amounts and transient experience motion remain.
+
+The first product-owner pass accepted that high-level skeleton and failed the detailed implementation. Correction #1 removes the rejected card dongles/cradles and gives cards, contributions, Dealer, and identity distinct radial lanes; separates Replay controls from one whole-Hand disclosure with bounded internal history scrolling; repairs Review into useful desktop left/center/right regions; restores stale disabled Raise and exact-card chance controls without changing canonical min-raise or all-in progression; adds confirmed canonical-only Abort Hand and non-clamping table-size validation; completes affected Hero/street/state RU/HE presentation plus Hebrew LTR amount islands; and tunes the Daylight Hand/table palette through semantic roles while preserving Midnight and Graphite.
+
+The product owner completed the final hands-on pass at 1920×1080 / 100% and accepted the Hand/Replay composition checkpoint. The accepted product model is compact Hand context/state on the left, the primary poker table in the center, and legal/chance controls, distinct Replay, and bounded vertical History on the right. Table-first hierarchy and canvas use, stable live/Replay geometry, chronological street grouping, collapse and internal scrolling, exact seeking, Return to live, canonical action behavior, no-dongle cards, exact contributions, live-only Abort, Raise, all-in progression, invalid-size rejection, EN/RU/HE/RTL, Daylight contrast, and the three-region Review are accepted.
+
+This is not perfect-polish acceptance. Four non-blocking debts remain: in dense/10-max geometry the lower side panels sit slightly too far inward and the top player slightly too far outward/high; hidden backs may later tuck under/behind their owning player only if privacy, ownership, non-obstruction, known-card inspectability, and the no-dongle grammar remain intact; the Dealer button is accepted but a future human Dealer position/presence may better explain the full-ring gap under table physicality/Game Setup, without adding a fake dealer now; and History padding, font weight, contrast, density, and event-row polish belongs to global/premium quality. These debts do not reopen the accepted Hand/Replay composition or chronology architecture.
+
 ## Roadmap consequences
 
-The confirmed review and second human disposition set the immediate sequence to:
+The newer product decision supersedes the earlier Training → Personal Strategy → mini-pass sequence. The current sequence is:
 
 1. `HANDS-ON-DEFECTS-001` — **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT DEBT**.
-2. `CORE-FLOW-CORRECTNESS-001` — **IMPLEMENTATION COMPLETE / FINAL HUMAN ACCEPTANCE REQUIRED**.
-3. `REPLAY-RAIL-NAV-001` — **PLANNED NEXT / BLOCKED ON CORE FLOW HUMAN ACCEPTANCE**.
-4. `TRAINING-COMPOSITION-001` — **PLANNED NEXT**.
-5. `PERSONAL-STRATEGY-003A` — **PLANNED NEXT**.
-6. Human whole-app mini-pass.
-7. Likely `EQUITY-COMPOSITION-001`, `ANALYZE-RANGE-UX-001`, and `GAME-SETUP-EVOLUTION-001`, with exact order reassessed at that mini-pass.
+2. `CORE-FLOW-CORRECTNESS-001` — **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT**.
+3. `REPLAY-RAIL-NAV-001` — **COMPLETED / HUMAN ACCEPTED HAND-REPLAY COMPOSITION CHECKPOINT WITH MINOR TABLE-PHYSICALITY DEBT**.
+4. `TRAINING-COMPOSITION-001` — **ACTIVE NEXT**.
+5. `EQUITY-COMPOSITION-001` → `ANALYZE-RANGE-UX-001` → `FIRST-USE-HOME-001` — **VISIBLE-PRODUCT CLOSURE**.
+6. `GUIDE-CONTENT-001`, `SAVED-VISUAL-KNOWLEDGE-001`, `CUSTOMIZATION-UX-001`, and `GLOBAL-PRODUCT-QUALITY-001` — **BOUNDED SECONDARY POLISH / EXACT ORDER REASSESSED**; `HOME-GAME-PRESENTATION-001` and `AUDIO-DESIGN-001` remain conditional on time and impact.
+7. Human whole-app pass → documentation integrity/continuity freeze → human clean commit/audit tag.
+8. Independent cross-model blind hands-on product audit plus white-box theoretical/architecture audit → human triage → serious P0/P1 fixes.
+9. Only then select `PERSONAL-STRATEGY-003A`, `GAME-SETUP-EVOLUTION-001`, `RANGE-EVOLUTION-001`, or another major capability from evidence.
 
-Later work remains preserved: Personal Strategy provider/reference/observed integration, Guide/content, Home Game presentation, Random Spot Generator, launch/home evolution, Saved visual knowledge, customization, audio design, global product quality, and `PREMIUM-CLOSEOUT-001` as the later pre-release quality gate.
+This defines the **September Alpha** milestone: a coherent, trustworthy, human-tested desktop build with accepted Hand/Replay, Training, Equity, Analyze/Range, materially improved First Use/Home and systemic polish, synchronized documentation, a whole-product manual pass, independent hands-on and theoretical audits, and serious findings triaged/fixed. It is internal/high-quality alpha, not public beta readiness, production reference coverage, completed live account/sync validation, finished mobile/social/PLO, or completion of the long-term capability roadmap.
+
+Later capability work remains preserved in the dossiers, including Learning Evidence, Natural-Language Intelligence, Reference Strategy Evolution, Equity/Hand Analysis, Bluff/Exploit Analysis, Opponent Intelligence, Deep Hand Review, Training Intelligence, Personal Strategy Intelligence, Range Evolution, Saved Knowledge/Sharing, Home Game Evolution, and Random Spot Generator. `PREMIUM-CLOSEOUT-001` remains the later pre-release quality gate.
 
 The workflow lesson is binding for user-facing work:
 

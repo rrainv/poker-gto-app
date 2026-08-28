@@ -100,13 +100,12 @@ test('felt, rail, depth, seats, cards, and the center pot render as one layered 
     cursor = next;
   }
   for (const hook of [
-    'table-seat-connector', 'table-card-cradle', 'table-seat-base',
-    'table-seat-surface', 'table-hole-cards',
+    'table-seat-base', 'table-seat-surface', 'table-hole-cards',
   ]) assert.match(renderer, new RegExp(hook));
+  assert.doesNotMatch(renderer, /table-seat-connector|table-card-cradle/);
+  assert.doesNotMatch(css, /\.table-seat-connector|\.table-card-cradle/);
   assert.match(css, /\.table-base\s*\{[\s\S]*?drop-shadow/);
   assert.match(css, /\.table-cushion\s*\{[\s\S]*?drop-shadow/);
-  assert.match(css, /\.table-seat-connector\s*\{[\s\S]*?stroke-linecap:\s*round/);
-  assert.match(css, /\.table-card-cradle\s*\{[\s\S]*?var\(--poker-table-seat\)[\s\S]*?var\(--poker-table-rail-end\)/);
 });
 
 test('Balanced Hand consumes its allocated table region without a viewport-height cap', () => {
@@ -150,21 +149,22 @@ test('remaining stacks, contributions, and the central pot use distinct restrain
   assert.doesNotMatch(primitives, /denomination|chipset|casino/i);
 });
 
-test('cards and contributions follow the seat-to-pot physical path', () => {
-  assert.match(renderer, /const cardCenterDistance = seatVector\.radialExtent \+ cardHalfHeight - cardOverlapUnits/);
+test('cards sit naturally in a radial felt lane and contributions use exact anchored amounts', () => {
+  assert.match(renderer, /const cardCenterDistance = Math\.max\([\s\S]*?seatVector\.radialExtent \+ cardRadialExtent \+ cardSeatGap,[\s\S]*?feltEntryDistance \+ 1/);
   assert.match(renderer, /const cardCenterX = Math\.round\(seatVector\.unitX \* cardCenterDistance\)/);
   assert.match(renderer, /const cardCenterY = Math\.round\(seatVector\.unitY \* cardCenterDistance\)/);
-  assert.match(renderer, /class="table-contribution-lane-path table-contribution-lane-path--owner"/);
-  assert.match(renderer, /class="table-contribution-lane-path table-contribution-lane-path--pot"/);
-  assert.match(css, /\.table-contribution-lane-path--owner\s*\{[\s\S]*?stroke-dasharray/);
-  assert.match(css, /\.table-contribution-lane-path--pot\s*\{[\s\S]*?stroke-width/);
-  assert.match(css, /\.poker-table-amount--contribution \.poker-table-amount-surface\s*\{[\s\S]*?fill:\s*color-mix\([\s\S]*?var\(--poker-table-surface-end\)/);
+  assert.match(renderer, /data-card-lane="radial-felt"/);
+  assert.doesNotMatch(renderer, /table-seat-connector|table-card-cradle/);
+  assert.match(renderer, /class="table-contribution-lane table-contribution-anchor"/);
+  assert.doesNotMatch(renderer, /table-contribution-lane-path/);
+  assert.doesNotMatch(css, /\.table-contribution-lane-path/);
+  assert.match(css, /\.poker-table-amount--contribution \.poker-table-amount-surface\s*\{[\s\S]*?fill:\s*var\(--poker-table-contribution-surface\)/);
   assert.match(css, /\.poker-table-amount--contribution \.poker-table-amount-surface\s*\{[\s\S]*?filter:\s*none/);
 });
 
 test('dealer, seat states, contribution lanes, and motion stay semantic and accessible', () => {
   assert.match(renderer, /dealerAnchor/);
-  assert.match(renderer, /data-anchor="seat-to-pot"/);
+  assert.match(renderer, /data-anchor="table-felt-near-seat"/);
   assert.match(renderer, /dealer\.setAttribute\('aria-label'/);
   for (const stateHook of ['is-hero', 'is-actor', 'is-folded', 'is-all-in']) {
     assert.match(renderer, new RegExp(stateHook));

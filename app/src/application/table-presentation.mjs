@@ -34,62 +34,62 @@ const ACTION_ORDER = Object.freeze(['fold', 'check', 'call', 'bet', 'raise', 'al
 const AGGRESSIVE_ACTIONS = new Set(['bet', 'raise', 'all_in']);
 
 const ANCHORS_BY_PLAYER_COUNT = Object.freeze({
-  2: Object.freeze([[0.50, 0.91], [0.50, 0.09]]),
-  3: Object.freeze([[0.50, 0.91], [0.18, 0.20], [0.82, 0.20]]),
-  4: Object.freeze([[0.50, 0.91], [0.12, 0.48], [0.50, 0.09], [0.88, 0.48]]),
-  5: Object.freeze([[0.50, 0.91], [0.16, 0.62], [0.22, 0.18], [0.78, 0.18], [0.84, 0.62]]),
-  6: Object.freeze([[0.50, 0.91], [0.17, 0.66], [0.17, 0.23], [0.50, 0.09], [0.83, 0.23], [0.83, 0.66]]),
-  7: Object.freeze([[0.50, 0.91], [0.22, 0.76], [0.10, 0.45], [0.24, 0.14], [0.76, 0.14], [0.90, 0.45], [0.78, 0.76]]),
-  8: Object.freeze([[0.50, 0.91], [0.22, 0.76], [0.10, 0.47], [0.24, 0.15], [0.50, 0.07], [0.76, 0.15], [0.90, 0.47], [0.78, 0.76]]),
-  9: Object.freeze([[0.50, 0.91], [0.25, 0.79], [0.09, 0.56], [0.12, 0.27], [0.34, 0.09], [0.66, 0.09], [0.88, 0.27], [0.91, 0.56], [0.75, 0.79]]),
-  10: Object.freeze([[0.50, 0.91], [0.26, 0.80], [0.09, 0.59], [0.09, 0.33], [0.27, 0.13], [0.50, 0.06], [0.73, 0.13], [0.91, 0.33], [0.91, 0.59], [0.74, 0.80]]),
+  2: Object.freeze([[0.50, 0.85], [0.50, 0.09]]),
+  3: Object.freeze([[0.50, 0.85], [0.18, 0.20], [0.82, 0.20]]),
+  4: Object.freeze([[0.50, 0.85], [0.12, 0.48], [0.50, 0.09], [0.88, 0.48]]),
+  5: Object.freeze([[0.50, 0.85], [0.16, 0.62], [0.22, 0.18], [0.78, 0.18], [0.84, 0.62]]),
+  6: Object.freeze([[0.50, 0.85], [0.17, 0.66], [0.17, 0.23], [0.50, 0.09], [0.83, 0.23], [0.83, 0.66]]),
+  7: Object.freeze([[0.50, 0.84], [0.22, 0.76], [0.10, 0.45], [0.24, 0.14], [0.76, 0.14], [0.90, 0.45], [0.78, 0.76]]),
+  8: Object.freeze([[0.50, 0.84], [0.22, 0.76], [0.10, 0.47], [0.24, 0.15], [0.50, 0.07], [0.76, 0.15], [0.90, 0.47], [0.78, 0.76]]),
+  9: Object.freeze([[0.50, 0.84], [0.25, 0.79], [0.09, 0.56], [0.12, 0.27], [0.34, 0.09], [0.66, 0.09], [0.88, 0.27], [0.91, 0.56], [0.75, 0.79]]),
+  10: Object.freeze([[0.50, 0.84], [0.26, 0.80], [0.09, 0.59], [0.09, 0.33], [0.27, 0.13], [0.50, 0.06], [0.73, 0.13], [0.91, 0.33], [0.91, 0.59], [0.74, 0.80]]),
 });
 
 const FAMILY_SPECIFICATIONS = Object.freeze({
   [TABLE_GEOMETRY_FAMILIES.HU]: Object.freeze({
-    tableBounds: Object.freeze([0.07, 0.14, 0.86, 0.66]),
+    tableBounds: Object.freeze([0.05, 0.14, 0.90, 0.66]),
     playerUnit: Object.freeze({ width: 150, height: 78 }),
     cardScale: 1.25,
     cardOverlap: 0.36,
     boardScale: 1.12,
-    contributionFraction: 0.44,
-    dealerFraction: 0.22,
+    contributionFraction: 0.62,
+    dealerFraction: 0.54,
   }),
   sparse_large: Object.freeze({
-    tableBounds: Object.freeze([0.11, 0.16, 0.78, 0.62]),
+    tableBounds: Object.freeze([0.05, 0.16, 0.90, 0.62]),
     playerUnit: Object.freeze({ width: 138, height: 74 }),
     cardScale: 1.15,
     cardOverlap: 0.22,
     boardScale: 1.08,
-    contributionFraction: 0.46,
-    dealerFraction: 0.22,
+    contributionFraction: 0.62,
+    dealerFraction: 0.54,
   }),
   sparse_five: Object.freeze({
-    tableBounds: Object.freeze([0.09, 0.15, 0.82, 0.64]),
+    tableBounds: Object.freeze([0.05, 0.15, 0.90, 0.64]),
     playerUnit: Object.freeze({ width: 122, height: 70 }),
     cardScale: 1,
     cardOverlap: 0.28,
     boardScale: 1,
-    contributionFraction: 0.46,
-    dealerFraction: 0.20,
+    contributionFraction: 0.62,
+    dealerFraction: 0.54,
   }),
   [TABLE_GEOMETRY_FAMILIES.SIX_MAX]: Object.freeze({
-    tableBounds: Object.freeze([0.07, 0.14, 0.86, 0.66]),
+    tableBounds: Object.freeze([0.05, 0.14, 0.90, 0.66]),
     playerUnit: Object.freeze({ width: 122, height: 70 }),
     cardScale: 1,
     cardOverlap: 0.24,
     boardScale: 1,
-    contributionFraction: 0.40,
-    dealerFraction: 0.20,
+    contributionFraction: 0.62,
+    dealerFraction: 0.54,
   }),
   [TABLE_GEOMETRY_FAMILIES.FULL_RING]: Object.freeze({
-    tableBounds: Object.freeze([0.07, 0.13, 0.86, 0.67]),
+    tableBounds: Object.freeze([0.05, 0.13, 0.90, 0.67]),
     playerUnit: Object.freeze({ width: 104, height: 62 }),
     cardScale: 0.88,
     cardOverlap: 0.14,
     boardScale: 0.94,
-    contributionFraction: 0.44,
-    dealerFraction: 0.18,
+    contributionFraction: 0.62,
+    dealerFraction: 0.54,
   }),
 });
 
@@ -113,7 +113,7 @@ const ROLE_PRESENTATION = Object.freeze({
   actor: Object.freeze({ opacity: 1, detail: 'full', cardEmphasis: 'strong', contributionEmphasis: 'strong' }),
   relevant: Object.freeze({ opacity: 0.98, detail: 'standard', cardEmphasis: 'standard', contributionEmphasis: 'strong' }),
   live: Object.freeze({ opacity: 0.86, detail: 'standard', cardEmphasis: 'standard', contributionEmphasis: 'standard' }),
-  folded: Object.freeze({ opacity: 0.42, detail: 'minimal', cardEmphasis: 'quiet', contributionEmphasis: 'quiet' }),
+  folded: Object.freeze({ opacity: 1, detail: 'compact', cardEmphasis: 'quiet', contributionEmphasis: 'quiet' }),
   empty: Object.freeze({ opacity: 0, detail: 'minimal', cardEmphasis: 'hidden', contributionEmphasis: 'hidden' }),
 });
 
@@ -193,6 +193,7 @@ function detailForSeat(role, family) {
   if (role === 'hero' || role === 'actor') return 'full';
   if (role === 'relevant') return family === TABLE_GEOMETRY_FAMILIES.FULL_RING ? 'compact' : 'standard';
   if (role === 'live') return family === TABLE_GEOMETRY_FAMILIES.FULL_RING ? 'compact' : 'standard';
+  if (role === 'folded') return 'compact';
   return 'minimal';
 }
 

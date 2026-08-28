@@ -98,7 +98,9 @@ test('street headings, ordered entries, Hero, amount, all-in, and current semant
   ]) {
     assert.match(`${renderer}\n${css}`, new RegExp(token), token);
   }
-  assert.match(renderer, /document\.createElement\('h3'\)/);
+  assert.match(renderer, /document\.createElement\('details'\)/);
+  assert.match(renderer, /document\.createElement\('summary'\)/);
+  assert.match(renderer, /section\.open = group\.isSelectedStreet/);
   assert.match(renderer, /document\.createElement\('ol'\)/);
   assert.match(renderer, /actionList\.start = item\.sequence \+ 1/);
   assert.match(renderer, /item\.value = entry\.sequence \+ 1/);

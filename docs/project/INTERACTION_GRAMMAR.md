@@ -20,6 +20,10 @@ Space follows the importance of the information, action, or result; panels do no
 
 Side rails are first-class interaction space when they let users operate while preserving the central poker object. A rail is not automatically correct: it must keep controls readable, logically ordered, keyboard accessible, and useful at supported widths rather than becoming a narrow filing cabinet.
 
+When chronology must coexist with a central poker object and immediate controls, use one vertically scrolling, semantically grouped rail over a competing horizontal primary timeline. Preserve canonical event order and direct selection, expose the current group, let completed/future groups collapse without hiding the selected event, and keep live/replay transitions inside the same workspace geometry. The rail is a projection and navigation surface; it never becomes a second history or cursor authority.
+
+Playback controls and chronology may share a rail but must remain distinct regions: playback owns Live/Replay state and transport, while history owns event order, grouping, selection, disclosure, and bounded scroll. Collapsing the whole history must retain an understandable selected/current summary and must not remove Replay controls.
+
 Useful content follows an upside-down-gravity rule: pack the primary object, current state, and next meaningful action toward the top before distributing secondary explanation or empty support regions below. The primary object appears before its supporting controls and prose in both visual and logical reading order.
 
 One conceptual action has one primary call to action. Repeated buttons that start the same Training session, complete the same workflow, or submit the same state do not become more discoverable by competing with one another. Secondary routes may remain available, but they must be visibly secondary and preserve the same authority.

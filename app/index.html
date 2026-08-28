@@ -983,18 +983,18 @@
                   <div><strong id="handSetupTitle" data-i18n="Start a hand">Start a hand</strong><small data-i18n="Choose seats and forced contributions">Choose seats and forced contributions</small></div>
                 </div>
                 <div class="hand-setup-grid">
-                  <label><span data-i18n="Players">Players</span><input id="handTableSize" class="control-input" type="number" min="2" max="10" step="1" value="2"></label>
+                  <label><span data-i18n="Players">Players</span><input id="handTableSize" class="control-input poker-data-token" type="number" min="2" max="10" step="1" value="2" aria-describedby="handTableSizeError"></label>
                   <label><span data-i18n="Game mode">Game mode</span><select id="handGameMode" class="control-select"><option value="home" data-i18n="Home">Home</option><option value="clubgg">ClubGG</option></select></label>
-                  <label><span data-i18n="Starting stack">Starting stack</span><span class="input-with-unit"><input id="handStackBb" class="control-input" type="number" min="1" max="500" step="1" value="100"><em>bb</em></span></label>
+                  <label><span data-i18n="Starting stack">Starting stack</span><span class="input-with-unit poker-data-token"><input id="handStackBb" class="control-input" type="number" min="1" max="500" step="1" value="100"><em>bb</em></span></label>
                   <label><span data-i18n="Button seat">Button seat</span><select id="handButtonSeat" class="control-select"></select></label>
                   <label><span data-i18n="Hero seat">Hero seat</span><select id="handHeroSeat" class="control-select"></select></label>
                   <label><span data-i18n="Ante type">Ante type</span><select id="handAnteType" class="control-select"><option value="none" data-i18n="None">None</option><option value="per_player" data-i18n="Per player">Per player</option><option value="big_blind" data-i18n="Big blind ante">Big blind ante</option></select></label>
-                  <label><span data-i18n="Ante amount">Ante amount</span><span class="input-with-unit"><input id="handAnteBb" class="control-input" type="number" min="0" max="20" step="0.1" value="0"><em>bb</em></span></label>
+                  <label><span data-i18n="Ante amount">Ante amount</span><span class="input-with-unit poker-data-token"><input id="handAnteBb" class="control-input" type="number" min="0" max="20" step="0.1" value="0"><em>bb</em></span></label>
                 </div>
+              <p id="handTableSizeError" class="field-error" role="alert" hidden></p>
               <p id="handAccountingPreview" class="hand-accounting-preview" data-i18n="Home · no rake or forced deduction">Home · no rake or forced deduction</p>
                 <div class="hand-button-row">
                   <button id="handStartButton" class="ui-button ui-button--primary" type="button" data-i18n="Start hand">Start hand</button>
-                  <button id="handResetButton" class="ui-button ui-button--quiet" type="button" data-i18n="Reset hand">Reset hand</button>
                 </div>
               </section>
               </details>
@@ -1007,49 +1007,18 @@
                 <div class="hand-state-strip" aria-live="polite">
                   <div><span data-i18n="Street">Street</span><strong id="handStateStreet">—</strong></div>
                   <div><span data-i18n="Actor">Actor</span><strong id="handStateActor">—</strong></div>
-                  <div><span data-i18n="Pot">Pot</span><strong id="handStatePot">—</strong></div>
-                  <div><span data-i18n="Deduction">Deduction</span><strong id="handStateDeduction">—</strong></div>
+                  <div><span data-i18n="Pot">Pot</span><strong id="handStatePot" class="poker-data-token">—</strong></div>
+                  <div><span data-i18n="Deduction">Deduction</span><strong id="handStateDeduction" class="poker-data-token">—</strong></div>
                 </div>
                 <details id="handPlayerDetails" class="hand-inline-disclosure">
                   <summary data-i18n="Players and contributions">Players and contributions</summary>
                   <div id="handSeatList" class="hand-seat-list" aria-label="Canonical players" data-i18n-aria-label="Canonical players"></div>
                 </details>
-              </section>
-
-              <section id="handDealSection" class="hand-control-section hand-stage-step" aria-labelledby="handDealTitle" hidden>
-                <div class="hand-section-head"><div><strong id="handDealTitle" data-i18n="Set private cards">Set private cards</strong><small id="handDealHelp" data-i18n="Choose Hero's cards. Opponents remain hidden unless you set them explicitly.">Choose Hero's cards. Opponents remain hidden unless you set them explicitly.</small></div></div>
-                <div id="handPrivateCards" class="hand-private-cards"></div>
-                <button id="handDealHoleButton" class="ui-button ui-button--primary" type="button" data-i18n="Start betting">Start betting</button>
-              </section>
-
-              <details id="handHistoryDisclosure" class="hand-disclosure hand-history-disclosure">
-                <summary>
-                  <span><strong data-i18n="replay.title">Hand replay</strong><small id="handHistoryCompactSummary" data-i18n="History and replay controls">History and replay controls</small></span>
-                  <span data-i18n="Review">Review</span>
-                </summary>
-              <section id="handHistorySection" class="hand-control-section" aria-labelledby="handHistoryTitle" data-tutorial-anchor="hand-replay">
-                <div class="hand-section-head"><div><strong id="handHistoryTitle" data-i18n="replay.title">Hand replay</strong><small data-i18n="replay.subtitle">Read-only timeline</small></div></div>
-                <div id="handReplayControls" class="replay-control-bar" data-replay-mode="empty" data-tutorial-anchor="replay-controls">
-                  <div class="replay-state-summary">
-                    <span id="handReplayModeBadge" class="badge replay-mode-badge" data-i18n="replay.status.live">LIVE</span>
-                    <span id="handReplayProgress" class="replay-step-progress poker-data-token" dir="ltr">Step 0 of 0</span>
-                    <span id="handReplayTransition" class="replay-transition-label" data-i18n="replay.marker.empty">No hand started</span>
-                  </div>
-                  <div class="replay-control-actions" role="group" aria-label="Replay controls" data-i18n-aria-label="replay.controls.label">
-                    <button id="handReplayPlaybackButton" class="ui-button ui-button--primary replay-playback-button" type="button" aria-pressed="false" disabled data-i18n="replay.control.play">Play</button>
-                    <button id="handReplayPreviousButton" class="ui-button ui-button--secondary" type="button" disabled data-i18n="replay.control.previous">Previous</button>
-                    <button id="handReplayNextButton" class="ui-button ui-button--secondary" type="button" disabled data-i18n="replay.control.next">Next</button>
-                    <button id="handReplayLiveButton" class="ui-button ui-button--primary replay-return-live-action" type="button" hidden disabled data-i18n="replay.control.returnToLive" data-tutorial-anchor="replay-return">Return to live</button>
-                  </div>
-                  <div id="replaySavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--replay"></div>
-                </div>
-                <p id="handReplayStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true">LIVE, Step 0 of 0</p>
-                <p id="handReplayReadOnlyNote" class="replay-readonly-note" hidden data-i18n="replay.readOnlyHelp">Read-only earlier state. Strategy and analysis remain tied to the live decision.</p>
-                <div class="replay-resolution-actions">
-                  <button id="handResolveShowdownButton" class="ui-button ui-button--primary" type="button" hidden data-i18n="Resolve showdown">Resolve showdown</button>
+                <div class="hand-current-actions">
+                  <button id="handResetButton" class="ui-button ui-button--danger-secondary" type="button" data-i18n="Abort hand" hidden>Abort hand</button>
                 </div>
               </section>
-              </details>
+
             </div>
           </section>
 
@@ -1312,11 +1281,6 @@
 
 
           </div>
-          <section id="handTimelineStage" class="hand-timeline-stage" data-playbook-hand hidden aria-labelledby="handTimelineStageTitle" data-tutorial-anchor="replay-timeline">
-            <h2 id="handTimelineStageTitle" class="sr-only" data-i18n="replay.title">Hand replay</h2>
-            <div id="handActionHistory" class="replay-timeline replay-timeline--compact" aria-label="Canonical hand timeline" data-i18n-aria-label="replay.a11y.timeline"></div>
-          </section>
-
           <section id="handLiveStageHeader" class="hand-live-stage-header" data-playbook-hand hidden aria-labelledby="handLiveStageTitle" data-tutorial-anchor="hand-live-stage">
             <div class="hand-live-stage-copy" role="status" aria-live="polite" aria-atomic="true">
               <span class="label" data-i18n="Current hand stage">Current hand stage</span>
@@ -1326,9 +1290,9 @@
             </div>
             <div class="hand-live-facts" aria-label="Current decision facts" data-i18n-aria-label="Current decision facts">
               <div><span data-i18n="Actor">Actor</span><strong id="handLiveActor">&mdash;</strong></div>
-              <div><span data-i18n="Pot">Pot</span><strong id="handLivePot">&mdash;</strong></div>
-              <div><span data-i18n="Facing">Facing</span><strong id="handLiveFacing">&mdash;</strong></div>
-              <div><span data-i18n="To call">To call</span><strong id="handLiveCall">&mdash;</strong></div>
+              <div><span data-i18n="Pot">Pot</span><strong id="handLivePot" class="poker-data-token">&mdash;</strong></div>
+              <div><span data-i18n="Facing">Facing</span><strong id="handLiveFacing" class="poker-data-token">&mdash;</strong></div>
+              <div><span data-i18n="To call">To call</span><strong id="handLiveCall" class="poker-data-token">&mdash;</strong></div>
             </div>
           </section>
 
@@ -1341,7 +1305,14 @@
             <div id="visual-table-container"></div>
           </div>
 
+          <aside id="handInteractionRail" class="hand-interaction-rail" data-playbook-hand hidden aria-label="Hand replay" data-i18n-aria-label="replay.title">
           <section id="handStageDock" class="hand-stage-dock" data-playbook-hand hidden data-tutorial-anchor="hand-action-controls">
+            <section id="handDealSection" class="hand-control-section hand-stage-step" aria-labelledby="handDealTitle" hidden>
+              <div class="hand-section-head"><div><strong id="handDealTitle" data-i18n="Set private cards">Set private cards</strong><small id="handDealHelp" data-i18n="Choose Hero's cards. Opponents remain hidden unless you set them explicitly.">Choose Hero's cards. Opponents remain hidden unless you set them explicitly.</small></div></div>
+              <div id="handPrivateCards" class="hand-private-cards"></div>
+              <button id="handDealHoleButton" class="ui-button ui-button--primary" type="button" data-i18n="Start betting">Start betting</button>
+            </section>
+
             <section id="handChanceSection" class="hand-control-section hand-stage-step" aria-labelledby="handChanceTitle" hidden>
               <div class="hand-section-head"><div><strong id="handChanceTitle" data-i18n="Deal board">Deal board</strong><small id="handChanceHelp" data-i18n="Choose the next legal board cards.">Choose the next legal board cards.</small></div></div>
               <div class="card-slots" data-slots="hand-board-chance"></div>
@@ -1351,9 +1322,9 @@
             <section id="handActionSection" class="hand-control-section hand-stage-step hand-action-dock" aria-labelledby="handActionTitle" hidden>
               <div class="hand-section-head"><div><strong id="handActionTitle" data-i18n="Current legal actions">Current legal actions</strong><small id="handActionActor">Waiting for a betting decision</small></div></div>
               <div class="hand-action-context" aria-label="Hero decision context" data-i18n-aria-label="Hero decision context">
-                <span><span data-i18n="Pot">Pot</span><strong id="handActionPot">&mdash;</strong></span>
-                <span><span data-i18n="To call">To call</span><strong id="handActionCall">&mdash;</strong></span>
-                <span><span data-i18n="Hero stack">Hero stack</span><strong id="handActionHeroStack">&mdash;</strong></span>
+                <span><span data-i18n="Pot">Pot</span><strong id="handActionPot" class="poker-data-token">&mdash;</strong></span>
+                <span><span data-i18n="To call">To call</span><strong id="handActionCall" class="poker-data-token">&mdash;</strong></span>
+                <span><span data-i18n="Hero stack">Hero stack</span><strong id="handActionHeroStack" class="poker-data-token">&mdash;</strong></span>
               </div>
               <div id="handLegalActions" class="hand-legal-actions" role="group" aria-label="Canonical legal actions" data-i18n-aria-label="Canonical legal actions"></div>
               <div id="handActionSizing" class="hand-action-sizing" hidden>
@@ -1363,8 +1334,8 @@
                   <button id="handSizingMaxPreset" class="ui-button ui-button--secondary" type="button" data-hand-sizing-preset="max" data-i18n="Maximum non-all-in">Maximum non-all-in</button>
                 </div>
                 <label class="hand-sizing-range"><span data-i18n="Exact amount-to range">Exact amount-to range</span><input id="handActionAmountRange" class="control-range" type="range" min="0" max="0" step="0.1" value="0"></label>
-                <label class="hand-custom-sizing"><span data-i18n="Custom amount-to">Custom amount-to</span><span class="input-with-unit"><input id="handActionAmountBb" class="control-input" type="number" step="0.1"><em>bb</em></span></label>
-                <small id="handActionAmountBounds"></small>
+                <label class="hand-custom-sizing"><span data-i18n="Custom amount-to">Custom amount-to</span><span class="input-with-unit poker-data-token"><input id="handActionAmountBb" class="control-input" type="number" step="0.1"><em>bb</em></span></label>
+                <small id="handActionAmountBounds" class="poker-data-token"></small>
                 <button id="handCommitSizedAction" class="ui-button ui-button--primary" type="button" hidden data-i18n="Apply amount-to">Apply amount-to</button>
               </div>
             </section>
@@ -1385,6 +1356,41 @@
               <p id="handCompletedAnalysisNote" class="panel-note" data-i18n="Analysis opens the latest recorded Hero decision and keeps this completed Hand available.">Analysis opens the latest recorded Hero decision and keeps this completed Hand available.</p>
             </section>
           </section>
+
+          <section id="handHistorySection" class="hand-control-section hand-replay-rail" aria-labelledby="handHistoryTitle" data-tutorial-anchor="hand-replay" hidden>
+            <div class="hand-section-head hand-replay-rail-heading">
+              <div><strong id="handHistoryTitle" data-i18n="Replay controls">Replay controls</strong><small data-i18n="Navigate the canonical timeline without changing the live hand.">Navigate the canonical timeline without changing the live hand.</small></div>
+            </div>
+            <div id="handReplayControls" class="replay-control-bar" data-replay-mode="empty" data-tutorial-anchor="replay-controls">
+              <div class="replay-state-summary">
+                <span id="handReplayModeBadge" class="badge replay-mode-badge" data-i18n="replay.status.live">LIVE</span>
+                <span id="handReplayProgress" class="replay-step-progress poker-data-token" dir="ltr">Step 0 of 0</span>
+                <span id="handReplayTransition" class="replay-transition-label" data-i18n="replay.marker.empty">No hand started</span>
+              </div>
+              <div class="replay-control-actions" role="group" aria-label="Replay controls" data-i18n-aria-label="replay.controls.label">
+                <button id="handReplayPlaybackButton" class="ui-button ui-button--primary replay-playback-button" type="button" aria-pressed="false" disabled data-i18n="replay.control.play">Play</button>
+                <button id="handReplayPreviousButton" class="ui-button ui-button--secondary" type="button" disabled data-i18n="replay.control.previous">Previous</button>
+                <button id="handReplayNextButton" class="ui-button ui-button--secondary" type="button" disabled data-i18n="replay.control.next">Next</button>
+                <button id="handReplayLiveButton" class="ui-button ui-button--primary replay-return-live-action" type="button" hidden disabled data-i18n="replay.control.returnToLive" data-tutorial-anchor="replay-return">Return to live</button>
+              </div>
+              <div id="replaySavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--replay"></div>
+            </div>
+            <p id="handReplayStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true">LIVE, Step 0 of 0</p>
+            <p id="handReplayReadOnlyNote" class="replay-readonly-note" hidden data-i18n="replay.readOnlyHelp">Read-only earlier state. Strategy and analysis remain tied to the live decision.</p>
+            <div class="replay-resolution-actions">
+              <button id="handResolveShowdownButton" class="ui-button ui-button--primary" type="button" hidden data-i18n="Resolve showdown">Resolve showdown</button>
+            </div>
+            <details id="handHistoryDisclosure" class="hand-history-disclosure" open>
+              <summary>
+                <span class="hand-history-summary-copy"><strong id="handTimelineStageTitle" data-i18n="Hand history">Hand history</strong><small id="handHistorySelectionSummary" data-i18n="No event selected">No event selected</small></span>
+                <span class="hand-history-summary-meta"><span id="handHistoryCompactSummary" class="poker-data-token">0</span><span id="handHistoryDisclosureAction" data-i18n="Collapse">Collapse</span></span>
+              </summary>
+              <section id="handTimelineStage" class="hand-timeline-stage" aria-labelledby="handTimelineStageTitle" data-tutorial-anchor="replay-timeline">
+                <div id="handActionHistory" class="replay-timeline replay-timeline--compact" aria-label="Canonical hand timeline" data-i18n-aria-label="replay.a11y.timeline"></div>
+              </section>
+            </details>
+          </section>
+          </aside>
 
           <div id="handReviewMount" class="hand-review-mount" data-playbook-hand>
             <section id="handReviewSurface" class="hand-review-surface" hidden aria-labelledby="handReviewTitle" data-tutorial-anchor="hand-review">
@@ -1484,6 +1490,7 @@
                   </div>
                 </article>
               </div>
+              <aside id="handReviewReplayRailMount" class="hand-review-replay-rail-mount" aria-label="Replay controls and hand history" data-i18n-aria-label="Replay controls and hand history"></aside>
             </section>
           </div>
 

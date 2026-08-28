@@ -180,8 +180,9 @@ test('replay cues share the bounded semantic motion scale and stay restrained', 
   assert.doesNotMatch(css.slice(css.indexOf('/* REPLAY-001C:')), /infinite|alternate|rotate|bounce/i);
 });
 
-test('one integrated seat/card unit supports deliberate geometry for every table size', () => {
-  assert.match(renderer, /data-card-anchor="integrated"/);
+test('one radial-felt seat/card unit supports deliberate geometry for every table size', () => {
+  assert.match(renderer, /data-card-lane="radial-felt"/);
+  assert.doesNotMatch(renderer, /table-seat-connector|table-card-cradle/);
   assert.match(renderer, /TABLE_FALLBACK_ANCHORS = Object\.freeze/);
   assert.match(renderer, /seatsLayer\.dataset\.tableSize = String\(activePlayers\)/);
   assert.match(renderer, /for \(let i = 0; i < activePlayers; i\+\+\)/);

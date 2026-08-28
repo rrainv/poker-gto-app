@@ -10,43 +10,22 @@ function tableMessage(key, fallback, values = {}) {
 }
 
 const TABLE_FALLBACK_ANCHORS = Object.freeze({
-  2: [[0.50, 0.91], [0.50, 0.09]],
-  3: [[0.50, 0.91], [0.18, 0.20], [0.82, 0.20]],
-  4: [[0.50, 0.91], [0.12, 0.48], [0.50, 0.09], [0.88, 0.48]],
-  5: [[0.50, 0.91], [0.16, 0.62], [0.22, 0.18], [0.78, 0.18], [0.84, 0.62]],
-  6: [[0.50, 0.91], [0.17, 0.66], [0.17, 0.23], [0.50, 0.09], [0.83, 0.23], [0.83, 0.66]],
-  7: [[0.50, 0.91], [0.22, 0.76], [0.10, 0.45], [0.24, 0.14], [0.76, 0.14], [0.90, 0.45], [0.78, 0.76]],
-  8: [[0.50, 0.91], [0.22, 0.76], [0.10, 0.47], [0.24, 0.15], [0.50, 0.07], [0.76, 0.15], [0.90, 0.47], [0.78, 0.76]],
-  9: [[0.50, 0.91], [0.25, 0.79], [0.09, 0.56], [0.12, 0.27], [0.34, 0.09], [0.66, 0.09], [0.88, 0.27], [0.91, 0.56], [0.75, 0.79]],
-  10: [[0.50, 0.91], [0.26, 0.80], [0.09, 0.59], [0.09, 0.33], [0.27, 0.13], [0.50, 0.06], [0.73, 0.13], [0.91, 0.33], [0.91, 0.59], [0.74, 0.80]],
+  2: [[0.50, 0.85], [0.50, 0.09]],
+  3: [[0.50, 0.85], [0.18, 0.20], [0.82, 0.20]],
+  4: [[0.50, 0.85], [0.12, 0.48], [0.50, 0.09], [0.88, 0.48]],
+  5: [[0.50, 0.85], [0.16, 0.62], [0.22, 0.18], [0.78, 0.18], [0.84, 0.62]],
+  6: [[0.50, 0.85], [0.17, 0.66], [0.17, 0.23], [0.50, 0.09], [0.83, 0.23], [0.83, 0.66]],
+  7: [[0.50, 0.84], [0.22, 0.76], [0.10, 0.45], [0.24, 0.14], [0.76, 0.14], [0.90, 0.45], [0.78, 0.76]],
+  8: [[0.50, 0.84], [0.22, 0.76], [0.10, 0.47], [0.24, 0.15], [0.50, 0.07], [0.76, 0.15], [0.90, 0.47], [0.78, 0.76]],
+  9: [[0.50, 0.84], [0.25, 0.79], [0.09, 0.56], [0.12, 0.27], [0.34, 0.09], [0.66, 0.09], [0.88, 0.27], [0.91, 0.56], [0.75, 0.79]],
+  10: [[0.50, 0.84], [0.26, 0.80], [0.09, 0.59], [0.09, 0.33], [0.27, 0.13], [0.50, 0.06], [0.73, 0.13], [0.91, 0.33], [0.91, 0.59], [0.74, 0.80]],
 });
 
 function tableContributionPoint({ centerX, centerY, seatX, seatY, radialFraction = 0.5 }) {
-  const idealX = seatX + ((centerX - seatX) * radialFraction);
-  const idealY = seatY + ((centerY - seatY) * radialFraction);
-  const rayX = centerX - seatX;
-  const rayY = centerY - seatY;
-  const rayLength = Math.hypot(rayX, rayY);
-  const unitX = rayLength ? rayX / rayLength : 0;
-  const unitY = rayLength ? rayY / rayLength : 0;
-  const intersectsHoleCards = (candidateX, candidateY) => (
-    candidateX + 38 >= seatX - 33
-    && candidateX - 38 <= seatX + 33
-    && candidateY + 10 >= seatY - 94
-    && candidateY - 10 <= seatY - 36
-  );
-
-  // Keep the ideal seat-to-pot ray. If it reaches the shared card box, move only
-  // as many SVG units inward on that same ray as are required to clear it.
-  for (let inwardCorrection = 0; inwardCorrection <= Math.ceil(rayLength); inwardCorrection += 1) {
-    const point = {
-      x: idealX + (unitX * inwardCorrection),
-      y: idealY + (unitY * inwardCorrection),
-    };
-    if (!intersectsHoleCards(point.x, point.y)) return point;
-  }
-
-  return { x: idealX, y: idealY };
+  return {
+    x: seatX + ((centerX - seatX) * radialFraction),
+    y: seatY + ((centerY - seatY) * radialFraction),
+  };
 }
 
 function tableSeatVector({ centerX, centerY, seatX, seatY, halfWidth, halfHeight }) {
@@ -59,6 +38,19 @@ function tableSeatVector({ centerX, centerY, seatX, seatY, halfWidth, halfHeight
     ((unitX / halfWidth) ** 2) + ((unitY / halfHeight) ** 2),
   );
   return { unitX, unitY, radialExtent };
+}
+
+function tableInsetRectEntryDistance({ seatX, seatY, unitX, unitY, bounds, inset }) {
+  const left = bounds.x + inset;
+  const right = bounds.x + bounds.width - inset;
+  const top = bounds.y + inset;
+  const bottom = bounds.y + bounds.height - inset;
+  const distances = [];
+  if (seatX < left && unitX > 0) distances.push((left - seatX) / unitX);
+  if (seatX > right && unitX < 0) distances.push((right - seatX) / unitX);
+  if (seatY < top && unitY > 0) distances.push((top - seatY) / unitY);
+  if (seatY > bottom && unitY < 0) distances.push((bottom - seatY) / unitY);
+  return distances.length ? Math.max(...distances) : 0;
 }
 
 class TableRenderer {
@@ -192,16 +184,29 @@ class TableRenderer {
       const seatVector = tableSeatVector({
         centerX, centerY, seatX: x, seatY: y, halfWidth, halfHeight,
       });
-      const connectorStart = seatVector.radialExtent - 10;
-      const connectorEnd = seatVector.radialExtent + 16;
+      const cardHalfWidth = (85 * cardScale) / 2;
       const cardHalfHeight = (57 * cardScale) / 2;
-      const cardCenterDistance = seatVector.radialExtent + cardHalfHeight - cardOverlapUnits;
+      const cardSeatGap = Math.max(12, Math.round(cardOverlapUnits * 0.30));
+      // Private cards occupy their own radial lane immediately inside the
+      // player unit. Contributions remain farther along the same ray toward
+      // the pot, so ownership reads spatially without a holder or connector.
+      const cardRadialExtent = (Math.abs(seatVector.unitX) * cardHalfWidth)
+        + (Math.abs(seatVector.unitY) * cardHalfHeight);
+      const feltBounds = presentation?.geometry?.tableBounds
+        || { x: 90, y: 98, width: 820, height: 416 };
+      const feltInset = presentation?.geometry?.physicality?.feltInset ?? 30;
+      const feltEntryDistance = tableInsetRectEntryDistance({
+        seatX: x, seatY: y, unitX: seatVector.unitX, unitY: seatVector.unitY,
+        bounds: feltBounds, inset: feltInset,
+      });
+      const cardCenterDistance = Math.max(
+        seatVector.radialExtent + cardRadialExtent + cardSeatGap,
+        feltEntryDistance + 1,
+      );
       const cardCenterX = Math.round(seatVector.unitX * cardCenterDistance);
       const cardCenterY = Math.round(seatVector.unitY * cardCenterDistance);
       const holeCardX = cardCenterX;
       const holeCardY = Math.round(cardCenterY - cardHalfHeight);
-      const cradleWidth = Math.round(88 * cardScale);
-      const cradleHeight = Math.round(62 * cardScale);
       const suppliedDealer = seatPresentation?.dealerAnchor;
       const dealerBaseX = suppliedDealer
         ? Math.round((suppliedDealer.x * 1000) - x)
@@ -209,20 +214,13 @@ class TableRenderer {
       const dealerBaseY = suppliedDealer
         ? Math.round((suppliedDealer.y * 650) - y)
         : Math.round(seatVector.unitY * (seatVector.radialExtent + 18));
-      const dealerTangentialOffset = (cradleWidth / 2) + 12;
+      const dealerTangentialOffset = Math.round((40 * cardScale) + 18);
       const dealerX = Math.round(dealerBaseX - (seatVector.unitY * dealerTangentialOffset));
       const dealerY = Math.round(dealerBaseY + (seatVector.unitX * dealerTangentialOffset));
       const actionY = Math.round(halfHeight + 12);
-      const contributionLaneStart = {
-        x: x + (seatVector.unitX * (seatVector.radialExtent + 4)),
-        y: y + (seatVector.unitY * (seatVector.radialExtent + 4)),
-      };
-
       seatsHtml += `
-        <g id="seat-${i}" class="table-seat table-player-unit${i === 0 ? ' is-hero' : ''}" data-seat-index="${i}" data-card-anchor="integrated" transform="translate(${x}, ${y})">
-          <path class="table-seat-connector" d="M${seatVector.unitX * connectorStart} ${seatVector.unitY * connectorStart} L${seatVector.unitX * connectorEnd} ${seatVector.unitY * connectorEnd}" aria-hidden="true" />
-          <rect class="table-card-cradle" x="${cardCenterX - (cradleWidth / 2)}" y="${cardCenterY - (cradleHeight / 2)}" width="${cradleWidth}" height="${cradleHeight}" rx="9" aria-hidden="true" />
-          <g id="hole-cards-${i}" class="table-hole-cards" style="--card-deal-from-x:${Math.round(seatVector.unitX * 24)}px; --card-deal-from-y:${Math.round(seatVector.unitY * 24)}px; --card-fold-to-x:${Math.round(seatVector.unitX * 38)}px; --card-fold-to-y:${Math.round(seatVector.unitY * 38)}px" transform="translate(${holeCardX}, ${holeCardY}) scale(${cardScale})" aria-hidden="true">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
+        <g id="seat-${i}" class="table-seat table-player-unit${i === 0 ? ' is-hero' : ''}" data-seat-index="${i}" data-card-lane="radial-felt" transform="translate(${x}, ${y})">
+          <g id="hole-cards-${i}" class="table-hole-cards" data-card-lane="radial-felt" style="--card-deal-from-x:${Math.round(seatVector.unitX * 24)}px; --card-deal-from-y:${Math.round(seatVector.unitY * 24)}px; --card-fold-to-x:${Math.round(seatVector.unitX * 38)}px; --card-fold-to-y:${Math.round(seatVector.unitY * 38)}px" transform="translate(${holeCardX}, ${holeCardY}) scale(${cardScale})" aria-hidden="true">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
           <g class="table-seat-info">
             <rect class="table-seat-base" x="${-halfWidth}" y="${-halfHeight + 4}" width="${unit.width}" height="${unit.height}" rx="12" aria-hidden="true" />
             <rect class="table-seat-surface" x="${-halfWidth}" y="${-halfHeight}" width="${unit.width}" height="${unit.height}" rx="12" aria-hidden="true" />
@@ -236,7 +234,7 @@ class TableRenderer {
             })}
             <text id="seat-status-${i}" class="table-seat-meta table-seat-status" x="0" y="${Math.round(halfHeight - 7)}" text-anchor="middle" hidden></text>
           </g>
-          <g id="dealer-${i}" class="table-dealer-button" data-anchor="seat-to-pot" transform="translate(${dealerX}, ${dealerY})" hidden>
+          <g id="dealer-${i}" class="table-dealer-button" data-anchor="table-felt-near-seat" transform="translate(${dealerX}, ${dealerY})" hidden>
             <circle r="12" aria-hidden="true" />
             <circle class="table-dealer-button-inner" r="8.5" aria-hidden="true" />
             <text id="dealer-txt-${i}" x="0" y="3.5" text-anchor="middle" aria-hidden="true">D</text>
@@ -248,9 +246,7 @@ class TableRenderer {
         </g>
       `;
       contributionsHtml += `
-        <g id="contribution-lane-${i}" class="table-contribution-lane" data-player-anchor="${i}" hidden>
-          <path class="table-contribution-lane-path table-contribution-lane-path--owner" d="M${contributionLaneStart.x} ${contributionLaneStart.y} L${contributionPoint.x} ${contributionPoint.y}" aria-hidden="true" />
-          <path class="table-contribution-lane-path table-contribution-lane-path--pot" d="M${contributionPoint.x} ${contributionPoint.y} L${centerX} ${centerY}" aria-hidden="true" />
+        <g id="contribution-lane-${i}" class="table-contribution-lane table-contribution-anchor" data-player-anchor="${i}" hidden>
           ${this.pokerTableAmountMarkup({
             id: `contribution-${i}`,
             className: 'table-contribution',

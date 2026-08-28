@@ -1918,7 +1918,8 @@ function bindSavedStudyObjectsUx() {
 function formatCanonicalBb(milliBb, digits = 1) {
   const value = Number(milliBb) / 1000;
   if (!Number.isFinite(value)) return '—';
-  return `${value.toFixed(digits).replace(/\.0$/, '')} bb`;
+  const amount = `${value.toFixed(digits).replace(/\.0$/, '')} bb`;
+  return document.documentElement.dir === 'rtl' ? `\u2066${amount}\u2069` : amount;
 }
 
 function canonicalPlayerLabel(player, heroPlayerId) {
@@ -1927,24 +1928,42 @@ function canonicalPlayerLabel(player, heroPlayerId) {
   return `${hero}${player.position || t('Seat {number}', { number: player.seat + 1 })}`;
 }
 
+function canonicalHandTableSizeValidation() {
+  const tableControl = $('#handTableSize');
+  const gameMode = selectedValue('#handGameMode') || 'home';
+  const minimum = gameMode === 'clubgg' ? 7 : 2;
+  const raw = String(tableControl?.value ?? '').trim();
+  const value = Number(raw);
+  const valid = raw !== '' && Number.isInteger(value) && value >= minimum && value <= 10;
+  return { valid, value, minimum, maximum: 10, gameMode };
+}
+
 function syncHandSeatSelectors() {
   const tableControl = $('#handTableSize');
   if (!tableControl) return;
-  const gameMode = selectedValue('#handGameMode') || 'home';
-  const minimum = gameMode === 'clubgg' ? 7 : 2;
-  const tableSize = Math.min(10, Math.max(minimum, Math.trunc(Number(tableControl.value) || minimum)));
+  const validation = canonicalHandTableSizeValidation();
+  const { gameMode, minimum } = validation;
   tableControl.min = String(minimum);
-  tableControl.value = String(tableSize);
+  tableControl.setAttribute('aria-invalid', String(!validation.valid));
+  const error = $('#handTableSizeError');
+  if (error) {
+    error.hidden = validation.valid;
+    error.textContent = gameMode === 'clubgg'
+      ? t('ClubGG currently supports 7 to 10 players. Enter a whole number in that range.')
+      : t('Hand tables support 2 to 10 players. Enter a whole number in that range.');
+  }
 
-  ['handButtonSeat', 'handHeroSeat'].forEach((id) => {
-    const select = $('#' + id);
-    if (!select) return;
-    const previous = Number(select.value);
-    select.innerHTML = Array.from({ length: tableSize }, (_, seat) => (
-      `<option value="${seat}">${t('Seat {number}', { number: seat + 1 })}</option>`
-    )).join('');
-    select.value = String(Number.isInteger(previous) && previous < tableSize ? previous : 0);
-  });
+  if (validation.valid) {
+    ['handButtonSeat', 'handHeroSeat'].forEach((id) => {
+      const select = $('#' + id);
+      if (!select) return;
+      const previous = Number(select.value);
+      select.innerHTML = Array.from({ length: validation.value }, (_, seat) => (
+        `<option value="${seat}">${t('Seat {number}', { number: seat + 1 })}</option>`
+      )).join('');
+      select.value = String(Number.isInteger(previous) && previous < validation.value ? previous : 0);
+    });
+  }
 
   const anteType = selectedValue('#handAnteType') || 'none';
   const ante = $('#handAnteBb');
@@ -1953,9 +1972,14 @@ function syncHandSeatSelectors() {
     if (anteType === 'none') ante.value = '0';
   }
   const preview = $('#handAccountingPreview');
-  if (preview) preview.textContent = gameMode === 'clubgg'
-    ? t('ClubGG · 0.1 bb per seated player · {total} bb total deduction', { total: (tableSize * 0.1).toFixed(1) })
-    : t('Home · no rake or forced deduction');
+  if (preview) preview.textContent = !validation.valid
+    ? t('Fix the player count before starting the hand.')
+    : gameMode === 'clubgg'
+      ? t('ClubGG · 0.1 bb per seated player · {total} bb total deduction', { total: (validation.value * 0.1).toFixed(1) })
+      : t('Home · no rake or forced deduction');
+  const start = $('#handStartButton');
+  if (start && !callPlaybookStateBridge('getState')) start.disabled = !validation.valid;
+  return validation;
 }
 
 function readCanonicalHandConfiguration() {
@@ -1989,7 +2013,12 @@ function startCanonicalPlaybookHand() {
     toast(t('End the current hand before changing its setup.'), 'warning');
     return null;
   }
-  syncHandSeatSelectors();
+  const tableSizeValidation = syncHandSeatSelectors();
+  if (!tableSizeValidation?.valid) {
+    toast(t('Enter a supported player count before starting the hand.'), 'warning');
+    $('#handTableSize')?.focus();
+    return null;
+  }
   if (app.handReview.source === 'canonical_hand') {
     closeActiveHandReview({ returnToEndpoint: false });
   }
@@ -2003,13 +2032,16 @@ function startCanonicalPlaybookHand() {
 
 function resetCanonicalPlaybookHand() {
   if (callPlaybookStateBridge('getState')
-    && !window.confirm(t('End the current hand and return to setup?'))) return null;
+    && !window.confirm(t('Abort this hand? Unsaved current live progress will be discarded. Saved hands and spots will not be changed.'))) return null;
   if (app.handReview.source === 'canonical_hand') {
     closeActiveHandReview({ returnToEndpoint: false });
   }
+  if (app.picker?.group?.startsWith('hand-')) closePicker({ restoreFocus: false });
   callPlaybookStateBridge('resetHand');
   resetCanonicalHandDraft();
   renderCanonicalHandWorkspace();
+  $('#handSetupDisclosure')?.setAttribute('open', '');
+  $('#handStartButton')?.focus();
   return null;
 }
 
@@ -2110,6 +2142,22 @@ function canonicalActionPresentation(type, option) {
   return { label, amount, accessibleLabel: amount ? `${label}, ${amount}` : label };
 }
 
+function syncCanonicalSizedActionCommitState() {
+  const input = $('#handActionAmountBb');
+  const commit = $('#handCommitSizedAction');
+  if (!input || !commit) return false;
+  const value = Number(input.value);
+  const minimum = Number(input.min);
+  const maximum = Number(input.max);
+  const step = Number(input.step) || 0.1;
+  const aligned = Number.isFinite(value)
+    && Math.abs(((value - minimum) / step) - Math.round((value - minimum) / step)) < 1e-7;
+  const valid = Number.isFinite(value) && value >= minimum && value <= maximum && aligned;
+  input.setAttribute('aria-invalid', String(!valid));
+  commit.disabled = app.playbookHandDraft.actionSubmissionLocked || !valid;
+  return valid;
+}
+
 function chooseCanonicalSizedAction(type, option) {
   if (app.playbookHandDraft.actionSubmissionLocked) return;
   app.playbookHandDraft.sizedAction = type;
@@ -2123,11 +2171,13 @@ function chooseCanonicalSizedAction(type, option) {
   const max = Number(option.maxToMilliBb) / 1000;
   const step = Number(callPlaybookStateBridge('getState')?.game?.chipUnitMilliBb || 100) / 1000;
   sizing.hidden = false;
+  input.disabled = false;
   input.min = String(min);
   input.max = String(max);
   input.step = String(step);
   input.value = String(min);
   if (range) {
+    range.disabled = false;
     range.min = String(min);
     range.max = String(max);
     range.step = String(step);
@@ -2137,20 +2187,26 @@ function chooseCanonicalSizedAction(type, option) {
   const minimumPreset = $('#handSizingMinPreset');
   const maximumPreset = $('#handSizingMaxPreset');
   if (minimumPreset) {
+    minimumPreset.disabled = false;
     minimumPreset.dataset.amountToBb = String(min);
     minimumPreset.textContent = `${t('Minimum')} · ${formatCanonicalBb(option.minToMilliBb)}`;
   }
   if (maximumPreset) {
+    maximumPreset.disabled = false;
     maximumPreset.dataset.amountToBb = String(max);
     maximumPreset.textContent = `${t('Maximum non-all-in')} · ${formatCanonicalBb(option.maxToMilliBb)}`;
     maximumPreset.hidden = max === min;
   }
   if (label) label.textContent = t(type === 'bet' ? 'Bet to' : 'Raise to');
   if (bounds) bounds.textContent = t('{min}–{max} bb · amount-to', { min, max });
-  if ($('#handCommitSizedAction')) $('#handCommitSizedAction').hidden = false;
+  if ($('#handCommitSizedAction')) {
+    $('#handCommitSizedAction').hidden = false;
+    $('#handCommitSizedAction').disabled = false;
+  }
   $$('#handLegalActions [data-canonical-action]').forEach((button) => {
     button.setAttribute('aria-pressed', String(button.dataset.canonicalAction === type));
   });
+  syncCanonicalSizedActionCommitState();
 }
 
 function applyCanonicalHandAction(type, amountToBb = null) {
@@ -2178,6 +2234,9 @@ function applyCanonicalHandAction(type, amountToBb = null) {
 function commitCanonicalSizedAction() {
   const type = app.playbookHandDraft.sizedAction;
   if (!type) return toast(t('Choose Bet or Raise first.'), 'warning');
+  if (!syncCanonicalSizedActionCommitState()) {
+    return toast(t('Enter an amount within the canonical legal range.'), 'warning');
+  }
   return applyCanonicalHandAction(type, Number(selectedValue('#handActionAmountBb')));
 }
 
@@ -2351,14 +2410,18 @@ function renderCanonicalHandSetupState(state, stage, replayProjection) {
   const start = $('#handStartButton');
   if (start) {
     start.hidden = immutable;
-    start.disabled = immutable;
+    start.disabled = immutable || !canonicalHandTableSizeValidation().valid;
   }
   const reset = $('#handResetButton');
   if (reset) {
-    reset.hidden = !state || savedViewer;
-    reset.disabled = !state || savedViewer;
-    reset.textContent = t('End hand');
-    reset.dataset.i18n = 'End hand';
+    const abortable = Boolean(state
+      && !savedViewer
+      && state.phase !== 'terminal'
+      && state.terminal?.isTerminal !== true);
+    reset.hidden = !abortable;
+    reset.disabled = !abortable;
+    reset.textContent = t('Abort hand');
+    reset.dataset.i18n = 'Abort hand';
   }
 }
 
@@ -2376,7 +2439,7 @@ function renderCanonicalHandStage(state, legalActions, replayProjection) {
 
   renderCanonicalHandSetupState(state, stage, replayProjection);
   if ($('#handStateSection')) $('#handStateSection').hidden = !state;
-  if ($('#handHistoryDisclosure')) $('#handHistoryDisclosure').hidden = !state;
+  if ($('#handHistorySection')) $('#handHistorySection').hidden = !state;
   if (timelineStage) {
     timelineStage.hidden = !state;
     timelineStage.dataset.timelineMode = replayProjection?.readOnly || terminal ? 'review' : 'compact';
@@ -2430,9 +2493,16 @@ function renderCanonicalHandStage(state, legalActions, replayProjection) {
     : '—';
 
   const historyCount = replayProjection?.timeline?.entryCount || 0;
-  if ($('#handHistoryCompactSummary')) $('#handHistoryCompactSummary').textContent = historyCount > 0
-    ? t('{count} canonical actions', { count: historyCount })
-    : t('History and replay controls');
+  if ($('#handHistoryCompactSummary')) $('#handHistoryCompactSummary').textContent = t('{count} actions', {
+    count: historyCount
+  });
+  const historyDisclosure = $('#handHistoryDisclosure');
+  const historyDisclosureAction = $('#handHistoryDisclosureAction');
+  if (historyDisclosureAction) {
+    const key = historyDisclosure?.open === false ? 'Expand' : 'Collapse';
+    historyDisclosureAction.textContent = t(key);
+    historyDisclosureAction.dataset.i18n = key;
+  }
 
   const completed = $('#handCompletedSection');
   if (completed) completed.hidden = !terminal || replayProjection?.readOnly === true;
@@ -2814,6 +2884,12 @@ function renderCanonicalReplayTimeline() {
   const projection = callPlaybookStateBridge('createReplayProjectionViewModel');
   const model = projection?.timeline;
   if (!model || projection?.schemaVersion !== 'replay-projection/v1') return;
+  const priorStreetDisclosure = new Map(
+    [...root.querySelectorAll('.replay-street-group')].map((group) => [
+      group.dataset.replayStreet,
+      group.open,
+    ]),
+  );
   root.replaceChildren();
   root.dataset.replayState = model.status;
   root.dataset.replayMode = projection.mode;
@@ -2834,15 +2910,29 @@ function renderCanonicalReplayTimeline() {
   let markerAttached = false;
 
   for (const group of model.groups) {
-    const section = document.createElement('section');
+    const section = document.createElement('details');
     section.className = `replay-street-group${group.isSelectedStreet ? ' is-current-street' : ''}`;
     section.dataset.replayStreet = group.street;
+    section.dataset.replayGroupState = group.isSelectedStreet
+      ? 'current'
+      : group.items.every((item) => item.presentationState === 'completed')
+        ? 'completed'
+        : 'future';
+    section.open = group.isSelectedStreet || priorStreetDisclosure.get(group.street) === true;
 
-    const heading = document.createElement('h3');
+    const summary = document.createElement('summary');
+    summary.className = 'replay-street-summary';
+    const heading = document.createElement('span');
     heading.className = 'replay-street-heading';
     heading.id = `replay-street-${group.street}`;
     heading.textContent = t(group.headingKey);
-    section.appendChild(heading);
+    summary.appendChild(heading);
+    const itemCount = document.createElement('span');
+    itemCount.className = 'replay-street-count poker-data-token';
+    itemCount.textContent = String(group.items.length);
+    itemCount.setAttribute('aria-hidden', 'true');
+    summary.appendChild(itemCount);
+    section.appendChild(summary);
 
     if (group.items.length > 0) {
       appendReplayTimelineItems(section, heading, group.items);
@@ -2858,6 +2948,22 @@ function renderCanonicalReplayTimeline() {
       markerAttached = true;
     }
     root.appendChild(section);
+  }
+  const historyCount = $('#handHistoryCompactSummary');
+  if (historyCount) historyCount.textContent = t('{count} actions', { count: model.entryCount });
+  const selectedSummary = $('#handHistorySelectionSummary');
+  if (selectedSummary) {
+    if (model.selectedAction) {
+      const amount = model.selectedAction.amountKind !== 'none'
+        && Number.isSafeInteger(model.selectedAction.amountMilliBb)
+        ? ` · ${formatCanonicalBb(model.selectedAction.amountMilliBb)}`
+        : '';
+      selectedSummary.textContent = `${replayActorLabel(model.selectedAction)} · ${t(model.selectedAction.actionLabelKey)}${amount}`;
+    } else if (model.selectedTransition) {
+      selectedSummary.textContent = t(model.selectedTransition.labelKey);
+    } else {
+      selectedSummary.textContent = replayMarkerLabel(model.currentMarker);
+    }
   }
 
   if (model.showCurrentMarker && !markerAttached) {
@@ -2965,7 +3071,9 @@ function renderCanonicalHandWorkspace() {
     badge.className = `badge status-badge status-badge--${status.tone}`;
   }
   if ($('#handStateSummary')) $('#handStateSummary').textContent = status.summary;
-  if ($('#handStateStreet')) $('#handStateStreet').textContent = state?.street || '—';
+  if ($('#handStateStreet')) $('#handStateStreet').textContent = state?.street
+    ? t(`replay.street.${state.street}`)
+    : '—';
   const actor = state?.players?.find((player) => player.playerId === state.actingPlayerId);
   if ($('#handStateActor')) $('#handStateActor').textContent = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '—';
   if ($('#handStatePot')) $('#handStatePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '—';
@@ -3104,6 +3212,16 @@ function mountActiveHandReview() {
     ? $('#trainingHandReviewMount')
     : $('#handReviewMount');
   if (!surface || !mount) return null;
+  const history = $('#handHistorySection');
+  const reviewRail = $('#handReviewReplayRailMount');
+  const liveRail = $('#handInteractionRail');
+  const handMode = app.handReview.source === 'canonical_hand';
+  if (handMode && history && reviewRail && history.parentElement !== reviewRail) {
+    reviewRail.appendChild(history);
+  } else if (!handMode && history && liveRail && history.parentElement !== liveRail) {
+    liveRail.appendChild(history);
+  }
+  $('#gtoMode')?.classList.toggle('is-hand-review-open', handMode);
   if (surface.parentElement !== mount) mount.appendChild(surface);
   surface.hidden = false;
   surface.dataset.reviewSource = app.handReview.source;
@@ -3118,6 +3236,10 @@ function closeActiveHandReview({ returnToEndpoint = true } = {}) {
   app.handReview.model = null;
   const surface = $('#handReviewSurface');
   if (surface) surface.hidden = true;
+  $('#gtoMode')?.classList.remove('is-hand-review-open');
+  const history = $('#handHistorySection');
+  const liveRail = $('#handInteractionRail');
+  if (history && liveRail && history.parentElement !== liveRail) liveRail.appendChild(history);
   if (priorSource === 'training_full_hand') {
     setFullHandTrainingPhase('complete');
     dispatchFullHandTrainingTable(app.training.fullHandSnapshot);
@@ -3618,8 +3740,6 @@ function bindHandReviewWorkspace() {
 }
 
 function revealCanonicalHandHistory({ replay = false } = {}) {
-  const disclosure = $('#handHistoryDisclosure');
-  if (disclosure) disclosure.open = true;
   if (replay) callPlaybookStateBridge('startReplayPlayback');
   const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   $('#handHistorySection')?.scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'nearest' });
@@ -3695,6 +3815,14 @@ function bindCanonicalHandWorkspace() {
   });
   if ($('#handStartButton')) $('#handStartButton').addEventListener('click', startCanonicalPlaybookHand);
   if ($('#handResetButton')) $('#handResetButton').addEventListener('click', resetCanonicalPlaybookHand);
+  $('#handHistoryDisclosure')?.addEventListener('toggle', (event) => {
+    const key = event.currentTarget.open ? 'Collapse' : 'Expand';
+    const action = $('#handHistoryDisclosureAction');
+    if (action) {
+      action.textContent = t(key);
+      action.dataset.i18n = key;
+    }
+  });
   ['handSizingMinPreset', 'handSizingMaxPreset'].forEach((id) => {
     $('#' + id)?.addEventListener('click', (event) => {
       const value = Number(event.currentTarget.dataset.amountToBb);
@@ -3702,11 +3830,13 @@ function bindCanonicalHandWorkspace() {
       if (!input || !Number.isFinite(value)) return;
       input.value = String(value);
       if ($('#handActionAmountRange')) $('#handActionAmountRange').value = String(value);
+      syncCanonicalSizedActionCommitState();
       $('#handCommitSizedAction')?.focus();
     });
   });
   $('#handActionAmountRange')?.addEventListener('input', (event) => {
     if ($('#handActionAmountBb')) $('#handActionAmountBb').value = event.currentTarget.value;
+    syncCanonicalSizedActionCommitState();
   });
   $('#handActionAmountBb')?.addEventListener('input', (event) => {
     const range = $('#handActionAmountRange');
@@ -3714,6 +3844,7 @@ function bindCanonicalHandWorkspace() {
     if (range && Number.isFinite(value)) {
       range.value = String(Math.min(Number(range.max), Math.max(Number(range.min), value)));
     }
+    syncCanonicalSizedActionCommitState();
   });
   $('#handActionAmountBb')?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') commitCanonicalSizedAction();

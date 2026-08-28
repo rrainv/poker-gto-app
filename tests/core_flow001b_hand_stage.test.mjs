@@ -83,25 +83,29 @@ function createHandBridge(id = 'core-flow-hand') {
   return { bridge, controller, initial, browserWindow };
 }
 
-test('setup and private cards stay in the Hand rail while table actions use the main stage', () => {
+test('setup stays compact while private cards and actions share the table-adjacent Hand rail', () => {
   const setupStart = HTML.indexOf('id="handSetupDisclosure"');
   const railStart = HTML.indexOf('class="side-stack playbook-context-rail"');
   const railEnd = HTML.indexOf('</aside>', railStart);
   const privateCardsStart = HTML.indexOf('id="handDealSection"');
   const tableStart = HTML.indexOf('id="table-wrapper"');
+  const interactionStart = HTML.indexOf('id="handInteractionRail"');
   const dockStart = HTML.indexOf('id="handStageDock"');
   const actionStart = HTML.indexOf('id="handActionSection"');
   assert.ok(railStart >= 0 && setupStart > railStart);
-  assert.ok(privateCardsStart > setupStart && privateCardsStart < railEnd);
-  assert.ok(tableStart > railEnd && dockStart > tableStart && actionStart > dockStart);
+  assert.ok(tableStart > railEnd && interactionStart > tableStart);
+  assert.ok(dockStart > interactionStart && privateCardsStart > dockStart && actionStart > privateCardsStart);
   assert.equal((HTML.match(/id="handSetupDisclosure"/g) || []).length, 1);
   assert.equal((HTML.match(/id="handDealSection"/g) || []).length, 1);
   assert.equal((HTML.match(/id="handActionSection"/g) || []).length, 1);
   assert.match(HTML, /id="handSetupDisclosure"[^>]*open/);
-  assert.match(HTML, /id="handHistoryDisclosure"/);
+  assert.match(HTML, /id="handHistoryDisclosure"[^>]*open/);
+  assert.match(HTML, /id="handHistorySelectionSummary"/);
+  assert.match(HTML, /id="handHistoryDisclosureAction"/);
+  assert.match(HTML, /id="handHistorySection"[^>]*hand-replay-rail/);
   assert.match(HTML, /id="handLiveStageHeader"[^>]*data-playbook-hand/);
   assert.match(HTML, /id="handStageDock"[^>]*data-playbook-hand[^>]*data-tutorial-anchor="hand-action-controls"/);
-  assert.doesNotMatch(
+  assert.match(
     sourceBetween(HTML, 'id="handStageDock"', 'id="playbookAnalysisNavigation"'),
     /id="handDealSection"/,
   );
