@@ -18,13 +18,50 @@ Do not continue unrelated work in a chat simply because it has repository contex
 
 ## 3. Agent lifecycle
 
-Default implementation ticket:
+Classify the current run before choosing verification. The default is a normal bounded ticket; a correction remains part of that ticket, and release-style gates wait for an accepted checkpoint or audit.
+
+### Fast iteration / human correction
+
+Use while developing a bounded change or repairing a concept the product owner rejected:
+
+- run focused affected tests only
+- run `node --check` for changed JavaScript/MJS modules
+- run `git diff --check`
+- use targeted browser inspection only when it is useful to the correction
+- do not run the full Node suite
+- do not run the solver suite unless the changed behavior directly involves the solver
+- do not repeat an exhaustive locale/theme/viewport matrix
+- do not broadly reconcile planning documents
+
+A correction prompt repairs the rejected concept. It does not silently become a second backlog ticket.
+
+### Normal bounded ticket
+
+Use for the complete implementation and review loop of one approved outcome:
+
+- inspect the canonical path, implement only approved scope, and add or update focused tests
+- run focused affected tests, syntax checks for changed JavaScript/MJS, and diff hygiene
+- for UI tickets, inspect the primary browser state
+- update only documentation whose truth actually changed
+- obtain product-owner hands-on acceptance before treating the result as a checkpoint
+
+### Accepted checkpoint / audit
+
+Use after human acceptance when checkpointing the result, or when the ticket explicitly owns an audit:
+
+- run the full Node suite
+- run the solver suite only when domain, solver, or strategy changes make it relevant, or checkpoint policy explicitly requires it
+- run a broader browser matrix when risk or checkpoint policy justifies it
+- reconcile all affected documentation under `../project/DOCUMENTATION_GOVERNANCE.md`
+- leave staging and committing to the human
+
+The implementation loop is:
 
 1. inspect current code, tests, and named documents
 2. confirm the canonical path
 3. implement only approved scope
 4. add/update focused tests
-5. run focused and full verification
+5. verify at the applicable execution level
 6. report clearly
 7. stop
 
@@ -62,20 +99,23 @@ Documentation movement follows `../project/DOCUMENTATION_GOVERNANCE.md`: a tiny 
 
 ## 5. Tests
 
-Run the smallest relevant suite while developing, then the required full gate before reporting.
+Verification follows the execution level in section 3. Ordinary iterations and normal bounded reports do not require the full gate.
 
-Default full gate:
+Accepted checkpoint/audit full gate:
 
 ```powershell
 node --test tests/*.test.js tests/*.test.mjs
-$env:PYTHONPATH='solver;.'
-python -B -m unittest discover -s tests/solver -p 'test_*.py'
-node --check app/src/core/logic.js
-node --check app/main.js
 git diff --check -- app shared solver tests docs README.md
 ```
 
-Syntax-check every new or modified module.
+Add the solver suite only when the checkpoint changed domain, solver, or strategy code, or its policy explicitly requires solver verification:
+
+```powershell
+$env:PYTHONPATH='solver;.'
+python -B -m unittest discover -s tests/solver -p 'test_*.py'
+```
+
+During fast and normal work, syntax-check each changed JavaScript/MJS module rather than a fixed global list. Focused tests should cover the affected behavior and relevant invariants.
 
 Ticket prompts may add focused gates. Do not silently skip a required command. If unavailable, report why.
 
@@ -85,10 +125,12 @@ Automated structural tests do not prove visual correctness.
 
 For UI work:
 
-- run browser inspection when available
-- test requested viewports/themes/languages/states
+- inspect the primary browser state for a normal bounded ticket when available
+- expand to additional viewports/themes/languages/states only when requested or justified by checkpoint risk
 - if unavailable, mark visual findings `UNVERIFIED`, `PARTIAL`, or `STRUCTURAL ONLY`
 - never report a visual QA item closed solely because CSS source tests passed
+
+The product owner's hands-on QA is the subjective acceptance gate. If the product owner was explicitly asked to check several items and later reports only failures, treat the unmentioned requested checks as passed. Do not ask for those checks again unless subsequent code changes create a credible regression risk.
 
 For mathematical work, prefer invariant/property tests over arbitrary exact snapshots.
 
@@ -105,28 +147,39 @@ Stop and report before proceeding if:
 
 Small implementation details needed to satisfy the explicit goal do not require a new approval.
 
+A newly discovered issue joins the current ticket only when the ticket caused it or it blocks acceptance of the ticket's intended user job. Otherwise record or route it to the appropriate owner under documentation governance and continue the bounded ticket.
+
 ## 8. Completion report
 
-Always return:
+Normal reports are concise and include:
 
 1. outcome
-2. root cause or before/after architecture where relevant
+2. important root cause or design choice, when relevant
 3. files changed
-4. behavior preserved
-5. tests added/updated
-6. focused results
-7. full Node/Python/static results
-8. browser/manual result or explicit absence
-9. QA/product IDs closed, partial, deferred, or regressed
-10. known limitations
-11. diff stat and Git status
-12. confirmation that nothing was staged or committed
+4. focused verification
+5. browser/manual verification, when applicable
+6. known or deferred issues
+7. Git status and confirmation that nothing was staged or committed
+
+An accepted checkpoint or audit report also records its broader gates and coordinated documentation result. Ordinary tickets do not require a release-style 20-30 item certification report.
 
 Do not start the next ticket in the report.
 
-## 9. Prompt efficiency
+## 9. Multi-agent work
 
-Ticket prompts should reference these documents instead of repeating them:
+One writer/integrator owns the working tree by default and reviews the final diff.
+
+Use parallel subagents primarily for read-only repository reconnaissance, browser/current-state inspection, test and edge-case analysis, documentation/authority consistency review, or requested competitor/research analysis.
+
+Parallel writes are allowed only when file ownership is explicitly disjoint or agents use isolated Git worktrees/branches. Never let multiple agents mutate overlapping files in the same working tree. Do not run competing heavy test or browser jobs in parallel on the same working tree or machine when resource or timing noise is credible.
+
+## 10. Model and reasoning economy
+
+Match reasoning depth to risk. Architecture, poker correctness, persistence, migrations, strategy authority, and audits warrant deeper reasoning. Bounded UI, CSS, i18n, and mechanical work do not require maximum reasoning by default. Repository policy should express this principle without depending on product-specific model names.
+
+## 11. Prompt efficiency
+
+Repository documents own durable invariants. Ticket prompts should name only the few invariants specifically at risk and reference these authorities instead of restating the architecture:
 
 - architecture: `AGENT_MASTER_CONTEXT.md`, `../project/ARCHITECTURE_CONTRACT.md`
 - workflow: this file
