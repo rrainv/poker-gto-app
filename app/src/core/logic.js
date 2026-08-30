@@ -6723,6 +6723,9 @@ function bindSliderPair(rangeId, numberId, callback) {
 }
 
 let homeViewModel = null;
+let homeSavedExpandedId = null;
+let homeSavedCategory = 'all';
+let homeSavedQuickPreviewOwner = null;
 let homeRefreshSequence = 0;
 let homeRefreshTimer = null;
 let activeSavedSpotContext = null;
@@ -6785,7 +6788,7 @@ function resolveHomeDestinationPresentation(destination, {
   const visibleSections = normalizedDestination === 'saved'
     ? guest
       ? ['guest']
-      : ['saved-overview', 'recent', 'review']
+      : ['saved-overview', 'recent']
     : guest
       ? ['guest', 'continue', 'strategy', 'quick', 'other']
       : ['overview', 'continue', 'review', 'recent', 'strategy', 'quick', 'other'];
@@ -6844,6 +6847,10 @@ function applyHomeDestinationPresentation(destination = activeNavigationDestinat
   Object.entries(sections).forEach(([key, section]) => {
     if (section) section.hidden = !visible.has(key);
   });
+
+  setTranslatedElement($('#homeRecentEyebrow'), state.destination === 'saved' ? 'Saved study objects' : 'Your latest saved study items');
+  setTranslatedElement($('#homeRecentTitle'), state.destination === 'saved' ? 'Library' : 'Recent');
+  if (state.destination !== 'saved') hideSavedQuickPreview();
 
   setTranslatedElement($('#homeGuestAccountEyebrow'), state.guestCopy.eyebrow);
   setTranslatedElement($('#homeGuestAccountTitle'), state.guestCopy.title);
@@ -6972,7 +6979,11 @@ function homeRecency(isoTimestamp) {
 
 function homeSavedItemTitle(item) {
   if (item.title) return item.title;
-  const kind = item.kind === 'hand' ? t('Saved Hand') : t('Saved Spot');
+  const kind = item.kind === 'hand'
+    ? t('Saved Hand')
+    : item.kind === 'spot'
+      ? t('Saved Spot')
+      : t('Saved item');
   const facts = [item.heroPosition, item.street && t(item.street[0].toUpperCase() + item.street.slice(1))]
     .filter(Boolean);
   return facts.length ? `${kind} · ${facts.join(' · ')}` : kind;
@@ -6989,7 +7000,7 @@ function homeSavedItemFacts(item) {
     facts.push(item.derivation === 'scenario' ? t('Scenario') : t('Hand-derived'));
   }
   const recency = homeRecency(item.updatedAt);
-  if (recency) facts.push(recency);
+  if (recency) facts.push(`${t('Updated')} ${recency}`);
   return facts;
 }
 
@@ -7059,6 +7070,343 @@ function createHomeSavedItemElement(item, { compact = false } = {}) {
   return row;
 }
 
+function createSavedPreviewCard(card, label, size = 'mini') {
+  const element = document.createElement('span');
+  element.className = 'saved-preview-card riverline-card';
+  element.dataset.cardSize = size;
+  element.setAttribute('role', 'img');
+  element.setAttribute('aria-label', card || t(label));
+  const match = typeof card === 'string' ? /^([2-9TJQKA])([cdhs])$/u.exec(card) : null;
+  if (!match) {
+    element.className = 'saved-preview-card saved-preview-card--unknown riverline-card-back';
+    return element;
+  }
+  const presentation = window.RiverlineCardPresentation;
+  if (presentation?.appendCardFaceContents) {
+    presentation.appendCardFaceContents(element, {
+      rank: match[1],
+      suit: match[2],
+      rankStyle: document.documentElement.dataset.cardRankStyle || 'poker',
+    });
+  } else {
+    element.textContent = card;
+  }
+  return element;
+}
+
+function createSavedPokerPreview(item, { variant = 'compact' } = {}) {
+  const preview = document.createElement('span');
+  preview.className = `saved-poker-preview saved-poker-preview--${variant}`;
+  preview.dataset.savedPreviewKind = item.kind;
+  preview.dataset.savedPreviewDerivation = item.derivation;
+  preview.setAttribute('aria-label', t('Stored poker preview'));
+  const cardSize = variant === 'detail' ? 'compact' : variant === 'quick' ? 'result' : 'mini';
+
+  const hero = document.createElement('span');
+  hero.className = 'saved-preview-group saved-preview-group--hero';
+  const heroLabel = document.createElement('span');
+  heroLabel.textContent = t('Hero');
+  const heroCards = document.createElement('span');
+  heroCards.className = 'saved-preview-cards';
+  const knownHeroCards = Array.isArray(item.heroCards) ? item.heroCards : [];
+  for (let index = 0; index < 2; index += 1) {
+    heroCards.appendChild(createSavedPreviewCard(knownHeroCards[index] || null, 'Unknown card', cardSize));
+  }
+  hero.append(heroLabel, heroCards);
+
+  const board = document.createElement('span');
+  board.className = 'saved-preview-group saved-preview-group--board';
+  const boardLabel = document.createElement('span');
+  boardLabel.textContent = t('Board');
+  const boardCards = document.createElement('span');
+  boardCards.className = 'saved-preview-cards';
+  (Array.isArray(item.board) ? item.board : []).forEach((card) => {
+    boardCards.appendChild(createSavedPreviewCard(card, 'Unknown card', cardSize));
+  });
+  if (boardCards.childElementCount === 0) {
+    const emptyBoard = document.createElement('span');
+    emptyBoard.className = 'saved-preview-empty-board';
+    emptyBoard.textContent = t('No board cards');
+    boardCards.appendChild(emptyBoard);
+  }
+  board.append(boardLabel, boardCards);
+  preview.append(hero, board);
+  return preview;
+}
+
+function savedLibraryCategoryModel(items, selectedCategory = homeSavedCategory) {
+  const source = Array.isArray(items) ? items : [];
+  const selected = ['all', 'hands', 'spots'].includes(selectedCategory) ? selectedCategory : 'all';
+  const hands = source.filter((item) => item.kind === 'hand');
+  const spots = source.filter((item) => item.kind === 'spot');
+  return Object.freeze({
+    selected,
+    counts: Object.freeze({ all: source.length, hands: hands.length, spots: spots.length }),
+    items: Object.freeze(selected === 'hands' ? hands : selected === 'spots' ? spots : [...source]),
+  });
+}
+
+function renderSavedLibraryCategories(model) {
+  const categories = $('#savedLibraryCategories');
+  if (!categories) return;
+  categories.setAttribute('aria-label', t('Saved categories'));
+  categories.querySelectorAll('[data-saved-category]').forEach((control) => {
+    const category = control.dataset.savedCategory;
+    control.setAttribute('aria-pressed', String(category === model.selected));
+    const labelKey = category === 'hands' ? 'Hands' : category === 'spots' ? 'Spots' : 'All';
+    setTranslatedElement(control.querySelector('span'), labelKey);
+    const count = control.querySelector('[data-saved-category-count]');
+    if (count) count.textContent = String(model.counts[category] ?? 0);
+  });
+}
+
+function createSavedCategoryEmptyState(category) {
+  const empty = document.createElement('div');
+  empty.className = 'home-empty-state saved-library-category-empty';
+  const title = document.createElement('strong');
+  const copy = document.createElement('p');
+  if (category === 'hands') {
+    title.textContent = t('No saved Hands yet.');
+    copy.textContent = t('Save a Hand from Hand or Review to keep it for later study.');
+  } else {
+    title.textContent = t('No saved Spots yet.');
+    copy.textContent = t('Save a Spot from Analyze or Review to keep it for later study.');
+  }
+  empty.append(title, copy);
+  return empty;
+}
+
+function hideSavedQuickPreview() {
+  const overlay = $('#savedQuickPreviewOverlay');
+  const wasVisible = Boolean(overlay && !overlay.hidden);
+  homeSavedQuickPreviewOwner = null;
+  if (overlay) {
+    overlay.hidden = true;
+    overlay.replaceChildren();
+    overlay.removeAttribute('data-placement');
+  }
+  return wasVisible;
+}
+
+function positionSavedQuickPreview(owner, overlay) {
+  const margin = 12;
+  const gap = 8;
+  const ownerRect = owner.getBoundingClientRect();
+  overlay.style.maxWidth = `${Math.max(0, window.innerWidth - (margin * 2))}px`;
+  const overlayRect = overlay.getBoundingClientRect();
+  const preferredX = document.documentElement.dir === 'rtl'
+    ? ownerRect.right - overlayRect.width
+    : ownerRect.left;
+  const left = Math.min(
+    Math.max(margin, preferredX),
+    Math.max(margin, window.innerWidth - overlayRect.width - margin),
+  );
+  const below = ownerRect.bottom + gap;
+  const above = ownerRect.top - overlayRect.height - gap;
+  const useAbove = below + overlayRect.height > window.innerHeight - margin && above >= margin;
+  const top = useAbove
+    ? above
+    : Math.min(Math.max(margin, below), Math.max(margin, window.innerHeight - overlayRect.height - margin));
+  overlay.style.left = `${Math.round(left)}px`;
+  overlay.style.top = `${Math.round(top)}px`;
+  overlay.dataset.placement = useAbove ? 'above' : 'below';
+  overlay.style.visibility = 'visible';
+}
+
+function showSavedQuickPreview(owner) {
+  const id = owner?.dataset.savedSelectId;
+  const item = (homeViewModel?.sections?.recent?.items || []).find((candidate) => candidate.id === id);
+  if (!item || (item.kind !== 'hand' && item.kind !== 'spot') || owner.getAttribute('aria-expanded') === 'true') {
+    hideSavedQuickPreview();
+    return;
+  }
+  const overlay = $('#savedQuickPreviewOverlay');
+  if (!overlay) return;
+  const quickLabel = document.createElement('span');
+  quickLabel.className = 'saved-library-quick-label';
+  quickLabel.textContent = t(item.derivation === 'scenario' ? 'Scenario snapshot' : 'Hand snapshot');
+  overlay.replaceChildren(quickLabel, createSavedPokerPreview(item, { variant: 'quick' }));
+  overlay.hidden = false;
+  overlay.style.visibility = 'hidden';
+  homeSavedQuickPreviewOwner = owner;
+  positionSavedQuickPreview(owner, overlay);
+}
+
+function createSavedLibraryItemElement(item, expanded) {
+  const control = document.createElement('button');
+  control.type = 'button';
+  control.className = 'saved-library-item';
+  control.dataset.savedSelectId = item.id;
+  control.dataset.savedKind = item.kind;
+  control.setAttribute('aria-expanded', String(expanded));
+  control.setAttribute('aria-controls', 'homeSavedDetail');
+  control.setAttribute('aria-label', `${t('View details')}: ${homeSavedItemTitle(item)}`);
+  if (expanded) control.dataset.expanded = 'true';
+  if (item.kind === 'hand' || item.kind === 'spot') control.appendChild(createSavedPokerPreview(item));
+
+  const copy = document.createElement('span');
+  copy.className = 'saved-library-item-copy';
+  const identity = document.createElement('span');
+  identity.className = 'home-saved-item-title-row';
+  const kind = document.createElement('span');
+  kind.className = 'home-saved-item-kind';
+  kind.textContent = t(item.kind === 'hand' ? 'Hand' : item.kind === 'spot' ? 'Spot' : 'Saved item');
+  const title = document.createElement('strong');
+  title.dir = 'auto';
+  title.textContent = homeSavedItemTitle(item);
+  identity.append(kind, title);
+  const meta = document.createElement('span');
+  meta.className = 'home-saved-item-meta poker-data-token';
+  meta.dir = 'ltr';
+  homeSavedItemFacts(item).slice(0, 4).forEach((fact) => {
+    const token = document.createElement('span');
+    token.textContent = fact;
+    meta.appendChild(token);
+  });
+  copy.append(identity, meta);
+  if (item.reviewState === 'review_later' || item.isMistake) {
+    const review = document.createElement('span');
+    review.className = 'saved-library-item-review';
+    review.textContent = t(item.isMistake ? 'Mistake' : 'Review later');
+    copy.appendChild(review);
+  }
+  control.appendChild(copy);
+  return control;
+}
+
+function savedItemTruth(item) {
+  if (item.kind === 'hand') return 'Canonical Hand · read-only replay';
+  if (item.derivation === 'scenario') return 'Scenario study snapshot · no canonical Hand history';
+  if (item.kind === 'spot') return 'Decision snapshot · Hand history unavailable';
+  return 'This saved object type is unavailable in this Riverline version.';
+}
+
+function renderSavedLibraryDetail(item) {
+  const detail = $('#homeSavedDetail');
+  if (!detail) return;
+  detail.replaceChildren();
+  if (!item) {
+    detail.hidden = true;
+    return;
+  }
+  detail.hidden = false;
+  const head = document.createElement('header');
+  head.className = 'saved-library-detail-head';
+  const headCopy = document.createElement('div');
+  const kind = document.createElement('span');
+  kind.className = 'home-saved-item-kind';
+  kind.textContent = t(item.kind === 'hand' ? 'Saved Hand' : item.kind === 'spot' ? 'Saved Spot' : 'Saved item');
+  const title = document.createElement('h3');
+  title.id = 'homeSavedDetailTitle';
+  title.dir = 'auto';
+  title.textContent = homeSavedItemTitle(item);
+  const truth = document.createElement('p');
+  truth.className = 'saved-library-truth';
+  truth.textContent = t(savedItemTruth(item));
+  headCopy.append(kind, title, truth);
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'ui-button ui-button--quiet saved-library-detail-close';
+  close.dataset.savedDetailClose = 'true';
+  close.textContent = t('Close');
+  close.setAttribute('aria-label', t('Close details'));
+  head.append(headCopy, close);
+  detail.appendChild(head);
+  if (item.kind === 'hand' || item.kind === 'spot') detail.appendChild(createSavedPokerPreview(item, { variant: 'detail' }));
+
+  const facts = document.createElement('div');
+  facts.className = 'saved-library-detail-facts poker-data-token';
+  facts.dir = 'ltr';
+  homeSavedItemFacts(item).forEach((fact) => {
+    const token = document.createElement('span');
+    token.textContent = fact;
+    facts.appendChild(token);
+  });
+  detail.appendChild(facts);
+
+  if (item.note) {
+    const note = document.createElement('section');
+    note.className = 'saved-library-note';
+    const noteTitle = document.createElement('h4');
+    noteTitle.textContent = t('Study note');
+    const noteCopy = document.createElement('p');
+    noteCopy.dir = 'auto';
+    noteCopy.textContent = item.note;
+    note.append(noteTitle, noteCopy);
+    detail.appendChild(note);
+  }
+  if (item.tags.length || item.reviewState === 'review_later' || item.isMistake) {
+    const annotations = document.createElement('div');
+    annotations.className = 'home-saved-item-badges';
+    if (item.reviewState === 'review_later') {
+      const review = document.createElement('span');
+      review.className = 'home-saved-badge home-saved-badge--review';
+      review.textContent = t('Review later');
+      annotations.appendChild(review);
+    }
+    if (item.isMistake) {
+      const mistake = document.createElement('span');
+      mistake.className = 'home-saved-badge home-saved-badge--mistake';
+      mistake.textContent = t('Mistake');
+      annotations.appendChild(mistake);
+    }
+    item.tags.forEach((tag) => {
+      const tagElement = document.createElement('span');
+      tagElement.className = 'home-saved-badge';
+      tagElement.dir = 'auto';
+      tagElement.textContent = tag;
+      annotations.appendChild(tagElement);
+    });
+    detail.appendChild(annotations);
+  }
+
+  const action = document.createElement('button');
+  action.type = 'button';
+  action.className = 'ui-button ui-button--primary saved-library-open';
+  action.dataset.homeSavedId = item.id;
+  action.textContent = t(item.kind === 'hand' ? 'Open Hand' : item.kind === 'spot' ? 'Open Spot' : 'Unavailable');
+  action.disabled = item.kind !== 'hand' && item.kind !== 'spot';
+  action.setAttribute('aria-label', `${action.textContent}: ${homeSavedItemTitle(item)}`);
+  detail.appendChild(action);
+}
+
+function renderSavedLibrary(section) {
+  const root = $('#homeRecentContent');
+  if (!root) return;
+  hideSavedQuickPreview();
+  root.replaceChildren();
+  root.setAttribute('aria-label', t('Saved study objects'));
+  const categoryModel = savedLibraryCategoryModel(section?.items || []);
+  homeSavedCategory = categoryModel.selected;
+  renderSavedLibraryCategories(categoryModel);
+  if (section?.status === 'error') {
+    root.appendChild(homeEmptyState('Saved items could not be loaded.', true));
+    renderSavedLibraryDetail(null);
+    return;
+  }
+  const allItems = section?.items || [];
+  const items = categoryModel.items;
+  if (!allItems.length) {
+    root.appendChild(homeEmptyAction(
+      'Saved Hands and Spots you intentionally keep will appear here.',
+      'Analyze a Hand',
+      'analyze',
+      { primary: true },
+    ));
+    renderSavedLibraryDetail(null);
+    return;
+  }
+  if (!items.length) {
+    root.appendChild(createSavedCategoryEmptyState(homeSavedCategory));
+    homeSavedExpandedId = null;
+    renderSavedLibraryDetail(null);
+    return;
+  }
+  if (!items.some((item) => item.id === homeSavedExpandedId)) homeSavedExpandedId = null;
+  items.forEach((item) => root.appendChild(createSavedLibraryItemElement(item, item.id === homeSavedExpandedId)));
+  renderSavedLibraryDetail(items.find((item) => item.id === homeSavedExpandedId));
+}
+
 function renderHomeContinue(section) {
   const root = $('#homeContinueContent');
   if (!root) return;
@@ -7116,6 +7464,12 @@ function renderHomeContinue(section) {
 function renderHomeRecent(section) {
   const root = $('#homeRecentContent');
   if (!root) return;
+  if (activeNavigationDestination() === 'saved') {
+    renderSavedLibrary(section);
+    return;
+  }
+  root.removeAttribute('aria-label');
+  renderSavedLibraryDetail(null);
   root.replaceChildren();
   if (section?.status === 'error') {
     root.appendChild(homeEmptyState('Saved items could not be loaded.', true));
@@ -7299,7 +7653,13 @@ function renderHomeWorkspace(model) {
   renderHomeQuickStart(model);
   renderHomeContinue(model.sections.continue);
   renderHomePersonalStrategy(model.sections.personalStrategy);
-  if (!guest) {
+  if (guest) {
+    homeSavedExpandedId = null;
+    homeSavedCategory = 'all';
+    hideSavedQuickPreview();
+    $('#homeRecentContent')?.replaceChildren();
+    renderSavedLibraryDetail(null);
+  } else {
     renderHomeRecent(model.sections.recent);
     renderHomeReview(model.sections.review);
   }
@@ -7324,6 +7684,29 @@ function beginHomeLoading() {
   if (workspace) workspace.setAttribute('aria-busy', 'true');
   if (loading) loading.hidden = false;
   if (content) content.hidden = true;
+}
+
+function clearSavedOwnerPresentation() {
+  ++homeRefreshSequence;
+  homeSavedExpandedId = null;
+  homeSavedCategory = 'all';
+  hideSavedQuickPreview();
+  $('#homeRecentContent')?.replaceChildren();
+  renderSavedLibraryDetail(null);
+
+  const savedHandProjection = callPlaybookStateBridge('createReplayProjectionViewModel');
+  const savedHandOpen = savedHandProjection?.viewerContext?.kind === 'saved_hand';
+  activeSavedSpotContext = null;
+  renderSavedSpotViewer(null);
+  if (savedHandOpen) {
+    callPlaybookStateBridge('closeSavedHand');
+    renderSavedHandViewerContext(null);
+    if (activeWorkspaceMode() === 'gto') renderCanonicalHandWorkspace();
+  }
+
+  ++savedStudyRefreshSequence;
+  savedStudyCurrentObject = null;
+  if (!$('#savedStudyModal')?.hidden) closeSavedStudyEditor();
 }
 
 async function refreshHomeWorkspace({ preserveVisible = false } = {}) {
@@ -7351,9 +7734,13 @@ async function refreshHomeWorkspace({ preserveVisible = false } = {}) {
 
 function scheduleHomeRefresh({ clearPrivateState = false } = {}) {
   homeViewModel = null;
+  if (clearPrivateState) clearSavedOwnerPresentation();
+  if (homeRefreshTimer !== null) {
+    window.clearTimeout(homeRefreshTimer);
+    homeRefreshTimer = null;
+  }
   if (activeWorkspaceMode() !== 'home' || welcomeOrientationIsVisible()) return;
   if (clearPrivateState) beginHomeLoading();
-  if (homeRefreshTimer !== null) window.clearTimeout(homeRefreshTimer);
   homeRefreshTimer = window.setTimeout(() => {
     homeRefreshTimer = null;
     void refreshHomeWorkspace();
@@ -7499,6 +7886,42 @@ function toast(message, tone = 'info', scope = activeWorkspaceMode()) {
 
 function bindEvents() {
 
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || activeNavigationDestination() !== 'saved') return;
+    if (hideSavedQuickPreview()) {
+      event.preventDefault();
+      return;
+    }
+    if (!homeSavedExpandedId) return;
+    const previousId = homeSavedExpandedId;
+    homeSavedExpandedId = null;
+    renderSavedLibrary(homeViewModel?.sections?.recent);
+    document.querySelector(`[data-saved-select-id="${CSS.escape(previousId)}"]`)?.focus();
+  });
+
+  document.addEventListener('pointerover', (event) => {
+    const owner = event.target.closest?.('[data-saved-select-id]');
+    if (owner && owner !== homeSavedQuickPreviewOwner) showSavedQuickPreview(owner);
+  });
+
+  document.addEventListener('pointerout', (event) => {
+    const owner = event.target.closest?.('[data-saved-select-id]');
+    if (owner === homeSavedQuickPreviewOwner && !owner.contains(event.relatedTarget)) hideSavedQuickPreview();
+  });
+
+  document.addEventListener('focusin', (event) => {
+    const owner = event.target.closest?.('[data-saved-select-id]');
+    if (owner) showSavedQuickPreview(owner);
+  });
+
+  document.addEventListener('focusout', (event) => {
+    const owner = event.target.closest?.('[data-saved-select-id]');
+    if (owner === homeSavedQuickPreviewOwner && !owner.contains(event.relatedTarget)) hideSavedQuickPreview();
+  });
+
+  window.addEventListener('resize', hideSavedQuickPreview);
+  window.addEventListener('scroll', hideSavedQuickPreview, true);
+
   document.addEventListener('click', (event) => {
 
     const homeDestination = event.target.closest('[data-home-destination]');
@@ -7520,6 +7943,34 @@ function bindEvents() {
     }
     if (homeAction?.dataset.homeAction === 'review-sync') {
       window.RiverlineAuthentication?.openAccount?.();
+      return;
+    }
+
+    const savedDetailClose = event.target.closest('[data-saved-detail-close]');
+    if (savedDetailClose) {
+      const previousId = homeSavedExpandedId;
+      homeSavedExpandedId = null;
+      renderSavedLibrary(homeViewModel?.sections?.recent);
+      if (previousId) document.querySelector(`[data-saved-select-id="${CSS.escape(previousId)}"]`)?.focus();
+      return;
+    }
+
+    const savedCategory = event.target.closest('[data-saved-category]');
+    if (savedCategory) {
+      homeSavedCategory = savedCategory.dataset.savedCategory;
+      homeSavedExpandedId = null;
+      hideSavedQuickPreview();
+      renderSavedLibrary(homeViewModel?.sections?.recent);
+      return;
+    }
+
+    const savedSelection = event.target.closest('[data-saved-select-id]');
+    if (savedSelection) {
+      const id = savedSelection.dataset.savedSelectId;
+      hideSavedQuickPreview();
+      homeSavedExpandedId = homeSavedExpandedId === id ? null : id;
+      renderSavedLibrary(homeViewModel?.sections?.recent);
+      document.querySelector(`[data-saved-select-id="${CSS.escape(id)}"]`)?.focus();
       return;
     }
 
@@ -8827,6 +9278,7 @@ function syncCardPresentationState(presentation, { refresh = true } = {}) {
   app.settings.cardBackStyle = presentation.backStyle;
   if (!refresh) return;
   renderAllCards();
+  if (activeWorkspaceMode() === 'home' && homeViewModel) renderHomeWorkspace(homeViewModel);
   if (activeWorkspaceMode() === 'gto' && playbookSurfaceIsVisible('analysis')) {
     renderPlaybookDecisionAnalysis(
       app.decisionContext,

@@ -1,8 +1,4 @@
-import {
-  GAME_RULES_COLLECTION_TYPES,
-  POKER_STATE_SCHEMA_VERSION,
-  POKER_STATE_V2_SCHEMA_VERSION,
-} from '../../../shared/poker-domain/index.js';
+import { createSavedStudyPreviewFacts } from './saved-study-preview-facts.mjs';
 
 export const HOME_VIEW_MODEL_SCHEMA_VERSION = 'home-view-model/v2';
 export const HOME_RECENT_LIMIT = 6;
@@ -23,83 +19,28 @@ function serializedError(error) {
   });
 }
 
-function bbFromMilli(value) {
-  return Number.isSafeInteger(value) ? value / 1000 : null;
-}
-
-function neutralSavedHandGameMode(state) {
-  if (state.schemaVersion === POKER_STATE_SCHEMA_VERSION
-    || (state.schemaVersion === undefined && typeof state.game?.mode === 'string')) {
-    return state.game.mode;
-  }
-  if (state.schemaVersion !== POKER_STATE_V2_SCHEMA_VERSION) {
-    throw new TypeError(`Unsupported Saved Hand PokerState version: ${String(state.schemaVersion)}`);
-  }
-  const policyType = state.rulesSnapshot.definition.collectionPolicy.type;
-  if (policyType === GAME_RULES_COLLECTION_TYPES.FIXED_PER_SEATED_PLAYER) return 'fixed';
-  if (policyType === GAME_RULES_COLLECTION_TYPES.NONE) return 'off';
-  throw new RangeError(`Unsupported Saved Hand collection policy: ${String(policyType)}`);
-}
-
-function savedHandItem(object) {
-  const snapshot = object.payload;
-  const state = snapshot.pokerState;
-  const hero = state.players.find((player) => player.playerId === snapshot.heroPlayerId);
-  if (!hero) throw new RangeError('Saved Hand Hero is unavailable');
-  return {
-    kind: 'hand',
-    derivation: 'canonical_hand',
-    tableSize: state.players.length,
-    gameMode: neutralSavedHandGameMode(state),
-    heroPosition: hero.position,
-    street: state.street,
-    phase: state.phase,
-    board: [...state.board],
-    potBb: bbFromMilli(state.potMilliBb),
-    historyStatus: 'canonical_replay',
-  };
-}
-
-function savedSpotItem(object) {
-  const snapshot = object.payload;
-  const context = snapshot.decisionContext;
-  return {
-    kind: 'spot',
-    derivation: snapshot.derivation,
-    tableSize: context.tableSize,
-    gameMode: context.rakeMode,
-    heroPosition: context.heroPosition,
-    street: context.street,
-    board: [...context.board],
-    stackBb: context.stackBb,
-    potBb: context.potBb,
-    facingSizeBb: context.facingSizeBb,
-    callAmountBb: context.callAmountBb,
-    historyStatus: snapshot.truth.historyStatus,
-  };
-}
-
 export function createHomeSavedItem(object) {
   if (!object || object.schemaVersion !== 'saved-study-object/v1') {
     throw new TypeError('Home requires SavedStudyObject v1');
   }
   const annotations = object.annotations;
-  const details = object.kind === 'hand'
-    ? savedHandItem(object)
-    : object.kind === 'spot'
-      ? savedSpotItem(object)
-      : { kind: object.kind, derivation: 'unsupported', historyStatus: 'not_available' };
+  const {
+    schemaVersion: previewSchemaVersion,
+    ...previewFacts
+  } = createSavedStudyPreviewFacts(object);
   return deepFreeze({
     schemaVersion: 'home-saved-item/v1',
+    previewSchemaVersion,
     id: object.id,
     title: annotations.title,
+    note: annotations.note,
     hasNote: Boolean(annotations.note),
     tags: annotations.tags.map((tag) => tag.display),
     reviewState: annotations.reviewState,
     isMistake: annotations.classifications.includes('mistake'),
     createdAt: object.createdAt,
     updatedAt: object.updatedAt,
-    ...details,
+    ...previewFacts,
   });
 }
 

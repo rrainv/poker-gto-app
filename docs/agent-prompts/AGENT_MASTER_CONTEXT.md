@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 30, 2026 (`FIRST-USE-HOME-001` joins Core Flow, Replay, Training, Equity, and Analyze/Range as completed and human accepted; bounded secondary polish is next, followed by September Alpha whole-app/docs/audit gates before any major new feature; `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision and `PREMIUM-CLOSEOUT-001` remains a later pre-release quality gate).
+Last refreshed: August 30, 2026 (`SAVED-VISUAL-KNOWLEDGE-001` joins Core Flow, Replay, Training, Equity, Analyze/Range, and First Use/Home as completed and human accepted; the observed all-in runout regression is active next, followed by `GUIDE-CONTENT-001` and September Alpha closure/audit preparation; `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision and `PREMIUM-CLOSEOUT-001` remains a later pre-release quality gate).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -35,7 +35,7 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 - **Analysis:** `RangeAnalysisFacts v1` owns canonical factual classification; DOM-free `range-comparison-facts/v1` projects representative-class comparison facts over Range Core card-removal truth; `AnalysisExplanation v1` consumes trusted facts without recreating poker/strategy/Equity.
 - **Presentation:** `table-presentation/v1` and `hand-review/v1` are ephemeral projections only.
 - **Experience:** `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1` create presentation consequences only.
-- **Saved:** `SavedStudyObject v1` with strict versioned Hand/Spot and Replay sources; consumers do not invent bookmark/note/review stores.
+- **Saved:** `SavedStudyObject v1` remains persistence/schema authority for current Hand/Spot objects; DOM-free `saved-study-preview-facts/v1` is the bounded preview projection, unknown future kinds remain unsupported, and consumers do not invent bookmark/note/review stores.
 - **Personal Strategy:** sparse immutable intended-strategy evidence; reference and observed behavior stay separate.
 - **Home Game:** exact-money organizer domain separate from poker/study authorities.
 
@@ -62,12 +62,14 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 3. **COMPLETED / HUMAN ACCEPTED HAND-REPLAY COMPOSITION CHECKPOINT WITH MINOR TABLE-PHYSICALITY DEBT — `REPLAY-RAIL-NAV-001`**
 4. **COMPLETED / HUMAN ACCEPTED — `TRAINING-COMPOSITION-001`**
 5. **COMPLETED / HUMAN ACCEPTED — `EQUITY-COMPOSITION-001`, `ANALYZE-RANGE-UX-001`, and `FIRST-USE-HOME-001`**
-6. **NEXT — BOUNDED SECONDARY POLISH / EXACT ORDER REASSESSED — `GUIDE-CONTENT-001`, `SAVED-VISUAL-KNOWLEDGE-001`, `CUSTOMIZATION-UX-001`, `GLOBAL-PRODUCT-QUALITY-001`; `HOME-GAME-PRESENTATION-001` and `AUDIO-DESIGN-001` remain conditional on time and impact**
-7. **SEPTEMBER ALPHA CLOSURE — human whole-app pass → documentation integrity/continuity freeze → human clean commit/audit tag → cross-model blind hands-on and white-box architecture audits → human triage → P0/P1 fixes**
-8. **PRESERVED MAJOR FEATURES / ACTIVATE ONLY FROM POST-AUDIT EVIDENCE — `PERSONAL-STRATEGY-003A`, `GAME-SETUP-EVOLUTION-001`, `RANGE-EVOLUTION-001`, and the documented capability roadmap**
-9. **RETURN DEPENDENCIES — `REFERENCE-PACK-001` production source acquisition/review and `TRAINING-MEMORY-001` manual Firefox acceptance**
-10. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
-11. release/mobile/social/PLO later
+6. **COMPLETED / HUMAN ACCEPTED — `SAVED-VISUAL-KNOWLEDGE-001`**
+7. **ACTIVE NEXT — observed all-in runout regression reproduction/diagnosis/repair**
+8. **PLANNED NEXT — `GUIDE-CONTENT-001`**
+9. **SEPTEMBER ALPHA CLOSURE — human whole-app pass → documentation integrity/continuity freeze → human clean commit/audit tag → cross-model blind hands-on and white-box architecture audits → human triage → P0/P1 fixes**
+10. **PRESERVED MAJOR FEATURES / ACTIVATE ONLY FROM POST-AUDIT EVIDENCE — `PERSONAL-STRATEGY-003A`, `GAME-SETUP-EVOLUTION-001`, `RANGE-EVOLUTION-001`, and the documented capability roadmap**
+11. **RETURN DEPENDENCIES — `REFERENCE-PACK-001` production source acquisition/review and `TRAINING-MEMORY-001` manual Firefox acceptance**
+12. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+13. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
@@ -80,7 +82,8 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - Training Varied/Focused/Full Hand, the Practice Planner, and Training Memory v1 are implemented foundations. Advanced scheduling/cross-surface memory work and `Not sure` remain future; exact source/claim snapshots and historical/current labels are binding.
 - `reference-pack/v1` has no production data registration. Never promote its synthetic test fixture, benchmark observations, or generalized heuristic curves into trusted reference truth.
 - Personal Strategy is checkpointed through legacy-named Calibration/Matrix/Builder/Teacher. The [independent `002R` review and human disposition](../project/PERSONAL_STRATEGY_002R_REVIEW.md) are accepted; `003A` remains the preserved versioned Game setup/Approach migration and local-first RFI-first first-value reset, but is not immediately next and may be activated only from post-September-Alpha audit evidence. Provider/reference/observed integration still follows 003A acceptance.
-- Saved Hand/Spot and `HOME-002A` exist; the full `HOME-002B` library does not.
+- Saved Hand/Spot and `HOME-002A` exist. `SAVED-VISUAL-KNOWLEDGE-001` is human accepted: compact grid primary; All / Hands / Spots visible at zero; DOM-free observer-safe Hand and lossy Scenario Spot previews; body-level bounded hover/focus overlay; click/Enter detail; shared cards; identity clearing; unknown-kind unavailable state; unchanged reopen behavior. Full `HOME-002B` search/pagination and new payload kinds do not exist.
+- Saved Training Experience, Saved Equity Snapshot, and learner-facing Full Hand Hero-fold termination are preserved future work only; they are not activated, prioritized, or current Saved kinds.
 - `FIRST-USE-HOME-001` is human accepted. Home is the permanent recurring startup/study destination; optional Welcome orientation is separate presentation state, defaults to shown with suppression unchecked, suppresses only itself, and has zero selected sidebar destinations. Navigation always reflects the real destination. Guest Home is useful without sign-in. Continue uses only a live canonical Hand or active/paused Personal Strategy; all other current states receive Start. Training, Analyze, Equity, and last-route continuation remain unsupported pending explicit contracts. Current identity surfaces share one canonical brand-spade asset separately from poker-card suits.
 - Home Game `001B` is an accepted implementation checkpoint over the separate 001A accounting authority; hard delete/import remain deliberately deferred and real Firefox/provider acceptance remains `RET-HOMEGAME-001` debt.
 - Workspace composition is accepted as a useful implementation checkpoint, not a whole-product visual-polish closeout: surviving specialized-layout polish remains `RET-COMPOSITION-002` debt. `EQUITY-COMPOSITION-001` is human accepted with bounded 2–10-player input, presentation-only inline names, adjacent Board/Dead/Method setup, compact lifecycle states, a dominant completed comparison, shared transactional card-set editing, and exact-entered-hand next-card outcomes that keep strict-ahead cards separate from structural completions still behind. Richer Equity/Hand Analysis remains preserved future work. Known-card inspectability is separately owned by `RET-CARDS-THEMES-001`.

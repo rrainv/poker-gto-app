@@ -29,6 +29,7 @@ Sharing should extend that same object model deliberately. It must remain local-
 - [Saved Object Sync](../SAVED_OBJECT_SYNC_SPEC.md) also defines explicit conflict choices. Its conflict-copy provenance is a useful foundation, but it is not a shipped social-fork feature.
 - [Home Dashboard](../HOME_DASHBOARD_SPEC.md) consumes Saved facts; it does not own saved-object schemas or persistence.
 - [Strategy Source Authority](../STRATEGY_SOURCE_AUTHORITY_SPEC.md) defines what future frozen strategy analysis must preserve if a Saved payload stores a historical judgment.
+- Human-accepted `SAVED-VISUAL-KNOWLEDGE-001` establishes the current compact Hand/Spot grid, visible All / Hands / Spots category model, DOM-free `saved-study-preview-facts/v1`, bounded body-level hover/focus overlay, explicit bounded detail, shared card presentation, unsupported unknown-kind behavior, private-state clearing, and unchanged reopen boundary. The subsystem spec remains implementation authority.
 
 Current implemented payloads and UI remain bounded. Saved Range, Drill, Session, Review, comments, social sharing, and a complete library experience require their own approved payload or application owners.
 
@@ -56,12 +57,14 @@ Notes, tags, review state, and mistake metadata should remain one shared annotat
 
 ### Additional saved types
 
+- **Saved Training Experience:** preserve a Full Hand Training experience as its canonical Hand plus the Training decisions/evidence that made it a learning experience, rather than silently degrading it to a bare Hand. A future contract must define the relation to Training Memory, answer-time source/claim snapshots, ownership, privacy, versioning, reopen/review behavior, and whether the canonical Hand is embedded or referenced.
+- **Saved Equity Snapshot:** preserve exact entered inputs and explicit unknowns, board and dead cards, calculation method and method version, relevant seed/sample/exactness facts, result semantics, and enough versioned state for instant truthful reopening. It must reuse canonical Equity request/result authority rather than store a renderer summary.
 - **Saved Range:** a versioned canonical weighted-range or Personal Strategy-related payload with exact role, context, provenance, unknown coverage, and history semantics.
 - **Saved Drill:** a reproducible study request or approved drill definition, not a bag of generated renderer state.
 - **Saved Session:** durable membership and source facts for a Training or review session when the owning history contract exists.
 - **Saved Review:** structured review annotations and references to the evidence being reviewed.
 
-No type should be added merely to fill the library. Its subsystem must first define the payload, authority, versioning, reopening behavior, and limits.
+No type should be added merely to fill the library. Saved Training Experience and Saved Equity Snapshot are preserved future directions, not active categories or approved `SavedStudyObject v1` kinds. Every new type's subsystem must first define the payload, authority, versioning, reopening behavior, and limits.
 
 ### Revisions and history
 

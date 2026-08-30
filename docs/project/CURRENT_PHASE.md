@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 30, 2026 (`FIRST-USE-HOME-001` is **COMPLETED / HUMAN ACCEPTED**; the bounded secondary-polish wave is next, followed by September Alpha whole-app/docs/audit gates; `PERSONAL-STRATEGY-003A` is preserved but is not immediately next).
+Last refreshed: August 30, 2026 (`SAVED-VISUAL-KNOWLEDGE-001` is **COMPLETED / HUMAN ACCEPTED**; the observed all-in runout regression is active next, followed by `GUIDE-CONTENT-001` and September Alpha closure/audit preparation; `PERSONAL-STRATEGY-003A` remains preserved but is not immediately next).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -113,28 +113,37 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - Training, Analyze, Equity, and last-route continuation remain unsupported until their owners expose explicit contracts. Future Home evolution must not invent recent activity, recommendations, streaks, cloud/sync claims, or cross-workspace history;
    - current Riverline identity surfaces reuse one canonical brand-spade asset; poker-card suit rendering remains separate.
 
-16. **NEXT — BOUNDED SECONDARY POLISH WAVE; exact order reassessed as needed**
-   - `GUIDE-CONTENT-001`, `SAVED-VISUAL-KNOWLEDGE-001`, `CUSTOMIZATION-UX-001`, and `GLOBAL-PRODUCT-QUALITY-001` address the highest-impact surviving visible/systemic debt;
-   - `HOME-GAME-PRESENTATION-001` and `AUDIO-DESIGN-001` remain conditional and bounded according to remaining time and product impact.
+16. **COMPLETED / HUMAN ACCEPTED — `SAVED-VISUAL-KNOWLEDGE-001`**
+   - `SavedStudyObject v1` remains the persistence/schema authority and Hand/Spot remain the only currently interpreted kinds; unknown future kinds render unsupported/unavailable;
+   - DOM-free `saved-study-preview-facts/v1` projects observer-safe Hand facts and visibly lossy/schematic Scenario Spot facts for the compact primary Saved grid, while `card-presentation/v1` remains the card-rendering authority;
+   - All / Hands / Spots remain visible at zero count; hover/focus share one viewport-bounded body-level overlay, while click/Enter owns bounded detail expansion;
+   - identity/account changes clear private preview/detail state, and Hand/Spot reopen behavior remains unchanged. Saved Training Experience, Saved Equity Snapshot, and learner-facing Full Hand Hero-fold termination are preserved future work only.
 
-17. **SEPTEMBER ALPHA CLOSURE AND AUDIT GATES**
+17. **ACTIVE NEXT — OBSERVED ALL-IN RUNOUT REGRESSION**
+   - reproduce, diagnose, and repair the observed all-in runout regression without assuming a canonical poker-math defect or reopening accepted Hand/Replay composition;
+   - preserve explicit flop → turn → river → showdown chance progression and prevent stale presentation/Replay disable state.
+
+18. **PLANNED NEXT — `GUIDE-CONTENT-001`**
+   - refresh the current Guide and explanatory content through the existing help/tutorial authority with concise, visual, task-oriented teaching.
+
+19. **SEPTEMBER ALPHA CLOSURE AND AUDIT GATES**
    - run a human whole-app pass after the visible closure and bounded polish wave;
    - synchronize and freeze documentation integrity/continuity, then the human owns the clean commit and audit tag;
    - run independent cross-model deep audits: one blind hands-on product audit and one white-box theoretical/architecture audit;
    - perform human triage and fix serious P0/P1 audit findings before activating a major new feature.
 
-18. **PRESERVED MAJOR FEATURES / ACTIVATE ONLY FROM POST-AUDIT EVIDENCE**
+20. **PRESERVED MAJOR FEATURES / ACTIVATE ONLY FROM POST-AUDIT EVIDENCE**
    - `PERSONAL-STRATEGY-003A`, `GAME-SETUP-EVOLUTION-001`, `RANGE-EVOLUTION-001`, or another major capability may be selected only after the September Alpha audits and human triage;
    - `003A` remains the preserved versioned Game setup/Approach migration and local-first first-value reset; it is not immediately next and has not been deleted or demoted;
    - selected reference, personal intent, source-labelled observed behavior, and opponent policy remain separate, and provider/reference/observed integration still follows an accepted `003A` checkpoint if that feature is selected.
 
-19. **PRESERVED LONG-TERM CAPABILITY ROADMAP**
+21. **PRESERVED LONG-TERM CAPABILITY ROADMAP**
    - Learning Evidence, Natural-Language Intelligence, Reference Strategy Evolution, Equity/Hand Analysis, Bluff/Exploit Analysis, Opponent Intelligence, Deep Hand Review, Training Intelligence, Personal Strategy Intelligence, Range Evolution, Saved Knowledge/Sharing, Home Game Evolution, and Random Spot Generator remain durable continuation paths in capability dossiers;
    - capability documentation does not activate any candidate or pre-commit its order.
 
-20. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+22. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
 
-21. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
+23. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
 
 The near-term milestone is **September Alpha**: a coherent, trustworthy, human-tested desktop build with accepted Hand/Replay, Training, Equity, Analyze/Range, materially improved First Use/Home and major visible/systemic polish; synchronized documentation; a whole-product manual pass; independent cross-model hands-on and theoretical audits; and serious findings triaged/fixed. It is an internal/high-quality alpha, not public beta readiness, production reference coverage, completed live account/sync validation, finished mobile/social/PLO, or a completed long-term capability roadmap.
 
@@ -155,7 +164,7 @@ The following architecture is established and must not be duplicated:
 - `training-decision-record/v1` / `training-session-record/v1` own durable encountered-decision/session evidence; historical source/claim snapshots are immutable, and Full Hand decisions share one session replay authority.
 - `AnalysisExplanation v1`, `RangeAnalysisFacts v1`, and `BluffAnalysisFacts v1` consume trusted facts without becoming poker, Equity, range, or strategy authorities.
 - `table-presentation/v1` and `hand-review/v1` are ephemeral projections; `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1` create presentation consequences only.
-- `SavedStudyObject v1`, Personal Strategy evidence, account/sync, and Home Game each retain their separate application/persistence authorities.
+- `SavedStudyObject v1` remains Saved persistence/schema authority; DOM-free `saved-study-preview-facts/v1` is its bounded Hand/Spot preview projection, not a second Saved or poker authority. Personal Strategy evidence, account/sync, and Home Game retain their separate authorities.
 
 Do not revive browser/Electron ONNX inference, remote strategy APIs, arbitrary solver-tree upload, duplicate Equity, synthetic legacy Training, or a second poker/range/Saved authority.
 
@@ -197,7 +206,7 @@ Canonical Equity, `RANGE-CORE-001`, `ANALYSIS-RANGE-001`, and `BLUFF-001` are cu
 
 ### Saved, Home, opponents, and release
 
-Saved Hand/Spot and `HOME-002A` exist. `HOME-002B` later builds the dense Saved Study Library only over approved payloads. OpponentPolicy/bots remain high-value future work after table, Training, and reference foundations mature. Accounts/sync remain local-first and opt-in, with live Supabase/RLS and two-profile acceptance required before beta.
+Saved Hand/Spot and `HOME-002A` exist. `SAVED-VISUAL-KNOWLEDGE-001` is completed and human accepted: the compact grid is primary; All / Hands / Spots remain visible at zero; DOM-free observer-safe/lossy previews use a bounded body overlay and explicit detail; unknown kinds remain unavailable; reopen and persistence boundaries are unchanged. `HOME-002B` remains later search/filter/pagination/library depth only over approved payloads. Saved Training Experience and Saved Equity Snapshot remain dependency-gated future payload decisions. OpponentPolicy/bots remain high-value future work after table, Training, and reference foundations mature. Accounts/sync remain local-first and opt-in, with live Supabase/RLS and two-profile acceptance required before beta.
 
 Detailed intent lives in the [Saved Knowledge](capabilities/SAVED_KNOWLEDGE_AND_SHARING.md) and [Opponent Intelligence](capabilities/OPPONENT_INTELLIGENCE.md) dossiers. Release, mobile, social, and PLO remain later branches in their preserved order.
 

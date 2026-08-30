@@ -1,6 +1,6 @@
 # Home Dashboard v2
 
-Status: `HOME-002A` implementation checkpoint plus `FIRST-USE-HOME-001` completed / human accepted, August 30, 2026.
+Status: `HOME-002A` implementation checkpoint plus `FIRST-USE-HOME-001` and `SAVED-VISUAL-KNOWLEDGE-001` completed / human accepted, August 30, 2026.
 
 ## Purpose and ownership
 
@@ -75,9 +75,13 @@ Identity/authentication changes immediately hide the previous rendered account c
 
 Recent is limited to six items; Review Later and Mistakes are limited to three items each. Each item retains kind, title, useful tags/annotations, timestamp, truthful derivation facts, and canonical reopen behavior.
 
+Saved is a distinct presentation destination over the same bounded Home/Saved application authority. Its human-accepted primary surface is a compact grid of current `SavedStudyObject v1` objects. All / Hands / Spots are always-visible keyboard-accessible categories, including at zero count, and filter only the already-loaded bounded result: All preserves unknown objects as unsupported/unavailable, Hands selects `kind=hand`, and Spots selects `kind=spot`. Training and Equity are not current categories or Saved kinds.
+
+DOM-free `saved-study-preview-facts/v1` supplies observer-safe canonical Hand preview facts and visibly lossy/schematic Scenario Spot facts. Hover and keyboard focus share one viewport-bounded body-level overlay; click/Enter expands one bounded detail surface; card faces reuse `card-presentation/v1`. Identity/account changes clear private Saved preview/detail state before reload. The existing Hand/Spot openers and reopen semantics remain unchanged.
+
 For nested v2 Saved payloads, Home keeps the existing summary shape and derives neutral `off` or fixed-per-player accounting from the immutable rules snapshot. It never requires `game.mode`, infers an operator from provenance, or performs a preset lookup. V1 summaries retain their existing game-mode projection.
 
-There is no `View all` destination because a full Saved Library does not yet exist. HOME-002A does not fake one.
+The Saved destination does not imply that full `HOME-002B` exists. Search, broader filters, sorting/pagination, bulk operations, and additional payload kinds remain later work; HOME-002A does not fake them.
 
 ## Personal Strategy truth
 
@@ -99,7 +103,7 @@ The responsive grid targets 1024×768 through 2560×1600 without horizontal over
 
 ## Preserved future work
 
-- full Saved Library, View all, search, filters, and tags;
+- full Saved Library search, broader filters, sorting/pagination, bulk operations, and approved additional payload kinds;
 - persistent Training history, mistake re-drilling, mastery, sessions, and trends;
 - durable recent Analysis history;
 - configurable card order, visibility, density, and beginner/expert composition;

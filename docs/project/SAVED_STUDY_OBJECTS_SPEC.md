@@ -1,8 +1,8 @@
 # Saved Study Objects Foundation
 
-Status: implemented through `SAVED-OBJECTS-002` and `GAME-RULES-001C`, with optional account sync added by `ACCOUNT-002B-A`
+Status: implemented through `SAVED-OBJECTS-002`, `GAME-RULES-001C`, and human-accepted `SAVED-VISUAL-KNOWLEDGE-001`, with optional account sync added by `ACCOUNT-002B-A`
 
-Date: August 16, 2026
+Date: August 30, 2026
 
 ## Purpose and authority
 
@@ -154,6 +154,23 @@ The v1 payload remains unchanged. A rules-aware Hand-derived or standalone Spot 
 - The spot declares `lossy_scenario` and `not_available` history.
 
 This preserves Scenario's intentionally arbitrary study semantics without inventing historical legality.
+
+## Saved preview and library presentation
+
+Schema: `saved-study-preview-facts/v1`
+
+`SavedStudyObject v1` remains the sole persistence/schema authority. The DOM-free preview projection consumes a validated Saved object and emits bounded presentation facts; it is not stored, exported, synced, or treated as a second Saved, PokerState, Replay, Equity, Training, or strategy authority.
+
+Current interpretation is deliberately limited:
+
+- `hand` previews preserve canonical observer-safe Hero cards, board/dead cards, known revealed opponent hands, street, pot, and declared Replay/history truth without exposing unrevealed holdings;
+- `spot` previews preserve only facts present in the stored DecisionContext and derivation metadata; Scenario-derived Spots remain visibly lossy/schematic and never manufacture canonical Hand history, players, contributions, or opponent holdings;
+- unknown future kinds remain present but render unsupported/unavailable; they are never coerced into Hand or Spot;
+- card faces reuse `card-presentation/v1`; preview renderers do not own rank/suit styling or poker evaluation.
+
+The human-accepted Saved presentation keeps the compact object grid primary. All / Hands / Spots are the visible supported category model and remain visible when their count is zero; filtering uses the already-bounded current result set and introduces no second repository query. Hover and keyboard focus use the same viewport-aware body-level bounded overlay, while click/Enter expands one bounded detail surface. Identity/account changes clear private preview and detail state before another owner can render.
+
+This presentation checkpoint does not change Saved Hand or Spot reopening, persistence, annotations, archive, portability, or sync behavior. No Saved Training Experience or Saved Equity Snapshot kind exists today; each requires a future explicit payload, authority, privacy/versioning, and reopen decision.
 
 ## Ownership
 

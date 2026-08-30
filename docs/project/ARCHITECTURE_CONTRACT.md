@@ -32,12 +32,13 @@ Production must not import solver experiments, training scripts, cloud tooling, 
 - exact-hand, board-structure, blocker, and optional supplied-range facts for Analysis: `RangeAnalysisFacts v1`
 - Equity workspace factual projection and exact-entered-hand next-card comparison: `equity-hand-analysis/v1` and `exact-entered-hand-outcomes/v1` under the application layer
 - user-owned saved hands/spots/notes/review metadata: `SavedStudyObject v1` under `app/src/saved-study-objects/`
+- Saved Hand/Spot preview facts: DOM-free `saved-study-preview-facts/v1` under the application layer; ephemeral only, never persistence or poker authority
 - performance scheduling/invalidation: `product-performance/v1`
 - desktop host: `app/main.js`
 
 A consumer must not bypass these authorities to compute its own alternative answer.
 
-Home/Dashboard, Hand/Replay, Training review, Matrix, and future Range tools are consumers of the Saved Study application/repository boundary. They must not define parallel bookmark, note, review, or saved-object persistence models. Saved Hand payloads preserve canonical observer-level PokerState facts plus a versioned canonical transition source that replays only through `shared/poker-domain`; they never persist Replay presentation frames. Saved Scenario spots remain explicitly lossy and cannot claim canonical history.
+Home/Dashboard, Hand/Replay, Training review, Matrix, and future Range tools are consumers of the Saved Study application/repository boundary. They must not define parallel bookmark, note, review, or saved-object persistence models. `saved-study-preview-facts/v1` is the DOM-free bounded presentation projection for currently interpreted Hand/Spot objects; it never becomes a stored Saved schema, repository query authority, PokerState reconstruction, or reopen path. Saved Hand payloads preserve canonical observer-level PokerState facts plus a versioned canonical transition source that replays only through `shared/poker-domain`; they never persist Replay presentation frames. Saved Scenario spots remain explicitly lossy and cannot claim canonical history. Unknown future kinds remain unsupported/unavailable until an approved payload interpreter exists.
 
 New live Hands use the snapshot-authoritative `poker-state/v2` path. Versioned `playbook-scenario/v2`, `training-config/v2`, `canonical-hand-replay-source/v2`, `saved-hand-snapshot/v2`, and `saved-spot-snapshot/v2` carry or preserve the exact immutable rules snapshot where their specifications require it. Historical v1 readers remain strict and are not silently rewritten. See `GAME_RULES_V1_SPEC.md` and `SAVED_STUDY_OBJECTS_SPEC.md`.
 

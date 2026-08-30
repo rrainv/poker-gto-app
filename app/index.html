@@ -548,7 +548,7 @@
         <div id="homeWorkspaceContent" class="home-dashboard-grid" data-product-destination="home" hidden>
           <section id="homeSavedOverview" class="panel home-section home-section--saved-overview" aria-labelledby="homeSavedOverviewTitle" data-tutorial-anchor="saved-overview" hidden>
             <header class="home-section-head"><div><p data-i18n="Saved study">Saved study</p><h2 id="homeSavedOverviewTitle" data-i18n="Saved Hands &amp; Spots">Saved Hands &amp; Spots</h2></div></header>
-            <p class="home-saved-overview-copy" data-i18n="Reopen saved Hands and Spots for replay, review, and continued study.">Reopen saved Hands and Spots for replay, review, and continued study.</p>
+            <p class="home-saved-overview-copy" data-i18n="Choose something you intentionally kept, inspect its stored facts, and reopen it for study.">Choose something you intentionally kept, inspect its stored facts, and reopen it for study.</p>
           </section>
           <section id="homeAccountOverview" class="panel home-section home-section--overview" aria-labelledby="homeAccountOverviewTitle" hidden>
             <div class="home-account-overview">
@@ -588,8 +588,25 @@
           </section>
 
           <section class="panel home-section home-section--recent" aria-labelledby="homeRecentTitle" data-home-surface="saved" data-tutorial-anchor="home-recent" tabindex="-1">
-            <header class="home-section-head"><div><p data-i18n="Your latest saved study items">Your latest saved study items</p><h2 id="homeRecentTitle" data-i18n="Recent">Recent</h2></div></header>
-            <div id="homeRecentContent" class="home-saved-list"></div>
+            <header class="home-section-head"><div><p id="homeRecentEyebrow" data-i18n="Your latest saved study items">Your latest saved study items</p><h2 id="homeRecentTitle" data-i18n="Recent">Recent</h2></div></header>
+            <div id="savedLibraryCategories" class="saved-library-categories" role="group" aria-label="Saved categories">
+              <button type="button" class="saved-library-category" data-saved-category="all" aria-pressed="true">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="2.5" width="6" height="6" rx="1"></rect><rect x="11.5" y="2.5" width="6" height="6" rx="1"></rect><rect x="2.5" y="11.5" width="6" height="6" rx="1"></rect><rect x="11.5" y="11.5" width="6" height="6" rx="1"></rect></svg>
+                <span data-i18n="All">All</span><strong data-saved-category-count="all">0</strong>
+              </button>
+              <button type="button" class="saved-library-category" data-saved-category="hands" aria-pressed="false">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5.5" y="2.5" width="10" height="14" rx="2"></rect><path d="M5.5 5.5h-1a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h6"></path><path d="M10.5 8.5c0-1.8 3-1.8 3 0 0 1.4-1.5 2.1-1.5 2.1s-1.5-.7-1.5-2.1Z"></path></svg>
+                <span data-i18n="Hands">Hands</span><strong data-saved-category-count="hands">0</strong>
+              </button>
+              <button type="button" class="saved-library-category" data-saved-category="spots" aria-pressed="false">
+                <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"></circle><circle cx="10" cy="10" r="3"></circle><path d="M10 1v3M10 16v3M1 10h3M16 10h3"></path></svg>
+                <span data-i18n="Spots">Spots</span><strong data-saved-category-count="spots">0</strong>
+              </button>
+            </div>
+            <div id="savedLibraryLayout" class="saved-library-layout">
+              <div id="homeRecentContent" class="home-saved-list"></div>
+              <aside id="homeSavedDetail" class="saved-library-detail" aria-labelledby="homeSavedDetailTitle" hidden></aside>
+            </div>
           </section>
 
           <section class="panel home-section home-section--strategy" aria-labelledby="homeStrategyTitle" data-tutorial-anchor="home-personal-strategy">
@@ -3339,6 +3356,8 @@
   <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" data-tone="info"></div>
 
   </div> <!-- /.shell -->
+
+  <div id="savedQuickPreviewOverlay" class="saved-library-quick-preview" aria-hidden="true" hidden></div>
 
   <script src="src/core/AudioFoleyManifest.js" defer></script>
   <script src="src/core/SoundFX.js" defer></script>

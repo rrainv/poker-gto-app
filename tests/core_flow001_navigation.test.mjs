@@ -102,10 +102,10 @@ test('Home and Saved resolve to distinct visible states over the same Home autho
   assert.equal(home.destination, 'home');
   assert.equal(saved.destination, 'saved');
   assert.deepEqual(Array.from(home.visibleSections), ['overview', 'continue', 'review', 'recent', 'strategy', 'quick', 'other']);
-  assert.deepEqual(Array.from(saved.visibleSections), ['saved-overview', 'recent', 'review']);
+  assert.deepEqual(Array.from(saved.visibleSections), ['saved-overview', 'recent']);
   assert.deepEqual(Array.from(homeAgain.visibleSections), Array.from(home.visibleSections));
   assert.match(html, /id="homeSavedOverview"[^>]*hidden/);
-  assert.match(css, /home-dashboard-grid\[data-product-destination="saved"\][\s\S]*?"recent recent"[\s\S]*?"review review"/);
+  assert.match(css, /home-dashboard-grid\[data-product-destination="saved"\][\s\S]*?"recent recent"/);
   assert.match(logic, /applyHomeDestinationPresentation\(destination\)/);
   assert.match(logic, /sequence !== homeRefreshSequence/);
 });

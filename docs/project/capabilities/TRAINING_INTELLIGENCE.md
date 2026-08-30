@@ -56,6 +56,7 @@ Training Intelligence should preserve:
 - Home, Replay, Deep Review, Analyze, and Saved continuity;
 - selected-reference and Personal Strategy comparison as distinct roles;
 - explicit per-session/profile/mode opt-in before recording observed Personal Strategy evidence;
+- learner-facing Full Hand termination when Hero folds, instead of autoplaying an opponent-only remainder; canonical Hand settlement/history may still be completed or derived behind the Training presentation only through an explicit future lifecycle contract;
 - later opponent-policy drills through canonical full-hand generation.
 
 A future supported summary might say:
