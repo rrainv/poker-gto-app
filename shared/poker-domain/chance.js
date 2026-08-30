@@ -1,5 +1,6 @@
 import { assertCardArray, assertUniqueKnownCards } from './cards.js';
 import { deepFreeze } from './freeze.js';
+import { HOLDEM_DECK } from './holdem-combos.js';
 import { clonePokerState } from './poker-state-rules.js';
 import { createHiddenHoleCards } from './private-cards.js';
 import { firstPreflopActorId } from './selectors.js';
@@ -18,6 +19,28 @@ function requirePendingChance(state, chanceEvent) {
   if (chanceEvent.type !== state.pendingChance.type) {
     throw new RangeError(`Expected pending chance event ${state.pendingChance.type}`);
   }
+}
+
+export function getAvailableChanceCards(state, pendingCards = []) {
+  validatePokerState(state);
+  if (state.phase !== PHASES.CHANCE || state.pendingChance === null) {
+    throw new RangeError('Available chance cards require a pending chance event');
+  }
+
+  const pending = assertCardArray(pendingCards, 'pendingCards');
+  if (pending.length > state.pendingChance.cardCount) {
+    throw new RangeError('Pending chance cards exceed the pending chance card count');
+  }
+  const consumed = assertUniqueKnownCards([
+    { label: 'board', cards: state.board },
+    { label: 'deadCards', cards: state.deadCards },
+    ...state.players
+      .filter((player) => Array.isArray(player.holeCards))
+      .map((player) => ({ label: `holeCards.${player.playerId}`, cards: player.holeCards })),
+    { label: 'pendingCards', cards: pending },
+  ]);
+
+  return deepFreeze(HOLDEM_DECK.filter((card) => !consumed.has(card)));
 }
 
 function applyHoleDeal(state, chanceEvent) {

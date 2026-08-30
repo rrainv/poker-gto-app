@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 30, 2026 (`SAVED-VISUAL-KNOWLEDGE-001` is **COMPLETED / HUMAN ACCEPTED**; the observed all-in runout regression is active next, followed by `GUIDE-CONTENT-001` and September Alpha closure/audit preparation; `PERSONAL-STRATEGY-003A` remains preserved but is not immediately next).
+Last refreshed: August 31, 2026 (`CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001` is **COMPLETED / HUMAN ACCEPTED**; the cheap Saved global-preview console guard is active next, followed by `GUIDE-CONTENT-001` and September Alpha closure/audit preparation; `PERSONAL-STRATEGY-003A` remains preserved but is not immediately next).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -119,31 +119,36 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - All / Hands / Spots remain visible at zero count; hover/focus share one viewport-bounded body-level overlay, while click/Enter owns bounded detail expansion;
    - identity/account changes clear private preview/detail state, and Hand/Spot reopen behavior remains unchanged. Saved Training Experience, Saved Equity Snapshot, and learner-facing Full Hand Hero-fold termination are preserved future work only.
 
-17. **ACTIVE NEXT — OBSERVED ALL-IN RUNOUT REGRESSION**
-   - reproduce, diagnose, and repair the observed all-in runout regression without assuming a canonical poker-math defect or reopening accepted Hand/Replay composition;
-   - preserve explicit flop → turn → river → showdown chance progression and prevent stale presentation/Replay disable state.
+17. **COMPLETED / HUMAN ACCEPTED — `CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001`**
+   - canonical `PokerState` semantics were correct; the root cause was application/UI state coordination, not poker mathematics and not Hand composition;
+   - fully known hole deals were mislabeled as hidden/observed Replay events, Replay transition rejection left a stale committed flop draft, and that stale draft allowed an already-consumed board card to reappear as a later chance candidate;
+   - the accepted explicit Turn → River → Showdown all-in chance flow remains intact. The canonical available-card query excludes the current board, known hole cards, dead cards, and pending selections, while stale consumed draft cards are removed before the chance picker opens;
+   - Replay and live terminal states agree, and runout events occur exactly once.
 
-18. **PLANNED NEXT — `GUIDE-CONTENT-001`**
+18. **ACTIVE NEXT — CHEAP SAVED GLOBAL-PREVIEW CONSOLE GUARD**
+   - add only the bounded global-preview console guard identified during Firefox verification; preserve the human-accepted Saved hover/focus preview behavior and do not reopen Saved composition.
+
+19. **PLANNED NEXT — `GUIDE-CONTENT-001`**
    - refresh the current Guide and explanatory content through the existing help/tutorial authority with concise, visual, task-oriented teaching.
 
-19. **SEPTEMBER ALPHA CLOSURE AND AUDIT GATES**
+20. **SEPTEMBER ALPHA CLOSURE AND AUDIT GATES**
    - run a human whole-app pass after the visible closure and bounded polish wave;
    - synchronize and freeze documentation integrity/continuity, then the human owns the clean commit and audit tag;
    - run independent cross-model deep audits: one blind hands-on product audit and one white-box theoretical/architecture audit;
    - perform human triage and fix serious P0/P1 audit findings before activating a major new feature.
 
-20. **PRESERVED MAJOR FEATURES / ACTIVATE ONLY FROM POST-AUDIT EVIDENCE**
+21. **PRESERVED MAJOR FEATURES / ACTIVATE ONLY FROM POST-AUDIT EVIDENCE**
    - `PERSONAL-STRATEGY-003A`, `GAME-SETUP-EVOLUTION-001`, `RANGE-EVOLUTION-001`, or another major capability may be selected only after the September Alpha audits and human triage;
    - `003A` remains the preserved versioned Game setup/Approach migration and local-first first-value reset; it is not immediately next and has not been deleted or demoted;
    - selected reference, personal intent, source-labelled observed behavior, and opponent policy remain separate, and provider/reference/observed integration still follows an accepted `003A` checkpoint if that feature is selected.
 
-21. **PRESERVED LONG-TERM CAPABILITY ROADMAP**
+22. **PRESERVED LONG-TERM CAPABILITY ROADMAP**
    - Learning Evidence, Natural-Language Intelligence, Reference Strategy Evolution, Equity/Hand Analysis, Bluff/Exploit Analysis, Opponent Intelligence, Deep Hand Review, Training Intelligence, Personal Strategy Intelligence, Range Evolution, Saved Knowledge/Sharing, Home Game Evolution, and Random Spot Generator remain durable continuation paths in capability dossiers;
    - capability documentation does not activate any candidate or pre-commit its order.
 
-22. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+23. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
 
-23. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
+24. **PRESERVED FUTURE — release, deliberate mobile, social, and PLO branches later**
 
 The near-term milestone is **September Alpha**: a coherent, trustworthy, human-tested desktop build with accepted Hand/Replay, Training, Equity, Analyze/Range, materially improved First Use/Home and major visible/systemic polish; synchronized documentation; a whole-product manual pass; independent cross-model hands-on and theoretical audits; and serious findings triaged/fixed. It is an internal/high-quality alpha, not public beta readiness, production reference coverage, completed live account/sync validation, finished mobile/social/PLO, or a completed long-term capability roadmap.
 
@@ -175,6 +180,8 @@ Do not revive browser/Electron ONNX inference, remote strategy APIs, arbitrary s
 Completed/checkpointed work includes adaptive Table Presence, canonical Replay, shared Full Hand Review, accepted audio/motion architecture, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, the accepted-with-debt `WORKSPACE-COMPOSITION-002` simplification, and `TABLE-PHYSICALITY-003` with explicit presentation debt.
 
 `HOME-GAME-001B` is completed at an accepted implementation checkpoint with broader real Firefox/provider acceptance retained as `RET-HOMEGAME-001`; the generalized append-only session-entry correction is human accepted under the completed Core Flow checkpoint. `SETTINGS-IA-001` is also completed at an accepted implementation checkpoint; its unavailable real Firefox matrix is retained under `QA-HANDSON-010` and `RET-PREMIUM-001`. `HANDS-ON-DEFECTS-001` is an accepted bounded repair checkpoint, not whole-product visual acceptance. The Hand/Replay structural owner is completed and human accepted with minor table-physicality debt: it replaces horizontal primary chronology with a vertical street-grouped rail, keeps table and actions simultaneously available, and repairs card/seat, folded-seat, Dealer-button, and static contribution-line presentation. Its accepted product model must remain stable; named seat geometry, hidden-card physicality, full-ring Dealer-presence explainability, and History micro-polish debt remain with the Return Queue and do not reopen the architecture. Fresh-Hand lifecycle, transaction correction, continuous two-card opponent entry, and canonical min-raise/reopening behavior are completed and human accepted under `CORE-FLOW-CORRECTNESS-001`. Controls First and the ineffective user-facing Comfortable/Compact selector remain removed.
+
+`CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001` is completed and human accepted. Canonical `PokerState` semantics were correct; the application/UI repair aligns fully known hole-deal Replay labeling, clears stale committed board drafts after rejected Replay transitions, derives available chance cards without current-board, known-hole, dead, or pending cards, and removes stale consumed drafts before opening the picker. Explicit Turn → River → Showdown remains intact, Replay/live terminal states agree, and each runout event occurs exactly once. This acceptance does not reopen Hand composition.
 
 ### Home Game
 

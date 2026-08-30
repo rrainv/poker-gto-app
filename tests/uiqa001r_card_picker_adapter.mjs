@@ -165,7 +165,12 @@ export function delegatedCardSlotClick(group = 'hero', index = 0) {
   return sandbox.__calls;
 }
 
-export function createProductionPickerHarness({ handMode = false, rankStyle = 'poker' } = {}) {
+export function createProductionPickerHarness({
+  handMode = false,
+  rankStyle = 'poker',
+  canonicalState = null,
+  canonicalAvailableChanceCards = null,
+} = {}) {
   const elements = new Map();
   const slotElements = new Map();
   const makeElement = (overrides = {}) => ({
@@ -238,6 +243,8 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
       picker: null,
       selectedHand: null
     };
+    const canonicalState = ${JSON.stringify(canonicalState)};
+    const canonicalAvailableChanceCards = ${JSON.stringify(canonicalAvailableChanceCards)};
     const $ = (selector) => document.querySelector(selector);
     const $$ = (selector) => [...document.querySelectorAll(selector)];
     const getSuit = (card) => SUITS.find((suit) => suit.id === (card && card[1]));
@@ -248,10 +255,15 @@ export function createProductionPickerHarness({ handMode = false, rankStyle = 'p
     function equityPlayerLabel(index) { return index === 0 ? 'Hero' : 'Player ' + (index + 1); }
     function callPlaybookStateBridge(method) {
       if (method === 'getHeroPlayerId') return 'player-0';
+      if (method === 'getState' && canonicalState) return canonicalState;
       if (method === 'getState') return {
         pendingChance: { type: 'deal_flop', cardCount: 3 },
         players: Array.from({ length: 10 }, (_, seat) => ({ playerId: 'player-' + seat, seat, position: 'Seat ' + (seat + 1) }))
       };
+      if (method === 'getAvailableChanceCards' && Array.isArray(canonicalAvailableChanceCards)) {
+        const pendingCards = arguments[1] || [];
+        return canonicalAvailableChanceCards.filter((card) => !pendingCards.includes(card));
+      }
       return null;
     }
     function canonicalPlayerLabel(player) { return player?.position || 'Player'; }

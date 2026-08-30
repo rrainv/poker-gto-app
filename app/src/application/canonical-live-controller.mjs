@@ -9,6 +9,7 @@ import {
   bbToMilliBb,
   createAction,
   createGameRulesSnapshotFromLegacyGameConfiguration,
+  getAvailableChanceCards as deriveAvailableChanceCards,
   getLegalActionSpec,
 } from '../../../shared/poker-domain/index.js';
 import { createCanonicalHandSession } from './canonical-hand-session.mjs';
@@ -302,6 +303,16 @@ export function createCanonicalLiveController({
       if (!featureEnabled || session.getState()?.phase !== PHASES.BETTING) return null;
       try {
         return getLegalActionSpec(session.getState());
+      } catch (error) {
+        return setError(error);
+      }
+    },
+
+    getAvailableChanceCards(pendingCards = []) {
+      const state = requireEnabledState();
+      if (!state) return null;
+      try {
+        return deriveAvailableChanceCards(state, pendingCards);
       } catch (error) {
         return setError(error);
       }

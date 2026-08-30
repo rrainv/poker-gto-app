@@ -1517,6 +1517,18 @@ function openPicker(group, index) {
     committed: definition.committed.slice(),
     draft: definition.committed.slice()
   };
+  if (group === 'hand-board-chance') {
+    const canonicalAvailable = callPlaybookStateBridge('getAvailableChanceCards', []);
+    if (Array.isArray(canonicalAvailable)) {
+      const available = new Set(canonicalAvailable);
+      const legalCommitted = app.picker.committed.filter((card) => available.has(card));
+      if (legalCommitted.length !== app.picker.committed.length) {
+        groupCards(group).splice(0, groupCards(group).length, ...legalCommitted);
+        app.picker.committed = legalCommitted.slice();
+        app.picker.draft = legalCommitted.slice();
+      }
+    }
+  }
 
   const modalTitle = $('#modalTitle');
   if (modalTitle) modalTitle.textContent = definition.title;
@@ -1620,6 +1632,18 @@ function cardSetPickerScope(group) {
 }
 
 function unavailableCardsForPicker(picker) {
+  if (picker.group === 'hand-board-chance') {
+    const canonicalAvailable = callPlaybookStateBridge(
+      'getAvailableChanceCards',
+      picker.draft.slice()
+    );
+    if (Array.isArray(canonicalAvailable)) {
+      const allowed = new Set([...canonicalAvailable, ...picker.draft]);
+      return new Set(RANKS.flatMap((rank) => (
+        SUITS.map((suit) => rank + suit.id)
+      )).filter((card) => !allowed.has(card)));
+    }
+  }
   const used = usedCards(cardSetPickerScope(picker.group)).slice();
   picker.committed.forEach((card) => {
     const ownCardIndex = used.indexOf(card);

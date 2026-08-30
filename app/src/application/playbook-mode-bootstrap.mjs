@@ -511,11 +511,18 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     },
 
     dealObservedHoleCards(cardsByPlayer) {
+      const state = canonicalController.getState();
+      const knownPlayerCount = cardsByPlayer && typeof cardsByPlayer === 'object'
+        ? Object.keys(cardsByPlayer).length
+        : 0;
+      const fullyKnownDeal = knownPlayerCount === state?.players?.length;
       return publishLiveTransition(
-        'deal_hole_observed',
-        REPLAY_FRAME_OPERATIONS.DEAL_HOLE_OBSERVED,
+        fullyKnownDeal ? 'deal_hole' : 'deal_hole_observed',
+        fullyKnownDeal
+          ? REPLAY_FRAME_OPERATIONS.DEAL_HOLE
+          : REPLAY_FRAME_OPERATIONS.DEAL_HOLE_OBSERVED,
         () => canonicalController.dealObservedHoleCards(cardsByPlayer),
-        { holeCardCount: Object.keys(cardsByPlayer || {}).length * 2 },
+        { holeCardCount: knownPlayerCount * 2 },
       );
     },
 
@@ -556,6 +563,9 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     getState: () => savedHandViewer?.pokerState ?? canonicalController.getState(),
     getHeroPlayerId: () => savedHandViewer?.heroPlayerId ?? canonicalController.getHeroPlayerId(),
     getLegalActions: () => (savedHandViewer ? null : canonicalController.getLegalActions()),
+    getAvailableChanceCards: (pendingCards = []) => (
+      savedHandViewer ? null : canonicalController.getAvailableChanceCards(pendingCards)
+    ),
     getDiagnostics: () => canonicalController.getDiagnostics(),
   });
 
