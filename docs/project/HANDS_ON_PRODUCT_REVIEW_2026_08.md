@@ -2,7 +2,7 @@
 
 Status: **COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED**
 
-Planning consequence: `HANDS-ON-DEFECTS-001` is **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT**. `CORE-FLOW-CORRECTNESS-001` is **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT**. `REPLAY-RAIL-NAV-001` is **COMPLETED / HUMAN ACCEPTED HAND-REPLAY COMPOSITION CHECKPOINT WITH MINOR TABLE-PHYSICALITY DEBT**. `TRAINING-COMPOSITION-001` is **COMPLETED / HUMAN ACCEPTED**; `EQUITY-COMPOSITION-001` is **NEXT / READY**, followed by visible closure and September Alpha whole-app/docs/audit gates before another major feature. `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision.
+Planning consequence: `HANDS-ON-DEFECTS-001` is **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT**. `CORE-FLOW-CORRECTNESS-001` is **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT**. `REPLAY-RAIL-NAV-001`, `TRAINING-COMPOSITION-001`, and `EQUITY-COMPOSITION-001` are **COMPLETED / HUMAN ACCEPTED**; `ANALYZE-RANGE-UX-001` is **ACTIVE NEXT / READY**, followed by visible closure and September Alpha whole-app/docs/audit gates before another major feature. `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision.
 
 This is the durable evidence and triage artifact for `HANDS-ON-PRODUCT-REVIEW-001`. It is not another roadmap, backlog, QA system, or implementation specification. Current status and sequence remain owned by [Current Phase](CURRENT_PHASE.md), [Roadmap](ROADMAP.md), and [Product Backlog](PRODUCT_BACKLOG.md). Issue routing and deferred checkpoint debt remain owned by [QA Backlog](QA_BACKLOG.md) and [Product Return Queue](PRODUCT_RETURN_QUEUE.md).
 
@@ -246,7 +246,7 @@ The newer product decision supersedes the earlier Training → Personal Strategy
 2. `CORE-FLOW-CORRECTNESS-001` — **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT**.
 3. `REPLAY-RAIL-NAV-001` — **COMPLETED / HUMAN ACCEPTED HAND-REPLAY COMPOSITION CHECKPOINT WITH MINOR TABLE-PHYSICALITY DEBT**.
 4. `TRAINING-COMPOSITION-001` — **COMPLETED / HUMAN ACCEPTED**.
-5. `EQUITY-COMPOSITION-001` — **NEXT / READY**, then `ANALYZE-RANGE-UX-001` → `FIRST-USE-HOME-001` — **VISIBLE-PRODUCT CLOSURE**.
+5. `EQUITY-COMPOSITION-001` — **COMPLETED / HUMAN ACCEPTED**; `ANALYZE-RANGE-UX-001` — **ACTIVE NEXT / READY**, then `FIRST-USE-HOME-001` — **VISIBLE-PRODUCT CLOSURE**.
 6. `GUIDE-CONTENT-001`, `SAVED-VISUAL-KNOWLEDGE-001`, `CUSTOMIZATION-UX-001`, and `GLOBAL-PRODUCT-QUALITY-001` — **BOUNDED SECONDARY POLISH / EXACT ORDER REASSESSED**; `HOME-GAME-PRESENTATION-001` and `AUDIO-DESIGN-001` remain conditional on time and impact.
 7. Human whole-app pass → documentation integrity/continuity freeze → human clean commit/audit tag.
 8. Independent cross-model blind hands-on product audit plus white-box theoretical/architecture audit → human triage → serious P0/P1 fixes.

@@ -2501,7 +2501,6 @@
     <section id="equityMode" class="mode-view equity-mode" style="display: none;">
       <div class="workspace-frame workspace-frame--standard">
       <div class="equity-workspace" data-equity-state="empty">
-        <div class="equity-input-stack">
           <section class="panel equity-player-panel" aria-labelledby="equityPlayersTitle" data-tutorial-anchor="equity-player-hands">
             <div class="panel-head equity-section-head">
               <div>
@@ -2524,13 +2523,18 @@
                 <span class="equity-toolbar-label" data-i18n="Quick">Quick</span>
                 <button class="ui-button ui-button-ghost is-active" type="button" data-equity-player-count="2" aria-label="Set 2 players">2</button>
                 <button class="ui-button ui-button-ghost" type="button" data-equity-player-count="6" aria-label="Set 6 players">6</button>
-                <button class="ui-button ui-button-ghost" type="button" data-equity-player-count="9" aria-label="Set 9 players">9</button>
+                <button class="ui-button ui-button-ghost" type="button" data-equity-player-count="10" aria-label="Set 10 players">10</button>
               </div>
             </div>
-            <div id="equityPlayers" class="equity-player-list"></div>
+            <div class="equity-player-roster">
+              <div id="equityPlayers" class="equity-player-list"></div>
+              <div class="equity-roster-footer">
+                <button id="equityAddPlayer" class="equity-add-player ui-button ui-button--secondary" type="button" data-i18n="+ Add player">+ Add player</button>
+              </div>
+            </div>
           </section>
 
-          <div class="equity-shared-flow">
+          <main class="equity-center-column" aria-label="Board and calculation" data-i18n-aria-label="Board and calculation">
           <section class="panel equity-cards-panel" aria-labelledby="equityCardsTitle" data-tutorial-anchor="equity-shared-cards">
             <div class="panel-head equity-section-head">
               <div>
@@ -2558,19 +2562,19 @@
             <div class="equity-card-group equity-dead-group">
               <div class="equity-card-group-head">
                 <div><h3 data-i18n="Dead Cards">Dead Cards</h3><span class="muted" data-i18n="Excluded from the remaining deck">Excluded from the remaining deck</span></div>
-                <div class="equity-card-group-actions"><span id="equityDeadCount" class="equity-count">0</span><button class="ui-button ui-button-ghost" type="button" data-clear="eqdead" data-i18n="Clear">Clear</button></div>
+                <div class="equity-card-group-actions"><span><span id="eqDeckCount">52</span> <span data-i18n="remaining">remaining</span></span><span id="equityDeadCount" class="equity-count">0</span><button class="ui-button ui-button-ghost" type="button" data-clear="eqdead" data-i18n="Clear">Clear</button></div>
               </div>
               <div class="cards-row equity-dead-cards" data-slots="eqdead" aria-label="Dead cards" data-i18n-aria-label="Dead cards"></div>
             </div>
           </section>
 
-          <section class="panel equity-controls-panel" aria-labelledby="equityCalculationTitle" data-tutorial-anchor="equity-method">
-            <div class="panel-head equity-section-head"><div><p class="equity-eyebrow" data-i18n="Calculation">Calculation</p><h2 id="equityCalculationTitle" data-i18n="Method & Precision">Method &amp; Precision</h2></div></div>
+          <section class="panel equity-controls-panel equity-calculation-strip" aria-labelledby="equityCalculationTitle" data-tutorial-anchor="equity-method">
+            <div class="panel-head equity-section-head"><div><p class="equity-eyebrow" data-i18n="Calculation">Calculation</p><h2 id="equityCalculationTitle" data-i18n="Calculate Equity">Calculate Equity</h2></div><span id="methodBadge" class="equity-method-badge" data-i18n="Awaiting input">Awaiting input</span></div>
             <div class="equity-control-grid">
               <label class="ui-field"><span data-i18n="Method">Method</span><select id="calcStyle"><option value="auto" data-i18n="Auto (recommended)">Auto (recommended)</option><option value="exact" data-i18n="Exact enumeration">Exact enumeration</option><option value="sim" data-i18n="Monte Carlo">Monte Carlo</option></select></label>
               <label class="ui-field"><span data-i18n="Monte Carlo samples">Monte Carlo samples</span><select id="trials"><option value="10000">10,000</option><option value="50000">50,000</option><option value="100000">100,000</option><option value="250000">250,000</option></select></label>
             </div>
-            <details class="density-support-disclosure equity-method-disclosure" data-density-collapse-in-compact open>
+            <details class="density-support-disclosure equity-method-disclosure" data-density-collapse-in-compact>
               <summary data-i18n="Calculation guidance">Calculation guidance</summary>
               <p class="equity-method-help">
                 <strong data-i18n="Auto">Auto</strong> <span data-i18n="uses exact enumeration when practical, otherwise simulation.">uses exact enumeration when practical, otherwise simulation.</span>
@@ -2580,25 +2584,37 @@
             </details>
             <div id="equityEstimate" class="equity-estimate" aria-live="polite" data-i18n="Add complete known hands or mark them unknown to estimate the calculation.">Add complete known hands or mark them unknown to estimate the calculation.</div>
             <div id="equityReadiness" class="equity-readiness" data-state="blocked" role="status" aria-live="polite" data-i18n="Complete Hero's known hand or mark it unknown.">Complete Hero's known hand or mark it unknown.</div>
+            <div id="equityStatus" class="equity-calculation-status muted" role="status" aria-live="polite" aria-atomic="true" data-i18n="Results update after calculation.">Results update after calculation.</div>
             <div class="equity-calculate-row" data-tutorial-anchor="equity-calculate"><button id="calculate" class="primary equity-calculate" type="button" aria-describedby="equityReadiness equityEstimate" disabled data-i18n="Calculate equity">Calculate equity</button><button id="cancelEquity" class="ui-button ui-button-danger equity-cancel" type="button" hidden data-i18n="Cancel">Cancel</button></div>
             <div id="progress" class="progress-wrap" data-progress-mode="indeterminate" hidden aria-label="Equity calculation activity" data-i18n-aria-label="Equity calculation activity"><div class="progress-heading"><span class="progress-spinner" aria-hidden="true"></span><strong class="progress-method" data-i18n="Preparing calculation…">Preparing calculation…</strong><span class="progress-percent" hidden></span></div><div class="progress-track" role="progressbar" aria-label="Equity calculation progress" data-i18n-aria-label="Equity calculation progress"><div class="progress-fill"></div></div><div class="progress-copy"><span class="progress-status" data-i18n="Waiting for measurable work…">Waiting for measurable work…</span><span class="progress-telemetry poker-data-token" hidden></span></div></div>
             <details id="equityAdvanced" class="equity-advanced" data-tutorial-anchor="equity-advanced"><summary data-i18n="Advanced calculation settings">Advanced calculation settings</summary><div class="equity-advanced-body"><label class="ui-field"><span data-i18n="Monte Carlo seed">Monte Carlo seed</span><div class="equity-seed-row"><input id="equitySeed" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="Generated automatically" data-i18n-placeholder="Generated automatically"><button id="rerollEquitySeed" class="ui-button ui-button-ghost" type="button" data-i18n="New seed">New seed</button></div><small class="muted" data-i18n="Leave blank for a generated seed. Reuse a seed for reproducible simulation.">Leave blank for a generated seed. Reuse a seed for reproducible simulation.</small></label></div></details>
           </section>
-          </div>
-        </div>
-
-        <div class="equity-output-stack">
-          <section id="equityResultsPanel" class="panel equity-results-panel" data-result-state="empty" aria-labelledby="equityResultsTitle" data-tutorial-anchor="equity-results">
-            <div class="panel-head equity-result-head"><div><p class="equity-eyebrow" data-i18n="Results">Results</p><h2 id="equityResultsTitle" data-i18n="Equity">Equity</h2></div><span id="methodBadge" class="equity-method-badge" data-i18n="Awaiting input">Awaiting input</span></div>
-            <div class="equity-headline"><span class="equity-headline-label" data-i18n="Result overview">Result overview</span><strong id="headlineEquity" class="poker-data-token">—</strong><span id="equityStatus" class="muted" role="status" aria-live="polite" aria-atomic="true" data-i18n="Results update after calculation.">Results update after calculation.</span></div>
-            <section class="equity-scenario" aria-labelledby="equityScenarioTitle"><h3 id="equityScenarioTitle" data-i18n="Scenario">Scenario</h3><div id="equityScenarioContext" class="equity-scenario-context"></div></section>
-            <div class="equity-result-summary"><div><span data-i18n="Split-pot trials">Split-pot trials</span><strong id="equitySplitSummary">—</strong></div><div><span data-i18n="Remaining deck">Remaining deck</span><strong id="eqDeckCount">52</strong></div></div>
+          <section id="equityResultsPanel" class="panel equity-overview-panel" data-result-state="empty" aria-labelledby="equityResultsTitle" data-tutorial-anchor="equity-results">
+            <div class="panel-head equity-result-head"><div><p class="equity-eyebrow" data-i18n="Comparison">Comparison</p><h2 id="equityResultsTitle" data-i18n="Equity overview">Equity overview</h2></div></div>
+            <section class="equity-comparison" aria-labelledby="equityResultsTitle">
+              <div id="equityComparison" class="equity-comparison-list" aria-live="polite"></div>
+            </section>
           </section>
+          </main>
+
+        <aside id="equityHandAnalysis" class="panel equity-dossier-panel equity-hand-analysis-panel" data-analysis-state="setup" aria-labelledby="equityHandAnalysisTitle" data-tutorial-anchor="equity-results">
+          <div class="panel-head equity-dossier-head">
+            <div><p class="equity-eyebrow" data-i18n="Calculated outcomes">Calculated outcomes</p><h2 id="equityHandAnalysisTitle" data-i18n="Hand Analysis">Hand Analysis</h2></div>
+          </div>
+          <div id="equityHandAnalysisContent" class="equity-dossier-content" aria-live="polite">
+            <section class="equity-dossier-section equity-analysis-empty"><h3 data-i18n="Hand Analysis">Hand Analysis</h3><p class="muted" data-i18n="Calculate Equity to inspect entered-hand outcomes and detailed hand facts.">Calculate Equity to inspect entered-hand outcomes and detailed hand facts.</p></section>
+          </div>
           <details id="equityDetails" class="panel equity-details-panel">
-            <summary><span data-i18n="Calculation details">Calculation details</span><span class="muted" data-i18n="Method, workload, and execution metadata">Method, workload, and execution metadata</span></summary>
+            <summary><span data-i18n="Calculation evidence">Calculation evidence</span><span class="muted" data-i18n="Method, workload, provenance, and limitations">Method, workload, provenance, and limitations</span></summary>
             <dl class="equity-detail-grid"><div><dt data-i18n="Requested">Requested</dt><dd id="equityDetailRequested">Auto</dd></div><div><dt data-i18n="Actual method">Actual method</dt><dd id="equityDetailActual">—</dd></div><div><dt data-i18n="Estimated combinations">Estimated combinations</dt><dd id="equityDetailEstimate">—</dd></div><div><dt data-i18n="Samples">Samples</dt><dd id="equityDetailSamples">—</dd></div><div><dt data-i18n="Seed">Seed</dt><dd id="equityDetailSeed">—</dd></div><div><dt data-i18n="Unknown hands">Unknown hands</dt><dd id="equityDetailUnknown">1</dd></div><div><dt data-i18n="Missing board cards">Missing board cards</dt><dd id="equityDetailBoard">5</dd></div><div><dt data-i18n="Execution">Execution</dt><dd id="equityDetailExecution">Ready</dd></div></dl>
+            <div class="equity-evidence-split"><span data-i18n="Split-pot trials">Split-pot trials</span><strong id="equitySplitSummary">—</strong></div>
+            <div id="equityEvidenceFacts" class="equity-evidence-facts"></div>
           </details>
-        </div>
+          <details class="equity-future-analysis" data-future-analysis-home hidden>
+            <summary data-i18n="Further analysis">Further analysis</summary>
+            <div id="equityFurtherAnalysisContent"></div>
+          </details>
+        </aside>
       </div>
       </div>
     </section>
@@ -2692,6 +2708,21 @@
         </button>
 
       </div>
+
+      <section id="cardSetPickerContext" class="card-set-picker-context" aria-labelledby="cardSetPickerOwner" hidden>
+        <div class="card-set-picker-heading"><span id="cardSetPickerKind"></span><strong id="cardSetPickerOwner"></strong></div>
+        <div class="card-set-picker-selection">
+          <span id="cardSetPickerLabel" class="card-set-picker-label"></span>
+          <span id="cardSetPickerCount" class="card-set-picker-count poker-data-token" aria-live="polite"></span>
+        </div>
+        <div id="cardSetPickerCards" class="card-set-picker-cards" role="group" aria-live="polite"></div>
+        <div class="card-set-picker-actions">
+          <button id="cardSetPickerClear" class="ui-button ui-button-ghost" type="button" data-card-set-action="clear" data-i18n="Clear hand">Clear hand</button>
+          <span class="card-set-picker-action-spacer" aria-hidden="true"></span>
+          <button id="cardSetPickerCancel" class="ui-button ui-button--secondary" type="button" data-card-set-action="cancel" data-i18n="Cancel">Cancel</button>
+          <button id="cardSetPickerApply" class="ui-button ui-button--primary" type="button" data-card-set-action="apply" data-i18n="Apply">Apply</button>
+        </div>
+      </section>
 
       <div class="deck" id="deck"></div>
 

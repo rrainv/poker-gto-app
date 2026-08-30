@@ -14,6 +14,9 @@ const cardPresentation = fs.readFileSync(new URL('../app/src/application/card-pr
 const experienceEvents = fs.readFileSync(new URL('../app/src/application/experience-events.mjs', import.meta.url), 'utf8');
 const playbookBootstrap = fs.readFileSync(new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url), 'utf8');
 const trainingBootstrap = fs.readFileSync(new URL('../app/src/application/training-mode-bootstrap.mjs', import.meta.url), 'utf8');
+const analysisBootstrap = fs.readFileSync(new URL('../app/src/application/analysis-explanation-bootstrap.mjs', import.meta.url), 'utf8');
+const equityHandAnalysis = fs.readFileSync(new URL('../app/src/application/equity-hand-analysis.mjs', import.meta.url), 'utf8');
+const rangeAnalysis = fs.readFileSync(new URL('../app/src/application/range-analysis.mjs', import.meta.url), 'utf8');
 
 const matrixHtml = html.slice(html.indexOf('id="chartView"'), html.indexOf('id="rangeView"'));
 const uiQaStart = css.indexOf('UI-QA-002B: dense range analysis');
@@ -83,15 +86,15 @@ test('spades use face-dark and theme-aware UI contrast without changing suit com
   for (const suit of ['h', 'd', 'c', 's']) assert.match(logic, new RegExp(`card--suit-\\$\\{suit\\.id\\}`));
 });
 
-test('Outs uses grouped analytical markup while retaining the legacy calculation entry point', () => {
-  for (const className of ['outs-panel-head', 'outs-total', 'outs-groups', 'outs-group-head', 'outs-card-list', 'outs-card']) {
-    assert.match(logic, new RegExp(className));
-  }
-  assert.match(logic, /const outsResult = calculateOuts\(myCards, allOpponentsCards, board, deadCards\)/);
-  assert.match(logic, /function calculateOuts\(myCards, allOpponentsCards, boardCards, deadCards = \[\]\)/);
-  assert.match(logic, /class="outs-card riverline-card card--suit-\$\{suit\}"[^>]+aria-label="\$\{label\}"/);
-  assert.doesNotMatch(logic, /OutsAhead/);
-  assert.doesNotMatch(logic.match(/const outsResult = calculateOuts[\s\S]*?\n\s*}\n\s*}\)\(\);/)?.[0] ?? '', /style="/);
+test('Equity analysis consumes canonical structural completions and exact entered-hand outcomes', () => {
+  assert.match(rangeAnalysis, /structural_direct_improvement_cards/);
+  assert.match(equityHandAnalysis, /createExactEnteredHandOutcomeFacts/);
+  assert.match(equityHandAnalysis, /winningOuts/);
+  assert.match(equityHandAnalysis, /'winning_out'/);
+  assert.match(equityHandAnalysis, /structuralImprovementsStillBehind/);
+  assert.match(analysisBootstrap, /createEquityHandAnalysisProjection/);
+  assert.match(logic, /bridge\.createEquityHandAnalysisProjection/);
+  assert.doesNotMatch(logic, /function calculateOuts\(|\bscoreSeven\(/);
 });
 
 test('polished exact-card fallbacks use displayCard while analytical hand classes remain intact', () => {
@@ -185,9 +188,10 @@ test('deal and feedback motion are event-scoped, restrained, and reduced-motion 
 });
 
 test('UI-QA-002B remains presentation-only and keeps protected engines intact', () => {
-  for (const symbol of ['deriveDecisionContext', 'strategyProvider.resultSchemaVersion', 'calculateEquity', 'calculateOuts', 'handleTrainingGuess']) {
+  for (const symbol of ['deriveDecisionContext', 'strategyProvider.resultSchemaVersion', 'calculateEquity', 'handleTrainingGuess']) {
     assert.match(logic, new RegExp(symbol));
   }
+  assert.doesNotMatch(logic, /function calculateOuts\(|\bscoreSeven\(/);
   assert.doesNotMatch(table, /PokerState|DecisionContext|StrategyResult|calculateEquity|regret|MCCFR/);
   assert.doesNotMatch(uiQaCss, /calculateEquity|calculateOuts|DecisionContext|StrategyResult|MCCFR|teacher/i);
 });

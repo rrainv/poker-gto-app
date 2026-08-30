@@ -441,7 +441,7 @@ test('Hand presentation is one-way, disables scenario facts, and guards direct c
 
 test('both modes converge on one StrategyProvider and StrategyResult rendering path', () => {
   const updateStart = LOGIC.indexOf("async function updateContext(reason = 'Context updated')");
-  const updateEnd = LOGIC.indexOf('// Legacy fast evaluator retained for the existing Outs display only.', updateStart);
+  const updateEnd = LOGIC.indexOf('let equityCalculationGeneration = 0;', updateStart);
   assert.ok(updateEnd > updateStart);
   const update = LOGIC.slice(updateStart, updateEnd);
   assert.equal((update.match(/strategyProvider\.resolve\(decisionContext\)/g) || []).length, 1);

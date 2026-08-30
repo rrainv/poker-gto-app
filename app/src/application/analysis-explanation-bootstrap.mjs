@@ -21,6 +21,13 @@ import {
   formatSuggestedSizingBb,
   roundSuggestedSizingBb,
 } from './poker-sizing-presentation.mjs';
+import {
+  EQUITY_HAND_ANALYSIS_SCHEMA_VERSION,
+  EXACT_ENTERED_HAND_OUTCOMES_SCHEMA_VERSION,
+  createEquityHandAnalysisProjection,
+  createExactEnteredHandOutcomeFacts,
+  orderBestFiveForPresentation,
+} from './equity-hand-analysis.mjs';
 
 export function installAnalysisExplanationBridge(browserWindow) {
   if (!browserWindow) return null;
@@ -36,6 +43,11 @@ export function installAnalysisExplanationBridge(browserWindow) {
     createBluffAnalysisFacts,
     deriveExactHandFacts,
     deriveBoardTextureFacts,
+    equityHandAnalysisSchemaVersion: EQUITY_HAND_ANALYSIS_SCHEMA_VERSION,
+    exactEnteredHandOutcomesSchemaVersion: EXACT_ENTERED_HAND_OUTCOMES_SCHEMA_VERSION,
+    createEquityHandAnalysisProjection,
+    createExactEnteredHandOutcomeFacts,
+    orderBestFiveForPresentation,
     formatTemplate: formatAnalysisTemplate,
     formatExactPokerAmountBb,
     formatSuggestedSizingBb,

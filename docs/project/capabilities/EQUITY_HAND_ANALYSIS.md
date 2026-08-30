@@ -29,8 +29,11 @@ Current implemented contracts remain in:
 - [ARCHITECTURE_CONTRACT.md](../ARCHITECTURE_CONTRACT.md): canonical evaluator, Equity, range, and UI authority boundaries;
 - [evaluator.js](../../../shared/poker-domain/evaluator.js): canonical five- and seven-card hand ranking and evaluator-selected best five;
 - [equity.js](../../../shared/poker-domain/equity.js): canonical 2-10-player exact or seeded Monte Carlo Equity, win/tie/share accounting, cancellation, and progress.
+- [equity-hand-analysis.mjs](../../../app/src/application/equity-hand-analysis.mjs): immutable `equity-hand-analysis/v1` composition and `exact-entered-hand-outcomes/v1` comparison of every entered exact hand across legal next cards.
 
-The current Equity request accepts exact two-card hands or a uniform unknown hand, board cards, and dead cards. It does not accept weighted opponent ranges. Current Range Analysis deliberately omits backdoor draws and does not claim clean outs, nut advantage, range standing, vulnerability, or Equity. No current Runout Explorer or card-outcome preview contract exists.
+The current Equity request accepts exact two-card hands or a uniform unknown hand, board cards, and dead cards. It does not accept weighted opponent ranges. When every opponent hand is exact and at least a flop exists, the application projection now distinguishes current entered-hand standing, legal next cards that put a player strictly ahead of every entered opponent, tie cards, and structural category improvements that still leave that player behind. This exact-entered-hand comparison is not Range Analysis, weighted-range standing, a clean/dirty-out model, or a final-pot guarantee; on the flop, the River remains unresolved after the classified Turn card.
+
+Current Range Analysis deliberately omits backdoor draws and does not claim clean outs, nut advantage, range standing, vulnerability, or Equity. No current Runout Explorer or card-outcome preview contract exists. Richer split-pot explanation, Hand Standing beyond entered exact hands, nuts/locks/vulnerability, clean/dirty improvements, weighted range-relative analysis, and the future interactions below remain preserved rather than implied by the accepted Equity checkpoint.
 
 ## Desired future behavior
 
@@ -358,7 +361,7 @@ No new market research is performed by this dossier. Existing Riverline product 
 - `CARD-OUTCOME-PREVIEW-001` — **PRESERVED** here with all-cards context, evaluator-selected best-five emphasis, unused-card dimming, exact result/kickers, keyboard parity, and distinct hypothetical-state semantics.
 - `EQUITY-HAND-ANALYSIS-001` — **PRESERVED** as the broader structured hand/runout/nut/blocker direction.
 - `RANGE-VS-RANGE-001` — **PRESERVED**, shared with [RANGE_EVOLUTION.md](./RANGE_EVOLUTION.md); it requires a versioned weighted Equity/Analysis boundary.
-- Existing exact/seeded Equity and the current direct-outs foundation — **IMPLEMENTED**, but they do not imply the future depth above.
+- Existing exact/seeded Equity, the current direct-outs foundation, and exact-entered-hand next-card outcome distinction — **IMPLEMENTED**, but they do not imply the future depth above.
 
 ## Related specs/capabilities
 

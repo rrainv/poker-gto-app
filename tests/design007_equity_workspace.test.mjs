@@ -41,14 +41,19 @@ test('known and unknown hands are explicit and incomplete known hands block calc
   assert.match(logic, /data-equity-hand-mode="known"/);
   assert.match(logic, /data-equity-hand-mode="unknown"/);
   assert.match(logic, /data-hand-state="\$\{handState\}"/);
-  assert.match(equityLogic, /player\.handMode !== 'unknown'[\s\S]*cards\.filter\(Boolean\)\.length !== 2/);
+  assert.match(equityLogic, /player\.cards !== null && player\.cards\.length !== 2/);
   assert.match(equityHtml, /id="calculate"[^>]+disabled/);
 });
 
-test('unknown hands use canonical card backs and known hands reuse the shared picker slots', () => {
+test('unknown hands use canonical card backs and known hands reuse the shared hand picker grammar', () => {
   assert.match(logic, /class="poker-card-back riverline-card-back"/);
-  assert.match(logic, /data-slots="player-\$\{playerIndex\}"/);
-  assert.match(logic, /renderSlots\(\`player-\$\{playerIndex\}\`, 2\)/);
+  assert.match(logic, /data-equity-edit-hand="\$\{player\.id\}"/);
+  assert.match(logic, /function openEquityHandPicker/);
+  assert.match(logic, /function isPrivateHandCardSetGroup/);
+  assert.match(logic, /draft: definition\.committed\.slice\(\)/);
+  assert.match(logic, /function applyCardSetPicker/);
+  const selection = logic.slice(logic.indexOf('function selectCard'), logic.indexOf('function cardSetPickerFocusTarget'));
+  assert.doesNotMatch(selection, /renderEquityCards|setEquityPending/);
   assert.match(css, /\.equity-unknown-hand \.poker-card-back/);
 });
 
@@ -61,7 +66,7 @@ test('player management supports stable identities and bounded 2 through 10 coun
     logic.indexOf('function renderEquityPlayers'),
     logic.indexOf('function updateActionOptions'),
   ), /confirm\(/);
-  for (const count of [2, 6, 9]) assert.match(equityHtml, new RegExp(`data-equity-player-count="${count}"`));
+  for (const count of [2, 6, 10]) assert.match(equityHtml, new RegExp(`data-equity-player-count="${count}"`));
 });
 
 test('board and dead-card controls expose counts, arbitrary board entry, and clear', () => {
@@ -104,26 +109,27 @@ test('seed is optional, validated as uint32, and forwarded without changing requ
 });
 
 test('results prioritize equity while preserving per-player win and tie detail and order', () => {
-  assert.match(equityHtml, /id="headlineEquity"/);
+  assert.doesNotMatch(equityHtml, /id="headlineEquity"/);
+  assert.match(equityHtml, /id="equityHandAnalysisTitle"[^>]*>Hand Analysis/);
   assert.doesNotMatch(equityHtml, /id="equityBars"|class="equity-result-card"/);
   assert.doesNotMatch(equityHtml, /id="equitySum"|Total equity/);
   assert.match(equityHtml, /id="equitySplitSummary"/);
-  assert.match(equityLogic, /equityResult\.players\.map/);
+  assert.match(logic, /lastResult\?\.players\?\.find\(\(\{ id \}\) => id === player\.id\)/);
+  assert.match(logic, /app\.equity\.players[\s\S]*?\.map\(\(player, playerIndex\) => equityOverviewPlayerMarkup\(player, playerIndex\)\)/s);
   assert.match(logic, /function equityPlayerResultMarkup\(player, playerIndex\)/);
   assert.match(logic, /class="equity-result-primary"><span>\$\{t\('Equity'\)\}<\/span>/);
   assert.match(logic, /<span>\$\{t\('Win'\)\}<\/span><strong class="poker-data-token">\$\{winValue\}<\/strong>/);
   assert.match(logic, /<span>\$\{t\('Tie'\)\}<\/span><strong class="poker-data-token">\$\{tieValue\}<\/strong>/);
-  assert.match(logic, /equityPlayerResultMarkup\(player, playerIndex\)/);
+  assert.match(logic, /footer\.outerHTML = equityPlayerResultMarkup\(player, playerIndex\)/);
   assert.doesNotMatch(equityLogic, /equityTotal|#equitySum/);
   assert.match(logic, /data-player-series="\$\{playerIndex\}"/);
 });
 
-test('shared result context stays compact while preserving board street and dead cards', () => {
-  assert.match(equityHtml, /id="equityScenarioContext"/);
-  assert.match(equityLogic, /0: 'Preflop', 3: 'Flop', 4: 'Turn', 5: 'River'/);
-  assert.match(equityLogic, /request\.players\.length/);
-  assert.match(equityLogic, /request\.deadCards\?\.length/);
-  assert.match(equityLogic, /training-readonly-card riverline-card/);
+test('results avoid repeating the visible setup scenario', () => {
+  assert.doesNotMatch(equityHtml, /equityScenarioContext|equityScenarioTitle|class="equity-scenario"/);
+  assert.match(equityHtml, /id="methodBadge"/);
+  assert.match(equityHtml, /id="equitySplitSummary"/);
+  assert.match(equityHtml, /id="equityDetails"/);
 });
 
 test('actual method, samples, seed, unknown count, board count, and execution are visible metadata', () => {

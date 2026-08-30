@@ -4,6 +4,7 @@ const vm = require('vm');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const LOGIC_PATH = path.join(REPO_ROOT, 'app', 'src', 'core', 'logic.js');
+const EVALUATOR_PATH = path.join(REPO_ROOT, 'shared', 'poker-domain', 'evaluator.js');
 const HTML_PATH = path.join(REPO_ROOT, 'app', 'index.html');
 const STRATEGY_RESULT_PATH = path.join(
   REPO_ROOT, 'app', 'src', 'application', 'strategy-result.mjs',
@@ -113,18 +114,17 @@ function createHarness() {
     preflopHeuristicSource.indexOf('function strategyAction('),
   );
   const potSource = sliceBetween(source, 'function preflopBasePot()', 'function updateMetrics()');
-  const updateContextSource = sliceBetween(source, 'async function updateContext(reason =', '// Legacy fast evaluator retained for the existing Outs display only.');
+  const updateContextSource = sliceBetween(source, 'async function updateContext(reason =', 'let equityCalculationGeneration = 0;');
   const tableProjectionSource = sliceBetween(
     source,
     'function renderPlaybookTableProjection()',
     'async function updateContext(reason =',
   );
   const sliderSource = sliceBetween(source, 'function syncSliderPair(rangeId, numberId)', 'function bindSliderPair(rangeId, numberId, callback)');
-  const evaluatorEquitySource = sliceBetween(
-    source,
-    '// Static TypedArray buffers for zero-GC hand evaluation in main thread',
-    'let equityCalculationGeneration = 0;',
-  );
+  const evaluatorSource = moduleSource(EVALUATOR_PATH)
+    .replaceAll('RANK_VALUE', 'EVALUATOR_RANK_VALUE')
+    .replaceAll('deepFreeze', 'evaluatorDeepFreeze')
+    .replaceAll('POKER_HAND_RANK_SCHEMA_VERSION', 'EVALUATOR_HAND_RANK_SCHEMA_VERSION');
 
   const controls = new Map();
   const sandbox = {
@@ -179,26 +179,17 @@ function createHarness() {
     ${strategyContractSource}
     ${strategyClaimPolicySource}
     ${strategyProviderSource}
-    ${evaluatorEquitySource}
     const CARD_RANKS = '23456789TJQKA';
-    const CARD_SUITS = 'shdc';
-    const HAND_CATEGORIES = Object.freeze({
-      HIGH_CARD: 'high_card', ONE_PAIR: 'one_pair', TWO_PAIR: 'two_pair',
-      THREE_OF_A_KIND: 'three_of_a_kind', STRAIGHT: 'straight', FLUSH: 'flush',
-      FULL_HOUSE: 'full_house', FOUR_OF_A_KIND: 'four_of_a_kind',
-      STRAIGHT_FLUSH: 'straight_flush'
-    });
-    const QA_HAND_CATEGORIES = Object.freeze(Object.values(HAND_CATEGORIES));
-    function qaRank(cards, score) {
-      return {
-        score,
-        category: QA_HAND_CATEGORIES[Math.floor(score / 1e10)],
-        tiebreakers: [],
-        bestFiveCards: cards.slice(0, 5)
-      };
+    const EVALUATOR_HAND_RANK_SCHEMA_VERSION = 'poker-hand-rank/v1';
+    const evaluatorDeepFreeze = (value) => Object.freeze(value);
+    function assertCardArray(cards, label) {
+      if (!Array.isArray(cards)) throw new TypeError(label + ' must be an array');
+      cards.forEach((card) => {
+        if (!/^[2-9TJQKA][shdc]$/.test(card)) throw new TypeError(label + ' contains an invalid card');
+      });
     }
-    function evaluateFive(cards) { return qaRank(cards, scoreFive(cards)); }
-    function evaluateSeven(cards) { return qaRank(cards, scoreSeven(cards)); }
+    ${evaluatorSource}
+    const CARD_SUITS = 'shdc';
     function assertUniqueKnownCards(groups) {
       const seen = new Set();
       for (const group of groups) {

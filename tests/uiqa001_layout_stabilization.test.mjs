@@ -115,12 +115,11 @@ test('Equity communicates arbitrary 2 through 10 counts with a stepper and optio
 });
 
 test('Equity keeps calculation in the primary input workflow and coexists with results on desktop', () => {
-  assert.match(equityHtml, /class="equity-input-stack"[\s\S]*id="calculate"/);
-  assert.match(uiQaCss, /@media \(min-width: 1280px\)[\s\S]*?\.equity-input-stack\s*\{[^}]*grid-template-columns:\s*repeat\(2/);
-  assert.match(equityHtml, /class="equity-shared-flow"[\s\S]*class="panel equity-cards-panel"[\s\S]*class="panel equity-controls-panel"/);
-  assert.match(uiQaCss, /\.equity-shared-flow \.equity-controls-panel\s*\{\s*border-top:/);
-  assert.match(uiQaCss, /\.equity-workspace\s*\{[^}]*grid-template-columns:/);
-  assert.match(uiQaCss, /@media \(max-width: 900px\)[\s\S]*?\.equity-workspace\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/);
+  assert.match(equityHtml, /class="equity-center-column"[\s\S]*class="panel equity-controls-panel equity-calculation-strip"[\s\S]*id="calculate"/);
+  assert.match(equityHtml, /class="panel equity-player-panel"[\s\S]*class="equity-center-column"[\s\S]*class="panel equity-dossier-panel equity-hand-analysis-panel"/);
+  assert.match(css, /\.equity-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(360px, 400px\) minmax\(400px, 448px\) minmax\(520px, 1fr\)/);
+  assert.match(css, /\.equity-center-column\s*\{[^}]*display:\s*grid/);
+  assert.match(css, /@media \(max-width: 1100px\)[\s\S]*?\.equity-workspace[^{]*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/);
 });
 
 test('Training centers the decision between support and setup on wide desktop', () => {

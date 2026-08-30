@@ -407,6 +407,7 @@ test('browser bridge exposes only canonical decision-practice and full-Hand life
     'nextFullHandReviewFrame',
     'previousFullHandReviewFrame',
     'replay',
+    'replayExercise',
     'reset',
     'resetFullHand',
     'resolveRulesCapability',

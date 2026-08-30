@@ -343,7 +343,9 @@ test('core-flow controls are discoverable, localized, keyboard-aware, and remain
   assert.match(logic, /function prepareCanonicalNewHand\(\)[\s\S]*callPlaybookStateBridge\('prepareNewHand'\)[\s\S]*handStartButton/);
   assert.match(bridge, /prepareNewHand\(\)[\s\S]*phase !== 'terminal'[\s\S]*canonicalController\.reset\(\)[\s\S]*canonicalHandSourceId = null[\s\S]*replayController\.clear\(\)/);
 
-  assert.match(logic, /nextPrivateCardIndex[\s\S]*openPicker\(group, nextPrivateCardIndex\)/);
+  assert.match(logic, /function isPrivateHandCardSetGroup[\s\S]*group\.startsWith\('hand-seat-'\)/);
+  assert.match(logic, /kind: 'private_hand'[\s\S]*requiredCount: 2[\s\S]*draft: definition\.committed\.slice\(\)/);
+  assert.match(logic, /function applyCardSetPicker[\s\S]*replaceCardSetTarget\(picker, picker\.draft\.slice\(\)\)/);
   assert.match(logic, /function handleCardPickerKeydown\(event\)[\s\S]*event\.key === 'Escape'[\s\S]*event\.key !== 'Tab'/);
   assert.match(logic, /event\.stopPropagation\(\)[\s\S]*closePicker\(\)/);
   assert.match(logic, /knownOpponentsOpen[\s\S]*root\.querySelector\('\.hand-known-opponents'\)[\s\S]*knownOpponents\.open = knownOpponentsOpen/);

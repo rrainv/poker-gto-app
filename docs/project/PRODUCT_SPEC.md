@@ -1,6 +1,6 @@
 # Riverline Product and UI Specification
 
-Last refreshed: August 26, 2026 (`TRAINING-MEMORY-001`).
+Last refreshed: August 30, 2026 (`EQUITY-COMPOSITION-001` human-accepted interaction closeout).
 
 ## 1. Product principle
 
@@ -78,6 +78,7 @@ Hover/focus inspection, hypothetical states, Save/bookmark, Randomize/Lock, card
 ## 6. Durable visible-product invariants
 
 - **Card picker:** default cards are readable at 1080p without browser zoom; fix the default before adding micro-settings.
+- **Transactional card-set editing:** supported Hand/Scenario and Equity card sets edit as a draft and commit once through Apply; Cancel/Escape restores the prior set, and only a committed legal change reaches the owning surface's existing invalidation/readiness path.
 - **Board:** five board cards remain one horizontal row on supported desktop layouts. Street grouping labels may sit above slots.
 - **Card identity:** every visible known card exposes rank and suit identity across Hero/opponent cards, 2/4-color modes, T/10, themes, and RTL.
 - **Sizing display:** presentation uses human poker precision rather than leaking internal floating-point decimals; canonical stored amounts remain exact.

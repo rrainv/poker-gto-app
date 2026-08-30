@@ -8007,9 +8007,9 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   display: grid;
   grid-template-columns: repeat(5, var(--poker-card-width));
   grid-template-rows: auto var(--poker-card-height);
-  column-gap: 2px;
+  column-gap: var(--space-3);
   row-gap: var(--space-2);
-  overflow-x: auto;
+  overflow: visible;
   direction: ltr;
   unicode-bidi: isolate;
 }
@@ -8017,12 +8017,14 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 .playbook-board-layout [data-playbook-street="flop"] { grid-column: 1 / span 3; grid-row: 1; }
 .playbook-board-layout [data-playbook-street="turn"] { grid-column: 4; grid-row: 1; }
 .playbook-board-layout [data-playbook-street="river"] { grid-column: 5; grid-row: 1; }
-.playbook-board-layout .playbook-board-cards > .card-slot { grid-row: 2; margin: 0; }
-.playbook-board-layout .playbook-board-cards > .card-slot:nth-child(1) { grid-column: 1; }
-.playbook-board-layout .playbook-board-cards > .card-slot:nth-child(2) { grid-column: 2; }
-.playbook-board-layout .playbook-board-cards > .card-slot:nth-child(3) { grid-column: 3; }
-.playbook-board-layout .playbook-board-cards > .card-slot:nth-child(4) { grid-column: 4; }
-.playbook-board-layout .playbook-board-cards > .card-slot:nth-child(5) { grid-column: 5; }
+.playbook-board-layout .playbook-board-cards > .board-card-set-editor { grid-row: 2; margin: 0; }
+.playbook-board-layout .playbook-board-cards > .board-card-set-editor--flop {
+  grid-column: 1 / span 3;
+  grid-template-columns: repeat(3, var(--poker-card-width));
+  column-gap: var(--space-3);
+}
+.playbook-board-layout .playbook-board-cards > .board-card-set-editor[data-card-set-index="3"] { grid-column: 4; }
+.playbook-board-layout .playbook-board-cards > .board-card-set-editor[data-card-set-index="4"] { grid-column: 5; }
 .playbook-board-layout [data-playbook-street] {
   align-self: center;
   color: var(--text-muted);
@@ -8787,7 +8789,6 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   padding: var(--space-4);
   background: var(--surface-inset);
   border: 1px solid var(--border-subtle);
-  border-inline-start: 3px solid var(--series-color);
   border-radius: var(--radius-control);
 }
 
@@ -8983,7 +8984,6 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   outline-offset: 2px;
 }
 
-[dir="rtl"] .equity-player-card { border-inline-start: 3px solid var(--series-color); }
 [dir="rtl"] .equity-row b,
 [dir="rtl"] .equity-result-summary,
 [dir="rtl"] .equity-detail-grid { direction: rtl; }
@@ -10199,7 +10199,7 @@ button.rail-utility { width: 100%; cursor: pointer; }
   margin-top: var(--space-4);
   margin-right: auto;
   margin-left: 0;
-  overflow-x: auto;
+  overflow: visible;
   direction: ltr;
   unicode-bidi: isolate;
 }
@@ -10212,12 +10212,14 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .equity-board-layout [data-equity-street="flop"] { grid-column: 1 / span 3; grid-row: 1; }
 .equity-board-layout [data-equity-street="turn"] { grid-column: 4; grid-row: 1; }
 .equity-board-layout [data-equity-street="river"] { grid-column: 5; grid-row: 1; }
-.equity-board-layout .equity-board-cards > .card-slot { grid-row: 2; margin: 0; }
-.equity-board-layout .equity-board-cards > .card-slot:nth-child(1) { grid-column: 1; }
-.equity-board-layout .equity-board-cards > .card-slot:nth-child(2) { grid-column: 2; }
-.equity-board-layout .equity-board-cards > .card-slot:nth-child(3) { grid-column: 3; }
-.equity-board-layout .equity-board-cards > .card-slot:nth-child(4) { grid-column: 4; }
-.equity-board-layout .equity-board-cards > .card-slot:nth-child(5) { grid-column: 5; }
+.equity-board-layout .equity-board-cards > .board-card-set-editor { grid-row: 2; margin: 0; }
+.equity-board-layout .equity-board-cards > .board-card-set-editor--flop {
+  grid-column: 1 / span 3;
+  grid-template-columns: repeat(3, var(--poker-card-width, 48px));
+  column-gap: var(--equity-board-column-gap);
+}
+.equity-board-layout .equity-board-cards > .board-card-set-editor[data-card-set-index="3"] { grid-column: 4; }
+.equity-board-layout .equity-board-cards > .board-card-set-editor[data-card-set-index="4"] { grid-column: 5; }
 
 .equity-board-layout [data-equity-street] {
   align-self: center;
@@ -13850,36 +13852,483 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"] .table-wrappe
   font-size: var(--text-label-size);
 }
 
-/* Equity keeps one persistent player-tile surface from input through results.
-   The shared result rail stays compact, so completing a calculation does not
-   replace the editable tiles with a second horizontal result dashboard. */
-#equityMode .workspace-frame--standard {
-  --workspace-frame-max: var(--workspace-frame-dense);
-}
+/* EQUITY-COMPOSITION-001R: frozen Player Gallery / Board / Dossier model. */
+#equityMode .workspace-frame--standard { --workspace-frame-max: var(--workspace-frame-dense); }
 .equity-workspace {
   width: min(100%, var(--workspace-frame-dense));
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 320px);
+  display: grid;
+  grid-template-columns: minmax(360px, 400px) minmax(400px, 448px) minmax(520px, 1fr);
+  gap: var(--workspace-column-gap);
+  align-items: start;
 }
-.equity-output-stack {
+.equity-player-panel,
+.equity-center-column,
+.equity-dossier-panel { min-width: 0; }
+.equity-center-column { display: grid; gap: var(--space-3); align-content: start; }
+.equity-dossier-panel {
+  position: sticky;
+  top: var(--space-2);
+  max-block-size: calc(100dvh - 118px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+#equityMode .equity-section-head,
+#equityMode .equity-dossier-head { padding: 10px var(--space-4); }
+#equityMode .equity-section-head h2,
+#equityMode .equity-dossier-head h2 { font-size: 1.075rem; }
+#equityMode .equity-section-head .density-support-disclosure { display: none; }
+#equityMode .equity-player-toolbar { padding: var(--space-2) var(--space-3); }
+#equityMode .equity-presets .ui-button { min-width: 34px; min-height: 30px; }
+
+.equity-player-roster { min-width: 0; display: grid; grid-template-rows: minmax(0, auto) auto; }
+.equity-player-list {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  max-block-size: 654px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  align-content: start;
+  padding: var(--space-2);
+  scrollbar-width: thin;
+}
+.equity-roster-footer {
+  padding: var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+}
+.equity-add-player { width: 100%; min-width: 0; min-height: 34px; }
+.equity-player-card {
+  --series-color: var(--series-0);
+  min-width: 0;
+  block-size: 216px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 28px minmax(96px, 1fr) 56px;
+  row-gap: var(--space-1);
+  padding: var(--space-2);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  background: var(--surface-inset);
+}
+.equity-player-card[data-player-series="1"] { --series-color: var(--series-1); }
+.equity-player-card[data-player-series="2"] { --series-color: var(--series-2); }
+.equity-player-card[data-player-series="3"] { --series-color: var(--series-3); }
+.equity-player-card[data-player-series="4"] { --series-color: var(--series-4); }
+.equity-player-card[data-player-series="5"] { --series-color: var(--series-5); }
+.equity-player-card[data-player-series="6"] { --series-color: var(--series-6); }
+.equity-player-card[data-player-series="7"] { --series-color: var(--series-7); }
+.equity-player-card[data-player-series="8"] { --series-color: var(--series-8); }
+.equity-player-card[data-player-series="9"] { --series-color: var(--series-9); }
+.equity-player-head {
+  min-width: 0;
+  min-block-size: 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+  margin: 0;
+  padding: 0;
+}
+.equity-player-head .remove-player {
+  position: static;
+  grid-column: auto;
+  justify-self: end;
+  min-width: 0;
+  min-height: 26px;
+  padding: 2px var(--space-2);
+  font-size: var(--text-micro-size);
+}
+.equity-player-identity { min-width: 0; min-block-size: 26px; display: flex; gap: var(--space-2); align-items: center; padding-block: 0; }
+.equity-player-identity .series-marker { flex: 0 0 auto; align-self: center; }
+.equity-player-name-editor { min-width: 0; height: 26px; flex: 1 1 auto; display: grid; align-items: center; }
+.equity-player-name-label,
+.equity-player-name {
+  grid-area: 1 / 1;
+  min-width: 0;
   width: 100%;
-  max-width: 320px;
+  height: 26px;
+  padding: 0 var(--space-2);
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font-family: var(--font-ui);
+  font-size: var(--text-label-size);
+  font-weight: 800;
+  line-height: 24px;
 }
-.equity-player-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
-.equity-player-list > .add-player { grid-column: 1 / -1; }
+.equity-player-name-label {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.equity-player-name { appearance: none; outline: 0; }
+.equity-player-name-label[hidden],
+.equity-player-name[hidden] { display: none; }
+.equity-player-name-label:hover,
+.equity-player-name-label:focus-visible,
+.equity-player-name:hover,
+.equity-player-name:focus { background: var(--surface-panel); border-color: var(--border-default); }
+.equity-player-name::placeholder { color: var(--text-primary); opacity: 1; }
+.equity-player-identity small { display: none; }
+.equity-player-body {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(66px, 1fr) 28px;
+  gap: var(--space-1);
+  align-items: center;
+  margin: 0;
+  padding-block-start: var(--space-1);
+  overflow: hidden;
+}
+.equity-hand-mode { min-width: 0; grid-row: 2; align-self: end; justify-self: center; }
+.equity-hand-mode button { min-height: 26px; padding: 1px var(--space-2); font-size: var(--text-micro-size); }
+.equity-hand-editor,
+.equity-unknown-hand { min-width: 0; grid-row: 1; justify-content: center; overflow: hidden; }
+.equity-hand-editor {
+  width: 100%;
+  min-height: 72px;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+}
+.equity-hand-editor:hover,
+.equity-hand-editor:focus-visible { background: var(--surface-panel); border-color: var(--border-default); }
+.equity-hand-editor-cards { display: flex; gap: var(--space-3); justify-content: center; overflow: visible; }
+.equity-hand-editor .card-slot { width: var(--card-size-standard-width); height: var(--card-size-standard-height); }
+.equity-hand-editor-action { color: var(--text-muted); font-size: var(--text-micro-size); font-weight: 750; }
+.equity-hand-empty-index { color: var(--text-muted); font: 750 var(--text-label-size)/1 var(--font-data); }
+.equity-unknown-hand > :last-child { display: none; }
+.equity-hand-message { display: none; }
+.equity-player-footer {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 15px minmax(0, 1fr);
+  gap: 2px;
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--border-subtle);
+}
+.equity-player-footer-state {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-micro-size);
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.equity-player-footer[data-result-state="stale"] .equity-player-footer-state { color: var(--warning); font-weight: 750; }
+.equity-player-footer[data-result-state="stale"] .equity-result-metrics { opacity: .72; }
+.equity-player-footer .equity-result-metrics {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr;
+  gap: var(--space-1);
+}
+.equity-player-footer .equity-result-metrics > div {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 1px;
+  padding: 2px var(--space-1);
+  background: var(--surface-panel);
+  border-radius: var(--radius-control);
+}
+.equity-player-footer .equity-result-metrics span { color: var(--text-muted); font-size: .625rem; text-transform: uppercase; }
+.equity-player-footer .equity-result-metrics strong { font-size: var(--text-label-size); }
+.equity-player-footer .equity-result-primary strong { color: var(--text-primary); font-size: var(--text-body-size); }
 
-@media (min-width: 1280px) {
-  .equity-input-stack {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.equity-cards-panel,
+.equity-controls-panel { padding-bottom: var(--space-3); }
+.equity-cards-panel { border: 1px solid var(--border-default); }
+.equity-cards-panel .equity-card-group:first-of-type {
+  padding-block: var(--space-3);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 5%, transparent), transparent);
+}
+#equityMode .equity-card-group { margin-inline: var(--space-3); padding: var(--space-3); }
+#equityMode .equity-card-group + .equity-card-group { margin-top: var(--space-2); }
+#equityMode .equity-card-group-head { gap: var(--space-2); }
+#equityMode .equity-card-group-head h3 { font-size: var(--text-label-size); }
+.equity-board-layout { justify-items: center; }
+.equity-board-cards { justify-content: center; flex-wrap: nowrap; }
+.equity-board-cards .card-slot { width: var(--card-size-hero-width); height: var(--card-size-hero-height); }
+.equity-dead-group { padding-block: var(--space-2); }
+.equity-dead-cards { max-block-size: 88px; overflow-y: auto; overflow-x: hidden; }
+.equity-calculation-strip { border: 1px solid var(--border-subtle); }
+.equity-calculation-strip .equity-section-head { margin-bottom: var(--space-2); }
+.equity-calculation-strip .equity-control-grid { grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr); gap: var(--space-2); padding-inline: var(--space-3); }
+.equity-calculation-strip .ui-field { gap: var(--space-1); font-size: var(--text-micro-size); }
+.equity-calculation-strip select { min-height: 36px; }
+.equity-calculation-strip :is(.equity-estimate, .equity-readiness) { margin: var(--space-2) var(--space-3) 0; padding: var(--space-2) var(--space-3); font-size: var(--text-micro-size); }
+.equity-calculation-status { min-height: 17px; margin: var(--space-2) var(--space-3) 0; font-size: var(--text-micro-size); }
+.equity-calculate-row { justify-content: flex-start; }
+.equity-calculation-strip .equity-calculate-row { padding: var(--space-2) var(--space-3) 0; }
+.equity-calculate { min-width: 170px; min-height: 40px; }
+.equity-calculation-strip :is(.equity-method-disclosure, .equity-advanced) { margin: var(--space-2) var(--space-3) 0; }
+.equity-calculation-strip :is(.equity-method-disclosure, .equity-advanced) > summary { padding-top: var(--space-2); font-size: var(--text-micro-size); }
+.equity-overview-panel { display: none; }
+.equity-overview-panel .panel-head { margin-bottom: 0; }
+.equity-comparison { padding: 0 var(--space-4) var(--space-4); }
+.equity-comparison-list { display: grid; gap: var(--space-2); }
+.equity-overview-player {
+  --series-color: var(--series-0);
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+}
+.equity-overview-player[data-player-series="1"] { --series-color: var(--series-1); }
+.equity-overview-player[data-player-series="2"] { --series-color: var(--series-2); }
+.equity-overview-player[data-player-series="3"] { --series-color: var(--series-3); }
+.equity-overview-player[data-player-series="4"] { --series-color: var(--series-4); }
+.equity-overview-player[data-player-series="5"] { --series-color: var(--series-5); }
+.equity-overview-player[data-player-series="6"] { --series-color: var(--series-6); }
+.equity-overview-player[data-player-series="7"] { --series-color: var(--series-7); }
+.equity-overview-player[data-player-series="8"] { --series-color: var(--series-8); }
+.equity-overview-player[data-player-series="9"] { --series-color: var(--series-9); }
+.equity-overview-player > span { min-width: 0; display: flex; align-items: center; gap: var(--space-2); }
+.equity-overview-player > span strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equity-overview-player .eqbar { grid-column: 1 / -1; height: 5px; }
+
+.equity-dossier-head { position: sticky; top: 0; z-index: 2; background: var(--surface-panel); border-bottom: 1px solid var(--border-subtle); }
+.equity-dossier-content { display: grid; gap: var(--space-2); padding: var(--space-2); }
+.equity-player-analysis-list { min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); align-items: start; }
+.equity-player-analysis-list[data-player-count="3"] > .equity-player-analysis:last-child {
+  grid-column: 1 / -1;
+  inline-size: calc((100% - var(--space-2)) / 2);
+  justify-self: center;
+}
+.equity-player-analysis {
+  --series-color: var(--series-0);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface-inset);
+}
+.equity-player-analysis[data-player-series="1"] { --series-color: var(--series-1); }
+.equity-player-analysis[data-player-series="2"] { --series-color: var(--series-2); }
+.equity-player-analysis[data-player-series="3"] { --series-color: var(--series-3); }
+.equity-player-analysis[data-player-series="4"] { --series-color: var(--series-4); }
+.equity-player-analysis[data-player-series="5"] { --series-color: var(--series-5); }
+.equity-player-analysis[data-player-series="6"] { --series-color: var(--series-6); }
+.equity-player-analysis[data-player-series="7"] { --series-color: var(--series-7); }
+.equity-player-analysis[data-player-series="8"] { --series-color: var(--series-8); }
+.equity-player-analysis[data-player-series="9"] { --series-color: var(--series-9); }
+.equity-player-analysis > h3,
+.equity-player-analysis > summary {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-3);
+  color: var(--text-primary);
+  font-size: var(--text-label-size);
+  border-inline-start: 4px solid var(--series-color);
+  background: var(--surface-panel);
+}
+.equity-player-analysis > summary { cursor: pointer; }
+.equity-player-analysis-title { min-width: 0; display: inline-flex; align-items: center; gap: var(--space-2); padding-inline-end: var(--space-2); }
+.equity-player-analysis-title > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equity-analysis-equity { min-inline-size: 132px; display: grid; grid-template-columns: minmax(0, 1fr) auto; justify-items: end; gap: 3px var(--space-2); white-space: nowrap; }
+.equity-analysis-equity > span { color: var(--text-muted); font-size: .625rem; letter-spacing: .08em; text-transform: uppercase; }
+.equity-analysis-equity > span:first-child { justify-self: start; align-self: end; }
+.equity-analysis-equity > strong { color: var(--text-primary); font-size: 1.55rem; line-height: 1; letter-spacing: -.035em; }
+.equity-analysis-bar { grid-column: 1 / -1; inline-size: 100%; block-size: 7px; overflow: hidden; background: var(--surface-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); }
+.equity-analysis-bar > span { display: block; inline-size: var(--equity-percent); block-size: 100%; background: var(--series-color); border-radius: inherit; }
+.equity-analysis-secondary-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); padding: var(--space-2) var(--space-3); border-top: 1px solid var(--border-subtle); }
+.equity-analysis-secondary-metrics > div { display: flex; justify-content: space-between; gap: var(--space-2); padding: var(--space-2); background: var(--surface-panel); border-radius: var(--radius-control); }
+.equity-analysis-secondary-metrics span { color: var(--text-muted); font-size: .625rem; letter-spacing: .06em; text-transform: uppercase; }
+.equity-analysis-secondary-metrics strong { color: var(--text-secondary); font-size: var(--text-label-size); }
+.equity-player-analysis .equity-dossier-section:first-of-type { border-top: 1px solid var(--border-subtle); }
+.equity-dossier-section {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+.equity-dossier-section h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-label-size);
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+.equity-unknown-outcome { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-3); align-items: baseline; }
+.equity-unknown-outcome strong { color: var(--text-primary); font-size: var(--text-label-size); }
+.equity-unknown-outcome span { color: var(--text-muted); font-size: var(--text-micro-size); }
+.equity-current-hand-title { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; }
+.equity-current-hand-title > strong { color: var(--text-primary); font-size: var(--text-body-size); }
+.equity-dossier-cards,
+.equity-current-hand-title > span,
+.equity-best-five { min-width: 0; }
+.equity-best-five { display: grid; gap: var(--space-2); }
+.equity-best-five > summary { color: var(--text-secondary); cursor: pointer; font-size: var(--text-micro-size); font-weight: 750; }
+.equity-best-five > [data-equity-lazy-detail] { padding-top: var(--space-2); }
+.equity-readonly-cards { max-width: 100%; flex-wrap: wrap; gap: var(--space-1); }
+.equity-current-hand-title .training-readonly-card,
+.equity-board-analysis .training-readonly-card { --poker-card-width: 32px; --poker-card-height: 44px; }
+.equity-fact-list,
+.equity-direct-summary { display: grid; gap: var(--space-2); }
+.equity-fact-row,
+.equity-direct-fact {
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+.equity-fact-row span,
+.equity-direct-fact span { color: var(--text-muted); font-size: var(--text-micro-size); }
+.equity-fact-row strong,
+.equity-direct-fact strong { color: var(--text-secondary); font-size: var(--text-micro-size); text-align: end; }
+.equity-outs {
+  margin: 0 var(--space-2) var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--primary) 34%, var(--border-default));
+  border-inline-start: 4px solid var(--primary);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--primary) 6%, var(--surface-inset));
+}
+.equity-direct-fact--unique { padding-top: var(--space-2); border-top: 1px solid var(--border-subtle); }
+.equity-direct-fact--unique strong { color: var(--text-primary); font-size: var(--text-label-size); }
+.equity-direct-note { margin: 0; color: var(--text-muted); font-size: var(--text-micro-size); line-height: 1.4; }
+.equity-status-row { display: flex; justify-content: space-between; gap: var(--space-2); align-items: center; }
+.equity-status-row > span { color: var(--text-muted); font-size: .625rem; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; }
+.equity-standing { padding: 3px var(--space-2); color: var(--text-primary); background: var(--surface-panel); border: 1px solid var(--border-default); border-radius: var(--radius-pill); font-size: var(--text-micro-size); text-transform: uppercase; letter-spacing: .05em; }
+.equity-standing[data-standing="leading"] { color: var(--status-success); }
+.equity-standing[data-standing="behind"] { color: var(--status-warning); }
+.equity-outcome-empty { color: var(--text-secondary); font-size: var(--text-micro-size); font-weight: 700; }
+.equity-outcome-group { display: grid; gap: var(--space-1); padding-top: var(--space-1); }
+.equity-outcome-group h4 { margin: 0; color: var(--text-primary); font-size: var(--text-micro-size); letter-spacing: .06em; text-transform: uppercase; }
+.equity-board-analysis { border: 1px solid var(--border-subtle); border-radius: var(--radius-control); background: var(--surface-inset); }
+.equity-board-analysis-heading { min-width: 0; display: flex; justify-content: space-between; gap: var(--space-3); align-items: center; }
+.equity-board-analysis-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-1); }
+.equity-board-analysis-facts > div { min-width: 0; display: grid; gap: 2px; padding: var(--space-2); background: var(--surface-panel); border-radius: var(--radius-control); }
+.equity-board-analysis-facts span { color: var(--text-muted); font-size: .625rem; letter-spacing: .04em; text-transform: uppercase; }
+.equity-board-analysis-facts strong { overflow: hidden; color: var(--text-secondary); font-size: var(--text-micro-size); text-overflow: ellipsis; white-space: nowrap; }
+.equity-analysis-stale { margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0; display: grid; gap: 2px; padding: var(--space-2) var(--space-3); color: var(--warning); background: color-mix(in srgb, var(--warning) 9%, var(--surface-inset)); border-bottom: 1px solid color-mix(in srgb, var(--warning) 42%, var(--border-subtle)); }
+.equity-analysis-stale strong { font-size: var(--text-label-size); line-height: 1.25; }
+.equity-analysis-stale span { color: var(--text-secondary); font-size: var(--text-micro-size); line-height: 1.35; }
+.equity-hand-analysis-panel[data-analysis-state="setup"] > :is(.equity-details-panel, .equity-future-analysis) { display: none; }
+.equity-technical-board,
+.equity-technical-player { display: grid; gap: var(--space-2); padding-top: var(--space-3); }
+.equity-technical-board > h3,
+.equity-technical-player > h3 { margin: 0; color: var(--text-secondary); font-size: var(--text-micro-size); }
+.equity-technical-player .equity-card-removal { margin: 0; padding: 0; border: 0; }
+.equity-direct-details,
+.equity-card-removal,
+.equity-provenance-details { min-width: 0; }
+.equity-direct-details > summary,
+.equity-card-removal > summary,
+.equity-provenance-details > summary { color: var(--text-secondary); cursor: pointer; font-size: var(--text-micro-size); font-weight: 750; }
+.equity-card-removal > summary { display: flex; justify-content: space-between; gap: var(--space-2); }
+.equity-direct-card-row { min-width: 0; display: grid; gap: var(--space-2); padding-top: var(--space-3); }
+.equity-direct-card-row > span:first-child { color: var(--text-muted); font-size: var(--text-micro-size); }
+.equity-details-panel { margin: 0; border-inline: 0; border-bottom: 0; border-radius: 0; }
+.equity-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.equity-evidence-split,
+.equity-evidence-facts { margin: 0 var(--space-4) var(--space-4); }
+.equity-evidence-split { display: flex; justify-content: space-between; gap: var(--space-2); }
+.equity-future-analysis { margin: 0; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); }
+.equity-future-analysis > summary { cursor: pointer; color: var(--text-secondary); font-weight: 750; }
+.equity-future-analysis p { margin-bottom: 0; }
+
+.card-set-picker-context {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 var(--space-5) var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+.card-set-picker-context[hidden] { display: none; }
+.card-set-picker-heading,
+.card-set-picker-selection,
+.card-set-picker-actions { display: flex; align-items: center; gap: var(--space-3); }
+.card-set-picker-heading,
+.card-set-picker-selection { justify-content: space-between; }
+.card-set-picker-heading span,
+.card-set-picker-label,
+.card-set-picker-count,
+.card-set-picker-empty { color: var(--text-muted); font-size: var(--text-micro-size); }
+.card-set-picker-cards {
+  min-block-size: calc(var(--card-size-standard-height) + (2 * var(--space-2)));
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2);
+  overflow: visible;
+}
+.card-set-picker-card {
+  flex: 0 0 var(--card-size-standard-width);
+  width: var(--card-size-standard-width) !important;
+  min-width: var(--card-size-standard-width) !important;
+  height: var(--card-size-standard-height) !important;
+  min-height: var(--card-size-standard-height) !important;
+  padding: 0;
+  border-color: var(--border-focus);
+}
+.card-set-picker-card--empty { display: grid; }
+.card-set-picker-action-spacer { flex: 1 1 auto; }
+.private-hand-set-editor { display: flex; flex-wrap: nowrap; gap: var(--space-3); padding: var(--space-1); overflow: visible; background: transparent; border: 0; border-radius: var(--radius-control); }
+.private-hand-set-editor:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 3px; }
+.board-card-set-editor { display: grid; grid-template-columns: 1fr; gap: var(--space-2); padding: 0; background: transparent; border: 0; border-radius: var(--radius-control); }
+.board-card-set-editor--flop { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.board-card-set-editor:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 3px; }
+
+[dir="rtl"] .equity-player-card { text-align: start; }
+
+@media (max-width: 1500px) {
+  .equity-workspace { grid-template-columns: minmax(350px, 390px) minmax(390px, 440px) minmax(400px, 1fr); }
+  .equity-player-card { block-size: 216px; }
+  .equity-player-list { max-block-size: 654px; }
+}
+@media (max-width: 1250px) {
+  .equity-workspace { grid-template-columns: minmax(350px, .74fr) minmax(400px, .88fr) minmax(360px, 1.08fr); gap: var(--space-3); }
+  .equity-player-list { gap: var(--space-2); padding: var(--space-3); }
+  .equity-player-card { block-size: 216px; padding: var(--space-2); }
+}
+@media (max-width: 1100px) {
+  .equity-workspace { grid-template-columns: minmax(0, 1fr); }
+  .equity-dossier-panel { position: static; max-block-size: none; }
+  .equity-player-list { max-block-size: 694px; }
+}
+@media (max-width: 620px) {
+  .equity-player-list { grid-template-columns: minmax(0, 1fr); }
+  .equity-player-card { block-size: 216px; }
+  .equity-calculation-strip .equity-control-grid { grid-template-columns: minmax(0, 1fr); }
+  .equity-detail-grid { grid-template-columns: minmax(0, 1fr); }
+  .equity-player-analysis-list,
+  .equity-board-analysis-facts { grid-template-columns: minmax(0, 1fr); }
+  .equity-player-analysis-list[data-player-count="3"] > .equity-player-analysis:last-child { grid-column: auto; inline-size: 100%; }
 }
 
-@media (min-width: 1500px) {
-  .equity-shared-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .equity-shared-flow .equity-controls-panel {
-    border-top: 0;
-    border-inline-start: 1px solid var(--border-subtle);
-  }
+/* The picker keeps selection feedback immediate without repainting a blurred
+   full-window backdrop or animating paint properties across the dense deck. */
+#cardModal { backdrop-filter: none; }
+#cardModal .deck-card {
+  box-shadow: none;
+  transition: none;
 }
+#cardModal .deck-card:disabled,
+#cardModal .deck-card.unavailable { filter: none; opacity: .42; }
 
 /* Compact tightens rhythm and ordinary controls while explicit readability
    floors continue to protect cards, critical facts, and primary decisions. */
@@ -13897,12 +14346,12 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"] .table-wrappe
   font-size: max(.875rem, var(--text-body-size));
 }
 [data-density="compact"] .equity-player-list {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-[data-density="compact"] .equity-player-body { grid-template-columns: minmax(0, 1fr); }
+[data-density="compact"] .equity-player-body { grid-template-columns: auto minmax(0, 1fr); }
 @media (min-width: 1500px) {
   [data-density="compact"] .equity-player-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

@@ -123,7 +123,7 @@ test('Equity uses reusable multiway series while retaining separate win and tie 
   for (let index = 1; index < 10; index += 1) {
     assert.match(visualSystem, new RegExp(`equity-player-card\\[data-player-series="${index}"\\]`));
   }
-  assert.match(logic, /class="equity-player-results" data-result-state="\$\{state\}"/);
+  assert.match(logic, /class="equity-player-footer" data-result-state="\$\{state\}"/);
   assert.match(html, /id="equitySplitSummary"/);
 });
 

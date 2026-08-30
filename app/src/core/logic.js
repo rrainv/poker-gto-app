@@ -136,9 +136,9 @@ const app = {
 
     players: [
 
-      { id: 'equity-player-0', name: 'Hero', cards: [], handMode: 'known' },
+      { id: 'equity-player-0', name: '', cards: [], handMode: 'known' },
 
-      { id: 'equity-player-1', name: 'Opponent 1', cards: [], handMode: 'unknown' }
+      { id: 'equity-player-1', name: '', cards: [], handMode: 'unknown' }
 
     ],
 
@@ -147,6 +147,16 @@ const app = {
     lastRequest: null,
 
     lastResult: null,
+
+    staleResult: null,
+
+    lastAnalysis: null,
+
+    staleAnalysis: null,
+
+    lastAnalysisLabels: null,
+
+    staleAnalysisLabels: null,
 
     lastProgress: null,
 
@@ -425,7 +435,9 @@ function groupCards(group) {
 
   }
 
-  if (group.startsWith('player-')) return app.equity.players[Number(group.slice(7))].cards;
+  const equityPlayer = equityPlayerFromHandGroup(group);
+
+  if (equityPlayer) return equityPlayer.cards;
 
   return [];
 
@@ -435,8 +447,22 @@ function groupCards(group) {
 
 function isEquityGroup(group) {
 
-  return group.startsWith('eq') || group.startsWith('player-');
+  return group.startsWith('eq') || isEquityPrivateHandGroup(group);
 
+}
+
+function equityHandGroup(playerId) {
+  return `equity-hand-${playerId}`;
+}
+
+function equityPlayerFromHandGroup(group) {
+  if (!isEquityPrivateHandGroup(group)) return null;
+  const playerId = group.slice('equity-hand-'.length);
+  return app.equity.players.find((player) => player.id === playerId) || null;
+}
+
+function isEquityPrivateHandGroup(group) {
+  return String(group || '').startsWith('equity-hand-');
 }
 
 
@@ -508,6 +534,40 @@ function cardVisualState(group, card) {
   return 'known';
 }
 
+function isPrivateHandCardSetGroup(group) {
+  return group === 'hero' || group.startsWith('hand-seat-') || isEquityPrivateHandGroup(group);
+}
+
+function privateHandSetEditorMarkup(group, cards) {
+  const ownerLabel = privateHandOwnerLabel(group);
+  const cardMarkupSet = Array.from({ length: 2 }, (_, index) => {
+    const card = cards[index];
+    const suitClass = card ? ` card--suit-${card[1]}` : '';
+    return `<span class="card-slot card--${card ? 'known filled' : 'empty'}${suitClass} riverline-card" data-card-state="${card ? 'known' : 'empty'}" data-card-size="slot" aria-hidden="true">${cardMarkup(card)}</span>`;
+  }).join('');
+  return `<button type="button" class="private-hand-set-editor" data-card-set-edit="${group}" aria-label="${escapeEquityMarkup(t('Edit {player} hand', { player: ownerLabel }))}">${cardMarkupSet}</button>`;
+}
+
+function boardCardSetEditorsMarkup(group, count, cards) {
+  const entries = group === 'hand-board-chance'
+    ? [{ originIndex: 0, cardCount: count }]
+    : [
+        { originIndex: 0, cardCount: 3 },
+        { originIndex: 3, cardCount: 1 },
+        { originIndex: 4, cardCount: 1 }
+      ];
+  return entries.map(({ originIndex, cardCount }) => {
+    const definition = boardStreetCardSetDefinition(group, originIndex);
+    const slots = Array.from({ length: cardCount }, (_, offset) => {
+      const card = cards[originIndex + offset];
+      const suitClass = card ? ` card--suit-${card[1]}` : '';
+      return `<span class="card-slot card--${card ? 'known filled' : 'empty'}${suitClass} riverline-card" data-card-state="${card ? 'known' : 'empty'}" data-card-size="slot" aria-hidden="true">${cardMarkup(card)}</span>`;
+    }).join('');
+    const setClass = cardCount === 3 ? ' board-card-set-editor--flop' : ' board-card-set-editor--single';
+    return `<button type="button" class="board-card-set-editor${setClass}" data-card-set-edit="${group}" data-card-set-index="${originIndex}" data-index="${originIndex}" aria-label="${escapeEquityMarkup(definition.title)}">${slots}</button>`;
+  }).join('');
+}
+
 
 
 function renderSlots(group, count) {
@@ -517,6 +577,16 @@ function renderSlots(group, count) {
   if (!target) return;
 
   const cards = groupCards(group);
+
+  if (isPrivateHandCardSetGroup(group)) {
+    target.innerHTML = privateHandSetEditorMarkup(group, cards);
+    return;
+  }
+
+  if (['board', 'eqboard', 'hand-board-chance'].includes(group)) {
+    target.innerHTML = boardCardSetEditorsMarkup(group, count, cards);
+    return;
+  }
 
   let renderCount = count;
 
@@ -538,9 +608,12 @@ function renderSlots(group, count) {
 
     const state = cardVisualState(group, card);
     const suitClass = card ? ` card--suit-${card[1]}` : '';
-    const ariaLabel = card
-      ? t('Replace {card}{dead}', { card: displayCard(card), dead: state === 'dead' ? `, ${t('dead card')}` : '' })
-      : t('Choose card {number}', { number: index + 1 });
+    const boardDefinition = boardStreetCardSetDefinition(group, index);
+    const ariaLabel = boardDefinition
+      ? boardDefinition.title
+      : card
+        ? t('Replace {card}{dead}', { card: displayCard(card), dead: state === 'dead' ? `, ${t('dead card')}` : '' })
+        : t('Choose a card');
     return `<button type="button" class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-card-size="slot" data-group="${group}" data-index="${index}" aria-label="${ariaLabel}">${cardMarkup(card)}</button>`;
 
   }).join('');
@@ -549,72 +622,567 @@ function renderSlots(group, count) {
 
 
 
-function equityPlayerLabel(playerIndex) {
+function equityDefaultPlayerLabel(playerIndex) {
   return playerIndex === 0 ? t('Hero') : t('Player {number}', { number: playerIndex + 1 });
 }
 
+function equityPlayerLabel(playerIndex) {
+  const customName = String(app.equity.players[playerIndex]?.name || '').trim();
+  return customName || equityDefaultPlayerLabel(playerIndex);
+}
+
+function escapeEquityMarkup(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+
+const EQUITY_MADE_HAND_TRANSLATION_KEYS = Object.freeze({
+  high_card: 'analysis.value.highCard',
+  one_pair: 'analysis.value.onePair',
+  two_pair: 'analysis.value.twoPair',
+  three_of_a_kind: 'analysis.value.threeOfAKind',
+  straight: 'analysis.value.straight',
+  flush: 'analysis.value.flush',
+  full_house: 'analysis.value.fullHouse',
+  four_of_a_kind: 'analysis.value.fourOfAKind',
+  straight_flush: 'analysis.value.straightFlush'
+});
+
+const EQUITY_FACT_TRANSLATION_KEYS = Object.freeze({
+  board_pair: 'analysis.value.boardPair',
+  overpair: 'analysis.value.overpair',
+  pocket_pair: 'analysis.value.pocketPair',
+  pairs_board_rank: 'analysis.value.pairsBoardRank',
+  top_pair: 'analysis.value.topPair',
+  middle_pair: 'analysis.value.middlePair',
+  lower_pair: 'analysis.value.lowerPair',
+  board_two_pair: 'analysis.value.boardTwoPair',
+  set: 'analysis.value.set',
+  trips: 'analysis.value.trips',
+  board_trips: 'analysis.value.boardTrips',
+  plays_board: 'analysis.value.playsBoard',
+  rainbow: 'analysis.value.rainbow',
+  two_tone: 'analysis.value.twoTone',
+  monotone: 'analysis.value.monotone',
+  multi_suit: 'analysis.value.multiSuit',
+  connected: 'analysis.value.connected',
+  coordinated: 'analysis.value.coordinated',
+  disconnected: 'analysis.value.disconnected',
+  three_flush: 'analysis.value.threeFlush',
+  four_flush: 'analysis.value.fourFlush',
+  board_flush: 'analysis.value.boardFlush',
+  none: 'analysis.value.flushStateNone'
+});
+
+function equityFactLabel(value) {
+  const key = EQUITY_FACT_TRANSLATION_KEYS[value];
+  return key ? t(key) : String(value || '').replaceAll('_', ' ');
+}
+
+function equityRankLabel(value) {
+  const ranks = { 14: 'A', 13: 'K', 12: 'Q', 11: 'J', 10: 'T', 9: '9', 8: '8', 7: '7', 6: '6', 5: '5', 4: '4', 3: '3', 2: '2' };
+  return displayCardRank(ranks[value] || String(value || ''));
+}
+
+function equityRankPluralLabel(value) {
+  const ranks = {
+    14: 'Aces', 13: 'Kings', 12: 'Queens', 11: 'Jacks', 10: 'Tens', 9: 'Nines',
+    8: 'Eights', 7: 'Sevens', 6: 'Sixes', 5: 'Fives', 4: 'Fours', 3: 'Threes', 2: 'Twos'
+  };
+  return t(ranks[value] || equityRankLabel(value));
+}
+
+function equityMadeHandLabel(exactHand) {
+  if (exactHand?.street === 'preflop' && exactHand.preflopHandClass) {
+    const kindKeys = {
+      pair: 'analysis.value.pocketPair',
+      suited: 'analysis.value.suitedHand',
+      offsuit: 'analysis.value.offsuitHand'
+    };
+    return `${exactHand.preflopHandClass} · ${t(kindKeys[exactHand.preflopKind])}`;
+  }
+  const key = EQUITY_MADE_HAND_TRANSLATION_KEYS[exactHand?.primaryCategory];
+  if (!key) return null;
+  if (exactHand.primaryCategory === 'straight_flush' && exactHand.madeHandSubtype === 'royal') {
+    return t('analysis.value.royalFlush');
+  }
+  if (exactHand.primaryCategory === 'straight' && exactHand.madeHandSubtype === 'wheel') {
+    return t('analysis.value.wheelStraight');
+  }
+  if (exactHand.primaryCategory === 'straight' && exactHand.madeHandSubtype === 'broadway') {
+    return t('analysis.value.broadwayStraight');
+  }
+  if (exactHand.primaryCategory === 'straight_flush' && exactHand.madeHandSubtype === 'wheel') {
+    return t('analysis.value.wheelStraightFlush');
+  }
+  if (['straight', 'flush', 'straight_flush'].includes(exactHand.primaryCategory)
+    && Number.isInteger(exactHand.canonicalRank?.tiebreakers?.[0])) {
+    return t('{rank}-high {hand}', {
+      rank: equityRankLabel(exactHand.canonicalRank.tiebreakers[0]),
+      hand: t(key)
+    });
+  }
+  const category = t(key);
+  const relationship = exactHand.relationship && exactHand.relationship !== exactHand.primaryCategory
+    ? equityFactLabel(exactHand.relationship) : null;
+  const tiebreakers = exactHand.canonicalRank?.tiebreakers || [];
+  const structure = exactHand.primaryCategory === 'four_of_a_kind'
+    ? equityRankPluralLabel(tiebreakers[0])
+    : exactHand.primaryCategory === 'full_house'
+      ? t('{trips} full of {pair}', { trips: equityRankPluralLabel(tiebreakers[0]), pair: equityRankPluralLabel(tiebreakers[1]) })
+      : exactHand.primaryCategory === 'three_of_a_kind'
+        ? equityRankPluralLabel(tiebreakers[0])
+        : exactHand.primaryCategory === 'two_pair'
+          ? t('{first} and {second}', { first: equityRankPluralLabel(tiebreakers[0]), second: equityRankPluralLabel(tiebreakers[1]) })
+          : exactHand.primaryCategory === 'one_pair'
+            ? equityRankPluralLabel(tiebreakers[0]) : null;
+  return [category, structure, relationship].filter(Boolean).join(' — ');
+}
+
+function equityStraightDrawLabel(subtype) {
+  const keys = {
+    gutshot: 'analysis.value.gutshot',
+    open_ended: 'analysis.value.openEndedDraw',
+    double_gutshot: 'analysis.value.doubleGutshot'
+  };
+  return t(keys[subtype] || 'analysis.outs.straight');
+}
+
+function equityStructuralOutsMarkup(playerProjection) {
+  const facts = playerProjection?.facts;
+  const drawOuts = facts?.exactHand?.drawOuts;
+  if (!drawOuts?.available || !['flop', 'turn'].includes(drawOuts.street)
+    || drawOuts.semantics !== 'structural_direct_improvement_cards') return '';
+  const families = [
+    { key: 'flush', label: t('analysis.value.flushDraw'), fact: drawOuts.flush },
+    { key: 'straight', label: equityStraightDrawLabel(drawOuts.straight?.subtype), fact: drawOuts.straight },
+    { key: 'straight-flush', label: t('analysis.value.straightFlushDraw'), fact: drawOuts.straightFlush }
+  ].filter(({ fact }) => fact?.available && fact.count > 0);
+  if (!families.length) return '';
+
+  const familyMarkup = families.map(({ key, label, fact }) => `
+    <div class="equity-direct-fact" data-direct-family="${key}"><span>${escapeEquityMarkup(label)}</span><strong>${fact.count === 1 ? t('1 direct card') : t('{count} direct cards', { count: fact.count })}</strong></div>`).join('');
+  const detailMarkup = `<details class="equity-direct-details" data-equity-disclosure="structural" data-player-id="${playerProjection.id}"><summary>${t('Exact structural completion cards')}</summary><div data-equity-lazy-detail></div></details>`;
+
+  return `
+    <section class="equity-dossier-section equity-outs" data-range-analysis-schema="${facts.schemaVersion}" data-direct-semantics="${drawOuts.semantics}">
+      <h3>${t('Structural draws / completions')}</h3>
+      <div class="equity-direct-summary">
+        ${familyMarkup}
+        <div class="equity-direct-fact equity-direct-fact--unique"><span>${t('Unique direct completion cards')}</span><strong>${drawOuts.uniqueCompletionCardCount}</strong></div>
+      </div>
+      <p class="equity-direct-note">${t('Structural direct completions — not guaranteed winning outs')}</p>
+      ${detailMarkup}
+    </section>`;
+}
+
+function equityCurrentHandMarkup(playerProjection) {
+  const cards = playerProjection?.cards;
+  const facts = playerProjection?.facts;
+  if (cards === null) {
+    return `<section class="equity-dossier-section" data-dossier-section="current-hand"><h3>${t('Current hand')}</h3><p class="muted">${t('Exact hand facts are unavailable for an unknown hand.')}</p></section>`;
+  }
+  if (cards.length !== 2) {
+    return `<section class="equity-dossier-section" data-dossier-section="current-hand"><h3>${t('Current hand')}</h3><p class="muted">${t('Choose two known cards to inspect this player.')}</p></section>`;
+  }
+  const exactHand = facts?.exactHand;
+  if (!exactHand?.available) {
+    return `<section class="equity-dossier-section" data-dossier-section="current-hand"><h3>${t('Current hand')}</h3><div class="equity-dossier-cards">${equityReadOnlyCardsMarkup(cards, t('Player cards'))}</div><p class="muted">${t('Complete the flop to inspect postflop hand facts.')}</p></section>`;
+  }
+  const madeHand = equityMadeHandLabel(exactHand);
+  const bestFive = playerProjection.bestFivePresentationCards || [];
+  const contribution = exactHand.street === 'preflop'
+    ? ''
+    : `<div class="equity-fact-row"><span>${t('Private cards contribute')}</span><strong>${t(exactHand.usesHeroCards ? 'Yes' : 'No')}</strong></div>`;
+  const overcards = exactHand.draws?.overcardCount > 0
+    ? `<div class="equity-fact-row"><span>${t('analysis.value.overcardsShort')}</span><strong>${exactHand.draws.overcardCount}</strong></div>` : '';
+  return `<section class="equity-dossier-section equity-current-hand" data-dossier-section="current-hand" data-street="${exactHand.street}">
+    <h3>${t('Current hand')}</h3>
+    <div class="equity-current-hand-title"><strong>${escapeEquityMarkup(madeHand || t('Unavailable'))}</strong><span>${equityReadOnlyCardsMarkup(cards, t('Player cards'))}</span></div>
+    ${bestFive.length ? `<details class="equity-best-five" data-equity-disclosure="best-five" data-player-id="${playerProjection.id}"><summary>${t('Best five')}</summary><div data-equity-lazy-detail></div></details>` : ''}
+    <div class="equity-fact-list">${contribution}${overcards}${exactHand.draws?.madeHandAndDraw ? `<div class="equity-fact-row"><span>${t('Made hand + draw')}</span><strong>${t('Yes')}</strong></div>` : ''}</div>
+  </section>`;
+}
+
+function equityBoardAnalysisMarkup(projection) {
+  const board = projection?.globalFacts?.board;
+  if (!board?.available) return '';
+  const pairing = board.quads ? t('Four of a kind') : board.tripled ? t('Trips') : board.doublePaired ? t('Double paired') : board.paired ? t('Paired') : t('Unpaired');
+  return `<section class="equity-dossier-section equity-board-analysis" data-dossier-section="board-analysis">
+    <div class="equity-board-analysis-heading"><h3>${t('Board Analysis')}</h3>${equityReadOnlyCardsMarkup(projection.board, t('Board'))}</div>
+    <div class="equity-board-analysis-facts">
+      <div><span>${t('Pairing')}</span><strong>${pairing}</strong></div>
+      <div><span>${t('Suit texture')}</span><strong>${t(EQUITY_FACT_TRANSLATION_KEYS[board.suitTexture])}</strong></div>
+      <div><span>${t('Connectivity')}</span><strong>${t(EQUITY_FACT_TRANSLATION_KEYS[board.connectivity])}</strong></div>
+    </div>
+  </section>`;
+}
+
+function equityBoardTechnicalMarkup(facts) {
+  const board = facts?.board;
+  if (!board?.available) return '';
+  const straightRanks = board.straightCompletionRanks?.length
+    ? board.straightCompletionRanks.map(equityRankLabel).join(', ') : t('None');
+  return `<section class="equity-technical-board" data-dossier-section="board-technical">
+    <h3>${t('Board technical facts')}</h3>
+    <div class="equity-fact-list">
+      <div class="equity-fact-row"><span>${t('Flush state')}</span><strong>${t(EQUITY_FACT_TRANSLATION_KEYS[board.flushCompletionState])}</strong></div>
+      <div class="equity-fact-row"><span>${t('Board straight completion ranks')}</span><strong class="poker-data-token">${straightRanks}</strong></div>
+    </div>
+  </section>`;
+}
+
+function equityCardRemovalMarkup(facts) {
+  if (facts?.blockers?.heroCards?.length !== 2) return '';
+  return `<details class="equity-dossier-section equity-card-removal" data-dossier-section="card-removal">
+    <summary><span>${t('Card removal')}</span><strong>${t('{count} raw combos removed', { count: facts.blockers.rawCombosRemovedByHeroCards })}</strong></summary>
+    <div class="equity-fact-list">${facts.blockers.heroCardEffects.map((effect) => `<div class="equity-fact-row"><span class="poker-data-token">${displayCard(effect.card)}</span><strong>${t('{count} containing combos', { count: effect.rawComboCountContainingCard })}</strong></div>`).join('')}</div>
+    <p class="muted">${t('Raw structural card removal only — no range or strategy meaning.')}</p>
+  </details>`;
+}
+
+function equityEvidenceFactsMarkup(facts) {
+  if (!facts) return `<p class="muted">${t('Structural analysis service unavailable.')}</p>`;
+  return `<details class="equity-provenance-details">
+    <summary>${t('Fact sources and limitations')}</summary>
+    <div class="equity-fact-list">
+      <div class="equity-fact-row"><span>${t('Exact hand')}</span><strong>${escapeEquityMarkup(t(facts.provenance.exactHand.label))}</strong></div>
+      <div class="equity-fact-row"><span>${t('Board')}</span><strong>${escapeEquityMarkup(t(facts.provenance.board.label))}</strong></div>
+      <div class="equity-fact-row"><span>${t('Dead Cards')}</span><strong>${escapeEquityMarkup(t(facts.provenance.deadCards.label))}</strong></div>
+    </div>
+    <p class="muted">${t('Structural hand and board facts only. No weighted range is supplied. Direct completions are not Equity or guaranteed winning outs.')}</p>
+  </details>`;
+}
+
+function equityOutcomeGroupMarkup(label, group, playerId, outcomeKind) {
+  if (!group?.count) return '';
+  const summaries = group.groups.map(({ resultCategory, count }) => `<div class="equity-direct-fact"><span>${escapeEquityMarkup(t(EQUITY_MADE_HAND_TRANSLATION_KEYS[resultCategory] || resultCategory))}</span><strong>${count === 1 ? t('1 card') : t('{count} cards', { count })}</strong></div>`).join('');
+  return `<div class="equity-outcome-group"><h4>${label}</h4>${summaries}<details class="equity-direct-details" data-equity-disclosure="outcome" data-outcome-kind="${outcomeKind}" data-player-id="${playerId}"><summary>${t('Exact cards')}</summary><div data-equity-lazy-detail></div></details></div>`;
+}
+
+function equityExactOutcomeMarkup(playerProjection, exactOutcomes) {
+  if (playerProjection.cards === null) return '';
+  if (!exactOutcomes?.available) {
+    if (exactOutcomes?.reason !== 'unknown_opponent') return '';
+    return `<section class="equity-dossier-section equity-entered-outcomes" data-outcome-state="unknown"><div class="equity-unknown-outcome"><strong>${t('Opponent unknown')}</strong><span>${t('Exact catch-up analysis unavailable')}</span></div></section>`;
+  }
+  const outcome = exactOutcomes.players.find(({ id }) => id === playerProjection.id);
+  if (!outcome) return '';
+  const standing = outcome.currentStanding === 'leading' ? t('Leading')
+    : outcome.currentStanding === 'tied' ? t('Tied') : t('Behind');
+  const winningLabel = outcome.currentStanding === 'tied' ? t('Cards that put this player ahead') : t('Catch-up cards');
+  const winning = equityOutcomeGroupMarkup(winningLabel, outcome.winningOuts, playerProjection.id, 'winningOuts');
+  const ties = equityOutcomeGroupMarkup(t('Tie cards'), outcome.tieOuts, playerProjection.id, 'tieOuts');
+  const stillBehind = equityOutcomeGroupMarkup(t('Other improvements — still behind'), outcome.structuralImprovementsStillBehind, playerProjection.id, 'structuralImprovementsStillBehind');
+  const leadingCopy = exactOutcomes.nextCardAvailable && outcome.currentStanding === 'leading' ? `<div class="equity-outcome-empty">${t('No catch-up needed')}</div>` : '';
+  const noCatchUp = exactOutcomes.nextCardAvailable && outcome.currentStanding !== 'leading' && !outcome.winningOuts.count
+    ? `<div class="equity-outcome-empty">${t('No next card puts this player strictly ahead of every entered exact opponent.')}</div>` : '';
+  const hasNextCardClaims = outcome.winningOuts.count || outcome.tieOuts.count || outcome.structuralImprovementsStillBehind.count;
+  const scope = hasNextCardClaims && exactOutcomes.nextCardMeaning === 'ahead_after_next_card_not_guaranteed_final_pot'
+    ? t('Catch-up cards: ahead after this turn card; River remains.')
+    : hasNextCardClaims && exactOutcomes.nextCardMeaning === 'final_one_card_runout'
+      ? t('River cards that win at showdown.') : '';
+  return `<section class="equity-dossier-section equity-entered-outcomes" data-outcome-state="${outcome.currentStanding}">
+    <div class="equity-status-row"><span>${t('Status')}</span><strong class="equity-standing" data-standing="${outcome.currentStanding}">${standing}</strong></div>${leadingCopy}${noCatchUp}${winning}${ties}${stillBehind}${scope ? `<p class="equity-direct-note">${scope}</p>` : ''}
+  </section>`;
+}
+
+function equityProjectionLabel(playerId) {
+  const labels = app.equity.lifecycle === 'complete' ? app.equity.lastAnalysisLabels : app.equity.staleAnalysisLabels;
+  if (labels?.[playerId]) return labels[playerId];
+  const index = app.equity.players.findIndex((player) => player.id === playerId);
+  return index >= 0 ? equityPlayerLabel(index) : playerId;
+}
+
+function equityAnalysisResultForPlayer(playerId) {
+  const result = app.equity.lifecycle === 'complete' ? app.equity.lastResult : app.equity.staleResult;
+  return result?.players?.find((player) => player.id === playerId) || null;
+}
+
+function equityAnalysisEquityMarkup(playerId) {
+  const result = equityAnalysisResultForPlayer(playerId);
+  if (!result) return '';
+  const equityPercent = Math.max(0, Math.min(100, result.equity * 100));
+  const equityLabel = `${equityPercent.toFixed(1)}%`;
+  return `<span class="equity-analysis-equity"><span>${t('Equity')}</span><strong class="poker-data-token">${equityLabel}</strong><span class="equity-analysis-bar" aria-hidden="true"><span style="--equity-percent: ${equityPercent.toFixed(3)}%"></span></span></span>`;
+}
+
+function equityAnalysisSecondaryMetricsMarkup(playerId) {
+  const result = equityAnalysisResultForPlayer(playerId);
+  if (!result) return '';
+  return `<div class="equity-analysis-secondary-metrics" aria-label="${escapeEquityMarkup(t('Win and tie probabilities'))}">
+    <div><span>${t('Win')}</span><strong class="poker-data-token">${(result.winProbability * 100).toFixed(1)}%</strong></div>
+    <div><span>${t('Tie')}</span><strong class="poker-data-token">${(result.tieProbability * 100).toFixed(1)}%</strong></div>
+  </div>`;
+}
+
+function equityPlayerAnalysisBody(playerProjection, projection) {
+  return [
+    equityAnalysisSecondaryMetricsMarkup(playerProjection.id),
+    equityCurrentHandMarkup(playerProjection),
+    equityExactOutcomeMarkup(playerProjection, projection.exactOutcomes),
+    equityStructuralOutsMarkup(playerProjection)
+  ].filter(Boolean).join('');
+}
+
+function equityPlayerAnalysisMarkup(playerProjection, playerIndex, projection, collapsePlayers) {
+  const label = equityProjectionLabel(playerProjection.id);
+  const body = collapsePlayers ? '' : equityPlayerAnalysisBody(playerProjection, projection);
+  const heading = `<span class="equity-player-analysis-title"><i class="series-marker" aria-hidden="true"></i><strong>${escapeEquityMarkup(label)}</strong></span>${equityAnalysisEquityMarkup(playerProjection.id)}`;
+  return collapsePlayers
+    ? `<details class="equity-player-analysis" data-equity-disclosure="player" data-player-id="${playerProjection.id}" data-player-series="${playerIndex}"><summary>${heading}</summary><div data-equity-lazy-detail></div></details>`
+    : `<section class="equity-player-analysis" data-player-id="${playerProjection.id}" data-player-series="${playerIndex}" aria-labelledby="equityAnalysisPlayer-${playerProjection.id}"><h3 id="equityAnalysisPlayer-${playerProjection.id}">${heading}</h3>${body}</section>`;
+}
+
+function equityAnalysisEmptyMarkup() {
+  return `<section class="equity-dossier-section equity-analysis-empty"><h3>${t('Hand Analysis')}</h3><p class="muted">${t('Calculate Equity to inspect entered-hand outcomes and detailed hand facts.')}</p></section>`;
+}
+
+function equityAnalysisProjection() {
+  return app.equity.lifecycle === 'complete' ? app.equity.lastAnalysis : app.equity.staleAnalysis;
+}
+
+function equityLazyDisclosureMarkup(details, projection) {
+  const player = projection?.players.find(({ id }) => id === details.dataset.playerId);
+  if (!player) return '';
+  const disclosure = details.dataset.equityDisclosure;
+  if (disclosure === 'player') return equityPlayerAnalysisBody(player, projection);
+  if (disclosure === 'best-five') return equityReadOnlyCardsMarkup(player.bestFivePresentationCards, t('Best five'));
+  if (disclosure === 'structural') {
+    const drawOuts = player.facts?.exactHand?.drawOuts;
+    const families = [
+      ['flush', t('analysis.value.flushDraw'), drawOuts?.flush],
+      ['straight', equityStraightDrawLabel(drawOuts?.straight?.subtype), drawOuts?.straight],
+      ['straight-flush', t('analysis.value.straightFlushDraw'), drawOuts?.straightFlush]
+    ].filter(([, , fact]) => fact?.available && fact.count > 0);
+    return families.map(([key, label, fact]) => `<div class="equity-direct-card-row" data-direct-family="${key}"><span>${escapeEquityMarkup(label)}</span>${equityReadOnlyCardsMarkup(fact.completionCards, label)}</div>`).join('');
+  }
+  if (disclosure === 'outcome') {
+    const outcome = projection.exactOutcomes?.players?.find(({ id }) => id === player.id);
+    const family = outcome?.[details.dataset.outcomeKind];
+    return family?.groups?.map(({ resultCategory, cards }) => {
+      const label = t(EQUITY_MADE_HAND_TRANSLATION_KEYS[resultCategory] || resultCategory);
+      return `<div class="equity-direct-card-row"><span>${escapeEquityMarkup(label)}</span>${equityReadOnlyCardsMarkup(cards, label)}</div>`;
+    }).join('') || '';
+  }
+  return '';
+}
+
+function bindEquityAnalysisDisclosures(content) {
+  if (!content || content.dataset.disclosureBound === 'true') return;
+  content.dataset.disclosureBound = 'true';
+  content.addEventListener('toggle', (event) => {
+    const details = event.target.closest?.('details[data-equity-disclosure]');
+    if (!details?.open) return;
+    const target = details.querySelector(':scope > [data-equity-lazy-detail]');
+    if (!target || target.dataset.rendered === 'true') return;
+    target.innerHTML = equityLazyDisclosureMarkup(details, equityAnalysisProjection());
+    target.dataset.rendered = 'true';
+  }, true);
+}
+
+function equityDisclosureKey(details) {
+  return [details.dataset.equityDisclosure, details.dataset.playerId, details.dataset.outcomeKind || ''].join('|');
+}
+
+function openEquityDisclosureKeys(content) {
+  return [...(content?.querySelectorAll?.('details[data-equity-disclosure][open]') || [])]
+    .map(equityDisclosureKey);
+}
+
+function restoreEquityDisclosureKeys(content, keys, projection) {
+  const orderedKeys = [...keys].sort((left, right) => Number(!left.startsWith('player|')) - Number(!right.startsWith('player|')));
+  orderedKeys.forEach((key) => {
+    const details = [...content.querySelectorAll('details[data-equity-disclosure]')]
+      .find((candidate) => equityDisclosureKey(candidate) === key);
+    if (!details) return;
+    details.open = true;
+    const target = details.querySelector(':scope > [data-equity-lazy-detail]');
+    if (target && target.dataset.rendered !== 'true') {
+      target.innerHTML = equityLazyDisclosureMarkup(details, projection);
+      target.dataset.rendered = 'true';
+    }
+  });
+}
+
+function renderEquityHandAnalysis() {
+  const content = $('#equityHandAnalysisContent');
+  const openDisclosures = openEquityDisclosureKeys(content);
+  const projection = equityAnalysisProjection();
+  const stale = app.equity.lifecycle !== 'complete' && Boolean(projection);
+  const panel = $('#equityHandAnalysis');
+  if (panel) panel.dataset.analysisState = projection ? (stale ? 'stale' : 'current') : 'setup';
+  if (!projection) {
+    if (content) content.innerHTML = equityAnalysisEmptyMarkup();
+    if ($('#equityEvidenceFacts')) $('#equityEvidenceFacts').innerHTML = '';
+    if ($('#equityFurtherAnalysisContent')) $('#equityFurtherAnalysisContent').innerHTML = '';
+    if (document.querySelector('[data-future-analysis-home]')) document.querySelector('[data-future-analysis-home]').hidden = true;
+    return;
+  }
+  const collapsePlayers = projection.players.length >= 5;
+  if (content) {
+    content.innerHTML = `${stale ? `<div class="equity-analysis-stale" role="status"><strong>${t('Analysis is out of date')}</strong><span>${t('Inputs changed. Recalculate to update these results.')}</span></div>` : ''}${[
+      equityBoardAnalysisMarkup(projection),
+      `<div class="equity-player-analysis-list" data-player-count="${projection.players.length}">${projection.players.map((player, playerIndex) => equityPlayerAnalysisMarkup(player, playerIndex, projection, collapsePlayers)).join('')}</div>`
+    ].filter(Boolean).join('')}`;
+    bindEquityAnalysisDisclosures(content);
+    restoreEquityDisclosureKeys(content, openDisclosures, projection);
+  }
+  if ($('#equityEvidenceFacts')) $('#equityEvidenceFacts').innerHTML = equityEvidenceFactsMarkup(projection.globalFacts);
+  const boardTechnical = equityBoardTechnicalMarkup(projection.globalFacts);
+  const removal = projection.players.map((player) => {
+    const markup = equityCardRemovalMarkup(player.facts);
+    return markup ? `<section class="equity-technical-player"><h3>${escapeEquityMarkup(equityProjectionLabel(player.id))}</h3>${markup}</section>` : '';
+  }).filter(Boolean).join('');
+  const furtherAnalysis = boardTechnical + removal;
+  if ($('#equityFurtherAnalysisContent')) $('#equityFurtherAnalysisContent').innerHTML = furtherAnalysis;
+  if (document.querySelector('[data-future-analysis-home]')) document.querySelector('[data-future-analysis-home]').hidden = !furtherAnalysis;
+}
+
 function createEquityPlayer() {
-  const playerNumber = app.equity.players.length + 1;
   return {
     id: `equity-player-${app.equity.nextPlayerId++}`,
-    name: `Player ${playerNumber}`,
+    name: '',
     cards: [],
     handMode: 'unknown'
   };
 }
 
 function equityPlayerResultMarkup(player, playerIndex) {
-  const result = app.equity.lastResult?.players?.find(({ id }) => id === player.id);
-  const complete = app.equity.lifecycle === 'complete' && result;
+  const current = app.equity.lastResult?.players?.find(({ id }) => id === player.id);
+  const stale = app.equity.staleResult?.players?.find(({ id }) => id === player.id);
+  const complete = app.equity.lifecycle === 'complete' && current;
   const running = app.equity.lifecycle === 'running';
-  const state = complete ? 'complete' : (running ? 'running' : 'pending');
+  const result = complete ? current : stale;
+  const state = complete ? 'complete' : (result ? 'stale' : (running ? 'running' : 'setup'));
   const pendingValue = running ? '&hellip;' : '&mdash;';
-  const equityValue = complete ? `${(result.equity * 100).toFixed(1)}%` : pendingValue;
-  const winValue = complete ? `${(result.winProbability * 100).toFixed(1)}%` : pendingValue;
-  const tieValue = complete ? `${(result.tieProbability * 100).toFixed(1)}%` : pendingValue;
-  const equityWidth = complete ? result.equity * 100 : 0;
-  const label = equityPlayerLabel(playerIndex);
+  const equityValue = result ? `${(result.equity * 100).toFixed(1)}%` : pendingValue;
+  const winValue = result ? `${(result.winProbability * 100).toFixed(1)}%` : pendingValue;
+  const tieValue = result ? `${(result.tieProbability * 100).toFixed(1)}%` : pendingValue;
+  const status = state === 'complete' ? t('Calculated')
+    : state === 'running' ? t('Calculating…')
+      : state === 'stale' ? t('Stale')
+        : (player.handMode === 'unknown' ? t('Unknown hand') : t('{count} / 2 cards', { count: player.cards.filter(Boolean).length }));
   return `
-    <section class="equity-player-results" data-result-state="${state}" aria-label="${t('{player} equity', { player: label })}" aria-live="polite">
-      <div class="equity-result-metrics">
+    <footer class="equity-player-footer" data-result-state="${state}" aria-live="polite">
+      <div class="equity-player-footer-state">${status}</div>
+      <div class="equity-result-metrics" aria-label="${escapeEquityMarkup(t('{player} equity', { player: equityPlayerLabel(playerIndex) }))}">
         <div class="equity-result-primary"><span>${t('Equity')}</span><strong class="poker-data-token">${equityValue}</strong></div>
         <div><span>${t('Win')}</span><strong class="poker-data-token">${winValue}</strong></div>
         <div><span>${t('Tie')}</span><strong class="poker-data-token">${tieValue}</strong></div>
       </div>
-      <div class="eqbar" ${complete ? `role="progressbar" aria-label="${t('{player} equity', { player: label })}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${equityWidth.toFixed(1)}"` : 'aria-hidden="true"'}><div class="eqfill player-series" style="width:${equityWidth}%"></div></div>
-    </section>`;
+    </footer>`;
+}
+
+function equityOverviewPlayerMarkup(player, playerIndex) {
+  const result = app.equity.lastResult?.players?.find(({ id }) => id === player.id);
+  if (app.equity.lifecycle !== 'complete' || !result) return '';
+  const equityWidth = result.equity * 100;
+  const label = equityPlayerLabel(playerIndex);
+  const equityAriaLabel = escapeEquityMarkup(t('{player} equity', { player: label }));
+  return `<div class="equity-overview-player" data-player-series="${playerIndex}">
+    <span><i class="series-marker" aria-hidden="true"></i><strong>${escapeEquityMarkup(label)}</strong></span>
+    <strong class="poker-data-token">${equityWidth.toFixed(1)}%</strong>
+    <div class="eqbar" role="progressbar" aria-label="${equityAriaLabel}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${equityWidth.toFixed(1)}"><div class="eqfill player-series" style="width:${equityWidth}%"></div></div>
+  </div>`;
+}
+
+function syncEquityPlayerNamePresentation(playerIndex) {
+  const player = app.equity.players[playerIndex];
+  if (!player) return;
+  const label = equityPlayerLabel(playerIndex);
+  if (app.equity.lastAnalysisLabels?.[player.id]) app.equity.lastAnalysisLabels[player.id] = label;
+  if (app.equity.staleAnalysisLabels?.[player.id]) app.equity.staleAnalysisLabels[player.id] = label;
+  renderEquityComparison();
+  document.querySelectorAll(`[data-player-id="${player.id}"] .equity-player-analysis-title strong, .equity-current-matchup [data-player-id="${player.id}"] span`).forEach((node) => {
+    node.textContent = label;
+  });
+  const tile = document.querySelector(`#equityPlayers [data-player-id="${player.id}"]`);
+  const labelControl = tile?.querySelector('[data-equity-player-name-label]');
+  if (labelControl) {
+    labelControl.textContent = label;
+    labelControl.setAttribute('aria-label', t('{player} name', { player: label }));
+  }
+  tile?.querySelector('.equity-result-metrics')?.setAttribute('aria-label', t('{player} equity', { player: label }));
+}
+
+function finishEquityPlayerNameEdit(input, { cancel = false } = {}) {
+  const playerId = input?.dataset.playerId;
+  const playerIndex = app.equity.players.findIndex((candidate) => candidate.id === playerId);
+  const player = app.equity.players[playerIndex];
+  const editor = input?.closest('.equity-player-name-editor');
+  const labelControl = editor?.querySelector('[data-equity-player-name-label]');
+  if (!player || !editor || !labelControl || input.hidden) return;
+  if (!cancel) {
+    player.name = input.value.trim().slice(0, 40);
+    syncEquityPlayerNamePresentation(playerIndex);
+  }
+  input.value = player.name;
+  input.hidden = true;
+  labelControl.hidden = false;
+  labelControl.focus({ preventScroll: true });
+}
+
+function beginEquityPlayerNameEdit(labelControl) {
+  const editor = labelControl?.closest('.equity-player-name-editor');
+  const input = editor?.querySelector('[data-equity-player-name]');
+  if (!input) return;
+  labelControl.hidden = true;
+  input.hidden = false;
+  input.focus({ preventScroll: true });
+  input.select();
+}
+
+function renderEquityComparison() {
+  const root = $('#equityComparison');
+  if (!root) return;
+  root.dataset.playerCount = String(app.equity.players.length);
+  root.innerHTML = app.equity.players
+    .map((player, playerIndex) => equityOverviewPlayerMarkup(player, playerIndex))
+    .join('');
 }
 
 function renderEquityPlayerResults() {
-  const root = $('#equityPlayers');
-  if (!root) return;
-  root.querySelectorAll('.equity-player-card').forEach((card, playerIndex) => {
+  document.querySelectorAll('#equityPlayers .equity-player-card').forEach((tile, playerIndex) => {
+    const footer = tile.querySelector('.equity-player-footer');
     const player = app.equity.players[playerIndex];
-    const current = card.querySelector('.equity-player-results');
-    if (player && current) current.outerHTML = equityPlayerResultMarkup(player, playerIndex);
+    if (footer && player) footer.outerHTML = equityPlayerResultMarkup(player, playerIndex);
   });
+  renderEquityComparison();
 }
 
 function setEquityPlayerCount(requestedCount) {
   const count = Math.max(2, Math.min(10, Number(requestedCount) || 2));
   while (app.equity.players.length < count) app.equity.players.push(createEquityPlayer());
   if (app.equity.players.length > count) app.equity.players.splice(count);
-  renderAllCards();
-  setEquityPending();
+  setEquityPending({ renderInputs: 'players' });
 }
 
-function setEquityHandMode(playerIndex, handMode) {
-  const player = app.equity.players[playerIndex];
+function setEquityHandMode(playerId, handMode) {
+  const player = app.equity.players.find((candidate) => candidate.id === playerId);
   if (!player || !['known', 'unknown'].includes(handMode)) return;
+  if (app.picker?.group === equityHandGroup(player.id)) closePicker({ restoreFocus: false });
   player.handMode = handMode;
   if (handMode === 'unknown') player.cards = [];
-  renderAllCards();
-  setEquityPending();
+  setEquityPending({ renderInputs: 'players' });
+}
+
+function equityHandEditorMarkup(player, playerIndex, label) {
+  const cards = Array.from({ length: 2 }, (_, cardIndex) => {
+    const card = player.cards[cardIndex];
+    const state = card ? cardVisualState(equityHandGroup(player.id), card) : 'empty';
+    const suitClass = card ? ` card--suit-${card[1]}` : '';
+    const content = card ? cardMarkup(card) : '';
+    return `<span class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-card-size="standard"${card ? ` data-card-id="${card}"` : ''} aria-hidden="true">${content}</span>`;
+  }).join('');
+  return `<button type="button" class="equity-hand-editor" data-equity-edit-hand="${player.id}" aria-label="${escapeEquityMarkup(t('Edit {player} hand', { player: label }))}"><span class="equity-hand-editor-cards">${cards}</span><span class="equity-hand-editor-action">${t(player.cards.filter(Boolean).length ? 'Edit hand' : 'Choose hand')}</span></button>`;
 }
 
 function renderEquityPlayers() {
   const root = $('#equityPlayers');
   if (!root) return;
+  root.dataset.playerCount = String(app.equity.players.length);
 
   root.innerHTML = app.equity.players.map((player, playerIndex) => {
     const mode = player.handMode || (player.cards.filter(Boolean).length ? 'known' : 'unknown');
@@ -630,44 +1198,36 @@ function renderEquityPlayers() {
     return `
       <article class="equity-player-card" data-player-id="${player.id}" data-player-series="${playerIndex}" data-hand-state="${handState}">
         <header class="equity-player-head">
-          <span class="equity-player-identity"><i class="series-marker" aria-hidden="true"></i><strong>${label}</strong><small>${status}</small></span>
+          <span class="equity-player-identity"><i class="series-marker" aria-hidden="true"></i><span class="equity-player-name-editor"><button type="button" class="equity-player-name-label" data-equity-player-name-label="${playerIndex}" aria-label="${escapeEquityMarkup(t('{player} name', { player: label }))}">${escapeEquityMarkup(label)}</button><input class="equity-player-name" data-equity-player-name="${playerIndex}" data-player-id="${player.id}" maxlength="40" value="${escapeEquityMarkup(player.name)}" placeholder="${escapeEquityMarkup(equityDefaultPlayerLabel(playerIndex))}" aria-label="${escapeEquityMarkup(t('{player} name', { player: label }))}" hidden></span><small>${status}</small></span>
           ${playerIndex > 1 ? `<button type="button" class="remove-player ui-button ui-button-ghost" data-remove-player="${playerIndex}" aria-label="${t('Remove {player}', { player: label })}">${t('Remove')}</button>` : ''}
         </header>
         <div class="equity-player-body">
           <div class="equity-hand-mode" role="group" aria-label="${t('{player} hand type', { player: label })}">
-            <button type="button" data-equity-hand-mode="known" data-player-index="${playerIndex}" aria-pressed="${mode === 'known'}">${t('Known')}</button>
-            <button type="button" data-equity-hand-mode="unknown" data-player-index="${playerIndex}" aria-pressed="${mode === 'unknown'}">${t('Unknown')}</button>
+            <button type="button" data-equity-hand-mode="known" data-player-id="${player.id}" aria-pressed="${mode === 'known'}">${t('Known')}</button>
+            <button type="button" data-equity-hand-mode="unknown" data-player-id="${player.id}" aria-pressed="${mode === 'unknown'}">${t('Unknown')}</button>
           </div>
           ${mode === 'known'
-            ? `<div class="card-slots equity-known-hand" data-slots="player-${playerIndex}"></div>`
+            ? equityHandEditorMarkup(player, playerIndex, label)
             : `<div class="equity-unknown-hand" aria-label="${t('{player} unknown cards', { player: label })}"><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span>${t('Random legal hand')}</span></div>`}
         </div>
         <div class="equity-hand-message" id="equityHandMessage-${playerIndex}">${status}</div>
         ${equityPlayerResultMarkup(player, playerIndex)}
-        <section id="outsPanel-${playerIndex}" class="equity-player-outs" aria-label="Outs" aria-live="polite">
-          <div class="outs-panel-head"><span class="outs-panel-title" data-i18n="Outs">Outs</span><span id="outsCount-${playerIndex}" class="outs-total"></span></div>
-          <div id="outsSummary-${playerIndex}" class="outs-summary"></div>
-          <div id="outsCards-${playerIndex}" class="outs-groups"></div>
-        </section>
       </article>`;
   }).join('');
 
-  app.equity.players.forEach((player, playerIndex) => {
-    if (player.handMode === 'known') renderSlots(`player-${playerIndex}`, 2);
-  });
-
-  const add = document.createElement('button');
-  add.type = 'button';
-  add.className = 'add-player ui-button ui-button--secondary';
-  add.disabled = app.equity.players.length >= 10;
-  add.textContent = app.equity.players.length >= 10 ? t('10 player maximum') : t('+ Add player');
-  add.addEventListener('click', () => {
-    if (app.equity.players.length >= 10) return toast(t('Maximum of ten players.'), 'warning');
-    app.equity.players.push(createEquityPlayer());
-    renderAllCards();
-    setEquityPending();
-  });
-  root.appendChild(add);
+  const add = $('#equityAddPlayer');
+  if (add) {
+    const atMaximum = app.equity.players.length >= 10;
+    const addLabel = atMaximum ? '10 player maximum' : '+ Add player';
+    add.disabled = atMaximum;
+    add.dataset.i18n = addLabel;
+    add.textContent = t(addLabel);
+    add.onclick = () => {
+      if (app.equity.players.length >= 10) return;
+      app.equity.players.push(createEquityPlayer());
+      setEquityPending({ renderInputs: 'players' });
+    };
+  }
 
   const playerCount = $('#equityPlayerCount');
   if (playerCount) playerCount.textContent = t('{count} players', { count: app.equity.players.length });
@@ -678,6 +1238,26 @@ function renderEquityPlayers() {
   document.querySelectorAll('[data-equity-player-count]').forEach((button) => {
     button.classList.toggle('is-active', Number(button.dataset.equityPlayerCount) === app.equity.players.length);
     button.setAttribute('aria-label', t('Set {count} players', { count: button.dataset.equityPlayerCount }));
+  });
+  root.querySelectorAll('[data-equity-player-name-label]').forEach((labelControl) => {
+    labelControl.addEventListener('click', (event) => {
+      event.stopPropagation();
+      beginEquityPlayerNameEdit(labelControl);
+    });
+  });
+  root.querySelectorAll('[data-equity-player-name]').forEach((input) => {
+    input.addEventListener('click', (event) => event.stopPropagation());
+    input.addEventListener('keydown', (event) => {
+      event.stopPropagation();
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        finishEquityPlayerNameEdit(input);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        finishEquityPlayerNameEdit(input, { cancel: true });
+      }
+    });
+    input.addEventListener('blur', () => finishEquityPlayerNameEdit(input));
   });
   if (typeof updateDomTranslations === 'function') updateDomTranslations();
 }
@@ -761,30 +1341,159 @@ function renderPlaybookCardStateSummary(availableCount) {
   if (deadCardCount) deadCardCount.textContent = String(deadCards.filter(Boolean).length);
 }
 
-function renderEquityCards() {
-  renderSlots('eqboard', 5);
-
-  renderSlots('eqdead', 52);
-
-  if (app.equity.players.length > 0) renderEquityPlayers();
-
+function renderEquityCardCounts() {
   const deckCount = $('#eqDeckCount');
   if (deckCount) deckCount.textContent = remainingCards('equity');
-
   const boardCount = $('#equityBoardCount');
   if (boardCount) boardCount.textContent = `${app.equity.board.filter(Boolean).length} / 5`;
-
   const deadCount = $('#equityDeadCount');
   if (deadCount) deadCount.textContent = String(app.equity.dead.filter(Boolean).length);
+}
 
-  renderEquityScenarioContext();
+function renderEquitySharedCards() {
+  renderSlots('eqboard', 5);
+  renderSlots('eqdead', 52);
+  renderEquityCardCounts();
+}
 
+function renderEquityCards() {
+  renderEquitySharedCards();
+  if (app.equity.players.length > 0) renderEquityPlayers();
 }
 
 function renderAllCards({ mode = activeWorkspaceMode() } = {}) {
   if (mode === 'gto') renderPlaybookCards();
   else if (mode === 'equity') renderEquityCards();
   else if (mode === 'training' && typeof renderTrainingCards === 'function') renderTrainingCards();
+}
+
+function openEquityHandPicker(playerId) {
+  const player = app.equity.players.find((candidate) => candidate.id === playerId);
+  if (!player || player.handMode !== 'known') return false;
+  openPicker(equityHandGroup(player.id), 0);
+  return true;
+}
+
+function privateHandOwnerLabel(group) {
+  if (group === 'hero') return t('Hero');
+  const equityPlayer = equityPlayerFromHandGroup(group);
+  if (equityPlayer) return equityPlayerLabel(app.equity.players.indexOf(equityPlayer));
+  if (group.startsWith('hand-seat-')) {
+    const seat = Number(group.slice('hand-seat-'.length));
+    const state = callPlaybookStateBridge('getState');
+    const player = state?.players?.find((candidate) => candidate.seat === seat);
+    return canonicalPlayerLabel(player, callPlaybookStateBridge('getHeroPlayerId'));
+  }
+  return t('Player hand');
+}
+
+function boardStreetCardSetDefinition(group, originIndex) {
+  if (group === 'hand-board-chance') {
+    const state = callPlaybookStateBridge('getState');
+    const requiredCount = Math.max(1, Number(state?.pendingChance?.cardCount) || 1);
+    const street = String(state?.pendingChance?.type || '').replace('deal_', '');
+    const streetLabel = t(street ? street.charAt(0).toUpperCase() + street.slice(1) : 'Board');
+    return {
+      kind: requiredCount === 3 ? 'flop' : 'board_street',
+      requiredCount,
+      targetIndices: Array.from({ length: requiredCount }, (_, index) => index),
+      title: t('Edit {street}', { street: streetLabel }),
+      kindLabel: t('Board cards'),
+      ownerLabel: streetLabel,
+      selectionLabel: t('Selected cards')
+    };
+  }
+  if (!['board', 'eqboard'].includes(group)) return null;
+  if (originIndex <= 2) {
+    return {
+      kind: 'flop',
+      requiredCount: 3,
+      targetIndices: [0, 1, 2],
+      title: t('Edit Flop'),
+      kindLabel: t('Board cards'),
+      ownerLabel: t('Flop'),
+      selectionLabel: t('Selected flop')
+    };
+  }
+  const streetLabel = t(originIndex === 3 ? 'Turn' : 'River');
+  return {
+    kind: 'board_street',
+    requiredCount: 1,
+    targetIndices: [originIndex],
+    title: t('Edit {street}', { street: streetLabel }),
+    kindLabel: t('Board card'),
+    ownerLabel: streetLabel,
+    selectionLabel: t('Selected card')
+  };
+}
+
+function cardSetPickerDefinition(group, originIndex) {
+  const cards = groupCards(group);
+  const privateHand = isPrivateHandCardSetGroup(group);
+  if (privateHand) {
+    const ownerLabel = privateHandOwnerLabel(group);
+    return {
+      kind: 'private_hand',
+      requiredCount: 2,
+      targetIndices: [0, 1],
+      title: t('Edit {player} hand', { player: ownerLabel }),
+      kindLabel: t('Player hand'),
+      ownerLabel,
+      selectionLabel: t('Selected hand'),
+      committed: cards.slice(0, 2).filter(Boolean)
+    };
+  }
+  const boardDefinition = boardStreetCardSetDefinition(group, originIndex);
+  if (boardDefinition) {
+    return {
+      ...boardDefinition,
+      committed: boardDefinition.targetIndices.map((index) => cards[index]).filter(Boolean)
+    };
+  }
+  const deadCard = group.includes('dead');
+  return {
+    kind: deadCard ? 'dead_card' : 'single_card',
+    requiredCount: 1,
+    targetIndices: [originIndex],
+    title: t(deadCard ? 'Choose a dead card' : 'Choose a card'),
+    kindLabel: t(deadCard ? 'Dead card' : 'Card'),
+    ownerLabel: '',
+    selectionLabel: t('Selected card'),
+    committed: cards[originIndex] ? [cards[originIndex]] : []
+  };
+}
+
+function renderCardSetPickerContext() {
+  const context = $('#cardSetPickerContext');
+  const picker = app.picker;
+  if (!context) return;
+  context.hidden = !picker;
+  if (!picker) return;
+  if ($('#cardSetPickerKind')) $('#cardSetPickerKind').textContent = picker.ownerLabel ? picker.kindLabel : '';
+  if ($('#cardSetPickerOwner')) $('#cardSetPickerOwner').textContent = picker.ownerLabel || picker.kindLabel;
+  if ($('#cardSetPickerLabel')) $('#cardSetPickerLabel').textContent = picker.selectionLabel;
+  if ($('#cardSetPickerCount')) $('#cardSetPickerCount').textContent = t('{selected} / {required} selected', {
+    selected: picker.draft.length,
+    required: picker.requiredCount
+  });
+  const cards = $('#cardSetPickerCards');
+  if (cards) {
+    cards.setAttribute('aria-label', picker.selectionLabel);
+    cards.innerHTML = Array.from({ length: picker.requiredCount }, (_, index) => {
+      const card = picker.draft[index];
+      if (!card) {
+        return '<span class="card-set-picker-card card-set-picker-card--empty card-slot card--empty riverline-card" data-card-state="empty" data-card-size="standard" aria-hidden="true"></span>';
+      }
+      return `<button type="button" class="card-set-picker-card card-slot card--known filled card--suit-${card[1]} riverline-card" data-card-state="known" data-card-size="standard" data-card-set-preview-card="${card}" aria-label="${escapeEquityMarkup(t('Deselect {card}', { card: displayCard(card) }))}">${cardMarkup(card)}</button>`;
+    }).join('');
+  }
+  const clear = $('#cardSetPickerClear');
+  if (clear) {
+    clear.hidden = picker.kind !== 'private_hand';
+    clear.disabled = picker.draft.length === 0;
+  }
+  const apply = $('#cardSetPickerApply');
+  if (apply) apply.disabled = picker.draft.length !== picker.requiredCount;
 }
 
 
@@ -799,32 +1508,23 @@ function openPicker(group, index) {
     return toast('Training cards come from the canonical generated hand.', 'warning');
   }
 
-  app.picker = { group, index };
-
-  const current = groupCards(group)[index];
+  const originIndex = Number.isInteger(Number(index)) ? Number(index) : 0;
+  const definition = cardSetPickerDefinition(group, originIndex);
+  app.picker = {
+    group,
+    originIndex,
+    ...definition,
+    committed: definition.committed.slice(),
+    draft: definition.committed.slice()
+  };
 
   const modalTitle = $('#modalTitle');
-
-  if (modalTitle) {
-    let targetLabel = '';
-    if (group === 'eqboard') targetLabel = t('board card {number}', { number: index + 1 });
-    else if (group === 'eqdead') targetLabel = t('dead card {number}', { number: index + 1 });
-    else if (group.startsWith('player-')) targetLabel = t('{player} card {number}', {
-      player: equityPlayerLabel(Number(group.split('-')[1])),
-      number: index + 1
-    });
-    modalTitle.textContent = targetLabel
-      ? t(current ? 'Replace {target}' : 'Choose {target}', { target: targetLabel })
-      : (current ? t('Replace card') : t('Choose a card'));
-  }
+  if (modalTitle) modalTitle.textContent = definition.title;
 
   const modalCopy = $('#modalCopy');
-
   if (modalCopy) modalCopy.textContent = group.includes('dead')
-
-    ? t('Choose a card known to be out of play.')
-
-    : t('Cards already used in this scenario are unavailable.');
+    ? t('Choose a card known to be out of play, then Apply.')
+    : t('Select or deselect cards, then Apply. Cards committed elsewhere are unavailable.');
 
   const burnControl = $('#burnControl');
 
@@ -833,6 +1533,8 @@ function openPicker(group, index) {
   const markBurn = $('#markBurn');
 
   if (markBurn) markBurn.checked = group === 'dead' || group === 'eqdead';
+
+  renderCardSetPickerContext();
 
   renderDeck();
 
@@ -843,7 +1545,7 @@ function openPicker(group, index) {
 
   const deck = $('#deck');
   const pickerFocusTarget = deck?.querySelector?.(
-    current ? `[data-deck-card="${current}"]` : 'button:not([disabled])'
+    app.picker.draft[0] ? `[data-deck-card="${app.picker.draft[0]}"]` : 'button:not([disabled])'
   ) || $('#closeModal');
   pickerFocusTarget?.focus?.({ preventScroll: true });
 
@@ -853,17 +1555,8 @@ function openPicker(group, index) {
 
 function renderDeck() {
 
-  const { group, index } = app.picker;
-
-  const current = groupCards(group)[index];
-
-  const scope = group.startsWith('hand-') ? 'hand'
-    : group.startsWith('training') ? 'training'
-      : isEquityGroup(group) ? 'equity' : 'gto';
-
-  const unavailable = new Set(usedCards(scope));
-
-  if (current) unavailable.delete(current);
+  const { draft } = app.picker;
+  const unavailable = unavailableCardsForPicker(app.picker);
 
   const deck = $('#deck');
 
@@ -871,13 +1564,15 @@ function renderDeck() {
     deck.innerHTML = SUITS.map((suit) => {
       const cards = RANKS.map((rank) => {
         const card = rank + suit.id;
-        const isUnavailable = unavailable.has(card);
-        const isSelected = current === card;
+        const isSelected = draft.includes(card);
+        const isUnavailable = !isSelected && unavailable.has(card);
         const visualRank = displayCardRank(rank);
         const accessibleCard = `${visualRank}${suit.symbol}`;
-        const accessibleLabel = isUnavailable
-          ? t('{card}, unavailable', { card: accessibleCard })
-          : t('Choose {card}', { card: accessibleCard });
+        const accessibleLabel = isSelected
+          ? t('Deselect {card}', { card: accessibleCard })
+          : isUnavailable
+            ? t('{card}, unavailable', { card: accessibleCard })
+            : t('Select {card}', { card: accessibleCard });
         return `<button type="button" class="deck-card card--suit-${suit.id}${isSelected ? ' is-selected' : ''} riverline-card" data-card-size="picker" aria-label="${accessibleLabel}" aria-pressed="${isSelected}" data-suit="${suit.id}" data-rank="${rank}" data-deck-card="${card}" ${isUnavailable ? 'disabled' : ''}>${globalThis.RiverlineCardPresentation.cardFaceMarkup({ rank, suit: suit.id, rankStyle: app.settings.cardRankStyle })}</button>`;
       }).join('');
       return `<div class="deck-suit-row" data-picker-suit="${suit.id}"><div class="deck-suit-label s-${suit.id}" aria-hidden="true">${suit.symbol}</div><div class="deck-ranks">${cards}</div></div>`;
@@ -888,21 +1583,64 @@ function renderDeck() {
 
 
 
+function updateDeckCardStates(changedCards) {
+  const picker = app.picker;
+  const deck = $('#deck');
+  if (!picker || !deck || !Array.isArray(changedCards) || changedCards.length === 0) return;
+
+  const unavailable = unavailableCardsForPicker(picker);
+  const controls = changedCards
+    .map((card) => document.querySelector(`[data-deck-card="${card}"]`))
+    .filter(Boolean);
+  controls.forEach((control) => {
+    const card = control.dataset.deckCard;
+    const isSelected = picker.draft.includes(card);
+    const isUnavailable = !isSelected && unavailable.has(card);
+    const suit = getSuit(card);
+    const accessibleCard = `${displayCardRank(card[0])}${suit?.symbol || ''}`;
+    const accessibleLabel = isSelected
+      ? t('Deselect {card}', { card: accessibleCard })
+      : isUnavailable
+        ? t('{card}, unavailable', { card: accessibleCard })
+        : t('Select {card}', { card: accessibleCard });
+
+    control.classList.toggle('is-selected', isSelected);
+    control.disabled = isUnavailable;
+    control.setAttribute('aria-pressed', String(isSelected));
+    control.setAttribute('aria-label', accessibleLabel);
+  });
+}
+
+
+
+function cardSetPickerScope(group) {
+  return group.startsWith('hand-') ? 'hand'
+    : group.startsWith('training') ? 'training'
+      : isEquityGroup(group) ? 'equity' : 'gto';
+}
+
+function unavailableCardsForPicker(picker) {
+  const used = usedCards(cardSetPickerScope(picker.group)).slice();
+  picker.committed.forEach((card) => {
+    const ownCardIndex = used.indexOf(card);
+    if (ownCardIndex >= 0) used.splice(ownCardIndex, 1);
+  });
+  return new Set(used);
+}
+
+
+
 function firstEmptyIndex(cards, limit) {
-
   for (let index = 0; index < limit; index += 1) if (!cards[index]) return index;
-
   return -1;
-
 }
 
 
 
 function selectCard(card) {
-
-  const { group, index } = app.picker;
-  let appearanceGroup = group;
-  let appearanceIndex = index;
+  const picker = app.picker;
+  if (!picker) return false;
+  const { group } = picker;
 
   if (isHandMode() && PLAYBOOK_DECISION_CARD_GROUPS.includes(group)) {
     closePicker();
@@ -914,68 +1652,83 @@ function selectCard(card) {
     closePicker();
     return toast('Training cards come from the canonical generated hand.', 'warning');
   }
-
-  const target = groupCards(group);
-
-  const markBurn = $('#markBurn').checked;
-
-
-
-  if (markBurn && !group.includes('dead')) {
-
-    const destination = isEquityGroup(group) ? 'eqdead' : 'dead';
-
-    const deadCards = groupCards(destination);
-
-    const freeIndex = firstEmptyIndex(deadCards, 52);
-
-    if (freeIndex < 0) return toast('No empty burned-card slot.', 'warning');
-
-    target[index] = null;
-
-    deadCards[freeIndex] = card;
-    appearanceGroup = destination;
-    appearanceIndex = freeIndex;
-
-  } else {
-
-    target[index] = card;
-
+  const selectedIndex = picker.draft.indexOf(card);
+  if (selectedIndex >= 0) picker.draft.splice(selectedIndex, 1);
+  else {
+    const unavailable = unavailableCardsForPicker(picker);
+    if (unavailable.has(card)) return false;
+    if (picker.draft.length >= picker.requiredCount) {
+      toast(t('Deselect a card before choosing another.'), 'warning');
+      return false;
+    }
+    picker.draft.push(card);
   }
+  renderCardSetPickerContext();
+  updateDeckCardStates([card]);
+  const selectedControl = document.querySelector(`[data-deck-card="${card}"]`);
+  if (selectedControl && document.activeElement !== selectedControl) selectedControl.focus?.({ preventScroll: true });
+  return true;
+}
 
+function cardSetPickerFocusTarget(picker) {
+  if (!picker) return null;
+  const equityPlayer = equityPlayerFromHandGroup(picker.group);
+  if (equityPlayer) return document.querySelector(`[data-equity-edit-hand="${equityPlayer.id}"]`);
+  if (isPrivateHandCardSetGroup(picker.group)) {
+    return document.querySelector(`[data-card-set-edit="${picker.group}"]`);
+  }
+  return document.querySelector(`[data-slots="${picker.group}"] [data-index="${picker.originIndex}"]`);
+}
 
-
-  if (group === 'hero') app.selectedHand = null;
-
-  const nextPrivateCardIndex = !markBurn && group.startsWith('hand-seat-')
-    ? firstEmptyIndex(target, 2)
-    : -1;
-  if (nextPrivateCardIndex >= 0) {
-    renderCanonicalHandWorkspace();
-    const appearedCard = document.querySelector(
-      `[data-slots="${appearanceGroup}"] [data-index="${appearanceIndex}"]`
-    );
-    appearedCard?.classList.add('is-card-dealt');
-    openPicker(group, nextPrivateCardIndex);
+function replaceCardSetTarget(picker, cards) {
+  const target = groupCards(picker.group);
+  if (picker.kind === 'private_hand' || picker.group === 'hand-board-chance') {
+    target.splice(0, target.length, ...cards);
     return;
   }
+  const next = target.slice();
+  picker.targetIndices.forEach((targetIndex, draftIndex) => {
+    next[targetIndex] = cards[draftIndex];
+  });
+  target.splice(0, target.length, ...next);
+}
 
-  closePicker({ restoreFocus: false });
-
-  renderAllCards();
-
-  if (isEquityGroup(group)) setEquityPending();
-
-  else if (group.startsWith('hand-')) renderCanonicalHandWorkspace();
-
-  else updateContext('Cards changed');
-
-  const appearedCard = document.querySelector(`[data-slots="${appearanceGroup}"] [data-index="${appearanceIndex}"]`);
-  if (appearedCard) {
-    appearedCard.classList.add('is-card-dealt');
-    appearedCard.focus({ preventScroll: true });
+function renderCommittedCardSet(picker) {
+  if (picker.group === 'hero') app.selectedHand = null;
+  if (isEquityGroup(picker.group)) {
+    setEquityPending({ renderInputs: equityPlayerFromHandGroup(picker.group) ? 'players' : 'shared' });
+  } else if (picker.group.startsWith('hand-')) renderCanonicalHandWorkspace();
+  else {
+    renderAllCards();
+    updateContext('Cards changed');
   }
+}
 
+function finishCardSetCommit(picker) {
+  closePicker({ restoreFocus: false });
+  renderCommittedCardSet(picker);
+  const focusTarget = cardSetPickerFocusTarget(picker);
+  focusTarget?.classList?.add('is-card-dealt');
+  focusTarget?.focus?.({ preventScroll: true });
+}
+
+function applyCardSetPicker() {
+  const picker = app.picker;
+  if (!picker || picker.draft.length !== picker.requiredCount) return false;
+  replaceCardSetTarget(picker, picker.draft.slice());
+  finishCardSetCommit(picker);
+  return true;
+}
+
+function clearPrivateHandPicker() {
+  const picker = app.picker;
+  if (!picker || picker.kind !== 'private_hand') return false;
+  const changedCards = picker.draft.slice();
+  picker.draft = [];
+  renderCardSetPickerContext();
+  updateDeckCardStates(changedCards);
+  $('#deck')?.querySelector?.('button:not([disabled])')?.focus?.({ preventScroll: true });
+  return true;
 }
 
 
@@ -1021,9 +1774,7 @@ function closePicker(options) {
 
   const picker = app.picker;
 
-  const focusTarget = picker
-    ? document.querySelector(`[data-slots="${picker.group}"] [data-index="${picker.index}"]`)
-    : null;
+  const focusTarget = cardSetPickerFocusTarget(picker);
 
   app.picker = null;
 
@@ -1032,6 +1783,8 @@ function closePicker(options) {
   const focusWasInsidePicker = Boolean(cardModal?.contains?.(document.activeElement));
 
   if (cardModal) cardModal.classList.remove('show');
+
+  if ($('#cardSetPickerContext')) $('#cardSetPickerContext').hidden = true;
 
   // The deck is rebuilt on every open already. Detach its 52 hidden controls
   // after close so an inactive picker does not retain a large subtree.
@@ -1057,9 +1810,9 @@ function clearGroup(group) {
 
   groupCards(group).length = 0;
 
-  renderAllCards();
-
-  if (isEquityGroup(group)) setEquityPending();
+  if (isEquityGroup(group)) {
+    setEquityPending({ renderInputs: equityPlayerFromHandGroup(group) ? 'players' : 'shared' });
+  }
 
   else if (group.startsWith('hand-')) renderCanonicalHandWorkspace();
 
@@ -1067,7 +1820,10 @@ function clearGroup(group) {
 
     // Training group - no context update needed
 
-  } else updateContext('Cards cleared');
+  } else {
+    renderAllCards();
+    updateContext('Cards cleared');
+  }
 
 }
 
@@ -5457,164 +6213,6 @@ async function updateContext(reason = 'Context updated') {
 
 // ---------------------------------------------------------------------------
 
-// Legacy fast evaluator retained for the existing Outs display only.
-// Canonical Equity calculation lives in shared/poker-domain/equity.js.
-
-// ---------------------------------------------------------------------------
-
-// Static TypedArray buffers for zero-GC hand evaluation in main thread
-const JS_EVAL_COUNTS = new Uint8Array(15);
-const JS_EVAL_RANKS = new Int32Array(5);
-const JS_EVAL_SUITS = new Uint8Array(5);
-const JS_EVAL_5 = new Array(5);
-
-/**
- * Fast zero-allocation 5-card score calculation.
- * 
- * @param {Array<string>} cards Array of 5 card strings (e.g. ['As', 'Kh', 'Td', '9c', '2s'])
- * @returns {number} Packed numerical hand score
- */
-function scoreFive(cards) {
-  for (let i = 0; i < 5; i++) {
-    const cardStr = cards[i];
-    JS_EVAL_RANKS[i] = RANK_VALUE[cardStr[0]] || 2;
-    JS_EVAL_SUITS[i] = cardStr[1] === 's' ? 1 : cardStr[1] === 'h' ? 2 : cardStr[1] === 'd' ? 4 : 8;
-  }
-
-  const isFlush = (JS_EVAL_SUITS[0] & JS_EVAL_SUITS[1] & JS_EVAL_SUITS[2] & JS_EVAL_SUITS[3] & JS_EVAL_SUITS[4]) !== 0;
-
-  // In-place bubble sort of 5 rank integers descending
-  for (let i = 0; i < 4; i++) {
-    for (let j = i + 1; j < 5; j++) {
-      if (JS_EVAL_RANKS[j] > JS_EVAL_RANKS[i]) {
-        const tmp = JS_EVAL_RANKS[i];
-        JS_EVAL_RANKS[i] = JS_EVAL_RANKS[j];
-        JS_EVAL_RANKS[j] = tmp;
-      }
-    }
-  }
-
-  let rankMask = 0;
-  for (let i = 0; i < 5; i++) rankMask |= (1 << (JS_EVAL_RANKS[i] - 2));
-
-  const isWheel = rankMask === 0x100f;
-  let isStraight = isWheel;
-  let straightHigh = isWheel ? 5 : JS_EVAL_RANKS[0];
-  if (!isWheel) {
-    for (let r = 14; r >= 6; r--) {
-      const mask = 0x1f << (r - 6);
-      if ((rankMask & mask) === mask) {
-        isStraight = true;
-        straightHigh = r;
-        break;
-      }
-    }
-  }
-
-  const pack = (cat, t0, t1 = 0, t2 = 0, t3 = 0, t4 = 0) =>
-    cat * 1e10 + t0 * 50625 + t1 * 3375 + t2 * 225 + t3 * 15 + t4;
-
-  if (isFlush && isStraight) return pack(8, straightHigh);
-
-  JS_EVAL_COUNTS.fill(0);
-  for (let i = 0; i < 5; i++) JS_EVAL_COUNTS[JS_EVAL_RANKS[i]]++;
-
-  let fourRank = 0, threeRank = 0, pair1 = 0, pair2 = 0;
-  for (let r = 14; r >= 2; r--) {
-    const cnt = JS_EVAL_COUNTS[r];
-    if (cnt === 4) fourRank = r;
-    else if (cnt === 3) threeRank = r;
-    else if (cnt === 2) {
-      if (pair1 === 0) pair1 = r;
-      else pair2 = r;
-    }
-  }
-
-  if (fourRank > 0) {
-    let kicker = 0;
-    for (let i = 0; i < 5; i++) {
-      if (JS_EVAL_RANKS[i] !== fourRank) { kicker = JS_EVAL_RANKS[i]; break; }
-    }
-    return pack(7, fourRank, kicker);
-  }
-
-  if (threeRank > 0 && pair1 > 0) return pack(6, threeRank, pair1);
-  if (isFlush) return pack(5, JS_EVAL_RANKS[0], JS_EVAL_RANKS[1], JS_EVAL_RANKS[2], JS_EVAL_RANKS[3], JS_EVAL_RANKS[4]);
-  if (isStraight) return pack(4, straightHigh);
-
-  if (threeRank > 0) {
-    let k1 = 0, k2 = 0;
-    for (let i = 0; i < 5; i++) {
-      if (JS_EVAL_RANKS[i] !== threeRank) {
-        if (k1 === 0) k1 = JS_EVAL_RANKS[i];
-        else { k2 = JS_EVAL_RANKS[i]; break; }
-      }
-    }
-    return pack(3, threeRank, k1, k2);
-  }
-
-  if (pair1 > 0 && pair2 > 0) {
-    let kicker = 0;
-    for (let i = 0; i < 5; i++) {
-      if (JS_EVAL_RANKS[i] !== pair1 && JS_EVAL_RANKS[i] !== pair2) { kicker = JS_EVAL_RANKS[i]; break; }
-    }
-    return pack(2, pair1, pair2, kicker);
-  }
-
-  if (pair1 > 0) {
-    let k1 = 0, k2 = 0, k3 = 0;
-    for (let i = 0; i < 5; i++) {
-      if (JS_EVAL_RANKS[i] !== pair1) {
-        if (k1 === 0) k1 = JS_EVAL_RANKS[i];
-        else if (k2 === 0) k2 = JS_EVAL_RANKS[i];
-        else { k3 = JS_EVAL_RANKS[i]; break; }
-      }
-    }
-    return pack(1, pair1, k1, k2, k3);
-  }
-
-  return pack(0, JS_EVAL_RANKS[0], JS_EVAL_RANKS[1], JS_EVAL_RANKS[2], JS_EVAL_RANKS[3], JS_EVAL_RANKS[4]);
-}
-
-/**
- * Fast zero-allocation 7-card evaluator.
- *
- * @param {Array<string>} cards 5, 6, or 7 card array
- * @returns {number} Maximum 5-card score combination
- */
-function scoreSeven(cards) {
-  if (!cards || cards.length < 5) return 0;
-  if (cards.length === 5) return scoreFive(cards);
-
-  let best = 0;
-  const n = cards.length;
-  if (n === 6) {
-    for (let i = 0; i < 6; i++) {
-      let idx = 0;
-      for (let k = 0; k < 6; k++) {
-        if (k !== i) JS_EVAL_5[idx++] = cards[k];
-      }
-      const sc = scoreFive(JS_EVAL_5);
-      if (sc > best) best = sc;
-    }
-    return best;
-  }
-
-  for (let i = 0; i < 6; i++) {
-    for (let j = i + 1; j < 7; j++) {
-      let idx = 0;
-      for (let k = 0; k < 7; k++) {
-        if (k !== i && k !== j) JS_EVAL_5[idx++] = cards[k];
-      }
-      const sc = scoreFive(JS_EVAL_5);
-      if (sc > best) best = sc;
-    }
-  }
-  return best;
-}
-
-
-
 let equityCalculationGeneration = 0;
 let equityCalculationRunning = false;
 let equityProgressRevealTimer = null;
@@ -5657,8 +6255,9 @@ function updateEquityReadiness() {
   const estimateCopy = $('#equityEstimate');
   if (!calculate || !readiness) return null;
 
-  const incompleteIndex = app.equity.players.findIndex((player) => (
-    player.handMode !== 'unknown' && player.cards.filter(Boolean).length !== 2
+  const request = equityRequestFromCurrentInputs();
+  const incompleteIndex = request.players.findIndex((player) => (
+    player.cards !== null && player.cards.length !== 2
   ));
   const seedValue = $('#equitySeed')?.value?.trim() || '';
   const seedNumber = seedValue === '' ? null : Number(seedValue);
@@ -5673,12 +6272,12 @@ function updateEquityReadiness() {
     state = 'blocked';
     message = t('Seed must be a whole number from 0 through 4,294,967,295.');
   } else {
-    estimate = callEquityServiceBridge('estimate', equityRequestFromCurrentInputs());
+    estimate = callEquityServiceBridge('estimate', request);
     if (estimate?.ok === false) {
       state = 'blocked';
       message = equityFailureMessage(estimate.error);
     } else if (estimate?.ok) {
-      const requestedMethod = equityRequestFromCurrentInputs().method;
+      const requestedMethod = request.method;
       if (requestedMethod === 'exact' && !estimate.exactFeasible) {
         state = 'warning';
         message = t('Exact enumeration exceeds the safe workload limit. Choose Auto or Monte Carlo.');
@@ -5703,17 +6302,19 @@ function updateEquityReadiness() {
     })
     : t('Workload estimate appears when all known hands are complete.');
 
-  const request = equityRequestFromCurrentInputs();
-  if ($('#equityDetailRequested')) $('#equityDetailRequested').textContent = t(request.method === 'monte_carlo' ? 'Monte Carlo' : (request.method === 'exact' ? 'Exact' : 'Auto'));
-  if ($('#equityDetailEstimate')) $('#equityDetailEstimate').textContent = estimate?.ok ? formatEquityCombinationCount(estimate) : '—';
-  if ($('#equityDetailSamples')) $('#equityDetailSamples').textContent = request.samples.toLocaleString();
-  if ($('#equityDetailSeed')) $('#equityDetailSeed').textContent = request.seed === undefined ? t('Generated at run time') : String(request.seed);
-  if ($('#equityDetailUnknown')) $('#equityDetailUnknown').textContent = String(request.players.filter((player) => player.cards === null).length);
-  if ($('#equityDetailBoard')) $('#equityDetailBoard').textContent = String(5 - request.board.length);
+  if (!app.equity.staleAnalysis && app.equity.lifecycle !== 'complete') {
+    if ($('#equityDetailRequested')) $('#equityDetailRequested').textContent = t(request.method === 'monte_carlo' ? 'Monte Carlo' : (request.method === 'exact' ? 'Exact' : 'Auto'));
+    if ($('#equityDetailEstimate')) $('#equityDetailEstimate').textContent = estimate?.ok ? formatEquityCombinationCount(estimate) : '—';
+    if ($('#equityDetailSamples')) $('#equityDetailSamples').textContent = request.samples.toLocaleString();
+    if ($('#equityDetailSeed')) $('#equityDetailSeed').textContent = request.seed === undefined ? t('Generated at run time') : String(request.seed);
+    if ($('#equityDetailUnknown')) $('#equityDetailUnknown').textContent = String(request.players.filter((player) => player.cards === null).length);
+    if ($('#equityDetailBoard')) $('#equityDetailBoard').textContent = String(5 - request.board.length);
+  }
   return { state, message, estimate, request };
 }
 
-function setEquityCalculationRunning(running) {
+function setEquityCalculationRunning(running, options) {
+  const refreshReadiness = options?.refreshReadiness !== false;
   equityCalculationRunning = running;
   const calculate = $('#calculate');
   const cancel = $('#cancelEquity');
@@ -5738,7 +6339,7 @@ function setEquityCalculationRunning(running) {
   if ($('#equityDetailExecution')) $('#equityDetailExecution').textContent = running
     ? t(callEquityServiceBridge('isWorkerBacked') ? 'Web Worker' : 'In-process fallback')
     : t('Ready');
-  if (!running) updateEquityReadiness();
+  if (!running && refreshReadiness) updateEquityReadiness();
 }
 
 function renderEquityProgress(progress) {
@@ -5841,6 +6442,9 @@ async function calculateEquity() {
   }
   const generation = ++equityCalculationGeneration;
   const request = readiness.request;
+  if (app.equity.lastResult) app.equity.staleResult = app.equity.lastResult;
+  if (app.equity.lastAnalysis) app.equity.staleAnalysis = app.equity.lastAnalysis;
+  if (app.equity.lastAnalysisLabels) app.equity.staleAnalysisLabels = app.equity.lastAnalysisLabels;
   app.equity.lifecycle = 'running';
   app.equity.lastRequest = structuredClone(request);
   app.equity.lastResult = null;
@@ -5856,6 +6460,7 @@ async function calculateEquity() {
   }
 
   clearEquityResults('running', t('Calculating conditional equity…'));
+  renderEquityHandAnalysis();
   setEquityCalculationRunning(true);
   $('#methodBadge').textContent = t('RUNNING');
   const response = await calculation;
@@ -5871,6 +6476,7 @@ async function calculateEquity() {
     $('#equityResultsPanel').dataset.resultState = response.error.code === 'aborted' ? 'empty' : 'error';
     setEquityCompositionState($('#equityResultsPanel').dataset.resultState);
     renderEquityPlayerResults();
+    renderEquityHandAnalysis();
     toast(message, response.error.code === 'aborted' ? 'info' : 'warning');
     return response;
   }
@@ -5889,94 +6495,80 @@ function cancelEquityCalculation() {
   if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = 'empty';
   setEquityCompositionState('empty');
   renderEquityPlayerResults();
+  renderEquityHandAnalysis();
   return true;
-}
-
-function equityStreetLabel(boardCount) {
-  const labels = { 0: 'Preflop', 3: 'Flop', 4: 'Turn', 5: 'River' };
-  return labels[boardCount] ? t(labels[boardCount]) : t('Partial board · {count} / 5 cards', { count: boardCount });
 }
 
 function equityReadOnlyCardsMarkup(cards, label) {
   if (cards === null) {
-    return `<span class="equity-result-unknown" aria-label="${t('{player}: unknown hand', { player: label })}"><span class="poker-card-back riverline-card-back" data-card-size="result" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" data-card-size="result" aria-hidden="true"></span><span>${t('Unknown hand')}</span></span>`;
+    return `<span class="equity-result-unknown" aria-label="${escapeEquityMarkup(t('{player}: unknown hand', { player: label }))}"><span class="poker-card-back riverline-card-back" data-card-size="result" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" data-card-size="result" aria-hidden="true"></span><span>${t('Unknown hand')}</span></span>`;
   }
   if (!cards?.length) return `<span class="equity-context-empty">${t('No cards')}</span>`;
   return `<span class="equity-readonly-cards">${cards.map((card) => `<span class="training-readonly-card riverline-card" data-card-size="result" role="img" aria-label="${displayCard(card)}">${cardMarkup(card)}</span>`).join('')}</span>`;
 }
 
-function renderEquityScenarioContext(request = equityRequestFromCurrentInputs()) {
-  const root = $('#equityScenarioContext');
-  if (!root) return;
-  const board = request.board || [];
-  const boardMarkup = board.length
-    ? equityReadOnlyCardsMarkup(board, t('Board'))
-    : `<span class="equity-context-empty">${t('No board cards')}</span>`;
-  const deadMarkup = request.deadCards?.length
-    ? `<div class="equity-context-row equity-context-row--dead"><span class="equity-context-label">${t('Dead')}</span>${equityReadOnlyCardsMarkup(request.deadCards, t('Dead cards'))}</div>`
-    : '';
-  root.innerHTML = `
-    <div class="equity-context-street"><span>${t('Street')}</span><strong>${equityStreetLabel(board.length)}</strong></div>
-    <div class="equity-context-street"><span>${t('Players')}</span><strong>${t('{count} players', { count: request.players.length })}</strong></div>
-    <div class="equity-context-row"><span class="equity-context-label">${t('Board')}</span>${boardMarkup}</div>
-    ${deadMarkup}`;
-}
-
 function setEquityCompositionState(state) {
   const workspace = document.querySelector('.equity-workspace');
   if (!workspace) return 'empty';
-  const supported = new Set(['empty', 'running', 'complete', 'error']);
+  const supported = new Set(['empty', 'stale', 'running', 'complete', 'error']);
   const resolved = supported.has(state) ? state : 'empty';
   workspace.dataset.equityState = resolved;
   return resolved;
 }
 
-function clearEquityResults(state = 'empty', status = t('Results update after calculation.')) {
+function clearEquityResults(state = 'empty', status = t('Results update after calculation.'), { renderPlayerFooters = true } = {}) {
   const panel = $('#equityResultsPanel');
   if (panel) panel.dataset.resultState = state;
   setEquityCompositionState(state);
-  if ($('#headlineEquity')) $('#headlineEquity').textContent = '—';
   if ($('#equityStatus')) $('#equityStatus').textContent = status;
-  if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = '—';
-  if ($('#equityDetailActual')) $('#equityDetailActual').textContent = '—';
-  renderEquityPlayerResults();
-  renderEquityScenarioContext();
+  if (!app.equity.staleResult) {
+    if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = '—';
+    if ($('#equityDetailActual')) $('#equityDetailActual').textContent = '—';
+  }
+  if (renderPlayerFooters) renderEquityPlayerResults();
 }
 
-function renderEquityResult(equityResult, request = equityRequestFromCurrentInputs(), { announce = true } = {}) {
+function renderEquityResult(equityResult, request = equityRequestFromCurrentInputs(), { announce = true, rebuildAnalysis = true } = {}) {
+  const bridge = globalThis.RiverlineAnalysisExplanation;
+  let analysis = rebuildAnalysis ? null : app.equity.lastAnalysis;
+  if (rebuildAnalysis && typeof bridge?.createEquityHandAnalysisProjection === 'function') {
+    try {
+      analysis = bridge.createEquityHandAnalysisProjection({
+        players: request.players.map((player) => ({ id: player.id, cards: player.cards === null ? null : [...player.cards] })),
+        board: [...request.board],
+        deadCards: [...request.deadCards]
+      });
+    } catch (_error) {
+      analysis = null;
+    }
+  }
   app.equity.lifecycle = 'complete';
   app.equity.lastResult = equityResult;
+  app.equity.staleResult = null;
+  app.equity.lastAnalysis = analysis;
+  app.equity.staleAnalysis = null;
+  app.equity.lastAnalysisLabels = Object.fromEntries(app.equity.players.map((player, playerIndex) => [player.id, equityPlayerLabel(playerIndex)]));
+  app.equity.staleAnalysisLabels = null;
   app.equity.lastRequest = structuredClone(request);
   app.equity.lastError = null;
-  const namesById = new Map(app.equity.players.map((player, index) => [player.id, equityPlayerLabel(index)]));
-  const result = equityResult.players.map((player) => ({
-    id: player.id,
-    name: namesById.get(player.id) || player.id,
-    win: player.winProbability * 100,
-    tie: player.tieProbability * 100,
-    equity: player.equity * 100
-  }));
   const exact = equityResult.exact;
   const total = equityResult.trials;
   const splitRate = equityResult.metadata.splitPotTrials / total * 100;
-  const leadingEquity = Math.max(...result.map((player) => player.equity));
   const requestedLabel = t(request.method === 'auto' ? 'AUTO' : (request.method === 'exact' ? 'EXACT' : 'MONTE CARLO'));
   const actualLabel = t(exact ? 'EXACT' : 'MONTE CARLO');
-
-  const leaders = result.filter((player) => Math.abs(player.equity - leadingEquity) < 0.05);
-  $('#headlineEquity').textContent = leaders.length === 1
-    ? t('{player} leads', { player: leaders[0].name })
-    : t('{count}-way equity tie', { count: leaders.length });
 
   $('#equityStatus').textContent = exact
     ? t('Exact enumeration · {count} outcomes', { count: total.toLocaleString() })
     : t('Monte Carlo · {count} trials', { count: total.toLocaleString() });
 
   $('#methodBadge').textContent = request.method === 'auto' ? `${requestedLabel} → ${actualLabel}` : actualLabel;
+  if ($('#calculate')) {
+    $('#calculate').dataset.i18n = 'Recalculate';
+    $('#calculate').textContent = t('Recalculate');
+  }
 
   renderEquityPlayerResults();
-  renderEquityScenarioContext(request);
-
+  renderEquityHandAnalysis();
   if ($('#equityResultsPanel')) $('#equityResultsPanel').dataset.resultState = 'complete';
   setEquityCompositionState('complete');
   if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = `${equityResult.metadata.splitPotTrials.toLocaleString()} · ${splitRate.toFixed(1)}%`;
@@ -5988,94 +6580,40 @@ function renderEquityResult(equityResult, request = equityRequestFromCurrentInpu
   if ($('#equityDetailBoard')) $('#equityDetailBoard').textContent = String(equityResult.metadata.boardCardsMissing);
   if ($('#equityDetailExecution')) $('#equityDetailExecution').textContent = t(callEquityServiceBridge('isWorkerBacked') ? 'Web Worker' : 'In-process fallback');
   if (announce) toast(t('Win probability updated'), 'success');
-
-  // === OUTS CALCULATION (per-player, shown inline beside each player's cards) ===
-  // Available on Flop (3 cards) or Turn (4 cards) when both player hands are known
-    (function renderAllOuts() {
-    const board = app.equity.board.filter(Boolean);
-    const deadCards = app.equity.dead || [];
-    const suitSymbols = { s: '♠', h: '♥', d: '♦', c: '♣' };
-
-    app.equity.players.forEach((player, playerIndex) => {
-      const panel   = document.getElementById(`outsPanel-${playerIndex}`);
-      const countEl = document.getElementById(`outsCount-${playerIndex}`);
-      const summEl  = document.getElementById(`outsSummary-${playerIndex}`);
-      const cardsEl = document.getElementById(`outsCards-${playerIndex}`);
-      if (!panel) return;
-
-      const myCards = player.cards.filter(Boolean);
-
-      if (myCards.length !== 2 || board.length < 3 || board.length > 4) {
-        panel.style.display = 'none';
-        return;
-      }
-
-      // Collect ALL opponents who have 2 known cards
-      const allOpponentsCards = [];
-      app.equity.players.forEach((p, i) => {
-        if (i !== playerIndex) {
-          const c = p.cards.filter(Boolean);
-          if (c.length === 2) allOpponentsCards.push(c);
-        }
-      });
-
-      if (allOpponentsCards.length === 0) { panel.style.display = 'none'; return; }
-
-      const outsResult = calculateOuts(myCards, allOpponentsCards, board, deadCards);
-
-      if (!outsResult) { panel.style.display = 'none'; return; }
-
-      panel.style.display = 'grid';
-
-      if (outsResult.ahead) {
-        panel.dataset.outsState = 'ahead';
-        if (countEl) countEl.textContent = t('Ahead');
-        if (summEl)  summEl.textContent = t('Currently winning — no outs needed.');
-        if (cardsEl) cardsEl.innerHTML = '';
-      } else if (outsResult.count === 0) {
-        panel.dataset.outsState = 'drawing-dead';
-        if (countEl) countEl.textContent = t('0 total');
-        if (summEl)  summEl.textContent = t('No outs — drawing dead.');
-        if (cardsEl) cardsEl.innerHTML = '';
-      } else {
-        panel.dataset.outsState = 'drawing';
-        if (countEl) countEl.textContent = t('{count} total', { count: outsResult.count });
-        if (summEl) summEl.textContent = t('Cards that improve this hand against the entered known opponents.');
-        if (cardsEl) {
-          let html = '';
-          outsResult.categories.forEach(cat => {
-            html += '<div class="outs-group">';
-            html += `<div class="outs-group-head"><strong>${t(cat.name)}</strong><span>${t(cat.cards.length === 1 ? '{count} out' : '{count} outs', { count: cat.cards.length })}</span></div>`;
-            html += '<div class="outs-card-list">';
-            html += cat.cards.map(card => {
-              const rank = displayCardRank(card[0]), suit = card[1];
-              const label = displayCard(card);
-              return `<span class="outs-card riverline-card card--suit-${suit}" role="img" aria-label="${label}"><strong>${rank}</strong><span aria-hidden="true">${suitSymbols[suit] || suit}</span></span>`;
-            }).join('');
-            html += '</div></div>';
-          });
-          cardsEl.innerHTML = html;
-        }
-      }
-    });
-  })();
-
 }
 
-
-
-function setEquityPending() {
+function setEquityPending(options) {
+  const renderInputs = options?.renderInputs;
   callEquityServiceBridge('cancel');
   equityCalculationGeneration += 1;
-  setEquityCalculationRunning(false);
+  setEquityCalculationRunning(false, { refreshReadiness: false });
+  if (app.equity.lastResult) app.equity.staleResult = app.equity.lastResult;
+  if (app.equity.lastAnalysis) app.equity.staleAnalysis = app.equity.lastAnalysis;
+  if (app.equity.lastAnalysisLabels) app.equity.staleAnalysisLabels = app.equity.lastAnalysisLabels;
   app.equity.lifecycle = 'pending';
   app.equity.lastRequest = null;
   app.equity.lastResult = null;
   app.equity.lastProgress = null;
   app.equity.lastError = null;
-  clearEquityResults('empty', t('Inputs changed. Calculate to refresh the result.'));
+  const hasStaleResult = Boolean(app.equity.staleResult);
+  clearEquityResults(
+    hasStaleResult ? 'stale' : 'empty',
+    t(hasStaleResult ? 'Results are stale.' : 'Inputs changed. Calculate to refresh the result.'),
+    { renderPlayerFooters: renderInputs !== 'players' }
+  );
+  if ($('#calculate')) {
+    const calculateLabel = hasStaleResult ? 'Recalculate' : 'Calculate equity';
+    $('#calculate').dataset.i18n = calculateLabel;
+    $('#calculate').textContent = t(calculateLabel);
+  }
   if ($('#methodBadge')) $('#methodBadge').textContent = t('AWAITING CALCULATION');
-  updateEquityReadiness();
+  if (renderInputs === 'players') {
+    renderEquityPlayers();
+    renderEquityCardCounts();
+  } else if (renderInputs === 'shared') renderEquitySharedCards();
+  else if (renderInputs === true) renderEquityCards();
+  renderEquityHandAnalysis();
+  return updateEquityReadiness();
 }
 
 function resetEquityCalculator() {
@@ -6085,20 +6623,30 @@ function resetEquityCalculator() {
   app.equity.dead = [];
   app.equity.nextPlayerId = 2;
   app.equity.players = [
-    { id: 'equity-player-0', name: 'Hero', cards: [], handMode: 'known' },
-    { id: 'equity-player-1', name: 'Opponent 1', cards: [], handMode: 'unknown' }
+    { id: 'equity-player-0', name: '', cards: [], handMode: 'known' },
+    { id: 'equity-player-1', name: '', cards: [], handMode: 'unknown' }
   ];
   if ($('#calcStyle')) $('#calcStyle').value = 'auto';
   if ($('#trials')) $('#trials').value = '10000';
   if ($('#equitySeed')) $('#equitySeed').value = '';
   setEquityCalculationRunning(false);
-  renderAllCards();
+  renderEquityCards();
   app.equity.lifecycle = 'idle';
   app.equity.lastRequest = null;
   app.equity.lastResult = null;
+  app.equity.staleResult = null;
+  app.equity.lastAnalysis = null;
+  app.equity.staleAnalysis = null;
+  app.equity.lastAnalysisLabels = null;
+  app.equity.staleAnalysisLabels = null;
   app.equity.lastProgress = null;
   app.equity.lastError = null;
   clearEquityResults('empty', t('Results update after calculation.'));
+  renderEquityHandAnalysis();
+  if ($('#calculate')) {
+    $('#calculate').dataset.i18n = 'Calculate equity';
+    $('#calculate').textContent = t('Calculate equity');
+  }
   if ($('#methodBadge')) $('#methodBadge').textContent = t('AWAITING INPUT');
   updateEquityReadiness();
 }
@@ -6972,10 +7520,27 @@ function bindEvents() {
     const handModeControl = event.target.closest('[data-equity-hand-mode]');
     if (handModeControl) {
       return setEquityHandMode(
-        Number(handModeControl.dataset.playerIndex),
+        handModeControl.dataset.playerId,
         handModeControl.dataset.equityHandMode
       );
     }
+
+    const cardSetPreviewCard = event.target.closest('[data-card-set-preview-card]');
+    if (cardSetPreviewCard) return selectCard(cardSetPreviewCard.dataset.cardSetPreviewCard);
+
+    const cardSetAction = event.target.closest('[data-card-set-action]');
+    if (cardSetAction?.dataset.cardSetAction === 'apply') return applyCardSetPicker();
+    if (cardSetAction?.dataset.cardSetAction === 'clear') return clearPrivateHandPicker();
+    if (cardSetAction?.dataset.cardSetAction === 'cancel') return closePicker();
+
+    const equityHandEditor = event.target.closest('[data-equity-edit-hand]');
+    if (equityHandEditor) return openEquityHandPicker(equityHandEditor.dataset.equityEditHand);
+
+    const cardSetEditor = event.target.closest('[data-card-set-edit]');
+    if (cardSetEditor) return openPicker(
+      cardSetEditor.dataset.cardSetEdit,
+      Number(cardSetEditor.dataset.cardSetIndex) || 0
+    );
 
     const playerCountPreset = event.target.closest('[data-equity-player-count]');
     if (playerCountPreset) return setEquityPlayerCount(playerCountPreset.dataset.equityPlayerCount);
@@ -7016,9 +7581,7 @@ function bindEvents() {
       if (playerIndex < 2 || playerIndex >= app.equity.players.length) return;
       app.equity.players.splice(playerIndex, 1);
 
-      renderAllCards();
-
-      setEquityPending();
+      setEquityPending({ renderInputs: 'players' });
 
     }
 
@@ -7508,16 +8071,14 @@ function refreshLocalizedPlaybookRuntime() {
 }
 
 function refreshLocalizedEquityRuntime() {
-  renderEquityPlayers();
   renderEquityCards();
   if (['idle', 'pending'].includes(app.equity.lifecycle) && $('#equityDetailExecution')) {
     $('#equityDetailExecution').textContent = t('Ready');
   }
   if (app.equity.lifecycle === 'complete' && app.equity.lastResult && app.equity.lastRequest) {
-    renderEquityResult(app.equity.lastResult, app.equity.lastRequest, { announce: false });
+    renderEquityResult(app.equity.lastResult, app.equity.lastRequest, { announce: false, rebuildAnalysis: false });
     return;
   }
-  renderEquityScenarioContext(app.equity.lastRequest || equityRequestFromCurrentInputs());
   updateEquityReadiness();
   if (app.equity.lifecycle === 'running') {
     if (app.equity.lastProgress) renderEquityProgress(app.equity.lastProgress);
@@ -7529,9 +8090,10 @@ function refreshLocalizedEquityRuntime() {
     if ($('#equityStatus')) $('#equityStatus').textContent = equityFailureMessage(app.equity.lastError);
     if ($('#methodBadge')) $('#methodBadge').textContent = t('ERROR');
   } else if (app.equity.lifecycle === 'pending') {
-    if ($('#equityStatus')) $('#equityStatus').textContent = t('Inputs changed. Calculate to refresh the result.');
+    if ($('#equityStatus')) $('#equityStatus').textContent = t(app.equity.staleResult ? 'Results are stale.' : 'Inputs changed. Calculate to refresh the result.');
     if ($('#methodBadge')) $('#methodBadge').textContent = t('AWAITING CALCULATION');
   }
+  renderEquityHandAnalysis();
 }
 
 function refreshLocalizedTrainingRuntime() {
@@ -11875,81 +12437,4 @@ function replayTrainingExercise(seed) {
     });
   }
   return newRandomTrainingHand({ seed: numericSeed, config });
-}
-
-// ================================================================
-// OUTS CALCULATOR
-// ================================================================
-
-/**
- * calculateOuts: Given hero cards, villain cards, and current board,
- * returns the list of cards that improve hero's hand to beat villain.
- * Only valid on flop (3 cards) or turn (4 cards).
- */
-function calculateOuts(myCards, allOpponentsCards, boardCards, deadCards = []) {
-  if (!myCards || myCards.length !== 2) return null;
-  if (!allOpponentsCards || allOpponentsCards.length === 0) return null;
-  if (!boardCards || boardCards.length < 3 || boardCards.length > 4) return null;
-
-  const allUsed = new Set([...myCards, ...boardCards, ...deadCards].filter(Boolean));
-  allOpponentsCards.forEach(cards => cards.forEach(c => { if (c) allUsed.add(c); }));
-  
-  const ranks = ['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
-  const suits = ['s','h','d','c'];
-  const deck = [];
-  for (let r of ranks) for (let s of suits) { if (!allUsed.has(r + s)) deck.push(r + s); }
-
-  const myCurrentScore = scoreSeven([...myCards, ...boardCards]);
-  let maxOppCurrentScore = 0;
-  for (let oppCards of allOpponentsCards) {
-    if (oppCards && oppCards.length === 2) {
-      const oppScore = scoreSeven([...oppCards, ...boardCards]);
-      if (oppScore > maxOppCurrentScore) maxOppCurrentScore = oppScore;
-    }
-  }
-
-  // If hero is already strictly ahead of all opponents
-  if (myCurrentScore > maxOppCurrentScore) return { ahead: true };
-
-  const CATEGORY_NAMES = {
-    8: "Straight Flush",
-    7: "Four of a Kind",
-    6: "Full House",
-    5: "Flush",
-    4: "Straight",
-    3: "Three of a Kind",
-    2: "Two Pair",
-    1: "Pair",
-    0: "High Card"
-  };
-
-  const categoriesMap = {};
-  let totalOuts = 0;
-
-  for (let card of deck) {
-    const testBoard = [...boardCards, card];
-    const myFutureScore = scoreSeven([...myCards, ...testBoard]);
-    
-    let maxOppFutureScore = 0;
-    for (let oppCards of allOpponentsCards) {
-      if (oppCards && oppCards.length === 2) {
-        const oppScore = scoreSeven([...oppCards, ...testBoard]);
-        if (oppScore > maxOppFutureScore) maxOppFutureScore = oppScore;
-      }
-    }
-    
-    // Only count as an out if it strictly wins
-    if (myFutureScore > maxOppFutureScore) {
-      const cat = Math.floor(myFutureScore / 1e10);
-      const catName = CATEGORY_NAMES[cat] || "Improved Hand";
-      
-      if (!categoriesMap[catName]) categoriesMap[catName] = { rank: cat, name: catName, cards: [] };
-      categoriesMap[catName].cards.push(card);
-      totalOuts++;
-    }
-  }
-
-  const categories = Object.values(categoriesMap).sort((a, b) => b.rank - a.rank);
-
-  return { ahead: false, count: totalOuts, categories: categories };
 }

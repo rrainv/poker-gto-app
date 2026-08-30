@@ -50,9 +50,11 @@ test('Scenario board is one semantic five-card LTR row in every surrounding dire
   assert.ok(board.indexOf('data-playbook-street="turn"') < board.indexOf('data-playbook-street="river"'));
   assert.match(css, /\.playbook-board-layout\s*\{[^}]*grid-template-columns:\s*repeat\(5, var\(--poker-card-width\)\)/);
   assert.match(css, /\[dir="rtl"\] \.playbook-board-layout \{ direction: ltr; unicode-bidi: isolate; \}/);
-  for (let index = 1; index <= 5; index += 1) {
-    assert.match(css, new RegExp(`playbook-board-cards > \\.card-slot:nth-child\\(${index}\\) \\{ grid-column: ${index}; \\}`));
-  }
+  assert.match(css, /\.playbook-board-layout \.playbook-board-cards > \.board-card-set-editor--flop\s*\{[^}]*grid-column:\s*1 \/ span 3/);
+  assert.match(css, /board-card-set-editor\[data-card-set-index="3"\]\s*\{\s*grid-column:\s*4/);
+  assert.match(css, /board-card-set-editor\[data-card-set-index="4"\]\s*\{\s*grid-column:\s*5/);
+  assert.match(logic, /boardStreetCardSetDefinition\(group, originIndex\)/);
+  assert.match(logic, /committed:\s*definition\.committed\.slice\(\)[\s\S]*draft:\s*definition\.committed\.slice\(\)/);
 });
 
 test('released Home tutorial decisions persist while a deliberate later version can re-offer', () => {

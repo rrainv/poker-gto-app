@@ -64,6 +64,12 @@ Durable Save uses the `SavedStudyObject` application authority and the shared ac
 
 Known cards retain one rank-plus-suit identity across DOM cards, SVG cards, text, previews, themes, 2/4-color choices, `T`/`10`, localization, and RTL. When a private card is legitimately known or revealed, its full rank+suit identity remains comfortably inspectable and is not substantially covered by seat panels, action treatments, card cradles, or other local chrome. Equivalent known-card consumers preserve that inspection floor while adapting composition to their surface. Hidden private cards remain hidden; presentation debt never weakens privacy. Internal IDs may travel through contracts but should not normally be raw user-facing prose.
 
+### Transactional card-set editing
+
+When a surface edits a logical card set—such as a two-card private hand or a flop/turn/river group—the shared interaction is draft then commit. Opening the picker copies the current set into a temporary selection; card choices update only that draft. `Apply` commits the complete legal set once through the owning surface, while `Cancel` or Escape restores the pre-open state without invalidation. Clear behavior must be explicit and must not silently turn a cancelled draft into a source mutation.
+
+The picker preserves canonical card identity, duplicate-card exclusion, legal set size, initiating-control focus, keyboard operation, and visible selection state. Consumers may run their existing readiness or stale-result invalidation only after a committed change; the picker does not create poker state or define a second card authority. This transactional interaction is accepted cross-surface behavior for the existing Hand/Scenario and Equity consumers.
+
 ### Facts, Explain, and Coach / Summary
 
 - **Facts:** dense structured facts, statistics, provenance, and uncertainty.
@@ -95,6 +101,7 @@ Result summaries remain concise, with deeper supported facts available through a
 | Shared Save/bookmark | APPLICABLE NOW for supported Hand/Spot payloads | APPLICABLE NOW for supported Spot payloads | DEFERRED — Saved Drill/Session payload owners | NOT APPLICABLE until an approved Equity-study payload exists | DEFERRED — Saved Range/Profile payload owner | APPLICABLE NOW for supported objects | NOT APPLICABLE; Home Game has its own session lifecycle |
 | Randomize/Lock | DEFERRED — Random Spot Generator for study setup, never live canonical history | DEFERRED — Random Spot Generator | NOT APPLICABLE to the canonical Training generator's private curriculum contract | DEFERRED — Random Spot Generator | NOT APPLICABLE to ordinary evidence editing | NOT APPLICABLE to passive inspection | NOT APPLICABLE to money/session records |
 | Card identity | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW when exact combos/cards appear | APPLICABLE NOW for supported previews | NOT APPLICABLE to the ledger; deferred to any approved linked-Hand preview |
+| Transactional card-set editing | APPLICABLE NOW for supported Hand setup/reveal inputs | APPLICABLE NOW for exact Scenario inputs | NOT APPLICABLE to canonical generated Training state | APPLICABLE NOW | NOT APPLICABLE to ordinary evidence editing | NOT APPLICABLE to passive inspection | NOT APPLICABLE to money/session records |
 | Facts / Explain / Coach | DEFERRED — Deep Hand Review | APPLICABLE NOW at factual/explanation foundation; richer synthesis deferred | DEFERRED — Training Intelligence summaries | DEFERRED — Equity and Hand Analysis | DEFERRED — Personal Strategy Intelligence | DEFERRED — Saved synthesis | APPLICABLE NOW for exact accounting explanation only; poker coaching is not applicable |
 | Provenance/uncertainty | APPLICABLE NOW for source-aware review | APPLICABLE NOW | APPLICABLE NOW for source-aware feedback | APPLICABLE NOW for method/result provenance | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW for ledger/correction provenance |
 | Unknown/unavailable | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW | APPLICABLE NOW |

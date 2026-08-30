@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 28, 2026 (`TRAINING-COMPOSITION-001` is **COMPLETED / HUMAN ACCEPTED**; `EQUITY-COMPOSITION-001` is **NEXT / READY**, followed by the remaining visible-product closure wave and September Alpha whole-app/docs/audit gates; `PERSONAL-STRATEGY-003A` is preserved but is not immediately next).
+Last refreshed: August 30, 2026 (`EQUITY-COMPOSITION-001` is **COMPLETED / HUMAN ACCEPTED**; `ANALYZE-RANGE-UX-001` is **ACTIVE NEXT / READY**, followed by the remaining visible-product closure wave and September Alpha whole-app/docs/audit gates; `PERSONAL-STRATEGY-003A` is preserved but is not immediately next).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -9,7 +9,7 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
 - **COMPLETED:** accepted bounded outcome; later changes require a new ticket.
 - **COMPLETED / HUMAN ACCEPTED ... WITH MINOR DEBT:** accepted bounded product checkpoint whose named non-blocking debt stays with later owners; later architecture changes require a new ticket.
 - **CHECKPOINTED / INTENTIONALLY INCOMPLETE:** useful foundation accepted with a named resume point.
-- **IMPLEMENTATION COMPLETE / FINAL HUMAN ACCEPTANCE REQUIRED:** the bounded implementation, human-QA correction, and agent verification are complete, but the product owner has not issued final acceptance.
+- **IMPLEMENTATION COMPLETE / AWAITING HUMAN ACCEPTANCE:** the bounded implementation and agent verification are complete, but the product owner has not issued final acceptance.
 - **ACTIVE NEXT:** accepted next bounded ticket, started in its own chat.
 - **PLANNED NEXT:** ordered work after the active-next ticket.
 - **PLANNED NEXT / BLOCKED ON HUMAN ACCEPTANCE:** ordered next work that must not start until the named human checkpoint is accepted.
@@ -94,10 +94,13 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - focused semantic/domain tests and the Firefox 154 matrix pass at 1920×1080, 1366×768, 2560×1440, and 2560×1600 across EN/RU/HE RTL and Midnight/Graphite/Daylight.
    - lean closeout evidence at Firefox 154 / 1920×1080 proves `Replay this decision` remounts the exact canonical exercise, replay answers do not change headline session counters or planner progress, Next advances exactly one exercise, and terminal Full Hand Review retains the live-scale shared table with vertical canonical History and no horizontal timeline. The product owner human accepted the checkpoint.
 
-13. **NEXT / READY — `EQUITY-COMPOSITION-001`**
-   - own bounded player tiles, optional useful names, central Board/Dead/Method controls, and dominant result presentation without changing canonical Equity.
+13. **COMPLETED / HUMAN ACCEPTED — `EQUITY-COMPOSITION-001`**
+   - bounded 2–10-player setup keeps player inputs in one scrollable region with optional transient names and keeps Board/Dead/Method readily adjacent; the empty/running result state stays compact, while completed Equity uses a separate dominant player-comparison surface and optional factual hand details.
+   - canonical Equity requests, method selection/disclosure, progress, cancellation, stale-result invalidation, and factual outs remain preserved. Shared transactional card-set editing is accepted across its existing consumers, and optional inline player names remain presentation-only.
+   - exact entered hands now expose current standing and next-card outcome families through `exact-entered-hand-outcomes/v1`: a structural completion is explicitly not the same claim as a card that puts a player ahead of every entered exact opponent. Focused and targeted Firefox evidence passed, and the product owner human accepted the checkpoint.
+   - Runout Explorer, Card Outcome Preview, richer Hand Standing, nuts/locks/vulnerability, clean/dirty improvements, richer split-pot explanation, weighted range-relative analysis, and other dossier-owned depth remain preserved future work rather than hidden closeout debt.
 
-14. **PLANNED AFTER EQUITY — `ANALYZE-RANGE-UX-001`**
+14. **ACTIVE NEXT / READY — `ANALYZE-RANGE-UX-001`**
    - own local Matrix inspection, truthful comparison/card-removal presentation, persistent/local legend, decision-fact discovery, and progressive depth without adding a range or analysis authority.
 
 15. **PLANNED AFTER ANALYZE/RANGE — `FIRST-USE-HOME-001`**

@@ -6,6 +6,7 @@ const { pathToFileURL } = require('url');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const LOGIC_PATH = path.join(REPO_ROOT, 'app', 'src', 'core', 'logic.js');
+const EVALUATOR_PATH = path.join(REPO_ROOT, 'shared', 'poker-domain', 'evaluator.js');
 const PYTHON_ADAPTER_PATH = path.join(__dirname, 'python_evaluator_adapter.py');
 
 function sliceBetween(source, startMarker, endMarker) {
@@ -24,11 +25,10 @@ function createLogicHarness() {
 
   const cardStateSource = sliceBetween(source, 'function groupCards(group)', 'function cardMarkup(card)');
   const renderDeckSource = sliceBetween(source, 'function renderDeck()', 'function firstEmptyIndex(cards, limit)');
-  const evaluatorEquitySource = sliceBetween(
-    source,
-    '// Static TypedArray buffers for zero-GC hand evaluation in main thread',
-    'let equityCalculationGeneration = 0;'
-  );
+  const evaluatorSource = fs.readFileSync(EVALUATOR_PATH, 'utf8')
+    .replace(/import[^;]+;\s*/g, '')
+    .replaceAll('export ', '')
+    .replaceAll('RANK_VALUE', 'EVALUATOR_RANK_VALUE');
 
   const sandbox = {
     Array,
@@ -43,6 +43,22 @@ function createLogicHarness() {
   vm.runInContext(`
     ${rankValue[0]}
     const RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+    const CARD_RANKS = '23456789TJQKA';
+    const POKER_HAND_RANK_SCHEMA_VERSION = 'poker-hand-rank/v1';
+    const deepFreeze = (value) => Object.freeze(value);
+    const assertCardArray = (cards, label) => {
+      if (!Array.isArray(cards)) throw new TypeError(label + ' must be an array');
+      cards.forEach((card) => {
+        if (!/^[2-9TJQKA][shdc]$/.test(card)) throw new TypeError(label + ' contains an invalid card');
+      });
+    };
+    const assertUniqueKnownCards = (groups) => {
+      const seen = new Set();
+      groups.forEach(({ cards }) => cards.forEach((card) => {
+        if (seen.has(card)) throw new RangeError('Duplicate known card: ' + card);
+        seen.add(card);
+      }));
+    };
     const SUITS = [
       { id: 'h', symbol: 'h' },
       { id: 's', symbol: 's' },
@@ -50,7 +66,7 @@ function createLogicHarness() {
       { id: 'c', symbol: 'c' }
     ];
 
-    let app = { equity: { board: [], dead: [], players: [] }, gto: {}, training: {}, settings: { cardRankStyle: 'poker' } };
+    let app = { equity: { board: [], dead: [], players: [] }, gto: { hero: [], board: [], dead: [] }, training: { hero: [], board: [] }, settings: { cardRankStyle: 'poker' } };
     let config = {};
     let deckNode = { innerHTML: '' };
 
@@ -64,14 +80,21 @@ function createLogicHarness() {
     };
     ${cardStateSource}
     ${renderDeckSource}
-    ${evaluatorEquitySource}
+    ${evaluatorSource}
 
     globalThis.__qa001 = {
-      scoreFive,
-      scoreSeven,
+      scoreFive: (cards) => evaluateFive(cards).score,
+      scoreSeven: (cards) => (cards.length === 5 ? evaluateFive(cards) : evaluateSeven(cards)).score,
       renderDeckFor(state, picker) {
+        state.players.forEach((player, index) => {
+          if (!player.id) player.id = 'equity-player-' + index;
+        });
         app.equity = state;
-        app.picker = picker;
+        const legacyPlayerIndex = /^player-([0-9]+)$/.exec(picker.group)?.[1];
+        const player = legacyPlayerIndex === undefined ? null : state.players[Number(legacyPlayerIndex)];
+        const group = player ? equityHandGroup(player.id) : picker.group;
+        const committed = player ? player.cards.slice() : groupCards(group).filter(Boolean);
+        app.picker = { ...picker, group, committed, draft: committed.slice() };
         deckNode = { innerHTML: '' };
         renderDeck();
         return deckNode.innerHTML;

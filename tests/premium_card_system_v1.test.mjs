@@ -343,7 +343,7 @@ test('picker accessibility, four-color semantics, RTL, and reduced motion remain
   assert.match(logic, /aria-pressed="\$\{isSelected\}"/);
   assert.match(logic, /data-deck-card="\$\{card\}" \$\{isUnavailable \? 'disabled' : ''\}/);
   assert.match(logic, /t\('\{card\}, unavailable'/);
-  assert.match(logic, /t\('Choose \{card\}'/);
+  assert.match(logic, /t\('Select \{card\}'/);
   assert.match(css, /html\[data-four-color="false"\][\s\S]*?--suit-diamond:\s*var\(--suit-heart\)[\s\S]*?--suit-club:\s*var\(--suit-spade\)/);
   for (const [suit, token] of Object.entries({ h: 'heart', d: 'diamond', c: 'club', s: 'spade' })) {
     assert.match(css, new RegExp(`card--suit-${suit}[\\s\\S]*?var\\(--suit-${token}\\)`));

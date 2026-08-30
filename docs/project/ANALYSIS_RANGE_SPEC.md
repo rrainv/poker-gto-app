@@ -129,6 +129,8 @@ Straight-flush draw geometry is classified independently from the prospective ma
 
 These are structural direct-improvement/completion cards, not clean outs, guaranteed winning cards, probability, or Equity. The contract includes `equityCalculated: false`, and Analysis never adds family counts or performs four-and-two arithmetic. Supplied-range draw mass remains a separate per-combo composition fact; no range-level outs count is synthesized.
 
+An Equity consumer may combine `RangeAnalysisFacts v1` with the separate immutable application projection `exact-entered-hand-outcomes/v1`. That projection uses the canonical evaluator and every entered exact hand to classify legal next cards as strict-ahead outcomes, tie outcomes, structural category improvements that still remain behind, or non-catch-up cards. It is not part of `RangeAnalysisFacts v1`, is unavailable when an opponent hand is unknown, and does not convert structural completion cards into clean outs, guaranteed final-pot wins, or Equity. On the flop, being ahead after the next card still leaves the River unresolved; on the turn, the next card is the final one-card runout.
+
 ### Other attributes
 
 Overcards are reported only for an unpaired high-card state and count distinct Hero ranks above the highest board rank. `madeHandAndDraw` is an overlapping attribute when a non-high-card made hand coexists with a primary flush or straight draw.

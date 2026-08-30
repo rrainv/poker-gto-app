@@ -30,6 +30,7 @@ Production must not import solver experiments, training scripts, cloud tooling, 
 - durable encountered-decision/session learning evidence, review lifecycle, and re-drill identity: `training-decision-record/v1` / `training-session-record/v1` under `app/src/training-memory/`
 - explanation data: `AnalysisExplanation v1`
 - exact-hand, board-structure, blocker, and optional supplied-range facts for Analysis: `RangeAnalysisFacts v1`
+- Equity workspace factual projection and exact-entered-hand next-card comparison: `equity-hand-analysis/v1` and `exact-entered-hand-outcomes/v1` under the application layer
 - user-owned saved hands/spots/notes/review metadata: `SavedStudyObject v1` under `app/src/saved-study-objects/`
 - performance scheduling/invalidation: `product-performance/v1`
 - desktop host: `app/main.js`
@@ -150,6 +151,8 @@ Any future model/reference provider must enter behind this boundary with a versi
 Canonical Equity is a separate product service. Worker and in-process execution must use the same shared implementation.
 
 Heuristic conditional samples inside strategy are not canonical Equity and must be labelled separately.
+
+`equity-hand-analysis/v1` is an immutable application projection over canonical evaluator results plus `RangeAnalysisFacts v1`. Its `exact-entered-hand-outcomes/v1` facts compare every entered exact hand against every legal next card and keep current standing, strict-ahead cards, tie cards, and structural improvements that still leave the player behind as separate outcome families. It is unavailable when an opponent is unknown. A structural completion is not a clean out, guaranteed winner, or Equity claim, and UI renderers may not collapse it into a card that puts the player ahead.
 
 ## 8. Hold'em range core
 

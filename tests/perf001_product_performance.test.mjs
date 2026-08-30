@@ -131,7 +131,7 @@ test('Facing and Pot each have one slider binding and no duplicate delayed input
 test('ordinary Playbook updates invalidate hidden work instead of rendering every DOM surface', () => {
   const update = sourceBetween(
     "async function updateContext(reason = 'Context updated')",
-    '// Legacy fast evaluator retained for the existing Outs display only.',
+    'let equityCalculationGeneration = 0;',
   );
   assert.match(update, /invalidatePlaybookDerivedSurfaces\(\)/);
   assert.match(update, /renderVisiblePlaybookDerivedSurfaces\(\)/);
@@ -142,7 +142,7 @@ test('ordinary Playbook updates invalidate hidden work instead of rendering ever
 test('one main DecisionContext update resolves its StrategyResult once and reuses it', () => {
   const update = sourceBetween(
     "async function updateContext(reason = 'Context updated')",
-    '// Legacy fast evaluator retained for the existing Outs display only.',
+    'let equityCalculationGeneration = 0;',
   );
   assert.equal((update.match(/strategyProvider\.resolve\(decisionContext\)/g) || []).length, 1);
   assert.match(logic, /renderPlaybookDecisionAnalysis\(\s*app\.decisionContext,\s*app\.strategyResult/);
@@ -168,7 +168,7 @@ test('theme changes and retained animations no longer trigger strategy or forced
 test('Training and Equity card/readiness work stays within its active workspace', () => {
   const cards = sourceBetween('function activeWorkspaceMode()', 'function openPicker(');
   const trainingCards = sourceBetween('function renderTrainingCards()', 'function updateAssistanceDisplay(');
-  const pending = sourceBetween('function setEquityPending()', 'function resetEquityCalculator()');
+  const pending = sourceBetween('function setEquityPending(options)', 'function resetEquityCalculator()');
   assert.match(cards, /mode === 'gto'[\s\S]*mode === 'equity'[\s\S]*mode === 'training'/);
   assert.doesNotMatch(cards, /updateEquityReadiness/);
   assert.match(trainingCards, /trainingModeIsVisible\(\)/);

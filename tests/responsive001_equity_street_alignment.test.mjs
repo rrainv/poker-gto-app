@@ -20,16 +20,13 @@ test('Equity street labels and live board slots share one five-column layout', (
   );
 });
 
-test('Flop spans slots one through three while Turn and River map to four and five', () => {
+test('the Flop set spans columns one through three while Turn and River map to four and five', () => {
   assert.match(css, /\[data-equity-street="flop"\]\s*\{[^}]*grid-column:\s*1\s*\/\s*span\s*3/);
   assert.match(css, /\[data-equity-street="turn"\]\s*\{[^}]*grid-column:\s*4/);
   assert.match(css, /\[data-equity-street="river"\]\s*\{[^}]*grid-column:\s*5/);
-  for (let index = 1; index <= 5; index += 1) {
-    assert.match(
-      css,
-      new RegExp(`equity-board-cards\\s*>\\s*\\.card-slot:nth-child\\(${index}\\)\\s*\\{[^}]*grid-column:\\s*${index}`)
-    );
-  }
+  assert.match(css, /equity-board-cards\s*>\s*\.board-card-set-editor--flop\s*\{[^}]*grid-column:\s*1\s*\/\s*span\s*3/);
+  assert.match(css, /board-card-set-editor\[data-card-set-index="3"\]\s*\{[^}]*grid-column:\s*4/);
+  assert.match(css, /board-card-set-editor\[data-card-set-index="4"\]\s*\{[^}]*grid-column:\s*5/);
 });
 
 test('Hebrew preserves the LTR Flop to Turn to River semantic and slot order', () => {
@@ -39,4 +36,12 @@ test('Hebrew preserves the LTR Flop to Turn to River semantic and slot order', (
   assert.ok(flop >= 0 && flop < turn && turn < river);
   assert.match(css, /\[dir="rtl"\]\s+\.equity-board-layout\s*\{[^}]*direction:\s*ltr[^}]*unicode-bidi:\s*isolate/);
   assert.doesNotMatch(css, /\.equity-board-layout[^}]*direction:\s*rtl/);
+});
+
+test('Analyze and Equity Board compositions scope set-editor geometry without internal scrollbars', () => {
+  assert.match(css, /\.playbook-board-layout\s*\{[^}]*column-gap:\s*var\(--space-3\)[^}]*overflow:\s*visible/s);
+  assert.match(css, /playbook-board-cards\s*>\s*\.board-card-set-editor--flop\s*\{[^}]*grid-column:\s*1\s*\/\s*span\s*3[^}]*grid-template-columns:\s*repeat\(3,\s*var\(--poker-card-width\)\)/s);
+  assert.match(css, /playbook-board-cards\s*>\s*\.board-card-set-editor\[data-card-set-index="3"\]\s*\{[^}]*grid-column:\s*4/);
+  assert.match(css, /playbook-board-cards\s*>\s*\.board-card-set-editor\[data-card-set-index="4"\]\s*\{[^}]*grid-column:\s*5/);
+  assert.match(css, /\.equity-board-layout\s*\{[^}]*overflow:\s*visible/s);
 });

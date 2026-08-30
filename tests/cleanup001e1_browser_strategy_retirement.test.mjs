@@ -39,7 +39,7 @@ test('Playbook resolves DecisionContext through the deterministic StrategyProvid
   const providerSeam = sourceBetween('function readHeuristicOptions(', 'function setFrequency(index, action)');
   const updateContext = sourceBetween(
     "async function updateContext(reason = 'Context updated')",
-    '// Legacy fast evaluator retained for the existing Outs display only.',
+    'let equityCalculationGeneration = 0;',
   );
 
   assert.match(providerSeam, /heuristicOptionsResolver: readHeuristicOptions/);

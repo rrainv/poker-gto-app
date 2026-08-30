@@ -27,6 +27,18 @@ const playbookHtml = html.slice(html.indexOf('id="gtoMode"'), html.indexOf('id="
 const trainingHtml = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="equityMode"'));
 const equityHtml = html.slice(html.indexOf('id="equityMode"'), html.indexOf('id="infoMode"'));
 
+test('card-set preview geometry reserves full-size cards, stable gaps, padding, and visible edges', () => {
+  const boardEditorRule = css.match(/^\.board-card-set-editor\s*\{[^}]*\}/ms)?.[0] || '';
+  assert.match(css, /\.card-set-picker-context\s*\{[^}]*padding:\s*var\(--space-4\) var\(--space-5\)/s);
+  assert.match(css, /\.card-set-picker-cards\s*\{[^}]*gap:\s*var\(--space-4\)[^}]*padding:\s*var\(--space-2\)[^}]*overflow:\s*visible/s);
+  assert.match(css, /\.card-set-picker-card\s*\{[^}]*flex:\s*0 0 var\(--card-size-standard-width\)[^}]*height:\s*var\(--card-size-standard-height\) !important/s);
+  assert.match(css, /\.private-hand-set-editor\s*\{[^}]*gap:\s*var\(--space-3\)[^}]*overflow:\s*visible/s);
+  assert.match(css, /\.equity-hand-editor-cards\s*\{[^}]*gap:\s*var\(--space-3\)[^}]*overflow:\s*visible/s);
+  assert.match(boardEditorRule, /gap:\s*var\(--space-2\)/);
+  assert.match(boardEditorRule, /padding:\s*0/);
+  assert.doesNotMatch(boardEditorRule, /overflow:/);
+});
+
 test('root rank preference no longer consumes delegated Playbook card clicks', () => {
   const calls = delegatedCardSlotClick('hero', 0);
   assert.equal(calls.picker.length, 1);
@@ -56,44 +68,47 @@ test('root rank preference no longer consumes delegated Playbook card clicks', (
   assert.equal(JSON.parse(values.get(CARD_PRESENTATION_STORAGE_KEY)).rankStyle, 'full-ten');
 });
 
-for (const [label, group, card, handMode] of [
-  ['Playbook Hero', 'hero', 'As', false],
-  ['Playbook board', 'board', 'Kh', false],
-  ['Playbook dead cards', 'dead', 'Qc', false],
-  ['Equity known hand', 'player-0', 'Th', false],
-  ['Equity board', 'eqboard', 'Jd', false],
-  ['Equity dead cards', 'eqdead', '9s', false],
+for (const [label, group, cards, handMode] of [
+  ['Playbook Hero', 'hero', ['As', 'Kh'], false],
+  ['Playbook Flop', 'board', ['Kh', '7d', '2c'], false],
+  ['Playbook dead cards', 'dead', ['Qc'], false],
+  ['Equity Flop', 'eqboard', ['Jd', '8s', '3h'], false],
+  ['Equity dead cards', 'eqdead', ['9s'], false],
 ]) {
-  test(`${label} uses the production picker open/select/close path`, () => {
+  test(`${label} uses the production picker draft/Apply path`, () => {
     const picker = createProductionPickerHarness({ handMode });
     picker.openPicker(group, 0);
     assert.equal(picker.modalOpen(), true);
-    picker.selectCard(card);
-    assert.equal(picker.groupCards(group)[0], card);
+    cards.forEach(picker.selectCard);
+    assert.deepEqual([...picker.groupCards(group)], []);
+    assert.equal(picker.modalOpen(), true);
+    assert.equal(picker.applyDisabled(), false);
+    picker.apply();
+    assert.deepEqual([...picker.groupCards(group)], cards);
     assert.equal(picker.app.picker, null);
     assert.equal(picker.modalOpen(), false);
-    assert.match(picker.slotMarkup(group), new RegExp(`data-group="${group}"[^>]*data-index="0"`));
     assert.match(picker.slotMarkup(group), group.includes('dead') ? /card--dead/ : /card--known/);
   });
 }
 
-test('Hand private-card picker stays open for two cards, then closes', () => {
+test('Hand private-card picker stays open for two cards and commits only on Apply', () => {
   const picker = createProductionPickerHarness({ handMode: true });
   picker.openPicker('hand-seat-0', 0);
   picker.selectCard('Ad');
 
-  assert.deepEqual([...picker.groupCards('hand-seat-0')], ['Ad']);
+  assert.deepEqual([...picker.groupCards('hand-seat-0')], []);
   assert.equal(picker.app.picker.group, 'hand-seat-0');
-  assert.equal(picker.app.picker.index, 1);
   assert.equal(picker.modalOpen(), true);
-  assert.match(picker.deckMarkup(), /data-deck-card="Ad"[^>]*disabled/);
+  assert.match(picker.deckMarkup(), /is-selected[^>]*data-deck-card="Ad"/);
 
   picker.selectCard('Kh');
+  assert.deepEqual([...picker.groupCards('hand-seat-0')], []);
+  assert.equal(picker.modalOpen(), true);
+  picker.apply();
   assert.deepEqual([...picker.groupCards('hand-seat-0')], ['Ad', 'Kh']);
   assert.equal(picker.app.picker, null);
   assert.equal(picker.modalOpen(), false);
-  assert.match(picker.slotMarkup('hand-seat-0'), /data-index="0"/);
-  assert.match(picker.slotMarkup('hand-seat-0'), /data-index="1"/);
+  assert.match(picker.slotMarkup('hand-seat-0'), /data-card-set-edit="hand-seat-0"/);
   assert.equal((picker.slotMarkup('hand-seat-0').match(/card--known/g) || []).length, 2);
 });
 
@@ -102,22 +117,22 @@ test('Hand private-card picker supports cancel after one card and multiple known
   picker.openPicker('hand-seat-0', 0);
   picker.selectCard('As');
   picker.closePicker();
-  assert.deepEqual([...picker.groupCards('hand-seat-0')], ['As']);
+  assert.deepEqual([...picker.groupCards('hand-seat-0')], []);
   assert.equal(picker.modalOpen(), false);
 
   picker.openPicker('hand-seat-1', 0);
-  assert.match(picker.deckMarkup(), /data-deck-card="As"[^>]*disabled/);
   picker.selectCard('Kd');
   assert.equal(picker.app.picker.group, 'hand-seat-1');
-  assert.equal(picker.app.picker.index, 1);
   picker.selectCard('Qc');
+  picker.apply();
 
   picker.openPicker('hand-seat-2', 0);
-  for (const card of ['As', 'Kd', 'Qc']) {
+  for (const card of ['Kd', 'Qc']) {
     assert.match(picker.deckMarkup(), new RegExp(`data-deck-card="${card}"[^>]*disabled`));
   }
   picker.selectCard('Jh');
   picker.selectCard('Ts');
+  picker.apply();
 
   assert.deepEqual([...picker.groupCards('hand-seat-1')], ['Kd', 'Qc']);
   assert.deepEqual([...picker.groupCards('hand-seat-2')], ['Jh', 'Ts']);
@@ -131,9 +146,10 @@ test('Hand private-card picker keeps the same two-card flow from heads-up throug
     picker.openPicker(group, 0);
     picker.selectCard('7c');
     assert.equal(picker.app.picker.group, group);
-    assert.equal(picker.app.picker.index, 1);
     assert.equal(picker.modalOpen(), true);
     picker.selectCard('6d');
+    assert.equal(picker.modalOpen(), true);
+    picker.apply();
     assert.deepEqual([...picker.groupCards(group)], ['7c', '6d']);
     assert.equal(picker.modalOpen(), false);
   }
@@ -145,44 +161,56 @@ test('picker can close one target and open the next board or dead-card target', 
   picker.selectCard('2s');
   picker.openPicker('dead', 0);
   assert.equal(picker.app.picker.group, 'dead');
-  assert.equal(picker.app.picker.index, 0);
+  assert.equal(picker.app.picker.originIndex, 0);
   assert.equal(picker.modalOpen(), true);
 });
 
-test('filled editable cards use Replace semantics: open, cancel, then replace', () => {
+test('filled private hands reopen as an unordered draft; Cancel preserves and Apply replaces', () => {
   const picker = createProductionPickerHarness();
   picker.openPicker('hero', 0);
   picker.selectCard('Ah');
+  picker.selectCard('Qd');
+  picker.apply();
 
   picker.openPicker('hero', 0);
   assert.equal(picker.modalOpen(), true);
-  assert.equal(picker.groupCards('hero')[0], 'Ah');
-  assert.match(picker.slotMarkup('hero'), /aria-label="Replace A/);
+  assert.deepEqual([...picker.groupCards('hero')], ['Ah', 'Qd']);
+  assert.match(picker.contextMarkup(), /A[\s\S]*Q/);
 
+  picker.selectCard('Ah');
+  picker.selectCard('Kh');
   picker.closePicker();
-  assert.equal(picker.groupCards('hero')[0], 'Ah');
+  assert.deepEqual([...picker.groupCards('hero')], ['Ah', 'Qd']);
 
   picker.openPicker('hero', 0);
+  picker.selectCard('Ah');
   picker.selectCard('Kh');
-  assert.equal(picker.groupCards('hero')[0], 'Kh');
+  picker.apply();
+  assert.deepEqual([...picker.groupCards('hero')], ['Qd', 'Kh']);
 });
 
 test('T and 10 are presentation choices while canonical IDs and face ranks stay stable', () => {
   const poker = createProductionPickerHarness({ rankStyle: 'poker' });
   poker.openPicker('hero', 0);
   poker.selectCard('Th');
+  poker.selectCard('As');
+  poker.apply();
   assert.equal(poker.groupCards('hero')[0], 'Th');
   assert.match(poker.slotMarkup('hero'), /class="rank s-h">T</);
 
   const fullTen = createProductionPickerHarness({ rankStyle: 'full-ten' });
   fullTen.openPicker('hero', 0);
   fullTen.selectCard('Th');
+  fullTen.selectCard('As');
+  fullTen.apply();
   assert.equal(fullTen.groupCards('hero')[0], 'Th');
   assert.match(fullTen.slotMarkup('hero'), /class="rank rank--ten s-h" data-card-rank-width="wide">10</);
   for (const card of ['As', 'Kh', 'Qd', 'Jc']) {
     const next = createProductionPickerHarness({ rankStyle: 'full-ten' });
     next.openPicker('hero', 0);
     next.selectCard(card);
+    next.selectCard(card === 'As' ? 'Kh' : 'As');
+    next.apply();
     assert.doesNotMatch(next.slotMarkup('hero'), /rank--ten/);
     assert.match(next.slotMarkup('hero'), new RegExp(`class="rank s-${card[1]}">${card[0]}<`));
   }
@@ -231,15 +259,15 @@ test('table viewBox reserves seat extrema and expanded wrapper does not clip', (
   assert.match(repairCss, /\.table-wrapper\.collapsed\s*\{[^}]*height:\s*0[^}]*overflow:\s*hidden/);
 });
 
-test('Equity reads as Players to Shared Cards and Calculation to Results', () => {
+test('Equity reads as Players to Board and Calculation to Hand Analysis', () => {
   const players = equityHtml.indexOf('class="panel equity-player-panel"');
-  const shared = equityHtml.indexOf('class="equity-shared-flow"');
+  const center = equityHtml.indexOf('class="equity-center-column"');
   const cards = equityHtml.indexOf('class="panel equity-cards-panel"');
-  const controls = equityHtml.indexOf('class="panel equity-controls-panel"');
-  const output = equityHtml.indexOf('class="equity-output-stack"');
-  assert.ok(players < shared && shared < cards && cards < controls && controls < output);
-  assert.match(repairCss, /\.equity-shared-flow\s*\{[^}]*background:\s*var\(--surface-panel\)[^}]*border:/);
-  assert.match(repairCss, /\.equity-shared-flow \.equity-controls-panel\s*\{\s*border-top:/);
+  const controls = equityHtml.indexOf('class="panel equity-controls-panel');
+  const analysis = equityHtml.indexOf('id="equityHandAnalysis"');
+  assert.ok(players < center && center < cards && cards < controls && controls < analysis);
+  assert.match(repairCss, /\.equity-workspace\s*\{[^}]*grid-template-columns:/);
+  assert.match(repairCss, /\.equity-center-column\s*\{[^}]*display:\s*grid/);
   assert.match(equityHtml, /id="equityDecreasePlayers"[\s\S]*id="equityIncreasePlayers"/);
 });
 

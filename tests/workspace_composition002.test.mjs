@@ -96,23 +96,30 @@ test('Training context is one semantic hierarchy driven by existing lifecycle st
   assert.doesNotMatch(css, /data-layout-preset="(?:table-focus|controls-first)"[^}]*\.training-workspace/s);
 });
 
-test('Equity keeps one player-tile model through pending, running, and complete states', () => {
+test('Equity keeps a stable gallery, center Board, and global Hand Analysis rail', () => {
   const equity = html.slice(html.indexOf('class="equity-workspace"'), html.indexOf('<!-- Settings Modal -->'));
   assert.match(equity, /class="equity-workspace" data-equity-state="empty"/);
-  assert.ok(equity.indexOf('equity-input-stack') < equity.indexOf('equity-output-stack'));
-  assert.match(logic, /function setEquityCompositionState\(state\)[\s\S]*?new Set\(\['empty', 'running', 'complete', 'error'\]\)[\s\S]*?workspace\.dataset\.equityState = resolved/);
-  assert.match(ticketCss, /\.equity-workspace\s*\{[^}]*minmax\(0, 1fr\) minmax\(300px, 320px\)/s);
+  assert.ok(equity.indexOf('equity-player-panel') < equity.indexOf('equity-center-column'));
+  assert.ok(equity.indexOf('equity-center-column') < equity.indexOf('equity-dossier-panel'));
+  assert.match(logic, /function setEquityCompositionState\(state\)[\s\S]*?new Set\(\['empty', 'stale', 'running', 'complete', 'error'\]\)[\s\S]*?workspace\.dataset\.equityState = resolved/);
+  assert.match(ticketCss, /\.equity-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(360px, 400px\) minmax\(400px, 448px\) minmax\(520px, 1fr\)/s);
   assert.match(ticketCss, /#equityMode \.workspace-frame--standard\s*\{[^}]*--workspace-frame-max:\s*var\(--workspace-frame-dense\)/s);
-  assert.doesNotMatch(ticketCss, /data-equity-state="(?:running|complete)"[^}]*grid-template-columns/s);
+  assert.match(ticketCss, /\.equity-center-column\s*\{[^}]*display:\s*grid/s);
+  assert.match(ticketCss, /\.equity-dossier-panel\s*\{[^}]*position:\s*sticky/s);
+  assert.doesNotMatch(ticketCss, /data-equity-state="(?:running|complete)"\][^{]*\.equity-workspace\s*\{[^}]*grid-template-columns/s);
   assert.doesNotMatch(css, /data-layout-preset="analysis-focus"[^}]*\.equity-workspace/s);
-  assert.match(ticketCss, /\.equity-player-list\s*\{[^}]*repeat\(auto-fit, minmax\(min\(100%, 280px\), 1fr\)\)/s);
-  assert.match(ticketCss, /@media \(min-width: 1500px\)[\s\S]*?\.equity-shared-flow\s*\{[^}]*repeat\(2,/s);
-  assert.match(ticketCss, /data-density="compact"[^}]*\.equity-player-list\s*\{[^}]*min\(100%, 200px\)/s);
+  assert.match(ticketCss, /\.equity-player-list\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*max-block-size:\s*654px[^}]*overflow-y:\s*auto[^}]*overflow-x:\s*hidden/s);
+  assert.match(ticketCss, /data-density="compact"[^}]*\.equity-player-list\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s);
   assert.match(logic, /function equityPlayerResultMarkup\(player, playerIndex\)[\s\S]*?data-result-state="\$\{state\}"[\s\S]*?equity-result-primary[\s\S]*?t\('Win'\)[\s\S]*?t\('Tie'\)/s);
-  assert.match(logic, /function renderEquityPlayerResults\(\)[\s\S]*?\.equity-player-card[\s\S]*?current\.outerHTML = equityPlayerResultMarkup/s);
+  assert.match(logic, /function renderEquityPlayerResults\(\)[\s\S]*?footer\.outerHTML = equityPlayerResultMarkup\(player, playerIndex\)[\s\S]*?renderEquityComparison\(\)/s);
+  assert.match(logic, /function renderEquityResult\([\s\S]*?renderEquityPlayerResults\(\)[\s\S]*?renderEquityHandAnalysis\(\)/s);
+  assert.match(logic, /class="equity-player-footer"/);
+  assert.match(equity, /id="equityHandAnalysisTitle"[^>]*>Hand Analysis/);
+  assert.doesNotMatch(logic, /selectedPlayerId|selectEquityPlayer/);
+  assert.doesNotMatch(logic.slice(logic.indexOf('function renderEquityPlayers'), logic.indexOf('function updateActionOptions')), /outsPanel-|equity-result-tile/);
   assert.match(logic, /app\.equity\.lifecycle === 'running'/);
   assert.match(logic, /app\.equity\.lifecycle === 'complete'/);
-  assert.doesNotMatch(equity, /id="equityBars"|class="equity-result-card"/);
+  assert.doesNotMatch(equity, /id="equityBars"|class="equity-result-card"|equity-output-stack/);
   assert.doesNotMatch(css, /data-layout-preset="controls-first"[^}]*\.equity-workspace/s);
 });
 
