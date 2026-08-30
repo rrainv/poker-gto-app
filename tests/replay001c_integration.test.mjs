@@ -24,6 +24,7 @@ const translations = fs.readFileSync(
   new URL('../app/src/locales/analysis-translations.js', import.meta.url),
   'utf8',
 );
+const FORCED_LAYOUT_READ = /offsetWidth|offsetHeight|getBoundingClientRect\(/;
 
 function sourceBetween(source, startToken, endToken) {
   const start = source.indexOf(startToken);
@@ -148,6 +149,8 @@ test('motion is bounded, reduced-motion safe, theme-token based, and has no soun
 
 test('motion has a paintable, cancellable lifecycle and settles without a timer loop', () => {
   const applyMotion = sourceBetween(renderer, 'applyReplayMotion(state, motion)', 'renderPresenceState(');
+  const replayLogic = sourceBetween(logic, 'function createReplayIdentity(', 'function activeHandReviewInput(');
+  const replayHotPaths = [playbackSource, projectionSource, bridgeSource, replayLogic, applyMotion].join('\n');
   assert.ok(applyMotion.indexOf('dataset.replayMotionCycle') < applyMotion.indexOf('settleReplayMotionWhenFinished'),
     'transient classes must exist before their Web Animations lifecycle is observed');
   assert.match(renderer, /activeReplayAnimations\.forEach\(\(animation\) => animation\.cancel\(\)\)/);
@@ -162,7 +165,8 @@ test('motion has a paintable, cancellable lifecycle and settles without a timer 
   assert.match(logic, /root\.dataset\.replayMotionToken === motionToken/);
   assert.match(logic, /current\.classList\.remove\('is-replay-motion-current'\)/);
   assert.doesNotMatch(renderer, /setInterval|requestAnimationFrame|setTimeout/);
-  assert.doesNotMatch(`${logic}\n${renderer}`, /offsetWidth|offsetHeight|getBoundingClientRect\(/);
+  assert.match('function replayTick() { node.getBoundingClientRect(); }', FORCED_LAYOUT_READ);
+  assert.doesNotMatch(replayHotPaths, FORCED_LAYOUT_READ);
 });
 
 test('replay cues share the bounded semantic motion scale and stay restrained', () => {

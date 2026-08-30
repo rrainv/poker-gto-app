@@ -1944,6 +1944,11 @@ if (window.riverlineTutorialTranslations) {
     if (appTranslations[language]) Object.assign(appTranslations[language], entries);
   });
 }
+if (window.riverlineGuideTranslations) {
+  Object.entries(window.riverlineGuideTranslations).forEach(([language, entries]) => {
+    if (appTranslations[language]) Object.assign(appTranslations[language], entries);
+  });
+}
 
 if (window.riverlineWelcomeTranslations) {
   Object.entries(window.riverlineWelcomeTranslations).forEach(([language, entries]) => {

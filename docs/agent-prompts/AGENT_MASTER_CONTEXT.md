@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 31, 2026 (`CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001` joins Saved, Core Flow, Replay, Training, Equity, Analyze/Range, and First Use/Home as completed and human accepted; the cheap Saved global-preview console guard is active next, followed by `GUIDE-CONTENT-001` and September Alpha closure/audit preparation; `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision and `PREMIUM-CLOSEOUT-001` remains a later pre-release quality gate).
+Last refreshed: August 31, 2026 (`GUIDE-CONTENT-001` joins Saved, Core Flow, Replay, Training, Equity, Analyze/Range, and First Use/Home as completed and human accepted; the September Alpha whole-app human sanity pass is active next, followed by documentation/continuity freeze, full verification, the clean audit commit and immutable audit tag, independent cross-model audits, and human triage; structural, refactor, and feature work remains held for audit evidence unless the sanity pass exposes a blocker).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -64,13 +64,14 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 5. **COMPLETED / HUMAN ACCEPTED — `EQUITY-COMPOSITION-001`, `ANALYZE-RANGE-UX-001`, and `FIRST-USE-HOME-001`**
 6. **COMPLETED / HUMAN ACCEPTED — `SAVED-VISUAL-KNOWLEDGE-001`**
 7. **COMPLETED / HUMAN ACCEPTED — `CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001`**
-8. **ACTIVE NEXT — cheap Saved global-preview console guard**
-9. **PLANNED NEXT — `GUIDE-CONTENT-001`**
-10. **SEPTEMBER ALPHA CLOSURE — human whole-app pass → documentation integrity/continuity freeze → human clean commit/audit tag → cross-model blind hands-on and white-box architecture audits → human triage → P0/P1 fixes**
-11. **PRESERVED MAJOR FEATURES / ACTIVATE ONLY FROM POST-AUDIT EVIDENCE — `PERSONAL-STRATEGY-003A`, `GAME-SETUP-EVOLUTION-001`, `RANGE-EVOLUTION-001`, and the documented capability roadmap**
-12. **RETURN DEPENDENCIES — `REFERENCE-PACK-001` production source acquisition/review and `TRAINING-MEMORY-001` manual Firefox acceptance**
-13. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
-14. release/mobile/social/PLO later
+8. **COMPLETED / HUMAN ACCEPTED — `GUIDE-CONTENT-001`**
+9. **ACTIVE NEXT — SEPTEMBER ALPHA WHOLE-APP HUMAN SANITY PASS**
+10. **SEPTEMBER ALPHA CONTINUITY / VERIFICATION — documentation and continuity freeze → full verification gate → human clean audit commit and immutable audit tag**
+11. **INDEPENDENT AUDIT — cross-model blind hands-on and white-box architecture audits → human triage before further structural, refactor, or feature work**
+12. **PRESERVED MAJOR FEATURES / ACTIVATE ONLY FROM POST-AUDIT EVIDENCE — `PERSONAL-STRATEGY-003A`, `GAME-SETUP-EVOLUTION-001`, `RANGE-EVOLUTION-001`, and the documented capability roadmap**
+13. **RETURN DEPENDENCIES — `REFERENCE-PACK-001` production source acquisition/review and `TRAINING-MEMORY-001` manual Firefox acceptance**
+14. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+15. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
@@ -91,8 +92,10 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - `HANDS-ON-DEFECTS-001` is accepted only as a bounded repair checkpoint. Welcome title focus/Escape, clearer Home Game completion state, Return to live, auth feedback, card-removal parity, Analyze clipping, Personal Strategy vocabulary, and Replay geometry are accepted; this is not whole-product or Hand/Training composition acceptance.
 - `CORE-FLOW-CORRECTNESS-001` is the completed, human-accepted Core Flow correctness checkpoint. Preserve the fresh-Hand lifecycle; generalized session-level append-only correction over eligible buy-in/rebuy/add-on/cash-out facts with optional reason; continuous two-card known-opponent picker with logical focus and duplicate-card exclusion; and verified canonical minimum-raise/reopening semantics, including a legal 7bb → 13bb reraise from a 6bb last full increment. No human gate remains and no poker-domain rule changed.
 - `CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001` is completed and human accepted. Canonical `PokerState` semantics were correct; the root cause was application/UI coordination: fully known hole deals were mislabeled as hidden/observed Replay events, Replay transition rejection left a stale committed flop draft, and the consumed card could reappear as a later chance candidate. Preserve the accepted explicit Turn → River → Showdown flow, the canonical available-card exclusion of current board, known hole cards, dead cards, and pending selections, stale consumed-draft removal before picker open, Replay/live terminal agreement, and exact-once runout events. Do not reopen Hand composition.
+- `GUIDE-CONTENT-001` is completed and human accepted. Guide is the durable workflow-first reference for Hand, Analyze, Training, Equity, and Personal Strategy; Welcome / Learn Riverline remains orientation; existing workspace tutorials remain contextual interactive teaching. Guide actions reuse navigation authority, no tutorial/persistence authority was added, and the accepted Hand/Scenario, reference/Personal Strategy, Facts/Explain, Equity/strategy, heuristic/solved-GTO, Saved object, and sign-in/cloud-sync truth boundaries remain binding.
 - `REPLAY-RAIL-NAV-001` is the human-accepted Hand/Replay composition checkpoint: compact Hand context/state on the left, the primary poker table in the center, and legal/chance controls, distinct Replay, and bounded vertical History on the right. Preserve table-first hierarchy, stable live/Replay structure, accepted chronology and seeking, Return to live, canonical actions, no-dongle cards, contributions, Abort/Raise/all-in/invalid-size behavior, EN/RU/HE/RTL, Daylight contrast, and Review. Minor debt remains explicit: dense/10-max lower side panels sit slightly too far inward and the top player slightly too far outward/high; hidden backs may later tuck under their owning player if privacy, ownership, inspectability, and non-obstruction remain intact; full-ring Dealer presence/explainability belongs to table physicality/Game Setup rather than a fake dealer; and History padding/weight/contrast/density/event-row polish belongs to global/premium quality. Do not reopen the accepted architecture for those debts.
 - **September Alpha** is the near-term internal/high-quality-alpha milestone: a coherent, trustworthy, human-tested desktop build with accepted Hand/Replay, Training, Equity, Analyze/Range, materially improved First Use/Home and systemic polish, synchronized documentation, a whole-product manual pass, independent cross-model hands-on and theoretical audits, and serious findings triaged/fixed. It does not claim public beta readiness, production reference coverage, completed live account/sync validation, mobile/social/PLO completion, or completion of the long-term capability roadmap.
+- Do not activate Customization, Global Product Quality, god-file decomposition, or another feature ticket before the September Alpha audits and human triage unless the whole-app sanity pass exposes a blocker.
 - The 59 confirmed August findings supersede any broad claim that accepted UI checkpoints equal current whole-product visual acceptance. Existing foundations remain accepted; remaining problems stay open under their named correctness, redesign, and quality owners in the review artifact.
 
 ## Hands-on product workflow

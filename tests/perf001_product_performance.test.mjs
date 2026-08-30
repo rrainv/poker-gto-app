@@ -20,6 +20,33 @@ function sourceBetween(start, end) {
   return logic.slice(from, to);
 }
 
+function functionSource(name) {
+  const start = logic.indexOf(`function ${name}(`);
+  assert.ok(start >= 0, `Missing function ${name}`);
+  const brace = logic.indexOf('{', start);
+  let depth = 0;
+  let quote = null;
+  let escaped = false;
+  for (let index = brace; index < logic.length; index += 1) {
+    const character = logic[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (character === '\\') escaped = true;
+      else if (character === quote) quote = null;
+      continue;
+    }
+    if (character === '"' || character === "'" || character === '`') {
+      quote = character;
+      continue;
+    }
+    if (character === '{') depth += 1;
+    if (character === '}' && --depth === 0) return logic.slice(start, index + 1);
+  }
+  assert.fail(`Unterminated function ${name}`);
+}
+
+const FORCED_LAYOUT_READ = /offsetWidth|offsetHeight|getBoundingClientRect\(/;
+
 function frameHarness() {
   let nextHandle = 1;
   const callbacks = new Map();
@@ -161,8 +188,18 @@ test('Matrix preparation remains provider-backed, preflop-only, complete, and co
 
 test('theme changes and retained animations no longer trigger strategy or forced layout', () => {
   const events = sourceBetween('function bindEvents()', 'function init()');
+  const hotPaths = [
+    events,
+    ...[
+      'renderAllCards',
+      'invalidatePlaybookDerivedSurfaces',
+      'renderVisiblePlaybookDerivedSurfaces',
+      'updateContext',
+    ].map(functionSource),
+  ].join('\n');
   assert.doesNotMatch(events, /updateContext\('Theme changed'\)|updateContext\(`Switched to/);
-  assert.doesNotMatch(logic, /offsetWidth|offsetHeight|getBoundingClientRect\(/);
+  assert.match('function hotPath() { node.getBoundingClientRect(); }', FORCED_LAYOUT_READ);
+  assert.doesNotMatch(hotPaths, FORCED_LAYOUT_READ);
 });
 
 test('Training and Equity card/readiness work stays within its active workspace', () => {

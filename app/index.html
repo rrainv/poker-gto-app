@@ -18,7 +18,7 @@
 
   <script src="src/application/welcome-orientation-prepaint.js"></script>
 
-  <link rel="stylesheet" href="styles.css?v=26">
+  <link rel="stylesheet" href="styles.css?v=27">
 
   <link rel="icon" type="image/svg+xml" href="assets/riverline-brand-mark.svg">
 
@@ -29,8 +29,9 @@
   <script src="src/locales/home-translations.js?v=3" defer></script>
   <script src="src/locales/home-game-translations.js?v=1" defer></script>
   <script src="src/locales/tutorial-translations.js?v=1" defer></script>
+  <script src="src/locales/guide-translations.js?v=1" defer></script>
   <script src="src/locales/welcome-translations.js?v=1" defer></script>
-  <script src="src/locales/i18n.js?v=4" defer></script>
+  <script src="src/locales/i18n.js?v=5" defer></script>
   <script src="node_modules/@supabase/supabase-js/dist/umd/supabase.js" defer></script>
 
 
@@ -391,7 +392,7 @@
             <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20v-2a5 5 0 0 1 10 0v2m1-6a4 4 0 0 1 7 2.6V20"/><circle cx="17" cy="17" r="3"/><path d="M17 15.5v3m-1.5-1.5h3"/></svg>
             <span data-i18n="Home Game">Home Game</span>
           </button>
-          <button class="mode-nav-item" type="button" data-mode="info" data-navigation-id="guide" data-workspace-eyebrow="Riverline" data-mode-title="Guide" data-mode-subtitle="Product guidance, poker terms, and control reference." aria-label="Guide" data-i18n-aria-label="Guide" title="Guide" data-i18n-title="Guide" data-tooltip="Guide" aria-current="false">
+          <button class="mode-nav-item" type="button" data-mode="info" data-navigation-id="guide" data-workspace-eyebrow="Riverline" data-mode-title="Guide" data-mode-subtitle="Product workflows, study boundaries, and current capabilities." aria-label="Guide" data-i18n-aria-label="Guide" title="Guide" data-i18n-title="Guide" data-tooltip="Guide" aria-current="false">
             <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"/></svg>
             <span data-i18n="Guide">Guide</span>
           </button>
@@ -630,7 +631,7 @@
             <nav class="home-other-links" aria-label="More destinations" data-i18n-aria-label="More destinations">
               <button type="button" class="home-other-link" data-home-destination="saved"><strong data-i18n="Saved study">Saved</strong><span data-i18n="Reopen saved Hands and Spots.">Reopen saved Hands and Spots.</span></button>
               <button type="button" class="home-other-link" data-home-destination="home-game"><strong data-i18n="Home Game">Home Game</strong><span data-i18n="Run buy-ins, cash-outs, and settlement.">Run buy-ins, cash-outs, and settlement.</span></button>
-              <button type="button" class="home-other-link" data-home-destination="guide"><strong data-i18n="Guide">Guide</strong><span data-i18n="Learn Riverline controls and poker terms.">Learn Riverline controls and poker terms.</span></button>
+              <button type="button" class="home-other-link" data-home-destination="guide"><strong data-i18n="Guide">Guide</strong><span data-i18n="Learn Riverline workflows and study boundaries.">Learn Riverline workflows and study boundaries.</span></button>
             </nav>
           </section>
         </div>
@@ -2673,65 +2674,58 @@
       </div>
     </section>
 
-    <section id="infoMode" class="mode-view guide-mode" style="display: none;">
-      <div class="guide-workspace">
-        <section id="infoView" class="panel guide-panel" style="min-width: 0;">
-          <div class="panel-head"><div><div class="panel-title" data-i18n="Getting started and Playbook">Getting started and Playbook</div><div class="panel-note" data-i18n="Build a spot, inspect its recommendation, then explore the current view.">Build a spot, inspect its recommendation, then explore the current view.</div></div></div>
-          <div class="panel-body">
-            <div class="info-section">
-              <h3 style="margin-top:0; color:var(--primary);" data-i18n="Getting started">Getting started</h3>
-              <p data-i18n="Use Hand to play or continue a canonical Hand, Analyze to review a Hand or build a study spot, and Training to practice decisions. Personal Strategy, Equity, and Saved support deeper study; Home Game, Guide, and Settings stay in the Riverline support area.">Use Hand to play or continue a canonical Hand, Analyze to review a Hand or build a study spot, and Training to practice decisions. Personal Strategy, Equity, and Saved support deeper study; Home Game, Guide, and Settings stay in the Riverline support area.</p>
-              <p><strong data-i18n="Common terms:">Common terms:</strong> <span data-i18n="Unopened means no voluntary raise has occurred. Facing a raise, 3-bet, or 4-bet describes the action you must respond to. SPR is the effective stack divided by the pot.">Unopened means no voluntary raise has occurred. Facing a raise, 3-bet, or 4-bet describes the action you must respond to. SPR is the effective stack divided by the pot.</span></p>
-            </div>
-            <div class="divider"></div>
-            <div class="info-section">
-              <h3 style="color:var(--primary);" data-i18n="Study a decision">Study a decision</h3>
-              <p data-i18n="Choose or build a spot, set cards where needed, and inspect the primary recommendation and Strategy Mix. Open “What goes into this decision?” for the supporting facts, then use Current spot views to switch between Decision, Range Matrix, and Range Category Comparison. The table can be collapsed when you want more room for analysis.">Choose or build a spot, set cards where needed, and inspect the primary recommendation and Strategy Mix. Open “What goes into this decision?” for the supporting facts, then use Current spot views to switch between Decision, Range Matrix, and Range Category Comparison. The table can be collapsed when you want more room for analysis.</p>
-              <p><strong data-i18n="Facing context:">Facing context:</strong> <span data-i18n="Use the action context to describe what happened before your turn. Facing size is the current wager context, not necessarily the exact amount you must call. When a call amount is known, Riverline labels that price separately.">Use the action context to describe what happened before your turn. Facing size is the current wager context, not necessarily the exact amount you must call. When a call amount is known, Riverline labels that price separately.</span></p>
-            </div>
-            <div class="divider"></div>
-            <div class="info-section">
-              <h3 style="color:var(--primary);" data-i18n="Range Matrix and comparison">Range Matrix and comparison</h3>
-              <p data-i18n="Preflop Matrix cells represent hand classes. Their tint shows the dominant action and the stacked band shows the full strategy mix. Hover or focus a cell for a quick frequency cue; select it for action-frequency detail in the inspector.">Preflop Matrix cells represent hand classes. Their tint shows the dominant action and the stacked band shows the full strategy mix. Hover or focus a cell for a quick frequency cue; select it for action-frequency detail in the inspector.</p>
-              <p data-i18n="A full postflop Matrix expansion is not available yet. Use Decision for an exact-hand postflop recommendation. Range Category Comparison instead compares fixed heuristic preflop samples by the categories they make on a board; it is descriptive, not a weighted range-versus-range calculation.">A full postflop Matrix expansion is not available yet. Use Decision for an exact-hand postflop recommendation. Range Category Comparison instead compares fixed heuristic preflop samples by the categories they make on a board; it is descriptive, not a weighted range-versus-range calculation.</p>
-            </div>
-            <div class="divider"></div>
-            <div class="info-section">
-              <h3 style="color:var(--primary);" data-i18n="Scenario and Hand">Scenario and Hand</h3>
-              <p><strong data-i18n="Scenario mode:">Scenario mode:</strong> <span data-i18n="Use this for an arbitrary study snapshot. You supply the context, so it does not represent a complete legal hand history and some exact pricing or history facts can be unknown.">Use this for an arbitrary study snapshot. You supply the context, so it does not represent a complete legal hand history and some exact pricing or history facts can be unknown.</span></p>
-              <p><strong data-i18n="Hand mode:">Hand mode:</strong> <span data-i18n="Use this to progress a legal hand. Actions, history, and prices are derived from the hand as it develops.">Use this to progress a legal hand. Actions, history, and prices are derived from the hand as it develops.</span></p>
-              <p><strong data-i18n="Accounting:">Accounting:</strong> <span data-i18n="Home has no Riverline rake or deduction. In ClubGG-style games, each seated player contributes 0.1 bb once per hand outside the contestable pot.">Home has no Riverline rake or deduction. In ClubGG-style games, each seated player contributes 0.1 bb once per hand outside the contestable pot.</span></p>
-            </div>
+    <section id="infoMode" class="mode-view guide-mode" style="display: none;" aria-labelledby="guideTitle">
+      <div id="infoView" class="guide-workspace guide-workspace--current">
+        <header class="guide-intro">
+          <div>
+            <p class="guide-kicker" data-i18n="Product guide">Product guide</p>
+            <h2 id="guideTitle" data-i18n="Learn Riverline by workflow">Learn Riverline by workflow</h2>
+            <p data-i18n="Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and heuristic guidance—not solved-GTO truth.">Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and heuristic guidance—not solved-GTO truth.</p>
+          </div>
+          <aside class="guide-first-path" aria-labelledby="guideFirstPathTitle"><strong id="guideFirstPathTitle" data-i18n="A good first path">A good first path</strong><ol><li data-i18n="Play a legal Hand and review its decisions.">Play a legal Hand and review its decisions.</li><li data-i18n="Open Training to practise similar decisions.">Open Training to practise similar decisions.</li></ol></aside>
+        </header>
+
+        <section class="guide-section" aria-labelledby="guideCoreTitle">
+          <div class="guide-section-head"><p class="guide-kicker" data-i18n="Core workflows">Core workflows</p><h2 id="guideCoreTitle" data-i18n="Move from a question to useful work">Move from a question to useful work</h2></div>
+          <div class="guide-workflow-grid">
+            <article class="guide-workflow-card guide-workflow-card--primary"><span class="guide-workflow-number" aria-hidden="true">01</span><h3 data-i18n="Play and review a Hand">Play and review a Hand</h3><ol><li data-i18n="Set seats, stacks, button, and cards.">Set seats, stacks, button, and cards.</li><li data-i18n="Start the Hand and choose only legal actions.">Start the Hand and choose only legal actions.</li><li data-i18n="Review important decisions and their source-labelled guidance.">Review important decisions and their source-labelled guidance.</li><li data-i18n="Use Replay to inspect the canonical timeline.">Use Replay to inspect the canonical timeline.</li></ol><button class="ui-button ui-button--primary guide-workflow-action" type="button" data-guide-destination="hand" data-i18n="Open Hand">Open Hand</button></article>
+            <article class="guide-workflow-card"><span class="guide-workflow-number" aria-hidden="true">02</span><h3 data-i18n="Analyze a spot">Analyze a spot</h3><ol><li data-i18n="Choose the current Hand or build a Scenario snapshot.">Choose the current Hand or build a Scenario snapshot.</li><li data-i18n="Set the known cards and objective context.">Set the known cards and objective context.</li><li data-i18n="Inspect Decision, Matrix, comparison, and supporting facts where available.">Inspect Decision, Matrix, comparison, and supporting facts where available.</li></ol><button class="ui-button ui-button--secondary guide-workflow-action" type="button" data-guide-destination="analyze" data-i18n="Open Analyze">Open Analyze</button></article>
+            <article class="guide-workflow-card"><span class="guide-workflow-number" aria-hidden="true">03</span><h3 data-i18n="Train decisions">Train decisions</h3><ol><li data-i18n="Choose Varied, Focused, or Full Hand practice.">Choose Varied, Focused, or Full Hand practice.</li><li data-i18n="Answer the generated legal decision.">Answer the generated legal decision.</li><li data-i18n="Review the comparison, explanation, and session evidence.">Review the comparison, explanation, and session evidence.</li></ol><button class="ui-button ui-button--secondary guide-workflow-action" type="button" data-guide-destination="training" data-i18n="Open Training">Open Training</button></article>
+            <article class="guide-workflow-card"><span class="guide-workflow-number" aria-hidden="true">04</span><h3 data-i18n="Calculate Equity">Calculate Equity</h3><ol><li data-i18n="Add exact hands or leave opponents unknown.">Add exact hands or leave opponents unknown.</li><li data-i18n="Set board and dead cards, then calculate.">Set board and dead cards, then calculate.</li><li data-i18n="Compare Equity, Win, and Tie results with the method shown.">Compare Equity, Win, and Tie results with the method shown.</li></ol><button class="ui-button ui-button--secondary guide-workflow-action" type="button" data-guide-destination="equity" data-i18n="Open Equity">Open Equity</button></article>
+            <article class="guide-workflow-card"><span class="guide-workflow-number" aria-hidden="true">05</span><h3 data-i18n="Teach Personal Strategy">Teach Personal Strategy</h3><ol><li data-i18n="Use a Riverline profile to record how you intend to play.">Use a Riverline profile to record how you intend to play.</li><li data-i18n="Answer calibration prompts or edit supported ranges.">Answer calibration prompts or edit supported ranges.</li><li data-i18n="Treat the result as personal intent, not the correct answer.">Treat the result as personal intent, not the correct answer.</li></ol><button class="ui-button ui-button--secondary guide-workflow-action" type="button" data-guide-destination="personal-strategy" data-i18n="Open Personal Strategy">Open Personal Strategy</button></article>
           </div>
         </section>
-        <section id="howtoView" class="panel guide-panel" style="min-width: 0;">
-          <div class="panel-head"><div><div class="panel-title" data-i18n="Training and tools">Training and tools</div><div class="panel-note" data-i18n="Practice legal decisions, calculate equity, and tune presentation preferences.">Practice legal decisions, calculate equity, and tune presentation preferences.</div></div></div>
-          <div class="panel-body">
-            <div class="info-section">
-              <h3 style="margin-top:0; color:var(--primary);" data-i18n="Training">Training</h3>
-              <p data-i18n="Training generates legal hand trajectories. Choose a decision family and Assistance level, then answer using a visible action. Study hints are optional coaching prompts. After your answer, review the verdict, your chosen action, the current reference frequencies, and the shared analysis.">Training generates legal hand trajectories. Choose a decision family and Assistance level, then answer using a visible action. Study hints are optional coaching prompts. After your answer, review the verdict, your chosen action, the current reference frequencies, and the shared analysis.</p>
-              <p data-i18n="Use session progress to track the current run. Replay and current-drill controls let you revisit the same generated trajectory.">Use session progress to track the current run. Replay and current-drill controls let you revisit the same generated trajectory.</p>
-            </div>
-            <div class="divider"></div>
-            <div class="info-section">
-              <h3 style="color:var(--primary);" data-i18n="Equity">Equity</h3>
-              <p data-i18n="Add known hands or leave opponents random, then set board and dead cards as needed. Auto uses exact enumeration when practical and otherwise uses Monte Carlo simulation. Preparation can be indeterminate; during a simulation, progress, rate, and estimated time remaining can appear.">Add known hands or leave opponents random, then set board and dead cards as needed. Auto uses exact enumeration when practical and otherwise uses Monte Carlo simulation. Preparation can be indeterminate; during a simulation, progress, rate, and estimated time remaining can appear.</p>
-              <p data-i18n="Results identify whether they are exact or simulated and show Equity, Win, and Tie for each player. Simulation is an estimate. Cancel stops the calculation and keeps your configuration intact.">Results identify whether they are exact or simulated and show Equity, Win, and Tie for each player. Simulation is an estimate. Cancel stops the calculation and keeps your configuration intact.</p>
-            </div>
-            <div class="divider"></div>
-            <div class="info-section">
-              <h3 style="color:var(--primary);" data-i18n="Settings and presentation">Settings and presentation</h3>
-              <p data-i18n="Settings includes theme, language, audio, and card presentation. Choose Classic, Minimal, or High Contrast faces and Riverline, Solid, or Geometric backs. Rank style displays ten as T or 10; presentation never changes card identity.">Settings includes theme, language, audio, and card presentation. Choose Classic, Minimal, or High Contrast faces and Riverline, Solid, or Geometric backs. Rank style displays ten as T or 10; presentation never changes card identity.</p>
-            </div>
-            <div class="divider"></div>
-            <div class="info-section">
-              <h3 style="color:var(--primary);" data-i18n="Strategy source and limits">Strategy source and limits</h3>
-              <p data-i18n="Riverline currently uses a deterministic heuristic strategy source for decision recommendations and Training reference frequencies. Exact-hand postflop recommendations are heuristic, and the preflop Matrix reflects the same source.">Riverline currently uses a deterministic heuristic strategy source for decision recommendations and Training reference frequencies. Exact-hand postflop recommendations are heuristic, and the preflop Matrix reflects the same source.</p>
-              <p data-i18n="Use Riverline to structure study and compare its recommendations with your own review. Heuristic recommendations and Training comparisons are not proof of objectively correct or optimal poker strategy.">Use Riverline to structure study and compare its recommendations with your own review. Heuristic recommendations and Training comparisons are not proof of objectively correct or optimal poker strategy.</p>
-            </div>
+
+        <section class="guide-section" aria-labelledby="guideConceptsTitle">
+          <div class="guide-section-head"><p class="guide-kicker" data-i18n="Know the boundaries">Know the boundaries</p><h2 id="guideConceptsTitle" data-i18n="Distinctions that keep study truthful">Distinctions that keep study truthful</h2></div>
+          <div class="guide-disclosure-grid">
+            <details><summary data-i18n="Hand vs Scenario">Hand vs Scenario</summary><p data-i18n="Hand is canonical legal poker history. Scenario is an intentionally bounded, lossy study snapshot and may not contain exact history, pricing, or state facts.">Hand is canonical legal poker history. Scenario is an intentionally bounded, lossy study snapshot and may not contain exact history, pricing, or state facts.</p></details>
+            <details><summary data-i18n="Reference vs Personal Strategy">Reference vs Personal Strategy</summary><p data-i18n="A reference or source is separate strategy evidence. Personal Strategy records how you intend to play; it is not normative truth and does not replace the selected source.">A reference or source is separate strategy evidence. Personal Strategy records how you intend to play; it is not normative truth and does not replace the selected source.</p></details>
+            <details><summary data-i18n="Facts vs Explain">Facts vs Explain</summary><p data-i18n="Facts are structured trusted evidence. Explain offers a bounded interpretation of that evidence; it never becomes poker, Equity, or strategy authority.">Facts are structured trusted evidence. Explain offers a bounded interpretation of that evidence; it never becomes poker, Equity, or strategy authority.</p></details>
+            <details><summary data-i18n="Equity is not strategy">Equity is not strategy</summary><p data-i18n="Equity compares possible outcomes; it does not recommend an action. A card that structurally completes a hand is not automatically a winning out against every entered hand.">Equity compares possible outcomes; it does not recommend an action. A card that structurally completes a hand is not automatically a winning out against every entered hand.</p></details>
+            <details><summary data-i18n="Saved keeps current truth limits">Saved keeps current truth limits</summary><p data-i18n="Saved is intentional study knowledge. Current saved Hands retain canonical history; saved Spots retain Scenario limitations. These are the implemented saved kinds today.">Saved is intentional study knowledge. Current saved Hands retain canonical history; saved Spots retain Scenario limitations. These are the implemented saved kinds today.</p></details>
+            <details><summary data-i18n="Current strategy source">Current strategy source</summary><p data-i18n="Riverline currently falls back to a deterministic heuristic strategy source. Its recommendations and Training comparisons are useful study input, not solved GTO, Nash, exact EV, exploitability evidence, or proof of optimal play.">Riverline currently falls back to a deterministic heuristic strategy source. Its recommendations and Training comparisons are useful study input, not solved GTO, Nash, exact EV, exploitability evidence, or proof of optimal play.</p></details>
+          </div>
+        </section>
+
+        <section class="guide-section guide-study-section" aria-labelledby="guideStudyTitle">
+          <div class="guide-section-head"><p class="guide-kicker" data-i18n="Study and knowledge">Study and knowledge</p><h2 id="guideStudyTitle" data-i18n="Keep useful work connected">Keep useful work connected</h2></div>
+          <div class="guide-knowledge-grid">
+            <article><h3 data-i18n="Saved">Saved</h3><p data-i18n="Keep Hands and Spots intentionally, inspect their stored facts, and reopen them for continued study. Saved study requires a Riverline profile.">Keep Hands and Spots intentionally, inspect their stored facts, and reopen them for continued study. Saved study requires a Riverline profile.</p><button class="ui-button ui-button--quiet" type="button" data-guide-destination="saved" data-i18n="Open Saved">Open Saved</button></article>
+            <article><h3 data-i18n="Replay and Review">Replay and Review</h3><p data-i18n="Replay moves through a canonical Hand timeline. Review gathers decisions and source-labelled comparisons without changing Hand truth.">Replay moves through a canonical Hand timeline. Review gathers decisions and source-labelled comparisons without changing Hand truth.</p></article>
+            <article><h3 data-i18n="Learn in context">Learn in context</h3><p data-i18n="Guide is durable product reference. Learn Riverline provides orientation, while the tutorial control in supported workspaces starts the existing contextual teaching for that workspace.">Guide is durable product reference. Learn Riverline provides orientation, while the tutorial control in supported workspaces starts the existing contextual teaching for that workspace.</p></article>
+          </div>
+        </section>
+
+        <section class="guide-section guide-other-section" aria-labelledby="guideOtherTitle">
+          <div class="guide-section-head"><p class="guide-kicker" data-i18n="Other tools">Other tools</p><h2 id="guideOtherTitle" data-i18n="Organize and customize">Organize and customize</h2></div>
+          <div class="guide-other-grid">
+            <article><h3 data-i18n="Home Game">Home Game</h3><p data-i18n="Run an organizer ledger for players, buy-ins, cash-outs, and settlement. It is separate from poker analysis and study authority.">Run an organizer ledger for players, buy-ins, cash-outs, and settlement. It is separate from poker analysis and study authority.</p><button class="ui-button ui-button--quiet" type="button" data-guide-destination="home-game" data-i18n="Open Home Game">Open Home Game</button></article>
+            <article><h3 data-i18n="Settings and access">Settings and access</h3><p data-i18n="Adjust appearance, audio and motion, language, and account data. The Guide works for Guests; signing in alone does not guarantee cloud sync or backup.">Adjust appearance, audio and motion, language, and account data. The Guide works for Guests; signing in alone does not guarantee cloud sync or backup.</p></article>
           </div>
         </section>
       </div>
+
     </section>
 
 
@@ -3374,6 +3368,7 @@
   <script type="module" src="src/application/welcome-orientation-bootstrap.mjs"></script>
   <script type="module" src="src/application/settings-ia-bootstrap.mjs"></script>
   <script type="module" src="src/application/tutorial-bootstrap.mjs"></script>
+  <script type="module" src="src/application/guide-bootstrap.mjs"></script>
   <script type="module" src="src/application/presentation-density-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-memory-bootstrap.mjs"></script>

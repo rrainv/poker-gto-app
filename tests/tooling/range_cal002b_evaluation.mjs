@@ -332,6 +332,7 @@ export async function benchmarkRangeCal002bProjection({ repetitions = 101 } = {}
   });
   const target = split.heldOutHandClasses[0];
   const samples = [];
+  estimatePersonalStrategyHand(evidenceView, target);
   for (let index = 0; index < repetitions; index += 1) {
     const startedAt = performance.now();
     estimatePersonalStrategyHand(evidenceView, target);
@@ -362,12 +363,43 @@ export async function benchmarkRangeCal002bProjection({ repetitions = 101 } = {}
   const invalidatedStarted = performance.now();
   await service.getStrategySnapshot(scope);
   const invalidatedSnapshotMs = performance.now() - invalidatedStarted;
+  const snapshotSamples = [snapshotMs];
+  const invalidatedSamples = [invalidatedSnapshotMs];
+  for (let index = 1; index < 5; index += 1) {
+    let isolatedSource = {
+      rangeObservations: split.visibleObservations,
+      trainingObservations: [],
+    };
+    const isolatedService = createPersonalStrategyProjectionService({
+      repository: {
+        async loadEvidenceScope() { return isolatedSource; },
+      },
+    });
+    const isolatedSnapshotStarted = performance.now();
+    await isolatedService.getStrategySnapshot(scope);
+    snapshotSamples.push(performance.now() - isolatedSnapshotStarted);
+    isolatedSource = {
+      ...isolatedSource,
+      rangeObservations: [
+        ...isolatedSource.rangeObservations,
+        observation(fixture, 43, additionalHand, `-added-${index}`),
+      ],
+    };
+    isolatedService.invalidateScope(scope);
+    const isolatedInvalidatedStarted = performance.now();
+    await isolatedService.getStrategySnapshot(scope);
+    invalidatedSamples.push(performance.now() - isolatedInvalidatedStarted);
+  }
   return deepFreeze({
     oneEstimateMedianMs: median(samples),
     oneEstimateMaximumMs: Math.max(...samples),
     snapshot169Ms: snapshotMs,
+    snapshot169RepresentativeMs: Math.min(...snapshotSamples),
+    snapshotSampleCount: snapshotSamples.length,
     repeatedCachedSnapshotMs,
     invalidatedSnapshotMs,
+    invalidatedSnapshotRepresentativeMs: Math.min(...invalidatedSamples),
+    invalidatedSnapshotSampleCount: invalidatedSamples.length,
     cacheMetrics: service.getCacheMetrics(),
   });
 }

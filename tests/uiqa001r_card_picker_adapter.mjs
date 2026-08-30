@@ -148,6 +148,8 @@ export function delegatedCardSlotClick(group = 'hero', index = 0) {
     function renderBettingTree() {}
     const street = 'preflop';
     globalThis.__calls = ${JSON.stringify(calls)};
+    ${extractFunction('hideSavedQuickPreview')}
+    ${extractFunction('handleSavedQuickPreviewExit')}
     ${extractFunction('bindEvents')}
     bindEvents();
   `, sandbox);

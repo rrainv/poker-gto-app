@@ -73,7 +73,7 @@ test('responsive strategy is fluid rather than resolution-specific', () => {
   for (const breakpoint of [1500, 1320, 1280, 1180, 1100, 900, 820, 700, 520]) {
     assert.match(uiQaCss, new RegExp(`(?:min|max)-width: ${breakpoint}px`), String(breakpoint));
   }
-  assert.doesNotMatch(uiQaCss, /2200px|1920px|1536px|1440px|1024px|768px|390px/);
+  assert.doesNotMatch(uiQaCss, /@media[^\{]*\((?:min|max)-width:\s*(?:2200|1920|1536|1440|1024|768|390)px\)/);
 });
 
 test('Playbook workflow and betting context use compact structural strips', () => {

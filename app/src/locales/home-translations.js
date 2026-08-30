@@ -323,7 +323,7 @@
     'Save a Spot from Analyze or Review to keep it for later study.': 'שמרו ספוט מתוך ניתוח או סקירה כדי ללמוד אותו מאוחר יותר.',
     'Stored poker preview': 'תצוגה מקדימה של מצב הפוקר השמור',
     'Hero': 'הירו',
-    'Board': 'לוח',
+    'Board': 'בורד',
     'Unknown card': 'קלף לא ידוע',
     'No board cards': 'אין קלפי לוח',
     'Inspect': 'בדיקה',

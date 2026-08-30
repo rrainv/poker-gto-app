@@ -134,7 +134,7 @@ test('final human-evidence correction preserves bounded visible-state contracts'
   assert.doesNotMatch(welcome, /id="welcomeTitle"[^>]+tabindex/);
   assert.match(welcomeBootstrap, /clearNavigationSelection/);
   assert.match(welcomeBootstrap, /setAttribute\('aria-current', 'false'\)/);
-  assert.match(welcomeBootstrap, /shell\.dataset\.activeMode = 'welcome'/);
+  assert.doesNotMatch(welcomeBootstrap, /shell\.dataset\.(?:activeMode|activeDestination) = 'welcome'/);
   assert.doesNotMatch(welcomeBootstrap, /heading\?\.focus/);
   assert.match(css, /data-welcome-orientation="visible"[\s\S]*?\.mode-nav-item[\s\S]*?background:\s*transparent/);
 

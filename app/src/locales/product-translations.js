@@ -1855,7 +1855,7 @@ Object.assign(he, {
     'Explain': 'הסבר',
     'Why these facts matter': 'למה העובדות האלה חשובות',
     'Hero hand': 'היד של Hero',
-    'Board': 'לוח',
+    'Board': 'בורד',
     'Preflop · no board': 'פרה־פלופ · אין לוח',
     'Available combos': 'קומבואים זמינים',
     'Removed combos': 'קומבואים שהוסרו',
