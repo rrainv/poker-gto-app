@@ -22,6 +22,17 @@ const annotations = Object.freeze({
   classifications: ['mistake'],
 });
 
+function createSavedQuickPreviewExitHandler(activeOwner, hideSavedQuickPreview) {
+  const start = logic.indexOf('function handleSavedQuickPreviewExit');
+  const end = logic.indexOf('function positionSavedQuickPreview', start);
+  const implementation = logic.slice(start, end);
+  return Function(
+    'homeSavedQuickPreviewOwner',
+    'hideSavedQuickPreview',
+    `${implementation}; return handleSavedQuickPreviewExit;`,
+  )(activeOwner, hideSavedQuickPreview);
+}
+
 function savedObject(kind, payload, id = `saved-${kind}`) {
   return {
     schemaVersion: 'saved-study-object/v1',
@@ -148,12 +159,53 @@ test('hover and keyboard focus share a viewport-aware preview owned outside the 
   assert.doesNotMatch(itemRenderer, /saved-library-quick-preview/);
   assert.match(logic, /function positionSavedQuickPreview[\s\S]*?getBoundingClientRect[\s\S]*?window\.innerWidth[\s\S]*?window\.innerHeight[\s\S]*?useAbove/);
   assert.match(logic, /pointerover[\s\S]*?showSavedQuickPreview\(owner\)[\s\S]*?focusin[\s\S]*?showSavedQuickPreview\(owner\)/);
-  assert.match(logic, /pointerout[\s\S]*?hideSavedQuickPreview[\s\S]*?focusout[\s\S]*?hideSavedQuickPreview/);
+  assert.match(logic, /addEventListener\('pointerout', handleSavedQuickPreviewExit\)/);
+  assert.match(logic, /addEventListener\('focusout', handleSavedQuickPreviewExit\)/);
   assert.match(logic, /homeSavedExpandedId = homeSavedExpandedId === id \? null : id/);
   assert.match(logic, /event\.key !== 'Escape'[\s\S]*?hideSavedQuickPreview\(\)[\s\S]*?homeSavedExpandedId = null[\s\S]*?renderSavedLibrary/);
   assert.match(logic, /data-saved-detail-close[\s\S]*?homeSavedExpandedId = null/);
   assert.match(logic, /dataset\.savedPreviewDerivation = item\.derivation/);
   assert.match(css, /saved-preview-derivation="scenario"[\s\S]*?border-style: dashed/);
+});
+
+test('Saved pointerout is inert when no quick-preview owner exists', () => {
+  let hideCount = 0;
+  const handler = createSavedQuickPreviewExitHandler(null, () => { hideCount += 1; });
+  const event = {
+    type: 'pointerout',
+    target: { closest: () => null },
+    relatedTarget: null,
+  };
+
+  assert.doesNotThrow(() => handler(event));
+  assert.equal(hideCount, 0);
+});
+
+test('Saved focusout is inert when no quick-preview owner exists', () => {
+  let hideCount = 0;
+  const handler = createSavedQuickPreviewExitHandler(null, () => { hideCount += 1; });
+  const event = {
+    type: 'focusout',
+    target: { closest: () => null },
+    relatedTarget: null,
+  };
+
+  assert.doesNotThrow(() => handler(event));
+  assert.equal(hideCount, 0);
+});
+
+test('Saved quick-preview exit still dismisses the active owner', () => {
+  let hideCount = 0;
+  const owner = { contains: () => false };
+  const handler = createSavedQuickPreviewExitHandler(owner, () => { hideCount += 1; });
+
+  handler({
+    type: 'pointerout',
+    target: { closest: () => owner },
+    relatedTarget: {},
+  });
+
+  assert.equal(hideCount, 1);
 });
 
 test('All, Hands, and Spots remain visible and filter actual bounded Saved objects truthfully', () => {

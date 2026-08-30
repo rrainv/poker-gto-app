@@ -7212,6 +7212,13 @@ function hideSavedQuickPreview() {
   return wasVisible;
 }
 
+function handleSavedQuickPreviewExit(event) {
+  const owner = event.target.closest?.('[data-saved-select-id]');
+  if (owner && owner === homeSavedQuickPreviewOwner && !owner.contains(event.relatedTarget)) {
+    hideSavedQuickPreview();
+  }
+}
+
 function positionSavedQuickPreview(owner, overlay) {
   const margin = 12;
   const gap = 8;
@@ -7928,20 +7935,14 @@ function bindEvents() {
     if (owner && owner !== homeSavedQuickPreviewOwner) showSavedQuickPreview(owner);
   });
 
-  document.addEventListener('pointerout', (event) => {
-    const owner = event.target.closest?.('[data-saved-select-id]');
-    if (owner === homeSavedQuickPreviewOwner && !owner.contains(event.relatedTarget)) hideSavedQuickPreview();
-  });
+  document.addEventListener('pointerout', handleSavedQuickPreviewExit);
 
   document.addEventListener('focusin', (event) => {
     const owner = event.target.closest?.('[data-saved-select-id]');
     if (owner) showSavedQuickPreview(owner);
   });
 
-  document.addEventListener('focusout', (event) => {
-    const owner = event.target.closest?.('[data-saved-select-id]');
-    if (owner === homeSavedQuickPreviewOwner && !owner.contains(event.relatedTarget)) hideSavedQuickPreview();
-  });
+  document.addEventListener('focusout', handleSavedQuickPreviewExit);
 
   window.addEventListener('resize', hideSavedQuickPreview);
   window.addEventListener('scroll', hideSavedQuickPreview, true);
