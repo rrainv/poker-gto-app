@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 30, 2026 (`EQUITY-COMPOSITION-001` and `ANALYZE-RANGE-UX-001` are **COMPLETED / HUMAN ACCEPTED**; `FIRST-USE-HOME-001` is **NEXT / READY**, followed by the remaining visible-product closure wave and September Alpha whole-app/docs/audit gates; `PERSONAL-STRATEGY-003A` is preserved but is not immediately next).
+Last refreshed: August 30, 2026 (`FIRST-USE-HOME-001` is **COMPLETED / HUMAN ACCEPTED**; the bounded secondary-polish wave is next, followed by September Alpha whole-app/docs/audit gates; `PERSONAL-STRATEGY-003A` is preserved but is not immediately next).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -63,7 +63,7 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
 9. **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT — `HANDS-ON-DEFECTS-001`**
    - the second product-owner acceptance pass closes the bounded ticket under the anti-loop rule; no third local correction cycle is authorized;
    - accepted repairs are Welcome title focus/Escape, materially clearer Home Game completion state, Return to live, privacy-safe auth feedback, dead-card/range parity, Analyze clipping, stable Personal Strategy vocabulary, and materially improved Replay geometry;
-   - Hand still appears selected on Welcome and Home Game imbalance prominence remains weak; those remain with `FIRST-USE-HOME-001` and `HOME-GAME-PRESENTATION-001`. The revealed-card/player overlap was routed to `REPLAY-RAIL-NAV-001` and is now resolved at its human-accepted no-dongle checkpoint, with only the named future hidden-back physicality constraint retained;
+   - the later human-accepted `FIRST-USE-HOME-001` checkpoint resolved false Welcome navigation selection; Home Game imbalance prominence remains with `HOME-GAME-PRESENTATION-001`. The revealed-card/player overlap was routed to `REPLAY-RAIL-NAV-001` and is now resolved at its human-accepted no-dongle checkpoint, with only the named future hidden-back physicality constraint retained;
    - the checkpoint does not claim all HPR issues fixed or accept Hand, Training, Home, Saved, or whole-product composition.
 
 10. **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT — `CORE-FLOW-CORRECTNESS-001`**
@@ -106,10 +106,14 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - comparison uses one canonical surviving representative per eligible sampled class and explicitly does not generalize that representative's category to every combo in the class. `range-comparison-facts/v1` is the DOM-free factual projection over canonical `RangeAnalysisFacts v1` and Range Core card-removal conditioning; renderers consume its structured facts only.
    - Facts → Explain progressive depth is accepted. Weighted ranges, range-vs-range Equity, nut-advantage/distribution claims, and combo-level action-conditioned propagation remain future `RANGE-EVOLUTION-001` / dependency-gated work rather than implied current capability.
 
-15. **NEXT / READY — `FIRST-USE-HOME-001`**
-   - own recurring launch/home, onboarding separation, sidebar/active-workspace semantics, first- versus returning-launch behavior, and useful truthful Guest Home density.
+15. **COMPLETED / HUMAN ACCEPTED — `FIRST-USE-HOME-001`**
+   - Home is the permanent recurring startup and study destination; optional Welcome orientation is presentation state separate from routing, suppresses only itself, defaults to unsuppressed/unchecked on first use, and shows zero selected sidebar destinations while active;
+   - active navigation always reflects the true destination, and Guest Home remains useful without sign-in;
+   - truthful Continue is limited to a live canonical Hand or active/paused Personal Strategy. Without either, Home presents a useful Start state rather than fabricated recency;
+   - Training, Analyze, Equity, and last-route continuation remain unsupported until their owners expose explicit contracts. Future Home evolution must not invent recent activity, recommendations, streaks, cloud/sync claims, or cross-workspace history;
+   - current Riverline identity surfaces reuse one canonical brand-spade asset; poker-card suit rendering remains separate.
 
-16. **BOUNDED SECONDARY POLISH WAVE — exact order reassessed as needed**
+16. **NEXT — BOUNDED SECONDARY POLISH WAVE; exact order reassessed as needed**
    - `GUIDE-CONTENT-001`, `SAVED-VISUAL-KNOWLEDGE-001`, `CUSTOMIZATION-UX-001`, and `GLOBAL-PRODUCT-QUALITY-001` address the highest-impact surviving visible/systemic debt;
    - `HOME-GAME-PRESENTATION-001` and `AUDIO-DESIGN-001` remain conditional and bounded according to remaining time and product impact.
 

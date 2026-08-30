@@ -12,18 +12,18 @@ const [html, css, logic, homeSource, homeBootstrap, personalRepository, translat
   readFile(new URL('../app/src/locales/home-translations.js', import.meta.url), 'utf8'),
 ]);
 
-test('Home is the real landing workspace with the five bounded information sections', () => {
+test('Home is the real landing workspace with bounded recurring study sections', () => {
   assert.match(html, /data-active-mode="home"/);
   assert.match(html, /data-navigation-id="home"[^>]*aria-current="page"/);
   assert.match(html, /id="homeMode" class="mode-view active"/);
-  for (const id of ['homeContinueTitle', 'homeRecentTitle', 'homeReviewTitle', 'homeStrategyTitle', 'homeQuickStartTitle']) {
+  for (const id of ['homeContinueTitle', 'homeRecentTitle', 'homeReviewTitle', 'homeStrategyTitle', 'homeQuickStartTitle', 'homeOtherTitle']) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
   assert.match(html, /data-home-destination="hand"/);
   assert.match(html, /data-home-destination="analyze"/);
   assert.match(html, /data-home-destination="training"/);
   assert.match(html, /data-home-destination="equity"/);
-  assert.match(html, /data-home-destination="personal-strategy"/);
+  assert.match(logic, /action\.dataset\.homeDestination = 'personal-strategy'/);
 });
 
 test('Home queries are bounded and contain no compute or full-library authority', () => {
@@ -40,7 +40,7 @@ test('Home and saved viewers expose accessible actions, error states, RTL copy, 
   assert.match(logic, /home-error-state/);
   assert.match(html, /id="savedHandViewerBanner"[\s\S]*?Read-only/);
   assert.match(html, /id="savedSpotViewerBanner"[\s\S]*?History unavailable/);
-  assert.match(css, /grid-template-areas:[\s\S]*?"continue review"[\s\S]*?"recent recent"/);
+  assert.match(css, /grid-template-areas:[\s\S]*?"continue quick"[\s\S]*?"recent recent"/);
   assert.match(css, /@media \(max-width: 1120px\)/);
   assert.match(css, /min-width: 0/);
   assert.match(css, /margin-inline|text-align: start/);
@@ -51,8 +51,8 @@ test('Home and saved viewers expose accessible actions, error states, RTL copy, 
   }
 });
 
-test('Home initialization stays cheap, Welcome does no hidden workspace work, and Playbook initializes only when opened', () => {
-  assert.match(logic, /if \(activeWorkspaceMode\(\) === 'home'\) void refreshHomeWorkspace\(\);[\s\S]*?else if \(activeWorkspaceMode\(\) !== 'welcome'\) updateContext\('Ready'\)/);
+test('Home initialization stays cheap under orientation and Playbook initializes only when opened', () => {
+  assert.match(logic, /if \(activeWorkspaceMode\(\) === 'home' && !welcomeOrientationIsVisible\(\)\) void refreshHomeWorkspace\(\);[\s\S]*?else if \(!welcomeOrientationIsVisible\(\)\) updateContext\('Ready'\)/);
   assert.match(logic, /if \(mode === 'home'\) \{[\s\S]*?refreshHomeWorkspace\(\)/);
   assert.match(logic, /else if \(!app\.playbookResolution && !activeSavedSpotContext\)[\s\S]*?updateContext\('Playbook opened'\)/);
 });

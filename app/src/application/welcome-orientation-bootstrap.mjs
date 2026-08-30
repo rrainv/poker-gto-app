@@ -32,8 +32,6 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
       control.classList.remove('active');
       control.setAttribute('aria-current', 'false');
     });
-    shell.dataset.activeMode = 'welcome';
-    shell.dataset.activeDestination = 'welcome';
   }
 
   function restoreNavigationSelection() {
@@ -73,7 +71,7 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
     root.dataset.welcomeOrientation = 'visible';
     clearNavigationSelection();
     if (remember) {
-      remember.checked = true;
+      remember.checked = false;
       remember.closest('.welcome-preference')?.toggleAttribute('hidden', manual);
     }
     if (manualNote) manualNote.hidden = !manual;
@@ -116,6 +114,7 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
       hideSurface({ restoreFocus: true, restoreNavigation: true });
     } else {
       session.dismiss({ remember: remember?.checked !== false });
+      findNavigationControl('home')?.focus?.({ preventScroll: true });
     }
   });
 

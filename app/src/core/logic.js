@@ -6727,19 +6727,18 @@ let homeRefreshSequence = 0;
 let homeRefreshTimer = null;
 let activeSavedSpotContext = null;
 
+function welcomeOrientationIsVisible() {
+  const state = document.documentElement.dataset.welcomeOrientation;
+  return state === 'unseen' || state === 'visible';
+}
+
 function activateNavigationItem(button) {
   if (!button) return false;
-  const welcomeState = document.documentElement.dataset.welcomeOrientation;
-  if (welcomeState === 'unseen' || welcomeState === 'visible') {
+  if (welcomeOrientationIsVisible()) {
     $$('.mode-nav-item[data-mode][data-navigation-id]').forEach((item) => {
       item.classList.remove('active');
       item.setAttribute('aria-current', 'false');
     });
-    const welcomeShell = $('.riverline-shell');
-    if (welcomeShell) {
-      welcomeShell.dataset.activeMode = 'welcome';
-      welcomeShell.dataset.activeDestination = 'welcome';
-    }
     return false;
   }
   $$('.mode-nav-item[data-mode][data-navigation-id]').forEach((item) => {
@@ -6788,8 +6787,8 @@ function resolveHomeDestinationPresentation(destination, {
       ? ['guest']
       : ['saved-overview', 'recent', 'review']
     : guest
-      ? ['guest', ...(hasContinuation ? ['continue'] : []), 'quick']
-      : ['overview', 'continue', 'review', 'recent', 'strategy', 'quick'];
+      ? ['guest', 'continue', 'strategy', 'quick', 'other']
+      : ['overview', 'continue', 'review', 'recent', 'strategy', 'quick', 'other'];
   return Object.freeze({
     destination: normalizedDestination,
     visibleSections: Object.freeze(visibleSections),
@@ -6802,9 +6801,9 @@ function resolveHomeDestinationPresentation(destination, {
       })
       : Object.freeze({
         eyebrow: 'Guest Mode',
-        title: 'Welcome to Riverline',
+        title: 'Riverline is ready to use',
         primary: 'Analyze hands, train decisions, and calculate Equity without an account.',
-        secondary: 'Sign in to save hands, build Personal Strategy, and sync study progress.',
+        secondary: 'Saved study and Personal Strategy require a Riverline profile. Signing in does not enable sync or cloud backup.',
       }),
   });
 }
@@ -6839,6 +6838,7 @@ function applyHomeDestinationPresentation(destination = activeNavigationDestinat
     recent: $('#homeRecentContent')?.closest('.home-section'),
     strategy: $('#homeStrategyContent')?.closest('.home-section'),
     quick: $('#homeQuickStartTitle')?.closest('.home-section'),
+    other: $('#homeOtherTitle')?.closest('.home-section'),
   };
   const visible = new Set(state.visibleSections);
   Object.entries(sections).forEach(([key, section]) => {
@@ -6939,14 +6939,14 @@ function homeEmptyState(messageKey, error = false) {
   return message;
 }
 
-function homeEmptyAction(messageKey, actionKey, destination) {
+function homeEmptyAction(messageKey, actionKey, destination, { primary = false } = {}) {
   const root = document.createElement('div');
   root.className = 'home-empty-state';
   const message = document.createElement('p');
   message.textContent = t(messageKey);
   const action = document.createElement('button');
   action.type = 'button';
-  action.className = 'ui-button ui-button--quiet';
+  action.className = `ui-button ${primary ? 'ui-button--primary' : 'ui-button--quiet'}`;
   action.dataset.homeDestination = destination;
   action.textContent = t(actionKey);
   root.append(message, action);
@@ -7063,8 +7063,11 @@ function renderHomeContinue(section) {
   const root = $('#homeContinueContent');
   if (!root) return;
   root.replaceChildren();
+  const hasContinuation = Boolean(section?.items?.length);
+  setTranslatedElement($('#homeContinueEyebrow'), hasContinuation ? 'Pick up where you left off' : 'Your next action');
+  setTranslatedElement($('#homeContinueTitle'), hasContinuation ? 'Continue' : 'Start study');
   if (!section?.items?.length) {
-    root.appendChild(homeEmptyState('Nothing to continue right now.'));
+    root.appendChild(homeEmptyAction('Play or reconstruct a legal hand.', 'Start a Hand', 'hand', { primary: true }));
     return;
   }
   const list = document.createElement('div');
@@ -7151,6 +7154,20 @@ function renderHomePersonalStrategy(section) {
   const root = $('#homeStrategyContent');
   if (!root) return;
   root.replaceChildren();
+  if (section?.status === 'unavailable') {
+    const card = document.createElement('div');
+    card.className = 'home-strategy-summary';
+    const copy = document.createElement('p');
+    copy.textContent = t('Teach Riverline how you intend to play. A Riverline profile is required.');
+    const action = document.createElement('button');
+    action.type = 'button';
+    action.className = 'ui-button ui-button--secondary';
+    action.dataset.homeDestination = 'personal-strategy';
+    action.textContent = t('Open Personal Strategy');
+    card.append(copy, action);
+    root.appendChild(card);
+    return;
+  }
   if (section?.status === 'error') {
     root.appendChild(homeEmptyState('Personal Strategy could not be loaded.', true));
     return;
@@ -7247,7 +7264,7 @@ function renderHomeQuickStart(model) {
   const allowed = new Set(model.sections.quickStart?.destinations || []);
   document.querySelectorAll('[data-home-destination]').forEach((control) => {
     const destination = control.dataset.homeDestination;
-    if (!['hand', 'analyze', 'training', 'personal-strategy', 'equity', 'review_mistakes'].includes(destination)) return;
+    if (!['hand', 'analyze', 'training', 'equity', 'review_mistakes'].includes(destination)) return;
     if (!control.closest('.home-quick-links')) return;
     control.hidden = !allowed.has(destination);
   });
@@ -7265,8 +7282,7 @@ function renderHomeWorkspace(model) {
   const guest = model.sessionMode === 'guest';
   const restricted = [
     $('#homeReviewContent')?.closest('.home-section'),
-    $('#homeRecentContent')?.closest('.home-section'),
-    $('#homeStrategyContent')?.closest('.home-section')
+    $('#homeRecentContent')?.closest('.home-section')
   ];
   restricted.forEach((section) => { if (section) section.hidden = guest; });
   const guestAccount = $('#homeGuestAccount');
@@ -7282,18 +7298,16 @@ function renderHomeWorkspace(model) {
   }
   renderHomeQuickStart(model);
   renderHomeContinue(model.sections.continue);
+  renderHomePersonalStrategy(model.sections.personalStrategy);
   if (!guest) {
     renderHomeRecent(model.sections.recent);
     renderHomeReview(model.sections.review);
-    renderHomePersonalStrategy(model.sections.personalStrategy);
   }
   const workspace = $('#homeWorkspace');
   const loading = $('#homeLoadingState');
   const content = $('#homeWorkspaceContent');
   if (content) content.dataset.sessionMode = guest ? 'guest' : 'account';
   if (content) content.dataset.hasContinuation = String(Boolean(model.sections.continue?.items?.length));
-  const continueSection = $('#homeContinueContent')?.closest('.home-section');
-  if (continueSection) continueSection.hidden = guest && !model.sections.continue?.items?.length;
   if (workspace) workspace.setAttribute('aria-busy', 'false');
   if (loading) loading.hidden = true;
   if (content) content.hidden = false;
@@ -7313,6 +7327,7 @@ function beginHomeLoading() {
 }
 
 async function refreshHomeWorkspace({ preserveVisible = false } = {}) {
+  if (welcomeOrientationIsVisible()) return;
   const sequence = ++homeRefreshSequence;
   if (!preserveVisible || !homeViewModel) beginHomeLoading();
   try {
@@ -7336,7 +7351,7 @@ async function refreshHomeWorkspace({ preserveVisible = false } = {}) {
 
 function scheduleHomeRefresh({ clearPrivateState = false } = {}) {
   homeViewModel = null;
-  if (activeWorkspaceMode() !== 'home') return;
+  if (activeWorkspaceMode() !== 'home' || welcomeOrientationIsVisible()) return;
   if (clearPrivateState) beginHomeLoading();
   if (homeRefreshTimer !== null) window.clearTimeout(homeRefreshTimer);
   homeRefreshTimer = window.setTimeout(() => {
@@ -7625,7 +7640,7 @@ function bindEvents() {
   $$('.mode-nav-item[data-mode]').forEach((button) => button.addEventListener('click', () => {
     const mode = button.dataset.mode;
     const destination = button.dataset.navigationId || mode;
-    activateNavigationItem(button);
+    if (!activateNavigationItem(button)) return;
     clearToast();
     const tutorialWorkspace = mode === 'home' && destination === 'saved' ? 'saved' : mode;
     window.RiverlineTutorials?.workspaceChanged?.(tutorialWorkspace);
@@ -8238,8 +8253,8 @@ function init() {
 
     
 
-    if (activeWorkspaceMode() === 'home') void refreshHomeWorkspace();
-    else if (activeWorkspaceMode() !== 'welcome') updateContext('Ready');
+    if (activeWorkspaceMode() === 'home' && !welcomeOrientationIsVisible()) void refreshHomeWorkspace();
+    else if (!welcomeOrientationIsVisible()) updateContext('Ready');
 
   } catch (error) {
 

@@ -22,11 +22,7 @@
 
   root.dataset.welcomeOrientation = oriented ? 'completed' : 'unseen';
   if (!oriented) {
-    document.addEventListener('DOMContentLoaded', function selectWelcomeEntry() {
-      var shell = document.querySelector('.riverline-shell');
-      if (!shell) return;
-      shell.dataset.activeMode = 'welcome';
-      shell.dataset.activeDestination = 'welcome';
+    document.addEventListener('DOMContentLoaded', function clearWorkspaceSelectionForOrientation() {
       document.querySelectorAll('.mode-nav-item.active').forEach(function clearInitialNavigation(item) {
         item.classList.remove('active');
         item.setAttribute('aria-current', 'false');

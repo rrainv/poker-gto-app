@@ -11,7 +11,7 @@ import {
   createWelcomeOrientationSession,
 } from '../app/src/application/welcome-orientation.mjs';
 
-const [html, css, bootstrap, prepaint, translations, i18n, logic] = await Promise.all([
+const [html, css, bootstrap, prepaint, translations, i18n, logic, brandMark, cardPresentation] = await Promise.all([
   readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
   readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/application/welcome-orientation-bootstrap.mjs', import.meta.url), 'utf8'),
@@ -19,6 +19,8 @@ const [html, css, bootstrap, prepaint, translations, i18n, logic] = await Promis
   readFile(new URL('../app/src/locales/welcome-translations.js', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8'),
+  readFile(new URL('../app/assets/riverline-brand-mark.svg', import.meta.url), 'utf8'),
+  readFile(new URL('../app/src/application/card-presentation.mjs', import.meta.url), 'utf8'),
 ]);
 
 class MemoryStorage {
@@ -46,6 +48,44 @@ test('unseen local and Guest users start on Welcome while a completed preference
   assert.equal(preference(storage).shouldShowOnStartup(), false);
   assert.match(bootstrap, /storage: options\.storage \?\? browserWindow\.localStorage/);
   assert.doesNotMatch(bootstrap, /Account|authchange|identity|Supabase|network|fetch\(/i);
+});
+
+test('Welcome suppression is opt-in while explicit saved choices remain authoritative', () => {
+  const welcome = html.slice(html.indexOf('id="welcomeOrientation"'), html.indexOf('class="shell workspace-canvas"'));
+  assert.match(welcome, /<input id="welcomeRememberChoice" type="checkbox">/);
+  assert.doesNotMatch(welcome, /id="welcomeRememberChoice"[^>]*\schecked(?:\s|>)/);
+  assert.match(bootstrap, /remember\.checked = false/);
+  assert.doesNotMatch(bootstrap, /remember\.checked = true/);
+
+  const freshStorage = new MemoryStorage();
+  const freshSession = createWelcomeOrientationSession({
+    preference: preference(freshStorage),
+    navigate: () => {},
+  });
+  freshSession.open();
+  freshSession.dismiss({ remember: false });
+  assert.equal(freshStorage.getItem(WELCOME_ORIENTATION_STORAGE_KEY), null);
+  assert.equal(preference(freshStorage).shouldShowOnStartup(), true);
+
+  const suppressedStorage = new MemoryStorage();
+  preference(suppressedStorage).dismiss();
+  assert.equal(preference(suppressedStorage).shouldShowOnStartup(), false);
+});
+
+test('Riverline identity uses one canonical geometric brand spade without changing card suits', () => {
+  assert.equal((brandMark.match(/<symbol id="riverlineBrandSpade"/g) ?? []).length, 1);
+  assert.equal((brandMark.match(/<path d=/g) ?? []).length, 1);
+  assert.match(brandMark, /M128 18C111 40/);
+  assert.equal((html.match(/<use href="assets\/riverline-brand-mark\.svg#riverlineBrandSpade" \/>/g) ?? []).length, 2);
+  assert.match(html, /<link rel="icon" type="image\/svg\+xml" href="assets\/riverline-brand-mark\.svg">/);
+  assert.doesNotMatch(brandMark, /♠|<text\b/);
+  assert.doesNotMatch(html.slice(0, html.indexOf('<body>')), /♠/);
+  assert.doesNotMatch(html, /M12 3c-2\.2 3\.2-6\.5 5\.7/);
+  assert.doesNotMatch(html, /M272\.5 6\.6c-9\.3/);
+  assert.match(css, /--brand-mark-compact-background: var\(--accent-primary\)/);
+  assert.match(css, /--brand-mark-compact-foreground: var\(--surface-canvas\)/);
+  assert.match(css, /\.rail-brand \.brand-mark svg \{[\s\S]*?fill: currentColor/);
+  assert.match(cardPresentation, /s: Object\.freeze\(\{ id: 's', symbol: '♠', name: 'spades' \}\)/);
 });
 
 test('explicit dismissal is terminal across reload and returns through the existing Home route', () => {
@@ -141,7 +181,7 @@ test('unavailable or invalid local storage safely falls back to an unseen in-ses
   assert.doesNotThrow(() => recovered.complete('hand'));
 });
 
-test('prepaint selects Welcome before Home and the main init skips hidden Home work', () => {
+test('prepaint layers Welcome over recurring Home without selecting a false workspace', () => {
   function execute(storedValue = null) {
     const root = { dataset: {} };
     const shell = { dataset: { activeMode: 'home', activeDestination: 'home' } };
@@ -162,11 +202,13 @@ test('prepaint selects Welcome before Home and the main init skips hidden Home w
 
   const unseen = execute();
   assert.equal(unseen.root.dataset.welcomeOrientation, 'unseen');
-  assert.equal(unseen.shell.dataset.activeMode, 'welcome');
+  assert.equal(unseen.shell.dataset.activeMode, 'home');
+  assert.equal(unseen.shell.dataset.activeDestination, 'home');
   assert.equal(unseen.active['aria-current'], 'false');
-  assert.match(logic, /else if \(activeWorkspaceMode\(\) !== 'welcome'\) updateContext\('Ready'\)/);
+  assert.match(logic, /if \(activeWorkspaceMode\(\) === 'home' && !welcomeOrientationIsVisible\(\)\) void refreshHomeWorkspace\(\)/);
   assert.ok(html.indexOf('welcome-orientation-prepaint.js') < html.indexOf('styles.css'));
-  assert.match(css, /data-welcome-orientation="unseen"\] \.workspace-canvas[\s\S]*display: none/);
+  assert.doesNotMatch(css, /data-welcome-orientation="unseen"\] \.workspace-canvas[\s\S]{0,100}display: none/);
+  assert.match(css, /\.welcome-orientation \{[\s\S]*?position: absolute[\s\S]*?z-index: 40/);
 
   const completed = execute({
     schemaVersion: WELCOME_ORIENTATION_SCHEMA_VERSION,
@@ -189,7 +231,7 @@ test('prepaint selects Welcome before Home and the main init skips hidden Home w
     destination: 'unknown-workspace',
   });
   assert.equal(invalidTerminal.root.dataset.welcomeOrientation, 'unseen');
-  assert.equal(invalidTerminal.shell.dataset.activeMode, 'welcome');
+  assert.equal(invalidTerminal.shell.dataset.activeMode, 'home');
 });
 
 test('Welcome copy is complete in EN, RU, and HE and uses logical RTL-safe composition', () => {
@@ -218,6 +260,7 @@ test('Welcome uses semantic headings, native buttons and checkbox, visible focus
   assert.doesNotMatch(welcome, /id="welcomeTitle"[^>]+tabindex/);
   assert.match(css, /welcome-job-card:focus-visible/);
   assert.match(css, /welcome-preference:focus-within/);
+  assert.match(css, /welcome-close\[hidden\] \{ display: none; \}/);
   assert.match(bootstrap, /event\.key !== 'Escape'/);
   assert.match(bootstrap, /session\.dismiss/);
   assert.match(bootstrap, /clearNavigationSelection/);

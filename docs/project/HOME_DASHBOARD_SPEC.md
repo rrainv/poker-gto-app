@@ -1,6 +1,6 @@
 # Home Dashboard v2
 
-Status: `HOME-002A` implementation checkpoint, August 18, 2026.
+Status: `HOME-002A` implementation checkpoint plus `FIRST-USE-HOME-001` completed / human accepted, August 30, 2026.
 
 ## Purpose and ownership
 
@@ -23,15 +23,23 @@ current in-memory Playbook continuation
 
 The renderer does not inspect IndexedDB, resolve StrategyProvider results, run Equity, infer a 169-hand range, or create Training/Analysis history.
 
+## Recurring Home and optional orientation
+
+Home is the permanent recurring startup and study destination for first-time and returning use. Welcome is optional orientation presentation state layered separately from routing; it is not another route or workspace authority. While Welcome is visible, no sidebar destination is selected and hidden Home initialization intended for active Home does not run. Dismissing or finishing Welcome activates Home normally, while manually reopening Welcome does not reset or reinitialize the current workspace.
+
+Welcome suppression affects orientation only. A missing, invalid, or new preference shows Welcome and leaves `Don't show Welcome on startup again` unchecked; suppression requires an explicit user opt-in, and an existing explicit saved suppression remains authoritative. Active navigation always reflects the true destination.
+
+Current Riverline identity surfaces reuse one canonical geometric brand-spade asset with context-appropriate presentation. This identity asset is separate from ordinary poker-card suit symbols and rendering.
+
 ## Session compositions
 
 ### Guest
 
-Guest Home does not issue Saved Study, Personal Strategy, calibration, identity, or sync-domain reads. It contains:
+Guest Home does not issue account-scoped Saved Study, identity, or sync-domain reads. It contains:
 
 - a short Riverline introduction and restrained sign-in promotion;
-- Playbook, Training, and Equity Quick Start actions;
-- Continue only when the current process has a real in-memory live Hand.
+- useful direct Start/study actions through existing destinations;
+- Continue only when an explicit supported resume contract exists.
 
 Saved, Review, Mistakes, Personal Strategy, and calibration content are absent. Guest is useful without presenting another identity's content.
 
@@ -52,10 +60,10 @@ Fresh accounts use intentional actions instead of a grid of zero metrics. Saved 
 
 Home may show only explicit resume contracts:
 
-- active or paused Range Calibration below 169 directly answered hand classes;
+- an active or paused Personal Strategy session;
 - a current in-memory canonical live Hand exposed by the Playbook bridge.
 
-Home does not claim that old Scenario, Analysis, or Training state is resumable.
+When neither exists, the prime Home area presents a useful Start action rather than an empty Continue shell or fabricated recency. Training, Analyze, Equity, and last-route continuation remain unsupported until their owners expose explicit contracts. Home does not infer continuation from old Scenario state, route history, timestamps, or incidental consumer state.
 
 ## Loading, invalidation, and identity isolation
 
@@ -78,6 +86,8 @@ The summary reads one selected exact scope through the Personal Strategy reposit
 ## Training and Analysis seams
 
 `HomeViewModel v2.sections.history` contains explicit unsupported Training and Analysis history seams. This keeps later composition modular without fabricating persisted statistics or introducing a new persistence authority.
+
+Future Home/dashboard evolution must remain contract-backed. It must not promote unsupported recent activity, recommendations, streaks, cloud/sync claims, or cross-workspace history merely to fill the dashboard.
 
 ## Accessibility, localization, and layout
 

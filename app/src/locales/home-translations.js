@@ -236,6 +236,45 @@
     'Use Hand to play or continue a canonical Hand, Analyze to review a Hand or build a study spot, and Training to practice decisions. Personal Strategy, Equity, and Saved support deeper study; Home Game, Guide, and Settings stay in the Riverline support area.': 'השתמשו ביד כדי לשחק או להמשיך יד קנונית, בניתוח כדי לסקור יד או לבנות ספוט לימוד, ובאימון כדי לתרגל החלטות. אסטרטגיה אישית, אקוויטי ושמורים תומכים בלימוד מעמיק; משחק ביתי, מדריך והגדרות נשארים באזור התמיכה של Riverline.',
   });
 
+  Object.assign(ru, {
+    'Riverline is ready to use': 'Riverline готов к работе',
+    'Saved study and Personal Strategy require a Riverline profile. Signing in does not enable sync or cloud backup.': 'Для сохранённых материалов и личной стратегии нужен профиль Riverline. Вход не включает синхронизацию или облачное резервное копирование.',
+    'Your next action': 'Следующее действие',
+    'Start study': 'Начать обучение',
+    'Start a Hand': 'Начать раздачу',
+    'No unfinished work is available. Choose a core study workspace to begin.': 'Незавершённой работы нет. Выберите основной учебный раздел, чтобы начать.',
+    'Personal': 'Личное',
+    'Choose a workspace': 'Выберите раздел',
+    'Play or reconstruct a legal hand.': 'Сыграйте или восстановите корректную раздачу.',
+    'Inspect a decision, Matrix, ranges, and facts.': 'Изучите решение, Матрицу, диапазоны и факты.',
+    'Practice generated poker decisions.': 'Тренируйтесь на сгенерированных покерных решениях.',
+    'Compare hand outcomes and detailed analysis.': 'Сравните исходы рук и подробный анализ.',
+    'More destinations': 'Другие разделы',
+    'Reopen saved Hands and Spots.': 'Откройте сохранённые раздачи и споты.',
+    'Run buy-ins, cash-outs, and settlement.': 'Ведите бай-ины, кэшауты и расчёты.',
+    'Learn Riverline controls and poker terms.': 'Изучите управление Riverline и покерные термины.',
+    'Teach Riverline how you intend to play. A Riverline profile is required.': 'Покажите Riverline, как вы намерены играть. Требуется профиль Riverline.',
+  });
+  Object.assign(he, {
+    'Riverline is ready to use': 'Riverline מוכן לשימוש',
+    'Saved study and Personal Strategy require a Riverline profile. Signing in does not enable sync or cloud backup.': 'לימוד שמור ואסטרטגיה אישית דורשים פרופיל Riverline. התחברות אינה מפעילה סנכרון או גיבוי בענן.',
+    'Your next action': 'הפעולה הבאה שלך',
+    'Start study': 'התחלת לימוד',
+    'Start a Hand': 'התחלת יד',
+    'No unfinished work is available. Choose a core study workspace to begin.': 'אין עבודה לא גמורה זמינה. בחרו סביבת לימוד מרכזית כדי להתחיל.',
+    'Personal': 'אישי',
+    'Choose a workspace': 'בחרו סביבת עבודה',
+    'Play or reconstruct a legal hand.': 'שחקו או שחזרו יד חוקית.',
+    'Inspect a decision, Matrix, ranges, and facts.': 'בדקו החלטה, מטריצה, טווחים ועובדות.',
+    'Practice generated poker decisions.': 'תרגלו החלטות פוקר שנוצרו.',
+    'Compare hand outcomes and detailed analysis.': 'השוו תוצאות ידיים וניתוח מפורט.',
+    'More destinations': 'יעדים נוספים',
+    'Reopen saved Hands and Spots.': 'פתחו מחדש ידיים וספוטים שמורים.',
+    'Run buy-ins, cash-outs, and settlement.': 'נהלו קניות, משיכות וסליקה.',
+    'Learn Riverline controls and poker terms.': 'למדו את פקדי Riverline ואת מונחי הפוקר.',
+    'Teach Riverline how you intend to play. A Riverline profile is required.': 'למדו את Riverline כיצד בכוונתכם לשחק. נדרש פרופיל Riverline.',
+  });
+
   const keys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineHomeTranslations = {
     en: Object.fromEntries([...keys].map((key) => [key, {

@@ -77,7 +77,7 @@ test('Hand, Analyze, and Saved remain destinations over existing mounted workspa
 
 test('destination switching changes presentation without recreating or resetting mounted study state', () => {
   const handler = modeNavigationHandler();
-  assert.match(handler, /activateNavigationItem\(button\)/);
+  assert.match(handler, /if \(!activateNavigationItem\(button\)\) return;/);
   assert.match(handler, /const activeView = \$\(`#\$\{mode\}Mode`\)/);
   assert.match(handler, /renderFullHandTrainingSnapshot\(app\.training\.fullHandSnapshot\)/);
   assert.doesNotMatch(handler, /new\s+[A-Z]|create[A-Z]\w+Controller|dispose\(|reset(?:Hand|Training|Calibration|Strategy)|localStorage\.clear|indexedDB\.deleteDatabase/);
@@ -101,7 +101,7 @@ test('Home and Saved resolve to distinct visible states over the same Home autho
   const homeAgain = resolveHomeDestination('home', { sessionMode: 'account', hasContinuation: true });
   assert.equal(home.destination, 'home');
   assert.equal(saved.destination, 'saved');
-  assert.deepEqual(Array.from(home.visibleSections), ['overview', 'continue', 'review', 'recent', 'strategy', 'quick']);
+  assert.deepEqual(Array.from(home.visibleSections), ['overview', 'continue', 'review', 'recent', 'strategy', 'quick', 'other']);
   assert.deepEqual(Array.from(saved.visibleSections), ['saved-overview', 'recent', 'review']);
   assert.deepEqual(Array.from(homeAgain.visibleSections), Array.from(home.visibleSections));
   assert.match(html, /id="homeSavedOverview"[^>]*hidden/);
@@ -195,10 +195,11 @@ test('Personal Strategy is the umbrella while Calibration, Teacher, Matrix, and 
 });
 
 test('Home offers real workflow entries and the Core Flow shell has EN, RU, HE, and RTL coverage', () => {
-  for (const destination of ['hand', 'analyze', 'training', 'personal-strategy', 'equity']) {
+  for (const destination of ['hand', 'analyze', 'training', 'equity']) {
     assert.match(html, new RegExp(`data-home-destination="${destination}"`));
     assert.match(homeModel, new RegExp(`['"]${destination}['"]`));
   }
+  assert.match(logic, /action\.dataset\.homeDestination = 'personal-strategy'/);
   for (const key of ['Core study', 'Hand', 'Analyze', 'Saved study', 'Saved Hands & Spots', 'Hand workflow', 'Analysis source', 'Opening Personal Strategy']) {
     const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     assert.match(translations, new RegExp(`'${escaped}'`, 'g'));

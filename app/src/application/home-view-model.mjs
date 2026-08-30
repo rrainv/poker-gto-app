@@ -284,7 +284,7 @@ export function createHomeViewModelController({
       const personalStrategy = personalStrategySection(personalResult);
       const continuation = continuationResult.status === 'fulfilled' ? continuationResult.value : null;
       const identity = identitySection(profileQueries ? profileResult : null, accountQueries ? accountResult : null);
-      const quickStartDestinations = ['hand', 'analyze', 'training', 'personal-strategy', 'equity'];
+      const quickStartDestinations = ['hand', 'analyze', 'training', 'equity'];
       if (mistakes.status === 'ready' && mistakes.items.length > 0) {
         quickStartDestinations.push('review_mistakes');
       }

@@ -20,9 +20,7 @@
 
   <link rel="stylesheet" href="styles.css?v=26">
 
-  <link rel="icon"
-
-    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 fill=%22%2325c281%22>♠</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="assets/riverline-brand-mark.svg">
 
   <script src="src/locales/product-translations.js?v=1" defer></script>
   <script src="src/locales/account-translations.js?v=1" defer></script>
@@ -343,7 +341,7 @@
   <aside id="modeRail" class="mode-rail" aria-label="Riverline application" data-i18n-aria-label="Riverline application">
       <div class="rail-brand">
         <div class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" role="img"><path d="M12 3c-2.2 3.2-6.5 5.7-6.5 9.7A4.3 4.3 0 0 0 12 16.4a4.3 4.3 0 0 0 6.5-3.7C18.5 8.7 14.2 6.2 12 3Z"/><path d="M9.2 20h5.6M12 15.5V20"/></svg>
+          <svg viewBox="0 0 256 256" aria-hidden="true"><use href="assets/riverline-brand-mark.svg#riverlineBrandSpade" /></svg>
         </div>
         <div class="rail-brand-copy">
           <strong data-i18n="Riverline">Riverline</strong>
@@ -480,7 +478,7 @@
 
           <header class="welcome-intro">
             <div class="welcome-brand" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M12 3c-2.2 3.2-6.5 5.7-6.5 9.7A4.3 4.3 0 0 0 12 16.4a4.3 4.3 0 0 0 6.5-3.7C18.5 8.7 14.2 6.2 12 3Z"/><path d="M9.2 20h5.6M12 15.5V20"/></svg>
+              <svg viewBox="0 0 256 256" aria-hidden="true"><use href="assets/riverline-brand-mark.svg#riverlineBrandSpade" /></svg>
             </div>
             <div>
               <p class="welcome-eyebrow" data-i18n="Welcome to Riverline">Welcome to Riverline</p>
@@ -529,7 +527,7 @@
               <button class="ui-button ui-button--quiet" type="button" data-welcome-destination="guide" data-i18n="Open the Guide">Open the Guide</button>
             </div>
             <label class="welcome-preference" for="welcomeRememberChoice">
-              <input id="welcomeRememberChoice" type="checkbox" checked>
+              <input id="welcomeRememberChoice" type="checkbox">
               <span data-i18n="Don't show Welcome on startup again">Don't show Welcome on startup again</span>
             </label>
             <p id="welcomeManualNote" class="welcome-manual-note" data-i18n="Welcome stays available from Learn Riverline and will not replace your normal Home startup." hidden>Welcome stays available from Learn Riverline and will not replace your normal Home startup.</p>
@@ -569,15 +567,18 @@
             </div>
           </section>
           <section id="homeGuestAccount" class="panel home-section home-section--guest-account" aria-labelledby="homeGuestAccountTitle" hidden>
-            <header class="home-section-head"><div><p id="homeGuestAccountEyebrow" data-i18n="Guest Mode">Guest Mode</p><h2 id="homeGuestAccountTitle" data-i18n="Welcome to Riverline">Welcome to Riverline</h2></div></header>
             <div class="home-guest-account-copy">
+              <div>
+                <p id="homeGuestAccountEyebrow" data-i18n="Guest Mode">Guest Mode</p>
+                <h2 id="homeGuestAccountTitle" data-i18n="Riverline is ready to use">Riverline is ready to use</h2>
+              </div>
               <p id="homeGuestAccountPrimary" data-i18n="Analyze hands, train decisions, and calculate Equity without an account.">Analyze hands, train decisions, and calculate Equity without an account.</p>
-              <p id="homeGuestAccountSecondary" data-i18n="Sign in to save hands, build Personal Strategy, and sync study progress.">Sign in to save hands, build Personal Strategy, and sync study progress.</p>
-              <button id="homeGuestSignIn" class="ui-button ui-button--primary" type="button" data-i18n="Sign in or create account">Sign in or create account</button>
+              <p id="homeGuestAccountSecondary" data-i18n="Saved study and Personal Strategy require a Riverline profile. Signing in does not enable sync or cloud backup.">Saved study and Personal Strategy require a Riverline profile. Signing in does not enable sync or cloud backup.</p>
+              <button id="homeGuestSignIn" class="ui-button ui-button--quiet" type="button" data-i18n="Sign in or create account">Sign in or create account</button>
             </div>
           </section>
           <section class="panel home-section home-section--continue" aria-labelledby="homeContinueTitle">
-            <header class="home-section-head"><div><p data-i18n="Pick up where you left off">Pick up where you left off</p><h2 id="homeContinueTitle" data-i18n="Continue">Continue</h2></div></header>
+            <header class="home-section-head"><div><p id="homeContinueEyebrow" data-i18n="Your next action">Your next action</p><h2 id="homeContinueTitle" data-i18n="Start study">Start study</h2></div></header>
             <div id="homeContinueContent" class="home-section-content"></div>
           </section>
 
@@ -592,19 +593,27 @@
           </section>
 
           <section class="panel home-section home-section--strategy" aria-labelledby="homeStrategyTitle" data-tutorial-anchor="home-personal-strategy">
-            <header class="home-section-head"><div><p data-i18n="Direct calibration only">Direct calibration only</p><h2 id="homeStrategyTitle" data-i18n="Personal Strategy">Personal Strategy</h2></div></header>
+            <header class="home-section-head"><div><p data-i18n="Personal">Personal</p><h2 id="homeStrategyTitle" data-i18n="Personal Strategy">Personal Strategy</h2></div></header>
             <div id="homeStrategyContent" class="home-section-content"></div>
           </section>
 
           <section class="panel home-section home-section--quick" aria-labelledby="homeQuickStartTitle" data-tutorial-anchor="home-quick-start">
-            <header class="home-section-head"><div><p data-i18n="Go straight to a workspace">Go straight to a workspace</p><h2 id="homeQuickStartTitle" data-i18n="Quick Start">Quick Start</h2></div></header>
-            <nav class="home-quick-links" aria-label="Quick Start" data-i18n-aria-label="Quick Start">
-              <button type="button" class="home-quick-link home-quick-link--hand" data-home-destination="hand"><strong data-i18n="Hand">Hand</strong><span data-i18n="Play or continue a Hand">Play or continue a Hand</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="analyze"><strong data-i18n="Analyze">Analyze</strong><span data-i18n="Review a Hand or build a spot">Review a Hand or build a spot</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="training"><strong data-i18n="Training">Training</strong><span data-i18n="Practice a decision">Practice a decision</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="personal-strategy"><strong data-i18n="Personal Strategy">Personal Strategy</strong><span data-i18n="Calibrate, inspect, and build your ranges">Calibrate, inspect, and build your ranges</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="equity"><strong data-i18n="Equity">Equity</strong><span data-i18n="Calculate win chances">Calculate win chances</span></button>
+            <header class="home-section-head"><div><p data-i18n="Choose a workspace">Choose a workspace</p><h2 id="homeQuickStartTitle" data-i18n="Core study">Core study</h2></div></header>
+            <nav class="home-quick-links" aria-label="Core study" data-i18n-aria-label="Core study">
+              <button type="button" class="home-quick-link home-quick-link--hand" data-home-destination="hand"><strong data-i18n="Hand">Hand</strong><span data-i18n="Play or reconstruct a legal hand.">Play or reconstruct a legal hand.</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="analyze"><strong data-i18n="Analyze">Analyze</strong><span data-i18n="Inspect a decision, Matrix, ranges, and facts.">Inspect a decision, Matrix, ranges, and facts.</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="training"><strong data-i18n="Training">Training</strong><span data-i18n="Practice generated poker decisions.">Practice generated poker decisions.</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="equity"><strong data-i18n="Equity">Equity</strong><span data-i18n="Compare hand outcomes and detailed analysis.">Compare hand outcomes and detailed analysis.</span></button>
               <button type="button" class="home-quick-link" data-home-destination="review_mistakes" hidden><strong data-i18n="Review Mistakes">Review Mistakes</strong><span data-i18n="Revisit marked decisions">Revisit marked decisions</span></button>
+            </nav>
+          </section>
+
+          <section class="panel home-section home-section--other" aria-labelledby="homeOtherTitle">
+            <header class="home-section-head"><div><p data-i18n="Riverline">Riverline</p><h2 id="homeOtherTitle" data-i18n="More destinations">More destinations</h2></div></header>
+            <nav class="home-other-links" aria-label="More destinations" data-i18n-aria-label="More destinations">
+              <button type="button" class="home-other-link" data-home-destination="saved"><strong data-i18n="Saved study">Saved</strong><span data-i18n="Reopen saved Hands and Spots.">Reopen saved Hands and Spots.</span></button>
+              <button type="button" class="home-other-link" data-home-destination="home-game"><strong data-i18n="Home Game">Home Game</strong><span data-i18n="Run buy-ins, cash-outs, and settlement.">Run buy-ins, cash-outs, and settlement.</span></button>
+              <button type="button" class="home-other-link" data-home-destination="guide"><strong data-i18n="Guide">Guide</strong><span data-i18n="Learn Riverline controls and poker terms.">Learn Riverline controls and poker terms.</span></button>
             </nav>
           </section>
         </div>
