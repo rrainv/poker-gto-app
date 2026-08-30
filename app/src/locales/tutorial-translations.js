@@ -854,6 +854,10 @@
   Object.assign(en, savedTutorial.en);
   Object.assign(ru, savedTutorial.ru);
   Object.assign(he, savedTutorial.he);
+  const analysisFactsTutorial = 'Use the visible Facts for exact decision context, then open Explain for supported hand, draw, board, source, and limitation detail. Facts come from canonical inputs and the canonical evaluator, not from the recommendation.';
+  en[analysisFactsTutorial] = analysisFactsTutorial;
+  ru[analysisFactsTutorial] = 'Сначала используйте видимые «Факты» для точного контекста решения, затем откройте «Объяснение» для подтверждённых деталей руки, дро, борда, источника и ограничений. Факты поступают из канонических входных данных и оценщиков, а не из рекомендации.';
+  he[analysisFactsTutorial] = 'השתמשו תחילה ב„עובדות” הגלויות להקשר המדויק של ההחלטה, ואז פתחו את „הסבר” לפרטים נתמכים על היד, הדרואים, הלוח, המקור והמגבלות. העובדות מגיעות מהקלטים ומהמעריכים הקנוניים, לא מההמלצה.';
 
   global.riverlineTutorialTranslations = Object.freeze({
     en: Object.freeze(en),

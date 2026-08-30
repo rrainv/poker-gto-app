@@ -114,7 +114,7 @@ test('welcome, Home Game, action, Analyze, Replay, and Training repairs retain a
   assert.match(logic, /hand-action-amount poker-data-token/);
   assert.match(logic, /amount\.dir = 'ltr'/);
   assert.match(css, /\.hand-action-dock :is\(\.hand-action-label, \.hand-action-amount\)[\s\S]*font:\s*inherit/);
-  assert.match(css, /\.analysis-panel-content\s*\{[^}]*max-block-size:\s*none[^}]*overflow:\s*visible/);
+  assert.match(css, /\.analysis-panel-content\s*\{[^}]*max-block-size:\s*min\(420px, 44vh\)[^}]*overflow:\s*auto/);
   assert.doesNotMatch(css, /\.matrix-tooltip\s*\{[^}]*max-height:\s*76px/);
 
   assert.match(css, /data-table-projection="play"[^}]*\{[^}]*var\(--table-inline-max\)/);

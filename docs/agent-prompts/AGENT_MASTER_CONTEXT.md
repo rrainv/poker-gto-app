@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 30, 2026 (`CORE-FLOW-CORRECTNESS-001`, `REPLAY-RAIL-NAV-001`, `TRAINING-COMPOSITION-001`, and `EQUITY-COMPOSITION-001` are completed and human accepted; `ANALYZE-RANGE-UX-001` is active next and ready, followed by the remaining visible-product closure wave and September Alpha whole-app/docs/audit gates before any major new feature; `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision and `PREMIUM-CLOSEOUT-001` remains a later pre-release quality gate).
+Last refreshed: August 30, 2026 (`CORE-FLOW-CORRECTNESS-001`, `REPLAY-RAIL-NAV-001`, `TRAINING-COMPOSITION-001`, `EQUITY-COMPOSITION-001`, and `ANALYZE-RANGE-UX-001` are completed and human accepted; `FIRST-USE-HOME-001` is next and ready, followed by the remaining visible-product closure wave and September Alpha whole-app/docs/audit gates before any major new feature; `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision and `PREMIUM-CLOSEOUT-001` remains a later pre-release quality gate).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -32,7 +32,7 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 - **Decision strategy:** `DecisionContext v1` with additive `decision-context/v1.1` -> `StrategyProvider v1` -> `StrategyResult v1` -> `StrategyClaimPolicy v1`.
 - **Current strategy:** deterministic generalized heuristic under `app/src/strategy/`; `reference-pack/v1` validation/matching/provider infrastructure exists, but no production pack or validated general Hold'em production reference is registered.
 - **Training:** planner/intents/requests own structural curriculum targets only; canonical generator owns legal trajectories; sizing families are generation targets, not recommendations. Training Memory v1 owns durable encountered-decision/session evidence and frozen answer-time source/claim snapshots, not grading or Saved intent.
-- **Analysis:** `AnalysisExplanation v1` and `RangeAnalysisFacts v1` consume trusted facts without recreating poker/strategy/Equity.
+- **Analysis:** `RangeAnalysisFacts v1` owns canonical factual classification; DOM-free `range-comparison-facts/v1` projects representative-class comparison facts over Range Core card-removal truth; `AnalysisExplanation v1` consumes trusted facts without recreating poker/strategy/Equity.
 - **Presentation:** `table-presentation/v1` and `hand-review/v1` are ephemeral projections only.
 - **Experience:** `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1` create presentation consequences only.
 - **Saved:** `SavedStudyObject v1` with strict versioned Hand/Spot and Replay sources; consumers do not invent bookmark/note/review stores.
@@ -61,7 +61,7 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 2. **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT — `CORE-FLOW-CORRECTNESS-001`**
 3. **COMPLETED / HUMAN ACCEPTED HAND-REPLAY COMPOSITION CHECKPOINT WITH MINOR TABLE-PHYSICALITY DEBT — `REPLAY-RAIL-NAV-001`**
 4. **COMPLETED / HUMAN ACCEPTED — `TRAINING-COMPOSITION-001`**
-5. **COMPLETED / HUMAN ACCEPTED — `EQUITY-COMPOSITION-001`**; **ACTIVE NEXT / READY — `ANALYZE-RANGE-UX-001`**, then **VISIBLE CLOSURE — `FIRST-USE-HOME-001`**
+5. **COMPLETED / HUMAN ACCEPTED — `EQUITY-COMPOSITION-001` and `ANALYZE-RANGE-UX-001`**; **NEXT / READY — `FIRST-USE-HOME-001`**
 6. **BOUNDED SECONDARY POLISH / EXACT ORDER REASSESSED — `GUIDE-CONTENT-001`, `SAVED-VISUAL-KNOWLEDGE-001`, `CUSTOMIZATION-UX-001`, `GLOBAL-PRODUCT-QUALITY-001`; `HOME-GAME-PRESENTATION-001` and `AUDIO-DESIGN-001` remain conditional on time and impact**
 7. **SEPTEMBER ALPHA CLOSURE — human whole-app pass → documentation integrity/continuity freeze → human clean commit/audit tag → cross-model blind hands-on and white-box architecture audits → human triage → P0/P1 fixes**
 8. **PRESERVED MAJOR FEATURES / ACTIVATE ONLY FROM POST-AUDIT EVIDENCE — `PERSONAL-STRATEGY-003A`, `GAME-SETUP-EVOLUTION-001`, `RANGE-EVOLUTION-001`, and the documented capability roadmap**

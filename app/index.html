@@ -1232,7 +1232,7 @@
 
               <div class="teacher-panel" style="margin-top: 24px;" data-tutorial-anchor="playbook-analysis-explanation">
 
-                <button id="toggleTeacher"
+                <button id="toggleTeacher" class="analysis-explain-toggle" type="button" aria-expanded="false" aria-controls="teacherContent"
 
                   style="background: none; border: none; color: var(--primary); font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 0;">
 
@@ -1242,7 +1242,7 @@
 
                   </svg>
 
-                  <span data-i18n="What goes into this decision?">What goes into this decision?</span>
+                  <span><strong data-i18n="Explain">Explain</strong><small data-i18n="Why these facts matter">Why these facts matter</small></span>
 
                 </button>
 
@@ -1258,6 +1258,8 @@
 
             <div class="metric-grid playbook-metric-strip" aria-label="Decision metrics" data-i18n-aria-label="Decision metrics" data-state-surface="derived">
 
+                <div class="playbook-facts-heading"><span data-i18n="Facts">Facts</span><strong data-i18n="Decision facts">Decision facts</strong><small data-i18n="Exact context for the current recommendation">Exact context for the current recommendation</small></div>
+
                 <div class="metric"><span data-i18n="Position">Position</span><b id="mPosition">—</b></div>
 
                 <div class="metric"><span data-i18n="Pot">Pot</span><b id="mPot">—</b></div>
@@ -1266,13 +1268,13 @@
 
                 <div class="metric"><span data-i18n="Stack">Stack</span><b id="mStack">—</b></div>
 
-                <div class="metric"><span data-i18n="Est. equity">Est. equity</span><b id="mEquity">—</b></div>
+                <div class="metric"><span data-i18n="Hero hand">Hero hand</span><b id="mEquity">—</b></div>
 
                 <div class="metric"><span data-i18n="Pot odds">Pot odds</span><b id="mPotOdds">—</b></div>
 
                 <div class="metric"><span data-i18n="SPR">SPR</span><b id="mSPR">—</b></div>
 
-                <div class="metric"><span data-i18n="Rake drag">Rake drag</span><b id="mRake">5.0%</b></div>
+                <div class="metric"><span data-i18n="Board">Board</span><b id="mRake">—</b></div>
 
               </div>
 
@@ -1588,22 +1590,6 @@
 
               </div>
 
-              <div class="strategy-key matrix-action-legend" id="strategyKey" role="list" aria-label="Strategy action colors" data-i18n-aria-label="Strategy action colors">
-
-                <span class="key" role="listitem"><i class="open" data-action-kind="aggressive"></i><span data-i18n="Raise / bet">Raise / bet</span></span>
-
-              <span class="key" role="listitem"><i class="call" data-action-kind="passive"></i><span data-i18n="Check / call">Check / call</span></span>
-
-              <span class="key" role="listitem"><i class="all-in" data-action-kind="all-in"></i><span data-i18n="All-in">All-in</span></span>
-
-                <span class="key" role="listitem"><i class="mix" data-action-kind="mixed"></i><span data-i18n="Mixed">Mixed</span></span>
-
-                <span class="key" role="listitem"><i class="fold" data-action-kind="fold"></i><span data-i18n="Fold">Fold</span></span>
-
-            <span class="matrix-legend-note" data-i18n="Tint shows the dominant action · band shows the full mix">Tint shows the dominant action · band shows the full mix</span>
-
-              </div>
-
                 </div>
 
               <aside class="selected-hand matrix-hand-inspector" aria-labelledby="selectedHand" aria-live="polite" data-tutorial-anchor="range-matrix-selection">
@@ -1624,6 +1610,12 @@
 
                 </div>
 
+                <dl class="matrix-inspector-facts">
+                  <div><dt data-i18n="Available combos">Available combos</dt><dd id="selectedAvailableCombos" class="poker-data-token">—</dd></div>
+                  <div><dt data-i18n="Removed combos">Removed combos</dt><dd id="selectedRemovedCombos" class="poker-data-token">—</dd></div>
+                  <div><dt data-i18n="Source">Source</dt><dd id="selectedRangeSource">—</dd></div>
+                </dl>
+
                 <div id="selectedMix">
 
                   <span data-i18n="Click a cell to inspect action frequencies.">Click a cell to inspect action
@@ -1631,6 +1623,20 @@
                     frequencies.</span>
 
                 </div>
+
+                <section class="matrix-inspector-legend" aria-labelledby="matrixInspectorLegendTitle">
+                  <strong id="matrixInspectorLegendTitle" data-i18n="Legend">Legend</strong>
+                  <div class="strategy-key matrix-action-legend" id="strategyKey" role="list" aria-label="Strategy action colors and states" data-i18n-aria-label="Strategy action colors and states">
+                    <span class="key" role="listitem"><i class="open" data-action-kind="aggressive"></i><span data-i18n="Raise / bet">Raise / bet</span></span>
+                    <span class="key" role="listitem"><i class="call" data-action-kind="passive"></i><span data-i18n="Check / call">Check / call</span></span>
+                    <span class="key" role="listitem"><i class="all-in" data-action-kind="all-in"></i><span data-i18n="All-in">All-in</span></span>
+                    <span class="key" role="listitem"><i class="mix" data-action-kind="mixed"></i><span data-i18n="Mixed">Mixed</span></span>
+                    <span class="key" role="listitem"><i class="fold" data-action-kind="fold"></i><span data-i18n="Fold">Fold</span></span>
+                    <span class="key" role="listitem"><i data-matrix-state="unavailable"></i><span data-i18n="Unavailable">Unavailable</span></span>
+                    <span class="key" role="listitem"><i data-matrix-state="removed"></i><span data-i18n="Removed by known cards">Removed by known cards</span></span>
+                    <span class="matrix-legend-note" data-i18n="Tint shows the dominant action · band shows the full mix">Tint shows the dominant action · band shows the full mix</span>
+                  </div>
+                </section>
 
               </aside>
 
@@ -1675,58 +1681,80 @@
                   Add at least a flop to compare the manually selected heuristic range samples.
                 </div>
                 <div id="rangeAdvantageAnalysis" hidden>
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:12px; font-weight:bold; text-transform:uppercase; color:var(--muted);">
-                  <span data-i18n="Hero strong-category share">Hero strong-category share</span>
-                  <span data-i18n="Villain strong-category share">Villain strong-category share</span>
-                </div>
-                <div style="display:flex; height:24px; border-radius:4px; overflow:hidden; margin-bottom:24px; background:var(--bg);">
-                  <div id="heroAdvBar" style="width:50%; background:var(--primary); transition:width 0.3s;"></div>
-                  <div id="villainAdvBar" style="width:50%; background:var(--red); transition:width 0.3s;"></div>
-                </div>
-          <div class="range-comparison-scroll" tabindex="0" aria-label="Scrollable aligned Hero and Villain range category matrices" data-i18n-aria-label="Scrollable aligned Hero and Villain range category matrices">
-                <div class="range-grid-split">
-                  <div class="range-comparison-pane">
-                    <div style="margin-bottom:8px; font-weight:bold; color:var(--text); display:flex; justify-content:space-between;">
-                    <span id="heroRangeTitle" data-i18n="Hero sample">Hero sample</span>
-                    <span id="heroRangeScore" class="poker-data-token" style="color:var(--primary);">0%</span>
+                  <section class="range-comparison-matrices" aria-label="Hero and opponent sample matrices" data-i18n-aria-label="Hero and opponent sample matrices">
+                    <div class="range-grid-split">
+                      <div class="range-comparison-pane">
+                        <div class="range-comparison-pane-head"><span id="heroRangeTitle" data-i18n="Hero sample">Hero sample</span></div>
+                        <div class="matrix-wrap"><div class="strategy-grid range-grid" id="heroRangeGrid" role="grid" aria-rowcount="13" aria-colcount="13" aria-label="13 by 13 starting hand matrix" data-i18n-aria-label="13 by 13 starting hand matrix"></div></div>
+                        <div id="heroHoverInfo" class="range-class-inspector" aria-live="polite" data-i18n="Focus or hover a hand to see details">Focus or hover a hand to see details</div>
+                      </div>
+                      <div class="range-comparison-pane">
+                        <div class="range-comparison-pane-head"><span id="villainRangeTitle" data-i18n="Villain sample">Villain sample</span></div>
+                        <div class="matrix-wrap"><div class="strategy-grid range-grid" id="villainRangeGrid" role="grid" aria-rowcount="13" aria-colcount="13" aria-label="13 by 13 starting hand matrix" data-i18n-aria-label="13 by 13 starting hand matrix"></div></div>
+                        <div id="villainHoverInfo" class="range-class-inspector" aria-live="polite" data-i18n="Focus or hover a hand to see details">Focus or hover a hand to see details</div>
+                      </div>
                     </div>
-                    <div class="matrix-wrap" style="padding:0;">
-                      <div class="strategy-grid range-grid" id="heroRangeGrid" aria-label="13 by 13 starting hand matrix" data-i18n-aria-label="13 by 13 starting hand matrix"></div>
+                    <div class="strategy-key range-category-legend" role="list" aria-label="Range category colors and states" data-i18n-aria-label="Range category colors and states">
+                      <span class="key" role="listitem"><i data-category="very-strong"></i><span data-i18n="Very strong made">Very strong made</span></span>
+                      <span class="key" role="listitem"><i data-category="strong-made"></i><span data-i18n="Strong made">Strong made</span></span>
+                      <span class="key" role="listitem"><i data-category="marginal-draw"></i><span data-i18n="Marginal or draw">Marginal or draw</span></span>
+                      <span class="key" role="listitem"><i data-category="air"></i><span data-i18n="Air">Air</span></span>
+                      <span class="key" role="listitem"><i data-state="fully-removed">×</i><span data-i18n="Unavailable after known-card removal">Unavailable after known-card removal</span></span>
+                      <span class="key" role="listitem"><i data-state="not-in-sample">–</i><span data-i18n="Not in sample">Not in sample</span></span>
                     </div>
-                    <div id="heroHoverInfo" style="margin-top:8px; font-size:12px; min-height:16px; color:var(--muted); text-align:center;" data-i18n="Hover over a hand to see details">Hover over a hand to see details</div>
-                    <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:12px;">
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--primary)" data-i18n="Very strong made">Very strong made</span><span id="heroStatVeryStrong">0 (0%)</span></div>
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:#8bc34a" data-i18n="Strong made">Strong made</span><span id="heroStatStrongMade">0 (0%)</span></div>
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--orange)" data-i18n="Marginal or draw">Marginal or draw</span><span id="heroStatMarginal">0 (0%)</span></div>
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--red)" data-i18n="Air">Air</span><span id="heroStatAir">0 (0%)</span></div>
+                  </section>
+
+                  <h3 class="range-comparison-section-title" data-i18n="Category summary">Category summary</h3>
+
+                  <div class="paired-range-comparison" role="img" aria-label="Hero and opponent category shares on a shared zero to one hundred percent scale" data-i18n-aria-label="Hero and opponent category shares on a shared zero to one hundred percent scale">
+                    <div class="paired-range-scale" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>
+                    <div class="paired-range-category" data-category="veryStrong">
+                      <strong data-i18n="Very strong made">Very strong made</strong>
+                      <div class="paired-range-row"><span data-i18n="Hero">Hero</span><div class="paired-range-track"><i id="heroVeryStrongBar"></i></div><b id="heroStatVeryStrong">0 (0%)</b></div>
+                      <div class="paired-range-row"><span data-i18n="Villain">Villain</span><div class="paired-range-track"><i id="villainVeryStrongBar"></i></div><b id="vilStatVeryStrong">0 (0%)</b></div>
+                    </div>
+                    <div class="paired-range-category" data-category="strongMade">
+                      <strong data-i18n="Strong made">Strong made</strong>
+                      <div class="paired-range-row"><span data-i18n="Hero">Hero</span><div class="paired-range-track"><i id="heroStrongMadeBar"></i></div><b id="heroStatStrongMade">0 (0%)</b></div>
+                      <div class="paired-range-row"><span data-i18n="Villain">Villain</span><div class="paired-range-track"><i id="villainStrongMadeBar"></i></div><b id="vilStatStrongMade">0 (0%)</b></div>
+                    </div>
+                    <div class="paired-range-category" data-category="marginal">
+                      <strong data-i18n="Marginal or draw">Marginal or draw</strong>
+                      <div class="paired-range-row"><span data-i18n="Hero">Hero</span><div class="paired-range-track"><i id="heroMarginalBar"></i></div><b id="heroStatMarginal">0 (0%)</b></div>
+                      <div class="paired-range-row"><span data-i18n="Villain">Villain</span><div class="paired-range-track"><i id="villainMarginalBar"></i></div><b id="vilStatMarginal">0 (0%)</b></div>
+                    </div>
+                    <div class="paired-range-category" data-category="air">
+                      <strong data-i18n="Air">Air</strong>
+                      <div class="paired-range-row"><span data-i18n="Hero">Hero</span><div class="paired-range-track"><i id="heroAirBar"></i></div><b id="heroStatAir">0 (0%)</b></div>
+                      <div class="paired-range-row"><span data-i18n="Villain">Villain</span><div class="paired-range-track"><i id="villainAirBar"></i></div><b id="vilStatAir">0 (0%)</b></div>
                     </div>
                   </div>
-                  <div class="range-comparison-pane">
-                    <div style="margin-bottom:8px; font-weight:bold; color:var(--text); display:flex; justify-content:space-between;">
-                    <span id="villainRangeTitle" data-i18n="Villain sample">Villain sample</span>
-                    <span id="villainRangeScore" class="poker-data-token" style="color:var(--red);">0%</span>
-                    </div>
-                    <div class="matrix-wrap" style="padding:0;">
-                      <div class="strategy-grid range-grid" id="villainRangeGrid" aria-label="13 by 13 starting hand matrix" data-i18n-aria-label="13 by 13 starting hand matrix"></div>
-                    </div>
-                    <div id="villainHoverInfo" style="margin-top:8px; font-size:12px; min-height:16px; color:var(--muted); text-align:center;" data-i18n="Hover over a hand to see details">Hover over a hand to see details</div>
-                    <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:12px;">
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--primary)" data-i18n="Very strong made">Very strong made</span><span id="vilStatVeryStrong">0 (0%)</span></div>
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:#8bc34a" data-i18n="Strong made">Strong made</span><span id="vilStatStrongMade">0 (0%)</span></div>
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--orange)" data-i18n="Marginal or draw">Marginal or draw</span><span id="vilStatMarginal">0 (0%)</span></div>
-                      <div style="display:flex; justify-content:space-between; padding:4px; background:#1e293b; border-radius:4px;"><span style="color:var(--red)" data-i18n="Air">Air</span><span id="vilStatAir">0 (0%)</span></div>
-                    </div>
+
+                  <div class="range-strong-summary">
+                    <div><span data-i18n="Hero strong-category share">Hero strong-category share</span><strong id="heroRangeScore" class="poker-data-token">0%</strong><div class="paired-range-track"><i id="heroAdvBar"></i></div></div>
+                    <div><span data-i18n="Villain strong-category share">Villain strong-category share</span><strong id="villainRangeScore" class="poker-data-token">0%</strong><div class="paired-range-track"><i id="villainAdvBar"></i></div></div>
                   </div>
-                </div>
-                </div>
-                <div class="strategy-key" style="margin-top:24px; justify-content:center;">
-                  <span class="key"><i style="background:var(--primary)"></i><span data-i18n="Very strong made">Very strong made</span></span>
-                  <span class="key"><i style="background:#8bc34a"></i><span data-i18n="Strong made">Strong made</span></span>
-                  <span class="key"><i style="background:var(--orange)"></i><span data-i18n="Marginal or draw">Marginal or draw</span></span>
-                  <span class="key"><i style="background:var(--red)"></i><span data-i18n="Air">Air</span></span>
-                  <span class="key"><i style="background:transparent; border:1px solid #334155;"></i><span data-i18n="Not in sample">Not in sample</span></span>
-                </div>
-                <div id="rangeConclusion" style="margin-top:24px; padding:16px; background:#0f172a; border-left:4px solid var(--primary); border-radius:4px; font-size:14px; line-height:1.5;">
+
+                  <section class="range-comparison-basis" aria-labelledby="rangeComparisonBasisTitle">
+                    <div class="range-comparison-basis-heading">
+                      <strong id="rangeComparisonBasisTitle" data-i18n="Source, coverage, and removal basis">Source, coverage, and removal basis</strong>
+                      <span data-i18n="Independent shares on one 0–100% scale">Independent shares on one 0–100% scale</span>
+                    </div>
+                    <p id="rangeComparisonLimitation" class="range-comparison-limitation">—</p>
+                    <dl>
+                      <div><dt data-i18n="Hero source">Hero source</dt><dd id="heroRangeBasis">—</dd></div>
+                      <div><dt data-i18n="Opponent source">Opponent source</dt><dd id="villainRangeBasis">—</dd></div>
+                      <div><dt data-i18n="Coverage">Coverage</dt><dd id="rangeCoverageBasis">—</dd></div>
+                      <div><dt data-i18n="Normalization">Normalization</dt><dd data-i18n="Unavailable · class sample has no combo weights">Unavailable · class sample has no combo weights</dd></div>
+                      <div class="range-removal-summary"><dt data-i18n="Card removal">Card removal</dt><dd id="rangeRemovalSummary">—</dd></div>
+                    </dl>
+                  </section>
+
+                  <details id="rangeTechnicalDetails" class="range-technical-details">
+                    <summary><span><strong data-i18n="Technical class detail">Technical class detail</strong><small data-i18n="Inspect exact sampled classes and unavailable holdings">Inspect exact sampled classes and unavailable holdings</small></span></summary>
+                    <p id="rangeRemovalTechnical" class="range-removal-technical poker-data-token">—</p>
+                  </details>
+                <div id="rangeConclusion" class="range-conclusion">
                   Waiting for board...
                 </div>
                 </div>
@@ -3298,11 +3326,6 @@
       </div>
     </div>
   </template>
-
-  <div id="matrixCellCue" class="matrix-cell-cue" role="tooltip" hidden>
-    <strong id="matrixCellCueHand"></strong>
-    <span id="matrixCellCueMix"></span>
-  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" data-tone="info"></div>
 

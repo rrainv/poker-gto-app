@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 30, 2026 (`EQUITY-COMPOSITION-001` is **COMPLETED / HUMAN ACCEPTED**; `ANALYZE-RANGE-UX-001` is **ACTIVE NEXT / READY**, followed by the remaining visible-product closure wave and September Alpha whole-app/docs/audit gates; `PERSONAL-STRATEGY-003A` is preserved but is not immediately next).
+Last refreshed: August 30, 2026 (`EQUITY-COMPOSITION-001` and `ANALYZE-RANGE-UX-001` are **COMPLETED / HUMAN ACCEPTED**; `FIRST-USE-HOME-001` is **NEXT / READY**, followed by the remaining visible-product closure wave and September Alpha whole-app/docs/audit gates; `PERSONAL-STRATEGY-003A` is preserved but is not immediately next).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -100,10 +100,13 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    - exact entered hands now expose current standing and next-card outcome families through `exact-entered-hand-outcomes/v1`: a structural completion is explicitly not the same claim as a card that puts a player ahead of every entered exact opponent. Focused and targeted Firefox evidence passed, and the product owner human accepted the checkpoint.
    - Runout Explorer, Card Outcome Preview, richer Hand Standing, nuts/locks/vulnerability, clean/dirty improvements, richer split-pot explanation, weighted range-relative analysis, and other dossier-owned depth remain preserved future work rather than hidden closeout debt.
 
-14. **ACTIVE NEXT / READY — `ANALYZE-RANGE-UX-001`**
-   - own local Matrix inspection, truthful comparison/card-removal presentation, persistent/local legend, decision-fact discovery, and progressive depth without adding a range or analysis authority.
+14. **COMPLETED / HUMAN ACCEPTED — `ANALYZE-RANGE-UX-001`**
+   - the Range Matrix keeps its selected-hand inspector and compact legend local to the Matrix; unavailable and known-card-removed states remain explicit without a duplicate floating hand popup.
+   - Range Category Comparison leads with complete Hero and opponent matrices, then truthful paired category bars. Hero and opponent retain independent percentages on one shared 0–100% scale; fully removed and not-in-sample remain distinct.
+   - comparison uses one canonical surviving representative per eligible sampled class and explicitly does not generalize that representative's category to every combo in the class. `range-comparison-facts/v1` is the DOM-free factual projection over canonical `RangeAnalysisFacts v1` and Range Core card-removal conditioning; renderers consume its structured facts only.
+   - Facts → Explain progressive depth is accepted. Weighted ranges, range-vs-range Equity, nut-advantage/distribution claims, and combo-level action-conditioned propagation remain future `RANGE-EVOLUTION-001` / dependency-gated work rather than implied current capability.
 
-15. **PLANNED AFTER ANALYZE/RANGE — `FIRST-USE-HOME-001`**
+15. **NEXT / READY — `FIRST-USE-HOME-001`**
    - own recurring launch/home, onboarding separation, sidebar/active-workspace semantics, first- versus returning-launch behavior, and useful truthful Guest Home density.
 
 16. **BOUNDED SECONDARY POLISH WAVE — exact order reassessed as needed**
@@ -142,6 +145,7 @@ The following architecture is established and must not be duplicated:
 - Scenario remains a truthful lossy snapshot; Hand remains canonical legal history.
 - `DecisionContext v1` plus additive v1.1 facts feeds one `StrategyProvider v1` → `StrategyResult v1` → `StrategyClaimPolicy v1` path.
 - `reference-pack/v1` validates declarative bounded packs and can select an exact pack behind that same provider path; no production pack is currently registered.
+- `RangeAnalysisFacts v1` owns canonical factual range/hand classification; DOM-free `range-comparison-facts/v1` projects representative-class comparison facts after canonical Range Core card-removal conditioning.
 - The current deterministic heuristic is generalized/comparative fallback, never solved-GTO, Nash, exact-EV, exploitability, or optimality authority.
 - Training Practice Planner/intent/request own structural curriculum targets; the canonical Training generator owns legal trajectories and grading.
 - `training-decision-record/v1` / `training-session-record/v1` own durable encountered-decision/session evidence; historical source/claim snapshots are immutable, and Full Hand decisions share one session replay authority.

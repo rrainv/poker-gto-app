@@ -192,7 +192,7 @@ trusted cards / DecisionContext / optional HoldemWeightedRange v1
                               -> renderer
 ```
 
-`RangeAnalysisFacts v1` reuses the canonical evaluator and range core. It may classify exact hands, draws, board structure, raw exact-card removal, and the conditioned composition of explicitly supplied ranges. It must not select actions, call StrategyProvider or Equity, infer a missing range, claim range/nut advantage, or label a blocker as strategically good or bad. `AnalysisExplanation v1` consumes these facts; it does not recompute them. See `ANALYSIS_RANGE_SPEC.md`.
+`RangeAnalysisFacts v1` reuses the canonical evaluator and range core. It may classify exact hands, draws, board structure, raw exact-card removal, and the conditioned composition of explicitly supplied ranges. It must not select actions, call StrategyProvider or Equity, infer a missing range, claim range/nut advantage, or label a blocker as strategically good or bad. `range-comparison-facts/v1` is the DOM-free representative-class comparison projection: it consumes canonical Range Core card-removal output, delegates category/draw facts to `RangeAnalysisFacts v1`, preserves fully removed versus not-in-sample truth, and supplies independent Hero/opponent shares on one shared 0–100% scale. One canonical surviving representative per eligible sampled class does not characterize every combo in that class. Renderers consume these structured facts only. `AnalysisExplanation v1` consumes trusted facts; it does not recompute them. See `ANALYSIS_RANGE_SPEC.md`.
 
 ### 10.1 Natural-language projection boundary
 

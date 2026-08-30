@@ -28,6 +28,10 @@ import {
   createExactEnteredHandOutcomeFacts,
   orderBestFiveForPresentation,
 } from './equity-hand-analysis.mjs';
+import {
+  RANGE_COMPARISON_FACTS_SCHEMA_VERSION,
+  createRepresentativeRangeComparisonFacts,
+} from './range-comparison-facts.mjs';
 
 export function installAnalysisExplanationBridge(browserWindow) {
   if (!browserWindow) return null;
@@ -43,6 +47,8 @@ export function installAnalysisExplanationBridge(browserWindow) {
     createBluffAnalysisFacts,
     deriveExactHandFacts,
     deriveBoardTextureFacts,
+    rangeComparisonFactsSchemaVersion: RANGE_COMPARISON_FACTS_SCHEMA_VERSION,
+    createRepresentativeRangeComparisonFacts,
     equityHandAnalysisSchemaVersion: EQUITY_HAND_ANALYSIS_SCHEMA_VERSION,
     exactEnteredHandOutcomesSchemaVersion: EXACT_ENTERED_HAND_OUTCOMES_SCHEMA_VERSION,
     createEquityHandAnalysisProjection,

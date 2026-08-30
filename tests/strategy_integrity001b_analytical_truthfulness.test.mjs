@@ -109,9 +109,37 @@ function rangeHarness() {
     PREFLOP_RANGES: ranges,
     $: (selector) => elements.get(selector.slice(1)) || null,
     t: (text) => text,
-    renderRangeGrid: (_gridId, _hoverId, range) => ({ ...range.stats }),
+    representativeRangeComparisonFacts: (range) => ({
+      categoryCounts: {
+        very_strong_made: range.stats.veryStrong,
+        strong_made: range.stats.strongMade,
+        marginal_or_draw: range.stats.marginal,
+        air: range.stats.air,
+      },
+      categoryShares: {
+        very_strong_made: range.stats.veryStrong / range.stats.total,
+        strong_made: range.stats.strongMade / range.stats.total,
+        marginal_or_draw: range.stats.marginal / range.stats.total,
+        air: range.stats.air / range.stats.total,
+      },
+      coverage: {
+        eligibleRepresentativeCount: range.stats.total,
+        suppliedSampleClassCount: range.stats.total,
+      },
+      cells: {},
+    }),
+    rangeComparisonStats: (facts) => ({
+      veryStrong: facts.categoryCounts.very_strong_made,
+      strongMade: facts.categoryCounts.strong_made,
+      marginal: facts.categoryCounts.marginal_or_draw,
+      air: facts.categoryCounts.air,
+      total: facts.coverage.eligibleRepresentativeCount,
+    }),
+    renderRangeGrid: () => {},
+    renderRangeCategoryBars: () => {},
+    rangeRemovalPresentation: () => ({ affectedClasses: 0, unavailableClasses: 0, removedCombos: 0 }),
     projectHandClassesAfterCardRemoval: projectPreflopHandClassesAfterCardRemoval,
-    document: { createElement: () => fakeElement() },
+    document: { createElement: () => fakeElement(), querySelector: () => null },
   };
   const rangeFunction = sourceBetween(logic, 'function renderRangeAdvantage()', 'function renderBettingTree()');
   vm.runInNewContext(`${rangeFunction}\nglobalThis.render = renderRangeAdvantage;`, context);
@@ -142,7 +170,8 @@ test('Range comparison is descriptive, limitation-labelled, and context-safe in 
   const rangeSource = sourceBetween(logic, 'function renderRangeAdvantage()', 'function renderBettingTree()');
   assert.doesNotMatch(logic + locales, /Significant Nut Advantage|Villain Nut Advantage|use large bet sizes and overbets|bet very frequently \(using smaller bet sizes\)|distributing equity evenly/);
   assert.match(rangeSource, /heuristic fixed-range\/category analysis/);
-  assert.match(rangeSource, /one representative available combo per hand class/);
+  assert.match(rangeSource, /one canonical surviving representative per eligible sampled class/);
+  assert.match(rangeSource, /category does not describe every combo in that class/);
   assert.match(rangeSource, /not solver range advantage, range-vs-range equity/);
 
   const { context, elements } = rangeHarness();

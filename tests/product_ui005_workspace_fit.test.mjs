@@ -51,24 +51,23 @@ test('preflop Matrix communicates the real strategy mix without filling every ce
   assert.match(renderChart, /matrix-mix-bar[\s\S]*?actions\.map[\s\S]*?action\.value/);
   assert.match(ticketCss, /\.hand-cell\[data-state="available"\]\s*\{[\s\S]*?color-mix/);
   assert.match(ticketCss, /\.range-matrix-panel \.matrix-mix-bar\s*\{[\s\S]*?height:\s*8px/);
-  assert.match(html, /id="matrixCellCue"[^>]+role="tooltip"[^>]+hidden/);
-  assert.match(logic, /grid\.addEventListener\('pointerover',[\s\S]*?showMatrixCellCue/);
-  assert.match(logic, /grid\.addEventListener\('focusin',[\s\S]*?showMatrixCellCue/);
-  assert.match(logic, /showMatrixCellCue\(cell, event\)/);
-  assert.match(ticketCss, /\.matrix-cell-cue\[data-input="pointer"\][\s\S]*?clamp\(8px,[\s\S]*?100vw - 228px/);
-  assert.match(ticketCss, /\.matrix-cell-cue\[data-input="keyboard"\][\s\S]*?inset-inline-end:\s*8px/);
+  assert.doesNotMatch(html, /id="matrixCellCue"|class="matrix-cell-cue"/);
+  assert.match(logic, /grid\.addEventListener\('pointerover',[\s\S]*?renderMatrixCellInspector/);
+  assert.match(logic, /grid\.addEventListener\('focusin',[\s\S]*?renderMatrixCellInspector/);
+  assert.match(css, /\.matrix-inspector-legend\s*\{[^}]*display:\s*grid/);
   assert.match(renderChart, /button\.dataset\.strategyCue = detail/);
-  assert.match(renderChart, /id="selectedMix"|\$\('#selectedMix'\)\.innerHTML/);
+  assert.match(logic, /function renderMatrixCellInspector\([\s\S]*?\$\('#selectedMix'\)\.innerHTML/);
 });
 
-test('range category comparison keeps both matrices aligned in one internal scroller', () => {
+test('range category comparison keeps both complete matrices aligned without an internal scroller', () => {
   const range = html.slice(html.indexOf('id="rangeView"'), html.indexOf('</main>'));
-  assert.match(range, /class="range-comparison-scroll"[^>]+tabindex="0"/);
+  assert.doesNotMatch(range, /range-comparison-scroll|Scrollable aligned/);
   assert.equal((range.match(/class="range-comparison-pane"/g) || []).length, 2);
   assert.match(range, /id="heroRangeGrid"[\s\S]*?id="villainRangeGrid"/);
   assert.doesNotMatch(range, /class="range-grid-split"[^>]+style=/);
-  assert.match(ticketCss, /\.range-comparison-scroll\s*\{[\s\S]*?overflow-x:\s*auto/);
-  assert.match(ticketCss, /\.range-grid-split\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(330px, 1fr\)\)/);
+  assert.match(ticketCss, /\.range-comparison-matrices\s*\{[^}]*overflow:\s*visible/);
+  assert.match(ticketCss, /\.range-grid-split\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(ticketCss, /\.range-comparison-pane \.matrix-wrap\s*\{[^}]*overflow:\s*visible/);
 });
 
 test('Training compacts only an actually empty board while retaining Hero cards', () => {
@@ -84,7 +83,7 @@ test('Training compacts only an actually empty board while retaining Hero cards'
 test('desktop composition contains wide content inside local scrollers rather than the page', () => {
   assert.match(ticketCss, /\.range-comparison-panel\s*\{[^}]*overflow:\s*visible/);
   assert.match(ticketCss, /\.range-comparison-panel > \.panel-body\s*\{[^}]*max-block-size:\s*none;[^}]*overflow:\s*visible/);
-  assert.match(ticketCss, /\.range-comparison-scroll\s*\{[\s\S]*?max-width:\s*100%/);
+  assert.match(ticketCss, /\.range-comparison-matrices\s*\{[^}]*overflow:\s*visible/);
   assert.match(ticketCss, /\.range-matrix-panel \.strategy-grid\s*\{[^}]*min-width:\s*max-content/);
   assert.doesNotMatch(ticketCss, /(?:^|\n)\s*(?:html|body)\s*\{[^}]*overflow-x:\s*(?:auto|scroll)/);
 });

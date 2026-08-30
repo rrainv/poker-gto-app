@@ -5121,9 +5121,6 @@ function updateMetrics() {
   let facing = context ? context.facingSizeBb : numericValue('#facingSize');
   const callAmount = context ? context.callAmountBb : null;
   const stack = context ? context.stackBb : numericValue('#stack', 100);
-  const rakeMode = context?.rakeMode || selectedValue('#rakeMode');
-  const accounting = context || strategyAccountingContext(rakeMode, numericValue('#players', 6));
-
   const isPreflopUnopened = (street === 'preflop') && (lastAction === 'unopened');
   const isPreflopOpenDecision = isPreflopUnopened && heroPos !== 'BB';
 
@@ -5136,8 +5133,12 @@ function updateMetrics() {
     if (facingNum) facingNum.value = '0';
   }
 
+  const heroCards = (context?.heroCards || app.gto?.hero || []).filter(Boolean);
+  const boardCards = (context?.board || app.gto?.board || []).filter(Boolean);
   const mEquity = $('#mEquity');
-  if (mEquity) mEquity.textContent = t('Range needed');
+  if (mEquity) mEquity.textContent = heroCards.length
+    ? (formatHand(heroCards) || heroCards.map(displayCard).join(' '))
+    : t('Unknown');
 
   const mPotOdds = $('#mPotOdds');
   if (mPotOdds) {
@@ -5156,15 +5157,9 @@ function updateMetrics() {
   if (mSPR) mSPR.textContent = (stack / Math.max(.5, pot)).toFixed(1);
 
   const mRake = $('#mRake');
-  if (mRake) {
-    if (rakeMode === 'off') mRake.textContent = t('Off');
-    else if (rakeMode === 'fixed') {
-      mRake.textContent = t('{perPlayer} bb/player · {total} bb total', {
-        perPlayer: accounting.forcedContributionPerPlayerBb.toFixed(1),
-        total: accounting.totalForcedContributionBb.toFixed(1)
-      });
-    } else mRake.textContent = t('Off');
-  }
+  if (mRake) mRake.textContent = boardCards.length
+    ? boardCards.map(displayCard).join(' ')
+    : t('Preflop · no board');
 
   const metricValues = {
     mPosition: heroPos || '—',
@@ -5335,32 +5330,29 @@ function projectHandClassesAfterCardRemoval(handClasses, blockers) {
 }
 
 
-function hideMatrixCellCue() {
-  const cue = $('#matrixCellCue');
-  if (!cue) return;
-  cue.hidden = true;
-  cue.removeAttribute('data-input');
-  cue.style.removeProperty('--matrix-cue-x');
-  cue.style.removeProperty('--matrix-cue-y');
+function renderMatrixCellInspector(cell) {
+  if (!cell?.dataset.hand) return;
+  const actions = JSON.parse(cell.dataset.strategyActions || '[]');
+  if ($('#selectedHand')) $('#selectedHand').textContent = cell.dataset.hand;
+  if ($('#selectedHandKind')) $('#selectedHandKind').textContent = cell.dataset.handKindLabel || t('Hand class');
+  if ($('#selectedHandPrimary')) {
+    $('#selectedHandPrimary').textContent = cell.dataset.primaryLabel || t('Strategy unavailable');
+    $('#selectedHandPrimary').dataset.actionKind = cell.dataset.primaryAction || 'unavailable';
+  }
+  if ($('#selectedAvailableCombos')) $('#selectedAvailableCombos').textContent = cell.dataset.availableCombos || '—';
+  if ($('#selectedRemovedCombos')) $('#selectedRemovedCombos').textContent = cell.dataset.removedCombos || '—';
+  if ($('#selectedRangeSource')) $('#selectedRangeSource').textContent = cell.dataset.sourceLabel || t('Unavailable');
+  if ($('#selectedMix')) {
+    const detail = cell.dataset.strategyCue || t('Strategy unavailable');
+    $('#selectedMix').innerHTML = actions.length
+      ? `<div class="matrix-inspector-actions">${actions.map((action) => `<span class="matrix-inspector-action"><i data-action-kind="${action.kind}"></i><span>${action.name}</span><strong>${action.value % 1 === 0 ? action.value : Number(action.value).toFixed(1)}%</strong></span>`).join('')}</div><div class="alloc" role="img" aria-label="${detail}">${actions.map((action) => `<i data-action-kind="${action.kind}" style="width:${action.value}%"></i>`).join('')}</div>`
+      : `<span class="matrix-inspector-unavailable">${detail}</span>`;
+  }
 }
 
-function showMatrixCellCue(cell, pointerEvent = null) {
-  const cue = $('#matrixCellCue');
-  if (!cue || !cell?.dataset.hand) return;
-
-  const hand = $('#matrixCellCueHand');
-  const mix = $('#matrixCellCueMix');
-  if (hand) hand.textContent = cell.dataset.hand;
-  if (mix) mix.textContent = cell.dataset.strategyCue || t('Strategy unavailable');
-  cue.dataset.input = pointerEvent ? 'pointer' : 'keyboard';
-  if (pointerEvent) {
-    cue.style.setProperty('--matrix-cue-x', `${pointerEvent.clientX}px`);
-    cue.style.setProperty('--matrix-cue-y', `${pointerEvent.clientY}px`);
-  } else {
-    cue.style.removeProperty('--matrix-cue-x');
-    cue.style.removeProperty('--matrix-cue-y');
-  }
-  cue.hidden = false;
+function restoreSelectedMatrixInspector(grid) {
+  renderMatrixCellInspector(grid?.querySelector(`[data-hand="${app.selectedHand}"]`)
+    || grid?.querySelector('[aria-pressed="true"]'));
 }
 
 function bindMatrixGridInteractions(grid) {
@@ -5377,19 +5369,18 @@ function bindMatrixGridInteractions(grid) {
   grid.addEventListener('pointerover', (event) => {
     const cell = event.target.closest('.hand-cell');
     if (!cell || (event.relatedTarget && cell.contains(event.relatedTarget))) return;
-    showMatrixCellCue(cell, event);
+    renderMatrixCellInspector(cell);
   });
   grid.addEventListener('pointerout', (event) => {
     const cell = event.target.closest('.hand-cell');
     if (!cell || (event.relatedTarget && cell.contains(event.relatedTarget))) return;
-    hideMatrixCellCue();
+    restoreSelectedMatrixInspector(grid);
   });
-  grid.addEventListener('focusin', (event) => showMatrixCellCue(event.target.closest('.hand-cell')));
-  grid.addEventListener('focusout', hideMatrixCellCue);
+  grid.addEventListener('focusin', (event) => renderMatrixCellInspector(event.target.closest('.hand-cell')));
+  grid.addEventListener('focusout', () => restoreSelectedMatrixInspector(grid));
   grid.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') hideMatrixCellCue();
+    if (event.key === 'Escape') restoreSelectedMatrixInspector(grid);
   });
-  grid.closest('.matrix-wrap')?.addEventListener('scroll', hideMatrixCellCue, { passive: true });
 }
 
 function matrixMixState(actions, dominantAction) {
@@ -5430,12 +5421,14 @@ function renderChart() {
   }
 
   if (isPostFlop) {
-    hideMatrixCellCue();
     grid.replaceChildren();
     if ($('#chartSelectionPreview')) $('#chartSelectionPreview').innerHTML = `<span>${t('Exact hand only')}</span>`;
     if ($('#selectedHand')) $('#selectedHand').textContent = t('Exact hand only');
     if ($('#selectedHandKind')) $('#selectedHandKind').textContent = t('Postflop decision');
     if ($('#selectedHandPrimary')) $('#selectedHandPrimary').textContent = t('Range expansion unavailable');
+    if ($('#selectedAvailableCombos')) $('#selectedAvailableCombos').textContent = '—';
+    if ($('#selectedRemovedCombos')) $('#selectedRemovedCombos').textContent = '—';
+    if ($('#selectedRangeSource')) $('#selectedRangeSource').textContent = t('Unavailable');
     if ($('#selectedMix')) $('#selectedMix').innerHTML = `<span class="matrix-inspector-unavailable">${t('Use Decision for the exact-hand strategy.')}</span>`;
     if ($('#chartSummary')) $('#chartSummary').textContent = t('Use Decision for exact-hand postflop strategy.');
     return;
@@ -5498,7 +5491,6 @@ function renderChart() {
     button.dataset.cardRemovalState = matrixCell?.cardRemovalState || 'unavailable';
     button.dataset.strategyCue = detail;
     button.setAttribute('aria-pressed', String(isSelected));
-    button.setAttribute('aria-describedby', 'matrixCellCue');
 
     const chartMode = $('#chartAction')?.value || 'strategy';
 
@@ -5553,6 +5545,20 @@ function renderChart() {
 
     const kindLabel = t(handKind === 'pair' ? 'Pair' : handKind === 'suited' ? 'Suited' : 'Offsuit');
     button.setAttribute('aria-label', `${hand}, ${kindLabel}: ${detail}`);
+    button.dataset.handKindLabel = kindLabel;
+    button.dataset.primaryLabel = dominantAction
+      ? t('Primary · {action} {value}%', { action: t(dominantAction.name), value: dominantAction.value })
+      : t('Strategy unavailable');
+    button.dataset.availableCombos = matrixCell
+      ? `${matrixCell.eligibleComboCount} / ${matrixCell.physicalComboCount}`
+      : '—';
+    button.dataset.removedCombos = matrixCell ? String(matrixCell.blockedComboCount) : '—';
+    button.dataset.sourceLabel = matrixSource ? strategySourceDisplayLabel(matrixSource) : t('Unavailable');
+    button.dataset.strategyActions = JSON.stringify(actions.map((action) => ({
+      kind: visualActionKind(action),
+      name: t(action.name),
+      value: action.value,
+    })));
 
 
 
@@ -5570,19 +5576,7 @@ function renderChart() {
 
         const primaryAction = dominantAction;
         previewHTML = `<strong class="matrix-preview-hand">${hand}</strong><span class="matrix-preview-summary">${primaryAction ? `${t(primaryAction.name)} ${primaryAction.value}%` : t('Unavailable')}</span>`;
-
-        $('#selectedHand').textContent = hand;
-        if ($('#selectedHandKind')) $('#selectedHandKind').textContent = kindLabel;
-        if ($('#selectedHandPrimary')) {
-          $('#selectedHandPrimary').textContent = primaryAction
-            ? t('Primary · {action} {value}%', { action: t(primaryAction.name), value: primaryAction.value })
-            : t('Strategy unavailable');
-          $('#selectedHandPrimary').dataset.actionKind = visualActionKind(primaryAction);
-        }
-
-        $('#selectedMix').innerHTML = actions.length
-          ? `<div class="matrix-inspector-actions">${actions.map((action) => `<span class="matrix-inspector-action"><i data-action-kind="${visualActionKind(action)}"></i><span>${t(action.name)}</span><strong>${action.value % 1 === 0 ? action.value : Number(action.value).toFixed(1)}%</strong></span>`).join('')}</div><div class="alloc" role="img" aria-label="${detail}">${actions.map((action) => `<i data-action-kind="${visualActionKind(action)}" style="width:${action.value}%"></i>`).join('')}</div>`
-          : `<span class="matrix-inspector-unavailable">${detail || t('Strategy unavailable for this hand.')}</span>`;
+        renderMatrixCellInspector(button);
 
     }
 
@@ -5659,6 +5653,9 @@ function prepareMatrixStrategyModel(decisionContext) {
     return {
       hand,
       actions,
+      physicalComboCount: cardRemoval?.cells[hand]?.physicalComboCount ?? 0,
+      eligibleComboCount: cardRemoval?.cells[hand]?.eligibleComboCount ?? 0,
+      blockedComboCount: cardRemoval?.cells[hand]?.blockedComboCount ?? 0,
       cardRemovalState: !cardRemoval
         ? 'unavailable'
         : cardRemoval.cells[hand]?.fullyRemoved ? 'fully_removed' : 'eligible',
@@ -7608,6 +7605,7 @@ function bindEvents() {
       const isHidden = t.style.display === 'none' || t.style.display === '';
 
       t.style.display = isHidden ? 'block' : 'none';
+      $('#toggleTeacher').setAttribute('aria-expanded', String(isHidden));
 
       t.classList.toggle('is-analysis-entering', isHidden);
 
@@ -8290,251 +8288,60 @@ const PREFLOP_RANGES = {
 
 
 
-function scoreSevenJs(hole, board) {
-
-    if (!hole || !hole.length) return 0;
-
-    const cards = [...hole, ...board];
-
-    if (cards.length < 5) return 0;
-
-    
-
-    // Evaluate 5 card combinations
-
-    const getCombinations = (arr, k) => {
-
-        let i, j, combs, head, tailcombs;
-
-        if (k > arr.length || k <= 0) return [];
-
-        if (k === arr.length) return [arr];
-
-        if (k === 1) return arr.map(a => [a]);
-
-        combs = [];
-
-        for (i = 0; i < arr.length - k + 1; i++) {
-
-            head = arr.slice(i, i + 1);
-
-            tailcombs = getCombinations(arr.slice(i + 1), k - 1);
-
-            for (j = 0; j < tailcombs.length; j++) combs.push(head.concat(tailcombs[j]));
-
-        }
-
-        return combs;
-
-    };
-
-    
-
-    const RANK_VAL = { '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9, 'T':10, 'J':11, 'Q':12, 'K':13, 'A':14 };
-
-    
-
-    let maxScore = 0;
-
-    const combos5 = getCombinations(cards, 5);
-
-    for (let c of combos5) {
-
-        let values = c.map(card => RANK_VAL[card[0]]).sort((a, b) => b - a);
-
-        let suits = c.map(card => card[1]);
-
-        
-
-        let counts = {};
-
-        values.forEach(v => counts[v] = (counts[v] || 0) + 1);
-
-        let groups = Object.keys(counts).map(k => [parseInt(k), counts[k]]).sort((a, b) => {
-
-            if (b[1] !== a[1]) return b[1] - a[1];
-
-            return b[0] - a[0];
-
-        });
-
-        
-
-        let unique = [...new Set(values)];
-
-        let isWheel = (unique.length === 5 && unique[0] === 14 && unique[1] === 5 && unique[2] === 4 && unique[3] === 3 && unique[4] === 2);
-
-        let isStraight = (unique.length === 5 && unique[0] - unique[4] === 4) || isWheel;
-
-        let strHigh = isWheel ? 5 : (isStraight ? unique[0] : 0);
-
-        let isFlush = new Set(suits).size === 1;
-
-        
-
-        let pack = (cat, tiebreakers) => {
-
-            let s = cat * 10000000000;
-
-            for (let i = 0; i < tiebreakers.length; i++) {
-
-                s += tiebreakers[i] * Math.pow(15, 4 - i);
-
-            }
-
-            return s;
-
-        };
-
-        
-
-        let score = 0;
-
-        if (isFlush && isStraight) score = pack(8, [strHigh]);
-
-        else if (groups[0][1] === 4) score = pack(7, [groups[0][0], groups[1][0]]);
-
-        else if (groups[0][1] === 3 && groups[1][1] === 2) score = pack(6, [groups[0][0], groups[1][0]]);
-
-        else if (isFlush) score = pack(5, values);
-
-        else if (isStraight) score = pack(4, [strHigh]);
-
-        else if (groups[0][1] === 3) score = pack(3, [groups[0][0], ...groups.filter(g => g[1]===1).map(g=>g[0])]);
-
-        else if (groups[0][1] === 2 && groups[1][1] === 2) score = pack(2, [groups[0][0], groups[1][0], groups[2][0]]);
-
-        else if (groups[0][1] === 2) score = pack(1, [groups[0][0], ...groups.filter(g => g[1]===1).map(g=>g[0])]);
-
-        else score = pack(0, values);
-
-        
-
-        if (score > maxScore) maxScore = score;
-
-    }
-
-    
-
-    // Heuristic draw boost
-
-    let suits = cards.map(c => c[1]);
-
-    let hasFd = ['s','h','d','c'].some(s => suits.filter(x => x === s).length >= 4);
-
-    
-
-    let ranks = [...new Set(cards.map(c => RANK_VAL[c[0]]))].sort((a, b) => a - b);
-
-    if (ranks.includes(14)) ranks.unshift(1); // Ace low
-
-    let oesd = false, gutshot = false;
-
-    for (let k = 0; k < ranks.length - 3; k++) {
-
-        let r1 = ranks[k], r4 = ranks[k+3];
-
-        if (r4 - r1 === 3) {
-
-            if (r1 > 1 && r4 < 14) oesd = true;
-
-            else gutshot = true;
-
-        } else if (r4 - r1 === 4) {
-
-            gutshot = true;
-
-        }
-
-    }
-
-    
-
-    if (maxScore < 20000000000) {
-
-        if (hasFd && oesd) maxScore = Math.max(maxScore, 35000000000);
-
-        else if (hasFd) maxScore = Math.max(maxScore, 25000000000);
-
-        else if (oesd) maxScore = Math.max(maxScore, 15000000000);
-
-        else if (gutshot) maxScore = Math.max(maxScore, 5000000000);
-
-    }
-
-    return maxScore;
-
+function rangeRemovalPresentation(cardRemoval) {
+  const cells = Object.values(cardRemoval?.cells || {});
+  return {
+    affectedClasses: cells.filter((cell) => cell.blockedComboCount > 0).length,
+    unavailableClasses: cells.filter((cell) => cell.fullyRemoved).length,
+    removedCombos: cells.reduce((sum, cell) => sum + cell.blockedComboCount, 0),
+  };
 }
 
-
-
-// Categorize one representative available combo: 0=air, 1=marginal/draw,
-// 2=strong made, 3=very strong made, -1=not in the fixed sample.
-
-function scoreRangeHand(handCode, boardCards, range, cardRemoval) {
-
-  if (!range.has(handCode)) return -1;
-
-  const combo = cardRemoval?.cells[handCode]?.firstEligibleCombo ?? null;
-
-  if (!combo) return -1;
-
-
-
-  const score = scoreSevenJs(combo, boardCards);
-
-  const cat   = Math.floor(score / 10000000000);
-
-
-
-  if      (cat >= 4)  return 3; // very strong made (straight+)
-
-  else if (cat >= 2)  return 2; // strong made (two pair / trips)
-
-  else if (cat >= 1)  return 1; // marginal (pair)
-
-  else {
-
-    // Check for strong draws as "marginal"
-
-    const cards = [...combo, ...boardCards];
-
-    const suits  = cards.map(c=>c[1]);
-
-    const hasFD  = ['s','h','d','c'].some(s => suits.filter(x=>x===s).length >= 4);
-
-    const RANK_VAL = {'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'T':10,'J':11,'Q':12,'K':13,'A':14};
-
-    let ranks = [...new Set(cards.map(c=>RANK_VAL[c[0]]))].sort((a,b)=>a-b);
-
-    if (ranks.includes(14)) ranks.unshift(1);
-
-    let hasSD = false;
-
-    for (let k=0; k<ranks.length-3; k++) if (ranks[k+3]-ranks[k] <= 4) { hasSD=true; break; }
-
-    if (hasFD || hasSD) return 1;
-
-    return 0;
-
-  }
-
+function representativeRangeComparisonFacts(sampleRange, board, cardRemoval) {
+  const bridge = globalThis.RiverlineAnalysisExplanation;
+  if (bridge?.rangeComparisonFactsSchemaVersion !== 'range-comparison-facts/v1'
+    || typeof bridge.createRepresentativeRangeComparisonFacts !== 'function') return null;
+  return bridge.createRepresentativeRangeComparisonFacts({
+    handClasses: RANKS.flatMap((_, row) => RANKS.map((__, column) => handCode(row, column))),
+    sampleHandClasses: [...sampleRange],
+    board,
+    cardRemoval,
+  });
 }
 
+function rangeComparisonStats(facts) {
+  const counts = facts?.categoryCounts || {};
+  return {
+    veryStrong: counts.very_strong_made || 0,
+    strongMade: counts.strong_made || 0,
+    marginal: counts.marginal_or_draw || 0,
+    air: counts.air || 0,
+    total: facts?.coverage?.eligibleRepresentativeCount || 0,
+  };
+}
 
+function renderRangeCategoryBars(stats, side) {
+  const mappings = [
+    ['VeryStrong', 'veryStrong'], ['StrongMade', 'strongMade'],
+    ['Marginal', 'marginal'], ['Air', 'air'],
+  ];
+  mappings.forEach(([idPart, key]) => {
+    const share = stats.total ? stats[key] / stats.total * 100 : 0;
+    const bar = $(`#${side}${idPart}Bar`);
+    if (bar) bar.style.width = `${share.toFixed(1)}%`;
+  });
+}
 
-function renderRangeGrid(gridId, hoverInfoId, range, board, cardRemoval, statIds) {
+function renderRangeGrid(gridId, hoverInfoId, comparisonFacts, statIds) {
   const grid = $('#' + gridId);
   if (!grid) return { veryStrong:0, strongMade:0, marginal:0, air:0, total:0 };
   
-  const stats = { veryStrong:0, strongMade:0, marginal:0, air:0, total:0 };
-  const COLOR = { 3:'var(--primary)', 2:'#8bc34a', 1:'var(--orange)', 0:'var(--red)' };
-  const LABEL = {
-    3: t('Very strong made'),
-    2: t('Strong made'),
-    1: t('Marginal or draw'),
-    0: t('Air'),
-    [-1]: t('Not in sample')
+  const stats = rangeComparisonStats(comparisonFacts);
+  const CATEGORY = {
+    very_strong_made: { state: 'very-strong', label: t('Very strong made') },
+    strong_made: { state: 'strong-made', label: t('Strong made') },
+    marginal_or_draw: { state: 'marginal-draw', label: t('Marginal or draw') },
+    air: { state: 'air', label: t('Air') },
   };
 
   // Init grid once
@@ -8543,52 +8350,58 @@ function renderRangeGrid(gridId, hoverInfoId, range, board, cardRemoval, statIds
     RANKS.forEach((_, row) => RANKS.forEach((__, col) => {
       const btn = document.createElement('button');
       btn.className = 'hand-cell range-cell';
+      btn.type = 'button';
+      btn.setAttribute('role', 'gridcell');
+      btn.setAttribute('aria-rowindex', String(row + 1));
+      btn.setAttribute('aria-colindex', String(col + 1));
       btn.dataset.hand = handCode(row, col);
       btn.dataset.index = row * 13 + col;
       grid.appendChild(btn);
     }));
     
     // Event delegation
-    grid.addEventListener('mouseover', (e) => {
+    const inspect = (e) => {
       const btn = e.target.closest('.range-cell');
       if (btn) {
         const info = $('#' + hoverInfoId);
         if (info) info.textContent = `${btn.dataset.hand}: ${btn.title}`;
       }
-    });
-    grid.addEventListener('mouseout', (e) => {
+    };
+    const clearInspection = (e) => {
       const btn = e.target.closest('.range-cell');
       if (btn) {
         const info = $('#' + hoverInfoId);
-        if (info) info.textContent = t('Hover over a hand to see details');
+        if (info) info.textContent = t('Focus or hover a hand to see details');
       }
-    });
+    };
+    grid.addEventListener('mouseover', inspect);
+    grid.addEventListener('focusin', inspect);
+    grid.addEventListener('mouseout', clearInspection);
+    grid.addEventListener('focusout', clearInspection);
   }
 
   RANKS.forEach((_, row) => RANKS.forEach((__, col) => {
     const hand = handCode(row, col);
-    const tier = scoreRangeHand(hand, board, range, cardRemoval);
+    const cell = comparisonFacts?.cells?.[hand];
+    const presentation = CATEGORY[cell?.category] || null;
     const idx = row * 13 + col;
     const btn = grid.children[idx];
-    const fullyRemoved = range.has(hand) && cardRemoval?.cells[hand]?.fullyRemoved === true;
+    const fullyRemoved = cell?.state === 'fully_removed';
+    const notInSample = cell?.state === 'not_in_sample';
+    const state = fullyRemoved ? 'fully-removed' : notInSample ? 'not-in-sample' : 'eligible';
+    const category = presentation?.state || 'none';
+    const stateLabel = fullyRemoved
+      ? t('Unavailable after known-card removal')
+      : notInSample ? t('Not in sample') : presentation?.label || t('Unavailable');
     
     btn.textContent = hand;
-    btn.title = fullyRemoved ? t('Unavailable after known-card removal') : LABEL[tier] || t('Not in sample');
-    btn.dataset.cardRemovalState = fullyRemoved ? 'fully-removed' : tier === -1 ? 'not-in-sample' : 'eligible';
-
-    if (tier === -1) {
-      btn.style.background = 'transparent';
-      btn.style.border = '1px solid #1e293b';
-      btn.style.color = '#334155';
-      btn.style.opacity = '1';
-    } else {
-      btn.style.background = COLOR[tier];
-      btn.style.border = 'none';
-      btn.style.color = '#ffffff';
-      btn.style.opacity = '0.88';
-      stats[['air','marginal','strongMade','veryStrong'][tier]]++;
-      stats.total++;
-    }
+    btn.title = stateLabel;
+    btn.setAttribute('aria-label', `${hand}: ${stateLabel}`);
+    btn.className = `hand-cell range-cell range-state-${category} is-${state}`;
+    btn.dataset.category = category;
+    btn.dataset.cardRemovalState = state;
+    btn.dataset.sampleState = state;
+    btn.disabled = false;
   }));
 
 
@@ -8660,31 +8473,77 @@ function renderRangeAdvantage() {
     }
     return { status: 'card_removal_unavailable', mode: PLAYBOOK_MODES.SCENARIO, heroPos, villainPos };
   }
+  const heroComparisonFacts = representativeRangeComparisonFacts(heroRange, board, heroCardRemoval);
+  const villainComparisonFacts = representativeRangeComparisonFacts(villainRange, board, villainCardRemoval);
+  if (!heroComparisonFacts || !villainComparisonFacts) {
+    if (analysis) analysis.hidden = true;
+    if (status) {
+      status.dataset.state = 'unavailable';
+      status.textContent = t('Range comparison is unavailable because canonical analysis facts could not be loaded.');
+    }
+    return { status: 'analysis_facts_unavailable', mode: PLAYBOOK_MODES.SCENARIO, heroPos, villainPos };
+  }
 
   if (analysis) analysis.hidden = false;
   if (status) {
     status.dataset.state = 'available';
-    status.textContent = t('Source: heuristic fixed-range/category analysis. Fixed approximate preflop ranges; one representative available combo per hand class; no combo weights. This is not solver range advantage, range-vs-range equity, or support for a betting size or frequency.');
+    status.textContent = t('Hero and opponent sample matrices are ready.');
   }
 
   const statIds = {
     hero: { veryStrong:'heroStatVeryStrong', strongMade:'heroStatStrongMade', marginal:'heroStatMarginal', air:'heroStatAir' },
     villain: { veryStrong:'vilStatVeryStrong', strongMade:'vilStatStrongMade', marginal:'vilStatMarginal', air:'vilStatAir' }
   };
-  const heroStats = renderRangeGrid('heroRangeGrid', 'heroHoverInfo', heroRange, board, heroCardRemoval, statIds.hero);
-  const villainStats = renderRangeGrid('villainRangeGrid', 'villainHoverInfo', villainRange, board, villainCardRemoval, statIds.villain);
+  const heroStats = rangeComparisonStats(heroComparisonFacts);
+  const villainStats = rangeComparisonStats(villainComparisonFacts);
+  renderRangeGrid('heroRangeGrid', 'heroHoverInfo', heroComparisonFacts, statIds.hero);
+  renderRangeGrid('villainRangeGrid', 'villainHoverInfo', villainComparisonFacts, statIds.villain);
 
-  const heroStrongShare = heroStats.total
-    ? (heroStats.veryStrong + heroStats.strongMade) / heroStats.total : 0;
-  const villainStrongShare = villainStats.total
-    ? (villainStats.veryStrong + villainStats.strongMade) / villainStats.total : 0;
-  const combinedShare = heroStrongShare + villainStrongShare;
-  const heroBarShare = combinedShare > 0 ? Math.round(heroStrongShare / combinedShare * 100) : 50;
+  const pct = (value, total) => total ? `${(value / total * 100).toFixed(0)}%` : '0%';
+  Object.entries(statIds.hero).forEach(([key, id]) => {
+    if ($('#' + id)) $('#' + id).textContent = `${heroStats[key]} (${pct(heroStats[key], heroStats.total)})`;
+  });
+  Object.entries(statIds.villain).forEach(([key, id]) => {
+    if ($('#' + id)) $('#' + id).textContent = `${villainStats[key]} (${pct(villainStats[key], villainStats.total)})`;
+  });
+  renderRangeCategoryBars(heroStats, 'hero');
+  renderRangeCategoryBars(villainStats, 'villain');
 
-  if ($('#heroAdvBar')) $('#heroAdvBar').style.width = `${heroBarShare}%`;
-  if ($('#villainAdvBar')) $('#villainAdvBar').style.width = `${100 - heroBarShare}%`;
+  const heroStrongShare = (heroComparisonFacts.categoryShares.very_strong_made || 0)
+    + (heroComparisonFacts.categoryShares.strong_made || 0);
+  const villainStrongShare = (villainComparisonFacts.categoryShares.very_strong_made || 0)
+    + (villainComparisonFacts.categoryShares.strong_made || 0);
+  if ($('#heroAdvBar')) $('#heroAdvBar').style.width = `${(heroStrongShare * 100).toFixed(1)}%`;
+  if ($('#villainAdvBar')) $('#villainAdvBar').style.width = `${(villainStrongShare * 100).toFixed(1)}%`;
   if ($('#heroRangeScore')) $('#heroRangeScore').textContent = `${(heroStrongShare * 100).toFixed(1)}% ${t('strong made categories')}`;
   if ($('#villainRangeScore')) $('#villainRangeScore').textContent = `${(villainStrongShare * 100).toFixed(1)}% ${t('strong made categories')}`;
+
+  const heroRemoval = rangeRemovalPresentation(heroCardRemoval);
+  const villainRemoval = rangeRemovalPresentation(villainCardRemoval);
+  if ($('#rangeComparisonLimitation')) $('#rangeComparisonLimitation').textContent = t('Source: heuristic fixed-range/category analysis. Uses one canonical surviving representative per eligible sampled class; its category does not describe every combo in that class. This is not solver range advantage, range-vs-range equity, or sizing/frequency evidence.');
+  if ($('#heroRangeBasis')) $('#heroRangeBasis').textContent = t('Hero · fixed heuristic class sample ({position})', { position: heroPos });
+  if ($('#villainRangeBasis')) $('#villainRangeBasis').textContent = t('Opponent · fixed heuristic class sample ({position})', { position: villainPos });
+  if ($('#rangeCoverageBasis')) $('#rangeCoverageBasis').textContent = t('{heroEligible} of {heroSample} Hero classes and {villainEligible} of {villainSample} opponent classes have one canonical surviving representative. Shares describe those representatives only, not every combo in each class; unlisted classes are not inferred.', {
+    heroEligible: heroComparisonFacts.coverage.eligibleRepresentativeCount,
+    heroSample: heroComparisonFacts.coverage.suppliedSampleClassCount,
+    villainEligible: villainComparisonFacts.coverage.eligibleRepresentativeCount,
+    villainSample: villainComparisonFacts.coverage.suppliedSampleClassCount,
+  });
+  if ($('#rangeRemovalSummary')) $('#rangeRemovalSummary').textContent = t('{heroAffected} Hero classes affected ({heroUnavailable} unavailable); {villainAffected} opponent classes affected ({villainUnavailable} unavailable). Board/dead cards condition both; Hero cards additionally condition the opponent.', {
+    heroAffected: heroRemoval.affectedClasses,
+    heroUnavailable: heroRemoval.unavailableClasses,
+    villainAffected: villainRemoval.affectedClasses,
+    villainUnavailable: villainRemoval.unavailableClasses,
+  });
+  if ($('#rangeRemovalTechnical')) $('#rangeRemovalTechnical').textContent = t('Physical combos removed within the selected class samples: Hero {heroCombos}; opponent {villainCombos}. Known weighted mass is unavailable because these samples have no combo weights.', {
+    heroCombos: heroRemoval.removedCombos,
+    villainCombos: villainRemoval.removedCombos,
+  });
+  const pairedComparison = document.querySelector('.paired-range-comparison');
+  if (pairedComparison) pairedComparison.setAttribute('aria-label', t('Hero {hero}% and opponent {villain}% strong-category shares. Independent percentages on the same zero to one hundred percent scale.', {
+    hero: (heroStrongShare * 100).toFixed(1),
+    villain: (villainStrongShare * 100).toFixed(1),
+  }));
 
   let title = t('Similar sampled categories');
   let description = t('The sampled made-hand and draw categories are similar.');

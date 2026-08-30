@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import vm from 'node:vm';
+
+const require = createRequire(import.meta.url);
+const strategyHarness = require('./qa002_adapters.js');
 
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
@@ -62,10 +66,22 @@ test('matrix selection, inspector, and unavailable states remain explicit', () =
 });
 
 test('matrix action probabilities and mixed encoding remain unmodified', () => {
-  assert.match(renderChart, /style="width:\$\{action\.value\}%"/);
-  assert.equal((renderChart.match(/style="width:\$\{action\.value\}%"/g) || []).length, 2);
-  assert.match(renderChart, /matrix-mix-bar[\s\S]*?visualActionKind\(action\)/);
-  assert.doesNotMatch(renderChart, /actions\s*=\s*actions\.map\([^)]*(?:normalize|\/\s*100)/i);
+  const result = strategyHarness.preflopStrategyResult({ open: 70, call: 30, fold: 0 });
+  const presentation = strategyHarness.legacyProfileForStrategyResult(result);
+
+  assert.ok(Math.abs(result.actions[0].probability - 0.7) <= 1e-12);
+  assert.ok(Math.abs(result.actions[1].probability - 0.3) <= 1e-12);
+  assert.ok(Math.abs(result.actions.reduce((total, action) => total + action.probability, 0) - 1) <= 1e-12);
+  assert.deepEqual(presentation.actions.map(({ kind, value }) => ({ kind, value })), [
+    { kind: 'aggressive', value: 70 },
+    { kind: 'passive', value: 30 },
+  ]);
+  assert.equal(presentation.actions.reduce((total, action) => total + action.value, 0), 100);
+  assert.match(renderChart, /actions = strategyResultPresentationActions\(cellStrategyResult\)/);
+  assert.match(renderChart, /const mixState = matrixMixState\(actions, dominantAction\)/);
+  assert.match(renderChart, /button\.dataset\.mixState = mixState/);
+  assert.match(renderChart, /button\.dataset\.strategyActions = JSON\.stringify\(actions\.map/);
+  assert.match(logic, /const actions = JSON\.parse\(cell\.dataset\.strategyActions \|\| '\[\]'\)/);
   assert.match(renderChart, /button\.dataset\.state = actions\.length \? 'available' : 'unavailable'/);
 });
 
