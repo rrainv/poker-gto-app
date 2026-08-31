@@ -1,8 +1,8 @@
 # Hands-On Product Review — August 2026
 
-Status: **COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED**
+Status: **HISTORICAL / SUPERSEDED FOR CURRENT SEQUENCING — COMPLETED EVIDENCE CAPTURE**
 
-Planning consequence: `HANDS-ON-DEFECTS-001` is **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT STRUCTURAL AND NEWLY DISCOVERED DEBT**. `CORE-FLOW-CORRECTNESS-001` is **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT**. `REPLAY-RAIL-NAV-001`, `TRAINING-COMPOSITION-001`, `EQUITY-COMPOSITION-001`, and `ANALYZE-RANGE-UX-001` are **COMPLETED / HUMAN ACCEPTED**; `FIRST-USE-HOME-001` is **NEXT / READY**, followed by visible closure and September Alpha whole-app/docs/audit gates before another major feature. `PERSONAL-STRATEGY-003A` remains preserved for a post-audit activation decision.
+The findings and then-current dispositions below remain durable evidence. Any `NEXT`, ordering, or checkpoint language is historical and superseded by [Current Phase](CURRENT_PHASE.md), [Roadmap](ROADMAP.md), and the September Alpha `AUDIT-TRIAGE-001` human synthesis.
 
 This is the durable evidence and triage artifact for `HANDS-ON-PRODUCT-REVIEW-001`. It is not another roadmap, backlog, QA system, or implementation specification. Current status and sequence remain owned by [Current Phase](CURRENT_PHASE.md), [Roadmap](ROADMAP.md), and [Product Backlog](PRODUCT_BACKLOG.md). Issue routing and deferred checkpoint debt remain owned by [QA Backlog](QA_BACKLOG.md) and [Product Return Queue](PRODUCT_RETURN_QUEUE.md).
 
@@ -238,9 +238,9 @@ The product owner completed the final hands-on pass at 1920×1080 / 100% and acc
 
 This is not perfect-polish acceptance. Four non-blocking debts remain: in dense/10-max geometry the lower side panels sit slightly too far inward and the top player slightly too far outward/high; hidden backs may later tuck under/behind their owning player only if privacy, ownership, non-obstruction, known-card inspectability, and the no-dongle grammar remain intact; the Dealer button is accepted but a future human Dealer position/presence may better explain the full-ring gap under table physicality/Game Setup, without adding a fake dealer now; and History padding, font weight, contrast, density, and event-row polish belongs to global/premium quality. These debts do not reopen the accepted Hand/Replay composition or chronology architecture.
 
-## Roadmap consequences
+## Historical roadmap consequences at this review checkpoint
 
-The newer product decision supersedes the earlier Training → Personal Strategy → mini-pass sequence. The current sequence is:
+At the time of this review, the newer product decision superseded the earlier Training → Personal Strategy → mini-pass sequence. This list is preserved as rationale, not current instruction:
 
 1. `HANDS-ON-DEFECTS-001` — **COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT DEBT**.
 2. `CORE-FLOW-CORRECTNESS-001` — **COMPLETED / HUMAN ACCEPTED CORE-FLOW CORRECTNESS CHECKPOINT**.

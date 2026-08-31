@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 31, 2026 (`GUIDE-CONTENT-001` is **COMPLETED / HUMAN ACCEPTED**; September Alpha now advances through the whole-app human sanity pass, documentation/continuity freeze, full verification, clean audit commit and immutable audit tag, independent cross-model audits, and human triage before evidence-based activation of structural, refactor, or feature work).
+Last refreshed: August 31, 2026 (`AUDIT-TRIAGE-001` incorporates the completed September Alpha independent audits and authoritative human synthesis; foundational trust, ownership, economics, lifecycle, browser-test, retrieval, and bounded-composition gates now lead execution).
 
 This roadmap explains major directional sequencing and why phases are ordered. [Current Phase](CURRENT_PHASE.md) owns the exact current checkpoint and execution order; [Product Backlog](PRODUCT_BACKLOG.md) owns concise capability/status. The [capability dossiers](capabilities/README.md) preserve detailed long-term intent without setting priority.
 
@@ -54,26 +54,33 @@ The completed dossier migration records more possibilities; it does not promote 
 16. **COMPLETED / HUMAN ACCEPTED — `SAVED-VISUAL-KNOWLEDGE-001`** — the compact Saved grid now uses DOM-free `saved-study-preview-facts/v1`, visible All / Hands / Spots categories, a viewport-bounded body overlay for hover/focus, bounded click/Enter detail, shared `card-presentation/v1`, privacy-safe identity clearing, truthful Hand/Scenario previews, unsupported unknown kinds, and unchanged `SavedStudyObject v1` persistence/reopen boundaries.
 17. **COMPLETED / HUMAN ACCEPTED — `CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001` —** canonical `PokerState` semantics were correct. Application/UI fixes align fully known hole-deal Replay labeling, remove stale committed/consumed board drafts, and use the canonical available-card query excluding current board, known hole cards, dead cards, and pending selections. Explicit Turn → River → Showdown remains intact; Replay/live terminal states agree and runout events occur exactly once. Hand composition remains closed.
 18. **COMPLETED / HUMAN ACCEPTED — `GUIDE-CONTENT-001` —** Guide is the durable workflow-first product reference for Hand, Analyze, Training, Equity, and Personal Strategy. Welcome / Learn Riverline remains orientation; workspace tutorials remain contextual interactive teaching. Actions reuse navigation authority, no tutorial/persistence authority was added, and current authority/truth boundaries remain explicit.
-19. **ACTIVE NEXT — SEPTEMBER ALPHA WHOLE-APP HUMAN SANITY PASS.**
-20. **SEPTEMBER ALPHA CONTINUITY AND VERIFICATION GATES —** documentation/continuity freeze → full verification gate → human-owned clean audit commit and immutable audit tag.
-21. **INDEPENDENT CROSS-MODEL DEEP AUDIT —** blind hands-on product audit plus white-box theoretical/architecture audit → human triage of findings before further structural, refactor, or feature work.
-22. **PRESERVED MAJOR FEATURES / POST-AUDIT ACTIVATION DECISION —** `PERSONAL-STRATEGY-003A`, `GAME-SETUP-EVOLUTION-001`, `RANGE-EVOLUTION-001`, or another major documented capability may be activated only from audit evidence and human prioritization. Customization, Global Product Quality, and god-file decomposition are likewise held unless the sanity pass exposes a blocker.
-23. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`** — whole-product release-quality acceptance after nearer visible owners; it is not the September Alpha milestone.
-24. **Release/mobile/social/PLO later** — only after their prerequisites and explicit decisions.
+19. **ACTIVE NEXT — `AUTH-TRAINING-MEMORY-001`.**
+20. **FOUNDATIONAL DECISION/TRUST GATES —** `DECISION-ECONOMICS-001` → `STRATEGY-TRUST-001` → `DECISION-CONTEXT-SINGLE-AUTHORITY-001`.
+21. **HIGH-RISK REPRODUCTION — `AUDIT-HIGH-RISK-REPRO-001`** — reproduce the eleven preserved blind findings before any fix or acceptance claim.
+22. **IDENTITY AND PRODUCT-TRUTH GATES —** `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`.
+23. **PORTABLE TEST/LIFECYCLE PLATFORM — `BROWSER-TEST-PLATFORM-001`.**
+24. **BOUNDED UI COMPOSITION EXTRACTION —** `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot. This is risk-driven incremental decomposition, not React/Redux or a framework rewrite.
+25. **CURRENT SAVED RETRIEVAL — `SAVED-LIBRARY-001`** — full current Hand/Spot retrieval before any new Saved payload kind.
+26. **STUDY CONTINUITY — `HOME-STUDY-CONTINUITY-001`.**
+27. **BOUNDED REFERENCE-SOURCE DECISION —** after read-only source research, which may run in parallel.
+28. **LEARNING-LOOP EXPANSION.**
+29. **PERSONAL STRATEGY — `PERSONAL-STRATEGY-003A`.**
+30. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`** — whole-product release-quality acceptance after nearer foundational owners.
+31. **Release/mobile/social/PLO later** — only after their prerequisites and explicit decisions.
 
 ## Phase A — usable visible-product foundation
 
-Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and the bounded `HANDS-ON-DEFECTS-001` repair remain useful visible-product foundations. Core Flow, Hand Replay, the all-in runout regression repair, Training, Equity, Analyze/Range, First Use/Home, Saved Visual Knowledge, and the workflow-first Guide are completed human-accepted checkpoints. The September Alpha whole-app human sanity pass is next, followed by continuity freeze, full verification, the audit commit/tag, independent audits, and human triage. This does not claim perfect polish or whole-product visual acceptance before those gates.
+Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and the bounded `HANDS-ON-DEFECTS-001` repair remain useful visible-product foundations. Core Flow, Hand Replay, the all-in runout regression repair, Training composition, Equity, Analyze/Range, First Use/Home, Saved Visual Knowledge, and the workflow-first Guide remain accepted checkpoints. The completed audits found foundational debt beneath some checkpoint claims, especially Training Memory ownership, decision economics/context convergence, strategy trust and grading, lifecycle disposal, portable browser testing, Saved retrieval, and root composition. Those owners now lead; no broad polish or expansion wave begins first.
 
-The current product decision deliberately completes the major remaining visible composition and systemic polish debt before another large feature/product-model implementation. This is a bounded closure wave, not an indefinite subjective-polish loop: exact secondary-polish order is reassessed by impact, Home Game presentation and Audio Design remain conditional, and serious audit findings determine whether further repair is required. `PREMIUM-CLOSEOUT-001` is deferred, not cancelled, and remains the later pre-release quality gate. Controls First, the ineffective density selector, arbitrary layout editing, casino spectacle, fake cinematic 3D, avatars by default, and reward theater remain rejected.
+The current product decision puts the human-triaged foundation gates ahead of another large feature/product-model implementation or broad polish wave. Bounded secondary polish remains routed debt, Home Game presentation and Audio Design remain conditional, and `PREMIUM-CLOSEOUT-001` remains the later pre-release quality gate. Controls First, the ineffective density selector, arbitrary layout editing, casino spectacle, fake cinematic 3D, avatars by default, and reward theater remain rejected.
 
 Real-browser/human judgment remains required for hierarchy, balance, readability, and aesthetics. Known acceptance debt stays in the QA Backlog and Return Queue rather than expanding this roadmap.
 
 ## September Alpha — internal high-quality milestone
 
-The near-term goal is a coherent, trustworthy, human-tested desktop Riverline build with accepted Hand/Replay, Training, Equity, and Analyze/Range composition; materially improved First Use/Home; major remaining visible/systemic polish addressed; synchronized documentation; a whole-product manual pass; independent cross-model blind hands-on and white-box theoretical/architecture audits; and serious findings triaged/fixed.
+The September Alpha evidence checkpoint captured a coherent desktop build, synchronized documentation, a whole-product manual pass, independent cross-model blind hands-on and white-box theoretical/architecture audits, and authoritative human triage. Triage completion is not a claim that the resulting foundation debts or eleven blind findings are fixed; their named owners now gate continuation.
 
-September Alpha is not public beta readiness, production reference coverage, completed live account/sync validation, finished mobile/social/PLO, or completion of the long-term capability roadmap. The dossier layer remains the durable continuation path after this closure/audit phase.
+September Alpha is not public beta readiness, production reference coverage, completed live account/sync validation, finished mobile/social/PLO, or completion of the long-term capability roadmap. The audit checkpoint is complete; its human-triaged foundational owners now gate continuation. The dossier layer remains durable intent and does not override this sequence.
 
 ## Phase B — trusted reference strategy
 
@@ -83,13 +90,13 @@ Detailed direction: [Reference Strategy Evolution](capabilities/REFERENCE_STRATE
 
 ## Phase C — persistent learning
 
-Training has evolved from isolated legal deterministic exercises into a first history-aware learning loop. `TRAINING-MEMORY-001` durably preserves exact decision/session and answer-time source/claim evidence, derives bounded recent/review views, and supports historical Same Spot plus current Similar Spot without creating new poker or strategy authority. Advanced spaced/adaptive scheduling, Saved/Home/Replay/Analyze continuity, rich filters/trends, sync/export, and Personal Strategy observation remain later slices.
+Training has evolved from isolated legal deterministic exercises into a first history-aware learning loop. `TRAINING-MEMORY-001` preserves exact decision/session and answer-time source/claim evidence and supports historical Same Spot plus current Similar Spot, but audit evidence invalidates the claim that owner indexing alone establishes authentication isolation. The heuristic baseline is comparative only, and its agreement/disagreement cannot stand in for skill, accuracy, mastery, correctness, GTO, or automatic remediation. Auth isolation and normative-grading repair precede advanced scheduling, Saved/Home/Replay/Analyze continuity, rich filters/trends, sync/export, and Personal Strategy observation.
 
 Detailed direction: [Learning Evidence Foundation](capabilities/LEARNING_EVIDENCE_FOUNDATION.md), [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md), and [Deep Hand Review](capabilities/DEEP_HAND_REVIEW.md).
 
 ## Phase D — Personal Strategy integration and insight
 
-After independent review, add intended-strategy comparison without turning personal intent into normative truth. Keep selected reference and observed play explicit, preserve contradictions and sparse evidence, make Training evidence opt-in, then add evidence-backed uncertainty queues and summaries.
+After the foundational gates and learning-loop expansion, add intended-strategy comparison without turning personal intent into normative truth. Keep selected reference and observed play explicit, preserve contradictions and sparse evidence, make Training evidence opt-in, then add evidence-backed uncertainty queues and summaries. The current legacy exactly-three-mode UI is not the accepted future model.
 
 Detailed direction: [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md) and [Natural-Language Intelligence](capabilities/NATURAL_LANGUAGE_INTELLIGENCE.md).
 
@@ -101,7 +108,7 @@ Detailed direction: [Range Evolution](capabilities/RANGE_EVOLUTION.md) and [Save
 
 ## Phase F — opponent policies and full-hand learning
 
-Create an explicit opponent-behavior contract separate from reference strategy and claims about real people. Generic, environment, custom, and Personal-Strategy-as-opponent policies may then feed legal full-hand Training, Review, Save, and re-drill continuity.
+Evolve the existing bounded `OpponentPolicy v1` contract and deterministic `basic` Full Hand policy without conflating them with reference strategy or claims about real people. Richer generic, environment, custom, and Personal-Strategy-as-opponent policies may later feed legal full-hand Training, Review, Save, and re-drill continuity.
 
 Detailed direction: [Opponent Intelligence](capabilities/OPPONENT_INTELLIGENCE.md).
 
@@ -116,7 +123,7 @@ Equity/hand/runout depth, range-aware bluff/exploit work, and shared legal rando
 
 ## Parallel maintenance and release gates
 
-Security, data-integrity, or release blockers may interrupt the sequence. These include live Supabase migrations/RLS and multi-profile acceptance, targeted architecture extraction when real work touches the seam, and privacy/legal/packaging/offline/observability decisions.
+Security, data-integrity, or release blockers may interrupt the sequence. Training Memory auth isolation and authenticated sign-out inaccessibility are current blockers rather than later beta polish. The accepted long-term Guest model is a durable anonymous device-local profile, distinct from every authenticated owner. Live Supabase migrations/RLS and multi-profile acceptance, privacy/legal/packaging/offline/observability decisions, and evidence-triggered bounded extraction remain important without authorizing a rewrite.
 
 `PREMIUM-CLOSEOUT-001` is the planned-later pre-release quality gate for whole-product manual QA, final high-value visual debt, Guide, responsive desktop, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings/theme consistency, Return Queue visual debt, and accepted Core Flow regression continuity. It should run when the product feature set is materially more mature, before a public or equivalent release-quality milestone.
 

@@ -6,7 +6,7 @@ Date: August 17, 2026
 
 ## Purpose and boundary
 
-Riverline is local-first. `ACCOUNT-001` added a stable application identity and explicit ownership mapping. `ACCOUNT-002A/AR` adds bounded auth/link/switch behavior and corrects signed-out product semantics: signed-out users are Guest, not a persistent Local Profile. The original local identity remains a non-destructive migration/claim record and is not a Guest-visible data authority.
+Riverline is local-first. `ACCOUNT-001` added a stable application identity and explicit ownership mapping. `ACCOUNT-002A/AR` implemented a non-persistent Guest product state while retaining the original local identity only as a non-destructive migration/claim record. The September Alpha human disposition now accepts a different long-term model: Guest is a durable anonymous device-local profile, distinct from every authenticated owner. `IDENTITY-LIFECYCLE-001` owns that migration and the cross-surface owner/generation/disposal contract; this documentation change does not claim the runtime already implements it.
 
 `AUTHENTICATION_SPEC.md` is authoritative for the current provider adapter, mapping, linking, switching, sign-out, and session behavior. Statements below describing ACCOUNT-001's former lack of auth are foundation history and are superseded where that specification says otherwise.
 
@@ -42,7 +42,7 @@ Settings / Home / owned-domain application consumers
 | language | i18n preference authority | device | Presentation preference remains stable when identities change |
 | theme, four-color deck, card/rank style, audio, sidebar collapse | existing Settings/presentation authorities | device | Hardware/presentation choice; no account migration in this ticket |
 | Saved source-reference keys | Saved source controller | device/application navigation | Bounded reopen hint, not durable owned study data; owner-scoped repository lookup prevents cross-identity disclosure |
-| Training history | none | unsupported | No persistent Training-history domain exists yet |
+| Training Memory decision/session evidence | `training-memory/v1` IndexedDB | owner-keyed, auth gate incomplete | Durable Training Memory now exists, but its bridge reads the registry's active identity outside the authentication gate; `AUTH-TRAINING-MEMORY-001` owns sign-out inaccessibility and account/Guest isolation |
 | window geometry, filesystem paths, cache/performance state | host/runtime where applicable | device | Never account-owned |
 
 This classification deliberately avoids moving every preference merely because identity now exists. A later cross-device preference change requires its own versioned migration and explicit product decision.
@@ -168,16 +168,16 @@ An import can never activate a foreign identity or impersonate a future authenti
 
 The registry and storage naming permit a legacy Local identity, Account A, and Account B on one device without sharing a domain storage target. ACCOUNT-002AR exposes account state from the global header and Account/Profile modal; Settings is secondary. The legacy identity is shown only during an explicit authenticated claim decision.
 
-Future sign-out behavior is fixed at the data-model level:
+The accepted target sign-out behavior is fixed at the data-model level and owned by `IDENTITY-LIFECYCLE-001`:
 
 1. keep authenticated-identity data locally stored under its binding;
-2. enter non-persistent Guest Mode without exposing any persistent identity;
+2. activate a durable anonymous device-local Guest profile without exposing any authenticated identity;
 3. stop querying the authenticated identity's namespaces;
 4. do not delete, merge, or re-own its data;
 5. re-authentication may activate that identity again; a different account requires fresh provider validation;
 6. purge is a separate explicit destructive user action, not sign-out.
 
-ACCOUNT-002 must not create a second identity that points silently at the local identity's storage. Claiming local data requires an explicit, atomic ownership-binding transfer/link contract with failure recovery and user-visible consent.
+The Guest profile and every authenticated identity require distinct storage/owner targets. No sign-out, sign-in, or account switch may silently point one identity at another's data. Claiming Guest/local data requires an explicit, atomic ownership-binding transfer/link contract with failure recovery and user-visible consent.
 
 ## Local to authenticated linkage
 
@@ -215,7 +215,7 @@ Stable IDs, timestamps, revisions, domain-specific tombstones/history, and the o
 
 - all Account, Saved, Personal Strategy, preference, and poker-history data remains local by default;
 - account-identity initialization itself performs no fetch, WebSocket, beacon, telemetry, or upload; the separate optional authentication service may contact Supabase to restore and validate a provider session;
-- no sign-in is required for non-persistent core analysis, Training, Equity, Guide, or device settings;
+- no sign-in is required for core analysis, Training, Equity, Guide, or device settings; the accepted target may retain device-local Guest history only under the anonymous Guest owner, never an authenticated owner;
 - persistent Saved/Review/Mistakes/Personal Strategy/Range Calibration require a validated persistent account identity;
 - the header and Account/Profile surface distinguish `Guest Mode` from `Signed in`, while separately stating the Saved and Personal Strategy / Range Calibration sync choices and their current status;
 - a functional Supabase email/password surface is owned by the separate authentication boundary;
@@ -239,7 +239,9 @@ Account startup does one bounded registry read. First launch writes one metadata
 
 The current account platform still does not implement:
 
-- Training-history, Saved Range, or cross-device preference sync. Only explicit Saved Hand/Spot and Personal Strategy / Range Calibration study sync are implemented;
+- Training Memory sync, Saved Range, or cross-device preference sync. Only explicit Saved Hand/Spot and Personal Strategy / Range Calibration study sync are implemented;
+- the durable anonymous Guest migration and one cross-surface owner/generation/disposal lifecycle; these are owned by `IDENTITY-LIFECYCLE-001`;
+- Training Memory authentication isolation and sign-out inaccessibility; owned by `AUTH-TRAINING-MEMORY-001`;
 - remote deletion, local forgetting, account recovery, OAuth, magic links, passkeys, or provider-to-provider linking;
 - sharing, friends, study groups, public links, or social identity;
 - telemetry;

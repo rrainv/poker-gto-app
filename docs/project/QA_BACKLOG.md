@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 31, 2026 (`GUIDE-CONTENT-001` is **COMPLETED / HUMAN ACCEPTED**; the September Alpha whole-app human sanity pass is active next, followed by continuity freeze, full verification, the audit commit/tag, independent audits, and human triage; no perfect-polish or public-beta closure is implied).
+Last consolidated: August 31, 2026 (`AUDIT-TRIAGE-001` incorporates the completed September Alpha independent audits and authoritative human synthesis; foundation debt and blind findings below remain open until their named owners provide evidence).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -15,6 +15,41 @@ This is the authoritative issue-routing file for historical and current QA. Code
 - `REGRESSION`: previously better/closed behavior broke
 
 A visual issue is not `CLOSED` without manual/browser confirmation.
+
+The current minimum supported desktop viewport remains **1366×768**. Findings observed only at 1024×768 or similarly compact layouts remain useful compact/mobile-responsive future evidence, but they are not promoted to current blockers without a separate product decision.
+
+## September Alpha audit foundation owners
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-AUTH-TRAINING-MEMORY-001 | OPEN / FOUNDATIONAL | Training Memory uses owner-keyed records but obtains the account registry's active identity outside the authentication gate. Owner indexing alone does not prove authenticated-account isolation, and explicit sign-out must make authenticated Training Memory inaccessible. | `AUTH-TRAINING-MEMORY-001` |
+| QA-DECISION-ECONOMICS-001 | OPEN / FOUNDATIONAL | DecisionContext lacks one accepted actor-relative economics contract for exact incremental price, contestable-pot layers, contribution, and effective stacks across Hero and non-Hero decisions. Poker accounting must remain canonical. | `DECISION-ECONOMICS-001` |
+| QA-STRATEGY-TRUST-001 | OPEN / FOUNDATIONAL | Descriptor validation, provenance fields, and an exact matcher do not by themselves constitute human acceptance of a trusted production strategy source. Define evidence, licensing, coverage, validation, review, registration, and revocation gates. | `STRATEGY-TRUST-001` |
+| QA-DECISION-CONTEXT-SINGLE-AUTHORITY-001 | OPEN / FOUNDATIONAL | The extracted projectors coexist with a classic `logic.js` constructor and a fail-open fallback when the Playbook bridge is unavailable. Prove one production projection authority and explicit failure semantics. | `DECISION-CONTEXT-SINGLE-AUTHORITY-001` |
+| QA-IDENTITY-LIFECYCLE-001 | OPEN / FOUNDATIONAL | Account-dependent surfaces do not yet share one proven owner/generation/invalidation/disposal lifecycle. The accepted target is a durable anonymous device-local Guest profile, while explicit sign-out hides every authenticated-owner scope. | `IDENTITY-LIFECYCLE-001` |
+| QA-HEURISTIC-BASELINE-TRUTH-001 | OPEN / FOUNDATIONAL | The current heuristic is exploratory/comparative baseline evidence only. Agreement/disagreement must not be presented or aggregated as skill, accuracy, mastery, correctness, GTO, or automatic remediation. | `HEURISTIC-BASELINE-TRUTH-001` |
+| QA-TRAINING-NORMATIVE-001 | OPEN / FOUNDATIONAL | Current internal grading uses probability gap to the modal action. That rule may support legacy deterministic comparison, but it is not accepted as normative correctness even for a future trusted source. | `TRAINING-NORMATIVE-001` |
+| QA-BROWSER-TEST-PLATFORM-001 | OPEN / FOUNDATIONAL | Riverline needs portable mounted-browser lifecycle tests that exercise real mounting, focus, modals, account changes, inactive workspaces, generation cancellation, and disposal rather than source-pattern substitutes alone. | `BROWSER-TEST-PLATFORM-001` |
+| QA-UI-COMPOSITION-ROOT-001 | OPEN / FOUNDATIONAL | Root UI orchestration and lifecycle ownership remain concentrated in `logic.js`. Define a bounded composition root, then prove one workspace extraction pilot without a React/Redux/framework rewrite. | `UI-COMPOSITION-ROOT-001` |
+| QA-DOCS-CONTINUITY-001 | CLOSED / AUDIT TRIAGE | Live planning authorities now share the post-audit order and stable product truths; historical reviews are prominently labelled and Home Game, Guest lifecycle, Training Memory, Saved retrieval, OpponentPolicy, heuristic, and viewport contradictions are corrected without inventing a new planning authority. | `AUDIT-TRIAGE-001`; preserve through `DOCUMENTATION_GOVERNANCE.md` |
+
+## September Alpha blind findings — needs reproduction
+
+No row in this section is a confirmed defect or accepted fix. `AUDIT-HIGH-RISK-REPRO-001` must reproduce each finding at the supported desktop baseline, capture exact state/evidence, and then route or reject it explicitly.
+
+| ID | Status | Issue | Owner |
+|---|---|---|---|
+| QA-AUDIT-EQUITY-EXACT-OPPONENT-001 | OPEN / NEEDS REPRODUCTION | Known-opponent exclusion may be wrong in Equity “Exact” completion cards. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-FULL-HAND-MEMORY-LEAK-001 | OPEN / NEEDS REPRODUCTION | Full Hand normative feedback may leak through Training Memory before terminal Review. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-SAME-SPOT-COHERENCE-001 | OPEN / NEEDS REPRODUCTION | Same Spot may break session mode, mode label, or headline-stat coherence. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-NON-HERO-CONTEXT-001 | OPEN / NEEDS REPRODUCTION | Non-Hero actor context and decision-time stack presentation may be wrong or Hero-relative. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-HAND-ANALYZE-STACK-001 | OPEN / NEEDS REPRODUCTION | Hand → Analyze may transfer the wrong stack/economics snapshot. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-ANALYZE-CHRONOLOGY-001 | OPEN / NEEDS REPRODUCTION | Analyze Scenario chronology/readiness may allow contradictory or premature states. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-HOME-COMPLETED-HAND-001 | OPEN / NEEDS REPRODUCTION | Home may present a completed Hand as live/continuable. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-AUTH-CLIENT-DUPLICATE-001 | OPEN / NEEDS REPRODUCTION | Runtime may create or warn about duplicate authentication clients. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-BROWSER-A11Y-001 | OPEN / NEEDS REPRODUCTION | Real-browser Tab order, modal containment/restoration, and inactive-workspace accessibility may diverge from structural tests. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-RANGE-COMPARISON-INTERACTION-001 | OPEN / NEEDS REPRODUCTION | Range comparison hover/focus behavior may be inconsistent or inaccessible. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-HAND-REVIEW-PRIORITY-001 | OPEN / NEEDS REPRODUCTION | Hand Review priority metrics may disagree across displayed values or projections. | `AUDIT-HIGH-RISK-REPRO-001` |
 
 ## Global Node baseline and CI
 
@@ -70,7 +105,7 @@ The detailed evidence is [Hands-On Product Review — August 2026](HANDS_ON_PROD
 | HPR-2026-08 #30 | DEFERRED / NAMED OWNER | Shared legal Randomize/Lock behavior with card-removal truth and later reproduction. | `RANDOM-SPOT-GENERATOR-001` |
 | HPR-2026-08 #36–37, #41–42, #53; #38–40 after bounded repair | CLOSED / HUMAN ACCEPTED | Matrix-local selected-hand inspection and legend, canonical card-removal presentation, primary complete comparison matrices, truthful independent shared-scale percentages, representative-sample limits, and Facts → Explain progressive depth are accepted. | accepted `ANALYZE-RANGE-UX-001` checkpoint |
 | HPR-2026-08 #46 after bounded repair | COMPLETED / HUMAN ACCEPTED | The accepted normal decision/study-rail skeleton, Correction #1, and final hardening remain intact. Lean closeout evidence proves exact same-decision replay with unchanged headline session/planner statistics and one-step Next progression; terminal Full Hand Review retains 1183×769px versus 1184×770px live shared-table geometry, vertical canonical History, source/comparison evidence, and no horizontal timeline at Firefox 154 / 1920×1080. | accepted `TRAINING-COMPOSITION-001` checkpoint |
-| HPR-2026-08 #49–51, #54 | PRESERVED MAJOR FEATURE / ACTIVATE ONLY AFTER SEPTEMBER ALPHA AUDIT AND HUMAN TRIAGE | Game setup/Approach first value, broad sparse/high-information coverage before boundary refinement, and Teach Riverline Next/Matrix Edit consolidation. It is not immediately next. | `PERSONAL-STRATEGY-003A` |
+| HPR-2026-08 #49–51, #54 | PLANNED / ORDERED AFTER FOUNDATION AND LEARNING-LOOP GATES | Game setup/Approach first value, broad sparse/high-information coverage before boundary refinement, and Teach Riverline Next/Matrix Edit consolidation. It is item 16 in the binding order and does not jump the preceding gates. | `PERSONAL-STRATEGY-003A` |
 | HPR-2026-08 #55 | DEFERRED / NAMED OWNER | Evidence-grounded concepts/reference/reasoning that genuinely teach; no claim this exists today. | `PERSONAL-STRATEGY-TEACHING-001` |
 | HPR-2026-08 #56–57 | CLOSED / HUMAN ACCEPTED | Bounded 2–10-player composition, presentation-only inline naming, adjacent Board/Dead/Method controls, compact empty/running output, separate dominant completed comparison, transactional card-set input, and truthful exact-entered-hand outcome presentation are human accepted. | accepted `EQUITY-COMPOSITION-001` checkpoint |
 | HPR-2026-08 #59 | CLOSED / HUMAN ACCEPTED | The compact Saved grid uses DOM-free observer-safe Hand and visibly lossy Scenario Spot previews, visible zero-count All / Hands / Spots categories, a viewport-bounded hover/focus overlay, explicit bounded detail, shared card presentation, unsupported unknown-kind states, privacy clearing, and unchanged reopen/persistence boundaries. | accepted `SAVED-VISUAL-KNOWLEDGE-001` checkpoint |
@@ -207,14 +242,14 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 | QA-RANGE-CAL-002D | PARTIAL | Snapshot-derived Matrix, truthful statuses, filters, evidence/history inspector, conflict preservation, corrections, adaptive follow/selection, keyboard/RTL and performance are automated; human Firefox matrix acceptance remains. | RANGE-CAL-002D human acceptance |
 | QA-RANGE-BUILDER-001 | PARTIAL | Builder selection/painting, grouped direct/exact edits, conflict-safe commits, undo, adaptive reranking, i18n and tutorial are automated; human Firefox editing acceptance remains. | RANGE-BUILDER-001 human acceptance |
 | QA-RANGE-TEACHER-001 | PARTIAL | Boundary/sparse/conflict/exact-mix recommendations, focused Calibration routing, scope isolation, i18n/tutorial and performance are automated; human Firefox compactness/truthfulness acceptance remains. | RANGE-TEACHER-001 human acceptance |
-| QA-PERSONAL-002R | PARTIAL | The [independent product/architecture review and human disposition](PERSONAL_STRATEGY_002R_REVIEW.md) are complete and accepted. HPR-2026-08 #49–55 adds confirmed hands-on evidence for the accepted Game setup/Approach reset, broad coverage before boundary refinement, raw-label repair, surface consolidation, and a later genuine teaching owner. `003A` is preserved but waits for visible closure, the September Alpha audits, and human triage rather than following Training directly. Existing and future-migrated EN/HE/RU visual/real-user acceptance remains unperformed. | `PERSONAL-STRATEGY-003A`; `PERSONAL-STRATEGY-TEACHING-001` |
+| QA-PERSONAL-002R | PARTIAL | The [independent product/architecture review and human disposition](PERSONAL_STRATEGY_002R_REVIEW.md) are complete and accepted. HPR-2026-08 #49–55 adds confirmed hands-on evidence for the accepted Game setup/Approach reset, broad coverage before boundary refinement, raw-label repair, surface consolidation, and a later genuine teaching owner. `003A` is item 16 after the binding foundation, extraction, Saved/Home, reference-source, and learning-loop gates. Existing and future-migrated EN/HE/RU visual/real-user acceptance remains unperformed. | `PERSONAL-STRATEGY-003A`; `PERSONAL-STRATEGY-TEACHING-001` |
 
 ## Workspace composition and responsive fit
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
 | QA-LAYOUT-001 | OPEN | Decision/Matrix/Range tabs sit too low and feel disconnected | PRODUCT-UI-005 |
-| QA-LAYOUT-002 | PARTIAL | Active Hand now uses a primary compact timeline → adaptive table → Hero action dock sequence before secondary details, while setup remains a bounded rail and Analysis remains separate; Firefox passed the ticket's 1920×1080, 2560×1440, and 2560×1600 capture matrix, while 1024×768, 1366×768, representative zoom, and independent interaction acceptance remain open | TABLE-PRESENCE-002 human Firefox acceptance / PRODUCT-UI-005 |
+| QA-LAYOUT-002 | PARTIAL | Active Hand now uses a primary compact timeline → adaptive table → Hero action dock sequence before secondary details, while setup remains a bounded rail and Analysis remains separate; Firefox passed the ticket's 1920×1080, 2560×1440, and 2560×1600 capture matrix, while the supported 1366×768 baseline, representative zoom, and independent interaction acceptance remain open. Prior 1024×768 findings are preserved as future compact/mobile-responsive evidence, not current blockers. | TABLE-PRESENCE-002 human Firefox acceptance / PRODUCT-UI-005 |
 | QA-LAYOUT-003 | PARTIAL | TABLE-PRESENCE-002 resolves active play and review as table/card-first while retaining configuration-first setup before a Hand starts; HU, 6-max, and 10-max Firefox captures passed target-width, dock-visibility, overflow, and collision checks, while independent human validation remains open | TABLE-PRESENCE-002 human Firefox acceptance / Product Lab follow-up if rejected |
 | QA-LAYOUT-PRESETS-001 | PARTIAL / ACCEPTED CHECKPOINT | Workspace-specific preset authority remains, but the exposed model is deliberately simplified: Balanced everywhere, Hand-only Table Focus, Analyze-only Analysis Focus, no Controls First, and no user-facing density selector. Automated Firefox coverage passed the retained modes; any remaining subjective specialized-layout polish stays with `RET-COMPOSITION-002`. | `WORKSPACE-COMPOSITION-002` checkpoint / `RET-COMPOSITION-002` |
 | QA-MATRIX-001 | CLOSED / HUMAN ACCEPTED | Canonical card-removal parity remains intact; selected-hand detail and the compact legend are local to the Matrix, and comparison semantics are accepted. | accepted `ANALYZE-RANGE-UX-001` checkpoint |
@@ -256,15 +291,15 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-TRAINING-MEMORY-001 | COMPLETED / HUMAN ACCEPTED | Owner-scoped durable evidence remains authoritative. Review later/Difficult behavior remains persisted and reversible. Confirmed Full Hand Abort finishes the Memory session as abandoned while preserving recorded decision/replay evidence; focused domain and Firefox Incomplete-session evidence pass. | accepted `TRAINING-COMPOSITION-001` checkpoint |
+| QA-TRAINING-MEMORY-001 | PARTIAL / AUTH ISOLATION REOPENED | Durable decision/session evidence, review controls, exact Same Spot, Similar Spot, and abandoned Full Hand preservation remain accepted bounded behavior. Authentication-gated owner isolation and sign-out inaccessibility were not established and are reopened separately as `QA-AUTH-TRAINING-MEMORY-001`. | `AUTH-TRAINING-MEMORY-001` |
 | QA-TRAINING-REDRILL-001 | COMPLETED / HUMAN ACCEPTED V1 FOUNDATION | Same Spot remains exact historical reproduction and Similar Spot remains planner/generator-backed current practice. Firefox loaded canonical Memory actions and preserved the incomplete aborted Full Hand session; sophisticated scheduling, Saved Drill presets, richer filters, and cross-surface continuity remain future. | Future `TRAINING-MEMORY-002` when prioritized |
-| QA-SAVED-LIBRARY-001 | DEFERRED | Full dense master-detail Saved Study Library and Hand/Spot/Range/Drill/Review/Session taxonomy are not implemented. | HOME-002B + payload tickets |
+| QA-SAVED-LIBRARY-001 | OPEN / REOPENED FOUNDATIONAL RETRIEVAL | The accepted Saved grid filters only an already-bounded result set. Full retrieval/search/filter/sort/pagination for current Hand/Spot objects is not implemented. New payload kinds remain explicitly out of scope. | `SAVED-LIBRARY-001` |
 
 ## Opponent policy / bots future QA
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-OPPONENT-POLICY-001 | DEFERRED | Opponent archetypes/custom policies/full-hand bot Training require a separate provenance-aware behavior contract and must not be conflated with reference strategy or real-person certainty. | OPPONENT-POLICY-ARCH-001 |
+| QA-OPPONENT-POLICY-001 | PARTIAL / DOCUMENTATION CORRECTED | A strict provenance-aware `OpponentPolicy v1`, built-in deterministic `basic` policy, and legal Full Hand automated progression already exist. Richer archetypes, custom policies, user selection, and any real-person prediction remain deferred and must not be conflated with reference strategy. | existing bounded foundation; later `OPPONENT-POLICY-ARCH-001` product evolution |
 
 ## Performance and DOM follow-up
 
@@ -273,7 +308,7 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 | QA-PERF-001 | CLOSED | duplicate slider/context updates and hidden Matrix computation | PERF-001 |
 | QA-PERF-002 | CLOSED | hidden picker deck removed on close; remaining heavy grids are intentional visible/cached work | PERF-RL18 |
 | QA-PERF-003 | OPEN | visible Matrix DOM mutation needs browser profiling only if still measured sluggish | later PERF follow-up |
-| QA-PERF-004 | DEFERRED / TEST INFRASTRUCTURE | The default highly parallel full Node invocation can trip the existing Range Calibration `<100ms` wall-clock assertion under machine saturation. The test passes alone, and the complete suite passes 1,792/1,792 with bounded concurrency. This is not a Workspace Composition product failure; do not loosen the threshold without a dedicated test-infrastructure decision. | `RET-TEST-INFRA-001` if reproduced in clean CI or the canonical developer environment |
+| QA-PERF-004 | DEFERRED / TEST INFRASTRUCTURE | The default highly parallel full Node invocation can trip the existing Range Calibration `<100ms` wall-clock assertion under machine saturation while the focused test and bounded-concurrency suite pass. This is not a Workspace Composition product failure; do not loosen the threshold without a dedicated test-infrastructure decision. | `RET-TEST-INFRA-001` if reproduced in clean CI or the canonical developer environment |
 
 ## Closed or intentionally removed historical QA
 

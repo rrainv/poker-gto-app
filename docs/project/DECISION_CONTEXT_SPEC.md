@@ -4,7 +4,7 @@ Status: `DECISION-CONTEXT-001A` additive application-contract extension.
 
 ## 1. Versioning and boundary
 
-DecisionContext remains the one application strategy projection between Scenario
+DecisionContext remains the intended one application strategy projection between Scenario
 or canonical PokerState and StrategyProvider:
 
 ```text
@@ -35,6 +35,8 @@ can differ from base v1.
 DecisionContext is a projection, not a second poker engine, history model,
 provider parameter bag, or solver schema. Canonical legality comes only from
 `shared/poker-domain/getLegalActionSpec()` and related canonical selectors.
+
+Current implementation caveat: the extracted Scenario/PokerState projectors still coexist with a classic `logic.js` constructor and a fail-open Playbook bridge fallback. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` owns convergence and explicit failure semantics. This specification states the required authority; it does not claim that audit debt is already closed.
 
 ## 2. Base-v1 field audit
 
@@ -117,6 +119,8 @@ fingerprint to agree with the Saved rules snapshot.
   cannot represent side-pot/effective-stack relationships.
 
 These fields do not model side-pot strategy or already-contributed pot layers.
+
+They are also Hero-named compatibility fields rather than a complete actor-relative economics contract. `DECISION-ECONOMICS-001` owns exact decision-actor identity, incremental price, contestable-pot layers, actor contribution, and effective-stack semantics for Hero and non-Hero decisions. That work must project canonical poker-domain accounting and may not introduce a second pot or side-pot authority. Until it closes, `currentPotBb` must not be assumed to answer every actor-relative contestable-pot question.
 
 ### Mandatory v1.1 strategy field choice
 

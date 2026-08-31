@@ -1,6 +1,6 @@
 # Riverline Home Game Organizer specification
 
-Status: `HOME-GAME-001B` accepted implementation checkpoint; Core Flow cash-out correction is implementation complete and awaiting human acceptance; broader manual Firefox/provider acceptance debt remains
+Status: `HOME-GAME-001B` accepted implementation checkpoint; Core Flow cash-out correction is completed / human accepted; broader manual Firefox/provider acceptance debt remains
 Date: August 27, 2026
 
 ## Purpose and boundary
@@ -26,7 +26,7 @@ Home Game form / commands
 - `HomeGameTransaction v1`: immutable `buy_in | rebuy | add_on | cash_out | correction` ledger entry; an additive replacement relation explicitly links a new fact to the original corrected fact.
 - `HomeGameChipSnapshot v1`: optional current/final integer chip count. It is never financial authority.
 - `HomeGameSettlement v1`: deterministic derived transfers, not a stored total.
-- `HomeGameSessionExport v1`: serializable session/ledger/snapshot envelope; no UI yet.
+- `HomeGameSessionExport v1`: serializable session/ledger/snapshot envelope exposed as an account-only canonical JSON download; import is not implemented.
 
 All durable records have stable opaque IDs and owner references. Session/group/player records have revisions; ledger and snapshot facts are immutable.
 
@@ -85,7 +85,7 @@ Authenticated accounts have one reusable player library with stable-ID edit, nic
 
 Hard deletion is intentionally not exposed: deleting a player, group, or financial session would require retention and audit semantics beyond v1, while reversible archive satisfies organizer management safely. `HomeGameSessionExport v1` is exposed as account-only JSON download. Import remains deferred because v1 has no accepted validation, ownership-adoption, conflict, or duplicate-ledger contract; arbitrary JSON is never accepted into the ledger.
 
-Cards replace a wide financial table and collapse to one result column on narrower desktops. Forms are semantic and labeled; errors use an assertive live region; result meaning is not color-only; logical CSS supports RTL. Stable copy is supplied in EN/RU/HE. No delete/archive action is exposed yet.
+Cards replace a wide financial table and collapse to one result column on narrower desktops. Forms are semantic and labeled; errors use an assertive live region; result meaning is not color-only; logical CSS supports RTL. Stable copy is supplied in EN/RU/HE. Reversible player/group/session archive and restore are exposed; hard delete is not.
 
 ## Performance
 
@@ -101,6 +101,8 @@ The domain performs deterministic integer arithmetic over one ledger. IndexedDB 
 - hard delete and import until explicit retention/validation/ownership contracts exist;
 - dealer/button advancement, photos, recurring games, group defaults;
 - Guest-to-account adoption;
-- human acceptance of the Core Flow cash-out correction interaction; broader completed Firefox visual/language acceptance and real authenticated provider-path acceptance.
+- broader completed Firefox visual/language acceptance and real authenticated provider-path acceptance.
+
+Home Game remains a supporting utility. After the named safety/acceptance fixes, product expansion is frozen until a later explicit reprioritization; broader organizer features do not enter the immediate foundation sequence.
 
 Tournament sessions must not reuse this cash-game contract as though chip counts were money. They require separate versioned accounting semantics.

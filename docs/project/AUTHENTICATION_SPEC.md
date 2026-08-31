@@ -6,7 +6,9 @@ Date: August 17, 2026
 
 ## Scope
 
-ACCOUNT-002A/AR adds real provider authentication, required remote account-profile metadata, explicit identity linking, and discoverable account UX. Signed-out product state is **Guest Mode**, not a durable Local Profile. Guest may use non-persistent analysis/training and device preferences, but Riverline does not query or persist Saved/Review/Mistakes/Personal Strategy/Range Calibration for Guest. It does not upload, synchronize, back up, share, or remotely delete poker study data. `ACCOUNT-002B-A` permits only an authenticated, currently validated session with explicit identity-scoped opt-in to synchronize Saved Hands/Spots.
+ACCOUNT-002A/AR adds real provider authentication, required remote account-profile metadata, explicit identity linking, and discoverable account UX. The implemented signed-out product state is non-persistent **Guest Mode** for account-gated domains. The accepted long-term product model is now a durable anonymous device-local Guest profile, distinct from every authenticated owner; `IDENTITY-LIFECYCLE-001` owns that migration and one cross-surface owner/generation/disposal lifecycle. Guest data remains local unless a later explicit adoption/sync contract says otherwise. `ACCOUNT-002B-A` permits only an authenticated, currently validated session with explicit identity-scoped opt-in to synchronize Saved Hands/Spots.
+
+Explicit sign-out is an access boundary, not deletion: authenticated-owner bytes may remain stored, but every authenticated-owner query, mounted view, late generation, and cached repository must become inaccessible immediately. Current Training Memory does not yet satisfy this gate because it resolves the account registry's active identity directly; `AUTH-TRAINING-MEMORY-001` owns the repair.
 
 ```text
 Supabase Auth browser client + public.profiles/RLS
@@ -134,7 +136,7 @@ Activation changes only `activeIdentityId`. Saved, Home, Personal Strategy, and 
 
 Range Calibration waits for auth restoration before mounting. A live identity-change event disposes its repository/controller, removes identity-scoped DOM and global listeners, and remounts from the new binding. Home reloads its current-user view model on the same event.
 
-Sign-out asks Supabase to invalidate the global provider session. If the provider cannot be reached, the adapter attempts a local SDK sign-out so the device no longer uses that session. Riverline then enters Guest Mode in all cases; it does not reveal a Local Profile. Authenticated and legacy caches remain intact but unreachable through Guest queries. Re-authentication restores the mapped account. No purge or remote deletion is implemented.
+Sign-out asks Supabase to invalidate the global provider session. If the provider cannot be reached, the adapter attempts a local SDK sign-out so the device no longer uses that session. Riverline then enters Guest Mode in all cases; it does not reveal a Local Profile. Authenticated and legacy caches behind the authentication gate remain intact but unreachable through Guest queries. Training Memory is the known exception: its current bridge bypasses that gate, so `AUTH-TRAINING-MEMORY-001` must establish the same inaccessibility before this is a cross-product guarantee. Re-authentication restores the mapped account. No purge or remote deletion is implemented.
 
 `PersistentIdentityGate.requirePersistentIdentity({ intent, resumeAction })` is the single durable-feature promotion seam. Saved Study and Range Calibration retain the in-memory action/context, open the Account/Profile flow, execute the durable callback exactly once only after `signed_in`, and reject cancellation with `persistent_identity_cancelled` before any reference or domain record is written. Home returns a dedicated Guest model without issuing user-domain queries.
 

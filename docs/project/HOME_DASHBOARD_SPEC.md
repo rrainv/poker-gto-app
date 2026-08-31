@@ -35,13 +35,13 @@ Current Riverline identity surfaces reuse one canonical geometric brand-spade as
 
 ### Guest
 
-Guest Home does not issue account-scoped Saved Study, identity, or sync-domain reads. It contains:
+Current Guest Home does not issue authenticated-account Saved Study, identity, or sync-domain reads. The accepted long-term Guest is a durable anonymous device-local profile under `IDENTITY-LIFECYCLE-001`; it remains distinct from every authenticated owner. Guest Home contains:
 
 - a short Riverline introduction and restrained sign-in promotion;
 - useful direct Start/study actions through existing destinations;
 - Continue only when an explicit supported resume contract exists.
 
-Saved, Review, Mistakes, Personal Strategy, and calibration content are absent. Guest is useful without presenting another identity's content.
+In the current runtime, Saved, Review, Mistakes, Personal Strategy, and calibration content are absent. The future durable Guest may expose only its own explicitly supported local domains. Explicit sign-out must never present the prior authenticated identity's content.
 
 ### Authenticated
 
@@ -81,7 +81,7 @@ DOM-free `saved-study-preview-facts/v1` supplies observer-safe canonical Hand pr
 
 For nested v2 Saved payloads, Home keeps the existing summary shape and derives neutral `off` or fixed-per-player accounting from the immutable rules snapshot. It never requires `game.mode`, infers an operator from provenance, or performs a preset lookup. V1 summaries retain their existing game-mode projection.
 
-The Saved destination does not imply that full `HOME-002B` exists. Search, broader filters, sorting/pagination, bulk operations, and additional payload kinds remain later work; HOME-002A does not fake them.
+The Saved destination does not imply full retrieval: it filters only the already-loaded bounded result. `SAVED-LIBRARY-001` now owns full retrieval, search, broader filters, sorting, and pagination for current Hand/Spot objects. Bulk operations, broader `HOME-002B` master-detail evolution, and additional payload kinds remain later; no new kind is authorized by the retrieval ticket.
 
 ## Personal Strategy truth
 
@@ -97,14 +97,14 @@ Future Home/dashboard evolution must remain contract-backed. It must not promote
 
 The dashboard uses semantic sections/headings, keyboard buttons, contextual accessible Saved-item labels, visible focus styles, text-plus-color sync state, and a polite atomic sync status. EN/RU/HE copy is structurally complete; usernames and poker/numeric facts remain LTR islands in Hebrew.
 
-The responsive grid targets 1024×768 through 2560×1600 without horizontal overflow. The account overview is compact, important modules remain high in the grid, and the narrow fallback is a single column. Mobile remains deferred.
+The minimum supported desktop is 1366×768, with representative larger desktops through 2560×1600 and 4K. Existing 1024×768 behavior remains compact/mobile-responsive future evidence rather than a current blocker. The account overview is compact, important modules remain high in the grid, and the narrow fallback is a single column. Mobile remains deferred.
 
 `home.first-use` v2 teaches the account/sync overview, Saved reopen, Review, Personal Strategy truth, and Quick Start without creating another help system.
 
 ## Preserved future work
 
-- full Saved Library search, broader filters, sorting/pagination, bulk operations, and approved additional payload kinds;
-- persistent Training history, mistake re-drilling, mastery, sessions, and trends;
+- `SAVED-LIBRARY-001` full retrieval/search/filter/sort/pagination for current Hand/Spot objects, then later bulk operations and approved additional payload kinds;
+- contract-backed Home continuity over existing Training Memory; sophisticated re-drilling, mastery, and trends remain later and cannot be inferred from heuristic agreement;
 - durable recent Analysis history;
 - configurable card order, visibility, density, and beginner/expert composition;
 - study goals and approved gamification only after a separate product decision.

@@ -1,6 +1,6 @@
 # Training Memory v1 specification
 
-Status: accepted implementation checkpoint for `TRAINING-MEMORY-001`, August 26, 2026. Manual Firefox acceptance remains routed debt.
+Status: accepted bounded evidence/re-drill checkpoint for `TRAINING-MEMORY-001`, August 26, 2026; authentication-owner isolation is reopened under `AUTH-TRAINING-MEMORY-001`, and baseline/remediation semantics are reopened under `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`.
 
 ## Purpose and authority
 
@@ -36,7 +36,7 @@ Answered records store:
 - the internal deterministic Training evaluation as internal evidence;
 - a public comparison state: `matches_reference`, `close_to_reference`, `differs_from_reference`, `unsupported`, or `unavailable`.
 
-Internal grade and permitted public claim are deliberately separate. A heuristic internal `mistake` grade remains a comparative `differs_from_reference` record; it is not stored as universal poker truth. A future exactly covered validated reference can preserve its genuinely normative policy without rewriting older evidence.
+Internal grade and permitted public claim are deliberately separate. A heuristic internal `mistake` grade remains a comparative `differs_from_reference` record; it is not stored as universal poker truth. Heuristic agreement/disagreement is not skill, accuracy, mastery, correctness, GTO, or automatic remediation. A future trusted source does not become normatively gradeable merely because it has a modal distribution: `TRAINING-NORMATIVE-001` must define a source-justified grading method without probability-gap-to-modal-action as the correctness rule.
 
 Study metadata is user-authored and distinct from source truth: `review`, `difficult`, `important`, and `myMistake`. Training v1 has no `Not sure` action, so the existing product question remains open rather than being silently mapped to an action.
 
@@ -60,9 +60,9 @@ Presentation strings, hand-category prose, UI tags as poker inference, fake accu
 
 ## Local-first persistence and ownership
 
-Training Memory uses its own IndexedDB database, `riverline-training-memory`, version 1, with backend schema `training-memory-indexeddb/v1`. It shares Riverline's existing active identity authority and `RiverlineOwnershipRef`; it creates no identity or account binding.
+Training Memory uses its own IndexedDB database, `riverline-training-memory`, version 1, with backend schema `training-memory-indexeddb/v1`. It currently obtains `getActiveIdentity()` from the account registry and creates `RiverlineOwnershipRef` records; it creates no identity or account binding.
 
-The supported local/Guest identity path is durable on the device. Authenticated-future identities use a distinct account owner key. All records and indexed queries are owner-scoped and fail closed on owner mismatch. There is no upload, implicit sync, or remote assumption. The JSON-compatible schemas preserve a future export/import seam, but no export UI is claimed.
+This storage is owner-keyed, but the current browser bridge is not gated by the validated authentication session. The account registry can retain an authenticated identity as its internal active identity after the authentication layer has entered Guest state, so owner-key checks alone do not establish sign-out inaccessibility. `AUTH-TRAINING-MEMORY-001` must route every read/write/query through the authenticated-or-durable-Guest lifecycle authority, cancel stale generations, dispose prior-owner repositories/views, and prove cross-owner isolation. Existing bytes must remain untouched on access denial. There is no upload, implicit sync, or remote assumption. The JSON-compatible schemas preserve a future export/import seam, but no export UI is claimed.
 
 Stores and important indexes:
 
@@ -74,16 +74,16 @@ Version-1 migration creates missing stores/indexes without deleting other data. 
 
 ## Review queue and lifecycle
 
-The canonical queue is derived from answered evidence and study metadata. V1 reasons are narrow and inspectable:
+The current v1 queue is derived from answered evidence and study metadata. Its stored reasons remain inspectable, but automatic remediation semantics are not accepted:
 
-- differs from the selected reference;
-- close to the selected reference;
+- differs from the selected reference (historical comparative evidence only);
+- close to the selected reference (historical comparative evidence only);
 - source comparison unavailable/unsupported;
 - manually marked Review, Difficult, Important, or My mistake.
 
 Lifecycle states are `none`, `pending`, `reviewed`, and `snoozed`. Done marks reviewed but preserves evidence; Review tomorrow creates a one-day due date; Review again returns an item to pending.
 
-Priority is deterministic and transparent: explicit Review/Difficult/Important/My mistake weights, then difference/unavailable/close weights, plus bounded age, minus bounded prior-review count. It is not a mastery, skill, or ability-confidence score. Sophisticated spaced/adaptive scheduling is deferred to `TRAINING-MEMORY-002`.
+Priority is currently deterministic and transparent: explicit Review/Difficult/Important/My mistake weights, then difference/unavailable/close weights, plus bounded age, minus bounded prior-review count. The human audit disposition supersedes treating heuristic disagreement alone as an automatic remediation signal. `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001` must separate user-authored review intent and legitimately normative evidence from baseline comparison. Priority is not a mastery, skill, accuracy, correctness, or ability-confidence score. Sophisticated spaced/adaptive scheduling is deferred until those semantics are repaired.
 
 ## Same Spot
 
@@ -132,7 +132,9 @@ V1 limitations and return points:
 
 - manual Firefox acceptance at 1920x1080 and 1366x768 for EN, HE RTL, representative RU, and Full Hand remains open;
 - advanced spaced/adaptive scheduling, saved drills, rich filters/trends, Home/Replay/Analyze continuity, export/import, sync, and Personal Strategy opt-in are later tickets;
-- current source coverage remains generalized heuristic fallback because no production reference pack is registered;
+- current source coverage remains a generalized exploratory/comparative heuristic baseline because no production reference pack is registered;
+- authentication-gated owner isolation and explicit sign-out inaccessibility remain open under `AUTH-TRAINING-MEMORY-001`;
+- heuristic disagreement must stop creating automatic remediation under `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`;
 - `Not sure` remains an open product decision.
 
 Focused automated coverage is in `tests/training_memory001_foundation.test.mjs`.

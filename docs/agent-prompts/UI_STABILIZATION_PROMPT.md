@@ -16,7 +16,7 @@ Rules:
 - preserve PERF-001 scheduling, single-provider resolution, hidden-surface invalidation, and Matrix reuse
 - prefer shared tokens/components over one-off fixes, but do not rewrite the stylesheet
 - distinguish structural tests from visual acceptance
-- test 1024, 1280, 1440, and 1600 desktop widths when the ticket owns geometry
+- test the supported 1366×768 minimum plus representative 1440, 1600, 1920, and larger desktop widths when the ticket owns geometry; preserve 1024×768 as compact/mobile-responsive future evidence, not a current blocker
 - include Hebrew/RTL and longer-copy stress when relevant
 - do not close an issue without live visual confirmation if its defect is visual
 

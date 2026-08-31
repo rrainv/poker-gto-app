@@ -1,6 +1,6 @@
 # Strategy Source Authority and Claim Policy
 
-Status: `REFERENCE-AUTHORITY-001` implementation contract.
+Status: `REFERENCE-AUTHORITY-001` implementation contract; production trust acceptance remains open under `STRATEGY-TRUST-001`.
 
 This specification defines how Riverline interprets a strategy result. It does not decide poker actions, tune the heuristic, validate a reference dataset, or make Personal Strategy a production provider.
 
@@ -18,7 +18,7 @@ StrategyClaimPolicy v1
 Playbook / Analyze / Matrix / Training / in-memory Full Hand review
 ```
 
-`StrategyProvider` remains the only production strategy entry point. `StrategyClaimPolicy` is the only application authority that translates source metadata into permitted product claims. It never generates actions or changes probabilities.
+`StrategyProvider` remains the required production strategy entry point. `StrategyClaimPolicy` is the only application authority that translates source metadata into permitted product claims. It never generates actions or changes probabilities. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` separately owns removal of the current classic/fail-open DecisionContext path before documentation may claim full consumer convergence.
 
 ## 2. Concepts that must remain separate
 
@@ -121,18 +121,19 @@ The policy is derived from authority + coverage + effective capabilities + resul
 | observed behavior | observed-action semantics | no | only if the observation contract supports it | no |
 | unsupported/unavailable | no | no | no | no |
 
-Normative presentation is enabled by descriptor and coverage facts, not provider-specific UI code. A synthetic exact validated descriptor therefore upgrades existing consumers without changing them.
+Normative presentation is enabled only by descriptor, coverage, effective capabilities, and prior production trust acceptance, not provider-specific UI code. Synthetic fixtures may exercise consumer behavior but can never grant or simulate production trust merely by declaring an exact validated descriptor.
 
 ## 7. Current heuristic policy
 
-The built-in heuristic is deterministic, versioned, known-provenance, generalized, quantitative, and comparative. It remains useful for:
+The built-in heuristic is deterministic, versioned, known-provenance, generalized, quantitative, and comparative. It is a baseline for exploration and explicit comparison only. It remains useful for:
 
-- scoped Riverline recommendations;
 - exploratory Analysis;
 - comparative Training feedback;
 - rough provider-backed Matrix frequencies;
 - action-price practice;
 - deterministic reproduction while the same source version is available.
+
+Heuristic agreement is not skill, accuracy, mastery, correctness, or GTO. Heuristic disagreement is not objective error and must not automatically create remediation, a mistake queue, or curriculum priority. Product copy may describe the baseline's preferred action or distribution only when it remains explicit that the claim belongs to this exploratory source.
 
 The v4 preflop source preserves the v3 unopened, limped, BB-option, facing-3-bet,
 and facing-4-bet-or-more probability paths. Inside the exact
@@ -266,8 +267,8 @@ The provider supplies a versioned descriptor and exact coverage only after match
 
 `REFERENCE-PACK-001` implements this path as `reference-pack/v1` with a strict
 declarative validator, exact canonical matcher, provider adapter, and unchanged
-heuristic fallback. Production registration requires an accepted validation
-status plus explicit permitted redistribution/repository inclusion. Synthetic
+heuristic fallback. Production registration requires the separately accepted
+`STRATEGY-TRUST-001` gate plus explicit permitted redistribution/repository inclusion. Synthetic
 fixtures require a test-only gate and cannot claim `validated_reference`.
 There is currently no registered production pack, accepted frequency corpus, or
 normative/EV/optimality upgrade. Contract and current source blocker are owned
@@ -281,14 +282,20 @@ The model supplies a versioned descriptor, explicit evaluation/validation basis,
 
 Being solver-derived grants no automatic trust. Reproducible assumptions, bounded coverage, independent validation, and declared capabilities determine authority.
 
-## 14. Extension checklist
+## 14. Production trust acceptance
+
+`STRATEGY-TRUST-001` must define one human-auditable acceptance record before any production source receives trusted or normative authority. At minimum it owns source identity/version, immutable assumptions and data, compatible license and redistribution rights, reproducible or strong provenance, independent validation against a predeclared corpus, exact coverage and mismatch behavior, reviewer/decision identity, registration status, and revocation/supersession behavior. Automated schema validation and an exact matcher are necessary inputs, not the acceptance decision.
+
+Read-only reference-source research may run in parallel with foundation work. One bounded source decision follows when the evidence is ready; research observations or private benchmark material do not become production truth.
+
+## 15. Extension checklist
 
 Before enabling a new production source:
 
 1. define stable identity/version and provenance;
 2. define the complete coverage matcher;
 3. declare only capabilities present in every emitted result;
-4. document validation evidence supporting the chosen authority;
+4. document validation evidence and satisfy the production trust acceptance record supporting the chosen authority;
 5. prove unsupported contexts fall through without extrapolation;
 6. run claim-policy consumer tests without adding source-ID UI conditions;
 7. decide separately whether durable historical reproduction is required.

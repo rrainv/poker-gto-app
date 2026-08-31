@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 31, 2026 (`GUIDE-CONTENT-001` is **COMPLETED / HUMAN ACCEPTED**; the September Alpha whole-app human sanity pass is active next, followed by documentation/continuity freeze, full verification, the clean audit commit and immutable audit tag, independent cross-model audits, and human triage before further structural, refactor, or feature work).
+Last consolidated: August 31, 2026 (`AUDIT-TRIAGE-001` incorporates the completed September Alpha independent audits and authoritative human synthesis; the current order is the foundational sequence below).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -47,15 +47,19 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | 8 | COMPLETED / HUMAN ACCEPTED | `CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001`; canonical `PokerState` semantics correct, application/UI root cause repaired, explicit all-in chance flow and exact-once Replay/live agreement accepted |
 | 9 | COMPLETED / HUMAN ACCEPTED | `GUIDE-CONTENT-001` workflow-first durable product reference over existing navigation and tutorial authorities |
 | conditional | PRESERVED CONDITIONAL / NOT IN CURRENT ORDER | `HOME-GAME-PRESENTATION-001`, `AUDIO-DESIGN-001` |
-| active next | ACTIVE NEXT | September Alpha whole-app human sanity pass |
-| September Alpha continuity | DOCS / CONTINUITY FREEZE → FULL VERIFICATION GATE | freeze coherent project truth, then verify the complete checkpoint |
-| September Alpha audit checkpoint | HUMAN CLEAN AUDIT COMMIT → IMMUTABLE AUDIT TAG | human-owned clean audit baseline |
-| September Alpha audit | CROSS-MODEL DEEP AUDIT → HUMAN TRIAGE | blind hands-on product audit plus white-box theoretical/architecture audit before further structural, refactor, or feature work |
-| post-audit | PRESERVED MAJOR FEATURES / EVIDENCE-BASED ACTIVATION | `PERSONAL-STRATEGY-003A`, `GAME-SETUP-EVOLUTION-001`, `RANGE-EVOLUTION-001`, or another documented major capability |
+| 1 | ACTIVE NEXT | `AUTH-TRAINING-MEMORY-001` |
+| 2–4 | PLANNED NEXT / FOUNDATIONAL | `DECISION-ECONOMICS-001` → `STRATEGY-TRUST-001` → `DECISION-CONTEXT-SINGLE-AUTHORITY-001` |
+| 5 | PLANNED NEXT / NEEDS REPRODUCTION | `AUDIT-HIGH-RISK-REPRO-001` |
+| 6–9 | PLANNED NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
+| 10–11 | PLANNED NEXT / INCREMENTAL EXTRACTION | `UI-COMPOSITION-ROOT-001` → one bounded workspace extraction pilot |
+| 12–13 | PLANNED NEXT | `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001` |
+| 14 | PLANNED NEXT / BOUNDED DECISION | reference-source decision after read-only research; research may run in parallel |
+| 15 | PLANNED NEXT | learning-loop expansion after foundation gates |
+| 16 | PLANNED NEXT | `PERSONAL-STRATEGY-003A` |
 | later gate | PLANNED LATER / PRE-RELEASE QUALITY GATE | `PREMIUM-CLOSEOUT-001` |
 | future | PRESERVED FUTURE | release/mobile/social/PLO later |
 
-The **September Alpha** milestone is an internal/high-quality alpha: a coherent, trustworthy, human-tested desktop build with accepted Hand/Replay, Training, Equity, Analyze/Range, materially improved First Use/Home and systemic polish, synchronized documentation, a whole-product manual pass, independent cross-model hands-on and theoretical audits, and serious findings triaged/fixed. It is not public beta readiness, production reference coverage, completed live account/sync validation, finished mobile/social/PLO, or completion of the long-term roadmap.
+The **September Alpha** milestone and independent-audit checkpoint are complete as evidence capture and human triage, not public-beta readiness. The resulting foundation gates do not reopen accepted UI checkpoints wholesale, but they supersede claims that owner indexes, heuristic agreement, source metadata, structural browser substitutes, or a bounded Saved result set are sufficient product closure.
 
 Learning Evidence, Natural-Language Intelligence, Reference Strategy Evolution, Equity/Hand Analysis, Bluff/Exploit Analysis, Opponent Intelligence, Deep Hand Review, Training Intelligence, Personal Strategy Intelligence, Range Evolution, Saved Knowledge/Sharing, Home Game Evolution, and Random Spot Generator remain preserved in capability dossiers; the closure/audit phase does not compress or delete them.
 
@@ -87,7 +91,8 @@ Detailed evidence and row-level traceability remain in [Hands-On Product Review 
 
 | Capability | Status | Accepted scope |
 |---|---|---|
-| source authority, DecisionContext, fallback repair, role semantics, benchmark, and bounded calibration | COMPLETED FOUNDATION | One `DecisionContext → StrategyProvider → StrategyResult → StrategyClaimPolicy` path; current v4 remains generalized/comparative and narrowly calibrated. |
+| source authority, DecisionContext, fallback repair, role semantics, benchmark, and bounded calibration | CHECKPOINTED / FOUNDATIONAL DEBT ACTIVATED | The target remains one `DecisionContext → StrategyProvider → StrategyResult → StrategyClaimPolicy` path. Audit evidence found duplicate/fail-open DecisionContext construction, incomplete actor-relative contestable-pot economics, and no accepted production trust gate. Owners: `DECISION-ECONOMICS-001`, `STRATEGY-TRUST-001`, `DECISION-CONTEXT-SINGLE-AUTHORITY-001`. |
+| `HEURISTIC-BASELINE-TRUTH-001` | PLANNED NEXT / FOUNDATIONAL | Current strategy output is a heuristic baseline for exploration and explicit comparison only. Agreement/disagreement is not skill, accuracy, mastery, correctness, GTO, or automatic remediation. |
 | `REFERENCE-PACK-001` bounded reference pack/provider | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `reference-pack/v1`, exact rules/history/stack/legality matcher, deterministic validation/integrity, provider adapter, unchanged labelled fallback, and generic Playbook/Training/Matrix/Analyze/Review consumption are implemented with synthetic test-only data. No production corpus is registered; resume with exact immutable source data, compatible license/redistribution, reproducible or strong provenance, and independent validation evidence. See [Reference Pack v1](REFERENCE_PACK_V1_SPEC.md) and [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
 | broader preflop/postflop reference and evidence-driven fallback calibration | PRESERVED FUTURE | Expand only through measurable validation; exact coverage never extrapolates. See [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
 | trustworthy datasets and learned/model providers | PRESERVED FUTURE / dependency-gated | Only after validated anchors demonstrate value; never train on heuristic labels and market the result as GTO. See [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
@@ -115,8 +120,8 @@ Independent visual/interaction acceptance remains in QA and the Return Queue; im
 
 | Capability | Status | Accepted scope |
 |---|---|---|
-| deterministic Training and Practice Planner | COMPLETED FOUNDATION | Legal canonical generator, shared provider/grading path, Varied/Focused structural planning, Full Hand mode, reproducible seeds, and generation-only sizing families. |
-| Training Memory / DecisionRecord / review and re-drill | COMPLETED / ACCEPTED V1 CHECKPOINT WITH MANUAL FIREFOX DEBT | Durable shown/answered/source/version/context/session evidence, owner-isolated IndexedDB, bounded recent history, transparent Review lifecycle, exact historical Same Spot, current planner/generator-backed Similar Spot, factual source-aware summaries, and Full Hand replay sharing are implemented. The heuristic remains comparative. See [Training Memory v1](TRAINING_MEMORY_V1_SPEC.md), [Learning Evidence Foundation](capabilities/LEARNING_EVIDENCE_FOUNDATION.md), and [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
+| deterministic Training and Practice Planner | CHECKPOINTED / NORMATIVE GRADING DEBT ACTIVATED | Legal canonical generator, Varied/Focused structural planning, Full Hand mode, reproducible seeds, and generation-only sizing families remain. `TRAINING-NORMATIVE-001` must replace probability-gap-to-modal-action as a normative correctness rule and keep comparative baseline practice distinct. |
+| Training Memory / DecisionRecord / review and re-drill | CHECKPOINTED / AUTH ISOLATION DEBT ACTIVATED | Durable shown/answered/source/version/context/session evidence, bounded recent history, review lifecycle, exact historical Same Spot, current planner/generator-backed Similar Spot, factual source-aware summaries, and Full Hand replay sharing exist. Current owner indexes do not prove authentication-gated isolation or sign-out inaccessibility; `AUTH-TRAINING-MEMORY-001` owns the repair. Heuristic disagreement alone must not create remediation. See [Training Memory v1](TRAINING_MEMORY_V1_SPEC.md), [Learning Evidence Foundation](capabilities/LEARNING_EVIDENCE_FOUNDATION.md), and [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
 | Training Memory scheduling and cross-surface continuation | PLANNED LATER | Principled spaced/adaptive scheduling, rich filters/trends, Saved Drill payloads, Home/Replay/Analyze continuity, export/import, sync, and explicit Personal Strategy observation require later bounded tickets; `Not sure` remains open. |
 | Full Hand Training Hero-fold termination | PRESERVED FUTURE / NOT ACTIVATED | Learner-facing Full Hand Training should end when Hero folds instead of autoplaying an opponent-only remainder. This requires a bounded Training lifecycle decision and must not change canonical Hand settlement/history. See [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
 | profile-aware Training evidence and opponent-policy drills | PLANNED LATER / dependency-gated | Explicit opt-in, immutable observed provenance, no overwrite of intended strategy, later explicit opponent policy. |
@@ -130,7 +135,7 @@ Training `Not sure` behavior remains an open product question; Calibration's exi
 |---|---|---|
 | Foundation / Calibration / inference / Matrix / Builder / Teacher | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Three user-named modes per profile, sparse immutable intended evidence, dominant-only ≠ pure, contradictions, categorical uncertainty, adaptive questions, and one shared evidence authority. |
 | `PERSONAL-STRATEGY-002R` | COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED | The [independent review and human disposition](PERSONAL_STRATEGY_002R_REVIEW.md) preserve the intended-evidence authority and accept the Game setup/Approach, local-first, RFI-first, first-value product reset before integration. Browser/real-user acceptance remains routed debt. |
-| `PERSONAL-STRATEGY-003A` | PRESERVED MAJOR FEATURE / ACTIVATE ONLY AFTER SEPTEMBER ALPHA AUDIT AND HUMAN TRIAGE | Own the versioned legacy migration and deliver one Game setup, one initial Approach, approximately five supported RFI questions, broad sparse/high-information coverage before fine boundary refinement, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit. It is not immediately next; no provider/reference/observed integration. |
+| `PERSONAL-STRATEGY-003A` | PLANNED / ORDERED AFTER FOUNDATION AND LEARNING-LOOP GATES | Own the versioned legacy migration and deliver one Game setup, one initial Approach, approximately five supported RFI questions, broad sparse/high-information coverage before fine boundary refinement, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit. It remains item 16 in the binding order; no provider/reference/observed integration. Exactly three legacy UI modes are not a future product requirement. |
 | provider/reference/observed integration | PLANNED LATER / AFTER 003A AND HUMAN CHECKPOINT | Keep intended Personal Strategy, selected reference, source-labelled observed behavior, and opponent policy explicit; Training comparison/adoption is opt-in and Training Memory remains the observed authority. |
 | `PERSONAL-INSIGHTS-001` | PLANNED LATER after integration | Cross-profile Teach Riverline Next queue and evidence/provenance/uncertainty-aware summaries. See [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md). |
 | bounded versioning and later postflop/combo depth | ACCEPTED DIRECTION / LATER SLICES | Duplicate Approach, immutable material Game setup versions, and restore-through-new-correction/version are accepted; branches, arbitrary rollback, and Git-like management are deferred. Postflop remains exact-fact future work. See [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md). |
@@ -155,7 +160,8 @@ Training `Not sure` behavior remains an open product question; Calibration's exi
 | Saved Hand / Spot | COMPLETED | Versioned local-first objects, shared title/note/tags/review/mistake metadata, archive, observer-safe canonical Replay, and portability foundations. |
 | `SAVED-VISUAL-KNOWLEDGE-001` | COMPLETED / HUMAN ACCEPTED | Compact Hand/Spot grid with visible All / Hands / Spots categories, DOM-free truthful previews, bounded hover/focus overlay and explicit detail, shared cards, privacy clearing, unsupported unknown kinds, and unchanged reopen/persistence authority. |
 | `HOME-002A` My Riverline | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Guest/account-aware Continue and bounded Saved/Recent/Review/Mistakes/Personal Strategy previews; human acceptance remains open. |
-| `HOME-002B` Saved Study Library | PLANNED LATER | Dense master-detail Hands/Spots first, then approved Range/Drill/Review/Session payloads with search/filter/tags and explicit Open/Study. See [Saved Knowledge and Sharing](capabilities/SAVED_KNOWLEDGE_AND_SHARING.md). |
+| `SAVED-LIBRARY-001` | PLANNED NEXT / FOUNDATIONAL RETRIEVAL | Full retrieval, search, filtering, sorting, and pagination over the existing Hand/Spot library. It does not authorize new payload kinds. The broader `HOME-002B` master-detail evolution remains later. See [Saved Knowledge and Sharing](capabilities/SAVED_KNOWLEDGE_AND_SHARING.md). |
+| `HOME-STUDY-CONTINUITY-001` | PLANNED NEXT | Connect only explicit Hand, Training, Saved, and other study resume/history contracts after ownership and retrieval gates; never fabricate recency or mastery. |
 | Saved Training Experience | PRESERVED FUTURE / dependency-gated / NOT ACTIVATED | Preserve a Full Hand Training experience as canonical Hand plus its Training decisions/evidence rather than degrading it to a bare Hand; requires an approved payload, ownership, privacy, versioning, and reopen contract. |
 | Saved Equity Snapshot | PRESERVED FUTURE / dependency-gated / NOT ACTIVATED | Preserve exact inputs and unknowns, board/dead cards, calculation method/version/result, and instant-reopen semantics through a future approved payload; current Saved kinds remain Hand and Spot. |
 | user-visible export/import, version history, share/fork/collaborate | PRESERVED FUTURE / dependency-gated | Private by default; share actual versioned state/provenance, with read-only-first acceptable. See [Saved Knowledge and Sharing](capabilities/SAVED_KNOWLEDGE_AND_SHARING.md). |
@@ -166,7 +172,7 @@ Home remains a consumer and must not invent accuracy, mastery, streaks, or histo
 
 | Capability | Status | Accepted scope |
 |---|---|---|
-| identity/auth plus Saved and Personal Strategy sync | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Guest-first local identity, Supabase email/password/profile, explicit opt-in local-first sync, outbox/retry/tombstones/conflicts; live migrations/RLS and lifecycle acceptance remain. |
+| identity/auth plus Saved and Personal Strategy sync | CHECKPOINTED / FOUNDATIONAL LIFECYCLE DEBT ACTIVATED | Supabase email/password/profile and explicit opt-in sync foundations exist. `IDENTITY-LIFECYCLE-001` owns cross-surface owner/generation/disposal semantics. The accepted long-term Guest is a durable anonymous device-local profile; explicit sign-out must make authenticated-owner data inaccessible. Current runtime remains unchanged until that ticket. |
 | username/password adapter | OPEN PRODUCT DECISION | Trusted rate-limited server/Edge Function only if still required; never client-side username-to-email lookup. |
 | recovery/deletion/local forgetting and cross-device preferences | PRESERVED FUTURE | Explicit privacy/lifecycle work after core sync stability. |
 | social identity and study sharing | PRESERVED FUTURE / dependency-gated | After privacy/versioning maturity; sharing semantics live in [Saved Knowledge and Sharing](capabilities/SAVED_KNOWLEDGE_AND_SHARING.md). |
@@ -177,7 +183,7 @@ Authentication never silently enables upload; Riverline remains useful offline.
 
 | Capability | Status | Accepted scope |
 |---|---|---|
-| `HOME-GAME-001A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Separate players/groups/sessions, exact integer money, append-only corrections, chips separate from money, lifecycle/reopen, balance rejection, deterministic settlement, account IndexedDB/Guest memory. |
+| `HOME-GAME-001A` | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Separate players/groups/sessions, exact integer money, append-only corrections, chips separate from money, lifecycle/reopen, balance rejection, deterministic settlement, account IndexedDB/Guest memory. Home Game remains a supporting utility; expansion freezes after safety fixes. |
 | Create Game routing blocker | COMPLETED | Creation stays in Home Game and opens the intended active session. |
 | `HOME-GAME-001B` | COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT WITH MANUAL FIREFOX/PROVIDER DEBT | Stable reusable player edit/archive/restore; ordered group management and roster reuse; session archive/restore and lifecycle inspection; atomic visible correction/replacement history; account-only canonical export. Hard delete/import are deliberately deferred for missing safety contracts. |
 | settlement/history/Hand-link/mobile evolution | PRESERVED FUTURE / decisions open | Fewest Transfers vs Banker/preferred banker, payment tracking, recurring games, stable Hand linkage, reconciliation, and later sharing. See [Home Game Evolution](capabilities/HOME_GAME_EVOLUTION.md). |
@@ -198,6 +204,8 @@ The current settlement algorithm is deterministic; it is not a selected Fewest T
 | `PREMIUM-CLOSEOUT-001` | PLANNED LATER / PRE-RELEASE QUALITY GATE | Whole-product manual QA, final high-value visual-debt burn, Guide finalization, responsive desktop matrix, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings polish, theme consistency, applicable Return Queue debt, and release-quality Core Flow acceptance after the feature set is materially more mature. |
 | evidence-grounded natural-language intelligence | PRESERVED FUTURE / first concrete slice `PERSONAL-INSIGHTS-001` | Facts / Explain / Coach depth over approved structured evidence, with facts-only use always available. See [Natural-Language Intelligence](capabilities/NATURAL_LANGUAGE_INTELLIGENCE.md). |
 | shared interaction integrity | COMPLETED | Accepted product rule: one semantic owner and interaction language across applicable surfaces; see [Interaction Grammar](INTERACTION_GRAMMAR.md). |
+| `BROWSER-TEST-PLATFORM-001` | PLANNED NEXT / FOUNDATIONAL | Portable mounted-browser lifecycle coverage for real ownership, generation, disposal, focus, modal, and inactive-workspace behavior. |
+| `UI-COMPOSITION-ROOT-001` | PLANNED NEXT / FOUNDATIONAL | Establish a bounded composition root and then extract one workspace pilot behind existing seams. No React/Redux/framework rewrite. |
 | restrained felt/table/chip customization | OPEN PRODUCT DECISION | Default quality first; customization cannot compensate for a bad default. |
 | arbitrary layout editor, Controls First, ineffective density choice | REJECTED / REMOVED | Do not revive without materially new evidence. Global Beginner/Expert mode is superseded by strong defaults plus local Facts/Explain/Coach depth. |
 
@@ -205,8 +213,8 @@ The current settlement algorithm is deterministic; it is not a selected Fewest T
 
 | Capability | Status | Accepted scope |
 |---|---|---|
-| `OPPONENT-POLICY-ARCH-001` and opponent intelligence | PRESERVED FUTURE / high strategic value | Context-conditioned observations and versioned population/generic/real/custom policies separate from reference, exploit, Personal Strategy, and claims about people. See [Opponent Intelligence](capabilities/OPPONENT_INTELLIGENCE.md). |
-| full-hand bot Training | PRESERVED FUTURE / dependency-gated | Legal complete hands, post-hand review, Save/re-drill continuity, and explicit policy assumptions after table/Training/reference maturity. |
+| basic `OpponentPolicy v1` / deterministic Full Hand bot progression | COMPLETED BOUNDED FOUNDATION | A strict DOM-free policy contract, explicit heuristic-archetype provenance, deterministic legal selection, and a built-in `basic` policy already power automated Full Hand progression. This is not a real-person model or broad bot product. |
+| `OPPONENT-POLICY-ARCH-001` product evolution | PRESERVED FUTURE / high strategic value | Population/generic/real/custom policy evidence, richer archetypes, and user-facing selection remain separate from reference, exploit, Personal Strategy, and claims about people. See [Opponent Intelligence](capabilities/OPPONENT_INTELLIGENCE.md). |
 
 ## 12. Platform / Release / Mobile
 

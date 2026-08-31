@@ -1,6 +1,8 @@
 # Current Repository Audit
 
-Snapshot refreshed August 26, 2026 by `TRAINING-MEMORY-001` from the `DOCS-INTEGRITY-001` audit baseline. This is a dated evidence snapshot, not planning authority. Executable code and passing tests are final implementation truth; `CURRENT_PHASE.md` owns execution order.
+Status: **HISTORICAL / SUPERSEDED AS CURRENT-STATE AUTHORITY — DATED EVIDENCE SNAPSHOT**
+
+Snapshot refreshed August 26, 2026 by `TRAINING-MEMORY-001` from the `DOCS-INTEGRITY-001` audit baseline. This is a dated evidence snapshot, not planning or current-state authority. Its measurements and then-current observations remain evidence; any live status, identity/isolation claim, or execution order is superseded by `CURRENT_PHASE.md`, `PRODUCT_BACKLOG.md`, `QA_BACKLOG.md`, `PRODUCT_RETURN_QUEUE.md`, and the relevant current specification. Executable code and passing tests remain final implementation truth.
 
 No browser/manual acceptance was performed for the Training Memory checkpoint because browser discovery returned no available browser. Existing manual and live-provider gaps remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 

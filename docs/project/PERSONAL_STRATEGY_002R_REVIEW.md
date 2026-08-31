@@ -1,6 +1,6 @@
 # PERSONAL-STRATEGY-002R independent product and architecture review
 
-Status: **COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED**
+Status: **HISTORICAL / SUPERSEDED FOR CURRENT SEQUENCING — COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED**
 
 Date: August 26, 2026
 
@@ -8,7 +8,7 @@ Implementation state: **unchanged**
 
 Accepted next implementation at this review's checkpoint: **`PERSONAL-STRATEGY-003A` / ACTIVE NEXT AT ACCEPTANCE**
 
-Current planning note: this document preserves the August 26 `002R` rationale and then-current disposition. [Current Phase](CURRENT_PHASE.md) now places `HANDS-ON-DEFECTS-001` active next and `PERSONAL-STRATEGY-003A` planned next. That sequencing update does not change the accepted `002R` product direction.
+Current planning note: this document preserves the August 26 `002R` rationale and then-current disposition. All `ACTIVE NEXT`, `PLANNED NEXT`, and ordering language below is historical. [Current Phase](CURRENT_PHASE.md) owns the post-audit foundation sequence and places `PERSONAL-STRATEGY-003A` after the foundation gates and learning-loop expansion. That sequencing update does not change the accepted `002R` product direction.
 
 Human disposition: The product owner accepted the Game setup/Approach model, first-value reset, RFI-first scope, local-first Guest use, understanding vocabulary, surface consolidation, role boundaries, and bounded versioning direction on August 26, 2026. The review's stronger observed-pattern thresholds were not frozen; only the fewer-than-five history-only boundary was accepted. Provider/reference/observed integration remains planned after 003A.
 
@@ -422,7 +422,7 @@ Do not build Git for ranges.
 
 Recommended ticket: **`PERSONAL-STRATEGY-003A — first-value product-model reset`**
 
-State at `002R` acceptance: **ACTIVE NEXT / HUMAN PRODUCT DIRECTION ACCEPTED**. Current live status: **PLANNED NEXT**; see [Current Phase](CURRENT_PHASE.md).
+State at `002R` acceptance: **ACTIVE NEXT / HUMAN PRODUCT DIRECTION ACCEPTED**. This is historical checkpoint language; see [Current Phase](CURRENT_PHASE.md) for live status.
 
 ### One bounded outcome
 
@@ -474,6 +474,6 @@ The accepted state is:
 
 > `PERSONAL-STRATEGY-002R` — **COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED**
 >
-> `PERSONAL-STRATEGY-003A` — **ACTIVE NEXT AT `002R` ACCEPTANCE; CURRENTLY PLANNED NEXT**
+> `PERSONAL-STRATEGY-003A` — **ACTIVE NEXT AT `002R` ACCEPTANCE; CURRENT SEQUENCE SUPERSEDED**
 >
-> Provider/reference/observed integration — **PLANNED NEXT / AFTER 003A ACCEPTANCE**
+> Provider/reference/observed integration — **HISTORICAL PLAN / AFTER 003A ACCEPTANCE**

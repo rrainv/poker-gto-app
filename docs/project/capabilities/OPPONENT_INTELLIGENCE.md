@@ -6,7 +6,7 @@
 
 Opponent Intelligence is Riverline's future capability for describing and using explicit, evidence-bounded behavior assumptions about populations, configurable policies, recurring opponents, and Training agents. Its purpose is to help a user reason about how an opponent may differ from a selected reference while keeping observation, approximation, and strategic authority honest.
 
-It is not poker astrology, surveillance, or permission to turn a nickname such as “aggressive player” into a strategy fact. No opponent-model contract or runtime is created by this dossier.
+It is not poker astrology, surveillance, or permission to turn a nickname such as “aggressive player” into a strategy fact. This dossier creates no runtime. A bounded `OpponentPolicy v1` contract and deterministic `basic` Full Hand policy already exist in code; the broader evidence/model product described here does not.
 
 ## User jobs / why it matters
 
@@ -30,8 +30,9 @@ Users should eventually be able to:
 - [Training Practice Planner](../TRAINING_PRACTICE_PLANNER_SPEC.md) owns structural Training targets only; a future opponent policy cannot bypass the canonical legal generator.
 - [Analysis Range specification](../ANALYSIS_RANGE_SPEC.md) permits analysis of explicitly supplied ranges but does not infer a missing range or choose strategy.
 - [Home Game Organizer](../HOME_GAME_ORGANIZER_SPEC.md) remains a separate accounting/session domain. Any friend-profile relation requires an explicit, privacy-safe link rather than coupling ledgers to poker models.
+- `app/src/application/opponent-policy.mjs` implements a strict DOM-free `OpponentPolicy v1` interface with explicit heuristic-archetype provenance, deterministic legal action selection, and a built-in `basic` policy. `automated-hand-progression.mjs` assigns and applies it for Full Hand progression through canonical legality.
 
-Riverline currently has no production `OpponentPolicy` contract, no approved real-person profiling store, and no claim that a bot predicts a human opponent.
+Riverline therefore has a bounded production bot-policy foundation, but no approved real-person profiling store, population evidence model, custom-policy persistence, user-facing archetype system, or claim that a bot predicts a human opponent. The `basic` policy is not reference strategy and is not a product-complete bot personality system.
 
 ## Desired future behavior
 

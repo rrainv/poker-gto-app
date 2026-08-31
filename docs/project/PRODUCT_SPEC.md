@@ -14,7 +14,7 @@ Riverline is a serious personal poker learning workstation. Premium means consis
 - **Hand:** canonical legal full-hand play, Table Presence, action dock, timeline, completion, and Replay.
 - **Review:** shared decision-by-decision Hand and Full Hand Training review over canonical history.
 - **Analyze:** Scenario or Hand decision analysis, explanation, evidence, provenance, Matrix, ranges, and structural board/blocker facts.
-- **Training:** Varied, Focused, and Full Hand practice over canonical legal generation and source-aware grading/presentation, with local-first encountered-decision history, review, and re-drill.
+- **Training:** Varied, Focused, and Full Hand practice over canonical legal generation and source-aware comparison/presentation, with local-first encountered-decision history, review, and re-drill. The current heuristic is an exploratory/comparative baseline; agreement/disagreement is not skill, accuracy, mastery, correctness, GTO, or automatic remediation.
 - **Personal Strategy:** profile/mode Calibration, Matrix, Range Builder, and Range Teacher over one sparse evidence authority.
 - **Equity:** canonical exact or seeded Monte Carlo Hold'em outcomes.
 - **Saved:** local-first versioned Hand/Spot objects, annotations, review state, and detached Replay reopening.
@@ -97,7 +97,7 @@ Every meaningful feature defines default, loading/generating, empty/incomplete, 
 
 ## 8. Responsive behavior
 
-Desktop repair targets include 1024×768, 1280×900, 1440×900, 1600×900, 1920×1080, 2560×1440, 2560×1600, 4K, and representative zoom. Critical information must not disappear. Mobile later receives a distinct composition rather than stacked desktop panels.
+The minimum supported desktop viewport is 1366×768. Current repair/acceptance targets include that baseline, 1440×900, 1600×900, 1920×1080, 2560×1440, 2560×1600, 4K, and representative zoom. Existing 1024×768 findings are preserved as compact/mobile-responsive future evidence rather than current blockers. Mobile later receives a distinct composition rather than stacked desktop panels.
 
 Structural CSS/no-overlap checks are evidence, not visual acceptance. Real-browser/human review remains required where hierarchy, balance, density, legibility, or aesthetics require judgment.
 

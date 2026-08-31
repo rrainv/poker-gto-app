@@ -168,7 +168,7 @@ Current interpretation is deliberately limited:
 - unknown future kinds remain present but render unsupported/unavailable; they are never coerced into Hand or Spot;
 - card faces reuse `card-presentation/v1`; preview renderers do not own rank/suit styling or poker evaluation.
 
-The human-accepted Saved presentation keeps the compact object grid primary. All / Hands / Spots are the visible supported category model and remain visible when their count is zero; filtering uses the already-bounded current result set and introduces no second repository query. Hover and keyboard focus use the same viewport-aware body-level bounded overlay, while click/Enter expands one bounded detail surface. Identity/account changes clear private preview and detail state before another owner can render.
+The human-accepted Saved presentation keeps the compact object grid primary. All / Hands / Spots are the visible supported category model and remain visible when their count is zero; the current implementation filters only the already-bounded result set. This is not full-library retrieval. `SAVED-LIBRARY-001` owns a repository-backed retrieval/query contract for existing Hand/Spot objects with search, filters, sorting, and pagination, without creating another Saved authority or adding payload kinds. Hover and keyboard focus use the same viewport-aware body-level bounded overlay, while click/Enter expands one bounded detail surface. Identity/account changes clear private preview and detail state before another owner can render.
 
 This presentation checkpoint does not change Saved Hand or Spot reopening, persistence, annotations, archive, portability, or sync behavior. No Saved Training Experience or Saved Equity Snapshot kind exists today; each requires a future explicit payload, authority, privacy/versioning, and reopen decision.
 
@@ -304,6 +304,6 @@ These figures establish comfortable thousands-of-objects behavior; they are not 
 
 ## Deferred UX and platform work
 
-`SAVED-OBJECTS-001/001R/002` add no Dashboard, Home redesign, saved-hand browser, global search, Training auto-save, Range integration, sharing, or backend. Optional account cloud sync is now owned exclusively by `ACCOUNT-002B-A` and `SAVED_OBJECT_SYNC_SPEC.md`; it does not change the Saved object/export schemas. `SAVED-OBJECTS-002` intentionally adds no temporary recent-items list; the current-source reference proves bounded reopen behavior without building UI that Home will replace.
+`SAVED-OBJECTS-001/001R/002` add no Dashboard, Home redesign, full saved-hand browser, global search, Training auto-save, Range integration, sharing, or backend. Optional account cloud sync is now owned exclusively by `ACCOUNT-002B-A` and `SAVED_OBJECT_SYNC_SPEC.md`; it does not change the Saved object/export schemas. `SAVED-LIBRARY-001` is the activated consumer/retrieval owner for current Hand/Spot records only. It must reuse this repository/application authority and does not authorize Range, Drill, Review, Session, Training, or Equity payloads.
 
 The existing Saved opener loads a Hand, version-validates and reconstructs `payload.replaySource`, and feeds the reconstruction to the Replay projection/playback controllers. Both supported Hand versions open through that detached read-only path; it never persists or invents renderer frames, playback cursor/timers, or hidden cards.

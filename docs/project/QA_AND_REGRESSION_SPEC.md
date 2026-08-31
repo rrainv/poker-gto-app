@@ -32,6 +32,8 @@ Protect poker correctness, architecture contracts, performance, and user-facing 
 - legal trajectory replay
 - grading and stale/double/illegal protection
 - no pre-answer leakage except explicit Study Preview
+- comparative baseline agreement/disagreement never becomes skill, accuracy, mastery, correctness, GTO, or automatic remediation
+- normative grading never uses probability gap to the modal action as its correctness rule
 
 ### UI/UX
 
@@ -44,6 +46,7 @@ Protect poker correctness, architecture contracts, performance, and user-facing 
 - RTL and translation-length geometry
 - requested desktop widths and zoom
 - Product UI owned QA IDs
+- mounted-browser ownership/generation/disposal, focus/modal, inactive-workspace, and account-switch lifecycle
 
 ### Performance
 
@@ -89,7 +92,9 @@ For visual tickets, record:
 - state exercised
 - screenshot or exact observation where practical
 
-No browser means no claim of visual closure.
+No browser means no claim of visual closure. Source-pattern or detached-DOM tests do not close mounted lifecycle, focus, modal, inactive-workspace, identity-switch, generation-cancellation, or disposal findings.
+
+The current minimum supported desktop viewport is 1366×768. A 1024×768 finding remains compact/mobile-responsive future evidence unless a later product decision expands current support.
 
 ## 5. Agent rule
 

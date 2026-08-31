@@ -113,11 +113,13 @@ Current-pot/SPR logic must use `currentPotBb`, not compatibility `potBb`.
 Live-stack logic must use `heroStackBb` and the appropriate effective-stack
 fact, not compatibility `stackBb`.
 
+Those v1.1 facts do not yet constitute a complete actor-relative decision-economics contract. `DECISION-ECONOMICS-001` owns exact contestable-pot pricing, contribution, and effective-stack semantics for whichever actor is deciding, while `shared/poker-domain` remains the only accounting authority. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` owns removal of the classic `logic.js` constructor and any fail-open bridge path; until it closes, documentation must not claim every production consumer already uses one projector.
+
 Additive fields may remain in v1 only when backward-compatible and explicitly documented/tested. Breaking changes require an approved schema migration.
 
 ## 6. StrategyProvider and StrategyResult
 
-All current strategy-consuming surfaces use:
+The required production dependency is:
 
 ```text
 DecisionContext v1 → StrategyProvider v1 → StrategyResult v1
@@ -134,7 +136,7 @@ Actions use structured canonical action types; labels are presentation data. Pro
 
 `StrategyResult v1` additively carries a source descriptor, source version, provenance, context coverage, and capabilities. Source identity, provenance, authority, coverage, capabilities, and claim policy are distinct facts. Legacy numeric confidence/coverage metadata grants no authority.
 
-All consumers must obtain user-facing claim semantics from `StrategyClaimPolicy v1`. They must not infer correctness, optimality, exactness, EV loss, or normative grading from a source ID, family, solver/model branding, probability distribution, or confidence number. The current heuristic has generalized comparative authority only. See `STRATEGY_SOURCE_AUTHORITY_SPEC.md`.
+All consumers must obtain user-facing claim semantics from `StrategyClaimPolicy v1`. They must not infer correctness, optimality, exactness, EV loss, normative grading, skill, accuracy, mastery, or GTO from a source ID, family, solver/model branding, probability distribution, agreement, disagreement, or confidence number. The current heuristic is exploratory/comparative baseline evidence only, and its disagreement alone must not create remediation. See `STRATEGY_SOURCE_AUTHORITY_SPEC.md`.
 
 `reference-pack/v1` is the accepted declarative bounded-provider foundation.
 It validates source/licensing facts, complete data, capabilities, integrity, and
@@ -145,7 +147,7 @@ the separately labelled existing fallback without blending. No production pack
 is currently registered because no production-safe source has been accepted.
 See `REFERENCE_PACK_V1_SPEC.md`.
 
-Any future model/reference provider must enter behind this boundary with a versioned descriptor, explicit context matcher, declared capabilities, and validation-backed authority. Exact bounded coverage must not extrapolate. Do not revive retired loaders.
+Any future model/reference provider must enter behind this boundary with a versioned descriptor, explicit context matcher, declared capabilities, and validation-backed authority. Descriptor fields and automated validation do not self-authorize production trust: `STRATEGY-TRUST-001` must define and satisfy the human acceptance, evidence, licensing, registration, and revocation gate. Exact bounded coverage must not extrapolate. Do not revive retired loaders.
 
 ## 7. Equity
 
@@ -170,15 +172,17 @@ Training must:
 - generate legal canonical states
 - use deterministic seed/replay behavior
 - call the same StrategyProvider as Playbook
-- grade from StrategyResult
+- preserve comparison evidence from StrategyResult
 - interpret internal grades through StrategyClaimPolicy for public wording and statistics
 - avoid Training-only strategy fallbacks
+
+Comparative baseline practice and normative grading are separate contracts. Probability gap to the modal action is not an accepted normative correctness rule. Normative grading requires an accepted trusted source, exact-enough coverage, an explicit normative capability, and a grading method justified by that source; `TRAINING-NORMATIVE-001` owns the change. Heuristic agreement/disagreement must never become skill, accuracy, mastery, correctness, GTO, or automatic remediation.
 
 Training modules do not become browser strategy authorities.
 
 `TrainingPracticePlanner`, `TrainingSessionIntent v1`, and `TrainingScenarioRequest v1` own structural curriculum/target planning only. They select a target envelope, including generation sizing families where applicable, but never construct cards, actions, bets, pots, PokerState, DecisionContext, StrategyResult, or grades. Sizing families are generation targets, not recommendations. The canonical Training generator remains the only legal-trajectory authority and advances planner coverage only after an exercise is successfully served. See `TRAINING_PRACTICE_PLANNER_SPEC.md`.
 
-`training-decision-record/v1` and `training-session-record/v1` are the durable Training Memory authority for what an owner was shown and answered. They preserve canonical reproduction identity plus the frozen StrategyResult/StrategyClaimPolicy at answer time; they do not re-grade history with today's provider. Review reasons, summaries, priority, and `training-similarity/v1` are deterministic projections. Exact Same Spot uses frozen historical comparison; Similar Spot must route a versioned envelope through the Practice Planner and canonical generator and is labelled current. SavedStudyObject remains intentional bookmarking, while Training Memory remains encountered-decision evidence. Full Hand stores one session-level replay source with per-decision replay references. See `TRAINING_MEMORY_V1_SPEC.md`.
+`training-decision-record/v1` and `training-session-record/v1` are the durable Training Memory authority for what an owner was shown and answered. They preserve canonical reproduction identity plus the frozen StrategyResult/StrategyClaimPolicy at answer time; they do not re-grade history with today's provider. Review reasons, summaries, priority, and `training-similarity/v1` are deterministic projections. Exact Same Spot uses frozen historical comparison; Similar Spot must route a versioned envelope through the Practice Planner and canonical generator and is labelled current. SavedStudyObject remains intentional bookmarking, while Training Memory remains encountered-decision evidence. Full Hand stores one session-level replay source with per-decision replay references. Current owner-indexed storage is not proof of authentication isolation: `AUTH-TRAINING-MEMORY-001` must route every read/write through validated session scope and make authenticated-owner data inaccessible on sign-out. See `TRAINING_MEMORY_V1_SPEC.md`.
 
 ## 10. AnalysisExplanation
 
