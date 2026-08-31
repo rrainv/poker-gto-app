@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 31, 2026 (`DECISION-ECONOMICS-001` is accepted; `STRATEGY-TRUST-001` is active next in the post-audit foundation sequence).
+Last refreshed: August 31, 2026 (`STRATEGY-TRUST-001` is accepted; `DECISION-CONTEXT-SINGLE-AUTHORITY-001` is active next in the post-audit foundation sequence).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -29,9 +29,9 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 
 - **Game Rules:** `GameRulesDefinition v1` / immutable `GameRulesSnapshot v1`; brand/operator provenance never selects accounting.
 - **Poker:** `shared/poker-domain/` owns PokerState v1/v2, cards, actions, legality, accounting, evaluator, Equity, combos, and weighted ranges.
-- **Decision strategy:** `DecisionContext v1` with additive `decision-context/v1.1` -> `StrategyProvider v1` -> `StrategyResult v1` -> `StrategyClaimPolicy v1`.
-- **Current strategy:** deterministic heuristic baseline under `app/src/strategy/`, exploratory/comparative only; `reference-pack/v1` validation/matching/provider infrastructure exists, but no production pack, accepted trust record, or validated general Hold'em production reference is registered.
-- **Training:** planner/intents/requests own structural curriculum targets only; canonical generator owns legal trajectories; sizing families are generation targets, not recommendations. Training Memory v1 owns durable encountered-decision/session evidence and frozen answer-time source/claim snapshots, not grading or Saved intent.
+- **Decision strategy:** `DecisionContext v1` with additive `decision-context/v1.1` -> `StrategyProvider v1`; provider declaration -> structural/source validation -> application-owned acceptance -> effective bounded authority -> `StrategyResult v1` -> `StrategyClaimPolicy v1`. Strong authority cannot be self-declared.
+- **Current strategy:** deterministic heuristic baseline under `app/src/strategy/`, generalized exploratory/comparative only; `reference-pack/v1` validation/matching/provider infrastructure and the application-owned trust gate exist, but no production pack, accepted production source record, or validated general Hold'em production reference is registered.
+- **Training:** planner/intents/requests own structural curriculum targets only; canonical generator owns legal trajectories; sizing families are generation targets, not recommendations. Training Memory v1 owns durable encountered-decision/session evidence and frozen answer-time source/effective-authority/claim snapshots, not grading or Saved intent; reference comparison/remediation requires ClaimPolicy permission.
 - **Analysis:** `RangeAnalysisFacts v1` owns canonical factual classification; DOM-free `range-comparison-facts/v1` projects representative-class comparison facts over Range Core card-removal truth; `AnalysisExplanation v1` consumes trusted facts without recreating poker/strategy/Equity.
 - **Presentation:** `table-presentation/v1` and `hand-review/v1` are ephemeral projections only.
 - **Experience:** `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1` create presentation consequences only.
@@ -68,7 +68,7 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 7. **COMPLETED / HUMAN ACCEPTED — `CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001`**
 8. **COMPLETED / HUMAN ACCEPTED — `GUIDE-CONTENT-001`**
 9. **COMPLETED / HUMAN SECURITY ACCEPTED — `AUTH-TRAINING-MEMORY-001`**
-10. **COMPLETED / HUMAN ACCEPTED — `DECISION-ECONOMICS-001`; ACTIVE NEXT / FOUNDATIONAL TRUST — `STRATEGY-TRUST-001` → `DECISION-CONTEXT-SINGLE-AUTHORITY-001`**
+10. **COMPLETED / HUMAN ACCEPTED — `DECISION-ECONOMICS-001`; COMPLETED / ACCEPTED — `STRATEGY-TRUST-001`; ACTIVE NEXT — `DECISION-CONTEXT-SINGLE-AUTHORITY-001`**
 11. **NEEDS REPRODUCTION — `AUDIT-HIGH-RISK-REPRO-001`**
 12. **IDENTITY/TRUTH — `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`**
 13. **PORTABLE BROWSER LIFECYCLE — `BROWSER-TEST-PLATFORM-001`**
@@ -89,6 +89,7 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - `PREMIUM-CLOSEOUT-001` is not cancelled: it is the later whole-product manual, visual, responsive, localization, accessibility, Guide, Core Flow, and release-quality gate after the feature set is materially more mature.
 - `UX-REGRESSION-001` is accepted: the eleven owned hands-on IDs are closed with the checkpoint's Node and bounded Firefox 154 evidence; unowned composition/product debt remains open.
 - Training Varied/Focused/Full Hand, the Practice Planner, and Training Memory v1 are implemented foundations. `AUTH-TRAINING-MEMORY-001` is human/security accepted: authentication-aware owner/generation scope prevents Guest or another account from accessing retained prior-account Memory, invalidates stale reads/intents/writes, and revokes local access before provider cleanup without deleting account bytes. The durable anonymous Device Guest remains future `IDENTITY-LIFECYCLE-001` work. `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001` still reopen remediation and grading semantics. Advanced scheduling/cross-surface memory work and `Not sure` remain future; exact source/claim snapshots and historical/current labels are binding.
+- `STRATEGY-TRUST-001` is accepted: declarations and manifest statuses are evidence only; application-owned acceptance bounds authority/capabilities/coverage and binds Reference Packs to exact source ID/version/fingerprint. Live opaque acceptance is process-local and never persisted as proof; historical records retain durable answer-time authority metadata and frozen ClaimPolicy without silent upgrade or reauthentication.
 - `reference-pack/v1` has no production data registration. Never promote its synthetic test fixture, benchmark observations, or generalized heuristic curves into trusted reference truth.
 - Personal Strategy is checkpointed through legacy-named Calibration/Matrix/Builder/Teacher. The [independent `002R` review and human disposition](../project/PERSONAL_STRATEGY_002R_REVIEW.md) are accepted; `003A` remains the preserved versioned Game setup/Approach migration and local-first RFI-first first-value reset at step 16 of the binding post-audit order, after the foundation, extraction, Saved/Home, reference-source, and learning-loop gates. Exactly three legacy UI modes are not a future product requirement. Provider/reference/observed integration still follows 003A acceptance.
 - Saved Hand/Spot and `HOME-002A` exist. `SAVED-VISUAL-KNOWLEDGE-001` is human accepted for the bounded loaded set: compact grid primary; All / Hands / Spots visible at zero; DOM-free observer-safe Hand and lossy Scenario Spot previews; body-level bounded hover/focus overlay; click/Enter detail; shared cards; identity clearing; unknown-kind unavailable state; unchanged reopen behavior. `SAVED-LIBRARY-001` now owns full retrieval/search/pagination for current Hand/Spot objects; new payload kinds remain later.

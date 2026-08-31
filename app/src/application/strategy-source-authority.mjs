@@ -4,6 +4,11 @@ export const STRATEGY_CONTEXT_COVERAGE_SCHEMA_VERSION =
   'strategy-context-coverage/v1';
 export const STRATEGY_RESULT_CAPABILITIES_SCHEMA_VERSION =
   'strategy-result-capabilities/v1';
+export const STRATEGY_SOURCE_ACCEPTANCE_SCHEMA_VERSION =
+  'strategy-source-acceptance-record/v1';
+export const STRATEGY_SOURCE_AUTHORITY_SNAPSHOT_SCHEMA_VERSION =
+  'strategy-source-authority-snapshot/v1';
+export const STRATEGY_EXACT_DISTRIBUTION_TOLERANCE = 1e-12;
 
 export const STRATEGY_SOURCE_AUTHORITIES = Object.freeze({
   NONE: 'none',
@@ -56,6 +61,8 @@ const DISTRIBUTION_VALUES = Object.freeze(
 );
 const SIZING_VALUES = Object.freeze(Object.values(STRATEGY_ACTION_SIZING_CAPABILITIES));
 const GRADING_VALUES = Object.freeze(Object.values(STRATEGY_GRADING_CAPABILITIES));
+const TRUSTED_ACCEPTANCE_RECORDS = new WeakSet();
+const LIVE_RESULT_ACCEPTANCE = new WeakMap();
 
 function deepFreeze(value) {
   if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
@@ -198,6 +205,12 @@ export const STRATEGY_LIMITATIONS = deepFreeze({
     message: 'Synthetic reference-pack data is test-only and is not production poker truth.',
     priority: 100,
   },
+  source_not_accepted: {
+    code: 'source_not_accepted',
+    messageKey: 'This source is not registered for authoritative Riverline claims.',
+    message: 'This source is not registered for authoritative Riverline claims.',
+    priority: 99,
+  },
 });
 
 export function strategyLimitationForCode(code) {
@@ -272,6 +285,121 @@ export function createStrategySourceDescriptor({
   });
 }
 
+function createTrustedAcceptanceRecord({
+  sourceId,
+  allowedFamily,
+  acceptedAuthority,
+  acceptedCapabilities = {},
+  acceptedCoverageCeiling = STRATEGY_COVERAGE_KINDS.UNSUPPORTED,
+  validationStatus,
+  acceptanceDecisionId = null,
+  acceptedVersion = null,
+  acceptedFingerprint = null,
+} = {}) {
+  if (!AUTHORITY_VALUES.includes(acceptedAuthority)) {
+    throw new RangeError(`Unsupported accepted strategy authority: ${acceptedAuthority}`);
+  }
+  if (!COVERAGE_VALUES.includes(acceptedCoverageCeiling)) {
+    throw new RangeError(`Unsupported accepted strategy coverage: ${acceptedCoverageCeiling}`);
+  }
+  const normalizedFamily = stableId(allowedFamily, 'Accepted strategy source family');
+  const strongReferenceAcceptance = normalizedFamily === STRATEGY_SOURCE_FAMILIES.REFERENCE_PACK
+    && [
+      STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
+      STRATEGY_SOURCE_AUTHORITIES.VALIDATED_REFERENCE,
+    ].includes(acceptedAuthority);
+  if (strongReferenceAcceptance
+    && (acceptedVersion === null || acceptedFingerprint === null)) {
+    throw new RangeError('Accepted reference-pack authority requires exact version and fingerprint');
+  }
+  const record = deepFreeze({
+    schemaVersion: STRATEGY_SOURCE_ACCEPTANCE_SCHEMA_VERSION,
+    sourceId: stableId(sourceId, 'Accepted strategy source ID'),
+    allowedFamily: normalizedFamily,
+    acceptedAuthority,
+    acceptedCapabilities: normalizeCapabilities(acceptedCapabilities),
+    acceptedCoverageCeiling,
+    validationStatus: requiredString(validationStatus, 'Strategy source validation status'),
+    acceptanceDecisionId: acceptanceDecisionId === null
+      ? null
+      : requiredString(acceptanceDecisionId, 'Strategy source acceptance decision ID'),
+    acceptedVersion: acceptedVersion === null
+      ? null
+      : requiredString(acceptedVersion, 'Accepted strategy source version'),
+    acceptedFingerprint: acceptedFingerprint === null
+      ? null
+      : requiredString(acceptedFingerprint, 'Accepted strategy source fingerprint'),
+  });
+  TRUSTED_ACCEPTANCE_RECORDS.add(record);
+  return record;
+}
+
+/**
+ * Application composition roots use this explicit factory to turn reviewed
+ * registration data into trusted records. Provider/source objects cannot
+ * acquire acceptance by supplying a schema-shaped object themselves.
+ */
+export function createStrategySourceAcceptanceRegistry(entries = []) {
+  if (!Array.isArray(entries)) {
+    throw new TypeError('Strategy source acceptance registry entries must be an array');
+  }
+  const records = entries.map(createTrustedAcceptanceRecord);
+  const bySourceId = new Map();
+  for (const record of records) {
+    if (bySourceId.has(record.sourceId)) {
+      throw new RangeError(`Duplicate strategy source acceptance: ${record.sourceId}`);
+    }
+    bySourceId.set(record.sourceId, record);
+  }
+  return Object.freeze({
+    schemaVersion: 'strategy-source-acceptance-registry/v1',
+    acceptanceFor(descriptor, fingerprint = null) {
+      const record = bySourceId.get(descriptor?.id);
+      if (!record || descriptor.family !== record.allowedFamily) return null;
+      if (record.acceptedVersion !== null && descriptor.version !== record.acceptedVersion) return null;
+      if (record.acceptedFingerprint !== null && fingerprint !== record.acceptedFingerprint) return null;
+      return record;
+    },
+  });
+}
+
+export function isTrustedStrategySourceAcceptance(record, descriptor, fingerprint = null) {
+  return TRUSTED_ACCEPTANCE_RECORDS.has(record)
+    && record.sourceId === descriptor?.id
+    && record.allowedFamily === descriptor?.family
+    && (record.acceptedVersion === null || record.acceptedVersion === descriptor?.version)
+    && (record.acceptedFingerprint === null || record.acceptedFingerprint === fingerprint);
+}
+
+export function bindLiveStrategyResultAcceptance(result, record, descriptor, fingerprint = null) {
+  if (!result || typeof result !== 'object'
+    || !isTrustedStrategySourceAcceptance(record, descriptor, fingerprint)) return result;
+  LIVE_RESULT_ACCEPTANCE.set(result, record);
+  return result;
+}
+
+export function liveStrategyResultAcceptanceFor(result, descriptor, fingerprint = null) {
+  const record = result && typeof result === 'object'
+    ? LIVE_RESULT_ACCEPTANCE.get(result)
+    : null;
+  return isTrustedStrategySourceAcceptance(record, descriptor, fingerprint) ? record : null;
+}
+
+export function strategySourceAuthoritySnapshotFor(record, descriptor, fingerprint = null) {
+  if (!isTrustedStrategySourceAcceptance(record, descriptor, fingerprint)) return null;
+  return deepFreeze({
+    schemaVersion: STRATEGY_SOURCE_AUTHORITY_SNAPSHOT_SCHEMA_VERSION,
+    sourceId: descriptor.id,
+    sourceVersion: descriptor.version,
+    sourceFingerprint: fingerprint,
+    acceptedAuthority: record.acceptedAuthority,
+    acceptedCapabilities: { ...record.acceptedCapabilities },
+    acceptedCoverage: record.acceptedCoverageCeiling,
+    validationStatus: record.validationStatus,
+    acceptanceDecisionId: record.acceptanceDecisionId,
+  });
+}
+
 const HEURISTIC_CAPABILITIES = Object.freeze({
   actionDistribution: STRATEGY_ACTION_DISTRIBUTION_CAPABILITIES.QUANTITATIVE,
   actionSizing: STRATEGY_ACTION_SIZING_CAPABILITIES.PARTIAL,
@@ -328,12 +456,57 @@ export const STRATEGY_SOURCE_REGISTRY = deepFreeze({
   }),
 });
 
+const BUILT_IN_SOURCE_ACCEPTANCE = createStrategySourceAcceptanceRegistry([
+  {
+    sourceId: 'heuristic_preflop',
+    allowedFamily: STRATEGY_SOURCE_FAMILIES.HEURISTIC,
+    acceptedAuthority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
+    acceptedCapabilities: HEURISTIC_CAPABILITIES,
+    acceptedCoverageCeiling: STRATEGY_COVERAGE_KINDS.GENERALIZED,
+    validationStatus: 'riverline_builtin_exploratory_baseline',
+    acceptanceDecisionId: 'riverline_builtin_heuristic_preflop',
+    acceptedVersion: STRATEGY_SOURCE_REGISTRY.heuristic_preflop.version,
+  },
+  {
+    sourceId: 'heuristic_postflop',
+    allowedFamily: STRATEGY_SOURCE_FAMILIES.HEURISTIC,
+    acceptedAuthority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
+    acceptedCapabilities: HEURISTIC_CAPABILITIES,
+    acceptedCoverageCeiling: STRATEGY_COVERAGE_KINDS.GENERALIZED,
+    validationStatus: 'riverline_builtin_exploratory_baseline',
+    acceptanceDecisionId: 'riverline_builtin_heuristic_postflop',
+    acceptedVersion: STRATEGY_SOURCE_REGISTRY.heuristic_postflop.version,
+  },
+  {
+    sourceId: 'equity_fallback',
+    allowedFamily: STRATEGY_SOURCE_FAMILIES.EQUITY,
+    acceptedAuthority: STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY,
+    acceptedCapabilities: STRATEGY_SOURCE_REGISTRY.equity_fallback.capabilities,
+    acceptedCoverageCeiling: STRATEGY_COVERAGE_KINDS.GENERALIZED,
+    validationStatus: 'riverline_builtin_equity_information_only',
+    acceptanceDecisionId: 'riverline_builtin_equity_fallback',
+    acceptedVersion: STRATEGY_SOURCE_REGISTRY.equity_fallback.version,
+  },
+  {
+    sourceId: 'unavailable',
+    allowedFamily: STRATEGY_SOURCE_FAMILIES.UNAVAILABLE,
+    acceptedAuthority: STRATEGY_SOURCE_AUTHORITIES.NONE,
+    acceptedCapabilities: {},
+    acceptedCoverageCeiling: STRATEGY_COVERAGE_KINDS.UNSUPPORTED,
+    validationStatus: 'riverline_builtin_unavailable',
+    acceptanceDecisionId: 'riverline_builtin_unavailable',
+    acceptedVersion: STRATEGY_SOURCE_REGISTRY.unavailable.version,
+  },
+]);
+
+export function builtInStrategySourceAcceptanceFor(descriptor) {
+  return BUILT_IN_SOURCE_ACCEPTANCE.acceptanceFor(descriptor);
+}
+
 export function strategySourceDescriptorFor(source, explicitDescriptor = null) {
   const sourceId = String(source || '');
   if (explicitDescriptor !== null && explicitDescriptor !== undefined) {
-    const descriptor = explicitDescriptor.schemaVersion === STRATEGY_SOURCE_DESCRIPTOR_SCHEMA_VERSION
-      ? explicitDescriptor
-      : createStrategySourceDescriptor(explicitDescriptor);
+    const descriptor = createStrategySourceDescriptor(explicitDescriptor);
     if (descriptor.id !== sourceId) {
       throw new RangeError('StrategyResult source must match its source descriptor ID');
     }

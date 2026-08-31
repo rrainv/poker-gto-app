@@ -2,7 +2,7 @@
 
 Status: **HISTORICAL / SUPERSEDED AS CURRENT-STATE AUTHORITY — DATED EVIDENCE SNAPSHOT**
 
-Snapshot refreshed August 26, 2026 by `TRAINING-MEMORY-001` from the `DOCS-INTEGRITY-001` audit baseline. This is a dated evidence snapshot, not planning or current-state authority. Its measurements and then-current observations remain evidence; any live status, identity/isolation claim, or execution order is superseded by `CURRENT_PHASE.md`, `PRODUCT_BACKLOG.md`, `QA_BACKLOG.md`, `PRODUCT_RETURN_QUEUE.md`, and the relevant current specification. Executable code and passing tests remain final implementation truth.
+Snapshot refreshed August 31, 2026 through `STRATEGY-TRUST-001` from the `DOCS-INTEGRITY-001` audit baseline. This is a dated evidence snapshot, not planning or current-state authority. Its measurements and then-current observations remain evidence; any live status, identity/isolation claim, or execution order is superseded by `CURRENT_PHASE.md`, `PRODUCT_BACKLOG.md`, `QA_BACKLOG.md`, `PRODUCT_RETURN_QUEUE.md`, and the relevant current specification. Executable code and passing tests remain final implementation truth.
 
 No browser/manual acceptance was performed for the Training Memory checkpoint because browser discovery returned no available browser. Existing manual and live-provider gaps remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -47,6 +47,16 @@ The only current production strategy is the deterministic heuristic under `app/s
 
 Source identity, version/provenance, authority, exact/generalized/unsupported coverage, capabilities, and claim policy remain distinct. The heuristic has generalized comparative authority only and cannot authorize solved-GTO, Nash, exact-frequency, EV-loss, exploitability, or optimality claims.
 
+`STRATEGY-TRUST-001` adds the accepted boundary between declaration and
+authority: provider declaration -> structural/source validation ->
+application-owned acceptance -> effective bounded authority -> StrategyResult
+-> StrategyClaimPolicy. Reference Pack authority requires exact registered
+source ID/version/content fingerprint; manifest validation status is evidence
+only. Live opaque acceptance is process-local and non-persistent. Durable
+Training Memory freezes answer-time authority metadata and ClaimPolicy, and
+exploratory/unaccepted sources cannot create reference-comparison/remediation
+states. No production Reference Pack is registered.
+
 ## 4. Training
 
 The canonical Training generator/session/grading/presentation path generates legal deterministic trajectories and resolves the same StrategyProvider as other consumers.
@@ -90,6 +100,12 @@ Player management polish, visible correction history, session archive/delete, im
 ## 9. Verification baselines
 
 `TRAINING-MEMORY-001` reports its focused suite green at **10/10** and the complete Node suite green at **1,844/1,844** with bounded concurrency. The first default-parallel run reached **1,843/1,844** with only the already-routed load-sensitive Range Calibration wall-clock assertion failing; no threshold was changed.
+
+`STRATEGY-TRUST-001` reports **78/78** focused StrategySource,
+StrategyResult, StrategyProvider, ClaimPolicy, Reference Pack, Training grading,
+Training Memory, and persistence/clone tests green. Changed JavaScript/MJS
+syntax checks and `git diff --check` passed; no full Node suite was run before
+human acceptance, as required by the bounded ticket.
 
 The current solver research baseline remains the isolated `solver/riverline_solver/` bounded HU 100bb no-rake preflop game/validation harness with public-tree, parity, exact small-fixture best-response/exploitability, and independent Kuhn validation tests. It is not solved full-game Hold'em, a production provider, a dataset, or a model. The Python solver suite is green at **26/26** for this checkpoint when `solver/` is supplied on the Python import path.
 

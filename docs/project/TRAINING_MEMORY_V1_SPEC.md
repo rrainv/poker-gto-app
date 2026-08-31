@@ -1,6 +1,6 @@
 # Training Memory v1 specification
 
-Status: accepted bounded evidence/re-drill checkpoint for `TRAINING-MEMORY-001`, August 26, 2026; authentication-owner isolation is human/security accepted under `AUTH-TRAINING-MEMORY-001`, August 31, 2026. Baseline/remediation semantics remain reopened under `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`.
+Status: accepted bounded evidence/re-drill checkpoint for `TRAINING-MEMORY-001`, August 26, 2026; authentication-owner isolation is human/security accepted under `AUTH-TRAINING-MEMORY-001`, and source-trust persistence/comparison gating is accepted under `STRATEGY-TRUST-001`, August 31, 2026. Baseline/remediation semantics remain reopened under `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`.
 
 ## Purpose and authority
 
@@ -31,12 +31,20 @@ Full Hand decisions instead store the hand/Hero identity, hand seed, and exact r
 Answered records store:
 
 - the normally submitted canonical action and exact amount-to in milliBB when supplied;
-- the exact `StrategyResult v1` shown at answer time, including source descriptor/version, coverage, capabilities, distribution, provenance, and limitations;
+- the exact `StrategyResult v1` shown at answer time, including source descriptor/version, coverage, capabilities, distribution, provenance, limitations, and the durable effective-authority snapshot (source ID/version/fingerprint where available, accepted authority/capabilities/coverage, validation status, and acceptance decision identity);
 - the resolved `StrategyClaimPolicy v1` from that time;
 - the internal deterministic Training evaluation as internal evidence;
 - a public comparison state: `matches_reference`, `close_to_reference`, `differs_from_reference`, `unsupported`, or `unavailable`.
 
 Internal grade and permitted public claim are deliberately separate. A heuristic internal `mistake` grade remains a comparative `differs_from_reference` record; it is not stored as universal poker truth. Heuristic agreement/disagreement is not skill, accuracy, mastery, correctness, GTO, or automatic remediation. A future trusted source does not become normatively gradeable merely because it has a modal distribution: `TRAINING-NORMATIVE-001` must define a source-justified grading method without probability-gap-to-modal-action as the correctness rule.
+
+Reference comparison states and automatic reference-derived review reasons are
+created only when the frozen answer-time ClaimPolicy explicitly permits the
+required comparative or normative claim. Exploratory or unaccepted sources
+cannot create `matches_reference`, `close_to_reference`, or
+`differs_from_reference`, and cannot create automatic reference-derived
+remediation. The opaque live acceptance token is never persisted as proof of
+trust.
 
 Study metadata is user-authored and distinct from source truth: `review`, `difficult`, `important`, and `myMistake`. Training v1 has no `Not sure` action, so the existing product question remains open rather than being silently mapped to an action.
 
@@ -52,7 +60,7 @@ Accuracy is not a session field. Session summaries are derived from ordered Deci
 
 | Class | Facts |
 |---|---|
-| Store durably | ownership and IDs; timestamps/status/order; exact PokerState or Full Hand replay reference; DecisionContext; legal actions/sizing bounds; generator/planner replay identity; response; frozen StrategyResult and ClaimPolicy; study metadata; review lifecycle |
+| Store durably | ownership and IDs; timestamps/status/order; exact PokerState or Full Hand replay reference; DecisionContext; legal actions/sizing bounds; generator/planner replay identity; response; frozen StrategyResult, effective source-authority snapshot/acceptance decision identity, and ClaimPolicy; study metadata; review lifecycle |
 | Derive deterministically | public review reasons; priority; session summary; similarity dimensions/envelope; cards/board/position/source presentation; exact same-spot state from stored canonical evidence |
 | Cache/recompute | per-session summary cache and UI formatting; bounded recent/due list projections |
 
@@ -92,7 +100,7 @@ Same Spot reconstructs the exact canonical decision:
 - generated decisions reuse the frozen PokerState, DecisionContext, legal actions, cards, rules, positions, stacks, price, and source result;
 - Full Hand decisions reconstruct their exact pre-action frame from the one session-level canonical replay source.
 
-The v1 comparison is explicitly `historical`: it uses the frozen original StrategyResult and ClaimPolicy. It never silently substitutes today's provider.
+The v1 comparison is explicitly `historical`: it uses the frozen original StrategyResult, durable answer-time authority metadata, and ClaimPolicy. It never silently substitutes today's provider, reauthenticates a lost process-local acceptance token, upgrades an old record, or re-grades authority during Same Spot.
 
 ## Similar Spot
 

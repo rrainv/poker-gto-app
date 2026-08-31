@@ -6,6 +6,7 @@ import {
   STRATEGY_SOURCE_AUTHORITIES,
   createStrategyContextCoverage,
   deriveStrategyResultCapabilities,
+  liveStrategyResultAcceptanceFor,
   strategyLimitationForCode,
   strategySourceDescriptorFor,
 } from './strategy-source-authority.mjs';
@@ -45,8 +46,93 @@ function descriptorForResult(result) {
 
 function coverageForResult(result, descriptor) {
   const candidate = result?.contextCoverage;
-  if (candidate?.kind && candidate?.schemaVersion) return candidate;
-  return createStrategyContextCoverage({ kind: descriptor.defaultCoverage });
+  const declared = candidate?.kind && candidate?.schemaVersion
+    ? candidate
+    : createStrategyContextCoverage({ kind: descriptor.defaultCoverage });
+  const acceptance = acceptedSourceForResult(result, descriptor);
+  const ceiling = acceptance?.acceptedCoverageCeiling
+    ?? STRATEGY_COVERAGE_KINDS.GENERALIZED;
+  const rank = {
+    [STRATEGY_COVERAGE_KINDS.UNSUPPORTED]: 0,
+    [STRATEGY_COVERAGE_KINDS.GENERALIZED]: 1,
+    [STRATEGY_COVERAGE_KINDS.EXACT]: 2,
+  };
+  const kind = rank[declared.kind] <= rank[ceiling] ? declared.kind : ceiling;
+  return createStrategyContextCoverage({
+    kind,
+    basis: kind === declared.kind ? declared.basis : 'application_acceptance_ceiling',
+    limitationCodes: [
+      ...(declared.limitationCodes || []),
+      ...(acceptance ? [] : ['source_not_accepted']),
+    ],
+  });
+}
+
+function acceptedSourceForResult(result, descriptor) {
+  const fingerprint = result?.provenance?.contentHash ?? null;
+  return liveStrategyResultAcceptanceFor(
+    result,
+    descriptor,
+    fingerprint,
+  );
+}
+
+function capabilitiesForResult(result, descriptor, acceptance) {
+  const declared = deriveStrategyResultCapabilities(descriptor, result?.actions);
+  if (!acceptance) {
+    return deepFreeze({
+      ...declared,
+      actionDistribution: declared.actionDistribution
+        === STRATEGY_ACTION_DISTRIBUTION_CAPABILITIES.NONE
+        ? STRATEGY_ACTION_DISTRIBUTION_CAPABILITIES.NONE
+        : STRATEGY_ACTION_DISTRIBUTION_CAPABILITIES.QUANTITATIVE,
+      actionSizing: STRATEGY_ACTION_SIZING_CAPABILITIES.NONE,
+      actionEv: false,
+      grading: STRATEGY_GRADING_CAPABILITIES.NONE,
+      optimality: false,
+    });
+  }
+  const distributionRank = ['none', 'qualitative', 'quantitative', 'exact'];
+  const sizingRank = ['none', 'partial', 'complete'];
+  const gradingRank = ['none', 'comparative', 'normative'];
+  const ceiling = acceptance.acceptedCapabilities;
+  const lower = (value, accepted, order) => (
+    order[Math.min(order.indexOf(value), order.indexOf(accepted))]
+  );
+  return deepFreeze({
+    ...declared,
+    actionDistribution: lower(
+      declared.actionDistribution,
+      ceiling.actionDistribution,
+      distributionRank,
+    ),
+    actionSizing: lower(declared.actionSizing, ceiling.actionSizing, sizingRank),
+    actionEv: declared.actionEv && ceiling.actionEv,
+    grading: lower(declared.grading, ceiling.grading, gradingRank),
+    optimality: declared.optimality && ceiling.optimality,
+  });
+}
+
+function authorityFor(descriptor, acceptance) {
+  if (!acceptance) {
+    return descriptor.family === 'unavailable'
+      ? STRATEGY_SOURCE_AUTHORITIES.NONE
+      : STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY;
+  }
+  const referenceOrder = [
+    STRATEGY_SOURCE_AUTHORITIES.NONE,
+    STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY,
+    STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
+    STRATEGY_SOURCE_AUTHORITIES.VALIDATED_REFERENCE,
+  ];
+  const declaredRank = referenceOrder.indexOf(descriptor.authority);
+  const acceptedRank = referenceOrder.indexOf(acceptance.acceptedAuthority);
+  if (declaredRank >= 0 && acceptedRank >= 0) {
+    return referenceOrder[Math.min(declaredRank, acceptedRank)];
+  }
+  return descriptor.authority === acceptance.acceptedAuthority
+    ? descriptor.authority
+    : STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY;
 }
 
 function limitationsFor(descriptor, coverage) {
@@ -62,25 +148,26 @@ function limitationsFor(descriptor, coverage) {
 
 export function resolveStrategyClaimPolicy(strategyResult) {
   const descriptor = descriptorForResult(strategyResult);
+  const acceptance = acceptedSourceForResult(strategyResult, descriptor);
   const coverage = coverageForResult(strategyResult, descriptor);
-  const capabilities = strategyResult?.capabilities
-    || deriveStrategyResultCapabilities(descriptor, strategyResult?.actions);
+  const capabilities = capabilitiesForResult(strategyResult, descriptor, acceptance);
   const supported = coverage.kind !== STRATEGY_COVERAGE_KINDS.UNSUPPORTED;
   const exactCoverage = coverage.kind === STRATEGY_COVERAGE_KINDS.EXACT;
   const distributionAvailable = capabilities.actionDistribution
     !== STRATEGY_ACTION_DISTRIBUTION_CAPABILITIES.NONE;
   const available = supported && distributionAvailable
     && Array.isArray(strategyResult?.actions) && strategyResult.actions.length > 0;
+  const acceptedAuthority = authorityFor(descriptor, acceptance);
   const referenceAuthority = [
     STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
     STRATEGY_SOURCE_AUTHORITIES.VALIDATED_REFERENCE,
-  ].includes(descriptor.authority);
+  ].includes(acceptedAuthority);
   const comparative = available
     && referenceAuthority
     && capabilities.grading !== STRATEGY_GRADING_CAPABILITIES.NONE;
   const normative = comparative
     && exactCoverage
-    && descriptor.authority === STRATEGY_SOURCE_AUTHORITIES.VALIDATED_REFERENCE
+    && acceptedAuthority === STRATEGY_SOURCE_AUTHORITIES.VALIDATED_REFERENCE
     && capabilities.grading === STRATEGY_GRADING_CAPABILITIES.NORMATIVE;
   const claims = {
     [STRATEGY_CLAIMS.STRATEGY_PRESENTATION]: available,
@@ -110,15 +197,16 @@ export function resolveStrategyClaimPolicy(strategyResult) {
   if (available) {
     if (normative) mode = 'normative';
     else if (comparative) mode = 'comparative';
-    else if (descriptor.authority === STRATEGY_SOURCE_AUTHORITIES.PERSONAL) mode = 'personal';
-    else if (descriptor.authority === STRATEGY_SOURCE_AUTHORITIES.OBSERVED) mode = 'observed';
+    else if (acceptedAuthority === STRATEGY_SOURCE_AUTHORITIES.PERSONAL) mode = 'personal';
+    else if (acceptedAuthority === STRATEGY_SOURCE_AUTHORITIES.OBSERVED) mode = 'observed';
     else mode = 'exploratory';
   }
   return deepFreeze({
     schemaVersion: STRATEGY_CLAIM_POLICY_SCHEMA_VERSION,
     source: descriptor,
     sourceVersion: strategyResult?.sourceVersion ?? descriptor.version,
-    authority: descriptor.authority,
+    authority: acceptedAuthority,
+    sourceAuthoritySnapshot: strategyResult?.sourceAuthoritySnapshot ?? null,
     coverage,
     capabilities,
     availability: available ? 'available' : 'unavailable',

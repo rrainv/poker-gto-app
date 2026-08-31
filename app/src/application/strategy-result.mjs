@@ -3,9 +3,16 @@ import {
   STRATEGY_CONTEXT_COVERAGE_SCHEMA_VERSION,
   STRATEGY_RESULT_CAPABILITIES_SCHEMA_VERSION,
   STRATEGY_SOURCE_DESCRIPTOR_SCHEMA_VERSION,
+  STRATEGY_ACTION_DISTRIBUTION_CAPABILITIES,
   STRATEGY_COVERAGE_KINDS,
+  STRATEGY_GRADING_CAPABILITIES,
+  STRATEGY_EXACT_DISTRIBUTION_TOLERANCE,
+  bindLiveStrategyResultAcceptance,
+  builtInStrategySourceAcceptanceFor,
   deriveStrategyResultCapabilities,
+  isTrustedStrategySourceAcceptance,
   normalizeStrategyContextCoverage,
+  strategySourceAuthoritySnapshotFor,
   strategySourceDescriptorFor,
 } from './strategy-source-authority.mjs';
 
@@ -20,7 +27,7 @@ export const STRATEGY_SOURCES = Object.freeze({
 
 export const STRATEGY_ACTION_TYPES = Object.freeze({ ...ACTION_TYPES });
 
-export const STRATEGY_PROBABILITY_TOLERANCE = 1e-12;
+export const STRATEGY_PROBABILITY_TOLERANCE = STRATEGY_EXACT_DISTRIBUTION_TOLERANCE;
 
 const ACTION_TYPE_VALUES = Object.freeze(Object.values(STRATEGY_ACTION_TYPES));
 
@@ -100,14 +107,20 @@ function defaultActionLabel(type) {
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-function normalizedActions(entries) {
+function normalizedActions(entries, { strict = false } = {}) {
   const prepared = (Array.isArray(entries) ? entries : []).map((entry) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
       throw new TypeError('StrategyResult actions must be objects');
     }
     const label = String(entry.label ?? entry.name ?? '');
     const action = normalizeStructuredAction(entry.action, label);
-    const weight = Math.max(0, Number(entry.probability ?? entry.value) || 0);
+    const rawProbability = entry.probability ?? entry.value;
+    const rawWeight = Number(rawProbability);
+    if (strict && (typeof rawProbability !== 'number'
+      || !Number.isFinite(rawWeight) || rawWeight < 0 || rawWeight > 1)) {
+      throw new RangeError('Exact/normative strategy probabilities must be finite values from 0 to 1');
+    }
+    const weight = strict ? rawWeight : Math.max(0, rawWeight || 0);
     return {
       action,
       label: label || defaultActionLabel(action.type),
@@ -118,6 +131,18 @@ function normalizedActions(entries) {
 
   const total = prepared.reduce((sum, entry) => sum + entry.weight, 0);
   if (!(total > 0)) return [];
+
+  if (strict) {
+    if (Math.abs(total - 1) > STRATEGY_PROBABILITY_TOLERANCE) {
+      throw new RangeError(`Exact/normative strategy probability mass must equal 1; received ${total}`);
+    }
+    return prepared.map((entry) => ({
+      action: entry.action,
+      label: entry.label,
+      probability: entry.weight,
+      evBb: entry.evBb,
+    }));
+  }
 
   const normalized = prepared.map((entry) => ({
     action: entry.action,
@@ -146,6 +171,7 @@ function normalizedActions(entries) {
 export function createStrategyResult({
   source,
   sourceDescriptor = null,
+  sourceAcceptance = null,
   sourceVersion = null,
   provenance = null,
   contextCoverage = null,
@@ -169,7 +195,19 @@ export function createStrategyResult({
     throw new RangeError('StrategyResult sourceVersion must match its source descriptor');
   }
 
-  const resultActions = normalizedActions(actions);
+  const builtInAcceptance = builtInStrategySourceAcceptanceFor(descriptor);
+  const acceptedFingerprint = provenance?.contentHash ?? null;
+  const acceptedSource = isTrustedStrategySourceAcceptance(
+    sourceAcceptance,
+    descriptor,
+    acceptedFingerprint,
+  ) ? sourceAcceptance : builtInAcceptance;
+  const strictDistribution = acceptedSource !== null
+    && (acceptedSource.acceptedCapabilities.actionDistribution
+      === STRATEGY_ACTION_DISTRIBUTION_CAPABILITIES.EXACT
+      || acceptedSource.acceptedCapabilities.grading
+        === STRATEGY_GRADING_CAPABILITIES.NORMATIVE);
+  const resultActions = normalizedActions(actions, { strict: strictDistribution });
   if (source === STRATEGY_SOURCES.UNAVAILABLE && resultActions.length > 0) {
     throw new RangeError('Unavailable StrategyResult cannot contain actions');
   }
@@ -189,10 +227,15 @@ export function createStrategyResult({
     && resolvedContextCoverage.kind !== STRATEGY_COVERAGE_KINDS.UNSUPPORTED) {
     throw new RangeError('Unavailable StrategyResult must have unsupported context coverage');
   }
-  return deepFreeze({
+  const result = deepFreeze({
     schemaVersion: STRATEGY_RESULT_SCHEMA_VERSION,
     source,
     sourceDescriptor: descriptor,
+    sourceAuthoritySnapshot: strategySourceAuthoritySnapshotFor(
+      acceptedSource,
+      descriptor,
+      acceptedFingerprint,
+    ),
     sourceVersion: resolvedSourceVersion,
     provenance: provenance === undefined || provenance === null ? null : cloneData(provenance),
     contextCoverage: resolvedContextCoverage,
@@ -209,6 +252,12 @@ export function createStrategyResult({
     warnings: Array.isArray(warnings) ? warnings.map(String) : [],
     details: details === undefined ? null : cloneData(details),
   });
+  return bindLiveStrategyResultAcceptance(
+    result,
+    acceptedSource,
+    descriptor,
+    acceptedFingerprint,
+  );
 }
 
 export function createUnavailableStrategyResult(reason = null, details = null) {

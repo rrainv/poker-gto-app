@@ -1,7 +1,8 @@
 # Reference Pack v1 specification
 
-Status: `REFERENCE-PACK-001` provider foundation checkpoint; production source
-acquisition intentionally incomplete.
+Status: `REFERENCE-PACK-001` provider foundation checkpoint with the accepted
+`STRATEGY-TRUST-001` application trust gate; production source acquisition
+remains intentionally incomplete and no production pack is registered.
 
 ## 1. Outcome and authority boundary
 
@@ -11,6 +12,7 @@ strategy source. It enters the existing production path only through:
 ```text
 DecisionContext v1.1
         -> StrategyProvider v1
+        -> validated pack + application acceptance registry lookup
         -> StrategyResult v1
         -> StrategyClaimPolicy v1
         -> Playbook / Training / Matrix / Analyze / Review
@@ -70,8 +72,9 @@ license, license identifier/URL, explicit redistribution status, explicit
 repository-inclusion permission, and provenance notes. Permitted source origins
 are Riverline-owned data, licensed data, clearly public data, or an independent
 reproducible solver method. A manifest does not itself establish that its legal
-or validation statements are true; production acceptance remains a reviewed
-checkpoint.
+or validation statements are true. `accepted_validated` and equivalent statuses
+are evidence only; production authority requires application-owned acceptance
+matching the exact source ID, source version, and content fingerprint.
 
 The validation record requires a validation contract version, evidence
 identity, status, authority decision, non-empty corpus and metric descriptions,
@@ -95,8 +98,9 @@ total-to sizes, exact legal bounds, and the heads-up/multiway boundary.
 The v1 data representation is exactly the canonical 169 preflop classes. Every
 class must appear once. Every row must contain each declared legal action once
 in canonical order, including explicit zero-frequency actions. Frequencies must
-be finite, non-negative, and sum to one within `1e-9`; malformed production data
-is rejected rather than normalized. Only canonical preflop action families are
+be numeric, finite, non-negative, and sum to one within the shared `1e-12`
+StrategyResult tolerance; percentage-unit, over-mass, and under-mass inputs are
+rejected rather than normalized. Only canonical preflop action families are
 accepted. Non-aggressive actions cannot carry sizes. Aggressive sizes are
 total-to amounts and must be declared, legal, and unambiguous. All-in size must
 equal the exact legal all-in total.
@@ -168,8 +172,13 @@ unavailable and therefore cannot match.
 ## 8. Provider selection and fallback
 
 `reference-pack-provider-adapter/v1` validates the pack once, indexes all rows
-in a `Map`, and resolves a matched hand class by direct lookup. A matched pack
-emits a normal StrategyResult v1 with its source descriptor, exact coverage,
+in a `Map`, and resolves a matched hand class by direct lookup. Structural,
+integrity, provenance, licensing, and manifest validation remain canonical in
+this validator, but they do not mint authority. StrategyProvider receives the
+application-owned registry and accepts a pack only when its exact descriptor ID,
+version, and validated content hash match the active record. Changed bytes,
+wrong version/fingerprint, and revoked or superseded registry state fail closed.
+A matched and accepted pack emits a normal StrategyResult v1 with its source descriptor, exact coverage,
 effective capabilities, action distribution, supported sizes, provenance,
 limitations, pack identity/version/hash, validation status, role, and hand
 class.
@@ -204,6 +213,11 @@ Policy permits exact-frequency display only when exact distribution and exact
 coverage survive result capability resolution. No action EV means no EV or EV
 loss claim. No optimality means no optimal language. `comparative_reference`
 permits comparison but not normative grading.
+
+The opaque live acceptance token is process-local and never persisted as proof
+of trust. Durable evidence stores the answer-time source identity/version/hash,
+effective authority/capability/coverage snapshot, acceptance decision identity,
+and frozen ClaimPolicy. Hydration does not reauthenticate or upgrade it.
 
 ## 10. Current evidence, limitations, and resume point
 

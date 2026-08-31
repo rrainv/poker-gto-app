@@ -460,9 +460,19 @@ function gradeComparisonState(evaluation, claimPolicy) {
       : TRAINING_COMPARISON_STATES.UNAVAILABLE;
   }
   if (!evaluation) return TRAINING_COMPARISON_STATES.UNAVAILABLE;
-  if (evaluation.grade === 'optimal') return TRAINING_COMPARISON_STATES.MATCHES_REFERENCE;
-  if (evaluation.grade === 'acceptable') return TRAINING_COMPARISON_STATES.CLOSE_TO_REFERENCE;
-  return TRAINING_COMPARISON_STATES.DIFFERS_FROM_REFERENCE;
+  const permitsComparativeGrade = claimPolicy?.claims?.comparative_grading === true
+    || claimPolicy?.claims?.normative_grading === true;
+  if (!permitsComparativeGrade) return TRAINING_COMPARISON_STATES.UNAVAILABLE;
+  if (evaluation.grade === 'optimal' && claimPolicy?.claims?.reference_match === true) {
+    return TRAINING_COMPARISON_STATES.MATCHES_REFERENCE;
+  }
+  if (evaluation.grade === 'acceptable' && claimPolicy?.claims?.reference_deviation === true) {
+    return TRAINING_COMPARISON_STATES.CLOSE_TO_REFERENCE;
+  }
+  if (evaluation.grade === 'mistake' && claimPolicy?.claims?.reference_deviation === true) {
+    return TRAINING_COMPARISON_STATES.DIFFERS_FROM_REFERENCE;
+  }
+  return TRAINING_COMPARISON_STATES.UNAVAILABLE;
 }
 
 export function createTrainingStrategyEvidence({ strategyResult, claimPolicy, evaluation } = {}) {
@@ -484,7 +494,7 @@ export function reviewReasonsForDecision(record) {
     reasons.push(TRAINING_REVIEW_REASON_CODES.DIFFERS_FROM_REFERENCE);
   } else if (comparison === TRAINING_COMPARISON_STATES.CLOSE_TO_REFERENCE) {
     reasons.push(TRAINING_REVIEW_REASON_CODES.CLOSE_TO_REFERENCE);
-  } else if ([
+  } else if (record.strategyEvidence?.claimPolicy?.mode !== 'exploratory' && [
     TRAINING_COMPARISON_STATES.UNSUPPORTED,
     TRAINING_COMPARISON_STATES.UNAVAILABLE,
   ].includes(comparison)) {

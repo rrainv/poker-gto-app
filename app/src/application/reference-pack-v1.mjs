@@ -15,6 +15,7 @@ import {
   STRATEGY_ACTION_DISTRIBUTION_CAPABILITIES,
   STRATEGY_ACTION_SIZING_CAPABILITIES,
   STRATEGY_COVERAGE_KINDS,
+  STRATEGY_EXACT_DISTRIBUTION_TOLERANCE,
   STRATEGY_GRADING_CAPABILITIES,
   STRATEGY_SOURCE_AUTHORITIES,
   STRATEGY_SOURCE_FAMILIES,
@@ -90,6 +91,11 @@ const PRIOR_ACTION_KEYS = Object.freeze([
   'callAmountBb',
   'heroStreetContributionBb',
   'currentPotBb',
+]);
+const PRIOR_ACTION_ACTOR_ECONOMICS_KEYS = Object.freeze([
+  'actorContestablePotAfterCallBb',
+  'actorIneligiblePotAfterCallBb',
+  'requiredRawEquity',
 ]);
 const LEGAL_BOUND_KEYS = Object.freeze([
   'canRaise', 'minRaiseToBb', 'maxRaiseToBb', 'allInToBb',
@@ -208,9 +214,12 @@ function stableId(value, label) {
   return id;
 }
 
-function finiteNumber(value, label, { minimum = Number.NEGATIVE_INFINITY } = {}) {
-  if (!Number.isFinite(value) || value < minimum) {
-    throw new RangeError(`${label} must be a finite number >= ${minimum}`);
+function finiteNumber(value, label, {
+  minimum = Number.NEGATIVE_INFINITY,
+  maximum = Number.POSITIVE_INFINITY,
+} = {}) {
+  if (!Number.isFinite(value) || value < minimum || value > maximum) {
+    throw new RangeError(`${label} must be a finite number from ${minimum} through ${maximum}`);
   }
   return Number(value);
 }
@@ -427,7 +436,18 @@ function normalizeValidation(raw) {
 }
 
 function normalizePriorActionTree(raw) {
-  requireExactKeys(raw, PRIOR_ACTION_KEYS, 'Reference pack priorActionTree');
+  const carriesActorEconomics = PRIOR_ACTION_ACTOR_ECONOMICS_KEYS.some((key) => (
+    Object.hasOwn(raw, key)
+  ));
+  requireExactKeys(raw, [
+    ...PRIOR_ACTION_KEYS,
+    ...(carriesActorEconomics ? PRIOR_ACTION_ACTOR_ECONOMICS_KEYS : []),
+  ], 'Reference pack priorActionTree');
+  if (carriesActorEconomics && PRIOR_ACTION_ACTOR_ECONOMICS_KEYS.some((key) => (
+    !Object.hasOwn(raw, key)
+  ))) {
+    throw new TypeError('Reference pack actor economics fields must be carried together');
+  }
   if (raw.street !== 'preflop') {
     throw new RangeError('reference-pack/v1 supports preflop nodes only');
   }
@@ -478,6 +498,27 @@ function normalizePriorActionTree(raw) {
       'priorActionTree.currentPotBb',
       { minimum: 0 },
     ),
+    actorContestablePotAfterCallBb: carriesActorEconomics
+      ? finiteNumber(
+        raw.actorContestablePotAfterCallBb,
+        'priorActionTree.actorContestablePotAfterCallBb',
+        { minimum: 0 },
+      )
+      : null,
+    actorIneligiblePotAfterCallBb: carriesActorEconomics
+      ? finiteNumber(
+        raw.actorIneligiblePotAfterCallBb,
+        'priorActionTree.actorIneligiblePotAfterCallBb',
+        { minimum: 0 },
+      )
+      : null,
+    requiredRawEquity: carriesActorEconomics
+      ? nullableFiniteNumber(
+        raw.requiredRawEquity,
+        'priorActionTree.requiredRawEquity',
+        { minimum: 0, maximum: 1 },
+      )
+      : null,
   };
 }
 
@@ -729,7 +770,7 @@ function normalizeRows(raw, gameAssumptions, capabilities) {
       );
     }
     const mass = actions.reduce((sum, action) => sum + action.probability, 0);
-    if (Math.abs(mass - 1) > REFERENCE_PACK_PROBABILITY_TOLERANCE) {
+    if (Math.abs(mass - 1) > STRATEGY_EXACT_DISTRIBUTION_TOLERANCE) {
       throw new RangeError(`Row ${row.handClass} probability mass must equal 1; received ${mass}`);
     }
     if (!actions.some((action) => action.probability > 0)) {
@@ -858,6 +899,10 @@ function equalNumber(left, right) {
     && Math.abs(left - right) <= REFERENCE_PACK_PROBABILITY_TOLERANCE;
 }
 
+function equalNullableNumber(left, right) {
+  return left === null && right === null ? true : equalNumber(left, right);
+}
+
 function equalJson(left, right) {
   return canonicalSerialize(left) === canonicalSerialize(right);
 }
@@ -943,6 +988,17 @@ function matchValidatedReferencePack(pack, decisionContext) {
     )
     || !equalNumber(decisionContext?.currentPotBb, prior.currentPotBb),
   'reference_pack_decision_economics_mismatch');
+  mismatch(!equalNumber(
+    decisionContext?.actorContestablePotAfterCallBb,
+    prior.actorContestablePotAfterCallBb,
+  ) || !equalNumber(
+    decisionContext?.actorIneligiblePotAfterCallBb,
+    prior.actorIneligiblePotAfterCallBb,
+  ) || !equalNullableNumber(
+    decisionContext?.requiredRawEquity,
+    prior.requiredRawEquity,
+  ),
+  'reference_pack_actor_call_economics_mismatch');
   mismatch(decisionContext?.canRaise !== assumptions.legalActionBounds.canRaise
     || (assumptions.legalActionBounds.minRaiseToBb !== null
       && !equalNumber(
@@ -1009,7 +1065,6 @@ export function createReferencePackAdapter(pack, { allowTestPack = false } = {})
     validated.representation.rows.map((row) => [row.handClass, row]),
   );
   const { identity, sourceDescriptor, gameAssumptions, source, validation } = validated.manifest;
-
   return Object.freeze({
     schemaVersion: REFERENCE_PACK_ADAPTER_VERSION,
     packId: identity.packId,

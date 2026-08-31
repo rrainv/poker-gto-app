@@ -17,6 +17,7 @@ function browserProviderOptions(options = {}) {
     : () => ({});
   return {
     referencePack: options?.referencePack ?? null,
+    sourceAcceptanceRegistry: options?.sourceAcceptanceRegistry ?? null,
     fallbackResolver(decisionContext) {
       return resolveHeuristicStrategy(
         decisionContext,

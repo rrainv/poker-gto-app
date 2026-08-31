@@ -11,6 +11,7 @@ import {
   STRATEGY_SOURCE_AUTHORITIES,
   STRATEGY_SOURCE_FAMILIES,
   createStrategyContextCoverage,
+  createStrategySourceAcceptanceRegistry,
   createStrategySourceDescriptor,
   heuristicContextLimitationCodes,
 } from '../app/src/application/strategy-source-authority.mjs';
@@ -67,14 +68,16 @@ function descriptor({
   actionEv = false,
   grading = STRATEGY_GRADING_CAPABILITIES.NORMATIVE,
   optimality = false,
+  family = null,
+  version = null,
 } = {}) {
   return createStrategySourceDescriptor({
     id,
-    version: `${id}/v1`,
+    version: version ?? `${id}/v1`,
     displayName: 'Validated HU 100bb test reference',
-    family: authority === STRATEGY_SOURCE_AUTHORITIES.PERSONAL
+    family: family ?? (authority === STRATEGY_SOURCE_AUTHORITIES.PERSONAL
       ? STRATEGY_SOURCE_FAMILIES.PERSONAL
-      : STRATEGY_SOURCE_FAMILIES.REFERENCE_PACK,
+      : STRATEGY_SOURCE_FAMILIES.REFERENCE_PACK),
     authority,
     capabilities: {
       actionDistribution,
@@ -88,9 +91,30 @@ function descriptor({
 }
 
 function resultFor(sourceDescriptor, coverageKind, options = {}) {
+  const fingerprint = options.fingerprint ?? `${sourceDescriptor.id}-test-fingerprint`;
+  const sourceAcceptance = options.accepted === false ? null : options.sourceAcceptance
+    ?? createStrategySourceAcceptanceRegistry([{
+      sourceId: sourceDescriptor.id,
+      allowedFamily: sourceDescriptor.family,
+      acceptedAuthority: sourceDescriptor.authority,
+      acceptedCapabilities: sourceDescriptor.capabilities,
+      acceptedCoverageCeiling: STRATEGY_COVERAGE_KINDS.EXACT,
+      validationStatus: 'explicit_test_acceptance',
+      acceptedVersion: sourceDescriptor.version,
+      acceptedFingerprint: sourceDescriptor.family === STRATEGY_SOURCE_FAMILIES.REFERENCE_PACK
+        ? fingerprint
+        : null,
+    }]).acceptanceFor(
+      sourceDescriptor,
+      sourceDescriptor.family === STRATEGY_SOURCE_FAMILIES.REFERENCE_PACK
+        ? fingerprint
+        : null,
+    );
   return createStrategyResult({
     source: sourceDescriptor.id,
     sourceDescriptor,
+    sourceAcceptance,
+    provenance: { contentHash: fingerprint },
     contextCoverage: createStrategyContextCoverage({
       kind: coverageKind,
       basis: 'test_fixture',
@@ -102,6 +126,215 @@ function resultFor(sourceDescriptor, coverageKind, options = {}) {
     ],
   });
 }
+
+test('self-declared validated metadata cannot grant strong Riverline authority', () => {
+  const malicious = descriptor({
+    id: 'untrusted.learned',
+    optimality: true,
+    family: STRATEGY_SOURCE_FAMILIES.LEARNED,
+  });
+  const result = resultFor(malicious, STRATEGY_COVERAGE_KINDS.EXACT, { accepted: false });
+  const policy = resolveStrategyClaimPolicy(result);
+
+  assert.equal(policy.authority, STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY);
+  assert.equal(policy.mode, 'exploratory');
+  assert.equal(policy.coverage.kind, STRATEGY_COVERAGE_KINDS.GENERALIZED);
+  assert.equal(policy.sourceAuthoritySnapshot, null);
+  for (const claim of [
+    STRATEGY_CLAIMS.NORMATIVE_GRADING,
+    STRATEGY_CLAIMS.OBJECTIVE_CORRECTNESS,
+    STRATEGY_CLAIMS.OPTIMALITY,
+    STRATEGY_CLAIMS.EXACT_FREQUENCIES,
+    STRATEGY_CLAIMS.ACTION_EV,
+    STRATEGY_CLAIMS.NORMATIVE_CURRICULUM_WEIGHTING,
+  ]) assert.equal(canStrategyClaim(policy, claim), false, claim);
+});
+
+test('unknown provider metadata and schema-shaped acceptance remain untrusted until registered', () => {
+  const malicious = descriptor({
+    id: 'untrusted.provider',
+    optimality: true,
+    family: STRATEGY_SOURCE_FAMILIES.LEARNED,
+  });
+  const provider = createStrategyProvider({
+    fallbackResolver: () => ({
+      source: malicious.id,
+      sourceDescriptor: malicious,
+      sourceAcceptance: {
+        schemaVersion: 'strategy-source-acceptance-record/v1',
+        sourceId: malicious.id,
+        acceptedAuthority: STRATEGY_SOURCE_AUTHORITIES.VALIDATED_REFERENCE,
+      },
+      contextCoverage: createStrategyContextCoverage({ kind: STRATEGY_COVERAGE_KINDS.EXACT }),
+      actions: [{ action: { type: 'raise' }, probability: 1 }],
+    }),
+  });
+  const result = provider.resolve(context());
+  const policy = resolveStrategyClaimPolicy(result);
+
+  assert.equal(result.source, malicious.id);
+  assert.equal(result.sourceAuthoritySnapshot, null);
+  assert.equal(policy.mode, 'exploratory');
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.NORMATIVE_GRADING), false);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.OPTIMALITY), false);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.EXACT_FREQUENCIES), false);
+});
+
+test('explicit acceptance cannot be exceeded by a future provider declaration', () => {
+  const future = descriptor({
+    id: 'future.learned',
+    optimality: true,
+    family: STRATEGY_SOURCE_FAMILIES.LEARNED,
+  });
+  const registry = createStrategySourceAcceptanceRegistry([{
+    sourceId: future.id,
+    allowedFamily: future.family,
+    acceptedAuthority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
+    acceptedCapabilities: {
+      actionDistribution: STRATEGY_ACTION_DISTRIBUTION_CAPABILITIES.QUANTITATIVE,
+      grading: STRATEGY_GRADING_CAPABILITIES.COMPARATIVE,
+    },
+    acceptedCoverageCeiling: STRATEGY_COVERAGE_KINDS.GENERALIZED,
+    validationStatus: 'bounded_future_test_acceptance',
+    acceptedVersion: future.version,
+  }]);
+  const provider = createStrategyProvider({
+    sourceAcceptanceRegistry: registry,
+    fallbackResolver: () => ({
+      source: future.id,
+      sourceDescriptor: future,
+      contextCoverage: createStrategyContextCoverage({ kind: STRATEGY_COVERAGE_KINDS.EXACT }),
+      actions: [
+        { action: { type: 'raise' }, probability: 0.7 },
+        { action: { type: 'fold' }, probability: 0.3 },
+      ],
+    }),
+  });
+  const policy = resolveStrategyClaimPolicy(provider.resolve(context()));
+
+  assert.equal(policy.authority, STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE);
+  assert.equal(policy.coverage.kind, STRATEGY_COVERAGE_KINDS.GENERALIZED);
+  assert.equal(policy.mode, 'comparative');
+  assert.equal(policy.capabilities.actionDistribution, 'quantitative');
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.EXACT_FREQUENCIES), false);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.NORMATIVE_GRADING), false);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.OPTIMALITY), false);
+});
+
+test('acceptance is not reusable across source, version, fingerprint, or registry revocation', () => {
+  const sourceA = descriptor({ id: 'accepted.source-a' });
+  const fingerprint = 'source-a-fingerprint';
+  const registry = createStrategySourceAcceptanceRegistry([{
+    sourceId: sourceA.id,
+    allowedFamily: sourceA.family,
+    acceptedAuthority: sourceA.authority,
+    acceptedCapabilities: sourceA.capabilities,
+    acceptedCoverageCeiling: STRATEGY_COVERAGE_KINDS.EXACT,
+    validationStatus: 'accepted_test_reference',
+    acceptanceDecisionId: 'accept-source-a-v1',
+    acceptedVersion: sourceA.version,
+    acceptedFingerprint: fingerprint,
+  }]);
+  const candidateFor = (sourceDescriptor, contentHash) => ({
+    source: sourceDescriptor.id,
+    sourceDescriptor,
+    provenance: { contentHash },
+    contextCoverage: createStrategyContextCoverage({ kind: STRATEGY_COVERAGE_KINDS.EXACT }),
+    actions: [
+      { action: { type: 'raise' }, probability: 0.7 },
+      { action: { type: 'fold' }, probability: 0.3 },
+    ],
+  });
+  const resolve = (sourceDescriptor, contentHash, activeRegistry = registry) => (
+    createStrategyProvider({
+      sourceAcceptanceRegistry: activeRegistry,
+      fallbackResolver: () => candidateFor(sourceDescriptor, contentHash),
+    }).resolve(context())
+  );
+
+  assert.equal(resolveStrategyClaimPolicy(resolve(sourceA, fingerprint)).mode, 'normative');
+  const rejected = [
+    resolve(descriptor({ id: 'accepted.source-b' }), fingerprint),
+    resolve(descriptor({ id: sourceA.id, version: `${sourceA.id}/v2` }), fingerprint),
+    resolve(sourceA, 'wrong-fingerprint'),
+    resolve(sourceA, fingerprint, null),
+  ];
+  for (const result of rejected) {
+    assert.equal(result.sourceAuthoritySnapshot, null);
+    assert.equal(resolveStrategyClaimPolicy(result).mode, 'exploratory');
+  }
+});
+
+test('strong reference acceptance rejects wildcard version or fingerprint', () => {
+  const sourceDescriptor = descriptor({ id: 'wildcard.reference' });
+  const base = {
+    sourceId: sourceDescriptor.id,
+    allowedFamily: sourceDescriptor.family,
+    acceptedAuthority: sourceDescriptor.authority,
+    acceptedCapabilities: sourceDescriptor.capabilities,
+    acceptedCoverageCeiling: STRATEGY_COVERAGE_KINDS.EXACT,
+    validationStatus: 'invalid_wildcard_test',
+  };
+  assert.throws(
+    () => createStrategySourceAcceptanceRegistry([{ ...base, acceptedFingerprint: 'fingerprint' }]),
+    /requires exact version and fingerprint/,
+  );
+  assert.throws(
+    () => createStrategySourceAcceptanceRegistry([{ ...base, acceptedVersion: sourceDescriptor.version }]),
+    /requires exact version and fingerprint/,
+  );
+});
+
+test('accepted exact or normative distributions fail closed instead of normalizing', () => {
+  const acceptedDescriptor = descriptor({ id: 'accepted.exact.test' });
+  const acceptance = createStrategySourceAcceptanceRegistry([{
+    sourceId: acceptedDescriptor.id,
+    allowedFamily: acceptedDescriptor.family,
+    acceptedAuthority: acceptedDescriptor.authority,
+    acceptedCapabilities: acceptedDescriptor.capabilities,
+    acceptedCoverageCeiling: STRATEGY_COVERAGE_KINDS.EXACT,
+    validationStatus: 'explicit_test_acceptance',
+    acceptedVersion: acceptedDescriptor.version,
+    acceptedFingerprint: 'accepted-exact-test-fingerprint',
+  }]).acceptanceFor(acceptedDescriptor, 'accepted-exact-test-fingerprint');
+  const createMalformed = (probabilities) => () => createStrategyResult({
+    source: acceptedDescriptor.id,
+    sourceDescriptor: acceptedDescriptor,
+    sourceAcceptance: acceptance,
+    provenance: { contentHash: 'accepted-exact-test-fingerprint' },
+    contextCoverage: createStrategyContextCoverage({ kind: STRATEGY_COVERAGE_KINDS.EXACT }),
+    actions: probabilities.map((probability, index) => ({
+      action: { type: index === 0 ? 'raise' : 'fold' },
+      probability,
+    })),
+  });
+
+  assert.throws(createMalformed([-0.1, 1.1]), /must be finite values/);
+  assert.throws(createMalformed([Number.NaN, 1]), /must be finite values/);
+  assert.throws(createMalformed([Number.POSITIVE_INFINITY, 0]), /must be finite values/);
+  assert.throws(createMalformed(['0.5', 0.5]), /must be finite values/);
+  assert.throws(createMalformed([60, 30, 10]), /must be finite values/);
+  assert.throws(createMalformed([0.7, 0.4]), /probability mass must equal 1/);
+  assert.throws(createMalformed([0.4, 0.4]), /probability mass must equal 1/);
+});
+
+test('opaque live acceptance is not cloned while durable authority evidence remains readable', () => {
+  const sourceDescriptor = descriptor({ id: 'clone.persistence.reference' });
+  const liveResult = resultFor(sourceDescriptor, STRATEGY_COVERAGE_KINDS.EXACT);
+  const livePolicy = resolveStrategyClaimPolicy(liveResult);
+  const persistedResult = structuredClone(liveResult);
+  const recomputedPolicy = resolveStrategyClaimPolicy(persistedResult);
+
+  assert.equal(Object.hasOwn(liveResult, 'sourceAcceptance'), false);
+  assert.equal(livePolicy.mode, 'normative');
+  assert.equal(liveResult.sourceAuthoritySnapshot.sourceId, sourceDescriptor.id);
+  assert.equal(liveResult.sourceAuthoritySnapshot.sourceVersion, sourceDescriptor.version);
+  assert.equal(liveResult.sourceAuthoritySnapshot.acceptedAuthority, 'validated_reference');
+  assert.equal(liveResult.sourceAuthoritySnapshot.acceptedCoverage, 'exact');
+  assert.deepEqual(persistedResult.sourceAuthoritySnapshot, liveResult.sourceAuthoritySnapshot);
+  assert.equal(recomputedPolicy.mode, 'exploratory');
+  assert.equal(recomputedPolicy.sourceAuthoritySnapshot.sourceId, sourceDescriptor.id);
+});
 
 test('heuristic authority permits comparison but never objective or exact claims', () => {
   const provider = createStrategyProvider({ fallbackResolver: resolveHeuristicStrategy });
@@ -123,6 +356,25 @@ test('heuristic authority permits comparison but never objective or exact claims
   ]) {
     assert.equal(canStrategyClaim(policy, forbidden), false, forbidden);
   }
+});
+
+test('equity fallback remains exploratory information rather than strategy authority', () => {
+  const result = createStrategyResult({
+    source: 'equity_fallback',
+    actions: [
+      { action: { type: 'call' }, probability: 0.55 },
+      { action: { type: 'fold' }, probability: 0.45 },
+    ],
+  });
+  const policy = resolveStrategyClaimPolicy(result);
+
+  assert.equal(policy.authority, STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY);
+  assert.equal(policy.mode, 'exploratory');
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.STRATEGY_PRESENTATION), true);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.REFERENCE_MATCH), false);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.NORMATIVE_GRADING), false);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.EXACT_FREQUENCIES), false);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.ACTION_EV), false);
 });
 
 test('coverage gates claims and an exact validated descriptor upgrades consumers without special cases', () => {

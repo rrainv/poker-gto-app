@@ -1,6 +1,6 @@
 # Strategy Source Authority and Claim Policy
 
-Status: `REFERENCE-AUTHORITY-001` implementation contract; production trust acceptance remains open under `STRATEGY-TRUST-001`.
+Status: accepted implementation contract through `STRATEGY-TRUST-001`, August 31, 2026. No production Reference Pack or validated general Hold'em production reference is registered.
 
 This specification defines how Riverline interprets a strategy result. It does not decide poker actions, tune the heuristic, validate a reference dataset, or make Personal Strategy a production provider.
 
@@ -20,13 +20,19 @@ Playbook / Analyze / Matrix / Training / in-memory Full Hand review
 
 `StrategyProvider` remains the required production strategy entry point. `StrategyClaimPolicy` is the only application authority that translates source metadata into permitted product claims. It never generates actions or changes probabilities. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` separately owns removal of the current classic/fail-open DecisionContext path before documentation may claim full consumer convergence.
 
+The accepted trust boundary inside that path is: provider declaration ->
+structural/source validation -> application-owned acceptance -> effective
+bounded authority -> StrategyResult -> StrategyClaimPolicy. Strong authority
+can never be self-declared.
+
 ## 2. Concepts that must remain separate
 
 | Concept | Meaning | Canonical representation |
 |---|---|---|
 | Source identity | What generated the result | stable descriptor `id` |
 | Source provenance | Which version, origin, method, and assumptions produced it | descriptor `version` plus `StrategyResult.provenance` |
-| Source authority | Which epistemic/product role Riverline may assign | descriptor `authority` |
+| Declared source authority | Which epistemic/product role the source requests | descriptor `authority` |
+| Accepted source authority | Which bounded role Riverline grants after validation/review | application-owned acceptance record and effective authority snapshot |
 | Context coverage | Whether this source covers this exact decision | `StrategyContextCoverage v1` |
 | Capabilities | Which data and comparisons the result genuinely supplies | descriptor declarations intersected with actual result data |
 | Claim policy | Which statements a consumer may make now | `StrategyClaimPolicy v1` |
@@ -40,7 +46,7 @@ Legacy `confidence` and numeric `coverage` fields remain readable for additive `
 - stable source ID and version;
 - localized display-name key;
 - family (`heuristic`, `equity`, `reference_pack`, `learned`, `personal`, `manual`, or `unavailable`);
-- authority;
+- requested/declared authority;
 - declared capabilities;
 - default coverage;
 - source-level limitations.
@@ -54,13 +60,31 @@ Authority values are deliberately small:
 - `personal`: intended user strategy, not poker truth;
 - `observed`: recorded behavior, not intended or normative strategy.
 
-Family does not grant authority. A solver pack, learned model, heuristic, or personal source receives only the authority supported by its declared validation contract.
+Family, schema version, descriptor authority, and provider possession do not grant authority. A solver pack, learned model, heuristic, or personal source receives only the intersection of its declaration, actual result data, context coverage, and application-owned acceptance ceiling. Without acceptance, an otherwise usable unknown source fails toward exploratory semantics and receives no strong claim.
 
 ### Registry decision
 
 Riverline has a small immutable built-in descriptor registry in `strategy-source-authority.mjs`. It covers the current preflop heuristic, postflop heuristic, equity fallback, and unavailable source. This is appropriate because old source IDs previously carried only implicit semantics and every consumer needs the same interpretation.
 
-Future provider-owned descriptors travel with their `StrategyResult`; they do not require UI source-ID branches. The registry is not a provider selector, dataset store, or second strategy authority.
+Future provider-owned descriptors travel with their `StrategyResult`; they do not require UI source-ID branches. Separately, the application composition root injects the immutable source-acceptance registry used by StrategyProvider. A provider cannot mint or persist its own trusted registry entry. Neither registry is a dataset store or a second strategy selector.
+
+### Application-owned acceptance
+
+An acceptance record binds exact source ID, allowed family, accepted authority,
+capability ceiling, coverage ceiling, validation status, and optional decision
+identity. Strong Reference Pack acceptance additionally requires an exact source
+version and content fingerprint; neither may be null or wildcarded. Changed
+bytes, wrong source/version/fingerprint, or revoked/superseded registry state
+fail closed. Manifest `accepted_validated` and equivalent provider declarations
+remain evidence only.
+
+The opaque live acceptance token is process-local and used only during current
+resolution. It is not serialized or persisted as proof of trust. StrategyResult
+and durable Training Memory instead freeze a data-only answer-time authority
+snapshot—source ID/version/fingerprint where available, accepted authority,
+capabilities, coverage, validation/decision identity—and the resolved
+StrategyClaimPolicy. Cloning or IndexedDB hydration cannot reauthenticate that
+snapshot, silently upgrade it, or rewrite an old policy.
 
 ## 4. Context coverage
 
@@ -91,6 +115,10 @@ Important invariants:
 - reference disagreement is not automatically a mistake;
 - exact personal frequencies remain personal intent, not normative truth;
 - source confidence does not measure user skill.
+- accepted exact or normative action distributions require numeric, finite,
+  non-negative probabilities with mass one within the shared `1e-12`
+  tolerance; percentage-unit inputs such as `60/30/10`, clamping, and semantic
+  renormalization are rejected.
 
 Range availability/provenance is not added to `StrategyResult` in this ticket because no current StrategyResult consumer receives a source-owned range. Existing range contracts remain separate.
 
@@ -121,7 +149,7 @@ The policy is derived from authority + coverage + effective capabilities + resul
 | observed behavior | observed-action semantics | no | only if the observation contract supports it | no |
 | unsupported/unavailable | no | no | no | no |
 
-Normative presentation is enabled only by descriptor, coverage, effective capabilities, and prior production trust acceptance, not provider-specific UI code. Synthetic fixtures may exercise consumer behavior but can never grant or simulate production trust merely by declaring an exact validated descriptor.
+Normative presentation is enabled only by declared metadata intersected with exact coverage, actual capabilities, and current application-owned acceptance, not provider-specific UI code. Synthetic fixtures may exercise consumer behavior but can never grant or simulate production trust merely by declaring an exact validated descriptor.
 
 ## 7. Current heuristic policy
 
@@ -133,7 +161,7 @@ The built-in heuristic is deterministic, versioned, known-provenance, generalize
 - action-price practice;
 - deterministic reproduction while the same source version is available.
 
-Heuristic agreement is not skill, accuracy, mastery, correctness, or GTO. Heuristic disagreement is not objective error and must not automatically create remediation, a mistake queue, or curriculum priority. Product copy may describe the baseline's preferred action or distribution only when it remains explicit that the claim belongs to this exploratory source.
+Heuristic agreement is not skill, accuracy, mastery, correctness, or GTO. The heuristic is not normative, optimal, exact-frequency, or solved-strategy authority. Heuristic disagreement is not objective error and must not automatically create remediation, a mistake queue, or curriculum priority. Product copy may describe the baseline's preferred action or distribution only when it remains explicit that the claim belongs to this exploratory source. Equity fallback remains exploratory, and unavailable remains unavailable.
 
 The v4 preflop source preserves the v3 unopened, limped, BB-option, facing-3-bet,
 and facing-4-bet-or-more probability paths. Inside the exact
@@ -267,8 +295,10 @@ The provider supplies a versioned descriptor and exact coverage only after match
 
 `REFERENCE-PACK-001` implements this path as `reference-pack/v1` with a strict
 declarative validator, exact canonical matcher, provider adapter, and unchanged
-heuristic fallback. Production registration requires the separately accepted
-`STRATEGY-TRUST-001` gate plus explicit permitted redistribution/repository inclusion. Synthetic
+heuristic fallback. Production registration requires the accepted
+`STRATEGY-TRUST-001` gate, explicit permitted redistribution/repository
+inclusion, and application acceptance matching exact source ID, version, and
+content fingerprint. Synthetic
 fixtures require a test-only gate and cannot claim `validated_reference`.
 There is currently no registered production pack, accepted frequency corpus, or
 normative/EV/optimality upgrade. Contract and current source blocker are owned
@@ -284,7 +314,15 @@ Being solver-derived grants no automatic trust. Reproducible assumptions, bounde
 
 ## 14. Production trust acceptance
 
-`STRATEGY-TRUST-001` must define one human-auditable acceptance record before any production source receives trusted or normative authority. At minimum it owns source identity/version, immutable assumptions and data, compatible license and redistribution rights, reproducible or strong provenance, independent validation against a predeclared corpus, exact coverage and mismatch behavior, reviewer/decision identity, registration status, and revocation/supersession behavior. Automated schema validation and an exact matcher are necessary inputs, not the acceptance decision.
+`STRATEGY-TRUST-001` is accepted. Before any production source receives trusted
+or normative authority, one human-auditable application acceptance must bind
+source identity/version, immutable content fingerprint, allowed family,
+accepted capabilities and coverage ceiling, compatible license and
+redistribution rights, reproducible or strong provenance, independent
+validation against a predeclared corpus, exact mismatch behavior,
+reviewer/decision identity, registration status, and revocation/supersession
+behavior. Automated schema/integrity validation, manifest status, and an exact
+matcher are necessary evidence, never the acceptance decision.
 
 Read-only reference-source research may run in parallel with foundation work. One bounded source decision follows when the evidence is ready; research observations or private benchmark material do not become production truth.
 

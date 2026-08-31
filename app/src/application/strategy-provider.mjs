@@ -38,7 +38,7 @@ function fallbackFailure(error) {
   });
 }
 
-function resultFromCandidate(candidate, decisionContext) {
+function resultFromCandidate(candidate, decisionContext, sourceAcceptance = null) {
   const sourceDescriptor = strategySourceDescriptorFor(
     candidate?.source,
     candidate?.sourceDescriptor ?? null,
@@ -46,6 +46,7 @@ function resultFromCandidate(candidate, decisionContext) {
   return createStrategyResult({
     ...candidate,
     sourceDescriptor,
+    sourceAcceptance,
     contextCoverage: candidate?.contextCoverage
       ?? strategyContextCoverageFor(
         candidate?.source,
@@ -83,9 +84,14 @@ export function createStrategyProvider({
   fallbackResolver,
   referencePack = null,
   allowTestReferencePack = false,
+  sourceAcceptanceRegistry = null,
 } = {}) {
   if (typeof fallbackResolver !== 'function') {
     throw new TypeError('StrategyProvider requires an explicit fallbackResolver');
+  }
+  if (sourceAcceptanceRegistry !== null
+    && typeof sourceAcceptanceRegistry?.acceptanceFor !== 'function') {
+    throw new TypeError('StrategyProvider sourceAcceptanceRegistry must be an acceptance registry');
   }
   const referenceAdapter = referencePack === null || referencePack === undefined
     ? null
@@ -109,7 +115,18 @@ export function createStrategyProvider({
         try {
           const referenceResolution = referenceAdapter.resolve(decisionContext);
           if (referenceResolution.candidate) {
-            return resultFromCandidate(referenceResolution.candidate, decisionContext);
+            const descriptor = strategySourceDescriptorFor(
+              referenceResolution.candidate.source,
+              referenceResolution.candidate.sourceDescriptor,
+            );
+            return resultFromCandidate(
+              referenceResolution.candidate,
+              decisionContext,
+              sourceAcceptanceRegistry?.acceptanceFor(
+                descriptor,
+                referenceAdapter.contentHash,
+              ) ?? null,
+            );
           }
           referenceSelection = {
             packId: referenceAdapter.packId,
@@ -142,7 +159,15 @@ export function createStrategyProvider({
       }
 
       try {
-        return resultFromCandidate(candidate, decisionContext);
+        const descriptor = strategySourceDescriptorFor(
+          candidate?.source,
+          candidate?.sourceDescriptor ?? null,
+        );
+        const acceptance = sourceAcceptanceRegistry?.acceptanceFor(
+          descriptor,
+          candidate?.provenance?.contentHash ?? null,
+        ) ?? null;
+        return resultFromCandidate(candidate, decisionContext, acceptance);
       } catch (error) {
         return fallbackFailure(error);
       }

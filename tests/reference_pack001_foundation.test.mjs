@@ -22,6 +22,10 @@ import {
 } from '../app/src/application/reference-pack-v1.mjs';
 import { createStrategyProvider } from '../app/src/application/strategy-provider.mjs';
 import {
+  STRATEGY_EXACT_DISTRIBUTION_TOLERANCE,
+  createStrategySourceAcceptanceRegistry,
+} from '../app/src/application/strategy-source-authority.mjs';
+import {
   STRATEGY_CLAIMS,
   canStrategyClaim,
   resolveStrategyClaimPolicy,
@@ -114,6 +118,9 @@ function syntheticPack() {
           callAmountBb: 1.5,
           heroStreetContributionBb: 1,
           currentPotBb: 4,
+          actorContestablePotAfterCallBb: 5.5,
+          actorIneligiblePotAfterCallBb: 0,
+          requiredRawEquity: 1.5 / 5.5,
         },
         availableActionFamilies: ['fold', 'call', 'raise', 'all_in'],
         supportedAggressiveSizes: [
@@ -188,11 +195,28 @@ function changedPack(change) {
   return attachReferencePackIntegrity(draft);
 }
 
+function acceptanceRegistryForPack(referencePack) {
+  const descriptor = validateReferencePack(referencePack).manifest.sourceDescriptor;
+  return createStrategySourceAcceptanceRegistry([{
+    sourceId: descriptor.id,
+    allowedFamily: descriptor.family,
+    acceptedAuthority: descriptor.authority,
+    acceptedCapabilities: referencePack.manifest.capabilities,
+    acceptedCoverageCeiling: 'exact',
+    validationStatus: 'synthetic_test_only',
+    acceptanceDecisionId: 'reference_pack001_synthetic_test_acceptance',
+    acceptedVersion: descriptor.version,
+    acceptedFingerprint: referencePack.integrity.contentHash,
+  }]);
+}
+
 function providerWithPack() {
+  const referencePack = syntheticPack();
   return createStrategyProvider({
     fallbackResolver: resolveHeuristicStrategy,
-    referencePack: syntheticPack(),
+    referencePack,
     allowTestReferencePack: true,
+    sourceAcceptanceRegistry: acceptanceRegistryForPack(referencePack),
   });
 }
 
@@ -223,6 +247,71 @@ test('synthetic packs cannot register in production and require an explicit test
   const adapter = createReferencePackAdapter(syntheticPack(), { allowTestPack: true });
   assert.equal(adapter.productionEligible, false);
   assert.equal(adapter.lookupKind, 'canonical_preflop_hand_class_map');
+});
+
+test('pack manifest acceptance evidence grants no authority without registry acceptance', () => {
+  const selfDeclaredAccepted = changedPack((pack) => {
+    pack.manifest.sourceDescriptor.authority = 'validated_reference';
+    pack.manifest.capabilities.grading = 'normative';
+    pack.manifest.validation.status = REFERENCE_PACK_VALIDATION_STATUSES.ACCEPTED_VALIDATED;
+    pack.manifest.validation.authorityDecision = 'validated_reference';
+    pack.manifest.validation.acceptanceDate = '2026-08-31';
+  });
+  const provider = createStrategyProvider({
+    fallbackResolver: resolveHeuristicStrategy,
+    referencePack: selfDeclaredAccepted,
+  });
+  const result = provider.resolve(exactContext());
+  const policy = resolveStrategyClaimPolicy(result);
+
+  assert.equal(result.source, 'reference_pack.synthetic.bb-vs-btn-open-2.5.test');
+  assert.equal(result.sourceAuthoritySnapshot, null);
+  assert.equal(policy.mode, 'exploratory');
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.COMPARATIVE_GRADING), false);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.EXACT_FREQUENCIES), false);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.NORMATIVE_GRADING), false);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.OPTIMALITY), false);
+});
+
+test('reference acceptance is exact-fingerprint bound and cannot survive changed pack bytes', () => {
+  const acceptedPack = syntheticPack();
+  const registry = acceptanceRegistryForPack(acceptedPack);
+  const changed = changedPack((pack) => {
+    pack.manifest.source.provenanceNotes += ' changed bytes';
+  });
+  const result = createStrategyProvider({
+    fallbackResolver: resolveHeuristicStrategy,
+    referencePack: changed,
+    allowTestReferencePack: true,
+    sourceAcceptanceRegistry: registry,
+  }).resolve(exactContext());
+
+  assert.notEqual(changed.integrity.contentHash, acceptedPack.integrity.contentHash);
+  assert.equal(result.sourceAuthoritySnapshot, null);
+  assert.equal(resolveStrategyClaimPolicy(result).mode, 'exploratory');
+});
+
+test('pack and StrategyResult share one exact-distribution tolerance', () => {
+  const nearTolerance = changedPack((pack) => {
+    pack.representation.rows[0].actions[0].probability += (
+      STRATEGY_EXACT_DISTRIBUTION_TOLERANCE / 2
+    );
+  });
+  assert.doesNotThrow(() => validateReferencePack(nearTolerance));
+  const handClass = nearTolerance.representation.rows[0].handClass;
+  const decisionContext = {
+    ...exactContext(),
+    heroCards: [...getHoldemCombosForHandClass(handClass)[0].cards],
+  };
+  const result = createStrategyProvider({
+    fallbackResolver: resolveHeuristicStrategy,
+    referencePack: nearTolerance,
+    allowTestReferencePack: true,
+    sourceAcceptanceRegistry: acceptanceRegistryForPack(nearTolerance),
+  }).resolve(decisionContext);
+
+  assert.equal(result.source, nearTolerance.manifest.sourceDescriptor.id);
+  assert.equal(resolveStrategyClaimPolicy(result).mode, 'comparative');
 });
 
 test('pack validation rejects malformed mass, duplicate/missing classes, illegal actions, false sizing, and false EV', () => {
@@ -299,6 +388,21 @@ test('exact matcher accepts only the canonical BB cold response to BTN 2.5bb nod
   assert.deepEqual(match.coverage.limitationCodes, []);
 });
 
+test('legacy total-pot-only pack remains readable but cannot claim an exact actor-price match', () => {
+  const legacyPack = syntheticPack();
+  delete legacyPack.manifest.gameAssumptions.priorActionTree.actorContestablePotAfterCallBb;
+  delete legacyPack.manifest.gameAssumptions.priorActionTree.actorIneligiblePotAfterCallBb;
+  delete legacyPack.manifest.gameAssumptions.priorActionTree.requiredRawEquity;
+  legacyPack.integrity.contentHash = null;
+  const readable = attachReferencePackIntegrity(legacyPack);
+  assert.doesNotThrow(() => validateReferencePack(readable));
+  const match = matchReferencePackContext(readable, exactContext());
+  assert.equal(match.matched, false);
+  assert.ok(match.coverage.limitationCodes.includes(
+    'reference_pack_actor_call_economics_mismatch',
+  ));
+});
+
 test('exact matcher rejects every material near-miss dimension without interpolation', () => {
   const cases = [
     ['game', (context) => { context.gameRules.definition.variant = 'omaha'; }, 'reference_pack_game_mismatch'],
@@ -314,6 +418,7 @@ test('exact matcher rejects every material near-miss dimension without interpola
     ['open-size', (context) => { context.facingSizeBb = 2.3; }, 'reference_pack_open_size_mismatch'],
     ['aggressors', (context) => { context.priorActionSummary.distinctAggressorCount = 2; }, 'reference_pack_prior_action_mismatch'],
     ['cold', (context) => { context.priorActionSummary.heroActionWouldBeCold = false; }, 'reference_pack_cold_action_mismatch'],
+    ['actor-price', (context) => { context.requiredRawEquity = 0.5; }, 'reference_pack_actor_call_economics_mismatch'],
     ['legal-support', (context) => { context.canRaise = false; }, 'reference_pack_legal_action_support_mismatch'],
     ['multiway', (context) => { context.opponentCount = 2; }, 'reference_pack_opponent_count_mismatch'],
   ];
@@ -339,6 +444,12 @@ test('provider selects the exact pack result and policy remains comparative, non
   assert.equal(result.provenance.packVersion, '1.0.0-test');
   assert.equal(result.details.referencePack.handClass, 'QJo');
   assert.equal(policy.mode, 'comparative');
+  assert.equal(result.sourceAuthoritySnapshot.validationStatus, 'synthetic_test_only');
+  assert.equal(
+    result.sourceAuthoritySnapshot.sourceFingerprint,
+    syntheticPack().integrity.contentHash,
+  );
+  assert.equal(policy.authority, 'comparative_reference');
   assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.EXACT_FREQUENCIES), true);
   assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.COMPARATIVE_GRADING), true);
   assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.NORMATIVE_GRADING), false);

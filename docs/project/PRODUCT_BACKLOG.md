@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 31, 2026 (`DECISION-ECONOMICS-001` is human accepted; the remaining foundational sequence begins with `STRATEGY-TRUST-001`).
+Last consolidated: August 31, 2026 (`STRATEGY-TRUST-001` is accepted; the remaining foundational sequence begins with `DECISION-CONTEXT-SINGLE-AUTHORITY-001`).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -49,8 +49,8 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | conditional | PRESERVED CONDITIONAL / NOT IN CURRENT ORDER | `HOME-GAME-PRESENTATION-001`, `AUDIO-DESIGN-001` |
 | 1 | COMPLETED / HUMAN SECURITY ACCEPTED | `AUTH-TRAINING-MEMORY-001` |
 | 2 | COMPLETED / HUMAN ACCEPTED | `DECISION-ECONOMICS-001`; canonical pot accounting preserved, actor-relative strategic pricing repaired |
-| 3 | ACTIVE NEXT / FOUNDATIONAL | `STRATEGY-TRUST-001` |
-| 4 | PLANNED NEXT / FOUNDATIONAL | `DECISION-CONTEXT-SINGLE-AUTHORITY-001` |
+| 3 | COMPLETED / ACCEPTED | `STRATEGY-TRUST-001`; application-owned bounded source acceptance, durable historical authority evidence, and fail-closed exact/normative inputs |
+| 4 | ACTIVE NEXT / FOUNDATIONAL | `DECISION-CONTEXT-SINGLE-AUTHORITY-001` |
 | 5 | PLANNED NEXT / NEEDS REPRODUCTION | `AUDIT-HIGH-RISK-REPRO-001` |
 | 6–9 | PLANNED NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
 | 10–11 | PLANNED NEXT / INCREMENTAL EXTRACTION | `UI-COMPOSITION-ROOT-001` → one bounded workspace extraction pilot |
@@ -93,7 +93,7 @@ Detailed evidence and row-level traceability remain in [Hands-On Product Review 
 
 | Capability | Status | Accepted scope |
 |---|---|---|
-| source authority, DecisionContext, fallback repair, role semantics, benchmark, and bounded calibration | CHECKPOINTED / FOUNDATIONAL DEBT ACTIVATED | The target remains one `DecisionContext → StrategyProvider → StrategyResult → StrategyClaimPolicy` path. `DECISION-ECONOMICS-001` is accepted: canonical ledger accounting was correct, and exact actor-relative call pricing now uses the canonical selector plus additive v1.1 contestable/ineligible pot-after-call and raw-equity facts while lossy/legacy contexts remain distinguishable. Remaining owners: `STRATEGY-TRUST-001`, `DECISION-CONTEXT-SINGLE-AUTHORITY-001`. |
+| source authority, DecisionContext, fallback repair, role semantics, benchmark, and bounded calibration | CHECKPOINTED / TRUST AND ECONOMICS ACCEPTED; CONTEXT CONVERGENCE ACTIVE | The target remains one `DecisionContext → StrategyProvider → StrategyResult → StrategyClaimPolicy` path. `DECISION-ECONOMICS-001` preserves canonical accounting and exact actor-relative pricing only where evidence exists. `STRATEGY-TRUST-001` now requires provider declaration → structural/source validation → application-owned acceptance → effective bounded authority; strong claims cannot be self-declared, Reference Pack authority binds exact ID/version/fingerprint, live trust is not persisted, historical ClaimPolicy evidence remains frozen, and malformed accepted exact/normative distributions fail closed at the shared `1e-12` tolerance. No production Reference Pack exists. Remaining owner: `DECISION-CONTEXT-SINGLE-AUTHORITY-001`. |
 | `HEURISTIC-BASELINE-TRUTH-001` | PLANNED NEXT / FOUNDATIONAL | Current strategy output is a heuristic baseline for exploration and explicit comparison only. Agreement/disagreement is not skill, accuracy, mastery, correctness, GTO, or automatic remediation. |
 | `REFERENCE-PACK-001` bounded reference pack/provider | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `reference-pack/v1`, exact rules/history/stack/legality matcher, deterministic validation/integrity, provider adapter, unchanged labelled fallback, and generic Playbook/Training/Matrix/Analyze/Review consumption are implemented with synthetic test-only data. No production corpus is registered; resume with exact immutable source data, compatible license/redistribution, reproducible or strong provenance, and independent validation evidence. See [Reference Pack v1](REFERENCE_PACK_V1_SPEC.md) and [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
 | broader preflop/postflop reference and evidence-driven fallback calibration | PRESERVED FUTURE | Expand only through measurable validation; exact coverage never extrapolates. See [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |

@@ -27,6 +27,7 @@ import {
 } from '../app/src/application/strategy-result.mjs';
 import {
   createStrategyContextCoverage,
+  createStrategySourceAcceptanceRegistry,
   createStrategySourceDescriptor,
 } from '../app/src/application/strategy-source-authority.mjs';
 import {
@@ -206,6 +207,66 @@ test('DecisionRecord v1 freezes exact canonical state and comparative source tru
   validateTrainingDecisionRecord(record);
 });
 
+test('historical Training Memory context bytes remain absent rather than backfilled', async () => {
+  const historicalExercise = structuredClone(exercise());
+  delete historicalExercise.decisionContext.actorContestablePotAfterCallBb;
+  delete historicalExercise.decisionContext.actorIneligiblePotAfterCallBb;
+  delete historicalExercise.decisionContext.requiredRawEquity;
+  const historicalBytes = JSON.stringify(historicalExercise.decisionContext);
+  const { service } = serviceFixture();
+  const fixture = await answeredExerciseRecord({
+    service,
+    currentExercise: historicalExercise,
+  });
+  assert.equal(JSON.stringify(fixture.answered.decisionContext), historicalBytes);
+  assert.equal(
+    Object.hasOwn(fixture.answered.decisionContext, 'actorContestablePotAfterCallBb'),
+    false,
+  );
+  validateTrainingDecisionRecord(fixture.answered);
+});
+
+test('unaccepted exploratory answers create no reference comparison or automatic review reason', async () => {
+  const base = exercise();
+  const unacceptedDescriptor = createStrategySourceDescriptor({
+    id: 'unaccepted.training.source',
+    version: 'unaccepted.training.source/v1',
+    displayName: 'Unaccepted training source',
+    family: 'learned',
+    authority: 'validated_reference',
+    capabilities: {
+      actionDistribution: 'exact',
+      grading: 'normative',
+      optimality: true,
+    },
+    defaultCoverage: 'exact',
+  });
+  const unacceptedResult = createStrategyResult({
+    source: unacceptedDescriptor.id,
+    sourceDescriptor: unacceptedDescriptor,
+    contextCoverage: createStrategyContextCoverage({ kind: 'exact' }),
+    actions: [
+      { action: { type: ACTION_TYPES.FOLD }, probability: 0.1 },
+      { action: { type: ACTION_TYPES.RAISE }, probability: 0.9 },
+    ],
+  });
+  const currentExercise = Object.freeze({
+    ...structuredClone(base),
+    strategyResult: unacceptedResult,
+  });
+  const { service } = serviceFixture();
+  const { answered } = await answeredExerciseRecord({
+    service,
+    currentExercise,
+    actionType: ACTION_TYPES.FOLD,
+  });
+
+  assert.equal(answered.strategyEvidence.claimPolicy.mode, 'exploratory');
+  assert.equal(answered.strategyEvidence.comparisonState, 'unavailable');
+  assert.deepEqual(reviewReasonsForDecision(answered), []);
+  assert.equal(answered.reviewState.state, TRAINING_REVIEW_LIFECYCLE_STATES.NONE);
+});
+
 test('frozen claim policy distinguishes a genuinely normative reference from internal grade', async () => {
   const base = exercise();
   const descriptor = createStrategySourceDescriptor({
@@ -226,6 +287,17 @@ test('frozen claim policy distinguishes a genuinely normative reference from int
   const normativeResult = createStrategyResult({
     source: descriptor.id,
     sourceDescriptor: descriptor,
+    sourceAcceptance: createStrategySourceAcceptanceRegistry([{
+      sourceId: descriptor.id,
+      allowedFamily: descriptor.family,
+      acceptedAuthority: descriptor.authority,
+      acceptedCapabilities: descriptor.capabilities,
+      acceptedCoverageCeiling: 'exact',
+      validationStatus: 'explicit_test_acceptance',
+      acceptedVersion: descriptor.version,
+      acceptedFingerprint: 'validated-test-reference-fingerprint',
+    }]).acceptanceFor(descriptor, 'validated-test-reference-fingerprint'),
+    provenance: { contentHash: 'validated-test-reference-fingerprint' },
     contextCoverage: createStrategyContextCoverage({ kind: 'exact' }),
     actions: [
       { action: { type: ACTION_TYPES.FOLD }, label: 'Fold', probability: 0.1 },
@@ -247,6 +319,22 @@ test('frozen claim policy distinguishes a genuinely normative reference from int
   assert.equal(answered.strategyEvidence.claimPolicy.trainingSemantics, 'normative');
   assert.equal(answered.strategyEvidence.claimPolicy.claims.accuracy, true);
   assert.equal(answered.strategyEvidence.claimPolicy.sourceVersion, 'validated-test-reference/v1');
+  assert.equal(
+    answered.strategyEvidence.strategyResult.sourceAuthoritySnapshot.sourceFingerprint,
+    'validated-test-reference-fingerprint',
+  );
+  assert.equal(Object.hasOwn(answered.strategyEvidence.strategyResult, 'sourceAcceptance'), false);
+  const same = await service.createSameSpot(answered.id);
+  assert.equal(same.historicalClaimPolicy.trainingSemantics, 'normative');
+  assert.deepEqual(
+    same.exercise.strategyResult.sourceAuthoritySnapshot,
+    answered.strategyEvidence.strategyResult.sourceAuthoritySnapshot,
+  );
+  const oldFrozenRecord = structuredClone(answered);
+  delete oldFrozenRecord.strategyEvidence.strategyResult.sourceAuthoritySnapshot;
+  delete oldFrozenRecord.strategyEvidence.claimPolicy.sourceAuthoritySnapshot;
+  assert.doesNotThrow(() => validateTrainingDecisionRecord(oldFrozenRecord));
+  assert.equal(oldFrozenRecord.strategyEvidence.claimPolicy.trainingSemantics, 'normative');
 });
 
 test('SessionRecord v1 preserves order and derives a source-versioned factual summary', async () => {

@@ -156,6 +156,16 @@ Actions use structured canonical action types; labels are presentation data. Pro
 
 `StrategyResult v1` additively carries a source descriptor, source version, provenance, context coverage, and capabilities. Source identity, provenance, authority, coverage, capabilities, and claim policy are distinct facts. Legacy numeric confidence/coverage metadata grants no authority.
 
+The canonical trust boundary is provider declaration -> structural/source
+validation -> application-owned acceptance -> effective bounded authority ->
+StrategyResult -> StrategyClaimPolicy. Strong authority can never be
+self-declared. Reference Pack acceptance binds exact source ID, version, and
+content fingerprint; changed bytes, mismatches, and revoked/superseded registry
+state fail closed. Live opaque acceptance is process-local and is not persisted
+as proof. Durable evidence freezes answer-time effective authority,
+capability/coverage, acceptance decision identity, and ClaimPolicy without
+silent upgrade or reauthentication.
+
 All consumers must obtain user-facing claim semantics from `StrategyClaimPolicy v1`. They must not infer correctness, optimality, exactness, EV loss, normative grading, skill, accuracy, mastery, or GTO from a source ID, family, solver/model branding, probability distribution, agreement, disagreement, or confidence number. The current heuristic is exploratory/comparative baseline evidence only, and its disagreement alone must not create remediation. See `STRATEGY_SOURCE_AUTHORITY_SPEC.md`.
 
 `reference-pack/v1` is the accepted declarative bounded-provider foundation.
@@ -167,7 +177,7 @@ the separately labelled existing fallback without blending. No production pack
 is currently registered because no production-safe source has been accepted.
 See `REFERENCE_PACK_V1_SPEC.md`.
 
-Any future model/reference provider must enter behind this boundary with a versioned descriptor, explicit context matcher, declared capabilities, and validation-backed authority. Descriptor fields and automated validation do not self-authorize production trust: `STRATEGY-TRUST-001` must define and satisfy the human acceptance, evidence, licensing, registration, and revocation gate. Exact bounded coverage must not extrapolate. Do not revive retired loaders.
+Any future model/reference provider must enter behind this boundary with a versioned descriptor, explicit context matcher, declared capabilities, and validation evidence. Descriptor fields, manifest statuses such as `accepted_validated`, and automated validation do not self-authorize production trust: the accepted `STRATEGY-TRUST-001` application record owns evidence, licensing, exact identity/version/fingerprint registration, capability/coverage ceilings, and revocation/supersession. Exact bounded coverage must not extrapolate. Do not revive retired loaders.
 
 ## 7. Equity
 
