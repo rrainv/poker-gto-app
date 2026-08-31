@@ -1,6 +1,6 @@
 # Riverline Checkpoint Return Queue
 
-Last refreshed: August 31, 2026 (`AUTH-TRAINING-MEMORY-001` closes its auth-isolation return; `DECISION-ECONOMICS-001` now leads the remaining foundation queue).
+Last refreshed: August 31, 2026 (`DECISION-ECONOMICS-001` closes its actor-pricing return; `STRATEGY-TRUST-001` now leads the remaining foundation queue).
 
 This is the prioritized **must-return** companion to `PRODUCT_BACKLOG.md` and `QA_BACKLOG.md`.
 
@@ -20,11 +20,11 @@ Use it for work that was intentionally checkpointed with known unfinished accept
 
 ## Current prioritized return queue
 
-[Current Phase](CURRENT_PHASE.md) remains the sequence authority. `AUTH-TRAINING-MEMORY-001` is completed and human/security accepted. The remaining audit-triaged foundation activation order is: (1) `DECISION-ECONOMICS-001`; (2) `STRATEGY-TRUST-001`; (3) `DECISION-CONTEXT-SINGLE-AUTHORITY-001`; (4) `AUDIT-HIGH-RISK-REPRO-001`; (5) `IDENTITY-LIFECYCLE-001`; (6) `HEURISTIC-BASELINE-TRUTH-001`; (7) `TRAINING-NORMATIVE-001`; (8) `BROWSER-TEST-PLATFORM-001`; (9) `UI-COMPOSITION-ROOT-001`; (10) one bounded workspace extraction pilot; (11) `SAVED-LIBRARY-001`; (12) `HOME-STUDY-CONTINUITY-001`; (13) one bounded reference-source decision after parallel read-only research; (14) learning-loop expansion; (15) `PERSONAL-STRATEGY-003A`. Table row order preserves the compact debt registry and does not override that activation sequence.
+[Current Phase](CURRENT_PHASE.md) remains the sequence authority. `AUTH-TRAINING-MEMORY-001` and `DECISION-ECONOMICS-001` are completed and accepted. The remaining audit-triaged foundation activation order is: (1) `STRATEGY-TRUST-001`; (2) `DECISION-CONTEXT-SINGLE-AUTHORITY-001`; (3) `AUDIT-HIGH-RISK-REPRO-001`; (4) `IDENTITY-LIFECYCLE-001`; (5) `HEURISTIC-BASELINE-TRUTH-001`; (6) `TRAINING-NORMATIVE-001`; (7) `BROWSER-TEST-PLATFORM-001`; (8) `UI-COMPOSITION-ROOT-001`; (9) one bounded workspace extraction pilot; (10) `SAVED-LIBRARY-001`; (11) `HOME-STUDY-CONTINUITY-001`; (12) one bounded reference-source decision after parallel read-only research; (13) learning-loop expansion; (14) `PERSONAL-STRATEGY-003A`. Table row order preserves the compact debt registry and does not override that activation sequence.
 
 | ID | Priority | Subsystem | What is still unfinished / known debt | Next owner / trigger |
 |---|---|---|---|---|
-| RET-DECISION-ECONOMICS-001 | RETURN-SOON / FOUNDATIONAL | Decision economics | Current decision facts do not yet form one accepted actor-relative contract for incremental price, contestable-pot layers, contribution, and effective stacks across Hero and non-Hero decisions. | `DECISION-ECONOMICS-001` |
+| RET-DECISION-ECONOMICS-001 | COMPLETED / HUMAN ACCEPTED; NO CURRENT RETURN REMAINS | Decision economics | Canonical pot accounting was correct. Exact actor-relative strategic pricing now projects stack-capped call, contestable/ineligible pot-after-call, and raw-equity facts through the canonical selector; lossy Scenario and historical total-pot-only contexts do not fabricate exact pricing. | No trigger; preserve `DECISION-ECONOMICS-001` and normal regression coverage |
 | RET-STRATEGY-TRUST-001 | RETURN-SOON / FOUNDATIONAL | Strategy source acceptance | Schema/provenance validation and exact matching do not themselves establish that a production strategy source is trustworthy. Source evidence, license, review, bounded coverage, registration, and revocation need one acceptance gate. | `STRATEGY-TRUST-001` |
 | RET-DECISION-CONTEXT-AUTHORITY-001 | RETURN-SOON / FOUNDATIONAL | DecisionContext | Extracted projectors coexist with a classic `logic.js` constructor and fail-open fallback. The production path must converge on one explicit authority/failure model. | `DECISION-CONTEXT-SINGLE-AUTHORITY-001` |
 | RET-AUDIT-HIGH-RISK-REPRO-001 | RETURN-SOON / NEEDS REPRODUCTION | Cross-product QA | Eleven blind findings remain unconfirmed and unclosed: Equity exact-opponent exclusion, Full Hand Memory leakage, Same Spot coherence, non-Hero context, Hand→Analyze stack transfer, Analyze chronology, completed-Hand Home state, duplicate auth client, real-browser accessibility, Range comparison interaction, and Hand Review priority metrics. | `AUDIT-HIGH-RISK-REPRO-001`; exact IDs in `QA_BACKLOG.md` |

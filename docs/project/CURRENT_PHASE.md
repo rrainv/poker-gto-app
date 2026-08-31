@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 31, 2026 (`AUTH-TRAINING-MEMORY-001` is human/security accepted; `DECISION-ECONOMICS-001` is active next in the post-audit foundation sequence).
+Last refreshed: August 31, 2026 (`DECISION-ECONOMICS-001` is human accepted; `STRATEGY-TRUST-001` is active next in the post-audit foundation sequence).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -133,8 +133,8 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
 
 19. **FOUNDATIONAL GATES — POST-AUDIT HUMAN EXECUTION ORDER**
    1. **COMPLETED / HUMAN SECURITY ACCEPTED — `AUTH-TRAINING-MEMORY-001`** — authentication-aware owner scope and generation now isolate prior-account Training Memory from Guest/other accounts, revoke local access before provider cleanup, discard stale queued/read results, abort stale in-flight writes, and preserve account bytes for authenticated return;
-   2. **ACTIVE NEXT — `DECISION-ECONOMICS-001`** — define actor-relative decision economics and contestable-pot pricing without duplicating poker accounting;
-   3. `STRATEGY-TRUST-001` — establish the production acceptance gate for a trusted strategy source;
+   2. **COMPLETED / HUMAN ACCEPTED — `DECISION-ECONOMICS-001`** — canonical pot accounting remains authoritative; accepted actor-relative strategic pricing projects exact contestable/ineligible pot-after-call and raw-equity facts through `deriveActorCallEconomics(state, actorPlayerId)` without reopening ledger accounting;
+   3. **ACTIVE NEXT — `STRATEGY-TRUST-001`** — establish the production acceptance gate for a trusted strategy source;
    4. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` — remove duplicate/fail-open DecisionContext construction paths;
    5. `AUDIT-HIGH-RISK-REPRO-001` — reproduce or reject every preserved high-risk blind finding before any fix claim;
    6. `IDENTITY-LIFECYCLE-001` — establish cross-surface owner, generation, invalidation, and disposal behavior, including the durable anonymous device-local Guest target and authenticated sign-out isolation;

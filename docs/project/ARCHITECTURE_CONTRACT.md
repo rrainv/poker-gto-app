@@ -109,11 +109,31 @@ lossy Scenario inputs must not infer them from a broad prior-action label.
 See `DECISION_CONTEXT_SPEC.md` for precise field and evidence semantics.
 
 Pot-odds or commitment math must use `callAmountBb`, not `facingSizeBb`.
-Current-pot/SPR logic must use `currentPotBb`, not compatibility `potBb`.
+Total-ledger accounting and table pot display use `currentPotBb`, not
+compatibility `potBb`.
 Live-stack logic must use `heroStackBb` and the appropriate effective-stack
 fact, not compatibility `stackBb`.
 
-Those v1.1 facts do not yet constitute a complete actor-relative decision-economics contract. `DECISION-ECONOMICS-001` owns exact contestable-pot pricing, contribution, and effective-stack semantics for whichever actor is deciding, while `shared/poker-domain` remains the only accounting authority. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` owns removal of the classic `logic.js` constructor and any fail-open bridge path; until it closes, documentation must not claim every production consumer already uses one projector.
+`DECISION-ECONOMICS-001` is accepted. Canonical pot accounting was correct; the
+defect was actor-relative strategic pricing. The canonical
+`deriveActorCallEconomics(state, actorPlayerId)` selector projects exact
+actor-contestable and actor-ineligible pot-after-call facts from
+`shared/poker-domain`. `currentPotBb` remains the exact total ledger pot and
+`callAmountBb` the exact incremental stack-capped call. Additive v1.1 fields are
+`actorContestablePotAfterCallBb`, `actorIneligiblePotAfterCallBb`, and
+`requiredRawEquity`. Exact call price never falls back to total pot when these
+actor facts are absent; lossy Scenario leaves them unavailable. Strategic SPR
+uses actor-contestable facts only when exact or bounded, multiway MDF remains
+unavailable without exact bounded semantics, and table pot presentation remains
+total-ledger based. Historical v1/pre-extension-v1.1 contexts remain readable
+without rewriting.
+
+Exact reference matching distinguishes legacy total-pot-only contexts from
+actor-relative exact pricing; missing additive actor economics cannot satisfy
+an exact price match. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` owns removal of the
+classic `logic.js` constructor and any fail-open bridge path; until it closes,
+documentation must not claim every production consumer already uses one
+projector.
 
 Additive fields may remain in v1 only when backward-compatible and explicitly documented/tested. Breaking changes require an approved schema migration.
 

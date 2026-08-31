@@ -97,13 +97,22 @@ material rule assumption. It is additive and optional for historical v1.1 Saved
 Spot payloads; new saved contexts validate it when present and require its
 fingerprint to agree with the Saved rules snapshot.
 
-## 3. Additive current-pot and live-stack fields
+## 3. Additive current-pot, actor-call economics, and live-stack fields
 
 - `currentPotBb`: exact current canonical pot converted from integer milliBB at
   the application boundary without the legacy 0.5–200 compatibility clamp. A
   Scenario preserves an explicitly supplied finite non-negative pot; a numeric
   string is normalized with provenance; an absent or invalid value is `null`
   with unavailable provenance. Scenario never reconstructs a pot from history.
+
+- `actorContestablePotAfterCallBb`: exact pot the deciding actor can win after
+  making the stack-capped call, projected from canonical contribution layers.
+- `actorIneligiblePotAfterCallBb`: exact remainder of the total ledger pot that
+  the deciding actor cannot win after that call.
+- `requiredRawEquity`: exact raw call threshold,
+  `callAmountBb / actorContestablePotAfterCallBb`, when a positive exact call
+  and actor-contestable denominator are available. It is `null` for checks,
+  unavailable actor economics, or an invalid/unbounded denominator.
 
 - `startingStackBb`: exact canonical Hero starting stack. For Scenario, the
   normalized configured `stackBb` value; it is not evidence of live chips.
@@ -118,15 +127,30 @@ fingerprint to agree with the Saved rules snapshot.
   live opponent exists. Multiway uses `null` plus provenance because one scalar
   cannot represent side-pot/effective-stack relationships.
 
-These fields do not model side-pot strategy or already-contributed pot layers.
+`deriveActorCallEconomics(state, actorPlayerId)` in `shared/poker-domain` is the
+canonical actor-call economics selector. Canonical pot accounting was already
+correct; the repaired defect was actor-relative strategic pricing. The selector
+projects the canonical ledger and pot layers and does not create a second pot or
+side-pot authority. `currentPotBb` remains the exact total ledger pot, while
+`callAmountBb` remains the exact incremental stack-capped call.
 
-They are also Hero-named compatibility fields rather than a complete actor-relative economics contract. `DECISION-ECONOMICS-001` owns exact decision-actor identity, incremental price, contestable-pot layers, actor contribution, and effective-stack semantics for Hero and non-Hero decisions. That work must project canonical poker-domain accounting and may not introduce a second pot or side-pot authority. Until it closes, `currentPotBb` must not be assumed to answer every actor-relative contestable-pot question.
+Lossy Scenario exposes actor economics as unavailable and never substitutes its
+explicit or compatibility total pot for an exact call-price denominator.
+Historical base-v1 and pre-extension-v1.1 contexts remain readable without
+rewriting; absence of the additive actor-economics fields remains meaningful.
 
 ### Mandatory v1.1 strategy field choice
 
-A v1.1-aware strategy must use `currentPotBb` for exact current-pot or SPR
-reasoning. It must not use `potBb`, which remains the legacy compatibility
-projection and can be defaulted or clamped.
+A v1.1-aware strategy must use `currentPotBb` for total-ledger accounting and
+table pot display. It must not use `potBb`, which remains the legacy
+compatibility projection and can be defaulted or clamped. User-facing strategic
+SPR uses actor-contestable facts only where they are exact or explicitly
+bounded; it must not relabel the total ledger pot as actor-contestable.
+
+Exact call pricing uses `requiredRawEquity` or the exact actor-contestable
+denominator. It never falls back to `currentPotBb` or `potBb` when actor
+economics are absent. Multiway MDF remains unavailable unless an exact bounded
+semantic contract exists for that decision.
 
 Likewise, live-stack reasoning must use `heroStackBb`, `effectiveStackBb`, or
 `effectiveStackByOpponent` as appropriate. It must not use legacy `stackBb`,

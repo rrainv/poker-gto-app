@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 31, 2026 (`AUTH-TRAINING-MEMORY-001` is human/security accepted; the remaining foundational sequence begins with `DECISION-ECONOMICS-001`).
+Last consolidated: August 31, 2026 (`DECISION-ECONOMICS-001` is human accepted; the remaining foundational sequence begins with `STRATEGY-TRUST-001`).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -48,8 +48,9 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | 9 | COMPLETED / HUMAN ACCEPTED | `GUIDE-CONTENT-001` workflow-first durable product reference over existing navigation and tutorial authorities |
 | conditional | PRESERVED CONDITIONAL / NOT IN CURRENT ORDER | `HOME-GAME-PRESENTATION-001`, `AUDIO-DESIGN-001` |
 | 1 | COMPLETED / HUMAN SECURITY ACCEPTED | `AUTH-TRAINING-MEMORY-001` |
-| 2 | ACTIVE NEXT / FOUNDATIONAL | `DECISION-ECONOMICS-001` |
-| 3–4 | PLANNED NEXT / FOUNDATIONAL | `STRATEGY-TRUST-001` → `DECISION-CONTEXT-SINGLE-AUTHORITY-001` |
+| 2 | COMPLETED / HUMAN ACCEPTED | `DECISION-ECONOMICS-001`; canonical pot accounting preserved, actor-relative strategic pricing repaired |
+| 3 | ACTIVE NEXT / FOUNDATIONAL | `STRATEGY-TRUST-001` |
+| 4 | PLANNED NEXT / FOUNDATIONAL | `DECISION-CONTEXT-SINGLE-AUTHORITY-001` |
 | 5 | PLANNED NEXT / NEEDS REPRODUCTION | `AUDIT-HIGH-RISK-REPRO-001` |
 | 6–9 | PLANNED NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
 | 10–11 | PLANNED NEXT / INCREMENTAL EXTRACTION | `UI-COMPOSITION-ROOT-001` → one bounded workspace extraction pilot |
@@ -92,7 +93,7 @@ Detailed evidence and row-level traceability remain in [Hands-On Product Review 
 
 | Capability | Status | Accepted scope |
 |---|---|---|
-| source authority, DecisionContext, fallback repair, role semantics, benchmark, and bounded calibration | CHECKPOINTED / FOUNDATIONAL DEBT ACTIVATED | The target remains one `DecisionContext → StrategyProvider → StrategyResult → StrategyClaimPolicy` path. Audit evidence found duplicate/fail-open DecisionContext construction, incomplete actor-relative contestable-pot economics, and no accepted production trust gate. Owners: `DECISION-ECONOMICS-001`, `STRATEGY-TRUST-001`, `DECISION-CONTEXT-SINGLE-AUTHORITY-001`. |
+| source authority, DecisionContext, fallback repair, role semantics, benchmark, and bounded calibration | CHECKPOINTED / FOUNDATIONAL DEBT ACTIVATED | The target remains one `DecisionContext → StrategyProvider → StrategyResult → StrategyClaimPolicy` path. `DECISION-ECONOMICS-001` is accepted: canonical ledger accounting was correct, and exact actor-relative call pricing now uses the canonical selector plus additive v1.1 contestable/ineligible pot-after-call and raw-equity facts while lossy/legacy contexts remain distinguishable. Remaining owners: `STRATEGY-TRUST-001`, `DECISION-CONTEXT-SINGLE-AUTHORITY-001`. |
 | `HEURISTIC-BASELINE-TRUTH-001` | PLANNED NEXT / FOUNDATIONAL | Current strategy output is a heuristic baseline for exploration and explicit comparison only. Agreement/disagreement is not skill, accuracy, mastery, correctness, GTO, or automatic remediation. |
 | `REFERENCE-PACK-001` bounded reference pack/provider | CHECKPOINTED / INTENTIONALLY INCOMPLETE | `reference-pack/v1`, exact rules/history/stack/legality matcher, deterministic validation/integrity, provider adapter, unchanged labelled fallback, and generic Playbook/Training/Matrix/Analyze/Review consumption are implemented with synthetic test-only data. No production corpus is registered; resume with exact immutable source data, compatible license/redistribution, reproducible or strong provenance, and independent validation evidence. See [Reference Pack v1](REFERENCE_PACK_V1_SPEC.md) and [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
 | broader preflop/postflop reference and evidence-driven fallback calibration | PRESERVED FUTURE | Expand only through measurable validation; exact coverage never extrapolates. See [Reference Strategy Evolution](capabilities/REFERENCE_STRATEGY_EVOLUTION.md). |
