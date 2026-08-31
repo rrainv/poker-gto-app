@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 31, 2026 (`AUDIT-TRIAGE-001` incorporates the completed September Alpha independent audits and authoritative human synthesis; foundation debt and blind findings below remain open until their named owners provide evidence).
+Last consolidated: August 31, 2026 (`AUTH-TRAINING-MEMORY-001` is human/security accepted; remaining foundation debt and blind findings stay with their named owners).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -22,7 +22,7 @@ The current minimum supported desktop viewport remains **1366×768**. Findings o
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-AUTH-TRAINING-MEMORY-001 | OPEN / FOUNDATIONAL | Training Memory uses owner-keyed records but obtains the account registry's active identity outside the authentication gate. Owner indexing alone does not prove authenticated-account isolation, and explicit sign-out must make authenticated Training Memory inaccessible. | `AUTH-TRAINING-MEMORY-001` |
+| QA-AUTH-TRAINING-MEMORY-001 | COMPLETED / ACCEPTED | Training Memory now resolves authentication-aware owner scope rather than raw AccountIdentity storage routing. Auth/owner generation invalidates queued and in-flight reads/writes; explicit sign-out revokes local access before provider cleanup, provider failure cannot restore it, and A → Guest → B / A → Guest → A isolation is covered without deleting account bytes. | `AUTH-TRAINING-MEMORY-001`; human/security accepted August 31, 2026 |
 | QA-DECISION-ECONOMICS-001 | OPEN / FOUNDATIONAL | DecisionContext lacks one accepted actor-relative economics contract for exact incremental price, contestable-pot layers, contribution, and effective stacks across Hero and non-Hero decisions. Poker accounting must remain canonical. | `DECISION-ECONOMICS-001` |
 | QA-STRATEGY-TRUST-001 | OPEN / FOUNDATIONAL | Descriptor validation, provenance fields, and an exact matcher do not by themselves constitute human acceptance of a trusted production strategy source. Define evidence, licensing, coverage, validation, review, registration, and revocation gates. | `STRATEGY-TRUST-001` |
 | QA-DECISION-CONTEXT-SINGLE-AUTHORITY-001 | OPEN / FOUNDATIONAL | The extracted projectors coexist with a classic `logic.js` constructor and a fail-open fallback when the Playbook bridge is unavailable. Prove one production projection authority and explicit failure semantics. | `DECISION-CONTEXT-SINGLE-AUTHORITY-001` |
@@ -291,7 +291,7 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-TRAINING-MEMORY-001 | PARTIAL / AUTH ISOLATION REOPENED | Durable decision/session evidence, review controls, exact Same Spot, Similar Spot, and abandoned Full Hand preservation remain accepted bounded behavior. Authentication-gated owner isolation and sign-out inaccessibility were not established and are reopened separately as `QA-AUTH-TRAINING-MEMORY-001`. | `AUTH-TRAINING-MEMORY-001` |
+| QA-TRAINING-MEMORY-001 | COMPLETED / AUTH ISOLATION ACCEPTED | Durable decision/session evidence, review controls, exact Same Spot, Similar Spot, abandoned Full Hand preservation, authentication-gated owner isolation, and sign-out inaccessibility are accepted bounded behavior. Advanced scheduling and cross-surface continuation remain future product work rather than QA closure debt. | Accepted `TRAINING-MEMORY-001` + `AUTH-TRAINING-MEMORY-001` foundations |
 | QA-TRAINING-REDRILL-001 | COMPLETED / HUMAN ACCEPTED V1 FOUNDATION | Same Spot remains exact historical reproduction and Similar Spot remains planner/generator-backed current practice. Firefox loaded canonical Memory actions and preserved the incomplete aborted Full Hand session; sophisticated scheduling, Saved Drill presets, richer filters, and cross-surface continuity remain future. | Future `TRAINING-MEMORY-002` when prioritized |
 | QA-SAVED-LIBRARY-001 | OPEN / REOPENED FOUNDATIONAL RETRIEVAL | The accepted Saved grid filters only an already-bounded result set. Full retrieval/search/filter/sort/pagination for current Hand/Spot objects is not implemented. New payload kinds remain explicitly out of scope. | `SAVED-LIBRARY-001` |
 

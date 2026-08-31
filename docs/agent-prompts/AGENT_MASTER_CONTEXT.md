@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 31, 2026 (`AUDIT-TRIAGE-001` incorporates the completed September Alpha independent audits and authoritative human synthesis; foundational trust, ownership, economics, lifecycle, browser-test, retrieval, and bounded-composition gates now lead execution).
+Last refreshed: August 31, 2026 (`AUTH-TRAINING-MEMORY-001` is human/security accepted; `DECISION-ECONOMICS-001` is active next in the post-audit foundation sequence).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -67,8 +67,8 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 6. **COMPLETED / HUMAN ACCEPTED — `SAVED-VISUAL-KNOWLEDGE-001`**
 7. **COMPLETED / HUMAN ACCEPTED — `CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001`**
 8. **COMPLETED / HUMAN ACCEPTED — `GUIDE-CONTENT-001`**
-9. **ACTIVE NEXT — `AUTH-TRAINING-MEMORY-001`**
-10. **FOUNDATIONAL DECISION/TRUST — `DECISION-ECONOMICS-001` → `STRATEGY-TRUST-001` → `DECISION-CONTEXT-SINGLE-AUTHORITY-001`**
+9. **COMPLETED / HUMAN SECURITY ACCEPTED — `AUTH-TRAINING-MEMORY-001`**
+10. **ACTIVE NEXT / FOUNDATIONAL DECISION/TRUST — `DECISION-ECONOMICS-001` → `STRATEGY-TRUST-001` → `DECISION-CONTEXT-SINGLE-AUTHORITY-001`**
 11. **NEEDS REPRODUCTION — `AUDIT-HIGH-RISK-REPRO-001`**
 12. **IDENTITY/TRUTH — `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`**
 13. **PORTABLE BROWSER LIFECYCLE — `BROWSER-TEST-PLATFORM-001`**
@@ -88,7 +88,7 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - `SETTINGS-IA-001` is accepted structurally; its unavailable real Firefox category/viewport/theme/language matrix remains `QA-HANDSON-010` / `RET-PREMIUM-001` debt.
 - `PREMIUM-CLOSEOUT-001` is not cancelled: it is the later whole-product manual, visual, responsive, localization, accessibility, Guide, Core Flow, and release-quality gate after the feature set is materially more mature.
 - `UX-REGRESSION-001` is accepted: the eleven owned hands-on IDs are closed with the checkpoint's Node and bounded Firefox 154 evidence; unowned composition/product debt remains open.
-- Training Varied/Focused/Full Hand, the Practice Planner, and Training Memory v1 are implemented foundations. `AUTH-TRAINING-MEMORY-001` reopens authenticated-owner isolation; `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001` reopen remediation and grading semantics. Advanced scheduling/cross-surface memory work and `Not sure` remain future; exact source/claim snapshots and historical/current labels are binding.
+- Training Varied/Focused/Full Hand, the Practice Planner, and Training Memory v1 are implemented foundations. `AUTH-TRAINING-MEMORY-001` is human/security accepted: authentication-aware owner/generation scope prevents Guest or another account from accessing retained prior-account Memory, invalidates stale reads/intents/writes, and revokes local access before provider cleanup without deleting account bytes. The durable anonymous Device Guest remains future `IDENTITY-LIFECYCLE-001` work. `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001` still reopen remediation and grading semantics. Advanced scheduling/cross-surface memory work and `Not sure` remain future; exact source/claim snapshots and historical/current labels are binding.
 - `reference-pack/v1` has no production data registration. Never promote its synthetic test fixture, benchmark observations, or generalized heuristic curves into trusted reference truth.
 - Personal Strategy is checkpointed through legacy-named Calibration/Matrix/Builder/Teacher. The [independent `002R` review and human disposition](../project/PERSONAL_STRATEGY_002R_REVIEW.md) are accepted; `003A` remains the preserved versioned Game setup/Approach migration and local-first RFI-first first-value reset at step 16 of the binding post-audit order, after the foundation, extraction, Saved/Home, reference-source, and learning-loop gates. Exactly three legacy UI modes are not a future product requirement. Provider/reference/observed integration still follows 003A acceptance.
 - Saved Hand/Spot and `HOME-002A` exist. `SAVED-VISUAL-KNOWLEDGE-001` is human accepted for the bounded loaded set: compact grid primary; All / Hands / Spots visible at zero; DOM-free observer-safe Hand and lossy Scenario Spot previews; body-level bounded hover/focus overlay; click/Enter detail; shared cards; identity clearing; unknown-kind unavailable state; unchanged reopen behavior. `SAVED-LIBRARY-001` now owns full retrieval/search/pagination for current Hand/Spot objects; new payload kinds remain later.

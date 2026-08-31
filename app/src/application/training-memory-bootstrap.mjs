@@ -1,11 +1,19 @@
-import { createTrainingMemoryService } from './training-memory-service.mjs';
+import {
+  createTrainingMemoryOwnerResolver,
+  createTrainingMemoryService,
+} from './training-memory-service.mjs';
 
 export function installTrainingMemoryBridge(browserWindow, options = {}) {
   if (!browserWindow) return null;
   const identityProvider = options.identityProvider ?? browserWindow.RiverlineAccountIdentity;
-  if (!identityProvider?.getActiveIdentity) return null;
-  const service = options.service ?? createTrainingMemoryService({
+  const authentication = options.authentication ?? browserWindow.RiverlineAuthentication;
+  if (!identityProvider?.getActiveIdentity || !authentication?.getState) return null;
+  const ownerProvider = options.ownerProvider ?? createTrainingMemoryOwnerResolver({
+    authentication,
     identityProvider,
+  });
+  const service = options.service ?? createTrainingMemoryService({
+    ownerProvider,
     database: options.database,
     repositoryFactory: options.repositoryFactory,
     clock: options.clock,
@@ -36,6 +44,7 @@ export function installTrainingMemoryBridge(browserWindow, options = {}) {
     generateSimilarSpot: (recordId, generateOptions) => (
       service.generateSimilarSpot(recordId, generateOptions)
     ),
+    getOwnerState: () => ownerProvider.getState?.() ?? null,
   });
   Object.defineProperty(browserWindow, 'RiverlineTrainingMemory', {
     configurable: true,
@@ -47,4 +56,3 @@ export function installTrainingMemoryBridge(browserWindow, options = {}) {
 }
 
 if (typeof window !== 'undefined') installTrainingMemoryBridge(window);
-

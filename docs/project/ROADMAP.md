@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: August 31, 2026 (`AUDIT-TRIAGE-001` incorporates the completed September Alpha independent audits and authoritative human synthesis; foundational trust, ownership, economics, lifecycle, browser-test, retrieval, and bounded-composition gates now lead execution).
+Last refreshed: August 31, 2026 (`AUTH-TRAINING-MEMORY-001` is human/security accepted; `DECISION-ECONOMICS-001` now leads the remaining foundational gates).
 
 This roadmap explains major directional sequencing and why phases are ordered. [Current Phase](CURRENT_PHASE.md) owns the exact current checkpoint and execution order; [Product Backlog](PRODUCT_BACKLOG.md) owns concise capability/status. The [capability dossiers](capabilities/README.md) preserve detailed long-term intent without setting priority.
 
@@ -54,8 +54,8 @@ The completed dossier migration records more possibilities; it does not promote 
 16. **COMPLETED / HUMAN ACCEPTED — `SAVED-VISUAL-KNOWLEDGE-001`** — the compact Saved grid now uses DOM-free `saved-study-preview-facts/v1`, visible All / Hands / Spots categories, a viewport-bounded body overlay for hover/focus, bounded click/Enter detail, shared `card-presentation/v1`, privacy-safe identity clearing, truthful Hand/Scenario previews, unsupported unknown kinds, and unchanged `SavedStudyObject v1` persistence/reopen boundaries.
 17. **COMPLETED / HUMAN ACCEPTED — `CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001` —** canonical `PokerState` semantics were correct. Application/UI fixes align fully known hole-deal Replay labeling, remove stale committed/consumed board drafts, and use the canonical available-card query excluding current board, known hole cards, dead cards, and pending selections. Explicit Turn → River → Showdown remains intact; Replay/live terminal states agree and runout events occur exactly once. Hand composition remains closed.
 18. **COMPLETED / HUMAN ACCEPTED — `GUIDE-CONTENT-001` —** Guide is the durable workflow-first product reference for Hand, Analyze, Training, Equity, and Personal Strategy. Welcome / Learn Riverline remains orientation; workspace tutorials remain contextual interactive teaching. Actions reuse navigation authority, no tutorial/persistence authority was added, and current authority/truth boundaries remain explicit.
-19. **ACTIVE NEXT — `AUTH-TRAINING-MEMORY-001`.**
-20. **FOUNDATIONAL DECISION/TRUST GATES —** `DECISION-ECONOMICS-001` → `STRATEGY-TRUST-001` → `DECISION-CONTEXT-SINGLE-AUTHORITY-001`.
+19. **COMPLETED / HUMAN SECURITY ACCEPTED — `AUTH-TRAINING-MEMORY-001` —** Training Memory now uses authentication-aware owner scope and generation; Guest cannot reach a retained prior account, sign-out revokes local access before provider cleanup, stale reads/intents and in-flight writes fail closed, and prior-account bytes remain intact for authenticated return. Durable anonymous Device Guest remains future lifecycle work.
+20. **ACTIVE NEXT / FOUNDATIONAL DECISION ECONOMICS — `DECISION-ECONOMICS-001`.** Then `STRATEGY-TRUST-001` → `DECISION-CONTEXT-SINGLE-AUTHORITY-001`.
 21. **HIGH-RISK REPRODUCTION — `AUDIT-HIGH-RISK-REPRO-001`** — reproduce the eleven preserved blind findings before any fix or acceptance claim.
 22. **IDENTITY AND PRODUCT-TRUTH GATES —** `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`.
 23. **PORTABLE TEST/LIFECYCLE PLATFORM — `BROWSER-TEST-PLATFORM-001`.**
@@ -70,7 +70,7 @@ The completed dossier migration records more possibilities; it does not promote 
 
 ## Phase A — usable visible-product foundation
 
-Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and the bounded `HANDS-ON-DEFECTS-001` repair remain useful visible-product foundations. Core Flow, Hand Replay, the all-in runout regression repair, Training composition, Equity, Analyze/Range, First Use/Home, Saved Visual Knowledge, and the workflow-first Guide remain accepted checkpoints. The completed audits found foundational debt beneath some checkpoint claims, especially Training Memory ownership, decision economics/context convergence, strategy trust and grading, lifecycle disposal, portable browser testing, Saved retrieval, and root composition. Those owners now lead; no broad polish or expansion wave begins first.
+Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and the bounded `HANDS-ON-DEFECTS-001` repair remain useful visible-product foundations. Core Flow, Hand Replay, the all-in runout regression repair, Training composition, Equity, Analyze/Range, First Use/Home, Saved Visual Knowledge, and the workflow-first Guide remain accepted checkpoints. The completed audits found foundational debt beneath some checkpoint claims. Training Memory ownership is now repaired and human/security accepted; decision economics/context convergence, strategy trust and grading, generalized lifecycle disposal including durable anonymous Device Guest, portable browser testing, Saved retrieval, and root composition remain. Those owners now lead; no broad polish or expansion wave begins first.
 
 The current product decision puts the human-triaged foundation gates ahead of another large feature/product-model implementation or broad polish wave. Bounded secondary polish remains routed debt, Home Game presentation and Audio Design remain conditional, and `PREMIUM-CLOSEOUT-001` remains the later pre-release quality gate. Controls First, the ineffective density selector, arbitrary layout editing, casino spectacle, fake cinematic 3D, avatars by default, and reward theater remain rejected.
 

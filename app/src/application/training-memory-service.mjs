@@ -2,6 +2,7 @@ import {
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
 import {
+  RIVERLINE_IDENTITY_KINDS,
   riverlineOwnershipRefForIdentity,
 } from '../account-identity/domain.mjs';
 import {
@@ -49,6 +50,85 @@ import {
 export const TRAINING_MEMORY_SERVICE_SCHEMA_VERSION = 'training-memory-service/v1';
 export const TRAINING_MEMORY_SAME_SPOT_SCHEMA_VERSION = 'training-same-spot/v1';
 export const TRAINING_MEMORY_SIMILAR_SPOT_SCHEMA_VERSION = 'training-similar-spot-result/v1';
+
+export class TrainingMemoryAuthorizationError extends Error {
+  constructor(code = 'training_memory_owner_unavailable') {
+    super('Training Memory is unavailable without a currently authenticated owner.');
+    this.name = 'TrainingMemoryAuthorizationError';
+    this.code = code;
+  }
+}
+
+export function createTrainingMemoryOwnerResolver({ authentication, identityProvider } = {}) {
+  if (!authentication?.ready || !authentication?.getState || !authentication?.subscribe) {
+    throw new TypeError('Training Memory owner resolution requires AuthenticationService');
+  }
+  if (!identityProvider?.getActiveIdentity) {
+    throw new TypeError('Training Memory owner resolution requires AccountIdentity');
+  }
+  let authState = authentication.getState();
+  let activeIdentityId = null;
+  let generation = 0;
+  let generationController = new AbortController();
+
+  function invalidateGeneration() {
+    generationController.abort();
+    generationController = new AbortController();
+    generation += 1;
+  }
+
+  authentication.subscribe((nextState) => {
+    authState = nextState;
+    invalidateGeneration();
+  });
+  identityProvider.subscribe?.(({ identity }) => {
+    activeIdentityId = identity?.identityId ?? null;
+    invalidateGeneration();
+  });
+
+  function reject(code) {
+    throw new TrainingMemoryAuthorizationError(code);
+  }
+
+  function assertCurrent(snapshot) {
+    if (!snapshot || snapshot.generation !== generation) reject('training_memory_generation_stale');
+    if (authState?.status !== 'signed_in') reject('training_memory_auth_required');
+    if (activeIdentityId !== null && activeIdentityId !== snapshot.ownerRef.ownerId) {
+      reject('training_memory_owner_changed');
+    }
+    const profileOwnerId = authState.profile?.riverlineIdentityId ?? null;
+    if (profileOwnerId !== null && profileOwnerId !== snapshot.ownerRef.ownerId) {
+      reject('training_memory_owner_mismatch');
+    }
+    return snapshot;
+  }
+
+  return Object.freeze({
+    async capture() {
+      await authentication.ready();
+      if (authState?.status !== 'signed_in') reject('training_memory_auth_required');
+      const expectedGeneration = generation;
+      const identity = await identityProvider.getActiveIdentity();
+      if (identity.kind !== RIVERLINE_IDENTITY_KINDS.AUTHENTICATED_FUTURE) {
+        reject('training_memory_authenticated_identity_required');
+      }
+      const snapshot = Object.freeze({
+        authStatus: authState.status,
+        generation: expectedGeneration,
+        ownerRef: riverlineOwnershipRefForIdentity(identity),
+        signal: generationController.signal,
+      });
+      if (activeIdentityId === null) activeIdentityId = identity.identityId;
+      return assertCurrent(snapshot);
+    },
+    assertCurrent,
+    getState: () => Object.freeze({
+      authStatus: authState?.status ?? 'initializing',
+      generation,
+      ownerId: authState?.status === 'signed_in' ? activeIdentityId : null,
+    }),
+  });
+}
 
 function timestampFrom(clock) {
   const value = clock();
@@ -358,22 +438,22 @@ function sameCards(left, right) {
 }
 
 export function createTrainingMemoryService({
-  identityProvider,
+  ownerProvider,
   database = null,
   repositoryFactory = createTrainingMemoryRepository,
   clock = () => new Date(),
   idFactory = defaultIdFactory,
   generateSimilarExercise = generateTrainingExerciseFromScenarioRequest,
 } = {}) {
-  if (!identityProvider || typeof identityProvider.getActiveIdentity !== 'function') {
-    throw new TypeError('Training Memory requires the Riverline identity authority');
+  if (!ownerProvider?.capture || !ownerProvider?.assertCurrent) {
+    throw new TypeError('Training Memory requires an authenticated owner provider');
   }
   const sharedDatabase = database ?? createIndexedDbTrainingMemoryDatabase();
   const repositories = new Map();
 
   async function context() {
-    const identity = await identityProvider.getActiveIdentity();
-    const ownerRef = riverlineOwnershipRefForIdentity(identity);
+    const authorization = await ownerProvider.capture();
+    const ownerRef = authorization.ownerRef;
     const key = trainingMemoryOwnerKey(ownerRef);
     if (!repositories.has(key)) {
       repositories.set(key, repositoryFactory({
@@ -382,11 +462,21 @@ export function createTrainingMemoryService({
         clock,
       }));
     }
-    return { ownerRef, repository: repositories.get(key) };
+    ownerProvider.assertCurrent(authorization);
+    return { authorization, ownerRef, repository: repositories.get(key) };
   }
 
-  async function getOwnedSession(repository, ownerRef, id) {
+  function authorizationOptions(operationContext) {
+    return {
+      authorizationGuard: () => ownerProvider.assertCurrent(operationContext.authorization),
+      authorizationSignal: operationContext.authorization.signal ?? null,
+    };
+  }
+
+  async function getOwnedSession(operationContext, id) {
+    const { repository, ownerRef } = operationContext;
     const session = await repository.getSession(id);
+    ownerProvider.assertCurrent(operationContext.authorization);
     if (!session) throw new RangeError(`Unknown Training session: ${id}`);
     if (!sameTrainingMemoryOwner(session.ownerRef, ownerRef)) {
       throw new RangeError('Training session belongs to another Riverline profile');
@@ -394,8 +484,10 @@ export function createTrainingMemoryService({
     return session;
   }
 
-  async function getOwnedDecision(repository, ownerRef, id) {
+  async function getOwnedDecision(operationContext, id) {
+    const { repository, ownerRef } = operationContext;
     const decision = await repository.getDecision(id);
+    ownerProvider.assertCurrent(operationContext.authorization);
     if (!decision) throw new RangeError(`Unknown Training decision: ${id}`);
     if (!sameTrainingMemoryOwner(decision.ownerRef, ownerRef)) {
       throw new RangeError('Training decision belongs to another Riverline profile');
@@ -414,7 +506,8 @@ export function createTrainingMemoryService({
       focus = null,
       selectedSourceId = null,
     } = {}) {
-      const { ownerRef, repository } = await context();
+      const operationContext = await context();
+      const { ownerRef, repository } = operationContext;
       const startedAt = timestampFrom(clock);
       const session = createSessionRecord({
         id: idFactory('training-session'),
@@ -427,7 +520,11 @@ export function createTrainingMemoryService({
         selectedSourceId,
         startedAt,
       });
-      return repository.createSession(session);
+      const created = await repository.createSession(session, {
+        ...authorizationOptions(operationContext),
+      });
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return created;
     },
 
     async finishSession(sessionId, status = TRAINING_SESSION_STATUSES.COMPLETED, {
@@ -437,8 +534,9 @@ export function createTrainingMemoryService({
         .includes(status)) {
         throw new RangeError('Training session may finish as completed or abandoned');
       }
-      const { ownerRef, repository } = await context();
-      const session = await getOwnedSession(repository, ownerRef, sessionId);
+      const operationContext = await context();
+      const { repository } = operationContext;
+      const session = await getOwnedSession(operationContext, sessionId);
       if (session.status !== TRAINING_SESSION_STATUSES.ACTIVE) return session;
       const at = timestampFrom(clock);
       const next = cloneTrainingMemoryData(session);
@@ -449,7 +547,11 @@ export function createTrainingMemoryService({
         next.fullHandSource = cloneTrainingMemoryData(suppliedFullHandSource);
       }
       validateTrainingSessionRecord(next);
-      return repository.replaceSession(next);
+      const replaced = await repository.replaceSession(next, {
+        ...authorizationOptions(operationContext),
+      });
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return replaced;
     },
 
     async recordExerciseShown({
@@ -458,8 +560,9 @@ export function createTrainingMemoryService({
       parentDecisionRecordId = null,
       redrillKind = null,
     } = {}) {
-      const { ownerRef, repository } = await context();
-      const session = await getOwnedSession(repository, ownerRef, sessionId);
+      const operationContext = await context();
+      const { ownerRef, repository } = operationContext;
+      const session = await getOwnedSession(operationContext, sessionId);
       if (session.status !== TRAINING_SESSION_STATUSES.ACTIVE) {
         throw new RangeError('Cannot append a decision to a finished Training session');
       }
@@ -477,7 +580,11 @@ export function createTrainingMemoryService({
         }),
         shownAt,
       });
-      return repository.addShownDecision(record);
+      const added = await repository.addShownDecision(record, {
+        ...authorizationOptions(operationContext),
+      });
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return added;
     },
 
     async recordExerciseAnswered({
@@ -487,8 +594,9 @@ export function createTrainingMemoryService({
       actionType,
       amountToMilliBb = null,
     } = {}) {
-      const { ownerRef, repository } = await context();
-      const record = await getOwnedDecision(repository, ownerRef, recordId);
+      const operationContext = await context();
+      const { repository } = operationContext;
+      const record = await getOwnedDecision(operationContext, recordId);
       if (record.status === TRAINING_DECISION_STATUSES.ANSWERED) return record;
       const answered = answeredDecisionRecord(record, {
         strategyResult,
@@ -497,7 +605,11 @@ export function createTrainingMemoryService({
         amountToMilliBb,
         answeredAt: timestampFrom(clock),
       });
-      return repository.replaceDecision(answered);
+      const replaced = await repository.replaceDecision(answered, {
+        ...authorizationOptions(operationContext),
+      });
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return replaced;
     },
 
     async recordFullHandDecisionShown({
@@ -506,8 +618,9 @@ export function createTrainingMemoryService({
       replaySource,
       handSeed,
     } = {}) {
-      const { ownerRef, repository } = await context();
-      const session = await getOwnedSession(repository, ownerRef, sessionId);
+      const operationContext = await context();
+      const { ownerRef, repository } = operationContext;
+      const session = await getOwnedSession(operationContext, sessionId);
       if (session.status !== TRAINING_SESSION_STATUSES.ACTIVE) {
         throw new RangeError('Cannot append a decision to a finished Training session');
       }
@@ -527,12 +640,18 @@ export function createTrainingMemoryService({
         decision.handId,
         decision.currentActor.playerId,
       );
-      return repository.addShownDecision(record, { fullHandSource: source });
+      const added = await repository.addShownDecision(record, {
+        fullHandSource: source,
+        ...authorizationOptions(operationContext),
+      });
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return added;
     },
 
     async recordFullHandDecisionAnswered({ recordId, decision, replaySource, handSeed } = {}) {
-      const { ownerRef, repository } = await context();
-      const record = await getOwnedDecision(repository, ownerRef, recordId);
+      const operationContext = await context();
+      const { repository } = operationContext;
+      const record = await getOwnedDecision(operationContext, recordId);
       if (record.status === TRAINING_DECISION_STATUSES.ANSWERED) return record;
       const strategyResult = decision.evaluation?.strategyResult;
       const evaluation = decision.evaluation?.answerEvaluation;
@@ -554,76 +673,99 @@ export function createTrainingMemoryService({
       if (record.decisionSource.handSeed !== requireUint32(handSeed, 'Full-Hand Training seed')) {
         throw new RangeError('Full-Hand Training seed changed within a session');
       }
-      return repository.replaceDecision(answered, { fullHandSource: source });
+      const replaced = await repository.replaceDecision(answered, {
+        fullHandSource: source,
+        ...authorizationOptions(operationContext),
+      });
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return replaced;
     },
 
     async updateStudyMetadata(recordId, changes) {
-      const { ownerRef, repository } = await context();
-      const record = await getOwnedDecision(repository, ownerRef, recordId);
-      return repository.replaceDecision(updateTrainingStudyMetadata(
+      const operationContext = await context();
+      const { repository } = operationContext;
+      const record = await getOwnedDecision(operationContext, recordId);
+      const replaced = await repository.replaceDecision(updateTrainingStudyMetadata(
         record,
         changes,
         timestampFrom(clock),
-      ));
+      ), authorizationOptions(operationContext));
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return replaced;
     },
 
     async markReviewed(recordId) {
-      const { ownerRef, repository } = await context();
-      const record = await getOwnedDecision(repository, ownerRef, recordId);
-      return repository.replaceDecision(transitionTrainingReview(record, {
+      const operationContext = await context();
+      const { repository } = operationContext;
+      const record = await getOwnedDecision(operationContext, recordId);
+      const replaced = await repository.replaceDecision(transitionTrainingReview(record, {
         state: TRAINING_REVIEW_LIFECYCLE_STATES.REVIEWED,
         at: timestampFrom(clock),
-      }));
+      }), authorizationOptions(operationContext));
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return replaced;
     },
 
     async reviewAgain(recordId) {
-      const { ownerRef, repository } = await context();
-      const record = await getOwnedDecision(repository, ownerRef, recordId);
-      return repository.replaceDecision(transitionTrainingReview(record, {
+      const operationContext = await context();
+      const { repository } = operationContext;
+      const record = await getOwnedDecision(operationContext, recordId);
+      const replaced = await repository.replaceDecision(transitionTrainingReview(record, {
         state: TRAINING_REVIEW_LIFECYCLE_STATES.PENDING,
         at: timestampFrom(clock),
-      }));
+      }), authorizationOptions(operationContext));
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return replaced;
     },
 
     async snooze(recordId, days = 1) {
       if (!Number.isSafeInteger(days) || days < 1 || days > 30) {
         throw new RangeError('Training review snooze must be 1 through 30 days');
       }
-      const { ownerRef, repository } = await context();
-      const record = await getOwnedDecision(repository, ownerRef, recordId);
+      const operationContext = await context();
+      const { repository } = operationContext;
+      const record = await getOwnedDecision(operationContext, recordId);
       const at = timestampFrom(clock);
       const dueAt = new Date(Date.parse(at) + days * 86_400_000).toISOString();
-      return repository.replaceDecision(transitionTrainingReview(record, {
+      const replaced = await repository.replaceDecision(transitionTrainingReview(record, {
         state: TRAINING_REVIEW_LIFECYCLE_STATES.SNOOZED,
         dueAt,
         at,
-      }));
+      }), authorizationOptions(operationContext));
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return replaced;
     },
 
     async getDecision(recordId) {
-      const { ownerRef, repository } = await context();
-      return getOwnedDecision(repository, ownerRef, recordId);
+      const operationContext = await context();
+      return getOwnedDecision(operationContext, recordId);
     },
 
     async listRecentSessions(options) {
-      const { repository } = await context();
-      return repository.listRecentSessions(options);
+      const operationContext = await context();
+      const result = await operationContext.repository.listRecentSessions(options);
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return result;
     },
 
     async listSessionDecisions(sessionId, options) {
-      const { repository } = await context();
-      return repository.listSessionDecisions(sessionId, options);
+      const operationContext = await context();
+      const result = await operationContext.repository.listSessionDecisions(sessionId, options);
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return result;
     },
 
     async listDueReview(options) {
-      const { repository } = await context();
-      return repository.listDueReview(options);
+      const operationContext = await context();
+      const result = await operationContext.repository.listDueReview(options);
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return result;
     },
 
     async createSameSpot(recordId) {
-      const { ownerRef, repository } = await context();
-      const record = await getOwnedDecision(repository, ownerRef, recordId);
-      const session = await getOwnedSession(repository, ownerRef, record.sessionId);
+      const operationContext = await context();
+      const record = await getOwnedDecision(operationContext, recordId);
+      const session = await getOwnedSession(operationContext, record.sessionId);
       const state = stateForRecord(record, session);
       return Object.freeze({
         schemaVersion: TRAINING_MEMORY_SAME_SPOT_SCHEMA_VERSION,
@@ -643,9 +785,9 @@ export function createTrainingMemoryService({
       if (!Number.isSafeInteger(attempt) || attempt < 1 || attempt > 1000) {
         throw new RangeError('Similar Spot attempt must be 1 through 1000');
       }
-      const { ownerRef, repository } = await context();
-      const record = await getOwnedDecision(repository, ownerRef, recordId);
-      const session = await getOwnedSession(repository, ownerRef, record.sessionId);
+      const operationContext = await context();
+      const record = await getOwnedDecision(operationContext, recordId);
+      const session = await getOwnedSession(operationContext, record.sessionId);
       const similarity = deriveTrainingSimilarity(record);
       if (!similarity.available) {
         return Object.freeze({
@@ -699,6 +841,7 @@ export function createTrainingMemoryService({
           rulesSnapshot,
           strategyProvider,
         }));
+        ownerProvider.assertCurrent(operationContext.authorization);
         if (!result?.ok) {
           generated = result;
           continue;

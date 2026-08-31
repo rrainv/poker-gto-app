@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 31, 2026 (`AUDIT-TRIAGE-001` incorporates the completed September Alpha independent audits and authoritative human synthesis; the current order is the foundational sequence below).
+Last consolidated: August 31, 2026 (`AUTH-TRAINING-MEMORY-001` is human/security accepted; the remaining foundational sequence begins with `DECISION-ECONOMICS-001`).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -47,8 +47,9 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | 8 | COMPLETED / HUMAN ACCEPTED | `CORE-FLOW-ALLIN-RUNOUT-REGRESSION-001`; canonical `PokerState` semantics correct, application/UI root cause repaired, explicit all-in chance flow and exact-once Replay/live agreement accepted |
 | 9 | COMPLETED / HUMAN ACCEPTED | `GUIDE-CONTENT-001` workflow-first durable product reference over existing navigation and tutorial authorities |
 | conditional | PRESERVED CONDITIONAL / NOT IN CURRENT ORDER | `HOME-GAME-PRESENTATION-001`, `AUDIO-DESIGN-001` |
-| 1 | ACTIVE NEXT | `AUTH-TRAINING-MEMORY-001` |
-| 2–4 | PLANNED NEXT / FOUNDATIONAL | `DECISION-ECONOMICS-001` → `STRATEGY-TRUST-001` → `DECISION-CONTEXT-SINGLE-AUTHORITY-001` |
+| 1 | COMPLETED / HUMAN SECURITY ACCEPTED | `AUTH-TRAINING-MEMORY-001` |
+| 2 | ACTIVE NEXT / FOUNDATIONAL | `DECISION-ECONOMICS-001` |
+| 3–4 | PLANNED NEXT / FOUNDATIONAL | `STRATEGY-TRUST-001` → `DECISION-CONTEXT-SINGLE-AUTHORITY-001` |
 | 5 | PLANNED NEXT / NEEDS REPRODUCTION | `AUDIT-HIGH-RISK-REPRO-001` |
 | 6–9 | PLANNED NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
 | 10–11 | PLANNED NEXT / INCREMENTAL EXTRACTION | `UI-COMPOSITION-ROOT-001` → one bounded workspace extraction pilot |
@@ -121,7 +122,7 @@ Independent visual/interaction acceptance remains in QA and the Return Queue; im
 | Capability | Status | Accepted scope |
 |---|---|---|
 | deterministic Training and Practice Planner | CHECKPOINTED / NORMATIVE GRADING DEBT ACTIVATED | Legal canonical generator, Varied/Focused structural planning, Full Hand mode, reproducible seeds, and generation-only sizing families remain. `TRAINING-NORMATIVE-001` must replace probability-gap-to-modal-action as a normative correctness rule and keep comparative baseline practice distinct. |
-| Training Memory / DecisionRecord / review and re-drill | CHECKPOINTED / AUTH ISOLATION DEBT ACTIVATED | Durable shown/answered/source/version/context/session evidence, bounded recent history, review lifecycle, exact historical Same Spot, current planner/generator-backed Similar Spot, factual source-aware summaries, and Full Hand replay sharing exist. Current owner indexes do not prove authentication-gated isolation or sign-out inaccessibility; `AUTH-TRAINING-MEMORY-001` owns the repair. Heuristic disagreement alone must not create remediation. See [Training Memory v1](TRAINING_MEMORY_V1_SPEC.md), [Learning Evidence Foundation](capabilities/LEARNING_EVIDENCE_FOUNDATION.md), and [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
+| Training Memory / DecisionRecord / review and re-drill | CHECKPOINTED / AUTH ISOLATION HUMAN-ACCEPTED | Durable shown/answered/source/version/context/session evidence, bounded recent history, review lifecycle, exact historical Same Spot, current planner/generator-backed Similar Spot, factual source-aware summaries, and Full Hand replay sharing exist. Authentication-aware owner scope and generation now prevent Guest/other-account access, stale reads, queued stale intents, and in-flight stale commits while preserving prior-account bytes. Heuristic disagreement alone must not create remediation. Durable anonymous Device Guest remains future `IDENTITY-LIFECYCLE-001` work. See [Training Memory v1](TRAINING_MEMORY_V1_SPEC.md), [Learning Evidence Foundation](capabilities/LEARNING_EVIDENCE_FOUNDATION.md), and [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
 | Training Memory scheduling and cross-surface continuation | PLANNED LATER | Principled spaced/adaptive scheduling, rich filters/trends, Saved Drill payloads, Home/Replay/Analyze continuity, export/import, sync, and explicit Personal Strategy observation require later bounded tickets; `Not sure` remains open. |
 | Full Hand Training Hero-fold termination | PRESERVED FUTURE / NOT ACTIVATED | Learner-facing Full Hand Training should end when Hero folds instead of autoplaying an opponent-only remainder. This requires a bounded Training lifecycle decision and must not change canonical Hand settlement/history. See [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md). |
 | profile-aware Training evidence and opponent-policy drills | PLANNED LATER / dependency-gated | Explicit opt-in, immutable observed provenance, no overwrite of intended strategy, later explicit opponent policy. |

@@ -235,20 +235,28 @@ export function createTrainingMemoryRepository({
     return durableDatabase.runTransaction(stores, 'readonly', operation);
   }
 
-  async function withWrite(stores, operation) {
+  async function withWrite(
+    stores,
+    operation,
+    { authorizationGuard = null, authorizationSignal = null } = {},
+  ) {
     await initialize();
     const names = [...new Set([...stores, TRAINING_MEMORY_STORES.METADATA])];
     return durableDatabase.runTransaction(names, 'readwrite', async (transaction) => {
+      authorizationGuard?.();
       const currentMetadata = validateMetadata(
         await transaction.get(TRAINING_MEMORY_STORES.METADATA, METADATA_KEY),
       );
+      authorizationGuard?.();
       const result = await operation(transaction);
+      authorizationGuard?.();
       await transaction.put(
         TRAINING_MEMORY_STORES.METADATA,
         nextMetadata(currentMetadata, clock),
       );
+      authorizationGuard?.();
       return result;
-    });
+    }, { signal: authorizationSignal });
   }
 
   return Object.freeze({
@@ -256,7 +264,10 @@ export function createTrainingMemoryRepository({
     database: durableDatabase,
     initialize,
 
-    async createSession(session) {
+    async createSession(session, {
+      authorizationGuard = null,
+      authorizationSignal = null,
+    } = {}) {
       validateTrainingSessionRecord(session);
       ensureOwner(session, ownerRef, 'Training session');
       return withWrite([TRAINING_MEMORY_STORES.SESSIONS], async (transaction) => {
@@ -271,7 +282,7 @@ export function createTrainingMemoryRepository({
         }
         await transaction.add(TRAINING_MEMORY_STORES.SESSIONS, sessionRecord(session));
         return cloneTrainingMemoryData(session);
-      });
+      }, { authorizationGuard, authorizationSignal });
     },
 
     async getSession(id) {
@@ -292,7 +303,11 @@ export function createTrainingMemoryRepository({
       });
     },
 
-    async addShownDecision(decision, { fullHandSource = null } = {}) {
+    async addShownDecision(decision, {
+      fullHandSource = null,
+      authorizationGuard = null,
+      authorizationSignal = null,
+    } = {}) {
       validateTrainingDecisionRecord(decision);
       ensureOwner(decision, ownerRef, 'Training decision');
       if (decision.status !== TRAINING_DECISION_STATUSES.SHOWN) {
@@ -328,10 +343,15 @@ export function createTrainingMemoryRepository({
           );
           return cloneTrainingMemoryData(decision);
         },
+        { authorizationGuard, authorizationSignal },
       );
     },
 
-    async replaceDecision(decision, { fullHandSource = null } = {}) {
+    async replaceDecision(decision, {
+      fullHandSource = null,
+      authorizationGuard = null,
+      authorizationSignal = null,
+    } = {}) {
       validateTrainingDecisionRecord(decision);
       ensureOwner(decision, ownerRef, 'Training decision');
       return withWrite(
@@ -366,10 +386,14 @@ export function createTrainingMemoryRepository({
           );
           return cloneTrainingMemoryData(decision);
         },
+        { authorizationGuard, authorizationSignal },
       );
     },
 
-    async replaceSession(session) {
+    async replaceSession(session, {
+      authorizationGuard = null,
+      authorizationSignal = null,
+    } = {}) {
       validateTrainingSessionRecord(session);
       ensureOwner(session, ownerRef, 'Training session');
       return withWrite([TRAINING_MEMORY_STORES.SESSIONS], async (transaction) => {
@@ -388,7 +412,7 @@ export function createTrainingMemoryRepository({
           sessionRecord(session, stored.summaryCache),
         );
         return cloneTrainingMemoryData(session);
-      });
+      }, { authorizationGuard, authorizationSignal });
     },
 
     async listRecentSessions({ limit = 10 } = {}) {

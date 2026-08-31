@@ -11,6 +11,7 @@ import {
 import {
   RIVERLINE_IDENTITY_KINDS,
   createRiverlineIdentity,
+  riverlineOwnershipRefForIdentity,
 } from '../app/src/account-identity/domain.mjs';
 import {
   TRAINING_CONFIG_V2_SCHEMA_VERSION,
@@ -74,9 +75,18 @@ function identity(identityId = 'local-training-player', kind = RIVERLINE_IDENTIT
   });
 }
 
-function identityProvider(activeIdentity) {
+function ownerProvider(activeIdentity) {
+  const snapshot = Object.freeze({
+    authStatus: 'signed_in',
+    generation: 0,
+    ownerRef: riverlineOwnershipRefForIdentity(activeIdentity),
+  });
   return Object.freeze({
-    async getActiveIdentity() { return activeIdentity; },
+    async capture() { return snapshot; },
+    assertCurrent(candidate) {
+      if (candidate !== snapshot) throw new Error('Unexpected Training Memory owner snapshot');
+      return candidate;
+    },
   });
 }
 
@@ -139,7 +149,7 @@ function serviceFixture({ owner = identity(), database = createMemoryTrainingMem
   return {
     database,
     service: createTrainingMemoryService({
-      identityProvider: identityProvider(owner),
+      ownerProvider: ownerProvider(owner),
       database,
       clock: clock(),
       idFactory: idFactory(owner.identityId),

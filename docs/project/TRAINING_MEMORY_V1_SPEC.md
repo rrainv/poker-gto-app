@@ -1,6 +1,6 @@
 # Training Memory v1 specification
 
-Status: accepted bounded evidence/re-drill checkpoint for `TRAINING-MEMORY-001`, August 26, 2026; authentication-owner isolation is reopened under `AUTH-TRAINING-MEMORY-001`, and baseline/remediation semantics are reopened under `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`.
+Status: accepted bounded evidence/re-drill checkpoint for `TRAINING-MEMORY-001`, August 26, 2026; authentication-owner isolation is human/security accepted under `AUTH-TRAINING-MEMORY-001`, August 31, 2026. Baseline/remediation semantics remain reopened under `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`.
 
 ## Purpose and authority
 
@@ -60,9 +60,9 @@ Presentation strings, hand-category prose, UI tags as poker inference, fake accu
 
 ## Local-first persistence and ownership
 
-Training Memory uses its own IndexedDB database, `riverline-training-memory`, version 1, with backend schema `training-memory-indexeddb/v1`. It currently obtains `getActiveIdentity()` from the account registry and creates `RiverlineOwnershipRef` records; it creates no identity or account binding.
+Training Memory uses its own IndexedDB database, `riverline-training-memory`, version 1, with backend schema `training-memory-indexeddb/v1`. Its browser bridge resolves an authenticated owner scope from AuthenticationService plus AccountIdentity and creates `RiverlineOwnershipRef` records; it creates no identity or account binding.
 
-This storage is owner-keyed, but the current browser bridge is not gated by the validated authentication session. The account registry can retain an authenticated identity as its internal active identity after the authentication layer has entered Guest state, so owner-key checks alone do not establish sign-out inaccessibility. `AUTH-TRAINING-MEMORY-001` must route every read/write/query through the authenticated-or-durable-Guest lifecycle authority, cancel stale generations, dispose prior-owner repositories/views, and prove cross-owner isolation. Existing bytes must remain untouched on access denial. There is no upload, implicit sync, or remote assumption. The JSON-compatible schemas preserve a future export/import seam, but no export UI is claimed.
+Owner-key indexes remain a storage invariant, not authorization. The accepted owner resolver captures expected authentication state, owner reference, and auth/identity generation for every operation. Guest cannot resolve a retained authenticated AccountIdentity, and A → Guest → B plus A → Guest → A coverage proves that B never adopts A while A becomes accessible again only after A authenticates. Auth/identity transitions synchronously clear owner-sensitive Memory presentation and invalidate stale reads, lazy decisions, Same Spot, Similar Spot, review actions, and mixed due/recent panel reads. Queued intents whose generation changed are discarded before owner resolution. Each in-flight write carries its generation abort signal into the repository transaction: IndexedDB aborts the transaction, while the deterministic memory backend stages and discards changes before commit. Existing account bytes remain untouched on access denial. Explicit sign-out revokes local Training Memory access before remote provider cleanup; provider failure cannot restore prior access. There is no upload, implicit sync, or remote assumption. The JSON-compatible schemas preserve a future export/import seam, but no export UI is claimed. This contract does not implement the durable anonymous Device Guest or generalized cross-surface lifecycle; `IDENTITY-LIFECYCLE-001` retains that future work.
 
 Stores and important indexes:
 
@@ -133,7 +133,7 @@ V1 limitations and return points:
 - manual Firefox acceptance at 1920x1080 and 1366x768 for EN, HE RTL, representative RU, and Full Hand remains open;
 - advanced spaced/adaptive scheduling, saved drills, rich filters/trends, Home/Replay/Analyze continuity, export/import, sync, and Personal Strategy opt-in are later tickets;
 - current source coverage remains a generalized exploratory/comparative heuristic baseline because no production reference pack is registered;
-- authentication-gated owner isolation and explicit sign-out inaccessibility remain open under `AUTH-TRAINING-MEMORY-001`;
+- authentication-gated owner isolation and explicit sign-out inaccessibility are accepted under `AUTH-TRAINING-MEMORY-001`; the durable anonymous Device Guest and generalized lifecycle remain future `IDENTITY-LIFECYCLE-001` work;
 - heuristic disagreement must stop creating automatic remediation under `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`;
 - `Not sure` remains an open product decision.
 

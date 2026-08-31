@@ -63,6 +63,7 @@ export function createAuthenticationService({
   const profiles = profileRepositoryContract(profileRepository);
   const listeners = new Set();
   let initializationPromise = null;
+  let authenticationGeneration = 0;
   let currentProviderIdentity = null;
   let currentProfile = null;
   let pendingProviderIdentity = null;
@@ -81,6 +82,15 @@ export function createAuthenticationService({
     state = Object.freeze({ ...state, ...changes });
     for (const listener of listeners) listener(state);
     return state;
+  }
+
+  function beginAuthenticationOperation() {
+    authenticationGeneration += 1;
+    return authenticationGeneration;
+  }
+
+  function operationIsCurrent(expectedGeneration) {
+    return expectedGeneration === authenticationGeneration;
   }
 
   function useGuestState(noticeCode = null) {
@@ -114,7 +124,8 @@ export function createAuthenticationService({
       : profiles.bindRiverlineIdentity(providerIdentity, riverlineIdentityId);
   }
 
-  function publishSignedIn(providerIdentity, profile, noticeCode = null) {
+  function publishSignedIn(providerIdentity, profile, noticeCode = null, expectedGeneration = null) {
+    if (expectedGeneration !== null && !operationIsCurrent(expectedGeneration)) return state;
     currentProviderIdentity = providerIdentity;
     currentProfile = profile;
     pendingProviderIdentity = null;
@@ -129,12 +140,19 @@ export function createAuthenticationService({
     });
   }
 
-  async function settleAuthenticatedIdentity(providerIdentity, profileSetup = null) {
+  async function settleAuthenticatedIdentity(
+    providerIdentity,
+    profileSetup = null,
+    expectedGeneration = null,
+  ) {
+    if (expectedGeneration !== null && !operationIsCurrent(expectedGeneration)) return state;
     validateAuthProviderIdentity(providerIdentity);
     currentProviderIdentity = providerIdentity;
     let profile = profiles ? await profiles.getByProviderIdentity(providerIdentity) : null;
+    if (expectedGeneration !== null && !operationIsCurrent(expectedGeneration)) return state;
     if (!profile && profiles && profileSetup) {
       profile = await profiles.createForProviderIdentity(providerIdentity, profileSetup);
+      if (expectedGeneration !== null && !operationIsCurrent(expectedGeneration)) return state;
     }
     if (!profile && profiles) {
       pendingProviderIdentity = providerIdentity;
@@ -150,9 +168,10 @@ export function createAuthenticationService({
     }
 
     const existing = await accountIdentity.activateProviderIdentity(providerIdentity);
+    if (expectedGeneration !== null && !operationIsCurrent(expectedGeneration)) return state;
     if (existing) {
       profile = await bindRemoteProfile(profile, providerIdentity, existing.identity.identityId);
-      return publishSignedIn(providerIdentity, profile);
+      return publishSignedIn(providerIdentity, profile, null, expectedGeneration);
     }
 
     if (profile?.riverlineIdentityId) {
@@ -160,12 +179,19 @@ export function createAuthenticationService({
         displayName: profile.displayName,
         riverlineIdentityId: profile.riverlineIdentityId,
       });
-      return publishSignedIn(providerIdentity, profile, account.created ? 'account_restored_on_device' : null);
+      if (expectedGeneration !== null && !operationIsCurrent(expectedGeneration)) return state;
+      return publishSignedIn(
+        providerIdentity,
+        profile,
+        account.created ? 'account_restored_on_device' : null,
+        expectedGeneration,
+      );
     }
 
     // The legacy identity becomes active only inside this explicit authenticated
     // claim decision. Guest Mode never activates or exposes it.
     const local = await accountIdentity.activateLocalIdentity();
+    if (expectedGeneration !== null && !operationIsCurrent(expectedGeneration)) return state;
     pendingProviderIdentity = providerIdentity;
     pendingLocalIdentityId = local.identityId;
     currentProfile = profile;
@@ -179,7 +205,8 @@ export function createAuthenticationService({
     });
   }
 
-  function settleFailure(error, fallback = 'authentication_failed') {
+  function settleFailure(error, fallback = 'authentication_failed', expectedGeneration = null) {
+    if (expectedGeneration !== null && !operationIsCurrent(expectedGeneration)) return state;
     const code = error?.code ?? fallback;
     if (code === 'authentication_cancelled') return useGuestState('authentication_cancelled');
     if (code === 'session_expired') return useGuestState('session_expired');
@@ -193,14 +220,18 @@ export function createAuthenticationService({
 
   async function initialize() {
     if (initializationPromise) return initializationPromise;
+    const expectedGeneration = beginAuthenticationOperation();
     initializationPromise = (async () => {
       await accountIdentity.initialize();
+      if (!operationIsCurrent(expectedGeneration)) return state;
       if (!adapter || !adapter.isAvailable()) return useGuestState('provider_not_configured');
       try {
         const restored = await adapter.restoreSession();
+        if (!operationIsCurrent(expectedGeneration)) return state;
         if (!restored) return useGuestState();
-        return await settleAuthenticatedIdentity(restored);
+        return await settleAuthenticatedIdentity(restored, null, expectedGeneration);
       } catch (error) {
+        if (!operationIsCurrent(expectedGeneration)) return state;
         if (error?.code === 'profile_identity_conflict') return settleFailure(error);
         return useGuestState(error?.code === 'session_expired' ? 'session_expired' : 'provider_unavailable');
       }
@@ -211,6 +242,7 @@ export function createAuthenticationService({
   async function authenticate(method, rawCredentials) {
     await initialize();
     if (!adapter || !adapter.isAvailable()) return useGuestState('provider_not_configured');
+    const expectedGeneration = beginAuthenticationOperation();
     let credentials = rawCredentials;
     if (method === 'signUpWithPassword') {
       try { credentials = normalizedSignUpCredentials(rawCredentials); }
@@ -221,6 +253,7 @@ export function createAuthenticationService({
     publish({ status: 'authenticating', noticeCode: null });
     try {
       const result = await adapter[method](credentials);
+      if (!operationIsCurrent(expectedGeneration)) return state;
       if (result?.status === 'confirmation_required') {
         currentProviderIdentity = null;
         return publish({
@@ -236,19 +269,25 @@ export function createAuthenticationService({
         method === 'signUpWithPassword'
           ? { username: credentials.username, displayName: credentials.displayName }
           : null,
+        expectedGeneration,
       );
     } catch (error) {
-      return settleFailure(error);
+      return settleFailure(error, 'authentication_failed', expectedGeneration);
     }
   }
 
   async function signOut() {
-    await initialize();
-    let noticeCode = 'signed_out';
+    beginAuthenticationOperation();
+    useGuestState('signed_out');
     if (adapter) {
-      try { await adapter.signOut(); } catch { noticeCode = 'signout_incomplete'; }
+      try { await adapter.signOut(); }
+      catch {
+        return state.status === 'guest'
+          ? publish({ noticeCode: 'signout_incomplete' })
+          : state;
+      }
     }
-    return useGuestState(noticeCode);
+    return state;
   }
 
   return Object.freeze({
@@ -284,8 +323,14 @@ export function createAuthenticationService({
     async refreshSession() {
       await initialize();
       if (!adapter) return useGuestState('provider_not_configured');
-      try { return await settleAuthenticatedIdentity(await adapter.refreshSession()); }
-      catch (error) { return settleFailure(error, 'session_expired'); }
+      const expectedGeneration = beginAuthenticationOperation();
+      try {
+        const refreshed = await adapter.refreshSession();
+        if (!operationIsCurrent(expectedGeneration)) return state;
+        return await settleAuthenticatedIdentity(refreshed, null, expectedGeneration);
+      } catch (error) {
+        return settleFailure(error, 'session_expired', expectedGeneration);
+      }
     },
     async linkCurrentLocalData() {
       if (!pendingProviderIdentity || !pendingLocalIdentityId) {
@@ -342,14 +387,16 @@ export function createAuthenticationService({
       return publish({ profile, noticeCode: 'display_name_saved' });
     },
     async cancelPendingAuthentication() {
+      beginAuthenticationOperation();
+      useGuestState('authentication_cancelled');
       if (adapter) {
         try { await adapter.signOut(); } catch { /* Guest Mode still wins locally */ }
       }
-      return useGuestState('authentication_cancelled');
+      return state;
     },
     signOut,
-    switchToGuest: () => (currentProviderIdentity ? signOut() : useGuestState()),
-    switchToLocalProfile: () => (currentProviderIdentity ? signOut() : useGuestState()),
+    switchToGuest: () => signOut(),
+    switchToLocalProfile: () => signOut(),
     subscribe(listener) {
       if (typeof listener !== 'function') throw new TypeError('Authentication listener must be a function');
       listeners.add(listener);

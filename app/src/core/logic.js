@@ -216,6 +216,8 @@ const app = {
 
     memoryWritePromise: Promise.resolve(),
 
+    memoryGeneration: 0,
+
     memoryCurrentRecordPromise: null,
 
     memoryCurrentRecordId: null,
@@ -8708,14 +8710,14 @@ function init() {
     window.addEventListener('riverline:languagechange', refreshLocalizedRuntime);
     window.addEventListener('riverline:identitychange', () => {
       scheduleHomeRefresh({ clearPrivateState: true });
-      app.training.memorySessionPromise = null;
-      app.training.memoryWritePromise = Promise.resolve();
-      app.training.memoryFullHandDecisionRecords = new Map();
-      resetTrainingMemoryDecisionState();
-      if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
+      clearTrainingMemoryOwnerPresentation();
     });
-    window.addEventListener('riverline:authchange', () => {
+    window.addEventListener('riverline:authchange', (event) => {
       scheduleHomeRefresh({ clearPrivateState: true });
+      clearTrainingMemoryOwnerPresentation();
+      if (event.detail?.status === 'signed_in' && $('#trainingMemoryPanel')?.open) {
+        void refreshTrainingMemoryPanel();
+      }
       if (activeWorkspaceMode() === 'gto') void refreshSavedStudySource();
     });
     window.addEventListener('riverline:savedstudychange', () => {
@@ -10209,9 +10211,11 @@ function setTrainingMemoryStatus(messageKey, variables = {}, { error = false } =
 }
 
 function queueTrainingMemoryWrite(operation) {
+  const generation = app.training.memoryGeneration;
   const queued = Promise.resolve(app.training.memoryWritePromise)
     .catch(() => null)
-    .then(operation);
+    .then(() => (generation === app.training.memoryGeneration ? operation() : null))
+    .then((result) => (generation === app.training.memoryGeneration ? result : null));
   const handled = queued.catch((error) => {
     console.error('[Riverline Training Memory]', error);
     setTrainingMemoryStatus(
@@ -10223,6 +10227,30 @@ function queueTrainingMemoryWrite(operation) {
   });
   app.training.memoryWritePromise = handled;
   return handled;
+}
+
+function clearTrainingMemoryOwnerPresentation() {
+  const ownerSensitiveRedrill = Boolean(
+    app.training.currentExercise?.generationMetadata?.memoryRedrill,
+  );
+  app.training.memoryGeneration += 1;
+  app.training.memorySessionPromise = null;
+  app.training.memoryWritePromise = Promise.resolve();
+  app.training.memoryFullHandDecisionRecords = new Map();
+  app.training.memoryLastItems = [];
+  app.training.memoryRedrillNote = '';
+  resetTrainingMemoryDecisionState();
+  const list = $('#trainingMemoryList');
+  if (list) list.replaceChildren();
+  const panel = $('#trainingMemoryPanel');
+  if (panel) panel.dataset.memoryLoaded = 'false';
+  const badge = $('#trainingMemoryDueBadge');
+  if (badge) {
+    badge.textContent = '0';
+    badge.hidden = true;
+  }
+  setTrainingMemoryStatus('');
+  if (ownerSensitiveRedrill) clearTrainingSessionState();
 }
 
 function resetTrainingMemoryDecisionState() {
@@ -10574,9 +10602,14 @@ function renderTrainingMemoryDecisionItem(record, { reviewItem = null } = {}) {
   return item;
 }
 
-async function populateTrainingMemorySessionDecisions(container, sessionId) {
+async function populateTrainingMemorySessionDecisions(
+  container,
+  sessionId,
+  generation = app.training.memoryGeneration,
+) {
   container.replaceChildren();
   const decisions = await callTrainingMemoryBridge('listSessionDecisions', sessionId, { limit: 25 });
+  if (generation !== app.training.memoryGeneration) return;
   if (!Array.isArray(decisions) || decisions.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'training-memory-empty';
@@ -10627,7 +10660,9 @@ function renderTrainingMemorySessionItem(entry) {
   details.addEventListener('toggle', () => {
     if (!details.open || loaded) return;
     loaded = true;
-    void populateTrainingMemorySessionDecisions(decisions, session.id).catch((error) => {
+    const generation = app.training.memoryGeneration;
+    void populateTrainingMemorySessionDecisions(decisions, session.id, generation).catch((error) => {
+      if (generation !== app.training.memoryGeneration) return;
       console.error('[Riverline Training Memory]', error);
       decisions.textContent = t('Training Memory is unavailable. Existing history was left untouched.');
     });
@@ -10640,10 +10675,12 @@ function renderTrainingMemorySessionItem(entry) {
 async function refreshTrainingMemoryPanel() {
   const list = $('#trainingMemoryList');
   if (!list) return null;
+  const generation = app.training.memoryGeneration;
   setTrainingMemoryStatus('Loading Training Memory…');
   list.replaceChildren();
   try {
     const due = await callTrainingMemoryBridge('listDueReview', { limit: 12 });
+    if (generation !== app.training.memoryGeneration) return null;
     if (!Array.isArray(due)) throw new Error('Training Memory review query is unavailable');
     const memoryPanel = $('#trainingMemoryPanel');
     if (memoryPanel) memoryPanel.dataset.memoryLoaded = 'true';
@@ -10654,6 +10691,7 @@ async function refreshTrainingMemoryPanel() {
     let items;
     if (app.training.memoryView === 'recent') {
       items = await callTrainingMemoryBridge('listRecentSessions', { limit: 10 });
+      if (generation !== app.training.memoryGeneration) return null;
       if (!Array.isArray(items)) throw new Error('Training Memory session query is unavailable');
       items.forEach((entry) => list.appendChild(renderTrainingMemorySessionItem(entry)));
       if (items.length === 0) setTrainingMemoryStatus('No Training sessions recorded yet.');
@@ -10669,6 +10707,7 @@ async function refreshTrainingMemoryPanel() {
     app.training.memoryLastItems = items;
     return items;
   } catch (error) {
+    if (generation !== app.training.memoryGeneration) return null;
     console.error('[Riverline Training Memory]', error);
     setTrainingMemoryStatus(
       'Training Memory is unavailable. Existing history was left untouched.',
@@ -10715,6 +10754,7 @@ function handleTrainingMemoryTabKey(event) {
 }
 
 async function toggleCurrentTrainingMemoryMetadata(field) {
+  const generation = app.training.memoryGeneration;
   const recordPromise = app.training.memoryCurrentRecordPromise;
   if (!recordPromise) return null;
   const actions = $('#trainingMemoryDecisionActions');
@@ -10727,6 +10767,7 @@ async function toggleCurrentTrainingMemoryMetadata(field) {
     const updated = await callTrainingMemoryBridge('updateStudyMetadata', record.id, {
       [field]: enabled,
     });
+    if (generation !== app.training.memoryGeneration) return null;
     if (updated) {
       app.training.memoryCurrentRecordPromise = Promise.resolve(updated);
       app.training.memoryCurrentRecordId = updated.id;
@@ -10751,6 +10792,7 @@ async function toggleCurrentTrainingMemoryMetadata(field) {
 }
 
 async function openTrainingMemoryRedrill(recordId, kind) {
+  const generation = app.training.memoryGeneration;
   setTrainingMemoryStatus('Loading Training Memory…');
   try {
     await app.training.memoryWritePromise;
@@ -10760,6 +10802,7 @@ async function openTrainingMemoryRedrill(recordId, kind) {
           strategyProvider,
           attempt: 1,
         });
+    if (generation !== app.training.memoryGeneration) return null;
     if (!result || (kind === 'similar_spot' && !result.ok)) {
       setTrainingMemoryStatus('Similar Spot is unavailable for this record.', {}, { error: true });
       return null;
@@ -10810,6 +10853,7 @@ async function openTrainingMemoryRedrill(recordId, kind) {
     });
     return result;
   } catch (error) {
+    if (generation !== app.training.memoryGeneration) return null;
     console.error('[Riverline Training Memory re-drill]', error);
     setTrainingMemoryStatus(
       'Training Memory is unavailable. Existing history was left untouched.',

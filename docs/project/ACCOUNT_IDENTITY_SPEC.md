@@ -42,7 +42,7 @@ Settings / Home / owned-domain application consumers
 | language | i18n preference authority | device | Presentation preference remains stable when identities change |
 | theme, four-color deck, card/rank style, audio, sidebar collapse | existing Settings/presentation authorities | device | Hardware/presentation choice; no account migration in this ticket |
 | Saved source-reference keys | Saved source controller | device/application navigation | Bounded reopen hint, not durable owned study data; owner-scoped repository lookup prevents cross-identity disclosure |
-| Training Memory decision/session evidence | `training-memory/v1` IndexedDB | owner-keyed, auth gate incomplete | Durable Training Memory now exists, but its bridge reads the registry's active identity outside the authentication gate; `AUTH-TRAINING-MEMORY-001` owns sign-out inaccessibility and account/Guest isolation |
+| Training Memory decision/session evidence | `training-memory/v1` IndexedDB | authenticated owner scope | The accepted bridge resolves ownership through authentication plus owner generation rather than raw registry storage routing. Guest cannot access a retained authenticated identity; sign-out invalidates stale reads/writes while leaving prior-account bytes intact. |
 | window geometry, filesystem paths, cache/performance state | host/runtime where applicable | device | Never account-owned |
 
 This classification deliberately avoids moving every preference merely because identity now exists. A later cross-device preference change requires its own versioned migration and explicit product decision.
@@ -241,7 +241,6 @@ The current account platform still does not implement:
 
 - Training Memory sync, Saved Range, or cross-device preference sync. Only explicit Saved Hand/Spot and Personal Strategy / Range Calibration study sync are implemented;
 - the durable anonymous Guest migration and one cross-surface owner/generation/disposal lifecycle; these are owned by `IDENTITY-LIFECYCLE-001`;
-- Training Memory authentication isolation and sign-out inaccessibility; owned by `AUTH-TRAINING-MEMORY-001`;
 - remote deletion, local forgetting, account recovery, OAuth, magic links, passkeys, or provider-to-provider linking;
 - sharing, friends, study groups, public links, or social identity;
 - telemetry;

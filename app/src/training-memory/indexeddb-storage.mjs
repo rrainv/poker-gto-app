@@ -189,18 +189,26 @@ export function createIndexedDbTrainingMemoryDatabase({
   return Object.freeze({
     name,
     version,
-    async runTransaction(storeNames, mode, operation) {
+    async runTransaction(storeNames, mode, operation, { signal = null } = {}) {
       const database = await connection();
       const transaction = database.transaction(storeNames, mode, { durability: 'strict' });
       const completion = transactionCompletion(transaction);
+      const abortForSignal = () => {
+        try { transaction.abort(); } catch { /* already complete */ }
+      };
+      signal?.addEventListener('abort', abortForSignal, { once: true });
       try {
+        if (signal?.aborted) throw new Error('Training Memory authorization became stale');
         const result = await operation(indexedDbTransactionAdapter(transaction, IDBKeyRange));
+        if (signal?.aborted) throw new Error('Training Memory authorization became stale');
         await completion;
         return result;
       } catch (error) {
         try { transaction.abort(); } catch { /* already complete */ }
         try { await completion; } catch { /* keep operation error */ }
         throw error;
+      } finally {
+        signal?.removeEventListener('abort', abortForSignal);
       }
     },
     async close() {
@@ -249,6 +257,7 @@ export function createMemoryTrainingMemoryDatabase({ name = 'memory-training-mem
     recordsWritten: 0,
   };
   let nextFailure = null;
+  let nextCommitDelay = null;
 
   const keyFor = (storeName, value) => valueAtKeyPath(
     value,
@@ -258,9 +267,12 @@ export function createMemoryTrainingMemoryDatabase({ name = 'memory-training-mem
   return Object.freeze({
     name,
     version: TRAINING_MEMORY_DATABASE_VERSION,
-    async runTransaction(storeNames, mode, operation) {
+    async runTransaction(storeNames, mode, operation, { signal = null } = {}) {
       metrics.transactions += 1;
       metrics[mode] += 1;
+      let authorizationAborted = Boolean(signal?.aborted);
+      const abortForSignal = () => { authorizationAborted = true; };
+      signal?.addEventListener('abort', abortForSignal, { once: true });
       const writes = new Map(storeNames.map((name) => [name, new Map()]));
       const deletes = new Map(storeNames.map((name) => [name, new Set()]));
       const visible = (name, key) => {
@@ -324,23 +336,38 @@ export function createMemoryTrainingMemoryDatabase({ name = 'memory-training-mem
           return selected;
         },
       });
-      const result = await operation(adapter);
-      if (nextFailure) {
-        const failure = nextFailure;
-        nextFailure = null;
-        throw failure;
-      }
-      for (const name of storeNames) {
-        for (const key of deletes.get(name)) stores.get(name).delete(key);
-        for (const [key, value] of writes.get(name)) {
-          stores.get(name).set(key, cloneData(value));
-          metrics.recordsWritten += 1;
+      try {
+        if (authorizationAborted) throw new Error('Training Memory authorization became stale');
+        const result = await operation(adapter);
+        if (mode === 'readwrite' && nextCommitDelay) {
+          const delay = nextCommitDelay;
+          nextCommitDelay = null;
+          await delay();
         }
+        if (authorizationAborted) throw new Error('Training Memory authorization became stale');
+        if (nextFailure) {
+          const failure = nextFailure;
+          nextFailure = null;
+          throw failure;
+        }
+        for (const name of storeNames) {
+          for (const key of deletes.get(name)) stores.get(name).delete(key);
+          for (const [key, value] of writes.get(name)) {
+            stores.get(name).set(key, cloneData(value));
+            metrics.recordsWritten += 1;
+          }
+        }
+        return cloneData(result);
+      } finally {
+        signal?.removeEventListener('abort', abortForSignal);
       }
-      return cloneData(result);
     },
     failNextTransaction(error = new Error('Injected Training Memory failure')) {
       nextFailure = error;
+    },
+    delayNextCommit(operation) {
+      if (typeof operation !== 'function') throw new TypeError('Commit delay must be a function');
+      nextCommitDelay = operation;
     },
     getMetrics() { return cloneData(metrics); },
     inspectStore(name) { return entriesFromStore(stores, name); },
@@ -352,4 +379,3 @@ function entriesFromStore(stores, name) {
   if (!stores.has(name)) throw new RangeError(`Unknown Training Memory store: ${name}`);
   return [...stores.get(name).values()].map(cloneData);
 }
-
