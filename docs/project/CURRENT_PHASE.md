@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 31, 2026 (`STRATEGY-TRUST-001` is accepted; `DECISION-CONTEXT-SINGLE-AUTHORITY-001` is active next in the post-audit foundation sequence).
+Last refreshed: August 31, 2026 (`DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted; `AUDIT-HIGH-RISK-REPRO-001` is active next in the post-audit foundation sequence).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -135,8 +135,8 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    1. **COMPLETED / HUMAN SECURITY ACCEPTED — `AUTH-TRAINING-MEMORY-001`** — authentication-aware owner scope and generation now isolate prior-account Training Memory from Guest/other accounts, revoke local access before provider cleanup, discard stale queued/read results, abort stale in-flight writes, and preserve account bytes for authenticated return;
    2. **COMPLETED / HUMAN ACCEPTED — `DECISION-ECONOMICS-001`** — canonical pot accounting remains authoritative; accepted actor-relative strategic pricing projects exact contestable/ineligible pot-after-call and raw-equity facts through `deriveActorCallEconomics(state, actorPlayerId)` without reopening ledger accounting;
    3. **COMPLETED / ACCEPTED — `STRATEGY-TRUST-001`** — provider declaration and structural/source validation are now separated from application-owned acceptance; bounded authority requires exact registered identity/version/fingerprint where applicable, cannot exceed acceptance ceilings, and persists only durable answer-time authority/claim evidence rather than a live trust token;
-   4. **ACTIVE NEXT — `DECISION-CONTEXT-SINGLE-AUTHORITY-001`** — remove duplicate/fail-open DecisionContext construction paths;
-   5. `AUDIT-HIGH-RISK-REPRO-001` — reproduce or reject every preserved high-risk blind finding before any fix claim;
+   4. **COMPLETED / ACCEPTED — `DECISION-CONTEXT-SINGLE-AUTHORITY-001`** — Scenario and Hand now use their canonical application projectors through `resolvePlaybookDecisionContext()`; missing/failed Playbook dependencies clear stale context/result state and fail closed without a local projector;
+   5. **ACTIVE NEXT / NEEDS REPRODUCTION — `AUDIT-HIGH-RISK-REPRO-001`** — reproduce or reject every preserved high-risk blind finding before any fix claim;
    6. `IDENTITY-LIFECYCLE-001` — establish cross-surface owner, generation, invalidation, and disposal behavior, including the durable anonymous device-local Guest target and authenticated sign-out isolation;
    7. `HEURISTIC-BASELINE-TRUTH-001` — make every consumer treat the current heuristic as exploratory/comparative baseline evidence only;
    8. `TRAINING-NORMATIVE-001` — separate comparative practice from normative grading and replace probability-gap-to-modal-action as a normative correctness rule;
@@ -171,7 +171,7 @@ The following architecture is established and must not be duplicated:
 - `GameRulesDefinition v1` / immutable `GameRulesSnapshot v1` own mathematical rules; new live Hands use snapshot-authoritative `PokerState v2`.
 - `shared/poker-domain/` owns cards, state, actions, legality, accounting, evaluator, canonical Equity, Hold'em combos, and weighted ranges.
 - Scenario remains a truthful lossy snapshot; Hand remains canonical legal history.
-- `DecisionContext v1` plus additive v1.1 facts is the intended input to one `StrategyProvider v1` → `StrategyResult v1` → `StrategyClaimPolicy v1` path. Audit evidence found a classic fallback constructor and fail-open bridge path; `DECISION-CONTEXT-SINGLE-AUTHORITY-001` owns convergence.
+- `DecisionContext v1` plus additive v1.1 facts is the intended input to one `StrategyProvider v1` → `StrategyResult v1` → `StrategyClaimPolicy v1` path. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted: `deriveDecisionContextFromPlaybookScenario()` owns Scenario, `deriveDecisionContextFromPokerState()` owns Hand, and `resolvePlaybookDecisionContext()` selects the canonical projection. Missing or failed dependencies clear DecisionContext and StrategyResult without local reconstruction. This does not remove unrelated poker helpers or complete the broader `logic.js` composition work owned by `UI-COMPOSITION-ROOT-001`.
 - Strategy trust follows provider declaration → structural/source validation → application-owned acceptance → effective bounded authority → `StrategyResult v1` → `StrategyClaimPolicy v1`. Strong authority is never self-declared; live opaque acceptance is process-local, while persisted historical evidence freezes durable answer-time authority/coverage/capability metadata and ClaimPolicy without reauthentication.
 - `reference-pack/v1` validates declarative bounded packs and can select an exact pack behind that same provider path. Manifest validation status is evidence only; production authority additionally requires registered exact source ID, version, and content fingerprint. No production pack is currently registered.
 - `RangeAnalysisFacts v1` owns canonical factual range/hand classification; DOM-free `range-comparison-facts/v1` projects representative-class comparison facts after canonical Range Core card-removal conditioning.

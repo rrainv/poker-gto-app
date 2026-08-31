@@ -130,10 +130,14 @@ without rewriting.
 
 Exact reference matching distinguishes legacy total-pot-only contexts from
 actor-relative exact pricing; missing additive actor economics cannot satisfy
-an exact price match. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` owns removal of the
-classic `logic.js` constructor and any fail-open bridge path; until it closes,
-documentation must not claim every production consumer already uses one
-projector.
+an exact price match. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted:
+`deriveDecisionContextFromPlaybookScenario()` owns Scenario projection,
+`deriveDecisionContextFromPokerState()` owns Hand projection, and
+`resolvePlaybookDecisionContext()` selects between them. Missing required
+Playbook dependencies fail closed with `canonical_playbook_dependency_unavailable`;
+throwing or invalid canonical resolution fails closed with
+`canonical_playbook_resolution_failed`. Neither path manufactures a local
+DecisionContext or StrategyResult.
 
 Additive fields may remain in v1 only when backward-compatible and explicitly documented/tested. Breaking changes require an approved schema migration.
 

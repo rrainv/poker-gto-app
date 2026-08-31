@@ -18,7 +18,7 @@ StrategyClaimPolicy v1
 Playbook / Analyze / Matrix / Training / in-memory Full Hand review
 ```
 
-`StrategyProvider` remains the required production strategy entry point. `StrategyClaimPolicy` is the only application authority that translates source metadata into permitted product claims. It never generates actions or changes probabilities. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` separately owns removal of the current classic/fail-open DecisionContext path before documentation may claim full consumer convergence.
+`StrategyProvider` remains the required production strategy entry point. `StrategyClaimPolicy` is the only application authority that translates source metadata into permitted product claims. It never generates actions or changes probabilities. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted: Scenario and Hand now reach this path only through their canonical application projectors selected by `resolvePlaybookDecisionContext()`, and missing/failed canonical resolution clears strategy state instead of manufacturing a fallback DecisionContext or StrategyResult.
 
 The accepted trust boundary inside that path is: provider declaration ->
 structural/source validation -> application-owned acceptance -> effective

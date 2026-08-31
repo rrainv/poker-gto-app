@@ -36,7 +36,15 @@ DecisionContext is a projection, not a second poker engine, history model,
 provider parameter bag, or solver schema. Canonical legality comes only from
 `shared/poker-domain/getLegalActionSpec()` and related canonical selectors.
 
-Current implementation caveat: the extracted Scenario/PokerState projectors still coexist with a classic `logic.js` constructor and a fail-open Playbook bridge fallback. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` owns convergence and explicit failure semantics. This specification states the required authority; it does not claim that audit debt is already closed.
+`DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted. Scenario projects only
+through `deriveDecisionContextFromPlaybookScenario()`, Hand projects only through
+`deriveDecisionContextFromPokerState()`, and `resolvePlaybookDecisionContext()`
+selects the canonical path. The former classic `logic.js` constructor and local
+consumer reconstruction paths are deleted. Missing required Playbook dependencies
+use `canonical_playbook_dependency_unavailable`; throwing or invalid canonical
+resolution uses `canonical_playbook_resolution_failed`. Both clear DecisionContext
+and StrategyResult, render unavailable/error presentation, and permit recovery
+after the dependency is restored without invoking a local projector.
 
 ## 2. Base-v1 field audit
 
