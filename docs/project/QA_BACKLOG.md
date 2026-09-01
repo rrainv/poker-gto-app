@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: September 1, 2026 (`AUDIT-CHEAP-FIX-BATCH-001` is accepted; `AUTH-SUPABASE-SINGLETON-001` is active next, and unresolved audit findings stay with their named owners).
+Last consolidated: September 1, 2026 (`AUTH-SUPABASE-SINGLETON-001` is accepted; `ANALYZE-SCENARIO-READINESS-001` is active next, and unresolved audit findings stay with their named owners).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -35,7 +35,7 @@ The current minimum supported desktop viewport remains **1366×768**. Findings o
 
 ## September Alpha blind findings — disposition in progress
 
-`AUDIT-CHEAP-FIX-BATCH-001` closes the three accepted rows below. Remaining rows retain their explicit reproduction or implementation owner; acceptance of one bounded batch does not close unrelated findings.
+Accepted bounded tickets close only their exact rows below. Remaining rows retain their explicit reproduction or implementation owner; acceptance of one repair does not close unrelated findings.
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
@@ -44,9 +44,9 @@ The current minimum supported desktop viewport remains **1366×768**. Findings o
 | QA-AUDIT-SAME-SPOT-COHERENCE-001 | OPEN / NEEDS REPRODUCTION | Same Spot may break session mode, mode label, or headline-stat coherence. | `AUDIT-HIGH-RISK-REPRO-001` |
 | QA-AUDIT-NON-HERO-CONTEXT-001 | COMPLETED / ACCEPTED | The Hand action dock context and stack are current-actor-relative. Hero remains distinct identity but is not used as another player’s decision-context label. | Preserve `AUDIT-CHEAP-FIX-BATCH-001` and focused regression coverage |
 | QA-AUDIT-HAND-ANALYZE-STACK-001 | OPEN / NEEDS REPRODUCTION | Hand → Analyze may transfer the wrong stack/economics snapshot. | `AUDIT-HIGH-RISK-REPRO-001` |
-| QA-AUDIT-ANALYZE-CHRONOLOGY-001 | OPEN / NEEDS REPRODUCTION | Analyze Scenario chronology/readiness may allow contradictory or premature states. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-ANALYZE-CHRONOLOGY-001 | OPEN / ACTIVE NEXT | Analyze Scenario chronology/readiness may allow contradictory or premature states. | `ANALYZE-SCENARIO-READINESS-001` |
 | QA-AUDIT-HOME-COMPLETED-HAND-001 | OPEN / NEEDS REPRODUCTION | Home may present a completed Hand as live/continuable. | `AUDIT-HIGH-RISK-REPRO-001` |
-| QA-AUDIT-AUTH-CLIENT-DUPLICATE-001 | OPEN / ACTIVE NEXT | Runtime may create or warn about duplicate authentication clients. | `AUTH-SUPABASE-SINGLETON-001` |
+| QA-AUDIT-AUTH-CLIENT-DUPLICATE-001 | COMPLETED / ACCEPTED | The duplicate Supabase/GoTrue client condition is resolved. One browser-runtime owner supplies the same client to Authentication, Account/Profile, Saved sync, and Personal Strategy sync; equivalent normalized configuration is idempotent, materially different in-runtime configuration fails closed, and auth/identity transitions do not recreate the client. Missing or invalid configuration remains Guest/local-only. | Preserve `AUTH-SUPABASE-SINGLETON-001` and focused regression coverage |
 | QA-AUDIT-BROWSER-A11Y-001 | OPEN / NEEDS REPRODUCTION | Real-browser Tab order, modal containment/restoration, and inactive-workspace accessibility may diverge from structural tests. | `AUDIT-HIGH-RISK-REPRO-001` |
 | QA-AUDIT-RANGE-COMPARISON-INTERACTION-001 | OPEN / NEEDS REPRODUCTION | Range comparison hover/focus behavior may be inconsistent or inaccessible. | `AUDIT-HIGH-RISK-REPRO-001` |
 | QA-AUDIT-HAND-REVIEW-PRIORITY-001 | OPEN / NEEDS REPRODUCTION | Hand Review priority metrics may disagree across displayed values or projections. | `AUDIT-HIGH-RISK-REPRO-001` |

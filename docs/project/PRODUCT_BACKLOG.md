@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: September 1, 2026 (`AUDIT-CHEAP-FIX-BATCH-001` is accepted; the remaining foundational sequence begins with `AUTH-SUPABASE-SINGLETON-001`).
+Last consolidated: September 1, 2026 (`AUTH-SUPABASE-SINGLETON-001` is accepted; the remaining foundational sequence begins with `ANALYZE-SCENARIO-READINESS-001`).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -52,13 +52,14 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | 3 | COMPLETED / ACCEPTED | `STRATEGY-TRUST-001`; application-owned bounded source acceptance, durable historical authority evidence, and fail-closed exact/normative inputs |
 | 4 | COMPLETED / ACCEPTED | `DECISION-CONTEXT-SINGLE-AUTHORITY-001`; one canonical Scenario/Hand projection selector with fail-closed dependency semantics |
 | 5 | COMPLETED / ACCEPTED | `AUDIT-CHEAP-FIX-BATCH-001`; Full Hand Memory embargo, actor-relative Hand context/stack, and complete-known-card structural Equity identities |
-| 6 | ACTIVE NEXT / FOUNDATIONAL | `AUTH-SUPABASE-SINGLETON-001` |
-| 7–10 | PLANNED NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
-| 11–12 | PLANNED NEXT / INCREMENTAL EXTRACTION | `UI-COMPOSITION-ROOT-001` → one bounded workspace extraction pilot |
-| 13–14 | PLANNED NEXT | `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001` |
-| 15 | PLANNED NEXT / BOUNDED DECISION | reference-source decision after read-only research; research may run in parallel |
-| 16 | PLANNED NEXT | learning-loop expansion after foundation gates |
-| 17 | PLANNED NEXT | `PERSONAL-STRATEGY-003A` |
+| 6 | COMPLETED / ACCEPTED FOUNDATIONAL | `AUTH-SUPABASE-SINGLETON-001`; one browser-runtime Supabase client shared by Authentication, Account/Profile, Saved sync, and Personal Strategy sync with fail-closed reconfiguration and idempotent lifecycle acquisition |
+| 7 | ACTIVE NEXT / AUDIT CORRECTNESS | `ANALYZE-SCENARIO-READINESS-001` |
+| 8–11 | PLANNED NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
+| 12–13 | PLANNED NEXT / INCREMENTAL EXTRACTION | `UI-COMPOSITION-ROOT-001` → one bounded workspace extraction pilot |
+| 14–15 | PLANNED NEXT | `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001` |
+| 16 | PLANNED NEXT / BOUNDED DECISION | reference-source decision after read-only research; research may run in parallel |
+| 17 | PLANNED NEXT | learning-loop expansion after foundation gates |
+| 18 | PLANNED NEXT | `PERSONAL-STRATEGY-003A` |
 | later gate | PLANNED LATER / PRE-RELEASE QUALITY GATE | `PREMIUM-CLOSEOUT-001` |
 | future | PRESERVED FUTURE | release/mobile/social/PLO later |
 
@@ -175,7 +176,7 @@ Home remains a consumer and must not invent accuracy, mastery, streaks, or histo
 
 | Capability | Status | Accepted scope |
 |---|---|---|
-| identity/auth plus Saved and Personal Strategy sync | CHECKPOINTED / FOUNDATIONAL LIFECYCLE DEBT ACTIVATED | Supabase email/password/profile and explicit opt-in sync foundations exist. `IDENTITY-LIFECYCLE-001` owns cross-surface owner/generation/disposal semantics. The accepted long-term Guest is a durable anonymous device-local profile; explicit sign-out must make authenticated-owner data inaccessible. Current runtime remains unchanged until that ticket. |
+| identity/auth plus Saved and Personal Strategy sync | CHECKPOINTED / SINGLE-CLIENT OWNERSHIP ACCEPTED; FOUNDATIONAL LIFECYCLE DEBT ACTIVATED | Supabase email/password/profile and explicit opt-in sync foundations exist. One browser-runtime Supabase client is shared by Authentication, Account/Profile, Saved sync, and Personal Strategy sync; equivalent/repeated acquisition is idempotent, materially different in-runtime configuration fails closed, and auth/identity transitions do not recreate it. `IDENTITY-LIFECYCLE-001` still owns broader cross-surface owner/generation/disposal semantics and the durable anonymous device-local Guest target; explicit sign-out must keep authenticated-owner data inaccessible. |
 | username/password adapter | OPEN PRODUCT DECISION | Trusted rate-limited server/Edge Function only if still required; never client-side username-to-email lookup. |
 | recovery/deletion/local forgetting and cross-device preferences | PRESERVED FUTURE | Explicit privacy/lifecycle work after core sync stability. |
 | social identity and study sharing | PRESERVED FUTURE / dependency-gated | After privacy/versioning maturity; sharing semantics live in [Saved Knowledge and Sharing](capabilities/SAVED_KNOWLEDGE_AND_SHARING.md). |

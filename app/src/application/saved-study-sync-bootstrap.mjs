@@ -1,5 +1,5 @@
 import {
-  createSupabaseBrowserClient,
+  getRiverlineSupabaseBrowserClient,
   resolveRiverlineAuthConfig,
 } from '../authentication/index.mjs';
 import {
@@ -352,7 +352,11 @@ export async function installSavedStudySyncBridge(browserWindow, options = {}) {
   let remoteAdapter = options.remoteAdapter ?? null;
   if (!remoteAdapter && config) {
     try {
-      client ??= createSupabaseBrowserClient({ config, clientFactory: options.clientFactory });
+      client ??= getRiverlineSupabaseBrowserClient({
+        browserWindow,
+        config,
+        clientFactory: options.clientFactory,
+      });
       remoteAdapter = createSupabaseRemoteSyncAdapter({ client });
     } catch { /* visible persistent error if a user explicitly enables sync */ }
   }

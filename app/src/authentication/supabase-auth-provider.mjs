@@ -33,7 +33,7 @@ function decodeJwtRole(value) {
   }
 }
 
-function validatePublicConfiguration(config) {
+export function normalizeSupabasePublicConfiguration(config) {
   if (!config || typeof config !== 'object') throw new TypeError('Supabase public configuration is required');
   let url;
   try { url = new URL(config.supabaseUrl); } catch { throw new TypeError('Supabase URL is invalid'); }
@@ -50,6 +50,29 @@ function validatePublicConfiguration(config) {
     supabaseUrl: url.origin,
     supabasePublishableKey: publishableKey,
     providerTenantId: url.origin,
+  });
+}
+
+export function createSupabaseBrowserClientDefinition(config) {
+  const configuration = normalizeSupabasePublicConfiguration(config);
+  const storageSuffix = configuration.providerTenantId.replace(/[^A-Za-z0-9._-]/g, '_');
+  const options = Object.freeze({
+    auth: Object.freeze({
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+      flowType: 'pkce',
+      storageKey: `riverline.auth.supabase.${storageSuffix}.v1`,
+    }),
+  });
+  return Object.freeze({
+    configuration,
+    options,
+    identity: JSON.stringify({
+      supabaseUrl: configuration.supabaseUrl,
+      supabasePublishableKey: configuration.supabasePublishableKey,
+      auth: options.auth,
+    }),
   });
 }
 
@@ -127,7 +150,7 @@ export function createSupabaseAuthProviderAdapter({
   clock = () => new Date(),
   timeoutMs = 5000,
 } = {}) {
-  const configuration = validatePublicConfiguration(config);
+  const configuration = normalizeSupabasePublicConfiguration(config);
   const authClient = client ?? createSupabaseBrowserClient({ config, clientFactory });
   if (!authClient?.auth) throw new TypeError('Supabase client does not expose Auth');
 
@@ -197,23 +220,14 @@ export function createSupabaseBrowserClient({
   config,
   clientFactory = globalThis.supabase?.createClient,
 } = {}) {
-  const configuration = validatePublicConfiguration(config);
+  const definition = createSupabaseBrowserClientDefinition(config);
   if (typeof clientFactory !== 'function') {
     throw new TypeError('The official Supabase browser client is unavailable');
   }
-  const storageSuffix = configuration.providerTenantId.replace(/[^A-Za-z0-9._-]/g, '_');
   const client = clientFactory(
-    configuration.supabaseUrl,
-    configuration.supabasePublishableKey,
-    {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: false,
-        flowType: 'pkce',
-        storageKey: `riverline.auth.supabase.${storageSuffix}.v1`,
-      },
-    },
+    definition.configuration.supabaseUrl,
+    definition.configuration.supabasePublishableKey,
+    definition.options,
   );
   if (!client?.auth) throw new TypeError('Supabase client does not expose Auth');
   return client;

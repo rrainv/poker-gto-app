@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: September 1, 2026 (`AUDIT-CHEAP-FIX-BATCH-001` is accepted; `AUTH-SUPABASE-SINGLETON-001` is active next in the post-audit foundation sequence).
+Last refreshed: September 1, 2026 (`AUTH-SUPABASE-SINGLETON-001` is accepted; `ANALYZE-SCENARIO-READINESS-001` is active next in the post-audit foundation sequence).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -70,16 +70,17 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 9. **COMPLETED / HUMAN SECURITY ACCEPTED — `AUTH-TRAINING-MEMORY-001`**
 10. **COMPLETED / HUMAN ACCEPTED — `DECISION-ECONOMICS-001`; COMPLETED / ACCEPTED — `STRATEGY-TRUST-001`; COMPLETED / ACCEPTED — `DECISION-CONTEXT-SINGLE-AUTHORITY-001`**
 11. **COMPLETED / ACCEPTED — `AUDIT-CHEAP-FIX-BATCH-001`** — Full Hand Memory embargo, current-actor Hand context/stack, and complete-known-card structural Equity identities; exact entered-hand outcome authority unchanged
-12. **ACTIVE NEXT — `AUTH-SUPABASE-SINGLETON-001`**
-13. **IDENTITY/TRUTH — `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`**
-14. **PORTABLE BROWSER LIFECYCLE — `BROWSER-TEST-PLATFORM-001`**
-15. **INCREMENTAL COMPOSITION — `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot; no framework rewrite**
-16. **SAVED/HOME — `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001`**
-17. **BOUNDED REFERENCE-SOURCE DECISION — after read-only research, which may run in parallel**
-18. **LEARNING-LOOP EXPANSION**
-19. **PERSONAL STRATEGY — `PERSONAL-STRATEGY-003A`**
-20. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
-21. release/mobile/social/PLO later
+12. **COMPLETED / ACCEPTED — `AUTH-SUPABASE-SINGLETON-001`** — one browser-runtime Supabase client is shared by Authentication, Account/Profile, Saved sync, and Personal Strategy sync; equivalent/repeated acquisition is idempotent and materially different in-runtime configuration fails closed
+13. **ACTIVE NEXT — `ANALYZE-SCENARIO-READINESS-001`**
+14. **IDENTITY/TRUTH — `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`**
+15. **PORTABLE BROWSER LIFECYCLE — `BROWSER-TEST-PLATFORM-001`**
+16. **INCREMENTAL COMPOSITION — `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot; no framework rewrite**
+17. **SAVED/HOME — `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001`**
+18. **BOUNDED REFERENCE-SOURCE DECISION — after read-only research, which may run in parallel**
+19. **LEARNING-LOOP EXPANSION**
+20. **PERSONAL STRATEGY — `PERSONAL-STRATEGY-003A`**
+21. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+22. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 

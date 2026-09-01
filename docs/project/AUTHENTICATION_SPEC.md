@@ -68,6 +68,16 @@ The adapter uses the official `@supabase/supabase-js` browser client. It never r
 
 `app/src/authentication/fake-auth-provider.mjs` supplies deterministic success, cancellation, failure, expired-session, unavailable-provider, and multiple-identity behavior. Tests never use live internet.
 
+## Browser client ownership
+
+Riverline owns one Supabase browser client per configured browser runtime through the browser-level client provider. Authentication is a consumer, not the owner. The Authentication adapter, Account/Profile repository, Saved sync adapter, and Personal Strategy sync adapter all receive the same underlying client instance.
+
+Client identity is the normalized Supabase origin, public publishable key, and the effective Auth persistence/session options, including the Riverline storage namespace. Equivalent normalized configuration and repeated bootstrap acquisition return the existing runtime-local client. Materially different configuration within the same runtime fails closed instead of reusing the wrong tenant or Auth namespace. A new browser runtime receives a new client.
+
+Sign-in, sign-up, refresh, sign-out, identity transitions, navigation, sync refresh/reconnect, and Saved or Personal Strategy activity do not recreate the client. Adapters and services retain their existing lifecycle and listener responsibilities without owning or disposing the shared SDK client. Missing or invalid public configuration creates no client and preserves provider-unavailable Guest behavior plus local-only Saved and Personal Strategy behavior.
+
+This ownership seam does not change public publishable-key handling, sanitized Auth errors, profile binding, session restore, sync opt-in, local-first commits, revisions, conflicts, tombstones, outbox behavior, or identity-generation cancellation.
+
 ## ProviderIdentityMapping v1
 
 Schema: `provider-identity-mapping/v1`

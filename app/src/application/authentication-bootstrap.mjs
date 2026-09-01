@@ -1,6 +1,6 @@
 import {
   createSupabaseAuthProviderAdapter,
-  createSupabaseBrowserClient,
+  getRiverlineSupabaseBrowserClient,
   resolveRiverlineAuthConfig,
 } from '../authentication/index.mjs';
 import './account-identity-bootstrap.mjs';
@@ -383,7 +383,11 @@ export async function installAuthenticationBridge(browserWindow, options = {}) {
   let profileRepository = options.profileRepository ?? null;
   if (config && (!providerAdapter || !profileRepository)) {
     try {
-      client ??= createSupabaseBrowserClient({ config, clientFactory: options.clientFactory });
+      client ??= getRiverlineSupabaseBrowserClient({
+        browserWindow,
+        config,
+        clientFactory: options.clientFactory,
+      });
       providerAdapter ??= createSupabaseAuthProviderAdapter({ config, client });
       profileRepository ??= createSupabaseAccountProfileRepository({ client });
     } catch {
