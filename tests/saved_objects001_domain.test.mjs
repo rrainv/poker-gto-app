@@ -312,8 +312,19 @@ test('Hand-derived spot is canonical while Scenario-derived spot is explicitly l
   assert.equal(handResult.object.payload.truth.historyStatus, 'canonical_reference');
   assert.equal(handResult.object.payload.handReference.actionSequenceCount, 0);
   assert.equal(handResult.object.payload.decisionContext.opponentCount, 1);
+  assert.equal(
+    handResult.object.payload.decisionContext.actorContestablePotAfterCallBb,
+    2,
+  );
+  assert.equal(handResult.object.payload.decisionContext.requiredRawEquity, 0.25);
   assert.equal(handResult.object.payload.scenarioInput, null);
   validateSavedSpotSnapshot(handResult.object.payload);
+
+  const historicalV11 = structuredClone(handResult.object.payload);
+  delete historicalV11.decisionContext.actorContestablePotAfterCallBb;
+  delete historicalV11.decisionContext.actorIneligiblePotAfterCallBb;
+  delete historicalV11.decisionContext.requiredRawEquity;
+  validateSavedSpotSnapshot(historicalV11);
 
   const lossyResult = await app.saveSpot({
     derivation: SAVED_SPOT_DERIVATIONS.SCENARIO,

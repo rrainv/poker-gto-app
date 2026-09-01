@@ -1,9 +1,14 @@
 const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('url');
 const vm = require('vm');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const LOGIC_PATH = path.join(REPO_ROOT, 'app', 'src', 'core', 'logic.js');
+const PLAYBOOK_STATE_SOURCE_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'application', 'playbook-state-source.mjs',
+);
+const playbookStateSourcePromise = import(pathToFileURL(PLAYBOOK_STATE_SOURCE_PATH).href);
 const EVALUATOR_PATH = path.join(REPO_ROOT, 'shared', 'poker-domain', 'evaluator.js');
 const HTML_PATH = path.join(REPO_ROOT, 'app', 'index.html');
 const STRATEGY_RESULT_PATH = path.join(
@@ -173,6 +178,7 @@ function createHarness() {
     const ACTION_TYPES = Object.freeze({
       FOLD: 'fold', CHECK: 'check', CALL: 'call', BET: 'bet', RAISE: 'raise', ALL_IN: 'all_in'
     });
+    const PLAYBOOK_MODES = Object.freeze({ SCENARIO: 'scenario', HAND: 'hand' });
     ${pokerPositionsSource}
     const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
     ${strategySourceAuthoritySource}
@@ -284,6 +290,7 @@ function createHarness() {
     const requestAnimationFrame = (callback) => callback();
     const syncNoop = () => {};
     const setFrequency = syncNoop;
+    const setRecommendationState = syncNoop;
     const updateMetrics = syncNoop;
     const renderPath = syncNoop;
     const renderChart = syncNoop;
@@ -374,7 +381,6 @@ function createHarness() {
       fallbackPositionModifiers() { return { ...PREFLOP_FALLBACK_POSITION_MODIFIERS }; },
       normalizeFacingSize,
       strategyAccountingContext,
-      deriveDecisionContext,
       decisionContextToLegacyPostflopContext,
       calculatePreflopFallbackForDecisionContext,
       STRATEGY_RESULT_SCHEMA_VERSION,
@@ -412,7 +418,7 @@ function createHarness() {
         controls.set('#straddle', createElement(straddle));
         return preflopBasePot();
       },
-      async captureContext(values) {
+      async captureContext(values, canonicalScenarioProjector) {
         controls.clear();
         const definitions = {
           players: [values.players ?? 6, 2, 10],
@@ -436,13 +442,44 @@ function createHarness() {
         app.gto.hero = values.heroCards || [];
         app.gto.dead = values.deadCards || [];
         app.lastContextKey = '';
+        if (values.seedStale === true) {
+          app.decisionContext = { schemaVersion: 'decision-context/v1', stale: true };
+          app.strategyResult = { schemaVersion: 'strategy-result/v1', stale: true };
+        }
+        if (values.bridgeBehavior === 'missing') {
+          delete window.RiverlinePlaybookState;
+          delete globalThis.RiverlinePlaybookState;
+        } else {
+          const playbookBridge = {
+            resolveDecisionContext(input) {
+              if (values.bridgeBehavior === 'throw') throw new Error('test resolver failure');
+              if (values.bridgeBehavior === 'invalid') return null;
+              return {
+                schemaVersion: 'playbook-decision-resolution/v1',
+                mode: 'scenario',
+                status: 'available',
+                reason: null,
+                error: null,
+                decisionContext: canonicalScenarioProjector(input)
+              };
+            },
+            createViewModel(strategyResult) {
+              return { strategyResult };
+            }
+          };
+          if (values.bridgeBehavior === 'missing_resolver') {
+            delete playbookBridge.resolveDecisionContext;
+          }
+          window.RiverlinePlaybookState = playbookBridge;
+          globalThis.RiverlinePlaybookState = playbookBridge;
+        }
         dispatchedState = null;
         const decisionContexts = [];
         const strategyResults = [];
         const refreshCount = values.refreshCount ?? 1;
         for (let refresh = 0; refresh < refreshCount; refresh += 1) {
           await updateContext('QA-002 capture');
-          decisionContexts.push({ ...app.decisionContext });
+          decisionContexts.push(app.decisionContext ? { ...app.decisionContext } : null);
           strategyResults.push(JSON.parse(JSON.stringify(app.strategyResult)));
         }
         return {
@@ -450,6 +487,8 @@ function createHarness() {
           decisionContexts,
           strategyResult: strategyResults[strategyResults.length - 1],
           strategyResults,
+          playbookResolution: { ...app.playbookResolution },
+          playbookViewModel: app.playbookViewModel,
           snapshot: readPlaybookInputSnapshot(),
           facingControl: controls.get('#facingSize').value,
           facingNumberControl: controls.get('#facingSizeNum').value,
@@ -503,7 +542,6 @@ module.exports = {
   fallbackPositionModifiers: () => plain(harness.fallbackPositionModifiers()),
   normalizeFacingSize: (...args) => harness.normalizeFacingSize(...args),
   strategyAccountingContext: (...args) => plain(harness.strategyAccountingContext(...args)),
-  deriveDecisionContext: (...args) => plain(harness.deriveDecisionContext(...args)),
   legacyPostflopContext: (...args) => plain(harness.decisionContextToLegacyPostflopContext(...args)),
   fallbackForDecisionContext: (...args) => plain(harness.calculatePreflopFallbackForDecisionContext(...args)),
   strategyResultSchemaVersion: harness.STRATEGY_RESULT_SCHEMA_VERSION,
@@ -520,7 +558,10 @@ module.exports = {
   fallbackStrategyProfile: (...args) => plain(harness.fallbackStrategyProfile(...args)),
   fallbackStrategyResult: (...args) => plain(harness.fallbackStrategyResult(...args)),
   preflopPot: (...args) => harness.preflopPot(...args),
-  captureContext: async (...args) => plain(await harness.captureContext(...args)),
+  captureContext: async (values = {}) => {
+    const { deriveDecisionContextFromPlaybookScenario } = await playbookStateSourcePromise;
+    return plain(await harness.captureContext(values, deriveDecisionContextFromPlaybookScenario));
+  },
   postflopWithDrop: (...args) => plain(harness.postflopWithDrop(...args)),
   rankValue: (...args) => harness.rankValue(...args),
   fallbackSource: harness.fallbackSource,

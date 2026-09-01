@@ -56,7 +56,7 @@ export function calibrationDecisionContext(overrides = {}) {
     limperCount: street === 'preflop' ? 0 : null,
     aggressorPosition: null,
   };
-  return {
+  const context = {
     schemaVersion: 'decision-context/v1',
     contractVersion: 'decision-context/v1.1',
     tableSize: 6,
@@ -94,6 +94,26 @@ export function calibrationDecisionContext(overrides = {}) {
     board,
     street,
   };
+  if (!Object.hasOwn(overrides, 'actorContestablePotAfterCallBb')) {
+    context.actorContestablePotAfterCallBb = Number.isFinite(context.callAmountBb)
+      && context.callAmountBb > 0
+      ? context.currentPotBb + context.callAmountBb
+      : context.callAmountBb === 0 ? context.currentPotBb : null;
+  }
+  if (!Object.hasOwn(overrides, 'actorIneligiblePotAfterCallBb')) {
+    context.actorIneligiblePotAfterCallBb = context.actorContestablePotAfterCallBb === null
+      ? null
+      : Math.max(0, context.currentPotBb + (context.callAmountBb || 0)
+        - context.actorContestablePotAfterCallBb);
+  }
+  if (!Object.hasOwn(overrides, 'requiredRawEquity')) {
+    context.requiredRawEquity = Number.isFinite(context.callAmountBb)
+      && context.callAmountBb > 0
+      && context.actorContestablePotAfterCallBb > 0
+      ? context.callAmountBb / context.actorContestablePotAfterCallBb
+      : null;
+  }
+  return context;
 }
 
 export const PREFLOP_FACING_CATEGORIES = Object.freeze({
@@ -583,6 +603,9 @@ export const POSTFLOP_COUNTERFACTUAL_CORPUS = Object.freeze({
       heroCards: ['As', '5s'],
       board: ['2s', '9s', 'Kd'],
       callAmountBb: 10,
+      actorContestablePotAfterCallBb: 20,
+      actorIneligiblePotAfterCallBb: 0,
+      requiredRawEquity: 0.5,
     }),
   }),
   postflopRaiseHistorySensitivity: Object.freeze({

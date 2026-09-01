@@ -29,6 +29,13 @@ function finiteNonNegative(value) {
   return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
 }
 
+function actorContestablePotBeforeAction(decision) {
+  const afterCall = finiteNonNegative(decision?.actorContestablePotAfterCallBb);
+  const callAmount = finiteNonNegative(decision?.callAmountBb);
+  if (afterCall === null || callAmount === null || afterCall < callAmount) return null;
+  return afterCall - callAmount;
+}
+
 function normalizedAction(entry, source) {
   const action = entry?.action || entry;
   if (!action || typeof action !== 'object') return null;
@@ -70,7 +77,7 @@ function unavailableEconomics(action, decision, reason, extra = {}) {
     amountSemantics: action?.type === 'raise'
       ? 'total_street_contribution_after_action'
       : action?.type === 'bet' ? 'incremental_wager' : null,
-    potBeforeActionBb: finiteNonNegative(decision?.potBb),
+    potBeforeActionBb: actorContestablePotBeforeAction(decision),
     riskBb: null,
     immediateRewardBb: null,
     breakEvenFoldFrequency: null,
@@ -104,9 +111,9 @@ function aggressiveEconomics(action, decision) {
   if (!AGGRESSIVE_ACTION_TYPES.has(action.type)) {
     return unavailableEconomics(action, decision, 'current_action_not_aggressive');
   }
-  const potBeforeActionBb = finiteNonNegative(decision?.potBb);
+  const potBeforeActionBb = actorContestablePotBeforeAction(decision);
   if (potBeforeActionBb === null) {
-    return unavailableEconomics(action, decision, 'pot_before_action_unavailable');
+    return unavailableEconomics(action, decision, 'actor_contestable_pot_unavailable');
   }
   if (action.type === 'all_in') {
     return unavailableEconomics(action, decision, 'all_in_aggression_semantics_unavailable');

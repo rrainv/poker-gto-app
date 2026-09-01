@@ -86,10 +86,6 @@ function resolveScenario() {
   const result = resolvePlaybookDecisionContext({
     mode: PLAYBOOK_MODES.SCENARIO,
     scenarioInput,
-    deriveScenarioDecisionContext: (input) => calibrationDecisionContext({
-      ...input,
-      schemaVersion: 'decision-context/v1',
-    }),
   });
   if (result.status !== 'available') throw new Error('Scenario profile resolution failed');
 }

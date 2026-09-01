@@ -1,6 +1,6 @@
 # Current Riverline phase
 
-Last refreshed: August 31, 2026 (`DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted; `AUDIT-HIGH-RISK-REPRO-001` is active next in the post-audit foundation sequence).
+Last refreshed: September 1, 2026 (`AUDIT-CHEAP-FIX-BATCH-001` is accepted; `AUTH-SUPABASE-SINGLETON-001` is active next in the post-audit foundation sequence).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
@@ -136,18 +136,19 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    2. **COMPLETED / HUMAN ACCEPTED — `DECISION-ECONOMICS-001`** — canonical pot accounting remains authoritative; accepted actor-relative strategic pricing projects exact contestable/ineligible pot-after-call and raw-equity facts through `deriveActorCallEconomics(state, actorPlayerId)` without reopening ledger accounting;
    3. **COMPLETED / ACCEPTED — `STRATEGY-TRUST-001`** — provider declaration and structural/source validation are now separated from application-owned acceptance; bounded authority requires exact registered identity/version/fingerprint where applicable, cannot exceed acceptance ceilings, and persists only durable answer-time authority/claim evidence rather than a live trust token;
    4. **COMPLETED / ACCEPTED — `DECISION-CONTEXT-SINGLE-AUTHORITY-001`** — Scenario and Hand now use their canonical application projectors through `resolvePlaybookDecisionContext()`; missing/failed Playbook dependencies clear stale context/result state and fail closed without a local projector;
-   5. **ACTIVE NEXT / NEEDS REPRODUCTION — `AUDIT-HIGH-RISK-REPRO-001`** — reproduce or reject every preserved high-risk blind finding before any fix claim;
-   6. `IDENTITY-LIFECYCLE-001` — establish cross-surface owner, generation, invalidation, and disposal behavior, including the durable anonymous device-local Guest target and authenticated sign-out isolation;
-   7. `HEURISTIC-BASELINE-TRUTH-001` — make every consumer treat the current heuristic as exploratory/comparative baseline evidence only;
-   8. `TRAINING-NORMATIVE-001` — separate comparative practice from normative grading and replace probability-gap-to-modal-action as a normative correctness rule;
-   9. `BROWSER-TEST-PLATFORM-001` — create a portable mounted-browser lifecycle test platform;
-   10. `UI-COMPOSITION-ROOT-001` — define the bounded composition root and lifecycle seams without a framework rewrite;
-   11. run one bounded workspace extraction pilot chosen by the composition-root ticket;
-   12. `SAVED-LIBRARY-001` — deliver full retrieval for current Saved Hand/Spot objects before adding payload kinds;
-   13. `HOME-STUDY-CONTINUITY-001` — connect only contract-backed study continuity;
-   14. make one bounded reference-source decision after the read-only source research is ready;
-   15. expand the learning loop only after the trust, grading, lifecycle, browser, and retrieval gates;
-   16. `PERSONAL-STRATEGY-003A` — then execute the preserved versioned Game setup/Approach and first-value reset.
+   5. **COMPLETED / ACCEPTED — `AUDIT-CHEAP-FIX-BATCH-001`** — live Full Hand Memory presentation redacts answer/source/comparison/review information until terminal Review without rewriting stored evidence; Hand action context and stack are current-actor-relative while Hero identity remains distinct; specific Equity structural completion identities exclude all known hole cards, board, and dead cards without changing exact entered-hand outcome authority;
+   6. **ACTIVE NEXT — `AUTH-SUPABASE-SINGLETON-001`** — repair duplicate Supabase/auth client ownership without expanding the broader identity lifecycle;
+   7. `IDENTITY-LIFECYCLE-001` — establish cross-surface owner, generation, invalidation, and disposal behavior, including the durable anonymous device-local Guest target and authenticated sign-out isolation;
+   8. `HEURISTIC-BASELINE-TRUTH-001` — make every consumer treat the current heuristic as exploratory/comparative baseline evidence only;
+   9. `TRAINING-NORMATIVE-001` — separate comparative practice from normative grading and replace probability-gap-to-modal-action as a normative correctness rule;
+   10. `BROWSER-TEST-PLATFORM-001` — create a portable mounted-browser lifecycle test platform;
+   11. `UI-COMPOSITION-ROOT-001` — define the bounded composition root and lifecycle seams without a framework rewrite;
+   12. run one bounded workspace extraction pilot chosen by the composition-root ticket;
+   13. `SAVED-LIBRARY-001` — deliver full retrieval for current Saved Hand/Spot objects before adding payload kinds;
+   14. `HOME-STUDY-CONTINUITY-001` — connect only contract-backed study continuity;
+   15. make one bounded reference-source decision after the read-only source research is ready;
+   16. expand the learning loop only after the trust, grading, lifecycle, browser, and retrieval gates;
+   17. `PERSONAL-STRATEGY-003A` — then execute the preserved versioned Game setup/Approach and first-value reset.
    - read-only reference-source research may run in parallel;
    - Home Game remains a supporting utility and freezes expansion after safety fixes;
    - no broad visual-polish wave, bots, Range Evolution, advanced Equity, new Saved payload kinds, mobile, social, PLO, or natural-language Coach work moves ahead of these gates.

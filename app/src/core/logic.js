@@ -214,6 +214,8 @@ const app = {
 
     memorySessionPromise: null,
 
+    memoryPresentationSessionPromise: null,
+
     memoryWritePromise: Promise.resolve(),
 
     memoryGeneration: 0,
@@ -1946,9 +1948,6 @@ function normalizeFacingSize(lastAction, facingSize = 0) {
 
 const CLUBGG_FORCED_CONTRIBUTION_PER_PLAYER_BB = 0.1;
 const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
-const DECISION_CONTEXT_CONTRACT_VERSION = 'decision-context/v1.1';
-const DECISION_CONTEXT_DERIVATION_SCHEMA_VERSION = 'decision-context-derivation/v1';
-
 function strategyAccountingContext(rakeMode, seatedPlayerCount) {
 
   const mode = rakeMode;
@@ -2150,6 +2149,8 @@ function playbookResolutionMessage(resolution) {
       : 'Scenario controls are authoritative. This spot does not claim a legal hand history.');
   }
   const reasons = {
+    canonical_playbook_dependency_unavailable: t('The canonical Playbook service is unavailable.'),
+    canonical_playbook_resolution_failed: t('The canonical Playbook service could not resolve this decision.'),
     unsupported_canonical_rake_mode: t('Hand mode does not support percentage or capped rake.'),
     canonical_straddle_unsupported: t('Hand mode does not support a nonzero straddle.'),
     clubgg_requires_7_to_10_players: t('ClubGG hand mode requires 7 to 10 seated players.'),
@@ -2219,104 +2220,6 @@ function syncCanonicalDecisionDisplay(decisionContext) {
   return decisionContext;
 }
 
-function coreDecisionDerivationEvent(field, quality, code, value, rawValue) {
-  const event = { field, quality, code };
-  if (rawValue !== undefined && (typeof rawValue !== 'number' || Number.isFinite(rawValue))) {
-    event.rawValue = rawValue;
-  }
-  if (value !== undefined) event.value = value;
-  return event;
-}
-
-function coreDecisionUnavailableField(field, code, value = null) {
-  return coreDecisionDerivationEvent(field, 'unavailable', code, value);
-}
-
-function coreNormalizedDecisionNumber(value, fallback, min, max, field, events, integer = false) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) {
-    events.push(coreDecisionDerivationEvent(
-      field, 'defaulted', 'non_finite_default', fallback, value
-    ));
-    return fallback;
-  }
-  const clamped = normalizedDecisionNumber(numeric, fallback, min, max);
-  if (clamped !== numeric) {
-    events.push(coreDecisionDerivationEvent(
-      field, 'clamped', 'supported_range_clamp', clamped, numeric
-    ));
-  }
-  const normalized = integer ? Math.trunc(clamped) : clamped;
-  if (normalized !== clamped) {
-    events.push(coreDecisionDerivationEvent(
-      field, 'normalized', 'integer_truncation', normalized, clamped
-    ));
-  }
-  return normalized;
-}
-
-function coreScenarioCurrentPotBb(value, events) {
-  if (value === undefined || value === null || value === '') {
-    events.push(coreDecisionUnavailableField(
-      'currentPotBb', 'scenario_current_pot_unavailable'
-    ));
-    return null;
-  }
-  const numeric = typeof value === 'number'
-    ? value
-    : typeof value === 'string' ? Number(value) : Number.NaN;
-  if (!Number.isFinite(numeric) || numeric < 0) {
-    events.push(coreDecisionDerivationEvent(
-      'currentPotBb', 'unavailable', 'scenario_current_pot_invalid', null, value
-    ));
-    return null;
-  }
-  events.push(coreDecisionDerivationEvent(
-    'currentPotBb',
-    typeof value === 'number' ? 'exact' : 'normalized',
-    typeof value === 'number'
-      ? 'scenario_current_pot_explicit'
-      : 'scenario_current_pot_numeric_parse',
-    numeric,
-    typeof value === 'number' ? undefined : value
-  ));
-  return numeric;
-}
-
-function coreScenarioPriorActionSummary(street, lastAction) {
-  const action = String(lastAction || '').toLowerCase();
-  const actionFamilies = {
-    unopened: 'none', check: 'check', bet: 'bet', raise: 'raise',
-    '3bet': 'raise', '4bet': 'raise', limp: 'limp', call: 'call'
-  };
-  const lastActionFamily = actionFamilies[action] || 'unknown';
-  let aggressionFamily = 'none';
-  let aggressionCount = 0;
-  if (street === 'preflop') {
-    if (action === 'raise') { aggressionFamily = 'open'; aggressionCount = 1; }
-    else if (action === '3bet') { aggressionFamily = 'three_bet'; aggressionCount = 2; }
-    else if (action === '4bet') { aggressionFamily = 'four_bet_or_more'; aggressionCount = null; }
-    else if (lastActionFamily === 'unknown') { aggressionFamily = 'unknown'; aggressionCount = null; }
-  } else if (action === 'bet') {
-    aggressionFamily = 'bet'; aggressionCount = 1;
-  } else if (action === 'raise') {
-    aggressionFamily = 'raise'; aggressionCount = 2;
-  } else if (action === '3bet' || action === '4bet') {
-    aggressionFamily = 'raise'; aggressionCount = null;
-  } else if (lastActionFamily === 'unknown') {
-    aggressionFamily = 'unknown'; aggressionCount = null;
-  }
-  return {
-    lastActionFamily,
-    lastActorPosition: null,
-    facingActionFamily: actionFamilies[action] || 'unknown',
-    aggressionFamily,
-    aggressionCount,
-    limperCount: street === 'preflop' && action === 'unopened' ? 0 : null,
-    aggressorPosition: null
-  };
-}
-
 function renderUnavailableStrategy(resolution) {
   const message = playbookResolutionMessage(resolution);
   const waiting = resolution?.mode === 'hand' && String(resolution?.reason || '').startsWith('canonical_');
@@ -2351,7 +2254,6 @@ function renderUnavailableStrategy(resolution) {
   if (resolution?.mode === 'hand') {
     renderUnavailableActionPath(message, waiting ? 'waiting' : 'unavailable');
   }
-  app.strategyResult = strategyProvider.resolve(null);
   playbookSurfaceInvalidator.renderIfNeeded('analysis');
   renderPlaybookModeStatus(resolution);
 }
@@ -3042,18 +2944,20 @@ function renderCanonicalLegalActions(state, legalActionSpec = undefined) {
   if (!spec) return;
 
   const actor = state.players.find((player) => player.playerId === state.actingPlayerId);
-  const hero = state.players.find((player) => (
-    player.playerId === callPlaybookStateBridge('getHeroPlayerId')
-  ));
+  const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
+  const actorLabel = canonicalPlayerLabel(actor, heroPlayerId);
   if ($('#handActionActor')) $('#handActionActor').textContent = t('{player} to act', {
-    player: canonicalPlayerLabel(actor, callPlaybookStateBridge('getHeroPlayerId'))
+    player: actorLabel
   });
+  const actionContext = section.querySelector('.hand-action-context');
+  if (actionContext) actionContext.setAttribute('aria-label', `${actorLabel} · ${t('Decision context')}`);
+  if ($('#handActionStackLabel')) $('#handActionStackLabel').textContent = `${actorLabel} · ${t('Stack')}`;
   if ($('#handActionPot')) $('#handActionPot').textContent = formatCanonicalBb(state.potMilliBb);
   if ($('#handActionCall')) $('#handActionCall').textContent = formatCanonicalBb(
     spec.call.available ? spec.call.commitMilliBb : 0
   );
-  if ($('#handActionHeroStack')) $('#handActionHeroStack').textContent = hero
-    ? formatCanonicalBb(hero.currentStackMilliBb)
+  if ($('#handActionHeroStack')) $('#handActionHeroStack').textContent = actor
+    ? formatCanonicalBb(actor.currentStackMilliBb)
     : t('Unavailable');
   section.setAttribute('aria-busy', String(app.playbookHandDraft.actionSubmissionLocked));
   const options = [
@@ -4719,194 +4623,6 @@ function bindCanonicalHandWorkspace() {
 
 
 
-function deriveDecisionContext(snapshot = {}) {
-
-  const derivationEvents = [];
-  const tableSize = coreNormalizedDecisionNumber(
-    snapshot.tableSize, 6, 2, 10, 'tableSize', derivationEvents, true
-  );
-  const heroPosition = typeof snapshot.heroPosition === 'string' && snapshot.heroPosition
-    ? snapshot.heroPosition
-    : 'BTN';
-  if (heroPosition !== snapshot.heroPosition) {
-    derivationEvents.push(coreDecisionDerivationEvent(
-      'heroPosition', 'defaulted', 'missing_position_default', heroPosition, snapshot.heroPosition
-    ));
-  }
-  const heroCards = normalizedDecisionCards(snapshot.heroCards);
-  const board = normalizedDecisionCards(snapshot.board);
-  const deadCards = normalizedDecisionCards(snapshot.deadCards);
-  [
-    ['heroCards', heroCards], ['board', board], ['deadCards', deadCards]
-  ].forEach(([field, value]) => derivationEvents.push(coreDecisionDerivationEvent(
-    field, 'normalized', 'scenario_card_array_projection', value
-  )));
-  const stackEventStart = derivationEvents.length;
-  const stackBb = coreNormalizedDecisionNumber(
-    snapshot.stackBb, 100, 10, 500, 'stackBb', derivationEvents
-  );
-  for (const event of derivationEvents.slice(stackEventStart)) {
-    derivationEvents.push({
-      ...event,
-      field: 'startingStackBb',
-      code: `scenario_configured_stack_${event.code}`
-    });
-  }
-  const stackMode = typeof snapshot.stackMode === 'string' && snapshot.stackMode
-    ? snapshot.stackMode
-    : 'hero';
-  if (stackMode !== snapshot.stackMode) {
-    derivationEvents.push(coreDecisionDerivationEvent(
-      'stackMode', 'defaulted', 'missing_stack_mode_default', stackMode, snapshot.stackMode
-    ));
-  }
-  const currentPotBb = coreScenarioCurrentPotBb(snapshot.potBb, derivationEvents);
-  const potBb = coreNormalizedDecisionNumber(
-    snapshot.potBb, 1.5, 0.5, 200, 'potBb', derivationEvents
-  );
-  const lastAction = typeof snapshot.lastAction === 'string' && snapshot.lastAction
-    ? snapshot.lastAction
-    : 'unopened';
-  if (lastAction !== snapshot.lastAction) {
-    derivationEvents.push(coreDecisionDerivationEvent(
-      'lastAction', 'defaulted', 'missing_prior_action_default', lastAction, snapshot.lastAction
-    ));
-  }
-  const street = currentStreet(board);
-  derivationEvents.push(coreDecisionDerivationEvent(
-    'street', 'normalized', 'derived_from_board_count', street, snapshot.street
-  ));
-  const rawFacingSizeBb = coreNormalizedDecisionNumber(
-    snapshot.facingSizeBb, 0, 0, 100, 'facingSizeBb', derivationEvents
-  );
-  const facingSizeBb = normalizeFacingSize(lastAction, rawFacingSizeBb);
-  if (facingSizeBb !== rawFacingSizeBb) {
-    derivationEvents.push(coreDecisionDerivationEvent(
-      'facingSizeBb', 'normalized', 'unopened_facing_size_zeroed', facingSizeBb, rawFacingSizeBb
-    ));
-  }
-  // Scenario mode deliberately does not reconstruct a legal betting history.
-  // Only an explicit check, or the BB's unopened check option, proves a free price.
-  const callAmountBb = (lastAction === 'check'
-    || (lastAction === 'unopened' && heroPosition === 'BB')) ? 0 : null;
-  derivationEvents.push(callAmountBb === null
-    ? coreDecisionUnavailableField('callAmountBb', 'scenario_exact_call_price_unavailable')
-    : coreDecisionDerivationEvent(
-      'callAmountBb', 'normalized', 'scenario_free_price_category', 0
-    ));
-  const priorActionSummary = coreScenarioPriorActionSummary(street, lastAction);
-  derivationEvents.push(
-    coreDecisionUnavailableField('opponentCount', 'scenario_live_opponents_unavailable'),
-    coreDecisionUnavailableField('heroStackBb', 'scenario_live_stack_unavailable'),
-    coreDecisionUnavailableField('effectiveStackBb', 'scenario_effective_stack_unavailable'),
-    coreDecisionUnavailableField(
-      'effectiveStackByOpponent', 'scenario_opponent_stacks_unavailable', []
-    ),
-    coreDecisionUnavailableField(
-      'heroStreetContributionBb', 'scenario_street_contribution_unavailable'
-    ),
-    coreDecisionUnavailableField('canRaise', 'scenario_legal_actions_unavailable'),
-    coreDecisionUnavailableField('minRaiseToBb', 'scenario_legal_actions_unavailable'),
-    coreDecisionUnavailableField('maxRaiseToBb', 'scenario_legal_actions_unavailable'),
-    coreDecisionUnavailableField('allInToBb', 'scenario_live_stack_unavailable'),
-    coreDecisionUnavailableField(
-      'priorActionSummary.lastActorPosition', 'scenario_actor_position_unavailable'
-    ),
-    coreDecisionUnavailableField(
-      'priorActionSummary.aggressorPosition', 'scenario_aggressor_position_unavailable'
-    )
-  );
-  if (priorActionSummary.aggressionCount === null) {
-    derivationEvents.push(coreDecisionUnavailableField(
-      'priorActionSummary.aggressionCount', 'scenario_exact_aggression_count_unavailable'
-    ));
-  }
-  if (priorActionSummary.limperCount === null) {
-    derivationEvents.push(coreDecisionUnavailableField(
-      'priorActionSummary.limperCount', 'scenario_limper_count_unavailable'
-    ));
-  }
-  const positionRelation = street === 'preflop' ? 'not_applicable' : 'unknown';
-  const aggressorPositionRelation = street === 'preflop' ? 'not_applicable' : 'unknown';
-  if (positionRelation === 'unknown') {
-    derivationEvents.push(
-      coreDecisionUnavailableField(
-        'positionRelation', 'scenario_seat_order_unavailable', 'unknown'
-      ),
-      coreDecisionUnavailableField(
-        'aggressorPositionRelation', 'scenario_seat_order_unavailable', 'unknown'
-      )
-    );
-  }
-  const supportedRakeModes = ['off', 'fixed'];
-  if (!supportedRakeModes.includes(snapshot.rakeMode)) {
-    throw new RangeError(`Unsupported legacy Scenario rakeMode: ${String(snapshot.rakeMode)}`);
-  }
-  const rakeMode = snapshot.rakeMode;
-  const accounting = strategyAccountingContext(rakeMode, tableSize);
-
-  return {
-    schemaVersion: DECISION_CONTEXT_SCHEMA_VERSION,
-    contractVersion: DECISION_CONTEXT_CONTRACT_VERSION,
-    tableSize,
-    // Scenario mode knows seated players only; it must not claim an exact live count.
-    opponentCount: null,
-    heroPosition,
-    street,
-    heroCards,
-    board,
-    deadCards,
-    stackBb,
-    stackMode,
-    startingStackBb: stackBb,
-    heroStackBb: null,
-    effectiveStackBb: null,
-    effectiveStackByOpponent: [],
-    positionRelation,
-    aggressorPositionRelation,
-    currentPotBb,
-    potBb,
-    lastAction,
-    priorActionSummary,
-    facingSizeBb,
-    callAmountBb,
-    heroStreetContributionBb: null,
-    canRaise: null,
-    minRaiseToBb: null,
-    maxRaiseToBb: null,
-    allInToBb: null,
-    rakeMode: accounting.rakeMode,
-    forcedContributionPerPlayerBb: accounting.forcedContributionPerPlayerBb,
-    totalForcedContributionBb: accounting.totalForcedContributionBb,
-    derivation: {
-      schemaVersion: DECISION_CONTEXT_DERIVATION_SCHEMA_VERSION,
-      source: 'scenario',
-      defaultQuality: 'exact',
-      events: derivationEvents
-    }
-  };
-
-}
-
-
-
-function requireDecisionContext(context) {
-
-  if (context !== null && context !== undefined) {
-    if (context.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION) return context;
-    throw new TypeError('Expected DecisionContext decision-context/v1');
-  }
-
-  if (app.decisionContext && app.decisionContext.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION) {
-    return app.decisionContext;
-  }
-
-  return deriveDecisionContext(readPlaybookInputSnapshot());
-
-}
-
-
-
 function updatePositionSelect(playersSelector, positionSelector) {
 
   const players = numericValue(playersSelector, 6);
@@ -5175,12 +4891,25 @@ function updateMetrics() {
     } else if (lastAction === 'unopened' || callAmount === 0) {
       mPotOdds.textContent = '—';
     } else {
-      mPotOdds.textContent = (callAmount / (pot + callAmount) * 100).toFixed(1) + '%';
+      mPotOdds.textContent = Number.isFinite(context.requiredRawEquity)
+        ? (context.requiredRawEquity * 100).toFixed(1) + '%'
+        : '—';
     }
   }
 
   const mSPR = $('#mSPR');
-  if (mSPR) mSPR.textContent = (stack / Math.max(.5, pot)).toFixed(1);
+  if (mSPR) {
+    const actorPotBeforeAction = context
+      && Number.isFinite(context.actorContestablePotAfterCallBb)
+      && Number.isFinite(context.callAmountBb)
+      ? context.actorContestablePotAfterCallBb - context.callAmountBb
+      : null;
+    mSPR.textContent = context?.opponentCount === 1
+      && Number.isFinite(context.effectiveStackBb)
+      && actorPotBeforeAction > 0
+      ? (context.effectiveStackBb / actorPotBeforeAction).toFixed(1)
+      : '—';
+  }
 
   const mRake = $('#mRake');
   if (mRake) mRake.textContent = boardCards.length
@@ -6001,16 +5730,42 @@ async function updateContext(reason = 'Context updated') {
 
   const inputSnapshot = readPlaybookInputSnapshot();
   const playbookBridge = globalThis.RiverlinePlaybookState;
-  const playbookResolution = resolutionOverride || (playbookBridge && typeof playbookBridge.resolveDecisionContext === 'function'
-    ? playbookBridge.resolveDecisionContext(inputSnapshot)
-    : {
+  let playbookResolution = resolutionOverride;
+  if (!playbookResolution) {
+    const mode = app.playbookMode === PLAYBOOK_MODES.HAND
+      ? PLAYBOOK_MODES.HAND
+      : PLAYBOOK_MODES.SCENARIO;
+    if (!playbookBridge || typeof playbookBridge.resolveDecisionContext !== 'function') {
+      playbookResolution = {
         schemaVersion: 'playbook-decision-resolution/v1',
-        mode: 'scenario',
-        status: 'available',
-        reason: null,
+        mode,
+        status: 'unavailable',
+        reason: 'canonical_playbook_dependency_unavailable',
         error: null,
-        decisionContext: deriveDecisionContext(inputSnapshot)
-      });
+        decisionContext: null
+      };
+    } else {
+      try {
+        playbookResolution = playbookBridge.resolveDecisionContext(inputSnapshot);
+        if (!playbookResolution
+          || playbookResolution.schemaVersion !== 'playbook-decision-resolution/v1') {
+          throw new TypeError('Canonical Playbook resolver returned an invalid resolution');
+        }
+      } catch (error) {
+        playbookResolution = {
+          schemaVersion: 'playbook-decision-resolution/v1',
+          mode,
+          status: 'error',
+          reason: 'canonical_playbook_resolution_failed',
+          error: {
+            name: error instanceof Error ? error.name : 'Error',
+            message: error instanceof Error ? error.message : String(error)
+          },
+          decisionContext: null
+        };
+      }
+    }
+  }
   app.playbookMode = playbookResolution.mode;
   app.playbookResolution = playbookResolution;
 
@@ -8951,7 +8706,20 @@ function renderRangeAdvantage() {
 
   const decisionContext = app.decisionContext?.schemaVersion === DECISION_CONTEXT_SCHEMA_VERSION
     ? app.decisionContext
-    : deriveDecisionContext(readPlaybookScenarioInput());
+    : null;
+  if (!decisionContext) {
+    if (analysis) analysis.hidden = true;
+    if (status) {
+      status.dataset.state = 'unavailable';
+      status.textContent = t('Range comparison is unavailable because the canonical decision context could not be resolved.');
+    }
+    return {
+      status: 'decision_context_unavailable',
+      mode: PLAYBOOK_MODES.SCENARIO,
+      heroPos,
+      villainPos
+    };
+  }
   const commonBlockers = [...decisionContext.board, ...decisionContext.deadCards];
   const heroCardRemoval = projectHandClassesAfterCardRemoval([...heroRange], commonBlockers);
   const villainCardRemoval = projectHandClassesAfterCardRemoval(
@@ -9078,7 +8846,13 @@ function renderBettingTree() {
   const container = $('#pioTreeContainer');
   if (!container) return;
 
-  const currentStrategyResult = app.strategyResult || strategyProvider.resolve(null);
+  const currentStrategyResult = app.strategyResult;
+  if (!currentStrategyResult) {
+    container.dataset.state = 'unavailable';
+    container.textContent = t('Unavailable');
+    return;
+  }
+  delete container.dataset.state;
   const profile = strategyResultToLegacyProfile(currentStrategyResult);
   const board = app.gto ? app.gto.board.filter(Boolean) : [];
   const pos = $('#heroPos') ? $('#heroPos').value : 'BTN';
@@ -10235,6 +10009,7 @@ function clearTrainingMemoryOwnerPresentation() {
   );
   app.training.memoryGeneration += 1;
   app.training.memorySessionPromise = null;
+  app.training.memoryPresentationSessionPromise = null;
   app.training.memoryWritePromise = Promise.resolve();
   app.training.memoryFullHandDecisionRecords = new Map();
   app.training.memoryLastItems = [];
@@ -10319,6 +10094,7 @@ function startTrainingMemorySession(input) {
     return callTrainingMemoryBridge('startSession', input);
   });
   app.training.memorySessionPromise = sessionPromise;
+  app.training.memoryPresentationSessionPromise = sessionPromise;
   return sessionPromise;
 }
 
@@ -10327,7 +10103,7 @@ function finishTrainingMemorySession(status = 'completed', finishOptions = {}) {
   if (!sessionPromise) return Promise.resolve(null);
   app.training.memorySessionPromise = null;
   app.training.memoryFullHandDecisionRecords = new Map();
-  return queueTrainingMemoryWrite(async () => {
+  const finishedSessionPromise = queueTrainingMemoryWrite(async () => {
     const session = await sessionPromise;
     if (!session?.id) return null;
     const finished = await callTrainingMemoryBridge(
@@ -10339,6 +10115,8 @@ function finishTrainingMemorySession(status = 'completed', finishOptions = {}) {
     if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
     return finished;
   });
+  app.training.memoryPresentationSessionPromise = finishedSessionPromise;
+  return finishedSessionPromise;
 }
 
 function recordTrainingExerciseShown(exercise) {
@@ -10486,6 +10264,20 @@ function trainingMemoryComparisonLabel(comparison) {
   }[comparison] || 'Unavailable');
 }
 
+function trainingMemoryPresentationGate(session) {
+  const fullHandReviewUnlocked = session?.mode === 'full_hand'
+    && document.querySelector('.training-workspace')?.dataset.trainingFullHandPhase === 'review'
+    && session.fullHandSource?.handId === app.training.fullHandSnapshot?.state?.handId;
+  return callTrainingMemoryBridge('createPresentationGate', session, {
+    fullHandReviewUnlocked,
+  }) || {
+    feedbackEmbargoed: false,
+    revealAnswerAndReference: true,
+    revealReviewReasons: true,
+    revealSessionVerdict: true,
+  };
+}
+
 function trainingMemoryButton(labelKey, className, handler) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -10520,11 +10312,22 @@ function trainingMemoryDecisionSummary(record) {
   return wrapper;
 }
 
-function renderTrainingMemoryDecisionItem(record, { reviewItem = null } = {}) {
+function renderTrainingMemoryDecisionItem(record, { reviewItem = null, session = null } = {}) {
   const item = document.createElement('li');
   item.className = 'training-memory-item training-memory-decision-item';
   item.dataset.recordId = record.id;
   item.appendChild(trainingMemoryDecisionSummary(record));
+
+  const presentationGate = trainingMemoryPresentationGate(session);
+  if (presentationGate.feedbackEmbargoed) {
+    const embargo = document.createElement('div');
+    embargo.className = 'training-memory-facts';
+    const message = document.createElement('span');
+    message.textContent = t('Hidden until review');
+    embargo.appendChild(message);
+    item.appendChild(embargo);
+    return item;
+  }
 
   const facts = document.createElement('div');
   facts.className = 'training-memory-facts';
@@ -10605,6 +10408,7 @@ function renderTrainingMemoryDecisionItem(record, { reviewItem = null } = {}) {
 async function populateTrainingMemorySessionDecisions(
   container,
   sessionId,
+  session = null,
   generation = app.training.memoryGeneration,
 ) {
   container.replaceChildren();
@@ -10619,12 +10423,13 @@ async function populateTrainingMemorySessionDecisions(
   }
   const list = document.createElement('ul');
   list.className = 'training-memory-session-decisions';
-  decisions.forEach((record) => list.appendChild(renderTrainingMemoryDecisionItem(record)));
+  decisions.forEach((record) => list.appendChild(renderTrainingMemoryDecisionItem(record, { session })));
   container.appendChild(list);
 }
 
 function renderTrainingMemorySessionItem(entry) {
   const { session, summary } = entry;
+  const presentationGate = trainingMemoryPresentationGate(session);
   const item = document.createElement('li');
   item.className = 'training-memory-item training-memory-session-item';
   const details = document.createElement('details');
@@ -10637,23 +10442,27 @@ function renderTrainingMemorySessionItem(entry) {
     : session.status === 'active' ? 'Open session' : 'Incomplete';
   status.textContent = t(statusKey);
   const counts = document.createElement('small');
-  counts.textContent = t('{answered} answered; {review} review', {
-    answered: summary.answeredCount,
-    review: summary.reviewCount,
-  });
+  counts.textContent = presentationGate.revealSessionVerdict
+    ? t('{answered} answered; {review} review', {
+      answered: summary.answeredCount,
+      review: summary.reviewCount,
+    })
+    : t('Hidden until review');
   head.append(title, status, counts);
   const source = document.createElement('p');
   source.className = 'poker-data-token training-memory-session-source';
   source.dir = summary.sourceIds.length ? 'ltr' : 'auto';
-  source.textContent = summary.sourceIds.length
-    ? summary.sourceIds.join(', ')
-    : t('Source unavailable');
+  source.textContent = presentationGate.revealSessionVerdict
+    ? (summary.sourceIds.length ? summary.sourceIds.join(', ') : t('Source unavailable'))
+    : t('Hidden until review');
   const comparison = document.createElement('p');
   comparison.className = 'training-memory-session-comparisons';
-  comparison.textContent = Object.entries(summary.comparisonCounts)
-    .filter(([, count]) => count > 0)
-    .map(([key, count]) => `${trainingMemoryComparisonLabel(key)}: ${count}`)
-    .join(' · ') || t('No answer recorded');
+  comparison.textContent = presentationGate.revealSessionVerdict
+    ? (Object.entries(summary.comparisonCounts)
+      .filter(([, count]) => count > 0)
+      .map(([key, count]) => `${trainingMemoryComparisonLabel(key)}: ${count}`)
+      .join(' · ') || t('No answer recorded'))
+    : t('Hidden until review');
   const decisions = document.createElement('div');
   decisions.className = 'training-memory-session-decision-mount';
   let loaded = false;
@@ -10661,7 +10470,7 @@ function renderTrainingMemorySessionItem(entry) {
     if (!details.open || loaded) return;
     loaded = true;
     const generation = app.training.memoryGeneration;
-    void populateTrainingMemorySessionDecisions(decisions, session.id, generation).catch((error) => {
+    void populateTrainingMemorySessionDecisions(decisions, session.id, session, generation).catch((error) => {
       if (generation !== app.training.memoryGeneration) return;
       console.error('[Riverline Training Memory]', error);
       decisions.textContent = t('Training Memory is unavailable. Existing history was left untouched.');
@@ -10682,11 +10491,20 @@ async function refreshTrainingMemoryPanel() {
     const due = await callTrainingMemoryBridge('listDueReview', { limit: 12 });
     if (generation !== app.training.memoryGeneration) return null;
     if (!Array.isArray(due)) throw new Error('Training Memory review query is unavailable');
+    const presentationSession = await Promise.resolve(
+      app.training.memoryPresentationSessionPromise,
+    ).catch(() => null);
+    if (generation !== app.training.memoryGeneration) return null;
     const memoryPanel = $('#trainingMemoryPanel');
     if (memoryPanel) memoryPanel.dataset.memoryLoaded = 'true';
     if ($('#trainingMemoryDueBadge')) {
-      $('#trainingMemoryDueBadge').textContent = String(due.length);
-      $('#trainingMemoryDueBadge').hidden = due.length === 0;
+      const visibleDueCount = due.filter((entry) => (
+        !presentationSession
+        || presentationSession.id !== entry.record.sessionId
+        || trainingMemoryPresentationGate(presentationSession).revealReviewReasons
+      )).length;
+      $('#trainingMemoryDueBadge').textContent = String(visibleDueCount);
+      $('#trainingMemoryDueBadge').hidden = visibleDueCount === 0;
     }
     let items;
     if (app.training.memoryView === 'recent') {
@@ -10699,7 +10517,10 @@ async function refreshTrainingMemoryPanel() {
     } else {
       items = due;
       items.forEach((entry) => list.appendChild(
-        renderTrainingMemoryDecisionItem(entry.record, { reviewItem: entry }),
+        renderTrainingMemoryDecisionItem(entry.record, {
+          reviewItem: entry,
+          session: presentationSession?.id === entry.record.sessionId ? presentationSession : null,
+        }),
       ));
       if (items.length === 0) setTrainingMemoryStatus('No decisions are due for review.');
       else setTrainingMemoryStatus('');
@@ -11016,7 +10837,13 @@ function trainingContextPresentationAdapter(decisionContext) {
   const callAmount = Number.isFinite(decisionContext.callAmountBb)
     ? decisionContext.callAmountBb
     : null;
-  const potSize = decisionContext.potBb;
+  const potSize = decisionContext.currentPotBb ?? decisionContext.potBb;
+  const actorContestablePotAfterCall = Number.isFinite(
+    decisionContext.actorContestablePotAfterCallBb
+  ) ? decisionContext.actorContestablePotAfterCallBb : null;
+  const requiredRawEquity = Number.isFinite(decisionContext.requiredRawEquity)
+    ? decisionContext.requiredRawEquity
+    : null;
   return {
     table_size: decisionContext.tableSize,
     stack: decisionContext.stackBb,
@@ -11026,8 +10853,12 @@ function trainingContextPresentationAdapter(decisionContext) {
     potSize,
     facingSize,
     callAmount,
-    potOdds: callAmount !== null && callAmount > 0 ? callAmount / (potSize + callAmount) * 100 : null,
-    mdf: callAmount !== null && callAmount > 0 ? potSize / (potSize + callAmount) * 100 : null,
+    potOdds: callAmount !== null && callAmount > 0 && requiredRawEquity !== null
+      ? requiredRawEquity * 100 : null,
+    mdf: decisionContext.opponentCount === 1
+      && callAmount !== null && callAmount > 0 && actorContestablePotAfterCall !== null
+      ? (actorContestablePotAfterCall - callAmount) / actorContestablePotAfterCall * 100
+      : null,
     board: [...decisionContext.board],
     rakeMode: decisionContext.rakeMode,
     forcedContributionPerPlayerBb: decisionContext.forcedContributionPerPlayerBb,

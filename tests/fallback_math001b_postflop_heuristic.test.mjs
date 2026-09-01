@@ -42,7 +42,7 @@ function context(overrides = {}) {
   const opponentCount = overrides.opponentCount ?? 1;
   const lastAction = overrides.lastAction ?? 'check';
   const aggressionFamily = ['bet', 'raise'].includes(lastAction) ? lastAction : 'none';
-  return {
+  const result = {
     schemaVersion: 'decision-context/v1',
     contractVersion: 'decision-context/v1.1',
     tableSize: 2,
@@ -86,6 +86,21 @@ function context(overrides = {}) {
     totalForcedContributionBb: 0,
     ...overrides,
   };
+  if (!Object.hasOwn(overrides, 'actorContestablePotAfterCallBb')) {
+    result.actorContestablePotAfterCallBb = Number.isFinite(result.callAmountBb)
+      ? result.currentPotBb + result.callAmountBb
+      : null;
+  }
+  if (!Object.hasOwn(overrides, 'actorIneligiblePotAfterCallBb')) {
+    result.actorIneligiblePotAfterCallBb = result.actorContestablePotAfterCallBb === null
+      ? null : 0;
+  }
+  if (!Object.hasOwn(overrides, 'requiredRawEquity')) {
+    result.requiredRawEquity = result.callAmountBb > 0
+      ? result.callAmountBb / result.actorContestablePotAfterCallBb
+      : null;
+  }
+  return result;
 }
 
 function options(overrides = {}) {
@@ -310,7 +325,7 @@ test('price, action-family, sizing, MDF, and flat-drop semantics stay structural
       options(),
       { eq: 0.5 },
     ),
-    /requires exact callAmountBb and currentPotBb/,
+    /requires exact actor-relative call economics/,
   );
 
   const priced = calculatePostflopStrategyFromSample(

@@ -5,6 +5,7 @@ import {
   POKER_STATE_V2_SCHEMA_VERSION,
   POSITIONS_BY_TABLE_SIZE,
   createGameRulesSnapshotFromLegacyGameConfiguration,
+  deriveActorCallEconomics,
   getLegalActionSpec,
   maximumAmountToMilliBb,
   PHASES,
@@ -361,6 +362,39 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
   const facingSizeBb = hasCompatibleAggression ? state.currentBetMilliBb / 1000 : 0;
   const legalActions = getLegalActionSpec(state);
   const callAmountBb = legalActions.call.commitMilliBb / 1000;
+  const actorEconomics = deriveActorCallEconomics(state, hero.playerId);
+  const actorContestablePotAfterCallBb =
+    actorEconomics.actorContestablePotAfterCallMilliBb / 1000;
+  const actorIneligiblePotAfterCallBb =
+    actorEconomics.actorIneligiblePotAfterCallMilliBb / 1000;
+  const requiredRawEquity = actorEconomics.requiredRawEquity;
+  derivationEvents.push(
+    derivationEvent(
+      'actorContestablePotAfterCallBb',
+      'exact',
+      'canonical_actor_pot_layers_after_call',
+      actorContestablePotAfterCallBb,
+    ),
+    derivationEvent(
+      'actorIneligiblePotAfterCallBb',
+      'exact',
+      'canonical_actor_ineligible_layers_after_call',
+      actorIneligiblePotAfterCallBb,
+    ),
+  );
+  if (requiredRawEquity === null) {
+    derivationEvents.push(unavailableDecisionContextField(
+      'requiredRawEquity',
+      'no_incremental_call_price',
+    ));
+  } else {
+    derivationEvents.push(derivationEvent(
+      'requiredRawEquity',
+      'exact',
+      'canonical_actor_call_price',
+      requiredRawEquity,
+    ));
+  }
   const heroStreetContributionBb = hero.streetContributionMilliBb / 1000;
   const accounting = accountingFromPokerState(state);
   const gameRulesSnapshot = state.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION
@@ -469,6 +503,9 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
     priorActionSummary: priorActionSummary(state, legalActions),
     facingSizeBb,
     callAmountBb,
+    actorContestablePotAfterCallBb,
+    actorIneligiblePotAfterCallBb,
+    requiredRawEquity,
     heroStreetContributionBb,
     canRaise,
     minRaiseToBb,

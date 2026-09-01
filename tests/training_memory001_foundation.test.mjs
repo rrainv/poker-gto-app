@@ -35,6 +35,7 @@ import {
   createFullHandTrainingSessionController,
 } from '../app/src/application/full-hand-training-session-controller.mjs';
 import { createTrainingMemoryService } from '../app/src/application/training-memory-service.mjs';
+import { createTrainingMemoryPresentationGate } from '../app/src/application/training-memory-presentation.mjs';
 import {
   TRAINING_COMPARISON_STATES,
   TRAINING_DECISION_RECORD_SCHEMA_VERSION,
@@ -640,6 +641,49 @@ test('Full Hand decisions share one session replay authority and reference exact
   assert.equal(deriveTrainingSimilarity(incompleteEvidence).available, false);
   assert.equal(deriveTrainingSimilarity(incompleteEvidence).unavailableReason,
     'insufficient_canonical_dimensions');
+});
+
+test('live Full Hand Memory presentation is embargoed until terminal Review without rewriting evidence', () => {
+  const liveSession = Object.freeze({ mode: 'full_hand', status: 'active' });
+  const completedSession = Object.freeze({ mode: 'full_hand', status: 'completed' });
+  const ordinarySession = Object.freeze({ mode: 'focused', status: 'active' });
+  const frozenEvidence = Object.freeze({
+    chosenAction: Object.freeze({ type: 'raise' }),
+    source: 'frozen-provider',
+    sourceVersion: 'v7',
+    comparisonState: 'differs_from_reference',
+    reviewReasons: Object.freeze(['differs_from_reference']),
+  });
+  const before = structuredClone(frozenEvidence);
+
+  assert.deepEqual(createTrainingMemoryPresentationGate(liveSession), {
+    schemaVersion: 'training-memory-presentation-gate/v1',
+    feedbackEmbargoed: true,
+    revealAnswerAndReference: false,
+    revealReviewReasons: false,
+    revealSessionVerdict: false,
+  });
+  assert.equal(createTrainingMemoryPresentationGate(completedSession).feedbackEmbargoed, false);
+  assert.equal(createTrainingMemoryPresentationGate(completedSession).revealAnswerAndReference, true);
+  assert.equal(createTrainingMemoryPresentationGate(liveSession, {
+    fullHandReviewUnlocked: true,
+  }).feedbackEmbargoed, false);
+  assert.equal(createTrainingMemoryPresentationGate(ordinarySession).feedbackEmbargoed, false);
+  assert.deepEqual(frozenEvidence, before);
+
+  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+  const decisionRenderer = logic.slice(
+    logic.indexOf('function renderTrainingMemoryDecisionItem('),
+    logic.indexOf('async function populateTrainingMemorySessionDecisions('),
+  );
+  const sessionRenderer = logic.slice(
+    logic.indexOf('function renderTrainingMemorySessionItem('),
+    logic.indexOf('async function refreshTrainingMemoryPanel('),
+  );
+  assert.match(decisionRenderer, /presentationGate\.feedbackEmbargoed[\s\S]*Hidden until review[\s\S]*return item/);
+  assert.ok(decisionRenderer.indexOf('return item;') < decisionRenderer.indexOf("const chosen = document.createElement('span')"));
+  assert.match(sessionRenderer, /presentationGate\.revealSessionVerdict/g);
+  assert.match(logic, /visibleDueCount[\s\S]*revealReviewReasons/);
 });
 
 test('abandoning Full Hand preserves answered evidence without fabricating completion', async () => {

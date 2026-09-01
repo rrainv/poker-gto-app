@@ -1,6 +1,6 @@
 # Riverline persistent QA backlog
 
-Last consolidated: August 31, 2026 (`DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted; `AUDIT-HIGH-RISK-REPRO-001` now leads the remaining foundation work, and blind findings stay with their named owners).
+Last consolidated: September 1, 2026 (`AUDIT-CHEAP-FIX-BATCH-001` is accepted; `AUTH-SUPABASE-SINGLETON-001` is active next, and unresolved audit findings stay with their named owners).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
 
@@ -33,20 +33,20 @@ The current minimum supported desktop viewport remains **1366×768**. Findings o
 | QA-UI-COMPOSITION-ROOT-001 | OPEN / FOUNDATIONAL | Root UI orchestration and lifecycle ownership remain concentrated in `logic.js`. Define a bounded composition root, then prove one workspace extraction pilot without a React/Redux/framework rewrite. | `UI-COMPOSITION-ROOT-001` |
 | QA-DOCS-CONTINUITY-001 | CLOSED / AUDIT TRIAGE | Live planning authorities now share the post-audit order and stable product truths; historical reviews are prominently labelled and Home Game, Guest lifecycle, Training Memory, Saved retrieval, OpponentPolicy, heuristic, and viewport contradictions are corrected without inventing a new planning authority. | `AUDIT-TRIAGE-001`; preserve through `DOCUMENTATION_GOVERNANCE.md` |
 
-## September Alpha blind findings — needs reproduction
+## September Alpha blind findings — disposition in progress
 
-No row in this section is a confirmed defect or accepted fix. `AUDIT-HIGH-RISK-REPRO-001` must reproduce each finding at the supported desktop baseline, capture exact state/evidence, and then route or reject it explicitly.
+`AUDIT-CHEAP-FIX-BATCH-001` closes the three accepted rows below. Remaining rows retain their explicit reproduction or implementation owner; acceptance of one bounded batch does not close unrelated findings.
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-AUDIT-EQUITY-EXACT-OPPONENT-001 | OPEN / NEEDS REPRODUCTION | Known-opponent exclusion may be wrong in Equity “Exact” completion cards. | `AUDIT-HIGH-RISK-REPRO-001` |
-| QA-AUDIT-FULL-HAND-MEMORY-LEAK-001 | OPEN / NEEDS REPRODUCTION | Full Hand normative feedback may leak through Training Memory before terminal Review. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-EQUITY-EXACT-OPPONENT-001 | COMPLETED / ACCEPTED | Specific structural completion-card identities exclude the complete entered known-card set: all known hole cards, board, and dead cards. Exact entered-hand outcome authority remains unchanged. | Preserve `AUDIT-CHEAP-FIX-BATCH-001` and focused regression coverage |
+| QA-AUDIT-FULL-HAND-MEMORY-LEAK-001 | COMPLETED / ACCEPTED | Live Full Hand may persist evidence internally, but Training Memory presentation redacts answer, source, comparison, and review information until terminal Review; Review unlocks normal presentation without rewriting evidence. | Preserve `AUDIT-CHEAP-FIX-BATCH-001` and focused regression coverage |
 | QA-AUDIT-SAME-SPOT-COHERENCE-001 | OPEN / NEEDS REPRODUCTION | Same Spot may break session mode, mode label, or headline-stat coherence. | `AUDIT-HIGH-RISK-REPRO-001` |
-| QA-AUDIT-NON-HERO-CONTEXT-001 | OPEN / NEEDS REPRODUCTION | Non-Hero actor context and decision-time stack presentation may be wrong or Hero-relative. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-NON-HERO-CONTEXT-001 | COMPLETED / ACCEPTED | The Hand action dock context and stack are current-actor-relative. Hero remains distinct identity but is not used as another player’s decision-context label. | Preserve `AUDIT-CHEAP-FIX-BATCH-001` and focused regression coverage |
 | QA-AUDIT-HAND-ANALYZE-STACK-001 | OPEN / NEEDS REPRODUCTION | Hand → Analyze may transfer the wrong stack/economics snapshot. | `AUDIT-HIGH-RISK-REPRO-001` |
 | QA-AUDIT-ANALYZE-CHRONOLOGY-001 | OPEN / NEEDS REPRODUCTION | Analyze Scenario chronology/readiness may allow contradictory or premature states. | `AUDIT-HIGH-RISK-REPRO-001` |
 | QA-AUDIT-HOME-COMPLETED-HAND-001 | OPEN / NEEDS REPRODUCTION | Home may present a completed Hand as live/continuable. | `AUDIT-HIGH-RISK-REPRO-001` |
-| QA-AUDIT-AUTH-CLIENT-DUPLICATE-001 | OPEN / NEEDS REPRODUCTION | Runtime may create or warn about duplicate authentication clients. | `AUDIT-HIGH-RISK-REPRO-001` |
+| QA-AUDIT-AUTH-CLIENT-DUPLICATE-001 | OPEN / ACTIVE NEXT | Runtime may create or warn about duplicate authentication clients. | `AUTH-SUPABASE-SINGLETON-001` |
 | QA-AUDIT-BROWSER-A11Y-001 | OPEN / NEEDS REPRODUCTION | Real-browser Tab order, modal containment/restoration, and inactive-workspace accessibility may diverge from structural tests. | `AUDIT-HIGH-RISK-REPRO-001` |
 | QA-AUDIT-RANGE-COMPARISON-INTERACTION-001 | OPEN / NEEDS REPRODUCTION | Range comparison hover/focus behavior may be inconsistent or inaccessible. | `AUDIT-HIGH-RISK-REPRO-001` |
 | QA-AUDIT-HAND-REVIEW-PRIORITY-001 | OPEN / NEEDS REPRODUCTION | Hand Review priority metrics may disagree across displayed values or projections. | `AUDIT-HIGH-RISK-REPRO-001` |
@@ -105,7 +105,7 @@ The detailed evidence is [Hands-On Product Review — August 2026](HANDS_ON_PROD
 | HPR-2026-08 #30 | DEFERRED / NAMED OWNER | Shared legal Randomize/Lock behavior with card-removal truth and later reproduction. | `RANDOM-SPOT-GENERATOR-001` |
 | HPR-2026-08 #36–37, #41–42, #53; #38–40 after bounded repair | CLOSED / HUMAN ACCEPTED | Matrix-local selected-hand inspection and legend, canonical card-removal presentation, primary complete comparison matrices, truthful independent shared-scale percentages, representative-sample limits, and Facts → Explain progressive depth are accepted. | accepted `ANALYZE-RANGE-UX-001` checkpoint |
 | HPR-2026-08 #46 after bounded repair | COMPLETED / HUMAN ACCEPTED | The accepted normal decision/study-rail skeleton, Correction #1, and final hardening remain intact. Lean closeout evidence proves exact same-decision replay with unchanged headline session/planner statistics and one-step Next progression; terminal Full Hand Review retains 1183×769px versus 1184×770px live shared-table geometry, vertical canonical History, source/comparison evidence, and no horizontal timeline at Firefox 154 / 1920×1080. | accepted `TRAINING-COMPOSITION-001` checkpoint |
-| HPR-2026-08 #49–51, #54 | PLANNED / ORDERED AFTER FOUNDATION AND LEARNING-LOOP GATES | Game setup/Approach first value, broad sparse/high-information coverage before boundary refinement, and Teach Riverline Next/Matrix Edit consolidation. It is item 16 in the binding order and does not jump the preceding gates. | `PERSONAL-STRATEGY-003A` |
+| HPR-2026-08 #49–51, #54 | PLANNED / ORDERED AFTER FOUNDATION AND LEARNING-LOOP GATES | Game setup/Approach first value, broad sparse/high-information coverage before boundary refinement, and Teach Riverline Next/Matrix Edit consolidation. It is item 17 in the binding order and does not jump the preceding gates. | `PERSONAL-STRATEGY-003A` |
 | HPR-2026-08 #55 | DEFERRED / NAMED OWNER | Evidence-grounded concepts/reference/reasoning that genuinely teach; no claim this exists today. | `PERSONAL-STRATEGY-TEACHING-001` |
 | HPR-2026-08 #56–57 | CLOSED / HUMAN ACCEPTED | Bounded 2–10-player composition, presentation-only inline naming, adjacent Board/Dead/Method controls, compact empty/running output, separate dominant completed comparison, transactional card-set input, and truthful exact-entered-hand outcome presentation are human accepted. | accepted `EQUITY-COMPOSITION-001` checkpoint |
 | HPR-2026-08 #59 | CLOSED / HUMAN ACCEPTED | The compact Saved grid uses DOM-free observer-safe Hand and visibly lossy Scenario Spot previews, visible zero-count All / Hands / Spots categories, a viewport-bounded hover/focus overlay, explicit bounded detail, shared card presentation, unsupported unknown-kind states, privacy clearing, and unchanged reopen/persistence boundaries. | accepted `SAVED-VISUAL-KNOWLEDGE-001` checkpoint |

@@ -61,7 +61,11 @@ function fakeWindow() {
   };
 }
 
-function createHandBridge(id = 'core-flow-hand') {
+function createHandBridge(id = 'core-flow-hand', {
+  tableSize = 2,
+  heroSeat = 0,
+  buttonSeat = 0,
+} = {}) {
   const controller = createCanonicalLiveController({ enabled: true });
   const browserWindow = fakeWindow();
   const bridge = installPlaybookStateSourceBridge(browserWindow, {
@@ -70,12 +74,12 @@ function createHandBridge(id = 'core-flow-hand') {
   });
   bridge.setMode('hand', scenario());
   const initial = bridge.initializeHand({
-    tableSize: 2,
+    tableSize,
     gameMode: GAME_MODES.HOME,
     stackBb: 100,
     stackMode: 'hero',
-    heroSeat: 0,
-    buttonSeat: 0,
+    heroSeat,
+    buttonSeat,
     anteType: 'none',
     anteBb: 0,
     straddleBb: 0,
@@ -155,6 +159,51 @@ test('canonical phase and actor transitions supply the live table stage without 
   assert.equal(chance.pendingChance.type, 'deal_flop');
   assert.equal(bridge.getLegalActions(), null);
   assert.equal(bridge.createTablePresenceViewModel().status, 'awaiting_board');
+});
+
+test('three-player Hand action context follows Hero, SB, and BB actors with each stack behind', () => {
+  const { bridge, controller } = createHandBridge('actor-relative-three-player', {
+    tableSize: 3,
+    heroSeat: 0,
+    buttonSeat: 0,
+  });
+  let state = bridge.dealObservedHoleCards({
+    [controller.getHeroPlayerId()]: ['As', 'Kd'],
+  });
+  const contexts = [];
+  const capture = () => {
+    const actor = state.players.find((player) => player.playerId === state.actingPlayerId);
+    contexts.push({
+      playerId: actor.playerId,
+      position: actor.position,
+      stackMilliBb: actor.currentStackMilliBb,
+      legalPlayerId: bridge.getLegalActions().playerId,
+    });
+  };
+
+  capture();
+  state = bridge.applyAction(ACTION_TYPES.CALL);
+  capture();
+  state = bridge.applyAction(ACTION_TYPES.CALL);
+  capture();
+  state = bridge.applyAction(ACTION_TYPES.CHECK);
+
+  assert.deepEqual(contexts.map(({ position }) => position), ['BTN', 'SB', 'BB']);
+  assert.deepEqual(contexts.map(({ stackMilliBb }) => stackMilliBb), [100_000, 99_500, 99_000]);
+  assert.equal(contexts[0].playerId, controller.getHeroPlayerId());
+  assert.equal(contexts.every(({ playerId, legalPlayerId }) => playerId === legalPlayerId), true);
+  assert.equal(state.phase, 'chance');
+
+  const legalRenderer = sourceBetween(
+    LOGIC,
+    'function renderCanonicalLegalActions(',
+    'function canonicalHandStatus(',
+  );
+  assert.match(legalRenderer, /const actorLabel = canonicalPlayerLabel\(actor, heroPlayerId\)/);
+  assert.match(legalRenderer, /handActionStackLabel[\s\S]*actorLabel[\s\S]*t\('Stack'\)/);
+  assert.match(legalRenderer, /formatCanonicalBb\(actor\.currentStackMilliBb\)/);
+  assert.doesNotMatch(legalRenderer, /formatCanonicalBb\(hero\.currentStackMilliBb\)/);
+  assert.doesNotMatch(HTML, /aria-label="Hero decision context"/);
 });
 
 test('action dock renders only canonical legal options and keeps amount-to presets plus custom sizing', () => {

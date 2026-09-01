@@ -25,7 +25,7 @@ import { createRangeAnalysisFacts } from '../app/src/application/range-analysis.
 import { createStrategyResult } from '../app/src/application/strategy-result.mjs';
 
 function context(overrides = {}) {
-  return {
+  const result = {
     schemaVersion: 'decision-context/v1',
     tableSize: 2,
     opponentCount: 1,
@@ -46,6 +46,21 @@ function context(overrides = {}) {
     totalForcedContributionBb: 0,
     ...overrides,
   };
+  if (!Object.hasOwn(overrides, 'currentPotBb')) result.currentPotBb = result.potBb;
+  if (!Object.hasOwn(overrides, 'actorContestablePotAfterCallBb')) {
+    result.actorContestablePotAfterCallBb = Number.isFinite(result.callAmountBb)
+      ? result.potBb + result.callAmountBb
+      : null;
+  }
+  if (!Object.hasOwn(overrides, 'actorIneligiblePotAfterCallBb')) {
+    result.actorIneligiblePotAfterCallBb = 0;
+  }
+  if (!Object.hasOwn(overrides, 'requiredRawEquity')) {
+    result.requiredRawEquity = result.callAmountBb > 0
+      ? result.callAmountBb / result.actorContestablePotAfterCallBb
+      : null;
+  }
+  return result;
 }
 
 function strategy(action, options = {}) {
@@ -288,7 +303,7 @@ test('raise without trusted contribution semantics reports unavailable instead o
     strategy({ type: 'raise', amountBb: 12 }),
   );
   assert.equal(result.economics.availability, 'unavailable');
-  assert.equal(result.economics.unavailableReason, 'hero_street_contribution_unavailable');
+  assert.equal(result.economics.unavailableReason, 'actor_contestable_pot_unavailable');
   assert.equal(result.economics.breakEvenFoldFrequency, null);
 });
 

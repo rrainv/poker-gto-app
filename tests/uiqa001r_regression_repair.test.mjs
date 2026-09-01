@@ -285,7 +285,7 @@ test('Training keeps stacked probabilities and removes the circular reference wh
 });
 
 test('repair remains outside poker, Equity math, Training grading, and solver code', () => {
-  for (const symbol of ['deriveDecisionContext', 'calculateEquity', 'handleTrainingGuess']) {
+  for (const symbol of ['RiverlinePlaybookState', 'calculateEquity', 'handleTrainingGuess']) {
     assert.match(logic, new RegExp(symbol));
   }
   assert.match(preflop, /calculatePreflopFallbackStrategy/);

@@ -41,6 +41,39 @@ function effectiveContributionsBySeat(state) {
   });
 }
 
+function potLayersFromContributions(contributions) {
+  const thresholds = [...new Set(
+    contributions.map((entry) => entry.amountMilliBb).filter((amount) => amount > 0),
+  )].sort((left, right) => left - right);
+  const layers = [];
+  let contributionFloorMilliBb = 0;
+
+  for (const contributionCeilingMilliBb of thresholds) {
+    const contributors = contributions.filter((entry) => (
+      entry.amountMilliBb >= contributionCeilingMilliBb
+    ));
+    if (contributors.length >= 2) {
+      const amountMilliBb = (contributionCeilingMilliBb - contributionFloorMilliBb)
+        * contributors.length;
+      if (!Number.isSafeInteger(amountMilliBb)) {
+        throw new RangeError('Pot layer amount exceeds safe integer precision');
+      }
+      layers.push({
+        schemaVersion: POKER_POT_LAYER_SCHEMA_VERSION,
+        amountMilliBb,
+        contributionFloorMilliBb,
+        contributionCeilingMilliBb,
+        contributorPlayerIds: contributors.map((entry) => entry.player.playerId),
+        eligiblePlayerIds: contributors
+          .filter((entry) => isPlayerLive(entry.player))
+          .map((entry) => entry.player.playerId),
+      });
+    }
+    contributionFloorMilliBb = contributionCeilingMilliBb;
+  }
+  return layers;
+}
+
 export function deriveUnmatchedContribution(state, recipientPlayerId = null) {
   const contributions = effectiveContributionsBySeat(state);
   let candidate;
@@ -71,37 +104,7 @@ export function deriveUnmatchedContribution(state, recipientPlayerId = null) {
 
 export function derivePotLayers(state) {
   const contributions = effectiveContributionsBySeat(state);
-  const thresholds = [...new Set(
-    contributions.map((entry) => entry.amountMilliBb).filter((amount) => amount > 0),
-  )].sort((left, right) => left - right);
-  const layers = [];
-  let contributionFloorMilliBb = 0;
-
-  for (const contributionCeilingMilliBb of thresholds) {
-    const contributors = contributions.filter((entry) => (
-      entry.amountMilliBb >= contributionCeilingMilliBb
-    ));
-    if (contributors.length >= 2) {
-      const amountMilliBb = (contributionCeilingMilliBb - contributionFloorMilliBb)
-        * contributors.length;
-      if (!Number.isSafeInteger(amountMilliBb)) {
-        throw new RangeError('Pot layer amount exceeds safe integer precision');
-      }
-      layers.push({
-        schemaVersion: POKER_POT_LAYER_SCHEMA_VERSION,
-        amountMilliBb,
-        contributionFloorMilliBb,
-        contributionCeilingMilliBb,
-        contributorPlayerIds: contributors.map((entry) => entry.player.playerId),
-        eligiblePlayerIds: contributors
-          .filter((entry) => isPlayerLive(entry.player))
-          .map((entry) => entry.player.playerId),
-      });
-    }
-    contributionFloorMilliBb = contributionCeilingMilliBb;
-  }
-
-  return deepFreeze(layers);
+  return deepFreeze(potLayersFromContributions(contributions));
 }
 
 function sameIds(left, right) {

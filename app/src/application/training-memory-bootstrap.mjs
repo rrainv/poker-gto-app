@@ -2,6 +2,7 @@ import {
   createTrainingMemoryOwnerResolver,
   createTrainingMemoryService,
 } from './training-memory-service.mjs';
+import { createTrainingMemoryPresentationGate } from './training-memory-presentation.mjs';
 
 export function installTrainingMemoryBridge(browserWindow, options = {}) {
   if (!browserWindow) return null;
@@ -40,6 +41,9 @@ export function installTrainingMemoryBridge(browserWindow, options = {}) {
       service.listSessionDecisions(sessionId, queryOptions)
     ),
     listDueReview: (queryOptions) => service.listDueReview(queryOptions),
+    createPresentationGate: (session, gateOptions) => (
+      createTrainingMemoryPresentationGate(session, gateOptions)
+    ),
     createSameSpot: (recordId) => service.createSameSpot(recordId),
     generateSimilarSpot: (recordId, generateOptions) => (
       service.generateSimilarSpot(recordId, generateOptions)

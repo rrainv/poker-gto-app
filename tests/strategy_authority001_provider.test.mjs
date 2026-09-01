@@ -229,7 +229,8 @@ test('AnalysisExplanation consumes StrategyResult and never becomes a strategy s
 });
 
 test('production source sweep leaves fallback math only behind the provider seam', () => {
-  assert.equal((logic.match(/strategyProvider\.resolve\(/g) || []).length, 5);
+  assert.equal((logic.match(/strategyProvider\.resolve\(/g) || []).length, 3);
+  assert.doesNotMatch(logic, /strategyProvider\.resolve\(null\)/);
   const analysisRender = logic.slice(
     logic.indexOf('function renderDecisionAnalysis('),
     logic.indexOf('function renderPlaybookTableProjection('),

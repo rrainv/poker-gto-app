@@ -53,6 +53,26 @@ test('exact known Full House versus flush draw separates catch-up from structura
   assert.deepEqual(structural.straightFlush.completionCards, ['Th']);
 });
 
+test('structural completion identities exclude every entered known hole card', () => {
+  const projection = createEquityHandAnalysisProjection({
+    players: [
+      { id: 'hero', cards: ['Ah', 'As'] },
+      { id: 'opponent', cards: ['Kh', 'Ks'] },
+    ],
+    board: ['2h', '3h', '4h'],
+    deadCards: [],
+  });
+  const heroCompletions = projection.players[0].facts.exactHand.drawOuts;
+  const shownCards = [
+    ...heroCompletions.flush.completionCards,
+    ...heroCompletions.straight.completionCards,
+    ...heroCompletions.straightFlush.completionCards,
+  ];
+
+  assert.equal(shownCards.includes('Kh'), false);
+  assert.equal(heroCompletions.flush.completionCards.includes('Qh'), true);
+});
+
 test('multiway winning outs must beat every entered exact hand', () => {
   const headsUp = createExactEnteredHandOutcomeFacts({
     players: [
@@ -142,6 +162,9 @@ test('one completed projection invokes one global and one known-player RangeAnal
   assert.equal(calls.requests, 3);
   assert.equal(calls.facts, 3);
   assert.equal(projection.players[2].facts, null);
+  assert.deepEqual(projection.globalFacts.input.deadCards, ['Ah', 'Kh', 'Qs', 'Qd']);
+  assert.deepEqual(projection.players[0].facts.input.deadCards, ['Qs', 'Qd']);
+  assert.deepEqual(projection.players[1].facts.input.deadCards, ['Ah', 'Kh']);
 });
 
 test('result-owned analysis lifecycle performs no setup or stale replacement projection', () => {

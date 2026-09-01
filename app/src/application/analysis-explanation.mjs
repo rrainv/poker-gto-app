@@ -795,7 +795,7 @@ function positionSection(context, trustedFacts) {
 }
 
 function potOddsSection(context) {
-  const potBeforeCallBb = finiteNumber(context.potBb);
+  const potBeforeCallBb = finiteNumber(context.currentPotBb ?? context.potBb);
   const callAmountBb = finiteNumber(context.callAmountBb);
   if (potBeforeCallBb === null || potBeforeCallBb < 0) return null;
   const facts = [fact('pot_before_action', {
@@ -809,11 +809,12 @@ function potOddsSection(context) {
       values: { callAmount: bb(callAmountBb) },
     }));
     if (callAmountBb > 0) {
-      const potAfterCallBb = potBeforeCallBb + callAmountBb;
-      const requiredEquity = potAfterCallBb > 0 ? callAmountBb / potAfterCallBb : 0;
-      facts.push(
+      const potAfterCallBb = finiteNumber(context.actorContestablePotAfterCallBb);
+      const requiredEquity = finiteNumber(context.requiredRawEquity);
+      if (potAfterCallBb !== null && potAfterCallBb > 0
+        && requiredEquity !== null && requiredEquity >= 0 && requiredEquity <= 1) facts.push(
         fact('pot_after_call', {
-          kind: 'derived', label: 'Pot after call', labelKey: 'analysis.fact.potAfterCall', value: potAfterCallBb, unit: 'bb',
+          kind: 'factual', label: 'Contestable if you call', labelKey: 'analysis.fact.potAfterCall', value: potAfterCallBb, unit: 'bb',
           templateKey: 'analysis.pot.afterCall', fallback: 'Calling {callAmount} makes the contested pot {potAfterCall}.',
           values: { callAmount: bb(callAmountBb), potAfterCall: bb(potAfterCallBb) },
         }),
@@ -823,6 +824,12 @@ function potOddsSection(context) {
           values: { requiredEquity: percent(requiredEquity, 1) },
         }),
       );
+      else facts.push(fact('call_price_availability', {
+        kind: 'availability', label: 'Contestable call price', labelKey: 'analysis.fact.callPrice', value: 'unavailable',
+        templateKey: 'analysis.pot.priceUnavailable',
+        fallback: 'Exact actor-relative call economics are unavailable for this context.',
+        values: {},
+      }));
     }
   } else {
     facts.push(fact('call_price_availability', {
@@ -843,20 +850,20 @@ function potOddsSection(context) {
 }
 
 function sprSection(context, warnings) {
-  if (context.street === 'preflop') return null;
-  const stackBb = finiteNumber(context.stackBb);
-  const potBb = finiteNumber(context.potBb);
+  if (context.street === 'preflop' || context.opponentCount !== 1) return null;
+  const stackBb = finiteNumber(context.effectiveStackBb);
+  const afterCallBb = finiteNumber(context.actorContestablePotAfterCallBb);
+  const callAmountBb = finiteNumber(context.callAmountBb);
+  const potBb = afterCallBb !== null && callAmountBb !== null
+    ? afterCallBb - callAmountBb
+    : null;
   if (stackBb === null || potBb === null || stackBb < 0 || potBb <= 0) return null;
   const spr = stackBb / potBb;
   const category = spr < 4 ? 'low' : spr <= 10 ? 'medium' : 'high';
-  warnings.push(warning(
-    'lossy_stack_semantics',
-    'SPR uses DecisionContext v1 stackBb, which is a compatibility stack rather than a guaranteed effective stack.',
-  ));
   return section('spr', 'Stack / SPR', 'supporting', [
     fact('stack_bb', {
-      label: 'Compatibility stack', labelKey: 'analysis.fact.stackBb', value: stackBb, unit: 'bb',
-      templateKey: 'analysis.spr.stack', fallback: 'DecisionContext reports a {stack} compatibility stack.',
+      label: 'Effective stack', labelKey: 'analysis.fact.stackBb', value: stackBb, unit: 'bb',
+      templateKey: 'analysis.spr.stack', fallback: 'The heads-up effective stack is {stack}.',
       values: { stack: bb(stackBb) },
     }),
     fact('spr', {

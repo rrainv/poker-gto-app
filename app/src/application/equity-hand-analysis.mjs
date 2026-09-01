@@ -229,12 +229,12 @@ function analysisSource() {
   };
 }
 
-function rangeFactsFor(heroCards, board, deadCards, createRequest, createFacts) {
+function rangeFactsFor(heroCards, board, unavailableCards, createRequest, createFacts) {
   const source = analysisSource();
   return createFacts(createRequest({
     heroCards,
     board,
-    deadCards,
+    deadCards: unavailableCards,
     ranges: {},
     provenance: { exactHand: source, board: source, deadCards: source },
   }));
@@ -246,9 +246,19 @@ export function createEquityHandAnalysisProjection(input = {}, dependencies = {}
   const players = normalizedPlayers(input.players);
   const board = [...(input.board || [])];
   const deadCards = [...(input.deadCards || [])];
-  const globalFacts = rangeFactsFor([], board, deadCards, createRequest, createFacts);
+  const knownHoleCards = players.flatMap((player) => player.cards || []);
+  const globalFacts = rangeFactsFor(
+    [], board, [...deadCards, ...knownHoleCards], createRequest, createFacts,
+  );
   const playerFacts = players.map((player) => {
-    const facts = player.cards ? rangeFactsFor(player.cards, board, deadCards, createRequest, createFacts) : null;
+    const unavailableCards = [
+      ...deadCards,
+      ...players.filter((candidate) => candidate.id !== player.id)
+        .flatMap((candidate) => candidate.cards || []),
+    ];
+    const facts = player.cards
+      ? rangeFactsFor(player.cards, board, unavailableCards, createRequest, createFacts)
+      : null;
     return {
       id: player.id,
       cards: player.cards ? [...player.cards] : null,

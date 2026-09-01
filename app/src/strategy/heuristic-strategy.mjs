@@ -173,13 +173,16 @@ export function resolveHeuristicStrategy(
   if (decisionContext.street === 'preflop') return preflopCandidate(decisionContext);
   const trustedCallPrice = Number.isFinite(decisionContext.callAmountBb)
     && decisionContext.callAmountBb >= 0;
-  const trustedCurrentPot = decisionContext.contractVersion === 'decision-context/v1.1'
-    ? Number.isFinite(decisionContext.currentPotBb) && decisionContext.currentPotBb >= 0
-    : Number.isFinite(decisionContext.potBb) && decisionContext.potBb >= 0;
+  const trustedActorEconomics = decisionContext.contractVersion === 'decision-context/v1.1'
+    && Number.isFinite(decisionContext.actorContestablePotAfterCallBb)
+    && decisionContext.actorContestablePotAfterCallBb > 0
+    && Number.isFinite(decisionContext.requiredRawEquity)
+    && decisionContext.requiredRawEquity >= 0
+    && decisionContext.requiredRawEquity <= 1;
   if (postflopContextFacesWager(decisionContext)
-    && (!trustedCallPrice || !trustedCurrentPot)) {
+    && (!trustedCallPrice || !trustedActorEconomics)) {
     return unavailableCandidate(
-      'Exact call price and current pot are required for a postflop facing-wager heuristic strategy.',
+      'Exact actor-relative call economics are required for a postflop facing-wager heuristic strategy.',
       { providerReason: 'exact_decision_economics_unavailable' },
       {
         kind: 'unsupported',

@@ -1,6 +1,7 @@
 import {
   ACTION_TYPES,
   STREETS,
+  deriveActorCallEconomics,
   getLegalActionSpec,
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
@@ -123,11 +124,12 @@ function presetCandidates(state, legalActions, actionType, bounds) {
       }));
     }
   } else {
-    const raisePotBasisMilliBb = state.potMilliBb + legalActions.call.commitMilliBb;
+    const actorEconomics = deriveActorCallEconomics(state, state.actingPlayerId);
+    const actorPotBasisMilliBb = actorEconomics.actorContestablePotAfterCallMilliBb;
     for (const [presetId, label, fraction] of POSTFLOP_TARGETS) {
       const rawAmountMilliBb = actionType === ACTION_TYPES.BET
-        ? state.potMilliBb * fraction
-        : state.currentBetMilliBb + raisePotBasisMilliBb * fraction;
+        ? actorPotBasisMilliBb * fraction
+        : state.currentBetMilliBb + actorPotBasisMilliBb * fraction;
       candidates.push(amountPreset({
         presetId,
         label,

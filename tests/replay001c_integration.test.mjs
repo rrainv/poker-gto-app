@@ -144,7 +144,7 @@ test('motion is bounded, reduced-motion safe, theme-token based, and has no soun
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?#visual-table-container \.is-replay-action-motion[\s\S]*?animation: none !important/);
   const replayMotionCss = sourceBetween(css, '/* REPLAY-001C:', '[dir="rtl"] .table-seat-stack');
   assert.doesNotMatch(replayMotionCss, /#[0-9a-f]{3,8}/i);
-  assert.doesNotMatch(`${playbackSource}\n${bridgeSource}\n${logic.slice(logic.indexOf('function replayActorLabel('), logic.indexOf('function deriveDecisionContext('))}`, /SoundFX/);
+  assert.doesNotMatch(`${playbackSource}\n${bridgeSource}\n${logic.slice(logic.indexOf('function replayActorLabel('), logic.indexOf('function updatePositionSelect('))}`, /SoundFX/);
 });
 
 test('motion has a paintable, cancellable lifecycle and settles without a timer loop', () => {

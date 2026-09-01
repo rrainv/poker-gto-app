@@ -1075,7 +1075,15 @@ function decisionFacts(decisionContext) {
     sourceSchemaVersion: decisionContext.schemaVersion,
     street: decisionContext.street,
     potBb: nullableFinite(decisionContext.potBb),
+    currentPotBb: nullableFinite(decisionContext.currentPotBb),
     callAmountBb: nullableFinite(decisionContext.callAmountBb),
+    actorContestablePotAfterCallBb: nullableFinite(
+      decisionContext.actorContestablePotAfterCallBb,
+    ),
+    actorIneligiblePotAfterCallBb: nullableFinite(
+      decisionContext.actorIneligiblePotAfterCallBb,
+    ),
+    requiredRawEquity: nullableFinite(decisionContext.requiredRawEquity),
     facingSizeBb: nullableFinite(decisionContext.facingSizeBb),
     heroStreetContributionBb: nullableFinite(decisionContext.heroStreetContributionBb),
     stackBb: nullableFinite(decisionContext.stackBb),

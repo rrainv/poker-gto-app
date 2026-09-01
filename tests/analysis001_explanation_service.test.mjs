@@ -151,7 +151,9 @@ test('cards, board, pot, facing, position, street, and StrategyResult each react
 test('facing a bet derives call amount, pot after call, and correct raw required equity', () => {
   const result = explanation({
     decisionContext: context({
-      lastAction: 'raise', facingSizeBb: 3, callAmountBb: 2, heroStreetContributionBb: 1, potBb: 6.5,
+      lastAction: 'raise', facingSizeBb: 3, callAmountBb: 2,
+      heroStreetContributionBb: 1, potBb: 6.5,
+      actorContestablePotAfterCallBb: 8.5, requiredRawEquity: 2 / 8.5,
     }),
   });
   assert.equal(findFact(result, 'pot_odds', 'call_amount').value, 2);
@@ -163,11 +165,29 @@ test('facing a bet derives call amount, pot after call, and correct raw required
 
 test('a supplied short all-in call uses the trusted legal commitment', () => {
   const result = explanation({
-    decisionContext: context({ lastAction: 'raise', facingSizeBb: 20, callAmountBb: 7, potBb: 10, stackBb: 7 }),
+    decisionContext: context({
+      lastAction: 'raise', facingSizeBb: 20, callAmountBb: 7, potBb: 10,
+      stackBb: 7, actorContestablePotAfterCallBb: 17, requiredRawEquity: 7 / 17,
+    }),
   });
   assert.equal(findFact(result, 'pot_odds', 'call_amount').value, 7);
   assert.equal(findFact(result, 'pot_odds', 'pot_after_call').value, 17);
   assert.equal(findFact(result, 'pot_odds', 'required_raw_equity').value, 7 / 17);
+});
+
+test('unmatched shove excess stays distinct from the actor-contestable pot', () => {
+  const result = explanation({
+    decisionContext: context({
+      lastAction: 'raise', facingSizeBb: 100, callAmountBb: 9,
+      potBb: 101, currentPotBb: 101,
+      actorContestablePotAfterCallBb: 20,
+      actorIneligiblePotAfterCallBb: 90,
+      requiredRawEquity: 0.45,
+    }),
+  });
+  assert.equal(findFact(result, 'pot_odds', 'pot_before_action').value, 101);
+  assert.equal(findFact(result, 'pot_odds', 'pot_after_call').value, 20);
+  assert.equal(findFact(result, 'pot_odds', 'required_raw_equity').value, 0.45);
 });
 
 test('unavailable Scenario pricing never manufactures exact pot odds', () => {
@@ -196,18 +216,30 @@ test('trusted free-check states never create required-equity facts', () => {
   }
 });
 
-test('SPR is postflop-only and uses explicit low, medium, and high compatibility categories', () => {
+test('SPR is postflop-only, exact HU actor-relative, and unavailable as a multiway scalar', () => {
   assert.equal(findSection(explanation(), 'spr'), undefined);
   for (const [stackBb, potBb, category] of [[10, 5, 'low'], [30, 5, 'medium'], [100, 5, 'high']]) {
     const result = explanation({
-      decisionContext: context({ street: 'flop', board: ['Ah', '7d', '2c'], stackBb, potBb }),
+      decisionContext: context({
+        street: 'flop', board: ['Ah', '7d', '2c'], stackBb, potBb,
+        opponentCount: 1, effectiveStackBb: stackBb, callAmountBb: 0,
+        currentPotBb: potBb, actorContestablePotAfterCallBb: potBb,
+      }),
       strategyResult: strategy({ source: 'heuristic_postflop', actions: [action('Check', 'check', 1)] }),
     });
     const spr = findFact(result, 'spr', 'spr');
     assert.equal(spr.value, stackBb / potBb);
     assert.match(spr.text, new RegExp(category));
-    assert.ok(result.warnings.some((entry) => entry.code === 'lossy_stack_semantics'));
   }
+  const multiway = explanation({
+    decisionContext: context({
+      street: 'flop', board: ['Ah', '7d', '2c'], opponentCount: 2,
+      effectiveStackBb: null, currentPotBb: 5, callAmountBb: 0,
+      actorContestablePotAfterCallBb: 5,
+    }),
+    strategyResult: strategy({ source: 'heuristic_postflop', actions: [action('Check', 'check', 1)] }),
+  });
+  assert.equal(findSection(multiway, 'spr'), undefined);
 });
 
 test('pure, dominant, and balanced mixed outputs use centralized thresholds', () => {

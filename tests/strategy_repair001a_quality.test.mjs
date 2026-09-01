@@ -320,7 +320,7 @@ test('missing trusted postflop call price abstains with unsupported authority me
     result.contextCoverage.limitationCodes,
     ['heuristic_exact_call_price_unavailable'],
   );
-  assert.match(result.explanation, /Exact call price and current pot are required/);
+  assert.match(result.explanation, /Exact actor-relative call economics are required/);
   assert.doesNotMatch(
     [result.explanation, ...result.warnings].filter(Boolean).join(' '),
     /GTO|Nash|optimal|EV loss/i,
@@ -328,7 +328,7 @@ test('missing trusted postflop call price abstains with unsupported authority me
 
   assert.throws(
     () => calculatePostflopStrategyFromSample(context, options(), { eq: 0.5 }),
-    /requires exact callAmountBb and currentPotBb/,
+    /requires exact actor-relative call economics/,
   );
 });
 

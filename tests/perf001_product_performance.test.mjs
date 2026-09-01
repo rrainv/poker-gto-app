@@ -173,7 +173,8 @@ test('one main DecisionContext update resolves its StrategyResult once and reuse
   );
   assert.equal((update.match(/strategyProvider\.resolve\(decisionContext\)/g) || []).length, 1);
   assert.match(logic, /renderPlaybookDecisionAnalysis\(\s*app\.decisionContext,\s*app\.strategyResult/);
-  assert.match(logic, /app\.strategyResult \|\| strategyProvider\.resolve\(null\)/);
+  assert.match(logic, /const currentStrategyResult = app\.strategyResult;[\s\S]*?if \(!currentStrategyResult\)/);
+  assert.doesNotMatch(logic, /strategyProvider\.resolve\(null\)/);
 });
 
 test('Matrix preparation remains provider-backed, preflop-only, complete, and context-keyed', () => {

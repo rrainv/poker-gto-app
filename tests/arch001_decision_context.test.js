@@ -2,9 +2,16 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const qa = require('./qa002_adapters');
+let deriveDecisionContextFromPlaybookScenario;
+
+test.before(async () => {
+  ({ deriveDecisionContextFromPlaybookScenario } = await import(
+    '../app/src/application/playbook-state-source.mjs'
+  ));
+});
 
 function snapshot(overrides = {}) {
-  return {
+  const result = {
     tableSize: 6,
     heroPosition: 'BTN',
     heroCards: ['As', 'Kd'],
@@ -20,10 +27,15 @@ function snapshot(overrides = {}) {
     rakeMode: 'off',
     ...overrides,
   };
+  if (result.rakeMode === 'fixed') {
+    result.forcedContributionPerPlayerBb = 0.1;
+    result.totalForcedContributionBb = result.tableSize * 0.1;
+  }
+  return result;
 }
 
 test('DecisionContext v1 derives a Home unopened spot', () => {
-  const context = qa.deriveDecisionContext(snapshot());
+  const context = deriveDecisionContextFromPlaybookScenario(snapshot());
   assert.deepEqual({
     schemaVersion: context.schemaVersion,
     tableSize: context.tableSize,
@@ -75,7 +87,7 @@ test('DecisionContext v1 derives a Home unopened spot', () => {
 });
 
 test('DecisionContext v1 derives a ClubGG unopened spot', () => {
-  const context = qa.deriveDecisionContext(snapshot({
+  const context = deriveDecisionContextFromPlaybookScenario(snapshot({
     tableSize: 9,
     heroPosition: 'LJ',
     stackBb: 200,
@@ -89,14 +101,14 @@ test('DecisionContext v1 derives a ClubGG unopened spot', () => {
 });
 
 test('raise and 3-bet facing sizes remain positive', () => {
-  const raise = qa.deriveDecisionContext(snapshot({ lastAction: 'raise', facingSizeBb: 2.5, potBb: 4 }));
-  const threeBet = qa.deriveDecisionContext(snapshot({ lastAction: '3bet', facingSizeBb: 7.5, potBb: 11.5 }));
+  const raise = deriveDecisionContextFromPlaybookScenario(snapshot({ lastAction: 'raise', facingSizeBb: 2.5, potBb: 4 }));
+  const threeBet = deriveDecisionContextFromPlaybookScenario(snapshot({ lastAction: '3bet', facingSizeBb: 7.5, potBb: 11.5 }));
   assert.equal(raise.facingSizeBb, 2.5);
   assert.equal(threeBet.facingSizeBb, 7.5);
 });
 
 test('DecisionContext preserves a 10-max full-ring position', () => {
-  const context = qa.deriveDecisionContext(snapshot({
+  const context = deriveDecisionContextFromPlaybookScenario(snapshot({
     tableSize: 10,
     heroPosition: 'UTG+2',
     rakeMode: 'fixed',
@@ -113,7 +125,7 @@ test('street is derived from explicit board cards for flop, turn, and river', ()
     [['2c', '7d', '9h', 'Ts', 'Jc'], 'river'],
   ];
   for (const [board, street] of boards) {
-    assert.equal(qa.deriveDecisionContext(snapshot({ board })).street, street);
+    assert.equal(deriveDecisionContextFromPlaybookScenario(snapshot({ board })).street, street);
   }
 });
 
@@ -131,9 +143,9 @@ test('invalid and edge inputs use current production bounds while unknown accoun
     facingSizeBb: 999,
     rakeMode: 'off',
   };
-  assert.throws(() => qa.deriveDecisionContext({ ...edgeInput, rakeMode: 'unknown' }),
+  assert.throws(() => deriveDecisionContextFromPlaybookScenario({ ...edgeInput, rakeMode: 'unknown' }),
     /Unsupported legacy Scenario rakeMode/);
-  const context = qa.deriveDecisionContext(edgeInput);
+  const context = deriveDecisionContextFromPlaybookScenario(edgeInput);
   assert.deepEqual({
     tableSize: context.tableSize,
     heroPosition: context.heroPosition,
@@ -185,6 +197,42 @@ test('updateContext follows snapshot to DecisionContext to fallback StrategyResu
   assert.equal(capture.strategyResult.contextCoverage.basis, 'missing_trusted_decision_economics');
 });
 
+test('updateContext fails closed and clears stale results when the canonical bridge is missing', async () => {
+  const capture = await qa.captureContext({ bridgeBehavior: 'missing', seedStale: true });
+  assert.equal(capture.playbookResolution.status, 'unavailable');
+  assert.equal(capture.playbookResolution.reason, 'canonical_playbook_dependency_unavailable');
+  assert.equal(capture.decisionContext, null);
+  assert.equal(capture.strategyResult, null);
+  assert.equal(capture.playbookViewModel, null);
+
+  const missingResolver = await qa.captureContext({
+    bridgeBehavior: 'missing_resolver',
+    seedStale: true,
+  });
+  assert.equal(missingResolver.playbookResolution.reason,
+    'canonical_playbook_dependency_unavailable');
+  assert.equal(missingResolver.decisionContext, null);
+  assert.equal(missingResolver.strategyResult, null);
+});
+
+test('updateContext fails closed with a stable reason when the canonical resolver throws', async () => {
+  const capture = await qa.captureContext({ bridgeBehavior: 'throw', seedStale: true });
+  assert.equal(capture.playbookResolution.status, 'error');
+  assert.equal(capture.playbookResolution.reason, 'canonical_playbook_resolution_failed');
+  assert.match(capture.playbookResolution.error.message, /test resolver failure/);
+  assert.equal(capture.decisionContext, null);
+  assert.equal(capture.strategyResult, null);
+});
+
+test('updateContext resumes canonical Scenario resolution after the bridge is restored', async () => {
+  await qa.captureContext({ bridgeBehavior: 'missing', seedStale: true });
+  const restored = await qa.captureContext({ heroCards: ['As', 'Kd'] });
+  assert.equal(restored.playbookResolution.status, 'available');
+  assert.equal(restored.decisionContext.schemaVersion, 'decision-context/v1');
+  assert.equal(restored.decisionContext.derivation.source, 'scenario');
+  assert.equal(restored.strategyResult.schemaVersion, 'strategy-result/v1');
+});
+
 test('fallback recommendations use the same cards and fields through DecisionContext', () => {
   const fixtures = [
     snapshot({ heroPosition: 'BTN' }),
@@ -194,7 +242,7 @@ test('fallback recommendations use the same cards and fields through DecisionCon
   ];
 
   for (const input of fixtures) {
-    const context = qa.deriveDecisionContext(input);
+    const context = deriveDecisionContextFromPlaybookScenario(input);
     const [firstCard, secondCard] = context.heroCards;
     const direct = qa.fallback(
       firstCard[0], secondCard[0], firstCard[0] === secondCard[0], firstCard[1] === secondCard[1],

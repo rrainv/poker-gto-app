@@ -373,7 +373,12 @@ test('exact price is causal while nominal wager-to labels remain invariant', () 
   assert.deepEqual(strategyActions(relabeled), strategyActions(nominal));
 
   const expensive = calculatePostflopStrategyFromSample(
-    { ...baseline, callAmountBb: 10 },
+    {
+      ...baseline,
+      callAmountBb: 10,
+      actorContestablePotAfterCallBb: 20,
+      requiredRawEquity: 0.5,
+    },
     OPTIONS,
     { eq: 0.35 },
   );

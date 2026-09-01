@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import fs from 'node:fs';
 
 import { createAnalysisExplanation } from '../app/src/application/analysis-explanation.mjs';
+import { deriveDecisionContextFromPlaybookScenario } from '../app/src/application/playbook-state-source.mjs';
 
 const require = createRequire(import.meta.url);
 const qa = require('./qa002_adapters.js');
@@ -12,7 +13,7 @@ const PREFLOP = fs.readFileSync(new URL('../app/src/strategy/preflop-heuristic.m
 const POSTFLOP = fs.readFileSync(new URL('../app/src/strategy/postflop-heuristic.mjs', import.meta.url), 'utf8');
 
 function scenario(overrides = {}) {
-  return qa.deriveDecisionContext({
+  return deriveDecisionContextFromPlaybookScenario({
     tableSize: 6,
     heroPosition: 'BTN',
     heroCards: ['As', 'Kh'],
@@ -144,10 +145,11 @@ test('fallback price mathematics never defaults missing call price to nominal fa
   assert.doesNotMatch(fallback, /callAmountBb\s*=\s*facingSize/);
   assert.doesNotMatch(fallback, /trustedCallAmount\s*===\s*null\s*\?\s*0/);
   assert.doesNotMatch(fallback, /potSize\s*\/\s*\(potSize\s*\+\s*facingSize\)/);
-  assert.match(POSTFLOP, /requiredRawEquity[\s\S]*trustedCallAmount\s*\/\s*\(decisionPotBb\s*\+\s*trustedCallAmount\)/);
+  assert.match(POSTFLOP, /requiredRawEquity[\s\S]*decisionContext\.requiredRawEquity/);
+  assert.doesNotMatch(POSTFLOP, /trustedCallAmount\s*\/\s*\(decisionPotBb\s*\+\s*trustedCallAmount\)/);
   assert.match(POSTFLOP, /decision_context_v1\.1_current_pot/);
   assert.match(PREFLOP, /const potOdds = callAmountBb \/ priceDenominator/);
   assert.match(PREFLOP, /Legal bounds are used for projection, not as recommendations/);
   assert.doesNotMatch(PREFLOP, /facingSizeBb\s*\/\s*|const raiseAmount/);
-  assert.doesNotMatch(LOGIC, /requiredRawEquity|cheapOddsDefenseBoost/);
+  assert.doesNotMatch(LOGIC, /cheapOddsDefenseBoost/);
 });

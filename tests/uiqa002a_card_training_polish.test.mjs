@@ -118,7 +118,7 @@ test('muted action tokens retain the stable Fold passive aggressive all-in and m
 });
 
 test('UI-QA-002A remains presentation-only and leaves the Range Matrix deferred', () => {
-  for (const symbol of ['deriveDecisionContext', 'strategyProvider.resultSchemaVersion', 'calculateEquity', 'handleTrainingGuess']) {
+  for (const symbol of ['RiverlinePlaybookState', 'strategyProvider.resultSchemaVersion', 'calculateEquity', 'handleTrainingGuess']) {
     assert.match(logic, new RegExp(symbol));
   }
   assert.match(trainingPresentation, /schemaVersion/);

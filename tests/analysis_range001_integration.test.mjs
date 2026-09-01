@@ -139,7 +139,7 @@ function createTeacherRuntime(language = 'en') {
 }
 
 function context(overrides = {}) {
-  return {
+  const result = {
     schemaVersion: 'decision-context/v1',
     tableSize: 6,
     opponentCount: null,
@@ -160,6 +160,22 @@ function context(overrides = {}) {
     totalForcedContributionBb: 0,
     ...overrides,
   };
+  if (!Object.hasOwn(overrides, 'currentPotBb')) result.currentPotBb = result.potBb;
+  if (!Object.hasOwn(overrides, 'actorContestablePotAfterCallBb')) {
+    result.actorContestablePotAfterCallBb = Number.isFinite(result.callAmountBb)
+      ? result.currentPotBb + result.callAmountBb
+      : null;
+  }
+  if (!Object.hasOwn(overrides, 'actorIneligiblePotAfterCallBb')) {
+    result.actorIneligiblePotAfterCallBb = result.actorContestablePotAfterCallBb === null
+      ? null : 0;
+  }
+  if (!Object.hasOwn(overrides, 'requiredRawEquity')) {
+    result.requiredRawEquity = result.callAmountBb > 0
+      ? result.callAmountBb / result.actorContestablePotAfterCallBb
+      : null;
+  }
+  return result;
 }
 
 function strategy() {

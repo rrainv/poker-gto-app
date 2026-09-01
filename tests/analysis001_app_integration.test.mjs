@@ -50,7 +50,8 @@ test('Playbook replaces the legacy HTML teacher with current contracts and trust
 
 test('Playbook unavailable states replace stale analysis', () => {
   const unavailable = sourceBetween('function renderUnavailableStrategy(', 'async function requestPlaybookMode(');
-  assert.match(unavailable, /app\.strategyResult = strategyProvider\.resolve\(null\)/);
+  assert.doesNotMatch(unavailable, /strategyProvider\.resolve/);
+  assert.match(logic, /app\.decisionContext = null;\s+app\.strategyResult = null;/);
   assert.match(unavailable, /playbookSurfaceInvalidator\.renderIfNeeded\('analysis'\)/);
   assert.match(logic, /analysisUnavailableReasonForResolution\(app\.playbookResolution\)/);
   assert.doesNotMatch(logic, /renderLoadingStrategy|strategy_loading/);

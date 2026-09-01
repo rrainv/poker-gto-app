@@ -517,6 +517,7 @@ function validateDecisionContextSnapshot(context, derivation) {
   ];
   const extended = context.contractVersion === 'decision-context/v1.1';
   const carriesGameRules = Object.hasOwn(context, 'gameRules');
+  const carriesActorEconomics = Object.hasOwn(context, 'actorContestablePotAfterCallBb');
   requireExactKeys(context, extended ? [
     ...legacyKeys,
     'contractVersion',
@@ -528,6 +529,11 @@ function validateDecisionContextSnapshot(context, derivation) {
     'positionRelation',
     'aggressorPositionRelation',
     'currentPotBb',
+    ...(carriesActorEconomics ? [
+      'actorContestablePotAfterCallBb',
+      'actorIneligiblePotAfterCallBb',
+      'requiredRawEquity',
+    ] : []),
     'priorActionSummary',
     'canRaise',
     'minRaiseToBb',
@@ -638,6 +644,30 @@ function validateDecisionContextSnapshot(context, derivation) {
       'DecisionContext.currentPotBb',
       { nullable: true },
     );
+    if (carriesActorEconomics) {
+      if (!Object.hasOwn(context, 'actorIneligiblePotAfterCallBb')
+        || !Object.hasOwn(context, 'requiredRawEquity')) {
+        throw new TypeError('DecisionContext actor economics fields must be carried together');
+      }
+      requireNonNegativeNumber(
+        context.actorContestablePotAfterCallBb,
+        'DecisionContext.actorContestablePotAfterCallBb',
+        { nullable: true },
+      );
+      requireNonNegativeNumber(
+        context.actorIneligiblePotAfterCallBb,
+        'DecisionContext.actorIneligiblePotAfterCallBb',
+        { nullable: true },
+      );
+      requireNonNegativeNumber(
+        context.requiredRawEquity,
+        'DecisionContext.requiredRawEquity',
+        { nullable: true },
+      );
+      if (context.requiredRawEquity !== null && context.requiredRawEquity > 1) {
+        throw new RangeError('DecisionContext.requiredRawEquity must not exceed one');
+      }
+    }
 
     const summary = requireObject(
       context.priorActionSummary,

@@ -175,7 +175,7 @@ test('responsive, RTL, and reduced-motion rules preserve poker semantics', () =>
 });
 
 test('poker and strategy safety entry points remain intact', () => {
-  for (const symbol of ['deriveDecisionContext', 'calculateEquity', 'evaluateHand']) {
+  for (const symbol of ['RiverlinePlaybookState', 'calculateEquity', 'evaluateHand']) {
     assert.match(logic, new RegExp(symbol));
   }
   assert.match(strategy, /calculatePreflopFallbackStrategy/);

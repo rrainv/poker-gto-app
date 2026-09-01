@@ -190,7 +190,7 @@ test('RTL, reduced motion, and interaction-versus-state affordances remain expli
 
 test('UI-QA-001 presentation section contains no poker, strategy, Equity-math, Training-generation, or solver code', () => {
   assert.doesNotMatch(uiQaCss, /DecisionContext|StrategyResult|PokerState|calculateEquity|evaluateSeven|MCCFR|regret|TrainingConfig/);
-  for (const symbol of ['deriveDecisionContext', 'calculateEquity']) {
+  for (const symbol of ['RiverlinePlaybookState', 'calculateEquity']) {
     assert.match(logic, new RegExp(symbol));
   }
   assert.match(strategy, /calculatePreflopFallbackStrategy/);

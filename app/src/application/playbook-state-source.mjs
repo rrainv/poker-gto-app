@@ -585,6 +585,18 @@ export function deriveDecisionContextFromPlaybookScenario(scenarioInput) {
       'heroStreetContributionBb',
       'scenario_street_contribution_unavailable',
     ),
+    unavailableDecisionContextField(
+      'actorContestablePotAfterCallBb',
+      'scenario_actor_pot_layers_unavailable',
+    ),
+    unavailableDecisionContextField(
+      'actorIneligiblePotAfterCallBb',
+      'scenario_actor_pot_layers_unavailable',
+    ),
+    unavailableDecisionContextField(
+      'requiredRawEquity',
+      'scenario_actor_call_economics_unavailable',
+    ),
     unavailableDecisionContextField('canRaise', 'scenario_legal_actions_unavailable'),
     unavailableDecisionContextField('minRaiseToBb', 'scenario_legal_actions_unavailable'),
     unavailableDecisionContextField('maxRaiseToBb', 'scenario_legal_actions_unavailable'),
@@ -692,6 +704,9 @@ export function deriveDecisionContextFromPlaybookScenario(scenarioInput) {
     priorActionSummary,
     facingSizeBb,
     callAmountBb,
+    actorContestablePotAfterCallBb: null,
+    actorIneligiblePotAfterCallBb: null,
+    requiredRawEquity: null,
     heroStreetContributionBb: null,
     canRaise: null,
     minRaiseToBb: null,
@@ -768,15 +783,11 @@ export function resolvePlaybookDecisionContext({
   canonicalSession = null,
   heroPlayerId = null,
   projectionOptions = {},
-  deriveScenarioDecisionContext = null,
 } = {}) {
   if (mode === PLAYBOOK_MODES.SCENARIO) {
     try {
       const input = createPlaybookScenarioInput(scenarioInput || {});
-      const projector = typeof deriveScenarioDecisionContext === 'function'
-        ? deriveScenarioDecisionContext
-        : deriveDecisionContextFromPlaybookScenario;
-      const decisionContext = projector(input);
+      const decisionContext = deriveDecisionContextFromPlaybookScenario(input);
       if (decisionContext?.schemaVersion !== 'decision-context/v1') {
         throw new TypeError('Scenario projection did not return DecisionContext v1');
       }
@@ -866,7 +877,7 @@ export function createPlaybookModeController({ canonicalController } = {}) {
       return lastResolution;
     },
 
-    resolve({ scenarioInput, deriveScenarioDecisionContext } = {}) {
+    resolve({ scenarioInput } = {}) {
       if (scenarioInput && mode === PLAYBOOK_MODES.SCENARIO) {
         lastScenarioInput = createPlaybookScenarioInput(scenarioInput);
       }
@@ -876,7 +887,6 @@ export function createPlaybookModeController({ canonicalController } = {}) {
         canonicalSession: canonicalController,
         heroPlayerId: canonicalController?.getHeroPlayerId?.() ?? null,
         projectionOptions: canonicalController?.getProjectionOptions?.() ?? {},
-        deriveScenarioDecisionContext,
       });
       return lastResolution;
     },

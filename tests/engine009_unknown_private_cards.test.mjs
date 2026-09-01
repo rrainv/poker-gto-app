@@ -355,7 +355,7 @@ test('Hand Mode source uses canonical partial deal/reveal APIs and does not samp
   const chance = fs.readFileSync(new URL('../shared/poker-domain/chance.js', import.meta.url), 'utf8');
   const reveal = fs.readFileSync(new URL('../shared/poker-domain/private-reveal.js', import.meta.url), 'utf8');
   const handStart = logic.indexOf('function commitCanonicalHoleDeal');
-  const handEnd = logic.indexOf('function deriveDecisionContext', handStart);
+  const handEnd = logic.indexOf('function updatePositionSelect', handStart);
   assert.ok(handStart >= 0 && handEnd > handStart, 'canonical Hand section must be present');
   const canonicalHandLogic = logic.slice(handStart, handEnd);
   assert.match(logic, /callPlaybookStateBridge\('dealObservedHoleCards', cardsByPlayer\)/);

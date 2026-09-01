@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: August 31, 2026 (`DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted; the remaining foundational sequence begins with `AUDIT-HIGH-RISK-REPRO-001`).
+Last consolidated: September 1, 2026 (`AUDIT-CHEAP-FIX-BATCH-001` is accepted; the remaining foundational sequence begins with `AUTH-SUPABASE-SINGLETON-001`).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -51,13 +51,14 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | 2 | COMPLETED / HUMAN ACCEPTED | `DECISION-ECONOMICS-001`; canonical pot accounting preserved, actor-relative strategic pricing repaired |
 | 3 | COMPLETED / ACCEPTED | `STRATEGY-TRUST-001`; application-owned bounded source acceptance, durable historical authority evidence, and fail-closed exact/normative inputs |
 | 4 | COMPLETED / ACCEPTED | `DECISION-CONTEXT-SINGLE-AUTHORITY-001`; one canonical Scenario/Hand projection selector with fail-closed dependency semantics |
-| 5 | ACTIVE NEXT / NEEDS REPRODUCTION | `AUDIT-HIGH-RISK-REPRO-001` |
-| 6–9 | PLANNED NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
-| 10–11 | PLANNED NEXT / INCREMENTAL EXTRACTION | `UI-COMPOSITION-ROOT-001` → one bounded workspace extraction pilot |
-| 12–13 | PLANNED NEXT | `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001` |
-| 14 | PLANNED NEXT / BOUNDED DECISION | reference-source decision after read-only research; research may run in parallel |
-| 15 | PLANNED NEXT | learning-loop expansion after foundation gates |
-| 16 | PLANNED NEXT | `PERSONAL-STRATEGY-003A` |
+| 5 | COMPLETED / ACCEPTED | `AUDIT-CHEAP-FIX-BATCH-001`; Full Hand Memory embargo, actor-relative Hand context/stack, and complete-known-card structural Equity identities |
+| 6 | ACTIVE NEXT / FOUNDATIONAL | `AUTH-SUPABASE-SINGLETON-001` |
+| 7–10 | PLANNED NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
+| 11–12 | PLANNED NEXT / INCREMENTAL EXTRACTION | `UI-COMPOSITION-ROOT-001` → one bounded workspace extraction pilot |
+| 13–14 | PLANNED NEXT | `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001` |
+| 15 | PLANNED NEXT / BOUNDED DECISION | reference-source decision after read-only research; research may run in parallel |
+| 16 | PLANNED NEXT | learning-loop expansion after foundation gates |
+| 17 | PLANNED NEXT | `PERSONAL-STRATEGY-003A` |
 | later gate | PLANNED LATER / PRE-RELEASE QUALITY GATE | `PREMIUM-CLOSEOUT-001` |
 | future | PRESERVED FUTURE | release/mobile/social/PLO later |
 
@@ -137,7 +138,7 @@ Training `Not sure` behavior remains an open product question; Calibration's exi
 |---|---|---|
 | Foundation / Calibration / inference / Matrix / Builder / Teacher | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Three user-named modes per profile, sparse immutable intended evidence, dominant-only ≠ pure, contradictions, categorical uncertainty, adaptive questions, and one shared evidence authority. |
 | `PERSONAL-STRATEGY-002R` | COMPLETED / HUMAN PRODUCT REVIEW ACCEPTED | The [independent review and human disposition](PERSONAL_STRATEGY_002R_REVIEW.md) preserve the intended-evidence authority and accept the Game setup/Approach, local-first, RFI-first, first-value product reset before integration. Browser/real-user acceptance remains routed debt. |
-| `PERSONAL-STRATEGY-003A` | PLANNED / ORDERED AFTER FOUNDATION AND LEARNING-LOOP GATES | Own the versioned legacy migration and deliver one Game setup, one initial Approach, approximately five supported RFI questions, broad sparse/high-information coverage before fine boundary refinement, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit. It remains item 16 in the binding order; no provider/reference/observed integration. Exactly three legacy UI modes are not a future product requirement. |
+| `PERSONAL-STRATEGY-003A` | PLANNED / ORDERED AFTER FOUNDATION AND LEARNING-LOOP GATES | Own the versioned legacy migration and deliver one Game setup, one initial Approach, approximately five supported RFI questions, broad sparse/high-information coverage before fine boundary refinement, What Riverline understands, Teach Riverline Next, and secondary Strategy Matrix/Matrix Edit. It remains item 17 in the binding order; no provider/reference/observed integration. Exactly three legacy UI modes are not a future product requirement. |
 | provider/reference/observed integration | PLANNED LATER / AFTER 003A AND HUMAN CHECKPOINT | Keep intended Personal Strategy, selected reference, source-labelled observed behavior, and opponent policy explicit; Training comparison/adoption is opt-in and Training Memory remains the observed authority. |
 | `PERSONAL-INSIGHTS-001` | PLANNED LATER after integration | Cross-profile Teach Riverline Next queue and evidence/provenance/uncertainty-aware summaries. See [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md). |
 | bounded versioning and later postflop/combo depth | ACCEPTED DIRECTION / LATER SLICES | Duplicate Approach, immutable material Game setup versions, and restore-through-new-correction/version are accepted; branches, arbitrary rollback, and Git-like management are deferred. Postflop remains exact-fact future work. See [Personal Strategy Intelligence](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md). |

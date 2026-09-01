@@ -83,7 +83,7 @@ test('Previous, Next, and Return-to-live controls consume projection and canonic
   const bindings = sourceBetween(
     logic,
     'function bindCanonicalHandWorkspace()',
-    'function deriveDecisionContext(',
+    'function updatePositionSelect(',
   );
   assert.match(controls, /projection\.canPrevious/);
   assert.match(controls, /projection\.canNext/);

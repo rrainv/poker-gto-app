@@ -235,8 +235,8 @@ export function installPlaybookStateSourceBridge(browserWindow, {
 
     createScenarioInputFromLegacyCompatibility: createPlaybookScenarioInputFromLegacyCompatibility,
 
-    resolveDecisionContext(scenarioInput, deriveScenarioDecisionContext) {
-      return modeController.resolve({ scenarioInput, deriveScenarioDecisionContext });
+    resolveDecisionContext(scenarioInput) {
+      return modeController.resolve({ scenarioInput });
     },
 
     createViewModel(strategyResult = null) {

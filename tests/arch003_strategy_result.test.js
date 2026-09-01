@@ -4,6 +4,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const qa = require('./qa002_adapters');
+let deriveDecisionContextFromPlaybookScenario;
+
+test.before(async () => {
+  ({ deriveDecisionContextFromPlaybookScenario } = await import(
+    '../app/src/application/playbook-state-source.mjs'
+  ));
+});
 
 const logicSource = fs.readFileSync(
   path.resolve(__dirname, '..', 'app', 'src', 'core', 'logic.js'),
@@ -15,7 +22,7 @@ const heuristicSource = fs.readFileSync(
 );
 
 function context(overrides = {}) {
-  return qa.deriveDecisionContext({
+  const input = {
     tableSize: 6,
     heroPosition: 'BTN',
     heroCards: ['As', 'Ks'],
@@ -29,7 +36,12 @@ function context(overrides = {}) {
     rakeMode: 'off',
     legacyRakeValue: 0,
     ...overrides,
-  });
+  };
+  if (input.rakeMode === 'fixed') {
+    input.forcedContributionPerPlayerBb = 0.1;
+    input.totalForcedContributionBb = input.tableSize * 0.1;
+  }
+  return deriveDecisionContextFromPlaybookScenario(input);
 }
 
 function assertNormalized(result) {

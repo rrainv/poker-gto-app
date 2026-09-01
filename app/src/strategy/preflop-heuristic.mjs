@@ -949,9 +949,14 @@ export function calculatePreflopHeuristic(decisionContext) {
   const decisionFamily = fallbackCalibration;
   const stackFacts = preflopStrategicStackFacts(decisionContext);
   const exactCurrentPot = decisionContext.contractVersion === 'decision-context/v1.1'
+    && decisionContext.callAmountBb === 0
     && Number.isFinite(decisionContext.currentPotBb)
     && decisionContext.currentPotBb >= 0
     ? decisionContext.currentPotBb
+    : decisionContext.contractVersion === 'decision-context/v1.1'
+      && Number.isFinite(decisionContext.actorContestablePotAfterCallBb)
+      && decisionContext.actorContestablePotAfterCallBb >= decisionContext.callAmountBb
+      ? decisionContext.actorContestablePotAfterCallBb - decisionContext.callAmountBb
     : decisionContext.contractVersion === 'decision-context/v1.1'
       ? null
       : decisionContext.potBb;
@@ -1074,6 +1079,10 @@ export function calculatePreflopHeuristic(decisionContext) {
       priceAdjustmentApplied: (
         facesAggression && callPriceAvailable && exactCurrentPot !== null
       ),
+      requiredRawEquity: facesAggression
+        && Number.isFinite(decisionContext.requiredRawEquity)
+        ? decisionContext.requiredRawEquity
+        : null,
       styleControlsApplied: false,
       forcedContributionAdjustmentApplied: false,
       stackCapActionProjectionApplied: callReachesStackCap,

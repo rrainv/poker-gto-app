@@ -102,7 +102,6 @@ function resolveScenario(input) {
   return resolvePlaybookDecisionContext({
     mode: PLAYBOOK_MODES.SCENARIO,
     scenarioInput: input,
-    deriveScenarioDecisionContext: legacy.deriveDecisionContext,
   });
 }
 
@@ -183,12 +182,11 @@ test('mode switching preserves the Scenario snapshot and canonical session indep
   const canonicalController = controllerWithCards();
   const modes = createPlaybookModeController({ canonicalController });
   const manual = scenario({ potBb: 27, lastAction: '3bet', facingSizeBb: 9 });
-  modes.resolve({ scenarioInput: manual, deriveScenarioDecisionContext: legacy.deriveDecisionContext });
+  modes.resolve({ scenarioInput: manual });
   const handState = canonicalController.getState();
   modes.setMode('hand', manual);
   modes.resolve({
     scenarioInput: scenario({ potBb: 99, lastAction: 'raise', facingSizeBb: 50 }),
-    deriveScenarioDecisionContext: legacy.deriveDecisionContext,
   });
   modes.setMode('scenario');
   assert.deepEqual(modes.getLastScenarioInput(), manual);
@@ -423,6 +421,11 @@ test('product browser bridge owns a separate persistent canonical controller and
 });
 
 test('mode UI defaults to Scenario, is semantic, keyboard-native, and does not persist mode', () => {
+  assert.ok(
+    HTML.indexOf('src/application/playbook-mode-bootstrap.mjs')
+      < HTML.indexOf('src/core/logic.js'),
+    'canonical Playbook bridge must load before classic orchestration',
+  );
   assert.match(HTML, /id="playbookModeControl"[^>]+role="group"[^>]+aria-label=/);
   assert.match(HTML, /id="playbookScenarioMode"[^>]+type="button"[^>]+aria-pressed="true"/);
   assert.match(HTML, /id="playbookHandMode"[^>]+type="button"[^>]+aria-pressed="false"/);
@@ -448,6 +451,8 @@ test('both modes converge on one StrategyProvider and StrategyResult rendering p
   assert.equal((update.match(/strategyResultToLegacyProfile\(strategyResult\)/g) || []).length, 1);
   assert.doesNotMatch(LOGIC, /scenarioActionProfile|handActionProfile/);
   assert.match(update, /playbookResolution\.decisionContext/);
+  assert.match(PRODUCT_BOOTSTRAP,
+    /resolveDecisionContext\(scenarioInput\)\s*\{\s*return modeController\.resolve\(\{ scenarioInput \}\)/);
 });
 
 test('product Hand path has one canonical controller and no dev shadow path', () => {

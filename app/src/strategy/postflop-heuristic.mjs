@@ -316,7 +316,19 @@ function postflopDecisionPotFacts(decisionContext) {
 
 export function postflopEffectiveSprFacts(decisionContext) {
   const potFacts = postflopDecisionPotFacts(decisionContext);
-  const currentPotBb = potFacts.value;
+  const actorContestableAfterCall = Number(
+    decisionContext?.actorContestablePotAfterCallBb,
+  );
+  const callAmountBb = Number(decisionContext?.callAmountBb);
+  const actorContestableBeforeAction = potFacts.kind === 'decision_context_v1.1_current_pot'
+    && Number.isFinite(actorContestableAfterCall)
+    && Number.isFinite(callAmountBb)
+    && actorContestableAfterCall >= callAmountBb
+    ? actorContestableAfterCall - callAmountBb
+    : null;
+  const currentPotBb = potFacts.kind === 'decision_context_v1.1_current_pot'
+    ? actorContestableBeforeAction
+    : potFacts.value;
   if (!(currentPotBb > 0)) {
     return {
       kind: 'unavailable',
@@ -360,6 +372,9 @@ export function postflopEffectiveSprFacts(decisionContext) {
       minimum: scalar,
       maximum: scalar,
       currentPotBb,
+      potSemantics: actorContestableBeforeAction === null
+        ? potFacts.kind
+        : 'actor_contestable_pot_before_action',
       effectiveStackBb: decisionContext.effectiveStackBb,
       adjustmentEnabled: true,
       reason: null,
@@ -378,6 +393,9 @@ export function postflopEffectiveSprFacts(decisionContext) {
       minimum: Math.min(...perOpponent),
       maximum: Math.max(...perOpponent),
       currentPotBb,
+      potSemantics: actorContestableBeforeAction === null
+        ? potFacts.kind
+        : 'actor_contestable_pot_before_action',
       perOpponent,
       adjustmentEnabled: false,
       reason: 'multiway_scalar_adjustment_disabled',
@@ -389,6 +407,9 @@ export function postflopEffectiveSprFacts(decisionContext) {
     minimum: null,
     maximum: null,
     currentPotBb,
+    potSemantics: actorContestableBeforeAction === null
+      ? potFacts.kind
+      : 'actor_contestable_pot_before_action',
     adjustmentEnabled: false,
     reason: 'live_effective_stack_unavailable',
   };
@@ -662,13 +683,15 @@ export function calculatePostflopStrategyFromSample(decisionContext, options, si
 
   const requiredRawEquity = trustedCallAmount !== null
     && trustedCallAmount > 0
-    && decisionPotBb !== null
-    ? trustedCallAmount / (decisionPotBb + trustedCallAmount)
+    && Number.isFinite(decisionContext.requiredRawEquity)
+    && decisionContext.requiredRawEquity >= 0
+    && decisionContext.requiredRawEquity <= 1
+    ? decisionContext.requiredRawEquity
     : null;
   const facesWager = postflopContextFacesWager(decisionContext, trustedCallAmount);
-  if (facesWager && (trustedCallAmount === null || decisionPotBb === null)) {
+  if (facesWager && (trustedCallAmount === null || requiredRawEquity === null)) {
     throw new RangeError(
-      'Postflop facing-wager strategy requires exact callAmountBb and currentPotBb facts',
+      'Postflop facing-wager strategy requires exact actor-relative call economics',
     );
   }
   let strategy;
@@ -730,6 +753,9 @@ export function calculatePostflopStrategyFromSample(decisionContext, options, si
     aggressionScore,
     sampledEquity,
     requiredRawEquity,
+    actorContestablePotAfterCallBbUsed: requiredRawEquity === null
+      ? null
+      : decisionContext.actorContestablePotAfterCallBb,
     priceSource: trustedCallAmount === null
       ? 'unavailable_scenario_price'
       : decisionPotBb === null && trustedCallAmount > 0

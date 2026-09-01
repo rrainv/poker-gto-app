@@ -138,7 +138,7 @@ test('mobile rules preserve touch targets, wrapping, and viewport-safe overlays'
 });
 
 test('component work leaves core poker contracts and function entry points intact', () => {
-  for (const symbol of ['deriveDecisionContext', 'calculateEquity']) {
+  for (const symbol of ['RiverlinePlaybookState', 'calculateEquity']) {
     assert.match(logic, new RegExp(symbol));
   }
   assert.match(strategy, /calculatePreflopFallbackStrategy/);

@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: August 31, 2026 (`DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted; `AUDIT-HIGH-RISK-REPRO-001` is active next in the post-audit foundation sequence).
+Last refreshed: September 1, 2026 (`AUDIT-CHEAP-FIX-BATCH-001` is accepted; `AUTH-SUPABASE-SINGLETON-001` is active next in the post-audit foundation sequence).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -69,16 +69,17 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 8. **COMPLETED / HUMAN ACCEPTED — `GUIDE-CONTENT-001`**
 9. **COMPLETED / HUMAN SECURITY ACCEPTED — `AUTH-TRAINING-MEMORY-001`**
 10. **COMPLETED / HUMAN ACCEPTED — `DECISION-ECONOMICS-001`; COMPLETED / ACCEPTED — `STRATEGY-TRUST-001`; COMPLETED / ACCEPTED — `DECISION-CONTEXT-SINGLE-AUTHORITY-001`**
-11. **ACTIVE NEXT / NEEDS REPRODUCTION — `AUDIT-HIGH-RISK-REPRO-001`**
-12. **IDENTITY/TRUTH — `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`**
-13. **PORTABLE BROWSER LIFECYCLE — `BROWSER-TEST-PLATFORM-001`**
-14. **INCREMENTAL COMPOSITION — `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot; no framework rewrite**
-15. **SAVED/HOME — `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001`**
-16. **BOUNDED REFERENCE-SOURCE DECISION — after read-only research, which may run in parallel**
-17. **LEARNING-LOOP EXPANSION**
-18. **PERSONAL STRATEGY — `PERSONAL-STRATEGY-003A`**
-19. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
-20. release/mobile/social/PLO later
+11. **COMPLETED / ACCEPTED — `AUDIT-CHEAP-FIX-BATCH-001`** — Full Hand Memory embargo, current-actor Hand context/stack, and complete-known-card structural Equity identities; exact entered-hand outcome authority unchanged
+12. **ACTIVE NEXT — `AUTH-SUPABASE-SINGLETON-001`**
+13. **IDENTITY/TRUTH — `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`**
+14. **PORTABLE BROWSER LIFECYCLE — `BROWSER-TEST-PLATFORM-001`**
+15. **INCREMENTAL COMPOSITION — `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot; no framework rewrite**
+16. **SAVED/HOME — `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001`**
+17. **BOUNDED REFERENCE-SOURCE DECISION — after read-only research, which may run in parallel**
+18. **LEARNING-LOOP EXPANSION**
+19. **PERSONAL STRATEGY — `PERSONAL-STRATEGY-003A`**
+20. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+21. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
@@ -91,7 +92,7 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - Training Varied/Focused/Full Hand, the Practice Planner, and Training Memory v1 are implemented foundations. `AUTH-TRAINING-MEMORY-001` is human/security accepted: authentication-aware owner/generation scope prevents Guest or another account from accessing retained prior-account Memory, invalidates stale reads/intents/writes, and revokes local access before provider cleanup without deleting account bytes. The durable anonymous Device Guest remains future `IDENTITY-LIFECYCLE-001` work. `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001` still reopen remediation and grading semantics. Advanced scheduling/cross-surface memory work and `Not sure` remain future; exact source/claim snapshots and historical/current labels are binding.
 - `STRATEGY-TRUST-001` is accepted: declarations and manifest statuses are evidence only; application-owned acceptance bounds authority/capabilities/coverage and binds Reference Packs to exact source ID/version/fingerprint. Live opaque acceptance is process-local and never persisted as proof; historical records retain durable answer-time authority metadata and frozen ClaimPolicy without silent upgrade or reauthentication.
 - `reference-pack/v1` has no production data registration. Never promote its synthetic test fixture, benchmark observations, or generalized heuristic curves into trusted reference truth.
-- Personal Strategy is checkpointed through legacy-named Calibration/Matrix/Builder/Teacher. The [independent `002R` review and human disposition](../project/PERSONAL_STRATEGY_002R_REVIEW.md) are accepted; `003A` remains the preserved versioned Game setup/Approach migration and local-first RFI-first first-value reset at step 16 of the binding post-audit order, after the foundation, extraction, Saved/Home, reference-source, and learning-loop gates. Exactly three legacy UI modes are not a future product requirement. Provider/reference/observed integration still follows 003A acceptance.
+- Personal Strategy is checkpointed through legacy-named Calibration/Matrix/Builder/Teacher. The [independent `002R` review and human disposition](../project/PERSONAL_STRATEGY_002R_REVIEW.md) are accepted; `003A` remains the preserved versioned Game setup/Approach migration and local-first RFI-first first-value reset at step 17 of the binding post-audit order, after the foundation, extraction, Saved/Home, reference-source, and learning-loop gates. Exactly three legacy UI modes are not a future product requirement. Provider/reference/observed integration still follows 003A acceptance.
 - Saved Hand/Spot and `HOME-002A` exist. `SAVED-VISUAL-KNOWLEDGE-001` is human accepted for the bounded loaded set: compact grid primary; All / Hands / Spots visible at zero; DOM-free observer-safe Hand and lossy Scenario Spot previews; body-level bounded hover/focus overlay; click/Enter detail; shared cards; identity clearing; unknown-kind unavailable state; unchanged reopen behavior. `SAVED-LIBRARY-001` now owns full retrieval/search/pagination for current Hand/Spot objects; new payload kinds remain later.
 - Saved Training Experience, Saved Equity Snapshot, and learner-facing Full Hand Hero-fold termination are preserved future work only; they are not activated, prioritized, or current Saved kinds.
 - `FIRST-USE-HOME-001` is human accepted. Home is the permanent recurring startup/study destination; optional Welcome orientation is separate presentation state, defaults to shown with suppression unchecked, suppresses only itself, and has zero selected sidebar destinations. Navigation always reflects the real destination. Guest Home is useful without sign-in. Continue uses only a live canonical Hand or active/paused Personal Strategy; all other current states receive Start. Training, Analyze, Equity, and last-route continuation remain unsupported pending explicit contracts. Current identity surfaces share one canonical brand-spade asset separately from poker-card suits.

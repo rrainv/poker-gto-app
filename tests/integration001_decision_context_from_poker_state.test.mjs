@@ -17,6 +17,7 @@ import {
   initializeHand,
 } from '../shared/poker-domain/index.js';
 import { deriveDecisionContextFromPokerState } from '../app/src/application/decision-context-from-poker-state.mjs';
+import { deriveDecisionContextFromPlaybookScenario } from '../app/src/application/playbook-state-source.mjs';
 
 const require = createRequire(import.meta.url);
 const legacy = require('./qa002_adapters.js');
@@ -70,8 +71,8 @@ function context(state, options = {}) {
   return deriveDecisionContextFromPokerState(state, state.actingPlayerId, options);
 }
 
-function legacyEquivalent(projected) {
-  return legacy.deriveDecisionContext({
+function scenarioEquivalent(projected) {
+  return deriveDecisionContextFromPlaybookScenario({
     tableSize: projected.tableSize,
     heroPosition: projected.heroPosition,
     heroCards: projected.heroCards,
@@ -83,10 +84,12 @@ function legacyEquivalent(projected) {
     lastAction: projected.lastAction,
     facingSizeBb: projected.facingSizeBb,
     rakeMode: projected.rakeMode,
+    forcedContributionPerPlayerBb: projected.forcedContributionPerPlayerBb,
+    totalForcedContributionBb: projected.totalForcedContributionBb,
   });
 }
 
-function assertLegacyParity(projected) {
+function assertScenarioCompatibility(projected) {
   const comparable = (value) => ({
     schemaVersion: value.schemaVersion,
     tableSize: value.tableSize,
@@ -104,7 +107,7 @@ function assertLegacyParity(projected) {
     forcedContributionPerPlayerBb: value.forcedContributionPerPlayerBb,
     totalForcedContributionBb: value.totalForcedContributionBb,
   });
-  assert.deepEqual(comparable(projected), comparable(legacyEquivalent(projected)));
+  assert.deepEqual(comparable(projected), comparable(scenarioEquivalent(projected)));
 }
 
 function foldUntilPosition(state, position) {
@@ -192,7 +195,7 @@ test('HU unopened PokerState preserves v1 fields and adds exact v1.1 facts', () 
   assert.equal(projected.maxRaiseToBb, 100);
   assert.equal(projected.allInToBb, 100);
   assert.equal(projected.derivation.source, 'canonical_hand');
-  assertLegacyParity(projected);
+  assertScenarioCompatibility(projected);
 });
 
 test('six-max BTN remains unopened after earlier positions fold', () => {
@@ -202,7 +205,7 @@ test('six-max BTN remains unopened after earlier positions fold', () => {
   assert.equal(projected.opponentCount, 2, 'three players remain live after folds to BTN');
   assert.equal(projected.lastAction, 'unopened');
   assert.equal(projected.facingSizeBb, 0);
-  assertLegacyParity(projected);
+  assertScenarioCompatibility(projected);
 });
 
 test('10-max UTG unopened projection preserves the full-ring position', () => {
@@ -210,7 +213,7 @@ test('10-max UTG unopened projection preserves the full-ring position', () => {
   assert.equal(projected.tableSize, 10);
   assert.equal(projected.heroPosition, 'UTG');
   assert.equal(projected.lastAction, 'unopened');
-  assertLegacyParity(projected);
+  assertScenarioCompatibility(projected);
 });
 
 test('preflop raises preserve nominal wager-to values and trusted incremental prices', () => {
@@ -221,7 +224,7 @@ test('preflop raises preserve nominal wager-to values and trusted incremental pr
   assert.equal(raised.facingSizeBb, 2.5);
   assert.equal(raised.heroStreetContributionBb, 1);
   assert.equal(raised.callAmountBb, 1.5);
-  assertLegacyParity(raised);
+  assertScenarioCompatibility(raised);
 
   state = act(state, ACTION_TYPES.RAISE, 7500);
   const threeBet = context(state);
@@ -229,7 +232,7 @@ test('preflop raises preserve nominal wager-to values and trusted incremental pr
   assert.equal(threeBet.facingSizeBb, 7.5);
   assert.equal(threeBet.heroStreetContributionBb, 2.5);
   assert.equal(threeBet.callAmountBb, 5);
-  assertLegacyParity(threeBet);
+  assertScenarioCompatibility(threeBet);
 
   state = act(state, ACTION_TYPES.RAISE, 18_000);
   const fourBet = context(state);
@@ -237,7 +240,7 @@ test('preflop raises preserve nominal wager-to values and trusted incremental pr
   assert.equal(fourBet.facingSizeBb, 18);
   assert.equal(fourBet.heroStreetContributionBb, 7.5);
   assert.equal(fourBet.callAmountBb, 10.5);
-  assertLegacyParity(fourBet);
+  assertScenarioCompatibility(fourBet);
 });
 
 test('limps map lossily to check and preserve the BB free option', () => {
@@ -250,7 +253,7 @@ test('limps map lossily to check and preserve the BB free option', () => {
   assert.equal(projected.heroPosition, 'BB');
   assert.equal(projected.lastAction, 'check');
   assert.equal(projected.facingSizeBb, 0);
-  assertLegacyParity(projected);
+  assertScenarioCompatibility(projected);
 });
 
 test('short-stack projection keeps nominal wager size and clamps the trusted call commitment', () => {
@@ -264,7 +267,7 @@ test('short-stack projection keeps nominal wager size and clamps the trusted cal
   assert.equal(projected.lastAction, 'raise');
   assert.equal(projected.heroStreetContributionBb, 1);
   assert.equal(projected.callAmountBb, 19);
-  assertLegacyParity(projected);
+  assertScenarioCompatibility(projected);
 });
 
 test('flop first action and a prior check project as check with zero facing size', () => {
@@ -273,13 +276,13 @@ test('flop first action and a prior check project as check with zero facing size
   assert.equal(firstAction.street, 'flop');
   assert.equal(firstAction.lastAction, 'check');
   assert.equal(firstAction.facingSizeBb, 0);
-  assertLegacyParity(firstAction);
+  assertScenarioCompatibility(firstAction);
 
   state = act(state, ACTION_TYPES.CHECK);
   const checkedTo = context(state);
   assert.equal(checkedTo.lastAction, 'check');
   assert.equal(checkedTo.facingSizeBb, 0);
-  assertLegacyParity(checkedTo);
+  assertScenarioCompatibility(checkedTo);
 });
 
 test('postflop bet and raise classifications preserve nominal bet-to sizes', () => {
@@ -290,7 +293,7 @@ test('postflop bet and raise classifications preserve nominal bet-to sizes', () 
   assert.equal(facingBet.facingSizeBb, 2);
   assert.equal(facingBet.heroStreetContributionBb, 0);
   assert.equal(facingBet.callAmountBb, 2);
-  assertLegacyParity(facingBet);
+  assertScenarioCompatibility(facingBet);
 
   state = act(state, ACTION_TYPES.RAISE, 6000);
   const facingRaise = context(state);
@@ -298,7 +301,7 @@ test('postflop bet and raise classifications preserve nominal bet-to sizes', () 
   assert.equal(facingRaise.facingSizeBb, 6);
   assert.equal(facingRaise.heroStreetContributionBb, 2);
   assert.equal(facingRaise.callAmountBb, 4);
-  assertLegacyParity(facingRaise);
+  assertScenarioCompatibility(facingRaise);
 });
 
 test('turn and river street projections follow canonical board transitions', () => {
@@ -306,13 +309,13 @@ test('turn and river street projections follow canonical board transitions', () 
   assert.equal(turn.street, 'turn');
   assert.equal(turn.board.length, 4);
   assert.equal(turn.lastAction, 'check');
-  assertLegacyParity(turn);
+  assertScenarioCompatibility(turn);
 
   const river = context(reachRiver());
   assert.equal(river.street, 'river');
   assert.equal(river.board.length, 5);
   assert.equal(river.lastAction, 'check');
-  assertLegacyParity(river);
+  assertScenarioCompatibility(river);
 });
 
 test('Home and ClubGG accounting map without percentage-rake semantics', () => {
@@ -330,7 +333,7 @@ test('Home and ClubGG accounting map without percentage-rake semantics', () => {
     assert.equal(club.totalForcedContributionBb, playerCount / 10);
     assert.equal(Object.hasOwn(club, 'legacyRakePercent'), false);
     assert.equal(club.potBb, 1.5);
-    assertLegacyParity(club);
+    assertScenarioCompatibility(club);
   }
 });
 
@@ -343,7 +346,7 @@ test('all stack modes preserve the same configured starting-stack projection', (
     const projected = context(state, { stackMode });
     assert.equal(projected.stackBb, 100);
     assert.equal(projected.stackMode, stackMode);
-    assertLegacyParity(projected);
+    assertScenarioCompatibility(projected);
     contexts.push(projected);
   }
 
@@ -407,7 +410,7 @@ test('DecisionContext v1 applies the same stack, pot, and facing bounds as legac
   assert.equal(shallowState.players[0].startingStackMilliBb, 5000);
   assert.equal(shallow.stackBb, 10);
   assert.equal(shallow.facingSizeBb, 0);
-  assertLegacyParity(shallow);
+  assertScenarioCompatibility(shallow);
 
   let deepState = createDealtState({ stacksMilliBb: [600_000, 600_000] });
   deepState = act(deepState, ACTION_TYPES.RAISE, 250_000);
@@ -455,7 +458,7 @@ test('every emitted lastAction is accepted by the current fallback vocabulary', 
   const supported = ['unopened', 'raise', '3bet', '4bet', 'bet', 'check'];
 
   for (const lastAction of supported) {
-    const projected = legacy.deriveDecisionContext({
+    const projected = deriveDecisionContextFromPlaybookScenario({
       tableSize: 6,
       heroPosition: 'BTN',
       heroCards: ['As', 'Ad'],
@@ -546,7 +549,7 @@ test('adapter is pure, copies card arrays, and has no browser/global dependency'
     'utf8',
   );
   assert.doesNotMatch(productionLogic, /decision-context-from-poker-state/);
-  assert.match(productionLogic, /deriveDecisionContext\(readPlaybookInputSnapshot\(\)\)/);
+  assert.doesNotMatch(productionLogic, /function deriveDecisionContext|deriveDecisionContext\(readPlaybookInputSnapshot\(\)\)/);
 
   const domainFiles = fs.readdirSync(new URL('../shared/poker-domain/', import.meta.url));
   for (const file of domainFiles.filter((name) => name.endsWith('.js'))) {
