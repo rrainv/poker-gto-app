@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 import * as RiverlineCardPresentation from '../app/src/application/card-presentation.mjs';
+import * as RiverlineCardClearSemantics from '../app/src/application/card-clear-semantics.mjs';
 
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 
@@ -111,6 +112,7 @@ export function delegatedCardSlotClick(group = 'hero', index = 0) {
   const sandbox = {
     console,
     RiverlineCardPresentation,
+    RiverlineCardClearSemantics,
     localStorage: { getItem() { return null; }, setItem() {} },
     window: { addEventListener() {} },
     document: {
@@ -198,9 +200,19 @@ export function createProductionPickerHarness({
     'deckCount', 'deadCardCount', 'eqDeckCount', 'equityBoardCount', 'equityDeadCount',
     'cardSetPickerContext', 'cardSetPickerKind', 'cardSetPickerOwner', 'cardSetPickerLabel',
     'cardSetPickerCount', 'cardSetPickerCards', 'cardSetPickerClear', 'cardSetPickerApply',
+    'lastAction', 'facingSize', 'facingSizeNum', 'potSize', 'potSizeNum',
+    'players', 'ante', 'straddle',
   ]) {
     elements.set(`#${id}`, makeElement());
   }
+  elements.get('#lastAction').value = 'unopened';
+  elements.get('#facingSize').value = '0';
+  elements.get('#facingSizeNum').value = '0';
+  elements.get('#potSize').value = '1.5';
+  elements.get('#potSizeNum').value = '1.5';
+  elements.get('#players').value = '6';
+  elements.get('#ante').value = '0';
+  elements.get('#straddle').value = '0';
   trackDeckBuilds(elements.get('#deck'));
   elements.get('#deck').querySelectorAll = () => deckControlsFor(elements.get('#deck'));
   const groups = [
@@ -212,6 +224,7 @@ export function createProductionPickerHarness({
   const sandbox = {
     console,
     RiverlineCardPresentation,
+    RiverlineCardClearSemantics,
     CustomEvent: class CustomEvent {},
     localStorage: { getItem() { return null; }, setItem() {} },
     document: {
@@ -243,17 +256,34 @@ export function createProductionPickerHarness({
       playbookHandDraft: { bySeat: {}, board: [] },
       playbookMode: ${handMode ? 'PLAYBOOK_MODES.HAND' : 'PLAYBOOK_MODES.SCENARIO'},
       picker: null,
-      selectedHand: null
+      selectedHand: null,
+      strategyResult: null,
+      playbookResolution: null,
+      updateCount: 0,
+      equityUpdateCount: 0
     };
     const canonicalState = ${JSON.stringify(canonicalState)};
     const canonicalAvailableChanceCards = ${JSON.stringify(canonicalAvailableChanceCards)};
     const $ = (selector) => document.querySelector(selector);
     const $$ = (selector) => [...document.querySelectorAll(selector)];
+    const selectedValue = (selector) => $(selector)?.value;
+    const numericValue = (selector, fallback = 0) => {
+      const value = Number(selectedValue(selector));
+      return Number.isFinite(value) ? value : fallback;
+    };
     const getSuit = (card) => SUITS.find((suit) => suit.id === (card && card[1]));
     const displayCardRank = (rank) => globalThis.RiverlineCardPresentation.displayCardRank(rank, app.settings.cardRankStyle);
     const displayCard = (card) => card ? displayCardRank(card[0]) + getSuit(card).symbol : '';
     const t = (value, variables = {}) => String(value).replace(/\\{(\\w+)\\}/g, (_, key) => variables[key] ?? '{' + key + '}');
     function isHandMode() { return app.playbookMode === PLAYBOOK_MODES.HAND; }
+    function activeWorkspaceMode() { return 'gto'; }
+    function requireCardClearSemanticsBridge() {
+      return {
+        commands: RiverlineCardClearSemantics.CARD_CLEAR_COMMANDS,
+        applyEditableCardClear: RiverlineCardClearSemantics.applyEditableCardClear,
+        editableCardClearWouldChange: RiverlineCardClearSemantics.editableCardClearWouldChange
+      };
+    }
     function equityPlayerLabel(index) { return index === 0 ? 'Hero' : 'Player ' + (index + 1); }
     function callPlaybookStateBridge(method) {
       if (method === 'getHeroPlayerId') return 'player-0';
@@ -272,12 +302,25 @@ export function createProductionPickerHarness({
     function toast() {}
     function notifyCanonicalHeroCardsChanged() {}
     function notifyCanonicalBoardCardsChanged() {}
-    function setEquityPending() { renderEquityCards(); }
+    function setEquityPending() {
+      app.equityUpdateCount += 1;
+      renderEquityCards();
+    }
     function renderCanonicalHandWorkspace() {
       for (let seat = 0; seat < 10; seat += 1) renderSlots('hand-seat-' + seat, 2);
       renderSlots('hand-board-chance', 3);
     }
-    function updateContext() {}
+    function updateContext() {
+      app.updateCount += 1;
+      const street = currentStreet(app.gto.board);
+      const ready = app.gto.hero.filter(Boolean).length === 2 && street !== 'invalid';
+      app.strategyResult = ready ? { recomputed: true, street } : null;
+      app.playbookResolution = {
+        status: ready ? 'available' : 'unavailable',
+        reason: ready ? null : 'scenario_not_ready',
+        street
+      };
+    }
     function updateActionOptions() {}
     function updateEquityReadiness() {}
     function renderCanonicalDecisionCards() {}
@@ -294,6 +337,7 @@ export function createProductionPickerHarness({
     ${extractFunction('cardVisualState')}
     ${extractFunction('isPrivateHandCardSetGroup')}
     ${extractFunction('privateHandSetEditorMarkup')}
+    ${extractFunction('deadCardSetEditorMarkup')}
     ${extractFunction('boardCardSetEditorsMarkup')}
     ${extractFunction('renderSlots')}
     ${extractFunction('renderPlaybookCardStateSummary')}
@@ -307,6 +351,10 @@ export function createProductionPickerHarness({
       renderEquityCards();
       renderCanonicalHandWorkspace();
     }
+    ${extractFunction('setScenarioControlPair')}
+    ${extractFunction('resetScenarioBettingDependencies')}
+    ${extractFunction('currentStreet')}
+    ${extractFunction('preflopBasePot')}
     ${extractFunction('privateHandOwnerLabel')}
     ${extractFunction('boardStreetCardSetDefinition')}
     ${extractFunction('cardSetPickerDefinition')}
@@ -322,15 +370,29 @@ export function createProductionPickerHarness({
     ${extractFunction('renderCommittedCardSet')}
     ${extractFunction('finishCardSetCommit')}
     ${extractFunction('applyCardSetPicker')}
-    ${extractFunction('clearPrivateHandPicker')}
+    ${extractFunction('scenarioCardClearTargets')}
+    ${extractFunction('cardClearTargetsForPicker')}
+    ${extractFunction('syncExplicitCardClearAvailability')}
+    ${extractFunction('applyScenarioCardClear')}
+    ${extractFunction('applyEquityCardClear')}
+    ${extractFunction('applyHandDraftCardClear')}
+    ${extractFunction('clearCardSetPicker')}
     ${extractFunction('handleCardPickerKeydown')}
     ${extractFunction('closePicker')}
+    ${extractFunction('clearScenarioHeroFromShortcut')}
     globalThis.__pickerApi = {
       app,
       openPicker,
       selectCard,
       apply: applyCardSetPicker,
-      clearPrivateHand: clearPrivateHandPicker,
+      clearPrivateHand: clearCardSetPicker,
+      clearHand: clearCardSetPicker,
+      clearGroup(group) {
+        const commands = requireCardClearSemanticsBridge().commands;
+        const command = { hero: commands.CLEAR_HERO, board: commands.CLEAR_BOARD, dead: commands.CLEAR_DEAD_SET }[group];
+        return applyScenarioCardClear(command);
+      },
+      cShortcut: clearScenarioHeroFromShortcut,
       escape() { handleCardPickerKeydown({ key: 'Escape', preventDefault() {}, stopPropagation() {} }); },
       closePicker,
       renderAllCards,
@@ -345,6 +407,24 @@ export function createProductionPickerHarness({
           available: String(document.querySelector('#deckCount').textContent),
           dead: String(document.querySelector('#deadCardCount').textContent),
         };
+      },
+      scenarioControls() {
+        return {
+          lastAction: $('#lastAction').value,
+          facing: $('#facingSize').value,
+          facingNumber: $('#facingSizeNum').value,
+          pot: $('#potSize').value,
+          potNumber: $('#potSizeNum').value,
+        };
+      },
+      setScenarioControls(values) {
+        const ids = {
+          lastAction: 'lastAction', facing: 'facingSize', facingNumber: 'facingSizeNum',
+          pot: 'potSize', potNumber: 'potSizeNum',
+        };
+        Object.entries(values).forEach(([key, value]) => {
+          if (ids[key]) $('#' + ids[key]).value = String(value);
+        });
       },
       modalOpen() { return document.querySelector('#cardModal').classList.contains('show'); }
     };
@@ -384,6 +464,7 @@ export function createEquityHandEntryHarness() {
   const sandbox = {
     console,
     RiverlineCardPresentation,
+    RiverlineCardClearSemantics,
     structuredClone,
     document: {
       activeElement: elements.get('#deck'),
@@ -434,6 +515,13 @@ export function createEquityHandEntryHarness() {
     const displayCard = (card) => card ? displayCardRank(card[0]) + getSuit(card).symbol : '';
     const t = (value, variables = {}) => String(value).replace(/\\{(\\w+)\\}/g, (_, key) => variables[key] ?? '{' + key + '}');
     function isHandMode() { return false; }
+    function requireCardClearSemanticsBridge() {
+      return {
+        commands: RiverlineCardClearSemantics.CARD_CLEAR_COMMANDS,
+        applyEditableCardClear: RiverlineCardClearSemantics.applyEditableCardClear,
+        editableCardClearWouldChange: RiverlineCardClearSemantics.editableCardClearWouldChange
+      };
+    }
     function callPlaybookStateBridge() { return null; }
     function canonicalPlayerLabel() { return 'Player'; }
     function callEquityServiceBridge(method) {
@@ -491,7 +579,12 @@ export function createEquityHandEntryHarness() {
     ${extractFunction('renderCommittedCardSet')}
     ${extractFunction('finishCardSetCommit')}
     ${extractFunction('applyCardSetPicker')}
-    ${extractFunction('clearPrivateHandPicker')}
+    ${extractFunction('scenarioCardClearTargets')}
+    ${extractFunction('cardClearTargetsForPicker')}
+    ${extractFunction('applyScenarioCardClear')}
+    ${extractFunction('applyEquityCardClear')}
+    ${extractFunction('applyHandDraftCardClear')}
+    ${extractFunction('clearCardSetPicker')}
     ${extractFunction('closePicker')}
     ${extractFunction('setEquityHandMode')}
     ${extractFunction('equityRequestFromCurrentInputs')}
@@ -504,7 +597,7 @@ export function createEquityHandEntryHarness() {
       openHand: openEquityHandPicker,
       selectCard,
       apply: applyCardSetPicker,
-      clearHand: clearPrivateHandPicker,
+      clearHand: clearCardSetPicker,
       cancel: closePicker,
       setMode: setEquityHandMode,
       request: equityRequestFromCurrentInputs,

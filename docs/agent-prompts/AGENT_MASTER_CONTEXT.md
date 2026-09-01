@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: September 1, 2026 (`AUTH-SUPABASE-SINGLETON-001` is accepted; `ANALYZE-SCENARIO-READINESS-001` is active next in the post-audit foundation sequence).
+Last refreshed: September 1, 2026 (`ANALYZE-SCENARIO-READINESS-001` and `CARD-CLEAR-SEMANTICS-001` are human accepted; `HOME-HAND-LIFECYCLE-001` is active next, followed by `SAME-SPOT-COHERENCE-001`).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -71,21 +71,25 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 10. **COMPLETED / HUMAN ACCEPTED — `DECISION-ECONOMICS-001`; COMPLETED / ACCEPTED — `STRATEGY-TRUST-001`; COMPLETED / ACCEPTED — `DECISION-CONTEXT-SINGLE-AUTHORITY-001`**
 11. **COMPLETED / ACCEPTED — `AUDIT-CHEAP-FIX-BATCH-001`** — Full Hand Memory embargo, current-actor Hand context/stack, and complete-known-card structural Equity identities; exact entered-hand outcome authority unchanged
 12. **COMPLETED / ACCEPTED — `AUTH-SUPABASE-SINGLETON-001`** — one browser-runtime Supabase client is shared by Authentication, Account/Profile, Saved sync, and Personal Strategy sync; equivalent/repeated acquisition is idempotent and materially different in-runtime configuration fails closed
-13. **ACTIVE NEXT — `ANALYZE-SCENARIO-READINESS-001`**
-14. **IDENTITY/TRUTH — `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`**
-15. **PORTABLE BROWSER LIFECYCLE — `BROWSER-TEST-PLATFORM-001`**
-16. **INCREMENTAL COMPOSITION — `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot; no framework rewrite**
-17. **SAVED/HOME — `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001`**
-18. **BOUNDED REFERENCE-SOURCE DECISION — after read-only research, which may run in parallel**
-19. **LEARNING-LOOP EXPANSION**
-20. **PERSONAL STRATEGY — `PERSONAL-STRATEGY-003A`**
-21. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
-22. release/mobile/social/PLO later
+13. **COMPLETED / HUMAN ACCEPTED — `ANALYZE-SCENARIO-READINESS-001` AND `CARD-CLEAR-SEMANTICS-001`**
+14. **ACTIVE NEXT — `HOME-HAND-LIFECYCLE-001`**
+15. **PLANNED NEXT — `SAME-SPOT-COHERENCE-001`**
+16. **IDENTITY/TRUTH — `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`**
+17. **PORTABLE BROWSER LIFECYCLE — `BROWSER-TEST-PLATFORM-001`**
+18. **INCREMENTAL COMPOSITION — `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot; no framework rewrite**
+19. **SAVED/HOME — `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001`**
+20. **BOUNDED REFERENCE-SOURCE DECISION — after read-only research, which may run in parallel**
+21. **LEARNING-LOOP EXPANSION**
+22. **PERSONAL STRATEGY — `PERSONAL-STRATEGY-003A`**
+23. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
+24. release/mobile/social/PLO later
 
 This order is directional and may move after accepted checkpoints. Reprioritization updates affected live planning documents together; a tiny patch with no product-state change requires no Roadmap churn.
 
 ## Current checkpoint boundaries
 
+- `ANALYZE-SCENARIO-READINESS-001` is human accepted. Scenario remains an editable lossy draft, but only centrally validated provider-ready coherence reaches StrategyProvider; invalid chronology, action/facing dependencies, uniqueness, and basic numeric inputs fail closed as `scenario_not_ready` with natural guidance, later-street clears preserve only valid earlier state, and exact actor-relative economics are never invented.
+- `CARD-CLEAR-SEMANTICS-001` is human accepted. One DOM-free command owner defines isolated Hero/private/street/board/dead/all/pending clears, empty clears are no-ops, canonical Hand history is protected, and Analyze/Equity share whole-set Dead Cards draft/Apply/cancel behavior with ordinary resting slots and overlay-isolated geometry.
 - `AUDIO-MOTION-001` is accepted; subjective Study/UI/Check polish remains `RET-AUDIO-001` debt, not current scope.
 - `SETTINGS-IA-001` is accepted structurally; its unavailable real Firefox category/viewport/theme/language matrix remains `QA-HANDSON-010` / `RET-PREMIUM-001` debt.
 - `PREMIUM-CLOSEOUT-001` is not cancelled: it is the later whole-product manual, visual, responsive, localization, accessibility, Guide, Core Flow, and release-quality gate after the feature set is materially more mature.

@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: September 1, 2026 (`AUTH-SUPABASE-SINGLETON-001` is accepted; the remaining foundational sequence begins with `ANALYZE-SCENARIO-READINESS-001`).
+Last consolidated: September 1, 2026 (`ANALYZE-SCENARIO-READINESS-001` and `CARD-CLEAR-SEMANTICS-001` are human accepted; `HOME-HAND-LIFECYCLE-001` then `SAME-SPOT-COHERENCE-001` lead the remaining audit cleanup).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -53,13 +53,16 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | 4 | COMPLETED / ACCEPTED | `DECISION-CONTEXT-SINGLE-AUTHORITY-001`; one canonical Scenario/Hand projection selector with fail-closed dependency semantics |
 | 5 | COMPLETED / ACCEPTED | `AUDIT-CHEAP-FIX-BATCH-001`; Full Hand Memory embargo, actor-relative Hand context/stack, and complete-known-card structural Equity identities |
 | 6 | COMPLETED / ACCEPTED FOUNDATIONAL | `AUTH-SUPABASE-SINGLETON-001`; one browser-runtime Supabase client shared by Authentication, Account/Profile, Saved sync, and Personal Strategy sync with fail-closed reconfiguration and idempotent lifecycle acquisition |
-| 7 | ACTIVE NEXT / AUDIT CORRECTNESS | `ANALYZE-SCENARIO-READINESS-001` |
-| 8–11 | PLANNED NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
-| 12–13 | PLANNED NEXT / INCREMENTAL EXTRACTION | `UI-COMPOSITION-ROOT-001` → one bounded workspace extraction pilot |
-| 14–15 | PLANNED NEXT | `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001` |
-| 16 | PLANNED NEXT / BOUNDED DECISION | reference-source decision after read-only research; research may run in parallel |
-| 17 | PLANNED NEXT | learning-loop expansion after foundation gates |
-| 18 | PLANNED NEXT | `PERSONAL-STRATEGY-003A` |
+| 7 | COMPLETED / HUMAN ACCEPTED / AUDIT CORRECTNESS | `ANALYZE-SCENARIO-READINESS-001`; editable lossy drafts, central provider-readiness validation, fail-closed `scenario_not_ready`, transactional later-street clearing, and no invented actor-relative economics |
+| 8 | COMPLETED / HUMAN ACCEPTED / SHARED INTERACTION | `CARD-CLEAR-SEMANTICS-001`; one DOM-free clear-command owner plus shared Analyze/Equity whole-set Dead Cards editing and restored no-nested-scroll slot presentation |
+| 9 | ACTIVE NEXT / FAST AUDIT CLEANUP | `HOME-HAND-LIFECYCLE-001` |
+| 10 | PLANNED NEXT / FAST AUDIT CLEANUP | `SAME-SPOT-COHERENCE-001` |
+| 11–14 | PLANNED NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
+| 15–16 | PLANNED NEXT / INCREMENTAL EXTRACTION | `UI-COMPOSITION-ROOT-001` → one bounded workspace extraction pilot |
+| 17–18 | PLANNED NEXT | `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001` |
+| 19 | PLANNED NEXT / BOUNDED DECISION | reference-source decision after read-only research; research may run in parallel |
+| 20 | PLANNED NEXT | learning-loop expansion after foundation gates |
+| 21 | PLANNED NEXT | `PERSONAL-STRATEGY-003A` |
 | later gate | PLANNED LATER / PRE-RELEASE QUALITY GATE | `PREMIUM-CLOSEOUT-001` |
 | future | PRESERVED FUTURE | release/mobile/social/PLO later |
 

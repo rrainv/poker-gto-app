@@ -72,11 +72,11 @@ test('player management supports stable identities and bounded 2 through 10 coun
 test('board and dead-card controls expose counts, arbitrary board entry, and clear', () => {
   assert.match(equityHtml, /id="equityBoardCount"/);
   assert.match(equityHtml, /data-slots="eqboard"/);
-  assert.match(equityHtml, /id="equityBoardCount"[\s\S]*data-clear="eqboard"/);
+  assert.match(equityHtml, /id="equityBoardCount"[\s\S]*data-card-clear-command="clear_board" data-card-clear-surface="equity"/);
   assert.match(equityHtml, /Flop[\s\S]*Turn[\s\S]*River/);
   assert.match(equityHtml, /Street labels are visual guides only/);
   assert.match(equityHtml, /id="equityDeadCount"/);
-  assert.match(equityHtml, /data-clear="eqdead"/);
+  assert.match(equityHtml, /data-card-clear-command="clear_dead_set" data-card-clear-surface="equity"/);
   assert.match(logic, /app\.equity\.board\.filter\(Boolean\)\.length/);
   assert.match(logic, /app\.equity\.dead\.filter\(Boolean\)\.length/);
 });

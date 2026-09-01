@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: September 1, 2026 (`AUTH-SUPABASE-SINGLETON-001` is accepted; `ANALYZE-SCENARIO-READINESS-001` now leads the remaining foundational gates).
+Last refreshed: September 1, 2026 (`ANALYZE-SCENARIO-READINESS-001` and `CARD-CLEAR-SEMANTICS-001` are human accepted; the fastest remaining audit cleanup is `HOME-HAND-LIFECYCLE-001`, then `SAME-SPOT-COHERENCE-001`).
 
 This roadmap explains major directional sequencing and why phases are ordered. [Current Phase](CURRENT_PHASE.md) owns the exact current checkpoint and execution order; [Product Backlog](PRODUCT_BACKLOG.md) owns concise capability/status. The [capability dossiers](capabilities/README.md) preserve detailed long-term intent without setting priority.
 
@@ -58,21 +58,24 @@ The completed dossier migration records more possibilities; it does not promote 
 20. **COMPLETED / HUMAN ACCEPTED FOUNDATION — `DECISION-ECONOMICS-001`, `STRATEGY-TRUST-001`, AND `DECISION-CONTEXT-SINGLE-AUTHORITY-001`.** Canonical ledger-pot accounting remains authoritative and actor-relative strategic pricing is exact only where canonical evidence exists. Strategy authority now requires structural/source validation followed by application-owned, identity/version/fingerprint-bound acceptance; provider declarations and manifest statuses cannot self-authorize, live trust tokens are not persisted, and historical answer-time authority/ClaimPolicy evidence is frozen. Scenario and Hand now use their canonical DecisionContext projectors through one selector, with missing/failed Playbook dependencies clearing stale state instead of invoking local construction. No production Reference Pack exists.
 21. **COMPLETED / ACCEPTED — `AUDIT-CHEAP-FIX-BATCH-001`** — Training Memory now preserves Full Hand evidence while embargoing answer/reference/review presentation until terminal Review; the Hand action dock follows the current actor and stack without erasing Hero identity; Equity structural completion identities use the complete entered known-card set while exact entered-hand outcome authority remains unchanged.
 22. **COMPLETED / ACCEPTED — `AUTH-SUPABASE-SINGLETON-001`** — one browser-runtime Supabase client owner serves Authentication, Account/Profile, Saved sync, and Personal Strategy sync. Equivalent normalized configuration and repeated acquisition reuse it; materially different in-runtime configuration fails closed; auth/identity transitions do not recreate it; missing/invalid configuration remains Guest/local-only.
-23. **ACTIVE NEXT — `ANALYZE-SCENARIO-READINESS-001`** — resolve the confirmed Analyze Scenario chronology/readiness audit finding without broad Analyze redesign.
-24. **IDENTITY AND PRODUCT-TRUTH GATES —** `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`.
-25. **PORTABLE TEST/LIFECYCLE PLATFORM — `BROWSER-TEST-PLATFORM-001`.**
-26. **BOUNDED UI COMPOSITION EXTRACTION —** `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot. This is risk-driven incremental decomposition, not React/Redux or a framework rewrite.
-27. **CURRENT SAVED RETRIEVAL — `SAVED-LIBRARY-001`** — full current Hand/Spot retrieval before any new Saved payload kind.
-28. **STUDY CONTINUITY — `HOME-STUDY-CONTINUITY-001`.**
-29. **BOUNDED REFERENCE-SOURCE DECISION —** after read-only source research, which may run in parallel.
-30. **LEARNING-LOOP EXPANSION.**
-31. **PERSONAL STRATEGY — `PERSONAL-STRATEGY-003A`.**
-32. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`** — whole-product release-quality acceptance after nearer foundational owners.
-33. **Release/mobile/social/PLO later** — only after their prerequisites and explicit decisions.
+23. **COMPLETED / HUMAN ACCEPTED — `ANALYZE-SCENARIO-READINESS-001`** — editable lossy Scenario drafts now pass one central coherence/readiness gate before `StrategyProvider`. Invalid chronology, action/facing dependencies, duplicate cards, or basic numeric inputs fail closed as `scenario_not_ready` with natural guidance; later-street clears preserve only valid earlier state and Scenario never invents exact actor-relative economics.
+24. **COMPLETED / HUMAN ACCEPTED — `CARD-CLEAR-SEMANTICS-001`** — one DOM-free semantic command owner defines isolated Hero/private/street/board/dead/all/pending clears. Analyze and Equity share transactional whole-set Dead Cards editing and restored slot-style resting presentation; adapters retain only dependent-state and invalidation ownership.
+25. **ACTIVE NEXT / FAST AUDIT CLEANUP — `HOME-HAND-LIFECYCLE-001`** — reconcile completed-Hand lifecycle truth on Home.
+26. **PLANNED NEXT / FAST AUDIT CLEANUP — `SAME-SPOT-COHERENCE-001`** — reconcile Same Spot session mode, label, and headline statistics.
+27. **IDENTITY AND PRODUCT-TRUTH GATES —** `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`.
+28. **PORTABLE TEST/LIFECYCLE PLATFORM — `BROWSER-TEST-PLATFORM-001`.**
+29. **BOUNDED UI COMPOSITION EXTRACTION —** `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot. This is risk-driven incremental decomposition, not React/Redux or a framework rewrite.
+30. **CURRENT SAVED RETRIEVAL — `SAVED-LIBRARY-001`** — full current Hand/Spot retrieval before any new Saved payload kind.
+31. **STUDY CONTINUITY — `HOME-STUDY-CONTINUITY-001`.**
+32. **BOUNDED REFERENCE-SOURCE DECISION —** after read-only source research, which may run in parallel.
+33. **LEARNING-LOOP EXPANSION.**
+34. **PERSONAL STRATEGY — `PERSONAL-STRATEGY-003A`.**
+35. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`** — whole-product release-quality acceptance after nearer foundational owners.
+36. **Release/mobile/social/PLO later** — only after their prerequisites and explicit decisions.
 
 ## Phase A — usable visible-product foundation
 
-Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and the bounded `HANDS-ON-DEFECTS-001` repair remain useful visible-product foundations. Core Flow, Hand Replay, the all-in runout regression repair, Training composition, Equity, Analyze/Range, First Use/Home, Saved Visual Knowledge, and the workflow-first Guide remain accepted checkpoints. The completed audits found foundational debt beneath some checkpoint claims. Training Memory ownership, actor-relative decision economics, and the declaration-versus-acceptance strategy trust boundary are now repaired and accepted; DecisionContext convergence, heuristic-consumer truth and normative grading, generalized lifecycle disposal including durable anonymous Device Guest, portable browser testing, Saved retrieval, and root composition remain. Those owners now lead; no broad polish or expansion wave begins first.
+Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and the bounded `HANDS-ON-DEFECTS-001` repair remain useful visible-product foundations. Core Flow, Hand Replay, the all-in runout regression repair, Training composition, Equity, Analyze/Range, First Use/Home, Saved Visual Knowledge, and the workflow-first Guide remain accepted checkpoints. The completed audits found foundational debt beneath some checkpoint claims. Training Memory ownership, actor-relative decision economics, the declaration-versus-acceptance strategy trust boundary, DecisionContext convergence, Analyze Scenario readiness, and shared card-clear semantics are now repaired and accepted. `HOME-HAND-LIFECYCLE-001` and `SAME-SPOT-COHERENCE-001` lead the remaining fast audit cleanup; heuristic-consumer truth and normative grading, generalized lifecycle disposal including durable anonymous Device Guest, portable browser testing, Saved retrieval, and root composition resume afterward. No broad polish or expansion wave begins first.
 
 The current product decision puts the human-triaged foundation gates ahead of another large feature/product-model implementation or broad polish wave. Bounded secondary polish remains routed debt, Home Game presentation and Audio Design remain conditional, and `PREMIUM-CLOSEOUT-001` remains the later pre-release quality gate. Controls First, the ineffective density selector, arbitrary layout editing, casino spectacle, fake cinematic 3D, avatars by default, and reward theater remain rejected.
 

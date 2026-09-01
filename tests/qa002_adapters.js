@@ -119,7 +119,14 @@ function createHarness() {
     preflopHeuristicSource.indexOf('function strategyAction('),
   );
   const potSource = sliceBetween(source, 'function preflopBasePot()', 'function updateMetrics()');
-  const updateContextSource = sliceBetween(source, 'async function updateContext(reason =', 'let equityCalculationGeneration = 0;');
+  const updateContextSource = sliceBetween(
+    source,
+    'async function updateContext(reason =',
+    'let equityCalculationGeneration = 0;',
+  ).replace(
+    'const strategyResult = strategyProvider.resolve(decisionContext);',
+    'strategyProviderResolveCount += 1;\n  const strategyResult = strategyProvider.resolve(decisionContext);',
+  );
   const tableProjectionSource = sliceBetween(
     source,
     'function renderPlaybookTableProjection()',
@@ -303,6 +310,7 @@ function createHarness() {
       return first + second + (cards[0][1] === cards[1][1] ? 's' : 'o');
     };
     let capturedEquityDecisionContext = null;
+    let strategyProviderResolveCount = 0;
     function decisionContextToLegacyPostflopContext(context) {
       return {
         board: context.board.slice(), heroCards: context.heroCards.slice(),
@@ -418,7 +426,7 @@ function createHarness() {
         controls.set('#straddle', createElement(straddle));
         return preflopBasePot();
       },
-      async captureContext(values, canonicalScenarioProjector) {
+      async captureContext(values, canonicalScenarioProjector, canonicalScenarioResolver) {
         controls.clear();
         const definitions = {
           players: [values.players ?? 6, 2, 10],
@@ -454,6 +462,12 @@ function createHarness() {
             resolveDecisionContext(input) {
               if (values.bridgeBehavior === 'throw') throw new Error('test resolver failure');
               if (values.bridgeBehavior === 'invalid') return null;
+              if (values.useReadinessResolver === true) {
+                return canonicalScenarioResolver({
+                  mode: 'scenario',
+                  scenarioInput: input,
+                });
+              }
               return {
                 schemaVersion: 'playbook-decision-resolution/v1',
                 mode: 'scenario',
@@ -474,6 +488,7 @@ function createHarness() {
           globalThis.RiverlinePlaybookState = playbookBridge;
         }
         dispatchedState = null;
+        strategyProviderResolveCount = 0;
         const decisionContexts = [];
         const strategyResults = [];
         const refreshCount = values.refreshCount ?? 1;
@@ -492,6 +507,7 @@ function createHarness() {
           snapshot: readPlaybookInputSnapshot(),
           facingControl: controls.get('#facingSize').value,
           facingNumberControl: controls.get('#facingSizeNum').value,
+          strategyProviderResolveCount,
           dispatchedState,
         };
       },
@@ -559,8 +575,15 @@ module.exports = {
   fallbackStrategyResult: (...args) => plain(harness.fallbackStrategyResult(...args)),
   preflopPot: (...args) => harness.preflopPot(...args),
   captureContext: async (values = {}) => {
-    const { deriveDecisionContextFromPlaybookScenario } = await playbookStateSourcePromise;
-    return plain(await harness.captureContext(values, deriveDecisionContextFromPlaybookScenario));
+    const {
+      deriveDecisionContextFromPlaybookScenario,
+      resolvePlaybookDecisionContext,
+    } = await playbookStateSourcePromise;
+    return plain(await harness.captureContext(
+      values,
+      deriveDecisionContextFromPlaybookScenario,
+      resolvePlaybookDecisionContext,
+    ));
   },
   postflopWithDrop: (...args) => plain(harness.postflopWithDrop(...args)),
   rankValue: (...args) => harness.rankValue(...args),

@@ -61,6 +61,16 @@ UI must not implement:
 - strategy mathematics
 - solver/model training
 
+Editable-card clearing has one shared DOM-free semantic owner. Its command set is
+`CLEAR_HERO`, `CLEAR_PLAYER_HAND`, `CLEAR_FLOP`, `CLEAR_TURN`, `CLEAR_RIVER`,
+`CLEAR_BOARD`, `CLEAR_DEAD_SET`, `CLEAR_DEAD_CARD`, `CLEAR_ALL_EDITABLE`, and
+`CLEAR_PENDING_CARD_SET`. Hero/private clears preserve board and dead cards;
+Flop clears Flop, Turn, and River; Turn clears Turn and River; River clears only
+River; dead-card single and set clears remain distinct; empty clears are
+idempotent no-ops. Canonical Hand history is never an editable target. Workspace
+adapters own only their dependent state, readiness, rendering, and invalidation
+consequences.
+
 ## 4. Scenario versus canonical Hand
 
 Scenario:
@@ -68,6 +78,15 @@ Scenario:
 - arbitrary, intentionally lossy study snapshot
 - does not claim a legal PokerState/history
 - preserves unknown facts as `null`
+- may remain editable while incomplete or contradictory, but reaches
+  `StrategyProvider` only after central provider-readiness validation
+- fails closed as `scenario_not_ready` when card/street chronology,
+  action/street consistency, facing/action dependencies, known-card uniqueness,
+  or basic numeric readiness is incoherent
+- uses natural user-facing guidance while retaining structured readiness reasons
+- transactionally clears later-street state while preserving only still-valid
+  earlier state
+- never invents exact actor-relative economics
 
 Hand Mode:
 

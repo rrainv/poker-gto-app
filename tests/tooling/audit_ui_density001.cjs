@@ -74,7 +74,7 @@ async function measure(win, configuration) {
     const overlaps = (a, b) => a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
     const header = rect('.playbook-dead-card-header');
     const summary = rect('.playbook-card-state-summary');
-    const clear = rect('.playbook-dead-card-header [data-clear="dead"]');
+    const clear = rect('.playbook-dead-card-header [data-card-clear-command="clear_dead_set"]');
     const label = rect('.playbook-dead-card-header > .playbook-card-state-copy > strong');
     const root = document.documentElement;
     return {

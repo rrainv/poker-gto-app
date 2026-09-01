@@ -166,20 +166,16 @@ test('an existing unordered hand is preloaded; Cancel preserves it and Apply rep
   assert.equal(equity.readiness().state, 'ready');
 });
 
-test('Clear resets only the draft, while Known changes mode without opening a second interaction', () => {
+test('Clear commits only that Equity player hand, while Known changes mode without opening a second interaction', () => {
   const equity = createEquityHandEntryHarness();
   equity.app.equity.players[0].cards = ['As', 'Kd'];
   equity.sync();
   equity.openHand('equity-player-0');
 
   assert.equal(equity.clearHand(), true);
-  assert.deepEqual([...equity.app.equity.players[0].cards], ['As', 'Kd']);
-  assert.equal(equity.modalOpen(), true);
-  assert.equal((equity.contextMarkup().match(/card-set-picker-card--empty/g) || []).length, 2);
-  assert.equal(equity.applyDisabled(), true);
-  equity.cancel();
-  assert.deepEqual([...equity.request().players[0].cards], ['As', 'Kd']);
-  assert.equal(equity.readiness().state, 'ready');
+  assert.deepEqual([...equity.app.equity.players[0].cards], []);
+  assert.equal(equity.modalOpen(), false);
+  assert.equal(equity.readiness().state, 'blocked');
 
   equity.openHand('equity-player-0');
   equity.selectCard('Js');
@@ -198,6 +194,17 @@ test('Clear resets only the draft, while Known changes mode without opening a se
   assert.equal(equity.modalOpen(), false);
   assert.equal(equity.readiness().state, 'blocked');
   assert.equal(equity.openHand('equity-player-0'), true);
+  assert.equal(equity.modalOpen(), true);
+});
+
+test('clearing an already empty Equity hand is a true no-op', () => {
+  const equity = createEquityHandEntryHarness();
+  equity.trace({ clear: true });
+  equity.openHand('equity-player-0');
+
+  assert.equal(equity.clearHand(), false);
+  assert.deepEqual([...equity.trace()], []);
+  assert.deepEqual([...equity.app.equity.players[0].cards], []);
   assert.equal(equity.modalOpen(), true);
 });
 

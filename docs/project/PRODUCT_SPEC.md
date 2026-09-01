@@ -78,7 +78,8 @@ Hover/focus inspection, hypothetical states, Save/bookmark, Randomize/Lock, card
 ## 6. Durable visible-product invariants
 
 - **Card picker:** default cards are readable at 1080p without browser zoom; fix the default before adding micro-settings.
-- **Transactional card-set editing:** supported Hand/Scenario and Equity card sets edit as a draft and commit once through Apply; Cancel/Escape restores the prior set, and only a committed legal change reaches the owning surface's existing invalidation/readiness path.
+- **Transactional card-set editing:** supported Hand/Scenario and Equity card sets edit as a draft and commit once through Apply; Cancel/Escape/X/backdrop restores the prior set, and only a committed legal change reaches the owning surface's existing invalidation/readiness path. Analyze and Equity Dead Cards use one whole-set multi-select/toggle editor; `Clear all` changes only its draft until Apply. Resting Dead Cards retain ordinary Riverline slots without nested scrolling, and the overlay does not change underlying workspace geometry.
+- **Analyze Scenario readiness:** Scenario remains an editable lossy draft, but only centrally validated coherent inputs reach `StrategyProvider`. Invalid chronology, action/facing dependencies, duplicate known cards, and basic numeric readiness fail closed with natural guidance; clearing later-street cards preserves only valid earlier state, and Scenario does not fabricate exact actor-relative economics.
 - **Board:** five board cards remain one horizontal row on supported desktop layouts. Street grouping labels may sit above slots.
 - **Card identity:** every visible known card exposes rank and suit identity across Hero/opponent cards, 2/4-color modes, T/10, themes, and RTL.
 - **Sizing display:** presentation uses human poker precision rather than leaking internal floating-point decimals; canonical stored amounts remain exact.

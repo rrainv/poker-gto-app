@@ -53,7 +53,7 @@ test('street is derived only from the number of populated board cards', () => {
   assert.equal(qa.streetFor(['As', 'Kd', 'Qh', '2c', '3s']), 'river');
   assert.equal(qa.streetFor(['As']), 'invalid');
   assert.equal(qa.streetFor(['As', 'Kd']), 'invalid');
-  assert.equal(qa.streetFor(['As', null, 'Kd', null, 'Qh']), 'flop');
+  assert.equal(qa.streetFor(['As', null, 'Kd', null, 'Qh']), 'invalid');
 });
 
 test('table and stack controls expose the current UI boundaries', () => {

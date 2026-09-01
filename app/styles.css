@@ -9108,7 +9108,7 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 .equity-card-group + .equity-card-group { margin-top: var(--space-4); }
 .equity-card-group-head { justify-content: space-between; align-items: flex-start; }
 .equity-card-group-head h3 { margin: 0 0 var(--space-1); font-size: 1rem; }
-.equity-dead-cards { max-height: 170px; overflow-y: auto; margin-top: var(--space-4); }
+.equity-dead-cards { overflow: visible; margin-top: var(--space-4); }
 
 .equity-control-grid {
   display: grid;
@@ -14378,7 +14378,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"] .table-wrappe
 .equity-board-cards { justify-content: center; flex-wrap: nowrap; }
 .equity-board-cards .card-slot { width: var(--card-size-hero-width); height: var(--card-size-hero-height); }
 .equity-dead-group { padding-block: var(--space-2); }
-.equity-dead-cards { max-block-size: 88px; overflow-y: auto; overflow-x: hidden; }
+.equity-dead-cards { min-block-size: var(--poker-card-height); overflow: visible; }
 .equity-calculation-strip { border: 1px solid var(--border-subtle); }
 .equity-calculation-strip .equity-section-head { margin-bottom: var(--space-2); }
 .equity-calculation-strip .equity-control-grid { grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr); gap: var(--space-2); padding-inline: var(--space-3); }
@@ -14602,6 +14602,19 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"] .table-wrappe
 .card-set-picker-action-spacer { flex: 1 1 auto; }
 .private-hand-set-editor { display: flex; flex-wrap: nowrap; gap: var(--space-3); padding: var(--space-1); overflow: visible; background: transparent; border: 0; border-radius: var(--radius-control); }
 .private-hand-set-editor:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 3px; }
+.dead-card-set-editor {
+  min-block-size: var(--poker-card-height);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-control);
+}
+.dead-card-set-editor:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 3px; }
 .board-card-set-editor { display: grid; grid-template-columns: 1fr; gap: var(--space-2); padding: 0; background: transparent; border: 0; border-radius: var(--radius-control); }
 .board-card-set-editor--flop { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .board-card-set-editor:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 3px; }
@@ -14635,7 +14648,22 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"] .table-wrappe
 
 /* The picker keeps selection feedback immediate without repainting a blurred
    full-window backdrop or animating paint properties across the dense deck. */
-#cardModal { backdrop-filter: none; }
+#cardModal {
+  backdrop-filter: none;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal-backdrop);
+  overflow: hidden;
+}
+#cardModal > .modal {
+  max-height: calc(100dvh - (2 * var(--space-6)));
+  margin: auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+#cardModal .card-set-picker-context[data-picker-kind="dead_set"] .card-set-picker-cards {
+  flex-wrap: wrap;
+}
 #cardModal .deck-card {
   box-shadow: none;
   transition: none;

@@ -59,7 +59,7 @@ test('compact labels and provenance copy remain available to EN, RU, and HE cata
 
 test('dead-card header keeps the status group and Clear action in independent reflow-safe columns', () => {
   const header = html.slice(html.indexOf('playbook-dead-card-header'), html.indexOf('data-slots="dead"'));
-  assert.match(header, /class="playbook-card-state-copy"[\s\S]*data-clear="dead"/);
+  assert.match(header, /class="playbook-card-state-copy"[\s\S]*data-card-clear-command="clear_dead_set"/);
   assert.match(css, /\.playbook-dead-card-header\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto/);
   assert.match(css, /\.playbook-card-state-summary\s*\{[^}]*flex-wrap:\s*wrap/);
   assert.match(css, /\.playbook-dead-card-header > \.small-link\s*\{[^}]*white-space:\s*nowrap/);

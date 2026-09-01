@@ -921,7 +921,7 @@
 
                 <strong data-i18n="Hero hand">Hero hand</strong>
 
-                <button class="small-link" data-clear="hero" data-i18n="Clear">Clear</button>
+                <button class="small-link" data-card-clear-command="clear_hero" data-card-clear-surface="scenario" data-i18n="Clear">Clear</button>
 
               </div>
 
@@ -933,7 +933,7 @@
 
                 <strong data-i18n="Board">Board</strong>
 
-                <button class="small-link" data-clear="board" data-i18n="Clear">Clear</button>
+                <button class="small-link" data-card-clear-command="clear_board" data-card-clear-surface="scenario" data-i18n="Clear">Clear</button>
 
               </div>
 
@@ -958,7 +958,7 @@
                     <span><span data-i18n="Available">Available</span>: <strong id="deckCount">52</strong></span>
                   </div>
                 </div>
-                <button class="small-link" data-clear="dead" data-i18n="Clear">Clear</button>
+                <button class="small-link" data-card-clear-command="clear_dead_set" data-card-clear-surface="scenario" data-i18n="Clear">Clear</button>
 
               </div>
 
@@ -2606,7 +2606,7 @@
                 <div><h3 data-i18n="Board">Board</h3><span class="muted" data-i18n="0–5 cards, in deal order">0–5 cards, in deal order</span></div>
                 <div class="equity-card-group-actions">
                   <span id="equityBoardCount" class="equity-count">0 / 5</span>
-                  <button class="ui-button ui-button-ghost" type="button" data-clear="eqboard" data-i18n="Clear">Clear</button>
+                  <button class="ui-button ui-button-ghost" type="button" data-card-clear-command="clear_board" data-card-clear-surface="equity" data-i18n="Clear">Clear</button>
                 </div>
               </div>
               <div class="equity-board-layout equity-board-order" dir="ltr">
@@ -2617,7 +2617,7 @@
             <div class="equity-card-group equity-dead-group">
               <div class="equity-card-group-head">
                 <div><h3 data-i18n="Dead Cards">Dead Cards</h3><span class="muted" data-i18n="Excluded from the remaining deck">Excluded from the remaining deck</span></div>
-                <div class="equity-card-group-actions"><span><span id="eqDeckCount">52</span> <span data-i18n="remaining">remaining</span></span><span id="equityDeadCount" class="equity-count">0</span><button class="ui-button ui-button-ghost" type="button" data-clear="eqdead" data-i18n="Clear">Clear</button></div>
+                <div class="equity-card-group-actions"><span><span id="eqDeckCount">52</span> <span data-i18n="remaining">remaining</span></span><span id="equityDeadCount" class="equity-count">0</span><button class="ui-button ui-button-ghost" type="button" data-card-clear-command="clear_dead_set" data-card-clear-surface="equity" data-i18n="Clear">Clear</button></div>
               </div>
               <div class="cards-row equity-dead-cards" data-slots="eqdead" aria-label="Dead cards" data-i18n-aria-label="Dead cards"></div>
             </div>
@@ -3355,6 +3355,7 @@
 
   <script src="src/core/AudioFoleyManifest.js" defer></script>
   <script src="src/core/SoundFX.js" defer></script>
+  <script type="module" src="src/application/card-clear-semantics.mjs"></script>
   <script type="module" src="src/application/product-performance.mjs"></script>
   <script type="module" src="src/application/strategy-provider-bootstrap.mjs"></script>
   <script type="module" src="src/application/analysis-explanation-bootstrap.mjs"></script>

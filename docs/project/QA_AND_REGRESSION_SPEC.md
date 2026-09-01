@@ -24,6 +24,9 @@ Protect poker correctness, architecture contracts, performance, and user-facing 
 - source/provenance truthfulness
 - deterministic heuristic behavior
 - Scenario versus Hand isolation
+- editable lossy Scenario drafts fail closed before StrategyProvider unless
+  central chronology, action/facing, uniqueness, and numeric readiness passes
+- lossy Scenario never invents actor-relative economics
 
 ### Training
 
@@ -38,7 +41,11 @@ Protect poker correctness, architecture contracts, performance, and user-facing 
 ### UI/UX
 
 - primary workspaces load and switch
-- card picker replace/cancel behavior
+- transactional card-set Apply versus Cancel/Escape/X/backdrop behavior
+- shared clear-command isolation, chronology, dead-card single/set distinction,
+  idempotent empty clears, and canonical Hand-history protection
+- Analyze/Equity whole-set Dead Cards editing, ordinary resting slots without
+  nested scroll, and overlay geometry isolation
 - notifications do not cross workflows
 - keyboard/focus/ARIA truthfulness
 - empty/loading/error/unavailable/result states

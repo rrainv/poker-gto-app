@@ -18,8 +18,8 @@ test('the card picker builds its deck only while open and detaches it on close',
   const render = sourceBetween('function renderDeck()', 'function updateDeckCardStates(');
   const update = sourceBetween('function updateDeckCardStates(', 'function cardSetPickerScope(');
   const select = sourceBetween('function selectCard(', 'function cardSetPickerFocusTarget(');
-  const clear = sourceBetween('function clearPrivateHandPicker(', 'function cardPickerFocusableElements(');
-  const close = sourceBetween('function closePicker(', 'function clearGroup(');
+  const clear = sourceBetween('function scenarioCardClearTargets(', 'function cardPickerFocusableElements(');
+  const close = sourceBetween('function closePicker(', 'function handleExplicitCardClear(');
   assert.match(open, /renderDeck\(\)/);
   assert.match(render, /deck\.innerHTML = SUITS\.map/);
   assert.match(update, /!Array\.isArray\(changedCards\) \|\| changedCards\.length === 0/);
@@ -31,10 +31,10 @@ test('the card picker builds its deck only while open and detaches it on close',
   assert.doesNotMatch(update, /innerHTML|replaceChildren/);
   assert.match(select, /updateDeckCardStates\(\[card\]\)/);
   assert.doesNotMatch(select, /renderDeck\(\)|innerHTML|replaceChildren/);
-  assert.match(clear, /const changedCards = picker\.draft\.slice\(\)/);
-  assert.match(clear, /updateDeckCardStates\(changedCards\)/);
+  assert.match(clear, /applyEditableCardClear/);
+  assert.match(clear, /closePicker\(\{ restoreFocus: false \}\)/);
   assert.doesNotMatch(clear, /renderDeck\(\)|innerHTML|replaceChildren/);
-  assert.doesNotMatch(`${select}\n${clear}`, /createRangeAnalysisFacts|equityRangeAnalysisFacts|setEquityPending/);
+  assert.doesNotMatch(select, /createRangeAnalysisFacts|equityRangeAnalysisFacts|setEquityPending/);
   assert.match(close, /\$\('#deck'\)\?\.replaceChildren\?\.\(\)/);
   assert.match(css, /#cardModal\s*\{\s*backdrop-filter:\s*none/);
   assert.match(css, /#cardModal \.deck-card\s*\{[^}]*box-shadow:\s*none[^}]*transition:\s*none/s);
@@ -43,7 +43,7 @@ test('the card picker builds its deck only while open and detaches it on close',
 test('picker keeps focus in the draft deck and restores it to the originating set editor on close', () => {
   const open = sourceBetween('function openPicker(', 'function renderDeck(');
   const select = sourceBetween('function selectCard(', 'function closePicker(');
-  const close = sourceBetween('function closePicker(', 'function clearGroup(');
+  const close = sourceBetween('function closePicker(', 'function handleExplicitCardClear(');
   assert.match(open, /pickerFocusTarget\?\.focus\?\.\(\{ preventScroll: true \}\)/);
   assert.match(select, /const selectedControl = document\.querySelector\(`\[data-deck-card="\$\{card\}"\]`\)/);
   assert.match(select, /document\.activeElement !== selectedControl/);

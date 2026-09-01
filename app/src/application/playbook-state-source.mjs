@@ -12,6 +12,10 @@ import {
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
 import {
+  playbookScenarioStreetFromBoard,
+  validatePlaybookScenarioReadiness,
+} from './playbook-scenario-readiness.mjs';
+import {
   DECISION_CONTEXT_CONTRACT_VERSION,
   DECISION_CONTEXT_SCHEMA_VERSION,
   createDecisionContextDerivation,
@@ -75,6 +79,7 @@ function resolution(mode, status, details = {}) {
     mode,
     status,
     reason: null,
+    readiness: null,
     decisionContext: null,
     error: null,
     ...details,
@@ -83,6 +88,10 @@ function resolution(mode, status, details = {}) {
 
 function copyCards(cards) {
   return Array.isArray(cards) ? cards.filter(Boolean).slice() : [];
+}
+
+function copyBoardSlots(cards) {
+  return Array.isArray(cards) ? cards.slice() : [];
 }
 
 function requireExactKeys(value, expected, label) {
@@ -107,7 +116,7 @@ function createPlaybookScenarioV1(input) {
     heroPosition: input.heroPosition,
     street: input.street,
     heroCards: copyCards(input.heroCards),
-    board: copyCards(input.board),
+    board: copyBoardSlots(input.board),
     deadCards: copyCards(input.deadCards),
     stackBb: input.stackBb,
     stackMode: input.stackMode,
@@ -136,7 +145,7 @@ function createPlaybookScenarioV2(input) {
     heroPosition: input.heroPosition,
     street: input.street,
     heroCards: copyCards(input.heroCards),
-    board: copyCards(input.board),
+    board: copyBoardSlots(input.board),
     deadCards: copyCards(input.deadCards),
     stackBb: input.stackBb,
     stackMode: input.stackMode,
@@ -199,7 +208,7 @@ export function createPlaybookScenarioInputFromLegacyCompatibility(input = {}) {
     heroPosition: input.heroPosition,
     street: input.street,
     heroCards: copyCards(input.heroCards),
-    board: copyCards(input.board),
+    board: copyBoardSlots(input.board),
     deadCards: copyCards(input.deadCards),
     stackBb: input.stackBb,
     stackMode: input.stackMode,
@@ -298,12 +307,7 @@ function scenarioCurrentPotBb(value, events) {
 }
 
 function scenarioStreet(board) {
-  const count = copyCards(board).length;
-  if (count === 0) return 'preflop';
-  if (count === 3) return 'flop';
-  if (count === 4) return 'turn';
-  if (count === 5) return 'river';
-  return 'invalid';
+  return playbookScenarioStreetFromBoard(board);
 }
 
 function scenarioFacingSize(lastAction, value, events) {
@@ -787,6 +791,13 @@ export function resolvePlaybookDecisionContext({
   if (mode === PLAYBOOK_MODES.SCENARIO) {
     try {
       const input = createPlaybookScenarioInput(scenarioInput || {});
+      const readiness = validatePlaybookScenarioReadiness(input);
+      if (!readiness.ready) {
+        return resolution(mode, 'unavailable', {
+          reason: 'scenario_not_ready',
+          readiness,
+        });
+      }
       const decisionContext = deriveDecisionContextFromPlaybookScenario(input);
       if (decisionContext?.schemaVersion !== 'decision-context/v1') {
         throw new TypeError('Scenario projection did not return DecisionContext v1');
@@ -836,6 +847,7 @@ export function createPlaybookViewModel({ resolution: current, strategyResult = 
     mode: safeResolution.mode,
     status: safeResolution.status,
     reason: safeResolution.reason,
+    readiness: safeResolution.readiness ?? null,
     error: safeResolution.error,
     decisionContext: safeResolution.decisionContext,
     strategyResult,

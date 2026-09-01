@@ -107,8 +107,8 @@ test('Russian Clear is semantically distinct from Fold and Equity uses the canon
   assert.equal(audit.semantic.russianClear, 'Очистить');
   assert.equal(audit.semantic.russianFold, 'Фолд');
   assert.equal(audit.semantic.russianClearDistinctFromFold, true);
-  assert.match(html, /data-clear="eqboard"[^>]*data-i18n="Clear"/);
-  assert.match(html, /data-clear="eqdead"[^>]*data-i18n="Clear"/);
+  assert.match(html, /data-card-clear-command="clear_board"[^>]*data-i18n="Clear"/);
+  assert.match(html, /data-card-clear-command="clear_dead_set"[^>]*data-i18n="Clear"/);
 });
 
 test('language changes update the live static DOM, persistence, direction, and event lifecycle', () => {

@@ -321,6 +321,16 @@ function callEquityServiceBridge(method, ...args) {
   }
 }
 
+function requireCardClearSemanticsBridge() {
+  const bridge = globalThis.RiverlineCardClearSemantics;
+  if (!bridge || bridge.schemaVersion !== 'card-clear-semantics/v1'
+    || typeof bridge.applyEditableCardClear !== 'function'
+    || typeof bridge.editableCardClearWouldChange !== 'function') {
+    throw new Error('Riverline card-clear semantics bridge is unavailable');
+  }
+  return bridge;
+}
+
 function callTrainingServiceBridge(method, ...args) {
   try {
     const bridge = window.RiverlineTraining;
@@ -552,6 +562,18 @@ function privateHandSetEditorMarkup(group, cards) {
   return `<button type="button" class="private-hand-set-editor" data-card-set-edit="${group}" aria-label="${escapeEquityMarkup(t('Edit {player} hand', { player: ownerLabel }))}">${cardMarkupSet}</button>`;
 }
 
+function deadCardSetEditorMarkup(group, cards, count) {
+  const committed = cards.filter(Boolean);
+  const visibleSlotCount = Math.min(count, committed.length + 1);
+  const slots = Array.from({ length: visibleSlotCount }, (_, index) => {
+    const card = committed[index];
+    const state = card ? 'dead' : 'empty';
+    const suitClass = card ? ` card--suit-${card[1]}` : '';
+    return `<span class="card-slot card--${state}${card ? ' filled' : ''}${suitClass} riverline-card" data-card-state="${state}" data-card-size="slot" aria-hidden="true">${cardMarkup(card)}</span>`;
+  }).join('');
+  return `<button type="button" class="dead-card-set-editor" data-card-set-edit="${group}" data-card-set-index="0" aria-label="${escapeEquityMarkup(t('Edit dead cards'))}">${slots}</button>`;
+}
+
 function boardCardSetEditorsMarkup(group, count, cards) {
   const entries = group === 'hand-board-chance'
     ? [{ originIndex: 0, cardCount: count }]
@@ -587,24 +609,17 @@ function renderSlots(group, count) {
     return;
   }
 
+  if (group.includes('dead')) {
+    target.innerHTML = deadCardSetEditorMarkup(group, cards, count);
+    return;
+  }
+
   if (['board', 'eqboard', 'hand-board-chance'].includes(group)) {
     target.innerHTML = boardCardSetEditorsMarkup(group, count, cards);
     return;
   }
 
   let renderCount = count;
-
-  // Auto-collapse dead cards to save space
-
-  if (group.includes('dead')) {
-
-      const filledCount = cards.filter(Boolean).length;
-
-      renderCount = Math.min(count, filledCount + 1);
-
-  }
-
-  
 
   target.innerHTML = Array.from({ length: renderCount }, (_, index) => {
 
@@ -1168,7 +1183,12 @@ function setEquityHandMode(playerId, handMode) {
   if (!player || !['known', 'unknown'].includes(handMode)) return;
   if (app.picker?.group === equityHandGroup(player.id)) closePicker({ restoreFocus: false });
   player.handMode = handMode;
-  if (handMode === 'unknown') player.cards = [];
+  if (handMode === 'unknown') {
+    requireCardClearSemanticsBridge().applyEditableCardClear(
+      requireCardClearSemanticsBridge().commands.CLEAR_PLAYER_HAND,
+      { playerHand: player.cards }
+    );
+  }
   setEquityPending({ renderInputs: 'players' });
 }
 
@@ -1270,21 +1290,27 @@ function renderEquityPlayers() {
 
 function updateActionOptions() {
 
-  const isPreflop = currentStreet() === 'preflop';
+  const street = currentStreet();
+
+  const isPreflop = street === 'preflop';
 
   const sel = $('#lastAction');
 
   if (!sel) return;
 
+  const allowedActions = isPreflop
+    ? new Set(['unopened', 'raise', '3bet', '4bet'])
+    : street === 'invalid'
+      ? new Set(Array.from(sel.options, (option) => option.value))
+      : new Set(['check', 'bet', 'raise']);
+
   Array.from(sel.options).forEach(opt => {
 
-    if (opt.value === 'bet' || opt.value === 'check') {
+    const allowed = allowedActions.has(opt.value);
 
-      opt.style.display = isPreflop ? 'none' : '';
+    opt.style.display = allowed ? '' : 'none';
 
-      opt.disabled = isPreflop;
-
-    }
+    opt.disabled = !allowed;
 
   });
 
@@ -1292,10 +1318,34 @@ function updateActionOptions() {
 
   if (sel.selectedOptions.length && sel.selectedOptions[0].disabled) {
 
-    sel.value = isPreflop ? 'unopened' : 'check';
+    resetScenarioBettingDependencies(isPreflop ? 'preflop' : street);
 
   }
 
+}
+
+function setScenarioControlPair(rangeId, numberId, value) {
+  const range = $('#' + rangeId);
+  const number = $('#' + numberId);
+  if (range) range.value = String(value);
+  if (number) number.value = String(value);
+}
+
+function resetScenarioBettingDependencies(street, options) {
+  const resetPot = options?.resetPot === true;
+  const action = street === 'preflop' ? 'unopened' : 'check';
+  if ($('#lastAction')) $('#lastAction').value = action;
+  setScenarioControlPair('facingSize', 'facingSizeNum', 0);
+  if (resetPot && street === 'preflop') {
+    setScenarioControlPair('potSize', 'potSizeNum', preflopBasePot());
+  }
+}
+
+function reconcileScenarioActionDependencies() {
+  const action = selectedValue('#lastAction');
+  if (action === 'unopened' || action === 'check' || action === 'call' || action === 'limp') {
+    setScenarioControlPair('facingSize', 'facingSizeNum', 0);
+  }
 }
 
 
@@ -1330,6 +1380,7 @@ function renderPlaybookCards() {
   }
 
   renderPlaybookCardStateSummary(remainingCards(isHandMode() ? 'hand' : 'gto'));
+  syncExplicitCardClearAvailability('scenario');
   updateActionOptions();
 }
 
@@ -1358,6 +1409,7 @@ function renderEquitySharedCards() {
   renderSlots('eqboard', 5);
   renderSlots('eqdead', 52);
   renderEquityCardCounts();
+  syncExplicitCardClearAvailability('equity');
 }
 
 function renderEquityCards() {
@@ -1392,6 +1444,7 @@ function privateHandOwnerLabel(group) {
 }
 
 function boardStreetCardSetDefinition(group, originIndex) {
+  const commands = requireCardClearSemanticsBridge().commands;
   if (group === 'hand-board-chance') {
     const state = callPlaybookStateBridge('getState');
     const requiredCount = Math.max(1, Number(state?.pendingChance?.cardCount) || 1);
@@ -1404,7 +1457,8 @@ function boardStreetCardSetDefinition(group, originIndex) {
       title: t('Edit {street}', { street: streetLabel }),
       kindLabel: t('Board cards'),
       ownerLabel: streetLabel,
-      selectionLabel: t('Selected cards')
+      selectionLabel: t('Selected cards'),
+      clearCommand: commands.CLEAR_PENDING_CARD_SET
     };
   }
   if (!['board', 'eqboard'].includes(group)) return null;
@@ -1416,7 +1470,8 @@ function boardStreetCardSetDefinition(group, originIndex) {
       title: t('Edit Flop'),
       kindLabel: t('Board cards'),
       ownerLabel: t('Flop'),
-      selectionLabel: t('Selected flop')
+      selectionLabel: t('Selected flop'),
+      clearCommand: commands.CLEAR_FLOP
     };
   }
   const streetLabel = t(originIndex === 3 ? 'Turn' : 'River');
@@ -1427,14 +1482,30 @@ function boardStreetCardSetDefinition(group, originIndex) {
     title: t('Edit {street}', { street: streetLabel }),
     kindLabel: t('Board card'),
     ownerLabel: streetLabel,
-    selectionLabel: t('Selected card')
+    selectionLabel: t('Selected card'),
+    clearCommand: originIndex === 3 ? commands.CLEAR_TURN : commands.CLEAR_RIVER
   };
 }
 
 function cardSetPickerDefinition(group, originIndex) {
   const cards = groupCards(group);
+  if (group === 'dead' || group === 'eqdead') {
+    return {
+      kind: 'dead_set',
+      requiredCount: null,
+      maxCount: 52,
+      targetIndices: [],
+      title: t('Edit dead cards'),
+      kindLabel: t('Dead cards'),
+      ownerLabel: '',
+      selectionLabel: t('Selected dead cards'),
+      clearCommand: requireCardClearSemanticsBridge().commands.CLEAR_DEAD_SET,
+      committed: cards.filter(Boolean)
+    };
+  }
   const privateHand = isPrivateHandCardSetGroup(group);
   if (privateHand) {
+    const commands = requireCardClearSemanticsBridge().commands;
     const ownerLabel = privateHandOwnerLabel(group);
     return {
       kind: 'private_hand',
@@ -1444,6 +1515,7 @@ function cardSetPickerDefinition(group, originIndex) {
       kindLabel: t('Player hand'),
       ownerLabel,
       selectionLabel: t('Selected hand'),
+      clearCommand: group === 'hero' ? commands.CLEAR_HERO : commands.CLEAR_PLAYER_HAND,
       committed: cards.slice(0, 2).filter(Boolean)
     };
   }
@@ -1454,15 +1526,15 @@ function cardSetPickerDefinition(group, originIndex) {
       committed: boardDefinition.targetIndices.map((index) => cards[index]).filter(Boolean)
     };
   }
-  const deadCard = group.includes('dead');
   return {
-    kind: deadCard ? 'dead_card' : 'single_card',
+    kind: 'single_card',
     requiredCount: 1,
     targetIndices: [originIndex],
-    title: t(deadCard ? 'Choose a dead card' : 'Choose a card'),
-    kindLabel: t(deadCard ? 'Dead card' : 'Card'),
+    title: t('Choose a card'),
+    kindLabel: t('Card'),
     ownerLabel: '',
     selectionLabel: t('Selected card'),
+    clearCommand: null,
     committed: cards[originIndex] ? [cards[originIndex]] : []
   };
 }
@@ -1473,31 +1545,48 @@ function renderCardSetPickerContext() {
   if (!context) return;
   context.hidden = !picker;
   if (!picker) return;
+  context.dataset.pickerKind = picker.kind;
   if ($('#cardSetPickerKind')) $('#cardSetPickerKind').textContent = picker.ownerLabel ? picker.kindLabel : '';
   if ($('#cardSetPickerOwner')) $('#cardSetPickerOwner').textContent = picker.ownerLabel || picker.kindLabel;
   if ($('#cardSetPickerLabel')) $('#cardSetPickerLabel').textContent = picker.selectionLabel;
-  if ($('#cardSetPickerCount')) $('#cardSetPickerCount').textContent = t('{selected} / {required} selected', {
-    selected: picker.draft.length,
-    required: picker.requiredCount
-  });
+  if ($('#cardSetPickerCount')) $('#cardSetPickerCount').textContent = picker.kind === 'dead_set'
+    ? t('{selected} selected', { selected: picker.draft.length })
+    : t('{selected} / {required} selected', {
+      selected: picker.draft.length,
+      required: picker.requiredCount
+    });
   const cards = $('#cardSetPickerCards');
   if (cards) {
     cards.setAttribute('aria-label', picker.selectionLabel);
-    cards.innerHTML = Array.from({ length: picker.requiredCount }, (_, index) => {
+    const previewCount = picker.kind === 'dead_set' ? picker.draft.length : picker.requiredCount;
+    cards.innerHTML = previewCount === 0
+      ? `<span class="card-set-picker-empty">${t('No dead cards selected')}</span>`
+      : Array.from({ length: previewCount }, (_, index) => {
       const card = picker.draft[index];
       if (!card) {
         return '<span class="card-set-picker-card card-set-picker-card--empty card-slot card--empty riverline-card" data-card-state="empty" data-card-size="standard" aria-hidden="true"></span>';
       }
       return `<button type="button" class="card-set-picker-card card-slot card--known filled card--suit-${card[1]} riverline-card" data-card-state="known" data-card-size="standard" data-card-set-preview-card="${card}" aria-label="${escapeEquityMarkup(t('Deselect {card}', { card: displayCard(card) }))}">${cardMarkup(card)}</button>`;
-    }).join('');
+      }).join('');
   }
   const clear = $('#cardSetPickerClear');
   if (clear) {
-    clear.hidden = picker.kind !== 'private_hand';
-    clear.disabled = picker.draft.length === 0;
+    clear.hidden = !picker.clearCommand;
+    clear.disabled = picker.kind === 'dead_set'
+      ? picker.draft.length === 0
+      : !requireCardClearSemanticsBridge().editableCardClearWouldChange(
+        picker.clearCommand,
+        cardClearTargetsForPicker(picker)
+      );
+    const clearLabel = picker.kind === 'dead_set'
+      ? 'Clear all'
+      : picker.kind === 'private_hand' ? 'Clear hand' : 'Clear';
+    clear.dataset.i18n = clearLabel;
+    clear.textContent = t(clearLabel);
   }
   const apply = $('#cardSetPickerApply');
-  if (apply) apply.disabled = picker.draft.length !== picker.requiredCount;
+  if (apply) apply.disabled = picker.kind !== 'dead_set'
+    && picker.draft.length !== picker.requiredCount;
 }
 
 
@@ -1539,16 +1628,16 @@ function openPicker(group, index) {
 
   const modalCopy = $('#modalCopy');
   if (modalCopy) modalCopy.textContent = group.includes('dead')
-    ? t('Choose a card known to be out of play, then Apply.')
+    ? t('Choose any known cards that are out of play.')
     : t('Select or deselect cards, then Apply. Cards committed elsewhere are unavailable.');
 
   const burnControl = $('#burnControl');
 
-  if (burnControl) burnControl.style.display = group === 'dead' || group === 'eqdead' ? 'flex' : 'none';
+  if (burnControl) burnControl.style.display = 'none';
 
   const markBurn = $('#markBurn');
 
-  if (markBurn) markBurn.checked = group === 'dead' || group === 'eqdead';
+  if (markBurn) markBurn.checked = false;
 
   renderCardSetPickerContext();
 
@@ -1685,7 +1774,7 @@ function selectCard(card) {
   else {
     const unavailable = unavailableCardsForPicker(picker);
     if (unavailable.has(card)) return false;
-    if (picker.draft.length >= picker.requiredCount) {
+    if (picker.draft.length >= (picker.maxCount ?? picker.requiredCount)) {
       toast(t('Deselect a card before choosing another.'), 'warning');
       return false;
     }
@@ -1705,12 +1794,16 @@ function cardSetPickerFocusTarget(picker) {
   if (isPrivateHandCardSetGroup(picker.group)) {
     return document.querySelector(`[data-card-set-edit="${picker.group}"]`);
   }
+  if (picker.kind === 'dead_set') {
+    return document.querySelector(`[data-card-set-edit="${picker.group}"]`);
+  }
   return document.querySelector(`[data-slots="${picker.group}"] [data-index="${picker.originIndex}"]`);
 }
 
 function replaceCardSetTarget(picker, cards) {
   const target = groupCards(picker.group);
-  if (picker.kind === 'private_hand' || picker.group === 'hand-board-chance') {
+  if (picker.kind === 'private_hand' || picker.kind === 'dead_set'
+    || picker.group === 'hand-board-chance') {
     target.splice(0, target.length, ...cards);
     return;
   }
@@ -1742,20 +1835,137 @@ function finishCardSetCommit(picker) {
 
 function applyCardSetPicker() {
   const picker = app.picker;
-  if (!picker || picker.draft.length !== picker.requiredCount) return false;
+  if (!picker || (picker.kind !== 'dead_set' && picker.draft.length !== picker.requiredCount)) return false;
+  if (picker.kind === 'dead_set') {
+    const unavailable = unavailableCardsForPicker(picker);
+    if (picker.draft.some((card) => unavailable.has(card))) {
+      renderDeck();
+      return toast(t('Some selected cards are no longer available. Review the selection and try again.'), 'warning');
+    }
+    const committed = groupCards(picker.group).filter(Boolean);
+    const unchanged = committed.length === picker.draft.length
+      && committed.every((card) => picker.draft.includes(card));
+    if (unchanged) {
+      closePicker();
+      return true;
+    }
+  }
   replaceCardSetTarget(picker, picker.draft.slice());
   finishCardSetCommit(picker);
   return true;
 }
 
-function clearPrivateHandPicker() {
+function scenarioCardClearTargets() {
+  return { hero: app.gto.hero, board: app.gto.board, dead: app.gto.dead };
+}
+
+function cardClearTargetsForPicker(picker) {
+  if (picker.group === 'dead') {
+    return { dead: app.gto.dead };
+  }
+  if (picker.group === 'hero' || picker.group === 'board') {
+    return scenarioCardClearTargets();
+  }
+  if (isEquityGroup(picker.group)) {
+    return {
+      board: app.equity.board,
+      dead: app.equity.dead,
+      playerHand: equityPlayerFromHandGroup(picker.group)?.cards || null,
+      playerHands: app.equity.players.map((player) => player.cards),
+    };
+  }
+  return picker.group === 'hand-board-chance'
+    ? { pending: app.playbookHandDraft.board }
+    : { playerHand: groupCards(picker.group) };
+}
+
+function syncExplicitCardClearAvailability(surface) {
+  const semantics = requireCardClearSemanticsBridge();
+  document.querySelectorAll(`[data-card-clear-surface="${surface}"]`).forEach((control) => {
+    const targets = surface === 'scenario'
+      ? scenarioCardClearTargets()
+      : { board: app.equity.board, dead: app.equity.dead };
+    control.disabled = (surface === 'scenario' && isHandMode())
+      || !semantics.editableCardClearWouldChange(control.dataset.cardClearCommand, targets);
+  });
+}
+
+function applyScenarioCardClear(command, options) {
+  if (isHandMode()) return false;
+  const commands = requireCardClearSemanticsBridge().commands;
+  const targets = options?.targets || scenarioCardClearTargets();
+  const heroHadCards = Array.isArray(targets.hero) && targets.hero.length > 0;
+  const boardHadCards = Array.isArray(targets.board) && targets.board.length > 0;
+  const result = requireCardClearSemanticsBridge().applyEditableCardClear(
+    command,
+    targets
+  );
+  if (!result.changed) return result;
+  if (command === commands.CLEAR_HERO
+    || (command === commands.CLEAR_ALL_EDITABLE && heroHadCards)) {
+    app.selectedHand = null;
+  }
+  if (command === commands.CLEAR_FLOP || command === commands.CLEAR_BOARD
+    || (command === commands.CLEAR_ALL_EDITABLE && boardHadCards)) {
+    resetScenarioBettingDependencies('preflop', { resetPot: true });
+  }
+  renderAllCards();
+  updateContext('Cards cleared');
+  return result;
+}
+
+function applyEquityCardClear(command, options) {
+  const playerHand = options?.playerHand || null;
+  const result = requireCardClearSemanticsBridge().applyEditableCardClear(command, {
+    board: app.equity.board,
+    dead: app.equity.dead,
+    playerHand,
+    playerHands: app.equity.players.map((player) => player.cards),
+  });
+  if (!result.changed) return result;
+  setEquityPending({ renderInputs: playerHand ? 'players' : 'shared' });
+  return result;
+}
+
+function applyHandDraftCardClear(command, picker) {
+  if (!picker?.group?.startsWith('hand-')) return false;
+  const targets = picker.group === 'hand-board-chance'
+    ? { pending: app.playbookHandDraft.board }
+    : { playerHand: groupCards(picker.group) };
+  const result = requireCardClearSemanticsBridge().applyEditableCardClear(command, targets);
+  if (!result.changed) return result;
+  renderCanonicalHandWorkspace();
+  return result;
+}
+
+function clearCardSetPicker() {
   const picker = app.picker;
-  if (!picker || picker.kind !== 'private_hand') return false;
-  const changedCards = picker.draft.slice();
-  picker.draft = [];
-  renderCardSetPickerContext();
-  updateDeckCardStates(changedCards);
-  $('#deck')?.querySelector?.('button:not([disabled])')?.focus?.({ preventScroll: true });
+  if (!picker?.clearCommand) return false;
+  if (picker.kind === 'dead_set') {
+    if (picker.draft.length === 0) return false;
+    const changedCards = picker.draft.slice();
+    picker.draft = [];
+    renderCardSetPickerContext();
+    updateDeckCardStates(changedCards);
+    $('#deck')?.querySelector?.('button:not([disabled])')?.focus?.({ preventScroll: true });
+    return true;
+  }
+  let result = false;
+  if (picker.group === 'hero' || picker.group === 'board' || picker.group === 'dead') {
+    result = applyScenarioCardClear(picker.clearCommand, {
+      targets: cardClearTargetsForPicker(picker),
+    });
+  } else if (isEquityGroup(picker.group)) {
+    result = applyEquityCardClear(picker.clearCommand, {
+      playerHand: equityPlayerFromHandGroup(picker.group)?.cards || null,
+    });
+  } else if (picker.group.startsWith('hand-')) {
+    result = applyHandDraftCardClear(picker.clearCommand, picker);
+  }
+  if (!result?.changed) return false;
+  closePicker({ restoreFocus: false });
+  const focusTarget = cardSetPickerFocusTarget(picker);
+  focusTarget?.focus?.({ preventScroll: true });
   return true;
 }
 
@@ -1824,35 +2034,20 @@ function closePicker(options) {
 
 
 
-function clearGroup(group) {
-
-  if (isHandMode() && PLAYBOOK_DECISION_CARD_GROUPS.includes(group)) {
-    return toast('These cards come from the canonical hand in Hand mode.', 'warning');
+function handleExplicitCardClear(control) {
+  const { cardClearCommand: command, cardClearSurface: surface } = control.dataset;
+  if (!command) return false;
+  if (surface === 'scenario') {
+    if (isHandMode()) return toast('These cards come from the canonical hand in Hand mode.', 'warning');
+    return applyScenarioCardClear(command);
   }
+  if (surface === 'equity') return applyEquityCardClear(command);
+  return false;
+}
 
-  if (group.startsWith('training')) {
-    return toast('Training cards come from the canonical generated hand.', 'warning');
-  }
-
-  if (group === 'hero') app.selectedHand = null;
-
-  groupCards(group).length = 0;
-
-  if (isEquityGroup(group)) {
-    setEquityPending({ renderInputs: equityPlayerFromHandGroup(group) ? 'players' : 'shared' });
-  }
-
-  else if (group.startsWith('hand-')) renderCanonicalHandWorkspace();
-
-  else if (group.startsWith('training')) {
-
-    // Training group - no context update needed
-
-  } else {
-    renderAllCards();
-    updateContext('Cards cleared');
-  }
-
+function clearScenarioHeroFromShortcut() {
+  if (isHandMode() || activeWorkspaceMode() !== 'gto') return false;
+  return applyScenarioCardClear(requireCardClearSemanticsBridge().commands.CLEAR_HERO);
 }
 
 
@@ -1876,11 +2071,13 @@ function currentStreet(board) {
       b = (app.gto && app.gto.board) || [];
     }
   }
-  const count = b.filter(Boolean).length;
-  if (count === 0) return 'preflop';
-  if (count === 3) return 'flop';
-  if (count === 4) return 'turn';
-  if (count === 5) return 'river';
+  if (!Array.isArray(b)) return 'invalid';
+  if (b.slice(5).some(Boolean)) return 'invalid';
+  const present = b.slice(0, 5).map(Boolean);
+  if (!present.some(Boolean)) return 'preflop';
+  if (present[0] && present[1] && present[2] && !present[3] && !present[4]) return 'flop';
+  if (present[0] && present[1] && present[2] && present[3] && !present[4]) return 'turn';
+  if (present[0] && present[1] && present[2] && present[3] && present[4]) return 'river';
   return 'invalid';
 }
 
@@ -1991,7 +2188,9 @@ function normalizedDecisionCards(cards) {
 function readPlaybookScenarioInput() {
   const lastActionControl = $('#lastAction');
   const tableSize = numericValue('#players', 6);
-  const board = normalizedDecisionCards(app.gto && app.gto.board);
+  const board = Array.isArray(app.gto && app.gto.board)
+    ? app.gto.board.slice()
+    : [];
   const rakeMode = selectedValue('#rakeMode');
   const accounting = strategyAccountingContext(rakeMode, tableSize);
   const rawInput = {
@@ -2069,7 +2268,7 @@ function capturePlaybookScenarioPresentation() {
   return {
     controls,
     hero: normalizedDecisionCards(app.gto && app.gto.hero),
-    board: normalizedDecisionCards(app.gto && app.gto.board),
+    board: Array.isArray(app.gto && app.gto.board) ? app.gto.board.slice() : [],
     dead: normalizedDecisionCards(app.gto && app.gto.dead)
   };
 }
@@ -2085,7 +2284,7 @@ function restorePlaybookScenarioPresentation(snapshot) {
     $('#heroPos').value = snapshot.controls.heroPos;
   }
   app.gto.hero = normalizedDecisionCards(snapshot.hero);
-  app.gto.board = normalizedDecisionCards(snapshot.board);
+  app.gto.board = Array.isArray(snapshot.board) ? snapshot.board.slice() : [];
   app.gto.dead = normalizedDecisionCards(snapshot.dead);
   renderAllCards();
 }
@@ -2119,7 +2318,7 @@ function setPlaybookControlAuthority(mode) {
     }
   });
 
-  $$('[data-clear="hero"], [data-clear="board"], [data-clear="dead"]').forEach((button) => {
+  $$('[data-card-clear-surface="scenario"]').forEach((button) => {
     button.disabled = handMode;
     button.toggleAttribute('data-scenario-only', handMode);
   });
@@ -2164,6 +2363,8 @@ function playbookResolutionMessage(resolution) {
     canonical_hero_cards_unknown: t('Deal the hero two cards before requesting strategy.'),
     saved_hand_read_only: t('Read-only saved hand. Replay controls do not change your live hand.'),
     scenario_projection_failed: t('The Scenario input could not be converted to a decision context.'),
+    scenario_not_ready: t(resolution.readiness?.message
+      || 'This spot is still incomplete, so Riverline won\'t give strategy advice yet.'),
     canonical_projection_failed: t('The canonical hand could not be converted to a decision context.')
   };
   return reasons[resolution.reason] || t('This Playbook state is unavailable.');
@@ -6397,6 +6598,14 @@ function setEquityPending(options) {
 function resetEquityCalculator() {
   callEquityServiceBridge('cancel');
   equityCalculationGeneration += 1;
+  requireCardClearSemanticsBridge().applyEditableCardClear(
+    requireCardClearSemanticsBridge().commands.CLEAR_ALL_EDITABLE,
+    {
+      board: app.equity.board,
+      dead: app.equity.dead,
+      playerHands: app.equity.players.map((player) => player.cards),
+    }
+  );
   app.equity.board = [];
   app.equity.dead = [];
   app.equity.nextPlayerId = 2;
@@ -7775,7 +7984,7 @@ function bindEvents() {
 
     const cardSetAction = event.target.closest('[data-card-set-action]');
     if (cardSetAction?.dataset.cardSetAction === 'apply') return applyCardSetPicker();
-    if (cardSetAction?.dataset.cardSetAction === 'clear') return clearPrivateHandPicker();
+    if (cardSetAction?.dataset.cardSetAction === 'clear') return clearCardSetPicker();
     if (cardSetAction?.dataset.cardSetAction === 'cancel') return closePicker();
 
     const equityHandEditor = event.target.closest('[data-equity-edit-hand]');
@@ -7815,9 +8024,9 @@ function bindEvents() {
 
     }
 
-    const clear = event.target.closest('[data-clear]');
+    const clear = event.target.closest('[data-card-clear-command]');
 
-    if (clear) return clearGroup(clear.dataset.clear);
+    if (clear) return handleExplicitCardClear(clear);
 
     const removePlayer = event.target.closest('[data-remove-player]');
 
@@ -8050,7 +8259,10 @@ function bindEvents() {
 
   ['lastAction'].forEach((id) => {
 
-    if ($('#' + id)) $('#' + id).addEventListener('change', () => updateContext('Configuration changed'));
+    if ($('#' + id)) $('#' + id).addEventListener('change', () => {
+      reconcileScenarioActionDependencies();
+      updateContext('Configuration changed');
+    });
 
   });
 
@@ -8185,40 +8397,21 @@ function bindEvents() {
 
     if (trainingModeIsVisible()) return;
 
-    if (e.key === 'Escape') {
-
-      app.gto.hero = [null, null];
-
-      app.gto.board = [null, null, null, null, null];
-
-      app.gto.dead = [];
-
-      updateContext('Cleared all via Escape key');
-
-      renderAllCards();
-
-    }
-
     // C - Clear current selection
     if (e.key === 'c' || e.key === 'C') {
-      const heroSlot = document.querySelector('.card-slot[data-group="hero"][data-index="0"]');
-      if (heroSlot && app.gto.hero[0]) {
-        app.gto.hero = [null, null];
-        renderAllCards();
-        updateContext('Cleared hero cards');
-      }
+      clearScenarioHeroFromShortcut();
     }
 
     // H - Open hero card picker
     if (e.key === 'h' || e.key === 'H') {
-      const heroSlot = document.querySelector('.card-slot[data-group="hero"][data-index="0"]');
-      if (heroSlot) heroSlot.click();
+      const heroEditor = document.querySelector('[data-card-set-edit="hero"]');
+      if (heroEditor) heroEditor.click();
     }
 
     // B - Open board card picker
     if (e.key === 'b' || e.key === 'B') {
-      const boardSlot = document.querySelector('.card-slot[data-group="board"][data-index="0"]');
-      if (boardSlot) boardSlot.click();
+      const boardEditor = document.querySelector('[data-card-set-edit="board"][data-card-set-index="0"]');
+      if (boardEditor) boardEditor.click();
     }
 
     // S - Calculate equity
@@ -8408,6 +8601,7 @@ function init() {
     if (!cardPresentation || cardPresentation.schemaVersion !== 'card-presentation/v1') {
       throw new Error('Riverline card presentation authority is unavailable');
     }
+    requireCardClearSemanticsBridge();
     syncCardPresentationState(cardPresentation.get(), { refresh: false });
 
     initSidebar();

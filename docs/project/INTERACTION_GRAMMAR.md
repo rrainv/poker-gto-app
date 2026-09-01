@@ -66,9 +66,25 @@ Known cards retain one rank-plus-suit identity across DOM cards, SVG cards, text
 
 ### Transactional card-set editing
 
-When a surface edits a logical card set—such as a two-card private hand or a flop/turn/river group—the shared interaction is draft then commit. Opening the picker copies the current set into a temporary selection; card choices update only that draft. `Apply` commits the complete legal set once through the owning surface, while `Cancel` or Escape restores the pre-open state without invalidation. Clear behavior must be explicit and must not silently turn a cancelled draft into a source mutation.
+When a surface edits a logical card set—such as a two-card private hand, a flop/turn/river group, or known dead cards—the shared interaction is draft then commit. Opening the picker copies the current set into a temporary selection; card choices update only that draft. `Apply` commits the complete legal set once through the owning surface, while `Cancel`, Escape, X, or backdrop dismissal restores the pre-open state without invalidation. Clear behavior must be explicit and must not silently turn a cancelled draft into a source mutation.
 
 The picker preserves canonical card identity, duplicate-card exclusion, legal set size, initiating-control focus, keyboard operation, and visible selection state. Consumers may run their existing readiness or stale-result invalidation only after a committed change; the picker does not create poker state or define a second card authority. This transactional interaction is accepted cross-surface behavior for the existing Hand/Scenario and Equity consumers.
+
+Card clearing is semantically distinct from picker cancellation. The shared
+DOM-free command vocabulary is `CLEAR_HERO`, `CLEAR_PLAYER_HAND`, `CLEAR_FLOP`,
+`CLEAR_TURN`, `CLEAR_RIVER`, `CLEAR_BOARD`, `CLEAR_DEAD_SET`,
+`CLEAR_DEAD_CARD`, `CLEAR_ALL_EDITABLE`, and `CLEAR_PENDING_CARD_SET`. Hero and
+private-hand clears preserve board/dead cards; Flop clears Flop+Turn+River; Turn
+clears Turn+River; River clears only River; dead-card single and set clears are
+distinct; and an already-empty target is a no-op. Canonical Hand history is not
+an editable target.
+
+Analyze and Equity edit Dead Cards as one whole set: committed cards open
+preselected, available cards toggle into or out of the draft, `Clear all` clears
+only that draft, and Apply commits once. The resting presentation remains the
+ordinary Riverline slot language, including an empty slot, with no nested
+scrolling. The editor belongs to the shared viewport overlay and does not alter
+the underlying workspace geometry.
 
 ### Facts, Explain, and Coach / Summary
 
