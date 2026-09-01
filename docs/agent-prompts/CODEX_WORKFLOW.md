@@ -18,7 +18,16 @@ Do not continue unrelated work in a chat simply because it has repository contex
 
 ## 3. Agent lifecycle
 
-Classify the current run before choosing verification. The default is a normal bounded ticket; a correction remains part of that ticket, and release-style gates wait for an accepted checkpoint or audit.
+Classify the ticket by product risk before choosing its verification level:
+
+- **Mechanical Fast:** tiny bugs, copy, CSS, i18n, mechanical test maintenance, simple state resets, and bounded quality-of-life work. Inspect narrowly, implement directly when unambiguous, run focused tests, avoid broad documentation reconciliation, and use low/medium reasoning.
+- **Product Contract First:** new user-facing features or materially new UX, Training, natural-language, Personal Strategy, product-flow, or user-visible persistence behavior. Inspect first, resolve material ambiguity, agree a concise behavior contract, and only then implement.
+- **Correctness / Architecture:** poker correctness, privacy/security, persistence integrity or migrations, strategy authority, canonical state ownership, and architecture. Use the rigorous bounded-ticket workflow, deeper reasoning, invariant-focused tests, and an independent scout/reviewer only when it materially reduces risk.
+- **Heavy Future Design:** major future capabilities where design has more value than premature implementation. Prioritize product decisions, boundaries/interfaces, state ownership, truth/authority, failure/abstention behavior, natural-language implications, tests, vertical slices, and explicit non-goals. Do not automatically implement the broad system after designing it.
+
+For user-facing product behavior, UX, learning semantics, natural-language behavior, user-visible persistence, or workflows with multiple reasonable interpretations, do not silently choose a materially ambiguous interpretation. If a reasonable product owner could reject the result because of that choice, inspect first, ask one to four high-information questions, propose a concise behavior contract, and wait for the answer before implementation. Do not ask when accepted specifications already answer the question, the ticket is a deterministic correctness repair, the choice is purely internal, or clarification would not materially change the product.
+
+Then choose the verification level below. The default is a normal bounded ticket; a correction remains part of that ticket, and release-style gates wait for an accepted checkpoint or audit.
 
 ### Fast iteration / human correction
 
@@ -169,13 +178,23 @@ Do not start the next ticket in the report.
 
 One writer/integrator owns the working tree by default and reviews the final diff.
 
-Use parallel subagents primarily for read-only repository reconnaissance, browser/current-state inspection, test and edge-case analysis, documentation/authority consistency review, or requested competitor/research analysis.
+Independent scouts and reviewers are not the default. Use them when independence materially reduces risk, especially for privacy/security, poker mathematics, persistence/migrations, strategy authority, broad architecture, or high-risk cross-subsystem work. Do not routinely add them to labels, CSS, tiny UI work, simple randomization or local-state controls, or mechanical test maintenance.
+
+When justified, use parallel subagents primarily for read-only repository reconnaissance, browser/current-state inspection, test and edge-case analysis, documentation/authority consistency review, or requested competitor/research analysis.
 
 Parallel writes are allowed only when file ownership is explicitly disjoint or agents use isolated Git worktrees/branches. Never let multiple agents mutate overlapping files in the same working tree. Do not run competing heavy test or browser jobs in parallel on the same working tree or machine when resource or timing noise is credible.
 
 ## 10. Model and reasoning economy
 
 Match reasoning depth to risk. Architecture, poker correctness, persistence, migrations, strategy authority, and audits warrant deeper reasoning. Bounded UI, CSS, i18n, and mechanical work do not require maximum reasoning by default. Repository policy should express this principle without depending on product-specific model names.
+
+Optimize for accepted product progress, not maximum ceremony per ticket:
+
+- batch several cheap related fixes into one bounded coherent outcome
+- use focused tests during implementation; reserve full gates for checkpoints and audits
+- after roughly two same-cause rejected corrections, stop patching blindly and reassess the behavior contract or root cause
+- replace stale implementation-shape tests with behavioral coverage when appropriate
+- after approximately two or three maintenance/correctness tickets, consider one bounded high-value, low-cost product batch; never promote it above an unresolved P0/P1 blocker
 
 ## 11. Prompt efficiency
 

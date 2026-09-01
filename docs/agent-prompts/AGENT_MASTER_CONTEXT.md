@@ -53,6 +53,12 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 - Personal dominant-only evidence is never fake 100% frequency.
 - Structural tests do not replace human visual acceptance.
 
+## Natural-language north star
+
+Natural-language output is part of Riverline's learning experience, not decorative copy. It must be factual from trusted structured facts, keep claim strength within source authority, lead with natural and accessible poker language, vary depth with the decision, omit irrelevant generic sections and filler, state heuristic/incomplete/unsupported/unavailable evidence honestly, and keep a consistent voice across Analyze, Review, Training, Personal Strategy, Saved, Study/Home, and future import flows. Repeated language may vary within bounds, but factual meaning and claim strength must not change.
+
+The authority path is: trusted structured facts -> explanation facts -> claim permission -> natural-language rendering. Natural language never becomes poker or strategy authority and must never imply fake certainty.
+
 ## Current execution snapshot
 
 `DOCS-INTEGRITY-001`, `UX-REGRESSION-001`, `WELCOME-INTRO-001`, `WORKSPACE-COMPOSITION-002`, `DOCS-CAPABILITY-DOSSIERS-001`, `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and `TRAINING-MEMORY-001` are completed/accepted checkpoints. `REFERENCE-PACK-001` is checkpointed/intentionally incomplete: its contract, strict matcher, provider/fallback, and synthetic consumer tests are accepted, while production source acquisition remains `RET-REFERENCE-PACK-001`.

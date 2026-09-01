@@ -41,6 +41,8 @@ If an accepted checkpoint changes priority, subsystem status, architecture, know
 
 A tiny patch that changes no accepted product state, priority, architecture, debt, or future ownership does **not** require Roadmap churn. It still updates QA when an issue closes, regresses, or changes owner.
 
+Update the owning documents immediately when accepted work changes canonical architecture, a product contract, security/privacy semantics, durable authority, roadmap/current sequencing, or schema/persistence semantics. Minor UI behavior, copy, small quality-of-life work, local polish, and small regression closures may batch their durable summaries until the next checkpoint when no authority, status, priority, debt ownership, or QA truth would become stale. Preserve the ownership rules above; batching is not permission to create a parallel status system or forget accepted debt.
+
 ## Ticket reports and stale documents
 
 An accepted ticket report is evidence, not a permanent parallel status system. The accepting ticket incorporates any lasting status, priority, architecture, QA, or debt change into the owning documents above.

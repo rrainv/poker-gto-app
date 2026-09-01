@@ -4,6 +4,10 @@ Last refreshed: September 1, 2026 (`ANALYZE-SCENARIO-READINESS-001` and `CARD-CL
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
+## Throughput note
+
+Maintenance is being compressed without changing the ordered roadmap below. `ANALYZE-SCENARIO-READINESS-001` remains human accepted; `HOME-HAND-LIFECYCLE-001` remains active next. After the remaining serious audit maintenance, alternate cleanup with bounded light/high-reward feature batches when no P0/P1 blocker intervenes. Use the remaining high-capability model window primarily for difficult product and architecture decisions on future heavy branches, not extra ceremony on settled mechanical work.
+
 ## Status vocabulary
 
 - **COMPLETED:** accepted bounded outcome; later changes require a new ticket.
