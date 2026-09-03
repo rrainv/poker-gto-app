@@ -2394,6 +2394,10 @@
             <div id="trainingFeedback" class="training-feedback" data-grade="none" hidden data-tutorial-anchor="training-feedback">
               <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info" data-i18n="Feedback">Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
               <div class="training-verdict" role="status" aria-live="polite" aria-atomic="true"><h3 id="feedbackTitle" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
+              <dl id="trainingSameSpotComparison" class="training-same-spot-comparison" hidden aria-label="Same spot comparison" data-i18n-aria-label="Same spot comparison">
+                <div><dt data-i18n="Earlier answer">Earlier answer</dt><dd id="trainingSameSpotEarlierAnswer">â€”</dd></div>
+                <div><dt data-i18n="This try">This try</dt><dd id="trainingSameSpotThisTry">â€”</dd></div>
+              </dl>
               <div id="trainingFeedbackProgressionMount"></div>
               <div id="trainingMemoryDecisionActions" class="training-memory-decision-actions" hidden aria-label="Study labels" data-i18n-aria-label="Study labels">
                 <button id="trainingMarkReview" class="ui-button ui-button--secondary" type="button" aria-pressed="false" data-i18n="Review later">Review later</button>
@@ -2506,7 +2510,7 @@
               <span class="training-setup-summary-action" data-i18n="Adjust drill">Adjust drill</span>
             </summary>
             <div class="panel-head"><div><p class="training-eyebrow" data-i18n="Drill setup">Drill setup</p><h2 id="trainingSetupTitle" data-i18n="Choose a decision family">Choose a decision family</h2></div><span class="badge status-badge status-badge--available" data-i18n="Home · no rake">Home · no rake</span></div>
-            <div class="panel-body training-setup-fields">
+              <div class="panel-body training-setup-fields">
               <div id="trainingModeSwitch" class="training-mode-switch" role="group" aria-label="Training mode" data-i18n-aria-label="Training mode">
                 <button class="ui-button is-active" type="button" data-training-session-mode="varied" aria-pressed="true" data-i18n="Varied Session">Varied Session</button>
                 <button class="ui-button" type="button" data-training-session-mode="focused" aria-pressed="false" data-i18n="Focused Drill">Focused Drill</button>
@@ -2531,9 +2535,20 @@
               </div>
               <label class="ui-field"><span data-i18n="Assistance">Assistance</span><select id="trainingDifficulty" class="control-select"><option value="hard" selected data-i18n="Hard · no odds shown">Hard · no odds shown</option><option value="easy" data-i18n="Easy · pot odds and MDF">Easy · pot odds and MDF</option><option value="guided" data-i18n="Guided · odds and prompt">Guided · odds and prompt</option></select></label>
               <div id="trainingFilterMessage" class="training-filter-message" role="status"></div>
-              <button class="ui-button ui-button--primary training-generate" type="button" id="trainingNewHand" data-i18n="Start Training">Start Training</button>
-            </div>
-          </details>
+                <button class="ui-button ui-button--primary training-generate" type="button" id="trainingNewHand" data-i18n="Start Training">Start Training</button>
+              </div>
+              <div id="trainingSameSpotSetup" class="panel-body training-same-spot-setup" hidden>
+                <div><p class="training-eyebrow" data-i18n="Re-drill from Training Memory">Re-drill from Training Memory</p><h3 data-i18n="Same spot">Same spot</h3><p id="trainingSameSpotSessionNote"></p></div>
+                <dl class="training-same-spot-facts">
+                  <div><dt data-i18n="Street">Street</dt><dd id="trainingSameSpotStreet">â€”</dd></div>
+                  <div><dt data-i18n="Position">Position</dt><dd id="trainingSameSpotPosition">â€”</dd></div>
+                  <div><dt data-i18n="Table size">Table size</dt><dd id="trainingSameSpotTable">â€”</dd></div>
+                  <div><dt data-i18n="Effective stack">Effective stack</dt><dd id="trainingSameSpotStack">â€”</dd></div>
+                  <div><dt data-i18n="Facing">Facing</dt><dd id="trainingSameSpotFacing">â€”</dd></div>
+                </dl>
+                <button id="trainingSameSpotExit" class="ui-button ui-button--primary" type="button" data-i18n="Back to Training">Back to Training</button>
+              </div>
+            </details>
           <details class="panel training-assistance-panel" aria-labelledby="trainingAssistanceTitle" data-training-availability="before-session"><summary class="panel-head"><div><h2 id="trainingAssistanceTitle" data-i18n="Assistance">Assistance</h2><p class="panel-note" data-i18n="Difficulty controls automatic help.">Difficulty controls automatic help.</p><p id="trainingAssistanceAvailability" class="panel-note" data-i18n="Hints become available after a decision is generated.">Hints become available after a decision is generated.</p></div><span id="trainingAssistanceLevel" class="badge status-badge status-badge--info" data-i18n="Hard">Hard</span></summary><div class="panel-body"><p class="training-study-hints-note"><strong data-i18n="Study hints">Study hints</strong><span data-i18n="Ask for a coaching prompt in the decision panel.">Ask for a coaching prompt in the decision panel.</span></p></div></details>
           <details class="panel training-advanced" id="trainingAdvanced">
             <summary data-i18n="Seed, replay & diagnostics">Seed, replay & diagnostics</summary>

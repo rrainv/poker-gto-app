@@ -4,11 +4,40 @@ import {
 } from './training-memory-service.mjs';
 import { createTrainingMemoryPresentationGate } from './training-memory-presentation.mjs';
 
+const pendingBridgeInstalls = new WeakMap();
+
+function clearPendingBridgeInstall(browserWindow) {
+  const pending = pendingBridgeInstalls.get(browserWindow);
+  if (!pending) return;
+  browserWindow.removeEventListener?.('riverline:authchange', pending.retry);
+  browserWindow.removeEventListener?.('riverline:identitychange', pending.retry);
+  pendingBridgeInstalls.delete(browserWindow);
+}
+
+function retryTrainingMemoryBridgeInstall(browserWindow, options) {
+  if (!browserWindow?.addEventListener || pendingBridgeInstalls.has(browserWindow)) return;
+  const retry = () => {
+    if (installTrainingMemoryBridge(browserWindow, options)) {
+      clearPendingBridgeInstall(browserWindow);
+    }
+  };
+  pendingBridgeInstalls.set(browserWindow, { retry });
+  browserWindow.addEventListener('riverline:authchange', retry);
+  browserWindow.addEventListener('riverline:identitychange', retry);
+}
+
 export function installTrainingMemoryBridge(browserWindow, options = {}) {
   if (!browserWindow) return null;
+  if (browserWindow.RiverlineTrainingMemory) {
+    clearPendingBridgeInstall(browserWindow);
+    return browserWindow.RiverlineTrainingMemory;
+  }
   const identityProvider = options.identityProvider ?? browserWindow.RiverlineAccountIdentity;
   const authentication = options.authentication ?? browserWindow.RiverlineAuthentication;
-  if (!identityProvider?.getActiveIdentity || !authentication?.getState) return null;
+  if (!identityProvider?.getActiveIdentity || !authentication?.getState) {
+    retryTrainingMemoryBridgeInstall(browserWindow, options);
+    return null;
+  }
   const ownerProvider = options.ownerProvider ?? createTrainingMemoryOwnerResolver({
     authentication,
     identityProvider,
@@ -56,6 +85,8 @@ export function installTrainingMemoryBridge(browserWindow, options = {}) {
     value: bridge,
     writable: false,
   });
+  clearPendingBridgeInstall(browserWindow);
+  browserWindow.dispatchEvent?.(new Event('riverline:trainingmemoryready'));
   return bridge;
 }
 

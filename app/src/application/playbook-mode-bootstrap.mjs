@@ -1,4 +1,5 @@
 import { createCanonicalLiveController } from './canonical-live-controller.mjs';
+import { isHandResumable } from '../../../shared/poker-domain/index.js';
 import {
   PLAYBOOK_MODES,
   createPlaybookModeController,
@@ -439,7 +440,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
         title,
         pokerState,
         heroPlayerId,
-        hasLiveHand: Boolean(canonicalController.getState()),
+        hasLiveHand: isHandResumable(canonicalController.getState()),
       });
       return publish('saved_hand_open', bridge.createReplayProjectionViewModel());
     },
@@ -452,7 +453,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     },
 
     hasLiveHand() {
-      return Boolean(canonicalController.getState());
+      return isHandResumable(canonicalController.getState());
     },
 
     getResolution: () => modeController.getResolution(),

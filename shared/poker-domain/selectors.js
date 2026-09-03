@@ -62,6 +62,12 @@ export function currentActor(state) {
   return state.actingPlayerId === null ? null : playerById(state, state.actingPlayerId);
 }
 
+export function isHandResumable(state) {
+  if (state === null || state === undefined) return false;
+  requirePokerState(state);
+  return state.terminal?.isTerminal === false;
+}
+
 export function amountToCallMilliBb(state, playerId = state.actingPlayerId) {
   requirePokerState(state);
   const player = playerById(state, playerId);

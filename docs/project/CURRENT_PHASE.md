@@ -1,12 +1,12 @@
 # Current Riverline phase
 
-Last refreshed: September 1, 2026 (`ANALYZE-SCENARIO-READINESS-001` and `CARD-CLEAR-SEMANTICS-001` are human accepted; `HOME-HAND-LIFECYCLE-001` is active next, followed by `SAME-SPOT-COHERENCE-001`).
+Last refreshed: September 3, 2026 (`HOME-HAND-LIFECYCLE-001`, `TRAINING-MEMORY-AVAILABILITY-001`, and `SAME-SPOT-COHERENCE-001R` are human accepted; `LIGHT-WINS-BATCH-001` is active next).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
 ## Throughput note
 
-Maintenance is being compressed without changing the ordered roadmap below. `ANALYZE-SCENARIO-READINESS-001` remains human accepted; `HOME-HAND-LIFECYCLE-001` remains active next. After the remaining serious audit maintenance, alternate cleanup with bounded light/high-reward feature batches when no P0/P1 blocker intervenes. Use the remaining high-capability model window primarily for difficult product and architecture decisions on future heavy branches, not extra ceremony on settled mechanical work.
+The September 3 maintenance batch is closed and accepted. Current work advances to the bounded `LIGHT-WINS-BATCH-001` product batch without materially re-ranking the preserved long-term foundation sequence. Continue alternating bounded high-reward work with required correctness cleanup when no P0/P1 blocker intervenes.
 
 ## Status vocabulary
 
@@ -144,19 +144,21 @@ Maintenance is being compressed without changing the ordered roadmap below. `ANA
    6. **COMPLETED / ACCEPTED — `AUTH-SUPABASE-SINGLETON-001`** — one browser-runtime Supabase client owner now serves Authentication, Account/Profile, Saved sync, and Personal Strategy sync; equivalent normalized configuration reuses it, materially different in-runtime configuration fails closed, and lifecycle transitions do not recreate it;
    7. **COMPLETED / HUMAN ACCEPTED — `ANALYZE-SCENARIO-READINESS-001`** — Scenario remains an editable lossy draft, but one central readiness owner admits only coherent provider-ready scenarios to `StrategyProvider`; card/street chronology, action/street consistency, facing/action dependencies, physical-card uniqueness, and basic numeric readiness fail closed as `scenario_not_ready` with natural user-facing guidance. Later-street clearing transactionally preserves only still-valid earlier state, and lossy Scenario never invents exact actor-relative economics;
    8. **COMPLETED / HUMAN ACCEPTED — `CARD-CLEAR-SEMANTICS-001`** — one shared DOM-free command owner defines Hero, private-hand, street, board, dead-card single/set, all-editable, and pending-set clear semantics. Empty clears are idempotent, canonical Hand history remains protected, workspace adapters own only dependent state/invalidation, and Analyze/Equity share one whole-set Dead Cards draft/Apply/cancel interaction without changing resting Riverline slots or workspace geometry;
-   9. **ACTIVE NEXT — `HOME-HAND-LIFECYCLE-001`** — reproduce and repair the confirmed audit finding that Home may present a completed Hand as live or continuable;
-   10. **PLANNED NEXT — `SAME-SPOT-COHERENCE-001`** — reproduce and repair Same Spot session-mode, mode-label, and headline-stat coherence;
-   11. `IDENTITY-LIFECYCLE-001` — establish cross-surface owner, generation, invalidation, and disposal behavior, including the durable anonymous device-local Guest target and authenticated sign-out isolation;
-   12. `HEURISTIC-BASELINE-TRUTH-001` — make every consumer treat the current heuristic as exploratory/comparative baseline evidence only;
-   13. `TRAINING-NORMATIVE-001` — separate comparative practice from normative grading and replace probability-gap-to-modal-action as a normative correctness rule;
-   14. `BROWSER-TEST-PLATFORM-001` — create a portable mounted-browser lifecycle test platform;
-   15. `UI-COMPOSITION-ROOT-001` — define the bounded composition root and lifecycle seams without a framework rewrite;
-   16. run one bounded workspace extraction pilot chosen by the composition-root ticket;
-   17. `SAVED-LIBRARY-001` — deliver full retrieval for current Saved Hand/Spot objects before adding payload kinds;
-   18. `HOME-STUDY-CONTINUITY-001` — connect only contract-backed study continuity;
-   19. make one bounded reference-source decision after the read-only source research is ready;
-   20. expand the learning loop only after the trust, grading, lifecycle, browser, and retrieval gates;
-   21. `PERSONAL-STRATEGY-003A` — then execute the preserved versioned Game setup/Approach and first-value reset.
+   9. **COMPLETED / HUMAN ACCEPTED — `HOME-HAND-LIFECYCLE-001`** — only non-terminal canonical Hands are resumable; completed showdown, fold, and all-in Hands are not presented as live;
+   10. **COMPLETED / HUMAN ACCEPTED — `TRAINING-MEMORY-AVAILABILITY-001`** — Training Memory bridge installation recovers from auth/bootstrap ordering, signed-in local Memory works in idle and all ordinary Training modes without Supabase sync, and auth-owner isolation remains intact;
+   11. **COMPLETED / HUMAN ACCEPTED — `SAME-SPOT-COHERENCE-001R`** — Same Spot is a standalone idle-only Training Memory re-drill, not Focused or planner-backed; active ordinary Training blocks entry without suspend/restore, and frozen comparison evidence remains headline-stat/planner-neutral;
+   12. **ACTIVE NEXT — `LIGHT-WINS-BATCH-001`** — bounded high-reward product work; its ticket owns the exact scope and does not re-rank the long-term roadmap;
+   13. `IDENTITY-LIFECYCLE-001` — establish cross-surface owner, generation, invalidation, and disposal behavior, including the durable anonymous device-local Guest target and authenticated sign-out isolation;
+   14. `HEURISTIC-BASELINE-TRUTH-001` — make every consumer treat the current heuristic as exploratory/comparative baseline evidence only;
+   15. `TRAINING-NORMATIVE-001` — separate comparative practice from normative grading and replace probability-gap-to-modal-action as a normative correctness rule;
+   16. `BROWSER-TEST-PLATFORM-001` — create a portable mounted-browser lifecycle test platform;
+   17. `UI-COMPOSITION-ROOT-001` — define the bounded composition root and lifecycle seams without a framework rewrite;
+   18. run one bounded workspace extraction pilot chosen by the composition-root ticket;
+   19. `SAVED-LIBRARY-001` — deliver full retrieval for current Saved Hand/Spot objects before adding payload kinds;
+   20. `HOME-STUDY-CONTINUITY-001` — connect only contract-backed study continuity;
+   21. make one bounded reference-source decision after the read-only source research is ready;
+   22. expand the learning loop only after the trust, grading, lifecycle, browser, and retrieval gates;
+   23. `PERSONAL-STRATEGY-003A` — then execute the preserved versioned Game setup/Approach and first-value reset.
    - read-only reference-source research may run in parallel;
    - Home Game remains a supporting utility and freezes expansion after safety fixes;
    - no broad visual-polish wave, bots, Range Evolution, advanced Equity, new Saved payload kinds, mobile, social, PLO, or natural-language Coach work moves ahead of these gates.
@@ -219,7 +221,7 @@ Source authority, DecisionContext v1.1, exact preflop role semantics, research-o
 
 ### Training
 
-Varied, Focused, and Full Hand Training are legal, deterministic, provider-backed foundations. `TRAINING-MEMORY-001` adds durable DecisionRecord/session evidence, indexed recent history, a Review queue, reversible review lifecycle, exact historical Same Spot, and planner/generator-backed current Similar Spot. `AUTH-TRAINING-MEMORY-001` is human/security accepted: raw AccountIdentity storage routing is no longer authorization; auth/owner generation protects reads, writes, lazy decisions, Same/Similar Spot, review actions, and mixed panel reads across A → Guest → B and A → Guest → A. Explicit sign-out revokes local access before provider cleanup, and provider failure cannot restore it. Heuristic disagreement still contributes automatic review priority, owned by `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`. Heuristic agreement or disagreement is comparative evidence only; it is not skill, accuracy, mastery, correctness, GTO, or automatic remediation. Old evidence retains its exact source/version/coverage/capabilities/claim snapshot. Advanced scheduling, filters/trends, Saved/Home/Replay/Analyze continuity, Personal Strategy opt-in, sync/export, `Not sure`, and the durable anonymous Device Guest remain later slices. See [Training Memory v1](TRAINING_MEMORY_V1_SPEC.md), [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md), and [Learning Evidence](capabilities/LEARNING_EVIDENCE_FOUNDATION.md).
+Varied, Focused, and Full Hand Training are legal, deterministic, provider-backed foundations. `TRAINING-MEMORY-001` adds durable DecisionRecord/session evidence, indexed recent history, a Review queue, reversible review lifecycle, exact historical Same Spot, and planner/generator-backed current Similar Spot. The accepted availability repair makes the auth-aware local bridge recover from bootstrap ordering and serve signed-in idle, Varied, Focused, and Full Hand Training without Supabase sync. Auth/owner generation and A → Guest → B / A → Guest → A isolation remain intact. Same Spot is a standalone idle-only Memory re-drill, neither Focused nor planner-backed; active ordinary Training blocks entry, no suspend/restore path exists, frozen earlier/current source evidence remains explicit, and ordinary headline statistics/planner progress do not change. Heuristic disagreement still contributes automatic review priority, owned by `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`. Advanced scheduling, filters/trends, Saved/Home/Replay/Analyze continuity, Personal Strategy opt-in, sync/export, `Not sure`, and the durable anonymous Device Guest remain later slices. See [Training Memory v1](TRAINING_MEMORY_V1_SPEC.md), [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md), and [Learning Evidence](capabilities/LEARNING_EVIDENCE_FOUNDATION.md).
 
 ### Personal Strategy
 

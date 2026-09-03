@@ -234,7 +234,11 @@ const app = {
 
     memoryLastItems: [],
 
-    memoryRedrillNote: ''
+    memoryLastDiagnostic: null,
+
+    memoryRedrillNote: '',
+
+    sameSpotHistoricalRecord: null
 
   },
 
@@ -2497,6 +2501,10 @@ function bindPlaybookModeControl() {
     button.addEventListener('click', () => requestPlaybookMode(button.dataset.playbookMode));
   });
   window.addEventListener('riverline:playbook-state-change', (event) => {
+    if (!event.detail?.operation?.startsWith('replay_')
+      && !event.detail?.operation?.startsWith('saved_hand_')) {
+      scheduleHomeRefresh();
+    }
     if (event.detail?.operation !== 'mode' && isHandMode()) {
       renderCanonicalHandWorkspace();
       if (event.detail?.operation?.startsWith('replay_')
@@ -8669,6 +8677,9 @@ function init() {
       }
       if (activeWorkspaceMode() === 'gto') void refreshSavedStudySource();
     });
+    window.addEventListener('riverline:trainingmemoryready', () => {
+      if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
+    });
     window.addEventListener('riverline:savedstudychange', () => {
       scheduleHomeRefresh();
       if (activeWorkspaceMode() === 'gto') void refreshSavedStudySource();
@@ -9378,7 +9389,8 @@ function handleTrainingKeyboardShortcut(event) {
     }
     return;
   }
-  if (event.key === 'Enter' && app.training.lifecycle === 'feedback' && target?.tagName !== 'BUTTON') {
+  if (event.key === 'Enter' && app.training.lifecycle === 'feedback'
+    && !trainingSameSpotIsActive() && target?.tagName !== 'BUTTON') {
     event.preventDefault();
     event.stopImmediatePropagation();
     $('#trainingNextHandBtn')?.click();
@@ -9534,6 +9546,7 @@ function initTrainingMode() {
   });
   bind('#trainingMarkReview', 'click', () => toggleCurrentTrainingMemoryMetadata('review'));
   bind('#trainingMarkDifficult', 'click', () => toggleCurrentTrainingMemoryMetadata('difficult'));
+  bind('#trainingSameSpotExit', 'click', () => { void exitTrainingSameSpot(); });
   bind('#trainingAdjustDrill', 'click', () => {
     $('#trainingAdvanced')?.removeAttribute('open');
     setTrainingSetupExpanded(true, { focus: true });
@@ -9816,8 +9829,11 @@ function showTrainingSolution(solution) {
 
   const eyebrow = $('#trainingSolutionEyebrow');
   if (eyebrow) {
-    eyebrow.textContent = t('After-answer reference');
-    eyebrow.dataset.i18n = 'After-answer reference';
+    const key = trainingSameSpotIsActive()
+      ? sameSpotSourceRole(app.training.sameSpotHistoricalRecord)
+      : 'After-answer reference';
+    eyebrow.textContent = t(key);
+    eyebrow.dataset.i18n = key;
   }
   const note = solutionDiv.querySelector?.('.training-reference-note');
   if (note) note.textContent = t('Probabilities from the displayed strategy source; no EV is implied.');
@@ -10022,6 +10038,120 @@ function trainingSessionMode() {
     : 'varied';
 }
 
+function trainingSameSpotState() {
+  return window.RiverlineTraining?.getSameSpotState?.() ?? {
+    active: false,
+    answered: false,
+  };
+}
+
+function trainingSameSpotIsActive() {
+  return trainingSameSpotState().active === true;
+}
+
+function sameSpotSourceRole(record) {
+  const family = record?.strategyEvidence?.claimPolicy?.source?.family
+    ?? record?.strategyEvidence?.strategyResult?.sourceDescriptor?.family
+    ?? 'heuristic';
+  return family === 'heuristic' ? 'Baseline then' : 'Reference then';
+}
+
+function sameSpotActionLabel(actionType, context) {
+  return actionType ? t(trainingActionLabel(actionType, context)) : t('No answer recorded');
+}
+
+function renderSameSpotComparison(evaluation = null) {
+  const record = app.training.sameSpotHistoricalRecord;
+  const comparison = $('#trainingSameSpotComparison');
+  if (!comparison || !record) return;
+  const earlierType = record.userResponse?.action?.type ?? null;
+  $('#trainingSameSpotEarlierAnswer').textContent = sameSpotActionLabel(
+    earlierType,
+    record.decisionContext,
+  );
+  $('#trainingSameSpotThisTry').textContent = evaluation?.chosenAction?.type
+    ? sameSpotActionLabel(evaluation.chosenAction.type, record.decisionContext)
+    : t('Answer to compare');
+  comparison.hidden = !evaluation;
+}
+
+function renderSameSpotSetup(exercise) {
+  const context = exercise.decisionContext;
+  const setup = $('#trainingSetupPanel');
+  const ordinary = setup?.querySelector('.training-setup-fields');
+  const ordinaryHead = setup?.querySelector('.panel-head');
+  const summaryAction = setup?.querySelector('.training-setup-summary-action');
+  const sameSpot = $('#trainingSameSpotSetup');
+  if (ordinary) ordinary.hidden = true;
+  if (ordinaryHead) ordinaryHead.hidden = true;
+  if (summaryAction) summaryAction.hidden = true;
+  if (sameSpot) sameSpot.hidden = false;
+  if (setup) setup.open = true;
+  if ($('#trainingSetupSummary')) $('#trainingSetupSummary').textContent = t('Same spot');
+  if ($('#trainingSameSpotSessionNote')) {
+    $('#trainingSameSpotSessionNote').textContent = t('Separate from session stats');
+  }
+  if ($('#trainingSameSpotStreet')) {
+    $('#trainingSameSpotStreet').textContent = t(
+      context.street.charAt(0).toUpperCase() + context.street.slice(1),
+    );
+  }
+  if ($('#trainingSameSpotPosition')) $('#trainingSameSpotPosition').textContent = context.heroPosition || 'â€”';
+  if ($('#trainingSameSpotTable')) {
+    $('#trainingSameSpotTable').textContent = Number.isSafeInteger(context.tableSize)
+      ? t('analysis.value.tableSize', { count: context.tableSize }) : 'â€”';
+  }
+  const effectiveStack = Number.isFinite(context.effectiveStackBb)
+    ? context.effectiveStackBb : Number.isFinite(context.stackBb) ? context.stackBb : null;
+  if ($('#trainingSameSpotStack')) {
+    $('#trainingSameSpotStack').textContent = effectiveStack === null
+      ? 'â€”' : `${effectiveStack.toFixed(1)} bb`;
+  }
+  if ($('#trainingSameSpotFacing')) {
+    $('#trainingSameSpotFacing').textContent = formatTrainingFacingCopy(context);
+  }
+  const progress = $('#trainingSessionProgress');
+  if (progress) {
+    progress.hidden = false;
+    progress.textContent = t('Separate from session stats');
+  }
+  const statGrid = document.querySelector('.training-stat-grid');
+  const gradeCounts = document.querySelector('.training-grade-counts');
+  if (statGrid) statGrid.hidden = true;
+  if (gradeCounts) gradeCounts.hidden = true;
+  if ($('#trainingResetStats')) $('#trainingResetStats').hidden = true;
+  const assistance = document.querySelector('.training-assistance-panel');
+  if (assistance) assistance.hidden = true;
+  if ($('#trainingAdvanced')) $('#trainingAdvanced').hidden = true;
+  if ($('#trainingMemoryPanel')) $('#trainingMemoryPanel').hidden = true;
+  if ($('#trainingAdjustDrill')) $('#trainingAdjustDrill').hidden = true;
+  if ($('#trainingReplayDecisionBtn')) $('#trainingReplayDecisionBtn').hidden = true;
+}
+
+function showOrdinaryTrainingSetupAfterSameSpot() {
+  const ordinary = $('#trainingSetupPanel')?.querySelector('.training-setup-fields');
+  const ordinaryHead = $('#trainingSetupPanel')?.querySelector('.panel-head');
+  const summaryAction = $('#trainingSetupPanel')?.querySelector('.training-setup-summary-action');
+  if (ordinary) ordinary.hidden = false;
+  if (ordinaryHead) ordinaryHead.hidden = false;
+  if (summaryAction) summaryAction.hidden = false;
+  if ($('#trainingSameSpotSetup')) $('#trainingSameSpotSetup').hidden = true;
+  if ($('#trainingSetupPanel')) $('#trainingSetupPanel').open = true;
+  const statGrid = document.querySelector('.training-stat-grid');
+  const gradeCounts = document.querySelector('.training-grade-counts');
+  if (statGrid) statGrid.hidden = false;
+  if (gradeCounts) gradeCounts.hidden = false;
+  if ($('#trainingResetStats')) $('#trainingResetStats').hidden = false;
+  const assistance = document.querySelector('.training-assistance-panel');
+  if (assistance) assistance.hidden = false;
+  if ($('#trainingAdvanced')) $('#trainingAdvanced').hidden = false;
+  if ($('#trainingMemoryPanel')) $('#trainingMemoryPanel').hidden = false;
+  if ($('#trainingAdjustDrill')) $('#trainingAdjustDrill').hidden = false;
+  if ($('#trainingSameSpotComparison')) $('#trainingSameSpotComparison').hidden = true;
+  updateTrainingPositions();
+  updateTrainingSetupSummary();
+}
+
 function restoreSharedPokerTable() {
   const table = $('#visual-table-container');
   const playbookMount = $('#table-wrapper');
@@ -10186,11 +10316,18 @@ function queueTrainingMemoryWrite(operation) {
     .then((result) => (generation === app.training.memoryGeneration ? result : null));
   const handled = queued.catch((error) => {
     console.error('[Riverline Training Memory]', error);
-    setTrainingMemoryStatus(
-      'Training Memory is unavailable. Existing history was left untouched.',
-      {},
-      { error: true },
-    );
+    if (generation === app.training.memoryGeneration) {
+      app.training.memoryLastDiagnostic = Object.freeze({
+        code: error?.code ?? 'training_memory_write_failed',
+        name: error?.name ?? 'Error',
+        message: error?.message ?? String(error),
+      });
+      setTrainingMemoryStatus(
+        'Training Memory is unavailable. Existing history was left untouched.',
+        {},
+        { error: true },
+      );
+    }
     return null;
   });
   app.training.memoryWritePromise = handled;
@@ -10201,13 +10338,21 @@ function clearTrainingMemoryOwnerPresentation() {
   const ownerSensitiveRedrill = Boolean(
     app.training.currentExercise?.generationMetadata?.memoryRedrill,
   );
+  const sameSpotWasActive = typeof window !== 'undefined'
+    && window.RiverlineTraining?.getSameSpotState?.().active === true;
   app.training.memoryGeneration += 1;
   app.training.memorySessionPromise = null;
   app.training.memoryPresentationSessionPromise = null;
   app.training.memoryWritePromise = Promise.resolve();
   app.training.memoryFullHandDecisionRecords = new Map();
   app.training.memoryLastItems = [];
+  app.training.memoryLastDiagnostic = null;
   app.training.memoryRedrillNote = '';
+  app.training.replaySourceRecordPromise = null;
+  app.training.sameSpotHistoricalRecord = null;
+  if (sameSpotWasActive) {
+    window.RiverlineTraining.releaseSameSpot?.();
+  }
   resetTrainingMemoryDecisionState();
   const list = $('#trainingMemoryList');
   if (list) list.replaceChildren();
@@ -10219,7 +10364,10 @@ function clearTrainingMemoryOwnerPresentation() {
     badge.hidden = true;
   }
   setTrainingMemoryStatus('');
-  if (ownerSensitiveRedrill) clearTrainingSessionState();
+  if (ownerSensitiveRedrill) {
+    clearTrainingSessionState();
+    if (sameSpotWasActive) showOrdinaryTrainingSetupAfterSameSpot();
+  }
 }
 
 function resetTrainingMemoryDecisionState() {
@@ -10292,6 +10440,17 @@ function startTrainingMemorySession(input) {
   return sessionPromise;
 }
 
+function startTemporaryTrainingMemoryReviewSession(input) {
+  resetTrainingMemoryDecisionState();
+  app.training.memoryFullHandDecisionRecords = new Map();
+  const sessionPromise = queueTrainingMemoryWrite(() => (
+    callTrainingMemoryBridge('startSession', input)
+  ));
+  app.training.memorySessionPromise = sessionPromise;
+  app.training.memoryPresentationSessionPromise = sessionPromise;
+  return sessionPromise;
+}
+
 function finishTrainingMemorySession(status = 'completed', finishOptions = {}) {
   const sessionPromise = app.training.memorySessionPromise;
   if (!sessionPromise) return Promise.resolve(null);
@@ -10311,6 +10470,59 @@ function finishTrainingMemorySession(status = 'completed', finishOptions = {}) {
   });
   app.training.memoryPresentationSessionPromise = finishedSessionPromise;
   return finishedSessionPromise;
+}
+
+function discardSameSpotMemoryRuntime() {
+  app.training.memoryGeneration += 1;
+  app.training.memorySessionPromise = null;
+  app.training.memoryPresentationSessionPromise = null;
+  app.training.memoryCurrentRecordPromise = null;
+  app.training.memoryCurrentRecordId = null;
+  app.training.memoryFullHandDecisionRecords = new Map();
+  app.training.memoryPendingOrigin = null;
+  app.training.memoryPendingOriginPromise = null;
+  app.training.replaySourceRecordPromise = null;
+  app.training.memoryWritePromise = Promise.resolve();
+}
+
+function returnSameSpotToIdleTraining() {
+  resetTrainingMemoryDecisionState();
+  app.training.memoryRedrillNote = '';
+  app.training.sameSpotHistoricalRecord = null;
+  invalidateFullHandPresentation();
+  callTrainingServiceBridge('reset');
+  clearTrainingSessionCompletion();
+  app.training.currentExercise = null;
+  app.training.currentStrategyResult = null;
+  app.training.currentEvaluation = null;
+  app.training.currentPresentation = null;
+  app.training.currentSolution = null;
+  app.training.currentAttemptKind = 'primary';
+  app.training.currentHand = null;
+  app.training.currentContext = null;
+  app.training.hero = [];
+  app.training.board = [];
+  clearTrainingExercisePresentation();
+  showOrdinaryTrainingSetupAfterSameSpot();
+  updateTrainingStats();
+  updateTrainingSessionProgress();
+  setTrainingWorkspaceState('idle');
+  setFullHandTrainingPhase(trainingSessionMode() === 'full_hand' ? 'setup' : 'off');
+}
+
+async function exitTrainingSameSpot() {
+  const released = callTrainingServiceBridge('releaseSameSpot');
+  if (!released) return false;
+  let cleanup = app.training.memoryWritePromise;
+  if (app.training.memorySessionPromise) {
+    cleanup = finishTrainingMemorySession(released.answered ? 'completed' : 'abandoned');
+  }
+  await Promise.resolve(cleanup).catch(() => null);
+  await Promise.resolve(app.training.memoryWritePromise).catch(() => null);
+  discardSameSpotMemoryRuntime();
+  returnSameSpotToIdleTraining();
+  await refreshTrainingMemoryPanel();
+  return true;
 }
 
 function recordTrainingExerciseShown(exercise) {
@@ -10682,9 +10894,18 @@ async function refreshTrainingMemoryPanel() {
   setTrainingMemoryStatus('Loading Training Memory…');
   list.replaceChildren();
   try {
+    if (!window.RiverlineTrainingMemory) {
+      const error = new Error('Training Memory bridge is not installed');
+      error.code = 'training_memory_bridge_unavailable';
+      throw error;
+    }
     const due = await callTrainingMemoryBridge('listDueReview', { limit: 12 });
     if (generation !== app.training.memoryGeneration) return null;
-    if (!Array.isArray(due)) throw new Error('Training Memory review query is unavailable');
+    if (!Array.isArray(due)) {
+      const error = new Error('Training Memory review query is unavailable');
+      error.code = 'training_memory_review_query_unavailable';
+      throw error;
+    }
     const presentationSession = await Promise.resolve(
       app.training.memoryPresentationSessionPromise,
     ).catch(() => null);
@@ -10704,7 +10925,11 @@ async function refreshTrainingMemoryPanel() {
     if (app.training.memoryView === 'recent') {
       items = await callTrainingMemoryBridge('listRecentSessions', { limit: 10 });
       if (generation !== app.training.memoryGeneration) return null;
-      if (!Array.isArray(items)) throw new Error('Training Memory session query is unavailable');
+      if (!Array.isArray(items)) {
+        const error = new Error('Training Memory session query is unavailable');
+        error.code = 'training_memory_session_query_unavailable';
+        throw error;
+      }
       items.forEach((entry) => list.appendChild(renderTrainingMemorySessionItem(entry)));
       if (items.length === 0) setTrainingMemoryStatus('No Training sessions recorded yet.');
       else setTrainingMemoryStatus('');
@@ -10720,10 +10945,16 @@ async function refreshTrainingMemoryPanel() {
       else setTrainingMemoryStatus('');
     }
     app.training.memoryLastItems = items;
+    app.training.memoryLastDiagnostic = null;
     return items;
   } catch (error) {
     if (generation !== app.training.memoryGeneration) return null;
     console.error('[Riverline Training Memory]', error);
+    app.training.memoryLastDiagnostic = Object.freeze({
+      code: error?.code ?? 'training_memory_panel_query_failed',
+      name: error?.name ?? 'Error',
+      message: error?.message ?? String(error),
+    });
     setTrainingMemoryStatus(
       'Training Memory is unavailable. Existing history was left untouched.',
       {},
@@ -10806,17 +11037,78 @@ async function toggleCurrentTrainingMemoryMetadata(field) {
   });
 }
 
+async function openTrainingMemorySameSpot(recordId) {
+  if (trainingSessionIsActive()) {
+    setTrainingMemoryStatus(
+      'Finish or leave your current session before re-drilling this spot.',
+    );
+    return null;
+  }
+  const generation = app.training.memoryGeneration;
+  let began = false;
+  try {
+    await app.training.memoryWritePromise;
+    const [result, historicalRecord] = await Promise.all([
+      callTrainingMemoryBridge('createSameSpot', recordId),
+      callTrainingMemoryBridge('getDecision', recordId),
+    ]);
+    if (generation !== app.training.memoryGeneration || !result || !historicalRecord) return null;
+
+    callTrainingServiceBridge('beginSameSpot', {
+      sourceDecisionRecordId: recordId,
+    });
+    began = true;
+    app.training.lifecycle = 'generating';
+    setTrainingWorkspaceState('generating');
+    setFullHandTrainingPhase('off');
+    clearTrainingExercisePresentation();
+    startTemporaryTrainingMemoryReviewSession({
+      mode: 'review',
+      requestedLength: 1,
+      sessionSeed: result.exercise.seed,
+      plannerIntent: null,
+      focus: {
+        redrillKind: 'same_spot',
+        sourceDecisionRecordId: recordId,
+        comparison: 'historical',
+      },
+    });
+    app.training.memoryPendingOrigin = {
+      parentDecisionRecordId: recordId,
+      redrillKind: 'same_spot',
+    };
+    app.training.memoryRedrillNote = '';
+    app.training.sameSpotHistoricalRecord = historicalRecord;
+    const loaded = callTrainingServiceBridge('loadExercise', result.exercise);
+    if (!loaded?.ok) throw new Error(loaded?.error?.message || 'Training re-drill could not load');
+    renderCanonicalTrainingExercise(result.exercise, { attemptKind: 'redrill' });
+    renderSameSpotSetup(result.exercise);
+    renderSameSpotComparison();
+    if ($('#trainingFullHandTableMount')) $('#trainingFullHandTableMount').hidden = true;
+    if ($('#trainingNextHandBtn')) $('#trainingNextHandBtn').hidden = true;
+    setTrainingMemoryStatus('Same spot ready');
+    $('#trainingExerciseSurface')?.scrollIntoView?.({
+      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
+    return result;
+  } catch (error) {
+    if (began && trainingSameSpotIsActive()) await exitTrainingSameSpot();
+    if (generation !== app.training.memoryGeneration) return null;
+    throw error;
+  }
+}
+
 async function openTrainingMemoryRedrill(recordId, kind) {
   const generation = app.training.memoryGeneration;
   setTrainingMemoryStatus('Loading Training Memory…');
   try {
+    if (kind === 'same_spot') return await openTrainingMemorySameSpot(recordId);
     await app.training.memoryWritePromise;
-    const result = kind === 'same_spot'
-      ? await callTrainingMemoryBridge('createSameSpot', recordId)
-      : await callTrainingMemoryBridge('generateSimilarSpot', recordId, {
-          strategyProvider,
-          attempt: 1,
-        });
+    const result = await callTrainingMemoryBridge('generateSimilarSpot', recordId, {
+      strategyProvider,
+      attempt: 1,
+    });
     if (generation !== app.training.memoryGeneration) return null;
     if (!result || (kind === 'similar_spot' && !result.ok)) {
       setTrainingMemoryStatus('Similar Spot is unavailable for this record.', {}, { error: true });
@@ -10831,15 +11123,15 @@ async function openTrainingMemoryRedrill(recordId, kind) {
       sessionSeed: result.exercise.seed,
       plannerIntent: null,
       focus: {
-        redrillKind: kind,
+        redrillKind: 'similar_spot',
         sourceDecisionRecordId: recordId,
-        comparison: kind === 'same_spot' ? 'historical' : 'current',
+        comparison: 'current',
         similarity: result.similarity ?? null,
       },
     });
     app.training.memoryPendingOrigin = {
       parentDecisionRecordId: recordId,
-      redrillKind: kind,
+      redrillKind: 'similar_spot',
     };
     const similarityLabels = {
       game_rules: 'Same game rules',
@@ -10849,19 +11141,17 @@ async function openTrainingMemoryRedrill(recordId, kind) {
       prior_action_family: 'Same prior-action family',
       effective_stack_bucket: 'Similar effective stack',
     };
-    app.training.memoryRedrillNote = kind === 'same_spot'
-      ? t('Historical comparison')
-      : [
-          t('Similar because:'),
-          ...(result.similarity?.dimensions || [])
-            .filter((dimension) => dimension.quality !== 'unavailable'
-              && similarityLabels[dimension.dimension])
-            .map((dimension) => t(similarityLabels[dimension.dimension])),
-        ].join(' ');
+    app.training.memoryRedrillNote = [
+      t('Similar because:'),
+      ...(result.similarity?.dimensions || [])
+        .filter((dimension) => dimension.quality !== 'unavailable'
+          && similarityLabels[dimension.dimension])
+        .map((dimension) => t(similarityLabels[dimension.dimension])),
+    ].join(' ');
     const loaded = callTrainingServiceBridge('loadExercise', result.exercise);
     if (!loaded?.ok) throw new Error(loaded?.error?.message || 'Training re-drill could not load');
     renderCanonicalTrainingExercise(result.exercise);
-    setTrainingMemoryStatus(kind === 'same_spot' ? 'Historical comparison' : 'Current comparison');
+    setTrainingMemoryStatus('Current comparison');
     $('#trainingExerciseSurface')?.scrollIntoView?.({
       behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
       block: 'start',
@@ -11098,7 +11388,7 @@ function setTrainingWorkspaceState(state) {
   if (!workspace) return;
   workspace.dataset.trainingState = state;
   projectTrainingContinuationControls(
-    trainingSessionMode() !== 'full_hand' && state === 'feedback',
+    (trainingSessionMode() !== 'full_hand' || trainingSameSpotIsActive()) && state === 'feedback',
   );
   workspace.setAttribute('aria-busy', String(['generating', 'automating'].includes(state)));
   const stateBadge = $('#trainingStateBadge');
@@ -11129,12 +11419,14 @@ function setTrainingWorkspaceState(state) {
     );
   }
   if ($('#trainingFeedback')) {
-    $('#trainingFeedback').hidden = trainingSessionMode() === 'full_hand' || state !== 'feedback';
+    $('#trainingFeedback').hidden = (trainingSessionMode() === 'full_hand'
+      && !trainingSameSpotIsActive()) || state !== 'feedback';
   }
   const nextButton = $('#trainingNextHandBtn');
-  if (nextButton && trainingSessionMode() !== 'full_hand') {
+  if (nextButton && (trainingSessionMode() !== 'full_hand' || trainingSameSpotIsActive())) {
     nextButton.hidden = !['ready', 'feedback'].includes(state)
-      || Boolean(app.training.practiceSession?.completed);
+      || Boolean(app.training.practiceSession?.completed)
+      || trainingSameSpotIsActive();
   }
   if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = state !== 'terminal';
   if (state === 'idle' || state === 'error') setTrainingSetupExpanded(true);
@@ -11453,7 +11745,7 @@ function updateTrainingButtons(exercise) {
   const container = $('#trainingGuessButtons');
   if (!container) return;
   container.innerHTML = '';
-  const fullHand = trainingSessionMode() === 'full_hand';
+  const fullHand = trainingSessionMode() === 'full_hand' && !trainingSameSpotIsActive();
   if (fullHand) clearFullHandTrainingSizingControls();
   const presentationByType = new Map((app.training.currentPresentation?.legalActions || []).map((entry) => [entry.type, entry]));
   canonicalTrainingLegalActionTypes(exercise).forEach((type) => {
@@ -11511,9 +11803,11 @@ function renderTrainingSource(exercise) {
     ? localizedStrategyLimitation(policy)
     : '';
   const memoryComparison = exercise?.generationMetadata?.memoryRedrill?.comparison;
-  const comparisonLabel = memoryComparison === 'historical'
-    ? t('Historical comparison')
-    : memoryComparison === 'current' ? t('Current comparison') : '';
+  const sameSpot = trainingSameSpotIsActive() && memoryComparison === 'historical';
+  const comparisonLabel = memoryComparison === 'current' ? t('Current comparison') : '';
+  const sourceRoleKey = sameSpot
+    ? sameSpotSourceRole(app.training.sameSpotHistoricalRecord)
+    : 'Reference source';
   const limitation = [
     comparisonLabel,
     app.training.memoryRedrillNote,
@@ -11528,8 +11822,8 @@ function renderTrainingSource(exercise) {
   const tone = policy.source.family === 'heuristic' ? 'heuristic' : 'info';
   sourceElement.className = `badge status-badge status-badge--${tone}`;
   if ($('#trainingReferenceSummaryTitle')) {
-    $('#trainingReferenceSummaryTitle').dataset.i18n = 'Reference source';
-    $('#trainingReferenceSummaryTitle').textContent = t('Reference source');
+    $('#trainingReferenceSummaryTitle').dataset.i18n = sourceRoleKey;
+    $('#trainingReferenceSummaryTitle').textContent = t(sourceRoleKey);
   }
   const referenceValue = $('#trainingReferenceSummaryValue');
   const referenceNote = $('#trainingReferenceSummaryNote');
@@ -11602,7 +11896,7 @@ function renderTrainingDecisionContextSummary(exercise) {
   if ($('#trainingMdfVal')) $('#trainingMdfVal').textContent = legacyContext.mdf === null
     ? t('— (range reference)')
     : t('{value}% (range reference)', { value: legacyContext.mdf.toFixed(1) });
-  if (trainingSessionMode() === 'focused' && $('#trainingHeroPos')) {
+  if (trainingSessionMode() === 'focused' && !trainingSameSpotIsActive() && $('#trainingHeroPos')) {
     $('#trainingHeroPos').value = context.heroPosition;
   }
   if ($('#trainingPositionVal')) $('#trainingPositionVal').textContent = context.heroPosition;
@@ -11613,6 +11907,7 @@ function renderTrainingDecisionContextSummary(exercise) {
 function renderCanonicalTrainingExercise(exercise, {
   attemptKind = 'primary',
   replaySourceRecordPromise = null,
+  recordShown = true,
 } = {}) {
   const context = exercise.decisionContext;
   const presentation = exercise.presentation;
@@ -11625,7 +11920,8 @@ function renderCanonicalTrainingExercise(exercise, {
   app.training.board = [...presentation.board];
   app.training.currentContext = legacyContext;
   app.training.currentSolution = trainingStrategyResultToPresentation(exercise.strategyResult);
-  app.training.currentAttemptKind = attemptKind === 'replay' ? 'replay' : 'primary';
+  app.training.currentAttemptKind = ['replay', 'redrill'].includes(attemptKind)
+    ? attemptKind : 'primary';
   app.training.replaySourceRecordPromise = app.training.currentAttemptKind === 'replay'
     ? replaySourceRecordPromise
     : null;
@@ -11650,8 +11946,11 @@ function renderCanonicalTrainingExercise(exercise, {
   const solutionDiv = $('#trainingSolution');
   if (solutionDiv) solutionDiv.hidden = true;
   if ($('#trainingSolutionEyebrow')) {
-    $('#trainingSolutionEyebrow').textContent = t('After-answer reference');
-    $('#trainingSolutionEyebrow').dataset.i18n = 'After-answer reference';
+    const key = trainingSameSpotIsActive()
+      ? sameSpotSourceRole(app.training.sameSpotHistoricalRecord)
+      : 'After-answer reference';
+    $('#trainingSolutionEyebrow').textContent = t(key);
+    $('#trainingSolutionEyebrow').dataset.i18n = key;
   }
   const scoreBadge = $('#trainingScoreBadge');
   if (scoreBadge) scoreBadge.hidden = true;
@@ -11672,7 +11971,7 @@ function renderCanonicalTrainingExercise(exercise, {
       card.classList.add('is-card-dealt');
       card.style.setProperty('--card-deal-order', String(Math.min(index, 4)));
     });
-  recordTrainingExerciseShown(exercise);
+  if (recordShown) recordTrainingExerciseShown(exercise);
 }
 
 function prepareTrainingGeneration({ preserveSession = false } = {}) {
@@ -12516,11 +12815,11 @@ function replayCurrentTrainingDecision() {
 function trainingSessionIsActive() {
   const state = document.querySelector('.training-workspace')?.dataset.trainingState;
   if (app.training.practiceSession?.completed) return false;
-  return Boolean(app.training.memorySessionPromise)
-    || ['generating', 'automating', 'ready', 'grading', 'feedback'].includes(state);
+  return ['generating', 'automating', 'ready', 'grading', 'feedback'].includes(state);
 }
 
-function startConfiguredTrainingSessionWithGuard(options = {}) {
+async function startConfiguredTrainingSessionWithGuard(options = {}) {
+  if (trainingSameSpotIsActive()) await exitTrainingSameSpot();
   if (trainingSessionIsActive() && !window.confirm(t(
     'Start a new Training session? The active session will be marked incomplete, and its recorded decisions will remain in Training Memory.',
   ))) return null;
@@ -12766,7 +13065,7 @@ function renderTrainingEvaluationSummary(evaluation, exercise) {
 }
 
 function handleTrainingGuess(userAction) {
-  if (trainingSessionMode() === 'full_hand') {
+  if (trainingSessionMode() === 'full_hand' && !trainingSameSpotIsActive()) {
     handleFullHandTrainingGuess(userAction);
     return;
   }
@@ -12781,7 +13080,8 @@ function handleTrainingGuess(userAction) {
   }
 
   const evaluation = result.evaluation;
-  const countsTowardSession = app.training.currentAttemptKind !== 'replay';
+  const countsTowardSession = app.training.currentAttemptKind !== 'replay'
+    && app.training.currentAttemptKind !== 'redrill';
   app.training.lifecycle = 'answered';
   app.training.currentEvaluation = evaluation;
   resetTrainingStudyHints();
@@ -12818,6 +13118,10 @@ function handleTrainingGuess(userAction) {
     actionType: userAction,
   });
   if (exercise.generationMetadata?.memoryRedrill) {
+    if (trainingSameSpotIsActive()) {
+      callTrainingServiceBridge('markSameSpotAnswered');
+      renderSameSpotComparison(evaluation);
+    }
     void finishTrainingMemorySession('completed');
   }
   const guessButtons = $('#trainingGuessButtons');
@@ -12825,6 +13129,10 @@ function handleTrainingGuess(userAction) {
   const nextBtn = $('#trainingNextHandBtn');
   if (nextBtn) {
     nextBtn.textContent = t('Next exercise');
+    if (trainingSameSpotIsActive()) nextBtn.hidden = true;
+  }
+  if (trainingSameSpotIsActive() && $('#trainingScoreBadge')) {
+    $('#trainingScoreBadge').hidden = true;
   }
   app.training.lifecycle = 'feedback';
   setTrainingWorkspaceState('feedback');

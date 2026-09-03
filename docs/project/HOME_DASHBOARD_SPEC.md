@@ -61,7 +61,7 @@ Fresh accounts use intentional actions instead of a grid of zero metrics. Saved 
 Home may show only explicit resume contracts:
 
 - an active or paused Personal Strategy session;
-- a current in-memory canonical live Hand exposed by the Playbook bridge.
+- a current in-memory canonical Hand exposed by the Playbook bridge only while its canonical state is non-terminal and therefore resumable. Completed showdown, fold, and all-in Hands are not live continuation targets and must produce Start rather than Continue.
 
 When neither exists, the prime Home area presents a useful Start action rather than an empty Continue shell or fabricated recency. Training, Analyze, Equity, and last-route continuation remain unsupported until their owners expose explicit contracts. Home does not infer continuation from old Scenario state, route history, timestamps, or incidental consumer state.
 

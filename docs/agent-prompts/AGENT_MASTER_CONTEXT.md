@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: September 1, 2026 (`ANALYZE-SCENARIO-READINESS-001` and `CARD-CLEAR-SEMANTICS-001` are human accepted; `HOME-HAND-LIFECYCLE-001` is active next, followed by `SAME-SPOT-COHERENCE-001`).
+Last refreshed: September 3, 2026 (Home Hand lifecycle, Training Memory availability, and standalone Same Spot maintenance are human accepted; `LIGHT-WINS-BATCH-001` is active next).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -78,8 +78,8 @@ The authority path is: trusted structured facts -> explanation facts -> claim pe
 11. **COMPLETED / ACCEPTED — `AUDIT-CHEAP-FIX-BATCH-001`** — Full Hand Memory embargo, current-actor Hand context/stack, and complete-known-card structural Equity identities; exact entered-hand outcome authority unchanged
 12. **COMPLETED / ACCEPTED — `AUTH-SUPABASE-SINGLETON-001`** — one browser-runtime Supabase client is shared by Authentication, Account/Profile, Saved sync, and Personal Strategy sync; equivalent/repeated acquisition is idempotent and materially different in-runtime configuration fails closed
 13. **COMPLETED / HUMAN ACCEPTED — `ANALYZE-SCENARIO-READINESS-001` AND `CARD-CLEAR-SEMANTICS-001`**
-14. **ACTIVE NEXT — `HOME-HAND-LIFECYCLE-001`**
-15. **PLANNED NEXT — `SAME-SPOT-COHERENCE-001`**
+14. **COMPLETED / HUMAN ACCEPTED — `HOME-HAND-LIFECYCLE-001`, `TRAINING-MEMORY-AVAILABILITY-001`, AND `SAME-SPOT-COHERENCE-001R`**
+15. **ACTIVE NEXT — `LIGHT-WINS-BATCH-001`**
 16. **IDENTITY/TRUTH — `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`**
 17. **PORTABLE BROWSER LIFECYCLE — `BROWSER-TEST-PLATFORM-001`**
 18. **INCREMENTAL COMPOSITION — `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot; no framework rewrite**
@@ -100,7 +100,7 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 - `SETTINGS-IA-001` is accepted structurally; its unavailable real Firefox category/viewport/theme/language matrix remains `QA-HANDSON-010` / `RET-PREMIUM-001` debt.
 - `PREMIUM-CLOSEOUT-001` is not cancelled: it is the later whole-product manual, visual, responsive, localization, accessibility, Guide, Core Flow, and release-quality gate after the feature set is materially more mature.
 - `UX-REGRESSION-001` is accepted: the eleven owned hands-on IDs are closed with the checkpoint's Node and bounded Firefox 154 evidence; unowned composition/product debt remains open.
-- Training Varied/Focused/Full Hand, the Practice Planner, and Training Memory v1 are implemented foundations. `AUTH-TRAINING-MEMORY-001` is human/security accepted: authentication-aware owner/generation scope prevents Guest or another account from accessing retained prior-account Memory, invalidates stale reads/intents/writes, and revokes local access before provider cleanup without deleting account bytes. The durable anonymous Device Guest remains future `IDENTITY-LIFECYCLE-001` work. `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001` still reopen remediation and grading semantics. Advanced scheduling/cross-surface memory work and `Not sure` remain future; exact source/claim snapshots and historical/current labels are binding.
+- Training Varied/Focused/Full Hand, the Practice Planner, and Training Memory v1 are implemented foundations. Auth-aware owner/generation isolation remains accepted, and bridge installation now recovers from bootstrap ordering so signed-in local Memory works in idle and all ordinary modes without Supabase sync. Same Spot is a standalone idle-only historical Memory re-drill, neither Focused nor planner-backed; active ordinary Training blocks entry without suspend/restore, frozen earlier/current source evidence remains explicit, and headline statistics/planner progress are unchanged. The durable anonymous Device Guest remains future `IDENTITY-LIFECYCLE-001` work. `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001` still reopen remediation and grading semantics.
 - `STRATEGY-TRUST-001` is accepted: declarations and manifest statuses are evidence only; application-owned acceptance bounds authority/capabilities/coverage and binds Reference Packs to exact source ID/version/fingerprint. Live opaque acceptance is process-local and never persisted as proof; historical records retain durable answer-time authority metadata and frozen ClaimPolicy without silent upgrade or reauthentication.
 - `reference-pack/v1` has no production data registration. Never promote its synthetic test fixture, benchmark observations, or generalized heuristic curves into trusted reference truth.
 - Personal Strategy is checkpointed through legacy-named Calibration/Matrix/Builder/Teacher. The [independent `002R` review and human disposition](../project/PERSONAL_STRATEGY_002R_REVIEW.md) are accepted; `003A` remains the preserved versioned Game setup/Approach migration and local-first RFI-first first-value reset at step 17 of the binding post-audit order, after the foundation, extraction, Saved/Home, reference-source, and learning-loop gates. Exactly three legacy UI modes are not a future product requirement. Provider/reference/observed integration still follows 003A acceptance.

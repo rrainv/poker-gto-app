@@ -1386,6 +1386,20 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 .training-grade-counts i[data-grade="mistake"] { background: var(--status-warning); }
 
 .training-setup-fields { display: grid; gap: var(--space-4); }
+.training-same-spot-setup { display: grid; gap: var(--space-4); }
+.training-same-spot-setup[hidden] { display: none; }
+.training-same-spot-setup h3 { margin: 0; color: var(--text-primary); font-size: 1.15rem; }
+.training-same-spot-setup p { margin: var(--space-1) 0 0; color: var(--text-secondary); line-height: 1.5; }
+.training-same-spot-facts,
+.training-same-spot-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); margin: 0; }
+.training-same-spot-facts > div,
+.training-same-spot-comparison > div { min-width: 0; padding: var(--space-3); background: var(--surface-inset); border: 1px solid var(--border-subtle); border-radius: var(--radius-cell); }
+.training-same-spot-facts dt,
+.training-same-spot-comparison dt { color: var(--text-muted); font-size: var(--text-micro-size); font-weight: 700; }
+.training-same-spot-facts dd,
+.training-same-spot-comparison dd { margin: var(--space-1) 0 0; color: var(--text-primary); font-weight: 750; overflow-wrap: anywhere; }
+.training-same-spot-comparison { margin-top: var(--space-4); }
+.training-same-spot-comparison[hidden] { display: none; }
 .training-mode-switch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; padding: 1px; background: var(--border-default); border-radius: var(--radius-control); }
 .training-mode-switch .ui-button { min-height: 40px; border: 0; border-radius: calc(var(--radius-control) - 1px); color: var(--text-secondary); background: var(--surface-inset); }
 .training-mode-switch .ui-button.is-active,

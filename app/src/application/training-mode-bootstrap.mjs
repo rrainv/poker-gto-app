@@ -33,6 +33,7 @@ import {
   createFullHandTrainingSizingModel,
   validateFullHandTrainingSizingInput,
 } from './full-hand-training-sizing.mjs';
+import { createTrainingSameSpotLifecycle } from './training-same-spot-lifecycle.mjs';
 
 export const FULL_HAND_TABLE_TRANSITION_PRESENTATION_SCHEMA_VERSION =
   'full-hand-table-transition-presentation/v1';
@@ -40,6 +41,7 @@ export const FULL_HAND_TABLE_TRANSITION_PRESENTATION_SCHEMA_VERSION =
 export function installTrainingModeBridge(browserWindow, {
   controller = createTrainingSessionController(),
   fullHandController = createFullHandTrainingSessionController(),
+  sameSpotLifecycle = createTrainingSameSpotLifecycle(),
 } = {}) {
   if (!browserWindow) return null;
   const experienceBridge = installExperienceEventsBridge(browserWindow);
@@ -265,6 +267,18 @@ export function installTrainingModeBridge(browserWindow, {
       fullHandReviewReplayHandId = null;
       fullHandController.reset();
       return controller.reset();
+    },
+    beginSameSpot(input) {
+      return sameSpotLifecycle.begin(input);
+    },
+    markSameSpotAnswered() {
+      return sameSpotLifecycle.markAnswered();
+    },
+    releaseSameSpot() {
+      return sameSpotLifecycle.release();
+    },
+    getSameSpotState() {
+      return sameSpotLifecycle.getState();
     },
   });
   Object.defineProperty(browserWindow, 'RiverlineTraining', {

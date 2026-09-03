@@ -12,6 +12,9 @@ import {
   createRiverlineIdentity,
 } from '../app/src/account-identity/domain.mjs';
 import {
+  installTrainingMemoryBridge,
+} from '../app/src/application/training-memory-bootstrap.mjs';
+import {
   TrainingMemoryAuthorizationError,
   createTrainingMemoryOwnerResolver,
   createTrainingMemoryService,
@@ -539,6 +542,7 @@ test('owner transition clears private Training Memory presentation synchronously
   let status = 'private status';
   const sandbox = {
     app,
+    window: { RiverlineTrainingMemory: {} },
     $: (selector) => elements.get(selector.slice(1)) ?? null,
     resetTrainingMemoryDecisionState() { resetCalls += 1; },
     setTrainingMemoryStatus(value) { status = value; },
@@ -578,6 +582,63 @@ test('queued A write intent that has not started is discarded before owner resol
   assert.equal(sandbox.calls, 0);
 });
 
+test('a rejected write from an invalidated Memory epoch cannot publish unavailable status', async () => {
+  const source = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+  const queue = extractFunction(source, 'queueTrainingMemoryWrite');
+  const operation = deferred();
+  const app = { training: { memoryGeneration: 5, memoryWritePromise: Promise.resolve() } };
+  const statuses = [];
+  const sandbox = {
+    app,
+    console: { error() {} },
+    setTrainingMemoryStatus(value) { statuses.push(value); },
+  };
+  vm.runInNewContext(
+    `${queue}; this.result = queueTrainingMemoryWrite(async () => { this.operation.enter(); await this.operation.wait; throw new Error('stale cleanup'); });`,
+    { ...sandbox, operation },
+  );
+  await operation.entered;
+  app.training.memoryGeneration += 1;
+  operation.release();
+  await app.training.memoryWritePromise;
+  assert.deepEqual(statuses, []);
+});
+
+for (const answered of [false, true]) {
+  test(`standalone Same Spot ${answered ? 'stores its answer and completes' : 'exits unanswered and abandons'} without disabling Memory`, async () => {
+    const { service } = fixture();
+    const historical = await createAnsweredDecision(service);
+    const sameSpot = await service.createSameSpot(historical.answered.id);
+    const review = await service.startSession({ mode: 'review', requestedLength: 1 });
+    const shown = await service.recordExerciseShown({
+      sessionId: review.id,
+      exercise: sameSpot.exercise,
+      parentDecisionRecordId: historical.answered.id,
+      redrillKind: 'same_spot',
+    });
+    if (answered) {
+      const actionType = sameSpot.exercise.strategyResult.recommendation.action.type;
+      const evaluation = evaluateTrainingAnswer({
+        exerciseId: sameSpot.exercise.id,
+        chosenActionType: actionType,
+        strategyResult: sameSpot.exercise.strategyResult,
+        decisionContext: sameSpot.exercise.decisionContext,
+      });
+      await service.recordExerciseAnswered({
+        recordId: shown.id,
+        evaluation,
+        strategyResult: sameSpot.exercise.strategyResult,
+        actionType,
+      });
+    }
+    const finished = await service.finishSession(review.id, answered ? 'completed' : 'abandoned');
+    assert.equal(finished.status, answered ? 'completed' : 'abandoned');
+    assert.equal((await service.getDecision(shown.id)).status, answered ? 'answered' : 'shown');
+    assert.ok(Array.isArray(await service.listRecentSessions()));
+    assert.ok(Array.isArray(await service.listDueReview()));
+  });
+}
+
 test('mixed sequential panel refresh cannot combine due rows from A with recent rows from B', async () => {
   const source = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
   const refresh = extractFunction(source, 'refreshTrainingMemoryPanel');
@@ -599,6 +660,7 @@ test('mixed sequential panel refresh cannot combine due rows from A with recent 
   } };
   const sandbox = {
     app,
+    window: { RiverlineTrainingMemory: {} },
     $: (selector) => elements.get(selector.slice(1)) ?? null,
     setTrainingMemoryStatus() {},
     async callTrainingMemoryBridge(method) {
@@ -621,6 +683,30 @@ test('mixed sequential panel refresh cannot combine due rows from A with recent 
   assert.equal(app.training.memoryLastItems.length, 0);
 });
 
+test('panel failure preserves the concrete diagnostic code behind generic copy', async () => {
+  const source = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+  const refresh = extractFunction(source, 'refreshTrainingMemoryPanel');
+  const list = { replaceChildren() {} };
+  const app = { training: {
+    memoryGeneration: 2,
+    memoryView: 'review',
+    memoryLastItems: [],
+    memoryLastDiagnostic: null,
+  } };
+  const statuses = [];
+  const sandbox = {
+    app,
+    window: {},
+    $: (selector) => (selector === '#trainingMemoryList' ? list : null),
+    setTrainingMemoryStatus(value, variables, options) { statuses.push({ value, options }); },
+    console: { error() {} },
+  };
+  vm.runInNewContext(`${refresh}; this.result = refreshTrainingMemoryPanel();`, sandbox);
+  assert.equal(await sandbox.result, null);
+  assert.equal(app.training.memoryLastDiagnostic.code, 'training_memory_bridge_unavailable');
+  assert.equal(statuses.at(-1).options.error, true);
+});
+
 test('owner resolver installs exactly one auth and one identity subscription', () => {
   const ownerLifecycle = lifecycle(identity('subscription-account'));
   createTrainingMemoryOwnerResolver({
@@ -629,4 +715,60 @@ test('owner resolver installs exactly one auth and one identity subscription', (
   });
   assert.equal(ownerLifecycle.authSubscriptionCount, 1);
   assert.equal(ownerLifecycle.identitySubscriptionCount, 1);
+});
+
+test('Training Memory bridge recovers when authentication installs after its first bootstrap attempt', async () => {
+  class BrowserWindow extends EventTarget {}
+  const browserWindow = new BrowserWindow();
+  const accountA = identity('late-bootstrap-account');
+  const ownerLifecycle = lifecycle(accountA);
+  const database = createMemoryTrainingMemoryDatabase();
+  let readyEvents = 0;
+  browserWindow.addEventListener('riverline:trainingmemoryready', () => { readyEvents += 1; });
+
+  assert.equal(installTrainingMemoryBridge(browserWindow, { database }), null);
+  browserWindow.RiverlineAuthentication = ownerLifecycle.authentication;
+  browserWindow.RiverlineAccountIdentity = ownerLifecycle.identityProvider;
+  browserWindow.dispatchEvent(new Event('riverline:authchange'));
+
+  assert.equal(browserWindow.RiverlineTrainingMemory?.schemaVersion, 'training-memory-bridge/v1');
+  assert.equal(readyEvents, 1);
+  assert.deepEqual(await browserWindow.RiverlineTrainingMemory.listRecentSessions(), []);
+  assert.deepEqual(await browserWindow.RiverlineTrainingMemory.listDueReview(), []);
+  const historical = await createAnsweredDecision(browserWindow.RiverlineTrainingMemory);
+  const sameSpot = await browserWindow.RiverlineTrainingMemory.createSameSpot(
+    historical.answered.id,
+  );
+  assert.equal(sameSpot.sourceDecisionRecordId, historical.answered.id);
+  assert.equal(
+    installTrainingMemoryBridge(browserWindow, { database }),
+    browserWindow.RiverlineTrainingMemory,
+  );
+  assert.equal(ownerLifecycle.authSubscriptionCount, 1);
+  assert.equal(ownerLifecycle.identitySubscriptionCount, 1);
+  browserWindow.dispatchEvent(new Event('riverline:authchange'));
+  browserWindow.dispatchEvent(new Event('riverline:identitychange'));
+  assert.equal(readyEvents, 1);
+});
+
+test('real auth-aware bridge remains locally available through Varied, Focused, and Full Hand sessions', async () => {
+  class BrowserWindow extends EventTarget {}
+  const browserWindow = new BrowserWindow();
+  const accountA = identity('ordinary-training-account');
+  const ownerLifecycle = lifecycle(accountA);
+  browserWindow.RiverlineAuthentication = ownerLifecycle.authentication;
+  browserWindow.RiverlineAccountIdentity = ownerLifecycle.identityProvider;
+  installTrainingMemoryBridge(browserWindow, {
+    database: createMemoryTrainingMemoryDatabase(),
+    clock: clock(),
+    idFactory: idFactory(),
+  });
+
+  for (const mode of ['varied', 'focused', 'full_hand']) {
+    const session = await browserWindow.RiverlineTrainingMemory.startSession({ mode });
+    assert.equal(session.mode, mode);
+    assert.ok(Array.isArray(await browserWindow.RiverlineTrainingMemory.listRecentSessions()));
+    assert.ok(Array.isArray(await browserWindow.RiverlineTrainingMemory.listDueReview()));
+    await browserWindow.RiverlineTrainingMemory.finishSession(session.id, 'abandoned');
+  }
 });
