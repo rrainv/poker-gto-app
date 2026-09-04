@@ -6,11 +6,11 @@ Planning authority remains in the [Product Backlog](../PRODUCT_BACKLOG.md), [Cur
 
 ## Product purpose
 
-Riverline should eventually offer a small, reusable randomization utility for constructing legal study states quickly. Users should be able to lock the parts they care about and randomize only the requested cards or bounded spot components while Riverline preserves canonical deck legality, known/dead/excluded cards, hidden-card privacy, and reproducibility where useful.
+Riverline now offers a bounded randomization interaction across Analyze Scenario, top-level Hand / Analyze Hand Mode, and Equity. The surfaces share restrained language and bounded deterministic/recipe infrastructure where appropriate, while each retains its own application adapter, validation, commit boundary, and state authority.
 
 Randomization is input assistance. It is not a new poker-state authority, strategy source, opponent model, range sampler, or claim that a generated spot is representative.
 
-The August 2026 confirmed hands-on product review strengthens the user demand for this capability across card- and spot-driven study surfaces. It does not select an implementation order or relax the canonical legality, lock, privacy, and reproducibility boundaries below.
+The August 2026 confirmed hands-on product review established the demand; `LIGHT-WINS-BATCH-001` is the human-accepted bounded foundation. It does not complete the broader future capability or relax the canonical legality, Keep, privacy, and reproducibility boundaries below.
 
 ## User jobs / why it matters
 
@@ -30,11 +30,22 @@ The August 2026 confirmed hands-on product review strengthens the user demand fo
 - [Training Practice Planner](../TRAINING_PRACTICE_PLANNER_SPEC.md) plans Training target envelopes, while canonical Training generation owns legal trajectories. Neither becomes a generic Random Spot Generator.
 - Existing Hand, Scenario, Equity, and Analysis controllers own their source-state selection and validation.
 
-There is no current generic random-spot capability implied by these foundations. Future work should reuse them rather than copy deck arrays, card parsing, PokerState construction, or legal-action logic into a UI helper.
+There is no universal generic random-spot authority. The accepted surface-specific utilities reuse canonical card and state boundaries rather than copying deck arrays, PokerState construction, or legal-action logic into renderers.
+
+## Accepted bounded capability
+
+- **Analyze Scenario:** a compact dice + settings utility can create a complete provider-ready lossy Scenario from empty state. Whole-spot generation may vary the supported street when Board/street is free. Keep supports Hero, exact Board/street, Position, Stack, and Betting context; Change only supports Hero, Board, Position, Stack, and Betting context. Generation is atomic, passes the existing readiness boundary before commit, uses `analyze-whole-spot-policy/v2`, and keeps deterministic/versioned recipes in secondary details.
+- **Top-level Hand / Analyze Hand Mode:** the compact dice fills only the currently pending uncommitted Hero private-card, flop, turn, or river chance draft as appropriate. Repeated rerolls replace only that draft; existing Deal/Apply remains the canonical commit. Committed history and opponent private cards are never randomized, and v1 has no Hand settings/Keep panel.
+- **Equity:** New Matchup preserves roster/order/names and Known/Unknown modes, rerolls only Known hands, preserves board and dead cards, and does not calculate automatically. Change only targets an individual Known hand or Board. Random flop / turn / river preserves existing hands and dead cards. Player count and dead cards are never randomized.
+- **Shared product:** UI remains restrained utility grammar rather than casino styling; natural-language feedback is concise and factual; EN/RU/HE and RTL are supported. Canonical card/rules/position/Hand/Scenario/Equity authorities are unchanged, and Training remains planner/generator-owned and untouched.
+
+## Preserved future extensions
+
+The following are not implemented by the accepted batch: Another Like This; broader Lock & Perturb; controlled transfer drills; recipe sharing, import, or history; Saved-derived randomization; Training Intelligence integrations; and runout exploration. Each requires its own explicit owner, contract, and reprioritization.
 
 ## Desired future behavior
 
-### Card-component randomization
+### Further card-component randomization
 
 Potential bounded actions include:
 
@@ -109,7 +120,7 @@ Future spot construction may offer bounded effective-stack randomization, but on
 - The request must use an explicit legal minimum and maximum or named, documented buckets such as short / medium / standard / deep. Generated values must satisfy the owning Game Rules, table/player configuration, chip unit, and builder constraints; visually plausible but nonsensical values are unavailable results, not valid samples.
 - An explicit Stack lock excludes effective stack from the next randomization request. Randomizing cards or any other unlocked component must not alter a locked stack.
 - Reproduction requires the deterministic seed, algorithm/version, normalized input fingerprint, requested bounds or bucket, exact locks, relevant Game Rules identity, and resulting canonical stack facts.
-- One future shared generator may serve Training, Analyze, Equity, and study-Hand setup through their existing application boundaries. Each consumer may request or display the result, but none becomes a parallel stack, legality, or randomization authority.
+- Future bounded recipe infrastructure may serve additional consumers only through their existing application boundaries. No shared universal state generator may replace surface-specific Scenario, Hand, Equity, or Training authorities.
 - Exact controls, defaults, bucket edges, supported consumers, and sampling distribution remain future product decisions. Bounded effective-stack randomization is documented here for later work; it is not implemented or activated by `TRAINING-COMPOSITION-001`.
 
 ## Structured facts / evidence required
@@ -144,7 +155,7 @@ For durable reproduction, store the compact recipe plus any source/version ident
 - Hypothetical generated state must be clearly distinct from actual canonical state.
 - A seed provides reproduction only with the matching algorithm version, input, locks, exclusions, and targets.
 - Failure to satisfy locks or legality is an unavailable result, not permission to relax constraints silently.
-- Consumers must use one shared randomization contract and interaction language; they do not implement local deck math.
+- Consumers share the interaction language and only bounded recipe infrastructure where appropriate; they retain surface-specific adapters and do not implement local deck math.
 
 ## Preserved interactions and microfeatures
 
@@ -162,9 +173,9 @@ For durable reproduction, store the compact recipe plus any source/version ident
 
 ## Cross-surface applicability
 
-- **Equity:** applicable to Hero/opponent hands, board/runout, and possibly dead-card-aware inputs through the canonical Equity request path.
-- **Analyze:** applicable to hypothetical exact cards, boards, or supported simple Spots; never mutates the analyzed actual state silently.
-- **Study Hand setup:** applicable through canonical Hand initialization or an approved setup builder.
+- **Equity:** bounded Known-hand and Board randomization is implemented through the Equity-input adapter; broader runout/outcome exploration remains future.
+- **Analyze:** bounded provider-ready lossy Scenario generation is implemented under `analyze-whole-spot-policy/v2`; broader Another Like This and Lock & Perturb remain future.
+- **Study Hand setup:** pending uncommitted Hero/flop/turn/river draft rerolls are implemented; broader setup generation remains future.
 - **Runout Explorer:** natural future consumer for legal Turn/River card or class exploration.
 - **Deep Hand Review:** may generate an explicitly hypothetical alternate runout or branch without altering the historical Hand.
 - **Training:** not automatically a consumer. Canonical Training generation already owns legal exercise trajectories; a later study-facing random action must not bypass curriculum/generator authority.
@@ -191,18 +202,15 @@ A random control should appear only where the owning source can validate and con
 
 ## Suggested implementation slices
 
-These are possible future boundaries, not execution priority:
+These are possible remaining future boundaries, not execution priority. The accepted batch already provides bounded recipe infrastructure and the three surface adapters described above:
 
-1. Pure canonical card-component request/result contract with lock and exclusion validation.
-2. Hero/opponent two-card and Flop/Turn/River randomization over explicit study inputs.
-3. Shared Randomize/Lock interaction controller and accessible presentation.
-4. Equity integration using existing request validation and dead-card semantics.
-5. Analyze/study-Hand adapters through existing application builders.
-6. Versioned deterministic seed/recipe and reproduction tests.
-7. Privacy-safe hypothetical opponent-hand handling.
-8. Runout Explorer integration.
-9. Bounded, lockable effective-stack variation through one shared canonical generator contract.
-10. Separately specified simple-spot generation only for a proven supported state family.
+1. Another Like This and broader Lock & Perturb semantics.
+2. Controlled transfer drills without bypassing the Training planner/generator.
+3. Recipe sharing, import, history, and Saved-derived randomization.
+4. Training Intelligence integrations.
+5. Privacy-safe hypothetical opponent-hand handling.
+6. Runout Explorer integration.
+7. Bounded, lockable effective-stack variation through an approved surface owner.
 
 ## Competitive/reference lessons
 
@@ -227,8 +235,8 @@ No new web research is introduced by this dossier.
 
 ## Open product questions
 
-- Which first consumer and smallest component set demonstrate enough value?
-- Should seeds be generated and retained automatically, exposed only on demand, or absent until Save/Share requires them?
+- Which future extension demonstrates enough value after the accepted three-surface foundation?
+- When durable recipe features are approved, should seeds be retained automatically, exposed only on demand, or stored only for Save/Share?
 - Which deterministic random algorithm/versioning contract is appropriate for long-lived reproduction?
 - Should Flop order be preserved as dealt order, canonical display order, or both facts separately?
 - Which dead, burned, and excluded-card categories are supported by each consumer?
@@ -240,8 +248,9 @@ No new web research is introduced by this dossier.
 
 ## Legacy/recovered IDs and ideas
 
-- `RANDOM-SPOT-GENERATOR-001` — **PRESERVED** as a future legal study-state utility.
-- Random Hero hand, random opponent hand, random Flop, random Turn, random River, random board/runout, and random simple Spot — **PRESERVED** behind canonical owners.
+- `RANDOM-SPOT-GENERATOR-001` — **BOUNDED FOUNDATION HUMAN ACCEPTED** through `LIGHT-WINS-BATCH-001`; named extensions remain preserved future work.
+- Analyze whole-spot generation, pending Hand chance-draft rerolls, Equity Known-hand rerolls, and explicit Equity board-street utilities — **IMPLEMENTED / HUMAN ACCEPTED** behind canonical surface owners.
+- Random opponent hands, broader board/runout exploration, and further simple-spot behavior — **PRESERVED** behind canonical owners.
 - Component locks, requested-component-only randomization, known/dead/burned/excluded-card legality, hidden-card privacy, and deterministic seed/reproduction — **PRESERVED invariants**.
 - A separate randomizer-owned poker state, renderer deck math, or implied strategic representativeness — **REJECTED**.
 

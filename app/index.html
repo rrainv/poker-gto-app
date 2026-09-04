@@ -899,7 +899,7 @@
 
           <section id="scenarioCardsPanel" class="panel playbook-cards-panel" data-playbook-scenario data-tutorial-anchor="scenario-cards">
 
-            <div class="panel-head">
+            <div class="panel-head playbook-randomize-head">
 
               <div>
 
@@ -911,6 +911,35 @@
 
                   slot to choose from the available deck.</div>
 
+              </div>
+
+              <div class="playbook-randomize-compact">
+                <button id="scenarioRandomizeButton" class="playbook-randomize-trigger" type="button" aria-label="New random spot" data-i18n-aria-label="New random spot" title="New random spot" data-i18n-title="New random spot">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2.5 4.25a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01ZM12 12a1.25 1.25 0 1 0 0 .01Zm-4.5 4.5a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01Z"/></svg>
+                </button>
+                <details id="scenarioRandomizationMenu" class="playbook-randomize-menu">
+                  <summary class="playbook-randomize-settings-trigger" aria-label="Randomization settings" data-i18n-aria-label="Randomization settings" title="Randomization settings" data-i18n-title="Randomization settings">
+                  <span class="playbook-randomize-chevron" aria-hidden="true">&#9662;</span>
+                  </summary>
+                  <div class="playbook-randomize-popover">
+                  <div class="playbook-randomize-settings-title" data-i18n="Keep while generating">Keep while generating</div>
+                  <div class="playbook-keep-list" role="group" aria-label="Keep while generating" data-i18n-aria-label="Keep while generating">
+                    <button type="button" aria-pressed="false" data-scenario-keep="hero" data-i18n="Hero">Hero</button>
+                    <button type="button" aria-pressed="false" data-scenario-keep="board" data-i18n="Board / street">Board / street</button>
+                    <button type="button" aria-pressed="false" data-scenario-keep="position" data-i18n="Position">Position</button>
+                    <button type="button" aria-pressed="false" data-scenario-keep="stack" data-i18n="Stack">Stack</button>
+                    <button type="button" aria-pressed="false" data-scenario-keep="betting_context" data-i18n="Betting context">Betting context</button>
+                  </div>
+                  <div class="playbook-randomize-settings-title" data-i18n="Change only">Change only</div>
+                  <div class="playbook-randomize-menu-items" role="group" aria-label="Change only" data-i18n-aria-label="Change only">
+                    <button type="button" data-scenario-randomize-target="hero" data-i18n="New Hero">New Hero</button>
+                    <button type="button" data-scenario-randomize-target="board" data-i18n="New board">New board</button>
+                    <button type="button" data-scenario-randomize-target="position" data-i18n="New position">New position</button>
+                    <button type="button" data-scenario-randomize-target="stack" data-i18n="New stack">New stack</button>
+                    <button type="button" data-scenario-randomize-target="betting_context" data-i18n="New betting context">New betting context</button>
+                  </div>
+                  </div>
+                </details>
               </div>
 
             </div>
@@ -963,6 +992,17 @@
               </div>
 
               <div class="card-slots" data-slots="dead"></div>
+
+              <p id="scenarioRandomizeStatus" class="playbook-randomize-status" role="status" aria-live="polite" aria-atomic="true"></p>
+              <details id="scenarioRandomizationDetails" class="playbook-randomization-details" hidden>
+                <summary data-i18n="Randomization details">Randomization details</summary>
+                <dl>
+                  <div><dt data-i18n="Changed">Changed</dt><dd id="scenarioRecipeTarget">—</dd></div>
+                  <div><dt data-i18n="Seed">Seed</dt><dd id="scenarioRecipeSeed" class="poker-data-token">—</dd></div>
+                  <div><dt data-i18n="Version">Version</dt><dd id="scenarioRecipeVersion">—</dd></div>
+                </dl>
+                <button id="scenarioCopyRecipe" class="ui-button ui-button--quiet" type="button" data-i18n="Copy recipe">Copy recipe</button>
+              </details>
 
             </div>
 
@@ -1337,16 +1377,19 @@
           <aside id="handInteractionRail" class="hand-interaction-rail" data-playbook-hand hidden aria-label="Hand replay" data-i18n-aria-label="replay.title">
           <section id="handStageDock" class="hand-stage-dock" data-playbook-hand hidden data-tutorial-anchor="hand-action-controls">
             <section id="handDealSection" class="hand-control-section hand-stage-step" aria-labelledby="handDealTitle" hidden>
-              <div class="hand-section-head"><div><strong id="handDealTitle" data-i18n="Set private cards">Set private cards</strong><small id="handDealHelp" data-i18n="Choose Hero's cards. Opponents remain hidden unless you set them explicitly.">Choose Hero's cards. Opponents remain hidden unless you set them explicitly.</small></div></div>
+              <div class="hand-section-head"><div><strong id="handDealTitle" data-i18n="Set private cards">Set private cards</strong><small id="handDealHelp" data-i18n="Choose Hero's cards. Opponents remain hidden unless you set them explicitly.">Choose Hero's cards. Opponents remain hidden unless you set them explicitly.</small></div><button id="handRandomizePrivate" class="playbook-randomize-trigger" type="button" aria-label="Random Hero cards" data-i18n-aria-label="Random Hero cards" title="Random Hero cards" data-i18n-title="Random Hero cards"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2.5 4.25a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01ZM12 12a1.25 1.25 0 1 0 0 .01Zm-4.5 4.5a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01Z"/></svg></button></div>
               <div id="handPrivateCards" class="hand-private-cards"></div>
               <button id="handDealHoleButton" class="ui-button ui-button--primary" type="button" data-i18n="Start betting">Start betting</button>
             </section>
 
             <section id="handChanceSection" class="hand-control-section hand-stage-step" aria-labelledby="handChanceTitle" hidden>
-              <div class="hand-section-head"><div><strong id="handChanceTitle" data-i18n="Deal board">Deal board</strong><small id="handChanceHelp" data-i18n="Choose the next legal board cards.">Choose the next legal board cards.</small></div></div>
+              <div class="hand-section-head"><div><strong id="handChanceTitle" data-i18n="Deal board">Deal board</strong><small id="handChanceHelp" data-i18n="Choose the next legal board cards.">Choose the next legal board cards.</small></div><button id="handRandomizeBoard" class="playbook-randomize-trigger" type="button" aria-label="Random board cards" data-i18n-aria-label="Random board cards" title="Random board cards" data-i18n-title="Random board cards"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2.5 4.25a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01ZM12 12a1.25 1.25 0 1 0 0 .01Zm-4.5 4.5a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01Z"/></svg></button></div>
               <div class="card-slots" data-slots="hand-board-chance"></div>
               <button id="handDealBoardButton" class="ui-button ui-button--primary" type="button" data-i18n="Commit board cards">Commit board cards</button>
             </section>
+
+            <p id="handRandomizeStatus" class="surface-randomize-status" role="status" aria-live="polite" aria-atomic="true"></p>
+            <details id="handRandomizationDetails" class="surface-randomization-details" hidden><summary data-i18n="Randomization details">Randomization details</summary><div><span data-i18n="Seed">Seed</span><strong id="handRecipeSeed" class="poker-data-token">&mdash;</strong></div><div><span data-i18n="Version">Version</span><strong id="handRecipeVersion">&mdash;</strong></div><button id="handCopyRecipe" class="ui-button ui-button--quiet" type="button" data-i18n="Copy recipe">Copy recipe</button></details>
 
             <section id="handActionSection" class="hand-control-section hand-stage-step hand-action-dock" aria-labelledby="handActionTitle" hidden>
               <div class="hand-section-head"><div><strong id="handActionTitle" data-i18n="Current legal actions">Current legal actions</strong><small id="handActionActor">Waiting for a betting decision</small></div></div>
@@ -2395,8 +2438,8 @@
               <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info" data-i18n="Feedback">Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
               <div class="training-verdict" role="status" aria-live="polite" aria-atomic="true"><h3 id="feedbackTitle" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
               <dl id="trainingSameSpotComparison" class="training-same-spot-comparison" hidden aria-label="Same spot comparison" data-i18n-aria-label="Same spot comparison">
-                <div><dt data-i18n="Earlier answer">Earlier answer</dt><dd id="trainingSameSpotEarlierAnswer">â€”</dd></div>
-                <div><dt data-i18n="This try">This try</dt><dd id="trainingSameSpotThisTry">â€”</dd></div>
+                <div><dt data-i18n="Earlier answer">Earlier answer</dt><dd id="trainingSameSpotEarlierAnswer">-</dd></div>
+                <div><dt data-i18n="This try">This try</dt><dd id="trainingSameSpotThisTry">-</dd></div>
               </dl>
               <div id="trainingFeedbackProgressionMount"></div>
               <div id="trainingMemoryDecisionActions" class="training-memory-decision-actions" hidden aria-label="Study labels" data-i18n-aria-label="Study labels">
@@ -2540,11 +2583,11 @@
               <div id="trainingSameSpotSetup" class="panel-body training-same-spot-setup" hidden>
                 <div><p class="training-eyebrow" data-i18n="Re-drill from Training Memory">Re-drill from Training Memory</p><h3 data-i18n="Same spot">Same spot</h3><p id="trainingSameSpotSessionNote"></p></div>
                 <dl class="training-same-spot-facts">
-                  <div><dt data-i18n="Street">Street</dt><dd id="trainingSameSpotStreet">â€”</dd></div>
-                  <div><dt data-i18n="Position">Position</dt><dd id="trainingSameSpotPosition">â€”</dd></div>
-                  <div><dt data-i18n="Table size">Table size</dt><dd id="trainingSameSpotTable">â€”</dd></div>
-                  <div><dt data-i18n="Effective stack">Effective stack</dt><dd id="trainingSameSpotStack">â€”</dd></div>
-                  <div><dt data-i18n="Facing">Facing</dt><dd id="trainingSameSpotFacing">â€”</dd></div>
+                  <div><dt data-i18n="Street">Street</dt><dd id="trainingSameSpotStreet">-</dd></div>
+                  <div><dt data-i18n="Position">Position</dt><dd id="trainingSameSpotPosition">-</dd></div>
+                  <div><dt data-i18n="Table size">Table size</dt><dd id="trainingSameSpotTable">-</dd></div>
+                  <div><dt data-i18n="Effective stack">Effective stack</dt><dd id="trainingSameSpotStack">-</dd></div>
+                  <div><dt data-i18n="Facing">Facing</dt><dd id="trainingSameSpotFacing">-</dd></div>
                 </dl>
                 <button id="trainingSameSpotExit" class="ui-button ui-button--primary" type="button" data-i18n="Back to Training">Back to Training</button>
               </div>
@@ -2581,7 +2624,27 @@
                   <p class="muted" data-i18n="Mark each hand as known or unknown. Known hands require exactly two cards.">Mark each hand as known or unknown. Known hands require exactly two cards.</p>
                 </details>
               </div>
-              <button id="resetEquity" class="ui-button ui-button-ghost equity-reset" type="button" data-i18n="Reset">Reset</button>
+              <div class="equity-head-actions">
+                <div class="surface-randomize-compact">
+                  <button id="equityRandomizeButton" class="surface-randomize-trigger" type="button" aria-label="New matchup" data-i18n-aria-label="New matchup" title="New matchup" data-i18n-title="New matchup"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2.5 4.25a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01ZM12 12a1.25 1.25 0 1 0 0 .01Zm-4.5 4.5a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01Z"/></svg></button>
+                  <details id="equityRandomizationMenu" class="surface-randomize-menu">
+                    <summary class="surface-randomize-settings-trigger" aria-label="Matchup randomization settings" data-i18n-aria-label="Matchup randomization settings" title="Matchup randomization settings" data-i18n-title="Matchup randomization settings"><span class="surface-randomize-chevron" aria-hidden="true">&#9662;</span></summary>
+                    <div class="surface-randomize-popover equity-randomize-popover">
+                      <div class="surface-randomize-settings-title" data-i18n="Change only">Change only</div>
+                      <div id="equityRandomizePlayers" class="surface-randomize-menu-items"></div>
+                      <button class="equity-randomize-menu-action" type="button" data-equity-randomize-target="board" data-i18n="Board">Board</button>
+                      <div class="surface-randomize-settings-title" data-i18n="Board depth">Board depth</div>
+                      <div class="surface-randomize-menu-items">
+                        <button type="button" data-equity-randomize-target="flop" data-i18n="Random flop">Random flop</button>
+                        <button type="button" data-equity-randomize-target="turn" data-i18n="Random turn">Random turn</button>
+                        <button type="button" data-equity-randomize-target="river" data-i18n="Random river">Random river</button>
+                      </div>
+                      <details id="equityRandomizationDetails" class="surface-randomization-details" hidden><summary data-i18n="Randomization details">Randomization details</summary><div><span data-i18n="Seed">Seed</span><strong id="equityRecipeSeed" class="poker-data-token">&mdash;</strong></div><div><span data-i18n="Version">Version</span><strong id="equityRecipeVersion">&mdash;</strong></div><button id="equityCopyRecipe" class="ui-button ui-button--quiet" type="button" data-i18n="Copy recipe">Copy recipe</button></details>
+                    </div>
+                  </details>
+                </div>
+                <button id="resetEquity" class="ui-button ui-button-ghost equity-reset" type="button" data-i18n="Reset">Reset</button>
+              </div>
             </div>
             <div class="equity-player-toolbar">
               <div class="equity-player-count-control" role="group" aria-label="Player count, from 2 through 10" data-i18n-aria-label="Player count, from 2 through 10">
@@ -2602,6 +2665,7 @@
                 <button id="equityAddPlayer" class="equity-add-player ui-button ui-button--secondary" type="button" data-i18n="+ Add player">+ Add player</button>
               </div>
             </div>
+            <p id="equityRandomizeStatus" class="surface-randomize-status" role="status" aria-live="polite" aria-atomic="true"></p>
           </section>
 
           <main class="equity-center-column" aria-label="Board and calculation" data-i18n-aria-label="Board and calculation">

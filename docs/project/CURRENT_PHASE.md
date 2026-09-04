@@ -1,12 +1,12 @@
 # Current Riverline phase
 
-Last refreshed: September 3, 2026 (`HOME-HAND-LIFECYCLE-001`, `TRAINING-MEMORY-AVAILABILITY-001`, and `SAME-SPOT-COHERENCE-001R` are human accepted; `LIGHT-WINS-BATCH-001` is active next).
+Last refreshed: September 4, 2026 (`LIGHT-WINS-BATCH-001` is human accepted; `IDENTITY-LIFECYCLE-001` is active next).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
 ## Throughput note
 
-The September 3 maintenance batch is closed and accepted. Current work advances to the bounded `LIGHT-WINS-BATCH-001` product batch without materially re-ranking the preserved long-term foundation sequence. Continue alternating bounded high-reward work with required correctness cleanup when no P0/P1 blocker intervenes.
+`LIGHT-WINS-BATCH-001` is closed and human accepted across Analyze Scenario, top-level Hand / Analyze Hand Mode, and Equity. Current work advances to the already-planned `IDENTITY-LIFECYCLE-001` foundation gate without materially re-ranking the preserved sequence. Continue alternating bounded high-reward work with required correctness cleanup when no P0/P1 blocker intervenes.
 
 ## Status vocabulary
 
@@ -147,8 +147,8 @@ The September 3 maintenance batch is closed and accepted. Current work advances 
    9. **COMPLETED / HUMAN ACCEPTED — `HOME-HAND-LIFECYCLE-001`** — only non-terminal canonical Hands are resumable; completed showdown, fold, and all-in Hands are not presented as live;
    10. **COMPLETED / HUMAN ACCEPTED — `TRAINING-MEMORY-AVAILABILITY-001`** — Training Memory bridge installation recovers from auth/bootstrap ordering, signed-in local Memory works in idle and all ordinary Training modes without Supabase sync, and auth-owner isolation remains intact;
    11. **COMPLETED / HUMAN ACCEPTED — `SAME-SPOT-COHERENCE-001R`** — Same Spot is a standalone idle-only Training Memory re-drill, not Focused or planner-backed; active ordinary Training blocks entry without suspend/restore, and frozen comparison evidence remains headline-stat/planner-neutral;
-   12. **ACTIVE NEXT — `LIGHT-WINS-BATCH-001`** — bounded high-reward product work; its ticket owns the exact scope and does not re-rank the long-term roadmap;
-   13. `IDENTITY-LIFECYCLE-001` — establish cross-surface owner, generation, invalidation, and disposal behavior, including the durable anonymous device-local Guest target and authenticated sign-out isolation;
+   12. **COMPLETED / HUMAN ACCEPTED — `LIGHT-WINS-BATCH-001`** — bounded cross-surface randomization utilities are accepted in Analyze Scenario, top-level Hand / Analyze Hand Mode, and Equity. Analyze uses `analyze-whole-spot-policy/v2` for atomic provider-ready lossy Scenario generation with exact Keep and Change-only controls; Hand randomizes only the pending uncommitted chance draft and keeps Deal/Apply as canonical commit; Equity preserves roster/order/names, Known/Unknown modes, board, and dead cards while rerolling only Known hands, and provides explicit board-street utilities without automatic calculation. Shared deterministic recipe infrastructure and interaction language do not create a universal poker-state generator or change surface authorities;
+   13. **ACTIVE NEXT — `IDENTITY-LIFECYCLE-001`** — establish cross-surface owner, generation, invalidation, and disposal behavior, including the durable anonymous device-local Guest target and authenticated sign-out isolation;
    14. `HEURISTIC-BASELINE-TRUTH-001` — make every consumer treat the current heuristic as exploratory/comparative baseline evidence only;
    15. `TRAINING-NORMATIVE-001` — separate comparative practice from normative grading and replace probability-gap-to-modal-action as a normative correctness rule;
    16. `BROWSER-TEST-PLATFORM-001` — create a portable mounted-browser lifecycle test platform;
@@ -164,7 +164,7 @@ The September 3 maintenance batch is closed and accepted. Current work advances 
    - no broad visual-polish wave, bots, Range Evolution, advanced Equity, new Saved payload kinds, mobile, social, PLO, or natural-language Coach work moves ahead of these gates.
 
 20. **PRESERVED LONG-TERM CAPABILITY ROADMAP**
-   - Learning Evidence, Natural-Language Intelligence, Reference Strategy Evolution, Equity/Hand Analysis, Bluff/Exploit Analysis, Opponent Intelligence, Deep Hand Review, Training Intelligence, Personal Strategy Intelligence, Range Evolution, Saved Knowledge/Sharing, Home Game Evolution, and Random Spot Generator remain durable continuation paths in capability dossiers;
+   - Learning Evidence, Natural-Language Intelligence, Reference Strategy Evolution, Equity/Hand Analysis, Bluff/Exploit Analysis, Opponent Intelligence, Deep Hand Review, Training Intelligence, Personal Strategy Intelligence, Range Evolution, Saved Knowledge/Sharing, Home Game Evolution, and the unimplemented extensions of Random Spot Generator remain durable continuation paths in capability dossiers;
    - capability documentation does not activate any candidate or pre-commit its order.
 
 21. **PLANNED LATER / PRE-RELEASE QUALITY GATE — `PREMIUM-CLOSEOUT-001`**
@@ -182,6 +182,7 @@ The following architecture is established and must not be duplicated:
 - `GameRulesDefinition v1` / immutable `GameRulesSnapshot v1` own mathematical rules; new live Hands use snapshot-authoritative `PokerState v2`.
 - `shared/poker-domain/` owns cards, state, actions, legality, accounting, evaluator, canonical Equity, Hold'em combos, and weighted ranges.
 - Scenario remains a truthful lossy snapshot; Hand remains canonical legal history.
+- Randomization is a shared restrained interaction language with bounded deterministic/recipe infrastructure, not a universal poker-state generator. Analyze, Hand, and Equity keep their surface-specific application adapters and canonical authorities; Training remains planner/generator-owned and untouched. Random output carries no GTO, strategic-importance, population-frequency, or representative-spot claim.
 - `DecisionContext v1` plus additive v1.1 facts is the intended input to one `StrategyProvider v1` → `StrategyResult v1` → `StrategyClaimPolicy v1` path. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted: `deriveDecisionContextFromPlaybookScenario()` owns Scenario, `deriveDecisionContextFromPokerState()` owns Hand, and `resolvePlaybookDecisionContext()` selects the canonical projection. Missing or failed dependencies clear DecisionContext and StrategyResult without local reconstruction. This does not remove unrelated poker helpers or complete the broader `logic.js` composition work owned by `UI-COMPOSITION-ROOT-001`.
 - Strategy trust follows provider declaration → structural/source validation → application-owned acceptance → effective bounded authority → `StrategyResult v1` → `StrategyClaimPolicy v1`. Strong authority is never self-declared; live opaque acceptance is process-local, while persisted historical evidence freezes durable answer-time authority/coverage/capability metadata and ClaimPolicy without reauthentication.
 - `reference-pack/v1` validates declarative bounded packs and can select an exact pack behind that same provider path. Manifest validation status is evidence only; production authority additionally requires registered exact source ID, version, and content fingerprint. No production pack is currently registered.
@@ -232,6 +233,8 @@ The independent [`PERSONAL-STRATEGY-002R` review](PERSONAL_STRATEGY_002R_REVIEW.
 ### Analysis, Equity, bluff, and ranges
 
 Canonical Equity, `RANGE-CORE-001`, `ANALYSIS-RANGE-001`, and `BLUFF-001` are current foundations. Their richer long-term directions are preserved in the [Equity and Hand Analysis](capabilities/EQUITY_HAND_ANALYSIS.md), [Bluff and Exploit Analysis](capabilities/BLUFF_EXPLOIT_ANALYSIS.md), and [Range Evolution](capabilities/RANGE_EVOLUTION.md) dossiers. They do not jump the current queue.
+
+`LIGHT-WINS-BATCH-001` is human accepted. Analyze Scenario offers a compact dice + settings utility: New Spot atomically commits only a readiness-valid, provider-ready lossy Scenario; when Board/street is free, whole-spot generation may vary the supported street. Keep supports Hero, exact Board/street, Position, Stack, and Betting context; Change only supports Hero, Board, Position, Stack, and Betting context. Deterministic/versioned recipe details stay secondary. In top-level Hand / Analyze Hand Mode, the same compact language fills only the currently pending uncommitted Hero/flop/turn/river chance draft, repeated rerolls replace only that draft, and existing Deal/Apply remains the commit; committed Hand history and opponent private cards are never randomized, and v1 has no Hand settings/Keep panel. Equity's New Matchup preserves roster/order/names, Known/Unknown modes, board, and dead cards; rerolls only Known hands; never auto-calculates; supports Change only for an individual Known hand or Board; and provides Random flop / turn / river without changing hands or dead cards. Player count and dead cards are never randomized. EN/RU/HE, RTL, restrained non-casino utility presentation, and concise factual feedback are accepted across the bounded surfaces.
 
 ### Saved, Home, opponents, and release
 

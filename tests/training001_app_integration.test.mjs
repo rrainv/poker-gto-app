@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
+import { createProductionPickerHarness } from './uiqa001r_card_picker_adapter.mjs';
+
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const canonicalStart = logic.indexOf("const TRAINING_CONFIG_SCHEMA_VERSION = 'training-config/v1'");
@@ -42,8 +44,9 @@ test('answer controls are rendered only from canonical legal-action availability
 });
 
 test('Training cards are generated read-only projections and manual mutation paths are guarded', () => {
-  const guardCount = (logic.match(/Training cards come from the canonical generated hand\./g) || []).length;
-  assert.ok(guardCount >= 4);
+  const picker = createProductionPickerHarness();
+  picker.openPicker('trainingHero', 0);
+  assert.equal(picker.app.picker, null);
   assert.match(canonicalTraining, /app\.training\.hero = \[\.\.\.presentation\.heroCards\]/);
   assert.match(canonicalTraining, /app\.training\.board = \[\.\.\.presentation\.board\]/);
 });

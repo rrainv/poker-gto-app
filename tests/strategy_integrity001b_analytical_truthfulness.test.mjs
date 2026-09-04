@@ -199,7 +199,9 @@ test('related analytical surfaces retain explicit truthfulness boundaries', () =
   assert.match(logic, /no EV loss is implied/);
   const explanation = fs.readFileSync(new URL('../app/src/application/analysis-explanation.mjs', import.meta.url), 'utf8');
   assert.match(explanation, /claimPolicy\.claims\[STRATEGY_CLAIMS\.ACTION_EV\]/);
-  assert.match(explanation, /compatibility stack rather than a guaranteed effective stack/);
+  const spr = sourceBetween(explanation, 'function sprSection(', 'function historyText(');
+  assert.match(spr, /context\.effectiveStackBb/);
+  assert.doesNotMatch(spr, /context\.stackBb\b/);
   assert.match(explanation, /The strategy source supplies no action EV comparison/);
   const facts = sourceBetween(logic, 'function trustedAnalysisFacts(', 'function renderDecisionAnalysis(');
   assert.doesNotMatch(facts, /originalEquity|facts\.equity/);

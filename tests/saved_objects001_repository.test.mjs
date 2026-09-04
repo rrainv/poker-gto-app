@@ -288,9 +288,9 @@ test('Saved Study subsystem remains isolated from renderer, strategy, Equity, Tr
   ];
   const sources = await Promise.all(files.map((file) => readFile(new URL(file, import.meta.url), 'utf8')));
   const source = sources.join('\n');
-  assert.doesNotMatch(source, /document\.|window\.|HTMLElement|querySelector|StrategyProvider|Equity|training-generator|personal-strategy/u);
+  assert.doesNotMatch(source, /document\.|window\.|HTMLElement|querySelector|StrategyProvider|training-generator|personal-strategy/u);
+  assert.doesNotMatch(source, /(?:from\s+|import\s*\()\s*['"][^'"]*equity[^'"]*['"]/iu);
   assert.doesNotMatch(source, /riverline-personal-strategy|personal-strategy-(?:store|export)/u);
   assert.match(source, /deriveDecisionContextFromPokerState/);
   assert.match(source, /validatePokerState/);
 });
-

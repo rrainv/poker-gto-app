@@ -259,7 +259,7 @@ test('pure, dominant, and balanced mixed outputs use centralized thresholds', ()
   });
 });
 
-test('StrategyResult sizing is retained without invented rationale or EV', () => {
+test('unaccepted StrategyResult sizing is retained structurally without promotion, rationale, or EV', () => {
   const result = explanation({
     decisionContext: context({ potBb: 6.4 }),
     strategyResult: strategy({
@@ -269,10 +269,8 @@ test('StrategyResult sizing is retained without invented rationale or EV', () =>
       ],
     }),
   });
-  const sizing = findFact(result, 'sizing', 'sizing_bet_0');
-  assert.equal(sizing.value.amountBb, 3.2);
-  assert.equal(sizing.value.derivedPotFraction, 0.5);
-  assert.match(sizing.text, /3\.2bb.*50%/);
+  assert.equal(result.actionAnalysis[0].action.amountBb, 3.2);
+  assert.equal(findSection(result, 'sizing'), undefined);
   assert.equal(result.actionAnalysis[0].evBb, null);
   assert.ok(result.warnings.some((entry) => entry.code === 'ev_unavailable'));
   assert.doesNotMatch(JSON.stringify(result), /maximi[sz]es|fold equity/i);

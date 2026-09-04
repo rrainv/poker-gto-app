@@ -1,6 +1,6 @@
 # Agent Master Context
 
-Last refreshed: September 3, 2026 (Home Hand lifecycle, Training Memory availability, and standalone Same Spot maintenance are human accepted; `LIGHT-WINS-BATCH-001` is active next).
+Last refreshed: September 4, 2026 (`LIGHT-WINS-BATCH-001` is human accepted; `IDENTITY-LIFECYCLE-001` is active next).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
@@ -42,6 +42,7 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 ## Critical semantic facts
 
 - Scenario is lossy; Hand is canonical legal history.
+- Randomization is shared interaction language with bounded deterministic recipe infrastructure, not a universal poker-state generator. Analyze, Hand, and Equity retain surface-specific adapters/authorities; Training remains planner/generator-owned. Random output carries no strategic, frequency, representative-spot, or GTO claim.
 - New live Hands use snapshot-authoritative `poker-state/v2`; v1 is historical compatibility.
 - `facingSizeBb` is wager-to context; `callAmountBb` is exact incremental price when known.
 - Exact pot/SPR uses `currentPotBb`; live stack reasoning uses Hero/effective-stack fields, never compatibility `potBb`/`stackBb`.
@@ -79,8 +80,8 @@ The authority path is: trusted structured facts -> explanation facts -> claim pe
 12. **COMPLETED / ACCEPTED — `AUTH-SUPABASE-SINGLETON-001`** — one browser-runtime Supabase client is shared by Authentication, Account/Profile, Saved sync, and Personal Strategy sync; equivalent/repeated acquisition is idempotent and materially different in-runtime configuration fails closed
 13. **COMPLETED / HUMAN ACCEPTED — `ANALYZE-SCENARIO-READINESS-001` AND `CARD-CLEAR-SEMANTICS-001`**
 14. **COMPLETED / HUMAN ACCEPTED — `HOME-HAND-LIFECYCLE-001`, `TRAINING-MEMORY-AVAILABILITY-001`, AND `SAME-SPOT-COHERENCE-001R`**
-15. **ACTIVE NEXT — `LIGHT-WINS-BATCH-001`**
-16. **IDENTITY/TRUTH — `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`**
+15. **COMPLETED / HUMAN ACCEPTED — `LIGHT-WINS-BATCH-001`** — Analyze Scenario uses atomic readiness-valid `analyze-whole-spot-policy/v2` generation and scoped Keep/Change-only controls; Hand rerolls only pending uncommitted chance drafts; Equity preserves matchup structure and explicit calculation while rerolling Known hands or requested board streets
+16. **ACTIVE NEXT — IDENTITY/TRUTH — `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`**
 17. **PORTABLE BROWSER LIFECYCLE — `BROWSER-TEST-PLATFORM-001`**
 18. **INCREMENTAL COMPOSITION — `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot; no framework rewrite**
 19. **SAVED/HOME — `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001`**
@@ -94,6 +95,7 @@ This order is directional and may move after accepted checkpoints. Reprioritizat
 
 ## Current checkpoint boundaries
 
+- `LIGHT-WINS-BATCH-001` is human accepted across Analyze Scenario, top-level Hand / Analyze Hand Mode, and Equity. Preserve the compact dice utility grammar, EN/RU/HE and RTL, concise factual feedback, surface-specific application boundaries, and unchanged canonical card/rules/position/Hand/Scenario/Equity authorities. Hand never randomizes committed history or opponent private cards; Equity never randomizes player count or dead cards and never calculates automatically. Deterministic/versioned recipes remain details-on-demand. Another Like This, broader Lock & Perturb, controlled transfer drills, recipe sharing/import/history, Saved-derived randomization, Training Intelligence integrations, and runout exploration remain unimplemented future extensions.
 - `ANALYZE-SCENARIO-READINESS-001` is human accepted. Scenario remains an editable lossy draft, but only centrally validated provider-ready coherence reaches StrategyProvider; invalid chronology, action/facing dependencies, uniqueness, and basic numeric inputs fail closed as `scenario_not_ready` with natural guidance, later-street clears preserve only valid earlier state, and exact actor-relative economics are never invented.
 - `CARD-CLEAR-SEMANTICS-001` is human accepted. One DOM-free command owner defines isolated Hero/private/street/board/dead/all/pending clears, empty clears are no-ops, canonical Hand history is protected, and Analyze/Equity share whole-set Dead Cards draft/Apply/cancel behavior with ordinary resting slots and overlay-isolated geometry.
 - `AUDIO-MOTION-001` is accepted; subjective Study/UI/Check polish remains `RET-AUDIO-001` debt, not current scope.

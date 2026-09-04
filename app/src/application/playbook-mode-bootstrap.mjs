@@ -28,6 +28,15 @@ import {
   TABLE_VISUAL_STATES,
   createTablePresentation,
 } from './table-presentation.mjs';
+import {
+  ANALYZE_RANDOMIZATION_REQUEST_VERSION,
+  ANALYZE_RANDOMIZATION_TARGETS,
+  randomizeAnalyzeScenario,
+} from './analyze-scenario-randomization.mjs';
+import {
+  HAND_PENDING_RANDOMIZATION_REQUEST_VERSION,
+  randomizeHandPendingDraft,
+} from './hand-pending-randomization.mjs';
 
 export const PLAYBOOK_STATE_CHANGE_EVENT = 'riverline:playbook-state-change';
 
@@ -235,6 +244,16 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     createScenarioInput: createPlaybookScenarioInput,
 
     createScenarioInputFromLegacyCompatibility: createPlaybookScenarioInputFromLegacyCompatibility,
+
+    randomizationRequestVersion: ANALYZE_RANDOMIZATION_REQUEST_VERSION,
+
+    randomizationTargets: ANALYZE_RANDOMIZATION_TARGETS,
+
+    randomizeScenario: randomizeAnalyzeScenario,
+
+    handRandomizationRequestVersion: HAND_PENDING_RANDOMIZATION_REQUEST_VERSION,
+
+    randomizeHandPendingDraft,
 
     resolveDecisionContext(scenarioInput) {
       return modeController.resolve({ scenarioInput });

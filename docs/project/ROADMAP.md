@@ -1,6 +1,6 @@
 # Riverline Roadmap
 
-Last refreshed: September 3, 2026 (the accepted maintenance closeout completes Home Hand lifecycle, Training Memory availability, and standalone Same Spot coherence; `LIGHT-WINS-BATCH-001` is active next).
+Last refreshed: September 4, 2026 (`LIGHT-WINS-BATCH-001` is human accepted; `IDENTITY-LIFECYCLE-001` is active next).
 
 This roadmap explains major directional sequencing and why phases are ordered. [Current Phase](CURRENT_PHASE.md) owns the exact current checkpoint and execution order; [Product Backlog](PRODUCT_BACKLOG.md) owns concise capability/status. The [capability dossiers](capabilities/README.md) preserve detailed long-term intent without setting priority.
 
@@ -63,8 +63,8 @@ The completed dossier migration records more possibilities; it does not promote 
 25. **COMPLETED / HUMAN ACCEPTED — `HOME-HAND-LIFECYCLE-001`** — only non-terminal canonical Hands are resumable; completed showdown, fold, and all-in Hands are not presented as live.
 26. **COMPLETED / HUMAN ACCEPTED — `TRAINING-MEMORY-AVAILABILITY-001`** — auth/bootstrap ordering no longer permanently prevents the signed-in local Memory bridge; idle and all ordinary Training modes work without Supabase sync while auth-owner isolation remains intact.
 27. **COMPLETED / HUMAN ACCEPTED — `SAME-SPOT-COHERENCE-001R`** — Same Spot is an idle-only standalone Memory re-drill, not Focused or planner-backed; active Training blocks entry, no suspend/restore path exists, and frozen comparison evidence remains ordinary-stat/planner-neutral.
-28. **ACTIVE NEXT — `LIGHT-WINS-BATCH-001`** — bounded high-reward product work without materially re-ranking the preserved sequence below.
-29. **IDENTITY AND PRODUCT-TRUTH GATES —** `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`.
+28. **COMPLETED / HUMAN ACCEPTED — `LIGHT-WINS-BATCH-001`** — restrained randomization utilities are accepted across Analyze Scenario, top-level Hand / Analyze Hand Mode, and Equity. Surface-specific adapters preserve their canonical authorities; only bounded deterministic recipe infrastructure and interaction language are shared, and Training remains untouched.
+29. **ACTIVE NEXT — IDENTITY AND PRODUCT-TRUTH GATES —** `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001`.
 30. **PORTABLE TEST/LIFECYCLE PLATFORM — `BROWSER-TEST-PLATFORM-001`.**
 31. **BOUNDED UI COMPOSITION EXTRACTION —** `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot. This is risk-driven incremental decomposition, not React/Redux or a framework rewrite.
 32. **CURRENT SAVED RETRIEVAL — `SAVED-LIBRARY-001`** — full current Hand/Spot retrieval before any new Saved payload kind.
@@ -77,7 +77,7 @@ The completed dossier migration records more possibilities; it does not promote 
 
 ## Phase A — usable visible-product foundation
 
-Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and the bounded `HANDS-ON-DEFECTS-001` repair remain useful visible-product foundations. Core Flow, Hand Replay, the all-in runout regression repair, Training composition, Equity, Analyze/Range, First Use/Home, Saved Visual Knowledge, and the workflow-first Guide remain accepted checkpoints. The September 3 maintenance closeout also accepts truthful Home Hand resumption, auth-order-resilient local Training Memory, and standalone Same Spot coherence. `LIGHT-WINS-BATCH-001` is next; heuristic-consumer truth and normative grading, generalized lifecycle disposal including durable anonymous Device Guest, portable browser testing, Saved retrieval, and root composition retain their relative order afterward.
+Completed `TABLE-PHYSICALITY-003`, `HOME-GAME-001B`, `SETTINGS-IA-001`, and the bounded `HANDS-ON-DEFECTS-001` repair remain useful visible-product foundations. Core Flow, Hand Replay, the all-in runout regression repair, Training composition, Equity, Analyze/Range, First Use/Home, Saved Visual Knowledge, and the workflow-first Guide remain accepted checkpoints. The September 3 maintenance closeout also accepts truthful Home Hand resumption, auth-order-resilient local Training Memory, and standalone Same Spot coherence. `LIGHT-WINS-BATCH-001` now adds the human-accepted bounded randomization interaction across Analyze, Hand, and Equity without promoting a universal generator. `IDENTITY-LIFECYCLE-001` is next; heuristic-consumer truth and normative grading, portable browser testing, root composition, and Saved retrieval retain their relative order afterward.
 
 The current product decision puts the human-triaged foundation gates ahead of another large feature/product-model implementation or broad polish wave. Bounded secondary polish remains routed debt, Home Game presentation and Audio Design remain conditional, and `PREMIUM-CLOSEOUT-001` remains the later pre-release quality gate. Controls First, the ineffective density selector, arbitrary layout editing, casino spectacle, fake cinematic 3D, avatars by default, and reward theater remain rejected.
 

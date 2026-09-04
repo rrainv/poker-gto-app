@@ -124,7 +124,19 @@ const app = {
     cardBackStyle: 'riverline'
   },
 
-  gto: { hero: [], board: [], dead: [] },
+  gto: {
+    hero: [],
+    board: [],
+    dead: [],
+    randomizationKeeps: {
+      hero: false,
+      board: false,
+      position: false,
+      stack: false,
+      betting_context: false
+    },
+    lastRandomizationRecipe: null
+  },
 
   equity: {
 
@@ -160,7 +172,11 @@ const app = {
 
     lastProgress: null,
 
-    lastError: null
+    lastError: null,
+
+    randomizationPending: false,
+
+    lastRandomizationRecipe: null
 
   },
 
@@ -243,7 +259,8 @@ const app = {
   },
 
   playbookHandDraft: {
-    bySeat: {}, board: [], sizedAction: null, actionSubmissionLocked: false
+    bySeat: {}, board: [], sizedAction: null, actionSubmissionLocked: false,
+    randomizationPending: false, lastRandomizationRecipe: null
   },
 
   picker: null,
@@ -1287,6 +1304,7 @@ function renderEquityPlayers() {
     });
     input.addEventListener('blur', () => finishEquityPlayerNameEdit(input));
   });
+  renderEquityRandomizationControls();
   if (typeof updateDomTranslations === 'function') updateDomTranslations();
 }
 
@@ -1386,6 +1404,9 @@ function renderPlaybookCards() {
   renderPlaybookCardStateSummary(remainingCards(isHandMode() ? 'hand' : 'gto'));
   syncExplicitCardClearAvailability('scenario');
   updateActionOptions();
+  if (typeof renderScenarioRandomizationControls === 'function') {
+    renderScenarioRandomizationControls();
+  }
 }
 
 function renderPlaybookCardStateSummary(availableCount) {
@@ -1419,6 +1440,130 @@ function renderEquitySharedCards() {
 function renderEquityCards() {
   renderEquitySharedCards();
   if (app.equity.players.length > 0) renderEquityPlayers();
+}
+
+function equityRandomizationInput() {
+  return {
+    players: app.equity.players.map((player) => ({
+      id: player.id,
+      name: player.name,
+      handMode: player.handMode || (player.cards.filter(Boolean).length ? 'known' : 'unknown'),
+      cards: [...player.cards]
+    })),
+    board: [...app.equity.board],
+    deadCards: [...app.equity.dead]
+  };
+}
+
+function setEquityRandomizationStatus(message, replacements) {
+  const status = $('#equityRandomizeStatus');
+  if (status) status.textContent = message ? t(message, replacements) : '';
+}
+
+function renderEquityRandomizationRecipe(recipe = app.equity.lastRandomizationRecipe) {
+  const details = $('#equityRandomizationDetails');
+  if (!details) return;
+  details.hidden = !recipe;
+  if (!recipe) return;
+  if ($('#equityRecipeSeed')) $('#equityRecipeSeed').textContent = String(recipe.seed);
+  if ($('#equityRecipeVersion')) $('#equityRecipeVersion').textContent = recipe.generatorVersion;
+}
+
+function renderEquityRandomizationControls() {
+  const players = $('#equityRandomizePlayers');
+  if (players) {
+    const known = app.equity.players
+      .map((player, index) => ({ player, label: equityPlayerLabel(index) }))
+      .filter(({ player }) => player.handMode === 'known');
+    players.innerHTML = known.length
+      ? known.map(({ player, label }) => `<button type="button" data-equity-randomize-player-id="${escapeEquityMarkup(player.id)}">${escapeEquityMarkup(label)}</button>`).join('')
+      : `<span class="panel-note">${t('No Known hands')}</span>`;
+  }
+  const primary = $('#equityRandomizeButton');
+  if (primary) primary.disabled = app.equity.randomizationPending;
+  renderEquityRandomizationRecipe();
+}
+
+function equityRandomizationFailureMessage(result) {
+  if (result?.code === 'no_known_hands') return 'Mark at least one hand Known to create a new matchup.';
+  if (result?.code === 'board_empty') return 'There is no board to change.';
+  if (result?.code === 'player_not_known') return 'That hand is no longer Known.';
+  if (result?.code === 'insufficient_available_cards') return 'Not enough legal cards remain.';
+  if (result?.code === 'preserved_cards_invalid' || result?.code === 'candidate_cards_invalid') {
+    return 'The preserved cards conflict with each other.';
+  }
+  return 'Random cards are unavailable right now.';
+}
+
+function equityRandomizationSuccessMessage(result, playerId) {
+  const target = result.recipe.target;
+  if (target === 'matchup') {
+    const count = result.input.players.filter((player) => player.handMode === 'known').length;
+    return t('New cards for {count} Known hands.', { count });
+  }
+  if (target === 'player') {
+    const index = app.equity.players.findIndex((player) => player.id === playerId);
+    return t('Changed only {player}.', { player: equityPlayerLabel(index) });
+  }
+  if (target === 'board') return t('Changed only the board.');
+  return t('Random {street} ready.', { street: t(target.charAt(0).toUpperCase() + target.slice(1)) });
+}
+
+async function randomizeCurrentEquityInput(target = 'matchup', playerId = null) {
+  if (app.equity.randomizationPending) return false;
+  const bridge = globalThis.RiverlineEquity;
+  if (!bridge?.randomizeInput || !bridge?.randomizationRequestVersion) {
+    setEquityRandomizationStatus('Random cards are unavailable right now.');
+    return false;
+  }
+  app.equity.randomizationPending = true;
+  renderEquityRandomizationControls();
+  $('#equityRandomizeButton')?.setAttribute('aria-busy', 'true');
+  try {
+    const result = bridge.randomizeInput({
+      schemaVersion: bridge.randomizationRequestVersion,
+      input: equityRandomizationInput(),
+      target,
+      playerId,
+      seed: randomizationSeed()
+    });
+    if (result.status !== 'available') {
+      setEquityRandomizationStatus(equityRandomizationFailureMessage(result));
+      return false;
+    }
+    closePicker({ restoreFocus: false });
+    app.equity.players = result.input.players.map((player) => ({ ...player, cards: [...player.cards] }));
+    app.equity.board = [...result.input.board];
+    app.equity.dead = [...result.input.deadCards];
+    app.equity.lastRandomizationRecipe = result.recipe;
+    setEquityPending({ renderInputs: true });
+    renderEquityRandomizationRecipe(result.recipe);
+    setEquityRandomizationStatus(equityRandomizationSuccessMessage(result, playerId));
+    return true;
+  } catch (error) {
+    console.error('[Riverline Equity randomization]', error);
+    setEquityRandomizationStatus('Random cards are unavailable right now.');
+    return false;
+  } finally {
+    app.equity.randomizationPending = false;
+    $('#equityRandomizeButton')?.removeAttribute('aria-busy');
+    const menu = $('#equityRandomizationMenu');
+    if (menu) menu.open = false;
+    renderEquityRandomizationControls();
+  }
+}
+
+async function copyEquityRandomizationRecipe() {
+  const recipe = app.equity.lastRandomizationRecipe;
+  if (!recipe) return false;
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(recipe, null, 2));
+    setEquityRandomizationStatus('Randomization recipe copied.');
+    return true;
+  } catch {
+    setEquityRandomizationStatus('The randomization recipe could not be copied.');
+    return false;
+  }
 }
 
 function renderAllCards({ mode = activeWorkspaceMode() } = {}) {
@@ -2241,6 +2386,189 @@ function readPlaybookScenarioInput() {
   return Object.freeze(rawInput);
 }
 
+function randomizationSeed() {
+  if (window.crypto?.getRandomValues) {
+    return window.crypto.getRandomValues(new Uint32Array(1))[0];
+  }
+  return Math.floor(Math.random() * 0x1_0000_0000) >>> 0;
+}
+
+function scenarioRandomizationSeed() {
+  return randomizationSeed();
+}
+
+function setScenarioRandomizationStatus(message) {
+  const status = $('#scenarioRandomizeStatus');
+  if (status) status.textContent = message ? t(message) : '';
+}
+
+function scenarioRandomizationTargetLabel(target) {
+  return t({
+    spot: 'Complete spot',
+    hero: 'Hero hand',
+    board: 'Board',
+    position: 'Position',
+    stack: 'Stack',
+    betting_context: 'Betting context'
+  }[target] || target);
+}
+
+function renderScenarioRandomizationRecipe(recipe = app.gto.lastRandomizationRecipe) {
+  const details = $('#scenarioRandomizationDetails');
+  if (!details) return;
+  details.hidden = !recipe;
+  if (!recipe) return;
+  if ($('#scenarioRecipeTarget')) {
+    $('#scenarioRecipeTarget').textContent = scenarioRandomizationTargetLabel(recipe.target);
+  }
+  if ($('#scenarioRecipeSeed')) $('#scenarioRecipeSeed').textContent = String(recipe.seed);
+  if ($('#scenarioRecipeVersion')) $('#scenarioRecipeVersion').textContent = recipe.generatorVersion;
+}
+
+function renderScenarioRandomizationControls() {
+  const keeps = app.gto.randomizationKeeps;
+  document.querySelectorAll('[data-scenario-keep]').forEach((button) => {
+    button.setAttribute('aria-pressed', String(keeps[button.dataset.scenarioKeep] === true));
+  });
+  document.querySelectorAll('[data-scenario-randomize-target]').forEach((button) => {
+    const target = button.dataset.scenarioRandomizeTarget;
+    button.disabled = keeps[target] === true
+      || (target === 'board' && currentStreet() === 'preflop');
+    if (button.disabled) {
+      button.title = t(keeps[target]
+        ? 'Turn off Keep for this item before changing it.'
+        : 'There is no board to change preflop.');
+    } else {
+      button.removeAttribute('title');
+    }
+  });
+  renderScenarioRandomizationRecipe();
+}
+
+function scenarioRandomizationFailureMessage(result, target) {
+  if (result.code === 'target_locked') {
+    return 'Turn off Keep for this item before changing it.';
+  }
+  if (result.code === 'board_not_applicable') return 'There is no board to change preflop.';
+  if (result.code === 'kept_hero_incomplete') return 'Choose two Hero cards or turn off Keep Hero.';
+  if (result.code === 'kept_cards_invalid') return 'The kept cards conflict with each other.';
+  if (result.code === 'kept_position_unavailable') return 'The kept position does not fit the current rules.';
+  if (result.code === 'kept_stack_invalid') return 'Choose a valid stack or turn off Keep Stack.';
+  if (result.code === 'kept_context_incompatible') return 'The kept board and betting context do not fit together.';
+  if (result.code === 'spot_constraints_unavailable') return 'These Keep settings leave no supported random spot.';
+  if (result.code === 'insufficient_available_cards') {
+    return target === 'hero'
+      ? 'No legal Hero hand is available with the current cards and exclusions.'
+      : 'The kept and dead cards leave no legal board.';
+  }
+  if (result.code === 'betting_context_unavailable') {
+    return "Riverline couldn't create a supported betting context without changing the rest of this spot.";
+  }
+  if (result.code === 'no_alternative_position') return 'No different position is available at this table size.';
+  if (result.code === 'scenario_not_ready') return result.readiness?.message || 'Complete this Scenario before randomizing it.';
+  return 'Riverline could not create another legal version of this Scenario.';
+}
+
+function scenarioRandomizationSuccessMessage(result) {
+  if (result.recipe.target === 'spot') {
+    const kept = Object.entries(result.recipe.keeps)
+      .filter(([, value]) => value)
+      .map(([group]) => t({
+        hero: 'Hero', board: 'board / street', position: 'position',
+        stack: 'stack', betting_context: 'betting context'
+      }[group]));
+    const streetLabel = t(result.scenario.street.charAt(0).toUpperCase() + result.scenario.street.slice(1));
+    return kept.length
+      ? t('New {street} spot. Kept {groups}.', { street: streetLabel, groups: kept.join(', ') })
+      : t('New {table}-max {street} spot.', { table: result.scenario.tableSize, street: streetLabel });
+  }
+  const changed = result.changedGroups[0];
+  if (changed === 'hero') return 'Changed only Hero.';
+  if (changed === 'board') return 'Changed only the board.';
+  if (changed === 'position') return 'Changed only the position.';
+  if (changed === 'stack') return 'Changed only the stack.';
+  if (changed === 'betting_context') {
+    return 'Changed only the betting context.';
+  }
+  return 'New random spot.';
+}
+
+function applyRandomizedScenarioToControls(scenario) {
+  app.gto.hero = [...scenario.heroCards];
+  app.gto.board = [...scenario.board];
+  app.gto.dead = [...scenario.deadCards];
+  setScenarioControlPair('players', 'playersNum', scenario.tableSize);
+  updatePositions();
+  if ($('#heroPos')) $('#heroPos').value = scenario.heroPosition;
+  if ($('#stackMode')) $('#stackMode').value = scenario.stackMode;
+  setScenarioControlPair('stack', 'stackNum', scenario.stackBb);
+  setScenarioControlPair('potSize', 'potSizeNum', scenario.potBb);
+  setScenarioControlPair('facingSize', 'facingSizeNum', scenario.facingSizeBb);
+  updateActionOptions();
+  if ($('#lastAction')) $('#lastAction').value = scenario.lastAction;
+  renderPlaybookCards();
+}
+
+async function randomizeCurrentAnalyzeScenario(target = 'spot') {
+  if (isHandMode() || app.gto.randomizationPending) return false;
+  const bridge = globalThis.RiverlinePlaybookState;
+  if (!bridge?.randomizeScenario || !bridge?.randomizationRequestVersion) {
+    setScenarioRandomizationStatus('Randomization is unavailable right now.');
+    return false;
+  }
+  app.gto.randomizationPending = true;
+  const primary = $('#scenarioRandomizeButton');
+  if (primary) {
+    primary.disabled = true;
+    primary.setAttribute('aria-busy', 'true');
+  }
+  try {
+    const result = bridge.randomizeScenario({
+      schemaVersion: bridge.randomizationRequestVersion,
+      scenario: readPlaybookScenarioInput(),
+      target,
+      keeps: { ...app.gto.randomizationKeeps },
+      seed: scenarioRandomizationSeed()
+    });
+    if (result.status !== 'available') {
+      setScenarioRandomizationStatus(scenarioRandomizationFailureMessage(result, target));
+      return false;
+    }
+    applyRandomizedScenarioToControls(result.scenario);
+    app.gto.lastRandomizationRecipe = result.recipe;
+    renderScenarioRandomizationRecipe(result.recipe);
+    setScenarioRandomizationStatus(scenarioRandomizationSuccessMessage(result));
+    await updateContext('Scenario randomized');
+    return true;
+  } catch (error) {
+    console.error('[Riverline Analyze randomization]', error);
+    setScenarioRandomizationStatus('Riverline could not create another legal version of this Scenario.');
+    return false;
+  } finally {
+    app.gto.randomizationPending = false;
+    if (primary) {
+      primary.disabled = false;
+      primary.removeAttribute('aria-busy');
+    }
+    const menu = $('#scenarioRandomizationMenu');
+    if (menu) menu.open = false;
+    renderScenarioRandomizationControls();
+  }
+}
+
+async function copyScenarioRandomizationRecipe() {
+  const recipe = app.gto.lastRandomizationRecipe;
+  if (!recipe) return false;
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(recipe, null, 2));
+    setScenarioRandomizationStatus('Randomization recipe copied.');
+    return true;
+  } catch (error) {
+    setScenarioRandomizationStatus('The randomization recipe could not be copied.');
+    return false;
+  }
+}
+
 // Compatibility name retained for the existing characterization harnesses.
 function readPlaybookInputSnapshot() {
   return readPlaybookScenarioInput();
@@ -2902,6 +3230,106 @@ function resetCanonicalHandDraft() {
   app.playbookHandDraft.board = [];
   app.playbookHandDraft.sizedAction = null;
   app.playbookHandDraft.actionSubmissionLocked = false;
+  app.playbookHandDraft.randomizationPending = false;
+  app.playbookHandDraft.lastRandomizationRecipe = null;
+  setHandRandomizationStatus('');
+  renderHandRandomizationRecipe(null);
+}
+
+function setHandRandomizationStatus(message, replacements) {
+  const status = $('#handRandomizeStatus');
+  if (status) status.textContent = message ? t(message, replacements) : '';
+}
+
+function renderHandRandomizationRecipe(recipe = app.playbookHandDraft.lastRandomizationRecipe) {
+  const details = $('#handRandomizationDetails');
+  if (!details) return;
+  details.hidden = !recipe;
+  if (!recipe) return;
+  if ($('#handRecipeSeed')) $('#handRecipeSeed').textContent = String(recipe.seed);
+  if ($('#handRecipeVersion')) $('#handRecipeVersion').textContent = recipe.generatorVersion;
+}
+
+function handPendingRandomizationFailureMessage(result) {
+  if (result?.code === 'no_pending_card_stage' || result?.code === 'unsupported_pending_card_stage') {
+    return 'No card stage is waiting.';
+  }
+  if (result?.code === 'insufficient_available_cards') return 'Not enough legal cards remain.';
+  return 'Random cards are unavailable right now.';
+}
+
+async function randomizeCanonicalHandPendingDraft() {
+  if (app.playbookHandDraft.randomizationPending) return false;
+  const bridge = globalThis.RiverlinePlaybookState;
+  const state = bridge?.getState?.();
+  if (!bridge?.randomizeHandPendingDraft || !bridge?.handRandomizationRequestVersion || !state?.pendingChance) {
+    setHandRandomizationStatus('No card stage is waiting.');
+    return false;
+  }
+  const isHeroPending = state.pendingChance.type === 'deal_hole';
+  const heroPlayerId = bridge.getHeroPlayerId?.();
+  const hero = state.players?.find((player) => player.playerId === heroPlayerId);
+  if (isHeroPending && !hero) {
+    setHandRandomizationStatus('Random cards are unavailable right now.');
+    return false;
+  }
+  const pendingCards = isHeroPending
+    ? state.players
+      .filter((player) => player.playerId !== heroPlayerId)
+      .flatMap((player) => normalizedDecisionCards(app.playbookHandDraft.bySeat[player.seat]))
+    : [];
+  const availableCards = bridge.getAvailableChanceCards?.(pendingCards);
+  if (!Array.isArray(availableCards)) {
+    setHandRandomizationStatus('Random cards are unavailable right now.');
+    return false;
+  }
+  app.playbookHandDraft.randomizationPending = true;
+  const button = isHeroPending ? $('#handRandomizePrivate') : $('#handRandomizeBoard');
+  button?.setAttribute('aria-busy', 'true');
+  if (button) button.disabled = true;
+  try {
+    const result = bridge.randomizeHandPendingDraft({
+      schemaVersion: bridge.handRandomizationRequestVersion,
+      state,
+      availableCards,
+      seed: randomizationSeed()
+    });
+    if (result.status !== 'available') {
+      setHandRandomizationStatus(handPendingRandomizationFailureMessage(result));
+      return false;
+    }
+    closePicker({ restoreFocus: false });
+    if (result.target === 'hero') app.playbookHandDraft.bySeat[hero.seat] = [...result.cards];
+    else app.playbookHandDraft.board = [...result.cards];
+    app.playbookHandDraft.lastRandomizationRecipe = result.recipe;
+    renderCanonicalHandWorkspace();
+    renderHandRandomizationRecipe(result.recipe);
+    setHandRandomizationStatus(result.target === 'hero'
+      ? 'Random Hero cards ready.'
+      : 'Random {street} ready.', { street: t(result.target.charAt(0).toUpperCase() + result.target.slice(1)) });
+    return true;
+  } catch (error) {
+    console.error('[Riverline Hand pending randomization]', error);
+    setHandRandomizationStatus('Random cards are unavailable right now.');
+    return false;
+  } finally {
+    app.playbookHandDraft.randomizationPending = false;
+    button?.removeAttribute('aria-busy');
+    renderCanonicalHandWorkspace();
+  }
+}
+
+async function copyHandRandomizationRecipe() {
+  const recipe = app.playbookHandDraft.lastRandomizationRecipe;
+  if (!recipe) return false;
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(recipe, null, 2));
+    setHandRandomizationStatus('Randomization recipe copied.');
+    return true;
+  } catch {
+    setHandRandomizationStatus('The randomization recipe could not be copied.');
+    return false;
+  }
 }
 
 function canonicalHandFailureMessage() {
@@ -3442,9 +3870,14 @@ function renderCanonicalHandStage(state, legalActions, replayProjection) {
 function renderCanonicalPrivateDeal(state) {
   const section = $('#handDealSection');
   const root = $('#handPrivateCards');
+  const randomize = $('#handRandomizePrivate');
   const isHoleDeal = state?.pendingChance?.type === 'deal_hole';
   const isAwaitingReveal = state?.showdown?.status === 'awaiting_private_reveal';
   if (!section || !root) return;
+  if (randomize) {
+    randomize.hidden = !isHoleDeal;
+    randomize.disabled = !isHoleDeal || app.playbookHandDraft.randomizationPending;
+  }
   const knownOpponentsOpen = root.querySelector('.hand-known-opponents')?.open === true;
   section.hidden = !isHoleDeal && !isAwaitingReveal;
   if (!isHoleDeal && !isAwaitingReveal) return;
@@ -3489,14 +3922,24 @@ function renderCanonicalPrivateDeal(state) {
 
 function renderCanonicalChance(state) {
   const section = $('#handChanceSection');
+  const randomize = $('#handRandomizeBoard');
   const isBoardChance = state?.phase === 'chance' && state?.pendingChance?.type !== 'deal_hole';
   if (!section) return;
   section.hidden = !isBoardChance;
+  if (randomize) {
+    randomize.hidden = !isBoardChance;
+    randomize.disabled = !isBoardChance || app.playbookHandDraft.randomizationPending;
+  }
   if (!isBoardChance) return;
   const chanceName = state.pendingChance.type.replace('deal_', '');
   const expected = Number(state.pendingChance.cardCount) || 0;
   if ($('#handChanceTitle')) $('#handChanceTitle').textContent = t('Deal {street}', { street: t(chanceName.charAt(0).toUpperCase() + chanceName.slice(1)) });
   if ($('#handChanceHelp')) $('#handChanceHelp').textContent = t('Choose the next {count} legal board cards.', { count: expected });
+  if (randomize) {
+    const label = t('Random {street}', { street: t(chanceName.charAt(0).toUpperCase() + chanceName.slice(1)) });
+    randomize.setAttribute('aria-label', label);
+    randomize.title = label;
+  }
   renderSlots('hand-board-chance', expected);
   if ($('#handDealBoardButton')) $('#handDealBoardButton').disabled = normalizedDecisionCards(app.playbookHandDraft.board).length !== expected;
 }
@@ -4785,6 +5228,15 @@ function bindCanonicalHandWorkspace() {
   $('#handCommitSizedAction')?.addEventListener('click', commitCanonicalSizedAction);
   if ($('#handDealHoleButton')) $('#handDealHoleButton').addEventListener('click', commitCanonicalPrivateCards);
   if ($('#handDealBoardButton')) $('#handDealBoardButton').addEventListener('click', commitCanonicalBoardDeal);
+  $('#handRandomizePrivate')?.addEventListener('click', () => {
+    void randomizeCanonicalHandPendingDraft();
+  });
+  $('#handRandomizeBoard')?.addEventListener('click', () => {
+    void randomizeCanonicalHandPendingDraft();
+  });
+  $('#handCopyRecipe')?.addEventListener('click', () => {
+    void copyHandRandomizationRecipe();
+  });
   if ($('#handReplayPlaybackButton')) $('#handReplayPlaybackButton').addEventListener('click', () => {
     const playback = callPlaybookStateBridge('createReplayPlaybackViewModel');
     callPlaybookStateBridge(playback?.playing ? 'pauseReplayPlayback' : 'startReplayPlayback');
@@ -6621,6 +7073,10 @@ function resetEquityCalculator() {
     { id: 'equity-player-0', name: '', cards: [], handMode: 'known' },
     { id: 'equity-player-1', name: '', cards: [], handMode: 'unknown' }
   ];
+  app.equity.randomizationPending = false;
+  app.equity.lastRandomizationRecipe = null;
+  setEquityRandomizationStatus('');
+  renderEquityRandomizationRecipe(null);
   if ($('#calcStyle')) $('#calcStyle').value = 'auto';
   if ($('#trials')) $('#trials').value = '10000';
   if ($('#equitySeed')) $('#equitySeed').value = '';
@@ -8207,6 +8663,39 @@ function bindEvents() {
     if (el) selectPlaybookAnalysisView(el, true);
   });
 
+  $('#scenarioRandomizeButton')?.addEventListener('click', () => {
+    void randomizeCurrentAnalyzeScenario('spot');
+  });
+  document.querySelectorAll('[data-scenario-keep]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const group = button.dataset.scenarioKeep;
+      app.gto.randomizationKeeps[group] = !app.gto.randomizationKeeps[group];
+      renderScenarioRandomizationControls();
+    });
+  });
+  document.querySelectorAll('[data-scenario-randomize-target]').forEach((button) => {
+    button.addEventListener('click', () => {
+      void randomizeCurrentAnalyzeScenario(button.dataset.scenarioRandomizeTarget);
+    });
+  });
+  $('#scenarioCopyRecipe')?.addEventListener('click', () => {
+    void copyScenarioRandomizationRecipe();
+  });
+  const scenarioRandomizationMenu = $('#scenarioRandomizationMenu');
+  scenarioRandomizationMenu?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !scenarioRandomizationMenu.open) return;
+    event.preventDefault();
+    scenarioRandomizationMenu.open = false;
+    scenarioRandomizationMenu.querySelector('summary')?.focus({ preventScroll: true });
+  });
+  document.addEventListener('click', (event) => {
+    if (scenarioRandomizationMenu?.open
+      && !scenarioRandomizationMenu.contains(event.target)
+      && event.target !== $('#scenarioRandomizeButton')) {
+      scenarioRandomizationMenu.open = false;
+    }
+  });
+
   ['backContext', 'postflopMatrixBack'].forEach((id) => {
     if ($('#' + id)) $('#' + id).addEventListener('click', () => {
       const el = document.querySelector('[data-gto-view="context"]');
@@ -8287,6 +8776,36 @@ function bindEvents() {
 
 
   if ($('#calculate')) $('#calculate').addEventListener('click', calculateEquity);
+
+  $('#equityRandomizeButton')?.addEventListener('click', () => {
+    void randomizeCurrentEquityInput('matchup');
+  });
+  document.querySelectorAll('[data-equity-randomize-target]').forEach((button) => {
+    button.addEventListener('click', () => {
+      void randomizeCurrentEquityInput(button.dataset.equityRandomizeTarget);
+    });
+  });
+  $('#equityRandomizePlayers')?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-equity-randomize-player-id]');
+    if (button) void randomizeCurrentEquityInput('player', button.dataset.equityRandomizePlayerId);
+  });
+  $('#equityCopyRecipe')?.addEventListener('click', () => {
+    void copyEquityRandomizationRecipe();
+  });
+  const equityRandomizationMenu = $('#equityRandomizationMenu');
+  equityRandomizationMenu?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !equityRandomizationMenu.open) return;
+    event.preventDefault();
+    equityRandomizationMenu.open = false;
+    equityRandomizationMenu.querySelector('summary')?.focus({ preventScroll: true });
+  });
+  document.addEventListener('click', (event) => {
+    if (equityRandomizationMenu?.open
+      && !equityRandomizationMenu.contains(event.target)
+      && event.target !== $('#equityRandomizeButton')) {
+      equityRandomizationMenu.open = false;
+    }
+  });
 
   if ($('#cancelEquity')) $('#cancelEquity').addEventListener('click', cancelEquityCalculation);
 
@@ -10096,16 +10615,16 @@ function renderSameSpotSetup(exercise) {
       context.street.charAt(0).toUpperCase() + context.street.slice(1),
     );
   }
-  if ($('#trainingSameSpotPosition')) $('#trainingSameSpotPosition').textContent = context.heroPosition || 'â€”';
+  if ($('#trainingSameSpotPosition')) $('#trainingSameSpotPosition').textContent = context.heroPosition || '-';
   if ($('#trainingSameSpotTable')) {
     $('#trainingSameSpotTable').textContent = Number.isSafeInteger(context.tableSize)
-      ? t('analysis.value.tableSize', { count: context.tableSize }) : 'â€”';
+      ? t('analysis.value.tableSize', { count: context.tableSize }) : '-';
   }
   const effectiveStack = Number.isFinite(context.effectiveStackBb)
     ? context.effectiveStackBb : Number.isFinite(context.stackBb) ? context.stackBb : null;
   if ($('#trainingSameSpotStack')) {
     $('#trainingSameSpotStack').textContent = effectiveStack === null
-      ? 'â€”' : `${effectiveStack.toFixed(1)} bb`;
+      ? '-' : `${effectiveStack.toFixed(1)} bb`;
   }
   if ($('#trainingSameSpotFacing')) {
     $('#trainingSameSpotFacing').textContent = formatTrainingFacingCopy(context);

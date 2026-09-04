@@ -1,6 +1,6 @@
 # Riverline Product and Feature Backlog
 
-Last consolidated: September 3, 2026 (`HOME-HAND-LIFECYCLE-001`, `TRAINING-MEMORY-AVAILABILITY-001`, and `SAME-SPOT-COHERENCE-001R` are human accepted; `LIGHT-WINS-BATCH-001` is active next).
+Last consolidated: September 4, 2026 (`LIGHT-WINS-BATCH-001` is human accepted; `IDENTITY-LIFECYCLE-001` is active next).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
@@ -56,8 +56,9 @@ Reference strategy, intended Personal Strategy, observed behavior, opponent poli
 | 7 | COMPLETED / HUMAN ACCEPTED / AUDIT CORRECTNESS | `ANALYZE-SCENARIO-READINESS-001`; editable lossy drafts, central provider-readiness validation, fail-closed `scenario_not_ready`, transactional later-street clearing, and no invented actor-relative economics |
 | 8 | COMPLETED / HUMAN ACCEPTED / SHARED INTERACTION | `CARD-CLEAR-SEMANTICS-001`; one DOM-free clear-command owner plus shared Analyze/Equity whole-set Dead Cards editing and restored no-nested-scroll slot presentation |
 | 9–11 | COMPLETED / HUMAN ACCEPTED MAINTENANCE | `HOME-HAND-LIFECYCLE-001`; `TRAINING-MEMORY-AVAILABILITY-001`; `SAME-SPOT-COHERENCE-001R` |
-| 12 | ACTIVE NEXT / BOUNDED PRODUCT BATCH | `LIGHT-WINS-BATCH-001` |
-| 13–16 | PLANNED NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` → `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
+| 12 | COMPLETED / HUMAN ACCEPTED / BOUNDED CROSS-SURFACE RANDOMIZATION | `LIGHT-WINS-BATCH-001`; surface-specific Analyze Scenario, top-level Hand / Analyze Hand Mode, and Equity utilities with restrained shared interaction/recipe infrastructure |
+| 13 | ACTIVE NEXT / FOUNDATIONAL | `IDENTITY-LIFECYCLE-001` |
+| 14–16 | PLANNED NEXT / FOUNDATIONAL | `HEURISTIC-BASELINE-TRUTH-001` → `TRAINING-NORMATIVE-001` → `BROWSER-TEST-PLATFORM-001` |
 | 17–18 | PLANNED NEXT / INCREMENTAL EXTRACTION | `UI-COMPOSITION-ROOT-001` → one bounded workspace extraction pilot |
 | 19–20 | PLANNED NEXT | `SAVED-LIBRARY-001` → `HOME-STUDY-CONTINUITY-001` |
 | 21 | PLANNED NEXT / BOUNDED DECISION | reference-source decision after read-only research; research may run in parallel |
@@ -88,7 +89,7 @@ Detailed evidence and row-level traceability remain in [Hands-On Product Review 
 | `GAME-SETUP-EVOLUTION-001` | PRESERVED MAJOR FEATURE / POST-AUDIT ACTIVATION CANDIDATE | Reusable configurable game setups/presets and physical seat/button/Dealer interaction. |
 | `HOME-GAME-PRESENTATION-001` | CONDITIONAL / BOUNDED BY TIME AND IMPACT | Denser Riverline-integrated organizer, useful table/session representation, stronger proximate imbalance/toast presentation, and broader lifecycle feedback. |
 | `AUDIO-DESIGN-001` | CONDITIONAL / BOUNDED BY TIME AND IMPACT | Subjective poker/Study/UI listening quality over the accepted `riverline-audio/v1` authority; no second audio authority. |
-| `RANDOM-SPOT-GENERATOR-001` | PRESERVED FUTURE / REASSESS AT CHECKPOINT | Shared legal Randomize/Lock capability with card-removal truth and later reproduction. |
+| `RANDOM-SPOT-GENERATOR-001` | BOUNDED FOUNDATION HUMAN ACCEPTED / EXTENSIONS PRESERVED | `LIGHT-WINS-BATCH-001` accepts restrained surface-specific randomization in Analyze, Hand, and Equity with canonical card/state authorities unchanged. Another Like This, broader Lock & Perturb, controlled transfer drills, recipe sharing/import/history, Saved-derived randomization, Training Intelligence integrations, and runout exploration remain future. |
 | `ANALYZE-RANGE-UX-001` | COMPLETED / HUMAN ACCEPTED | Matrix-local selected-hand inspector and compact legend; canonical Range Core card-removal conditioning; Facts → Explain depth; primary complete Hero/opponent comparison matrices; independent percentages on one shared 0–100% scale; and truthful one-representative-per-eligible-sampled-class limits. DOM-free `range-comparison-facts/v1` supplies structured comparison facts. Weighted ranges, range-vs-range Equity, nut advantage/distribution, and action-conditioned propagation remain future Range Evolution work. |
 | `PERSONAL-STRATEGY-TEACHING-001` | PRESERVED FUTURE / REASSESS AT CHECKPOINT | Evidence-grounded concepts/reference/reasoning that genuinely teach; not a claim about the current Teacher. |
 | `SAVED-VISUAL-KNOWLEDGE-001` | COMPLETED / HUMAN ACCEPTED | `SavedStudyObject v1` remains persistence/schema authority. DOM-free `saved-study-preview-facts/v1` projects observer-safe canonical Hand facts and visibly lossy/schematic Scenario Spot facts. The compact grid is primary; All / Hands / Spots remain visible at zero; hover/focus use one viewport-bounded body overlay; click/Enter expands bounded detail; cards reuse `card-presentation/v1`; unknown kinds remain unavailable; identity changes clear private presentation; reopen behavior is unchanged. |
@@ -159,7 +160,7 @@ Training `Not sure` behavior remains an open product question; Calibration's exi
 | `BLUFF-ANALYSIS-002` | PLANNED LATER / dependency-gated | Range-aware value/bluff/bluff-catcher/candidate-quality and explicit exploit analysis. See [Bluff and Exploit Analysis](capabilities/BLUFF_EXPLOIT_ANALYSIS.md). |
 | `RANGE-EVOLUTION-001` | PLANNED LATER | Canonical combo-level action-conditioned preflop-to-river propagation with distinct reference/Personal/opponent roles. See [Range Evolution](capabilities/RANGE_EVOLUTION.md). |
 | weighted range-vs-range / range and nut distribution | PRESERVED FUTURE / dependency-gated | Requires approved Equity/Analysis boundaries, explicit weighted ranges, provenance, and unknown-preserving semantics. See [Range Evolution](capabilities/RANGE_EVOLUTION.md). |
-| `RANDOM-SPOT-GENERATOR-001` | PRESERVED FUTURE | Legal lock-aware randomized study-state utility for supported consumers. See [Random Spot Generator](capabilities/RANDOM_SPOT_GENERATOR.md). |
+| `RANDOM-SPOT-GENERATOR-001` | COMPLETED / HUMAN ACCEPTED BOUNDED FOUNDATION; EXTENSIONS PRESERVED | Analyze uses atomic provider-ready lossy Scenario generation under `analyze-whole-spot-policy/v2`; Hand fills only pending uncommitted chance drafts; Equity preserves matchup structure while rerolling Known hands or requested board streets. Shared interaction/recipe infrastructure is not a universal state generator. See [Random Spot Generator](capabilities/RANDOM_SPOT_GENERATOR.md). |
 
 ## 7. Saved / Home
 

@@ -96,7 +96,13 @@ function createRuntime() {
 test('visible product-key audit preserves the bounded accepted English fallbacks', () => {
   const audit = buildAudit();
   for (const language of ['en', 'ru', 'he']) {
-    assert.deepEqual(audit.coverage[language].missing, ['Four of a kind', 'Yes']);
+    assert.deepEqual(audit.coverage[language].missing, [
+      'Four of a kind',
+      'Range comparison is unavailable because the canonical decision context could not be resolved.',
+      'The canonical Playbook service could not resolve this decision.',
+      'The canonical Playbook service is unavailable.',
+      'Yes',
+    ]);
   }
   assert.deepEqual(audit.mojibake, []);
   assert.deepEqual(audit.crossLocaleScriptContamination, []);

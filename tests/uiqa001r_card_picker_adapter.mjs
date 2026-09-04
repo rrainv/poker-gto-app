@@ -117,7 +117,10 @@ export function delegatedCardSlotClick(group = 'hero', index = 0) {
     window: { addEventListener() {} },
     document: {
       documentElement: { dataset: { cardRankStyle: 'poker' } },
-      addEventListener(type, listener) { listeners[type] = listener; },
+      addEventListener(type, listener) {
+        if (!listeners[type]) listeners[type] = [];
+        listeners[type].push(listener);
+      },
       getElementById() { return null; },
       querySelector() { return null; },
       querySelectorAll() { return []; },
@@ -165,7 +168,7 @@ export function delegatedCardSlotClick(group = 'hero', index = 0) {
       return null;
     },
   };
-  listeners.click({ target });
+  listeners.click.forEach((listener) => listener({ target }));
   return sandbox.__calls;
 }
 
