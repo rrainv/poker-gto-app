@@ -150,6 +150,15 @@ Facts-only inspection remains available. Presentation labels never replace expli
 
 ## Dependencies
 
+- **OPPONENT-ACTOR-INFORMATION-001** is a required correctness/information-isolation
+  gate before serious/custom or evidence-derived bot expansion. The current
+  selector receives full PokerState and state-fingerprint-derived RNG inputs.
+  Future selectors must receive only actor-observable information; inaccessible
+  private cards cannot affect inputs, fingerprints, seeds, caches or decisions.
+  Canonical legality is necessary but does not establish this isolation. Require
+  counterfactual hidden-card invariance tests under the same actor information,
+  policy version and policy seed. See [Training Intelligence v1](../TRAINING_INTELLIGENCE_V1_SPEC.md).
+
 - [Learning Evidence Foundation](LEARNING_EVIDENCE_FOUNDATION.md);
 - [Range Evolution](RANGE_EVOLUTION.md) and canonical Range Core;
 - an approved versioned `OpponentPolicy`/opponent-evidence contract;

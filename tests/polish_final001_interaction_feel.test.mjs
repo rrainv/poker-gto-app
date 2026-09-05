@@ -35,10 +35,10 @@ test('motion language is tokenized, event-scoped, and avoids large animated tree
 });
 
 test('answer feedback remains semantic while correct and mistake states get calm emphasis', () => {
-  assert.match(logic, /feedbackDiv\.dataset\.accepted = String\(Boolean\(isCorrect\)\)/);
-  assert.match(logic, /trainingFeedback'\)\) \$\('#trainingFeedback'\)\.dataset\.grade = evaluation\.grade/);
-  assert.match(polishCss, /data-grade="optimal"[\s\S]*--status-success/);
-  assert.match(polishCss, /data-grade="mistake"[\s\S]*--status-danger/);
+  assert.match(logic, /delete feedbackDiv\.dataset\.accepted/);
+  assert.match(logic, /trainingFeedback'\)\.dataset\.grade = presentation\.tone/);
+  assert.match(polishCss, /data-truth-state="normative_assessment"\]\[data-grade="success"[\s\S]*--status-success/);
+  assert.match(polishCss, /data-truth-state="normative_assessment"\]\[data-grade="error"[\s\S]*--status-danger/);
   assert.match(polishCss, /@keyframes riverline-answer-enter[\s\S]*opacity:\s*0[\s\S]*translate:\s*0 -5px/);
 });
 

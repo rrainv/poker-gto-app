@@ -29,7 +29,7 @@ test('Training has explicit lifecycle, feedback, history, provenance, and replay
   ]) assert.match(training, new RegExp(`id="${id}"`), id);
   assert.match(training, /aria-live="polite"/);
   assert.match(training, /role="alert"/);
-  assert.match(training, /Matches reference[\s\S]*Close to reference[\s\S]*Differs from reference/);
+  assert.match(training, /After-answer comparison[\s\S]*Source frequencies/);
   assert.doesNotMatch(training, /\bOptimal\b/);
   assert.doesNotMatch(training, /\bGTO\b|Deep CFR/i);
 });
@@ -39,12 +39,11 @@ test('Training controls and feedback remain contract-honest', () => {
   assert.match(logic, /callTrainingServiceBridge\('answer', exercise\.id, userAction\)/);
   assert.match(logic, /callTrainingPresentationBridge\('createViewModel', exercise\)/);
   assert.match(logic, /evaluation\.grade/);
-  assert.match(logic, /function trainingGradePresentation\(grade, strategyResult\)/);
-  assert.match(logic, /semantics === 'normative'[\s\S]*optimal: t\('Correct'\)/);
-  assert.match(logic, /semantics === 'comparative'[\s\S]*optimal: t\('Matches Riverline reference'\)/);
-  assert.match(logic, /trainingGradePresentation\([\s\S]*evaluation\.grade,[\s\S]*exercise\.strategyResult/);
+  assert.match(logic, /function trainingGradePresentation\(grade, strategyResult, evaluation = null\)/);
+  assert.match(logic, /truthPresentation\(truth\)\.title/);
+  assert.match(logic, /truthPresentation\(truth\)\.title/);
   assert.doesNotMatch(logic, /t\(evaluation\.grade\.charAt/);
-  assert.match(logic, /explanationData\.evAvailable/);
+  assert.match(logic, /truthPresentation\(truth\)/);
   assert.match(logic, /generationMetadata\?\.trainingConfig/);
   assert.doesNotMatch(training, /data-ev-bb|Expected value/);
 });
@@ -77,10 +76,9 @@ test('Training layout is responsive, theme-tokenized, RTL-safe, and motion-safe'
 });
 
 test('Training session metrics remain in-memory and bounded to this session', () => {
-  for (const id of [
-    'trainingTotalHands', 'trainingCorrect', 'trainingAccuracy', 'trainingStreak',
-    'trainingBestStreak', 'trainingOptimalCount', 'trainingAcceptableCount', 'trainingMistakeCount',
-  ]) assert.match(training, new RegExp(`id="${id}"`), id);
+  for (const id of ['trainingTotalHands', 'trainingTruthMetrics']) {
+    assert.match(training, new RegExp(`id="${id}"`), id);
+  }
   const stats = logic.slice(logic.indexOf('function updateTrainingStats'), logic.indexOf('function formatHand'));
   assert.doesNotMatch(stats, /localStorage|indexedDB|fetch/);
 });

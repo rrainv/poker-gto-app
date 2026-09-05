@@ -88,8 +88,8 @@ test('owner invalidation releases Same Spot and restores only ordinary idle pres
 test('frozen earlier evidence and this try remain separately labelled', () => {
   assert.match(html, /data-i18n="Earlier answer"/);
   assert.match(html, /data-i18n="This try"/);
-  assert.match(logic, /sameSpotSourceRole[\s\S]*'Baseline then'[\s\S]*'Reference then'/);
-  assert.match(sameSpotFlow, /callTrainingMemoryBridge\('createSameSpot', recordId\)/);
+  assert.match(logic, /sameSpotSourceRole[\s\S]*'Historical heuristic baseline'[\s\S]*'Historical selected reference'/);
+  assert.match(sameSpotFlow, /callTrainingMemoryBridge\('createSameSpot', recordId, \{ handoff \}\)/);
   assert.match(sameSpotFlow, /callTrainingMemoryBridge\('getDecision', recordId\)/);
   assert.doesNotMatch(sameSpotFlow, /generateSimilarSpot|resolve\(/);
 });
@@ -190,15 +190,18 @@ function renderedSameSpotButton(openRedrill) {
   );
   const sandbox = {
     document: { createElement: (tagName) => new FakeElement(tagName) },
+    app: { training: { memoryGeneration: 0 } },
     t: (value) => value,
     trainingMemoryButton: undefined,
     trainingMemoryDecisionSummary: () => new FakeElement('div'),
     trainingMemoryPresentationGate: () => ({ feedbackEmbargoed: false }),
+    truthPresentation: () => ({ title: 'Not assessed' }),
+    requireStrategyProviderBridge: () => ({ historicalTruth: () => null }),
     trainingMemoryComparisonLabel: (value) => value,
     trainingActionLabel: (value) => value,
     openTrainingMemoryRedrill: openRedrill,
     queueTrainingMemoryWrite: async () => null,
-    callTrainingMemoryBridge: async () => null,
+    callTrainingMemoryBridge: () => null,
     refreshTrainingMemoryPanel() {},
     TRAINING_MEMORY_REASON_LABELS: {},
   };

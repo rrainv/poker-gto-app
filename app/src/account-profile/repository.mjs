@@ -27,6 +27,7 @@ function failure(code, message, cause = null) {
 
 function databaseFailure(error, fallback = 'profile_unavailable') {
   const content = `${error?.code ?? ''} ${error?.message ?? ''} ${error?.details ?? ''}`;
+  if (fallback === 'profile_identity_conflict') return failure(fallback, 'Account profile binding could not be confirmed.', error);
   if (/23505|unique|duplicate|username/i.test(content)) {
     return failure('username_unavailable', 'That username is unavailable.', error);
   }

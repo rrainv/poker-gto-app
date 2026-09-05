@@ -28,6 +28,21 @@ const T1 = '2026-08-14T14:01:00.000Z';
 const T2 = '2026-08-14T14:02:00.000Z';
 const T3 = '2026-08-14T14:03:00.000Z';
 
+function asLegacyV1(snapshot) {
+  const legacy = structuredClone(snapshot);
+  legacy.schemaVersion = 'personal-strategy-store/v1';
+  delete legacy.qualitativeEvidence;
+  for (const profile of legacy.profiles) {
+    profile.schemaVersion = 'strategy-profile/v1';
+    delete profile.setupVersion; delete profile.setupAssumptions; delete profile.versionHistory;
+  }
+  for (const mode of legacy.modes) {
+    mode.schemaVersion = 'strategy-mode/v1';
+    delete mode.approachVersion; delete mode.versionHistory; delete mode.forkProvenance;
+  }
+  return legacy;
+}
+
 class MemoryStorage {
   constructor(entries = {}) { this.values = new Map(Object.entries(entries)); }
   getItem(key) { return this.values.get(key) ?? null; }
@@ -173,7 +188,7 @@ async function legacyFixture() {
   const seed = repository();
   await seed.saveProfileBundle(bundle());
   const snapshot = await seed.loadSnapshot();
-  return JSON.stringify(snapshot);
+  return JSON.stringify(asLegacyV1(snapshot));
 }
 
 test('valid Web Storage v1 migration is automatic, verified, idempotent, and retains its source', async () => {

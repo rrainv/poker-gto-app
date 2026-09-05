@@ -119,7 +119,7 @@ test('language is a shared secondary route and Help does not replace global disc
 });
 
 test('Account & Data remains a truthful status and route, not a cloud-sync claim', () => {
-  assert.match(settingsHtml, /Guest study history is not saved\. Device settings remain available\./);
+  assert.match(settingsHtml, /Study data is still stored locally/);
   assert.match(settingsHtml, /Cloud sync is not enabled/);
   assert.match(settingsHtml, /Signing in does not create a cloud backup\./);
   assert.match(settingsHtml, /id="settingsOpenAccount"/);

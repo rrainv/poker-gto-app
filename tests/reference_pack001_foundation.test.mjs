@@ -533,7 +533,7 @@ test('Playbook, Training, Matrix, Analyze, and Review consume the same normal St
   });
   assert.equal(review.selectedDecision.source.id, result.source);
   assert.equal(review.selectedDecision.source.coverage, 'exact');
-  assert.equal(review.selectedDecision.comparison.semantics, 'comparative');
+  assert.equal(review.selectedDecision.comparison.semantics, 'accepted_reference_comparison');
 });
 
 test('pack resolution is deterministic and uses map lookup without consumer source branches', () => {

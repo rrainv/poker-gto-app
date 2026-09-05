@@ -89,18 +89,24 @@ export function createIndexedDbSyncDatabase({
   };
   return Object.freeze({
     name,
-    async runTransaction(storeNames, mode, operation) {
+    async runTransaction(storeNames, mode, operation, { signal = null } = {}) {
       const database = await connection();
       const transaction = database.transaction(storeNames, mode, { durability: 'strict' });
       const done = completion(transaction);
+      const abort = () => { try { transaction.abort(); } catch { /* already complete */ } };
+      signal?.addEventListener('abort', abort, { once: true });
       try {
+        if (signal?.aborted) throw new Error('Sync ownership scope is stale');
         const result = await operation(adapter(transaction));
+        if (signal?.aborted) throw new Error('Sync ownership scope is stale');
         await done;
         return result;
       } catch (error) {
         try { transaction.abort(); } catch { /* already complete */ }
         try { await done; } catch { /* preserve operation error */ }
         throw error;
+      } finally {
+        signal?.removeEventListener('abort', abort);
       }
     },
     async close() {
@@ -116,8 +122,9 @@ export function createMemorySyncDatabase({ name = 'memory-riverline-sync' } = {}
   let closed = false;
   return Object.freeze({
     name,
-    async runTransaction(storeNames, mode, operation) {
+    async runTransaction(storeNames, mode, operation, { signal = null } = {}) {
       if (closed) throw new Error('Sync database is closed');
+      if (signal?.aborted) throw new Error('Sync ownership scope is stale');
       const working = new Map(storeNames.map((store) => [
         store,
         new Map([...stores.get(store)].map(([key, value]) => [key, clone(value)])),
@@ -140,6 +147,7 @@ export function createMemorySyncDatabase({ name = 'memory-riverline-sync' } = {}
         },
       });
       const result = await operation(transaction);
+      if (signal?.aborted) throw new Error('Sync ownership scope is stale');
       if (mode === 'readwrite') {
         for (const store of storeNames) stores.set(store, working.get(store));
       }

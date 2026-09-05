@@ -1,3 +1,4 @@
+import { createRfiStructuralMappingFacts, matchesRfiMappingFocus, rfiMappingFamilyReasonKey, RFI_MAPPING_REASON_KEYS } from './structural-range-mapping.mjs';
 import {
   ACTION_TYPES,
   PREFLOP_HAND_CLASSES,
@@ -67,6 +68,7 @@ export const RFI_SELECTION_INTENTS = Object.freeze({
 });
 
 export const RFI_CALIBRATION_INTENTS = Object.freeze({
+  MAPPING: 'mapping',
   QUICK: 'quick',
   STANDARD: 'standard',
   DEEP: 'deep',
@@ -83,6 +85,7 @@ export const RFI_CALIBRATION_STOP_REASONS = Object.freeze({
   FULL_DIRECT_COVERAGE: 'full_direct_coverage',
   CONFLICT_RESOLUTION_NEEDED: 'conflict_resolution_needed',
   PROFILE_READY: 'profile_ready',
+  INITIAL_MAP_READY: 'initial_map_ready',
   REFINEMENT_BATCH_COMPLETE: 'refinement_batch_complete',
 });
 
@@ -149,6 +152,7 @@ export const RFI_COLD_START_ANCHORS = Object.freeze([
 ]);
 
 export const RFI_CALIBRATION_INTENT_POLICIES = Object.freeze({
+  [RFI_CALIBRATION_INTENTS.MAPPING]: Object.freeze({ maxQuestionCount: null, minimumDirectCount: null, targetHighQualityCoverage: null, lowQuestionValueThreshold: 0 }),
   [RFI_CALIBRATION_INTENTS.QUICK]: Object.freeze({
     maxQuestionCount: 5,
     minimumDirectCount: 5,
@@ -537,7 +541,8 @@ function isRecommendedClarification({
 }
 
 function compareCandidates(left, right) {
-  return right.biasedPriorityTier - left.biasedPriorityTier
+  return (right.mappingPriority ?? 0) - (left.mappingPriority ?? 0)
+    || right.biasedPriorityTier - left.biasedPriorityTier
     || (left.coldStartIndex ?? Number.MAX_SAFE_INTEGER)
       - (right.coldStartIndex ?? Number.MAX_SAFE_INTEGER)
     || right.questionValueScore - left.questionValueScore
@@ -591,6 +596,10 @@ export function rankCalibrationCandidates(snapshot, options = {}) {
   const includeSkipped = options.includeSkipped === true;
   const { byHand, directFamilyCounts } = estimateMaps(snapshot);
   const transfersByHand = transferEstimatesFor(snapshot, options.transferProjection);
+  const mapping = options.intent === RFI_CALIBRATION_INTENTS.MAPPING
+    ? createRfiStructuralMappingFacts({ snapshot, evidenceView: options.mappingEvidenceView }) : null;
+  const mappingDirectHands = new Set(mapping?.directHands ?? []);
+  const mappingConflictHands = new Set(mapping?.conflictHands ?? []);
   const directCount = snapshot.summary.directlyKnownCount;
   const coldStartActive = directCount < RFI_COLD_START_ANCHORS.length;
   const coverageByHand = new Map(PREFLOP_HAND_CLASSES.map((handClass) => [
@@ -603,8 +612,9 @@ export function rankCalibrationCandidates(snapshot, options = {}) {
   );
 
   const candidates = [];
-  for (const estimate of snapshot.estimates) {
-    if (estimate.status === DIRECT_STATUS) continue;
+  for (let estimate of snapshot.estimates) {
+    if (mappingConflictHands.has(estimate.handClass)) estimate = { ...estimate, status: CONFLICT_STATUS };
+    if (estimate.status === DIRECT_STATUS || mappingDirectHands.has(estimate.handClass)) continue;
     if (!ORDINARY_UNRESOLVED_STATUSES.has(estimate.status) && estimate.status !== CONFLICT_STATUS) continue;
     if (!includeSkipped && skippedHandClasses.has(estimate.handClass)) continue;
     const feature = describeRfiHandClass(estimate.handClass);
@@ -672,6 +682,26 @@ export function rankCalibrationCandidates(snapshot, options = {}) {
       exactMix,
       transferFacts,
     });
+    let mappingPriority = 0, mappingReasonKey = null, mappingFamilyId = null;
+    if (mapping) {
+      const specificFocus = mapping.families.some((entry) => entry.id === options.mappingFocus);
+      const proposals = mapping.families.filter((entry) => entry.probeHand === estimate.handClass && entry.state !== 'initially_sampled'
+        && (!specificFocus || entry.id === options.mappingFocus));
+      const family = proposals.sort((a, b) => ({ unmapped: 4, boundary: 3, nearby: 1, gap: 0 }[b.probeKind]
+        - { unmapped: 4, boundary: 3, nearby: 1, gap: 0 }[a.probeKind]))[0];
+      if (family) {
+        mappingPriority = ({ unmapped: 4000, boundary: 3000, nearby: 1500, gap: 1000 })[family.probeKind];
+        mappingReasonKey = rfiMappingFamilyReasonKey(family.id);
+        mappingFamilyId = family.id;
+      }
+      if (estimate.status === CONFLICT_STATUS) { mappingPriority = Math.max(mappingPriority, 2000); mappingReasonKey = RFI_MAPPING_REASON_KEYS.conflict; }
+      if (matchesRfiMappingFocus(estimate.handClass, options.mappingFocus)) {
+        mappingPriority += 10000; mappingReasonKey = estimate.status === CONFLICT_STATUS
+          ? RFI_MAPPING_REASON_KEYS.conflict : RFI_MAPPING_REASON_KEYS.focus;
+      }
+      mappingFamilyId ??= mapping.families.find((entry) => entry.handClasses.includes(estimate.handClass))?.id ?? null;
+      mappingReasonKey ??= rfiMappingFamilyReasonKey(mappingFamilyId);
+    }
     candidates.push({
       schemaVersion: RFI_CALIBRATION_CANDIDATE_SCHEMA_VERSION,
       selectionPolicyVersion: RFI_QUESTION_SELECTION_POLICY_VERSION,
@@ -701,6 +731,7 @@ export function rankCalibrationCandidates(snapshot, options = {}) {
       nearbyUnresolvedCount: coverage.unresolvedNeighbors.length,
       relationTypes: relationTypesFor(estimate),
       structuralFamily,
+      ...(mapping ? { mappingPriority, mappingReasonKey, mappingFamilyId } : {}),
       transferState: transferFacts.state,
       transferBand: transferFacts.band,
       transferDonorSignalState: transferFacts.donorSignalState,
@@ -788,6 +819,8 @@ export function getCalibrationQuestionExplanation(candidate) {
   if (!candidate || candidate.schemaVersion !== RFI_CALIBRATION_CANDIDATE_SCHEMA_VERSION) {
     throw new TypeError('A ranked RFI calibration candidate is required');
   }
+  if (candidate.mappingReasonKey) return deepFreeze({ reasonCode: 'structural_range_mapping',
+    messageKey: candidate.mappingReasonKey, familyId: candidate.mappingFamilyId, nearbyHands: [] });
   let reasonCode;
   if (candidate.questionKind === 'conflict_resolution') {
     reasonCode = RFI_QUESTION_REASON_CODES.EXPLICIT_CONFLICT_RESOLUTION;
@@ -994,7 +1027,7 @@ export function assessCalibrationProgress(snapshot, options = {}) {
   const refinementActive = options.refinementActive === true && refinementBatchRemaining > 0;
   const rankedCandidates = options.rankedCandidates
     ?? rankCalibrationCandidates(snapshot, options);
-  const profileReadiness = assessRfiProfileReadiness(snapshot, {
+  let profileReadiness = assessRfiProfileReadiness(snapshot, {
     ...options,
     refinementActive,
     rankedCandidates,
@@ -1056,6 +1089,25 @@ export function assessCalibrationProgress(snapshot, options = {}) {
     }
   }
 
+  let coverage = null;
+  if (intent === RFI_CALIBRATION_INTENTS.MAPPING) {
+    coverage = createRfiStructuralMappingFacts({ snapshot, evidenceView: options.mappingEvidenceView });
+    profileReadiness = { ...profileReadiness, profileReady: coverage.initialMapReady,
+      state: coverage.conflictHands.length ? RFI_PROFILE_READINESS_STATES.CONFLICTED
+        : coverage.initialMapReady ? RFI_PROFILE_READINESS_STATES.READY : RFI_PROFILE_READINESS_STATES.BUILDING,
+      coverage };
+    // Mapping has no session-count quota. Stop only on explicit pause/stop,
+    // evidence coverage, or exhaustion of the finite canonical hand set.
+    stopReason = options.userStopped ? RFI_CALIBRATION_STOP_REASONS.USER_STOPPED
+      : options.userPaused ? RFI_CALIBRATION_STOP_REASONS.USER_PAUSED
+        : coverage.completeRange ? RFI_CALIBRATION_STOP_REASONS.FULL_DIRECT_COVERAGE
+          : rankedCandidates[0]?.questionKind === 'conflict_resolution' ? RFI_CALIBRATION_STOP_REASONS.CONFLICT_RESOLUTION_NEEDED
+          : coverage.initialMapReady && additionalQuestionAllowance === 0 && !refinementActive ? RFI_CALIBRATION_STOP_REASONS.INITIAL_MAP_READY
+            : !generalNextCandidate ? conflictingCount ? RFI_CALIBRATION_STOP_REASONS.CONFLICT_RESOLUTION_NEEDED
+              : RFI_CALIBRATION_STOP_REASONS.NO_USEFUL_CANDIDATES : null;
+    shouldStop = stopReason !== null;
+  }
+
   let recommendedAction = 'answer_next_question';
   if (stopReason === RFI_CALIBRATION_STOP_REASONS.CONFLICT_RESOLUTION_NEEDED) {
     recommendedAction = 'resolve_conflicts';
@@ -1076,9 +1128,10 @@ export function assessCalibrationProgress(snapshot, options = {}) {
     schemaVersion: RFI_CALIBRATION_PROGRESS_SCHEMA_VERSION,
     stoppingPolicyVersion: RFI_STOPPING_POLICY_VERSION,
     intent,
+    ...(coverage ? { coverage } : {}),
     shouldStop,
     stopReason,
-    directCount,
+    directCount: coverage?.directCount ?? directCount,
     inferredHighCount,
     inferredMediumCount,
     locallyInferredCount: profileReadiness.locallyInferredCount,
@@ -1086,7 +1139,7 @@ export function assessCalibrationProgress(snapshot, options = {}) {
     modeledHandCount: profileReadiness.modeledHandCount,
     modeledOrTransferredCount: profileReadiness.modeledOrTransferredCount,
     uncertainCount,
-    conflictingCount,
+    conflictingCount: coverage?.conflictHands.length ?? conflictingCount,
     unknownCount,
     visibleUnknownCount: profileReadiness.visibleUnknownCount,
     attemptedCoverage: attempted,

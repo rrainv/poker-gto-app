@@ -2,6 +2,16 @@
 
 > This capability dossier preserves long-term product intent and design direction. It does not own execution priority or current implementation truth. See PRODUCT_BACKLOG.md for capability status and CURRENT_PHASE.md / ROADMAP.md for sequencing. Current implemented contracts remain in subsystem specs/code.
 
+## Bounded shared foundation
+
+The explicit `PERSONAL-STRATEGY-INTELLIGENCE-001` scope introduces `natural-language-envelope/v1`, the local `personal-intent-interpretation/v1` preview, and deterministic `personal-range-language-facts/v1`. Their current contracts and verification limits live in [Personal Strategy Intelligence v1](../PERSONAL_STRATEGY_INTELLIGENCE_V1_SPEC.md); focused integration verification passes and human acceptance remains pending. This is not an accepted checkpoint, general language-model runtime, or migration of every consumer.
+
+The envelope separates factual, interpretive, provisional user-intent inference, and strategic claim classes. It carries subject/role, evidence references, exact scope, uncertainty, current/historical/provisional basis, a named derivation/permission, wording strength, and optional structured correction command. Domain owners supply truth; language cannot grant itself poker or assessment authority.
+
+EN/RU/HE interpretation preserves original wording and unresolved terms. Explicit confirmation creates immutable intended evidence; local provisional drafts can only influence clarification. Range prose comes from deterministic hand-family coverage and exact/dominant evidence facts. Sparse regions cannot acquire whole-range claims, and source comparison cannot acquire normative wording. No caller-provided flag upgrades action-level Strategy Truth into a region-level assessment contract.
+
+The foundation is reusable later by Analyze, Deep Review, Training, Saved/Home/Study Inbox, Equity/Hand Analysis/Range, Import, Reference Strategy, and Opponent Intelligence while preserving their existing command, persistence, consent, and hidden-information boundaries. Those integrations remain separate work.
+
 ## Product purpose
 
 Riverline should combine broad poker study tooling with deeply integrated, evidence-grounded natural-language learning intelligence. Language should help a user notice what matters, understand supported reasons, and connect patterns across decisions without hiding the underlying facts.
@@ -29,7 +39,7 @@ Users should be able to:
 - [Personal Strategy Foundation](../PERSONAL_STRATEGY_FOUNDATION_SPEC.md) preserves intended evidence, observation, contradictions, and uncertainty as distinct facts.
 - [Product Specification](../PRODUCT_SPEC.md) already favors strict hierarchy, progressive disclosure, and honest provenance.
 
-Current `AnalysisExplanation v1` is a structured explanation boundary. Riverline has no approved general natural-language model runtime, and current heuristic output does not authorize solved-GTO or objective-correctness prose.
+Current `AnalysisExplanation v1` consumes the shared truth projection, including frozen historical source semantics for Same Spot. Heuristic qualification appears beside the primary Analyze action, and language may vary without exceeding permitted claims. `AnalysisExplanation v1` remains a structured explanation boundary. Riverline has no approved general natural-language model runtime, and current heuristic output does not authorize solved-GTO or objective-correctness prose.
 
 ## Desired future behavior
 
@@ -86,11 +96,11 @@ Generated copy should retain machine-readable links back to the supporting fact 
 
 - Natural-language consumers never become poker, strategy, Equity, range, opponent-model, or grading authority.
 - A fluent sentence has no more authority than its weakest required structured input.
-- `StrategyClaimPolicy v1` still controls normative, exactness, sizing, EV, and optimality language.
+- `StrategyClaimPolicy v1` plus the shared `strategy-truth/v1` projection control source, comparison and assessment language; normative claims require separately accepted assessment-policy permission.
 - Reference strategy, intended Personal Strategy, observed behavior, and opponent policy remain explicitly named roles.
 - Missing evidence stays unknown or unavailable; it is never filled from “general poker knowledge.”
 - A summary must state material uncertainty, limited coverage, stale model identity, or small sample size in user-comprehensible terms.
-- Comparative heuristic disagreement remains alignment with Riverline's generalized reference, not objective error.
+- Heuristic agreement/disagreement is explicitly a comparison with an approximate exploratory baseline. It is never reference alignment, correctness, mistake, remediation, accuracy, retention or transfer evidence. Accepted exact references may describe their mix; only a compatible accepted assessment criterion permits supported/unsupported judgments.
 - Natural-language output should be reproducible enough to audit its inputs and policy version; wording need not be stored as truth.
 - Any future remote language service requires a separate privacy, data-minimization, redaction, consent, latency, fallback, and failure-mode decision.
 - Localization may adapt wording and order but cannot change fact or authority semantics.

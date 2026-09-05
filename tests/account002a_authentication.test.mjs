@@ -99,14 +99,14 @@ async function seedPersonalStrategy(database, fixture) {
 }
 
 test('Guest startup and unavailable provider preserve legacy Local Profile storage without exposing it', async () => {
-  assert.equal(RIVERLINE_ACCOUNT_DATABASE_VERSION, 2);
-  assert.deepEqual(RIVERLINE_ACCOUNT_DATABASE_MIGRATIONS.map((entry) => entry.version), [1, 2]);
+  assert.equal(RIVERLINE_ACCOUNT_DATABASE_VERSION, 4);
+  assert.deepEqual(RIVERLINE_ACCOUNT_DATABASE_MIGRATIONS.map((entry) => entry.version), [1, 2, 3, 4]);
   assert.notEqual(
     providerIdentityMappingId({ provider: 'fake', providerSubject: '/' }),
     providerIdentityMappingId({ provider: 'fake', providerSubject: '_2F' }),
   );
   const { account } = accountFixture({ label: 'local' });
-  const authentication = createAuthenticationService({ accountIdentity: account, providerAdapter: null });
+  const authentication = createAuthenticationService({ hasMeaningfulGuestWork: async () => true, accountIdentity: account, providerAdapter: null });
   const state = await authentication.initialize();
   assert.equal(state.status, 'guest');
   assert.equal(state.noticeCode, 'provider_not_configured');
@@ -115,7 +115,7 @@ test('Guest startup and unavailable provider preserve legacy Local Profile stora
   const offline = createFakeAuthProviderAdapter({
     failures: { restoreSession: new AuthProviderError('provider_unavailable', 'offline') },
   });
-  const second = createAuthenticationService({ accountIdentity: account, providerAdapter: offline });
+  const second = createAuthenticationService({ hasMeaningfulGuestWork: async () => true, accountIdentity: account, providerAdapter: offline });
   assert.equal((await second.initialize()).status, 'guest');
   assert.equal((await account.getActiveIdentity()).kind, RIVERLINE_IDENTITY_KINDS.LOCAL);
 });
@@ -145,10 +145,10 @@ test('first authentication links current data atomically while preserving Riverl
 
   const identityA = providerIdentity('provider-a');
   const fake = createFakeAuthProviderAdapter({ identities: [identityA] });
-  const authentication = createAuthenticationService({ accountIdentity: account, providerAdapter: fake });
+  const authentication = createAuthenticationService({ hasMeaningfulGuestWork: async () => true, accountIdentity: account, providerAdapter: fake });
   await authentication.initialize();
   const pending = await authentication.signInWithPassword({ email: identityA.email, password: 'not-recorded' });
-  assert.equal(pending.status, 'link_required');
+  assert.equal(pending.status, 'link_choice_required');
   assert.equal(pending.canLinkCurrentLocalData, true);
   assert.equal((await repository.getSnapshot()).providerIdentityMappings.length, 0);
 
@@ -189,7 +189,7 @@ test('first authentication links current data atomically while preserving Riverl
 
   await authentication.signOut();
   assert.equal(authentication.getState().status, 'guest');
-  assert.equal((await account.getActiveIdentity()).identityId, originalIdentityId);
+  assert.equal((await account.getActiveIdentity()).identityId, replacementLocal.identityId);
   assert.equal((await repository.getSnapshot()).providerIdentityMappings.length, 1);
   fake.queueIdentity(providerIdentity('provider-a', { at: AUTH_T2 }));
   assert.equal((await authentication.signInWithPassword({ email: identityA.email, password: 'not-recorded' })).status, 'signed_in');
@@ -202,21 +202,22 @@ test('link failure rolls back every record and retry is safe', async () => {
   const { account, repository } = accountFixture({ database, label: 'rollback' });
   const local = (await account.initialize()).activeIdentity;
   const identityA = providerIdentity('rollback-a');
-  const authentication = createAuthenticationService({
+  const authentication = createAuthenticationService({ hasMeaningfulGuestWork: async () => true,
     accountIdentity: account,
-    providerAdapter: createFakeAuthProviderAdapter({ identities: [identityA] }),
+    providerAdapter: createFakeAuthProviderAdapter({ identities: [identityA, identityA] }),
   });
   await authentication.initialize();
   await authentication.signInWithPassword({ email: identityA.email, password: 'not-recorded' });
   database.failNextTransaction('before_commit', new Error('interrupted link'), 'readwrite');
   const failed = await authentication.linkCurrentLocalData();
-  assert.equal(failed.status, 'link_required');
+  assert.equal(failed.status, 'guest');
   const rolledBack = await repository.getSnapshot();
   assert.equal(rolledBack.activeIdentity.identityId, local.identityId);
   assert.equal(rolledBack.activeIdentity.kind, RIVERLINE_IDENTITY_KINDS.LOCAL);
   assert.equal(rolledBack.identities.length, 1);
-  assert.equal(rolledBack.bindings.length, 2);
+  assert.equal(rolledBack.bindings.length, 3);
   assert.equal(rolledBack.providerIdentityMappings.length, 0);
+  await authentication.signInWithPassword({ email: identityA.email, password: 'not-recorded' });
   assert.equal((await authentication.linkCurrentLocalData()).status, 'signed_in');
   assert.equal((await repository.getSnapshot()).providerIdentityMappings.length, 1);
 });
@@ -226,7 +227,7 @@ test('start separately preserves Local Profile and re-authentication does not du
   const local = (await account.initialize()).activeIdentity;
   const identityA = providerIdentity('separate-a', { email: 'alice@example.com' });
   const fake = createFakeAuthProviderAdapter({ identities: [identityA] });
-  const authentication = createAuthenticationService({ accountIdentity: account, providerAdapter: fake });
+  const authentication = createAuthenticationService({ hasMeaningfulGuestWork: async () => true, accountIdentity: account, providerAdapter: fake });
   await authentication.initialize();
   await authentication.signInWithPassword({ email: identityA.email, password: 'not-recorded' });
   assert.equal((await authentication.startSeparately()).status, 'signed_in');
@@ -238,7 +239,7 @@ test('start separately preserves Local Profile and re-authentication does not du
   assert.notEqual(localBinding.storageScope, accountBinding.storageScope);
   await authentication.signOut();
   assert.equal(authentication.getState().status, 'guest');
-  assert.equal((await account.getActiveIdentity()).identityId, accountA.identityId);
+  assert.equal((await account.getActiveIdentity()).identityId, local.identityId);
   fake.queueIdentity(providerIdentity('separate-a', { email: 'alice@example.com', at: AUTH_T2 }));
   assert.equal((await authentication.signInWithPassword({ email: identityA.email, password: 'not-recorded' })).status, 'signed_in');
   assert.equal((await account.getActiveIdentity()).identityId, accountA.identityId);
@@ -251,7 +252,7 @@ test('matching emails from different provider subjects remain separate and Guest
   const identityA = providerIdentity('multi-a');
   const identityB = providerIdentity('multi-b');
   const fake = createFakeAuthProviderAdapter({ identities: [identityA] });
-  const authentication = createAuthenticationService({ accountIdentity: account, providerAdapter: fake });
+  const authentication = createAuthenticationService({ hasMeaningfulGuestWork: async () => true, accountIdentity: account, providerAdapter: fake });
   await authentication.initialize();
   await authentication.signInWithPassword({ email: identityA.email, password: 'not-recorded' });
   await authentication.startSeparately();
@@ -310,16 +311,16 @@ test('matching emails from different provider subjects remain separate and Guest
   assert.equal((await home.load()).identity.profile.identityId, accountA.identityId);
   await authentication.signOut();
   assert.equal(authentication.getState().status, 'guest');
-  assert.equal((await account.getActiveIdentity()).identityId, accountA.identityId);
+  assert.equal((await account.getActiveIdentity()).identityId, local.identityId);
 });
 
 test('session restore activates the mapped Riverline identity; expired restore returns to Guest', async () => {
   const { account } = accountFixture({ label: 'restore' });
   const local = (await account.initialize()).activeIdentity;
   const identityA = providerIdentity('restore-a');
-  const setup = createAuthenticationService({
+  const setup = createAuthenticationService({ hasMeaningfulGuestWork: async () => true,
     accountIdentity: account,
-    providerAdapter: createFakeAuthProviderAdapter({ identities: [identityA] }),
+    providerAdapter: createFakeAuthProviderAdapter({ identities: [identityA, identityA] }),
   });
   await setup.initialize();
   await setup.signInWithPassword({ email: identityA.email, password: 'not-recorded' });
@@ -327,14 +328,14 @@ test('session restore activates the mapped Riverline identity; expired restore r
   const accountA = await account.getActiveIdentity();
 
   await account.activateLocalIdentity();
-  const restored = createAuthenticationService({
+  const restored = createAuthenticationService({ hasMeaningfulGuestWork: async () => true,
     accountIdentity: account,
     providerAdapter: createFakeAuthProviderAdapter({ restoredIdentity: providerIdentity('restore-a', { at: AUTH_T2 }) }),
   });
   assert.equal((await restored.initialize()).status, 'signed_in');
   assert.equal((await account.getActiveIdentity()).identityId, accountA.identityId);
 
-  const expired = createAuthenticationService({
+  const expired = createAuthenticationService({ hasMeaningfulGuestWork: async () => true,
     accountIdentity: account,
     providerAdapter: createFakeAuthProviderAdapter({
       failures: { restoreSession: new AuthProviderError('session_expired', 'expired') },
@@ -342,12 +343,12 @@ test('session restore activates the mapped Riverline identity; expired restore r
   });
   assert.equal((await expired.initialize()).status, 'guest');
   assert.equal(expired.getState().noticeCode, 'session_expired');
-  assert.equal((await account.getActiveIdentity()).identityId, accountA.identityId);
+  assert.equal((await account.getActiveIdentity()).identityId, local.identityId);
 });
 
 test('fake adapter covers cancellation, failure, unavailable, expired session, and multiple identities without internet', async () => {
   const { account } = accountFixture({ label: 'fake' });
-  const cancelled = createAuthenticationService({
+  const cancelled = createAuthenticationService({ hasMeaningfulGuestWork: async () => true,
     accountIdentity: account,
     providerAdapter: createFakeAuthProviderAdapter({
       failures: { signInWithPassword: new AuthProviderError('authentication_cancelled', 'cancelled') },
@@ -356,7 +357,7 @@ test('fake adapter covers cancellation, failure, unavailable, expired session, a
   await cancelled.initialize();
   assert.equal((await cancelled.signInWithPassword({ email: 'a@b.c', password: 'not-recorded' })).status, 'guest');
 
-  const unavailable = createAuthenticationService({
+  const unavailable = createAuthenticationService({ hasMeaningfulGuestWork: async () => true,
     accountIdentity: account,
     providerAdapter: createFakeAuthProviderAdapter({ available: false }),
   });
@@ -461,8 +462,8 @@ test('auth mappings and credentials never enter study exports; UI owns accessibl
     readFile(new URL('../app/auth-config.example.js', import.meta.url), 'utf8'),
   ]);
   assert.match(html, /role="dialog"[^>]+aria-modal="true"[^>]+aria-labelledby="accountLinkModalTitle"/);
-  assert.match(html, /Use current local data/);
-  assert.match(html, /Start separately/);
+  assert.match(html, /Move local work to account/);
+  assert.match(html, /Keep separate/);
   assert.match(html, /Cloud sync is not enabled/);
   assert.match(html, /accountSignInEmail[^>]+dir="ltr"/);
   assert.match(bootstrap, /event\.key === 'Escape'/);

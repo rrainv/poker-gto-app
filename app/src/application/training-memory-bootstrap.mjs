@@ -3,6 +3,7 @@ import {
   createTrainingMemoryService,
 } from './training-memory-service.mjs';
 import { createTrainingMemoryPresentationGate } from './training-memory-presentation.mjs';
+import { deriveTrainingSchedulingProposal } from './training-intelligence.mjs';
 
 const pendingBridgeInstalls = new WeakMap();
 
@@ -58,6 +59,10 @@ export function installTrainingMemoryBridge(browserWindow, options = {}) {
     ),
     recordExerciseShown: (input) => service.recordExerciseShown(input),
     recordExerciseAnswered: (input) => service.recordExerciseAnswered(input),
+    requestUncertainRevisit: (recordId) => service.requestUncertainRevisit(recordId),
+    listLearningRevisits: () => service.listLearningRevisits(),
+    changeLearningRevisit: (handoff, action) => service.changeLearningRevisit(handoff, action),
+    learningProposal: (record) => deriveTrainingSchedulingProposal(record),
     recordFullHandDecisionShown: (input) => service.recordFullHandDecisionShown(input),
     recordFullHandDecisionAnswered: (input) => service.recordFullHandDecisionAnswered(input),
     updateStudyMetadata: (recordId, changes) => service.updateStudyMetadata(recordId, changes),
@@ -73,7 +78,7 @@ export function installTrainingMemoryBridge(browserWindow, options = {}) {
     createPresentationGate: (session, gateOptions) => (
       createTrainingMemoryPresentationGate(session, gateOptions)
     ),
-    createSameSpot: (recordId) => service.createSameSpot(recordId),
+    createSameSpot: (recordId, sameOptions) => service.createSameSpot(recordId, sameOptions),
     generateSimilarSpot: (recordId, generateOptions) => (
       service.generateSimilarSpot(recordId, generateOptions)
     ),

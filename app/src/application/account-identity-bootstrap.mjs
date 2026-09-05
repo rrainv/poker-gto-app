@@ -75,25 +75,27 @@ export function installAccountIdentityBridge(browserWindow, options = {}) {
   });
   const initialization = service.initialize();
   const bridge = Object.freeze({
-    schemaVersion: 'riverline-account-bridge/v1',
+    schemaVersion: 'riverline-account-bridge/v2',
     initialize: () => initialization,
+    ensureDeviceGuestIdentity: () => service.ensureDeviceGuestIdentity(),
     ensureLocalIdentity: () => service.ensureLocalIdentity(),
     getActiveIdentity: () => service.getActiveIdentity(),
     getActiveIdentityId: () => service.getActiveIdentityId(),
+    getLifecycleState: () => service.getLifecycleState(),
+    captureLifecycleScope: (domain) => service.captureLifecycleScope(domain),
+    isCurrentLifecycleScope: (scope) => service.isCurrentLifecycleScope(scope),
+    assertCurrentLifecycleScope: (scope) => service.assertCurrentLifecycleScope(scope),
     getProfileSummary: () => service.getProfileSummary(),
     listKnownIdentities: () => service.listKnownIdentities(),
     reserveIdentityId: () => service.reserveIdentityId(),
     getDomainOwnership: (domain) => service.getDomainOwnership(domain),
     getProviderIdentityMapping: (providerIdentity) => service.getProviderIdentityMapping(providerIdentity),
     activateProviderIdentity: (providerIdentity) => service.activateProviderIdentity(providerIdentity),
-    linkProviderIdentityToLocal: (providerIdentity, linkOptions) => (
-      service.linkProviderIdentityToLocal(providerIdentity, linkOptions)
-    ),
-    startProviderIdentitySeparately: (providerIdentity, startOptions) => (
-      service.startProviderIdentitySeparately(providerIdentity, startOptions)
-    ),
+    getPendingLifecycleTransition: () => service.getPendingLifecycleTransition(),
+    runFirstSignInTransition: (provider, options) => service.runFirstSignInTransition(provider, options),
+    requireRecovery: (error) => service.requireRecovery(error),
     setDisplayName: (value) => service.setDisplayName(value),
-    activateIdentity: (identityId) => service.activateIdentity(identityId),
+    activateDeviceGuest: () => service.activateDeviceGuest(),
     activateLocalIdentity: () => service.activateLocalIdentity(),
     subscribe: (listener) => service.subscribe(listener),
   });

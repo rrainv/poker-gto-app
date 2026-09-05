@@ -13,6 +13,7 @@ import { createAnalysisExplanation } from '../app/src/application/analysis-expla
 import { createBluffAnalysisFacts } from '../app/src/application/bluff-analysis.mjs';
 import { createRangeAnalysisFacts } from '../app/src/application/range-analysis.mjs';
 import { PLAYBOOK_ANALYSIS_TUTORIAL_DEFINITION } from '../app/src/tutorial/current-app-tutorials.mjs';
+import * as RiverlineCardPresentation from '../app/src/application/card-presentation.mjs';
 
 const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const EXPLANATION = fs.readFileSync(
@@ -96,7 +97,7 @@ function createTeacherRuntime(language = 'en') {
   let currentLanguage = language;
   const document = {
     documentElement: { dataset: {}, dir: language === 'he' ? 'rtl' : 'ltr', lang: language },
-    createElement: (tagName) => new FakeElement(tagName),
+    createElement: (tagName) => Object.assign(new FakeElement(tagName), { ownerDocument: document }),
     createTextNode: (text) => new FakeTextNode(text),
   };
   const resolveTranslation = (key) => {
@@ -120,14 +121,15 @@ function createTeacherRuntime(language = 'en') {
     console,
     Intl,
     RiverlineI18n: { resolveTranslation },
+    RiverlineCardPresentation,
     t,
   };
   vm.runInNewContext(RENDERER, runtime, { filename: 'teacher.js' });
   return {
     document,
-    render(explanation) {
+    render(explanation, surface = 'playbook') {
       const container = new FakeElement('div');
-      window.renderAnalysisExplanation(container, explanation, { surface: 'playbook' });
+      window.renderAnalysisExplanation(container, explanation, { surface });
       return container;
     },
     setLanguage(nextLanguage) {
@@ -417,10 +419,10 @@ test('compact Analysis visibly surfaces the exact wheel straight-flush draw and 
   assert.match(handBoard.textContent, /Outs/);
   assert.match(handBoard.textContent, /Flush/);
   assert.match(handBoard.textContent, /Straight/);
-  assert.match(handBoard.textContent, /5h/);
+  assert.ok(renderedDescendants(handBoard).some((element) => element.getAttribute('aria-label') === '5♥'));
   assert.match(handBoard.textContent, /Wheel straight flush/);
   assert.match(handBoard.textContent, /Unique direct improvement cards: 12/);
-  assert.match(handBoard.textContent, /Shared out counted once: 5h/);
+  assert.match(handBoard.textContent, /Shared out counted once: 5♥/);
 });
 
 test('OESFD and royal draw labels retain exact structured completion results', () => {
@@ -449,10 +451,13 @@ test('OESFD and royal draw labels retain exact structured completion results', (
       fact(explanation, 'hand_board', 'draw_outs').value.straightFlush.completionCards,
       fixture.cards,
     );
-    const text = createTeacherRuntime('en').render(explanation).textContent;
+    const rendered = createTeacherRuntime('en').render(explanation);
+    const text = rendered.textContent;
     assert.match(text, fixture.copy);
     assert.match(text, fixture.results);
-    fixture.cards.forEach((card) => assert.match(text, new RegExp(card)));
+    fixture.cards.forEach((card) => assert.ok(renderedDescendants(rendered).some((element) => (
+      element.getAttribute('aria-label') === `${card[0]}${RiverlineCardPresentation.cardSuitPresentation(card[1]).symbol}`
+    ))));
   }
 });
 
@@ -500,8 +505,46 @@ test('Hebrew structured outs stay RTL with completion cards as local data island
   assert.equal(primary.classList.contains('poker-data-token'), false);
   assert.notEqual(primary.getAttribute('dir'), 'ltr');
   const cards = renderedDescendants(primary)
-    .find((element) => element.classList.contains('poker-data-token'));
-  assert.equal(cards.textContent, '5h');
+    .find((element) => element.classList.contains('analysis-mini-card'));
+  assert.equal(cards.getAttribute('aria-label'), '5♥');
+  assert.equal(cards.dataset.cardSize, 'mini');
+});
+
+test('Facts and Explain use canonical mini faces for every physical out, including overlaps, in each locale and surface', () => {
+  const decisionContext = context({ heroCards: ['As', 'Ks'], board: ['Qs', 'Js', '2d'] });
+  const explanation = createAnalysisExplanation({ decisionContext, strategyResult: strategy(),
+    rangeAnalysisFacts: createRangeAnalysisFacts({ decisionContext }), authority: 'scenario' });
+  const original = JSON.stringify(explanation);
+  const outs = fact(explanation, 'hand_board', 'draw_outs').value;
+  for (const language of ['en', 'ru', 'he']) for (const surface of ['playbook', 'training']) {
+    for (const rankStyle of ['poker', 'full-ten']) {
+      const teacher = createTeacherRuntime(language);
+      teacher.document.documentElement.dataset.cardRankStyle = rankStyle;
+      const rendered = teacher.render(explanation, surface);
+      const elements = renderedDescendants(rendered);
+      const labelsFor = (root) => renderedDescendants(root)
+        .filter((element) => element.classList.contains('analysis-mini-card'))
+        .map((element) => {
+          assert.equal(element.dataset.cardSize, 'mini');
+          assert.ok(element.classList.contains('riverline-card'));
+          assert.equal(element.children.length, 3, 'shared corner/center card-face component');
+          return element.getAttribute('aria-label');
+        });
+      const expected = (cards) => cards.map((card) => (
+        `${RiverlineCardPresentation.displayCardRank(card[0], rankStyle)}${RiverlineCardPresentation.cardSuitPresentation(card[1]).symbol}`
+      ));
+      for (const [family, cards] of [['flush', outs.flush.completionCards], ['straight', outs.straight.completionCards], ['straight_flush', outs.straightFlush.completionCards]]) {
+        const row = elements.find((element) => element.dataset.outFamily === family);
+        assert.deepEqual(labelsFor(row), expected(cards));
+      }
+      const overlap = elements.find((element) => element.classList.contains('analysis-outs-overlap'));
+      assert.deepEqual(labelsFor(overlap), expected(outs.overlaps.map((entry) => entry.card)));
+      assert.equal(teacher.document.documentElement.dir, language === 'he' ? 'rtl' : 'ltr');
+      assert.notEqual(overlap.getAttribute('dir'), 'ltr', 'localized prose keeps its surrounding direction');
+      assert.equal(elements.some((element) => element.classList.contains('analysis-out-card')), false, 'no literal card-code fallback when the card component is available');
+    }
+  }
+  assert.equal(JSON.stringify(explanation), original, 'rendering preserves all factual and truth evidence');
 });
 
 test('explicit partial range rendering remains conditional, source-specific, and non-normalized', () => {

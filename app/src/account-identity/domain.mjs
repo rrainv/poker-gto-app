@@ -1,12 +1,24 @@
-export const RIVERLINE_IDENTITY_SCHEMA_VERSION = 'riverline-identity/v1';
+export const RIVERLINE_IDENTITY_SCHEMA_VERSION = 'riverline-identity/v2';
+export const LEGACY_RIVERLINE_IDENTITY_SCHEMA_VERSION = 'riverline-identity/v1';
 export const RIVERLINE_OWNERSHIP_REF_SCHEMA_VERSION = 'riverline-ownership-ref/v1';
 export const RIVERLINE_DOMAIN_OWNERSHIP_BINDING_SCHEMA_VERSION = 'riverline-domain-ownership-binding/v1';
-export const RIVERLINE_ACCOUNT_METADATA_SCHEMA_VERSION = 'riverline-account-metadata/v1';
-export const RIVERLINE_ACCOUNT_MIGRATION_SCHEMA_VERSION = 'riverline-account-migration/v1';
-export const RIVERLINE_ACCOUNT_MIGRATION_VERSION = 1;
+export const RIVERLINE_ACCOUNT_METADATA_SCHEMA_VERSION = 'riverline-account-metadata/v2';
+export const LEGACY_RIVERLINE_ACCOUNT_METADATA_SCHEMA_VERSION = 'riverline-account-metadata/v1';
+export const RIVERLINE_ACCOUNT_MIGRATION_SCHEMA_VERSION = 'riverline-account-migration/v2';
+export const LEGACY_RIVERLINE_ACCOUNT_MIGRATION_SCHEMA_VERSION = 'riverline-account-migration/v1';
+export const RIVERLINE_ACCOUNT_MIGRATION_VERSION = 2;
 export const RIVERLINE_DISPLAY_NAME_MAX_LENGTH = 80;
 
 export const RIVERLINE_IDENTITY_KINDS = Object.freeze({
+  DEVICE_GUEST: 'device_guest',
+  AUTHENTICATED_ACCOUNT: 'authenticated_account',
+  // Compatibility names remain source-level aliases only. RiverlineIdentity v2
+  // never persists the retired v1 values.
+  LOCAL: 'device_guest',
+  AUTHENTICATED_FUTURE: 'authenticated_account',
+});
+
+export const LEGACY_RIVERLINE_IDENTITY_KINDS = Object.freeze({
   LOCAL: 'local',
   AUTHENTICATED_FUTURE: 'authenticated_future',
 });
@@ -19,6 +31,7 @@ export const RIVERLINE_OWNER_TYPES = Object.freeze({
 export const RIVERLINE_OWNED_DOMAINS = Object.freeze({
   SAVED_STUDY_OBJECTS: 'saved_study_objects',
   PERSONAL_STRATEGY: 'personal_strategy',
+  TRAINING_MEMORY: 'training_memory',
 });
 
 export const RIVERLINE_STORAGE_SCOPES = Object.freeze({
@@ -30,7 +43,7 @@ export const RIVERLINE_BINDING_PROVENANCE = Object.freeze({
   IDENTITY_INITIALIZED: 'identity_initialized',
 });
 
-const IDENTITY_KIND_VALUES = Object.freeze(Object.values(RIVERLINE_IDENTITY_KINDS));
+const IDENTITY_KIND_VALUES = Object.freeze([...new Set(Object.values(RIVERLINE_IDENTITY_KINDS))]);
 const OWNER_TYPE_VALUES = Object.freeze(Object.values(RIVERLINE_OWNER_TYPES));
 const OWNED_DOMAIN_VALUES = Object.freeze(Object.values(RIVERLINE_OWNED_DOMAINS));
 const BINDING_PROVENANCE_VALUES = Object.freeze(Object.values(RIVERLINE_BINDING_PROVENANCE));
@@ -69,6 +82,11 @@ function requireId(value, label) {
   return value;
 }
 
+function requireOptionalId(value, label) {
+  if (value === null) return null;
+  return requireId(value, label);
+}
+
 function requireIsoTimestamp(value, label) {
   if (typeof value !== 'string' || !Number.isFinite(Date.parse(value))
     || new Date(Date.parse(value)).toISOString() !== value) {
@@ -88,7 +106,7 @@ export function normalizeRiverlineDisplayName(value) {
 }
 
 function expectedOwnerType(kind) {
-  return kind === RIVERLINE_IDENTITY_KINDS.LOCAL
+  return kind === RIVERLINE_IDENTITY_KINDS.DEVICE_GUEST
     ? RIVERLINE_OWNER_TYPES.LOCAL_IDENTITY
     : RIVERLINE_OWNER_TYPES.ACCOUNT_IDENTITY;
 }
@@ -118,7 +136,7 @@ export function validateRiverlineOwnershipRef(ref) {
 
 export function createRiverlineIdentity({
   identityId,
-  kind = RIVERLINE_IDENTITY_KINDS.LOCAL,
+  kind = RIVERLINE_IDENTITY_KINDS.DEVICE_GUEST,
   displayName = 'Local Player',
   localDeviceIdentityId,
   createdAt,
@@ -196,6 +214,7 @@ export function rebindRiverlineDomainOwnershipBinding(binding, identity, updated
     identity,
     domain: binding.domain,
     domainOwnerId: binding.domainOwnerId,
+    domainOwnerRef: binding.domainOwnerRef,
     storageScope: binding.storageScope,
     provenance: binding.provenance,
     createdAt: binding.createdAt,
@@ -213,6 +232,7 @@ export function createRiverlineDomainOwnershipBinding({
   identity,
   domain,
   domainOwnerId,
+  domainOwnerRef = null,
   storageScope,
   provenance,
   createdAt,
@@ -220,7 +240,13 @@ export function createRiverlineDomainOwnershipBinding({
 } = {}) {
   validateRiverlineIdentity(identity);
   const binding = {
-    schemaVersion: RIVERLINE_DOMAIN_OWNERSHIP_BINDING_SCHEMA_VERSION,
+    schemaVersion: domain === RIVERLINE_OWNED_DOMAINS.TRAINING_MEMORY
+      ? 'riverline-domain-ownership-binding/v2' : RIVERLINE_DOMAIN_OWNERSHIP_BINDING_SCHEMA_VERSION,
+    ...(domain === RIVERLINE_OWNED_DOMAINS.TRAINING_MEMORY ? {
+      domainOwnerRef: cloneData(domainOwnerRef ?? createRiverlineOwnershipRef({
+        ownerType: expectedOwnerType(identity.kind), ownerId: domainOwnerId,
+      })),
+    } : {}),
     bindingId: domainOwnershipBindingId(identity.identityId, domain),
     identityId: identity.identityId,
     domain,
@@ -240,8 +266,17 @@ export function validateRiverlineDomainOwnershipBinding(binding) {
   requireExactKeys(binding, [
     'schemaVersion', 'bindingId', 'identityId', 'domain', 'ownershipRef', 'domainOwnerId',
     'storageScope', 'provenance', 'createdAt', 'updatedAt',
+    ...(binding.domain === RIVERLINE_OWNED_DOMAINS.TRAINING_MEMORY ? ['domainOwnerRef'] : []),
   ], 'RiverlineDomainOwnershipBinding');
-  if (binding.schemaVersion !== RIVERLINE_DOMAIN_OWNERSHIP_BINDING_SCHEMA_VERSION) {
+  const training = binding.domain === RIVERLINE_OWNED_DOMAINS.TRAINING_MEMORY;
+  if (training) {
+    validateRiverlineOwnershipRef(binding.domainOwnerRef);
+    if (binding.domainOwnerRef.ownerId !== binding.domainOwnerId) {
+      throw new TypeError('Training Memory persisted owner differs from its binding');
+    }
+  }
+  if (binding.schemaVersion !== (training ? 'riverline-domain-ownership-binding/v2'
+    : RIVERLINE_DOMAIN_OWNERSHIP_BINDING_SCHEMA_VERSION)) {
     throw new TypeError(`Expected ${RIVERLINE_DOMAIN_OWNERSHIP_BINDING_SCHEMA_VERSION}`);
   }
   requireId(binding.identityId, 'RiverlineDomainOwnershipBinding.identityId');
@@ -268,13 +303,18 @@ export function validateRiverlineDomainOwnershipBinding(binding) {
   return binding;
 }
 
-export function createRiverlineAccountMigration({ completedAt, adoptedDomains = [] } = {}) {
+export function createRiverlineAccountMigration({
+  completedAt,
+  adoptedDomains = [],
+  adoptedDeviceGuestIdentityId,
+} = {}) {
   const migration = {
     schemaVersion: RIVERLINE_ACCOUNT_MIGRATION_SCHEMA_VERSION,
     version: RIVERLINE_ACCOUNT_MIGRATION_VERSION,
     status: 'complete',
     completedAt,
     adoptedDomains: [...adoptedDomains].sort(),
+    adoptedDeviceGuestIdentityId,
   };
   validateRiverlineAccountMigration(migration);
   return deepFreeze(migration);
@@ -284,6 +324,7 @@ export function validateRiverlineAccountMigration(migration) {
   requireObject(migration, 'RiverlineAccountMigration');
   requireExactKeys(migration, [
     'schemaVersion', 'version', 'status', 'completedAt', 'adoptedDomains',
+    'adoptedDeviceGuestIdentityId',
   ], 'RiverlineAccountMigration');
   if (migration.schemaVersion !== RIVERLINE_ACCOUNT_MIGRATION_SCHEMA_VERSION
     || migration.version !== RIVERLINE_ACCOUNT_MIGRATION_VERSION
@@ -296,14 +337,51 @@ export function validateRiverlineAccountMigration(migration) {
     || new Set(migration.adoptedDomains).size !== migration.adoptedDomains.length) {
     throw new TypeError('RiverlineAccountMigration.adoptedDomains is invalid');
   }
+  requireId(
+    migration.adoptedDeviceGuestIdentityId,
+    'RiverlineAccountMigration.adoptedDeviceGuestIdentityId',
+  );
   return migration;
+}
+
+export function createRiverlineAccountMetadata({
+  backendSchemaVersion,
+  databaseVersion,
+  activeIdentityId,
+  deviceGuestIdentityId,
+  localDeviceIdentityId,
+  revision = 0,
+  lifecycleGeneration = 0,
+  pendingTransitionId = null,
+  createdAt,
+  updatedAt = createdAt,
+  migration,
+} = {}) {
+  const metadata = {
+    schemaVersion: RIVERLINE_ACCOUNT_METADATA_SCHEMA_VERSION,
+    key: 'state',
+    backendSchemaVersion,
+    databaseVersion,
+    activeIdentityId,
+    deviceGuestIdentityId,
+    localDeviceIdentityId,
+    revision,
+    lifecycleGeneration,
+    pendingTransitionId,
+    createdAt,
+    updatedAt,
+    migration: cloneData(migration),
+  };
+  validateRiverlineAccountMetadata(metadata);
+  return deepFreeze(metadata);
 }
 
 export function validateRiverlineAccountMetadata(metadata) {
   requireObject(metadata, 'RiverlineAccountMetadata');
   requireExactKeys(metadata, [
     'schemaVersion', 'key', 'backendSchemaVersion', 'databaseVersion',
-    'activeIdentityId', 'localDeviceIdentityId', 'revision',
+    'activeIdentityId', 'deviceGuestIdentityId', 'localDeviceIdentityId', 'revision',
+    'lifecycleGeneration', 'pendingTransitionId',
     'createdAt', 'updatedAt', 'migration',
   ], 'RiverlineAccountMetadata');
   if (metadata.schemaVersion !== RIVERLINE_ACCOUNT_METADATA_SCHEMA_VERSION || metadata.key !== 'state') {
@@ -314,12 +392,20 @@ export function validateRiverlineAccountMetadata(metadata) {
     throw new TypeError('Riverline account backend metadata is invalid');
   }
   requireId(metadata.activeIdentityId, 'RiverlineAccountMetadata.activeIdentityId');
+  requireId(metadata.deviceGuestIdentityId, 'RiverlineAccountMetadata.deviceGuestIdentityId');
   requireId(metadata.localDeviceIdentityId, 'RiverlineAccountMetadata.localDeviceIdentityId');
   if (!Number.isSafeInteger(metadata.revision) || metadata.revision < 0) {
     throw new RangeError('RiverlineAccountMetadata.revision must be a non-negative safe integer');
   }
+  if (!Number.isSafeInteger(metadata.lifecycleGeneration) || metadata.lifecycleGeneration < 0) {
+    throw new RangeError('RiverlineAccountMetadata.lifecycleGeneration must be a non-negative safe integer');
+  }
+  requireOptionalId(metadata.pendingTransitionId, 'RiverlineAccountMetadata.pendingTransitionId');
   requireIsoTimestamp(metadata.createdAt, 'RiverlineAccountMetadata.createdAt');
   requireIsoTimestamp(metadata.updatedAt, 'RiverlineAccountMetadata.updatedAt');
+  if (Date.parse(metadata.updatedAt) < Date.parse(metadata.createdAt)) {
+    throw new RangeError('RiverlineAccountMetadata.updatedAt cannot precede createdAt');
+  }
   validateRiverlineAccountMigration(metadata.migration);
   return metadata;
 }

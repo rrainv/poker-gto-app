@@ -55,6 +55,7 @@ export function createPersonalStrategyHomeQuery({
   storage = createPersonalStrategyBrowserStorage(),
   database = null,
   ownershipResolver = null,
+  lifecycleScopeResolver = null,
   databaseResolver = null,
   clock = () => new Date(),
 } = {}) {
@@ -70,8 +71,10 @@ export function createPersonalStrategyHomeQuery({
   }
 
   async function resolveOwnership() {
-    if (ownershipResolver) {
-      const binding = await ownershipResolver();
+    if (ownershipResolver || lifecycleScopeResolver) {
+      const lifecycleScope = await lifecycleScopeResolver?.();
+      const binding = lifecycleScope?.domainOwnerBinding ?? await ownershipResolver();
+      lifecycleScope?.assertCurrent();
       const ownerId = binding?.domainOwnerId;
       if (typeof ownerId !== 'string' || !ownerId.trim()) return null;
       let resolvedDatabase = database;
@@ -83,7 +86,7 @@ export function createPersonalStrategyHomeQuery({
         }
         resolvedDatabase = databases.get(name);
       }
-      return { binding, ownerId, database: resolvedDatabase, storage: scopedStorage(binding) };
+      return { binding, lifecycleScope, ownerId, database: resolvedDatabase, storage: scopedStorage(binding) };
     }
     const ownerId = storage.getItem(RANGE_CALIBRATION_OWNER_KEY);
     if (typeof ownerId !== 'string' || !ownerId.trim()) return null;
@@ -94,17 +97,26 @@ export function createPersonalStrategyHomeQuery({
     async loadSummary() {
       const ownership = await resolveOwnership();
       if (!ownership) return emptySummary(0);
-      const key = `${ownership.database?.name ?? 'default'}:local:${ownership.ownerId}`;
+      ownership.lifecycleScope?.assertCurrent();
+      const key = `${ownership.database?.name ?? 'default'}:local:${ownership.ownerId}:${ownership.lifecycleScope?.lifecycleGeneration ?? 'fixed'}`;
       if (!repositories.has(key)) {
         repositories.set(key, createPersonalStrategyRepository({
           database: ownership.database,
           legacyStorage: ownership.storage,
           ownerRef: createLocalOwnerRef(ownership.ownerId),
+          lifecycleScope: ownership.lifecycleScope,
           clock,
         }));
+        ownership.lifecycleScope?.signal.addEventListener('abort', () => {
+        const repository = repositories.get(key);
+        repositories.delete(key);
+        databases.delete(ownership.database?.name);
+        void repository?.close().catch(() => {});
+        }, { once: true });
       }
       const scope = preferredScope(ownership.storage);
       const summary = await repositories.get(key).loadHomeSummary(scope || {});
+      ownership.lifecycleScope?.assertCurrent();
       if (!summary.selectedProfile || !summary.selectedMode) return emptySummary(summary.profileCount);
       const session = summary.session;
       return Object.freeze({

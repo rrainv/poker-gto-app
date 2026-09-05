@@ -51,7 +51,7 @@ function accountFixture(label = 'guest') {
 
 test('signed-out authentication is Guest Mode and hides legacy local identity from account UX', async () => {
   const { account, repository } = accountFixture('startup');
-  const authentication = createAuthenticationService({
+  const authentication = createAuthenticationService({ hasMeaningfulGuestWork: async () => true,
     accountIdentity: account,
     providerAdapter: null,
   });
@@ -73,7 +73,7 @@ test('profile-backed first sign-in claims legacy data explicitly and sign-out re
     username: 'river_player7',
     displayName: 'שחקן Riverline',
   });
-  const authentication = createAuthenticationService({
+  const authentication = createAuthenticationService({ hasMeaningfulGuestWork: async () => true,
     accountIdentity: account,
     providerAdapter: createFakeAuthProviderAdapter({ identities: [providerIdentity] }),
     profileRepository: profiles,
@@ -83,8 +83,8 @@ test('profile-backed first sign-in claims legacy data explicitly and sign-out re
     email: providerIdentity.email,
     password: 'not-exported',
   });
-  assert.equal(pending.status, 'link_required');
-  assert.equal(pending.profile.username, 'river_player7');
+  assert.equal(pending.status, 'link_choice_required');
+  assert.equal(pending.profile, null);
   const legacyId = (await repository.getSnapshot()).identities[0].identityId;
   const signedIn = await authentication.linkCurrentLocalData();
   assert.equal(signedIn.status, 'signed_in');
@@ -103,7 +103,7 @@ test('signup creates required normalized profile and supports Unicode display-na
   const { account } = accountFixture('signup');
   const providerIdentity = identity('signup-user');
   const profiles = createMemoryAccountProfileRepository({ clock: () => T2 });
-  const authentication = createAuthenticationService({
+  const authentication = createAuthenticationService({ hasMeaningfulGuestWork: async () => true,
     accountIdentity: account,
     providerAdapter: createFakeAuthProviderAdapter({ identities: [providerIdentity] }),
     profileRepository: profiles,
@@ -115,8 +115,8 @@ test('signup creates required normalized profile and supports Unicode display-na
     username: 'River_Player7',
     displayName: 'Игрок',
   });
-  assert.equal(pending.status, 'link_required');
-  assert.equal(pending.profile.username, 'river_player7');
+  assert.equal(pending.status, 'link_choice_required');
+  assert.equal(pending.profile, null);
   await authentication.startSeparately();
   const updated = await authentication.updateDisplayName('שחקנית');
   assert.equal(updated.profile.displayName, 'שחקנית');
@@ -175,7 +175,7 @@ test('persistent identity gate cancels safely and resumes the retained action ex
   assert.equal(writes, 1);
 });
 
-test('Guest Save Spot cancellation writes nothing and authenticated resume saves the retained spot once', async () => {
+test('Guest saves a local Spot immediately without queuing a sign-in intent', async () => {
   let authState = { status: 'guest' };
   const authListeners = new Set();
   const authentication = {
@@ -220,30 +220,18 @@ test('Guest Save Spot cancellation writes nothing and authenticated resume saves
   });
   const decisionContext = Object.freeze({ schemaVersion: 'decision-context/v1' });
 
-  const cancelled = saved.saveCurrent({ mode: 'scenario', scenarioInput, decisionContext });
-  await Promise.resolve();
-  assert.equal(gate.getState().status, 'required');
-  assert.equal(gate.cancelPendingIntent(), true);
-  await assert.rejects(cancelled, (error) => error.code === 'persistent_identity_cancelled');
-  assert.deepEqual(savedInputs, []);
-  assert.deepEqual(storageWrites, []);
-
-  const resumed = saved.saveCurrent({ mode: 'scenario', scenarioInput, decisionContext });
-  await Promise.resolve();
-  authState = { status: 'signed_in' };
-  authListeners.forEach((listener) => listener(authState));
-  const result = await resumed;
+  const result = await saved.saveCurrent({ mode: 'scenario', scenarioInput, decisionContext });
+  assert.equal(gate.getState().status, 'idle');
+  assert.equal(gate.hasPendingIntent(), false);
   assert.equal(result.created, true);
   assert.equal(savedInputs.length, 1);
   assert.equal(savedInputs[0].scenarioInput, scenarioInput);
   assert.equal(savedInputs[0].decisionContext, decisionContext);
   assert.equal(storageWrites.length, 1);
-  authListeners.forEach((listener) => listener(authState));
-  await Promise.resolve();
-  assert.equal(savedInputs.length, 1);
+
 });
 
-test('Guest Saved and Home boundaries do not query durable account-owned data', async () => {
+test('explicit local Saved adapter bypasses sign-in while unavailable Home ownership remains fail-closed', async () => {
   let durableCalls = 0;
   let gateCalls = 0;
   const authentication = { ready: async () => ({ status: 'guest' }), getState: () => ({ status: 'guest' }) };
@@ -283,9 +271,9 @@ test('Guest Saved and Home boundaries do not query durable account-owned data', 
   assert.equal(await saved.getById('hidden-account-item'), null);
   await assert.rejects(
     saved.saveCurrent({ mode: 'scenario' }),
-    (error) => error.code === 'persistent_identity_cancelled',
+    (error) => error instanceof TypeError,
   );
-  assert.equal(gateCalls, 1);
+  assert.equal(gateCalls, 0);
 
   const home = installHomeWorkspaceBridge(browserWindow, {
     savedStudyQueries: saved,
@@ -299,7 +287,7 @@ test('Guest Saved and Home boundaries do not query durable account-owned data', 
   assert.equal(model.sessionMode, 'guest');
   assert.equal(model.sections.recent.status, 'unavailable');
   assert.deepEqual(model.sections.quickStart.destinations, ['hand', 'analyze', 'training', 'equity']);
-  assert.equal(durableCalls, 0);
+  assert.equal(durableCalls, 2);
 });
 
 test('Supabase signup sends profile metadata but never exposes password outside Auth call', async () => {

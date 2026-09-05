@@ -2,6 +2,10 @@
 
 This document defines durable cross-surface interaction integrity. It is a semantic product contract, not poker, strategy, Equity, range, Training, persistence, implementation-status, or execution-priority authority.
 
+## Strategy comparison and assessment language
+
+Use the shared `strategy-truth/v1` presentation across Analyze, Training, Review and Explain. Heuristic baseline qualification belongs beside the primary action; heuristic and accepted-reference comparisons use neutral feedback, borders, badges and audio. Positive/corrective consequences require a permitted normative outcome from an explicitly accepted assessment policy. Session metrics show populated authority groups, without universal Alignment/Accuracy. Historical source labels remain explicit in Same Spot. Saved/Home mistake annotations read "Marked as a mistake" and remain user attribution. See [Strategy Source Authority](STRATEGY_SOURCE_AUTHORITY_SPEC.md).
+
 ## Core rule
 
 A reusable semantic feature has **one semantic owner and one interaction language** across every surface where the concept meaningfully applies.

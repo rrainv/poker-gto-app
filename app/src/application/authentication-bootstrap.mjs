@@ -27,22 +27,25 @@ function authNoticeKey(state) {
   if (state.noticeCode === 'username_unavailable') return 'That username is unavailable.';
   if (state.noticeCode === 'invalid_profile') return 'Check the username and display name.';
   if (state.noticeCode === 'profile_identity_conflict') return 'This account is bound to a different Riverline identity. No local data was changed.';
-  if (state.noticeCode === 'signout_incomplete') return 'Signed out locally, but the provider could not be reached.';
+  if (state.noticeCode === 'identity_recovery_required'
+    || state.status === 'recovery_required') return 'Riverline couldn’t finish switching identities. Your existing work was not deleted, merged, or moved. Try again to continue safely.';
+  if (state.noticeCode === 'signout_incomplete') return 'You’re signed out in Riverline. The account provider could not confirm sign-out, but your account data remains unavailable here.';
   if (state.noticeCode === 'link_failed') return 'Account linking failed. Your existing data was left untouched.';
   if (state.noticeCode === 'display_name_saved') return 'Display name saved.';
   const keys = {
     initializing: 'Checking authentication status…',
     authenticating: 'Signing in…',
-    linking: 'Linking account safely…',
+    transitioning: 'Switching identities safely…',
     signed_in: 'Signed in. Study data remains on this device.',
     guest: state.noticeCode === 'provider_not_configured'
       ? 'Guest Mode. Sign-in is unavailable until Supabase public configuration is added.'
-      : 'Guest Mode. Study history is not saved.',
+      : 'Your learning workspace is saved on this device.',
     confirmation_required: 'Check your email to confirm the account, then sign in.',
     authentication_failed: 'Authentication failed. Check the details and try again.',
     profile_setup_required: 'Complete the required profile to continue.',
     identity_conflict: 'Account identity conflict. No local data was changed.',
-    link_required: 'Choose whether to claim existing data or start separately.',
+    recovery_required: 'Riverline couldn’t finish switching identities. Your existing work was not deleted, merged, or moved. Try again to continue safely.',
+    link_choice_required: 'Bring your local work into this account?',
   };
   return keys[state.status] ?? '';
 }
@@ -50,6 +53,7 @@ function authNoticeKey(state) {
 function authNoticeIsError(state) {
   return state.status === 'authentication_failed'
     || state.status === 'identity_conflict'
+    || state.status === 'recovery_required'
     || ['invalid_credentials', 'signup_conflict', 'signup_failed', 'provider_unavailable',
       'session_expired', 'username_unavailable', 'invalid_profile', 'profile_identity_conflict',
       'signout_incomplete', 'link_failed'].includes(state.noticeCode);
@@ -126,6 +130,8 @@ function bindAuthenticationUi(browserWindow, service, gate) {
       const state = service.getState();
       const target = state.status === 'signed_in'
         ? document.querySelector('#accountDisplayName')
+        : state.status === 'recovery_required'
+          ? document.querySelector('#accountIdentityRetry')
         : state.status === 'profile_setup_required'
           ? document.querySelector('#accountSetupUsername')
           : document.querySelector('#accountSignInEmail');
@@ -146,6 +152,8 @@ function bindAuthenticationUi(browserWindow, service, gate) {
 
   function openLink(state) {
     if (!linkModal) return;
+    if (accountModal) accountModal.inert = true;
+    document.querySelector('.riverline-shell')?.setAttribute('inert', '');
     linkModal.querySelector('#accountLinkEmail').textContent = state.email ?? '';
     linkModal.querySelector('#accountLinkCurrent').hidden = !state.canLinkCurrentLocalData;
     if (linkModal.hidden) {
@@ -159,14 +167,20 @@ function bindAuthenticationUi(browserWindow, service, gate) {
 
   function closeLink({ restoreFocus = true } = {}) {
     if (!linkModal || linkModal.hidden) return;
+    if (accountModal) accountModal.inert = false;
+    document.querySelector('.riverline-shell')?.removeAttribute('inert');
     linkModal.classList.remove('show');
     linkModal.hidden = true;
     if (accountModal?.hidden !== false) document.body.classList.remove('modal-open');
-    if (restoreFocus) focusBeforeLink?.focus?.({ preventScroll: true });
+    if (restoreFocus) {
+      const target = focusBeforeLink?.getClientRects?.().length ? focusBeforeLink : (accountModal?.hidden === false ? document.querySelector('#accountProfileClose') : menuButton);
+      target?.focus?.({ preventScroll: true });
+    }
     focusBeforeLink = null;
   }
 
   async function cancelLink() {
+    if (service.getState().status === 'transitioning') return;
     gate.cancelPendingIntent();
     await service.cancelPendingAuthentication();
     closeLink({ restoreFocus: false });
@@ -180,10 +194,10 @@ function bindAuthenticationUi(browserWindow, service, gate) {
 
   function render(state) {
     const signedIn = state.status === 'signed_in' && Boolean(state.profile);
-    const profile = state.profile;
+    const profile = signedIn ? state.profile : null;
     const displayName = profile?.displayName ?? translated('Guest');
     const username = profile ? `@${profile.username}` : translated('Not signed in');
-    const busy = ['initializing', 'authenticating', 'linking'].includes(state.status);
+    const busy = ['initializing', 'authenticating', 'transitioning'].includes(state.status);
 
     document.querySelector('#accountMenuAvatar').textContent = initials(displayName);
     document.querySelector('#accountMenuLabel').textContent = displayName;
@@ -205,10 +219,13 @@ function bindAuthenticationUi(browserWindow, service, gate) {
       document.querySelector('#settingsAccountDescription'),
       signedIn
         ? 'Study data is separated by this account on this device. Cloud sync is not enabled.'
-        : 'Guest study history is not saved. Device settings remain available.',
+        : 'Your learning workspace is saved on this device.',
     );
 
-    document.querySelector('#accountGuestForms').hidden = signedIn || state.status === 'profile_setup_required';
+    document.querySelector('#accountGuestForms').hidden = signedIn
+      || state.status === 'profile_setup_required'
+      || (state.status === 'recovery_required' && !state.canRetrySignIn);
+    signUpForm.hidden = state.status === 'recovery_required';
     setupForm.hidden = state.status !== 'profile_setup_required';
     document.querySelector('#accountSignedInProfile').hidden = !signedIn;
     if (signedIn) {
@@ -221,8 +238,10 @@ function bindAuthenticationUi(browserWindow, service, gate) {
     }
     setAuthStatus(authNoticeKey(state), { error: authNoticeIsError(state) });
     setBusy(busy);
-    if (state.status === 'link_required') openLink(state);
-    else if (state.status !== 'linking') closeLink({ restoreFocus: false });
+    document.querySelector('#accountIdentityRetry').hidden = state.status !== 'recovery_required';
+    if (state.status === 'link_choice_required') openLink(state);
+    else if (state.status !== 'transitioning') closeLink();
+    if (state.status === 'recovery_required' && accountModal?.hidden) openAccount();
     browserWindow.dispatchEvent(new CustomEvent('riverline:authchange', {
       detail: { status: state.status, signedIn },
     }));
@@ -306,6 +325,7 @@ function bindAuthenticationUi(browserWindow, service, gate) {
   accountModal?.addEventListener('click', (event) => {
     if (event.target === accountModal) closeAccount();
   });
+  document.querySelector('#accountIdentityRetry')?.addEventListener('click', () => void service.retryIdentityTransition());
   document.querySelector('#accountSignOut')?.addEventListener('click', () => void service.signOut().then(() => closeAccount()));
   document.querySelector('#accountUseAnother')?.addEventListener('click', () => void useAnotherAccount());
   linkModal?.querySelector('#accountLinkCurrent')?.addEventListener('click', () => void service.linkCurrentLocalData());
@@ -319,6 +339,9 @@ function bindAuthenticationUi(browserWindow, service, gate) {
 
   document.addEventListener('click', (event) => {
     if (!menu?.hidden && !document.querySelector('#accountHeaderControl')?.contains(event.target)) closeMenu();
+  });
+  document.addEventListener('focusin', (event) => {
+    if (linkModal?.hidden === false && !linkModal.contains(event.target)) focusableIn(linkModal)[0]?.focus();
   });
   document.addEventListener('keydown', (event) => {
     if (!linkModal?.hidden) {
@@ -399,11 +422,12 @@ export async function installAuthenticationBridge(browserWindow, options = {}) {
     accountIdentity: options.accountIdentity ?? browserWindow.RiverlineAccountIdentity,
     providerAdapter,
     profileRepository,
+    hasMeaningfulGuestWork: options.hasMeaningfulGuestWork,
   });
   const gate = options.persistentIdentityGate ?? createPersistentIdentityGate({ authentication: service });
   const initialization = service.initialize();
   const bridge = Object.freeze({
-    schemaVersion: 'riverline-authentication-bridge/v2',
+    schemaVersion: 'riverline-authentication-bridge/v3',
     ready: () => initialization,
     getState: () => service.getState(),
     getKnownIdentities: () => service.getKnownIdentities(),
@@ -412,6 +436,7 @@ export async function installAuthenticationBridge(browserWindow, options = {}) {
     completeProfileSetup: (profile) => service.completeProfileSetup(profile),
     linkCurrentLocalData: () => service.linkCurrentLocalData(),
     startSeparately: () => service.startSeparately(),
+    retryIdentityTransition: () => service.retryIdentityTransition(),
     updateDisplayName: (value) => service.updateDisplayName(value),
     cancelPendingAuthentication: () => service.cancelPendingAuthentication(),
     signOut: () => service.signOut(),
@@ -437,9 +462,15 @@ export async function installAuthenticationBridge(browserWindow, options = {}) {
     }),
     writable: false,
   });
-  browserWindow.RiverlineAccountIdentity.subscribe(({ identity, reason }) => {
+  browserWindow.RiverlineAccountIdentity.subscribe(({ identity, reason, lifecycle }) => {
     browserWindow.dispatchEvent(new CustomEvent('riverline:identitychange', {
-      detail: { identityId: identity.identityId, reason },
+      detail: {
+        identityId: identity?.identityId ?? null,
+        identityKind: identity?.kind ?? null,
+        lifecycleGeneration: lifecycle?.lifecycleGeneration ?? null,
+        lifecycleStatus: lifecycle?.status ?? null,
+        reason,
+      },
     }));
   });
   const bind = () => bindAuthenticationUi(browserWindow, service, gate);

@@ -46,7 +46,16 @@ export function createPersistentIdentityGate({ authentication } = {}) {
     }
   }
 
-  authentication.subscribe(() => { void resumePending(); });
+  authentication.subscribe((next) => {
+    if (pending && (next.status === 'recovery_required'
+      || (next.status === 'guest' && ['authentication_cancelled', 'signed_out', 'signout_incomplete'].includes(next.noticeCode)))) {
+      const request = pending;
+      pending = null;
+      publish({ status: 'idle', intent: null, noticeCode: 'persistent_identity_cancelled' });
+      request.reject(persistentIdentityFailure('persistent_identity_cancelled', 'The pending account action was cancelled.'));
+    }
+    void resumePending();
+  });
 
   async function requirePersistentIdentity({ intent, resumeAction } = {}) {
     if (typeof intent !== 'string' || !intent.trim()) {

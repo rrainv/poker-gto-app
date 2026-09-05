@@ -196,7 +196,7 @@ test('Equity results omit the tautological Total equity summary without touching
 
 test('related analytical surfaces retain explicit truthfulness boundaries', () => {
   assert.match(logic, /MDF \([^)]*\) is a range-level reference, not a threshold for this hand/);
-  assert.match(logic, /no EV loss is implied/);
+  assert.match(logic, /no EV is implied/);
   const explanation = fs.readFileSync(new URL('../app/src/application/analysis-explanation.mjs', import.meta.url), 'utf8');
   assert.match(explanation, /claimPolicy\.claims\[STRATEGY_CLAIMS\.ACTION_EV\]/);
   const spr = sourceBetween(explanation, 'function sprSection(', 'function historyText(');

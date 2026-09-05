@@ -1,3 +1,4 @@
+import { projectStrategyTruth, historicalStrategyTruth, strategyTruthPresentation } from './strategy-truth.mjs';
 import {
   STRATEGY_RESULT_SCHEMA_VERSION,
   STRATEGY_SOURCES,
@@ -1102,6 +1103,7 @@ function unavailableReasonFor(context, strategyResult, explicitReason) {
 export function createAnalysisExplanation({
   decisionContext,
   strategyResult,
+  historicalStrategyEvidence = null,
   trustedFacts = {},
   rangeAnalysisFacts = null,
   bluffAnalysisFacts = null,
@@ -1129,7 +1131,9 @@ export function createAnalysisExplanation({
 
   const normalizedAuthority = normalizeAuthority(authority);
   const history = normalizeHistory(trustedFacts?.actionHistory, normalizedAuthority.type);
-  const claimPolicy = resolveStrategyClaimPolicy(strategyResult);
+  const truth = historicalStrategyEvidence ? historicalStrategyTruth(historicalStrategyEvidence)
+    : projectStrategyTruth({ strategyResult, decisionContext });
+  const claimPolicy = truth.claimPolicy;
   const provenance = provenanceFor(strategyResult, claimPolicy);
   const warnings = [];
   const actions = claimPolicy.claims[STRATEGY_CLAIMS.STRATEGY_PRESENTATION]
@@ -1205,7 +1209,7 @@ export function createAnalysisExplanation({
   const summaryValues = reason ? { reason: UNAVAILABLE_COPY[reason] || UNAVAILABLE_COPY.strategy_unavailable } : {
     action: leadingAction?.label || strategyResult?.recommendation?.label || 'The recommendation',
     probability: leadingAction ? percent(leadingAction.probability, 0) : 'unknown',
-    source: provenance.label,
+    source: strategyTruthPresentation(truth).sourceLabel,
   };
   const summary = reason
     ? summaryValues.reason
@@ -1224,6 +1228,7 @@ export function createAnalysisExplanation({
     sections,
     actionAnalysis,
     claimPolicy,
+    truth,
     warnings: uniqueWarnings,
     provenance: {
       ...provenance,

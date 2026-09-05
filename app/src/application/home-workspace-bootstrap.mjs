@@ -36,7 +36,9 @@ export function installHomeWorkspaceBridge(browserWindow, options = {}) {
   const personalStrategyQueries = options.personalStrategyQueries
     ?? createPersonalStrategyHomeQuery({
       storage: options.storage ?? browserWindow.localStorage,
-      ...(accountQueries?.getDomainOwnership ? {
+      ...(accountQueries?.captureLifecycleScope ? {
+        lifecycleScopeResolver: () => accountQueries.captureLifecycleScope(RIVERLINE_OWNED_DOMAINS.PERSONAL_STRATEGY),
+      } : accountQueries?.getDomainOwnership ? {
         ownershipResolver: () => accountQueries.getDomainOwnership(
           RIVERLINE_OWNED_DOMAINS.PERSONAL_STRATEGY,
         ),
@@ -57,7 +59,14 @@ export function installHomeWorkspaceBridge(browserWindow, options = {}) {
   const bridge = Object.freeze({
     schemaVersion: 'home-workspace/v1',
     async load() {
+      const scope = await accountQueries?.captureLifecycleScope?.();
       await authentication?.ready?.();
+      scope?.assertCurrent();
+      if (scope) {
+        const model = await home.load({ guest: scope.identityKind === 'device_guest' });
+        scope.assertCurrent();
+        return model;
+      }
       const authenticationState = authentication?.getState?.();
       if (authenticationState?.status !== 'signed_in') {
         return createGuestHomeViewModel({
@@ -66,7 +75,12 @@ export function installHomeWorkspaceBridge(browserWindow, options = {}) {
       }
       return home.load();
     },
-    openSavedItem: (id) => opener.open(id),
+    async openSavedItem(id) {
+      const lifecycleScope = await accountQueries?.captureLifecycleScope?.();
+      const result = await opener.open(id, { lifecycleScope });
+      lifecycleScope?.assertCurrent();
+      return result;
+    },
   });
   Object.defineProperty(browserWindow, 'RiverlineHome', {
     configurable: true,

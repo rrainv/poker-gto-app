@@ -414,7 +414,7 @@ test('diagnostic corpus shows real deltas while authority and Training contracts
 
   for (const id of ['heuristic_preflop', 'heuristic_postflop']) {
     const descriptor = STRATEGY_SOURCE_REGISTRY[id];
-    assert.equal(descriptor.authority, STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE);
+    assert.equal(descriptor.authority, STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY);
     assert.equal(descriptor.capabilities.actionEv, false);
     assert.equal(descriptor.capabilities.optimality, false);
     assert.equal(descriptor.defaultCoverage, 'generalized');

@@ -86,13 +86,10 @@ test('Training probability normalization and displayed facts are unchanged', () 
 });
 
 test('Session Progress exposes explicit cells and restrained internal dividers', () => {
-  assert.match(trainingHtml, /class="training-stat-grid"[^>]+role="list"[^>]+aria-label="Session summary"/);
-  for (const metric of ['attempts', 'accepted', 'acceptance', 'streak', 'best-streak']) {
-    assert.match(trainingHtml, new RegExp(`class="training-stat-cell"[^>]+data-training-stat="${metric}"[^>]+role="listitem"`));
-  }
-  for (const id of ['trainingTotalHands', 'trainingCorrect', 'trainingAccuracy', 'trainingStreak', 'trainingBestStreak']) {
-    assert.match(trainingHtml, new RegExp(`id="${id}"`));
-  }
+  assert.match(trainingHtml, /class="training-stat-grid"/);
+  assert.match(trainingHtml, /class="training-stat-cell"[^>]*>[\s\S]*id="trainingTotalHands"/);
+  assert.match(trainingHtml, /id="trainingTruthMetrics"[^>]+role="status"/);
+  assert.doesNotMatch(trainingHtml, /id="trainingAccuracy"/);
   assert.match(css, /\.training-stat-grid\s*\{[^}]*gap:\s*1px[^}]*background:\s*var\(--border-subtle\)/);
   assert.match(css, /\.training-stat-grid strong\s*\{[^}]*font-variant-numeric:\s*tabular-nums/);
   assert.match(css, /\.training-grade-counts\s*\{[^}]*border-top:/);

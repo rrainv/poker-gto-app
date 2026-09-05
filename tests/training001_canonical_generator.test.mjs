@@ -302,7 +302,7 @@ test('canonical-to-StrategyResult mapping preserves explicit action families inc
   assert.equal(mapCanonicalActionToStrategyAction(ACTION_TYPES.CALL, result), null);
 });
 
-test('mixed StrategyResult grading accepts actions within 15 points and never invents EV', () => {
+test('mixed StrategyResult distance is descriptive and grants no correctness or EV', () => {
   const result = {
     schemaVersion: 'strategy-result/v1',
     source: 'heuristic_preflop',
@@ -316,7 +316,7 @@ test('mixed StrategyResult grading accepts actions within 15 points and never in
   });
   assert.equal(acceptable.schemaVersion, TRAINING_ANSWER_EVALUATION_SCHEMA_VERSION);
   assert.equal(acceptable.grade, 'acceptable');
-  assert.equal(acceptable.accepted, true);
+  assert.equal(acceptable.accepted, false);
   assert.equal(acceptable.explanationData.evAvailable, false);
   assert.equal(acceptable.explanationData.chosenEvBb, null);
 
@@ -324,7 +324,7 @@ test('mixed StrategyResult grading accepts actions within 15 points and never in
     exerciseId: 'mixed', chosenActionType: 'raise', strategyResult: result,
   });
   assert.equal(optimal.grade, 'optimal');
-  assert.equal(optimal.accepted, true);
+  assert.equal(optimal.accepted, false);
 
   const mistake = evaluateTrainingAnswer({
     exerciseId: 'mixed', chosenActionType: 'fold', strategyResult: result,

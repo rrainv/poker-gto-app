@@ -3,6 +3,7 @@ import {
 } from '../../../shared/poker-domain/index.js';
 import {
   RIVERLINE_IDENTITY_KINDS,
+  RIVERLINE_OWNED_DOMAINS,
   riverlineOwnershipRefForIdentity,
 } from '../account-identity/domain.mjs';
 import {
@@ -29,6 +30,8 @@ import {
   createIndexedDbTrainingMemoryDatabase,
 } from '../training-memory/indexeddb-storage.mjs';
 import { createTrainingMemoryRepository } from '../training-memory/repository.mjs';
+import { withTrainingLearningEvidence, UNCERTAIN_REVISIT_POLICY_VERSION } from '../training-memory/learning-evidence.mjs';
+import { deriveTrainingSchedulingProposal, projectTrainingRevisits, requireTrainingRevisitProposal } from './training-intelligence.mjs';
 import {
   reconstructCanonicalHandReplaySource,
 } from './canonical-hand-replay-source.mjs';
@@ -53,7 +56,7 @@ export const TRAINING_MEMORY_SIMILAR_SPOT_SCHEMA_VERSION = 'training-similar-spo
 
 export class TrainingMemoryAuthorizationError extends Error {
   constructor(code = 'training_memory_owner_unavailable') {
-    super('Training Memory is unavailable without a currently authenticated owner.');
+    super('Training Memory is unavailable without a current local workspace owner.');
     this.name = 'TrainingMemoryAuthorizationError';
     this.code = code;
   }
@@ -92,12 +95,19 @@ export function createTrainingMemoryOwnerResolver({ authentication, identityProv
 
   function assertCurrent(snapshot) {
     if (!snapshot || snapshot.generation !== generation) reject('training_memory_generation_stale');
+    if (snapshot.lifecycleScope) {
+      snapshot.lifecycleScope.assertCurrent();
+      if (snapshot.lifecycleScope.identityKind === RIVERLINE_IDENTITY_KINDS.DEVICE_GUEST) {
+        if (authState?.status === 'signed_in') reject('training_memory_owner_mismatch');
+        return snapshot;
+      }
+    }
     if (authState?.status !== 'signed_in') reject('training_memory_auth_required');
-    if (activeIdentityId !== null && activeIdentityId !== snapshot.ownerRef.ownerId) {
+    if (activeIdentityId !== null && activeIdentityId !== (snapshot.lifecycleScope?.identityId ?? snapshot.ownerRef.ownerId)) {
       reject('training_memory_owner_changed');
     }
     const profileOwnerId = authState.profile?.riverlineIdentityId ?? null;
-    if (profileOwnerId !== null && profileOwnerId !== snapshot.ownerRef.ownerId) {
+    if (profileOwnerId !== null && profileOwnerId !== (snapshot.lifecycleScope?.identityId ?? snapshot.ownerRef.ownerId)) {
       reject('training_memory_owner_mismatch');
     }
     return snapshot;
@@ -105,27 +115,35 @@ export function createTrainingMemoryOwnerResolver({ authentication, identityProv
 
   return Object.freeze({
     async capture() {
+      const requestedGeneration = generation;
       await authentication.ready();
-      if (authState?.status !== 'signed_in') reject('training_memory_auth_required');
+      if (requestedGeneration !== generation) reject('training_memory_generation_stale');
       const expectedGeneration = generation;
-      const identity = await identityProvider.getActiveIdentity();
-      if (identity.kind !== RIVERLINE_IDENTITY_KINDS.AUTHENTICATED_FUTURE) {
-        reject('training_memory_authenticated_identity_required');
+      const lifecycleScope = identityProvider.captureLifecycleScope
+        ? await identityProvider.captureLifecycleScope(RIVERLINE_OWNED_DOMAINS.TRAINING_MEMORY)
+        : null;
+      const identity = lifecycleScope ? null : await identityProvider.getActiveIdentity();
+      if (!lifecycleScope && (authState?.status !== 'signed_in'
+        || identity.kind !== RIVERLINE_IDENTITY_KINDS.AUTHENTICATED_ACCOUNT)) {
+        reject('training_memory_auth_required');
       }
       const snapshot = Object.freeze({
         authStatus: authState.status,
         generation: expectedGeneration,
-        ownerRef: riverlineOwnershipRefForIdentity(identity),
+        lifecycleScope,
+        ownerRef: lifecycleScope ? lifecycleScope.domainOwnerBinding.domainOwnerRef
+          : riverlineOwnershipRefForIdentity(identity),
         signal: generationController.signal,
       });
-      if (activeIdentityId === null) activeIdentityId = identity.identityId;
+      if (activeIdentityId === null) activeIdentityId = lifecycleScope?.identityId ?? identity.identityId;
       return assertCurrent(snapshot);
     },
     assertCurrent,
     getState: () => Object.freeze({
       authStatus: authState?.status ?? 'initializing',
       generation,
-      ownerId: authState?.status === 'signed_in' ? activeIdentityId : null,
+      ownerId: ['guest_active', 'account_active'].includes(identityProvider.getLifecycleState?.().status)
+        || authState?.status === 'signed_in' ? activeIdentityId : null,
     }),
   });
 }
@@ -315,7 +333,7 @@ function answeredDecisionRecord(record, {
   amountToMilliBb = null,
   answeredAt,
 } = {}) {
-  const claimPolicy = resolveStrategyClaimPolicy(strategyResult);
+  const claimPolicy = evaluation?.truth?.claimPolicy ?? resolveStrategyClaimPolicy(strategyResult);
   const next = cloneTrainingMemoryData(record);
   next.status = TRAINING_DECISION_STATUSES.ANSWERED;
   next.answeredAt = answeredAt;
@@ -375,6 +393,7 @@ function historicalSameSpotExercise(record, state, id) {
     heroPlayerId: record.decisionSource.heroPlayerId,
     decisionContext: cloneTrainingMemoryData(record.decisionContext),
     strategyResult: cloneTrainingMemoryData(strategyResult),
+    historicalStrategyEvidence: cloneTrainingMemoryData(record.strategyEvidence),
     legalActions: cloneTrainingMemoryData(record.legalActions),
     presentation: presentationFromContext(record.decisionContext),
     generationMetadata: {
@@ -559,6 +578,7 @@ export function createTrainingMemoryService({
       exercise,
       parentDecisionRecordId = null,
       redrillKind = null,
+      revisit = null,
     } = {}) {
       const operationContext = await context();
       const { ownerRef, repository } = operationContext;
@@ -567,7 +587,7 @@ export function createTrainingMemoryService({
         throw new RangeError('Cannot append a decision to a finished Training session');
       }
       const shownAt = timestampFrom(clock);
-      const record = createShownDecisionRecord({
+      let record = createShownDecisionRecord({
         id: idFactory('training-decision'),
         ownerRef,
         session,
@@ -580,6 +600,27 @@ export function createTrainingMemoryService({
         }),
         shownAt,
       });
+      if (revisit) {
+        const parent = await getOwnedDecision(operationContext, parentDecisionRecordId);
+        const proposal = deriveTrainingSchedulingProposal(parent, clock());
+        if (!proposal || proposal.handoff.requestedAt !== revisit.requestedAt
+          || proposal.dueAt !== revisit.dueAt || revisit.sourceDecisionRecordId !== parent.id) {
+          throw new RangeError('The revisit request changed; reopen it from review.');
+        }
+        if (exercise.generationMetadata?.memoryRedrill?.sourceDecisionRecordId !== parent.id
+          || exercise.generationMetadata?.memoryRedrill?.comparison !== 'historical'
+          || ['decisionContext', 'legalActions'].some((key) => JSON.stringify(exercise[key]) !== JSON.stringify(parent[key]))
+          || JSON.stringify(exercise.pokerState) !== JSON.stringify(parent.decisionSource.pokerState)
+          || JSON.stringify(exercise.strategyResult) !== JSON.stringify(parent.strategyEvidence.strategyResult)) {
+          throw new RangeError('Exact revisit evidence does not match its historical source.');
+        }
+        record = withTrainingLearningEvidence(record);
+        record.learningEvidence.revisit = {
+          sourceDecisionRecordId: parent.id,
+          requestedAt: revisit.requestedAt, dueAt: revisit.dueAt, startedAt: shownAt,
+        };
+        validateTrainingDecisionRecord(record);
+      }
       const added = await repository.addShownDecision(record, {
         ...authorizationOptions(operationContext),
       });
@@ -593,23 +634,75 @@ export function createTrainingMemoryService({
       strategyResult,
       actionType,
       amountToMilliBb = null,
+      uncertainty = null,
     } = {}) {
       const operationContext = await context();
       const { repository } = operationContext;
       const record = await getOwnedDecision(operationContext, recordId);
       if (record.status === TRAINING_DECISION_STATUSES.ANSWERED) return record;
-      const answered = answeredDecisionRecord(record, {
+      let answered = answeredDecisionRecord(record, {
         strategyResult,
         evaluation,
         actionType,
         amountToMilliBb,
         answeredAt: timestampFrom(clock),
       });
+      if (uncertainty !== null) {
+        answered = withTrainingLearningEvidence(answered);
+        answered.learningEvidence.uncertainty = cloneTrainingMemoryData(uncertainty);
+        validateTrainingDecisionRecord(answered);
+      }
       const replaced = await repository.replaceDecision(answered, {
+        expectedRecord: record,
+        resolveRevisit: true,
         ...authorizationOptions(operationContext),
       });
       ownerProvider.assertCurrent(operationContext.authorization);
       return replaced;
+    },
+
+    async requestUncertainRevisit(recordId) {
+      const operationContext = await context();
+      const record = await getOwnedDecision(operationContext, recordId);
+      if (!record.learningEvidence?.uncertainty) throw new RangeError('No pre-reveal uncertainty was recorded.');
+      const at = timestampFrom(clock);
+      const next = withTrainingLearningEvidence(record);
+      next.learningEvidence.revisitRequest = { requestedAt: at, policyVersion: UNCERTAIN_REVISIT_POLICY_VERSION };
+      next.reviewState = cloneTrainingMemoryData(createTrainingReviewState({
+        ...record.reviewState, state: 'snoozed', dueAt: new Date(Date.parse(at) + 86_400_000).toISOString(),
+      }));
+      next.updatedAt = at;
+      const replaced = await operationContext.repository.replaceDecision(next, {
+        expectedRecord: record, ...authorizationOptions(operationContext),
+      });
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return replaced;
+    },
+
+    async changeLearningRevisit(handoff, action) {
+      if (!['snooze', 'dismiss'].includes(action)) throw new TypeError('Unsupported revisit action');
+      const operationContext = await context();
+      const record = await getOwnedDecision(operationContext, handoff?.sourceDecisionRecordId);
+      const at = timestampFrom(clock);
+      requireTrainingRevisitProposal(record, handoff, at);
+      const next = transitionTrainingReview(record, { at,
+        state: action === 'snooze' ? 'snoozed' : 'reviewed',
+        dueAt: action === 'snooze' ? new Date(Date.parse(at) + 86400000).toISOString() : null,
+      });
+      const result = await operationContext.repository.replaceDecision(next, {
+        expectedRecord: record, ...authorizationOptions(operationContext),
+      });
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return result;
+    },
+
+    async listLearningRevisits() {
+      const operationContext = await context();
+      const now = clock();
+      const records = await operationContext.repository.listRevisitCandidates({ now, limit: 50 });
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return { schemaVersion: 'training-revisit-page/v1', proposals: projectTrainingRevisits(records, now),
+        coverage: 'bounded_page', scanned: records.length, limit: 50 };
     },
 
     async recordFullHandDecisionShown({
@@ -689,7 +782,7 @@ export function createTrainingMemoryService({
         record,
         changes,
         timestampFrom(clock),
-      ), authorizationOptions(operationContext));
+      ), { expectedRecord: record, ...authorizationOptions(operationContext) });
       ownerProvider.assertCurrent(operationContext.authorization);
       return replaced;
     },
@@ -701,7 +794,7 @@ export function createTrainingMemoryService({
       const replaced = await repository.replaceDecision(transitionTrainingReview(record, {
         state: TRAINING_REVIEW_LIFECYCLE_STATES.REVIEWED,
         at: timestampFrom(clock),
-      }), authorizationOptions(operationContext));
+      }), { expectedRecord: record, ...authorizationOptions(operationContext) });
       ownerProvider.assertCurrent(operationContext.authorization);
       return replaced;
     },
@@ -713,7 +806,7 @@ export function createTrainingMemoryService({
       const replaced = await repository.replaceDecision(transitionTrainingReview(record, {
         state: TRAINING_REVIEW_LIFECYCLE_STATES.PENDING,
         at: timestampFrom(clock),
-      }), authorizationOptions(operationContext));
+      }), { expectedRecord: record, ...authorizationOptions(operationContext) });
       ownerProvider.assertCurrent(operationContext.authorization);
       return replaced;
     },
@@ -731,7 +824,7 @@ export function createTrainingMemoryService({
         state: TRAINING_REVIEW_LIFECYCLE_STATES.SNOOZED,
         dueAt,
         at,
-      }), authorizationOptions(operationContext));
+      }), { expectedRecord: record, ...authorizationOptions(operationContext) });
       ownerProvider.assertCurrent(operationContext.authorization);
       return replaced;
     },
@@ -762,15 +855,22 @@ export function createTrainingMemoryService({
       return result;
     },
 
-    async createSameSpot(recordId) {
+    async createSameSpot(recordId, { handoff = null } = {}) {
       const operationContext = await context();
       const record = await getOwnedDecision(operationContext, recordId);
       const session = await getOwnedSession(operationContext, record.sessionId);
       const state = stateForRecord(record, session);
+      let revisit = null;
+      if (handoff) {
+        requireTrainingRevisitProposal(record, handoff, clock());
+        revisit = { sourceDecisionRecordId: record.id, requestedAt: handoff.requestedAt,
+          dueAt: handoff.dueAt, startedAt: timestampFrom(clock) };
+      }
       return Object.freeze({
         schemaVersion: TRAINING_MEMORY_SAME_SPOT_SCHEMA_VERSION,
         sourceDecisionRecordId: record.id,
         comparison: 'historical',
+        revisit,
         historicalClaimPolicy: cloneTrainingMemoryData(record.strategyEvidence?.claimPolicy ?? null),
         exercise: historicalSameSpotExercise(
           record,
@@ -866,6 +966,7 @@ export function createTrainingMemoryService({
           === JSON.stringify(generated.exercise.decisionContext.board) ? [] : ['board']),
       ];
       const exercise = cloneTrainingMemoryData(generated.exercise);
+      exercise.strategyResult = generated.exercise.strategyResult;
       exercise.generationMetadata.memoryRedrill = {
         schemaVersion: TRAINING_MEMORY_SIMILAR_SPOT_SCHEMA_VERSION,
         sourceDecisionRecordId: record.id,

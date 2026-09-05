@@ -63,7 +63,7 @@ test('Training study hints and pricing copy remain truthful before and after an 
   assert.match(html, />Get a hint<\/button>/);
   assert.doesNotMatch(html, /Hints never reveal|never reveal the answer|does not change grading/i);
   const solution = between('function showTrainingSolution(solution)', 'function updateTrainingStats()');
-  assert.match(solution, /After-answer reference/);
+  assert.match(solution, /After-answer comparison/);
   assert.doesNotMatch(solution, /Strategy preview|lifecycle === 'ready'/);
   const pricing = between('function formatTrainingFacingCopy', 'function trainingActionLabel');
   assert.match(pricing, /Math\.abs\(facingSize - callAmount\) > 0\.001/);

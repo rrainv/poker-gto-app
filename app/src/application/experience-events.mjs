@@ -1,3 +1,4 @@
+import { strategyTruthPresentation } from './strategy-truth.mjs';
 import { motionIntentForExperienceEvent } from './experience-motion.mjs';
 
 export const EXPERIENCE_EVENT_SCHEMA_VERSION = 'experience-event/v1';
@@ -335,13 +336,8 @@ export function createStudyExperienceEvent({
   return createExperienceEvent({ type, origin, source, token, payload });
 }
 
-export function trainingStudyAudioMeaning({ comparisonState, feedbackSemantics } = {}) {
-  if (!['comparative', 'normative'].includes(feedbackSemantics)) return null;
-  return {
-    optimal: STUDY_AUDIO_MEANINGS.POSITIVE,
-    acceptable: STUDY_AUDIO_MEANINGS.NEUTRAL,
-    mistake: STUDY_AUDIO_MEANINGS.CORRECTIVE,
-  }[comparisonState] || null;
+export function trainingStudyAudioMeaning({ truth } = {}) {
+  return strategyTruthPresentation(truth).audio;
 }
 
 export function installExperienceEventsBridge(browserWindow) {
@@ -396,6 +392,7 @@ export function installExperienceEventsBridge(browserWindow) {
       token,
       comparisonState,
       feedbackSemantics,
+      truth,
       chosenActionType,
       accepted,
     } = {}) {
@@ -407,7 +404,7 @@ export function installExperienceEventsBridge(browserWindow) {
         payload: {
           comparisonState,
           feedbackSemantics,
-          studyAudioMeaning: trainingStudyAudioMeaning({ comparisonState, feedbackSemantics }),
+          studyAudioMeaning: trainingStudyAudioMeaning({ truth }),
           accepted: accepted === true,
           chosenActionType: chosenActionType ?? null,
         },

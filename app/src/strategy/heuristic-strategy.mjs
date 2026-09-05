@@ -100,7 +100,7 @@ function preflopCandidate(decisionContext) {
     },
     actions: result.actions,
     recommendedLabel: actionLabel.toUpperCase(),
-    explanation: `Mathematical Fallback suggests ${actionLabel} based on hand playability & position.`,
+    explanation: `The heuristic baseline prefers ${actionLabel} using approximate hand and position rules.`,
     details: result.details,
   };
 }

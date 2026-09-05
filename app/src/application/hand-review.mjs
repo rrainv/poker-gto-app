@@ -1,3 +1,4 @@
+import { projectStrategyTruth, historicalStrategyTruth, summarizeStrategyTruth } from './strategy-truth.mjs';
 import { evaluateTrainingAnswer } from './training-answer-evaluation.mjs';
 import {
   STRATEGY_CLAIMS,
@@ -142,6 +143,7 @@ function resolveEvaluation(decision, strategyResult) {
     return evaluateTrainingAnswer({
       exerciseId: decision.decisionId,
       chosenActionType: decision.chosenAction.type,
+      chosenAction: decision.chosenAction,
       strategyResult,
       decisionContext: decision.decisionContext,
     });
@@ -183,27 +185,16 @@ function limitationCodes(decision, policy, distribution) {
   return [...codes];
 }
 
-function comparisonFor(policy, evaluation, limitationCodeList) {
-  const permitted = canStrategyClaim(policy, STRATEGY_CLAIMS.COMPARATIVE_GRADING)
-    || canStrategyClaim(policy, STRATEGY_CLAIMS.NORMATIVE_GRADING);
-  if (!permitted || !evaluation) {
-    return {
-      state: HAND_REVIEW_COMPARISONS.UNAVAILABLE,
-      semantics: 'unavailable',
-      chosenProbability: null,
-      highestProbability: null,
-      highestActionType: null,
-      probabilityGap: null,
-    };
-  }
+function comparisonFor(policy, evaluation, limitationCodeList, truth) {
+  const comparison = truth.comparison;
   return {
-    state: COMPARISON_BY_GRADE[evaluation.grade] ?? HAND_REVIEW_COMPARISONS.UNAVAILABLE,
-    semantics: policy.trainingSemantics,
-    chosenProbability: evaluation.chosenProbability,
-    highestProbability: evaluation.bestProbability,
-    highestActionType: evaluation.bestStrategyAction?.type ?? null,
-    probabilityGap: evaluation.explanationData?.probabilityGap ?? null,
-    actionFamilyOnly: limitationCodeList.includes('sizing_not_compared'),
+    state: truth.state === 'normative_assessment' ? truth.outcome === 'supported' ? 'matches' : 'differs'
+      : comparison?.kind ?? 'unavailable',
+    semantics: truth.state, truth,
+    chosenProbability: comparison?.chosenProbability ?? null,
+    highestProbability: comparison?.highestProbability ?? null,
+    highestActionType: evaluation?.bestStrategyAction?.type ?? null,
+    probabilityGap: comparison ? evaluation?.explanationData?.probabilityGap ?? null : null,
   };
 }
 
@@ -229,11 +220,13 @@ function sourcePresentation(policy) {
 }
 
 function projectDecision(decision, strategyResult, replayPoint) {
-  const policy = resolveStrategyClaimPolicy(strategyResult);
   const evaluation = resolveEvaluation(decision, strategyResult);
+  const truth = evaluation?.truth ?? projectStrategyTruth({ strategyResult, decisionContext: decision.decisionContext,
+    chosenAction: { type: decision.chosenAction?.type, amountBb: Number.isSafeInteger(decision.chosenAction?.amountToMilliBb) ? decision.chosenAction.amountToMilliBb / 1000 : null } });
+  const policy = truth.claimPolicy;
   const distribution = distributionFor(strategyResult, policy);
   const limitations = limitationCodes(decision, policy, distribution);
-  const comparison = comparisonFor(policy, evaluation, limitations);
+  const comparison = comparisonFor(policy, evaluation, limitations, truth);
   const context = decision.decisionContext;
   const actionSequence = Number.isSafeInteger(decision.chosenActionResult?.actionSequence)
     ? decision.chosenActionResult.actionSequence
@@ -281,16 +274,12 @@ function projectDecision(decision, strategyResult, replayPoint) {
     legalAlternatives: legalAlternatives(decision.legalActions),
     strategyResult,
     claimPolicy: policy,
+    truth,
     source: sourcePresentation(policy),
     distribution,
     comparison,
     limitations,
-    reviewPriority: Number.isFinite(comparison.probabilityGap)
-      ? {
-        kind: 'reference_disagreement',
-        value: comparison.probabilityGap,
-      }
-      : null,
+    reviewPriority: truth.learningEligibility.remediation ? { kind: 'normative_remediation', value: 1 } : null,
   };
 }
 
@@ -328,7 +317,8 @@ function overviewFor(decisions, completedHandResult, heroPlayerId, selectedIndex
     generalizedDecisionCount: decisions.filter((decision) => (
       decision.source.coverage === 'generalized'
     )).length,
-    alignmentSummaryPermitted: comparable.length > 0,
+    truthSummary: summarizeStrategyTruth(decisions.map((decision) => decision.truth)),
+    alignmentSummaryPermitted: false, // Deprecated: consumers use categorized truthSummary.
     alignmentCounts,
     sourceIds,
     selectedReference: decisions[selectedIndex]?.source ?? null,

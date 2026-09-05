@@ -2,11 +2,11 @@
 
 Status: `ACCOUNT-002A` implementation authority, refined by `ACCOUNT-002AR` and consumed by `ACCOUNT-002B-A`
 
-Date: August 17, 2026
+Date: September 4, 2026
 
 ## Scope
 
-ACCOUNT-002A/AR adds real provider authentication, required remote account-profile metadata, explicit identity linking, and discoverable account UX. The implemented signed-out product state is non-persistent **Guest Mode** for account-gated domains. The accepted long-term product model is now a durable anonymous device-local Guest profile, distinct from every authenticated owner; `IDENTITY-LIFECYCLE-001` owns that migration and one cross-surface owner/generation/disposal lifecycle. Guest data remains local unless a later explicit adoption/sync contract says otherwise. `ACCOUNT-002B-A` permits only an authenticated, currently validated session with explicit identity-scoped opt-in to synchronize Saved Hands/Spots.
+ACCOUNT-002A/AR adds real provider authentication, required remote account-profile metadata, explicit identity linking, and discoverable account UX. `IDENTITY-LIFECYCLE-001A` now makes the signed-out identity a stable anonymous Device Guest, distinct from every authenticated owner, and supplies the shared owner/generation/abort boundary. Slice B enables Guest-owned Saved, Personal Strategy, and Training Memory locally through lifecycle scopes; Guest remains ineligible for sync. `ACCOUNT-002B-A` permits only an authenticated, currently validated session with explicit identity-scoped opt-in to synchronize Saved Hands/Spots.
 
 Explicit sign-out is an access boundary, not deletion: authenticated-owner bytes may remain stored, but every authenticated-owner query, mounted view, late generation, and cached repository must become inaccessible immediately. `AUTH-TRAINING-MEMORY-001` is human/security accepted: Training Memory now resolves an authentication-aware owner and generation instead of treating the account registry's retained storage identity as authorization.
 
@@ -26,10 +26,10 @@ ProviderIdentityMapping v1
 Riverline account identity service
         |
         v
-RiverlineIdentity v1 + identity-scoped local domains
+RiverlineIdentity v2 + identity-scoped local domains
 ```
 
-An external provider subject is never a Riverline owner ID. Email, display name, username, and provider subject are not poker-domain keys. Legacy Local Profile bytes remain in the account registry solely for explicit claim/recovery and are invisible to Guest.
+An external provider subject is never a Riverline owner ID. Email, display name, username, and provider subject are not poker-domain keys. The account registry contains exactly one provider-unbound Device Guest identity; its domain bindings authorize the local learning workspace under the current lifecycle scope.
 
 ## Provider selection
 
@@ -95,7 +95,7 @@ ProviderIdentityMapping
   lastAuthenticatedAt
 ```
 
-Mappings live in the account IndexedDB database's `providerIdentityMappings` store. The physical account database is version `2`; the v1-to-v2 upgrade adds the store and updates physical metadata without rewriting Saved or Personal Strategy data. Mappings are excluded from normal study-data exports.
+Mappings live in the account IndexedDB database's `providerIdentityMappings` store. The physical account database is now version `4`; the historical v1-to-v2 upgrade added the mapping store and updates physical metadata without rewriting Saved or Personal Strategy data. Mappings are excluded from normal study-data exports.
 
 Provider email is not persisted in the mapping and is never matched to another mapping. Two provider subjects with the same email create two Riverline identities unless a future explicit provider-link workflow says otherwise.
 
@@ -113,46 +113,39 @@ After provider authentication:
 
 1. AuthenticationService looks up the exact provider/project/subject mapping.
 2. If found, it refreshes `lastAuthenticatedAt` and activates the same Riverline identity.
-3. If no local mapping exists and the remote profile is not yet bound, Riverline activates the hidden legacy identity only inside the authenticated claim decision and requires an explicit choice: claim existing data, start separately, or cancel.
+3. If neither a local mapping nor remote binding exists, bounded meaningful-data detection requires Move / Keep Separate / Cancel for a nonempty Guest. An empty Guest automatically uses Keep Separate without publishing a choice.
 4. No domain ownership changes occur before that choice.
 5. If an older authenticated user has no `public.profiles` row, `profile_setup_required` provides a resumable recovery form; account-owned domains remain unavailable until completion.
 
 Provider display metadata is only a bounded initial display-name suggestion for a separately created profile. It never overwrites an existing Riverline display name.
 
-## Link current local data
+## First-sign-in promotion and recovery
 
-One strict account-database transaction:
+`IDENTITY-LIFECYCLE-001C` uses the versioned journal in `ACCOUNT_IDENTITY_SPEC.md`. Move preserves the Guest identity ID, every domain-native binding and namespace, and all local domain records, including Training Memory's stable persisted owner reference. One reserved new empty Guest replaces it. Keep Separate preserves the original Guest and creates a distinct reserved account with fresh bindings. Neither operation copies, merges or imports records, nor enables sync.
 
-1. verifies the active target is still the expected Local Profile and the provider mapping is new;
-2. retains the existing Riverline `identityId`;
-3. transitions its existing v1 kind vocabulary from `local` to `authenticated_future`;
-4. updates only account ownership bindings' owner type while preserving domain owner IDs and storage scopes;
-5. creates a new empty legacy Local identity with fresh namespaced bindings for a possible later explicit claim; it is not Guest Mode and is not exposed on sign-out;
-6. adds ProviderIdentityMapping v1 and commits once with the authenticated identity active.
+All sign-in, sign-up, profile completion, restore and refresh activation paths converge on the same account-validation boundary. An existing mapping requires agreement with the remote profile and local identity/bindings; a remote-only binding without a local mapping fails closed into recovery. Email is never ownership evidence. No already-bound account receives a Guest migration dialog or meaningful-data query.
 
-The historical `authenticated_future` value remains in RiverlineIdentity v1 to avoid a semantic schema rewrite; in ACCOUNT-002A it represents an authenticated Riverline identity.
+New-account transitions persist local reservations before any remote binding. The remote RPC is idempotent for the same reserved ID. A failed confirmation read after the RPC is an ambiguous remote outcome and retains recovery rather than promising rollback. Local finalization is one abortable registry transaction; authenticated state publishes only afterward. Provider operations are serialized and lifecycle/auth generation checks reject stale choices and completions.
 
-Saved IDs, annotations, revisions, tombstones, Replay sources, Personal Strategy profile/mode/evidence/contradiction/session IDs, and domain records are not rewritten. The remote profile binding is reserved first so another account cannot claim the same stable Riverline ID. If the following IndexedDB transaction fails, all local records roll back, the original bytes remain untouched, and retry safely reuses that same reserved ID; no Guest/account query crosses owners during the incomplete state.
+Recovery resumes the same recorded provider subject, identity and replacement Guest reservations. Missing provider sessions permit recovery sign-in to that same account; another subject cannot progress, create a profile, receive Guest work, or replace the reservation. Cancel before any remote request returns to Guest. An interrupted remote request remains recovery-only until safely resolved. Provider cleanup failure never grants local account access.
 
-## Start separately and existing accounts
-
-Start separately atomically creates one authenticated Riverline identity, fresh Saved and Personal Strategy bindings/namespaces, one provider mapping, and active-identity metadata. The Local Profile remains untouched. Repeated authentication for the same provider/project/subject activates the existing mapped identity and never duplicates it.
+The semantic Move / Keep Separate dialog uses EN/RU/HE translations, a focus trap and restoration, and an inert background. Unresolved choices expose Guest only; account profile details render only after `signed_in`. Recovery opens the Account surface with Try again and, where a journal exists, the sign-in form. Browser/Electron visual, keyboard and live Supabase acceptance remain unverified in Slice C.
 
 ## Guest, account switching, and sign-out
 
 The global top-right account control is the primary discovery surface. Guest sees an explicit Guest/Sign-in affordance. A signed-in account shows its initial/display name, with `@username` and account status in the accessible menu. Account/Profile is a focused modal; Settings retains only a secondary route. “Use another account” signs out to Guest, then requires fresh provider authentication. Locally cached identity knowledge is never enough to reveal account-owned data.
 
-Activation changes only `activeIdentityId`. Saved, Home, Personal Strategy, and Range Calibration resolve their binding again. Object ownership is never mutated merely to switch views.
+Activation advances the application lifecycle generation and updates registry `activeIdentityId`; the stored ID alone never authorizes access. Current scopes are aborted before Saved, Home, Personal Strategy, Range Calibration, or presentation code may resolve a different owner. Object ownership is never mutated merely to switch views.
 
 Range Calibration waits for auth restoration before mounting. A live identity-change event disposes its repository/controller, removes identity-scoped DOM and global listeners, and remounts from the new binding. Home reloads its current-user view model on the same event.
 
-Explicit sign-out first invalidates the local authentication generation and enters Guest Mode, then asks Supabase to invalidate the provider session. Training Memory access is therefore revoked before remote cleanup finishes. Provider sign-out failure may report incomplete cleanup but cannot restore the prior local account scope. Authenticated and legacy bytes remain intact but unreachable through Guest queries; re-authentication of the mapped account makes that account's Training Memory accessible again. No purge or remote deletion is implemented. The durable anonymous Device Guest and generalized cross-surface lifecycle remain future `IDENTITY-LIFECYCLE-001` work.
+Explicit sign-out first invalidates authentication and identity lifecycle generations, clears owner-sensitive presentation, and activates the stable Device Guest locally. Only then does it ask Supabase to invalidate the provider session. Provider sign-out failure may report incomplete cleanup but cannot restore the prior local account scope. Authenticated bytes and unsynced queues remain intact but unreachable through Guest queries; re-authentication of the mapped account may activate only that account after provider/profile/mapping/binding validation. No purge or remote deletion is implemented.
 
 `PersistentIdentityGate.requirePersistentIdentity({ intent, resumeAction })` is the single durable-feature promotion seam. Saved Study and Range Calibration retain the in-memory action/context, open the Account/Profile flow, execute the durable callback exactly once only after `signed_in`, and reject cancellation with `persistent_identity_cancelled` before any reference or domain record is written. Home returns a dedicated Guest model without issuing user-domain queries.
 
 ## Session restoration and offline behavior
 
-Startup order is account registry, bounded provider restoration/profile validation, then guarded identity-scoped consumers. The adapter reads the SDK session and validates the user with a five-second bound. A mapped valid session activates its Riverline identity. Missing, expired, timed-out, offline, malformed, or unconfigured auth enters Guest Mode without querying account-owned domains.
+Without a pending transition, startup order is account registry migration/validation, Device Guest activation, bounded provider restoration/profile validation, then guarded identity-scoped consumers. The adapter reads the SDK session and validates the user with a five-second bound. A mapped session activates its authenticated Riverline identity only after provider identity, remote profile binding when configured, local mapping, identity kind, and domain bindings agree. Missing, expired, timed-out, offline, malformed, or unconfigured auth leaves Device Guest active without querying account-owned domains; ambiguous local ownership enters `recovery_required` instead of falling back to a retained account.
 
 Riverline never blocks general startup indefinitely on auth. Account caches fail closed: without a validated restored session/profile, their bytes remain stored but invisible. Core analysis, Training, Equity, Guide, theme, language, audio, and other device preferences remain available.
 

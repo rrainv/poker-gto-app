@@ -4,6 +4,16 @@
 
 Planning navigation: [PRODUCT_BACKLOG.md](../PRODUCT_BACKLOG.md), [CURRENT_PHASE.md](../CURRENT_PHASE.md), and [ROADMAP.md](../ROADMAP.md).
 
+## Authorized Intelligence v1 contract
+
+The explicit `PERSONAL-STRATEGY-INTELLIGENCE-001` implementation instruction authorizes arbitrary user-named Game Setups, any positive number of independently named Approaches, and a primary editable **What Riverline understands** workspace fed by structured and natural-language input. [Intelligence v1 specification](../PERSONAL_STRATEGY_INTELLIGENCE_V1_SPEC.md) owns the new versioned persistence/qualitative/language contracts; focused integration verification passes; human acceptance remains pending. This section records scope and authority, not an accepted checkpoint or roadmap reprioritization.
+
+Natural-language teaching preserves original wording, negation, scope, uncertainty, and user confirmation. Provisional interpretations may influence a local follow-up; only confirmed intent becomes immutable evidence. Corrections supersede with history, exact frequencies remain explicit, and duplicate Approaches freeze source evidence without live inheritance. No fixed Home/ClubGG model, three-range ceiling, or universal Tight/Loose coordinate is retained.
+
+Range summaries consume deterministic hand-family facts. Personal-to-Personal comparison retains exact context compatibility and direct-vs-exact precision. Heuristic/reference comparison remains source-labelled, region-coverage-bound comparative language; no action-level assessment grants normative range wording. The shared explanation envelope is reusable later across other surfaces without migrating them now. Training observations, Hero intent, reference strategy, opponent policy, and normative assessment remain permanently separate.
+
+Local store/profile/mode/export v2 and IndexedDB backend v3 retain legacy identities and evidence. Personal Strategy sync v1 must report upgrade-required before transport can run; the new local schema does not authorize a remote migration or upload. See the owning specification for exact APIs, limitations, and verification evidence.
+
 ## Accepted product direction — August 26, 2026
 
 The human product review for [`PERSONAL-STRATEGY-002R`](../PERSONAL_STRATEGY_002R_REVIEW.md) is accepted. The durable user job is:
@@ -34,7 +44,7 @@ Accepted product rules:
 - With fewer than five compatible observed decisions, future observed comparison may show individual history only. Stronger pattern thresholds and compatibility rules are deliberately deferred to the analytics implementation ticket.
 - Append-only evidence history, grouped undo/corrections, Duplicate Approach, immutable material Game setup versions, and restore-through-new-correction/version are accepted. Branches, arbitrary historical rollback, and Git-like version management are deferred.
 
-`PERSONAL-STRATEGY-003A` owns the new versioned product/storage migration and first-value reset. Until that implementation is accepted, current Profile/Mode schemas and legacy internal names remain implementation truth only where compatibility requires them.
+The earlier `PERSONAL-STRATEGY-003A` ownership records the accepted reset direction. The explicit Intelligence implementation instruction now owns the bounded versioned migration and first-value implementation described above; acceptance and live sequencing remain with their owning planning documents. Profile/Mode names remain internal stable identities where compatibility requires them.
 
 ## Product purpose
 
@@ -59,7 +69,7 @@ The durable foundation is user evidence. Inference, summaries, comparisons, teac
 
 Current implemented contracts remain in:
 
-- [PERSONAL_STRATEGY_FOUNDATION_SPEC.md](../PERSONAL_STRATEGY_FOUNDATION_SPEC.md): profiles, exactly three discrete user-named Modes, objective contexts, immutable direct and Training evidence contracts, revision history, sessions, repository, export/import, and durability;
+- [PERSONAL_STRATEGY_FOUNDATION_SPEC.md](../PERSONAL_STRATEGY_FOUNDATION_SPEC.md): current v2 Game Setups/Approaches plus legacy v1 compatibility, objective contexts, immutable direct and Training evidence contracts, revision history, sessions, repository, export/import, and durability;
 - [PERSONAL_STRATEGY_ACTION_CONTRACT_SPEC.md](../PERSONAL_STRATEGY_ACTION_CONTRACT_SPEC.md): structured action identities, dominant versus exact precision, action-aware preflop contexts, and compatibility boundaries;
 - [RANGE_INFERENCE_SPEC.md](../RANGE_INFERENCE_SPEC.md): source-preserving evidence view, conflicts, categorical same-context inference, abstention, ordinal uncertainty, support facts, and recomputable snapshots;
 - [ADAPTIVE_RANGE_CALIBRATION_SPEC.md](../ADAPTIVE_RANGE_CALIBRATION_SPEC.md): deterministic question value, Quick/Standard/Deep intents, profile-readiness and clarification flow, Skip/Not sure semantics, progress, and resume;
@@ -70,7 +80,7 @@ Current implemented contracts remain in:
 - [PERSONAL_STRATEGY_SYNC_SPEC.md](../PERSONAL_STRATEGY_SYNC_SPEC.md): explicit opt-in sync of source profiles, Modes, evidence, and sessions while inferred output remains local/recomputable;
 - [UNIFIED_RANGE_INTELLIGENCE_SPEC.md](../UNIFIED_RANGE_INTELLIGENCE_SPEC.md): the shared authority and consumer-adapter direction.
 
-The current implemented scope is primarily preflop RFI Fold/Raise over canonical 169 hand classes. Class-level Matrix, Builder, Teacher, categorical inference, adaptive Calibration, context transfer, and optional sync are automated legacy-named checkpoints with human Firefox acceptance still separately tracked. The wider action contract can store additional direct preflop roles, but the accepted primary product must not imply equally mature inference outside first-in/RFI. There is no current Personal Strategy provider in StrategyProvider, live Training evidence opt-in, postflop model, combo editor, writable multi-head resolution, accepted Game setup/Approach migration, or narrative Personal Insights runtime.
+The current implemented scope is primarily preflop RFI Fold/Raise over canonical 169 hand classes. Class-level Matrix, Builder, Teacher, categorical inference, adaptive Calibration, context transfer, and optional sync are automated legacy-named checkpoints with human Firefox acceptance still separately tracked. The wider action contract can store additional direct preflop roles, but the accepted primary product must not imply equally mature inference outside first-in/RFI. There is no current Personal Strategy provider in StrategyProvider, live Training evidence opt-in, postflop model, combo editor, or writable multi-head resolution. The Intelligence v1 migration, confirmed qualitative teaching, and bounded deterministic narrative facts are implemented under integration; they do not yet constitute human acceptance or a general Personal Insights model runtime.
 
 ## Desired future behavior
 

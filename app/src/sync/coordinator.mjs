@@ -53,10 +53,26 @@ export function createSyncCoordinator({
   let preference = Object.freeze({ enabled: false, decided: false });
   let state = Object.freeze({
     schemaVersion: 'riverline-sync-status/v1', state: SYNC_UI_STATES.DISABLED,
-    enabled: false, decided: false, pendingCount: 0, conflictCount: 0, errorCount: 0,
+    enabled: false, decided: false, pendingCount: 0, conflictCount: 0, errorCount: 0, syncedCount: 0,
   });
   let timer = null;
   let running = null;
+  let activeDomainAdapter = domainAdapter;
+  let activeRepository = repository;
+
+  function authorized(snapshot = context) {
+    return Boolean(snapshot.identityId && snapshot.authenticated && snapshot.sessionValid
+      && (!snapshot.lifecycleScope || (snapshot.lifecycleScope.isCurrent()
+        && snapshot.lifecycleScope.identityKind === 'authenticated_account'
+        && snapshot.lifecycleScope.identityId === snapshot.identityId)));
+  }
+
+  function assertCurrent(identityId, token, { requireEnabled = true } = {}) {
+    if (generation !== token || context.identityId !== identityId || !authorized()
+      || (requireEnabled && !preference.enabled)) {
+      throw Object.assign(new Error('Sync ownership scope is stale'), { code: 'sync_scope_stale' });
+    }
+  }
 
   function publish(nextState, details = {}) {
     state = Object.freeze({ ...state, ...details, state: nextState });
@@ -65,7 +81,7 @@ export function createSyncCoordinator({
   }
 
   function eligible(snapshot = context) {
-    return Boolean(snapshot.identityId && snapshot.authenticated && snapshot.sessionValid && preference.enabled);
+    return authorized(snapshot) && preference.enabled;
   }
 
   function current(identityId, token) {
@@ -86,13 +102,20 @@ export function createSyncCoordinator({
   }
 
   async function refreshStatus(fallback = null) {
-    if (!context.identityId || !preference.enabled) {
+    const identityId = context.identityId;
+    const token = generation;
+    if (!authorized() || !preference.enabled) {
       return publish(preference.decided ? SYNC_UI_STATES.SAVED_LOCALLY : SYNC_UI_STATES.DISABLED, {
         enabled: false, decided: preference.decided,
-        pendingCount: 0, conflictCount: 0, errorCount: 0,
+        pendingCount: 0, conflictCount: 0, errorCount: 0, syncedCount: 0,
       });
     }
-    const summary = await repository.summary(context.identityId);
+    let summary;
+    try { summary = await activeRepository.summary(context.identityId); } catch (error) {
+      if (!current(identityId, token)) return state;
+      throw error;
+    }
+    if (!current(identityId, token)) return state;
     let next = fallback;
     if (!next) {
       if (summary.conflictCount) next = SYNC_UI_STATES.CONFLICT;
@@ -103,40 +126,46 @@ export function createSyncCoordinator({
     return publish(next, { ...summary, enabled: true, decided: true });
   }
 
-  async function enqueueObject(identityId, object) {
-    if (domainAdapter.supports && !domainAdapter.supports(object)) return null;
-    const objectId = domainAdapter.objectId?.(object) ?? object?.id;
-    const record = await repository.getRecord(identityId, objectId);
-    const document = domainAdapter.serialize(object, {
+  async function enqueueObject(identityId, object, token = generation) {
+    assertCurrent(identityId, token);
+    const adapter = activeDomainAdapter;
+    await adapter.preflight?.();
+    assertCurrent(identityId, token);
+    if (adapter.supports && !adapter.supports(object)) return null;
+    const objectId = adapter.objectId?.(object) ?? object?.id;
+    const record = await activeRepository.getRecord(identityId, objectId);
+    assertCurrent(identityId, token);
+    const document = adapter.serialize(object, {
       remoteRevision: record?.remoteRevision ?? 0,
       baseObject: record?.baseObject ?? null,
     });
     if (record?.state === 'synced' && record.remoteRevision === document.revision
-      && domainAdapter.same(record.baseObject, document)) return null;
+      && adapter.same(record.baseObject, document)) return null;
     const now = timestamp(clock);
     const operation = createSyncOperation({
       operationId: idFactory('sync-op'), identityId, object: document,
       expectedRemoteRevision: record?.remoteRevision ?? 0, createdAt: now,
       domain,
-      kind: domainAdapter.operationKind?.(object, document) ?? 'upsert_object',
-      validateObject: domainAdapter.validateRemote,
+      kind: adapter.operationKind?.(object, document) ?? 'upsert_object',
+      validateObject: adapter.validateRemote,
     });
-    return repository.enqueue(operation);
+    return activeRepository.enqueue(operation);
   }
 
   async function applyRemote(identityId, token, localObject, remoteRecord) {
     if (!current(identityId, token)) return false;
-    await domainAdapter.applyRemote(remoteRecord.object, {
+    await activeDomainAdapter.applyRemote(remoteRecord.object, {
       expectedRevision: localObject?.revision ?? null,
     });
     if (!current(identityId, token)) return false;
-    await repository.markSynced(identityId, remoteRecord.object, remoteRecord.serverUpdatedAt);
+    await activeRepository.markSynced(identityId, remoteRecord.object, remoteRecord.serverUpdatedAt);
+    if (!current(identityId, token)) return false;
     onRemoteApplied(Object.freeze({ identityId, objectId: remoteRecord.object.id }));
     return true;
   }
 
   async function createConflict(identityId, localObject, remoteRecord, baseObject = null) {
-    await repository.markConflict(identityId, {
+    await activeRepository.markConflict(identityId, {
       schemaVersion: domainAdapter.conflictSchemaVersion ?? 'saved-study-sync-conflict/v1',
       reconciliationVersion: domainAdapter.reconciliationVersion ?? SYNC_RECONCILIATION_VERSION,
       objectId: remoteRecord.object.id,
@@ -150,50 +179,56 @@ export function createSyncCoordinator({
 
   async function reconcile(identityId, token, remoteRecord) {
     if (!current(identityId, token)) return;
-    const localObject = await domainAdapter.getLocalObject(remoteRecord.object.id);
+    const adapter = activeDomainAdapter;
+    const localObject = await adapter.getLocalObject(remoteRecord.object.id);
     if (!current(identityId, token)) return;
-    const record = await repository.getRecord(identityId, remoteRecord.object.id);
+    const record = await activeRepository.getRecord(identityId, remoteRecord.object.id);
+    if (!current(identityId, token)) return;
     if (record?.remoteRevision && remoteRecord.object.revision < record.remoteRevision) return;
     if (!localObject) {
       await applyRemote(identityId, token, null, remoteRecord);
       return;
     }
-    const localDocument = domainAdapter.serialize(localObject);
-    if (domainAdapter.same(localDocument, remoteRecord.object)) {
-      await repository.markSynced(identityId, remoteRecord.object, remoteRecord.serverUpdatedAt);
+    const localDocument = adapter.serialize(localObject);
+    if (adapter.same(localDocument, remoteRecord.object)) {
+      await activeRepository.markSynced(identityId, remoteRecord.object, remoteRecord.serverUpdatedAt);
       return;
     }
     const base = record?.baseObject ?? null;
-    if (domainAdapter.mergeRemote) {
-      const mergedDocument = await domainAdapter.mergeRemote({
+    if (adapter.mergeRemote) {
+      const mergedDocument = await adapter.mergeRemote({
         localObject,
         localDocument,
         remoteDocument: remoteRecord.object,
         baseObject: base,
       });
+      if (!current(identityId, token)) return;
       if (mergedDocument) {
-        await domainAdapter.applyRemote(mergedDocument, {
+        await adapter.applyRemote(mergedDocument, {
           expectedRevision: localObject?.revision ?? null,
         });
         if (!current(identityId, token)) return;
-        await repository.markSynced(identityId, remoteRecord.object, remoteRecord.serverUpdatedAt);
-        if (!domainAdapter.same(mergedDocument, remoteRecord.object)) {
-          const mergedLocal = await domainAdapter.getLocalObject(remoteRecord.object.id);
-          if (mergedLocal) await enqueueObject(identityId, mergedLocal);
+        await activeRepository.markSynced(identityId, remoteRecord.object, remoteRecord.serverUpdatedAt);
+        if (!current(identityId, token)) return;
+        if (!adapter.same(mergedDocument, remoteRecord.object)) {
+          const mergedLocal = await adapter.getLocalObject(remoteRecord.object.id);
+          if (!current(identityId, token)) return;
+          if (mergedLocal) await enqueueObject(identityId, mergedLocal, token);
         }
+        if (!current(identityId, token)) return;
         onRemoteApplied(Object.freeze({ identityId, objectId: remoteRecord.object.id }));
         return;
       }
     }
     if (base) {
-      const localChanged = !domainAdapter.same(localDocument, base);
-      const remoteChanged = !domainAdapter.same(remoteRecord.object, base);
+      const localChanged = !adapter.same(localDocument, base);
+      const remoteChanged = !adapter.same(remoteRecord.object, base);
       if (!localChanged && remoteChanged) {
         await applyRemote(identityId, token, localObject, remoteRecord);
         return;
       }
       if (localChanged && !remoteChanged) {
-        await enqueueObject(identityId, localObject);
+        await enqueueObject(identityId, localObject, token);
         return;
       }
     }
@@ -202,16 +237,19 @@ export function createSyncCoordinator({
 
   async function push(identityId, token, { force = false } = {}) {
     const now = timestamp(clock);
-    const operations = await repository.listDueOperations(identityId, now, batchSize, force);
+    const operations = await activeRepository.listDueOperations(identityId, now, batchSize, force);
     for (const operation of operations) {
       if (!current(identityId, token)) return { stopped: true };
       try {
+        // Revalidate local schema even for operations queued before a migration.
+        await activeDomainAdapter.preflight?.();
+        if (!current(identityId, token)) return { stopped: true };
         const result = await remoteAdapter.pushOperation({
           domain, identityId, operation,
         });
         if (!current(identityId, token)) return { stopped: true };
         if (result.status === 'acknowledged') {
-          await repository.acknowledge(
+          await activeRepository.acknowledge(
             identityId, operation.operationId, result.record.object, result.record.serverUpdatedAt,
           );
         } else if (result.record) {
@@ -222,10 +260,11 @@ export function createSyncCoordinator({
           });
         }
       } catch (error) {
+        if (!current(identityId, token)) return { stopped: true };
         const kind = error?.kind ?? 'permanent';
         const delay = retryDelay(operation.attempts);
         const nextAttemptAt = new Date(Date.parse(timestamp(clock)) + delay).toISOString();
-        await repository.fail(identityId, operation, {
+        await activeRepository.fail(identityId, operation, {
           code: error?.code ?? 'sync_failed', nextAttemptAt, persistent: kind === 'permanent',
         });
         if (kind === 'auth') return { auth: true };
@@ -240,7 +279,7 @@ export function createSyncCoordinator({
   }
 
   async function pull(identityId, token) {
-    let cursor = await repository.getCursor(identityId);
+    let cursor = await activeRepository.getCursor(identityId);
     for (let batch = 0; batch < maxPullBatches; batch += 1) {
       if (!current(identityId, token)) return { stopped: true };
       let result;
@@ -253,14 +292,15 @@ export function createSyncCoordinator({
         if (error?.kind === 'transient') return { offline: true, errorCode: error?.code };
         return { error: true, errorCode: error?.code ?? 'sync_failed' };
       }
-      const records = domainAdapter.orderRemoteRecords
-        ? domainAdapter.orderRemoteRecords(result.records)
+      if (!current(identityId, token)) return { stopped: true };
+      const records = activeDomainAdapter.orderRemoteRecords
+        ? activeDomainAdapter.orderRemoteRecords(result.records)
         : result.records;
       for (const remoteRecord of records) await reconcile(identityId, token, remoteRecord);
       if (!current(identityId, token)) return { stopped: true };
       if (result.cursor) {
         cursor = result.cursor;
-        await repository.setCursor(identityId, cursor);
+        await activeRepository.setCursor(identityId, cursor);
       }
       if (!result.hasMore) break;
     }
@@ -268,13 +308,22 @@ export function createSyncCoordinator({
   }
 
   async function run({ force = false } = {}) {
-    if (running) return running;
+    if (running?.generation === generation) return running.promise;
     if (!eligible()) return refreshStatus();
     if (!online()) return refreshStatus(SYNC_UI_STATES.OFFLINE);
     const identityId = context.identityId;
     const token = generation;
-    running = (async () => {
+    const operation = (async () => {
       publish(SYNC_UI_STATES.SYNCING, { enabled: true, decided: true });
+      try {
+        await activeDomainAdapter.preflight?.();
+      } catch (error) {
+        if (!current(identityId, token)) return state;
+        await activeRepository.setDomainError(identityId, error?.code ?? 'sync_failed', timestamp(clock));
+        if (!current(identityId, token)) return state;
+        return refreshStatus(SYNC_UI_STATES.ERROR);
+      }
+      if (!current(identityId, token)) return state;
       const pushed = await push(identityId, token, { force });
       if (!current(identityId, token)) return state;
       if (pushed.auth) return refreshStatus(SYNC_UI_STATES.AUTH_PAUSED);
@@ -288,101 +337,171 @@ export function createSyncCoordinator({
         return refreshStatus(SYNC_UI_STATES.OFFLINE);
       }
       if (pulled.error) {
-        await repository.setDomainError(identityId, pulled.errorCode, timestamp(clock));
+        await activeRepository.setDomainError(identityId, pulled.errorCode, timestamp(clock));
+        if (!current(identityId, token)) return state;
         return refreshStatus(SYNC_UI_STATES.ERROR);
       }
-      await repository.clearDomainError(identityId);
+      await activeRepository.clearDomainError(identityId);
+      if (!current(identityId, token)) return state;
       return refreshStatus();
-    })().finally(() => { running = null; });
-    return running;
+    })().catch((error) => {
+      if (!current(identityId, token)) return state;
+      throw error;
+    }).finally(() => { if (running?.generation === token) running = null; });
+    running = { generation: token, promise: operation };
+    return operation;
   }
 
   return Object.freeze({
-    async activate({ identityId = null, authenticated = false, sessionValid = false } = {}) {
+    async activate({ identityId = null, authenticated = false, sessionValid = false,
+      lifecycleScope = null, domainAdapter: nextAdapter = domainAdapter } = {}) {
       generation += 1;
+      const token = generation;
       clearSchedule();
-      context = Object.freeze({ identityId, authenticated, sessionValid });
-      preference = identityId
-        ? Object.freeze(await repository.getPreference(identityId))
-        : Object.freeze({ enabled: false, decided: false });
+      context = Object.freeze({ identityId, authenticated, sessionValid, lifecycleScope });
+      activeDomainAdapter = nextAdapter;
+      activeRepository = lifecycleScope && repository.forLifecycleScope
+        ? repository.forLifecycleScope(lifecycleScope) : repository;
+      preference = Object.freeze({ enabled: false, decided: false });
+      publish(SYNC_UI_STATES.DISABLED, {
+        enabled: false, decided: false, pendingCount: 0, conflictCount: 0, errorCount: 0, syncedCount: 0,
+      });
+      if (!authorized()) return state;
+      let loaded;
+      try { loaded = await activeRepository.getPreference(identityId); } catch (error) {
+        if (generation !== token || !authorized()) return state;
+        throw error;
+      }
+      if (generation !== token || !authorized()) return state;
+      preference = Object.freeze(loaded);
+      if (preference.enabled) {
+        try { await activeDomainAdapter.preflight?.(); } catch (error) {
+          if (!current(identityId, token)) return state;
+          await activeRepository.setDomainError(identityId, error?.code ?? 'sync_failed', timestamp(clock));
+          if (!current(identityId, token)) return state;
+          return refreshStatus(SYNC_UI_STATES.ERROR);
+        }
+      }
       await refreshStatus();
-      if (eligible()) schedule(0, true);
+      if (current(identityId, token)) schedule(0, true);
       return state;
     },
     async getEnableSummary() {
-      if (!context.identityId || !context.authenticated) return Object.freeze({ itemCount: 0 });
-      return Object.freeze({ itemCount: (await domainAdapter.listLocalObjects()).length });
+      if (!authorized()) return Object.freeze({ itemCount: 0 });
+      const identityId = context.identityId;
+      const token = generation;
+      const objects = await activeDomainAdapter.listLocalObjects();
+      assertCurrent(identityId, token, { requireEnabled: false });
+      return Object.freeze({ itemCount: objects.length });
     },
     async enable() {
-      if (!context.identityId || !context.authenticated || !context.sessionValid) {
-        throw new RangeError('A valid authenticated session is required to enable sync');
+      if (!authorized()) throw new RangeError('A valid authenticated session is required to enable sync');
+      const identityId = context.identityId;
+      const token = generation;
+      const adapter = activeDomainAdapter;
+      const updated = await activeRepository.setPreference(identityId, true, timestamp(clock));
+      assertCurrent(identityId, token, { requireEnabled: false });
+      preference = Object.freeze(updated);
+      let objects;
+      try {
+        await adapter.preflight?.();
+        assertCurrent(identityId, token);
+        objects = await adapter.listLocalObjects();
+      } catch (error) {
+        if (!current(identityId, token)) throw error;
+        await activeRepository.setDomainError(identityId, error?.code ?? 'sync_failed', timestamp(clock));
+        if (current(identityId, token)) await refreshStatus(SYNC_UI_STATES.ERROR);
+        throw error;
       }
-      preference = Object.freeze(await repository.setPreference(context.identityId, true, timestamp(clock)));
-      const objects = await domainAdapter.listLocalObjects();
-      for (const object of objects) await enqueueObject(context.identityId, object);
+      assertCurrent(identityId, token);
+      for (const object of objects) await enqueueObject(identityId, object, token);
+      assertCurrent(identityId, token);
       await refreshStatus();
-      schedule(0);
+      if (current(identityId, token)) schedule(0);
       return Object.freeze({ itemCount: objects.length, state });
     },
     async disable() {
-      if (!context.identityId) return state;
+      if (!authorized()) return state;
       generation += 1;
+      const identityId = context.identityId;
+      const token = generation;
       clearSchedule();
-      preference = Object.freeze(await repository.setPreference(context.identityId, false, timestamp(clock)));
+      const updated = await activeRepository.setPreference(identityId, false, timestamp(clock));
+      assertCurrent(identityId, token, { requireEnabled: false });
+      preference = Object.freeze(updated);
       return refreshStatus();
     },
-    async recordLocalMutation(object) {
-      if (!eligible()) return Object.freeze({ queued: false });
+    async recordLocalMutation(object, { lifecycleScope = null } = {}) {
+      if (!eligible() || (lifecycleScope && (!lifecycleScope.isCurrent()
+        || lifecycleScope.identityId !== context.identityId))) return Object.freeze({ queued: false });
+      const identityId = context.identityId;
+      const token = generation;
       try {
-        await enqueueObject(context.identityId, object);
+        await enqueueObject(identityId, object, token);
       } catch (error) {
+        if (!current(identityId, token)) return Object.freeze({ queued: false });
+        await activeRepository.setDomainError(identityId, error?.code ?? 'sync_failed', timestamp(clock));
+        if (!current(identityId, token)) return Object.freeze({ queued: false });
         publish(SYNC_UI_STATES.ERROR, { enabled: true, decided: true, errorCount: 1 });
         throw error;
       }
+      if (!current(identityId, token)) return Object.freeze({ queued: false });
       await refreshStatus(online() ? SYNC_UI_STATES.SAVED_LOCALLY : SYNC_UI_STATES.OFFLINE);
-      schedule(0);
-      return Object.freeze({ queued: true });
+      if (current(identityId, token)) schedule(0);
+      return Object.freeze({ queued: current(identityId, token) });
     },
     syncNow: () => run({ force: true }),
     getState: () => state,
     async listConflicts() {
-      return context.identityId ? repository.listConflicts(context.identityId) : [];
+      if (!eligible()) return [];
+      const identityId = context.identityId;
+      const token = generation;
+      let conflicts;
+      try { conflicts = await activeRepository.listConflicts(identityId); } catch (error) {
+        if (!current(identityId, token)) return [];
+        throw error;
+      }
+      return current(identityId, token) ? conflicts : [];
     },
     async resolveConflict(objectId, choice) {
       if (!eligible()) throw new RangeError('Sync is not active');
       const identityId = context.identityId;
-      const conflict = await repository.getConflict(identityId, objectId);
+      const token = generation;
+      const adapter = activeDomainAdapter;
+      const guard = () => assertCurrent(identityId, token);
+      const conflict = await activeRepository.getConflict(identityId, objectId);
+      guard();
       if (!conflict) throw new RangeError('Sync conflict is unavailable');
-      const remoteRecord = {
-        object: conflict.remoteObject,
-        serverUpdatedAt: conflict.remoteServerUpdatedAt,
-      };
-      if (choice === 'keep_cloud') {
-        await domainAdapter.applyRemote(conflict.remoteObject, {
+      if (choice === 'keep_cloud' || choice === 'keep_both') {
+        await adapter.applyRemote(conflict.remoteObject, {
           expectedRevision: conflict.localObject.revision,
         });
-        await repository.markSynced(identityId, conflict.remoteObject, conflict.remoteServerUpdatedAt);
+        guard();
+        await activeRepository.markSynced(identityId, conflict.remoteObject, conflict.remoteServerUpdatedAt);
+        guard();
+        if (choice === 'keep_both') {
+          const copy = await adapter.createConflictCopy(conflict.localObject, idFactory('saved-conflict'));
+          guard();
+          await enqueueObject(identityId, copy, token);
+          guard();
+        }
         onRemoteApplied(Object.freeze({ identityId, objectId }));
       } else if (choice === 'keep_device') {
-        const winner = await domainAdapter.prepareLocalWinner(conflict.localObject, conflict.remoteObject);
-        await domainAdapter.applyRemote(domainAdapter.serialize(winner), {
+        const winner = await adapter.prepareLocalWinner(conflict.localObject, conflict.remoteObject);
+        guard();
+        await adapter.applyRemote(adapter.serialize(winner), {
           expectedRevision: conflict.localObject.revision,
         });
-        await repository.markSynced(identityId, conflict.remoteObject, conflict.remoteServerUpdatedAt);
-        await enqueueObject(identityId, winner);
-      } else if (choice === 'keep_both') {
-        await domainAdapter.applyRemote(conflict.remoteObject, {
-          expectedRevision: conflict.localObject.revision,
-        });
-        await repository.markSynced(identityId, conflict.remoteObject, conflict.remoteServerUpdatedAt);
-        const copy = await domainAdapter.createConflictCopy(conflict.localObject, idFactory('saved-conflict'));
-        await enqueueObject(identityId, copy);
-        onRemoteApplied(Object.freeze({ identityId, objectId }));
+        guard();
+        await activeRepository.markSynced(identityId, conflict.remoteObject, conflict.remoteServerUpdatedAt);
+        guard();
+        await enqueueObject(identityId, winner, token);
+        guard();
       } else {
         throw new RangeError(`Unsupported conflict choice: ${choice}`);
       }
       await refreshStatus();
-      schedule(0);
+      if (current(identityId, token)) schedule(0);
       return state;
     },
     subscribe(listener) {
@@ -393,7 +512,7 @@ export function createSyncCoordinator({
     close() {
       generation += 1;
       clearSchedule();
-      return repository.close?.();
+      return activeRepository.close?.();
     },
   });
 }

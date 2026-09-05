@@ -207,16 +207,16 @@ export function createHomeViewModelController({
   }
 
   return Object.freeze({
-    async load() {
+    async load({ guest = false } = {}) {
       const [recentResult, reviewResult, mistakeResult, personalResult,
         accountResult, profileResult, syncResult, continuationResult] = await Promise.allSettled([
         savedStudyQueries.listRecent({ limit: HOME_RECENT_LIMIT }),
         savedStudyQueries.listForReview({ limit: HOME_REVIEW_LIMIT }),
         savedStudyQueries.listMistakes({ limit: HOME_MISTAKE_LIMIT }),
         personalStrategyQueries.loadSummary(),
-        accountQueries?.getProfileSummary?.() ?? null,
-        profileQueries?.getProfileSummary?.() ?? null,
-        syncQueries?.getState?.() ?? null,
+        guest ? null : accountQueries?.getProfileSummary?.() ?? null,
+        guest ? null : profileQueries?.getProfileSummary?.() ?? null,
+        guest ? null : syncQueries?.getState?.() ?? null,
         continuationQueries?.getSummary?.() ?? null,
       ]);
       const recent = sectionFrom(recentResult, mapSavedItems);
@@ -231,9 +231,9 @@ export function createHomeViewModelController({
       }
       return deepFreeze({
         schemaVersion: HOME_VIEW_MODEL_SCHEMA_VERSION,
-        sessionMode: 'account',
-        identity,
-        sync: syncSection(syncQueries ? syncResult : null),
+        sessionMode: guest ? 'guest' : 'account',
+        identity: guest ? { status: 'guest', profile: null } : identity,
+        sync: guest ? { status: 'unavailable', state: 'unavailable' } : syncSection(syncQueries ? syncResult : null),
         sections: {
           continue: continueSection(personalStrategy, continuation),
           recent,

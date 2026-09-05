@@ -199,8 +199,8 @@ test('DecisionRecord v1 freezes exact canonical state and comparative source tru
   assert.equal(record.userResponse.submission, 'normal');
   assert.equal(record.strategyEvidence.strategyResult.sourceVersion, 'riverline-preflop-heuristic/v4');
   assert.equal(record.strategyEvidence.strategyResult.sourceDescriptor.family, 'heuristic');
-  assert.equal(record.strategyEvidence.claimPolicy.trainingSemantics, 'comparative');
-  assert.equal(record.strategyEvidence.comparisonState, TRAINING_COMPARISON_STATES.DIFFERS_FROM_REFERENCE);
+  assert.equal(record.strategyEvidence.claimPolicy.trainingSemantics, 'unavailable');
+  assert.equal(record.strategyEvidence.comparisonState, TRAINING_COMPARISON_STATES.UNAVAILABLE);
   assert.equal(record.strategyEvidence.internalEvaluation.grade, 'mistake');
   assert.equal(Object.hasOwn(record, 'accuracy'), false);
   assert.equal(Object.hasOwn(record, 'correct'), false);
@@ -225,6 +225,22 @@ test('historical Training Memory context bytes remain absent rather than backfil
     false,
   );
   validateTrainingDecisionRecord(fixture.answered);
+});
+
+test('frozen truth cannot be transplanted onto a different recorded context or action', async () => {
+  const { service } = serviceFixture();
+  const { answered } = await answeredExerciseRecord({ service });
+  const contextChanged = structuredClone(answered);
+  contextChanged.decisionContext.stackBb += 1;
+  assert.throws(() => validateTrainingDecisionRecord(contextChanged), /Frozen truth context/);
+  const actionChanged = structuredClone(answered);
+  actionChanged.userResponse.action.type = ACTION_TYPES.RAISE;
+  assert.throws(() => validateTrainingDecisionRecord(actionChanged), /Frozen truth action/);
+  assert.equal(answered.strategyEvidence.internalEvaluation.truth.learningEligibility.remediation, false);
+  assert.deepEqual(reviewReasonsForDecision(answered), []);
+  const summary = deriveTrainingSessionSummary([answered]);
+  assert.equal(summary.truthSummary.groups.heuristic_comparison.attempts, 1);
+  assert.equal(summary.truthSummary.groups.normative_assessment.attempts, 0);
 });
 
 test('unaccepted exploratory answers create no reference comparison or automatic review reason', async () => {
@@ -268,7 +284,7 @@ test('unaccepted exploratory answers create no reference comparison or automatic
   assert.equal(answered.reviewState.state, TRAINING_REVIEW_LIFECYCLE_STATES.NONE);
 });
 
-test('frozen claim policy distinguishes a genuinely normative reference from internal grade', async () => {
+test('accepted reference without an assessment policy stays a frozen comparison', async () => {
   const base = exercise();
   const descriptor = createStrategySourceDescriptor({
     id: 'validated-test-reference',
@@ -317,8 +333,8 @@ test('frozen claim policy distinguishes a genuinely normative reference from int
 
   assert.equal(answered.strategyEvidence.internalEvaluation.grade, 'mistake');
   assert.equal(answered.strategyEvidence.comparisonState, 'differs_from_reference');
-  assert.equal(answered.strategyEvidence.claimPolicy.trainingSemantics, 'normative');
-  assert.equal(answered.strategyEvidence.claimPolicy.claims.accuracy, true);
+  assert.equal(answered.strategyEvidence.claimPolicy.trainingSemantics, 'comparative');
+  assert.equal(answered.strategyEvidence.claimPolicy.claims.accuracy, false);
   assert.equal(answered.strategyEvidence.claimPolicy.sourceVersion, 'validated-test-reference/v1');
   assert.equal(
     answered.strategyEvidence.strategyResult.sourceAuthoritySnapshot.sourceFingerprint,
@@ -326,16 +342,17 @@ test('frozen claim policy distinguishes a genuinely normative reference from int
   );
   assert.equal(Object.hasOwn(answered.strategyEvidence.strategyResult, 'sourceAcceptance'), false);
   const same = await service.createSameSpot(answered.id);
-  assert.equal(same.historicalClaimPolicy.trainingSemantics, 'normative');
+  assert.equal(same.historicalClaimPolicy.trainingSemantics, 'comparative');
   assert.deepEqual(
     same.exercise.strategyResult.sourceAuthoritySnapshot,
     answered.strategyEvidence.strategyResult.sourceAuthoritySnapshot,
   );
   const oldFrozenRecord = structuredClone(answered);
+  delete oldFrozenRecord.strategyEvidence.internalEvaluation.truth; // Legacy record without truth snapshot.
   delete oldFrozenRecord.strategyEvidence.strategyResult.sourceAuthoritySnapshot;
   delete oldFrozenRecord.strategyEvidence.claimPolicy.sourceAuthoritySnapshot;
   assert.doesNotThrow(() => validateTrainingDecisionRecord(oldFrozenRecord));
-  assert.equal(oldFrozenRecord.strategyEvidence.claimPolicy.trainingSemantics, 'normative');
+  assert.equal(oldFrozenRecord.strategyEvidence.claimPolicy.trainingSemantics, 'comparative');
 });
 
 test('SessionRecord v1 preserves order and derives a source-versioned factual summary', async () => {
@@ -368,7 +385,7 @@ test('SessionRecord v1 preserves order and derives a source-versioned factual su
   assert.deepEqual(completed.decisionRecordIds, records.map((record) => record.id));
   assert.deepEqual(page.map((record) => record.ordinal), [0, 1]);
   assert.equal(summary.answeredCount, 2);
-  assert.equal(summary.comparisonCounts.differs_from_reference, 2);
+  assert.equal(summary.comparisonCounts.differs_from_reference, 0);
   assert.deepEqual(summary.sourceIds, ['heuristic_preflop@riverline-preflop-heuristic/v4']);
   assert.equal(Object.hasOwn(summary, 'accuracy'), false);
   validateTrainingSessionRecord(completed);
@@ -437,15 +454,13 @@ test('Review queue exposes narrow reasons and reversible lifecycle transitions',
   const { service } = serviceFixture();
   const { answered } = await answeredExerciseRecord({ service });
   let due = await service.listDueReview({ limit: 10, now: new Date('2026-09-01T00:00:00.000Z') });
-  assert.equal(due.length, 1);
-  assert.deepEqual(due[0].reasons, [TRAINING_REVIEW_REASON_CODES.DIFFERS_FROM_REFERENCE]);
-  assert.equal(due[0].record.strategyEvidence.claimPolicy.trainingSemantics, 'comparative');
-  assert.equal(due[0].priority > 0, true);
+  assert.equal(due.length, 0);
+  assert.deepEqual(reviewReasonsForDecision(answered), []);
+  assert.equal(answered.strategyEvidence.internalEvaluation.truth.state, 'heuristic_comparison');
 
   const labelled = await service.updateStudyMetadata(answered.id, { review: true, difficult: true });
   due = await service.listDueReview({ limit: 10 });
   assert.deepEqual(new Set(due[0].reasons), new Set([
-    TRAINING_REVIEW_REASON_CODES.DIFFERS_FROM_REFERENCE,
     TRAINING_REVIEW_REASON_CODES.MANUAL_REVIEW,
     TRAINING_REVIEW_REASON_CODES.MANUAL_DIFFICULT,
   ]));
@@ -468,13 +483,13 @@ test('Review queue exposes narrow reasons and reversible lifecycle transitions',
   })).length, 1);
 });
 
-test('manual study flags can add and remove review lifecycle on a reference-aligned decision', async () => {
+test('manual study flags can add and remove review lifecycle on a heuristic-matching decision', async () => {
   const { service } = serviceFixture();
   const { answered } = await answeredExerciseRecord({
     service,
     actionType: ACTION_TYPES.RAISE,
   });
-  assert.equal(answered.strategyEvidence.comparisonState, 'matches_reference');
+  assert.equal(answered.strategyEvidence.comparisonState, 'unavailable');
   assert.equal(answered.reviewState.state, TRAINING_REVIEW_LIFECYCLE_STATES.NONE);
 
   const marked = await service.updateStudyMetadata(answered.id, {
@@ -637,6 +652,7 @@ test('Full Hand decisions share one session replay authority and reference exact
     decisions[0].decisionContext.currentActorIndex);
 
   const incompleteEvidence = structuredClone(decisions[0]);
+  delete incompleteEvidence.strategyEvidence.internalEvaluation.truth; // Older evidence without a frozen truth contract.
   incompleteEvidence.decisionContext.gameRules.semanticFingerprint = null;
   assert.equal(deriveTrainingSimilarity(incompleteEvidence).available, false);
   assert.equal(deriveTrainingSimilarity(incompleteEvidence).unavailableReason,
@@ -742,6 +758,7 @@ test('history queries are indexed/bounded and do not resolve strategy at startup
       strategyResult: currentExercise.strategyResult,
       actionType: ACTION_TYPES.FOLD,
     });
+    await service.updateStudyMetadata(shown.id, { review: true });
     await service.finishSession(session.id, 'completed');
   }
   const before = database.getMetrics();

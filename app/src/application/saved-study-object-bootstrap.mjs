@@ -1,106 +1,100 @@
 import { createSavedStudyObjectApplication } from './saved-study-object-service.mjs';
-import { createSavedStudyObjectSourceController } from './saved-study-object-source-controller.mjs';
+import { createSavedStudyObjectSourceController, savedStudyClassificationsWithMistake } from './saved-study-object-source-controller.mjs';
 import './authentication-bootstrap.mjs';
-import {
-  RIVERLINE_OWNED_DOMAINS,
-  scopedDomainDatabaseName,
-} from '../account-identity/index.mjs';
-import {
-  SAVED_STUDY_DATABASE_NAME,
-  createIndexedDbSavedStudyDatabase,
-  createSavedStudyOwnerRef,
-} from '../saved-study-objects/index.mjs';
+import { RIVERLINE_OWNED_DOMAINS, scopedDomainDatabaseName, scopedPreferenceKey } from '../account-identity/index.mjs';
+import { SAVED_STUDY_DATABASE_NAME, createIndexedDbSavedStudyDatabase, createSavedStudyOwnerRef } from '../saved-study-objects/index.mjs';
 
 export function installSavedStudyObjectBridge(browserWindow, options = {}) {
   if (!browserWindow) return null;
-  const databases = new Map();
+  const identity = options.accountIdentity ?? browserWindow.RiverlineAccountIdentity;
   const mutationListeners = new Set();
-  const notifyLocalMutation = async (mutation) => {
-    for (const listener of mutationListeners) await listener(mutation);
-  };
-  const application = options.application ?? createSavedStudyObjectApplication({
-    onLocalMutation: notifyLocalMutation,
-    activationResolver: async () => {
-      await browserWindow.RiverlineAuthentication?.ready?.();
-      if (browserWindow.RiverlineAuthentication?.getState?.().status !== 'signed_in') {
-        const error = new RangeError('A persistent Account Profile is required');
-        error.code = 'persistent_identity_required';
-        throw error;
-      }
-      const accountIdentity = options.accountIdentity ?? browserWindow.RiverlineAccountIdentity;
-      if (!accountIdentity?.getDomainOwnership) return null;
-      const binding = await accountIdentity.getDomainOwnership(
-        RIVERLINE_OWNED_DOMAINS.SAVED_STUDY_OBJECTS,
-      );
-      const name = scopedDomainDatabaseName(SAVED_STUDY_DATABASE_NAME, binding);
-      if (!databases.has(name)) databases.set(name, createIndexedDbSavedStudyDatabase({ name }));
-      return Object.freeze({
-        ownerRef: createSavedStudyOwnerRef(binding.domainOwnerId),
-        database: databases.get(name),
-      });
-    },
-  });
-  const controller = createSavedStudyObjectSourceController({
-    application,
-    storage: options.storage ?? browserWindow.localStorage,
-    getPlaybookBridge: options.getPlaybookBridge ?? (() => browserWindow.RiverlinePlaybookState),
-    clock: options.clock,
-  });
-  const authentication = options.authentication ?? browserWindow.RiverlineAuthentication;
-  const gate = options.persistentIdentityGate ?? browserWindow.RiverlinePersistentIdentity;
-  const signedIn = () => authentication?.getState?.().status === 'signed_in';
-  const guestStatus = () => Promise.resolve(Object.freeze({
-    schemaVersion: 'saved-study-source-controller/v1',
-    state: 'unsaved',
-    identity: null,
-    object: null,
-  }));
-  const requireIdentity = (intent, resumeAction) => {
-    if (!gate?.requirePersistentIdentity) {
-      const error = new RangeError('A persistent Account Profile is required');
-      error.code = 'persistent_identity_required';
-      return Promise.reject(error);
+  const bundles = new Map();
+  const storage = options.storage ?? browserWindow.localStorage;
+  function bundleFor(scope) {
+    scope?.assertCurrent();
+    const key = scope ? scope.identityId + ':' + scope.lifecycleGeneration : 'provided';
+    if (bundles.has(key)) return bundles.get(key);
+    const binding = scope?.domainOwnerBinding;
+    const application = options.application ?? createSavedStudyObjectApplication({
+      ownerRef: createSavedStudyOwnerRef(binding.domainOwnerId),
+      database: options.databaseResolver?.(binding) ?? createIndexedDbSavedStudyDatabase({
+        name: scopedDomainDatabaseName(SAVED_STUDY_DATABASE_NAME, binding),
+      }),
+      lifecycleScope: scope,
+      onLocalMutation: async (mutation) => {
+        scope?.assertCurrent();
+        for (const listener of mutationListeners) {
+          scope?.assertCurrent();
+          await listener(mutation);
+        }
+      },
+    });
+    const scopedStorage = binding ? Object.freeze(Object.fromEntries(
+      ['getItem', 'setItem', 'removeItem'].map((method) => [method, (key, ...args) => {
+        scope.assertCurrent();
+        return storage[method](scopedPreferenceKey(key, binding), ...args);
+      }]),
+    )) : storage;
+    const controller = createSavedStudyObjectSourceController({
+      application, storage: scopedStorage, lifecycleScope: scope,
+      getPlaybookBridge: options.getPlaybookBridge ?? (() => browserWindow.RiverlinePlaybookState),
+      clock: options.clock,
+    });
+    const bundle = { application, controller };
+    bundles.set(key, bundle);
+    scope?.signal.addEventListener('abort', () => {
+      bundles.delete(key);
+      void application.close().catch(() => {});
+    }, { once: true });
+    return bundle;
+  }
+  async function capture() {
+    if (!identity?.captureLifecycleScope) {
+      if (options.application) return null;
+      throw new Error('Saved lifecycle ownership is unavailable');
     }
-    return gate.requirePersistentIdentity({ intent, resumeAction });
-  };
+    return identity.captureLifecycleScope(RIVERLINE_OWNED_DOMAINS.SAVED_STUDY_OBJECTS);
+  }
+  async function invoke(target, method, args) {
+    const scope = await capture();
+    const result = await bundleFor(scope)[target][method](...args);
+    scope?.assertCurrent();
+    return result;
+  }
   const bridge = Object.freeze({
-    ...controller,
-    getCurrentStatus: (...args) => (signedIn() ? controller.getCurrentStatus(...args) : guestStatus()),
-    saveCurrent: (...args) => requireIdentity('save-study-object', () => controller.saveCurrent(...args)),
-    saveReviewedDecisionSpot: (...args) => requireIdentity(
-      'save-study-object',
-      () => application.saveReviewedDecisionSpot(...args),
-    ),
-    updateAnnotations: (...args) => requireIdentity('update-saved-study-object', () => (
-      controller.updateAnnotations(...args)
-    )),
-    archiveCurrent: (...args) => requireIdentity('archive-saved-study-object', () => (
-      controller.archiveCurrent(...args)
-    )),
-    getById: (...args) => (signedIn() ? application.getById(...args) : Promise.resolve(null)),
-    listRecent: (...args) => (signedIn() ? application.listRecent(...args) : Promise.resolve([])),
-    listForReview: (...args) => (signedIn() ? application.listForReview(...args) : Promise.resolve([])),
-    listMistakes: (...args) => (signedIn() ? application.listMistakes(...args) : Promise.resolve([])),
+    schemaVersion: 'saved-study-source-controller/v1',
+    classificationsWithMistake: savedStudyClassificationsWithMistake,
+    ...Object.fromEntries(['getCurrentStatus', 'saveCurrent', 'updateAnnotations', 'archiveCurrent']
+      .map((method) => [method, (...args) => invoke('controller', method, args)])),
+    ...Object.fromEntries(['saveReviewedDecisionSpot', 'getById', 'listRecent', 'listForReview',
+      'listMistakes', 'exportLibrary', 'importLibrary']
+      .map((method) => [method, (...args) => invoke('application', method, args)])),
     subscribeLocalMutations(listener) {
       if (typeof listener !== 'function') throw new TypeError('Saved mutation listener must be a function');
       mutationListeners.add(listener);
       return () => mutationListeners.delete(listener);
     },
-    createSyncPort: () => Object.freeze({
-      listAll: () => application.listAllForSync(),
-      getById: (id) => application.getById(id),
-      applyRemote: (object, syncOptions) => application.applySyncedObject(object, syncOptions),
-      saveObject: (object) => application.applySyncedObject(object, { expectedRevision: null }),
-      activate: () => application.activate(),
-    }),
+    createSyncPort(scope) {
+      // Sync ports are fixed to their authenticated generation, never dynamically rerouted.
+      const call = async (method, ...args) => {
+        if (scope?.identityKind !== 'authenticated_account') throw new Error('Account sync scope required');
+        scope.assertCurrent();
+        const result = await bundleFor(scope).application[method](...args);
+        scope.assertCurrent();
+        return result;
+      };
+      return Object.freeze({
+        listAll: () => call('listAllForSync'),
+        getById: (id) => call('getById', id),
+        applyRemote: (object, syncOptions) => call('applySyncedObject', object, syncOptions),
+        saveObject: (object) => call('applySyncedObject', object, { expectedRevision: null }),
+        activate: () => call('activate'),
+      });
+    },
   });
   Object.defineProperty(browserWindow, 'RiverlineSavedStudyObjects', {
-    configurable: true,
-    enumerable: false,
-    value: bridge,
-    writable: false,
+    configurable: true, enumerable: false, value: bridge, writable: false,
   });
   return bridge;
 }
-
 if (typeof window !== 'undefined') installSavedStudyObjectBridge(window);

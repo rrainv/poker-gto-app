@@ -59,7 +59,7 @@ test('current-session progress and restrained source truth remain visible in the
   assert.match(trainingMarkup, /id="trainingReferenceSummary"/);
   assert.match(logic, /strategyPolicySummary\(policy\)/);
   assert.match(logic, /referenceValue\.dataset\.sourceFamily = policy\.source\.family/);
-  assert.match(trainingMarkup, /Reference-aligned/);
+  assert.match(trainingMarkup, /id="trainingTruthMetrics"/);
   assert.doesNotMatch(trainingMarkup, />Accuracy</);
   assert.match(ticketCss, /training-session-panel \.training-stat-grid[^}]*repeat\(2,/s);
 });

@@ -93,51 +93,49 @@ export const TRAINING_BASIC_TUTORIAL_DEFINITION = definition({
   descriptionKey: 'Generate a legal decision, answer before feedback, and continue the drill.',
   steps: [
     { id: 'setup', anchor: 'training-setup', titleKey: 'Choose a session style', bodyKey: 'Varied Session chooses useful legal variety across streets, positions, tables, stacks, and facing sizes. Focused Drill keeps the exact controls when you want one decision family.', placement: 'left' },
-    { id: 'decision', anchor: 'training-decision', titleKey: 'Read the spot before answering', bodyKey: 'Hero cards, board, pot, stack, position, and facing action come from the generated canonical trajectory. Form your answer before Riverline reveals its reference.', placement: 'right' },
+    { id: 'decision', anchor: 'training-decision', titleKey: 'Read the spot before answering', bodyKey: 'Hero cards, board, pot, stack, position, and facing action come from the generated canonical trajectory. Form your answer before Riverline reveals the source comparison.', placement: 'right' },
     { id: 'actions', anchor: 'training-decision', titleKey: 'Choose one legal action', bodyKey: 'Only legal actions are offered. Your answer is compared once with Riverline’s current StrategyResult according to the Training contract.', placement: 'bottom' },
-    { id: 'hints', anchor: 'training-decision', titleKey: 'Use hints as coaching prompts', bodyKey: 'Optional hints reveal one prompt at a time without exposing the full reference strategy before your answer.', placement: 'bottom' },
-    { id: 'next', anchor: 'training-next', titleKey: 'Continue the workflow', bodyKey: 'After review, generate the next exercise or adjust the drill. Session progress summarizes this browser run; it is not a future mistake-history or spaced-review system.', placement: 'top' },
+    { id: 'hints', anchor: 'training-decision', titleKey: 'Use hints as coaching prompts', bodyKey: 'Optional hints reveal one prompt at a time without exposing the full source distribution before your answer.', placement: 'bottom' },
+    { id: 'next', anchor: 'training-next', titleKey: 'Continue the workflow', bodyKey: 'Optionally mark your answer unsure before submitting. After answering, request an exact revisit in 24 hours. Open Training Memory while idle to practice, snooze, or stop reminders. A revisit does not prove retention.', placement: 'top' },
   ],
 });
 
 export const TRAINING_FEEDBACK_TUTORIAL_DEFINITION = definition({
   id: 'training.feedback', workspace: 'training',
   titleKey: 'Understanding Training feedback',
-  descriptionKey: 'Read the verdict, reference frequencies, explanation, and next action after answering.',
+  descriptionKey: 'Read the source comparison, explanation, and next action after answering.',
   steps: [
-    { id: 'feedback', anchor: 'training-feedback', titleKey: 'Interpret the grade narrowly', bodyKey: '“Correct” means your answer matched Riverline’s current reference under the Training grading contract. It is not a claim of mathematically proven universal optimality.', placement: 'bottom', precondition: 'training-answered' },
-    { id: 'reference', anchor: 'training-reference', titleKey: 'Compare with the displayed source', bodyKey: 'Reference frequencies come from the named strategy source. They show its mix and do not imply EV loss, solver accuracy, or confidence percentages.', placement: 'left', precondition: 'training-answered' },
+    { id: 'feedback', anchor: 'training-feedback', titleKey: 'Understand the comparison', bodyKey: 'Heuristic comparisons describe agreement, not correctness. Only an accepted assessment can judge whether an action is supported.', placement: 'bottom', precondition: 'training-answered' },
+    { id: 'reference', anchor: 'training-reference', titleKey: 'Compare with the displayed source', bodyKey: 'Displayed frequencies come from the named strategy source. They show its mix and do not imply EV loss, solver accuracy, or confidence percentages.', placement: 'left', precondition: 'training-answered' },
     { id: 'analysis', anchor: 'training-analysis', titleKey: 'Use the explanation to review the spot', bodyKey: 'The shared Analysis organizes trusted hand facts and reasons behind the current result. Treat it as study guidance from the current authority, with the same provenance limits.', placement: 'top', precondition: 'training-answered' },
     { id: 'next', anchor: 'training-next', titleKey: 'Apply the review, then move on', bodyKey: 'Generate the next spot once you understand the mismatch or agreement. Replay can revisit this generated trajectory without turning the session into saved mistake history.', placement: 'top' },
   ],
 });
 
 export const CALIBRATION_SETUP_TUTORIAL_DEFINITION = definition({
-  id: 'calibration.setup', workspace: 'calibration', firstUsePolicy: 'prompt',
-  titleKey: 'Range Calibration setup',
-  descriptionKey: 'Define the real environment, choose a question goal, and let current evidence guide the session.',
+  id: 'calibration.setup', version: 2, workspace: 'calibration', firstUsePolicy: 'prompt',
+  titleKey: 'Teach Riverline your intended strategy',
+  descriptionKey: 'Answer concrete poker questions to map hand families and boundaries, then refine what remains uncertain.',
   steps: [
-    { id: 'overview', anchor: 'calibration-overview', titleKey: 'Riverline chooses informative hands', bodyKey: 'Riverline selects high-value hands from current direct evidence and the derived uncertainty model. You do not need to answer all 169; direct answers remain yours.', placement: 'bottom' },
-    { id: 'empty-profile', anchor: 'calibration-empty-profile', titleKey: 'Name a real poker environment', bodyKey: 'A Profile represents a recognizable game or player-pool identity. Each Profile has exactly three discrete Modes named in your own words; they are not points on a numeric style slider.', placement: 'bottom', precondition: 'calibration-empty' },
-    { id: 'profile', anchor: 'calibration-profile', titleKey: 'Name a real poker environment', bodyKey: 'A Profile represents a recognizable game or player-pool identity. Each Profile has exactly three discrete Modes named in your own words; they are not points on a numeric style slider.', placement: 'bottom', precondition: 'calibration-configured' },
-    { id: 'context', anchor: 'calibration-context', titleKey: 'Choose objective RFI facts', bodyKey: 'Set environment, table size, Hero position, effective stack, and accounting for an unopened preflop range. These facts identify the direct range you are calibrating.', placement: 'right', precondition: 'calibration-configured' },
-    { id: 'start', anchor: 'calibration-start', titleKey: 'Choose a session depth', bodyKey: 'Quick, Standard, and Deep are question-count goals. Pause anytime; Riverline recomputes the next question from saved evidence when you resume.', placement: 'left', precondition: 'calibration-configured' },
-    { id: 'teacher', anchor: 'range-teacher-tab', titleKey: 'Learn from your own strategy', bodyKey: 'Range Teacher explains boundaries, conflicts, unknown regions, and qualitative transfers from compatible nearby RFI contexts in your own Personal Strategy evidence. Transfers remain derived, and its suggestions never grade you against GTO or a reference strategy.', placement: 'bottom', precondition: 'calibration-configured' },
-    { id: 'builder', anchor: 'calibration-personal-matrix', titleKey: 'Build the same strategy directly', bodyKey: 'Range Builder selects or paints many Matrix hands at once. Builder edits become direct evidence, exact mixes stay explicit, Undo preserves history, and Calibration immediately uses the updated model.', placement: 'top', precondition: 'calibration-configured' },
+    { id: 'overview', anchor: 'calibration-overview', titleKey: 'Map how you intend to play', bodyKey: 'Start with a concrete hand and choose what you would usually do. Riverline uses your answers to build a structural range map. Intended play stays separate from observed behavior and strategy sources.', placement: 'bottom' },
+    { id: 'empty-profile', anchor: 'calibration-empty-profile', titleKey: 'Start with one Game Setup and one Approach', bodyKey: 'Name a game and check the table size and effective stack. Extra setup options are secondary. Add independent Approaches whenever useful. Game names do not select poker mathematics; the decision context preserves the actual accounting.', placement: 'bottom', precondition: 'calibration-empty' },
+    { id: 'start', anchor: 'calibration-question', titleKey: 'Explore families and their boundaries', bodyKey: 'Questions adapt to your answers, exploring hand families and nearby action boundaries. One example does not establish a region. There is no fixed question quota; stop whenever you want and return to refine the map.', placement: 'bottom', precondition: 'calibration-question-ready' },
+    { id: 'understanding', anchor: 'personal-understanding', titleKey: 'Read coverage, not a completion score', bodyKey: 'Coverage shows which families have an initial map, remain partly mapped, or are not explored. A sampled region is not a complete range. Exact answers, estimates, unknowns, and conflicts stay distinct.', placement: 'bottom', precondition: 'calibration-configured' },
+    { id: 'intent', anchor: 'personal-intent', titleKey: 'Add context only when it helps', bodyKey: 'Concrete answers lead. Add context, an exception, or a correction when needed, then preview and confirm the meaning. Unconfirmed wording can guide a clarification but does not change saved intent.', placement: 'right', precondition: 'calibration-configured' },
+    { id: 'matrix', anchor: 'personal-matrix-edit', titleKey: 'Use Matrix Edit for precise examples', bodyKey: 'Matrix Edit feeds the same intended evidence. Inspect a hand, correct its dominant action, or enter an explicit exact mix. Corrections preserve history; preferred actions never imply 100% frequency.', placement: 'bottom', precondition: 'calibration-configured' },
   ],
 });
 
 export const CALIBRATION_ANSWERS_TUTORIAL_DEFINITION = definition({
-  id: 'calibration.answers', workspace: 'calibration',
+  id: 'calibration.answers', version: 2, workspace: 'calibration',
   titleKey: 'Answering and exact mixes',
   descriptionKey: 'Answer adaptive questions, add exact frequencies when useful, and keep direct evidence distinct from inference.',
   steps: [
-    { id: 'meaning', anchor: 'calibration-question', titleKey: 'Answer for the named Profile and Mode', bodyKey: 'The displayed hand belongs to the selected real environment, Mode, and RFI context. Choose what best represents that identity, not a generic poker answer.', placement: 'bottom', precondition: 'calibration-question-ready' },
-    { id: 'quick', anchor: 'calibration-answer-actions', titleKey: 'Quick answers mean dominant action', bodyKey: 'Fold or Raise records the preferred or dominant action for this hand. It never means the action is played at a pure 100% frequency.', placement: 'bottom', precondition: 'calibration-question-ready' },
-    { id: 'mix', anchor: 'calibration-exact-mix', titleKey: 'Use exact mixes only when you know them', bodyKey: 'Set Frequencies stores an explicit Fold/Raise mix separately from a quick answer. An exact tie is valid and has no dominant action.', placement: 'top', precondition: 'calibration-question-ready' },
+    { id: 'meaning', anchor: 'calibration-question', titleKey: 'Answer for this Game Setup and Approach', bodyKey: 'The hand belongs to the selected Game Setup, Approach, and decision context. Choose how you intend to play there; this is intended evidence, not an observation of your behavior.', placement: 'bottom', precondition: 'calibration-question-ready' },
+    { id: 'quick', anchor: 'calibration-answer-actions', titleKey: 'Quick answers mean dominant action', bodyKey: 'Selecting an action records your preferred or dominant action for this hand. It never means the action is played at a pure 100% frequency.', placement: 'bottom', precondition: 'calibration-question-ready' },
+    { id: 'mix', anchor: 'calibration-exact-mix', titleKey: 'Use exact mixes only when you know them', bodyKey: 'Set Frequencies stores an explicit mix over the available actions separately from a quick answer. An exact tie is valid and has no dominant action.', placement: 'top', precondition: 'calibration-question-ready' },
     { id: 'reason', anchor: 'calibration-question-reason', titleKey: 'See why each hand matters', bodyKey: 'The reason points to a boundary, sparse region, nearby disagreement, or coverage gain. It explains question value, not poker confidence.', placement: 'bottom', precondition: 'calibration-question-ready' },
-    { id: 'progress', anchor: 'calibration-progress', titleKey: 'Read progress by category', bodyKey: 'Direct, inferred-high, inferred-medium, uncertain, conflicting, and unknown stay separate. These counts are coverage facts, not a confidence percentage.', placement: 'top', precondition: 'calibration-question-ready' },
-    { id: 'inspect-correct', anchor: 'calibration-matrix-inspector', titleKey: 'Inspect and correct Riverline', bodyKey: 'Select a Matrix cell to see direct history, contributing neighbors, and boundary facts. Confirming an inference records only a dominant action; exact mixes remain explicit.', placement: 'left', precondition: 'calibration-question-ready' },
+    { id: 'progress', anchor: 'calibration-progress', titleKey: 'Follow family coverage and boundaries', bodyKey: 'Progress follows the evidence across hand families and action boundaries, not a fixed number of questions. Sparse families remain uncertain. You can stop early and resume mapping or refinement later.', placement: 'top', precondition: 'calibration-question-ready' },
     { id: 'control', anchor: 'calibration-session-controls', titleKey: 'Pause, stop, skip, or undo safely', bodyKey: 'Pause preserves the session, Stop ends it, and Skip or I’m not sure records no poker evidence. Undo retracts the immediately previous direct observation when available.', placement: 'bottom', precondition: 'calibration-question-ready' },
   ],
 });

@@ -37,7 +37,9 @@ function analysisInterpolatedElement(key, fallback, values = {}, tokenKinds = {}
     const name = match[1];
     const value = Object.prototype.hasOwnProperty.call(values, name) ? values[name] : match[0];
     const kind = tokenKinds[name] || 'text';
-    if (kind === 'data' || kind === 'user') {
+    if (kind === 'cards') {
+      element.appendChild(analysisOutCardList(value));
+    } else if (kind === 'data' || kind === 'user') {
       const token = analysisLiteralElement(
         'span',
         kind === 'data' ? 'poker-data-token' : 'analysis-user-text',
@@ -221,9 +223,10 @@ function analysisRangeCompositionElement(entries) {
 }
 
 function analysisOutCardList(cards) {
-  const list = analysisElement('span', 'analysis-out-card-list');
+  const list = analysisElement('span', 'analysis-out-card-list analysis-card-token');
   (Array.isArray(cards) ? cards : []).forEach((card) => {
-    const token = analysisLiteralElement('span', 'analysis-out-card poker-data-token', card);
+    const token = analysisCardTokenElement(card)
+      || analysisLiteralElement('span', 'analysis-out-card poker-data-token', card);
     token.dataset.analysisToken = 'data';
     list.appendChild(token);
   });
@@ -270,8 +273,8 @@ function analysisDrawOutsElement(drawOuts) {
       results.appendChild(analysisInterpolatedElement(
         'analysis.value.straightFlushOutSingle',
         '{cards} -> {completion}',
-        { cards: completion.card, completion: analysisConceptText(subtypeConcept) },
-        { cards: 'data' },
+        { cards: [completion.card], completion: analysisConceptText(subtypeConcept) },
+        { cards: 'cards' },
       ));
     });
     row.append(
@@ -291,12 +294,12 @@ function analysisDrawOutsElement(drawOuts) {
   summary.classList.add('analysis-outs-summary');
   element.appendChild(summary);
   if (outs.overlaps?.length) {
-    const overlapCards = outs.overlaps.map((entry) => entry.card).join(', ');
+    const overlapCards = outs.overlaps.map((entry) => entry.card);
     const overlap = analysisInterpolatedElement(
       'analysis.outs.shared',
       'Shared out counted once: {cards}',
       { cards: overlapCards },
-      { cards: 'data' },
+      { cards: 'cards' },
     );
     overlap.classList.add('analysis-outs-overlap');
     element.appendChild(overlap);
@@ -789,7 +792,7 @@ function analysisSummaryText(explanation) {
     ...(explanation.summaryValues || {}),
     action: analysisActionText(primary?.label || explanation.summaryValues?.action),
     probability: primary ? `${(primary.probability * 100).toFixed(0)}%` : explanation.summaryValues?.probability,
-    source: analysisProvenanceLabel(explanation)
+    source: explanation.truth ? analysisUiText(explanation.summaryValues.source) : analysisProvenanceLabel(explanation)
   });
 }
 

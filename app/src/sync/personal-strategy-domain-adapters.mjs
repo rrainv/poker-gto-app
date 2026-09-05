@@ -1,14 +1,12 @@
 import {
   CALIBRATION_SESSION_SCHEMA_VERSION,
   RANGE_OBSERVATION_SCHEMA_VERSION,
-  STRATEGY_MODE_SCHEMA_VERSION,
-  STRATEGY_PROFILE_SCHEMA_VERSION,
   TRAINING_OBSERVATION_SCHEMA_VERSION,
   createLocalOwnerRef,
+  migrateStrategyProfile,
+  migrateStrategyMode,
   validateCalibrationSession,
   validateRangeObservation,
-  validateStrategyMode,
-  validateStrategyProfile,
   validateTrainingObservation,
 } from '../personal-strategy/index.mjs';
 import { PERSONAL_STRATEGY_SYNC_DOMAIN, cloneSyncData } from './domain.mjs';
@@ -16,6 +14,25 @@ import { PERSONAL_STRATEGY_SYNC_DOMAIN, cloneSyncData } from './domain.mjs';
 export const REMOTE_PERSONAL_STRATEGY_ENTITY_VERSION = 'remote-personal-strategy-entity/v1';
 export const PERSONAL_STRATEGY_RECONCILIATION_VERSION = 'personal-strategy-reconciliation/v1';
 export const PERSONAL_STRATEGY_CONFLICT_VERSION = 'personal-strategy-metadata-conflict/v1';
+
+// The deployed RPC still owns v1. Local schema upgrades never upgrade that contract.
+export const REMOTE_PERSONAL_STRATEGY_PROFILE_VERSION = 'strategy-profile/v1';
+export const REMOTE_PERSONAL_STRATEGY_MODE_VERSION = 'strategy-mode/v1';
+
+export function unsupportedPersonalStrategySyncSchema() {
+  return Object.assign(new RangeError('Personal Strategy is saved locally. Cloud sync requires a compatible schema upgrade.'), {
+    code: 'unsupported_schema', kind: 'permanent', reason: 'personal_strategy_remote_upgrade_required',
+  });
+}
+
+function assertRemoteCompatibleLocalEntity(value) {
+  const type = entityType(value);
+  if (!type || (type === PERSONAL_STRATEGY_ENTITY_TYPES.PROFILE_BUNDLE
+    && (value.profile?.schemaVersion !== REMOTE_PERSONAL_STRATEGY_PROFILE_VERSION
+      || value.modes?.some((mode) => mode.schemaVersion !== REMOTE_PERSONAL_STRATEGY_MODE_VERSION)))) {
+    throw unsupportedPersonalStrategySyncSchema();
+  }
+}
 
 export const PERSONAL_STRATEGY_ENTITY_TYPES = Object.freeze({
   PROFILE_BUNDLE: 'profile_bundle',
@@ -71,12 +88,25 @@ function withoutOwner(profile) {
 function validateProfileBundlePayload(payload) {
   requireObject(payload, 'Remote profile bundle payload');
   exactKeys(payload, ['profile', 'modes'], 'Remote profile bundle payload');
+  if (payload.profile?.schemaVersion !== REMOTE_PERSONAL_STRATEGY_PROFILE_VERSION) {
+    throw unsupportedPersonalStrategySyncSchema();
+  }
   if (!Array.isArray(payload.modes) || payload.modes.length !== 3) {
     throw new RangeError('Remote profile bundle requires exactly three modes');
   }
   const profile = { ...cloneSyncData(payload.profile), ownerRef: createLocalOwnerRef('remote-validation-owner') };
-  validateStrategyProfile(profile);
-  payload.modes.forEach(validateStrategyMode);
+  if (profile.schemaVersion !== REMOTE_PERSONAL_STRATEGY_PROFILE_VERSION
+    || payload.modes.some((mode) => mode.schemaVersion !== REMOTE_PERSONAL_STRATEGY_MODE_VERSION)) {
+    throw unsupportedPersonalStrategySyncSchema();
+  }
+  exactKeys(profile, ['schemaVersion', 'id', 'ownerRef', 'displayName', 'description',
+    'createdAt', 'updatedAt', 'gameDomain', 'tags', 'modeIds', 'state'], 'Remote v1 profile');
+  migrateStrategyProfile(profile);
+  payload.modes.forEach((mode) => {
+    exactKeys(mode, ['schemaVersion', 'id', 'profileId', 'displayName', 'description',
+      'createdAt', 'updatedAt', 'displayOrder', 'state'], 'Remote v1 mode');
+    migrateStrategyMode(mode);
+  });
   if (profile.modeIds.some((id) => !payload.modes.some((mode) => mode.id === id))) {
     throw new RangeError('Remote profile bundle modes do not match the profile');
   }
@@ -87,7 +117,7 @@ function validatePayload(type, payload) {
   if (type === PERSONAL_STRATEGY_ENTITY_TYPES.RANGE_OBSERVATION) return validateRangeObservation(payload);
   if (type === PERSONAL_STRATEGY_ENTITY_TYPES.TRAINING_OBSERVATION) return validateTrainingObservation(payload);
   if (type === PERSONAL_STRATEGY_ENTITY_TYPES.CALIBRATION_SESSION) return validateCalibrationSession(payload);
-  throw new RangeError(`Unsupported Personal Strategy sync entity type: ${type}`);
+  throw unsupportedPersonalStrategySyncSchema();
 }
 
 export function validateRemotePersonalStrategyEntity(document) {
@@ -97,7 +127,7 @@ export function validateRemotePersonalStrategyEntity(document) {
     'revision', 'createdAt', 'updatedAt', 'payload',
   ], 'Remote Personal Strategy entity');
   if (document.schemaVersion !== REMOTE_PERSONAL_STRATEGY_ENTITY_VERSION) {
-    throw new TypeError('Remote Personal Strategy entity uses an unsupported schema');
+    throw unsupportedPersonalStrategySyncSchema();
   }
   if (typeof document.id !== 'string' || !document.id
     || typeof document.profileId !== 'string' || !document.profileId) {
@@ -110,13 +140,13 @@ export function validateRemotePersonalStrategyEntity(document) {
   requireTimestamp(document.updatedAt, 'Remote Personal Strategy updatedAt');
   validatePayload(document.entityType, document.payload);
   const expectedSchema = {
-    [PERSONAL_STRATEGY_ENTITY_TYPES.PROFILE_BUNDLE]: STRATEGY_PROFILE_SCHEMA_VERSION,
+    [PERSONAL_STRATEGY_ENTITY_TYPES.PROFILE_BUNDLE]: REMOTE_PERSONAL_STRATEGY_PROFILE_VERSION,
     [PERSONAL_STRATEGY_ENTITY_TYPES.RANGE_OBSERVATION]: RANGE_OBSERVATION_SCHEMA_VERSION,
     [PERSONAL_STRATEGY_ENTITY_TYPES.TRAINING_OBSERVATION]: TRAINING_OBSERVATION_SCHEMA_VERSION,
     [PERSONAL_STRATEGY_ENTITY_TYPES.CALIBRATION_SESSION]: CALIBRATION_SESSION_SCHEMA_VERSION,
   }[document.entityType];
   if (document.entitySchemaVersion !== expectedSchema) {
-    throw new TypeError('Remote Personal Strategy entity payload schema does not match its type');
+    throw unsupportedPersonalStrategySyncSchema();
   }
   if (document.entityType === PERSONAL_STRATEGY_ENTITY_TYPES.PROFILE_BUNDLE) {
     if (document.id !== document.payload.profile.id || document.profileId !== document.id) {
@@ -129,9 +159,9 @@ export function validateRemotePersonalStrategyEntity(document) {
 }
 
 export function createPersonalStrategyProfileBundle(profile, modes) {
-  validateStrategyProfile(profile);
-  if (!Array.isArray(modes) || modes.length !== 3) throw new RangeError('Profile bundle requires three modes');
-  modes.forEach(validateStrategyMode);
+  migrateStrategyProfile(profile);
+  if (!Array.isArray(modes) || modes.length !== profile.modeIds.length) throw new RangeError('Profile bundle requires every Approach');
+  modes.forEach(migrateStrategyMode);
   return Object.freeze({
     syncEntityType: PERSONAL_STRATEGY_ENTITY_TYPES.PROFILE_BUNDLE,
     id: profile.id,
@@ -150,6 +180,7 @@ function entityType(value) {
 }
 
 export function toRemotePersonalStrategyEntity(value, { remoteRevision = 0 } = {}) {
+  assertRemoteCompatibleLocalEntity(value);
   const type = entityType(value);
   if (!type) throw new TypeError('Unsupported local Personal Strategy sync entity');
   const immutable = [
@@ -171,7 +202,7 @@ export function toRemotePersonalStrategyEntity(value, { remoteRevision = 0 } = {
     schemaVersion: REMOTE_PERSONAL_STRATEGY_ENTITY_VERSION,
     entityType: type,
     entitySchemaVersion: type === PERSONAL_STRATEGY_ENTITY_TYPES.PROFILE_BUNDLE
-      ? STRATEGY_PROFILE_SCHEMA_VERSION
+      ? REMOTE_PERSONAL_STRATEGY_PROFILE_VERSION
       : value.schemaVersion,
     id,
     profileId,
@@ -390,11 +421,17 @@ export function createPersonalStrategySyncAdapter({ syncPort } = {}) {
   if (!syncPort?.listEntities || !syncPort?.getEntityById || !syncPort?.applyRemoteEntity || !syncPort?.ownerRef) {
     throw new TypeError('Personal Strategy sync requires the canonical repository port');
   }
+  async function preflight() {
+    if (syncPort.assertCompatible) return syncPort.assertCompatible();
+    const objects = await syncPort.listEntities();
+    objects.forEach(assertRemoteCompatibleLocalEntity);
+  }
   return Object.freeze({
     domain: PERSONAL_STRATEGY_SYNC_DOMAIN,
     reconciliationVersion: PERSONAL_STRATEGY_RECONCILIATION_VERSION,
     conflictSchemaVersion: PERSONAL_STRATEGY_CONFLICT_VERSION,
-    supports: (value) => entityType(value) !== null,
+    preflight,
+    supports(value) { assertRemoteCompatibleLocalEntity(value); return true; },
     objectId: (value) => value?.id,
     listLocalObjects: () => syncPort.listEntities(),
     getLocalObject: (id) => syncPort.getEntityById(id),
@@ -415,6 +452,7 @@ export function createPersonalStrategySyncAdapter({ syncPort } = {}) {
       ));
     },
     async applyRemote(document) {
+      await preflight();
       return syncPort.applyRemoteEntity(
         fromRemotePersonalStrategyEntity(document, await syncPort.ownerRef()),
         document,
@@ -430,6 +468,7 @@ export function createPersonalStrategySyncAdapter({ syncPort } = {}) {
       return null;
     },
     async prepareLocalWinner(localObject, remoteDocument) {
+      await preflight();
       const next = toRemotePersonalStrategyEntity(localObject, { remoteRevision: remoteDocument.revision });
       await syncPort.applyRemoteEntity(
         fromRemotePersonalStrategyEntity(next, await syncPort.ownerRef()),

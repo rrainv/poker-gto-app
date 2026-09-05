@@ -3236,6 +3236,50 @@ Object.assign(trainingWorkspaceTranslations.he, {
   "Choose amount-to": "\u05d1\u05d7\u05d9\u05e8\u05ea \u05d4\u05e1\u05db\u05d5\u05dd \u05d4\u05db\u05d5\u05dc\u05dc",
   "{action}. {feedback}": "{action}. {feedback}"
 });
+const trainingIntelligenceTranslations = {
+  en: {
+    "This revisit is unavailable. Refresh Training Memory and try again.": "This revisit is unavailable. Refresh Training Memory and try again.",
+    "I'm unsure about my answer (optional)": "I'm unsure about my answer (optional)",
+    "Revisit in 24 hours": "Revisit in 24 hours",
+    "What to practice next": "What to practice next",
+    "You marked this decision uncertain and asked to revisit it.": "You marked this decision uncertain and asked to revisit it.",
+    "Practice now": "Practice now",
+    "Stop reminding": "Stop reminding",
+    "More uncertainty revisits in this page": "More uncertainty revisits in this page",
+    "Exact revisit · due {date}. This is a practice reminder, not a learning assessment.": "Exact revisit · due {date}. This is a practice reminder, not a learning assessment.",
+    "Revisit requested for {date}. Open Training Memory when your session is finished.": "Revisit requested for {date}. Open Training Memory when your session is finished.",
+    "Optionally mark your answer unsure before submitting. After answering, request an exact revisit in 24 hours. Open Training Memory while idle to practice, snooze, or stop reminders. A revisit does not prove retention.": "Optionally mark your answer unsure before submitting. After answering, request an exact revisit in 24 hours. Open Training Memory while idle to practice, snooze, or stop reminders. A revisit does not prove retention.",
+  },
+  ru: {
+    "This revisit is unavailable. Refresh Training Memory and try again.": "Повтор недоступен. Обновите историю тренировок и попробуйте снова.",
+    "I'm unsure about my answer (optional)": "Я не уверен в ответе (необязательно)",
+    "Revisit in 24 hours": "Повторить через 24 часа",
+    "What to practice next": "Что потренировать дальше",
+    "You marked this decision uncertain and asked to revisit it.": "Вы отметили неуверенность в этом решении и попросили вернуться к нему.",
+    "Practice now": "Повторить сейчас",
+    "Stop reminding": "Больше не напоминать",
+    "More uncertainty revisits in this page": "Другие повторы по неуверенным ответам в этой подборке",
+    "Exact revisit · due {date}. This is a practice reminder, not a learning assessment.": "Та же ситуация · запланировано на {date}. Это напоминание о практике, а не оценка навыка.",
+    "Revisit requested for {date}. Open Training Memory when your session is finished.": "Повтор запланирован на {date}. После сессии откройте историю тренировок.",
+    "Optionally mark your answer unsure before submitting. After answering, request an exact revisit in 24 hours. Open Training Memory while idle to practice, snooze, or stop reminders. A revisit does not prove retention.": "Перед ответом можно отметить неуверенность. После ответа запланируйте повтор той же ситуации через 24 часа. Вне сессии откройте историю тренировок, чтобы повторить, отложить или отключить напоминания. Сам повтор не доказывает закрепление навыка.",
+  },
+  he: {
+    "This revisit is unavailable. Refresh Training Memory and try again.": "החזרה אינה זמינה. רענן את זיכרון האימונים ונסה שוב.",
+    "I'm unsure about my answer (optional)": "אני לא בטוח בתשובה שלי (לבחירה)",
+    "Revisit in 24 hours": "חזרה בעוד 24 שעות",
+    "What to practice next": "מה לתרגל עכשיו",
+    "You marked this decision uncertain and asked to revisit it.": "סימנת חוסר ודאות בהחלטה הזו וביקשת לחזור אליה.",
+    "Practice now": "לתרגל עכשיו",
+    "Stop reminding": "להפסיק תזכורות",
+    "More uncertainty revisits in this page": "חזרות נוספות על תשובות לא בטוחות בעמוד זה",
+    "Exact revisit · due {date}. This is a practice reminder, not a learning assessment.": "חזרה על אותו מצב · מתוכננת ל־{date}. זו תזכורת לתרגול, לא הערכת למידה.",
+    "Revisit requested for {date}. Open Training Memory when your session is finished.": "החזרה נקבעה ל־{date}. בסיום האימון, פתח את זיכרון האימונים.",
+    "Optionally mark your answer unsure before submitting. After answering, request an exact revisit in 24 hours. Open Training Memory while idle to practice, snooze, or stop reminders. A revisit does not prove retention.": "אפשר לסמן חוסר ודאות לפני שליחת התשובה. לאחר התשובה ניתן לבקש חזרה על אותו מצב בעוד 24 שעות. מחוץ לאימון, פתח את זיכרון האימונים כדי לתרגל, לדחות או להפסיק תזכורות. עצם החזרה אינה מוכיחה שימור מיומנות.",
+  },
+};
+Object.entries(trainingIntelligenceTranslations).forEach(([language, entries]) => {
+  Object.assign(trainingMemoryTranslations[language], entries);
+});
 Object.entries(trainingMemoryTranslations).forEach(([language, entries]) => {
   Object.assign(trainingWorkspaceTranslations[language], entries);
 });

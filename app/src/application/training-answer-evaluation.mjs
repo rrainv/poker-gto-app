@@ -1,5 +1,6 @@
 import { ACTION_TYPES } from '../../../shared/poker-domain/index.js';
 import { isStrategyResultV1 } from './strategy-result.mjs';
+import { projectStrategyTruth, historicalStrategyTruth } from './strategy-truth.mjs';
 
 export const TRAINING_ANSWER_EVALUATION_SCHEMA_VERSION =
   'training-answer-evaluation/v1';
@@ -51,6 +52,8 @@ export function evaluateTrainingAnswer({
   chosenActionType,
   strategyResult,
   decisionContext = null,
+  chosenAction = null,
+  historicalEvidence = null,
 } = {}) {
   if (typeof exerciseId !== 'string' || !exerciseId) {
     throw new TypeError('exerciseId is required');
@@ -67,21 +70,29 @@ export function evaluateTrainingAnswer({
     (current, entry) => (!current || entry.probability > current.probability ? entry : current),
     null,
   );
-  if (!best) throw new RangeError('StrategyResult has no gradeable actions');
 
-  const chosenProbability = mapped?.probability ?? 0;
-  const bestProbability = best.probability;
+
+  const chosenProbability = best ? mapped?.probability ?? 0 : null;
+  const bestProbability = best?.probability ?? null;
   const probabilityGap = Math.max(0, bestProbability - chosenProbability);
-  const grade = probabilityGap <= OPTIMAL_PROBABILITY_GAP
+  const grade = !best ? null : probabilityGap <= OPTIMAL_PROBABILITY_GAP
     ? 'optimal'
     : chosenProbability > 0
       && probabilityGap <= ACCEPTABLE_PROBABILITY_GAP + Number.EPSILON
       ? 'acceptable'
       : 'mistake';
-  const accepted = grade !== 'mistake';
+  const action = { type: chosenActionType, amountBb: Number.isSafeInteger(chosenAction?.amountToMilliBb)
+    ? chosenAction.amountToMilliBb / 1000 : chosenAction?.amountBb ?? null };
+  const truth = historicalEvidence
+    ? historicalStrategyTruth(historicalEvidence, { chosenAction: action, decisionContext })
+    : projectStrategyTruth({ strategyResult, chosenAction: action, decisionContext });
+  const accepted = truth.state === 'normative_assessment' && truth.outcome === 'supported' && truth.claims.correct;
 
   return deepFreeze({
     schemaVersion: TRAINING_ANSWER_EVALUATION_SCHEMA_VERSION,
+    truth,
+    comparisonAccepted: grade !== null && grade !== 'mistake',
+    comparisonGrade: grade,
     exerciseId,
     chosenAction: { type: chosenActionType },
     mappedStrategyAction: mapped,
@@ -89,17 +100,17 @@ export function evaluateTrainingAnswer({
     bestProbability,
     bestStrategyAction: {
       type: strategyType(best),
-      label: best.label,
+      label: best?.label ?? null,
     },
-    grade,
+    grade: truth.state === 'normative_assessment' ? truth.outcome === 'supported' ? 'optimal' : 'mistake' : grade,
     accepted,
     scoreDelta: accepted ? 1 : 0,
     explanationData: {
       probabilityGap,
       source: strategyResult.source,
       chosenEvBb: mapped?.evBb ?? null,
-      bestEvBb: Number.isFinite(best.evBb) ? Number(best.evBb) : null,
-      evAvailable: Number.isFinite(mapped?.evBb) && Number.isFinite(best.evBb),
+      bestEvBb: Number.isFinite(best?.evBb) ? Number(best.evBb) : null,
+      evAvailable: Number.isFinite(mapped?.evBb) && Number.isFinite(best?.evBb),
     },
   });
 }

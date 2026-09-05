@@ -20,6 +20,7 @@ import {
   TRAINING_MEMORY_STORES,
   createIndexedDbTrainingMemoryDatabase,
 } from './indexeddb-storage.mjs';
+import { TRAINING_LEARNING_DECISION_VERSION } from './learning-evidence.mjs';
 
 const METADATA_KEY = 'state';
 const MAX_QUERY_LIMIT = 200;
@@ -123,7 +124,7 @@ function validateMetadata(value) {
       'Training Memory uses an unsupported database version and was left untouched.',
     );
   }
-  if (value.decisionSchemaVersion !== TRAINING_DECISION_RECORD_SCHEMA_VERSION
+  if (![TRAINING_DECISION_RECORD_SCHEMA_VERSION, TRAINING_LEARNING_DECISION_VERSION].includes(value.decisionSchemaVersion)
     || value.sessionSchemaVersion !== TRAINING_SESSION_RECORD_SCHEMA_VERSION) {
     throw new TrainingMemoryStorageError(
       'unsupported_schema',
@@ -250,9 +251,13 @@ export function createTrainingMemoryRepository({
       authorizationGuard?.();
       const result = await operation(transaction);
       authorizationGuard?.();
+      const updatedMetadata = nextMetadata(currentMetadata, clock);
+      if (result?.schemaVersion === TRAINING_LEARNING_DECISION_VERSION) {
+        updatedMetadata.decisionSchemaVersion = TRAINING_LEARNING_DECISION_VERSION;
+      }
       await transaction.put(
         TRAINING_MEMORY_STORES.METADATA,
-        nextMetadata(currentMetadata, clock),
+        updatedMetadata,
       );
       authorizationGuard?.();
       return result;
@@ -263,6 +268,21 @@ export function createTrainingMemoryRepository({
     ownerRef: cloneTrainingMemoryData(ownerRef),
     database: durableDatabase,
     initialize,
+
+    async hasMeaningfulData() {
+      return durableDatabase.runTransaction(Object.values(TRAINING_MEMORY_STORES), 'readonly', async (transaction) => {
+        const metadata = await transaction.get(TRAINING_MEMORY_STORES.METADATA, METADATA_KEY);
+        if (metadata) validateMetadata(metadata);
+        else if (await transaction.count(TRAINING_MEMORY_STORES.SESSIONS) || await transaction.count(TRAINING_MEMORY_STORES.DECISIONS)) {
+          throw new TrainingMemoryStorageError('invalid_metadata', 'Training Memory metadata is unavailable');
+        }
+        for (const [store, index] of [[TRAINING_MEMORY_STORES.SESSIONS, TRAINING_MEMORY_INDEXES.OWNER_STARTED_AT], [TRAINING_MEMORY_STORES.DECISIONS, TRAINING_MEMORY_INDEXES.OWNER_CREATED_AT]]) {
+          const records = await transaction.getAllByIndexRange(store, index, { lower: [ownerKey, STRING_FLOOR], upper: [ownerKey, STRING_CEILING], limit: 1, direction: 'next' });
+          if (records.length) return true; // Includes abandoned sessions and unanswered decisions.
+        }
+        return false;
+      });
+    },
 
     async createSession(session, {
       authorizationGuard = null,
@@ -330,6 +350,18 @@ export function createTrainingMemoryRepository({
             throw new TrainingMemoryStorageError('conflicting_id', 'Training decision ID is already in use.');
           }
           requireSessionDecisionMembership(session, decision);
+          const revisit = decision.learningEvidence?.revisit;
+          if (revisit) {
+            const parentStored = await transaction.get(TRAINING_MEMORY_STORES.DECISIONS, revisit.sourceDecisionRecordId);
+            if (!parentStored) throw new TrainingMemoryStorageError('missing_decision', 'Revisit source is missing.');
+            const parent = parentStored.value;
+            ensureOwner(parent, ownerRef, 'Revisit source');
+            if (parent.learningEvidence?.revisitRequest?.requestedAt !== revisit.requestedAt
+              || parent.reviewState.dueAt !== revisit.dueAt
+              || !['pending', 'snoozed'].includes(parent.reviewState.state)) {
+              throw new TrainingMemoryStorageError('stale_decision', 'The revisit request changed; reopen it from review.');
+            }
+          }
           const nextSession = cloneTrainingMemoryData(session);
           nextSession.decisionRecordIds.push(decision.id);
           nextSession.updatedAt = decision.updatedAt;
@@ -349,6 +381,8 @@ export function createTrainingMemoryRepository({
 
     async replaceDecision(decision, {
       fullHandSource = null,
+      expectedRecord = null,
+      resolveRevisit = false,
       authorizationGuard = null,
       authorizationSignal = null,
     } = {}) {
@@ -361,6 +395,9 @@ export function createTrainingMemoryRepository({
           if (!stored) throw new TrainingMemoryStorageError('missing_decision', 'Training decision is missing.');
           const before = stored.value;
           ensureOwner(before, ownerRef, 'Training decision');
+          if (expectedRecord && !sameData(before, expectedRecord)) {
+            throw new TrainingMemoryStorageError('stale_decision', 'Training evidence changed; reload and retry.');
+          }
           if (before.sessionId !== decision.sessionId || before.ordinal !== decision.ordinal
             || before.exerciseId !== decision.exerciseId || before.shownAt !== decision.shownAt) {
             throw new TrainingMemoryStorageError(
@@ -384,6 +421,34 @@ export function createTrainingMemoryRepository({
             TRAINING_MEMORY_STORES.SESSIONS,
             sessionRecord(nextSession, nextCache),
           );
+          const revisit = decision.learningEvidence?.revisit;
+          if (resolveRevisit && revisit && before.status !== TRAINING_DECISION_STATUSES.ANSWERED
+            && decision.status === TRAINING_DECISION_STATUSES.ANSWERED) {
+            const parentStored = await transaction.get(TRAINING_MEMORY_STORES.DECISIONS, revisit.sourceDecisionRecordId);
+            if (parentStored) {
+              const parent = parentStored.value;
+              ensureOwner(parent, ownerRef, 'Revisit source');
+              validateTrainingDecisionRecord(parent);
+              if (parent.learningEvidence?.revisitRequest?.requestedAt === revisit.requestedAt
+                && parent.reviewState.dueAt === revisit.dueAt
+                && ['pending', 'snoozed'].includes(parent.reviewState.state)) {
+                const resolved = cloneTrainingMemoryData(parent);
+                resolved.reviewState = {
+                  ...resolved.reviewState, state: 'reviewed', dueAt: null,
+                  lastReviewedAt: decision.answeredAt, reviewCount: resolved.reviewState.reviewCount + 1,
+                };
+                resolved.updatedAt = decision.answeredAt;
+                validateTrainingDecisionRecord(resolved);
+                await transaction.put(TRAINING_MEMORY_STORES.DECISIONS, decisionRecord(resolved));
+                const parentSessionStored = await transaction.get(TRAINING_MEMORY_STORES.SESSIONS, parent.sessionId);
+                if (!parentSessionStored) throw new TrainingMemoryStorageError('missing_session', 'Revisit source session is missing.');
+                ensureOwner(parentSessionStored.value, ownerRef, 'Revisit source session');
+                const parentSession = cloneTrainingMemoryData(parentSessionStored.value);
+                parentSession.updatedAt = resolved.updatedAt > parentSession.updatedAt ? resolved.updatedAt : parentSession.updatedAt;
+                await transaction.put(TRAINING_MEMORY_STORES.SESSIONS, sessionRecord(parentSession, parentSessionStored.summaryCache));
+              }
+            }
+          }
           return cloneTrainingMemoryData(decision);
         },
         { authorizationGuard, authorizationSignal },
@@ -496,6 +561,18 @@ export function createTrainingMemoryRepository({
             || left.record.shownAt.localeCompare(right.record.shownAt)
             || left.recordId.localeCompare(right.recordId))
           .slice(0, bounded);
+      });
+    },
+
+    async listRevisitCandidates({ now = new Date(), limit = 50 } = {}) {
+      const bounded = queryLimit(limit);
+      return withRead([TRAINING_MEMORY_STORES.DECISIONS], async (transaction) => {
+        const records = await transaction.getAllByIndexRange(
+          TRAINING_MEMORY_STORES.DECISIONS, TRAINING_MEMORY_INDEXES.OWNER_REVIEW_STATE_DUE_AT,
+          { lower: [ownerKey, 'snoozed', ISO_FLOOR], upper: [ownerKey, 'snoozed', new Date(now).toISOString()],
+            direction: 'next', limit: bounded },
+        );
+        return records.map((entry) => cloneTrainingMemoryData(entry.value));
       });
     },
 

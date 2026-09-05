@@ -47,18 +47,18 @@ test('question UI exposes one dominant hand-class prompt with canonical RFI acti
 
 test('adaptive setup, transparent question value, truthful model progress, and completion controls are present', () => {
   const template = calibrationTemplate();
-  for (const intent of ['quick', 'standard', 'deep']) {
-    assert.match(template, new RegExp(`name="calibration-intent" value="${intent}"`));
-  }
-  assert.match(template, /Question counts are session goals, not time promises/);
+  assert.match(template, /name="calibration-intent" value="mapping"/);
+  assert.match(template, /Map hand families and boundaries. Stop whenever you want/);
+  assert.match(template, /id="personalMappingCoverage"/);
+  assert.doesNotMatch(template, /About 5 questions|About 30 questions|Up to 75 questions/);
   assert.match(template, /Riverline chooses informative hands first/);
   assert.match(template, /data-tutorial-anchor="calibration-question-reason"/);
   for (const category of [
     'Direct', 'Locally inferred', 'Transferred', 'Uncertain', 'Unknown', 'Conflicting',
   ]) assert.match(template, new RegExp(`>${category}<`));
   assert.doesNotMatch(template, /id="calibrationProgressBar"|high-value questions remain/);
-  assert.match(template, /Your starter profile is ready/);
-  assert.match(template, /Review profile/);
+  assert.match(template, /Initial map/);
+  assert.match(template, /id="calibrationCompleteOpenMatrix"[^>]+data-i18n="Review understanding"/);
   assert.doesNotMatch(template.slice(
     template.indexOf('id="calibrationCompleteState"'),
     template.indexOf('<div class="calibration-personal-column">'),

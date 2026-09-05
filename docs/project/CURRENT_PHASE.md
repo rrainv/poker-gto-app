@@ -1,12 +1,12 @@
 # Current Riverline phase
 
-Last refreshed: September 4, 2026 (`LIGHT-WINS-BATCH-001` is human accepted; `IDENTITY-LIFECYCLE-001` is active next).
+Last refreshed: September 5, 2026 (`MASSIVE-FOUNDATION-CHECKPOINT-001` consolidates the accepted Identity, truth, Training Intelligence, and Personal Strategy foundations).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
 ## Throughput note
 
-`LIGHT-WINS-BATCH-001` is closed and human accepted across Analyze Scenario, top-level Hand / Analyze Hand Mode, and Equity. Current work advances to the already-planned `IDENTITY-LIFECYCLE-001` foundation gate without materially re-ranking the preserved sequence. Continue alternating bounded high-reward work with required correctness cleanup when no P0/P1 blocker intervenes.
+`MASSIVE-FOUNDATION-CHECKPOINT-001` closes the accumulated Identity Lifecycle A/B/C, heuristic/normative truth, first Training Intelligence, Explain/outs, and Personal Strategy Intelligence implementation foundations. The next preserved gate is `BROWSER-TEST-PLATFORM-001`; later ordering remains unchanged.
 
 ## Status vocabulary
 
@@ -148,17 +148,14 @@ This document answers **what Riverline is doing now and what follows it**. `ROAD
    10. **COMPLETED / HUMAN ACCEPTED — `TRAINING-MEMORY-AVAILABILITY-001`** — Training Memory bridge installation recovers from auth/bootstrap ordering, signed-in local Memory works in idle and all ordinary Training modes without Supabase sync, and auth-owner isolation remains intact;
    11. **COMPLETED / HUMAN ACCEPTED — `SAME-SPOT-COHERENCE-001R`** — Same Spot is a standalone idle-only Training Memory re-drill, not Focused or planner-backed; active ordinary Training blocks entry without suspend/restore, and frozen comparison evidence remains headline-stat/planner-neutral;
    12. **COMPLETED / HUMAN ACCEPTED — `LIGHT-WINS-BATCH-001`** — bounded cross-surface randomization utilities are accepted in Analyze Scenario, top-level Hand / Analyze Hand Mode, and Equity. Analyze uses `analyze-whole-spot-policy/v2` for atomic provider-ready lossy Scenario generation with exact Keep and Change-only controls; Hand randomizes only the pending uncommitted chance draft and keeps Deal/Apply as canonical commit; Equity preserves roster/order/names, Known/Unknown modes, board, and dead cards while rerolling only Known hands, and provides explicit board-street utilities without automatic calculation. Shared deterministic recipe infrastructure and interaction language do not create a universal poker-state generator or change surface authorities;
-   13. **ACTIVE NEXT — `IDENTITY-LIFECYCLE-001`** — establish cross-surface owner, generation, invalidation, and disposal behavior, including the durable anonymous device-local Guest target and authenticated sign-out isolation;
-   14. `HEURISTIC-BASELINE-TRUTH-001` — make every consumer treat the current heuristic as exploratory/comparative baseline evidence only;
-   15. `TRAINING-NORMATIVE-001` — separate comparative practice from normative grading and replace probability-gap-to-modal-action as a normative correctness rule;
-   16. `BROWSER-TEST-PLATFORM-001` — create a portable mounted-browser lifecycle test platform;
-   17. `UI-COMPOSITION-ROOT-001` — define the bounded composition root and lifecycle seams without a framework rewrite;
-   18. run one bounded workspace extraction pilot chosen by the composition-root ticket;
-   19. `SAVED-LIBRARY-001` — deliver full retrieval for current Saved Hand/Spot objects before adding payload kinds;
-   20. `HOME-STUDY-CONTINUITY-001` — connect only contract-backed study continuity;
-   21. make one bounded reference-source decision after the read-only source research is ready;
-   22. expand the learning loop only after the trust, grading, lifecycle, browser, and retrieval gates;
-   23. `PERSONAL-STRATEGY-003A` — then execute the preserved versioned Game setup/Approach and first-value reset.
+   13. **COMPLETED / ACCEPTED FOUNDATION — `MASSIVE-FOUNDATION-CHECKPOINT-001`** — consolidates `IDENTITY-LIFECYCLE-001A/B/C`, durable Device Guest/account isolation, `HEURISTIC-BASELINE-TRUTH-001`, `TRAINING-NORMATIVE-001`, the first `TRAINING-INTELLIGENCE-001` Unsure → Revisit slice, and `PERSONAL-STRATEGY-INTELLIGENCE-001` including structural range mapping and Natural-Language foundations;
+   14. **ACTIVE NEXT — `BROWSER-TEST-PLATFORM-001`** — create a portable mounted-browser lifecycle test platform;
+   15. `UI-COMPOSITION-ROOT-001` — define the bounded composition root and lifecycle seams without a framework rewrite;
+   16. run one bounded workspace extraction pilot chosen by the composition-root ticket;
+   17. `SAVED-LIBRARY-001` — deliver full retrieval for current Saved Hand/Spot objects before adding payload kinds;
+   18. `HOME-STUDY-CONTINUITY-001` — connect only contract-backed study continuity;
+   19. make one bounded reference-source decision after the read-only source research is ready;
+   20. expand the learning loop after the browser, composition, retrieval, continuity, and source-decision gates.
    - read-only reference-source research may run in parallel;
    - Home Game remains a supporting utility and freezes expansion after safety fixes;
    - no broad visual-polish wave, bots, Range Evolution, advanced Equity, new Saved payload kinds, mobile, social, PLO, or natural-language Coach work moves ahead of these gates.
@@ -189,7 +186,7 @@ The following architecture is established and must not be duplicated:
 - `RangeAnalysisFacts v1` owns canonical factual range/hand classification; DOM-free `range-comparison-facts/v1` projects representative-class comparison facts after canonical Range Core card-removal conditioning.
 - The current deterministic heuristic is a generalized exploratory/comparative baseline only, never normative, exact-frequency, skill, accuracy, mastery, correctness, solved-GTO, Nash, exact-EV, exploitability, or optimality authority. Agreement does not prove ability, and disagreement alone does not create remediation. Equity fallback remains exploratory; unavailable remains unavailable.
 - Training Practice Planner/intent/request own structural curriculum targets; the canonical Training generator owns legal trajectories and grading.
-- `training-decision-record/v1` / `training-session-record/v1` own durable encountered-decision/session evidence; historical source/authority/claim snapshots are immutable, Same Spot preserves their answer-time semantics, and Full Hand decisions share one session replay authority. Reference comparison/remediation requires ClaimPolicy permission, so exploratory or unaccepted sources cannot create reference-alignment states or automatic reference-derived review. Authentication-aware owner/generation scope now gates every operation, while the durable anonymous Device Guest and generalized cross-surface lifecycle remain future `IDENTITY-LIFECYCLE-001` work.
+- `training-decision-record/v1` / `training-session-record/v1` own durable encountered-decision/session evidence; historical source/authority/claim snapshots are immutable, Same Spot preserves their answer-time semantics, and Full Hand decisions share one session replay authority. Reference comparison/remediation requires ClaimPolicy permission. Identity Lifecycle A/B/C now provide durable Device Guest ownership, account isolation, generation fencing, explicit Move/Keep/Cancel, and journaled promotion/recovery.
 - `AnalysisExplanation v1`, `RangeAnalysisFacts v1`, and `BluffAnalysisFacts v1` consume trusted facts without becoming poker, Equity, range, or strategy authorities.
 - `table-presentation/v1` and `hand-review/v1` are ephemeral projections; `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1` create presentation consequences only.
 - `SavedStudyObject v1` remains Saved persistence/schema authority; DOM-free `saved-study-preview-facts/v1` is its bounded Hand/Spot preview projection, not a second Saved or poker authority. Personal Strategy evidence, account/sync, and Home Game retain their separate authorities.
@@ -222,13 +219,11 @@ Source authority, DecisionContext v1.1, exact preflop role semantics, research-o
 
 ### Training
 
-Varied, Focused, and Full Hand Training are legal, deterministic, provider-backed foundations. `TRAINING-MEMORY-001` adds durable DecisionRecord/session evidence, indexed recent history, a Review queue, reversible review lifecycle, exact historical Same Spot, and planner/generator-backed current Similar Spot. The accepted availability repair makes the auth-aware local bridge recover from bootstrap ordering and serve signed-in idle, Varied, Focused, and Full Hand Training without Supabase sync. Auth/owner generation and A → Guest → B / A → Guest → A isolation remain intact. Same Spot is a standalone idle-only Memory re-drill, neither Focused nor planner-backed; active ordinary Training blocks entry, no suspend/restore path exists, frozen earlier/current source evidence remains explicit, and ordinary headline statistics/planner progress do not change. Heuristic disagreement still contributes automatic review priority, owned by `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`. Advanced scheduling, filters/trends, Saved/Home/Replay/Analyze continuity, Personal Strategy opt-in, sync/export, `Not sure`, and the durable anonymous Device Guest remain later slices. See [Training Memory v1](TRAINING_MEMORY_V1_SPEC.md), [Training Intelligence](capabilities/TRAINING_INTELLIGENCE.md), and [Learning Evidence](capabilities/LEARNING_EVIDENCE_FOUNDATION.md).
+Varied, Focused, and Full Hand Training are legal, deterministic, provider-backed foundations. `TRAINING-MEMORY-001` owns durable DecisionRecord/session evidence, Review, Same Spot, and Similar Spot. The first `TRAINING-INTELLIGENCE-001` slice adds optional pre-reveal Unsure evidence and an explicit exact 24-hour Revisit with why-returned facts, overrides, historical-answer embargo, and owner/request fences. Heuristic agreement remains neutral comparative evidence; normative grading requires an explicit application-owned assessment policy. Advanced scheduling, filters/trends, cross-surface continuity, Personal Strategy observation, and sync/export remain later slices.
 
 ### Personal Strategy
 
-Calibration, deterministic inference, Matrix, Range Builder, Range Teacher, bounded RFI context transfer, and optional sync are checkpointed over one sparse immutable intended-strategy evidence authority.
-
-The independent [`PERSONAL-STRATEGY-002R` review](PERSONAL_STRATEGY_002R_REVIEW.md) is completed and human-accepted. `PERSONAL-STRATEGY-003A` remains the preserved versioned Game setup/Approach migration plus bounded local-first first-value reset before provider integration. It is ordered only after the foundation gates, one workspace extraction pilot, current Saved/Home continuity, a bounded reference-source decision, and learning-loop expansion; it does not jump that queue. The confirmed hands-on evidence strengthens broad sparse/high-information coverage before fine boundary refinement and confirms that exactly-three/environment restrictions and standalone Teacher/Builder complexity are painful. Exactly three legacy UI modes are not a future product requirement. Direct intent, inference, selected reference, source-labelled observed behavior, and opponent policy remain distinct; dominant-only evidence never becomes a fake 100% mix. Accepted durable direction lives in the [Personal Strategy dossier](capabilities/PERSONAL_STRATEGY_INTELLIGENCE.md).
+`PERSONAL-STRATEGY-INTELLIGENCE-001` implements the accepted reset over one sparse immutable intended-strategy authority: arbitrary Game Setups, unlimited independently versioned Approaches, structural/boundary-driven range mapping, qualitative intent with correction lineage, What Riverline understands, Matrix precision, and deterministic range-level Natural-Language summaries/comparisons. Direct intent, inference, selected reference, observed Hero behavior, opponent policy, and normative assessment remain separate. See [Personal Strategy Intelligence v1](PERSONAL_STRATEGY_INTELLIGENCE_V1_SPEC.md).
 
 ### Analysis, Equity, bluff, and ranges
 

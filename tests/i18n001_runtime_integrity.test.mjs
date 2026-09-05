@@ -161,7 +161,7 @@ test('runtime messages support named interpolation through the single translatio
   );
 });
 
-test('Training matching-reference verdict localizes as Correct in every supported language', () => {
+test('legacy Correct label remains translatable without authorizing a Training verdict', () => {
   const runtime = createRuntime();
   for (const [language, expected] of [
     ['en', 'Correct'],

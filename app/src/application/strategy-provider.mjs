@@ -10,6 +10,7 @@ import {
   strategySourceDescriptorFor,
 } from './strategy-source-authority.mjs';
 import { createReferencePackAdapter } from './reference-pack-v1.mjs';
+import { bindStrategyAssessmentPolicy } from './strategy-assessment-policy.mjs';
 
 export const STRATEGY_PROVIDER_SCHEMA_VERSION = 'strategy-provider/v1';
 
@@ -85,6 +86,7 @@ export function createStrategyProvider({
   referencePack = null,
   allowTestReferencePack = false,
   sourceAcceptanceRegistry = null,
+  assessmentPolicyRegistry = null,
 } = {}) {
   if (typeof fallbackResolver !== 'function') {
     throw new TypeError('StrategyProvider requires an explicit fallbackResolver');
@@ -119,14 +121,14 @@ export function createStrategyProvider({
               referenceResolution.candidate.source,
               referenceResolution.candidate.sourceDescriptor,
             );
-            return resultFromCandidate(
+            return bindStrategyAssessmentPolicy(resultFromCandidate(
               referenceResolution.candidate,
               decisionContext,
               sourceAcceptanceRegistry?.acceptanceFor(
                 descriptor,
                 referenceAdapter.contentHash,
               ) ?? null,
-            );
+            ), decisionContext, assessmentPolicyRegistry);
           }
           referenceSelection = {
             packId: referenceAdapter.packId,
@@ -167,7 +169,7 @@ export function createStrategyProvider({
           descriptor,
           candidate?.provenance?.contentHash ?? null,
         ) ?? null;
-        return resultFromCandidate(candidate, decisionContext, acceptance);
+        return bindStrategyAssessmentPolicy(resultFromCandidate(candidate, decisionContext, acceptance), decisionContext, assessmentPolicyRegistry);
       } catch (error) {
         return fallbackFailure(error);
       }

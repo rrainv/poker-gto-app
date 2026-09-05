@@ -36,17 +36,11 @@ Answered records store:
 - the internal deterministic Training evaluation as internal evidence;
 - a public comparison state: `matches_reference`, `close_to_reference`, `differs_from_reference`, `unsupported`, or `unavailable`.
 
-Internal grade and permitted public claim are deliberately separate. A heuristic internal `mistake` grade remains a comparative `differs_from_reference` record; it is not stored as universal poker truth. Heuristic agreement/disagreement is not skill, accuracy, mastery, correctness, GTO, or automatic remediation. A future trusted source does not become normatively gradeable merely because it has a modal distribution: `TRAINING-NORMATIVE-001` must define a source-justified grading method without probability-gap-to-modal-action as the correctness rule.
+Internal modal-distance grades remain descriptive compatibility evidence. New heuristic records have no reference-comparison permission: their legacy comparison field is unavailable, while `internalEvaluation.truth` preserves explicitly named heuristic agreement/disagreement. The additive `strategy-truth/v1` snapshot freezes source/assessment identity, context/action, permitted claims, assessment outcome, reasons and learning eligibility. Only an accepted action-set criterion can authorize supported/unsupported outcomes; source acceptance alone cannot. See [Strategy Source Authority](STRATEGY_SOURCE_AUTHORITY_SPEC.md).
 
-Reference comparison states and automatic reference-derived review reasons are
-created only when the frozen answer-time ClaimPolicy explicitly permits the
-required comparative or normative claim. Exploratory or unaccepted sources
-cannot create `matches_reference`, `close_to_reference`, or
-`differs_from_reference`, and cannot create automatic reference-derived
-remediation. The opaque live acceptance token is never persisted as proof of
-trust.
+Historical snapshots are validated without consulting current registries. Existing records are neither rewritten nor upgraded; legacy reference-comparison names remain readable but cannot create normative assessments or automatic remediation. No new schema/store/index/database migration is introduced by the truth gate.
 
-Study metadata is user-authored and distinct from source truth: `review`, `difficult`, `important`, and `myMistake`. Training v1 has no `Not sure` action, so the existing product question remains open rather than being silently mapped to an action.
+Study metadata is user-authored and distinct from source truth: `review`, `difficult`, `important`, and `myMistake`. `TRAINING-INTELLIGENCE-001` adds optional pre-reveal uncertainty on ordinary Varied/Focused answers through `training-decision-record/v1.1` / `training-learning-evidence/v1`; legacy v1 records are unchanged. The action and assessment remain separate. A distinct ungraded abstention is preserved for later implementation, never mapped to Fold or Skip. See [Training Intelligence v1](TRAINING_INTELLIGENCE_V1_SPEC.md).
 
 ### `training-session-record/v1`
 
@@ -68,9 +62,10 @@ Presentation strings, hand-category prose, UI tags as poker inference, fake accu
 
 ## Local-first persistence and ownership
 
-Training Memory uses its own IndexedDB database, `riverline-training-memory`, version 1, with backend schema `training-memory-indexeddb/v1`. Its browser bridge resolves an authenticated owner scope from AuthenticationService plus AccountIdentity and creates `RiverlineOwnershipRef` records; it creates no identity or account binding. Bridge installation recovers when Authentication or AccountIdentity becomes ready after the first bootstrap attempt, without caching the early failure or duplicating subscriptions. For a signed-in local owner, idle, Varied, Focused, and Full Hand Training use this local repository whether or not Supabase sync is configured or available.
+Training Memory retains its own IndexedDB database, `riverline-training-memory`, version 1, and unchanged historical decision/session schemas. Slice B resolves the current lifecycle `training_memory` domain binding; its stable `domainOwnerRef` supplies persisted owner indexes independently of the current identity kind. Existing account references are preserved. Slice C Move preserves the same Guest persisted owner reference when its identity becomes authenticated; no historical session or decision record is rewritten. Missing or incompatible stable bindings block promotion.
 
-Owner-key indexes remain a storage invariant, not authorization. The accepted owner resolver captures expected authentication state, owner reference, and auth/identity generation for every operation. Guest cannot resolve a retained authenticated AccountIdentity, and A → Guest → B plus A → Guest → A coverage proves that B never adopts A while A becomes accessible again only after A authenticates. Auth/identity transitions synchronously clear owner-sensitive Memory presentation and invalidate stale reads, lazy decisions, Same Spot, Similar Spot, review actions, and mixed due/recent panel reads. Queued intents whose generation changed are discarded before owner resolution. Each in-flight write carries its generation abort signal into the repository transaction: IndexedDB aborts the transaction, while the deterministic memory backend stages and discards changes before commit. Existing account bytes remain untouched on access denial. Explicit sign-out revokes local Training Memory access before remote provider cleanup; provider failure cannot restore prior access. There is no upload, implicit sync, or remote assumption. The JSON-compatible schemas preserve a future export/import seam, but no export UI is claimed. This contract does not implement the durable anonymous Device Guest or generalized cross-surface lifecycle; `IDENTITY-LIFECYCLE-001` retains that future work.
+Owner indexes are storage invariants, not authorization. The bridge preserves the accepted authentication/owner generation model and adds current lifecycle-scope validation. Account access requires the matching authenticated profile; Device Guest receives only its own durable local Memory. Bootstrap ordering remains recoverable. Auth/identity transitions synchronously clear owner-sensitive Memory presentation and invalidate stale reads, lazy decisions, Same Spot, Similar Spot, review actions, mixed panel reads, and queued intents. In-flight writes carry an abort signal; IndexedDB aborts and deterministic memory storage discards staged writes. Existing bytes survive denial and are available only to the same current owner. No remote work, sync, export UI, or new Home history projection is added.
+
 
 Stores and important indexes:
 
@@ -82,16 +77,28 @@ Version-1 migration creates missing stores/indexes without deleting other data. 
 
 ## Review queue and lifecycle
 
-The current v1 queue is derived from answered evidence and study metadata. Its stored reasons remain inspectable, but automatic remediation semantics are not accepted:
+The bounded Intelligence extension reuses this lifecycle for explicit uncertain
+revisit requests: a request schedules 24 hours later, with Practice now, Snooze
+and Stop reminding controls. The new lazy recommendation projection consumes
+only those requests and sorts by due time/ID; it does not inherit the legacy
+comparative weights below. Exact revisits retain historical source evidence,
+hide previous answers/hints, and keep ordinary stats/planner progress unchanged.
+Only a persisted linked answer resolves a still-matching request, without any
+retention, correctness, or transfer claim. Record-version metadata advances
+atomically to v1.1 on the first extended write; no database/store/index migration
+or historical rewrite occurs. Human browser acceptance remains pending.
 
-- differs from the selected reference (historical comparative evidence only);
-- close to the selected reference (historical comparative evidence only);
-- source comparison unavailable/unsupported;
-- manually marked Review, Difficult, Important, or My mistake.
+The queue is derived from frozen truth and explicit study intent:
 
-Lifecycle states are `none`, `pending`, `reviewed`, and `snoozed`. Done marks reviewed but preserves evidence; Review tomorrow creates a one-day due date; Review again returns an item to pending.
+- accepted normative unsupported outcomes with explicit remediation permission;
+- manually marked Review, Difficult, Important, or My mistake;
+- explicit uncertainty/revisit requests.
 
-Priority is currently deterministic and transparent: explicit Review/Difficult/Important/My mistake weights, then difference/unavailable/close weights, plus bounded age, minus bounded prior-review count. The human audit disposition supersedes treating heuristic disagreement alone as an automatic remediation signal. `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001` must separate user-authored review intent and legitimately normative evidence from baseline comparison. Priority is not a mastery, skill, accuracy, correctness, or ability-confidence score. Sophisticated spaced/adaptive scheduling is deferred until those semantics are repaired.
+Heuristic or accepted-reference disagreement, closeness, and unavailable comparison do not create automatic reasons. Old evidence and lifecycle bytes remain preserved; reasonless historical entries are excluded from due queries and have zero priority. Deterministic user/accepted-remediation weights, bounded age and prior-review counts order eligible items; priority is not skill or mastery.
+
+Lifecycle states remain `none`, `pending`, `reviewed`, and `snoozed`. Done preserves evidence; Review tomorrow and Review again preserve the existing reversible workflow. Unsure -> explicit Revisit -> Why it returned continues when assessment is unavailable.
+
+Session summaries partition heuristic comparison, accepted-reference comparison, normative permitted outcomes and unassessed participation. Presentation shows meaningful groups only and no universal accuracy/alignment rate.
 
 ## Same Spot
 
@@ -100,9 +107,9 @@ Same Spot reconstructs the exact canonical decision:
 - generated decisions reuse the frozen PokerState, DecisionContext, legal actions, cards, rules, positions, stacks, price, and source result;
 - Full Hand decisions reconstruct their exact pre-action frame from the one session-level canonical replay source.
 
-The v1 comparison is explicitly `historical`: it uses the frozen original StrategyResult, durable answer-time authority metadata, and ClaimPolicy. It never silently substitutes today's provider, reauthenticates a lost process-local acceptance token, upgrades an old record, or re-grades authority during Same Spot.
+The v1 comparison is explicitly `historical`: it uses the frozen original StrategyResult, durable answer-time authority metadata, ClaimPolicy, and the frozen assessment/truth snapshot when present. It never silently substitutes today's provider, reauthenticates a lost process-local acceptance token, upgrades an old record, or re-grades authority during Same Spot.
 
-For the current alpha, Same Spot is a standalone Training Memory re-drill that starts only while ordinary Training is idle. It creates one temporary `review` Memory session for one decision, is neither Focused Drill nor planner-backed, and completes or abandons that review session before returning to ordinary idle Training. When an ordinary Varied, Focused, or Full Hand session is active, entry is prevented with natural explanatory copy without replacing, suspending, or abandoning that session. Riverline has no suspended Training snapshot, restore machinery, or Return-to-session path. Frozen `Earlier answer` / `This try` and `Baseline then` / `Reference then` evidence remains distinct, and the re-drill changes neither ordinary Training headline statistics nor planner progress.
+For the current alpha, Same Spot is a standalone Training Memory re-drill that starts only while ordinary Training is idle. It creates one temporary `review` Memory session for one decision, is neither Focused Drill nor planner-backed, and completes or abandons that review session before returning to ordinary idle Training. When an ordinary Varied, Focused, or Full Hand session is active, entry is prevented with natural explanatory copy without replacing, suspending, or abandoning that session. Riverline has no suspended Training snapshot, restore machinery, or Return-to-session path. Frozen `Earlier answer` / `This try` and `Historical heuristic baseline` / `Historical selected reference` evidence remains distinct, and the re-drill changes neither ordinary Training headline statistics nor planner progress.
 
 ## Similar Spot
 
@@ -124,7 +131,7 @@ The result is labelled `current`, names why it is similar, records which card/bo
 
 ## Full Hand behavior
 
-One Training Memory session represents one Full Hand. Its Hero DecisionRecords reference exact replay points; one evolving session-level canonical replay source is retained. Exact action amount-to is recorded, while current Full Hand grading remains action-family only. Memory writes do not replace or alter the Full Hand controller, Hero journal, Replay, or shared Review.
+One Training Memory session represents one Full Hand. Its Hero DecisionRecords reference exact replay points; one evolving session-level canonical replay source is retained. Exact action amount-to is recorded and supplied to the shared evaluator; normative assessment additionally requires accepted exact sizing coverage. Ordinary action-only answers abstain when the criterion needs a concrete size. Memory writes do not replace or alter the Full Hand controller, Hero journal, Replay, or shared Review.
 
 ## UI, accessibility, and localization
 
@@ -143,8 +150,8 @@ V1 limitations and return points:
 - manual Firefox acceptance at 1920x1080 and 1366x768 for EN, HE RTL, representative RU, and Full Hand remains open;
 - advanced spaced/adaptive scheduling, saved drills, rich filters/trends, Home/Replay/Analyze continuity, export/import, sync, and Personal Strategy opt-in are later tickets;
 - current source coverage remains a generalized exploratory/comparative heuristic baseline because no production reference pack is registered;
-- authentication-gated owner isolation and explicit sign-out inaccessibility are accepted under `AUTH-TRAINING-MEMORY-001`; the durable anonymous Device Guest and generalized lifecycle remain future `IDENTITY-LIFECYCLE-001` work;
+- authentication-gated owner isolation and explicit sign-out inaccessibility are accepted under `AUTH-TRAINING-MEMORY-001`; Slice B adds durable Device Guest ownership and awaits human acceptance; Slice C adds journaled promotion with the same persisted owner binding and pending human acceptance;
 - heuristic disagreement must stop creating automatic remediation under `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`;
-- `Not sure` remains an open product decision.
+- Optional pre-answer uncertainty and explicit delayed exact revisits are implemented under `TRAINING-INTELLIGENCE-001`; the separate abstention path remains future work.
 
 Focused automated coverage is in `tests/training_memory001_foundation.test.mjs`.

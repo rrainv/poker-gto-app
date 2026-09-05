@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 import { createRangeCalibrationLifecycle } from '../app/src/application/range-calibration-lifecycle.mjs';
+import { normalizeModeNames } from '../app/src/application/range-calibration-service.mjs';
 
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
@@ -54,20 +55,30 @@ test('the full Personal Strategy workspace remains dormant until Personal Strate
   assert.equal(mountCalls, 1);
 });
 
-test('profile editor requires exactly three text-named modes and contains no interpolation controls', () => {
+test('Game Setup editor accepts any positive number of named Approaches and contains no interpolation controls', () => {
+  const personalIds = [...html.matchAll(/\bid="((?:calibration|personal)[^"]*)"/g)].map((match) => match[1]);
+  assert.equal(new Set(personalIds).size, personalIds.length, 'Workspace and modal fields must resolve to distinct DOM elements');
   const modal = html.slice(html.indexOf('id="calibrationProfileModalTemplate"'), html.indexOf('</template>', html.indexOf('id="calibrationProfileModalTemplate"')));
-  assert.equal((modal.match(/id="calibrationModeName[123]"/g) || []).length, 3);
+  assert.match(modal, /id="personalApproachNameFields"/);
+  assert.doesNotMatch(modal, /id="calibrationModeName[123]"|three strategy modes/);
+  assert.deepEqual(normalizeModeNames(['Usual']), ['Usual']);
+  const names = ['Usual', 'Against Alex', 'Deep', 'Short', 'Experiment'];
+  assert.deepEqual(normalizeModeNames(names), names);
+  assert.throws(() => normalizeModeNames([]), /At least one Approach/);
+  assert.throws(() => normalizeModeNames(['Usual', 'usual']), /different/);
   assert.doesNotMatch(modal, /type="range"|styleValue|interpolation|Tight 0|Loose 100/i);
-  assert.match(service, /Mode names must be different within one profile/);
+  assert.match(workspace, /entry\.modes\.map\(\(candidate\) => candidate\.displayName\)/);
+  assert.match(workspace, /personalApproachNameFields'\)\.replaceChildren\(\.\.\.names\.map/);
+  assert.match(html, /id="personalApproachForm"[\s\S]*?type="submit"[^>]*data-i18n="Add Approach"/);
 });
 
-test('profile editor gives the semantic mode legend its own flow space above the bordered input group', () => {
+test('Game Setup editor groups dynamically generated Approach fields beneath an accessible legend', () => {
   const modal = html.slice(html.indexOf('id="calibrationProfileModalTemplate"'), html.indexOf('</template>', html.indexOf('id="calibrationProfileModalTemplate"')));
-  assert.match(modal, /<fieldset class="calibration-mode-name-fields">[\s\S]*?<legend[^>]*>Your three strategy modes<\/legend>[\s\S]*?<div class="calibration-mode-name-panel">/);
-  assert.match(modal, /<div class="calibration-mode-name-inputs">[\s\S]*?calibrationModeName1[\s\S]*?calibrationModeName2[\s\S]*?calibrationModeName3/);
+  assert.match(modal, /<fieldset class="calibration-mode-name-fields">[\s\S]*?<legend[^>]*>Approaches<\/legend>[\s\S]*?<div id="personalApproachNameFields" class="calibration-mode-name-inputs">/);
   assert.match(css, /\.calibration-mode-name-fields \{[^}]*padding: 0;[^}]*border: 0;/);
-  assert.match(css, /\.calibration-mode-name-panel \{[^}]*padding: clamp\([^}]*border: 1px solid var\(--border-subtle\)/);
-  assert.match(css, /\.calibration-mode-name-inputs \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.calibration-mode-name-fields legend \{[^}]*overflow-wrap: anywhere;/);
+  assert.match(workspace, /label\.append\(caption, input\)/);
+  assert.match(workspace, /input\.required = true; input\.dir = 'auto'/);
   assert.match(css, /\.calibration-mode-name-inputs input \{[^}]*min-inline-size: 0;[^}]*text-overflow: ellipsis;/);
 });
 

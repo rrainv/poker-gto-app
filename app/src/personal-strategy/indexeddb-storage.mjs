@@ -1,9 +1,10 @@
 export const PERSONAL_STRATEGY_DATABASE_NAME = 'riverline-personal-strategy';
-export const PERSONAL_STRATEGY_DATABASE_VERSION = 2;
-export const PERSONAL_STRATEGY_BACKEND_SCHEMA_VERSION = 'personal-strategy-indexeddb/v2';
+export const PERSONAL_STRATEGY_DATABASE_VERSION = 3;
+export const PERSONAL_STRATEGY_BACKEND_SCHEMA_VERSION = 'personal-strategy-indexeddb/v3';
 
 export const PERSONAL_STRATEGY_OBJECT_STORES = Object.freeze({
   METADATA: 'metadata',
+  QUALITATIVE_EVIDENCE: 'qualitativeEvidence',
   PROFILES: 'profiles',
   MODES: 'modes',
   RANGE_OBSERVATIONS: 'rangeObservations',
@@ -14,6 +15,7 @@ export const PERSONAL_STRATEGY_OBJECT_STORES = Object.freeze({
 });
 
 const STORE_DEFINITIONS = Object.freeze({
+  [PERSONAL_STRATEGY_OBJECT_STORES.QUALITATIVE_EVIDENCE]: Object.freeze({ keyPath: 'id', indexes: [['profileId', 'profileId'], ['modeId', 'modeId']] }),
   [PERSONAL_STRATEGY_OBJECT_STORES.METADATA]: Object.freeze({ keyPath: 'key', indexes: [] }),
   [PERSONAL_STRATEGY_OBJECT_STORES.PROFILES]: Object.freeze({ keyPath: 'id', indexes: [] }),
   [PERSONAL_STRATEGY_OBJECT_STORES.MODES]: Object.freeze({
@@ -135,18 +137,30 @@ export function createIndexedDbPersonalStrategyDatabase({
   return Object.freeze({
     name,
     version,
-    async runTransaction(storeNames, mode, operation) {
+    async runTransaction(storeNames, mode, operation, { signal = null } = {}) {
+      if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
       const database = await connection();
+      if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
       const transaction = database.transaction(storeNames, mode, { durability: 'strict' });
       const completion = transactionCompletion(transaction);
+      completion.catch(() => {});
+      const abortForSignal = () => {
+        try { transaction.abort(); } catch { /* already complete */ }
+      };
+      signal?.addEventListener('abort', abortForSignal, { once: true });
       try {
+        if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
         const result = await operation(indexedDbTransactionAdapter(transaction));
+        if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
         await completion;
+        if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
         return result;
       } catch (error) {
         try { transaction.abort(); } catch { /* already completed or aborted */ }
         try { await completion; } catch { /* preserve the operation error */ }
         throw error;
+      } finally {
+        signal?.removeEventListener('abort', abortForSignal);
       }
     },
     async close() {
@@ -194,7 +208,8 @@ export function createMemoryPersonalStrategyDatabase({ name = 'memory-personal-s
   return Object.freeze({
     name,
     version: PERSONAL_STRATEGY_DATABASE_VERSION,
-    async runTransaction(storeNames, mode, operation) {
+    async runTransaction(storeNames, mode, operation, { signal = null } = {}) {
+      if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
       if (closed) throw new Error('Personal Strategy database is closed');
       metrics.transactions += 1;
       metrics[mode] += 1;
@@ -247,6 +262,7 @@ export function createMemoryPersonalStrategyDatabase({ name = 'memory-personal-s
         },
       });
       const result = await operation(adapter);
+      if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
       const beforeCommitFailure = takeFailure('before_commit', mode);
       if (beforeCommitFailure) throw beforeCommitFailure.error;
       for (const storeName of storeNames) {

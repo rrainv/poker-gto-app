@@ -157,6 +157,10 @@ test('browser bridge is frozen, narrow, and loaded before classic logic', () => 
   assert.deepEqual(Object.keys(bridge), [
     'schemaVersion',
     'claimPolicySchemaVersion',
+    'truthFor',
+    'historicalTruth',
+    'truthPresentation',
+    'summarizeTruth',
     'createProvider',
     'claimsFor',
     'canClaim',

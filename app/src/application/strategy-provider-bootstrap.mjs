@@ -9,6 +9,7 @@ import {
 } from './strategy-claim-policy.mjs';
 import { strategySourceDescriptorFor } from './strategy-source-authority.mjs';
 import { resolveHeuristicStrategy } from '../strategy/heuristic-strategy.mjs';
+import { projectStrategyTruth, historicalStrategyTruth, strategyTruthPresentation, summarizeStrategyTruth } from './strategy-truth.mjs';
 
 function browserProviderOptions(options = {}) {
   if (typeof options?.fallbackResolver === 'function') return options;
@@ -18,6 +19,7 @@ function browserProviderOptions(options = {}) {
   return {
     referencePack: options?.referencePack ?? null,
     sourceAcceptanceRegistry: options?.sourceAcceptanceRegistry ?? null,
+    assessmentPolicyRegistry: options?.assessmentPolicyRegistry ?? null,
     fallbackResolver(decisionContext) {
       return resolveHeuristicStrategy(
         decisionContext,
@@ -32,6 +34,10 @@ export function installStrategyProviderBridge(browserWindow) {
   const bridge = Object.freeze({
     schemaVersion: STRATEGY_PROVIDER_SCHEMA_VERSION,
     claimPolicySchemaVersion: STRATEGY_CLAIM_POLICY_SCHEMA_VERSION,
+    truthFor: projectStrategyTruth,
+    historicalTruth: historicalStrategyTruth,
+    truthPresentation: strategyTruthPresentation,
+    summarizeTruth: summarizeStrategyTruth,
     createProvider(options) {
       return createStrategyProvider(browserProviderOptions(options));
     },

@@ -414,6 +414,7 @@ export function createTrainingSessionController({
           chosenActionType,
           strategyResult: snapshot.exercise.strategyResult,
           decisionContext: snapshot.exercise.decisionContext,
+          historicalEvidence: snapshot.exercise.historicalStrategyEvidence ?? null,
         });
       } catch (error) {
         return sessionFailure(

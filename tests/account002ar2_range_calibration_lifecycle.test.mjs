@@ -286,7 +286,7 @@ test('production shell declares every non-blank state and keeps authenticated st
   assert.match(css, /\.calibration-account-required-state/);
   assert.match(bootstrap, /import '\.\/authentication-bootstrap\.mjs'/);
   assert.match(bootstrap, /createRangeCalibrationLifecycle/);
-  assert.match(workspace, /createIdentityScopedRangeCalibrationApplication\(binding\)/);
+  assert.match(workspace, /createIdentityScopedRangeCalibrationApplication\(scope.domainOwnerBinding, \{ lifecycleScope: scope \}\)/);
   assert.doesNotMatch(workspace, /createRangeCalibrationApplication\(\)/);
   assert.match(workspace, /await application\?\.repository\?\.close\?\.\(\)/);
   for (const key of [

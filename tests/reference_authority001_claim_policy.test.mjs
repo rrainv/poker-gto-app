@@ -214,7 +214,7 @@ test('explicit acceptance cannot be exceeded by a future provider declaration', 
 
   assert.equal(policy.authority, STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE);
   assert.equal(policy.coverage.kind, STRATEGY_COVERAGE_KINDS.GENERALIZED);
-  assert.equal(policy.mode, 'comparative');
+  assert.equal(policy.mode, 'exploratory');
   assert.equal(policy.capabilities.actionDistribution, 'quantitative');
   assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.EXACT_FREQUENCIES), false);
   assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.NORMATIVE_GRADING), false);
@@ -252,7 +252,7 @@ test('acceptance is not reusable across source, version, fingerprint, or registr
     }).resolve(context())
   );
 
-  assert.equal(resolveStrategyClaimPolicy(resolve(sourceA, fingerprint)).mode, 'normative');
+  assert.equal(resolveStrategyClaimPolicy(resolve(sourceA, fingerprint)).mode, 'comparative');
   const rejected = [
     resolve(descriptor({ id: 'accepted.source-b' }), fingerprint),
     resolve(descriptor({ id: sourceA.id, version: `${sourceA.id}/v2` }), fingerprint),
@@ -326,7 +326,7 @@ test('opaque live acceptance is not cloned while durable authority evidence rema
   const recomputedPolicy = resolveStrategyClaimPolicy(persistedResult);
 
   assert.equal(Object.hasOwn(liveResult, 'sourceAcceptance'), false);
-  assert.equal(livePolicy.mode, 'normative');
+  assert.equal(livePolicy.mode, 'comparative');
   assert.equal(liveResult.sourceAuthoritySnapshot.sourceId, sourceDescriptor.id);
   assert.equal(liveResult.sourceAuthoritySnapshot.sourceVersion, sourceDescriptor.version);
   assert.equal(liveResult.sourceAuthoritySnapshot.acceptedAuthority, 'validated_reference');
@@ -341,10 +341,10 @@ test('heuristic authority permits comparison but never objective or exact claims
   const result = provider.resolve(context());
   const policy = resolveStrategyClaimPolicy(result);
 
-  assert.equal(policy.mode, 'comparative');
+  assert.equal(policy.mode, 'exploratory');
   assert.equal(policy.coverage.kind, STRATEGY_COVERAGE_KINDS.GENERALIZED);
-  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.REFERENCE_MATCH), true);
-  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.REFERENCE_DEVIATION), true);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.REFERENCE_MATCH), false);
+  assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.REFERENCE_DEVIATION), false);
   for (const forbidden of [
     STRATEGY_CLAIMS.OBJECTIVE_CORRECTNESS,
     STRATEGY_CLAIMS.MISTAKE,
@@ -377,7 +377,7 @@ test('equity fallback remains exploratory information rather than strategy autho
   assert.equal(canStrategyClaim(policy, STRATEGY_CLAIMS.ACTION_EV), false);
 });
 
-test('coverage gates claims and an exact validated descriptor upgrades consumers without special cases', () => {
+test('exact accepted source grants reference comparison but requires a separate assessment policy', () => {
   const sourceDescriptor = descriptor();
   const exactPolicy = resolveStrategyClaimPolicy(resultFor(
     sourceDescriptor,
@@ -392,13 +392,13 @@ test('coverage gates claims and an exact validated descriptor upgrades consumers
     STRATEGY_COVERAGE_KINDS.UNSUPPORTED,
   ));
 
-  assert.equal(exactPolicy.mode, 'normative');
-  assert.equal(canStrategyClaim(exactPolicy, STRATEGY_CLAIMS.OBJECTIVE_CORRECTNESS), true);
+  assert.equal(exactPolicy.mode, 'comparative');
+  assert.equal(canStrategyClaim(exactPolicy, STRATEGY_CLAIMS.OBJECTIVE_CORRECTNESS), false);
   assert.equal(canStrategyClaim(exactPolicy, STRATEGY_CLAIMS.EXACT_FREQUENCIES), true);
   assert.equal(canStrategyClaim(exactPolicy, STRATEGY_CLAIMS.OPTIMALITY), false);
 
-  assert.equal(generalizedPolicy.mode, 'comparative');
-  assert.equal(canStrategyClaim(generalizedPolicy, STRATEGY_CLAIMS.REFERENCE_MATCH), true);
+  assert.equal(generalizedPolicy.mode, 'exploratory');
+  assert.equal(canStrategyClaim(generalizedPolicy, STRATEGY_CLAIMS.REFERENCE_MATCH), false);
   assert.equal(canStrategyClaim(generalizedPolicy, STRATEGY_CLAIMS.OBJECTIVE_CORRECTNESS), false);
   assert.equal(canStrategyClaim(generalizedPolicy, STRATEGY_CLAIMS.EXACT_FREQUENCIES), false);
 
@@ -448,7 +448,7 @@ test('distribution, sizing, EV, and normative authority remain independent capab
   });
   const evPolicy = resolveStrategyClaimPolicy(evResult);
   assert.equal(canStrategyClaim(evPolicy, STRATEGY_CLAIMS.ACTION_EV), true);
-  assert.equal(canStrategyClaim(evPolicy, STRATEGY_CLAIMS.EV_LOSS), true);
+  assert.equal(canStrategyClaim(evPolicy, STRATEGY_CLAIMS.EV_LOSS), false);
 });
 
 test('high-risk heuristic contexts use one structured limitation-code path', () => {
@@ -477,7 +477,7 @@ test('high-risk heuristic contexts use one structured limitation-code path', () 
   );
 });
 
-test('Training grading mathematics and heuristic action probabilities are unchanged', () => {
+test('legacy comparison distance and heuristic probabilities remain descriptive without correctness', () => {
   const sourceDescriptor = descriptor({
     id: 'grading_math_test',
     authority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
@@ -497,8 +497,9 @@ test('Training grading mathematics and heuristic action probabilities are unchan
     strategyResult: gradingResult,
   }));
   assert.deepEqual(grades.map((entry) => entry.grade), ['optimal', 'acceptable', 'mistake']);
-  assert.deepEqual(grades.map((entry) => entry.accepted), [true, true, false]);
-  assert.deepEqual(grades.map((entry) => entry.scoreDelta), [1, 1, 0]);
+  assert.deepEqual(grades.map((entry) => entry.comparisonAccepted), [true, true, false]);
+  assert.deepEqual(grades.map((entry) => entry.accepted), [false, false, false]);
+  assert.deepEqual(grades.map((entry) => entry.scoreDelta), [0, 0, 0]);
 
   const decisionContext = context();
   const candidate = resolveHeuristicStrategy(decisionContext);
@@ -520,8 +521,8 @@ test('Analysis, Training, and Matrix consume structured policy without adding au
   const decisionContext = context({ lastAction: '3bet', facingSizeBb: 9, callAmountBb: 6 });
   const strategyResult = provider.resolve(decisionContext);
   const explanation = createAnalysisExplanation({ decisionContext, strategyResult });
-  assert.equal(explanation.claimPolicy.mode, 'comparative');
-  assert.equal(explanation.provenance.authority, STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE);
+  assert.equal(explanation.claimPolicy.mode, 'exploratory');
+  assert.equal(explanation.provenance.authority, STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY);
   assert.ok(explanation.warnings.some((entry) => (
     entry.code === 'heuristic_facing_3bet_coarse'
   )));

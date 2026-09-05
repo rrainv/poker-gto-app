@@ -23,9 +23,11 @@ export function createSavedStudyObjectOpenController({ application, playbookBrid
   }
 
   return Object.freeze({
-    async open(id) {
+    async open(id, { lifecycleScope = null } = {}) {
+      lifecycleScope?.assertCurrent();
       if (typeof id !== 'string' || !id) throw new TypeError('Saved study item ID is required');
       const object = requireActiveObject(await application.getById(id, { includeArchived: false }), id);
+      lifecycleScope?.assertCurrent();
       if (object.kind === 'hand') {
         const reconstruction = reconstructCanonicalHandReplaySource(object.payload.replaySource);
         if (reconstruction.heroPlayerId !== object.payload.heroPlayerId

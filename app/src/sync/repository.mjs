@@ -6,12 +6,23 @@ import {
 
 const key = (identityId, domain, suffix = '') => `${identityId}:${domain}${suffix ? `:${suffix}` : ''}`;
 
-export function createSyncRepository({ database = null, domain = SAVED_STUDY_SYNC_DOMAIN } = {}) {
+export function createSyncRepository({ database = null, domain = SAVED_STUDY_SYNC_DOMAIN,
+  lifecycleScope = null } = {}) {
   const durableDatabase = database ?? createIndexedDbSyncDatabase();
-  const read = (stores, operation) => durableDatabase.runTransaction(stores, 'readonly', operation);
-  const write = (stores, operation) => durableDatabase.runTransaction(stores, 'readwrite', operation);
+  const run = (stores, mode, operation) => {
+    lifecycleScope?.assertCurrent();
+    return durableDatabase.runTransaction(stores, mode, async (transaction) => {
+      lifecycleScope?.assertCurrent();
+      const result = await operation(transaction);
+      lifecycleScope?.assertCurrent();
+      return result;
+    }, { signal: lifecycleScope?.signal ?? null });
+  };
+  const read = (stores, operation) => run(stores, 'readonly', operation);
+  const write = (stores, operation) => run(stores, 'readwrite', operation);
 
   return Object.freeze({
+    forLifecycleScope: (scope) => createSyncRepository({ database: durableDatabase, domain, lifecycleScope: scope }),
     async getPreference(identityId) {
       return read([SYNC_STORES.PREFERENCES], async (transaction) => (
         await transaction.get(SYNC_STORES.PREFERENCES, key(identityId, domain))

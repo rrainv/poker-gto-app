@@ -154,7 +154,7 @@ test('account switches and sync transitions are resolved from current query stat
 
 test('Home v2 UI is responsive, accessible, coalesced, and remains a lightweight consumer', () => {
   assert.match(html, /id="homeAccountOverview"[\s\S]*?id="homeSyncStatus"[\s\S]*?aria-live="polite"/);
-  assert.match(html, /Saved study and Personal Strategy require a Riverline profile\. Signing in does not enable sync or cloud backup\./);
+  assert.match(html, /Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode\. Guest data does not sync\./);
   assert.match(html, /data-home-destination="review_mistakes"/);
   assert.match(css, /grid-template-areas:[\s\S]*?"overview overview"/);
   assert.match(css, /@media \(max-width: 760px\)/);

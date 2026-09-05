@@ -6,8 +6,8 @@ import {
   isPreflopHandClass,
 } from '../../../shared/poker-domain/index.js';
 
-export const STRATEGY_PROFILE_SCHEMA_VERSION = 'strategy-profile/v1';
-export const STRATEGY_MODE_SCHEMA_VERSION = 'strategy-mode/v1';
+export const STRATEGY_PROFILE_SCHEMA_VERSION = 'strategy-profile/v2';
+export const STRATEGY_MODE_SCHEMA_VERSION = 'strategy-mode/v2';
 export const CALIBRATION_CONTEXT_SCHEMA_VERSION = 'calibration-context/v1';
 export const CALIBRATION_CONTEXT_V2_SCHEMA_VERSION = 'calibration-context/v2';
 export const RANGE_OBSERVATION_SCHEMA_VERSION = 'range-observation/v1';
@@ -322,6 +322,44 @@ export function sameOwnerRef(left, right) {
   return left.kind === right.kind && left.id === right.id;
 }
 
+function versionSnapshot(value) {
+  const { versionHistory, ...snapshot } = cloneData(value);
+  return snapshot;
+}
+
+function validateVersionedMetadata(value, field) {
+  if (!Number.isInteger(value[field]) || value[field] < 1) throw new RangeError(`${field} must be positive`);
+  if (!Array.isArray(value.versionHistory) || value.versionHistory.length !== value[field] - 1) {
+    throw new RangeError('Version history must preserve every preceding version');
+  }
+  value.versionHistory.forEach((entry, index) => {
+    if (entry[field] !== index + 1 || entry.id !== value.id || entry.versionHistory !== undefined) {
+      throw new RangeError('Version history identity or order is invalid');
+    }
+  });
+}
+
+export function migrateStrategyProfile(profile) {
+  if (profile.schemaVersion === STRATEGY_PROFILE_SCHEMA_VERSION) {
+    validateStrategyProfile(profile); return deepFreeze(cloneData(profile));
+  }
+  if (profile.schemaVersion !== 'strategy-profile/v1') throw new RangeError('Unsupported StrategyProfile schema');
+  requireUniqueStrings(profile.modeIds, 'Legacy StrategyProfile.modeIds', 3);
+  const migrated = { ...cloneData(profile), schemaVersion: STRATEGY_PROFILE_SCHEMA_VERSION,
+    setupAssumptions: {}, setupVersion: 1, versionHistory: [] };
+  validateStrategyProfile(migrated); return deepFreeze(migrated);
+}
+
+export function migrateStrategyMode(mode) {
+  if (mode.schemaVersion === STRATEGY_MODE_SCHEMA_VERSION) {
+    validateStrategyMode(mode); return deepFreeze(cloneData(mode));
+  }
+  if (mode.schemaVersion !== 'strategy-mode/v1') throw new RangeError('Unsupported StrategyMode schema');
+  const migrated = { ...cloneData(mode), schemaVersion: STRATEGY_MODE_SCHEMA_VERSION,
+    approachVersion: 1, versionHistory: [], forkProvenance: null };
+  validateStrategyMode(migrated); return deepFreeze(migrated);
+}
+
 export function validateStrategyProfile(profile) {
   requireSchema(profile, STRATEGY_PROFILE_SCHEMA_VERSION, 'StrategyProfile');
   requireString(profile.id, 'StrategyProfile.id');
@@ -334,7 +372,10 @@ export function validateStrategyProfile(profile) {
   if (profile.gameDomain !== POKER_VARIANT) {
     throw new RangeError(`StrategyProfile.gameDomain must be ${POKER_VARIANT}`);
   }
-  requireUniqueStrings(profile.modeIds, 'StrategyProfile.modeIds', 3);
+  requireUniqueStrings(profile.modeIds, 'StrategyProfile.modeIds');
+  if (!profile.modeIds.length) throw new RangeError('Game Setup requires at least one Approach');
+  validateVersionedMetadata(profile, 'setupVersion');
+  requireObject(profile.setupAssumptions, 'Game Setup assumptions');
   requireUniqueStrings(profile.tags, 'StrategyProfile.tags');
   if (!PROFILE_STATE_VALUES.includes(profile.state)) {
     throw new RangeError(`Unsupported StrategyProfile state: ${profile.state}`);
@@ -352,6 +393,9 @@ export function createStrategyProfile({
   gameDomain = POKER_VARIANT,
   tags = [],
   modeIds,
+  setupAssumptions = {},
+  setupVersion = 1,
+  versionHistory = [],
   state = PROFILE_STATES.ACTIVE,
 } = {}) {
   const profile = {
@@ -365,6 +409,9 @@ export function createStrategyProfile({
     gameDomain,
     tags: [...tags],
     modeIds: [...(modeIds ?? [])],
+    setupAssumptions: cloneData(setupAssumptions),
+    setupVersion,
+    versionHistory: cloneData(versionHistory),
     state,
   };
   validateStrategyProfile(profile);
@@ -375,6 +422,9 @@ export function updateStrategyProfile(profile, changes = {}, updatedAt) {
   validateStrategyProfile(profile);
   return createStrategyProfile({
     ...profile,
+    setupAssumptions: changes.setupAssumptions ?? profile.setupAssumptions,
+    setupVersion: profile.setupVersion + 1,
+    versionHistory: [...profile.versionHistory, versionSnapshot(profile)],
     displayName: changes.displayName ?? profile.displayName,
     description: Object.hasOwn(changes, 'description') ? changes.description : profile.description,
     tags: changes.tags ?? profile.tags,
@@ -385,6 +435,8 @@ export function updateStrategyProfile(profile, changes = {}, updatedAt) {
 
 export function validateStrategyMode(mode) {
   requireSchema(mode, STRATEGY_MODE_SCHEMA_VERSION, 'StrategyMode');
+  validateVersionedMetadata(mode, 'approachVersion');
+  if (mode.forkProvenance !== null) requireObject(mode.forkProvenance, 'Approach fork provenance');
   requireString(mode.id, 'StrategyMode.id');
   requireString(mode.profileId, 'StrategyMode.profileId');
   requireString(mode.displayName, 'StrategyMode.displayName');
@@ -399,7 +451,7 @@ export function validateStrategyMode(mode) {
     throw new RangeError(`Unsupported StrategyMode state: ${mode.state}`);
   }
   if (Object.hasOwn(mode, 'styleValue') || Object.hasOwn(mode, 'interpolationCoordinate')) {
-    throw new RangeError('StrategyMode v1 does not support numeric style/interpolation coordinates');
+    throw new RangeError('StrategyMode does not support numeric style/interpolation coordinates');
   }
   return mode;
 }
@@ -412,6 +464,9 @@ export function createStrategyMode({
   createdAt,
   updatedAt = createdAt,
   displayOrder,
+  approachVersion = 1,
+  versionHistory = [],
+  forkProvenance = null,
   state = PROFILE_STATES.ACTIVE,
 } = {}) {
   const mode = {
@@ -423,6 +478,9 @@ export function createStrategyMode({
     createdAt,
     updatedAt,
     displayOrder,
+    approachVersion,
+    versionHistory: cloneData(versionHistory),
+    forkProvenance: cloneData(forkProvenance),
     state,
   };
   validateStrategyMode(mode);
@@ -433,6 +491,8 @@ export function updateStrategyMode(mode, changes = {}, updatedAt) {
   validateStrategyMode(mode);
   return createStrategyMode({
     ...mode,
+    approachVersion: mode.approachVersion + 1,
+    versionHistory: [...mode.versionHistory, versionSnapshot(mode)],
     displayName: changes.displayName ?? mode.displayName,
     description: Object.hasOwn(changes, 'description') ? changes.description : mode.description,
     displayOrder: changes.displayOrder ?? mode.displayOrder,
@@ -450,11 +510,12 @@ export function createStrategyProfileBundle({
   modes,
   createdAt,
   modeIds,
+  setupAssumptions = {},
 } = {}) {
-  if (!Array.isArray(modes) || modes.length !== 3) {
-    throw new RangeError('A StrategyProfile v1 bundle requires exactly three user-named modes');
+  if (!Array.isArray(modes) || modes.length < 1) {
+    throw new RangeError('A Game Setup bundle requires at least one user-named Approach');
   }
-  const ids = requireUniqueStrings(modeIds, 'modeIds', 3);
+  const ids = requireUniqueStrings(modeIds, 'modeIds', modes.length);
   const strategyModes = modes.map((entry, index) => createStrategyMode({
     id: ids[index],
     profileId,
@@ -470,6 +531,7 @@ export function createStrategyProfileBundle({
     description,
     tags,
     modeIds: ids,
+    setupAssumptions,
     createdAt,
   });
   return deepFreeze({ profile, modes: strategyModes });

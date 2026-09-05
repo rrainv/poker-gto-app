@@ -1,3 +1,4 @@
+import { createRfiStructuralMappingFacts } from '../personal-strategy/structural-range-mapping.mjs';
 import {
   ACTION_TYPES,
   ANTE_TYPES,
@@ -13,7 +14,9 @@ import {
   applyChance,
   createAction,
   createGameRulesSnapshotFromLegacyGameConfiguration,
+  createGameRulesSnapshot,
   getLegalActionSpec,
+  getHoldemCombosForHandClass,
   initializeHandFromGameRulesSnapshot,
 } from '../../../shared/poker-domain/index.js';
 import {
@@ -66,6 +69,8 @@ import {
 } from '../account-identity/index.mjs';
 import { LEGACY_PERSONAL_STRATEGY_OWNER_KEY } from '../account-identity/legacy-ownership.mjs';
 import { createPersonalStrategyRangeBuilder } from './range-builder-service.mjs';
+import { previewPersonalStrategyIntent } from '../personal-strategy/intent-interpretation.mjs';
+import { createQualitativeEvidence } from '../personal-strategy/qualitative-evidence.mjs';
 
 export {
   RFI_CALIBRATION_INTENTS,
@@ -103,6 +108,7 @@ const PREFLOP_CALIBRATION_DECISION_FAMILY_SET = new Set(
 const MIX_TOTAL_TOLERANCE = 1e-9;
 
 export const CALIBRATION_ENVIRONMENTS = Object.freeze({
+  CUSTOM: 'custom',
   HOME: 'home',
   CLUBGG: 'clubgg',
 });
@@ -111,6 +117,10 @@ const ENVIRONMENT_TAG_PREFIX = 'riverline:environment:';
 const ENVIRONMENT_VALUES = Object.freeze(Object.values(CALIBRATION_ENVIRONMENTS));
 
 export const CALIBRATION_ENVIRONMENT_RULES = Object.freeze({
+  custom: Object.freeze({
+    gameRulesId: 'user-setup-defaults/v1', minTableSize: 2, maxTableSize: 10, defaultTableSize: 6,
+    accounting: Object.freeze({ anteType: ANTE_TYPES.NONE, anteBb: 0, forcedContributionPerPlayerBb: 0, rakeMode: 'off' }),
+  }),
   [CALIBRATION_ENVIRONMENTS.HOME]: Object.freeze({
     gameRulesId: 'riverline-home-v1',
     minTableSize: 2,
@@ -192,8 +202,8 @@ export function normalizeCalibrationDescription(value) {
 }
 
 export function normalizeModeNames(values) {
-  if (!Array.isArray(values) || values.length !== 3) {
-    throw new RangeError('Exactly three mode names are required');
+  if (!Array.isArray(values) || values.length < 1) {
+    throw new RangeError('At least one Approach name is required');
   }
   const names = values.map((value, index) => normalizeCalibrationName(value, `Mode ${index + 1}`));
   const comparable = names.map((name) => name.toLocaleLowerCase('en-US'));
@@ -215,7 +225,7 @@ function environmentTag(environment) {
 export function profileDefaultEnvironment(profile) {
   const tag = profile?.tags?.find((entry) => entry.startsWith(ENVIRONMENT_TAG_PREFIX));
   const environment = tag?.slice(ENVIRONMENT_TAG_PREFIX.length);
-  return ENVIRONMENT_VALUES.includes(environment) ? environment : CALIBRATION_ENVIRONMENTS.HOME;
+  return ENVIRONMENT_VALUES.includes(environment) ? environment : CALIBRATION_ENVIRONMENTS.CUSTOM;
 }
 
 export function tableSizesForEnvironment(environment) {
@@ -277,13 +287,20 @@ export function normalizeRfiContextSelection(selection = {}, { environmentDefaul
     );
   }
   const effectiveStackBb = stackWasSupplied ? requestedStack : 100;
+  const customAccounting = environment === CALIBRATION_ENVIRONMENTS.CUSTOM;
+  const collectionBb = Number(selection.collectionBb ?? 0);
+  const anteBb = Number(selection.anteBb ?? 0);
+  const anteType = selection.anteType ?? ANTE_TYPES.NONE;
+  if (customAccounting && (![collectionBb, anteBb].every((amount) => Number.isFinite(amount) && amount >= 0 && amount <= 10)
+    || !Object.values(ANTE_TYPES).includes(anteType))) throw new RangeError('Invalid Game Setup accounting assumptions');
   return Object.freeze({
     environment,
     tableSize,
     heroPosition,
     effectiveStackBb,
     decisionFamily,
-    actionAware,
+    actionAware: actionAware || customAccounting,
+    ...(customAccounting ? { collectionBb, anteBb, anteType } : {}),
   });
 }
 
@@ -291,8 +308,8 @@ const CALIBRATION_CONTEXT_DECK = Object.freeze(
   [...CARD_RANKS].flatMap((rank) => [...CARD_SUITS].map((suit) => `${rank}${suit}`)),
 );
 
-function calibrationContextState(selection) {
-  const rulesSnapshot = createGameRulesSnapshotFromLegacyGameConfiguration({
+function calibrationContextState(selection, handClass = null) {
+  let rulesSnapshot = createGameRulesSnapshotFromLegacyGameConfiguration({
     mode: selection.environment === CALIBRATION_ENVIRONMENTS.CLUBGG
       ? GAME_MODES.CLUBGG : GAME_MODES.HOME,
     smallBlindMilliBb: 500,
@@ -300,6 +317,19 @@ function calibrationContextState(selection) {
     chipUnitMilliBb: 100,
     ante: { type: ANTE_TYPES.NONE, amountMilliBb: 0 },
   }, selection.tableSize);
+  if (selection.environment === CALIBRATION_ENVIRONMENTS.CUSTOM) {
+    const definition = cloneData(rulesSnapshot.definition);
+    definition.blinds.chipUnitMilliBb = 1;
+    definition.ante = { type: selection.anteType, amountMilliBb: Math.round(selection.anteBb * 1000) };
+    if (selection.collectionBb > 0) {
+      const legacyCollection = createGameRulesSnapshotFromLegacyGameConfiguration({
+        mode: GAME_MODES.CLUBGG, smallBlindMilliBb: 500, bigBlindMilliBb: 1000,
+        chipUnitMilliBb: 1, ante: { type: ANTE_TYPES.NONE, amountMilliBb: 0 },
+      }, 8).definition.collectionPolicy;
+      definition.collectionPolicy = { ...legacyCollection, amountMilliBb: Math.round(selection.collectionBb * 1000) };
+    }
+    rulesSnapshot = createGameRulesSnapshot({ source: { kind: 'direct' }, setup: { seatedPlayers: selection.tableSize }, definition });
+  }
   const players = Array.from({ length: selection.tableSize }, (_, seat) => ({
     playerId: `calibration-player-${seat}`,
     seat,
@@ -311,10 +341,14 @@ function calibrationContextState(selection) {
     buttonSeat: selection.tableSize - 1,
     players,
   });
-  const cardsByPlayer = Object.fromEntries(players.map((player, index) => [
-    player.playerId,
-    [CALIBRATION_CONTEXT_DECK[index * 2], CALIBRATION_CONTEXT_DECK[index * 2 + 1]],
-  ]));
+  const heroId = state.players.find((player) => player.position === selection.heroPosition)?.playerId;
+  const heroCards = handClass ? getHoldemCombosForHandClass(handClass)[0].cards : null;
+  const availableCards = CALIBRATION_CONTEXT_DECK.filter((card) => !heroCards?.includes(card));
+  let cardIndex = 0;
+  const cardsByPlayer = Object.fromEntries(players.map((player) => {
+    const cards = heroCards && player.playerId === heroId ? heroCards : availableCards.slice(cardIndex, cardIndex += 2);
+    return [player.playerId, cards];
+  }));
   return applyChance(state, { type: CHANCE_TYPES.DEAL_HOLE, cardsByPlayer });
 }
 
@@ -367,11 +401,11 @@ function nextCalibrationContextStates(state, targetFamily) {
   });
 }
 
-export function createCanonicalPreflopContextFromSelection(selection) {
+export function createCanonicalPreflopStateFromSelection(selection, { handClass = null } = {}) {
   const normalized = normalizeRfiContextSelection(selection, {
     environmentDefault: selection?.environment,
   });
-  const initial = calibrationContextState(normalized);
+  const initial = calibrationContextState(normalized, handClass);
   const hero = initial.players.find((player) => player.position === normalized.heroPosition);
   if (!hero) throw new RangeError('Selected Hero position is unavailable');
   const queue = [initial];
@@ -385,7 +419,7 @@ export function createCanonicalPreflopContextFromSelection(selection) {
     if (state.actingPlayerId === hero.playerId) {
       try {
         const context = derivePreflopCalibrationContextFromPokerState(state, hero.playerId);
-        if (context.decisionFamily === normalized.decisionFamily) return context;
+        if (context.decisionFamily === normalized.decisionFamily) return Object.freeze({ state, heroPlayerId: hero.playerId, context });
       } catch {
         // Continue searching legal canonical trajectories.
       }
@@ -394,6 +428,10 @@ export function createCanonicalPreflopContextFromSelection(selection) {
     queue.push(...nextCalibrationContextStates(state, normalized.decisionFamily));
   }
   throw new RangeError('No canonical preflop trajectory matches this context selection');
+}
+
+export function createCanonicalPreflopContextFromSelection(selection) {
+  return createCanonicalPreflopStateFromSelection(selection).context;
 }
 
 export function createContextFromSelection(selection) {
@@ -644,6 +682,7 @@ function adaptiveCursor(session, leaves, changes = {}) {
   const askedHandClasses = changes.askedHandClasses ?? cursorHandHistory(session, leaves);
   return {
     ...session.cursor,
+    mappingFocus: changes.mappingFocus !== undefined ? changes.mappingFocus : session.cursor.mappingFocus ?? null,
     selectionPolicyVersion: RFI_QUESTION_SELECTION_POLICY_VERSION,
     stoppingPolicyVersion: RFI_STOPPING_POLICY_VERSION,
     coldStartPolicyVersion: RFI_COLD_START_POLICY_VERSION,
@@ -825,7 +864,7 @@ function directOnlyProgress(evidenceView, cursor, candidateRanking) {
   const conflictingCount = evidenceView.summary.conflictingHandCount;
   const sessionQuestionCount = cursor.sessionQuestionCount ?? 0;
   const intent = normalizeRfiCalibrationIntent(cursor.calibrationIntent);
-  const limit = intent === RFI_CALIBRATION_INTENTS.QUICK ? 5
+  const limit = intent === RFI_CALIBRATION_INTENTS.MAPPING ? Infinity : intent === RFI_CALIBRATION_INTENTS.QUICK ? 5
     : intent === RFI_CALIBRATION_INTENTS.DEEP ? 75
       : intent === RFI_CALIBRATION_INTENTS.EXHAUSTIVE ? 169 : 30;
   const shouldStop = sessionQuestionCount >= limit || candidateRanking.length === 0;
@@ -1002,16 +1041,21 @@ function calibrationSelectionOutcome(
   cursor,
   answered,
   excludedHandClasses = new Set(),
+  mappingEvidenceView = null,
 ) {
   const refinementActive = cursor.refinementActive === true
     && cursor.refinementBatchRemaining > 0;
   const candidateRanking = rankCalibrationCandidates(personalStrategySnapshot, {
+    intent: cursor.calibrationIntent,
+    mappingFocus: cursor.mappingFocus,
+    mappingEvidenceView,
     recentQuestionHistory: cursor.askedHandClasses,
     skippedHandClasses: cursor.skippedHandClasses,
     includeSkipped: cursor.calibrationIntent === RFI_CALIBRATION_INTENTS.EXHAUSTIVE,
     selectionIntent: cursor.selectionIntent,
     transferProjection,
-  }).filter((candidate) => !excludedHandClasses.has(candidate.handClass));
+  }).filter((candidate) => !excludedHandClasses.has(candidate.handClass)
+    || (cursor.calibrationIntent === RFI_CALIBRATION_INTENTS.MAPPING && candidate.questionKind === 'conflict_resolution'));
   let candidate;
   const userDirected = cursor.userDirectedHandClass !== null
     && cursor.userDirectedHandClass !== undefined;
@@ -1033,6 +1077,7 @@ function calibrationSelectionOutcome(
   }
   const progressAssessment = assessCalibrationProgress(personalStrategySnapshot, {
     intent: cursor.calibrationIntent,
+    mappingEvidenceView,
     rankedCandidates: candidateRanking,
     sessionQuestionCount: cursor.sessionQuestionCount,
     additionalQuestionAllowance: cursor.additionalQuestionAllowance,
@@ -1044,7 +1089,7 @@ function calibrationSelectionOutcome(
       && cursor.lastStopReason === RFI_CALIBRATION_STOP_REASONS.USER_STOPPED,
   });
   if (!candidate && !progressAssessment.shouldStop) {
-    candidate = progressAssessment.profileReadiness.profileReady || refinementActive
+    candidate = cursor.calibrationIntent !== RFI_CALIBRATION_INTENTS.MAPPING && (progressAssessment.profileReadiness.profileReady || refinementActive)
       ? candidateRanking.find((entry) => (
         entry.ordinaryQuestionEligible && entry.recommendedClarification
       )) ?? null
@@ -1307,6 +1352,7 @@ async function calibrationState(
       progressAssessment,
       availableActions: availableActionsForContext(session.contextScope),
       progress: Object.freeze({
+        ...(progressAssessment.coverage ? { coverage: progressAssessment.coverage } : {}),
         answered: answered.size,
         remaining: RANGE_CALIBRATION_QUESTION_ORDER.length - answered.size,
         total: RANGE_CALIBRATION_QUESTION_ORDER.length,
@@ -1333,6 +1379,7 @@ async function calibrationState(
     cursor,
     answered,
     firstInSubspace ? directEvidenceHandClasses(projectionBundle.evidenceView) : new Set(),
+    projectionBundle.evidenceView,
   );
   const baseMatrixProjection = createPersonalStrategyMatrixProjection({
     snapshot: personalStrategySnapshot,
@@ -1389,6 +1436,7 @@ async function calibrationState(
     availableActions: firstInSubspace
       ? availableActionsForContext(session.contextScope) : RFI_CALIBRATION_ACTIONS,
     progress: Object.freeze({
+      ...(progressAssessment.coverage ? { coverage: progressAssessment.coverage } : {}),
       answered: answered.size,
       remaining: RANGE_CALIBRATION_QUESTION_ORDER.length - answered.size,
       total: RANGE_CALIBRATION_QUESTION_ORDER.length,
@@ -1497,6 +1545,7 @@ export function createRangeCalibrationApplication({
   storage = createPersonalStrategyBrowserStorage(),
   database = null,
   ownerRef = null,
+  lifecycleScope = null,
   clock = () => new Date(),
   idFactory = defaultIdFactory,
   onLocalMutation = null,
@@ -1512,11 +1561,13 @@ export function createRangeCalibrationApplication({
   const storageMetrics = { reads: 0, writes: 0, readsByKey: {}, writesByKey: {} };
   const storageAdapter = {
     getItem(key) {
+      lifecycleScope?.assertCurrent();
       storageMetrics.reads += 1;
       storageMetrics.readsByKey[key] = (storageMetrics.readsByKey[key] || 0) + 1;
       return storage.getItem(key);
     },
     setItem(key, value) {
+      lifecycleScope?.assertCurrent();
       storageMetrics.writes += 1;
       storageMetrics.writesByKey[key] = (storageMetrics.writesByKey[key] || 0) + 1;
       return storage.setItem(key, value);
@@ -1529,15 +1580,67 @@ export function createRangeCalibrationApplication({
     database,
     legacyStorage: storageAdapter,
     ownerRef: resolvedOwnerRef,
+    lifecycleScope,
     clock,
   });
   const projectionService = createPersonalStrategyProjectionService({ repository });
+  const qualitativeDrafts = new WeakMap();
+
+  async function previewQualitativeIntent(scope, { text, language = 'en', scopeKind = 'decision', scopeDescription = '', supersedesEvidenceIds = [], exceptionTo = null, handClass = null } = {}) {
+    if (!['decision', 'approach'].includes(scopeKind) || typeof scopeDescription !== 'string' || scopeDescription.length > 240) {
+      throw new RangeError('Invalid qualitative intent scope');
+    }
+    if (handClass !== null && !PREFLOP_HAND_CLASSES.includes(handClass)) throw new RangeError('Qualitative hand scope must use a canonical hand class');
+    const workspace = await readWorkspace();
+    const entry = workspace.profiles.find((candidate) => candidate.profile.id === scope.profileId);
+    const approach = entry?.modes.find((candidate) => candidate.id === scope.modeId);
+    if (!approach) throw stalePersonalStrategyScope('Qualitative intent');
+    const evidence = await repository.loadQualitativeEvidence(scope);
+    const superseded = new Set(evidence.flatMap((record) => record.supersedesEvidenceIds ?? []));
+    const heads = evidence.filter((record) => !superseded.has(record.id));
+    if (supersedesEvidenceIds.some((id) => !heads.some((record) => record.id === id))) throw stalePersonalStrategyScope('Correction');
+    if (exceptionTo && !heads.some((record) => record.id === exceptionTo)) throw stalePersonalStrategyScope('Exception');
+    const statedScope = { kind: scopeKind, description: String(scopeDescription).trim(),
+      ...(scopeKind === 'decision' ? { context: cloneData(scope.context), ...(handClass === null ? {} : { handClass }) } : {}),
+      setupVersion: entry.profile.setupVersion, profileId: scope.profileId, modeId: scope.modeId };
+    const preview = previewPersonalStrategyIntent({ text, language, scope: cloneData(scope), statedScope });
+    qualitativeDrafts.set(preview, { scope: cloneData(scope), approachVersion: approach.approachVersion,
+      setupVersion: entry.profile.setupVersion, statedScope, supersedesEvidenceIds: [...supersedesEvidenceIds], exceptionTo,
+      affected: heads.filter((record) => supersedesEvidenceIds.includes(record.id)) });
+    return preview;
+  }
+
+  async function confirmQualitativeIntent(preview) {
+    const draft = qualitativeDrafts.get(preview);
+    if (!draft) throw stalePersonalStrategyScope('Interpretation preview');
+    const workspace = await readWorkspace();
+    const entry = workspace.profiles.find((candidate) => candidate.profile.id === draft.scope.profileId);
+    const approach = entry?.modes.find((candidate) => candidate.id === draft.scope.modeId);
+    if (!approach || approach.approachVersion !== draft.approachVersion || entry.profile.setupVersion !== draft.setupVersion) {
+      throw stalePersonalStrategyScope('Interpretation preview');
+    }
+    const createdAt = timestampFrom(clock);
+    const record = createQualitativeEvidence({
+      id: idFactory('qualitative-intent'), profileId: draft.scope.profileId, modeId: draft.scope.modeId,
+      approachVersion: draft.approachVersion, originalWording: preview.originalText, language: preview.language,
+      statedScope: draft.statedScope, inferredScope: preview.inferredScope,
+      unresolvedTerms: preview.unresolvedTerms, interpretation: preview,
+      confirmation: { state: 'confirmed', confirmedAt: createdAt },
+      supersedesEvidenceIds: draft.supersedesEvidenceIds, correctionGroupId: idFactory('intent-correction'),
+      provenance: { type: 'user_confirmed_interpretation', source: 'user_intent', surface: 'teach_riverline', exceptionTo: draft.exceptionTo }, createdAt,
+    });
+    await repository.appendQualitativeEvidence([record]);
+    qualitativeDrafts.delete(preview);
+    return record;
+  }
 
   async function notifyLocalMutation(entities) {
+    lifecycleScope?.assertCurrent();
     if (!onLocalMutation) return;
     try {
       await onLocalMutation(Object.freeze({
         schemaVersion: 'personal-strategy-local-mutation/v1',
+        lifecycleScope,
         entities: Object.freeze(cloneData(entities)),
       }));
     } catch {
@@ -1629,7 +1732,7 @@ export function createRangeCalibrationApplication({
     });
   }
 
-  async function createProfile({ displayName, description, environment, modeNames }) {
+  async function createProfile({ displayName, description, environment = CALIBRATION_ENVIRONMENTS.CUSTOM, modeNames = ['Usual'], setupAssumptions = {} }) {
     const createdAt = timestampFrom(clock);
     const normalizedModes = normalizeModeNames(modeNames);
     const bundle = createStrategyProfileBundle({
@@ -1641,25 +1744,27 @@ export function createRangeCalibrationApplication({
       modes: normalizedModes,
       createdAt,
       modeIds: normalizedModes.map(() => idFactory('mode')),
+      setupAssumptions,
     });
     await repository.saveProfileBundle(bundle);
     await notifyLocalMutation([profileBundleEntity(bundle.profile, bundle.modes)]);
     return bundle;
   }
 
-  async function updateProfileConfiguration(profileId, { displayName, description, modeNames }) {
+  async function updateProfileConfiguration(profileId, { displayName, description, modeNames, setupAssumptions }) {
     const workspace = await readWorkspace();
     const entry = workspace.profiles.find((candidate) => candidate.profile.id === profileId);
     if (!entry) throw new RangeError('Strategy profile was not found');
     const updatedAt = timestampFrom(clock);
-    const normalizedModes = normalizeModeNames(modeNames);
+    const normalizedModes = normalizeModeNames(modeNames ?? entry.modes.map((mode) => mode.displayName));
+    if (normalizedModes.length !== entry.modes.length) throw new RangeError('Use Add Approach to extend this Game Setup');
     const profile = updateStrategyProfile(entry.profile, {
       displayName: normalizeCalibrationName(displayName, 'Profile name'),
       description: normalizeCalibrationDescription(description),
+      ...(setupAssumptions ? { setupAssumptions } : {}),
     }, updatedAt);
-    const modes = entry.modes.map((mode, index) => updateStrategyMode(mode, {
-      displayName: normalizedModes[index],
-    }, updatedAt));
+    const modes = entry.modes.map((mode, index) => mode.displayName === normalizedModes[index]
+      ? mode : updateStrategyMode(mode, { displayName: normalizedModes[index] }, updatedAt));
     await repository.saveProfileConfiguration({ profile, modes });
     await notifyLocalMutation([profileBundleEntity(profile, modes)]);
     return Object.freeze({ profile, modes });
@@ -1691,6 +1796,7 @@ export function createRangeCalibrationApplication({
     activeModeId,
     context,
     intent = null,
+    focus = undefined,
     selectionIntent = null,
     rangeTeacherPreset = undefined,
     forcedHandClass = null,
@@ -1750,6 +1856,7 @@ export function createRangeCalibrationApplication({
           stoppingPolicyVersion: RFI_STOPPING_POLICY_VERSION,
           coldStartPolicyVersion: RFI_COLD_START_POLICY_VERSION,
           calibrationIntent: resolvedIntent,
+          mappingFocus: focus ?? null,
           selectionIntent: resolvedSelectionIntent,
           rangeTeacherPreset: resolvedRangeTeacherPreset,
           askedHandClasses: [],
@@ -1772,10 +1879,12 @@ export function createRangeCalibrationApplication({
       const leaves = currentDirectLeafMap(snapshot, session);
       const continuingProfileCheckpoint = continueAfterStop && [
         RFI_CALIBRATION_STOP_REASONS.PROFILE_READY,
+        RFI_CALIBRATION_STOP_REASONS.INITIAL_MAP_READY,
         RFI_CALIBRATION_STOP_REASONS.REFINEMENT_BATCH_COMPLETE,
       ].includes(session.cursor.lastStopReason);
       const cursor = adaptiveCursor(session, leaves, {
         calibrationIntent: resolvedIntent,
+        mappingFocus: focus,
         selectionIntent: resolvedSelectionIntent,
         rangeTeacherPreset: resolvedRangeTeacherPreset,
         additionalQuestionAllowance: continueAfterStop
@@ -1967,9 +2076,8 @@ export function createRangeCalibrationApplication({
         cursor,
         answered,
         state.projectionMode === 'first_in_rfi_subspace'
-          ? directEvidenceHandClasses(state.personalStrategyEvidenceView) : new Set(),
-        state.projectionMode === 'first_in_rfi_subspace'
           ? directEvidenceHandClasses(previewBundle.evidenceView) : new Set(),
+        previewBundle.evidenceView,
       );
     }
     const completed = outcome.progressAssessment.shouldStop;
@@ -2098,6 +2206,7 @@ export function createRangeCalibrationApplication({
         answered,
         state.projectionMode === 'first_in_rfi_subspace'
           ? directEvidenceHandClasses(previewBundle.evidenceView) : new Set(),
+        previewBundle.evidenceView,
       );
     }
     cursor.nextPromptIndex = outcome.prompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length;
@@ -2230,6 +2339,9 @@ export function createRangeCalibrationApplication({
         state.session,
         cursor,
         answered,
+        state.projectionMode === 'first_in_rfi_subspace'
+          ? directEvidenceHandClasses(state.personalStrategyEvidenceView) : new Set(),
+        state.personalStrategyEvidenceView,
       );
     cursor.nextPromptIndex = outcome.prompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length;
     cursor.lastStopReason = outcome.progressAssessment.shouldStop
@@ -2299,6 +2411,7 @@ export function createRangeCalibrationApplication({
         answered,
         state.projectionMode === 'first_in_rfi_subspace'
           ? directEvidenceHandClasses(state.personalStrategyEvidenceView) : new Set(),
+        state.personalStrategyEvidenceView,
       );
     cursor.nextPromptIndex = outcome.prompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length;
     cursor.lastStopReason = outcome.progressAssessment.shouldStop
@@ -2632,6 +2745,7 @@ export function createRangeCalibrationApplication({
         answered,
         state.projectionMode === 'first_in_rfi_subspace'
           ? directEvidenceHandClasses(state.personalStrategyEvidenceView) : new Set(),
+        state.personalStrategyEvidenceView,
       );
     cursor.nextPromptIndex = outcome.prompt?.index ?? RANGE_CALIBRATION_QUESTION_ORDER.length;
     const session = updateCalibrationSession(state.session, {
@@ -2649,12 +2763,40 @@ export function createRangeCalibrationApplication({
     return calibrationState(snapshot, session, projectionService, null, leaves, state.workspaceLeafIndexes);
   }
 
-  return Object.freeze({
+  async function getRangeMappingProjection(scope, { focus = null, recentHands = [], skippedHands = [] } = {}) {
+    const firstInSubspace = firstInSubspaceInferenceAvailable(scope.context);
+    if (!inferenceAvailableForContext(scope.context) && !firstInSubspace) {
+      return Object.freeze({ available: false, coverage: null, candidates: [], reason: 'RFI mapping is unavailable for this decision family.' });
+    }
+    const bundle = firstInSubspace ? await firstInProjectionBundle(projectionService, scope)
+      : await projectionService.getProjectionBundle(scope);
+    const directHands = directEvidenceHandClasses(bundle.evidenceView);
+    const candidates = rankCalibrationCandidates(bundle.snapshot, {
+      intent: RFI_CALIBRATION_INTENTS.MAPPING, mappingFocus: focus, mappingEvidenceView: bundle.evidenceView,
+      recentQuestionHistory: recentHands, skippedHandClasses: skippedHands, transferProjection: bundle.transferProjection,
+    }).filter((candidate) => !directHands.has(candidate.handClass) || candidate.questionKind === 'conflict_resolution');
+    return Object.freeze({ available: true, coverage: createRfiStructuralMappingFacts({ snapshot: bundle.snapshot, evidenceView: bundle.evidenceView }), candidates });
+  }
+
+  const application = {
     ownerRef: resolvedOwnerRef,
+    lifecycleScope,
     repository,
     readWorkspace,
     createProfile,
     updateProfileConfiguration,
+    previewQualitativeIntent,
+    confirmQualitativeIntent,
+    discardQualitativeIntent(preview) { qualitativeDrafts.delete(preview); },
+    getQualitativeEvidence: (scope) => repository.loadQualitativeEvidence(scope),
+    getApproachHistory: (scope) => repository.loadApproachHistory(scope),
+    async addApproach(profileId, { displayName, sourceModeId = null }) {
+      const input = { id: idFactory('mode'), displayName: normalizeCalibrationName(displayName, 'Approach name') };
+      const result = sourceModeId
+        ? await repository.duplicateApproach(profileId, sourceModeId, input)
+        : await repository.addApproach(profileId, input);
+      return result;
+    },
     saveWorkspaceSelection,
     startOrResumeSession,
     switchCalibrationContext,
@@ -2666,6 +2808,7 @@ export function createRangeCalibrationApplication({
     requestAdditionalQuestion,
     getPersonalStrategyMatrixProjection,
     getRangeTeacherView,
+    getRangeMappingProjection,
     recordPersonalStrategyMatrixEvidence,
     applyRangeBuilderOperation,
     undoRangeBuilderOperation,
@@ -2697,5 +2840,17 @@ export function createRangeCalibrationApplication({
       });
     },
     getStorageMetrics: () => cloneData(storageMetrics),
-  });
+  };
+  return Object.freeze(Object.fromEntries(Object.entries(application).map(([key, value]) => [
+    key, typeof value !== 'function' ? value : (...args) => {
+      lifecycleScope?.assertCurrent();
+      const result = value(...args);
+      if (result?.then) return result.then((resolved) => {
+        lifecycleScope?.assertCurrent();
+        return resolved;
+      });
+      lifecycleScope?.assertCurrent();
+      return result;
+    },
+  ])));
 }

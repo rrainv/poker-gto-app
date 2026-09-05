@@ -96,9 +96,15 @@ test('truthfulness copy preserves Scenario, Replay, strategy, Training, Equity, 
   assert.match(copy['playbook.analysis-views'], /not weighted range-versus-range analysis/);
   assert.match(copy['playbook.analysis-views'], /not claimed as independently solver-resolved/);
   assert.match(copy['equity.basics'], /not by itself a complete strategy recommendation/);
-  assert.match(copy['training.feedback'], /not a claim of mathematically proven universal optimality/);
+  assert.match(copy['training.feedback'], /Heuristic comparisons describe agreement, not correctness/);
+  assert.match(copy['training.feedback'], /Only an accepted assessment can judge/);
   assert.match(copy['calibration.answers'], /never means the action is played at a pure 100% frequency/);
-  assert.match(copy['calibration.setup'], /selects high-value hands from current direct evidence/);
+  assert.match(copy['calibration.setup'], /Questions adapt to your answers/);
+  assert.match(copy['calibration.setup'], /One example does not establish a region/);
+  assert.doesNotMatch(copy['calibration.setup'], /five questions|5 questions|personal-teach-five/i);
+  assert.match(copy['calibration.setup'], /Unconfirmed wording can guide a clarification but does not change saved intent/);
+  assert.match(copy['calibration.setup'], /Add independent Approaches whenever useful/);
+  assert.doesNotMatch(copy['calibration.setup'], /exactly three|range-teacher-tab/);
   assert.match(copy['calibration.answers'], /question value, not poker confidence/);
   assert.match(copy['home-game.organizer'], /do not change PokerState or Riverline strategy/);
   assert.match(copy['home-game.organizer'], /Money and chips stay separate/);

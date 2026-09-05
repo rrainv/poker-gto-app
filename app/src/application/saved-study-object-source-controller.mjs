@@ -149,6 +149,7 @@ function status(state, details = {}) {
 
 export function createSavedStudyObjectSourceController({
   application,
+  lifecycleScope = null,
   storage,
   getPlaybookBridge,
   clock = () => new Date(),
@@ -178,12 +179,14 @@ export function createSavedStudyObjectSourceController({
   }
 
   async function resolve(identity) {
+    lifecycleScope?.assertCurrent();
     if (!identity) return status('unavailable');
     const cached = objectCache.get(identity.key);
     if (objectMatchesIdentity(cached, identity)) return status('saved', { identity, object: cached });
     const reference = referenceFromStorage(durableStorage, identity);
     if (!reference) return status('unsaved', { identity });
     const object = await application.getById(reference.objectId);
+    lifecycleScope?.assertCurrent();
     if (!objectMatchesIdentity(object, identity)) {
       clearReference(durableStorage, identity);
       objectCache.delete(identity.key);
@@ -250,10 +253,12 @@ export function createSavedStudyObjectSourceController({
       if (existingFlight) return existingFlight;
       const operation = (async () => {
         const existing = await resolve(identity);
+        lifecycleScope?.assertCurrent();
         if (existing.state === 'saved') return deepFreeze({ object: existing.object, created: false });
         const result = mode === 'hand'
           ? await saveHand(identity)
           : await saveScenario(identity, scenarioInput, decisionContext);
+        lifecycleScope?.assertCurrent();
         objectCache.set(identity.key, result.object);
         return deepFreeze({ object: result.object, created: result.created });
       })();
@@ -267,6 +272,7 @@ export function createSavedStudyObjectSourceController({
 
     async updateAnnotations(id, changes, options = {}) {
       const result = await application.updateAnnotations(id, changes, options);
+      lifecycleScope?.assertCurrent();
       for (const [key, object] of objectCache) {
         if (object.id === id) objectCache.set(key, result.object);
       }
@@ -277,6 +283,7 @@ export function createSavedStudyObjectSourceController({
       const identity = currentIdentity({ mode, scenarioInput });
       if (!identity) throw new RangeError('The current source is not saveable');
       const current = await resolve(identity);
+      lifecycleScope?.assertCurrent();
       if (current.state !== 'saved') throw new RangeError('The current source is not saved');
       const result = await application.archive(current.object.id, {
         expectedRevision: expectedRevision ?? current.object.revision,
@@ -286,11 +293,13 @@ export function createSavedStudyObjectSourceController({
       return result;
     },
 
-    classificationsWithMistake(object, selected) {
-      const values = new Set(object?.annotations?.classifications || []);
-      if (selected) values.add(SAVED_STUDY_CLASSIFICATIONS.MISTAKE);
-      else values.delete(SAVED_STUDY_CLASSIFICATIONS.MISTAKE);
-      return [...values].sort();
-    },
+    classificationsWithMistake: savedStudyClassificationsWithMistake,
   });
+}
+
+export function savedStudyClassificationsWithMistake(object, selected) {
+  const values = new Set(object?.annotations?.classifications || []);
+  if (selected) values.add(SAVED_STUDY_CLASSIFICATIONS.MISTAKE);
+  else values.delete(SAVED_STUDY_CLASSIFICATIONS.MISTAKE);
+  return [...values].sort();
 }

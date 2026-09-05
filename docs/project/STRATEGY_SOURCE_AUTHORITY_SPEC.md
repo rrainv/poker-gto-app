@@ -1,6 +1,6 @@
 # Strategy Source Authority and Claim Policy
 
-Status: accepted implementation contract through `STRATEGY-TRUST-001`, August 31, 2026. No production Reference Pack or validated general Hold'em production reference is registered.
+Status: implementation contract for `HEURISTIC-BASELINE-TRUTH-001` + `TRAINING-NORMATIVE-001`, September 5, 2026; human visual acceptance pending. No production Reference Pack or normative assessment policy is registered.
 
 This specification defines how Riverline interprets a strategy result. It does not decide poker actions, tune the heuristic, validate a reference dataset, or make Personal Strategy a production provider.
 
@@ -13,12 +13,14 @@ StrategyProvider v1
         ↓
 StrategyResult v1 + SourceDescriptor + ContextCoverage + capabilities
         ↓
-StrategyClaimPolicy v1
+StrategyClaimPolicy v1 + explicit assessment-policy acceptance
+        ↓
+strategy-truth/v1
         ↓
 Playbook / Analyze / Matrix / Training / in-memory Full Hand review
 ```
 
-`StrategyProvider` remains the required production strategy entry point. `StrategyClaimPolicy` is the only application authority that translates source metadata into permitted product claims. It never generates actions or changes probabilities. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted: Scenario and Hand now reach this path only through their canonical application projectors selected by `resolvePlaybookDecisionContext()`, and missing/failed canonical resolution clears strategy state instead of manufacturing a fallback DecisionContext or StrategyResult.
+`StrategyProvider` remains the required production strategy entry point. `StrategyClaimPolicy` translates accepted source and assessment metadata into permitted claims; the shared `strategy-truth/v1` projection owns downstream comparison/assessment semantics. It never generates actions or changes probabilities. `DECISION-CONTEXT-SINGLE-AUTHORITY-001` is accepted: Scenario and Hand now reach this path only through their canonical application projectors selected by `resolvePlaybookDecisionContext()`, and missing/failed canonical resolution clears strategy state instead of manufacturing a fallback DecisionContext or StrategyResult.
 
 The accepted trust boundary inside that path is: provider declaration ->
 structural/source validation -> application-owned acceptance -> effective
@@ -56,7 +58,7 @@ Authority values are deliberately small:
 - `none`: no strategy claim;
 - `exploratory`: information may be explored but not graded as a reference;
 - `comparative_reference`: may support explicit comparison to the named source;
-- `validated_reference`: may support bounded normative claims only with exact coverage and declared normative grading;
+- `validated_reference`: may supply an exact reference distribution; normative claims additionally require an explicitly accepted compatible assessment policy;
 - `personal`: intended user strategy, not poker truth;
 - `observed`: recorded behavior, not intended or normative strategy.
 
@@ -138,22 +140,30 @@ Current claims include:
 - normative curriculum weighting;
 - source limitations.
 
-The policy is derived from authority + coverage + effective capabilities + result availability. Consumers must not reproduce this matrix.
+The policy is derived from accepted source authority + coverage + effective capabilities + result availability + separately accepted assessment policy. Consumers must not reproduce this matrix.
 
-| Result semantics | Comparative wording | Correct/Mistake/Accuracy | Exact-frequency wording | EV loss |
-|---|---:|---:|---:|---:|
-| current heuristic, generalized | yes | no | no | no |
-| validated reference, exact, normative capability | yes | yes | only with exact distribution | only with declared complete action EV |
-| validated source, generalized mismatch | yes | no | no | no |
-| personal exact mix | personal/intended-strategy semantics | no | yes, if exact distribution | no |
-| observed behavior | observed-action semantics | no | only if the observation contract supports it | no |
-| unsupported/unavailable | no | no | no | no |
+| Truth state | Permitted interpretation | Normative claims |
+|---|---|---|
+| `unassessed` | preserve action/evidence and explicit revisit intent | none |
+| `heuristic_comparison` | approximate exploratory baseline distribution/agreement | none; no reference match/deviation/recommendation permissions |
+| `accepted_reference_comparison` | accepted source and exact compatible coverage; comparison language also respects ClaimPolicy | none without an accepted assessment criterion |
+| `normative_assessment` | accepted exact source plus compatible accepted action-set criterion and concrete chosen action | only the criterion's permitted supported/unsupported/remediation claims |
 
-Normative presentation is enabled only by declared metadata intersected with exact coverage, actual capabilities, and current application-owned acceptance, not provider-specific UI code. Synthetic fixtures may exercise consumer behavior but can never grant or simulate production trust merely by declaring an exact validated descriptor.
+Source acceptance alone never grants assessment authority. Generalized or incompatible reference coverage fails closed. Personal intent, observed Hero behavior, and OpponentPolicy are separate evidence roles and cannot authorize Hero assessment. `OPPONENT-ACTOR-INFORMATION-001` remains a separate required gate.
+
+### Accepted assessment policy v1
+
+`strategy-assessment-policy/v1` is application-owned and supplied at composition, separately from the source-acceptance registry. It binds policy ID/version and acceptance-decision ID to source ID/version/fingerprint, complete canonical v1.1 context identity (rules, stacks, tree/history, spot), required distribution/grading/sizing capabilities, explicit action universe, ambiguity keys, and claim permissions. Live acceptance is opaque and process-local; provider declarations and persisted objects cannot register themselves. No normative policy is registered in production.
+
+The only v1 criterion is `positive_probability_action_set/v1`: a positive-probability action in the accepted complete universe is supported, including Call 30% beside Raise 70%. An explicitly covered universe member absent from the distribution has zero support and may be unsupported. An action outside that universe, missing/wrong concrete size, ambiguous boundary, malformed/duplicate distribution, pot-fraction representation, partial coverage, or source/context/capability mismatch is unassessed. Sized universes require complete sizing capability and exact total-to amounts. No threshold, probability-gap grading, EV loss, frequency calibration, accuracy, retention, or transfer is inferred.
+
+`strategy-truth/v1` freezes state, source identity, chosen action/context identity, ClaimPolicy, accepted criterion, outcome, permitted claims, reasons, descriptive comparison, and learning eligibility. `strategyTruthPresentation` provides shared titles, source labels, tone and audio; renderers cannot promote its claim strength. Legacy modal-distance fields remain descriptive compatibility evidence only. Summary counts are partitioned by truth state, never combined into universal Alignment/Accuracy.
+
+Historical evidence stores this additive snapshot within `internalEvaluation`, without a database/schema migration or historical rewrite. Readers validate its internal consistency and bind it to the recorded action/context when present. Same Spot uses the frozen criterion and source; Similar Spot resolves today's provider. Legacy records without an assessment snapshot never gain normative authority from later registry changes.
 
 ## 7. Current heuristic policy
 
-The built-in heuristic is deterministic, versioned, known-provenance, generalized, quantitative, and comparative. It is a baseline for exploration and explicit comparison only. It remains useful for:
+The built-in heuristic is deterministic, versioned, known-provenance, generalized, quantitative, and exploratory. Its declared and accepted authority is `exploratory` and grading capability is `none`; descriptive baseline comparison lives in the truth projection. It is a baseline for exploration and explicit comparison only. It remains useful for:
 
 - exploratory Analysis;
 - comparative Training feedback;

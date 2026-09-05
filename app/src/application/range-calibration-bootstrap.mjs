@@ -61,9 +61,9 @@ function createRangeCalibrationSurface(browserWindow, options = {}) {
         );
       }
     },
-    async mountAuthenticated() {
+    async mountAuthenticated(options) {
       loadedWorkspaceModule ??= await loadWorkspaceModule();
-      return loadedWorkspaceModule.mountRangeCalibrationWorkspace();
+      return loadedWorkspaceModule.mountRangeCalibrationWorkspace(options);
     },
     async disposeAuthenticated() {
       await loadedWorkspaceModule?.disposeRangeCalibrationWorkspace?.();

@@ -83,8 +83,8 @@ test('Guest Home exposes truthful Start, core study, Personal, and supporting de
     assert.match(home, new RegExp(`data-home-destination="${destination}"`));
   }
   assert.match(logic, /homeEmptyAction\('Play or reconstruct a legal hand\.', 'Start a Hand', 'hand', \{ primary: true \}\)/);
-  assert.match(logic, /Teach Riverline how you intend to play\. A Riverline profile is required\./);
-  assert.match(html, /Signing in does not enable sync or cloud backup\./);
+  assert.match(logic, /Your learning workspace is saved on this device\./);
+  assert.match(html, /Guest data does not sync\./);
 });
 
 test('Continue is derived only from authoritative resumable state and never fabricates recency', () => {

@@ -125,24 +125,18 @@ test('experience events are deterministic, deeply immutable, and family typed', 
   }), /cannot use a poker-world event type/);
 });
 
-test('canonical Training grades and claim semantics select authority-safe study meaning', () => {
-  for (const feedbackSemantics of ['comparative', 'normative']) {
-    assert.equal(trainingStudyAudioMeaning({
-      comparisonState: 'optimal', feedbackSemantics,
-    }), STUDY_AUDIO_MEANINGS.POSITIVE);
-    assert.equal(trainingStudyAudioMeaning({
-      comparisonState: 'acceptable', feedbackSemantics,
-    }), STUDY_AUDIO_MEANINGS.NEUTRAL);
-    assert.equal(trainingStudyAudioMeaning({
-      comparisonState: 'mistake', feedbackSemantics,
-    }), STUDY_AUDIO_MEANINGS.CORRECTIVE);
+test('only permitted truth outcomes select positive or corrective study meaning', () => {
+  for (const feedbackSemantics of ['comparative', 'normative', 'normative_assessment', 'unavailable']) {
+    for (const comparisonState of ['optimal', 'acceptable', 'mistake', 'unknown']) {
+      assert.equal(trainingStudyAudioMeaning({ comparisonState, feedbackSemantics }), STUDY_AUDIO_MEANINGS.NEUTRAL);
+    }
   }
-  assert.equal(trainingStudyAudioMeaning({
-    comparisonState: 'optimal', feedbackSemantics: 'unavailable',
-  }), null);
-  assert.equal(trainingStudyAudioMeaning({
-    comparisonState: 'unknown', feedbackSemantics: 'comparative',
-  }), null);
+  for (const [outcome, permission, expected] of [['supported', 'correct', 'positive'], ['unsupported', 'incorrect', 'corrective']]) {
+    const truth = { state: 'normative_assessment', outcome, claims: { [permission]: true } };
+    assert.equal(trainingStudyAudioMeaning({ truth }), expected);
+    assert.equal(trainingStudyAudioMeaning({ truth: { ...truth, claims: {} } }), 'neutral');
+    assert.equal(trainingStudyAudioMeaning({ truth: { ...truth, state: 'heuristic_comparison' } }), 'neutral');
+  }
 });
 
 test('one completed canonical action derives action, chip, and actor events without mutating state', () => {
@@ -751,10 +745,10 @@ test('ordinary Training action labels produce one canonical study meaning and ne
   };
   const bridge = installExperienceEventsBridge(browserWindow);
   const cases = [
-    ['fold', 'optimal', 'study_positive'],
+    ['fold', 'optimal', 'study_neutral'],
     ['call', 'acceptable', 'study_neutral'],
-    ['raise', 'mistake', 'study_corrective'],
-    ['all_in', 'optimal', 'study_positive'],
+    ['raise', 'mistake', 'study_neutral'],
+    ['all_in', 'optimal', 'study_neutral'],
   ];
   cases.forEach(([chosenActionType, comparisonState], index) => {
     bridge.emitTrainingDecisionResult({
@@ -791,8 +785,7 @@ test('ordinary Training action labels produce one canonical study meaning and ne
     feedbackSemantics: 'unavailable',
   }).event;
   const unsupportedResult = await unsupported.sound.consumeExperienceEvent(unsupportedEvent);
-  assert.equal(unsupportedResult.reason, 'silent_policy');
-  assert.equal(unsupported.contextCount(), 0);
+  assert.equal(unsupportedResult.cueName, 'study_neutral');
 });
 
 test('master volume updates production cue gain live at 0, 25, 50, 72, and 100 percent', async () => {

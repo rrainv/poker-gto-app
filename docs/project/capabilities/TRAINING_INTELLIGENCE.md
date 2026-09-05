@@ -4,6 +4,17 @@
 
 ## Product purpose
 
+Authoritative decisions and the bounded first-slice contract now live in
+[Training Intelligence v1](../TRAINING_INTELLIGENCE_V1_SPEC.md): separate
+repetition/recall/retention/transfer evidence states; optional pre-reveal
+uncertainty with distinct future abstention; optional immediate retry and
+scheduled work at session boundaries; deterministic v1 with transparent adaptive
+scheduling as the long-term target; user overrides; and a recommendation plus
+queue projected from existing owners. Weak opponent evidence permits only
+user-requested hypothetical practice. This contract supersedes older open
+questions below where it explicitly settles them; it does not activate later
+adapters or claim human acceptance of the first slice.
+
 Training Intelligence is Riverline's long-term program for turning isolated legal exercises into a persistent, evidence-grounded learning loop: remember what was shown and answered, revisit useful mistakes or uncertainty, re-drill the same or similar spots, space review over time, and summarize recurring patterns honestly.
 
 It extends the learning experience around current Training authorities. It does not replace the Training Practice Planner, canonical legal generator, session/grading modules, StrategyProvider, StrategyClaimPolicy, Replay, Saved, or Personal Strategy evidence models.
@@ -35,7 +46,7 @@ Users should eventually be able to:
 - [Tutorial and onboarding](../TUTORIAL_ONBOARDING_SPEC.md) owns current help lifecycle; Training Intelligence does not create another tutorial system.
 - [Training Memory v1](../TRAINING_MEMORY_V1_SPEC.md) now owns durable profile-scoped DecisionRecord/session evidence, frozen answer-time source/claim snapshots, bounded recent/review queries, exact historical Same Spot, and planner/generator-backed current Similar Spot.
 
-Current Training is legal, deterministic, planner/provider-backed, source-aware, and durably remembers Varied, Focused, and Full Hand Hero decisions. The v1 queue uses transparent comparative/user-study reasons and reversible reviewed/snoozed lifecycle; it does not claim heuristic disagreement is a mistake. Advanced spaced/adaptive scheduling, rich filters/trends, Saved Drill payloads, Home/Replay/Analyze continuity, and Personal Strategy observation remain future work.
+Current Training is legal, deterministic, planner/provider-backed, source-aware, and durably remembers Varied, Focused, and Full Hand Hero decisions. The v1 queue uses explicit user-study intent and separately accepted normative remediation reasons and reversible reviewed/snoozed lifecycle; it does not claim heuristic disagreement is a mistake. Advanced spaced/adaptive scheduling, rich filters/trends, Saved Drill payloads, Home/Replay/Analyze continuity, and Personal Strategy observation remain future work.
 
 Human product evidence establishes a durable composition direction for `TRAINING-COMPOSITION-001`: one conceptual session start has one primary CTA; useful setup and status are top-packed; the pre/post-answer states retain one stable normal workspace skeleton; and Action History, Assistance, Training Memory, feedback, and explanation have explicit roles. The accepted normal skeleton and bounded correction remain preserved. Final hardening adds four rules: Varied/Focused feedback stays immediate with primary progression before manual study controls, Facts, reference, and optional Explain; expanding Explain never displaces Next; sparse normal modes use content-driven height while Full Hand retains table scale; and live Full Hand records neutrally, deferring comparison/source/Facts/depth to shared terminal Review, with confirmed live-only Abort abandoning Memory while preserving evidence. `Replay this decision` remounts the exact already-served canonical exercise; replay answers may retain truthful same-spot evidence but never change generated-session headline statistics, streaks, denominator consumption, or planner progress. Terminal Full Hand Review remains a state of the accepted shared-table workspace, retains live-scale table geometry, and uses vertical canonical History rather than a horizontal chronology projection. Varied, Focused, Full Hand, Same Spot, Similar Spot, planner, legality, grading, Replay, source, analysis, and memory authorities remain unchanged. Future bounded effective-stack variation belongs only to the shared Random Spot Generator contract with canonical bounds/locks/reproduction, not Training runtime. Firefox 154 focused evidence passes; the product owner human accepted `TRAINING-COMPOSITION-001`.
 
@@ -92,7 +103,7 @@ The first implementation should store only what its user job cannot truthfully r
 - `TrainingPracticePlanner` owns structural target planning only; the canonical generator owns cards, actions, PokerState, legality, pot, and trajectories.
 - Planner sizing families are generation targets, never recommendations or grades.
 - Training calls the same `StrategyProvider` as other consumers and has no Training-only fallback.
-- `StrategyClaimPolicy` controls whether a comparison may be generalized alignment or stronger normative wording.
+- `StrategyClaimPolicy` and `strategy-truth/v1` separate heuristic comparison, exact accepted-reference comparison and assessment-policy-authorized supported/unsupported outcomes; there is no universal alignment metric.
 - Comparative heuristic disagreement is not objective poker correctness, EV loss, or proof of a mistake.
 - Internal grading math may support deterministic session behavior, but public history/summaries must preserve source authority and limitations.
 - Reference strategy, intended Personal Strategy, observed Training behavior, and opponent policy remain distinct.

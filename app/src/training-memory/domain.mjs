@@ -10,6 +10,12 @@ import {
   STRATEGY_CLAIM_POLICY_SCHEMA_VERSION,
 } from '../application/strategy-claim-policy.mjs';
 import { isStrategyResultV1 } from '../application/strategy-result.mjs';
+import { historicalStrategyTruth, summarizeStrategyTruth, validatedHistoricalTruth } from '../application/strategy-truth.mjs';
+import { assessmentContextIdentity, assessmentActionKey, sizedAssessmentAction } from '../application/strategy-assessment-policy.mjs';
+import {
+  TRAINING_LEARNING_DECISION_VERSION,
+  validateTrainingLearningEvidence,
+} from './learning-evidence.mjs';
 
 export const TRAINING_DECISION_RECORD_SCHEMA_VERSION = 'training-decision-record/v1';
 export const TRAINING_SESSION_RECORD_SCHEMA_VERSION = 'training-session-record/v1';
@@ -53,6 +59,8 @@ export const TRAINING_REVIEW_REASON_CODES = Object.freeze({
   MANUAL_DIFFICULT: 'manual_difficult',
   MANUAL_IMPORTANT: 'manual_important',
   MANUAL_MY_MISTAKE: 'manual_my_mistake',
+  USER_UNCERTAIN_REVISIT: 'user_uncertain_requested_revisit',
+  NORMATIVE_REMEDIATION: 'normative_remediation',
 });
 
 const SESSION_STATUS_VALUES = Object.freeze(Object.values(TRAINING_SESSION_STATUSES));
@@ -318,6 +326,9 @@ function validateStrategyEvidence(evidence, status) {
   }
   if (evidence.internalEvaluation !== null) {
     requirePortableJson(evidence.internalEvaluation, 'Training internal evaluation');
+    if (evidence.internalEvaluation.truth !== undefined && !validatedHistoricalTruth(evidence)) {
+      throw new TypeError('Invalid frozen Training assessment snapshot');
+    }
   }
   return evidence;
 }
@@ -329,8 +340,9 @@ export function validateTrainingDecisionRecord(record) {
     'shownAt', 'answeredAt', 'status', 'mode', 'plannerIntentId', 'decisionSource',
     'decisionContext', 'legalActions', 'userResponse', 'strategyEvidence',
     'studyMetadata', 'reviewState', 'createdAt', 'updatedAt',
+    ...(record.schemaVersion === TRAINING_LEARNING_DECISION_VERSION ? ['learningEvidence'] : []),
   ], 'TrainingDecisionRecord');
-  if (record.schemaVersion !== TRAINING_DECISION_RECORD_SCHEMA_VERSION) {
+  if (![TRAINING_DECISION_RECORD_SCHEMA_VERSION, TRAINING_LEARNING_DECISION_VERSION].includes(record.schemaVersion)) {
     throw new TypeError(`Expected ${TRAINING_DECISION_RECORD_SCHEMA_VERSION}`);
   }
   requireId(record.id, 'TrainingDecisionRecord.id');
@@ -357,8 +369,25 @@ export function validateTrainingDecisionRecord(record) {
   requirePortableJson(record.legalActions, 'Training legal actions');
   validateUserResponse(record.userResponse, record.status);
   validateStrategyEvidence(record.strategyEvidence, record.status);
+  const truth = record.strategyEvidence?.internalEvaluation?.truth;
+  if (truth) {
+    const response = record.userResponse?.action;
+    const responseAction = { type: response?.type, amountBb: Number.isSafeInteger(response?.amountToMilliBb)
+      ? response.amountToMilliBb / 1000 : null };
+    if (truth.contextIdentity !== null && truth.contextIdentity !== assessmentContextIdentity(record.decisionContext)) {
+      throw new RangeError('Frozen truth context does not match the decision record');
+    }
+    if (truth.chosenAction?.type !== responseAction.type
+      || (sizedAssessmentAction(truth.chosenAction) && truth.chosenAction.amountBb !== null
+        && truth.chosenAction.amountBb !== undefined && assessmentActionKey(truth.chosenAction) !== assessmentActionKey(responseAction))) {
+      throw new RangeError('Frozen truth action does not match the decision response');
+    }
+  }
   validateTrainingStudyMetadata(record.studyMetadata);
   validateTrainingReviewState(record.reviewState);
+  if (record.schemaVersion === TRAINING_LEARNING_DECISION_VERSION) {
+    validateTrainingLearningEvidence(record.learningEvidence, record);
+  }
   requireIsoTimestamp(record.createdAt, 'TrainingDecisionRecord.createdAt');
   requireIsoTimestamp(record.updatedAt, 'TrainingDecisionRecord.updatedAt');
   if (record.createdAt !== record.shownAt
@@ -463,13 +492,14 @@ function gradeComparisonState(evaluation, claimPolicy) {
   const permitsComparativeGrade = claimPolicy?.claims?.comparative_grading === true
     || claimPolicy?.claims?.normative_grading === true;
   if (!permitsComparativeGrade) return TRAINING_COMPARISON_STATES.UNAVAILABLE;
-  if (evaluation.grade === 'optimal' && claimPolicy?.claims?.reference_match === true) {
+  const comparisonGrade = evaluation.comparisonGrade ?? evaluation.grade;
+  if (comparisonGrade === 'optimal' && claimPolicy?.claims?.reference_match === true) {
     return TRAINING_COMPARISON_STATES.MATCHES_REFERENCE;
   }
-  if (evaluation.grade === 'acceptable' && claimPolicy?.claims?.reference_deviation === true) {
+  if (comparisonGrade === 'acceptable' && claimPolicy?.claims?.reference_deviation === true) {
     return TRAINING_COMPARISON_STATES.CLOSE_TO_REFERENCE;
   }
-  if (evaluation.grade === 'mistake' && claimPolicy?.claims?.reference_deviation === true) {
+  if (comparisonGrade === 'mistake' && claimPolicy?.claims?.reference_deviation === true) {
     return TRAINING_COMPARISON_STATES.DIFFERS_FROM_REFERENCE;
   }
   return TRAINING_COMPARISON_STATES.UNAVAILABLE;
@@ -489,16 +519,12 @@ export function createTrainingStrategyEvidence({ strategyResult, claimPolicy, ev
 export function reviewReasonsForDecision(record) {
   validateTrainingDecisionRecord(record);
   const reasons = [];
-  const comparison = record.strategyEvidence?.comparisonState;
-  if (comparison === TRAINING_COMPARISON_STATES.DIFFERS_FROM_REFERENCE) {
-    reasons.push(TRAINING_REVIEW_REASON_CODES.DIFFERS_FROM_REFERENCE);
-  } else if (comparison === TRAINING_COMPARISON_STATES.CLOSE_TO_REFERENCE) {
-    reasons.push(TRAINING_REVIEW_REASON_CODES.CLOSE_TO_REFERENCE);
-  } else if (record.strategyEvidence?.claimPolicy?.mode !== 'exploratory' && [
-    TRAINING_COMPARISON_STATES.UNSUPPORTED,
-    TRAINING_COMPARISON_STATES.UNAVAILABLE,
-  ].includes(comparison)) {
-    reasons.push(TRAINING_REVIEW_REASON_CODES.SOURCE_UNAVAILABLE);
+  if (record.learningEvidence?.revisitRequest) {
+    reasons.push(TRAINING_REVIEW_REASON_CODES.USER_UNCERTAIN_REVISIT);
+  }
+  const truth = historicalStrategyTruth(record.strategyEvidence);
+  if (truth.state === 'normative_assessment' && truth.learningEligibility.remediation) {
+    reasons.push(TRAINING_REVIEW_REASON_CODES.NORMATIVE_REMEDIATION);
   }
   if (record.studyMetadata.review) reasons.push(TRAINING_REVIEW_REASON_CODES.MANUAL_REVIEW);
   if (record.studyMetadata.difficult) reasons.push(TRAINING_REVIEW_REASON_CODES.MANUAL_DIFFICULT);
@@ -514,6 +540,8 @@ export function trainingReviewPriority(record, now = new Date()) {
     [TRAINING_REVIEW_REASON_CODES.MANUAL_DIFFICULT]: 45,
     [TRAINING_REVIEW_REASON_CODES.MANUAL_IMPORTANT]: 40,
     [TRAINING_REVIEW_REASON_CODES.MANUAL_MY_MISTAKE]: 35,
+    [TRAINING_REVIEW_REASON_CODES.USER_UNCERTAIN_REVISIT]: 50,
+    [TRAINING_REVIEW_REASON_CODES.NORMATIVE_REMEDIATION]: 30,
     [TRAINING_REVIEW_REASON_CODES.DIFFERS_FROM_REFERENCE]: 30,
     [TRAINING_REVIEW_REASON_CODES.SOURCE_UNAVAILABLE]: 20,
     [TRAINING_REVIEW_REASON_CODES.CLOSE_TO_REFERENCE]: 10,
@@ -521,6 +549,7 @@ export function trainingReviewPriority(record, now = new Date()) {
   const ageDays = Math.max(0, Math.floor(
     (new Date(now).getTime() - Date.parse(record.shownAt)) / 86_400_000,
   ));
+  if (!reasons.length) return 0;
   return Math.max(0, reasons.reduce((sum, reason) => sum + weights[reason], 0)
     + Math.min(30, ageDays)
     - Math.min(30, record.reviewState.reviewCount * 5));
@@ -568,6 +597,8 @@ export function deriveTrainingSessionSummary(decisionRecords) {
     answeredCount,
     comparisonCounts,
     sourceIds: [...sourceIds].sort(),
+    truthSummary: summarizeStrategyTruth(ordered.filter((record) => record.status === 'answered')
+      .map((record) => historicalStrategyTruth(record.strategyEvidence))),
     reviewCount,
   });
 }

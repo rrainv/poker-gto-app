@@ -316,12 +316,12 @@ test('starter checkpoint copy has no 169-completion or remaining-cells semantics
   const start = html.indexOf('id="calibrationCompleteState"');
   const end = html.indexOf('<div class="calibration-personal-column">', start);
   const checkpoint = html.slice(start, end);
-  assert.match(checkpoint, /Your starter profile is ready/);
+  assert.match(checkpoint, /Initial map/);
   assert.match(checkpoint, /Direct answers/);
   assert.match(checkpoint, /Modeled hands/);
   assert.match(checkpoint, /Uncertain regions/);
   assert.match(checkpoint, /Recommended clarifications/);
-  assert.match(checkpoint, /Review profile/);
+  assert.match(checkpoint, /Review understanding/);
   assert.match(checkpoint, /Continue refining/);
   assert.match(checkpoint, /Stop for now/);
   assert.doesNotMatch(checkpoint, /169|remaining cells|complete all/i);

@@ -20,6 +20,12 @@ const STRATEGY_SOURCE_AUTHORITY_PATH = path.join(
 const STRATEGY_CLAIM_POLICY_PATH = path.join(
   REPO_ROOT, 'app', 'src', 'application', 'strategy-claim-policy.mjs',
 );
+const STRATEGY_ASSESSMENT_POLICY_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'application', 'strategy-assessment-policy.mjs',
+);
+const STRATEGY_TRUTH_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'application', 'strategy-truth.mjs',
+);
 const STRATEGY_PROVIDER_PATH = path.join(
   REPO_ROOT, 'app', 'src', 'application', 'strategy-provider.mjs',
 );
@@ -81,7 +87,9 @@ function createHarness() {
     .replace(/export\s+\{[\s\S]*?\}\s+from\s+['"][^'"]+['"];\s*/g, '')
     .replaceAll('export ', '');
   const strategySourceAuthoritySource = moduleSource(STRATEGY_SOURCE_AUTHORITY_PATH);
+  const strategyAssessmentPolicySource = moduleSource(STRATEGY_ASSESSMENT_POLICY_PATH);
   const strategyClaimPolicySource = moduleSource(STRATEGY_CLAIM_POLICY_PATH);
+  const strategyTruthSource = moduleSource(STRATEGY_TRUTH_PATH);
   const strategyContractSource = moduleSource(STRATEGY_RESULT_PATH);
   const strategyProviderSource = moduleSource(STRATEGY_PROVIDER_PATH);
   const heuristicEvaluatorSource = moduleSource(HEURISTIC_EVALUATOR_PATH);
@@ -153,6 +161,7 @@ function createHarness() {
     Promise,
     Set,
     String,
+    structuredClone,
     clearTimeout,
     setTimeout,
     controls,
@@ -190,7 +199,10 @@ function createHarness() {
     const DECISION_CONTEXT_SCHEMA_VERSION = 'decision-context/v1';
     ${strategySourceAuthoritySource}
     ${strategyContractSource}
+    ${strategyAssessmentPolicySource}
     ${strategyClaimPolicySource}
+    const freeze = freezeAssessmentData;
+    ${strategyTruthSource}
     ${strategyProviderSource}
     const CARD_RANKS = '23456789TJQKA';
     const EVALUATOR_HAND_RANK_SCHEMA_VERSION = 'poker-hand-rank/v1';
@@ -222,6 +234,9 @@ function createHarness() {
     const RiverlineStrategy = Object.freeze({
       schemaVersion: STRATEGY_PROVIDER_SCHEMA_VERSION,
       claimPolicySchemaVersion: STRATEGY_CLAIM_POLICY_SCHEMA_VERSION,
+      truthFor: projectStrategyTruth,
+      truthPresentation: strategyTruthPresentation,
+      summarizeTruth: summarizeStrategyTruth,
       createProvider(options = {}) {
         if (typeof options.fallbackResolver === 'function') return createStrategyProvider(options);
         const optionResolver = typeof options.heuristicOptionsResolver === 'function'

@@ -26,6 +26,21 @@ const T1 = '2026-08-14T09:01:00.000Z';
 const T2 = '2026-08-14T09:02:00.000Z';
 const OWNER = createLocalOwnerRef('local-owner-1');
 
+function asLegacyV1(snapshot) {
+  const legacy = structuredClone(snapshot);
+  legacy.schemaVersion = 'personal-strategy-store/v1';
+  delete legacy.qualitativeEvidence;
+  for (const profile of legacy.profiles) {
+    profile.schemaVersion = 'strategy-profile/v1';
+    delete profile.setupVersion; delete profile.setupAssumptions; delete profile.versionHistory;
+  }
+  for (const mode of legacy.modes) {
+    mode.schemaVersion = 'strategy-mode/v1';
+    delete mode.approachVersion; delete mode.versionHistory; delete mode.forkProvenance;
+  }
+  return legacy;
+}
+
 class MemoryStorage {
   constructor(initial = {}) {
     this.values = new Map(Object.entries(initial));
@@ -264,7 +279,7 @@ test('portable export/import validates versions and rejects collisions atomicall
 
   const unsupported = JSON.parse(encoded);
   unsupported.schemaVersion = 'personal-strategy-export/v99';
-  await assert.rejects(target.importPortable(unsupported), /Expected personal-strategy-export\/v1/);
+  await assert.rejects(target.importPortable(unsupported), /Expected personal-strategy-export\/v2/);
 });
 
 test('malformed, invalid, and future legacy records fail closed without overwriting stored bytes', async () => {
@@ -295,8 +310,8 @@ test('synthetic v0 store fixture migrates transactionally in deterministic order
     revision: current.revision,
     ownerId: current.ownerRef.id,
     updatedAt: current.updatedAt,
-    profiles: current.profiles,
-    modes: current.modes,
+    profiles: asLegacyV1(current).profiles,
+    modes: asLegacyV1(current).modes,
     observations: current.rangeObservations,
     sessions: current.calibrationSessions,
   };
@@ -305,7 +320,7 @@ test('synthetic v0 store fixture migrates transactionally in deterministic order
   });
 
   const migrated = await repository(storage).loadSnapshot();
-  assert.equal(migrated.schemaVersion, 'personal-strategy-store/v1');
+  assert.equal(migrated.schemaVersion, 'personal-strategy-store/v2');
   assert.deepEqual(migrated.ownerRef, OWNER);
   assert.deepEqual(migrated.rangeObservations, current.rangeObservations);
   assert.deepEqual(migrated.trainingObservations, []);

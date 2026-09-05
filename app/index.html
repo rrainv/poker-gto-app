@@ -368,7 +368,7 @@
             <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="m16.5 7.5 3-3m0 0v3m0-3h-3"/></svg>
             <span data-i18n="Training">Training</span>
           </button>
-          <button class="mode-nav-item" type="button" data-mode="calibration" data-navigation-id="personal-strategy" data-workspace-eyebrow="Core study" data-mode-title="Personal Strategy" data-mode-subtitle="Calibration, Matrix, Teacher, and Builder for the way you play." aria-label="Personal Strategy" data-i18n-aria-label="Personal Strategy" title="Personal Strategy" data-i18n-title="Personal Strategy" data-tooltip="Personal Strategy" aria-current="false">
+          <button class="mode-nav-item" type="button" data-mode="calibration" data-navigation-id="personal-strategy" data-workspace-eyebrow="Core study" data-mode-title="Personal Strategy" data-mode-subtitle="Review what Riverline understands, teach your intended play, and refine exact examples in Matrix Edit." aria-label="Personal Strategy" data-i18n-aria-label="Personal Strategy" title="Personal Strategy" data-i18n-title="Personal Strategy" data-tooltip="Personal Strategy" aria-current="false">
             <svg class="mode-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 5v14m4-14v14m4-14v14M4 9h16m-16 5h16"/><circle cx="16" cy="9" r="2"/></svg>
             <span data-i18n="Personal Strategy">Personal Strategy</span>
           </button>
@@ -574,7 +574,7 @@
                 <h2 id="homeGuestAccountTitle" data-i18n="Riverline is ready to use">Riverline is ready to use</h2>
               </div>
               <p id="homeGuestAccountPrimary" data-i18n="Analyze hands, train decisions, and calculate Equity without an account.">Analyze hands, train decisions, and calculate Equity without an account.</p>
-              <p id="homeGuestAccountSecondary" data-i18n="Saved study and Personal Strategy require a Riverline profile. Signing in does not enable sync or cloud backup.">Saved study and Personal Strategy require a Riverline profile. Signing in does not enable sync or cloud backup.</p>
+              <p id="homeGuestAccountSecondary" data-i18n="Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode. Guest data does not sync.">Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode. Guest data does not sync.</p>
               <button id="homeGuestSignIn" class="ui-button ui-button--quiet" type="button" data-i18n="Sign in or create account">Sign in or create account</button>
             </div>
           </section>
@@ -1198,10 +1198,11 @@
 
                   <div class="eyebrow"><span
 
-                      data-i18n="Primary decision">PRIMARY DECISION</span> · <span id="streetLabel"
+                      id="strategyTruthHeading" data-i18n="Heuristic baseline">Heuristic baseline</span> · <span id="streetLabel"
 
                       data-i18n="PREFLOP" style="text-transform:uppercase;">PREFLOP</span></div>
 
+                  <p id="strategyTruthNote" class="strategy-truth-note" data-i18n="Approximate exploratory guidance. Agreement is not correctness.">Approximate exploratory guidance. Agreement is not correctness.</p>
                   <div class="action-name" id="bestAction">
 
                     OPEN 2.5 BB</div>
@@ -1470,7 +1471,7 @@
                 <div>
                   <p class="hand-review-eyebrow" data-i18n="Post-hand learning">Post-hand learning</p>
                   <h2 id="handReviewTitle" data-i18n="Hand Review">Hand Review</h2>
-                  <p id="handReviewSubtitle" data-i18n="Inspect each Hero decision against the selected reference without changing the completed Hand.">Inspect each Hero decision against the selected reference without changing the completed Hand.</p>
+                  <p id="handReviewSubtitle" data-i18n="Inspect each Hero decision and its strategy source without changing the completed Hand.">Inspect each Hero decision and its strategy source without changing the completed Hand.</p>
                 </div>
                 <span id="handReviewProgress" class="badge status-badge status-badge--info poker-data-token"></span>
               </header>
@@ -1484,8 +1485,8 @@
                   <div><dt data-i18n="Result">Result</dt><dd id="handReviewResult">&mdash;</dd></div>
                   <div><dt data-i18n="Hero decisions">Hero decisions</dt><dd id="handReviewDecisionCount" class="poker-data-token">0</dd></div>
                   <div><dt data-i18n="Comparable decisions">Comparable decisions</dt><dd id="handReviewComparableCount" class="poker-data-token">0</dd></div>
-                  <div><dt data-i18n="Reference unavailable">Reference unavailable</dt><dd id="handReviewUnavailableCount" class="poker-data-token">0</dd></div>
-                  <div><dt data-i18n="Selected reference">Selected reference</dt><dd id="handReviewOverviewSource">&mdash;</dd></div>
+                  <div><dt data-i18n="Comparison unavailable">Comparison unavailable</dt><dd id="handReviewUnavailableCount" class="poker-data-token">0</dd></div>
+                  <div><dt data-i18n="Strategy source">Strategy source</dt><dd id="handReviewOverviewSource">&mdash;</dd></div>
                 </dl>
                 <p id="handReviewAlignmentSummary" class="hand-review-overview-summary"></p>
                 <p id="handReviewPrioritySummary" class="hand-review-priority-summary"></p>
@@ -1514,7 +1515,7 @@
 
                   <section class="hand-review-comparison" aria-labelledby="handReviewComparisonTitle">
                     <div class="hand-review-section-heading">
-                      <div><span data-i18n="Observed action vs reference">Observed action vs reference</span><h4 id="handReviewComparisonTitle" data-i18n="Chosen action and selected reference">Chosen action and selected reference</h4></div>
+                      <div><span data-i18n="Observed action and source comparison">Observed action and source comparison</span><h4 id="handReviewComparisonTitle" data-i18n="Chosen action and strategy source">Chosen action and strategy source</h4></div>
                       <span id="handReviewSourceBadge" class="badge status-badge status-badge--info"></span>
                     </div>
                     <div class="hand-review-chosen-row"><span data-i18n="Hero chose">Hero chose</span><strong id="handReviewChosenAction"></strong></div>
@@ -1536,7 +1537,7 @@
                   </dl>
 
                   <details class="hand-review-provenance">
-                    <summary data-i18n="Reference details">Reference details</summary>
+                    <summary data-i18n="Source details">Source details</summary>
                     <dl>
                       <div><dt data-i18n="Source">Source</dt><dd id="handReviewSourceDetail"></dd></div>
                       <div><dt data-i18n="Coverage">Coverage</dt><dd id="handReviewCoverage"></dd></div>
@@ -1871,17 +1872,8 @@
           <strong data-i18n="Opening Personal Strategy">Opening Personal Strategy</strong>
         </section>
 
-        <section id="calibrationGuestState" class="panel calibration-account-required-state" aria-labelledby="calibrationGuestTitle" hidden>
-          <div>
-            <p class="calibration-eyebrow" data-i18n="Account required">Account required</p>
-            <h2 id="calibrationGuestTitle" data-i18n="Sign in to build and save your Personal Strategy">Sign in to build and save your Personal Strategy</h2>
-            <p data-i18n="Personal Strategy stores profiles, calibration sessions, and direct answers. Sign in or create an account before starting.">Personal Strategy stores profiles, calibration sessions, and direct answers. Sign in or create an account before starting.</p>
-          </div>
-          <div class="calibration-account-required-actions">
-            <button class="ui-button ui-button--primary" type="button" data-calibration-account-action="sign-in" data-i18n="Sign in">Sign in</button>
-            <button class="ui-button ui-button--secondary" type="button" data-calibration-account-action="create-account" data-i18n="Create account">Create account</button>
-          </div>
-          <small data-i18n="Your current workspace remains open. No Personal Strategy data is created in Guest Mode.">Your current workspace remains open. No Personal Strategy data is created in Guest Mode.</small>
+        <section id="calibrationGuestState" class="panel" role="status" hidden>
+          <strong data-i18n="Opening Personal Strategy">Opening Personal Strategy</strong>
         </section>
 
         <section id="calibrationErrorState" class="panel calibration-error-state" role="alert" hidden>
@@ -1896,13 +1888,13 @@
         <section id="calibrationEmptyState" class="panel calibration-empty-state" hidden data-tutorial-anchor="calibration-empty-profile">
           <div class="calibration-empty-copy">
             <p class="calibration-eyebrow" data-i18n="Your poker environments">Your poker environments</p>
-            <h2 id="calibrationWorkspaceTitle" data-i18n="Teach Riverline how you play">Teach Riverline how you play</h2>
-            <p data-i18n="Start with a real game you recognize. Then name the three ways you play there and choose an unopened preflop spot.">Start with a real game you recognize. Then name the three ways you play there and choose an unopened preflop spot.</p>
-            <button id="calibrationCreateFirstProfile" class="ui-button ui-button--primary" type="button" data-i18n="Create your first profile">Create your first profile</button>
+            <h2 id="calibrationWorkspaceTitle" data-i18n="What Riverline understands">What Riverline understands</h2>
+            <p data-i18n="Map hand families and boundaries. Stop whenever you want.">Map hand families and boundaries. Stop whenever you want.</p>
+            <button id="calibrationCreateFirstProfile" class="ui-button ui-button--primary" type="button" data-i18n="Create Game Setup">Create Game Setup</button>
           </div>
           <ol class="calibration-first-use-steps" aria-label="How Range Calibration works" data-i18n-aria-label="How Range Calibration works">
             <li><span>1</span><div><strong data-i18n="Choose where you play">Choose where you play</strong><small data-i18n="Name a real poker environment, not an abstract style.">Name a real poker environment, not an abstract style.</small></div></li>
-            <li><span>2</span><div><strong data-i18n="Name three ways you play">Name three ways you play</strong><small data-i18n="Modes stay discrete and use your own words.">Modes stay discrete and use your own words.</small></div></li>
+            <li><span>2</span><div><strong data-i18n="Name your first Approach">Name your first Approach</strong><small data-i18n="Add independent Approaches whenever you need them.">Add independent Approaches whenever you need them.</small></div></li>
             <li><span>3</span><div><strong data-i18n="Choose the exact RFI spot">Choose the exact RFI spot</strong><small data-i18n="Set table, position, stack, and game accounting.">Set table, position, stack, and game accounting.</small></div></li>
           </ol>
         </section>
@@ -1911,30 +1903,40 @@
           <section class="panel calibration-identity-panel calibration-configuration-view" aria-labelledby="calibrationIdentityTitle" data-tutorial-anchor="calibration-profile">
             <div class="calibration-section-heading">
               <div>
-                <p class="calibration-eyebrow" data-i18n="Profile and mode">Profile and mode</p>
-                <h2 id="calibrationIdentityTitle" data-i18n="Where and how do you play?">Where and how do you play?</h2>
+                <p class="calibration-eyebrow" data-i18n="Personal Strategy">Personal Strategy</p>
+                <h2 id="calibrationIdentityTitle" data-i18n="Game Setup and Approach">Game Setup and Approach</h2>
               </div>
               <div class="calibration-profile-actions">
-                <button id="calibrationEditProfile" class="ui-button ui-button--tertiary" type="button" data-i18n="Edit profile">Edit profile</button>
-                <button id="calibrationCreateProfile" class="ui-button ui-button--secondary" type="button" data-i18n="New profile">New profile</button>
+                <button id="calibrationEditProfile" class="ui-button ui-button--tertiary" type="button" data-i18n="Edit Game Setup">Edit Game Setup</button>
+                <button id="calibrationCreateProfile" class="ui-button ui-button--secondary" type="button" data-i18n="Create Game Setup">Create Game Setup</button>
               </div>
             </div>
             <div class="calibration-profile-row">
               <label class="calibration-field calibration-profile-field" for="calibrationProfileSelect">
-                <span data-i18n="Poker environment profile">Poker environment profile</span>
+                <span data-i18n="Game Setup">Game Setup</span>
                 <select id="calibrationProfileSelect" class="control-select" dir="auto"></select>
               </label>
               <div class="calibration-profile-copy">
                 <strong id="calibrationProfileName" dir="auto"></strong>
-                <span id="calibrationProfileDescription" dir="auto"></span>
+                <span id="calibrationProfileDescriptionSummary" dir="auto"></span>
               </div>
             </div>
             <fieldset class="calibration-mode-fieldset">
-              <legend data-i18n="How you play here">How you play here</legend>
-              <div id="calibrationModeOptions" class="calibration-mode-options" role="radiogroup" aria-label="Strategy mode" data-i18n-aria-label="Strategy mode"></div>
+              <legend data-i18n="Approaches">Approaches</legend>
+              <div id="calibrationModeOptions" class="calibration-mode-options" role="radiogroup" aria-label="Approaches" data-i18n-aria-label="Approaches"></div>
             </fieldset>
+            <form id="personalApproachForm" class="personal-approach-form">
+              <label for="personalApproachName" data-i18n="New Approach name">New Approach name</label>
+              <input id="personalApproachName" class="control-input" maxlength="80" required dir="auto" autocomplete="off">
+              <button class="ui-button ui-button--secondary" type="submit" data-i18n="Add Approach">Add Approach</button>
+              <button id="personalDuplicateApproach" class="ui-button ui-button--tertiary" type="button" data-i18n="Duplicate selected Approach">Duplicate selected Approach</button>
+              <span id="personalApproachError" role="alert"></span>
+            </form>
           </section>
 
+
+
+          <details id="personalContextDisclosure" class="personal-context-disclosure calibration-configuration-view"><summary data-i18n="Decision context and teaching options">Decision context and teaching options</summary>
           <div class="calibration-main-grid calibration-configuration-view">
             <section class="panel calibration-context-panel" aria-labelledby="calibrationContextTitle" data-tutorial-anchor="calibration-context">
               <div class="calibration-section-heading">
@@ -1947,7 +1949,10 @@
               </div>
 
               <div class="calibration-context-controls" data-interaction-surface="interactive">
-                <label class="calibration-field" for="calibrationEnvironment"><span data-i18n="Game environment">Game environment</span><select id="calibrationEnvironment" class="control-select"><option value="home" data-i18n="Home game">Home game</option><option value="clubgg" data-i18n="ClubGG-style game">ClubGG-style game</option></select></label>
+                <label class="calibration-field" for="calibrationEnvironment"><span data-i18n="Accounting assumptions">Accounting assumptions</span><select id="calibrationEnvironment" class="control-select"><option value="custom" data-i18n="User-defined accounting">User-defined accounting</option><option value="home" data-i18n="Legacy: no collection">Legacy: no collection</option><option value="clubgg" data-i18n="Legacy: fixed collection">Legacy: fixed collection</option></select></label>
+                <label class="calibration-field" for="personalCollectionBb"><span data-i18n="Fixed collection per player (bb)">Fixed collection per player (bb)</span><input id="personalCollectionBb" class="control-input" type="number" min="0" max="10" step="0.001" value="0"></label>
+                <label class="calibration-field" for="personalAnteType"><span data-i18n="Ante type">Ante type</span><select id="personalAnteType" class="control-select"><option value="none" data-i18n="None">None</option><option value="per_player" data-i18n="Per player">Per player</option><option value="big_blind" data-i18n="Big blind">Big blind</option></select></label>
+                <label class="calibration-field" for="personalAnteBb"><span data-i18n="Ante (bb)">Ante (bb)</span><input id="personalAnteBb" class="control-input" type="number" min="0" max="10" step="0.001" value="0"></label>
                 <label class="calibration-field calibration-family-field" for="calibrationDecisionFamily"><span data-i18n="Decision family">Decision family</span><select id="calibrationDecisionFamily" class="control-select"><option value="preflop_rfi" data-i18n="First in / Unopened pot">First in / Unopened pot</option><option value="preflop_facing_limp" data-i18n="Facing limp">Facing limp</option><option value="preflop_facing_open" data-i18n="Facing open">Facing open</option><option value="preflop_facing_3bet" data-i18n="Facing 3-bet">Facing 3-bet</option><option value="preflop_facing_4bet" data-i18n="Facing 4-bet">Facing 4-bet</option><option value="preflop_bb_option" data-i18n="BB option">BB option</option></select></label>
                 <label class="calibration-field" for="calibrationTableSize"><span data-i18n="Table size">Table size</span><select id="calibrationTableSize" class="control-select poker-data-token"></select></label>
                 <label class="calibration-field" for="calibrationHeroPosition"><span data-i18n="Hero position">Hero position</span><select id="calibrationHeroPosition" class="control-select poker-data-token"></select></label>
@@ -1980,17 +1985,12 @@
 
             <aside class="calibration-session-column">
               <section class="panel calibration-session-panel" aria-labelledby="calibrationSessionTitle" data-tutorial-anchor="calibration-start">
-                <div class="calibration-section-heading"><div><p class="calibration-eyebrow" data-i18n="Calibration session">Calibration session</p><h2 id="calibrationSessionTitle" data-i18n="Ready to calibrate this range">Ready to calibrate this range</h2></div></div>
+                <div class="calibration-section-heading"><div><p class="calibration-eyebrow" data-i18n="Map your intended range">Map your intended range</p><h2 id="calibrationSessionTitle" data-i18n="Ready to calibrate this range">Ready to calibrate this range</h2></div></div>
                 <div class="calibration-ready-state">
                   <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 12h28v24H10z"/><path d="M17 18h14M17 24h14M17 30h8"/></svg>
                   <p data-i18n="Riverline chooses informative hands first. Every accepted answer is saved before the next hand appears.">Riverline chooses informative hands first. Every accepted answer is saved before the next hand appears.</p>
-                  <fieldset id="calibrationIntentOptions" class="calibration-intent-options">
-                    <legend data-i18n="Session depth">Session depth</legend>
-                    <label><input type="radio" name="calibration-intent" value="quick"><span><strong data-i18n="Quick">Quick</strong><small data-i18n="About 5 questions">About 5 questions</small></span></label>
-                    <label><input type="radio" name="calibration-intent" value="standard" checked><span><strong data-i18n="Standard">Standard</strong><small data-i18n="About 30 questions">About 30 questions</small></span></label>
-                    <label><input type="radio" name="calibration-intent" value="deep"><span><strong data-i18n="Deep">Deep</strong><small data-i18n="Up to 75 questions">Up to 75 questions</small></span></label>
-                  </fieldset>
-                  <small class="calibration-intent-note" data-i18n="Question counts are session goals, not time promises.">Question counts are session goals, not time promises.</small>
+                  <fieldset id="calibrationIntentOptions" class="calibration-intent-options" hidden><legend data-i18n="Map this range">Map this range</legend><label><input type="radio" name="calibration-intent" value="mapping" checked><span data-i18n="Map this range">Map this range</span></label></fieldset>
+                  <p data-i18n="Map hand families and boundaries. Stop whenever you want.">Map hand families and boundaries. Stop whenever you want.</p>
                   <button id="calibrationStartQuestions" class="ui-button ui-button--primary" type="button" data-i18n="Start questions">Start questions</button>
                 </div>
               </section>
@@ -2008,11 +2008,13 @@
             </aside>
           </div>
 
+          </details>
+
           <section id="calibrationQuestionView" class="panel calibration-question-view" aria-labelledby="calibrationQuestionTitle" hidden data-tutorial-anchor="calibration-question">
             <div id="calibrationContextChanged" class="calibration-context-changed" role="status" aria-live="polite" hidden><strong data-i18n="Context changed">Context changed</strong><span id="calibrationContextChangedFacts"></span><small id="calibrationContextChangedReason"></small></div>
             <header class="calibration-question-header">
               <div class="calibration-question-context">
-                <p class="calibration-eyebrow" data-i18n="Calibration session">Calibration session</p>
+                <p class="calibration-eyebrow" data-i18n="Map your intended range">Map your intended range</p>
                 <strong id="calibrationQuestionIdentity" dir="auto"></strong>
                 <span id="calibrationQuestionSpot" class="poker-data-token" dir="ltr"></span>
               </div>
@@ -2033,9 +2035,10 @@
                   <span data-i18n="Why this hand?">Why this hand?</span>
                   <strong id="calibrationQuestionReason" data-i18n="Samples a new hand family">Samples a new hand family</strong>
                 </div>
-                <p id="calibrationQuestionPrompt" data-i18n="What is your dominant action?">What is your dominant action?</p>
+                <p id="calibrationQuestionPrompt" data-i18n="What would you usually do with this hand?">What would you usually do with this hand?</p>
                 <div id="calibrationActionGrid" class="calibration-action-grid" role="group" aria-label="Dominant action" data-i18n-aria-label="Dominant action" data-tutorial-anchor="calibration-answer-actions"></div>
                 <div class="calibration-secondary-answer-actions">
+                  <button id="personalQuestionAddContext" class="ui-button ui-button--tertiary" type="button" data-i18n="Add context or an exception">Add context or an exception</button>
                   <button id="calibrationOpenMix" class="ui-button ui-button--tertiary calibration-mix-trigger" type="button" data-i18n="Set frequencies" data-tutorial-anchor="calibration-exact-mix">Set frequencies</button>
                   <button id="calibrationSkipQuestion" class="ui-button ui-button--tertiary" type="button" data-i18n="Skip">Skip</button>
                   <button id="calibrationNotSure" class="ui-button ui-button--tertiary" type="button" data-i18n="I’m not sure">I’m not sure</button>
@@ -2052,14 +2055,15 @@
                   </div>
                   <span id="calibrationQuestionProgress" dir="auto">0 direct · 0 modeled / transferred hands</span>
                   <span id="calibrationRecommendedClarifications" data-i18n="{count} recommended clarifications">0 recommended clarifications</span>
-                  <dl class="calibration-model-progress" aria-label="Calibration model progress" data-i18n-aria-label="Calibration model progress">
+                  <details><summary data-i18n="Inspect range evidence">Inspect range evidence</summary><dl class="calibration-model-progress" aria-label="Calibration model progress" data-i18n-aria-label="Calibration model progress">
                     <div><dt data-i18n="Direct">Direct</dt><dd id="calibrationDirectCount">0</dd></div>
                     <div><dt data-i18n="Locally inferred">Locally inferred</dt><dd id="calibrationLocallyInferredCount">0</dd></div>
                     <div><dt data-i18n="Transferred">Transferred</dt><dd id="calibrationTransferredCount">0</dd></div>
                     <div><dt data-i18n="Uncertain">Uncertain</dt><dd id="calibrationUncertainCount">0</dd></div>
                     <div><dt data-i18n="Unknown">Unknown</dt><dd id="calibrationUnknownCount">169</dd></div>
                     <div><dt data-i18n="Conflicting">Conflicting</dt><dd id="calibrationConflictingCount">0</dd></div>
-                  </dl>
+                  </dl></details>
+                  <details class="personal-coverage-disclosure"><summary data-i18n="Coverage and boundaries">Coverage and boundaries</summary><ul id="personalMappingCoverage" class="personal-mapping-coverage"></ul><p data-i18n="Sampled, not a complete range">Sampled, not a complete range</p></details>
                 </div>
                 <div id="calibrationPreviousAnswer" class="calibration-previous-answer" hidden>
                   <span><span data-i18n="Previous">Previous</span>: <b id="calibrationPreviousHand" class="poker-data-token" dir="ltr"></b> — <span id="calibrationPreviousAction"></span></span>
@@ -2070,7 +2074,7 @@
 
             <div id="calibrationCompleteState" class="calibration-complete-state" hidden>
               <p class="calibration-eyebrow" data-i18n="Session checkpoint">Session checkpoint</p>
-              <h2 id="calibrationCompleteTitle" data-i18n="Your starter profile is ready">Your starter profile is ready</h2>
+              <h2 id="calibrationCompleteTitle" data-i18n="Initial map">Initial map</h2>
               <p id="calibrationCompleteSummary" class="calibration-complete-summary"></p>
               <dl id="calibrationCompleteCounts" class="calibration-complete-facts">
                 <div><dt data-i18n="Direct answers">Direct answers</dt><dd id="calibrationCompleteDirectCount">0</dd></div>
@@ -2079,7 +2083,7 @@
                 <div><dt data-i18n="Recommended clarifications">Recommended clarifications</dt><dd id="calibrationCompleteClarificationCount">0</dd></div>
               </dl>
               <div class="calibration-complete-actions">
-                <button id="calibrationCompleteOpenMatrix" class="ui-button ui-button--primary" type="button" data-i18n="Review profile">Review profile</button>
+                <button id="calibrationCompleteOpenMatrix" class="ui-button ui-button--primary" type="button" data-i18n="Review understanding">Review understanding</button>
                 <button id="calibrationAskAnother" class="ui-button ui-button--secondary" type="button" data-i18n="Continue refining">Continue refining</button>
                 <button id="calibrationReturnToContext" class="ui-button ui-button--tertiary" type="button" data-i18n="Stop for now">Stop for now</button>
               </div>
@@ -2088,9 +2092,48 @@
 
           <div class="calibration-personal-column">
             <nav class="calibration-personal-tabs" role="tablist" aria-label="Personal Strategy views" data-i18n-aria-label="Personal Strategy views">
-              <button id="calibrationTeacherTab" class="ui-button ui-button--tertiary" type="button" role="tab" aria-selected="false" aria-controls="calibrationTeacherPanel" data-i18n="Range Teacher" data-tutorial-anchor="range-teacher-tab">Range Teacher</button>
-              <button id="calibrationMatrixTab" class="ui-button ui-button--tertiary" type="button" role="tab" aria-selected="true" aria-controls="calibrationMatrixPanel" data-i18n="Matrix">Matrix</button>
+              <button id="calibrationUnderstandingTab" class="ui-button ui-button--tertiary" type="button" role="tab" aria-selected="true" aria-controls="calibrationUnderstandingPanel" data-i18n="Understanding">Understanding</button>
+              <button id="calibrationTeacherTab" hidden class="ui-button ui-button--tertiary" type="button" role="tab" aria-selected="false" aria-controls="calibrationTeacherPanel" data-i18n="Range Teacher" data-tutorial-anchor="range-teacher-tab">Range Teacher</button>
+              <button id="calibrationMatrixTab" data-tutorial-anchor="personal-matrix-edit" class="ui-button ui-button--tertiary" type="button" role="tab" aria-selected="false" aria-controls="calibrationMatrixPanel" data-i18n="Matrix Edit">Matrix Edit</button>
             </nav>
+          <section role="tabpanel" id="calibrationUnderstandingPanel" data-tutorial-anchor="personal-understanding" class="panel personal-understanding-panel" aria-labelledby="personalUnderstandingTitle">
+            <div class="calibration-section-heading"><div><p class="calibration-eyebrow" data-i18n="Your intended strategy">Your intended strategy</p><h2 id="personalUnderstandingTitle" data-i18n="What Riverline understands">What Riverline understands</h2><p id="personalUnderstandingScope" class="muted"></p></div><button id="personalMapRange" data-tutorial-anchor="personal-range-mapping" class="ui-button ui-button--primary" type="button" data-i18n="Map this range">Map this range</button></div>
+            <p data-i18n="An initial understanding, not a completed strategy. Preferred actions never imply 100% frequency.">An initial understanding, not a completed strategy. Preferred actions never imply 100% frequency.</p>
+            <details class="personal-evidence-status"><summary data-i18n="Inspect range evidence">Inspect range evidence</summary><p id="personalUnderstandingStatus" role="status" aria-live="polite"></p></details>
+            <details class="personal-coverage-disclosure"><summary data-i18n="Coverage and boundaries">Coverage and boundaries</summary><ul id="personalUnderstandingCoverage" class="personal-mapping-coverage"></ul></details>
+            <div class="personal-understanding-columns">
+              <details id="personalContextInputDisclosure"><summary data-tutorial-anchor="personal-intent" data-i18n="Add context or an exception">Add context or an exception</summary>
+                <h3 data-i18n="Your confirmed intentions">Your confirmed intentions</h3>
+                <div id="personalIntentStatements" class="personal-intent-statements"></div>
+                <form id="personalIntentForm" class="personal-intent-form">
+                  <label for="personalIntentText" data-i18n="Add context or an exception">Add context or an exception</label>
+                  <textarea id="personalIntentText" rows="2" maxlength="4000" required dir="auto" aria-describedby="personalIntentHelp"></textarea>
+                  <p id="personalIntentHelp" class="muted" data-i18n="Use your own words. Riverline will show an interpretation before saving any intent.">Use your own words. Riverline will show an interpretation before saving any intent.</p>
+                  <div class="personal-intent-scope"><label for="personalIntentScope" data-i18n="Applies to">Applies to</label><select id="personalIntentScope" class="control-select"><option value="decision" data-i18n="Selected decision context">Selected decision context</option><option value="approach" data-i18n="This Approach broadly">This Approach broadly</option></select></div>
+                  <label for="personalIntentScopeNote" data-i18n="Scope or exception (optional)">Scope or exception (optional)</label><input id="personalIntentScopeNote" class="control-input" maxlength="240" dir="auto">
+                  <p id="personalCorrectionTarget" class="personal-correction-target" hidden></p>
+                  <button id="personalPreviewIntent" class="ui-button ui-button--secondary" type="submit" data-i18n="Preview understanding">Preview understanding</button>
+                  <button id="personalCancelCorrection" class="ui-button ui-button--tertiary" type="button" data-i18n="Cancel correction" hidden>Cancel correction</button>
+                </form>
+                <section id="personalIntentPreview" class="personal-intent-preview" aria-labelledby="personalPreviewTitle" hidden>
+                  <h3 id="personalPreviewTitle" tabindex="-1" data-i18n="Provisional interpretation">Provisional interpretation</h3>
+                  <ul id="personalPreviewStatements"></ul><p id="personalPreviewUncertainty"></p><p id="personalPreviewFollowup"></p>
+                  <div class="personal-inline-actions"><button id="personalConfirmIntent" class="ui-button ui-button--primary" type="button" data-i18n="Confirm intended meaning">Confirm intended meaning</button><button id="personalReviseIntent" class="ui-button ui-button--secondary" type="button" data-i18n="That's not what I meant">That's not what I meant</button><button id="personalNarrowScope" class="ui-button ui-button--tertiary" type="button" data-i18n="Narrow the scope">Narrow the scope</button><button id="personalGiveExample" class="ui-button ui-button--tertiary" type="button" data-i18n="Give exact examples">Give exact examples</button></div>
+                </section>
+                <p id="personalIntentError" role="alert"></p>
+              </details>
+              <aside class="personal-range-understanding">
+                <h3 data-i18n="Your range structure">Your range structure</h3><ul id="personalRangeSummary"></ul>
+                <details><summary data-i18n="Inspect range evidence">Inspect range evidence</summary><div id="personalRangeFacts"></div></details>
+                <section class="personal-next-question"><h3 data-i18n="Teach Riverline Next">Teach Riverline Next</h3><label for="personalTeachTopic" data-i18n="Focus (optional)">Focus (optional)</label><select id="personalTeachTopic" class="control-select"><option value="" data-i18n="Let Riverline suggest">Let Riverline suggest</option><option value="offsuit_boundary" data-i18n="Offsuit boundary">Offsuit boundary</option><option value="suited_boundary" data-i18n="Suited boundary">Suited boundary</option><option value="pair_boundary" data-i18n="Pocket pairs">Pocket pairs</option></select><p id="personalTeachReason"></p><button id="personalTeachNext" class="ui-button ui-button--secondary" type="button" data-i18n="Teach this next">Teach this next</button></section>
+              </aside>
+            </div>
+            <details class="personal-comparison"><summary data-i18n="Compare Approaches or a strategy source">Compare Approaches or a strategy source</summary><label for="personalComparisonApproach" data-i18n="Compare with">Compare with</label><select id="personalComparisonApproach" class="control-select"></select><button id="personalCompareApproach" class="ui-button ui-button--secondary" type="button" data-i18n="Compare Approaches">Compare Approaches</button><button id="personalCompareSource" class="ui-button ui-button--tertiary" type="button" data-i18n="Compare with baseline / reference">Compare with baseline / reference</button><p data-i18n="Comparisons describe compatible evidence. Differences do not establish mistakes.">Comparisons describe compatible evidence. Differences do not establish mistakes.</p><ul id="personalComparisonSummary" aria-live="polite"></ul><details><summary data-i18n="Comparison evidence">Comparison evidence</summary><pre id="personalComparisonFacts" dir="ltr"></pre></details></details>
+            <details id="personalVersionHistory"><summary data-i18n="Versions and correction history">Versions and correction history</summary><div id="personalHistoryContent"></div></details>
+          </section>
+
+
+
 
           <section id="calibrationTeacherPanel" class="panel calibration-teacher-panel" role="tabpanel" aria-labelledby="calibrationTeacherTitle" data-tutorial-anchor="range-teacher" hidden>
             <header class="calibration-teacher-header">
@@ -2421,13 +2464,14 @@
                 <div id="trainingDecisionControls" class="training-decision-controls">
                   <div id="trainingDecisionPrompt" class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
                   <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions" data-i18n-aria-label="Available actions" data-tutorial-anchor="training-answer-actions"></div>
+                  <label id="trainingUncertaintyControl" class="training-uncertainty" hidden><input id="trainingUncertain" type="checkbox"><span data-i18n="I'm unsure about my answer (optional)">I'm unsure about my answer (optional)</span></label>
                   <section id="trainingFullHandSizing" class="training-full-hand-sizing" hidden aria-labelledby="trainingFullHandSizingTitle">
                     <div class="training-full-hand-sizing-head">
                       <div><span class="training-zone-label" data-i18n="Concrete sizing">Concrete sizing</span><strong id="trainingFullHandSizingTitle" data-i18n="Choose an amount to">Choose an amount to</strong></div>
                       <small data-i18n="Amount-to · not raise-by">Amount-to · not raise-by</small>
                     </div>
                     <div id="trainingFullHandSizingActions"></div>
-                    <p class="training-reference-note" data-i18n="Exact sizing is recorded. The grade compares the action family only; sizing is not graded.">Exact sizing is recorded. The grade compares the action family only; sizing is not graded.</p>
+                    <p class="training-reference-note" data-i18n="Exact sizing is recorded. Assessment requires an accepted criterion that covers this action and size.">Exact sizing is recorded. Assessment requires an accepted criterion that covers this action and size.</p>
                   </section>
                   <p class="training-shortcut-help"><span data-i18n="Keyboard:">Keyboard:</span> <span class="poker-data-token" dir="ltr"><kbd>1</kbd>–<kbd>6</kbd></span> <span data-i18n="choose a visible action">choose a visible action</span></p>
                 </div>
@@ -2445,6 +2489,7 @@
               <div id="trainingMemoryDecisionActions" class="training-memory-decision-actions" hidden aria-label="Study labels" data-i18n-aria-label="Study labels">
                 <button id="trainingMarkReview" class="ui-button ui-button--secondary" type="button" aria-pressed="false" data-i18n="Review later">Review later</button>
                 <button id="trainingMarkDifficult" class="ui-button ui-button-ghost" type="button" aria-pressed="false" data-i18n="Mark difficult">Mark difficult</button>
+                <button id="trainingRequestRevisit" class="ui-button ui-button--secondary" type="button" hidden data-i18n="Revisit in 24 hours">Revisit in 24 hours</button>
               </div>
               <p id="trainingMemoryDecisionStatus" class="training-memory-decision-status" role="status" aria-live="polite" aria-atomic="true"></p>
               <p class="training-facts-label" data-i18n="Facts">Facts</p>
@@ -2464,7 +2509,7 @@
               <p id="trainingFullHandResult"></p>
               <dl class="training-full-hand-summary">
                 <div><dt data-i18n="Decisions answered">Decisions answered</dt><dd id="trainingFullHandDecisionCount" class="poker-data-token">0</dd></div>
-                <div><dt data-i18n="Reference summary">Reference summary</dt><dd id="trainingFullHandGradeSummary"></dd></div>
+                <div><dt data-i18n="Decision summary">Decision summary</dt><dd id="trainingFullHandGradeSummary"></dd></div>
               </dl>
               <div class="training-full-hand-completion-actions">
                 <button id="trainingReviewHand" class="ui-button ui-button--primary" type="button" aria-expanded="false" data-i18n="Review Hand">Review Hand</button>
@@ -2506,13 +2551,13 @@
           </section>
           <section id="trainingReferenceSummary" class="panel training-reference-summary" aria-labelledby="trainingReferenceSummaryTitle">
             <div class="panel-body">
-              <span id="trainingReferenceSummaryTitle" class="training-rail-label" data-i18n="Reference source">Reference source</span>
+              <span id="trainingReferenceSummaryTitle" class="training-rail-label" data-i18n="Strategy source">Strategy source</span>
               <strong id="trainingReferenceSummaryValue" data-i18n="Source unavailable">Source unavailable</strong>
               <small id="trainingReferenceSummaryNote" data-i18n="A source summary appears with each exercise.">A source summary appears with each exercise.</small>
             </div>
           </section>
           <section id="trainingSolution" class="panel training-solution-panel" hidden aria-labelledby="trainingSolutionTitle" data-tutorial-anchor="training-reference">
-            <div class="panel-head"><div><p id="trainingSolutionEyebrow" class="training-eyebrow" data-i18n="After-answer reference">After-answer reference</p><h2 id="trainingSolutionTitle" data-i18n="Source frequencies">Source frequencies</h2></div></div>
+            <div class="panel-head"><div><p id="trainingSolutionEyebrow" class="training-eyebrow" data-i18n="After-answer comparison">After-answer comparison</p><h2 id="trainingSolutionTitle" data-i18n="Source frequencies">Source frequencies</h2></div></div>
             <div class="panel-body">
               <p class="training-reference-note" data-i18n="Frequencies come from the displayed source; they are not automatically validated, and no EV is implied.">Frequencies come from the displayed source; they are not automatically validated, and no EV is implied.</p>
               <div class="training-frequency-stack frequency-stack is-empty" id="trainingFrequencyStack" role="img" aria-label="Strategy frequencies unavailable"></div>
@@ -2527,8 +2572,8 @@
             <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="This browser session">This browser session</p><h2 id="trainingSessionTitle" data-i18n="Session progress">Session progress</h2></div></summary>
             <div class="panel-body">
               <p id="trainingSessionProgress" class="training-session-progress" hidden aria-live="polite"></p>
-              <div class="training-stat-grid" role="list" aria-label="Session summary" data-i18n-aria-label="Session summary"><div class="training-stat-cell" data-training-stat="attempts" role="listitem"><span data-i18n="Attempts">Attempts</span><strong id="trainingTotalHands">0</strong></div><div class="training-stat-cell" data-training-stat="accepted" role="listitem"><span data-i18n="Reference-aligned">Reference-aligned</span><strong id="trainingCorrect">0</strong></div><div class="training-stat-cell" data-training-stat="acceptance" role="listitem"><span data-i18n="Alignment rate">Alignment rate</span><strong id="trainingAccuracy" class="poker-data-token">0%</strong></div><div class="training-stat-cell" data-training-stat="streak" role="listitem"><span data-i18n="Current alignment run">Current alignment run</span><strong id="trainingStreak">0</strong></div><div class="training-stat-cell" data-training-stat="best-streak" role="listitem"><span data-i18n="Best alignment run">Best alignment run</span><strong id="trainingBestStreak">0</strong></div></div>
-              <div class="training-grade-counts" aria-label="Reference comparison" data-i18n-aria-label="Reference comparison"><span><i data-grade="optimal"></i><span data-i18n="Matches reference">Matches reference</span> <strong id="trainingOptimalCount">0</strong></span><span><i data-grade="acceptable"></i><span data-i18n="Close to reference">Close to reference</span> <strong id="trainingAcceptableCount">0</strong></span><span><i data-grade="mistake"></i><span data-i18n="Differs from reference">Differs from reference</span> <strong id="trainingMistakeCount">0</strong></span></div>
+              <div class="training-stat-grid"><div class="training-stat-cell"><span data-i18n="Attempts">Attempts</span><strong id="trainingTotalHands">0</strong></div></div>
+              <p id="trainingTruthMetrics" role="status" data-i18n="No decisions recorded.">No decisions recorded.</p>
               <button class="ui-button ui-button-ghost ui-button--destructive" type="button" id="trainingResetStats" data-i18n="Reset session stats">Reset session stats</button>
             </div>
           </details>
@@ -2536,6 +2581,7 @@
             <summary class="panel-head"><div><p class="training-eyebrow" data-i18n="On this profile">On this profile</p><h2 id="trainingMemoryTitle" data-i18n="Training Memory">Training Memory</h2><p id="trainingMemoryAvailability" class="panel-note" data-i18n="Open to load saved review history for this profile.">Open to load saved review history for this profile.</p></div><span id="trainingMemoryDueBadge" class="badge status-badge status-badge--info" hidden>0</span></summary>
             <div class="panel-body">
               <p class="training-reference-note" data-i18n="History stays on this device and is isolated to the active profile.">History stays on this device and is isolated to the active profile.</p>
+              <section id="trainingLearningNext" class="training-learning-next" hidden aria-label="What to practice next" data-i18n-aria-label="What to practice next"></section>
               <div class="training-memory-tabs" role="tablist" aria-label="Training Memory view" data-i18n-aria-label="Training Memory view">
                 <button id="trainingMemoryReviewTab" class="ui-button ui-button--secondary is-active" type="button" role="tab" aria-selected="true" aria-controls="trainingMemoryList" tabindex="0" data-memory-view="review" data-i18n="Review queue">Review queue</button>
                 <button id="trainingMemoryRecentTab" class="ui-button ui-button-ghost" type="button" role="tab" aria-selected="false" aria-controls="trainingMemoryList" tabindex="-1" data-memory-view="recent" data-i18n="Recent sessions">Recent sessions</button>
@@ -3092,7 +3138,7 @@
               </div>
               <span id="settingsAccountBadge" class="badge status-badge status-badge--neutral" data-i18n="Not signed in">Not signed in</span>
             </div>
-            <p id="settingsAccountDescription" class="panel-note" data-i18n="Guest study history is not saved. Device settings remain available.">Guest study history is not saved. Device settings remain available.</p>
+            <p id="settingsAccountDescription" class="panel-note" data-i18n="Your learning workspace is saved on this device.">Your learning workspace is saved on this device.</p>
           </div>
           <button id="settingsOpenAccount" class="ui-button ui-button--secondary" type="button" data-i18n="Open Account / Profile">Open Account / Profile</button>
           <dl class="account-profile-facts">
@@ -3202,8 +3248,8 @@
       <div class="modal-head">
         <div>
           <p class="calibration-eyebrow" data-i18n="Poker environment">Poker environment</p>
-          <h2 id="calibrationProfileModalTitle" data-i18n="Create a strategy profile">Create a strategy profile</h2>
-          <p id="calibrationProfileModalDescription" data-i18n="Name where you play, then name exactly three recognizable ways you play there.">Name where you play, then name exactly three recognizable ways you play there.</p>
+          <h2 id="calibrationProfileModalTitle" data-i18n="Create Game Setup">Create Game Setup</h2>
+          <p id="calibrationProfileModalDescription" data-i18n="Name a real poker context and your first intended Approach. Add more whenever useful.">Name a real poker context and your first intended Approach. Add more whenever useful.</p>
         </div>
         <button id="calibrationProfileModalClose" class="close ui-button ui-button--icon" type="button" aria-label="Close profile editor" data-i18n-aria-label="Close profile editor" title="Close profile editor" data-i18n-title="Close profile editor">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
@@ -3211,35 +3257,28 @@
       </div>
       <div class="modal-body calibration-profile-form-grid">
         <label class="calibration-field calibration-profile-name-field" for="calibrationProfileDisplayName">
-          <span data-i18n="Profile name">Profile name</span>
+          <span data-i18n="Game Setup name">Game Setup name</span>
           <input id="calibrationProfileDisplayName" class="control-input" type="text" maxlength="80" autocomplete="off" required dir="auto" placeholder="Home Game with Friends" data-i18n-placeholder="Home Game with Friends">
           <small data-i18n="Think: Where am I playing?">Think: Where am I playing?</small>
         </label>
+        <label class="calibration-field" for="personalSetupTable"><span data-i18n="Default table size">Default table size</span><input id="personalSetupTable" class="control-input" type="number" min="2" max="10" step="1" value="6" required></label>
+        <label class="calibration-field" for="personalSetupStack"><span data-i18n="Default effective stack (bb)">Default effective stack (bb)</span><input id="personalSetupStack" class="control-input" type="number" min="10" max="500" value="100" required></label>
+        <details id="personalSetupAdvanced"><summary data-i18n="More setup options">More setup options</summary>
         <label class="calibration-field calibration-profile-description-field" for="calibrationProfileDescription">
           <span data-i18n="Short description (optional)">Short description (optional)</span>
           <textarea id="calibrationProfileDescription" maxlength="240" rows="3" dir="auto" placeholder="Regular Friday game with friends" data-i18n-placeholder="Regular Friday game with friends"></textarea>
         </label>
-        <label id="calibrationProfileEnvironmentField" class="calibration-field" for="calibrationProfileEnvironment">
-          <span data-i18n="Usual environment">Usual environment</span>
-          <select id="calibrationProfileEnvironment" class="control-select"><option value="home" data-i18n="Home game">Home game</option><option value="clubgg" data-i18n="ClubGG-style game">ClubGG-style game</option></select>
-          <small data-i18n="This prefills new spots; you can still change the exact context.">This prefills new spots; you can still change the exact context.</small>
-        </label>
-        <fieldset class="calibration-mode-name-fields">
-          <legend data-i18n="Your three strategy modes">Your three strategy modes</legend>
-          <div class="calibration-mode-name-panel">
-            <p data-i18n="Use names that describe distinct ways you play. There are no numeric style values.">Use names that describe distinct ways you play. There are no numeric style values.</p>
-            <div class="calibration-mode-name-inputs">
-              <label for="calibrationModeName1"><span data-i18n="Mode 1 name">Mode 1 name</span><input id="calibrationModeName1" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
-              <label for="calibrationModeName2"><span data-i18n="Mode 2 name">Mode 2 name</span><input id="calibrationModeName2" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
-              <label for="calibrationModeName3"><span data-i18n="Mode 3 name">Mode 3 name</span><input id="calibrationModeName3" class="control-input" type="text" maxlength="80" required autocomplete="off" dir="auto"></label>
-            </div>
-          </div>
-        </fieldset>
+        <input id="calibrationProfileEnvironment" type="hidden" value="custom">
+        <div id="calibrationProfileEnvironmentField" hidden></div>
+        <label class="calibration-field" for="personalSetupFormat"><span data-i18n="Format / environment (your words)">Format / environment (your words)</span><input id="personalSetupFormat" class="control-input" maxlength="80" dir="auto"></label>
+        <label class="calibration-field" for="personalSetupAssumptions"><span data-i18n="Game assumptions (optional)">Game assumptions (optional)</span><textarea id="personalSetupAssumptions" rows="2" maxlength="500" dir="auto"></textarea><small data-i18n="Describe rake, tournament stage or other conditions. Notes do not configure poker accounting; exact supported accounting is shown in Decision context.">Describe rake, tournament stage or other conditions. Notes do not configure poker accounting; exact supported accounting is shown in Decision context.</small></label>
+        <fieldset class="calibration-mode-name-fields"><legend data-i18n="Approaches">Approaches</legend><div id="personalApproachNameFields" class="calibration-mode-name-inputs"></div></fieldset>
+        </details>
         <p id="calibrationProfileFormError" class="calibration-form-error" role="alert" hidden></p>
       </div>
       <div class="modal-foot calibration-profile-modal-actions">
         <button id="calibrationProfileCancel" class="ui-button ui-button--tertiary" type="button" data-i18n="Cancel">Cancel</button>
-        <button id="calibrationProfileSubmit" class="ui-button ui-button--primary" type="submit" data-i18n="Create profile">Create profile</button>
+        <button id="calibrationProfileSubmit" class="ui-button ui-button--primary" type="submit" data-i18n="Create Game Setup">Create Game Setup</button>
       </div>
     </form>
   </div>
@@ -3272,7 +3311,7 @@
         <fieldset class="saved-study-flags">
           <legend data-i18n="Review">Review</legend>
           <label><input id="savedStudyReviewLater" type="checkbox"> <span data-i18n="Review later">Review later</span></label>
-          <label><input id="savedStudyMistake" type="checkbox"> <span data-i18n="Mistake">Mistake</span></label>
+          <label><input id="savedStudyMistake" type="checkbox"> <span data-i18n="Marked as a mistake">Marked as a mistake</span></label>
         </fieldset>
         <div id="savedStudyArchiveConfirmation" class="saved-study-archive-confirmation" role="alert" hidden>
           <p data-i18n="Archive this saved item? It will be removed from active saved items.">Archive this saved item? It will be removed from active saved items.</p>
@@ -3360,7 +3399,7 @@
             <p id="accountSyncConsequence" class="account-sync-consequence" data-i18n="Includes versioned Saved Hands and Saved Spots, their notes, review state, and archive tombstones.">Includes versioned Saved Hands and Saved Spots, their notes, review state, and archive tombstones.</p>
             <div id="accountStrategySyncOptIn" class="account-sync-opt-in account-sync-opt-in--domain">
               <strong data-i18n="Personal Strategy and Range Calibration">Personal Strategy and Range Calibration</strong>
-              <p id="accountStrategySyncItemSummary" data-i18n="{profiles} profiles, {observations} direct observations, and {sessions} active calibration sessions on this device will be synced.">0 profiles, 0 direct observations, and 0 active calibration sessions on this device will be synced.</p>
+              <p id="accountStrategySyncItemSummary" data-i18n="Saved locally">Saved locally</p>
               <div class="account-sync-actions">
                 <button id="accountStrategySyncEnable" class="ui-button ui-button--primary" type="button" data-i18n="Enable strategy sync">Enable strategy sync</button>
                 <button id="accountStrategySyncNotNow" class="ui-button ui-button--secondary" type="button" data-i18n="Not now">Not now</button>
@@ -3381,6 +3420,7 @@
             <button id="accountSignOut" class="ui-button ui-button--quiet" type="button" data-i18n="Sign out">Sign out</button>
           </div>
         </div>
+        <button id="accountIdentityRetry" class="ui-button ui-button--secondary" type="button" data-i18n="Try again" hidden>Try again</button>
         <p id="accountAuthStatus" class="account-auth-status" role="status" aria-live="polite"></p>
       </div>
     </div>
@@ -3409,19 +3449,19 @@
     <div id="accountLinkModal" class="modal-backdrop account-link-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="accountLinkModalTitle" aria-describedby="accountLinkModalDescription" hidden>
       <div class="modal overlay-surface account-link-modal">
         <div class="modal-head">
-          <div><p class="account-profile-kicker" data-i18n="First sign-in">First sign-in</p><h2 id="accountLinkModalTitle" data-i18n="Use this account with your current Riverline data?">Use this account with your current Riverline data?</h2></div>
+          <div><p class="account-profile-kicker" data-i18n="First sign-in">First sign-in</p><h2 id="accountLinkModalTitle" data-i18n="Bring your local work into this account?">Bring your local work into this account?</h2></div>
           <button id="accountLinkClose" class="close ui-button ui-button--icon" type="button" aria-label="Cancel" data-i18n-aria-label="Cancel" title="Cancel" data-i18n-title="Cancel">&times;</button>
         </div>
         <div class="modal-body">
           <p id="accountLinkModalDescription" data-i18n="Choose explicitly. Riverline never merges profiles by email.">Choose explicitly. Riverline never merges profiles by email.</p>
           <p class="account-link-email"><span data-i18n="Signed in as">Signed in as</span> <strong id="accountLinkEmail" dir="ltr"></strong></p>
           <div class="account-link-choice-list">
-            <button id="accountLinkCurrent" class="account-link-choice" type="button"><strong data-i18n="Use current local data">Use current local data</strong><small data-i18n="Keep current Riverline data and IDs with this account.">Keep current Riverline data and IDs with this account.</small></button>
-            <button id="accountStartSeparate" class="account-link-choice" type="button"><strong data-i18n="Start separately">Start separately</strong><small data-i18n="Keep the Local Profile intact and start a separate account profile.">Keep the Local Profile intact and start a separate account profile.</small></button>
+            <button id="accountLinkCurrent" class="account-link-choice" type="button"><strong data-i18n="Move local work to account">Move local work to account</strong><small data-i18n="Your current local work will move into this account. When you sign out, Riverline will return to a new empty Device Guest.">Your current local work will move into this account. When you sign out, Riverline will return to a new empty Device Guest.</small></button>
+            <button id="accountStartSeparate" class="account-link-choice" type="button"><strong data-i18n="Keep separate">Keep separate</strong><small data-i18n="Keep this Device Guest separate. This account will use its own work, and signing out will return to this Guest.">Keep this Device Guest separate. This account will use its own work, and signing out will return to this Guest.</small></button>
           </div>
           <p id="accountLinkError" class="account-auth-status" role="alert" aria-live="assertive"></p>
         </div>
-        <div class="modal-actions"><button id="accountLinkCancel" class="ui-button ui-button--secondary" type="button" data-i18n="Cancel">Cancel</button></div>
+        <div class="modal-actions"><button id="accountLinkCancel" class="ui-button ui-button--secondary" type="button" data-i18n="Cancel sign-in">Cancel sign-in</button></div>
       </div>
     </div>
   </template>

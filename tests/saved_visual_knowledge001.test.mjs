@@ -248,8 +248,8 @@ test('Saved cards consume shared presentation sizes without Saved clipping hacks
 
 test('empty, Guest, type, note, and locale truth remain explicit without fabricated study facts', () => {
   assert.match(logic, /Saved Hands and Spots you intentionally keep will appear here\./);
-  assert.match(logic, /Saved study belongs to a signed-in Riverline profile/);
-  assert.match(logic, /Signing in does not enable sync or cloud backup\./);
+  assert.match(logic, /Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode/);
+  assert.match(logic, /Guest data does not sync\./);
   assert.match(logic, /item\.note[\s\S]*?Study note/);
   assert.match(logic, /item\.kind === 'hand' \? 'Hand' : item\.kind === 'spot' \? 'Spot'/);
   assert.match(logic, /facts\.push\(`\$\{t\('Updated'\)\} \$\{recency\}`\)/);

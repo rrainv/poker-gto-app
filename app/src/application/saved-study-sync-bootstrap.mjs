@@ -13,12 +13,18 @@ import {
   createSyncCoordinator,
   createSyncRepository,
 } from '../sync/index.mjs';
+import { RIVERLINE_OWNED_DOMAINS } from '../account-identity/index.mjs';
 import { createPersonalStrategySyncPort } from './personal-strategy-sync-port.mjs';
 import './authentication-bootstrap.mjs';
 import './saved-study-object-bootstrap.mjs';
 
+export const PERSONAL_STRATEGY_SYNC_UPGRADE_MESSAGE = 'Personal Strategy is saved locally. Cloud sync needs a compatible server version.';
+const PERSONAL_STRATEGY_LOCAL_SUMMARY = '{profiles} setups, {observations} direct observations, and {sessions} active teaching sessions are saved on this device.';
+
 function translated(key, parameters = undefined) {
-  return globalThis.t?.(key, parameters) ?? key.replace('{count}', String(parameters?.count ?? '0'));
+  return globalThis.t?.(key, parameters) ?? key.replace(/\{([^}]+)\}/g, (token, name) => (
+    parameters?.[name] === undefined ? token : String(parameters[name])
+  ));
 }
 
 function setTranslatedText(element, key, parameters = undefined) {
@@ -83,7 +89,16 @@ export function createStudySyncAggregate(savedCoordinator, strategyCoordinator, 
   return Object.freeze({
     getState: () => state,
     getEnableSummary: () => savedCoordinator.getEnableSummary(),
-    getStrategyEnableSummary: () => strategyPort.getSummary(),
+    async getStrategyEnableSummary() {
+      const summary = await strategyPort.getSummary();
+      try {
+        await strategyPort.assertCompatible?.();
+        return Object.freeze({ ...summary, cloudSyncCompatible: true });
+      } catch (error) {
+        if (error?.code !== 'unsupported_schema') throw error;
+        return Object.freeze({ ...summary, cloudSyncCompatible: false });
+      }
+    },
     enable: () => savedCoordinator.enable(),
     disable: () => savedCoordinator.disable(),
     enableStrategy: () => strategyCoordinator.enable(),
@@ -114,13 +129,16 @@ export function createStudySyncAggregate(savedCoordinator, strategyCoordinator, 
   });
 }
 
-function bindSyncUi(browserWindow, coordinator) {
+export function bindSyncUi(browserWindow, coordinator) {
   const document = browserWindow.document;
   const conflictModal = document.querySelector('#syncConflictModal');
   let conflictFocus = null;
   let currentConflict = null;
   let dismissedConflictId = null;
   let summarySequence = 0;
+  let identityUiGeneration = 0;
+  let strategyUpgradeRequired = null;
+  setTranslatedText(document.querySelector('#accountStrategySyncItemSummary'), 'Saved locally');
 
   const statusKeys = Object.freeze({
     [SYNC_UI_STATES.DISABLED]: 'Saved locally',
@@ -146,8 +164,9 @@ function bindSyncUi(browserWindow, coordinator) {
   }
 
   async function openFirstConflict({ force = false } = {}) {
+    const sequence = summarySequence;
     const [conflict] = await coordinator.listConflicts();
-    if (!conflict || (!force && conflict.objectId === dismissedConflictId)) return;
+    if (sequence !== summarySequence || !conflict || (!force && conflict.objectId === dismissedConflictId)) return;
     currentConflict = conflict;
     conflictFocus = document.activeElement;
     const title = conflict.localObject?.annotations?.title
@@ -179,14 +198,19 @@ function bindSyncUi(browserWindow, coordinator) {
   }
 
   async function updateInitialSummary(state) {
-    if ((state.saved.decided && state.strategy.decided)
-      || !browserWindow.RiverlineAuthentication?.getState?.().profile) return;
-    if (document.querySelector('#accountProfileModal')?.hidden !== false) return;
+    if (browserWindow.RiverlineAuthentication?.getState?.().status !== 'signed_in') return;
+    if (strategyUpgradeRequired !== null && ((state.saved.decided && state.strategy.decided)
+      || document.querySelector('#accountProfileModal')?.hidden !== false)) return;
     const sequence = ++summarySequence;
-    const [summary, strategySummary] = await Promise.all([
-      coordinator.getEnableSummary(), coordinator.getStrategyEnableSummary(),
-    ]);
+    let summary;
+    let strategySummary;
+    try {
+      [summary, strategySummary] = await Promise.all([
+        coordinator.getEnableSummary(), coordinator.getStrategyEnableSummary(),
+      ]);
+    } catch { return; }
     if (sequence !== summarySequence) return;
+    strategyUpgradeRequired = strategySummary.cloudSyncCompatible === false;
     setTranslatedText(
       document.querySelector('#accountSyncItemSummary'),
       '{count} items on this device will be synced.',
@@ -194,13 +218,29 @@ function bindSyncUi(browserWindow, coordinator) {
     );
     setTranslatedText(
       document.querySelector('#accountStrategySyncItemSummary'),
-      '{profiles} profiles, {observations} direct observations, and {sessions} active calibration sessions on this device will be synced.',
+      strategyUpgradeRequired ? PERSONAL_STRATEGY_SYNC_UPGRADE_MESSAGE : PERSONAL_STRATEGY_LOCAL_SUMMARY,
       {
         profiles: strategySummary.profileCount,
         observations: strategySummary.directObservationCount,
         sessions: strategySummary.activeSessionCount,
       },
     );
+    renderStrategyAvailability(coordinator.getState());
+  }
+
+  function renderStrategyAvailability(state) {
+    const message = strategyUpgradeRequired
+      ? PERSONAL_STRATEGY_SYNC_UPGRADE_MESSAGE
+      : 'Inference is recomputed locally from synced evidence. Generic Training history is not synced.';
+    setTranslatedText(document.querySelector('#accountStrategySyncConsequence'), message);
+    if (!strategyUpgradeRequired) return;
+    setTranslatedText(document.querySelector('#accountStrategySyncItemSummary'), message);
+    document.querySelector('#accountStrategySyncEnable').disabled = true;
+    document.querySelector('#accountStrategySyncToggle').disabled = !state.strategy.enabled;
+    setTranslatedText(document.querySelector('#settingsSyncDescription'), message);
+    if (state.strategy.enabled && state.strategy.state === SYNC_UI_STATES.ERROR) {
+      setTranslatedText(document.querySelector('#accountSyncStatus')?.querySelector('span'), message);
+    }
   }
 
   function render(state) {
@@ -253,6 +293,7 @@ function bindSyncUi(browserWindow, coordinator) {
       );
     }
     setBusy(state.state === SYNC_UI_STATES.SYNCING);
+    renderStrategyAvailability(state);
     void updateInitialSummary(state);
     if (state.state === SYNC_UI_STATES.CONFLICT) void openFirstConflict();
   }
@@ -265,15 +306,30 @@ function bindSyncUi(browserWindow, coordinator) {
     await coordinator.syncNow();
   }
 
+  async function changeStrategySync(enabled) {
+    const identityGeneration = identityUiGeneration;
+    try {
+      await (enabled ? coordinator.enableStrategy() : coordinator.disableStrategy());
+    } catch (error) {
+      if (identityGeneration !== identityUiGeneration
+        || browserWindow.RiverlineAuthentication?.getState?.().status !== 'signed_in') return;
+      if (error?.code === 'unsupported_schema') strategyUpgradeRequired = true;
+      renderStrategyAvailability(coordinator.getState());
+      if (!strategyUpgradeRequired) setTranslatedText(
+        document.querySelector('#accountSyncStatus')?.querySelector('span'), 'Sync error',
+      );
+    }
+  }
+
   document.querySelector('#accountSyncEnable')?.addEventListener('click', () => void coordinator.enable());
   document.querySelector('#accountSyncNotNow')?.addEventListener('click', () => void coordinator.disable());
   document.querySelector('#accountSyncToggle')?.addEventListener('change', (event) => {
     void (event.currentTarget.checked ? coordinator.enable() : coordinator.disable());
   });
-  document.querySelector('#accountStrategySyncEnable')?.addEventListener('click', () => void coordinator.enableStrategy());
-  document.querySelector('#accountStrategySyncNotNow')?.addEventListener('click', () => void coordinator.disableStrategy());
+  document.querySelector('#accountStrategySyncEnable')?.addEventListener('click', () => void changeStrategySync(true));
+  document.querySelector('#accountStrategySyncNotNow')?.addEventListener('click', () => void changeStrategySync(false));
   document.querySelector('#accountStrategySyncToggle')?.addEventListener('change', (event) => {
-    void (event.currentTarget.checked ? coordinator.enableStrategy() : coordinator.disableStrategy());
+    void changeStrategySync(event.currentTarget.checked);
   });
   document.querySelector('#accountSyncNow')?.addEventListener('click', () => void manualSync());
   document.querySelector('#accountMenuSyncNow')?.addEventListener('click', () => void manualSync());
@@ -291,20 +347,25 @@ function bindSyncUi(browserWindow, coordinator) {
   for (const control of conflictModal?.querySelectorAll('[data-choice]') ?? []) {
     control.addEventListener('click', async () => {
       if (!currentConflict) return;
+      const sequence = summarySequence;
       for (const button of conflictModal.querySelectorAll('button')) button.disabled = true;
       setTranslatedText(document.querySelector('#syncConflictStatus'), 'Resolving conflict…');
       try {
         await coordinator.resolveConflict(
           currentConflict.objectId, control.dataset.choice, currentConflict.syncDomain,
         );
+        if (sequence !== summarySequence) return;
         dismissedConflictId = null;
         closeConflict({ dismissed: false });
         currentConflict = null;
         await openFirstConflict();
       } catch {
+        if (sequence !== summarySequence) return;
         setTranslatedText(document.querySelector('#syncConflictStatus'), 'Sync error');
       } finally {
-        for (const button of conflictModal.querySelectorAll('button')) button.disabled = false;
+        if (sequence === summarySequence) {
+          for (const button of conflictModal.querySelectorAll('button')) button.disabled = false;
+        }
       }
     });
   }
@@ -324,6 +385,17 @@ function bindSyncUi(browserWindow, coordinator) {
     } else if (!event.shiftKey && document.activeElement === last) {
       event.preventDefault(); first?.focus();
     }
+  });
+  browserWindow.addEventListener('riverline:identitychange', () => {
+    summarySequence += 1;
+    identityUiGeneration += 1;
+    strategyUpgradeRequired = null;
+    closeConflict({ restoreFocus: false, dismissed: false });
+    currentConflict = null;
+    dismissedConflictId = null;
+    for (const button of conflictModal?.querySelectorAll('button') ?? []) button.disabled = false;
+    const title = document.querySelector('#syncConflictObjectTitle');
+    if (title) title.textContent = '';
   });
   browserWindow.addEventListener('riverline:languagechange', () => render(coordinator.getState()));
   browserWindow.addEventListener('online', () => void coordinator.syncNow());
@@ -377,7 +449,7 @@ export async function installSavedStudySyncBridge(browserWindow, options = {}) {
     })),
   });
   browserWindow.RiverlineSavedStudyObjects.subscribeLocalMutations((mutation) => (
-    coordinator.recordLocalMutation(mutation.object)
+    coordinator.recordLocalMutation(mutation.object, { lifecycleScope: mutation.lifecycleScope })
   ));
   const strategyPort = options.strategyPort ?? createPersonalStrategySyncPort({
     authentication: browserWindow.RiverlineAuthentication,
@@ -406,32 +478,64 @@ export async function installSavedStudySyncBridge(browserWindow, options = {}) {
   browserWindow.addEventListener('riverline:personalstrategymutation', (event) => {
     for (const entity of event.detail?.entities ?? []) {
       if (personalStrategyAdapter.supports(entity) || rangeCalibrationAdapter.supports(entity)) {
-        void strategyCoordinator.recordLocalMutation(entity);
+        void strategyCoordinator.recordLocalMutation(entity, { lifecycleScope: event.detail?.lifecycleScope });
       }
     }
   });
-  const studySync = createStudySyncAggregate(coordinator, strategyCoordinator, strategyPort);
+  let activeStrategyPort = strategyPort;
+  const studySync = createStudySyncAggregate(coordinator, strategyCoordinator, {
+    getSummary: () => activeStrategyPort.getSummary(),
+  });
 
   let activationSequence = 0;
+  const accountIdentity = browserWindow.RiverlineAccountIdentity;
+  function deactivate() {
+    activationSequence += 1;
+    if (remoteStrategyInvalidation !== null) browserWindow.clearTimeout(remoteStrategyInvalidation);
+    remoteStrategyInvalidation = null;
+    // Both coordinators revoke synchronously, before either asynchronous preference read.
+    const strategy = strategyCoordinator.activate({});
+    const saved = coordinator.activate({});
+    return Promise.all([strategy, saved]);
+  }
   async function activateFromAuthentication(state = browserWindow.RiverlineAuthentication.getState()) {
     const sequence = ++activationSequence;
-    if (state.status !== 'signed_in' || !state.profile) {
-      await strategyCoordinator.activate({ identityId: null, authenticated: false, sessionValid: false });
-      return coordinator.activate({ identityId: null, authenticated: false, sessionValid: false });
+    if (state.status !== 'signed_in' || !state.profile) return deactivate();
+    try {
+      const [savedScope, strategyScope] = await Promise.all([
+        accountIdentity.captureLifecycleScope(RIVERLINE_OWNED_DOMAINS.SAVED_STUDY_OBJECTS),
+        accountIdentity.captureLifecycleScope(RIVERLINE_OWNED_DOMAINS.PERSONAL_STRATEGY),
+      ]);
+      if (sequence !== activationSequence) return coordinator.getState();
+      savedScope.assertCurrent();
+      strategyScope.assertCurrent();
+      if (savedScope.identityKind !== 'authenticated_account'
+        || savedScope.identityId !== strategyScope.identityId
+        || state.profile.riverlineIdentityId !== savedScope.identityId
+        || browserWindow.RiverlineAuthentication.getState() !== state) return deactivate();
+      activeStrategyPort = options.strategyPort ?? createPersonalStrategySyncPort({
+        authentication: browserWindow.RiverlineAuthentication,
+        accountIdentity, lifecycleScope: strategyScope,
+        databaseFactory: options.personalStrategyDatabaseFactory,
+      });
+      const savedAdapter = createSavedStudySyncDomainAdapter({
+        syncPort: browserWindow.RiverlineSavedStudyObjects.createSyncPort(savedScope),
+      });
+      const strategyAdapter = createPersonalStrategySyncAdapter({ syncPort: activeStrategyPort });
+      return await Promise.all([
+        strategyCoordinator.activate({
+          identityId: strategyScope.identityId, authenticated: true, sessionValid: true,
+          lifecycleScope: strategyScope, domainAdapter: strategyAdapter,
+        }),
+        coordinator.activate({
+          identityId: savedScope.identityId, authenticated: true, sessionValid: true,
+          lifecycleScope: savedScope, domainAdapter: savedAdapter,
+        }),
+      ]);
+    } catch (error) {
+      if (sequence === activationSequence) return deactivate();
+      return coordinator.getState();
     }
-    const identity = await browserWindow.RiverlineAccountIdentity.getActiveIdentity();
-    if (sequence !== activationSequence) return coordinator.getState();
-    if (state.profile.riverlineIdentityId
-      && state.profile.riverlineIdentityId !== identity.identityId) {
-      await strategyCoordinator.activate({ identityId: null, authenticated: false, sessionValid: false });
-      return coordinator.activate({ identityId: null, authenticated: false, sessionValid: false });
-    }
-    await strategyCoordinator.activate({
-      identityId: identity.identityId, authenticated: true, sessionValid: true,
-    });
-    return coordinator.activate({
-      identityId: identity.identityId, authenticated: true, sessionValid: true,
-    });
   }
 
   const bridge = Object.freeze({
@@ -451,7 +555,16 @@ export async function installSavedStudySyncBridge(browserWindow, options = {}) {
   Object.defineProperty(browserWindow, 'RiverlineStudySync', {
     configurable: true, enumerable: false, value: studySync, writable: false,
   });
-  browserWindow.RiverlineAuthentication.subscribe((state) => { void activateFromAuthentication(state); });
+  accountIdentity.subscribe?.(() => {
+    void deactivate();
+    if (accountIdentity.getLifecycleState?.().status === 'account_active') {
+      void activateFromAuthentication();
+    }
+  });
+  browserWindow.RiverlineAuthentication.subscribe((state) => {
+    void deactivate();
+    void activateFromAuthentication(state);
+  });
   await browserWindow.RiverlineAuthentication.ready();
   await activateFromAuthentication();
   const bind = () => bindSyncUi(browserWindow, studySync);

@@ -162,9 +162,9 @@ test('final human-evidence correction preserves bounded visible-state contracts'
   assert.doesNotMatch(JSON.stringify(SAVED_TUTORIAL_DEFINITION), /A quick tour of Home|My Riverline shows/);
   assert.match(tutorialBootstrap, /SAVED_TUTORIAL_DEFINITION/);
   assert.match(tutorialBootstrap, /activeDestination === 'saved'[\s\S]*?\? 'saved'/);
-  assert.match(logic, /Saved study belongs to a signed-in Riverline profile/);
-  assert.match(logic, /Signing in does not enable sync or cloud backup/);
-  assert.match(homeTranslations, /Saved study belongs to a signed-in Riverline profile/);
+  assert.match(logic, /Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode/);
+  assert.match(logic, /Guest data does not sync/);
+  assert.match(accountTranslations, /Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode/);
 });
 
 test('auth failure and password mismatch feedback is visible, privacy-safe, localized, and assertive on error', () => {

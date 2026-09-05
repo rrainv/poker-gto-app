@@ -35,26 +35,11 @@ Current Riverline identity surfaces reuse one canonical geometric brand-spade as
 
 ### Guest
 
-Current Guest Home does not issue authenticated-account Saved Study, identity, or sync-domain reads. The accepted long-term Guest is a durable anonymous device-local profile under `IDENTITY-LIFECYCLE-001`; it remains distinct from every authenticated owner. Guest Home contains:
+Slice B Guest Home loads current-owner bounded Saved/Review and Personal Strategy summaries through lifecycle scopes. Its account profile remains absent and sync unavailable: no account profile, cloud status, or account sync queries execute for Guest. The Saved destination exposes the same existing local Hand/Spot library and reopen semantics.
 
-- a short Riverline introduction and restrained sign-in promotion;
-- useful direct Start/study actions through existing destinations;
-- Continue only when an explicit supported resume contract exists.
+Every Home load captures one lifecycle generation, validates before domain queries, and validates before adoption. Owner transitions synchronously clear prior Saved previews/details, account overview, review/continuation/Personal Strategy presentation, and any Saved viewer; delayed results cannot populate the next owner. Returning to Guest restores the same local library and strategy.
 
-In the current runtime, Saved, Review, Mistakes, Personal Strategy, and calibration content are absent. The future durable Guest may expose only its own explicitly supported local domains. Explicit sign-out must never present the prior authenticated identity's content.
-
-### Authenticated
-
-Authenticated Home contains modular sections for:
-
-- compact `displayName` and `@username` from the authenticated AccountProfile;
-- aggregate study-sync status and a contextual account issue action for conflict/error;
-- resumable active/paused Range Calibration, plus a current in-memory live Hand when present;
-- bounded Recent, Review Later, and Mistakes SavedStudyObject previews;
-- selected Personal Strategy profile/mode/context, direct answered coverage, direct evidence count, active contradictory head count, and current session state;
-- context-aware Quick Start.
-
-Fresh accounts use intentional actions instead of a grid of zero metrics. Saved Hands and Spots use the existing canonical opener, so remote-pulled objects behave exactly like local objects.
+Quick Start and genuine runtime Hand continuation remain available. Training/Analysis history remains explicitly unsupported in the existing Home model; this slice does not invent a new dashboard integration or change Home Game persistence.
 
 ## Continue contract
 

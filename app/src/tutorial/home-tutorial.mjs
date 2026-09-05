@@ -17,7 +17,7 @@ export const HOME_TUTORIAL_DEFINITION = createTutorialDefinition({
       id: 'overview',
       anchor: 'home-overview',
       titleKey: 'Your study starts with context',
-      bodyKey: 'My Riverline shows your account identity, study sync, saved work, and next useful action without owning or recomputing that data.',
+      bodyKey: 'Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode. Guest data does not sync.',
       placement: 'bottom',
     },
     {

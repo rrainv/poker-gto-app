@@ -56,10 +56,8 @@ test('canonical feedback retains source provenance and avoids unsupported GTO or
     canonicalTraining.indexOf('function canonicalTrainingFeedback'),
     canonicalTraining.indexOf('function handleTrainingGuess'),
   );
-  assert.match(feedback, /strategySourceDisplayLabel\(strategyResult\)/);
-  assert.match(feedback, /policy\.trainingSemantics === 'normative'/);
-  assert.match(feedback, /Close to Riverline reference/);
-  assert.match(feedback, /no EV loss is implied/);
+  assert.match(feedback, /truthPresentation\(trainingTruth\(evaluation\)\)/);
+  assert.doesNotMatch(feedback, /Riverline reference|Correct action|Mistake/);
   assert.doesNotMatch(feedback, /\bGTO\b|\bsolver\b|Deep CFR/i);
   assert.match(html, /id="trainingStrategySource"/);
   const trainingMarkup = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('id="infoMode"'));

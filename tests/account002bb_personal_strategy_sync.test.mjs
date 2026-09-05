@@ -10,6 +10,8 @@ import {
   createLocalOwnerRef,
   createMemoryPersonalStrategyDatabase,
   updateStrategyProfile,
+  migrateStrategyProfile,
+  migrateStrategyMode,
 } from '../app/src/personal-strategy/index.mjs';
 import {
   RFI_INFERENCE_ABSTENTION_REASONS,
@@ -48,6 +50,23 @@ function storage() {
   };
 }
 
+// Historical v1 wire-protocol harness. Production v2 stores fail closed instead;
+// personal_strategy_intelligence_sync.test.mjs owns that current boundary.
+// Explicit test-only projection models an old client, never a runtime downgrade.
+function legacyWireEntity(entity) {
+  if (entity?.syncEntityType !== 'profile_bundle') return entity;
+  const { setupVersion, setupAssumptions, versionHistory, ...profile } = entity.profile;
+  return { ...entity, profile: { ...profile, schemaVersion: 'strategy-profile/v1' },
+    modes: entity.modes.map((value) => {
+      const { approachVersion, versionHistory, forkProvenance, ...mode } = value;
+      return { ...mode, schemaVersion: 'strategy-mode/v1' };
+    }) };
+}
+function currentRepositoryEntity(entity) {
+  if (entity?.syncEntityType !== 'profile_bundle') return entity;
+  return { ...entity, profile: migrateStrategyProfile(entity.profile), modes: entity.modes.map(migrateStrategyMode) };
+}
+
 function device({ label, backend, syncDatabase = null } = {}) {
   const now = clock();
   let ids = 0;
@@ -59,15 +78,16 @@ function device({ label, backend, syncDatabase = null } = {}) {
     clock: now,
     idFactory: (prefix) => `${prefix}-${label}-${++ids}`,
     onLocalMutation: async (mutation) => {
-      for (const entity of mutation.entities) await coordinator?.recordLocalMutation(entity);
+      for (const entity of mutation.entities) await coordinator?.recordLocalMutation(legacyWireEntity(entity));
     },
   });
   const port = Object.freeze({
+    assertCompatible: async () => {}, // This harness explicitly models the historical v1 client.
     ownerRef: async () => application.ownerRef,
-    listEntities: () => application.repository.listSyncEntities(),
-    getEntityById: (id) => application.repository.getSyncEntityById(id),
+    listEntities: async () => (await application.repository.listSyncEntities()).map(legacyWireEntity),
+    getEntityById: async (id) => legacyWireEntity(await application.repository.getSyncEntityById(id)),
     getSummary: () => application.repository.getSyncSummary(),
-    applyRemoteEntity: (entity, document) => application.repository.applySyncedEntity(entity, document),
+    applyRemoteEntity: (entity, document) => application.repository.applySyncedEntity(currentRepositoryEntity(entity), document),
   });
   const remote = createFakeRemoteSyncAdapter({
     backend,
@@ -288,7 +308,7 @@ test('same-field mode rename conflicts explicitly and archived profiles cannot b
   );
   await a.application.repository.saveProfile(archived);
   const aEntity = await a.application.repository.getSyncEntityById(archived.id);
-  await a.coordinator.recordLocalMutation(aEntity);
+  await a.coordinator.recordLocalMutation(legacyWireEntity(aEntity));
   await a.coordinator.syncNow();
   await b.application.updateProfileConfiguration(created.bundle.profile.id, {
     displayName: 'Stale active edit', description: 'Private calibration profile',

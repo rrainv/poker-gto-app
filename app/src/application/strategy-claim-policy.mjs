@@ -11,6 +11,7 @@ import {
   strategySourceDescriptorFor,
 } from './strategy-source-authority.mjs';
 
+import { acceptedAssessmentPolicyFor } from './strategy-assessment-policy.mjs';
 export const STRATEGY_CLAIM_POLICY_SCHEMA_VERSION = 'strategy-claim-policy/v1';
 
 export const STRATEGY_CLAIMS = Object.freeze({
@@ -158,7 +159,7 @@ export function resolveStrategyClaimPolicy(strategyResult) {
   const available = supported && distributionAvailable
     && Array.isArray(strategyResult?.actions) && strategyResult.actions.length > 0;
   const acceptedAuthority = authorityFor(descriptor, acceptance);
-  const referenceAuthority = [
+  const referenceAuthority = descriptor.family !== 'heuristic' && exactCoverage && [
     STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
     STRATEGY_SOURCE_AUTHORITIES.VALIDATED_REFERENCE,
   ].includes(acceptedAuthority);
@@ -168,7 +169,9 @@ export function resolveStrategyClaimPolicy(strategyResult) {
   const normative = comparative
     && exactCoverage
     && acceptedAuthority === STRATEGY_SOURCE_AUTHORITIES.VALIDATED_REFERENCE
-    && capabilities.grading === STRATEGY_GRADING_CAPABILITIES.NORMATIVE;
+    && capabilities.grading === STRATEGY_GRADING_CAPABILITIES.NORMATIVE
+    && acceptedAssessmentPolicyFor(strategyResult) !== null;
+  const assessmentPermissions = acceptedAssessmentPolicyFor(strategyResult)?.claimPermissions;
   const claims = {
     [STRATEGY_CLAIMS.STRATEGY_PRESENTATION]: available,
     [STRATEGY_CLAIMS.PREFERRED_ACTION]: available && capabilities.dominantAction,
@@ -177,10 +180,10 @@ export function resolveStrategyClaimPolicy(strategyResult) {
     [STRATEGY_CLAIMS.REFERENCE_DEVIATION]: comparative,
     [STRATEGY_CLAIMS.COMPARATIVE_GRADING]: comparative,
     [STRATEGY_CLAIMS.NORMATIVE_GRADING]: normative,
-    [STRATEGY_CLAIMS.OBJECTIVE_CORRECTNESS]: normative,
-    [STRATEGY_CLAIMS.MISTAKE]: normative,
-    [STRATEGY_CLAIMS.ACCURACY]: normative,
-    [STRATEGY_CLAIMS.OPTIMALITY]: normative && capabilities.optimality,
+    [STRATEGY_CLAIMS.OBJECTIVE_CORRECTNESS]: normative && assessmentPermissions.supported,
+    [STRATEGY_CLAIMS.MISTAKE]: normative && assessmentPermissions.unsupported,
+    [STRATEGY_CLAIMS.ACCURACY]: false,
+    [STRATEGY_CLAIMS.OPTIMALITY]: false,
     [STRATEGY_CLAIMS.EXACT_FREQUENCIES]: available
       && exactCoverage
       && capabilities.actionDistribution
@@ -188,8 +191,8 @@ export function resolveStrategyClaimPolicy(strategyResult) {
     [STRATEGY_CLAIMS.ACTION_SIZING]: available
       && capabilities.actionSizing !== STRATEGY_ACTION_SIZING_CAPABILITIES.NONE,
     [STRATEGY_CLAIMS.ACTION_EV]: available && capabilities.actionEv,
-    [STRATEGY_CLAIMS.EV_LOSS]: normative && capabilities.actionEv,
-    [STRATEGY_CLAIMS.NORMATIVE_CURRICULUM_WEIGHTING]: normative,
+    [STRATEGY_CLAIMS.EV_LOSS]: false,
+    [STRATEGY_CLAIMS.NORMATIVE_CURRICULUM_WEIGHTING]: false,
     [STRATEGY_CLAIMS.SOURCE_LIMITATIONS]: true,
   };
   const limitations = limitationsFor(descriptor, coverage);

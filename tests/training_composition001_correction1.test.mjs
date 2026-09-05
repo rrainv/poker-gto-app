@@ -126,7 +126,7 @@ test('Training feedback event precedes deep render and a prepared Study cue avoi
 
 test('Personal Strategy still owns its authenticated lazy bootstrap and recoverable shell', () => {
   assert.match(rangeBootstrap, /createRangeCalibrationLifecycle/);
-  assert.match(rangeBootstrap, /mountAuthenticated\(\)[\s\S]*mountRangeCalibrationWorkspace/);
+  assert.match(rangeBootstrap, /async mountAuthenticated\(options\)[\s\S]*mountRangeCalibrationWorkspace\(options\)/);
   assert.match(rangeBootstrap, /calibrationErrorState/);
   assert.match(rangeBootstrap, /lifecycle\.start\(\)/);
   assert.doesNotMatch(logic, /rangeCalibrationRepository|loadSnapshot/);

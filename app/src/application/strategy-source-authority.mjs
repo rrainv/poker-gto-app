@@ -404,7 +404,7 @@ const HEURISTIC_CAPABILITIES = Object.freeze({
   actionDistribution: STRATEGY_ACTION_DISTRIBUTION_CAPABILITIES.QUANTITATIVE,
   actionSizing: STRATEGY_ACTION_SIZING_CAPABILITIES.PARTIAL,
   actionEv: false,
-  grading: STRATEGY_GRADING_CAPABILITIES.COMPARATIVE,
+  grading: STRATEGY_GRADING_CAPABILITIES.NONE,
   optimality: false,
 });
 
@@ -414,7 +414,7 @@ export const STRATEGY_SOURCE_REGISTRY = deepFreeze({
     version: 'riverline-preflop-heuristic/v4',
     displayName: 'Heuristic fallback',
     family: STRATEGY_SOURCE_FAMILIES.HEURISTIC,
-    authority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
+    authority: STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY,
     capabilities: HEURISTIC_CAPABILITIES,
     defaultCoverage: STRATEGY_COVERAGE_KINDS.GENERALIZED,
     limitations: ['heuristic_not_validated'],
@@ -424,7 +424,7 @@ export const STRATEGY_SOURCE_REGISTRY = deepFreeze({
     version: 'riverline-postflop-heuristic/v3',
     displayName: 'Heuristic fallback',
     family: STRATEGY_SOURCE_FAMILIES.HEURISTIC,
-    authority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
+    authority: STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY,
     capabilities: HEURISTIC_CAPABILITIES,
     defaultCoverage: STRATEGY_COVERAGE_KINDS.GENERALIZED,
     limitations: ['heuristic_not_validated'],
@@ -460,7 +460,7 @@ const BUILT_IN_SOURCE_ACCEPTANCE = createStrategySourceAcceptanceRegistry([
   {
     sourceId: 'heuristic_preflop',
     allowedFamily: STRATEGY_SOURCE_FAMILIES.HEURISTIC,
-    acceptedAuthority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
+    acceptedAuthority: STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY,
     acceptedCapabilities: HEURISTIC_CAPABILITIES,
     acceptedCoverageCeiling: STRATEGY_COVERAGE_KINDS.GENERALIZED,
     validationStatus: 'riverline_builtin_exploratory_baseline',
@@ -470,7 +470,7 @@ const BUILT_IN_SOURCE_ACCEPTANCE = createStrategySourceAcceptanceRegistry([
   {
     sourceId: 'heuristic_postflop',
     allowedFamily: STRATEGY_SOURCE_FAMILIES.HEURISTIC,
-    acceptedAuthority: STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
+    acceptedAuthority: STRATEGY_SOURCE_AUTHORITIES.EXPLORATORY,
     acceptedCapabilities: HEURISTIC_CAPABILITIES,
     acceptedCoverageCeiling: STRATEGY_COVERAGE_KINDS.GENERALIZED,
     validationStatus: 'riverline_builtin_exploratory_baseline',

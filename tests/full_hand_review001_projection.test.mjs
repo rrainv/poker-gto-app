@@ -393,9 +393,8 @@ test('comparison wording state and priority are source-gated rather than EV thea
 
   assert.equal(review.priorityDecisionIndex, 0);
   assert.equal(review.selectedDecisionIndex, 0);
-  assert.equal(review.decisions[0].comparison.semantics, 'comparative');
-  assert.equal(review.decisions[0].reviewPriority.kind, 'reference_disagreement');
-  assert.equal(Object.hasOwn(review.decisions[0].reviewPriority, 'evLoss'), false);
+  assert.equal(review.decisions[0].comparison.semantics, 'heuristic_comparison');
+  assert.equal(review.decisions[0].reviewPriority, null);
   assert.equal(review.decisions[0].source.coverage, 'generalized');
   assert.equal(review.decisions[0].source.exactFrequencies, false);
   assert.deepEqual(review.extensionSeam.comparisonRoles, [

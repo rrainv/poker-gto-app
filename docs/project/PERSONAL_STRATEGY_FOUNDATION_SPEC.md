@@ -1,8 +1,10 @@
 # Personal Strategy Foundation Specification
 
-Status: durable evidence/persistence authority through `PREFLOP-ACTION-SPACE-001`
+Status: durable evidence/persistence authority with the authorized `PERSONAL-STRATEGY-INTELLIGENCE-001` v2 migration implemented with focused integration checks passing; human acceptance remains pending.
 
-Schema generation: v1
+Current Game Setup/Approach, qualitative evidence, migration, and language contracts: [PERSONAL_STRATEGY_INTELLIGENCE_V1_SPEC.md](PERSONAL_STRATEGY_INTELLIGENCE_V1_SPEC.md). Legacy v1 Profile/Mode shapes below remain historical compatibility documentation; their exactly-three constraint is not the current product contract.
+
+Schema generation: profile/mode/store/export v2; direct/Training evidence v1; IndexedDB backend v3.
 
 ## 1. Purpose and authority
 
@@ -37,7 +39,7 @@ Profile identity is its stable ID. Renaming a profile never changes its ID. A v1
 
 ### Strategy Mode
 
-A `StrategyMode` is one of the profile's three user-named, discrete strategic anchors. Names such as "Normal", "Cautious", and "Pressure" are examples only. The domain stores the user's name rather than translated presentation labels.
+A legacy v1 `StrategyMode` was one of a profile's three user-named, discrete strategic anchors. Current v2 Approaches have no fixed count and are independently named, versioned, and duplicable. Names such as "Normal", "Cautious", and "Pressure" are examples only. The domain stores the user's name rather than translated presentation labels.
 
 V1 deliberately has no tight/loose enum, numeric style value, interpolation coordinate, or claim that two modes lie on a continuum. Ordering is presentation order only. Any future mathematical relationship between modes requires an explicit, versioned contract based on evidence.
 
@@ -79,20 +81,21 @@ It is an immutable behavioral observation, not a direct range edit. It has its o
 
 | Contract | Schema identifier | Role |
 |---|---|---|
-| `StrategyProfile` | `strategy-profile/v1` | Stable local-owned environment/identity and its three mode IDs |
-| `StrategyMode` | `strategy-mode/v1` | User-named discrete anchor belonging to one profile |
+| `StrategyProfile` | `strategy-profile/v2` | Arbitrary named Game Setup, one or more Approach IDs, assumptions and metadata versions; v1 migrates losslessly |
+| `StrategyMode` | `strategy-mode/v2` | Independently named/versioned Approach with optional frozen fork provenance |
+| Qualitative intended evidence | `personal-qualitative-evidence/v1` | Confirmed wording, scope, interpretation, unresolved terms and immutable correction lineage |
 | `CalibrationContext` | `calibration-context/v1`, `calibration-context/v2` | Objective RFI compatibility facts and strict action-aware preflop spot facts |
 | `RangeObservation` | `range-observation/v1` | Direct preferred-action evidence and its revision link |
 | `TrainingObservation` | `training-observation/v1` | Actual Training choice and direct-answer comparison |
 | `CalibrationSession` | `calibration-session/v1` | Resumable elicitation scope and cursor |
-| Personal Strategy logical snapshot / legacy document | `personal-strategy-store/v1` | Validated domain aggregate used by migration, tests, and full snapshots; not the physical IndexedDB layout |
-| Portable export | `personal-strategy-export/v1` | Validated local transfer representation |
+| Personal Strategy logical snapshot / legacy document | `personal-strategy-store/v2` | Validated domain aggregate used by migration, tests, and full snapshots; not the physical IndexedDB layout |
+| Portable export | `personal-strategy-export/v2` | Validated local transfer representation |
 
 There is no v1 `InferredRange`, confidence score, `SavedSpot`, derived range cache, solver reference, or separate profile-range snapshot. Those objects acquire authority only when a future ticket implements their behavior and validation.
 
 `RANGE-CAL-002B` adds only recomputable read contracts over these unchanged durable records: `PersonalStrategyEvidenceView v1`, `PersonalStrategyEstimate v1`, ordinal `PersonalStrategyUncertainty v1`, inference support facts, and `PersonalStrategySnapshot v1`. They remain in memory, are excluded from portable evidence exports/cloud sync, and are specified in `RANGE_INFERENCE_SPEC.md`. No profile, mode, context, evidence, session, export, IndexedDB, or Supabase schema was migrated.
 
-## 4. StrategyProfile v1
+## 4. StrategyProfile v1 (legacy compatibility)
 
 Required fields:
 
@@ -112,9 +115,9 @@ state = active | archived
 
 `gameDomain` is `no_limit_texas_holdem` in v1. Display name is presentation text supplied by the user and is never used as identity. Tags are local metadata, not permissions or public discovery attributes.
 
-The profile factory requires exactly three unique mode IDs. Adding or removing anchors is not an unversioned v1 edit.
+The legacy v1 factory required exactly three unique mode IDs. The authorized v2 migration removes that limit; current factories require at least one unique Approach ID. Setup assumptions, versions, additions, and duplication are defined in the Intelligence v1 specification.
 
-## 5. StrategyMode v1
+## 5. StrategyMode v1 (legacy compatibility)
 
 Required fields:
 
@@ -279,9 +282,9 @@ This is enough to pause, close, reload, and resume a future deterministic elicit
 
 `RANGE-CAL-001C-A` uses a hybrid browser-native model:
 
-- IndexedDB database `riverline-personal-strategy`, database version `2`, is the one durable Personal Strategy record authority; v2 adds indexed conflicting evidence heads without changing v1 domain record schemas;
+- IndexedDB database `riverline-personal-strategy`, database version `3`, is the one durable Personal Strategy record authority; backend v2 added conflicting evidence heads and v3 adds confirmed qualitative evidence;
 - Web Storage retains only the stable local-owner bootstrap, Range Calibration workspace preferences, and any pre-migration recovery source under `riverline.personalStrategy.v1`;
-- domain schema identifiers remain v1; `personal-strategy-indexeddb/v2` and IndexedDB database version `2` separately version physical storage.
+- profile/mode/store/export identifiers are now v2; direct/Training evidence identifiers remain v1; `personal-strategy-indexeddb/v3` and database version `3` separately version physical storage.
 
 The decision follows measured evidence. Whole-document Web Storage remained fast for one 169-hand mode, but the supplied benchmark reached about 194 ms median at 3,042 observations and 452 ms median at 7,605 observations with a roughly 5.7 MB document. Every answer parsed, graph-validated, serialized, and synchronously replaced all history, so quota and main-thread time grew with total store size.
 
@@ -296,6 +299,7 @@ The physical object stores are:
 ```text
 metadata
 profiles
+qualitativeEvidence           indexes: profileId, modeId
 modes                         index: profileId
 rangeObservations             indexes: profileId, logicalKey, scopeKey, calibrationSessionId
 currentRangeObservations      indexes: profileId, scopeKey
@@ -321,33 +325,33 @@ An accepted answer runs one strict read/write transaction over metadata, immutab
 
 The operation ID is also the observation ID. Repeating the exact same committed observation/session pair returns idempotent success rather than duplicating it. Conflicting ID reuse fails closed. Transaction abort or quota failure leaves all prior records authoritative.
 
-`loadWorkspaceSnapshot` loads profiles, modes, sessions, and current leaves only. Full history is read only for full snapshots, migration validation, or export. Answer writes and one-hand lookup are therefore bounded independently from total immutable history.
+`loadWorkspaceSnapshot` loads profiles, modes, sessions, current direct leaves/conflicts, and qualitative evidence. Full direct history is read only for scoped history inspection, full snapshots, migration validation, duplication, or export. Answer writes and one-hand lookup are therefore bounded independently from total immutable history.
 
 ## 12. Export and import
 
-`personal-strategy-export/v1` is a portable JSON envelope containing export time, owner reference, selected profiles, their modes, direct evidence, Training evidence, and sessions. Export can select profile IDs and includes full direct history for those profiles.
+`personal-strategy-export/v2` is a portable JSON envelope containing export time, owner reference, selected profiles, their modes, direct evidence, Training evidence, sessions, and qualitative evidence. Metadata versions, forks, and immutable qualitative corrections are retained; legacy export v1 is explicitly migrated. Export can select profile IDs and includes full direct history for those profiles.
 
 Import behavior is deliberately conservative:
 
 - parse and validate the complete envelope before mutation;
-- require the exact supported export schema;
-- require the same local owner in v1;
+- accept current export v2 or explicitly migrate supported legacy export v1;
+- follow explicit repository `ownerPolicy`: `adopt_active` rehomes the imported profile to the active owner; `require_match` requires matching ownership;
 - reject any object-ID collision;
 - reject a second root for an existing direct-calibration key;
 - merge all collections in memory, validate the combined graph, then perform one IndexedDB transaction;
 - leave current data unchanged on any error.
 
-V1 does not silently regenerate IDs or adopt another owner. A future explicit "import as copy" flow may remap all IDs and references under a target owner, but that is a separate contract and UX decision.
+Import does not silently regenerate IDs. Active-owner adoption follows the explicit portable import policy and preserves source history. Arbitrary import-as-copy ID regeneration or sharing remains a separate contract.
 
 ## 13. Versioning and migrations
 
 Every durable object and envelope has an exact schema identifier. Domain schema and physical database/backend versions are independent. The ordered synthetic domain migration remains:
 
 ```text
-personal-strategy-store/v0 -> personal-strategy-store/v1
+personal-strategy-store/v0 -> personal-strategy-store/v1 -> personal-strategy-store/v2
 ```
 
-The v0 fixture exercises envelope changes: `ownerId` becomes structured `ownerRef`, `observations` becomes `rangeObservations`, `sessions` becomes `calibrationSessions`, and an empty `trainingObservations` collection is introduced.
+The v1-to-v2 step upgrades legacy Profile/Mode metadata and adds an empty qualitative collection without changing existing evidence. Existing IndexedDB backend versions 1/2 migrate atomically to backend v3. The v0 fixture exercises earlier envelope changes: `ownerId` becomes structured `ownerRef`, `observations` becomes `rangeObservations`, `sessions` becomes `calibrationSessions`, and an empty `trainingObservations` collection is introduced.
 
 On first IndexedDB activation, the repository detects the legacy `riverline.personalStrategy.v1` document. It parses, applies the ordered domain migration if necessary, validates the complete graph and owner, then imports profiles, modes, immutable evidence, current leaves, Training evidence, and sessions in one IndexedDB transaction. Counts are verified inside that transaction before completed migration metadata is written.
 
@@ -416,7 +420,7 @@ A later ticket must not cross an integration gate without owning it explicitly:
 - Matrix: personal rendering must consume a validated provider result, not read repository internals in UI code;
 - inference/uncertainty: crossed for preflop RFI Fold/Raise by `RANGE-CAL-002B`; the deterministic derived contracts, evidence policy, validation, and measured performance live in `RANGE_INFERENCE_SPEC.md`, while durable source schemas remain unchanged;
 - adaptive questions: requires a versioned selection/cursor policy and deterministic resume behavior;
-- accounts/sync: crossed by `ACCOUNT-002B-B` under `PERSONAL_STRATEGY_SYNC_SPEC.md`; later schema/domain additions still require their own sync semantics;
+- accounts/sync: legacy transport crossed by `ACCOUNT-002B-B` under `PERSONAL_STRATEGY_SYNC_SPEC.md`; Intelligence v2 local records fail closed as sync upgrade-required until that transport owns the new schema semantics;
 - import-as-copy/sharing: requires complete ID/reference remapping and explicit ownership transfer.
 
 Follow-on work must also preserve the unified architecture gates in `UNIFIED_RANGE_INTELLIGENCE_SPEC.md`: range inclusion weight, action frequency, and inference uncertainty remain distinct; dominant-only evidence never becomes a pure frequency; inferred output and conflict markers never become evidence; the 169 Matrix is inspection/correction rather than storage; and combo-aware projections reuse Range Core identity/math without creating another `HoldemWeightedRange` authority.
@@ -442,7 +446,7 @@ The following are release-blocking for this subsystem:
 
 1. Profile, mode, objective context, and hand class retain separate meanings.
 2. A profile ID remains stable across renames.
-3. V1 has exactly three user-named discrete modes and no numeric style axis.
+3. Legacy v1 exactly-three modes migrate without truncation; current v2 requires one or more user-named independent Approaches and no numeric style axis.
 4. `dominantAction = raise` plus `frequencies = null` is not a pure raise mix.
 5. Explicit mixes use structured canonical action identities and normalize to one.
 6. An exact maximum-frequency tie has `dominantAction = null`; no action is fabricated.
@@ -453,3 +457,7 @@ The following are release-blocking for this subsystem:
 11. Invalid, corrupt, incompatible, or colliding data cannot partially overwrite valid data.
 12. Existing Playbook, Matrix, Training, Equity, Analysis, settings, and StrategyProvider behavior remains unchanged.
 13. Personal Strategy has no startup cost until a future feature explicitly activates it.
+
+## Device Guest and lifecycle scope
+
+Slice B permits durable on-device Personal Strategy for Device Guest through the existing domain binding and repository. Profiles, modes, immutable evidence, contradictions, sessions, and scoped preferences retain their contracts. Each owner generation mounts a fresh workspace/repository/listener set and validates cached application projections. Revocation disposes presentation synchronously and aborts in-flight storage operations; stale responses and queued intents cannot seed another owner's work. Guest has no remote sync. Historical evidence is not rewritten; human browser acceptance remains pending.

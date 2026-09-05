@@ -46,6 +46,7 @@ function emitStudyExperience(type, {
 }
 
 function emitTrainingDecisionResultExperience({
+  truth,
   comparisonState,
   feedbackSemantics,
   accepted,
@@ -58,6 +59,7 @@ function emitTrainingDecisionResultExperience({
     origin: 'live',
     source: 'training_decision',
     token: applicationExperienceSequence,
+    truth,
     comparisonState,
     feedbackSemantics,
     accepted,
@@ -3042,6 +3044,7 @@ function savedStudyTagsFromEditor() {
 }
 
 async function saveSavedStudyAnnotations(event) {
+  const ownerGeneration = window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration;
   event.preventDefault();
   const object = savedStudyCurrentObject;
   if (!object) return;
@@ -3063,20 +3066,23 @@ async function saveSavedStudyAnnotations(event) {
       reviewState,
       classifications
     }, { expectedRevision: object.revision });
+    if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return;
     savedStudyCurrentObject = result.object;
     renderSavedStudySourceState('saved', result.object);
     closeSavedStudyEditor();
     toast(t('Changes saved'), 'success');
   } catch (error) {
+    if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return;
     console.error('[Riverline Saved Study Objects]', error);
     $('#savedStudyEditorStatus').textContent = t('Changes could not be saved.');
     toast(t('Changes could not be saved.'), 'error');
   } finally {
-    setSavedStudyEditorBusy(false);
+    if (ownerGeneration === window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) setSavedStudyEditorBusy(false);
   }
 }
 
 async function archiveSavedStudyObjectFromEditor() {
+  const ownerGeneration = window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration;
   const object = savedStudyCurrentObject;
   if (!object) return;
   setSavedStudyEditorBusy(true);
@@ -3086,17 +3092,19 @@ async function archiveSavedStudyObjectFromEditor() {
       ...currentSavedStudyInput(),
       expectedRevision: object.revision
     });
+    if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return;
     ++savedStudyRefreshSequence;
     savedStudyCurrentObject = null;
     renderSavedStudySourceState('unsaved', null);
     closeSavedStudyEditor();
     toast(t('Archived'), 'success');
   } catch (error) {
+    if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return;
     console.error('[Riverline Saved Study Objects]', error);
     $('#savedStudyEditorStatus').textContent = t('Archive failed');
     toast(t('Archive failed'), 'error');
   } finally {
-    setSavedStudyEditorBusy(false);
+    if (ownerGeneration === window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) setSavedStudyEditorBusy(false);
   }
 }
 
@@ -4616,28 +4624,12 @@ function reviewActionCopy(action, decision) {
 }
 
 function reviewComparisonLabel(comparison) {
-  if (!comparison || comparison.state === 'unavailable') return t('Reference unavailable');
-  if (comparison.semantics === 'normative') {
-    return {
-      matches: t('Correct'),
-      close: t('Acceptable'),
-      differs: t('Mistake')
-    }[comparison.state] || t('Review');
-  }
-  return {
-    matches: t('Matches Riverline reference'),
-    close: t('Close to Riverline reference'),
-    differs: t('Differs from Riverline reference')
-  }[comparison.state] || t('Reference unavailable');
+  return t(truthPresentation(comparison?.truth).title);
 }
 
 function reviewComparisonTone(comparison) {
-  return {
-    matches: 'success',
-    close: 'info',
-    differs: 'warning',
-    unavailable: 'neutral'
-  }[comparison?.state] || 'neutral';
+  const tone = truthPresentation(comparison?.truth).tone;
+  return tone === 'error' ? 'warning' : tone;
 }
 
 function reviewContextCopy(decision) {
@@ -4697,7 +4689,7 @@ function renderHandReviewFrequencyComparison(decision) {
     stack.setAttribute('aria-label', t('Strategy frequencies unavailable'));
     const unavailable = document.createElement('p');
     unavailable.className = 'hand-review-reference-unavailable';
-    unavailable.textContent = t('The hand and chosen action remain available even though this reference cannot compare the decision.');
+    unavailable.textContent = t('The hand and chosen action remain available even though strategy comparison is unavailable.');
     rows.appendChild(unavailable);
     return;
   }
@@ -4848,23 +4840,10 @@ function renderActiveHandReview() {
     source: model.overview.selectedReference?.id,
     sourceDescriptor: decision.claimPolicy.source
   });
-  if ($('#handReviewAlignmentSummary')) {
-    const counts = model.overview.alignmentCounts;
-    $('#handReviewAlignmentSummary').textContent = model.overview.alignmentSummaryPermitted
-      ? t('{matches} matches · {close} close · {differences} differences', {
-        matches: counts.matches,
-        close: counts.close,
-        differences: counts.differs
-      })
-      : t('No decisions can be compared with the selected reference; canonical replay remains available.');
-  }
+  if ($('#handReviewAlignmentSummary')) $('#handReviewAlignmentSummary').textContent = trainingTruthSummaryText(model.overview.truthSummary);
   if ($('#handReviewPrioritySummary')) {
     const priority = model.decisions[model.priorityDecisionIndex];
-    $('#handReviewPrioritySummary').textContent = priority?.reviewPriority
-      ? t('Review priority: Decision {number} has the strongest probability disagreement with this reference. This is not EV loss.', {
-        number: priority.decisionNumber
-      })
-      : t('Review priority is unavailable because this reference cannot compare the decisions.');
+    $('#handReviewPrioritySummary').textContent = priority?.reviewPriority ? t('Review suggested by the accepted assessment.') : t('Choose any decision to explore.');
   }
 
   renderHandReviewDecisionList(model);
@@ -4890,6 +4869,11 @@ function renderActiveHandReview() {
       $('#trainingStrategySource').textContent = sourceLabel;
       $('#trainingStrategySource').className = 'badge status-badge status-badge--info';
     }
+    if ($('#trainingReferenceSummaryTitle')) {
+      const sourceTitle = truthPresentation(decision.truth).sourceLabel;
+      $('#trainingReferenceSummaryTitle').dataset.i18n = sourceTitle;
+      $('#trainingReferenceSummaryTitle').textContent = t(sourceTitle);
+    }
     if ($('#trainingReferenceSummaryValue')) {
       $('#trainingReferenceSummaryValue').textContent = sourceLabel;
     }
@@ -4907,7 +4891,7 @@ function renderActiveHandReview() {
   renderHandReviewFrequencyComparison(decision);
   if ($('#handReviewComparisonNote')) {
     $('#handReviewComparisonNote').textContent = decision.source.coverage === 'generalized'
-      ? t('Riverline reference mixes are generalized for this context; they support comparison, not objective GTO truth.')
+      ? t('Approximate exploratory guidance. Agreement is not correctness.')
       : decision.comparison.state === 'unavailable'
         ? t('Reference comparison is unavailable. The canonical decision and replay remain fully usable.')
         : t('The chosen action is highlighted inside the full source mix; no pure strategy is implied.');
@@ -5050,6 +5034,7 @@ function openCanonicalHandReview() {
 }
 
 async function saveActiveHandReviewDecision() {
+  const ownerGeneration = window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration;
   const model = app.handReview.model || refreshActiveHandReviewModel();
   const decision = model?.selectedDecision;
   if (!decision || app.handReview.savedDecisionIds.has(decision.decisionId)) return null;
@@ -5070,11 +5055,13 @@ async function saveActiveHandReviewDecision() {
         street: reviewStreetLabel(decision.street)
       })
     });
+    if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return null;
     app.handReview.savedDecisionIds.add(decision.decisionId);
     renderActiveHandReview();
     toast(t('Saved decision.'), 'success');
     return result;
   } catch (error) {
+    if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return;
     if (error?.code !== 'persistent_identity_cancelled') {
       console.error('[Riverline Hand Review save]', error);
       toast(t('Save failed'), 'error');
@@ -6133,6 +6120,43 @@ function strategyClaimPolicy(strategyResult) {
   return requireStrategyProviderBridge().claimsFor(strategyResult);
 }
 
+function trainingTruth(evaluation, exercise = app.training.currentExercise) {
+  return evaluation?.truth || (exercise?.historicalStrategyEvidence
+    ? requireStrategyProviderBridge().historicalTruth(exercise.historicalStrategyEvidence)
+    : requireStrategyProviderBridge().truthFor({ strategyResult: exercise?.strategyResult, decisionContext: exercise?.decisionContext }));
+}
+
+function truthPresentation(truth) {
+  return requireStrategyProviderBridge().truthPresentation(truth);
+}
+
+function trainingTruthSummaryText(summary) {
+  if (!summary) return t('No decisions recorded.');
+  const labels = { heuristic_comparison: 'Heuristic comparison', accepted_reference_comparison: 'Selected-reference comparison', normative_assessment: 'Accepted assessment', unassessed: 'Not assessed' };
+  return Object.entries(summary.groups).filter(([, group]) => group.attempts > 0).map(([state, group]) => {
+    const detail = state === 'normative_assessment'
+      ? t('{supported} supported · {unsupported} unsupported', group)
+      : state === 'unassessed' || group.matches + group.close + group.differs === 0 ? t('{count} decisions', { count: group.attempts })
+        : t('{matches} matches · {close} close · {differences} differences', { matches: group.matches, close: group.close, differences: group.differs });
+    return `${t(labels[state])}: ${detail}`;
+  }).join(' / ') || t('No decisions recorded.');
+}
+
+function currentTrainingTruthSummary() {
+  return requireStrategyProviderBridge().summarizeTruth(app.training.truthHistory || []);
+}
+
+function renderAnalyzeTruth(strategyResult) {
+  const truth = requireStrategyProviderBridge().truthFor({ strategyResult, decisionContext: app.decisionContext });
+  const presentation = truthPresentation(truth);
+  const heading = $('#strategyTruthHeading');
+  if (heading) { heading.dataset.i18n = presentation.sourceLabel; heading.textContent = t(presentation.sourceLabel); }
+  const note = $('#strategyTruthNote');
+  if (note) { note.dataset.i18n = presentation.description; note.textContent = t(presentation.description); }
+  if ($('#recommendation')) $('#recommendation').dataset.truthState = truth.state;
+  return truth;
+}
+
 function localizedStrategyLimitation(policy) {
   const limitation = policy?.primaryLimitation;
   return limitation ? t(limitation.messageKey || limitation.message) : '';
@@ -6158,23 +6182,9 @@ function strategyPolicySummary(policy) {
   ].join(' · ');
 }
 
-function trainingGradePresentation(grade, strategyResult) {
-  const semantics = strategyClaimPolicy(strategyResult).trainingSemantics;
-  if (semantics === 'normative') {
-    return {
-      optimal: t('Correct'),
-      acceptable: t('Acceptable'),
-      mistake: t('Mistake')
-    }[grade] || t('Review');
-  }
-  if (semantics === 'comparative') {
-    return {
-      optimal: t('Matches Riverline reference'),
-      acceptable: t('Close to Riverline reference'),
-      mistake: t('Differs from Riverline reference')
-    }[grade] || t('Review');
-  }
-  return t('Reference unavailable');
+function trainingGradePresentation(grade, strategyResult, evaluation = null) {
+  const truth = evaluation?.truth || requireStrategyProviderBridge().truthFor({ strategyResult });
+  return t(truthPresentation(truth).title);
 }
 
 function setRecommendationState(state) {
@@ -6280,6 +6290,7 @@ function bluffAnalysisFactsForDecision(rangeAnalysisFacts, decisionContext, stra
 function renderDecisionAnalysis(container, {
   decisionContext,
   strategyResult,
+  historicalStrategyEvidence = null,
   trustedFacts,
   authority,
   depth,
@@ -6302,6 +6313,7 @@ function renderDecisionAnalysis(container, {
   const explanation = bridge.create({
     decisionContext,
     strategyResult,
+    historicalStrategyEvidence,
     trustedFacts,
     rangeAnalysisFacts,
     bluffAnalysisFacts,
@@ -6490,6 +6502,7 @@ async function updateContext(reason = 'Context updated') {
   const bestAction = $('#bestAction');
 
   if (bestAction) bestAction.textContent = t(profile.best);
+  renderAnalyzeTruth(strategyResult);
 
   const recommendationSizing = strategyResult.recommendation?.action;
   const bestSizing = $('#bestSizing');
@@ -7183,6 +7196,7 @@ let homeSavedQuickPreviewOwner = null;
 let homeRefreshSequence = 0;
 let homeRefreshTimer = null;
 let activeSavedSpotContext = null;
+let savedScenarioOwnerActive = false;
 
 function welcomeOrientationIsVisible() {
   const state = document.documentElement.dataset.welcomeOrientation;
@@ -7240,11 +7254,9 @@ function resolveHomeDestinationPresentation(destination, {
   const normalizedDestination = destination === 'saved' ? 'saved' : 'home';
   const guest = sessionMode === 'guest';
   const visibleSections = normalizedDestination === 'saved'
-    ? guest
-      ? ['guest']
-      : ['saved-overview', 'recent']
+    ? ['saved-overview', 'recent']
     : guest
-      ? ['guest', 'continue', 'strategy', 'quick', 'other']
+      ? ['guest', 'continue', 'review', 'recent', 'strategy', 'quick', 'other']
       : ['overview', 'continue', 'review', 'recent', 'strategy', 'quick', 'other'];
   return Object.freeze({
     destination: normalizedDestination,
@@ -7253,14 +7265,14 @@ function resolveHomeDestinationPresentation(destination, {
       ? Object.freeze({
         eyebrow: 'Saved study',
         title: 'Saved Hands & Spots',
-        primary: 'Saved study belongs to a signed-in Riverline profile. Sign in to open that profile\'s Hands and Spots.',
+        primary: 'Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode. Guest data does not sync.',
         secondary: 'Signing in does not enable sync or cloud backup.',
       })
       : Object.freeze({
         eyebrow: 'Guest Mode',
         title: 'Riverline is ready to use',
         primary: 'Analyze hands, train decisions, and calculate Equity without an account.',
-        secondary: 'Saved study and Personal Strategy require a Riverline profile. Signing in does not enable sync or cloud backup.',
+        secondary: 'Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode. Guest data does not sync.',
       }),
   });
 }
@@ -7501,7 +7513,7 @@ function createHomeSavedItemElement(item, { compact = false } = {}) {
   if (item.isMistake) {
     const mistake = document.createElement('span');
     mistake.className = 'home-saved-badge home-saved-badge--mistake';
-    mistake.textContent = t('Mistake');
+    mistake.textContent = t('Marked as a mistake');
     badges.appendChild(mistake);
   }
   if (item.tags.length > 0) {
@@ -7728,7 +7740,7 @@ function createSavedLibraryItemElement(item, expanded) {
   if (item.reviewState === 'review_later' || item.isMistake) {
     const review = document.createElement('span');
     review.className = 'saved-library-item-review';
-    review.textContent = t(item.isMistake ? 'Mistake' : 'Review later');
+    review.textContent = t(item.isMistake ? 'Marked as a mistake' : 'Review later');
     copy.appendChild(review);
   }
   control.appendChild(copy);
@@ -7808,7 +7820,7 @@ function renderSavedLibraryDetail(item) {
     if (item.isMistake) {
       const mistake = document.createElement('span');
       mistake.className = 'home-saved-badge home-saved-badge--mistake';
-      mistake.textContent = t('Mistake');
+      mistake.textContent = t('Marked as a mistake');
       annotations.appendChild(mistake);
     }
     item.tags.forEach((tag) => {
@@ -7962,7 +7974,7 @@ function renderHomeReview(section) {
   if (!root) return;
   root.replaceChildren();
   renderHomeReviewGroup(root, 'Review later', section?.reviewLater, 'Nothing marked for review.');
-  renderHomeReviewGroup(root, 'Mistake', section?.mistakes, 'No mistakes marked.');
+  renderHomeReviewGroup(root, 'Marked as a mistake', section?.mistakes, 'No mistakes marked.');
 }
 
 function renderHomePersonalStrategy(section) {
@@ -7973,7 +7985,7 @@ function renderHomePersonalStrategy(section) {
     const card = document.createElement('div');
     card.className = 'home-strategy-summary';
     const copy = document.createElement('p');
-    copy.textContent = t('Teach Riverline how you intend to play. A Riverline profile is required.');
+    copy.textContent = t('Your learning workspace is saved on this device.');
     const action = document.createElement('button');
     action.type = 'button';
     action.className = 'ui-button ui-button--secondary';
@@ -8099,14 +8111,14 @@ function renderHomeWorkspace(model) {
     $('#homeReviewContent')?.closest('.home-section'),
     $('#homeRecentContent')?.closest('.home-section')
   ];
-  restricted.forEach((section) => { if (section) section.hidden = guest; });
+  restricted.forEach((section) => { if (section) section.hidden = false; });
   const guestAccount = $('#homeGuestAccount');
   if (guestAccount) guestAccount.hidden = !guest;
   renderHomeAccountOverview(model);
   const subtitle = $('#workspaceSubtitle');
   if (activeNavigationDestination() === 'home' && subtitle) {
     const subtitleKey = guest
-      ? 'Analyze and train without saving account history.'
+      ? 'Your learning workspace is saved on this device.'
       : 'Your saved study, review queue, and next useful action.';
     subtitle.dataset.i18n = subtitleKey;
     subtitle.textContent = t(subtitleKey);
@@ -8114,16 +8126,8 @@ function renderHomeWorkspace(model) {
   renderHomeQuickStart(model);
   renderHomeContinue(model.sections.continue);
   renderHomePersonalStrategy(model.sections.personalStrategy);
-  if (guest) {
-    homeSavedExpandedId = null;
-    homeSavedCategory = 'all';
-    hideSavedQuickPreview();
-    $('#homeRecentContent')?.replaceChildren();
-    renderSavedLibraryDetail(null);
-  } else {
-    renderHomeRecent(model.sections.recent);
-    renderHomeReview(model.sections.review);
-  }
+  renderHomeRecent(model.sections.recent);
+  renderHomeReview(model.sections.review);
   const workspace = $('#homeWorkspace');
   const loading = $('#homeLoadingState');
   const content = $('#homeWorkspaceContent');
@@ -8147,8 +8151,39 @@ function beginHomeLoading() {
   if (content) content.hidden = true;
 }
 
+function clearSavedScenarioOwnerPresentation() {
+  savedScenarioOwnerActive = false;
+  savedPlaybookScenarioPresentation = null;
+  playbookUpdateScheduler.cancel();
+  PLAYBOOK_SCENARIO_CONTROL_IDS.forEach((id) => {
+    const control = document.getElementById(id);
+    if (!control) return;
+    if (control.options) {
+      const initial = [...control.options].find((option) => option.defaultSelected) || control.options[0];
+      if (initial) control.value = initial.value;
+    } else control.value = control.defaultValue;
+  });
+  app.gto.hero = [];
+  app.gto.board = [];
+  app.gto.dead = [];
+  app.decisionContext = null;
+  app.strategyResult = null;
+  if (app.playbookMode === PLAYBOOK_MODES.SCENARIO) {
+    const scenarioInput = readPlaybookScenarioInput();
+    callPlaybookStateBridge('setMode', PLAYBOOK_MODES.SCENARIO, scenarioInput);
+    app.playbookResolution = callPlaybookStateBridge('resolveDecisionContext', scenarioInput);
+    renderUnavailableStrategy(app.playbookResolution);
+    renderAllCards({ mode: 'gto' });
+  }
+}
+
 function clearSavedOwnerPresentation() {
   ++homeRefreshSequence;
+  homeViewModel = null;
+  $('#homeWorkspaceContent')?.setAttribute('hidden', '');
+  $('#homeReviewContent')?.replaceChildren();
+  $('#homeContinueContent')?.replaceChildren();
+  $('#homePersonalStrategyContent')?.replaceChildren();
   homeSavedExpandedId = null;
   homeSavedCategory = 'all';
   hideSavedQuickPreview();
@@ -8157,6 +8192,7 @@ function clearSavedOwnerPresentation() {
 
   const savedHandProjection = callPlaybookStateBridge('createReplayProjectionViewModel');
   const savedHandOpen = savedHandProjection?.viewerContext?.kind === 'saved_hand';
+  if (savedScenarioOwnerActive) clearSavedScenarioOwnerPresentation();
   activeSavedSpotContext = null;
   renderSavedSpotViewer(null);
   if (savedHandOpen) {
@@ -8166,6 +8202,7 @@ function clearSavedOwnerPresentation() {
   }
 
   ++savedStudyRefreshSequence;
+  app.handReview.savedDecisionIds.clear();
   savedStudyCurrentObject = null;
   if (!$('#savedStudyModal')?.hidden) closeSavedStudyEditor();
 }
@@ -8255,6 +8292,7 @@ function renderSavedSpotViewer(result = activeSavedSpotContext) {
 }
 
 async function openHomeSavedItem(id, control) {
+  const ownerGeneration = window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration;
   if (!id || control?.disabled) return;
   if (control) {
     control.disabled = true;
@@ -8262,6 +8300,7 @@ async function openHomeSavedItem(id, control) {
   }
   try {
     const result = await callHomeBridge('openSavedItem', id);
+    if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return;
     if (result.kind === 'hand') {
       activeSavedSpotContext = null;
       renderSavedSpotViewer(null);
@@ -8287,6 +8326,7 @@ async function openHomeSavedItem(id, control) {
     app.playbookMode = PLAYBOOK_MODES.SCENARIO;
     setPlaybookControlAuthority(PLAYBOOK_MODES.SCENARIO);
     restoreSavedSpotPresentation(result);
+    savedScenarioOwnerActive = true;
     activeSavedSpotContext = result;
     renderSavedSpotViewer(result);
     navigateToWorkspace('gto', 'analyze');
@@ -8299,6 +8339,7 @@ async function openHomeSavedItem(id, control) {
       decisionContext: result.decisionContext
     });
   } catch (error) {
+    if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return;
     console.error('[Riverline Home saved item]', error);
     toast(t('Saved item could not be opened.'), 'error', 'home');
   } finally {
@@ -8988,6 +9029,7 @@ function refreshLocalizedPlaybookRuntime() {
     const profile = localizedStrategyProfile(app.strategyResult);
     const claimPolicy = strategyClaimPolicy(app.strategyResult);
     if ($('#bestAction')) $('#bestAction').textContent = t(profile.best);
+    renderAnalyzeTruth(app.strategyResult);
     if ($('#bestReason')) $('#bestReason').textContent = profile.reason;
     const sourceLabel = strategySourceDisplayLabel(app.strategyResult);
     if ($('#sourceBadge')) {
@@ -9069,10 +9111,7 @@ function refreshLocalizedTrainingRuntime() {
   updateTrainingSessionProgress();
   updateTrainingSetupSummary();
   if (app.training.practiceSession?.completed && $('#trainingSessionCompletionText')) {
-    $('#trainingSessionCompletionText').textContent = t('{aligned} reference-aligned from {attempts} attempts.', {
-      aligned: app.training.stats.correct,
-      attempts: app.training.stats.totalHands,
-    });
+    $('#trainingSessionCompletionText').textContent = trainingTruthSummaryText(currentTrainingTruthSummary());
   }
   if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
   if (trainingSessionMode() === 'full_hand' && app.training.fullHandSnapshot) {
@@ -9187,11 +9226,15 @@ function init() {
     window.addEventListener('riverline:identitychange', () => {
       scheduleHomeRefresh({ clearPrivateState: true });
       clearTrainingMemoryOwnerPresentation();
+      if (['guest_active', 'account_active'].includes(window.RiverlineAccountIdentity?.getLifecycleState?.().status)) {
+        if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
+        if (activeWorkspaceMode() === 'gto') void refreshSavedStudySource();
+      }
     });
     window.addEventListener('riverline:authchange', (event) => {
       scheduleHomeRefresh({ clearPrivateState: true });
       clearTrainingMemoryOwnerPresentation();
-      if (event.detail?.status === 'signed_in' && $('#trainingMemoryPanel')?.open) {
+      if (['signed_in', 'guest'].includes(event.detail?.status) && $('#trainingMemoryPanel')?.open) {
         void refreshTrainingMemoryPanel();
       }
       if (activeWorkspaceMode() === 'gto') void refreshSavedStudySource();
@@ -10065,6 +10108,7 @@ function initTrainingMode() {
   });
   bind('#trainingMarkReview', 'click', () => toggleCurrentTrainingMemoryMetadata('review'));
   bind('#trainingMarkDifficult', 'click', () => toggleCurrentTrainingMemoryMetadata('difficult'));
+  bind('#trainingRequestRevisit', 'click', () => requestCurrentUncertainRevisit());
   bind('#trainingSameSpotExit', 'click', () => { void exitTrainingSameSpot(); });
   bind('#trainingAdjustDrill', 'click', () => {
     $('#trainingAdvanced')?.removeAttribute('open');
@@ -10169,6 +10213,12 @@ function updateAssistanceDisplay() {
   const details = document.querySelectorAll('#trainingMode .pot-math-detail');
   const hintBox = $('#trainingHintBox');
   const hintText = $('#trainingHintText');
+  if (hintBox) hintBox.hidden = Boolean(app.training.learningRevisitActive);
+  if (app.training.learningRevisitActive) {
+    if (hintBox) hintBox.style.display = 'none';
+    if (hintText) hintText.textContent = '';
+    return;
+  }
 
   if (level === 'hard') {
     details.forEach(el => el.style.display = 'none');
@@ -10222,6 +10272,7 @@ function trainingStudyHintExplanation(exercise) {
   return bridge.create({
     decisionContext: exercise.decisionContext,
     strategyResult: exercise.strategyResult,
+    historicalStrategyEvidence: exercise.historicalStrategyEvidence ?? null,
     trustedFacts: trustedAnalysisFacts(history),
     authority: 'training',
     depth: 'concise'
@@ -10229,6 +10280,7 @@ function trainingStudyHintExplanation(exercise) {
 }
 
 function revealNextTrainingStudyHint() {
+  if (app.training.learningRevisitActive) return;
   const exercise = app.training.currentExercise;
   if (app.training.lifecycle !== 'ready' || !exercise || typeof renderAnalysisStudyHints !== 'function') return;
   const explanation = app.training.studyHintExplanation || trainingStudyHintExplanation(exercise);
@@ -10250,7 +10302,7 @@ function revealNextTrainingStudyHint() {
   }
 }
 
-function showTrainingFeedback(feedback, isCorrect) {
+function showTrainingFeedback(feedback, isAccepted) {
 
   const feedbackDiv = $('#trainingFeedback');
 
@@ -10268,7 +10320,7 @@ function showTrainingFeedback(feedback, isCorrect) {
 
   if (feedbackDiv) {
     feedbackDiv.hidden = false;
-    feedbackDiv.dataset.accepted = String(Boolean(isCorrect));
+    delete feedbackDiv.dataset.accepted;
     feedbackDiv.classList.add('animate-feedback');
   }
 
@@ -10350,7 +10402,7 @@ function showTrainingSolution(solution) {
   if (eyebrow) {
     const key = trainingSameSpotIsActive()
       ? sameSpotSourceRole(app.training.sameSpotHistoricalRecord)
-      : 'After-answer reference';
+      : 'After-answer comparison';
     eyebrow.textContent = t(key);
     eyebrow.dataset.i18n = key;
   }
@@ -10444,42 +10496,11 @@ function showTrainingSolution(solution) {
 
 
 function updateTrainingStats() {
-
-  const totalEl = $('#trainingTotalHands');
-
-  const correctEl = $('#trainingCorrect');
-
-  const accuracyEl = $('#trainingAccuracy');
-
-  const streakEl = $('#trainingStreak');
-  const bestStreakEl = $('#trainingBestStreak');
-
-  
-
-  if (totalEl) totalEl.textContent = app.training.stats.totalHands;
-
-  if (correctEl) correctEl.textContent = app.training.stats.correct;
-
-  
-
-  const accuracy = app.training.stats.totalHands > 0
-
-    ? (app.training.stats.correct / app.training.stats.totalHands * 100).toFixed(1)
-
-    : '0';
-
-  if (accuracyEl) accuracyEl.textContent = accuracy + '%';
-
-  if (streakEl) streakEl.textContent = app.training.stats.streak;
-  if (bestStreakEl) bestStreakEl.textContent = app.training.bestStreak || 0;
-  if ($('#trainingOptimalCount')) $('#trainingOptimalCount').textContent = app.training.gradeStats?.optimal || 0;
-  if ($('#trainingAcceptableCount')) $('#trainingAcceptableCount').textContent = app.training.gradeStats?.acceptable || 0;
-  if ($('#trainingMistakeCount')) $('#trainingMistakeCount').textContent = app.training.gradeStats?.mistake || 0;
-
-  console.log('[Training] updateTrainingStats:', app.training.stats, 'accuracy:', accuracy + '%');
+  const summary = currentTrainingTruthSummary();
+  const target = $('#trainingTruthMetrics');
+  if (target) target.textContent = trainingTruthSummaryText(summary);
+  if ($('#trainingTotalHands')) $('#trainingTotalHands').textContent = String(summary.attempts);
 }
-
-
 
 function resetTrainingStats() {
 
@@ -10487,6 +10508,7 @@ function resetTrainingStats() {
 
   app.training.stats = { totalHands: 0, correct: 0, streak: 0 };
   app.training.gradeStats = { optimal: 0, acceptable: 0, mistake: 0 };
+  app.training.truthHistory = [];
   app.training.bestStreak = 0;
 
   updateTrainingStats();
@@ -10569,10 +10591,8 @@ function trainingSameSpotIsActive() {
 }
 
 function sameSpotSourceRole(record) {
-  const family = record?.strategyEvidence?.claimPolicy?.source?.family
-    ?? record?.strategyEvidence?.strategyResult?.sourceDescriptor?.family
-    ?? 'heuristic';
-  return family === 'heuristic' ? 'Baseline then' : 'Reference then';
+  const truth = requireStrategyProviderBridge().historicalTruth(record?.strategyEvidence);
+  return { heuristic_comparison: 'Historical heuristic baseline', accepted_reference_comparison: 'Historical selected reference', normative_assessment: 'Historical selected reference' }[truth.state] || 'Historical strategy information';
 }
 
 function sameSpotActionLabel(actionType, context) {
@@ -10583,6 +10603,12 @@ function renderSameSpotComparison(evaluation = null) {
   const record = app.training.sameSpotHistoricalRecord;
   const comparison = $('#trainingSameSpotComparison');
   if (!comparison || !record) return;
+  if (!evaluation) {
+    $('#trainingSameSpotEarlierAnswer').textContent = '';
+    $('#trainingSameSpotThisTry').textContent = '';
+    comparison.hidden = true;
+    return;
+  }
   const earlierType = record.userResponse?.action?.type ?? null;
   $('#trainingSameSpotEarlierAnswer').textContent = sameSpotActionLabel(
     earlierType,
@@ -10638,6 +10664,8 @@ function renderSameSpotSetup(exercise) {
   const gradeCounts = document.querySelector('.training-grade-counts');
   if (statGrid) statGrid.hidden = true;
   if (gradeCounts) gradeCounts.hidden = true;
+  if ($('#trainingTruthMetrics')) $('#trainingTruthMetrics').hidden = true;
+  if ($('#trainingTruthMetrics')) $('#trainingTruthMetrics').hidden = true;
   if ($('#trainingResetStats')) $('#trainingResetStats').hidden = true;
   const assistance = document.querySelector('.training-assistance-panel');
   if (assistance) assistance.hidden = true;
@@ -10660,6 +10688,8 @@ function showOrdinaryTrainingSetupAfterSameSpot() {
   const gradeCounts = document.querySelector('.training-grade-counts');
   if (statGrid) statGrid.hidden = false;
   if (gradeCounts) gradeCounts.hidden = false;
+  if ($('#trainingTruthMetrics')) $('#trainingTruthMetrics').hidden = false;
+  if ($('#trainingTruthMetrics')) $('#trainingTruthMetrics').hidden = false;
   if ($('#trainingResetStats')) $('#trainingResetStats').hidden = false;
   const assistance = document.querySelector('.training-assistance-panel');
   if (assistance) assistance.hidden = false;
@@ -10831,7 +10861,7 @@ function queueTrainingMemoryWrite(operation) {
   const generation = app.training.memoryGeneration;
   const queued = Promise.resolve(app.training.memoryWritePromise)
     .catch(() => null)
-    .then(() => (generation === app.training.memoryGeneration ? operation() : null))
+    .then(() => (generation === app.training.memoryGeneration ? operation(() => generation === app.training.memoryGeneration) : null))
     .then((result) => (generation === app.training.memoryGeneration ? result : null));
   const handled = queued.catch((error) => {
     console.error('[Riverline Training Memory]', error);
@@ -10854,6 +10884,7 @@ function queueTrainingMemoryWrite(operation) {
 }
 
 function clearTrainingMemoryOwnerPresentation() {
+  clearTrainingLearningPresentation();
   const ownerSensitiveRedrill = Boolean(
     app.training.currentExercise?.generationMetadata?.memoryRedrill,
   );
@@ -10911,12 +10942,19 @@ function resetTrainingMemoryDecisionState() {
     difficult.removeAttribute('aria-label');
   }
   if ($('#trainingMemoryDecisionStatus')) $('#trainingMemoryDecisionStatus').textContent = '';
+  if ($('#trainingRequestRevisit')) $('#trainingRequestRevisit').hidden = true;
 }
 
 function updateTrainingMemoryDecisionActions(record) {
   if (!record || record.id !== app.training.memoryCurrentRecordId) return;
   const actions = $('#trainingMemoryDecisionActions');
   if (actions) actions.hidden = record.status !== 'answered';
+  const revisitButton = $('#trainingRequestRevisit');
+  if (revisitButton) {
+    revisitButton.hidden = !record.learningEvidence?.uncertainty;
+    revisitButton.disabled = ['pending', 'snoozed'].includes(record.reviewState?.state)
+      && Boolean(record.learningEvidence?.revisitRequest);
+  }
   const toggles = [
     {
       selector: '#trainingMarkReview',
@@ -10949,9 +10987,11 @@ function startTrainingMemorySession(input) {
   resetTrainingMemoryDecisionState();
   app.training.memoryRedrillNote = '';
   app.training.memoryFullHandDecisionRecords = new Map();
-  const sessionPromise = queueTrainingMemoryWrite(async () => {
+  const sessionPromise = queueTrainingMemoryWrite(async (isCurrent) => {
     const prior = await priorSessionPromise;
+    if (!isCurrent()) return null;
     if (prior?.id) await callTrainingMemoryBridge('finishSession', prior.id, 'abandoned');
+    if (!isCurrent()) return null;
     return callTrainingMemoryBridge('startSession', input);
   });
   app.training.memorySessionPromise = sessionPromise;
@@ -10975,8 +11015,9 @@ function finishTrainingMemorySession(status = 'completed', finishOptions = {}) {
   if (!sessionPromise) return Promise.resolve(null);
   app.training.memorySessionPromise = null;
   app.training.memoryFullHandDecisionRecords = new Map();
-  const finishedSessionPromise = queueTrainingMemoryWrite(async () => {
+  const finishedSessionPromise = queueTrainingMemoryWrite(async (isCurrent) => {
     const session = await sessionPromise;
+    if (!isCurrent()) return null;
     if (!session?.id) return null;
     const finished = await callTrainingMemoryBridge(
       'finishSession',
@@ -10984,6 +11025,7 @@ function finishTrainingMemorySession(status = 'completed', finishOptions = {}) {
       status,
       finishOptions,
     );
+    if (!isCurrent()) return null;
     if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
     return finished;
   });
@@ -11052,16 +11094,20 @@ function recordTrainingExerciseShown(exercise) {
   app.training.memoryPendingOrigin = null;
   app.training.memoryPendingOriginPromise = null;
   resetTrainingMemoryDecisionState();
-  const recordPromise = queueTrainingMemoryWrite(async () => {
+  const recordPromise = queueTrainingMemoryWrite(async (isCurrent) => {
     const session = await sessionPromise;
+    if (!isCurrent()) return null;
     if (!session?.id) return null;
     const resolvedOrigin = origin || await Promise.resolve(originPromise).catch(() => null);
+    if (!isCurrent()) return null;
     const record = await callTrainingMemoryBridge('recordExerciseShown', {
       sessionId: session.id,
       exercise,
       parentDecisionRecordId: resolvedOrigin?.parentDecisionRecordId ?? null,
       redrillKind: resolvedOrigin?.redrillKind ?? null,
+      revisit: resolvedOrigin?.revisit ?? null,
     });
+    if (!isCurrent()) return null;
     if (record && app.training.currentExercise?.id === exercise.id) {
       app.training.memoryCurrentRecordId = record.id;
     }
@@ -11071,11 +11117,12 @@ function recordTrainingExerciseShown(exercise) {
   return recordPromise;
 }
 
-function recordTrainingExerciseAnswered({ evaluation, exercise, actionType, amountToMilliBb = null }) {
+function recordTrainingExerciseAnswered({ evaluation, exercise, actionType, amountToMilliBb = null, uncertainty = null }) {
   const recordPromise = app.training.memoryCurrentRecordPromise;
   if (!recordPromise) return null;
-  return queueTrainingMemoryWrite(async () => {
+  return queueTrainingMemoryWrite(async (isCurrent) => {
     const record = await recordPromise;
+    if (!isCurrent()) return null;
     if (!record?.id) return null;
     const answered = await callTrainingMemoryBridge('recordExerciseAnswered', {
       recordId: record.id,
@@ -11083,7 +11130,9 @@ function recordTrainingExerciseAnswered({ evaluation, exercise, actionType, amou
       strategyResult: exercise.strategyResult,
       actionType,
       amountToMilliBb,
+      uncertainty,
     });
+    if (!isCurrent()) return null;
     if (answered && app.training.memoryCurrentRecordId === answered.id) {
       app.training.memoryCurrentRecordPromise = Promise.resolve(answered);
       updateTrainingMemoryDecisionActions(answered);
@@ -11094,6 +11143,7 @@ function recordTrainingExerciseAnswered({ evaluation, exercise, actionType, amou
 }
 
 function recordFullHandTrainingDecisionShown(snapshot) {
+  const generation = app.training.memoryGeneration;
   const decision = snapshot?.currentDecision;
   const sessionPromise = app.training.memorySessionPromise;
   if (!decision || !sessionPromise) return null;
@@ -11101,13 +11151,14 @@ function recordFullHandTrainingDecisionShown(snapshot) {
   if (existing) {
     app.training.memoryCurrentRecordPromise = existing;
     void existing.then((record) => {
-      if (record) app.training.memoryCurrentRecordId = record.id;
+      if (record && generation === app.training.memoryGeneration) app.training.memoryCurrentRecordId = record.id;
     });
     return existing;
   }
   resetTrainingMemoryDecisionState();
-  const recordPromise = queueTrainingMemoryWrite(async () => {
+  const recordPromise = queueTrainingMemoryWrite(async (isCurrent) => {
     const session = await sessionPromise;
+    if (!isCurrent()) return null;
     if (!session?.id) return null;
     const record = await callTrainingMemoryBridge('recordFullHandDecisionShown', {
       sessionId: session.id,
@@ -11115,6 +11166,7 @@ function recordFullHandTrainingDecisionShown(snapshot) {
       replaySource: snapshot.replaySource,
       handSeed: snapshot.handSeed,
     });
+    if (!isCurrent()) return null;
     if (record && app.training.fullHandSnapshot?.currentDecision?.decisionId === decision.decisionId) {
       app.training.memoryCurrentRecordId = record.id;
     }
@@ -11131,8 +11183,9 @@ function recordFullHandTrainingDecisionAnswered(result) {
     ? app.training.memoryFullHandDecisionRecords.get(decision.decisionId)
     : null;
   if (!decision || !recordPromise) return Promise.resolve(null);
-  return queueTrainingMemoryWrite(async () => {
+  return queueTrainingMemoryWrite(async (isCurrent) => {
     const record = await recordPromise;
+    if (!isCurrent()) return null;
     if (!record?.id) return null;
     const answered = await callTrainingMemoryBridge('recordFullHandDecisionAnswered', {
       recordId: record.id,
@@ -11140,6 +11193,7 @@ function recordFullHandTrainingDecisionAnswered(result) {
       replaySource: result.snapshot.replaySource,
       handSeed: result.snapshot.handSeed,
     });
+    if (!isCurrent()) return null;
     if (answered && app.training.memoryCurrentRecordId === answered.id) {
       app.training.memoryCurrentRecordPromise = Promise.resolve(answered);
       updateTrainingMemoryDecisionActions(answered);
@@ -11150,13 +11204,15 @@ function recordFullHandTrainingDecisionAnswered(result) {
 }
 
 const TRAINING_MEMORY_REASON_LABELS = Object.freeze({
-  differs_from_reference: 'Differs from Riverline reference',
-  close_to_reference: 'Close to Riverline reference',
+  user_uncertain_requested_revisit: 'You marked this decision uncertain and asked to revisit it.',
+  differs_from_reference: 'Historical source difference',
+  close_to_reference: 'Historical source comparison',
   source_unavailable: 'Source comparison unavailable',
   manual_review: 'Manually marked Review',
   manual_difficult: 'Manually marked Difficult',
   manual_important: 'Manually marked Important',
   manual_my_mistake: 'User label: My mistake',
+  normative_remediation: 'Review suggested by the accepted assessment.',
 });
 
 function trainingMemoryDate(isoTimestamp) {
@@ -11268,9 +11324,7 @@ function renderTrainingMemoryDecisionItem(record, { reviewItem = null, session =
     ? `${result.source}@${result.sourceVersion}`
     : t('Source unavailable');
   const comparison = document.createElement('span');
-  comparison.textContent = trainingMemoryComparisonLabel(
-    record.strategyEvidence?.comparisonState ?? 'unavailable',
-  );
+  comparison.textContent = t(truthPresentation(requireStrategyProviderBridge().historicalTruth(record.strategyEvidence)).title);
   const coverage = document.createElement('span');
   coverage.textContent = record.strategyEvidence?.claimPolicy?.coverage?.kind
     ? `${t('Coverage')}: ${record.strategyEvidence.claimPolicy.coverage.kind}`
@@ -11296,6 +11350,19 @@ function renderTrainingMemoryDecisionItem(record, { reviewItem = null, session =
   if (record.status === 'answered') {
     const actions = document.createElement('div');
     actions.className = 'training-memory-item-actions';
+    const generation = app.training.memoryGeneration;
+    const learningProposal = callTrainingMemoryBridge('learningProposal', record);
+    if (learningProposal) {
+      item.appendChild(trainingRevisitActions(learningProposal,
+        () => generation === app.training.memoryGeneration && !trainingSameSpotIsActive()));
+    } else if (record.learningEvidence?.uncertainty) {
+      actions.append(trainingMemoryButton('Revisit in 24 hours', 'ui-button ui-button--secondary', async () => {
+        if (generation !== app.training.memoryGeneration) return;
+        await queueTrainingMemoryWrite((current) => current()
+          ? callTrainingMemoryBridge('requestUncertainRevisit', record.id) : null);
+        if (generation === app.training.memoryGeneration) void refreshTrainingMemoryPanel();
+      }));
+    }
     if (reviewItem) {
       actions.append(
         trainingMemoryButton('Done', 'ui-button ui-button--secondary', async () => {
@@ -11310,7 +11377,9 @@ function renderTrainingMemoryDecisionItem(record, { reviewItem = null, session =
     } else if (record.reviewState?.state !== 'pending') {
       actions.append(trainingMemoryButton('Review again', 'ui-button ui-button--secondary', async () => {
         await queueTrainingMemoryWrite(() => (
-          record.studyMetadata?.review
+          record.learningEvidence?.uncertainty
+            ? callTrainingMemoryBridge('requestUncertainRevisit', record.id)
+            : record.studyMetadata?.review
             ? callTrainingMemoryBridge('reviewAgain', record.id)
             : callTrainingMemoryBridge('updateStudyMetadata', record.id, { review: true })
         ));
@@ -11383,10 +11452,7 @@ function renderTrainingMemorySessionItem(entry) {
   const comparison = document.createElement('p');
   comparison.className = 'training-memory-session-comparisons';
   comparison.textContent = presentationGate.revealSessionVerdict
-    ? (Object.entries(summary.comparisonCounts)
-      .filter(([, count]) => count > 0)
-      .map(([key, count]) => `${trainingMemoryComparisonLabel(key)}: ${count}`)
-      .join(' · ') || t('No answer recorded'))
+    ? trainingTruthSummaryText(summary.truthSummary)
     : t('Hidden until review');
   const decisions = document.createElement('div');
   decisions.className = 'training-memory-session-decision-mount';
@@ -11404,6 +11470,106 @@ function renderTrainingMemorySessionItem(entry) {
   details.append(head, source, comparison, decisions);
   item.appendChild(details);
   return item;
+}
+
+function clearTrainingLearningPresentation() {
+  app.training.learningReadId = (app.training.learningReadId || 0) + 1;
+  app.training.learningRevisitActive = false;
+  if ($('#trainingUncertain')) $('#trainingUncertain').checked = false;
+  if ($('#trainingUncertaintyControl')) $('#trainingUncertaintyControl').hidden = true;
+  if ($('#trainingLearningNext')) {
+    $('#trainingLearningNext').replaceChildren();
+    $('#trainingLearningNext').hidden = true;
+  }
+}
+
+async function requestCurrentUncertainRevisit() {
+  const generation = app.training.memoryGeneration;
+  const recordPromise = app.training.memoryCurrentRecordPromise;
+  const button = $('#trainingRequestRevisit');
+  if (button) button.disabled = true;
+  const record = await queueTrainingMemoryWrite(async (isCurrent) => {
+    const current = await recordPromise;
+    if (!isCurrent() || !current?.learningEvidence?.uncertainty) return null;
+    return callTrainingMemoryBridge('requestUncertainRevisit', current.id);
+  });
+  if (generation !== app.training.memoryGeneration) return;
+  if (record && record.id === app.training.memoryCurrentRecordId) {
+    app.training.memoryCurrentRecordPromise = Promise.resolve(record);
+    updateTrainingMemoryDecisionActions(record);
+    if ($('#trainingMemoryDecisionStatus')) {
+      $('#trainingMemoryDecisionStatus').textContent = t('Revisit requested for {date}. Open Training Memory when your session is finished.', { date: trainingMemoryDate(record.reviewState.dueAt) });
+    }
+  } else if (button && recordPromise === app.training.memoryCurrentRecordPromise) button.disabled = false;
+  if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
+}
+
+function trainingRevisitActions(proposal, isCurrent) {
+  const actions = document.createElement('div');
+  actions.className = 'training-memory-item-actions';
+  actions.append(
+    trainingMemoryButton('Practice now', 'ui-button ui-button--primary', async () => {
+      if (!isCurrent()) return;
+      const generation = app.training.memoryGeneration;
+      try {
+        await openTrainingMemorySameSpot(proposal.decisionRecordId, proposal.handoff);
+      } catch (error) {
+        if (generation !== app.training.memoryGeneration) return;
+        console.error('[Riverline Training revisit]', error);
+        setTrainingMemoryStatus('This revisit is unavailable. Refresh Training Memory and try again.', {}, { error: true });
+      }
+    }),
+    trainingMemoryButton('Review tomorrow', 'ui-button ui-button-ghost', async () => {
+      if (!isCurrent()) return;
+      await queueTrainingMemoryWrite((current) => current()
+        ? callTrainingMemoryBridge('changeLearningRevisit', proposal.handoff, 'snooze') : null);
+      if (isCurrent()) void refreshTrainingMemoryPanel();
+    }),
+    trainingMemoryButton('Stop reminding', 'ui-button ui-button-ghost', async () => {
+      if (!isCurrent()) return;
+      await queueTrainingMemoryWrite((current) => current()
+        ? callTrainingMemoryBridge('changeLearningRevisit', proposal.handoff, 'dismiss') : null);
+      if (isCurrent()) void refreshTrainingMemoryPanel();
+    }),
+  );
+  return actions;
+}
+
+async function refreshTrainingLearningNext(generation) {
+  const region = $('#trainingLearningNext');
+  if (!region) return;
+  region.replaceChildren();
+  region.hidden = true;
+  const readId = app.training.learningReadId = (app.training.learningReadId || 0) + 1;
+  const isCurrent = () => generation === app.training.memoryGeneration
+    && readId === app.training.learningReadId && !trainingSessionIsActive()
+    && !trainingSameSpotIsActive() && trainingSessionMode() !== 'full_hand';
+  if (!isCurrent()) return;
+  const page = await callTrainingMemoryBridge('listLearningRevisits');
+  if (!isCurrent() || !page?.proposals?.length) return;
+  const heading = document.createElement('h3');
+  heading.textContent = t('What to practice next');
+  const reason = document.createElement('p');
+  reason.textContent = t('You marked this decision uncertain and asked to revisit it.');
+  const detail = document.createElement('p');
+  detail.textContent = t('Exact revisit · due {date}. This is a practice reminder, not a learning assessment.', { date: trainingMemoryDate(page.proposals[0].dueAt) });
+  region.append(heading, reason, detail, trainingRevisitActions(page.proposals[0], isCurrent));
+  if (page.proposals.length > 1) {
+    const queue = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = t('More uncertainty revisits in this page');
+    const list = document.createElement('ul');
+    for (const proposal of page.proposals.slice(1)) {
+      const item = document.createElement('li');
+      const date = document.createElement('p');
+      date.textContent = trainingMemoryDate(proposal.dueAt);
+      item.append(date, trainingRevisitActions(proposal, isCurrent));
+      list.append(item);
+    }
+    queue.append(summary, list);
+    region.append(queue);
+  }
+  region.hidden = false;
 }
 
 async function refreshTrainingMemoryPanel() {
@@ -11465,6 +11631,7 @@ async function refreshTrainingMemoryPanel() {
     }
     app.training.memoryLastItems = items;
     app.training.memoryLastDiagnostic = null;
+    await refreshTrainingLearningNext(generation);
     return items;
   } catch (error) {
     if (generation !== app.training.memoryGeneration) return null;
@@ -11556,7 +11723,7 @@ async function toggleCurrentTrainingMemoryMetadata(field) {
   });
 }
 
-async function openTrainingMemorySameSpot(recordId) {
+async function openTrainingMemorySameSpot(recordId, handoff = null) {
   if (trainingSessionIsActive()) {
     setTrainingMemoryStatus(
       'Finish or leave your current session before re-drilling this spot.',
@@ -11568,10 +11735,11 @@ async function openTrainingMemorySameSpot(recordId) {
   try {
     await app.training.memoryWritePromise;
     const [result, historicalRecord] = await Promise.all([
-      callTrainingMemoryBridge('createSameSpot', recordId),
+      callTrainingMemoryBridge('createSameSpot', recordId, { handoff }),
       callTrainingMemoryBridge('getDecision', recordId),
     ]);
     if (generation !== app.training.memoryGeneration || !result || !historicalRecord) return null;
+    if (trainingSessionIsActive() || trainingSameSpotIsActive()) return null;
 
     callTrainingServiceBridge('beginSameSpot', {
       sourceDecisionRecordId: recordId,
@@ -11595,6 +11763,7 @@ async function openTrainingMemorySameSpot(recordId) {
     app.training.memoryPendingOrigin = {
       parentDecisionRecordId: recordId,
       redrillKind: 'same_spot',
+      revisit: result.revisit ?? null,
     };
     app.training.memoryRedrillNote = '';
     app.training.sameSpotHistoricalRecord = historicalRecord;
@@ -11602,6 +11771,25 @@ async function openTrainingMemorySameSpot(recordId) {
     if (!loaded?.ok) throw new Error(loaded?.error?.message || 'Training re-drill could not load');
     renderCanonicalTrainingExercise(result.exercise, { attemptKind: 'redrill' });
     renderSameSpotSetup(result.exercise);
+    if (result.revisit) {
+      app.training.learningRevisitActive = true;
+      resetTrainingStudyHints();
+      if ($('#trainingStudyHints')) $('#trainingStudyHints').hidden = true;
+      if ($('#trainingHintBox')) $('#trainingHintBox').hidden = true;
+      if ($('#trainingHintBox')) $('#trainingHintBox').style.display = 'none';
+      if ($('#trainingHintText')) $('#trainingHintText').textContent = '';
+      if ($('#trainingMemoryList')) $('#trainingMemoryList').replaceChildren();
+      if ($('#trainingLearningNext')) $('#trainingLearningNext').replaceChildren();
+      if ($('#trainingSameSpotSessionNote')) $('#trainingSameSpotSessionNote').textContent = t('You marked this decision uncertain and asked to revisit it.');
+      app.training.lifecycle = 'generating';
+      if ($('#trainingGuessButtons')) $('#trainingGuessButtons').hidden = true;
+      const persisted = await app.training.memoryCurrentRecordPromise;
+      if (generation !== app.training.memoryGeneration) return null;
+      if (!trainingSameSpotIsActive() || app.training.currentExercise?.id !== result.exercise.id) return null;
+      if (!persisted?.learningEvidence?.revisit) throw new Error('The revisit could not be recorded. Reopen Training Memory.');
+      app.training.lifecycle = 'ready';
+      if ($('#trainingGuessButtons')) $('#trainingGuessButtons').hidden = false;
+    }
     renderSameSpotComparison();
     if ($('#trainingFullHandTableMount')) $('#trainingFullHandTableMount').hidden = true;
     if ($('#trainingNextHandBtn')) $('#trainingNextHandBtn').hidden = true;
@@ -11612,6 +11800,7 @@ async function openTrainingMemorySameSpot(recordId) {
     });
     return result;
   } catch (error) {
+    if (generation !== app.training.memoryGeneration) return null;
     if (began && trainingSameSpotIsActive()) await exitTrainingSameSpot();
     if (generation !== app.training.memoryGeneration) return null;
     throw error;
@@ -11730,6 +11919,7 @@ function clearTrainingSessionState() {
   clearTrainingSessionCompletion();
   app.training.stats = { totalHands: 0, correct: 0, streak: 0 };
   app.training.gradeStats = { optimal: 0, acceptable: 0, mistake: 0 };
+  app.training.truthHistory = [];
   app.training.bestStreak = 0;
   app.training.currentExercise = null;
   app.training.currentStrategyResult = null;
@@ -11961,6 +12151,7 @@ function setTrainingWorkspaceState(state) {
 }
 
 function clearTrainingExercisePresentation() {
+  clearTrainingLearningPresentation();
   resetTrainingStudyHints();
   if ($('#trainingExerciseTags')) $('#trainingExerciseTags').innerHTML = '';
   if ($('#trainingActionHistory')) $('#trainingActionHistory').innerHTML = `<li class="is-empty">${t('Generating a new canonical trajectory.')}</li>`;
@@ -12314,7 +12505,7 @@ function updateTrainingButtons(exercise) {
 
 function renderTrainingSource(exercise) {
   const strategyResult = exercise?.strategyResult || null;
-  const policy = strategyClaimPolicy(strategyResult);
+  const policy = trainingTruth(null, exercise).claimPolicy;
   const sourceElement = $('#trainingStrategySource');
   if (!sourceElement) return;
   const label = strategySourceDisplayLabel(strategyResult || 'unavailable');
@@ -12326,7 +12517,7 @@ function renderTrainingSource(exercise) {
   const comparisonLabel = memoryComparison === 'current' ? t('Current comparison') : '';
   const sourceRoleKey = sameSpot
     ? sameSpotSourceRole(app.training.sameSpotHistoricalRecord)
-    : 'Reference source';
+    : truthPresentation(trainingTruth(null, exercise)).sourceLabel;
   const limitation = [
     comparisonLabel,
     app.training.memoryRedrillNote,
@@ -12374,10 +12565,10 @@ function renderTrainingGenerationError(error) {
     unsupported_target: [t('Unsupported filter combination'), t('Choose a street and decision target that belong to the same decision family.')],
     generation_exhausted: [t('No matching exercise found'), t('The bounded generator could not reach this exact combination. Broaden a filter and try again.')],
     decision_projection_unavailable: [t('Decision context unavailable'), t('The generated hand could not be projected safely for the strategy path.')],
-    strategy_unavailable: [t('Strategy reference unavailable'), t('The current strategy path did not return a gradeable StrategyResult.')],
+    strategy_unavailable: [t('Strategy comparison unavailable'), t('Strategy information is unavailable for this exercise. Try again or adjust the drill.')],
     invalid_configuration: [t('Full Hand unavailable'), t('Check the table, stack, Hero position, and Game Rules setup.')],
     progression_failed: [t('Full Hand could not continue'), t('Canonical bot or chance progression stopped safely. Start a new Hand.')],
-    strategy_evaluation_failed: [t('Decision could not be graded'), t('The Hero action was not continued without a valid StrategyProvider evaluation.')],
+    strategy_evaluation_failed: [t('Decision comparison unavailable'), t('The decision could not be recorded safely. Start a new Hand.')],
     service_unavailable: [t('Training service unavailable'), t('Reload Riverline and try again. The canonical Training bridge did not load.')],
     internal_error: [t('Training could not continue'), t('An internal generation error occurred. Try another seed or adjust the drill.')]
   };
@@ -12428,6 +12619,11 @@ function renderCanonicalTrainingExercise(exercise, {
   replaySourceRecordPromise = null,
   recordShown = true,
 } = {}) {
+  clearTrainingLearningPresentation();
+  if ($('#trainingUncertaintyControl')) {
+    $('#trainingUncertaintyControl').hidden = attemptKind !== 'primary'
+      || !['varied', 'focused'].includes(trainingSessionMode()) || trainingSameSpotIsActive();
+  }
   const context = exercise.decisionContext;
   const presentation = exercise.presentation;
   const legacyContext = trainingContextPresentationAdapter(context);
@@ -12467,7 +12663,7 @@ function renderCanonicalTrainingExercise(exercise, {
   if ($('#trainingSolutionEyebrow')) {
     const key = trainingSameSpotIsActive()
       ? sameSpotSourceRole(app.training.sameSpotHistoricalRecord)
-      : 'After-answer reference';
+      : 'After-answer comparison';
     $('#trainingSolutionEyebrow').textContent = t(key);
     $('#trainingSolutionEyebrow').dataset.i18n = key;
   }
@@ -12877,20 +13073,9 @@ function renderFullHandTrainingStacks(snapshot) {
 
 function updateFullHandTrainingStats(snapshot) {
   const decisions = snapshot?.review?.decisions || [];
-  const accepted = decisions.filter((decision) => decision.grade !== 'mistake' && decision.grade !== null);
-  let currentStreak = 0;
-  let bestStreak = 0;
-  for (const decision of decisions) {
-    currentStreak = decision.grade && decision.grade !== 'mistake' ? currentStreak + 1 : 0;
-    bestStreak = Math.max(bestStreak, currentStreak);
-  }
-  app.training.stats = {
-    totalHands: snapshot?.summary?.decisionsAnswered || 0,
-    correct: accepted.length,
-    streak: currentStreak,
-  };
-  app.training.gradeStats = { ...(snapshot?.gradeCounts || { optimal: 0, acceptable: 0, mistake: 0 }) };
-  app.training.bestStreak = bestStreak;
+  app.training.truthHistory = decisions.filter((decision) => decision.chosenAction && decision.evaluation).map((decision) => decision.evaluation?.answerEvaluation?.truth
+    || decision.evaluation?.truth || requireStrategyProviderBridge().truthFor({ strategyResult: decision.strategyResult, decisionContext: decision.decisionContext }));
+  app.training.stats = { totalHands: snapshot?.summary?.decisionsAnswered || 0, correct: 0, streak: 0 };
   updateTrainingStats();
 }
 
@@ -12993,8 +13178,8 @@ function renderFullHandAwaitingHero(snapshot) {
     $('#trainingStrategySource').className = 'badge status-badge status-badge--info';
   }
   if ($('#trainingReferenceSummaryTitle')) {
-    $('#trainingReferenceSummaryTitle').dataset.i18n = 'Reference source';
-    $('#trainingReferenceSummaryTitle').textContent = t('Reference source');
+    $('#trainingReferenceSummaryTitle').dataset.i18n = 'Strategy source';
+    $('#trainingReferenceSummaryTitle').textContent = t('Strategy source');
   }
   if ($('#trainingReferenceSummaryValue')) {
     $('#trainingReferenceSummaryValue').textContent = t('Hidden until review');
@@ -13071,23 +13256,7 @@ function renderFullHandTerminal(snapshot) {
   if ($('#trainingFullHandDecisionCount')) {
     $('#trainingFullHandDecisionCount').textContent = String(snapshot.summary.decisionsAnswered);
   }
-  if ($('#trainingFullHandGradeSummary')) {
-    const decisions = snapshot.review?.decisions || [];
-    const normative = decisions.length > 0 && decisions.every((decision) => (
-      strategyClaimPolicy(decision.strategyResult).trainingSemantics === 'normative'
-    ));
-    $('#trainingFullHandGradeSummary').textContent = normative
-      ? t('{correct} correct · {acceptable} acceptable · {mistakes} mistakes', {
-          correct: snapshot.gradeCounts.optimal,
-          acceptable: snapshot.gradeCounts.acceptable,
-          mistakes: snapshot.gradeCounts.mistake,
-        })
-      : t('{matches} matches · {close} close · {differences} differences', {
-          matches: snapshot.gradeCounts.optimal,
-          close: snapshot.gradeCounts.acceptable,
-          differences: snapshot.gradeCounts.mistake,
-        });
-  }
+  if ($('#trainingFullHandGradeSummary')) $('#trainingFullHandGradeSummary').textContent = trainingTruthSummaryText(currentTrainingTruthSummary());
   if ($('#trainingDecisionNumber')) $('#trainingDecisionNumber').hidden = true;
   if ($('#trainingNextHandBtn')) $('#trainingNextHandBtn').hidden = true;
   if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
@@ -13297,6 +13466,7 @@ function abortFullHandTraining() {
 }
 
 function replayCurrentTrainingSeed() {
+  if (trainingSameSpotIsActive()) return null;
   if (trainingSessionMode() === 'full_hand') {
     const seed = app.training.fullHandSnapshot?.handSeed;
     return Number.isInteger(seed) ? startConfiguredTrainingSession({ seed }) : null;
@@ -13307,6 +13477,7 @@ function replayCurrentTrainingSeed() {
 }
 
 function replayCurrentTrainingDecision() {
+  if (trainingSameSpotIsActive()) return null;
   if (trainingSessionMode() === 'full_hand') return null;
   const exercise = app.training.currentExercise;
   if (!exercise) return null;
@@ -13408,10 +13579,7 @@ function completeVariedTrainingSession() {
   updateTrainingSessionProgress();
   if ($('#trainingSessionCompletion')) $('#trainingSessionCompletion').hidden = false;
   if ($('#trainingSessionCompletionText')) {
-    $('#trainingSessionCompletionText').textContent = t('{aligned} reference-aligned from {attempts} attempts.', {
-      aligned: app.training.stats.correct,
-      attempts: app.training.stats.totalHands,
-    });
+    $('#trainingSessionCompletionText').textContent = trainingTruthSummaryText(currentTrainingTruthSummary());
   }
   if ($('#trainingNextHandBtn')) $('#trainingNextHandBtn').hidden = true;
   void finishTrainingMemorySession('completed');
@@ -13463,57 +13631,8 @@ async function newRandomTrainingHand(options = {}) {
 }
 
 function canonicalTrainingFeedback(evaluation, strategyResult) {
-  const policy = strategyClaimPolicy(strategyResult);
-  const source = strategySourceDisplayLabel(strategyResult);
-  const chosen = t(evaluation.mappedStrategyAction?.label
-    || trainingActionLabel(evaluation.chosenAction.type, app.training.currentExercise.decisionContext));
-  const contextualLimitation = policy.primaryLimitation?.priority >= 70
-    ? localizedStrategyLimitation(policy)
-    : '';
-  const withLimitation = (text) => [text, contextualLimitation].filter(Boolean).join(' ');
-
-  if (policy.trainingSemantics === 'normative') {
-    if (evaluation.grade === 'optimal') {
-      return {
-        title: t('Correct'),
-        text: t('{action} matches the validated reference from {source}. Compare the displayed action frequencies for the full mix.', { action: chosen, source })
-      };
-    }
-    if (evaluation.grade === 'acceptable') {
-      return {
-        title: t('Acceptable'),
-        text: t('{action} is within the accepted mix of the validated reference from {source}.', { action: chosen, source })
-      };
-    }
-    return {
-      title: t('Mistake'),
-      text: t('{action} falls outside the accepted mix of the validated reference from {source}.', { action: chosen, source })
-    };
-  }
-
-  if (policy.trainingSemantics !== 'comparative') {
-    return {
-      title: t('Reference unavailable'),
-      text: t('This source cannot support a Training comparison for the current context.')
-    };
-  }
-
-  if (evaluation.grade === 'optimal') {
-    return {
-      title: t('Matches Riverline reference'),
-      text: withLimitation(t('{action} matches the selected Riverline reference. Compare the displayed source frequencies for the full mix.', { action: chosen }))
-    };
-  }
-  if (evaluation.grade === 'acceptable') {
-    return {
-      title: t('Close to Riverline reference'),
-      text: withLimitation(t('{action} is close to the leading action in the selected Riverline reference. Compare the displayed source frequencies for the full mix.', { action: chosen }))
-    };
-  }
-  return {
-    title: t('Differs from Riverline reference'),
-    text: withLimitation(t('{action} differs from the leading action in the selected Riverline reference. Compare the displayed source frequencies; this does not prove the play is objectively wrong, and no EV loss is implied.', { action: chosen }))
-  };
+  const presentation = truthPresentation(trainingTruth(evaluation));
+  return { title: t(presentation.title), text: t(presentation.description) };
 }
 
 function trainingActionHistoryForAnalysis(presentation) {
@@ -13540,6 +13659,7 @@ function renderTrainingDecisionAnalysis(exercise) {
   const explanation = renderDecisionAnalysis(container, {
     decisionContext: exercise.decisionContext,
     strategyResult: exercise.strategyResult,
+    historicalStrategyEvidence: exercise.historicalStrategyEvidence ?? null,
     trustedFacts: trustedAnalysisFacts(history),
     authority: 'training',
     depth: 'concise',
@@ -13555,32 +13675,21 @@ function renderTrainingDecisionAnalysis(exercise) {
 
 function renderTrainingEvaluationSummary(evaluation, exercise) {
   if (!evaluation || !exercise) return;
-  const scoreBadge = $('#trainingScoreBadge');
-  if (scoreBadge) {
-    scoreBadge.hidden = false;
-    scoreBadge.textContent = `${trainingGradePresentation(
-      evaluation.grade,
-      exercise.strategyResult,
-    )} · ${app.training.stats.correct}/${app.training.stats.totalHands}`;
-    scoreBadge.dataset.accepted = String(evaluation.accepted);
-  }
-  const chosenLabel = t(trainingActionLabel(evaluation.chosenAction.type, exercise.decisionContext));
+  const truth = trainingTruth(evaluation, exercise);
+  const presentation = truthPresentation(truth);
+  if ($('#trainingScoreBadge')) $('#trainingScoreBadge').hidden = true;
   if ($('#trainingGradeBadge')) {
-    $('#trainingGradeBadge').textContent = trainingGradePresentation(
-      evaluation.grade,
-      exercise.strategyResult,
-    );
-    $('#trainingGradeBadge').className = `badge training-grade-badge training-grade-badge--${evaluation.grade}`;
+    $('#trainingGradeBadge').textContent = t(presentation.title);
+    $('#trainingGradeBadge').className = `badge training-grade-badge training-grade-badge--${presentation.tone}`;
   }
-  if ($('#trainingFeedback')) $('#trainingFeedback').dataset.grade = evaluation.grade;
-  if ($('#trainingChosenAction')) $('#trainingChosenAction').textContent = chosenLabel;
-  if ($('#trainingChosenProbability')) $('#trainingChosenProbability').textContent = `${(evaluation.chosenProbability * 100).toFixed(0)}%`;
-  if ($('#trainingBestProbability')) $('#trainingBestProbability').textContent = `${t(evaluation.bestStrategyAction.label)} · ${(evaluation.bestProbability * 100).toFixed(0)}%`;
-  const evAvailable = evaluation.explanationData.evAvailable;
-  if ($('#trainingEvFact')) $('#trainingEvFact').hidden = !evAvailable;
-  if (evAvailable && $('#trainingEvValue')) {
-    $('#trainingEvValue').textContent = `${evaluation.explanationData.chosenEvBb.toFixed(2)} bb ${t('vs')} ${evaluation.explanationData.bestEvBb.toFixed(2)} bb`;
+  if ($('#trainingFeedback')) {
+    $('#trainingFeedback').dataset.grade = presentation.tone;
+    $('#trainingFeedback').dataset.truthState = truth.state;
   }
+  if ($('#trainingChosenAction')) $('#trainingChosenAction').textContent = t(trainingActionLabel(evaluation.chosenAction.type, exercise.decisionContext));
+  if ($('#trainingChosenProbability')) $('#trainingChosenProbability').textContent = Number.isFinite(evaluation.chosenProbability) ? `${(evaluation.chosenProbability * 100).toFixed(0)}%` : t('Unavailable');
+  if ($('#trainingBestProbability')) $('#trainingBestProbability').textContent = Number.isFinite(evaluation.bestProbability) ? `${t(evaluation.bestStrategyAction?.label || 'Unavailable')} · ${(evaluation.bestProbability * 100).toFixed(0)}%` : t('Unavailable');
+  if ($('#trainingEvFact')) $('#trainingEvFact').hidden = true;
 }
 
 function handleTrainingGuess(userAction) {
@@ -13590,6 +13699,9 @@ function handleTrainingGuess(userAction) {
   }
   const exercise = app.training.currentExercise;
   if (app.training.lifecycle !== 'ready' || !exercise) return;
+  const uncertainty = app.training.currentAttemptKind === 'primary'
+    && !trainingSameSpotIsActive() && $('#trainingUncertain')?.checked
+    ? { value: 'uncertain', phase: 'before_reveal', capturedAt: new Date().toISOString() } : null;
   const result = callTrainingServiceBridge('answer', exercise.id, userAction);
   if (!result?.ok) {
     if (result?.error?.code !== 'already_answered') {
@@ -13606,12 +13718,13 @@ function handleTrainingGuess(userAction) {
   resetTrainingStudyHints();
   if (countsTowardSession) {
     app.training.stats.totalHands += 1;
+    (app.training.truthHistory ||= []).push(evaluation.truth);
     app.training.stats.correct += evaluation.scoreDelta;
     app.training.stats.streak = evaluation.accepted ? app.training.stats.streak + 1 : 0;
     app.training.bestStreak = Math.max(app.training.bestStreak || 0, app.training.stats.streak);
     app.training.gradeStats[evaluation.grade] = (app.training.gradeStats[evaluation.grade] || 0) + 1;
   }
-  const feedbackSemantics = strategyClaimPolicy(exercise.strategyResult).trainingSemantics;
+  const feedbackSemantics = truthPresentation(evaluation.truth).tone === 'neutral' ? 'comparison' : evaluation.truth.state;
   updateTrainingStats();
 
   renderTrainingEvaluationSummary(evaluation, exercise);
@@ -13623,7 +13736,8 @@ function handleTrainingGuess(userAction) {
   // the cue remains perceptually attached to the submitted answer. Study cues
   // bypass the independent poker-foley queue in riverline-audio/v1.
   emitTrainingDecisionResultExperience({
-    comparisonState: evaluation.grade,
+    truth: evaluation.truth,
+    comparisonState: evaluation.truth.outcome === 'supported' ? 'optimal' : evaluation.truth.outcome === 'unsupported' ? 'mistake' : null,
     feedbackSemantics,
     accepted: evaluation.accepted,
     chosenActionType: userAction,
@@ -13635,7 +13749,9 @@ function handleTrainingGuess(userAction) {
     evaluation,
     exercise,
     actionType: userAction,
+    uncertainty,
   });
+  if ($('#trainingUncertaintyControl')) $('#trainingUncertaintyControl').hidden = true;
   if (exercise.generationMetadata?.memoryRedrill) {
     if (trainingSameSpotIsActive()) {
       callTrainingServiceBridge('markSameSpotAnswered');

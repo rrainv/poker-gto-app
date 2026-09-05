@@ -217,6 +217,8 @@ test('provider sign-out failure keeps local Guest revocation immediate and A byt
   const accountIdentity = {
     async initialize() { return { activeIdentity: accountA }; },
     async ensureLocalIdentity() { return accountA; },
+    async getPendingLifecycleTransition() { return null; },
+    async getProviderIdentityMapping() { return { riverlineIdentityId: accountA.identityId }; },
     async activateLocalIdentity() { return accountA; },
     async activateProviderIdentity() { return { identity: accountA }; },
     async getActiveIdentity() { return accountA; },
@@ -275,6 +277,8 @@ function accountIdentityStub(identities, initial = identities.values().next().va
   return {
     async initialize() { return { activeIdentity: active }; },
     async ensureLocalIdentity() { return active; },
+    async getPendingLifecycleTransition() { return null; },
+    async getProviderIdentityMapping(provider) { const identity = identities.get(provider.providerSubject); return identity ? { riverlineIdentityId: identity.identityId } : null; },
     async activateLocalIdentity() { return active; },
     async activateProviderIdentity(provider) {
       const next = identities.get(provider.providerSubject) ?? null;
@@ -321,9 +325,10 @@ test('stale restore, refresh, and sign-in completions cannot replace Guest or a 
   });
   const restoring = restoreAuth.initialize();
   await restoreGate.entered;
-  await restoreAuth.switchToGuest();
+  const restoreSignOut = restoreAuth.switchToGuest();
   assert.equal(restoreAuth.getState().status, 'guest');
   restoreGate.release();
+  await restoreSignOut;
   assert.equal((await restoring).status, 'guest');
 
   const refreshGate = deferred();
@@ -337,8 +342,10 @@ test('stale restore, refresh, and sign-in completions cannot replace Guest or a 
   assert.equal((await refreshAuth.initialize()).status, 'signed_in');
   const refreshing = refreshAuth.refreshSession();
   await refreshGate.entered;
-  await refreshAuth.switchToGuest();
+  const refreshSignOut = refreshAuth.switchToGuest();
+  assert.equal(refreshAuth.getState().status, 'guest');
   refreshGate.release();
+  await refreshSignOut;
   assert.equal((await refreshing).status, 'guest');
 
   const signInGate = deferred();
@@ -358,13 +365,10 @@ test('stale restore, refresh, and sign-in completions cannot replace Guest or a 
   assert.equal((await signInAuth.initialize()).status, 'guest');
   const delayedA = signInAuth.signInWithPassword({ email: 'a@example.com', password: 'x' });
   await signInGate.entered;
-  assert.equal((await signInAuth.signInWithPassword({
-    email: 'b@example.com',
-    password: 'x',
-  })).status, 'signed_in');
-  assert.equal(signInAuth.getState().email, providerB.email);
+  const signingInB = signInAuth.signInWithPassword({ email: 'b@example.com', password: 'x' });
   signInGate.release();
-  const final = await delayedA;
+  await delayedA;
+  const final = await signingInB;
   assert.equal(final.status, 'signed_in');
   assert.equal(final.email, providerB.email);
 });
@@ -548,7 +552,7 @@ test('owner transition clears private Training Memory presentation synchronously
     setTrainingMemoryStatus(value) { status = value; },
     clearTrainingSessionState() { throw new Error('unrelated Training state must remain'); },
   };
-  vm.runInNewContext(`${clear}; clearTrainingMemoryOwnerPresentation();`, sandbox);
+  vm.runInNewContext(`${extractFunction(source, 'clearTrainingLearningPresentation')}; ${clear}; clearTrainingMemoryOwnerPresentation();`, sandbox);
   assert.equal(app.training.memoryGeneration, 8);
   assert.equal(app.training.memorySessionPromise, null);
   assert.equal(app.training.memoryLastItems.length, 0);

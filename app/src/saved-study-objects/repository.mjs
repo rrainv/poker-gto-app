@@ -1,3 +1,4 @@
+import { runLifecycleTransaction } from '../application/identity-operation-scope.mjs';
 import {
   SAVED_STUDY_CLASSIFICATIONS,
   SAVED_STUDY_LIFECYCLE_STATES,
@@ -247,6 +248,7 @@ function rehomeObject(object, ownerRef) {
 
 export function createSavedStudyRepository({
   database = null,
+  lifecycleScope = null,
   ownerRef,
   clock = () => new Date(),
 } = {}) {
@@ -264,12 +266,21 @@ export function createSavedStudyRepository({
     return durableDatabase;
   }
 
+  function runTransaction(stores, mode, operation) {
+    return runLifecycleTransaction(getDatabase(), lifecycleScope, stores, mode, operation);
+  }
+
   async function initialize() {
-    if (initializationPromise) return initializationPromise;
+    lifecycleScope?.assertCurrent();
+    if (initializationPromise) {
+      const initialized = await initializationPromise;
+      lifecycleScope?.assertCurrent();
+      return initialized;
+    }
     initializationPromise = (async () => {
       let existing;
       try {
-        existing = await getDatabase().runTransaction([STORES.METADATA], 'readonly', (transaction) => (
+        existing = await runTransaction([STORES.METADATA], 'readonly', (transaction) => (
           transaction.get(STORES.METADATA, METADATA_KEY)
         ));
       } catch (error) {
@@ -285,7 +296,7 @@ export function createSavedStudyRepository({
       const timestamp = timestampFrom(clock);
       const metadata = createMetadata(ownerRef, timestamp);
       try {
-        return await getDatabase().runTransaction(
+        return await runTransaction(
           [STORES.METADATA, STORES.OBJECTS],
           'readwrite',
           async (transaction) => {
@@ -307,7 +318,9 @@ export function createSavedStudyRepository({
       }
     })();
     try {
-      return await initializationPromise;
+      const initialized = await initializationPromise;
+      lifecycleScope?.assertCurrent();
+      return initialized;
     } catch (error) {
       initializationPromise = null;
       throw error;
@@ -317,7 +330,7 @@ export function createSavedStudyRepository({
   async function readTransaction(storeNames, operation) {
     await initialize();
     try {
-      return await getDatabase().runTransaction(storeNames, 'readonly', operation);
+      return await runTransaction(storeNames, 'readonly', operation);
     } catch (error) {
       if (error instanceof SavedStudyStorageError || error instanceof RangeError || error instanceof TypeError) {
         throw error;
@@ -329,7 +342,7 @@ export function createSavedStudyRepository({
   async function writeTransaction(storeNames, operation) {
     await initialize();
     try {
-      return await getDatabase().runTransaction(
+      return await runTransaction(
         [...new Set([STORES.METADATA, ...storeNames])],
         'readwrite',
         operation,
@@ -372,6 +385,16 @@ export function createSavedStudyRepository({
     ownerRef: deepFreezeSavedStudyData(cloneSavedStudyData(ownerRef)),
 
     initialize,
+
+    async hasMeaningfulData() {
+      return runTransaction([STORES.METADATA, STORES.OBJECTS], 'readonly', async (transaction) => {
+        const metadata = await transaction.get(STORES.METADATA, METADATA_KEY);
+        const count = await transaction.count(STORES.OBJECTS);
+        if (metadata) validateMetadata(metadata, ownerRef);
+        else if (count) throw storageFailure('invalid_metadata', 'Saved ownership is unavailable');
+        return count > 0; // Includes archived objects and tombstones.
+      });
+    },
 
     async save(object) {
       validateSavedStudyObject(object);

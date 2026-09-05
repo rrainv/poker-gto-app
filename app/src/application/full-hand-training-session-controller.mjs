@@ -632,6 +632,7 @@ export function createFullHandTrainingSessionController({
         answerEvaluation = evaluateAnswer({
           exerciseId: decision.decisionId,
           chosenActionType: action.type,
+          chosenAction: action,
           strategyResult,
           decisionContext: decision.decisionContext,
         });

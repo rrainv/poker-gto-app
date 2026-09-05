@@ -188,18 +188,30 @@ export function createIndexedDbSavedStudyDatabase({
   return Object.freeze({
     name,
     version,
-    async runTransaction(storeNames, mode, operation) {
+    async runTransaction(storeNames, mode, operation, { signal = null } = {}) {
+      if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
       const database = await connection();
+      if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
       const transaction = database.transaction(storeNames, mode, { durability: 'strict' });
       const completion = transactionCompletion(transaction);
+      completion.catch(() => {});
+      const abortForSignal = () => {
+        try { transaction.abort(); } catch { /* already complete */ }
+      };
+      signal?.addEventListener('abort', abortForSignal, { once: true });
       try {
+        if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
         const result = await operation(indexedDbTransactionAdapter(transaction, IDBKeyRange));
+        if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
         await completion;
+        if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
         return result;
       } catch (error) {
         try { transaction.abort(); } catch { /* transaction already completed or aborted */ }
         try { await completion; } catch { /* preserve the operation error */ }
         throw error;
+      } finally {
+        signal?.removeEventListener('abort', abortForSignal);
       }
     },
     async close() {
@@ -289,7 +301,8 @@ export function createMemorySavedStudyDatabase({ name = 'memory-saved-study-obje
   return Object.freeze({
     name,
     version: SAVED_STUDY_DATABASE_VERSION,
-    async runTransaction(storeNames, mode, operation) {
+    async runTransaction(storeNames, mode, operation, { signal = null } = {}) {
+      if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
       if (closed) throw new Error('Saved Study database is closed');
       metrics.transactions += 1;
       metrics[mode] += 1;
@@ -357,6 +370,7 @@ export function createMemorySavedStudyDatabase({ name = 'memory-saved-study-obje
         },
       });
       const result = await operation(adapter);
+      if (signal?.aborted) throw new Error('Identity lifecycle scope is stale');
       const beforeCommitFailure = takeFailure('before_commit', mode);
       if (beforeCommitFailure) throw beforeCommitFailure.error;
       for (const storeName of storeNames) {

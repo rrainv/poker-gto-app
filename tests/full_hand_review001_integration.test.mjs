@@ -78,9 +78,8 @@ test('shared runtime uses canonical journals, exact Replay seeks, provider cache
   assert.match(styles, /\.hand-review-section-heading\s*>\s*div:not\(\.hand-review-card-row\)/);
   assert.match(logic, /openCanonicalHandDecisionInAnalysis\(app\.handReview\.model\?\.selectedDecisionIndex\)/);
   assert.match(logic, /saveReviewedDecisionSpot/);
-  assert.match(logic, /probability disagreement with this reference\. This is not EV loss/);
-  assert.match(logic, /comparison\.semantics === 'normative'/);
-  assert.match(logic, /Matches Riverline reference/);
+  assert.match(logic, /truthPresentation\(comparison\?\.truth/);
+  assert.match(logic, /trainingTruthSummaryText\(model.overview.truthSummary\)/);
   assert.doesNotMatch(logic, /reviewPriority[^\n]+evLoss/i);
 });
 

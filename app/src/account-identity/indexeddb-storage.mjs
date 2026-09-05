@@ -1,12 +1,13 @@
 export const RIVERLINE_ACCOUNT_DATABASE_NAME = 'riverline-account-identity';
-export const RIVERLINE_ACCOUNT_DATABASE_VERSION = 2;
-export const RIVERLINE_ACCOUNT_BACKEND_SCHEMA_VERSION = 'riverline-account-indexeddb/v2';
+export const RIVERLINE_ACCOUNT_DATABASE_VERSION = 4;
+export const RIVERLINE_ACCOUNT_BACKEND_SCHEMA_VERSION = 'riverline-account-indexeddb/v4';
 
 export const RIVERLINE_ACCOUNT_OBJECT_STORES = Object.freeze({
   METADATA: 'metadata',
   IDENTITIES: 'identities',
   DOMAIN_BINDINGS: 'domainOwnershipBindings',
   PROVIDER_MAPPINGS: 'providerIdentityMappings',
+  LIFECYCLE_TRANSITIONS: 'lifecycleTransitions',
 });
 
 const STORE_DEFINITIONS = Object.freeze({
@@ -14,6 +15,7 @@ const STORE_DEFINITIONS = Object.freeze({
   [RIVERLINE_ACCOUNT_OBJECT_STORES.IDENTITIES]: Object.freeze({ keyPath: 'identityId' }),
   [RIVERLINE_ACCOUNT_OBJECT_STORES.DOMAIN_BINDINGS]: Object.freeze({ keyPath: 'bindingId' }),
   [RIVERLINE_ACCOUNT_OBJECT_STORES.PROVIDER_MAPPINGS]: Object.freeze({ keyPath: 'mappingId' }),
+  [RIVERLINE_ACCOUNT_OBJECT_STORES.LIFECYCLE_TRANSITIONS]: Object.freeze({ keyPath: 'transitionId' }),
 });
 
 function cloneData(value) {
@@ -39,9 +41,22 @@ function transactionCompletion(transaction) {
 
 function migrateToVersion1(database) {
   for (const [name, definition] of Object.entries(STORE_DEFINITIONS)) {
-    if (name === RIVERLINE_ACCOUNT_OBJECT_STORES.PROVIDER_MAPPINGS) continue;
+    if ([
+      RIVERLINE_ACCOUNT_OBJECT_STORES.PROVIDER_MAPPINGS,
+      RIVERLINE_ACCOUNT_OBJECT_STORES.LIFECYCLE_TRANSITIONS,
+    ].includes(name)) continue;
     if (!database.objectStoreNames.contains(name)) database.createObjectStore(name, definition);
   }
+}
+
+function migrateToVersion3(database) {
+  const transitions = RIVERLINE_ACCOUNT_OBJECT_STORES.LIFECYCLE_TRANSITIONS;
+  if (!database.objectStoreNames.contains(transitions)) {
+    database.createObjectStore(transitions, STORE_DEFINITIONS[transitions]);
+  }
+  // The versionchange transaction changes structure only. Repository startup
+  // validates the complete v2 registry before any identity or metadata record
+  // is rewritten, so an ambiguous install remains byte-for-byte recoverable.
 }
 
 function migrateToVersion2(database, transaction) {
@@ -55,8 +70,8 @@ function migrateToVersion2(database, transaction) {
     if (!request.result) return;
     metadataStore.put({
       ...request.result,
-      backendSchemaVersion: RIVERLINE_ACCOUNT_BACKEND_SCHEMA_VERSION,
-      databaseVersion: RIVERLINE_ACCOUNT_DATABASE_VERSION,
+      backendSchemaVersion: 'riverline-account-indexeddb/v2',
+      databaseVersion: 2,
     });
   }, { once: true });
 }
@@ -64,6 +79,9 @@ function migrateToVersion2(database, transaction) {
 export const RIVERLINE_ACCOUNT_DATABASE_MIGRATIONS = Object.freeze([
   Object.freeze({ version: 1, upgrade: migrateToVersion1 }),
   Object.freeze({ version: 2, upgrade: migrateToVersion2 }),
+  Object.freeze({ version: 3, upgrade: migrateToVersion3 }),
+  // Registry records are validated and migrated by the repository transaction.
+  Object.freeze({ version: 4, upgrade: () => {} }),
 ]);
 
 function openDatabase(indexedDBFactory, name, version) {
@@ -115,19 +133,25 @@ export function createIndexedDbAccountIdentityDatabase({
   return Object.freeze({
     name,
     version,
-    async runTransaction(storeNames, mode, operation) {
+    async runTransaction(storeNames, mode, operation, { signal = null } = {}) {
+      if (signal?.aborted) throw new Error('Identity lifecycle transition is stale');
       const database = await connection();
+      if (signal?.aborted) throw new Error('Identity lifecycle transition is stale');
       const transaction = database.transaction(storeNames, mode, { durability: 'strict' });
       const completion = transactionCompletion(transaction);
+      completion.catch(() => {});
+      const abortForSignal = () => { try { transaction.abort(); } catch { /* already complete */ } };
+      signal?.addEventListener('abort', abortForSignal, { once: true });
       try {
         const result = await operation(adapter(transaction));
+        if (signal?.aborted) throw new Error('Identity lifecycle transition is stale');
         await completion;
         return result;
       } catch (error) {
         try { transaction.abort(); } catch { /* already complete */ }
         try { await completion; } catch { /* preserve operation error */ }
         throw error;
-      }
+      } finally { signal?.removeEventListener('abort', abortForSignal); }
     },
     async close() {
       if (!connectionPromise) return;
@@ -154,7 +178,8 @@ export function createMemoryAccountIdentityDatabase({ name = 'memory-account-ide
       pendingFailure = { stage, error, mode };
     },
     getMetrics: () => cloneData(metrics),
-    async runTransaction(storeNames, mode, operation) {
+    async runTransaction(storeNames, mode, operation, { signal = null } = {}) {
+      if (signal?.aborted) throw new Error('Identity lifecycle transition is stale');
       metrics.transactions += 1;
       if (pendingFailure?.stage === 'open' && (!pendingFailure.mode || pendingFailure.mode === mode)) {
         const failure = pendingFailure; pendingFailure = null; throw failure.error;
@@ -183,6 +208,7 @@ export function createMemoryAccountIdentityDatabase({ name = 'memory-account-ide
       if (pendingFailure?.stage === 'before_commit' && (!pendingFailure.mode || pendingFailure.mode === mode)) {
         const failure = pendingFailure; pendingFailure = null; throw failure.error;
       }
+      if (signal?.aborted) throw new Error('Identity lifecycle transition is stale');
       if (mode === 'readwrite') stores = draft;
       return result;
     },

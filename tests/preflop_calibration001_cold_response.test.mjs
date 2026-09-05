@@ -223,7 +223,7 @@ test('postflop path and generalized comparative authority remain unchanged', () 
 
   const result = resultFor('AJs');
   assert.equal(result.sourceVersion, 'riverline-preflop-heuristic/v4');
-  assert.equal(result.sourceDescriptor.authority, 'comparative_reference');
+  assert.equal(result.sourceDescriptor.authority, 'exploratory');
   assert.equal(result.contextCoverage.kind, 'generalized');
   assert.equal(result.capabilities.actionEv, false);
   assert.equal(result.capabilities.optimality, false);
@@ -250,7 +250,7 @@ test('Training remains compatible and retains legacy math outside the bounded ca
     PREFLOP_DECISION_ROLES.COLD_RESPONSE_TO_OPEN,
   );
   assert.equal(generated.exercise.strategyResult.details.roleSpecificPolicyApplied, false);
-  assert.equal(generated.exercise.strategyResult.sourceDescriptor.authority, 'comparative_reference');
+  assert.equal(generated.exercise.strategyResult.sourceDescriptor.authority, 'exploratory');
   assert.equal(generated.exercise.strategyResult.capabilities.actionEv, false);
 });
 

@@ -114,10 +114,16 @@ test('interrupted first-launch migration is atomic and retries without orphaned 
     idFactory: idFactory(),
     clock: () => ACCOUNT001_LEGACY_T0,
   });
-  await assert.rejects(account.initialize(), { code: 'migration_failed' });
-  const recovered = await account.initialize();
+  assert.equal((await account.initialize()).status, 'recovery_required');
+  const retry = createAccountIdentityService({
+    storage,
+    database,
+    idFactory: idFactory(),
+    clock: () => ACCOUNT001_LEGACY_T0,
+  });
+  const recovered = await retry.initialize();
   assert.equal(recovered.identities.length, 1);
-  assert.equal(recovered.bindings.length, 2);
+  assert.equal(recovered.bindings.length, 3);
   assert.deepEqual(recovered.metadata.migration.adoptedDomains, [
     RIVERLINE_OWNED_DOMAINS.PERSONAL_STRATEGY,
     RIVERLINE_OWNED_DOMAINS.SAVED_STUDY_OBJECTS,
@@ -183,10 +189,10 @@ test('pre-ACCOUNT Saved and Personal Strategy owners are adopted by mapping with
 
   const repeated = await account.initialize();
   assert.deepEqual(repeated, firstState);
-  assert.equal(accountDatabase.getMetrics().recordsWritten, 4);
+  assert.equal(accountDatabase.getMetrics().recordsWritten, 5);
 });
 
-test('active identity switches scoped Saved and Personal Strategy queries without mutating either owner', async () => {
+test('explicit identity ownership selection scopes Saved and Personal Strategy without mutating either owner', async () => {
   const storage = new MemoryStorage();
   const accountDatabase = createMemoryAccountIdentityDatabase();
   const repository = createAccountIdentityRepository({
@@ -232,9 +238,13 @@ test('active identity switches scoped Saved and Personal Strategy queries withou
       id: `saved-${identity.identityId}`,
     }));
   }
+  let selectedIdentityId = local.identityId;
   const savedQueries = createSavedStudyObjectApplication({
     activationResolver: async () => {
-      const binding = await account.getDomainOwnership(RIVERLINE_OWNED_DOMAINS.SAVED_STUDY_OBJECTS);
+      const binding = await repository.getDomainOwnership(
+        RIVERLINE_OWNED_DOMAINS.SAVED_STUDY_OBJECTS,
+        selectedIdentityId,
+      );
       return {
         ownerRef: createSavedStudyOwnerRef(binding.domainOwnerId),
         database: savedDatabases.get(binding.storageScope),
@@ -242,7 +252,7 @@ test('active identity switches scoped Saved and Personal Strategy queries withou
     },
   });
   assert.deepEqual((await savedQueries.listRecent()).map((entry) => entry.id), [`saved-${local.identityId}`]);
-  await account.activateIdentity(authenticated.identityId);
+  selectedIdentityId = authenticated.identityId;
   assert.deepEqual((await savedQueries.listRecent()).map((entry) => entry.id), [`saved-${authenticated.identityId}`]);
 
   const personalDatabases = new Map([
@@ -256,18 +266,21 @@ test('active identity switches scoped Saved and Personal Strategy queries withou
   }
   const personalQueries = createPersonalStrategyHomeQuery({
     storage,
-    ownershipResolver: () => account.getDomainOwnership(RIVERLINE_OWNED_DOMAINS.PERSONAL_STRATEGY),
+    ownershipResolver: () => repository.getDomainOwnership(
+      RIVERLINE_OWNED_DOMAINS.PERSONAL_STRATEGY,
+      selectedIdentityId,
+    ),
     databaseResolver: (binding) => personalDatabases.get(binding.storageScope),
   });
   assert.equal((await personalQueries.loadSummary()).profileCount, 1);
-  await account.activateLocalIdentity();
+  selectedIdentityId = local.identityId;
   assert.deepEqual((await savedQueries.listRecent()).map((entry) => entry.id), [`saved-${local.identityId}`]);
   assert.equal((await personalQueries.loadSummary()).profileCount, 1);
   assert.equal((await repository.getDomainOwnership(
     RIVERLINE_OWNED_DOMAINS.SAVED_STUDY_OBJECTS,
     authenticated.identityId,
   )).ownershipRef.ownerType, RIVERLINE_OWNER_TYPES.ACCOUNT_IDENTITY);
-  await account.activateIdentity(authenticated.identityId);
+  selectedIdentityId = authenticated.identityId;
   assert.equal((await savedQueries.listRecent())[0].id, `saved-${authenticated.identityId}`);
 });
 
@@ -321,9 +334,9 @@ test('Home receives the truthful account seam while Saved/Review/Mistake consume
   const calls = [];
   const object = createPreAccountSavedStudyFixture();
   const accountSummary = {
-    schemaVersion: 'riverline-account-profile-summary/v1',
+    schemaVersion: 'riverline-account-profile-summary/v2',
     identityId: 'identity-home',
-    kind: 'local',
+    kind: 'device_guest',
     displayName: 'Local Player',
     status: 'local_only',
     storage: 'on_this_device',

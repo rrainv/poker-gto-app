@@ -82,6 +82,7 @@ export function createSavedStudyObjectApplication({
   database = null,
   repository = null,
   ownerRef = null,
+  lifecycleScope = null,
   activationResolver = null,
   onLocalMutation = null,
   clock = () => new Date(),
@@ -111,7 +112,7 @@ export function createSavedStudyObjectApplication({
         ? requireStorage(storage ?? createSavedStudyBrowserStorage())
         : storage;
       const resolvedOwnerRef = ownerRef ?? getOrCreateOwnerRef(storageAdapter, idFactory);
-      const durableRepository = createSavedStudyRepository({ database, ownerRef: resolvedOwnerRef, clock });
+      const durableRepository = createSavedStudyRepository({ database, ownerRef: resolvedOwnerRef, clock, lifecycleScope });
       await durableRepository.initialize();
       return Object.freeze({ repository: durableRepository, ownerRef: resolvedOwnerRef });
     });
@@ -124,17 +125,24 @@ export function createSavedStudyObjectApplication({
   }
 
   async function activate() {
-    if (!activationResolver) return activateFixed();
+    lifecycleScope?.assertCurrent();
+    if (!activationResolver) {
+      const activated = await activateFixed();
+      lifecycleScope?.assertCurrent();
+      return activated;
+    }
     const resolved = await activationResolver();
-    if (!resolved) return activateFixed();
+    if (!resolved) throw new Error('Saved ownership is unavailable');
+    resolved.lifecycleScope?.assertCurrent();
     const resolvedOwnerRef = resolved.ownerRef;
     const resolvedDatabase = resolved.database ?? null;
-    const key = `${resolvedDatabase?.name ?? 'default'}:${savedStudyOwnerKey(resolvedOwnerRef)}`;
+    const key = `${resolvedDatabase?.name ?? 'default'}:${savedStudyOwnerKey(resolvedOwnerRef)}:${resolved.lifecycleScope?.lifecycleGeneration ?? 'fixed'}`;
     if (!scopedActivations.has(key)) {
       const activation = Promise.resolve().then(async () => {
         const durableRepository = createSavedStudyRepository({
           database: resolvedDatabase,
           ownerRef: resolvedOwnerRef,
+          lifecycleScope: resolved.lifecycleScope,
           clock,
         });
         await durableRepository.initialize();
@@ -145,7 +153,9 @@ export function createSavedStudyObjectApplication({
       });
       scopedActivations.set(key, activation);
     }
-    return scopedActivations.get(key);
+    const activated = await scopedActivations.get(key);
+    resolved.lifecycleScope?.assertCurrent();
+    return activated;
   }
 
   async function saveObject({ kind, payload, source, annotations, operation }) {
@@ -166,10 +176,12 @@ export function createSavedStudyObjectApplication({
   }
 
   async function notifyLocalMutation(type, object) {
+    lifecycleScope?.assertCurrent();
     if (!onLocalMutation) return;
     try {
       await onLocalMutation(Object.freeze({
         schemaVersion: 'saved-study-local-mutation/v1',
+        lifecycleScope,
         type,
         object,
       }));
@@ -392,8 +404,10 @@ export function createSavedStudyObjectApplication({
         ...(fixedActivationPromise ? [fixedActivationPromise] : []),
         ...scopedActivations.values(),
       ];
-      const resolved = await Promise.all(activations);
-      await Promise.all(resolved.map((entry) => entry.repository.close()));
+      const resolved = await Promise.allSettled(activations);
+      await Promise.all(resolved.filter((entry) => entry.status === 'fulfilled')
+        .map((entry) => entry.value.repository.close()));
+      await database?.close?.();
       fixedActivationPromise = null;
       scopedActivations.clear();
     },

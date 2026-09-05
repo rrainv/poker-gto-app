@@ -112,11 +112,11 @@ test('Home and Saved resolve to distinct visible states over the same Home autho
 
 test('Saved guest and empty presentation remains intentionally Saved instead of falling back to Home', () => {
   const savedGuest = resolveHomeDestination('saved', { sessionMode: 'guest' });
-  assert.deepEqual(Array.from(savedGuest.visibleSections), ['guest']);
+  assert.deepEqual(Array.from(savedGuest.visibleSections), ['saved-overview', 'recent']);
   assert.equal(savedGuest.guestCopy.eyebrow, 'Saved study');
   assert.equal(savedGuest.guestCopy.title, 'Saved Hands & Spots');
-  assert.equal(savedGuest.guestCopy.primary, 'Saved study belongs to a signed-in Riverline profile. Sign in to open that profile\'s Hands and Spots.');
-  assert.equal(savedGuest.guestCopy.secondary, 'Signing in does not enable sync or cloud backup.');
+  assert.match(savedGuest.guestCopy.primary, /stay on this device in Guest Mode/);
+  assert.match(savedGuest.guestCopy.secondary, /does not enable sync or cloud backup/);
   assert.match(logic, /renderHomeRecent\(model\.sections\.recent\)/);
   assert.match(logic, /homeEmptyAction\('No saved study yet\.', 'Analyze a Hand', 'analyze'\)/);
 });

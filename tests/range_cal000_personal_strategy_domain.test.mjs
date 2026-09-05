@@ -98,7 +98,7 @@ test('StrategyProfile identity is stable independently of its display name', () 
   assert.equal(validateStrategyProfile(JSON.parse(JSON.stringify(renamed))).id, renamed.id);
 });
 
-test('StrategyProfile v1 owns exactly three custom-named, discrete modes', () => {
+test('StrategyProfile v2 owns arbitrary custom-named, discrete Approaches', () => {
   const bundle = profileBundle();
   assert.deepEqual(bundle.modes.map((mode) => mode.displayName), [
     'Normal', 'Cautious', 'Pressure',
@@ -119,13 +119,15 @@ test('StrategyProfile v1 owns exactly three custom-named, discrete modes', () =>
     () => validateStrategyMode({ ...renamed, styleValue: 0.5 }),
     /does not support numeric style/,
   );
-  assert.throws(
-    () => createStrategyProfileBundle({
-      profileId: 'bad-profile', ownerRef: OWNER, displayName: 'Bad',
-      modes: ['Tight', 'Loose'], modeIds: ['one', 'two'], createdAt: CREATED_AT,
-    }),
-    /exactly three/,
-  );
+  const two = createStrategyProfileBundle({
+    profileId: 'two-approaches', ownerRef: OWNER, displayName: 'User context',
+    modes: ['Versus Alex', 'Short-handed'], modeIds: ['one', 'two'], createdAt: CREATED_AT,
+  });
+  assert.equal(two.modes.length, 2);
+  assert.throws(() => createStrategyProfileBundle({
+    profileId: 'empty', ownerRef: OWNER, displayName: 'Empty',
+    modes: [], modeIds: [], createdAt: CREATED_AT,
+  }), /at least one/);
 });
 
 test('RFI CalibrationContext stores objective spot facts, not profile personality', () => {
