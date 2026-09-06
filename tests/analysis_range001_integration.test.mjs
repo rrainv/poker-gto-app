@@ -754,7 +754,7 @@ test('renderer exposes compact blocker/range sections, readable partial coverage
   assert.doesNotMatch(RENDERER, /evaluateFive|evaluateSeven|conditionHoldemRange|calculateEquity/);
 });
 
-test('Analysis tutorial teaches the new facts without changing the manual v1 first-use policy', () => {
+test('Analysis tutorial teaches accepted study integrations without changing the manual v1 first-use policy', () => {
   const tutorial = PLAYBOOK_ANALYSIS_TUTORIAL_DEFINITION;
   assert.equal(tutorial.version, 1);
   assert.equal(tutorial.firstUsePolicy, 'manual');
@@ -769,8 +769,9 @@ test('Analysis tutorial teaches the new facts without changing the manual v1 fir
     'comparison',
   ]);
   assert.match(tutorial.steps.find((step) => step.id === 'exact-hand').bodyKey, /canonical evaluator/);
-  assert.match(tutorial.steps.find((step) => step.id === 'blockers').bodyKey, /33% required folds does not mean Villain folds 33%/);
-  assert.match(tutorial.steps.find((step) => step.id === 'blockers').bodyKey, /neutral removal facts/);
+  assert.match(tutorial.steps.find((step) => step.id === 'blockers').bodyKey, /synthetic policies/);
+  assert.match(tutorial.steps.find((step) => step.id === 'blockers').bodyKey, /unsupported targets/);
+  assert.match(tutorial.steps.find((step) => step.id === 'blockers').bodyKey, /opponent assumptions separate from the observed action and reference/);
   assert.match(tutorial.steps.find((step) => step.id === 'range').bodyKey, /unknown combos unknown/);
   assert.match(tutorial.steps.find((step) => step.id === 'range').bodyKey, /sources remain separate/);
   assert.match(HTML, /data-tutorial-anchor="playbook-analysis-explanation"/);

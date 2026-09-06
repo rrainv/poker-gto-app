@@ -1,5 +1,18 @@
 # Saved Study Objects Foundation
 
+September 6 additive [Deep Review / Study Inbox](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md)
+consumer: canonical reviewed decisions preserve their parent Saved Hand when
+needed, and Inbox reopens that exact decision through the existing source ID.
+Review later/Situational retain existing annotations. The shared annotation editor
+captures the selected Saved object and owner, so a changing current Hand cannot
+retarget a decision note. Detached decision editing exposes no current-Hand archive.
+No Saved schema or new evidence store is introduced.
+
+September 6 additive import extension: [Hand History Import v1](HAND_HISTORY_IMPORT_V1_SPEC.md)
+adds `saved-hand-snapshot/v3` with recorded-settlement PokerState/Replay v3 and
+durable structured provenance. Outer SavedStudyObject v1, database, ownership
+and historical records are unchanged. Raw history text is not stored.
+
 Status: implemented through `SAVED-OBJECTS-002`, `GAME-RULES-001C`, and human-accepted `SAVED-VISUAL-KNOWLEDGE-001`, with optional account sync added by `ACCOUNT-002B-A`
 
 Date: August 30, 2026

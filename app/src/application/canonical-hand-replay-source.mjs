@@ -2,6 +2,9 @@ import {
   CHANCE_TYPES,
   POKER_STATE_SCHEMA_VERSION,
   POKER_STATE_V2_SCHEMA_VERSION,
+  POKER_STATE_V3_SCHEMA_VERSION,
+  initializeRecordedHand,
+  applyRecordedSettlement,
   applyAction,
   applyChance,
   applyPrivateReveal,
@@ -14,18 +17,22 @@ import {
 
 export const CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION = 'canonical-hand-replay-source/v1';
 export const CANONICAL_HAND_REPLAY_SOURCE_V2_SCHEMA_VERSION = 'canonical-hand-replay-source/v2';
+export const CANONICAL_HAND_REPLAY_SOURCE_V3_SCHEMA_VERSION = 'canonical-hand-replay-source/v3';
 export const CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSION = 'canonical-hand-replay-event/v1';
 export const CANONICAL_HAND_REPLAY_EVENT_V2_SCHEMA_VERSION = 'canonical-hand-replay-event/v2';
+export const CANONICAL_HAND_REPLAY_EVENT_V3_SCHEMA_VERSION = 'canonical-hand-replay-event/v3';
 export const CANONICAL_HAND_REPLAY_RECONSTRUCTION_SCHEMA_VERSION = 'canonical-hand-replay-reconstruction/v1';
 
 export const CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSIONS = Object.freeze([
   CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION,
   CANONICAL_HAND_REPLAY_SOURCE_V2_SCHEMA_VERSION,
+  CANONICAL_HAND_REPLAY_SOURCE_V3_SCHEMA_VERSION,
 ]);
 
 export const CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSIONS = Object.freeze([
   CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSION,
   CANONICAL_HAND_REPLAY_EVENT_V2_SCHEMA_VERSION,
+  CANONICAL_HAND_REPLAY_EVENT_V3_SCHEMA_VERSION,
 ]);
 
 export const REPLAY_FRAME_OPERATIONS = Object.freeze({
@@ -36,10 +43,17 @@ export const REPLAY_FRAME_OPERATIONS = Object.freeze({
   DEAL_BOARD: 'deal_board',
   ACTION: 'action',
   SHOWDOWN: 'showdown',
+  RECORDED_SETTLEMENT: 'recorded_settlement',
 });
 
 const SUPPORTED_OPERATIONS = new Set(Object.values(REPLAY_FRAME_OPERATIONS));
 const REPLAY_VERSION_CONTRACTS = Object.freeze({
+  [CANONICAL_HAND_REPLAY_SOURCE_V3_SCHEMA_VERSION]: Object.freeze({
+    sourceSchemaVersion: CANONICAL_HAND_REPLAY_SOURCE_V3_SCHEMA_VERSION,
+    eventSchemaVersion: CANONICAL_HAND_REPLAY_EVENT_V3_SCHEMA_VERSION,
+    pokerStateSchemaVersion: POKER_STATE_V3_SCHEMA_VERSION,
+    initialize: initializeRecordedHand,
+  }),
   [CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION]: Object.freeze({
     sourceSchemaVersion: CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION,
     eventSchemaVersion: CANONICAL_HAND_REPLAY_EVENT_SCHEMA_VERSION,
@@ -276,6 +290,12 @@ function validateEventEnvelope(event, expectedSequence, expectedSchemaVersion) {
 }
 
 function applyReplayEvent(previousState, event, contract) {
+  if (event.operation === REPLAY_FRAME_OPERATIONS.RECORDED_SETTLEMENT) {
+    if (contract.pokerStateSchemaVersion !== POKER_STATE_V3_SCHEMA_VERSION) throw new RangeError('Recorded settlement requires Replay v3');
+    if (previousState?.recordedSettlement !== null) throw new RangeError('Recorded settlement must occur exactly once after canonical progression');
+    requireExactKeys(event.payload, ['evidence'], 'Replay recorded settlement');
+    return applyRecordedSettlement(previousState, event.payload.evidence);
+  }
   if (event.operation === REPLAY_FRAME_OPERATIONS.INITIALIZE_HAND) {
     if (previousState !== null || event.sequence !== 0) {
       throw new RangeError('Canonical Hand Replay must initialize exactly once at sequence 0');
@@ -405,6 +425,9 @@ export function deriveCanonicalHandReplayEvent({
     payload = { revealEvent: revealEventFromStates(previousState, state) };
   } else if (operation === REPLAY_FRAME_OPERATIONS.SHOWDOWN) {
     payload = null;
+  } else if (operation === REPLAY_FRAME_OPERATIONS.RECORDED_SETTLEMENT) {
+    const { schemaVersion, grossPotMilliBb, rakeMilliBb, payoutsMilliBbByPlayer } = state.recordedSettlement;
+    payload = { evidence: { schemaVersion, grossPotMilliBb, rakeMilliBb, payoutsMilliBbByPlayer } };
   } else {
     throw new RangeError(`Unsupported canonical Replay operation: ${operation}`);
   }

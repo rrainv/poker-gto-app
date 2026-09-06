@@ -541,6 +541,11 @@
 
     <section id="homeMode" class="mode-view active" data-product-destination="home" aria-label="Home" data-i18n-aria-label="Home dashboard">
       <div class="workspace-frame workspace-frame--standard">
+      <details id="studyInboxPanel" class="study-inbox-panel">
+        <summary id="studyInboxTitle">Study Inbox</summary>
+        <button id="studyInboxRefresh" type="button" class="ui-button ui-button--secondary">Refresh</button>
+        <div id="studyInboxContent" aria-live="polite"></div>
+      </details>
       <div id="homeWorkspace" class="home-workspace" aria-busy="true" data-tutorial-anchor="saved-workspace">
         <div id="homeLoadingState" class="home-loading-state" role="status">
           <span class="home-loading-spinner" aria-hidden="true"></span>
@@ -1040,6 +1045,7 @@
             </div>
 
             <div class="panel-body playbook-hand-body">
+              <button id="handImportButton" class="ui-button ui-button--secondary" type="button" data-tutorial-anchor="hand-import" data-i18n="Import hand history">Import hand history</button>
               <details id="handSetupDisclosure" class="hand-disclosure hand-setup-disclosure" open>
                 <summary>
                   <span><strong data-i18n="Hand setup">Hand setup</strong><small id="handSetupCompactSummary" data-i18n="Configure before the hand starts">Configure before the hand starts</small></span>
@@ -1522,6 +1528,7 @@
                     <div id="handReviewFrequencyStack" class="hand-review-frequency-stack" role="img" aria-label="Strategy frequencies unavailable"></div>
                     <div id="handReviewFrequencyRows" class="hand-review-frequency-rows"></div>
                     <p id="handReviewComparisonNote" class="panel-note"></p>
+                    <div id="handReviewExploitFacts"></div>
                   </section>
 
                   <dl class="hand-review-decision-facts">
@@ -2123,6 +2130,8 @@
                 <p id="personalIntentError" role="alert"></p>
               </details>
               <aside class="personal-range-understanding">
+                <section class="personal-coach" data-tutorial-anchor="personal-coach" aria-labelledby="personalCoachTitle"><h3 id="personalCoachTitle" data-i18n="Your next learning step">Your next learning step</h3><div id="personalCoachCards"></div></section>
+                <details class="personal-hand-disclosure" data-tutorial-anchor="personal-hand-study"><summary data-i18n="Teach through a hand">Teach through a hand</summary><div id="personalHandWorkspace" class="personal-hand-workspace"></div></details>
                 <h3 data-i18n="Your range structure">Your range structure</h3><ul id="personalRangeSummary"></ul>
                 <details><summary data-i18n="Inspect range evidence">Inspect range evidence</summary><div id="personalRangeFacts"></div></details>
                 <section class="personal-next-question"><h3 data-i18n="Teach Riverline Next">Teach Riverline Next</h3><label for="personalTeachTopic" data-i18n="Focus (optional)">Focus (optional)</label><select id="personalTeachTopic" class="control-select"><option value="" data-i18n="Let Riverline suggest">Let Riverline suggest</option><option value="offsuit_boundary" data-i18n="Offsuit boundary">Offsuit boundary</option><option value="suited_boundary" data-i18n="Suited boundary">Suited boundary</option><option value="pair_boundary" data-i18n="Pocket pairs">Pocket pairs</option></select><p id="personalTeachReason"></p><button id="personalTeachNext" class="ui-button ui-button--secondary" type="button" data-i18n="Teach this next">Teach this next</button></section>
@@ -2507,6 +2516,7 @@
               <p class="training-eyebrow" data-i18n="Full Hand">Full Hand</p>
               <h3 id="trainingFullHandCompletionTitle" data-i18n="Hand Complete">Hand Complete</h3>
               <p id="trainingFullHandResult"></p>
+              <section id="trainingOpponentReview" class="opponent-practice-review" hidden></section>
               <dl class="training-full-hand-summary">
                 <div><dt data-i18n="Decisions answered">Decisions answered</dt><dd id="trainingFullHandDecisionCount" class="poker-data-token">0</dd></div>
                 <div><dt data-i18n="Decision summary">Decision summary</dt><dd id="trainingFullHandGradeSummary"></dd></div>
@@ -2605,6 +2615,7 @@
                 <button class="ui-button" type="button" data-training-session-mode="focused" aria-pressed="false" data-i18n="Focused Drill">Focused Drill</button>
                 <button class="ui-button" type="button" data-training-session-mode="full_hand" aria-pressed="false" data-i18n="Full Hand">Full Hand</button>
               </div>
+              <section id="trainingOpponentSetup" class="opponent-practice-setup" hidden></section>
               <div id="trainingFullHandCompactControls" class="training-full-hand-compact-controls" hidden>
                 <div><span data-i18n="Live Hand">Live Hand</span><strong id="trainingFullHandCompactStatus"></strong><small><span data-i18n="Seed">Seed</span> <span id="trainingFullHandCompactSeed" class="poker-data-token">—</span></small></div>
                 <div><button id="trainingFullHandLiveNewHand" class="ui-button ui-button--secondary" type="button" data-i18n="New Hand">New Hand</button><button id="trainingFullHandEndHand" class="ui-button ui-button-ghost ui-button--destructive" type="button" hidden data-i18n="Abort hand">Abort hand</button></div>
@@ -2784,6 +2795,7 @@
           <div id="equityHandAnalysisContent" class="equity-dossier-content" aria-live="polite">
             <section class="equity-dossier-section equity-analysis-empty"><h3 data-i18n="Hand Analysis">Hand Analysis</h3><p class="muted" data-i18n="Calculate Equity to inspect entered-hand outcomes and detailed hand facts.">Calculate Equity to inspect entered-hand outcomes and detailed hand facts.</p></section>
           </div>
+          <div id="advancedEquityWorkspace" data-tutorial-anchor="equity-runouts"></div>
           <details id="equityDetails" class="panel equity-details-panel">
             <summary><span data-i18n="Calculation evidence">Calculation evidence</span><span class="muted" data-i18n="Method, workload, provenance, and limitations">Method, workload, provenance, and limitations</span></summary>
             <dl class="equity-detail-grid"><div><dt data-i18n="Requested">Requested</dt><dd id="equityDetailRequested">Auto</dd></div><div><dt data-i18n="Actual method">Actual method</dt><dd id="equityDetailActual">—</dd></div><div><dt data-i18n="Estimated combinations">Estimated combinations</dt><dd id="equityDetailEstimate">—</dd></div><div><dt data-i18n="Samples">Samples</dt><dd id="equityDetailSamples">—</dd></div><div><dt data-i18n="Seed">Seed</dt><dd id="equityDetailSeed">—</dd></div><div><dt data-i18n="Unknown hands">Unknown hands</dt><dd id="equityDetailUnknown">1</dd></div><div><dt data-i18n="Missing board cards">Missing board cards</dt><dd id="equityDetailBoard">5</dd></div><div><dt data-i18n="Execution">Execution</dt><dd id="equityDetailExecution">Ready</dd></div></dl>
@@ -3491,9 +3503,12 @@
   <script type="module" src="src/application/guide-bootstrap.mjs"></script>
   <script type="module" src="src/application/presentation-density-bootstrap.mjs"></script>
   <script type="module" src="src/application/equity-mode-bootstrap.mjs"></script>
+  <script type="module" src="src/application/advanced-equity-workspace.mjs"></script>
   <script type="module" src="src/application/training-memory-bootstrap.mjs"></script>
   <script type="module" src="src/application/training-mode-bootstrap.mjs"></script>
   <script type="module" src="src/application/hand-review-bootstrap.mjs"></script>
+  <script type="module" src="src/application/study-workspace-bootstrap.mjs"></script>
+  <script type="module" src="src/application/hand-history-import-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-card-removal-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>
   <script src="src/core/logic.js?v=27" defer></script>

@@ -25,7 +25,7 @@ function clockwiseWinnerOrder(state, winnerPlayerIds) {
     .map((player) => player.playerId);
 }
 
-function splitLayerAmount(state, amountMilliBb, winnerPlayerIds) {
+export function splitLayerAmount(state, amountMilliBb, winnerPlayerIds) {
   if (winnerPlayerIds.length === 0) throw new RangeError('A pot layer requires at least one winner');
   const chipUnit = state.game.chipUnitMilliBb;
   if (amountMilliBb % chipUnit !== 0) {

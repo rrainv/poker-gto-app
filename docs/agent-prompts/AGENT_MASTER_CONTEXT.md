@@ -1,10 +1,40 @@
 # Agent Master Context
 
+September 7 explicit Equity slice: [Advanced Equity v1](../project/ADVANCED_EQUITY_V1_SPEC.md)
+adds canonical weighted joint Equity and bounded runout/card inspection. Partial
+results are known-only, never full-range Equity. Personal exact trajectories and
+explicit Exploit hypotheses can consume it; policy weights still cannot supply
+ranges. This supersedes earlier weighted-Equity-unavailable snapshots below.
+`QA-ADVANCED-EQUITY-001` owns human acceptance; general sequencing is unchanged.
+
+September 6 explicit source foundation: [Reference Source Foundation v1](../project/REFERENCE_SOURCE_FOUNDATION_V1_SPEC.md)
+adds SHA-256 intake, exact coverage inventory, session health ledger, application
+claim ceilings and local private preview. No production source is registered.
+[Source research](../project/REFERENCE_SOURCE_ACQUISITION_2026_09.md) identifies
+HRC's authorized-result distribution permission; actual acquisition and review
+remain `RET-REFERENCE-PACK-001`. `QA-REFERENCE-STRATEGY-002` owns pending human QA.
+
+September 6 explicit study slice: [Deep Review / Study Inbox v1](../project/DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md)
+adds ephemeral `decision-delta/v1`, deterministic reasons and a lazy owner-projected
+Inbox. Saved annotations/parent Hands, Training Memory and Personal evidence retain
+storage authority. `QA-DEEP-STUDY-001` owns pending human acceptance; no general
+sequencing change or production normative/reference authority is implied.
+
+September 6 explicit import slice: [Hand History Import v1](../project/HAND_HISTORY_IMPORT_V1_SPEC.md)
+adds PokerStars English cash intake, opt-in recorded-settlement Game Rules v2 /
+PokerState and Replay v3, Saved Hand v3 provenance and shared Review continuity.
+`QA-HAND-HISTORY-IMPORT-001` retains human acceptance. Live/historical semantics
+and general sequencing are unchanged; rake-aware Personal/Training remain unavailable.
+
 Last refreshed: September 4, 2026 (`LIGHT-WINS-BATCH-001` is human accepted; `IDENTITY-LIFECYCLE-001` is active next).
 
 This is compact agent execution context, not a Product Backlog. `CURRENT_PHASE.md` owns execution order, `PRODUCT_BACKLOG.md` owns accepted capability/status, and `DOCUMENTATION_GOVERNANCE.md` owns update rules.
 
 ## Product and runtime
+
+`EXPLOIT-ANALYSIS-001` extends the existing teacher with [Exploit Analysis v1](../project/EXPLOIT_ANALYSIS_V1_SPEC.md): context-bound response facts, parameter-derived incentives/opportunities, Personal check questions, truthful unavailable semantic requests and six separate completed Review roles. Quantitative range response, weighted Equity, optimization and normative permissions are not added. `QA-EXPLOIT-ANALYSIS-001` owns pending human acceptance; general sequencing is unchanged.
+
+The additive [Bluff / Exploit Teacher v1](../project/BLUFF_EXPLOIT_TEACHER_V1_SPEC.md) now consumes canonical facts and policy-owned conditional action weights in Analyze Explain and selected Personal Hand study. It supplies reasoning questions/comparison and Training request contracts, not quantitative role/Equity or normative exploit authority. Current Phase and `QA-BLUFF-EXPLOIT-TEACHER-001` own pending acceptance.
 
 Riverline is a browser-first personal poker learning workstation connecting full-hand play, Review/Replay, Analyze, selected-reference comparison, Personal Strategy, Saved continuity, Training/re-drill, and later opponent policies. It should feel calm, serious, state-aware, and non-casino.
 
@@ -40,6 +70,12 @@ Electron is a thin host for the same app. Solver research stays isolated under `
 - **Home Game:** exact-money organizer domain separate from poker/study authorities.
 
 ## Critical semantic facts
+
+- `OPPONENT-INTELLIGENCE-002` adds Full Hand policy reflection intents, frozen review metadata and actor-input/branch disclosures, descriptive policy comparison, and read-only Personal Strategy region-teaching hooks. [Opponent Policy v2](../project/OPPONENT_POLICY_V2_SPEC.md) owns the contracts. Policy behavior/version and four parameters remain unchanged; themes never enter grading, exact semantic generation and quantitative response ranges remain unavailable, and evidence stays session-local. No real-person storage is implemented. `QA-OPPONENT-POLICY-002` retains human acceptance after an empty browser inventory.
+
+- September 6 explicit opponent ticket: [Opponent Policy v2](../project/OPPONENT_POLICY_V2_SPEC.md) implements the actor allowlist for all selectors, policy/deal seed separation, three parameter-backed card-independent presets/custom Full Hand selection, and session-local completed bot review. Hidden/future-card invariance and complete-hand replay are tested; `QA-OPPONENT-POLICY-001` retains human acceptance after an empty browser inventory. No quantitative range response, Personal Strategy adapter, real-person profiling, normative authority or new persistence is implemented.
+
+- `PERSONAL-STRATEGY-CONTINUATION-001C` (September 6) extends the [Personal Hand study](../project/PERSONAL_STRATEGY_COACH_V1_SPEC.md) through flop, turn and river on the existing bounded hypothetical BTN/BB line. Exact custom sizes, partial action-conditioned ranges, distinct mutation facts, street-aware combo questions, prior-node variations, Approach comparison and existing policy/concept lessons are implemented without a new persistence schema. Reload/correction reconstructs trajectories from intent and canonical replay. Exact-node/semantic Training generation, arbitrary Hand import, multiway branch generation, quantitative opponent ranges, weighted Equity and normative strategy assessment remain unavailable. Human acceptance remains with `QA-PERSONAL-COACH-001`; the browser inventory is empty. General sequencing and other issue owners are unchanged.
 
 - Scenario is lossy; Hand is canonical legal history.
 - Randomization is shared interaction language with bounded deterministic recipe infrastructure, not a universal poker-state generator. Analyze, Hand, and Equity retain surface-specific adapters/authorities; Training remains planner/generator-owned. Random output carries no strategic, frequency, representative-spot, or GTO claim.

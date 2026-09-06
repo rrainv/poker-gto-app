@@ -1,5 +1,6 @@
 import { resolveStrategyClaimPolicy } from './strategy-claim-policy.mjs';
 import { isStrategyResultV1 } from './strategy-result.mjs';
+import { selectedReferenceFacts } from './reference-coverage.mjs';
 import {
   acceptedAssessmentPolicyFor, assessmentActionKey, assessmentContextIdentity,
   freezeAssessmentData as freeze, sizedAssessmentAction, validateAssessmentPolicy,
@@ -30,7 +31,8 @@ function comparisonFor(result, chosenAction) {
 
 function project(result, policy, criterion, chosenAction, context, historical = false) {
   const reasons = [];
-  const valid = isStrategyResultV1(result) && policy?.availability === 'available';
+  const valid = isStrategyResultV1(result) && policy?.availability === 'available'
+    && policy.claims?.strategy_presentation === true;
   const heuristic = valid && policy.source?.family === 'heuristic'
     && policy.coverage?.kind !== 'unsupported';
   const reference = valid && !['heuristic', 'personal', 'observed', 'opponent'].includes(policy.source?.family)
@@ -38,7 +40,10 @@ function project(result, policy, criterion, chosenAction, context, historical = 
     && policy.coverage?.kind === 'exact';
   let state = heuristic ? TRUTH_STATES.HEURISTIC : reference ? TRUTH_STATES.REFERENCE : TRUTH_STATES.UNASSESSED;
   const claims = denied();
-  claims.reference = reference;
+  // Preserve legacy answer-time semantics; an explicit new source ceiling must
+  // also permit comparison before Personal/Review may consume that role.
+  claims.reference = reference && (policy.sourceAuthoritySnapshot?.acceptedClaimClasses == null
+    || policy.claims?.reference_match === true && policy.claims?.reference_deviation === true);
   let outcome = 'unassessed';
   let acceptedCriterion = null;
   if (reference && criterion && policy.claims?.normative_grading === true) {
@@ -84,6 +89,7 @@ function project(result, policy, criterion, chosenAction, context, historical = 
     source: { id: result?.source ?? null, version: result?.sourceVersion ?? null,
       fingerprint: result?.provenance?.contentHash ?? null, role: policy?.source?.family ?? 'unavailable' },
     claimPolicy: structuredClone(policy), assessmentPolicy: acceptedCriterion ? structuredClone(acceptedCriterion) : null,
+    selectedReference: selectedReferenceFacts(result, policy),
     claims, outcome, comparison: state === TRUTH_STATES.UNASSESSED ? null : comparisonFor(result,
       heuristic || policy.claims?.reference_match && policy.claims?.reference_deviation ? chosenAction : null),
     reasons: [...new Set(reasons)],
@@ -130,6 +136,8 @@ export function validatedHistoricalTruth(evidence) {
     const context = saved.contextIdentity === null ? null : JSON.parse(saved.contextIdentity);
     const expected = project(evidence.strategyResult, saved.claimPolicy, saved.assessmentPolicy,
       saved.chosenAction, context, true);
+    if (saved.selectedReference && assessmentContextIdentity(saved.selectedReference)
+      !== assessmentContextIdentity(expected.selectedReference)) return null;
     for (const key of ['state', 'source', 'claims', 'outcome', 'comparison', 'reasons', 'learningEligibility', 'assessmentPolicy']) {
       if (assessmentContextIdentity(saved[key]) !== assessmentContextIdentity(expected[key])) return null;
     }

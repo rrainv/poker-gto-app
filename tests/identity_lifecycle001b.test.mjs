@@ -525,6 +525,14 @@ test('owner clearing removes Saved Scenario cards and context even after its vie
     PLAYBOOK_SCENARIO_CONTROL_IDS: [...controls.keys(), 'absent-control'],
     document: { getElementById: (id) => controls.get(id) ?? null },
     savedScenarioOwnerActive: true,
+    importedHandOwnerPresentation: false,
+    handReviewDecisionSaver: { clear() { sandbox.decisionSaverCleared = true; } },
+    handReviewProjector: { clear() { sandbox.reviewProjectorCleared = true; } },
+    closeActiveHandReview({ returnToEndpoint }) {
+      assert.equal(returnToEndpoint, false);
+      app.handReview.source = null;
+      app.handReview.model = null;
+    },
     activeSavedSpotContext: null,
     savedPlaybookScenarioPresentation: { ownerPrivate: 'cached A presentation' },
     homeRefreshSequence: 0, homeViewModel: { ownerPrivate: 'A home' }, homeSavedExpandedId: 'A', homeSavedCategory: 'spot',
@@ -568,4 +576,6 @@ test('owner clearing removes Saved Scenario cards and context even after its vie
   assert.equal(sandbox.homeViewModel, null);
   assert.equal(app.playbookResolution, unavailable);
   assert.equal(app.handReview.savedDecisionIds.size, 0);
+  assert.equal(sandbox.decisionSaverCleared, true);
+  assert.equal(sandbox.reviewProjectorCleared, true);
 });

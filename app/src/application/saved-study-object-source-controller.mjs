@@ -196,7 +196,7 @@ export function createSavedStudyObjectSourceController({
     return status('saved', { identity, object });
   }
 
-  async function saveHand(identity) {
+  function captureHand() {
     const bridge = getPlaybookBridge();
     const pokerState = bridge?.getState?.() ?? null;
     const heroPlayerId = bridge?.getHeroPlayerId?.() ?? null;
@@ -205,11 +205,17 @@ export function createSavedStudyObjectSourceController({
     if (!pokerState || !heroPlayerId || !replaySource) {
       throw new RangeError('A canonical Hand and replay source are required before saving');
     }
+    return { pokerState, heroPlayerId, replaySource, projection, importProvenance: bridge?.getImportProvenance?.() ?? null };
+  }
+
+  async function saveHand(identity, captured) {
+    const { pokerState, heroPlayerId, replaySource, projection, importProvenance } = captured;
     const reference = establishReference(durableStorage, identity, clock);
     return application.saveHand({
       pokerState,
       heroPlayerId,
       replaySource,
+      importProvenance,
       sourceSurface: projection?.readOnly
         ? SAVED_STUDY_SOURCE_SURFACES.REPLAY
         : SAVED_STUDY_SOURCE_SURFACES.HAND,
@@ -249,6 +255,7 @@ export function createSavedStudyObjectSourceController({
     async saveCurrent({ mode, scenarioInput = null, decisionContext = null } = {}) {
       const identity = currentIdentity({ mode, scenarioInput });
       if (!identity) throw new RangeError('The current source is not saveable');
+      const capturedHand = mode === 'hand' ? captureHand() : null;
       const existingFlight = inFlightSaves.get(identity.key);
       if (existingFlight) return existingFlight;
       const operation = (async () => {
@@ -256,7 +263,7 @@ export function createSavedStudyObjectSourceController({
         lifecycleScope?.assertCurrent();
         if (existing.state === 'saved') return deepFreeze({ object: existing.object, created: false });
         const result = mode === 'hand'
-          ? await saveHand(identity)
+          ? await saveHand(identity, capturedHand)
           : await saveScenario(identity, scenarioInput, decisionContext);
         lifecycleScope?.assertCurrent();
         objectCache.set(identity.key, result.object);

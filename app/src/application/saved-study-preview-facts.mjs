@@ -2,6 +2,7 @@ import {
   GAME_RULES_COLLECTION_TYPES,
   POKER_STATE_SCHEMA_VERSION,
   POKER_STATE_V2_SCHEMA_VERSION,
+  POKER_STATE_V3_SCHEMA_VERSION,
 } from '../../../shared/poker-domain/index.js';
 
 export const SAVED_STUDY_PREVIEW_FACTS_SCHEMA_VERSION = 'saved-study-preview-facts/v1';
@@ -21,7 +22,7 @@ function neutralSavedHandGameMode(state) {
     || (state.schemaVersion === undefined && typeof state.game?.mode === 'string')) {
     return state.game.mode;
   }
-  if (state.schemaVersion !== POKER_STATE_V2_SCHEMA_VERSION) {
+  if (![POKER_STATE_V2_SCHEMA_VERSION, POKER_STATE_V3_SCHEMA_VERSION].includes(state.schemaVersion)) {
     throw new TypeError(`Unsupported Saved Hand PokerState version: ${String(state.schemaVersion)}`);
   }
   const policyType = state.rulesSnapshot.definition.collectionPolicy.type;

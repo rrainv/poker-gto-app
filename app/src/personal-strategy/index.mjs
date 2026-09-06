@@ -11,3 +11,4 @@ export * from './projection-service.mjs';
 export * from './rfi-question-selection.mjs';
 export * from './matrix-projection.mjs';
 export * from './range-teacher-view.mjs';
+export * from './exact-node-intent.mjs';

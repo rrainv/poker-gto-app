@@ -1,8 +1,8 @@
 import {
   EQUITY_ERROR_CODES,
-  calculateEquity,
   createEquityFailure,
 } from '../../../shared/poker-domain/index.js';
+import { calculateEquityRequest } from './advanced-equity-dispatch.mjs';
 
 export const EQUITY_WORKER_MESSAGES = Object.freeze({
   CALCULATE: 'equity/calculate',
@@ -13,7 +13,7 @@ export const EQUITY_WORKER_MESSAGES = Object.freeze({
 
 export function createEquityWorkerMessageHandler({
   postMessage,
-  calculate = calculateEquity,
+  calculate = calculateEquityRequest,
   AbortControllerClass = AbortController,
 } = {}) {
   if (typeof postMessage !== 'function') throw new TypeError('postMessage is required');

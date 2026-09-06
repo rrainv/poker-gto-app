@@ -32,6 +32,7 @@ import {
   RANGE_COMPARISON_FACTS_SCHEMA_VERSION,
   createRepresentativeRangeComparisonFacts,
 } from './range-comparison-facts.mjs';
+import { mountExploitTeacher } from './exploit-teacher-workspace.mjs';
 
 export function installAnalysisExplanationBridge(browserWindow) {
   if (!browserWindow) return null;
@@ -45,6 +46,7 @@ export function installAnalysisExplanationBridge(browserWindow) {
     createRangeAnalysisFacts,
     bluffAnalysisFactsSchemaVersion: BLUFF_ANALYSIS_FACTS_SCHEMA_VERSION,
     createBluffAnalysisFacts,
+    mountExploitTeacher,
     deriveExactHandFacts,
     deriveBoardTextureFacts,
     rangeComparisonFactsSchemaVersion: RANGE_COMPARISON_FACTS_SCHEMA_VERSION,

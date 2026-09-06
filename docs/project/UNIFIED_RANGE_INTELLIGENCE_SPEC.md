@@ -4,6 +4,8 @@ Status: architecture authority for `PERSONAL-STRATEGY-ARCH-002`; implementation 
 
 Date: August 18, 2026
 
+Current additive continuation (September 5, 2026): [Coach, Range Evolution 001A and Teach-through-a-Hand](PERSONAL_STRATEGY_COACH_V1_SPEC.md) own the bounded exact-node intended-evidence extension inside the existing repository, quantitative action conditioning, public-card removal, reached-flop combo teaching and grounded Coach projections. Legacy class/action-family evidence remains unchanged and cannot supply selected-size mass. Historical implementation tables below describe their named checkpoints; current Game Setup/Approach and store/export v3, database v4 truth remains [Intelligence v1](PERSONAL_STRATEGY_INTELLIGENCE_V1_SPEC.md). Trajectories remain derived; full postflop rollout, weighted Equity and unsupported Training targets remain unavailable.
+
 ## 1. Purpose and decision summary
 
 Riverline's Range Calibration, Personal Strategy Matrix, Range Builder, and Range Teacher must be different workflows over one range-intelligence model. They must not become separate range stores, inference engines, or strategy authorities.

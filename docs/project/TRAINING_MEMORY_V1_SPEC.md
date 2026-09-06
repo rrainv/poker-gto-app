@@ -1,5 +1,12 @@
 # Training Memory v1 specification
 
+Additive consumer: [Deep Review / Study Inbox v1](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md)
+now reads bounded due items and owner-checked sessions through `getSession`, joins
+completed Review decisions, and invokes existing Same/Similar/uncertainty routes.
+Its Home disclosure preserves the active Full Hand embargo and lifecycle fences.
+The v1 storage, grading and generation contracts below are unchanged; older
+statements excluding Home describe the original Memory delivery scope.
+
 Status: accepted bounded evidence/re-drill checkpoint for `TRAINING-MEMORY-001`, August 26, 2026; authentication-owner isolation is human/security accepted under `AUTH-TRAINING-MEMORY-001`, and source-trust persistence/comparison gating is accepted under `STRATEGY-TRUST-001`, August 31, 2026. Baseline/remediation semantics remain reopened under `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`.
 
 ## Purpose and authority

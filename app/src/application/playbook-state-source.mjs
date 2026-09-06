@@ -4,6 +4,7 @@ import {
   GAME_RULES_COLLECTION_TYPES,
   PHASES,
   POKER_STATE_V2_SCHEMA_VERSION,
+  POKER_STATE_V3_SCHEMA_VERSION,
   STREETS,
   bbToMilliBb,
   createGameRulesSnapshotFromLegacyGameConfiguration,
@@ -726,7 +727,7 @@ export function deriveDecisionContextFromPlaybookScenario(scenarioInput) {
 
 export function createPlaybookScenarioFromPokerState(state, heroPlayerId, options = {}) {
   validatePokerState(state);
-  if (state.schemaVersion !== POKER_STATE_V2_SCHEMA_VERSION) {
+  if (![POKER_STATE_V2_SCHEMA_VERSION, POKER_STATE_V3_SCHEMA_VERSION].includes(state.schemaVersion)) {
     throw new TypeError('Hand to Scenario v2 conversion requires poker-state/v2');
   }
   const context = deriveDecisionContextFromPokerState(state, heroPlayerId, options);

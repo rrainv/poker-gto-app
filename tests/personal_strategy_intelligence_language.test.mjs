@@ -9,6 +9,7 @@ import { PERSONAL_RANGE_REGIONS, createPersonalRangeLanguageFacts, comparePerson
   createStrategyRangeLanguageFacts, renderPersonalRangeLanguageFacts, renderPersonalRangeComparison,
   personalRangeRegionEnvelope } from '../app/src/personal-strategy/range-language-facts.mjs';
 import { createNaturalLanguageEnvelope } from '../app/src/application/natural-language-envelope.mjs';
+import { createPersonalCoach } from '../app/src/personal-strategy/coach.mjs';
 import { createStrategyProvider } from '../app/src/application/strategy-provider.mjs';
 import { resolveHeuristicStrategy } from '../app/src/strategy/heuristic-strategy.mjs';
 import { deriveDecisionContextFromPlaybookScenario } from '../app/src/application/playbook-state-source.mjs';
@@ -28,6 +29,20 @@ function view(observations, { modeId = 'a', context = ctx, trainingObservations 
   return createPersonalStrategyEvidenceView({ profileId: 'p', modeId, context, rangeObservations: observations, trainingObservations });
 }
 const factsFor = (observations, opts = {}) => createPersonalRangeLanguageFacts({ evidenceView: view(observations, opts) });
+test('insight presentation labels preserve every accepted sentence and its order across locales', () => {
+  const cases = [factsFor([]), factsFor([observation('K9s'), observation('K7s', 'fold'), observation('AA')]),
+    factsFor([observation('AA'), observation('AA', 'fold')])];
+  for (const facts of cases) for (const language of ['en', 'ru', 'he']) {
+    const rows = renderPersonalRangeLanguageFacts(facts, { language, withPresentation: true });
+    assert.deepEqual(rows.map(row => row.text), renderPersonalRangeLanguageFacts(facts, { language }));
+    assert.ok(rows.every(row => row.label && ['conflict', 'boundary', 'pattern', 'unresolved', 'precision'].includes(row.kind)));
+  }
+  const rows = renderPersonalRangeLanguageFacts(cases[1], { withPresentation: true });
+  assert.ok(rows.some(row => row.kind === 'boundary' && row.text.includes('K9s')));
+  assert.ok(rows.some(row => row.kind === 'precision' && row.text.includes('not exact play frequencies')));
+  assert.ok(rows.some(row => row.kind === 'precision' && row.text.includes('unasked hands')));
+  assert.ok(renderPersonalRangeLanguageFacts(cases[2], { withPresentation: true }).some(row => row.kind === 'conflict'));
+});
 const region = (facts, id) => facts.regions.find((r) => r.id === id);
 
 test('EN/RU/HE negation and original wording survive preview without action or frequency invention', () => {
@@ -264,7 +279,8 @@ test('accepted reference source still needs region coverage and cannot grant nor
   const provider = createStrategyProvider({ sourceAcceptanceRegistry, fallbackResolver: () => ({ source: descriptor.id,
     sourceDescriptor: descriptor, provenance: { contentHash: 'fixture' }, contextCoverage: { kind: 'exact' },
     actions: [{ action: { type: 'raise', amountBb: 3 }, probability: 1 }] }) });
-  const facts = factsFor([observation('AA', 'fold')]);
+  const evidenceView = view([observation('AA', 'fold')]);
+  const facts = createPersonalRangeLanguageFacts({ evidenceView });
   const entries = sourceEntries(PERSONAL_RANGE_REGIONS.pairs, provider);
   const comparison = createStrategyRangeLanguageFacts({ personalFacts: facts, entries, expectedRole: 'reference' });
   assert.equal(region(comparison, 'pairs').permission.comparison, true);
@@ -272,6 +288,13 @@ test('accepted reference source still needs region coverage and cannot grant nor
   assert.match(renderPersonalRangeComparison(comparison).join(' '), /selected reference/);
   const sparse = createStrategyRangeLanguageFacts({ personalFacts: facts, entries: entries.slice(0, 1), expectedRole: 'reference' });
   assert.equal(region(sparse, 'pairs').permission.comparison, false);
+  const coach = createPersonalCoach({ evidenceView, comparison });
+  const referenceCard = coach.opportunities.find((entry) => entry.kind === 'accepted_reference_difference');
+  assert.ok(referenceCard);
+  assert.equal(referenceCard.permission.normative, false);
+  assert.equal(referenceCard.envelope.wordingStrength, 'comparative');
+  assert.ok(referenceCard.evidenceRefs.some((ref) => ref.startsWith('source:')));
+  assert.ok(createPersonalCoach({ evidenceView, comparison: sparse }).opportunities.every((entry) => entry.kind !== 'accepted_reference_difference'));
 });
 
 test('source comparison rejects hand relabels, duplicate rows, changed stacks and prior-action scopes', () => {

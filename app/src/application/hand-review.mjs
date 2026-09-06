@@ -6,6 +6,8 @@ import {
   resolveStrategyClaimPolicy,
 } from './strategy-claim-policy.mjs';
 import { isStrategyResultV1 } from './strategy-result.mjs';
+import { createExploitReviewFacts } from './exploit-review-facts.mjs';
+import { projectDecisionDelta, selectImportantDecisions } from './decision-delta.mjs';
 
 export const HAND_REVIEW_SCHEMA_VERSION = 'hand-review/v1';
 export const HAND_REVIEW_FRAME_CONVENTION = 'pre_action_event_sequence';
@@ -219,8 +221,8 @@ function sourcePresentation(policy) {
   };
 }
 
-function projectDecision(decision, strategyResult, replayPoint) {
-  const evaluation = resolveEvaluation(decision, strategyResult);
+function projectDecision(decision, strategyResult, replayPoint, comparisonBlocked = false) {
+  const evaluation = comparisonBlocked ? null : resolveEvaluation(decision, strategyResult);
   const truth = evaluation?.truth ?? projectStrategyTruth({ strategyResult, decisionContext: decision.decisionContext,
     chosenAction: { type: decision.chosenAction?.type, amountBb: Number.isSafeInteger(decision.chosenAction?.amountToMilliBb) ? decision.chosenAction.amountToMilliBb / 1000 : null } });
   const policy = truth.claimPolicy;
@@ -275,6 +277,8 @@ function projectDecision(decision, strategyResult, replayPoint) {
     strategyResult,
     claimPolicy: policy,
     truth,
+    exploitReview: createExploitReviewFacts({ decisionContext: context, chosenAction: decision.chosenAction,
+      opponentPractice: decision.opponentPractice ?? null, strategyResult, truth }),
     source: sourcePresentation(policy),
     distribution,
     comparison,
@@ -401,6 +405,7 @@ export function createHandReviewProjector({ resolveStrategy = null } = {}) {
       replayProjection = null,
       selectedDecisionIndex = null,
       providerCacheKey = 'default',
+      importProvenance = null,
       actions = {},
     } = {}) {
       if (!Object.values(HAND_REVIEW_SOURCES).includes(source)) {
@@ -411,14 +416,21 @@ export function createHandReviewProjector({ resolveStrategy = null } = {}) {
       const rawDecisions = decisionsFrom({ decisions: suppliedDecisions });
       const projectedDecisions = rawDecisions.map((decision, index) => {
         const replayPoint = validateDecision(decision, index);
-        const strategyResult = resolveDecisionStrategy(
+        const comparisonBlocked = ['ambiguous', 'missing', 'unsupported'].some(kind => importProvenance?.factSummary?.[kind]?.length);
+        const strategyResult = comparisonBlocked ? null : resolveDecisionStrategy(
           handId,
           decision,
           String(providerCacheKey),
         );
-        return projectDecision(decision, strategyResult, replayPoint);
+        return projectDecision(decision, strategyResult, replayPoint, comparisonBlocked);
       });
-      const resolvedIndex = normalizeSelectedIndex(selectedDecisionIndex, projectedDecisions);
+      const deltas = projectedDecisions.map((decision, index) => projectDecisionDelta(decision, {
+        importProvenance, studyMetadata: rawDecisions[index].studyMetadata,
+        strategyBasis: source === HAND_REVIEW_SOURCES.TRAINING_FULL_HAND ? 'historical' : 'current',
+        learningEvidence: rawDecisions[index].learningEvidence,
+      }));
+      const importantDecisions = selectImportantDecisions(deltas);
+      const resolvedIndex = normalizeSelectedIndex(selectedDecisionIndex ?? importantDecisions[0]?.decisionIndex, projectedDecisions);
       const selectedDecision = resolvedIndex === null ? null : projectedDecisions[resolvedIndex];
       const priorityIndex = projectedDecisions.length === 0
         ? null
@@ -428,6 +440,8 @@ export function createHandReviewProjector({ resolveStrategy = null } = {}) {
         source,
         handId,
         heroPlayerId,
+        importProvenance: clone(importProvenance),
+        deepReview: { schemaVersion: 'deep-review/v1', deltas, importantDecisions },
         status: completedHandResult ? 'ready' : 'open',
         frameConvention: {
           id: HAND_REVIEW_FRAME_CONVENTION,
@@ -457,8 +471,9 @@ export function createHandReviewProjector({ resolveStrategy = null } = {}) {
           returnToCompleted: actions.returnToCompleted !== false,
         },
         extensionSeam: {
-          comparisonRoles: ['reference', 'personal_strategy', 'observed_action'],
-          activeRoles: ['reference', 'observed_action'],
+          comparisonRoles: ['reference', 'personal_strategy', 'opponent_policy', 'exploit_analysis', 'observed_action', 'normative_assessment'],
+          activeRoles: ['reference', 'observed_action', ...(projectedDecisions.some(decision =>
+            decision.exploitReview.roles.exploitAnalysis.availability === 'partial') ? ['opponent_policy', 'exploit_analysis'] : [])],
         },
       };
       return deepFreeze(review);
@@ -502,5 +517,6 @@ export function createHandReviewAnalysisHandoff(review, decisionIndex = review?.
     replayFrameTarget: clone(decision.replayFrameTarget),
     decisionContext: clone(decision.durable.decisionContext),
     rulesSnapshot: clone(decision.durable.rulesSnapshot),
+    exploitReview: clone(decision.exploitReview),
   });
 }

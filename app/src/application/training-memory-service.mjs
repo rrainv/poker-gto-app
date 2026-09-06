@@ -829,6 +829,12 @@ export function createTrainingMemoryService({
       return replaced;
     },
 
+    async getSession(sessionId) {
+      const operationContext = await context();
+      const session = await getOwnedSession(operationContext, sessionId);
+      return session;
+    },
+
     async getDecision(recordId) {
       const operationContext = await context();
       return getOwnedDecision(operationContext, recordId);

@@ -1,4 +1,5 @@
 import { projectStrategyTruth, historicalStrategyTruth, strategyTruthPresentation } from './strategy-truth.mjs';
+import { referenceCoveragePresentation } from './reference-source-language.mjs';
 import {
   STRATEGY_RESULT_SCHEMA_VERSION,
   STRATEGY_SOURCES,
@@ -1189,6 +1190,9 @@ export function createAnalysisExplanation({
     {},
     limitation.messageKey,
   )));
+  const referenceCoverageCopy = referenceCoveragePresentation(truth.selectedReference);
+  warnings.push(warning('selected_reference_coverage', referenceCoverageCopy.messageKey,
+    'info', {}, referenceCoverageCopy.messageKey));
   if (actions.length && !claimPolicy.claims[STRATEGY_CLAIMS.ACTION_EV]) {
     warnings.push(warning('ev_unavailable', 'The strategy source supplies no action EV comparison.'));
   }

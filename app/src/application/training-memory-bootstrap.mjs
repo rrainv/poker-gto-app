@@ -70,6 +70,7 @@ export function installTrainingMemoryBridge(browserWindow, options = {}) {
     reviewAgain: (recordId) => service.reviewAgain(recordId),
     snooze: (recordId, days) => service.snooze(recordId, days),
     getDecision: (recordId) => service.getDecision(recordId),
+    getSession: (sessionId) => service.getSession(sessionId),
     listRecentSessions: (queryOptions) => service.listRecentSessions(queryOptions),
     listSessionDecisions: (sessionId, queryOptions) => (
       service.listSessionDecisions(sessionId, queryOptions)

@@ -1643,5 +1643,40 @@
     en[name] = name; ru[name] = ruName; he[name] = heName;
   });
 
+  // REFERENCE-STRATEGY-002: fact-derived coverage diagnostics.
+  Object.assign(en, { 'This file matches the node, but its accepted permissions do not allow reference display here.': 'This file matches the node, but its accepted permissions do not allow reference display here.' });
+  Object.assign(ru, { 'This file matches the node, but its accepted permissions do not allow reference display here.': 'Файл соответствует узлу, но принятые разрешения не позволяют показывать его здесь как эталон.' });
+  Object.assign(he, { 'This file matches the node, but its accepted permissions do not allow reference display here.': 'הקובץ תואם לצומת, אך ההרשאות שאושרו אינן מאפשרות להציגו כאן כמקור ייחוס.' });
+  Object.assign(en, {
+    "The selected reference covers this exact preflop node.": "The selected reference covers this exact preflop node.",
+    "This file matches the preflop node, but Riverline has not accepted it as a reference.": "This file matches the preflop node, but Riverline has not accepted it as a reference.",
+    "The selected source does not cover this bet or raise size.": "The selected source does not cover this bet or raise size.",
+    "The selected source does not cover this stack depth.": "The selected source does not cover this stack depth.",
+    "The selected source uses different assumptions for this spot.": "The selected source uses different assumptions for this spot.",
+    "The selected source provides generalized coverage, not an exact reference for this spot.": "The selected source provides generalized coverage, not an exact reference for this spot.",
+    "The selected source is incomplete for this spot.": "The selected source is incomplete for this spot.",
+    "Riverline has no accepted reference for this spot yet.": "Riverline has no accepted reference for this spot yet."
+});
+  Object.assign(ru, {
+    "The selected reference covers this exact preflop node.": "Выбранный эталон покрывает именно этот префлоп-узел.",
+    "This file matches the preflop node, but Riverline has not accepted it as a reference.": "Файл соответствует префлоп-узлу, но Riverline ещё не принял его как эталон.",
+    "The selected source does not cover this bet or raise size.": "Выбранный источник не покрывает этот размер ставки или рейза.",
+    "The selected source does not cover this stack depth.": "Выбранный источник не покрывает эту глубину стека.",
+    "The selected source uses different assumptions for this spot.": "Выбранный источник использует другие исходные условия для этой ситуации.",
+    "The selected source provides generalized coverage, not an exact reference for this spot.": "Выбранный источник даёт обобщённые данные, а не точный эталон для этой ситуации.",
+    "The selected source is incomplete for this spot.": "Выбранный источник содержит неполные данные для этой ситуации.",
+    "Riverline has no accepted reference for this spot yet.": "В Riverline пока нет принятого эталона для этой ситуации."
+});
+  Object.assign(he, {
+    "The selected reference covers this exact preflop node.": "מקור הייחוס שנבחר מכסה בדיוק את צומת הפרה־פלופ הזה.",
+    "This file matches the preflop node, but Riverline has not accepted it as a reference.": "הקובץ תואם לצומת הפרה־פלופ, אך Riverline עדיין לא אישר אותו כמקור ייחוס.",
+    "The selected source does not cover this bet or raise size.": "המקור שנבחר אינו מכסה את גודל ההימור או ההעלאה הזה.",
+    "The selected source does not cover this stack depth.": "המקור שנבחר אינו מכסה את עומק הערימה הזה.",
+    "The selected source uses different assumptions for this spot.": "המקור שנבחר משתמש בהנחות שונות עבור המצב הזה.",
+    "The selected source provides generalized coverage, not an exact reference for this spot.": "המקור שנבחר מספק כיסוי כללי, ולא ייחוס מדויק למצב הזה.",
+    "The selected source is incomplete for this spot.": "המקור שנבחר אינו שלם עבור המצב הזה.",
+    "Riverline has no accepted reference for this spot yet.": "ל־Riverline עדיין אין מקור ייחוס מאושר למצב הזה."
+});
+
   global.riverlineAnalysisTranslations = { en, ru, he };
 }(window));

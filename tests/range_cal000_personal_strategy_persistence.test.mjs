@@ -279,7 +279,7 @@ test('portable export/import validates versions and rejects collisions atomicall
 
   const unsupported = JSON.parse(encoded);
   unsupported.schemaVersion = 'personal-strategy-export/v99';
-  await assert.rejects(target.importPortable(unsupported), /Expected personal-strategy-export\/v2/);
+  await assert.rejects(target.importPortable(unsupported), /Expected personal-strategy-export\/v3/);
 });
 
 test('malformed, invalid, and future legacy records fail closed without overwriting stored bytes', async () => {
@@ -320,7 +320,7 @@ test('synthetic v0 store fixture migrates transactionally in deterministic order
   });
 
   const migrated = await repository(storage).loadSnapshot();
-  assert.equal(migrated.schemaVersion, 'personal-strategy-store/v2');
+  assert.equal(migrated.schemaVersion, 'personal-strategy-store/v3');
   assert.deepEqual(migrated.ownerRef, OWNER);
   assert.deepEqual(migrated.rangeObservations, current.rangeObservations);
   assert.deepEqual(migrated.trainingObservations, []);

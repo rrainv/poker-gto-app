@@ -1,5 +1,6 @@
 import {
   POKER_STATE_V2_SCHEMA_VERSION,
+  POKER_STATE_V3_SCHEMA_VERSION,
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
 import {
@@ -195,12 +196,13 @@ export function createSavedStudyObjectApplication({
     pokerState,
     heroPlayerId,
     replaySource,
+    importProvenance = null,
     sourceSurface = SAVED_STUDY_SOURCE_SURFACES.HAND,
     sourceId = pokerState?.handId ?? null,
     operation = null,
     ...annotations
   } = {}) {
-    const payload = createSavedHandSnapshot({ pokerState, heroPlayerId, replaySource });
+    const payload = createSavedHandSnapshot({ pokerState, heroPlayerId, replaySource, importProvenance });
     return saveObject({
       kind: SAVED_STUDY_KINDS.HAND,
       payload,
@@ -229,7 +231,7 @@ export function createSavedStudyObjectApplication({
     const payload = createSavedSpotSnapshot({
       derivation: SAVED_SPOT_DERIVATIONS.HAND,
       decisionContext,
-      rulesSnapshot: pokerState.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION
+      rulesSnapshot: [POKER_STATE_V2_SCHEMA_VERSION, POKER_STATE_V3_SCHEMA_VERSION].includes(pokerState.schemaVersion)
         ? pokerState.rulesSnapshot
         : null,
       handReference: createSavedHandReference({

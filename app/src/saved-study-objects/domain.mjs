@@ -1,7 +1,9 @@
+import { validateHandImportProvenance } from './import-provenance.mjs';
 import {
   GAME_RULES_COLLECTION_TYPES,
   POKER_STATE_SCHEMA_VERSION,
   POKER_STATE_V2_SCHEMA_VERSION,
+  POKER_STATE_V3_SCHEMA_VERSION,
   POSITIONS_BY_TABLE_SIZE,
   STREETS,
   assertCardArray,
@@ -24,6 +26,7 @@ export const SAVED_STUDY_ANNOTATIONS_SCHEMA_VERSION = 'saved-study-annotations/v
 export const SAVED_STUDY_TAG_SCHEMA_VERSION = 'saved-study-tag/v1';
 export const SAVED_HAND_SNAPSHOT_SCHEMA_VERSION = 'saved-hand-snapshot/v1';
 export const SAVED_HAND_SNAPSHOT_V2_SCHEMA_VERSION = 'saved-hand-snapshot/v2';
+export const SAVED_HAND_SNAPSHOT_V3_SCHEMA_VERSION = 'saved-hand-snapshot/v3';
 export const SAVED_HAND_PRIVACY_SCHEMA_VERSION = 'saved-hand-privacy/v1';
 export const SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION = 'saved-spot-snapshot/v1';
 export const SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION = 'saved-spot-snapshot/v2';
@@ -393,8 +396,9 @@ function hiddenPrivateCardPlayerIds(state) {
   return state.players.filter((player) => isHiddenHoleCards(player.holeCards)).map((player) => player.playerId);
 }
 
-export function createSavedHandSnapshot({ pokerState, heroPlayerId, replaySource } = {}) {
+export function createSavedHandSnapshot({ pokerState, heroPlayerId, replaySource, importProvenance = null } = {}) {
   validatePokerState(pokerState);
+  if (importProvenance !== null && pokerState.schemaVersion !== POKER_STATE_V3_SCHEMA_VERSION) throw new RangeError('Import provenance requires Saved Hand v3');
   requireString(heroPlayerId, 'SavedHandSnapshot.heroPlayerId', 240);
   const state = cloneSavedStudyData(pokerState);
   const durableReplaySource = cloneSavedStudyData(replaySource);
@@ -411,7 +415,7 @@ export function createSavedHandSnapshot({ pokerState, heroPlayerId, replaySource
     throw new RangeError('SavedHandSnapshot Replay source must reconstruct its canonical PokerState exactly');
   }
   const snapshot = {
-    schemaVersion: pokerState.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION
+    schemaVersion: pokerState.schemaVersion === POKER_STATE_V3_SCHEMA_VERSION ? SAVED_HAND_SNAPSHOT_V3_SCHEMA_VERSION : pokerState.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION
       ? SAVED_HAND_SNAPSHOT_V2_SCHEMA_VERSION
       : SAVED_HAND_SNAPSHOT_SCHEMA_VERSION,
     heroPlayerId,
@@ -423,6 +427,7 @@ export function createSavedHandSnapshot({ pokerState, heroPlayerId, replaySource
       knownPrivateCardPlayerIds: knownPrivateCardPlayerIds(state),
     },
     replaySource: durableReplaySource,
+    ...(pokerState.schemaVersion === POKER_STATE_V3_SCHEMA_VERSION ? { importProvenance: cloneSavedStudyData(importProvenance) } : {}),
   };
   validateSavedHandSnapshot(snapshot);
   return deepFreezeSavedStudyData(snapshot);
@@ -433,6 +438,7 @@ export function validateSavedHandSnapshot(snapshot) {
   const expectedStateSchemaVersion = {
     [SAVED_HAND_SNAPSHOT_SCHEMA_VERSION]: POKER_STATE_SCHEMA_VERSION,
     [SAVED_HAND_SNAPSHOT_V2_SCHEMA_VERSION]: POKER_STATE_V2_SCHEMA_VERSION,
+    [SAVED_HAND_SNAPSHOT_V3_SCHEMA_VERSION]: POKER_STATE_V3_SCHEMA_VERSION,
   }[snapshot.schemaVersion];
   if (!expectedStateSchemaVersion) {
     throw new TypeError(
@@ -441,7 +447,7 @@ export function validateSavedHandSnapshot(snapshot) {
   }
   requireExactKeys(
     snapshot,
-    ['schemaVersion', 'heroPlayerId', 'pokerState', 'privacy', 'replaySource'],
+    ['schemaVersion', 'heroPlayerId', 'pokerState', 'privacy', 'replaySource', ...(expectedStateSchemaVersion === POKER_STATE_V3_SCHEMA_VERSION ? ['importProvenance'] : [])],
     'SavedHandSnapshot',
   );
   requireString(snapshot.heroPlayerId, 'SavedHandSnapshot.heroPlayerId', 240);
@@ -449,6 +455,7 @@ export function validateSavedHandSnapshot(snapshot) {
     throw new TypeError(`Expected ${expectedStateSchemaVersion}`);
   }
   validatePokerState(snapshot.pokerState);
+  if (expectedStateSchemaVersion === POKER_STATE_V3_SCHEMA_VERSION) validateHandImportProvenance(snapshot.importProvenance, snapshot.pokerState);
   const hero = snapshot.pokerState.players.find((player) => player.playerId === snapshot.heroPlayerId);
   if (!hero || !Array.isArray(hero.holeCards) || hero.holeCards.length !== 2) {
     throw new RangeError('SavedHandSnapshot requires a seated Hero with two known cards');

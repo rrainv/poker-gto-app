@@ -89,7 +89,7 @@ The review projection should request only the evidence needed for the visible de
 - Canonical Hand and Replay own actual cards, actions, pot, stacks, actor, street, and history.
 - The selected pre-action frame is a projection convention, not a new state snapshot.
 - `StrategyProvider` and `StrategyClaimPolicy` own strategy data and permitted comparison language.
-- A source-frequency disagreement is a transparent review priority, not EV loss, monetary importance, objective error, or “biggest mistake.”
+- Heuristic disagreement alone cannot select an important decision. An accepted-reference difference may be a descriptive study reason, separately from explicit intent, uncertainty, economics and permitted remediation. [Decision Delta / Study Inbox](../DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md) owns the first bounded contracts; no frequency gap implies EV loss or objective error.
 - Reference, intended Personal Strategy, observed action, and opponent/exploit roles stay separate.
 - Final chip outcome does not measure decision quality.
 - Equity, range, hand-analysis, and bluff facts come from their canonical services/contracts; Review does not recompute them.
@@ -165,7 +165,7 @@ These are possible future boundaries, not roadmap priority:
 The existing [Table Presence competitive reference](../TABLE_PRESENCE_COMPETITIVE_REFERENCE.md) is the approved evidence base. It records these durable decisions:
 
 - **ADOPT:** chronological decision-by-decision review, an obvious optional Review transition, compact decision navigation, and direct Replay movement. This adopts the user job and semantics, not the current navigator orientation.
-- **ADAPT:** use Riverline's immutable Hero journal and pre-action Replay convention; treat strongest source disagreement as review priority only; keep table as context rather than the learning hierarchy.
+- **ADAPT:** use Riverline's immutable Hero journal and pre-action Replay convention; expose deterministic evidence-backed study reasons; keep heuristic differences separate from permitted remediation and the table as exact context.
 - **DIFFERENTIATE:** remain useful when a source is unavailable/generalized, retain compact provenance/limitations, and reuse one Review for Hand and Full-Hand Training.
 - **REJECT:** unsupported solver scores, objective mistake language, exploitability/EV-loss theater, or duplicate state/timeline/Analysis/Saved authorities.
 

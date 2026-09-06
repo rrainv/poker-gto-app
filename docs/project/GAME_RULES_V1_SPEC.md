@@ -1,5 +1,9 @@
 # Game Rules v1 specification
 
+September 6 additive import extension: [Hand History Import v1](HAND_HISTORY_IMPORT_V1_SPEC.md)
+defines opt-in Game Rules Definition/Snapshot v2, PokerState v3 and recorded pot
+rake settlement evidence. The v1 contracts and live behavior below remain unchanged.
+
 ## Purpose and boundary
 
 `GameRulesDefinition v1`, `GameRulesPreset v1`, and `GameRulesSnapshot v1` are Riverline's DOM-free mathematical game-rules contracts. They live in `shared/poker-domain/game-rules.js`; the current Home/ClubGG bridge lives in `shared/poker-domain/game-rules-compat.js`.

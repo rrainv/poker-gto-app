@@ -1,5 +1,30 @@
 # Riverline Checkpoint Return Queue
 
+Current implementation acceptance: `QA-REFERENCE-STRATEGY-002` owns the
+[source foundation](REFERENCE_SOURCE_FOUNDATION_V1_SPEC.md) browser/product gate.
+`RET-REFERENCE-PACK-001` still owns actual corpus acquisition, vendor export
+mapping and independent acceptance; the [research recommendation](REFERENCE_SOURCE_ACQUISITION_2026_09.md)
+does not close it. Private activation/persistence and multi-node/postflop adapters
+remain explicit continuations. This is not an accepted checkpoint or priority change.
+
+Current implementation acceptance: `QA-DEEP-STUDY-001` owns the first
+[Deep Review / Study Inbox slice](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md), not accepted
+checkpoint debt. Exact concept/region Training and Review region targeting,
+exhaustive retrieval, durable cross-Hand Personal pattern evidence and rake-aware
+Personal/Training remain explicit continuation boundaries. Existing Return IDs
+and general priority are unchanged.
+
+Current implementation acceptance: `QA-HAND-HISTORY-IMPORT-001` owns the first
+[hand import slice](HAND_HISTORY_IMPORT_V1_SPEC.md). Browser acceptance is pending;
+recorded-rake Personal matching, exact Training and batch/Study Inbox remain
+explicit future capabilities. This is not an accepted checkpoint.
+
+Current implementation acceptance: `QA-EXPLOIT-ANALYSIS-001` owns the [Exploit Analysis v1](EXPLOIT_ANALYSIS_V1_SPEC.md) continuation's human gate. Exact response ranges, weighted Equity, optimized exploits, guaranteed semantic drills and durable Deep Review retain their existing capability dependencies. This is pending implementation acceptance, not newly accepted checkpoint debt or a sequence change.
+
+Current implementation acceptance: `QA-BLUFF-EXPLOIT-TEACHER-001` owns the September 6 [Teacher v1](BLUFF_EXPLOIT_TEACHER_V1_SPEC.md) browser/product gate. This is not accepted checkpoint debt. Quantitative response/role analysis, weighted Equity and semantic Training generation remain dependency-gated under existing capability owners; previous Return IDs retain their statuses.
+
+Current implementation acceptance: `QA-OPPONENT-POLICY-001` retains the actor-safe foundation gate; `QA-OPPONENT-POLICY-002` owns the new Full Hand reflection themes, actor-input/branch review, descriptive comparison and Personal region-teaching acceptance under [Opponent Policy v2](OPPONENT_POLICY_V2_SPEC.md). This is not accepted checkpoint debt. Browser inventory was empty. Durable policy review, guaranteed semantic drills, quantitative ranges, Personal-Strategy-as-bot adapters and real-person evidence remain future scope. Existing Return IDs retain their status and owners.
+
 Last refreshed: September 4, 2026 (`LIGHT-WINS-BATCH-001` is human accepted; `IDENTITY-LIFECYCLE-001` is active next).
 
 This is the prioritized **must-return** companion to `PRODUCT_BACKLOG.md` and `QA_BACKLOG.md`.
@@ -19,6 +44,8 @@ Use it for work that was intentionally checkpointed with known unfinished accept
 - **WATCH / CONDITIONAL** — investigate only if measured/user-observed behavior justifies it.
 
 ## Current prioritized return queue
+
+Current implementation acceptance to retain: `PERSONAL-STRATEGY-CONTINUATION-001C` (September 6) extends the [Personal Hand study](PERSONAL_STRATEGY_COACH_V1_SPEC.md) through flop, turn and river on the existing bounded hypothetical BTN/BB line. Exact custom sizes, partial action-conditioned ranges, distinct mutation facts, street-aware combo questions, prior-node variations, Approach comparison and existing policy/concept lessons are implemented without a new persistence schema. Reload/correction reconstructs trajectories from intent and canonical replay. Exact-node/semantic Training generation, arbitrary Hand import, multiway branch generation, quantitative opponent ranges, weighted Equity and normative strategy assessment remain unavailable. Human acceptance remains with `QA-PERSONAL-COACH-001`; the browser inventory is empty. General sequencing and other issue owners are unchanged. This is pending implementation acceptance, not newly accepted checkpoint debt.
 
 [Current Phase](CURRENT_PHASE.md) remains the sequence authority. `MASSIVE-FOUNDATION-CHECKPOINT-001` closes the accepted Identity, truth/assessment, first Training Intelligence, and Personal Strategy Intelligence foundations. `BROWSER-TEST-PLATFORM-001` is active next, followed by composition/extraction, Saved/Home continuity, the bounded reference-source decision, and later learning-loop and preserved capability expansion. Table row order remains a compact debt registry and does not override that sequence.
 
@@ -101,3 +128,12 @@ At every accepted ticket/checkpoint:
 7. Reconcile this queue against `QA_BACKLOG.md`, `CURRENT_PHASE.md`, and `PRODUCT_BACKLOG.md` at every roadmap sync and before beta/release planning.
 
 The queue should stay prioritized and compact. `QA_BACKLOG.md` may contain many low-level issues; this file contains the debts we are unwilling to forget.
+<!-- September 7 additive implementation; existing accepted returns retain ownership. -->
+
+`RET-ADVANCED-EQUITY-001` — **IMPLEMENTED SLICE / HUMAN ACCEPTANCE PENDING**.
+[Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md) and `QA-ADVANCED-EQUITY-001`
+own pending visual acceptance. Return after human use for defects in this slice;
+future explicitly scoped work owns Personal A/B UI, rigorous clean/dirty and
+redraw/nuts/lock facts, source picker and broader persisted runout continuity.
+Older statements that all runout/weighted analysis is future refer to the
+earlier accepted checkpoints and are superseded for this bounded slice only.

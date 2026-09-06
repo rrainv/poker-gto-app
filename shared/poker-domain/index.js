@@ -10,6 +10,7 @@ export * from './game-rules-compat.js';
 export * from './hand-class.js';
 export * from './holdem-combos.js';
 export * from './holdem-range.js';
+export * from './holdem-range-action.js';
 export * from './initialize-hand.js';
 export * from './legal-actions.js';
 export * from './positions.js';
@@ -21,3 +22,6 @@ export * from './selectors.js';
 export * from './showdown.js';
 export * from './transitions.js';
 export * from './validate.js';
+export * from './recorded-settlement.js';
+export { WEIGHTED_EQUITY_REQUEST_VERSION, WEIGHTED_EQUITY_RESULT_VERSION,
+  prepareWeightedEquity, estimateWeightedEquity, calculateWeightedEquity } from './weighted-equity.js';

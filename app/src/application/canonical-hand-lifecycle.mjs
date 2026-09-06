@@ -2,6 +2,7 @@ import {
   PHASES,
   POKER_STATE_SCHEMA_VERSION,
   POKER_STATE_V2_SCHEMA_VERSION,
+  POKER_STATE_V3_SCHEMA_VERSION,
   createGameRulesSnapshotFromLegacyGameConfiguration,
   getLegalActionSpec,
   playerById,
@@ -11,6 +12,7 @@ import { deriveDecisionContextFromPokerState } from './decision-context-from-pok
 import {
   CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION,
   CANONICAL_HAND_REPLAY_SOURCE_V2_SCHEMA_VERSION,
+  CANONICAL_HAND_REPLAY_SOURCE_V3_SCHEMA_VERSION,
   REPLAY_FRAME_OPERATIONS,
   createCanonicalHandReplaySource,
   deriveCanonicalHandReplayEvent,
@@ -75,6 +77,7 @@ function sumRecord(record) {
 }
 
 function rulesSnapshotFromState(state) {
+  if (state.schemaVersion === POKER_STATE_V3_SCHEMA_VERSION) return state.rulesSnapshot;
   if (state.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION) return state.rulesSnapshot;
   if (state.schemaVersion !== POKER_STATE_SCHEMA_VERSION) {
     throw new TypeError(`Unsupported PokerState version: ${state.schemaVersion}`);
@@ -89,6 +92,7 @@ function rulesSnapshotFromState(state) {
 }
 
 function replaySourceSchemaVersionForState(state) {
+  if (state.schemaVersion === POKER_STATE_V3_SCHEMA_VERSION) return CANONICAL_HAND_REPLAY_SOURCE_V3_SCHEMA_VERSION;
   return state.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION
     ? CANONICAL_HAND_REPLAY_SOURCE_V2_SCHEMA_VERSION
     : CANONICAL_HAND_REPLAY_SOURCE_SCHEMA_VERSION;
@@ -159,6 +163,10 @@ function createCompletedHandResult({ state, events, initialBoundary }) {
       potContributionTotalMilliBb: sumRecord(potContributionsMilliBbByPlayer),
       deductionsMilliBbByPlayer,
       deductionTotalMilliBb: state.deductionTotalMilliBb,
+      ...(state.schemaVersion === POKER_STATE_V3_SCHEMA_VERSION ? {
+        recordedRakeTotalMilliBb: state.recordedSettlement?.rakeMilliBb ?? 0,
+        recordedSettlement: clone(state.recordedSettlement),
+      } : {}),
       payoutsMilliBbByPlayer,
       payoutTotalMilliBb: sumRecord(payoutsMilliBbByPlayer),
       refundsMilliBbByPlayer,
@@ -470,6 +478,7 @@ export function createCanonicalHandLifecycleRecorder() {
         nextDecisions.push(newDecision(state, nextEvents.length - 1, nextDecisions.length));
       }
       const nextCompletedHandResult = state.phase === PHASES.TERMINAL
+        && (state.schemaVersion !== POKER_STATE_V3_SCHEMA_VERSION || state.recordedSettlement !== null)
         ? createCompletedHandResult({ state, events: nextEvents, initialBoundary })
         : null;
       events = nextEvents;

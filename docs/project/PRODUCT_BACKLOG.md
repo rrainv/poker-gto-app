@@ -1,10 +1,26 @@
 # Riverline Product and Feature Backlog
 
+`REFERENCE-STRATEGY-002` — **IMPLEMENTED FOUNDATION / HUMAN ACCEPTANCE PENDING**:
+[source intake, coverage and health](REFERENCE_SOURCE_FOUNDATION_V1_SPEC.md) add
+SHA-256 identity, exact node inventory, a session ledger, claim ceilings and
+local private JSON preview. [Acquisition research](REFERENCE_SOURCE_ACQUISITION_2026_09.md)
+recommends authorized HRC exports and a separate private-source path. No corpus,
+vendor parser, Sources UI, durable import or normative policy is delivered.
+The existing `REFERENCE-PACK-001` return dependency and general order remain.
+
 Last consolidated: September 5, 2026 (`MASSIVE-FOUNDATION-CHECKPOINT-001` consolidates the accepted Identity, truth, Training Intelligence, and Personal Strategy foundations).
 
 This is the concise accepted capability/status registry. [Current Phase](CURRENT_PHASE.md) owns exact execution order; [Roadmap](ROADMAP.md) owns major directional sequencing; [capability dossiers](capabilities/README.md) own detailed long-term intent and recovered microfeatures; specs/code own current contracts and implementation truth. `QA_BACKLOG.md` owns issue-level defects and manual acceptance; `PRODUCT_RETURN_QUEUE.md` owns accepted must-return debt.
 
 ## Status vocabulary
+
+`HAND-HISTORY-IMPORT-001` — **IMPLEMENTATION / HUMAN ACCEPTANCE PENDING**:
+[first PokerStars English cash adapter](HAND_HISTORY_IMPORT_V1_SPEC.md), exact
+recorded rake, shared Review/Replay, Saved provenance and decision Review later/
+Situational. Rake-aware Personal matching, imported Training, batch/session
+imports and opponent consent remain future. The bounded Study Inbox projection
+is implemented under the separate Review/Study owner below. QA owner:
+`QA-HAND-HISTORY-IMPORT-001`.
 
 - **COMPLETED:** accepted bounded implementation or documentation outcome.
 - **CHECKPOINTED / INTENTIONALLY INCOMPLETE:** accepted foundation with an explicit resume point.
@@ -113,7 +129,7 @@ Known limitations remain explicit: no production reference pack or validated gen
 | Capability | Status | Accepted scope |
 |---|---|---|
 | canonical Hand, Table Presence, Replay, and shared Full Hand Review | COMPLETED FOUNDATION | Legal Hand history, deterministic read-only Replay, `table-presentation/v1`, `hand-review/v1`, Hero decisions, pre-action frames, source-gated comparison, provenance, Analyze/Save/Repeat/Next continuity. |
-| deeper evidence-rich Hand Review | PRESERVED FUTURE / dependency-gated | Street-by-street Equity/hand/range/reference/Personal/observed/opponent evidence and supported synthesis without another history or grader. The vertical street-grouped chronology direction is implemented and human accepted under `REPLAY-RAIL-NAV-001`; deeper evidence remains future work. See [Deep Hand Review](capabilities/DEEP_HAND_REVIEW.md). |
+| deeper evidence-rich Hand Review / Study Inbox | FIRST SLICE IMPLEMENTED / HUMAN ACCEPTANCE PENDING | `DEEP-REVIEW-001` + `STUDY-INBOX-001` + `DECISION-DELTA-FOUNDATION`: [seven separate roles, deterministic top decisions and bounded owner-projected Inbox](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md), explicit current intent inspection, Saved parent/annotation continuity and existing Training routes. `QA-DEEP-STUDY-001` retains acceptance. Exact concept/region targeting, exhaustive retrieval, richer range/Equity evolution and durable cross-Hand pattern evidence remain dependency-gated. Long-term intent: [Deep Hand Review](capabilities/DEEP_HAND_REVIEW.md). |
 
 Independent visual/interaction acceptance remains in QA and the Return Queue; implementation checkpoints are not visual sign-off.
 
@@ -140,6 +156,8 @@ Training `Not sure` behavior remains an open product question; Calibration's exi
 
 ## 5. Personal Strategy
 
+**IMPLEMENTATION / HUMAN ACCEPTANCE PENDING** ? `PERSONAL-STRATEGY-CONTINUATION-001C` (September 6) extends the [Personal Hand study](PERSONAL_STRATEGY_COACH_V1_SPEC.md) through flop, turn and river on the existing bounded hypothetical BTN/BB line. Exact custom sizes, partial action-conditioned ranges, distinct mutation facts, street-aware combo questions, prior-node variations, Approach comparison and existing policy/concept lessons are implemented without a new persistence schema. Reload/correction reconstructs trajectories from intent and canonical replay. Exact-node/semantic Training generation, arbitrary Hand import, multiway branch generation, quantitative opponent ranges, weighted Equity and normative strategy assessment remain unavailable. Human acceptance remains with `QA-PERSONAL-COACH-001`; the browser inventory is empty. General sequencing and other issue owners are unchanged.
+
 | Capability | Status | Accepted scope |
 |---|---|---|
 | Foundation / Calibration / inference / Matrix / Builder / Teacher | CHECKPOINTED / INTENTIONALLY INCOMPLETE | Three user-named modes per profile, sparse immutable intended evidence, dominant-only ≠ pure, contradictions, categorical uncertainty, adaptive questions, and one shared evidence authority. |
@@ -151,15 +169,22 @@ Training `Not sure` behavior remains an open product question; Calibration's exi
 
 ## 6. Analysis / Matrix / Ranges / Equity
 
+The September 7 [Advanced Equity slice](ADVANCED_EQUITY_V1_SPEC.md) supersedes
+earlier ticket snapshots describing weighted Equity and runout inspection as
+entirely unavailable. Their broader strategic/source/persistence dependencies
+and existing human QA ownership remain unchanged.
+
 | Capability | Status | Accepted scope |
 |---|---|---|
-| canonical Equity | COMPLETED | One exact/seeded Monte Carlo 2–10-player service with win/tie/share accounting; no weighted-opponent request yet. |
+| canonical Equity | KNOWN-HAND FOUNDATION COMPLETED / WEIGHTED SLICE AWAITING HUMAN ACCEPTANCE | Known-hand v1 remains unchanged. [Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md) adds weighted joint exact/seeded sampling, explicit partial states, bounded runouts and read-only Personal/Exploit consumers; `QA-ADVANCED-EQUITY-001` owns acceptance. |
 | `RANGE-CORE-001` | COMPLETED | 52 cards → 1,326 combos → `HoldemWeightedRange v1` → blocker/normalization/Matrix projections; unknown ≠ zero. |
 | `ANALYSIS-RANGE-001` and `BLUFF-001` | CHECKPOINTED | Structural exact-hand/draw/board/blocker/range and bounded bluff economics/removal facts; no invented ranges, response, EV, advantage, or verdict. |
+| `BLUFF-EXPLOIT-TEACHER-001` + `OPPONENT-AWARE-COACHING-001` | BOUNDED IMPLEMENTATION / HUMAN ACCEPTANCE PENDING | [Teacher v1](BLUFF_EXPLOIT_TEACHER_V1_SPEC.md): policy-owned response facts, explicit candidate economics, value/checking/raise-plan lessons, semibluff and bluff-catcher availability, supplied semantic blocker seam, policy comparison in Analyze/Personal Hand, and Training handoff/configuration contracts. No quantitative roles, weighted Equity, normative exploit or guaranteed semantic generator. `QA-BLUFF-EXPLOIT-TEACHER-001` owns acceptance. |
 | `EQUITY-HAND-ANALYSIS-001` | PLANNED LATER / dependency-gated | Current exact-entered-hand next-card outcomes are implemented; broader runout/nut/blocker/standing/vulnerability, clean/dirty, split-pot, range-relative, and shared card-outcome-preview intelligence remains future. See [Equity and Hand Analysis](capabilities/EQUITY_HAND_ANALYSIS.md). |
 | `BLUFF-ANALYSIS-002` | PLANNED LATER / dependency-gated | Range-aware value/bluff/bluff-catcher/candidate-quality and explicit exploit analysis. See [Bluff and Exploit Analysis](capabilities/BLUFF_EXPLOIT_ANALYSIS.md). |
+| `EXPLOIT-ANALYSIS-001` | IMPLEMENTATION COMPLETE / HUMAN ACCEPTANCE PENDING | [Exploit Analysis v1](EXPLOIT_ANALYSIS_V1_SPEC.md): context-bound synthetic response facts, derived incentives/opportunities, partial bluff-catcher model, policy comparisons, Personal questions, explicit unsupported Training targets and separate completed Review roles. Quantitative response/Equity/optimization, exact generation and durable Deep Review remain dependency-gated; `QA-EXPLOIT-ANALYSIS-001` owns acceptance. |
 | `RANGE-EVOLUTION-001` | PLANNED LATER | Canonical combo-level action-conditioned preflop-to-river propagation with distinct reference/Personal/opponent roles. See [Range Evolution](capabilities/RANGE_EVOLUTION.md). |
-| weighted range-vs-range / range and nut distribution | PRESERVED FUTURE / dependency-gated | Requires approved Equity/Analysis boundaries, explicit weighted ranges, provenance, and unknown-preserving semantics. See [Range Evolution](capabilities/RANGE_EVOLUTION.md). |
+| `ADVANCED-EQUITY-001` + `WEIGHTED-RANGE-EQUITY-001` + `RUNOUT-EXPLORER-001` | FIRST SLICE IMPLEMENTED / HUMAN ACCEPTANCE PENDING | [Weighted range-vs-range, explicit unknown semantics, bounded runouts and card previews](ADVANCED_EQUITY_V1_SPEC.md), exact Personal trajectory and supplied Exploit consumers. `QA-ADVANCED-EQUITY-001` owns acceptance. Nut/range advantage, full clean/dirty taxonomy, Personal A/B UI and inferred response models remain future. |
 | `RANDOM-SPOT-GENERATOR-001` | COMPLETED / HUMAN ACCEPTED BOUNDED FOUNDATION; EXTENSIONS PRESERVED | Analyze uses atomic provider-ready lossy Scenario generation under `analyze-whole-spot-policy/v2`; Hand fills only pending uncommitted chance drafts; Equity preserves matchup structure while rerolling Known hands or requested board streets. Shared interaction/recipe infrastructure is not a universal state generator. See [Random Spot Generator](capabilities/RANDOM_SPOT_GENERATOR.md). |
 
 ## 7. Saved / Home
@@ -211,7 +236,7 @@ The current settlement algorithm is deterministic; it is not a selected Fewest T
 | `HANDS-ON-PRODUCT-REVIEW-001` | COMPLETED / CONFIRMED PRODUCT EVIDENCE CAPTURED | An independent outside-user review originated 59 findings; the product owner manually reproduced all 59; detailed evidence and ownership live in the review artifact. No finding is closed. |
 | `HANDS-ON-DEFECTS-001` | COMPLETED / ACCEPTED BOUNDED REPAIR CHECKPOINT WITH EXPLICIT DEBT | Successful bounded repairs are preserved; repeated structural failures and newly discovered functional defects remain explicitly routed rather than cosmetically patched again. |
 | `PREMIUM-CLOSEOUT-001` | PLANNED LATER / PRE-RELEASE QUALITY GATE | Whole-product manual QA, final high-value visual-debt burn, Guide finalization, responsive desktop matrix, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings polish, theme consistency, applicable Return Queue debt, and release-quality Core Flow acceptance after the feature set is materially more mature. |
-| evidence-grounded natural-language intelligence | CHECKPOINTED FOUNDATION / CONTINUATION PRESERVED | `natural-language-envelope/v1`, confirmed qualitative intent, structural range facts, and claim-permission-bound EN/RU/HE summaries/comparisons are implemented through Personal Strategy. Personal Strategy Coach, Deep Review/Study Inbox, Import → Review → Study, and other consumers remain preserved future integrations. See [Natural-Language Intelligence](capabilities/NATURAL_LANGUAGE_INTELLIGENCE.md). |
+| evidence-grounded natural-language intelligence | CHECKPOINTED FOUNDATION / CONTINUATION PRESERVED | `natural-language-envelope/v1`, confirmed qualitative intent, structural range facts, and claim-permission-bound EN/RU/HE summaries/comparisons are implemented through Personal Strategy. The bounded Coach, Import and [Deep Review/Study Inbox](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md) consumers have explicit implementation/QA owners; richer synthesis remains future. See [Natural-Language Intelligence](capabilities/NATURAL_LANGUAGE_INTELLIGENCE.md). |
 | shared interaction integrity | COMPLETED | Accepted product rule: one semantic owner and interaction language across applicable surfaces; see [Interaction Grammar](INTERACTION_GRAMMAR.md). |
 | `BROWSER-TEST-PLATFORM-001` | PLANNED NEXT / FOUNDATIONAL | Portable mounted-browser lifecycle coverage for real ownership, generation, disposal, focus, modal, and inactive-workspace behavior. |
 | `UI-COMPOSITION-ROOT-001` | PLANNED NEXT / FOUNDATIONAL | Establish a bounded composition root and then extract one workspace pilot behind existing seams. No React/Redux/framework rewrite. |
@@ -223,7 +248,9 @@ The current settlement algorithm is deterministic; it is not a selected Fewest T
 | Capability | Status | Accepted scope |
 |---|---|---|
 | basic `OpponentPolicy v1` / deterministic Full Hand bot progression | COMPLETED BOUNDED FOUNDATION | A strict DOM-free policy contract, explicit heuristic-archetype provenance, deterministic legal selection, and a built-in `basic` policy already power automated Full Hand progression. This is not a real-person model or broad bot product. |
-| `OPPONENT-POLICY-ARCH-001` product evolution | PRESERVED FUTURE / high strategic value | Population/generic/real/custom policy evidence, richer archetypes, and user-facing selection remain separate from reference, exploit, Personal Strategy, and claims about people. See [Opponent Intelligence](capabilities/OPPONENT_INTELLIGENCE.md). |
+| `OPPONENT-INTELLIGENCE-001` + actor information / actor-safe bots | BOUNDED IMPLEMENTATION / AWAITING HUMAN ACCEPTANCE | [Opponent Policy v2](OPPONENT_POLICY_V2_SPEC.md): actor allowlist, independent policy RNG, three explicit card-independent presets/custom parameters, Full Hand all-opponent/BB targeting, exact session-local decision provenance/review, factual EN/RU/HE language and counterfactual/complete-hand replay tests. No grading authority or persistence migration. `QA-OPPONENT-POLICY-001` retains human browser acceptance. |
+| `OPPONENT-POLICY-ARCH-001` product evolution | PRESERVED FUTURE / high strategic value | Quantitative range responses, card/history-aware archetypes, population/real-person evidence, persistent policy review and Personal Strategy snapshot adapters remain separate from reference/exploit/intent authority. See [Opponent Intelligence](capabilities/OPPONENT_INTELLIGENCE.md). |
+| `OPPONENT-INTELLIGENCE-002` / policy-conditioned Training / opponent-review foundation | BOUNDED IMPLEMENTATION / AWAITING HUMAN ACCEPTANCE | New Full Hand reflection intents retain exact policy requests through replay/review; completed branch disclosures expose actor inputs and active settings. Descriptive comparison and Personal Strategy region-teaching hooks preserve intent/grading and deny quantitative ranges. Four existing parameters and behavior version retained; future raw observation/estimate/configuration boundaries designed without real-person storage. [Opponent Policy v2](OPPONENT_POLICY_V2_SPEC.md), `QA-OPPONENT-POLICY-002`. |
 
 ## 12. Platform / Release / Mobile
 

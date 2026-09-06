@@ -263,7 +263,9 @@ The current production Matrix is not migrated by this ticket.
 
 ## 13. Personal Strategy boundary
 
-The range core can represent future Personal Strategy outputs with per-combo `personal_direct` and `personal_inferred` provenance while leaving unanswered combos unknown.
+`RANGE-CONTINUATION-FOUNDATION` adds an application adapter in `app/src/application/personal-strategy-weighted-range.mjs`; the [Coach/continuation specification](PERSONAL_STRATEGY_COACH_V1_SPEC.md) owns its wrapper semantics. Explicit exact RFI class mixes can become labelled **action-family mass**, with unknowns and provenance preserved through this unchanged Range Core. Family evidence contains no selected raise-size frequency and cannot establish an exact action-conditioned reached range. The adapter is a foundation API, not an active Analysis, StrategyProvider or Equity attachment.
+
+The range core represents Personal Strategy outputs with per-combo `personal_direct` provenance while leaving unanswered combos unknown. The approved `RANGE-EVOLUTION-001A` exact-node adapter in `personal-hand-study.mjs` consumes newly taught exact-size evidence. It never upgrades old action-family or dominant evidence implicitly.
 
 Current `RangeObservation v1` semantics remain authoritative:
 
@@ -271,13 +273,13 @@ Current `RangeObservation v1` semantics remain authoritative:
 - an explicit mix contains actual action probabilities;
 - tied mixes have no fabricated dominant action.
 
-Therefore no live adapter converts dominant-only Fold/Raise observations to range weights. An approved future application adapter may derive an action-conditioned range only when its evidence supplies the required quantitative semantics. `RANGE-CAL-002A` remains unexported, unpersisted, and unused by production.
+No adapter converts dominant-only Fold/Raise observations to range weights. The exact-node adapter derives reached mass only from explicit selected-size evidence at the identical canonical Hand node and Approach snapshot. `RANGE-CAL-002A` remains unexported, unpersisted, and unused by production.
 
 ## 14. StrategyResult action-conditioning boundary
 
 Range inclusion weight and per-action strategy frequency are different values.
 
-A future combo-aware provider may derive unnormalized action-conditioned mass as:
+Canonical `holdem-range-action.js` now supplies numeric unnormalized action conditioning, with application-owned proof of compatible context, action/size and source:
 
 ```text
 priorRangeWeight(combo)
@@ -285,9 +287,15 @@ priorRangeWeight(combo)
   = unnormalizedActionConditionedComboMass(combo)
 ```
 
-The result may then be normalized only under the complete-range rules above. `RANGE-CORE-001` does not implement this operation because current StrategyResult resolves one concrete combo at a time and StrategyProvider semantics are unchanged.
+The result may be normalized only under the complete-range rules above. `multiplyHoldemRangeByActionFrequencies()` validates both canonical ranges, multiplies known operands, and retains unknown whenever either operand is unknown (including unknown × zero). Per-combo provenance identifies both operands. `personal-hand-study.mjs` proves exact node/action/snapshot compatibility, rejects repeated action conditioning and skipped Hero decisions, and retains prior/current evidence lineage across public-card removal. StrategyProvider and StrategyResult contracts remain unchanged; this operation is not a provider or weighted Equity adapter.
 
 ## 15. Equity boundary
+
+September 7 additive [Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md) now owns
+`weighted-equity-request/v1`, joint weighted enumeration/sampling and explicit
+known-only partial results over unchanged Range Core. The v1 known-hand request
+below remains unchanged; its earlier missing-adapter limitation is resolved only
+through the new versioned request, never by converting a range to `null`.
 
 Canonical `equity-request/v1` represents an opponent as either:
 
@@ -332,4 +340,4 @@ These are bounded development-machine measurements, not universal latency promis
 
 ## 19. Explicit non-goals
 
-V1 does not implement Range Builder UI, Range Teacher logic, Personal Strategy inference integration, StrategyProvider migration, Equity migration, Saved Range objects, range notation parsing, postflop propagation, bluff classification, Compare Spots UI, accounts/cloud, or solver/model imports.
+The original RANGE-CORE-001 checkpoint did not implement Range Builder UI, Range Teacher logic, provider/Equity migrations, Saved Range objects, range notation parsing, postflop propagation, bluff classification, Compare Spots UI, accounts/cloud, or solver/model imports. The additive RANGE-EVOLUTION-001A multiplication primitive and bounded Personal exact-node continuation are described above; they do not activate those other consumers.

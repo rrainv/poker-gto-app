@@ -1,10 +1,48 @@
 # Current Riverline phase
 
+September 7 explicit ticket: [Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md)
+implements weighted joint Equity, partial known-only semantics, bounded runout
+inspection and read-only Personal/explicit Exploit range consumers.
+`QA-ADVANCED-EQUITY-001` owns pending human acceptance. This supersedes the
+weighted-Equity-unavailable wording in earlier ticket snapshots below only for
+this slice; broader quantitative response policies and strategic claims remain
+unavailable. General browser/composition/retrieval sequencing is unchanged.
+
+September 6 explicit source ticket: `REFERENCE-STRATEGY-002` implements the
+[source intake / coverage / health foundation](REFERENCE_SOURCE_FOUNDATION_V1_SPEC.md)
+and [first-source research decision](REFERENCE_SOURCE_ACQUISITION_2026_09.md).
+Private import is local preview only; no production corpus or assessment is
+accepted. `QA-REFERENCE-STRATEGY-002` owns human acceptance, while
+`RET-REFERENCE-PACK-001` retains actual acquisition/independent review. The general
+browser/composition/retrieval sequence and unrelated issue owners are unchanged.
+
+September 6 explicit review/study slice: [Deep Review / Study Inbox v1](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md)
+implements separate Decision Delta roles, transparent top decisions, a bounded
+owner-projected Home Inbox and existing Saved/Training handoffs. Human acceptance
+is pending with `QA-DEEP-STUDY-001`; this is not an accepted checkpoint or a change
+to the general execution order below. Unsupported targeting remains explicit.
+
 Last refreshed: September 5, 2026 (`MASSIVE-FOUNDATION-CHECKPOINT-001` consolidates the accepted Identity, truth, Training Intelligence, and Personal Strategy foundations).
 
 This document answers **what Riverline is doing now and what follows it**. `ROADMAP.md` explains major sequencing, `PRODUCT_BACKLOG.md` owns concise capability/status, capability dossiers preserve detailed long-term intent, and subsystem specs/code own current contracts and implementation truth. QA and accepted checkpoint debt remain in `QA_BACKLOG.md` and `PRODUCT_RETURN_QUEUE.md`.
 
 ## Throughput note
+
+Explicit September 6 authorization: `HAND-HISTORY-IMPORT-001` implements the first
+[PokerStars English cash import slice](HAND_HISTORY_IMPORT_V1_SPEC.md), versioned
+recorded rake and Saved provenance. `QA-HAND-HISTORY-IMPORT-001` owns pending human
+acceptance. Recorded-rake Personal matching and exact Training handoff remain
+unavailable. General sequencing and accepted checkpoints are unchanged.
+
+Explicit September 6 continuation: `EXPLOIT-ANALYSIS-001` implements the bounded [Exploit Analysis v1](EXPLOIT_ANALYSIS_V1_SPEC.md) response-fact/opportunity layer, policy-sensitive lessons, Personal selected-hand/region questions, unavailable semantic-practice feedback and six-role completed Full Hand Review projection. `QA-EXPLOIT-ANALYSIS-001` retains human acceptance after an empty browser inventory. Quantitative response ranges, weighted Equity, optimized exploits, exact semantic generation and durable Deep Review remain unavailable. No general execution-order change or accepted checkpoint is implied; earlier QA owners remain open.
+
+Explicit September 6 continuation: `OPPONENT-INTELLIGENCE-002` implements policy-conditioned Full Hand reflection intents, frozen intent/request review, actor-input/branch disclosures, descriptive policy comparisons and read-only Personal Strategy region-teaching hooks under [Opponent Policy v2](OPPONENT_POLICY_V2_SPEC.md). `QA-OPPONENT-POLICY-002` owns new human acceptance; earlier Opponent/Bluff/Personal QA owners remain open. The four-parameter behavior version, grading, quantitative-range abstention and session-local persistence boundary are unchanged. No guaranteed semantic drills or real-person model is implemented. Browser inventory is empty; general sequencing is unchanged.
+
+Explicit September 6 ticket exception: `BLUFF-EXPLOIT-TEACHER-001` + `OPPONENT-AWARE-COACHING-001` implements the [Teacher v1](BLUFF_EXPLOIT_TEACHER_V1_SPEC.md) bounded slice, awaiting `QA-BLUFF-EXPLOIT-TEACHER-001` human acceptance. Analyze Explain and selected Teach-through-a-Hand combinations expose sized hypotheses, shared synthetic response assumptions, lesson cards and comparison. Quantitative value/bluff-catcher roles, reached opponent ranges, weighted Equity and normative exploits remain unavailable. Training handoff/configuration contracts preserve ownership; exact semantic targets and one-click/source-node continuation remain future. General browser/composition sequencing is unchanged.
+
+Explicit September 6 ticket exception: `OPPONENT-INTELLIGENCE-001` + `OPPONENT-ACTOR-INFORMATION-001` + `ACTOR-SAFE-BOTS-001` is a bounded implementation awaiting human acceptance under [Opponent Policy v2](OPPONENT_POLICY_V2_SPEC.md). Actor-safe input/seed boundaries cover basic and configurable policies; three card-independent presets/custom parameters drive canonical Full Hand Training with session-local policy review. `QA-OPPONENT-POLICY-001` retains browser/RTL/product acceptance. This supersedes future-only bot-selection wording below for this slice, without advancing quantitative ranges, real-person models, persistent policy evidence or the general browser/composition sequence.
+
+Explicit current-ticket exception: `PERSONAL-STRATEGY-CONTINUATION-001C` (September 6) extends the [Personal Hand study](PERSONAL_STRATEGY_COACH_V1_SPEC.md) through flop, turn and river on the existing bounded hypothetical BTN/BB line. Exact custom sizes, partial action-conditioned ranges, distinct mutation facts, street-aware combo questions, prior-node variations, Approach comparison and existing policy/concept lessons are implemented without a new persistence schema. Reload/correction reconstructs trajectories from intent and canonical replay. Exact-node/semantic Training generation, arbitrary Hand import, multiway branch generation, quantitative opponent ranges, weighted Equity and normative strategy assessment remain unavailable. Human acceptance remains with `QA-PERSONAL-COACH-001`; the browser inventory is empty. General sequencing and other issue owners are unchanged.
 
 `MASSIVE-FOUNDATION-CHECKPOINT-001` closes the accumulated Identity Lifecycle A/B/C, heuristic/normative truth, first Training Intelligence, Explain/outs, and Personal Strategy Intelligence implementation foundations. The next preserved gate is `BROWSER-TEST-PLATFORM-001`; later ordering remains unchanged.
 
@@ -233,7 +271,7 @@ Canonical Equity, `RANGE-CORE-001`, `ANALYSIS-RANGE-001`, and `BLUFF-001` are cu
 
 ### Saved, Home, opponents, and release
 
-Saved Hand/Spot and `HOME-002A` exist. `SAVED-VISUAL-KNOWLEDGE-001` is completed and human accepted for the bounded loaded set: the compact grid is primary; All / Hands / Spots remain visible at zero; DOM-free observer-safe/lossy previews use a bounded body overlay and explicit detail; unknown kinds remain unavailable; reopen and persistence boundaries are unchanged. Full retrieval/search/pagination over the current Hand/Spot library is now `SAVED-LIBRARY-001`; it does not authorize new Saved payload kinds. Saved Training Experience and Saved Equity Snapshot remain dependency-gated future payload decisions. A strict deterministic `OpponentPolicy v1` and basic Full Hand bot policy already exist; richer archetypes, custom policies, and claims about real opponents remain future work. Accounts/sync remain local-first and opt-in; Training Memory auth isolation is accepted, while generalized cross-surface lifecycle repair, live Supabase/RLS, and two-profile acceptance remain required before beta.
+Saved Hand/Spot and `HOME-002A` exist. `SAVED-VISUAL-KNOWLEDGE-001` is completed and human accepted for the bounded loaded set: the compact grid is primary; All / Hands / Spots remain visible at zero; DOM-free observer-safe/lossy previews use a bounded body overlay and explicit detail; unknown kinds remain unavailable; reopen and persistence boundaries are unchanged. Full retrieval/search/pagination over the current Hand/Spot library is now `SAVED-LIBRARY-001`; it does not authorize new Saved payload kinds. Saved Training Experience and Saved Equity Snapshot remain dependency-gated future payload decisions. The actor-safe basic policy and configurable `OpponentPolicy v2` now support synthetic Full Hand selection and session-local review under the September 6 exception above. Quantitative range responses, durable policy review and real-person models remain future work. Accounts/sync remain local-first and opt-in; Training Memory auth isolation is accepted, while generalized cross-surface lifecycle repair, live Supabase/RLS, and two-profile acceptance remain required before beta.
 
 Detailed intent lives in the [Saved Knowledge](capabilities/SAVED_KNOWLEDGE_AND_SHARING.md) and [Opponent Intelligence](capabilities/OPPONENT_INTELLIGENCE.md) dossiers. Release, mobile, social, and PLO remain later branches in their preserved order.
 

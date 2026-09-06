@@ -116,7 +116,8 @@ test('Review UI and tutorial copy have explicit English, Russian, and Hebrew cov
   assert.match(i18n, /"Review priority"/);
   assert.match(i18n, /"Replay around selected decision"/);
   assert.match(tutorials, /anchor: 'hand-review'/);
-  assert.match(tutorials, /probability disagreement—not EV loss/);
+  assert.match(tutorials, /Deep Review highlights up to three decisions with explicit study reasons/);
+  assert.doesNotMatch(tutorials, /review priority is a probability disagreement/);
   assert.match(tutorialI18n, /const handReviewTutorial = \{/);
 });
 

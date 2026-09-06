@@ -24,6 +24,8 @@ import {
   PLAYBOOK_SCENARIO_V2_SCHEMA_VERSION,
   createPlaybookScenarioInput,
 } from './playbook-state-source.mjs';
+import { validateOpponentPracticeRequest } from './synthetic-opponent-policy.mjs';
+import { validatePolicyTrainingIntent } from './policy-conditioned-training.mjs';
 
 export const FULL_HAND_TRAINING_SESSION_SCHEMA_VERSION =
   'full-hand-training-session/v1';
@@ -145,6 +147,9 @@ function normalizeStartInput(input) {
     },
     heroSeat,
     heroPosition,
+    opponentPractice: input.opponentPractice == null ? null : validateOpponentPracticeRequest(input.opponentPractice),
+    policyTrainingIntent: input.policyTrainingIntent == null ? null
+      : validatePolicyTrainingIntent(input.policyTrainingIntent, input.opponentPractice ?? null),
     decisionContextOptions: structuredClone(decisionContextOptions),
   };
 }
@@ -174,7 +179,7 @@ function gradeCounts(decisions) {
   return deepFreeze(counts);
 }
 
-function createReview({ journal, replaySource, botDecisionJournal, completedHandResult }) {
+function createReview({ journal, replaySource, botDecisionJournal, completedHandResult, opponentPractice, policyTrainingIntent }) {
   if (!journal || !replaySource) return null;
   const decisions = journal.decisions.map((decision) => deepFreeze({
     schemaVersion: decision.schemaVersion,
@@ -196,6 +201,7 @@ function createReview({ journal, replaySource, botDecisionJournal, completedHand
     strategyResult: decision.evaluation?.strategyResult ?? null,
     grade: decision.evaluation?.answerEvaluation?.grade ?? null,
     evaluation: decision.evaluation,
+    opponentPractice,
   }));
   return deepFreeze({
     schemaVersion: FULL_HAND_TRAINING_REVIEW_SCHEMA_VERSION,
@@ -205,6 +211,8 @@ function createReview({ journal, replaySource, botDecisionJournal, completedHand
     replaySource,
     decisions,
     botDecisionJournal,
+    opponentPractice,
+    policyTrainingIntent,
     completedHandResult,
   });
 }
@@ -261,6 +269,8 @@ function initialSnapshot() {
     heroSeat: null,
     heroPlayerId: null,
     opponentAssignments: [],
+    opponentPractice: null,
+    policyTrainingIntent: null,
     state: null,
     currentDecision: null,
     answeredDecisions: [],
@@ -287,6 +297,8 @@ export function createFullHandTrainingStartConfigurationFromTrainingConfig({
   handSeed,
   heroPosition = null,
   handId = null,
+  opponentPractice = null,
+  policyTrainingIntent = null,
 } = {}) {
   const config = createTrainingConfig(trainingConfig);
   if (config.schemaVersion !== TRAINING_CONFIG_V2_SCHEMA_VERSION) {
@@ -305,6 +317,8 @@ export function createFullHandTrainingStartConfigurationFromTrainingConfig({
   return deepFreeze({
     handSeed: normalizedSeed,
     heroPosition: selectedHeroPosition,
+    opponentPractice: opponentPractice === null ? null : validateOpponentPracticeRequest(opponentPractice),
+    policyTrainingIntent: policyTrainingIntent === null ? null : validatePolicyTrainingIntent(policyTrainingIntent, opponentPractice),
     handConfiguration: {
       handId: normalizedHandId,
       rulesSnapshot: config.rulesSnapshot,
@@ -337,6 +351,8 @@ export function createFullHandTrainingSessionController({
   let strategyProvider = null;
   let sessionId = null;
   let handSeed = null;
+  let opponentPractice = null;
+  let policyTrainingIntent = null;
   let heroSeat = null;
   let heroPlayerId = null;
   let currentDecisionOrdinal = null;
@@ -376,6 +392,8 @@ export function createFullHandTrainingSessionController({
       replaySource,
       botDecisionJournal,
       completedHandResult,
+      opponentPractice,
+      policyTrainingIntent,
     });
     snapshot = deepFreeze({
       schemaVersion: FULL_HAND_TRAINING_SESSION_SCHEMA_VERSION,
@@ -386,6 +404,8 @@ export function createFullHandTrainingSessionController({
       heroSeat,
       heroPlayerId,
       opponentAssignments: progression.getOpponentAssignments(),
+      opponentPractice,
+      policyTrainingIntent,
       state,
       currentDecision,
       answeredDecisions,
@@ -470,6 +490,8 @@ export function createFullHandTrainingSessionController({
       strategyProvider = null;
       sessionId = null;
       handSeed = null;
+      opponentPractice = null;
+      policyTrainingIntent = null;
       heroSeat = null;
       heroPlayerId = null;
       currentDecisionOrdinal = null;
@@ -485,6 +507,8 @@ export function createFullHandTrainingSessionController({
         }
         progressionMode = suppliedProgressionMode;
         handSeed = normalized.handSeed;
+        opponentPractice = normalized.opponentPractice;
+        policyTrainingIntent = normalized.policyTrainingIntent;
         const capability = resolveTrainingRulesCapability(
           normalized.handConfiguration.rulesSnapshot,
           { tableSize: normalized.handConfiguration.players.length },
@@ -516,6 +540,7 @@ export function createFullHandTrainingSessionController({
           session,
           heroPlayerId,
           handSeed,
+          opponentPractice: normalized.opponentPractice,
           decisionContextOptions: normalized.decisionContextOptions,
         });
         projection(FULL_HAND_TRAINING_STATUSES.ADVANCING);
@@ -709,6 +734,8 @@ export function createFullHandTrainingSessionController({
       strategyProvider = null;
       sessionId = null;
       handSeed = null;
+      opponentPractice = null;
+      policyTrainingIntent = null;
       heroSeat = null;
       heroPlayerId = null;
       currentDecisionOrdinal = null;

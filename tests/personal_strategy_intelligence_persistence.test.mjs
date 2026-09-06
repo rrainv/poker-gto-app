@@ -117,14 +117,14 @@ test('ordered legacy migration preserves IDs/owner and old clients reject the ne
     frequencies: [{ action: { type: 'fold' }, probability: 0.6 }, { action: { type: 'raise' }, probability: 0.4 }] })];
   const migrated = migratePersonalStrategyStore(legacy);
   assert.deepEqual(migrated.rangeObservations, legacy.rangeObservations);
-  assert.equal(migrated.schemaVersion, 'personal-strategy-store/v2');
+  assert.equal(migrated.schemaVersion, 'personal-strategy-store/v3');
   assert.deepEqual(migrated.profiles[0].modeIds, legacy.profiles[0].modeIds);
   assert.deepEqual(migrated.ownerRef, legacy.ownerRef);
   assert.deepEqual(migrated.qualitativeEvidence, []);
   assert.deepEqual(migratePersonalStrategyStore(migrated), migrated);
   assert.throws(() => migratePersonalStrategyStore({ ...legacy, schemaVersion: 'personal-strategy-store/v99' }), /Unsupported/);
   const importedLegacy = parsePersonalStrategyExport({ ...legacy, schemaVersion: 'personal-strategy-export/v1', exportedAt: T0 });
-  assert.equal(importedLegacy.schemaVersion, 'personal-strategy-export/v2');
+  assert.equal(importedLegacy.schemaVersion, 'personal-strategy-export/v3');
 });
 
 test('existing IndexedDB v2 migrates atomically and retains original records on interruption', async () => {

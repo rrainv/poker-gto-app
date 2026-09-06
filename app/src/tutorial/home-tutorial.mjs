@@ -31,7 +31,7 @@ export const HOME_TUTORIAL_DEFINITION = createTutorialDefinition({
       id: 'review',
       anchor: 'home-review',
       titleKey: 'Build a focused review habit',
-      bodyKey: 'Review groups the hands and spots you marked to revisit or as mistakes, turning saved material into a focused study queue.',
+      bodyKey: 'Open Study Inbox for one next recommendation and an inspectable queue from Training Memory, Saved and selected Personal conflicts. Due and review reasons stay visible. The queue covers a bounded loaded selection and never changes your intended strategy.',
       placement: 'left',
     },
     {

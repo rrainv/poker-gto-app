@@ -1,5 +1,6 @@
 import { assertCardArray, assertUniqueKnownCards } from './cards.js';
 import { assertMilliBbAlignment, assertPositiveMilliBb } from './amounts.js';
+import { validateRecordedSettlementState } from './recorded-settlement.js';
 import { validateAction } from './action.js';
 import {
   GAME_RULES_COLLECTION_TYPES,
@@ -31,6 +32,7 @@ import {
   POKER_SHOWDOWN_LAYER_RESULT_SCHEMA_VERSION,
   POKER_STATE_SCHEMA_VERSION,
   POKER_STATE_V2_SCHEMA_VERSION,
+  POKER_STATE_V3_SCHEMA_VERSION,
   POKER_VARIANT,
   STREETS,
 } from './schema.js';
@@ -208,10 +210,13 @@ export function validatePokerState(state) {
   if (!state || ![
     POKER_STATE_SCHEMA_VERSION,
     POKER_STATE_V2_SCHEMA_VERSION,
+    POKER_STATE_V3_SCHEMA_VERSION,
   ].includes(state.schemaVersion)) {
     throw new TypeError(`Expected ${POKER_STATE_SCHEMA_VERSION} or ${POKER_STATE_V2_SCHEMA_VERSION}`);
   }
-  const isV2 = state.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION;
+  const isV3 = state.schemaVersion === POKER_STATE_V3_SCHEMA_VERSION;
+  const isV2 = isV3 || state.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION;
+  if (!isV3 && Object.hasOwn(state, 'recordedSettlement')) throw new RangeError('Recorded settlement requires PokerState v3');
   if (!state.game || state.game.variant !== POKER_VARIANT) throw new RangeError('Unsupported poker variant');
   if (!VALUES(PHASES).includes(state.phase)) throw new RangeError('Invalid phase');
   if (!VALUES(STREETS).includes(state.street)) throw new RangeError('Invalid street');
@@ -220,6 +225,10 @@ export function validatePokerState(state) {
   let rulesSnapshot = null;
   if (isV2) {
     rulesSnapshot = validatePokerStateV2Rules(state);
+    if ((rulesSnapshot.schemaVersion === 'game-rules-snapshot/v2') !== isV3) {
+      throw new RangeError('PokerState and rules snapshot versions must match');
+    }
+    if (isV3 && !Object.hasOwn(state, 'recordedSettlement')) throw new RangeError('PokerState v3 requires recordedSettlement');
   } else {
     const expectedForcedContribution = validateGameConfiguration(state.game, state.players.length);
     if (state.game.tableSize !== state.players.length) throw new RangeError('game.tableSize must match players');
@@ -317,16 +326,21 @@ export function validatePokerState(state) {
   if (!Array.isArray(state.ledger)) throw new TypeError('ledger must be an array');
   let ledgerPot = 0;
   let ledgerDeduction = 0;
+  let ledgerRecordedRake = 0;
   const ledgerPotByPlayer = new Map(state.players.map((player) => [player.playerId, 0]));
   const ledgerDeductionByPlayer = new Map(state.players.map((player) => [player.playerId, 0]));
   const streetPotByPlayer = new Map(state.players.map((player) => [player.playerId, 0]));
   state.ledger.forEach((entry, index) => {
     if (entry.sequence !== index) throw new RangeError('Ledger sequence must be contiguous');
-    if (!ids.has(entry.playerId)) throw new RangeError('Ledger entry refers to an unknown player');
+    const rakeEntry = isV3 && entry.kind === LEDGER_KINDS.RECORDED_RAKE;
+    if (rakeEntry ? entry.playerId !== null : !ids.has(entry.playerId)) throw new RangeError('Ledger entry refers to an unknown player');
     const allowedLedgerKinds = isV2
       ? POKER_STATE_V2_LEDGER_KINDS
       : POKER_STATE_V1_LEDGER_KINDS;
-    if (!allowedLedgerKinds.has(entry.kind)) throw new RangeError('Invalid ledger kind');
+    if (!rakeEntry && !allowedLedgerKinds.has(entry.kind)) throw new RangeError('Invalid ledger kind');
+    if (rakeEntry !== (entry.movement === LEDGER_MOVEMENTS.POT_TO_RECORDED_RAKE)) {
+      throw new RangeError('Recorded rake must move from pot to recorded rake');
+    }
     if (!VALUES(LEDGER_MOVEMENTS).includes(entry.movement)) throw new RangeError('Invalid ledger movement');
     assertPositiveMilliBb(entry.amountMilliBb, 'ledger.amountMilliBb');
     assertMilliBbAlignment(entry.amountMilliBb, state.game.chipUnitMilliBb, 'ledger.amountMilliBb');
@@ -365,7 +379,8 @@ export function validatePokerState(state) {
       ledgerDeduction += entry.amountMilliBb;
       ledgerDeductionByPlayer.set(entry.playerId, ledgerDeductionByPlayer.get(entry.playerId) + entry.amountMilliBb);
     }
-    if (entry.movement === LEDGER_MOVEMENTS.POT_TO_STACK) {
+    if (rakeEntry) ledgerRecordedRake += entry.amountMilliBb;
+    if (entry.movement === LEDGER_MOVEMENTS.POT_TO_STACK || rakeEntry) {
       ledgerPot -= entry.amountMilliBb;
       if (ledgerPot < 0) throw new RangeError('Ledger cannot credit more than the available pot');
     }
@@ -388,7 +403,7 @@ export function validatePokerState(state) {
 
   const startingStacks = state.players.reduce((sum, player) => sum + player.startingStackMilliBb, 0);
   const currentStacks = state.players.reduce((sum, player) => sum + player.currentStackMilliBb, 0);
-  if (startingStacks !== currentStacks + state.potMilliBb + state.deductionTotalMilliBb) {
+  if (startingStacks !== currentStacks + state.potMilliBb + state.deductionTotalMilliBb + ledgerRecordedRake) {
     throw new RangeError('Aggregate chips are not conserved');
   }
 
@@ -639,7 +654,8 @@ export function validatePokerState(state) {
         throw new RangeError('Layer payouts must equal the exact pot-layer amount');
       }
     });
-    if (!sameNumericRecord(aggregatePayouts, state.terminal.payoutsMilliBbByPlayer)) {
+    if (!sameNumericRecord(aggregatePayouts, isV3 && state.recordedSettlement
+      ? state.recordedSettlement.grossPayoutsMilliBbByPlayer : state.terminal.payoutsMilliBbByPlayer)) {
       throw new RangeError('Terminal showdown payouts must equal aggregate layer payouts');
     }
   } else if (!state.showdown || state.showdown.status !== 'not_reached') {
@@ -658,6 +674,7 @@ export function validatePokerState(state) {
     throw new RangeError('A terminal state must have no actor, no unsettled pot, and terminal status');
   }
 
+  if (isV3) validateRecordedSettlementState(state, ledgerRecordedRake);
   return state;
 }
 

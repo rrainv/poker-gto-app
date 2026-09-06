@@ -1041,11 +1041,42 @@
     ["Let's see where connected hands leave your continuing range.", 'Посмотрим, где связанные руки перестают входить в ваш диапазон продолжения.', 'בואו נראה היכן ידיים מחוברות יוצאות מטווח ההמשך שלכם.'],
     ["Let's check the lower end before describing your range.", 'Давайте проверим слабую часть, прежде чем описывать ваш диапазон.', 'בואו נבדוק את הקצה החלש לפני שנתאר את הטווח שלכם.'],
   ];
+  personalUnderstanding.push(
+    ['Your next learning step', 'Следующий шаг обучения', 'הצעד הבא בלמידה'],
+    ['Coaching needs current first-in preflop evidence. Refresh this selection to continue.', 'Для обучения нужны текущие данные о префлопе без предыдущего входа в банк. Обновите выбор, чтобы продолжить.', 'הלימוד דורש ראיות עדכניות על פרה־פלופ כשנכנסים ראשונים לקופה. רעננו את הבחירה כדי להמשיך.'],
+    ['Teach this boundary', 'Уточнить эту границу', 'הבהרת הגבול הזה'],
+    ['Teach this region', 'Описать эту область', 'תיאור האזור הזה'],
+    ['Clarify conflicting answers', 'Разобрать противоречивые ответы', 'בירור תשובות סותרות'],
+    ['Refine the exact mix', 'Уточнить точные частоты', 'דיוק התמהיל המדויק'],
+    ['Explore this Approach difference', 'Разобрать различие подходов', 'בדיקת ההבדל בין הגישות'],
+    ['Explore this baseline difference', 'Разобрать различие с базовой стратегией', 'בדיקת ההבדל מקו הבסיס'],
+    ['Explore this reference difference', 'Разобрать различие с эталоном', 'בדיקת ההבדל מאסטרטגיית הייחוס'],
+    ['Your examples leave this boundary open. One nearby answer can clarify where your preference changes.', 'Ваши примеры пока не определяют эту границу. Ответ о соседней руке поможет уточнить, где меняется ваше предпочтение.', 'הדוגמאות שלכם משאירות את הגבול פתוח. תשובה על יד סמוכה יכולה להבהיר היכן ההעדפה משתנה.'],
+    ['This family still has unanswered hands. Describe one example before drawing a broader conclusion.', 'В этом семействе ещё есть руки без ответа. Опишите один пример, прежде чем делать более широкий вывод.', 'במשפחה הזאת עדיין יש ידיים ללא תשובה. תארו דוגמה אחת לפני הסקת מסקנה רחבה יותר.'],
+    ['Active answers disagree for this hand. Review their scope and decide which intention applies.', 'Текущие ответы об этой руке противоречат друг другу. Проверьте условия и решите, какое намерение здесь применимо.', 'התשובות הפעילות ליד הזאת סותרות זו את זו. בדקו את התנאים והחליטו איזו כוונה חלה כאן.'],
+    ['Your preferred action is known; its exact frequency is not. Refine it only if you intend a specific mix.', 'Предпочитаемое действие известно, а его точная частота — нет. Уточняйте её, только если намерены использовать конкретный микс.', 'הפעולה המועדפת ידועה; התדירות המדויקת שלה אינה ידועה. דייקו אותה רק אם אתם מתכוונים לתמהיל מסוים.'],
+    ['The Approaches differ on this example. Explain which assumption makes you choose differently.', 'В этом примере подходы различаются. Объясните, какое предположение меняет ваш выбор.', 'הגישות שונות בדוגמה הזאת. הסבירו איזו הנחה גורמת לכם לבחור אחרת.'],
+    ['Your preference differs from the heuristic baseline on this example. That difference is a discussion prompt, not a mistake.', 'В этом примере ваше предпочтение отличается от эвристической базовой стратегии. Это повод для обсуждения, а не признак ошибки.', 'ההעדפה שלכם שונה מקו הבסיס ההיוריסטי בדוגמה הזאת. ההבדל הוא הזמנה לדיון, ולא טעות.'],
+    ['Your preference differs from the selected reference on this example. Action comparison does not assess the whole range.', 'В этом примере ваше предпочтение отличается от выбранного эталона. Сравнение действий не оценивает весь диапазон.', 'ההעדפה שלכם שונה מאסטרטגיית הייחוס שנבחרה בדוגמה הזאת. השוואת פעולות אינה מעריכה את הטווח כולו.'],
+    ['What makes you continue or fold this hand in this exact spot?', 'Что определяет ваш выбор: продолжить или сбросить эту руку именно здесь?', 'מה גורם לכם להמשיך או לקפל את היד במצב המדויק הזה?'],
+    ['How often do you intend each action, if you want to specify a mix?', 'Как часто вы намерены выбирать каждое действие, если хотите задать точный микс?', 'באיזו תדירות אתם מתכוונים לבחור בכל פעולה, אם ברצונכם להגדיר תמהיל?'],
+    ['Do these answers describe different conditions, or has your intention changed?', 'Эти ответы описывают разные условия или ваше намерение изменилось?', 'האם התשובות מתארות תנאים שונים, או שהכוונה שלכם השתנתה?'],
+    ['Which assumption explains your different choice here?', 'Какое предположение объясняет ваш другой выбор здесь?', 'איזו הנחה מסבירה את הבחירה השונה שלכם כאן?'],
+    ['If position, price, players still to act, or opponent assumptions change, describe that as a separate context.', 'Если меняются позиция, цена, игроки за вами или предположения о сопернике, опишите это как отдельный контекст.', 'אם העמדה, המחיר, השחקנים שטרם פעלו או ההנחות על היריב משתנים, תארו זאת כהקשר נפרד.'],
+    ['{direct}/{total} hand classes specified; this is evidence coverage, not confidence.', 'Описано {direct}/{total} классов рук — это покрытие данными, а не уверенность.', 'תוארו {direct}/{total} מחלקות ידיים; זהו כיסוי ראיות ולא רמת ביטחון.'],
+    ['Inspect this answer', 'Проверить этот ответ', 'בדיקת התשובה הזאת'],
+    ['Teach this hand', 'Описать эту руку', 'תיאור היד הזאת'],
+    ['Try a nearby hand', 'Рассмотреть соседнюю руку', 'בדיקת יד סמוכה'],
+    ['What would change this?', 'Что изменит решение?', 'מה ישנה את ההחלטה?'],
+    ['No unresolved coaching question in this selection.', 'В этой выборке нет неуточнённых вопросов для обучения.', 'אין שאלת לימוד פתוחה בבחירה הזאת.'],
+  );
   for (const [key, russian, hebrew] of personalUnderstanding) {
     ru[key] = russian;
     he[key] = hebrew;
   }
 
+  ru['Teach through a hand'] = 'Обучение через раздачу';
+  he['Teach through a hand'] = 'ללמד דרך יד';
   const keys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineRangeCalibrationTranslations = {
     en: Object.fromEntries([...keys].map((key) => [key, key])),

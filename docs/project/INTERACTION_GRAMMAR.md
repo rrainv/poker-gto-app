@@ -1,5 +1,21 @@
 # Riverline interaction grammar
 
+[Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md) uses an optional disclosure,
+explicit calculation, dominant result and secondary runout inspection. Unknown
+combo weights and explicitly excluded combos are different input choices;
+known-only output says conditional Equity. Hypothetical card focus/hover/click
+uses identical facts and shows all cards with the canonical best five emphasized.
+Category improvement and Equity delta remain separate; estimated deltas disclose
+sampling noise. Source/candidate changes clear old output, and analysis never
+rewrites a live Hand or Personal intent.
+
+Review/Study continuity uses explicit reasons, separate evidence roles and existing
+owner destinations. Review later and Situational annotate Saved; current Personal
+intent inspection never records observed play as intention. Study Inbox ranks only
+its disclosed loaded sources, preserves due facts, and never reveals active Full
+Hand answers. Unsupported exact/concept routes explain their limits. See the
+[Deep Review / Study Inbox contract](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md).
+
 This document defines durable cross-surface interaction integrity. It is a semantic product contract, not poker, strategy, Equity, range, Training, persistence, implementation-status, or execution-priority authority.
 
 ## Strategy comparison and assessment language

@@ -4,6 +4,8 @@ Implementation ticket: `PERSONAL-STRATEGY-INTELLIGENCE-001` plus the shared natu
 
 ## Product and authority
 
+The explicitly authorized `PERSONAL-STRATEGY-COACH-001` + `RANGE-EVOLUTION-001A` continuation adds [Coach and Teach-through-a-Hand](PERSONAL_STRATEGY_COACH_V1_SPEC.md): exact-node intended evidence in the existing repository, exact-size action conditioning, canonical public-card removal, first reached-flop physical-combo teaching, structured summaries and concept dependencies. Its approved additive store/export v3 and backend/database v4 migration preserves all legacy precision. Full turn/river UI, weighted Equity, opponent policies and unsupported Training generation remain unavailable; human acceptance is pending.
+
 The primary object is **What Riverline understands**, an editable projection of intended strategy. Conversation, quick dominant-action answers, structured teaching, exact mixes, and secondary Matrix Edit feed the same owned evidence. Conversation history is not a strategy database.
 
 Game Setup is an arbitrary user-named environment. Approach is an independently named intended strategy within that setup. A setup starts with one Approach and may have any positive number. Home Game, ClubGG, cash, tournament, stack-depth, player names, and exploit experiments are examples, not enums or poker accounting authority. No universal Tight/Loose coordinate or fixed anchor count is introduced.
@@ -12,22 +14,23 @@ Personal intended strategy, selected reference strategy, observed Hero behavior,
 
 ## Durable contracts and migration
 
-`app/src/personal-strategy/domain.mjs`, `qualitative-evidence.mjs`, and `repository.mjs` own the domain and persistence changes. Internal `profileId` and `modeId` names remain stable compatibility identities for Game Setup and Approach.
+`app/src/personal-strategy/domain.mjs`, `qualitative-evidence.mjs`, `exact-node-intent.mjs`, and `repository.mjs` own the domain and persistence changes. Internal `profileId` and `modeId` names remain stable compatibility identities for Game Setup and Approach.
 
 | Contract | Current schema | Change |
 |---|---|---|
 | Game Setup / StrategyProfile | `strategy-profile/v2` | One or more unique mode IDs; user name; opaque `setupAssumptions`; `setupVersion`; immutable prior metadata snapshots in `versionHistory` |
 | Approach / StrategyMode | `strategy-mode/v2` | Independent name/order; `approachVersion`; prior metadata snapshots; optional frozen `forkProvenance` |
 | Qualitative intended proposition | `personal-qualitative-evidence/v1` | Confirmed immutable wording, interpretation, scope, uncertainty, and correction lineage |
-| Logical store | `personal-strategy-store/v2` | Adds `qualitativeEvidence`; carries v2 profiles and modes |
-| Portable export | `personal-strategy-export/v2` | Preserves all selected profile evidence and histories |
-| IndexedDB backend | `personal-strategy-indexeddb/v3`, database version 3 | Adds `qualitativeEvidence`, indexed by profile and mode |
+| Exact-node intended action | `personal-exact-node-intent/v1` | Canonical Hand node, exact subject/action/size, preferred or exact precision, snapshot and immutable correction lineage |
+| Logical store | `personal-strategy-store/v3` | Adds `exactNodeIntents`; retains qualitative and legacy evidence, v2 profiles and modes |
+| Portable export | `personal-strategy-export/v3` | Preserves all selected profile evidence and histories |
+| IndexedDB backend | `personal-strategy-indexeddb/v4`, database version 4 | Adds `exactNodeIntents`, indexed by profile and mode, within the existing database |
 
 Existing `range-observation/v1`, `training-observation/v1`, calibration context identities, and session contracts retain their meanings. Dominant-only direct evidence has no exact frequency. Names and opaque setup assumptions never select Game Rules or replace canonical decision contexts.
 
-The repository accepts legacy store v0/v1 and export v1 through explicit migration. Legacy exactly-three profile/mode records become v2 without ID remapping or truncation. Names, descriptions, tags, ownership, direct answers, exact mixes, corrections, contradictory histories, sessions, and observed evidence remain intact. Existing IndexedDB backend versions 1/2 upgrade their profiles/modes and metadata atomically. Unsupported versions and incompatible graphs fail closed. Legacy Web Storage recovery bytes remain retained. New database and portable versions prevent old clients from silently discarding new records.
+The repository accepts legacy store v0/v1/v2 and export v1/v2 through ordered explicit migration; v2-to-v3 adds an empty exact-node collection without synthesizing node/size semantics. Legacy exactly-three profile/mode records become v2 without ID remapping or truncation. Names, descriptions, tags, ownership, direct answers, exact mixes, corrections, contradictory histories, sessions, and observed evidence remain intact. Existing IndexedDB backend versions 1/2/3 upgrade through ordered atomic metadata/evidence steps. Unsupported versions and incompatible graphs fail closed. Legacy Web Storage recovery bytes remain retained. New database and portable versions prevent old clients from silently discarding new records.
 
-A metadata update appends the unchanged previous version and increments the applicable version. Approach addition/duplication also records changed setup membership. Lower version numbers alone do not establish semantic incompatibility: evidence applicability requires actual assumptions/context compatibility. Immutable direct/qualitative evidence history is separate from metadata version history; each ordinary answer does not manufacture a new metadata version.
+A metadata update appends the unchanged previous version and increments the applicable version. Approach addition/duplication also records changed setup membership. Legacy evidence applicability still follows actual assumptions/context compatibility. The first exact-node slice deliberately requires the current exact setup/Approach version when deriving a teaching range; older exact records remain readable in history but need explicit revalidation for use after a metadata version changes. Immutable direct/qualitative evidence history is separate from metadata version history; each ordinary answer does not manufacture a new metadata version.
 
 `addApproach(profileId, { id, displayName, description })` adds a mode and its setup relationship in one transaction. `duplicateApproach(profileId, sourceModeId, { id, displayName, description })` copies complete direct and qualitative histories with new IDs and remapped supersession links. The fork records source approach/version, source evidence IDs, copied time, and repository revision. Copied direct records retain their original evidence and point to the source record; they do not retain a live calibration-session dependency. Later source or fork edits are independent. Training observations are not copied into intent. No live inheritance is supported.
 

@@ -468,6 +468,6 @@ test('dependency and scope boundaries remain intact', () => {
     assert.doesNotMatch(source, /app\/src|logic\.js|window\.|document\./, file);
   }
   assert.doesNotMatch(PRODUCT_BOOTSTRAP, /Equity|Training|calculateEquity|trainingMode/);
-  assert.doesNotMatch(LOGIC.match(/function syncCanonicalDecisionDisplay[\s\S]*?\n}\n/)?.[0] || '',
+  assert.doesNotMatch(LOGIC.match(/function syncCanonicalDecisionDisplay[\s\S]*?\r?\n}\r?\n/)?.[0] || '',
     /applyAction|initializeHand|createAction/);
 });

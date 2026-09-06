@@ -2,20 +2,21 @@ import {
   ACTION_TYPES,
   applyAction as applyPokerAction,
   createAction,
-  getLegalActionSpec,
   playerById,
   validateAction,
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
+import { createOpponentActorInformation } from './opponent-actor-information.mjs';
 
 export const OPPONENT_POLICY_SCHEMA_VERSION = 'opponent-policy/v1';
+export const OPPONENT_POLICY_V2_SCHEMA_VERSION = 'opponent-policy/v2';
 export const OPPONENT_POLICY_PROVENANCE_SCHEMA_VERSION = 'opponent-policy-provenance/v1';
 export const OPPONENT_POLICY_SELECTION_SCHEMA_VERSION = 'opponent-policy-selection/v1';
 export const OPPONENT_POLICY_DECISION_SCHEMA_VERSION = 'opponent-policy-decision/v1';
 export const OPPONENT_POLICY_TRANSITION_SCHEMA_VERSION = 'opponent-policy-transition/v1';
 
 export const BASELINE_OPPONENT_POLICY_ID = 'riverline.basic-opponent';
-export const BASELINE_OPPONENT_POLICY_VERSION = 'deterministic-legal-heuristic/v1';
+export const BASELINE_OPPONENT_POLICY_VERSION = 'deterministic-legal-heuristic/actor-safe-v2';
 
 const UINT32_MAX = 0xffffffff;
 const SAMPLE_SPACE = 10_000;
@@ -104,9 +105,9 @@ function hashString32(value, initialState = 0x811c9dc5) {
   return avalanche32(hash);
 }
 
-function pokerStateFingerprint(pokerState) {
-  const hash = hashString32(stableStringify(pokerState));
-  return `poker-state-fnv1a32:${hash.toString(16).padStart(8, '0')}`;
+function actorInformationFingerprint(information) {
+  const hash = hashString32(stableStringify(information));
+  return `actor-information-fnv1a32:${hash.toString(16).padStart(8, '0')}`;
 }
 
 function mixedDecisionSeed({ decisionSeed, stateFingerprint, policy }) {
@@ -114,6 +115,7 @@ function mixedDecisionSeed({ decisionSeed, stateFingerprint, policy }) {
     OPPONENT_POLICY_DECISION_SCHEMA_VERSION,
     policy.policyId,
     policy.policyVersion,
+    stableStringify(policy.configuration ?? null),
     stateFingerprint,
     `seed:${decisionSeed}`,
   ].join('|'));
@@ -137,8 +139,9 @@ function normalizeProvenance(provenance) {
 }
 
 function validatePolicy(policy) {
-  requireExactKeys(policy, POLICY_KEYS, 'OpponentPolicy');
-  if (policy.schemaVersion !== OPPONENT_POLICY_SCHEMA_VERSION) {
+  const v2 = policy?.schemaVersion === OPPONENT_POLICY_V2_SCHEMA_VERSION;
+  requireExactKeys(policy, v2 ? [...POLICY_KEYS, 'configuration'].sort() : POLICY_KEYS, 'OpponentPolicy');
+  if (!v2 && policy.schemaVersion !== OPPONENT_POLICY_SCHEMA_VERSION) {
     throw new TypeError(`Expected ${OPPONENT_POLICY_SCHEMA_VERSION}`);
   }
   requireNonEmptyString(policy.policyId, 'OpponentPolicy policyId');
@@ -182,9 +185,10 @@ function actorContext(pokerState, actor) {
  * intentionally separate from StrategyProvider and must return a canonical
  * OpponentPolicySelection v1 for wrapper-level legality validation.
  */
-export function createOpponentPolicy({ policyId, policyVersion, provenance, select } = {}) {
+export function createOpponentPolicy({ policyId, policyVersion, provenance, select, configuration = null } = {}) {
   const policy = {
-    schemaVersion: OPPONENT_POLICY_SCHEMA_VERSION,
+    schemaVersion: configuration === null ? OPPONENT_POLICY_SCHEMA_VERSION : OPPONENT_POLICY_V2_SCHEMA_VERSION,
+    ...(configuration === null ? {} : { configuration: frozenClone(configuration) }),
     policyId: requireNonEmptyString(policyId, 'OpponentPolicy policyId'),
     policyVersion: requireNonEmptyString(policyVersion, 'OpponentPolicy policyVersion'),
     provenance: normalizeProvenance(provenance),
@@ -196,14 +200,15 @@ export function createOpponentPolicy({ policyId, policyVersion, provenance, sele
 
 /**
  * Resolves exactly one legal canonical action for the current actor. A frozen
- * PokerState clone crosses the policy boundary, so selectors cannot mutate the
- * caller's state. Canonical applyAction is the final legality authority.
+ * actor-observable allowlist crosses the policy boundary. Canonical applyAction
+ * is the final legality authority and runs outside that information boundary.
  */
 export function chooseOpponentAction({
   policy,
   pokerState,
   actorSeat,
   decisionSeed,
+  ownCards = null,
 } = {}) {
   validatePolicy(policy);
   validatePokerState(pokerState);
@@ -215,22 +220,23 @@ export function chooseOpponentAction({
     throw new RangeError('OpponentPolicy actorSeat must identify the current actor');
   }
   const normalizedDecisionSeed = requireUint32(decisionSeed, 'decisionSeed');
-  const legalActionSpec = getLegalActionSpec(pokerState);
-  const stateFingerprint = pokerStateFingerprint(pokerState);
+  const information = createOpponentActorInformation({ pokerState, actorSeat, ownCards });
+  const legalActionSpec = information.legalActionSpec;
+  const stateFingerprint = actorInformationFingerprint(information);
   const mixedSeed = mixedDecisionSeed({
     decisionSeed: normalizedDecisionSeed,
     stateFingerprint,
     policy,
   });
-  const policyState = frozenClone(pokerState);
-  const selection = normalizeSelection(policy.select(deepFreeze({
-    pokerState: policyState,
-    actor: actorContext(policyState, playerById(policyState, policyState.actingPlayerId)),
+  const policyInput = deepFreeze({
+    information,
+    actor: actorContext(information, information.players.find(player => player.seat === actorSeat)),
     legalActionSpec: frozenClone(legalActionSpec),
     decisionSeed: normalizedDecisionSeed,
     stateFingerprint,
     mixedSeed,
-  })), pokerState.game.chipUnitMilliBb);
+  });
+  const selection = normalizeSelection(policy.select(policyInput), pokerState.game.chipUnitMilliBb);
 
   // This validates actor identity, action availability, and exact sizing
   // bounds through the canonical transition authority without mutating state.
@@ -242,10 +248,17 @@ export function chooseOpponentAction({
     policyVersion: policy.policyVersion,
     action: selection.action,
     provenance: policy.provenance,
+    policySchemaVersion: policy.schemaVersion,
+    policyConfiguration: policy.configuration ?? null,
+    actorInformation: information,
     deterministicMetadata: {
       decisionSeed: normalizedDecisionSeed,
       stateFingerprint,
       mixedSeed,
+      // Collision-free equality key for a consumer cache; never a whole-state
+      // hash or replay/deal identity. No decision cache is needed by this owner.
+      cacheKey: stableStringify({ policyId: policy.policyId, policyVersion: policy.policyVersion,
+        configuration: policy.configuration ?? null, information, decisionSeed: normalizedDecisionSeed }),
       sampleSpace: selection.selectionMetadata.sampleSpace ?? null,
       sampleValue: selection.selectionMetadata.sampleValue ?? null,
     },
@@ -364,7 +377,7 @@ export function createBasicOpponentPolicy() {
  * future orchestrator; the action itself remains an ordinary canonical Replay
  * and action-journal transition.
  */
-export function applyOpponentPolicyAction({ session, policy, decisionSeed } = {}) {
+export function applyOpponentPolicyAction({ session, policy, decisionSeed, ownCards = null } = {}) {
   if (!session || typeof session.getState !== 'function'
     || typeof session.getHeroDecisionJournal !== 'function'
     || typeof session.applyAction !== 'function') {
@@ -385,6 +398,7 @@ export function applyOpponentPolicyAction({ session, policy, decisionSeed } = {}
     pokerState,
     actorSeat: actor.seat,
     decisionSeed,
+    ownCards,
   });
   const state = session.applyAction(decision.action);
   return deepFreeze({

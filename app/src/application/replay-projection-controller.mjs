@@ -25,6 +25,9 @@ function deepFreeze(value) {
 }
 
 function framePresentation(operation, state) {
+  if (operation === REPLAY_FRAME_OPERATIONS.RECORDED_SETTLEMENT) {
+    return { kind: 'recorded_settlement', labelKey: 'Recorded settlement' };
+  }
   if (operation === REPLAY_FRAME_OPERATIONS.INITIALIZE_HAND) {
     return { kind: 'initialization', labelKey: 'replay.transition.initialization' };
   }

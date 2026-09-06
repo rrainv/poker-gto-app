@@ -1,10 +1,10 @@
 # Personal Strategy Foundation Specification
 
-Status: durable evidence/persistence authority with the authorized `PERSONAL-STRATEGY-INTELLIGENCE-001` v2 migration implemented with focused integration checks passing; human acceptance remains pending.
+Status: durable evidence/persistence authority. The approved Intelligence v2 migration and explicitly authorized `PERSONAL-STRATEGY-COACH-001` / `RANGE-EVOLUTION-001A` exact-node store/export v3 extension are implemented; current ticket acceptance remains pending.
 
 Current Game Setup/Approach, qualitative evidence, migration, and language contracts: [PERSONAL_STRATEGY_INTELLIGENCE_V1_SPEC.md](PERSONAL_STRATEGY_INTELLIGENCE_V1_SPEC.md). Legacy v1 Profile/Mode shapes below remain historical compatibility documentation; their exactly-three constraint is not the current product contract.
 
-Schema generation: profile/mode/store/export v2; direct/Training evidence v1; IndexedDB backend v3.
+Schema generation: profile/mode v2; store/export v3; direct/Training and exact-node evidence v1; IndexedDB backend/database v4.
 
 ## 1. Purpose and authority
 
@@ -282,9 +282,9 @@ This is enough to pause, close, reload, and resume a future deterministic elicit
 
 `RANGE-CAL-001C-A` uses a hybrid browser-native model:
 
-- IndexedDB database `riverline-personal-strategy`, database version `3`, is the one durable Personal Strategy record authority; backend v2 added conflicting evidence heads and v3 adds confirmed qualitative evidence;
+- IndexedDB database `riverline-personal-strategy`, database version `4`, is the one durable Personal Strategy record authority; backend v2 added conflicting evidence heads, v3 added confirmed qualitative evidence, and v4 adds exact-node intent;
 - Web Storage retains only the stable local-owner bootstrap, Range Calibration workspace preferences, and any pre-migration recovery source under `riverline.personalStrategy.v1`;
-- profile/mode/store/export identifiers are now v2; direct/Training evidence identifiers remain v1; `personal-strategy-indexeddb/v3` and database version `3` separately version physical storage.
+- profile/mode identifiers remain v2; store/export envelopes are v3; direct/Training evidence identifiers remain v1; `personal-exact-node-intent/v1` owns new exact-node evidence; `personal-strategy-indexeddb/v4` and database version `4` separately version physical storage.
 
 The decision follows measured evidence. Whole-document Web Storage remained fast for one 169-hand mode, but the supplied benchmark reached about 194 ms median at 3,042 observations and 452 ms median at 7,605 observations with a roughly 5.7 MB document. Every answer parsed, graph-validated, serialized, and synchronously replaced all history, so quota and main-thread time grew with total store size.
 
@@ -300,6 +300,7 @@ The physical object stores are:
 metadata
 profiles
 qualitativeEvidence           indexes: profileId, modeId
+exactNodeIntents              indexes: profileId, modeId
 modes                         index: profileId
 rangeObservations             indexes: profileId, logicalKey, scopeKey, calibrationSessionId
 currentRangeObservations      indexes: profileId, scopeKey
@@ -325,16 +326,20 @@ An accepted answer runs one strict read/write transaction over metadata, immutab
 
 The operation ID is also the observation ID. Repeating the exact same committed observation/session pair returns idempotent success rather than duplicating it. Conflicting ID reuse fails closed. Transaction abort or quota failure leaves all prior records authoritative.
 
-`loadWorkspaceSnapshot` loads profiles, modes, sessions, current direct leaves/conflicts, and qualitative evidence. Full direct history is read only for scoped history inspection, full snapshots, migration validation, duplication, or export. Answer writes and one-hand lookup are therefore bounded independently from total immutable history.
+`loadWorkspaceSnapshot` loads profiles, modes, sessions, current direct leaves/conflicts, qualitative evidence, and exact-node intent. Full direct history is read only for scoped history inspection, full snapshots, migration validation, duplication, or export. Existing direct-answer writes and one-hand lookup remain bounded independently from total immutable direct history.
+
+Exact-node intent is additive inside this repository. `appendExactNodeIntent` validates the canonical node/DecisionContext, exact actions and amount semantics, subject, intended precision, deterministic fingerprint, immutable provenance, and correction graph. It verifies current Setup/Approach versions, globally unused ID, and current supersession heads in one identity-fenced transaction. `loadExactNodeIntents` scopes by profile/mode, optionally filters node fingerprint, and validates its complete Approach history. These operations scale with that exact-node history; the historical direct-answer benchmark is not a performance claim for this new path.
+
+The `personal-exact-node-intent/v1` record retains exact replay identity, street/board/history, physical combo or explicitly expanded preflop class, preferred-only or exact mix, precise canonical action sizes, versions and lineage. Postflop class expansion is unsupported. Existing action-family answers, qualitative statements, and dominant-only evidence never receive fabricated node, size, or frequency precision. Weighted ranges, action/card-removal conditioning, trajectory nodes, and summaries remain derived. Forks copy intent into independently identified evidence with source provenance and remapped correction references; original evidence is unchanged.
 
 ## 12. Export and import
 
-`personal-strategy-export/v2` is a portable JSON envelope containing export time, owner reference, selected profiles, their modes, direct evidence, Training evidence, sessions, and qualitative evidence. Metadata versions, forks, and immutable qualitative corrections are retained; legacy export v1 is explicitly migrated. Export can select profile IDs and includes full direct history for those profiles.
+`personal-strategy-export/v3` is a portable JSON envelope containing export time, owner reference, selected profiles, their modes, direct evidence, Training evidence, sessions, qualitative evidence, and exact-node intent. Versions, forks, immutable corrections, exact sizes, and provenance are preserved losslessly. Legacy exports v1/v2 are explicitly migrated; exact-node evidence is never downgraded. Export can select profile IDs and includes complete evidence histories for those profiles.
 
 Import behavior is deliberately conservative:
 
 - parse and validate the complete envelope before mutation;
-- accept current export v2 or explicitly migrate supported legacy export v1;
+- accept current export v3 or explicitly migrate supported legacy exports v1/v2;
 - follow explicit repository `ownerPolicy`: `adopt_active` rehomes the imported profile to the active owner; `require_match` requires matching ownership;
 - reject any object-ID collision;
 - reject a second root for an existing direct-calibration key;
@@ -348,10 +353,10 @@ Import does not silently regenerate IDs. Active-owner adoption follows the expli
 Every durable object and envelope has an exact schema identifier. Domain schema and physical database/backend versions are independent. The ordered synthetic domain migration remains:
 
 ```text
-personal-strategy-store/v0 -> personal-strategy-store/v1 -> personal-strategy-store/v2
+personal-strategy-store/v0 -> personal-strategy-store/v1 -> personal-strategy-store/v2 -> personal-strategy-store/v3
 ```
 
-The v1-to-v2 step upgrades legacy Profile/Mode metadata and adds an empty qualitative collection without changing existing evidence. Existing IndexedDB backend versions 1/2 migrate atomically to backend v3. The v0 fixture exercises earlier envelope changes: `ownerId` becomes structured `ownerRef`, `observations` becomes `rangeObservations`, `sessions` becomes `calibrationSessions`, and an empty `trainingObservations` collection is introduced.
+The v1-to-v2 step upgrades legacy Profile/Mode metadata and adds an empty qualitative collection without changing existing evidence. The v2-to-v3 step adds an empty exact-node collection, preserving all v2 evidence verbatim at its original precision. Existing IndexedDB backend versions 1/2/3 migrate atomically to backend v4, retaining ordered domain-migration completion metadata. Older schemas containing exact-node records fail closed instead of discarding those records. The v0 fixture exercises earlier envelope changes: `ownerId` becomes structured `ownerRef`, `observations` becomes `rangeObservations`, `sessions` becomes `calibrationSessions`, and an empty `trainingObservations` collection is introduced.
 
 On first IndexedDB activation, the repository detects the legacy `riverline.personalStrategy.v1` document. It parses, applies the ordered domain migration if necessary, validates the complete graph and owner, then imports profiles, modes, immutable evidence, current leaves, Training evidence, and sessions in one IndexedDB transaction. Counts are verified inside that transaction before completed migration metadata is written.
 
@@ -364,7 +369,7 @@ Migration rules:
 - never partially write a domain or backend migration;
 - reject unknown/incompatible schema identifiers without altering stored data;
 - require an approved ticket for a breaking contract change;
-- additive unknown fields on recognized objects are tolerated and preserved through store cloning; the portable envelope imports only its recognized collections;
+- legacy recognized objects retain additive unknown fields through store cloning; the portable envelope imports its recognized collections; exact-node records use strict versioned fields and reject incompatible content;
 - do not reinterpret an old field when its semantics changed—introduce a new version and explicit transform.
 
 ## 14. Ownership and account readiness
@@ -375,7 +380,7 @@ V1 owner identity is structured:
 { "kind": "local", "id": "stable-local-owner-id" }
 ```
 
-Objects do not derive ownership from display name, browser locale, machine path, or DOM state. Modes/evidence inherit ownership through their profile relationship. The store and profile owner must match.
+Objects do not derive ownership from display name, browser locale, machine path, or DOM state. Modes/evidence, including exact-node intent, inherit ownership through their profile relationship. The store and profile owner must match. Portable active-owner adoption updates only this parent ownership; exact-node provenance is unchanged. Existing identity lifecycle scopes abort stale reads/writes and preserve Guest/account separation.
 
 Only `local` is operational in v1. A future `account` owner kind requires a versioned migration and explicit transfer/merge policy, but the structured boundary avoids embedding a local username throughout child objects.
 

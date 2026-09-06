@@ -1,10 +1,20 @@
 # Riverline Roadmap
 
+September 7 authorized exception: [Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md)
+implements the first weighted-range/runout slice, awaiting
+`QA-ADVANCED-EQUITY-001`. Earlier references to weighted Equity as wholly future
+are superseded for this slice. Broader range-response, strategy and durable
+continuity work remains gated; the general sequence is unchanged.
+
 Last refreshed: September 5, 2026 (`MASSIVE-FOUNDATION-CHECKPOINT-001` consolidates the accepted Identity, truth, Training Intelligence, and Personal Strategy foundations).
 
 This roadmap explains major directional sequencing and why phases are ordered. [Current Phase](CURRENT_PHASE.md) owns the exact current checkpoint and execution order; [Product Backlog](PRODUCT_BACKLOG.md) owns concise capability/status. The [capability dossiers](capabilities/README.md) preserve detailed long-term intent without setting priority.
 
 ## Product north star
+
+September 6 authorized exception: the [Bluff / Exploit Teacher v1](BLUFF_EXPLOIT_TEACHER_V1_SPEC.md) bounded teaching/comparison slice is implemented awaiting `QA-BLUFF-EXPLOIT-TEACHER-001`. Quantitative opponent ranges, weighted Equity, optimized exploit analysis and semantic Training generation remain future dependencies. General sequencing is unchanged.
+
+September 6 authorized exception: the bounded actor-safe synthetic Full Hand policy slice is implemented awaiting human acceptance; see [Opponent Policy v2](OPPONENT_POLICY_V2_SPEC.md) and `QA-OPPONENT-POLICY-001`. The later opponent-model phase below now concerns richer evidence/quantitative/persistence work, beyond the three implemented presets/custom parameters and session-local review. General browser/composition/retrieval sequencing is unchanged.
 
 Riverline is becoming a local-first personal poker learning workstation:
 
@@ -21,6 +31,8 @@ Play a complete canonical hand
 Reference strategy, intended Personal Strategy, observed behavior, opponent policy, and exploit analysis remain distinct roles. Evidence-grounded language helps users understand those roles; it never becomes their authority.
 
 ## Sequencing principles
+
+The September 6 `PERSONAL-STRATEGY-CONTINUATION-001C` exception extends the existing [Personal Hand study](PERSONAL_STRATEGY_COACH_V1_SPEC.md) through flop, turn and river with exact sizes, partial action-conditioned reach, canonical card removal, street-aware questions, mutation facts and explicit hypothetical variations. It preserves store/export v3 and IndexedDB v4; only intent persists. Human acceptance remains pending under `QA-PERSONAL-COACH-001`. Arbitrary Hand import, multiway generation, weighted Equity, quantitative opponent ranges and exact semantic Training targets remain separate. The general browser/composition/Saved/Home sequence is unchanged.
 
 1. Keep the visible product usable and record non-blocking visual debt, but do not repeatedly polish intermediate surfaces ahead of higher-value reference and learning work.
 2. Use the checkpointed bounded-provider gate before treating Training disagreement as normative or expanding model ambitions; no accepted source means comparative semantics only.

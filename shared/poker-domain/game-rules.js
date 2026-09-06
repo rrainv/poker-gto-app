@@ -6,6 +6,8 @@ import { deepFreeze } from './freeze.js';
 import { ANTE_TYPES, POKER_VARIANT } from './schema.js';
 
 export const GAME_RULES_DEFINITION_SCHEMA_VERSION = 'game-rules-definition/v1';
+export const GAME_RULES_DEFINITION_V2_SCHEMA_VERSION = 'game-rules-definition/v2';
+export const GAME_RULES_SNAPSHOT_V2_SCHEMA_VERSION = 'game-rules-snapshot/v2';
 export const GAME_RULES_PRESET_SCHEMA_VERSION = 'game-rules-preset/v1';
 export const GAME_RULES_SNAPSHOT_SCHEMA_VERSION = 'game-rules-snapshot/v1';
 export const GAME_RULES_SEMANTIC_FINGERPRINT_PREFIX = 'game-rules-semantic/v1:';
@@ -307,8 +309,9 @@ function normalizeCollectionPolicy(collectionPolicy, chipUnitMilliBb) {
 
 function normalizeDefinition(definition) {
   requirePlainObject(definition, 'GameRulesDefinition');
-  requireExactKeys(definition, DEFINITION_KEYS, 'GameRulesDefinition');
-  if (definition.schemaVersion !== GAME_RULES_DEFINITION_SCHEMA_VERSION) {
+  const recorded = definition.schemaVersion === GAME_RULES_DEFINITION_V2_SCHEMA_VERSION;
+  requireExactKeys(definition, recorded ? [...DEFINITION_KEYS, 'recordedSettlementPolicy'] : DEFINITION_KEYS, 'GameRulesDefinition');
+  if (!recorded && definition.schemaVersion !== GAME_RULES_DEFINITION_SCHEMA_VERSION) {
     throw new TypeError(`Expected ${GAME_RULES_DEFINITION_SCHEMA_VERSION}`);
   }
   const variant = requireEnum(definition.variant, GAME_RULES_VARIANTS, 'game rules variant');
@@ -322,8 +325,16 @@ function normalizeDefinition(definition) {
     blinds.chipUnitMilliBb,
   );
 
+  if (recorded) {
+    requireExactKeys(definition.recordedSettlementPolicy, ['type', 'rakeModel'], 'recordedSettlementPolicy');
+    if (definition.recordedSettlementPolicy.type !== 'source_recorded_rake'
+      || definition.recordedSettlementPolicy.rakeModel !== 'unknown'
+      || collectionPolicy.type !== 'none' || format !== 'cash') {
+      throw new RangeError('Recorded settlement requires cash, no start collection, and unknown source-recorded rake model');
+    }
+  }
   return {
-    schemaVersion: GAME_RULES_DEFINITION_SCHEMA_VERSION,
+    schemaVersion: definition.schemaVersion,
     variant,
     format,
     tableSize,
@@ -331,6 +342,7 @@ function normalizeDefinition(definition) {
     ante,
     straddle,
     collectionPolicy,
+    ...(recorded ? { recordedSettlementPolicy: { type: 'source_recorded_rake', rakeModel: 'unknown' } } : {}),
   };
 }
 
@@ -360,7 +372,9 @@ export function parseGameRulesSemanticSerialization(serialized) {
 }
 
 export function getGameRulesSemanticFingerprint(definition) {
-  return `${GAME_RULES_SEMANTIC_FINGERPRINT_PREFIX}${serializeGameRulesSemantics(definition)}`;
+  const prefix = definition?.schemaVersion === GAME_RULES_DEFINITION_V2_SCHEMA_VERSION
+    ? 'game-rules-semantic/v2:' : GAME_RULES_SEMANTIC_FINGERPRINT_PREFIX;
+  return `${prefix}${serializeGameRulesSemantics(definition)}`;
 }
 
 function normalizePresetOrigin(origin) {
@@ -396,6 +410,9 @@ function normalizePreset(preset) {
     throw new TypeError(`Expected ${GAME_RULES_PRESET_SCHEMA_VERSION}`);
   }
   const definition = normalizeDefinition(preset.definition);
+  if (definition.schemaVersion !== GAME_RULES_DEFINITION_SCHEMA_VERSION) {
+    throw new RangeError('GameRulesPreset v1 requires a v1 definition');
+  }
   return {
     schemaVersion: GAME_RULES_PRESET_SCHEMA_VERSION,
     id: normalizePresetId(preset.id),
@@ -470,7 +487,8 @@ export function createGameRulesSnapshot(input) {
   requireExactKeys(input, SNAPSHOT_INPUT_KEYS, 'GameRulesSnapshot input');
   const definition = normalizeDefinition(input.definition);
   const snapshot = {
-    schemaVersion: GAME_RULES_SNAPSHOT_SCHEMA_VERSION,
+    schemaVersion: definition.schemaVersion === GAME_RULES_DEFINITION_V2_SCHEMA_VERSION
+      ? GAME_RULES_SNAPSHOT_V2_SCHEMA_VERSION : GAME_RULES_SNAPSHOT_SCHEMA_VERSION,
     source: normalizeSnapshotSource(input.source),
     setup: normalizeSetup(input.setup, definition.tableSize, 'GameRulesSnapshot.setup'),
     semanticFingerprint: getGameRulesSemanticFingerprint(definition),
@@ -482,16 +500,21 @@ export function createGameRulesSnapshot(input) {
 export function validateGameRulesSnapshot(snapshot) {
   requirePlainObject(snapshot, 'GameRulesSnapshot');
   requireExactKeys(snapshot, SNAPSHOT_KEYS, 'GameRulesSnapshot');
-  if (snapshot.schemaVersion !== GAME_RULES_SNAPSHOT_SCHEMA_VERSION) {
+  if (![GAME_RULES_SNAPSHOT_SCHEMA_VERSION, GAME_RULES_SNAPSHOT_V2_SCHEMA_VERSION].includes(snapshot.schemaVersion)) {
     throw new TypeError(`Expected ${GAME_RULES_SNAPSHOT_SCHEMA_VERSION}`);
   }
   const definition = normalizeDefinition(snapshot.definition);
+  if ((snapshot.schemaVersion === GAME_RULES_SNAPSHOT_V2_SCHEMA_VERSION)
+    !== (definition.schemaVersion === GAME_RULES_DEFINITION_V2_SCHEMA_VERSION)) {
+    throw new RangeError('GameRulesSnapshot and definition versions must match');
+  }
   const expectedFingerprint = getGameRulesSemanticFingerprint(definition);
   if (snapshot.semanticFingerprint !== expectedFingerprint) {
     throw new RangeError('GameRulesSnapshot semanticFingerprint does not match its definition');
   }
   return deepFreeze({
-    schemaVersion: GAME_RULES_SNAPSHOT_SCHEMA_VERSION,
+    schemaVersion: definition.schemaVersion === GAME_RULES_DEFINITION_V2_SCHEMA_VERSION
+      ? GAME_RULES_SNAPSHOT_V2_SCHEMA_VERSION : GAME_RULES_SNAPSHOT_SCHEMA_VERSION,
     source: normalizeSnapshotSource(snapshot.source),
     setup: normalizeSetup(snapshot.setup, definition.tableSize, 'GameRulesSnapshot.setup'),
     semanticFingerprint: expectedFingerprint,

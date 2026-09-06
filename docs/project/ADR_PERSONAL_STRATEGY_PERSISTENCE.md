@@ -1,8 +1,8 @@
 # ADR: Personal Strategy persistence
 
-Status: accepted by `RANGE-CAL-001C-A`; additive evidence-head projection extended by `ACCOUNT-002B-B`
+Status: accepted storage decision; extended by `ACCOUNT-002B-B`, `PERSONAL-STRATEGY-INTELLIGENCE-001`, and the explicitly authorized exact-node migration in `PERSONAL-STRATEGY-COACH-001` / `RANGE-EVOLUTION-001A`. Exact-node implementation remains subject to ticket acceptance.
 
-Date: August 14, 2026
+Date: August 14, 2026; persistence contract updated September 5, 2026.
 
 ## Context
 
@@ -41,7 +41,7 @@ No server, remote database, Electron IPC/filesystem authority, database framewor
 
 ## Decision
 
-The one durable Personal Strategy authority is native IndexedDB database `riverline-personal-strategy`, database version `2`, behind `createPersonalStrategyRepository`.
+The one durable Personal Strategy authority is native IndexedDB database `riverline-personal-strategy`, database version `4`, behind `createPersonalStrategyRepository`.
 
 The dependency path is:
 
@@ -73,13 +73,15 @@ The UI has no direct storage access. The asynchronous boundary is real: the appl
 | `metadata` | `key` | backend/domain versions, owner, repository revision, migration status |
 | `profiles` | `id` | profile domain records |
 | `modes` | `id` | `profileId` |
+| `qualitativeEvidence` | `id` | `profileId`, `modeId`; immutable confirmed qualitative intent |
+| `exactNodeIntents` | `id` | `profileId`, `modeId`; immutable exact-node intended evidence |
 | `rangeObservations` | `id` | `profileId`, `logicalKey`, `scopeKey`, `calibrationSessionId`; immutable direct history |
 | `currentRangeObservations` | `logicalKey` | `profileId`, `scopeKey`; current leaf materialization |
 | `conflictingRangeObservations` | `observationId` | `profileId`, `logicalKey`, `scopeKey`; additional immutable heads created by offline sync conflicts |
 | `trainingObservations` | `id` | `profileId`, `logicalKey`; separate Training evidence |
 | `calibrationSessions` | `id` | `profileId`, `scopeKey`; resumable progress/cursor |
 
-Storage-only wrapper fields provide indexes around an unchanged domain `value`. They are not domain fields and never enter portable exports.
+Direct/Training/session storage-only wrapper fields provide indexes around an unchanged domain `value`. Qualitative and exact-node records are stored directly under their domain IDs. They are not domain fields and never enter portable exports.
 
 `logicalKey` is the existing `profile + mode + canonical context + hand` identity. `scopeKey` omits the hand. Immutable revision records are never compacted or deleted. `currentRangeObservations` points to the selected active or retracted editing leaf; `conflictingRangeObservations` indexes additional synced evidence heads, so one-hand and one-scope work does not scan history.
 
@@ -104,8 +106,8 @@ On first repository initialization:
 1. open/create IndexedDB without touching unrelated application data;
 2. read completed database metadata if present;
 3. otherwise detect `riverline.personalStrategy.v1`;
-4. parse and apply the ordered `personal-strategy-store/v0 -> v1` domain migration if needed;
-5. validate owner and the complete v1 graph;
+4. parse and apply the ordered `personal-strategy-store/v0 -> v1 -> v2 -> v3` domain migration if needed;
+5. validate owner and the complete current graph;
 6. write normalized records and derived current leaves in one database transaction;
 7. count the imported record families inside that transaction;
 8. write completed migration metadata only after counts match.
@@ -116,9 +118,9 @@ Malformed JSON, invalid graph, owner mismatch, unsupported domain/backend versio
 
 ## Export and import
 
-`personal-strategy-export/v1` remains a domain envelope, not an IndexedDB dump. It contains no object-store name, index key, database version, or backend schema.
+`personal-strategy-export/v3` is the current domain envelope, not an IndexedDB dump. It contains no object-store name, index key, database version, or backend schema.
 
-Selected-profile export queries record stores by `profileId` and includes complete direct revision history, Training evidence, modes, and sessions. Import validates the portable envelope and merged domain graph before one atomic IndexedDB transaction. Existing collision, owner-mismatch, tied-mix, and revision-chain policies are unchanged.
+Selected-profile export queries record stores by `profileId` and includes complete direct revision history, Training evidence, modes, sessions, qualitative evidence, and exact-node intent including its corrections and original provenance. Export v1/v2 passes ordered domain migration; current exports never downgrade exact-node records. Import validates the portable envelope and merged domain graph before one atomic IndexedDB transaction. Existing collision, owner-mismatch, tied-mix, and revision-chain policies are unchanged.
 
 This boundary is suitable for a future account/sync adapter because it consumes stable domain records rather than browser-database internals.
 
@@ -126,13 +128,18 @@ This boundary is suitable for a future account/sync adapter because it consumes 
 
 The following versions are independent:
 
-- domain objects/store/export: existing v1 identifiers;
-- physical backend schema: `personal-strategy-indexeddb/v2`;
-- IndexedDB database version: `2`.
+- Profile/Mode domain objects: v2; direct/Training/session evidence: existing v1 identifiers;
+- store/export envelopes: v3; exact-node intent: `personal-exact-node-intent/v1`;
+- physical backend schema: `personal-strategy-indexeddb/v4`;
+- IndexedDB database version: `4`.
 
-Database v2 is additive: it creates the conflicting-head store and advances physical metadata without rewriting v1 profiles, modes, evidence, sessions, or portable exports. Single-device edits retain the original linear selected-head transaction. Sync-created sibling/root evidence remains immutable in full history and receives a separate indexed head rather than being forced into a fabricated linear order.
+Historical database v2 was additive: it creates the conflicting-head store and advances physical metadata without rewriting v1 profiles, modes, evidence, sessions, or portable exports. Single-device edits retain the original linear selected-head transaction. Sync-created sibling/root evidence remains immutable in full history and receives a separate indexed head rather than being forced into a fabricated linear order.
 
-Moving storage does not bump `StrategyProfile`, `RangeObservation`, `CalibrationSession`, or export schemas. A later IndexedDB object-store/index upgrade increments the database version. A semantic domain change requires its own approved schema migration.
+The approved Intelligence v1-to-v2 domain migration upgrades Profile/Mode metadata and adds an empty qualitative collection; physical backend v3 supplies its store. The approved exact-node v2-to-v3 domain migration adds an empty `exactNodeIntents` collection without modifying any existing evidence; physical backend v4 supplies its store. Existing backend versions 1/2/3 upgrade atomically, with ordered domain transforms and completion metadata. Unexpected exact-node records in older schemas, corrupt histories, incompatible versions, and interrupted writes fail closed.
+
+Exact-node intent binds canonical replay/node identity, board/street/history, exact action amount semantics, physical combo (or explicitly expanded preflop class), preferred-only or exact-mix precision, Approach/Setup versions, immutable provenance, and correction lineage. The repository verifies current versions and current supersession heads before appending, then increments metadata in the same identity-fenced transaction. Duplicate IDs fail closed. Exact-node reads validate the complete addressed Approach history; their cost scales with that history. The earlier direct-answer benchmark below does not measure exact-node validation.
+
+Existing ?Raise 75%? remains action-family evidence and never becomes ?raise to 2.5bb 75%.? Dominant-only remains unknown frequency. Weighted ranges, conditioning, card removal, trajectories, and summaries are derived and are never added to this evidence collection. Forks create independently identified records with copied-source provenance and remapped correction IDs; the source records remain untouched. Owner adoption changes the existing store/profile owner only, preserving child intent/provenance. The legacy remote transport remains upgrade-required; this migration creates no remote schema or second store.
 
 ## Performance evidence
 

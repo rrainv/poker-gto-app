@@ -1,5 +1,19 @@
 # Riverline Architecture Contract
 
+[Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md) adds a canonical weighted
+realization path under `shared/poker-domain/` over unchanged Range Core and
+shared Equity RNG/enumeration/winner primitives. Runout/application consumers
+remain factual and ephemeral; UI does no poker math, source metadata grants no
+trust, and partial results are explicitly conditional on known positive mass.
+
+[Hand History Import v1](HAND_HISTORY_IMPORT_V1_SPEC.md) adds an application adapter
+and source-neutral recorded-settlement rules/state/Replay versions in the canonical
+domain. Saved Hand v3 retains structured provenance without raw text. Imported
+decisions reuse the lifecycle journal and shared Review; no poker, strategy,
+opponent, reviewer or Training authority is duplicated.
+
+The additive [Bluff / Exploit Teacher v1](BLUFF_EXPLOIT_TEACHER_V1_SPEC.md) consumes canonical DecisionContext/RangeAnalysis/BluffAnalysis and policy-owned response weights. Its facts supply assumption-labelled teaching, never strategy, Equity, assessment or persistence authority. Supplied semantic regions remain explicit model hypotheses; Training requests defer to the existing generator/planner/grader and Full Hand configuration owner.
+
 This document is authoritative for implementation decisions unless an approved ticket explicitly supersedes it.
 
 ## 1. Dependency direction
@@ -27,6 +41,7 @@ Production must not import solver experiments, training scripts, cloud tooling, 
 - permitted strategy claims: `StrategyClaimPolicy v1`
 - current heuristic implementation: `app/src/strategy/`
 - Training generation/session/grading: canonical application modules
+- opponent decisions: actor-observable `opponent-actor-information/v1` -> `OpponentPolicy v2` (with actor-safe basic compatibility) -> canonical action validation/application; see [Opponent Policy v2](OPPONENT_POLICY_V2_SPEC.md). Policy/deal RNG streams are independent. Synthetic assumptions grant no strategy, range-response or grading authority.
 - durable encountered-decision/session learning evidence, review lifecycle, and re-drill identity: `training-decision-record/v1` / `training-session-record/v1` under `app/src/training-memory/`
 - explanation data: `AnalysisExplanation v1`
 - exact-hand, board-structure, blocker, and optional supplied-range facts for Analysis: `RangeAnalysisFacts v1`
@@ -286,6 +301,7 @@ Preserve PERF-001 guarantees:
 
 - `table-presentation/v1` is a pure ephemeral table geometry/hierarchy/projection over canonical state, Replay, legality, and surface context.
 - `hand-review/v1` is a pure ephemeral selected-decision/review projection over the canonical Hero journal, Replay, StrategyResult, and StrategyClaimPolicy.
+- `decision-delta/v1` keeps observed, current Personal, accepted reference, heuristic, opponent, exploit and normative roles separate; `study-inbox/v1` projects existing Saved/Training/Personal owners with deterministic reasons and lifecycle fencing. Neither owns evidence storage, grading or generation. See [Deep Review / Study Inbox v1](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md).
 - `experience-event/v1`, `riverline-audio/v1`, and `riverline-motion/v1` translate completed canonical transitions or explicit study actions into presentation consequences.
 
 These contracts may format, project, animate, or sound already-established facts. They never become poker state, Game Rules, legality, accounting, strategy, grading, Replay history, Saved, or persistence authority. Direct seek, hydration, initial render, and review selection must not recreate historical poker-world consequences. See `TABLE_PRESENCE_COMPETITIVE_REFERENCE.md` and `AUDIO_MOTION_001_SPEC.md`.

@@ -1,5 +1,52 @@
 # Riverline persistent QA backlog
 
+`QA-ADVANCED-EQUITY-001` — **PARTIAL / HUMAN ACCEPTANCE PENDING**, owner
+`ADVANCED-EQUITY-001` + `WEIGHTED-RANGE-EQUITY-001` + `RUNOUT-EXPLORER-001`.
+[Advanced Equity v1 and human matrix](ADVANCED_EQUITY_V1_SPEC.md): weighted joint
+sampling/enumeration, unknown-preserving partial results, bounded runout/card
+previews, Personal trajectories and explicit Exploit range hypotheses.
+September 7 browser inventory had no enabled apps/browsers. Verify the compact
+disclosure/results, cancellation/input edits, keyboard/hover/tap preview,
+source facts, Personal/candidate changes, EN/RU/HE/RTL and desktop themes.
+Existing Equity/Personal/Exploit QA owners keep their statuses and scope.
+
+`QA-REFERENCE-STRATEGY-002` — **PARTIAL / HUMAN ACCEPTANCE PENDING**.
+[Source foundation and human matrix](REFERENCE_SOURCE_FOUNDATION_V1_SPEC.md):
+SHA-256 identities, exact/incompatible coverage, claim ceilings, private local
+preview, immutable health/history and EN/RU/HE messages are automated. Browser
+inventory was empty September 6; visual/keyboard/RTL acceptance is unverified.
+Check Analyze Limits & caveats with no source and development-only exact,
+unaccepted and stack/size/rake mismatch injection. There is no import UI or
+production source. `QA-REFERENCE-PACK-001`, `QA-PREFLOP-REFERENCE-001` and
+`RET-REFERENCE-PACK-001` retain their existing acquisition/acceptance ownership.
+
+`QA-DEEP-STUDY-001` — **PARTIAL / HUMAN ACCEPTANCE PENDING**, owner
+`DEEP-REVIEW-001` + `STUDY-INBOX-001` + `DECISION-DELTA-FOUNDATION`.
+[Scope and human matrix](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md): separate roles,
+deterministic reasons, owner-projected Inbox, Saved annotation/parent continuity,
+import uncertainty, current intent inspection and existing Training routes.
+Behavioral and mounted EN/RU/HE checks are structural only; browser inventory was
+empty September 6. Verify played/imported/policy completion, exact seeking,
+Review later → Inbox → reload, notes/Situational, intent changes, due/re-drill and
+active-session guards, policy setup, partial sources, Guest/account transitions,
+keyboard/focus/RTL, narrow desktop and both themes. Earlier Review priority,
+Import, Personal, Opponent and Saved QA IDs retain their owners and statuses.
+
+`QA-HAND-HISTORY-IMPORT-001` — **PARTIAL / HUMAN ACCEPTANCE PENDING**, owner
+`HAND-HISTORY-IMPORT-001`; [scope/acceptance](HAND_HISTORY_IMPORT_V1_SPEC.md).
+Source/reconstruction/settlement/Replay/Saved/owner/intent boundaries are automated.
+September 6 browser inventory is empty. Human QA: paste/file, warnings and disabled
+unsafe Open, gross/rake/net result, shared Review/Analyze, Save/reload/deduplication,
+repeated Review later/Situational, intent/practice unavailability, owner changes,
+keyboard/Escape, EN/RU/HE/RTL, Midnight/Daylight and constrained desktop. Earlier
+QA owners are unchanged.
+
+`QA-EXPLOIT-ANALYSIS-001` — **PARTIAL / HUMAN ACCEPTANCE PENDING**, owner `EXPLOIT-ANALYSIS-001`. [Exploit Analysis v1](EXPLOIT_ANALYSIS_V1_SPEC.md) adds behavioral response/authority/Personal/Training/Review and EN/RU/HE/RTL mounted checks. Browser inventory on September 6 was empty. Human QA: same Hero node/size across three policy explanations; facing-call partial model; Personal check evidence, region teaching, candidate inspection and Keep; unsupported Practice feedback; completed policy Full Hand Review with separate roles and Replay navigation; keyboard/focus, language/RTL, 1366×768/narrow desktop and Midnight/Daylight compactness. Structural checks do not close this gate or earlier Bluff/Personal/Opponent/Review issue IDs.
+
+`QA-BLUFF-EXPLOIT-TEACHER-001` — **PARTIAL / HUMAN ACCEPTANCE PENDING**, owner `BLUFF-EXPLOIT-TEACHER-001` + `OPPONENT-AWARE-COACHING-001`. [Teacher v1](BLUFF_EXPLOIT_TEACHER_V1_SPEC.md) has focused facts/authority/economics/request/locale/RTL/mounted lifecycle coverage. September 6 browser inventory returned no enabled apps/browsers. Human QA: postflop Analyze Explain and selected Teach-through-a-Hand combo; same-size policy comparison; facing-call/raise and invalid input; combo/Approach changes; lesson usefulness/compactness; keyboard, EN/RU/HE/RTL, narrow desktop and Midnight/Daylight. Exact semantic drills, quantitative role/Equity outputs and one-click/source-node continuation remain unavailable. Existing issue IDs retain their status and owners.
+
+Additional evidence for existing `QA-PERSONAL-COACH-001`: CONTINUATION-001C consolidates the duplicate Coach introduction into the hand-study guidance and restores `calibration.setup` to the tested seven-step bound. Tutorial inventory and EN/RU/HE completeness now pass. This structural fix does not close human product acceptance.
+
 Last consolidated: September 5, 2026 (`MASSIVE-FOUNDATION-CHECKPOINT-001` closes the accepted automated foundation; named browser/live-provider acceptance debt remains open).
 
 This is the authoritative issue-routing file for historical and current QA. Code/tests/latest accepted ticket reports determine actual closure.
@@ -241,6 +288,8 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 
 ## Personal Strategy / Range Calibration
 
+`QA-PERSONAL-COACH-001` - **PARTIAL / HUMAN ACCEPTANCE PENDING**, owner `PERSONAL-STRATEGY-CONTINUATION-001C` extending the original Coach/Range Evolution owner. [Current full-street scope](PERSONAL_STRATEGY_COACH_V1_SPEC.md) includes exact node/sizing, flop?turn?river navigation, partial reach, mutation summaries, intent corrections/reload, concept routing and policy/Approach exploration. September 6 browser inventory returned no enabled apps/browsers. Focused verification passed 71/71 tests; all 11 changed/new JavaScript files passed syntax checks and diff hygiene passed. Mounted application tests are structural only. Human QA: complete a bet and a check line through river, face a river bet, teach preferred/exact/custom sizes, inspect unknown/removed combos, correct an upstream answer, reload, vary an earlier card, compare Approaches/policies, and inspect truthful Training unavailability. Assess compactness/usefulness, focus/keyboard, EN/RU/HE/RTL, narrow desktop and Midnight/Daylight. Existing unrelated issue IDs remain unchanged.
+
 | ID | Status | Issue | Owner |
 |---|---|---|---|
 | QA-PERSONAL-INTELLIGENCE-001 | PARTIAL / HUMAN ACCEPTANCE PENDING | [Intelligence v1](PERSONAL_STRATEGY_INTELLIGENCE_V1_SPEC.md): arbitrary setups and 4+ Approaches, confirmed qualitative intent, immutable correction/reload/fork histories, deterministic range/Approach/source language and shared claim envelope. Focused integration passed 305/305 tests; final targeted verification after self-found fixes passed 104/104 (overlapping suites). Persistence/domain passes 38, Understanding event/DOM passes 12, Personal EN/RU/HE/tutorial coverage passes 3. Separate whole-tutorial checks retain two unrelated Home locale/Training copy assertion failures detailed in the owning spec; existing i18n/Training owners retain them. Browser inventory exposed no apps/browsers at inspection, so visual acceptance is unperformed. Human QA: setup/create 4+, adaptive family/boundary mapping and early stop, preview/confirm/correct/narrow/exception, dominant/exact/Matrix Edit, sparse abstention and comparative-only claims, reload/history/fork independence, owner transitions, EN/RU/HE keyboard/RTL. Existing Personal Strategy issue IDs remain open under their named owners. | `PERSONAL-STRATEGY-INTELLIGENCE-001` human acceptance |
@@ -302,11 +351,17 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 | QA-TRAINING-REDRILL-001 | COMPLETED / HUMAN ACCEPTED V1 + STANDALONE CLOSEOUT | Same Spot remains exact historical reproduction as a standalone idle-only Memory re-drill, separate from Focused/planner progress and ordinary headline stats; active ordinary Training blocks entry without suspend/restore. Similar Spot remains planner/generator-backed current practice. Sophisticated scheduling, Saved Drill presets, richer filters, and cross-surface continuity remain future. | Future `TRAINING-MEMORY-002` when prioritized |
 | QA-SAVED-LIBRARY-001 | OPEN / REOPENED FOUNDATIONAL RETRIEVAL | The accepted Saved grid filters only an already-bounded result set. Full retrieval/search/filter/sort/pagination for current Hand/Spot objects is not implemented. New payload kinds remain explicitly out of scope. | `SAVED-LIBRARY-001` |
 
-## Opponent policy / bots future QA
+## Opponent policy / bots QA
+
+Human correction for `QA-OPPONENT-POLICY-002`: bot/policy functionality is accepted. The remaining bounded setup-composition issue now uses Opponent + concise summary, Study focus, Apply to, and collapsed Advanced (seed, parameters, comparison and full limitations). Policy semantics and supported targets are unchanged. Browser inventory remains empty; compact right-rail/Start Training visibility needs human visual confirmation. Other requested policy functionality is not reopened.
+
+`QA-OPPONENT-POLICY-002` — **PARTIAL / HUMAN ACCEPTANCE PENDING**, owner `OPPONENT-INTELLIGENCE-002` + policy-conditioned Training + opponent-review foundation. Automated invariants cover frozen intent/request matching, unchanged provider/grader inputs, deterministic replay, actor provenance, descriptive custom-parameter NL, read-only Personal coverage and mounted locale/reset behavior. September 6 browser inventory returned no apps/browsers. Human QA: select Calling-heavy/Aggressive/Tight-passive and each reflection theme; compare custom settings; finish a hand and expand actor inputs/active settings/seeds; change setup then Replay seed; reset and switch language; inspect My Approach under opponent assumptions and Teach this region next; inspect Bluff/Exploit comparison questions. Check compactness, keyboard/focus, EN/RU/HE/RTL, 1366×768 and Midnight/Daylight. Questions must not imply guaranteed thin-value/bluff-catching/check-raise drills or normative policy grading. Earlier Opponent/Bluff/Personal and `RET-FULLHAND-HERO-FOLD-001` owners remain unchanged. No human acceptance or durable policy review is claimed.
+
+Stress evidence for `QA-OPPONENT-POLICY-001`: the configured three-handed 500bb always-raise path completes after Hero folds, beyond the old fixed event guard. The final focused run including that path took about 160 seconds. Long minimum-raise sequences therefore remain a performance limitation to assess in human use; the existing Hero-fold lifecycle return owner is not closed or absorbed by this ticket.
 
 | ID | Status | Issue | Owner |
 |---|---|---|---|
-| QA-OPPONENT-POLICY-001 | PARTIAL / DOCUMENTATION CORRECTED | A strict provenance-aware `OpponentPolicy v1`, built-in deterministic `basic` policy, and legal Full Hand automated progression already exist. Richer archetypes, custom policies, user selection, and any real-person prediction remain deferred and must not be conflated with reference strategy. | existing bounded foundation; later `OPPONENT-POLICY-ARCH-001` product evolution |
+| QA-OPPONENT-POLICY-001 | PARTIAL / HUMAN ACCEPTANCE PENDING | [Opponent Policy v2](OPPONENT_POLICY_V2_SPEC.md) adds actor-input allowlisting, independent policy RNG, hidden/future-card counterfactual tests, three parameter-backed card-independent presets/custom controls, all-opponents/BB targeting, and terminal policy review. Canonical complete-hand replay and mounted EN/RU/HE/reset checks pass. September 6 browser inventory returned no enabled apps/browsers. Human QA must play multiple full Hands against at least two presets, inspect custom parameters and BB-only rejection when Hero is BB, Replay seed, post-hand explanations, keyboard/focus, EN/RU/HE/RTL, normal/narrow desktop and Midnight/Daylight. Persistent policy review, quantitative ranges and real-person models are not claimed. Existing Full Hand/identity QA remains with its owners. | `OPPONENT-INTELLIGENCE-001` + `OPPONENT-ACTOR-INFORMATION-001` + `ACTOR-SAFE-BOTS-001` human acceptance |
 
 ## Performance and DOM follow-up
 

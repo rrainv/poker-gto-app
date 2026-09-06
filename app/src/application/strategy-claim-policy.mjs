@@ -163,10 +163,10 @@ export function resolveStrategyClaimPolicy(strategyResult) {
     STRATEGY_SOURCE_AUTHORITIES.COMPARATIVE_REFERENCE,
     STRATEGY_SOURCE_AUTHORITIES.VALIDATED_REFERENCE,
   ].includes(acceptedAuthority);
-  const comparative = available
+  let comparative = available
     && referenceAuthority
     && capabilities.grading !== STRATEGY_GRADING_CAPABILITIES.NONE;
-  const normative = comparative
+  let normative = comparative
     && exactCoverage
     && acceptedAuthority === STRATEGY_SOURCE_AUTHORITIES.VALIDATED_REFERENCE
     && capabilities.grading === STRATEGY_GRADING_CAPABILITIES.NORMATIVE
@@ -195,6 +195,21 @@ export function resolveStrategyClaimPolicy(strategyResult) {
     [STRATEGY_CLAIMS.NORMATIVE_CURRICULUM_WEIGHTING]: false,
     [STRATEGY_CLAIMS.SOURCE_LIMITATIONS]: true,
   };
+  if (acceptance?.acceptedClaimClasses !== null && acceptance?.acceptedClaimClasses !== undefined) {
+    for (const key of Object.keys(claims)) {
+      if (key !== STRATEGY_CLAIMS.SOURCE_LIMITATIONS) claims[key] &&= acceptance.acceptedClaimClasses.includes(key);
+    }
+    // Denying a parent permission also denies dependent language and grading.
+    if (!claims.strategy_presentation) {
+      for (const key of Object.keys(claims)) if (key !== STRATEGY_CLAIMS.SOURCE_LIMITATIONS) claims[key] = false;
+    }
+    claims.normative_grading &&= claims.comparative_grading;
+    if (!claims.normative_grading) {
+      for (const key of ['objective_correctness', 'mistake', 'normative_curriculum_weighting']) claims[key] = false;
+    }
+    comparative &&= claims.comparative_grading;
+    normative &&= claims.normative_grading;
+  }
   const limitations = limitationsFor(descriptor, coverage);
   let mode = 'unavailable';
   if (available) {

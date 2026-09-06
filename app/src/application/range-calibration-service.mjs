@@ -71,6 +71,12 @@ import { LEGACY_PERSONAL_STRATEGY_OWNER_KEY } from '../account-identity/legacy-o
 import { createPersonalStrategyRangeBuilder } from './range-builder-service.mjs';
 import { previewPersonalStrategyIntent } from '../personal-strategy/intent-interpretation.mjs';
 import { createQualitativeEvidence } from '../personal-strategy/qualitative-evidence.mjs';
+import { createExactNodeIntent, exactNodeIntentHeads, sameExactRangeNode, canonicalIntentContent } from '../personal-strategy/exact-node-intent.mjs';
+import { createPersonalHandBranch, createPersonalRangeNodeStudy,
+  personalPreflopCandidates, rebuildPersonalHandTrajectory, personalNodeActions, personalNodeContext,
+  personalRangeMutationFacts } from './personal-hand-study.mjs';
+import { createNodeCoach } from '../personal-strategy/node-coach.mjs';
+import { calibrationContextsEquivalent } from '../personal-strategy/domain.mjs';
 
 export {
   RFI_CALIBRATION_INTENTS,
@@ -2775,13 +2781,87 @@ export function createRangeCalibrationApplication({
       intent: RFI_CALIBRATION_INTENTS.MAPPING, mappingFocus: focus, mappingEvidenceView: bundle.evidenceView,
       recentQuestionHistory: recentHands, skippedHandClasses: skippedHands, transferProjection: bundle.transferProjection,
     }).filter((candidate) => !directHands.has(candidate.handClass) || candidate.questionKind === 'conflict_resolution');
-    return Object.freeze({ available: true, coverage: createRfiStructuralMappingFacts({ snapshot: bundle.snapshot, evidenceView: bundle.evidenceView }), candidates });
+    return Object.freeze({ available: true, evidenceFingerprint: bundle.evidenceView.evidenceFingerprint,
+      coverage: createRfiStructuralMappingFacts({ snapshot: bundle.snapshot, evidenceView: bundle.evidenceView }), candidates });
+  }
+
+  async function getPersonalHandStudy(scope, { board = ['Qs', '8c', '4h'], node = null, recentCombos = [], resume = true } = {}) {
+    const workspace = await readWorkspace();
+    const profile = workspace.snapshot.profiles.find(entry => entry.id === scope?.profileId && entry.state === PROFILE_STATES.ACTIVE);
+    const mode = workspace.snapshot.modes.find(entry => entry.id === scope?.modeId && entry.profileId === profile?.id && entry.state === PROFILE_STATES.ACTIVE);
+    if (!profile || !mode) throw new RangeError('Personal Hand Study scope unavailable');
+    const context = scope.context;
+    if (context?.decisionFamily !== 'preflop_rfi' || context.heroPosition !== 'BTN' || context.tableSize < 3) return { available: false, reason: 'unsupported_context' };
+    const savedSelection = workspace.preferences.byProfile[profile.id]?.context;
+    const selection = normalizeRfiContextSelection({ ...savedSelection, environment: profileDefaultEnvironment(profile),
+      tableSize: context.tableSize, heroPosition: 'BTN', effectiveStackBb: context.stack?.valueBb ?? context.effectiveStackBb,
+      decisionFamily: 'preflop_rfi', actionAware: context.schemaVersion === 'calibration-context/v2',
+      ...(context.accounting ? { anteType: context.accounting.anteType, anteBb: context.accounting.anteBb,
+        collectionBb: context.accounting.forcedContributionPerPlayerBb } : {}) });
+    if (!calibrationContextsEquivalent(createContextFromSelection(selection), context)) return { available: false, reason: 'unsupported_context' };
+    if (selection.environment === CALIBRATION_ENVIRONMENTS.CLUBGG || (selection.anteBb ?? 0) !== 0
+      || (selection.collectionBb ?? 0) !== 0 || (context.accounting?.rakeMode ?? 'off') !== 'off') return { available: false, reason: 'unsupported_context' };
+    const seed = calibrationContextState(selection);
+    const branch = createPersonalHandBranch({ tableSize: context.tableSize, stackBb: selection.effectiveStackBb, board, rulesSnapshot: seed.rulesSnapshot });
+    const approachSnapshot = { profileId: profile.id, modeId: mode.id, setupVersion: profile.setupVersion, approachVersion: mode.approachVersion };
+    const history = await repository.loadExactNodeIntents(scope);
+    const currentRecords = history.filter(record => record.setupVersion === profile.setupVersion && record.approachVersion === mode.approachVersion);
+    const atNode = node => currentRecords.filter(record => sameExactRangeNode(record.node, node));
+    const prefix = branch.flopNode.replaySource.events;
+    const compatible = candidate => candidate.actorId === branch.flopNode.actorId
+      && canonicalIntentContent(candidate.replaySource.events.slice(0, prefix.length)) === canonicalIntentContent(prefix);
+    const resumableNodes = [...new Map(currentRecords.filter(record => ['flop','turn','river'].includes(record.node.street)
+      && compatible(record.node)).map(record => [record.node.fingerprint, record.node])).values()];
+    const currentNode = node?.street === 'preflop' ? branch.flopNode : node
+      ?? (resume ? [...resumableNodes].sort((a,b) => b.replaySource.events.length - a.replaySource.events.length)[0] : null) ?? branch.flopNode;
+    if (!compatible(currentNode)) throw new RangeError('Unsupported exact teaching node');
+    const { trajectory, stages } = rebuildPersonalHandTrajectory({ preflopNode: branch.preflopNode,
+      targetNode: currentNode, records: currentRecords, approachSnapshot });
+    const actionTrajectory = stages[0].conditioned;
+    const study = createPersonalRangeNodeStudy({ trajectory, records: atNode(currentNode), recentCombos });
+    const heads = exactNodeIntentHeads(currentRecords);
+    const currentHeadIds = (node, subject) => heads.filter(record => sameExactRangeNode(record.node,node)
+      && canonicalIntentContent(record.subject) === canonicalIntentContent(subject)).map(record => record.id);
+    const evidenceView = await projectionService.getEvidenceView(scope);
+    const preflopCandidates = personalPreflopCandidates(evidenceView).map(candidate => ({ ...candidate,
+      currentHeadIds: currentHeadIds(branch.preflopNode,{kind:'hand_class',handClass:candidate.handClass}) }));
+    const questions = study.questions.map(question => ({ ...question,
+      currentHeadIds: currentHeadIds(currentNode,{kind:'combo',comboId:question.comboId}) }));
+    const coach = createNodeCoach({ studyFacts: study.facts, node: currentNode, approachSnapshot });
+    const contextFacts = personalNodeContext(currentNode);
+    const actions = [...personalNodeActions(currentNode)];
+    for (const record of exactNodeIntentHeads(atNode(currentNode))) for (const action of record.distribution?.map(item => item.action) ?? [record.preferredAction]) {
+      if (!actions.some(candidate => canonicalIntentContent(candidate) === canonicalIntentContent(action))) actions.push(action);
+    }
+    return Object.freeze({ available: true, ...branch, approachSnapshot, preflopCandidates,
+      comparisonApproaches: workspace.snapshot.modes.filter(entry => entry.profileId === profile.id && entry.id !== mode.id && entry.state === PROFILE_STATES.ACTIVE)
+        .map(entry => ({ id: entry.id, name: entry.name ?? entry.displayName ?? entry.id })),
+      node: currentNode, stages, resumableNodes, contextFacts, actions,
+      actionSizeHints: actions.map(action => ({ potFraction: action.action.type === 'bet' ? action.amountMilliBb / (contextFacts.potBb * 1000) : null })),
+      mutations: personalRangeMutationFacts({ stages, trajectory, study }),
+      exactNodeIntents: currentRecords, trajectory, actionTrajectory, study: { ...study, questions }, coach });
+  }
+  async function savePersonalHandIntent(scope, input) {
+    if (!input?.approachSnapshot || input.approachSnapshot.profileId !== scope.profileId || input.approachSnapshot.modeId !== scope.modeId) throw new RangeError('stale_personal_strategy_scope');
+    const current = await getPersonalHandStudy(scope, { board: input.node.street !== 'preflop' ? input.node.board.slice(0,3) : ['Qs','8c','4h'], node: input.node, resume: false });
+    if (!current.available || canonicalIntentContent(current.approachSnapshot) !== canonicalIntentContent(input.approachSnapshot)) throw new RangeError('stale_personal_strategy_scope');
+    if (!sameExactRangeNode(input.node,current.preflopNode) && !sameExactRangeNode(input.node,current.node)) throw new RangeError('Unsupported exact teaching node');
+    if (input.node.street !== 'preflop' && (input.subject?.kind !== 'combo' || !current.study.entries.some(entry => entry.comboId === input.subject.comboId))) throw new RangeError('Only known positive reached combos can be taught at this node');
+    const record = createExactNodeIntent({ ...input, ...current.approachSnapshot,
+      id: idFactory('exact-node-intent'), createdAt: timestampFrom(clock),
+      provenance: { source: 'user_intent', surface: 'teach_through_a_hand',
+        basis: 'explicit_exact_node_answer', assessment: 'none',
+        ...(typeof input.contextNote === 'string' && input.contextNote.trim() ? { contextNote: input.contextNote.trim().slice(0,2000), contextNoteSemantics: 'explanation_only_not_conditional_frequency' } : {}) } });
+    await repository.appendExactNodeIntent(record, { expectedHeadIds: input.supersedesEvidenceIds ?? [] });
+    return record;
   }
 
   const application = {
     ownerRef: resolvedOwnerRef,
     lifecycleScope,
     repository,
+    getPersonalHandStudy,
+    savePersonalHandIntent,
     readWorkspace,
     createProfile,
     updateProfileConfiguration,

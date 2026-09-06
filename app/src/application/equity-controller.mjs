@@ -1,11 +1,10 @@
 import {
   EQUITY_ERROR_CODES,
-  calculateEquity,
   createEquityFailure,
-  estimateEquityCombinations,
 } from '../../../shared/poker-domain/index.js';
 import { EQUITY_WORKER_MESSAGES } from './equity-worker-runtime.mjs';
 import { createEquityProgressTracker } from './equity-progress.mjs';
+import { calculateEquityRequest, estimateEquityRequest } from './advanced-equity-dispatch.mjs';
 
 function defaultSeedSource() {
   if (globalThis.crypto?.getRandomValues) {
@@ -29,7 +28,7 @@ function requestWithSeed(request, seedSource) {
 export function createEquityController({
   workerFactory = defaultWorkerFactory,
   seedSource = defaultSeedSource,
-  calculateInProcess = calculateEquity,
+  calculateInProcess = calculateEquityRequest,
 } = {}) {
   let worker = null;
   let workerUnavailable = false;
@@ -65,7 +64,7 @@ export function createEquityController({
       } else if (message.type === EQUITY_WORKER_MESSAGES.RESULT) {
         pending.delete(message.requestId);
         if (currentRequestId === message.requestId) currentRequestId = null;
-        entry.resolve(message.result);
+        entry.resolve(entry.cancelled ? createEquityFailure(EQUITY_ERROR_CODES.ABORTED, 'Equity calculation was cancelled') : message.result);
       }
     };
     worker.onerror = (event) => {
@@ -79,7 +78,7 @@ export function createEquityController({
 
   const controller = {
     estimate(request) {
-      return estimateEquityCombinations(request);
+      return estimateEquityRequest(request);
     },
 
     calculate(request, { onProgress = null } = {}) {
@@ -87,8 +86,9 @@ export function createEquityController({
       const requestId = `equity-${++sequence}`;
       currentRequestId = requestId;
       const seededRequest = requestWithSeed(request, seedSource);
-      const estimate = estimateEquityCombinations(seededRequest);
-      const progressTracker = estimate.ok
+      const estimate = estimateEquityRequest(seededRequest);
+      const progressTracker = seededRequest.schemaVersion !== 'equity-request/v1'
+        ? Object.freeze({ start() {}, update: progress => onProgress?.(progress) }) : estimate.ok
         ? createEquityProgressTracker({ request: seededRequest, estimate, onProgress })
         : Object.freeze({ start() {}, update() {} });
       progressTracker.start();
@@ -136,6 +136,7 @@ export function createEquityController({
         );
       }
       return Promise.resolve(calculation)
+        .then(result => inProcessEntry.cancelled ? createEquityFailure(EQUITY_ERROR_CODES.ABORTED, 'Equity calculation was cancelled') : result)
         .catch((error) => createEquityFailure(
           EQUITY_ERROR_CODES.INTERNAL_ERROR,
           error instanceof Error ? error.message : String(error),

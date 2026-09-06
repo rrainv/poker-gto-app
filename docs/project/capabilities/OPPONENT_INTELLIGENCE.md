@@ -6,7 +6,7 @@
 
 Opponent Intelligence is Riverline's future capability for describing and using explicit, evidence-bounded behavior assumptions about populations, configurable policies, recurring opponents, and Training agents. Its purpose is to help a user reason about how an opponent may differ from a selected reference while keeping observation, approximation, and strategic authority honest.
 
-It is not poker astrology, surveillance, or permission to turn a nickname such as “aggressive player” into a strategy fact. This dossier creates no runtime. A bounded `OpponentPolicy v1` contract and deterministic `basic` Full Hand policy already exist in code; the broader evidence/model product described here does not.
+It is not poker astrology, surveillance, or permission to turn a nickname such as “aggressive player” into a strategy fact. This dossier creates no runtime. Actor-safe basic and configurable synthetic Full Hand policies exist under [Opponent Policy v2](../OPPONENT_POLICY_V2_SPEC.md); the broader real-person evidence/model product described here does not.
 
 ## User jobs / why it matters
 
@@ -23,6 +23,8 @@ Users should eventually be able to:
 
 ## Existing foundation
 
+September 6 bounded implementation is specified by [Opponent Policy v2 and actor information](../OPPONENT_POLICY_V2_SPEC.md): actor-observable input/seed invariance, three parameter-backed card-independent presets/custom Full Hand selection, reflection intents and session-local completed actor/branch review. Descriptive comparisons and read-only Personal Strategy region-teaching hooks connect configured assumptions to learning questions without rewriting intent. That spec owns current actor and policy contracts. Persistence, quantitative response ranges, exact semantic drills and real-person evidence below remain future intent; raw observation/derived estimate/configuration and privacy seams are designed in the current spec. Human acceptance remains with `QA-OPPONENT-POLICY-001` and `QA-OPPONENT-POLICY-002`.
+
 - [Strategy Source Authority](../STRATEGY_SOURCE_AUTHORITY_SPEC.md) separates source identity, authority, coverage, capabilities, and permitted claims. Opponent behavior must remain a distinct semantic role.
 - [Range Core](../RANGE_CORE_SPEC.md) owns canonical combo identity, weighted ranges, conditioning, provenance, and unknown-versus-zero semantics.
 - [DecisionContext](../DECISION_CONTEXT_SPEC.md) supplies bounded decision facts without inventing missing Scenario history.
@@ -32,7 +34,7 @@ Users should eventually be able to:
 - [Home Game Organizer](../HOME_GAME_ORGANIZER_SPEC.md) remains a separate accounting/session domain. Any friend-profile relation requires an explicit, privacy-safe link rather than coupling ledgers to poker models.
 - `app/src/application/opponent-policy.mjs` implements a strict DOM-free `OpponentPolicy v1` interface with explicit heuristic-archetype provenance, deterministic legal action selection, and a built-in `basic` policy. `automated-hand-progression.mjs` assigns and applies it for Full Hand progression through canonical legality.
 
-Riverline therefore has a bounded production bot-policy foundation, but no approved real-person profiling store, population evidence model, custom-policy persistence, user-facing archetype system, or claim that a bot predicts a human opponent. The `basic` policy is not reference strategy and is not a product-complete bot personality system.
+Riverline has bounded synthetic presets and custom parameter selection, but no real-person profiling store, population evidence model, custom-policy persistence, or claim that a bot predicts a human opponent. The `basic` policy is not reference strategy and is not a product-complete bot personality system.
 
 ## Desired future behavior
 
@@ -150,10 +152,9 @@ Facts-only inspection remains available. Presentation labels never replace expli
 
 ## Dependencies
 
-- **OPPONENT-ACTOR-INFORMATION-001** is a required correctness/information-isolation
-  gate before serious/custom or evidence-derived bot expansion. The current
-  selector receives full PokerState and state-fingerprint-derived RNG inputs.
-  Future selectors must receive only actor-observable information; inaccessible
+- **OPPONENT-ACTOR-INFORMATION-001** establishes the current actor allowlist and
+  independent policy RNG boundary. All further bot/model expansion must preserve
+  it. Selectors receive only actor-observable information; inaccessible
   private cards cannot affect inputs, fingerprints, seeds, caches or decisions.
   Canonical legality is necessary but does not establish this isolation. Require
   counterfactual hidden-card invariance tests under the same actor information,

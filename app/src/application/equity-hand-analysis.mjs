@@ -11,7 +11,7 @@ const RANK_VALUE = Object.freeze(Object.fromEntries(
   [...'23456789TJQKA'].map((rank, index) => [rank, index + 2]),
 ));
 
-function evaluateAvailableCards(cards) {
+export function evaluateAvailableCards(cards) {
   if (cards.length === 5) return evaluateFive(cards);
   if (cards.length === 7) return evaluateSeven(cards);
   if (cards.length !== 6) throw new RangeError('Exact entered-hand comparison requires five through seven cards');

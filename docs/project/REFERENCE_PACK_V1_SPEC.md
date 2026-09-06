@@ -1,5 +1,13 @@
 # Reference Pack v1 specification
 
+September 6 additive continuation: [Reference Source Foundation v1](REFERENCE_SOURCE_FOUNDATION_V1_SPEC.md)
+adds SHA-256 intake identity, coverage inventory, session health observations,
+explicit claim ceilings and private local preview. Raw v1 packs and their FNV
+checksum remain compatible. The matcher now also rejects nonempty board/dead
+cards. No production corpus is registered; [source research](REFERENCE_SOURCE_ACQUISITION_2026_09.md)
+recommends an authorized, manually exported HRC run and a separate private-source
+path. This supersedes the earlier browser-only acquisition research limit below.
+
 Status: `REFERENCE-PACK-001` provider foundation checkpoint with the accepted
 `STRATEGY-TRUST-001` application trust gate; production source acquisition
 remains intentionally incomplete and no production pack is registered.

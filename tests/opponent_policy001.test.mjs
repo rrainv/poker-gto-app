@@ -166,7 +166,7 @@ test('same state, policy, and seed reproduce the exact frozen decision and prove
     populationModelClaim: false,
   });
   assert.equal(first.deterministicMetadata.decisionSeed, 0xdecafbad);
-  assert.match(first.deterministicMetadata.stateFingerprint, /^poker-state-fnv1a32:[0-9a-f]{8}$/);
+  assert.match(first.deterministicMetadata.stateFingerprint, /^actor-information-fnv1a32:[0-9a-f]{8}$/);
   assert.equal(Object.isFrozen(first), true);
   assert.equal(Object.isFrozen(first.action), true);
 });

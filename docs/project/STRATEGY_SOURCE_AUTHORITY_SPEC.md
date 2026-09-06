@@ -1,5 +1,12 @@
 # Strategy Source Authority and Claim Policy
 
+September 6 additive [Reference Source Foundation v1](REFERENCE_SOURCE_FOUNDATION_V1_SPEC.md):
+SHA-256 intake acceptance binds exact node identity and allowed claim classes;
+validated intake authority additionally requires independently passed validation.
+ClaimPolicy applies that ceiling, and Truth with an explicit ceiling requires reference-match/deviation
+permissions before exposing comparison to Personal/Training/Review. Historical
+evidence remains frozen; source acceptance does not accept an assessment policy.
+
 Status: implementation contract for `HEURISTIC-BASELINE-TRUTH-001` + `TRAINING-NORMATIVE-001`, September 5, 2026; human visual acceptance pending. No production Reference Pack or normative assessment policy is registered.
 
 This specification defines how Riverline interprets a strategy result. It does not decide poker actions, tune the heuristic, validate a reference dataset, or make Personal Strategy a production provider.

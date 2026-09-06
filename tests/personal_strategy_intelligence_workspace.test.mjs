@@ -90,6 +90,79 @@ test('optional question context binds this hand, while mapping reasons and cover
   } finally { globalThis.document = original; }
 });
 
+test('Coach routes a concrete question and variation through Teach Riverline and clears on owner change', async () => {
+  const original = globalThis.document; globalThis.document = fakeDocument;
+  try {
+    const f = await fixture(); await f.controller.load();
+    const opportunity = f.controller.getState().coach.opportunities[0];
+    const controls = descend(f.get('personalCoachCards'), (node) => node.dataset.coachId === opportunity.id);
+    assert.ok(controls.length >= 1);
+    assert.match(f.get('personalCoachCards').textContent, /unanswered hands|boundary/);
+    await f.get('personalCoachCards').fire('click', controls[0]);
+    assert.equal(f.calls.teach.at(-1).handClass, opportunity.region.handClass);
+    assert.equal(f.calls.teach.at(-1).intent, 'mapping');
+    if (opportunity.lesson.variation) {
+      await f.get('personalCoachCards').fire('click', controls[1]);
+      assert.equal(f.calls.teach.at(-1).handClass, opportunity.lesson.variation.handClass);
+    }
+    f.signalController.abort();
+    assert.equal(f.get('personalCoachCards').textContent, '');
+    const count = f.calls.teach.length;
+    await f.get('personalCoachCards').fire('click', controls[0]);
+    assert.equal(f.calls.teach.length, count);
+  } finally { globalThis.document = original; }
+});
+
+test('Coach rejects an old card after evidence changes before click', async () => {
+  const original = globalThis.document; globalThis.document = fakeDocument;
+  try {
+    let stale = false;
+    const f = await fixture({ intercept: (app) => ({ ...app, getEvidenceView: async (...args) => {
+      const evidence = await app.getEvidenceView(...args);
+      return stale ? { ...evidence, evidenceFingerprint: 'new-evidence' } : evidence;
+    } }) });
+    await f.controller.load();
+    const button = descend(f.get('personalCoachCards'), (node) => node.dataset.intentAction === 'coach')[0];
+    stale = true;
+    await f.get('personalCoachCards').fire('click', button);
+    assert.equal(f.calls.teach.length, 0);
+    assert.match(f.get('personalIntentError').textContent, /context changed/);
+    f.controller.dispose();
+  } finally { globalThis.document = original; }
+});
+
+test('Coach clears failed comparison cards and rejects changed evidence in the compared Approach', async () => {
+  const original = globalThis.document; globalThis.document = fakeDocument;
+  try {
+    let comparedMode = null, changed = false, fail = false;
+    const f = await fixture({ intercept: (app) => ({ ...app, getEvidenceView: async (scope) => {
+      if (scope.modeId === comparedMode && fail) throw new Error('read failed');
+      const evidence = await app.getEvidenceView(scope);
+      return changed && scope.modeId === comparedMode ? { ...evidence, evidenceFingerprint: 'changed-right' } : evidence;
+    } }) });
+    comparedMode = f.bundle.modes[1].id;
+    for (const [index, actionType] of [[0, 'fold'], [1, 'raise']]) {
+      const state = await f.app.startOrResumeSession({ selectedProfileId: f.scope.profileId, activeModeId: f.bundle.modes[index].id,
+        context: selection, forcedHandClass: 'AA', intent: 'quick' });
+      await f.app.answerCalibrationQuestion(state, { actionType });
+    }
+    await f.controller.load(); await f.get('personalCompareApproach').fire('click');
+    const opportunity = f.controller.getState().coach.opportunities.find((entry) => entry.kind === 'approach_difference');
+    assert.ok(opportunity);
+    const act = descend(f.get('personalCoachCards'), (node) => node.dataset.coachId === opportunity.id)[0];
+    changed = true;
+    await f.get('personalCoachCards').fire('click', act);
+    assert.equal(f.calls.teach.length, 0);
+    assert.ok(f.controller.getState().coach.opportunities.every((entry) => entry.kind !== 'approach_difference'));
+    changed = false; await f.get('personalCompareApproach').fire('click');
+    assert.ok(f.controller.getState().coach.opportunities.some((entry) => entry.kind === 'approach_difference'));
+    fail = true; await f.get('personalCompareApproach').fire('click');
+    assert.match(f.get('personalComparisonSummary').textContent, /unavailable/);
+    assert.ok(f.controller.getState().coach.opportunities.every((entry) => entry.kind !== 'approach_difference'));
+    f.controller.dispose();
+  } finally { globalThis.document = original; }
+});
+
 test('real UI form previews, confirms, corrects and reloads intended statements through application evidence', async () => {
   const original = globalThis.document; globalThis.document = fakeDocument;
   try {

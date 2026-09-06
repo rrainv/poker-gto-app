@@ -1,4 +1,6 @@
 import { createCanonicalLiveController } from './canonical-live-controller.mjs';
+import { createCanonicalHandLifecycleRecorder } from './canonical-hand-lifecycle.mjs';
+import { canonicalPokerStatesEqual, reconstructCanonicalHandReplaySource } from './canonical-hand-replay-source.mjs';
 import { isHandResumable } from '../../../shared/poker-domain/index.js';
 import {
   PLAYBOOK_MODES,
@@ -230,6 +232,36 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     },
   });
 
+  function openDetachedHand({ objectId = null, title = null, pokerState, heroPlayerId, replaySource, importProvenance = null }, kind) {
+    // Validate and build the existing canonical journal before replacing any viewer.
+    const reconstruction = reconstructCanonicalHandReplaySource(replaySource);
+    if (reconstruction.heroPlayerId !== heroPlayerId
+      || !canonicalPokerStatesEqual(reconstruction.finalState, pokerState)) {
+      throw new RangeError('Hand viewer source must reconstruct its canonical snapshot exactly');
+    }
+    if (kind === 'imported_hand' && (!importProvenance || importProvenance.canonicalHandId !== pokerState.handId)) {
+      throw new RangeError('Imported Hand requires provenance bound to its canonical Hand');
+    }
+    const lifecycle = createCanonicalHandLifecycleRecorder();
+    lifecycle.start(reconstruction.frames[0].state);
+    lifecycle.configureHero(reconstruction.frames[0].state, { heroPlayerId });
+    for (let index = 1; index < reconstruction.frames.length; index += 1) {
+      const frame = reconstruction.frames[index];
+      lifecycle.recordTransition({ previousState: reconstruction.frames[index - 1].state,
+        state: frame.state, operation: frame.operation });
+    }
+    playbackController.cancel();
+    const modeResult = modeController.setMode(PLAYBOOK_MODES.HAND,
+      modeController.getLastScenarioInput() || createPlaybookScenarioInput({}));
+    if (modeResult.mode !== PLAYBOOK_MODES.HAND) throw new RangeError('Hand viewer could not enter Hand Mode');
+    savedReplayController.replaceFromCanonicalHandReplaySource(replaySource, { readOnly: true });
+    savedHandViewer = Object.freeze({ kind, objectId, title,
+      pokerState: reconstruction.finalState, heroPlayerId, replaySource: lifecycle.createCanonicalHandReplaySource(),
+      lifecycle, importProvenance: importProvenance ? structuredClone(importProvenance) : null,
+      hasLiveHand: isHandResumable(canonicalController.getState()) });
+    return publish('saved_hand_open', bridge.createReplayProjectionViewModel());
+  }
+
   const bridge = Object.freeze({
     getMode: () => modeController.getMode(),
 
@@ -289,7 +321,7 @@ export function installPlaybookStateSourceBridge(browserWindow, {
         ? Object.freeze({
           ...projection,
           viewerContext: Object.freeze({
-            kind: 'saved_hand',
+            kind: savedHandViewer.kind,
             objectId: savedHandViewer.objectId,
             title: savedHandViewer.title,
             hasLiveHand: savedHandViewer.hasLiveHand,
@@ -335,12 +367,14 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     },
 
     createCanonicalHandReplaySource() {
+      if (savedHandViewer?.kind === 'imported_hand') return savedHandViewer.replaySource;
       return modeController.getMode() === PLAYBOOK_MODES.HAND && !savedHandViewer
         ? canonicalController.createCanonicalHandReplaySource()
         : null;
     },
 
     getHeroDecisionJournal() {
+      if (savedHandViewer) return savedHandViewer.lifecycle.getHeroDecisionJournal(savedHandViewer.pokerState);
       return modeController.getMode() === PLAYBOOK_MODES.HAND && !savedHandViewer
         ? canonicalController.getHeroDecisionJournal()
         : null;
@@ -353,13 +387,28 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     },
 
     getCompletedHandResult() {
+      if (savedHandViewer) return savedHandViewer.lifecycle.getCompletedHandResult();
       return modeController.getMode() === PLAYBOOK_MODES.HAND && !savedHandViewer
         ? canonicalController.getCompletedHandResult()
         : null;
     },
 
     getCanonicalHandSourceId() {
+      if (savedHandViewer?.kind === 'imported_hand') return savedHandViewer.pokerState.handId;
       return canonicalController.getState() && !savedHandViewer ? canonicalHandSourceId : null;
+    },
+
+    getImportProvenance() {
+      return savedHandViewer?.importProvenance ? structuredClone(savedHandViewer.importProvenance) : null;
+    },
+
+    getHeroDecisionState(decisionIndex) {
+      const journal = bridge.getHeroDecisionJournal();
+      const decision = Number.isSafeInteger(decisionIndex) ? journal?.decisions?.[decisionIndex] : null;
+      if (!decision) return null;
+      const source = savedHandViewer?.replaySource ?? canonicalController.createCanonicalHandReplaySource();
+      const frame = reconstructCanonicalHandReplaySource(source).frames[decision.occurrence.replayPoint.eventSequence];
+      return frame?.state ?? null;
     },
 
     createReplayPlaybackViewModel() {
@@ -444,24 +493,12 @@ export function installPlaybookStateSourceBridge(browserWindow, {
       );
     },
 
-    openSavedHand({ objectId, title = null, pokerState, heroPlayerId, replaySource } = {}) {
-      playbackController.cancel();
-      const modeResult = modeController.setMode(
-        PLAYBOOK_MODES.HAND,
-        modeController.getLastScenarioInput() || createPlaybookScenarioInput({}),
-      );
-      if (modeResult.mode !== PLAYBOOK_MODES.HAND) {
-        throw new RangeError('Saved Hand could not enter Hand Mode');
-      }
-      savedReplayController.replaceFromCanonicalHandReplaySource(replaySource, { readOnly: true });
-      savedHandViewer = Object.freeze({
-        objectId,
-        title,
-        pokerState,
-        heroPlayerId,
-        hasLiveHand: isHandResumable(canonicalController.getState()),
-      });
-      return publish('saved_hand_open', bridge.createReplayProjectionViewModel());
+    openSavedHand(input = {}) {
+      return openDetachedHand(input, 'saved_hand');
+    },
+
+    openImportedHand(input = {}) {
+      return openDetachedHand({ ...input, objectId: null }, 'imported_hand');
     },
 
     closeSavedHand() {

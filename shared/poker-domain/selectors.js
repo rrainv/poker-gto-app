@@ -135,12 +135,15 @@ export function ledgerTotals(state) {
   requirePokerState(state);
   let potMilliBb = 0;
   let deductionMilliBb = 0;
+  let recordedRakeMilliBb = 0;
   for (const entry of state.ledger) {
     if (entry.movement === LEDGER_MOVEMENTS.STACK_TO_POT) potMilliBb += entry.amountMilliBb;
-    if (entry.movement === LEDGER_MOVEMENTS.POT_TO_STACK) potMilliBb -= entry.amountMilliBb;
+    if ([LEDGER_MOVEMENTS.POT_TO_STACK, LEDGER_MOVEMENTS.POT_TO_RECORDED_RAKE].includes(entry.movement)) potMilliBb -= entry.amountMilliBb;
     if (entry.movement === LEDGER_MOVEMENTS.STACK_TO_DEDUCTION) deductionMilliBb += entry.amountMilliBb;
+    if (entry.movement === LEDGER_MOVEMENTS.POT_TO_RECORDED_RAKE) recordedRakeMilliBb += entry.amountMilliBb;
   }
-  return Object.freeze({ potMilliBb, deductionMilliBb });
+  return Object.freeze({ potMilliBb, deductionMilliBb,
+    ...(state.schemaVersion === 'poker-state/v3' ? { recordedRakeMilliBb } : {}) });
 }
 
 export function deductionTotalsByPlayer(state) {
@@ -165,5 +168,6 @@ export function stackTotals(state) {
 export function isChipConserved(state) {
   const stacks = stackTotals(state);
   return stacks.startingMilliBb
-    === stacks.remainingMilliBb + state.potMilliBb + state.deductionTotalMilliBb;
+    === stacks.remainingMilliBb + state.potMilliBb + state.deductionTotalMilliBb
+      + (state.recordedSettlement?.rakeMilliBb ?? 0);
 }

@@ -1,3 +1,4 @@
+import { validateExactNodeIntent, validateExactNodeIntentHistory, exactNodeIntentKey, exactNodeIntentHeads, createExactNodeIntent } from './exact-node-intent.mjs';
 import { validateQualitativeEvidence, validateQualitativeEvidenceHistory, qualitativeEvidenceHeads } from './qualitative-evidence.mjs';
 import { runLifecycleTransaction } from '../application/identity-operation-scope.mjs';
 import {
@@ -32,8 +33,8 @@ import {
 } from './indexeddb-storage.mjs';
 import { PREFLOP_HAND_CLASSES } from '../../../shared/poker-domain/index.js';
 
-export const PERSONAL_STRATEGY_STORE_SCHEMA_VERSION = 'personal-strategy-store/v2';
-export const PERSONAL_STRATEGY_EXPORT_SCHEMA_VERSION = 'personal-strategy-export/v2';
+export const PERSONAL_STRATEGY_STORE_SCHEMA_VERSION = 'personal-strategy-store/v3';
+export const PERSONAL_STRATEGY_EXPORT_SCHEMA_VERSION = 'personal-strategy-export/v3';
 export const PERSONAL_STRATEGY_STORAGE_KEY = 'riverline.personalStrategy.v1';
 export const PERSONAL_STRATEGY_EVIDENCE_SCOPE_CATALOG_SCHEMA_VERSION =
   'personal-strategy-evidence-scope-catalog/v1';
@@ -81,6 +82,7 @@ function timestampFrom(clock) {
 
 function idsForStore(store) {
   return [
+    ...(store.exactNodeIntents ?? []).map((entry) => entry.id),
     ...(store.qualitativeEvidence ?? []).map((entry) => entry.id),
     ...store.profiles.map((entry) => entry.id),
     ...store.modes.map((entry) => entry.id),
@@ -260,6 +262,14 @@ export function validatePersonalStrategyStore(store) {
     const { mode } = profileAndMode(store, evidence.profileId, evidence.modeId, 'Qualitative evidence');
     if (evidence.approachVersion > mode.approachVersion) throw new RangeError('Qualitative evidence references a future Approach version');
   }
+  requireArray(store.exactNodeIntents, 'PersonalStrategyStore.exactNodeIntents');
+  validateExactNodeIntentHistory(store.exactNodeIntents);
+  for (const evidence of store.exactNodeIntents) {
+    const { profile, mode } = profileAndMode(store, evidence.profileId, evidence.modeId, 'Exact-node intent');
+    if (evidence.approachVersion > mode.approachVersion || evidence.setupVersion > profile.setupVersion) {
+      throw new RangeError('Exact-node intent references a future Approach or Game Setup version');
+    }
+  }
   requireUniqueIds(store);
   validateProfileGraph(store);
   for (const observation of [...store.rangeObservations, ...store.trainingObservations]) {
@@ -281,6 +291,7 @@ export function createEmptyPersonalStrategyStore(ownerRef, updatedAt) {
     ownerRef: cloneData(ownerRef),
     updatedAt,
     qualitativeEvidence: [],
+    exactNodeIntents: [],
     profiles: [],
     modes: [],
     rangeObservations: [],
@@ -297,23 +308,36 @@ export function migratePersonalStrategyStore(rawStore) {
     validatePersonalStrategyStore(rawStore);
     return deepFreeze(cloneData(rawStore));
   }
-  if (![LEGACY_STORE_SCHEMA_VERSION, 'personal-strategy-store/v1'].includes(rawStore.schemaVersion)) {
+  const supported = [LEGACY_STORE_SCHEMA_VERSION, 'personal-strategy-store/v1', 'personal-strategy-store/v2'];
+  if (!supported.includes(rawStore.schemaVersion)) {
     throw new RangeError(`Unsupported Personal Strategy store schema: ${rawStore.schemaVersion}`);
   }
-  if (rawStore.qualitativeEvidence?.length) throw new RangeError('Legacy schema cannot contain qualitative evidence');
-  const legacyV0 = rawStore.schemaVersion === LEGACY_STORE_SCHEMA_VERSION;
-  const migrated = {
-    ...cloneData(rawStore),
-    schemaVersion: PERSONAL_STRATEGY_STORE_SCHEMA_VERSION,
-    revision: Number.isInteger(rawStore.revision) ? rawStore.revision : 0,
-    ownerRef: legacyV0 ? { kind: 'local', id: rawStore.ownerId } : cloneData(rawStore.ownerRef),
-    profiles: (rawStore.profiles ?? []).map(migrateStrategyProfile),
-    modes: (rawStore.modes ?? []).map(migrateStrategyMode),
-    rangeObservations: cloneData(legacyV0 ? rawStore.observations ?? [] : rawStore.rangeObservations),
-    trainingObservations: cloneData(rawStore.trainingObservations ?? []),
-    calibrationSessions: cloneData(legacyV0 ? rawStore.sessions ?? [] : rawStore.calibrationSessions),
-    qualitativeEvidence: [],
-  };
+  if (rawStore.exactNodeIntents !== undefined
+    && (!Array.isArray(rawStore.exactNodeIntents) || rawStore.exactNodeIntents.length)) {
+    throw new RangeError('Legacy schema cannot contain exact-node intent');
+  }
+  let migrated = cloneData(rawStore);
+  if (migrated.schemaVersion === LEGACY_STORE_SCHEMA_VERSION) {
+    migrated = { ...migrated, schemaVersion: 'personal-strategy-store/v1',
+      revision: Number.isInteger(migrated.revision) ? migrated.revision : 0,
+      ownerRef: { kind: 'local', id: migrated.ownerId },
+      profiles: migrated.profiles ?? [], modes: migrated.modes ?? [],
+      rangeObservations: migrated.observations ?? [], trainingObservations: migrated.trainingObservations ?? [],
+      calibrationSessions: migrated.sessions ?? [] };
+  }
+  if (migrated.schemaVersion === 'personal-strategy-store/v1') {
+    if (migrated.qualitativeEvidence !== undefined
+      && (!Array.isArray(migrated.qualitativeEvidence) || migrated.qualitativeEvidence.length)) {
+      throw new RangeError('Legacy schema cannot contain qualitative evidence');
+    }
+    migrated = { ...migrated, schemaVersion: 'personal-strategy-store/v2',
+      profiles: requireArray(migrated.profiles, 'Legacy profiles').map(migrateStrategyProfile),
+      modes: requireArray(migrated.modes, 'Legacy modes').map(migrateStrategyMode),
+      trainingObservations: migrated.trainingObservations ?? [], qualitativeEvidence: [] };
+  }
+  // v2 evidence is already authoritative at its original precision. No node,
+  // sizing, frequency, provenance, or historical record is synthesized here.
+  migrated = { ...migrated, schemaVersion: PERSONAL_STRATEGY_STORE_SCHEMA_VERSION, exactNodeIntents: [] };
   validatePersonalStrategyStore(migrated);
   return deepFreeze(migrated);
 }
@@ -325,6 +349,7 @@ function portableAsStore(portable) {
     ownerRef: cloneData(portable.ownerRef),
     updatedAt: portable.exportedAt,
     qualitativeEvidence: cloneData(portable.qualitativeEvidence),
+    exactNodeIntents: cloneData(portable.exactNodeIntents),
     profiles: cloneData(portable.profiles),
     modes: cloneData(portable.modes),
     rangeObservations: cloneData(portable.rangeObservations),
@@ -372,6 +397,7 @@ export function createPersonalStrategyExport(store, { profileIds = null, exporte
     exportedAt,
     ownerRef: cloneData(store.ownerRef),
     qualitativeEvidence: cloneData(store.qualitativeEvidence.filter((entry) => selectedIds.has(entry.profileId))),
+    exactNodeIntents: cloneData(store.exactNodeIntents.filter((entry) => selectedIds.has(entry.profileId))),
     profiles: cloneData(profiles),
     modes: cloneData(modes),
     rangeObservations: cloneData(rangeObservations),
@@ -394,10 +420,13 @@ export function parsePersonalStrategyExport(value) {
   } catch (error) {
     throw new TypeError(`Personal Strategy export is not valid JSON: ${error.message}`);
   }
-  if (parsed.schemaVersion === 'personal-strategy-export/v1') {
-    const migrated = migratePersonalStrategyStore({ ...parsed, schemaVersion: 'personal-strategy-store/v1', revision: 0, updatedAt: parsed.exportedAt });
+  requireObject(parsed, 'PersonalStrategyExport');
+  if (['personal-strategy-export/v1', 'personal-strategy-export/v2'].includes(parsed.schemaVersion)) {
+    const domainVersion = parsed.schemaVersion.replace('personal-strategy-export/', 'personal-strategy-store/');
+    const migrated = migratePersonalStrategyStore({ ...parsed, schemaVersion: domainVersion,
+      revision: 0, updatedAt: parsed.exportedAt });
     parsed = { ...parsed, schemaVersion: PERSONAL_STRATEGY_EXPORT_SCHEMA_VERSION, profiles: migrated.profiles,
-      modes: migrated.modes, qualitativeEvidence: [] };
+      modes: migrated.modes, qualitativeEvidence: migrated.qualitativeEvidence, exactNodeIntents: migrated.exactNodeIntents };
   }
   validatePersonalStrategyExport(parsed);
   return deepFreeze(parsed);
@@ -429,6 +458,7 @@ function storageFailure(code, message, cause) {
 const STORES = PERSONAL_STRATEGY_OBJECT_STORES;
 const ALL_DATABASE_STORES = Object.freeze(Object.values(STORES));
 const ID_STORES = Object.freeze([
+  STORES.EXACT_NODE_INTENTS,
   STORES.QUALITATIVE_EVIDENCE,
   STORES.PROFILES,
   STORES.MODES,
@@ -547,6 +577,7 @@ function sessionRecord(session) {
 function migrationCounts(store) {
   return Object.freeze({
     qualitativeEvidence: store.qualitativeEvidence.length,
+    exactNodeIntents: store.exactNodeIntents.length,
     profiles: store.profiles.length,
     modes: store.modes.length,
     rangeObservations: store.rangeObservations.length,
@@ -597,10 +628,12 @@ function validateMetadata(metadata, ownerRef) {
 }
 
 function isUpgradeableMetadata(metadata, ownerRef) {
-  return ((metadata?.backendSchemaVersion === LEGACY_BACKEND_SCHEMA_VERSION && metadata?.databaseVersion === LEGACY_DATABASE_VERSION)
+  const legacyV1 = ((metadata?.backendSchemaVersion === LEGACY_BACKEND_SCHEMA_VERSION && metadata?.databaseVersion === LEGACY_DATABASE_VERSION)
     || (metadata?.backendSchemaVersion === 'personal-strategy-indexeddb/v2' && metadata?.databaseVersion === 2))
-    && metadata?.domainSchemaVersion === 'personal-strategy-store/v1'
-    && sameOwnerRef(metadata?.ownerRef, ownerRef);
+    && metadata?.domainSchemaVersion === 'personal-strategy-store/v1';
+  const legacyV2 = metadata?.backendSchemaVersion === 'personal-strategy-indexeddb/v3'
+    && metadata?.databaseVersion === 3 && metadata?.domainSchemaVersion === 'personal-strategy-store/v2';
+  return (legacyV1 || legacyV2) && sameOwnerRef(metadata?.ownerRef, ownerRef);
 }
 
 function nextMetadata(metadata, clock) {
@@ -695,6 +728,7 @@ function legacySnapshotFromStorage(storage, storageKey, ownerRef, clock) {
 }
 
 async function importSnapshotTransaction(transaction, store, metadata) {
+  for (const record of store.exactNodeIntents) await transaction.add(STORES.EXACT_NODE_INTENTS, cloneData(record));
   for (const record of store.qualitativeEvidence) await transaction.add(STORES.QUALITATIVE_EVIDENCE, cloneData(record));
   for (const profile of store.profiles) await transaction.add(STORES.PROFILES, profile);
   for (const mode of store.modes) await transaction.add(STORES.MODES, mode);
@@ -710,6 +744,7 @@ async function importSnapshotTransaction(transaction, store, metadata) {
   }
   const actualCounts = {
     qualitativeEvidence: await transaction.count(STORES.QUALITATIVE_EVIDENCE),
+    exactNodeIntents: await transaction.count(STORES.EXACT_NODE_INTENTS),
     profiles: await transaction.count(STORES.PROFILES),
     modes: await transaction.count(STORES.MODES),
     rangeObservations: await transaction.count(STORES.RANGE_OBSERVATIONS),
@@ -722,13 +757,14 @@ async function importSnapshotTransaction(transaction, store, metadata) {
   await transaction.put(STORES.METADATA, metadata);
 }
 
-function snapshotFromRecords(metadata, { profiles, modes, rangeObservations, trainingObservations, calibrationSessions, qualitativeEvidence = [] }) {
+function snapshotFromRecords(metadata, { profiles, modes, rangeObservations, trainingObservations, calibrationSessions, qualitativeEvidence = [], exactNodeIntents = [] }) {
   const store = {
     schemaVersion: PERSONAL_STRATEGY_STORE_SCHEMA_VERSION,
     revision: metadata.revision,
     ownerRef: cloneData(metadata.ownerRef),
     updatedAt: metadata.updatedAt,
     qualitativeEvidence: cloneData(qualitativeEvidence),
+    exactNodeIntents: cloneData(exactNodeIntents),
     profiles: cloneData(profiles),
     modes: cloneData(modes),
     rangeObservations: rangeObservations.map((entry) => cloneData(entry.value)),
@@ -787,19 +823,21 @@ export function createPersonalStrategyRepository({
           return runTransaction(ALL_DATABASE_STORES, 'readwrite', async (transaction) => {
             const current = await transaction.get(STORES.METADATA, METADATA_KEY);
             if (!isUpgradeableMetadata(current, ownerRef)) return validateMetadata(current, ownerRef);
-            const [profiles, modes, range, training, sessions] = await Promise.all([
+            const [profiles, modes, range, training, sessions, qualitativeEvidence, exactNodeIntents] = await Promise.all([
               transaction.getAll(STORES.PROFILES), transaction.getAll(STORES.MODES),
               transaction.getAll(STORES.RANGE_OBSERVATIONS), transaction.getAll(STORES.TRAINING_OBSERVATIONS),
               transaction.getAll(STORES.CALIBRATION_SESSIONS),
+              transaction.getAll(STORES.QUALITATIVE_EVIDENCE), transaction.getAll(STORES.EXACT_NODE_INTENTS),
             ]);
             const migrated = migratePersonalStrategyStore({ schemaVersion: current.domainSchemaVersion,
               revision: current.revision, ownerRef: current.ownerRef, updatedAt: current.updatedAt,
-              profiles, modes, rangeObservations: range.map((entry) => entry.value),
+              profiles, modes, qualitativeEvidence, exactNodeIntents, rangeObservations: range.map((entry) => entry.value),
               trainingObservations: training.map((entry) => entry.value), calibrationSessions: sessions.map((entry) => entry.value) });
             for (const profile of migrated.profiles) await transaction.put(STORES.PROFILES, profile);
             for (const mode of migrated.modes) await transaction.put(STORES.MODES, mode);
             const upgraded = createMetadata(migrated, { ...cloneData(current.migration),
-              intelligenceMigration: { from: current.domainSchemaVersion, to: migrated.schemaVersion, completedAt: timestampFrom(clock) } });
+              ...(current.domainSchemaVersion === 'personal-strategy-store/v1' ? { intelligenceMigration: { from: current.domainSchemaVersion, to: 'personal-strategy-store/v2', completedAt: timestampFrom(clock) } } : {}),
+              exactNodeIntentMigration: { from: 'personal-strategy-store/v2', to: migrated.schemaVersion, completedAt: timestampFrom(clock) } });
             await transaction.put(STORES.METADATA, upgraded);
             return deepFreeze(cloneData(validateMetadata(upgraded, ownerRef)));
           });
@@ -944,7 +982,7 @@ export function createPersonalStrategyRepository({
     initialize,
 
     async hasMeaningfulData() {
-      const stores = [STORES.PROFILES, STORES.RANGE_OBSERVATIONS, STORES.TRAINING_OBSERVATIONS, STORES.CALIBRATION_SESSIONS];
+      const stores = [STORES.PROFILES, STORES.RANGE_OBSERVATIONS, STORES.TRAINING_OBSERVATIONS, STORES.CALIBRATION_SESSIONS, STORES.QUALITATIVE_EVIDENCE, STORES.EXACT_NODE_INTENTS];
       return runTransaction([STORES.METADATA, ...stores], 'readonly', async (transaction) => {
         const metadata = await transaction.get(STORES.METADATA, METADATA_KEY);
         const counts = await Promise.all(stores.map((name) => transaction.count(name)));
@@ -963,7 +1001,7 @@ export function createPersonalStrategyRepository({
 
     async loadSnapshot() {
       return readTransaction(ALL_DATABASE_STORES, async (transaction) => {
-        const [metadata, profiles, modes, rangeObservations, trainingObservations, calibrationSessions, qualitativeEvidence] = await Promise.all([
+        const [metadata, profiles, modes, rangeObservations, trainingObservations, calibrationSessions, qualitativeEvidence, exactNodeIntents] = await Promise.all([
           metadataIn(transaction),
           transaction.getAll(STORES.PROFILES),
           transaction.getAll(STORES.MODES),
@@ -971,9 +1009,10 @@ export function createPersonalStrategyRepository({
           transaction.getAll(STORES.TRAINING_OBSERVATIONS),
           transaction.getAll(STORES.CALIBRATION_SESSIONS),
           transaction.getAll(STORES.QUALITATIVE_EVIDENCE),
+          transaction.getAll(STORES.EXACT_NODE_INTENTS),
         ]);
         return snapshotFromRecords(metadata, {
-          profiles, modes, rangeObservations, trainingObservations, calibrationSessions, qualitativeEvidence,
+          profiles, modes, rangeObservations, trainingObservations, calibrationSessions, qualitativeEvidence, exactNodeIntents,
         });
       });
     },
@@ -981,6 +1020,7 @@ export function createPersonalStrategyRepository({
     async loadWorkspaceSnapshot() {
       return readTransaction([
         STORES.QUALITATIVE_EVIDENCE,
+        STORES.EXACT_NODE_INTENTS,
         STORES.METADATA,
         STORES.PROFILES,
         STORES.MODES,
@@ -988,7 +1028,7 @@ export function createPersonalStrategyRepository({
         STORES.CONFLICTING_RANGE_OBSERVATIONS,
         STORES.CALIBRATION_SESSIONS,
       ], async (transaction) => {
-        const [metadata, profiles, modes, conflicts, current, sessions, qualitativeEvidence] = await Promise.all([
+        const [metadata, profiles, modes, conflicts, current, sessions, qualitativeEvidence, exactNodeIntents] = await Promise.all([
           metadataIn(transaction),
           transaction.getAll(STORES.PROFILES),
           transaction.getAll(STORES.MODES),
@@ -996,13 +1036,20 @@ export function createPersonalStrategyRepository({
           transaction.getAll(STORES.CURRENT_RANGE_OBSERVATIONS),
           transaction.getAll(STORES.CALIBRATION_SESSIONS),
           transaction.getAll(STORES.QUALITATIVE_EVIDENCE),
+          transaction.getAll(STORES.EXACT_NODE_INTENTS),
         ]);
+        validateExactNodeIntentHistory(exactNodeIntents);
+        for (const record of exactNodeIntents) {
+          const { profile, mode } = profileAndMode({ profiles, modes }, record.profileId, record.modeId, 'Exact-node intent');
+          if (record.approachVersion > mode.approachVersion || record.setupVersion > profile.setupVersion) throw new RangeError('Exact-node intent references a future version');
+        }
         return deepFreeze({
           schemaVersion: PERSONAL_STRATEGY_STORE_SCHEMA_VERSION,
           revision: metadata.revision,
           ownerRef: cloneData(metadata.ownerRef),
           updatedAt: metadata.updatedAt,
           qualitativeEvidence: cloneData(qualitativeEvidence),
+          exactNodeIntents: cloneData(exactNodeIntents),
           profiles: cloneData(profiles),
           modes: cloneData(modes),
           rangeObservations: [...conflicts, ...current].map((entry) => cloneData(entry.value)),
@@ -1247,6 +1294,46 @@ export function createPersonalStrategyRepository({
       });
     },
 
+    async loadExactNodeIntents({ profileId, modeId, nodeFingerprint = null } = {}) {
+      return readTransaction([STORES.METADATA, STORES.PROFILES, STORES.MODES, STORES.EXACT_NODE_INTENTS], async (transaction) => {
+        await metadataIn(transaction);
+        const { profile, mode } = await requireProfileAndMode(transaction, profileId, modeId, 'Exact-node intent');
+        const history = (await transaction.getAllByIndex(STORES.EXACT_NODE_INTENTS, 'modeId', modeId))
+          .filter((record) => record.profileId === profileId);
+        validateExactNodeIntentHistory(history);
+        if (history.some((record) => record.approachVersion > mode.approachVersion || record.setupVersion > profile.setupVersion)) {
+          throw new RangeError('Exact-node intent references a future Approach or Game Setup version');
+        }
+        return deepFreeze(history.filter((record) => nodeFingerprint === null || record.node.fingerprint === nodeFingerprint).map(cloneData));
+      });
+    },
+
+    async appendExactNodeIntent(input, { expectedHeadIds = null } = {}) {
+      const record = cloneData(input);
+      validateExactNodeIntent(record);
+      return writeTransaction([...ID_STORES], async (transaction) => {
+        const metadata = await metadataIn(transaction);
+        const { profile, mode } = await requireProfileAndMode(transaction, record.profileId, record.modeId, 'Exact-node intent');
+        if (record.setupVersion !== profile.setupVersion) throw new RangeError('Game Setup changed since exact-node teaching');
+        if (record.approachVersion !== mode.approachVersion) throw new RangeError('Approach changed since exact-node teaching');
+        await assertUnusedId(transaction, record.id);
+        const history = (await transaction.getAllByIndex(STORES.EXACT_NODE_INTENTS, 'modeId', record.modeId))
+          .filter((entry) => entry.profileId === record.profileId);
+        validateExactNodeIntentHistory(history);
+        const heads = new Set(exactNodeIntentHeads(history).filter((entry) => exactNodeIntentKey(entry) === exactNodeIntentKey(record)).map((entry) => entry.id));
+        if (expectedHeadIds !== null) {
+          const expected = requireArray(expectedHeadIds, 'expectedHeadIds');
+          if (new Set(expected).size !== expected.length || expected.length !== heads.size || expected.some((id) => !heads.has(id))) {
+            throw new RangeError('Exact-node intent changed since teaching preview');
+          }
+        }
+        if (record.supersedesEvidenceIds.some((id) => !heads.has(id))) throw new RangeError('Correction must supersede current exact-node intent');
+        validateExactNodeIntentHistory([...history, record]);
+        await transaction.add(STORES.EXACT_NODE_INTENTS, record);
+        return commitMetadata(transaction, metadata);
+      });
+    },
+
     async loadQualitativeEvidence({ profileId, modeId } = {}) {
       return readTransaction([STORES.PROFILES, STORES.MODES, STORES.QUALITATIVE_EVIDENCE], async (transaction) => {
         await requireProfileAndMode(transaction, profileId, modeId, 'Qualitative evidence');
@@ -1256,16 +1343,21 @@ export function createPersonalStrategyRepository({
     },
 
     async loadApproachHistory({ profileId, modeId } = {}) {
-      return readTransaction([STORES.METADATA, STORES.PROFILES, STORES.MODES, STORES.RANGE_OBSERVATIONS, STORES.QUALITATIVE_EVIDENCE], async (transaction) => {
+      return readTransaction([STORES.METADATA, STORES.PROFILES, STORES.MODES, STORES.RANGE_OBSERVATIONS, STORES.QUALITATIVE_EVIDENCE, STORES.EXACT_NODE_INTENTS], async (transaction) => {
         const { profile, mode } = await requireProfileAndMode(transaction, profileId, modeId, 'Approach history');
         const metadata = await metadataIn(transaction);
-        const [direct, qualitative] = await Promise.all([
+        const [direct, qualitative, exactNodeIntents] = await Promise.all([
           transaction.getAllByIndex(STORES.RANGE_OBSERVATIONS, 'profileId', profileId),
           transaction.getAllByIndex(STORES.QUALITATIVE_EVIDENCE, 'modeId', modeId),
+          transaction.getAllByIndex(STORES.EXACT_NODE_INTENTS, 'modeId', modeId),
         ]);
+        const exactHistory = exactNodeIntents.filter((record) => record.profileId === profileId);
+        validateExactNodeIntentHistory(exactHistory);
+        if (exactHistory.some((record) => record.approachVersion > mode.approachVersion || record.setupVersion > profile.setupVersion)) throw new RangeError('Exact-node intent references a future version');
         return deepFreeze({ revision: metadata.revision, profile, mode,
           rangeObservations: direct.filter((record) => record.value.modeId === modeId).map((record) => cloneData(record.value)),
-          qualitativeEvidence: qualitative.filter((record) => record.profileId === profileId).map(cloneData) });
+          qualitativeEvidence: qualitative.filter((record) => record.profileId === profileId).map(cloneData),
+          exactNodeIntents: exactHistory.map(cloneData) });
       });
     },
 
@@ -1325,18 +1417,21 @@ export function createPersonalStrategyRepository({
         const metadata = await metadataIn(transaction);
         const { profile, mode: source } = await requireProfileAndMode(transaction, profileId, sourceModeId, 'Approach duplication');
         await assertUnusedId(transaction, id);
-        const [allDirect, allQualitative, modes] = await Promise.all([
+        const [allDirect, allQualitative, modes, allExactNodeIntents] = await Promise.all([
           transaction.getAllByIndex(STORES.RANGE_OBSERVATIONS, 'profileId', profileId),
           transaction.getAllByIndex(STORES.QUALITATIVE_EVIDENCE, 'modeId', sourceModeId),
           transaction.getAllByIndex(STORES.MODES, 'profileId', profileId),
+          transaction.getAllByIndex(STORES.EXACT_NODE_INTENTS, 'modeId', sourceModeId),
         ]);
         const direct = allDirect.map((entry) => entry.value).filter((entry) => entry.modeId === sourceModeId);
         const qualitative = allQualitative.filter((entry) => entry.profileId === profileId);
+        const exact = allExactNodeIntents.filter((entry) => entry.profileId === profileId);
+        validateExactNodeIntentHistory(exact);
         const now = timestampFrom(clock);
         const copiedId = (sourceId) => `${id}:copy:${sourceId}`;
         const forkProvenance = { profileId, modeId: sourceModeId, approachVersion: source.approachVersion,
           copiedAt: now, repositoryRevision: metadata.revision,
-          sourceEvidenceIds: [...direct, ...qualitative].map((entry) => entry.id) };
+          sourceEvidenceIds: [...direct, ...qualitative, ...exact].map((entry) => entry.id) };
         const mode = createStrategyMode({ id, profileId, displayName, description, createdAt: now,
           displayOrder: Math.max(-1, ...modes.map((entry) => entry.displayOrder)) + 1, forkProvenance });
         const copiedDirect = direct.map((entry) => ({ ...cloneData(entry), id: copiedId(entry.id), modeId: id,
@@ -1368,9 +1463,15 @@ export function createPersonalStrategyRepository({
             sourceInterpretationSnapshot: { statedScope: cloneData(entry.statedScope),
               inferredScope: cloneData(entry.inferredScope), interpretation: cloneData(entry.interpretation),
               exceptionTo: entry.provenance.exceptionTo ?? null } } }));
+        const copiedExact = exact.map((entry) => createExactNodeIntent({ ...cloneData(entry),
+          id: copiedId(entry.id), modeId: id, approachVersion: 1,
+          supersedesEvidenceIds: entry.supersedesEvidenceIds.map(copiedId),
+          provenance: { ...cloneData(entry.provenance), copiedFromEvidenceId: entry.id, copiedAt: now,
+            sourceApproachVersion: entry.approachVersion } }));
+        validateExactNodeIntentHistory(copiedExact);
         copiedDirect.forEach(validateRangeObservation);
         validateQualitativeEvidenceHistory(copiedQualitative);
-        for (const entry of [...copiedDirect, ...copiedQualitative]) await assertUnusedId(transaction, entry.id);
+        for (const entry of [...copiedDirect, ...copiedQualitative, ...copiedExact]) await assertUnusedId(transaction, entry.id);
         const updated = { ...cloneData(updateStrategyProfile(profile, {}, now)), modeIds: [...profile.modeIds, id] };
         validateStrategyProfile(updated);
         await transaction.put(STORES.PROFILES, updated);
@@ -1378,6 +1479,7 @@ export function createPersonalStrategyRepository({
         for (const entry of copiedDirect) await transaction.add(STORES.RANGE_OBSERVATIONS, rangeRecord(entry));
         await writeRangeHeads(transaction, copiedDirect);
         for (const entry of copiedQualitative) await transaction.add(STORES.QUALITATIVE_EVIDENCE, entry);
+        for (const entry of copiedExact) await transaction.add(STORES.EXACT_NODE_INTENTS, entry);
         await commitMetadata(transaction, metadata);
         return deepFreeze(cloneData(mode));
       });
@@ -1866,12 +1968,12 @@ export function createPersonalStrategyRepository({
         const profiles = await Promise.all(selectedIds.map((id) => transaction.get(STORES.PROFILES, id)));
         if (profiles.some((entry) => !entry)) throw new RangeError('Cannot export unknown profile');
         const records = await Promise.all([STORES.MODES, STORES.RANGE_OBSERVATIONS,
-          STORES.TRAINING_OBSERVATIONS, STORES.CALIBRATION_SESSIONS, STORES.QUALITATIVE_EVIDENCE].map(async (store) => (
+          STORES.TRAINING_OBSERVATIONS, STORES.CALIBRATION_SESSIONS, STORES.QUALITATIVE_EVIDENCE, STORES.EXACT_NODE_INTENTS].map(async (store) => (
           await Promise.all(selectedIds.map((id) => transaction.getAllByIndex(store, 'profileId', id)))
         ).flat()));
-        const [modes, rangeObservations, trainingObservations, calibrationSessions, qualitativeEvidence] = records;
+        const [modes, rangeObservations, trainingObservations, calibrationSessions, qualitativeEvidence, exactNodeIntents] = records;
         return snapshotFromRecords(metadata, { profiles, modes, rangeObservations, trainingObservations,
-          calibrationSessions, qualitativeEvidence });
+          calibrationSessions, qualitativeEvidence, exactNodeIntents });
       });
       return createPersonalStrategyExport(selected, { profileIds: selectedIds, exportedAt });
     },
@@ -1892,6 +1994,7 @@ export function createPersonalStrategyRepository({
       const collision = idsForStore(portableAsStore(portable)).find((id) => existingIds.has(id));
       if (collision) throw new RangeError(`Portable Personal Strategy ID collision: ${collision}`);
       const draft = cloneData(current);
+      draft.exactNodeIntents.push(...cloneData(portable.exactNodeIntents));
       draft.qualitativeEvidence.push(...cloneData(portable.qualitativeEvidence));
       draft.profiles.push(...cloneData(portable.profiles));
       draft.modes.push(...cloneData(portable.modes));
@@ -1912,6 +2015,7 @@ export function createPersonalStrategyRepository({
             throw new RangeError('Portable import collides with an existing direct-calibration history');
           }
         }
+        for (const record of portable.exactNodeIntents) await transaction.add(STORES.EXACT_NODE_INTENTS, cloneData(record));
         for (const record of portable.qualitativeEvidence) await transaction.add(STORES.QUALITATIVE_EVIDENCE, cloneData(record));
         for (const profile of portable.profiles) await transaction.add(STORES.PROFILES, cloneData(profile));
         for (const mode of portable.modes) await transaction.add(STORES.MODES, cloneData(mode));

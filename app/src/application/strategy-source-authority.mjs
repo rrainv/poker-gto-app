@@ -295,6 +295,9 @@ function createTrustedAcceptanceRecord({
   acceptanceDecisionId = null,
   acceptedVersion = null,
   acceptedFingerprint = null,
+  acceptedCoverageIdentity = null,
+  acceptedClaimClasses = null,
+  independentValidationStatus = 'not_reviewed',
 } = {}) {
   if (!AUTHORITY_VALUES.includes(acceptedAuthority)) {
     throw new RangeError(`Unsupported accepted strategy authority: ${acceptedAuthority}`);
@@ -311,6 +314,28 @@ function createTrustedAcceptanceRecord({
   if (strongReferenceAcceptance
     && (acceptedVersion === null || acceptedFingerprint === null)) {
     throw new RangeError('Accepted reference-pack authority requires exact version and fingerprint');
+  }
+  if (acceptedClaimClasses !== null && (!Array.isArray(acceptedClaimClasses)
+    || acceptedClaimClasses.some((claim) => typeof claim !== 'string' || !/^[a-z_]+$/.test(claim))
+    || new Set(acceptedClaimClasses).size !== acceptedClaimClasses.length)) {
+    throw new TypeError('Accepted claim classes must be unique claim IDs');
+  }
+  if (!['not_reviewed', 'passed', 'failed'].includes(independentValidationStatus)) {
+    throw new TypeError('Invalid independent validation status');
+  }
+  if (strongReferenceAcceptance && acceptedFingerprint?.startsWith('sha256:')
+    && (acceptedCoverageIdentity === null || acceptedClaimClasses === null)) {
+    throw new TypeError('SHA-256 source acceptance requires exact coverage identity and claim classes');
+  }
+  if (strongReferenceAcceptance && acceptedFingerprint?.startsWith('sha256:')) {
+    if (!/^sha256:[a-f0-9]{64}$/.test(acceptedFingerprint)
+      || !/^sha256:[a-f0-9]{64}$/.test(acceptedCoverageIdentity)) {
+      throw new TypeError('Source and coverage identities require full SHA-256 fingerprints');
+    }
+    if (acceptedAuthority === STRATEGY_SOURCE_AUTHORITIES.VALIDATED_REFERENCE
+      && independentValidationStatus !== 'passed') {
+      throw new TypeError('Validated intake authority requires independent validation');
+    }
   }
   const record = deepFreeze({
     schemaVersion: STRATEGY_SOURCE_ACCEPTANCE_SCHEMA_VERSION,
@@ -329,6 +354,10 @@ function createTrustedAcceptanceRecord({
     acceptedFingerprint: acceptedFingerprint === null
       ? null
       : requiredString(acceptedFingerprint, 'Accepted strategy source fingerprint'),
+    acceptedCoverageIdentity: acceptedCoverageIdentity === null ? null
+      : requiredString(acceptedCoverageIdentity, 'Accepted exact coverage identity'),
+    acceptedClaimClasses: acceptedClaimClasses === null ? null : [...acceptedClaimClasses],
+    independentValidationStatus,
   });
   TRUSTED_ACCEPTANCE_RECORDS.add(record);
   return record;
@@ -397,6 +426,9 @@ export function strategySourceAuthoritySnapshotFor(record, descriptor, fingerpri
     acceptedCoverage: record.acceptedCoverageCeiling,
     validationStatus: record.validationStatus,
     acceptanceDecisionId: record.acceptanceDecisionId,
+    acceptedCoverageIdentity: record.acceptedCoverageIdentity,
+    acceptedClaimClasses: record.acceptedClaimClasses,
+    independentValidationStatus: record.independentValidationStatus,
   });
 }
 

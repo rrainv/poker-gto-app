@@ -14,6 +14,7 @@ import {
   PHASES,
   POKER_STATE_SCHEMA_VERSION,
   POKER_STATE_V2_SCHEMA_VERSION,
+  POKER_STATE_V3_SCHEMA_VERSION,
   POKER_VARIANT,
   STREETS,
 } from './schema.js';
@@ -161,6 +162,7 @@ function initializeResolvedHand(configuration, playerSeeds, resolved) {
   const state = {
     schemaVersion: resolved.schemaVersion,
     handId: configuration.handId ?? null,
+    ...(resolved.schemaVersion === POKER_STATE_V3_SCHEMA_VERSION ? { recordedSettlement: null } : {}),
     ...(resolved.rulesSnapshot === null ? {} : { rulesSnapshot: resolved.rulesSnapshot }),
     game: resolved.game,
     phase: PHASES.CHANCE,
@@ -250,6 +252,20 @@ const SNAPSHOT_INITIALIZATION_KEYS = new Set([
 ]);
 
 export function initializeHandFromGameRulesSnapshot(configuration) {
+  if (configuration?.rulesSnapshot?.schemaVersion !== 'game-rules-snapshot/v1') {
+    throw new RangeError('Live snapshot initialization requires GameRulesSnapshot v1');
+  }
+  return initializeSnapshotHand(configuration, POKER_STATE_V2_SCHEMA_VERSION);
+}
+
+export function initializeRecordedHand(configuration) {
+  if (configuration?.rulesSnapshot?.schemaVersion !== 'game-rules-snapshot/v2') {
+    throw new RangeError('Recorded hand initialization requires GameRulesSnapshot v2');
+  }
+  return initializeSnapshotHand(configuration, POKER_STATE_V3_SCHEMA_VERSION);
+}
+
+function initializeSnapshotHand(configuration, schemaVersion) {
   if (!configuration || typeof configuration !== 'object' || Array.isArray(configuration)) {
     throw new TypeError('configuration is required');
   }
@@ -264,7 +280,7 @@ export function initializeHandFromGameRulesSnapshot(configuration) {
   const playerSeeds = validatePlayerSeeds(
     configuration.players,
     definition.blinds.chipUnitMilliBb,
-    POKER_STATE_V2_SCHEMA_VERSION,
+    schemaVersion,
   );
   if (rulesSnapshot.setup.seatedPlayers !== playerSeeds.length) {
     throw new RangeError('GameRulesSnapshot.setup.seatedPlayers must match the configured player count');
@@ -282,7 +298,7 @@ export function initializeHandFromGameRulesSnapshot(configuration) {
   }
 
   return initializeResolvedHand(configuration, playerSeeds, {
-    schemaVersion: POKER_STATE_V2_SCHEMA_VERSION,
+    schemaVersion,
     rulesSnapshot,
     game: {
       variant: definition.variant,

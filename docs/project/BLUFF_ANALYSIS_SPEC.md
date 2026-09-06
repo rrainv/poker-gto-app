@@ -2,6 +2,8 @@
 
 Status: implementation authority for `BLUFF-001`
 
+The additive [Bluff / Exploit Teacher v1](BLUFF_EXPLOIT_TEACHER_V1_SPEC.md) reuses these facts for explicit sized hypotheses, policy-conditioned lesson cards and comparison. It requires DecisionContext v1.1 for exact economics and preserves this v1 contract. Quantitative roles/Equity and normative exploits remain unavailable.
+
 Schema generation: v1
 
 ## 1. Purpose and dependency direction

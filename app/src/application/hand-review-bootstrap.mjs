@@ -5,6 +5,7 @@ import {
   createHandReviewAnalysisHandoff,
   createHandReviewProjector,
 } from './hand-review.mjs';
+import { renderExploitReview } from './exploit-review-workspace.mjs';
 
 export function installHandReviewBridge(browserWindow) {
   if (!browserWindow) return null;
@@ -15,6 +16,7 @@ export function installHandReviewBridge(browserWindow) {
     createProjector(options) {
       return createHandReviewProjector(options);
     },
+    renderExploitReview,
     createAnalysisHandoff(review, decisionIndex) {
       return createHandReviewAnalysisHandoff(review, decisionIndex);
     },

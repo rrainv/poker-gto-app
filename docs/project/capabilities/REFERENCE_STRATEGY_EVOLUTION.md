@@ -1,5 +1,12 @@
 # Reference Strategy Evolution
 
+Source intake continuation is specified in [Reference Source Foundation v1](../REFERENCE_SOURCE_FOUNDATION_V1_SPEC.md)
+with [acquisition research](../REFERENCE_SOURCE_ACQUISITION_2026_09.md). Preserve
+local user-source ownership and rights separately from source authority, exact
+coverage and assessment. Future durable import must define historical evidence,
+export/sync exclusions and owner lifecycle before activation; it must not infer
+these from a private flag or the solver brand.
+
 > This capability dossier preserves long-term product intent and design direction. It does not own execution priority or current implementation truth. See PRODUCT_BACKLOG.md for capability status and CURRENT_PHASE.md / ROADMAP.md for sequencing. Current implemented contracts remain in subsystem specs/code.
 
 Planning authority remains in the [Product Backlog](../PRODUCT_BACKLOG.md), [Current Phase](../CURRENT_PHASE.md), and [Roadmap](../ROADMAP.md).

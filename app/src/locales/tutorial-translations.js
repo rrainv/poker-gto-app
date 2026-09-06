@@ -1,5 +1,7 @@
 (function installTutorialTranslations(global) {
   const en = {
+    'Inspect ranges and hypothetical cards': 'Inspect ranges and hypothetical cards',
+    'Open Ranges & runouts to enter explicit weights or keep exact hands. Unknown combinations remain unknown; allow known-only Equity explicitly for a partial range. Inspect next cards or selected turn and river sequences, then focus a card to see the best five. Hand improvement and Equity improvement are separate facts.': 'Open Ranges & runouts to enter explicit weights or keep exact hands. Unknown combinations remain unknown; allow known-only Equity explicitly for a partial range. Inspect next cards or selected turn and river sequences, then focus a card to see the best five. Hand improvement and Equity improvement are separate facts.',
     'Tutorial': 'Tutorial',
     'Restart tutorial': 'Restart tutorial',
     'Guided tour available': 'Guided tour available',
@@ -24,6 +26,8 @@
   };
 
   const ru = {
+    'Inspect ranges and hypothetical cards': 'Изучайте диапазоны и гипотетические карты',
+    'Open Ranges & runouts to enter explicit weights or keep exact hands. Unknown combinations remain unknown; allow known-only Equity explicitly for a partial range. Inspect next cards or selected turn and river sequences, then focus a card to see the best five. Hand improvement and Equity improvement are separate facts.': 'Откройте «Диапазоны и ранауты», чтобы ввести веса или оставить точные руки. Неизвестные комбинации остаются неизвестными; явно разрешите Equity по известной части частичного диапазона. Изучайте следующие карты или выбранные последовательности тёрна и ривера; фокус на карте покажет лучшие пять. Улучшение руки и рост Equity — разные факты.',
     'Tutorial': 'Обучение',
     'Restart tutorial': 'Перезапустить обучение',
     'Guided tour available': 'Доступно краткое обучение',
@@ -48,6 +52,8 @@
   };
 
   const he = {
+    'Inspect ranges and hypothetical cards': 'בדקו טווחים וקלפים היפותטיים',
+    'Open Ranges & runouts to enter explicit weights or keep exact hands. Unknown combinations remain unknown; allow known-only Equity explicitly for a partial range. Inspect next cards or selected turn and river sequences, then focus a card to see the best five. Hand improvement and Equity improvement are separate facts.': 'פתחו טווחים וקלפי המשך כדי להזין משקלים מפורשים או לשמור ידיים מדויקות. צירופים לא ידועים נשארים לא ידועים; אשרו במפורש חישוב לפי החלק הידוע לטווח חלקי. בדקו קלף הבא או רצפי טרן וריבר נבחרים, והתמקדו בקלף כדי לראות את חמשת הטובים. שיפור היד ושיפור האקוויטי הם עובדות נפרדות.',
     'Tutorial': 'הדרכה',
     'Restart tutorial': 'הפעלת ההדרכה מחדש',
     'Guided tour available': 'זמינה הדרכה קצרה',
@@ -905,11 +911,392 @@
     ['Follow family coverage and boundaries', 'Следите за охватом семейств и границами', 'עקבו אחר כיסוי המשפחות והגבולות'],
     ['Progress follows the evidence across hand families and action boundaries, not a fixed number of questions. Sparse families remain uncertain. You can stop early and resume mapping or refinement later.', 'Прогресс отражает данные о семействах рук и границах действий, а не фиксированное число вопросов. Малоизученные семейства остаются неопределёнными. Можно остановиться раньше и продолжить исследование или уточнение позже.', 'ההתקדמות משקפת את הראיות במשפחות הידיים ובגבולות הפעולה, ולא מספר שאלות קבוע. משפחות עם מעט ראיות נשארות לא ודאיות. אפשר לעצור מוקדם ולחזור בהמשך למיפוי או לדיוק.'],
   );
+  personalUnderstandingTutorial.push(
+    ['Your next learning step', 'Следующий шаг обучения', 'הצעד הבא בלמידה'],
+    ['Coach connects an evidence gap or a comparison difference to one reasoning question. Teach the suggested hand, inspect a conflicting answer, or try a nearby hand. These prompts do not grade your strategy.', 'Coach связывает пробел в данных или различие при сравнении с одним вопросом для размышления. Опишите предложенную руку, проверьте противоречивый ответ или рассмотрите соседнюю руку. Эти вопросы не оценивают качество вашей стратегии.', 'המאמן מחבר פער בראיות או הבדל בהשוואה לשאלת חשיבה אחת. תארו את היד המוצעת, בדקו תשובה סותרת או נסו יד סמוכה. השאלות האלה אינן מדרגות את האסטרטגיה שלכם.'],
+  );
   for (const [key, russian, hebrew] of personalUnderstandingTutorial) { en[key] = key; ru[key] = russian; he[key] = hebrew; }
+  for (const [key, russian, hebrew] of [
+    ['Teach through a hand', 'Обучение через раздачу', 'ללמד דרך יד'],
+    ['Teach an exact BTN opening size, then follow selected actions and public cards through flop, turn and river. Inspect partial ranges, adopt combo intentions, and revisit earlier nodes for variations. Coach asks reasoning questions without grading your strategy.', 'Откройте изучение раздачи, укажите частоту для размера открытия BTN, затем опишите точные комбинации на достигнутом флопе. Неописанные руки остаются неизвестными. Coach задаёт вопросы для размышления без оценки качества стратегии.', 'פתחו לימוד יד כדי ללמד גודל פתיחה מ־BTN, ואז תארו צירופים מדויקים בפלופ שאליו הגעתם. ידיים שלא מופו נשארות לא ידועות. המאמן שואל שאלות לחשיבה בלי לדרג את האסטרטגיה שלכם.'],
+  ]) { en[key] = key; ru[key] = russian; he[key] = hebrew; }
   const guestStudyBoundary = 'Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode. Guest data does not sync.';
   en[guestStudyBoundary] = guestStudyBoundary;
   ru[guestStudyBoundary] = 'Сохранённые материалы, личная стратегия и память тренировок остаются на этом устройстве в гостевом режиме. Данные гостя не синхронизируются.';
   he[guestStudyBoundary] = 'הלימוד השמור, האסטרטגיה האישית וזיכרון האימונים נשארים במכשיר הזה במצב אורח. נתוני אורח אינם מסתנכרנים.';
+  const opponentTutorial = [
+    ['Compare synthetic policies and choose a study question for a new Full Hand. Questions do not guarantee a situation or change grading. After the hand, inspect the frozen policy, actor inputs and decisions. Teach through a hand connects policy questions to your existing Approach regions without changing intent.',
+      'Сравните синтетические политики и выберите вопрос для новой полной раздачи. Вопросы не гарантируют ситуацию и не меняют оценивание. После раздачи изучите зафиксированную политику, входные данные соперника и решения. Обучение через раздачу связывает вопросы о политике с регионами вашего Approach, не меняя замысел.',
+      'השוו מדיניות סינתטית ובחרו שאלת לימוד ליד מלאה חדשה. שאלות אינן מבטיחות מצב ואינן משנות הערכה. לאחר היד, בדקו את המדיניות שנשמרה, את הקלט לשחקן ואת החלטותיו. לימוד דרך יד מחבר שאלות על המדיניות לאזורים הקיימים בגישה שלכם בלי לשנות כוונה.'],
+    ['Choose a synthetic opponent', 'Выберите синтетического соперника', 'בחרו יריב סינתטי'],
+    ['Full Hand offers explicit opponent parameters for all opponents or BB only. Read the assumptions before starting; these card-independent policies describe synthetic behavior, not correct strategy or real people.',
+      'В полной раздаче можно задать параметры для всех соперников или только BB. Перед началом прочитайте допущения: эти политики не учитывают силу карт и описывают синтетическое поведение, а не правильную стратегию или реальных людей.',
+      'ביד מלאה אפשר להגדיר פרמטרים לכל היריבים או רק ל־BB. קראו את ההנחות לפני ההתחלה: המדיניות אינה מתחשבת בחוזק הקלפים ומתארת התנהגות סינתטית, ולא אסטרטגיה נכונה או אנשים אמיתיים.'],
+  ];
+  opponentTutorial.forEach(([key, russian, hebrew]) => { en[key] = key; ru[key] = russian; he[key] = hebrew; });
+  const exploitTutorial = [
+    ['Explore why an action might work', 'Разберите, почему действие может сработать', 'בדקו למה פעולה עשויה לעבוד'],
+    ['Explore an action and size in Why might this action work? Compare how synthetic policies change value, bluff and raise-response questions. In Teach through a hand, inspect candidates or keep your strategy. Practice this node explains unsupported targets. Completed Full Hand Review keeps opponent assumptions separate from the observed action and reference.',
+      'Разберите действие и размер в «Почему это действие может сработать?». Сравните, как синтетические политики меняют вопросы о вэлью, блефах и ответах на рейз. В обучении через раздачу изучите кандидатов или оставьте свою стратегию. «Тренировать этот узел» объясняет неподдерживаемые цели. Review завершённой полной раздачи разделяет предположения об оппоненте, наблюдаемое действие и референс.',
+      'בדקו פעולה וגודל ב«למה הפעולה הזאת עשויה לעבוד?». השוו כיצד מדיניות סינתטית משנה שאלות על ערך, בלופים ותגובה להעלאה. בלימוד דרך יד, בדקו מועמדות או שמרו על האסטרטגיה שלכם. «תרגול הצומת הזה» מסביר מטרות שאינן נתמכות. סקירת יד מלאה שהסתיימה מפרידה בין הנחות על היריב, הפעולה שנצפתה והייחוס.'],
+  ];
+  exploitTutorial.forEach(([key, russian, hebrew]) => { en[key] = key; ru[key] = russian; he[key] = hebrew; });
+  const handImportCopy = [
+  [
+    "Import hand history",
+    "Импорт истории раздачи",
+    "ייבוא היסטוריית יד"
+  ],
+  [
+    "Paste one PokerStars English NLHE cash hand. Parsing stays on this device.",
+    "Вставьте одну кеш-раздачу NLHE PokerStars на английском. Обработка выполняется на этом устройстве.",
+    "הדביקו יד קאש NLHE אחת מ־PokerStars באנגלית. העיבוד מתבצע במכשיר הזה."
+  ],
+  [
+    "Hand history",
+    "История раздачи",
+    "היסטוריית יד"
+  ],
+  [
+    "Import file",
+    "Импорт файла",
+    "ייבוא קובץ"
+  ],
+  [
+    "Preview reconstruction",
+    "Предпросмотр восстановления",
+    "תצוגה מקדימה של השחזור"
+  ],
+  [
+    "Open in Review",
+    "Открыть разбор",
+    "פתיחה בסקירה"
+  ],
+  [
+    "Hand reconstructed",
+    "Раздача восстановлена",
+    "היד שוחזרה"
+  ],
+  [
+    "Reconstruction unavailable",
+    "Восстановление недоступно",
+    "השחזור אינו זמין"
+  ],
+  [
+    "Inspect import details",
+    "Сведения об импорте",
+    "בדיקת פרטי הייבוא"
+  ],
+  [
+    "Imported hand",
+    "Импортированная раздача",
+    "יד מיובאת"
+  ],
+  [
+    "Import evidence",
+    "Данные импорта",
+    "ראיות הייבוא"
+  ],
+  [
+    "Format",
+    "Формат",
+    "פורמט"
+  ],
+  [
+    "Source hand",
+    "Исходная раздача",
+    "יד המקור"
+  ],
+  [
+    "Source timestamp",
+    "Время в источнике",
+    "זמן המקור"
+  ],
+  [
+    "Parser version",
+    "Версия парсера",
+    "גרסת המפענח"
+  ],
+  [
+    "Reconstruction version",
+    "Версия восстановления",
+    "גרסת השחזור"
+  ],
+  [
+    "Canonical hand",
+    "Каноническая раздача",
+    "היד הקנונית"
+  ],
+  [
+    "Import facts: exact",
+    "Факты импорта: точные",
+    "עובדות ייבוא: מדויקות"
+  ],
+  [
+    "Import facts: inferred",
+    "Факты импорта: выведенные",
+    "עובדות ייבוא: מוסקות"
+  ],
+  [
+    "Import facts: missing",
+    "Факты импорта: отсутствующие",
+    "עובדות ייבוא: חסרות"
+  ],
+  [
+    "Import facts: ambiguous",
+    "Факты импорта: неоднозначные",
+    "עובדות ייבוא: עמומות"
+  ],
+  [
+    "Import facts: unsupported",
+    "Факты импорта: неподдерживаемые",
+    "עובדות ייבוא: לא נתמכות"
+  ],
+  [
+    "Raw hand-history text is not stored with Saved Hands.",
+    "Исходный текст истории не сохраняется вместе с раздачей.",
+    "טקסט ההיסטוריה המקורי אינו נשמר עם היד."
+  ],
+  [
+    "Raises are interpreted as the total committed on this street, as defined by this format.",
+    "Рейзы означают общий вклад на текущей улице, согласно правилам формата.",
+    "העלאות מציינות את סך ההשקעה ברחוב הנוכחי, כפי שמגדיר הפורמט."
+  ],
+  [
+    "Gross pot",
+    "Банк до рейка",
+    "קופה לפני רייק"
+  ],
+  [
+    "Recorded rake",
+    "Рейк из истории",
+    "רייק מתועד"
+  ],
+  [
+    "Awarded",
+    "Выплачено",
+    "שולם"
+  ],
+  [
+    "Line",
+    "Строка",
+    "שורה"
+  ],
+  [
+    "Reconstructing hand…",
+    "Восстанавливаем раздачу…",
+    "משחזר את היד…"
+  ],
+  [
+    "The import was cancelled or is unavailable. Try again.",
+    "Импорт отменён или недоступен. Попробуйте ещё раз.",
+    "הייבוא בוטל או אינו זמין. נסו שוב."
+  ],
+  [
+    "Paste one hand history of at most 250,000 characters.",
+    "Вставьте одну историю раздачи длиной до 250 000 символов.",
+    "הדביקו היסטוריית יד אחת עד 250,000 תווים."
+  ],
+  [
+    "Use one PokerStars English cash No Limit Hold’em hand.",
+    "Нужна одна кеш-раздача PokerStars No Limit Hold’em на английском.",
+    "נדרשת יד קאש No Limit Hold’em אחת מ־PokerStars באנגלית."
+  ],
+  [
+    "The game header is missing or unsupported.",
+    "Заголовок игры отсутствует или не поддерживается.",
+    "כותרת המשחק חסרה או אינה נתמכת."
+  ],
+  [
+    "The table, button or seats are missing.",
+    "Не указан стол, баттон или места игроков.",
+    "חסרים שולחן, כפתור או מושבים."
+  ],
+  [
+    "This history does not identify Hero and two Hero cards.",
+    "История не указывает Hero и две его карты.",
+    "ההיסטוריה אינה מזהה את Hero ושני קלפיו."
+  ],
+  [
+    "The history must state the total pot and rake explicitly.",
+    "История должна явно указывать общий банк и рейк.",
+    "ההיסטוריה חייבת לציין במפורש את הקופה הכוללת והרייק."
+  ],
+  [
+    "This line contains information Riverline cannot safely interpret.",
+    "Эта строка содержит данные, которые Riverline не может однозначно прочитать.",
+    "שורה זו מכילה מידע ש־Riverline אינו יכול לפרש בוודאות."
+  ],
+  [
+    "A card is repeated or invalid. Riverline cannot reconstruct this hand safely.",
+    "Карта повторяется или недопустима. Riverline не может достоверно восстановить раздачу.",
+    "קלף חוזר או אינו תקין. Riverline אינו יכול לשחזר את היד בבטחה."
+  ],
+  [
+    "A player’s showdown cards are missing. The final result cannot be verified.",
+    "Отсутствуют карты игрока на вскрытии. Итог нельзя проверить.",
+    "חסרים קלפי שחקן בחשיפה. לא ניתן לאמת את התוצאה."
+  ],
+  [
+    "These amounts cannot be represented exactly in Riverline’s chip units.",
+    "Эти суммы нельзя точно представить в единицах фишек Riverline.",
+    "לא ניתן לייצג סכומים אלה בדיוק ביחידות הצ׳יפים של Riverline."
+  ],
+  [
+    "The raise increment does not agree with the raise-to amount.",
+    "Прибавка рейза не совпадает с итоговым размером рейза.",
+    "תוספת ההעלאה אינה תואמת לסכום ההעלאה הכולל."
+  ],
+  [
+    "The recorded call does not match the amount legally owed.",
+    "Записанный колл не совпадает с суммой к доплате.",
+    "ההשוואה המתועדת אינה תואמת לסכום הנדרש כחוק."
+  ],
+  [
+    "The uncalled refund does not match the canonical contributions.",
+    "Возврат непринятой ставки не совпадает с каноническими вкладами.",
+    "החזר ההימור שלא הושווה אינו תואם להשקעות הקנוניות."
+  ],
+  [
+    "The history is missing an uncalled refund required by the actions.",
+    "В истории нет возврата непринятой ставки, следующего из действий.",
+    "חסר בהיסטוריה החזר של הימור שלא הושווה, הנדרש לפי הפעולות."
+  ],
+  [
+    "A join or leave notice does not change the players dealt into this hand.",
+    "Сообщение о входе или выходе не меняет состав игроков этой раздачи.",
+    "הודעת הצטרפות או עזיבה אינה משנה את משתתפי היד."
+  ],
+  [
+    "The recorded action or settlement does not reconcile with the legal hand.",
+    "Записанное действие или расчёт не согласуется с легальной раздачей.",
+    "הפעולה או התשלום המתועדים אינם מתיישבים עם היד החוקית."
+  ],
+  [
+    "The source facts conflict or are incomplete. Inspect the indicated line.",
+    "Исходные факты противоречат друг другу или неполны. Проверьте указанную строку.",
+    "עובדות המקור סותרות או חסרות. בדקו את השורה המצוינת."
+  ]
+];
+  handImportCopy.push(...[
+  [
+    "Recorded settlement",
+    "Расчёт по истории",
+    "תשלום מתועד"
+  ],
+  [
+    "Imported hand. Choose a recorded Hero decision to study.",
+    "Импортированная раздача. Выберите записанное решение Hero для изучения.",
+    "יד מיובאת. בחרו החלטת Hero מתועדת ללימוד."
+  ],
+  [
+    "Study this decision",
+    "Изучить это решение",
+    "לימוד ההחלטה"
+  ],
+  [
+    "Recorded play, personal intent, and reference comparison are separate evidence.",
+    "Записанная игра, личное намерение и сравнение с источником — отдельные данные.",
+    "משחק מתועד, כוונה אישית והשוואה למקור הם ראיות נפרדות."
+  ],
+  [
+    "Inspect personal intent",
+    "Посмотреть личное намерение",
+    "בדיקת הכוונה האישית"
+  ],
+  [
+    "Refine context or update intent",
+    "Уточнить контекст или изменить намерение",
+    "דיוק ההקשר או עדכון הכוונה"
+  ],
+  [
+    "Mark as situational",
+    "Отметить как ситуативное",
+    "סימון כתלוי מצב"
+  ],
+  [
+    "Recorded action",
+    "Записанное действие",
+    "פעולה מתועדת"
+  ],
+  [
+    "Intended action",
+    "Задуманное действие",
+    "פעולה מתוכננת"
+  ],
+  [
+    "The action types agree; this is not a correctness assessment.",
+    "Типы действий совпадают; это не оценка правильности.",
+    "סוגי הפעולות תואמים; זו אינה הערכת נכונות."
+  ],
+  [
+    "The action types differ; context and intent need human interpretation.",
+    "Типы действий различаются; контекст и намерение требуют вашей интерпретации.",
+    "סוגי הפעולות שונים; ההקשר והכוונה דורשים פרשנות אנושית."
+  ],
+  [
+    "Imported decision practice has no compatible Training request.",
+    "Для тренировки импортированного решения пока нет совместимого запроса Training.",
+    "אין בקשת אימון תואמת לתרגול ההחלטה המיובאת."
+  ],
+  [
+    "Recorded rake does not establish a compatible Personal Strategy rake model.",
+    "Рейк из истории не задаёт совместимую модель рейка для Personal Strategy.",
+    "רייק מתועד אינו מגדיר מודל רייק תואם לאסטרטגיה האישית."
+  ],
+  [
+    "Personal intent lookup for this imported postflop decision is unavailable.",
+    "Поиск личного намерения для этого импортированного постфлоп-решения недоступен.",
+    "חיפוש כוונה אישית להחלטה מיובאת זו אחרי הפלופ אינו זמין."
+  ],
+  [
+    "This canonical decision has no supported Personal Strategy context.",
+    "У этого канонического решения нет поддерживаемого контекста Personal Strategy.",
+    "להחלטה קנונית זו אין הקשר נתמך באסטרטגיה האישית."
+  ],
+  [
+    "Choose a Game Setup and Approach in Personal Strategy.",
+    "Выберите конфигурацию игры и подход в Personal Strategy.",
+    "בחרו הגדרת משחק וגישה באסטרטגיה האישית."
+  ],
+  [
+    "The selected Personal Strategy context does not match this decision.",
+    "Выбранный контекст Personal Strategy не совпадает с этим решением.",
+    "ההקשר שנבחר באסטרטגיה האישית אינו תואם להחלטה."
+  ],
+  [
+    "No compatible direct personal intent is recorded.",
+    "Совместимое прямое личное намерение не записано.",
+    "לא תועדה כוונה אישית ישירה תואמת."
+  ],
+  [
+    "Personal intent has an unresolved conflict.",
+    "В личном намерении есть неразрешённое противоречие.",
+    "קיימת סתירה לא פתורה בכוונה האישית."
+  ],
+  [
+    "Personal Strategy is unavailable for this owner.",
+    "Personal Strategy недоступна для этого владельца данных.",
+    "האסטרטגיה האישית אינה זמינה לבעל הנתונים הזה."
+  ]
+]);
+  handImportCopy.push(
+    ['Saving this decision also preserves its source Hand.', 'Сохранение решения также сохраняет исходную раздачу.', 'שמירת ההחלטה שומרת גם את יד המקור.'],
+    ['Gross payouts before recorded rake', 'Выплаты до учёта рейка из истории', 'תשלומים ברוטו לפני הרייק המתועד'],
+    ['Choose seats, stacks, button, Hero and forced contributions to start a legal hand. Or use Import hand history to paste a PokerStars English cash hand, preview its reconstruction and open the same Review.',
+      'Выберите места, стеки, баттон, Hero и обязательные взносы для легальной раздачи. Или импортируйте историю кеш-раздачи PokerStars на английском, проверьте восстановление и откройте тот же разбор.',
+      'בחרו מושבים, ערימות, כפתור, Hero ותשלומי חובה כדי להתחיל יד חוקית. או ייבאו היסטוריית יד קאש מ־PokerStars באנגלית, בדקו את השחזור ופתחו את אותה סקירה.']
+  );
+  handImportCopy.forEach(([key, russian, hebrew]) => { en[key] = key; ru[key] = russian; he[key] = hebrew; });
+  const deepStudyTutorial = [
+    ['Deep Review highlights up to three decisions with explicit study reasons. Inspect separate observed, Personal, reference, baseline and opponent evidence. Review later uses Saved; supported practice uses Training Memory. Home Study Inbox suggests one next item from existing sources.',
+      'Глубокий разбор выделяет до трёх решений с явными причинами изучения. Проверяйте раздельно наблюдаемое действие, личное намерение, референс, эвристический ориентир и данные оппонента. «Разобрать позже» использует сохранения; доступная практика — память тренировок. Очередь изучения на главной предлагает следующий материал из существующих источников.',
+      'סקירה מעמיקה מדגישה עד שלוש החלטות עם סיבות לימוד מפורשות. בדקו בנפרד פעולה שנצפתה, כוונה אישית, ייחוס, בסיס היוריסטי וראיות על היריב. סקירה מאוחרת משתמשת בשמורים; תרגול נתמך משתמש בזיכרון האימון. תיבת הלימוד בדף הבית מציעה פריט הבא ממקורות קיימים.'],
+    ['Open Study Inbox for one next recommendation and an inspectable queue from Training Memory, Saved and selected Personal conflicts. Due and review reasons stay visible. The queue covers a bounded loaded selection and never changes your intended strategy.',
+      'Откройте очередь изучения: одна следующая рекомендация и проверяемая очередь из памяти тренировок, сохранений и конфликтов выбранной личной стратегии. Сроки и причины разбора видны. Очередь охватывает ограниченную загруженную выборку и не изменяет намеренную стратегию.',
+      'פתחו את תיבת הלימוד להמלצה הבאה ולתור הניתן לבדיקה מזיכרון האימון, משמורים ומסתירות בכוונה שנבחרה. מועדים וסיבות סקירה נשארים גלויים. התור מכסה בחירה מוגבלת שנטענה ואינו משנה את האסטרטגיה המכוונת שלכם.'],
+  ];
+  deepStudyTutorial.forEach(([key, russian, hebrew]) => { en[key] = key; ru[key] = russian; he[key] = hebrew; });
   global.riverlineTutorialTranslations = Object.freeze({
     en: Object.freeze(en),
     ru: Object.freeze(ru),

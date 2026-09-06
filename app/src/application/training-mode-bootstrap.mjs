@@ -34,6 +34,8 @@ import {
   validateFullHandTrainingSizingInput,
 } from './full-hand-training-sizing.mjs';
 import { createTrainingSameSpotLifecycle } from './training-same-spot-lifecycle.mjs';
+import { createOpponentPracticeWorkspace } from './opponent-practice-workspace.mjs';
+import { createExploitTrainingRequest, resolveExploitTrainingRequest, prepareExploitFullHandPractice } from './exploit-training-request.mjs';
 
 export const FULL_HAND_TABLE_TRANSITION_PRESENTATION_SCHEMA_VERSION =
   'full-hand-table-transition-presentation/v1';
@@ -45,6 +47,7 @@ export function installTrainingModeBridge(browserWindow, {
 } = {}) {
   if (!browserWindow) return null;
   const experienceBridge = installExperienceEventsBridge(browserWindow);
+  const opponentWorkspace = createOpponentPracticeWorkspace(browserWindow);
   const fullHandReviewReplayController = createReplayProjectionController();
   let fullHandReviewReplayHandId = null;
   const ensureFullHandReviewReplay = () => {
@@ -60,6 +63,14 @@ export function installTrainingModeBridge(browserWindow, {
     return fullHandReviewReplayController.getProjection();
   };
   const bridge = Object.freeze({
+    renderOpponentSetup(visible) { return opponentWorkspace.renderSetup(visible); },
+    readOpponentPractice(input) { return opponentWorkspace.readRequest(input); },
+    prepareOpponentPractice(input) { return opponentWorkspace.prepareRequest(input); },
+    readPolicyTrainingIntent(input) { return opponentWorkspace.readTrainingIntent(input); },
+    resolveConceptPracticeRequest(request, currentFacts) { return resolveExploitTrainingRequest(request, currentFacts); },
+    createConceptPracticeRequest(facts, options) { return createExploitTrainingRequest(facts, options); },
+    prepareConceptFullHandPractice(input) { return prepareExploitFullHandPractice(input); },
+    renderOpponentReview(snapshot) { return opponentWorkspace.renderReview(snapshot); },
     createConfigFromLegacyCompatibility(input) {
       return createTrainingConfigFromLegacyCompatibility(input);
     },
@@ -252,6 +263,7 @@ export function installTrainingModeBridge(browserWindow, {
       return fullHandController.createAnalysisHandoff(decisionOrdinal);
     },
     resetFullHand() {
+      opponentWorkspace.renderReview(null);
       fullHandReviewReplayController.clear();
       fullHandReviewReplayHandId = null;
       return fullHandController.reset();
@@ -263,6 +275,7 @@ export function installTrainingModeBridge(browserWindow, {
       return controller.getSnapshot();
     },
     reset() {
+      opponentWorkspace.renderReview(null);
       fullHandReviewReplayController.clear();
       fullHandReviewReplayHandId = null;
       fullHandController.reset();

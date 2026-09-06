@@ -19,6 +19,7 @@ import {
 import { representativeCardsForHandClass } from '../ui/representative-hand-cards.mjs';
 import { appendCardFaceContents } from './card-presentation.mjs';
 import { mountPersonalStrategyUnderstanding, renderPersonalMappingCoverage } from './personal-strategy-understanding-workspace.mjs';
+import { assertPersonalCoachRequestCurrent } from '../personal-strategy/coach.mjs';
 import { createPersonalStrategyScopeLifecycle } from './personal-strategy-scope-lifecycle.mjs';
 import {
   RIVERLINE_OWNED_DOMAINS,
@@ -140,6 +141,7 @@ function friendlyError(error) {
   if (error?.code === 'migration_failed') return translated('Personal Strategy migration did not finish. Your previous data remains intact; try again.');
   if (error?.code === 'transaction_failed') return translated('Your answer was not confirmed. Your previous data remains intact; retry the save.');
   const message = String(error?.message || '');
+  if (message === 'stale_personal_coach_request') return translated('The selected context changed. Preview your intention again.');
   if (/must be different/i.test(message)) return translated('Give each mode a different name.');
   if (/characters or fewer/i.test(message)) return translated('Use a shorter name or description.');
   if (/required/i.test(message)) return translated('Enter a Game Setup name and an Approach name.');
@@ -1498,12 +1500,20 @@ function createController(root, application, initialWorkspace, activationStarted
     root.dataset.persistenceState = pending ? 'pending' : (failedAnswer ? 'failed' : 'ready');
   }
 
-  async function enterQuestions({ handClass = null, intent = null, focus = null } = {}) {
+  async function enterQuestions({ handClass = null, intent = null, focus = null, coachRequest = null } = {}) {
     if (!await validateAndSaveStack({ reloadPersonalStrategy: false })) return;
     const scope = currentMatrixScope();
     if (!scope) return;
     const lifecycleToken = beginPersonalStrategyMutation(scope);
     try {
+      if (coachRequest) {
+        const evidence = await application.getEvidenceView(scope);
+        const compared = coachRequest.comparisonEvidence
+          ? await application.getEvidenceView(coachRequest.comparisonEvidence.scope) : null;
+        if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
+        assertPersonalCoachRequestCurrent(coachRequest, { scope: currentMatrixScope(), evidenceFingerprint: evidence.evidenceFingerprint,
+          comparisonEvidenceFingerprint: compared?.evidenceFingerprint ?? null });
+      }
       failedAnswer = null;
       query('#calibrationRetryAnswer').hidden = true;
       const nextState = await application.startOrResumeSession({

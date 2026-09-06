@@ -929,6 +929,10 @@ function matchValidatedReferencePack(pack, decisionContext) {
   'reference_pack_decision_context_version_mismatch');
   mismatch(decisionContext?.derivation?.source !== 'canonical_hand',
     'reference_pack_canonical_history_required');
+  mismatch(!Array.isArray(decisionContext?.board) || decisionContext.board.length !== 0,
+    'reference_pack_board_mismatch');
+  mismatch(!Array.isArray(decisionContext?.deadCards) || decisionContext.deadCards.length !== 0,
+    'reference_pack_dead_cards_mismatch');
   mismatch(!gameRules || !contextDefinition, 'reference_pack_game_rules_unavailable');
   if (contextDefinition) {
     mismatch(contextDefinition.variant !== assumptions.gameRulesDefinition.variant,
@@ -1070,6 +1074,8 @@ export function createReferencePackAdapter(pack, { allowTestPack = false } = {})
     packId: identity.packId,
     packVersion: identity.packVersion,
     contentHash: validated.integrity.contentHash,
+    sourceId: sourceDescriptor.id,
+    sourceVersion: sourceDescriptor.version,
     productionEligible,
     lookupKind: 'canonical_preflop_hand_class_map',
 

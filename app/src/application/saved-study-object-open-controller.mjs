@@ -40,6 +40,7 @@ export function createSavedStudyObjectOpenController({ application, playbookBrid
           pokerState: object.payload.pokerState,
           heroPlayerId: object.payload.heroPlayerId,
           replaySource: object.payload.replaySource,
+          importProvenance: object.payload.importProvenance ?? null,
         });
         if (projection?.schemaVersion !== 'replay-projection/v1'
           || projection?.viewerContext?.kind !== 'saved_hand'

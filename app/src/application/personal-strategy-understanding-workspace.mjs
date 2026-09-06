@@ -2,6 +2,8 @@ import { renderIntentInterpretation } from '../personal-strategy/intent-interpre
 import { createPersonalRangeLanguageFacts, renderPersonalRangeLanguageFacts,
   comparePersonalRangeLanguageFacts, renderPersonalRangeComparison, personalRangeRegionLabel } from '../personal-strategy/range-language-facts.mjs';
 import { choosePersonalTeachingNext, comparePersonalStrategyWithSource } from './personal-strategy-intelligence.mjs';
+import { createPersonalCoach, createPersonalCoachRequest, renderPersonalCoachLesson } from '../personal-strategy/coach.mjs';
+import { mountPersonalStrategyHandWorkspace } from './personal-strategy-hand-workspace.mjs';
 
 
 export function renderPersonalMappingCoverage(target, coverage, t) {
@@ -21,10 +23,14 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
   onRefresh, onTeach, onMatrix, getTeachingHand = () => null, t, language, signal } = {}) {
   const q = (id) => root.querySelector(`#${id}`);
   const lifecycle = new AbortController();
+  const handWorkspace = mountPersonalStrategyHandWorkspace({ root: q('personalHandWorkspace'), application,
+    getScope, t, language, onTeach, onMatrix, signal: lifecycle.signal });
   signal?.addEventListener('abort', () => dispose(), { once: true });
   let generation = 0, draftVersion = 0, loadVersion = 0, nextVersion = 0, preview = null, correctionIds = [], exceptionTo = null;
   let qualitative = [], facts = null, matrix = null, next = null, busy = false;
   let recentHands = [], contextHand = null;
+  let coachEvidence = null, coachCandidates = [], coach = null, coachComparison = null;
+  let coachAvailable = false;
   const key = () => JSON.stringify(getScope());
   const current = (version, scopeKey) => !lifecycle.signal.aborted && version === generation && key() === scopeKey;
   const capture = () => ({ version: generation, scopeKey: key() });
@@ -60,9 +66,13 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
     q('personalCancelCorrection').hidden = true;
   }
   function invalidate() {
+    handWorkspace.invalidate();
     generation += 1; busy = false;
     discardPreview(); resetCorrection(); qualitative = []; facts = matrix = next = null;
     recentHands = []; contextHand = null;
+    coachEvidence = coach = coachComparison = null; coachCandidates = [];
+    coachAvailable = false;
+    q('personalCoachCards')?.replaceChildren();
     if (q('personalContextInputDisclosure')) q('personalContextInputDisclosure').open = false;
     for (const id of ['personalIntentStatements', 'personalRangeSummary', 'personalRangeFacts', 'personalComparisonSummary', 'personalHistoryContent', 'personalUnderstandingCoverage']) q(id)?.replaceChildren();
     q('personalIntentText').value = ''; q('personalIntentScopeNote').value = '';
@@ -121,14 +131,59 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
       });
       if (!current(token.version, token.scopeKey) || requestVersion !== nextVersion) return;
       next = choosePersonalTeachingNext({ candidates: projection.candidates, userTopic, provisional });
+      coachAvailable = projection.available !== false;
+      coachCandidates = projection.candidates;
+      if (projection.evidenceFingerprint && projection.evidenceFingerprint !== coachEvidence?.evidenceFingerprint) {
+        coachAvailable = false; coach = null;
+      }
+      renderCoach();
       renderPersonalMappingCoverage(q('personalUnderstandingCoverage'), projection.coverage, t);
       q('personalMapRange').textContent = t(projection.coverage?.initialMapReady ? 'Refine this range' : 'Map this range');
       q('personalTeachReason').textContent = t(next.reasonKey);
       q('personalTeachNext').disabled = !next.candidate;
     } catch (caught) { if (current(token.version, token.scopeKey) && requestVersion === nextVersion) error(caught); }
   }
+  function renderCoach() {
+    const target = q('personalCoachCards');
+    if (!target || !coachEvidence) return;
+    if (!coachAvailable) {
+      coach = null;
+      target.replaceChildren(element('p', t('Coaching needs current first-in preflop evidence. Refresh this selection to continue.')));
+      return;
+    }
+    coach = createPersonalCoach({ evidenceView: coachEvidence, candidates: coachCandidates, comparison: coachComparison });
+    target.replaceChildren(...coach.opportunities.map((opportunity, index) => {
+      const lesson = renderPersonalCoachLesson(opportunity, { t, language: language() });
+      const card = element(index === 0 ? 'article' : 'details', undefined, `personal-coach-card ${index === 0 ? 'personal-coach-card--primary' : 'personal-coach-card--secondary'}`);
+      card.append(element(index === 0 ? 'h4' : 'summary', lesson.title));
+      const context = element('p', `${lesson.region} `, 'personal-coach-region'); const hand = element('bdi', lesson.handClass, 'personal-coach-hand'); hand.dir = 'ltr'; context.append(hand);
+      card.append(context, element('p', lesson.explanation, 'personal-coach-reason'), element('p', lesson.question, 'personal-coach-question'));
+      const actions = element('div', undefined, 'personal-inline-actions');
+      const act = button(opportunity.suggestedAction.destination === 'matrix' ? 'Inspect this answer' : 'Teach this hand', 'coach');
+      if (index === 0) act.className = 'ui-button ui-button--secondary personal-coach-primary-action';
+      act.dataset.coachId = opportunity.id; actions.append(act);
+      if (lesson.variation) {
+        const variation = button('Try a nearby hand', 'coach'); variation.dataset.coachId = opportunity.id;
+        variation.dataset.coachVariation = 'true'; actions.append(variation);
+      }
+      card.append(actions);
+      const details = element('details', undefined, 'personal-coach-support'); details.append(element('summary', t('What would change this?')),
+        element('p', lesson.whatChanges), element('p', lesson.coverage, 'personal-coach-precision'));
+      const raw = element('pre', JSON.stringify(opportunity.envelope, null, 2)); raw.dir = 'ltr';
+      const evidence = element('details'); evidence.append(element('summary', t('Evidence and interpretation')), raw);
+      details.append(evidence); card.append(details); return card;
+    }));
+    if (!coach.opportunities.length) target.append(element('p', t('No unresolved coaching question in this selection.')));
+  }
   function renderRange() {
-    lines('personalRangeSummary', renderPersonalRangeLanguageFacts(facts, { language: language() }));
+    const insights = renderPersonalRangeLanguageFacts(facts, { language: language(), withPresentation: true });
+    q('personalRangeSummary').replaceChildren(...insights.map((insight, index) => {
+      const startsGroup = index === 0 || insights[index - 1].kind !== insight.kind;
+      const row = element('li', undefined, `personal-insight-row${startsGroup ? ' personal-insight-row--group-start' : ''}`);
+      row.dataset.insightKind = insight.kind;
+      row.append(element('span', startsGroup ? insight.label : '', 'personal-insight-label'), element('p', insight.text));
+      return row;
+    }));
     const details = document.createDocumentFragment();
     for (const region of facts.regions) {
       const row = element('details'); row.append(element('summary', `${personalRangeRegionLabel(region.id, language())} · ${region.directClasses}/${region.totalClasses}`));
@@ -138,8 +193,12 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
   }
   async function load() {
     const scope = getScope(); if (!scope || lifecycle.signal.aborted) return;
+    handWorkspace.invalidate();
     const token = capture();
     const expectedLoadVersion = ++loadVersion;
+    coach = coachEvidence = coachComparison = null; coachCandidates = [];
+    coachAvailable = false;
+    q('personalCoachCards')?.replaceChildren();
     q('personalUnderstandingStatus').textContent = t('Reading your intended evidence…');
     try {
       const [evidenceView, statements, projection] = await Promise.all([
@@ -147,6 +206,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
       ]);
       if (!current(token.version, token.scopeKey) || expectedLoadVersion !== loadVersion) return;
       qualitative = statements; matrix = projection;
+      coachEvidence = evidenceView;
       facts = createPersonalRangeLanguageFacts({ evidenceView });
       const { entry, approach } = active();
       const selection = getSelection();
@@ -157,6 +217,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
         tentative: (counts.inferred_medium ?? 0) + (counts.uncertain ?? 0), unknown: counts.unknown ?? 0, conflict: counts.conflicting ?? 0,
       });
       renderStatements(); renderRange(); await renderNext();
+      if (!current(token.version, token.scopeKey) || expectedLoadVersion !== loadVersion) return;
       q('personalComparisonApproach').replaceChildren(...getWorkspace().profiles.flatMap((other) => other.modes
         .filter((mode) => mode.id !== approach.id).map((mode) => {
           const option = element('option', `${other.profile.displayName} · ${mode.displayName}`);
@@ -212,6 +273,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
   async function compare(source = false) {
     if (!facts || busy) return;
     const token = capture(); busy = true;
+    coachComparison = null; renderCoach();
     q('personalCompareSource').disabled = true; q('personalCompareApproach').disabled = true;
     lines('personalComparisonSummary', [t('Comparing compatible evidence…')]);
     try {
@@ -228,6 +290,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
           basis: 'same_exact_decision_context_across_named_setups' };
       }
       assertCurrent(token);
+      coachComparison = comparison; renderCoach();
       lines('personalComparisonSummary', renderPersonalRangeComparison(comparison, { language: language(), leftName: approach.displayName, rightName }));
       q('personalComparisonFacts').textContent = JSON.stringify(comparison, null, 2);
     } catch (caught) { if (current(token.version, token.scopeKey)) { lines('personalComparisonSummary', [t('Comparison unavailable for this context.')]); error(caught); } }
@@ -265,6 +328,26 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
   listen('personalMapRange', 'click', () => onTeach({ handClass: preview ? next?.candidate?.handClass : null,
     intent: 'mapping', focus: q('personalTeachTopic').value || null }));
   listen('personalTeachTopic', 'change', renderNext);
+  listen('personalCoachCards', 'click', async (event) => {
+    const target = event.target.closest('[data-intent-action="coach"]');
+    if (!target || busy) return;
+    const opportunity = coach?.opportunities.find((entry) => entry.id === target.dataset.coachId);
+    if (!opportunity) return;
+    const token = capture(); busy = true;
+    try {
+      const evidence = await application.getEvidenceView(getScope()); assertCurrent(token);
+      const comparedEvidence = opportunity.supporting.rightScope
+        ? await application.getEvidenceView(opportunity.supporting.rightScope) : null;
+      assertCurrent(token);
+      const request = createPersonalCoachRequest(opportunity, { scope: getScope(), evidenceFingerprint: evidence.evidenceFingerprint,
+        comparisonEvidenceFingerprint: comparedEvidence?.evidenceFingerprint ?? null,
+        variation: target.dataset.coachVariation === 'true',
+        destination: target.dataset.coachVariation === 'true' ? 'teach_riverline' : opportunity.suggestedAction.destination });
+      if (request.destination === 'matrix') await onMatrix(request.target.handClass);
+      else { recentHands.push(request.target.handClass); await onTeach({ ...request.target, coachRequest: request }); }
+    } catch (caught) { if (current(token.version, token.scopeKey)) { error(caught); await load(); } }
+    finally { if (current(token.version, token.scopeKey)) busy = false; }
+  });
   listen('personalTeachNext', 'click', () => {
     if (!next?.candidate) return;
     if (next.action === 'inspect') onMatrix(next.candidate.handClass);
@@ -291,5 +374,5 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
   listen('personalVersionHistory', 'toggle', loadHistory);
   function dispose() { if (lifecycle.signal.aborted) return; invalidate(); lifecycle.abort(); }
   function openContext() { if (!q('personalIntentText').value.trim()) contextHand = getTeachingHand(); q('personalContextInputDisclosure').open = true; q('personalIntentText').focus(); }
-  return Object.freeze({ load, invalidate, dispose, openContext, getState: () => ({ preview, facts, next, generation }) });
+  return Object.freeze({ load, invalidate, dispose, openContext, getState: () => ({ preview, facts, next, coach, generation }) });
 }

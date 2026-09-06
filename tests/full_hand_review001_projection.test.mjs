@@ -400,7 +400,10 @@ test('comparison wording state and priority are source-gated rather than EV thea
   assert.deepEqual(review.extensionSeam.comparisonRoles, [
     'reference',
     'personal_strategy',
+    'opponent_policy',
+    'exploit_analysis',
     'observed_action',
+    'normative_assessment',
   ]);
 });
 

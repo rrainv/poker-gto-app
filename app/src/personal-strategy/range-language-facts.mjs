@@ -177,7 +177,8 @@ export function comparePersonalRangeLanguageFacts(left, right) {
         normative: false, criterion: 'compatible_direct_region_comparison/v1' } };
   }) : [];
   return freeze({ schemaVersion: 'personal-range-language-comparison/v1', kind: 'personal_to_personal',
-    compatible, reason: compatible ? null : 'incompatible_decision_context', leftScope: left.scope, rightScope: right.scope, regions });
+    compatible, reason: compatible ? null : 'incompatible_decision_context', leftScope: left.scope, rightScope: right.scope,
+    leftEvidenceFingerprint: left.evidenceFingerprint, rightEvidenceFingerprint: right.evidenceFingerprint, regions });
 }
 
 // Application adapters supply the canonical calibration context associated with
@@ -256,7 +257,8 @@ export function comparePersonalRangeToSource(facts, { entries = [], sourceContex
       reason: !complete ? 'source_region_coverage_unavailable' : !region.directClasses ? 'personal_region_evidence_unavailable' : 'dominant_action_comparison_only' };
   });
   return freeze({ schemaVersion: 'personal-range-language-comparison/v1', kind: 'personal_to_source',
-    compatible: Boolean(compatible), reason: compatible ? null : 'incompatible_decision_context', regions });
+    compatible: Boolean(compatible), reason: compatible ? null : 'incompatible_decision_context',
+    leftScope: facts.scope, leftEvidenceFingerprint: facts.evidenceFingerprint, regions });
 }
 
 export function createStrategyRangeLanguageFacts({ personalFacts, entries = [], expectedRole,
@@ -298,20 +300,27 @@ const NARRATIVE_REGIONS = ['medium_pairs', 'small_pairs', 'premium_pairs', 'suit
   'weak_offsuit_high_card', 'weak_suited', 'offsuit_connectivity', 'low_cards', 'pairs', 'suited', 'offsuit', 'broadway', 'ax', 'kx', 'qx'];
 const narrativeRegions = (regions) => [...regions].sort((a, b) => NARRATIVE_REGIONS.indexOf(a.id) - NARRATIVE_REGIONS.indexOf(b.id));
 
-export function renderPersonalRangeLanguageFacts(facts, { language = 'en' } = {}) {
+export function renderPersonalRangeLanguageFacts(facts, { language = 'en', withPresentation = false } = {}) {
   language = languageOf(language);
   const lines = [], describedHands = new Set(), describedTransitions = new Set();
+  // Presentation metadata follows the existing sentence branches; no text parsing
+  // or second interpretation of the evidence is involved.
+  const kinds = [];
+  let kind = 'conflict';
+  const push = (text) => { lines.push(text); kinds.push(kind); };
+  const prepend = (text) => { lines.unshift(text); kinds.unshift('pattern'); };
   const ordered = narrativeRegions(facts.regions);
   const conflicts = new Set();
   for (const region of ordered) {
     const hands = region.structure.conflictingHandClasses.filter((hand) => !conflicts.has(hand));
     if (!hands.length || conflicts.size >= 3) continue;
-    lines.push(say(language,
+    push(say(language,
       `Your active answers conflict at ${handList(hands)}; the ${regionLabel(region.id, language)} boundary remains unresolved there.`,
       `Ваши активные ответы противоречат друг другу для ${handList(hands)}; граница региона «${regionLabel(region.id, language)}» здесь не определена.`,
       `התשובות הפעילות שלכם סותרות זו את זו לגבי ${handList(hands)}; הגבול באזור ${regionLabel(region.id, language)} עדיין לא הוגדר שם.`));
     hands.forEach((hand) => conflicts.add(hand));
   }
+  kind = 'boundary';
   for (const region of ordered) {
     const label = regionLabel(region.id, language);
     for (const boundary of region.structure.transitions) {
@@ -319,7 +328,7 @@ export function renderPersonalRangeLanguageFacts(facts, { language = 'en' } = {}
       if (describedTransitions.has(identity) || describedTransitions.size >= 3) continue;
       const upper = handToken(boundary.upperHandClass), lower = handToken(boundary.lowerHandClass);
       const upperAction = actionLabel(boundary.upperAction, language), lowerAction = actionLabel(boundary.lowerAction, language);
-      lines.push(say(language,
+      push(say(language,
         `Your ${label} preference changes from ${upperAction} with ${upper} to ${lowerAction} with ${lower}.`,
         `В регионе «${label}» ваше предпочтение меняется с ${upperAction} для ${upper} на ${lowerAction} для ${lower}.`,
         `באזור ${label}, ההעדפה שלכם משתנה מ־${upperAction} עם ${upper} ל־${lowerAction} עם ${lower}.`)
@@ -336,6 +345,7 @@ export function renderPersonalRangeLanguageFacts(facts, { language = 'en' } = {}
       describedTransitions.add(identity); describedHands.add(boundary.upperHandClass); describedHands.add(boundary.lowerHandClass);
     }
   }
+  kind = 'pattern';
   let patterns = 0;
   for (const region of ordered) {
     const pattern = region.structure, label = regionLabel(region.id, language);
@@ -343,11 +353,11 @@ export function renderPersonalRangeLanguageFacts(facts, { language = 'en' } = {}
     const action = pattern.consistentSelectedAction ?? pattern.wholeRegionMajorityAction;
     if (!action) continue;
     const actionText = actionLabel(action, language);
-    if (pattern.completePreferredCoverage) lines.push(say(language,
+    if (pattern.completePreferredCoverage) push(say(language,
       `${actionText} is your preferred response across ${pattern.consistentSelectedAction ? 'all' : 'most'} ${label}.`,
       `${actionText} — ваше предпочтительное действие для ${pattern.consistentSelectedAction ? 'всех рук' : 'большинства рук'} региона «${label}».`,
       `${actionText} היא התגובה המועדפת שלכם ב${pattern.consistentSelectedAction ? 'כל' : 'רוב'} הידיים באזור ${label}.`));
-    else lines.push(say(language,
+    else push(say(language,
       `The ${label} you specified share a ${actionText} preference (${handList(region.selectedSample.map((p) => p.handClass))}); the rest of this region remains unresolved.`,
       `Заданные вами руки региона «${label}» объединяет предпочтение ${actionText} (${handList(region.selectedSample.map((p) => p.handClass))}); остальные руки региона ещё не определены.`,
       `הידיים שהגדרתם באזור ${label} חולקות העדפה ל־${actionText} (${handList(region.selectedSample.map((p) => p.handClass))}); שאר האזור עדיין לא הוגדר.`));
@@ -365,45 +375,56 @@ export function renderPersonalRangeLanguageFacts(facts, { language = 'en' } = {}
       const example = region.selectedSample[0], label = regionLabel(region.id, language);
       const action = example.dominantAction ? actionLabel(example.dominantAction, language)
         : say(language, 'an explicit tied mix', 'явно заданная смесь без доминирующего действия', 'תמהיל מפורש ללא פעולה מובילה');
-      lines.push(say(language,
+      push(say(language,
         `You specified ${action} for ${handToken(example.handClass)}. That starts the map of ${label}; the region and its boundary still need more examples.`,
         `Вы задали ${action} для ${handToken(example.handClass)}. Это начало изучения региона «${label}»; для самого региона и его границы ещё нужны примеры.`,
         `הגדרתם ${action} עבור ${handToken(example.handClass)}. זו התחלה למיפוי ${label}; לאזור ולגבול שלו עדיין דרושות דוגמאות נוספות.`));
     }
   }
-  if (facts.actionConcentration.majorityInPremiumPairsAndBroadways) lines.push(say(language,
+  if (facts.actionConcentration.majorityInPremiumPairsAndBroadways) push(say(language,
     'Among the hands you specified, most aggressive preferences are in premium pairs and Broadways.',
     'Среди заданных вами рук большинство агрессивных предпочтений приходится на старшие пары и бродвей.',
     'מבין הידיים שהגדרתם, רוב ההעדפות האגרסיביות נמצאות בזוגות גבוהים ובברודוויי.'));
   const sparse = ['weak_suited', 'weak_offsuit_high_card', 'small_pairs'].map((id) => ordered.find((r) => r.id === id))
     .filter((r) => r.directClasses < 2);
+  kind = 'unresolved';
   if (sparse.length) {
     const names = sparse.slice(0, 2).map((r) => regionLabel(r.id, language)).join(say(language, ' and ', ' и ', ' ו־'));
-    lines.push(say(language, `There is not enough direct evidence yet to characterize ${names}.`,
+    push(say(language, `There is not enough direct evidence yet to characterize ${names}.`,
       `Прямых данных пока недостаточно, чтобы описать ${names}.`, `עדיין אין די ראיות ישירות כדי לאפיין ${names}.`));
   }
   const suited = facts.regions.find((r) => r.id === 'suited'), offsuit = facts.regions.find((r) => r.id === 'offsuit');
   if (suited.quantitative && offsuit.quantitative) {
     const a = Math.round(suited.quantitative.participation * 100), b = Math.round(offsuit.quantitative.participation * 100);
-    lines.unshift(language === 'ru' ? `По полностью заданным частотам: продолжение с одномастными руками ${a}%, с разномастными ${b}% (с весами канонических комбинаций).`
+    prepend(language === 'ru' ? `По полностью заданным частотам: продолжение с одномастными руками ${a}%, с разномастными ${b}% (с весами канонических комбинаций).`
       : language === 'he' ? `לפי התדירויות המלאות שהוגדרו: המשך עם ידיים סוטד ${a}%, ועם אוף־סוט ${b}% (בשקלול צירופי הקלפים).`
         : `Your complete exact evidence continues suited hands ${a}% and offsuit hands ${b}% (weighted by canonical card combinations).`);
   } else if (suited.structure.completePreferredCoverage && offsuit.structure.completePreferredCoverage
     && suited.structure.preferredContinueClasses !== offsuit.structure.preferredContinueClasses) {
     const more = suited.structure.preferredContinueClasses > offsuit.structure.preferredContinueClasses ? suited : offsuit;
     const less = more === suited ? offsuit : suited;
-    lines.unshift(say(language,
+    prepend(say(language,
       `You mark more ${regionLabel(more.id, language)} than ${regionLabel(less.id, language)} as preferred continues across the fully specified hand classes.`,
       `Среди полностью заданных классов рук вы предпочитаете продолжение с большим числом рук региона «${regionLabel(more.id, language)}», чем региона «${regionLabel(less.id, language)}».`,
       `במחלקות הידיים שהוגדרו במלואן, סימנתם המשך מועדף ביותר ${regionLabel(more.id, language)} מאשר ${regionLabel(less.id, language)}.`));
-  } else lines.push(say(language, 'Overall suited-versus-offsuit participation remains unresolved; unasked hands are not assumed to fold.',
+  } else { kind = 'precision'; push(say(language, 'Overall suited-versus-offsuit participation remains unresolved; unasked hands are not assumed to fold.',
     'Общая частота продолжения с одномастными и разномастными руками пока не определена; неотвеченные руки не считаются фолдами.',
-    'תדירות ההמשך הכוללת בסוטד לעומת אוף־סוט עדיין לא נקבעה; ידיים שלא נשאלו אינן נחשבות לפולד.'));
-  if (facts.regions.some((r) => r.dominantOnlyClasses)) lines.push(say(language,
+    'תדירות ההמשך הכוללת בסוטד לעומת אוף־סוט עדיין לא נקבעה; ידיים שלא נשאלו אינן נחשבות לפולד.')); }
+  kind = 'precision';
+  if (facts.regions.some((r) => r.dominantOnlyClasses)) push(say(language,
     'These patterns describe preferred actions, not exact play frequencies.',
     'Эти закономерности описывают предпочтительные действия, а не точные частоты игры.',
     'הדפוסים האלה מתארים פעולות מועדפות, ולא תדירויות משחק מדויקות.'));
-  return freeze(lines);
+  if (!withPresentation) return freeze(lines);
+  const labels = {
+    conflict: ['Conflicting answers', 'Противоречивые ответы', 'תשובות סותרות'],
+    boundary: ['Boundaries', 'Границы', 'גבולות'],
+    pattern: ['Stated patterns', 'Заданные закономерности', 'דפוסים שהוגדרו'],
+    unresolved: ['Still unresolved', 'Ещё не определено', 'עדיין לא הוגדר'],
+    precision: ['Precision', 'Точность', 'דיוק'],
+  };
+  return freeze(lines.map((text, index) => ({ text, kind: kinds[index],
+    label: labels[kinds[index]][['en', 'ru', 'he'].indexOf(language)] })));
 }
 
 export function renderPersonalRangeComparison(comparison, { language = 'en', leftName = 'A', rightName = 'B' } = {}) {

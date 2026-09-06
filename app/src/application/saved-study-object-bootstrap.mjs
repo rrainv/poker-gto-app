@@ -64,6 +64,14 @@ export function installSavedStudyObjectBridge(browserWindow, options = {}) {
   const bridge = Object.freeze({
     schemaVersion: 'saved-study-source-controller/v1',
     classificationsWithMistake: savedStudyClassificationsWithMistake,
+    async saveCurrentForScope(input, scope) {
+      if (!scope?.assertCurrent) throw new TypeError('A captured Saved ownership scope is required');
+      if (scope.domainOwnerBinding?.domain !== RIVERLINE_OWNED_DOMAINS.SAVED_STUDY_OBJECTS) throw new TypeError('Saved domain ownership is required');
+      scope.assertCurrent();
+      const result = await bundleFor(scope).controller.saveCurrent(input);
+      scope.assertCurrent();
+      return result;
+    },
     ...Object.fromEntries(['getCurrentStatus', 'saveCurrent', 'updateAnnotations', 'archiveCurrent']
       .map((method) => [method, (...args) => invoke('controller', method, args)])),
     ...Object.fromEntries(['saveReviewedDecisionSpot', 'getById', 'listRecent', 'listForReview',

@@ -3,6 +3,7 @@ import {
   GAME_RULES_COLLECTION_TYPES,
   GAME_MODES,
   POKER_STATE_V2_SCHEMA_VERSION,
+  POKER_STATE_V3_SCHEMA_VERSION,
   POSITIONS_BY_TABLE_SIZE,
   createGameRulesSnapshotFromLegacyGameConfiguration,
   deriveActorCallEconomics,
@@ -316,7 +317,7 @@ function requireActorDecision(state, heroPlayerId) {
 }
 
 function accountingFromPokerState(state) {
-  if (state.schemaVersion !== POKER_STATE_V2_SCHEMA_VERSION) {
+  if (![POKER_STATE_V2_SCHEMA_VERSION, POKER_STATE_V3_SCHEMA_VERSION].includes(state.schemaVersion)) {
     const amountMilliBb = state.game.forcedContributionPerPlayerMilliBb;
     return {
       rakeMode: state.game.mode === GAME_MODES.CLUBGG ? 'fixed' : 'off',
@@ -397,7 +398,7 @@ export function deriveDecisionContextFromPokerState(state, heroPlayerId, options
   }
   const heroStreetContributionBb = hero.streetContributionMilliBb / 1000;
   const accounting = accountingFromPokerState(state);
-  const gameRulesSnapshot = state.schemaVersion === POKER_STATE_V2_SCHEMA_VERSION
+  const gameRulesSnapshot = [POKER_STATE_V2_SCHEMA_VERSION, POKER_STATE_V3_SCHEMA_VERSION].includes(state.schemaVersion)
     ? state.rulesSnapshot
     : createGameRulesSnapshotFromLegacyGameConfiguration({
       mode: state.game.mode,

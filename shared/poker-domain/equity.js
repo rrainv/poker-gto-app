@@ -242,7 +242,7 @@ function remainingDeck(request) {
   return FULL_DECK.filter((card) => !excluded.has(card));
 }
 
-function* chooseCards(cards, count, start = 0, chosen = []) {
+export function* chooseCards(cards, count, start = 0, chosen = []) {
   if (chosen.length === count) {
     yield [...chosen];
     return;
@@ -287,7 +287,7 @@ function* exactRealizations(request) {
   yield* assignUnknown(0, remainingDeck(request));
 }
 
-function createSeededRandom(seed) {
+export function createSeededRandom(seed) {
   let state = seed >>> 0;
   const nextUint32 = () => {
     state = (state + 0x6d2b79f5) >>> 0;
@@ -303,7 +303,7 @@ function createSeededRandom(seed) {
     do value = nextUint32(); while (value >= limit);
     return value % upperExclusive;
   };
-  return Object.freeze({ nextInt });
+  return Object.freeze({ nextInt, nextFloat: () => nextUint32() / 0x100000000 });
 }
 
 function* monteCarloRealizations(request) {
@@ -346,7 +346,7 @@ function createAccumulator(request) {
   };
 }
 
-function recordRealization(accumulator, realization) {
+export function equityWinnerIndexes(realization) {
   const scores = realization.hands.map((hand) => (
     evaluateSeven([...hand, ...realization.board]).score
   ));
@@ -354,6 +354,11 @@ function recordRealization(accumulator, realization) {
   const winnerIndexes = scores
     .map((score, index) => (score === bestScore ? index : -1))
     .filter((index) => index >= 0);
+  return winnerIndexes;
+}
+
+function recordRealization(accumulator, realization) {
+  const winnerIndexes = equityWinnerIndexes(realization);
   if (winnerIndexes.length === 1) {
     accumulator.wins[winnerIndexes[0]] += 1;
   } else {

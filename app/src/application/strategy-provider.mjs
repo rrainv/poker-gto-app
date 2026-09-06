@@ -11,6 +11,8 @@ import {
 } from './strategy-source-authority.mjs';
 import { createReferencePackAdapter } from './reference-pack-v1.mjs';
 import { bindStrategyAssessmentPolicy } from './strategy-assessment-policy.mjs';
+import { referenceCoverageFromMatch } from './reference-coverage.mjs';
+import { isValidatedReferenceSourceIntake } from './reference-source-intake.mjs';
 
 export const STRATEGY_PROVIDER_SCHEMA_VERSION = 'strategy-provider/v1';
 
@@ -87,6 +89,7 @@ export function createStrategyProvider({
   allowTestReferencePack = false,
   sourceAcceptanceRegistry = null,
   assessmentPolicyRegistry = null,
+  referenceSourceIntake = null,
 } = {}) {
   if (typeof fallbackResolver !== 'function') {
     throw new TypeError('StrategyProvider requires an explicit fallbackResolver');
@@ -94,6 +97,13 @@ export function createStrategyProvider({
   if (sourceAcceptanceRegistry !== null
     && typeof sourceAcceptanceRegistry?.acceptanceFor !== 'function') {
     throw new TypeError('StrategyProvider sourceAcceptanceRegistry must be an acceptance registry');
+  }
+  if (referenceSourceIntake !== null) {
+    if (!isValidatedReferenceSourceIntake(referenceSourceIntake)) throw new TypeError('A validated source intake is required');
+    if (referencePack !== null) throw new TypeError('Select one reference source');
+    if (referenceSourceIntake.visibility === 'private_local') throw new TypeError('Private source activation is preview-only');
+    if (referenceSourceIntake.localUse.status !== 'permitted') throw new TypeError('Source use permission is missing');
+    referencePack = referenceSourceIntake.pack;
   }
   const referenceAdapter = referencePack === null || referencePack === undefined
     ? null
@@ -117,22 +127,36 @@ export function createStrategyProvider({
         try {
           const referenceResolution = referenceAdapter.resolve(decisionContext);
           if (referenceResolution.candidate) {
+            if (referenceSourceIntake) {
+              referenceResolution.candidate.provenance = {
+                ...referenceResolution.candidate.provenance,
+                contentHash: referenceSourceIntake.fingerprint,
+                legacyPackFingerprint: referenceAdapter.contentHash,
+                coverageIdentity: referenceSourceIntake.coverage.nodes[0].nodeIdentity,
+                sourceClass: referenceSourceIntake.sourceClass,
+              };
+            }
             const descriptor = strategySourceDescriptorFor(
               referenceResolution.candidate.source,
               referenceResolution.candidate.sourceDescriptor,
             );
+            let acceptance = sourceAcceptanceRegistry?.acceptanceFor(descriptor,
+              referenceSourceIntake?.fingerprint ?? referenceAdapter.contentHash) ?? null;
+            if (referenceSourceIntake && acceptance?.acceptedCoverageIdentity !== referenceSourceIntake.coverage.nodes[0].nodeIdentity) acceptance = null;
             return bindStrategyAssessmentPolicy(resultFromCandidate(
               referenceResolution.candidate,
               decisionContext,
-              sourceAcceptanceRegistry?.acceptanceFor(
-                descriptor,
-                referenceAdapter.contentHash,
-              ) ?? null,
+              acceptance,
             ), decisionContext, assessmentPolicyRegistry);
           }
           referenceSelection = {
             packId: referenceAdapter.packId,
             packVersion: referenceAdapter.packVersion,
+            sourceId: referenceAdapter.sourceId,
+            sourceVersion: referenceAdapter.sourceVersion,
+            contentHash: referenceSourceIntake?.fingerprint ?? referenceAdapter.contentHash,
+            coverageQuery: referenceCoverageFromMatch(referenceResolution.match,
+              referenceSourceIntake?.coverage.nodes[0].nodeIdentity ?? null),
             coverage: referenceResolution.match.coverage.kind,
             limitationCodes: [...referenceResolution.match.coverage.limitationCodes],
           };
@@ -140,6 +164,10 @@ export function createStrategyProvider({
           referenceSelection = {
             packId: referenceAdapter.packId,
             packVersion: referenceAdapter.packVersion,
+            sourceId: referenceAdapter.sourceId,
+            sourceVersion: referenceAdapter.sourceVersion,
+            contentHash: referenceSourceIntake?.fingerprint ?? referenceAdapter.contentHash,
+            coverageQuery: referenceCoverageFromMatch(null),
             coverage: 'unsupported',
             limitationCodes: ['reference_pack_resolution_error'],
             error: {

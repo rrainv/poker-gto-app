@@ -383,7 +383,7 @@ test('browser bridge exposes only canonical decision-practice and full-Hand life
   };
   const bridge = installTrainingModeBridge(browserWindow, { controller });
   assert.equal(browserWindow.RiverlineTraining, bridge);
-  assert.deepEqual(Object.keys(bridge).sort(), [
+  const canonicalLifecycleMethods = [
     'advanceFullHandOneEvent',
     'answer',
     'answerFullHand',
@@ -420,7 +420,25 @@ test('browser bridge exposes only canonical decision-practice and full-Hand life
     'startFullHand',
     'startPracticeSession',
     'validateFullHandSizingInput',
-  ]);
+  ];
+  const acceptedPracticeIntegrationMethods = [
+    'createConceptPracticeRequest',
+    'prepareConceptFullHandPractice',
+    'prepareOpponentPractice',
+    'readOpponentPractice',
+    'readPolicyTrainingIntent',
+    'renderOpponentReview',
+    'renderOpponentSetup',
+    'resolveConceptPracticeRequest',
+  ];
+  assert.deepEqual(Object.keys(bridge).sort(), [
+    ...canonicalLifecycleMethods,
+    ...acceptedPracticeIntegrationMethods,
+  ].sort());
+  for (const method of acceptedPracticeIntegrationMethods) {
+    assert.equal(typeof bridge[method], 'function', `${method} remains an explicit Training integration`);
+  }
+  assert.equal(Object.isFrozen(bridge), true);
   assert.equal(bridge.getSnapshot(), snapshot);
   assert.equal(Object.getOwnPropertyDescriptor(browserWindow, 'RiverlineTraining').writable, false);
 });

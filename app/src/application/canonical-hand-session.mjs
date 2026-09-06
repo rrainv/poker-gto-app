@@ -5,6 +5,8 @@ import {
   applyPrivateReveal as applyPokerPrivateReveal,
   initializeHand,
   initializeHandFromGameRulesSnapshot,
+  initializeRecordedHand,
+  applyRecordedSettlement,
   resolveShowdown as resolvePokerShowdown,
 } from '../../../shared/poker-domain/index.js';
 import {
@@ -48,6 +50,19 @@ export function createCanonicalHandSession(initialConfiguration) {
 
     configureHero(options) {
       return lifecycle.configureHero(requireState(state), options);
+    },
+
+    initializeRecordedHand(configuration) {
+      const nextState = initializeRecordedHand(configuration);
+      lifecycle.start(nextState);
+      state = nextState;
+      return state;
+    },
+
+    applyRecordedSettlement(evidence) {
+      const previousState = requireState(state);
+      const nextState = applyRecordedSettlement(previousState, evidence);
+      return replaceState(nextState, previousState, REPLAY_FRAME_OPERATIONS.RECORDED_SETTLEMENT);
     },
 
     captureCurrentHeroDecision() {

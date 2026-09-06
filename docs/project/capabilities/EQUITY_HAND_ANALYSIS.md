@@ -22,6 +22,13 @@ This is factual analysis over canonical poker authorities. It is not a strategy 
 
 ## Existing foundation
 
+September 7 additive implementation: [Advanced Equity v1](../ADVANCED_EQUITY_V1_SPEC.md)
+now supplies weighted range-vs-range/partial Equity, bounded next-card and selected
+sequence inspection, best-five previews and current exact-Hero range standing.
+It supersedes the prior-checkpoint unavailable wording below for those facts.
+The spec names remaining unsupported draw/redraw, lock, percentile and strategic
+range claims; this dossier preserves the fuller desired capability.
+
 Current implemented contracts remain in:
 
 - [ANALYSIS_RANGE_SPEC.md](../ANALYSIS_RANGE_SPEC.md): `RangeAnalysisFacts v1`, current made-hand relationships, board facts, structural direct completions, overlap-safe unique completion cards, raw card removal, and explicitly supplied-range facts;

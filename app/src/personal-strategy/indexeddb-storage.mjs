@@ -1,10 +1,11 @@
 export const PERSONAL_STRATEGY_DATABASE_NAME = 'riverline-personal-strategy';
-export const PERSONAL_STRATEGY_DATABASE_VERSION = 3;
-export const PERSONAL_STRATEGY_BACKEND_SCHEMA_VERSION = 'personal-strategy-indexeddb/v3';
+export const PERSONAL_STRATEGY_DATABASE_VERSION = 4;
+export const PERSONAL_STRATEGY_BACKEND_SCHEMA_VERSION = 'personal-strategy-indexeddb/v4';
 
 export const PERSONAL_STRATEGY_OBJECT_STORES = Object.freeze({
   METADATA: 'metadata',
   QUALITATIVE_EVIDENCE: 'qualitativeEvidence',
+  EXACT_NODE_INTENTS: 'exactNodeIntents',
   PROFILES: 'profiles',
   MODES: 'modes',
   RANGE_OBSERVATIONS: 'rangeObservations',
@@ -15,6 +16,7 @@ export const PERSONAL_STRATEGY_OBJECT_STORES = Object.freeze({
 });
 
 const STORE_DEFINITIONS = Object.freeze({
+  [PERSONAL_STRATEGY_OBJECT_STORES.EXACT_NODE_INTENTS]: Object.freeze({ keyPath: 'id', indexes: [['profileId', 'profileId'], ['modeId', 'modeId']] }),
   [PERSONAL_STRATEGY_OBJECT_STORES.QUALITATIVE_EVIDENCE]: Object.freeze({ keyPath: 'id', indexes: [['profileId', 'profileId'], ['modeId', 'modeId']] }),
   [PERSONAL_STRATEGY_OBJECT_STORES.METADATA]: Object.freeze({ keyPath: 'key', indexes: [] }),
   [PERSONAL_STRATEGY_OBJECT_STORES.PROFILES]: Object.freeze({ keyPath: 'id', indexes: [] }),

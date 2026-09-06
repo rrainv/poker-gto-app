@@ -2,6 +2,8 @@
 
 Status: implemented through `TRAINING-SAMPLER-002A`, `TRAINING-SAMPLER-002B`, `TRAINING-SIZING-DIVERSITY-001`, and the Varied/Focused Training foundation.
 
+`EXPLOIT-ANALYSIS-001` adds a visible request/resolution path for thin value, bluff, bluff catcher and check-raise study. All four exact semantic targets return the existing explicit unavailable planner reason; no substitute exercise or grade is created. New policy-conditioned Full Hand preparation remains a separate explicit request. See [Exploit Analysis v1](EXPLOIT_ANALYSIS_V1_SPEC.md); planner/generator/grader and persistence contracts are unchanged.
+
 ## Purpose and authority boundary
 
 The Training sampler program adds a DOM-free deterministic planning layer that asks:
@@ -24,6 +26,8 @@ actions, PokerState, DecisionContext, StrategyResult, or grades. The canonical
 Training generator remains the only legal-trajectory authority. Current Varied
 and Focused sessions consume this planner/adapter foundation; Full Hand Training
 remains a separate visible-hand mode.
+
+`OPPONENT-INTELLIGENCE-002` adds `policy-conditioned-training-intent/v1` for that separate Full Hand mode. It binds the exact synthetic opponent request and an optional reflection theme; only opponent decisions consume the policy, while existing Training generation and grading remain authoritative. Thin-value/bluff-catching themes do not guarantee semantic situations, and frequent-check-raise drills remain unsupported. See [Opponent Policy v2](OPPONENT_POLICY_V2_SPEC.md). Varied/Focused intents and requests below are unchanged.
 
 ## Contracts
 

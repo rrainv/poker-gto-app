@@ -14,6 +14,8 @@ import {
   applyOpponentPolicyAction,
   createBasicOpponentPolicy,
 } from './opponent-policy.mjs';
+import { SYNTHETIC_POLICY_ID, SYNTHETIC_POLICY_VERSION, createSyntheticOpponentPolicy,
+  validateOpponentPracticeRequest } from './synthetic-opponent-policy.mjs';
 
 export const AUTOMATED_OPPONENT_ASSIGNMENT_SCHEMA_VERSION =
   'automated-opponent-assignment/v1';
@@ -232,9 +234,11 @@ function shuffledChanceSchedule(state, chanceSeed) {
 }
 
 function defaultPolicyResolver(assignment, basicPolicy) {
+  if (assignment.policyId === SYNTHETIC_POLICY_ID && assignment.policyVersion === SYNTHETIC_POLICY_VERSION) {
+    return createSyntheticOpponentPolicy(assignment.config);
+  }
   if (assignment.policyId !== BASELINE_OPPONENT_POLICY_ID
-    || assignment.policyVersion !== BASELINE_OPPONENT_POLICY_VERSION
-    || assignment.archetype !== 'basic') {
+    || assignment.policyVersion !== BASELINE_OPPONENT_POLICY_VERSION) {
     throw new RangeError(
       `Unknown built-in opponent policy: ${assignment.policyId}@${assignment.policyVersion}`,
     );
@@ -253,11 +257,12 @@ function errorDetails(error) {
  * Creates the v1 assignment set. Every non-Hero seat uses the existing basic
  * OpponentPolicy, with an independent deterministic base seed.
  */
-export function createBasicOpponentAssignments({ pokerState, heroPlayerId, handSeed } = {}) {
+export function createBasicOpponentAssignments({ pokerState, heroPlayerId, handSeed, policySeed = 0 } = {}) {
   validatePokerState(pokerState);
   requireNonEmptyString(heroPlayerId, 'heroPlayerId');
   if (!playerById(pokerState, heroPlayerId)) throw new RangeError(`Unknown heroPlayerId: ${heroPlayerId}`);
-  const normalizedHandSeed = requireUint32(handSeed, 'handSeed');
+  requireUint32(handSeed, 'handSeed');
+  const normalizedPolicySeed = requireUint32(policySeed, 'policySeed');
   return Object.freeze(pokerState.players
     .filter((player) => player.playerId !== heroPlayerId)
     .map((player) => deepFreeze({
@@ -270,12 +275,26 @@ export function createBasicOpponentAssignments({ pokerState, heroPlayerId, handS
       config: null,
       baseSeed: deriveStableSeed([
         AUTOMATED_OPPONENT_ASSIGNMENT_SCHEMA_VERSION,
-        `hand-seed:${normalizedHandSeed}`,
+        `policy-seed:${normalizedPolicySeed}`,
         `seat:${player.seat}`,
         BASELINE_OPPONENT_POLICY_ID,
         BASELINE_OPPONENT_POLICY_VERSION,
       ]),
     })));
+}
+
+export function createConfiguredOpponentAssignments({ pokerState, heroPlayerId, handSeed, request } = {}) {
+  const normalized = validateOpponentPracticeRequest(request);
+  if (pokerState.players.length !== normalized.handFormat.tableSize) throw new RangeError('Opponent request table size mismatch');
+  const base = createBasicOpponentAssignments({ pokerState, heroPlayerId, handSeed, policySeed: normalized.policySeed });
+  const selected = pokerState.players.filter(player => player.playerId !== heroPlayerId
+    && (normalized.target === 'all_opponents' || player.position === normalized.target));
+  if (!selected.length) throw new RangeError('Requested opponent role is not a non-Hero seat');
+  return frozenClone(base.map(assignment => selected.some(player => player.seat === assignment.seat)
+    ? { ...assignment, policyId: normalized.policyId, policyVersion: normalized.policyVersion,
+      archetype: 'configured', config: normalized.configuration,
+      baseSeed: deriveStableSeed(['actor-policy-stream/v2', normalized.policySeed, assignment.seat]) }
+    : assignment));
 }
 
 /**
@@ -289,9 +308,10 @@ export function createAutomatedHandProgression({
   handSeed,
   chanceSeed = null,
   opponentAssignments = null,
+  opponentPractice = null,
   policyResolver = null,
   decisionContextOptions = {},
-  maxAutomatedTransitions = DEFAULT_MAX_AUTOMATED_TRANSITIONS,
+  maxAutomatedTransitions = null,
 } = {}) {
   const session = requireSession(createSession({
     session: suppliedSession,
@@ -299,6 +319,8 @@ export function createAutomatedHandProgression({
   }));
   const initialState = session.getState();
   requireFreshHandStart(initialState);
+  if (opponentAssignments !== null && opponentPractice !== null) throw new RangeError('Supply assignments or a practice request, not both');
+  const practiceRequest = opponentPractice === null ? null : validateOpponentPracticeRequest(opponentPractice);
   requireNonEmptyString(heroPlayerId, 'heroPlayerId');
   if (!playerById(initialState, heroPlayerId)) throw new RangeError(`Unknown heroPlayerId: ${heroPlayerId}`);
   const normalizedHandSeed = requireUint32(handSeed, 'handSeed');
@@ -309,18 +331,26 @@ export function createAutomatedHandProgression({
       'stream:physical-cards',
     ])
     : requireUint32(chanceSeed, 'chanceSeed');
-  if (!Number.isSafeInteger(maxAutomatedTransitions) || maxAutomatedTransitions < 1) {
+  // Custom minimum-raise policies can legitimately outlast the old 256-event
+  // baseline cap at 500bb. Money-moving actions spend at least one chip unit;
+  // checks/folds, street deals and reveals have a separate bounded allowance.
+  const transitionBudget = maxAutomatedTransitions ?? (practiceRequest === null
+    ? DEFAULT_MAX_AUTOMATED_TRANSITIONS
+    : initialState.players.reduce((sum, player) => sum + player.startingStackMilliBb / initialState.game.chipUnitMilliBb, 0)
+      + initialState.players.length * 6 + 16);
+  if (!Number.isSafeInteger(transitionBudget) || transitionBudget < 1) {
     throw new RangeError('maxAutomatedTransitions must be a positive safe integer');
   }
 
   const assignments = normalizeAssignments(
     initialState,
     heroPlayerId,
-    opponentAssignments ?? createBasicOpponentAssignments({
+    opponentAssignments ?? (opponentPractice === null ? createBasicOpponentAssignments({
       pokerState: initialState,
       heroPlayerId,
       handSeed: normalizedHandSeed,
-    }),
+    }) : createConfiguredOpponentAssignments({ pokerState: initialState, heroPlayerId,
+      handSeed: normalizedHandSeed, request: practiceRequest })),
   );
   session.configureHero({ heroPlayerId, decisionContextOptions });
   const assignmentsByPlayerId = new Map(
@@ -359,6 +389,7 @@ export function createAutomatedHandProgression({
       handSeed: normalizedHandSeed,
       chanceSeed: normalizedChanceSeed,
       assignments: [...assignments],
+      opponentPractice: practiceRequest,
       decisions: [...botDecisions],
     });
   };
@@ -405,11 +436,11 @@ export function createAutomatedHandProgression({
   };
 
   const requireTransitionBudget = () => {
-    if (automatedTransitionCount >= maxAutomatedTransitions) {
+    if (automatedTransitionCount >= transitionBudget) {
       throw new AutomatedProgressionError(
         AUTOMATED_HAND_PROGRESSION_ERROR_CODES.TRANSITION_LIMIT_EXCEEDED,
-        `Automated Hand exceeded its ${maxAutomatedTransitions}-transition limit`,
-        { maxAutomatedTransitions, automatedTransitionCount },
+        `Automated Hand exceeded its ${transitionBudget}-transition limit`,
+        { maxAutomatedTransitions: transitionBudget, automatedTransitionCount },
       );
     }
   };
@@ -571,17 +602,13 @@ export function createAutomatedHandProgression({
       );
     }
     const seatDecisionOrdinal = seatDecisionOrdinals.get(actor.seat);
-    const replaySourceBefore = session.createCanonicalHandReplaySource();
     const canonicalActionOrdinal = state.actionHistory.length;
-    const replayEventOrdinal = replaySourceBefore.events.length;
     const decisionSeed = deriveStableSeed([
       BOT_DECISION_RECORD_SCHEMA_VERSION,
-      `hand-seed:${normalizedHandSeed}`,
       `base-seed:${assignment.baseSeed}`,
       `seat:${actor.seat}`,
       `seat-decision:${seatDecisionOrdinal}`,
       `canonical-action:${canonicalActionOrdinal}`,
-      `replay-event:${replayEventOrdinal}`,
       assignment.policyId,
       assignment.policyVersion,
     ]);
@@ -589,7 +616,8 @@ export function createAutomatedHandProgression({
     let transition;
     try {
       requireTransitionBudget();
-      transition = applyOpponentPolicyAction({ session, policy, decisionSeed });
+      transition = applyOpponentPolicyAction({ session, policy, decisionSeed,
+        ownCards: schedule.holeCardsByPlayer[actor.playerId] });
       automatedTransitionCount += 1;
     } catch (error) {
       if (error instanceof AutomatedProgressionError) throw error;
@@ -619,6 +647,10 @@ export function createAutomatedHandProgression({
       sizingProvenance: transition.decision.sizingMetadata,
       selectionProvenance: transition.decision.selectionMetadata,
       policyProvenance: transition.decision.provenance,
+      policySchemaVersion: transition.decision.policySchemaVersion,
+      policyConfiguration: transition.decision.policyConfiguration,
+      actorInformation: transition.decision.actorInformation,
+      deterministicMetadata: transition.decision.deterministicMetadata,
       replayReference: {
         replaySourceSchemaVersion: replaySourceAfter.schemaVersion,
         replayEventSequence: replaySourceAfter.events.length - 1,

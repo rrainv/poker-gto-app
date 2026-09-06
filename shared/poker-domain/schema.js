@@ -1,8 +1,10 @@
 export const POKER_STATE_SCHEMA_VERSION = 'poker-state/v1';
 export const POKER_STATE_V2_SCHEMA_VERSION = 'poker-state/v2';
+export const POKER_STATE_V3_SCHEMA_VERSION = 'poker-state/v3';
 export const POKER_STATE_SCHEMA_VERSIONS = Object.freeze([
   POKER_STATE_SCHEMA_VERSION,
   POKER_STATE_V2_SCHEMA_VERSION,
+  POKER_STATE_V3_SCHEMA_VERSION,
 ]);
 export const POKER_ACTION_SCHEMA_VERSION = 'poker-action/v1';
 export const POKER_ACTION_RECORD_SCHEMA_VERSION = 'poker-action-record/v1';
@@ -69,12 +71,14 @@ export const LEDGER_KINDS = Object.freeze({
   ACTION: 'action',
   UNCALLED_REFUND: 'uncalled_refund',
   POT_AWARD: 'pot_award',
+  RECORDED_RAKE: 'recorded_rake',
 });
 
 export const LEDGER_MOVEMENTS = Object.freeze({
   STACK_TO_POT: 'stack_to_pot',
   STACK_TO_DEDUCTION: 'stack_to_deduction',
   POT_TO_STACK: 'pot_to_stack',
+  POT_TO_RECORDED_RAKE: 'pot_to_recorded_rake',
 });
 
 export const CLUBGG_FORCED_CONTRIBUTION_MILLI_BB = 100;

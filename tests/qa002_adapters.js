@@ -26,6 +26,9 @@ const STRATEGY_ASSESSMENT_POLICY_PATH = path.join(
 const STRATEGY_TRUTH_PATH = path.join(
   REPO_ROOT, 'app', 'src', 'application', 'strategy-truth.mjs',
 );
+const REFERENCE_COVERAGE_PATH = path.join(
+  REPO_ROOT, 'app', 'src', 'application', 'reference-coverage.mjs',
+);
 const STRATEGY_PROVIDER_PATH = path.join(
   REPO_ROOT, 'app', 'src', 'application', 'strategy-provider.mjs',
 );
@@ -89,6 +92,12 @@ function createHarness() {
   const strategySourceAuthoritySource = moduleSource(STRATEGY_SOURCE_AUTHORITY_PATH);
   const strategyAssessmentPolicySource = moduleSource(STRATEGY_ASSESSMENT_POLICY_PATH);
   const strategyClaimPolicySource = moduleSource(STRATEGY_CLAIM_POLICY_PATH);
+  const selectedReferenceFactsSource = moduleSource(REFERENCE_COVERAGE_PATH).match(
+    /function selectedReferenceFacts\([\s\S]*$/,
+  )?.[0];
+  if (!selectedReferenceFactsSource) {
+    throw new Error('Could not extract canonical selected-reference projection');
+  }
   const strategyTruthSource = moduleSource(STRATEGY_TRUTH_PATH);
   const strategyContractSource = moduleSource(STRATEGY_RESULT_PATH);
   const strategyProviderSource = moduleSource(STRATEGY_PROVIDER_PATH);
@@ -202,6 +211,7 @@ function createHarness() {
     ${strategyAssessmentPolicySource}
     ${strategyClaimPolicySource}
     const freeze = freezeAssessmentData;
+    ${selectedReferenceFactsSource}
     ${strategyTruthSource}
     ${strategyProviderSource}
     const CARD_RANKS = '23456789TJQKA';
