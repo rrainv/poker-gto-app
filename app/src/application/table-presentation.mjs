@@ -34,20 +34,26 @@ const ACTION_ORDER = Object.freeze(['fold', 'check', 'call', 'bet', 'raise', 'al
 const AGGRESSIVE_ACTIONS = new Set(['bet', 'raise', 'all_in']);
 
 const ANCHORS_BY_PLAYER_COUNT = Object.freeze({
-  2: Object.freeze([[0.50, 0.85], [0.50, 0.09]]),
-  3: Object.freeze([[0.50, 0.85], [0.18, 0.20], [0.82, 0.20]]),
-  4: Object.freeze([[0.50, 0.85], [0.12, 0.48], [0.50, 0.09], [0.88, 0.48]]),
-  5: Object.freeze([[0.50, 0.85], [0.16, 0.62], [0.22, 0.18], [0.78, 0.18], [0.84, 0.62]]),
-  6: Object.freeze([[0.50, 0.85], [0.17, 0.66], [0.17, 0.23], [0.50, 0.09], [0.83, 0.23], [0.83, 0.66]]),
-  7: Object.freeze([[0.50, 0.84], [0.22, 0.76], [0.10, 0.45], [0.24, 0.14], [0.76, 0.14], [0.90, 0.45], [0.78, 0.76]]),
-  8: Object.freeze([[0.50, 0.84], [0.22, 0.76], [0.10, 0.47], [0.24, 0.15], [0.50, 0.07], [0.76, 0.15], [0.90, 0.47], [0.78, 0.76]]),
-  9: Object.freeze([[0.50, 0.84], [0.25, 0.79], [0.09, 0.56], [0.12, 0.27], [0.34, 0.09], [0.66, 0.09], [0.88, 0.27], [0.91, 0.56], [0.75, 0.79]]),
-  10: Object.freeze([[0.50, 0.84], [0.26, 0.80], [0.09, 0.59], [0.09, 0.33], [0.27, 0.13], [0.50, 0.06], [0.73, 0.13], [0.91, 0.33], [0.91, 0.59], [0.74, 0.80]]),
+  2: Object.freeze([[.50, .84], [.50, .20]]),
+  3: Object.freeze([[.50, .84], [.23, .27], [.77, .27]]),
+  4: Object.freeze([[.50, .84], [.14, .49], [.50, .17], [.86, .49]]),
+  5: Object.freeze([[.50, .84], [.15, .65], [.24, .25], [.76, .25], [.85, .65]]),
+  6: Object.freeze([[.50, .84], [.14, .68], [.20, .28], [.50, .17], [.80, .28], [.86, .68]]),
+  7: Object.freeze([[.50, .84], [.20, .72], [.10, .46], [.26, .23], [.74, .23], [.90, .46], [.80, .72]]),
+  8: Object.freeze([[.50, .84], [.20, .72], [.10, .49], [.24, .25], [.50, .16], [.76, .25], [.90, .49], [.80, .72]]),
+  9: Object.freeze([[.50, .84], [.23, .73], [.09, .57], [.13, .33], [.35, .18], [.65, .18], [.87, .33], [.91, .57], [.77, .73]]),
+  10: Object.freeze([[.50, .84], [.23, .73], [.09, .60], [.10, .37], [.28, .22], [.50, .16], [.72, .22], [.90, .37], [.91, .60], [.77, .73]]),
 });
+
+// Shared by canonical Hand, Scenario rendering and presentation audits.
+export function tableSeatAnchors(playerCount) {
+  tableGeometryFamily(playerCount);
+  return ANCHORS_BY_PLAYER_COUNT[playerCount].map(([x, y]) => Object.freeze([x, y]));
+}
 
 const FAMILY_SPECIFICATIONS = Object.freeze({
   [TABLE_GEOMETRY_FAMILIES.HU]: Object.freeze({
-    tableBounds: Object.freeze([0.05, 0.14, 0.90, 0.66]),
+    tableBounds: Object.freeze([0.22, 0.25, 0.56, 0.50]),
     playerUnit: Object.freeze({ width: 150, height: 78 }),
     cardScale: 1.25,
     cardOverlap: 0.36,
@@ -56,7 +62,7 @@ const FAMILY_SPECIFICATIONS = Object.freeze({
     dealerFraction: 0.54,
   }),
   sparse_large: Object.freeze({
-    tableBounds: Object.freeze([0.05, 0.16, 0.90, 0.62]),
+    tableBounds: Object.freeze([0.09, 0.22, 0.82, 0.56]),
     playerUnit: Object.freeze({ width: 138, height: 74 }),
     cardScale: 1.15,
     cardOverlap: 0.22,
@@ -65,7 +71,7 @@ const FAMILY_SPECIFICATIONS = Object.freeze({
     dealerFraction: 0.54,
   }),
   sparse_five: Object.freeze({
-    tableBounds: Object.freeze([0.05, 0.15, 0.90, 0.64]),
+    tableBounds: Object.freeze([0.07, 0.21, 0.86, 0.57]),
     playerUnit: Object.freeze({ width: 122, height: 70 }),
     cardScale: 1,
     cardOverlap: 0.28,
@@ -74,7 +80,7 @@ const FAMILY_SPECIFICATIONS = Object.freeze({
     dealerFraction: 0.54,
   }),
   [TABLE_GEOMETRY_FAMILIES.SIX_MAX]: Object.freeze({
-    tableBounds: Object.freeze([0.05, 0.14, 0.90, 0.66]),
+    tableBounds: Object.freeze([0.06, 0.21, 0.88, 0.57]),
     playerUnit: Object.freeze({ width: 122, height: 70 }),
     cardScale: 1,
     cardOverlap: 0.24,
@@ -83,7 +89,7 @@ const FAMILY_SPECIFICATIONS = Object.freeze({
     dealerFraction: 0.54,
   }),
   [TABLE_GEOMETRY_FAMILIES.FULL_RING]: Object.freeze({
-    tableBounds: Object.freeze([0.05, 0.13, 0.90, 0.67]),
+    tableBounds: Object.freeze([0.05, 0.20, 0.90, 0.58]),
     playerUnit: Object.freeze({ width: 104, height: 62 }),
     cardScale: 0.88,
     cardOverlap: 0.14,
@@ -165,6 +171,16 @@ function absoluteBounds(bounds) {
     width: bounds[2] * COORDINATE_SPACE.width,
     height: bounds[3] * COORDINATE_SPACE.height,
   };
+}
+
+export function createTableGeometryProfile(playerCount, hasBoard = false) {
+  const family = tableGeometryFamily(playerCount), specification = familySpecification(playerCount, family);
+  return deepFreeze({ geometryFamily: family, geometryTemplate: `${family}-${playerCount}`,
+    geometry: { coordinateSpace: COORDINATE_SPACE, tableBounds: absoluteBounds(specification.tableBounds),
+      playerUnit: specification.playerUnit, cardScale: specification.cardScale, cardOverlap: specification.cardOverlap,
+      boardScale: specification.boardScale, contributionFraction: specification.contributionFraction,
+      physicality: TABLE_PHYSICALITY, potAnchor: { x: .5, y: hasBoard ? .43 : .48 } },
+  });
 }
 
 function latestRelevantPlayerId(tablePresence, visualState) {
@@ -306,7 +322,9 @@ export function createTablePresentation({
       throw new RangeError(`Missing geometry anchor for visual seat ${seat.visualSeatIndex}`);
     }
     const anchor = { x: anchorValues[0], y: anchorValues[1] };
-    const prominence = prominenceForSeat(seat, relevantPlayerId);
+    const prominence = tablePresence.status === 'setup_preview'
+      ? seat.isHero ? 'hero' : 'live'
+      : prominenceForSeat(seat, relevantPlayerId);
     const rolePresentation = ROLE_PRESENTATION[prominence];
     return {
       playerId: seat.playerId,
@@ -351,17 +369,7 @@ export function createTablePresentation({
     timelineMode: projection === TABLE_PROJECTIONS.REVIEW ? 'review' : 'compact',
     timeline: immutableTimeline,
     sizingTarget: PROJECTION_SIZING[projection],
-    geometry: {
-      coordinateSpace: COORDINATE_SPACE,
-      tableBounds: absoluteBounds(specification.tableBounds),
-      playerUnit: specification.playerUnit,
-      cardScale: specification.cardScale,
-      cardOverlap: specification.cardOverlap,
-      boardScale: specification.boardScale,
-      contributionFraction: specification.contributionFraction,
-      physicality: TABLE_PHYSICALITY,
-      potAnchor,
-    },
+    geometry: createTableGeometryProfile(playerCount, tablePresence.board.length > 0).geometry,
     decisionDock: {
       available: decisionAvailable,
       locked: decisionAvailable && submissionLocked === true,

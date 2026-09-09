@@ -1,5 +1,291 @@
 # Riverline persistent QA backlog
 
+## HAND-PREQA-001 - full-gate correction, September 9, 2026
+
+**EXACT FULL NODE GATE GREEN.** This continuation corrects the five reported
+failures after `BETA-HAND-PRE-QA-CORRECTION-001`. It does not close independent
+human Beta QA, reopen accepted accounting, or change presentation direction.
+
+- Classification before fixes: `ui_poker_primitives001` **B, stale source shape**;
+  `table_physicality003` **B, stale source shape** (both asserted the old lane
+  visibility expression); `replay_rail_nav001_correction` **B, stale source shape**
+  (hard-coded maximum instead of canonical definition maximum);
+  `explain_panel_interaction001` **D, environment-sensitive input harness**;
+  `i18n001_runtime_integrity` **E, missing product localization**.
+- Contribution tests execute renderer updates and verify exact amount writes,
+  nonzero/zero visibility, ante-only lanes, separate blind/ante/voluntary labels,
+  collection hiding, and reset removal. Physicality tests execute the shared
+  primitives and retain distinct restrained remaining-stack/contribution/pot
+  groups and one amount per group. Accepted product rendering is unchanged.
+- Player-count tests execute the owning validation, selector synchronization and
+  Start functions against the canonical controller. Invalid raw input is retained,
+  marked invalid, disables Start and never reaches initialization. No-collection
+  2-10 and fixed-collection 7-10 limits remain canonical; no clamping was added.
+- Explain failed the unchanged isolation test four times. Temporary probes showed
+  real overflow (758px scroll height / 298px client height), owned hit targets and
+  working nested clicks, but no wheel event from native Electron sendInputEvent
+  in its hidden Windows window. Mouse movement, unthrottling, wheel fields and
+  offscreen probes did not restore delivery; Chromium Input.dispatchMouseEvent
+  delivered a real wheel event and scrolled the same fixture by 180px. The worker
+  now uses that browser input path with scroll/toggle completion events and bounded
+  failure deadlines, not fixed sleeps. It asserts wheel delivery and actual panel
+  scrolling. Missing worker evidence now fails rather than passing CSS assertions.
+  Three consecutive corrected isolation runs passed, followed by the focused set
+  and default-concurrency full gate. No product Explain CSS was changed.
+- The new voluntary contribution caption in `TableRenderer.js` calls the existing
+  translation system for `Action`. Added Russian and Hebrew translations; the
+  catalog generates the English entry from its existing key union. Runtime tests
+  verify EN/RU/HE. The bounded accepted fallback list was not expanded.
+- Verification: all five affected files together **44 passed / 0 failed**; syntax
+  checks passed for all seven changed JS/MJS/CJS files; `git diff --check` passed.
+  Exact command `node --test tests/*.test.js tests/*.test.mjs` finished with
+  **2533 passed / 0 failed / 0 skipped**, 223410.2502ms, default concurrency.
+  Explain passed inside that run (3426.6979ms). Log:
+  `C:/Users/sjzns/AppData/Local/Temp/riverline-hand-preqa-fullgate-correction.log`.
+- Correction files (8): `app/src/locales/product-translations.js`;
+  `tests/ui_poker_primitives001.test.mjs`, `tests/table_physicality003.test.mjs`,
+  `tests/replay_rail_nav001_correction.test.mjs`,
+  `tests/explain_panel_interaction001.test.mjs`,
+  `tests/i18n001_runtime_integrity.test.mjs`,
+  `tests/tooling/explain_panel_interaction001_worker.cjs`; this backlog.
+  All unrelated prior work is preserved. Nothing staged or committed.
+
+## BETA-HAND-PRE-QA-CORRECTION-001 - September 8, 2026
+
+**IMPLEMENTED / FOCUSED FIREFOX VERIFIED; INDEPENDENT HUMAN BETA QA REMAINS SEPARATE.**
+This correction does not reopen the accepted BETA-BLOCKER repair or close other QA IDs.
+
+- Ante Hands show canonical posted blind/ante amounts on the existing contribution
+  anchors; voluntary street payments have a separate Action caption. No-ante felt
+  markers retain their existing presentation. Players and contributions exposes
+  the forced-payment breakdown. Replay initialization remains a transition, with
+  no invented voluntary ante action. Canonical accounting files are unchanged.
+- Hand's Home/ClubGG Game mode selector is replaced by Rake / collection: none or
+  fixed collection, with the existing 0.1 bb/player outside-pot contract and 7-10
+  seat limit read from canonical definitions. Ante controls remain explicit.
+  Old gameMode inputs use the existing compatibility adapter without data migration.
+- The reported Hero-fold disable condition was **not reproduced in the current
+  live path before edits**: Firefox already enabled the pending river randomizer
+  with Hero folded and both opponents all-in. No Hero-dependent root cause is
+  claimed. Availability now has an explicit pending-public-chance/card-pool/busy
+  projection, the button visibly says Random River, and invocation rejects
+  read-only Replay. Unit and mounted checks protect folded/all-in Hero runouts,
+  terminal/no-chance rejection, draft-only changes, and committed board/history.
+  If the human issue recurs, the next QA owner should retain its exact interaction
+  path and Replay/live state; this ticket does not claim that unidentified path fixed.
+- Verification: 87 focused tests passed; changed JS/MJS syntax and git diff --check
+  passed. No full Node suite or solver run. Firefox at 1920x1080, 100%, Daylight:
+  actual setup/start with fixed collection, initialized five-seat BBA, folded-Hero
+  Random River -> Commit, Replay read-only and return-to-live all passed, zero page
+  errors. Final screenshots were inspected; artifacts:
+  `C:/Users/sjzns/AppData/Local/Temp/riverline-hand-preqa-AVnaKr/`.
+  Reproduce with `node tests/tooling/verify_hand_preqa001_firefox.mjs`.
+- Ticket files (16): `app/index.html`; application `canonical-live-controller.mjs`,
+  `hand-setup-rules.mjs`, `hand-pending-randomization.mjs`,
+  `playbook-mode-bootstrap.mjs`, `table-presence-view-model.mjs`; `core/logic.js`;
+  `ui/TableRenderer.js`, `ui/riverline-design.css`; `locales/product-translations.js`;
+  tests `hand_preqa001_correction.test.mjs`, `beta_design_correction002.test.mjs`,
+  `design006_playbook_workspace.test.mjs`, `tooling/verify_hand_preqa001_firefox.mjs`;
+  this backlog and `PRODUCT_SPEC.md`. All prior work outside this list is preserved.
+  Nothing staged or committed.
+
+## BETA-BLOCKER-REPAIR-001 — September 8, 2026
+
+**COMPLETE FOR THIS BOUNDED REPAIR; BROADER HUMAN BETA ACCEPTANCE REMAINS SEPARATE.**
+This bounded repair owns only AUD-01/02/03/04/05/13. It does not close the prior
+design-refresh owners, live cloud/RLS gates, or the later Beta Repair Sweep.
+
+- **AUD-01 P0 ? IMPLEMENTED:** approved correctness-first compatibility preserves
+  historical source inputs and rederives accounting centrally. The HU reproduction
+  is 3bb / 16.67% / SB102 / BB98 with no ante refund. Independent money tests cover
+  BBA, individual/short antes, folds, all-ins, side pots, ties and ordinary refunds.
+  Saved Hand v1/v2/v3 uses a pure current-Replay adapter; legacy exact Spots require
+  same-owner lineage or return unavailable. Current ante Spots use nested v3.
+  Recorded source settlement is immutable. Training frozen evidence remains raw
+  and incompatible exact reuse fails closed. No alternate old accounting engine.
+- **AUD-02 — IMPLEMENTED:** stack-exhausting calls remain canonical calls; exact
+  amount, all-in marker and raise-to checks still fail closed.
+- **AUD-03 — IMPLEMENTED:** Analyze/workspace exit and invalid Review models reuse
+  the existing teardown. Mounted Firefox verifies completed Review and imported
+  Review over a retained live Hand, direct and via Training, preserving exact Hand
+  state. Incomplete live Hands have no direct Review entry in the current product.
+- **AUD-04 — IMPLEMENTED / HUMAN ACCEPTANCE PENDING:** contained in-flow rail,
+  adaptive stage facts and laptop column reservations. Mounted Firefox checks
+  Daylight 2/6/10-max at 1366×768 and 1920×1080, 100%, with optional tutorial
+  skipped. Vertical page/rail scrolling remains available; no core horizontal
+  overflow. This does not certify broader subjective table physicality.
+- **AUD-05 — IMPLEMENTED:** bounded scheduled continuation and truthful completion;
+  executing scheduler covers upload 0/1/24/25/26/49/50/51/76 and download
+  0/1/499/500/501/999/1000/1001, fences, failures/retry and duplicate-run protection.
+- **AUD-13 — BASELINE EXPECTATIONS RECONCILED:** all seven audited failures were
+  stale implementation/visual expectations (B), including shared anchor ownership,
+  accepted Advanced Equity, inherited Personal grid, removed debug oval and
+  count-specific HU geometry. Distinct panels and opposing HU ownership replace
+  obsolete universal widths/gaps; exact full-suite evidence is in the ticket report.
+
+Reproduction/verification: `tests/beta_blocker_accounting.test.mjs`,
+`tests/beta_blocker_import.test.mjs`,
+`tests/beta_blocker_sync.test.mjs`, and
+`tests/tooling/verify_beta_blocker001_firefox.mjs` (real mounted app, temporary
+profile, local loopback server, screenshots). No real account/cloud interaction.
+
+## QA-BETA-DESIGN-CORRECTION-002
+
+**IMPLEMENTED / INDEPENDENT HUMAN BETA QA PENDING**, September 7, 2026.
+Owner: final broad design correction; remaining subjective polish and reproduced
+defects move to the bounded Beta Repair Sweep. **Design direction is frozen.**
+No earlier QA or Return owner is closed. Enabled browser/app inventory was empty;
+no running-app screenshots, viewport validation or visual acceptance are claimed.
+
+Implemented corrections: draft Hand projection plus renderer-ready handshake;
+shared per-count Hand/Scenario geometry and removal of inner construction guides;
+active Analyze result versus unavailable state; neutral analysis/evidence and
+warmer learning roles through the existing theme owner; subtle Equity identity
+edges, compact Matchup editing and card-first inspection; grouped Personal
+sentences and explicit exact-frequency evidence count; auto-flow Home, Welcome
+contrast/wrapping and quieter active navigation. Portraits remain **TEMPORARY
+BETA ART**, with a clean `opponentPortrait` asset seam and consistent framing.
+
+### Exact independent human checklist
+
+Use **Firefox, 1920×1080, 100% zoom**. Repeat the structural/overflow pass at
+**1366×768, 100%**; optional 1440×900 and 2560×1440. Capture full-window evidence
+and record language, theme, viewport, steps, expected/actual result for failures.
+
+| Surface | States / acceptance checks |
+|---|---|
+| Hand | Reload with Players=2 before Start: exactly Hero + one opponent, explicit preview, no cards/actions/pot. Change 2→6→10, Hero, button and stack: immediate preview, no Hand created. Start live 2-, 6-, 10-max; also inspect 3-, 4-, 8-max geometry. Hero/lower/top clearance, seat-owned cards, separate contributions/pot, dealer, fold/all-in/actor and accepted three-region layout. No dotted inner ellipse or center guide. |
+| Analyze | Unavailable/readiness and valid heuristic recommendation; active result/mix/qualification, structured facts, open/closed Explain, quiet provenance. Inspect 2- and 8-max table. Valid heuristic warning must not look disabled or imply solved/success evidence. |
+| Training | Full Hand idle lineup, change player count/Hero position; start live 8-max, change a portrait, advance and fold a player, then review. Identities readable, folded seats subdued, no preview cards/pot/actions or behavior changes from appearance. |
+| Equity | Empty 2-player input; calculate 3-player result. Resting identity edges versus keyboard/edit focus. Expand Ranges & runouts, edit an exact hand/range through its local disclosure, calculate, inspect every supported next-card group and focus/hover/click details. Partial/unknown labels remain visible. Check Ah after Hero As Ad / opponent Jh Th / board Kh Qh 3c 2h: category improves while Equity falls. Cancel/edit during scan and inspect turn→river; no stale output/internal IDs. |
+| Personal | Normal and long Understanding without a question use available width. Active Mapping question remains primary. Check grouped boundaries/patterns/unknowns/precision/conflicts and small coverage map; exact-frequency count includes explicit pure/exact mix, excludes dominant-only/estimates. Original sentences and Matrix editing remain accessible. |
+| Home | Empty Guest and existing real Recent/Saved content: sections pack upward, Recent adjacent/below study, no stranded lower-right section or invented continuation. |
+| Welcome | Fresh startup and manual reopen: headline/illustration/four paths, Enter Riverline → Home, suppression applies only to Welcome. Check secondary text, path contrast and RU/HE wrapping; close/Escape correctly. |
+| Themes / access | Repeat surface checks in Midnight, Daylight and a custom surface/accent/felt preview→save→edit→cancel→reload flow. Test EN/RU/HE/RTL; card/numeric tokens LTR. Tab/Enter/Space/Escape, focus return, unclipped rings/popovers, warnings/errors/disabled states, independent card suit/T/10 settings and reduced motion. Portrait duplicates remain decorative; identity controls have names. |
+
+### Bounded performance evidence and return path
+
+Reproduce CPU/asset inventory with `node tests/tooling/profile_beta_design002.mjs`.
+Node v26.5.1, median of seven 2,000-call batches after warmup:
+
+| Work | Measured time / size |
+|---|---|
+| Built-in feature-role derivation | 0.1412 ms/call |
+| Custom feature-role derivation | 0.3618 ms/call |
+| 10-seat idle lineup projection | 0.0160 ms/call |
+| Ten original PNGs, each 1254×1254 | 20,501,764 compressed bytes; 62,900,640 bytes decoded RGBA estimate (~60 MiB), excluding browser overhead |
+
+These are CPU measurements and an asset-size estimate, **not browser latency**.
+Read-only mounted-DOM audit found 49 detail nodes recreated on each same-card
+focus/hover/click (147 across three events). The correction reuses that detail;
+card-preference changes force refresh. Repeated identical SVG portrait `href`
+writes are removed; HTML lineup/picker images use async decode/lazy loading.
+This does not prove image decoding or reported intermittent lag is resolved.
+Geometry/lineup signatures, inactive Training guards, cancellation/stale fences
+and PERF-001 remain intact. No speculative theme/render scheduling rewrite.
+
+Beta Repair Sweep: record Firefox Performance traces with cold then warm assets
+for workspace switches, Hand count slider and action progression, Full Hand
+8/10-max roster/progression, live theme changes, Equity card edit/recalculate and
+Ranges opening/group/focus, Personal Understanding↔Mapping, Welcome→Home.
+Compare scripting, style/layout, paint and image decode; record long-task stacks
+and repeated listeners/work per action. Profile with and without the portrait
+requests in a local diagnostic session to isolate asset cost. Smaller delivery
+assets and final art replacement remain explicit follow-up, not accepted art.
+
+Verification: **203/203 focused tests**, then **27/27 affected checks** after the
+final geometry-parity/precision assertions and dead-guide cleanup (groups overlap).
+All **30** changed/new app/test JS/MJS files pass `node --check`; normal
+`git diff --check` passes. Coverage includes draft reload/input/canonical boundary,
+2–10 seat clearance, theme/custom lifecycle and contrast, mounted Equity/Personal,
+Welcome/Home, EN/RU/HE, focus, audio/reduced motion and PERF-001. No solver or
+full-repository suite; nothing staged or committed. Structural tests do not
+establish Firefox viewport fit or visual acceptance.
+
+### Earlier Beta acceptance owners
+
+`QA-BETA-FEATURE-SURFACE-REFRESH-001` — **IMPLEMENTED / HUMAN VISUAL QA PENDING**,
+owner `BETA-FEATURE-SURFACE-REFRESH-001` + theme hardening + `WELCOME-REFRESH-002`
++ visual bug sweep. The preceding bold identity is directionally accepted;
+this follow-up preserves it. Browser inventory has no enabled surfaces, so no
+running-app screenshot, viewport, pointer or visual acceptance is claimed.
+
+Run every row at **1920×1080 and 1366×768, 100% zoom**; optional 1440×900 and
+2560×1440. Repeat in Midnight, Daylight and a saved custom theme, EN/RU/HE with
+Hebrew RTL. Keep poker/card geometry LTR and localized UI in document direction.
+
+| Surface | Exact states and checks |
+|---|---|
+| Hand | 2-, 6-, 10-max, setup/live/review: Hero bottom; top and lower-side clearance; owned card backs; distinct pot, contributions, dealer, stack and action; all three Hand regions remain usable. Also inspect 3-, 4-, 8-max seat geometry. |
+| Analyze | 2- and 8-max recommendation + table; action/mix/source/qualification primary, facts secondary, Explain open/closed, range reachable. |
+| Training | Idle Full Hand at 8-max, then change Hero position, player count, stack, assistance and opponent target/preset/focus. Preview contains no cards/pot/actions. Start live 8-max, choose different portraits per seat, advance/fold/review; appearance does not alter policy. |
+| Equity | Empty 2-player input; 3-player result; expanded Ranges & runouts. Rename a player; inspect exact and known-only partial results, all next cards, every group, card focus/hover/click, and selected turn→river sequences. Ah after Hero As Ad / opponent Jh Th / board Kh Qh 3c 2h improves Hero's category while losing Equity. Cancel/edit during scan; no stale result or internal player IDs. |
+| Personal | Normal Understanding and long report without active mapping: use full available width. Active mapping: question left, understanding right, stacked when constrained. Coverage map labels known/estimated/unknown/conflict evidence; no fabricated frequencies/confidence. Coach has one primary question; context and exact Matrix editing remain available. |
+| Welcome | Fresh startup, Enter Riverline → Home, four explicit study paths, secondary Equity/Guide; checkbox affects only Welcome. Manual reopen/close/Escape returns correctly; no silent workspace selection or fake continuity. Home retains real data/empty states. |
+| Controls/themes | Tab/Enter/Space/Escape, disclosure focus return, portrait selects, next-card focus, long labels and popovers. Preview custom surface/accent/felt, duplicate/save/cancel/reload. Check card T/10 and suit themes independently. Reduced motion removes travel/lift; appearance has only the existing gated selection tick. |
+
+Automated follow-up: **180/180 focused tests** (including 219 feature-theme color
+combinations, 2–10 seat clearance, canonical lineup identity, mounted labels/map/
+idle behavior, Welcome, i18n, audio/motion and PERF-001). Structural evidence is
+not browser acceptance. All **24** changed/new JS/MJS files pass `node --check`;
+normal `git diff --check` passes. No full-repository or solver suite was run.
+Nothing staged or committed. Previous QA/Return IDs remain open with their owners.
+
+`QA-BETA-DESIGN-REFRESH-001` — **FIRST PASS REJECTED / BOLD DIRECTION ACCEPTED / DETAILED QA PENDING**,
+owner `BETA-DESIGN-REFRESH-001`. [Presentation scope](PRODUCT_SPEC.md): shared
+panel/readability grammar, projected actor/dealer context, fictional per-seat
+cast in Full Hand Training, full-width Ranges & runouts, shared card faces,
+Explain/Coach/Personal/Inbox hierarchy and restrained focus/motion states.
+September 7 browser inventory returned no enabled apps/browsers. No visual
+acceptance is claimed. Mounted tests cover EN/RU/HE cast selection, canonical
+seat binding, unchanged policy requests, stale-result cancellation, disclosure
+Escape/focus and existing Personal/Training/Hand/Equity flows. The correction
+adds forest/jade/brass identity, distinct game/study surfaces, stronger controls,
+ten original illustrated portraits, localized seat subtitles, prominent coaching
+and result hierarchy, and initially expanded Runout Explorer. All ten image
+assets were visually inspected; the running application was not.
+
+Bold-pass automated evidence: **50/50** initial table/component checks;
+**90/90** mounted portrait/Equity/localization/tutorial/theme/audio/motion/PERF
+checks after keeping the renderer free of audio calls; **45/45** final mounted
+portrait/table/integration/shell/components checks. Groups overlap. All **13**
+ticket JS/MJS files pass `node --check`; `git diff --check` passes with the
+repository's normal CRLF handling. These are not screenshot acceptance.
+
+Earlier structural-pass evidence: main affected regression group **293/293**; localization
+and tutorial group **31/31**; additional shell/components/opponent/Training
+group **58/58**; final mounted refresh/Advanced Equity/Exploit/documentation
+group **21/21** after corrections. These groups overlap. The unchanged 500bb
+always-raise stress case was explicitly excluded from the extra opponent run;
+the ordinary complete-hand replay and hidden-card counterfactuals passed.
+All **12** changed/new JS/MJS files passed `node --check`; `git diff --check`
+passed. No full-repository or solver suite was run. Nothing staged or committed.
+
+Exact visual QA, **1920×1080, 100% browser zoom**, Midnight, Balanced layout,
+comfortable density, expanded navigation. Capture one full-window screenshot
+per row; compare with the rejected pass. The new identity and game/study
+separation should be apparent immediately, within five seconds.
+
+| Workspace | Steps | Visual acceptance |
+|---|---|---|
+| Analyze | Open an existing decision, show its matrix and Explain; expand evidence/caveats, then Escape. | Large primary conclusion, recognizable active navigation, clear range/category colors, quieter caveats; no clipping or text/border collisions; Escape returns focus to the summary. |
+| Hand | Open a 6-max hand; deal/advance an action, inspect actor and dealer, then replay a folded/all-in state. | Rich felt and substantial rim; pot, stacks, action badges and dealer remain distinct; no card/label overlap or private-card disclosure; real/imported player identities remain intact; primary actions remain reachable. |
+| Training Full Hand | Start 6-max; open Table cast, assign Mika, Nova and Otto to different opponent seats; close it and play an action. Repeat at HU and 10-max; fold a seat and enter review. | Different faces, names and short subtitles coexist and survive actions; position, stack, current action and actor/fold state remain readable; Hero is excluded; portrait changes do not change behavior settings or grading. |
+| Equity | Enter Hero As Ad, opponent Kh Kd, board Qh Jh 2c; calculate. Open Ranges & runouts, change opponent to explicit range KK:1, calculate; inspect available turns and best five. Cancel a new run, then reopen the disclosure. | Hands/board/dead-card zones are distinct; main Equity is prominent with method/partial truth visible; Runout Explorer is expanded and feels like a focused workspace; selected cards/best five are clear; cancellation clears stale output and preserves the draft; opening alone does not calculate. |
+| Personal Strategy | Open an existing taught node and Coach prompt; inspect range insights, open supporting evidence, then enter the hand-teaching stage. | Primary question stands out; insight categories are recognizable; support/evidence is quieter; teaching controls and Matrix remain reachable without cropped text or a wall of equivalent cards. |
+
+Repeat representative rows at **1366×768** and a **1100px-wide desktop window**;
+table plus primary actions should fit without horizontal page scrolling. Check
+EN/RU/HE, RTL, Daylight and a custom theme; poker geometry stays LTR. Tab through
+navigation, cast selects, range controls and disclosures; verify visible focus,
+native Enter/Space and Escape return. Switch T/10 and two/four-color cards.
+With reduced motion enabled, verify no travel, hover lift or disclosure animation.
+With sound enabled, a character change has one neutral tick; mute, Study off or
+volume zero suppress it. Existing deals/actions retain their original foley;
+this correction adds no reward sounds. Portraits remain runtime appearance,
+not policy configuration or durable replay evidence. All other QA/Return IDs
+retain their status and owners.
+
 `QA-ADVANCED-EQUITY-001` — **PARTIAL / HUMAN ACCEPTANCE PENDING**, owner
 `ADVANCED-EQUITY-001` + `WEIGHTED-RANGE-EQUITY-001` + `RUNOUT-EXPLORER-001`.
 [Advanced Equity v1 and human matrix](ADVANCED_EQUITY_V1_SPEC.md): weighted joint

@@ -1070,6 +1070,14 @@
     ['What would change this?', 'Что изменит решение?', 'מה ישנה את ההחלטה?'],
     ['No unresolved coaching question in this selection.', 'В этой выборке нет неуточнённых вопросов для обучения.', 'אין שאלת לימוד פתוחה בבחירה הזאת.'],
   );
+  personalUnderstanding.push(
+    ['Range evidence', 'Данные о диапазоне', 'ראיות על הטווח'],
+    ['Exact-frequency evidence', 'Данные с точными частотами', 'ראיות עם תדירויות מדויקות'],
+    ['Hand classes by evidence status, not action frequencies or confidence.', 'Классы рук по статусу данных, а не частоты действий или уровень уверенности.', 'מחלקות ידיים לפי מצב הראיות, ולא תדירויות פעולה או רמת ביטחון.'],
+    ['Supported estimates', 'Обоснованные оценки', 'הערכות נתמכות'],
+    ['Tentative', 'Предварительные оценки', 'הערכות ראשוניות'],
+    ['Transferred', 'Перенесённые данные', 'ראיות מועברות'],
+  );
   for (const [key, russian, hebrew] of personalUnderstanding) {
     ru[key] = russian;
     he[key] = hebrew;

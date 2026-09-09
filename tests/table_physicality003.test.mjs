@@ -1,4 +1,5 @@
 import test from 'node:test';
+import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
@@ -87,8 +88,6 @@ test('felt, rail, depth, seats, cards, and the center pot render as one layered 
     'id="table-cushion"',
     'id="table-surface"',
     'id="table-felt-texture"',
-    'id="table-betting-line"',
-    'id="table-pot-zone"',
     "id: 'table-pot'",
     'id="table-contributions-layer"',
     'id="seats-layer"',
@@ -140,8 +139,19 @@ test('remaining stacks, contributions, and the central pot use distinct restrain
   assert.match(renderer, /id: `contribution-\$\{i\}`[\s\S]*?visualVariant: 'contribution'/);
   assert.match(renderer, /id: 'table-pot'[\s\S]*?visualVariant: 'pot'/);
   assert.equal((renderer.match(/id: `contribution-\$\{i\}`/g) || []).length, 1);
-  assert.match(renderer, /contributionLane\?\.toggleAttribute\('hidden', !isVisible\)/);
-  assert.match(renderer, /player\.streetContributionMilliBb > 0/);
+  const context = {};
+  vm.runInNewContext(primitives, context);
+  const chip = context.RiverlinePokerPrimitives;
+  const remaining = chip.pokerAmountSvg({ chipStyle: 'stack', value: '98' });
+  const contribution = chip.pokerTableAmountSvg({ visualVariant: 'contribution', value: '1' });
+  const pot = chip.pokerTableAmountSvg({ visualVariant: 'pot', prefix: 'Pot', value: '2.5' });
+  assert.match(remaining, /poker-chip-stack--remaining/);
+  assert.match(contribution, /poker-table-amount--contribution/);
+  assert.match(pot, /poker-table-amount--pot/);
+  for (const [markup, count] of [[remaining, 3], [contribution, 2], [pot, 4]]) {
+    assert.equal((markup.match(/class="poker-chip-body"/g) || []).length, count, 'distinct bounded chip groups');
+    assert.equal((markup.match(/class="poker-amount-value"/g) || []).length, 1, 'one amount per group');
+  }
   assert.match(primitives, /poker-chip-stack--\$\{supportedVariant\}/);
   assert.match(primitives, /poker-table-amount-surface/);
   assert.match(primitives, /poker-amount-value/);

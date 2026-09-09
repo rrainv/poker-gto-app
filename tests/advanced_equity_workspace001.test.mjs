@@ -6,7 +6,9 @@ import { advancedEquityCopy as copy } from '../app/src/application/advanced-equi
 import { calculateEquityRequest } from '../app/src/application/advanced-equity-dispatch.mjs';
 setMaxListeners(0);
 class Element {
-  constructor(tag, doc) { this.tagName = tag; this.ownerDocument = doc; this.children = []; this.listeners = []; this._text = ''; this._value = null; }
+  constructor(tag, doc) { this.tagName = tag; this.ownerDocument = doc; this.children = []; this.listeners = []; this.dataset = {}; this._text = ''; this._value = null; }
+  querySelectorAll(selector) { return descendants(this).slice(1).filter(node => selector === '[data-display-player]' ? node.dataset.displayPlayer : node.tagName === selector); }
+  setAttribute(name, value) { this[name] = value; }
   set textContent(value) { this._text = String(value); this.children = []; }
   get textContent() { return this._text + this.children.map(child => child.textContent).join(' '); }
   set value(value) { this._value = String(value); }
@@ -59,13 +61,17 @@ test('card focus and click show best five; category improvement can lose all Equ
   const f = fixture(); await f.open();
   const path = descendants(f.root).find(node => node.tagName === 'input' && !node.type); path.value = 'Ah';
   await f.find('button', copy('selected')).fire('click');
-  const card = descendants(f.root).find(node => node.tagName === 'button' && node.textContent.startsWith('Ah ·'));
+  const card = descendants(f.root).find(node => node.tagName === 'button' && node.dataset.runout === 'Ah');
   assert.ok(card); assert.match(card.textContent, /0\.0%/); await card.fire('focus');
   assert.ok(f.root.textContent.includes(copy('three_of_a_kind')));
   assert.ok(f.root.textContent.includes(copy('behind')));
-  const tokens = descendants(f.root).filter(node => node.className?.includes('advanced-mini-card'));
+  const preview = descendants(f.root).find(node => node.className === 'advanced-equity-preview');
+  const tokens = descendants(preview).filter(node => node.className?.includes('advanced-mini-card'));
   assert.equal(tokens.length, 7); assert.equal(tokens.filter(node => node.tagName === 'strong').length, 5);
-  await card.fire('click'); assert.ok(f.root.textContent.includes(copy('hypothetical'))); f.view.dispose();
+  const firstChild = preview.children[0];
+  await card.fire('mouseenter'); await card.fire('click');
+  assert.equal(preview.children[0], firstChild, 'same card hover/focus/click reuses the detail DOM');
+  assert.ok(f.root.textContent.includes(copy('hypothetical'))); f.view.dispose();
 });
 test('Exploit range input cannot silently use the uniform unknown hand', async () => {
   let captured;

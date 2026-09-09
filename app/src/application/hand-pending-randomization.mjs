@@ -35,6 +35,13 @@ function pendingTarget(pendingChance) {
   return target ? { target, count: pendingChance.cardCount } : null;
 }
 
+export function canRandomizeHandPublicChance({ state, availableCards, readOnly = false, busy = false } = {}) {
+  if (readOnly || busy || state?.phase !== 'chance' || !state.pendingChance) return false;
+  const pending = pendingTarget(state.pendingChance);
+  return Boolean(pending && pending.target !== 'hero'
+    && Array.isArray(availableCards) && availableCards.length >= pending.count);
+}
+
 export function randomizeHandPendingDraft(request = {}) {
   if (request.schemaVersion !== HAND_PENDING_RANDOMIZATION_REQUEST_VERSION) {
     throw new TypeError('Unsupported Hand pending randomization request version');

@@ -140,12 +140,12 @@ test('held-out truth cannot leak into evidence view or inference', () => {
 
 test('one estimate, 169 snapshot, cache hit, and relevant-scope invalidation remain interactive', async () => {
   const performance = await benchmarkRangeCal002bProjection();
-  assert.ok(performance.oneEstimateMedianMs < 5);
+  assert.ok(performance.oneEstimateCpuMs < 5);
   assert.equal(performance.snapshotSampleCount, 5);
-  assert.ok(performance.snapshot169RepresentativeMs < 100);
-  assert.ok(performance.repeatedCachedSnapshotMs < performance.snapshot169Ms);
+  assert.ok(performance.snapshot169CpuMs < 100);
+  assert.equal(performance.cacheMetrics.cacheHits, 2);
   assert.equal(performance.invalidatedSnapshotSampleCount, 5);
-  assert.ok(performance.invalidatedSnapshotRepresentativeMs < 100);
+  assert.ok(performance.invalidatedSnapshotCpuMs < 100);
   assert.equal(performance.cacheMetrics.snapshotBuilds, 2);
   assert.equal(performance.cacheMetrics.invalidations, 1);
 });

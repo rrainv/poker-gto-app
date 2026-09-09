@@ -1,5 +1,6 @@
 import {
   createSavedStudyConflictCopy,
+  normalizeRemoteSavedAccounting,
   fromRemoteSavedStudyObject,
   prepareLocalConflictWinner,
   sameRemoteSavedStudyObject,
@@ -18,6 +19,7 @@ export function createSavedStudySyncDomainAdapter({
   }
   return Object.freeze({
     domain: 'saved_study_objects',
+    normalizeOperation: operation => ({ ...operation, object: normalizeRemoteSavedAccounting(operation.object) }),
     supports: (object) => ['hand', 'spot'].includes(object?.kind),
     async listLocalObjects() {
       return (await syncPort.listAll()).filter((object) => ['hand', 'spot'].includes(object.kind));

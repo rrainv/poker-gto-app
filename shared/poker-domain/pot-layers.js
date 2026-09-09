@@ -3,6 +3,7 @@ import { playersBySeat } from './positions.js';
 import {
   LEDGER_KINDS,
   POKER_POT_LAYER_SCHEMA_VERSION,
+  POKER_POT_LAYER_V2_SCHEMA_VERSION,
   POKER_STATE_SCHEMA_VERSION,
   POKER_STATE_SCHEMA_VERSIONS,
   POKER_STATE_V2_SCHEMA_VERSION,
@@ -31,13 +32,20 @@ function effectiveContributionsBySeat(state) {
       );
     }
   }
+  const anteByPlayerId = new Map();
+  for (const entry of state.ledger) {
+    if (entry.kind === LEDGER_KINDS.ANTE) {
+      anteByPlayerId.set(entry.playerId, (anteByPlayerId.get(entry.playerId) || 0) + entry.amountMilliBb);
+    }
+  }
   return playersBySeat(state.players).map((player) => {
+    const anteMilliBb = anteByPlayerId.get(player.playerId) || 0;
     const amountMilliBb = player.totalPotContributionMilliBb
-      - refundedByPlayerId.get(player.playerId);
+      - refundedByPlayerId.get(player.playerId) - anteMilliBb;
     if (!Number.isSafeInteger(amountMilliBb) || amountMilliBb < 0) {
       throw new RangeError(`Refunds exceed gross pot contribution for ${player.playerId}`);
     }
-    return { player, amountMilliBb };
+    return { player, amountMilliBb, anteMilliBb };
   });
 }
 
@@ -104,7 +112,41 @@ export function deriveUnmatchedContribution(state, recipientPlayerId = null) {
 
 export function derivePotLayers(state) {
   const contributions = effectiveContributionsBySeat(state);
-  return deepFreeze(potLayersFromContributions(contributions));
+  const layers = potLayersFromContributions(contributions);
+  const anteMilliBb = contributions.reduce((sum, entry) => sum + entry.anteMilliBb, 0);
+  const antePools = [];
+  if (anteMilliBb > 0 && state.game.ante.type === 'per_player') {
+    let floor = 0;
+    const thresholds = [...new Set(contributions.map(entry => entry.anteMilliBb).filter(Boolean))].sort((a, b) => a - b);
+    for (const ceiling of thresholds) {
+      const funders = contributions.filter(entry => entry.anteMilliBb >= ceiling);
+      antePools.push({ amount: (ceiling - floor) * funders.length, funders });
+      floor = ceiling;
+    }
+  } else if (anteMilliBb > 0) {
+    // A BBA funds the shared ante for the table, including ante-only all-ins.
+    antePools.push({ amount: anteMilliBb, funders: contributions });
+  }
+  const deadLayers = [];
+  for (const pool of antePools) {
+    const eligiblePlayerIds = pool.funders.filter(entry => isPlayerLive(entry.player))
+      .map(entry => entry.player.playerId);
+    // Combine identical eligibility before splitting odd chips.
+    const index = layers.findIndex(layer => sameIds(layer.eligiblePlayerIds, eligiblePlayerIds));
+    if (index >= 0) {
+      layers[index] = { ...layers[index], schemaVersion: POKER_POT_LAYER_V2_SCHEMA_VERSION,
+        amountMilliBb: layers[index].amountMilliBb + pool.amount,
+        anteMilliBb: (layers[index].anteMilliBb || 0) + pool.amount };
+    } else {
+      deadLayers.push({ schemaVersion: POKER_POT_LAYER_V2_SCHEMA_VERSION,
+        amountMilliBb: pool.amount, anteMilliBb: pool.amount,
+        contributionFloorMilliBb: 0, contributionCeilingMilliBb: 0,
+        contributorPlayerIds: pool.funders.filter(entry => entry.anteMilliBb > 0)
+          .map(entry => entry.player.playerId), eligiblePlayerIds });
+    }
+  }
+  layers.unshift(...deadLayers);
+  return deepFreeze(layers);
 }
 
 function sameIds(left, right) {
@@ -116,6 +158,7 @@ function sameIds(left, right) {
 
 function samePotLayer(left, right) {
   return left.schemaVersion === right.schemaVersion
+    && left.anteMilliBb === right.anteMilliBb
     && left.amountMilliBb === right.amountMilliBb
     && left.contributionFloorMilliBb === right.contributionFloorMilliBb
     && left.contributionCeilingMilliBb === right.contributionCeilingMilliBb
@@ -142,6 +185,18 @@ export function validatePotAccounting(state, accounting) {
   let contestablePotMilliBb = 0;
 
   for (const layer of accounting.potLayers) {
+    if (layer?.schemaVersion === POKER_POT_LAYER_V2_SCHEMA_VERSION) {
+      // v2 dead-money funding/eligibility is checked against canonical ledger
+      // derivation below; it is deliberately not a matched-wager threshold.
+      if (!Number.isSafeInteger(layer.amountMilliBb) || layer.amountMilliBb <= 0
+        || !Number.isSafeInteger(layer.anteMilliBb) || layer.anteMilliBb <= 0
+        || layer.amountMilliBb % state.game.chipUnitMilliBb !== 0) {
+        throw new RangeError('Ante layer requires positive aligned funding');
+      }
+      previousCeilingMilliBb = layer.contributionCeilingMilliBb;
+      contestablePotMilliBb += layer.amountMilliBb;
+      continue;
+    }
     if (!layer || layer.schemaVersion !== POKER_POT_LAYER_SCHEMA_VERSION) {
       throw new TypeError(`Expected ${POKER_POT_LAYER_SCHEMA_VERSION}`);
     }

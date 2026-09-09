@@ -130,6 +130,25 @@ Reference, Personal Strategy, observed behavior, opponent model, inference, and 
 
 Result summaries remain concise, with deeper supported facts available through a consistent disclosure pattern. Essential next actions, errors, provenance warnings, and accessibility information cannot be hidden merely to reduce visual density.
 
+The refreshed study disclosures retain native summary Enter/Space behavior.
+Escape closes the innermost open detail and returns focus to its summary;
+presentation drafts remain intact. Closing Ranges & runouts additionally cancels
+its calculation and fences stale output through the existing controller. Merely
+opening details, changing a cast identity or repainting cards does not calculate
+Equity, resolve strategy, save intention or grade a decision.
+
+### Fictional table identities
+
+In synthetic Full Hand Training, **Table cast** selects appearance independently
+for each canonical opponent seat. The short name, original portrait and non-strategic
+descriptor do not describe playing tendencies. **Opponent** settings still own
+the exact behavior preset/parameters and supported all-opponents/BB target.
+Several different appearances may share the same behavior. Native selects and
+the roster labels remain available in EN/RU/HE; table geometry stays LTR.
+Actor and Dealer labels come only from the current projection, with no inferred
+dealer or invented turn. Selection repaints names and accessible descriptions
+without rerendering private cards or invoking domain services.
+
 ## Cross-surface applicability
 
 | Shared concept | Hand / Replay | Analyze | Training | Equity | Personal Strategy | Saved / Home | Home Game |
@@ -167,11 +186,11 @@ The shared behavior is:
 
 | Consumer | Classification | Reason / owner |
 |---|---|---|
-| Equity | DEFERRED — applicable | Primary concrete-out and runout consumer; owned by [Equity and Hand Analysis](capabilities/EQUITY_HAND_ANALYSIS.md). |
+| Equity | IMPLEMENTED — bounded Advanced Equity runout results; human QA pending | Shared card faces, conditional Equity and hypothetical best-five inspection; no new classification authority. |
 | Analyze | DEFERRED — applicable when concrete outs/runouts exist | Reuses the same outcome contract; no renderer ranking logic. |
 | Deep Hand Review | DEFERRED — applicable | Supports selected hypothetical runout inspection without rewriting Replay. |
 | Training post-answer analysis | DEFERRED — applicable | Available only after an answer when supported facts expose concrete outs. |
-| Runout Explorer | DEFERRED — applicable | Natural full consumer of the same hypothetical-state contract. |
+| Runout Explorer | IMPLEMENTED — bounded; human QA pending | Focus/hover/click inspect existing result facts. Grouping preserves category/Equity distinctions and unavailable facts. |
 | Personal Strategy Matrix | NOT APPLICABLE | Ordinary preflop evidence inspection has no concrete board/runout outcome to preview. |
 
 ## Ownership and extension checklist

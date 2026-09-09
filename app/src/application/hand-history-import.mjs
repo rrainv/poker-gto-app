@@ -124,7 +124,8 @@ export function reconstructImportedHand(request, handId) {
         if (event.type === 'bet' && before.currentBetMilliBb !== 0) throw failure('bet_amount', line);
         if (event.type === 'raise' && (before.currentBetMilliBb === 0 || event.amountMilliBb <= before.currentBetMilliBb)) throw failure('raise_amount', line);
         if (event.type === 'raise' && event.amountMilliBb - before.currentBetMilliBb !== event.incrementMilliBb) throw failure('raise_amount', line);
-        const type = event.allIn ? 'all_in' : event.type;
+        // Stack exhaustion annotates a call; only bets/raises use aggressive all_in.
+        const type = event.allIn && event.type !== 'call' ? 'all_in' : event.type;
         session.applyAction(createAction(event.playerId, type, ['raise', 'bet'].includes(type) ? event.amountMilliBb : null));
         const record = session.getState().actionHistory.at(-1);
         if (event.allIn && ['raise', 'bet'].includes(event.type) && record.streetContributionAfterMilliBb !== event.amountMilliBb) throw failure('allin_amount', line);

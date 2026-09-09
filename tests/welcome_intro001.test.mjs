@@ -253,7 +253,7 @@ test('Welcome uses semantic headings, native buttons and checkbox, visible focus
   const welcome = html.slice(html.indexOf('id="welcomeOrientation"'), html.indexOf('class="shell workspace-canvas"'));
   assert.match(welcome, /<h1 id="welcomeTitle"/);
   assert.match(welcome, /<h2 id="welcomeJobsTitle"/);
-  assert.equal((welcome.match(/class="welcome-job-card" type="button"/g) ?? []).length, 5);
+  assert.equal((welcome.match(/class="welcome-job-card" type="button"/g) ?? []).length, 4);
   assert.match(welcome, /id="welcomeRememberChoice" type="checkbox"/);
   assert.match(welcome, /aria-labelledby="welcomeTitle" aria-describedby="welcomeDescription"/);
   assert.match(welcome, /id="welcomeOrientation"[^>]+tabindex="-1"/);
@@ -268,11 +268,13 @@ test('Welcome uses semantic headings, native buttons and checkbox, visible focus
   assert.doesNotMatch(bootstrap, /heading\?\.focus/);
 });
 
-test('five primary cards keep deliberate 3+2 wide and 2+2+1 constrained-desktop balance', () => {
-  assert.match(css, /welcome-job-grid[\s\S]*grid-template-columns: repeat\(6/);
-  assert.match(css, /welcome-job-card:nth-child\(n \+ 4\) \{ grid-column: span 3/);
-  assert.match(css, /@media \(max-width: 1180px\)[\s\S]*welcome-job-grid \{ grid-template-columns: repeat\(2/);
-  assert.match(css, /welcome-job-card:last-child \{ grid-column: 1 \/ -1/);
-  assert.match(css, /width: min\(100%, 1420px\)/);
-  assert.match(css, /@media \(max-height: 800px\) and \(min-width: 821px\)/);
+test('one primary Home entry accompanies four smaller paths and secondary Equity', async () => {
+  const refreshCss = await readFile(new URL('../app/src/ui/riverline-design.css', import.meta.url), 'utf8');
+  const welcome = html.slice(html.indexOf('id="welcomeOrientation"'), html.indexOf('class="shell workspace-canvas"'));
+  assert.equal((welcome.match(/ui-button--primary/g) ?? []).length, 1);
+  assert.match(welcome, /ui-button--primary welcome-enter[^>]*data-welcome-destination="home"/);
+  assert.match(welcome, /ui-button--quiet[^>]*data-welcome-destination="equity"/);
+  assert.match(refreshCss, /welcome-job-grid \{ grid-template-columns: repeat\(4/);
+  assert.match(refreshCss, /welcome-job-grid > \.welcome-job-card \{ grid-column: auto/);
+  assert.match(welcome, /welcome-table-scene" aria-hidden="true"/);
 });

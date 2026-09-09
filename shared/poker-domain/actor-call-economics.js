@@ -1,6 +1,6 @@
 import { deepFreeze } from './freeze.js';
 import { getLegalActionSpec } from './legal-actions.js';
-import { derivePotLayers } from './pot-layers.js';
+import { derivePotLayers, deriveUnmatchedContribution } from './pot-layers.js';
 import { POKER_ACTOR_CALL_ECONOMICS_SCHEMA_VERSION } from './schema.js';
 import { isPlayerLive } from './selectors.js';
 
@@ -47,6 +47,12 @@ export function deriveActorCallEconomics(state, actorPlayerId) {
     throw new RangeError('Actor-contestable pot cannot exceed the projected total pot');
   }
 
+  const ownRefund = projected => {
+    const unmatched = deriveUnmatchedContribution(projected, actorPlayerId);
+    return unmatched?.amountMilliBb ?? 0;
+  };
+  const incrementalRiskMilliBb = callCommitmentMilliBb
+    - (ownRefund(projectedState) - ownRefund(state));
   return deepFreeze({
     schemaVersion: POKER_ACTOR_CALL_ECONOMICS_SCHEMA_VERSION,
     actorPlayerId,
@@ -55,7 +61,7 @@ export function deriveActorCallEconomics(state, actorPlayerId) {
     actorContestablePotAfterCallMilliBb,
     actorIneligiblePotAfterCallMilliBb,
     requiredRawEquity: callCommitmentMilliBb > 0
-      ? callCommitmentMilliBb / actorContestablePotAfterCallMilliBb
+      ? incrementalRiskMilliBb / actorContestablePotAfterCallMilliBb
       : null,
   });
 }

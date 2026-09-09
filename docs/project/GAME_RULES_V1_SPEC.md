@@ -4,6 +4,28 @@ September 6 additive import extension: [Hand History Import v1](HAND_HISTORY_IMP
 defines opt-in Game Rules Definition/Snapshot v2, PokerState v3 and recorded pot
 rake settlement evidence. The v1 contracts and live behavior below remain unchanged.
 
+## September 8 accounting correction (AUD-01)
+
+Ante enters the pot but never establishes matched-wager or uncalled-refund
+thresholds. Canonical `pot-layers.js` subtracts actual ante ledger funding and
+prior refunds from gross contributions before deriving wager layers. BBA funds
+shared dead money for every live player, including an ante-only all-in. Individual
+antes use separately capped ante entitlement when a player posts short; folded
+funding remains in its pot. Neither ante form becomes a refundable wager.
+
+Ante-bearing layers use `poker-pot-layer/v2` with `anteMilliBb`; a pure ante layer
+has zero wager floor/ceiling. Wager-only layers retain v1 unchanged. Equal
+eligibility merges ante and wager funding before odd-chip splitting. A tied
+winner can receive zero chips in a layer smaller than the winner count; source
+recorded net awards still omit zero amounts. Refund recipient selection uses
+canonical net wager excess, never the largest gross contributor.
+
+PokerState v1/v2/v3 and Replay source/event v1/v2/v3 retain their structural
+versions. Every version executes corrected current rules. Historical Saved
+compatibility follows [Saved Study Objects](SAVED_STUDY_OBJECTS_SPEC.md), preserving
+source inputs rather than reproducing an incorrect old calculation. No broken
+legacy accounting implementation remains selectable.
+
 ## Purpose and boundary
 
 `GameRulesDefinition v1`, `GameRulesPreset v1`, and `GameRulesSnapshot v1` are Riverline's DOM-free mathematical game-rules contracts. They live in `shared/poker-domain/game-rules.js`; the current Home/ClubGG bridge lives in `shared/poker-domain/game-rules-compat.js`.
@@ -164,11 +186,11 @@ Initialization executes one shared posting path in this exact order:
 
 The canonical validator, selectors, betting/chance transitions, pot derivation, private reveal, and showdown accept both supported state versions. V1 states retain `clubgg_forced_contribution`; v2 states require `fixed_player_collection`. Deduction totals, per-player deduction selection, and conservation use ledger movement semantics rather than brand switching.
 
-`initializeHand()` remains the legacy `poker-state/v1` API and preserves its Home/ClubGG state shape, brand-specific ledger kind, and behavior. Existing v1 state and history are read as-is and are not rewritten or migrated.
+`initializeHand()` remains the legacy `poker-state/v1` API and preserves its Home/ClubGG state shape, brand-specific ledger kind, and posting contract. Historical source inputs remain stable; the AUD-01 compatibility adapter rederives affected Saved projections under current accounting.
 
 ## Replay and Saved durability
 
-Historical `canonical-hand-replay-source/v1` and `canonical-hand-replay-event/v1` retain their exact initialization and transition semantics. A `poker-state/v2` journal instead uses `canonical-hand-replay-source/v2` plus `canonical-hand-replay-event/v2`. Its initialization configuration contains the exact `GameRulesSnapshot v1`, hand/button/player setup, and starting stacks, and reconstruction calls `initializeHandFromGameRulesSnapshot()`. Source provenance never triggers a preset lookup or selects accounting.
+Historical `canonical-hand-replay-source/v1` and `canonical-hand-replay-event/v1` retain their exact input envelopes and use current canonical transition semantics. A `poker-state/v2` journal instead uses `canonical-hand-replay-source/v2` plus `canonical-hand-replay-event/v2`. Its initialization configuration contains the exact `GameRulesSnapshot v1`, hand/button/player setup, and starting stacks, and reconstruction calls `initializeHandFromGameRulesSnapshot()`. Source provenance never triggers a preset lookup or selects accounting.
 
 The outer `saved-study-object/v1`, `saved-study-library-export/v1`, `remote-saved-study-object/v1`, IndexedDB layout, and sync protocol remain unchanged. A v2 Hand uses `saved-hand-snapshot/v2`; its embedded final/current `poker-state/v2` and v2 Replay source must reconstruct exactly and must carry equal rule semantics and provenance. A rules-aware standalone or Hand-derived Spot uses `saved-spot-snapshot/v2`, retaining its existing `DecisionContext v1`/Scenario facts plus the immutable snapshot; the saved accounting projection and seated-player setup must agree with that snapshot. V1 Hand and Spot payloads remain strict v1 readers, and unknown nested versions fail explicitly.
 

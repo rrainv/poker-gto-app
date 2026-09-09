@@ -1,3 +1,4 @@
+import { normalizeSavedAccounting } from '../saved-study-objects/accounting-compatibility.mjs';
 import {
   cloneSavedStudyData,
   createSavedStudyObject,
@@ -70,7 +71,16 @@ function timestampAtLeast(clock, ...values) {
   return new Date(milliseconds).toISOString();
 }
 
+export function normalizeRemoteSavedAccounting(document) {
+  if (document?.kind !== 'hand' || !(document.payload?.pokerState?.game?.ante?.amountMilliBb > 0)) return document;
+  const { schemaVersion: _wireVersion, objectSchemaVersion, ...portable } = document;
+  const normalized = normalizeSavedAccounting({ ...portable, schemaVersion: objectSchemaVersion,
+    ownerRef: createSavedStudyOwnerRef('remote-validation-owner') });
+  return { ...document, payload: normalized.payload };
+}
+
 export function validateRemoteSavedStudyObject(document) {
+  document = normalizeRemoteSavedAccounting(document);
   if (!document || typeof document !== 'object' || Array.isArray(document)) {
     throw new TypeError('Remote SavedStudyObject must be an object');
   }
@@ -92,6 +102,7 @@ export function validateRemoteSavedStudyObject(document) {
 }
 
 export function toRemoteSavedStudyObject(object) {
+  object = normalizeSavedAccounting(object);
   validateSavedStudyObject(object);
   const { ownerRef: _localOwner, schemaVersion: objectSchemaVersion, ...portable } = clone(object);
   const document = {
@@ -104,6 +115,7 @@ export function toRemoteSavedStudyObject(object) {
 }
 
 export function fromRemoteSavedStudyObject(document, ownerRef) {
+  document = normalizeRemoteSavedAccounting(document);
   validateRemoteSavedStudyObject(document);
   const { schemaVersion: _remoteSchema, objectSchemaVersion, ...portable } = clone(document);
   return createSavedStudyObject({
@@ -115,7 +127,7 @@ export function fromRemoteSavedStudyObject(document, ownerRef) {
 
 export function sameRemoteSavedStudyObject(left, right) {
   if (!left || !right) return false;
-  return JSON.stringify(canonical(left)) === JSON.stringify(canonical(right));
+  return JSON.stringify(canonical(normalizeRemoteSavedAccounting(left))) === JSON.stringify(canonical(normalizeRemoteSavedAccounting(right)));
 }
 
 export function createSyncOperation({
@@ -128,6 +140,7 @@ export function createSyncOperation({
   kind = object?.lifecycle?.state === 'archived' ? 'tombstone_saved_object' : 'upsert_saved_object',
   validateObject = validateRemoteSavedStudyObject,
 } = {}) {
+  if (domain === SAVED_STUDY_SYNC_DOMAIN) object = normalizeRemoteSavedAccounting(object);
   validateObject(object);
   if (typeof operationId !== 'string' || !operationId
     || typeof identityId !== 'string' || !identityId) {
@@ -156,6 +169,7 @@ export function createSyncOperation({
 }
 
 export function prepareLocalConflictWinner(localObject, remoteDocument, { ownerRef, clock } = {}) {
+  localObject = normalizeSavedAccounting(localObject);
   validateSavedStudyObject(localObject);
   validateRemoteSavedStudyObject(remoteDocument);
   const updatedAt = timestampAtLeast(clock, localObject.updatedAt, remoteDocument.updatedAt);
@@ -175,6 +189,7 @@ export function createSavedStudyConflictCopy(localObject, {
   ownerRef,
   clock,
 } = {}) {
+  localObject = normalizeSavedAccounting(localObject);
   validateSavedStudyObject(localObject);
   const createdAt = timestampAtLeast(clock, localObject.updatedAt);
   return createSavedStudyObject({

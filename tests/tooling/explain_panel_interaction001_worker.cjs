@@ -23,16 +23,49 @@ app.whenReady().then(async () => {
       panelHitOwned: panel.contains(document.elementFromPoint(panelPoint.x, panelPoint.y)),
       summaryHitOwned: summary.contains(document.elementFromPoint(summaryPoint.x, summaryPoint.y)) };
   })()`);
-  win.webContents.sendInputEvent({ type: 'mouseWheel', ...geometry.panelPoint, deltaY: -180, canScroll: true });
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  const scrollTop = await win.webContents.executeJavaScript("document.querySelector('#teacherContent').scrollTop");
-  await win.webContents.executeJavaScript("document.querySelector('#teacherContent').scrollTop = 0");
-  win.webContents.sendInputEvent({ type: 'mouseMove', ...geometry.summaryPoint });
-  win.webContents.sendInputEvent({ type: 'mouseDown', ...geometry.summaryPoint, button: 'left', clickCount: 1 });
-  await new Promise((resolve) => setTimeout(resolve, 30));
-  win.webContents.sendInputEvent({ type: 'mouseUp', ...geometry.summaryPoint, button: 'left', clickCount: 1 });
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  const detailOpen = await win.webContents.executeJavaScript("document.querySelector('details').open");
-  fs.writeFileSync(resultPath, JSON.stringify({ ...geometry, scrollTop, detailOpen }));
+
+  // Native Electron sendInputEvent(mouseWheel) is dropped by this hidden Windows
+  // window. CDP dispatches real Chromium input through hit testing/default scrolling.
+  // Arm observable completion before input; never substitute a fixed sleep or a
+  // synthetic DOM event for the wheel/scroll behavior under test.
+  win.webContents.debugger.attach('1.3');
+  await win.webContents.executeJavaScript(`(() => {
+    const panel = document.querySelector('#teacherContent');
+    window.wheelReceived = false;
+    panel.addEventListener('wheel', () => { window.wheelReceived = true; }, { once: true, passive: true });
+    window.scrollCompletion = new Promise(resolve => {
+      const deadline = setTimeout(() => resolve(false), 5000);
+      panel.addEventListener('scroll', () => { clearTimeout(deadline); resolve(true); }, { once: true });
+    });
+  })()`);
+  await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+    type: 'mouseWheel', ...geometry.panelPoint, deltaX: 0, deltaY: 180,
+  });
+  const scroll = await win.webContents.executeJavaScript(`(async () => ({
+    scrollObserved: await window.scrollCompletion,
+    wheelReceived: window.wheelReceived,
+    scrollTop: document.querySelector('#teacherContent').scrollTop,
+  }))()`);
+  // Remove the scroll offset, then measure the actual nested target again.
+  const summaryPoint = await win.webContents.executeJavaScript(`(() => {
+    document.querySelector('#teacherContent').scrollTop = 0;
+    const summary = document.querySelector('summary');
+    const rect = summary.getBoundingClientRect();
+    window.detailCompletion = new Promise(resolve => {
+      const deadline = setTimeout(() => resolve(false), 5000);
+      summary.parentElement.addEventListener('toggle', () => {
+        clearTimeout(deadline); resolve(summary.parentElement.open);
+      }, { once: true });
+    });
+    return { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) };
+  })()`);
+  await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+    type: 'mousePressed', ...summaryPoint, button: 'left', clickCount: 1,
+  });
+  await win.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+    type: 'mouseReleased', ...summaryPoint, button: 'left', clickCount: 1,
+  });
+  const detailOpen = await win.webContents.executeJavaScript('window.detailCompletion');
+  fs.writeFileSync(resultPath, JSON.stringify({ ...geometry, ...scroll, detailOpen }));
   win.destroy(); app.quit();
 }).catch((error) => { fs.writeFileSync(resultPath, JSON.stringify({ error: String(error?.stack || error) })); app.quit(); });

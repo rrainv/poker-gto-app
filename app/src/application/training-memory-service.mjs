@@ -1,3 +1,4 @@
+import { deriveDecisionContextFromPokerState } from './decision-context-from-poker-state.mjs';
 import {
   validatePokerState,
 } from '../../../shared/poker-domain/index.js';
@@ -377,6 +378,28 @@ function presentationFromContext(context) {
   };
 }
 
+export function assertTrainingAccountingCompatible(record, state) {
+  if (!(state?.game?.ante?.amountMilliBb > 0)) return record;
+  try {
+    // A generated snapshot has no Replay to disambiguate an old refund from a
+    // legitimate one. Preserve it as evidence, but do not certify exact reuse.
+    if (record.decisionSource.kind === 'generated_exercise'
+      && state.ledger.some(entry => entry.kind === 'uncalled_refund')) throw new RangeError();
+    const current = deriveDecisionContextFromPokerState(state, record.decisionSource.heroPlayerId,
+      { stackMode: record.decisionContext.stackMode });
+    for (const field of ['currentPotBb', 'potBb', 'heroStackBb', 'effectiveStackBb',
+      'effectiveStackByOpponent', 'callAmountBb', 'actorContestablePotAfterCallBb',
+      'actorIneligiblePotAfterCallBb', 'requiredRawEquity']) {
+      if (JSON.stringify(record.decisionContext[field]) !== JSON.stringify(current[field])) throw new RangeError();
+    }
+    return record;
+  } catch (cause) {
+    const error = new RangeError('Historical Training accounting is unavailable; original evidence was left untouched.', { cause });
+    error.code = 'historical_accounting_incompatible';
+    throw error;
+  }
+}
+
 function historicalSameSpotExercise(record, state, id) {
   const strategyResult = record.strategyEvidence?.strategyResult;
   if (!strategyResult) {
@@ -512,6 +535,15 @@ export function createTrainingMemoryService({
       throw new RangeError('Training decision belongs to another Riverline profile');
     }
     return decision;
+  }
+
+  async function compatibleDecision(operationContext, record) {
+    const ante = record.decisionContext?.gameRules?.definition?.ante;
+    if (ante?.amountMilliBb === 0) return record;
+    const session = record.decisionSource.kind === 'generated_exercise' ? null
+      : await getOwnedSession(operationContext, record.sessionId);
+    assertTrainingAccountingCompatible(record, stateForRecord(record, session));
+    return record;
   }
 
   const service = {
@@ -700,6 +732,7 @@ export function createTrainingMemoryService({
       const operationContext = await context();
       const now = clock();
       const records = await operationContext.repository.listRevisitCandidates({ now, limit: 50 });
+      await Promise.all(records.map(record => compatibleDecision(operationContext, record)));
       ownerProvider.assertCurrent(operationContext.authorization);
       return { schemaVersion: 'training-revisit-page/v1', proposals: projectTrainingRevisits(records, now),
         coverage: 'bounded_page', scanned: records.length, limit: 50 };
@@ -837,7 +870,7 @@ export function createTrainingMemoryService({
 
     async getDecision(recordId) {
       const operationContext = await context();
-      return getOwnedDecision(operationContext, recordId);
+      return compatibleDecision(operationContext, await getOwnedDecision(operationContext, recordId));
     },
 
     async listRecentSessions(options) {
@@ -850,6 +883,7 @@ export function createTrainingMemoryService({
     async listSessionDecisions(sessionId, options) {
       const operationContext = await context();
       const result = await operationContext.repository.listSessionDecisions(sessionId, options);
+      await Promise.all(result.map(record => compatibleDecision(operationContext, record)));
       ownerProvider.assertCurrent(operationContext.authorization);
       return result;
     },
@@ -857,6 +891,7 @@ export function createTrainingMemoryService({
     async listDueReview(options) {
       const operationContext = await context();
       const result = await operationContext.repository.listDueReview(options);
+      await Promise.all(result.map(entry => compatibleDecision(operationContext, entry.record)));
       ownerProvider.assertCurrent(operationContext.authorization);
       return result;
     },
@@ -866,6 +901,7 @@ export function createTrainingMemoryService({
       const record = await getOwnedDecision(operationContext, recordId);
       const session = await getOwnedSession(operationContext, record.sessionId);
       const state = stateForRecord(record, session);
+      assertTrainingAccountingCompatible(record, state);
       let revisit = null;
       if (handoff) {
         requireTrainingRevisitProposal(record, handoff, clock());
@@ -894,6 +930,7 @@ export function createTrainingMemoryService({
       const operationContext = await context();
       const record = await getOwnedDecision(operationContext, recordId);
       const session = await getOwnedSession(operationContext, record.sessionId);
+      await compatibleDecision(operationContext, record);
       const similarity = deriveTrainingSimilarity(record);
       if (!similarity.available) {
         return Object.freeze({

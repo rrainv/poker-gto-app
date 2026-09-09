@@ -5,6 +5,7 @@ import { POLICY_STUDY_THEMES, createPolicyTrainingIntent } from './policy-condit
 import { opponentLearningCopy } from './opponent-learning-language.mjs';
 import { createOpponentDecisionReviewFacts } from './opponent-learning-facts.mjs';
 import { renderOpponentComparison } from './opponent-learning-workspace.mjs';
+import { bindDisclosureDismissal } from '../ui/study-disclosure.mjs';
 
 // Ephemeral controls only. No storage, identity, grading or strategy owner.
 export function createOpponentPracticeWorkspace(win) {
@@ -35,6 +36,7 @@ export function createOpponentPracticeWorkspace(win) {
       byId('opponentPolicyExactDescription').textContent = '';
       byId('opponentPolicyComparison')?.replaceChildren();
     }
+    win.updateTrainingSetupSummary?.();
   };
   const mount = () => {
     const root = byId('trainingOpponentSetup');
@@ -50,7 +52,7 @@ export function createOpponentPracticeWorkspace(win) {
     };
     const preset = select('trainingOpponentPreset', [['calling-heavy', 'calling'], ['aggressive', 'aggressive'], ['tight-passive', 'tight'], ['custom', 'custom']]);
     field(root, 'opponentChoice', preset);
-    const description = node('p'); description.id = 'opponentPolicyDescription'; description.setAttribute('aria-live', 'polite'); root.append(description);
+    const description = node('p'); description.className = 'study-block study-block--assumption'; description.id = 'opponentPolicyDescription'; description.setAttribute('aria-live', 'polite'); root.append(description);
     const theme = select('trainingOpponentTheme', POLICY_STUDY_THEMES.map(key => [key, key]));
     field(root, 'studyFocus', theme);
     const question = node('p'); question.id = 'opponentStudyQuestion'; question.setAttribute('aria-live', 'polite');
@@ -58,6 +60,7 @@ export function createOpponentPracticeWorkspace(win) {
     field(root, 'applyTo', select('trainingOpponentTarget', [['all_opponents', 'all'], ['BB', 'bb']]));
     root.append(localized('p', 'compactTruth'));
     const advanced = node('details'); advanced.id = 'trainingOpponentAdvanced'; advanced.append(localized('summary', 'advanced'));
+    advanced.className = 'study-disclosure'; bindDisclosureDismissal(advanced);
     root.append(advanced);
     const input = (id, max, value) => {
       const element = node('input'); element.id = id; element.type = 'number'; element.min = '0'; element.max = String(max);

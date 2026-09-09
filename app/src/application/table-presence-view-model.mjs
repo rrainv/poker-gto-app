@@ -8,7 +8,9 @@ import {
   areHoleCardsDealt,
   isHiddenHoleCards,
   validatePokerState,
+  bbToMilliBb,
 } from '../../../shared/poker-domain/index.js';
+import { deriveSeatAssignments } from '../../../shared/poker-domain/positions.js';
 
 export const TABLE_PRESENCE_SCHEMA_VERSION = 'table-presence/v1';
 
@@ -104,6 +106,28 @@ function emptyModel() {
   });
 }
 
+/** Draft setup projection, never a PokerState or a committed/dealt Hand. */
+export function createHandDraftTablePresence({ tableSize, heroSeat, buttonSeat, stackBb } = {}) {
+  if (!Number.isInteger(tableSize) || tableSize < 2 || tableSize > 10
+    || !Number.isInteger(heroSeat) || heroSeat < 0 || heroSeat >= tableSize
+    || !Number.isInteger(buttonSeat) || buttonSeat < 0 || buttonSeat >= tableSize
+    || !Number.isFinite(stackBb) || stackBb <= 0) return emptyModel();
+  let stack;
+  try { stack = bbToMilliBb(stackBb); } catch { return emptyModel(); }
+  const assignments = deriveSeatAssignments(Array.from({ length: tableSize }, (_, seat) => ({ seat, playerId: `draft-seat-${seat}` })), buttonSeat);
+  return deepFreeze({ ...emptyModel(), empty: false, status: 'setup_preview', heroSeat, buttonSeat,
+    seats: assignments.map(player => ({ ...player,
+      visualSeatIndex: (player.seat - heroSeat + tableSize) % tableSize,
+      suppliedName: null, identity: player.seat === heroSeat ? 'Hero' : player.position,
+      isHero: player.seat === heroSeat, isCurrentActor: false, isWaitingToAct: false,
+      isFolded: false, isAllIn: false, isDealtIn: false,
+      currentStackMilliBb: stack, startingStackMilliBb: stack,
+      streetContributionMilliBb: 0, totalPotContributionMilliBb: 0,
+      cardVisibility: 'undealt', hasCards: false, cards: [], latestAction: null,
+    })),
+  });
+}
+
 /**
  * Project one trusted PokerState into immutable, presentation-only table facts.
  * The result keeps canonical amounts in milliBb and never derives poker rules.
@@ -158,6 +182,15 @@ export function createTablePresenceViewModel({ state = null, heroPlayerId = null
       startingStackMilliBb: player.startingStackMilliBb,
       streetContributionMilliBb: player.streetContributionMilliBb,
       totalPotContributionMilliBb: player.totalPotContributionMilliBb,
+      // Read posted amounts from the canonical ledger, including antes which are
+      // deliberately excluded from the current betting-round contribution.
+      forcedContributions: state.ledger
+        .filter((entry) => entry.playerId === player.playerId
+          && ['small_blind', 'big_blind', 'ante'].includes(entry.kind))
+        .map(({ kind, amountMilliBb }) => ({ kind, amountMilliBb })),
+      voluntaryStreetContributionMilliBb: state.actionHistory
+        .filter((entry) => entry.playerId === player.playerId && entry.street === state.street)
+        .reduce((total, entry) => total + entry.committedMilliBb, 0),
       cardVisibility,
       hasCards: areHoleCardsDealt(player.holeCards),
       cards: knownCards,

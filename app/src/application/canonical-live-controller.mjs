@@ -2,16 +2,15 @@ import {
   ACTION_TYPES,
   ANTE_TYPES,
   CHANCE_TYPES,
-  GAME_MODES,
   PHASES,
   assertCardArray,
   assertUniqueKnownCards,
   bbToMilliBb,
   createAction,
-  createGameRulesSnapshotFromLegacyGameConfiguration,
   getAvailableChanceCards as deriveAvailableChanceCards,
   getLegalActionSpec,
 } from '../../../shared/poker-domain/index.js';
+import { createHandSetupRulesSnapshot } from './hand-setup-rules.mjs';
 import { createCanonicalHandSession } from './canonical-hand-session.mjs';
 
 export const CANONICAL_LIVE_DEFAULT_ENABLED = false;
@@ -69,7 +68,6 @@ function normalizeConfiguration(configuration, handIdFactory) {
   if (typeof handId !== 'string' || !handId.trim()) {
     throw new TypeError('handId must be a non-empty string');
   }
-  const gameMode = configuration.gameMode ?? GAME_MODES.HOME;
 
   const hasHeroSeat = configuration.heroSeat !== undefined
     && configuration.heroSeat !== null
@@ -120,13 +118,9 @@ function normalizeConfiguration(configuration, handIdFactory) {
     seat,
     startingStackMilliBb,
   }));
-  const rulesSnapshot = createGameRulesSnapshotFromLegacyGameConfiguration({
-    mode: gameMode,
-    smallBlindMilliBb: 500,
-    bigBlindMilliBb: 1000,
-    chipUnitMilliBb: 100,
-    ante: { type: anteType, amountMilliBb: anteMilliBb },
-  }, tableSize);
+  const rulesSnapshot = createHandSetupRulesSnapshot(configuration, {
+    type: anteType, amountMilliBb: anteMilliBb,
+  });
   const pokerConfiguration = {
     handId,
     rulesSnapshot,

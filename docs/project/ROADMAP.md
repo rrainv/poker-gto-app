@@ -1,5 +1,13 @@
 # Riverline Roadmap
 
+September 7 presentation sequencing: after `BETA-DESIGN-CORRECTION-002`, freeze
+the accepted forest/jade visual direction and move to **independent Human Beta
+QA, then bounded Beta Repair Sweep**. Do not start another broad redesign for
+subjective polish. `QA-BETA-DESIGN-CORRECTION-002` owns the pending desktop/theme
+matrix, temporary-art review and browser lag profiling. Implementation is not
+visual acceptance or a beta-readiness checkpoint; unrelated capability gates
+and Return owners below remain intact.
+
 September 7 authorized exception: [Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md)
 implements the first weighted-range/runout slice, awaiting
 `QA-ADVANCED-EQUITY-001`. Earlier references to weighted Equity as wholly future

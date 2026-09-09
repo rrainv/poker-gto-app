@@ -330,6 +330,8 @@
 
   </style>
 
+  <link rel="stylesheet" href="src/ui/riverline-design.css?v=1">
+
 </head>
 
 
@@ -478,14 +480,21 @@
           </button>
 
           <header class="welcome-intro">
-            <div class="welcome-brand" aria-hidden="true">
-              <svg viewBox="0 0 256 256" aria-hidden="true"><use href="assets/riverline-brand-mark.svg#riverlineBrandSpade" /></svg>
-            </div>
-            <div>
+            <div class="welcome-intro-copy">
               <p class="welcome-eyebrow" data-i18n="Welcome to Riverline">Welcome to Riverline</p>
-              <h1 id="welcomeTitle" data-i18n="Your personal poker learning workstation">Your personal poker learning workstation</h1>
-              <p id="welcomeDescription" data-i18n="Play and review hands, analyze decisions, train, calculate Equity, build Personal Strategy, and revisit saved study material.">Play and review hands, analyze decisions, train, calculate Equity, build Personal Strategy, and revisit saved study material.</p>
+              <h1 id="welcomeTitle" data-i18n="Learn how you play. Understand why. Practice what matters.">Learn how you play. Understand why. Practice what matters.</h1>
+              <p id="welcomeDescription" data-i18n="A place to explore your poker decisions, one hand at a time.">A place to explore your poker decisions, one hand at a time.</p>
+              <button class="ui-button ui-button--primary welcome-enter" type="button" data-welcome-destination="home" data-i18n="Enter Riverline">Enter Riverline</button>
             </div>
+            <figure class="welcome-table-illustration">
+              <div class="welcome-table-scene" aria-hidden="true">
+                <div class="welcome-table-felt"><svg viewBox="0 0 256 256"><use href="assets/riverline-brand-mark.svg#riverlineBrandSpade" /></svg></div>
+                <img class="welcome-portrait welcome-portrait--one" src="src/ui/assets/opponents/mika.png" alt="" width="96" height="96">
+                <img class="welcome-portrait welcome-portrait--two" src="src/ui/assets/opponents/pip.png" alt="" width="96" height="96">
+                <img class="welcome-portrait welcome-portrait--three" src="src/ui/assets/opponents/cleo.png" alt="" width="96" height="96">
+              </div>
+              <figcaption data-i18n="An illustration of your study table">An illustration of your study table</figcaption>
+            </figure>
           </header>
 
           <section class="welcome-jobs" aria-labelledby="welcomeJobsTitle">
@@ -509,11 +518,7 @@
                 <span class="welcome-job-copy"><strong data-i18n="Train Decisions">Train Decisions</strong><small data-i18n="Practice generated spots or play through a Full Hand session.">Practice generated spots or play through a Full Hand session.</small></span>
                 <span class="welcome-job-action" data-i18n="Open Training">Open Training</span>
               </button>
-              <button class="welcome-job-card" type="button" data-welcome-destination="equity">
-                <span class="welcome-job-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9V3Z"/><path d="M15 3.6A9 9 0 0 1 20.4 9H15V3.6Z"/></svg></span>
-                <span class="welcome-job-copy"><strong data-i18n="Calculate Equity">Calculate Equity</strong><small data-i18n="Compare exact or simulated win chances for Hold'em hands.">Compare exact or simulated win chances for Hold'em hands.</small></span>
-                <span class="welcome-job-action" data-i18n="Open Equity">Open Equity</span>
-              </button>
+
               <button class="welcome-job-card" type="button" data-welcome-destination="personal-strategy">
                 <span class="welcome-job-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 5v14m4-14v14m4-14v14M4 9h16m-16 5h16"/><circle cx="16" cy="9" r="2"/></svg></span>
                 <span class="welcome-job-copy"><strong data-i18n="Build Personal Strategy">Build Personal Strategy</strong><small data-i18n="Calibrate, inspect, teach, and edit the ranges you intend to play.">Calibrate, inspect, teach, and edit the ranges you intend to play.</small></span>
@@ -524,7 +529,7 @@
 
           <footer class="welcome-footer">
             <div class="welcome-secondary-actions">
-              <button class="ui-button ui-button--secondary" type="button" data-welcome-destination="home" data-i18n="Go to My Riverline">Go to My Riverline</button>
+              <button class="ui-button ui-button--quiet" type="button" data-welcome-destination="equity" data-i18n="Calculate Equity">Calculate Equity</button>
               <button class="ui-button ui-button--quiet" type="button" data-welcome-destination="guide" data-i18n="Open the Guide">Open the Guide</button>
             </div>
             <label class="welcome-preference" for="welcomeRememberChoice">
@@ -588,6 +593,17 @@
             <div id="homeContinueContent" class="home-section-content"></div>
           </section>
 
+          <section class="panel home-section home-section--quick" aria-labelledby="homeQuickStartTitle" data-tutorial-anchor="home-quick-start">
+            <header class="home-section-head"><div><p data-i18n="Choose a workspace">Choose a workspace</p><h2 id="homeQuickStartTitle" data-i18n="Core study">Core study</h2></div></header>
+            <nav class="home-quick-links" aria-label="Core study" data-i18n-aria-label="Core study">
+              <button type="button" class="home-quick-link home-quick-link--hand" data-home-destination="hand"><strong data-i18n="Hand">Hand</strong><span data-i18n="Play or reconstruct a legal hand.">Play or reconstruct a legal hand.</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="analyze"><strong data-i18n="Analyze">Analyze</strong><span data-i18n="Inspect a decision, Matrix, ranges, and facts.">Inspect a decision, Matrix, ranges, and facts.</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="training"><strong data-i18n="Training">Training</strong><span data-i18n="Practice generated poker decisions.">Practice generated poker decisions.</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="equity"><strong data-i18n="Equity">Equity</strong><span data-i18n="Compare hand outcomes and detailed analysis.">Compare hand outcomes and detailed analysis.</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="review_mistakes" hidden><strong data-i18n="Review Mistakes">Review Mistakes</strong><span data-i18n="Revisit marked decisions">Revisit marked decisions</span></button>
+            </nav>
+          </section>
+
           <section class="panel home-section home-section--review" aria-labelledby="homeReviewTitle" data-tutorial-anchor="home-review">
             <header class="home-section-head"><div><p data-i18n="Items you classified for another look">Items you classified for another look</p><h2 id="homeReviewTitle" data-i18n="Review">Review</h2></div></header>
             <div id="homeReviewContent" class="home-review-groups"></div>
@@ -620,16 +636,7 @@
             <div id="homeStrategyContent" class="home-section-content"></div>
           </section>
 
-          <section class="panel home-section home-section--quick" aria-labelledby="homeQuickStartTitle" data-tutorial-anchor="home-quick-start">
-            <header class="home-section-head"><div><p data-i18n="Choose a workspace">Choose a workspace</p><h2 id="homeQuickStartTitle" data-i18n="Core study">Core study</h2></div></header>
-            <nav class="home-quick-links" aria-label="Core study" data-i18n-aria-label="Core study">
-              <button type="button" class="home-quick-link home-quick-link--hand" data-home-destination="hand"><strong data-i18n="Hand">Hand</strong><span data-i18n="Play or reconstruct a legal hand.">Play or reconstruct a legal hand.</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="analyze"><strong data-i18n="Analyze">Analyze</strong><span data-i18n="Inspect a decision, Matrix, ranges, and facts.">Inspect a decision, Matrix, ranges, and facts.</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="training"><strong data-i18n="Training">Training</strong><span data-i18n="Practice generated poker decisions.">Practice generated poker decisions.</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="equity"><strong data-i18n="Equity">Equity</strong><span data-i18n="Compare hand outcomes and detailed analysis.">Compare hand outcomes and detailed analysis.</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="review_mistakes" hidden><strong data-i18n="Review Mistakes">Review Mistakes</strong><span data-i18n="Revisit marked decisions">Revisit marked decisions</span></button>
-            </nav>
-          </section>
+
 
           <section class="panel home-section home-section--other" aria-labelledby="homeOtherTitle">
             <header class="home-section-head"><div><p data-i18n="Riverline">Riverline</p><h2 id="homeOtherTitle" data-i18n="More destinations">More destinations</h2></div></header>
@@ -1056,8 +1063,8 @@
                   <div><strong id="handSetupTitle" data-i18n="Start a hand">Start a hand</strong><small data-i18n="Choose seats and forced contributions">Choose seats and forced contributions</small></div>
                 </div>
                 <div class="hand-setup-grid">
+                  <label class="hand-collection-field"><span data-i18n="Rake / collection">Rake / collection</span><select id="handCollectionType" class="control-select"><option value="none" data-i18n="No rake / collection">No rake / collection</option><option value="fixed_per_seated_player" data-i18n="Fixed collection">Fixed collection</option></select></label>
                   <label><span data-i18n="Players">Players</span><input id="handTableSize" class="control-input poker-data-token" type="number" min="2" max="10" step="1" value="2" aria-describedby="handTableSizeError"></label>
-                  <label><span data-i18n="Game mode">Game mode</span><select id="handGameMode" class="control-select"><option value="home" data-i18n="Home">Home</option><option value="clubgg">ClubGG</option></select></label>
                   <label><span data-i18n="Starting stack">Starting stack</span><span class="input-with-unit poker-data-token"><input id="handStackBb" class="control-input" type="number" min="1" max="500" step="1" value="100"><em>bb</em></span></label>
                   <label><span data-i18n="Button seat">Button seat</span><select id="handButtonSeat" class="control-select"></select></label>
                   <label><span data-i18n="Hero seat">Hero seat</span><select id="handHeroSeat" class="control-select"></select></label>
@@ -1065,7 +1072,7 @@
                   <label><span data-i18n="Ante amount">Ante amount</span><span class="input-with-unit poker-data-token"><input id="handAnteBb" class="control-input" type="number" min="0" max="20" step="0.1" value="0"><em>bb</em></span></label>
                 </div>
               <p id="handTableSizeError" class="field-error" role="alert" hidden></p>
-              <p id="handAccountingPreview" class="hand-accounting-preview" data-i18n="Home · no rake or forced deduction">Home · no rake or forced deduction</p>
+              <p id="handAccountingPreview" class="hand-accounting-preview">No rake / collection</p>
                 <div class="hand-button-row">
                   <button id="handStartButton" class="ui-button ui-button--primary" type="button" data-i18n="Start hand">Start hand</button>
                 </div>
@@ -2107,7 +2114,8 @@
             <div class="calibration-section-heading"><div><p class="calibration-eyebrow" data-i18n="Your intended strategy">Your intended strategy</p><h2 id="personalUnderstandingTitle" data-i18n="What Riverline understands">What Riverline understands</h2><p id="personalUnderstandingScope" class="muted"></p></div><button id="personalMapRange" data-tutorial-anchor="personal-range-mapping" class="ui-button ui-button--primary" type="button" data-i18n="Map this range">Map this range</button></div>
             <p data-i18n="An initial understanding, not a completed strategy. Preferred actions never imply 100% frequency.">An initial understanding, not a completed strategy. Preferred actions never imply 100% frequency.</p>
             <details class="personal-evidence-status"><summary data-i18n="Inspect range evidence">Inspect range evidence</summary><p id="personalUnderstandingStatus" role="status" aria-live="polite"></p></details>
-            <details class="personal-coverage-disclosure"><summary data-i18n="Coverage and boundaries">Coverage and boundaries</summary><ul id="personalUnderstandingCoverage" class="personal-mapping-coverage"></ul></details>
+            <div id="personalStrategyMap" class="personal-strategy-map" role="group" aria-label="Range evidence" data-i18n-aria-label="Range evidence"></div>
+            <details class="personal-coverage-disclosure" open><summary data-i18n="Coverage and boundaries">Coverage and boundaries</summary><ul id="personalUnderstandingCoverage" class="personal-mapping-coverage"></ul></details>
             <div class="personal-understanding-columns">
               <details id="personalContextInputDisclosure"><summary data-tutorial-anchor="personal-intent" data-i18n="Add context or an exception">Add context or an exception</summary>
                 <h3 data-i18n="Your confirmed intentions">Your confirmed intentions</h3>
@@ -2424,6 +2432,7 @@
 
             <div id="trainingExerciseTags" class="training-tag-row" aria-label="Exercise tags" data-i18n-aria-label="Exercise tags"></div>
             <div id="trainingIdle" class="training-state-message">
+              <div id="trainingLineupPreview" class="training-lineup-preview" hidden></div>
               <strong data-i18n="Ready for a drill">Ready for a drill</strong>
               <span data-i18n="Choose a mode in Session setup, then start Training.">Choose a mode in Session setup, then start Training.</span>
             </div>
@@ -2795,7 +2804,6 @@
           <div id="equityHandAnalysisContent" class="equity-dossier-content" aria-live="polite">
             <section class="equity-dossier-section equity-analysis-empty"><h3 data-i18n="Hand Analysis">Hand Analysis</h3><p class="muted" data-i18n="Calculate Equity to inspect entered-hand outcomes and detailed hand facts.">Calculate Equity to inspect entered-hand outcomes and detailed hand facts.</p></section>
           </div>
-          <div id="advancedEquityWorkspace" data-tutorial-anchor="equity-runouts"></div>
           <details id="equityDetails" class="panel equity-details-panel">
             <summary><span data-i18n="Calculation evidence">Calculation evidence</span><span class="muted" data-i18n="Method, workload, provenance, and limitations">Method, workload, provenance, and limitations</span></summary>
             <dl class="equity-detail-grid"><div><dt data-i18n="Requested">Requested</dt><dd id="equityDetailRequested">Auto</dd></div><div><dt data-i18n="Actual method">Actual method</dt><dd id="equityDetailActual">—</dd></div><div><dt data-i18n="Estimated combinations">Estimated combinations</dt><dd id="equityDetailEstimate">—</dd></div><div><dt data-i18n="Samples">Samples</dt><dd id="equityDetailSamples">—</dd></div><div><dt data-i18n="Seed">Seed</dt><dd id="equityDetailSeed">—</dd></div><div><dt data-i18n="Unknown hands">Unknown hands</dt><dd id="equityDetailUnknown">1</dd></div><div><dt data-i18n="Missing board cards">Missing board cards</dt><dd id="equityDetailBoard">5</dd></div><div><dt data-i18n="Execution">Execution</dt><dd id="equityDetailExecution">Ready</dd></div></dl>
@@ -2807,6 +2815,7 @@
             <div id="equityFurtherAnalysisContent"></div>
           </details>
         </aside>
+        <div id="advancedEquityWorkspace" class="equity-range-workspace" data-tutorial-anchor="equity-runouts"></div>
       </div>
       </div>
     </section>
@@ -3514,6 +3523,8 @@
   <script src="src/core/logic.js?v=27" defer></script>
   <script src="src/ui/teacher.js" defer></script>
   <script src="src/ui/PokerPrimitives.js" defer></script>
+  <script type="module" src="src/ui/table-environment.mjs"></script>
+  <script type="module" src="src/ui/training-lineup-preview.mjs"></script>
   <script src="src/ui/TableRenderer.js" defer></script>
 
 </body>

@@ -1,5 +1,14 @@
 # Riverline Checkpoint Return Queue
 
+September 7 presentation return gate: `QA-BETA-DESIGN-CORRECTION-002` owns
+independent Human Beta QA after the final broad correction. Direction is frozen;
+remaining subjective polish, **TEMPORARY BETA ART** replacement/asset sizing and
+actual browser lag measurement return through the bounded Beta Repair Sweep.
+These remain required review before presentation/beta readiness is declared.
+This is pending acceptance, not a new accepted checkpoint or closure of existing
+table/card/composition Return IDs. Detailed evidence and reproduction steps stay
+in `QA_BACKLOG.md`.
+
 Current implementation acceptance: `QA-REFERENCE-STRATEGY-002` owns the
 [source foundation](REFERENCE_SOURCE_FOUNDATION_V1_SPEC.md) browser/product gate.
 `RET-REFERENCE-PACK-001` still owns actual corpus acquisition, vendor export

@@ -137,7 +137,7 @@ test('all normalized anchors are safe, unique, and keep Hero at the bottom', () 
     assert.equal(anchorKeys.size, playerCount);
     assert.deepEqual(presentation.seats[0].anchor, {
       x: 0.5,
-      y: playerCount <= 6 ? 0.85 : 0.84,
+      y: 0.84,
     });
   }
 });

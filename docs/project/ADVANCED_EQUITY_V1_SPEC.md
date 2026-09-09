@@ -21,6 +21,34 @@ entries default to unknown. Excluding them is an explicit input choice.
 This small input adapter expands immediately into Range Core; it is not range
 storage, a complete poker-notation editor, or a second range model.
 
+September 7 `BETA-DESIGN-REFRESH-001` gives this disclosure a full-width row
+below the top-level matchup, outside the sticky Hand Analysis rail. Setup and
+result are separate regions; sufficient component width places them side by
+side, with Runout Explorer beneath and a separate card-inspection region.
+Personal/Exploit reuse the same component in a stacked form at smaller widths.
+Method/partial qualification precedes player values. Unknown/excluded choices
+and explicit known-only permission remain visible; syntax guidance is secondary.
+Exact inputs and best-five previews use shared card faces. Cancel is available
+while running; Escape returns to the nearest summary. Closing the outer panel
+cancels/fences output while retaining its range drafts for the same source.
+No automatic calculation, request/result schema or claim change is introduced.
+
+The feature-surface follow-up uses human player labels (including renamed input
+players) without invalidating Equity. Runouts render shared card faces with
+Equity, delta and category; rank/suit/category, Equity direction, category
+improvement and supported completion grouping consume existing result facts.
+Unavailable facts stay unavailable. Selected cards open hypothetical best-five
+inspection; turn→river sequence entry is secondary. No new draw taxonomy or
+probability interpretation is introduced.
+
+The final Beta correction keeps current cards, human labels and range/coverage
+identity in a compact Matchup region; per-player input editing lives in a native
+disclosure, opened when explicit range input is required. Method/help/seed are
+secondary. Partial qualification remains with the result. Repeated focus/hover/
+click of the same inspected card reuses its detail DOM; a card-presentation
+preference change explicitly refreshes it. Calculation and cancellation semantics
+are unchanged.
+
 Calculation is explicit. The result and its partial qualification precede the
 secondary Runout Explorer. Hand-input/seed/range changes and cancellation fence
 old results. Collapsed analysis does not perform Equity or provider work. The

@@ -226,6 +226,32 @@ The current settlement algorithm is deterministic; it is not a selected Fewest T
 
 ## 10. Product Experience / Settings / Themes / Layout / Cards
 
+`BETA-DESIGN-CORRECTION-002` -- **IMPLEMENTED / INDEPENDENT HUMAN BETA QA PENDING**.
+Final broad correction adds draft Hand preview, shared count-specific geometry,
+clean felt, active Analyze and neutral evidence surfaces, compact Equity editing,
+grouped Personal language/precision coverage and top-packed Home. The existing
+theme/card/poker/evidence owners remain authoritative. Design direction is frozen;
+independent Human Beta QA precedes bounded Beta Repair Sweep. Temporary portrait
+replacement/asset sizing and browser lag verification remain with
+`QA-BETA-DESIGN-CORRECTION-002`; earlier acceptance IDs are not closed.
+
+`BETA-FEATURE-SURFACE-REFRESH-001` + theme hardening + `WELCOME-REFRESH-002` —
+**IMPLEMENTED / HUMAN QA PENDING**. Purpose-built analytical, game and learning
+surfaces reuse the existing theme owner, original portraits and canonical facts.
+Understanding reflow, human Equity labels, next-card visualization, idle Training
+lineup and optional Home-first Welcome are covered by
+`QA-BETA-FEATURE-SURFACE-REFRESH-001`; no new persistence or evidence authority.
+
+`BETA-DESIGN-REFRESH-001` — **BOLD DIRECTION ACCEPTED / DETAILED QA PENDING**:
+[shared study presentation](PRODUCT_SPEC.md), factual actor/dealer table context,
+session-local per-seat fictional identities in Full Hand Training, full-width
+Advanced Equity and clearer Explain/Personal/Coach/Inbox hierarchy. Existing
+theme, policy, poker and evidence authorities are unchanged.
+`QA-BETA-DESIGN-REFRESH-001` retains visual, keyboard, RTL and desktop-fit
+acceptance after the first pass was visually rejected. The correction adds
+forest/jade/brass identity, game/study contrast, ten original portraits and
+stronger control/result hierarchy; previous owners and sequencing remain unchanged.
+
 | Capability | Status | Accepted scope |
 |---|---|---|
 | `UX-REGRESSION-001` and `WELCOME-INTRO-001` | COMPLETED | Repaired owned functional/semantic/legibility regressions and established versioned first-use orientation with human acceptance. |

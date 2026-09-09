@@ -197,17 +197,18 @@ test('fixed collection uses a generic hand-start ledger before ante and blinds a
   assert.equal(state.potMilliBb, 2200);
   assert.deepEqual(derivePotAccounting(state), {
     potLayers: [{
-      schemaVersion: 'poker-pot-layer/v1',
+      schemaVersion: 'poker-pot-layer/v2',
       amountMilliBb: 700,
+      anteMilliBb: 700,
       contributionFloorMilliBb: 0,
-      contributionCeilingMilliBb: 100,
+      contributionCeilingMilliBb: 0,
       contributorPlayerIds: ['P0', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
       eligiblePlayerIds: ['P0', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6'],
     }, {
       schemaVersion: 'poker-pot-layer/v1',
       amountMilliBb: 1000,
-      contributionFloorMilliBb: 100,
-      contributionCeilingMilliBb: 600,
+      contributionFloorMilliBb: 0,
+      contributionCeilingMilliBb: 500,
       contributorPlayerIds: ['P1', 'P2'],
       eligiblePlayerIds: ['P1', 'P2'],
     }],
@@ -215,8 +216,8 @@ test('fixed collection uses a generic hand-start ledger before ante and blinds a
       schemaVersion: 'poker-unmatched-contribution/v1',
       playerId: 'P2',
       amountMilliBb: 500,
-      contributionFloorMilliBb: 600,
-      contributionCeilingMilliBb: 1100,
+      contributionFloorMilliBb: 500,
+      contributionCeilingMilliBb: 1000,
     },
     contestablePotMilliBb: 1700,
     unmatchedMilliBb: 500,

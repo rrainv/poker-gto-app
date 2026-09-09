@@ -9,7 +9,7 @@ export const PRESENTATION_THEMES = Object.freeze([
   Object.freeze({
     id: 'midnight',
     name: 'Riverline Midnight',
-    preview: Object.freeze({ accent: '#42ad7b', surface: '#101311', felt: '#285a45' }),
+    preview: Object.freeze({ accent: '#8ad7b0', surface: '#0b1a19', felt: '#287456' }),
     tone: 'dark',
   }),
   Object.freeze({
@@ -42,6 +42,13 @@ const CUSTOM_PROPERTY_NAMES = Object.freeze([
   '--surface-interactive', '--surface-interactive-hover', '--surface-inset',
   '--border-subtle', '--border-default', '--border-strong', '--bg', '--panel', '--panel2',
   '--line', '--theme-gradient', '--page-glow', '--poker-felt-accent',
+  '--analysis-surface', '--analysis-surface-raised', '--analysis-text', '--analysis-secondary', '--analysis-muted',
+  '--game-background', '--game-surface', '--game-text', '--game-secondary', '--game-border',
+  '--table-seat-surface', '--table-hero-surface', '--table-actor-surface', '--table-seat-text',
+  '--table-felt-start', '--table-felt-end', '--table-felt-text', '--table-rail-start', '--table-rail-end',
+  '--table-accent', '--table-accent-text', '--learning-surface', '--learning-text',
+  '--analysis-primary-surface', '--evidence-surface', '--evidence-text',
+  '--navigation-active-surface', '--navigation-active-text',
 ]);
 
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
@@ -424,8 +431,56 @@ function clearCustomProperties(root) {
   CUSTOM_PROPERTY_NAMES.forEach((name) => root.style?.removeProperty?.(name));
 }
 
+// Derived presentation roles belong to the same theme owner, including previews.
+// They are never stored independently or selected by a feature workspace.
+export function deriveFeatureSurfaceRoles({ surface, accent, felt }) {
+  const palette = deriveSurfacePalette(surface);
+  const hsl = rgbToHsl(hexToRgb(surface));
+  // Neutral desks stay on one contrast side even for saturated midtone inputs.
+  const analysis = deriveSurfacePalette(hslToHex({ ...hsl, s: Math.min(hsl.s, 7), l: palette.tone === 'dark' ? clamp(hsl.l * .65 + 2, 6, 16) : Math.max(76, hsl.l - 2) }));
+  const analysisText = deriveTextPalette(analysis);
+  const foreground = background => contrastRatio('#000000', background) >= contrastRatio('#ffffff', background) ? '#000000' : '#ffffff';
+  const readableSurface = (color, text) => {
+    for (let step = 0; step <= 100; step++) {
+      const candidate = mixHexColors(color, text === '#ffffff' ? '#000000' : '#ffffff', step / 100);
+      if (contrastRatio(text, candidate) >= 4.5) return candidate;
+    }
+    return color;
+  };
+  const game = mixHexColors(surface, felt, .22);
+  const gameText = foreground(game);
+  const gameSurface = readableSurface(mixHexColors(game, felt, .25), gameText);
+  const seat = mixHexColors(surface, felt, .32);
+  const seatText = foreground(seat);
+  const hero = readableSurface(mixHexColors(seat, accent, .12), seatText);
+  const actor = readableSurface(mixHexColors(seat, accent, .2), seatText);
+  const support = mixHexColors(accent, palette.tone === 'light' ? '#755427' : '#e7c991', .72);
+  const tableAccent = ensureContrastAcross(support, [game, seat, hero, actor], 3, surfaceTone(game));
+  const learning = mixHexColors(analysis.panel, support, .1);
+  const navigation = mixHexColors(surface, accent, .09);
+  const feltText = foreground(felt);
+  return Object.freeze({
+    '--analysis-surface': analysis.panel, '--analysis-surface-raised': analysis.elevated,
+    '--analysis-text': analysisText.primary, '--analysis-secondary': analysisText.secondary, '--analysis-muted': analysisText.muted,
+    '--analysis-primary-surface': readableSurface(mixHexColors(analysis.elevated, accent, .035), analysisText.primary),
+    '--evidence-surface': analysis.inset, '--evidence-text': analysisText.secondary,
+    '--navigation-active-surface': navigation, '--navigation-active-text': foreground(navigation),
+    '--game-background': game, '--game-surface': gameSurface,
+    '--game-text': gameText, '--game-secondary': contrastRatio(mixHexColors(gameText, game, .16), game) >= 4.5 ? mixHexColors(gameText, game, .16) : gameText,
+    '--game-border': ensureContrastAcross(mixHexColors(gameText, game, .6), [game], 3, surfaceTone(game)),
+    '--table-seat-surface': seat, '--table-hero-surface': hero, '--table-actor-surface': actor, '--table-seat-text': seatText,
+    '--table-felt-start': readableSurface(mixHexColors(felt, '#ffffff', .12), feltText), '--table-felt-end': readableSurface(mixHexColors(felt, '#000000', .22), feltText),
+    '--table-felt-text': feltText,
+    '--table-rail-start': support, '--table-rail-end': mixHexColors(support, surface, .62),
+    '--table-accent': tableAccent, '--table-accent-text': foreground(tableAccent),
+    '--learning-surface': learning, '--learning-text': foreground(learning),
+  });
+}
+
 function applyCustomProperties(root, theme, customization) {
   clearCustomProperties(root);
+  const roles = deriveFeatureSurfaceRoles({ ...theme.preview, ...customization });
+  Object.entries(roles).forEach(([name, value]) => setCustomProperty(root, name, value));
   if (!customization) return;
   const activeSurface = customization.surface ?? theme.preview.surface;
   const surfacePalette = deriveSurfacePalette(activeSurface);

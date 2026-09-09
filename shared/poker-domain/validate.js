@@ -1,5 +1,5 @@
 import { assertCardArray, assertUniqueKnownCards } from './cards.js';
-import { assertMilliBbAlignment, assertPositiveMilliBb } from './amounts.js';
+import { assertMilliBb, assertMilliBbAlignment, assertPositiveMilliBb } from './amounts.js';
 import { validateRecordedSettlementState } from './recorded-settlement.js';
 import { validateAction } from './action.js';
 import {
@@ -641,7 +641,7 @@ export function validatePokerState(state) {
       }
       let layerPayout = 0;
       for (const [playerId, amountMilliBb] of Object.entries(result.payoutsMilliBbByPlayer)) {
-        assertPositiveMilliBb(amountMilliBb, 'showdown.layer payout');
+        assertMilliBb(amountMilliBb, 'showdown.layer payout');
         assertMilliBbAlignment(amountMilliBb, state.game.chipUnitMilliBb, 'showdown.layer payout');
         layerPayout += amountMilliBb;
         aggregatePayouts[playerId] = (aggregatePayouts[playerId] || 0) + amountMilliBb;

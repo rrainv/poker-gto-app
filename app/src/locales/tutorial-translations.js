@@ -1297,6 +1297,15 @@
       'פתחו את תיבת הלימוד להמלצה הבאה ולתור הניתן לבדיקה מזיכרון האימון, משמורים ומסתירות בכוונה שנבחרה. מועדים וסיבות סקירה נשארים גלויים. התור מכסה בחירה מוגבלת שנטענה ואינו משנה את האסטרטגיה המכוונת שלכם.'],
   ];
   deepStudyTutorial.forEach(([key, russian, hebrew]) => { en[key] = key; ru[key] = russian; he[key] = hebrew; });
+  const refreshTutorial = [
+    ['Ranges & runouts has its own workspace below the matchup. Set exact hands or explicit weights, then calculate. Unknown combinations stay unknown; partial Equity requires permission. Expand Runout Explorer and focus a card to inspect its best five. Cards are hypothetical; hand improvement and Equity improvement remain separate.',
+      '«Диапазоны и ранауты» теперь находятся в отдельной области под сравнением рук. Задайте точные руки или веса и рассчитайте. Неизвестные комбинации остаются неизвестными; частичный расчёт требует разрешения. Раскройте исследование ранаутов и перейдите к карте, чтобы увидеть лучшие пять. Карты гипотетические; улучшение руки и рост Equity — разные факты.',
+      'לטווחים וקלפי המשך יש אזור משלהם מתחת להשוואה. הגדירו ידיים מדויקות או משקלים מפורשים וחשבו. צירופים לא ידועים נשארים לא ידועים; אקוויטי חלקי דורש אישור. פתחו את סייר קלפי ההמשך והתמקדו בקלף כדי לבדוק את חמשת הטובים. הקלפים היפותטיים; שיפור היד ושיפור האקוויטי נשארים נפרדים.'],
+    ['Choose a behavior preset and study question for a new Full Hand. During play, open Table cast below the table to choose a fictional identity for each opponent. Appearance does not change behavior or grading. Questions do not guarantee a situation. After the hand, inspect the frozen policy, actor inputs and decisions.',
+      'Выберите поведение соперника и вопрос для новой полной раздачи. Во время игры откройте «Участники стола» под столом и выберите вымышленный образ для каждого соперника. Образ не меняет поведение или оценивание. Вопросы не гарантируют конкретную ситуацию. После раздачи изучите зафиксированную политику, доступные сопернику данные и решения.',
+      'בחרו הגדרת התנהגות ושאלת לימוד ליד מלאה חדשה. במהלך המשחק פתחו את הדמויות בשולחן מתחת לשולחן ובחרו דמות בדיונית לכל יריב. המראה אינו משנה התנהגות או הערכה. שאלות אינן מבטיחות מצב מסוים. לאחר היד, בדקו את המדיניות שנשמרה, את הקלט לשחקן ואת החלטותיו.'],
+  ];
+  refreshTutorial.forEach(([key, russian, hebrew]) => { en[key] = key; ru[key] = russian; he[key] = hebrew; });
   global.riverlineTutorialTranslations = Object.freeze({
     en: Object.freeze(en),
     ru: Object.freeze(ru),

@@ -7,6 +7,7 @@ import { createRangeAnalysisFacts } from './range-analysis.mjs';
 import { continuePersonalHandNode, inspectPersonalActionBranch, personalExactAmountFromBb, comparePersonalNodeStudies } from './personal-hand-study.mjs';
 import { createExactIntentAction, exactActionKey } from '../personal-strategy/exact-node-intent.mjs';
 import { continuationCopy, renderPersonalRangeMutations, personalNodeRegionLabel } from './personal-hand-continuation-language.mjs';
+import { bindDisclosureDismissal } from '../ui/study-disclosure.mjs';
 
 // Ephemeral form drafts only. The application owns node identity, legal actions,
 // range propagation, evidence heads and all durable writes.
@@ -79,6 +80,7 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
     const node = doc.createElement(tag);
     if (text !== undefined) node.textContent = text;
     if (className) node.className = className;
+    if (tag === 'details') bindDisclosureDismissal(node, { signal: renderLifecycle.signal });
     return node;
   };
   const scopeKey = () => JSON.stringify(getScope());
@@ -160,7 +162,7 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
         ? `${copy('old')}: ${(candidate.legacyRaiseFrequency * 100).toLocaleString(lang())}%. ${copy('noSize')}` : copy('noSize');
     };
     listen(select, 'change', update); update();
-    const submit = button('saveOpen'); submit.type = 'submit';
+    const submit = button('saveOpen'); submit.type = 'submit'; submit.className = 'ui-button ui-button--primary';
     form.append(label('class', select), saved, previous, label('frequency', frequency), el('p', copy('remainder')), submit);
     listen(form, 'submit', async (event) => {
       event.preventDefault();
@@ -275,7 +277,7 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
   }
   function renderContext() {
     if (!study.contextFacts) return;
-    const facts = study.contextFacts, section = el('section', undefined, 'personal-hand-stage');
+    const facts = study.contextFacts, section = el('section', undefined, 'personal-hand-stage study-block study-block--facts');
     section.append(el('h4', `${cc('context')} · ${cc(facts.street)}`), el('p', cc('potStack', { pot: facts.potBb, stack: facts.heroStackBb, position: facts.heroPosition })));
     const history = el('details'); history.append(el('summary', cc('history')));
     for (const action of facts.history) {
@@ -366,7 +368,7 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
     if (study.available === false) { status.textContent = copy('unavailable'); return; }
     root.append(el('p', cc('path'), 'personal-hand-path'));
     const board = el('p', (currentNode()?.board ?? ['Qs', '8c', '4h']).join(' '), 'personal-hand-board'); board.dir = 'ltr'; root.append(board);
-    root.append(el('p', copy('assumption')));
+    root.append(el('p', copy('assumption'), 'study-block study-block--assumption'));
     renderContext();
     if (study.study?.questions?.length && study.contextFacts) {
       const preflop = el('details'); preflop.append(el('summary', copy('preflop')));
@@ -382,11 +384,13 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
     renderContinuation();
     if (study.coach) {
       const rendered = renderNodeCoach(study.coach, { language: lang() });
-      root.append(el('p', rendered.summary), el('p', rendered.coverage, 'personal-hand-coverage'), el('p', rendered.caution));
+      const overview = el('section', undefined, 'study-block study-block--insight personal-node-overview');
+      overview.append(el('p', rendered.summary, 'study-lead'), el('p', rendered.coverage, 'personal-hand-coverage'), el('p', rendered.caution, 'study-note'));
+      root.append(overview);
       for (const [index, lesson] of rendered.lessons.entries()) {
         const card = el(index === 0 ? 'article' : 'details', undefined, 'personal-coach-card');
         card.append(el(index === 0 ? 'h4' : 'summary', lesson.noticed), el('p', lesson.why),
-          el('p', lesson.question, 'personal-coach-question'), el('p', lesson.explanation));
+          el('p', lesson.question, 'personal-coach-question'), el('p', lesson.explanation, 'study-note'));
         const more = el('details'); more.append(el('summary', copy('dependencies')), el('p', lesson.whatChanges),
           el('p', lesson.coverage), el('p', lesson.unavailable)); card.append(more); root.append(card);
         if (focusTeaching) {

@@ -187,7 +187,7 @@ test('replay cues share the bounded semantic motion scale and stay restrained', 
 test('one radial-felt seat/card unit supports deliberate geometry for every table size', () => {
   assert.match(renderer, /data-card-lane="radial-felt"/);
   assert.doesNotMatch(renderer, /table-seat-connector|table-card-cradle/);
-  assert.match(renderer, /TABLE_FALLBACK_ANCHORS = Object\.freeze/);
+  assert.match(renderer, /window\.RiverlineTableEnvironment\.anchors\(activePlayers\)/);
   assert.match(renderer, /seatsLayer\.dataset\.tableSize = String\(activePlayers\)/);
   assert.match(renderer, /for \(let i = 0; i < activePlayers; i\+\+\)/);
   assert.match(renderer, /width="\$\{unit\.width\}" height="\$\{unit\.height\}"/);

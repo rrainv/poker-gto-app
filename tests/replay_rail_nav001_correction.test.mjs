@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
+import { handSetupRulesDefinition } from '../app/src/application/hand-setup-rules.mjs';
 
 import { ACTION_TYPES, PHASES } from '../shared/poker-domain/index.js';
 import { createCanonicalLiveController } from '../app/src/application/canonical-live-controller.mjs';
@@ -136,14 +138,42 @@ test('Abort Hand is confirmed, clears only canonical live transients, and return
 });
 
 test('player-count validation preserves invalid input and blocks start instead of clamping', () => {
-  const validation = LOGIC.slice(
-    LOGIC.indexOf('function canonicalHandTableSizeValidation('),
-    LOGIC.indexOf('function readCanonicalHandConfiguration('),
-  );
-  assert.match(validation, /value >= minimum && value <= 10/);
-  assert.match(validation, /aria-invalid/);
-  assert.doesNotMatch(validation, /Math\.min\(10|Math\.max\(minimum|tableControl\.value =/);
-  assert.match(LOGIC, /if \(!tableSizeValidation\?\.valid\)/);
+  for (const collectionType of ['none', 'fixed_per_seated_player']) {
+    const minimum = handSetupRulesDefinition({ collectionType }).tableSize.minimumSeated;
+    for (const raw of ['', '-1', '1', '2.5', '2', '6', '7', '10', '11']) {
+      const controller = createCanonicalLiveController({ enabled: true });
+      let initializations = 0;
+      const controls = new Map(Object.entries({ handTableSize: raw, handCollectionType: collectionType,
+        handStackBb: '100', handButtonSeat: '0', handHeroSeat: '0', handAnteType: 'none', handAnteBb: '0',
+        handStartButton: '', handTableSizeError: '', handAccountingPreview: '',
+      }).map(([id, value]) => [`#${id}`, { value, attributes: {}, focus() {},
+        setAttribute(key, next) { this.attributes[key] = next; } }]));
+      const context = vm.createContext({
+        $: id => controls.get(id), selectedValue: id => controls.get(id)?.value,
+        t: text => text, formatCanonicalBb: amount => `${amount / 1000} bb`, toast() {}, clearToast() {},
+        app: { handReview: { source: null } }, resetCanonicalHandDraft() {}, renderCanonicalHandWorkspace() {},
+        callPlaybookStateBridge(method, ...args) {
+          if (method === 'handSetupRulesDefinition') return handSetupRulesDefinition(...args);
+          if (method === 'getState') return controller.getState();
+          if (method === 'initializeHand') { initializations++; return controller.initialize(...args); }
+          throw new Error(`Unexpected bridge call: ${method}`);
+        },
+      });
+      vm.runInContext(LOGIC.slice(LOGIC.indexOf('function canonicalHandTableSizeValidation('),
+        LOGIC.indexOf('function resetCanonicalHandDraft(')), context);
+      vm.runInContext(LOGIC.slice(LOGIC.indexOf('function startCanonicalPlaybookHand('),
+        LOGIC.indexOf('function resetCanonicalPlaybookHand(')), context);
+      const expectedValid = raw !== '' && Number.isInteger(Number(raw)) && Number(raw) >= minimum && Number(raw) <= 10;
+      assert.equal(context.syncHandSeatSelectors().valid, expectedValid, `${collectionType}: ${raw}`);
+      assert.equal(controls.get('#handTableSize').value, raw, 'validation preserves what the user entered');
+      assert.equal(controls.get('#handStartButton').disabled, !expectedValid);
+      assert.equal(controls.get('#handTableSize').attributes['aria-invalid'], String(!expectedValid));
+      const result = context.startCanonicalPlaybookHand();
+      assert.equal(initializations, expectedValid ? 1 : 0, 'invalid input cannot reach canonical initialization');
+      assert.equal(result?.players.length ?? null, expectedValid ? Number(raw) : null);
+      assert.equal(controls.get('#handTableSize').value, raw, 'Start must not clamp invalid input either');
+    }
+  }
   assert.match(HTML, /id="handTableSizeError"[^>]*role="alert"/);
 });
 

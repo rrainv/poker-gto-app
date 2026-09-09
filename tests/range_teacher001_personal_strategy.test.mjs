@@ -279,7 +279,6 @@ test('Teacher architecture and UI seam contain no Training grading or strategy-p
   assert.match(html, /data-teacher-preset="boundaries"/);
   assert.match(css, /\.calibration-teacher-summary/);
   assert.match(css, /\.calibration-personal-column\s*\{[^}]*display:\s*grid[^}]*align-content:\s*start/);
-  assert.match(css, /data-personal-view="understanding"\][^\n]+\.calibration-personal-column\s*\{[^}]*display:\s*grid/);
   assert.match(css, /\.personal-understanding-columns\s*\{[^}]*display:\s*grid/);
   assert.match(css, /\.calibration-teacher-panel\s*\{[^}]*gap:\s*var\(--space-3\)[^}]*padding:\s*clamp\(var\(--space-3\), 1\.1vw, var\(--space-4\)\)[^}]*overflow:\s*visible/);
   assert.match(css, /\.calibration-teacher-sections\s*\{[^}]*gap:\s*var\(--space-2\)[^}]*align-items:\s*start/);

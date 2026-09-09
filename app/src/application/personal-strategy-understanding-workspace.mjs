@@ -4,6 +4,7 @@ import { createPersonalRangeLanguageFacts, renderPersonalRangeLanguageFacts,
 import { choosePersonalTeachingNext, comparePersonalStrategyWithSource } from './personal-strategy-intelligence.mjs';
 import { createPersonalCoach, createPersonalCoachRequest, renderPersonalCoachLesson } from '../personal-strategy/coach.mjs';
 import { mountPersonalStrategyHandWorkspace } from './personal-strategy-hand-workspace.mjs';
+import { PERSONAL_STRATEGY_MATRIX_PRECISIONS } from '../personal-strategy/matrix-projection.mjs';
 
 
 export function renderPersonalMappingCoverage(target, coverage, t) {
@@ -13,8 +14,37 @@ export function renderPersonalMappingCoverage(target, coverage, t) {
     const row = document.createElement('li');
     const name = document.createElement('span'); name.textContent = t(family.labelKey);
     const state = document.createElement('strong'); state.textContent = t(labels[family.state] ?? 'Partly mapped');
-    row.dataset.coverageState = family.state; row.append(name, state); return row;
+    row.dataset.coverageState = family.state; row.append(name, state);
+    const samples = document.createElement('small');
+    samples.textContent = `${family.directCount ?? 0} / ${family.totalClasses ?? 0}`;
+    row.append(samples); return row;
   }));
+}
+
+export function renderPersonalStrategyMap(target, cells, t) {
+  if (!target) return;
+  target.replaceChildren(); target.hidden = !cells?.length;
+  if (!cells?.length) return;
+  const labels = { directly_known: 'Specified', inferred_high: 'Supported estimates', inferred_medium: 'Tentative', uncertain: 'Tentative', transferred: 'Transferred', unknown: 'Unknown', conflicting: 'Conflicts' };
+  const counts = new Map();
+  for (const cell of cells) {
+    const status = Object.hasOwn(labels, cell.status) ? cell.status : 'unknown';
+    counts.set(status, (counts.get(status) ?? 0) + 1);
+  }
+  const bar = document.createElement('div'); bar.className = 'personal-map-bar'; bar.setAttribute('aria-hidden', 'true');
+  const legend = document.createElement('ul'); legend.className = 'personal-map-legend';
+  for (const [status, count] of counts) {
+    const segment = document.createElement('span'); segment.dataset.coverageState = status; segment.style.flexGrow = String(count); bar.append(segment);
+    const item = document.createElement('li'); item.dataset.coverageState = status;
+    item.textContent = `${t(labels[status])} · ${count}`; legend.append(item);
+  }
+  const caption = document.createElement('p'); caption.className = 'study-note';
+  caption.textContent = t('Hand classes by evidence status, not action frequencies or confidence.');
+  const exactPrecisions = [PERSONAL_STRATEGY_MATRIX_PRECISIONS.PURE_EXPLICIT, PERSONAL_STRATEGY_MATRIX_PRECISIONS.EXACT_MIX, PERSONAL_STRATEGY_MATRIX_PRECISIONS.TIED_EXACT_MIX];
+  const exactCount = cells.filter(cell => cell.status === 'directly_known' && exactPrecisions.includes(cell.action?.precision)).length;
+  const precision = document.createElement('p'); precision.className = 'personal-map-precision';
+  precision.textContent = `${t('Exact-frequency evidence')} · ${exactCount}`;
+  target.append(bar, legend, precision, caption);
 }
 
 // Presentation/application adapter over the existing service. It never opens
@@ -74,7 +104,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
     coachAvailable = false;
     q('personalCoachCards')?.replaceChildren();
     if (q('personalContextInputDisclosure')) q('personalContextInputDisclosure').open = false;
-    for (const id of ['personalIntentStatements', 'personalRangeSummary', 'personalRangeFacts', 'personalComparisonSummary', 'personalHistoryContent', 'personalUnderstandingCoverage']) q(id)?.replaceChildren();
+    for (const id of ['personalIntentStatements', 'personalRangeSummary', 'personalRangeFacts', 'personalComparisonSummary', 'personalHistoryContent', 'personalUnderstandingCoverage', 'personalStrategyMap']) q(id)?.replaceChildren();
     q('personalIntentText').value = ''; q('personalIntentScopeNote').value = '';
     q('personalComparisonFacts').textContent = ''; q('personalIntentError').textContent = '';
     for (const id of ['personalUnderstandingScope', 'personalUnderstandingStatus', 'personalTeachReason', 'personalApproachError']) q(id).textContent = '';
@@ -177,12 +207,17 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
   }
   function renderRange() {
     const insights = renderPersonalRangeLanguageFacts(facts, { language: language(), withPresentation: true });
-    q('personalRangeSummary').replaceChildren(...insights.map((insight, index) => {
-      const startsGroup = index === 0 || insights[index - 1].kind !== insight.kind;
-      const row = element('li', undefined, `personal-insight-row${startsGroup ? ' personal-insight-row--group-start' : ''}`);
-      row.dataset.insightKind = insight.kind;
-      row.append(element('span', startsGroup ? insight.label : '', 'personal-insight-label'), element('p', insight.text));
-      return row;
+    const groups = new Map();
+    for (const insight of insights) {
+      if (!groups.has(insight.kind)) groups.set(insight.kind, []);
+      groups.get(insight.kind).push(insight);
+    }
+    q('personalRangeSummary').replaceChildren(...[...groups].map(([kind, rows]) => {
+      const group = element('li', undefined, 'personal-insight-group'); group.dataset.insightKind = kind;
+      const heading = element('h4', rows[0].label); heading.append(element('span', String(rows.length), 'personal-insight-count'));
+      const list = element('ul');
+      list.append(...rows.map(insight => element('li', insight.text, 'personal-insight-sentence')));
+      group.append(heading, list); return group;
     }));
     const details = document.createDocumentFragment();
     for (const region of facts.regions) {
@@ -206,6 +241,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
       ]);
       if (!current(token.version, token.scopeKey) || expectedLoadVersion !== loadVersion) return;
       qualitative = statements; matrix = projection;
+      renderPersonalStrategyMap(q('personalStrategyMap'), projection.cells, t);
       coachEvidence = evidenceView;
       facts = createPersonalRangeLanguageFacts({ evidenceView });
       const { entry, approach } = active();

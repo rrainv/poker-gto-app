@@ -9,17 +9,6 @@ function tableMessage(key, fallback, values = {}) {
   ));
 }
 
-const TABLE_FALLBACK_ANCHORS = Object.freeze({
-  2: [[0.50, 0.85], [0.50, 0.09]],
-  3: [[0.50, 0.85], [0.18, 0.20], [0.82, 0.20]],
-  4: [[0.50, 0.85], [0.12, 0.48], [0.50, 0.09], [0.88, 0.48]],
-  5: [[0.50, 0.85], [0.16, 0.62], [0.22, 0.18], [0.78, 0.18], [0.84, 0.62]],
-  6: [[0.50, 0.85], [0.17, 0.66], [0.17, 0.23], [0.50, 0.09], [0.83, 0.23], [0.83, 0.66]],
-  7: [[0.50, 0.84], [0.22, 0.76], [0.10, 0.45], [0.24, 0.14], [0.76, 0.14], [0.90, 0.45], [0.78, 0.76]],
-  8: [[0.50, 0.84], [0.22, 0.76], [0.10, 0.47], [0.24, 0.15], [0.50, 0.07], [0.76, 0.15], [0.90, 0.47], [0.78, 0.76]],
-  9: [[0.50, 0.84], [0.25, 0.79], [0.09, 0.56], [0.12, 0.27], [0.34, 0.09], [0.66, 0.09], [0.88, 0.27], [0.91, 0.56], [0.75, 0.79]],
-  10: [[0.50, 0.84], [0.26, 0.80], [0.09, 0.59], [0.09, 0.33], [0.27, 0.13], [0.50, 0.06], [0.73, 0.13], [0.91, 0.33], [0.91, 0.59], [0.74, 0.80]],
-});
 
 function tableContributionPoint({ centerX, centerY, seatX, seatY, radialFraction = 0.5 }) {
   return {
@@ -57,7 +46,7 @@ class TableRenderer {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
     if (!this.container) return;
-    this.currentActivePlayers = 10;
+    this.currentActivePlayers = 0;
     this.currentGeometrySignature = null;
     this.lastState = null;
     this.renderedCardSignatures = new Map();
@@ -94,6 +83,8 @@ class TableRenderer {
   }
 
   initSVG() {
+    this.environment?.dispose();
+    this.environment = null;
     this.container.innerHTML = `
       <svg id="poker-table-svg" class="riverline-poker-table" viewBox="0 0 1000 650" width="100%" role="img" aria-labelledby="poker-table-title" aria-describedby="poker-table-description" preserveAspectRatio="xMidYMid meet" dir="ltr">
         <title id="poker-table-title">${tableMessage('table.title', 'Riverline poker table')}</title>
@@ -132,11 +123,8 @@ class TableRenderer {
         <rect id="table-cushion" class="table-cushion" x="110" y="118" width="780" height="376" rx="188" ry="188" aria-hidden="true" />
         <rect id="table-surface" class="table-surface" x="120" y="128" width="760" height="356" rx="178" ry="178" aria-hidden="true" />
         <rect id="table-felt-texture" class="table-felt-texture" x="120" y="128" width="760" height="356" rx="178" ry="178" aria-hidden="true" />
-        <rect id="table-betting-line" class="table-betting-line" x="146" y="154" width="708" height="304" rx="152" ry="152" aria-hidden="true" />
-        <path id="table-riverline-mark" class="table-riverline-mark" d="M360 210 C418 180 582 180 640 210" aria-hidden="true" />
 
         <text id="table-phase-status" class="table-phase-status" x="500" y="238" text-anchor="middle"></text>
-        <ellipse id="table-pot-zone" class="table-pot-zone" cx="500" cy="286" rx="72" ry="23" aria-hidden="true" />
         ${this.pokerTableAmountMarkup({
           id: 'table-pot', className: 'table-pot', size: 'normal', x: 500, y: 286,
           prefix: tableMessage('table.potLabel', 'Pot'), value: '0', unit: 'bb', ariaHidden: true,
@@ -147,17 +135,20 @@ class TableRenderer {
         <g id="seats-layer" class="table-seats-layer"></g>
       </svg>
     `;
-    this.drawSeats();
+    this.drawSeats(this.currentActivePlayers);
   }
 
   drawSeats(activePlayers = 10, presentation = null) {
     const seatsLayer = this.container.querySelector('#seats-layer');
     const contributionsLayer = this.container.querySelector('#table-contributions-layer');
     if (!seatsLayer || !contributionsLayer) return;
+    if (activePlayers === 0) {
+      seatsLayer.innerHTML = ''; contributionsLayer.innerHTML = ''; return;
+    }
 
     const centerX = (presentation?.geometry?.potAnchor?.x ?? 0.5) * 1000;
     const centerY = (presentation?.geometry?.potAnchor?.y ?? 0.48) * 650;
-    const fallbackAnchors = TABLE_FALLBACK_ANCHORS[activePlayers] || TABLE_FALLBACK_ANCHORS[10];
+    const fallbackAnchors = window.RiverlineTableEnvironment.anchors(activePlayers);
     const unit = presentation?.geometry?.playerUnit || { width: activePlayers >= 7 ? 104 : 122, height: activePlayers >= 7 ? 62 : 70 };
     const cardScale = presentation?.geometry?.cardScale || (activePlayers < 3 ? 1.25 : activePlayers >= 7 ? 0.88 : 1);
     const cardOverlapUnits = Math.max(8, Math.round(unit.height * (presentation?.geometry?.cardOverlap ?? 0.24)));
@@ -218,15 +209,22 @@ class TableRenderer {
       const dealerX = Math.round(dealerBaseX - (seatVector.unitY * dealerTangentialOffset));
       const dealerY = Math.round(dealerBaseY + (seatVector.unitX * dealerTangentialOffset));
       const actionY = Math.round(halfHeight + 12);
+      // Grow into the outer padding; retain the text-side and bottom edges.
+      const portraitWidth = unit.width < 120 ? 32 : 40;
+      const portraitHeight = unit.height - 26;
       seatsHtml += `
         <g id="seat-${i}" class="table-seat table-player-unit${i === 0 ? ' is-hero' : ''}" data-seat-index="${i}" data-card-lane="radial-felt" transform="translate(${x}, ${y})">
           <g id="hole-cards-${i}" class="table-hole-cards" data-card-lane="radial-felt" style="--card-deal-from-x:${Math.round(seatVector.unitX * 24)}px; --card-deal-from-y:${Math.round(seatVector.unitY * 24)}px; --card-fold-to-x:${Math.round(seatVector.unitX * 38)}px; --card-fold-to-y:${Math.round(seatVector.unitY * 38)}px" transform="translate(${holeCardX}, ${holeCardY}) scale(${cardScale})" aria-hidden="true">${i === 0 ? '' : `${this.renderCardBack(0)}${this.renderCardBack(1)}`}</g>
           <g class="table-seat-info">
             <rect class="table-seat-base" x="${-halfWidth}" y="${-halfHeight + 4}" width="${unit.width}" height="${unit.height}" rx="12" aria-hidden="true" />
             <rect class="table-seat-surface" x="${-halfWidth}" y="${-halfHeight}" width="${unit.width}" height="${unit.height}" rx="12" aria-hidden="true" />
+            <circle class="table-identity-mark" cx="${-halfWidth + 8}" cy="0" r="3" aria-hidden="true" />
+            <defs><clipPath id="seat-portrait-clip-${i}"><rect x="${-halfWidth + 3}" y="${-halfHeight + 7}" width="${portraitWidth}" height="${portraitHeight}" rx="9" /></clipPath></defs>
+            <image class="table-seat-portrait" x="${-halfWidth + 3}" y="${-halfHeight + 7}" width="${portraitWidth}" height="${portraitHeight}" preserveAspectRatio="xMidYMid slice" clip-path="url(#seat-portrait-clip-${i})" hidden aria-hidden="true" />
+            <text class="table-seat-subtitle" x="18" y="${Math.round(-halfHeight + 30)}" text-anchor="middle" data-max-width="${unit.width - 48}" hidden></text>
             <path class="table-actor-indicator" d="M${Math.round(-halfWidth + 10)} ${Math.round(-halfHeight + 7)} H${Math.round(halfWidth - 10)}" aria-hidden="true" />
             <text class="table-seat-name" x="0" y="${Math.round(-halfHeight + 18)}" text-anchor="middle">${i === 0 ? tableMessage('Hero', 'Hero') : `P${i + 1}`}</text>
-            <text id="seat-position-${i}" class="table-seat-meta table-seat-position" x="0" y="${Math.round(-halfHeight + 31)}" text-anchor="middle"></text>
+            <text id="seat-position-${i}" class="table-seat-meta table-seat-position" x="0" y="${Math.round(-halfHeight + 31)}" data-normal-y="${Math.round(-halfHeight + 31)}" data-portrait-x="${-halfWidth + 3 + portraitWidth / 2}" data-portrait-y="${Math.round(halfHeight - 6)}" text-anchor="middle"></text>
             ${this.pokerAmountMarkup({
               id: `seat-stack-${i}`, className: 'table-seat-meta table-seat-stack',
               size: 'small', x: -38, y: Math.round(-halfHeight + 34), unit: '', ariaHidden: true,
@@ -259,6 +257,10 @@ class TableRenderer {
             hidden: true,
             visualVariant: 'contribution',
           })}
+          <g id="forced-contribution-${i}" class="table-forced-contribution" role="group" transform="translate(${contributionPoint.x} ${contributionPoint.y})">
+            <text class="table-forced-contribution-label" text-anchor="middle" y="23"></text>
+            <text class="table-voluntary-contribution-label" text-anchor="middle" y="37"></text>
+          </g>
         </g>`;
     }
     seatsLayer.innerHTML = seatsHtml;
@@ -338,6 +340,7 @@ class TableRenderer {
   }
 
   presenceSeatIdentity(player) {
+    if (this.environment?.identity(player)) return this.environment.name(player);
     const fallback = player.isHero
       ? tableMessage('Hero', 'Hero')
       : tableMessage('Player {number}', 'Player {number}', { number: player.seat + 1 });
@@ -368,6 +371,7 @@ class TableRenderer {
   }
 
   presencePhase(state) {
+    if (state.status === 'setup_preview') return tableMessage('Setup preview. No hand is in play.', 'Setup preview. No hand is in play.');
     if (state.empty) return tableMessage('table.empty.startHand', 'Start a hand');
     if (state.status === 'awaiting_private_cards') {
       return tableMessage('table.phase.awaitingPrivateCards', 'Awaiting private cards');
@@ -385,6 +389,7 @@ class TableRenderer {
   presenceSeatDescription(player) {
     const parts = [
       this.presenceSeatIdentity(player),
+      this.environment?.subtitle?.(player),
       player.position,
       tableMessage('table.a11y.stack', 'Stack {value} bb', {
         value: this.formatMilliBb(player.currentStackMilliBb),
@@ -658,17 +663,11 @@ class TableRenderer {
     this.setTableRoundedRect('#table-cushion', { x: 110, y: 118, width: 780, height: 376 });
     this.setTableRoundedRect('#table-surface', { x: 120, y: 128, width: 760, height: 356 });
     this.setTableRoundedRect('#table-felt-texture', { x: 120, y: 128, width: 760, height: 356 });
-    this.setTableRoundedRect('#table-betting-line', { x: 146, y: 154, width: 708, height: 304 });
     const phase = this.container.querySelector('#table-phase-status');
     phase?.setAttribute('x', '500');
     phase?.setAttribute('y', '238');
     this.container.querySelector('#table-pot')?.setAttribute('transform', 'translate(500 286)');
-    const potZone = this.container.querySelector('#table-pot-zone');
-    potZone?.setAttribute('cx', '500');
-    potZone?.setAttribute('cy', '286');
     this.container.querySelector('#community-cards')?.setAttribute('transform', 'translate(500, 330)');
-    this.container.querySelector('#table-riverline-mark')
-      ?.setAttribute('d', 'M360 210 C418 180 582 180 640 210');
   }
 
   applyPresentationGeometry(presentation) {
@@ -700,7 +699,6 @@ class TableRenderer {
     this.setTableRoundedRect('#table-cushion', bounds, physicality.cushionInset);
     this.setTableRoundedRect('#table-surface', bounds, physicality.feltInset);
     this.setTableRoundedRect('#table-felt-texture', bounds, physicality.feltInset);
-    this.setTableRoundedRect('#table-betting-line', bounds, physicality.bettingLineInset);
     const phase = this.container.querySelector('#table-phase-status');
     if (phase) {
       phase.setAttribute('x', String(potX));
@@ -708,21 +706,8 @@ class TableRenderer {
     }
     this.container.querySelector('#table-pot')
       ?.setAttribute('transform', `translate(${potX} ${potY})`);
-    const potZone = this.container.querySelector('#table-pot-zone');
-    if (potZone) {
-      potZone.setAttribute('cx', String(potX));
-      potZone.setAttribute('cy', String(potY));
-      potZone.setAttribute('rx', String(Math.max(62, bounds.width * 0.085)));
-    }
     this.container.querySelector('#community-cards')
       ?.setAttribute('transform', `translate(${potX}, ${potY + 34}) scale(${geometry.boardScale})`);
-    const mark = this.container.querySelector('#table-riverline-mark');
-    if (mark) {
-      const left = potX - (bounds.width * 0.15);
-      const right = potX + (bounds.width * 0.15);
-      const y = bounds.y + (bounds.height * 0.28);
-      mark.setAttribute('d', `M${left} ${y} C${potX - 52} ${y - 24} ${potX + 52} ${y - 24} ${right} ${y}`);
-    }
     this.container.dataset.tableGeometryFamily = presentation.geometryFamily;
   }
 
@@ -766,7 +751,7 @@ class TableRenderer {
       this.setPokerAmount(pot, {
         prefix: tableMessage('table.potLabel', 'Pot'), value, unit: 'bb', ariaHidden: true,
       });
-      pot.toggleAttribute('hidden', state.empty);
+      pot.toggleAttribute('hidden', state.empty || state.status === 'setup_preview');
     }
 
     const community = this.container.querySelector('#community-cards');
@@ -786,7 +771,7 @@ class TableRenderer {
     if (description) {
       description.textContent = [
         this.presencePhase(state),
-        state.empty ? null : tableMessage('table.pot', 'Pot {value} bb', {
+        state.empty || state.status === 'setup_preview' ? null : tableMessage('table.pot', 'Pot {value} bb', {
           value: this.formatMilliBb(state.potMilliBb),
         }),
         ...state.seats.map((player) => this.presenceSeatDescription(player)),
@@ -816,6 +801,7 @@ class TableRenderer {
       );
 
       seat.dataset.canonicalSeat = String(player.seat);
+      seat.dataset.identity = this.environment?.identity(player) || '';
       seat.dataset.playerId = player.playerId;
       seat.setAttribute('role', 'group');
       seat.setAttribute('aria-label', this.presenceSeatDescription(player));
@@ -844,6 +830,7 @@ class TableRenderer {
         }
       }
       if (position) position.textContent = player.position || '';
+      this.paintSeatPortrait(seat, player);
       if (stack) this.setPokerAmount(stack, {
         value: this.formatMilliBb(player.currentStackMilliBb), unit: 'bb', ariaHidden: true,
       });
@@ -863,7 +850,25 @@ class TableRenderer {
         ));
         const isVisible = state.showStreetContributions === true
           && player.streetContributionMilliBb > 0;
-        contributionLane?.toggleAttribute('hidden', !isVisible);
+        const forced = state.street === 'preflop' && state.showStreetContributions
+          && state.seats.some(seat => seat.forcedContributions?.some(entry => entry.kind === 'ante'))
+          ? player.forcedContributions || [] : [];
+        const forcedGroup = this.container.querySelector(`#forced-contribution-${i}`);
+        if (forcedGroup) {
+          forcedGroup.setAttribute('transform', contribution.getAttribute('transform'));
+          const label = forced.map(entry => {
+            const name = entry.kind === 'small_blind' ? 'SB' : entry.kind === 'big_blind' ? 'BB' : tableMessage('Ante', 'Ante');
+            return `${name} ${this.formatMilliBb(entry.amountMilliBb)}`;
+          }).join(' + ');
+          const forcedLabel = forcedGroup.querySelector('.table-forced-contribution-label');
+          forcedLabel.textContent = label;
+          forcedLabel.setAttribute('y', isVisible ? '23' : '4');
+          forcedGroup.querySelector('.table-voluntary-contribution-label').textContent = forced.length && player.voluntaryStreetContributionMilliBb > 0
+            ? `${tableMessage('Action', 'Action')} ${this.formatMilliBb(player.voluntaryStreetContributionMilliBb)}` : '';
+          forcedGroup.toggleAttribute('hidden', !forced.length);
+          forcedGroup.setAttribute('aria-label', `${player.identity}: ${label} bb`);
+        }
+        contributionLane?.toggleAttribute('hidden', !isVisible && !forced.length);
         contribution.toggleAttribute('hidden', !isVisible);
         const amount = isVisible ? this.formatMilliBb(player.streetContributionMilliBb) : '';
         this.setPokerAmount(contribution, {
@@ -952,13 +957,14 @@ class TableRenderer {
   renderScenarioState(state) {
     this.clearReplayMotionClasses();
     this.lastReplayMotionToken = null;
-    const scenarioGeometrySignature = `scenario:${state.activePlayers || this.currentActivePlayers}`;
+    const scenarioGeometrySignature = `scenario:${state.activePlayers || this.currentActivePlayers}:${Boolean(state.board?.length)}`;
     if (state.activePlayers && (state.activePlayers !== this.currentActivePlayers
       || scenarioGeometrySignature !== this.currentGeometrySignature)) {
       this.currentActivePlayers = state.activePlayers;
       this.currentGeometrySignature = scenarioGeometrySignature;
-      this.drawSeats(this.currentActivePlayers);
-      this.resetTableGeometry();
+      const layout = window.RiverlineTableEnvironment.layout(this.currentActivePlayers, Boolean(state.board?.length));
+      this.drawSeats(this.currentActivePlayers, layout);
+      this.applyPresentationGeometry(layout);
     }
     for (const key of [
       'tableProjection', 'tableVisualState', 'tableGeometryFamily',
@@ -997,6 +1003,7 @@ class TableRenderer {
       if (dealer) dealer.toggleAttribute('hidden', !isDealer);
       if (name) name.textContent = playerState?.name || (isHero ? tableMessage('Hero', 'Hero') : `P${i + 1}`);
       if (position) position.textContent = '';
+      this.paintSeatPortrait(seat, playerState || {});
       if (stack) this.setPokerAmount(stack, {
         value: Number.isFinite(playerState?.stackBb) ? playerState.stackBb : '',
         unit: Number.isFinite(playerState?.stackBb) ? 'bb' : '',
@@ -1008,6 +1015,7 @@ class TableRenderer {
       if (action) action.setAttribute('hidden', '');
       if (seat) {
         seat.removeAttribute('aria-label');
+        seat.dataset.identity = '';
         seat.classList.toggle('is-hero', isHero);
         seat.classList.toggle('is-dealer', isDealer);
         seat.classList.toggle('is-actor', isActor);
@@ -1029,10 +1037,68 @@ class TableRenderer {
     if (community && state.board) this.renderKnownCards(community, state.board, 'community', true);
   }
 
+  paintSeatPortrait(seat, player) {
+    if (!seat) return;
+    const portrait = seat.querySelector('.table-seat-portrait');
+    const subtitle = seat.querySelector('.table-seat-subtitle');
+    const name = seat.querySelector('.table-seat-name');
+    const position = seat.querySelector('.table-seat-position');
+    const src = this.environment?.portrait?.(player) || '';
+    if (portrait) {
+      portrait.toggleAttribute('hidden', !src);
+      if (src && portrait.getAttribute('href') !== src) portrait.setAttribute('href', src);
+      else if (!src) portrait.removeAttribute('href');
+    }
+    if (subtitle) {
+      const text = this.environment?.subtitle?.(player) || '';
+      subtitle.textContent = text;
+      subtitle.toggleAttribute('hidden', !src);
+      subtitle.removeAttribute('textLength');
+      // Squeeze only long localized labels, never ordinary short names.
+      if (text.length * 4.6 > Number(subtitle.dataset.maxWidth)) {
+        subtitle.setAttribute('textLength', subtitle.dataset.maxWidth);
+        subtitle.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+      }
+    }
+    if (name) name.setAttribute('x', src ? '18' : '0');
+    if (position) {
+      position.setAttribute('x', src ? position.dataset.portraitX : '0');
+      position.setAttribute('y', src ? position.dataset.portraitY : position.dataset.normalY);
+    }
+  }
+
+  refreshSeatIdentities() {
+    const presence = this.lastState?.tablePresence || this.lastState;
+    if (!presence?.seats) return;
+    for (const player of presence.seats) {
+      const seat = this.container.querySelector(`#seat-${player.visualSeatIndex}`);
+      const name = seat?.querySelector('.table-seat-name');
+      if (name) name.textContent = this.presenceSeatIdentity(player);
+      if (seat) {
+        seat.dataset.identity = this.environment?.identity(player) || '';
+        this.paintSeatPortrait(seat, player);
+        seat.setAttribute('aria-label', this.presenceSeatDescription(player));
+      }
+    }
+    const description = this.container.querySelector('#poker-table-description');
+    if (description) description.textContent = [this.presencePhase(presence),
+      tableMessage('table.pot', 'Pot {value} bb', { value: this.formatMilliBb(presence.potMilliBb) }),
+      ...presence.seats.map(player => this.presenceSeatDescription(player))].join('. ');
+  }
+
   renderState(state) {
     // Presentation-only state: no betting order or poker semantics are inferred here.
     if (!state) return;
     this.lastState = state;
+    if (!this.environment && window.RiverlineTableEnvironment) {
+      const root = document.createElement('div'); this.container.appendChild(root);
+      this.environment = window.RiverlineTableEnvironment.mount({ root,
+        language: () => document.documentElement.lang.split('-')[0] || 'en',
+        onChange: () => this.refreshSeatIdentities() });
+    }
+    this.environment?.update(state.tablePresence || state, {
+      synthetic: Boolean(this.container.closest('#trainingFullHandTableMount')),
+    });
     const title = this.container.querySelector('#poker-table-title');
     if (title) title.textContent = tableMessage('table.title', 'Riverline poker table');
     const replayMotion = this.pendingReplayMotion;
@@ -1050,6 +1116,7 @@ class TableRenderer {
 
 document.addEventListener('DOMContentLoaded', () => {
   window.tableRenderer = new TableRenderer('visual-table-container');
+  window.dispatchEvent(new CustomEvent('riverline:table-ready'));
 });
 
 window.TableRenderer = TableRenderer;

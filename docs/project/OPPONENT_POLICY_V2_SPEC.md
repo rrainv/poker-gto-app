@@ -43,6 +43,19 @@ Labels only populate explicit parameters in setup and never enter behavior or se
 
 ## Training and review
 
+September 7 presentation addition (`BETA-DESIGN-REFRESH-001`): the shared Full
+Hand table offers a collapsed **Table cast** during play/review. Ten fictional
+identities have short EN/RU/HE names, non-strategic descriptors and original
+illustrated portraits visible on the seats. Every opponent seat can select a
+different identity; Hero is excluded.
+Selection is keyed by canonical seat, survives action/visual-order changes for
+the same roster, and clears when the renderer leaves synthetic play or the
+roster/Hero changes. It is runtime appearance only, not a frozen historical
+attachment, policy input, persisted profile or real-person model. No change to
+`opponent-practice-request/v1`, parameters, behavior version, seeds, supported
+targets or review provenance. Per-seat **behavior** customization remains outside
+this slice. `QA-BETA-DESIGN-REFRESH-001` owns its presentation acceptance.
+
 `opponent-practice-request/v1` freezes policy ID/version, exact configuration, independent policy seed, target role, allowed context, and Hold'em/no-limit/table-size constraints. The Full Hand start adapter/controller passes it into automated progression. The UI offers all opponents or BB only, three presets and four editable parameters. A role matching Hero or no seated opponent is rejected. Unselected seats retain the actor-safe basic policy. TrainingConfig, planner, legal generator and grader contracts are unchanged; policy results never feed normative evaluation or the StrategyProvider.
 
 The completed automated Hand and bot journal retain the exact request, assignments, base and decision seeds, policy identity/schema/version, parameters, action, observable inputs, deterministic metadata, selection/sizing provenance and canonical Replay references. Terminal UI explains configured weights for each recorded branch; EN/RU/HE use a factual `natural-language-envelope/v1` with subject `synthetic_opponent_policy`, never a Hero assessment. Numeric tokens use RTL isolation. Replay seed preserves the frozen policy request even if draft parameters change. Controller reset clears journal/request/review; bridge reset also releases rendered review evidence. New choices affect new hands, not recorded decisions.

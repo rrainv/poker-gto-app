@@ -95,9 +95,16 @@ export function createSyncCoordinator({
 
   function schedule(delay = 0, force = false) {
     if (!eligible() || timer !== null) return;
+    const identityId = context.identityId;
+    const token = generation;
     timer = scheduleTask(() => {
+      if (!current(identityId, token)) return state;
       timer = null;
-      void run({ force });
+      if (running?.generation === token) {
+        running.rerun = { delay: 0, force: Boolean(force || running.rerun?.force) };
+        return running.promise;
+      }
+      return run({ force });
     }, delay);
   }
 
@@ -245,7 +252,8 @@ export function createSyncCoordinator({
         await activeDomainAdapter.preflight?.();
         if (!current(identityId, token)) return { stopped: true };
         const result = await remoteAdapter.pushOperation({
-          domain, identityId, operation,
+          domain, identityId, operation: activeDomainAdapter.normalizeOperation
+            ? activeDomainAdapter.normalizeOperation(operation) : operation,
         });
         if (!current(identityId, token)) return { stopped: true };
         if (result.status === 'acknowledged') {
@@ -269,8 +277,7 @@ export function createSyncCoordinator({
         });
         if (kind === 'auth') return { auth: true };
         if (kind === 'transient') {
-          schedule(delay);
-          return { offline: true };
+          return { offline: true, retryAfter: delay };
         }
         return { error: true };
       }
@@ -293,6 +300,10 @@ export function createSyncCoordinator({
         return { error: true, errorCode: error?.code ?? 'sync_failed' };
       }
       if (!current(identityId, token)) return { stopped: true };
+      if (result.hasMore && (!result.cursor
+        || JSON.stringify(result.cursor) === JSON.stringify(cursor))) {
+        return { error: true, errorCode: 'invalid_remote_response' };
+      }
       const records = activeDomainAdapter.orderRemoteRecords
         ? activeDomainAdapter.orderRemoteRecords(result.records)
         : result.records;
@@ -302,9 +313,9 @@ export function createSyncCoordinator({
         cursor = result.cursor;
         await activeRepository.setCursor(identityId, cursor);
       }
-      if (!result.hasMore) break;
+      if (!result.hasMore) return { hasMore: false };
     }
-    return {};
+    return { hasMore: true };
   }
 
   async function run({ force = false } = {}) {
@@ -313,6 +324,8 @@ export function createSyncCoordinator({
     if (!online()) return refreshStatus(SYNC_UI_STATES.OFFLINE);
     const identityId = context.identityId;
     const token = generation;
+    clearSchedule();
+    let nextRun = null;
     const operation = (async () => {
       publish(SYNC_UI_STATES.SYNCING, { enabled: true, decided: true });
       try {
@@ -327,13 +340,16 @@ export function createSyncCoordinator({
       const pushed = await push(identityId, token, { force });
       if (!current(identityId, token)) return state;
       if (pushed.auth) return refreshStatus(SYNC_UI_STATES.AUTH_PAUSED);
-      if (pushed.offline) return refreshStatus(SYNC_UI_STATES.OFFLINE);
+      if (pushed.offline) {
+        nextRun = { delay: pushed.retryAfter, force: false };
+        return refreshStatus(SYNC_UI_STATES.OFFLINE);
+      }
       if (pushed.error) return refreshStatus(SYNC_UI_STATES.ERROR);
       const pulled = await pull(identityId, token);
       if (!current(identityId, token)) return state;
       if (pulled.auth) return refreshStatus(SYNC_UI_STATES.AUTH_PAUSED);
       if (pulled.offline) {
-        schedule(1_000);
+        nextRun = { delay: 1_000, force: false };
         return refreshStatus(SYNC_UI_STATES.OFFLINE);
       }
       if (pulled.error) {
@@ -343,11 +359,23 @@ export function createSyncCoordinator({
       }
       await activeRepository.clearDomainError(identityId);
       if (!current(identityId, token)) return state;
+      const remaining = await activeRepository.listDueOperations(identityId, timestamp(clock), 1, force);
+      if (!current(identityId, token)) return state;
+      if (pulled.hasMore || remaining.length) {
+        nextRun = { delay: 0, force };
+        return refreshStatus(SYNC_UI_STATES.SYNCING);
+      }
       return refreshStatus();
     })().catch((error) => {
       if (!current(identityId, token)) return state;
       throw error;
-    }).finally(() => { if (running?.generation === token) running = null; });
+    }).finally(() => {
+      const rerun = running?.generation === token ? running.rerun : null;
+      if (running?.generation === token) running = null;
+      // Yield between bounded runs, after all asynchronous status work completes.
+      const continuation = nextRun ?? rerun;
+      if (continuation && current(identityId, token)) schedule(continuation.delay, continuation.force);
+    });
     running = { generation: token, promise: operation };
     return operation;
   }

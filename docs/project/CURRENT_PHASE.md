@@ -1,5 +1,38 @@
 # Current Riverline phase
 
+September 7 final broad correction: `BETA-DESIGN-CORRECTION-002` is implemented,
+awaiting independent Human Beta QA under `QA-BETA-DESIGN-CORRECTION-002`. Draft
+Hand setup now projects before Start; count-specific table geometry, neutral
+analysis/evidence roles, Equity/Personal/Home composition and bounded render
+deduplication refine the accepted identity. **Design direction is frozen.** The
+next presentation step is independent Human Beta QA, then a bounded Beta Repair
+Sweep for reproduced defects and remaining subjective polish. Temporary portrait
+art and browser performance measurements remain explicit QA debt. This freezes
+broad redesign, without claiming visual acceptance, beta readiness or closure of
+earlier QA/Return owners. Longer-term capability sequencing below is unchanged.
+
+September 7 follow-up: the product owner directionally accepts the bold
+forest/jade/brass identity. `BETA-FEATURE-SURFACE-REFRESH-001`, theme hardening,
+`WELCOME-REFRESH-002` and the visual bug sweep refine the existing surfaces:
+content-aware Understanding columns, human Equity names/card tiles, shared seat
+geometry, truthful idle Training lineup, neutral analysis roles and optional
+Welcome with one primary Home entry. Implementation is complete; visual/manual
+acceptance remains under `QA-BETA-FEATURE-SURFACE-REFRESH-001`. This is not a
+beta-readiness checkpoint and does not close previous acceptance owners.
+
+September 7 explicit presentation slice: `BETA-DESIGN-REFRESH-001` implements
+the shared study hierarchy, projected actor/dealer context, session-local
+per-seat fictional cast in Full Hand Training and a full-width Advanced Equity
+workspace. [Product presentation contract](PRODUCT_SPEC.md) and
+`QA-BETA-DESIGN-REFRESH-001` own scope and pending human acceptance. Poker,
+strategy, policy, grading and persistence contracts are unchanged. This is an
+implementation awaiting acceptance, not a general queue reprioritization or
+beta-readiness checkpoint; earlier QA/Return owners remain open. Human visual QA
+rejected the conservative first pass. The same-ticket bold correction now adds
+forest/jade/brass identity, game/study surface contrast, ten original portraits,
+stronger controls and expanded Runout Explorer. Its visual direction is accepted;
+the feature follow-up and previous detailed acceptance items remain pending.
+
 September 7 explicit ticket: [Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md)
 implements weighted joint Equity, partial known-only semantics, bounded runout
 inspection and read-only Personal/explicit Exploit range consumers.

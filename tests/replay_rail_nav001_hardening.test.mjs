@@ -52,7 +52,7 @@ function rectDistance(left, right) {
   return Math.hypot(dx, dy);
 }
 
-test('Hero uses the same attached rail language across HU through full ring', () => {
+test('count-specific composition keeps player panels distinct and Hero below the felt center', () => {
   for (let playerCount = 2; playerCount <= 10; playerCount += 1) {
     const presentation = createTablePresentation({
       tablePresence: tablePresence(playerCount),
@@ -66,26 +66,28 @@ test('Hero uses the same attached rail language across HU through full ring', ()
       width: unit.width,
       height: unit.height,
     };
-    assert.ok(rectDistance(heroBounds, presentation.geometry.tableBounds) <= 15,
-      `${playerCount}-player Hero must not float away from the table`);
-    assert.ok(presentation.geometry.tableBounds.width >= 900);
+    const bounds = presentation.geometry.tableBounds;
+    assert.ok(heroBounds.y > bounds.y + bounds.height / 2);
+    assert.ok(heroBounds.x >= bounds.x && heroBounds.x + heroBounds.width <= bounds.x + bounds.width);
+    const panels = presentation.seats.map(seat => ({ x: seat.anchor.x * 1000 - unit.width / 2,
+      y: seat.anchor.y * 650 - unit.height / 2, width: unit.width, height: unit.height }));
+    for (let i = 0; i < panels.length; i++) for (let j = i + 1; j < panels.length; j++) {
+      assert.ok(rectDistance(panels[i], panels[j]) > 0, `${playerCount} seats ${i}/${j} overlap`);
+    }
     assert.equal(presentation.geometry.contributionFraction, 0.62);
   }
 });
 
-test('HU opposing panels attach symmetrically while cards remain on radial felt lanes', () => {
+test('HU players face each other on a shared axis with cards owned by radial felt lanes', () => {
   const presentation = createTablePresentation({
     tablePresence: tablePresence(2),
     visualState: TABLE_VISUAL_STATES.LIVE_DECISION,
   });
-  const unit = presentation.geometry.playerUnit;
-  const distances = presentation.seats.map((seat) => rectDistance({
-    x: (seat.anchor.x * 1000) - (unit.width / 2),
-    y: (seat.anchor.y * 650) - (unit.height / 2),
-    width: unit.width,
-    height: unit.height,
-  }, presentation.geometry.tableBounds));
-  assert.ok(Math.abs(distances[0] - distances[1]) <= 1);
+  const [hero, opponent] = presentation.seats;
+  assert.equal(hero.anchor.x, opponent.anchor.x);
+  assert.ok(hero.anchor.y > presentation.geometry.potAnchor.y);
+  assert.ok(opponent.anchor.y < presentation.geometry.potAnchor.y);
+  assert.ok(presentation.geometry.tableBounds.width < createTablePresentation({ tablePresence: tablePresence(6) }).geometry.tableBounds.width);
   assert.match(RENDERER, /cardSeatGap = Math\.max\(12, Math\.round\(cardOverlapUnits \* 0\.30\)\)/);
   assert.match(RENDERER, /data-card-lane="radial-felt"/);
   assert.doesNotMatch(RENDERER, /table-seat-connector|table-card-cradle/);

@@ -53,7 +53,7 @@ export function validateRecordedSettlementState(state, ledgerRake) {
   if (!gross || typeof gross !== 'object' || Array.isArray(gross)) throw new TypeError('Gross payouts required');
   for (const [id, amount] of Object.entries(gross)) {
     assertMilliBbAlignment(amount, state.game.chipUnitMilliBb, 'gross payout');
-    if (amount === 0 || !state.terminal.winnerPlayerIds.includes(id)) throw new RangeError('Invalid gross award recipient');
+    if (!state.terminal.winnerPlayerIds.includes(id)) throw new RangeError('Invalid gross award recipient');
   }
   if (state.terminal.winnerPlayerIds.length !== Object.keys(gross).length
     || new Set(state.terminal.winnerPlayerIds).size !== Object.keys(gross).length) {

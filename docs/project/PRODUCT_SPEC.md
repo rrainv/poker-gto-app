@@ -34,11 +34,90 @@ One canonical Hand/state may support different ephemeral compositions:
 
 Presentation projections never become poker state, legality, accounting, strategy, Training, Replay, or persistence authority.
 
+Before a canonical Hand exists, valid draft setup projects a clearly labeled
+`setup_preview`: player count, Hero/button seats and starting stacks only.
+It contains no dealt cards, actor, pot history, forced contributions or actions.
+Changes project immediately, including after renderer startup; Start Hand remains
+the canonical creation boundary. A live or Saved Hand continues to project its
+canonical state and ignores setup drafts.
+
+Hand setup exposes actual **Rake / collection** choices: none, or the supported
+fixed 0.1 bb per seated player collected outside the pot (currently 7-10 seats).
+Existing canonical GameRulesDefinition presets supply the definitions and limits;
+new setup creates a direct immutable snapshot. Legacy `gameMode` setup inputs
+remain compatibility aliases. Future setup presets may group these controls but
+must never become rules authority (`BETA-HAND-PRE-QA-CORRECTION-001`).
+
+For ante Hands, preflop contribution markers expose posted blind and ante amounts
+from the canonical ledger, with voluntary action payments separately labeled.
+The Players and contributions disclosure retains the forced-payment breakdown;
+Replay initialization carries these facts without adding voluntary actions.
+Public-card randomization follows legal pending chance state regardless of Hero
+participation. It edits only the pending draft; Deal commits it. Historical Replay
+remains read-only and a committed public street cannot be rerandomized.
+
 ## 4. Visual system
 
 Use canonical tokens and components for typography, spacing, density, radii, borders, surfaces, shadows, controls, buttons, badges, focus, poker actions, cards, and table visuals. Avoid one-off inline styles when an existing component owns the rule. Do not begin a stylesheet rewrite during a bounded ticket.
 
-The no-casino aesthetic rejects avatars by default, spectacle, confetti, fake cinematic 3D, reward loops, and decorative casino clutter.
+The no-casino aesthetic rejects spectacle, confetti, fake cinematic 3D, reward loops, and decorative casino clutter. The human-requested bold correction of `BETA-DESIGN-REFRESH-001` permits original illustrated fictional portraits and short character descriptors in synthetic Full Hand practice. They are appearance, never behavioral or real-person evidence.
+
+### Shared study presentation
+
+The September 7 `BETA-DESIGN-REFRESH-001` implementation uses one theme-token
+grammar: primary headings/questions, readable factual blocks, blue assumption
+edges, neutral method badges, visible amber limitations, subdued supporting
+notes and native disclosures. Color accompanies wording and structure; it never
+grants strategy authority. Explain, Personal understanding/node teaching,
+Opponent setup/review and Study Inbox consume this grammar without changing
+their evidence, actions or scheduling. Existing panel and button components
+remain the shared foundation. After human visual rejection of the first pass,
+`src/ui/riverline-design.css` adds the forest/jade/brass shell, contrasting study
+desk and felt stage, tactile controls and stronger insight hierarchy. Midnight's
+built-in palette/preview change together; custom theme values remain authoritative.
+
+Canonical tables share adaptive seat/card geometry and show projected actor and
+dealer context beneath the felt. Full Hand Training adds a collapsed **Table
+cast** selector with independently selectable fictional identities per canonical
+opponent seat. Ordinary Hand/Scenario and imported players do not acquire these
+identities. Ten original PNG portraits, names and localized short archetypes
+are visible on opponent seats and in the selector. Appearance remains
+session-local and separate from policy settings. A neutral selection click uses
+existing SoundFX category/volume/mute gating; the table renderer remains silent.
+
+Equity's **Ranges & runouts** occupies a full-width row after the matchup and
+Hand Analysis. Within it, setup and results share space at sufficient component
+width; Runout Explorer follows beneath, initially expanded inside the still-lazy
+outer disclosure. It never starts computation on opening. Embedded Personal/Exploit instances
+stack by their own available width. Known cards use the existing shared card
+faces, including best-five emphasis, suit colors and T/10 preference.
+
+The bold direction is accepted. The follow-up `BETA-FEATURE-SURFACE-REFRESH-001`
+derives game, analysis and learning roles in `presentation-theme.mjs`, including
+custom live previews and contrast-safe felt gradients. Hand and Scenario share
+seat anchors with more top clearance, wider lower-side spacing and a tighter HU
+felt. Training's idle Full Hand roster derives positions without creating a Hand.
+Personal Understanding uses full width unless an active question needs the other
+column; its small read-only map counts existing evidence statuses, not frequencies
+or confidence. Welcome reuses the portraits as an explicitly decorative table,
+offers four compact study paths, and makes Enter Riverline → Home the primary
+action. Existing startup, suppression and manual-reopen behavior remain intact.
+
+The final `BETA-DESIGN-CORRECTION-002` keeps rich green for game space, derives
+charcoal analysis, active primary result, warmer learning and neutral evidence
+roles from the existing theme owner, and uses restrained navigation/identity
+edges. Hand and Scenario consume the same per-count geometry profile; felt has
+no construction ellipses. Understanding groups original sentences by their
+existing insight kind; its small map separately counts directly specified
+pure/exact-mix evidence, excluding estimates and dominant-only answers. Home
+auto-flows existing truthful sections upward. Portraits are **TEMPORARY BETA ART**
+behind the existing asset lookup seam; appearance is not final art acceptance.
+The accepted design direction is frozen pending independent Human Beta QA.
+
+Detailed acceptance remains under `QA-BETA-DESIGN-CORRECTION-002`,
+`QA-BETA-FEATURE-SURFACE-REFRESH-001` and
+`QA-BETA-DESIGN-REFRESH-001`. This does not close earlier table, cards, audio,
+composition, Personal, Opponent or Advanced Equity acceptance owners.
 
 ## 5. Information hierarchy and composition
 
@@ -94,6 +173,12 @@ Hover/focus inspection, hypothetical states, Save/bookmark, Randomize/Lock, card
 
 ## 7. UI states
 
+Review is ephemeral presentation over a canonical Hand. Analyze handoff, leaving
+its owning workspace, and an unavailable Review model use the shared Review
+teardown: clear Review selection/model, restore History to the Hand rail, remove
+Review visibility state, and preserve the canonical Hand. Returning to Hand
+therefore restores its normal live/completed presentation without a hybrid mode.
+
 Every meaningful feature defines default, loading/generating, empty/incomplete, blocked/invalid, unavailable-source, error/cancelled, and success/result states as applicable. Controls must visually and accessibly reflect actual state.
 
 ## 8. Responsive behavior
@@ -101,6 +186,10 @@ Every meaningful feature defines default, loading/generating, empty/incomplete, 
 The minimum supported desktop viewport is 1366×768. Current repair/acceptance targets include that baseline, 1440×900, 1600×900, 1920×1080, 2560×1440, 2560×1600, 4K, and representative zoom. Existing 1024×768 findings are preserved as compact/mobile-responsive future evidence rather than current blockers. Mobile later receives a distinct composition rather than stacked desktop panels.
 
 Structural CSS/no-overlap checks are evidence, not visual acceptance. Real-browser/human review remains required where hierarchy, balance, density, legibility, or aesthetics require judgment.
+
+The supported Hand desktop grid reserves separate table and interaction-rail
+columns; rail content scrolls within its own size containment. Stage facts wrap
+according to available width rather than imposing a fixed internal minimum.
 
 ## 9. Localization, RTL, and accessibility
 

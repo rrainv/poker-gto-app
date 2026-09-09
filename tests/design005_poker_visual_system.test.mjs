@@ -135,7 +135,7 @@ test('the poker table retains seat mapping and adds semantic presentation states
   assert.match(table, /classList\.toggle\('is-folded'/);
   assert.match(table, /classList\.toggle\('is-all-in'/);
   assert.match(table, /dealer\.toggleAttribute\('hidden', !isDealer\)/);
-  assert.match(table, /TABLE_FALLBACK_ANCHORS = Object\.freeze/);
+  assert.match(table, /window\.RiverlineTableEnvironment\.anchors\(activePlayers\)/);
   assert.match(table, /presentation\?\.geometry\?\.playerUnit/);
   assert.doesNotMatch(table, /Math\.(?:sin|cos)\(/);
 });

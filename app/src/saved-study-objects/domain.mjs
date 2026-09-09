@@ -30,6 +30,8 @@ export const SAVED_HAND_SNAPSHOT_V3_SCHEMA_VERSION = 'saved-hand-snapshot/v3';
 export const SAVED_HAND_PRIVACY_SCHEMA_VERSION = 'saved-hand-privacy/v1';
 export const SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION = 'saved-spot-snapshot/v1';
 export const SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION = 'saved-spot-snapshot/v2';
+export const SAVED_SPOT_SNAPSHOT_V3_SCHEMA_VERSION = 'saved-spot-snapshot/v3';
+export const SAVED_SPOT_ACCOUNTING_VERSION = 'ante-dead-money/v1';
 export const SAVED_HAND_REFERENCE_SCHEMA_VERSION = 'saved-hand-reference/v1';
 export const SAVED_SPOT_TRUTH_SCHEMA_VERSION = 'saved-spot-truth/v1';
 
@@ -898,6 +900,7 @@ export function createSavedSpotSnapshot({
   scenarioInput = null,
   handReference = null,
   rulesSnapshot = null,
+  accountingVersion = null,
 } = {}) {
   if (!SPOT_DERIVATION_VALUES.has(derivation)) {
     throw new RangeError(`Unsupported saved spot derivation: ${derivation}`);
@@ -917,7 +920,7 @@ export function createSavedSpotSnapshot({
     ? null
     : cloneSavedStudyData(validateGameRulesSnapshot(rulesSnapshot));
   const snapshot = {
-    schemaVersion: durableRulesSnapshot === null
+    schemaVersion: accountingVersion !== null ? SAVED_SPOT_SNAPSHOT_V3_SCHEMA_VERSION : durableRulesSnapshot === null
       ? SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION
       : SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION,
     derivation,
@@ -925,7 +928,8 @@ export function createSavedSpotSnapshot({
     scenarioInput: scenarioInput === null ? null : cloneSavedStudyData(scenarioInput),
     handReference: handReference === null ? null : cloneSavedStudyData(handReference),
     truth,
-    ...(durableRulesSnapshot === null ? {} : { rulesSnapshot: durableRulesSnapshot }),
+    ...(durableRulesSnapshot === null && accountingVersion === null ? {} : { rulesSnapshot: durableRulesSnapshot }),
+    ...(accountingVersion === null ? {} : { accountingVersion }),
   };
   validateSavedSpotSnapshot(snapshot);
   return deepFreezeSavedStudyData(snapshot);
@@ -933,19 +937,23 @@ export function createSavedSpotSnapshot({
 
 export function validateSavedSpotSnapshot(snapshot) {
   requireObject(snapshot, 'SavedSpotSnapshot');
-  if (![SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION, SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION]
+  if (![SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION, SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION, SAVED_SPOT_SNAPSHOT_V3_SCHEMA_VERSION]
     .includes(snapshot.schemaVersion)) {
     throw new TypeError(
       `Unsupported SavedSpotSnapshot version: ${String(snapshot.schemaVersion)}; supported: ${SAVED_SPOT_SNAPSHOT_SCHEMA_VERSION}, ${SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION}`,
     );
   }
-  const isV2 = snapshot.schemaVersion === SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION;
+  const isV3 = snapshot.schemaVersion === SAVED_SPOT_SNAPSHOT_V3_SCHEMA_VERSION;
+  const isV2 = snapshot.schemaVersion === SAVED_SPOT_SNAPSHOT_V2_SCHEMA_VERSION || isV3;
+  if (isV3 && (snapshot.accountingVersion !== SAVED_SPOT_ACCOUNTING_VERSION || snapshot.derivation !== 'hand')) {
+    throw new RangeError('Saved Spot v3 requires current canonical Hand accounting');
+  }
   requireExactKeys(
     snapshot,
     isV2
       ? [
         'schemaVersion', 'derivation', 'decisionContext', 'scenarioInput', 'handReference',
-        'truth', 'rulesSnapshot',
+        'truth', 'rulesSnapshot', ...(isV3 ? ['accountingVersion'] : []),
       ]
       : ['schemaVersion', 'derivation', 'decisionContext', 'scenarioInput', 'handReference', 'truth'],
     'SavedSpotSnapshot',
@@ -954,7 +962,8 @@ export function validateSavedSpotSnapshot(snapshot) {
     throw new RangeError(`Unsupported saved spot derivation: ${snapshot.derivation}`);
   }
   validateDecisionContextSnapshot(snapshot.decisionContext, snapshot.derivation);
-  if (isV2) validateSavedSpotRulesConsistency(snapshot);
+  if (isV2 && snapshot.rulesSnapshot !== null) validateSavedSpotRulesConsistency(snapshot);
+  if (isV2 && !isV3 && snapshot.rulesSnapshot === null) throw new TypeError('Saved Spot v2 requires rulesSnapshot');
   requireSchema(snapshot.truth, SAVED_SPOT_TRUTH_SCHEMA_VERSION, 'SavedSpotSnapshot.truth');
   requireExactKeys(snapshot.truth, ['schemaVersion', 'completeness', 'historyStatus'], 'SavedSpotSnapshot.truth');
   if (snapshot.derivation === SAVED_SPOT_DERIVATIONS.HAND) {

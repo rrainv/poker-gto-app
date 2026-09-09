@@ -32,20 +32,10 @@ export function creditPotToPlayer(state, playerId, amountMilliBb, kind, metadata
   appendLedger(state, player.playerId, kind, amountMilliBb, metadata);
 }
 
-function highestLiveContributor(state) {
-  const ordered = state.players.filter(isPlayerLive).sort((left, right) => (
-    right.totalPotContributionMilliBb - left.totalPotContributionMilliBb
-  ));
-  const candidate = ordered[0];
-  return candidate || null;
-}
-
 export function refundUncalledExcess(state, recipientPlayerId = null) {
-  const recipient = recipientPlayerId === null
-    ? highestLiveContributor(state)
-    : state.players.find((player) => player.playerId === recipientPlayerId);
+  const unmatched = deriveUnmatchedContribution(state, recipientPlayerId);
+  const recipient = state.players.find(player => player.playerId === unmatched?.playerId);
   if (!recipient || (recipientPlayerId === null && !isPlayerLive(recipient))) return null;
-  const unmatched = deriveUnmatchedContribution(state, recipient.playerId);
   const amountMilliBb = unmatched === null ? 0 : unmatched.amountMilliBb;
   creditPotToPlayer(state, recipient.playerId, amountMilliBb, LEDGER_KINDS.UNCALLED_REFUND);
   return amountMilliBb === 0 ? null : { playerId: recipient.playerId, amountMilliBb };

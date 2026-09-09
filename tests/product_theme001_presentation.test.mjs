@@ -9,6 +9,7 @@ import {
   PRESENTATION_THEMES,
   contrastRatio,
   createPresentationThemeController,
+  deriveFeatureSurfaceRoles,
   normalizeHexColor,
   normalizeThemeCustomization,
 } from '../app/src/application/presentation-theme.mjs';
@@ -116,7 +117,7 @@ test('reset and Cancel operate inside a draft without changing the saved custom 
   view.controller.reset();
   assert.equal(view.controller.getCustomization(), null);
   assert.equal(view.root.dataset.themeCustomized, 'false');
-  assert.equal(view.properties.size, 0);
+  assert.deepEqual(Object.fromEntries(view.properties), deriveFeatureSurfaceRoles(PRESENTATION_THEMES[0].preview));
   assert.equal(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY), persistedBefore);
   assert.equal(view.controller.cancelEdit(), true);
   assert.deepEqual(view.controller.getCustomization(), original);
@@ -138,7 +139,7 @@ test('invalid and legacy storage values repair to Midnight without leaking raw C
   assert.equal(view.controller.getTheme(), 'midnight');
   assert.equal(JSON.parse(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY)).activeThemeId, 'midnight');
   assert.equal(view.controller.getCustomization(), null);
-  assert.equal(view.properties.size, 0);
+  assert.deepEqual(Object.fromEntries(view.properties), deriveFeatureSurfaceRoles(PRESENTATION_THEMES[0].preview));
 
   assert.equal(normalizeHexColor('red'), null);
   assert.equal(normalizeThemeCustomization({ accent: 'var(--danger)' }, 'midnight'), null);

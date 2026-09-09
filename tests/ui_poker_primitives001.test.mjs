@@ -234,16 +234,64 @@ test('contributions stay on their independent seat-to-pot ray without card-box c
 });
 
 test('every trusted non-zero contribution renders once and zero or reset values hide it', () => {
-  const contributionRender = renderer.slice(
-    renderer.indexOf('if (contribution) {'),
-    renderer.indexOf('if (action) {', renderer.indexOf('if (contribution) {')),
-  );
-  assert.match(contributionRender, /const isVisible = state\.showStreetContributions === true[\s\S]*?player\.streetContributionMilliBb > 0/);
-  assert.match(contributionRender, /contributionLane\?\.toggleAttribute\('hidden', !isVisible\)/);
-  assert.match(contributionRender, /contribution\.toggleAttribute\('hidden', !isVisible\)/);
-  assert.match(contributionRender, /this\.setPokerAmount\(contribution/);
-  assert.doesNotMatch(contributionRender, /isHero|visualSeatIndex\s*===?\s*0|position|isButton/);
-  assert.equal((renderer.match(/id: `contribution-\$\{i\}`/g) || []).length, 1);
+  // Execute the renderer's update against DOM-shaped amount nodes. Assertions
+  // concern displayed values/visibility, not the spelling of its Boolean expression.
+  const contributionRender = renderer.slice(renderer.indexOf('if (contribution) {'),
+    renderer.indexOf('if (action) {', renderer.indexOf('if (contribution) {')));
+  function element(children = {}) {
+    const attributes = new Map();
+    return { children, attributes, textContent: '', dataset: {}, style: { setProperty() {} },
+      querySelector: selector => children[selector] || null,
+      setAttribute: (key, value) => attributes.set(key, value),
+      getAttribute: key => attributes.get(key), removeAttribute: key => attributes.delete(key),
+      toggleAttribute(key, value) { if (value) attributes.set(key, ''); else attributes.delete(key); },
+    };
+  }
+  const makeAmount = () => element(Object.fromEntries(['prefix', 'value', 'unit'].map(name => [`.poker-amount-${name}`, element()])));
+  const contribution = makeAmount(), contributionLane = element();
+  const forced = element({ '.table-forced-contribution-label': element(), '.table-voluntary-contribution-label': element() });
+  let writes = 0;
+  const receiver = { container: { querySelector: () => forced }, formatMilliBb: amount => String(amount / 1000),
+    setPokerAmount(node, options) { writes++; primitives.setPokerAmount(node, options); } };
+  const context = vm.createContext({ contribution, contributionLane, i: 0, prominence: 'live',
+    tableMessage: (_key, fallback, values = {}) => fallback.replace(/\{(\w+)\}/g, (_, key) => values[key]), receiver });
+  vm.runInContext(`function update(state, player) { ${contributionRender} }`, context);
+  const player = { identity: 'BB', streetContributionMilliBb: 0, forcedContributions: [], voluntaryStreetContributionMilliBb: 0 };
+  const state = { street: 'preflop', showStreetContributions: true, seats: [player] };
+  for (const amount of [500, 1000, 7250, 0, 2500, 0]) {
+    player.streetContributionMilliBb = amount; writes = 0;
+    context.update.call(receiver, state, player);
+    assert.equal(writes, 1, 'each update writes the one contribution amount exactly once');
+    assert.equal(contribution.children['.poker-amount-value'].textContent, amount ? String(amount / 1000) : '');
+    assert.equal(contribution.attributes.has('hidden'), amount === 0);
+    assert.equal(contributionLane.attributes.has('hidden'), amount === 0);
+  }
+  // Antes keep their semantic lane visible even for a seat with no live bet.
+  player.forcedContributions = [{ kind: 'ante', amountMilliBb: 1000 }];
+  context.update.call(receiver, state, player);
+  assert.equal(contribution.attributes.has('hidden'), true);
+  assert.equal(contributionLane.attributes.has('hidden'), false);
+  assert.equal(forced.children['.table-forced-contribution-label'].textContent, 'Ante 1');
+  player.streetContributionMilliBb = 1500;
+  player.forcedContributions.push({ kind: 'big_blind', amountMilliBb: 1000 });
+  player.voluntaryStreetContributionMilliBb = 500;
+  context.update.call(receiver, state, player);
+  assert.equal(contribution.children['.poker-amount-value'].textContent, '1.5');
+  assert.equal(forced.children['.table-forced-contribution-label'].textContent, 'Ante 1 + BB 1');
+  assert.equal(forced.children['.table-voluntary-contribution-label'].textContent, 'Action 0.5');
+  state.showStreetContributions = false;
+  context.update.call(receiver, state, player);
+  assert.equal(contributionLane.attributes.has('hidden'), true, 'collected payments leave the felt');
+  assert.equal(contribution.attributes.has('hidden'), true);
+  assert.equal(forced.attributes.has('hidden'), true);
+  // Reset removes the rendered layer entirely, including any ante captions.
+  const layers = { '#seats-layer': { innerHTML: 'seats' }, '#table-contributions-layer': { innerHTML: 'chips and ante captions' } };
+  const rendererContext = { window: {}, document: { addEventListener() {} } };
+  vm.runInNewContext(renderer, rendererContext);
+  rendererContext.window.TableRenderer.prototype.drawSeats.call({ container: { querySelector: key => layers[key] } }, 0);
+  assert.equal(layers['#table-contributions-layer'].innerHTML, '');
+  assert.equal(layers['#seats-layer'].innerHTML, '');
+  assert.equal((renderer.match(/id: `contribution-\$\{i\}`/g) || []).length, 1, 'one contribution group per seat');
 });
 
 test('Replay emphasis continues to animate complete amount regions for all table sizes', () => {

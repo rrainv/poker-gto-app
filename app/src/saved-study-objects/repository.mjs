@@ -1,3 +1,4 @@
+import { normalizeSavedAccounting, materializeSavedSpotAccounting, needsHandAccountingEvidence } from './accounting-compatibility.mjs';
 import { runLifecycleTransaction } from '../application/identity-operation-scope.mjs';
 import {
   SAVED_STUDY_CLASSIFICATIONS,
@@ -105,7 +106,7 @@ export function validateSavedStudyLibraryExport(portable) {
   }
   const ids = new Set();
   for (const object of portable.objects) {
-    validateSavedStudyObject(object);
+    validateSavedStudyObject(normalizeSavedAccounting(object));
     if (!sameSavedStudyOwner(object.ownerRef, portable.ownerRef)) {
       throw new RangeError('SavedStudyLibraryExport objects must share the envelope owner');
     }
@@ -122,7 +123,7 @@ export function createSavedStudyLibraryExport({ ownerRef, objects, exportedAt } 
     schemaVersion: SAVED_STUDY_LIBRARY_EXPORT_SCHEMA_VERSION,
     exportedAt: requireIsoTimestamp(exportedAt, 'exportedAt'),
     ownerRef: cloneSavedStudyData(ownerRef),
-    objects: sortPortableObjects(objects).map(cloneSavedStudyData),
+    objects: sortPortableObjects(objects).map(normalizeSavedAccounting).map(cloneSavedStudyData),
   };
   validateSavedStudyLibraryExport(portable);
   return deepFreezeSavedStudyData(portable);
@@ -140,6 +141,7 @@ export function parseSavedStudyLibraryExport(value) {
   } catch (error) {
     throw new TypeError(`Saved Study export is not valid JSON: ${error.message}`);
   }
+  if (Array.isArray(parsed?.objects)) parsed.objects = parsed.objects.map(normalizeSavedAccounting);
   validateSavedStudyLibraryExport(parsed);
   return deepFreezeSavedStudyData(parsed);
 }
@@ -374,7 +376,23 @@ export function createSavedStudyRepository({
     if (record && record.ownerKey !== ownerKey) {
       throw storageFailure('owner_mismatch', 'Saved Study object belongs to a different owner.');
     }
-    return record;
+    return record ? { ...record, value: normalizeSavedAccounting(record.value) } : record;
+  }
+
+  async function materialize(object, transaction) {
+    let current = normalizeSavedAccounting(object);
+    validateSavedStudyObject(current);
+    if (needsHandAccountingEvidence(current)) {
+      const parentId = current.payload.handReference?.savedHandObjectId;
+      const parent = parentId ? await getOwnedRecord(transaction, parentId) : null;
+      current = materializeSavedSpotAccounting(current, parent?.value);
+      validateSavedStudyObject(current);
+    }
+    return cloneSavedStudyData(current);
+  }
+
+  async function materializeRecords(records, transaction) {
+    return deepFreezeSavedStudyData(await Promise.all(records.map(record => materialize(record.value, transaction))));
   }
 
   const repository = {
@@ -397,6 +415,7 @@ export function createSavedStudyRepository({
     },
 
     async save(object) {
+      object = normalizeSavedAccounting(object);
       validateSavedStudyObject(object);
       if (!sameSavedStudyOwner(object.ownerRef, ownerRef)) {
         throw new RangeError('SavedStudyObject owner does not match repository owner');
@@ -426,14 +445,13 @@ export function createSavedStudyRepository({
       });
     },
 
-    async getById(id, { includeArchived = true } = {}) {
+    async getById(id, { includeArchived = true, forSync = false } = {}) {
       if (typeof id !== 'string' || !id) throw new TypeError('SavedStudyObject id is required');
       return readTransaction([STORES.OBJECTS], async (transaction) => {
         const record = await getOwnedRecord(transaction, id);
         if (!record || (!includeArchived
           && record.lifecycleState === SAVED_STUDY_LIFECYCLE_STATES.ARCHIVED)) return null;
-        validateSavedStudyObject(record.value);
-        return deepFreezeSavedStudyData(cloneSavedStudyData(record.value));
+        return deepFreezeSavedStudyData(forSync ? cloneSavedStudyData(record.value) : await materialize(record.value, transaction));
       });
     },
 
@@ -493,7 +511,7 @@ export function createSavedStudyRepository({
           SAVED_STUDY_INDEXES.OWNER_STATE_UPDATED_AT,
           { ...activeUpdatedRange(ownerKey), limit: boundedLimit },
         );
-        return deepFreezeSavedStudyData(records.map((record) => cloneSavedStudyData(record.value)));
+        return materializeRecords(records, transaction);
       });
     },
 
@@ -506,7 +524,7 @@ export function createSavedStudyRepository({
           SAVED_STUDY_INDEXES.OWNER_STATE_KIND_UPDATED_AT,
           { ...activeKindUpdatedRange(ownerKey, kind), limit: boundedLimit },
         );
-        return deepFreezeSavedStudyData(records.map((record) => cloneSavedStudyData(record.value)));
+        return materializeRecords(records, transaction);
       });
     },
 
@@ -524,7 +542,7 @@ export function createSavedStudyRepository({
           SAVED_STUDY_INDEXES.OWNER_STATE_REVIEW_UPDATED_AT,
           { ...activeReviewUpdatedRange(ownerKey, reviewState), limit: boundedLimit },
         );
-        return deepFreezeSavedStudyData(records.map((record) => cloneSavedStudyData(record.value)));
+        return materializeRecords(records, transaction);
       });
     },
 
@@ -537,11 +555,11 @@ export function createSavedStudyRepository({
           SAVED_STUDY_INDEXES.TAG_KEYS,
           tagKey,
         );
-        return deepFreezeSavedStudyData(recentValues(
+        return deepFreezeSavedStudyData(await Promise.all(recentValues(
           records.filter((record) => record.ownerKey === ownerKey
             && record.lifecycleState === SAVED_STUDY_LIFECYCLE_STATES.ACTIVE),
           boundedLimit,
-        ));
+        ).map(object => materialize(object, transaction))));
       });
     },
 
@@ -559,11 +577,11 @@ export function createSavedStudyRepository({
           SAVED_STUDY_INDEXES.CLASSIFICATION_KEYS,
           classification,
         );
-        return deepFreezeSavedStudyData(recentValues(
+        return deepFreezeSavedStudyData(await Promise.all(recentValues(
           records.filter((record) => record.ownerKey === ownerKey
             && record.lifecycleState === SAVED_STUDY_LIFECYCLE_STATES.ACTIVE),
           boundedLimit,
-        ));
+        ).map(object => materialize(object, transaction))));
       });
     },
 
@@ -573,12 +591,13 @@ export function createSavedStudyRepository({
         return deepFreezeSavedStudyData(sortPortableObjects(
           records
             .filter((record) => record.ownerKey === ownerKey)
-            .map((record) => cloneSavedStudyData(record.value)),
+            .map((record) => cloneSavedStudyData(normalizeSavedAccounting(record.value))),
         ));
       });
     },
 
     async applySyncedObject(object, { expectedRevision = null } = {}) {
+      object = normalizeSavedAccounting(object);
       validateSavedStudyObject(object);
       const incoming = sameSavedStudyOwner(object.ownerRef, ownerRef)
         ? cloneSavedStudyData(object)

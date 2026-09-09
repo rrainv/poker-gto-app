@@ -1,0 +1,22 @@
+PokerStars Hand #100000001: Hold'em No Limit ($0.50/$1.00 USD) - 2026/09/08 12:00:00 ET
+Table 'All-in call regression' 2-max Seat #1 is the button
+Seat 1: Hero ($10 in chips)
+Seat 2: Villain ($10 in chips)
+Hero: posts small blind $0.50
+Villain: posts big blind $1.00
+*** HOLE CARDS ***
+Dealt to Hero [As Ah]
+Hero: raises $9 to $10 and is all-in
+Villain: calls $9 and is all-in
+*** FLOP *** [2c 3d 4h]
+*** TURN *** [2c 3d 4h] [8s]
+*** RIVER *** [2c 3d 4h 8s] [9c]
+*** SHOW DOWN ***
+Hero: shows [As Ah]
+Villain: shows [Ks Kh]
+Hero collected $20 from pot
+*** SUMMARY ***
+Total pot $20 | Rake $0
+Board [2c 3d 4h 8s 9c]
+Seat 1: Hero (button) (small blind) showed [As Ah] and won ($20)
+Seat 2: Villain (big blind) showed [Ks Kh] and lost

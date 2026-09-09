@@ -25,6 +25,22 @@ canonical Training exercise or Full Hand decision
 
 The canonical generator still owns legal trajectories. `DecisionContext v1`, `StrategyProvider v1`, `StrategyResult v1`, and `StrategyClaimPolicy v1` retain their existing authority. Training Memory never writes observed answers into intended Personal Strategy.
 
+## AUD-01 historical accounting boundary
+
+Memory keeps answer-time context, StrategyResult, claim/truth identity, response,
+metadata and source evidence unchanged. Product decision/detail/review/revisit
+queries and Same/Similar Spot compare affected ante economics with current
+canonical state before exposing exact reuse. A mismatch throws
+`historical_accounting_incompatible` through the existing unavailable-history
+surface. Lists fail explicitly rather than silently dropping historical rows.
+
+Full Hand uses its owned session Replay point. Generated snapshots have no full
+Replay; if ante history includes a refund, they cannot safely distinguish a
+historical incorrect refund from a legitimate one and remain unavailable for exact
+reuse. Corrected ante evidence with sufficient authority and unchanged no-ante
+history remain usable. Raw repository history and user metadata remain preserved;
+there is no Memory schema bump or synthetic replacement of frozen strategy truth.
+
 ## Durable contracts
 
 ### `training-decision-record/v1`

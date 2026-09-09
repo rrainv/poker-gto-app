@@ -9,7 +9,8 @@ import { createMemoryPersonalStrategyDatabase } from '../app/src/personal-strate
 // event propagation, select options, focus, text nodes and listener cancellation
 // observable while the real application owns evidence/persistence/projections.
 class Element {
-  constructor(tag = 'div') { this.tagName = tag.toUpperCase(); this.children = []; this.dataset = {}; this.listeners = new Map(); this.hidden = false; this.disabled = false; this._text = ''; this._value = null; this.parentElement = null; }
+  constructor(tag = 'div') { this.tagName = tag.toUpperCase(); this.children = []; this.dataset = {}; this.style = {}; this.listeners = new Map(); this.hidden = false; this.disabled = false; this._text = ''; this._value = null; this.parentElement = null; }
+  setAttribute(name, value) { this[name] = String(value); }
   set textContent(value) { this._text = String(value); this.children = []; }
   get textContent() { return this._text + this.children.map((c) => c.textContent).join(''); }
   set value(value) { this._value = String(value); }

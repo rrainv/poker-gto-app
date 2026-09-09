@@ -22,8 +22,11 @@ variants, tournaments, Zoom/CAP headers, multiple hands, run-it-twice and unknow
 lines fail closed. Join/leave notices do not change the dealt-in roster.
 
 Raises mean street-total-to and their increment must agree. Calls mean incremental
-commitments. Explicit all-ins map to the canonical all-in command with exact size
-verification. Private reveals never leak backward through Replay. Missing Hero,
+commitments, including stack-capped calls marked "and is all-in". The marker
+must agree with resulting stack exhaustion; it never changes a call into an
+aggressive action. All-in bets/raises map to the canonical all-in command with
+exact street-total-to size verification. Private reveals never leak backward
+through Replay. Missing Hero,
 unknown showdown holdings, conflicting cards/amounts/order/summary and unsupported
 mechanics retain parsed evidence and structured line/code diagnostics, with no
 canonical Hand/Replay available to open/save. Intermediate states stay internal.
@@ -35,7 +38,8 @@ Game Rules Definition/Snapshot v2 add only
 `recordedSettlementPolicy: { type: 'source_recorded_rake', rakeModel: 'unknown' }`.
 No rate/cap/model is inferred. Collection remains `none`, separate from fixed
 per-player collection. Explicit `initializeRecordedHand()` creates PokerState v3;
-ordinary live initialization and historical v1/v2 semantics remain unchanged.
+ordinary live initialization keeps its structural contract. All state versions
+use current canonical ante accounting; source provenance never selects rules.
 
 Existing canonical fold/showdown accounting first verifies gross entitlement.
 `applyRecordedSettlement()` then reconciles `recorded-hand-settlement/v1`:
@@ -48,8 +52,11 @@ includes recorded rake separately. Identical settlement is idempotent;
 conflicting replacement fails closed. Missing evidence never means zero rake.
 
 Replay source/event v3 adds `recorded_settlement`. The lifecycle publishes a
-completed v3 result only after settlement evidence. Historical readers/records
-are preserved unchanged; no bulk migration or live rake behavior is introduced.
+completed v3 result only after settlement evidence. AUD-01 Saved compatibility
+reconstructs preserved historical inputs with current accounting. Recorded gross
+pot, rake and net awards are immutable source facts; disagreement fails existing
+reconciliation rather than rewriting those facts. There is no bulk destructive
+migration or live rake behavior.
 
 ## Review, Saved and study
 

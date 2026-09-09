@@ -93,7 +93,7 @@ export function installSavedStudyObjectBridge(browserWindow, options = {}) {
       };
       return Object.freeze({
         listAll: () => call('listAllForSync'),
-        getById: (id) => call('getById', id),
+        getById: (id) => call('getById', id, { forSync: true }),
         applyRemote: (object, syncOptions) => call('applySyncedObject', object, syncOptions),
         saveObject: (object) => call('applySyncedObject', object, { expectedRevision: null }),
         activate: () => call('activate'),

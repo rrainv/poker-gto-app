@@ -20,6 +20,19 @@ SyncCoordinator v1 -> durable sidecar/outbox -> RemoteSyncAdapter -> Supabase/RL
 
 `app/src/sync/` owns the transport protocol, durable sidecar, outbox, coordinator, retry behavior, adapter contracts, and Saved-domain reconciliation. `app/src/saved-study-objects/` remains the canonical Saved domain. Supabase calls do not enter Saved renderers or UI code.
 
+## AUD-01 accounting compatibility
+
+The Saved adapter normalizes affected Hand documents and comparison bases through
+`saved-accounting-compatibility/v1`. It also normalizes already queued outbox
+payloads immediately before push without changing operation IDs, identity,
+expected revision or retry state. No transport, RLS or database version changes.
+
+Legacy Hand-derived Spots may arrive before their parent. Sync preserves their
+versioned evidence; product repository reads require same-owner canonical lineage
+before materializing current exact facts. Missing lineage is explicitly unavailable.
+New/current ante Spots use nested `saved-spot-snapshot/v3`. Parent arrival never
+changes a stored Spot's annotations, timestamps or revision by itself.
+
 ## Versions
 
 | Concern | Version |
@@ -117,6 +130,15 @@ There is no aggressive polling. Work runs on opt-in, startup/sign-in for an alre
 ## Pull and reconciliation
 
 Pull is ordered by the server change cursor and bounded to at most five 100-row batches per run. Each document is fully domain-validated before local application.
+
+The coordinator yields and schedules another bounded run when due uploads remain
+after reconciliation or the last pull page reports more rows. Status remains
+`Syncing` across that continuation, including the final empty-page probe at an
+exact page boundary. It reports `Synced` only once both directions finish.
+Continuations retain identity/generation/consent fences and coalesce concurrent
+runs. Successful manual continuations retain force; transient failures resume
+with backoff rather than forcing retries. A non-advancing cursor with `hasMore`
+fails visibly instead of creating an endless loop.
 
 For one stable object ID:
 

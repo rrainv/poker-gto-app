@@ -231,6 +231,7 @@ export function createSavedStudyObjectApplication({
     const payload = createSavedSpotSnapshot({
       derivation: SAVED_SPOT_DERIVATIONS.HAND,
       decisionContext,
+      accountingVersion: pokerState.game.ante.amountMilliBb > 0 ? 'ante-dead-money/v1' : null,
       rulesSnapshot: [POKER_STATE_V2_SCHEMA_VERSION, POKER_STATE_V3_SCHEMA_VERSION].includes(pokerState.schemaVersion)
         ? pokerState.rulesSnapshot
         : null,
@@ -383,11 +384,11 @@ export function createSavedStudyObjectApplication({
       const portable = parseSavedStudyLibraryExport(value);
       const absentIds = [];
       for (const object of portable.objects) {
-        if (!await activated.repository.getById(object.id)) absentIds.push(object.id);
+        if (!await activated.repository.getById(object.id, { forSync: true })) absentIds.push(object.id);
       }
       const result = await activated.repository.importLibrary(value, options);
       for (const id of absentIds) {
-        const object = await activated.repository.getById(id);
+        const object = await activated.repository.getById(id, { forSync: true });
         await notifyLocalMutation(
           object.lifecycle.state === 'archived' ? 'tombstone' : 'upsert',
           object,

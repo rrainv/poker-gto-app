@@ -793,3 +793,25 @@ test('Training Memory UI is lazy, semantic, localized, RTL-safe, and keeps Saved
   assert.match(i18n, /"Training Memory": "\\u0418/);
   assert.match(i18n, /"Training Memory": "\\u05d6/);
 });
+
+
+test('AUD-01 historical ante Memory is retained but blocked at every product economics boundary', async () => {
+  const legacy = JSON.parse(fs.readFileSync(new URL('./fixtures/accounting-compatibility/pre-fix.json', import.meta.url), 'utf8'));
+  const { getLegalActionSpec } = await import('../shared/poker-domain/index.js');
+  const { service, database } = serviceFixture();
+  const original = exercise();
+  const oldExercise = { ...original, pokerState: legacy.bbaV2.initial.payload.pokerState,
+    heroPlayerId: 'SB', decisionContext: legacy.bbaV2.spot.payload.decisionContext,
+    legalActions: getLegalActionSpec(legacy.bbaV2.initial.payload.pokerState) };
+  const { session, answered } = await answeredExerciseRecord({ service, currentExercise: oldExercise });
+  await service.updateStudyMetadata(answered.id, { review: true });
+  const rawBefore = await database.runTransaction([TRAINING_MEMORY_STORES.DECISIONS], 'readonly', tx => tx.get(TRAINING_MEMORY_STORES.DECISIONS, answered.id));
+  for (const query of [() => service.getDecision(answered.id), () => service.listSessionDecisions(session.id),
+    () => service.listDueReview(), () => service.createSameSpot(answered.id),
+    () => service.generateSimilarSpot(answered.id, { strategyProvider: strategyProvider() })]) {
+    await assert.rejects(query, { code: 'historical_accounting_incompatible' }, String(query));
+  }
+  assert.deepEqual((await service.listLearningRevisits()).proposals, []);
+  const rawAfter = await database.runTransaction([TRAINING_MEMORY_STORES.DECISIONS], 'readonly', tx => tx.get(TRAINING_MEMORY_STORES.DECISIONS, answered.id));
+  assert.deepEqual(rawAfter, rawBefore);
+});

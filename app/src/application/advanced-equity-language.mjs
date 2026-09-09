@@ -1,5 +1,18 @@
 import { createNaturalLanguageEnvelope } from './natural-language-envelope.mjs';
 const COPY = {
+  matchup: ['Matchup', 'Сравнение рук', 'השוואת ידיים'], editRange: ['Edit hand / range', 'Изменить руку / диапазон', 'עריכת יד / טווח'],
+  hero: ['Hero', 'Hero', 'Hero'], player: ['Player', 'Игрок', 'שחקן'],
+  equityChange: ['Equity change', 'Изменение Equity', 'שינוי באקוויטי'], handChange: ['Hand improvement', 'Улучшение руки', 'שיפור היד'],
+  completion: ['Made-hand completion', 'Собранная комбинация', 'השלמת יד'],
+  raisesEquity: ['Higher Equity', 'Equity выше', 'אקוויטי גבוה יותר'], lowersEquity: ['Lower Equity', 'Equity ниже', 'אקוויטי נמוך יותר'],
+  sameEquity: ['Unchanged Equity', 'Equity без изменений', 'אקוויטי ללא שינוי'], unavailable: ['Unavailable', 'Недоступно', 'לא זמין'],
+  sameCategory: ['Same hand category', 'Та же категория руки', 'אותו סוג יד'], noCompletion: ['No category completion', 'Без новой категории', 'ללא השלמת סוג יד'],
+  setup: ['Set up the matchup', 'Настройте сравнение', 'הגדירו את ההשוואה'],
+  result: ['Matchup result', 'Результат сравнения', 'תוצאת ההשוואה'],
+  resultEmpty: ['Choose hands or ranges, then calculate to compare their showdown pot share.', 'Выберите руки или диапазоны и рассчитайте их доли банка на вскрытии.', 'בחרו ידיים או טווחים וחשבו את חלקם בקופה בחשיפה.'],
+  help: ['How to use this workspace', 'Как пользоваться этой областью', 'איך להשתמש באזור הזה'],
+  weights: ['Range weights', 'Веса диапазона', 'משקלי הטווח'],
+  previewEmpty: ['Focus or select a result card to inspect the hypothetical hand.', 'Выберите карту результата или перейдите к ней с клавиатуры, чтобы посмотреть гипотетическую руку.', 'התמקדו בקלף תוצאה או בחרו בו כדי לבדוק את היד ההיפותטית.'],
   title: ['Ranges & runouts', 'Диапазоны и ранауты', 'טווחים וקלפי המשך'],
   intro: ['Use current hands, board and dead cards. Optional ranges replace individual hands for this analysis.', 'Используются текущие руки, борд и мёртвые карты. Диапазон заменяет выбранную руку только для этого анализа.', 'הידיים, הלוח והקלפים המתים הנוכחיים משמשים לניתוח. טווח מחליף יד נבחרת בניתוח זה.'],
   tutorial: ['Enter explicit weights, calculate, then expand Runout Explorer. Card previews are hypothetical; hand improvement and Equity improvement are separate facts.', 'Введите веса, рассчитайте и раскройте исследование ранаутов. Превью гипотетическое: улучшение руки и рост Equity — разные факты.', 'הזינו משקלים, חשבו ופתחו את סייר קלפי ההמשך. התצוגה היפותטית; שיפור היד ושיפור האקוויטי הם עובדות נפרדות.'],

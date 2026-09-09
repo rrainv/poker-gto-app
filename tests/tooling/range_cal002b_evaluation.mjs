@@ -333,11 +333,16 @@ export async function benchmarkRangeCal002bProjection({ repetitions = 101 } = {}
   const target = split.heldOutHandClasses[0];
   const samples = [];
   estimatePersonalStrategyHand(evidenceView, target);
+  const estimateCpuStart = process.threadCpuUsage();
   for (let index = 0; index < repetitions; index += 1) {
     const startedAt = performance.now();
     estimatePersonalStrategyHand(evidenceView, target);
     samples.push(performance.now() - startedAt);
   }
+  const estimateCpu = process.threadCpuUsage(estimateCpuStart);
+  const snapshotCpuSamples = [];
+  const invalidatedCpuSamples = [];
+  const cpuMs = start => { const usage = process.threadCpuUsage(start); return (usage.user + usage.system) / 1000; };
   const service = createPersonalStrategyProjectionService({
     repository: {
       async loadEvidenceScope() { return source; },
@@ -348,9 +353,11 @@ export async function benchmarkRangeCal002bProjection({ repetitions = 101 } = {}
     modeId: RANGE_CAL002B_MODE_ID,
     context: RANGE_CAL002B_CONTEXT,
   };
+  const snapshotCpuStart = process.threadCpuUsage();
   const snapshotStarted = performance.now();
   await service.getStrategySnapshot(scope);
   const snapshotMs = performance.now() - snapshotStarted;
+  snapshotCpuSamples.push(cpuMs(snapshotCpuStart));
   const cachedStarted = performance.now();
   await service.getStrategySnapshot(scope);
   const repeatedCachedSnapshotMs = performance.now() - cachedStarted;
@@ -360,9 +367,11 @@ export async function benchmarkRangeCal002bProjection({ repetitions = 101 } = {}
     rangeObservations: [...source.rangeObservations, observation(fixture, 43, additionalHand, '-added')],
   };
   service.invalidateScope(scope);
+  const invalidatedCpuStart = process.threadCpuUsage();
   const invalidatedStarted = performance.now();
   await service.getStrategySnapshot(scope);
   const invalidatedSnapshotMs = performance.now() - invalidatedStarted;
+  invalidatedCpuSamples.push(cpuMs(invalidatedCpuStart));
   const snapshotSamples = [snapshotMs];
   const invalidatedSamples = [invalidatedSnapshotMs];
   for (let index = 1; index < 5; index += 1) {
@@ -375,9 +384,11 @@ export async function benchmarkRangeCal002bProjection({ repetitions = 101 } = {}
         async loadEvidenceScope() { return isolatedSource; },
       },
     });
+    const isolatedSnapshotCpuStart = process.threadCpuUsage();
     const isolatedSnapshotStarted = performance.now();
     await isolatedService.getStrategySnapshot(scope);
     snapshotSamples.push(performance.now() - isolatedSnapshotStarted);
+    snapshotCpuSamples.push(cpuMs(isolatedSnapshotCpuStart));
     isolatedSource = {
       ...isolatedSource,
       rangeObservations: [
@@ -386,11 +397,19 @@ export async function benchmarkRangeCal002bProjection({ repetitions = 101 } = {}
       ],
     };
     isolatedService.invalidateScope(scope);
+    const isolatedInvalidatedCpuStart = process.threadCpuUsage();
     const isolatedInvalidatedStarted = performance.now();
     await isolatedService.getStrategySnapshot(scope);
     invalidatedSamples.push(performance.now() - isolatedInvalidatedStarted);
+    invalidatedCpuSamples.push(cpuMs(isolatedInvalidatedCpuStart));
   }
   return deepFreeze({
+    // Batch thread CPU excludes unrelated test-process descheduling and avoids
+    // per-call zero medians from Windows CPU clock granularity. Wall metrics
+    // remain diagnostics; the computation budgets and cache counts stay fixed.
+    oneEstimateCpuMs: (estimateCpu.user + estimateCpu.system) / 1000 / repetitions,
+    snapshot169CpuMs: snapshotCpuSamples.reduce((a, b) => a + b, 0) / snapshotCpuSamples.length,
+    invalidatedSnapshotCpuMs: invalidatedCpuSamples.reduce((a, b) => a + b, 0) / invalidatedCpuSamples.length,
     oneEstimateMedianMs: median(samples),
     oneEstimateMaximumMs: Math.max(...samples),
     snapshot169Ms: snapshotMs,

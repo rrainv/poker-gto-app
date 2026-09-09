@@ -1,0 +1,450 @@
+/* BETA-DESIGN-REFRESH-001 — Riverline clubhouse.
+   Presentation only; semantic action/card colors and custom theme values stay authoritative. */
+:root {
+  --text-page-title-size: 1.75rem;
+  --text-section-size: 1.0625rem;
+  --riverline-brass: var(--table-accent, var(--accent-secondary));
+  --riverline-brass-soft: color-mix(in srgb, var(--riverline-brass) 11%, var(--surface-panel));
+  --riverline-analysis: var(--analysis-surface, var(--surface-elevated));
+  --riverline-game: var(--game-background, var(--surface-inset));
+  --riverline-depth: 0 12px 30px rgb(0 0 0 / .18), inset 0 1px rgb(255 255 255 / .045);
+}
+body { background: radial-gradient(ellipse at 82% 0%, color-mix(in srgb, var(--accent-primary) 9%, transparent), transparent 58%), var(--surface-canvas); }
+.riverline-shell { background: transparent; }
+.workspace-shell { background: transparent; }
+.workspace-header {
+  background: linear-gradient(110deg, var(--surface-shell), color-mix(in srgb, var(--surface-panel) 80%, var(--surface-shell)));
+  border-block-end: 1px solid color-mix(in srgb, var(--riverline-brass) 25%, var(--border-default));
+  box-shadow: 0 5px 22px #00000012;
+  padding-block: 10px;
+}
+.workspace-heading h1 { font-size: clamp(1.35rem, 1.6vw, 1.9rem); letter-spacing: -.035em; font-weight: 750; line-height: 1.16; }
+.workspace-heading p { font-size: .78rem; line-height: 1.45; }
+.workspace-eyebrow, .equity-eyebrow { color: var(--riverline-brass); letter-spacing: .11em; font-size: .65rem; font-weight: 750; }
+.workspace-canvas { padding-block-start: 18px; }
+.mode-rail {
+  background: linear-gradient(165deg, color-mix(in srgb, var(--surface-shell) 84%, var(--poker-felt-accent)), var(--surface-canvas) 80%);
+  border-inline-end: 1px solid color-mix(in srgb, var(--riverline-brass) 22%, var(--border-default));
+  box-shadow: 8px 0 32px #00000016;
+  padding-block: 16px 10px;
+}
+.rail-brand { gap: 8px; padding-block: 4px 18px; }
+.rail-brand .brand-mark { background: var(--accent-primary); color: var(--text-on-accent); border-radius: 13px 13px 5px 13px; box-shadow: 0 4px 0 color-mix(in srgb, var(--accent-primary) 45%, #000); }
+.rail-brand-copy strong { font-size: 1.23rem; letter-spacing: -.04em; color: var(--text-primary); }
+.rail-brand-copy span { color: var(--text-muted); font-size: .62rem; line-height: 1.4; }
+.rail-collapse-button { width: 28px; height: 30px; min-height: 30px; flex-basis: 28px; background: transparent; border-color: transparent; }
+.mode-nav-group-label { color: var(--riverline-brass); letter-spacing: .1em; font-size: .6rem; padding-block: 9px 5px; }
+.mode-nav-group + .mode-nav-group { border-block-start: 1px solid var(--border-subtle); margin-block-start: 12px; padding-block-start: 9px; }
+.mode-nav-item { position: relative; min-height: 43px; margin-block: 2px; gap: 10px; padding-inline: 10px; border-radius: 10px; font-size: .84rem; color: var(--text-secondary); }
+.mode-nav-icon { box-sizing: content-box; padding: 5px; width: 19px; height: 19px; border-radius: 8px; background: color-mix(in srgb, var(--accent-primary) 8%, transparent); color: var(--accent-primary); flex: 0 0 19px; }
+.mode-nav-item[aria-current="page"] {
+  background: var(--navigation-active-surface); color: var(--navigation-active-text); font-weight: 750;
+  box-shadow: inset 3px 0 var(--accent-primary);
+}
+.mode-nav-item[aria-current="page"] .mode-nav-icon { color: inherit; background: transparent; }
+.mode-nav-item:not([aria-current="page"]):hover { background: var(--surface-interactive); color: var(--text-primary); }
+.rail-utilities { padding-block-start: 12px; }
+.account-menu-button { border: 1px solid var(--border-default); background: var(--surface-elevated); border-radius: 24px; padding: 4px 12px 4px 5px; gap: 9px; box-shadow: var(--shadow-xs); }
+.account-menu-avatar { background: var(--riverline-brass-soft); color: var(--riverline-brass); border: 1px solid var(--riverline-brass); border-radius: 50%; font-weight: 750; }
+
+/* A luminous, structured study desk surrounds the deeper game stage. */
+.panel { background: linear-gradient(150deg, var(--surface-panel), color-mix(in srgb, var(--surface-panel) 94%, var(--surface-inset))); border: 1px solid var(--border-default); border-radius: 15px; box-shadow: var(--riverline-depth); }
+.panel-head { padding-block: 14px; border-block-end: 1px solid var(--border-subtle); }
+.panel-head :is(h2, h3) { font-size: 1.08rem; letter-spacing: -.025em; font-weight: 720; }
+:is(.overlay-surface, .modal) { border-color: var(--border-strong); background: var(--surface-panel); box-shadow: 0 24px 72px #0007, inset 0 1px #ffffff0d; }
+:is(.analysis-panel-content, .personal-understanding-panel, .equity-hand-analysis-panel, .advanced-equity) { background: var(--riverline-analysis); }
+.analysis-panel-content { border: 0; border-radius: 12px; padding: 18px; }
+.teacher-panel #teacherContent { background: var(--riverline-analysis) !important; border-color: transparent !important; }
+.analysis-summary { position: relative; padding: 4px 0 18px; border-block-end: 1px solid var(--border-strong); }
+.analysis-explanation-headline { font-size: clamp(1.25rem, 1.65vw, 1.7rem); font-weight: 720; letter-spacing: -.035em; line-height: 1.28; }
+.analysis-explanation-summary { font-size: .94rem; line-height: 1.65; }
+.analysis-presentation :is(.analysis-region-title, .analysis-detail-title) { color: var(--riverline-brass); font-size: .73rem; letter-spacing: .08em; }
+.analysis-reasoning-block { padding: 7px 0 7px 12px; background: transparent; border-radius: 0; border-inline-start: 3px solid var(--accent-primary); }
+.analysis-provenance { background: transparent; border-block-start: 1px solid var(--border-subtle); border-radius: 0; padding: 12px 0 0; }
+.analysis-provenance :is(p, li, small), .analysis-limitations { color: var(--text-muted); font-size: .8rem; }
+.study-block { border: 0; background: transparent; border-radius: 0; padding: 14px 0; }
+.study-block--facts { border-block-start: 2px solid var(--accent-primary); }
+.study-block--assumption { border-block-start: 2px solid var(--status-info); }
+.study-block--insight { border-block-start: 2px solid var(--riverline-brass); }
+.study-block :is(h3, h4, h5) { font-size: 1.06rem; letter-spacing: -.02em; }
+.study-lead { font-size: 1.08rem; line-height: 1.6; }
+.study-note { font-size: .82rem; color: var(--text-secondary); }
+.study-badge { background: var(--surface-inset); border-color: transparent; border-radius: 20px; padding: 5px 10px; font-size: .72rem; letter-spacing: .015em; }
+.study-warning { background: var(--riverline-brass-soft); border-inline-start-color: var(--riverline-brass); }
+.personal-coach-card--primary {
+  padding: 20px; background: linear-gradient(135deg, var(--riverline-brass-soft), var(--surface-panel));
+  border: 1px solid color-mix(in srgb, var(--riverline-brass) 55%, var(--border-default)); border-radius: 14px; box-shadow: var(--riverline-depth);
+}
+.personal-coach-card--primary h4 { font-size: 1.3rem; letter-spacing: -.025em; }
+.personal-coach-question, .study-question, .personal-range-understanding .personal-next-question {
+  padding: 15px 0; background: transparent; border: 0; border-block-start: 1px solid color-mix(in srgb, var(--riverline-brass) 35%, transparent);
+  font-size: clamp(1.1rem, 1.4vw, 1.45rem); font-weight: 650; line-height: 1.45; letter-spacing: -.02em;
+}
+.personal-node-overview { border-block-start: 2px solid var(--accent-primary); }
+.personal-insight-row { border-block-end: 1px solid var(--border-subtle); }
+.personal-coach-support, .personal-coach-precision { color: var(--text-muted); font-size: .8rem; }
+.personal-hand-stage { background: var(--surface-inset); padding: 18px; }
+.exploit-teacher-controls { background: var(--surface-inset); border-radius: 12px; padding: 14px; }
+
+/* Controls share weight, tactile edges and a clear keyboard state. */
+.ui-button { border-radius: 9px; font-weight: 650; box-shadow: 0 2px 0 color-mix(in srgb, var(--surface-inset) 80%, #000), inset 0 1px #ffffff09; }
+.ui-button:where(:not([class*="ui-button--poker-"]):not(.training-action-button):not(.ui-button--danger):not([data-canonical-action])) { border: 1px solid var(--border-strong); background: linear-gradient(var(--surface-elevated), var(--surface-interactive)); color: var(--text-primary); }
+.ui-button:is(.ui-button--primary, .ui-button-primary), .equity-calculate {
+  color: var(--text-on-accent); background: linear-gradient(165deg, var(--accent-primary-hover), var(--accent-primary));
+  border-color: color-mix(in srgb, var(--accent-primary) 80%, var(--text-on-accent));
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--accent-primary) 38%, var(--surface-canvas)), 0 5px 12px #0002;
+}
+.ui-button:is(.ui-button--quiet, .ui-button--ghost, .ui-button-ghost) { background: transparent; box-shadow: none; border-color: transparent; color: var(--text-secondary); }
+.ui-button:is(.ui-button--icon, .ui-button-icon) { border-radius: 10px; }
+.ui-button:hover:not(:disabled) { filter: brightness(1.08); }
+.ui-button:where(:not([class*="ui-button--poker-"]):not(.training-action-button):not(.ui-button--danger):not([data-canonical-action])):hover:not(:disabled) { border-color: var(--accent-primary); }
+.ui-button:active:not(:disabled) { translate: 0 2px; box-shadow: inset 0 1px 4px #0003; }
+.ui-button:disabled { filter: none; opacity: .45; box-shadow: none; cursor: not-allowed; }
+:is(.ui-button, .mode-nav-item, summary, input, select, textarea):focus-visible { outline: 3px solid var(--border-focus); outline-offset: 3px; }
+:is(.ui-tab, .segmented-control button) { border-radius: 7px; font-weight: 650; }
+:is(.ui-tab, .segmented-control button):is([aria-pressed="true"], [aria-selected="true"], .active) { background: var(--accent-primary); color: var(--text-on-accent); border-color: transparent; box-shadow: 0 2px 6px #0003; }
+:is(select.control-select, .ui-field select, .advanced-equity select, .personal-hand-stage select) { min-height: 36px; background-color: var(--surface-inset); border: 1px solid var(--border-strong); border-radius: 8px; padding-block: 7px; color: var(--text-primary); box-shadow: inset 0 2px 5px #0001; }
+:is(.ui-field, .advanced-equity, .personal-hand-stage) :is(input:not([type="checkbox"]):not([type="range"]), textarea) { background: var(--surface-inset); border: 1px solid var(--border-strong); color: var(--text-primary); border-radius: 8px; box-shadow: inset 0 2px 5px #0001; }
+input[type="range"] { accent-color: var(--accent-primary); cursor: pointer; }
+input[type="range"]::-webkit-slider-thumb { box-shadow: 0 2px 4px #0005, 0 0 0 3px color-mix(in srgb, var(--accent-primary) 18%, transparent); }
+.study-disclosure > summary { padding: 11px 8px; border-radius: 8px; font-weight: 650; }
+.study-disclosure > summary::marker { color: var(--riverline-brass); font-size: .8em; }
+.study-disclosure[open] > summary { border-block-end-color: var(--border-strong); }
+
+/* Felt, stitched cushion and brass edge: geometry and card lanes are untouched. */
+#visual-table-container {
+  background: radial-gradient(ellipse at 50% 43%, var(--game-surface), var(--riverline-game) 72%);
+  border: 1px solid var(--game-border); border-radius: 20px; box-shadow: inset 0 2px 24px #0005, 0 16px 34px #0002;
+  --poker-table-rail-start: var(--table-rail-start);
+  --poker-table-rail-end: var(--table-rail-end);
+  --poker-table-base-start: var(--table-rail-end);
+  --poker-table-base-end: var(--game-background);
+  --poker-table-cushion-start: var(--table-seat-surface);
+  --poker-table-cushion-end: var(--game-background);
+  --poker-table-surface-start: var(--table-felt-start);
+  --poker-table-surface-end: var(--table-felt-end);
+  --poker-table-line: color-mix(in srgb, var(--table-felt-text) 24%, transparent);
+  --poker-table-rail-stroke: var(--table-accent);
+  --poker-table-seat: var(--table-seat-surface);
+  --poker-table-seat-hero: var(--table-hero-surface);
+  --poker-table-contribution-surface: var(--game-surface);
+  --poker-table-contribution-border: var(--game-border);
+  --poker-table-contribution-text: var(--game-text);
+  --poker-table-contribution-text-halo: transparent;
+  --poker-table-contribution-chip: var(--table-accent);
+}
+#visual-table-container .table-rail--outer { stroke-width: 2; filter: drop-shadow(0 9px 6px #0007); }
+#visual-table-container .table-rail--inner { stroke: var(--table-accent); stroke-width: 1; }
+#visual-table-container .table-cushion { stroke: var(--game-border); stroke-width: 1.5; }
+#visual-table-container .table-felt-texture-mark { stroke: var(--table-felt-text); opacity: .13; }
+#visual-table-container .table-phase-status { fill: var(--table-felt-text); letter-spacing: 2px; font-size: 12px; }
+#visual-table-container .poker-table-amount--pot .poker-table-amount-surface { fill: var(--game-background); stroke: var(--table-accent); }
+#visual-table-container .table-pot { color: var(--game-text); }
+#visual-table-container .table-seat-name { fill: var(--table-seat-text); font-size: 12px; font-weight: 750; }
+#visual-table-container .table-seat-meta { color: var(--table-seat-text); fill: var(--table-seat-text); }
+#visual-table-container .table-seat :is(.table-seat-position, .table-seat-status, .poker-amount-text) { fill: var(--table-seat-text); }
+#visual-table-container .table-seat .poker-table-amount-surface { fill: var(--table-seat-surface); stroke: var(--game-border); }
+#visual-table-container .poker-table-amount--pot .poker-amount-text { fill: var(--game-text); }
+#visual-table-container .table-seat-surface { fill: var(--poker-table-seat); stroke: var(--game-border); filter: drop-shadow(0 5px 4px #0006); }
+#visual-table-container .table-seat.is-hero .table-seat-surface { fill: var(--poker-table-seat-hero); stroke: var(--table-accent); }
+#visual-table-container .table-seat.is-actor .table-seat-surface { fill: var(--table-actor-surface); stroke: var(--table-accent); stroke-width: 3; filter: drop-shadow(0 5px 5px #0006); }
+#visual-table-container .table-seat.is-all-in .table-seat-surface { stroke: var(--action-all-in); }
+#visual-table-container .table-actor-indicator { stroke: var(--table-accent); }
+#visual-table-container .table-seat-subtitle { fill: var(--table-seat-text); font: 8.5px var(--font-ui); unicode-bidi: plaintext; }
+.table-seat[data-identity]:not([data-identity=""]) .table-identity-mark { display: none; }
+.table-seat[data-identity]:not([data-identity=""]) .table-seat-stack { translate: 19px 0; }
+.table-seat[data-identity]:not([data-identity=""]) .table-seat-status { translate: 18px 0; }
+.table-seat-portrait[hidden], .table-seat-subtitle[hidden] { display: none; }
+.table-seat.is-folded .table-seat-portrait { opacity: .48; filter: saturate(.35); }
+#visual-table-container .table-dealer-button circle:first-child { fill: var(--table-accent); stroke: var(--game-border); stroke-width: 2; filter: drop-shadow(0 3px 1px #0005); }
+#visual-table-container .table-dealer-button-inner { stroke: var(--table-accent-text); }
+#visual-table-container .table-dealer-button text { fill: var(--table-accent-text); font-weight: 900; }
+.table-environment { background: var(--game-background); border-block-start: 1px solid var(--game-border); border-radius: 0 0 19px 19px; color: var(--game-text); }
+.table-environment .table-context-chip > span { color: var(--game-secondary); }
+.table-environment .table-context-chip bdi, .table-environment .table-cast > summary { color: var(--game-text); }
+.table-cast[open] { padding: 10px; border-radius: 12px; background: var(--surface-panel); }
+.table-cast[open] > summary { color: var(--text-primary); }
+.table-environment .table-cast:not([open]) > summary:hover { background: var(--game-surface); color: var(--game-text); }
+.table-cast-seat { grid-template-columns: 52px minmax(0, 1fr); padding: 10px; border-color: var(--border-default); background: var(--surface-elevated); }
+.table-cast-avatar { display: block; width: 52px; height: 52px; inline-size: 52px; block-size: 52px; object-fit: cover; border: 2px solid var(--riverline-brass); border-radius: 14px; box-shadow: 0 3px 8px #0004; }
+
+/* Equity: hands on a small felt tray; outcomes on the study desk. */
+.equity-player-card { background: var(--surface-elevated); border: 1px solid var(--border-default); border-block-start: 2px solid var(--series-color, var(--accent-primary)); border-radius: 12px; box-shadow: 0 6px 14px #0002; }
+.equity-player-name-label, .equity-player-name { font-size: .83rem; }
+.equity-hand-editor, .equity-unknown-hand { border-radius: 9px; background: color-mix(in srgb, var(--poker-felt-accent) 16%, var(--surface-inset)); box-shadow: inset 0 2px 8px #0002; }
+.equity-hand-mode button[aria-pressed="true"] { background: var(--accent-primary); color: var(--text-on-accent); box-shadow: 0 2px 5px #0002; }
+.equity-player-footer { border-block-start: 1px solid var(--border-default); }
+.equity-player-footer .equity-result-primary strong { font-size: 1.3rem; letter-spacing: -.04em; color: var(--accent-primary); }
+.equity-board-group { background: color-mix(in srgb, var(--poker-felt-accent) 22%, var(--surface-inset)); border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, var(--border-default)); border-radius: 12px; padding: 12px; }
+.equity-dead-group { padding: 10px 12px; background: var(--surface-inset); border-radius: 10px; border: 1px dashed var(--border-strong); }
+.equity-dossier-head { background: var(--riverline-analysis); }
+.equity-analysis-equity > strong { font-size: 1.9rem; font-weight: 750; letter-spacing: -.04em; color: var(--accent-primary); }
+.equity-analysis-bar { block-size: 8px; border-radius: 8px; }
+.equity-player-analysis { background: var(--surface-panel); border-color: var(--border-default); border-radius: 10px; }
+.advanced-equity { border: 1px solid var(--border-default); border-radius: 15px; padding: 18px; box-shadow: var(--riverline-depth); }
+.advanced-equity > summary { color: var(--text-primary); font-size: 1.3rem; letter-spacing: -.03em; }
+.advanced-equity-body { gap: 20px; }
+.advanced-equity :is(h3, h4) { font-size: 1.04rem; letter-spacing: -.02em; }
+.advanced-equity-inputs { gap: 12px; }
+.advanced-equity fieldset { border: 0; border-block-start: 2px solid var(--status-info); border-radius: 0; background: transparent; padding: 12px 0; }
+.advanced-equity legend { padding-inline: 0 10px; font-size: .87rem; }
+.advanced-equity textarea { min-block-size: 90px; font-family: var(--font-data); font-size: .82rem; line-height: 1.6; }
+.advanced-equity-result { background: var(--analysis-primary-surface); border: 0; border-radius: 12px; padding: 20px; box-shadow: inset 0 2px 12px #0002; }
+.advanced-equity-value { padding: 12px 0; border: 0; border-block-end: 1px solid var(--border-default); background: transparent; border-radius: 0; }
+.advanced-equity-value strong { color: var(--accent-primary); font-size: clamp(1.7rem, 2.7vw, 2.5rem); letter-spacing: -.05em; line-height: 1.2; }
+.advanced-equity-explorer { padding: 18px; background: var(--analysis-surface); border: 1px solid var(--border-default); border-radius: 12px; }
+.advanced-equity-explorer > summary { font-size: 1.25rem; letter-spacing: -.025em; color: var(--text-primary); padding-block-start: 0; }
+.advanced-equity-runout-controls { padding-block: 12px; border-block: 1px solid var(--border-subtle); }
+.advanced-equity-runout-results section > h4 { color: var(--riverline-brass); font-size: .82rem; }
+.advanced-equity-runout-results .ui-button { background: var(--surface-elevated); min-height: 36px; border-radius: 8px; }
+.advanced-equity-preview { padding: 16px; background: var(--analysis-surface-raised); border-color: var(--border-strong); border-radius: 12px; }
+.advanced-equity-preview .advanced-mini-card { box-shadow: 0 3px 6px #0004; }
+.advanced-equity-preview .advanced-mini-card.unused { opacity: .55; box-shadow: none; }
+.advanced-equity-help > summary { font-size: .8rem; color: var(--text-muted); padding-block: 5px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .ui-button, .mode-nav-item, .table-cast-seat { transition: translate 140ms ease, background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease; }
+  .ui-button:hover:not(:disabled), .table-cast-seat:hover { translate: 0 -1px; }
+  .ui-button:active:not(:disabled) { translate: 0 2px; }
+  .study-disclosure[open] > :not(summary) { animation: riverline-unfold 180ms ease-out; }
+  .table-seat-portrait { transition: opacity 170ms ease, filter 170ms ease; }
+  .mode-view.active { animation: riverline-unfold 180ms ease-out; }
+  @keyframes riverline-unfold { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .riverline-shell *, .riverline-shell *::before, .riverline-shell *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .ui-button:hover, .ui-button:active, .table-cast-seat:hover { translate: none; }
+}
+@media (max-width: 1400px) {
+  .workspace-header { padding-block: 7px; }
+  .workspace-heading h1 { font-size: 1.35rem; }
+  .workspace-canvas { padding-block-start: 12px; }
+  .rail-brand { padding-block-end: 9px; }
+  .mode-nav-item { min-height: 38px; margin-block: 1px; }
+  .mode-nav-group + .mode-nav-group { margin-block-start: 7px; padding-block-start: 5px; }
+  .panel-head { padding-block: 10px; }
+  .advanced-equity, .advanced-equity-explorer, .personal-coach-card--primary { padding: 14px; }
+}
+@media (max-width: 1050px) {
+  .workspace-heading p { max-width: 45ch; }
+  .mode-rail { padding-block: 8px; }
+  .analysis-panel-content { padding: 12px; }
+  .advanced-equity-body { gap: 14px; }
+  .advanced-equity-value strong { font-size: 1.8rem; }
+}
+[dir="rtl"] .analysis-reasoning-block { padding: 7px 12px 7px 0; }
+[dir="rtl"] .account-menu-button { padding: 4px 5px 4px 12px; }
+
+/* Feature surfaces. The theme controller owns their colors and live preview. */
+:is(.analysis-panel-content, .personal-understanding-panel, .equity-hand-analysis-panel, .advanced-equity, #recommendation) {
+  --text-primary: var(--analysis-text); --text-secondary: var(--analysis-secondary); --text-muted: var(--analysis-muted);
+  color: var(--analysis-text); background: var(--analysis-surface);
+}
+#recommendation { border: 1px solid var(--border-default); border-block-start: 3px solid var(--accent-primary); }
+#recommendation .action-name { font-size: clamp(1.8rem, 2.5vw, 2.7rem); letter-spacing: -.035em; line-height: 1.15; }
+#recommendation .strategy-truth-note { color: var(--analysis-secondary); line-height: 1.5; }
+.playbook-facts-heading small { color: var(--text-muted); }
+:is(#teacherContent, .personal-coach-card--primary) { background: var(--learning-surface); color: var(--learning-text); }
+.table-environment .table-cast[open] > summary { color: var(--text-primary); }
+.table-cast-seat { grid-template-columns: 64px minmax(0, 1fr); }
+.table-cast-avatar { width: 64px; height: 64px; inline-size: 64px; block-size: 64px; }
+
+/* Hidden questions must never reserve a track, including stale session views. */
+.range-calibration-workspace[data-personal-view="understanding"] .calibration-configured-state {
+  grid-template-columns: minmax(0, 1fr); align-items: start;
+}
+.range-calibration-workspace[data-personal-view="understanding"] .calibration-configured-state > .calibration-personal-column {
+  grid-column: 1 / -1; grid-row: auto; width: 100%; min-width: 0;
+}
+.range-calibration-workspace[data-personal-view="understanding"] .calibration-configured-state:has(> .calibration-question-view:not([hidden])) {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+}
+.range-calibration-workspace[data-personal-view="understanding"] .calibration-configured-state:has(> .calibration-question-view:not([hidden])) > .calibration-personal-column {
+  grid-column: 2; grid-row: 1;
+}
+.range-calibration-workspace[data-personal-view="understanding"] .calibration-question-view { min-height: 0; }
+.personal-understanding-panel { padding: clamp(14px, 2vw, 28px); }
+.personal-strategy-map { margin-block: 14px; padding: 14px; border: 1px solid var(--border-default); border-radius: 12px; }
+.personal-map-bar { display: flex; gap: 3px; block-size: 12px; overflow: hidden; border-radius: 6px; }
+.personal-map-bar > span { flex-basis: 0; min-inline-size: 2px; background: var(--border-strong); }
+.personal-map-bar > [data-coverage-state="directly_known"] { background: var(--accent-primary); }
+.personal-map-bar > [data-coverage-state="inferred_high"] { background: var(--status-info); }
+.personal-map-bar > :is([data-coverage-state="inferred_medium"], [data-coverage-state="uncertain"], [data-coverage-state="transferred"]) { background: var(--riverline-brass); }
+.personal-map-bar > [data-coverage-state="conflicting"] { background: var(--status-danger); }
+.personal-map-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; list-style: none; padding: 0; margin-block: 10px 0; font-size: .78rem; font-variant-numeric: tabular-nums; }
+.personal-mapping-coverage { grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 8px; }
+.personal-mapping-coverage li { display: grid; gap: 5px; padding: 10px; background: var(--analysis-surface-raised); border: 1px solid var(--border-default); border-radius: 9px; }
+.personal-mapping-coverage li[data-coverage-state="conflict"] { border-color: var(--status-danger); }
+.personal-mapping-coverage small { color: var(--analysis-secondary); font-variant-numeric: tabular-nums; }
+.personal-insight-row { grid-template-columns: minmax(0, 1fr); gap: 2px; padding-block: 9px; }
+.personal-insight-row p { max-inline-size: 90ch; margin: 0; line-height: 1.65; }
+.personal-insight-row--group-start { margin-block-start: 16px; border-block-start: 1px solid var(--border-strong); }
+.personal-insight-label:empty { display: none; }
+.personal-insight-label { color: var(--analysis-secondary); font-size: .78rem; font-weight: 700; }
+
+/* Real runout results: card, Equity and category have distinct reading lanes. */
+.advanced-equity-next-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+.advanced-equity-runout-results .runout-card { display: flex; flex-direction: column; justify-content: start; align-items: center; gap: 7px; padding: 12px 7px; min-width: 0; white-space: normal; text-align: center; }
+.runout-card-faces { display: flex; gap: 3px; direction: ltr; }
+.runout-card > strong { font-size: 1.2rem; color: var(--analysis-text); font-variant-numeric: tabular-nums; }
+.runout-card > small { font-size: .8rem; color: var(--analysis-secondary); }
+.runout-card-category { font-size: .73rem; line-height: 1.35; color: var(--analysis-secondary); }
+.runout-card[data-equity-change="up"] { border-block-start: 3px solid var(--accent-primary); }
+.runout-card[data-equity-change="down"] { border-block-start: 3px solid var(--status-warning); }
+.advanced-equity-runout-results .runout-card[aria-pressed="true"] { outline: 2px solid var(--accent-primary); outline-offset: 1px; background: var(--analysis-surface-raised); }
+.runout-detail-equity { display: block; margin-block: 12px; font-size: 1.65rem; font-variant-numeric: tabular-nums; }
+.advanced-equity-sequences { margin-block: 10px; padding: 8px 0; border-block-end: 1px solid var(--border-default); }
+.advanced-equity-sequences > summary { color: var(--analysis-secondary); font-size: .83rem; }
+.advanced-equity-sequences[open] > :not(summary) { margin-block-start: 10px; }
+.advanced-equity .study-status[data-state="partial"], .advanced-equity .study-status[data-state="unavailable"] { border-inline-start: 3px solid var(--status-warning); padding-inline-start: 10px; }
+
+/* An idle setup roster contains no simulated in-progress hand. */
+#trainingIdle:has(.training-lineup-preview:not([hidden])) { display: block; padding: 0; border: 0; background: transparent; }
+#trainingIdle:has(.training-lineup-preview:not([hidden])) > :is(strong, span) { display: none; }
+.training-lineup-preview { padding: clamp(16px, 2vw, 28px); background: var(--game-background); color: var(--game-text); border: 1px solid var(--game-border); border-radius: 16px; }
+.training-lineup-preview header p { color: var(--game-secondary); margin-block: 8px; }
+.training-lineup-preview h3 { color: var(--game-text); margin: 0; font-size: 1.35rem; }
+.training-lineup-eyebrow { font-size: .78rem; font-weight: 700; }
+.training-lineup-roster { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; padding: 0; list-style: none; margin-block: 20px; }
+.training-lineup-roster li { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--table-seat-surface); color: var(--table-seat-text); border: 1px solid var(--game-border); border-radius: 12px; min-width: 0; }
+.training-lineup-roster li[data-hero="true"] { background: var(--table-hero-surface); border-color: var(--table-accent); }
+.training-lineup-roster img, .training-lineup-hero { inline-size: 64px; block-size: 64px; border-radius: 12px; object-fit: cover; flex: 0 0 64px; }
+.training-lineup-hero { display: grid; place-items: center; background: var(--table-accent); color: var(--table-accent-text); font-size: 1.8rem; font-weight: 750; }
+.training-lineup-roster li > div { display: grid; gap: 4px; min-width: 0; }
+.training-lineup-roster strong { font-size: .88rem; overflow-wrap: anywhere; }
+.training-lineup-roster bdi { font-size: .78rem; }
+.training-lineup-settings { border-block-start: 1px solid var(--game-border); padding-block-start: 10px; }
+.training-lineup-settings p { font-size: .88rem; line-height: 1.5; }
+.training-lineup-settings small { color: var(--game-secondary); }
+
+/* Welcome remains optional orientation, with Home as its one primary entry. */
+.welcome-orientation-inner { max-inline-size: 1200px; }
+.welcome-intro { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); align-items: center; gap: 32px; padding-block: 10px 24px; }
+.welcome-intro h1 { max-inline-size: 20ch; font-size: clamp(2rem, 3.2vw, 3.4rem); line-height: 1.12; letter-spacing: -.045em; }
+.welcome-intro #welcomeDescription { max-inline-size: 48ch; line-height: 1.6; margin-block: 18px; }
+.welcome-enter { min-height: 46px; padding-inline: 24px; font-size: 1rem; }
+.welcome-table-illustration { margin: 0; min-width: 0; }
+.welcome-table-scene { position: relative; block-size: 250px; direction: ltr; }
+.welcome-table-felt { position: absolute; inset: 40px 8px 28px; border-radius: 50%; border: 12px solid var(--table-rail-end); background: radial-gradient(ellipse, var(--table-felt-start), var(--table-felt-end)); box-shadow: 0 10px 0 var(--table-seat-surface), 0 20px 30px #0004, inset 0 0 0 2px var(--table-rail-start); display: grid; place-items: center; }
+.welcome-table-felt svg { width: 64px; height: 64px; fill: var(--table-felt-text); opacity: .6; }
+.welcome-portrait { position: absolute; inline-size: 86px; block-size: 86px; border: 3px solid var(--table-accent); border-radius: 22px; object-fit: cover; box-shadow: 0 5px 15px #0004; }
+.welcome-portrait--one { left: 2%; top: 5%; rotate: -8deg; }
+.welcome-portrait--two { right: 4%; top: 0; rotate: 8deg; }
+.welcome-portrait--three { left: 42%; bottom: 0; }
+.welcome-table-illustration figcaption { margin-block-start: 12px; text-align: center; font-size: .74rem; color: var(--text-muted); }
+.welcome-job-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.welcome-job-card { min-height: 0; padding: 16px; grid-template-columns: minmax(0, 1fr); gap: 10px; border-radius: 12px; background: var(--analysis-surface); color: var(--analysis-text); }
+.welcome-job-copy small { color: var(--analysis-secondary); line-height: 1.5; }
+.welcome-job-action { color: var(--analysis-secondary); font-size: .78rem; }
+.welcome-jobs-heading p { display: none; }
+.welcome-footer { margin-block-start: 18px; }
+.home-hero { border-block-start: 3px solid var(--riverline-brass); background: var(--analysis-surface); color: var(--analysis-text); }
+:is(.runout-card, .welcome-job-card, .welcome-enter, .table-cast select):focus-visible { outline: 3px solid var(--border-focus); outline-offset: 3px; }
+@media (max-width: 1200px) {
+  .welcome-intro { gap: 20px; }
+  .welcome-table-scene { block-size: 210px; }
+  .welcome-job-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 1100px) {
+  .range-calibration-workspace[data-personal-view="understanding"] .calibration-configured-state:has(> .calibration-question-view:not([hidden])) { grid-template-columns: minmax(0, 1fr); }
+  .range-calibration-workspace[data-personal-view="understanding"] .calibration-configured-state:has(> .calibration-question-view:not([hidden])) > .calibration-personal-column { grid-column: 1; grid-row: auto; }
+}
+@media (max-width: 680px) {
+  .welcome-intro { grid-template-columns: minmax(0, 1fr); }
+  .welcome-intro h1 { max-inline-size: none; }
+  .welcome-table-scene { max-inline-size: 370px; margin-inline: auto; }
+  .welcome-job-grid { grid-template-columns: minmax(0, 1fr); }
+  .training-lineup-roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .training-lineup-roster li { flex-direction: column; text-align: center; }
+}
+
+.welcome-job-grid > .welcome-job-card { grid-column: auto; }
+.welcome-job-card .welcome-job-action { grid-column: 1; }
+@media (prefers-reduced-motion: reduce) { .welcome-job-card:hover { transform: none; } }
+
+/* BETA-DESIGN-CORRECTION-002: active decisions, quiet evidence, top-packed flow. */
+#recommendation { background: var(--analysis-primary-surface); box-shadow: var(--shadow-md); }
+#recommendation:is([data-recommendation-state="ready"], [data-recommendation-state="mixed"], [data-recommendation-state="warning"]) { border-block-start: 3px solid var(--accent-primary); }
+#recommendation:is([data-recommendation-state="unavailable"], [data-recommendation-state="waiting"], [data-recommendation-state="loading"]) { background: var(--evidence-surface); border-block-start-color: var(--border-default); box-shadow: none; }
+#recommendation .recommend-top { gap: 16px; align-items: start; }
+#recommendation .frequency-visualization { padding-block-start: 14px; margin-block-start: 16px; border-block-start: 1px solid var(--border-default); }
+#recommendation .strategy-truth-note { max-inline-size: 64ch; font-size: .8rem; }
+:is(.playbook-facts-panel, .analysis-provenance, .personal-coach-support, .advanced-equity-help) { background: var(--evidence-surface); color: var(--evidence-text); }
+.analysis-provenance { padding: 12px; border-radius: 8px; }
+.playbook-facts-heading { background: transparent; }
+#teacherContent { border-inline-start: 2px solid var(--riverline-brass); padding: 16px; border-radius: 10px; }
+.teacher-panel #teacherContent { background: var(--learning-surface); color: var(--learning-text); --text-primary: var(--learning-text); }
+.playbook-metric-strip, .playbook-metric-strip .metric { background: var(--evidence-surface); color: var(--evidence-text); border-color: var(--border-default); }
+.playbook-metric-strip .metric b { color: var(--analysis-text); }
+#gtoMode[data-playbook-mode="hand"] .playbook-table-label[data-playbook-hand]:not([hidden]) { display: grid; gap: 4px; }
+.playbook-table-label > :is(strong, small) { display: block; line-height: 1.45; }
+[dir="rtl"] .mode-nav-item[aria-current="page"] { box-shadow: inset -3px 0 var(--accent-primary); }
+
+.equity-player-card { outline: none; box-shadow: var(--shadow-xs); }
+.equity-player-card:focus-within { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.equity-player-card[data-hand-state="incomplete"] { border-color: var(--border-default); border-block-start-color: var(--status-warning); }
+.advanced-equity-body { align-items: start; }
+.advanced-equity-setup { padding: 0; }
+.advanced-equity fieldset { border-block-start: 0; padding: 10px; background: var(--analysis-surface-raised); border-radius: 10px; }
+.advanced-equity legend { padding-inline: 6px; }
+.advanced-equity-current-cards { margin-block: 6px 10px; }
+.advanced-equity-range-editor > summary { font-size: .78rem; padding: 7px 0; color: var(--analysis-secondary); }
+.advanced-equity-range-editor[open] { display: grid; gap: 10px; }
+.advanced-equity-range-editor textarea { min-block-size: 70px; }
+.advanced-equity-explorer > .study-note { font-size: .8rem; max-inline-size: 80ch; }
+.advanced-equity-help { padding: 10px; grid-column: 1 / -1; }
+.advanced-equity-preview { align-self: start; }
+.advanced-equity-preview:has(> .study-note:only-child) { padding: 12px; border-style: dashed; }
+.runout-card-faces { margin-block-end: 3px; }
+.runout-card > :is(strong, small), .runout-detail-equity { direction: ltr; unicode-bidi: isolate; }
+
+#personalRangeSummary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; padding: 0; list-style: none; }
+.personal-insight-group { padding: 14px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--analysis-surface-raised); min-inline-size: 0; }
+.personal-insight-group h4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 0 0 12px; font-size: .92rem; color: var(--analysis-text); }
+.personal-insight-count { font: .76rem var(--font-data); color: var(--analysis-secondary); }
+.personal-insight-group > ul { padding: 0; list-style: none; display: grid; gap: 10px; }
+.personal-insight-sentence { line-height: 1.6; overflow-wrap: anywhere; font-size: .87rem; }
+.personal-insight-group[data-insight-kind="conflict"] { border-inline-start: 3px solid var(--status-warning); }
+.personal-insight-group[data-insight-kind="precision"] { background: var(--evidence-surface); }
+.personal-map-bar { block-size: 8px; }
+.personal-map-precision { color: var(--analysis-secondary); font-size: .78rem; margin-block: 8px; }
+.personal-strategy-map { padding: 10px 12px; }
+
+#homeWorkspaceContent[data-product-destination="home"] {
+  grid-template-areas: none; grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row; align-content: start; align-items: start;
+}
+#homeWorkspaceContent[data-product-destination="home"] > .home-section { grid-area: auto; min-height: 0; }
+#homeWorkspaceContent[data-product-destination="home"] > :is(.home-section--overview, .home-section--guest-account) { grid-column: 1 / -1; }
+#homeWorkspaceContent[data-product-destination="home"] .home-section { background: var(--analysis-surface); color: var(--analysis-text); }
+#homeWorkspaceContent[data-product-destination="home"] .home-quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.welcome-job-card:hover { background: var(--analysis-surface-raised); color: var(--analysis-text); }
+.welcome-job-copy small, .welcome-job-action { color: var(--analysis-secondary); }
+.welcome-table-illustration figcaption { color: var(--text-secondary); }
+.welcome-intro-copy { min-inline-size: 0; }
+.welcome-intro h1 { overflow-wrap: anywhere; text-wrap: balance; }
+.welcome-job-copy { overflow-wrap: anywhere; }
+.table-cast-avatar, .training-lineup-roster img, .welcome-portrait { object-position: 50% 40%; border-radius: 18%; }
+@media (max-width: 1100px) {
+  #homeWorkspaceContent[data-product-destination="home"] { grid-template-columns: minmax(0, 1fr); }
+}
+/* Posted payments accompany the existing street chip marker; all amounts are bb. */
+.table-forced-contribution text {
+  fill: var(--table-text-primary, #fff);
+  font-size: 11px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--table-felt-color, #244f42);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+#handRandomizeBoard:not([hidden]) {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  gap: 6px;
+  padding-inline: 8px;
+}
+
+#handSetupSection .hand-collection-field { grid-column: 1 / -1; }

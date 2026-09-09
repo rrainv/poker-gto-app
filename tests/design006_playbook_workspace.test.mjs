@@ -96,7 +96,7 @@ test('Scenario organization retains supported product controls only', () => {
 
 test('Hand workspace includes bounded initialization and canonical state summaries', () => {
   for (const id of [
-    'handTableSize', 'handGameMode', 'handStackBb', 'handButtonSeat', 'handHeroSeat',
+    'handTableSize', 'handCollectionType', 'handStackBb', 'handButtonSeat', 'handHeroSeat',
     'handAnteType', 'handAnteBb', 'handStartButton', 'handResetButton',
     'handStateStreet', 'handStateActor', 'handStatePot', 'handStateDeduction',
     'handSeatList', 'handActionHistory',
@@ -159,7 +159,7 @@ test('product bridge completes deterministic streets and showdown', () => {
   assert.equal(bridge.getState().terminal.isTerminal, true);
 });
 
-test('ClubGG hand initialization exposes exact deduction outside the pot', () => {
+test('fixed collection and legacy initialization expose exact deduction outside the pot', () => {
   const { bridge } = browserBridge();
   bridge.initializeHand(configuration({ tableSize: 7, gameMode: 'clubgg' }));
   const state = bridge.getState();
@@ -167,7 +167,7 @@ test('ClubGG hand initialization exposes exact deduction outside the pot', () =>
   assert.equal(state.rulesSnapshot.definition.collectionPolicy.amountMilliBb, 100);
   assert.equal(state.deductionTotalMilliBb, 700);
   assert.equal(state.potMilliBb, 1500);
-  assert.match(logic, /ClubGG · 0\.1 bb per seated player/);
+  assert.match(logic, /Fixed collection outside the pot/);
   assert.doesNotMatch(html.slice(html.indexOf('id="playbookHandWorkspace"'), html.indexOf('</aside>', html.indexOf('id="playbookHandWorkspace"'))), /percentage rake/i);
 });
 

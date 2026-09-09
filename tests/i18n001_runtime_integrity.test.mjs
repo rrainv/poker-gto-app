@@ -120,6 +120,14 @@ test('visible product-key audit preserves the bounded accepted English fallbacks
   assert.deepEqual(audit.crossLocaleScriptContamination, []);
 });
 
+test('the voluntary contribution Action caption is localized in all product catalogs', () => {
+  const runtime = createRuntime();
+  for (const [language, expected] of [['en', 'Action'], ['ru', '\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435'], ['he', '\u05e4\u05e2\u05d5\u05dc\u05d4']]) {
+    runtime.context.window.setLanguage(language);
+    assert.equal(runtime.context.window.t('Action'), expected);
+  }
+});
+
 test('Russian Clear is semantically distinct from Fold and Equity uses the canonical Clear key', () => {
   const audit = buildAudit();
   assert.equal(audit.semantic.russianClear, 'Очистить');

@@ -1,3 +1,4 @@
+import { handSetupRulesDefinition } from './hand-setup-rules.mjs';
 import { createCanonicalLiveController } from './canonical-live-controller.mjs';
 import { createCanonicalHandLifecycleRecorder } from './canonical-hand-lifecycle.mjs';
 import { canonicalPokerStatesEqual, reconstructCanonicalHandReplaySource } from './canonical-hand-replay-source.mjs';
@@ -9,7 +10,7 @@ import {
   createPlaybookScenarioInputFromLegacyCompatibility,
   createPlaybookViewModel,
 } from './playbook-state-source.mjs';
-import { createTablePresenceViewModel } from './table-presence-view-model.mjs';
+import { createTablePresenceViewModel, createHandDraftTablePresence } from './table-presence-view-model.mjs';
 import { createReplayTimelineViewModel } from './replay-timeline-view-model.mjs';
 import {
   REPLAY_FRAME_OPERATIONS,
@@ -37,6 +38,7 @@ import {
 } from './analyze-scenario-randomization.mjs';
 import {
   HAND_PENDING_RANDOMIZATION_REQUEST_VERSION,
+  canRandomizeHandPublicChance,
   randomizeHandPendingDraft,
 } from './hand-pending-randomization.mjs';
 
@@ -286,6 +288,8 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     handRandomizationRequestVersion: HAND_PENDING_RANDOMIZATION_REQUEST_VERSION,
 
     randomizeHandPendingDraft,
+    canRandomizeHandPublicChance,
+    handSetupRulesDefinition,
 
     resolveDecisionContext(scenarioInput) {
       return modeController.resolve({ scenarioInput });
@@ -335,10 +339,13 @@ export function installPlaybookStateSourceBridge(browserWindow, {
       visualState: requestedVisualState = null,
       interaction: requestedInteraction = null,
       submissionLocked = false,
+      draftSetup = null,
     } = {}) {
       if (modeController.getMode() !== PLAYBOOK_MODES.HAND) return null;
       const replayProjection = activeReplayController().getProjection();
-      const tablePresence = replayProjection.tablePresence;
+      const tablePresence = !savedHandViewer && !canonicalController.getState() && draftSetup
+        ? createHandDraftTablePresence(draftSetup)
+        : replayProjection.tablePresence;
       const visualState = requestedVisualState
         ?? tableVisualState(tablePresence, replayProjection);
       const projection = requestedProjection

@@ -118,7 +118,7 @@ fingerprint to agree with the Saved rules snapshot.
 - `actorIneligiblePotAfterCallBb`: exact remainder of the total ledger pot that
   the deciding actor cannot win after that call.
 - `requiredRawEquity`: exact raw call threshold,
-  `callAmountBb / actorContestablePotAfterCallBb`, when a positive exact call
+  `incrementalRiskBb / actorContestablePotAfterCallBb`, when a positive exact call
   and actor-contestable denominator are available. It is `null` for checks,
   unavailable actor economics, or an invalid/unbounded denominator.
 
@@ -136,16 +136,19 @@ fingerprint to agree with the Saved rules snapshot.
   cannot represent side-pot/effective-stack relationships.
 
 `deriveActorCallEconomics(state, actorPlayerId)` in `shared/poker-domain` is the
-canonical actor-call economics selector. Canonical pot accounting was already
-correct; the repaired defect was actor-relative strategic pricing. The selector
+canonical actor-call economics selector. AUD-01 corrects ante funding centrally:
+ante never raises wager/refund thresholds. Incremental risk is the legal call
+less any increase in the actor's own refundable wager excess; a fully refundable
+nominal call has zero risk. Ordinary calls retain the call-amount numerator. The selector
 projects the canonical ledger and pot layers and does not create a second pot or
 side-pot authority. `currentPotBb` remains the exact total ledger pot, while
 `callAmountBb` remains the exact incremental stack-capped call.
 
 Lossy Scenario exposes actor economics as unavailable and never substitutes its
 explicit or compatibility total pot for an exact call-price denominator.
-Historical base-v1 and pre-extension-v1.1 contexts remain readable without
-rewriting; absence of the additive actor-economics fields remains meaningful.
+Historical base-v1 and pre-extension-v1.1 field absence remains meaningful.
+Affected durable ante contexts require the Saved/Training compatibility boundaries
+before being presented as current exact economics; unrelated evidence is unchanged.
 
 ### Mandatory v1.1 strategy field choice
 

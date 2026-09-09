@@ -17,6 +17,43 @@ Status: implemented through `SAVED-OBJECTS-002`, `GAME-RULES-001C`, and human-ac
 
 Date: August 30, 2026
 
+## September 8 historical accounting compatibility (AUD-01)
+
+`saved-accounting-compatibility/v1` is a pure, deterministic read/materialization
+adapter, not a database migration framework. Affected Saved Hand v1/v2/v3 values
+reconstruct their preserved Replay with current canonical rules, verify matching
+identities, Hero, rules/provenance, cards, chance endpoint, contribution ledger,
+and complete actual action records, then replace only derived accounting state.
+Implicit CALL/ALL_IN reconstruction that changes actual committed amounts fails.
+Current/correct and ordinary no-ante Hands retain their semantic values.
+
+IDs, owner, revision, timestamps, annotations, tags, lifecycle and source remain
+unchanged. Reads never overwrite stored bytes. Successful ordinary writes/imports
+can store normalized values through existing transactions. Missing/contradictory
+authority returns `historical_accounting_unavailable`; the original durable
+record stays intact. No invalid projection is accepted merely to make Replay fit.
+Imported recorded gross pot, rake and net awards remain immutable source evidence;
+current canonical reconstruction must pass existing recorded reconciliation.
+
+Ante-derived legacy Hand Spots (and older exact contexts with no rule authority)
+require their same-owner Saved Hand reference and one matching canonical Replay
+decision point. Exact context is rederived while preserving intent and annotations.
+Insufficient lineage makes product reads unavailable, without deleting the stored
+Spot. Scenario evidence remains lossy and unchanged.
+
+`saved-spot-snapshot/v3` certifies current `accountingVersion: ante-dead-money/v1`.
+It retains the Hand Spot fields and `rulesSnapshot` (nullable for a legacy v1
+source). New Spots derived directly from current canonical ante state and safely
+materialized legacy Spots use v3; current v3 reads are idempotent without requiring
+a saved parent. Frozen reviewed contexts without independent state authority do
+not gain this marker merely because they were saved by a newer client.
+
+Saved outer object/export/IndexedDB and sync versions do not change. Sync transports
+legacy Spot evidence independently of parent arrival; product materialization is
+separate. Old Hand transport, comparison bases and queued operations normalize
+through the same current adapter, preserving revisions, ownership and retry IDs.
+Older clients reject the unsupported nested Spot v3 explicitly.
+
 ## Purpose and authority
 
 Saved / Noted Study Objects are a user-owned application domain. They are not a Dashboard model, a renderer cache, a Personal Strategy extension, or a PokerState replacement.
@@ -62,8 +99,8 @@ Object creation starts at revision `1`. Annotation and archive mutations increme
 
 Known outer-v1 kinds and nested payloads are:
 
-- `hand` with `saved-hand-snapshot/v1` or `saved-hand-snapshot/v2`
-- `spot` with `saved-spot-snapshot/v1` or `saved-spot-snapshot/v2`
+- `hand` with `saved-hand-snapshot/v1`, `/v2` or `/v3`
+- `spot` with `saved-spot-snapshot/v1`, `/v2` or `/v3`
 
 Future `range`, `drill`, `session_review`, and other payloads are not implemented prematurely. An older client can validate, preserve, query, export, and re-import an unknown future kind as opaque versioned JSON, but does not interpret it.
 
@@ -125,7 +162,7 @@ The source contains the fixed observer/Hero player ID and a contiguous, zero-bas
 | `reveal_hole` | exact player ID and two revealed cards | `applyPrivateReveal` |
 | `showdown` | no payload | `resolveShowdown` |
 
-V1 initialization remains byte- and behavior-compatible. V2 initialization replaces the legacy `game` configuration with the exact `rulesSnapshot` and calls `initializeHandFromGameRulesSnapshot`; later operations retain the existing canonical transition inputs. A source version and all of its event versions must agree. Unknown or mixed versions, malformed snapshots/fingerprints, and missing v2 rules fail explicitly.
+V1 initialization keeps its serialized input contract; reconstructed ante economics follow the current AUD-01 rules. V2 initialization replaces the legacy `game` configuration with the exact `rulesSnapshot` and calls `initializeHandFromGameRulesSnapshot`; later operations retain the existing canonical transition inputs. A source version and all of its event versions must agree. Unknown or mixed versions, malformed snapshots/fingerprints, and missing v2 rules fail explicitly.
 
 The Replay projection controller derives an event only from adjacent successful canonical states. It immediately reapplies the derived input through the canonical poker domain and requires exact equality with the recorded next PokerState. On save, the complete source is replayed again; its observer must equal the Saved Hand Hero and its final state must equal the embedded PokerState. Event envelopes and operation-specific payloads use strict keys.
 

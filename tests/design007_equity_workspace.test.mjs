@@ -193,8 +193,9 @@ test('interactive controls retain accessible names, relationships, and pressed s
   assert.match(equityLogic, /track\.setAttribute\('aria-valuenow'/);
 });
 
-test('Equity UI remains isolated from Playbook, Training, ranges, and poker math', () => {
-  assert.doesNotMatch(equityHtml, /range|Playbook|Training|PokerState|DecisionContext/i);
+test('Equity UI delegates poker math and retains the accepted Advanced Equity range surface', () => {
+  assert.match(equityHtml, /id="advancedEquityWorkspace"/);
+  assert.doesNotMatch(equityHtml, /Playbook|Training|PokerState|DecisionContext/i);
   assert.doesNotMatch(equityLogic, /scoreFive|scoreSeven|evaluateSeven|calculatePreflop|StrategyResult/);
   assert.match(equityLogic, /callEquityServiceBridge\('calculate'/);
 });

@@ -1,0 +1,3970 @@
+{
+  "provenance": "Generated with pre-AUD-01 accounting before canonical edits on 2026-09-08.",
+  "bbaV1": {
+    "initial": {
+      "schemaVersion": "saved-study-object/v1",
+      "id": "legacy-big_blind-1-initial",
+      "ownerRef": {
+        "schemaVersion": "saved-study-owner/v1",
+        "kind": "local",
+        "id": "legacy-owner"
+      },
+      "kind": "hand",
+      "createdAt": "2026-08-01T00:00:00.000Z",
+      "updatedAt": "2026-08-01T00:00:00.000Z",
+      "revision": 1,
+      "annotations": {
+        "schemaVersion": "saved-study-annotations/v1",
+        "title": "Historical evidence",
+        "note": "Keep my note",
+        "tags": [
+          {
+            "schemaVersion": "saved-study-tag/v1",
+            "key": "bba",
+            "display": "BBA"
+          }
+        ],
+        "reviewState": "review_later",
+        "classifications": []
+      },
+      "source": {
+        "schemaVersion": "saved-study-source/v1",
+        "surface": "hand",
+        "sourceId": "legacy-big_blind-1-initial",
+        "parentObjectId": null
+      },
+      "payload": {
+        "schemaVersion": "saved-hand-snapshot/v1",
+        "heroPlayerId": "SB",
+        "pokerState": {
+          "schemaVersion": "poker-state/v1",
+          "handId": "legacy-big_blind-1",
+          "game": {
+            "variant": "no_limit_texas_holdem",
+            "mode": "home",
+            "tableSize": 2,
+            "smallBlindMilliBb": 500,
+            "bigBlindMilliBb": 1000,
+            "chipUnitMilliBb": 1,
+            "ante": {
+              "type": "big_blind",
+              "amountMilliBb": 1000
+            },
+            "forcedContributionPerPlayerMilliBb": 0
+          },
+          "phase": "betting",
+          "street": "preflop",
+          "buttonSeat": 0,
+          "actingPlayerId": "SB",
+          "board": [],
+          "deadCards": [],
+          "players": [
+            {
+              "playerId": "SB",
+              "seat": 0,
+              "position": "BTN",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "As",
+                "Ad"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 99500,
+              "streetContributionMilliBb": 500,
+              "totalPotContributionMilliBb": 500,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": false,
+              "raiseReopenAtMilliBb": null
+            },
+            {
+              "playerId": "BB",
+              "seat": 1,
+              "position": "BB",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "Ks",
+                "Kd"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 98000,
+              "streetContributionMilliBb": 1000,
+              "totalPotContributionMilliBb": 2000,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": false,
+              "raiseReopenAtMilliBb": null
+            }
+          ],
+          "potMilliBb": 2500,
+          "deductionTotalMilliBb": 0,
+          "currentBetMilliBb": 1000,
+          "lastFullRaiseIncrementMilliBb": 1000,
+          "lastAggressorPlayerId": null,
+          "actionHistory": [],
+          "ledger": [
+            {
+              "sequence": 0,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "ante",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 1000
+            },
+            {
+              "sequence": 1,
+              "playerId": "SB",
+              "street": "preflop",
+              "kind": "small_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 500
+            },
+            {
+              "sequence": 2,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "big_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 1000
+            }
+          ],
+          "pendingChance": null,
+          "terminal": {
+            "isTerminal": false,
+            "reason": null,
+            "winnerPlayerIds": [],
+            "payoutsMilliBbByPlayer": {},
+            "refundsMilliBbByPlayer": {}
+          },
+          "showdown": {
+            "status": "not_reached",
+            "eligiblePlayerIds": [],
+            "pots": [],
+            "handRanksByPlayer": null,
+            "layerResults": []
+          }
+        },
+        "privacy": {
+          "schemaVersion": "saved-hand-privacy/v1",
+          "perspectivePlayerId": "SB",
+          "hiddenPrivateCardPlayerIds": [],
+          "knownPrivateCardPlayerIds": [
+            "SB",
+            "BB"
+          ]
+        },
+        "replaySource": {
+          "schemaVersion": "canonical-hand-replay-source/v1",
+          "heroPlayerId": "SB",
+          "events": [
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 0,
+              "operation": "initialize_hand",
+              "payload": {
+                "configuration": {
+                  "handId": "legacy-big_blind-1",
+                  "game": {
+                    "mode": "home",
+                    "smallBlindMilliBb": 500,
+                    "bigBlindMilliBb": 1000,
+                    "chipUnitMilliBb": 1,
+                    "ante": {
+                      "type": "big_blind",
+                      "amountMilliBb": 1000
+                    }
+                  },
+                  "buttonSeat": 0,
+                  "players": [
+                    {
+                      "playerId": "SB",
+                      "seat": 0,
+                      "startingStackMilliBb": 100000
+                    },
+                    {
+                      "playerId": "BB",
+                      "seat": 1,
+                      "startingStackMilliBb": 100000
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 1,
+              "operation": "deal_hole",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_hole",
+                  "cardsByPlayer": {
+                    "SB": [
+                      "As",
+                      "Ad"
+                    ],
+                    "BB": [
+                      "Ks",
+                      "Kd"
+                    ]
+                  },
+                  "hiddenPlayerIds": []
+                }
+              }
+            }
+          ]
+        }
+      },
+      "lifecycle": {
+        "state": "active",
+        "archivedAt": null
+      }
+    },
+    "spot": {
+      "schemaVersion": "saved-study-object/v1",
+      "id": "legacy-big_blind-1-spot",
+      "ownerRef": {
+        "schemaVersion": "saved-study-owner/v1",
+        "kind": "local",
+        "id": "legacy-owner"
+      },
+      "kind": "spot",
+      "createdAt": "2026-08-01T00:00:00.000Z",
+      "updatedAt": "2026-08-01T00:00:00.000Z",
+      "revision": 1,
+      "annotations": {
+        "schemaVersion": "saved-study-annotations/v1",
+        "title": "Historical evidence",
+        "note": "Keep my note",
+        "tags": [
+          {
+            "schemaVersion": "saved-study-tag/v1",
+            "key": "bba",
+            "display": "BBA"
+          }
+        ],
+        "reviewState": "review_later",
+        "classifications": []
+      },
+      "source": {
+        "schemaVersion": "saved-study-source/v1",
+        "surface": "hand",
+        "sourceId": "legacy-big_blind-1-spot",
+        "parentObjectId": null
+      },
+      "payload": {
+        "schemaVersion": "saved-spot-snapshot/v1",
+        "derivation": "hand",
+        "decisionContext": {
+          "schemaVersion": "decision-context/v1",
+          "contractVersion": "decision-context/v1.1",
+          "tableSize": 2,
+          "gameRules": {
+            "schemaVersion": "decision-context-game-rules/v1",
+            "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"big_blind\",\"amountMilliBb\":1000},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+            "seatedPlayers": 2,
+            "orderedPositions": [
+              "BTN",
+              "BB"
+            ],
+            "definition": {
+              "schemaVersion": "game-rules-definition/v1",
+              "variant": "no_limit_texas_holdem",
+              "format": "cash",
+              "tableSize": {
+                "minimumSeated": 2,
+                "maximumSeated": 10
+              },
+              "blinds": {
+                "smallBlindMilliBb": 500,
+                "bigBlindMilliBb": 1000,
+                "chipUnitMilliBb": 1
+              },
+              "ante": {
+                "type": "big_blind",
+                "amountMilliBb": 1000
+              },
+              "straddle": {
+                "type": "none"
+              },
+              "collectionPolicy": {
+                "type": "none"
+              }
+            }
+          },
+          "opponentCount": 1,
+          "heroPosition": "BTN",
+          "street": "preflop",
+          "heroCards": [
+            "As",
+            "Ad"
+          ],
+          "board": [],
+          "deadCards": [],
+          "stackBb": 100,
+          "stackMode": "hero",
+          "startingStackBb": 100,
+          "heroStackBb": 99.5,
+          "effectiveStackBb": 98,
+          "effectiveStackByOpponent": [
+            {
+              "position": "BB",
+              "opponentStackBb": 98,
+              "effectiveStackBb": 98
+            }
+          ],
+          "positionRelation": "not_applicable",
+          "aggressorPositionRelation": "not_applicable",
+          "currentPotBb": 2.5,
+          "potBb": 2.5,
+          "lastAction": "unopened",
+          "priorActionSummary": {
+            "lastActionFamily": "none",
+            "lastActorPosition": null,
+            "facingActionFamily": "none",
+            "aggressionFamily": "none",
+            "aggressionCount": 0,
+            "limperCount": 0,
+            "aggressorPosition": null,
+            "heroPreviousVoluntaryActionFamily": "none",
+            "initialAggressorPosition": null,
+            "distinctAggressorCount": 0,
+            "latestAggressionWasCold": null,
+            "heroActionWouldBeCold": null
+          },
+          "facingSizeBb": 0,
+          "callAmountBb": 0.5,
+          "actorContestablePotAfterCallBb": 2,
+          "actorIneligiblePotAfterCallBb": 1,
+          "requiredRawEquity": 0.25,
+          "heroStreetContributionBb": 0.5,
+          "canRaise": true,
+          "minRaiseToBb": 2,
+          "maxRaiseToBb": 100,
+          "allInToBb": 100,
+          "rakeMode": "off",
+          "forcedContributionPerPlayerBb": 0,
+          "totalForcedContributionBb": 0,
+          "derivation": {
+            "schemaVersion": "decision-context-derivation/v1",
+            "source": "canonical_hand",
+            "defaultQuality": "exact",
+            "events": [
+              {
+                "field": "lastAction",
+                "quality": "normalized",
+                "code": "legacy_bounded_history_projection",
+                "value": "unopened"
+              },
+              {
+                "field": "actorContestablePotAfterCallBb",
+                "quality": "exact",
+                "code": "canonical_actor_pot_layers_after_call",
+                "value": 2
+              },
+              {
+                "field": "actorIneligiblePotAfterCallBb",
+                "quality": "exact",
+                "code": "canonical_actor_ineligible_layers_after_call",
+                "value": 1
+              },
+              {
+                "field": "requiredRawEquity",
+                "quality": "exact",
+                "code": "canonical_actor_call_price",
+                "value": 0.25
+              },
+              {
+                "field": "currentPotBb",
+                "quality": "exact",
+                "code": "canonical_current_pot",
+                "value": 2.5
+              }
+            ]
+          }
+        },
+        "scenarioInput": null,
+        "handReference": {
+          "schemaVersion": "saved-hand-reference/v1",
+          "savedHandObjectId": "legacy-big_blind-1",
+          "canonicalHandId": "legacy-big_blind-1",
+          "actionSequenceCount": 0
+        },
+        "truth": {
+          "schemaVersion": "saved-spot-truth/v1",
+          "completeness": "canonical_decision_context",
+          "historyStatus": "canonical_reference"
+        }
+      },
+      "lifecycle": {
+        "state": "active",
+        "archivedAt": null
+      }
+    },
+    "terminal": {
+      "schemaVersion": "saved-study-object/v1",
+      "id": "legacy-big_blind-1",
+      "ownerRef": {
+        "schemaVersion": "saved-study-owner/v1",
+        "kind": "local",
+        "id": "legacy-owner"
+      },
+      "kind": "hand",
+      "createdAt": "2026-08-01T00:00:00.000Z",
+      "updatedAt": "2026-08-01T00:00:00.000Z",
+      "revision": 1,
+      "annotations": {
+        "schemaVersion": "saved-study-annotations/v1",
+        "title": "Historical evidence",
+        "note": "Keep my note",
+        "tags": [
+          {
+            "schemaVersion": "saved-study-tag/v1",
+            "key": "bba",
+            "display": "BBA"
+          }
+        ],
+        "reviewState": "review_later",
+        "classifications": []
+      },
+      "source": {
+        "schemaVersion": "saved-study-source/v1",
+        "surface": "hand",
+        "sourceId": "legacy-big_blind-1",
+        "parentObjectId": null
+      },
+      "payload": {
+        "schemaVersion": "saved-hand-snapshot/v1",
+        "heroPlayerId": "SB",
+        "pokerState": {
+          "schemaVersion": "poker-state/v1",
+          "handId": "legacy-big_blind-1",
+          "game": {
+            "variant": "no_limit_texas_holdem",
+            "mode": "home",
+            "tableSize": 2,
+            "smallBlindMilliBb": 500,
+            "bigBlindMilliBb": 1000,
+            "chipUnitMilliBb": 1,
+            "ante": {
+              "type": "big_blind",
+              "amountMilliBb": 1000
+            },
+            "forcedContributionPerPlayerMilliBb": 0
+          },
+          "phase": "terminal",
+          "street": "river",
+          "buttonSeat": 0,
+          "actingPlayerId": null,
+          "board": [
+            "2c",
+            "3d",
+            "4h",
+            "8s",
+            "9c"
+          ],
+          "deadCards": [],
+          "players": [
+            {
+              "playerId": "SB",
+              "seat": 0,
+              "position": "BTN",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "As",
+                "Ad"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 101000,
+              "streetContributionMilliBb": 0,
+              "totalPotContributionMilliBb": 1000,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": true,
+              "raiseReopenAtMilliBb": 1
+            },
+            {
+              "playerId": "BB",
+              "seat": 1,
+              "position": "BB",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "Ks",
+                "Kd"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 99000,
+              "streetContributionMilliBb": 0,
+              "totalPotContributionMilliBb": 2000,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": true,
+              "raiseReopenAtMilliBb": 1
+            }
+          ],
+          "potMilliBb": 0,
+          "deductionTotalMilliBb": 0,
+          "currentBetMilliBb": 0,
+          "lastFullRaiseIncrementMilliBb": 1000,
+          "lastAggressorPlayerId": null,
+          "actionHistory": [
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 0,
+              "street": "preflop",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "call",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 500,
+              "committedMilliBb": 500,
+              "streetContributionAfterMilliBb": 1000,
+              "currentBetBeforeMilliBb": 1000,
+              "currentBetAfterMilliBb": 1000,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 1,
+              "street": "preflop",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 1000,
+              "currentBetBeforeMilliBb": 1000,
+              "currentBetAfterMilliBb": 1000,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 2,
+              "street": "flop",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 3,
+              "street": "flop",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 4,
+              "street": "turn",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 5,
+              "street": "turn",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 6,
+              "street": "river",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 7,
+              "street": "river",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            }
+          ],
+          "ledger": [
+            {
+              "sequence": 0,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "ante",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 1000
+            },
+            {
+              "sequence": 1,
+              "playerId": "SB",
+              "street": "preflop",
+              "kind": "small_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 500
+            },
+            {
+              "sequence": 2,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "big_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 1000
+            },
+            {
+              "sequence": 3,
+              "playerId": "SB",
+              "street": "preflop",
+              "kind": "action",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 500
+            },
+            {
+              "sequence": 4,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "uncalled_refund",
+              "movement": "pot_to_stack",
+              "amountMilliBb": 1000
+            },
+            {
+              "sequence": 5,
+              "playerId": "SB",
+              "street": "river",
+              "kind": "pot_award",
+              "movement": "pot_to_stack",
+              "amountMilliBb": 2000,
+              "settlementReason": "showdown",
+              "potLayerIndex": 0
+            }
+          ],
+          "pendingChance": null,
+          "terminal": {
+            "isTerminal": true,
+            "reason": "showdown",
+            "winnerPlayerIds": [
+              "SB"
+            ],
+            "payoutsMilliBbByPlayer": {
+              "SB": 2000
+            },
+            "refundsMilliBbByPlayer": {}
+          },
+          "showdown": {
+            "status": "settled",
+            "eligiblePlayerIds": [
+              "SB",
+              "BB"
+            ],
+            "pots": [],
+            "handRanksByPlayer": {
+              "SB": {
+                "schemaVersion": "poker-hand-rank/v1",
+                "score": 10000740985,
+                "category": "one_pair",
+                "categoryRank": 1,
+                "tiebreakers": [
+                  14,
+                  9,
+                  8,
+                  4
+                ],
+                "bestFiveCards": [
+                  "As",
+                  "Ad",
+                  "4h",
+                  "8s",
+                  "9c"
+                ]
+              },
+              "BB": {
+                "schemaVersion": "poker-hand-rank/v1",
+                "score": 10000690360,
+                "category": "one_pair",
+                "categoryRank": 1,
+                "tiebreakers": [
+                  13,
+                  9,
+                  8,
+                  4
+                ],
+                "bestFiveCards": [
+                  "Ks",
+                  "Kd",
+                  "4h",
+                  "8s",
+                  "9c"
+                ]
+              }
+            },
+            "layerResults": [
+              {
+                "schemaVersion": "poker-showdown-layer-result/v1",
+                "layerIndex": 0,
+                "amountMilliBb": 2000,
+                "contributionFloorMilliBb": 0,
+                "contributionCeilingMilliBb": 1000,
+                "eligiblePlayerIds": [
+                  "SB",
+                  "BB"
+                ],
+                "winnerPlayerIds": [
+                  "SB"
+                ],
+                "payoutsMilliBbByPlayer": {
+                  "SB": 2000
+                }
+              }
+            ]
+          }
+        },
+        "privacy": {
+          "schemaVersion": "saved-hand-privacy/v1",
+          "perspectivePlayerId": "SB",
+          "hiddenPrivateCardPlayerIds": [],
+          "knownPrivateCardPlayerIds": [
+            "SB",
+            "BB"
+          ]
+        },
+        "replaySource": {
+          "schemaVersion": "canonical-hand-replay-source/v1",
+          "heroPlayerId": "SB",
+          "events": [
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 0,
+              "operation": "initialize_hand",
+              "payload": {
+                "configuration": {
+                  "handId": "legacy-big_blind-1",
+                  "game": {
+                    "mode": "home",
+                    "smallBlindMilliBb": 500,
+                    "bigBlindMilliBb": 1000,
+                    "chipUnitMilliBb": 1,
+                    "ante": {
+                      "type": "big_blind",
+                      "amountMilliBb": 1000
+                    }
+                  },
+                  "buttonSeat": 0,
+                  "players": [
+                    {
+                      "playerId": "SB",
+                      "seat": 0,
+                      "startingStackMilliBb": 100000
+                    },
+                    {
+                      "playerId": "BB",
+                      "seat": 1,
+                      "startingStackMilliBb": 100000
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 1,
+              "operation": "deal_hole",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_hole",
+                  "cardsByPlayer": {
+                    "SB": [
+                      "As",
+                      "Ad"
+                    ],
+                    "BB": [
+                      "Ks",
+                      "Kd"
+                    ]
+                  },
+                  "hiddenPlayerIds": []
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 2,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "call",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 3,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 4,
+              "operation": "deal_board",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_flop",
+                  "cards": [
+                    "2c",
+                    "3d",
+                    "4h"
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 5,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 6,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 7,
+              "operation": "deal_board",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_turn",
+                  "cards": [
+                    "8s"
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 8,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 9,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 10,
+              "operation": "deal_board",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_river",
+                  "cards": [
+                    "9c"
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 11,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 12,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v1",
+              "sequence": 13,
+              "operation": "showdown",
+              "payload": null
+            }
+          ]
+        }
+      },
+      "lifecycle": {
+        "state": "active",
+        "archivedAt": null
+      }
+    }
+  },
+  "bbaV2": {
+    "initial": {
+      "schemaVersion": "saved-study-object/v1",
+      "id": "legacy-big_blind-2-initial",
+      "ownerRef": {
+        "schemaVersion": "saved-study-owner/v1",
+        "kind": "local",
+        "id": "legacy-owner"
+      },
+      "kind": "hand",
+      "createdAt": "2026-08-01T00:00:00.000Z",
+      "updatedAt": "2026-08-01T00:00:00.000Z",
+      "revision": 1,
+      "annotations": {
+        "schemaVersion": "saved-study-annotations/v1",
+        "title": "Historical evidence",
+        "note": "Keep my note",
+        "tags": [
+          {
+            "schemaVersion": "saved-study-tag/v1",
+            "key": "bba",
+            "display": "BBA"
+          }
+        ],
+        "reviewState": "review_later",
+        "classifications": []
+      },
+      "source": {
+        "schemaVersion": "saved-study-source/v1",
+        "surface": "hand",
+        "sourceId": "legacy-big_blind-2-initial",
+        "parentObjectId": null
+      },
+      "payload": {
+        "schemaVersion": "saved-hand-snapshot/v2",
+        "heroPlayerId": "SB",
+        "pokerState": {
+          "schemaVersion": "poker-state/v2",
+          "handId": "legacy-big_blind-2",
+          "rulesSnapshot": {
+            "schemaVersion": "game-rules-snapshot/v1",
+            "source": {
+              "kind": "legacy_compatibility",
+              "presetId": "riverline:builtin:no-rake-cash",
+              "presetRevision": 1,
+              "legacyMode": "home"
+            },
+            "setup": {
+              "seatedPlayers": 2
+            },
+            "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"big_blind\",\"amountMilliBb\":1000},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+            "definition": {
+              "schemaVersion": "game-rules-definition/v1",
+              "variant": "no_limit_texas_holdem",
+              "format": "cash",
+              "tableSize": {
+                "minimumSeated": 2,
+                "maximumSeated": 10
+              },
+              "blinds": {
+                "smallBlindMilliBb": 500,
+                "bigBlindMilliBb": 1000,
+                "chipUnitMilliBb": 1
+              },
+              "ante": {
+                "type": "big_blind",
+                "amountMilliBb": 1000
+              },
+              "straddle": {
+                "type": "none"
+              },
+              "collectionPolicy": {
+                "type": "none"
+              }
+            }
+          },
+          "game": {
+            "variant": "no_limit_texas_holdem",
+            "format": "cash",
+            "tableSize": 2,
+            "smallBlindMilliBb": 500,
+            "bigBlindMilliBb": 1000,
+            "chipUnitMilliBb": 1,
+            "ante": {
+              "type": "big_blind",
+              "amountMilliBb": 1000
+            }
+          },
+          "phase": "betting",
+          "street": "preflop",
+          "buttonSeat": 0,
+          "actingPlayerId": "SB",
+          "board": [],
+          "deadCards": [],
+          "players": [
+            {
+              "playerId": "SB",
+              "seat": 0,
+              "position": "BTN",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "As",
+                "Ad"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 99500,
+              "streetContributionMilliBb": 500,
+              "totalPotContributionMilliBb": 500,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": false,
+              "raiseReopenAtMilliBb": null
+            },
+            {
+              "playerId": "BB",
+              "seat": 1,
+              "position": "BB",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "Ks",
+                "Kd"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 98000,
+              "streetContributionMilliBb": 1000,
+              "totalPotContributionMilliBb": 2000,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": false,
+              "raiseReopenAtMilliBb": null
+            }
+          ],
+          "potMilliBb": 2500,
+          "deductionTotalMilliBb": 0,
+          "currentBetMilliBb": 1000,
+          "lastFullRaiseIncrementMilliBb": 1000,
+          "lastAggressorPlayerId": null,
+          "actionHistory": [],
+          "ledger": [
+            {
+              "sequence": 0,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "ante",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 1000
+            },
+            {
+              "sequence": 1,
+              "playerId": "SB",
+              "street": "preflop",
+              "kind": "small_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 500
+            },
+            {
+              "sequence": 2,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "big_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 1000
+            }
+          ],
+          "pendingChance": null,
+          "terminal": {
+            "isTerminal": false,
+            "reason": null,
+            "winnerPlayerIds": [],
+            "payoutsMilliBbByPlayer": {},
+            "refundsMilliBbByPlayer": {}
+          },
+          "showdown": {
+            "status": "not_reached",
+            "eligiblePlayerIds": [],
+            "pots": [],
+            "handRanksByPlayer": null,
+            "layerResults": []
+          }
+        },
+        "privacy": {
+          "schemaVersion": "saved-hand-privacy/v1",
+          "perspectivePlayerId": "SB",
+          "hiddenPrivateCardPlayerIds": [],
+          "knownPrivateCardPlayerIds": [
+            "SB",
+            "BB"
+          ]
+        },
+        "replaySource": {
+          "schemaVersion": "canonical-hand-replay-source/v2",
+          "heroPlayerId": "SB",
+          "events": [
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 0,
+              "operation": "initialize_hand",
+              "payload": {
+                "configuration": {
+                  "handId": "legacy-big_blind-2",
+                  "rulesSnapshot": {
+                    "schemaVersion": "game-rules-snapshot/v1",
+                    "source": {
+                      "kind": "legacy_compatibility",
+                      "presetId": "riverline:builtin:no-rake-cash",
+                      "presetRevision": 1,
+                      "legacyMode": "home"
+                    },
+                    "setup": {
+                      "seatedPlayers": 2
+                    },
+                    "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"big_blind\",\"amountMilliBb\":1000},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+                    "definition": {
+                      "schemaVersion": "game-rules-definition/v1",
+                      "variant": "no_limit_texas_holdem",
+                      "format": "cash",
+                      "tableSize": {
+                        "minimumSeated": 2,
+                        "maximumSeated": 10
+                      },
+                      "blinds": {
+                        "smallBlindMilliBb": 500,
+                        "bigBlindMilliBb": 1000,
+                        "chipUnitMilliBb": 1
+                      },
+                      "ante": {
+                        "type": "big_blind",
+                        "amountMilliBb": 1000
+                      },
+                      "straddle": {
+                        "type": "none"
+                      },
+                      "collectionPolicy": {
+                        "type": "none"
+                      }
+                    }
+                  },
+                  "buttonSeat": 0,
+                  "players": [
+                    {
+                      "playerId": "SB",
+                      "seat": 0,
+                      "startingStackMilliBb": 100000
+                    },
+                    {
+                      "playerId": "BB",
+                      "seat": 1,
+                      "startingStackMilliBb": 100000
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 1,
+              "operation": "deal_hole",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_hole",
+                  "cardsByPlayer": {
+                    "SB": [
+                      "As",
+                      "Ad"
+                    ],
+                    "BB": [
+                      "Ks",
+                      "Kd"
+                    ]
+                  },
+                  "hiddenPlayerIds": []
+                }
+              }
+            }
+          ]
+        }
+      },
+      "lifecycle": {
+        "state": "active",
+        "archivedAt": null
+      }
+    },
+    "spot": {
+      "schemaVersion": "saved-study-object/v1",
+      "id": "legacy-big_blind-2-spot",
+      "ownerRef": {
+        "schemaVersion": "saved-study-owner/v1",
+        "kind": "local",
+        "id": "legacy-owner"
+      },
+      "kind": "spot",
+      "createdAt": "2026-08-01T00:00:00.000Z",
+      "updatedAt": "2026-08-01T00:00:00.000Z",
+      "revision": 1,
+      "annotations": {
+        "schemaVersion": "saved-study-annotations/v1",
+        "title": "Historical evidence",
+        "note": "Keep my note",
+        "tags": [
+          {
+            "schemaVersion": "saved-study-tag/v1",
+            "key": "bba",
+            "display": "BBA"
+          }
+        ],
+        "reviewState": "review_later",
+        "classifications": []
+      },
+      "source": {
+        "schemaVersion": "saved-study-source/v1",
+        "surface": "hand",
+        "sourceId": "legacy-big_blind-2-spot",
+        "parentObjectId": null
+      },
+      "payload": {
+        "schemaVersion": "saved-spot-snapshot/v2",
+        "derivation": "hand",
+        "decisionContext": {
+          "schemaVersion": "decision-context/v1",
+          "contractVersion": "decision-context/v1.1",
+          "tableSize": 2,
+          "gameRules": {
+            "schemaVersion": "decision-context-game-rules/v1",
+            "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"big_blind\",\"amountMilliBb\":1000},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+            "seatedPlayers": 2,
+            "orderedPositions": [
+              "BTN",
+              "BB"
+            ],
+            "definition": {
+              "schemaVersion": "game-rules-definition/v1",
+              "variant": "no_limit_texas_holdem",
+              "format": "cash",
+              "tableSize": {
+                "minimumSeated": 2,
+                "maximumSeated": 10
+              },
+              "blinds": {
+                "smallBlindMilliBb": 500,
+                "bigBlindMilliBb": 1000,
+                "chipUnitMilliBb": 1
+              },
+              "ante": {
+                "type": "big_blind",
+                "amountMilliBb": 1000
+              },
+              "straddle": {
+                "type": "none"
+              },
+              "collectionPolicy": {
+                "type": "none"
+              }
+            }
+          },
+          "opponentCount": 1,
+          "heroPosition": "BTN",
+          "street": "preflop",
+          "heroCards": [
+            "As",
+            "Ad"
+          ],
+          "board": [],
+          "deadCards": [],
+          "stackBb": 100,
+          "stackMode": "hero",
+          "startingStackBb": 100,
+          "heroStackBb": 99.5,
+          "effectiveStackBb": 98,
+          "effectiveStackByOpponent": [
+            {
+              "position": "BB",
+              "opponentStackBb": 98,
+              "effectiveStackBb": 98
+            }
+          ],
+          "positionRelation": "not_applicable",
+          "aggressorPositionRelation": "not_applicable",
+          "currentPotBb": 2.5,
+          "potBb": 2.5,
+          "lastAction": "unopened",
+          "priorActionSummary": {
+            "lastActionFamily": "none",
+            "lastActorPosition": null,
+            "facingActionFamily": "none",
+            "aggressionFamily": "none",
+            "aggressionCount": 0,
+            "limperCount": 0,
+            "aggressorPosition": null,
+            "heroPreviousVoluntaryActionFamily": "none",
+            "initialAggressorPosition": null,
+            "distinctAggressorCount": 0,
+            "latestAggressionWasCold": null,
+            "heroActionWouldBeCold": null
+          },
+          "facingSizeBb": 0,
+          "callAmountBb": 0.5,
+          "actorContestablePotAfterCallBb": 2,
+          "actorIneligiblePotAfterCallBb": 1,
+          "requiredRawEquity": 0.25,
+          "heroStreetContributionBb": 0.5,
+          "canRaise": true,
+          "minRaiseToBb": 2,
+          "maxRaiseToBb": 100,
+          "allInToBb": 100,
+          "rakeMode": "off",
+          "forcedContributionPerPlayerBb": 0,
+          "totalForcedContributionBb": 0,
+          "derivation": {
+            "schemaVersion": "decision-context-derivation/v1",
+            "source": "canonical_hand",
+            "defaultQuality": "exact",
+            "events": [
+              {
+                "field": "lastAction",
+                "quality": "normalized",
+                "code": "legacy_bounded_history_projection",
+                "value": "unopened"
+              },
+              {
+                "field": "actorContestablePotAfterCallBb",
+                "quality": "exact",
+                "code": "canonical_actor_pot_layers_after_call",
+                "value": 2
+              },
+              {
+                "field": "actorIneligiblePotAfterCallBb",
+                "quality": "exact",
+                "code": "canonical_actor_ineligible_layers_after_call",
+                "value": 1
+              },
+              {
+                "field": "requiredRawEquity",
+                "quality": "exact",
+                "code": "canonical_actor_call_price",
+                "value": 0.25
+              },
+              {
+                "field": "currentPotBb",
+                "quality": "exact",
+                "code": "canonical_current_pot",
+                "value": 2.5
+              }
+            ]
+          }
+        },
+        "scenarioInput": null,
+        "handReference": {
+          "schemaVersion": "saved-hand-reference/v1",
+          "savedHandObjectId": "legacy-big_blind-2",
+          "canonicalHandId": "legacy-big_blind-2",
+          "actionSequenceCount": 0
+        },
+        "truth": {
+          "schemaVersion": "saved-spot-truth/v1",
+          "completeness": "canonical_decision_context",
+          "historyStatus": "canonical_reference"
+        },
+        "rulesSnapshot": {
+          "schemaVersion": "game-rules-snapshot/v1",
+          "source": {
+            "kind": "legacy_compatibility",
+            "presetId": "riverline:builtin:no-rake-cash",
+            "presetRevision": 1,
+            "legacyMode": "home"
+          },
+          "setup": {
+            "seatedPlayers": 2
+          },
+          "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"big_blind\",\"amountMilliBb\":1000},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+          "definition": {
+            "schemaVersion": "game-rules-definition/v1",
+            "variant": "no_limit_texas_holdem",
+            "format": "cash",
+            "tableSize": {
+              "minimumSeated": 2,
+              "maximumSeated": 10
+            },
+            "blinds": {
+              "smallBlindMilliBb": 500,
+              "bigBlindMilliBb": 1000,
+              "chipUnitMilliBb": 1
+            },
+            "ante": {
+              "type": "big_blind",
+              "amountMilliBb": 1000
+            },
+            "straddle": {
+              "type": "none"
+            },
+            "collectionPolicy": {
+              "type": "none"
+            }
+          }
+        }
+      },
+      "lifecycle": {
+        "state": "active",
+        "archivedAt": null
+      }
+    },
+    "terminal": {
+      "schemaVersion": "saved-study-object/v1",
+      "id": "legacy-big_blind-2",
+      "ownerRef": {
+        "schemaVersion": "saved-study-owner/v1",
+        "kind": "local",
+        "id": "legacy-owner"
+      },
+      "kind": "hand",
+      "createdAt": "2026-08-01T00:00:00.000Z",
+      "updatedAt": "2026-08-01T00:00:00.000Z",
+      "revision": 1,
+      "annotations": {
+        "schemaVersion": "saved-study-annotations/v1",
+        "title": "Historical evidence",
+        "note": "Keep my note",
+        "tags": [
+          {
+            "schemaVersion": "saved-study-tag/v1",
+            "key": "bba",
+            "display": "BBA"
+          }
+        ],
+        "reviewState": "review_later",
+        "classifications": []
+      },
+      "source": {
+        "schemaVersion": "saved-study-source/v1",
+        "surface": "hand",
+        "sourceId": "legacy-big_blind-2",
+        "parentObjectId": null
+      },
+      "payload": {
+        "schemaVersion": "saved-hand-snapshot/v2",
+        "heroPlayerId": "SB",
+        "pokerState": {
+          "schemaVersion": "poker-state/v2",
+          "handId": "legacy-big_blind-2",
+          "rulesSnapshot": {
+            "schemaVersion": "game-rules-snapshot/v1",
+            "source": {
+              "kind": "legacy_compatibility",
+              "presetId": "riverline:builtin:no-rake-cash",
+              "presetRevision": 1,
+              "legacyMode": "home"
+            },
+            "setup": {
+              "seatedPlayers": 2
+            },
+            "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"big_blind\",\"amountMilliBb\":1000},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+            "definition": {
+              "schemaVersion": "game-rules-definition/v1",
+              "variant": "no_limit_texas_holdem",
+              "format": "cash",
+              "tableSize": {
+                "minimumSeated": 2,
+                "maximumSeated": 10
+              },
+              "blinds": {
+                "smallBlindMilliBb": 500,
+                "bigBlindMilliBb": 1000,
+                "chipUnitMilliBb": 1
+              },
+              "ante": {
+                "type": "big_blind",
+                "amountMilliBb": 1000
+              },
+              "straddle": {
+                "type": "none"
+              },
+              "collectionPolicy": {
+                "type": "none"
+              }
+            }
+          },
+          "game": {
+            "variant": "no_limit_texas_holdem",
+            "format": "cash",
+            "tableSize": 2,
+            "smallBlindMilliBb": 500,
+            "bigBlindMilliBb": 1000,
+            "chipUnitMilliBb": 1,
+            "ante": {
+              "type": "big_blind",
+              "amountMilliBb": 1000
+            }
+          },
+          "phase": "terminal",
+          "street": "river",
+          "buttonSeat": 0,
+          "actingPlayerId": null,
+          "board": [
+            "2c",
+            "3d",
+            "4h",
+            "8s",
+            "9c"
+          ],
+          "deadCards": [],
+          "players": [
+            {
+              "playerId": "SB",
+              "seat": 0,
+              "position": "BTN",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "As",
+                "Ad"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 101000,
+              "streetContributionMilliBb": 0,
+              "totalPotContributionMilliBb": 1000,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": true,
+              "raiseReopenAtMilliBb": 1
+            },
+            {
+              "playerId": "BB",
+              "seat": 1,
+              "position": "BB",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "Ks",
+                "Kd"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 99000,
+              "streetContributionMilliBb": 0,
+              "totalPotContributionMilliBb": 2000,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": true,
+              "raiseReopenAtMilliBb": 1
+            }
+          ],
+          "potMilliBb": 0,
+          "deductionTotalMilliBb": 0,
+          "currentBetMilliBb": 0,
+          "lastFullRaiseIncrementMilliBb": 1000,
+          "lastAggressorPlayerId": null,
+          "actionHistory": [
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 0,
+              "street": "preflop",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "call",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 500,
+              "committedMilliBb": 500,
+              "streetContributionAfterMilliBb": 1000,
+              "currentBetBeforeMilliBb": 1000,
+              "currentBetAfterMilliBb": 1000,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 1,
+              "street": "preflop",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 1000,
+              "currentBetBeforeMilliBb": 1000,
+              "currentBetAfterMilliBb": 1000,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 2,
+              "street": "flop",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 3,
+              "street": "flop",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 4,
+              "street": "turn",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 5,
+              "street": "turn",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 6,
+              "street": "river",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 7,
+              "street": "river",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            }
+          ],
+          "ledger": [
+            {
+              "sequence": 0,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "ante",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 1000
+            },
+            {
+              "sequence": 1,
+              "playerId": "SB",
+              "street": "preflop",
+              "kind": "small_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 500
+            },
+            {
+              "sequence": 2,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "big_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 1000
+            },
+            {
+              "sequence": 3,
+              "playerId": "SB",
+              "street": "preflop",
+              "kind": "action",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 500
+            },
+            {
+              "sequence": 4,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "uncalled_refund",
+              "movement": "pot_to_stack",
+              "amountMilliBb": 1000
+            },
+            {
+              "sequence": 5,
+              "playerId": "SB",
+              "street": "river",
+              "kind": "pot_award",
+              "movement": "pot_to_stack",
+              "amountMilliBb": 2000,
+              "settlementReason": "showdown",
+              "potLayerIndex": 0
+            }
+          ],
+          "pendingChance": null,
+          "terminal": {
+            "isTerminal": true,
+            "reason": "showdown",
+            "winnerPlayerIds": [
+              "SB"
+            ],
+            "payoutsMilliBbByPlayer": {
+              "SB": 2000
+            },
+            "refundsMilliBbByPlayer": {}
+          },
+          "showdown": {
+            "status": "settled",
+            "eligiblePlayerIds": [
+              "SB",
+              "BB"
+            ],
+            "pots": [],
+            "handRanksByPlayer": {
+              "SB": {
+                "schemaVersion": "poker-hand-rank/v1",
+                "score": 10000740985,
+                "category": "one_pair",
+                "categoryRank": 1,
+                "tiebreakers": [
+                  14,
+                  9,
+                  8,
+                  4
+                ],
+                "bestFiveCards": [
+                  "As",
+                  "Ad",
+                  "4h",
+                  "8s",
+                  "9c"
+                ]
+              },
+              "BB": {
+                "schemaVersion": "poker-hand-rank/v1",
+                "score": 10000690360,
+                "category": "one_pair",
+                "categoryRank": 1,
+                "tiebreakers": [
+                  13,
+                  9,
+                  8,
+                  4
+                ],
+                "bestFiveCards": [
+                  "Ks",
+                  "Kd",
+                  "4h",
+                  "8s",
+                  "9c"
+                ]
+              }
+            },
+            "layerResults": [
+              {
+                "schemaVersion": "poker-showdown-layer-result/v1",
+                "layerIndex": 0,
+                "amountMilliBb": 2000,
+                "contributionFloorMilliBb": 0,
+                "contributionCeilingMilliBb": 1000,
+                "eligiblePlayerIds": [
+                  "SB",
+                  "BB"
+                ],
+                "winnerPlayerIds": [
+                  "SB"
+                ],
+                "payoutsMilliBbByPlayer": {
+                  "SB": 2000
+                }
+              }
+            ]
+          }
+        },
+        "privacy": {
+          "schemaVersion": "saved-hand-privacy/v1",
+          "perspectivePlayerId": "SB",
+          "hiddenPrivateCardPlayerIds": [],
+          "knownPrivateCardPlayerIds": [
+            "SB",
+            "BB"
+          ]
+        },
+        "replaySource": {
+          "schemaVersion": "canonical-hand-replay-source/v2",
+          "heroPlayerId": "SB",
+          "events": [
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 0,
+              "operation": "initialize_hand",
+              "payload": {
+                "configuration": {
+                  "handId": "legacy-big_blind-2",
+                  "rulesSnapshot": {
+                    "schemaVersion": "game-rules-snapshot/v1",
+                    "source": {
+                      "kind": "legacy_compatibility",
+                      "presetId": "riverline:builtin:no-rake-cash",
+                      "presetRevision": 1,
+                      "legacyMode": "home"
+                    },
+                    "setup": {
+                      "seatedPlayers": 2
+                    },
+                    "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"big_blind\",\"amountMilliBb\":1000},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+                    "definition": {
+                      "schemaVersion": "game-rules-definition/v1",
+                      "variant": "no_limit_texas_holdem",
+                      "format": "cash",
+                      "tableSize": {
+                        "minimumSeated": 2,
+                        "maximumSeated": 10
+                      },
+                      "blinds": {
+                        "smallBlindMilliBb": 500,
+                        "bigBlindMilliBb": 1000,
+                        "chipUnitMilliBb": 1
+                      },
+                      "ante": {
+                        "type": "big_blind",
+                        "amountMilliBb": 1000
+                      },
+                      "straddle": {
+                        "type": "none"
+                      },
+                      "collectionPolicy": {
+                        "type": "none"
+                      }
+                    }
+                  },
+                  "buttonSeat": 0,
+                  "players": [
+                    {
+                      "playerId": "SB",
+                      "seat": 0,
+                      "startingStackMilliBb": 100000
+                    },
+                    {
+                      "playerId": "BB",
+                      "seat": 1,
+                      "startingStackMilliBb": 100000
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 1,
+              "operation": "deal_hole",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_hole",
+                  "cardsByPlayer": {
+                    "SB": [
+                      "As",
+                      "Ad"
+                    ],
+                    "BB": [
+                      "Ks",
+                      "Kd"
+                    ]
+                  },
+                  "hiddenPlayerIds": []
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 2,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "call",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 3,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 4,
+              "operation": "deal_board",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_flop",
+                  "cards": [
+                    "2c",
+                    "3d",
+                    "4h"
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 5,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 6,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 7,
+              "operation": "deal_board",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_turn",
+                  "cards": [
+                    "8s"
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 8,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 9,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 10,
+              "operation": "deal_board",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_river",
+                  "cards": [
+                    "9c"
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 11,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 12,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 13,
+              "operation": "showdown",
+              "payload": null
+            }
+          ]
+        }
+      },
+      "lifecycle": {
+        "state": "active",
+        "archivedAt": null
+      }
+    }
+  },
+  "noAnte": {
+    "initial": {
+      "schemaVersion": "saved-study-object/v1",
+      "id": "legacy-none-2-initial",
+      "ownerRef": {
+        "schemaVersion": "saved-study-owner/v1",
+        "kind": "local",
+        "id": "legacy-owner"
+      },
+      "kind": "hand",
+      "createdAt": "2026-08-01T00:00:00.000Z",
+      "updatedAt": "2026-08-01T00:00:00.000Z",
+      "revision": 1,
+      "annotations": {
+        "schemaVersion": "saved-study-annotations/v1",
+        "title": "Historical evidence",
+        "note": "Keep my note",
+        "tags": [
+          {
+            "schemaVersion": "saved-study-tag/v1",
+            "key": "bba",
+            "display": "BBA"
+          }
+        ],
+        "reviewState": "review_later",
+        "classifications": []
+      },
+      "source": {
+        "schemaVersion": "saved-study-source/v1",
+        "surface": "hand",
+        "sourceId": "legacy-none-2-initial",
+        "parentObjectId": null
+      },
+      "payload": {
+        "schemaVersion": "saved-hand-snapshot/v2",
+        "heroPlayerId": "SB",
+        "pokerState": {
+          "schemaVersion": "poker-state/v2",
+          "handId": "legacy-none-2",
+          "rulesSnapshot": {
+            "schemaVersion": "game-rules-snapshot/v1",
+            "source": {
+              "kind": "legacy_compatibility",
+              "presetId": "riverline:builtin:no-rake-cash",
+              "presetRevision": 1,
+              "legacyMode": "home"
+            },
+            "setup": {
+              "seatedPlayers": 2
+            },
+            "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"none\",\"amountMilliBb\":0},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+            "definition": {
+              "schemaVersion": "game-rules-definition/v1",
+              "variant": "no_limit_texas_holdem",
+              "format": "cash",
+              "tableSize": {
+                "minimumSeated": 2,
+                "maximumSeated": 10
+              },
+              "blinds": {
+                "smallBlindMilliBb": 500,
+                "bigBlindMilliBb": 1000,
+                "chipUnitMilliBb": 1
+              },
+              "ante": {
+                "type": "none",
+                "amountMilliBb": 0
+              },
+              "straddle": {
+                "type": "none"
+              },
+              "collectionPolicy": {
+                "type": "none"
+              }
+            }
+          },
+          "game": {
+            "variant": "no_limit_texas_holdem",
+            "format": "cash",
+            "tableSize": 2,
+            "smallBlindMilliBb": 500,
+            "bigBlindMilliBb": 1000,
+            "chipUnitMilliBb": 1,
+            "ante": {
+              "type": "none",
+              "amountMilliBb": 0
+            }
+          },
+          "phase": "betting",
+          "street": "preflop",
+          "buttonSeat": 0,
+          "actingPlayerId": "SB",
+          "board": [],
+          "deadCards": [],
+          "players": [
+            {
+              "playerId": "SB",
+              "seat": 0,
+              "position": "BTN",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "As",
+                "Ad"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 99500,
+              "streetContributionMilliBb": 500,
+              "totalPotContributionMilliBb": 500,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": false,
+              "raiseReopenAtMilliBb": null
+            },
+            {
+              "playerId": "BB",
+              "seat": 1,
+              "position": "BB",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "Ks",
+                "Kd"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 99000,
+              "streetContributionMilliBb": 1000,
+              "totalPotContributionMilliBb": 1000,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": false,
+              "raiseReopenAtMilliBb": null
+            }
+          ],
+          "potMilliBb": 1500,
+          "deductionTotalMilliBb": 0,
+          "currentBetMilliBb": 1000,
+          "lastFullRaiseIncrementMilliBb": 1000,
+          "lastAggressorPlayerId": null,
+          "actionHistory": [],
+          "ledger": [
+            {
+              "sequence": 0,
+              "playerId": "SB",
+              "street": "preflop",
+              "kind": "small_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 500
+            },
+            {
+              "sequence": 1,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "big_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 1000
+            }
+          ],
+          "pendingChance": null,
+          "terminal": {
+            "isTerminal": false,
+            "reason": null,
+            "winnerPlayerIds": [],
+            "payoutsMilliBbByPlayer": {},
+            "refundsMilliBbByPlayer": {}
+          },
+          "showdown": {
+            "status": "not_reached",
+            "eligiblePlayerIds": [],
+            "pots": [],
+            "handRanksByPlayer": null,
+            "layerResults": []
+          }
+        },
+        "privacy": {
+          "schemaVersion": "saved-hand-privacy/v1",
+          "perspectivePlayerId": "SB",
+          "hiddenPrivateCardPlayerIds": [],
+          "knownPrivateCardPlayerIds": [
+            "SB",
+            "BB"
+          ]
+        },
+        "replaySource": {
+          "schemaVersion": "canonical-hand-replay-source/v2",
+          "heroPlayerId": "SB",
+          "events": [
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 0,
+              "operation": "initialize_hand",
+              "payload": {
+                "configuration": {
+                  "handId": "legacy-none-2",
+                  "rulesSnapshot": {
+                    "schemaVersion": "game-rules-snapshot/v1",
+                    "source": {
+                      "kind": "legacy_compatibility",
+                      "presetId": "riverline:builtin:no-rake-cash",
+                      "presetRevision": 1,
+                      "legacyMode": "home"
+                    },
+                    "setup": {
+                      "seatedPlayers": 2
+                    },
+                    "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"none\",\"amountMilliBb\":0},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+                    "definition": {
+                      "schemaVersion": "game-rules-definition/v1",
+                      "variant": "no_limit_texas_holdem",
+                      "format": "cash",
+                      "tableSize": {
+                        "minimumSeated": 2,
+                        "maximumSeated": 10
+                      },
+                      "blinds": {
+                        "smallBlindMilliBb": 500,
+                        "bigBlindMilliBb": 1000,
+                        "chipUnitMilliBb": 1
+                      },
+                      "ante": {
+                        "type": "none",
+                        "amountMilliBb": 0
+                      },
+                      "straddle": {
+                        "type": "none"
+                      },
+                      "collectionPolicy": {
+                        "type": "none"
+                      }
+                    }
+                  },
+                  "buttonSeat": 0,
+                  "players": [
+                    {
+                      "playerId": "SB",
+                      "seat": 0,
+                      "startingStackMilliBb": 100000
+                    },
+                    {
+                      "playerId": "BB",
+                      "seat": 1,
+                      "startingStackMilliBb": 100000
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 1,
+              "operation": "deal_hole",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_hole",
+                  "cardsByPlayer": {
+                    "SB": [
+                      "As",
+                      "Ad"
+                    ],
+                    "BB": [
+                      "Ks",
+                      "Kd"
+                    ]
+                  },
+                  "hiddenPlayerIds": []
+                }
+              }
+            }
+          ]
+        }
+      },
+      "lifecycle": {
+        "state": "active",
+        "archivedAt": null
+      }
+    },
+    "spot": {
+      "schemaVersion": "saved-study-object/v1",
+      "id": "legacy-none-2-spot",
+      "ownerRef": {
+        "schemaVersion": "saved-study-owner/v1",
+        "kind": "local",
+        "id": "legacy-owner"
+      },
+      "kind": "spot",
+      "createdAt": "2026-08-01T00:00:00.000Z",
+      "updatedAt": "2026-08-01T00:00:00.000Z",
+      "revision": 1,
+      "annotations": {
+        "schemaVersion": "saved-study-annotations/v1",
+        "title": "Historical evidence",
+        "note": "Keep my note",
+        "tags": [
+          {
+            "schemaVersion": "saved-study-tag/v1",
+            "key": "bba",
+            "display": "BBA"
+          }
+        ],
+        "reviewState": "review_later",
+        "classifications": []
+      },
+      "source": {
+        "schemaVersion": "saved-study-source/v1",
+        "surface": "hand",
+        "sourceId": "legacy-none-2-spot",
+        "parentObjectId": null
+      },
+      "payload": {
+        "schemaVersion": "saved-spot-snapshot/v2",
+        "derivation": "hand",
+        "decisionContext": {
+          "schemaVersion": "decision-context/v1",
+          "contractVersion": "decision-context/v1.1",
+          "tableSize": 2,
+          "gameRules": {
+            "schemaVersion": "decision-context-game-rules/v1",
+            "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"none\",\"amountMilliBb\":0},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+            "seatedPlayers": 2,
+            "orderedPositions": [
+              "BTN",
+              "BB"
+            ],
+            "definition": {
+              "schemaVersion": "game-rules-definition/v1",
+              "variant": "no_limit_texas_holdem",
+              "format": "cash",
+              "tableSize": {
+                "minimumSeated": 2,
+                "maximumSeated": 10
+              },
+              "blinds": {
+                "smallBlindMilliBb": 500,
+                "bigBlindMilliBb": 1000,
+                "chipUnitMilliBb": 1
+              },
+              "ante": {
+                "type": "none",
+                "amountMilliBb": 0
+              },
+              "straddle": {
+                "type": "none"
+              },
+              "collectionPolicy": {
+                "type": "none"
+              }
+            }
+          },
+          "opponentCount": 1,
+          "heroPosition": "BTN",
+          "street": "preflop",
+          "heroCards": [
+            "As",
+            "Ad"
+          ],
+          "board": [],
+          "deadCards": [],
+          "stackBb": 100,
+          "stackMode": "hero",
+          "startingStackBb": 100,
+          "heroStackBb": 99.5,
+          "effectiveStackBb": 99,
+          "effectiveStackByOpponent": [
+            {
+              "position": "BB",
+              "opponentStackBb": 99,
+              "effectiveStackBb": 99
+            }
+          ],
+          "positionRelation": "not_applicable",
+          "aggressorPositionRelation": "not_applicable",
+          "currentPotBb": 1.5,
+          "potBb": 1.5,
+          "lastAction": "unopened",
+          "priorActionSummary": {
+            "lastActionFamily": "none",
+            "lastActorPosition": null,
+            "facingActionFamily": "none",
+            "aggressionFamily": "none",
+            "aggressionCount": 0,
+            "limperCount": 0,
+            "aggressorPosition": null,
+            "heroPreviousVoluntaryActionFamily": "none",
+            "initialAggressorPosition": null,
+            "distinctAggressorCount": 0,
+            "latestAggressionWasCold": null,
+            "heroActionWouldBeCold": null
+          },
+          "facingSizeBb": 0,
+          "callAmountBb": 0.5,
+          "actorContestablePotAfterCallBb": 2,
+          "actorIneligiblePotAfterCallBb": 0,
+          "requiredRawEquity": 0.25,
+          "heroStreetContributionBb": 0.5,
+          "canRaise": true,
+          "minRaiseToBb": 2,
+          "maxRaiseToBb": 100,
+          "allInToBb": 100,
+          "rakeMode": "off",
+          "forcedContributionPerPlayerBb": 0,
+          "totalForcedContributionBb": 0,
+          "derivation": {
+            "schemaVersion": "decision-context-derivation/v1",
+            "source": "canonical_hand",
+            "defaultQuality": "exact",
+            "events": [
+              {
+                "field": "lastAction",
+                "quality": "normalized",
+                "code": "legacy_bounded_history_projection",
+                "value": "unopened"
+              },
+              {
+                "field": "actorContestablePotAfterCallBb",
+                "quality": "exact",
+                "code": "canonical_actor_pot_layers_after_call",
+                "value": 2
+              },
+              {
+                "field": "actorIneligiblePotAfterCallBb",
+                "quality": "exact",
+                "code": "canonical_actor_ineligible_layers_after_call",
+                "value": 0
+              },
+              {
+                "field": "requiredRawEquity",
+                "quality": "exact",
+                "code": "canonical_actor_call_price",
+                "value": 0.25
+              },
+              {
+                "field": "currentPotBb",
+                "quality": "exact",
+                "code": "canonical_current_pot",
+                "value": 1.5
+              }
+            ]
+          }
+        },
+        "scenarioInput": null,
+        "handReference": {
+          "schemaVersion": "saved-hand-reference/v1",
+          "savedHandObjectId": "legacy-none-2",
+          "canonicalHandId": "legacy-none-2",
+          "actionSequenceCount": 0
+        },
+        "truth": {
+          "schemaVersion": "saved-spot-truth/v1",
+          "completeness": "canonical_decision_context",
+          "historyStatus": "canonical_reference"
+        },
+        "rulesSnapshot": {
+          "schemaVersion": "game-rules-snapshot/v1",
+          "source": {
+            "kind": "legacy_compatibility",
+            "presetId": "riverline:builtin:no-rake-cash",
+            "presetRevision": 1,
+            "legacyMode": "home"
+          },
+          "setup": {
+            "seatedPlayers": 2
+          },
+          "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"none\",\"amountMilliBb\":0},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+          "definition": {
+            "schemaVersion": "game-rules-definition/v1",
+            "variant": "no_limit_texas_holdem",
+            "format": "cash",
+            "tableSize": {
+              "minimumSeated": 2,
+              "maximumSeated": 10
+            },
+            "blinds": {
+              "smallBlindMilliBb": 500,
+              "bigBlindMilliBb": 1000,
+              "chipUnitMilliBb": 1
+            },
+            "ante": {
+              "type": "none",
+              "amountMilliBb": 0
+            },
+            "straddle": {
+              "type": "none"
+            },
+            "collectionPolicy": {
+              "type": "none"
+            }
+          }
+        }
+      },
+      "lifecycle": {
+        "state": "active",
+        "archivedAt": null
+      }
+    },
+    "terminal": {
+      "schemaVersion": "saved-study-object/v1",
+      "id": "legacy-none-2",
+      "ownerRef": {
+        "schemaVersion": "saved-study-owner/v1",
+        "kind": "local",
+        "id": "legacy-owner"
+      },
+      "kind": "hand",
+      "createdAt": "2026-08-01T00:00:00.000Z",
+      "updatedAt": "2026-08-01T00:00:00.000Z",
+      "revision": 1,
+      "annotations": {
+        "schemaVersion": "saved-study-annotations/v1",
+        "title": "Historical evidence",
+        "note": "Keep my note",
+        "tags": [
+          {
+            "schemaVersion": "saved-study-tag/v1",
+            "key": "bba",
+            "display": "BBA"
+          }
+        ],
+        "reviewState": "review_later",
+        "classifications": []
+      },
+      "source": {
+        "schemaVersion": "saved-study-source/v1",
+        "surface": "hand",
+        "sourceId": "legacy-none-2",
+        "parentObjectId": null
+      },
+      "payload": {
+        "schemaVersion": "saved-hand-snapshot/v2",
+        "heroPlayerId": "SB",
+        "pokerState": {
+          "schemaVersion": "poker-state/v2",
+          "handId": "legacy-none-2",
+          "rulesSnapshot": {
+            "schemaVersion": "game-rules-snapshot/v1",
+            "source": {
+              "kind": "legacy_compatibility",
+              "presetId": "riverline:builtin:no-rake-cash",
+              "presetRevision": 1,
+              "legacyMode": "home"
+            },
+            "setup": {
+              "seatedPlayers": 2
+            },
+            "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"none\",\"amountMilliBb\":0},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+            "definition": {
+              "schemaVersion": "game-rules-definition/v1",
+              "variant": "no_limit_texas_holdem",
+              "format": "cash",
+              "tableSize": {
+                "minimumSeated": 2,
+                "maximumSeated": 10
+              },
+              "blinds": {
+                "smallBlindMilliBb": 500,
+                "bigBlindMilliBb": 1000,
+                "chipUnitMilliBb": 1
+              },
+              "ante": {
+                "type": "none",
+                "amountMilliBb": 0
+              },
+              "straddle": {
+                "type": "none"
+              },
+              "collectionPolicy": {
+                "type": "none"
+              }
+            }
+          },
+          "game": {
+            "variant": "no_limit_texas_holdem",
+            "format": "cash",
+            "tableSize": 2,
+            "smallBlindMilliBb": 500,
+            "bigBlindMilliBb": 1000,
+            "chipUnitMilliBb": 1,
+            "ante": {
+              "type": "none",
+              "amountMilliBb": 0
+            }
+          },
+          "phase": "terminal",
+          "street": "river",
+          "buttonSeat": 0,
+          "actingPlayerId": null,
+          "board": [
+            "2c",
+            "3d",
+            "4h",
+            "8s",
+            "9c"
+          ],
+          "deadCards": [],
+          "players": [
+            {
+              "playerId": "SB",
+              "seat": 0,
+              "position": "BTN",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "As",
+                "Ad"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 101000,
+              "streetContributionMilliBb": 0,
+              "totalPotContributionMilliBb": 1000,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": true,
+              "raiseReopenAtMilliBb": 1
+            },
+            {
+              "playerId": "BB",
+              "seat": 1,
+              "position": "BB",
+              "seated": true,
+              "dealtIn": true,
+              "holeCards": [
+                "Ks",
+                "Kd"
+              ],
+              "startingStackMilliBb": 100000,
+              "currentStackMilliBb": 99000,
+              "streetContributionMilliBb": 0,
+              "totalPotContributionMilliBb": 1000,
+              "totalDeductionMilliBb": 0,
+              "folded": false,
+              "actedThisStreet": true,
+              "raiseReopenAtMilliBb": 1
+            }
+          ],
+          "potMilliBb": 0,
+          "deductionTotalMilliBb": 0,
+          "currentBetMilliBb": 0,
+          "lastFullRaiseIncrementMilliBb": 1000,
+          "lastAggressorPlayerId": null,
+          "actionHistory": [
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 0,
+              "street": "preflop",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "call",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 500,
+              "committedMilliBb": 500,
+              "streetContributionAfterMilliBb": 1000,
+              "currentBetBeforeMilliBb": 1000,
+              "currentBetAfterMilliBb": 1000,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 1,
+              "street": "preflop",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 1000,
+              "currentBetBeforeMilliBb": 1000,
+              "currentBetAfterMilliBb": 1000,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 2,
+              "street": "flop",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 3,
+              "street": "flop",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 4,
+              "street": "turn",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 5,
+              "street": "turn",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 6,
+              "street": "river",
+              "playerId": "BB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "BB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            },
+            {
+              "schemaVersion": "poker-action-record/v1",
+              "sequence": 7,
+              "street": "river",
+              "playerId": "SB",
+              "submittedAction": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "SB",
+                "type": "check",
+                "amountToMilliBb": null
+              },
+              "toCallBeforeMilliBb": 0,
+              "committedMilliBb": 0,
+              "streetContributionAfterMilliBb": 0,
+              "currentBetBeforeMilliBb": 0,
+              "currentBetAfterMilliBb": 0,
+              "wasAllIn": false,
+              "wasFullRaise": false,
+              "reopenedBetting": false
+            }
+          ],
+          "ledger": [
+            {
+              "sequence": 0,
+              "playerId": "SB",
+              "street": "preflop",
+              "kind": "small_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 500
+            },
+            {
+              "sequence": 1,
+              "playerId": "BB",
+              "street": "preflop",
+              "kind": "big_blind",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 1000
+            },
+            {
+              "sequence": 2,
+              "playerId": "SB",
+              "street": "preflop",
+              "kind": "action",
+              "movement": "stack_to_pot",
+              "amountMilliBb": 500
+            },
+            {
+              "sequence": 3,
+              "playerId": "SB",
+              "street": "river",
+              "kind": "pot_award",
+              "movement": "pot_to_stack",
+              "amountMilliBb": 2000,
+              "settlementReason": "showdown",
+              "potLayerIndex": 0
+            }
+          ],
+          "pendingChance": null,
+          "terminal": {
+            "isTerminal": true,
+            "reason": "showdown",
+            "winnerPlayerIds": [
+              "SB"
+            ],
+            "payoutsMilliBbByPlayer": {
+              "SB": 2000
+            },
+            "refundsMilliBbByPlayer": {}
+          },
+          "showdown": {
+            "status": "settled",
+            "eligiblePlayerIds": [
+              "SB",
+              "BB"
+            ],
+            "pots": [],
+            "handRanksByPlayer": {
+              "SB": {
+                "schemaVersion": "poker-hand-rank/v1",
+                "score": 10000740985,
+                "category": "one_pair",
+                "categoryRank": 1,
+                "tiebreakers": [
+                  14,
+                  9,
+                  8,
+                  4
+                ],
+                "bestFiveCards": [
+                  "As",
+                  "Ad",
+                  "4h",
+                  "8s",
+                  "9c"
+                ]
+              },
+              "BB": {
+                "schemaVersion": "poker-hand-rank/v1",
+                "score": 10000690360,
+                "category": "one_pair",
+                "categoryRank": 1,
+                "tiebreakers": [
+                  13,
+                  9,
+                  8,
+                  4
+                ],
+                "bestFiveCards": [
+                  "Ks",
+                  "Kd",
+                  "4h",
+                  "8s",
+                  "9c"
+                ]
+              }
+            },
+            "layerResults": [
+              {
+                "schemaVersion": "poker-showdown-layer-result/v1",
+                "layerIndex": 0,
+                "amountMilliBb": 2000,
+                "contributionFloorMilliBb": 0,
+                "contributionCeilingMilliBb": 1000,
+                "eligiblePlayerIds": [
+                  "SB",
+                  "BB"
+                ],
+                "winnerPlayerIds": [
+                  "SB"
+                ],
+                "payoutsMilliBbByPlayer": {
+                  "SB": 2000
+                }
+              }
+            ]
+          }
+        },
+        "privacy": {
+          "schemaVersion": "saved-hand-privacy/v1",
+          "perspectivePlayerId": "SB",
+          "hiddenPrivateCardPlayerIds": [],
+          "knownPrivateCardPlayerIds": [
+            "SB",
+            "BB"
+          ]
+        },
+        "replaySource": {
+          "schemaVersion": "canonical-hand-replay-source/v2",
+          "heroPlayerId": "SB",
+          "events": [
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 0,
+              "operation": "initialize_hand",
+              "payload": {
+                "configuration": {
+                  "handId": "legacy-none-2",
+                  "rulesSnapshot": {
+                    "schemaVersion": "game-rules-snapshot/v1",
+                    "source": {
+                      "kind": "legacy_compatibility",
+                      "presetId": "riverline:builtin:no-rake-cash",
+                      "presetRevision": 1,
+                      "legacyMode": "home"
+                    },
+                    "setup": {
+                      "seatedPlayers": 2
+                    },
+                    "semanticFingerprint": "game-rules-semantic/v1:{\"schemaVersion\":\"game-rules-definition/v1\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":1},\"ante\":{\"type\":\"none\",\"amountMilliBb\":0},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"}}",
+                    "definition": {
+                      "schemaVersion": "game-rules-definition/v1",
+                      "variant": "no_limit_texas_holdem",
+                      "format": "cash",
+                      "tableSize": {
+                        "minimumSeated": 2,
+                        "maximumSeated": 10
+                      },
+                      "blinds": {
+                        "smallBlindMilliBb": 500,
+                        "bigBlindMilliBb": 1000,
+                        "chipUnitMilliBb": 1
+                      },
+                      "ante": {
+                        "type": "none",
+                        "amountMilliBb": 0
+                      },
+                      "straddle": {
+                        "type": "none"
+                      },
+                      "collectionPolicy": {
+                        "type": "none"
+                      }
+                    }
+                  },
+                  "buttonSeat": 0,
+                  "players": [
+                    {
+                      "playerId": "SB",
+                      "seat": 0,
+                      "startingStackMilliBb": 100000
+                    },
+                    {
+                      "playerId": "BB",
+                      "seat": 1,
+                      "startingStackMilliBb": 100000
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 1,
+              "operation": "deal_hole",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_hole",
+                  "cardsByPlayer": {
+                    "SB": [
+                      "As",
+                      "Ad"
+                    ],
+                    "BB": [
+                      "Ks",
+                      "Kd"
+                    ]
+                  },
+                  "hiddenPlayerIds": []
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 2,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "call",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 3,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 4,
+              "operation": "deal_board",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_flop",
+                  "cards": [
+                    "2c",
+                    "3d",
+                    "4h"
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 5,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 6,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 7,
+              "operation": "deal_board",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_turn",
+                  "cards": [
+                    "8s"
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 8,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 9,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 10,
+              "operation": "deal_board",
+              "payload": {
+                "chanceEvent": {
+                  "type": "deal_river",
+                  "cards": [
+                    "9c"
+                  ]
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 11,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "BB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 12,
+              "operation": "action",
+              "payload": {
+                "action": {
+                  "schemaVersion": "poker-action/v1",
+                  "playerId": "SB",
+                  "type": "check",
+                  "amountToMilliBb": null
+                }
+              }
+            },
+            {
+              "schemaVersion": "canonical-hand-replay-event/v2",
+              "sequence": 13,
+              "operation": "showdown",
+              "payload": null
+            }
+          ]
+        }
+      },
+      "lifecycle": {
+        "state": "active",
+        "archivedAt": null
+      }
+    }
+  },
+  "imported": {
+    "schemaVersion": "saved-study-object/v1",
+    "id": "legacy-import",
+    "ownerRef": {
+      "schemaVersion": "saved-study-owner/v1",
+      "kind": "local",
+      "id": "legacy-owner"
+    },
+    "kind": "hand",
+    "createdAt": "2026-08-01T00:00:00.000Z",
+    "updatedAt": "2026-08-01T00:00:00.000Z",
+    "revision": 1,
+    "annotations": {
+      "schemaVersion": "saved-study-annotations/v1",
+      "title": "Historical evidence",
+      "note": "Keep my note",
+      "tags": [
+        {
+          "schemaVersion": "saved-study-tag/v1",
+          "key": "bba",
+          "display": "BBA"
+        }
+      ],
+      "reviewState": "review_later",
+      "classifications": []
+    },
+    "source": {
+      "schemaVersion": "saved-study-source/v1",
+      "surface": "hand",
+      "sourceId": "legacy-import",
+      "parentObjectId": null
+    },
+    "payload": {
+      "schemaVersion": "saved-hand-snapshot/v3",
+      "heroPlayerId": "seat-1",
+      "pokerState": {
+        "schemaVersion": "poker-state/v3",
+        "handId": "import-c76bc4187fb65ee0ba0371ccf680e932a5732cbe46f57c23fd0cd77435142707",
+        "recordedSettlement": {
+          "schemaVersion": "recorded-hand-settlement/v1",
+          "grossPotMilliBb": 20000,
+          "rakeMilliBb": 0,
+          "payoutsMilliBbByPlayer": {
+            "seat-1": 20000
+          },
+          "netAwardedMilliBb": 20000,
+          "grossPayoutsMilliBbByPlayer": {
+            "seat-1": 20000
+          }
+        },
+        "rulesSnapshot": {
+          "schemaVersion": "game-rules-snapshot/v2",
+          "source": {
+            "kind": "direct"
+          },
+          "setup": {
+            "seatedPlayers": 2
+          },
+          "semanticFingerprint": "game-rules-semantic/v2:{\"schemaVersion\":\"game-rules-definition/v2\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":10},\"ante\":{\"type\":\"none\",\"amountMilliBb\":0},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"},\"recordedSettlementPolicy\":{\"type\":\"source_recorded_rake\",\"rakeModel\":\"unknown\"}}",
+          "definition": {
+            "schemaVersion": "game-rules-definition/v2",
+            "variant": "no_limit_texas_holdem",
+            "format": "cash",
+            "tableSize": {
+              "minimumSeated": 2,
+              "maximumSeated": 10
+            },
+            "blinds": {
+              "smallBlindMilliBb": 500,
+              "bigBlindMilliBb": 1000,
+              "chipUnitMilliBb": 10
+            },
+            "ante": {
+              "type": "none",
+              "amountMilliBb": 0
+            },
+            "straddle": {
+              "type": "none"
+            },
+            "collectionPolicy": {
+              "type": "none"
+            },
+            "recordedSettlementPolicy": {
+              "type": "source_recorded_rake",
+              "rakeModel": "unknown"
+            }
+          }
+        },
+        "game": {
+          "variant": "no_limit_texas_holdem",
+          "format": "cash",
+          "tableSize": 2,
+          "smallBlindMilliBb": 500,
+          "bigBlindMilliBb": 1000,
+          "chipUnitMilliBb": 10,
+          "ante": {
+            "type": "none",
+            "amountMilliBb": 0
+          }
+        },
+        "phase": "terminal",
+        "street": "river",
+        "buttonSeat": 0,
+        "actingPlayerId": null,
+        "board": [
+          "2c",
+          "3d",
+          "4h",
+          "8s",
+          "9c"
+        ],
+        "deadCards": [],
+        "players": [
+          {
+            "playerId": "seat-1",
+            "seat": 0,
+            "position": "BTN",
+            "seated": true,
+            "dealtIn": true,
+            "holeCards": [
+              "As",
+              "Ah"
+            ],
+            "startingStackMilliBb": 10000,
+            "currentStackMilliBb": 20000,
+            "streetContributionMilliBb": 0,
+            "totalPotContributionMilliBb": 10000,
+            "totalDeductionMilliBb": 0,
+            "folded": false,
+            "actedThisStreet": false,
+            "raiseReopenAtMilliBb": null
+          },
+          {
+            "playerId": "seat-2",
+            "seat": 1,
+            "position": "BB",
+            "seated": true,
+            "dealtIn": true,
+            "holeCards": [
+              "Ks",
+              "Kh"
+            ],
+            "startingStackMilliBb": 10000,
+            "currentStackMilliBb": 0,
+            "streetContributionMilliBb": 0,
+            "totalPotContributionMilliBb": 10000,
+            "totalDeductionMilliBb": 0,
+            "folded": false,
+            "actedThisStreet": false,
+            "raiseReopenAtMilliBb": null
+          }
+        ],
+        "potMilliBb": 0,
+        "deductionTotalMilliBb": 0,
+        "currentBetMilliBb": 0,
+        "lastFullRaiseIncrementMilliBb": 1000,
+        "lastAggressorPlayerId": null,
+        "actionHistory": [
+          {
+            "schemaVersion": "poker-action-record/v1",
+            "sequence": 0,
+            "street": "preflop",
+            "playerId": "seat-1",
+            "submittedAction": {
+              "schemaVersion": "poker-action/v1",
+              "playerId": "seat-1",
+              "type": "all_in",
+              "amountToMilliBb": null
+            },
+            "toCallBeforeMilliBb": 500,
+            "committedMilliBb": 9500,
+            "streetContributionAfterMilliBb": 10000,
+            "currentBetBeforeMilliBb": 1000,
+            "currentBetAfterMilliBb": 10000,
+            "wasAllIn": true,
+            "wasFullRaise": true,
+            "reopenedBetting": true
+          },
+          {
+            "schemaVersion": "poker-action-record/v1",
+            "sequence": 1,
+            "street": "preflop",
+            "playerId": "seat-2",
+            "submittedAction": {
+              "schemaVersion": "poker-action/v1",
+              "playerId": "seat-2",
+              "type": "call",
+              "amountToMilliBb": null
+            },
+            "toCallBeforeMilliBb": 9000,
+            "committedMilliBb": 9000,
+            "streetContributionAfterMilliBb": 10000,
+            "currentBetBeforeMilliBb": 10000,
+            "currentBetAfterMilliBb": 10000,
+            "wasAllIn": true,
+            "wasFullRaise": false,
+            "reopenedBetting": false
+          }
+        ],
+        "ledger": [
+          {
+            "sequence": 0,
+            "playerId": "seat-1",
+            "street": "preflop",
+            "kind": "small_blind",
+            "movement": "stack_to_pot",
+            "amountMilliBb": 500
+          },
+          {
+            "sequence": 1,
+            "playerId": "seat-2",
+            "street": "preflop",
+            "kind": "big_blind",
+            "movement": "stack_to_pot",
+            "amountMilliBb": 1000
+          },
+          {
+            "sequence": 2,
+            "playerId": "seat-1",
+            "street": "preflop",
+            "kind": "action",
+            "movement": "stack_to_pot",
+            "amountMilliBb": 9500
+          },
+          {
+            "sequence": 3,
+            "playerId": "seat-2",
+            "street": "preflop",
+            "kind": "action",
+            "movement": "stack_to_pot",
+            "amountMilliBb": 9000
+          },
+          {
+            "playerId": "seat-1",
+            "street": "river",
+            "kind": "pot_award",
+            "movement": "pot_to_stack",
+            "amountMilliBb": 20000,
+            "sequence": 4
+          }
+        ],
+        "pendingChance": null,
+        "terminal": {
+          "isTerminal": true,
+          "reason": "showdown",
+          "winnerPlayerIds": [
+            "seat-1"
+          ],
+          "payoutsMilliBbByPlayer": {
+            "seat-1": 20000
+          },
+          "refundsMilliBbByPlayer": {}
+        },
+        "showdown": {
+          "status": "settled",
+          "eligiblePlayerIds": [
+            "seat-1",
+            "seat-2"
+          ],
+          "pots": [],
+          "handRanksByPlayer": {
+            "seat-1": {
+              "schemaVersion": "poker-hand-rank/v1",
+              "score": 10000740985,
+              "category": "one_pair",
+              "categoryRank": 1,
+              "tiebreakers": [
+                14,
+                9,
+                8,
+                4
+              ],
+              "bestFiveCards": [
+                "As",
+                "Ah",
+                "4h",
+                "8s",
+                "9c"
+              ]
+            },
+            "seat-2": {
+              "schemaVersion": "poker-hand-rank/v1",
+              "score": 10000690360,
+              "category": "one_pair",
+              "categoryRank": 1,
+              "tiebreakers": [
+                13,
+                9,
+                8,
+                4
+              ],
+              "bestFiveCards": [
+                "Ks",
+                "Kh",
+                "4h",
+                "8s",
+                "9c"
+              ]
+            }
+          },
+          "layerResults": [
+            {
+              "schemaVersion": "poker-showdown-layer-result/v1",
+              "layerIndex": 0,
+              "amountMilliBb": 20000,
+              "contributionFloorMilliBb": 0,
+              "contributionCeilingMilliBb": 10000,
+              "eligiblePlayerIds": [
+                "seat-1",
+                "seat-2"
+              ],
+              "winnerPlayerIds": [
+                "seat-1"
+              ],
+              "payoutsMilliBbByPlayer": {
+                "seat-1": 20000
+              }
+            }
+          ]
+        }
+      },
+      "privacy": {
+        "schemaVersion": "saved-hand-privacy/v1",
+        "perspectivePlayerId": "seat-1",
+        "hiddenPrivateCardPlayerIds": [],
+        "knownPrivateCardPlayerIds": [
+          "seat-1",
+          "seat-2"
+        ]
+      },
+      "replaySource": {
+        "schemaVersion": "canonical-hand-replay-source/v3",
+        "heroPlayerId": "seat-1",
+        "events": [
+          {
+            "schemaVersion": "canonical-hand-replay-event/v3",
+            "sequence": 0,
+            "operation": "initialize_hand",
+            "payload": {
+              "configuration": {
+                "handId": "import-c76bc4187fb65ee0ba0371ccf680e932a5732cbe46f57c23fd0cd77435142707",
+                "rulesSnapshot": {
+                  "schemaVersion": "game-rules-snapshot/v2",
+                  "source": {
+                    "kind": "direct"
+                  },
+                  "setup": {
+                    "seatedPlayers": 2
+                  },
+                  "semanticFingerprint": "game-rules-semantic/v2:{\"schemaVersion\":\"game-rules-definition/v2\",\"variant\":\"no_limit_texas_holdem\",\"format\":\"cash\",\"tableSize\":{\"minimumSeated\":2,\"maximumSeated\":10},\"blinds\":{\"smallBlindMilliBb\":500,\"bigBlindMilliBb\":1000,\"chipUnitMilliBb\":10},\"ante\":{\"type\":\"none\",\"amountMilliBb\":0},\"straddle\":{\"type\":\"none\"},\"collectionPolicy\":{\"type\":\"none\"},\"recordedSettlementPolicy\":{\"type\":\"source_recorded_rake\",\"rakeModel\":\"unknown\"}}",
+                  "definition": {
+                    "schemaVersion": "game-rules-definition/v2",
+                    "variant": "no_limit_texas_holdem",
+                    "format": "cash",
+                    "tableSize": {
+                      "minimumSeated": 2,
+                      "maximumSeated": 10
+                    },
+                    "blinds": {
+                      "smallBlindMilliBb": 500,
+                      "bigBlindMilliBb": 1000,
+                      "chipUnitMilliBb": 10
+                    },
+                    "ante": {
+                      "type": "none",
+                      "amountMilliBb": 0
+                    },
+                    "straddle": {
+                      "type": "none"
+                    },
+                    "collectionPolicy": {
+                      "type": "none"
+                    },
+                    "recordedSettlementPolicy": {
+                      "type": "source_recorded_rake",
+                      "rakeModel": "unknown"
+                    }
+                  }
+                },
+                "buttonSeat": 0,
+                "players": [
+                  {
+                    "playerId": "seat-1",
+                    "seat": 0,
+                    "startingStackMilliBb": 10000
+                  },
+                  {
+                    "playerId": "seat-2",
+                    "seat": 1,
+                    "startingStackMilliBb": 10000
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "schemaVersion": "canonical-hand-replay-event/v3",
+            "sequence": 1,
+            "operation": "deal_hole_observed",
+            "payload": {
+              "chanceEvent": {
+                "type": "deal_hole",
+                "cardsByPlayer": {
+                  "seat-1": [
+                    "As",
+                    "Ah"
+                  ]
+                },
+                "hiddenPlayerIds": [
+                  "seat-2"
+                ]
+              }
+            }
+          },
+          {
+            "schemaVersion": "canonical-hand-replay-event/v3",
+            "sequence": 2,
+            "operation": "action",
+            "payload": {
+              "action": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "seat-1",
+                "type": "all_in",
+                "amountToMilliBb": null
+              }
+            }
+          },
+          {
+            "schemaVersion": "canonical-hand-replay-event/v3",
+            "sequence": 3,
+            "operation": "action",
+            "payload": {
+              "action": {
+                "schemaVersion": "poker-action/v1",
+                "playerId": "seat-2",
+                "type": "call",
+                "amountToMilliBb": null
+              }
+            }
+          },
+          {
+            "schemaVersion": "canonical-hand-replay-event/v3",
+            "sequence": 4,
+            "operation": "deal_board",
+            "payload": {
+              "chanceEvent": {
+                "type": "deal_flop",
+                "cards": [
+                  "2c",
+                  "3d",
+                  "4h"
+                ]
+              }
+            }
+          },
+          {
+            "schemaVersion": "canonical-hand-replay-event/v3",
+            "sequence": 5,
+            "operation": "deal_board",
+            "payload": {
+              "chanceEvent": {
+                "type": "deal_turn",
+                "cards": [
+                  "8s"
+                ]
+              }
+            }
+          },
+          {
+            "schemaVersion": "canonical-hand-replay-event/v3",
+            "sequence": 6,
+            "operation": "deal_board",
+            "payload": {
+              "chanceEvent": {
+                "type": "deal_river",
+                "cards": [
+                  "9c"
+                ]
+              }
+            }
+          },
+          {
+            "schemaVersion": "canonical-hand-replay-event/v3",
+            "sequence": 7,
+            "operation": "reveal_hole",
+            "payload": {
+              "revealEvent": {
+                "playerId": "seat-2",
+                "cards": [
+                  "Ks",
+                  "Kh"
+                ]
+              }
+            }
+          },
+          {
+            "schemaVersion": "canonical-hand-replay-event/v3",
+            "sequence": 8,
+            "operation": "showdown",
+            "payload": null
+          },
+          {
+            "schemaVersion": "canonical-hand-replay-event/v3",
+            "sequence": 9,
+            "operation": "recorded_settlement",
+            "payload": {
+              "evidence": {
+                "schemaVersion": "recorded-hand-settlement/v1",
+                "grossPotMilliBb": 20000,
+                "rakeMilliBb": 0,
+                "payoutsMilliBbByPlayer": {
+                  "seat-1": 20000
+                }
+              }
+            }
+          }
+        ]
+      },
+      "importProvenance": {
+        "schemaVersion": "hand-import-provenance/v1",
+        "importVersion": "hand-history-import/v1",
+        "sourceFormat": "pokerstars_english_nlhe_cash",
+        "parserVersion": "pokerstars-parser/v1",
+        "rawTextFingerprint": "sha256:c76bc4187fb65ee0ba0371ccf680e932a5732cbe46f57c23fd0cd77435142707",
+        "sourceHandId": "100000001",
+        "sourceTimestamp": "2026/09/08 12:00:00 ET",
+        "canonicalHandId": "import-c76bc4187fb65ee0ba0371ccf680e932a5732cbe46f57c23fd0cd77435142707",
+        "reconstructionVersion": "hand-import-reconstruction/v1",
+        "reconstructionStatus": "complete",
+        "factSummary": {
+          "exact": [
+            "source:header",
+            "source:seats",
+            "source:posts",
+            "source:actions",
+            "source:cards",
+            "source:settlement"
+          ],
+          "inferred": [
+            "format:raise_is_street_total_to",
+            "format:currency_minor_unit",
+            "format:no_ante_when_no_ante_posts"
+          ],
+          "missing": [],
+          "ambiguous": [],
+          "unsupported": []
+        },
+        "tableIdentity": {
+          "name": "All-in call regression",
+          "capacity": 2,
+          "currency": "USD"
+        },
+        "sourcePlayers": [
+          {
+            "playerId": "seat-1",
+            "sourceName": "Hero",
+            "seat": 0
+          },
+          {
+            "playerId": "seat-2",
+            "sourceName": "Villain",
+            "seat": 1
+          }
+        ],
+        "rawTextRetention": "not_stored"
+      }
+    },
+    "lifecycle": {
+      "state": "active",
+      "archivedAt": null
+    }
+  }
+}

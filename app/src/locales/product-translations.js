@@ -2,6 +2,12 @@
 // diagnostics, persistence, DOM application, and fallback direction.
 (function registerRiverlineProductTranslations(global) {
   const ru = {
+    "Action": "Действие",
+    "Fixed collection": "Фиксированный сбор",
+    "Rake / collection": "Рейк / сбор",
+    "No rake / collection": "Без рейка / сбора",
+    "Fixed collection outside the pot: {amount} per seated player.": "Сбор вне банка: {amount} с игрока за столом.",
+    "Fixed collection currently supports 7 to 10 players. Enter a whole number in that range.": "Фиксированный сбор поддерживает от 7 до 10 игроков. Введите целое число в этом диапазоне.",
     "— (Price unavailable)": "— (цена недоступна)",
     "— (range reference)": "— (ориентир для диапазона)",
     "— (Unopened)": "— (без рейза)",
@@ -528,6 +534,12 @@
   };
 
   const he = {
+    "Action": "פעולה",
+    "Fixed collection": "גבייה קבועה",
+    "Rake / collection": "רייק / גבייה",
+    "No rake / collection": "ללא רייק / גבייה",
+    "Fixed collection outside the pot: {amount} per seated player.": "גבייה מחוץ לקופה: {amount} לכל שחקן בשולחן.",
+    "Fixed collection currently supports 7 to 10 players. Enter a whole number in that range.": "גבייה קבועה תומכת ב־7 עד 10 שחקנים. יש להזין מספר שלם בטווח זה.",
     "— (Price unavailable)": "— (המחיר אינו זמין)",
     "— (range reference)": "— (ייחוס לטווח)",
     "— (Unopened)": "— (ללא רייז)",
@@ -2051,6 +2063,11 @@ Object.assign(he, {
   const personalUnderstandingSubtitle = 'Review what Riverline understands, teach your intended play, and refine exact examples in Matrix Edit.';
   ru[personalUnderstandingSubtitle] = 'Проверьте, что понимает Riverline, объясните свою задуманную игру и уточните точные примеры в редакторе матрицы.';
   he[personalUnderstandingSubtitle] = 'בדקו מה Riverline מבינה, למדו אותה איך אתם רוצים לשחק ודייקו דוגמאות בעריכת המטריצה.';
+  for (const [key, russian, hebrew] of [
+    ['Your next table', 'Ваш следующий стол', 'השולחן הבא שלכם'],
+    ['Setup preview. No hand is in play.', 'Предпросмотр настроек. Раздача ещё не началась.', 'תצוגה מקדימה של ההגדרות. היד טרם התחילה.'],
+    ['Portraits are appearance only. Opponent settings determine behavior.', 'Портреты задают только внешность. Поведение определяется настройками соперников.', 'הדיוקנאות קובעים מראה בלבד. הגדרות היריבים קובעות את ההתנהגות.'],
+  ]) { ru[key] = russian; he[key] = hebrew; }
   const allProductKeys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineProductTranslations = {
     en: Object.fromEntries([...allProductKeys].map((key) => [key, key])),
