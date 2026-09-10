@@ -14,9 +14,11 @@
 
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 
-  <title data-i18n="Riverline — Poker Strategy &amp; Analysis">Riverline — Poker Strategy &amp; Analysis</title>
+  <title data-i18n="Riverline — Poker Strategy &amp; Analysis">Riverline - Poker Strategy &amp; Analysis</title>
 
   <script src="src/application/welcome-orientation-prepaint.js"></script>
+  <script src="src/application/presentation-theme-prepaint.js"></script>
+  <script type="module" src="src/application/presentation-theme-initial.mjs"></script>
 
   <link rel="stylesheet" href="styles.css?v=27">
 
@@ -482,16 +484,16 @@
           <header class="welcome-intro">
             <div class="welcome-intro-copy">
               <p class="welcome-eyebrow" data-i18n="Welcome to Riverline">Welcome to Riverline</p>
-              <h1 id="welcomeTitle" data-i18n="Learn how you play. Understand why. Practice what matters.">Learn how you play. Understand why. Practice what matters.</h1>
+              <h1 id="welcomeTitle"><span data-i18n="Learn how you play.">Learn how you play.</span><span data-i18n="Understand why.">Understand why.</span><span data-i18n="Practice what matters.">Practice what matters.</span></h1>
               <p id="welcomeDescription" data-i18n="A place to explore your poker decisions, one hand at a time.">A place to explore your poker decisions, one hand at a time.</p>
               <button class="ui-button ui-button--primary welcome-enter" type="button" data-welcome-destination="home" data-i18n="Enter Riverline">Enter Riverline</button>
             </div>
             <figure class="welcome-table-illustration">
               <div class="welcome-table-scene" aria-hidden="true">
                 <div class="welcome-table-felt"><svg viewBox="0 0 256 256"><use href="assets/riverline-brand-mark.svg#riverlineBrandSpade" /></svg></div>
-                <img class="welcome-portrait welcome-portrait--one" src="src/ui/assets/opponents/mika.png" alt="" width="96" height="96">
-                <img class="welcome-portrait welcome-portrait--two" src="src/ui/assets/opponents/pip.png" alt="" width="96" height="96">
-                <img class="welcome-portrait welcome-portrait--three" src="src/ui/assets/opponents/cleo.png" alt="" width="96" height="96">
+                <img class="welcome-portrait welcome-portrait--one" src="src/ui/assets/opponents/mika-seat.webp" alt="" width="96" height="96">
+                <img class="welcome-portrait welcome-portrait--two" src="src/ui/assets/opponents/pip-seat.webp" alt="" width="96" height="96">
+                <img class="welcome-portrait welcome-portrait--three" src="src/ui/assets/opponents/cleo-seat.webp" alt="" width="96" height="96">
               </div>
               <figcaption data-i18n="An illustration of your study table">An illustration of your study table</figcaption>
             </figure>
@@ -588,27 +590,15 @@
               <button id="homeGuestSignIn" class="ui-button ui-button--quiet" type="button" data-i18n="Sign in or create account">Sign in or create account</button>
             </div>
           </section>
+          <div class="home-main-flow">
           <section class="panel home-section home-section--continue" aria-labelledby="homeContinueTitle">
             <header class="home-section-head"><div><p id="homeContinueEyebrow" data-i18n="Your next action">Your next action</p><h2 id="homeContinueTitle" data-i18n="Start study">Start study</h2></div></header>
             <div id="homeContinueContent" class="home-section-content"></div>
           </section>
-
-          <section class="panel home-section home-section--quick" aria-labelledby="homeQuickStartTitle" data-tutorial-anchor="home-quick-start">
-            <header class="home-section-head"><div><p data-i18n="Choose a workspace">Choose a workspace</p><h2 id="homeQuickStartTitle" data-i18n="Core study">Core study</h2></div></header>
-            <nav class="home-quick-links" aria-label="Core study" data-i18n-aria-label="Core study">
-              <button type="button" class="home-quick-link home-quick-link--hand" data-home-destination="hand"><strong data-i18n="Hand">Hand</strong><span data-i18n="Play or reconstruct a legal hand.">Play or reconstruct a legal hand.</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="analyze"><strong data-i18n="Analyze">Analyze</strong><span data-i18n="Inspect a decision, Matrix, ranges, and facts.">Inspect a decision, Matrix, ranges, and facts.</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="training"><strong data-i18n="Training">Training</strong><span data-i18n="Practice generated poker decisions.">Practice generated poker decisions.</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="equity"><strong data-i18n="Equity">Equity</strong><span data-i18n="Compare hand outcomes and detailed analysis.">Compare hand outcomes and detailed analysis.</span></button>
-              <button type="button" class="home-quick-link" data-home-destination="review_mistakes" hidden><strong data-i18n="Review Mistakes">Review Mistakes</strong><span data-i18n="Revisit marked decisions">Revisit marked decisions</span></button>
-            </nav>
-          </section>
-
           <section class="panel home-section home-section--review" aria-labelledby="homeReviewTitle" data-tutorial-anchor="home-review">
             <header class="home-section-head"><div><p data-i18n="Items you classified for another look">Items you classified for another look</p><h2 id="homeReviewTitle" data-i18n="Review">Review</h2></div></header>
             <div id="homeReviewContent" class="home-review-groups"></div>
           </section>
-
           <section class="panel home-section home-section--recent" aria-labelledby="homeRecentTitle" data-home-surface="saved" data-tutorial-anchor="home-recent" tabindex="-1">
             <header class="home-section-head"><div><p id="homeRecentEyebrow" data-i18n="Your latest saved study items">Your latest saved study items</p><h2 id="homeRecentTitle" data-i18n="Recent">Recent</h2></div></header>
             <div id="savedLibraryCategories" class="saved-library-categories" role="group" aria-label="Saved categories">
@@ -630,22 +620,23 @@
               <aside id="homeSavedDetail" class="saved-library-detail" aria-labelledby="homeSavedDetailTitle" hidden></aside>
             </div>
           </section>
-
-          <section class="panel home-section home-section--strategy" aria-labelledby="homeStrategyTitle" data-tutorial-anchor="home-personal-strategy">
-            <header class="home-section-head"><div><p data-i18n="Personal">Personal</p><h2 id="homeStrategyTitle" data-i18n="Personal Strategy">Personal Strategy</h2></div></header>
-            <div id="homeStrategyContent" class="home-section-content"></div>
-          </section>
-
-
-
-          <section class="panel home-section home-section--other" aria-labelledby="homeOtherTitle">
-            <header class="home-section-head"><div><p data-i18n="Riverline">Riverline</p><h2 id="homeOtherTitle" data-i18n="More destinations">More destinations</h2></div></header>
-            <nav class="home-other-links" aria-label="More destinations" data-i18n-aria-label="More destinations">
-              <button type="button" class="home-other-link" data-home-destination="saved"><strong data-i18n="Saved study">Saved</strong><span data-i18n="Reopen saved Hands and Spots.">Reopen saved Hands and Spots.</span></button>
-              <button type="button" class="home-other-link" data-home-destination="home-game"><strong data-i18n="Home Game">Home Game</strong><span data-i18n="Run buy-ins, cash-outs, and settlement.">Run buy-ins, cash-outs, and settlement.</span></button>
-              <button type="button" class="home-other-link" data-home-destination="guide"><strong data-i18n="Guide">Guide</strong><span data-i18n="Learn Riverline workflows and study boundaries.">Learn Riverline workflows and study boundaries.</span></button>
+          </div>
+          <aside class="home-destinations-rail">
+          <section class="panel home-section home-section--quick" aria-labelledby="homeQuickStartTitle" data-tutorial-anchor="home-quick-start">
+            <header class="home-section-head"><div><p data-i18n="Choose a workspace">Choose a workspace</p><h2 id="homeQuickStartTitle" data-i18n="Destinations">Destinations</h2></div></header>
+            <nav class="home-quick-links" aria-label="Core study" data-i18n-aria-label="Core study">
+              <button type="button" class="home-quick-link home-quick-link--hand" data-home-destination="hand"><strong data-i18n="Hand">Hand</strong><span data-i18n="Play or reconstruct a legal hand.">Play or reconstruct a legal hand.</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="analyze"><strong data-i18n="Analyze">Analyze</strong><span data-i18n="Inspect a decision, Matrix, ranges, and facts.">Inspect a decision, Matrix, ranges, and facts.</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="training"><strong data-i18n="Training">Training</strong><span data-i18n="Practice generated poker decisions.">Practice generated poker decisions.</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="equity"><strong data-i18n="Equity">Equity</strong><span data-i18n="Compare hand outcomes and detailed analysis.">Compare hand outcomes and detailed analysis.</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="review_mistakes" hidden><strong data-i18n="Review Mistakes">Review Mistakes</strong><span data-i18n="Revisit marked decisions">Revisit marked decisions</span></button>
+              <button type="button" class="home-quick-link" data-home-destination="personal-strategy"><strong data-i18n="Personal Strategy">Personal Strategy</strong></button>
+              <button type="button" class="home-quick-link" data-home-destination="saved"><strong data-i18n="Saved study">Saved study</strong></button>
+              <button type="button" class="home-quick-link" data-home-destination="home-game"><strong data-i18n="Home Game">Home Game</strong></button>
+              <button type="button" class="home-quick-link" data-home-destination="guide"><strong data-i18n="Guide">Guide</strong></button>
             </nav>
           </section>
+          </aside>
         </div>
       </div>
       </div>
@@ -1009,9 +1000,9 @@
               <details id="scenarioRandomizationDetails" class="playbook-randomization-details" hidden>
                 <summary data-i18n="Randomization details">Randomization details</summary>
                 <dl>
-                  <div><dt data-i18n="Changed">Changed</dt><dd id="scenarioRecipeTarget">—</dd></div>
-                  <div><dt data-i18n="Seed">Seed</dt><dd id="scenarioRecipeSeed" class="poker-data-token">—</dd></div>
-                  <div><dt data-i18n="Version">Version</dt><dd id="scenarioRecipeVersion">—</dd></div>
+                  <div><dt data-i18n="Changed">Changed</dt><dd id="scenarioRecipeTarget">-</dd></div>
+                  <div><dt data-i18n="Seed">Seed</dt><dd id="scenarioRecipeSeed" class="poker-data-token">-</dd></div>
+                  <div><dt data-i18n="Version">Version</dt><dd id="scenarioRecipeVersion">-</dd></div>
                 </dl>
                 <button id="scenarioCopyRecipe" class="ui-button ui-button--quiet" type="button" data-i18n="Copy recipe">Copy recipe</button>
               </details>
@@ -1062,12 +1053,25 @@
                 <div class="hand-section-head">
                   <div><strong id="handSetupTitle" data-i18n="Start a hand">Start a hand</strong><small data-i18n="Choose seats and forced contributions">Choose seats and forced contributions</small></div>
                 </div>
+                <div id="handTablePresets" class="hand-table-presets">
+                  <label><span data-i18n="Table preset">Table preset</span><select class="control-select"></select></label>
+                  <details class="hand-inline-disclosure"><summary data-i18n="Manage presets">Manage presets</summary>
+                    <label><span data-i18n="Preset name">Preset name</span><input class="control-input" maxlength="60"></label>
+                    <div class="hand-button-row">
+                      <button type="button" class="ui-button ui-button--secondary" data-preset-action="save" data-i18n="Save as new">Save as new</button>
+                      <button type="button" class="ui-button ui-button--quiet" data-preset-existing data-preset-action="update" data-i18n="Update preset">Update preset</button>
+                      <button type="button" class="ui-button ui-button--quiet" data-preset-existing data-preset-action="rename" data-i18n="Rename">Rename</button>
+                      <button type="button" class="ui-button ui-button--quiet" data-preset-existing data-preset-action="duplicate" data-i18n="Duplicate">Duplicate</button>
+                      <button type="button" class="ui-button ui-button--quiet" data-preset-existing data-preset-action="delete" data-i18n="Delete">Delete</button>
+                    </div>
+                  </details><p role="status" class="study-note"></p>
+                </div>
                 <div class="hand-setup-grid">
                   <label class="hand-collection-field"><span data-i18n="Rake / collection">Rake / collection</span><select id="handCollectionType" class="control-select"><option value="none" data-i18n="No rake / collection">No rake / collection</option><option value="fixed_per_seated_player" data-i18n="Fixed collection">Fixed collection</option></select></label>
                   <label><span data-i18n="Players">Players</span><input id="handTableSize" class="control-input poker-data-token" type="number" min="2" max="10" step="1" value="2" aria-describedby="handTableSizeError"></label>
                   <label><span data-i18n="Starting stack">Starting stack</span><span class="input-with-unit poker-data-token"><input id="handStackBb" class="control-input" type="number" min="1" max="500" step="1" value="100"><em>bb</em></span></label>
                   <label><span data-i18n="Button seat">Button seat</span><select id="handButtonSeat" class="control-select"></select></label>
-                  <label><span data-i18n="Hero seat">Hero seat</span><select id="handHeroSeat" class="control-select"></select></label>
+                  <label><span data-i18n="Hero position">Hero position</span><select id="handHeroSeat" class="control-select"></select></label>
                   <label><span data-i18n="Ante type">Ante type</span><select id="handAnteType" class="control-select"><option value="none" data-i18n="None">None</option><option value="per_player" data-i18n="Per player">Per player</option><option value="big_blind" data-i18n="Big blind ante">Big blind ante</option></select></label>
                   <label><span data-i18n="Ante amount">Ante amount</span><span class="input-with-unit poker-data-token"><input id="handAnteBb" class="control-input" type="number" min="0" max="20" step="0.1" value="0"><em>bb</em></span></label>
                 </div>
@@ -1085,10 +1089,10 @@
                   <div id="handSavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--hand" data-tutorial-anchor="hand-save"></div>
                 </div>
                 <div class="hand-state-strip" aria-live="polite">
-                  <div><span data-i18n="Street">Street</span><strong id="handStateStreet">—</strong></div>
-                  <div><span data-i18n="Actor">Actor</span><strong id="handStateActor">—</strong></div>
-                  <div><span data-i18n="Pot">Pot</span><strong id="handStatePot" class="poker-data-token">—</strong></div>
-                  <div><span data-i18n="Deduction">Deduction</span><strong id="handStateDeduction" class="poker-data-token">—</strong></div>
+                  <div><span data-i18n="Street">Street</span><strong id="handStateStreet">-</strong></div>
+                  <div><span data-i18n="Actor">Actor</span><strong id="handStateActor">-</strong></div>
+                  <div><span data-i18n="Pot">Pot</span><strong id="handStatePot" class="poker-data-token">-</strong></div>
+                  <div><span data-i18n="Deduction">Deduction</span><strong id="handStateDeduction" class="poker-data-token">-</strong></div>
                 </div>
                 <details id="handPlayerDetails" class="hand-inline-disclosure">
                   <summary data-i18n="Players and contributions">Players and contributions</summary>
@@ -1341,21 +1345,21 @@
 
                 <div class="playbook-facts-heading"><span data-i18n="Facts">Facts</span><strong data-i18n="Decision facts">Decision facts</strong><small data-i18n="Exact context for the current recommendation">Exact context for the current recommendation</small></div>
 
-                <div class="metric"><span data-i18n="Position">Position</span><b id="mPosition">—</b></div>
+                <div class="metric"><span data-i18n="Position">Position</span><b id="mPosition">-</b></div>
 
-                <div class="metric"><span data-i18n="Pot">Pot</span><b id="mPot">—</b></div>
+                <div class="metric"><span data-i18n="Pot">Pot</span><b id="mPot">-</b></div>
 
-                <div class="metric"><span data-i18n="Facing">Facing</span><b id="mFacing">—</b></div>
+                <div class="metric"><span data-i18n="Facing">Facing</span><b id="mFacing">-</b></div>
 
-                <div class="metric"><span data-i18n="Stack">Stack</span><b id="mStack">—</b></div>
+                <div class="metric"><span data-i18n="Stack">Stack</span><b id="mStack">-</b></div>
 
-                <div class="metric"><span data-i18n="Hero hand">Hero hand</span><b id="mEquity">—</b></div>
+                <div class="metric"><span data-i18n="Hero hand">Hero hand</span><b id="mEquity">-</b></div>
 
-                <div class="metric"><span data-i18n="Pot odds">Pot odds</span><b id="mPotOdds">—</b></div>
+                <div class="metric"><span data-i18n="Pot odds">Pot odds</span><b id="mPotOdds">-</b></div>
 
-                <div class="metric"><span data-i18n="SPR">SPR</span><b id="mSPR">—</b></div>
+                <div class="metric"><span data-i18n="SPR">SPR</span><b id="mSPR">-</b></div>
 
-                <div class="metric"><span data-i18n="Board">Board</span><b id="mRake">—</b></div>
+                <div class="metric"><span data-i18n="Board">Board</span><b id="mRake">-</b></div>
 
               </div>
 
@@ -1372,10 +1376,10 @@
               <small><span data-i18n="Last event">Last event</span>: <span id="handLiveStageLastAction" data-i18n="No action yet">No action yet</span></small>
             </div>
             <div class="hand-live-facts" aria-label="Current decision facts" data-i18n-aria-label="Current decision facts">
-              <div><span data-i18n="Actor">Actor</span><strong id="handLiveActor">&mdash;</strong></div>
-              <div><span data-i18n="Pot">Pot</span><strong id="handLivePot" class="poker-data-token">&mdash;</strong></div>
-              <div><span data-i18n="Facing">Facing</span><strong id="handLiveFacing" class="poker-data-token">&mdash;</strong></div>
-              <div><span data-i18n="To call">To call</span><strong id="handLiveCall" class="poker-data-token">&mdash;</strong></div>
+              <div><span data-i18n="Actor">Actor</span><strong id="handLiveActor">-</strong></div>
+              <div><span data-i18n="Pot">Pot</span><strong id="handLivePot" class="poker-data-token">-</strong></div>
+              <div><span data-i18n="Facing">Facing</span><strong id="handLiveFacing" class="poker-data-token">-</strong></div>
+              <div><span data-i18n="To call">To call</span><strong id="handLiveCall" class="poker-data-token">-</strong></div>
             </div>
           </section>
 
@@ -1403,14 +1407,14 @@
             </section>
 
             <p id="handRandomizeStatus" class="surface-randomize-status" role="status" aria-live="polite" aria-atomic="true"></p>
-            <details id="handRandomizationDetails" class="surface-randomization-details" hidden><summary data-i18n="Randomization details">Randomization details</summary><div><span data-i18n="Seed">Seed</span><strong id="handRecipeSeed" class="poker-data-token">&mdash;</strong></div><div><span data-i18n="Version">Version</span><strong id="handRecipeVersion">&mdash;</strong></div><button id="handCopyRecipe" class="ui-button ui-button--quiet" type="button" data-i18n="Copy recipe">Copy recipe</button></details>
+            <details id="handRandomizationDetails" class="surface-randomization-details" hidden><summary data-i18n="Randomization details">Randomization details</summary><div><span data-i18n="Seed">Seed</span><strong id="handRecipeSeed" class="poker-data-token">-</strong></div><div><span data-i18n="Version">Version</span><strong id="handRecipeVersion">-</strong></div><button id="handCopyRecipe" class="ui-button ui-button--quiet" type="button" data-i18n="Copy recipe">Copy recipe</button></details>
 
             <section id="handActionSection" class="hand-control-section hand-stage-step hand-action-dock" aria-labelledby="handActionTitle" hidden>
               <div class="hand-section-head"><div><strong id="handActionTitle" data-i18n="Current legal actions">Current legal actions</strong><small id="handActionActor">Waiting for a betting decision</small></div></div>
               <div class="hand-action-context" aria-label="Decision context" data-i18n-aria-label="Decision context">
-                <span><span data-i18n="Pot">Pot</span><strong id="handActionPot" class="poker-data-token">&mdash;</strong></span>
-                <span><span data-i18n="To call">To call</span><strong id="handActionCall" class="poker-data-token">&mdash;</strong></span>
-                <span><span id="handActionStackLabel" data-i18n="Stack">Stack</span><strong id="handActionHeroStack" class="poker-data-token">&mdash;</strong></span>
+                <span><span data-i18n="Pot">Pot</span><strong id="handActionPot" class="poker-data-token">-</strong></span>
+                <span><span data-i18n="To call">To call</span><strong id="handActionCall" class="poker-data-token">-</strong></span>
+                <span><span id="handActionStackLabel" data-i18n="Stack">Stack</span><strong id="handActionHeroStack" class="poker-data-token">-</strong></span>
               </div>
               <div id="handLegalActions" class="hand-legal-actions" role="group" aria-label="Canonical legal actions" data-i18n-aria-label="Canonical legal actions"></div>
               <div id="handActionSizing" class="hand-action-sizing" hidden>
@@ -1449,9 +1453,9 @@
             </div>
             <div id="handReplayControls" class="replay-control-bar" data-replay-mode="empty" data-tutorial-anchor="replay-controls">
               <div class="replay-state-summary">
-                <span id="handReplayModeBadge" class="badge replay-mode-badge" data-i18n="replay.status.live">LIVE</span>
+                <span id="handReplayModeBadge" class="badge replay-mode-badge">LIVE</span>
                 <span id="handReplayProgress" class="replay-step-progress poker-data-token" dir="ltr">Step 0 of 0</span>
-                <span id="handReplayTransition" class="replay-transition-label" data-i18n="replay.marker.empty">No hand started</span>
+                <span id="handReplayTransition" class="replay-transition-label">No hand started</span>
               </div>
               <div class="replay-control-actions" role="group" aria-label="Replay controls" data-i18n-aria-label="replay.controls.label">
                 <button id="handReplayPlaybackButton" class="ui-button ui-button--primary replay-playback-button" type="button" aria-pressed="false" disabled data-i18n="replay.control.play">Play</button>
@@ -1462,13 +1466,13 @@
               <div id="replaySavedStudyActionMount" class="saved-study-action-mount saved-study-action-mount--replay"></div>
             </div>
             <p id="handReplayStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true">LIVE, Step 0 of 0</p>
-            <p id="handReplayReadOnlyNote" class="replay-readonly-note" hidden data-i18n="replay.readOnlyHelp">Read-only earlier state. Strategy and analysis remain tied to the live decision.</p>
+            <p id="handReplayReadOnlyNote" class="replay-readonly-note" hidden>Read-only earlier state. Strategy and analysis remain tied to the live decision.</p>
             <div class="replay-resolution-actions">
               <button id="handResolveShowdownButton" class="ui-button ui-button--primary" type="button" hidden data-i18n="Resolve showdown">Resolve showdown</button>
             </div>
             <details id="handHistoryDisclosure" class="hand-history-disclosure" open>
               <summary>
-                <span class="hand-history-summary-copy"><strong id="handTimelineStageTitle" data-i18n="Hand history">Hand history</strong><small id="handHistorySelectionSummary" data-i18n="No event selected">No event selected</small></span>
+                <span class="hand-history-summary-copy"><strong id="handTimelineStageTitle" data-i18n="Hand history">Hand history</strong><small id="handHistorySelectionSummary">No event selected</small></span>
                 <span class="hand-history-summary-meta"><span id="handHistoryCompactSummary" class="poker-data-token">0</span><span id="handHistoryDisclosureAction" data-i18n="Collapse">Collapse</span></span>
               </summary>
               <section id="handTimelineStage" class="hand-timeline-stage" aria-labelledby="handTimelineStageTitle" data-tutorial-anchor="replay-timeline">
@@ -1489,31 +1493,10 @@
                 <span id="handReviewProgress" class="badge status-badge status-badge--info poker-data-token"></span>
               </header>
 
-              <section class="hand-review-overview" aria-labelledby="handReviewOverviewTitle">
-                <div class="hand-review-section-heading">
-                  <div><span data-i18n="Hand overview">Hand overview</span><h3 id="handReviewOverviewTitle" data-i18n="What happened">What happened</h3></div>
-                  <div id="handReviewFinalBoard" class="hand-review-card-row" aria-label="Final board" data-i18n-aria-label="Final board"></div>
-                </div>
-                <dl class="hand-review-overview-facts">
-                  <div><dt data-i18n="Result">Result</dt><dd id="handReviewResult">&mdash;</dd></div>
-                  <div><dt data-i18n="Hero decisions">Hero decisions</dt><dd id="handReviewDecisionCount" class="poker-data-token">0</dd></div>
-                  <div><dt data-i18n="Comparable decisions">Comparable decisions</dt><dd id="handReviewComparableCount" class="poker-data-token">0</dd></div>
-                  <div><dt data-i18n="Comparison unavailable">Comparison unavailable</dt><dd id="handReviewUnavailableCount" class="poker-data-token">0</dd></div>
-                  <div><dt data-i18n="Strategy source">Strategy source</dt><dd id="handReviewOverviewSource">&mdash;</dd></div>
-                </dl>
-                <p id="handReviewAlignmentSummary" class="hand-review-overview-summary"></p>
-                <p id="handReviewPrioritySummary" class="hand-review-priority-summary"></p>
-              </section>
+
 
               <div class="hand-review-workspace">
-                <nav class="hand-review-decision-navigation" aria-labelledby="handReviewDecisionNavigationTitle">
-                  <div class="hand-review-section-heading"><div><span data-i18n="Hero decisions">Hero decisions</span><h3 id="handReviewDecisionNavigationTitle" data-i18n="Decision navigation">Decision navigation</h3></div></div>
-                  <div id="handReviewDecisionList" class="hand-review-decision-list" aria-label="Hero decision navigation" data-i18n-aria-label="Hero decision navigation"></div>
-                  <div class="hand-review-decision-step-controls">
-                    <button id="handReviewPreviousDecision" class="ui-button ui-button--secondary" type="button" data-i18n="Previous decision">Previous decision</button>
-                    <button id="handReviewNextDecision" class="ui-button ui-button--secondary" type="button" data-i18n="Next decision">Next decision</button>
-                  </div>
-                </nav>
+
 
                 <article class="hand-review-decision-detail" aria-labelledby="handReviewDecisionTitle">
                   <header class="hand-review-decision-header">
@@ -1577,7 +1560,32 @@
                   </div>
                 </article>
               </div>
+              <aside class="hand-review-context-flow">
+              <section class="hand-review-overview" aria-labelledby="handReviewOverviewTitle">
+                <div class="hand-review-section-heading">
+                  <div><span data-i18n="Hand overview">Hand overview</span><h3 id="handReviewOverviewTitle" data-i18n="What happened">What happened</h3></div>
+                  <div id="handReviewFinalBoard" class="hand-review-card-row" aria-label="Final board" data-i18n-aria-label="Final board"></div>
+                </div>
+                <dl class="hand-review-overview-facts">
+                  <div><dt data-i18n="Result">Result</dt><dd id="handReviewResult">-</dd></div>
+                  <div><dt data-i18n="Hero decisions">Hero decisions</dt><dd id="handReviewDecisionCount" class="poker-data-token">0</dd></div>
+                  <div><dt data-i18n="Comparable decisions">Comparable decisions</dt><dd id="handReviewComparableCount" class="poker-data-token">0</dd></div>
+                  <div><dt data-i18n="Comparison unavailable">Comparison unavailable</dt><dd id="handReviewUnavailableCount" class="poker-data-token">0</dd></div>
+                  <div><dt data-i18n="Strategy source">Strategy source</dt><dd id="handReviewOverviewSource">-</dd></div>
+                </dl>
+                <p id="handReviewAlignmentSummary" class="hand-review-overview-summary"></p>
+                <p id="handReviewPrioritySummary" class="hand-review-priority-summary"></p>
+              </section>
+                <nav class="hand-review-decision-navigation" aria-labelledby="handReviewDecisionNavigationTitle">
+                  <div class="hand-review-section-heading"><div><span data-i18n="Hero decisions">Hero decisions</span><h3 id="handReviewDecisionNavigationTitle" data-i18n="Decision navigation">Decision navigation</h3></div></div>
+                  <div id="handReviewDecisionList" class="hand-review-decision-list" aria-label="Hero decision navigation" data-i18n-aria-label="Hero decision navigation"></div>
+                  <div class="hand-review-decision-step-controls">
+                    <button id="handReviewPreviousDecision" class="ui-button ui-button--secondary" type="button" data-i18n="Previous decision">Previous decision</button>
+                    <button id="handReviewNextDecision" class="ui-button ui-button--secondary" type="button" data-i18n="Next decision">Next decision</button>
+                  </div>
+                </nav>
               <aside id="handReviewReplayRailMount" class="hand-review-replay-rail-mount" aria-label="Replay controls and hand history" data-i18n-aria-label="Replay controls and hand history"></aside>
+              </aside>
             </section>
           </div>
 
@@ -1654,7 +1662,7 @@
 
               </div>
 
-              <div class="chart-summary poker-data-token" id="chartSummary">—</div>
+              <div class="chart-summary poker-data-token" id="chartSummary">-</div>
 
               <section id="postflopMatrixEmpty" class="matrix-empty-state" aria-labelledby="postflopMatrixEmptyTitle" hidden>
                 <div>
@@ -1696,9 +1704,9 @@
                 </div>
 
                 <dl class="matrix-inspector-facts">
-                  <div><dt data-i18n="Available combos">Available combos</dt><dd id="selectedAvailableCombos" class="poker-data-token">—</dd></div>
-                  <div><dt data-i18n="Removed combos">Removed combos</dt><dd id="selectedRemovedCombos" class="poker-data-token">—</dd></div>
-                  <div><dt data-i18n="Source">Source</dt><dd id="selectedRangeSource">—</dd></div>
+                  <div><dt data-i18n="Available combos">Available combos</dt><dd id="selectedAvailableCombos" class="poker-data-token">-</dd></div>
+                  <div><dt data-i18n="Removed combos">Removed combos</dt><dd id="selectedRemovedCombos" class="poker-data-token">-</dd></div>
+                  <div><dt data-i18n="Source">Source</dt><dd id="selectedRangeSource">-</dd></div>
                 </dl>
 
                 <div id="selectedMix">
@@ -1785,7 +1793,7 @@
                       <span class="key" role="listitem"><i data-category="marginal-draw"></i><span data-i18n="Marginal or draw">Marginal or draw</span></span>
                       <span class="key" role="listitem"><i data-category="air"></i><span data-i18n="Air">Air</span></span>
                       <span class="key" role="listitem"><i data-state="fully-removed">×</i><span data-i18n="Unavailable after known-card removal">Unavailable after known-card removal</span></span>
-                      <span class="key" role="listitem"><i data-state="not-in-sample">–</i><span data-i18n="Not in sample">Not in sample</span></span>
+                      <span class="key" role="listitem"><i data-state="not-in-sample">-</i><span data-i18n="Not in sample">Not in sample</span></span>
                     </div>
                   </section>
 
@@ -1823,21 +1831,21 @@
                   <section class="range-comparison-basis" aria-labelledby="rangeComparisonBasisTitle">
                     <div class="range-comparison-basis-heading">
                       <strong id="rangeComparisonBasisTitle" data-i18n="Source, coverage, and removal basis">Source, coverage, and removal basis</strong>
-                      <span data-i18n="Independent shares on one 0–100% scale">Independent shares on one 0–100% scale</span>
+                      <span data-i18n="Independent shares on one 0–100% scale">Independent shares on one 0-100% scale</span>
                     </div>
-                    <p id="rangeComparisonLimitation" class="range-comparison-limitation">—</p>
+                    <p id="rangeComparisonLimitation" class="range-comparison-limitation">-</p>
                     <dl>
-                      <div><dt data-i18n="Hero source">Hero source</dt><dd id="heroRangeBasis">—</dd></div>
-                      <div><dt data-i18n="Opponent source">Opponent source</dt><dd id="villainRangeBasis">—</dd></div>
-                      <div><dt data-i18n="Coverage">Coverage</dt><dd id="rangeCoverageBasis">—</dd></div>
+                      <div><dt data-i18n="Hero source">Hero source</dt><dd id="heroRangeBasis">-</dd></div>
+                      <div><dt data-i18n="Opponent source">Opponent source</dt><dd id="villainRangeBasis">-</dd></div>
+                      <div><dt data-i18n="Coverage">Coverage</dt><dd id="rangeCoverageBasis">-</dd></div>
                       <div><dt data-i18n="Normalization">Normalization</dt><dd data-i18n="Unavailable · class sample has no combo weights">Unavailable · class sample has no combo weights</dd></div>
-                      <div class="range-removal-summary"><dt data-i18n="Card removal">Card removal</dt><dd id="rangeRemovalSummary">—</dd></div>
+                      <div class="range-removal-summary"><dt data-i18n="Card removal">Card removal</dt><dd id="rangeRemovalSummary">-</dd></div>
                     </dl>
                   </section>
 
                   <details id="rangeTechnicalDetails" class="range-technical-details">
                     <summary><span><strong data-i18n="Technical class detail">Technical class detail</strong><small data-i18n="Inspect exact sampled classes and unavailable holdings">Inspect exact sampled classes and unavailable holdings</small></span></summary>
-                    <p id="rangeRemovalTechnical" class="range-removal-technical poker-data-token">—</p>
+                    <p id="rangeRemovalTechnical" class="range-removal-technical poker-data-token">-</p>
                   </details>
                 <div id="rangeConclusion" class="range-conclusion">
                   Waiting for board...
@@ -1973,7 +1981,7 @@
                 <label class="calibration-field calibration-stack-field" for="calibrationEffectiveStack">
                   <span data-i18n="Effective stack">Effective stack</span>
                   <span class="calibration-input-unit"><input id="calibrationEffectiveStack" class="control-input poker-data-token" type="number" min="10" max="500" step="1" inputmode="decimal" value="100" aria-describedby="calibrationStackHelp calibrationStackError"><em>bb</em></span>
-                  <small id="calibrationStackHelp" class="poker-data-token" data-i18n="10–500 bb">10–500 bb</small>
+                  <small id="calibrationStackHelp" class="poker-data-token" data-i18n="10–500 bb">10-500 bb</small>
                   <small id="calibrationStackError" class="control-message control-message--invalid" role="alert"></small>
                 </label>
               </div>
@@ -2080,7 +2088,7 @@
                   <details class="personal-coverage-disclosure"><summary data-i18n="Coverage and boundaries">Coverage and boundaries</summary><ul id="personalMappingCoverage" class="personal-mapping-coverage"></ul><p data-i18n="Sampled, not a complete range">Sampled, not a complete range</p></details>
                 </div>
                 <div id="calibrationPreviousAnswer" class="calibration-previous-answer" hidden>
-                  <span><span data-i18n="Previous">Previous</span>: <b id="calibrationPreviousHand" class="poker-data-token" dir="ltr"></b> — <span id="calibrationPreviousAction"></span></span>
+                  <span><span data-i18n="Previous">Previous</span>: <b id="calibrationPreviousHand" class="poker-data-token" dir="ltr"></b> - <span id="calibrationPreviousAction"></span></span>
                   <button id="calibrationUndoAnswer" class="ui-button ui-button--tertiary" type="button" data-i18n="Undo previous answer">Undo previous answer</button>
                 </div>
               </footer>
@@ -2146,7 +2154,7 @@
               </aside>
             </div>
             <details class="personal-comparison"><summary data-i18n="Compare Approaches or a strategy source">Compare Approaches or a strategy source</summary><label for="personalComparisonApproach" data-i18n="Compare with">Compare with</label><select id="personalComparisonApproach" class="control-select"></select><button id="personalCompareApproach" class="ui-button ui-button--secondary" type="button" data-i18n="Compare Approaches">Compare Approaches</button><button id="personalCompareSource" class="ui-button ui-button--tertiary" type="button" data-i18n="Compare with baseline / reference">Compare with baseline / reference</button><p data-i18n="Comparisons describe compatible evidence. Differences do not establish mistakes.">Comparisons describe compatible evidence. Differences do not establish mistakes.</p><ul id="personalComparisonSummary" aria-live="polite"></ul><details><summary data-i18n="Comparison evidence">Comparison evidence</summary><pre id="personalComparisonFacts" dir="ltr"></pre></details></details>
-            <details id="personalVersionHistory"><summary data-i18n="Versions and correction history">Versions and correction history</summary><div id="personalHistoryContent"></div></details>
+            <details id="personalVersionHistory"><summary data-i18n="What I've taught">What I've taught</summary><div id="personalHistoryContent"></div></details>
           </section>
 
 
@@ -2453,22 +2461,22 @@
                 <div class="training-board-zone"><span class="training-zone-label" data-i18n="Board">Board</span><div id="trainingBoardCards" class="training-card-row" aria-label="Board cards" data-i18n-aria-label="Board cards"></div></div>
                 <div class="training-table-divider" aria-hidden="true"></div>
                 <div class="training-hero-zone">
-                  <div><span class="training-zone-label" data-i18n="Hero">Hero</span><strong id="trainingHandDisplay">—</strong></div>
+                  <div><span class="training-zone-label" data-i18n="Hero">Hero</span><strong id="trainingHandDisplay">-</strong></div>
                   <div id="trainingHeroCards" class="training-card-row" aria-label="Hero cards" data-i18n-aria-label="Hero cards"></div>
                 </div>
                 <div id="trainingFullHandStacks" class="training-full-hand-stacks" hidden aria-label="Current stacks" data-i18n-aria-label="Current stacks"></div>
               </div>
               <div id="trainingPotInfo" class="training-context-strip" data-state-surface="derived" role="group" aria-label="Decision context" data-i18n-aria-label="Decision context">
-                <div class="training-context-fact training-context-fact--headline" data-context-priority="headline"><span data-i18n="Facing">Facing</span><strong id="trainingFacingVal">—</strong></div>
-                <div class="training-context-fact" data-context-priority="primary"><span data-i18n="Position">Position</span><strong id="trainingPositionVal" class="training-context-value--atomic poker-data-token">—</strong></div>
-                <div class="training-context-fact" data-context-priority="primary"><span data-i18n="Stack">Stack</span><strong id="trainingStackVal" class="training-context-value--atomic poker-data-token">—</strong></div>
-                <div class="training-context-fact" data-context-priority="primary"><span data-i18n="Pot">Pot</span><strong id="trainingPotVal" class="training-context-value--atomic poker-data-token">—</strong></div>
-                <div class="training-context-fact" data-context-priority="secondary"><span data-i18n="Players">Players</span><strong id="trainingTableVal" class="training-context-value--atomic poker-data-token">—</strong></div>
-                <div class="training-context-fact" data-context-priority="secondary"><span data-i18n="Street">Street</span><strong id="trainingStreetLabel" class="training-context-value--atomic">—</strong></div>
+                <div class="training-context-fact training-context-fact--headline" data-context-priority="headline"><span data-i18n="Facing">Facing</span><strong id="trainingFacingVal">-</strong></div>
+                <div class="training-context-fact" data-context-priority="primary"><span data-i18n="Position">Position</span><strong id="trainingPositionVal" class="training-context-value--atomic poker-data-token">-</strong></div>
+                <div class="training-context-fact" data-context-priority="primary"><span data-i18n="Stack">Stack</span><strong id="trainingStackVal" class="training-context-value--atomic poker-data-token">-</strong></div>
+                <div class="training-context-fact" data-context-priority="primary"><span data-i18n="Pot">Pot</span><strong id="trainingPotVal" class="training-context-value--atomic poker-data-token">-</strong></div>
+                <div class="training-context-fact" data-context-priority="secondary"><span data-i18n="Players">Players</span><strong id="trainingTableVal" class="training-context-value--atomic poker-data-token">-</strong></div>
+                <div class="training-context-fact" data-context-priority="secondary"><span data-i18n="Street">Street</span><strong id="trainingStreetLabel" class="training-context-value--atomic">-</strong></div>
               </div>
               <div id="trainingAssistance" class="training-assistance">
-                <div class="pot-math-detail"><span data-i18n="Pot Odds">Pot odds</span><strong id="trainingPotOddsVal">—</strong></div>
-                <div class="pot-math-detail"><span data-i18n="MDF">MDF</span><strong id="trainingMdfVal">—</strong></div>
+                <div class="pot-math-detail"><span data-i18n="Pot Odds">Pot odds</span><strong id="trainingPotOddsVal">-</strong></div>
+                <div class="pot-math-detail"><span data-i18n="MDF">MDF</span><strong id="trainingMdfVal">-</strong></div>
                 <div id="trainingHintBox" class="training-hint"><strong data-i18n="Guided prompt">Guided prompt</strong><span id="trainingHintText"></span></div>
               </div>
               <section id="trainingStudyHints" class="training-study-hints" aria-labelledby="trainingStudyHintsTitle" hidden data-tutorial-anchor="training-hints">
@@ -2491,7 +2499,7 @@
                     <div id="trainingFullHandSizingActions"></div>
                     <p class="training-reference-note" data-i18n="Exact sizing is recorded. Assessment requires an accepted criterion that covers this action and size.">Exact sizing is recorded. Assessment requires an accepted criterion that covers this action and size.</p>
                   </section>
-                  <p class="training-shortcut-help"><span data-i18n="Keyboard:">Keyboard:</span> <span class="poker-data-token" dir="ltr"><kbd>1</kbd>–<kbd>6</kbd></span> <span data-i18n="choose a visible action">choose a visible action</span></p>
+                  <p class="training-shortcut-help"><span data-i18n="Keyboard:">Keyboard:</span> <span class="poker-data-token" dir="ltr"><kbd>1</kbd>-<kbd>6</kbd></span> <span data-i18n="choose a visible action">choose a visible action</span></p>
                 </div>
               </div>
             </div>
@@ -2513,10 +2521,10 @@
               <p class="training-facts-label" data-i18n="Facts">Facts</p>
               <div id="trainingRelevantFacts" class="training-relevant-facts" hidden></div>
               <dl class="training-verdict-facts">
-                <div><dt data-i18n="Chosen action">Chosen action</dt><dd id="trainingChosenAction">—</dd></div>
-                <div class="training-verdict-frequency" hidden><dt data-i18n="Chosen frequency">Chosen frequency</dt><dd id="trainingChosenProbability" class="poker-data-token">—</dd></div>
-                <div class="training-verdict-frequency" hidden><dt data-i18n="Highest frequency">Highest frequency</dt><dd id="trainingBestProbability" class="poker-data-token">—</dd></div>
-                <div id="trainingEvFact" hidden><dt data-i18n="EV comparison">EV comparison</dt><dd id="trainingEvValue" class="poker-data-token">—</dd></div>
+                <div><dt data-i18n="Chosen action">Chosen action</dt><dd id="trainingChosenAction">-</dd></div>
+                <div class="training-verdict-frequency" hidden><dt data-i18n="Chosen frequency">Chosen frequency</dt><dd id="trainingChosenProbability" class="poker-data-token">-</dd></div>
+                <div class="training-verdict-frequency" hidden><dt data-i18n="Highest frequency">Highest frequency</dt><dd id="trainingBestProbability" class="poker-data-token">-</dd></div>
+                <div id="trainingEvFact" hidden><dt data-i18n="EV comparison">EV comparison</dt><dd id="trainingEvValue" class="poker-data-token">-</dd></div>
               </dl>
               <div id="trainingFeedbackReferenceMount"></div>
               <details class="training-analysis-region" data-tutorial-anchor="training-analysis"><summary id="trainingAnalysisTitle" data-i18n="Explain">Explain</summary><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></details>
@@ -2524,6 +2532,7 @@
             <section id="trainingFullHandCompletion" class="training-full-hand-completion" hidden aria-labelledby="trainingFullHandCompletionTitle" aria-live="polite">
               <p class="training-eyebrow" data-i18n="Full Hand">Full Hand</p>
               <h3 id="trainingFullHandCompletionTitle" data-i18n="Hand Complete">Hand Complete</h3>
+              <div id="trainingFoldDecisions" hidden></div>
               <p id="trainingFullHandResult"></p>
               <section id="trainingOpponentReview" class="opponent-practice-review" hidden></section>
               <dl class="training-full-hand-summary">
@@ -2532,6 +2541,7 @@
               </dl>
               <div class="training-full-hand-completion-actions">
                 <button id="trainingReviewHand" class="ui-button ui-button--primary" type="button" aria-expanded="false" data-i18n="Review Hand">Review Hand</button>
+                <button id="trainingWatchRest" class="ui-button ui-button--quiet" type="button" data-i18n="Watch rest of hand" hidden>Watch rest of hand</button>
                 <button id="trainingFullHandNewHand" class="ui-button ui-button--secondary" type="button" data-i18n="New Hand">New Hand</button>
               </div>
               <div id="trainingHandReviewMount" class="hand-review-mount hand-review-mount--training"></div>
@@ -2626,7 +2636,7 @@
               </div>
               <section id="trainingOpponentSetup" class="opponent-practice-setup" hidden></section>
               <div id="trainingFullHandCompactControls" class="training-full-hand-compact-controls" hidden>
-                <div><span data-i18n="Live Hand">Live Hand</span><strong id="trainingFullHandCompactStatus"></strong><small><span data-i18n="Seed">Seed</span> <span id="trainingFullHandCompactSeed" class="poker-data-token">—</span></small></div>
+                <div><span data-i18n="Live Hand">Live Hand</span><strong id="trainingFullHandCompactStatus"></strong><small><span data-i18n="Seed">Seed</span> <span id="trainingFullHandCompactSeed" class="poker-data-token">-</span></small></div>
                 <div><button id="trainingFullHandLiveNewHand" class="ui-button ui-button--secondary" type="button" data-i18n="New Hand">New Hand</button><button id="trainingFullHandEndHand" class="ui-button ui-button-ghost ui-button--destructive" type="button" hidden data-i18n="Abort hand">Abort hand</button></div>
               </div>
               <div id="trainingVariedControls" class="training-mode-controls">
@@ -2664,7 +2674,7 @@
             <div class="panel-body">
               <label class="ui-field"><span data-i18n="Exact uint32 seed">Exact uint32 seed</span><input id="trainingSeedInput" class="control-input poker-data-token" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="0–4294967295"></label>
               <button id="trainingGenerateSeed" class="ui-button ui-button--secondary" type="button" data-i18n="Generate from seed">Generate from seed</button>
-              <dl class="training-metadata-grid"><div><dt data-i18n="Current seed">Current seed</dt><dd id="trainingCurrentSeed" class="poker-data-token">—</dd></div><div><dt data-i18n="Exercise ID">Exercise ID</dt><dd id="trainingExerciseId" class="poker-data-token">—</dd></div><div><dt data-i18n="Generation attempts">Generation attempts</dt><dd id="trainingGenerationAttempts" class="poker-data-token">—</dd></div><div><dt data-i18n="Trajectory actions">Trajectory actions</dt><dd id="trainingTrajectoryLength" class="poker-data-token">—</dd></div><div><dt data-i18n="Policy">Policy</dt><dd id="trainingGenerationPolicy" class="poker-data-token">—</dd></div></dl>
+              <dl class="training-metadata-grid"><div><dt data-i18n="Current seed">Current seed</dt><dd id="trainingCurrentSeed" class="poker-data-token">-</dd></div><div><dt data-i18n="Exercise ID">Exercise ID</dt><dd id="trainingExerciseId" class="poker-data-token">-</dd></div><div><dt data-i18n="Generation attempts">Generation attempts</dt><dd id="trainingGenerationAttempts" class="poker-data-token">-</dd></div><div><dt data-i18n="Trajectory actions">Trajectory actions</dt><dd id="trainingTrajectoryLength" class="poker-data-token">-</dd></div><div><dt data-i18n="Policy">Policy</dt><dd id="trainingGenerationPolicy" class="poker-data-token">-</dd></div></dl>
               <div class="training-seed-actions"><button id="trainingCopySeed" class="ui-button ui-button-ghost" type="button" disabled data-i18n="Copy seed">Copy seed</button><button id="trainingReplayBtn" class="ui-button ui-button-ghost" type="button" aria-keyshortcuts="R" disabled><span data-i18n="Replay seed">Replay seed</span> <kbd class="poker-data-token">R</kbd></button></div>
             </div>
           </details>
@@ -2705,7 +2715,7 @@
                         <button type="button" data-equity-randomize-target="turn" data-i18n="Random turn">Random turn</button>
                         <button type="button" data-equity-randomize-target="river" data-i18n="Random river">Random river</button>
                       </div>
-                      <details id="equityRandomizationDetails" class="surface-randomization-details" hidden><summary data-i18n="Randomization details">Randomization details</summary><div><span data-i18n="Seed">Seed</span><strong id="equityRecipeSeed" class="poker-data-token">&mdash;</strong></div><div><span data-i18n="Version">Version</span><strong id="equityRecipeVersion">&mdash;</strong></div><button id="equityCopyRecipe" class="ui-button ui-button--quiet" type="button" data-i18n="Copy recipe">Copy recipe</button></details>
+                      <details id="equityRandomizationDetails" class="surface-randomization-details" hidden><summary data-i18n="Randomization details">Randomization details</summary><div><span data-i18n="Seed">Seed</span><strong id="equityRecipeSeed" class="poker-data-token">-</strong></div><div><span data-i18n="Version">Version</span><strong id="equityRecipeVersion">-</strong></div><button id="equityCopyRecipe" class="ui-button ui-button--quiet" type="button" data-i18n="Copy recipe">Copy recipe</button></details>
                     </div>
                   </details>
                 </div>
@@ -2748,7 +2758,7 @@
             </div>
             <div class="equity-card-group">
               <div class="equity-card-group-head">
-                <div><h3 data-i18n="Board">Board</h3><span class="muted" data-i18n="0–5 cards, in deal order">0–5 cards, in deal order</span></div>
+                <div><h3 data-i18n="Board">Board</h3><span class="muted" data-i18n="0–5 cards, in deal order">0-5 cards, in deal order</span></div>
                 <div class="equity-card-group-actions">
                   <span id="equityBoardCount" class="equity-count">0 / 5</span>
                   <button class="ui-button ui-button-ghost" type="button" data-card-clear-command="clear_board" data-card-clear-surface="equity" data-i18n="Clear">Clear</button>
@@ -2806,8 +2816,8 @@
           </div>
           <details id="equityDetails" class="panel equity-details-panel">
             <summary><span data-i18n="Calculation evidence">Calculation evidence</span><span class="muted" data-i18n="Method, workload, provenance, and limitations">Method, workload, provenance, and limitations</span></summary>
-            <dl class="equity-detail-grid"><div><dt data-i18n="Requested">Requested</dt><dd id="equityDetailRequested">Auto</dd></div><div><dt data-i18n="Actual method">Actual method</dt><dd id="equityDetailActual">—</dd></div><div><dt data-i18n="Estimated combinations">Estimated combinations</dt><dd id="equityDetailEstimate">—</dd></div><div><dt data-i18n="Samples">Samples</dt><dd id="equityDetailSamples">—</dd></div><div><dt data-i18n="Seed">Seed</dt><dd id="equityDetailSeed">—</dd></div><div><dt data-i18n="Unknown hands">Unknown hands</dt><dd id="equityDetailUnknown">1</dd></div><div><dt data-i18n="Missing board cards">Missing board cards</dt><dd id="equityDetailBoard">5</dd></div><div><dt data-i18n="Execution">Execution</dt><dd id="equityDetailExecution">Ready</dd></div></dl>
-            <div class="equity-evidence-split"><span data-i18n="Split-pot trials">Split-pot trials</span><strong id="equitySplitSummary">—</strong></div>
+            <dl class="equity-detail-grid"><div><dt data-i18n="Requested">Requested</dt><dd id="equityDetailRequested">Auto</dd></div><div><dt data-i18n="Actual method">Actual method</dt><dd id="equityDetailActual">-</dd></div><div><dt data-i18n="Estimated combinations">Estimated combinations</dt><dd id="equityDetailEstimate">-</dd></div><div><dt data-i18n="Samples">Samples</dt><dd id="equityDetailSamples">-</dd></div><div><dt data-i18n="Seed">Seed</dt><dd id="equityDetailSeed">-</dd></div><div><dt data-i18n="Unknown hands">Unknown hands</dt><dd id="equityDetailUnknown">1</dd></div><div><dt data-i18n="Missing board cards">Missing board cards</dt><dd id="equityDetailBoard">5</dd></div><div><dt data-i18n="Execution">Execution</dt><dd id="equityDetailExecution">Ready</dd></div></dl>
+            <div class="equity-evidence-split"><span data-i18n="Split-pot trials">Split-pot trials</span><strong id="equitySplitSummary">-</strong></div>
             <div id="equityEvidenceFacts" class="equity-evidence-facts"></div>
           </details>
           <details class="equity-future-analysis" data-future-analysis-home hidden>
@@ -2826,7 +2836,7 @@
           <div>
             <p class="guide-kicker" data-i18n="Product guide">Product guide</p>
             <h2 id="guideTitle" data-i18n="Learn Riverline by workflow">Learn Riverline by workflow</h2>
-            <p data-i18n="Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and heuristic guidance—not solved-GTO truth.">Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and heuristic guidance—not solved-GTO truth.</p>
+            <p data-i18n="Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and heuristic guidance—not solved-GTO truth.">Riverline connects legal Hand play, decision analysis, practice, Equity, and your own intended strategy in one study workstation. It provides structured evidence and heuristic guidance-not solved-GTO truth.</p>
           </div>
           <aside class="guide-first-path" aria-labelledby="guideFirstPathTitle"><strong id="guideFirstPathTitle" data-i18n="A good first path">A good first path</strong><ol><li data-i18n="Play a legal Hand and review its decisions.">Play a legal Hand and review its decisions.</li><li data-i18n="Open Training to practise similar decisions.">Open Training to practise similar decisions.</li></ol></aside>
         </header>
@@ -3210,9 +3220,11 @@
                   <small class="audio-preview-label" data-i18n="Study feedback">Study feedback</small>
                   <div class="audio-preview-actions" role="group" aria-label="Study feedback" data-i18n-aria-label="Study feedback">
                     <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="study_positive" data-i18n="Positive">Positive</button>
-                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="study_neutral" data-i18n="Neutral">Neutral</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="study_neutral" data-i18n="Confirmation">Confirmation</button>
                     <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="study_corrective" data-i18n="Corrective">Corrective</button>
-                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="hint" data-i18n="Hint">Hint</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="hint" data-i18n="Reveal">Reveal</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="warning" data-i18n="Warning">Warning</button>
+                    <button class="ui-button ui-button--tertiary" type="button" data-audio-preview-cue="error" data-i18n="Error">Error</button>
                   </div>
                 </div>
                 </div>
@@ -3372,7 +3384,7 @@
             <h3 data-i18n="Create account">Create account</h3>
             <label for="accountSignUpEmail"><span data-i18n="Email">Email</span><input id="accountSignUpEmail" class="control-input" type="email" inputmode="email" autocomplete="email" dir="ltr" required></label>
             <label for="accountSignUpUsername"><span data-i18n="Username">Username</span><input id="accountSignUpUsername" class="control-input" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9][A-Za-z0-9_]{2,23}" autocomplete="username" autocapitalize="none" spellcheck="false" dir="ltr" aria-describedby="accountUsernameHelp" required></label>
-            <small id="accountUsernameHelp" data-i18n="3–24 lowercase letters, digits, or underscores; start with a letter or digit.">3–24 lowercase letters, digits, or underscores; start with a letter or digit.</small>
+            <small id="accountUsernameHelp" data-i18n="3–24 lowercase letters, digits, or underscores; start with a letter or digit.">3-24 lowercase letters, digits, or underscores; start with a letter or digit.</small>
             <label for="accountSignUpDisplayName"><span data-i18n="Display name">Display name</span><input id="accountSignUpDisplayName" class="control-input" type="text" maxlength="80" autocomplete="name" dir="auto" required></label>
             <label for="accountSignUpPassword"><span data-i18n="Password">Password</span><input id="accountSignUpPassword" class="control-input" type="password" minlength="6" autocomplete="new-password" required></label>
             <label for="accountSignUpPasswordConfirm"><span data-i18n="Confirm password">Confirm password</span><input id="accountSignUpPasswordConfirm" class="control-input" type="password" minlength="6" autocomplete="new-password" aria-describedby="accountAuthStatus" required></label>

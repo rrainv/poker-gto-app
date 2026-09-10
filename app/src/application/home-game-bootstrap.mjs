@@ -196,7 +196,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
   }
 
   function timestamp(value) {
-    if (!value) return '—';
+    if (!value) return '-';
     return new Intl.DateTimeFormat(browserWindow.document.documentElement.lang || 'en', {
       dateStyle: 'medium', timeStyle: 'short',
     }).format(new Date(value));
@@ -473,7 +473,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     input.min = '0';
     input.step = session.currency.minorUnit === 0 ? '1' : `0.${'0'.repeat(session.currency.minorUnit - 1)}1`;
     input.inputMode = 'decimal';
-    input.setAttribute('aria-label', `${translate(browserWindow, label)} — ${playerName(state, participant.playerId)}`);
+    input.setAttribute('aria-label', `${translate(browserWindow, label)}, ${playerName(state, participant.playerId)}`);
     const button = element(document, 'button', 'ui-button ui-button--quiet', translate(browserWindow, label));
     button.type = 'button';
     button.addEventListener('click', () => {
@@ -498,7 +498,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     card.dataset.result = result.netMinor > 0 ? 'positive' : result.netMinor < 0 ? 'negative' : 'even';
     const heading = element(document, 'header');
     const title = element(document, 'div');
-    title.append(element(document, 'span', 'home-game-seat', translate(browserWindow, 'Seat {seat}', { seat: participant.seatNumber || '—' })));
+    title.append(element(document, 'span', 'home-game-seat', translate(browserWindow, 'Seat {seat}', { seat: participant.seatNumber || '-' })));
     title.append(element(document, 'h3', null, playerName(state, participant.playerId)));
     const outcome = element(document, 'strong', 'home-game-result', resultText(result.netMinor, bundle.session.currency));
     heading.append(title, outcome);
@@ -509,7 +509,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
       ['Chips', latestChipCount(bundle, participant.playerId)],
     ]) {
       totals.append(element(document, 'dt', null, translate(browserWindow, key)));
-      totals.append(element(document, 'dd', null, value === null ? '—' : key === 'Chips' ? String(value) : money(value, bundle.session.currency)));
+      totals.append(element(document, 'dd', null, value === null ? '-' : key === 'Chips' ? String(value) : money(value, bundle.session.currency)));
     }
     card.append(heading, totals);
     if (bundle.session.status === HOME_GAME_SESSION_STATUS.ACTIVE && participant.status !== 'cashed_out') {
@@ -542,7 +542,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
       chipInput.min = '0';
       chipInput.step = '1';
       chipInput.inputMode = 'numeric';
-      chipInput.setAttribute('aria-label', `${translate(browserWindow, 'Chips')} — ${playerName(state, participant.playerId)}`);
+      chipInput.setAttribute('aria-label', `${translate(browserWindow, 'Chips')}, ${playerName(state, participant.playerId)}`);
       const chipButton = element(document, 'button', 'ui-button ui-button--quiet', translate(browserWindow, 'Record chips'));
       chipButton.type = 'button';
       chipButton.addEventListener('click', () => {

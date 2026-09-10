@@ -291,7 +291,7 @@ export const personalRangeRegionLabel = (id, language = 'en') => regionLabel(id,
 const ACTIONS = { en: { fold: 'Fold', call: 'Call', check: 'Check', raise: 'Raise', bet: 'Bet', all_in: 'All-in' },
   ru: { fold: 'Фолд', call: 'Колл', check: 'Чек', raise: 'Рейз', bet: 'Ставка', all_in: 'Олл-ин' },
   he: { fold: 'פולד', call: 'קול', check: 'צ׳ק', raise: 'רייז', bet: 'הימור', all_in: 'אול־אין' } };
-const actionLabel = (type, language) => ACTIONS[language][type] ?? '—';
+const actionLabel = (type, language) => ACTIONS[language][type] ?? '-';
 const say = (language, en, ru, he) => ({ en, ru, he })[language];
 const handToken = (hand) => `\u2066${hand}\u2069`;
 const handList = (hands, limit = 3) => hands.slice(0, limit).map(handToken).join(', ');
@@ -355,7 +355,7 @@ export function renderPersonalRangeLanguageFacts(facts, { language = 'en', withP
     const actionText = actionLabel(action, language);
     if (pattern.completePreferredCoverage) push(say(language,
       `${actionText} is your preferred response across ${pattern.consistentSelectedAction ? 'all' : 'most'} ${label}.`,
-      `${actionText} — ваше предпочтительное действие для ${pattern.consistentSelectedAction ? 'всех рук' : 'большинства рук'} региона «${label}».`,
+      `${actionText}, ваше предпочтительное действие для ${pattern.consistentSelectedAction ? 'всех рук' : 'большинства рук'} региона «${label}».`,
       `${actionText} היא התגובה המועדפת שלכם ב${pattern.consistentSelectedAction ? 'כל' : 'רוב'} הידיים באזור ${label}.`));
     else push(say(language,
       `The ${label} you specified share a ${actionText} preference (${handList(region.selectedSample.map((p) => p.handClass))}); the rest of this region remains unresolved.`,
@@ -467,8 +467,8 @@ export function renderPersonalRangeComparison(comparison, { language = 'en', lef
     const remainingDifferences = region.differences.filter((d) => !described.has(d.handClass));
     if (remainingDifferences.length) {
       const examples = remainingDifferences.slice(0, 3).map((d) => `\u2066${d.handClass}\u2069: ${actionLabel(d.leftAction ?? d.personalAction, language)} / ${source ? d.sourcePreferredActions.map((a) => actionLabel(a, language)).join(', ') : actionLabel(d.rightAction, language)}`).join('; ');
-      lines.push(language === 'ru' ? `${label}: ${leftName} / ${namedRight} — разные предпочтения в выбранных примерах: ${examples}. Это сравнение, а не оценка правильности.`
-        : language === 'he' ? `${label}: ${leftName} / ${namedRight} — העדפות שונות בדוגמאות שנבחרו: ${examples}. זו השוואה ללא קביעה מה נכון.`
+      lines.push(language === 'ru' ? `${label}: ${leftName} / ${namedRight}, разные предпочтения в выбранных примерах: ${examples}. Это сравнение, а не оценка правильности.`
+        : language === 'he' ? `${label}: ${leftName} / ${namedRight}, העדפות שונות בדוגמאות שנבחרו: ${examples}. זו השוואה ללא קביעה מה נכון.`
           : `${label}: ${leftName} / ${namedRight} differ in preferred actions in these selected examples: ${examples}. This is comparative, with no correctness assessment.`);
       remainingDifferences.forEach((d) => described.add(d.handClass));
     }

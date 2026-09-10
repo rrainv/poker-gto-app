@@ -19,6 +19,7 @@ import {
 import { representativeCardsForHandClass } from '../ui/representative-hand-cards.mjs';
 import { appendCardFaceContents } from './card-presentation.mjs';
 import { mountPersonalStrategyUnderstanding, renderPersonalMappingCoverage } from './personal-strategy-understanding-workspace.mjs';
+import { personalTeacherLearning } from './personal-teacher-learning.mjs';
 import { assertPersonalCoachRequestCurrent } from '../personal-strategy/coach.mjs';
 import { createPersonalStrategyScopeLifecycle } from './personal-strategy-scope-lifecycle.mjs';
 import {
@@ -272,6 +273,7 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   function clearPersonalStrategyPresentation() {
+    teacherLearning = null;
     understanding?.invalidate();
     calibrationState = null;
     answerPending = false;
@@ -367,7 +369,7 @@ function createController(root, application, initialWorkspace, activationStarted
     if (cell.action.dominantAction === 'call') return 'C';
     if (cell.action.dominantAction === 'raise') return 'R';
     if (cell.action.dominantAction === 'all_in') return 'A';
-    return '—';
+    return '-';
   }
 
   function renderMatrixGrid() {
@@ -534,18 +536,18 @@ function createController(root, application, initialWorkspace, activationStarted
       const action = neighbor.observedDominantAction?.type
         ? actionLabel(neighbor.observedDominantAction.type)
         : translated(neighbor.pointResolution === 'conflicting' ? 'Conflict' : 'Exact boundary');
-      item.textContent = `${neighbor.handClass} — ${action} · ${translated(neighbor.relationType.replaceAll('_', ' '))}`;
+      item.textContent = `${neighbor.handClass}, ${action} · ${translated(neighbor.relationType.replaceAll('_', ' '))}`;
       item.dir = 'ltr';
       return item;
     }));
     query('#calibrationInspectorNeighborsSection').hidden = cell.support.selectedNeighbors.length === 0;
 
     const direct = query('#calibrationInspectorDirect');
-    const visibleDirect = [...cell.evidence.activeDirect, ...cell.evidence.training].slice(0, 8);
+    const visibleDirect = [...cell.evidence.activeDirect, ...cell.evidence.training];
     direct.replaceChildren(...(visibleDirect.length
       ? visibleDirect.map((entry) => evidenceNode(entry))
       : [Object.assign(document.createElement('p'), { textContent: translated('No direct evidence for this hand.') })]));
-    const history = cell.evidence.directHistory.slice(0, 12);
+    const history = cell.evidence.directHistory;
     query('#calibrationInspectorHistory').hidden = history.length <= cell.evidence.activeDirect.length;
     query('#calibrationInspectorHistoryList').replaceChildren(...history.map((entry) => evidenceNode(entry, { history: true })));
 
@@ -1318,6 +1320,35 @@ function createController(root, application, initialWorkspace, activationStarted
     };
   }
 
+  let teacherLearning = null;
+  function renderTeacherLearning() {
+    let panel = query('#personalTeacherLearning');
+    if (!panel) { panel = document.createElement('section'); panel.id = 'personalTeacherLearning'; panel.className = 'study-block personal-teacher-learning'; panel.tabIndex = -1; panel.setAttribute('aria-live', 'polite'); query('#calibrationActiveQuestion').prepend(panel); }
+    panel.hidden = !teacherLearning;
+    query('#calibrationQuestionRegion').hidden = !!teacherLearning;
+    if (!teacherLearning) return;
+    query('#calibrationActiveQuestion').hidden = false;
+    query('#calibrationCompleteState').hidden = true;
+    const learned = teacherLearning;
+    panel.replaceChildren();
+    const line = text => { const p = document.createElement('p'); p.textContent = text; panel.append(p); };
+    const title = document.createElement('h3'); title.textContent = translated('What Riverline learned'); panel.append(title);
+    line(learned.precision === 'uncertain' ? translated('You are not sure about {hand}. No action was added.', { hand: learned.handClass })
+      : learned.precision === 'exact' ? translated('Your exact mix for {hand} is saved.', { hand: learned.handClass })
+        : translated('You prefer {action} with {hand} here. This does not mean 100%.', { action: actionLabel(learned.actionType), hand: learned.handClass }));
+    if (learned.mix) line(Object.entries(learned.mix).map(([action, frequency]) => `${actionLabel(action)} ${frequency}%`).join(' / '));
+    line(translated('This answer does not fill in nearby hands.'));
+    if (learned.directCount !== null) line(translated('{count} hand classes have direct answers in this context.', { count: learned.directCount }));
+    if (learned.family) {
+      line(`${translated(learned.family.labelKey)}: ${learned.family.directCount} / ${learned.family.totalClasses}. ${learned.family.probeHand ? translated('Still to explore: {hand}.', { hand: learned.family.probeHand }) : ''}`);
+      if (learned.family.conflictHands?.length) line(translated('Conflicting answers remain here: {hands}.', { hands: learned.family.conflictHands.join(', ') }));
+    }
+    if (learned.nextHand) line(`${translated('Next')}: ${learned.nextHand}. ${translated(calibrationState.questionExplanation?.messageKey ?? 'Reduces uncertainty here')}`);
+    const button = (key, handler, primary = false) => { const b = document.createElement('button'); b.type = 'button'; b.className = `ui-button ui-button--${primary ? 'primary' : 'quiet'}`; b.textContent = translated(key); b.addEventListener('click', handler); panel.append(b); return b; };
+    button('Continue', () => { teacherLearning = null; renderQuestion(); query(calibrationState.prompt ? '#calibrationQuestionRegion' : '#calibrationReturnToContext')?.focus(); }, true);
+    button(learned.precision === 'uncertain' ? 'Explore this hand' : 'Correct answer', () => openTeacherMatrix(learned.handClass));
+    button("What I've taught", async () => { await setPersonalStrategySubview('understanding'); const history = query('#personalVersionHistory'); history.open = true; history.querySelector('summary')?.focus(); });
+  }
   function renderQuestion() {
     if (lifecycle.signal.aborted || application.lifecycleScope?.signal.aborted) return;
     if (!calibrationState) return;
@@ -1351,6 +1382,7 @@ function createController(root, application, initialWorkspace, activationStarted
     const complete = prompt === null;
     query('#calibrationActiveQuestion').hidden = complete;
     query('#calibrationCompleteState').hidden = !complete;
+    renderTeacherLearning();
     if (!complete) {
       renderQuestionActions();
       query('#calibrationQuestionTitle').textContent = prompt.handClass;
@@ -1501,6 +1533,7 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   async function enterQuestions({ handClass = null, intent = null, focus = null, coachRequest = null } = {}) {
+    teacherLearning = null;
     if (!await validateAndSaveStack({ reloadPersonalStrategy: false })) return;
     const scope = currentMatrixScope();
     if (!scope) return;
@@ -1553,6 +1586,7 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   async function enterTeacherSession(preset, handClass = null) {
+    teacherLearning = null;
     if (preset === RANGE_TEACHER_SESSION_PRESETS.CONFLICTS) {
       const conflictHand = handClass ?? rangeTeacherView?.contradictionHotspots[0]?.handClass;
       if (conflictHand) await openTeacherMatrix(conflictHand);
@@ -1623,7 +1657,7 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   async function acceptAnswer({ actionType = null, mix = null } = {}, { retry = false } = {}) {
-    if (!calibrationState?.prompt || answerPending) return false;
+    if (!calibrationState?.prompt || answerPending || teacherLearning) return false;
     const scope = currentMatrixScope();
     if (!scope) return false;
     const lifecycleToken = beginPersonalStrategyMutation(scope);
@@ -1645,6 +1679,7 @@ function createController(root, application, initialWorkspace, activationStarted
       if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return false;
       calibrationState = nextState;
       failedAnswer = null;
+      teacherLearning = personalTeacherLearning({ handClass: command.state.prompt.handClass, ...command.input, progress: nextState.progressAssessment, nextHand: nextState.prompt?.handClass });
       query('#calibrationRetryAnswer').hidden = true;
       query('#calibrationMixRetry').hidden = true;
       syncSnapshot(nextState.snapshot);
@@ -1652,9 +1687,7 @@ function createController(root, application, initialWorkspace, activationStarted
       const renderStartedAt = now();
       renderQuestion();
       recordInteractionSample(startedAt, renderStartedAt);
-      if (!nextState.prompt) {
-        window.requestAnimationFrame(() => query('#calibrationReturnToContext')?.focus?.({ preventScroll: true }));
-      }
+      window.requestAnimationFrame(() => query('#personalTeacherLearning')?.focus?.({ preventScroll: true }));
       return true;
     } catch (error) {
       if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
@@ -1674,6 +1707,7 @@ function createController(root, application, initialWorkspace, activationStarted
 
   async function undoAnswer() {
     if (!calibrationState?.previousAnswer || answerPending) return;
+    teacherLearning = null;
     const scope = currentMatrixScope();
     if (!scope) return;
     const lifecycleToken = beginPersonalStrategyMutation(scope);
@@ -1743,20 +1777,22 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   async function skipQuestion(notSure = false) {
-    if (!calibrationState?.prompt || answerPending) return;
+    if (!calibrationState?.prompt || answerPending || teacherLearning) return;
     const scope = currentMatrixScope();
     if (!scope) return;
     const lifecycleToken = beginPersonalStrategyMutation(scope);
     setAnswerPending(true, lifecycleToken.generation);
+    const previousHand = calibrationState.prompt.handClass;
     try {
       const nextState = await application.skipCalibrationQuestion(calibrationState, { notSure });
       if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return;
       calibrationState = nextState;
       syncSnapshot(calibrationState.snapshot);
       educationVisible = false;
+      teacherLearning = notSure ? personalTeacherLearning({ handClass: previousHand, notSure: true, progress: nextState.progressAssessment }) : null;
       renderQuestion();
       if (calibrationState.prompt) {
-        window.requestAnimationFrame(() => query('#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
+        window.requestAnimationFrame(() => query(teacherLearning ? '#personalTeacherLearning' : '#calibrationQuestionRegion')?.focus?.({ preventScroll: true }));
       }
     } catch (error) {
       if (personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) {
@@ -1837,6 +1873,7 @@ function createController(root, application, initialWorkspace, activationStarted
       });
       if (!personalStrategyScopeLifecycle.isCurrent(lifecycleToken, scope)) return false;
       patchWorkspaceWithObservations([result.acceptedObservation], result.metadata);
+      teacherLearning = null;
       if (result.calibrationState) {
         calibrationState = result.calibrationState;
         syncSnapshot(calibrationState.snapshot);
@@ -1873,6 +1910,7 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   function adoptBuilderResult(result) {
+    teacherLearning = null;
     if (result.calibrationState) {
       calibrationState = result.calibrationState;
       workspace = Object.freeze({ ...workspace, snapshot: calibrationState.snapshot });
@@ -1967,6 +2005,7 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   async function askSelectedMatrixHandNext(handClass = matrixSelectedHand) {
+    teacherLearning = null;
     if (!calibrationState || !handClass || matrixWritePending) return;
     const scope = currentMatrixScope();
     if (!scope) return;
@@ -2120,6 +2159,7 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   function openMixEditor(target = 'question') {
+    if (target === 'question' && teacherLearning) return;
     const handClass = target === 'matrix' ? matrixSelectedHand
       : target === 'builder' ? selectedBuilderHands()[0]
         : calibrationState?.prompt?.handClass;
@@ -2228,6 +2268,7 @@ function createController(root, application, initialWorkspace, activationStarted
   }
 
   async function refreshWorkspace(preferredProfileId = selection?.profileId) {
+    teacherLearning = null;
     const previousScopeKey = currentMatrixScopeKey();
     workspace = await application.readWorkspace();
     const entry = selectedEntry(workspace, preferredProfileId) || workspace.profiles[0] || null;
@@ -2688,7 +2729,7 @@ function createController(root, application, initialWorkspace, activationStarted
     query('#calibrationMatrixMix').addEventListener('click', () => openMixEditor('matrix'));
     query('#calibrationMatrixAskNext').addEventListener('click', askSelectedMatrixHandNext);
     root.addEventListener('keydown', (event) => {
-      if (!calibrationState?.prompt || !query('#calibrationMixDialog').hidden) return;
+      if (!calibrationState?.prompt || teacherLearning || !query('#calibrationMixDialog').hidden) return;
       const target = event.target;
       if (!query('#calibrationQuestionView').contains(target)
         || target.matches('input, textarea, select, [contenteditable="true"]')

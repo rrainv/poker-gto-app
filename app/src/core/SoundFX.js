@@ -36,18 +36,22 @@ const SoundFX = (function() {
   // Procedural synthesis is intentionally limited to subtle Study/UI cues.
   const CUE_PROFILE = Object.freeze({
     click: Object.freeze({ gain: 0.055, attack: 0.002, duration: 0.045 }),
-    positive: Object.freeze({ gain: 0.15, attack: 0.006, duration: 0.145 }),
-    corrective: Object.freeze({ gain: 0.142, attack: 0.006, duration: 0.14 }),
-    neutral: Object.freeze({ gain: 0.126, attack: 0.006, duration: 0.125 }),
-    hint: Object.freeze({ gain: 0.112, attack: 0.005, duration: 0.115 })
+    positive: Object.freeze({ gain: 0.14, attack: 0.014, duration: 0.24 }),
+    corrective: Object.freeze({ gain: 0.13, attack: 0.012, duration: 0.22 }),
+    neutral: Object.freeze({ gain: 0.12, attack: 0.012, duration: 0.12 }),
+    hint: Object.freeze({ gain: 0.10, attack: 0.028, duration: 0.28 }),
+    warning: Object.freeze({ gain: 0.115, attack: 0.015, duration: 0.18 }),
+    error: Object.freeze({ gain: 0.12, attack: 0.012, duration: 0.26 })
   });
 
-  // A shared rounded dyad keeps Study meanings related; contour supplies semantics.
+  // Short contours and different registers distinguish meaning without fanfare.
   const STUDY_CUE_CONFIG = Object.freeze({
-    study_positive: Object.freeze({ profile: 'positive', startFrequency: 392, endFrequency: 440, supportStartFrequency: 523.25, supportEndFrequency: 587.33, bodyGainScale: 0.82, supportGainScale: 0.18 }),
-    study_corrective: Object.freeze({ profile: 'corrective', startFrequency: 392, endFrequency: 349.23, supportStartFrequency: 523.25, supportEndFrequency: 466.16, bodyGainScale: 0.82, supportGainScale: 0.18 }),
-    study_neutral: Object.freeze({ profile: 'neutral', startFrequency: 392, endFrequency: 392, supportStartFrequency: 523.25, supportEndFrequency: 523.25, bodyGainScale: 0.82, supportGainScale: 0.18 }),
-    hint: Object.freeze({ profile: 'hint', startFrequency: 440, endFrequency: 466.16, supportStartFrequency: 587.33, supportEndFrequency: 622.25, bodyGainScale: 0.82, supportGainScale: 0.18 })
+    study_positive: Object.freeze({ profile: 'positive', startFrequency: 392, endFrequency: 523.25, supportStartFrequency: 523.25, supportEndFrequency: 659.25, supportDelay: .07, bodyGainScale: .82, supportGainScale: .18 }),
+    study_corrective: Object.freeze({ profile: 'corrective', startFrequency: 330, endFrequency: 247, supportStartFrequency: 440, supportEndFrequency: 330, supportDelay: .055, bodyGainScale: .85, supportGainScale: .15 }),
+    study_neutral: Object.freeze({ profile: 'neutral', startFrequency: 349.23, endFrequency: 349.23, supportStartFrequency: 698.46, supportEndFrequency: 698.46, bodyGainScale: .92, supportGainScale: .08 }),
+    hint: Object.freeze({ profile: 'hint', startFrequency: 523.25, endFrequency: 587.33, supportStartFrequency: 783.99, supportEndFrequency: 880, supportDelay: .09, bodyGainScale: .8, supportGainScale: .2 }),
+    warning: Object.freeze({ profile: 'warning', startFrequency: 294, endFrequency: 294, supportStartFrequency: 294, supportEndFrequency: 294, supportDelay: .18, bodyGainScale: .7, supportGainScale: .7 }),
+    error: Object.freeze({ profile: 'error', startFrequency: 220, endFrequency: 165, supportStartFrequency: 233, supportEndFrequency: 175, type: 'triangle', bodyGainScale: .85, supportGainScale: .12 }),
   });
 
   const CUE_DEFINITIONS = Object.freeze({
@@ -61,10 +65,12 @@ const SoundFX = (function() {
     raise: Object.freeze({ category: CATEGORIES.POKER, family: 'chips', cooldown: 0.065, layers: 2, sourceType: 'recorded_foley', relativeWeight: 7, character: 'two recorded medium chip movements' }),
     all_in: Object.freeze({ category: CATEGORIES.POKER, family: 'chips_heavy', cooldown: 0.1, layers: 1, sourceType: 'recorded_foley', relativeWeight: 10, character: 'authored recorded all-in chip push' }),
     pot_collect: Object.freeze({ category: CATEGORIES.POKER, family: 'pot', cooldown: 0.11, layers: 1, sourceType: 'recorded_foley', relativeWeight: 8, character: 'recorded chip gathering and consolidation' }),
-    study_positive: Object.freeze({ category: CATEGORIES.STUDY, family: 'study_result', cooldown: 0.09, layers: 2, character: 'clear upward aligned-result acknowledgement' }),
-    study_neutral: Object.freeze({ category: CATEGORIES.STUDY, family: 'study_result', cooldown: 0.09, layers: 2, character: 'clear flat close-result acknowledgement' }),
+    study_positive: Object.freeze({ category: CATEGORIES.STUDY, family: 'study_result', cooldown: 0.09, layers: 2, character: 'authorized normative correct outcome' }),
+    study_neutral: Object.freeze({ category: CATEGORIES.STUDY, family: 'study_result', cooldown: 0.09, layers: 2, character: 'neutral confirmation, no correctness claim' }),
     study_corrective: Object.freeze({ category: CATEGORIES.STUDY, family: 'study_result', cooldown: 0.09, layers: 2, character: 'clear calm downward corrective acknowledgement' }),
     hint: Object.freeze({ category: CATEGORIES.STUDY, family: 'hint', cooldown: 0.1, layers: 2, character: 'light audible study disclosure' }),
+    warning: Object.freeze({ category: CATEGORIES.STUDY, family: 'warning', cooldown: .3, layers: 2, character: 'two soft attention taps' }),
+    error: Object.freeze({ category: CATEGORIES.STUDY, family: 'error', cooldown: .3, layers: 2, character: 'low descending interruption' }),
     click: Object.freeze({ category: CATEGORIES.STUDY, family: 'selection', cooldown: 0.045, layers: 1, character: 'neutral selection tick' })
   });
 
@@ -93,7 +99,10 @@ const SoundFX = (function() {
     action_all_in: 'all_in',
     pot_collected: 'pot_collect',
     pot_awarded: 'pot_collect',
-    reference_comparison_revealed: 'hint'
+    reference_comparison_revealed: 'hint',
+    action_completed: 'study_neutral',
+    warning_presented: 'warning',
+    error_presented: 'error'
   });
 
   const STUDY_RESULT_CUES = Object.freeze({
@@ -104,7 +113,7 @@ const SoundFX = (function() {
 
   const PREVIEW_CUES = new Set([
     'card_deal', 'check', 'fold', 'call', 'raise', 'all_in', 'pot_collect',
-    'study_positive', 'study_neutral', 'study_corrective', 'hint'
+    'study_positive', 'study_neutral', 'study_corrective', 'hint', 'warning', 'error'
   ]);
 
   function cueForExperienceEvent(event) {
@@ -426,14 +435,15 @@ const SoundFX = (function() {
         endFrequency: studyConfig.endFrequency,
         profile,
         gainScale: studyConfig.bodyGainScale,
-        type: 'sine'
+        type: studyConfig.type || 'sine'
       });
       renderTone(ctx, {
+        start: ctx.currentTime + (studyConfig.supportDelay || 0),
         frequency: studyConfig.supportStartFrequency,
         endFrequency: studyConfig.supportEndFrequency,
         profile,
         gainScale: studyConfig.supportGainScale,
-        type: 'sine'
+        type: studyConfig.type || 'sine'
       });
       return;
     }
@@ -511,7 +521,9 @@ const SoundFX = (function() {
       if (result.played) lastCueTimes.set(definition.family, ctx.currentTime);
       return result;
     }
-    if (!reserveVoices(ctx, definition.layers, 0.22)) {
+    const studyConfig = STUDY_CUE_CONFIG[cueName];
+    const tail = studyConfig ? CUE_PROFILE[studyConfig.profile].duration + (studyConfig.supportDelay || 0) + .012 : .06;
+    if (!reserveVoices(ctx, definition.layers, tail)) {
       return Object.freeze({ played: false, reason: 'polyphony' });
     }
     lastCueTimes.set(definition.family, ctx.currentTime);
@@ -734,14 +746,14 @@ const SoundFX = (function() {
       }[String(action).toLowerCase()] || 'check';
       return playCue(cueName);
     },
-    playCorrect: () => playCue('study_positive'),
-    playWrong: () => playCue('study_corrective'),
+    playCorrect: () => playCue('study_neutral'),
+    playWrong: () => playCue('study_neutral'),
     playHint: () => playCue('hint'),
     playClick: () => playCue('click'),
     play(name) {
       const cueName = {
-        success_chime: 'study_positive', correct: 'study_positive',
-        acceptable: 'study_neutral', error_buzz: 'study_corrective', wrong: 'study_corrective',
+        success_chime: 'study_neutral', correct: 'study_neutral',
+        acceptable: 'study_neutral', error_buzz: 'error', wrong: 'study_neutral',
         chip_clink: 'call', chip: 'call', card_slide: 'card_deal', card: 'card_deal'
       }[name] || 'click';
       return playCue(cueName);

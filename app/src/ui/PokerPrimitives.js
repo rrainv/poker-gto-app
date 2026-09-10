@@ -8,7 +8,7 @@
 
   const TABLE_AMOUNT_SIZES = Object.freeze({
     small: Object.freeze({ stackTransform: 'translate(-37 -10) scale(1)', textX: -8, textY: 4, surfaceX: -43, surfaceY: -13, surfaceWidth: 89, surfaceHeight: 25 }),
-    normal: Object.freeze({ stackTransform: 'translate(-50 -12) scale(1.2)', textX: -17, textY: 5, surfaceX: -58, surfaceY: -17, surfaceWidth: 128, surfaceHeight: 33 }),
+    normal: Object.freeze({ stackTransform: 'translate(-92 -12) scale(1.2)', textX: -58, textY: 7, surfaceX: -104, surfaceY: -19, surfaceWidth: 208, surfaceHeight: 38 }),
   });
 
   function escapeMarkup(value) {

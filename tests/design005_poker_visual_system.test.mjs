@@ -97,7 +97,7 @@ test('frequency bars expose exact values and a primary stacked representation', 
   assert.match(html, /data-action-kind="fold" style="width:14%"/);
   assert.match(logic, /container\.setAttribute\('aria-label', label\)/);
   assert.match(logic, /barEl\.style\.width = action\.value \+ '%'/);
-  assert.match(logic, /numEl\.textContent = action\.value \? action\.value \+ '%' : '—'/);
+  assert.match(logic, /numEl\.textContent = action\.value \? action\.value \+ '%' : '-'/);
 });
 
 test('recommendations distinguish decision, provenance, metadata, and warnings', () => {

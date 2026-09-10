@@ -117,7 +117,7 @@ test('Training presentation exposes only available canonical actions and honest 
 
   assert.deepEqual(model.legalActions.map((action) => action.type), ['fold', 'call', 'raise', 'all_in']);
   assert.equal(model.legalActions.find((action) => action.type === 'call').amountLabel, '6bb');
-  assert.equal(model.legalActions.find((action) => action.type === 'raise').boundsLabel, '12–96bb to');
+  assert.equal(model.legalActions.find((action) => action.type === 'raise').boundsLabel, '12-96bb to');
   assert.equal(model.legalActions.find((action) => action.type === 'all_in').amountLabel, '96bb');
   assert.equal(model.legalActions.some((action) => action.type === 'check'), false);
 });

@@ -20,6 +20,34 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
   const learnButton = document.querySelector('#workspaceLearnButton');
   let invoker = null;
   let suspendedNavigation = null;
+  let suspendedPresentation = null;
+
+  function suspendBackground() {
+    if (suspendedPresentation) return;
+    const background = [];
+    // The existing surface lives inside the shell; inert only its siblings.
+    for (let node = surface; node?.parentElement; node = node.parentElement) {
+      for (const sibling of node.parentElement.children) {
+        if (sibling !== node) { background.push([sibling, sibling.inert]); sibling.inert = true; }
+      }
+    }
+    suspendedPresentation = { background, x: browserWindow.scrollX, y: browserWindow.scrollY,
+      overflow: document.body.style.overflow, rootOverflow: root.style.overflow };
+    document.body.style.overflow = root.style.overflow = 'hidden';
+    surface.setAttribute('role', 'dialog');
+    surface.setAttribute('aria-modal', 'true');
+    surface.scrollTop = 0;
+  }
+
+  function restoreBackground() {
+    if (!suspendedPresentation) return;
+    const saved = suspendedPresentation; suspendedPresentation = null;
+    for (const [node, inert] of saved.background) node.inert = inert;
+    document.body.style.overflow = saved.overflow;
+    root.style.overflow = saved.rootOverflow;
+    surface.removeAttribute('role'); surface.removeAttribute('aria-modal');
+    browserWindow.scrollTo({ left: saved.x, top: saved.y, behavior: 'instant' });
+  }
 
   const findNavigationControl = (destination) => [...document.querySelectorAll('.mode-nav-item[data-navigation-id]')]
     .find((control) => control.dataset.navigationId === destination) ?? null;
@@ -46,6 +74,7 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
     surface.hidden = true;
     surface.setAttribute('aria-hidden', 'true');
     root.dataset.welcomeOrientation = 'inactive';
+    restoreBackground();
     if (restoreNavigation) restoreNavigationSelection();
     if (restoreFocus) invoker?.focus?.({ preventScroll: true });
     invoker = null;
@@ -62,6 +91,7 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
   });
 
   function open({ manual = false, invokingControl = null } = {}) {
+    if (session.getState().visible) return true;
     if (manual) browserWindow.RiverlineTutorials?.cancelForOverlay?.();
     invoker = invokingControl;
     session.open({ manual });
@@ -70,6 +100,7 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
     surface.dataset.entryKind = manual ? 'manual' : 'startup';
     root.dataset.welcomeOrientation = 'visible';
     clearNavigationSelection();
+    if (manual) suspendBackground();
     if (remember) {
       remember.checked = false;
       remember.closest('.welcome-preference')?.toggleAttribute('hidden', manual);
@@ -107,6 +138,17 @@ export function installWelcomeOrientation(browserWindow, options = {}) {
   }, { capture: true });
 
   surface.addEventListener('keydown', (event) => {
+    if (event.key === 'Tab' && session.getState().entryKind === 'manual') {
+      const controls = [...surface.querySelectorAll('button, input, a[href], [tabindex]')]
+        .filter(node => !node.disabled && !node.hidden && node.getClientRects().length > 0);
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && (document.activeElement === first || document.activeElement === surface)) {
+        event.preventDefault(); last?.focus({ preventScroll: true });
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first?.focus({ preventScroll: true });
+      }
+      return;
+    }
     if (event.key !== 'Escape') return;
     event.preventDefault();
     if (session.getState().entryKind === 'manual') {

@@ -49,6 +49,9 @@ const CUSTOM_PROPERTY_NAMES = Object.freeze([
   '--table-accent', '--table-accent-text', '--learning-surface', '--learning-text',
   '--analysis-primary-surface', '--evidence-surface', '--evidence-text',
   '--navigation-active-surface', '--navigation-active-text',
+  '--learning-secondary', '--learning-muted', '--support-text', '--analysis-support',
+  '--learning-support', '--accent-text', '--status-warning', '--status-danger', '--status-info',
+  '--status-positive', '--warning', '--danger', '--success',
 ]);
 
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
@@ -151,19 +154,19 @@ export function contrastRatio(first, second) {
 }
 
 function readableTextOn(background) {
-  const dark = '#07120d';
+  const dark = '#000000';
   const light = '#ffffff';
   return contrastRatio(dark, background) >= contrastRatio(light, background) ? dark : light;
 }
 
 function surfaceTone(background) {
-  return readableTextOn(background) === '#07120d' ? 'light' : 'dark';
+  return readableTextOn(background) === '#000000' ? 'light' : 'dark';
 }
 
 function ensureContrastAcross(color, backgrounds, target, tone) {
   const validBackgrounds = backgrounds.filter((background) => normalizeHexColor(background));
   if (validBackgrounds.every((background) => contrastRatio(color, background) >= target)) return color;
-  const destination = tone === 'light' ? '#07120d' : '#ffffff';
+  const destination = tone === 'light' ? '#000000' : '#ffffff';
   for (let step = 1; step <= 20; step += 1) {
     const candidate = mixHexColors(color, destination, step * 0.05);
     if (validBackgrounds.every((background) => contrastRatio(candidate, background) >= target)) return candidate;
@@ -172,8 +175,8 @@ function ensureContrastAcross(color, backgrounds, target, tone) {
 }
 
 function deriveTextPalette(palette) {
-  const backgrounds = [palette.canvas, palette.panel, palette.elevated, palette.interactive, palette.inset];
-  const dark = '#07120d';
+  const backgrounds = [palette.canvas, palette.shell, palette.panel, palette.elevated, palette.interactive, palette.hover, palette.inset];
+  const dark = '#000000';
   const light = '#ffffff';
   const minimumContrast = (color) => Math.min(...backgrounds.map((background) => contrastRatio(color, background)));
   const primary = minimumContrast(dark) >= minimumContrast(light) ? dark : light;
@@ -181,7 +184,7 @@ function deriveTextPalette(palette) {
     primary,
     secondary: ensureContrastAcross(mixHexColors(primary, palette.canvas, 0.18), backgrounds, 4.5, palette.tone),
     muted: ensureContrastAcross(mixHexColors(primary, palette.canvas, 0.34), backgrounds, 4.5, palette.tone),
-    disabled: ensureContrastAcross(mixHexColors(primary, palette.canvas, 0.48), backgrounds, 3, palette.tone),
+    disabled: ensureContrastAcross(mixHexColors(primary, palette.canvas, 0.48), backgrounds, 4.5, palette.tone),
   };
 }
 
@@ -218,6 +221,14 @@ function deriveSurfacePalette(surface) {
       borderStrong: colorAt(hsl.l + 28, hsl.s * 0.55),
       glow: colorAt(hsl.l + 9),
     };
+  // Keep derived surfaces on the input canvas's readable side of midtone.
+  // The user's canvas color is preserved; only semantic derivatives adjust.
+  const foreground = readableTextOn(surface);
+  for (const key of ['shell', 'panel', 'elevated', 'interactive', 'hover', 'inset']) {
+    for (let step = 0; contrastRatio(foreground, palette[key]) < 4.5 && step < 100; step++) {
+      palette[key] = mixHexColors(palette[key], tone === 'light' ? '#ffffff' : '#000000', .04);
+    }
+  }
   const borderBackgrounds = [palette.canvas, palette.panel, palette.interactive];
   return {
     ...palette,
@@ -457,6 +468,7 @@ export function deriveFeatureSurfaceRoles({ surface, accent, felt }) {
   const support = mixHexColors(accent, palette.tone === 'light' ? '#755427' : '#e7c991', .72);
   const tableAccent = ensureContrastAcross(support, [game, seat, hero, actor], 3, surfaceTone(game));
   const learning = mixHexColors(analysis.panel, support, .1);
+  const learningText = foreground(learning);
   const navigation = mixHexColors(surface, accent, .09);
   const feltText = foreground(felt);
   return Object.freeze({
@@ -473,7 +485,12 @@ export function deriveFeatureSurfaceRoles({ surface, accent, felt }) {
     '--table-felt-text': feltText,
     '--table-rail-start': support, '--table-rail-end': mixHexColors(support, surface, .62),
     '--table-accent': tableAccent, '--table-accent-text': foreground(tableAccent),
-    '--learning-surface': learning, '--learning-text': foreground(learning),
+    '--learning-surface': learning, '--learning-text': learningText,
+    '--learning-secondary': ensureContrastAcross(mixHexColors(learningText, learning, .18), [learning], 4.5, surfaceTone(learning)),
+    '--learning-muted': ensureContrastAcross(mixHexColors(learningText, learning, .3), [learning], 4.5, surfaceTone(learning)),
+    '--support-text': ensureContrastAcross(support, ['canvas', 'shell', 'panel', 'elevated', 'interactive', 'hover', 'inset'].map(key => palette[key]), 4.5, palette.tone),
+    '--analysis-support': ensureContrastAcross(support, [analysis.panel, analysis.elevated, analysis.inset], 4.5, analysis.tone),
+    '--learning-support': ensureContrastAcross(support, [learning], 4.5, surfaceTone(learning)),
   });
 }
 
@@ -481,6 +498,16 @@ function applyCustomProperties(root, theme, customization) {
   clearCustomProperties(root);
   const roles = deriveFeatureSurfaceRoles({ ...theme.preview, ...customization });
   Object.entries(roles).forEach(([name, value]) => setCustomProperty(root, name, value));
+  const paletteForText = deriveSurfacePalette(customization?.surface ?? theme.preview.surface);
+  const textBackgrounds = ['canvas', 'shell', 'panel', 'elevated', 'interactive', 'hover', 'inset'].map(key => paletteForText[key]);
+  textBackgrounds.push(roles['--analysis-surface'], roles['--analysis-surface-raised'], roles['--learning-surface'], roles['--evidence-surface']);
+  const semanticText = (color) => ensureContrastAcross(color, textBackgrounds, 4.5, paletteForText.tone);
+  setCustomProperty(root, '--accent-text', semanticText(customization?.accent ?? theme.preview.accent));
+  setCustomProperty(root, '--text-disabled', semanticText(paletteForText.tone === 'dark' ? '#c1c5c0' : '#35433b'));
+  for (const [name, color] of Object.entries({ warning: '#c49439', danger: '#d46b71', info: '#729fd8', positive: '#61b78f' })) {
+    setCustomProperty(root, `--status-${name}`, semanticText(color));
+  }
+  for (const [alias, name] of Object.entries({ warning: 'warning', danger: 'danger', success: 'positive' })) setCustomProperty(root, `--${alias}`, `var(--status-${name})`);
   if (!customization) return;
   const activeSurface = customization.surface ?? theme.preview.surface;
   const surfacePalette = deriveSurfacePalette(activeSurface);
@@ -506,14 +533,13 @@ function applyCustomProperties(root, theme, customization) {
     setCustomProperty(root, '--text-primary', text.primary);
     setCustomProperty(root, '--text-secondary', text.secondary);
     setCustomProperty(root, '--text-muted', text.muted);
-    setCustomProperty(root, '--text-disabled', text.disabled);
     setCustomProperty(root, '--text', text.primary);
     setCustomProperty(root, '--muted', text.muted);
     setCustomProperty(root, 'color-scheme', palette.tone);
   }
   if (customization.accent) {
     const hoverTarget = readableTextOn(customization.accent);
-    const hover = mixHexColors(customization.accent, hoverTarget, 0.14);
+    const hover = mixHexColors(customization.accent, hoverTarget === '#ffffff' ? '#000000' : '#ffffff', 0.14);
     const secondary = mixHexColors(customization.accent, hoverTarget, 0.44);
     const rgb = hexToRgb(customization.accent);
     setCustomProperty(root, '--accent-primary', customization.accent);
@@ -526,13 +552,36 @@ function applyCustomProperties(root, theme, customization) {
   }
   if (customization.accent || customization.surface) {
     const activeAccent = customization.accent ?? theme.preview.accent;
-    const focusBackgrounds = [surfacePalette.canvas, surfacePalette.panel, surfacePalette.interactive];
+    const focusBackgrounds = textBackgrounds;
     const focus = ensureContrastAcross(activeAccent, focusBackgrounds, 3, surfacePalette.tone);
     setCustomProperty(root, '--border-focus', focus);
     setCustomProperty(root, '--selection-background', `color-mix(in srgb, ${focus} 24%, transparent)`);
     setCustomProperty(root, '--selection-border', focus);
   }
   if (customization.felt) setCustomProperty(root, '--poker-felt-accent', customization.felt);
+}
+
+// Disposable first-paint derivative. The library remains the only persisted authority.
+function cacheInitialTheme(root, storage) {
+  const properties = Object.fromEntries(CUSTOM_PROPERTY_NAMES.map(name => [name, root.style?.getPropertyValue?.(name) ?? '']).filter(([, value]) => value));
+  writeStorage(storage, 'riverline_theme_prepaint', JSON.stringify({
+    version: 'beta-b-1', library: readStorage(storage, PRESENTATION_THEME_STORAGE_KEY),
+    theme: root.dataset.theme, themeId: root.dataset.presentationThemeId,
+    kind: root.dataset.themeKind, properties,
+  }));
+}
+
+export function applyInitialPresentationTheme(root, storage) {
+  const { library } = readThemeLibrary(storage, new Date().toISOString());
+  const themeMap = new Map(library.customThemes.map(theme => [theme.id, theme]));
+  const base = builtInBaseFor(library.activeThemeId, themeMap);
+  const customization = effectiveOverridesFor(library.activeThemeId, themeMap);
+  root.dataset.theme = base.id;
+  root.dataset.presentationThemeId = library.activeThemeId;
+  root.dataset.themeKind = themeMap.has(library.activeThemeId) ? 'custom' : 'built-in';
+  applyCustomProperties(root, base, Object.keys(customization).length ? customization : null);
+  cacheInitialTheme(root, storage);
+  delete root.dataset.themePending;
 }
 
 function makeThemeId(createId) {
@@ -742,6 +791,9 @@ export function createPresentationThemeController({
     if (render) renderThemeLibrary();
     syncControls();
     if (persist) persistLibrary();
+    // Cache only the durable selection, never an in-progress color preview.
+    if (!editSession) cacheInitialTheme(root, storage);
+    delete root.dataset.themePending;
     if (shouldAnnounce) announce();
     return library.activeThemeId;
   }

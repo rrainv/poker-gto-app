@@ -19,7 +19,7 @@ test('reload with Players=2 reaches the table on renderer readiness; input previ
     dispatchEvent(event) { for (const fn of events.get(event.type) ?? []) fn(event); } };
   const bridge = installPlaybookStateSourceBridge(window); bridge.setMode('hand');
   for (const id of ['handTableSize', 'handCollectionType', 'handAnteType', 'handStackBb', 'handHeroSeat', 'handButtonSeat']) {
-    controls.set(`#${id}`, { addEventListener(type, fn) { this[type] = fn; } });
+    controls.set(`#${id}`, { dataset: {}, selectedOptions: [{ dataset: { position: 'BTN' } }], addEventListener(type, fn) { this[type] = fn; } });
   }
   const context = vm.createContext({ window, CustomEvent: window.CustomEvent,
     $: selector => controls.get(selector), isHandMode: () => bridge.getMode() === 'hand',

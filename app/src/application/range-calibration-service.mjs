@@ -2856,7 +2856,20 @@ export function createRangeCalibrationApplication({
     return record;
   }
 
+  async function correctPersonalHandEvidence(scope, { recordId, expectedHeadIds, precision, preferredAction = null, distribution = null }) {
+    const history = await repository.loadApproachHistory(scope);
+    const original = history.exactNodeIntents.find(record => record.id === recordId);
+    if (!original || original.setupVersion !== history.profile.setupVersion || original.approachVersion !== history.mode.approachVersion) throw new RangeError('stale_personal_strategy_scope');
+    const record = createExactNodeIntent({ ...original, id: idFactory('exact-node-intent'), createdAt: timestampFrom(clock),
+      precision, preferredAction, distribution, supersedesEvidenceIds: expectedHeadIds,
+      provenance: { source: 'user_intent', surface: 'teach_through_a_hand', basis: 'explicit_exact_node_answer', assessment: 'none' } });
+    // Corrections remain available even if an upstream answer removed this combo's current reach.
+    await repository.appendExactNodeIntent(record, { expectedHeadIds });
+    return record;
+  }
+
   const application = {
+    correctPersonalHandEvidence,
     ownerRef: resolvedOwnerRef,
     lifecycleScope,
     repository,

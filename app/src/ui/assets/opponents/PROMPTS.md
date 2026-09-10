@@ -4,9 +4,19 @@
 concept is accepted; the painterly style is not final. Replace through the
 `opponentPortrait` asset seam with consistent graphic avatars readable at 24–48px.
 Current originals are 1254×1254 each, 20,501,764 bytes total (about 60 MiB decoded
-RGBA). Optimized replacement/derivative assets and cold-load browser decode
-measurements remain in `QA-BETA-DESIGN-CORRECTION-002`; do not treat async/lazy
-loading as proof that the reported lag is resolved. No art was regenerated here.
+RGBA). BETA-REPAIR-SWEEP-B retains these source bytes and delivers 128×128 seat
+WebPs plus 320×320 preview WebPs, 174,474 bytes across all twenty derivatives.
+Welcome requests only its three seat derivatives. Final-art replacement and
+subjective/performance acceptance remain in `QA-BETA-DESIGN-CORRECTION-002`;
+smaller transfers do not establish that every reported source of lag is resolved.
+
+Derivative recipe (September 10, 2026): Firefox canvas `drawImage` from each
+original at 128×128 / 320×320, high-quality smoothing, then `toBlob` with
+`image/webp` quality 0.82 / 0.86 respectively. This is build-time asset work with
+no runtime image-processing dependency. `opponentPortrait(id, 'seat'|'preview')`
+owns delivery selection. Budget checks require seat files below 10,000 bytes,
+preview files below 30,000 bytes, and the complete set below 250,000 bytes. No art was
+regenerated in this repair.
 
 BETA-DESIGN-REFRESH-001, September 7, 2026. Generated with the built-in imagegen tool, one separate call per portrait; no external reference images or third-party characters. All ten PNGs in this directory are temporary Beta source assets copied unchanged from generation output. They are fictional session appearance, never OpponentPolicy evidence. No API/CLI generation was used.
 

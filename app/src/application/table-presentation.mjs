@@ -34,15 +34,15 @@ const ACTION_ORDER = Object.freeze(['fold', 'check', 'call', 'bet', 'raise', 'al
 const AGGRESSIVE_ACTIONS = new Set(['bet', 'raise', 'all_in']);
 
 const ANCHORS_BY_PLAYER_COUNT = Object.freeze({
-  2: Object.freeze([[.50, .84], [.50, .20]]),
-  3: Object.freeze([[.50, .84], [.23, .27], [.77, .27]]),
-  4: Object.freeze([[.50, .84], [.14, .49], [.50, .17], [.86, .49]]),
-  5: Object.freeze([[.50, .84], [.15, .65], [.24, .25], [.76, .25], [.85, .65]]),
-  6: Object.freeze([[.50, .84], [.14, .68], [.20, .28], [.50, .17], [.80, .28], [.86, .68]]),
-  7: Object.freeze([[.50, .84], [.20, .72], [.10, .46], [.26, .23], [.74, .23], [.90, .46], [.80, .72]]),
-  8: Object.freeze([[.50, .84], [.20, .72], [.10, .49], [.24, .25], [.50, .16], [.76, .25], [.90, .49], [.80, .72]]),
-  9: Object.freeze([[.50, .84], [.23, .73], [.09, .57], [.13, .33], [.35, .18], [.65, .18], [.87, .33], [.91, .57], [.77, .73]]),
-  10: Object.freeze([[.50, .84], [.23, .73], [.09, .60], [.10, .37], [.28, .22], [.50, .16], [.72, .22], [.90, .37], [.91, .60], [.77, .73]]),
+  2: Object.freeze([[.50, .81], [.50, .19]]),
+  3: Object.freeze([[.50, .81], [.23, .27], [.77, .27]]),
+  4: Object.freeze([[.50, .81], [.14, .49], [.50, .19], [.86, .49]]),
+  5: Object.freeze([[.50, .81], [.15, .65], [.24, .25], [.76, .25], [.85, .65]]),
+  6: Object.freeze([[.50, .81], [.14, .68], [.20, .28], [.50, .19], [.80, .28], [.86, .68]]),
+  7: Object.freeze([[.50, .81], [.20, .72], [.10, .46], [.26, .23], [.74, .23], [.90, .46], [.80, .72]]),
+  8: Object.freeze([[.50, .81], [.20, .72], [.10, .49], [.24, .25], [.50, .19], [.76, .25], [.90, .49], [.80, .72]]),
+  9: Object.freeze([[.50, .81], [.23, .73], [.09, .57], [.13, .33], [.35, .18], [.65, .18], [.87, .33], [.91, .57], [.77, .73]]),
+  10: Object.freeze([[.50, .81], [.23, .73], [.09, .60], [.10, .37], [.28, .22], [.50, .19], [.72, .22], [.90, .37], [.91, .60], [.77, .73]]),
 });
 
 // Shared by canonical Hand, Scenario rendering and presentation audits.
@@ -53,7 +53,7 @@ export function tableSeatAnchors(playerCount) {
 
 const FAMILY_SPECIFICATIONS = Object.freeze({
   [TABLE_GEOMETRY_FAMILIES.HU]: Object.freeze({
-    tableBounds: Object.freeze([0.22, 0.25, 0.56, 0.50]),
+    tableBounds: Object.freeze([0.07, 0.20, 0.86, 0.60]),
     playerUnit: Object.freeze({ width: 150, height: 78 }),
     cardScale: 1.25,
     cardOverlap: 0.36,
@@ -62,7 +62,7 @@ const FAMILY_SPECIFICATIONS = Object.freeze({
     dealerFraction: 0.54,
   }),
   sparse_large: Object.freeze({
-    tableBounds: Object.freeze([0.09, 0.22, 0.82, 0.56]),
+    tableBounds: Object.freeze([0.06, 0.20, 0.88, 0.60]),
     playerUnit: Object.freeze({ width: 138, height: 74 }),
     cardScale: 1.15,
     cardOverlap: 0.22,
@@ -71,7 +71,7 @@ const FAMILY_SPECIFICATIONS = Object.freeze({
     dealerFraction: 0.54,
   }),
   sparse_five: Object.freeze({
-    tableBounds: Object.freeze([0.07, 0.21, 0.86, 0.57]),
+    tableBounds: Object.freeze([0.06, 0.20, 0.88, 0.60]),
     playerUnit: Object.freeze({ width: 122, height: 70 }),
     cardScale: 1,
     cardOverlap: 0.28,
@@ -80,7 +80,7 @@ const FAMILY_SPECIFICATIONS = Object.freeze({
     dealerFraction: 0.54,
   }),
   [TABLE_GEOMETRY_FAMILIES.SIX_MAX]: Object.freeze({
-    tableBounds: Object.freeze([0.06, 0.21, 0.88, 0.57]),
+    tableBounds: Object.freeze([0.05, 0.20, 0.90, 0.60]),
     playerUnit: Object.freeze({ width: 122, height: 70 }),
     cardScale: 1,
     cardOverlap: 0.24,
@@ -89,7 +89,7 @@ const FAMILY_SPECIFICATIONS = Object.freeze({
     dealerFraction: 0.54,
   }),
   [TABLE_GEOMETRY_FAMILIES.FULL_RING]: Object.freeze({
-    tableBounds: Object.freeze([0.05, 0.20, 0.90, 0.58]),
+    tableBounds: Object.freeze([0.05, 0.20, 0.90, 0.60]),
     playerUnit: Object.freeze({ width: 104, height: 62 }),
     cardScale: 0.88,
     cardOverlap: 0.14,

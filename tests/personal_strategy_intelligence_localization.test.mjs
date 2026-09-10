@@ -17,7 +17,9 @@ const context = { window: {} };
 vm.runInNewContext(localeSource, context);
 vm.runInNewContext(tutorialSource, context);
 vm.runInNewContext(productSource, context);
-const catalog = context.window.riverlineRangeCalibrationTranslations;
+const catalog = Object.fromEntries(['en', 'ru', 'he'].map(language => [language, {
+  ...context.window.riverlineProductTranslations[language], ...context.window.riverlineRangeCalibrationTranslations[language],
+}]));
 const template = html.slice(html.indexOf('<template id="rangeCalibrationTemplate">'))
   .split('</template>')[0];
 const keys = new Set([

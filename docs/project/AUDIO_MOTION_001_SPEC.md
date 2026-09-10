@@ -2,6 +2,10 @@
 
 Status: **COMPLETED / ACCEPTED IMPLEMENTATION CHECKPOINT** on August 24, 2026. Human QA accepts the overall system, materially improved physical poker foley, routing architecture, and ordinary-Training Study/UI versus visible physical poker-world semantics as sufficient to move on. This checkpoint does not claim subjective sound-design perfection; Study/UI and optional Check refinement remain tracked polish debt.
 
+September 10, 2026: `BETA-REPAIR-SWEEP-B` refines the existing renderer and Full
+Hand pacing. Automated/browser evidence is recorded in `QA_BACKLOG.md`;
+subjective listening, fatigue and presentation acceptance remain pending.
+
 ## Outcome
 
 Riverline has one bounded semantic presentation path for live Hand, Replay playback, Training Full Hand, post-hand Review selection, and study feedback:
@@ -60,15 +64,27 @@ It provides:
 - a 12-voice polyphony ceiling, per-family cooldowns, event deduplication, hidden-tab suppression, zero-volume silence, and graceful unavailable-audio behavior;
 - a bounded eight-event production poker queue with deterministic short per-cue separation, so an immediate next poker-world transition cannot synchronously mask the preceding action cue; the existing category/master/hidden/volume checks are evaluated at playback, and lifecycle release cancels queued work;
 - coherent recorded card placement/fold families; one restrained isolated table/knuckle Check; one-impact small chips; one shared medium-chip source for Bet and layered Raise; trimmed same-author all-in pushes; and one multi-impact pot-gathering recording;
-- clearly perceptible `study_positive`, `study_neutral`, `study_corrective`, and `hint` cues whose meaning is derived from canonical grading plus `StrategyClaimPolicy`, never raw StrategyResult probabilities;
-- direct Settings previews for Card, Check, Fold, Call, Raise, All-in, Pot, Positive, Neutral, Corrective, and Hint that invoke the exact production cue renderer and obey the matching category policy;
+- six distinct short Study/UI profiles: `study_neutral` (confirmation), `hint` (reveal), `study_positive` (authorized normative correct), `study_corrective` (authorized normative incorrect), `warning`, and `error`. Register, contour, envelope and pulse timing distinguish meaning without reward theater. Assessment meaning comes from accepted authority plus `StrategyClaimPolicy`, never raw StrategyResult probabilities;
+- direct Settings previews for Card, Check, Fold, Call, Raise, All-in, Pot, Positive, Confirmation, Corrective, Reveal, Warning and Error use the exact production renderer and matching category policy. An explicitly labeled preview is not a classification of a user's answer;
 - a mass-based action hierarchy at default 72% master volume: Call uses one small-chip contact, Bet uses one medium placement, Raise layers the same medium material, All-in uses authored stack-push recordings, and Pot uses chip gathering. Pitch is never the source of action hierarchy.
 
 Decoded buffers are cached by asset URL and never fetched or decoded repeatedly. Session/Replay user gestures may warm the bounded cache without producing sound. Loading is asynchronous and never gates poker state or UI presentation. Missing, undecodable, or unavailable assets resolve to silence; the rejected synthesized poker cue set is not a fallback.
 
 Study/UI feedback must register clearly at the normal default 72% master volume: restrained does not mean inaudible. Positive, Neutral, Corrective, and Hint form one coherent rounded tonal family with short envelopes and a limited frequency range. Their upward, flat, downward, and disclosure contours carry semantic distinction without casino reward, punitive error, arcade, or operating-system-notification character. Physical poker foley and abstract Study feedback intentionally remain separate audio languages.
 
-Hand completion has no success/failure sound of its own. Pot movement is neutral. Ordinary Varied/Focused Training is an abstract study surface: after canonical evaluation and presentation establish the authorized `optimal`, `acceptable`, or `mistake` comparison meaning, one `decision_submitted` study event resolves respectively to positive, neutral, or corrective feedback. It never emits physical foley merely because the answer label is a poker action. Unsupported claim semantics stay silent.
+Hand completion has no success/failure sound of its own. Pot movement is neutral.
+Ordinary Varied/Focused Training emits one `decision_submitted` study event.
+Heuristic and descriptive reference comparisons use neutral confirmation.
+Positive/corrective classification requires an accepted normative assessment and
+its permitted outcome; legacy `playCorrect`/`playWrong` calls without authority
+use neutral confirmation. Ordinary answers never emit physical foley merely
+because their labels are poker actions. Unsupported claim semantics stay silent.
+
+The existing CC0 Check recording keeps its original bytes. Its playback window
+now starts at 35 ms, lasts 145 ms and fades for 42 ms at gain 0.32, preserving
+more of the natural table contact and tail. Voice reservations include the full
+Study envelope and delayed support tones. Category, master, volume, lifecycle,
+cooldown and polyphony controls remain authoritative.
 
 Full Hand Training uses the visible table metaphor, so its canonical action transition emits physical Fold/Check/Call/Bet/Raise/All-in foley and does not stack an immediate study-result sound over it. Live Hand, normal Replay playback, visible card handling, chip movement, and pot movement keep their physical routing. Calibration and Matrix labels do not create poker-world audio.
 
@@ -86,6 +102,13 @@ At faster Replay pacing, low-value check/card-reveal cues may be suppressed. Pla
 Motion includes restrained card/street settling, fold retreat, actor/action/value emphasis, stack-to-contribution chip travel, contribution-to-pot convergence, pot-to-winner travel, neutral hand completion, and Review selection. Paths consume normalized TablePresentation seat, contribution, and pot anchors; they do not inspect DOM geometry or infer poker math. Poker geometry remains LTR under RTL UI.
 
 With `prefers-reduced-motion: reduce`, travel intents are inactive and instantaneous. Essential state still appears immediately. Sound preferences and motion preferences remain independent.
+
+Full Hand's state-driven presentation policy retains 850 ms bot preparation,
+480 ms fold/check settling, 650 ms call settling, 720/780 ms bet/raise settling,
+950 ms all-in/street settling and 1200 ms showdown settling. Chance preparation
+is 280 ms. These comprehension pauses also apply under reduced motion; only
+travel/emphasis animation is suppressed. Cancellation and invalidation fence
+late callbacks before another canonical step advances.
 
 ## Competitive reference decision
 

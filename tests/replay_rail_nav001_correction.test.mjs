@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { handSetupPositions } from '../app/src/application/table-presets.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -146,7 +147,7 @@ test('player-count validation preserves invalid input and blocks start instead o
       const controls = new Map(Object.entries({ handTableSize: raw, handCollectionType: collectionType,
         handStackBb: '100', handButtonSeat: '0', handHeroSeat: '0', handAnteType: 'none', handAnteBb: '0',
         handStartButton: '', handTableSizeError: '', handAccountingPreview: '',
-      }).map(([id, value]) => [`#${id}`, { value, attributes: {}, focus() {},
+      }).map(([id, value]) => [`#${id}`, { value, dataset: {}, attributes: {}, focus() {},
         setAttribute(key, next) { this.attributes[key] = next; } }]));
       const context = vm.createContext({
         $: id => controls.get(id), selectedValue: id => controls.get(id)?.value,
@@ -154,6 +155,7 @@ test('player-count validation preserves invalid input and blocks start instead o
         app: { handReview: { source: null } }, resetCanonicalHandDraft() {}, renderCanonicalHandWorkspace() {},
         callPlaybookStateBridge(method, ...args) {
           if (method === 'handSetupRulesDefinition') return handSetupRulesDefinition(...args);
+          if (method === 'handSetupPositions') return handSetupPositions(...args);
           if (method === 'getState') return controller.getState();
           if (method === 'initializeHand') { initializations++; return controller.initialize(...args); }
           throw new Error(`Unexpected bridge call: ${method}`);

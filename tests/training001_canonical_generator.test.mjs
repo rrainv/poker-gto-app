@@ -384,6 +384,7 @@ test('browser bridge exposes only canonical decision-practice and full-Hand life
   const bridge = installTrainingModeBridge(browserWindow, { controller });
   assert.equal(browserWindow.RiverlineTraining, bridge);
   const canonicalLifecycleMethods = [
+    'watchFullHandRest',
     'advanceFullHandOneEvent',
     'answer',
     'answerFullHand',

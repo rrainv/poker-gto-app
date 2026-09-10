@@ -178,11 +178,14 @@ export function createExactEnteredHandOutcomeFacts(input = {}) {
         : tiedForBest
           ? 'tie_out'
           : canonicalImprovement && comparisons.some((comparison) => comparison < 0)
-            ? 'structural_improvement_still_behind'
+            ? currentStandings[playerIndex] === 'behind' ? 'structural_improvement_still_behind' : 'structural_improvement_loses_lead'
             : 'non_catch_up';
       entriesByPlayer[playerIndex].push({
         card,
         classification,
+        handClassImproved: canonicalImprovement,
+        standingBefore: currentStandings[playerIndex],
+        standingAfter: strictlyAhead ? 'leading' : tiedForBest ? 'tied' : 'behind',
         resultCategory: nextRanks[playerIndex].category,
         resultTiebreakers: [...nextRanks[playerIndex].tiebreakers],
       });
@@ -214,6 +217,8 @@ export function createExactEnteredHandOutcomeFacts(input = {}) {
         structuralImprovementsStillBehind: outcomeFamily(entries.filter((entry) => (
           entry.classification === 'structural_improvement_still_behind'
         ))),
+        structuralImprovementsLosingLead: outcomeFamily(entries.filter(entry => entry.classification === 'structural_improvement_loses_lead')),
+        nextCardTransitions: entries,
         nonCatchUpCards: outcomeFamily(entries.filter((entry) => entry.classification === 'non_catch_up')),
       };
     }),

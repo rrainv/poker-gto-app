@@ -1,5 +1,147 @@
 # Riverline persistent QA backlog
 
+## BETA-REPAIR-SWEEP-B - September 10, 2026
+
+**IMPLEMENTED; HUMAN VISUAL/LISTENING ACCEPTANCE PENDING.** Bounded presentation,
+interaction, copy, delivery assets, sound and pacing repair. Frozen forest/jade
+direction and canonical poker/strategy/Training authorities are retained. Pass C
+has not begun. Existing QA IDs and accepted checkpoints keep their owners.
+
+- Startup applies a revision/library-validated prepaint derivative, with the
+  canonical theme owner as fallback. Unsaved previews never enter the startup
+  cache. Firefox observed the selected default, Daylight and saved custom theme
+  on first visible frames after reload and cache-disabled reload, plus remembered
+  Home startup and Welcome startup.
+- Custom theme derivation preserves user source colors, bounds dependent
+  surfaces and derives text, support, status and focus roles against actual
+  backgrounds. Follow-up CSS fixes cover raw-accent labels, selected runouts,
+  disabled controls, transparent Home context and tinted Equity warnings.
+  Firefox passed 280 settled rendered text/outline probes covering actual
+  Home/sidebar/Explain nodes and production-class Equity fixtures across
+  default, Daylight and six extreme/midtone custom surfaces. Text meets 4.5:1
+  and the selected runout outline meets 3:1 in that exercised set; this does not
+  claim an exhaustive WCAG audit of every product state.
+- Welcome has a framed three-line hero. Home merges redundant destination
+  panels, retains current truthful next-action/Review/Recent data, and flows its
+  main sections independently of the compact Destinations rail. No new Home
+  intelligence or Saved authority was introduced.
+- Hand uses balanced seat anchors, a bottom Hero, restrained actor/fold cues and
+  larger pot/name/position/stack/action typography. The nested table frame and
+  height-based width cap are removed. Measured outer-rail widths across
+  2/3/4/6/8/10 players are 824–862 px at 1920 and 519–543 px at 1366, under 5%
+  spread per viewport. Pot capsule geometry fits the larger amount typography.
+- Review gives the decision explanation 1126/736 px and the context rail
+  484/320 px at the two viewports. Its full board fits 284 px without overflow.
+  Context, navigation and Replay share stable column ownership; deeper study
+  stays with the explanation. Replay changes scroll only the internal history
+  (654/655 px content in 408/290 px viewports), with document scroll unchanged.
+- Explain title/subtitle and reasoning use consistent logical insets. Equity
+  roster growth uses available width, with six desktop players in one row and
+  aligned header/cards/mode/results zones. Known Hero plus unknown opponents and
+  calculated six-player results were exercised at both viewports. Weighted
+  input remains in its existing optional Advanced Equity surface.
+- Product formatting localizes Riverline to Риверлайн / ריברליין and removes
+  em/en dashes from translated prose before user-value interpolation. Direct
+  prose and unavailable markers were cleaned up without changing technical IDs.
+  Copy retains uncertainty, unavailable states and heuristic truth limitations.
+- Twenty WebP derivatives total 174,474 bytes; all original PNGs are preserved.
+  Welcome loads three small derivatives. Existing lazy seat/preview loading and
+  the portrait selection seam remain. This addresses delivery sizing from
+  AUD-11, not final-art replacement or every possible cause of browser lag.
+- Six Study meanings use distinct profiles with authority-gated normative
+  outcomes, explicit Settings previews, and preserved category/master controls.
+  Check retains its CC0 recording with a softer gain and longer natural tail.
+  Full Hand uses action/street-specific comprehension pauses. Firefox observed
+  five automatic opponents before Hero under normal and native reduced motion;
+  reduced motion suppressed travel and retained readable pauses.
+- Reproduction: `node tools/dev-web-server.mjs`, then
+  `tests/tooling/verify_beta_repair_sweep_b_firefox.mjs` and
+  `tests/tooling/verify_beta_repair_sweep_b_contrast_firefox.mjs` with Puppeteer
+  supplied by `RIVERLINE_PUPPETEER_MODULE`. Firefox 155.0.1, 100% zoom,
+  1920×1080 and 1366×768, disposable profiles. Welcome and Explain EN/RU/HE,
+  Home, table counts, five-card/multiple-decision Review, internal replay scroll,
+  2/3/4/6/10-player Equity and results, startup themes and live Training passed
+  the scripted matrix with no page errors. Settings category switches disabled
+  only their matching previews; Tab reached the expected next sound control
+  with a visible focus outline, and seven preview gestures ran without page
+  errors. These gestures are not listening acceptance. Screenshots were inspected for
+  representative desktop/laptop/RTL layouts. This is not human sign-off.
+- Validation closeout: focused tests and changed JS/MJS syntax passed;
+  `git diff --check` passed. Exact full gate
+  `node --test tests/*.test.js tests/*.test.mjs` passed: **2,545 tests, 2,545
+  passed, 0 failed, 0 skipped**, 296.5 seconds. The final rerun includes the
+  updated Training size-label expectation for the requested hyphen style.
+- Retained acceptance: subjective sound distinguishability/volume/fatigue,
+  Check feel, Full Hand pace, custom-theme visual preference and overall Beta
+  composition require product-owner review. Existing `QA-AUDIO-MOTION-001`,
+  `RET-AUDIO-001`, `QA-BETA-DESIGN-CORRECTION-002` and table/card Return IDs are
+  not silently closed. No solver suite was needed; poker-domain files are
+  unchanged. Pre-existing Pass A work and `.codex/config.toml` were preserved.
+
+## BETA-REPAIR-SWEEP-A — September 10, 2026
+
+**BOUNDED REPAIR IMPLEMENTED; EXACT FULL GATE AND FIREFOX CHECKS PASSED.** The prior audit
+and combined two-human QA are complete and supplied this ticket's evidence.
+This pass owns behavioral/semantic repairs only; B/C presentation and convenience
+items, unrelated QA IDs and release/provider acceptance remain with their owners.
+
+- Home/Explain shared root: card-preference selectors matched `<html>` and bound
+  settings handlers to all bubbling clicks. Restricting them to buttons stops
+  three preference events and downstream Home/Explain rebuilding on inert clicks.
+  Deliberate Home navigation owns document-top reset; routine rendering never scrolls.
+- Tutorial uses its existing capture-scroll/RAF owner without interpolated
+  spotlight geometry. Active-only mutation/resize observation handles hidden,
+  removed and moved targets and disposes on exit. Manual Learn reuses Welcome
+  as a fixed modal with background inertness, scroll lock and restored focus/scroll.
+- Analyze applies generated action/facing pairs after old-street reconciliation.
+  The validated deterministic recipe is unchanged. Required showdown private
+  drafts follow canonical reveal IDs regardless of Hero participation.
+- Explain's native disclosures now retain their mounted nodes; shared Escape
+  dismissal complements Enter/Space. Replay runtime labels have no static
+  translation key that can overwrite them after reparenting (AUD-07).
+- Advanced Equity shows the active exact/unknown/range input (AUD-08), clearing
+  stale results on edits. Exact entered-hand outcomes separately expose category
+  improvement and standing transitions; Ah6d/7h5s on 7dQhAd places remaining
+  sevens under "Hand improves — loses lead", not "still behind" or winning outs.
+- Strategy Truth intersects source claim ceilings and assessment permissions,
+  including legacy normative grade output and historical re-drill (AUD-12).
+  Heuristic semantics and production source registration remain unchanged.
+- Auth diagnosis: local ignored public configuration exists; the required local
+  Supabase SDK was missing. Restored pinned runtime dependencies without changing
+  credentials/configuration. Missing SDK and missing config now have distinct
+  notices with unavailable credential forms disabled. Real account sign-in/create
+  remains unverified; no safe test account credentials were supplied or invented.
+
+- Firefox 155.0.1 at 1920x1080 / 100%, plus 1366x768 for tutorial geometry:
+  startup/navigation, inert Home clicks with/without tutorial at top/partial scroll,
+  wheel/internal scroll, resize, target hide/removal, next/back and teardown passed.
+  Learn bounds, background lock and workspace/scroll/focus restoration passed;
+  final Learn and tutorial screenshots were inspected.
+- Mounted browser checks passed for 120 applied Analyze seeds across all streets;
+  all three Explain disclosures with click/Enter/Space/Escape; folded-Hero multiway
+  private draft then explicit reveal; live/completed/imported Review Replay with
+  reparenting, Previous/Next, route return and EN/RU/HE changes; exact Equity QA case;
+  and separate missing-SDK/config auth paths. No page errors. Reproduce with
+  `tests/tooling/verify_beta_repair_sweep_a_firefox.mjs`; report/screenshots:
+  `C:/Users/sjzns/AppData/Local/Temp/riverline-beta-repair-a-x05UlD/`.
+- Focused behavioral tests passed, including 3,456 deterministic complete Analyze
+  spots over 2-10 players, all streets and Keep masks, change-only requests, private
+  reveal blockers/partial drafts, mounted Advanced Equity active-input transitions,
+  independent Strategy Truth ceilings and unavailable-auth service behavior.
+  All 19 changed/new JS/MJS syntax checks and `git diff --check` passed.
+- Exact final command `node --test tests/*.test.js tests/*.test.mjs` passed:
+  **2540 passed / 0 failed / 0 skipped**, 289187.731ms, default concurrency.
+  The initial run exposed a missing ignored Electron test runtime and a stale
+  Replay assertion requiring the removed static translation key. Restored the
+  local runtime and replaced that assertion with runtime label behavior coverage.
+  Electron required execution outside the sandbox; the final exact gate passed
+  in that environment. No shared poker-domain math changed; no solver gate run.
+  Full log and exact 25-file manifest are in the browser artifact directory under
+  `tooling/full-node-final.log` and `tooling/changed-files.txt`.
+- Nothing staged or committed. The pre-existing `.codex/config.toml` modification
+  is untouched; ignored local auth configuration and tracked dependency manifests
+  are unchanged. This is bounded repair verification, not release acceptance.
+
 ## HAND-PREQA-001 - full-gate correction, September 9, 2026
 
 **EXACT FULL NODE GATE GREEN.** This continuation corrects the five reported

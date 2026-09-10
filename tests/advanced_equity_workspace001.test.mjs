@@ -83,3 +83,30 @@ test('Exploit range input cannot silently use the uniform unknown hand', async (
   assert.equal(captured.players[1].kind, 'range'); assert.equal(captured.players[1].sourceRole, 'explicit_opponent_model');
   assert.ok(f.root.textContent.includes(copy('error'))); f.view.dispose();
 });
+
+test('active input summary follows unknown, exact, weighted and partial drafts and invalidates old results', async () => {
+  const f = fixture(); await f.open();
+  const unknown = { ...source(), players: [source().players[0], { id: 'villain', cards: null }] };
+  f.setSource(unknown);
+  assert.ok(f.root.textContent.includes(copy('uniform')));
+  f.setSource(source());
+  assert.ok(!f.root.textContent.includes(copy('uniform')));
+  const modes = descendants(f.root).filter(node => node.tagName === 'select' && node.children.some(option => option.value === 'current'));
+  modes[1].value = 'range'; await modes[1].fire('change');
+  let active = descendants(f.root).filter(node => node.className === 'advanced-equity-active-input')[1];
+  assert.equal(active.textContent, copy('range'));
+  assert.equal(descendants(active).filter(node => node.className?.includes('advanced-mini-card')).length, 0);
+  const text = descendants(f.root).filter(node => node.tagName === 'textarea')[1]; text.value = 'AA:1'; await text.fire('input');
+  modes[1].value = 'current'; await modes[1].fire('change');
+  assert.equal(descendants(active).filter(node => node.className?.includes('advanced-mini-card')).length, 2);
+  f.setSource(unknown);
+  const mode = descendants(f.root).filter(node => node.tagName === 'select' && node.children.some(option => option.value === 'current'))[1];
+  mode.value = 'range'; await mode.fire('change');
+  assert.ok(!f.root.textContent.includes(copy('uniform')));
+  const weights = descendants(f.root).filter(node => node.tagName === 'textarea')[1]; weights.value = 'QcQd:1'; await weights.fire('input');
+  const partial = descendants(f.root).find(node => node.type === 'checkbox'); partial.checked = true; await partial.fire('change');
+  await f.find('button', copy('calculate')).fire('click'); assert.ok(f.root.textContent.includes(copy('partial')));
+  mode.value = 'current'; await mode.fire('change');
+  assert.ok(f.root.textContent.includes(copy('uniform'))); assert.ok(!f.root.textContent.includes(copy('partial')));
+  f.view.dispose();
+});

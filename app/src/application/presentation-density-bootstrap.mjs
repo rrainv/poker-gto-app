@@ -67,9 +67,9 @@ function initializePresentationPreferences() {
     storage: window.localStorage,
     eventTarget: window,
     fourColorToggle: document.querySelector('#fourColorDeckToggle'),
-    faceStyleButtons: document.querySelectorAll('[data-card-face-style]'),
-    backStyleButtons: document.querySelectorAll('[data-card-back-style]'),
-    rankStyleButtons: document.querySelectorAll('[data-card-rank-style]'),
+    faceStyleButtons: document.querySelectorAll('button[data-card-face-style]'),
+    backStyleButtons: document.querySelectorAll('button[data-card-back-style]'),
+    rankStyleButtons: document.querySelectorAll('button[data-card-rank-style]'),
   }).init();
 
   const layoutController = createPresentationLayoutController({

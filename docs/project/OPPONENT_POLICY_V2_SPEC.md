@@ -1,5 +1,22 @@
 # Opponent Policy v2 and actor information
 
+## Sweep C: per-seat Full Hand setup
+
+The idle Full Hand lineup is the primary configuration surface. Each non-Hero seat
+has independent fictional character and synthetic policy settings. Select a seat
+to see its portrait/name/subtitle, Behavior preset, description and collapsed
+parameters. Apply this policy to all opponents copies behavior only. Character
+changes never enter policy requests, assignment IDs or RNG seeds. The session-local
+lineup reconciles count/Hero changes and resets on owner changes; Saved Lineups is
+not implemented. Live cast edits share the appearance owner.
+
+Existing `automated-opponent-assignment/v1` owns frozen runtime assignments. Per-seat
+practice requests retain strict v1 contracts and independent seat-stream derivation.
+Study focus refers to the selected opponent's request and stays outside grading.
+Former all/BB controls remain internal compatibility for explicit study requests.
+Configured per-seat policies receive the existing configured high-stack automation
+budget. Human browser acceptance remains pending.
+
 September 6, 2026. Actor-safe foundation plus `OPPONENT-INTELLIGENCE-002` / policy-conditioned Training / opponent-review foundation: bounded implementation, human acceptance pending. This is the current contract; [Opponent Intelligence](capabilities/OPPONENT_INTELLIGENCE.md) preserves broader intent.
 
 ## Information and authority

@@ -1,5 +1,22 @@
 # Training Memory v1 specification
 
+## Sweep C: Hero participation ends at fold
+
+Full Hand status `hero_complete` is a learner boundary, distinct from canonical
+terminal. Multiway Hero fold records/evaluates the decision and pauses the existing
+progression. The summary exposes Hero actions, truth-gated comparison, optional
+explanation, Review later and Next Hand without waiting for Memory IO, opponent
+animation, cards or showdown. No result is invented. Statistics count answered
+Hero decisions immediately.
+
+Watch rest of hand resumes the same progression, cards, policies/seeds and replay
+prefix without extra Hero answers. Canonically terminal folds retain normal Review.
+Next Hand/reset invalidates stale presentation callbacks. Memory finish stays
+one-shot: leaving a Hero-complete pause stores its partial replay as the completed
+learner session; Watch Rest can finish with the actual terminal source instead.
+Completed-Hand Review is not forged for a nonterminal state. Storage versions stay
+intact. Human Firefox acceptance remains pending.
+
 Additive consumer: [Deep Review / Study Inbox v1](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md)
 now reads bounded due items and owner-checked sessions through `getSession`, joins
 completed Review decisions, and invokes existing Same/Similar/uncertainty routes.

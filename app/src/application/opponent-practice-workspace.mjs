@@ -43,7 +43,7 @@ export function createOpponentPracticeWorkspace(win) {
     if (mounted || !root) return;
     mounted = true;
     const field = (parent, key, element) => {
-      const label = node('label'); label.className = 'ui-field'; label.append(localized('span', key), element); parent.append(label);
+      const label = node('label'); label.className = 'ui-field'; label.append(localized('span', key), element); parent.append(label); return label;
     };
     const select = (id, options) => {
       const element = node('select'); element.id = id; element.className = 'control-select';
@@ -51,13 +51,13 @@ export function createOpponentPracticeWorkspace(win) {
       return element;
     };
     const preset = select('trainingOpponentPreset', [['calling-heavy', 'calling'], ['aggressive', 'aggressive'], ['tight-passive', 'tight'], ['custom', 'custom']]);
-    field(root, 'opponentChoice', preset);
+    const presetField = field(root, 'opponentChoice', preset);
     const description = node('p'); description.className = 'study-block study-block--assumption'; description.id = 'opponentPolicyDescription'; description.setAttribute('aria-live', 'polite'); root.append(description);
     const theme = select('trainingOpponentTheme', POLICY_STUDY_THEMES.map(key => [key, key]));
     field(root, 'studyFocus', theme);
     const question = node('p'); question.id = 'opponentStudyQuestion'; question.setAttribute('aria-live', 'polite');
     theme.addEventListener('change', updateDescription);
-    field(root, 'applyTo', select('trainingOpponentTarget', [['all_opponents', 'all'], ['BB', 'bb']]));
+    const targetField = field(root, 'applyTo', select('trainingOpponentTarget', [['all_opponents', 'all'], ['BB', 'bb']]));
     root.append(localized('p', 'compactTruth'));
     const advanced = node('details'); advanced.id = 'trainingOpponentAdvanced'; advanced.append(localized('summary', 'advanced'));
     advanced.className = 'study-disclosure'; bindDisclosureDismissal(advanced);
@@ -87,6 +87,13 @@ export function createOpponentPracticeWorkspace(win) {
       if (presets[preset.value]) keys.forEach(key => { byId(`opponent-${key}`).value = String(presets[preset.value][key]); });
       updateDescription();
     });
+    // Seat selection owns ordinary Full Hand behavior; retain legacy controls for explicit study requests.
+    presetField.hidden = true;
+    targetField.hidden = true;
+    description.hidden = true;
+    details.hidden = true;
+    comparison.hidden = true;
+    exactDescription.hidden = true;
     updateDescription();
   };
   const renderReview = snapshot => {
@@ -105,7 +112,7 @@ export function createOpponentPracticeWorkspace(win) {
     const evidence = node('details'); evidence.append(localized('summary', 'evidence'));
     const seedLine = node('p', `${copy('seed')}: `);
     const seedToken = node('bdi', String(snapshot.opponentPractice?.policySeed ?? 0)); seedToken.dir = 'ltr';
-    seedLine.append(seedToken); evidence.append(seedLine);
+    seedLine.append(seedToken); if (snapshot.opponentPractice) evidence.append(seedLine);
     const configurations = new Set();
     assignments.forEach(item => {
       const key = JSON.stringify(item.config);
@@ -131,12 +138,12 @@ export function createOpponentPracticeWorkspace(win) {
           ({ smallPriceCallPercent: 'small', largePriceCallPercent: 'large', freeAggressionPercent: 'free', facingRaisePercent: 'raise' })[influence.parameter], `${influence.value}%`);
         if (!facts.influences.length) detail.append(localized('p', 'noInfluences'));
         const inputs = node('details'); inputs.append(localized('summary', 'observed'));
-        line(inputs, 'position', facts.actor.position); line(inputs, 'board', info.board.join(' ') || '—');
+        line(inputs, 'position', facts.actor.position); line(inputs, 'board', info.board.join(' ') || '-');
         line(inputs, 'cards', info.ownCards?.join(' ') ?? copy('unknown'));
         line(inputs, 'pot', info.potMilliBb / 1000); line(inputs, 'price', info.legalActionSpec.call.commitMilliBb / 1000);
         line(inputs, 'players', info.players.map(player => `${player.seat} · ${player.position} · ${player.currentStackMilliBb / 1000} bb`).join(' / '));
         line(inputs, 'legal', ['fold', 'check', 'call', 'bet', 'raise', 'allIn'].filter(key => info.legalActionSpec[key]?.available)
-          .map(key => `${actionName(key)}${info.legalActionSpec[key].minToMilliBb != null ? ` ${info.legalActionSpec[key].minToMilliBb / 1000}–${info.legalActionSpec[key].maxToMilliBb / 1000} bb` : ''}`).join(' / '));
+          .map(key => `${actionName(key)}${info.legalActionSpec[key].minToMilliBb != null ? ` ${info.legalActionSpec[key].minToMilliBb / 1000}-${info.legalActionSpec[key].maxToMilliBb / 1000} bb` : ''}`).join(' / '));
         inputs.append(localized('h5', 'publicHistory'));
         for (const action of info.actionHistory) {
           const player = info.players.find(player => player.playerId === action.playerId);
@@ -177,11 +184,11 @@ export function createOpponentPracticeWorkspace(win) {
       return createOpponentPracticeRequest({ configuration: createSyntheticConfiguration(parameters()),
         policySeed: number('trainingOpponentSeed'), target: byId('trainingOpponentTarget').value, tableSize });
     },
-    readTrainingIntent({ tableSize }) {
+    readTrainingIntent({ tableSize, opponentPractice = null }) {
       mount();
       if (!byId('trainingOpponentSetup')) return null;
       return createPolicyTrainingIntent({ theme: byId('trainingOpponentTheme').value,
-        opponentPractice: createOpponentPracticeRequest({ configuration: createSyntheticConfiguration(parameters()),
+        opponentPractice: opponentPractice ?? createOpponentPracticeRequest({ configuration: createSyntheticConfiguration(parameters()),
           policySeed: number('trainingOpponentSeed'), target: byId('trainingOpponentTarget').value, tableSize }) });
     },
     renderReview,

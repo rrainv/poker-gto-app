@@ -7,6 +7,14 @@ ClaimPolicy applies that ceiling, and Truth with an explicit ceiling requires re
 permissions before exposing comparison to Personal/Training/Review. Historical
 evidence remains frozen; source acceptance does not accept an assessment policy.
 
+`BETA-REPAIR-SWEEP-A` preserves that ceiling through downstream Truth:
+correct/incorrect require source objective-correctness permission and the
+corresponding assessment permission; mistake additionally requires source
+mistake permission. Remediation requires an unsupported outcome, permitted
+mistake and assessment remediation permission. Recommendation retains its
+independent ClaimPolicy ceiling. Assessment, historical re-drill, legacy grade
+metadata and presentation cannot restore a denied claim. No source is activated.
+
 Status: implementation contract for `HEURISTIC-BASELINE-TRUTH-001` + `TRAINING-NORMATIVE-001`, September 5, 2026; human visual acceptance pending. No production Reference Pack or normative assessment policy is registered.
 
 This specification defines how Riverline interprets a strategy result. It does not decide poker actions, tune the heuristic, validate a reference dataset, or make Personal Strategy a production provider.

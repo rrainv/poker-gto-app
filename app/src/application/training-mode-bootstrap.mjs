@@ -113,6 +113,7 @@ export function installTrainingModeBridge(browserWindow, {
     answerFullHand(decisionId, actionInput) {
       return fullHandController.answer(decisionId, actionInput);
     },
+    watchFullHandRest() { return fullHandController.watchRest(); },
     advanceFullHandOneEvent() {
       return fullHandController.advanceOneAutomatedEvent();
     },

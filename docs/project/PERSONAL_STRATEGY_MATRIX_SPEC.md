@@ -1,5 +1,11 @@
 # Personal Strategy Matrix specification
 
+Sweep C removes silent 8/12-record truncation from selected-cell direct evidence
+and correction history. What I've taught provides searchable, paginated access
+across the active Approach, independently of Teacher's candidate subset. Existing
+Matrix correction and immutable lineage remain authoritative, including preserved
+conflict branches. Human browser acceptance remains pending.
+
 Status: implementation authority for `RANGE-CAL-002D`
 
 Last updated: August 18, 2026.

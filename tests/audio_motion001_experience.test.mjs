@@ -543,44 +543,38 @@ test('Check uses the isolated single-impact table knock in production and previe
   assert.equal(selected.production, true);
   assert.equal(excluded.production, false);
   assert.deepEqual(JSON.parse(JSON.stringify(selected.playback)), {
-    gainTrim: 0.42,
-    sourceOffsetMs: 43,
-    playDurationMs: 74,
-    fadeOutMs: 18,
+    gainTrim: 0.32,
+    sourceOffsetMs: 35,
+    playDurationMs: 145,
+    fadeOutMs: 42,
   });
   const preview = await harness.sound.previewCue('check');
   assert.equal(preview.sourceType, 'recorded_foley');
   assert.deepEqual(Array.from(preview.sampleIds), ['table-check-01']);
-  assert.equal(harness.sampleStarts[0].sourceOffset, 0.043);
-  assert.equal(harness.sampleStarts[0].duration, 0.074);
+  assert.equal(harness.sampleStarts[0].sourceOffset, 0.035);
+  assert.equal(harness.sampleStarts[0].duration, 0.145);
 });
 
-test('Study family is one rounded tonal language with an explicit audible hierarchy', async () => {
-  const cueNames = ['study_positive', 'study_corrective', 'study_neutral', 'hint'];
-  const peaks = [];
-  const durations = [];
+test('six Study meanings have distinct short contours, registers or rhythm', async () => {
+  const cueNames = ['study_positive', 'study_corrective', 'study_neutral', 'hint', 'warning', 'error'];
+  const configs = createAudioHarness().sound.getStudyCueConfig();
+  const signatures = new Set();
   for (const cueName of cueNames) {
     const harness = createAudioHarness();
-    const result = await harness.sound.previewCue(cueName);
-    assert.equal(result.cueName, cueName);
-    assert.equal(harness.envelopes.length, 2, `${cueName} retains the shared two-tone body`);
-    peaks.push(Math.max(...harness.envelopes.flatMap((envelope) => envelope.map((entry) => entry.value))));
-    durations.push(harness.envelopes[0].at(-1).time - harness.envelopes[0][0].time);
+    assert.equal((await harness.sound.previewCue(cueName)).cueName, cueName);
+    assert.equal(harness.envelopes.length, 2);
+    const peak = Math.max(...harness.envelopes.flatMap(e => e.map(v => v.value)));
+    assert.ok(peak >= .05 && peak <= .12, `${cueName} restrained but audible`);
+    const span = Math.max(...harness.envelopes.flatMap(e => e.map(v => v.time))) - harness.envelopes[0][0].time;
+    assert.ok(span >= .1 && span <= .5, `${cueName} stays brief`);
+    signatures.add(JSON.stringify(configs[cueName]));
   }
-  assert.ok(peaks[0] > peaks[1] && peaks[1] > peaks[2] && peaks[2] > peaks[3]);
-  assert.ok(peaks[3] >= 0.06, 'Hint is intentionally perceptible at the default 72% master volume');
-  assert.ok(durations[0] > durations[1] && durations[1] > durations[2] && durations[2] > durations[3]);
-
-  const config = createAudioHarness().sound.getStudyCueConfig();
-  assert.deepEqual(Array.from(Object.keys(config)), cueNames);
-  assert.equal(config.study_positive.endFrequency > config.study_positive.startFrequency, true);
-  assert.equal(config.study_neutral.endFrequency, config.study_neutral.startFrequency);
-  assert.equal(config.study_corrective.endFrequency < config.study_corrective.startFrequency, true);
-  assert.equal(config.hint.endFrequency > config.hint.startFrequency, true);
-  for (const cueName of cueNames) {
-    assert.equal(config[cueName].bodyGainScale, 0.82);
-    assert.equal(config[cueName].supportGainScale, 0.18);
-  }
+  assert.equal(signatures.size, 6);
+  assert.ok(configs.study_positive.endFrequency > configs.study_positive.startFrequency);
+  assert.equal(configs.study_neutral.endFrequency, configs.study_neutral.startFrequency);
+  assert.ok(configs.study_corrective.endFrequency < configs.study_corrective.startFrequency);
+  assert.ok(configs.warning.supportDelay >= .15);
+  assert.equal(configs.error.type, 'triangle');
 });
 
 test('prepared Training feedback schedules its Study cue before the returned promise yields', async () => {
@@ -591,7 +585,7 @@ test('prepared Training feedback schedules its Study cue before the returned pro
   const scheduled = harness.sound.playCorrect();
   assert.equal(harness.envelopes.length, before + 2,
     'a running context schedules both Study oscillators synchronously');
-  assert.equal((await scheduled).cueName, 'study_positive');
+  assert.equal((await scheduled).cueName, 'study_neutral');
 });
 
 test('every poker cue resolves only to physical sample families with mass-based layering', () => {
@@ -916,9 +910,7 @@ test('Settings preview invokes the exact production cue renderer and respects Po
   assert.equal((await preview.sound.previewCue('hint')).cueName, 'hint');
 
   for (const [cueName, productionMethod] of [
-    ['study_positive', 'playCorrect'],
     ['study_neutral', 'playTrainingResult'],
-    ['study_corrective', 'playWrong'],
     ['hint', 'playHint'],
   ]) {
     const studyPreview = createAudioHarness();
@@ -928,7 +920,7 @@ test('Settings preview invokes the exact production cue renderer and respects Po
     assert.deepEqual(studyPreview.envelopes, studyProduction.envelopes, `${cueName} preview uses production rendering`);
     assert.equal(studyPreview.sampleStarts.length, 0);
   }
-  assert.equal((htmlSource.match(/data-audio-preview-cue=/g) || []).length, 11);
+  assert.equal((htmlSource.match(/data-audio-preview-cue=/g) || []).length, 13);
   assert.match(soundSource, /button\.onclick = \(\) => authority\.previewCue\(button\.dataset\.audioPreviewCue\)/);
 });
 

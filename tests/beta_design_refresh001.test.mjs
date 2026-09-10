@@ -33,6 +33,8 @@ class Element {
     if (selector === 'details[open]') return this.tagName === 'details' && this.open;
     if (selector === '[data-opponent-copy]') return !!this.dataset.opponentCopy;
     if (selector === '[data-display-player]') return !!this.dataset.displayPlayer;
+    const data = selector.match(/^\[data-([a-z-]+)(?:="([^"]*)")?\]$/);
+    if (data) { const key = data[1].replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()); return Object.hasOwn(this.dataset, key) && (data[2] === undefined || this.dataset[key] === data[2]); }
     return selector.startsWith('.') ? this.className?.split(' ').includes(selector.slice(1))
       : selector.startsWith('#') ? this.id === selector.slice(1) : this.tagName === selector;
   }
@@ -61,15 +63,32 @@ test('idle Full Hand preview reacts to setup, hides outside Full Hand, and retai
     const config = { mode: 'full_hand', playerCount: 8, heroPosition: 'BTN', stack: 40, assistance: 'Guided' };
     view.update(config);
     assert.equal(root.hidden, false); assert.equal(root.querySelectorAll('li').length, 8);
-    assert.equal(root.querySelectorAll('img').length, 7);
+    assert.equal(root.querySelector('ul').querySelectorAll('img').length, 7);
+    assert.equal(root.querySelectorAll('img').length, 8, 'Selected opponent also has a preview portrait');
     assert.match(root.textContent, /Hero BTN · 40 bb/);
-    assert.match(root.textContent, /Calling-heavy assumption/);
+    assert.equal(root.querySelector('ul').querySelectorAll('button').length, 7);
     const roster = root.querySelector('ul'); view.update(config); assert.equal(root.querySelector('ul'), roster);
     view.update({ ...config, playerCount: 2, stack: 100 });
     assert.equal(root.querySelectorAll('li').length, 2); assert.match(root.textContent, /100 bb/);
     view.update({ ...config, mode: 'focused' }); assert.equal(root.hidden, true);
     assert.equal(root.querySelectorAll('.riverline-card').length, 0);
   }
+});
+
+test('lineup seat controls retain independent policy, character and current Custom values without rebuilding the roster', async () => {
+  const f = documentFixture(), root = f.root('trainingLineupPreview'); f.root('trainingSetupPanel');
+  const view = installTrainingLineupPreview(f.win);
+  view.update({ mode: 'full_hand', playerCount: 6, heroPosition: 'BTN', stack: 100, assistance: 'Guided' });
+  const roster = root.querySelector('ul');
+  await roster.querySelectorAll('button')[1].fire('click');
+  const selected = view.selectedRequest(42).target, before = view.requests(42);
+  const character = root.querySelector('[data-lineup-character]'); character.value = 'cleo'; await character.fire('change');
+  assert.deepEqual(view.requests(42), before);
+  const policy = root.querySelector('[data-lineup-policy]'); policy.value = 'aggressive'; await policy.fire('change');
+  policy.value = 'custom'; await policy.fire('change');
+  assert.equal(view.selectedRequest(42).configuration.parameters.freeAggressionPercent, 65);
+  assert.equal(view.requests(42).find(entry => entry.request.target !== selected).request.configuration.parameters.freeAggressionPercent, 15);
+  assert.equal(root.querySelector('ul'), roster);
 });
 
 test('read-only Personal coverage map counts evidence states without assigning unknown frequencies', () => {
@@ -240,8 +259,8 @@ test('every cast identity resolves to original packaged portrait art and a local
   const portraits = OPPONENT_IDENTITIES.map(opponentPortrait);
   assert.equal(new Set(portraits).size, 10);
   for (const url of portraits) {
-    const png = fs.readFileSync(new URL(url));
-    assert.equal(png.subarray(1, 4).toString(), 'PNG');
+    const webp = fs.readFileSync(new URL(url));
+    assert.equal(webp.subarray(8, 12).toString(), 'WEBP');
   }
   for (const language of ['en', 'ru', 'he']) {
     const f = documentFixture(language), root = f.root();

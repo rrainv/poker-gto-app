@@ -80,6 +80,18 @@ function accountFixture({ storage = new MemoryStorage(), database = createMemory
   return { storage, database, repository, account: createAccountIdentityService({ repository }) };
 }
 
+test('missing configuration and a missing client report distinct unavailable states without submitting credentials', async () => {
+  for (const noticeCode of ['provider_not_configured', 'provider_client_unavailable']) {
+    const { account } = accountFixture();
+    const auth = createAuthenticationService({ accountIdentity: account, providerUnavailableCode: noticeCode });
+    assert.equal((await auth.initialize()).noticeCode, noticeCode);
+    assert.equal((await auth.signInWithPassword({ email: 'test@example.invalid', password: 'test-only' })).noticeCode, noticeCode);
+    assert.equal((await auth.signUpWithPassword({ email: 'test@example.invalid', password: 'test-only' })).noticeCode, noticeCode);
+    assert.equal(auth.getState().status, 'guest');
+    assert.equal((await auth.refreshSession()).noticeCode, noticeCode);
+  }
+});
+
 async function seedPersonalStrategy(database, fixture) {
   const repository = createPersonalStrategyRepository({
     database,

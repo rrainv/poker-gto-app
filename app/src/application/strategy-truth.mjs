@@ -75,10 +75,11 @@ function project(result, policy, criterion, chosenAction, context, historical = 
         state = TRUTH_STATES.NORMATIVE;
         outcome = result.actions.some((a) => assessmentActionKey(a.action) === assessmentActionKey(chosenAction)
           && a.probability > 0) ? 'supported' : 'unsupported';
-        claims.correct = criterion.claimPermissions.supported;
-        claims.incorrect = claims.mistake = criterion.claimPermissions.unsupported;
+        claims.correct = policy.claims.objective_correctness === true && criterion.claimPermissions.supported;
+        claims.incorrect = policy.claims.objective_correctness === true && criterion.claimPermissions.unsupported;
+        claims.mistake = claims.incorrect && policy.claims.mistake === true;
         // An individual action-set outcome is not frequency calibration.
-        claims.remediation = outcome === 'unsupported' && claims.incorrect && criterion.claimPermissions.remediation;
+        claims.remediation = outcome === 'unsupported' && claims.mistake && criterion.claimPermissions.remediation;
       }
     }
   } else if (reference) reasons.push('accepted_assessment_policy_unavailable');

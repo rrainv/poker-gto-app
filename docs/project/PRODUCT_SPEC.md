@@ -10,7 +10,7 @@ Riverline is a serious personal poker learning workstation. Premium means consis
 
 ## 2. Current product surfaces
 
-- **Home:** account/Guest-aware study hub, Continue, Saved/Recent/Review/Mistakes, Personal Strategy facts, and quick starts.
+- **Home:** account/Guest-aware study context, next action, Review, Recent, and a compact Destinations rail. Existing loaded evidence supplies the content; the dashboard adds no intelligence authority.
 - **Hand:** canonical legal full-hand play, Table Presence, action dock, timeline, completion, and Replay.
 - **Review:** shared decision-by-decision Hand and Full Hand Training review over canonical history.
 - **Analyze:** Scenario or Hand decision analysis, explanation, evidence, provenance, Matrix, ranges, and structural board/blocker facts.
@@ -23,6 +23,23 @@ Riverline is a serious personal poker learning workstation. Premium means consis
 - **Settings:** four focused categories—Appearance, Audio & Motion, Language & Help, and Account & Data—over the existing layout, card, theme, audio, localization, tutorial, and account/profile authorities.
 
 ## 3. State-aware projection model
+
+September 10 presentation refinement (`BETA-REPAIR-SWEEP-B`, human acceptance
+pending): Home's main sections flow independently of its Destinations rail.
+Hand keeps a stable major table footprint across 2–10 seats, with adaptive seat
+internals and a bottom-anchored Hero. Review gives the decision explanation most
+of the width, with context, navigation and Replay in one independently flowing
+secondary column; narrow layouts stack. Equity grows the player gallery across
+the workspace before adding tall rows. Known/unknown tiles share header, cards,
+mode/edit and result zones. These are presentation projections over existing
+owners, not new poker, strategy, Training or persistence contracts.
+
+The persisted theme is resolved before meaningful visible content. An optional
+disposable prepaint cache carries only a derivative of the canonical theme
+library, with revision/library matching and canonical fallback. Custom colors
+retain their source values while foregrounds and semantic surfaces are adjusted
+for their actual text/background roles. Portrait delivery uses optimized seat
+and preview WebPs; original temporary Beta source art remains replaceable.
 
 One canonical Hand/state may support different ephemeral compositions:
 
@@ -55,6 +72,12 @@ Replay initialization carries these facts without adding voluntary actions.
 Public-card randomization follows legal pending chance state regardless of Hero
 participation. It edits only the pending draft; Deal commits it. Historical Replay
 remains read-only and a committed public street cannot be rerandomized.
+
+At exact showdown, required unknown private hands also support draft-only
+randomization, independent of Hero being active or folded. Canonical required
+reveal IDs own eligibility; known private/board/dead cards and partial drafts
+remain blockers. Reveal commits; randomization never rewrites committed cards
+or fills unrelated folded players.
 
 ## 4. Visual system
 

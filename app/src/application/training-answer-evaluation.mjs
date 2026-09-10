@@ -102,7 +102,9 @@ export function evaluateTrainingAnswer({
       type: strategyType(best),
       label: best?.label ?? null,
     },
-    grade: truth.state === 'normative_assessment' ? truth.outcome === 'supported' ? 'optimal' : 'mistake' : grade,
+    grade: truth.state === 'normative_assessment'
+      ? accepted ? 'optimal' : truth.outcome === 'unsupported' && truth.claims.mistake ? 'mistake' : null
+      : grade,
     accepted,
     scoreDelta: accepted ? 1 : 0,
     explanationData: {

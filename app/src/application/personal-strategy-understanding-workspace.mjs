@@ -4,6 +4,7 @@ import { createPersonalRangeLanguageFacts, renderPersonalRangeLanguageFacts,
 import { choosePersonalTeachingNext, comparePersonalStrategyWithSource } from './personal-strategy-intelligence.mjs';
 import { createPersonalCoach, createPersonalCoachRequest, renderPersonalCoachLesson } from '../personal-strategy/coach.mjs';
 import { mountPersonalStrategyHandWorkspace } from './personal-strategy-hand-workspace.mjs';
+import { mountPersonalEvidenceReview } from './personal-evidence-review.mjs';
 import { PERSONAL_STRATEGY_MATRIX_PRECISIONS } from '../personal-strategy/matrix-projection.mjs';
 
 
@@ -339,10 +340,14 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
       const history = await application.getApproachHistory(getScope()); assertCurrent(token);
       const content = element('div');
       content.append(element('p', `${t('Approach version')}: ${history.mode.approachVersion} · ${t('Evidence revision')}: ${history.revision}`));
+      const answers = element('section'); content.append(answers);
+      mountPersonalEvidenceReview({ root: answers, history, application, scope: getScope(), t,
+        assertCurrent: () => assertCurrent(token), onSaved: async () => { await onRefresh(); await loadHistory(); q('personalVersionHistory').querySelector('summary')?.focus(); } });
       const superseded = new Set(history.qualitativeEvidence.flatMap((record) => record.supersedesEvidenceIds));
       for (const record of [...history.qualitativeEvidence].reverse()) {
         const row = element('article'); row.append(element('p', `${record.createdAt} · ${t(superseded.has(record.id) ? 'Superseded' : 'Confirmed qualitative tendency')} · ${record.originalWording}`));
         if (superseded.has(record.id)) row.append(button('Restore through a new correction', 'restore', record.id));
+        else row.append(button('Correct answer', 'correct', record.id));
         content.append(row);
       }
       const details = element('details'); details.append(element('summary', t('Complete version and evidence facts')));
@@ -396,7 +401,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
     if (record) beginCorrection(record, target.dataset.intentAction);
   });
   listen('personalHistoryContent', 'click', (event) => {
-    const target = event.target.closest('[data-intent-action="restore"]'); if (!target || busy) return;
+    const target = event.target.closest('[data-intent-action]'); if (!target || busy) return;
     const record = qualitative.find((item) => item.id === target.dataset.evidenceId); if (!record) return;
     // Find the current descendants of this exact correction chain only.
     const descendants = new Set([record.id]); let changed = true;

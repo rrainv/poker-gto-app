@@ -10,7 +10,7 @@ const COPY = {
   hero: ['Hero', 'Hero', 'Hero'],
   seat: ['Seat', 'Место', 'מושב'],
   appearance: ['Fictional identities for this session. Appearance only; behavior comes from Opponent settings.',
-    'Вымышленные персонажи на эту сессию. Образ меняется здесь, поведение — в настройках соперника.',
+    'Вымышленные персонажи на эту сессию. Образ меняется здесь, поведение, в настройках соперника.',
     'דמויות בדיוניות למפגש זה. המראה משתנה כאן; ההתנהגות נקבעת בהגדרות היריב.'],
   mika: ['Mika · Notebook collector', 'Мика · Коллекционер блокнотов', 'מיקה · אוספת מחברות'],
   pip: ['Pip · Puzzle fan', 'Пип · Любитель головоломок', 'פיפ · חובב חידות'],
@@ -26,7 +26,9 @@ const COPY = {
 export const tableEnvironmentCopy = (key, language = 'en') => COPY[key]?.[{ en: 0, ru: 1, he: 2 }[language] ?? 0] ?? key;
 export const OPPONENT_IDENTITIES = Object.freeze(['mika', 'pip', 'nova', 'remy', 'cleo', 'otto', 'luma', 'zig', 'fern', 'sol']);
 const PORTRAITS = Object.freeze(Object.fromEntries(OPPONENT_IDENTITIES.map(id =>
-  [id, new URL(`./assets/opponents/${id}.png`, import.meta.url).href])));
+  [id, new URL(`./assets/opponents/${id}-seat.webp`, import.meta.url).href])));
+const PORTRAIT_PREVIEWS = Object.freeze(Object.fromEntries(OPPONENT_IDENTITIES.map(id =>
+  [id, new URL(`./assets/opponents/${id}-preview.webp`, import.meta.url).href])));
 const SUBTITLES = {
   mika: ['Archivist', 'Архивист', 'ארכיונאית'], pip: ['Puzzler', 'Загадочник', 'חובב חידות'],
   nova: ['Night owl', 'Ночная сова', 'ציפור לילה'], remy: ['Coffee fan', 'Кофеман', 'חובב קפה'],
@@ -34,7 +36,7 @@ const SUBTITLES = {
   luma: ['Stargazer', 'Звездочёт', 'צופה בכוכבים'], zig: ['Cyclist', 'Велогонщик', 'רוכב אופניים'],
   fern: ['Gardener', 'Садовница', 'גננית'], sol: ['Baker', 'Пекарь', 'אופה'],
 };
-export const opponentPortrait = id => PORTRAITS[id] || '';
+export const opponentPortrait = (id, size = 'seat') => (size === 'preview' ? PORTRAIT_PREVIEWS[id] : PORTRAITS[id]) || '';
 export const opponentSubtitle = (id, language = 'en') => SUBTITLES[id]?.[{ en: 0, ru: 1, he: 2 }[language] ?? 0] || '';
 
 export function createTableCast() {
@@ -90,6 +92,10 @@ export function mountTableEnvironment({ root, language = () => 'en', onChange = 
     const seats = state?.seats ?? [];
     currentSeats = seats;
     cast.sync(seats, synthetic);
+    if (synthetic) for (const player of seats.filter(player => !player.isHero)) {
+      const selected = doc.defaultView?.RiverlineTrainingLineup?.character(player.seat);
+      if (selected) cast.select(player.seat, selected);
+    }
     root.hidden = !seats.length || state.empty === true;
     root.dir = language() === 'he' ? 'rtl' : 'ltr';
     details.hidden = !synthetic;
@@ -105,13 +111,14 @@ export function mountTableEnvironment({ root, language = () => 'en', onChange = 
       badge.decoding = 'async'; badge.loading = 'lazy';
       badge.alt = ''; badge.width = 52; badge.height = 52; badge.decoding = 'async';
       badge.ariaHidden = 'true';
-      const label = el('span', `${t('seat')} ${player.seat + 1} · ${player.position || '—'}`, 'table-cast-position');
+      const label = el('span', `${t('seat')} ${player.seat + 1} · ${player.position || '-'}`, 'table-cast-position');
       const select = el('select'); select.className = 'control-select'; select.dataset.castSeat = String(player.seat);
       for (const id of OPPONENT_IDENTITIES) { const option = el('option', t(id)); option.value = id; select.append(option); }
       const paint = () => { const id = cast.identity(player.seat); badge.src = opponentPortrait(id); badge.dataset.identity = id; };
       select.value = cast.identity(player.seat); paint(); row.append(badge, label, select); list.append(row);
       select.addEventListener('change', () => {
         if (!cast.select(player.seat, select.value)) return;
+        doc.defaultView?.RiverlineTrainingLineup?.setCharacter?.(player.seat, select.value);
         paint(); renderFacts(); onChange();
         // Native appearance selection only; never a projected poker event.
         if (typeof SoundFX !== 'undefined') SoundFX.playClick();

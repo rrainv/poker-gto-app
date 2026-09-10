@@ -1,5 +1,23 @@
 # Personal Strategy Intelligence v1
 
+## Sweep C: learning loop and complete answer access
+
+After quick, exact or Not sure answers, Teacher pauses on What Riverline learned.
+It describes precision, direct-answer count and the next question's existing reason
+before one Continue action. Preferred action never implies 100%; uncertainty adds
+no action, and an answer does not fill neighboring hands. Broad-family coverage
+and boundary/conflict scheduling retain sole prioritization authority. No new
+solver, LLM, normative comparison or fixed quota is added.
+
+What I've taught is separate from Teacher ranking and reads `getApproachHistory`
+for the active owner, Game Setup and Approach. All direct, qualitative and exact-node
+answers remain inspectable. Direct/exact entries have hand/street/action text search
+and incremental 20-row pages; qualitative wording/history remain available.
+Corrections keep preferred and exact inputs separate and append via existing
+repositories. Exact conflicts are disclosed before explicitly superseding current
+heads for that subject/node. History survives. Scope switches clear ephemeral
+learning/review state. Browser persistence/focus acceptance remains pending.
+
 Implementation ticket: `PERSONAL-STRATEGY-INTELLIGENCE-001` plus the shared natural-language foundation. The user explicitly authorized this versioned migration and product redesign. Implementation and focused integration verification are complete; human acceptance remains pending. This specification does not declare an accepted checkpoint or change roadmap sequencing. QA ownership remains in [QA_BACKLOG.md](QA_BACKLOG.md).
 
 ## Product and authority

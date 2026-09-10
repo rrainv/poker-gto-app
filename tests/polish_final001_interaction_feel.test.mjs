@@ -152,7 +152,7 @@ test('recorded foley supplies Card, Call, Raise, and All-in physical weight', as
   const allInHarness = createSoundHarness();
   await allInHarness.soundFx.playPokerAction('all_in');
   const correctiveHarness = createSoundHarness();
-  await correctiveHarness.soundFx.playWrong();
+  await correctiveHarness.soundFx.previewCue('study_corrective');
   assert.ok(peak(correctiveHarness) > 0);
   assert.ok(peak(cardHarness) > 0);
   assert.ok(peak(hintHarness) > 0);
@@ -165,13 +165,13 @@ test('recorded foley supplies Card, Call, Raise, and All-in physical weight', as
   assert.equal(allInHarness.oscillatorCount(), 0);
 
   const positiveHarness = createSoundHarness();
-  await positiveHarness.soundFx.playCorrect();
+  await positiveHarness.soundFx.previewCue('study_positive');
   assert.notDeepEqual(positiveHarness.gainEnvelopes, correctiveHarness.gainEnvelopes,
     'aligned and corrective meanings use distinct restrained envelopes');
   assert.match(sound, /decision_submitted[\s\S]*STUDY_RESULT_CUES/,
     'Training comparison meaning resolves dynamically from the canonical event payload');
-  assert.match(sound, /error_buzz:\s*'study_corrective'[\s\S]*wrong:\s*'study_corrective'/,
-    'legacy corrective aliases remain calm study feedback');
+  assert.match(sound, /error_buzz:\s*'error'[\s\S]*wrong:\s*'study_neutral'/,
+    'legacy aliases cannot grant normative outcome authority');
 });
 
 test('procedural Study/UI envelopes retain a short bounded attack and decay', async () => {

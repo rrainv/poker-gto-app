@@ -3287,6 +3287,16 @@ Object.entries(trainingWorkspaceTranslations).forEach(([language, entries]) => {
   Object.assign(appTranslations[language], entries);
 });
 
+// Bounded copy edits retain the existing lookup keys and all source limitations.
+for (const [key, en, ru, he] of [
+  ['Play a complete canonical Hand, then review or replay it.', 'Play a hand, then review your decisions.', 'Сыграйте раздачу, затем разберите свои решения.', 'שחקו יד, ואז סקרו את ההחלטות שלכם.'],
+  ['Your current in-memory hand is ready to continue.', 'Continue your current hand.', 'Продолжите текущую раздачу.', 'המשיכו את היד הנוכחית.'],
+  ['Riverline is ready to use', 'Your study space', 'Ваше пространство для учёбы', 'מרחב הלימוד שלכם'],
+  ['Inspect each Hero decision and its strategy source without changing the completed Hand.', 'Review your decisions and the source behind each comparison.', 'Разберите свои решения и источник каждого сравнения.', 'סקרו את ההחלטות שלכם ואת המקור לכל השוואה.'],
+  ['Canonical study-result acknowledgement and hints; never casino rewards.', 'Confirmations, reveals, and study feedback.', 'Подтверждения, подсказки и обратная связь.', 'אישורים, חשיפות ומשוב לימודי.'],
+]) {
+  appTranslations.en[key] = en; appTranslations.ru[key] = ru; appTranslations.he[key] = he;
+}
 window.appTranslations = appTranslations;
 const I18N_STORAGE_KEY = 'language';
 const I18N_LEGACY_STORAGE_KEY = 'appLang';
@@ -3303,19 +3313,27 @@ function normalizeLanguage(language) {
   return I18N_LANGUAGES.has(normalized) ? normalized : 'en';
 }
 
+// Editorial rules apply to product-owned copy before user values are interpolated.
+// Translation keys, names entered by users, URLs and provenance IDs are unchanged.
+function formatProductCopy(value, language) {
+  const brand = { en: 'Riverline', ru: 'Риверлайн', he: 'ריברליין' }[language] || 'Riverline';
+  return String(value).replace(/(?<![\w/.-])Riverline(?![\w/.-])/g, brand)
+    .replace(/\s+[—–]\s+/g, ', ').replace(/[—–]/g, '-');
+}
+
 function resolveTranslation(key, language = window.appLang || 'en') {
   const lang = normalizeLanguage(language);
   const dictionary = window.appTranslations?.[lang] || {};
   if (Object.prototype.hasOwnProperty.call(dictionary, key)) {
-    return { value: dictionary[key], language: lang, fallback: false, missing: false };
+    return { value: formatProductCopy(dictionary[key], lang), language: lang, fallback: false, missing: false };
   }
   const english = window.appTranslations?.en || {};
   if (Object.prototype.hasOwnProperty.call(english, key)) {
     i18nDiagnostics.fallbacks.add(`${lang}:${key}`);
-    return { value: english[key], language: 'en', fallback: lang !== 'en', missing: false };
+    return { value: formatProductCopy(english[key], lang), language: 'en', fallback: lang !== 'en', missing: false };
   }
   i18nDiagnostics.missing.add(`${lang}:${key}`);
-  return { value: key, language: 'en', fallback: lang !== 'en', missing: true };
+  return { value: formatProductCopy(key, lang), language: 'en', fallback: lang !== 'en', missing: true };
 }
 
 function interpolateTranslation(value, parameters = {}) {
@@ -3454,6 +3472,7 @@ window.appLang = normalizeLanguage(
   localStorage.getItem(I18N_STORAGE_KEY) || localStorage.getItem(I18N_LEGACY_STORAGE_KEY) || 'en'
 );
 window.t = t;
+window.formatProductCopy = formatProductCopy;
 window.setLocalizedText = setLocalizedText;
 window.setLanguage = setLanguage;
 window.RiverlineI18n = Object.freeze({

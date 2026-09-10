@@ -97,10 +97,12 @@ export function mountAdvancedEquity({ root, getRequest, language = () => 'en', s
     seed.value = String(source.seed ?? 1);
     for (const player of source.players) {
       const field = el('fieldset'), legend = named('legend', player.id); field.append(legend);
+      const activeSummary = el('div', undefined, 'advanced-equity-active-input');
+      field.append(activeSummary);
       if (!forcedRangeIds.includes(player.id) && player.cards?.length) {
         const cards = el('div', undefined, 'advanced-equity-current-cards advanced-equity-cards'); cards.dir = 'ltr';
-        cards.append(...player.cards.map(card => cardToken(card))); field.append(cards);
-      } else field.append(el('p', forcedRangeIds.includes(player.id) ? t('range') : player.kind === 'range' ? t('range') : t('uniform')));
+        cards.append(...player.cards.map(card => cardToken(card))); activeSummary.append(cards);
+      } else activeSummary.append(el('p', forcedRangeIds.includes(player.id) ? t('range') : player.kind === 'range' ? t('range') : t('uniform')));
       if (player.kind === 'range') {
         field.append(el('p', `${t(player.sourceRole)} · ${t('range')}`));
         inputs.append(field); continue;
@@ -117,7 +119,12 @@ export function mountAdvancedEquity({ root, getRequest, language = () => 'en', s
       missing.value = 'unknown';
       const missingLabel = el('label', t('unlisted')); missingLabel.append(missing);
       textLabel.hidden = missingLabel.hidden = mode.value !== 'range';
-      listen(mode, 'change', () => { textLabel.hidden = missingLabel.hidden = mode.value !== 'range'; invalidate(); }, inputLife.signal);
+      const currentSummary = [...activeSummary.children];
+      listen(mode, 'change', () => {
+        textLabel.hidden = missingLabel.hidden = mode.value !== 'range';
+        activeSummary.replaceChildren(...(mode.value === 'range' ? [el('p', t('range'))] : currentSummary));
+        invalidate();
+      }, inputLife.signal);
       listen(text, 'input', invalidate, inputLife.signal); listen(missing, 'change', invalidate, inputLife.signal);
       const editor = el('details', undefined, 'study-disclosure advanced-equity-range-editor');
       editor.open = forcedRangeIds.includes(player.id);
@@ -185,7 +192,7 @@ export function mountAdvancedEquity({ root, getRequest, language = () => 'en', s
     if (row.equity !== null) preview.append(el('strong', `Equity ${(row.equity * 100).toFixed(1)}%`, 'runout-detail-equity'));
     const detail = el('details'); detail.append(el('summary', t('evidence')), el('p', t('nextNote'), 'study-note'));
     for (const removal of row.removal ?? []) {
-      const line = el('p'); line.append(named('bdi', removal.playerId), el('span', ` · ${t('coverage')}: ${removal.after?.knownEligibleCombos ?? '—'} / ${removal.after?.eligibleCombos ?? '—'}`)); detail.append(line);
+      const line = el('p'); line.append(named('bdi', removal.playerId), el('span', ` · ${t('coverage')}: ${removal.after?.knownEligibleCombos ?? '-'} / ${removal.after?.eligibleCombos ?? '-'}`)); detail.append(line);
     }
     preview.append(detail);
     for (const node of cardsOutput.querySelectorAll('button')) node.setAttribute('aria-pressed', String(node.dataset.runout === row.cards.join(' ')));
@@ -202,7 +209,7 @@ export function mountAdvancedEquity({ root, getRequest, language = () => 'en', s
         button.dataset.runout = row.cards.join(' '); button.setAttribute('aria-pressed', String(inspectedRow === row));
         button.dataset.equityChange = row.equityDelta === null ? 'unknown' : row.equityDelta > 0 ? 'up' : row.equityDelta < 0 ? 'down' : 'same';
         const faces = el('span', undefined, 'runout-card-faces'); faces.append(...row.cards.map(card => cardToken(card)));
-        button.append(faces, el('strong', row.equity === null ? '—' : `${(row.equity * 100).toFixed(1)}%`),
+        button.append(faces, el('strong', row.equity === null ? '-' : `${(row.equity * 100).toFixed(1)}%`),
           el('small', row.equityDelta === null ? t('unavailable') : `${row.deltaEstimated ? '≈ ' : ''}${row.equityDelta > 0 ? '+' : ''}${(row.equityDelta * 100).toFixed(1)} ${t('deltaUnit')}`),
           el('span', row.resultingHand ? `${t(row.resultingHand.category)}${row.categoryImproved ? ` · ${t('improved')}` : ''}` : t('range'), 'runout-card-category'));
         button.type = 'button'; button.dir = language() === 'he' ? 'rtl' : 'ltr';

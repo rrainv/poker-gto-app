@@ -83,7 +83,7 @@ test('normal timing policy is versioned, deterministic, and future profile-ready
     bot: DEFAULT_FULL_HAND_PRESENTATION_TIMING_POLICY.botThinkingMs,
     action: DEFAULT_FULL_HAND_PRESENTATION_TIMING_POLICY.actionSettleMs,
     street: DEFAULT_FULL_HAND_PRESENTATION_TIMING_POLICY.streetRevealMs,
-  }, { bot: 750, action: 340, street: 600 });
+  }, { bot: 850, action: 580, street: 950 });
   assert.equal(Object.isFrozen(DEFAULT_FULL_HAND_PRESENTATION_TIMING_POLICY), true);
   assert.equal(Object.isFrozen(DEFAULT_FULL_HAND_PRESENTATION_TIMING_POLICY.reducedMotion), true);
 });
@@ -109,15 +109,15 @@ test('browser orchestration renders and settles each bot action before advancing
   assert.deepEqual(harness.log, [
     'locked:true',
     'cue:bot_thinking',
-    'wait:750',
+    'wait:850',
     'advance:1',
     'render:action:true',
-    'wait:340',
+    'wait:650',
     'cue:bot_thinking',
-    'wait:750',
+    'wait:850',
     'advance:2',
     'render:action:true',
-    'wait:340',
+    'wait:480',
     'cue:hero_boundary',
     'advance:3',
     'boundary:hero_turn',
@@ -235,8 +235,8 @@ test('reduced motion preserves every state step while suppressing transition mot
 
   assert.equal(result.status, 'awaiting_hero');
   assert.equal(harness.getStepCount(), 2);
-  assert.ok(harness.log.includes('wait:180'));
-  assert.ok(harness.log.includes('wait:0'));
+  assert.ok(harness.log.includes('wait:850'));
+  assert.ok(harness.log.includes('wait:650'));
   assert.ok(harness.log.includes('render:action:false'));
   assert.ok(harness.log.includes('boundary:hero_turn'));
 });

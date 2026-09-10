@@ -24,6 +24,23 @@ Use the shared `strategy-truth/v1` presentation across Analyze, Training, Review
 
 ## Core rule
 
+Presentation refinement (`BETA-REPAIR-SWEEP-B`): Home's next-action, Review and
+Recent sections use independent main-column flow beside Destinations. Review's
+explanation and context columns have stable grid ownership. Replay selection
+scrolls only its own bounded history list; opening disclosures and selecting
+events never seek or scroll the outer document as an incidental render effect.
+Equity player tiles retain the same header, cards, mode/edit and result order
+for known and unknown inputs, including keyboard order. Explain uses logical
+inner padding in EN/RU/HE.
+
+Natural product copy uses Riverline / Риверлайн / ריברליין in EN/RU/HE. Product
+sentences use commas, colons, parentheses, periods or hyphens instead of em/en
+dashes. Technical IDs, paths, URLs, values and user-authored content retain their
+identity. Concision must preserve source limitations, uncertainty and unavailable
+states. Confirmation and disclosure sounds never imply correctness; normative
+correct/incorrect sound requires accepted assessment authority. Reduced motion
+removes travel without shortening Full Hand comprehension pauses.
+
 A reusable semantic feature has **one semantic owner and one interaction language** across every surface where the concept meaningfully applies.
 
 This does not mean every feature appears everywhere. Each consumer classifies the concept as:
@@ -139,11 +156,12 @@ Equity, resolve strategy, save intention or grade a decision.
 
 ### Fictional table identities
 
-In synthetic Full Hand Training, **Table cast** selects appearance independently
-for each canonical opponent seat. The short name, original portrait and non-strategic
-descriptor do not describe playing tendencies. **Opponent** settings still own
-the exact behavior preset/parameters and supported all-opponents/BB target.
-Several different appearances may share the same behavior. Native selects and
+In synthetic Full Hand Training, the idle lineup selects each opponent seat and
+shows separate **Character**, **Behavior**, and collapsed **Advanced** controls.
+The short name, portrait and non-strategic descriptor do not describe playing
+tendencies. Policy requests/assignments own behavior independently for each seat;
+bulk apply copies behavior only. Live **Table cast** shares the appearance owner.
+Several appearances may share the same behavior. Native selects and
 the roster labels remain available in EN/RU/HE; table geometry stays LTR.
 Actor and Dealer labels come only from the current projection, with no inferred
 dealer or invented turn. Selection repaints names and accessible descriptions
@@ -183,6 +201,13 @@ The shared behavior is:
 7. Mark the preview as hypothetical and identify the added card.
 8. Make keyboard focus functionally equivalent to mouse hover; define touch/click semantics before shipping on touch.
 9. Do not imply Equity unless canonical Equity is separately calculated for that hypothetical state.
+
+Exact entered-hand next-card facts distinguish hand-class improvement from
+standing before/after the card. An improvement can lose the lead; display it as
+such rather than "still behind". Only a supported catch-up standing change is
+an out under that contract. Category improvement alone grants no out or Equity
+claim. The application-owned `exact-entered-hand-outcomes/v1` projection exposes
+these additive transitions; renderers consume them without comparing hands.
 
 | Consumer | Classification | Reason / owner |
 |---|---|---|

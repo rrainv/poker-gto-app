@@ -8,6 +8,7 @@ import {
 import {
   AUTOMATED_HAND_PROGRESSION_STATUSES,
   createAutomatedHandProgression,
+  createConfiguredOpponentAssignments,
 } from './automated-hand-progression.mjs';
 import { createCanonicalHandSession } from './canonical-hand-session.mjs';
 import {
@@ -47,6 +48,7 @@ export const FULL_HAND_TRAINING_STATUSES = Object.freeze({
   AWAITING_HERO: 'awaiting_hero',
   GRADING: 'grading',
   TERMINAL: 'terminal',
+  HERO_COMPLETE: 'hero_complete',
   ERROR: 'error',
 });
 
@@ -148,6 +150,7 @@ function normalizeStartInput(input) {
     heroSeat,
     heroPosition,
     opponentPractice: input.opponentPractice == null ? null : validateOpponentPracticeRequest(input.opponentPractice),
+    opponentSeats: input.opponentSeats == null ? null : structuredClone(input.opponentSeats),
     policyTrainingIntent: input.policyTrainingIntent == null ? null
       : validatePolicyTrainingIntent(input.policyTrainingIntent, input.opponentPractice ?? null),
     decisionContextOptions: structuredClone(decisionContextOptions),
@@ -299,6 +302,7 @@ export function createFullHandTrainingStartConfigurationFromTrainingConfig({
   handId = null,
   opponentPractice = null,
   policyTrainingIntent = null,
+  opponentSeats = null,
 } = {}) {
   const config = createTrainingConfig(trainingConfig);
   if (config.schemaVersion !== TRAINING_CONFIG_V2_SCHEMA_VERSION) {
@@ -316,6 +320,7 @@ export function createFullHandTrainingStartConfigurationFromTrainingConfig({
   const startingStackMilliBb = bbToMilliBb(config.stackBb, 'stackBb');
   return deepFreeze({
     handSeed: normalizedSeed,
+    opponentSeats,
     heroPosition: selectedHeroPosition,
     opponentPractice: opponentPractice === null ? null : validateOpponentPracticeRequest(opponentPractice),
     policyTrainingIntent: policyTrainingIntent === null ? null : validatePolicyTrainingIntent(policyTrainingIntent, opponentPractice),
@@ -540,7 +545,14 @@ export function createFullHandTrainingSessionController({
           session,
           heroPlayerId,
           handSeed,
-          opponentPractice: normalized.opponentPractice,
+          opponentPractice: normalized.opponentSeats ? null : normalized.opponentPractice,
+          opponentAssignments: normalized.opponentSeats ? normalized.opponentSeats.map(entry => {
+            const player = initialized.players.find(player => player.seat === entry.seat && player.playerId !== heroPlayerId);
+            if (!player) throw new RangeError('Opponent lineup seat unavailable');
+            const request = validateOpponentPracticeRequest(entry.request);
+            if (request.target !== player.position) throw new RangeError('Opponent lineup position changed');
+            return createConfiguredOpponentAssignments({ pokerState: initialized, heroPlayerId, handSeed, request }).find(item => item.seat === entry.seat);
+          }) : null,
           decisionContextOptions: normalized.decisionContextOptions,
         });
         projection(FULL_HAND_TRAINING_STATUSES.ADVANCING);
@@ -669,6 +681,10 @@ export function createFullHandTrainingSessionController({
         });
         currentDecisionOrdinal = null;
         lastEvaluation = evaluatedDecision.evaluation;
+        if (action.type === ACTION_TYPES.FOLD && activeProgression.getSession().getState().phase !== 'terminal') {
+          projection(FULL_HAND_TRAINING_STATUSES.HERO_COMPLETE);
+          return deepFreeze({ ok: true, evaluation: answerEvaluation, decision: evaluatedDecision, snapshot });
+        }
         projection(FULL_HAND_TRAINING_STATUSES.ADVANCING);
         if (progressionMode === FULL_HAND_TRAINING_PROGRESSION_MODES.STEPWISE) {
           return deepFreeze({
@@ -695,6 +711,16 @@ export function createFullHandTrainingSessionController({
           { error: serializedError(error) },
         );
       }
+    },
+
+    watchRest() {
+      if (snapshot.status !== FULL_HAND_TRAINING_STATUSES.HERO_COMPLETE || progression === null) {
+        return failure(FULL_HAND_TRAINING_ERROR_CODES.NOT_READY, 'No paused continuation.', {}, snapshot);
+      }
+      projection(FULL_HAND_TRAINING_STATUSES.ADVANCING);
+      return progressionMode === FULL_HAND_TRAINING_PROGRESSION_MODES.STEPWISE
+        ? deepFreeze({ ok: true, snapshot })
+        : acceptProgressionResult(progression.advanceUntilHeroOrTerminal());
     },
 
     advanceOneAutomatedEvent() {

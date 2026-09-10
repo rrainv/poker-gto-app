@@ -125,10 +125,10 @@ function postflopCandidate(decisionContext, options, rng) {
     .sort((left, right) => right.value - left.value);
   const recommendedAction = actions[0]?.label || 'Check';
   const sample = strategy.context?.heuristicSample || null;
-  const sampledPercent = Number.isFinite(sample?.eq) ? (sample.eq * 100).toFixed(1) : '—';
+  const sampledPercent = Number.isFinite(sample?.eq) ? (sample.eq * 100).toFixed(1) : '-';
   const candidatePercent = Number.isFinite(sample?.rangeFraction)
     ? (sample.rangeFraction * 100).toFixed(1)
-    : '—';
+    : '-';
 
   return {
     source: 'heuristic_postflop',

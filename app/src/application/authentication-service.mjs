@@ -55,6 +55,7 @@ export function createAuthenticationService({
   providerAdapter = null,
   profileRepository = null,
   hasMeaningfulGuestWork = null,
+  providerUnavailableCode = 'provider_not_configured',
 } = {}) {
   const activateDeviceGuest = accountIdentity?.activateDeviceGuest
     ?? accountIdentity?.activateLocalIdentity;
@@ -342,7 +343,7 @@ export function createAuthenticationService({
         || accountIdentity.getLifecycleState?.().status === 'recovery_required') {
         if (!identityState?.metadata?.pendingTransitionId) return useRecoveryState(identityState?.recovery?.code ?? 'identity_recovery_required');
       }
-      if (!adapter || !adapter.isAvailable()) return identityState?.metadata?.pendingTransitionId ? useRecoveryState() : useGuestState('provider_not_configured');
+      if (!adapter || !adapter.isAvailable()) return identityState?.metadata?.pendingTransitionId ? useRecoveryState() : useGuestState(providerUnavailableCode);
       try {
         const restored = await providerOperation('restoreSession', undefined, expectedGeneration);
         if (!operationIsCurrent(expectedGeneration)) return state;
@@ -365,7 +366,7 @@ export function createAuthenticationService({
     if (transitionTask) return state;
     if (state.status === 'recovery_required' && (!recoveryTransitionAvailable || method !== 'signInWithPassword')) return state;
     if (state.status === 'signed_in') await signOut();
-    if (!adapter || !adapter.isAvailable()) return useGuestState('provider_not_configured');
+    if (!adapter || !adapter.isAvailable()) return useGuestState(providerUnavailableCode);
     const expectedGeneration = beginAuthenticationOperation();
     let credentials = rawCredentials;
     if (method === 'signUpWithPassword') {
@@ -465,7 +466,7 @@ export function createAuthenticationService({
     async refreshSession() {
       await initialize();
       if (transitionTask || state.status === 'recovery_required') return state;
-      if (!adapter) return useGuestState('provider_not_configured');
+      if (!adapter) return useGuestState(providerUnavailableCode);
       const expectedGeneration = beginAuthenticationOperation();
       try {
         const refreshed = await providerOperation('refreshSession', undefined, expectedGeneration);

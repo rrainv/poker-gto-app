@@ -2,8 +2,12 @@
 
 September 7 presentation return gate: `QA-BETA-DESIGN-CORRECTION-002` owns
 independent Human Beta QA after the final broad correction. Direction is frozen;
-remaining subjective polish, **TEMPORARY BETA ART** replacement/asset sizing and
-actual browser lag measurement return through the bounded Beta Repair Sweep.
+remaining subjective polish, **TEMPORARY BETA ART** replacement and actual browser
+lag measurement return through the bounded Beta Repair Sweep. September 10
+`BETA-REPAIR-SWEEP-B` implements optimized delivery sizing, table/Review/Equity
+composition, theme contrast/startup and sound/pacing refinement. Source art is
+preserved; subjective sound/visual acceptance and broader lag disposition remain
+with their existing owners. This implementation does not close the return gate.
 These remain required review before presentation/beta readiness is declared.
 This is pending acceptance, not a new accepted checkpoint or closure of existing
 table/card/composition Return IDs. Detailed evidence and reproduction steps stay

@@ -6,19 +6,21 @@ export const FULL_HAND_PRESENTATION_ORCHESTRATOR_RESULT_SCHEMA_VERSION =
 export const DEFAULT_FULL_HAND_PRESENTATION_TIMING_POLICY = Object.freeze({
   schemaVersion: FULL_HAND_PRESENTATION_TIMING_POLICY_SCHEMA_VERSION,
   profile: 'normal',
-  botThinkingMs: 750,
-  chanceLeadMs: 180,
-  actionSettleMs: 340,
-  streetRevealMs: 600,
+  botThinkingMs: 850,
+  chanceLeadMs: 280,
+  actionSettleMs: 580,
+  actionSettleByType: Object.freeze({ fold: 480, check: 480, call: 650, bet: 720, raise: 780, all_in: 950 }),
+  streetRevealMs: 950,
+  showdownSettleMs: 1200,
   reducedMotion: Object.freeze({
-    botThinkingMs: 180,
-    chanceLeadMs: 0,
-    actionSettleMs: 0,
-    streetRevealMs: 0,
+    botThinkingMs: 850,
+    chanceLeadMs: 280,
+    actionSettleMs: 580,
+    streetRevealMs: 950,
   }),
 });
 
-const BOUNDARY_STATUSES = new Set(['awaiting_hero', 'terminal', 'error']);
+const BOUNDARY_STATUSES = new Set(['awaiting_hero', 'terminal', 'hero_complete', 'error']);
 
 function defaultWait(durationMs) {
   return new Promise((resolve) => globalThis.setTimeout(resolve, durationMs));
@@ -119,6 +121,14 @@ function timingValue(policy, reducedMotion, key) {
 }
 
 function eventSettleDuration(policy, reducedMotion, event) {
+  // Comprehension dwell survives reduced motion; only travel is suppressed.
+  if (event?.transitionKind === 'action') {
+    const action = typeof event.chosenAction === 'string' ? event.chosenAction : event.chosenAction?.type;
+    const duration = policy.actionSettleByType?.[action];
+    if (Number.isFinite(duration) && duration >= 0) return duration;
+  }
+  if (['showdown_resolution', 'private_reveal'].includes(event?.transitionKind)
+    && Number.isFinite(policy.showdownSettleMs) && policy.showdownSettleMs >= 0) return policy.showdownSettleMs;
   return timingValue(
     policy,
     reducedMotion,

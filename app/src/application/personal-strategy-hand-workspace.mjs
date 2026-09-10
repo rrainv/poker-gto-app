@@ -1,5 +1,6 @@
 import { renderNodeCoach, createNodeCoachHandoff, assertNodeCoachHandoffCurrent } from '../personal-strategy/node-coach.mjs';
 import { mountExploitTeacher } from './exploit-teacher-workspace.mjs';
+import { exactComboDecisionContext } from '../personal-strategy/exact-node-intent.mjs';
 import { mountAdvancedEquity } from './advanced-equity-workspace.mjs';
 import { createPersonalEquityRequest } from './weighted-equity-consumers.mjs';
 import { mountPersonalOpponentStudy } from './opponent-learning-workspace.mjs';
@@ -20,7 +21,7 @@ const COPY = {
   preflop: ['1. Teach the exact opening size', '1. Укажите частоту для точного размера открытия', '1. למדו את גודל הפתיחה המדויק'],
   class: ['Starting hand', 'Стартовая рука', 'יד התחלתית'],
   frequency: ['Raise to 2.5bb (%)', 'Рейз до 2.5bb (%)', 'העלאה ל־2.5bb (%)'],
-  remainder: ['The remaining frequency is Fold. Enter your intention for this size explicitly.', 'Остальная частота — фолд. Укажите своё намерение именно для этого размера.', 'יתר התדירות היא קיפול. הזינו במפורש את הכוונה שלכם לגודל הזה.'],
+  remainder: ['The remaining frequency is Fold. Enter your intention for this size explicitly.', 'Остальная частота, фолд. Укажите своё намерение именно для этого размера.', 'יתר התדירות היא קיפול. הזינו במפורש את הכוונה שלכם לגודל הזה.'],
   old: ['Earlier action-family answer', 'Прежний ответ о типе действия', 'תשובה קודמת על סוג הפעולה'],
   noSize: ['The earlier answer does not identify a raise size.', 'В прежнем ответе не указан размер рейза.', 'התשובה הקודמת אינה מזהה גודל העלאה.'],
   saveOpen: ['Save this opening intention', 'Сохранить намерение открытия', 'שמירת כוונת הפתיחה'],
@@ -143,7 +144,13 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
         supersedesEvidenceIds: headIds(payload.node, payload.subject) });
       if (!current(token)) return;
       if (payload.subject.kind === 'combo') recentCombos = [...recentCombos, payload.subject.comboId].slice(-16);
-      await load(); if (current(token)) { status.textContent = copy('saved'); status.tabIndex = -1; status.focus(); }
+      await load(); if (current(token)) {
+        const t = key => doc.defaultView?.t?.(key) ?? key;
+        status.textContent = `${copy('saved')} ${payload.precision === 'exact' ? t('Your exact mix is saved for this hand and node.') : t('Preferred action does not mean 100%.')} ${t('Other combinations remain unchanged.')}`;
+        const next = button('choose'); next.textContent = t('Continue'); next.className = 'ui-button ui-button--primary'; next.dataset.handAction = 'continue-learning';
+        listen(next, 'click', () => { selectedCombo = null; return load(); }); status.after(next);
+        status.tabIndex = -1; status.focus();
+      }
     } catch { if (current(token)) status.textContent = copy('error'); }
     finally { if (current(token)) { busy = false; if (submit) submit.disabled = false; } }
   }
@@ -177,7 +184,15 @@ export function mountPersonalStrategyHandWorkspace({ root, application, getScope
   function renderFlop() {
     const section = el('section', undefined, 'personal-hand-stage'); section.append(el('h4', cc('teach')));
     const availableActions = [...study.actions];
-    const questions = study.study?.questions ?? [];
+    const questions = [...(study.study?.questions ?? [])];
+    const inspectEntry = study.study?.entries?.find(entry => entry.comboId === selectedCombo);
+    if (inspectEntry && !questions.some(question => question.comboId === selectedCombo)) questions.push({ ...inspectEntry, decisionContext: exactComboDecisionContext(currentNode(), selectedCombo), questionKind: 'action_boundary' });
+    const inspect = el('details'); inspect.append(el('summary', doc.defaultView?.t?.("What I've taught") ?? "What I've taught"));
+    const inspectSelect = el('select'); inspectSelect.dataset.handField = 'inspect-combo';
+    inspectSelect.setAttribute('aria-label', doc.defaultView?.t?.('Inspect a combination') ?? 'Inspect a combination');
+    inspectSelect.append(option('', copy('choose')), ...(study.study?.entries ?? []).filter(entry => entry.precision !== 'unknown').map(entry => option(entry.comboId, `${entry.cards.join(' ')} · ${entry.handClass}`)));
+    listen(inspectSelect, 'change', () => { if (inspectSelect.value) { selectedCombo = inspectSelect.value; return load(); } });
+    inspect.append(inspectSelect); section.append(inspect);
     if (!questions.length) { section.append(el('p', currentNode().street && currentNode().street !== 'flop' ? cc('noReach') : copy('empty'))); root.append(section); return; }
     const form = el('form'); const select = el('select'); select.dataset.handField = 'combo';
     select.append(...questions.map((question) => option(question.comboId, `${question.cards.join(' ')} · ${question.handClass}`)));

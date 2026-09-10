@@ -19,6 +19,7 @@ function setTranslatedText(element, key) {
 }
 
 function authNoticeKey(state) {
+  if (state.noticeCode === 'provider_client_unavailable') return 'Sign-in is unavailable because the account client could not load. Your local workspace is still available.';
   if (state.noticeCode === 'invalid_credentials') return 'Email or password is incorrect. For privacy, Riverline does not confirm whether an account exists.';
   if (state.noticeCode === 'signup_conflict') return 'An account could not be created with these details. Try signing in or use another email.';
   if (state.noticeCode === 'signup_failed') return 'Account creation failed. Check the details and try again.';
@@ -238,6 +239,11 @@ function bindAuthenticationUi(browserWindow, service, gate) {
     }
     setAuthStatus(authNoticeKey(state), { error: authNoticeIsError(state) });
     setBusy(busy);
+    if (['provider_not_configured', 'provider_client_unavailable'].includes(state.noticeCode)) {
+      for (const form of [signInForm, signUpForm]) {
+        form?.querySelectorAll('input, button').forEach(control => { control.disabled = true; });
+      }
+    }
     document.querySelector('#accountIdentityRetry').hidden = state.status !== 'recovery_required';
     if (state.status === 'link_choice_required') openLink(state);
     else if (state.status !== 'transitioning') closeLink();
@@ -423,6 +429,7 @@ export async function installAuthenticationBridge(browserWindow, options = {}) {
     providerAdapter,
     profileRepository,
     hasMeaningfulGuestWork: options.hasMeaningfulGuestWork,
+    providerUnavailableCode: config ? 'provider_client_unavailable' : 'provider_not_configured',
   });
   const gate = options.persistentIdentityGate ?? createPersistentIdentityGate({ authentication: service });
   const initialization = service.initialize();

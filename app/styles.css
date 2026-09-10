@@ -1128,11 +1128,8 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
   box-shadow:
     0 0 0 4px color-mix(in srgb, var(--border-focus) 22%, transparent),
     0 0 0 120vmax color-mix(in srgb, var(--surface-canvas) 72%, transparent);
-  transition:
-    top var(--motion-normal) var(--ease-standard),
-    left var(--motion-normal) var(--ease-standard),
-    width var(--motion-normal) var(--ease-standard),
-    height var(--motion-normal) var(--ease-standard);
+  /* Geometry follows the target on each scroll frame without interpolation. */
+  transition: none;
 }
 
 .tutorial-spotlight[data-emphasis="outline"] { box-shadow: 0 0 0 4px color-mix(in srgb, var(--border-focus) 22%, transparent); }
@@ -14996,6 +14993,12 @@ html[data-welcome-orientation="unseen"] #welcomeOrientation[hidden] { display: b
 }
 .welcome-orientation:focus { outline: none; }
 
+.welcome-orientation[data-entry-kind="manual"] {
+  position: fixed;
+  z-index: var(--z-modal-backdrop);
+  overscroll-behavior: contain;
+}
+
 .welcome-orientation-inner {
   position: relative;
   display: grid;
@@ -15156,6 +15159,7 @@ html[data-welcome-orientation="unseen"] #welcomeOrientation[hidden] { display: b
   cursor: pointer;
 }
 .welcome-preference input { inline-size: 18px; block-size: 18px; accent-color: var(--accent-primary); }
+.welcome-preference[hidden] { display: none; }
 .welcome-preference:focus-within {
   border-radius: var(--radius-sm);
   outline: 2px solid var(--border-focus);
@@ -16803,3 +16807,19 @@ html[data-theme="midnight"] {
   --primary-rgb: 138, 215, 176;
 }
 html[data-theme="daylight"] { --riverline-depth: 0 10px 28px #233e2414, inset 0 1px #fff9; }
+/* Sweep C: compact setup and teaching controls use the established theme roles. */
+.hand-table-presets { display: grid; gap: 8px; margin-block-end: 12px; }
+.hand-table-presets label, .training-lineup-editor label, #personalHistoryContent form label { display: grid; gap: 5px; min-width: 0; }
+.hand-table-presets .hand-button-row { flex-wrap: wrap; }
+.training-lineup-seat { display: flex; align-items: center; gap: 8px; width: 100%; color: var(--text-primary); background: transparent; border: 1px solid transparent; border-radius: 10px; padding: 6px; text-align: start; cursor: pointer; }
+.training-lineup-seat[aria-pressed="true"] { border-color: var(--accent); background: var(--surface-raised); }
+.training-lineup-seat:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.training-lineup-editor { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px 12px; padding: 12px; border: 1px solid var(--border-color); border-radius: 12px; }
+.training-lineup-editor > img { grid-row: span 2; border-radius: 10px; }
+.training-lineup-editor > h4, .training-lineup-editor > p { margin: 0; }
+.training-lineup-editor > label, .training-lineup-editor > details, .training-lineup-editor > button { grid-column: 1 / -1; }
+.training-lineup-editor > p:not(:first-of-type) { grid-column: 1 / -1; }
+#personalHistoryContent article { padding-block: 8px; border-block-end: 1px solid var(--border-color); overflow-wrap: anywhere; }
+#personalHistoryContent form { display: grid; gap: 10px; }
+.personal-teacher-learning { display: flex; flex-wrap: wrap; gap: 10px; align-items: start; }
+.personal-teacher-learning h3, .personal-teacher-learning p { flex-basis: 100%; margin: 0; }

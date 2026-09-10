@@ -11,7 +11,9 @@ class Element {
   get textContent() { return this._text + this.children.map(child => child.textContent).join(' '); }
   set value(value) { this._value = String(value); }
   get value() { return this._value ?? (this.tagName === 'SELECT' ? this.children[0]?.value ?? '' : ''); }
-  append(...nodes) { this.children.push(...nodes); }
+  setAttribute(name, value) { this[name] = String(value); }
+  append(...nodes) { for (const node of nodes) node.parentElement = this; this.children.push(...nodes); }
+  after(node) { const siblings = this.parentElement.children; node.parentElement = this.parentElement; siblings.splice(siblings.indexOf(this) + 1, 0, node); }
   replaceChildren(...nodes) { this.children = []; this._text = ''; this.append(...nodes); }
   addEventListener(event, handler, { signal } = {}) { this.listeners.push({ event, handler, signal }); }
   async fire(event) { for (const listener of this.listeners) if (listener.event === event && !listener.signal?.aborted) await listener.handler({ preventDefault() {}, target: this }); }

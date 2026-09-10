@@ -35,17 +35,10 @@ export const HOME_TUTORIAL_DEFINITION = createTutorialDefinition({
       placement: 'left',
     },
     {
-      id: 'personal-strategy',
-      anchor: 'home-personal-strategy',
-      titleKey: 'Keep personal strategy claims grounded',
-      bodyKey: 'Personal Strategy summarizes your direct Range Calibration work. Riverline stores those observations, but experimental sparse inference is not presented here as finished confidence or a production range source.',
-      placement: 'right',
-    },
-    {
       id: 'quick-start',
       anchor: 'home-quick-start',
       titleKey: 'Move into the right tool',
-      bodyKey: 'Quick Start opens Riverline\'s main workspaces. Use it when you know whether you want to analyze, practise, calculate Equity, or build a personal range.',
+      bodyKey: 'Choose a destination to play, analyze, train, or return to your saved study.',
       placement: 'top',
     },
   ],

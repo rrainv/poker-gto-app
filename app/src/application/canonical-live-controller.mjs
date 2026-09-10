@@ -58,7 +58,7 @@ function requireInteger(value, minimum, maximum, label) {
   return numeric;
 }
 
-function normalizeConfiguration(configuration, handIdFactory) {
+export function normalizeCanonicalHandConfiguration(configuration, handIdFactory = () => 'draft-validation') {
   if (!configuration || typeof configuration !== 'object' || Array.isArray(configuration)) {
     throw new TypeError('Canonical Playbook configuration is required');
   }
@@ -135,6 +135,8 @@ function normalizeConfiguration(configuration, handIdFactory) {
     requestedHeroSeat: heroSeat,
   };
 }
+
+const normalizeConfiguration = normalizeCanonicalHandConfiguration;
 
 function validateStagedCards(cards) {
   const normalized = assertCardArray(cards, 'heroCards');

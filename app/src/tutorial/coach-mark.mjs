@@ -71,6 +71,8 @@ export function computeSpotlightRect({ targetRect, viewport, pad = 6 } = {}) {
 
 function elementUsable(element) {
   if (!element?.isConnected) return false;
+  const style = element.ownerDocument?.defaultView?.getComputedStyle?.(element);
+  if (style?.visibility === 'hidden' || style?.visibility === 'collapse' || style?.display === 'none') return false;
   const rect = element.getBoundingClientRect?.();
   return Boolean(rect && rect.width > 0 && rect.height > 0);
 }
@@ -92,6 +94,7 @@ export function createCoachMarkSurface({
   let active = null;
   let focusBeforeTutorial = null;
   let resizeObserver = null;
+  let mutationObserver = null;
   let layoutFrame = 0;
   let renderSequence = 0;
   let focusOnNextLayout = false;
@@ -231,6 +234,8 @@ export function createCoachMarkSurface({
     diagnostics.activeListeners = 0;
     resizeObserver?.disconnect?.();
     resizeObserver = null;
+    mutationObserver?.disconnect();
+    mutationObserver = null;
     if (layoutFrame) window.cancelAnimationFrame(layoutFrame);
     layoutFrame = 0;
   }
@@ -256,6 +261,13 @@ export function createCoachMarkSurface({
       focusBeforeTutorial = document.activeElement;
       document.body.appendChild(ui.layer);
       addActiveListeners();
+      if (typeof window.MutationObserver === 'function') {
+        mutationObserver = new window.MutationObserver(records => {
+          if (records.some(record => !ui.layer.contains(record.target))) scheduleLayout();
+        });
+        mutationObserver.observe(document.documentElement, { subtree: true, childList: true,
+          attributes: true, attributeFilter: ['hidden', 'style', 'class'] });
+      }
     }
     focusOnNextLayout = true;
     ui.panel.style.visibility = 'hidden';

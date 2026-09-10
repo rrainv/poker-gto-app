@@ -58,7 +58,7 @@ function legalActionPresentation(type, legalActions) {
   if (type === 'bet' || type === 'raise') {
     const minimum = bbLabel(source.minToMilliBb);
     const maximum = bbLabel(source.maxToMilliBb);
-    if (minimum && maximum) base.boundsLabel = `${minimum.replace('bb', '')}–${maximum} to`;
+    if (minimum && maximum) base.boundsLabel = `${minimum.replace('bb', '')}-${maximum} to`;
   }
   return base;
 }

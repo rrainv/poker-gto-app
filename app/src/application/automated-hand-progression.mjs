@@ -334,7 +334,7 @@ export function createAutomatedHandProgression({
   // Custom minimum-raise policies can legitimately outlast the old 256-event
   // baseline cap at 500bb. Money-moving actions spend at least one chip unit;
   // checks/folds, street deals and reveals have a separate bounded allowance.
-  const transitionBudget = maxAutomatedTransitions ?? (practiceRequest === null
+  const transitionBudget = maxAutomatedTransitions ?? (practiceRequest === null && !opponentAssignments?.some(item => item.config)
     ? DEFAULT_MAX_AUTOMATED_TRANSITIONS
     : initialState.players.reduce((sum, player) => sum + player.startingStackMilliBb / initialState.game.chipUnitMilliBb, 0)
       + initialState.players.length * 6 + 16);

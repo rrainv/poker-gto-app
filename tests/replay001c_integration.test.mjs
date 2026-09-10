@@ -149,7 +149,10 @@ test('motion is bounded, reduced-motion safe, theme-token based, and has no soun
 
 test('motion has a paintable, cancellable lifecycle and settles without a timer loop', () => {
   const applyMotion = sourceBetween(renderer, 'applyReplayMotion(state, motion)', 'renderPresenceState(');
-  const replayLogic = sourceBetween(logic, 'function createReplayIdentity(', 'function activeHandReviewInput(');
+  // Explicit selection visibility measures its own scroll viewport once. Motion
+  // interpolation and domain playback still must not measure DOM geometry.
+  const replayLogic = sourceBetween(logic, 'function createReplayIdentity(', 'function activeHandReviewInput(')
+    .replace(sourceBetween(logic, 'function keepReplaySelectionVisible(', 'function renderCanonicalReplayControls('), '');
   const replayHotPaths = [playbackSource, projectionSource, bridgeSource, replayLogic, applyMotion].join('\n');
   assert.ok(applyMotion.indexOf('dataset.replayMotionCycle') < applyMotion.indexOf('settleReplayMotionWhenFinished'),
     'transient classes must exist before their Web Animations lifecycle is observed');

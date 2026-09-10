@@ -101,7 +101,7 @@ test('Home and Saved resolve to distinct visible states over the same Home autho
   const homeAgain = resolveHomeDestination('home', { sessionMode: 'account', hasContinuation: true });
   assert.equal(home.destination, 'home');
   assert.equal(saved.destination, 'saved');
-  assert.deepEqual(Array.from(home.visibleSections), ['overview', 'continue', 'review', 'recent', 'strategy', 'quick', 'other']);
+  assert.deepEqual(Array.from(home.visibleSections), ['overview', 'continue', 'review', 'recent', 'quick']);
   assert.deepEqual(Array.from(saved.visibleSections), ['saved-overview', 'recent']);
   assert.deepEqual(Array.from(homeAgain.visibleSections), Array.from(home.visibleSections));
   assert.match(html, /id="homeSavedOverview"[^>]*hidden/);

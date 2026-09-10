@@ -779,7 +779,7 @@ function equityMadeHandLabel(exactHand) {
           ? t('{first} and {second}', { first: equityRankPluralLabel(tiebreakers[0]), second: equityRankPluralLabel(tiebreakers[1]) })
           : exactHand.primaryCategory === 'one_pair'
             ? equityRankPluralLabel(tiebreakers[0]) : null;
-  return [category, structure, relationship].filter(Boolean).join(' — ');
+  return [category, structure, relationship].filter(Boolean).join(', ');
 }
 
 function equityStraightDrawLabel(subtype) {
@@ -917,6 +917,7 @@ function equityExactOutcomeMarkup(playerProjection, exactOutcomes) {
   const winning = equityOutcomeGroupMarkup(winningLabel, outcome.winningOuts, playerProjection.id, 'winningOuts');
   const ties = equityOutcomeGroupMarkup(t('Tie cards'), outcome.tieOuts, playerProjection.id, 'tieOuts');
   const stillBehind = equityOutcomeGroupMarkup(t('Other improvements — still behind'), outcome.structuralImprovementsStillBehind, playerProjection.id, 'structuralImprovementsStillBehind');
+  const losesLead = equityOutcomeGroupMarkup(t('Hand improves — loses lead'), outcome.structuralImprovementsLosingLead, playerProjection.id, 'structuralImprovementsLosingLead');
   const leadingCopy = exactOutcomes.nextCardAvailable && outcome.currentStanding === 'leading' ? `<div class="equity-outcome-empty">${t('No catch-up needed')}</div>` : '';
   const noCatchUp = exactOutcomes.nextCardAvailable && outcome.currentStanding !== 'leading' && !outcome.winningOuts.count
     ? `<div class="equity-outcome-empty">${t('No next card puts this player strictly ahead of every entered exact opponent.')}</div>` : '';
@@ -926,7 +927,7 @@ function equityExactOutcomeMarkup(playerProjection, exactOutcomes) {
     : hasNextCardClaims && exactOutcomes.nextCardMeaning === 'final_one_card_runout'
       ? t('River cards that win at showdown.') : '';
   return `<section class="equity-dossier-section equity-entered-outcomes" data-outcome-state="${outcome.currentStanding}">
-    <div class="equity-status-row"><span>${t('Status')}</span><strong class="equity-standing" data-standing="${outcome.currentStanding}">${standing}</strong></div>${leadingCopy}${noCatchUp}${winning}${ties}${stillBehind}${scope ? `<p class="equity-direct-note">${scope}</p>` : ''}
+    <div class="equity-status-row"><span>${t('Status')}</span><strong class="equity-standing" data-standing="${outcome.currentStanding}">${standing}</strong></div>${leadingCopy}${noCatchUp}${winning}${ties}${stillBehind}${losesLead}${scope ? `<p class="equity-direct-note">${scope}</p>` : ''}
   </section>`;
 }
 
@@ -1098,7 +1099,7 @@ function equityPlayerResultMarkup(player, playerIndex) {
   const running = app.equity.lifecycle === 'running';
   const result = complete ? current : stale;
   const state = complete ? 'complete' : (result ? 'stale' : (running ? 'running' : 'setup'));
-  const pendingValue = running ? '&hellip;' : '&mdash;';
+  const pendingValue = running ? '&hellip;' : '-';
   const equityValue = result ? `${(result.equity * 100).toFixed(1)}%` : pendingValue;
   const winValue = result ? `${(result.winProbability * 100).toFixed(1)}%` : pendingValue;
   const tieValue = result ? `${(result.tieProbability * 100).toFixed(1)}%` : pendingValue;
@@ -1181,6 +1182,7 @@ function renderEquityComparison() {
   const root = $('#equityComparison');
   if (!root) return;
   root.dataset.playerCount = String(app.equity.players.length);
+  root.closest('.equity-workspace')?.setAttribute('data-roster-size', app.equity.players.length > 4 ? 'large' : 'small');
   root.innerHTML = app.equity.players
     .map((player, playerIndex) => equityOverviewPlayerMarkup(player, playerIndex))
     .join('');
@@ -1231,6 +1233,7 @@ function renderEquityPlayers() {
   const root = $('#equityPlayers');
   if (!root) return;
   root.dataset.playerCount = String(app.equity.players.length);
+  root.closest('.equity-workspace')?.setAttribute('data-roster-size', app.equity.players.length > 4 ? 'large' : 'small');
 
   root.innerHTML = app.equity.players.map((player, playerIndex) => {
     const mode = player.handMode || (player.cards.filter(Boolean).length ? 'known' : 'unknown');
@@ -1250,13 +1253,13 @@ function renderEquityPlayers() {
           ${playerIndex > 1 ? `<button type="button" class="remove-player ui-button ui-button-ghost" data-remove-player="${playerIndex}" aria-label="${t('Remove {player}', { player: label })}">${t('Remove')}</button>` : ''}
         </header>
         <div class="equity-player-body">
+          ${mode === 'known'
+            ? equityHandEditorMarkup(player, playerIndex, label)
+            : `<div class="equity-unknown-hand" aria-label="${t('{player} unknown cards', { player: label })}"><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span>${t('Random legal hand')}</span></div>`}
           <div class="equity-hand-mode" role="group" aria-label="${t('{player} hand type', { player: label })}">
             <button type="button" data-equity-hand-mode="known" data-player-id="${player.id}" aria-pressed="${mode === 'known'}">${t('Known')}</button>
             <button type="button" data-equity-hand-mode="unknown" data-player-id="${player.id}" aria-pressed="${mode === 'unknown'}">${t('Unknown')}</button>
           </div>
-          ${mode === 'known'
-            ? equityHandEditorMarkup(player, playerIndex, label)
-            : `<div class="equity-unknown-hand" aria-label="${t('{player} unknown cards', { player: label })}"><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span>${t('Random legal hand')}</span></div>`}
         </div>
         <div class="equity-hand-message" id="equityHandMessage-${playerIndex}">${status}</div>
         ${equityPlayerResultMarkup(player, playerIndex)}
@@ -2506,9 +2509,10 @@ function applyRandomizedScenarioToControls(scenario) {
   if ($('#stackMode')) $('#stackMode').value = scenario.stackMode;
   setScenarioControlPair('stack', 'stackNum', scenario.stackBb);
   setScenarioControlPair('potSize', 'potSizeNum', scenario.potBb);
-  setScenarioControlPair('facingSize', 'facingSizeNum', scenario.facingSizeBb);
+  // Reconcile the old street/action before committing the generated pair.
   updateActionOptions();
   if ($('#lastAction')) $('#lastAction').value = scenario.lastAction;
+  setScenarioControlPair('facingSize', 'facingSizeNum', scenario.facingSizeBb);
   renderPlaybookCards();
 }
 
@@ -2777,16 +2781,16 @@ function renderUnavailableStrategy(resolution) {
     $('#strategyWarnings').hidden = false;
   }
   const unavailableActions = Array.from({ length: 3 }, () => ({
-    name: '—', value: 0, kind: 'unavailable'
+    name: '-', value: 0, kind: 'unavailable'
   }));
   unavailableActions.forEach((action, index) => setFrequency(index + 1, action));
   if (typeof renderFrequencyStack === 'function') {
     renderFrequencyStack($('#actionFrequencyStack'), unavailableActions);
   }
   if ($('#actionWheel')) $('#actionWheel').style.background = 'var(--surface-interactive)';
-  if ($('#wheelCenterText')) $('#wheelCenterText').textContent = '—';
+  if ($('#wheelCenterText')) $('#wheelCenterText').textContent = '-';
   ['mPosition', 'mPot', 'mFacing', 'mStack', 'mEquity', 'mPotOdds', 'mSPR', 'mRake'].forEach((id) => {
-    if ($('#' + id)) $('#' + id).textContent = '—';
+    if ($('#' + id)) $('#' + id).textContent = '-';
   });
   if (resolution?.mode === 'hand') {
     renderUnavailableActionPath(message, waiting ? 'waiting' : 'unavailable');
@@ -3176,13 +3180,13 @@ function bindSavedStudyObjectsUx() {
 
 function formatCanonicalBb(milliBb, digits = 1) {
   const value = Number(milliBb) / 1000;
-  if (!Number.isFinite(value)) return '—';
+  if (!Number.isFinite(value)) return '-';
   const amount = `${value.toFixed(digits).replace(/\.0$/, '')} bb`;
   return document.documentElement.dir === 'rtl' ? `\u2066${amount}\u2069` : amount;
 }
 
 function canonicalPlayerLabel(player, heroPlayerId) {
-  if (!player) return '—';
+  if (!player) return '-';
   const hero = player.playerId === heroPlayerId ? `${t('Hero')} · ` : '';
   return `${hero}${player.position || t('Seat {number}', { number: player.seat + 1 })}`;
 }
@@ -3215,6 +3219,8 @@ function syncHandSeatSelectors() {
   }
 
   if (validation.valid) {
+    const heroSelect = $('#handHeroSeat');
+    const heroPosition = heroSelect?.selectedOptions?.[0]?.dataset.position || heroSelect?.dataset.position || 'BTN';
     ['handButtonSeat', 'handHeroSeat'].forEach((id) => {
       const select = $('#' + id);
       if (!select) return;
@@ -3224,6 +3230,13 @@ function syncHandSeatSelectors() {
       )).join('');
       select.value = String(Number.isInteger(previous) && previous < validation.value ? previous : 0);
     });
+    const assignments = callPlaybookStateBridge('handSetupPositions', validation.value, Number($('#handButtonSeat').value)) || [];
+    if (heroSelect && assignments.length) {
+      heroSelect.innerHTML = assignments.map(player => `<option value="${player.seat}" data-position="${player.position}">${player.position}${validation.value === 2 && player.position === 'BTN' ? ' / SB' : ''} · ${t('Seat {number}', { number: player.seat + 1 })}</option>`).join('');
+      const hero = assignments.find(player => player.position === heroPosition) || assignments.find(player => player.position === 'BTN');
+      heroSelect.value = String(hero.seat);
+      heroSelect.dataset.position = hero.position;
+    }
   }
 
   const anteType = selectedValue('#handAnteType') || 'none';
@@ -3294,12 +3307,13 @@ async function randomizeCanonicalHandPendingDraft() {
   if (app.playbookHandDraft.randomizationPending) return false;
   const bridge = globalThis.RiverlinePlaybookState;
   const state = bridge?.getState?.();
-  if (!bridge?.randomizeHandPendingDraft || !bridge?.handRandomizationRequestVersion || !state?.pendingChance) {
+  const isPrivateReveal = state?.showdown?.status === 'awaiting_private_reveal';
+  if (!bridge?.randomizeHandPendingDraft || !bridge?.handRandomizationRequestVersion || (!state?.pendingChance && !isPrivateReveal)) {
     setHandRandomizationStatus('No card stage is waiting.');
     return false;
   }
   if (bridge.createReplayProjectionViewModel?.()?.readOnly === true) return false;
-  const isHeroPending = state.pendingChance.type === 'deal_hole';
+  const isHeroPending = state.pendingChance?.type === 'deal_hole';
   const heroPlayerId = bridge.getHeroPlayerId?.();
   const hero = state.players?.find((player) => player.playerId === heroPlayerId);
   if (isHeroPending && !hero) {
@@ -3311,13 +3325,13 @@ async function randomizeCanonicalHandPendingDraft() {
       .filter((player) => player.playerId !== heroPlayerId)
       .flatMap((player) => normalizedDecisionCards(app.playbookHandDraft.bySeat[player.seat]))
     : [];
-  const availableCards = bridge.getAvailableChanceCards?.(pendingCards);
+  const availableCards = isPrivateReveal ? [] : bridge.getAvailableChanceCards?.(pendingCards);
   if (!Array.isArray(availableCards)) {
     setHandRandomizationStatus('Random cards are unavailable right now.');
     return false;
   }
   app.playbookHandDraft.randomizationPending = true;
-  const button = isHeroPending ? $('#handRandomizePrivate') : $('#handRandomizeBoard');
+  const button = isHeroPending || isPrivateReveal ? $('#handRandomizePrivate') : $('#handRandomizeBoard');
   button?.setAttribute('aria-busy', 'true');
   if (button) button.disabled = true;
   try {
@@ -3325,6 +3339,7 @@ async function randomizeCanonicalHandPendingDraft() {
       schemaVersion: bridge.handRandomizationRequestVersion,
       state,
       availableCards,
+      bySeat: app.playbookHandDraft.bySeat,
       seed: randomizationSeed()
     });
     if (result.status !== 'available') {
@@ -3332,12 +3347,14 @@ async function randomizeCanonicalHandPendingDraft() {
       return false;
     }
     closePicker({ restoreFocus: false });
-    if (result.target === 'hero') app.playbookHandDraft.bySeat[hero.seat] = [...result.cards];
+    if (result.target === 'private_reveal') {
+      for (const [seat, cards] of Object.entries(result.bySeat)) app.playbookHandDraft.bySeat[seat] = [...cards];
+    } else if (result.target === 'hero') app.playbookHandDraft.bySeat[hero.seat] = [...result.cards];
     else app.playbookHandDraft.board = [...result.cards];
     app.playbookHandDraft.lastRandomizationRecipe = result.recipe;
     renderCanonicalHandWorkspace();
     renderHandRandomizationRecipe(result.recipe);
-    setHandRandomizationStatus(result.target === 'hero'
+    setHandRandomizationStatus(result.target === 'private_reveal' ? 'Random private cards ready.' : result.target === 'hero'
       ? 'Random Hero cards ready.'
       : 'Random {street} ready.', { street: t(result.target.charAt(0).toUpperCase() + result.target.slice(1)) });
     return true;
@@ -3793,7 +3810,7 @@ function renderCanonicalHandStage(state, legalActions, replayProjection) {
   const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
   const stage = canonicalHandStageKey(state, replayProjection);
   const actor = state?.players?.find((player) => player.playerId === state.actingPlayerId);
-  const actorLabel = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '—';
+  const actorLabel = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '-';
   const status = canonicalHandStatus(state);
   const stageHeader = $('#handLiveStageHeader');
   const stageDock = $('#handStageDock');
@@ -3848,13 +3865,13 @@ function renderCanonicalHandStage(state, legalActions, replayProjection) {
     );
   }
   if ($('#handLiveActor')) $('#handLiveActor').textContent = actorLabel;
-  if ($('#handLivePot')) $('#handLivePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '—';
+  if ($('#handLivePot')) $('#handLivePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '-';
   if ($('#handLiveFacing')) $('#handLiveFacing').textContent = legalActions
     ? formatCanonicalBb(state.currentBetMilliBb)
-    : '—';
+    : '-';
   if ($('#handLiveCall')) $('#handLiveCall').textContent = legalActions
     ? formatCanonicalBb(legalActions.call.available ? legalActions.call.commitMilliBb : 0)
-    : '—';
+    : '-';
 
   const historyCount = replayProjection?.timeline?.entryCount || 0;
   if ($('#handHistoryCompactSummary')) $('#handHistoryCompactSummary').textContent = t('{count} actions', {
@@ -3908,8 +3925,12 @@ function renderCanonicalPrivateDeal(state) {
   const isAwaitingReveal = state?.showdown?.status === 'awaiting_private_reveal';
   if (!section || !root) return;
   if (randomize) {
-    randomize.hidden = !isHoleDeal;
-    randomize.disabled = !isHoleDeal || app.playbookHandDraft.randomizationPending;
+    randomize.hidden = !isHoleDeal && !isAwaitingReveal;
+    randomize.disabled = (!isHoleDeal && !isAwaitingReveal) || app.playbookHandDraft.randomizationPending;
+    randomize.dataset.i18nAriaLabel = isAwaitingReveal ? 'Random private cards' : 'Random Hero cards';
+    randomize.dataset.i18nTitle = randomize.dataset.i18nAriaLabel;
+    randomize.setAttribute('aria-label', t(isAwaitingReveal ? 'Random private cards' : 'Random Hero cards'));
+    randomize.title = t(isAwaitingReveal ? 'Random private cards' : 'Random Hero cards');
   }
   const knownOpponentsOpen = root.querySelector('.hand-known-opponents')?.open === true;
   section.hidden = !isHoleDeal && !isAwaitingReveal;
@@ -3985,7 +4006,7 @@ function renderCanonicalChance(state) {
 }
 
 function replayActorLabel(actor) {
-  if (!actor) return '—';
+  if (!actor) return '-';
   if (actor.suppliedName) {
     return actor.isHero ? `${t('Hero')} · ${actor.suppliedName}` : actor.suppliedName;
   }
@@ -4173,7 +4194,11 @@ function appendReplayTimelineItems(section, heading, items) {
 function keepReplaySelectionVisible(root) {
   const selected = root.querySelector('[aria-current="step"], .replay-current-marker[aria-current]');
   if (!selected) return;
-  selected.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+  // Only the history viewport owns selection scrolling, never the document.
+  const viewport = root.getBoundingClientRect();
+  const item = selected.getBoundingClientRect();
+  if (item.top < viewport.top) root.scrollTop -= viewport.top - item.top;
+  else if (item.bottom > viewport.bottom) root.scrollTop += item.bottom - viewport.bottom;
 }
 
 function renderCanonicalReplayControls(projection) {
@@ -4486,11 +4511,11 @@ function renderCanonicalHandWorkspace() {
   if ($('#handStateSummary')) $('#handStateSummary').textContent = status.summary;
   if ($('#handStateStreet')) $('#handStateStreet').textContent = state?.street
     ? t(`replay.street.${state.street}`)
-    : '—';
+    : '-';
   const actor = state?.players?.find((player) => player.playerId === state.actingPlayerId);
-  if ($('#handStateActor')) $('#handStateActor').textContent = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '—';
-  if ($('#handStatePot')) $('#handStatePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '—';
-  if ($('#handStateDeduction')) $('#handStateDeduction').textContent = state ? formatCanonicalBb(state.deductionTotalMilliBb) : '—';
+  if ($('#handStateActor')) $('#handStateActor').textContent = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '-';
+  if ($('#handStatePot')) $('#handStatePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '-';
+  if ($('#handStateDeduction')) $('#handStateDeduction').textContent = state ? formatCanonicalBb(state.deductionTotalMilliBb) : '-';
   if ($('#handStartButton')) $('#handStartButton').textContent = t('Start hand');
 
   const contributionSeats = replayProjection?.tablePresence?.seats || [];
@@ -5070,7 +5095,7 @@ function renderDeepStudyReview(surface, model) {
   let root = $('#deepStudyReview');
   if (!root) {
     root = document.createElement('section'); root.id = 'deepStudyReview';
-    surface.querySelector('.hand-review-overview')?.after(root);
+    surface.querySelector('.hand-review-decision-detail')?.append(root);
   }
   window.RiverlineStudy.renderReview({ root, review: model, translate: t,
     onSelect: index => selectActiveHandReviewDecision(index),
@@ -5466,16 +5491,34 @@ function bindCanonicalHandWorkspace() {
     if (isHandMode()) dispatchCanonicalTableState();
   });
   syncHandSeatSelectors();
+  callPlaybookStateBridge('mountTablePresets', {
+    readDraft: readCanonicalHandConfiguration,
+    isLocked: () => Boolean(callPlaybookStateBridge('getState')) || $('#handSetupSection')?.getAttribute('aria-disabled') === 'true',
+    loadDraft(configuration) {
+      for (const [key, id] of Object.entries({ tableSize: 'handTableSize', stackBb: 'handStackBb', collectionType: 'handCollectionType', anteType: 'handAnteType', anteBb: 'handAnteBb' })) $('#' + id).value = configuration[key];
+      syncHandSeatSelectors();
+      dispatchCanonicalTableState();
+    }
+  });
   ['handTableSize', 'handCollectionType', 'handAnteType'].forEach((id) => {
     if ($('#' + id)) $('#' + id).addEventListener('input', () => {
       syncHandSeatSelectors();
       if (!callPlaybookStateBridge('getState')) dispatchCanonicalTableState();
     });
   });
-  ['handStackBb', 'handHeroSeat', 'handButtonSeat'].forEach((id) => {
+  ['handStackBb', 'handHeroSeat', 'handButtonSeat', 'handAnteBb'].forEach((id) => {
     $('#' + id)?.addEventListener('input', () => {
+      if (id === 'handButtonSeat') syncHandSeatSelectors();
+      if (id === 'handHeroSeat') $('#handHeroSeat').dataset.position = $('#handHeroSeat').selectedOptions[0]?.dataset.position;
       if (!callPlaybookStateBridge('getState')) dispatchCanonicalTableState();
     });
+  });
+  window.addEventListener('riverline:place-dealer', event => {
+    if (callPlaybookStateBridge('getState')) return;
+    $('#handButtonSeat').value = String(event.detail.seat);
+    syncHandSeatSelectors();
+    dispatchCanonicalTableState();
+    $('#handButtonSeat')?.focus();
   });
   if ($('#handStartButton')) $('#handStartButton').addEventListener('click', startCanonicalPlaybookHand);
   if ($('#handResetButton')) $('#handResetButton').addEventListener('click', resetCanonicalPlaybookHand);
@@ -5671,10 +5714,10 @@ function localizedStrategyExplanation(result) {
   }
   if (result.source === 'heuristic_postflop') {
     const sample = result.details?.heuristicSample || null;
-    const sampledPercent = Number.isFinite(sample?.eq) ? (sample.eq * 100).toFixed(1) : '—';
+    const sampledPercent = Number.isFinite(sample?.eq) ? (sample.eq * 100).toFixed(1) : '-';
     const candidatePercent = Number.isFinite(sample?.rangeFraction)
       ? (sample.rangeFraction * 100).toFixed(1)
-      : '—';
+      : '-';
     return t('strategy.heuristic.postflopExplanation', { sampledPercent, candidatePercent });
   }
   return t(result.explanation || '');
@@ -5797,7 +5840,7 @@ function setFrequency(index, action) {
 
   }
 
-  if (numEl) numEl.textContent = action.value ? action.value + '%' : '—';
+  if (numEl) numEl.textContent = action.value ? action.value + '%' : '-';
 
 }
 
@@ -5849,11 +5892,11 @@ function updateMetrics() {
     } else if (!Number.isFinite(callAmount)) {
       mPotOdds.textContent = t('— (Price unavailable)');
     } else if (lastAction === 'unopened' || callAmount === 0) {
-      mPotOdds.textContent = '—';
+      mPotOdds.textContent = '-';
     } else {
       mPotOdds.textContent = Number.isFinite(context.requiredRawEquity)
         ? (context.requiredRawEquity * 100).toFixed(1) + '%'
-        : '—';
+        : '-';
     }
   }
 
@@ -5868,7 +5911,7 @@ function updateMetrics() {
       && Number.isFinite(context.effectiveStackBb)
       && actorPotBeforeAction > 0
       ? (context.effectiveStackBb / actorPotBeforeAction).toFixed(1)
-      : '—';
+      : '-';
   }
 
   const mRake = $('#mRake');
@@ -5877,7 +5920,7 @@ function updateMetrics() {
     : t('Preflop · no board');
 
   const metricValues = {
-    mPosition: heroPos || '—',
+    mPosition: heroPos || '-',
     mPot: `${Number(pot).toFixed(1)} bb`,
     mFacing: `${Number(facing).toFixed(1)} bb`,
     mStack: `${Number(stack).toFixed(0)} bb`
@@ -6054,8 +6097,8 @@ function renderMatrixCellInspector(cell) {
     $('#selectedHandPrimary').textContent = cell.dataset.primaryLabel || t('Strategy unavailable');
     $('#selectedHandPrimary').dataset.actionKind = cell.dataset.primaryAction || 'unavailable';
   }
-  if ($('#selectedAvailableCombos')) $('#selectedAvailableCombos').textContent = cell.dataset.availableCombos || '—';
-  if ($('#selectedRemovedCombos')) $('#selectedRemovedCombos').textContent = cell.dataset.removedCombos || '—';
+  if ($('#selectedAvailableCombos')) $('#selectedAvailableCombos').textContent = cell.dataset.availableCombos || '-';
+  if ($('#selectedRemovedCombos')) $('#selectedRemovedCombos').textContent = cell.dataset.removedCombos || '-';
   if ($('#selectedRangeSource')) $('#selectedRangeSource').textContent = cell.dataset.sourceLabel || t('Unavailable');
   if ($('#selectedMix')) {
     const detail = cell.dataset.strategyCue || t('Strategy unavailable');
@@ -6113,7 +6156,7 @@ function renderChart() {
     ? app.decisionContext
     : null;
   const matrixContextUnavailable = !decisionContext;
-  const positions = decisionContext?.heroPosition || '—';
+  const positions = decisionContext?.heroPosition || '-';
   const matrixStack = decisionContext?.stackBb ?? 0;
   const matrixModel = prepareMatrixStrategyModel(decisionContext);
   const currentHeroClass = matrixContextUnavailable
@@ -6141,8 +6184,8 @@ function renderChart() {
     if ($('#selectedHand')) $('#selectedHand').textContent = t('Exact hand only');
     if ($('#selectedHandKind')) $('#selectedHandKind').textContent = t('Postflop decision');
     if ($('#selectedHandPrimary')) $('#selectedHandPrimary').textContent = t('Range expansion unavailable');
-    if ($('#selectedAvailableCombos')) $('#selectedAvailableCombos').textContent = '—';
-    if ($('#selectedRemovedCombos')) $('#selectedRemovedCombos').textContent = '—';
+    if ($('#selectedAvailableCombos')) $('#selectedAvailableCombos').textContent = '-';
+    if ($('#selectedRemovedCombos')) $('#selectedRemovedCombos').textContent = '-';
     if ($('#selectedRangeSource')) $('#selectedRangeSource').textContent = t('Unavailable');
     if ($('#selectedMix')) $('#selectedMix').innerHTML = `<span class="matrix-inspector-unavailable">${t('Use Decision for the exact-hand strategy.')}</span>`;
     if ($('#chartSummary')) $('#chartSummary').textContent = t('Use Decision for exact-hand postflop strategy.');
@@ -6266,8 +6309,8 @@ function renderChart() {
       : t('Strategy unavailable');
     button.dataset.availableCombos = matrixCell
       ? `${matrixCell.eligibleComboCount} / ${matrixCell.physicalComboCount}`
-      : '—';
-    button.dataset.removedCombos = matrixCell ? String(matrixCell.blockedComboCount) : '—';
+      : '-';
+    button.dataset.removedCombos = matrixCell ? String(matrixCell.blockedComboCount) : '-';
     button.dataset.sourceLabel = matrixSource ? strategySourceDisplayLabel(matrixSource) : t('Unavailable');
     button.dataset.strategyActions = JSON.stringify(actions.map((action) => ({
       kind: visualActionKind(action),
@@ -6638,6 +6681,7 @@ function renderDecisionAnalysis(container, {
     unavailableReason
   });
   renderAnalysisExplanation(container, explanation, { depth, surface });
+  container.querySelectorAll('details').forEach(details => bridge.bindDisclosureDismissal?.(details));
   if (surface === 'playbook' && depth !== 'facts' && decisionContext && rangeAnalysisFacts
     && ['flop', 'turn', 'river'].includes(decisionContext.street) && bridge.mountExploitTeacher) {
     const teacherRoot = document.createElement('div');
@@ -6912,7 +6956,7 @@ async function updateContext(reason = 'Context updated') {
 
   const displayActions = [...profile.actions];
 
-  while (displayActions.length < 3) displayActions.push({ name: '—', value: 0, kind: 'unavailable' });
+  while (displayActions.length < 3) displayActions.push({ name: '-', value: 0, kind: 'unavailable' });
 
   displayActions.forEach((action, index) => setFrequency(index + 1, action));
 
@@ -6936,7 +6980,7 @@ async function updateContext(reason = 'Context updated') {
 
   const val = a.value;
 
-  let formattedVal = '—';
+  let formattedVal = '-';
 
   if (val) {
 
@@ -7080,7 +7124,7 @@ function updateEquityReadiness() {
 
   if (!app.equity.staleAnalysis && app.equity.lifecycle !== 'complete') {
     if ($('#equityDetailRequested')) $('#equityDetailRequested').textContent = t(request.method === 'monte_carlo' ? 'Monte Carlo' : (request.method === 'exact' ? 'Exact' : 'Auto'));
-    if ($('#equityDetailEstimate')) $('#equityDetailEstimate').textContent = estimate?.ok ? formatEquityCombinationCount(estimate) : '—';
+    if ($('#equityDetailEstimate')) $('#equityDetailEstimate').textContent = estimate?.ok ? formatEquityCombinationCount(estimate) : '-';
     if ($('#equityDetailSamples')) $('#equityDetailSamples').textContent = request.samples.toLocaleString();
     if ($('#equityDetailSeed')) $('#equityDetailSeed').textContent = request.seed === undefined ? t('Generated at run time') : String(request.seed);
     if ($('#equityDetailUnknown')) $('#equityDetailUnknown').textContent = String(request.players.filter((player) => player.cards === null).length);
@@ -7298,8 +7342,8 @@ function clearEquityResults(state = 'empty', status = t('Results update after ca
   setEquityCompositionState(state);
   if ($('#equityStatus')) $('#equityStatus').textContent = status;
   if (!app.equity.staleResult) {
-    if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = '—';
-    if ($('#equityDetailActual')) $('#equityDetailActual').textContent = '—';
+    if ($('#equitySplitSummary')) $('#equitySplitSummary').textContent = '-';
+    if ($('#equityDetailActual')) $('#equityDetailActual').textContent = '-';
   }
   if (renderPlayerFooters) renderEquityPlayerResults();
 }
@@ -7581,8 +7625,8 @@ function resolveHomeDestinationPresentation(destination, {
   const visibleSections = normalizedDestination === 'saved'
     ? ['saved-overview', 'recent']
     : guest
-      ? ['guest', 'continue', 'review', 'recent', 'strategy', 'quick', 'other']
-      : ['overview', 'continue', 'review', 'recent', 'strategy', 'quick', 'other'];
+      ? ['guest', 'continue', 'review', 'recent', 'quick']
+      : ['overview', 'continue', 'review', 'recent', 'quick'];
   return Object.freeze({
     destination: normalizedDestination,
     visibleSections: Object.freeze(visibleSections),
@@ -7717,7 +7761,7 @@ function navigateToProductDestination(destination) {
 
 function revealHomeDestination() {
   if (activeWorkspaceMode() !== 'home') return;
-  $('#homeWorkspace')?.scrollIntoView?.({ behavior: 'auto', block: 'start' });
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 }
 
 async function returnToHomeLiveHand() {
@@ -8288,7 +8332,7 @@ function renderHomeReviewGroup(root, titleKey, section, emptyKey) {
   const list = document.createElement('div');
   list.className = 'home-review-list';
   if (section?.status === 'error') list.appendChild(homeEmptyState('Saved items could not be loaded.', true));
-  else if (!section?.items?.length) list.appendChild(homeEmptyAction(emptyKey, 'Start Training', 'training'));
+  else if (!section?.items?.length) list.appendChild(homeEmptyState(emptyKey));
   else section.items.forEach((item) => list.appendChild(createHomeSavedItemElement(item, { compact: true })));
   group.append(heading, list);
   root.appendChild(group);
@@ -8462,7 +8506,6 @@ function renderHomeWorkspace(model) {
   if (loading) loading.hidden = true;
   if (content) content.hidden = false;
   applyHomeDestinationPresentation();
-  window.requestAnimationFrame(revealHomeDestination);
   const tutorialWorkspace = activeNavigationDestination() === 'saved' ? 'saved' : 'home';
   window.RiverlineTutorials?.offerForWorkspace?.(tutorialWorkspace, workspace);
 }
@@ -8739,6 +8782,8 @@ function toast(message, tone = 'info', scope = activeWorkspaceMode()) {
 
   element.dataset.tone = ['info', 'success', 'warning', 'error'].includes(tone) ? tone : 'info';
   element.dataset.scope = scope;
+  const cue = { success: 'action_completed', warning: 'warning_presented', error: 'error_presented' }[tone];
+  if (cue && scope !== 'training') emitStudyExperience(cue, { source: 'ui_notice', token: sequence });
 
   element.classList.add('show');
 
@@ -9427,7 +9472,7 @@ function refreshLocalizedPlaybookRuntime() {
       $('#strategyWarnings').hidden = warnings.length === 0;
     }
     const displayActions = [...profile.actions];
-    while (displayActions.length < 3) displayActions.push({ name: '—', value: 0, kind: 'unavailable' });
+    while (displayActions.length < 3) displayActions.push({ name: '-', value: 0, kind: 'unavailable' });
     displayActions.forEach((action, index) => setFrequency(index + 1, action));
     renderFrequencyStack($('#actionFrequencyStack'), displayActions);
     updateMetrics(app.decisionContext);
@@ -10471,6 +10516,14 @@ function initTrainingMode() {
   bind('#trainingFullHandLiveNewHand', 'click', () => startConfiguredTrainingSessionWithGuard());
   bind('#trainingFullHandEndHand', 'click', abortFullHandTraining);
   bind('#trainingReviewHand', 'click', toggleFullHandTrainingReview);
+  bind('#trainingWatchRest', 'click', async () => {
+    const result = callTrainingServiceBridge('watchFullHandRest');
+    if (result?.ok) {
+      $('#trainingWatchRest').hidden = true;
+      if (result.snapshot.status === 'advancing') await runFullHandPresentation();
+      else renderFullHandTrainingSnapshot(result.snapshot);
+    }
+  });
   bind('#trainingMemoryPanel', 'toggle', (event) => {
     if (event.currentTarget.open) void refreshTrainingMemoryPanel();
   });
@@ -10569,7 +10622,7 @@ function renderTrainingCards() {
   if ($('#trainingHandDisplay')) {
     $('#trainingHandDisplay').textContent = heroCards.length === 2
       ? formatHand(heroCards) || heroCards.map(displayCard).join(' ')
-      : '—';
+      : '-';
   }
 }
 
@@ -11193,10 +11246,11 @@ function setFullHandTrainingPhase(phase = 'setup') {
   if ($('#trainingFullHandCompactSeed')) {
     $('#trainingFullHandCompactSeed').textContent = Number.isInteger(app.training.fullHandSnapshot?.handSeed)
       ? String(app.training.fullHandSnapshot.handSeed)
-      : '—';
+      : '-';
   }
   if ($('#trainingFullHandCompactStatus')) {
-    const statusKey = nextPhase === 'live' ? 'Playing to Hero'
+    const heroFolded = app.training.fullHandSnapshot?.state?.players?.find(player => player.playerId === app.training.fullHandSnapshot?.heroPlayerId)?.folded;
+    const statusKey = nextPhase === 'live' ? (heroFolded ? 'Watching the rest of this hand' : 'Playing to Hero')
       : nextPhase === 'review' ? 'Post-Hand Review'
         : nextPhase === 'complete' ? 'Hand Complete' : 'Ready';
     $('#trainingFullHandCompactStatus').textContent = t(statusKey);
@@ -11385,6 +11439,11 @@ function startTemporaryTrainingMemoryReviewSession(input) {
 }
 
 function finishTrainingMemorySession(status = 'completed', finishOptions = {}) {
+  const folded = app.training.fullHandSnapshot;
+  if (folded?.status === 'hero_complete' && !finishOptions.fullHandSource) {
+    status = 'completed';
+    finishOptions = { ...finishOptions, fullHandSource: { handId: folded.state.handId, heroPlayerId: folded.heroPlayerId, replaySource: folded.replaySource } };
+  }
   const sessionPromise = app.training.memorySessionPromise;
   if (!sessionPromise) return Promise.resolve(null);
   app.training.memorySessionPromise = null;
@@ -12536,7 +12595,7 @@ function clearTrainingExercisePresentation() {
     $('#trainingStrategySource').className = 'badge status-badge status-badge--info';
   }
   ['#trainingCurrentSeed', '#trainingExerciseId', '#trainingGenerationAttempts', '#trainingTrajectoryLength', '#trainingGenerationPolicy']
-    .forEach((selector) => { if ($(selector)) $(selector).textContent = '—'; });
+    .forEach((selector) => { if ($(selector)) $(selector).textContent = '-'; });
   if ($('#trainingCopySeed')) $('#trainingCopySeed').disabled = true;
   if ($('#trainingReplayBtn')) $('#trainingReplayBtn').disabled = true;
   if ($('#trainingDecisionNumber')) $('#trainingDecisionNumber').hidden = true;
@@ -12595,9 +12654,9 @@ function renderTrainingPresentation(exercise) {
   });
   if ($('#trainingCurrentSeed')) $('#trainingCurrentSeed').textContent = String(presentation.seed);
   if ($('#trainingExerciseId')) $('#trainingExerciseId').textContent = presentation.exerciseId;
-  if ($('#trainingGenerationAttempts')) $('#trainingGenerationAttempts').textContent = presentation.metadata.attempts ?? '—';
-  if ($('#trainingTrajectoryLength')) $('#trainingTrajectoryLength').textContent = presentation.metadata.trajectoryLength ?? '—';
-  if ($('#trainingGenerationPolicy')) $('#trainingGenerationPolicy').textContent = presentation.metadata.policy ?? '—';
+  if ($('#trainingGenerationAttempts')) $('#trainingGenerationAttempts').textContent = presentation.metadata.attempts ?? '-';
+  if ($('#trainingTrajectoryLength')) $('#trainingTrajectoryLength').textContent = presentation.metadata.trajectoryLength ?? '-';
+  if ($('#trainingGenerationPolicy')) $('#trainingGenerationPolicy').textContent = presentation.metadata.policy ?? '-';
   if ($('#trainingCopySeed')) $('#trainingCopySeed').disabled = false;
   if ($('#trainingReplayBtn')) $('#trainingReplayBtn').disabled = false;
   if ($('#trainingReplayDecisionBtn')) $('#trainingReplayDecisionBtn').hidden = false;
@@ -12977,7 +13036,7 @@ function renderTrainingDecisionContextSummary(exercise) {
   if (potInfo) potInfo.style.removeProperty('display');
   if ($('#trainingPotVal')) $('#trainingPotVal').textContent = `${context.potBb.toFixed(1)} bb`;
   if ($('#trainingFacingVal')) $('#trainingFacingVal').textContent = formatTrainingFacingCopy(context);
-  if ($('#trainingPotOddsVal')) $('#trainingPotOddsVal').textContent = legacyContext.potOdds === null ? '—' : `${legacyContext.potOdds.toFixed(1)}%`;
+  if ($('#trainingPotOddsVal')) $('#trainingPotOddsVal').textContent = legacyContext.potOdds === null ? '-' : `${legacyContext.potOdds.toFixed(1)}%`;
   if ($('#trainingMdfVal')) $('#trainingMdfVal').textContent = legacyContext.mdf === null
     ? t('— (range reference)')
     : t('{value}% (range reference)', { value: legacyContext.mdf.toFixed(1) });
@@ -13294,7 +13353,7 @@ function renderFullHandPresentationStatus(cue, snapshot) {
   if (promptDetail) {
     promptDetail.textContent = heroTurn
       ? t('Choose one legal action.')
-      : t('Actions unlock when it is Hero\'s turn.');
+      : t(snapshot.state?.players?.find(player => player.playerId === snapshot.heroPlayerId)?.folded ? 'Watching the rest of this hand' : 'Actions unlock when it is Hero\'s turn.');
   }
 }
 
@@ -13477,14 +13536,14 @@ function fullHandTrainingExercise(snapshot) {
 
 function renderFullHandTrainingMetadata(snapshot, decision) {
   if ($('#trainingCurrentSeed')) $('#trainingCurrentSeed').textContent = String(snapshot.handSeed);
-  if ($('#trainingExerciseId')) $('#trainingExerciseId').textContent = decision?.decisionId || snapshot.state?.handId || '—';
+  if ($('#trainingExerciseId')) $('#trainingExerciseId').textContent = decision?.decisionId || snapshot.state?.handId || '-';
   if ($('#trainingGenerationAttempts')) $('#trainingGenerationAttempts').textContent = '1';
   if ($('#trainingTrajectoryLength')) $('#trainingTrajectoryLength').textContent = String(snapshot.state?.actionHistory?.length || 0);
   if ($('#trainingGenerationPolicy')) {
     const assignment = snapshot.opponentAssignments?.[0];
     $('#trainingGenerationPolicy').textContent = assignment
       ? `${assignment.policyId}@${assignment.policyVersion}`
-      : '—';
+      : '-';
   }
   if ($('#trainingCopySeed')) $('#trainingCopySeed').disabled = false;
   if ($('#trainingReplayBtn')) $('#trainingReplayBtn').disabled = false;
@@ -13612,6 +13671,7 @@ function fullHandTerminalResultCopy(snapshot) {
 }
 
 function renderFullHandTerminal(snapshot) {
+  const heroComplete = snapshot.status === 'hero_complete';
   callTrainingServiceBridge('renderOpponentReview', snapshot);
   app.training.fullHandSnapshot = snapshot;
   app.training.lifecycle = 'terminal';
@@ -13627,8 +13687,48 @@ function renderFullHandTerminal(snapshot) {
   setTrainingWorkspaceState('terminal');
   setFullHandTrainingPhase('complete');
   dispatchFullHandTrainingTable(snapshot);
-  if ($('#trainingInstruction')) $('#trainingInstruction').textContent = t('The canonical Hand is complete and ready for review.');
-  if ($('#trainingFullHandResult')) $('#trainingFullHandResult').textContent = fullHandTerminalResultCopy(snapshot);
+  if ($('#trainingInstruction')) $('#trainingInstruction').textContent = t(heroComplete ? 'Your decisions are ready to review. Opponents are paused.' : 'The canonical Hand is complete and ready for review.');
+  if ($('#trainingFullHandResult')) $('#trainingFullHandResult').textContent = heroComplete ? t('Hero folded. No further cards or opponent actions have been played.') : fullHandTerminalResultCopy(snapshot);
+  $('#trainingFullHandCompletionTitle').textContent = t(heroComplete ? 'Your hand summary' : 'Hand Complete');
+  $('#trainingFullHandCompletionTitle').dataset.i18n = heroComplete ? 'Your hand summary' : 'Hand Complete';
+  $('#trainingReviewHand').hidden = heroComplete;
+  $('#trainingWatchRest').hidden = !heroComplete;
+  const foldDecisions = $('#trainingFoldDecisions');
+  foldDecisions.hidden = !heroComplete;
+  foldDecisions.replaceChildren();
+  if (heroComplete) for (const decision of snapshot.answeredDecisions) {
+    const row = document.createElement('p');
+    const action = decision.chosenAction?.type || '';
+    row.textContent = `${t(decision.street.charAt(0).toUpperCase() + decision.street.slice(1))} · ${decision.heroCards.join(' ')} · ${t(action.charAt(0).toUpperCase() + action.slice(1))}`;
+    foldDecisions.append(row);
+    const truth = trainingTruth(decision.evaluation?.answerEvaluation, { strategyResult: decision.evaluation?.strategyResult, decisionContext: decision.decisionContext });
+    const presentation = truthPresentation(truth);
+    const comparison = document.createElement('p'); comparison.textContent = `${t(presentation.title)}. ${t(presentation.description)}`; foldDecisions.append(comparison);
+    const details = document.createElement('details'), summary = document.createElement('summary'), analysis = document.createElement('div');
+    summary.textContent = t('Explain'); details.append(summary, analysis); foldDecisions.append(details);
+    let rendered = false;
+    details.addEventListener('toggle', () => {
+      if (!details.open || rendered || app.training.fullHandSnapshot?.sessionId !== snapshot.sessionId) return;
+      rendered = true;
+      renderDecisionAnalysis(analysis, { decisionContext: decision.decisionContext, strategyResult: decision.evaluation?.strategyResult,
+        authority: 'training', depth: 'concise', surface: 'training' });
+    });
+    const reviewLater = document.createElement('button'); reviewLater.type = 'button'; reviewLater.className = 'ui-button ui-button--quiet'; reviewLater.textContent = t('Review later'); foldDecisions.append(reviewLater);
+    const recordPromise = app.training.memoryFullHandDecisionRecords.get(decision.decisionId);
+    reviewLater.disabled = !recordPromise;
+    reviewLater.addEventListener('click', async () => {
+      reviewLater.disabled = true;
+      try { const updated = await queueTrainingMemoryWrite(async isCurrent => { const record = await recordPromise; if (isCurrent() && record?.id) return callTrainingMemoryBridge('updateStudyMetadata', record.id, { review: true }); return null; });
+        if (app.training.fullHandSnapshot?.sessionId === snapshot.sessionId) reviewLater.textContent = t(updated ? 'Added to review. Training Memory review queue updated.' : 'Training Memory is unavailable.');
+      } catch { reviewLater.disabled = false; }
+    });
+  }
+  if (heroComplete) {
+    $('#trainingStateBadge').textContent = t('Your hand summary');
+    $('#trainingFullHandCompactStatus').textContent = t('Hero folded');
+    $('#trainingFullHandActionStatus').hidden = true;
+    $('#trainingFullHandNewHand')?.focus({ preventScroll: true });
+  }
   if ($('#trainingFullHandDecisionCount')) {
     $('#trainingFullHandDecisionCount').textContent = String(snapshot.summary.decisionsAnswered);
   }
@@ -13638,7 +13738,7 @@ function renderFullHandTerminal(snapshot) {
   if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
   if ($('#trainingReviewHand')) $('#trainingReviewHand').setAttribute('aria-expanded', 'false');
   app.training.fullHandReviewIndex = 0;
-  void finishTrainingMemorySession('completed', {
+  if (!heroComplete) void finishTrainingMemorySession('completed', {
     fullHandSource: {
       handId: snapshot.state.handId,
       heroPlayerId: snapshot.heroPlayerId,
@@ -13652,12 +13752,13 @@ function renderFullHandTrainingSnapshot(snapshot) {
   app.training.fullHandSnapshot = snapshot;
   if (snapshot.status === 'awaiting_hero') return renderFullHandAwaitingHero(snapshot);
   if (snapshot.status === 'grading') return renderFullHandGrading(snapshot);
-  if (snapshot.status === 'terminal') return renderFullHandTerminal(snapshot);
+  if (snapshot.status === 'terminal' || snapshot.status === 'hero_complete') return renderFullHandTerminal(snapshot);
   if (snapshot.status === 'error') return renderTrainingGenerationError(snapshot.error);
   return null;
 }
 
 async function startFullHandTraining(options = {}) {
+  if (app.training.fullHandSnapshot?.status === 'hero_complete') void finishTrainingMemorySession('completed');
   callTrainingServiceBridge('renderOpponentReview', null);
   emitStudyExperience('session_started', {
     source: 'training_full_hand',
@@ -13692,12 +13793,15 @@ async function startFullHandTraining(options = {}) {
         rulesSnapshotVersion: trainingConfig.rulesSnapshot?.schemaVersion ?? null,
       },
     });
+    const opponentSeats = !options.opponentPractice && !options.policyTrainingIntent ? window.RiverlineTrainingLineup?.requests?.(Number($('#trainingOpponentSeed')?.value || 0)) : null;
     const policyTrainingIntent = options.policyTrainingIntent ?? (options.opponentPractice ? null
-      : callTrainingServiceBridge('readPolicyTrainingIntent', { tableSize: trainingConfig.tableSize }));
+      : callTrainingServiceBridge('readPolicyTrainingIntent', { tableSize: trainingConfig.tableSize,
+        opponentPractice: opponentSeats ? window.RiverlineTrainingLineup.selectedRequest(Number($('#trainingOpponentSeed')?.value || 0)) : null }));
     const startConfiguration = callTrainingServiceBridge('createFullHandStartConfiguration', {
       trainingConfig,
       handSeed: seed,
       heroPosition: $('#trainingHeroPos')?.value || null,
+      opponentSeats,
       opponentPractice: options.opponentPractice ?? policyTrainingIntent?.opponentPractice
         ?? callTrainingServiceBridge('readOpponentPractice', { tableSize: trainingConfig.tableSize }),
       policyTrainingIntent,
@@ -13752,7 +13856,13 @@ async function handleFullHandTrainingGuess(userAction, amountToMilliBb = null) {
     return result;
   }
   renderFullHandDecisionRecorded(result);
-  await recordFullHandTrainingDecisionAnswered(result);
+  const memoryWrite = recordFullHandTrainingDecisionAnswered(result);
+  if (result.snapshot.status === 'hero_complete') {
+    renderFullHandTrainingSnapshot(result.snapshot);
+    void memoryWrite;
+    return result;
+  }
+  await memoryWrite;
   if (result.snapshot.status === 'advancing') {
     await runFullHandPresentation({
       initialTransition: {

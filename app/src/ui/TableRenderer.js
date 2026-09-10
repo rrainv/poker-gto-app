@@ -801,10 +801,15 @@ class TableRenderer {
       );
 
       seat.dataset.canonicalSeat = String(player.seat);
+      const draftSeat = state.status === 'setup_preview' && !this.container.closest('#trainingMode');
+      seat.tabIndex = draftSeat ? 0 : -1;
+      const placeDealer = () => window.dispatchEvent(new CustomEvent('riverline:place-dealer', { detail: { seat: player.seat } }));
+      seat.onclick = draftSeat ? placeDealer : null;
+      seat.onkeydown = draftSeat ? event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); placeDealer(); } } : null;
       seat.dataset.identity = this.environment?.identity(player) || '';
       seat.dataset.playerId = player.playerId;
-      seat.setAttribute('role', 'group');
-      seat.setAttribute('aria-label', this.presenceSeatDescription(player));
+      seat.setAttribute('role', draftSeat ? 'button' : 'group');
+      seat.setAttribute('aria-label', this.presenceSeatDescription(player) + (draftSeat ? `, ${window.t?.('Place Dealer here') || 'Place Dealer here'}` : ''));
       seat.classList.toggle('is-hero', isHero);
       seat.classList.toggle('is-dealer', isDealer);
       seat.classList.toggle('is-actor', isActor);

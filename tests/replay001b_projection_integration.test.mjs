@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import vm from 'node:vm';
 
 const bridgeSource = fs.readFileSync(
   new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url),
@@ -147,7 +148,18 @@ test('historical Replay disables live mutation surfaces and explains live-bound 
   assert.match(readOnly, /querySelectorAll\('button, input, select'\)/);
   assert.match(readOnly, /control\.disabled = true/);
   assert.match(readOnly, /handResolveShowdownButton/);
-  assert.match(html, /id="handReplayReadOnlyNote"[^>]*data-i18n="replay\.readOnlyHelp"/);
+  const note = { hidden: true, textContent: '' };
+  let locale = 'en';
+  const context = { $: selector => selector === '#handReplayReadOnlyNote' ? note : null,
+    document: { activeElement: null }, callPlaybookStateBridge: () => null,
+    t: key => `${locale}:${key}` };
+  vm.runInNewContext(sourceBetween(logic, 'function renderCanonicalReplayControls(', 'function renderCanonicalReplayTimeline('), context);
+  const projection = { schemaVersion: 'replay-projection/v1', readOnly: true, selectedFrame: {} };
+  context.renderCanonicalReplayControls(projection);
+  assert.equal(note.hidden, false); assert.equal(note.textContent, 'en:replay.readOnlyHelp');
+  locale = 'he'; context.renderCanonicalReplayControls({ ...projection, viewerContext: { kind: 'saved_hand' } });
+  assert.equal(note.textContent, 'he:Read-only saved hand. Replay controls do not change your live hand.');
+  context.renderCanonicalReplayControls({ ...projection, readOnly: false }); assert.equal(note.hidden, true);
   assert.match(translations, /Strategy and analysis remain tied to the live decision/);
 });
 

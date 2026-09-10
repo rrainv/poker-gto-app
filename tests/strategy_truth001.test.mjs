@@ -8,7 +8,7 @@ import { createPreflopRoleAuditFixtures } from './fixtures/preflop-role001-fixtu
 import { createStrategyProvider } from '../app/src/application/strategy-provider.mjs';
 import { createStrategyResult, createUnavailableStrategyResult } from '../app/src/application/strategy-result.mjs';
 import { resolveHeuristicStrategy } from '../app/src/strategy/heuristic-strategy.mjs';
-import { resolveStrategyClaimPolicy } from '../app/src/application/strategy-claim-policy.mjs';
+import { resolveStrategyClaimPolicy, STRATEGY_CLAIMS } from '../app/src/application/strategy-claim-policy.mjs';
 import { createStrategySourceDescriptor, createStrategySourceAcceptanceRegistry } from '../app/src/application/strategy-source-authority.mjs';
 import { ASSESSMENT_POLICY_VERSION, assessmentContextIdentity, createAssessmentPolicyAcceptanceRegistry } from '../app/src/application/strategy-assessment-policy.mjs';
 import { projectStrategyTruth, historicalStrategyTruth, summarizeStrategyTruth, strategyTruthPresentation } from '../app/src/application/strategy-truth.mjs';
@@ -39,6 +39,34 @@ function fixture({ assessment = true, coverage = 'exact', policyChanges = {}, so
   return { result: provider.resolve(ctx), provider, criterion };
 }
 const answer = (result, type, amountBb) => evaluateTrainingAnswer({ exerciseId: 'truth-test', chosenActionType: type, chosenAction: { type, amountBb }, strategyResult: result, decisionContext: ctx });
+
+test('assessment never exceeds an individual accepted source claim ceiling, including historical re-drill', () => {
+  for (const denied of ['objective_correctness', 'mistake', 'recommendation', 'normative_grading', 'comparative_grading', 'strategy_presentation']) {
+    const { result } = fixture({ sourceChanges: { acceptedClaimClasses: Object.values(STRATEGY_CLAIMS).filter(key => key !== denied) } });
+    const policy = resolveStrategyClaimPolicy(result);
+    assert.equal(policy.claims[denied], false);
+    for (const type of ['call', 'fold']) {
+      const evaluation = answer(result, type), truth = evaluation.truth;
+      if (denied === 'objective_correctness' || denied === 'mistake' && type === 'fold') assert.equal(evaluation.grade, null);
+      if (denied !== 'recommendation') {
+        assert.equal(truth.claims.mistake, false, denied);
+        assert.equal(truth.claims.remediation, false, denied);
+        assert.equal(truth.learningEligibility.remediation, false);
+        if (denied !== 'mistake') {
+          assert.equal(truth.claims.correct, false);
+          assert.equal(truth.claims.incorrect, false);
+          assert.equal(strategyTruthPresentation(truth).tone, 'neutral');
+        }
+      }
+      const stored = JSON.parse(JSON.stringify(createTrainingStrategyEvidence({ strategyResult: result, claimPolicy: policy, evaluation })));
+      const replayed = historicalStrategyTruth(stored, { chosenAction: { type }, decisionContext: ctx });
+      assert.deepEqual(replayed.claims, truth.claims);
+      assert.equal(replayed.claimPolicy.claims[denied], false);
+    }
+  }
+  const { result } = fixture({ policyChanges: { claimPermissions: { supported: true, unsupported: true, remediation: false } } });
+  assert.equal(answer(result, 'fold').truth.claims.remediation, false);
+});
 
 test('A2o HU 60bb stays deterministic Fold 100%, with baseline-only permissions and neutral presentation', () => {
   const provider = createStrategyProvider({ fallbackResolver: resolveHeuristicStrategy });

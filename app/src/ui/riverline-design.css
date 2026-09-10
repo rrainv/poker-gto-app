@@ -3,7 +3,7 @@
 :root {
   --text-page-title-size: 1.75rem;
   --text-section-size: 1.0625rem;
-  --riverline-brass: var(--table-accent, var(--accent-secondary));
+  --riverline-brass: var(--support-text, var(--accent-secondary));
   --riverline-brass-soft: color-mix(in srgb, var(--riverline-brass) 11%, var(--surface-panel));
   --riverline-analysis: var(--analysis-surface, var(--surface-elevated));
   --riverline-game: var(--game-background, var(--surface-inset));
@@ -238,6 +238,7 @@ input[type="range"]::-webkit-slider-thumb { box-shadow: 0 2px 4px #0005, 0 0 0 3
 /* Feature surfaces. The theme controller owns their colors and live preview. */
 :is(.analysis-panel-content, .personal-understanding-panel, .equity-hand-analysis-panel, .advanced-equity, #recommendation) {
   --text-primary: var(--analysis-text); --text-secondary: var(--analysis-secondary); --text-muted: var(--analysis-muted);
+  --riverline-brass: var(--analysis-support); --surface-panel: var(--analysis-surface); --surface-inset: var(--evidence-surface); --surface-elevated: var(--analysis-surface-raised);
   color: var(--analysis-text); background: var(--analysis-surface);
 }
 #recommendation { border: 1px solid var(--border-default); border-block-start: 3px solid var(--accent-primary); }
@@ -448,3 +449,126 @@ input[type="range"]::-webkit-slider-thumb { box-shadow: 0 2px 4px #0005, 0 0 0 3
 }
 
 #handSetupSection .hand-collection-field { grid-column: 1 / -1; }
+
+/* BETA-REPAIR-SWEEP-B: stable objects and independent reading columns. */
+html[data-theme-pending="true"] body { visibility: hidden; }
+.welcome-intro { padding: clamp(20px, 3vw, 38px); gap: 28px; border: 1px solid var(--border-default); border-radius: 18px; background: var(--surface-panel); box-shadow: var(--riverline-depth); }
+.welcome-intro h1 { max-inline-size: none; font-size: clamp(1.8rem, 2.8vw, 3rem); line-height: 1.2; margin-block: 18px; }
+.welcome-intro h1 > span { display: block; }
+.welcome-intro h1 > span:nth-child(2) { color: var(--accent-text); }
+.welcome-intro h1 > span:last-child { font-size: .78em; font-weight: 550; margin-block-start: .3em; }
+.welcome-eyebrow { font-size: .78rem; letter-spacing: .09em; color: var(--riverline-brass); }
+.welcome-table-scene { block-size: 280px; }
+.welcome-intro #welcomeDescription { font-size: .94rem; margin-block: 18px 24px; }
+.welcome-job-grid { margin-block-start: 18px; }
+
+#homeWorkspaceContent[data-product-destination="home"] { grid-template-columns: minmax(0, 1fr) minmax(250px, .32fr); gap: 16px; }
+.home-main-flow, .home-destinations-rail { display: grid; align-content: start; gap: 16px; min-inline-size: 0; }
+#homeWorkspaceContent .home-main-flow > .home-section, #homeWorkspaceContent .home-destinations-rail > .home-section { grid-area: auto; min-block-size: 0; }
+#homeWorkspaceContent[data-product-destination="home"] .home-section { --text-primary: var(--analysis-text); --text-secondary: var(--analysis-secondary); --text-muted: var(--analysis-muted); --riverline-brass: var(--analysis-support); --surface-panel: var(--analysis-surface); --surface-inset: var(--evidence-surface); --surface-interactive: var(--analysis-surface-raised); padding: 18px; }
+#homeWorkspaceContent[data-product-destination="home"] :is(.home-section--guest-account, .home-section--overview) { padding: 10px 16px; background: var(--analysis-surface); box-shadow: none; border: 0; }
+#homeWorkspaceContent[data-product-destination="home"] .home-guest-account-copy { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
+#homeWorkspaceContent[data-product-destination="home"] .home-guest-account-copy > div, #homeWorkspaceContent[data-product-destination="home"] #homeGuestAccountPrimary { display: none; }
+#homeWorkspaceContent[data-product-destination="home"] #homeGuestAccountSecondary { flex: 1 1 400px; margin: 0; font-size: .8rem; }
+#homeWorkspaceContent[data-product-destination="home"] .home-quick-links { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+#homeWorkspaceContent[data-product-destination="home"] .home-quick-link { min-height: 38px; padding: 8px 10px; background: transparent; border-color: transparent; box-shadow: none; }
+#homeWorkspaceContent[data-product-destination="home"] .home-quick-link span { display: none; }
+#homeWorkspaceContent[data-product-destination="home"] .home-quick-link:hover { background: var(--surface-interactive); }
+#homeWorkspaceContent[data-product-destination="home"] .home-section-head { padding: 0 0 12px; margin-block-end: 12px; background: transparent; border: 0; border-block-end: 1px solid var(--border-default); border-radius: 0; }
+#homeWorkspaceContent[data-product-destination="home"] .home-review-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+#homeWorkspaceContent[data-product-destination="home"] .home-empty-state { min-height: 0; padding: 12px; }
+#homeWorkspaceContent[data-product-destination="saved"] .home-main-flow { grid-column: 1 / -1; }
+#homeWorkspaceContent[data-product-destination="saved"] .home-destinations-rail { display: none; }
+
+#gtoMode[data-product-destination="hand"] #table-wrapper:not(.collapsed) { padding: 0; border: 0; box-shadow: none; background: var(--game-background); }
+#gtoMode[data-product-destination="hand"] #table-wrapper #visual-table-container { inline-size: 100%; width: 100%; max-inline-size: none; border: 0; border-radius: 16px; box-shadow: none; }
+#visual-table-container .table-seat-name { font-size: 13px; }
+#visual-table-container .table-seat-position { font-size: 10px; }
+#visual-table-container .table-seat-status { font-size: 9px; }
+#visual-table-container .table-seat-stack .poker-amount-text { font-size: 12px; }
+#visual-table-container .table-contribution .poker-amount-text { font-size: 12px; }
+#visual-table-container .poker-table-amount--pot .poker-amount-text { font-size: 20px; }
+#visual-table-container .table-seat.is-actor .table-seat-name { font-weight: 800; }
+#visual-table-container .table-seat.is-folded .table-seat-name { opacity: .65; }
+
+html[data-layout-preset] #gtoMode[data-product-destination="hand"].is-hand-review-open .playbook-workspace { grid-template-columns: minmax(0, 1fr); }
+html[data-layout-preset] #gtoMode[data-product-destination="hand"].is-hand-review-open .playbook-decision-workspace { grid-column: 1 / -1; grid-row: 1; }
+#gtoMode[data-product-destination="hand"].is-hand-review-open .playbook-context-rail { display: none; }
+#handReviewSurface.hand-review-surface,
+#gtoMode[data-product-destination="hand"].is-hand-review-open #handReviewSurface[data-review-source="canonical_hand"] { grid-template-columns: minmax(0, 1fr) minmax(320px, .43fr); grid-template-rows: auto auto; align-items: start; gap: 20px; }
+#handReviewSurface .hand-review-header { grid-column: 1 / -1; grid-row: 1; }
+#handReviewSurface .hand-review-workspace,
+#gtoMode[data-product-destination="hand"].is-hand-review-open .hand-review-workspace { display: block; grid-column: 1; grid-row: 2; min-inline-size: 0; }
+#handReviewSurface .hand-review-context-flow { grid-column: 2; grid-row: 2; display: grid; align-content: start; gap: 16px; min-inline-size: 0; }
+#handReviewSurface :is(.hand-review-overview, .hand-review-decision-navigation, .hand-review-decision-detail, .hand-review-replay-rail-mount),
+#gtoMode[data-product-destination="hand"].is-hand-review-open :is(.hand-review-overview, .hand-review-decision-navigation, .hand-review-decision-detail, .hand-review-replay-rail-mount) { grid-column: auto; grid-row: auto; position: static; min-inline-size: 0; }
+#handReviewSurface .hand-review-overview .hand-review-section-heading { display: grid; gap: 12px; }
+#handReviewSurface .hand-review-overview-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#gtoMode[data-product-destination="hand"].is-hand-review-open .hand-review-overview-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#handReviewSurface .hand-review-overview-facts > div:last-child { grid-column: 1 / -1; }
+#deepStudyReview { padding-block-start: 14px; border-block-start: 1px solid var(--border-default); }
+#handReviewSurface .hand-review-card-row { flex-wrap: nowrap; gap: 6px; }
+#handReviewSurface .hand-review-decision-list { grid-template-columns: minmax(0, 1fr); }
+#handReviewSurface #handHistorySection { max-block-size: 480px; }
+
+.teacher-panel #teacherContent { background: var(--learning-surface) !important; --text-primary: var(--learning-text); --text-secondary: var(--learning-secondary); --text-muted: var(--learning-muted); --riverline-brass: var(--learning-support); --surface-panel: var(--learning-surface); --surface-inset: var(--learning-surface); padding: 20px !important; box-sizing: border-box; }
+.teacher-panel .analysis-summary { padding: 0 0 16px; }
+.teacher-panel .analysis-reasoning-block, [dir="rtl"] .teacher-panel .analysis-reasoning-block { padding-block: 10px; padding-inline: 14px 10px; overflow-wrap: anywhere; }
+.advanced-equity-runout-results .runout-card { background: var(--analysis-surface); color: var(--analysis-text); }
+.ui-button:disabled { opacity: 1; color: var(--text-disabled, var(--text-secondary)); background: var(--surface-inset); border-style: dashed; }
+.ui-button:hover:not(:disabled) { filter: none; }
+.mode-rail { background: linear-gradient(165deg, var(--surface-shell), var(--surface-canvas) 80%); }
+.mode-nav-icon { color: var(--accent-text); }
+.mode-nav-group--support .mode-nav-item:not([aria-current="page"]) { color: var(--text-secondary); }
+.welcome-job-icon { color: var(--analysis-support); background: var(--analysis-surface-raised); }
+#visual-table-container .table-action-label { font-size: 11px; font-weight: 750; }
+.equity-player-footer .equity-result-primary strong { color: var(--accent-text); }
+.advanced-equity-value strong, .equity-analysis-equity > strong { color: var(--accent-text); }
+.equity-readiness:is([data-state="blocked"], [data-state="warning"]) { background: var(--surface-panel); }
+.hand-review-decision-button:focus-visible { outline-color: var(--border-focus); }
+.analysis-key-fact[data-fact-kind="derived"] .analysis-fact-primary,
+.analysis-hero-facts .analysis-key-fact[data-fact-key="draws"] .analysis-fact-primary,
+.analysis-outs-summary, .analysis-semibluff-draws, .playbook-facts-heading > span { color: var(--accent-text); }
+.analysis-study-hint-count { color: var(--accent-text) !important; }
+.advanced-equity-runout-results .runout-card[aria-pressed="true"] { outline-color: var(--border-focus); }
+.equity-presets .is-active { color: var(--accent-text); background: var(--surface-interactive); }
+.advanced-equity .study-warning { color: var(--analysis-text); background: var(--analysis-surface-raised); }
+
+/* Roster growth consumes width before adding another row. */
+#equityMode .equity-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(330px, .42fr); gap: 18px; align-items: start; }
+#equityMode .equity-player-panel { grid-column: 1; grid-row: 1; }
+#equityMode .equity-center-column { grid-column: 2; grid-row: 1 / span 2; }
+#equityMode .equity-dossier-panel { grid-column: 1; grid-row: 2; position: static; max-block-size: none; overflow: visible; }
+#equityMode .equity-workspace[data-roster-size="large"] .equity-player-panel { grid-column: 1 / -1; }
+#equityMode .equity-workspace[data-roster-size="large"] .equity-center-column { grid-column: 2; grid-row: 2; }
+#equityMode .equity-player-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); max-block-size: none; overflow: visible; padding: 12px; gap: 12px; }
+#equityMode .equity-player-list:is([data-player-count="2"], [data-player-count="3"]) { grid-template-columns: repeat(auto-fit, minmax(190px, 240px)); }
+@media (min-width: 1600px) {
+  #equityMode .equity-player-list:is([data-player-count="5"], [data-player-count="10"]) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  #equityMode .equity-player-list[data-player-count="6"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+#equityMode .equity-player-card { block-size: auto; min-block-size: 272px; grid-template-rows: 28px 152px minmax(56px, auto); padding: 10px; overflow: visible; }
+#equityMode .equity-player-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: 116px 28px; gap: 8px; padding: 0; overflow: visible; }
+#equityMode :is(.equity-hand-editor, .equity-unknown-hand) { grid-column: 1; grid-row: 1; block-size: 116px; margin: 0; padding: 8px; align-content: center; align-items: center; }
+#equityMode .equity-unknown-hand { display: flex; gap: 12px; }
+#equityMode .equity-hand-editor { grid-template-rows: 72px 18px; }
+#equityMode .equity-hand-mode { grid-column: 1; grid-row: 2; align-self: center; }
+#equityMode .equity-player-footer { grid-template-rows: minmax(15px, auto) minmax(36px, auto); }
+#equityMode .equity-player-footer-state { white-space: normal; overflow: visible; font-size: .72rem; }
+#equityMode .equity-player-footer .equity-result-metrics span { font-size: .7rem; }
+#equityMode .equity-player-head .remove-player { grid-column: 2; grid-row: 1; font-size: .7rem; padding-inline: 4px; }
+
+@media (max-width: 1450px) {
+  #equityMode .equity-workspace { grid-template-columns: minmax(0, 1fr) minmax(310px, .5fr); }
+  #equityMode .equity-workspace[data-roster-size="large"] .equity-player-panel { grid-column: 1 / -1; }
+  #equityMode .equity-workspace[data-roster-size="large"] .equity-center-column { grid-column: 2; grid-row: 2; }
+}
+@media (max-width: 1100px) {
+  #homeWorkspaceContent[data-product-destination="home"] { grid-template-columns: minmax(0, 1fr); }
+  #homeWorkspaceContent[data-product-destination="home"] .home-quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #equityMode .equity-workspace { display: flex; flex-direction: column; }
+  #equityMode .equity-workspace > * { inline-size: 100%; }
+  #handReviewSurface.hand-review-surface,
+  #gtoMode[data-product-destination="hand"].is-hand-review-open #handReviewSurface[data-review-source="canonical_hand"] { grid-template-columns: minmax(0, 1fr); }
+  #handReviewSurface .hand-review-context-flow { grid-column: 1; grid-row: 3; }
+}

@@ -35,6 +35,47 @@ function pendingTarget(pendingChance) {
   return target ? { target, count: pendingChance.cardCount } : null;
 }
 
+// Resolution supplies the eligible unknown players; Hero participation is irrelevant.
+export function requiredPrivateRevealPlayers(state) {
+  if (state?.showdown?.status !== 'awaiting_private_reveal') return [];
+  return (state.showdown.requiredRevealPlayerIds ?? [])
+    .map(id => state.players.find(player => player.playerId === id))
+    .filter(player => player && !player.folded && !Array.isArray(player.holeCards));
+}
+
+function randomizePrivateRevealDraft(request) {
+  const players = requiredPrivateRevealPlayers(request.state);
+  if (!players.length) return unavailable('no_pending_card_stage');
+  const bySeat = {};
+  const known = [...request.state.board, ...request.state.deadCards,
+    ...request.state.players.flatMap(player => Array.isArray(player.holeCards) ? player.holeCards : [])];
+  for (const player of players) {
+    const draft = request.bySeat?.[player.seat] ?? [];
+    if (!Array.isArray(draft) || draft.length > 2) return unavailable('invalid_private_draft');
+    bySeat[player.seat] = [draft[0] || null, draft[1] || null];
+    known.push(...bySeat[player.seat].filter(Boolean));
+  }
+  if (known.some(card => !isCard(card)) || new Set(known).size !== known.length) {
+    return unavailable('invalid_private_draft');
+  }
+  const blocked = new Set(known);
+  const deck = createSeededRandom(request.seed).shuffle(HOLDEM_DECK.filter(card => !blocked.has(card)));
+  const needed = Object.values(bySeat).flat().filter(card => !card).length;
+  if (deck.length < needed) return unavailable('insufficient_available_cards');
+  for (const cards of Object.values(bySeat)) {
+    for (let slot = 0; slot < 2; slot++) if (!cards[slot]) cards[slot] = deck.pop();
+  }
+  const recipe = createRandomizationRecipe({
+    generatorVersion: HAND_PENDING_RANDOMIZER_VERSION,
+    requestVersion: HAND_PENDING_RANDOMIZATION_REQUEST_VERSION,
+    sourceSurface: 'canonical_hand_pending_draft', target: 'private_reveal', seed: request.seed,
+    inputContext: { state: request.state, bySeat: request.bySeat ?? {} },
+    resultContext: { bySeat }, details: { generatedCardsBySeat: bySeat },
+  });
+  return deepFreezeRandomization({ schemaVersion: HAND_PENDING_RANDOMIZATION_RESULT_VERSION,
+    status: 'available', code: null, target: 'private_reveal', bySeat, cards: null, recipe });
+}
+
 export function canRandomizeHandPublicChance({ state, availableCards, readOnly = false, busy = false } = {}) {
   if (readOnly || busy || state?.phase !== 'chance' || !state.pendingChance) return false;
   const pending = pendingTarget(state.pendingChance);
@@ -54,6 +95,7 @@ export function randomizeHandPendingDraft(request = {}) {
   } catch {
     return unavailable('invalid_canonical_state');
   }
+  if (requiredPrivateRevealPlayers(request.state).length) return randomizePrivateRevealDraft(request);
   if (!request.state.pendingChance) return unavailable('no_pending_card_stage');
   const pending = pendingTarget(request.state.pendingChance);
   if (!pending) return unavailable('unsupported_pending_card_stage');

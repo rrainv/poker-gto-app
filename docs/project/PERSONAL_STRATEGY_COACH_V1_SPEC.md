@@ -1,5 +1,20 @@
 # Personal Strategy Coach, Range Evolution and Teach through a Hand
 
+## Sweep C: exact correction and teaching continuity
+
+The Teacher candidate list stays prioritized. A separate saved-combo selector
+inspects answered combinations outside that list, materializing a DecisionContext
+only for the selected combo. After save the answer remains selected, precision is
+explained and Continue deliberately advances. Existing canonical context, history,
+range mutations and Exploit Teacher facts remain the educational source.
+
+What I've taught also exposes exact answers whose current reach disappeared after
+an upstream correction. Correcting existing evidence uses its stored node/subject
+and validated current immutable heads, without teaching new unknown-reach combos.
+Current setup/Approach versions and repository owner fences remain mandatory.
+Original records survive exact-to-preferred and preferred-to-exact corrections.
+No persistence migration is required. Human educational/browser acceptance is pending.
+
 September 7 additive [Advanced Equity v1](ADVANCED_EQUITY_V1_SPEC.md) consumes a
 fingerprint-validated exact action-conditioned trajectory in the Hand study's
 optional range/runout disclosure. It never upgrades the older action-family

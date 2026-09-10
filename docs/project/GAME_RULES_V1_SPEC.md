@@ -1,5 +1,27 @@
 # Game Rules v1 specification
 
+## Sweep C: local Table presets and position-based Hand draft
+
+`table-presets/v1` is an owner-keyed localStorage convenience collection in
+`app/src/application/table-presets.mjs`, separate from mathematical GameRulesPreset
+and Personal Strategy Game Setup. Records have stable IDs, normalized 1–60 character
+names, created/updated timestamps, and supported draft configuration: player count,
+equal starting stack, collection choice, ante type and amount. Blinds remain the
+existing fixed 0.5/1 bb definition. Guest/account records are separate and local only.
+
+Load copies into the draft and immediately updates the preview. Save as new,
+Update, Rename, Duplicate and Delete live in a compact disclosure. Duplicate names
+are allowed with distinct IDs. Draft edits never rewrite saved presets; a loaded
+modified preset is labelled Modified. Delete preserves the draft. Invalid records
+are unavailable. The live configuration normalizer validates without initializing
+PokerState; Start hand remains the canonical commit boundary.
+
+Hero selection uses `deriveSeatAssignments` and only valid positions. Dealer changes
+preserve Hero position; a removed position falls back to BTN. HU displays BTN / SB.
+The Dealer moves by native selector or keyboard/click preview seat. No drag-only
+interaction or hand-specific preset data is introduced. This supersedes the earlier
+bounded preset UX deferral. Human browser acceptance remains pending.
+
 September 6 additive import extension: [Hand History Import v1](HAND_HISTORY_IMPORT_V1_SPEC.md)
 defines opt-in Game Rules Definition/Snapshot v2, PokerState v3 and recorded pot
 rake settlement evidence. The v1 contracts and live behavior below remain unchanged.

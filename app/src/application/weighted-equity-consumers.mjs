@@ -12,7 +12,7 @@ export function parseExplicitEquityRange(text, unlistedState = 'unknown') {
   const entries = [], classes = {}, seen = new Set();
   for (const token of text.trim().split(/[\s,;]+/).filter(Boolean)) {
     const match = /^([2-9TJQKA]{2}[so]?|[2-9TJQKA][shdc][2-9TJQKA][shdc]):(0(?:\.\d+)?|1(?:\.0+)?|\.\d+)$/.exec(token);
-    if (!match || seen.has(match[1])) throw new RangeError('Use AA:1, AKs:0.5 or AsKh:0.2; weights 0–1');
+    if (!match || seen.has(match[1])) throw new RangeError('Use AA:1, AKs:0.5 or AsKh:0.2; weights 0-1');
     seen.add(match[1]);
     const [, key, weight] = match;
     if (key.length === 4) entries.push({ comboId: holdemComboIdForCards([key.slice(0, 2), key.slice(2)]), state: 'known', weight: Number(weight), provenanceId: 'manual' });

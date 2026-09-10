@@ -1,4 +1,6 @@
 import { handSetupRulesDefinition } from './hand-setup-rules.mjs';
+import { handSetupPositions } from './table-presets.mjs';
+import { mountTablePresets } from './table-presets-workspace.mjs';
 import { createCanonicalLiveController } from './canonical-live-controller.mjs';
 import { createCanonicalHandLifecycleRecorder } from './canonical-hand-lifecycle.mjs';
 import { canonicalPokerStatesEqual, reconstructCanonicalHandReplaySource } from './canonical-hand-replay-source.mjs';
@@ -290,6 +292,8 @@ export function installPlaybookStateSourceBridge(browserWindow, {
     randomizeHandPendingDraft,
     canRandomizeHandPublicChance,
     handSetupRulesDefinition,
+    handSetupPositions,
+    mountTablePresets: options => mountTablePresets({ ...options, window: browserWindow }),
 
     resolveDecisionContext(scenarioInput) {
       return modeController.resolve({ scenarioInput });
