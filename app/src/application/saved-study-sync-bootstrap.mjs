@@ -7,7 +7,6 @@ import {
   SYNC_UI_STATES,
   createIndexedDbSyncDatabase,
   createPersonalStrategySyncAdapter,
-  createRangeCalibrationSyncAdapter,
   createSavedStudySyncDomainAdapter,
   createSupabaseRemoteSyncAdapter,
   createSyncCoordinator,
@@ -457,7 +456,6 @@ export async function installSavedStudySyncBridge(browserWindow, options = {}) {
     databaseFactory: options.personalStrategyDatabaseFactory,
   });
   const personalStrategyAdapter = createPersonalStrategySyncAdapter({ syncPort: strategyPort });
-  const rangeCalibrationAdapter = createRangeCalibrationSyncAdapter({ syncPort: strategyPort });
   let remoteStrategyInvalidation = null;
   const invalidatePersonalStrategy = () => {
     if (remoteStrategyInvalidation !== null) browserWindow.clearTimeout(remoteStrategyInvalidation);
@@ -477,9 +475,11 @@ export async function installSavedStudySyncBridge(browserWindow, options = {}) {
   });
   browserWindow.addEventListener('riverline:personalstrategymutation', (event) => {
     for (const entity of event.detail?.entities ?? []) {
-      if (personalStrategyAdapter.supports(entity) || rangeCalibrationAdapter.supports(entity)) {
-        void strategyCoordinator.recordLocalMutation(entity, { lifecycleScope: event.detail?.lifecycleScope });
-      }
+      // The coordinator checks eligibility before schema compatibility and owns
+      // sync error status. A committed local/Guest edit is not a remote request.
+      void strategyCoordinator.recordLocalMutation(entity, {
+        lifecycleScope: event.detail?.lifecycleScope,
+      }).catch(() => { /* Already reported by the coordinator; keep local evidence authoritative. */ });
     }
   });
   let activeStrategyPort = strategyPort;

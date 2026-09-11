@@ -1209,6 +1209,12 @@
 
             <section class="panel recommend playbook-primary-decision" id="recommendation" data-recommendation-state="ready" aria-live="polite" aria-atomic="false" data-tutorial-anchor="playbook-recommendation">
 
+              <div id="analysisInputState" class="workspace-empty-state" hidden>
+                <h2 data-i18n="Complete this decision">Complete this decision</h2>
+                <p id="analysisInputMessage"></p>
+                <button id="analysisEditInputs" class="ui-button ui-button--primary" type="button" data-i18n="Edit decision inputs">Edit decision inputs</button>
+              </div>
+
               <div class="recommend-top">
 
                 <div>
@@ -1509,7 +1515,7 @@
                     <div><span data-i18n="Board">Board</span><div id="handReviewBoardCards" class="hand-review-card-row"></div></div>
                   </div>
 
-                  <section class="hand-review-comparison" aria-labelledby="handReviewComparisonTitle">
+                  <details class="hand-review-comparison" aria-labelledby="handReviewComparisonTitle"><summary data-i18n="Source comparison">Source comparison</summary>
                     <div class="hand-review-section-heading">
                       <div><span data-i18n="Observed action and source comparison">Observed action and source comparison</span><h4 id="handReviewComparisonTitle" data-i18n="Chosen action and strategy source">Chosen action and strategy source</h4></div>
                       <span id="handReviewSourceBadge" class="badge status-badge status-badge--info"></span>
@@ -1519,8 +1525,9 @@
                     <div id="handReviewFrequencyRows" class="hand-review-frequency-rows"></div>
                     <p id="handReviewComparisonNote" class="panel-note"></p>
                     <div id="handReviewExploitFacts"></div>
-                  </section>
+                  </details>
 
+                  <details class="hand-review-exact-facts"><summary data-i18n="Decision facts">Decision facts</summary>
                   <dl class="hand-review-decision-facts">
                     <div><dt data-i18n="Position">Position</dt><dd id="handReviewPosition" class="poker-data-token"></dd></div>
                     <div><dt data-i18n="Pot">Pot</dt><dd id="handReviewPot" class="poker-data-token"></dd></div>
@@ -1532,6 +1539,7 @@
                     <div><dt data-i18n="Effective stack">Effective stack</dt><dd id="handReviewEffectiveStack" class="poker-data-token"></dd></div>
                     <div><dt data-i18n="Replay frame">Replay frame</dt><dd id="handReviewReplayPoint" class="poker-data-token"></dd></div>
                   </dl>
+                  </details>
 
                   <details class="hand-review-provenance">
                     <summary data-i18n="Source details">Source details</summary>
@@ -2120,10 +2128,9 @@
             </nav>
           <section role="tabpanel" id="calibrationUnderstandingPanel" data-tutorial-anchor="personal-understanding" class="panel personal-understanding-panel" aria-labelledby="personalUnderstandingTitle">
             <div class="calibration-section-heading"><div><p class="calibration-eyebrow" data-i18n="Your intended strategy">Your intended strategy</p><h2 id="personalUnderstandingTitle" data-i18n="What Riverline understands">What Riverline understands</h2><p id="personalUnderstandingScope" class="muted"></p></div><button id="personalMapRange" data-tutorial-anchor="personal-range-mapping" class="ui-button ui-button--primary" type="button" data-i18n="Map this range">Map this range</button></div>
-            <p data-i18n="An initial understanding, not a completed strategy. Preferred actions never imply 100% frequency.">An initial understanding, not a completed strategy. Preferred actions never imply 100% frequency.</p>
-            <details class="personal-evidence-status"><summary data-i18n="Inspect range evidence">Inspect range evidence</summary><p id="personalUnderstandingStatus" role="status" aria-live="polite"></p></details>
+            <details class="personal-evidence-status"><summary data-i18n="Inspect range evidence">Inspect range evidence</summary><p id="personalUnderstandingStatus" role="status" aria-live="polite"></p><p data-i18n="An initial understanding, not a completed strategy. Preferred actions never imply 100% frequency.">An initial understanding, not a completed strategy. Preferred actions never imply 100% frequency.</p></details>
             <div id="personalStrategyMap" class="personal-strategy-map" role="group" aria-label="Range evidence" data-i18n-aria-label="Range evidence"></div>
-            <details class="personal-coverage-disclosure" open><summary data-i18n="Coverage and boundaries">Coverage and boundaries</summary><ul id="personalUnderstandingCoverage" class="personal-mapping-coverage"></ul></details>
+            <details class="personal-coverage-disclosure"><summary data-i18n="Coverage and boundaries">Coverage and boundaries</summary><ul id="personalUnderstandingCoverage" class="personal-mapping-coverage"></ul></details>
             <div class="personal-understanding-columns">
               <details id="personalContextInputDisclosure"><summary data-tutorial-anchor="personal-intent" data-i18n="Add context or an exception">Add context or an exception</summary>
                 <h3 data-i18n="Your confirmed intentions">Your confirmed intentions</h3>
@@ -2488,7 +2495,7 @@
               </section>
               <div id="trainingDecisionActionMount">
                 <div id="trainingDecisionControls" class="training-decision-controls">
-                  <div id="trainingDecisionPrompt" class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="Only legal actions are shown.">Only legal actions are shown.</small></div>
+                  <div id="trainingDecisionPrompt" class="training-decision-prompt"><span data-i18n="Hero to act">Hero to act</span><strong data-i18n="What is your decision?">What is your decision?</strong><small data-i18n="What are you trying to accomplish?">What are you trying to accomplish?</small></div>
                   <div id="trainingGuessButtons" class="training-action-grid" aria-label="Available actions" data-i18n-aria-label="Available actions" data-tutorial-anchor="training-answer-actions"></div>
                   <label id="trainingUncertaintyControl" class="training-uncertainty" hidden><input id="trainingUncertain" type="checkbox"><span data-i18n="I'm unsure about my answer (optional)">I'm unsure about my answer (optional)</span></label>
                   <section id="trainingFullHandSizing" class="training-full-hand-sizing" hidden aria-labelledby="trainingFullHandSizingTitle">
@@ -2506,7 +2513,7 @@
 
             <div id="trainingFeedback" class="training-feedback" data-grade="none" hidden data-tutorial-anchor="training-feedback">
               <div class="training-feedback-head"><span id="trainingGradeBadge" class="badge status-badge status-badge--info" data-i18n="Feedback">Feedback</span><span id="trainingScoreBadge" class="training-session-score" hidden></span></div>
-              <div class="training-verdict" role="status" aria-live="polite" aria-atomic="true"><h3 id="feedbackTitle" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
+              <div class="training-verdict" role="status" aria-live="polite" aria-atomic="true"><h3 id="feedbackTitle" tabindex="-1" data-i18n="Feedback">Feedback</h3><p id="feedbackText" data-i18n="Your answer will be compared with the current strategy reference.">Your answer will be compared with the current strategy reference.</p></div>
               <dl id="trainingSameSpotComparison" class="training-same-spot-comparison" hidden aria-label="Same spot comparison" data-i18n-aria-label="Same spot comparison">
                 <div><dt data-i18n="Earlier answer">Earlier answer</dt><dd id="trainingSameSpotEarlierAnswer">-</dd></div>
                 <div><dt data-i18n="This try">This try</dt><dd id="trainingSameSpotThisTry">-</dd></div>
@@ -2799,14 +2806,18 @@
             <div id="progress" class="progress-wrap" data-progress-mode="indeterminate" hidden aria-label="Equity calculation activity" data-i18n-aria-label="Equity calculation activity"><div class="progress-heading"><span class="progress-spinner" aria-hidden="true"></span><strong class="progress-method" data-i18n="Preparing calculation…">Preparing calculation…</strong><span class="progress-percent" hidden></span></div><div class="progress-track" role="progressbar" aria-label="Equity calculation progress" data-i18n-aria-label="Equity calculation progress"><div class="progress-fill"></div></div><div class="progress-copy"><span class="progress-status" data-i18n="Waiting for measurable work…">Waiting for measurable work…</span><span class="progress-telemetry poker-data-token" hidden></span></div></div>
             <details id="equityAdvanced" class="equity-advanced" data-tutorial-anchor="equity-advanced"><summary data-i18n="Advanced calculation settings">Advanced calculation settings</summary><div class="equity-advanced-body"><label class="ui-field"><span data-i18n="Monte Carlo seed">Monte Carlo seed</span><div class="equity-seed-row"><input id="equitySeed" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="Generated automatically" data-i18n-placeholder="Generated automatically"><button id="rerollEquitySeed" class="ui-button ui-button-ghost" type="button" data-i18n="New seed">New seed</button></div><small class="muted" data-i18n="Leave blank for a generated seed. Reuse a seed for reproducible simulation.">Leave blank for a generated seed. Reuse a seed for reproducible simulation.</small></label></div></details>
           </section>
+          </main>
           <section id="equityResultsPanel" class="panel equity-overview-panel" data-result-state="empty" aria-labelledby="equityResultsTitle" data-tutorial-anchor="equity-results">
+            <div class="workspace-empty-state equity-before-calculation">
+              <h2 data-i18n="See how the matchup plays out">See how the matchup plays out</h2>
+              <p data-i18n="Set known hands, board and dead cards. Calculate to compare each player's Equity, wins and ties.">Set known hands, board and dead cards. Calculate to compare each player's Equity, wins and ties.</p>
+              <p class="muted" data-i18n="Unknown opponents use all available hands. Ranges and runouts are below.">Unknown opponents use all available hands. Ranges and runouts are below.</p>
+            </div>
             <div class="panel-head equity-result-head"><div><p class="equity-eyebrow" data-i18n="Comparison">Comparison</p><h2 id="equityResultsTitle" data-i18n="Equity overview">Equity overview</h2></div></div>
             <section class="equity-comparison" aria-labelledby="equityResultsTitle">
               <div id="equityComparison" class="equity-comparison-list" aria-live="polite"></div>
             </section>
           </section>
-          </main>
-
         <aside id="equityHandAnalysis" class="panel equity-dossier-panel equity-hand-analysis-panel" data-analysis-state="setup" aria-labelledby="equityHandAnalysisTitle" data-tutorial-anchor="equity-results">
           <div class="panel-head equity-dossier-head">
             <div><p class="equity-eyebrow" data-i18n="Calculated outcomes">Calculated outcomes</p><h2 id="equityHandAnalysisTitle" data-i18n="Hand Analysis">Hand Analysis</h2></div>
@@ -2850,6 +2861,19 @@
             <article class="guide-workflow-card"><span class="guide-workflow-number" aria-hidden="true">04</span><h3 data-i18n="Calculate Equity">Calculate Equity</h3><ol><li data-i18n="Add exact hands or leave opponents unknown.">Add exact hands or leave opponents unknown.</li><li data-i18n="Set board and dead cards, then calculate.">Set board and dead cards, then calculate.</li><li data-i18n="Compare Equity, Win, and Tie results with the method shown.">Compare Equity, Win, and Tie results with the method shown.</li></ol><button class="ui-button ui-button--secondary guide-workflow-action" type="button" data-guide-destination="equity" data-i18n="Open Equity">Open Equity</button></article>
             <article class="guide-workflow-card"><span class="guide-workflow-number" aria-hidden="true">05</span><h3 data-i18n="Teach Personal Strategy">Teach Personal Strategy</h3><ol><li data-i18n="Use a Riverline profile to record how you intend to play.">Use a Riverline profile to record how you intend to play.</li><li data-i18n="Answer calibration prompts or edit supported ranges.">Answer calibration prompts or edit supported ranges.</li><li data-i18n="Treat the result as personal intent, not the correct answer.">Treat the result as personal intent, not the correct answer.</li></ol><button class="ui-button ui-button--secondary guide-workflow-action" type="button" data-guide-destination="personal-strategy" data-i18n="Open Personal Strategy">Open Personal Strategy</button></article>
           </div>
+        </section>
+
+        <section class="guide-section information-role-legend" aria-labelledby="informationRolesTitle">
+          <h2 id="informationRolesTitle" data-i18n="How Riverline knows things">How Riverline knows things</h2>
+          <dl>
+            <div><dt data-i18n="Observed">Observed</dt><dd data-i18n="What happened in the Hand.">What happened in the Hand.</dd></div>
+            <div><dt data-i18n="Personal Strategy">Personal Strategy</dt><dd data-i18n="How you told Riverline you intend to play.">How you told Riverline you intend to play.</dd></div>
+            <div><dt data-i18n="Selected reference">Selected reference</dt><dd data-i18n="Strategy from an accepted source, only within its coverage.">Strategy from an accepted source, only within its coverage.</dd></div>
+            <div><dt data-i18n="Heuristic fallback">Heuristic fallback</dt><dd data-i18n="Exploratory guidance, not solved strategy or a correctness grade.">Exploratory guidance, not solved strategy or a correctness grade.</dd></div>
+            <div><dt data-i18n="Calculated">Calculated</dt><dd data-i18n="Poker rules, Equity, pot economics and hand strength from the supplied inputs.">Poker rules, Equity, pot economics and hand strength from the supplied inputs.</dd></div>
+            <div><dt data-i18n="Opponent assumption">Opponent assumption</dt><dd data-i18n="Synthetic behavior for practice and exploit questions, not a read on a real player.">Synthetic behavior for practice and exploit questions, not a read on a real player.</dd></div>
+            <div><dt data-i18n="Normative assessment">Normative assessment</dt><dd data-i18n="A grade only when an accepted source and assessment policy permit it.">A grade only when an accepted source and assessment policy permit it.</dd></div>
+          </dl>
         </section>
 
         <section class="guide-section" aria-labelledby="guideConceptsTitle">

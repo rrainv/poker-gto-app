@@ -46,6 +46,10 @@ Firefox is the primary browser acceptance target.
 
 ## Canonical verification
 
+Real-app Beta smoke: `node tests/tooling/verify_beta_candidate_browser.mjs`.
+See [browser prerequisites, coverage and failure artifacts](tests/tooling/README.md#current-beta-browser-entry-point).
+Automated smoke does not replace human Firefox visual acceptance.
+
 ```powershell
 node --test tests/*.test.js tests/*.test.mjs
 $env:PYTHONPATH='solver;.'

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { runInNewContext } from 'node:vm';
-import { bindSyncUi, createStudySyncAggregate, PERSONAL_STRATEGY_SYNC_UPGRADE_MESSAGE } from '../app/src/application/saved-study-sync-bootstrap.mjs';
+import { bindSyncUi, createStudySyncAggregate, installSavedStudySyncBridge, PERSONAL_STRATEGY_SYNC_UPGRADE_MESSAGE } from '../app/src/application/saved-study-sync-bootstrap.mjs';
 import {
   createLocalOwnerRef, migrateStrategyProfile, migrateStrategyMode,
   createMemoryPersonalStrategyDatabase,
@@ -53,6 +53,42 @@ function harness(initial = [], { beforePreflight = async () => {} } = {}) {
   return { adapter, repository, coordinator, applied, calls, migrate: () => { objects = [migratedBundle()]; } };
 }
 const activate = (h) => h.coordinator.activate({ identityId, authenticated: true, sessionValid: true });
+
+test('mounted mutation listener leaves Guest edits local and contains enabled sync schema failures', async () => {
+  const h = harness([legacyBundle()]);
+  const saved = harness();
+  const listeners = new Map(), pending = [];
+  const strategyCoordinator = { ...h.coordinator, recordLocalMutation(...args) {
+    const operation = h.coordinator.recordLocalMutation(...args); pending.push(operation); return operation;
+  } };
+  const browser = {
+    document: { readyState: 'loading', addEventListener() {} },
+    addEventListener(name, listener) { listeners.set(name, listener); },
+    RiverlineAuthentication: { ready: async () => {}, getState: () => ({ status: 'guest' }), subscribe() {} },
+    RiverlineAccountIdentity: { subscribe() {} },
+    RiverlineSavedStudyObjects: { subscribeLocalMutations() {}, createSyncPort: () => ({
+      listAll: async () => [], getById: async () => null, applyRemote: async () => {}, activate: async () => ({}),
+    }) },
+  };
+  await installSavedStudySyncBridge(browser, { config: {}, remoteAdapter: {}, database: createMemorySyncDatabase(),
+    coordinator: saved.coordinator, strategyCoordinator, strategyPort: {
+      listEntities: async () => [], getEntityById: async () => null, applyRemoteEntity: async () => {}, ownerRef: async () => ownerRef,
+    } });
+  const localEvidence = migratedBundle(), before = structuredClone(localEvidence);
+  const notify = () => listeners.get('riverline:personalstrategymutation')({ detail: { entities: [localEvidence] } });
+  try {
+    assert.doesNotThrow(notify, 'Guest mutation must not synchronously preflight remote schemas');
+    assert.deepEqual(await pending.pop(), { queued: false });
+    assert.deepEqual(h.calls, []);
+    await activate(h); await h.coordinator.enable(); h.migrate();
+    assert.doesNotThrow(notify);
+    await assert.rejects(pending.pop(), unsupported);
+    assert.equal(h.coordinator.getState().state, 'error', 'Coordinator retains the visible sync failure');
+    assert.deepEqual(h.calls, []);
+    assert.deepEqual(localEvidence, before, 'Committed local evidence is unchanged');
+    assert.equal((await h.repository.getRecord(identityId, '__domain__')).lastErrorCode, 'unsupported_schema');
+  } finally { h.coordinator.close(); saved.coordinator.close(); }
+});
 
 test('remote v1 stays readable without rebranding v2 metadata or qualitative intent as v1', () => {
   const legacy = toRemotePersonalStrategyEntity(legacyBundle());

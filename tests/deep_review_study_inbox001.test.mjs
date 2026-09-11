@@ -197,6 +197,7 @@ class Element {
   set textContent(value) { this._text = String(value); this.children = []; }
   get textContent() { return this._text + this.children.map(child => child.textContent).join(' '); }
   append(...nodes) { this.children.push(...nodes); }
+  prepend(...nodes) { this.children.unshift(...nodes); }
   replaceChildren(...nodes) { this._text = ''; this.children = [...nodes]; }
   setAttribute(key, value) { this[key] = value; }
   addEventListener(type, handler) { this.listeners.push({ type, handler }); }
@@ -213,10 +214,12 @@ test('mounted EN/RU/HE Deep Review keeps evidence collapsed, exact seeking, and 
     assert.equal(root.dir, language === 'he' ? 'rtl' : 'ltr');
     const nodes = descendants(root);
     assert.equal(nodes.filter(node => node.dataset.deltaRole).length, 7);
+    const primary = nodes.find(node => node.className === 'study-primary-roles');
+    assert.deepEqual(primary.children.map(node => node.dataset.deltaRole), ['observedAction', 'personalIntent', 'heuristicBaseline']);
     assert.ok(nodes.filter(node => node.tagName === 'details').every(node => !node.open));
     const buttons = nodes.filter(node => node.tagName === 'button');
-    await buttons[0].fire('click'); assert.equal(selected, 0);
-    active = false; await buttons[1].fire('click'); assert.equal(actions, 0);
+    await buttons.find(node => node.dataset.studyControl === 'decision:0').fire('click'); assert.equal(selected, 0);
+    active = false; await buttons.find(node => node.dataset.studyControl === 'later').fire('click'); assert.equal(actions, 0);
     assert.ok(nodes.filter(node => node.tagName === 'bdi').every(node => node.dir === 'ltr'));
     for (const text of Object.values(STUDY_COPY)) assert.ok(text.every(value => typeof value === 'string' && value.length));
   }
@@ -282,4 +285,23 @@ test('shared Saved annotation editor binds the reviewed decision, not a changing
   await context.archiveSavedStudyObjectFromEditor(); assert.equal(writes.length, 1);
   owner++;
   await context.saveSavedStudyAnnotations({ preventDefault() {} }); assert.equal(writes.length, 1);
+});
+
+test('Review primary intent stays qualitative; unavailable and reference roles never inherit heuristic permission', () => {
+  const f = hand(), selected = f.review.selectedDecision;
+  const personal = { personalStatus: 'available', intendedAction: 'call', precision: 'dominant_only',
+    actionTypeRelationship: 'different_action_type', frequency: null, evidenceIds: ['intent-1'] };
+  for (const reference of [false, true]) {
+    const decision = reference ? { ...selected, truth: { ...selected.truth, claims: { ...selected.truth.claims, reference: true } } } : selected;
+    const review = { ...f.review, decisions: [decision], selectedDecision: decision };
+    const root = rootElement();
+    renderDeepReview({ root, review, evidence: { [decision.decisionId]: { personal } }, onAction() {}, onSelect() {} });
+    const primary = descendants(root).find(node => node.className === 'study-primary-roles');
+    assert.deepEqual(primary.children.map(node => node.dataset.deltaRole), ['observedAction', 'personalIntent', reference ? 'selectedReference' : 'heuristicBaseline']);
+    const intent = primary.children.find(node => node.dataset.deltaRole === 'personalIntent');
+    assert.ok(intent.textContent.includes('Call'));
+    assert.ok(!intent.textContent.includes('%'));
+    assert.equal(personal.frequency, null);
+    assert.equal(descendants(root).filter(node => node.dataset.deltaRole === 'normativeAssessment').length, 1);
+  }
 });

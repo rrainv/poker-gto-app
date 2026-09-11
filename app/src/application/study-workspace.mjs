@@ -23,13 +23,14 @@ export function renderDeepReview({ root, review, evidence = {}, language = 'en',
     .map(element => [element.dataset.studyDisclosure, element.open]));
   const active = root.ownerDocument.activeElement;
   const focusedControl = root.contains?.(active) ? active?.dataset?.studyControl : null;
+  const focusedDisclosure = root.contains?.(active) && active?.tagName === 'SUMMARY'
+    ? active.parentElement?.dataset?.studyDisclosure : null;
   root.replaceChildren();
   if (review?.status !== 'ready') return;
   const { copy, node, line, token, button } = elements(root, language, translate);
   const deltas = review.decisions.map(decision => projectDecisionDelta(decision, {
     importProvenance: review.importProvenance,
     strategyBasis: review.source === 'training_full_hand' ? 'historical' : 'current', ...evidence[decision.decisionId] }));
-  root.append(node('h3', copy('deep')));
   if (evidencePending) line(root, copy('loading'));
   if (evidenceUnavailable.length) line(root, `${copy('partial')} ${evidenceUnavailable.map(copy).join(' · ')}`);
   const priorities = selectImportantDecisions(deltas);
@@ -42,8 +43,8 @@ export function renderDeepReview({ root, review, evidence = {}, language = 'en',
     select.textContent = `${delta.decisionIndex + 1} · ${copy(delta.street)}`;
     line(item, copy(delta.reasons[0].code)); list.append(item);
   }
-  root.append(list);
   const policy = node('details'); policy.append(node('summary', copy('why'))); line(policy, copy('priorityPolicy')); root.append(policy);
+  policy.append(list);
   policy.dataset.studyDisclosure = 'priority';
   const delta = deltas.find(item => item.decisionId === review.selectedDecision.decisionId);
   const selected = node('section'); selected.dataset.decisionDelta = delta.decisionId;
@@ -51,37 +52,51 @@ export function renderDeepReview({ root, review, evidence = {}, language = 'en',
   if (delta.situational) line(selected, copy('marked'));
   const roles = node('details'); roles.append(node('summary', copy('details')));
   roles.dataset.studyDisclosure = `${delta.decisionId}:evidence`;
+  const primary = node('div'); primary.className = 'study-primary-roles';
+  // Keep the selected source's actual role. A heuristic never becomes a reference.
+  const comparisonRole = delta.roles.selectedReference.availability === 'available'
+    ? 'selectedReference' : delta.roles.heuristicBaseline.availability === 'available'
+      ? 'heuristicBaseline' : 'selectedReference';
+  const primaryRoles = new Set(['observedAction', 'personalIntent', comparisonRole]);
   for (const [key, role] of Object.entries(delta.roles)) {
-    const part = node('section'); part.dataset.deltaRole = key; part.append(node('h4', copy(key)));
+    const part = node('section'); part.dataset.deltaRole = key; part.dataset.availability = role.availability; part.append(node('h4', copy(key)));
     if (role.availability === 'unavailable') line(part, copy(role.reason ?? 'unavailable'));
-    else if (key === 'observedAction') line(part, copy(role.evidence.type));
+    else if (key === 'observedAction') {
+      const action = role.evidence;
+      const value = node('p', translate(action.amountKind === 'amount_to'
+        ? { raise: 'Raise to', bet: 'Bet to', all_in: 'All-in to' }[action.type] ?? copy(action.type) : copy(action.type)));
+      if (action.amountKind !== 'none' && Number.isSafeInteger(action.amountMilliBb)) value.append(token(` ${action.amountMilliBb / 1000} bb`));
+      part.append(value);
+    }
     else if (key === 'personalIntent') {
       line(part, copy(role.evidence.intendedAction));
-      line(part, copy('inspected'));
       if (role.evidence.selection) line(part, `${role.evidence.selection.setupName} · ${role.evidence.selection.approachName}`);
       // Preferred action is qualitative; no invented 100% frequency.
       if (Array.isArray(role.evidence.frequency)) for (const entry of role.evidence.frequency) {
         const p = node('p', copy(entry.action.type));
         p.append(token(` ${Math.round(entry.probability * 1000) / 10}%`)); part.append(p);
       }
+      const detail = node('details'); detail.append(node('summary', copy('details'))); line(detail, copy('inspected'));
+      detail.dataset.studyDisclosure = `${delta.decisionId}:intent-basis`; part.append(detail);
     } else if (key === 'opponentPolicy') {
       const description = describeOpponentPolicy(role.evidence.configuration, language);
       line(part, description);
     } else if (key === 'exploitAnalysis') line(part, copy('exploit'));
     else if (key === 'normativeAssessment') line(part, translate(strategyTruthPresentation(role.evidence).title));
     else {
-      line(part, copy(role.basis === 'historical' ? 'historicalSource' : 'currentSource'));
-      part.append(token(`${role.evidence.source.id} · ${role.evidence.source.version ?? ''}`));
       for (const action of role.evidence.distribution) {
         const p = node('p', copy(action.type)); p.append(token(` ${Math.round(action.probability * 1000) / 10}%`)); part.append(p);
       }
-      if (key === 'heuristicBaseline') line(part, copy('baseline'));
+      const detail = node('details'); detail.append(node('summary', copy('details')));
+      detail.dataset.studyDisclosure = `${delta.decisionId}:${key}-basis`;
+      line(detail, copy(role.basis === 'historical' ? 'historicalSource' : 'currentSource'));
+      detail.append(token(`${role.evidence.source.id} · ${role.evidence.source.version ?? ''}`));
+      if (key === 'heuristicBaseline') line(detail, copy('baseline'));
+      part.append(detail);
     }
-    roles.append(part);
+    (primaryRoles.has(key) ? primary : roles).append(part);
   }
-  // Observed action stays visible while optional evidence layers remain collapsed.
-  line(selected, `${copy('observedAction')}: ${copy(delta.roles.observedAction.evidence.type)}`);
-  selected.append(roles);
+  selected.append(primary, roles);
   const actions = node('div'); actions.className = 'study-actions';
   const feedback = node('p'); feedback.setAttribute('aria-live', 'polite');
   for (const key of ['later', 'practice', 'similar', 'inspect', 'situational', 'save']) {
@@ -99,12 +114,14 @@ export function renderDeepReview({ root, review, evidence = {}, language = 'en',
   for (const key of ['change', 'teach', 'unresolved', ...(delta.roles.opponentPolicy.availability === 'available' ? ['policy'] : [])]) {
     button(more, key, async () => { if (isCurrent()) { const message = await onAction(key, delta); if (isCurrent()) feedback.textContent = message ? copy(message) : ''; } });
   }
-  selected.append(actions, more, feedback); root.append(selected);
+  selected.append(actions, more, feedback); root.prepend(selected);
   for (const element of root.querySelectorAll?.('[data-study-disclosure]') ?? []) {
     if (disclosureState.has(element.dataset.studyDisclosure)) element.open = disclosureState.get(element.dataset.studyDisclosure);
   }
   if (focusedControl) [...root.querySelectorAll?.('[data-study-control]') ?? []]
     .find(element => element.dataset.studyControl === focusedControl)?.focus({ preventScroll: true });
+  if (focusedDisclosure) [...root.querySelectorAll?.('[data-study-disclosure]') ?? []]
+    .find(element => element.dataset.studyDisclosure === focusedDisclosure)?.querySelector('summary')?.focus({ preventScroll: true });
   return deltas;
 }
 

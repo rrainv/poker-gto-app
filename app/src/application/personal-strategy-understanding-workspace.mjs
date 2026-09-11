@@ -5,7 +5,7 @@ import { choosePersonalTeachingNext, comparePersonalStrategyWithSource } from '.
 import { createPersonalCoach, createPersonalCoachRequest, renderPersonalCoachLesson } from '../personal-strategy/coach.mjs';
 import { mountPersonalStrategyHandWorkspace } from './personal-strategy-hand-workspace.mjs';
 import { mountPersonalEvidenceReview } from './personal-evidence-review.mjs';
-import { PERSONAL_STRATEGY_MATRIX_PRECISIONS } from '../personal-strategy/matrix-projection.mjs';
+import { PERSONAL_STRATEGY_MATRIX_PRECISIONS, PERSONAL_STRATEGY_MATRIX_STATUS_MARKERS } from '../personal-strategy/matrix-projection.mjs';
 
 
 export function renderPersonalMappingCoverage(target, coverage, t) {
@@ -22,8 +22,10 @@ export function renderPersonalMappingCoverage(target, coverage, t) {
   }));
 }
 
-export function renderPersonalStrategyMap(target, cells, t) {
+export function renderPersonalStrategyMap(target, cells, t, { onInspect, onTeach, currentHand = null } = {}) {
   if (!target) return;
+  const focusedHand = target.contains(target.ownerDocument.activeElement)
+    ? target.ownerDocument.activeElement?.dataset?.mapHand : null;
   target.replaceChildren(); target.hidden = !cells?.length;
   if (!cells?.length) return;
   const labels = { directly_known: 'Specified', inferred_high: 'Supported estimates', inferred_medium: 'Tentative', uncertain: 'Tentative', transferred: 'Transferred', unknown: 'Unknown', conflicting: 'Conflicts' };
@@ -37,21 +39,55 @@ export function renderPersonalStrategyMap(target, cells, t) {
   for (const [status, count] of counts) {
     const segment = document.createElement('span'); segment.dataset.coverageState = status; segment.style.flexGrow = String(count); bar.append(segment);
     const item = document.createElement('li'); item.dataset.coverageState = status;
-    item.textContent = `${t(labels[status])} · ${count}`; legend.append(item);
+    item.textContent = `${onInspect && onTeach ? `${PERSONAL_STRATEGY_MATRIX_STATUS_MARKERS[status]} · ` : ''}${t(labels[status])} · ${count}`; legend.append(item);
   }
   const caption = document.createElement('p'); caption.className = 'study-note';
   caption.textContent = t('Hand classes by evidence status, not action frequencies or confidence.');
   const exactPrecisions = [PERSONAL_STRATEGY_MATRIX_PRECISIONS.PURE_EXPLICIT, PERSONAL_STRATEGY_MATRIX_PRECISIONS.EXACT_MIX, PERSONAL_STRATEGY_MATRIX_PRECISIONS.TIED_EXACT_MIX];
   const exactCount = cells.filter(cell => cell.status === 'directly_known' && exactPrecisions.includes(cell.action?.precision)).length;
   const precision = document.createElement('p'); precision.className = 'personal-map-precision';
-  precision.textContent = `${t('Exact-frequency evidence')} · ${exactCount}`;
+  precision.textContent = `${onInspect && onTeach ? '% · ' : ''}${t('Exact-frequency evidence')} · ${exactCount}`;
   target.append(bar, legend, precision, caption);
+  if (onInspect && onTeach) {
+    const grid = document.createElement('div'); grid.className = 'personal-hand-map'; grid.dir = 'ltr';
+    for (const cell of cells) {
+      const control = document.createElement('button'); control.type = 'button';
+      control.dataset.mapHand = cell.handClass; control.dataset.coverageState = cell.status;
+      control.tabIndex = focusedHand ? (cell.handClass === focusedHand ? 0 : -1) : (grid.children.length === 0 ? 0 : -1);
+      const exact = cell.status === 'directly_known' && exactPrecisions.includes(cell.action?.precision);
+      control.dataset.exactEvidence = String(exact);
+      if (cell.handClass === currentHand) control.setAttribute('aria-current', 'true');
+      const label = document.createElement('span'); label.textContent = cell.handClass;
+      const marker = document.createElement('span'); marker.className = 'personal-hand-status';
+      marker.setAttribute('aria-hidden', 'true');
+      marker.textContent = `${PERSONAL_STRATEGY_MATRIX_STATUS_MARKERS[cell.status] ?? '·'}${exact ? '%' : ''}`;
+      control.append(label, marker);
+      const action = cell.status === 'unknown' ? 'Teach this hand' : 'Inspect this answer';
+      control.setAttribute('aria-label', `${cell.handClass} · ${t(labels[cell.status] ?? 'Unknown')}${exact ? ` · ${t('Exact-frequency evidence')}` : ''} · ${t(action)}`);
+      control.title = control.getAttribute('aria-label');
+      control.addEventListener('click', () => cell.status === 'unknown'
+        ? onTeach({ handClass: cell.handClass, intent: 'mapping' }) : onInspect(cell.handClass));
+      grid.append(control);
+    }
+    grid.addEventListener('keydown', event => {
+      const index = [...grid.children].indexOf(event.target);
+      if (index < 0) return;
+      const moves = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 13, ArrowUp: -13, Home: -index, End: grid.children.length - 1 - index };
+      if (!Object.hasOwn(moves, event.key)) return;
+      event.preventDefault();
+      const next = grid.children[Math.max(0, Math.min(grid.children.length - 1, index + moves[event.key]))];
+      for (const control of grid.children) control.tabIndex = control === next ? 0 : -1;
+      next.focus({ preventScroll: true });
+    });
+    target.append(grid);
+    if (focusedHand) [...grid.children].find(control => control.dataset.mapHand === focusedHand)?.focus({ preventScroll: true });
+  }
 }
 
 // Presentation/application adapter over the existing service. It never opens
 // storage, resolves poker facts locally, or persists drafts/chat transcripts.
 export function mountPersonalStrategyUnderstanding({ root, application, getScope, getSelection, getWorkspace,
-  onRefresh, onTeach, onMatrix, getTeachingHand = () => null, t, language, signal } = {}) {
+  onRefresh, onTeach, onMatrix, getTeachingHand = () => null, getMapHand = getTeachingHand, t, language, signal } = {}) {
   const q = (id) => root.querySelector(`#${id}`);
   const lifecycle = new AbortController();
   const handWorkspace = mountPersonalStrategyHandWorkspace({ root: q('personalHandWorkspace'), application,
@@ -242,7 +278,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
       ]);
       if (!current(token.version, token.scopeKey) || expectedLoadVersion !== loadVersion) return;
       qualitative = statements; matrix = projection;
-      renderPersonalStrategyMap(q('personalStrategyMap'), projection.cells, t);
+      renderPersonalStrategyMap(q('personalStrategyMap'), projection.cells, t, { onInspect: onMatrix, onTeach, currentHand: getMapHand() });
       coachEvidence = evidenceView;
       facts = createPersonalRangeLanguageFacts({ evidenceView });
       const { entry, approach } = active();

@@ -1,5 +1,157 @@
 # Riverline persistent QA backlog
 
+## QA-BROWSER-BETA-HARNESS-001 - September 11, 2026
+
+**IMPLEMENTED / FIREFOX AUTOMATED SMOKE PASSED; HUMAN VISUAL ACCEPTANCE SEPARATE.**
+The [current Beta smoke command](../../tests/tooling/README.md#current-beta-browser-entry-point)
+runs the mounted app in disposable Firefox state using the existing dev server.
+Ticket flow numbers in console output map to the requested lifecycle groups;
+the owning tooling README records prerequisites, fixtures, viewport/theme/locale
+coverage, artifacts and the distinction from human Firefox visual acceptance.
+No earlier visual, account/provider or Beta-readiness gate is closed.
+
+Final browser command: `node tests/tooling/verify_beta_candidate_browser.mjs`,
+with `RIVERLINE_BROWSER_PORT=0` because the developer's port-3000 server was
+already running and was preserved. Firefox **155.0.1**, Puppeteer Core **25.10.0**:
+**21 groups / all 23 requested flows passed in 95.9 seconds**, zero console/page/
+critical-asset diagnostics. Primary 1920x1080 and bounded 1366x768 coverage use
+scale 1; Midnight/Daylight and EN/RU/HE/RTL are exercised as documented. A prior
+complete run passed in 95.7 seconds before the additional theme-focus regression.
+Final browser log: `C:/Users/sjzns/AppData/Local/Temp/riverline-browser-beta-verification-20260911/browser-final.log`.
+The exact `node --test tests/*.test.js tests/*.test.mjs` gate completed on
+September 12 local time: **2,560 passed, 0 failed, 0 cancelled, 0 skipped**,
+307.5 seconds. The final run used browser-process permissions for the existing
+Electron Explain test. The first restricted run exposed that launch limitation
+and an obsolete source assertion requiring the removed redundant adapter; the
+assertion was updated, with mounted mutation behavior covered separately.
+Full log: `C:/Users/sjzns/AppData/Local/Temp/riverline-browser-beta-verification-20260911/full-node-final.log`.
+Changed-module syntax and `git diff --check` passed. Sixteen ticket files remain
+unstaged and uncommitted; pre-existing modernization/config changes remain intact.
+There are no passing-step screenshots or pixel baselines. Exact theme compositor
+timing, exhaustive contrast, real account sync and human visual judgment remain
+outside the smoke's claims.
+
+The suite reproduced `QA-MODERNIZATION-SYNC-001`: the browser's local-mutation
+listener called the remote adapter's throwing compatibility predicate before
+the coordinator checked Guest/disabled eligibility. The bounded repair delegates
+to the coordinator first and handles its rejected sidecar promise; enabled sync
+keeps its existing visible error state. No schema or authority changes. Local
+teaching, correction and isolation are browser regressions; focused tests also
+check Guest no-op, retained enabled-sync schema failure and unchanged evidence.
+Runner lifecycle tests cover port collision and cleanup after launch/context
+failure. Existing modernization changes and `.codex/config.toml` are preserved.
+
+### QA-BROWSER-BETA-THEME-FOCUS-001
+
+**FIXED / BROWSER REGRESSION COVERED.** Choosing a theme replaced its focused
+swatch button, leaving focus on BODY. The Settings-local Escape handler then
+could not receive the key. The swatch activation handler now restores focus to
+the replacement selected button only when the initiating button held focus.
+The mounted smoke checks both retained Settings focus and Escape dismissal after
+Daylight/Midnight selection. Theme persistence and palette authority are unchanged.
+Pre-fix assertion/screenshot: temporary `riverline-browser-beta-DDRAZ4` directory.
+
+## QA-BETA-PRODUCT-MODERNIZATION-001 - September 11, 2026
+
+**Visual balance correction — implemented; human visual acceptance pending.**
+Human review requested only Home/Guide grouping and restoration of the Personal
+Strategy tile map. Continue keeps its focal surface; Review/Recent and Destinations
+have quiet grouped surfaces alongside the existing contained account context.
+Guide workflow groups and the information-role legend have restrained containment.
+The 13x13 map has filled tiles, canonical non-color evidence markers, per-cell
+exact-frequency marks, current-hand/learning selection, hover and keyboard focus.
+This correction does not change other workspace composition, copy, theme definitions,
+navigation, evidence authority, or scheduling/invalidation paths.
+
+- Firefox at `http://127.0.0.1:3000/`, served by `node tools/dev-web-server.mjs`:
+  Home, Guide, Personal active teaching and paused Understanding checked at
+  1920x1080 and 1366x768 in Midnight, Daylight and one saved custom theme.
+  Representative screenshots were visually inspected. All 169 cells retained
+  13 columns without horizontal overflow; smallest active tiles were 34.77x28px.
+  Computed tile text contrast minima: Midnight 11.52:1, Daylight 14.58:1,
+  custom 10.58:1. Canonical labels plus markers distinguish unknown, specified,
+  supported, tentative, transferred and conflict states. A non-persisted rendering
+  fixture exercised rare evidence states and exact precision in each combination.
+- One Tab stop, arrow movement, visible focus, current-hand update after answering
+  and Continue, removal of current state on Pause, keyboard unknown-hand teaching,
+  and pointer known-hand inspection/unknown-hand teaching passed. Pointer checks
+  scroll targets clear of the fixed header. No human acceptance is inferred.
+- Reproduction: `tests/tooling/verify_visual_balance001_firefox.mjs`, with
+  `RIVERLINE_PUPPETEER_MODULE` pointing to an available Puppeteer module.
+  Theme/viewport artifacts: `C:/Users/sjzns/AppData/Local/Temp/riverline-visual-balance-gi4bpE/`;
+  pointer supplement: `C:/Users/sjzns/AppData/Local/Temp/riverline-visual-balance-0E2iXJ/`.
+  Only the existing QA-MODERNIZATION-SYNC-001 diagnostic recurred; no new page errors.
+- 47 focused presentation, theme, Understanding and locale tests passed. Changed
+  JS/MJS syntax and `git diff --check` passed. No full Node gate was run for this
+  correction. Six correction files: `riverline-design.css`,
+  `personal-strategy-understanding-workspace.mjs`, `range-calibration-workspace.mjs`,
+  `beta_design_refresh001.test.mjs`, `verify_visual_balance001_firefox.mjs`, and
+  this QA record. Prior ticket edits and the pre-existing config edit remain intact;
+  nothing staged or committed. No unrelated QA/Return ID closes.
+
+**IMPLEMENTED / HUMAN PRODUCT ACCEPTANCE PENDING.** Bounded clarity pass over
+the accepted identity and existing workspaces. No earlier QA or Return ID closes.
+
+- Analyze unavailable/ready, Equity empty/calculated/stale, Saved empty/populated,
+  Home continuity, Training decide/learn, Review peer evidence roles and Personal
+  teaching/map/correction now use distinct hierarchy with less nested chrome.
+  Guide includes the EN/RU/HE information-role legend. Personal tutorial guidance
+  describes map interaction without resetting tutorial completion.
+- Canonical handoffs were inspected in Review/Study, Saved open, Training Memory
+  re-drill and Personal teaching. Exact DecisionContext and replay facts remain
+  owner-provided; Scenario stays lossy. No new shadow context or schema was added.
+  Review's primary action consumes the existing amount-kind/amount projection.
+  Reference permissions, normative permissions, unknowns and intent precision
+  remain separate. The Equity controller and Advanced/Runout workspace already
+  cancel work, invalidate on input/route changes and fence late results.
+- Firefox 155.0.1, disposable profile, 100% zoom: empty workspaces at 1920x1080 and
+  1366x768; Analyze unavailable/result and Equity empty/result/stale at both;
+  Personal active question at both plus answer, Matrix inspection/correction and
+  unknown-hand teaching. Training before/after commitment, Review without intent
+  and a clearly synthetic qualitative-intent presentation fixture, expanded
+  evidence, Saved population, Home continuity, Settings, Explain and Runout card
+  inspection were exercised. Arrow navigation, one map Tab stop, Training answer
+  focus, Review disclosure focus/state after refresh, and Runout Escape passed.
+  Default, Daylight and one saved custom theme received EN/RU/HE route/overflow
+  checks. Representative screenshots were visually inspected. This is browser
+  evidence, not the owner's subjective acceptance or an exhaustive contrast audit.
+  A targeted 1920x1080 supplement exercised native reduced motion, return Welcome
+  with modal focus restoration, Training before/after commitment and Review.
+  Review's new Decision Facts disclosure passed Enter/Space keyboard interaction.
+- Reproduction: start `node tools/dev-web-server.mjs`, then run
+  `tests/tooling/verify_product_modernization001_firefox.mjs` with
+  `RIVERLINE_PUPPETEER_MODULE` pointing to an available Puppeteer installation.
+  Browser artifacts: `C:/Users/sjzns/AppData/Local/Temp/riverline-modernization-uLB5Sy/`.
+  The report preserves every page diagnostic, including the existing sync
+  compatibility exception below. There were no other page errors in this run.
+- Focused Review, map routing/focus, theme, Sweep C, Training, Equity and locale
+  tests passed. Changed-module syntax and `git diff --check` passed. The exact
+  `node --test tests/*.test.js tests/*.test.mjs` gate passed: **2,555 passed,
+  0 failed, 0 cancelled, 0 skipped**, 282.6 seconds. The first run exposed missing
+  catalog entries and incomplete DOM test adapters; both were corrected before
+  the final full rerun. Logs and the exact 19-file ticket manifest are in the
+  browser artifact directory (`full-node-final.log`, `changed-files.txt`).
+  Poker-domain files are unchanged; no solver suite was required. Nothing was
+  staged or committed; the pre-existing `.codex/config.toml` change is untouched.
+- Remaining human checks: overall premium feel, linguistic judgment and subjective
+  acceptance of the Review/Training compositions at the two desktop sizes.
+  Real account sign-in/sync was not attempted without test credentials.
+
+### QA-MODERNIZATION-SYNC-001
+
+**LOCAL UNCAUGHT DIAGNOSTIC FIXED BY `BROWSER-BETA-HARNESS-001`; REAL SYNC ACCEPTANCE REMAINS `RET-ACCOUNT-003`.**
+The local mutation listener now checks eligibility through the existing
+coordinator before remote schema validation, and contains already-reported
+sidecar failures. The observation below is the pre-fix evidence; cloud schema
+compatibility and real-provider acceptance are unchanged.
+Creating a local Game Setup and later visiting Settings in a fresh Device Guest
+profile logged `RangeError: Personal Strategy is saved locally. Cloud sync
+requires a compatible schema upgrade.` The exception originates in the existing
+Personal sync compatibility boundary; local teaching, correction and map reload
+passed. The browser harness reports this diagnostic explicitly, separately from
+new presentation failures. No cloud schema migration or sync expansion was
+attempted. Investigate the unhandled UI diagnostic under the existing sync owner.
+
 ## BETA-REPAIR-SWEEP-B - September 10, 2026
 
 **IMPLEMENTED; HUMAN VISUAL/LISTENING ACCEPTANCE PENDING.** Bounded presentation,

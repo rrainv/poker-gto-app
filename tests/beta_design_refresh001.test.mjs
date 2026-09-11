@@ -315,3 +315,58 @@ test('shared exact card faces follow T/10 preferences without calculation and st
   view.dispose(); f.doc.documentElement.dataset.cardRankStyle = 'poker'; await f.emit('riverline:cardpresentationchange');
   assert.match(token.textContent, /10 ♥/); assert.equal(calculations, 0);
 });
+
+test('Personal map routes evidence inspection and unknown teaching through existing callbacks and retains keyboard orientation', async () => {
+  const f = documentFixture(), root = f.root(), previous = globalThis.document; globalThis.document = f.doc;
+  const cells = [{ handClass: 'AA', status: 'directly_known', action: { precision: 'dominant_only' } },
+    { handClass: 'AKs', status: 'unknown' }, { handClass: 'AQs', status: 'inferred_high' }];
+  const before = structuredClone(cells), calls = [];
+  const actions = { onInspect: hand => calls.push(['inspect', hand]), onTeach: request => calls.push(['teach', request]) };
+  try {
+    renderPersonalStrategyMap(root, cells, key => key, actions);
+    const grid = root.querySelector('.personal-hand-map');
+    assert.equal(grid.children.filter(button => button.tabIndex === 0).length, 1);
+    grid.children[0].focus();
+    await grid.fire('keydown', { key: 'ArrowRight', target: grid.children[0] });
+    assert.equal(f.doc.activeElement.dataset.mapHand, 'AKs');
+    await f.doc.activeElement.fire('click');
+    assert.deepEqual(calls.pop(), ['teach', { handClass: 'AKs', intent: 'mapping' }]);
+    renderPersonalStrategyMap(root, cells, key => key, actions);
+    assert.equal(f.doc.activeElement.dataset.mapHand, 'AKs');
+    const buttons = root.querySelector('.personal-hand-map').children;
+    await buttons[0].fire('click'); await buttons[2].fire('click');
+    assert.deepEqual(calls, [['inspect', 'AA'], ['inspect', 'AQs']]);
+    assert.deepEqual(cells, before);
+    assert.ok(buttons[1].getAttribute('aria-label').includes('Unknown'));
+    assert.ok(!buttons[0].textContent.includes('100%'));
+  } finally { globalThis.document = previous; }
+});
+
+test('Personal tiles expose current hand and truthful non-color evidence markers without promoting preferred actions to exact mixes', () => {
+  const f = documentFixture(), root = f.root(), previous = globalThis.document; globalThis.document = f.doc;
+  const cells = [
+    { handClass: 'AA', status: 'directly_known', action: { precision: 'dominant_only' } },
+    { handClass: 'AKs', status: 'directly_known', action: { precision: 'exact_mix' } },
+    ...['unknown', 'inferred_high', 'inferred_medium', 'uncertain', 'transferred', 'conflicting']
+      .map((status, index) => ({ handClass: ['AQs', 'AJs', 'ATs', 'A9s', 'A8s', 'A7s'][index], status })),
+  ];
+  const before = structuredClone(cells), actions = { onInspect() {}, onTeach() {} };
+  try {
+    renderPersonalStrategyMap(root, cells, key => key, { ...actions, currentHand: 'AQs' });
+    let buttons = root.querySelector('.personal-hand-map').children;
+    assert.deepEqual(buttons.map(button => button.querySelector('.personal-hand-status').textContent), ['D', 'D%', '·', 'H', 'M', '?', 'T', '!']);
+    assert.equal(buttons[0].dataset.exactEvidence, 'false');
+    assert.equal(buttons[1].dataset.exactEvidence, 'true');
+    assert.match(buttons[1].getAttribute('aria-label'), /Exact-frequency evidence/);
+    assert.doesNotMatch(buttons[0].getAttribute('aria-label'), /Exact-frequency evidence|100%/);
+    assert.deepEqual(buttons.filter(button => button.getAttribute('aria-current') === 'true').map(button => button.dataset.mapHand), ['AQs']);
+    buttons[4].focus();
+    renderPersonalStrategyMap(root, cells, key => key, { ...actions, currentHand: 'AKs' });
+    buttons = root.querySelector('.personal-hand-map').children;
+    assert.equal(f.doc.activeElement.dataset.mapHand, 'ATs', 'current question never steals keyboard focus');
+    assert.deepEqual(buttons.filter(button => button.getAttribute('aria-current') === 'true').map(button => button.dataset.mapHand), ['AKs']);
+    renderPersonalStrategyMap(root, cells, key => key, actions);
+    assert.ok(root.querySelector('.personal-hand-map').children.every(button => !button.getAttribute('aria-current')));
+    assert.deepEqual(cells, before);
+  } finally { globalThis.document = previous; }
+});

@@ -3,10 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-const { default: puppeteer } = await import(process.env.RIVERLINE_PUPPETEER_MODULE || 'puppeteer');
+import { launchFirefox } from './browser-runtime.mjs';
 const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'riverline-beta-repair-a-'));
-const browser = await puppeteer.launch({ browser: 'firefox', headless: true,
-  executablePath: process.env.FIREFOX_PATH || 'C:/Program Files/Mozilla Firefox/firefox.exe' });
+const browser = await launchFirefox();
 const checks = [], errors = [];
 const settle = async page => { await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))); };
 try {

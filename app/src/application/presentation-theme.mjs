@@ -709,7 +709,15 @@ export function createPresentationThemeController({
     else name.textContent = translate(theme.name);
     copy.append(dot, name);
     button.append(copy);
-    const listener = () => apply(theme.id);
+    const listener = () => {
+      const restoreFocus = documentRef.activeElement === button;
+      apply(theme.id);
+      if (restoreFocus) {
+        const grid = isCustom ? customGrid : builtInGrid;
+        [...(grid?.querySelectorAll?.('[data-theme-id]') ?? [])]
+          .find(control => control.dataset.themeId === theme.id)?.focus?.({ preventScroll: true });
+      }
+    };
     button.addEventListener('click', listener);
     gridListeners.push([button, 'click', listener]);
     return button;

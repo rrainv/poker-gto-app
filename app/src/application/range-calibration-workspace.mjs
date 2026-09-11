@@ -1322,6 +1322,7 @@ function createController(root, application, initialWorkspace, activationStarted
 
   let teacherLearning = null;
   function renderTeacherLearning() {
+    root.dataset.teacherPhase = teacherLearning ? 'learn' : 'question';
     let panel = query('#personalTeacherLearning');
     if (!panel) { panel = document.createElement('section'); panel.id = 'personalTeacherLearning'; panel.className = 'study-block personal-teacher-learning'; panel.tabIndex = -1; panel.setAttribute('aria-live', 'polite'); query('#calibrationActiveQuestion').prepend(panel); }
     panel.hidden = !teacherLearning;
@@ -2932,8 +2933,13 @@ function createController(root, application, initialWorkspace, activationStarted
   if (currentMatrixScope()) activateCurrentPersonalStrategyScope();
 
   understanding = mountPersonalStrategyUnderstanding({
-    root, application, getTeachingHand: () => calibrationState?.prompt?.handClass ?? null, getScope: currentMatrixScope, getSelection: () => selection, getWorkspace: () => workspace,
-    onRefresh: refreshWorkspace, onTeach: enterQuestions, onMatrix: (handClass = null) => setPersonalStrategySubview('matrix', { handClass }),
+    root, application, getTeachingHand: () => calibrationState?.prompt?.handClass ?? null,
+    getMapHand: () => root.dataset.sessionView === 'questions' ? teacherLearning?.handClass ?? calibrationState?.prompt?.handClass ?? null : null,
+    getScope: currentMatrixScope, getSelection: () => selection, getWorkspace: () => workspace,
+    onRefresh: refreshWorkspace, onTeach: enterQuestions, onMatrix: async (handClass = null) => {
+      await setPersonalStrategySubview('matrix', { handClass });
+      query('#calibrationMatrixTab')?.focus({ preventScroll: true });
+    },
     t: translated, language: () => window.appLang ?? document.documentElement.lang ?? 'en',
     signal: lifecycle.signal,
   });

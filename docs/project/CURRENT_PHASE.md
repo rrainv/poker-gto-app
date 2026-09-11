@@ -1,5 +1,21 @@
 # Current Riverline phase
 
+September 11 bounded infrastructure: `BROWSER-BETA-HARNESS-001` adds the local
+[real-app Firefox Beta smoke command](../../tests/tooling/README.md#current-beta-browser-entry-point)
+within the browser-platform foundation. It also repairs the reproduced Guest
+Personal Strategy mutation/sync diagnostic without changing remote compatibility,
+and restores keyboard focus after a Settings theme choice.
+`QA-BROWSER-BETA-HARNESS-001` owns execution evidence. This is not human visual
+acceptance, authenticated sync acceptance, a Beta Candidate declaration or a
+change to the broader composition/retrieval sequence below.
+
+September 11 explicit presentation pass: `BETA-PRODUCT-MODERNIZATION-001` is
+implemented, with human product acceptance pending under
+`QA-BETA-PRODUCT-MODERNIZATION-001`. Existing identity/navigation, canonical
+contexts and evidence roles are preserved. This is not an accepted checkpoint,
+a schema migration or a change to general sequencing. The new sync diagnostic
+is routed to `RET-ACCOUNT-003`; earlier acceptance IDs remain open.
+
 September 7 final broad correction: `BETA-DESIGN-CORRECTION-002` is implemented,
 awaiting independent Human Beta QA under `QA-BETA-DESIGN-CORRECTION-002`. Draft
 Hand setup now projects before Start; count-specific table geometry, neutral

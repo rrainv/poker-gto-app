@@ -402,7 +402,8 @@ test('migration and account UX expose private relational/RLS sync without generi
   assert.match(html, /id="accountStrategySyncToggle"[^>]+role="switch"/);
   assert.match(html, /Personal Strategy and Range Calibration/);
   assert.match(bootstrap, /createPersonalStrategySyncAdapter/);
-  assert.match(bootstrap, /createRangeCalibrationSyncAdapter/);
+  // Calibration entities share the coordinator's adapter. Eligibility/schema
+  // handling at the mounted event boundary is covered by intelligence_sync.
   assert.match(bootstrap, /riverline:personalstrategychange/);
   assert.match(translations, /[\u0590-\u05ff]/u);
   assert.match(translations, /[\u0400-\u04ff]/u);

@@ -144,6 +144,30 @@ composition, Personal, Opponent or Advanced Equity acceptance owners.
 
 ## 5. Information hierarchy and composition
 
+`BETA-PRODUCT-MODERNIZATION-001` keeps the accepted forest/jade identity and
+navigation. An incomplete Analyze decision presents the existing readiness
+reason and an input action instead of disabled recommendation graphics. Equity
+has a purposeful pre-calculation composition; calculated values dominate the
+player tiles, while stale evidence keeps its existing qualification. Saved's
+empty library leads to Hand or Analyze; populated retrieval is unchanged.
+
+Training separates the decision and learning compositions, moves feedback before
+the retained card/context evidence after commitment, and transfers focus from
+the hidden answer controls to feedback. Full Hand's answer embargo remains intact.
+Review foregrounds observed action (including projected sizing), current Personal
+intent, and the actual available comparison role. Heuristic fallback never gains
+a reference label. Source basis, normative assessment, opponent assumptions,
+exploit reasoning and exact Decision Facts remain independently inspectable.
+
+Personal Understanding exposes the existing 169-class projection beside teaching:
+known/estimated/conflicting hands route to existing Matrix inspection/correction;
+unknown hands route to existing teaching. The keyboard map uses one Tab stop and
+arrow navigation. Family coverage remains a separate disclosure over canonical
+structural counts. No completion percentage or inferred exact frequency is added.
+Guide owns one compact information-role legend. These are presentation changes,
+not new poker, strategy, evidence, persistence or decision-handoff contracts.
+Human visual acceptance remains with `QA-BETA-PRODUCT-MODERNIZATION-001`.
+
 Every workspace must make its primary job, next action, and principal result obvious. Analysis should generally present answer/verdict, concise reason, key facts, deeper detail, then provenance/limitations. Do not duplicate the same evidence across equally prominent panels.
 
 A visible composition may fail acceptance despite technically valid geometry when it has obvious:

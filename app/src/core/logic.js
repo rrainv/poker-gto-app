@@ -2765,6 +2765,7 @@ function renderUnavailableStrategy(resolution) {
   const message = playbookResolutionMessage(resolution);
   const waiting = resolution?.mode === 'hand' && String(resolution?.reason || '').startsWith('canonical_');
   setRecommendationState(waiting ? 'waiting' : 'unavailable');
+  if ($('#analysisInputMessage')) $('#analysisInputMessage').textContent = message;
   if ($('#bestAction')) $('#bestAction').textContent = t('Unavailable');
   if ($('#bestSizing')) {
     $('#bestSizing').textContent = '';
@@ -5095,7 +5096,7 @@ function renderDeepStudyReview(surface, model) {
   let root = $('#deepStudyReview');
   if (!root) {
     root = document.createElement('section'); root.id = 'deepStudyReview';
-    surface.querySelector('.hand-review-decision-detail')?.append(root);
+    surface.querySelector('.hand-review-decision-detail')?.insertBefore(root, surface.querySelector('.hand-review-comparison'));
   }
   window.RiverlineStudy.renderReview({ root, review: model, translate: t,
     onSelect: index => selectActiveHandReviewDecision(index),
@@ -6547,6 +6548,26 @@ function setRecommendationState(state) {
   if (!recommendation) return;
   recommendation.dataset.recommendationState = state;
   recommendation.setAttribute('aria-busy', String(state === 'loading'));
+  const inputState = $('#analysisInputState');
+  if (inputState) {
+    inputState.hidden = !['waiting', 'unavailable', 'loading'].includes(state);
+    $('#analysisInputMessage').textContent = state === 'loading' ? t('Loading…') : t('Check the cards and decision context to continue.');
+    $('#analysisEditInputs').hidden = state === 'loading';
+    $('#analysisEditInputs').onclick = () => {
+      const heroEditor = document.querySelector('[data-card-set-edit="hero"]');
+      if (app.playbookMode !== PLAYBOOK_MODES.HAND && app.gto.hero.length !== 2 && heroEditor?.getClientRects().length) {
+        heroEditor.focus();
+        return;
+      }
+      const region = app.playbookMode === PLAYBOOK_MODES.HAND
+        ? $('#handSetupDisclosure') : document.querySelector('.playbook-context-rail');
+      if (!region) return;
+      if (region.tagName === 'DETAILS') region.open = true;
+      const control = [...region.querySelectorAll('button, select, input')]
+        .find(node => !node.disabled && node.getClientRects().length);
+      control?.focus();
+    };
+  }
 }
 
 function analysisUnavailableReasonForResolution(resolution) {
@@ -8227,14 +8248,20 @@ function renderSavedLibrary(section) {
     return;
   }
   const allItems = section?.items || [];
+  root.dataset.libraryState = allItems.length ? 'populated' : 'empty';
   const items = categoryModel.items;
   if (!allItems.length) {
-    root.appendChild(homeEmptyAction(
+    const empty = homeEmptyAction(
       'Saved Hands and Spots you intentionally keep will appear here.',
       'Analyze a Hand',
       'analyze',
       { primary: true },
-    ));
+    );
+    const heading = document.createElement('h3'); heading.textContent = t('Keep a decision worth returning to');
+    empty.prepend(heading);
+    const hand = document.createElement('button'); hand.type = 'button'; hand.className = 'ui-button ui-button--quiet';
+    hand.dataset.homeDestination = 'hand'; hand.textContent = t('Play a Hand'); empty.append(hand);
+    root.appendChild(empty);
     renderSavedLibraryDetail(null);
     return;
   }
@@ -12530,6 +12557,11 @@ function setTrainingWorkspaceState(state) {
   const workspace = document.querySelector('.training-workspace');
   if (!workspace) return;
   workspace.dataset.trainingState = state;
+  const title = $('#trainingWorkspaceTitle');
+  if (title) {
+    const key = state === 'feedback' ? 'Learn from this decision' : 'Make the decision';
+    title.dataset.i18n = key; title.textContent = t(key);
+  }
   projectTrainingContinuationControls(
     (trainingSessionMode() !== 'full_hand' || trainingSameSpotIsActive()) && state === 'feedback',
   );
@@ -14266,6 +14298,9 @@ function handleTrainingGuess(userAction) {
   app.training.lifecycle = 'feedback';
   setTrainingWorkspaceState('feedback');
   if (countsTowardSession) completeVariedTrainingSession();
+  // The committed action controls are now hidden. Keep keyboard orientation in
+  // the new learning composition, without moving focus on passive rerenders.
+  $('#feedbackTitle')?.focus({ preventScroll: true });
 }
 
 function replayTrainingExercise(seed) {

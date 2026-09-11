@@ -91,7 +91,7 @@ test('Personal Strategy v2 tutorials reference live anchors and translate the co
   assert.equal(start.precondition, 'calibration-question-ready');
   assert.ok(!CALIBRATION_SETUP_TUTORIAL_DEFINITION.steps.some((step) => ['calibration-profile', 'personal-range-mapping'].includes(step.anchor)));
   assert.match(content, /before saving|does not change saved intent/);
-  assert.match(content, /A sampled region is not a complete range/);
+  assert.match(content, /Coverage counts evidence, not strategy completion/);
   assert.match(content, /There is no fixed question quota/);
   assert.match(content, /Concrete answers lead/);
   assert.doesNotMatch(content, /five questions|5 questions|personal-teach-five/i);

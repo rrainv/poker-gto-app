@@ -226,6 +226,13 @@ The current settlement algorithm is deterministic; it is not a selected Fewest T
 
 ## 10. Product Experience / Settings / Themes / Layout / Cards
 
+`BETA-PRODUCT-MODERNIZATION-001` - **IMPLEMENTED / HUMAN ACCEPTANCE PENDING**:
+purposeful unavailable/empty compositions, quieter containers, Training
+decide/learn hierarchy, three primary Review concepts, selectable Personal
+evidence map and a compact Guide information-role legend. Existing authorities
+and feature scope remain unchanged. `QA-BETA-PRODUCT-MODERNIZATION-001` owns
+acceptance; no general queue or accepted-checkpoint change is implied.
+
 `BETA-DESIGN-CORRECTION-002` -- **IMPLEMENTED / INDEPENDENT HUMAN BETA QA PENDING**.
 Final broad correction adds draft Hand preview, shared count-specific geometry,
 clean felt, active Analyze and neutral evidence surfaces, compact Equity editing,
@@ -264,7 +271,7 @@ stronger control/result hierarchy; previous owners and sequencing remain unchang
 | `PREMIUM-CLOSEOUT-001` | PLANNED LATER / PRE-RELEASE QUALITY GATE | Whole-product manual QA, final high-value visual-debt burn, Guide finalization, responsive desktop matrix, EN/RU/HE/RTL, accessibility, cards/table/replay/Settings polish, theme consistency, applicable Return Queue debt, and release-quality Core Flow acceptance after the feature set is materially more mature. |
 | evidence-grounded natural-language intelligence | CHECKPOINTED FOUNDATION / CONTINUATION PRESERVED | `natural-language-envelope/v1`, confirmed qualitative intent, structural range facts, and claim-permission-bound EN/RU/HE summaries/comparisons are implemented through Personal Strategy. The bounded Coach, Import and [Deep Review/Study Inbox](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md) consumers have explicit implementation/QA owners; richer synthesis remains future. See [Natural-Language Intelligence](capabilities/NATURAL_LANGUAGE_INTELLIGENCE.md). |
 | shared interaction integrity | COMPLETED | Accepted product rule: one semantic owner and interaction language across applicable surfaces; see [Interaction Grammar](INTERACTION_GRAMMAR.md). |
-| `BROWSER-TEST-PLATFORM-001` | PLANNED NEXT / FOUNDATIONAL | Portable mounted-browser lifecycle coverage for real ownership, generation, disposal, focus, modal, and inactive-workspace behavior. |
+| `BROWSER-TEST-PLATFORM-001` | FOUNDATIONAL / BOUNDED BETA SMOKE IMPLEMENTED | `BROWSER-BETA-HARNESS-001` adds the [local real-app Firefox command](../../tests/tooling/README.md#current-beta-browser-entry-point) with isolated Guest state, cross-workspace flows and failure evidence. Broader authenticated ownership/generation/disposal coverage and human visual acceptance remain separate; no general sequencing change. |
 | `UI-COMPOSITION-ROOT-001` | PLANNED NEXT / FOUNDATIONAL | Establish a bounded composition root and then extract one workspace pilot behind existing seams. No React/Redux/framework rewrite. |
 | restrained felt/table/chip customization | OPEN PRODUCT DECISION | Default quality first; customization cannot compensate for a bad default. |
 | arbitrary layout editor, Controls First, ineffective density choice | REJECTED / REMOVED | Do not revive without materially new evidence. Global Beginner/Expert mode is superseded by strong defaults plus local Facts/Explain/Coach depth. |

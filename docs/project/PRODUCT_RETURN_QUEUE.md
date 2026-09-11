@@ -1,5 +1,18 @@
 # Riverline Checkpoint Return Queue
 
+September 11 browser infrastructure: `BROWSER-BETA-HARNESS-001` repairs the
+uncaught local/Guest Personal mutation diagnostic recorded in
+`QA-MODERNIZATION-SYNC-001`. Sync eligibility and compatibility remain with the
+existing coordinator; enabled incompatible sync remains an explicit error.
+`RET-ACCOUNT-003` still owns real-account/provider and schema compatibility
+acceptance. The automated Beta smoke does not close that return gate.
+
+September 11 implementation acceptance: `QA-BETA-PRODUCT-MODERNIZATION-001`
+owns the bounded clarity pass's human gate. Its Firefox evidence includes an
+existing Personal sync compatibility exception after local teaching/Settings;
+`QA-MODERNIZATION-SYNC-001` routes that diagnostic to `RET-ACCOUNT-003` without
+authorizing a migration. No existing return gate is closed by this pass.
+
 September 7 presentation return gate: `QA-BETA-DESIGN-CORRECTION-002` owns
 independent Human Beta QA after the final broad correction. Direction is frozen;
 remaining subjective polish, **TEMPORARY BETA ART** replacement and actual browser
