@@ -1323,9 +1323,9 @@
 
               <div class="teacher-panel" style="margin-top: 24px;" data-tutorial-anchor="playbook-analysis-explanation">
 
-                <button id="toggleTeacher" class="analysis-explain-toggle" type="button" aria-expanded="false" aria-controls="teacherContent"
+                <button id="toggleTeacher" class="analysis-explain-toggle explain-action" type="button" aria-expanded="false" aria-controls="teacherContent"
 
-                  style="background: none; border: none; color: var(--primary); font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 0;">
+>
 
                   <svg width="16" height="16" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 
@@ -1347,6 +1347,7 @@
 
               </div>
 
+            <button id="analysisTeachDecision" class="ui-button ui-button--secondary decision-teach-action" type="button" data-i18n="Teach from this decision">Teach from this decision</button>
             <div class="metric-grid playbook-metric-strip" aria-label="Decision metrics" data-i18n-aria-label="Decision metrics" data-state-surface="derived">
 
                 <div class="playbook-facts-heading"><span data-i18n="Facts">Facts</span><strong data-i18n="Decision facts">Decision facts</strong><small data-i18n="Exact context for the current recommendation">Exact context for the current recommendation</small></div>
@@ -1455,7 +1456,7 @@
 
           <section id="handHistorySection" class="hand-control-section hand-replay-rail" aria-labelledby="handHistoryTitle" data-tutorial-anchor="hand-replay" hidden>
             <div class="hand-section-head hand-replay-rail-heading">
-              <div><strong id="handHistoryTitle" data-i18n="Replay controls">Replay controls</strong><small data-i18n="Navigate the canonical timeline without changing the live hand.">Navigate the canonical timeline without changing the live hand.</small></div>
+              <div><strong id="handHistoryTitle" data-i18n="Replay this hand">Replay this hand</strong><small data-i18n="See how the hand unfolded, action by action.">See how the hand unfolded, action by action.</small></div>
             </div>
             <div id="handReplayControls" class="replay-control-bar" data-replay-mode="empty" data-tutorial-anchor="replay-controls">
               <div class="replay-state-summary">
@@ -1494,7 +1495,7 @@
                 <div>
                   <p class="hand-review-eyebrow" data-i18n="Post-hand learning">Post-hand learning</p>
                   <h2 id="handReviewTitle" data-i18n="Hand Review">Hand Review</h2>
-                  <p id="handReviewSubtitle" data-i18n="Inspect each Hero decision and its strategy source without changing the completed Hand.">Inspect each Hero decision and its strategy source without changing the completed Hand.</p>
+                  <p id="handReviewSubtitle" data-i18n="Understand Hero decisions here. Use Replay to see the action history.">Understand Hero decisions here. Use Replay to see the action history.</p>
                 </div>
                 <span id="handReviewProgress" class="badge status-badge status-badge--info poker-data-token"></span>
               </header>
@@ -1509,6 +1510,10 @@
                     <div><span id="handReviewDecisionStreet" class="hand-review-street poker-data-token"></span><h3 id="handReviewDecisionTitle"></h3><p id="handReviewDecisionContext"></p></div>
                     <span id="handReviewComparisonBadge" class="badge status-badge status-badge--info"></span>
                   </header>
+
+                  <div class="hand-review-actions">
+                    <button id="handReviewAnalyze" class="ui-button ui-button--primary explain-action" type="button" data-i18n="Explain this decision">Explain this decision</button>
+                  </div>
 
                   <div class="hand-review-cards">
                     <div><span data-i18n="Hero cards">Hero cards</span><div id="handReviewHeroCards" class="hand-review-card-row"></div></div>
@@ -1559,7 +1564,6 @@
                   </div>
 
                   <div class="hand-review-actions">
-                    <button id="handReviewAnalyze" class="ui-button ui-button--primary" type="button" data-i18n="Analyze this decision">Analyze this decision</button>
                     <button id="handReviewSaveSpot" class="ui-button ui-button--secondary saved-study-bookmark-action" type="button" aria-pressed="false" data-bookmark-state="unsaved" data-i18n="Save this decision">Save this decision</button>
                     <button id="handReviewSaveHand" class="ui-button ui-button--secondary saved-study-bookmark-action" type="button" aria-pressed="false" data-bookmark-state="unsaved" data-i18n="Save hand">Save hand</button>
                     <button id="handReviewRepeat" class="ui-button ui-button--secondary" type="button" data-i18n="Repeat hand">Repeat hand</button>
@@ -1589,7 +1593,7 @@
                   <div id="handReviewDecisionList" class="hand-review-decision-list" aria-label="Hero decision navigation" data-i18n-aria-label="Hero decision navigation"></div>
                   <div class="hand-review-decision-step-controls">
                     <button id="handReviewPreviousDecision" class="ui-button ui-button--secondary" type="button" data-i18n="Previous decision">Previous decision</button>
-                    <button id="handReviewNextDecision" class="ui-button ui-button--secondary" type="button" data-i18n="Next decision">Next decision</button>
+                    <button id="handReviewNextDecision" class="ui-button ui-button--primary" type="button" data-i18n="Next decision">Next decision</button>
                   </div>
                 </nav>
               <aside id="handReviewReplayRailMount" class="hand-review-replay-rail-mount" aria-label="Replay controls and hand history" data-i18n-aria-label="Replay controls and hand history"></aside>
@@ -2129,6 +2133,9 @@
           <section role="tabpanel" id="calibrationUnderstandingPanel" data-tutorial-anchor="personal-understanding" class="panel personal-understanding-panel" aria-labelledby="personalUnderstandingTitle">
             <div class="calibration-section-heading"><div><p class="calibration-eyebrow" data-i18n="Your intended strategy">Your intended strategy</p><h2 id="personalUnderstandingTitle" data-i18n="What Riverline understands">What Riverline understands</h2><p id="personalUnderstandingScope" class="muted"></p></div><button id="personalMapRange" data-tutorial-anchor="personal-range-mapping" class="ui-button ui-button--primary" type="button" data-i18n="Map this range">Map this range</button></div>
             <details class="personal-evidence-status"><summary data-i18n="Inspect range evidence">Inspect range evidence</summary><p id="personalUnderstandingStatus" role="status" aria-live="polite"></p><p data-i18n="An initial understanding, not a completed strategy. Preferred actions never imply 100% frequency.">An initial understanding, not a completed strategy. Preferred actions never imply 100% frequency.</p></details>
+            <p class="personal-view-purpose" data-i18n="Understanding shows your growing range. Matrix Edit lets you inspect and correct individual hands in the same evidence.">Understanding shows your growing range. Matrix Edit lets you inspect and correct individual hands in the same evidence.</p>
+            <div class="personal-teaching-paths"><button id="personalOpenHandStudy" class="ui-button ui-button--secondary" type="button" data-i18n="Teach through a hand">Teach through a hand</button><p data-i18n="Map preflop ranges here, explore later streets through a hand, or bring a decision from Analyze, Training or Review.">Map preflop ranges here, explore later streets through a hand, or bring a decision from Analyze, Training or Review.</p></div>
+            <details id="personalVersionHistory"><summary data-i18n="What I've taught">What I've taught</summary><div id="personalHistoryContent"></div></details>
             <div id="personalStrategyMap" class="personal-strategy-map" role="group" aria-label="Range evidence" data-i18n-aria-label="Range evidence"></div>
             <details class="personal-coverage-disclosure"><summary data-i18n="Coverage and boundaries">Coverage and boundaries</summary><ul id="personalUnderstandingCoverage" class="personal-mapping-coverage"></ul></details>
             <div class="personal-understanding-columns">
@@ -2136,6 +2143,8 @@
                 <h3 data-i18n="Your confirmed intentions">Your confirmed intentions</h3>
                 <div id="personalIntentStatements" class="personal-intent-statements"></div>
                 <form id="personalIntentForm" class="personal-intent-form">
+                  <p id="personalDecisionContext" class="personal-decision-context" dir="auto" hidden></p>
+                  <button id="personalClearDecision" class="ui-button ui-button--tertiary" type="button" data-i18n="Remove decision example" hidden>Remove decision example</button>
                   <label for="personalIntentText" data-i18n="Add context or an exception">Add context or an exception</label>
                   <textarea id="personalIntentText" rows="2" maxlength="4000" required dir="auto" aria-describedby="personalIntentHelp"></textarea>
                   <p id="personalIntentHelp" class="muted" data-i18n="Use your own words. Riverline will show an interpretation before saving any intent.">Use your own words. Riverline will show an interpretation before saving any intent.</p>
@@ -2161,7 +2170,6 @@
               </aside>
             </div>
             <details class="personal-comparison"><summary data-i18n="Compare Approaches or a strategy source">Compare Approaches or a strategy source</summary><label for="personalComparisonApproach" data-i18n="Compare with">Compare with</label><select id="personalComparisonApproach" class="control-select"></select><button id="personalCompareApproach" class="ui-button ui-button--secondary" type="button" data-i18n="Compare Approaches">Compare Approaches</button><button id="personalCompareSource" class="ui-button ui-button--tertiary" type="button" data-i18n="Compare with baseline / reference">Compare with baseline / reference</button><p data-i18n="Comparisons describe compatible evidence. Differences do not establish mistakes.">Comparisons describe compatible evidence. Differences do not establish mistakes.</p><ul id="personalComparisonSummary" aria-live="polite"></ul><details><summary data-i18n="Comparison evidence">Comparison evidence</summary><pre id="personalComparisonFacts" dir="ltr"></pre></details></details>
-            <details id="personalVersionHistory"><summary data-i18n="What I've taught">What I've taught</summary><div id="personalHistoryContent"></div></details>
           </section>
 
 
@@ -2231,7 +2239,7 @@
             <header class="calibration-matrix-header">
               <div>
                 <p class="calibration-eyebrow" data-i18n="Personal Strategy">Personal Strategy</p>
-                <h2 id="calibrationMatrixTitle" data-i18n="Your strategy matrix">Your strategy matrix</h2>
+                <h2 id="calibrationMatrixTitle" data-i18n="Your strategy matrix">Your strategy matrix</h2><p class="personal-view-purpose" data-i18n="Precise edits to the same range shown in Understanding. Select a hand to inspect or correct your intended action.">Precise edits to the same range shown in Understanding. Select a hand to inspect or correct your intended action.</p>
                 <p id="calibrationMatrixScope" class="calibration-matrix-scope poker-data-token" dir="ltr"></p>
               </div>
               <div class="calibration-matrix-header-actions">
@@ -2534,6 +2542,7 @@
                 <div id="trainingEvFact" hidden><dt data-i18n="EV comparison">EV comparison</dt><dd id="trainingEvValue" class="poker-data-token">-</dd></div>
               </dl>
               <div id="trainingFeedbackReferenceMount"></div>
+              <button id="trainingTeachDecision" class="ui-button ui-button--secondary decision-teach-action" type="button" data-i18n="Teach from this decision">Teach from this decision</button>
               <details class="training-analysis-region" data-tutorial-anchor="training-analysis"><summary id="trainingAnalysisTitle" data-i18n="Explain">Explain</summary><div id="trainingAnalysis" class="training-shared-analysis" hidden></div></details>
             </div>
             <section id="trainingFullHandCompletion" class="training-full-hand-completion" hidden aria-labelledby="trainingFullHandCompletionTitle" aria-live="polite">
@@ -2709,7 +2718,7 @@
               </div>
               <div class="equity-head-actions">
                 <div class="surface-randomize-compact">
-                  <button id="equityRandomizeButton" class="surface-randomize-trigger" type="button" aria-label="New matchup" data-i18n-aria-label="New matchup" title="New matchup" data-i18n-title="New matchup"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2.5 4.25a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01ZM12 12a1.25 1.25 0 1 0 0 .01Zm-4.5 4.5a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01Z"/></svg></button>
+                  <button id="equityRandomizeButton" class="surface-randomize-trigger surface-randomize-labelled" type="button" aria-label="Randomize hands" data-i18n-aria-label="Randomize hands" title="Randomize hands" data-i18n-title="Randomize hands"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2.5 4.25a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01ZM12 12a1.25 1.25 0 1 0 0 .01Zm-4.5 4.5a1.25 1.25 0 1 0 0 .01Zm9 0a1.25 1.25 0 1 0 0 .01Z"/></svg><span data-i18n="Randomize hands">Randomize hands</span></button>
                   <details id="equityRandomizationMenu" class="surface-randomize-menu">
                     <summary class="surface-randomize-settings-trigger" aria-label="Matchup randomization settings" data-i18n-aria-label="Matchup randomization settings" title="Matchup randomization settings" data-i18n-title="Matchup randomization settings"><span class="surface-randomize-chevron" aria-hidden="true">&#9662;</span></summary>
                     <div class="surface-randomize-popover equity-randomize-popover">
@@ -2767,10 +2776,12 @@
               <div class="equity-card-group-head">
                 <div><h3 data-i18n="Board">Board</h3><span class="muted" data-i18n="0–5 cards, in deal order">0-5 cards, in deal order</span></div>
                 <div class="equity-card-group-actions">
+                  <button id="equityRandomizeBoard" class="ui-button ui-button--secondary" type="button" data-equity-randomize-target="board" data-i18n="Randomize board">Randomize board</button>
                   <span id="equityBoardCount" class="equity-count">0 / 5</span>
                   <button class="ui-button ui-button-ghost" type="button" data-card-clear-command="clear_board" data-card-clear-surface="equity" data-i18n="Clear">Clear</button>
                 </div>
               </div>
+              <div class="equity-board-random-actions" role="group" aria-label="Board depth" data-i18n-aria-label="Board depth"><button class="ui-button ui-button--tertiary" type="button" data-equity-randomize-target="flop" data-i18n="Random flop">Random flop</button><button class="ui-button ui-button--tertiary" type="button" data-equity-randomize-target="turn" data-i18n="Random turn">Random turn</button><button class="ui-button ui-button--tertiary" type="button" data-equity-randomize-target="river" data-i18n="Random river">Random river</button></div>
               <div class="equity-board-layout equity-board-order" dir="ltr">
                 <div class="equity-street-guide" aria-hidden="true"><span class="equity-street-flop" data-equity-street="flop" data-i18n="Flop">Flop</span><span data-equity-street="turn" data-i18n="Turn">Turn</span><span data-equity-street="river" data-i18n="River">River</span></div>
                 <div class="cards-row equity-board-cards" data-slots="eqboard" aria-label="Board cards" data-i18n-aria-label="Board cards"></div>

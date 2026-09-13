@@ -1,4 +1,5 @@
 import { renderIntentInterpretation } from '../personal-strategy/intent-interpretation.mjs';
+import { describePersonalDecisionExample } from './personal-decision-teaching.mjs';
 import { createPersonalRangeLanguageFacts, renderPersonalRangeLanguageFacts,
   comparePersonalRangeLanguageFacts, renderPersonalRangeComparison, personalRangeRegionLabel } from '../personal-strategy/range-language-facts.mjs';
 import { choosePersonalTeachingNext, comparePersonalStrategyWithSource } from './personal-strategy-intelligence.mjs';
@@ -95,7 +96,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
   signal?.addEventListener('abort', () => dispose(), { once: true });
   let generation = 0, draftVersion = 0, loadVersion = 0, nextVersion = 0, preview = null, correctionIds = [], exceptionTo = null;
   let qualitative = [], facts = null, matrix = null, next = null, busy = false;
-  let recentHands = [], contextHand = null;
+  let recentHands = [], contextHand = null, decisionExample = null;
   let coachEvidence = null, coachCandidates = [], coach = null, coachComparison = null;
   let coachAvailable = false;
   const key = () => JSON.stringify(getScope());
@@ -132,17 +133,27 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
     q('personalCorrectionTarget').hidden = true;
     q('personalCancelCorrection').hidden = true;
   }
+  function renderDecisionContext() {
+    if (q('personalDecisionContext')) {
+      q('personalDecisionContext').hidden = !decisionExample;
+      q('personalDecisionContext').textContent = decisionExample ? describePersonalDecisionExample(decisionExample, t) : '';
+      q('personalClearDecision').hidden = !decisionExample || correctionIds.length > 0;
+    }
+    q('personalIntentScope').disabled = !!decisionExample;
+  }
   function invalidate() {
     handWorkspace.invalidate();
     generation += 1; busy = false;
     discardPreview(); resetCorrection(); qualitative = []; facts = matrix = next = null;
-    recentHands = []; contextHand = null;
+    recentHands = []; contextHand = null; decisionExample = null;
+    renderDecisionContext();
     coachEvidence = coach = coachComparison = null; coachCandidates = [];
     coachAvailable = false;
     q('personalCoachCards')?.replaceChildren();
     if (q('personalContextInputDisclosure')) q('personalContextInputDisclosure').open = false;
     for (const id of ['personalIntentStatements', 'personalRangeSummary', 'personalRangeFacts', 'personalComparisonSummary', 'personalHistoryContent', 'personalUnderstandingCoverage', 'personalStrategyMap']) q(id)?.replaceChildren();
     q('personalIntentText').value = ''; q('personalIntentScopeNote').value = '';
+    q('personalIntentScope').disabled = false;
     q('personalComparisonFacts').textContent = ''; q('personalIntentError').textContent = '';
     for (const id of ['personalUnderstandingScope', 'personalUnderstandingStatus', 'personalTeachReason', 'personalApproachError']) q(id).textContent = '';
     q('personalComparisonApproach').replaceChildren();
@@ -156,6 +167,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
     return { entry, approach: entry?.modes.find((item) => item.id === scope?.modeId) };
   }
   function scopeLabel(statedScope) {
+    if (statedScope?.decisionExample) return describePersonalDecisionExample(statedScope.decisionExample, t);
     const context = statedScope?.context;
     const family = { preflop_rfi: 'First in / Unopened pot', preflop_facing_limp: 'Facing limp',
       preflop_facing_open: 'Facing open', preflop_facing_3bet: 'Facing 3-bet',
@@ -240,7 +252,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
       const evidence = element('details'); evidence.append(element('summary', t('Evidence and interpretation')), raw);
       details.append(evidence); card.append(details); return card;
     }));
-    if (!coach.opportunities.length) target.append(element('p', t('No unresolved coaching question in this selection.')));
+    if (!coach.opportunities.length) target.append(element('p', t('No current question here. Map another range or select a hand in Matrix Edit.')));
   }
   function renderRange() {
     const insights = renderPersonalRangeLanguageFacts(facts, { language: language(), withPresentation: true });
@@ -265,6 +277,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
   }
   async function load() {
     const scope = getScope(); if (!scope || lifecycle.signal.aborted) return;
+    renderDecisionContext();
     handWorkspace.invalidate();
     const token = capture();
     const expectedLoadVersion = ++loadVersion;
@@ -305,7 +318,7 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
     try {
       const value = await application.previewQualitativeIntent(getScope(), {
         text: q('personalIntentText').value, language: language(), handClass: contextHand, scopeKind: q('personalIntentScope').value,
-        scopeDescription: q('personalIntentScopeNote').value, supersedesEvidenceIds: correctionIds, exceptionTo,
+        scopeDescription: q('personalIntentScopeNote').value, supersedesEvidenceIds: correctionIds, exceptionTo, decisionExample,
       });
       if (!current(token.version, token.scopeKey) || draftVersion !== expectedDraftVersion) { application.discardQualitativeIntent(value); return; }
       preview = value;
@@ -326,7 +339,9 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
       if (!current(token.version, token.scopeKey)) return;
       if (draftVersion === expectedDraftVersion) {
         preview = null; q('personalIntentPreview').hidden = true; resetCorrection();
-        q('personalIntentText').value = ''; q('personalIntentScopeNote').value = '';
+        q('personalIntentText').value = ''; q('personalIntentScopeNote').value = ''; decisionExample = null;
+        q('personalIntentScope').disabled = false;
+        renderDecisionContext();
       }
       q('personalIntentError').textContent = '';
       await load(); q('personalIntentText').focus();
@@ -334,8 +349,11 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
     finally { if (current(token.version, token.scopeKey)) { busy = false; q('personalConfirmIntent').disabled = false; } }
   }
   function beginCorrection(record, kind = 'correct') {
+    decisionExample = record.statedScope?.decisionExample ?? null;
+    q('personalIntentScope').disabled = !!decisionExample;
     q('personalContextInputDisclosure').open = true; contextHand = record.statedScope?.handClass ?? null;
     discardPreview(); correctionIds = kind === 'exception' ? [] : [record.id]; exceptionTo = kind === 'exception' ? record.id : null;
+    renderDecisionContext();
     q('personalIntentText').value = kind === 'exception' ? '' : record.originalWording;
     q('personalIntentScope').value = record.statedScope?.kind ?? 'decision';
     q('personalIntentScopeNote').value = kind === 'exception' ? '' : record.statedScope?.description ?? '';
@@ -393,14 +411,21 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
   }
   function listen(id, event, handler) { q(id).addEventListener(event, handler, { signal: lifecycle.signal }); }
   listen('personalIntentForm', 'submit', previewIntent);
+  if (q('personalClearDecision')) listen('personalClearDecision', 'click', () => {
+    discardPreview(); decisionExample = null; contextHand = getTeachingHand(); renderDecisionContext(); q('personalIntentText').focus();
+  });
+  if (q('personalOpenHandStudy')) listen('personalOpenHandStudy', 'click', () => {
+    const disclosure = q('personalHandWorkspace').closest('details'); disclosure.open = true;
+    disclosure.scrollIntoView?.({ block: 'center', behavior: 'instant' }); disclosure.querySelector('summary').focus();
+  });
   listen('personalContextInputDisclosure', 'toggle', () => {
-    if (q('personalContextInputDisclosure').open && !q('personalIntentText').value.trim()) contextHand = getTeachingHand();
+    if (!decisionExample && q('personalContextInputDisclosure').open && !q('personalIntentText').value.trim()) contextHand = getTeachingHand();
   });
   listen('personalConfirmIntent', 'click', confirmIntent);
   for (const id of ['personalIntentText', 'personalIntentScopeNote', 'personalIntentScope']) listen(id, 'input', () => { discardPreview(); return renderNext(); });
   listen('personalReviseIntent', 'click', () => { discardPreview(); q('personalIntentText').focus(); return renderNext(); });
   listen('personalNarrowScope', 'click', () => { discardPreview(); q('personalIntentScopeNote').focus(); return renderNext(); });
-  listen('personalCancelCorrection', 'click', () => { discardPreview(); resetCorrection(); q('personalIntentText').value = ''; });
+  listen('personalCancelCorrection', 'click', () => { discardPreview(); resetCorrection(); q('personalIntentText').value = ''; decisionExample = null; renderDecisionContext(); });
   listen('personalGiveExample', 'click', () => onMatrix());
   listen('personalMapRange', 'click', () => onTeach({ handClass: preview ? next?.candidate?.handClass : null,
     intent: 'mapping', focus: q('personalTeachTopic').value || null }));
@@ -451,5 +476,15 @@ export function mountPersonalStrategyUnderstanding({ root, application, getScope
   listen('personalVersionHistory', 'toggle', loadHistory);
   function dispose() { if (lifecycle.signal.aborted) return; invalidate(); lifecycle.abort(); }
   function openContext() { if (!q('personalIntentText').value.trim()) contextHand = getTeachingHand(); q('personalContextInputDisclosure').open = true; q('personalIntentText').focus(); }
-  return Object.freeze({ load, invalidate, dispose, openContext, getState: () => ({ preview, facts, next, coach, generation }) });
+  function openDecisionExample(example) {
+    if (busy || q('personalIntentText').value.trim() || preview || correctionIds.length) return false;
+    discardPreview(); resetCorrection(); contextHand = null; decisionExample = example;
+    q('personalIntentScope').value = 'decision'; q('personalIntentScope').disabled = true;
+    q('personalIntentScopeNote').value = ''; renderDecisionContext();
+    q('personalContextInputDisclosure').open = true;
+    q('personalIntentText').scrollIntoView?.({ block: 'center', behavior: 'instant' });
+    q('personalIntentText').focus();
+    return true;
+  }
+  return Object.freeze({ load, invalidate, dispose, openContext, openDecisionExample, getState: () => ({ preview, facts, next, coach, generation }) });
 }

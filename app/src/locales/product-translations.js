@@ -2136,6 +2136,30 @@ Object.assign(he, {
     ['Your exact mix is saved for this hand and node.', 'Точные частоты сохранены для этой руки в данной точке.', 'התמהיל המדויק נשמר ליד ולנקודה הזו.'],
     ['Other combinations remain unchanged.', 'Другие комбинации не изменились.', 'הצירופים האחרים לא השתנו.'],
   ]) { ru[key] = russian; he[key] = hebrew; }
+  // Beta coherence copy.
+  for (const [key, russian, hebrew] of [
+    ["Randomize hands","Случайные руки","ידיים אקראיות"],
+    ["Randomize board","Случайный борд","לוח אקראי"],
+    ["Teach from this decision","Обучить на этом решении","ללמד מההחלטה הזו"],
+    ["Explain this decision","Объяснить это решение","הסבר להחלטה הזו"],
+    ["Use this decision","Использовать это решение","שימוש בהחלטה הזו"],
+    ["Decision example unavailable","Пример решения недоступен","דוגמת ההחלטה אינה זמינה"],
+    ["Choose a Game Setup and Approach, then describe how you intend to play this spot. Preview and confirm to save; this does not fill a range or copy your played action.","Выберите настройки игры и подход, затем опишите, как вы хотите играть в этой ситуации. Проверьте смысл и подтвердите сохранение: это не заполняет диапазон и не копирует сыгранное действие.","בחרו הגדרת משחק וגישה, ואז תארו איך אתם מתכוונים לשחק במצב הזה. בדקו ואשרו כדי לשמור; הפעולה אינה ממלאת טווח ואינה מעתיקה את מה ששיחקתם."],
+    ["Finish your current intention before using another decision.","Завершите текущее намерение перед переходом к другому решению.","סיימו את הכוונה הנוכחית לפני שימוש בהחלטה אחרת."],
+    ["Understanding shows your growing range. Matrix Edit lets you inspect and correct individual hands in the same evidence.","Понимание показывает формирующийся диапазон. Редактор матрицы позволяет проверять и исправлять отдельные руки в тех же данных.","הבנה מציגה את הטווח שנבנה. עריכת מטריצה מאפשרת לבדוק ולתקן ידיים בודדות באותן ראיות."],
+    ["Precise edits to the same range shown in Understanding. Select a hand to inspect or correct your intended action.","Точные изменения того же диапазона, что показан в Понимании. Выберите руку, чтобы проверить или исправить задуманное действие.","עריכה מדויקת של אותו טווח שמוצג בהבנה. בחרו יד לבדיקה או לתיקון הפעולה הרצויה."],
+    ["Map preflop ranges here, explore later streets through a hand, or bring a decision from Analyze, Training or Review.","Здесь можно строить префлоп-диапазоны, изучать следующие улицы через раздачу или принести решение из Анализа, Тренировки или Разбора.","מפו כאן טווחי פרה־פלופ, חקרו רחובות מאוחרים דרך יד, או הביאו החלטה מניתוח, אימון או סקירה."],
+    ["Remove decision example","Убрать пример решения","הסרת דוגמת ההחלטה"],
+    ["Dismiss","Закрыть","סגירה"],
+    ["Return to hand","Вернуться к раздаче","חזרה ליד"]
+  ]) { ru[key] = russian; he[key] = hebrew; }
+  for (const [key, russian, hebrew] of [
+    ['Replay this hand', 'Повтор этой раздачи', 'צפייה חוזרת ביד'],
+    ['See how the hand unfolded, action by action.', 'Посмотрите, как развивалась раздача, действие за действием.', 'ראו כיצד היד התפתחה, פעולה אחר פעולה.'],
+    ['Understand Hero decisions here. Use Replay to see the action history.', 'Здесь можно разобраться в решениях Hero. Повтор показывает историю действий.', 'כאן אפשר להבין את החלטות Hero. צפייה חוזרת מציגה את היסטוריית הפעולות.'],
+    ['No current question here. Map another range or select a hand in Matrix Edit.', 'Сейчас здесь нет вопроса. Постройте другой диапазон или выберите руку в редакторе матрицы.', 'אין כאן שאלה כרגע. מפו טווח אחר או בחרו יד בעריכת מטריצה.'],
+    ['No direct evidence for this hand. Choose your intended action in Matrix Edit or map this range.', 'Для этой руки пока нет прямых ответов. Укажите задуманное действие в редакторе матрицы или постройте этот диапазон.', 'אין עדיין תשובות ישירות ליד הזו. בחרו את הפעולה הרצויה בעריכת מטריצה או מפו את הטווח הזה.'],
+  ]) { ru[key] = russian; he[key] = hebrew; }
   const allProductKeys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineProductTranslations = {
     en: Object.fromEntries([...allProductKeys].map((key) => [key, key])),

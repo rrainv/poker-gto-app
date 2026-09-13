@@ -81,7 +81,6 @@ export function installStudyWorkspaceBridge(browserWindow) {
             paint(); return;
           }
           if (['practice', 'similar'].includes(action) && !record) return 'practiceLimit';
-          if (action === 'teach') return 'teachLimit';
           if (action === 'unresolved') return null;
           return state.options.onAction(action, delta, record);
         } });

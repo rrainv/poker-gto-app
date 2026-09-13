@@ -5,13 +5,14 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { startDevWebServer } from '../../tools/dev-web-server.mjs';
 
-export async function launchFirefox() {
+export async function launchFirefox({ protocolTimeout = Number(process.env.RIVERLINE_BROWSER_PROTOCOL_TIMEOUT) || 20000 } = {}) {
   const module = process.env.RIVERLINE_PUPPETEER_MODULE;
   const { default: puppeteer } = await import(module && path.isAbsolute(module) ? pathToFileURL(module).href : module || 'puppeteer-core');
   const executablePath = process.env.FIREFOX_PATH || ({ win32: 'C:/Program Files/Mozilla Firefox/firefox.exe', linux: '/usr/bin/firefox', darwin: '/Applications/Firefox.app/Contents/MacOS/firefox' })[process.platform];
   await fs.access(executablePath).catch(() => { throw Error(`Firefox not found at ${executablePath}. Set FIREFOX_PATH to an installed Firefox executable.`); });
   // Puppeteer creates and removes its own temporary profile; never pass a user profile.
-  return puppeteer.launch({ browser: 'firefox', executablePath, headless: true, timeout: 30000, protocolTimeout: 20000 });
+  return puppeteer.launch({ browser: 'firefox', executablePath, headless: true, timeout: 30000, protocolTimeout,
+    dumpio: process.env.RIVERLINE_BROWSER_LOG === '1' });
 }
 
 export async function settle(page) {

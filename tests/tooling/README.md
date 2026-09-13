@@ -1,5 +1,22 @@
 # Riverline verification tooling
 
+## Focused Beta coherence check
+
+`node tests/tooling/verify_beta_coherence_firefox.mjs` uses the shared runtime on
+an OS-assigned local port and a disposable Firefox profile. It allows 60 seconds
+for the browser protocol handshake; the existing Beta smoke keeps its default.
+The check covers 2–10 seats at 1920x1080/1366x768, preflop/flop card/contribution
+geometry and every dealer anchor, then source-to-Personal teaching, confirmed
+intent reload, Training embargo, Review Explain, independent Equity randomizers,
+and EN/RU/HE with Midnight/Daylight at the smaller desktop viewport. Temporary
+dealer visibility changes are geometry probes only; canonical Hand progression
+uses the real application bridge. Deterministic input fixtures avoid random test
+outcomes; no personal browser state or authenticated services are used.
+
+Screenshots and a JSON geometry/diagnostic report are written to the printed
+temporary `riverline-coherence-*` directory. These are automated checks and visual
+inspection artifacts, not human product acceptance or exhaustive table coverage.
+
 ## Current Beta browser entry point
 
 From the repository root:
@@ -18,6 +35,11 @@ The app's local Supabase SDK must also exist: run `npm ci --ignore-scripts` in
 Firefox executable; standard Windows, macOS and Linux paths are supported.
 `RIVERLINE_PUPPETEER_MODULE` optionally selects an existing compatible installation,
 as in earlier verifiers.
+For a slow Firefox startup, `RIVERLINE_BROWSER_PROTOCOL_TIMEOUT=60000` increases
+the protocol handshake allowance without changing application flow timeouts.
+`RIVERLINE_BROWSER_LOG=1` forwards Firefox's own startup/diagnostic output when
+investigating a handshake stall; these native diagnostics are separate from the
+application console/page/asset checks.
 
 The command owns the existing `tools/dev-web-server.mjs` implementation in-process
 on `http://127.0.0.1:3000/`. An occupied port fails clearly without adopting or
@@ -213,3 +235,13 @@ repository has no trusted limp-branch reference output, and the context does
 not retain the branch's prior-action 4bb size anchor. Reference quality metadata
 is a gate, not an informational label:
 insufficient references produce no calibration metrics.
+### Beta Candidate quick sweep
+
+`node tests/tooling/verify_beta_quick_sweep_firefox.mjs` uses the same disposable
+Firefox runtime as the mandatory Beta smoke. It checks open Explain locale
+cycles, retained facts/disclosures/focus/scroll, inactive-workspace and Settings
+refresh, Review/Replay copy, input editing, Equity empty/stale states, empty
+Personal/Saved, and folded/all-in table geometry. Reports and screenshots go to
+an OS temporary `riverline-quick-sweep-*` directory. Run alongside the existing
+`verify_beta_coherence_firefox.mjs` for teaching, matrices and 2-10-seat checks.
+These verifiers provide agent evidence, not human Beta acceptance.

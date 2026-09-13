@@ -1,5 +1,118 @@
 # Riverline persistent QA backlog
 
+## BETA-CANDIDATE-QUICK-SWEEP-001 - September 13, 2026
+
+**IMPLEMENTED / AUTOMATED GATES PASSED / HUMAN ACCEPTANCE PENDING.**
+`QA-I18N-002`: mounted Analyze, Training and Review-to-Explain content refreshes
+from the existing AnalysisExplanation facts even when its workspace is inactive.
+Locale updates preserve the mounted article, disclosure nodes/open state, focus
+and page position. Exploit labels and generated lessons update in place without
+resetting candidate, policy, size, comparison or factual results.
+
+Replay's shared Hand/Review rail now says **Replay this hand** and **See how the
+hand unfolded, action by action.** Review describes Hero decision understanding
+separately and places its existing Explain action immediately below the decision
+header. No Replay authority or entry-point duplication changes. The all-in stress
+check found top-seat private cards touching the contribution chip stack at six
+seats. A 10-unit SVG clearance adjustment keeps that contribution in its existing
+inward lane; the table geometry and seat/card owners are preserved.
+
+Bounded major-surface audit: Home and Hand retain existing next-step controls;
+Analyze's missing-card editor works and invalid inputs clear the current result;
+Training keeps decision/Next primary and Review later secondary; Equity retains
+separate hands/board randomizers, Calculate and stale-result states. Personal
+no-question/no-direct-evidence copy and Study Inbox's empty state now name the
+next action. Empty Saved keeps one Analyze route and describes supported Hands
+and Spots. What I've taught moves beside the teaching paths, above the map.
+Existing range mapping versus decision intent and Understanding versus Matrix
+Edit wording, hand ordering, geometry and evidence semantics are preserved.
+Runout Explorer remains reachable inside Ranges & runouts; Deep Review retains
+separate evidence roles and decision actions. No new capability or schema.
+
+Ticket files (prior uncommitted coherence edits in shared files are preserved):
+`app/index.html`, `app/src/core/logic.js`, `app/src/ui/teacher.js`, `app/src/ui/TableRenderer.js`,
+`app/src/locales/i18n.js`, `app/src/locales/product-translations.js`,
+`app/src/application/exploit-teacher-workspace.mjs`,
+`app/src/application/personal-strategy-understanding-workspace.mjs`,
+`app/src/application/range-calibration-workspace.mjs`,
+`app/src/application/study-language.mjs`,
+`tests/exploit_teacher_workspace001.test.mjs`,
+`tests/tooling/verify_beta_quick_sweep_firefox.mjs`,
+`tests/tooling/README.md`, `tests/tutorial002_current_app_coverage.test.mjs`, and this QA backlog.
+
+Verification:
+- Focused quick sweep (`node tests/tooling/verify_beta_quick_sweep_firefox.mjs`):
+  **30 checks passed**, Firefox 155.0.1, testing 18 locale transitions, 12 folded/all-in dense
+  table states across 1920×1080 and 1366×768 Midnight/Daylight with 0 overlaps,
+  measured page scroll movement under 1px, focus and disclosure preservation, and 0 diagnostics.
+- Browser Beta smoke (`node tests/tooling/verify_beta_candidate_browser.mjs`):
+  **21 groups / all 23 requested flows passed in 91.7s**, Firefox 155.0.1,
+  0 application console/page/asset diagnostics.
+- Canonical full Node suite (`node --test tests/*.test.js tests/*.test.mjs`):
+  **2,562 passed, 0 failed, 0 skipped**.
+- Syntax and whitespace: `git diff --check` passed clean.
+
+Human Beta acceptance and unrelated QA/Return owners remain open. No staging,
+commit, roadmap reprioritization, or human-acceptance claim is part of this sweep.
+
+## QA-BETA-COHERENCE-001 - September 12, 2026
+
+**IMPLEMENTED / HUMAN PRODUCT ACCEPTANCE PENDING.** Focused coherence sweep over
+the existing modernization. Destinations has explicit containment; Analyze opens
+the missing-card editor or editable controls (canonical Hand uses Return to hand).
+Explain is a distinct study action in Analyze/Training; Review opens and focuses
+the selected decision's Explain. Mapping, Continue and next-decision hierarchy
+remain on their existing actions. Understanding and Matrix Edit explain their
+shared evidence and different jobs while retaining the compact 13x13 map.
+
+Analyze, answered Training and shared Review route a decision example into the
+existing Personal wording/preview/confirmation flow. See the
+[owning contract](PERSONAL_STRATEGY_INTELLIGENCE_V1_SPEC.md#beta-coherence-teaching-from-a-decision).
+The exact Hand teaching path has a direct entry. Equity exposes separate labelled
+hands/board controls and board-depth actions over its existing legal randomizers;
+roster, Unknown hands, exclusions and calculation cancellation remain unchanged.
+
+Table inspection reproduced contribution/card or pot collisions at 2–4 players
+and dealer/card/neighbor collisions at several anchors. Sparse contributions now
+use the opposite lateral lane; the enlarged dealer marker sits beside its owner
+panel, clear of inward cards. This is a bounded presentation refinement under
+`RET-TABLE-001`; earlier visual/table issue IDs are not silently closed.
+
+Verification: **193 focused tests passed**, including qualitative confirmation,
+reload/correction lineage, draft protection, localization, table presentation,
+canonical randomization and PERF-001 guards. Seventeen changed/new JavaScript
+modules passed syntax checks; `git diff --check` passed. The shared browser
+runtime's three lifecycle tests also passed after its optional startup diagnostics
+were added. Focused log: `C:/Users/sjzns/AppData/Local/Temp/riverline-coherence-focused.log`.
+
+The existing `node tests/tooling/verify_beta_candidate_browser.mjs` smoke passed
+**21 groups / all 23 requested flows in 112.5 seconds**, Firefox **155.0.1**,
+with no application console/page/asset diagnostics. It used
+`RIVERLINE_BROWSER_PORT=0` and `RIVERLINE_BROWSER_PROTOCOL_TIMEOUT=60000`.
+The focused `node tests/tooling/verify_beta_coherence_firefox.mjs` pass covers
+36 table configurations (2-10 players, preflop/flop, 1920x1080/1366x768), probes
+every dealer anchor, and exercises teaching from Analyze/answered Training/Review,
+input editing, Explain handoff, independent Equity randomization, and EN/RU/HE
+in Midnight/Daylight. The final run passed with `completed: true`, no detected
+table overlaps/viewport overflow, and an empty application diagnostics array.
+Report and screenshots: `C:/Users/sjzns/AppData/Local/Temp/riverline-coherence-WJSrCG/`.
+Agent screenshot review checked Home containment, the actual Analyze card editor,
+Explain above Analyze metrics, Training Explain, dealer ownership in dense tables,
+Personal teaching/compact matrix and representative RU/HE/RTL and Daylight states.
+Firefox intermittently timed out during protocol startup before page load; retry
+passed. Optional native browser logging includes Firefox platform/actor warnings,
+separate from the clean application diagnostics.
+
+The follow-up reported under `QA-I18N-002` (an already-open Explain body in English
+after switching to Russian, `analyze-daylight-ru.png`) is repaired in
+`BETA-CANDIDATE-QUICK-SWEEP-001` above. Human locale acceptance remains separate.
+At 1366x768, dense tables still
+use small text and longer analysis content requires vertical scrolling.
+
+Independent human acceptance, subjective density at 1366x768, and untested table
+states remain separate from the automated checks. No Beta-readiness, remote sync,
+source authority, schema migration or roadmap checkpoint is claimed.
+
 ## QA-BROWSER-BETA-HARNESS-001 - September 11, 2026
 
 **IMPLEMENTED / FIREFOX AUTOMATED SMOKE PASSED; HUMAN VISUAL ACCEPTANCE SEPARATE.**
@@ -917,7 +1030,7 @@ Do not expand theme/layout/density/card variant catalogs during the active table
 |---|---|---|---|
 | QA-GUIDE-001 | CLOSED / HUMAN ACCEPTED | Guide is the durable workflow-first product reference; actions reuse navigation authority, Welcome / Learn Riverline remains orientation, workspace tutorials remain contextual interactive teaching, and current product truth boundaries remain explicit. | accepted `GUIDE-CONTENT-001` checkpoint |
 | QA-I18N-001 | PARTIAL | Rendered-visible RU/HE audit is structurally clean across representative surfaces; FULL-HAND-REVIEW-001 adds complete EN/RU/HE review vocabulary and structural audits. Human linguistic acceptance remains pending. | i18n / FULL-HAND-REVIEW-001 human acceptance |
-| QA-I18N-002 | PARTIAL | Live locale switching preserves state and re-renders without cross-locale leakage; shared review content is translated through the canonical runtime. Human acceptance remains pending. | i18n / FULL-HAND-REVIEW-001 human acceptance |
+| QA-I18N-002 | IMPLEMENTED / HUMAN ACCEPTANCE PENDING | Quick sweep refreshes mounted Analyze/Training/Review Explain across EN/RU/HE, including inactive workspaces, with retained facts, disclosure nodes, focus and scroll. Exploit teaching labels/lessons preserve inputs and comparison. See the September 13 quick-sweep evidence above. Broader human locale acceptance remains pending. | BETA-CANDIDATE-QUICK-SWEEP-001 / i18n human acceptance |
 | QA-I18N-003 | PARTIAL | Static diagnostics report no missing visible keys, mojibake, or cross-locale contamination under the narrow whitelist, including Full Hand Review keys. Human acceptance remains pending. | i18n human acceptance |
 | QA-I18N-004 | PARTIAL | RTL and poker-data LTR islands are structurally tested, including the shared review surface and cards/action values; human visual acceptance remains. | responsive/i18n / FULL-HAND-REVIEW-001 human acceptance |
 | QA-RESP-001 | PARTIAL | Automated desktop renderer and structural responsive checks cover existing workspaces; Full Hand Review adds two-column-to-single-column convergence and Compact rules. Human Firefox acceptance remains pending at the ticket viewports/themes. | FULL-HAND-REVIEW-001 / premium closeout human acceptance |

@@ -679,10 +679,44 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"].is-hand-revie
 #equityMode .equity-workspace[data-equity-state="empty"] .equity-player-card { min-block-size: 0; grid-template-rows: 28px 152px; }
 #equityMode .equity-workspace[data-equity-state="empty"] .equity-player-footer { display: none; }
 #homeWorkspaceContent[data-product-destination="home"] .home-empty-state { background: transparent; border: 0; padding-inline: 0; }
-#homeWorkspaceContent[data-product-destination="home"] .home-main-flow > .home-section:not(.home-section--continue) { background: var(--analysis-surface); border: 1px solid var(--border-default); border-radius: 8px; }
+#homeWorkspaceContent[data-product-destination="home"] :is(.home-main-flow > .home-section:not(.home-section--continue), .home-destinations-rail > .home-section--quick) { background: var(--analysis-surface); border: 1px solid var(--border-default); border-radius: 8px; }
 .study-primary-roles [data-availability="unavailable"] > p:first-of-type { font-size: .9rem; font-weight: 400; }
 #handReviewSurface .hand-review-decision-cards > div { border: 0; background: transparent; box-shadow: none; }
 #handReviewSurface .hand-review-header, #handReviewSurface .hand-review-decision-head { background: transparent; border: 0; padding-inline: 0; }
 #handReviewSurface .hand-review-overview-facts > div { border: 0; background: transparent; }
 #handReviewSurface .hand-review-decision-button { box-shadow: none; border: 0; border-radius: 0; border-block-end: 1px solid var(--border-default); }
 #equityMode #calculate:disabled { color: var(--text-disabled, var(--text-secondary)); background: var(--surface-inset); border: 1px dashed var(--border-default); box-shadow: none; }
+
+/* Beta coherence: clear study actions over the existing surface hierarchy. */
+#toggleTeacher, .training-analysis-region > summary, .training-full-hand-decision-explain > summary {
+  box-sizing: border-box; inline-size: 100%; padding: 12px 16px; border: 1px solid var(--learning-support);
+  border-radius: 8px; background: var(--learning-surface); color: var(--learning-text); font: 650 .95rem/1.4 var(--font-ui); cursor: pointer;
+}
+#toggleTeacher { display: flex; align-items: center; gap: 12px; text-align: start; }
+#toggleTeacher span { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+#toggleTeacher small { font-size: .8rem; font-weight: 400; color: var(--learning-secondary); }
+#toggleTeacher strong { color: var(--learning-text); font-size: 1rem; }
+#toggleTeacher[aria-expanded="true"] { border-end-start-radius: 0; border-end-end-radius: 0; }
+#toggleTeacher:focus-visible { outline: 3px solid var(--border-focus); outline-offset: 3px; }
+#recommendation .teacher-panel { margin-block-start: 14px !important; }
+.decision-teach-action { margin-block: 12px; }
+.training-workspace:not([data-training-state="feedback"]) #trainingTeachDecision { display: none; }
+#personalMapRange, #calibrationStartQuestions, .personal-teacher-learning .ui-button--primary { min-block-size: 42px; padding-inline: 22px; font-size: .95rem; }
+.personal-view-purpose { color: var(--text-secondary); max-inline-size: 75ch; font-size: .85rem; line-height: 1.5; }
+.personal-teaching-paths { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-block: 12px; border-block: 1px solid var(--border-default); }
+.personal-teaching-paths p { flex: 1 1 280px; margin: 0; font-size: .8rem; color: var(--text-secondary); }
+.personal-decision-example { grid-column: 1 / -1; border-inline-start: 3px solid var(--accent-primary); padding: 18px; }
+.personal-decision-example button { margin-inline-end: 10px; }
+.personal-decision-example p { max-inline-size: 85ch; line-height: 1.5; }
+.surface-randomize-trigger.surface-randomize-labelled { inline-size: auto; width: auto; padding-inline: 10px; gap: 8px; font-size: .8rem; }
+.surface-randomize-labelled svg { flex: 0 0 20px; width: 20px; }
+.equity-board-random-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-block: 10px; }
+.equity-card-group-actions { flex-wrap: wrap; justify-content: end; }
+#visual-table-container .table-seat.is-dealer .table-seat-surface { stroke: var(--table-accent); stroke-width: 2.5; }
+#visual-table-container .table-seat.is-dealer .table-seat-position { font-weight: 850; }
+#visual-table-container .table-dealer-button { opacity: 1; }
+
+#visual-table-container .table-dealer-button text { font-size: 15px; }
+
+.surface-randomize-trigger.surface-randomize-labelled { display: inline-flex; align-items: center; }
+.personal-decision-context { padding: 12px; border-inline-start: 3px solid var(--learning-support); background: var(--learning-surface); color: var(--learning-text); }

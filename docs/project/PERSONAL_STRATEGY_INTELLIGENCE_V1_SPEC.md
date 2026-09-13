@@ -1,5 +1,28 @@
 # Personal Strategy Intelligence v1
 
+## Beta coherence: teaching from a decision
+
+Analyze, answered single-decision Training and shared completed Hand Review expose
+**Teach from this decision**. The existing Personal workspace owns one ephemeral
+incoming example, including before first Setup creation. The user selects a Game
+Setup/Approach and explicitly uses or dismisses the example. Using it opens the
+existing wording -> preview -> confirm editor; unfinished wording is preserved.
+
+`personal-decision-teaching.mjs` copies only displayed source, street, Hero cards,
+board, position, table size and available canonical pot/stack/call facts. It does
+not copy played actions, opponent private cards, strategy results or full replay.
+The confirmed qualitative record stores this descriptive example inside the
+existing JSON `statedScope.decisionExample`. Its current preflop calibration
+context/hand class are omitted so a postflop example is not mislabeled as preflop.
+There is no schema/database migration, new store, automatic quantitative mapping,
+exact-node import, or automatic promotion of observed behavior to intended play.
+Correction/reload retain the example and immutable lineage. Owner disposal clears
+incoming and editor examples; scope changes clear the active editor as before.
+An unconfirmed incoming example is session-local and can be explicitly assigned
+to a different Approach. The existing exact **Teach through a hand** path remains
+separate and now has a direct entry above the compact Understanding map.
+
+
 ## Sweep C: learning loop and complete answer access
 
 After quick, exact or Not sure answers, Teacher pauses on What Riverline learned.

@@ -46,6 +46,7 @@ test('Personal Strategy template and Understanding controls have EN/RU/HE copy w
   for (const language of ['en', 'ru', 'he']) for (const key of keys) {
     assert.equal(typeof catalog[language][key], 'string', `${language}: ${key}`);
     assert.ok(catalog[language][key].trim(), `${language}: ${key}`);
+    assert.doesNotMatch(catalog[language][key], /\?{2,}|\uFFFD/, `${language}: damaged translation: ${key}`);
     assert.deepEqual(placeholders(catalog[language][key]), placeholders(key), `${language}: ${key}`);
   }
   assert.match(catalog.ru['Confirm intended meaning'], /Подтвердить/);
@@ -93,7 +94,8 @@ test('Personal Strategy v2 tutorials reference live anchors and translate the co
   assert.match(content, /before saving|does not change saved intent/);
   assert.match(content, /Coverage counts evidence, not strategy completion/);
   assert.match(content, /There is no fixed question quota/);
-  assert.match(content, /Concrete answers lead/);
+  assert.match(content, /Bring a decision from Analyze, Training or Review/);
+  assert.match(content, /do not fill ranges or copy observed actions/);
   assert.doesNotMatch(content, /five questions|5 questions|personal-teach-five/i);
   assert.doesNotMatch(content, /exactly three|range-teacher-tab/);
 });

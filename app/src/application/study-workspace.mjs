@@ -99,7 +99,7 @@ export function renderDeepReview({ root, review, evidence = {}, language = 'en',
   selected.append(primary, roles);
   const actions = node('div'); actions.className = 'study-actions';
   const feedback = node('p'); feedback.setAttribute('aria-live', 'polite');
-  for (const key of ['later', 'practice', 'similar', 'inspect', 'situational', 'save']) {
+  for (const key of ['teach', 'later', 'practice', 'similar', 'inspect', 'situational', 'save']) {
     const control = button(actions, key, async () => {
       if (!isCurrent()) return;
       control.disabled = true;
@@ -111,7 +111,7 @@ export function renderDeepReview({ root, review, evidence = {}, language = 'en',
   }
   const more = node('details'); more.append(node('summary', copy('change')));
   more.dataset.studyDisclosure = `${delta.decisionId}:personal`;
-  for (const key of ['change', 'teach', 'unresolved', ...(delta.roles.opponentPolicy.availability === 'available' ? ['policy'] : [])]) {
+  for (const key of ['change', 'unresolved', ...(delta.roles.opponentPolicy.availability === 'available' ? ['policy'] : [])]) {
     button(more, key, async () => { if (isCurrent()) { const message = await onAction(key, delta); if (isCurrent()) feedback.textContent = message ? copy(message) : ''; } });
   }
   selected.append(actions, more, feedback); root.prepend(selected);

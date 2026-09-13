@@ -102,7 +102,7 @@ test('truthfulness copy preserves Scenario, Replay, strategy, Training, Equity, 
   assert.match(copy['calibration.setup'], /Questions adapt to your answers/);
   assert.match(copy['calibration.setup'], /One example does not establish a region/);
   assert.doesNotMatch(copy['calibration.setup'], /five questions|5 questions|personal-teach-five/i);
-  assert.match(copy['calibration.setup'], /Unconfirmed wording can guide a clarification but does not change saved intent/);
+  assert.match(copy['calibration.setup'], /Decision examples stay qualitative; they do not fill ranges or copy observed actions/);
   assert.match(copy['calibration.setup'], /Add independent Approaches whenever useful/);
   assert.doesNotMatch(copy['calibration.setup'], /exactly three|range-teacher-tab/);
   assert.match(copy['calibration.answers'], /question value, not poker confidence/);

@@ -3458,6 +3458,7 @@ function initI18n() {
 }
 
 function setLanguage(language) {
+  const pagePosition = { top: window.scrollY, left: window.scrollX, behavior: 'instant' };
   const lang = setDocumentLanguage(language);
   localStorage.setItem(I18N_STORAGE_KEY, lang);
   localStorage.setItem(I18N_LEGACY_STORAGE_KEY, lang);
@@ -3465,6 +3466,7 @@ function setLanguage(language) {
   if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
     window.dispatchEvent(new CustomEvent('riverline:languagechange', { detail: { language: lang } }));
   }
+  window.scrollTo?.(pagePosition);
   return lang;
 }
 

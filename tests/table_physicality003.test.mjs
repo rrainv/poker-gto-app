@@ -173,8 +173,8 @@ test('cards sit naturally in a radial felt lane and contributions use exact anch
 });
 
 test('dealer, seat states, contribution lanes, and motion stay semantic and accessible', () => {
-  assert.match(renderer, /dealerAnchor/);
-  assert.match(renderer, /data-anchor="table-felt-near-seat"/);
+  assert.match(renderer, /const isDealer = player.isButton/);
+  assert.match(renderer, /data-anchor="table-seat-shoulder"/);
   assert.match(renderer, /dealer\.setAttribute\('aria-label'/);
   for (const stateHook of ['is-hero', 'is-actor', 'is-folded', 'is-all-in']) {
     assert.match(renderer, new RegExp(stateHook));

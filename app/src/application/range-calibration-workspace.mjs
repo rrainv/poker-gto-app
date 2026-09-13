@@ -20,6 +20,7 @@ import { representativeCardsForHandClass } from '../ui/representative-hand-cards
 import { appendCardFaceContents } from './card-presentation.mjs';
 import { mountPersonalStrategyUnderstanding, renderPersonalMappingCoverage } from './personal-strategy-understanding-workspace.mjs';
 import { personalTeacherLearning } from './personal-teacher-learning.mjs';
+import { createPersonalDecisionExample, describePersonalDecisionExample } from './personal-decision-teaching.mjs';
 import { assertPersonalCoachRequestCurrent } from '../personal-strategy/coach.mjs';
 import { createPersonalStrategyScopeLifecycle } from './personal-strategy-scope-lifecycle.mjs';
 import {
@@ -546,7 +547,7 @@ function createController(root, application, initialWorkspace, activationStarted
     const visibleDirect = [...cell.evidence.activeDirect, ...cell.evidence.training];
     direct.replaceChildren(...(visibleDirect.length
       ? visibleDirect.map((entry) => evidenceNode(entry))
-      : [Object.assign(document.createElement('p'), { textContent: translated('No direct evidence for this hand.') })]));
+      : [Object.assign(document.createElement('p'), { textContent: translated('No direct evidence for this hand. Choose your intended action in Matrix Edit or map this range.') })]));
     const history = cell.evidence.directHistory;
     query('#calibrationInspectorHistory').hidden = history.length <= cell.evidence.activeDirect.length;
     query('#calibrationInspectorHistoryList').replaceChildren(...history.map((entry) => evidenceNode(entry, { history: true })));
@@ -2253,12 +2254,39 @@ function createController(root, application, initialWorkspace, activationStarted
         : query('#calibrationAnswerError').textContent;
   }
 
+  let pendingDecisionExample = null;
+  function renderDecisionExample() {
+    let banner = query('#personalDecisionExample');
+    if (!pendingDecisionExample) { banner?.remove(); return; }
+    if (!banner) { banner = document.createElement('section'); banner.id = 'personalDecisionExample'; banner.className = 'panel personal-decision-example'; root.prepend(banner); }
+    banner.replaceChildren();
+    const title = document.createElement('h2'); title.textContent = translated('Teach from this decision');
+    const context = document.createElement('p'); context.dir = 'auto'; context.textContent = describePersonalDecisionExample(pendingDecisionExample, translated);
+    const help = document.createElement('p'); help.textContent = translated('Choose a Game Setup and Approach, then describe how you intend to play this spot. Preview and confirm to save; this does not fill a range or copy your played action.');
+    const use = document.createElement('button'); use.type = 'button'; use.className = 'ui-button ui-button--primary'; use.textContent = translated('Use this decision'); use.disabled = !selection;
+    use.onclick = async () => {
+      const example = pendingDecisionExample;
+      const scope = currentMatrixScope();
+      use.disabled = true;
+      try {
+        await setPersonalStrategySubview('understanding');
+        if (lifecycle.signal.aborted || example !== pendingDecisionExample || JSON.stringify(scope) !== JSON.stringify(currentMatrixScope())) return;
+        if (!understanding.openDecisionExample(example)) { help.textContent = translated('Finish your current intention before using another decision.'); return; }
+        pendingDecisionExample = null; renderDecisionExample();
+      } catch { if (!lifecycle.signal.aborted) help.textContent = translated('Decision example unavailable'); }
+      finally { if (use.isConnected && !lifecycle.signal.aborted) use.disabled = !selection; }
+    };
+    const discard = document.createElement('button'); discard.type = 'button'; discard.className = 'ui-button ui-button--tertiary'; discard.textContent = translated('Dismiss');
+    discard.onclick = () => { pendingDecisionExample = null; renderDecisionExample(); query(selection ? '#personalMapRange' : '#calibrationCreateFirstProfile')?.focus(); };
+    banner.append(title, context, help, use, discard);
+  }
   function render() {
     if (lifecycle.signal.aborted || application.lifecycleScope?.signal.aborted) return;
     if (!workspace.profiles.length) {
       selection = null;
       if (personalStrategyScopeLifecycle.capture()) activateCurrentPersonalStrategyScope();
       setState('empty');
+      renderDecisionExample();
       return;
     }
     if (!selection || !activeEntry()) {
@@ -2266,6 +2294,7 @@ function createController(root, application, initialWorkspace, activationStarted
       activateCurrentPersonalStrategyScope();
     }
     renderConfigured();
+    renderDecisionExample();
   }
 
   async function refreshWorkspace(preferredProfileId = selection?.profileId) {
@@ -2954,6 +2983,13 @@ function createController(root, application, initialWorkspace, activationStarted
 
   return Object.freeze({
     render,
+    receiveDecision(context, source) {
+      application.lifecycleScope?.assertCurrent();
+      pendingDecisionExample = createPersonalDecisionExample(context, source);
+      renderDecisionExample();
+      const banner = query('#personalDecisionExample'); banner.tabIndex = -1;
+      banner.scrollIntoView?.({ block: 'center', behavior: 'instant' }); banner.focus();
+    },
     openCreateProfile: () => {
       application.lifecycleScope?.assertCurrent();
       return openProfileEditor('create');

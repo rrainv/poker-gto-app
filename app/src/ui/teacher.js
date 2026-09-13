@@ -806,7 +806,40 @@ function analysisWarningText(entry, explanation) {
   return analysisMessage(key, entry.message, entry.values || {});
 }
 
+// Locale refresh uses the same facts and keeps mounted disclosures and focus.
+function patchAnalysisLanguage(current, translated) {
+  if (current.nodeType !== translated.nodeType || current.nodeName !== translated.nodeName) {
+    current.replaceWith(translated);
+    return;
+  }
+  if (current.nodeType === 3) {
+    if (current.nodeValue !== translated.nodeValue) current.nodeValue = translated.nodeValue;
+    return;
+  }
+  for (const attribute of [...translated.attributes]) {
+    if (attribute.name !== 'open' && current.getAttribute(attribute.name) !== attribute.value) {
+      current.setAttribute(attribute.name, attribute.value);
+    }
+  }
+  const oldChildren = [...current.childNodes], newChildren = [...translated.childNodes];
+  newChildren.forEach((child, index) => {
+    if (oldChildren[index]) patchAnalysisLanguage(oldChildren[index], child);
+    else current.appendChild(child);
+  });
+  oldChildren.slice(newChildren.length).forEach(child => child.remove());
+}
+
 function renderAnalysisExplanation(container, explanation, options = {}) {
+  if (options.refreshLanguage && container?.firstElementChild) {
+    const draft = document.createElement('div');
+    const article = buildAnalysisExplanation(draft, explanation, options);
+    patchAnalysisLanguage(container.firstElementChild, article);
+    return container.firstElementChild;
+  }
+  return buildAnalysisExplanation(container, explanation, options);
+}
+
+function buildAnalysisExplanation(container, explanation, options = {}) {
   if (!container) return null;
   container.replaceChildren();
 

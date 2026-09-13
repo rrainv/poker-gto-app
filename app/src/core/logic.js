@@ -1463,7 +1463,7 @@ function equityRandomizationInput() {
 
 function setEquityRandomizationStatus(message, replacements) {
   const status = $('#equityRandomizeStatus');
-  if (status) status.textContent = message ? t(message, replacements) : '';
+  if (status) { status.textContent = message ? t(message, replacements) : ''; status.dataset.language = window.appLang || 'en'; }
 }
 
 function renderEquityRandomizationRecipe(recipe = app.equity.lastRandomizationRecipe) {
@@ -1476,6 +1476,10 @@ function renderEquityRandomizationRecipe(recipe = app.equity.lastRandomizationRe
 }
 
 function renderEquityRandomizationControls() {
+  const status = $('#equityRandomizeStatus');
+  // A completed transient announcement belongs to the language it was spoken
+  // in; the recipe and current inputs remain inspectable after a locale switch.
+  if (status?.dataset.language && status.dataset.language !== (window.appLang || 'en')) setEquityRandomizationStatus('');
   const players = $('#equityRandomizePlayers');
   if (players) {
     const known = app.equity.players
@@ -1487,6 +1491,8 @@ function renderEquityRandomizationControls() {
   }
   const primary = $('#equityRandomizeButton');
   if (primary) primary.disabled = app.equity.randomizationPending;
+  const board = $('#equityRandomizeBoard');
+  if (board) board.disabled = app.equity.randomizationPending || app.equity.board.length === 0;
   renderEquityRandomizationRecipe();
 }
 
@@ -5115,6 +5121,7 @@ function renderDeepStudyReview(surface, model) {
         chosenAction: model.selectedDecision.chosenAction } : null;
     },
     onAction: async (action, delta, record) => {
+      if (action === 'teach') return teachPersonalDecision(model.selectedDecision.durable.decisionContext, 'Review');
       if (action === 'later' || action === 'situational') {
         const result = await saveActiveHandReviewDecision(action === 'later'
           ? { reviewState: 'review_later' } : { situational: true });
@@ -5145,6 +5152,19 @@ function renderDeepStudyReview(surface, model) {
       }
     },
   });
+}
+
+async function teachPersonalDecision(context, source) {
+  const owner = window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration;
+  const snapshot = context ? structuredClone(context) : null;
+  if (!snapshot) { toast(t('Decision example unavailable'), 'warning'); return; }
+  navigateToWorkspace('calibration', 'personal-strategy');
+  try {
+    const controller = await window.RiverlineRangeCalibrationLifecycle.activate();
+    if (owner !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration || activeWorkspaceMode() !== 'calibration') return;
+    if (!controller) throw new Error('Personal Strategy unavailable');
+    controller.receiveDecision(snapshot, source);
+  } catch { toast(t('Decision example unavailable'), 'warning'); }
 }
 
 function bindStudyInbox() {
@@ -5402,9 +5422,14 @@ function bindHandReviewWorkspace() {
     const frameIndex = app.handReview.model?.selectedDecision?.replayFrameTarget.frameIndex;
     if (Number.isSafeInteger(frameIndex)) stepActiveHandReviewReplay('select', frameIndex);
   });
-  $('#handReviewAnalyze')?.addEventListener('click', () => {
-    if (app.handReview.source === 'training_full_hand') openFullHandDecisionInAnalysis();
-    else openCanonicalHandDecisionInAnalysis(app.handReview.model?.selectedDecisionIndex);
+  $('#handReviewAnalyze')?.addEventListener('click', async () => {
+    if (app.handReview.source === 'training_full_hand') await openFullHandDecisionInAnalysis();
+    else await openCanonicalHandDecisionInAnalysis(app.handReview.model?.selectedDecisionIndex);
+    if (activeWorkspaceMode() === 'gto' && app.strategyResult) {
+      if ($('#toggleTeacher')?.getAttribute('aria-expanded') !== 'true') $('#toggleTeacher')?.click();
+      $('#toggleTeacher')?.scrollIntoView({ block: 'center', behavior: 'instant' });
+      $('#toggleTeacher')?.focus({ preventScroll: true });
+    }
   });
   $('#handReviewSaveSpot')?.addEventListener('click', saveActiveHandReviewDecision);
   $('#handReviewSaveHand')?.addEventListener('click', () => $('#savedStudySaveButton')?.click());
@@ -6547,25 +6572,37 @@ function setRecommendationState(state) {
   const recommendation = $('#recommendation');
   if (!recommendation) return;
   recommendation.dataset.recommendationState = state;
+  if ($('#analysisTeachDecision')) $('#analysisTeachDecision').hidden = !['ready', 'mixed', 'warning'].includes(state);
   recommendation.setAttribute('aria-busy', String(state === 'loading'));
   const inputState = $('#analysisInputState');
   if (inputState) {
     inputState.hidden = !['waiting', 'unavailable', 'loading'].includes(state);
     $('#analysisInputMessage').textContent = state === 'loading' ? t('Loading…') : t('Check the cards and decision context to continue.');
     $('#analysisEditInputs').hidden = state === 'loading';
+    const editLabel = app.playbookMode === PLAYBOOK_MODES.HAND ? 'Return to hand' : 'Edit decision inputs';
+    $('#analysisEditInputs').dataset.i18n = editLabel;
+    $('#analysisEditInputs').textContent = t(editLabel);
     $('#analysisEditInputs').onclick = () => {
-      const heroEditor = document.querySelector('[data-card-set-edit="hero"]');
-      if (app.playbookMode !== PLAYBOOK_MODES.HAND && app.gto.hero.length !== 2 && heroEditor?.getClientRects().length) {
-        heroEditor.focus();
+      if (app.playbookMode === PLAYBOOK_MODES.HAND) {
+        navigateToWorkspace('gto', 'hand');
+        const target = [...document.querySelectorAll('#handInteractionRail button, #handCompletedActions button, #handSetupDisclosure input')]
+          .find(node => !node.disabled && node.getClientRects().length) || $('#handLiveStageHeader');
+        if (target) { target.tabIndex = target.tabIndex < 0 ? -1 : target.tabIndex; target.scrollIntoView({ block: 'center', behavior: 'instant' }); target.focus({ preventScroll: true }); }
         return;
       }
-      const region = app.playbookMode === PLAYBOOK_MODES.HAND
-        ? $('#handSetupDisclosure') : document.querySelector('.playbook-context-rail');
+      const heroEditor = document.querySelector('[data-card-set-edit="hero"]');
+      if (app.playbookMode !== PLAYBOOK_MODES.HAND && app.gto.hero.length !== 2 && heroEditor?.getClientRects().length) {
+        heroEditor.click();
+        return;
+      }
+      const region = document.querySelector('.playbook-context-rail');
       if (!region) return;
       if (region.tagName === 'DETAILS') region.open = true;
+      region.querySelectorAll('details').forEach(details => { details.open = true; });
       const control = [...region.querySelectorAll('button, select, input')]
         .find(node => !node.disabled && node.getClientRects().length);
-      control?.focus();
+      control?.scrollIntoView({ block: 'center', behavior: 'instant' });
+      control?.focus({ preventScroll: true });
     };
   }
 }
@@ -6664,6 +6701,8 @@ function bluffAnalysisFactsForDecision(rangeAnalysisFacts, decisionContext, stra
 }
 
 const exploitTeacherMounts = new WeakMap();
+const mountedDecisionAnalyses = new Map();
+let refreshingAnalysisLanguage = false;
 
 function renderDecisionAnalysis(container, {
   decisionContext,
@@ -6677,6 +6716,10 @@ function renderDecisionAnalysis(container, {
   rangeInputs = EMPTY_RANGE_ANALYSIS_INPUTS
 }) {
   if (!container) return null;
+  if (refreshingAnalysisLanguage && mountedDecisionAnalyses.has(container)) {
+    return mountedDecisionAnalyses.get(container).explanation;
+  }
+  mountedDecisionAnalyses.delete(container);
   exploitTeacherMounts.get(container)?.dispose();
   exploitTeacherMounts.delete(container);
   const bridge = globalThis.RiverlineAnalysisExplanation;
@@ -6702,6 +6745,8 @@ function renderDecisionAnalysis(container, {
     unavailableReason
   });
   renderAnalysisExplanation(container, explanation, { depth, surface });
+  for (const target of mountedDecisionAnalyses.keys()) if (!target.isConnected) mountedDecisionAnalyses.delete(target);
+  mountedDecisionAnalyses.set(container, { explanation, depth, surface });
   container.querySelectorAll('details').forEach(details => bridge.bindDisclosureDismissal?.(details));
   if (surface === 'playbook' && depth !== 'facts' && decisionContext && rangeAnalysisFacts
     && ['flop', 'turn', 'river'].includes(decisionContext.street) && bridge.mountExploitTeacher) {
@@ -8259,8 +8304,6 @@ function renderSavedLibrary(section) {
     );
     const heading = document.createElement('h3'); heading.textContent = t('Keep a decision worth returning to');
     empty.prepend(heading);
-    const hand = document.createElement('button'); hand.type = 'button'; hand.className = 'ui-button ui-button--quiet';
-    hand.dataset.homeDestination = 'hand'; hand.textContent = t('Play a Hand'); empty.append(hand);
     root.appendChild(empty);
     renderSavedLibraryDetail(null);
     return;
@@ -9263,6 +9306,12 @@ function bindEvents() {
   $('#equityRandomizeButton')?.addEventListener('click', () => {
     void randomizeCurrentEquityInput('matchup');
   });
+  $('#analysisTeachDecision')?.addEventListener('click', () => { void teachPersonalDecision(app.decisionContext, 'Analyze'); });
+  $('#trainingTeachDecision')?.addEventListener('click', () => {
+    if (document.querySelector('.training-workspace')?.dataset.trainingState === 'feedback') {
+      void teachPersonalDecision(app.training.currentExercise?.decisionContext, 'Training');
+    }
+  });
   document.querySelectorAll('[data-equity-randomize-target]').forEach((button) => {
     button.addEventListener('click', () => {
       void randomizeCurrentEquityInput(button.dataset.equityRandomizeTarget);
@@ -9580,6 +9629,14 @@ function refreshLocalizedTrainingRuntime() {
 }
 
 function refreshLocalizedRuntime() {
+  // Settings temporarily hides the study workspace. Refresh every mounted
+  // explanation, including those behind Settings, without recomputing facts.
+  refreshingAnalysisLanguage = true;
+  try {
+  for (const [container, entry] of mountedDecisionAnalyses) {
+    if (!container.isConnected) { mountedDecisionAnalyses.delete(container); continue; }
+    renderAnalysisExplanation(container, entry.explanation, { ...entry, refreshLanguage: true });
+  }
   window.SoundFX?.refreshControls?.();
   const shell = $('.riverline-shell');
   applySidebarState(Boolean(shell?.classList.contains('is-sidebar-collapsed')));
@@ -9590,6 +9647,9 @@ function refreshLocalizedRuntime() {
   refreshLocalizedPlaybookRuntime();
   refreshLocalizedEquityRuntime();
   refreshLocalizedTrainingRuntime();
+  } finally {
+    refreshingAnalysisLanguage = false;
+  }
 }
 
 function init() {

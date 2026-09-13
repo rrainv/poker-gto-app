@@ -1,4 +1,5 @@
 import { createRfiStructuralMappingFacts } from '../personal-strategy/structural-range-mapping.mjs';
+import { createPersonalDecisionExample } from './personal-decision-teaching.mjs';
 import {
   ACTION_TYPES,
   ANTE_TYPES,
@@ -1592,7 +1593,8 @@ export function createRangeCalibrationApplication({
   const projectionService = createPersonalStrategyProjectionService({ repository });
   const qualitativeDrafts = new WeakMap();
 
-  async function previewQualitativeIntent(scope, { text, language = 'en', scopeKind = 'decision', scopeDescription = '', supersedesEvidenceIds = [], exceptionTo = null, handClass = null } = {}) {
+  async function previewQualitativeIntent(scope, { text, language = 'en', scopeKind = 'decision', scopeDescription = '', supersedesEvidenceIds = [], exceptionTo = null, handClass = null, decisionExample = null } = {}) {
+    if (decisionExample) decisionExample = createPersonalDecisionExample({ ...decisionExample, schemaVersion: 'decision-context/v1' }, decisionExample.source);
     if (!['decision', 'approach'].includes(scopeKind) || typeof scopeDescription !== 'string' || scopeDescription.length > 240) {
       throw new RangeError('Invalid qualitative intent scope');
     }
@@ -1607,7 +1609,8 @@ export function createRangeCalibrationApplication({
     if (supersedesEvidenceIds.some((id) => !heads.some((record) => record.id === id))) throw stalePersonalStrategyScope('Correction');
     if (exceptionTo && !heads.some((record) => record.id === exceptionTo)) throw stalePersonalStrategyScope('Exception');
     const statedScope = { kind: scopeKind, description: String(scopeDescription).trim(),
-      ...(scopeKind === 'decision' ? { context: cloneData(scope.context), ...(handClass === null ? {} : { handClass }) } : {}),
+      ...(decisionExample ? { decisionExample: cloneData(decisionExample) }
+        : scopeKind === 'decision' ? { context: cloneData(scope.context), ...(handClass === null ? {} : { handClass }) } : {}),
       setupVersion: entry.profile.setupVersion, profileId: scope.profileId, modeId: scope.modeId };
     const preview = previewPersonalStrategyIntent({ text, language, scope: cloneData(scope), statedScope });
     qualitativeDrafts.set(preview, { scope: cloneData(scope), approachVersion: approach.approachVersion,

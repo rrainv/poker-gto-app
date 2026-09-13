@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { mountPersonalStrategyUnderstanding } from '../app/src/application/personal-strategy-understanding-workspace.mjs';
+import { createPersonalDecisionExample } from '../app/src/application/personal-decision-teaching.mjs';
 import { createRangeCalibrationApplication, createContextFromSelection } from '../app/src/application/range-calibration-service.mjs';
 import { createMemoryPersonalStrategyDatabase } from '../app/src/personal-strategy/indexeddb-storage.mjs';
 
@@ -402,5 +403,47 @@ test('owner abort immediately clears the previous understanding identity, counts
     assert.equal(f.get('personalTeachReason').textContent, '');
     assert.equal(f.get('personalIntentStatements').textContent, '');
     assert.equal(f.controller.getState().preview, null);
+  } finally { globalThis.document = original; }
+});
+
+
+test('decision teaching preserves a postflop example through explicit confirmation, reload and correction without mapping preflop', async () => {
+  const original = globalThis.document; globalThis.document = fakeDocument;
+  try {
+    const f = await fixture({ teachingHand: 'K9s' }); await f.controller.load();
+    const context = { schemaVersion: 'decision-context/v1', tableSize: 6, street: 'turn', heroPosition: 'BB',
+      heroCards: ['As', 'Kh'], board: ['Qc', '8d', '4h', '2s'], currentPotBb: 24, effectiveStackBb: 88, callAmountBb: 8,
+      hiddenOpponentCards: ['Ac', 'Ad'], chosenAction: 'fold' };
+    const example = createPersonalDecisionExample(context, 'Review');
+    assert.equal(f.controller.openDecisionExample(example), true);
+    assert.equal(fakeDocument.activeElement.id, 'personalIntentText');
+    assert.match(f.get('personalDecisionContext').textContent, /Review.*Turn.*BB.*As Kh.*Qc 8d 4h 2s/);
+    assert.equal(f.get('personalIntentScope').disabled, true);
+    f.get('personalIntentText').value = 'I prefer to call this turn against small bets.';
+    assert.equal(f.controller.openDecisionExample(example), false, 'a handoff must not replace unfinished wording');
+    await f.get('personalIntentForm').fire('submit');
+    assert.deepEqual(await f.app.getQualitativeEvidence(f.scope), [], 'preview writes nothing');
+    const preview = f.controller.getState().preview;
+    assert.deepEqual(preview.statedScope.decisionExample, example);
+    assert.equal(preview.statedScope.context, undefined, 'selected preflop context is not attached to a turn example');
+    assert.equal(preview.statedScope.handClass, undefined);
+    assert.equal(example.hiddenOpponentCards, undefined); assert.equal(example.chosenAction, undefined);
+    await f.get('personalConfirmIntent').fire('click');
+    const records = await f.makeApp().getQualitativeEvidence(f.scope);
+    assert.equal(records.length, 1); assert.deepEqual(records[0].statedScope.decisionExample, example);
+    assert.equal((await f.app.getEvidenceView(f.scope)).summary.directlyAnsweredHandCount, 0);
+    assert.equal(f.get('personalDecisionContext').hidden, true);
+    const correction = descend(f.get('personalIntentStatements'), node => node.dataset.intentAction === 'correct')[0];
+    await f.get('personalIntentStatements').fire('click', correction);
+    assert.match(f.get('personalDecisionContext').textContent, /Turn/);
+    f.get('personalIntentText').value = 'I prefer to fold this turn against large bets.';
+    await f.get('personalIntentForm').fire('submit'); await f.get('personalConfirmIntent').fire('click');
+    const corrected = await f.makeApp().getQualitativeEvidence(f.scope);
+    assert.equal(corrected.length, 2); assert.deepEqual(corrected[1].statedScope.decisionExample, example);
+    assert.deepEqual(corrected[1].supersedesEvidenceIds, [records[0].id]);
+    assert.equal(f.controller.openDecisionExample(example), true);
+    f.signalController.abort();
+    assert.equal(f.get('personalDecisionContext').hidden, true, 'owner disposal clears the example');
+    assert.equal(f.get('personalIntentScope').disabled, false);
   } finally { globalThis.document = original; }
 });

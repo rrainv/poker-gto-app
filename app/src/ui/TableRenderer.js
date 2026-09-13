@@ -175,6 +175,16 @@ class TableRenderer {
       const seatVector = tableSeatVector({
         centerX, centerY, seatX: x, seatY: y, halfWidth, halfHeight,
       });
+      // Large sparse-table cards need a lateral amount lane. Keep it opposite
+      // the dealer marker, clear of both private cards and the central pot.
+      if (activePlayers <= 4) {
+        contributionPoint.x += seatVector.unitY * 100;
+        contributionPoint.y -= seatVector.unitX * 100;
+      } else if (seatVector.unitY > 0.9) {
+        // Leave room below top-seat private cards for the taller all-in chip
+        // stack. This stays in the existing inward contribution lane.
+        contributionPoint.y += 10;
+      }
       const cardHalfWidth = (85 * cardScale) / 2;
       const cardHalfHeight = (57 * cardScale) / 2;
       const cardSeatGap = Math.max(12, Math.round(cardOverlapUnits * 0.30));
@@ -198,16 +208,11 @@ class TableRenderer {
       const cardCenterY = Math.round(seatVector.unitY * cardCenterDistance);
       const holeCardX = cardCenterX;
       const holeCardY = Math.round(cardCenterY - cardHalfHeight);
-      const suppliedDealer = seatPresentation?.dealerAnchor;
-      const dealerBaseX = suppliedDealer
-        ? Math.round((suppliedDealer.x * 1000) - x)
-        : Math.round(seatVector.unitX * (seatVector.radialExtent + 18));
-      const dealerBaseY = suppliedDealer
-        ? Math.round((suppliedDealer.y * 650) - y)
-        : Math.round(seatVector.unitY * (seatVector.radialExtent + 18));
-      const dealerTangentialOffset = Math.round((40 * cardScale) + 18);
-      const dealerX = Math.round(dealerBaseX - (seatVector.unitY * dealerTangentialOffset));
-      const dealerY = Math.round(dealerBaseY + (seatVector.unitX * dealerTangentialOffset));
+      // Attach the marker beside its owning panel, away from inward card and
+      // contribution lanes. Outer side seats use the outer shoulder; top/bottom
+      // seats use the right shoulder. Canonical isButton still owns visibility.
+      const dealerX = Math.round((seatVector.unitX > 0.7 ? -1 : 1) * (halfWidth + 20));
+      const dealerY = Math.round(-halfHeight + 14);
       const actionY = Math.round(halfHeight + 12);
       // Grow into the outer padding; retain the text-side and bottom edges.
       const portraitWidth = unit.width < 120 ? 32 : 40;
@@ -232,10 +237,10 @@ class TableRenderer {
             })}
             <text id="seat-status-${i}" class="table-seat-meta table-seat-status" x="0" y="${Math.round(halfHeight - 7)}" text-anchor="middle" hidden></text>
           </g>
-          <g id="dealer-${i}" class="table-dealer-button" data-anchor="table-felt-near-seat" transform="translate(${dealerX}, ${dealerY})" hidden>
-            <circle r="12" aria-hidden="true" />
-            <circle class="table-dealer-button-inner" r="8.5" aria-hidden="true" />
-            <text id="dealer-txt-${i}" x="0" y="3.5" text-anchor="middle" aria-hidden="true">D</text>
+          <g id="dealer-${i}" class="table-dealer-button" data-anchor="table-seat-shoulder" transform="translate(${dealerX}, ${dealerY})" hidden>
+            <circle r="17" aria-hidden="true" />
+            <circle class="table-dealer-button-inner" r="13" aria-hidden="true" />
+            <text id="dealer-txt-${i}" x="0" y="5" text-anchor="middle" aria-hidden="true">D</text>
           </g>
           <g id="action-${i}" class="table-action-badge" transform="translate(0, ${actionY})" hidden aria-hidden="true">
             <rect class="table-action-surface" x="-44" y="-9" width="88" height="18" rx="9" aria-hidden="true" />
