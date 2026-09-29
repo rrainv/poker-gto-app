@@ -60,13 +60,13 @@ Identity/authentication changes immediately hide the previous rendered account c
 
 Recent is limited to six items; Review Later and Mistakes are limited to three items each. Each item retains kind, title, useful tags/annotations, timestamp, truthful derivation facts, and canonical reopen behavior.
 
-Saved is a distinct presentation destination over the same bounded Home/Saved application authority. Its human-accepted primary surface is a compact grid of current `SavedStudyObject v1` objects. All / Hands / Spots are always-visible keyboard-accessible categories, including at zero count, and filter only the already-loaded bounded result: All preserves unknown objects as unsupported/unavailable, Hands selects `kind=hand`, and Spots selects `kind=spot`. Training and Equity are not current categories or Saved kinds.
+Saved is a distinct destination over the same Saved application authority, but since `SAVED-LIBRARY-001` it no longer reuses Home's Recent section or Home's six-item query. It mounts its own library controller and query (up to 200 active objects, search, filters, sort; see [Saved library query](SAVED_STUDY_OBJECTS_SPEC.md#saved-library-query)), which loads only while Saved is shown. Home Recent keeps its six-item limit, rendering, and Continue behavior unchanged, and the Home load performs no library read. Its human-accepted primary surface is a compact grid of current `SavedStudyObject v1` objects. All / Hands / Spots are always-visible keyboard-accessible categories, including at zero count: All preserves unknown objects as unsupported/unavailable, Hands selects `kind=hand`, and Spots selects `kind=spot`. Training and Equity are not current categories or Saved kinds. The Study Inbox disclosure belongs to Home and is hidden on the Saved destination.
 
 DOM-free `saved-study-preview-facts/v1` supplies observer-safe canonical Hand preview facts and visibly lossy/schematic Scenario Spot facts. Hover and keyboard focus share one viewport-bounded body-level overlay; click/Enter expands one bounded detail surface; card faces reuse `card-presentation/v1`. Identity/account changes clear private Saved preview/detail state before reload. The existing Hand/Spot openers and reopen semantics remain unchanged.
 
 For nested v2 Saved payloads, Home keeps the existing summary shape and derives neutral `off` or fixed-per-player accounting from the immutable rules snapshot. It never requires `game.mode`, infers an operator from provenance, or performs a preset lookup. V1 summaries retain their existing game-mode projection.
 
-The Saved destination does not imply full retrieval: it filters only the already-loaded bounded result. `SAVED-LIBRARY-001` now owns full retrieval, search, broader filters, sorting, and pagination for current Hand/Spot objects. Bulk operations, broader `HOME-002B` master-detail evolution, and additional payload kinds remain later; no new kind is authorized by the retrieval ticket.
+The Saved library is bounded to the 200 most recently updated active objects with a visible disclosure at the bound; cursor pagination beyond that bound, bulk operations, broader `HOME-002B` master-detail evolution, and additional payload kinds remain later. No new kind is authorized by the retrieval ticket.
 
 ## Personal Strategy truth
 
@@ -88,7 +88,7 @@ The minimum supported desktop is 1366×768, with representative larger desktops 
 
 ## Preserved future work
 
-- `SAVED-LIBRARY-001` full retrieval/search/filter/sort/pagination for current Hand/Spot objects, then later bulk operations and approved additional payload kinds;
+- beyond the implemented bounded `SAVED-LIBRARY-001` library: cursor pagination past 200 items, bulk operations, and approved additional payload kinds;
 - contract-backed Home continuity over existing Training Memory; sophisticated re-drilling, mastery, and trends remain later and cannot be inferred from heuristic agreement;
 - durable recent Analysis history;
 - configurable card order, visibility, density, and beginner/expert composition;

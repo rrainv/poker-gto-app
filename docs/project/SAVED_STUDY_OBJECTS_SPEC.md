@@ -13,7 +13,7 @@ adds `saved-hand-snapshot/v3` with recorded-settlement PokerState/Replay v3 and
 durable structured provenance. Outer SavedStudyObject v1, database, ownership
 and historical records are unchanged. Raw history text is not stored.
 
-Status: implemented through `SAVED-OBJECTS-002`, `GAME-RULES-001C`, and human-accepted `SAVED-VISUAL-KNOWLEDGE-001`, with optional account sync added by `ACCOUNT-002B-A`
+Status: implemented through `SAVED-OBJECTS-002`, `GAME-RULES-001C`, and human-accepted `SAVED-VISUAL-KNOWLEDGE-001`, with optional account sync added by `ACCOUNT-002B-A`; the bounded Saved library query (`SAVED-LIBRARY-001`, September 29, 2026) is implemented with human acceptance pending
 
 Date: August 30, 2026
 
@@ -218,7 +218,24 @@ Current interpretation is deliberately limited:
 - unknown future kinds remain present but render unsupported/unavailable; they are never coerced into Hand or Spot;
 - card faces reuse `card-presentation/v1`; preview renderers do not own rank/suit styling or poker evaluation.
 
-The human-accepted Saved presentation keeps the compact object grid primary. All / Hands / Spots are the visible supported category model and remain visible when their count is zero; the current implementation filters only the already-bounded result set. This is not full-library retrieval. `SAVED-LIBRARY-001` owns a repository-backed retrieval/query contract for existing Hand/Spot objects with search, filters, sorting, and pagination, without creating another Saved authority or adding payload kinds. Hover and keyboard focus use the same viewport-aware body-level bounded overlay, while click/Enter expands one bounded detail surface. Identity/account changes clear private preview and detail state before another owner can render.
+The human-accepted Saved presentation keeps the compact object grid primary. All / Hands / Spots are the visible supported category model and remain visible when their count is zero. Since `SAVED-LIBRARY-001` the grid renders the Saved destination's own bounded library query (see [Saved library query](#saved-library-query)) instead of Home's six-item Recent result. Hover and keyboard focus use the same viewport-aware body-level bounded overlay, while click/Enter expands one bounded detail surface. Identity/account changes clear private preview and detail state before another owner can render.
+
+## Saved library query
+
+Status: `SAVED-LIBRARY-001` implemented September 29, 2026; human acceptance pending under `QA-SAVED-LIBRARY-001`.
+
+The Saved destination owns an independent library query; Home Recent keeps its separate six-item query.
+
+- **Retrieval and bound.** One `listRecent({ limit: 200 })` call through the existing Saved application bridge reads active (non-archived) objects for the current lifecycle owner via the existing `ownerStateUpdatedAt` index, most recently updated first. Fewer than 200 results means the category counts are exact library totals. Exactly 200 results shows a localized note — "Showing the 200 most recently updated items. Counts cover shown items only." — and the counts describe only the shown items. There is no cursor or pagination; the next owner for retrieval beyond the bound is recorded in `RET-HOME-001`.
+- **Search.** One field, evaluated client-side over the loaded set only: annotation title, note, and tag display values. Text is normalized with Unicode NFKD, combining marks removed (Latin accents, Hebrew niqqud), lower-cased, `ё` folded to `е`, and whitespace collapsed. Several words must all match (AND); each word may match a different field. Input is debounced; typing never reads the repository. Derived facts such as position or street are not searched.
+- **Filters** combine with search: Kind (All / Hands / Spots; All keeps unknown kinds as unavailable), Review (Any / Review later / Resolved), Mistakes only (the existing `mistake` classification), and Tag (tags present in the loaded set, keyed by the Saved tag normalization). A visible Clear resets search and filters and keeps the chosen sort.
+- **Sort.** Recently updated (default) or Recently created, with a stable ID tie-break. At the bound, Recently created orders only the loaded set; the bound note covers this.
+- **States.** An empty library keeps the existing "Keep a decision worth returning to" state. A kind filter alone keeps the accepted "No saved Hands/Spots yet" copy. Any other empty result shows a distinct no-results message with Clear. A load failure shows the existing error state and clears the list, so a stale list is never shown as current.
+- **Session and owner.** Search, filters, sort, and the open detail persist in memory while navigating away and back within one owner session. An owner change (sign-in/out, account switch, Guest) synchronously clears the loaded items, query text, tag options, preview, and detail before any other owner's data can render; stale loads are discarded after every `await` through the captured lifecycle scope and a controller generation.
+- **Invalidation (PERF-001).** `riverline:savedstudychange`, `riverline:studysyncchange`, and the Saved service's post-commit local-mutation signal reload the library only while Saved is visible, coalesced to one load; otherwise they mark it dirty and it reloads on the next show. There is no polling and no library read at startup or on Home.
+- **No new authority.** The query, normalized search text, tag options, and view state are ephemeral and in memory only. No index, cache, IndexedDB version, payload kind, export, or sync change is introduced.
+
+Implementation: DOM-free `app/src/application/saved-library-query.mjs` (`saved-library-query/v1`, `saved-library-view/v1`) and the mounted controller `app/src/application/saved-library-workspace.mjs` (`saved-library-workspace/v1`: `mount(container, deps)` → `show`, `hide`, `invalidate`, `ownerChanged`, `dispose`). `logic.js` supplies explicit dependencies and routing only. This is the first workspace extraction pilot; it is not a general composition root.
 
 This presentation checkpoint does not change Saved Hand or Spot reopening, persistence, annotations, archive, portability, or sync behavior. No Saved Training Experience or Saved Equity Snapshot kind exists today; each requires a future explicit payload, authority, privacy/versioning, and reopen decision.
 
@@ -354,7 +371,7 @@ These figures establish comfortable thousands-of-objects behavior; they are not 
 
 ## Deferred UX and platform work
 
-`SAVED-OBJECTS-001/001R/002` add no Dashboard, Home redesign, full saved-hand browser, global search, Training auto-save, Range integration, sharing, or backend. Optional account cloud sync is now owned exclusively by `ACCOUNT-002B-A` and `SAVED_OBJECT_SYNC_SPEC.md`; it does not change the Saved object/export schemas. `SAVED-LIBRARY-001` is the activated consumer/retrieval owner for current Hand/Spot records only. It must reuse this repository/application authority and does not authorize Range, Drill, Review, Session, Training, or Equity payloads.
+`SAVED-OBJECTS-001/001R/002` add no Dashboard, Home redesign, full saved-hand browser, global search, Training auto-save, Range integration, sharing, or backend. Optional account cloud sync is now owned exclusively by `ACCOUNT-002B-A` and `SAVED_OBJECT_SYNC_SPEC.md`; it does not change the Saved object/export schemas. `SAVED-LIBRARY-001` implements the bounded consumer/retrieval slice for current Hand/Spot records only (see [Saved library query](#saved-library-query)). It reuses this repository/application authority and does not authorize Range, Drill, Review, Session, Training, or Equity payloads.
 
 The existing Saved opener loads a Hand, version-validates and reconstructs `payload.replaySource`, and feeds the reconstruction to the Replay projection/playback controllers. Both supported Hand versions open through that detached read-only path; it never persists or invents renderer frames, playback cursor/timers, or hidden cards.
 

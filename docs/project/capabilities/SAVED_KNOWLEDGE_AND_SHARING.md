@@ -33,7 +33,7 @@ Sharing should extend that same object model deliberately. It must remain local-
 
 Current implemented payloads and UI remain bounded. Saved Range, Drill, Session, Review, comments, social sharing, and a complete library experience require their own approved payload or application owners.
 
-Current authentication policy scopes Saved inspection and persistence to a signed-in Riverline profile. Account-owned cached objects may remain local to the device and invisible while signed out. This is compatible with a local-first repository: signing in selects the permitted owner scope and does not by itself enable sync, cloud backup, sharing, or upload. Guest copy must state that boundary rather than implying anonymous access to account-owned device data.
+Saved is available to Device Guest and to each signed-in Riverline profile as separate local libraries. Guest Saved stays on this device and never syncs or makes remote calls; account-owned objects remain invisible to Guest and to other accounts. Signing in selects the permitted owner scope and does not by itself enable sync, cloud backup, sharing, or upload. Guest copy must state that boundary rather than implying access to another owner's device data.
 
 ## Desired future behavior
 
@@ -48,6 +48,8 @@ The Saved Study Library should provide a dense, calm master-detail workspace rat
 - a selected-object inspector with explicit Open, Study, Review, Export, Share, Archive, and other applicable actions;
 - compact previews that consume payload-owned projections rather than reconstructing poker facts in the library; for a Saved Spot this may be an observer-safe miniature table/board/Hero/pot representation available through hover, keyboard focus, tap, or detail without making essential facts pointer-only;
 - clear unavailable states when an older client cannot interpret a future payload.
+
+September 29, 2026 status (`SAVED-LIBRARY-001`, implemented, human acceptance pending): the Saved destination has its own library query over current Hand/Spot objects — the 200 most recently updated active objects with a visible bound note — plus client-side search over title/note/tags, kind / review state / mistake / tag filters, and Recently updated / Recently created sort. The [Saved Study Objects spec](../SAVED_STUDY_OBJECTS_SPEC.md#saved-library-query) owns the implemented semantics. Still future: search over structured poker context, source/lifecycle/date/poker-dimension filters, cursor pagination beyond the bound, Export/Share/Archive actions in the inspector, and new payload kinds.
 
 Folders or collections may be useful, but tags and search should be proven insufficient before another organizational hierarchy is introduced.
 
@@ -190,7 +192,7 @@ Advanced users should be able to use dense library facts and filters without nar
 
 These are possible future boundaries, not execution priority:
 
-1. Saved Study Library for current Hand/Spot objects with search, filter, tags, and master-detail inspection.
+1. Saved Study Library for current Hand/Spot objects with search, filter, tags, and master-detail inspection. (The bounded first slice is implemented by `SAVED-LIBRARY-001`; pagination beyond 200 and structured/poker-dimension filters remain.)
 2. User-visible export/import over existing validated portability contracts.
 3. Revision/history projection for current types, including compare and restore-as-new-revision.
 4. One new payload type only when its owning subsystem contract is ready.

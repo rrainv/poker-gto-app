@@ -102,7 +102,8 @@ test('Home and Saved resolve to distinct visible states over the same Home autho
   assert.equal(home.destination, 'home');
   assert.equal(saved.destination, 'saved');
   assert.deepEqual(Array.from(home.visibleSections), ['overview', 'continue', 'review', 'recent', 'quick']);
-  assert.deepEqual(Array.from(saved.visibleSections), ['saved-overview', 'recent']);
+  // SAVED-LIBRARY-001: Saved owns an independent library section instead of reusing Home Recent.
+  assert.deepEqual(Array.from(saved.visibleSections), ['saved-overview', 'library']);
   assert.deepEqual(Array.from(homeAgain.visibleSections), Array.from(home.visibleSections));
   assert.match(html, /id="homeSavedOverview"[^>]*hidden/);
   assert.match(css, /home-dashboard-grid\[data-product-destination="saved"\][\s\S]*?"recent recent"/);
@@ -112,7 +113,7 @@ test('Home and Saved resolve to distinct visible states over the same Home autho
 
 test('Saved guest and empty presentation remains intentionally Saved instead of falling back to Home', () => {
   const savedGuest = resolveHomeDestination('saved', { sessionMode: 'guest' });
-  assert.deepEqual(Array.from(savedGuest.visibleSections), ['saved-overview', 'recent']);
+  assert.deepEqual(Array.from(savedGuest.visibleSections), ['saved-overview', 'library']);
   assert.equal(savedGuest.guestCopy.eyebrow, 'Saved study');
   assert.equal(savedGuest.guestCopy.title, 'Saved Hands & Spots');
   assert.match(savedGuest.guestCopy.primary, /stay on this device in Guest Mode/);

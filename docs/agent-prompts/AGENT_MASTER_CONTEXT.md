@@ -1,5 +1,11 @@
 # Agent Master Context
 
+September 29 Saved slice: `SAVED-LIBRARY-001` gives Saved an independent bounded
+library (200, disclosed; search/filters/sort) in `saved-library-workspace.mjs`,
+which also fulfilled the first extraction pilot. `QA-SAVED-LIBRARY-001` owns human
+acceptance; `UI-COMPOSITION-ROOT-001` remains separate. Items 18–19 and the Saved
+bullet below predate this.
+
 September 7 explicit Equity slice: [Advanced Equity v1](../project/ADVANCED_EQUITY_V1_SPEC.md)
 adds canonical weighted joint Equity and bounded runout/card inspection. Partial
 results are known-only, never full-range Equity. Personal exact trajectories and

@@ -601,24 +601,12 @@
           </section>
           <section class="panel home-section home-section--recent" aria-labelledby="homeRecentTitle" data-home-surface="saved" data-tutorial-anchor="home-recent" tabindex="-1">
             <header class="home-section-head"><div><p id="homeRecentEyebrow" data-i18n="Your latest saved study items">Your latest saved study items</p><h2 id="homeRecentTitle" data-i18n="Recent">Recent</h2></div></header>
-            <div id="savedLibraryCategories" class="saved-library-categories" role="group" aria-label="Saved categories">
-              <button type="button" class="saved-library-category" data-saved-category="all" aria-pressed="true">
-                <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="2.5" width="6" height="6" rx="1"></rect><rect x="11.5" y="2.5" width="6" height="6" rx="1"></rect><rect x="2.5" y="11.5" width="6" height="6" rx="1"></rect><rect x="11.5" y="11.5" width="6" height="6" rx="1"></rect></svg>
-                <span data-i18n="All">All</span><strong data-saved-category-count="all">0</strong>
-              </button>
-              <button type="button" class="saved-library-category" data-saved-category="hands" aria-pressed="false">
-                <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5.5" y="2.5" width="10" height="14" rx="2"></rect><path d="M5.5 5.5h-1a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h6"></path><path d="M10.5 8.5c0-1.8 3-1.8 3 0 0 1.4-1.5 2.1-1.5 2.1s-1.5-.7-1.5-2.1Z"></path></svg>
-                <span data-i18n="Hands">Hands</span><strong data-saved-category-count="hands">0</strong>
-              </button>
-              <button type="button" class="saved-library-category" data-saved-category="spots" aria-pressed="false">
-                <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"></circle><circle cx="10" cy="10" r="3"></circle><path d="M10 1v3M10 16v3M1 10h3M16 10h3"></path></svg>
-                <span data-i18n="Spots">Spots</span><strong data-saved-category-count="spots">0</strong>
-              </button>
-            </div>
-            <div id="savedLibraryLayout" class="saved-library-layout">
-              <div id="homeRecentContent" class="home-saved-list"></div>
-              <aside id="homeSavedDetail" class="saved-library-detail" aria-labelledby="homeSavedDetailTitle" hidden></aside>
-            </div>
+            <div id="homeRecentContent" class="home-saved-list"></div>
+          </section>
+          <section id="savedLibrarySection" class="panel home-section home-section--library" aria-labelledby="savedLibraryTitle" data-tutorial-anchor="saved-library" hidden>
+            <header class="home-section-head"><div><p data-i18n="Saved study objects">Saved study objects</p><h2 id="savedLibraryTitle" data-i18n="Library">Library</h2></div></header>
+            <div class="saved-library-controls" data-saved-library-controls data-tutorial-anchor="saved-library-find"></div>
+            <div class="saved-library-body" data-saved-library-body></div>
           </section>
           </div>
           <aside class="home-destinations-rail">
@@ -2902,7 +2890,7 @@
         <section class="guide-section guide-study-section" aria-labelledby="guideStudyTitle">
           <div class="guide-section-head"><p class="guide-kicker" data-i18n="Study and knowledge">Study and knowledge</p><h2 id="guideStudyTitle" data-i18n="Keep useful work connected">Keep useful work connected</h2></div>
           <div class="guide-knowledge-grid">
-            <article><h3 data-i18n="Saved">Saved</h3><p data-i18n="Keep Hands and Spots intentionally, inspect their stored facts, and reopen them for continued study. Saved study requires a Riverline profile.">Keep Hands and Spots intentionally, inspect their stored facts, and reopen them for continued study. Saved study requires a Riverline profile.</p><button class="ui-button ui-button--quiet" type="button" data-guide-destination="saved" data-i18n="Open Saved">Open Saved</button></article>
+            <article><h3 data-i18n="Saved">Saved</h3><p data-i18n="Keep Hands and Spots intentionally, then find one by searching titles, notes, and tags or filtering by kind, review state, mistakes, and tag. Inspect its stored facts and reopen it for continued study. Guest Saved stays on this device.">Keep Hands and Spots intentionally, then find one by searching titles, notes, and tags or filtering by kind, review state, mistakes, and tag. Inspect its stored facts and reopen it for continued study. Guest Saved stays on this device.</p><button class="ui-button ui-button--quiet" type="button" data-guide-destination="saved" data-i18n="Open Saved">Open Saved</button></article>
             <article><h3 data-i18n="Replay and Review">Replay and Review</h3><p data-i18n="Replay moves through a canonical Hand timeline. Review gathers decisions and source-labelled comparisons without changing Hand truth.">Replay moves through a canonical Hand timeline. Review gathers decisions and source-labelled comparisons without changing Hand truth.</p></article>
             <article><h3 data-i18n="Learn in context">Learn in context</h3><p data-i18n="Guide is durable product reference. Learn Riverline provides orientation, while the tutorial control in supported workspaces starts the existing contextual teaching for that workspace.">Guide is durable product reference. Learn Riverline provides orientation, while the tutorial control in supported workspaces starts the existing contextual teaching for that workspace.</p></article>
           </div>
@@ -3567,7 +3555,8 @@
   <script type="module" src="src/application/hand-history-import-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-card-removal-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>
-  <script src="src/core/logic.js?v=27" defer></script>
+  <script type="module" src="src/application/saved-library-workspace.mjs"></script>
+  <script src="src/core/logic.js?v=28" defer></script>
   <script src="src/ui/teacher.js" defer></script>
   <script src="src/ui/PokerPrimitives.js" defer></script>
   <script type="module" src="src/ui/table-environment.mjs"></script>

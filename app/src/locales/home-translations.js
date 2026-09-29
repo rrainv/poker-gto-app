@@ -346,6 +346,55 @@
     'Saved Hands and Spots you intentionally keep will appear here.': 'ידיים וספוטים שתבחרו לשמור ללימוד יופיעו כאן.',
   });
 
+  // SAVED-LIBRARY-001 search, filters, sort and bound disclosure.
+  Object.assign(ru, {
+    'Search Saved': 'Поиск по сохранённому',
+    'Title, note, or tag': 'Название, заметка или тег',
+    'Review state': 'Статус разбора',
+    'Any review state': 'Любой статус',
+    'Resolved': 'Разобрано',
+    'Mistakes only': 'Только ошибки',
+    'Tag': 'Тег',
+    'All tags': 'Все теги',
+    'Sort': 'Сортировка',
+    'Recently updated': 'Недавно обновлённые',
+    'Recently created': 'Недавно созданные',
+    'Clear filters': 'Сбросить фильтры',
+    'Clear search and filters': 'Сбросить поиск и фильтры',
+    'Library filters': 'Фильтры библиотеки',
+    'Showing the {count} most recently updated items.': 'Показаны {count} последних обновлённых материалов.',
+    'Counts cover shown items only.': 'Счётчики учитывают только показанные материалы.',
+    'Showing {shown} of {total}': 'Показано {shown} из {total}',
+    'Showing all {total}': 'Показаны все: {total}',
+    'Nothing matches your search and filters.': 'Ничего не найдено по вашему поиску и фильтрам.',
+    'Every loaded Saved item was excluded by the current search or filters.': 'Текущий поиск или фильтры исключили все загруженные материалы.',
+    'Loading your Saved library…': 'Загружаем библиотеку сохранённого…',
+  });
+  // SAVED-LIBRARY-001 search, filters, sort and bound disclosure.
+  Object.assign(he, {
+    'Search Saved': 'חיפוש בשמורים',
+    'Title, note, or tag': 'כותרת, הערה או תגית',
+    'Review state': 'מצב סקירה',
+    'Any review state': 'כל מצב סקירה',
+    'Resolved': 'טופל',
+    'Mistakes only': 'טעויות בלבד',
+    'Tag': 'תגית',
+    'All tags': 'כל התגיות',
+    'Sort': 'מיון',
+    'Recently updated': 'עודכנו לאחרונה',
+    'Recently created': 'נוצרו לאחרונה',
+    'Clear filters': 'ניקוי מסננים',
+    'Clear search and filters': 'ניקוי חיפוש ומסננים',
+    'Library filters': 'מסנני הספרייה',
+    'Showing the {count} most recently updated items.': 'מוצגים {count} הפריטים שעודכנו לאחרונה.',
+    'Counts cover shown items only.': 'הספירות כוללות רק פריטים מוצגים.',
+    'Showing {shown} of {total}': 'מוצגים {shown} מתוך {total}',
+    'Showing all {total}': 'מוצגים כל {total} הפריטים',
+    'Nothing matches your search and filters.': 'אין פריטים שתואמים את החיפוש והמסננים.',
+    'Every loaded Saved item was excluded by the current search or filters.': 'החיפוש או המסננים הנוכחיים החריגו את כל הפריטים השמורים שנטענו.',
+    'Loading your Saved library…': 'טוען את ספריית השמורים…',
+  });
+
   const keys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineHomeTranslations = {
     en: Object.fromEntries([...keys].map((key) => [key, {

@@ -21,8 +21,16 @@ export const SAVED_TUTORIAL_DEFINITION = createTutorialDefinition({
       placement: 'bottom',
     },
     {
+      id: 'find',
+      anchor: 'saved-library-find',
+      titleKey: 'Find a saved item',
+      bodyKey: 'Search words from titles, notes, and tags, then narrow by kind, review state, mistakes, or tag. Clear restores the whole library.',
+      placement: 'bottom',
+      precondition: 'saved-library-ready',
+    },
+    {
       id: 'recent',
-      anchor: 'home-recent',
+      anchor: 'saved-library',
       titleKey: 'Reopen the exact study object',
       bodyKey: 'Open a Saved Hand for canonical Replay or a Saved Spot for its supplied study context. Saved does not invent missing history.',
       placement: 'top',

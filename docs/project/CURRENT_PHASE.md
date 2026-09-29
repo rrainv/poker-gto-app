@@ -1,5 +1,14 @@
 # Current Riverline phase
 
+September 29 bounded retrieval: `SAVED-LIBRARY-001` is implemented with human
+acceptance pending under `QA-SAVED-LIBRARY-001`. Saved now owns an independent
+library query (200 most recently updated active Hand/Spot objects, disclosed
+bound, client-side search, kind/review/mistake/tag filters, updated/created sort);
+Home Recent is unchanged. The ticket also fulfilled the first workspace
+extraction pilot (`saved-library-workspace/v1`); `UI-COMPOSITION-ROOT-001`
+remains its own item. No schema, index or payload change. The Study Inbox is now
+Home-only. `BROWSER-TEST-PLATFORM-001` sequencing below is unchanged.
+
 September 11 bounded infrastructure: `BROWSER-BETA-HARNESS-001` adds the local
 [real-app Firefox Beta smoke command](../../tests/tooling/README.md#current-beta-browser-entry-point)
 within the browser-platform foundation. It also repairs the reproduced Guest
@@ -238,8 +247,8 @@ Explicit current-ticket exception: `PERSONAL-STRATEGY-CONTINUATION-001C` (Septem
    13. **COMPLETED / ACCEPTED FOUNDATION — `MASSIVE-FOUNDATION-CHECKPOINT-001`** — consolidates `IDENTITY-LIFECYCLE-001A/B/C`, durable Device Guest/account isolation, `HEURISTIC-BASELINE-TRUTH-001`, `TRAINING-NORMATIVE-001`, the first `TRAINING-INTELLIGENCE-001` Unsure → Revisit slice, and `PERSONAL-STRATEGY-INTELLIGENCE-001` including structural range mapping and Natural-Language foundations;
    14. **ACTIVE NEXT — `BROWSER-TEST-PLATFORM-001`** — create a portable mounted-browser lifecycle test platform;
    15. `UI-COMPOSITION-ROOT-001` — define the bounded composition root and lifecycle seams without a framework rewrite;
-   16. run one bounded workspace extraction pilot chosen by the composition-root ticket;
-   17. `SAVED-LIBRARY-001` — deliver full retrieval for current Saved Hand/Spot objects before adding payload kinds;
+   16. **FULFILLED BY `SAVED-LIBRARY-001`** — the one bounded workspace extraction pilot (Saved library `mount` → `show`/`hide`/`invalidate`/`ownerChanged`/`dispose`); the composition-root ticket may adopt or revise that seam;
+   17. **IMPLEMENTED / HUMAN ACCEPTANCE PENDING — `SAVED-LIBRARY-001`** — bounded retrieval (200, disclosed), search, filters and sort for current Saved Hand/Spot objects before adding payload kinds; pagination beyond the bound stays `RET-HOME-001` residual;
    18. `HOME-STUDY-CONTINUITY-001` — connect only contract-backed study continuity;
    19. make one bounded reference-source decision after the read-only source research is ready;
    20. expand the learning loop after the browser, composition, retrieval, continuity, and source-decision gates.
@@ -320,7 +329,7 @@ Canonical Equity, `RANGE-CORE-001`, `ANALYSIS-RANGE-001`, and `BLUFF-001` are cu
 
 ### Saved, Home, opponents, and release
 
-Saved Hand/Spot and `HOME-002A` exist. `SAVED-VISUAL-KNOWLEDGE-001` is completed and human accepted for the bounded loaded set: the compact grid is primary; All / Hands / Spots remain visible at zero; DOM-free observer-safe/lossy previews use a bounded body overlay and explicit detail; unknown kinds remain unavailable; reopen and persistence boundaries are unchanged. Full retrieval/search/pagination over the current Hand/Spot library is now `SAVED-LIBRARY-001`; it does not authorize new Saved payload kinds. Saved Training Experience and Saved Equity Snapshot remain dependency-gated future payload decisions. The actor-safe basic policy and configurable `OpponentPolicy v2` now support synthetic Full Hand selection and session-local review under the September 6 exception above. Quantitative range responses, durable policy review and real-person models remain future work. Accounts/sync remain local-first and opt-in; Training Memory auth isolation is accepted, while generalized cross-surface lifecycle repair, live Supabase/RLS, and two-profile acceptance remain required before beta.
+Saved Hand/Spot and `HOME-002A` exist. `SAVED-VISUAL-KNOWLEDGE-001` is completed and human accepted for the bounded loaded set: the compact grid is primary; All / Hands / Spots remain visible at zero; DOM-free observer-safe/lossy previews use a bounded body overlay and explicit detail; unknown kinds remain unavailable; reopen and persistence boundaries are unchanged. `SAVED-LIBRARY-001` implements bounded retrieval (200 most recently updated, disclosed), search and filters over the current Hand/Spot library, pending human acceptance; cursor pagination beyond the bound remains residual, and it does not authorize new Saved payload kinds. Saved Training Experience and Saved Equity Snapshot remain dependency-gated future payload decisions. The actor-safe basic policy and configurable `OpponentPolicy v2` now support synthetic Full Hand selection and session-local review under the September 6 exception above. Quantitative range responses, durable policy review and real-person models remain future work. Accounts/sync remain local-first and opt-in; Training Memory auth isolation is accepted, while generalized cross-surface lifecycle repair, live Supabase/RLS, and two-profile acceptance remain required before beta.
 
 Detailed intent lives in the [Saved Knowledge](capabilities/SAVED_KNOWLEDGE_AND_SHARING.md) and [Opponent Intelligence](capabilities/OPPONENT_INTELLIGENCE.md) dossiers. Release, mobile, social, and PLO remain later branches in their preserved order.
 

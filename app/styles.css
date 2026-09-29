@@ -739,6 +739,47 @@
 .saved-library-note p { margin: 0; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .saved-library-open { justify-self: start; min-width: 140px; }
 
+/* SAVED-LIBRARY-001: independent Saved library search, filters, sort and bound disclosure. */
+.home-dashboard-grid[data-product-destination="saved"] .home-section--library > .home-section-head { margin-block-end: var(--space-4); }
+.saved-library-controls { min-width: 0; display: grid; gap: var(--space-3); margin-block-end: var(--space-4); }
+.home-dashboard-grid[data-product-destination="saved"] .saved-library-controls .saved-library-categories { margin-block-end: 0; }
+.saved-library-search,
+.saved-library-filter { min-width: 0; display: grid; gap: var(--space-1); }
+.saved-library-search { max-width: 560px; }
+.saved-library-search > span,
+.saved-library-filter > span { color: var(--text-secondary); font-size: var(--text-micro-size); font-weight: 700; }
+.saved-library-search input,
+.saved-library-filter select {
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px var(--space-3);
+  color: var(--text-primary);
+  font: inherit;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+}
+.saved-library-filter select { min-width: 160px; }
+.saved-library-filter select:disabled { opacity: .6; }
+.saved-library-search input:focus-visible,
+.saved-library-filter select:focus-visible,
+.saved-library-toggle input:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.saved-library-filters { min-width: 0; display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-3); }
+.saved-library-toggle { min-height: 38px; display: inline-flex; align-items: center; gap: var(--space-2); color: var(--text-primary); font-size: var(--text-label-size); cursor: pointer; }
+.saved-library-toggle input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent-primary); }
+.saved-library-clear { min-height: 38px; }
+.saved-library-bound-note,
+.saved-library-status { margin: 0 0 var(--space-3); color: var(--text-secondary); font-size: var(--text-label-size); line-height: 1.45; }
+.saved-library-bound-note { padding: var(--space-2) var(--space-3); background: var(--surface-inset); border-inline-start: 3px solid var(--border-strong); border-radius: var(--radius-sm); }
+.saved-library-bound-note[hidden] { display: none; }
+.saved-library-no-results .ui-button { justify-self: start; margin-top: var(--space-3); }
+/* Saved is one full-width flow in every session mode. Home guest/account grid areas
+   (which omit saved-overview) must not create an implicit column that narrows the library. */
+#homeWorkspaceContent[data-product-destination="saved"] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "saved-overview" "recent";
+}
+
 @media (max-width: 620px) {
   .saved-library-item { grid-template-columns: minmax(0, 1fr); }
 }

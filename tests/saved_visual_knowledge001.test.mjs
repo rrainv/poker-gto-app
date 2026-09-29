@@ -4,14 +4,19 @@ import { readFile } from 'node:fs/promises';
 
 import { createHomeSavedItem } from '../app/src/application/home-view-model.mjs';
 import { createSavedStudyPreviewFacts } from '../app/src/application/saved-study-preview-facts.mjs';
+import { filterSavedLibraryItems, savedLibraryKindCounts } from '../app/src/application/saved-library-query.mjs';
+import { mountSavedLibrary } from '../app/src/application/saved-library-workspace.mjs';
+import { createFakeDom, descendants } from './fixtures/saved-library-fake-dom.mjs';
 
-const [html, css, logic, modelSource, previewSource, translations] = await Promise.all([
+const [html, css, logic, modelSource, previewSource, translations, library] = await Promise.all([
   readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
   readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/application/home-view-model.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/application/saved-study-preview-facts.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/locales/home-translations.js', import.meta.url), 'utf8'),
+  // SAVED-LIBRARY-001 moved Saved destination rendering from logic.js into this module.
+  readFile(new URL('../app/src/application/saved-library-workspace.mjs', import.meta.url), 'utf8'),
 ]);
 
 const annotations = Object.freeze({
@@ -22,15 +27,20 @@ const annotations = Object.freeze({
   classifications: ['mistake'],
 });
 
-function createSavedQuickPreviewExitHandler(activeOwner, hideSavedQuickPreview) {
-  const start = logic.indexOf('function handleSavedQuickPreviewExit');
-  const end = logic.indexOf('function positionSavedQuickPreview', start);
-  const implementation = logic.slice(start, end);
-  return Function(
-    'homeSavedQuickPreviewOwner',
-    'hideSavedQuickPreview',
-    `${implementation}; return handleSavedQuickPreviewExit;`,
-  )(activeOwner, hideSavedQuickPreview);
+function mountQuickPreviewLibrary(objects) {
+  const dom = createFakeDom();
+  const section = dom.document.createElement('section');
+  const overlay = dom.document.createElement('div');
+  overlay.hidden = true;
+  dom.document.body.append(section, overlay);
+  const controller = mountSavedLibrary(section, {
+    savedService: { listRecent: async () => objects },
+    translate: (key) => key,
+    presentation: { itemTitle: (item) => item.title || item.id, itemFacts: () => [] },
+    overlay,
+    openItem() {},
+  });
+  return { dom, section, overlay, controller };
 }
 
 function savedObject(kind, payload, id = `saved-${kind}`) {
@@ -119,7 +129,7 @@ test('Saved Scenario preview is explicitly lossy and uses only its stored Decisi
   for (const unavailable of ['currentActor', 'button', 'opponentHoldings', 'foldedPlayers', 'contributions', 'opponentCount']) {
     assert.equal(Object.hasOwn(item, unavailable), false, unavailable);
   }
-  assert.match(logic, /Scenario study snapshot · no canonical Hand history/);
+  assert.match(library, /Scenario study snapshot · no canonical Hand history/);
 });
 
 test('unknown future Saved kinds remain unsupported and are never projected as Spots', () => {
@@ -133,18 +143,19 @@ test('unknown future Saved kinds remain unsupported and are never projected as S
 });
 
 test('Saved defaults to a compact width-filling collection and expands detail only on request', () => {
-  assert.match(html, /id="savedLibraryLayout"[\s\S]*?id="homeRecentContent"[\s\S]*?id="homeSavedDetail"/);
+  assert.match(html, /id="savedLibrarySection"[\s\S]*?data-saved-library-body/);
+  assert.match(library, /const layout = el\('div', 'saved-library-layout'\);[\s\S]*?const list = el\('div', 'home-saved-list'\);[\s\S]*?layout\.append\(list, detail\)/);
   assert.match(css, /home-saved-list[\s\S]*?repeat\(auto-fill, minmax\(min\(100%, 440px\), 1fr\)\)/);
   assert.match(css, /#homeMode\[data-product-destination="saved"\][\s\S]*?--workspace-frame-max: var\(--workspace-frame-wide\)/);
-  assert.match(logic, /let homeSavedExpandedId = null/);
-  assert.match(logic, /if \(!items\.some[\s\S]*?homeSavedExpandedId = null/);
-  assert.doesNotMatch(logic, /homeSavedExpandedId = items\[0\]\.id/);
-  assert.match(logic, /control\.setAttribute\('aria-expanded', String\(expanded\)\)/);
+  assert.match(library, /let expandedId = null/);
+  assert.match(library, /if \(!model\.results\.some[\s\S]*?expandedId = null/);
+  assert.doesNotMatch(library, /expandedId = (?:model\.results|items)\[0\]\.id/);
+  assert.match(library, /control\.setAttribute\('aria-expanded', String\(expanded\)\)/);
 
-  const detailStart = logic.indexOf('function renderSavedLibraryDetail');
-  const detailEnd = logic.indexOf('function renderSavedLibrary', detailStart + 1);
-  const detailRenderer = logic.slice(detailStart, detailEnd);
-  assert.equal((detailRenderer.match(/dataset\.homeSavedId/g) || []).length, 1);
+  const detailStart = library.indexOf('function renderDetail');
+  const detailEnd = library.indexOf('function libraryEmptyState', detailStart + 1);
+  const detailRenderer = library.slice(detailStart, detailEnd);
+  assert.equal((detailRenderer.match(/dataset\.savedLibraryOpen/g) || []).length, 1);
   assert.match(detailRenderer, /ui-button--primary saved-library-open/);
   assert.match(detailRenderer, /dataset\.savedDetailClose/);
   assert.doesNotMatch(detailRenderer, /openSavedItem|PokerState|evaluate|Equity|StrategyProvider/);
@@ -155,105 +166,98 @@ test('hover and keyboard focus share a viewport-aware preview owned outside the 
   assert.match(css, /\.saved-library-quick-preview\s*\{[\s\S]*?position:\s*fixed/);
   assert.match(css, /\.saved-library-quick-preview\[hidden\]\s*\{\s*display:\s*none/);
   assert.doesNotMatch(css, /saved-library-item:is\(:hover, :focus-visible\)[\s\S]*saved-library-quick-preview/);
-  const itemRenderer = logic.slice(logic.indexOf('function createSavedLibraryItemElement'), logic.indexOf('function savedItemTruth'));
+  const itemRenderer = library.slice(library.indexOf('function createItemElement'), library.indexOf('function itemTruth'));
   assert.doesNotMatch(itemRenderer, /saved-library-quick-preview/);
-  assert.match(logic, /function positionSavedQuickPreview[\s\S]*?getBoundingClientRect[\s\S]*?window\.innerWidth[\s\S]*?window\.innerHeight[\s\S]*?useAbove/);
-  assert.match(logic, /pointerover[\s\S]*?showSavedQuickPreview\(owner\)[\s\S]*?focusin[\s\S]*?showSavedQuickPreview\(owner\)/);
-  assert.match(logic, /addEventListener\('pointerout', handleSavedQuickPreviewExit\)/);
-  assert.match(logic, /addEventListener\('focusout', handleSavedQuickPreviewExit\)/);
-  assert.match(logic, /homeSavedExpandedId = homeSavedExpandedId === id \? null : id/);
-  assert.match(logic, /event\.key !== 'Escape'[\s\S]*?hideSavedQuickPreview\(\)[\s\S]*?homeSavedExpandedId = null[\s\S]*?renderSavedLibrary/);
-  assert.match(logic, /data-saved-detail-close[\s\S]*?homeSavedExpandedId = null/);
-  assert.match(logic, /dataset\.savedPreviewDerivation = item\.derivation/);
+  assert.match(library, /function positionPreview[\s\S]*?getBoundingClientRect[\s\S]*?view\.innerWidth[\s\S]*?view\.innerHeight[\s\S]*?useAbove/);
+  assert.match(library, /function onPreviewEnter[\s\S]*?showPreview\(owner\)[\s\S]*?'pointerover', onPreviewEnter[\s\S]*?'focusin', onPreviewEnter/);
+  assert.match(library, /\[container, 'pointerout', handlePreviewExit\]/);
+  assert.match(library, /\[container, 'focusout', handlePreviewExit\]/);
+  assert.match(library, /expandedId = expandedId === id \? null : id/);
+  assert.match(library, /event\.key !== 'Escape'[\s\S]*?hidePreview\(\)[\s\S]*?expandedId = null[\s\S]*?render\(\)/);
+  assert.match(library, /data-saved-detail-close[\s\S]*?expandedId = null/);
+  assert.match(library, /dataset\.savedPreviewDerivation = item\.derivation/);
   assert.match(css, /saved-preview-derivation="scenario"[\s\S]*?border-style: dashed/);
 });
 
-test('Saved pointerout is inert when no quick-preview owner exists', () => {
-  let hideCount = 0;
-  const handler = createSavedQuickPreviewExitHandler(null, () => { hideCount += 1; });
-  const event = {
-    type: 'pointerout',
-    target: { closest: () => null },
-    relatedTarget: null,
-  };
-
-  assert.doesNotThrow(() => handler(event));
-  assert.equal(hideCount, 0);
+// The quick-preview exit handler is now a mounted-controller closure, so these
+// keep the same inert/dismiss invariants through real delegated events.
+test('Saved pointerout is inert when no quick-preview owner exists', async () => {
+  const f = mountQuickPreviewLibrary([savedObject('hand', handPayload(['As', 'Kh']), 'h1')]);
+  f.controller.show();
+  await new Promise((resolve) => setImmediate(resolve));
+  f.overlay.hidden = false;
+  const search = f.section.querySelector('[data-saved-library-search]');
+  assert.doesNotThrow(() => f.dom.dispatch(search, 'pointerout', { relatedTarget: null }));
+  assert.equal(f.overlay.hidden, false);
 });
 
-test('Saved focusout is inert when no quick-preview owner exists', () => {
-  let hideCount = 0;
-  const handler = createSavedQuickPreviewExitHandler(null, () => { hideCount += 1; });
-  const event = {
-    type: 'focusout',
-    target: { closest: () => null },
-    relatedTarget: null,
-  };
-
-  assert.doesNotThrow(() => handler(event));
-  assert.equal(hideCount, 0);
+test('Saved focusout is inert when no quick-preview owner exists', async () => {
+  const f = mountQuickPreviewLibrary([savedObject('hand', handPayload(['As', 'Kh']), 'h1')]);
+  f.controller.show();
+  await new Promise((resolve) => setImmediate(resolve));
+  f.overlay.hidden = false;
+  const search = f.section.querySelector('[data-saved-library-search]');
+  assert.doesNotThrow(() => f.dom.dispatch(search, 'focusout', { relatedTarget: null }));
+  assert.equal(f.overlay.hidden, false);
 });
 
-test('Saved quick-preview exit still dismisses the active owner', () => {
-  let hideCount = 0;
-  const owner = { contains: () => false };
-  const handler = createSavedQuickPreviewExitHandler(owner, () => { hideCount += 1; });
-
-  handler({
-    type: 'pointerout',
-    target: { closest: () => owner },
-    relatedTarget: {},
-  });
-
-  assert.equal(hideCount, 1);
+test('Saved quick-preview exit still dismisses the active owner', async () => {
+  const f = mountQuickPreviewLibrary([savedObject('hand', handPayload(['As', 'Kh']), 'h1')]);
+  f.controller.show();
+  await new Promise((resolve) => setImmediate(resolve));
+  const owner = f.section.querySelector('[data-saved-select-id="h1"]');
+  f.dom.dispatch(owner, 'pointerover');
+  assert.equal(f.overlay.hidden, false);
+  f.dom.dispatch(owner, 'pointerout', { relatedTarget: f.dom.document.body });
+  assert.equal(f.overlay.hidden, true);
 });
 
-test('All, Hands, and Spots remain visible and filter actual bounded Saved objects truthfully', () => {
+test('All, Hands, and Spots remain visible and filter actual bounded Saved objects truthfully', async () => {
+  const f = mountQuickPreviewLibrary([]);
+  f.controller.show();
+  await new Promise((resolve) => setImmediate(resolve));
+  const categories = descendants(f.section).filter((node) => node.dataset.savedCategory);
+  assert.deepEqual(categories.map((node) => node.dataset.savedCategory), ['all', 'hands', 'spots']);
   for (const category of ['all', 'hands', 'spots']) {
-    assert.match(html, new RegExp(`data-saved-category="${category}"[\\s\\S]*?data-saved-category-count="${category}">0`));
+    assert.equal(f.section.querySelector(`[data-saved-category-count="${category}"]`).textContent, '0');
   }
-  assert.doesNotMatch(html.slice(html.indexOf('id="savedLibraryCategories"'), html.indexOf('id="savedLibraryLayout"')), /Training|Equity/);
+  assert.doesNotMatch(categories.map((node) => node.textContent).join(' '), /Training|Equity/);
 
-  const start = logic.indexOf('function savedLibraryCategoryModel');
-  const end = logic.indexOf('function renderSavedLibraryCategories', start);
-  const implementation = logic.slice(start, end);
-  const categoryModel = Function('homeSavedCategory', `${implementation}; return savedLibraryCategoryModel;`)('all');
   const items = [
     { id: 'h1', kind: 'hand' },
     { id: 's1', kind: 'spot' },
     { id: 'future1', kind: 'future_kind' },
   ];
-  const all = categoryModel(items, 'all');
-  assert.deepEqual(all.counts, { all: 3, hands: 1, spots: 1 });
-  assert.deepEqual(all.items.map(({ id }) => id), ['h1', 's1', 'future1']);
-  assert.deepEqual(categoryModel(items, 'hands').items.map(({ id }) => id), ['h1']);
-  assert.deepEqual(categoryModel(items, 'spots').items.map(({ id }) => id), ['s1']);
-  assert.deepEqual(categoryModel([{ id: 's1', kind: 'spot' }], 'hands').items, []);
-  assert.match(logic, /No saved Hands yet\.[\s\S]*?Save a Hand from Hand or Review/);
-  assert.match(logic, /No saved Spots yet\.[\s\S]*?Save a Spot from Analyze or Review/);
-  assert.doesNotMatch(implementation, /training|equity/i);
+  assert.deepEqual({ ...savedLibraryKindCounts(items) }, { all: 3, hands: 1, spots: 1 });
+  assert.deepEqual(filterSavedLibraryItems(items, { kind: 'all' }).map(({ id }) => id), ['h1', 's1', 'future1']);
+  assert.deepEqual(filterSavedLibraryItems(items, { kind: 'hands' }).map(({ id }) => id), ['h1']);
+  assert.deepEqual(filterSavedLibraryItems(items, { kind: 'spots' }).map(({ id }) => id), ['s1']);
+  assert.deepEqual(filterSavedLibraryItems([{ id: 's1', kind: 'spot' }], { kind: 'hands' }), []);
+  assert.match(library, /No saved Hands yet\.[\s\S]*?Save a Hand from Hand or Review/);
+  assert.match(library, /No saved Spots yet\.[\s\S]*?Save a Spot from Analyze or Review/);
+  assert.doesNotMatch(library.slice(library.indexOf('const CATEGORY_LABELS'), library.indexOf('const REVIEW_LABELS')), /training|equity/i);
 });
 
 test('Saved cards consume shared presentation sizes without Saved clipping hacks', () => {
   const savedCssStart = css.indexOf('.saved-library-layout');
   const savedCssEnd = css.indexOf('.home-dashboard-grid[data-product-destination="saved"] {', savedCssStart);
   const savedCss = css.slice(savedCssStart, savedCssEnd);
-  assert.match(logic, /window\.RiverlineCardPresentation/);
-  assert.match(logic, /presentation\.appendCardFaceContents/);
-  assert.match(logic, /variant === 'detail' \? 'compact' : variant === 'quick' \? 'result' : 'mini'/);
-  assert.doesNotMatch(logic, /suit: \{ c:|data\.tone|savedCardPresentation/);
+  assert.match(logic, /getCardPresentation: \(\) => window\.RiverlineCardPresentation/);
+  assert.match(library, /presentation\.appendCardFaceContents/);
+  assert.match(library, /variant === 'detail' \? 'compact' : variant === 'quick' \? 'result' : 'mini'/);
+  assert.doesNotMatch(`${logic}\n${library}`, /suit: \{ c:|data\.tone|savedCardPresentation/);
   assert.doesNotMatch(savedCss, /overflow:\s*(?:hidden|clip)/);
   assert.doesNotMatch(savedCss, /\.saved-preview-card\s*\{[^}]*inline-size|\.saved-preview-card\s*\{[^}]*block-size/s);
 });
 
 test('empty, Guest, type, note, and locale truth remain explicit without fabricated study facts', () => {
-  assert.match(logic, /Saved Hands and Spots you intentionally keep will appear here\./);
+  assert.match(library, /Saved Hands and Spots you intentionally keep will appear here\./);
   assert.match(logic, /Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode/);
   assert.match(logic, /Guest data does not sync\./);
-  assert.match(logic, /item\.note[\s\S]*?Study note/);
-  assert.match(logic, /item\.kind === 'hand' \? 'Hand' : item\.kind === 'spot' \? 'Spot'/);
+  assert.match(library, /item\.note[\s\S]*?Study note/);
+  assert.match(library, /item\.kind === 'hand' \? 'Hand' : item\.kind === 'spot' \? 'Spot'/);
   assert.match(logic, /facts\.push\(`\$\{t\('Updated'\)\} \$\{recency\}`\)/);
-  assert.doesNotMatch(`${modelSource}\n${logic.slice(logic.indexOf('function createSavedPreviewCard'), logic.indexOf('function renderHomeContinue'))}`, /mastery|EV loss|solver correctness|progress percentage|resolveStrategy|calculateEquity/iu);
+  assert.doesNotMatch(`${modelSource}\n${library}`, /mastery|EV loss|solver correctness|progress percentage|resolveStrategy|calculateEquity/iu);
   for (const key of ['Stored poker preview', 'Open Hand', 'Open Spot', 'Study note', 'Unknown card', 'Updated', 'View details', 'Close details']) {
     assert.equal((translations.match(new RegExp(`'${key}'`, 'g')) || []).length >= 2, true, key);
   }
@@ -264,9 +268,10 @@ test('identity invalidation clears private Saved presentation before a late owne
   const clearEnd = logic.indexOf('async function refreshHomeWorkspace', clearStart);
   const clear = logic.slice(clearStart, clearEnd);
   assert.match(clear, /\+\+homeRefreshSequence/);
-  assert.match(clear, /homeSavedExpandedId = null/);
   assert.match(clear, /homeRecentContent[\s\S]*?replaceChildren/);
-  assert.match(clear, /renderSavedLibraryDetail\(null\)/);
+  // Saved library detail/preview/query clearing is owned by the controller (behavior-tested in saved_library001).
+  assert.match(clear, /savedLibraryController\?\.ownerChanged\(\)/);
+  assert.match(library, /ownerChanged\(\) \{[\s\S]*?expandedId = null;[\s\S]*?hidePreview\(\);[\s\S]*?render\(\);/);
   assert.match(clear, /activeSavedSpotContext = null/);
   assert.match(clear, /closeSavedHand/);
   assert.match(clear, /closeSavedStudyEditor/);

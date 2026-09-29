@@ -1,5 +1,10 @@
 # Riverline Roadmap
 
+September 29 retrieval: `SAVED-LIBRARY-001` is implemented (human acceptance
+pending) and also fulfilled the first bounded workspace extraction pilot.
+`UI-COMPOSITION-ROOT-001` stays a separate item; directional order is otherwise
+unchanged.
+
 September 7 presentation sequencing: after `BETA-DESIGN-CORRECTION-002`, freeze
 the accepted forest/jade visual direction and move to **independent Human Beta
 QA, then bounded Beta Repair Sweep**. Do not start another broad redesign for
@@ -86,8 +91,8 @@ The completed dossier migration records more possibilities; it does not promote 
 28. **COMPLETED / HUMAN ACCEPTED — `LIGHT-WINS-BATCH-001`** — restrained randomization utilities are accepted across Analyze Scenario, top-level Hand / Analyze Hand Mode, and Equity. Surface-specific adapters preserve their canonical authorities; only bounded deterministic recipe infrastructure and interaction language are shared, and Training remains untouched.
 29. **COMPLETED / ACCEPTED FOUNDATION — `MASSIVE-FOUNDATION-CHECKPOINT-001` —** Identity Lifecycle A/B/C, durable Device Guest/account isolation, heuristic/reference/normative truth separation, explicit assessment-policy authority, first Training Intelligence Unsure → Revisit, and Personal Strategy Intelligence with structural range mapping and Natural-Language foundations.
 30. **ACTIVE NEXT — PORTABLE TEST/LIFECYCLE PLATFORM — `BROWSER-TEST-PLATFORM-001`.**
-31. **BOUNDED UI COMPOSITION EXTRACTION —** `UI-COMPOSITION-ROOT-001` → one workspace extraction pilot. This is risk-driven incremental decomposition, not React/Redux or a framework rewrite.
-32. **CURRENT SAVED RETRIEVAL — `SAVED-LIBRARY-001`** — full current Hand/Spot retrieval before any new Saved payload kind.
+31. **BOUNDED UI COMPOSITION EXTRACTION —** `UI-COMPOSITION-ROOT-001`. The one workspace extraction pilot was fulfilled by `SAVED-LIBRARY-001`. This is risk-driven incremental decomposition, not React/Redux or a framework rewrite.
+32. **CURRENT SAVED RETRIEVAL — `SAVED-LIBRARY-001` (IMPLEMENTED / HUMAN ACCEPTANCE PENDING)** — bounded current Hand/Spot retrieval, search and filters before any new Saved payload kind; pagination beyond 200 remains residual.
 33. **STUDY CONTINUITY — `HOME-STUDY-CONTINUITY-001`.**
 34. **BOUNDED REFERENCE-SOURCE DECISION —** after read-only source research, which may run in parallel.
 35. **LEARNING-LOOP EXPANSION.**

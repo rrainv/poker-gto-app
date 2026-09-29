@@ -535,9 +535,10 @@ test('owner clearing removes Saved Scenario cards and context even after its vie
     },
     activeSavedSpotContext: null,
     savedPlaybookScenarioPresentation: { ownerPrivate: 'cached A presentation' },
-    homeRefreshSequence: 0, homeViewModel: { ownerPrivate: 'A home' }, homeSavedExpandedId: 'A', homeSavedCategory: 'spot',
+    homeRefreshSequence: 0, homeViewModel: { ownerPrivate: 'A home' },
+    savedLibraryController: { ownerChanged() { sandbox.savedLibraryOwnerChanged = true; } },
     savedStudyRefreshSequence: 0, savedStudyCurrentObject: { ownerPrivate: 'A object' },
-    $: () => null, hideSavedQuickPreview() {}, renderSavedLibraryDetail() {}, renderSavedSpotViewer() {},
+    $: () => null, renderSavedSpotViewer() {},
     closeSavedStudyEditor() {},
     playbookUpdateScheduler: { cancel() { calls.push('cancel'); } },
     readPlaybookScenarioInput() {
@@ -574,6 +575,7 @@ test('owner clearing removes Saved Scenario cards and context even after its vie
   assert.equal(sandbox.savedPlaybookScenarioPresentation, null);
   assert.equal(sandbox.savedStudyCurrentObject, null);
   assert.equal(sandbox.homeViewModel, null);
+  assert.equal(sandbox.savedLibraryOwnerChanged, true, 'Saved library private state clears with the owner');
   assert.equal(app.playbookResolution, unavailable);
   assert.equal(app.handReview.savedDecisionIds.size, 0);
   assert.equal(sandbox.decisionSaverCleared, true);
