@@ -713,6 +713,19 @@ unaccepted and stack/size/rake mismatch injection. There is no import UI or
 production source. `QA-REFERENCE-PACK-001`, `QA-PREFLOP-REFERENCE-001` and
 `RET-REFERENCE-PACK-001` retain their existing acquisition/acceptance ownership.
 
+September 26, `REFERENCE-INTEGRITY-RECOVERY-001`: reproduced unsupported default
+HRC authority and exact coverage for a canonical 100bb BTN with a 20bb BB. Removed
+the generated pilot/acceptance, restored bounded heads-up validation and platform
+hashing, and retained effective-authority-driven presentation. The
+[recovery report](REFERENCE_INTEGRITY_RECOVERY001_REPORT.md) owns commands and
+results: 61 focused tests passed; the single full Node run had 2,566 passes and
+two failures (report-creation ordering and embedded-browser sandbox), with both
+affected reruns passing. Firefox 156.0.1 passed all 21 smoke groups outside the
+sandbox with zero diagnostics. Human acceptance remains pending: check heuristic labels in Analyze,
+Training and Review, EN/RU/HE including RTL, and preserved Explain/Replay behavior.
+Potential frozen Training Memory exposure remains unresolved under
+`RET-REFERENCE-PACK-001`; no historical evidence was modified or reauthenticated.
+
 `QA-DEEP-STUDY-001` — **PARTIAL / HUMAN ACCEPTANCE PENDING**, owner
 `DEEP-REVIEW-001` + `STUDY-INBOX-001` + `DECISION-DELTA-FOUNDATION`.
 [Scope and human matrix](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md): separate roles,

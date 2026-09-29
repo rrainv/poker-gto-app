@@ -8,6 +8,14 @@ validation or source acceptance.
 
 ## Recommendation
 
+September 26 recovery note (`REFERENCE-INTEGRITY-RECOVERY-001`): the uncommitted
+HRC-labelled pilot generated frequencies and EVs from hand-category rules; no
+original export or independent validation artifact supported its declarations.
+The pilot and its acceptance records have been removed. Published permission for
+authorized HRC calculations does not establish that these generated rows were such
+calculations. Acquisition and independent review remain `RET-REFERENCE-PACK-001`;
+see the [recovery evidence report](REFERENCE_INTEGRITY_RECOVERY001_REPORT.md).
+
 1. **First distributable candidate: Riverline-owned HRC Pro calculations,
    manually exported through the product's supported export/save workflow.**
    This is a more concrete option than assuming commercial exports are forbidden

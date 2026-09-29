@@ -83,6 +83,13 @@ The legacy FNV-1a pack checksum is retained for compatibility and reported as
 `legacyPackFingerprint`; it is not promoted into a cryptographic proof. A computed
 SHA-256 is also not a signature or proof that provenance is truthful.
 
+Intake hashing uses asynchronous platform Web Crypto. The default browser bridge
+does not import or hash a corpus during module evaluation; it synchronously installs
+the existing provider bridge without an accepted source. An explicitly configured
+intake must first finish `validateReferenceSourceIntake`. Raw pack compatibility
+remains intact. No multi-node routing or self-generated acceptance registry is part
+of this foundation.
+
 ## Coverage inventory and query
 
 `createReferenceCoverageMap(pack)` projects the pack's complete assumptions into

@@ -12,20 +12,23 @@ import { resolveHeuristicStrategy } from '../strategy/heuristic-strategy.mjs';
 import { projectStrategyTruth, historicalStrategyTruth, strategyTruthPresentation, summarizeStrategyTruth } from './strategy-truth.mjs';
 
 function browserProviderOptions(options = {}) {
-  if (typeof options?.fallbackResolver === 'function') return options;
   const heuristicOptionsResolver = typeof options?.heuristicOptionsResolver === 'function'
     ? options.heuristicOptionsResolver
     : () => ({});
-  return {
-    referencePack: options?.referencePack ?? null,
-    sourceAcceptanceRegistry: options?.sourceAcceptanceRegistry ?? null,
-    assessmentPolicyRegistry: options?.assessmentPolicyRegistry ?? null,
-    fallbackResolver(decisionContext) {
-      return resolveHeuristicStrategy(
+  const fallbackResolver = typeof options?.fallbackResolver === 'function'
+    ? options.fallbackResolver
+    : (decisionContext) => resolveHeuristicStrategy(
         decisionContext,
         heuristicOptionsResolver(decisionContext),
       );
-    },
+
+  return {
+    referenceSourceIntake: options?.referenceSourceIntake ?? null,
+    referencePack: options?.referencePack ?? null,
+    allowTestReferencePack: options?.allowTestReferencePack === true,
+    sourceAcceptanceRegistry: options?.sourceAcceptanceRegistry ?? null,
+    assessmentPolicyRegistry: options?.assessmentPolicyRegistry ?? null,
+    fallbackResolver,
   };
 }
 

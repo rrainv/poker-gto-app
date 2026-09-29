@@ -101,7 +101,11 @@ Game assumptions retain the complete canonical `GameRulesDefinition v1` and
 its semantic fingerprint, table size and ordered positions, Hero/aggressor
 positions, exact decision role, starting/effective stack semantics, complete
 bounded prior-action tree, legal action families, supported aggressive
-total-to sizes, exact legal bounds, and the heads-up/multiway boundary.
+total-to sizes, exact legal bounds, and an explicit opponent boundary. V1 requires
+`heads_up_at_decision` with exactly one live opponent and a finite, known effective
+stack. Multiway nodes and null required stack/history assumptions are unsupported;
+two unknown values never establish exact coverage. A broader representation needs
+a separately reviewed contract, not a relaxed v1 matcher.
 
 The v1 data representation is exactly the canonical 169 preflop classes. Every
 class must appear once. Every row must contain each declared legal action once

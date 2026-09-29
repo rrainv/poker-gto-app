@@ -33,6 +33,17 @@ mapping and independent acceptance; the [research recommendation](REFERENCE_SOUR
 does not close it. Private activation/persistence and multi-node/postflop adapters
 remain explicit continuations. This is not an accepted checkpoint or priority change.
 
+September 26 recovery: `RET-REFERENCE-PACK-001` also retains the unsupported pilot's
+historical-evidence disposition, coordinated with the Training Memory owner. The
+pilot/default acceptance is removed, but answer-time source identity, frequencies,
+EV details, effective authority and ClaimPolicy could have been stored in Training
+Memory and reused by Same Spot. No user database was inspected, so affected-record
+existence/count is unknown. A separate product decision must define any annotation
+or restriction while preserving originals; any resulting persistence migration
+requires its own approved scope. No silent rewrite, deletion or reauthentication
+is authorized. See [recovery evidence](REFERENCE_INTEGRITY_RECOVERY001_REPORT.md).
+Existing Memory auth/availability acceptance is unaffected.
+
 Current implementation acceptance: `QA-DEEP-STUDY-001` owns the first
 [Deep Review / Study Inbox slice](DEEP_REVIEW_STUDY_INBOX_V1_SPEC.md), not accepted
 checkpoint debt. Exact concept/region Training and Review region targeting,

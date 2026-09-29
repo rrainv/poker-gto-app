@@ -370,6 +370,39 @@ input[type="range"]::-webkit-slider-thumb { box-shadow: 0 2px 4px #0005, 0 0 0 3
 #recommendation .recommend-top { gap: 16px; align-items: start; }
 #recommendation .frequency-visualization { padding-block-start: 14px; margin-block-start: 16px; border-block-start: 1px solid var(--border-default); }
 #recommendation .strategy-truth-note { max-inline-size: 64ch; font-size: .8rem; }
+#recommendation:is([data-strategy-authority="comparative_reference"], [data-truth-state="accepted_reference_comparison"]) {
+  border-block-start: 3px solid var(--info-primary, #38bdf8);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--info-primary, #38bdf8) 22%, transparent), var(--shadow-md);
+}
+#recommendation:is([data-strategy-authority="comparative_reference"], [data-truth-state="accepted_reference_comparison"]) #strategyTruthHeading {
+  color: var(--info-primary, #38bdf8);
+  font-weight: 750;
+  letter-spacing: .03em;
+}
+.status-badge--reference,
+.badge[data-strategy-authority="comparative_reference"] {
+  color: var(--info-primary, #38bdf8);
+  border-color: color-mix(in srgb, var(--info-primary, #38bdf8) 50%, var(--border-default));
+  background: color-mix(in srgb, var(--info-primary, #38bdf8) 12%, transparent);
+}
+.analysis-presentation:is([data-analysis-authority="comparative_reference"], [data-truth-state="accepted_reference_comparison"]) {
+  border-inline-start: 3px solid var(--info-primary, #38bdf8);
+  padding-inline-start: 14px;
+}
+.analysis-presentation .analysis-authority-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: .68rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--info-primary, #38bdf8) 15%, transparent);
+  color: var(--info-primary, #38bdf8);
+  border: 1px solid color-mix(in srgb, var(--info-primary, #38bdf8) 45%, transparent);
+  margin-inline-start: 8px;
+}
 :is(.playbook-facts-panel, .analysis-provenance, .personal-coach-support, .advanced-equity-help) { background: var(--evidence-surface); color: var(--evidence-text); }
 .analysis-provenance { padding: 12px; border-radius: 8px; }
 .playbook-facts-heading { background: transparent; }

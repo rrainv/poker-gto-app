@@ -6531,10 +6531,29 @@ function renderAnalyzeTruth(strategyResult) {
   const truth = requireStrategyProviderBridge().truthFor({ strategyResult, decisionContext: app.decisionContext });
   const presentation = truthPresentation(truth);
   const heading = $('#strategyTruthHeading');
-  if (heading) { heading.dataset.i18n = presentation.sourceLabel; heading.textContent = t(presentation.sourceLabel); }
+  if (heading) {
+    if (truth.state === 'accepted_reference_comparison') {
+      const sourceLabel = strategySourceDisplayLabel(strategyResult)
+        || truth.selectedReference?.manifest?.source?.displayName
+        || presentation.sourceLabel;
+      heading.textContent = sourceLabel;
+      delete heading.dataset.i18n;
+    } else {
+      heading.dataset.i18n = presentation.sourceLabel;
+      heading.textContent = t(presentation.sourceLabel);
+    }
+  }
   const note = $('#strategyTruthNote');
   if (note) { note.dataset.i18n = presentation.description; note.textContent = t(presentation.description); }
-  if ($('#recommendation')) $('#recommendation').dataset.truthState = truth.state;
+  const rec = $('#recommendation');
+  if (rec) {
+    rec.dataset.truthState = truth.state;
+    if (truth.state === 'accepted_reference_comparison') {
+      rec.dataset.strategyAuthority = 'comparative_reference';
+    } else {
+      delete rec.dataset.strategyAuthority;
+    }
+  }
   return truth;
 }
 
@@ -6984,12 +7003,22 @@ async function updateContext(reason = 'Context updated') {
 
   if (sourceBadge) {
     const sourceLabel = strategySourceDisplayLabel(strategyResult);
-    const sourceTone = claimPolicy.source.family === 'heuristic' ? 'heuristic' : 'info';
+    const isReference = claimPolicy.authority === 'comparative_reference';
+    const sourceTone = claimPolicy.source.family === 'heuristic'
+      ? 'heuristic'
+      : isReference
+        ? 'reference'
+        : 'info';
     const provenance = strategyPolicySummary(claimPolicy);
     sourceBadge.textContent = sourceLabel;
     sourceBadge.title = provenance;
     sourceBadge.setAttribute('aria-label', `${t('Strategy source')}: ${sourceLabel}`);
     sourceBadge.className = `badge status-badge status-badge--${sourceTone}`;
+    if (isReference) {
+      sourceBadge.dataset.strategyAuthority = 'comparative_reference';
+    } else {
+      delete sourceBadge.dataset.strategyAuthority;
+    }
     const provenanceElement = $('#strategySourceProvenance');
     if (provenanceElement) provenanceElement.textContent = provenance;
   }
@@ -9527,6 +9556,18 @@ function refreshLocalizedPlaybookRuntime() {
       $('#sourceBadge').textContent = sourceLabel;
       $('#sourceBadge').title = strategyPolicySummary(claimPolicy);
       $('#sourceBadge').setAttribute('aria-label', `${t('Strategy source')}: ${sourceLabel}`);
+      const isReference = claimPolicy?.authority === 'comparative_reference';
+      const sourceTone = claimPolicy?.source?.family === 'heuristic'
+        ? 'heuristic'
+        : isReference
+          ? 'reference'
+          : 'info';
+      $('#sourceBadge').className = `badge status-badge status-badge--${sourceTone}`;
+      if (isReference) {
+        $('#sourceBadge').dataset.strategyAuthority = 'comparative_reference';
+      } else {
+        delete $('#sourceBadge').dataset.strategyAuthority;
+      }
     }
     if ($('#strategySourceProvenance')) {
       $('#strategySourceProvenance').textContent = strategyPolicySummary(claimPolicy);

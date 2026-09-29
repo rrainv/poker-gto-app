@@ -860,6 +860,12 @@ function buildAnalysisExplanation(container, explanation, options = {}) {
   article.dataset.analysisAvailability = explanation.availability;
   article.dataset.analysisSurface = surface;
   article.dataset.analysisGrammar = 'summary-key-facts-reasons-details-provenance';
+  if (explanation.provenance?.authority) {
+    article.dataset.analysisAuthority = explanation.provenance.authority;
+  }
+  if (explanation.truth?.state) {
+    article.dataset.truthState = explanation.truth.state;
+  }
 
   const header = analysisElement('header', 'analysis-summary');
   header.append(
@@ -898,6 +904,9 @@ function buildAnalysisExplanation(container, explanation, options = {}) {
       analysisElement('span', null, analysisMessage('analysis.ui.source', 'Source')),
       analysisElement('strong', null, analysisProvenanceLabel(explanation)),
     );
+    if (explanation.provenance?.authority === 'comparative_reference') {
+      source.appendChild(analysisElement('span', 'badge status-badge status-badge--reference analysis-authority-badge', analysisMessage('analysis.ui.comparativeReference', 'Comparative Reference')));
+    }
     provenance.appendChild(source);
     const factSources = analysisFactSourcesElement(explanation);
     if (factSources) provenance.appendChild(factSources);
@@ -954,6 +963,9 @@ function buildAnalysisExplanation(container, explanation, options = {}) {
     analysisElement('span', null, analysisMessage('analysis.ui.source', 'Source')),
     analysisElement('strong', null, analysisProvenanceLabel(explanation)),
   );
+  if (explanation.provenance?.authority === 'comparative_reference') {
+    source.appendChild(analysisElement('span', 'badge status-badge status-badge--reference analysis-authority-badge', analysisMessage('analysis.ui.comparativeReference', 'Comparative Reference')));
+  }
   if (explanation.provenance.modelVersion) {
     source.appendChild(analysisElement('small', null, analysisMessage('analysis.ui.model', `Model ${explanation.provenance.modelVersion}`, { version: explanation.provenance.modelVersion })));
   }
