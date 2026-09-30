@@ -21,6 +21,14 @@ export const SAVED_TUTORIAL_DEFINITION = createTutorialDefinition({
       placement: 'bottom',
     },
     {
+      id: 'history',
+      anchor: 'saved-view-toggle',
+      titleKey: 'Saved items or Training history',
+      bodyKey: 'Training history lists answered Training decisions from this device. It is Training Memory evidence, not a Saved item, until you choose Save as Spot. It is not synced.',
+      placement: 'bottom',
+      precondition: 'saved-library-ready',
+    },
+    {
       id: 'find',
       anchor: 'saved-library-find',
       titleKey: 'Find a saved item',

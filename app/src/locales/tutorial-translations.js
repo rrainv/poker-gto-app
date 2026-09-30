@@ -827,6 +827,8 @@
 
   const savedTutorial = {
     en: {
+      'Saved items or Training history': 'Saved items or Training history',
+      'Training history lists answered Training decisions from this device. It is Training Memory evidence, not a Saved item, until you choose Save as Spot. It is not synced.': 'Training history lists answered Training decisions from this device. It is Training Memory evidence, not a Saved item, until you choose Save as Spot. It is not synced.',
       'Using Saved study': 'Using Saved study',
       'Reopen profile-scoped Hands and Spots without mixing Saved with the Home dashboard.': 'Reopen profile-scoped Hands and Spots without mixing Saved with the Home dashboard.',
       'Saved has its own study job': 'Saved has its own study job',
@@ -839,6 +841,8 @@
       'Review and Mistake group the same Saved objects you explicitly classified; they are study intent, not an objective strategy grade.': 'Review and Mistake group the same Saved objects you explicitly classified; they are study intent, not an objective strategy grade.',
     },
     ru: {
+      'Saved items or Training history': 'Сохранённые материалы или история тренировок',
+      'Training history lists answered Training decisions from this device. It is Training Memory evidence, not a Saved item, until you choose Save as Spot. It is not synced.': 'История тренировок показывает решения из тренировок на этом устройстве. Это данные памяти тренировок, а не сохранённый материал, пока вы не выберете «Сохранить как спот». История не синхронизируется.',
       'Using Saved study': '\u0420\u0430\u0431\u043e\u0442\u0430 \u0441 \u0441\u043e\u0445\u0440\u0430\u043d\u0451\u043d\u043d\u044b\u043c\u0438 \u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u0430\u043c\u0438',
       'Reopen profile-scoped Hands and Spots without mixing Saved with the Home dashboard.': '\u041e\u0442\u043a\u0440\u044b\u0432\u0430\u0439\u0442\u0435 \u0440\u0430\u0437\u0434\u0430\u0447\u0438 \u0438 \u0441\u043f\u043e\u0442\u044b \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u043e\u0433\u043e \u043f\u0440\u043e\u0444\u0438\u043b\u044f \u043e\u0442\u0434\u0435\u043b\u044c\u043d\u043e \u043e\u0442 Home.',
       'Saved has its own study job': '\u0423 Saved \u0441\u0432\u043e\u044f \u0443\u0447\u0435\u0431\u043d\u0430\u044f \u0437\u0430\u0434\u0430\u0447\u0430',
@@ -851,6 +855,8 @@
       'Review and Mistake group the same Saved objects you explicitly classified; they are study intent, not an objective strategy grade.': 'Review \u0438 Mistake \u0433\u0440\u0443\u043f\u043f\u0438\u0440\u0443\u044e\u0442 \u0442\u0435 \u0436\u0435 \u043e\u0431\u044a\u0435\u043a\u0442\u044b Saved, \u043a\u043e\u0442\u043e\u0440\u044b\u0435 \u0432\u044b \u044f\u0432\u043d\u043e \u043e\u0442\u043c\u0435\u0442\u0438\u043b\u0438; \u044d\u0442\u043e \u0446\u0435\u043b\u044c \u043e\u0431\u0443\u0447\u0435\u043d\u0438\u044f, \u0430 \u043d\u0435 \u043e\u0431\u044a\u0435\u043a\u0442\u0438\u0432\u043d\u0430\u044f \u043e\u0446\u0435\u043d\u043a\u0430 \u0441\u0442\u0440\u0430\u0442\u0435\u0433\u0438\u0438.',
     },
     he: {
+      'Saved items or Training history': 'פריטים שמורים או היסטוריית אימונים',
+      'Training history lists answered Training decisions from this device. It is Training Memory evidence, not a Saved item, until you choose Save as Spot. It is not synced.': 'היסטוריית האימונים מציגה החלטות מאימונים במכשיר הזה. אלה נתוני זיכרון האימונים, לא פריט שמור, עד שתבחרו "שמירה כספוט". ההיסטוריה אינה מסונכרנת.',
       'Using Saved study': '\u05e9\u05d9\u05de\u05d5\u05e9 \u05d1\u05dc\u05d9\u05de\u05d5\u05d3 \u05e9\u05de\u05d5\u05e8',
       'Reopen profile-scoped Hands and Spots without mixing Saved with the Home dashboard.': '\u05e4\u05ea\u05d7\u05d5 \u05d9\u05d3\u05d9\u05d9\u05dd \u05d5\u05e1\u05e4\u05d5\u05d8\u05d9\u05dd \u05e9\u05dc \u05d4\u05e4\u05e8\u05d5\u05e4\u05d9\u05dc \u05d1\u05dc\u05d9 \u05dc\u05e2\u05e8\u05d1\u05d1 \u05d0\u05ea Saved \u05e2\u05dd \u05dc\u05d5\u05d7 Home.',
       'Saved has its own study job': '\u05dc-Saved \u05d9\u05e9 \u05ea\u05e4\u05e7\u05d9\u05d3 \u05dc\u05d9\u05de\u05d5\u05d3\u05d9 \u05de\u05e9\u05dc\u05d5',

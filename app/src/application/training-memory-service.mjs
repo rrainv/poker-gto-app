@@ -896,6 +896,45 @@ export function createTrainingMemoryService({
       return result;
     },
 
+    // Read-only answered-decision history for Saved Training history. Records and their
+    // owning sessions are returned unchanged; presentation gating stays with the consumer.
+    async listRecentAnsweredDecisions({ limit = 200 } = {}) {
+      const operationContext = await context();
+      const page = await operationContext.repository.listRecentAnswered({ limit });
+      ownerProvider.assertCurrent(operationContext.authorization);
+      const sessionsById = new Map(page.sessions.map((session) => [session.id, session]));
+      const reconstructed = new Map();
+      for (const record of page.decisions) {
+        // Same AUD-01 check as the other product lists; each Full Hand replay is rebuilt once.
+        if (record.decisionContext?.gameRules?.definition?.ante?.amountMilliBb === 0) continue;
+        if (record.decisionSource.kind === 'generated_exercise') {
+          assertTrainingAccountingCompatible(record, record.decisionSource.pokerState);
+          continue;
+        }
+        const session = sessionsById.get(record.sessionId);
+        if (!session) throw new RangeError('Full-Hand Same Spot replay evidence is unavailable');
+        if (!reconstructed.has(session.id)) reconstructed.set(session.id, { session, frames: null });
+        const entry = reconstructed.get(session.id);
+        const replay = entry.session.fullHandSource?.replaySource;
+        if (!replay) throw new RangeError('Full-Hand Same Spot replay evidence is unavailable');
+        entry.frames ??= reconstructCanonicalHandReplaySource(replay).frames;
+        const frame = entry.frames.find((candidate) => (
+          candidate.sequence === record.decisionSource.replayPoint.eventSequence
+        ));
+        if (!frame) throw new RangeError('Full-Hand Same Spot replay point is unavailable');
+        assertTrainingAccountingCompatible(record, frame.state);
+      }
+      ownerProvider.assertCurrent(operationContext.authorization);
+      return Object.freeze({
+        schemaVersion: 'training-answered-history-page/v1',
+        decisions: Object.freeze(page.decisions),
+        sessions: Object.freeze(page.sessions),
+        limit,
+        bounded: page.bounded,
+        scanned: page.scanned,
+      });
+    },
+
     async createSameSpot(recordId, { handoff = null } = {}) {
       const operationContext = await context();
       const record = await getOwnedDecision(operationContext, recordId);

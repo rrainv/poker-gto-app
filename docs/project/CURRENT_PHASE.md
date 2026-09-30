@@ -1,5 +1,12 @@
 # Current Riverline phase
 
+September 30 explicit Saved slice: `SAVED-TRAINING-HISTORY-001` is implemented
+with human acceptance pending under `QA-SAVED-TRAINING-HISTORY-001`. Saved adds a
+"Saved items / Training history" toggle; Training history is a read-only, gated
+projection of Training Memory answered decisions with explicit Save as Spot. It
+adds one read-only Training Memory query over existing indexes and no schema,
+index, payload or sync change. The sequencing below is unchanged.
+
 September 29 bounded retrieval: `SAVED-LIBRARY-001` is implemented with human
 acceptance pending under `QA-SAVED-LIBRARY-001`. Saved now owns an independent
 library query (200 most recently updated active Hand/Spot objects, disclosed

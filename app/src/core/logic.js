@@ -7655,6 +7655,7 @@ function bindSliderPair(rangeId, numberId, callback) {
 
 let homeViewModel = null;
 let savedLibraryController = null;
+let savedTrainingHistoryController = null;
 let homeRefreshSequence = 0;
 let homeRefreshTimer = null;
 let activeSavedSpotContext = null;
@@ -8004,13 +8005,25 @@ function syncSavedLibraryVisibility() {
   const visible = activeWorkspaceMode() === 'home'
     && activeNavigationDestination() === 'saved'
     && !welcomeOrientationIsVisible();
-  if (visible) savedLibraryController.show();
-  else savedLibraryController.hide();
+  // The Saved items | Training history toggle routes show/hide to the selected view.
+  const controller = savedTrainingHistoryController ?? savedLibraryController;
+  if (visible) controller.show();
+  else controller.hide();
+}
+
+function openSavedTrainingHistoryRedrill(recordId, kind) {
+  navigateToWorkspace('training', 'training');
+  if (trainingSessionIsActive() || trainingSameSpotIsActive()) {
+    toast(t('Finish or leave your current session before re-drilling this spot.'), 'warning'); return;
+  }
+  return openTrainingMemoryRedrill(recordId, kind);
 }
 
 function mountSavedLibraryWorkspace() {
   const section = $('#savedLibrarySection');
   if (!section || !window.RiverlineSavedLibrary || !window.RiverlineSavedStudyObjects) return;
+  savedTrainingHistoryController?.dispose();
+  savedTrainingHistoryController = null;
   savedLibraryController?.dispose();
   savedLibraryController = window.RiverlineSavedLibrary.mount(section, {
     savedService: window.RiverlineSavedStudyObjects,
@@ -8025,6 +8038,26 @@ function mountSavedLibraryWorkspace() {
     navigate: navigateToProductDestination,
     reportError: (error) => console.error('[Riverline Saved library]', error),
   });
+  savedTrainingHistoryController = window.RiverlineSavedTrainingHistory?.mount(section, {
+    library: savedLibraryController,
+    getTrainingMemory: () => window.RiverlineTrainingMemory ?? null,
+    savedService: window.RiverlineSavedStudyObjects,
+    captureScope: () => window.RiverlineAccountIdentity?.captureLifecycleScope?.('training_memory') ?? null,
+    whenReady: () => window.RiverlineAuthentication?.ready?.(),
+    translate: t,
+    locale: () => window.appLang || 'en',
+    getCardPresentation: () => window.RiverlineCardPresentation,
+    getCardRankStyle: () => document.documentElement.dataset.cardRankStyle || 'poker',
+    presentationGate: trainingMemoryPresentationGate,
+    actionLabel: (record) => t(trainingActionLabel(record.userResponse.action.type, record.decisionContext)),
+    historicalTruthTitle: (record) => {
+      try { return t(truthPresentation(requireStrategyProviderBridge().historicalTruth(record.strategyEvidence)).title); }
+      catch (_) { return null; }
+    },
+    openRedrill: openSavedTrainingHistoryRedrill,
+    navigate: navigateToProductDestination,
+    reportError: (error) => console.error('[Riverline Saved Training history]', error),
+  }) ?? null;
   syncSavedLibraryVisibility();
 }
 
@@ -8329,6 +8362,8 @@ function clearSavedOwnerPresentation() {
   $('#homeRecentContent')?.replaceChildren();
   // Saved library query, filters, preview and detail clear before any new owner can render.
   savedLibraryController?.ownerChanged();
+  // Training history view state and the toggle reset to Saved items for the new owner.
+  savedTrainingHistoryController?.ownerChanged();
 
   const savedHandProjection = callPlaybookStateBridge('createReplayProjectionViewModel');
   const savedHandOpen = ['saved_hand', 'imported_hand'].includes(savedHandProjection?.viewerContext?.kind);
@@ -11397,24 +11432,13 @@ const TRAINING_MEMORY_REASON_LABELS = Object.freeze({
   normative_remediation: 'Review suggested by the accepted assessment.',
 });
 
+// Row formatting lives in training-memory-row-format.mjs, shared with Saved Training history.
 function trainingMemoryDate(isoTimestamp) {
-  try {
-    return new Intl.DateTimeFormat(window.appLang || 'en', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(isoTimestamp));
-  } catch (_) {
-    return String(isoTimestamp || '');
-  }
+  return window.RiverlineTrainingMemoryFormat.formatDate(isoTimestamp, window.appLang || 'en');
 }
 
 function trainingMemoryModeLabel(mode) {
-  return t({
-    varied: 'Varied',
-    focused: 'Focused',
-    full_hand: 'Full Hand',
-    review: 'Review',
-  }[mode] || mode);
+  return t(window.RiverlineTrainingMemoryFormat.modeLabelKey(mode));
 }
 
 function trainingMemoryComparisonLabel(comparison) {
@@ -11454,23 +11478,13 @@ function trainingMemoryDecisionSummary(record) {
   const context = record.decisionContext;
   const wrapper = document.createElement('div');
   wrapper.className = 'training-memory-decision-summary';
+  const summary = window.RiverlineTrainingMemoryFormat.contextSummary(context, t);
   const cards = document.createElement('strong');
   cards.className = 'poker-data-token training-memory-cards';
   cards.dir = 'ltr';
-  const board = context.board?.length ? context.board.join(' ') : t('Preflop');
-  cards.textContent = `${context.heroCards.join(' ')} · ${board}`;
+  cards.textContent = summary.cards;
   const spot = document.createElement('span');
-  spot.textContent = [
-    t(context.street.charAt(0).toUpperCase() + context.street.slice(1)),
-    context.heroPosition,
-    Number.isFinite(context.effectiveStackBb)
-      ? `${t('Effective stack')} ${context.effectiveStackBb} bb`
-      : null,
-    Number.isFinite(context.currentPotBb) ? `${t('Pot')} ${context.currentPotBb} bb` : null,
-    Number.isFinite(context.callAmountBb) && context.callAmountBb > 0
-      ? `${t('Facing')} ${context.callAmountBb} bb`
-      : null,
-  ].filter(Boolean).join(' · ');
+  spot.textContent = summary.spot;
   wrapper.append(cards, spot);
   return wrapper;
 }

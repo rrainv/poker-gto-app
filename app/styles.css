@@ -773,6 +773,56 @@
 .saved-library-bound-note { padding: var(--space-2) var(--space-3); background: var(--surface-inset); border-inline-start: 3px solid var(--border-strong); border-radius: var(--radius-sm); }
 .saved-library-bound-note[hidden] { display: none; }
 .saved-library-no-results .ui-button { justify-self: start; margin-top: var(--space-3); }
+
+/* SAVED-TRAINING-HISTORY-001: Saved items | Training history toggle and read-only history view. */
+.saved-library-controls[hidden],
+.saved-library-body[hidden],
+.saved-training-history[hidden],
+.saved-training-withheld-note[hidden] { display: none; }
+.saved-view-toggle { margin-block-end: var(--space-4); }
+.saved-view-toggle-group {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+}
+.saved-view-option {
+  position: relative;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-label-size);
+  font-weight: 650;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.saved-view-option input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.saved-view-option:hover { color: var(--text-primary); }
+.saved-view-option:has(input:checked) { color: var(--text-primary); font-weight: 800; background: var(--surface-raised); border-color: var(--border-strong); }
+.saved-view-option:has(input:focus-visible) { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.saved-training-history { min-width: 0; display: grid; gap: 0; }
+.saved-training-local-note,
+.saved-training-withheld-note { margin: 0 0 var(--space-3); color: var(--text-secondary); font-size: var(--text-label-size); line-height: 1.45; }
+.saved-training-withheld-note { padding: var(--space-2) var(--space-3); background: var(--surface-inset); border-inline-start: 3px solid var(--accent-primary); border-radius: var(--radius-sm); }
+.saved-training-item .saved-library-item-copy { gap: var(--space-1); }
+.saved-training-spot,
+.saved-training-action,
+.saved-training-source { color: var(--text-secondary); font-size: var(--text-label-size); overflow-wrap: anywhere; }
+.saved-training-spot { flex-wrap: wrap; column-gap: var(--space-2); }
+.saved-training-fact { unicode-bidi: isolate; }
+.home-saved-item-meta.saved-training-spot > .saved-training-fact::after { content: none; }
+.saved-training-fact-separator { color: var(--text-disabled); font-style: normal; }
+.saved-training-badges { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.saved-training-badges:empty { display: none; }
+.saved-training-history-technical { margin: 0; color: var(--text-secondary); font-size: var(--text-micro-size); overflow-wrap: anywhere; }
+.saved-training-history-source { margin: 0; color: var(--text-secondary); font-size: var(--text-label-size); line-height: 1.45; }
+.saved-training-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.saved-training-save-state { margin: 0; color: var(--text-primary); font-size: var(--text-label-size); font-weight: 700; }
 /* Saved is one full-width flow in every session mode. Home guest/account grid areas
    (which omit saved-overview) must not create an implicit column that narrows the library. */
 #homeWorkspaceContent[data-product-destination="saved"] {

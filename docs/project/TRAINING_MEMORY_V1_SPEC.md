@@ -24,6 +24,18 @@ Its Home disclosure preserves the active Full Hand embargo and lifecycle fences.
 The v1 storage, grading and generation contracts below are unchanged; older
 statements excluding Home describe the original Memory delivery scope.
 
+Additive read consumer (`SAVED-TRAINING-HISTORY-001`, September 30, 2026): the
+Saved destination's Training history view reads `listRecentAnsweredDecisions({ limit })`
+(repository `listRecentAnswered`). It is read-only and owner-scoped over the existing
+`ownerCreatedAt` index: newest-created decisions are scanned in bounded pages (at most
+3× the limit, limit ≤ 200), unanswered rows are skipped, answered records are returned
+unchanged with their owning sessions from the same transaction, sorted by answer time,
+and `bounded` is set when older answered history may exist. The same AUD-01 accounting
+check as the other lists applies (each Full Hand replay rebuilt once per page). The
+consumer applies the existing presentation gate, so an active Full Hand stays hidden.
+No database version, store, index, record schema or write path changed. Save as Spot
+uses read-only `createSameSpot` state; the Saved object is owned by Saved.
+
 Status: accepted bounded evidence/re-drill checkpoint for `TRAINING-MEMORY-001`, August 26, 2026; authentication-owner isolation is human/security accepted under `AUTH-TRAINING-MEMORY-001`, and source-trust persistence/comparison gating is accepted under `STRATEGY-TRUST-001`, August 31, 2026. Baseline/remediation semantics remain reopened under `HEURISTIC-BASELINE-TRUTH-001` / `TRAINING-NORMATIVE-001`.
 
 ## Purpose and authority

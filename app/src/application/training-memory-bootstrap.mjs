@@ -76,6 +76,7 @@ export function installTrainingMemoryBridge(browserWindow, options = {}) {
       service.listSessionDecisions(sessionId, queryOptions)
     ),
     listDueReview: (queryOptions) => service.listDueReview(queryOptions),
+    listRecentAnsweredDecisions: (queryOptions) => service.listRecentAnsweredDecisions(queryOptions),
     createPresentationGate: (session, gateOptions) => (
       createTrainingMemoryPresentationGate(session, gateOptions)
     ),

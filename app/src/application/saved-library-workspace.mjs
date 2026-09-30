@@ -2,6 +2,7 @@
 // search/filter/sort and rendering. logic.js only mounts and routes it.
 // SavedStudyObject v1 remains the authority; nothing here is persisted.
 import { createHomeSavedItem } from './home-view-model.mjs';
+import { createSavedPokerPreview } from './saved-poker-preview.mjs';
 import {
   SAVED_LIBRARY_LIMIT,
   clearSavedLibraryQuery,
@@ -170,52 +171,14 @@ export function mountSavedLibrary(container, deps = {}) {
     clearButton.setAttribute('aria-label', t('Clear search and filters'));
   }
 
-  // Shared body-level hover/focus preview overlay.
-  function createPreviewCard(card, label, size = 'mini') {
-    const element = el('span', 'saved-preview-card riverline-card');
-    element.dataset.cardSize = size;
-    element.setAttribute('role', 'img');
-    element.setAttribute('aria-label', card || t(label));
-    const match = typeof card === 'string' ? /^([2-9TJQKA])([cdhs])$/u.exec(card) : null;
-    if (!match) {
-      element.className = 'saved-preview-card saved-preview-card--unknown riverline-card-back';
-      return element;
-    }
-    const presentation = deps.getCardPresentation?.();
-    if (presentation?.appendCardFaceContents) {
-      presentation.appendCardFaceContents(element, {
-        rank: match[1],
-        suit: match[2],
-        rankStyle: deps.getCardRankStyle?.() || 'poker',
-      });
-    } else {
-      element.textContent = card;
-    }
-    return element;
-  }
-
+  // Card tiles come from the shared Saved preview builder (also used by Training history).
   function createPokerPreview(item, { variant = 'compact' } = {}) {
-    const preview = el('span', `saved-poker-preview saved-poker-preview--${variant}`);
-    preview.dataset.savedPreviewKind = item.kind;
-    preview.dataset.savedPreviewDerivation = item.derivation;
-    preview.setAttribute('aria-label', t('Stored poker preview'));
-    const cardSize = variant === 'detail' ? 'compact' : variant === 'quick' ? 'result' : 'mini';
-    const hero = el('span', 'saved-preview-group saved-preview-group--hero');
-    const heroCards = el('span', 'saved-preview-cards');
-    const knownHeroCards = Array.isArray(item.heroCards) ? item.heroCards : [];
-    for (let index = 0; index < 2; index += 1) {
-      heroCards.appendChild(createPreviewCard(knownHeroCards[index] || null, 'Unknown card', cardSize));
-    }
-    hero.append(el('span', '', t('Hero')), heroCards);
-    const board = el('span', 'saved-preview-group saved-preview-group--board');
-    const boardCards = el('span', 'saved-preview-cards');
-    (Array.isArray(item.board) ? item.board : []).forEach((card) => {
-      boardCards.appendChild(createPreviewCard(card, 'Unknown card', cardSize));
+    return createSavedPokerPreview(doc, item, {
+      variant,
+      translate: t,
+      getCardPresentation: deps.getCardPresentation,
+      getCardRankStyle: deps.getCardRankStyle,
     });
-    if (boardCards.childElementCount === 0) boardCards.appendChild(el('span', 'saved-preview-empty-board', t('No board cards')));
-    board.append(el('span', '', t('Board')), boardCards);
-    preview.append(hero, board);
-    return preview;
   }
 
   function hidePreview() {

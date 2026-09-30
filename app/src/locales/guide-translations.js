@@ -57,6 +57,7 @@
     'Run an organizer ledger for players, buy-ins, cash-outs, and settlement. It is separate from poker analysis and study authority.': 'Ведите организаторский журнал игроков, бай-инов, кэшаутов и расчётов. Он отделён от анализа покера и учебных источников.',
     'Settings and access': 'Настройки и доступ',
     'Adjust appearance, audio and motion, language, and account data. The Guide works for Guests; signing in alone does not guarantee cloud sync or backup.': 'Настраивайте внешний вид, звук и движение, язык и данные аккаунта. Руководство доступно гостям; сам вход не гарантирует облачную синхронизацию или резервную копию.',
+    'Training history in Saved lists your answered Training decisions from this device. Reopen one as Same Spot or Similar Spot, or keep it as a Saved Spot. Training history is not synced.': 'История тренировок в сохранённом показывает решения, которые вы приняли в тренировках на этом устройстве. Откройте решение как тот же или похожий спот либо сохраните его как спот. История тренировок не синхронизируется.',
     'Open Analyze': 'Открыть анализ', 'Open Saved': 'Открыть сохранённое', 'Open Home Game': 'Открыть домашнюю игру',
   };
 
@@ -116,6 +117,7 @@
     'Run an organizer ledger for players, buy-ins, cash-outs, and settlement. It is separate from poker analysis and study authority.': 'נהלו יומן מארגן לשחקנים, קניות, משיכות וסליקה. הוא נפרד מסמכות ניתוח הפוקר והלימוד.',
     'Settings and access': 'הגדרות וגישה',
     'Adjust appearance, audio and motion, language, and account data. The Guide works for Guests; signing in alone does not guarantee cloud sync or backup.': 'התאימו מראה, שמע ותנועה, שפה ונתוני חשבון. המדריך זמין לאורחים; התחברות לבדה אינה מבטיחה סנכרון ענן או גיבוי.',
+    'Training history in Saved lists your answered Training decisions from this device. Reopen one as Same Spot or Similar Spot, or keep it as a Saved Spot. Training history is not synced.': 'היסטוריית האימונים בשמורים מציגה החלטות שעניתם עליהן באימונים במכשיר הזה. פתחו החלטה כאותו ספוט או כספוט דומה, או שמרו אותה כספוט. היסטוריית האימונים אינה מסונכרנת.',
     'Open Analyze': 'פתיחת ניתוח', 'Open Saved': 'פתיחת שמורים', 'Open Home Game': 'פתיחת משחק ביתי',
   };
 

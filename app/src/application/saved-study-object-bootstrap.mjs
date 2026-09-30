@@ -74,7 +74,7 @@ export function installSavedStudyObjectBridge(browserWindow, options = {}) {
     },
     ...Object.fromEntries(['getCurrentStatus', 'saveCurrent', 'updateAnnotations', 'archiveCurrent']
       .map((method) => [method, (...args) => invoke('controller', method, args)])),
-    ...Object.fromEntries(['saveReviewedDecisionSpot', 'getById', 'listRecent', 'listForReview',
+    ...Object.fromEntries(['saveReviewedDecisionSpot', 'saveHandDerivedSpot', 'getById', 'listRecent', 'listForReview',
       'listMistakes', 'exportLibrary', 'importLibrary']
       .map((method) => [method, (...args) => invoke('application', method, args)])),
     subscribeLocalMutations(listener) {

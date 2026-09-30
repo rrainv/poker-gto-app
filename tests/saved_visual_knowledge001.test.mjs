@@ -8,7 +8,7 @@ import { filterSavedLibraryItems, savedLibraryKindCounts } from '../app/src/appl
 import { mountSavedLibrary } from '../app/src/application/saved-library-workspace.mjs';
 import { createFakeDom, descendants } from './fixtures/saved-library-fake-dom.mjs';
 
-const [html, css, logic, modelSource, previewSource, translations, library] = await Promise.all([
+const [html, css, logic, modelSource, previewSource, translations, library, sharedPreview] = await Promise.all([
   readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
   readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8'),
@@ -17,6 +17,8 @@ const [html, css, logic, modelSource, previewSource, translations, library] = aw
   readFile(new URL('../app/src/locales/home-translations.js', import.meta.url), 'utf8'),
   // SAVED-LIBRARY-001 moved Saved destination rendering from logic.js into this module.
   readFile(new URL('../app/src/application/saved-library-workspace.mjs', import.meta.url), 'utf8'),
+  // SAVED-TRAINING-HISTORY-001 moved the card-tile builder into this shared module.
+  readFile(new URL('../app/src/application/saved-poker-preview.mjs', import.meta.url), 'utf8'),
 ]);
 
 const annotations = Object.freeze({
@@ -175,7 +177,7 @@ test('hover and keyboard focus share a viewport-aware preview owned outside the 
   assert.match(library, /expandedId = expandedId === id \? null : id/);
   assert.match(library, /event\.key !== 'Escape'[\s\S]*?hidePreview\(\)[\s\S]*?expandedId = null[\s\S]*?render\(\)/);
   assert.match(library, /data-saved-detail-close[\s\S]*?expandedId = null/);
-  assert.match(library, /dataset\.savedPreviewDerivation = item\.derivation/);
+  assert.match(`${library}\n${sharedPreview}`, /dataset\.savedPreviewDerivation = item\.derivation/);
   assert.match(css, /saved-preview-derivation="scenario"[\s\S]*?border-style: dashed/);
 });
 
@@ -243,9 +245,9 @@ test('Saved cards consume shared presentation sizes without Saved clipping hacks
   const savedCssEnd = css.indexOf('.home-dashboard-grid[data-product-destination="saved"] {', savedCssStart);
   const savedCss = css.slice(savedCssStart, savedCssEnd);
   assert.match(logic, /getCardPresentation: \(\) => window\.RiverlineCardPresentation/);
-  assert.match(library, /presentation\.appendCardFaceContents/);
-  assert.match(library, /variant === 'detail' \? 'compact' : variant === 'quick' \? 'result' : 'mini'/);
-  assert.doesNotMatch(`${logic}\n${library}`, /suit: \{ c:|data\.tone|savedCardPresentation/);
+  assert.match(`${library}\n${sharedPreview}`, /presentation\.appendCardFaceContents/);
+  assert.match(`${library}\n${sharedPreview}`, /variant === 'detail' \? 'compact' : variant === 'quick' \? 'result' : 'mini'/);
+  assert.doesNotMatch(`${logic}\n${library}\n${sharedPreview}`, /suit: \{ c:|data\.tone|savedCardPresentation/);
   assert.doesNotMatch(savedCss, /overflow:\s*(?:hidden|clip)/);
   assert.doesNotMatch(savedCss, /\.saved-preview-card\s*\{[^}]*inline-size|\.saved-preview-card\s*\{[^}]*block-size/s);
 });

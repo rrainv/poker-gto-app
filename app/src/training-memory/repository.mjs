@@ -576,6 +576,61 @@ export function createTrainingMemoryRepository({
       });
     },
 
+    // Read-only, owner-scoped answered history over the existing ownerCreatedAt index.
+    // Decisions are shown and answered one at a time, so newest-created order bounds the
+    // most recently answered set; unanswered rows are skipped within a capped scan. The
+    // owning sessions are read in the same transaction so presentation gates stay exact.
+    async listRecentAnswered({ limit = 200, maxScan = limit * 3 } = {}) {
+      const bounded = queryLimit(limit);
+      if (!Number.isSafeInteger(maxScan) || maxScan < bounded || maxScan > MAX_QUERY_LIMIT * 5) {
+        throw new RangeError('Training Memory answered-history scan cap is invalid');
+      }
+      return withRead([TRAINING_MEMORY_STORES.DECISIONS, TRAINING_MEMORY_STORES.SESSIONS], async (transaction) => {
+        const answered = [];
+        const seen = new Set();
+        let upper = STRING_CEILING;
+        let scanned = 0;
+        let exhausted = false;
+        while (answered.length < bounded && scanned < maxScan) {
+          const pageLimit = Math.min(MAX_QUERY_LIMIT, maxScan - scanned);
+          const page = await transaction.getAllByIndexRange(
+            TRAINING_MEMORY_STORES.DECISIONS,
+            TRAINING_MEMORY_INDEXES.OWNER_CREATED_AT,
+            { lower: [ownerKey, STRING_FLOOR], upper: [ownerKey, upper], direction: 'prev', limit: pageLimit },
+          );
+          const fresh = page.filter((entry) => !seen.has(entry.id));
+          for (const entry of fresh) {
+            seen.add(entry.id);
+            scanned += 1;
+            ensureOwner(entry.value, ownerRef, 'Training decision');
+            if (entry.value.status === TRAINING_DECISION_STATUSES.ANSWERED && answered.length < bounded) {
+              answered.push(cloneTrainingMemoryData(entry.value));
+            }
+          }
+          if (page.length < pageLimit) { exhausted = true; break; }
+          // The inclusive upper bound re-reads equal timestamps; no new row means a tie overflow.
+          if (!fresh.length) break;
+          upper = page[page.length - 1].createdAt;
+        }
+        const sessions = [];
+        for (const sessionId of [...new Set(answered.map((record) => record.sessionId))]) {
+          const stored = await transaction.get(TRAINING_MEMORY_STORES.SESSIONS, sessionId);
+          if (!stored) continue;
+          ensureOwner(stored.value, ownerRef, 'Training session');
+          sessions.push(cloneTrainingMemoryData(stored.value));
+        }
+        answered.sort((left, right) => right.answeredAt.localeCompare(left.answeredAt)
+          || right.shownAt.localeCompare(left.shownAt) || left.id.localeCompare(right.id));
+        return {
+          decisions: answered,
+          sessions,
+          scanned,
+          // True when older answered decisions may exist beyond the returned page.
+          bounded: answered.length >= bounded || !exhausted,
+        };
+      });
+    },
+
     async listSimilarHistory(similarityKey, { limit = 20 } = {}) {
       const bounded = queryLimit(limit);
       if (typeof similarityKey !== 'string' || !similarityKey) {

@@ -605,8 +605,10 @@
           </section>
           <section id="savedLibrarySection" class="panel home-section home-section--library" aria-labelledby="savedLibraryTitle" data-tutorial-anchor="saved-library" hidden>
             <header class="home-section-head"><div><p data-i18n="Saved study objects">Saved study objects</p><h2 id="savedLibraryTitle" data-i18n="Library">Library</h2></div></header>
+            <div class="saved-view-toggle" data-saved-view-toggle data-tutorial-anchor="saved-view-toggle"></div>
             <div class="saved-library-controls" data-saved-library-controls data-tutorial-anchor="saved-library-find"></div>
             <div class="saved-library-body" data-saved-library-body></div>
+            <div class="saved-training-history" data-saved-training-history hidden></div>
           </section>
           </div>
           <aside class="home-destinations-rail">
@@ -2890,7 +2892,7 @@
         <section class="guide-section guide-study-section" aria-labelledby="guideStudyTitle">
           <div class="guide-section-head"><p class="guide-kicker" data-i18n="Study and knowledge">Study and knowledge</p><h2 id="guideStudyTitle" data-i18n="Keep useful work connected">Keep useful work connected</h2></div>
           <div class="guide-knowledge-grid">
-            <article><h3 data-i18n="Saved">Saved</h3><p data-i18n="Keep Hands and Spots intentionally, then find one by searching titles, notes, and tags or filtering by kind, review state, mistakes, and tag. Inspect its stored facts and reopen it for continued study. Guest Saved stays on this device.">Keep Hands and Spots intentionally, then find one by searching titles, notes, and tags or filtering by kind, review state, mistakes, and tag. Inspect its stored facts and reopen it for continued study. Guest Saved stays on this device.</p><button class="ui-button ui-button--quiet" type="button" data-guide-destination="saved" data-i18n="Open Saved">Open Saved</button></article>
+            <article><h3 data-i18n="Saved">Saved</h3><p data-i18n="Keep Hands and Spots intentionally, then find one by searching titles, notes, and tags or filtering by kind, review state, mistakes, and tag. Inspect its stored facts and reopen it for continued study. Guest Saved stays on this device.">Keep Hands and Spots intentionally, then find one by searching titles, notes, and tags or filtering by kind, review state, mistakes, and tag. Inspect its stored facts and reopen it for continued study. Guest Saved stays on this device.</p><p data-i18n="Training history in Saved lists your answered Training decisions from this device. Reopen one as Same Spot or Similar Spot, or keep it as a Saved Spot. Training history is not synced.">Training history in Saved lists your answered Training decisions from this device. Reopen one as Same Spot or Similar Spot, or keep it as a Saved Spot. Training history is not synced.</p><button class="ui-button ui-button--quiet" type="button" data-guide-destination="saved" data-i18n="Open Saved">Open Saved</button></article>
             <article><h3 data-i18n="Replay and Review">Replay and Review</h3><p data-i18n="Replay moves through a canonical Hand timeline. Review gathers decisions and source-labelled comparisons without changing Hand truth.">Replay moves through a canonical Hand timeline. Review gathers decisions and source-labelled comparisons without changing Hand truth.</p></article>
             <article><h3 data-i18n="Learn in context">Learn in context</h3><p data-i18n="Guide is durable product reference. Learn Riverline provides orientation, while the tutorial control in supported workspaces starts the existing contextual teaching for that workspace.">Guide is durable product reference. Learn Riverline provides orientation, while the tutorial control in supported workspaces starts the existing contextual teaching for that workspace.</p></article>
           </div>
@@ -3556,6 +3558,8 @@
   <script type="module" src="src/application/range-card-removal-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>
   <script type="module" src="src/application/saved-library-workspace.mjs"></script>
+  <script type="module" src="src/application/training-memory-row-format.mjs"></script>
+  <script type="module" src="src/application/saved-training-history-workspace.mjs"></script>
   <script src="src/core/logic.js?v=28" defer></script>
   <script src="src/ui/teacher.js" defer></script>
   <script src="src/ui/PokerPrimitives.js" defer></script>
