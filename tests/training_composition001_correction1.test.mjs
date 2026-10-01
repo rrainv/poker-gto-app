@@ -95,7 +95,7 @@ test('Full Hand action family selection gates canonical amount-to sizing', () =>
   assert.match(sizing, /validateFullHandSizingInput/);
   assert.match(sizing, /input\.min = sizing\.minValueBb/);
   assert.match(sizing, /input\.max = sizing\.maxValueBb/);
-  assert.match(sizing, /Apply amount-to/);
+  assert.match(sizing, /submit\.textContent = t\('Apply'\)/);
   assert.match(sizing, /preset\.kind !== 'all_in'/);
   assert.match(logic, /type === 'all_in' \? exercise\.legalActions\?\.allIn/);
 });

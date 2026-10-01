@@ -379,7 +379,10 @@ test('provider-readiness messages have explicit Russian and Hebrew translations'
     'Add the turn before choosing a river card.',
     'Each known card can appear only once.',
     'This action does not match the current street.',
-    'Clear the amount to call or choose a facing bet or raise.',
+    'Set Facing size to 0 or choose a bet or raise as the prior action.',
+    'Enter the Facing size for this bet or raise.',
+    'Enter a valid Facing size.',
+    'Enter a valid Ante.',
     'This spot is still incomplete, so Riverline won\'t give strategy advice yet.',
   ];
   for (const key of keys) {

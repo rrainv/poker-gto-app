@@ -20,13 +20,16 @@ const REASON_MESSAGES = Object.freeze({
   duplicate_known_card: 'Each known card can appear only once.',
   unsupported_action: 'Choose a supported prior action for this spot.',
   action_not_valid_for_street: 'This action does not match the current street.',
-  facing_amount_invalid: 'Use a non-negative number for the amount to call.',
+  // Wording uses the Analyze field labels (Facing size, Pot before action,
+  // Starting stack, Table size, Ante) so the message names the field it edits.
+  facing_amount_invalid: 'Enter a valid Facing size.',
   facing_amount_without_aggression:
-    'Clear the amount to call or choose a facing bet or raise.',
-  aggression_requires_facing_amount: 'Add the amount to call for this facing action.',
-  pot_invalid: 'Use a non-negative number for the pot.',
-  stack_invalid: 'Use a positive number for the stack.',
-  table_size_invalid: 'Choose a table size from 2 to 10 players.',
+    'Set Facing size to 0 or choose a bet or raise as the prior action.',
+  aggression_requires_facing_amount: 'Enter the Facing size for this bet or raise.',
+  pot_invalid: 'Enter a valid Pot before action.',
+  stack_invalid: 'Enter a valid Starting stack.',
+  table_size_invalid: 'Choose a Table size from 2 to 10 players.',
+  ante_invalid: 'Enter a valid Ante.',
   hero_position_missing: 'Choose Hero\'s position before requesting strategy.',
   scenario_input_invalid:
     'This spot is still incomplete, so Riverline won\'t give strategy advice yet.',
@@ -138,9 +141,9 @@ export function validatePlaybookScenarioReadiness(input) {
   if (facingSizeBb === null || facingSizeBb < 0) {
     reasons.push(reason('facing_amount_invalid', ['facingSizeBb']));
   } else if (!AGGRESSIVE_ACTIONS.has(action) && facingSizeBb > 0) {
-    reasons.push(reason('facing_amount_without_aggression', ['lastAction', 'facingSizeBb']));
+    reasons.push(reason('facing_amount_without_aggression', ['facingSizeBb', 'lastAction']));
   } else if (AGGRESSIVE_ACTIONS.has(action) && facingSizeBb === 0) {
-    reasons.push(reason('aggression_requires_facing_amount', ['lastAction', 'facingSizeBb']));
+    reasons.push(reason('aggression_requires_facing_amount', ['facingSizeBb', 'lastAction']));
   }
 
   const potBb = finiteNumber(input.potBb);
@@ -150,6 +153,12 @@ export function validatePlaybookScenarioReadiness(input) {
   const tableSize = finiteNumber(input.tableSize);
   if (!Number.isInteger(tableSize) || tableSize < 2 || tableSize > 10) {
     reasons.push(reason('table_size_invalid', ['tableSize']));
+  }
+  // Snapshot-authoritative v2 carries the ante inside its rules snapshot; only an
+  // explicit v1 ante (including an incomplete numeric draft) is checked here.
+  if (input.anteBb !== undefined) {
+    const anteBb = finiteNumber(input.anteBb);
+    if (anteBb === null || anteBb < 0) reasons.push(reason('ante_invalid', ['anteBb']));
   }
   if (typeof input.heroPosition !== 'string' || input.heroPosition.trim() === '') {
     reasons.push(reason('hero_position_missing', ['heroPosition']));

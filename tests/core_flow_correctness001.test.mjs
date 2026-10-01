@@ -370,7 +370,7 @@ test('core-flow controls are discoverable, localized, keyboard-aware, and remain
   assert.match(productTranslations, /"Start new hand": "התחלת יד חדשה"/);
 
   assert.match(html, /data-i18n="Raise to">Raise to</);
-  assert.match(html, /data-i18n="Canonical amount-to sizing">Canonical amount-to sizing</);
+  assert.match(html, /data-i18n="Total for this street">Total for this street</);
   const legalRenderer = logic.slice(
     logic.indexOf('function renderCanonicalLegalActions('),
     logic.indexOf('function canonicalHandStatus('),

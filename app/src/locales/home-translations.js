@@ -477,6 +477,8 @@
     en: Object.fromEntries([...keys].map((key) => [key, {
       'Home dashboard': 'Home',
       'Saved study': 'Saved',
+      'replay.status.saved': 'SAVED',
+      'replay.control.returnToSavedHand': 'Return to end of saved hand',
     }[key] || key])),
     ru,
     he,

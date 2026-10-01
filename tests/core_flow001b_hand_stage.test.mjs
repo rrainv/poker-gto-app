@@ -303,7 +303,7 @@ test('desktop hierarchy, localization, RTL, and secondary disclosures remain str
     'Current hand stage',
     'Hand table',
     'Current legal actions',
-    'Custom amount-to',
+    'Custom size',
     'Hand complete',
     'End hand',
     'Hero to act',

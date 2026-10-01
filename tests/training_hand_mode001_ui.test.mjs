@@ -55,7 +55,7 @@ test('Full Hand reuses legal action controls and the canonical table presence re
 
 test('Full Hand reveals keyboard-usable canonical amount-to controls only after Bet or Raise', () => {
   assert.match(training, /id="trainingFullHandSizing"[^>]+aria-labelledby="trainingFullHandSizingTitle"/);
-  assert.match(training, /Amount-to · not raise-by/);
+  assert.match(training, /Enter the total, not the raise amount/);
   assert.match(logic, /input\.type = 'number'/);
   assert.match(logic, /input\.min = sizing\.minValueBb/);
   assert.match(logic, /input\.max = sizing\.maxValueBb/);

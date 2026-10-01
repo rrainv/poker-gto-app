@@ -1,3 +1,4 @@
+import { PHASES, getLegalActionSpec } from '../../../shared/poker-domain/index.js';
 import { createReplayTimelineViewModel } from './replay-timeline-view-model.mjs';
 import { createTablePresenceViewModel } from './table-presence-view-model.mjs';
 import {
@@ -77,6 +78,44 @@ function publicBoardCardsForFrame(kind, tablePresence) {
   }));
 }
 
+/**
+ * Stage facts for one immutable frame, computed once at capture so seeking
+ * performs no poker, strategy or Equity work. Amounts stay canonical milli-bb.
+ */
+function stageFactsForFrame(state) {
+  const betting = state.phase === PHASES.BETTING;
+  let callMilliBb = null;
+  if (betting) {
+    try {
+      const legal = getLegalActionSpec(state);
+      callMilliBb = legal.call?.available ? legal.call.commitMilliBb : 0;
+    } catch {
+      callMilliBb = null;
+    }
+  }
+  const last = state.actionHistory?.at(-1) ?? null;
+  return {
+    street: state.street,
+    phase: state.phase,
+    terminal: state.phase === PHASES.TERMINAL || state.terminal?.isTerminal === true,
+    showdownStatus: state.showdown?.status ?? null,
+    pendingChanceType: state.pendingChance?.type ?? null,
+    actingPlayerId: betting ? state.actingPlayerId ?? null : null,
+    potMilliBb: state.potMilliBb,
+    deductionTotalMilliBb: state.deductionTotalMilliBb ?? null,
+    currentBetMilliBb: betting ? state.currentBetMilliBb : null,
+    callMilliBb,
+    lastAction: last ? {
+      sequence: last.sequence,
+      playerId: last.playerId,
+      street: last.street,
+      type: last.submittedAction?.type ?? last.type ?? null,
+      committedMilliBb: last.committedMilliBb ?? null,
+      currentBetAfterMilliBb: last.currentBetAfterMilliBb ?? null,
+    } : null,
+  };
+}
+
 function captureFrame(state, heroPlayerId, operation) {
   if (!state || typeof state !== 'object' || Array.isArray(state)) {
     throw new TypeError('A canonical PokerState is required for a Replay frame');
@@ -103,6 +142,7 @@ function captureFrame(state, heroPlayerId, operation) {
   return deepFreeze({
     state: snapshot,
     tablePresence,
+    stageFacts: stageFactsForFrame(snapshot),
     heroPlayerId,
     operation,
     kind: presentation.kind,
@@ -382,6 +422,7 @@ function emptyProjection() {
     selectedFrame: null,
     motion: null,
     tablePresence,
+    selectedStageFacts: null,
     timeline: {
       empty: true,
       emptyState: liveTimeline.emptyState,
@@ -513,6 +554,9 @@ export function createReplayProjectionController({
       },
       motion,
       tablePresence,
+      // Additive: facts of the selected read-only frame; null at the live edge,
+      // where live renderers keep using the live canonical state.
+      selectedStageFacts: atLive ? null : selectedFrame.stageFacts,
       timeline,
       liveTimeline,
     });

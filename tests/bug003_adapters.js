@@ -24,6 +24,8 @@ function createHarness() {
 
   const numericSource = sliceBetween(source, 'function numericValue(id, fallback = 0)', 'function updatePositionSelect(');
   const updateSource = sliceBetween(source, 'function updatePositionSelect(', 'function strategyResultPresentationActions(');
+  // updatePositions() skips an incomplete Table size draft (DECISION-INPUT-TRUTH-001).
+  const sliderDraftSource = sliceBetween(source, 'const SLIDER_PAIR_NUMBER_IDS', 'function bindSliderPair(');
   const controls = new Map();
 
   const sandbox = { controls, createElement };
@@ -36,6 +38,7 @@ function createHarness() {
       return element ? element.value : undefined;
     };
     ${numericSource}
+    ${sliderDraftSource}
     ${updateSource}
     globalThis.__bug003 = {
       positionsFor(tableSize) { return POSITIONS[tableSize] ? [...POSITIONS[tableSize]] : null; },

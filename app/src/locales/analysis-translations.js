@@ -230,7 +230,18 @@
     'replay.transition.flopDeal': 'Flop dealt',
     'replay.transition.turnDeal': 'Turn dealt',
     'replay.transition.riverDeal': 'River dealt',
-    'replay.transition.showdown': 'Showdown resolved'
+    'replay.transition.showdown': 'Showdown resolved',
+    'replay.control.returnToCompleted': 'Return to completed hand',
+    'facing.line.position': '{position} · {detail}',
+    'facing.detail.wager': 'facing {facing} · {price}',
+    'facing.detail.unopened': 'unopened · {price}',
+    'facing.detail.limped': 'limped · {price}',
+    'facing.detail.option': 'option · check available',
+    'facing.detail.checkAvailable': 'check available',
+    'facing.detail.unavailable': 'price unavailable',
+    'facing.price.toCall': '{call} to call',
+    'facing.price.allInCall': '{call} to call (all-in)',
+    'facing.price.unavailable': 'price unavailable'
   };
 
   const ru = {
@@ -346,7 +357,18 @@
     'replay.transition.initialization': 'Раздача создана', 'replay.transition.privateDeal': 'Закрытые карты розданы',
     'replay.transition.privateReveal': 'Закрытые карты открыты', 'replay.transition.action': 'Действие записано',
     'replay.transition.flopDeal': 'Флоп роздан', 'replay.transition.turnDeal': 'Тёрн роздан',
-    'replay.transition.riverDeal': 'Ривер роздан', 'replay.transition.showdown': 'Шоудаун рассчитан'
+    'replay.transition.riverDeal': 'Ривер роздан', 'replay.transition.showdown': 'Шоудаун рассчитан',
+    'replay.control.returnToCompleted': 'Вернуться к завершённой раздаче',
+    'facing.line.position': '{position} · {detail}',
+    'facing.detail.wager': 'против {facing} · {price}',
+    'facing.detail.unopened': 'банк не открыт · {price}',
+    'facing.detail.limped': 'лимп-банк · {price}',
+    'facing.detail.option': 'опция · чек доступен',
+    'facing.detail.checkAvailable': 'чек доступен',
+    'facing.detail.unavailable': 'цена недоступна',
+    'facing.price.toCall': 'колл {call}',
+    'facing.price.allInCall': 'колл {call} (олл-ин)',
+    'facing.price.unavailable': 'цена недоступна'
   };
 
   const he = {
@@ -462,7 +484,18 @@
     'replay.transition.initialization': 'היד אותחלה', 'replay.transition.privateDeal': 'הקלפים הפרטיים חולקו',
     'replay.transition.privateReveal': 'הקלפים הפרטיים נחשפו', 'replay.transition.action': 'הפעולה נרשמה',
     'replay.transition.flopDeal': 'הפלופ חולק', 'replay.transition.turnDeal': 'הטרן חולק',
-    'replay.transition.riverDeal': 'הריבר חולק', 'replay.transition.showdown': 'השואודאון הוכרע'
+    'replay.transition.riverDeal': 'הריבר חולק', 'replay.transition.showdown': 'השואודאון הוכרע',
+    'replay.control.returnToCompleted': 'חזרה ליד שהסתיימה',
+    'facing.line.position': '{position} · {detail}',
+    'facing.detail.wager': 'מול {facing} · {price}',
+    'facing.detail.unopened': 'קופה לא פתוחה · {price}',
+    'facing.detail.limped': 'קופה עם לימפ · {price}',
+    'facing.detail.option': "אופציה · אפשר צ'ק",
+    'facing.detail.checkAvailable': "אפשר צ'ק",
+    'facing.detail.unavailable': 'המחיר אינו זמין',
+    'facing.price.toCall': '{call} להשוואה',
+    'facing.price.allInCall': '{call} להשוואה (אול-אין)',
+    'facing.price.unavailable': 'המחיר אינו זמין'
   };
 
   const rangeAnalysisCatalog = {

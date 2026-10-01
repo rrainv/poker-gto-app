@@ -105,14 +105,17 @@ test('fallback remains finite and normalized at current stack/facing boundaries'
   }
 });
 
+// DECISION-INPUT-TRUTH-001: out-of-bounds text is an incomplete draft. It is
+// neither coerced into the field nor committed to the slider (the readiness gate
+// reports it), so the committed value still never leaves the HTML bounds.
 test('HTML and slider synchronization keep facing size nonnegative', () => {
   assert.deepEqual(qa.readInputBounds('facingSizeNum'), { min: 0, max: 100, step: 0.5 });
-  assert.deepEqual(qa.clampPair('facingSize', 'facingSizeNum', 0, -7, 0, 100), { range: 0, number: 0 });
+  assert.deepEqual(qa.clampPair('facingSize', 'facingSizeNum', 0, -7, 0, 100), { range: '0', number: '-7' });
 });
 
 test('HTML and slider synchronization keep pot size at or above 0.5bb', () => {
   assert.deepEqual(qa.readInputBounds('potSizeNum'), { min: 0.5, max: 200, step: 0.5 });
-  assert.deepEqual(qa.clampPair('potSize', 'potSizeNum', 1.5, -7, 0.5, 200), { range: 0.5, number: 0.5 });
+  assert.deepEqual(qa.clampPair('potSize', 'potSizeNum', 1.5, -7, 0.5, 200), { range: '1.5', number: '-7' });
 });
 
 test('preflop base pot is blinds plus per-player ante plus straddle', () => {

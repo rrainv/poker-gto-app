@@ -79,6 +79,7 @@ function createElement(value = '', options = {}) {
     },
     addEventListener() {},
     setAttribute(name, nextValue) { this[name] = String(nextValue); },
+    removeAttribute(name) { delete this[name]; },
     appendChild(child) { this.children.push(child); },
   };
 }
@@ -465,11 +466,16 @@ function createHarness() {
           facingSize: [values.facingSize ?? 0, 0, 100],
           facingSizeNum: [values.facingSize ?? 0, 0, 100],
           potSize: [values.potSize ?? 1.5, 0.5, 200],
+          potSizeNum: [values.potSize ?? 1.5, 0.5, 200],
           stackMode: [values.stackMode ?? 'hero'],
           rakeMode: [values.rakeMode ?? 'off'],
         };
         for (const [id, [value, min, max]] of Object.entries(definitions)) {
           controls.set('#' + id, createElement(value, { min, max, text: String(value) }));
+        }
+        // Raw text typed into a numeric field, independent of the slider value.
+        for (const [id, text] of Object.entries(values.numberText || {})) {
+          controls.get('#' + id).value = String(text);
         }
         app.gto.board = values.board || [];
         app.gto.hero = values.heroCards || [];
@@ -532,6 +538,11 @@ function createHarness() {
           snapshot: readPlaybookInputSnapshot(),
           facingControl: controls.get('#facingSize').value,
           facingNumberControl: controls.get('#facingSizeNum').value,
+          sliderPairControls: Object.fromEntries(
+            ['players', 'playersNum', 'stack', 'stackNum', 'ante', 'anteNum',
+              'facingSize', 'facingSizeNum', 'potSize', 'potSizeNum']
+              .map((id) => [id, String(controls.get('#' + id).value)]),
+          ),
           strategyProviderResolveCount,
           dispatchedState,
         };

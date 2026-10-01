@@ -65,10 +65,11 @@ test('Training study hints and pricing copy remain truthful before and after an 
   const solution = between('function showTrainingSolution(solution)', 'function updateTrainingStats()');
   assert.match(solution, /After-answer comparison/);
   assert.doesNotMatch(solution, /Strategy preview|lifecycle === 'ready'/);
+  // DECISION-INPUT-TRUTH-001: the facing tile is a consumer of the canonical
+  // decision-facing-summary/v1 projection (unit-tested there), not UI math.
   const pricing = between('function formatTrainingFacingCopy', 'function trainingActionLabel');
-  assert.match(pricing, /Math\.abs\(facingSize - callAmount\) > 0\.001/);
-  assert.match(pricing, /t\('\{value\} bb to call', \{ value: callAmount\.toFixed\(1\) \}\)/);
-  assert.doesNotMatch(pricing, /\(\$\{facingSize\.toFixed\(1\)\} bb to\)/);
+  assert.match(pricing, /decisionFacingCopy\(context\)/);
+  assert.doesNotMatch(pricing, /facingSize|callAmount|toFixed/);
   const answer = between('function handleTrainingGuess(', 'function replayTrainingExercise(');
   assert.match(answer, /callTrainingServiceBridge\('answer', exercise\.id, userAction\)/);
   assert.match(answer, /renderTrainingDecisionAnalysis\(exercise\)[\s\S]*showTrainingSolution\(app\.training\.currentSolution\)/);

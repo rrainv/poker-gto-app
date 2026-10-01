@@ -508,7 +508,7 @@ try {
       ? ['Full Hand did not reveal legal Bet/Raise sizing in the action rail'] : []),
     ...(!fullHandSizingModel || Number(fullHandSizingModel.min) > Number(fullHandSizingModel.value)
       || Number(fullHandSizingModel.value) > Number(fullHandSizingModel.max)
-      || fullHandSizingModel.commit !== 'Apply amount-to'
+      || fullHandSizingModel.commit !== 'Apply'
       ? ['Full Hand sizing did not expose canonical bounds and explicit amount-to commit'] : []),
     ...(!fullHandAnswered?.fullHandFeedback || fullHandAnswered.historyCount < 1
       ? ['Full Hand answer did not preserve neutral confirmation and canonical history'] : []),

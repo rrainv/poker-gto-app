@@ -262,7 +262,8 @@ const app = {
 
   playbookHandDraft: {
     bySeat: {}, board: [], sizedAction: null, actionSubmissionLocked: false,
-    randomizationPending: false, lastRandomizationRecipe: null
+    randomizationPending: false, lastRandomizationRecipe: null,
+    randomizationStatusStage: null, randomizationStatusTarget: null
   },
 
   picker: null,
@@ -2348,7 +2349,7 @@ function normalizedDecisionCards(cards) {
 
 function readPlaybookScenarioInput() {
   const lastActionControl = $('#lastAction');
-  const tableSize = numericValue('#players', 6);
+  const tableSize = sliderPairValue('players', 6);
   const board = Array.isArray(app.gto && app.gto.board)
     ? app.gto.board.slice()
     : [];
@@ -2364,18 +2365,18 @@ function readPlaybookScenarioInput() {
     heroCards: normalizedDecisionCards(app.gto && app.gto.hero),
     board,
     deadCards: normalizedDecisionCards(app.gto && app.gto.dead),
-    stackBb: numericValue('#stack', 100),
+    stackBb: sliderPairValue('stack', 100),
     stackMode: selectedValue('#stackMode'),
-    potBb: numericValue('#potSize', 1.5),
+    potBb: sliderPairValue('potSize', 1.5),
     lastAction: selectedValue('#lastAction'),
     lastActionLabel: lastActionControl && lastActionControl.selectedOptions && lastActionControl.selectedOptions[0]
       ? lastActionControl.selectedOptions[0].text
       : 'Unopened',
-    facingSizeBb: numericValue('#facingSize', 0),
+    facingSizeBb: sliderPairValue('facingSize', 0),
     rakeMode,
     forcedContributionPerPlayerBb: accounting.forcedContributionPerPlayerBb,
     totalForcedContributionBb: accounting.totalForcedContributionBb,
-    anteBb: numericValue('#ante', 0),
+    anteBb: sliderPairValue('ante', 0),
     straddleBb: numericValue('#straddle', 0)
   };
 
@@ -2383,7 +2384,11 @@ function readPlaybookScenarioInput() {
     globalThis.RiverlinePlaybookState
     && typeof globalThis.RiverlinePlaybookState.createScenarioInputFromLegacyCompatibility === 'function'
   );
-  const bridged = typeof callPlaybookStateBridge === 'function'
+  // An incomplete numeric draft must not be resolved into rules (the legacy
+  // adapter would coerce or reject it); the v1 readiness gate reports it instead.
+  const hasIncompleteNumericDraft = ['tableSize', 'stackBb', 'potBb', 'facingSizeBb', 'anteBb']
+    .some((key) => Number.isNaN(rawInput[key]));
+  const bridged = !hasIncompleteNumericDraft && typeof callPlaybookStateBridge === 'function'
     ? callPlaybookStateBridge('createScenarioInputFromLegacyCompatibility', rawInput)
     : null;
   if (bridged) return bridged;
@@ -3288,9 +3293,40 @@ function resetCanonicalHandDraft() {
   renderHandRandomizationRecipe(null);
 }
 
-function setHandRandomizationStatus(message, replacements) {
+// A randomizer status describes one pending card stage. It is bound to that
+// canonical stage and its draft, and clears once either moves on.
+function canonicalHandDraftStageKey(state) {
+  if (!state) return '';
+  return [
+    state.phase,
+    state.street,
+    state.pendingChance?.type || '',
+    state.showdown?.status || '',
+    state.actionHistory?.length || 0
+  ].join('|');
+}
+
+function setHandRandomizationStatus(message, replacements, target = null) {
   const status = $('#handRandomizeStatus');
   if (status) status.textContent = message ? t(message, replacements) : '';
+  app.playbookHandDraft.randomizationStatusStage = message
+    ? canonicalHandDraftStageKey(callPlaybookStateBridge('getState'))
+    : null;
+  app.playbookHandDraft.randomizationStatusTarget = message ? target : null;
+}
+
+function reconcileHandRandomizationStatus(state) {
+  const draft = app.playbookHandDraft;
+  if (draft.randomizationStatusStage === null || draft.randomizationStatusStage === undefined) return;
+  const target = draft.randomizationStatusTarget;
+  const draftCleared = target === 'hero' || target === 'private_reveal'
+    ? Object.values(draft.bySeat || {}).every((cards) => normalizedDecisionCards(cards).length === 0)
+    : target
+      ? normalizedDecisionCards(draft.board).length === 0
+      : false;
+  if (draftCleared || canonicalHandDraftStageKey(state) !== draft.randomizationStatusStage) {
+    setHandRandomizationStatus('');
+  }
 }
 
 function renderHandRandomizationRecipe(recipe = app.playbookHandDraft.lastRandomizationRecipe) {
@@ -3363,7 +3399,7 @@ async function randomizeCanonicalHandPendingDraft() {
     renderHandRandomizationRecipe(result.recipe);
     setHandRandomizationStatus(result.target === 'private_reveal' ? 'Random private cards ready.' : result.target === 'hero'
       ? 'Random Hero cards ready.'
-      : 'Random {street} ready.', { street: t(result.target.charAt(0).toUpperCase() + result.target.slice(1)) });
+      : 'Random {street} ready.', { street: t(result.target.charAt(0).toUpperCase() + result.target.slice(1)) }, result.target);
     return true;
   } catch (error) {
     console.error('[Riverline Hand pending randomization]', error);
@@ -3584,7 +3620,7 @@ function chooseCanonicalSizedAction(type, option) {
     maximumPreset.hidden = max === min;
   }
   if (label) label.textContent = t(type === 'bet' ? 'Bet to' : 'Raise to');
-  if (bounds) bounds.textContent = t('{min}–{max} bb · amount-to', { min, max });
+  if (bounds) bounds.textContent = t('{min}–{max} bb total', { min, max });
   if ($('#handCommitSizedAction')) {
     $('#handCommitSizedAction').hidden = false;
     $('#handCommitSizedAction').disabled = false;
@@ -3680,7 +3716,7 @@ function renderCanonicalLegalActions(state, legalActionSpec = undefined) {
       amount.textContent = presentation.amount;
       button.appendChild(amount);
     }
-    button.setAttribute('aria-label', `${presentation.accessibleLabel}${type === 'bet' || type === 'raise' ? `, ${t('choose amount-to sizing')}` : ''}`);
+    button.setAttribute('aria-label', `${presentation.accessibleLabel}${type === 'bet' || type === 'raise' ? `, ${t('choose bet size')}` : ''}`);
     if (type === 'bet' || type === 'raise') {
       button.addEventListener('click', () => chooseCanonicalSizedAction(type, option));
     } else {
@@ -3813,10 +3849,27 @@ function renderCanonicalHandSetupState(state, stage, replayProjection) {
   }
 }
 
+// During read-only Replay every stage fact comes from the selected frame
+// (replay-projection/v1 selectedStageFacts); live values return at the live edge.
+function canonicalReplayFrameFacts(replayProjection) {
+  return replayProjection?.readOnly === true ? replayProjection.selectedStageFacts || null : null;
+}
+
+function canonicalStatusStateFromFrameFacts(facts) {
+  return {
+    phase: facts.phase,
+    terminal: { isTerminal: facts.terminal === true },
+    showdown: facts.showdownStatus ? { status: facts.showdownStatus } : null,
+    pendingChance: facts.pendingChanceType ? { type: facts.pendingChanceType } : null
+  };
+}
+
 function renderCanonicalHandStage(state, legalActions, replayProjection) {
   const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
   const stage = canonicalHandStageKey(state, replayProjection);
-  const actor = state?.players?.find((player) => player.playerId === state.actingPlayerId);
+  const frameFacts = canonicalReplayFrameFacts(replayProjection);
+  const actorPlayerId = frameFacts ? frameFacts.actingPlayerId : state?.actingPlayerId;
+  const actor = state?.players?.find((player) => player.playerId === actorPlayerId);
   const actorLabel = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '-';
   const status = canonicalHandStatus(state);
   const stageHeader = $('#handLiveStageHeader');
@@ -3866,19 +3919,29 @@ function renderCanonicalHandStage(state, legalActions, replayProjection) {
     : status.summary;
   if ($('#handLiveStageLastAction')) {
     $('#handLiveStageLastAction').textContent = canonicalActionHistoryLabel(
-      state?.actionHistory?.at(-1),
+      frameFacts ? frameFacts.lastAction : state?.actionHistory?.at(-1),
       state,
       heroPlayerId
     );
   }
   if ($('#handLiveActor')) $('#handLiveActor').textContent = actorLabel;
-  if ($('#handLivePot')) $('#handLivePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '-';
-  if ($('#handLiveFacing')) $('#handLiveFacing').textContent = legalActions
-    ? formatCanonicalBb(state.currentBetMilliBb)
-    : '-';
-  if ($('#handLiveCall')) $('#handLiveCall').textContent = legalActions
-    ? formatCanonicalBb(legalActions.call.available ? legalActions.call.commitMilliBb : 0)
-    : '-';
+  if (frameFacts) {
+    if ($('#handLivePot')) $('#handLivePot').textContent = formatCanonicalBb(frameFacts.potMilliBb);
+    if ($('#handLiveFacing')) $('#handLiveFacing').textContent = frameFacts.currentBetMilliBb === null
+      ? '-'
+      : formatCanonicalBb(frameFacts.currentBetMilliBb);
+    if ($('#handLiveCall')) $('#handLiveCall').textContent = frameFacts.callMilliBb === null
+      ? '-'
+      : formatCanonicalBb(frameFacts.callMilliBb);
+  } else {
+    if ($('#handLivePot')) $('#handLivePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '-';
+    if ($('#handLiveFacing')) $('#handLiveFacing').textContent = legalActions
+      ? formatCanonicalBb(state.currentBetMilliBb)
+      : '-';
+    if ($('#handLiveCall')) $('#handLiveCall').textContent = legalActions
+      ? formatCanonicalBb(legalActions.call.available ? legalActions.call.commitMilliBb : 0)
+      : '-';
+  }
 
   const historyCount = replayProjection?.timeline?.entryCount || 0;
   if ($('#handHistoryCompactSummary')) $('#handHistoryCompactSummary').textContent = t('{count} actions', {
@@ -4282,12 +4345,20 @@ function renderCanonicalReplayControls(projection) {
     const canExitReplayToLive = projection.mode === 'replay'
       && projection.canReturnToLive === true
       && liveHandInProgress;
-    const endpointKey = 'replay.control.returnToLive';
+    // Replaying a completed live hand returns to its completed state with the
+    // same control; the completion card reappears once Replay is left.
+    const canExitReplayToCompleted = projection.mode === 'replay'
+      && projection.canReturnToLive === true
+      && Boolean(liveState)
+      && !liveHandInProgress;
+    const endpointKey = canExitReplayToCompleted
+      ? 'replay.control.returnToCompleted'
+      : 'replay.control.returnToLive';
     live.textContent = t(endpointKey);
     live.dataset.i18n = endpointKey;
     live.setAttribute('aria-label', t(endpointKey));
-    live.hidden = !canExitReplayToLive;
-    live.disabled = !canExitReplayToLive;
+    live.hidden = !canExitReplayToLive && !canExitReplayToCompleted;
+    live.disabled = !canExitReplayToLive && !canExitReplayToCompleted;
   }
   if (focusedControl?.disabled) {
     [playbackButton, previous, next, live]
@@ -4503,34 +4574,64 @@ function renderCanonicalHandWorkspace() {
   if (!workspace) return;
   const state = callPlaybookStateBridge('getState');
   const replayProjection = callPlaybookStateBridge('createReplayProjectionViewModel');
+  reconcileHandRandomizationStatus(state);
   if (app.handReview.source === 'canonical_hand') refreshActiveHandReviewModel();
   const legalActions = state ? callPlaybookStateBridge('getLegalActions') : null;
   placeSavedStudySourceActions(replayProjection);
   renderSavedHandViewerContext(replayProjection);
   workspace.classList.toggle('is-hand-in-progress', Boolean(state));
   const heroPlayerId = callPlaybookStateBridge('getHeroPlayerId');
-  const status = canonicalHandStatus(state);
+  const frameFacts = canonicalReplayFrameFacts(replayProjection);
+  const status = canonicalHandStatus(frameFacts ? canonicalStatusStateFromFrameFacts(frameFacts) : state);
   const badge = $('#handSessionBadge');
   if (badge) {
     badge.textContent = status.label;
     badge.className = `badge status-badge status-badge--${status.tone}`;
   }
   if ($('#handStateSummary')) $('#handStateSummary').textContent = status.summary;
-  if ($('#handStateStreet')) $('#handStateStreet').textContent = state?.street
-    ? t(`replay.street.${state.street}`)
+  const shownStreet = frameFacts ? frameFacts.street : state?.street;
+  if ($('#handStateStreet')) $('#handStateStreet').textContent = shownStreet
+    ? t(`replay.street.${shownStreet}`)
     : '-';
-  const actor = state?.players?.find((player) => player.playerId === state.actingPlayerId);
+  const shownActorId = frameFacts ? frameFacts.actingPlayerId : state?.actingPlayerId;
+  const actor = state?.players?.find((player) => player.playerId === shownActorId);
   if ($('#handStateActor')) $('#handStateActor').textContent = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '-';
-  if ($('#handStatePot')) $('#handStatePot').textContent = state ? formatCanonicalBb(state.potMilliBb) : '-';
-  if ($('#handStateDeduction')) $('#handStateDeduction').textContent = state ? formatCanonicalBb(state.deductionTotalMilliBb) : '-';
+  const shownPot = frameFacts ? frameFacts.potMilliBb : state?.potMilliBb;
+  const shownDeduction = frameFacts ? frameFacts.deductionTotalMilliBb : state?.deductionTotalMilliBb;
+  if ($('#handStatePot')) $('#handStatePot').textContent = state ? formatCanonicalBb(shownPot) : '-';
+  if ($('#handStateDeduction')) $('#handStateDeduction').textContent = state && Number.isFinite(shownDeduction)
+    ? formatCanonicalBb(shownDeduction)
+    : '-';
   if ($('#handStartButton')) $('#handStartButton').textContent = t('Start hand');
 
   const contributionSeats = replayProjection?.tablePresence?.seats || [];
+  // Replay rows read the selected frame's table presence; live rows read live state.
+  const seatRows = frameFacts
+    ? contributionSeats.map((seat) => ({
+      player: state?.players?.find((player) => player.playerId === seat.playerId) || seat,
+      seat: seat.seat,
+      isActor: seat.playerId === shownActorId,
+      folded: seat.isFolded,
+      stack: seat.currentStackMilliBb,
+      street: seat.streetContributionMilliBb,
+      hand: seat.totalPotContributionMilliBb,
+      forced: seat.forcedContributions || []
+    }))
+    : (state?.players || []).map((player) => ({
+      player,
+      seat: player.seat,
+      isActor: player.playerId === state.actingPlayerId,
+      folded: player.folded,
+      stack: player.currentStackMilliBb,
+      street: player.streetContributionMilliBb,
+      hand: player.totalPotContributionMilliBb,
+      forced: contributionSeats.find(seat => seat.playerId === player.playerId)?.forcedContributions || []
+    }));
   const seats = $('#handSeatList');
-  if (seats) seats.innerHTML = state?.players?.map((player) => `
-    <div class="hand-seat-row${player.playerId === state.actingPlayerId ? ' is-actor' : ''}${player.folded ? ' is-folded' : ''}">
-      <div><strong>${canonicalPlayerLabel(player, heroPlayerId)}</strong><small>${t('Seat {number}', { number: player.seat + 1 })}${player.currentStackMilliBb === 0 && !player.folded ? ` · ${t('All-in')}` : ''}${player.folded ? ` · ${t('Folded')}` : ''}</small></div>
-      <div class="hand-seat-values poker-data-token">${formatCanonicalBb(player.currentStackMilliBb)}<br>${t('street')} ${formatCanonicalBb(player.streetContributionMilliBb)} · ${t('hand')} ${formatCanonicalBb(player.totalPotContributionMilliBb)}<br>${(contributionSeats.find(seat => seat.playerId === player.playerId)?.forcedContributions || []).map(entry => `${t(entry.kind === 'small_blind' ? 'SB' : entry.kind === 'big_blind' ? 'BB' : 'Ante')} ${formatCanonicalBb(entry.amountMilliBb)}`).join(' + ')}</div>
+  if (seats) seats.innerHTML = seatRows.map((row) => `
+    <div class="hand-seat-row${row.isActor ? ' is-actor' : ''}${row.folded ? ' is-folded' : ''}">
+      <div><strong>${canonicalPlayerLabel(row.player, heroPlayerId)}</strong><small>${t('Seat {number}', { number: row.seat + 1 })}${row.stack === 0 && !row.folded ? ` · ${t('All-in')}` : ''}${row.folded ? ` · ${t('Folded')}` : ''}</small></div>
+      <div class="hand-seat-values poker-data-token">${formatCanonicalBb(row.stack)}<br>${t('street')} ${formatCanonicalBb(row.street)} · ${t('hand')} ${formatCanonicalBb(row.hand)}<br>${row.forced.map(entry => `${t(entry.kind === 'small_blind' ? 'SB' : entry.kind === 'big_blind' ? 'BB' : 'Ante')} ${formatCanonicalBb(entry.amountMilliBb)}`).join(' + ')}</div>
     </div>`).join('') || `<p class="panel-note">${t('No players yet.')}</p>`;
 
   renderCanonicalPrivateDeal(state);
@@ -4725,18 +4826,17 @@ function reviewComparisonTone(comparison) {
   return tone === 'error' ? 'warning' : tone;
 }
 
+// Facing wording comes from canonical DecisionContext facts through the
+// decision-facing-summary/v1 projection; the renderer does no poker math.
+function decisionFacingCopy(decisionContext, position = null) {
+  const facing = window.RiverlineDecisionFacing;
+  if (!facing || !decisionContext) return position || t('Unavailable');
+  return facing.format(facing.describe(decisionContext), { position, translate: t });
+}
+
 function reviewContextCopy(decision) {
-  const context = decision.context;
   const actor = decision.durable.heroPosition || t('position unavailable');
-  if (Number.isFinite(context.callAmountBb) && context.callAmountBb > 0) {
-    return t('{position} facing {facing} · {call} to call', {
-      position: actor,
-      facing: Number.isFinite(context.facingSizeBb) ? `${context.facingSizeBb} bb` : t('action'),
-      call: `${context.callAmountBb} bb`
-    });
-  }
-  const family = String(context.facingActionFamily || 'none').replaceAll('_', ' ');
-  return t('{position} · {context}', { position: actor, context: t(family) });
+  return decisionFacingCopy(decision.durable.decisionContext, actor);
 }
 
 function renderHandReviewCards(target, cards, emptyKey) {
@@ -5674,6 +5774,10 @@ function updatePositionSelect(playersSelector, positionSelector) {
 
 function updatePositions() {
 
+  // An incomplete Table size draft (for example "1" on the way to "10") must not
+  // rebuild the position list from a guessed table size.
+  if (readSliderPairDraft($('#playersNum')).state === 'incomplete') return;
+
   updatePositionSelect('#playersNum', '#heroPos');
 
 }
@@ -5898,10 +6002,7 @@ function updateMetrics() {
   // Blinds are forced contributions, not a voluntary wager facing the hero.
   if (isPreflopUnopened) {
     facing = normalizeFacingSize(lastAction, facing);
-    const facingSlider = $('#facingSize');
-    const facingNum = $('#facingSizeNum');
-    if (facingSlider) facingSlider.value = '0';
-    if (facingNum) facingNum.value = '0';
+    setSliderPairDisplay('facingSize', 'facingSizeNum', 0);
   }
 
   const heroCards = (context?.heroCards || app.gto?.hero || []).filter(Boolean);
@@ -6609,6 +6710,7 @@ function setRecommendationState(state) {
         if (target) { target.tabIndex = target.tabIndex < 0 ? -1 : target.tabIndex; target.scrollIntoView({ block: 'center', behavior: 'instant' }); target.focus({ preventScroll: true }); }
         return;
       }
+      if (focusScenarioReadinessField(app.playbookResolution)) return;
       const heroEditor = document.querySelector('[data-card-set-edit="hero"]');
       if (app.playbookMode !== PLAYBOOK_MODES.HAND && app.gto.hero.length !== 2 && heroEditor?.getClientRects().length) {
         heroEditor.click();
@@ -6624,6 +6726,54 @@ function setRecommendationState(state) {
       control?.focus({ preventScroll: true });
     };
   }
+}
+
+// Readiness reasons name canonical Scenario fields; each maps to the control
+// whose label the readiness message uses.
+const SCENARIO_READINESS_FIELD_CONTROLS = Object.freeze({
+  facingSizeBb: '#facingSizeNum',
+  potBb: '#potSizeNum',
+  stackBb: '#stackNum',
+  tableSize: '#playersNum',
+  anteBb: '#anteNum',
+  lastAction: '#lastAction',
+  heroPosition: '#heroPos',
+  heroCards: '[data-card-set-edit="hero"]',
+  board: '[data-card-set-edit="board"]',
+  street: '[data-card-set-edit="board"]',
+  deadCards: '[data-card-set-edit="dead"]'
+});
+
+function scenarioReadinessFocusTarget(resolution) {
+  if (resolution?.mode !== PLAYBOOK_MODES.SCENARIO || resolution?.reason !== 'scenario_not_ready') return null;
+  const field = resolution.readiness?.reasons?.[0]?.fields?.[0];
+  return SCENARIO_READINESS_FIELD_CONTROLS[field] || null;
+}
+
+function focusScenarioReadinessField(resolution) {
+  const selector = scenarioReadinessFocusTarget(resolution);
+  const control = selector ? document.querySelector(selector) : null;
+  if (!control) return false;
+  if (control.matches('[data-card-set-edit]')) {
+    if (!control.getClientRects().length) return false;
+    control.click();
+    return true;
+  }
+  for (let node = control.parentElement; node; node = node.parentElement) {
+    if (node.tagName === 'DETAILS') node.open = true;
+  }
+  const context = document.querySelector('#gtoMode');
+  if (context?.classList.contains('is-context-collapsed')) $('#togglePlaybookContext')?.click();
+  if ($('#advancedRules')?.contains(control) && $('#advancedRules').classList.contains('hidden')) {
+    $('#toggleAdvanced')?.click();
+  }
+  if (control.disabled || !control.getClientRects().length) return false;
+  control.scrollIntoView({ block: 'center', behavior: 'instant' });
+  control.focus({ preventScroll: true });
+  if (control.tagName === 'INPUT') {
+    try { control.select(); } catch { /* Selection is optional for numeric inputs. */ }
+  }
+  return true;
 }
 
 function analysisUnavailableReasonForResolution(resolution) {
@@ -6915,8 +7065,7 @@ async function updateContext(reason = 'Context updated') {
   if (typeof renderPlaybookModeStatus === 'function') renderPlaybookModeStatus(playbookResolution);
   
   if (decisionContext.street === 'preflop' && decisionContext.lastAction === 'unopened') {
-    if ($('#facingSize')) $('#facingSize').value = decisionContext.facingSizeBb;
-    if ($('#facingSizeNum')) $('#facingSizeNum').value = decisionContext.facingSizeBb;
+    setSliderPairDisplay('facingSize', 'facingSizeNum', decisionContext.facingSizeBb);
   }
   
   const strategyResult = strategyProvider.resolve(decisionContext);
@@ -7597,23 +7746,65 @@ function syncSliderPair(rangeId, numberId) {
 
   if (!range || !number) return;
 
-  if (document.activeElement === number) {
-
-    const value = Math.min(Number(range.max), Math.max(Number(range.min), Number(number.value) || Number(range.min)));
-
-    range.value = value;
-
-    number.value = value;
-
-  } else {
-
-    number.value = range.value;
-
-  }
+  // Never write the number field from here: the typed text is the draft.
+  const draft = readSliderPairDraft(number);
+  if (draft.state === 'valid') range.value = String(draft.value);
+  const invalid = draft.state === 'incomplete' && document.activeElement !== number;
+  if (invalid) number.setAttribute('aria-invalid', 'true');
+  else number.removeAttribute('aria-invalid');
 
 }
 
+function normalizeSliderPairDisplay(numberId) {
+  const number = $('#' + numberId);
+  const draft = readSliderPairDraft(number);
+  // Blur normalizes only a valid value ("2.50" -> "2.5"); invalid text stays
+  // visible so the readiness message can name the field to correct.
+  if (draft.state === 'valid') number.value = String(draft.value);
+}
 
+function setSliderPairDisplay(rangeId, numberId, value) {
+  const range = $('#' + rangeId);
+  const number = $('#' + numberId);
+  if (range) range.value = value;
+  if (number && document.activeElement !== number) number.value = value;
+}
+
+
+
+// Slider-pair numeric entry keeps exactly what the user types (including
+// intermediate text such as "2." or ""). Only a complete, in-bounds parse
+// becomes the committed value; incomplete text is never coerced to a number and
+// reaches the Scenario readiness gate as non-finite input instead.
+const SLIDER_PAIR_NUMBER_IDS = Object.freeze({
+  players: 'playersNum',
+  stack: 'stackNum',
+  ante: 'anteNum',
+  facingSize: 'facingSizeNum',
+  potSize: 'potSizeNum'
+});
+
+function readSliderPairDraft(number) {
+  if (!number) return { state: 'missing', value: null };
+  const text = String(number.value ?? '').trim();
+  if (number.validity?.badInput || text === '') return { state: 'incomplete', value: null };
+  const value = Number(text);
+  const min = number.min === '' ? Number.NaN : Number(number.min);
+  const max = number.max === '' ? Number.NaN : Number(number.max);
+  if (!Number.isFinite(value)
+    || (Number.isFinite(min) && value < min)
+    || (Number.isFinite(max) && value > max)) {
+    return { state: 'incomplete', value: null };
+  }
+  return { state: 'valid', value };
+}
+
+function sliderPairValue(rangeId, fallback) {
+  const draft = readSliderPairDraft($('#' + SLIDER_PAIR_NUMBER_IDS[rangeId]));
+  if (draft.state === 'incomplete') return Number.NaN;
+  if (draft.state === 'valid') return draft.value;
+  return numericValue('#' + rangeId, fallback);
+}
 
 function bindSliderPair(rangeId, numberId, callback) {
 
@@ -7628,6 +7819,7 @@ function bindSliderPair(rangeId, numberId, callback) {
   range.addEventListener('input', () => {
 
     number.value = range.value;
+    number.removeAttribute('aria-invalid');
 
     onInput();
 
@@ -7643,13 +7835,17 @@ function bindSliderPair(rangeId, numberId, callback) {
 
   range.addEventListener('change', () => {
     number.value = range.value;
+    number.removeAttribute('aria-invalid');
     onChange();
   });
 
   number.addEventListener('change', () => {
+    normalizeSliderPairDisplay(numberId);
     syncSliderPair(rangeId, numberId);
     onChange();
   });
+
+  number.addEventListener('blur', () => syncSliderPair(rangeId, numberId));
 
 }
 
@@ -12257,17 +12453,7 @@ function trainingContextPresentationAdapter(decisionContext) {
 }
 
 function formatTrainingFacingCopy(context) {
-  const callAmount = Number(context?.callAmountBb);
-  const facingSize = Number(context?.facingSizeBb);
-  if (Number.isFinite(callAmount) && callAmount > 0) {
-    const callCopy = t('{value} bb to call', { value: callAmount.toFixed(1) });
-    return Number.isFinite(facingSize) && Math.abs(facingSize - callAmount) > 0.001
-      ? t('Facing {value} bb · {callCopy}', { value: facingSize.toFixed(1), callCopy })
-      : callCopy;
-  }
-  return context?.street === 'preflop' && context?.heroPosition !== 'BB'
-    ? t('0.0 bb (Unopened)')
-    : t('0.0 bb (Free Check)');
+  return decisionFacingCopy(context);
 }
 
 function trainingActionLabel(type, decisionContext) {
@@ -12453,22 +12639,22 @@ function clearFullHandTrainingSizingControls({ clearSelection = true } = {}) {
 function fullHandSizingValidationCopy(validation, actionLabel, sizingModel) {
   const amount = fullHandBbLabel(validation?.amountToMilliBb);
   const messages = {
-    required: () => t('Enter an amount-to.'),
-    invalid_format: () => t('Use a numeric amount-to in bb.'),
+    required: () => t('Enter a size.'),
+    invalid_format: () => t('Use a number in bb.'),
     unsupported_precision: () => t('Use no more than three decimal places.'),
     action_unavailable: () => t('This action is no longer available.'),
-    below_minimum: () => t('Minimum amount-to is {amount}.', {
+    below_minimum: () => t('Minimum size is {amount}.', {
       amount: fullHandBbLabel(sizingModel.minToMilliBb),
     }),
-    above_maximum: () => t('Maximum amount-to is {amount}.', {
+    above_maximum: () => t('Maximum size is {amount}.', {
       amount: fullHandBbLabel(sizingModel.maxToMilliBb),
     }),
-    chip_unit_misaligned: () => t('Amount-to must use {step} increments.', {
+    chip_unit_misaligned: () => t('Size must use {step} increments.', {
       step: `${sizingModel.stepValueBb} bb`,
     }),
   };
   if (validation?.valid) {
-    return t('Legal amount-to: {amount}. Press Enter or choose {action}.', {
+    return t('Legal size: {amount}. Press Enter or choose {action}.', {
       amount,
       action: actionLabel,
     });
@@ -12522,7 +12708,7 @@ function renderFullHandTrainingSizingControls(actionType = app.training.fullHand
   input.max = sizing.maxValueBb;
   input.step = sizing.stepValueBb;
   input.value = sizing.initialValueBb;
-  input.setAttribute('aria-label', t('{action} amount-to in big blinds', { action: actionLabel }));
+  input.setAttribute('aria-label', t('{action} to, in big blinds', { action: actionLabel }));
   input.setAttribute('aria-describedby', `${boundsId} ${validationId}`);
   const unit = document.createElement('span');
   unit.textContent = 'bb';
@@ -12530,7 +12716,7 @@ function renderFullHandTrainingSizingControls(actionType = app.training.fullHand
   const submit = document.createElement('button');
   submit.type = 'button';
   submit.className = `ui-button ui-button--primary training-full-hand-sizing-submit training-action-button--${actionType}`;
-  submit.textContent = t('Apply amount-to');
+  submit.textContent = t('Apply');
   entry.append(label, amountControl, submit);
 
   const bounds = document.createElement('p');
@@ -12674,7 +12860,7 @@ function updateTrainingButtons(exercise) {
       : sizing?.boundsLabel;
     const sizingLabel = fullHand
       ? ['bet', 'raise'].includes(type)
-        ? t('Choose amount-to')
+        ? t('Choose size')
         : actionPresentation?.amount || fullHandTrainingActionDetail(type, exercise.legalActions)
       : boundsLabel || sizing?.amountLabel || '';
     const button = document.createElement('button');
@@ -12702,7 +12888,26 @@ function updateTrainingButtons(exercise) {
   });
   container.dataset.actionCount = String(container.childElementCount);
   container.hidden = false;
+  renderTrainingShortcutHint(container.childElementCount);
   clearFullHandTrainingSizingControls({ clearSelection: !fullHand });
+}
+
+// The hint lists exactly the number keys bound to the visible action buttons.
+function renderTrainingShortcutHint(actionCount) {
+  const help = $('#trainingShortcutHelp');
+  const range = $('#trainingShortcutRange');
+  if (!help || !range) return;
+  const count = Math.max(0, Math.min(6, Number(actionCount) || 0));
+  help.hidden = count === 0;
+  const first = document.createElement('kbd');
+  first.textContent = '1';
+  if (count <= 1) {
+    range.replaceChildren(first);
+    return;
+  }
+  const last = document.createElement('kbd');
+  last.textContent = String(count);
+  range.replaceChildren(first, document.createTextNode('-'), last);
 }
 
 function renderTrainingSource(exercise) {

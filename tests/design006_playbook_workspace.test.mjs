@@ -121,7 +121,8 @@ test('legal action UI is sourced from canonical specs with amount-to bounds', ()
   }
   assert.match(logic, /option\.minToMilliBb/);
   assert.match(logic, /option\.maxToMilliBb/);
-  assert.match(logic, /amount-to/);
+  // DECISION-INPUT-TRUTH-001: bounds stay wager-to totals, worded in plain poker terms.
+  assert.match(logic, /\{min\}–\{max\} bb total/);
   assert.match(logic, /callPlaybookStateBridge\('applyAction', type, amountToBb\)/);
 });
 

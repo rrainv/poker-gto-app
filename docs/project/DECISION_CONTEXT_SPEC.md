@@ -312,3 +312,51 @@ STRATEGY-REPAIR-001B may consume the new facts. It must do so explicitly and
 must not reinterpret the compatibility fields. Exact current-pot/SPR logic uses
 `currentPotBb`, never `potBb`; live-stack logic uses the explicit live/effective
 stack fields, never `stackBb`.
+
+## 10. Presentation consumers: facing wording and Replay stage facts
+
+`DECISION-INPUT-TRUTH-001` adds two read-only presentation projections. Neither
+changes DecisionContext, strategy input or canonical history.
+
+### Facing wording (`decision-facing-summary/v1`)
+
+`app/src/application/decision-facing-summary.mjs` classifies one DecisionContext
+from canonical facts only: `priorActionSummary` (`aggressionCount`,
+`aggressionFamily`, `facingActionFamily`, `limperCount`), `facingSizeBb`
+(wager-to), `callAmountBb` (exact stack-capped incremental call) and
+`heroStackBb`. It never recomputes an amount. Review and the Training "Facing"
+tile consume it.
+
+| Canonical facts | Kind | English line |
+| --- | --- | --- |
+| Voluntary wager on the street (bet/raise beyond blinds, straddles and antes), call > 0 | `facing_wager` | `BTN · facing 9 bb · 6 bb to call` |
+| As above, and the call commits all chips behind (`callAmountBb >= heroStackBb`) | `facing_wager`, `callIsAllIn` | `BTN · facing 10 bb · 5 bb to call (all-in)` |
+| Preflop, no voluntary wager, no limpers, call > 0 | `unopened` | `BTN · unopened · 1 bb to call` |
+| Preflop, no voluntary wager, `limperCount > 0` (or Scenario `limp`/`call`) | `limped` | `CO · limped · 1 bb to call` |
+| Preflop, no voluntary wager, call = 0 | `option` | `BB · option · check available` |
+| Postflop, no voluntary wager, nothing to call | `check_available` | `BTN · check available` |
+| Wager presence unknown, call > 0 | `price_only` | `BTN · 1 bb to call` |
+
+The facing size is printed only for a real voluntary wager; a blind-only spot
+never reads "facing 0 bb". Scenario contexts carry `callAmountBb = null` (§2), so
+the price reads "price unavailable" and is never fabricated from the nominal
+size. Without a position (the Training tile) the line starts with a capital
+letter. EN/RU/HE keys live under `facing.*`.
+
+### Replay stage facts (`replay-projection/v1.selectedStageFacts`)
+
+`replay-projection/v1` gains the additive `selectedStageFacts`, `null` at the
+live edge. Each immutable Replay frame computes its facts once, at capture, from
+that frame's PokerState: street, phase, terminal/showdown/pending-chance status,
+acting player (betting only), `potMilliBb`, `deductionTotalMilliBb`,
+`currentBetMilliBb`, the actor's call price from the canonical
+`getLegalActionSpec(state).call.commitMilliBb` (0 when no call is available,
+`null` outside betting), and the last action record. Seeking only selects a
+precomputed frame, so it performs no poker, strategy or Equity work.
+
+While Replay is read-only, the stage header (actor, pot, to call, last action)
+and the Current hand card (status, street, actor, pot, deductions, seat rows from
+the frame's `table-presence/v1`) read only these facts. Live values return when
+Replay returns to the live edge. Replaying a completed live hand offers the same
+Return control ("Return to completed hand"); the completion card reappears once
+Replay is left.

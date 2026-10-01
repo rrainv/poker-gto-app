@@ -79,6 +79,36 @@ Functionally correct state mutation is product-incomplete when the user cannot u
 
 Explanatory copy must earn its space. Do not present obvious invariants as product benefits, use defensive filler to compensate for unclear interaction, or expose raw enum, schema, state, or code-derived identifiers to users. Stable product vocabulary, capitalization, localization, and accessible error language are part of the interaction contract.
 
+### Numeric entry, readiness and status lines
+
+`DECISION-INPUT-TRUTH-001` codifies these rules for every typed numeric field
+paired with a slider, and for the readiness and status lines that describe them.
+
+- A field keeps exactly what the user types, including intermediate text such as
+  `2.`, `0.` or an empty field. Renderers and programmatic resets never rewrite a
+  focused field.
+- Only complete text that parses to a value within the field's bounds becomes the
+  committed value and moves the slider. Incomplete or out-of-bounds text is never
+  coerced, clamped or replaced by a fallback. It reaches the owning readiness
+  gate as an invalid value, so the result shows as not ready rather than as a
+  guessed number.
+- Leaving the field normalizes the display of a valid value (`2.50` becomes
+  `2.5`). Invalid text stays visible, is marked invalid and is described by the
+  readiness message.
+- Typing adds no strategy or Equity work beyond the surface's existing coalesced
+  update path.
+- Readiness messages name a field with its visible label (for example "Facing
+  size", "Pot before action"). They never use internal terms such as "amount to
+  call" for a field labelled otherwise. An edit action next to the message
+  focuses the first field the message names and scrolls it into view without
+  moving the rest of the page.
+- A status line about a draft or randomizer ("Random Flop ready.") describes one
+  pending stage. It clears when that draft is committed or cancelled, or when the
+  street or hand advances.
+- Sizing copy uses poker wording ("Raise to", "Bet size", "Apply"). Amounts stay
+  wager-to totals; internal terms such as "amount-to" are not user-facing.
+- A keyboard hint lists exactly the keys that are currently bound.
+
 ## Shared semantic vocabulary
 
 ### Hover, focus, tap, and inspect
