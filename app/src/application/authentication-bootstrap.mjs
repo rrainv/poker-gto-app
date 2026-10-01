@@ -220,7 +220,7 @@ function bindAuthenticationUi(browserWindow, service, gate) {
       document.querySelector('#settingsAccountDescription'),
       signedIn
         ? 'Study data is separated by this account on this device. Cloud sync is not enabled.'
-        : 'Your learning workspace is saved on this device.',
+        : 'Your learning workspace is saved on this device. Guest Home Game sessions are not kept after reload.',
     );
 
     document.querySelector('#accountGuestForms').hidden = signedIn

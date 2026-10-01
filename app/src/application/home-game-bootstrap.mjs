@@ -2,10 +2,15 @@ import {
   HOME_GAME_SESSION_STATUS,
   HOME_GAME_TRANSACTION_TYPES,
   formatMinorUnits,
-  parseMoneyToMinorUnits,
 } from '../home-game/index.mjs';
 import './authentication-bootstrap.mjs';
 import { createHomeGameApplication } from './home-game-service.mjs';
+import {
+  HOME_GAME_INPUT_MESSAGES,
+  createHomeGameDraftStore,
+  readHomeGameAmount,
+  readHomeGameChipCount,
+} from './home-game-amount-input.mjs';
 
 function translate(browserWindow, key, parameters = {}) {
   return typeof browserWindow.t === 'function' ? browserWindow.t(key, parameters) : key;
@@ -115,6 +120,12 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
   let draftRoster = [];
   let draftSourceGroupId = null;
   let editorOperation = null;
+  let editorValidate = null;
+  let pendingFocusKey = null;
+  let fieldErrorCount = 0;
+  const seatDrafts = createHomeGameDraftStore();
+  const fieldErrors = new WeakMap();
+  const formFieldErrors = new Set();
 
   function setError(error = null) {
     refs.error.hidden = !error;
@@ -143,13 +154,16 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     refs.actionStatus.textContent = messageKey ? translate(browserWindow, messageKey, parameters) : '';
   }
 
-  async function perform(operation, { successKey = null, successParameters = {} } = {}) {
+  async function perform(operation, { successKey = null, successParameters = {}, onSuccess = null } = {}) {
     if (busy) return;
+    // Captured before controls are disabled so the re-render can return focus.
+    pendingFocusKey = focusedControlKey();
     setError();
     setActionStatus();
     setBusy(true);
     try {
       state = await operation();
+      onSuccess?.();
       if (successKey) setActionStatus(successKey, successParameters);
       render();
     } catch (error) {
@@ -157,7 +171,69 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     } finally {
       setBusy(false);
       if (state) render();
+      pendingFocusKey = null;
     }
+  }
+
+  function focusedControlKey() {
+    const active = document.activeElement;
+    return active && refs.root.contains?.(active) ? active.dataset?.homeGameControl || null : null;
+  }
+
+  function restoreFocus(key) {
+    if (!key) return;
+    const active = document.activeElement;
+    // Only return focus that the re-render removed; never steal it from elsewhere.
+    if (active && active !== document.body && active.isConnected) return;
+    const target = [...refs.root.querySelectorAll('[data-home-game-control]')]
+      .find((node) => node.dataset.homeGameControl === key);
+    target?.focus({ preventScroll: true });
+  }
+
+  function captureScroll() {
+    const positions = [];
+    for (let node = refs.session.parentElement; node; node = node.parentElement) {
+      if (node.scrollTop) positions.push([node, node.scrollTop]);
+    }
+    const scroller = document.scrollingElement;
+    if (scroller && !positions.some(([node]) => node === scroller)) positions.push([scroller, scroller.scrollTop]);
+    return positions;
+  }
+
+  function restoreScroll(positions) {
+    positions.forEach(([node, top]) => { if (node.scrollTop !== top) node.scrollTop = top; });
+  }
+
+  // Inline validation belongs to the field; nothing is submitted while it shows.
+  function setFieldError(input, messageKey = null) {
+    let node = fieldErrors.get(input);
+    if (!messageKey) {
+      input.removeAttribute('aria-invalid');
+      if (node) {
+        node.hidden = true;
+        node.textContent = '';
+        delete node.dataset.messageKey;
+      }
+      return;
+    }
+    if (!node) {
+      node = element(document, 'span', 'home-game-field-error');
+      node.id = `homeGameFieldError${++fieldErrorCount}`;
+      node.setAttribute('role', 'alert');
+      input.parentElement.append(node);
+      fieldErrors.set(input, node);
+      input.setAttribute('aria-describedby', node.id);
+    }
+    node.dataset.messageKey = messageKey;
+    node.textContent = translate(browserWindow, messageKey);
+    node.hidden = false;
+    input.setAttribute('aria-invalid', 'true');
+  }
+
+  function setFormFieldError(input, messageKey = null) {
+    setFieldError(input, messageKey);
+    if (messageKey) formFieldErrors.add(input);
+    else formFieldErrors.delete(input);
   }
 
   function translatedLabel(key, forId, value = '') {
@@ -173,12 +249,13 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     return { label, input };
   }
 
-  function openEditor(title, body, operation, submitLabel = 'Save') {
+  function openEditor(title, body, operation, submitLabel = 'Save', { validate = null } = {}) {
     refs.editorTitle.textContent = translate(browserWindow, title);
     refs.editorBody.replaceChildren(body);
     refs.editorSubmit.textContent = translate(browserWindow, submitLabel);
     refs.editorSubmit.hidden = typeof operation !== 'function';
     editorOperation = operation;
+    editorValidate = validate;
     refs.editorDialog.showModal();
     refs.editorBody.querySelector('input, textarea, select, button')?.focus();
   }
@@ -215,11 +292,6 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
       item.original.playerId === playerId
       && item.original.type === HOME_GAME_TRANSACTION_TYPES.CASH_OUT
     )) || null;
-  }
-
-  function parseOptionalMoney(input, minorUnit = 2) {
-    const value = input.value.trim();
-    return value === '' ? 0 : parseMoneyToMinorUnits(value, minorUnit);
   }
 
   function money(amountMinor, currency = state.current?.session.currency) {
@@ -465,31 +537,63 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     }
   }
 
-  function addAmountAction(container, { label, type, participant, session, allowZero = false, handler }) {
-    const field = element(document, 'label', 'home-game-amount-field');
-    field.append(element(document, 'span', null, translate(browserWindow, label)));
+  // One seat field: typed text survives re-renders as an in-memory draft, Enter
+  // submits this field's own action, and invalid input stays inline.
+  function addSeatField(container, { field, label, buttonLabel = label, participant, session, step, inputMode, read, submit }) {
+    const { sessionId } = session;
+    const { playerId } = participant;
+    const wrapper = element(document, 'label', 'home-game-amount-field');
+    wrapper.append(element(document, 'span', null, translate(browserWindow, label)));
     const input = element(document, 'input', 'control-input');
     input.type = 'number';
     input.min = '0';
-    input.step = session.currency.minorUnit === 0 ? '1' : `0.${'0'.repeat(session.currency.minorUnit - 1)}1`;
-    input.inputMode = 'decimal';
-    input.setAttribute('aria-label', `${translate(browserWindow, label)}, ${playerName(state, participant.playerId)}`);
-    const button = element(document, 'button', 'ui-button ui-button--quiet', translate(browserWindow, label));
+    input.step = step;
+    input.inputMode = inputMode;
+    input.dataset.homeGameControl = `${field}:${playerId}:input`;
+    input.setAttribute('aria-label', `${translate(browserWindow, label)}, ${playerName(state, playerId)}`);
+    const button = element(document, 'button', 'ui-button ui-button--quiet', translate(browserWindow, buttonLabel));
     button.type = 'button';
-    button.addEventListener('click', () => {
-      let amountMinor;
-      try {
-        amountMinor = parseMoneyToMinorUnits(input.value || '0', session.currency.minorUnit);
-        if (amountMinor < (allowZero ? 0 : 1)) throw new RangeError(translate(browserWindow, 'Enter a valid amount.'));
-      } catch (error) {
-        setError(error);
+    button.dataset.homeGameControl = `${field}:${playerId}:submit`;
+    wrapper.append(input, button);
+    container.append(wrapper);
+    const draft = seatDrafts.get(sessionId, playerId, field);
+    if (draft?.value) input.value = draft.value;
+    if (draft?.error) setFieldError(input, draft.error);
+    input.addEventListener('input', () => {
+      seatDrafts.set(sessionId, playerId, field, { value: input.value, error: null });
+      setFieldError(input, null);
+    });
+    const submitField = () => {
+      const result = read(input);
+      if (!result.ok) {
+        seatDrafts.set(sessionId, playerId, field, { value: input.value, error: result.messageKey });
+        setFieldError(input, result.messageKey);
         input.focus();
         return;
       }
-      perform(() => handler({ sessionId: session.sessionId, playerId: participant.playerId, type, amountMinor }));
+      perform(() => submit(result), { onSuccess: () => seatDrafts.clear(sessionId, playerId, field) });
+    };
+    button.addEventListener('click', submitField);
+    input.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || event.isComposing) return;
+      event.preventDefault();
+      submitField();
     });
-    field.append(input, button);
-    container.append(field);
+  }
+
+  function addAmountAction(container, { field, label, type, participant, session, allowZero = false, handler }) {
+    const { minorUnit } = session.currency;
+    addSeatField(container, {
+      field,
+      label,
+      participant,
+      session,
+      step: minorUnit === 0 ? '1' : `0.${'0'.repeat(minorUnit - 1)}1`,
+      inputMode: 'decimal',
+      // An empty field is never read as zero; only a typed 0 may cash out.
+      read: (input) => readHomeGameAmount(input, { minorUnit, required: true, minimumMinor: allowZero ? 0 : 1 }),
+      submit: ({ amountMinor }) => handler({ sessionId: session.sessionId, playerId: participant.playerId, type, amountMinor }),
+    });
   }
 
   function renderParticipant(participant, bundle) {
@@ -515,6 +619,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     if (bundle.session.status === HOME_GAME_SESSION_STATUS.ACTIVE && participant.status !== 'cashed_out') {
       const actions = element(document, 'div', 'home-game-player-actions');
       addAmountAction(actions, {
+        field: 'money_in',
         label: result.totalInMinor === 0 ? 'Buy-in' : 'Rebuy',
         type: result.totalInMinor === 0 ? HOME_GAME_TRANSACTION_TYPES.BUY_IN : HOME_GAME_TRANSACTION_TYPES.REBUY,
         participant,
@@ -522,6 +627,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
         handler: (values) => bridge.addTransaction(values),
       });
       addAmountAction(actions, {
+        field: 'add_on',
         label: 'Add-on',
         type: HOME_GAME_TRANSACTION_TYPES.ADD_ON,
         participant,
@@ -529,29 +635,24 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
         handler: (values) => bridge.addTransaction(values),
       });
       addAmountAction(actions, {
+        field: 'cash_out',
         label: 'Cash out',
         participant,
         session: bundle.session,
         allowZero: true,
         handler: (values) => bridge.cashOut(values),
       });
-      const chipField = element(document, 'label', 'home-game-amount-field');
-      chipField.append(element(document, 'span', null, translate(browserWindow, 'Chips')));
-      const chipInput = element(document, 'input', 'control-input');
-      chipInput.type = 'number';
-      chipInput.min = '0';
-      chipInput.step = '1';
-      chipInput.inputMode = 'numeric';
-      chipInput.setAttribute('aria-label', `${translate(browserWindow, 'Chips')}, ${playerName(state, participant.playerId)}`);
-      const chipButton = element(document, 'button', 'ui-button ui-button--quiet', translate(browserWindow, 'Record chips'));
-      chipButton.type = 'button';
-      chipButton.addEventListener('click', () => {
-        const chipCount = Number(chipInput.value);
-        if (!Number.isSafeInteger(chipCount) || chipCount < 0) { setError(new RangeError(translate(browserWindow, 'Enter a whole chip count.'))); chipInput.focus(); return; }
-        perform(() => bridge.recordChipCount({ sessionId: bundle.session.sessionId, playerId: participant.playerId, chipCount }));
+      addSeatField(actions, {
+        field: 'chips',
+        label: 'Chips',
+        buttonLabel: 'Record chips',
+        participant,
+        session: bundle.session,
+        step: '1',
+        inputMode: 'numeric',
+        read: readHomeGameChipCount,
+        submit: ({ chipCount }) => bridge.recordChipCount({ sessionId: bundle.session.sessionId, playerId: participant.playerId, chipCount }),
       });
-      chipField.append(chipInput, chipButton);
-      actions.append(chipField);
       card.append(actions);
     } else if (participant.status === 'cashed_out') {
       const finalState = element(document, 'div', 'home-game-final-state-actions');
@@ -599,6 +700,24 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     const reason = translatedLabel('Reason (optional)', 'homeGameCorrectionReason');
     reason.input.maxLength = 500;
     body.append(summary, replacement.label, reason.label);
+    replacement.input.addEventListener('input', () => setFieldError(replacement.input, null));
+    // Empty means reversal only; anything typed must be a valid positive amount.
+    let replacementAmountMinor = null;
+    const validate = () => {
+      const result = readHomeGameAmount(replacement.input, {
+        minorUnit: bundle.session.currency.minorUnit,
+        required: false,
+        minimumMinor: 1,
+        belowMinimumMessage: HOME_GAME_INPUT_MESSAGES.REPLACEMENT_POSITIVE,
+      });
+      if (!result.ok) {
+        setFieldError(replacement.input, result.messageKey);
+        replacement.input.focus();
+        return false;
+      }
+      replacementAmountMinor = result.amountMinor;
+      return true;
+    };
     openEditor('Correct ledger entry', body, async () => {
       const accepted = await confirmAction({
         title: 'Confirm correction?',
@@ -606,16 +725,13 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
         confirmLabel: 'Correct entry',
       });
       if (!accepted) return state;
-      const replacementAmountMinor = replacement.input.value.trim() === ''
-        ? null
-        : parseMoneyToMinorUnits(replacement.input.value, bundle.session.currency.minorUnit);
       return bridge.correctTransaction({
         sessionId: bundle.session.sessionId,
         transactionId: item.original.transactionId,
         replacementAmountMinor,
         note: reason.input.value.trim() || null,
       });
-    }, 'Correct entry');
+    }, 'Correct entry', { validate });
   }
 
   function openCorrectionEntryChooser(bundle) {
@@ -638,6 +754,7 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
       );
       choose.addEventListener('click', () => {
         editorOperation = null;
+        editorValidate = null;
         refs.editorDialog.close('select');
         openCorrectionEditor(item, bundle);
       });
@@ -753,6 +870,14 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
         'This session is now read-only and remains in Recent Sessions. Review settlement and histories below, export it, or reopen it deliberately to make a correction.')));
       panel.append(completion);
     }
+    // Drafts end with the session or the seat's ability to act.
+    if (bundle.session.status === HOME_GAME_SESSION_STATUS.ACTIVE) {
+      seatDrafts.retain(bundle.session.sessionId, bundle.session.participants
+        .filter((participant) => participant.status !== 'cashed_out')
+        .map((participant) => participant.playerId));
+    } else {
+      seatDrafts.clearSession(bundle.session.sessionId);
+    }
     const grid = element(document, 'div', 'home-game-player-grid');
     bundle.session.participants.forEach((participant) => grid.append(renderParticipant(participant, bundle)));
     panel.append(grid);
@@ -827,27 +952,43 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
 
   function render() {
     if (!state) return;
+    const focusKey = pendingFocusKey || focusedControlKey();
+    const scroll = captureScroll();
     const guest = state.persistence === 'guest_memory';
+    // Sign-in, sign-out and identity switches never carry typed amounts across owners.
+    seatDrafts.setOwnerScope(`${state.persistence}:${state.ownerId || ''}`);
     refs.persistence.textContent = translate(browserWindow, guest ? 'Guest · in-memory only' : 'Account · saved on this device');
     refs.persistence.className = `status-badge ${guest ? 'status-badge--warning' : 'status-badge--available'}`;
     refs.notice.hidden = false;
     refs.notice.textContent = translate(browserWindow, guest
-      ? 'Guest sessions stay only in this browser session. Sign in before starting a game you want to keep.'
+      ? 'Guest sessions are not kept after reload. Sign in before starting a game you want to keep.'
       : 'Home Game data is private and stored locally for this account. Cloud sync is not enabled yet.');
+    // Saved players, groups, archives and the player library need an account;
+    // Guest sees one explanation in Saved Groups instead of inert controls.
     refs.saveGroup.disabled = guest;
     refs.groupName.disabled = guest || !refs.saveGroup.checked;
+    refs.saveGroup.closest('label').hidden = guest;
+    refs.groupName.closest('label').hidden = guest;
     refs.accountRoster.hidden = guest;
     refs.guestRoster.hidden = !guest;
     refs.newGroup.hidden = guest;
+    refs.showArchivedGroups.closest('label').hidden = guest;
+    refs.showArchivedSessions.closest('label').hidden = guest;
     refs.newPlayer.closest('details').hidden = guest;
     if (!guest) {
       renderRosterChoices();
       renderRoster();
     }
+    formFieldErrors.forEach((input) => {
+      const node = fieldErrors.get(input);
+      if (node?.dataset.messageKey) node.textContent = translate(browserWindow, node.dataset.messageKey);
+    });
     renderGroups();
     renderRecent();
     renderPlayers();
     renderSession();
+    restoreScroll(scroll);
+    restoreFocus(focusKey);
   }
 
   refs.saveGroup.addEventListener('change', () => { refs.groupName.disabled = !refs.saveGroup.checked || state?.persistence === 'guest_memory'; });
@@ -878,24 +1019,37 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
   refs.showArchivedSessions.addEventListener('change', renderRecent);
   refs.editorForm.addEventListener('submit', (event) => {
     event.preventDefault();
+    // A failed validation keeps the editor open with its inline message.
+    if (editorValidate && !editorValidate()) return;
     const operation = editorOperation;
     editorOperation = null;
+    editorValidate = null;
     refs.editorDialog.close();
     if (operation) perform(operation);
   });
   refs.editorDialog.querySelectorAll('[data-home-game-close]').forEach((button) => button.addEventListener('click', () => refs.editorDialog.close('cancel')));
+  const optionalFormAmounts = [refs.buyIn, refs.smallBlind, refs.bigBlind, refs.ante];
+  optionalFormAmounts.forEach((input) => input.addEventListener('input', () => setFormFieldError(input, null)));
   refs.form.addEventListener('submit', (event) => {
     event.preventDefault();
-    let buyInMinor;
-    let blinds;
-    try {
-      buyInMinor = parseMoneyToMinorUnits(refs.buyIn.value || '0', 2);
-      const smallBlindMinor = parseOptionalMoney(refs.smallBlind);
-      const bigBlindMinor = parseOptionalMoney(refs.bigBlind);
-      const anteMinor = parseOptionalMoney(refs.ante);
-      blinds = smallBlindMinor || bigBlindMinor || anteMinor ? { smallBlindMinor, bigBlindMinor, anteMinor } : null;
-      if (state.persistence === 'account_local' && draftRoster.length < 2) throw new RangeError(translate(browserWindow, 'Add at least two players.'));
-    } catch (error) { setError(error); refs.buyIn.focus(); return; }
+    // These amounts are optional: empty means none, but invalid text never
+    // becomes zero and blocks the session from starting.
+    const [buyIn, smallBlind, bigBlind, ante] = optionalFormAmounts.map((input) => {
+      const result = readHomeGameAmount(input, { minorUnit: 2, required: false, minimumMinor: 0 });
+      setFormFieldError(input, result.ok ? null : result.messageKey);
+      return result;
+    });
+    const invalidIndex = [buyIn, smallBlind, bigBlind, ante].findIndex((result) => !result.ok);
+    if (invalidIndex >= 0) { optionalFormAmounts[invalidIndex].focus(); return; }
+    const buyInMinor = buyIn.amountMinor ?? 0;
+    const smallBlindMinor = smallBlind.amountMinor ?? 0;
+    const bigBlindMinor = bigBlind.amountMinor ?? 0;
+    const anteMinor = ante.amountMinor ?? 0;
+    const blinds = smallBlindMinor || bigBlindMinor || anteMinor ? { smallBlindMinor, bigBlindMinor, anteMinor } : null;
+    if (state.persistence === 'account_local' && draftRoster.length < 2) {
+      setError(new RangeError(translate(browserWindow, 'Add at least two players.')));
+      return;
+    }
     perform(() => bridge.createSession({
       title: refs.title.value,
       currencyCode: refs.currency.value,

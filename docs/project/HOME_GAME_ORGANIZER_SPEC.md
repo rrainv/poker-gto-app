@@ -1,6 +1,6 @@
 # Riverline Home Game Organizer specification
 
-Status: `HOME-GAME-001B` accepted implementation checkpoint; Core Flow cash-out correction is completed / human accepted; broader manual Firefox/provider acceptance debt remains
+Status: `HOME-GAME-001B` accepted implementation checkpoint; Core Flow cash-out correction is completed / human accepted; `HOMEGAME-LEDGER-INPUT-001` amount validation, seat drafts and Guest truth are implemented with human acceptance pending; a correctable zero cash-out awaits a persisted-format decision (`QA-HOME-GAME-INPUT-004`); broader manual Firefox/provider acceptance debt remains
 Date: August 27, 2026
 
 ## Purpose and boundary
@@ -54,7 +54,7 @@ Physical storage adds repository-only ledger sequence so equal timestamps reload
 
 `sessionBalance = total cash-outs - total money in = sum(participant net)`. A session balances only at exactly zero minor units. No tolerance is needed and no discrepancy is distributed.
 
-Lifecycle is `draft -> active -> completed`, with deliberate `completed -> active` reopen. Completion requires every active participant to be explicitly cashed out/inactive, exact balance, and computable settlement. Completed sessions reject edits. Reopen increments revision, clears `endedAt`, appends a lifecycle event, and preserves the ledger without duplicating transactions. Completed sessions may be archived and restored; an archived session remains inspectable/exportable and must be restored before reopen. A zero cash-out uses explicit participant state without a meaningless zero ledger entry.
+Lifecycle is `draft -> active -> completed`, with deliberate `completed -> active` reopen. Completion requires every active participant to be explicitly cashed out/inactive, exact balance, and computable settlement. Completed sessions reject edits. Reopen increments revision, clears `endedAt`, appends a lifecycle event, and preserves the ledger without duplicating transactions. Completed sessions may be archived and restored; an archived session remains inspectable/exportable and must be restored before reopen. A zero cash-out uses explicit participant state without a meaningless zero ledger entry. Only an explicitly entered `0` records it; an empty or invalid field records nothing. Because v1 ledger amounts are at least one minor unit and a correction must reverse an existing ledger entry, a zero cash-out has no ledger row, is not offered by `Correct entries`, and cannot currently be reversed. Making it correctable needs an approved persisted-format or correction-semantics decision (`QA-HOME-GAME-INPUT-004`); account sessions may already contain such final states, including ones caused by the former empty-field defect, and are not rewritten.
 
 Settlement orders creditors and debtors by stable participant order. A two-pointer pass transfers the smaller remaining claim/obligation and advances exhausted sides. It is deterministic and uses at most `debtors + creditors - 1` transfers. Tests prove positive debtor-to-creditor transfers, exhausted claims, conserved total, zero-result omission, and explicit `unbalanced_session` failure.
 
@@ -69,13 +69,19 @@ Guest semantics are explicit:
 - Guests may run a complete session in a runtime memory adapter.
 - Guests never query a persistent identity and cannot save reusable groups.
 - IndexedDB rejects a Guest owner, so there is no silent durable Guest history.
-- Guest data disappears with the runtime. Sign-in selects the account scope; automatic adoption of an in-progress Guest session is not implemented.
+- Guest data disappears with the runtime, including a page reload. Sign-in selects the account scope; automatic adoption of an in-progress Guest session is not implemented.
+- Guest presentation says so plainly: the workspace notice states that Guest sessions are not kept after reload, and the Guest description in Settings › Account & Data adds the same Home Game exception to the generic "saved on this device" copy. Other domains' Guest copy and storage are unchanged.
+- Account-only controls (saved-player roster, groups, Save Group / Group name, archive toggles and the Player Library) are hidden for Guest; Saved Groups shows one explanatory line instead. Workspace `[hidden]` is authoritative over component display rules, so no hidden control can reappear as a dead control.
 
 Home Game financial data is private and local. There is no upload, telemetry, public sharing, or sync. Later sync must use an approved domain adapter behind SyncCoordinator and preserve immutable ledger/correction history.
 
 ## Manageable web workspace
 
 The top-level workspace provides Guest/account storage status; New Session with reusable players/groups, reorderable seats, currency, optional blinds/ante, initial buy-in and optional account-only group; Saved Groups and Recent Sessions; participant Total in/Cash out/Chips plus textual Receives/Owes/Even; Rebuy, Add-on, Cash out and chip snapshots; balance status; guarded completion; settlement; and deliberate reopen.
+
+Every Home Game amount field is read as exact text and never defaults to zero. Seat Buy-in/Rebuy, Add-on and Cash out require an entered amount (Cash out alone accepts an explicit `0`); Chips requires a whole count; a correction replacement may be empty (reversal only) but otherwise must be positive; New Session initial buy-in and blinds are optional (empty means none) but reject invalid text. An empty, non-numeric, negative, over-precise or below-minimum value shows an inline message on that field (`role="alert"`, `aria-invalid`), keeps any open editor open, and changes nothing. Enter in a seat field submits that field's own action through the same validation.
+
+Typed-but-unsubmitted seat amounts are in-memory drafts keyed by session, participant and field. They survive the re-render that follows any action, are cleared when their action succeeds, when the seat is cashed out, when the session is no longer active, and on any owner change (sign-in, sign-out, identity switch); they are never persisted. Re-rendering restores the focused control and scroll position. This is presentation state only and never reaches the ledger.
 
 An active session exposes `Correct entries` as the obvious ledger-level entry point over every still-eligible buy-in, rebuy, add-on, and cash-out. The user selects an existing transaction and reaches the same correction editor and explicit immutable-reversal confirmation; the local `Correct cash-out` shortcut may remain beside `Final cash-out recorded`. Replacement amount and user reason/note are independently optional: a supplied replacement appends atomically with the reversal, an omitted replacement appends only the reversal, a supplied reason persists normally, and an omitted reason remains `null` without invented canonical prose. The original entry remains visible in ledger history, corrected transactions are not offered again, and completed sessions remain read-only until deliberate reopen. This is presentation/application routing over the existing ledger authority, not a second correction model.
 

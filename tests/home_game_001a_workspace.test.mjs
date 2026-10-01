@@ -108,10 +108,11 @@ test('workspace command flow exposes truthful balance, completion, settlement, a
 });
 
 test('Home Game proof surface is top-level, responsive, accessible, localized, and ledger-driven', async () => {
-  const [html, css, bootstrap, service, translations, i18n] = await Promise.all([
+  const [html, css, bootstrap, amountInput, service, translations, i18n] = await Promise.all([
     readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/home-game-bootstrap.mjs', import.meta.url), 'utf8'),
+    readFile(new URL('../app/src/application/home-game-amount-input.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/home-game-service.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/home-game-translations.js', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8'),
@@ -124,7 +125,10 @@ test('Home Game proof surface is top-level, responsive, accessible, localized, a
   assert.match(css, /\.home-game-layout[\s\S]*?grid-template-columns/);
   assert.match(css, /@media \(max-width: 1280px\)/);
   assert.match(css, /border-inline-start|padding-inline-start/);
-  assert.match(bootstrap, /parseMoneyToMinorUnits/);
+  // Money fields are read only through the exact decimal parser (HOMEGAME-LEDGER-INPUT-001 moved it to one module).
+  assert.match(bootstrap, /from '\.\/home-game-amount-input\.mjs'/);
+  assert.match(amountInput, /parseMoneyToMinorUnits/);
+  assert.doesNotMatch(`${bootstrap}\n${amountInput}`, /parseFloat|Number\(input\.value\)/);
   assert.match(bootstrap, /Receives \{amount\}|Owes \{amount\}/);
   assert.doesNotMatch(`${bootstrap}\n${service}`, /StrategyProvider|PokerState|DecisionContext|Equity|SavedStudyObject|personal-strategy/);
   assert.match(i18n, /riverlineHomeGameTranslations/);

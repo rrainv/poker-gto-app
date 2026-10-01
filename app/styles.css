@@ -307,6 +307,11 @@
 .home-game-amount-field { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2); align-items: end; }
 .home-game-amount-field > span { grid-column: 1 / -1; color: var(--text-muted); font-size: var(--text-micro-size); }
 .home-game-amount-field .control-input { min-width: 0; }
+/* Component display rules (grid/flex/ui-button) must not resurrect hidden
+   account-only controls or a hidden dialog action. */
+.home-game-workspace [hidden] { display: none !important; }
+.home-game-field-error { grid-column: 1 / -1; color: var(--danger); font-size: var(--text-micro-size); font-weight: 700; line-height: 1.4; }
+.home-game-workspace .control-input[aria-invalid="true"] { border-color: var(--danger); }
 .home-game-final-state { margin: var(--space-3) 0 0; color: var(--text-muted); font-size: var(--text-label-size); }
 .home-game-final-state-actions {
   display: flex;
