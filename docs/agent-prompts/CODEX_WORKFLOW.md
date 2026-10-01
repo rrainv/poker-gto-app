@@ -106,6 +106,14 @@ The human reviews and commits after acceptance. See `../project/GIT_WORKFLOW.md`
 
 Documentation movement follows `../project/DOCUMENTATION_GOVERNANCE.md`: a tiny patch with no product-state change needs no Roadmap churn, while an accepted checkpoint or reprioritization updates every affected live planning document in the same ticket.
 
+### Windows / Git Bash pitfalls
+
+The repository is LF-only (`.gitattributes`: `* text=auto eol=lf`), but Git for Windows ships `core.autocrlf=true`, which can hide line-ending churn until a source-matching test fails.
+
+- Write scripts and multi-line content with the file-write/edit tools, not shell heredocs or PowerShell here-strings; those silently pick the shell's line endings and quoting.
+- Never convert line endings (no `unix2dos`/`dos2unix`, `sed -i` rewrites, editor "change EOL", `git add --renormalize`, or `git checkout` refreshes) unless the ticket owns it.
+- Before reporting, run `git diff --stat`: a file showing every line changed for a small edit is line-ending churn. Fix it before reporting; `git ls-files --eol <file>` shows index/working-tree endings.
+
 ## 5. Tests
 
 Verification follows the execution level in section 3. Ordinary iterations and normal bounded reports do not require the full gate.

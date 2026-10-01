@@ -6,6 +6,9 @@
   "main": "main.js",
   "author": "Riverline Development Team",
   "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "electron .",
     "electron": "electron .",

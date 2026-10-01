@@ -1,0 +1,42 @@
+# Line endings: the index and every working tree use LF, on every platform.
+# This overrides a system-level core.autocrlf=true (Git for Windows default),
+# which otherwise checks text files out as CRLF and lets editors write mixed
+# endings that break source-matching tests.
+* text=auto eol=lf
+
+# Binary assets: never normalize, never diff as text.
+# Images
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.icns  binary
+# Fonts
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.eot   binary
+# Audio / video
+*.ogg   binary
+*.mp3   binary
+*.wav   binary
+*.m4a   binary
+*.mp4   binary
+*.webm  binary
+# Compiled / model artifacts
+*.wasm  binary
+*.onnx  binary
+*.pt    binary
+*.bin   binary
+*.dat   binary
+# Archives / installers
+*.zip   binary
+*.gz    binary
+*.tgz   binary
+*.7z    binary
+*.exe   binary
+*.dll   binary
+*.pdf   binary

@@ -7,11 +7,30 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-test('expanded Explain owns pointer hit testing, wheel scroll, and nested controls', () => {
+
+// The electron package records its platform binary in path.txt; RIVERLINE_ELECTRON_BINARY
+// overrides it (set it to a missing path to exercise the skip below).
+function electronBinary() {
+  if (process.env.RIVERLINE_ELECTRON_BINARY) return process.env.RIVERLINE_ELECTRON_BINARY;
+  const pkg = path.join(root, 'node_modules', 'electron');
+  const recorded = path.join(pkg, 'path.txt');
+  const relative = fs.existsSync(recorded) ? fs.readFileSync(recorded, 'utf8').trim()
+    : process.platform === 'win32' ? 'electron.exe' : 'electron';
+  return path.join(pkg, 'dist', relative);
+}
+
+const electron = electronBinary();
+const skip = !fs.existsSync(electron)
+  ? `Electron binary unavailable at ${electron} (run npm ci at the repository root)`
+  : process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY
+    ? 'no display available for Electron (DISPLAY/WAYLAND_DISPLAY unset)'
+    : false;
+
+test('expanded Explain owns pointer hit testing, wheel scroll, and nested controls', { skip }, () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'riverline-explain-panel-'));
   const resultPath = path.join(temp, 'result.json');
   const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
-  const run = spawnSync(path.join(root, 'node_modules', 'electron', 'dist', 'electron.exe'), [
+  const run = spawnSync(electron, [
     path.join(root, 'tests', 'tooling', 'explain_panel_interaction001_worker.cjs'),
     `--user-data=${path.join(temp, 'user-data')}`, `--result=${resultPath}`
   ], { cwd: root, env, encoding: 'utf8', timeout: 30_000 });
