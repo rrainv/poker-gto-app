@@ -5082,10 +5082,11 @@ function renderActiveHandReview() {
   const sourceLabel = decision.strategyResult
     ? strategySourceDisplayLabel(decision.strategyResult)
     : strategySourceDisplayLabel(decision.source.id);
+  const sourceKey = strategySourceDisplayKey(decision.strategyResult || decision.source.id);
   if ($('#handReviewSourceBadge')) $('#handReviewSourceBadge').textContent = sourceLabel;
   if (model.source === 'training_full_hand') {
     if ($('#trainingStrategySource')) {
-      $('#trainingStrategySource').textContent = sourceLabel;
+      setSourceClaimText($('#trainingStrategySource'), sourceKey);
       $('#trainingStrategySource').className = 'badge status-badge status-badge--info';
     }
     if ($('#trainingReferenceSummaryTitle')) {
@@ -5093,18 +5094,16 @@ function renderActiveHandReview() {
       $('#trainingReferenceSummaryTitle').dataset.i18n = sourceTitle;
       $('#trainingReferenceSummaryTitle').textContent = t(sourceTitle);
     }
-    if ($('#trainingReferenceSummaryValue')) {
-      $('#trainingReferenceSummaryValue').textContent = sourceLabel;
-    }
+    setSourceClaimText($('#trainingReferenceSummaryValue'), sourceKey);
     if ($('#trainingReferenceSummaryNote')) {
-      $('#trainingReferenceSummaryNote').textContent = [
+      setSourceClaimText($('#trainingReferenceSummaryNote'), null, [
         reviewComparisonLabel(decision.comparison),
         t({
           exact: 'Exact covered context',
           generalized: 'Generalized context',
           unsupported: 'Unsupported context',
         }[decision.source.coverage] || 'Unsupported context'),
-      ].join(' · ');
+      ].join(' · '));
     }
   }
   renderHandReviewFrequencyComparison(decision);
@@ -6590,12 +6589,26 @@ function renderFrequencyStack(container, actions) {
   container.classList.toggle('is-empty', populated.length === 0);
 }
 
-function strategySourceDisplayLabel(source) {
+function strategySourceDisplayKey(source) {
   const result = source && typeof source === 'object' ? source : null;
   const sourceId = result?.source || source;
   const descriptor = result?.sourceDescriptor
     || requireStrategyProviderBridge().sourceDescriptorFor(sourceId);
-  return t(descriptor?.displayNameKey || descriptor?.displayName || String(sourceId || 'Unavailable'));
+  return descriptor?.displayNameKey || descriptor?.displayName || String(sourceId || 'Unavailable');
+}
+
+function strategySourceDisplayLabel(source) {
+  return t(strategySourceDisplayKey(source));
+}
+
+// Source surfaces ship a static data-i18n placeholder. Writing a claim rebinds
+// that key (or drops it for composed text, which its owner re-renders) so a
+// language switch re-translates the claim instead of restoring the placeholder.
+function setSourceClaimText(element, key, text = t(key)) {
+  if (!element) return;
+  if (key) element.dataset.i18n = key;
+  else delete element.dataset.i18n;
+  element.textContent = text;
 }
 
 function strategyClaimPolicy(strategyResult) {
@@ -9493,7 +9506,15 @@ function refreshLocalizedTrainingRuntime() {
   }
   if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
   if (trainingSessionMode() === 'full_hand' && app.training.fullHandSnapshot) {
+    const reviewOpen = app.handReview.source === 'training_full_hand' && app.handReview.model;
     renderFullHandTrainingSnapshot(app.training.fullHandSnapshot);
+    if (reviewOpen) {
+      // Keep an open review open; re-render it from its existing model only.
+      setFullHandTrainingPhase('review');
+      if ($('#trainingExerciseSurface')) $('#trainingExerciseSurface').hidden = false;
+      dispatchFullHandTrainingTable(app.training.fullHandSnapshot, { review: true });
+      renderActiveHandReview();
+    }
     return;
   }
   renderTrainingCards();
@@ -9513,6 +9534,16 @@ function refreshLocalizedTrainingRuntime() {
     showTrainingSolution(app.training.currentSolution);
     renderTrainingDecisionAnalysis(exercise);
   }
+}
+
+// Mirrors authentication-owner-change.mjs: a repeated authchange for the same
+// owner is not an owner change; events without an ownerKey always clear.
+let lastAuthenticationOwnerKey;
+function authenticationOwnerChanged(event) {
+  const ownerKey = event?.detail?.ownerKey;
+  if (typeof ownerKey === 'string' && ownerKey === lastAuthenticationOwnerKey) return false;
+  lastAuthenticationOwnerKey = ownerKey;
+  return true;
 }
 
 function refreshLocalizedRuntime() {
@@ -9624,6 +9655,7 @@ function init() {
       }
     });
     window.addEventListener('riverline:authchange', (event) => {
+      if (!authenticationOwnerChanged(event)) return;
       scheduleHomeRefresh({ clearPrivateState: true });
       clearTrainingMemoryOwnerPresentation();
       if (['signed_in', 'guest'].includes(event.detail?.status) && $('#trainingMemoryPanel')?.open) {
@@ -12545,7 +12577,7 @@ function clearTrainingExercisePresentation() {
   if ($('#trainingActionHistory')) $('#trainingActionHistory').innerHTML = `<li class="is-empty">${t('Generating a new canonical trajectory.')}</li>`;
   if ($('#trainingCurrentActor')) $('#trainingCurrentActor').textContent = t('No decision loaded.');
   if ($('#trainingStrategySource')) {
-    $('#trainingStrategySource').textContent = t('Source pending');
+    setSourceClaimText($('#trainingStrategySource'), 'Source pending');
     $('#trainingStrategySource').className = 'badge status-badge status-badge--info';
   }
   ['#trainingCurrentSeed', '#trainingExerciseId', '#trainingGenerationAttempts', '#trainingTrajectoryLength', '#trainingGenerationPolicy']
@@ -12915,7 +12947,8 @@ function renderTrainingSource(exercise) {
   const policy = trainingTruth(null, exercise).claimPolicy;
   const sourceElement = $('#trainingStrategySource');
   if (!sourceElement) return;
-  const label = strategySourceDisplayLabel(strategyResult || 'unavailable');
+  const labelKey = strategySourceDisplayKey(strategyResult || 'unavailable');
+  const label = t(labelKey);
   const policyLimitation = policy.primaryLimitation?.priority >= 70
     ? localizedStrategyLimitation(policy)
     : '';
@@ -12930,7 +12963,7 @@ function renderTrainingSource(exercise) {
     app.training.memoryRedrillNote,
     policyLimitation,
   ].filter(Boolean).join(' ');
-  sourceElement.textContent = label;
+  setSourceClaimText(sourceElement, labelKey);
   sourceElement.title = [
     t('Strategy source: {source}. Exercise seed {seed}.', { source: label, seed: exercise.seed }),
     strategyPolicySummary(policy),
@@ -12945,12 +12978,10 @@ function renderTrainingSource(exercise) {
   const referenceValue = $('#trainingReferenceSummaryValue');
   const referenceNote = $('#trainingReferenceSummaryNote');
   if (referenceValue) {
-    referenceValue.textContent = label;
+    setSourceClaimText(referenceValue, labelKey);
     referenceValue.dataset.sourceFamily = policy.source.family;
   }
-  if (referenceNote) {
-    referenceNote.textContent = [strategyPolicySummary(policy), comparisonLabel].filter(Boolean).join(' · ');
-  }
+  setSourceClaimText(referenceNote, null, [strategyPolicySummary(policy), comparisonLabel].filter(Boolean).join(' · '));
   const limitationElement = $('#trainingSourceLimitation');
   if (limitationElement) {
     limitationElement.textContent = limitation;
@@ -12993,7 +13024,7 @@ function renderTrainingGenerationError(error) {
   }
   const sourceElement = $('#trainingStrategySource');
   if (sourceElement) {
-    sourceElement.textContent = t('Source unavailable');
+    setSourceClaimText(sourceElement, 'Source unavailable');
     sourceElement.className = 'badge status-badge status-badge--warning';
   }
   if ($('#trainingSourceLimitation')) $('#trainingSourceLimitation').hidden = true;
@@ -13581,19 +13612,15 @@ function renderFullHandAwaitingHero(snapshot) {
     $('#trainingInstruction').textContent = t('Hero to act. Choose one legal action; the same Hand continues automatically.');
   }
   if ($('#trainingStrategySource')) {
-    $('#trainingStrategySource').textContent = t('Hidden until review');
+    setSourceClaimText($('#trainingStrategySource'), 'Hidden until review');
     $('#trainingStrategySource').className = 'badge status-badge status-badge--info';
   }
   if ($('#trainingReferenceSummaryTitle')) {
     $('#trainingReferenceSummaryTitle').dataset.i18n = 'Strategy source';
     $('#trainingReferenceSummaryTitle').textContent = t('Strategy source');
   }
-  if ($('#trainingReferenceSummaryValue')) {
-    $('#trainingReferenceSummaryValue').textContent = t('Hidden until review');
-  }
-  if ($('#trainingReferenceSummaryNote')) {
-    $('#trainingReferenceSummaryNote').textContent = t('Comparison and source details are available after the Hand in Review.');
-  }
+  setSourceClaimText($('#trainingReferenceSummaryValue'), 'Hidden until review');
+  setSourceClaimText($('#trainingReferenceSummaryNote'), 'Comparison and source details are available after the Hand in Review.');
   if ($('#trainingSourceLimitation')) $('#trainingSourceLimitation').hidden = true;
   if ($('#trainingSolution')) $('#trainingSolution').hidden = true;
   if ($('#trainingFeedback')) $('#trainingFeedback').hidden = true;

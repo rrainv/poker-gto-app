@@ -4,6 +4,7 @@ import {
   formatMinorUnits,
 } from '../home-game/index.mjs';
 import './authentication-bootstrap.mjs';
+import { createAuthenticationOwnerChangeGuard } from './authentication-owner-change.mjs';
 import { createHomeGameApplication } from './home-game-service.mjs';
 import {
   HOME_GAME_INPUT_MESSAGES,
@@ -1071,7 +1072,8 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
 
   const refresh = () => perform(() => bridge.load());
   browserWindow.addEventListener('riverline:languagechange', () => render());
-  browserWindow.addEventListener('riverline:authchange', refresh);
+  const authenticationOwnerChanged = createAuthenticationOwnerChangeGuard();
+  browserWindow.addEventListener('riverline:authchange', (event) => { if (authenticationOwnerChanged(event)) refresh(); });
   browserWindow.addEventListener('riverline:identitychange', refresh);
   void refresh();
   return Object.freeze({ refresh, render: () => render(), getState: () => state });

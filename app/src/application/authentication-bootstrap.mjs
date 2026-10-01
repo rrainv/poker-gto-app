@@ -7,6 +7,7 @@ import './account-identity-bootstrap.mjs';
 import { createSupabaseAccountProfileRepository } from '../account-profile/index.mjs';
 import { createAuthenticationService } from './authentication-service.mjs';
 import { createPersistentIdentityGate } from './persistent-identity-gate.mjs';
+import { authenticationOwnerKey } from './authentication-owner-change.mjs';
 
 function translated(key) {
   return globalThis.t?.(key) ?? key;
@@ -82,7 +83,7 @@ function initials(value) {
   return (characters[0] || 'G').toLocaleUpperCase();
 }
 
-function bindAuthenticationUi(browserWindow, service, gate) {
+export function bindAuthenticationUi(browserWindow, service, gate) {
   const document = browserWindow.document;
   const accountModal = document.querySelector('#accountProfileModal');
   const linkModal = cloneLinkModal(browserWindow);
@@ -248,8 +249,18 @@ function bindAuthenticationUi(browserWindow, service, gate) {
     if (state.status === 'link_choice_required') openLink(state);
     else if (state.status !== 'transitioning') closeLink();
     if (state.status === 'recovery_required' && accountModal?.hidden) openAccount();
+  }
+
+  // Only authentication state changes publish. A language re-render is
+  // presentation and must never look like an owner change to consumers.
+  function renderAndPublish(state) {
+    render(state);
     browserWindow.dispatchEvent(new CustomEvent('riverline:authchange', {
-      detail: { status: state.status, signedIn },
+      detail: {
+        status: state.status,
+        signedIn: state.status === 'signed_in' && Boolean(state.profile),
+        ownerKey: authenticationOwnerKey(state, browserWindow.RiverlineAccountIdentity?.getLifecycleState?.()),
+      },
     }));
   }
 
@@ -394,14 +405,14 @@ function bindAuthenticationUi(browserWindow, service, gate) {
 
   browserWindow.addEventListener('riverline:openaccount', () => openAccount());
   browserWindow.addEventListener('riverline:languagechange', () => render(service.getState()));
-  service.subscribe(render);
+  service.subscribe(renderAndPublish);
   gate.subscribe((gateState) => {
     if (gateState.status === 'required') openAccount({ forGate: true });
     if (openedForGate && gateState.status === 'idle' && service.getState().status === 'signed_in') {
       closeAccount({ cancelIntent: false });
     }
   });
-  void service.initialize().then(render);
+  void service.initialize().then(renderAndPublish);
 }
 
 export async function installAuthenticationBridge(browserWindow, options = {}) {

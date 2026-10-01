@@ -3,6 +3,7 @@ import { renderDeepReview, renderStudyInbox } from './study-workspace.mjs';
 import { studyCopy } from './study-language.mjs';
 import { createContextFromSelection, createIdentityScopedRangeCalibrationApplication } from './range-calibration-service.mjs';
 import { readHandImportStudy } from './hand-import-study.mjs';
+import { createAuthenticationOwnerChangeGuard } from './authentication-owner-change.mjs';
 
 export async function readSelectedPersonalConflicts(identity) {
   const scope = await identity.captureLifecycleScope('personal_strategy'); scope.assertCurrent();
@@ -47,7 +48,8 @@ export function installStudyWorkspaceBridge(browserWindow) {
     for (const root of roots) root.replaceChildren();
   }
   browserWindow.addEventListener('riverline:identitychange', clear);
-  browserWindow.addEventListener('riverline:authchange', clear);
+  const authenticationOwnerChanged = createAuthenticationOwnerChangeGuard();
+  browserWindow.addEventListener('riverline:authchange', (event) => { if (authenticationOwnerChanged(event)) clear(); });
 
   function renderReview(options) {
     const { root, review } = options; roots.add(root);
