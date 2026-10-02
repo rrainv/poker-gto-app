@@ -1,5 +1,36 @@
 # Riverline persistent QA backlog
 
+## DS-FOUNDATION-001 - October 2, 2026
+
+**IMPLEMENTED / AUTOMATED / HUMAN ACCEPTANCE PENDING.** Owner spec:
+[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md). Source review: `VISUAL-DESIGN-REVIEW-2026-10`
+§A7/§B1/§B2 (outside the repo). One `:root` token block (type, spacing, radius,
+elevation, control geometry, provenance role); a component layer replacing DESIGN-004
+(Button, Field, Checkbox/Radio, Switch, Segmented, Tabs, Chip, Badge, Callout, Fact
+grid, Disclosure, List row, Poker data island, Surface/Overlay); `riverline-design.css`
+retired (global restyles folded, surface rules relocated to the end of `styles.css`
+in their old cascade position); dev-only component sheet at `/__dev/component-sheet.html`.
+No composition, icon, card-face/felt, theme-contract, schema or behavior change.
+Evidence: `tests/ds_foundation001.test.mjs`; rendered contrast of 21 token pairs in
+Midnight/Graphite/Daylight/custom sample all pass; Firefox before/after pairs at
+1920/1366, EN/HE, Midnight/Daylight/custom in `Riverline_QA_2026-10/foundation/`.
+
+| ID | Status | Evidence / scope | Owner |
+| --- | --- | --- | --- |
+| QA-DS-FOUNDATION-001 | IMPLEMENTED / HUMAN ACCEPTANCE PENDING | Human checks: (1) component sheet coherent and premium in each theme, EN and HE; (2) workspaces same or better, nothing broken/clipped/unreadable; (3) a custom theme still recolors everything incl. new components; (4) the three defects below. Intentional visible changes: flat surfaces (12px radius, no drop shadow), overlays 12px; md controls 40→36px; secondary/icon buttons lose the 2px tactile edge (primary keeps it); button radius 9→8px; selected segments/tabs are elevated + accent underline instead of accent fill; unselected segments use secondary text; segment captions readable; panel headings 17→16px; 10px overline text → 11px; previously undefined `--radius-md/lg/sm` now round their corners; toned/source badges outlined; selects show a caret everywhere; Saved chips 38→32px; native checkboxes/radios token-drawn; field labels use secondary text. | `DS-FOUNDATION-001` human acceptance |
+| QA-DS-FOUNDATION-002 | IMPLEMENTED / AUTOMATED + FIREFOX RENDERED / HUMAN ACCEPTANCE PENDING | `PRODUCT-QA-SWEEP-2026-10` QA-SWEEP-015 / review A9.5: Settings selected rank-style caption was light text on the accent fill. Selected segments no longer use an accent fill; the caption measures 7.15:1 (Midnight) / 7.6:1 (Daylight). | same |
+| QA-DS-FOUNDATION-003 | IMPLEMENTED / FIREFOX RENDERED / HUMAN ACCEPTANCE PENDING | Saved "Mistakes only" (and Training history) checkboxes were unstyled native dark squares. All native checkboxes/radios now use the Checkbox component with a visible accent check (≥5.6:1 check mark in every review theme). | same |
+| QA-DS-FOUNDATION-004 | IMPLEMENTED / AUTOMATED + FIREFOX RENDERED / HUMAN ACCEPTANCE PENDING | Review A9.3: HE Saved previews reversed card order (Hero K♠J♠ shown J♠K♠; board reversed). Saved preview card rows are now poker data islands (`.poker-island`, `dir="ltr"`); HE order matches EN. | same |
+| QA-DS-FOUNDATION-007 | IMPLEMENTED / FIREFOX RENDERED / HUMAN ACCEPTANCE PENDING | Visual-correction amendment (owner screenshot of the component sheet). Switch: legacy rules repainted the checked thumb (`--text-secondary` on the light accent track; early `.switch.on b` painted it the track's own accent in Settings) — both folded; off = secondary thumb on inset with a muted boundary, on = `--text-on-accent` thumb on the accent. Checkbox: one shared SVG-mask glyph (2px round stroke, centered, not mirrored in RTL) replaces the gradient-drawn tick; boundary `--text-muted`; disabled = dashed `--text-disabled` boundary. Type hierarchy by color role (primary / secondary / muted) plus theme-derived `--action-*-text` for action-named verdicts; the accent is no longer a text color (`.action-name`). Rendered contrast: 40 pairs × Midnight/Graphite/Daylight/custom, all pass. Crops at 100/125/200% in `foundation/component-sheet/crops/`. | same |
+| QA-DS-FOUNDATION-005 | OPEN — MIGRATION DEBT | Families not yet on components, by workspace. Shell: `.mode-nav-item`, rail utilities (`.utility-button` 42px alias), header Learn/help; legacy aliases `.cta/.secondary/.small-link/.close/.tab/.sub-tab/.street-tab`. Hand: legal-action buttons (`[data-canonical-action]`) and Training answers (`.training-action-button`) await a Poker action button component; stage/fact strips (`.hand-review-overview-facts`, stage header) → Fact grid; History rows → List row. Analyze: facts strip (`.playbook-metric-strip`) → Fact grid; limitation strips (`.study-warning`, `.study-status`, `.analysis-warning`) → Callout; `.study-badge` → Badge; source badge placement. Training: setup selects (`.training-select` with `!important`), context strip → Fact grid, Memory tabs (`.training-memory-tabs`) → Tabs. Personal: `.calibration-personal-tabs` → Tabs; `.personal-hand-stage` field overrides; map legend → Chips. Equity: `.advanced-equity` field overrides (border/radius), randomize triggers, player-name label, card-set editors. Saved: library cards → List row, detail → Inspector (SAVED-COMPOSITION-002). Home Game: seat amount fields and bare-text actions. Settings: `.settings-category-tab`, `.card-style-choice`, `.theme-swatch-btn`. Guide: workflow links. | SHELL-001 and the per-workspace batches of review §F |
+| QA-DS-FOUNDATION-006 | OPEN — CSS DEBT | (a) ~710 relocated surface lines at the end of `styles.css` (incl. remaining `!important` in `.teacher-panel`/reduced-motion rules) dissolve into workspace sections; (b) 60 rules / 44 `!important` in retired, unselectable legacy themes (Discord, Terminal, Brutalist, Serious PIO, …); (c) the inline `<style>` in `index.html`; (d) 225 literal `font-size` declarations (was 277 across both files; exact-value literals already tokenized) and 626 hex literals, mostly table/card/legacy-theme; (e) `--elevation-feature` and `--text-page-title-size` legacy tokens. `!important` lines across product CSS 265 → 260. | per-workspace batches / PREMIUM-TIDY-001 |
+
+Review A9 incidental defects not owned by this ticket remain unrouted for owner
+triage (not absorbed): A9.1 raw `replay.status.saved` at 1366, A9.2 RU/HE Home vs
+Home Game label collision, A9.4 HE Saved panel headings at physical left, A9.6
+Runout Explorer 6♠ on dark face, A9.7 Facts strip truncation / History under sticky
+header / focus under sticky header, A9.8 translucent seat plate in setup preview.
+
 ## BETA-CANDIDATE-QUICK-SWEEP-001 - September 13, 2026
 
 **IMPLEMENTED / AUTOMATED GATES PASSED / HUMAN ACCEPTANCE PENDING.**

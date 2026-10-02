@@ -5,12 +5,15 @@ import fs from 'node:fs';
 const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const ticketCss = css.slice(css.indexOf('PREMIUM-LAYOUT-001: bounded desktop workspace composition'));
+// DS-FOUNDATION-001 moved every :root token into the single token block.
+const tokenBlock = css.slice(0, css.indexOf('\n}\n'));
+
 
 test('shared workspace primitives define bounded, readable, rail, and dense composition roles', () => {
-  assert.match(ticketCss, /--workspace-frame-standard:\s*1380px/);
-  assert.match(ticketCss, /--workspace-frame-wide:\s*1500px/);
-  assert.match(ticketCss, /--workspace-frame-dense:\s*1680px/);
-  assert.match(ticketCss, /--workspace-readable-max:\s*1120px/);
+  assert.match(tokenBlock, /--workspace-frame-standard:\s*1380px/);
+  assert.match(tokenBlock, /--workspace-frame-wide:\s*1500px/);
+  assert.match(tokenBlock, /--workspace-frame-dense:\s*1680px/);
+  assert.match(tokenBlock, /--workspace-readable-max:\s*1120px/);
   assert.match(ticketCss, /\.workspace-frame\s*\{[\s\S]*?width:\s*min\(100%, var\(--workspace-frame-max/);
   assert.match(ticketCss, /:is\(\.workspace-layout, \.playbook-workspace, \.training-workspace, \.equity-workspace\)/);
   assert.match(ticketCss, /:is\(\.workspace-stage, \.playbook-decision-workspace, \.training-decision-column, \.equity-input-stack\)/);

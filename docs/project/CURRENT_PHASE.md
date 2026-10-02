@@ -1,5 +1,14 @@
 # Current Riverline phase
 
+October 2 explicit design foundation: `DS-FOUNDATION-001` is implemented with human
+acceptance pending under `QA-DS-FOUNDATION-001`. [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)
+now owns tokens, the component layer and the cascade contract; `riverline-design.css`
+is retired (globals folded, surface rules relocated into `styles.css`); one `:root`
+token block; a dev-only component sheet at `/__dev/component-sheet.html`. No
+composition, icon, card/felt, theme-contract or schema change. The workspace
+batches of `VISUAL-DESIGN-REVIEW-2026-10` §F (next: `SHELL-001`) start from this
+foundation; the sequencing below is otherwise unchanged.
+
 September 30 explicit Saved slice: `SAVED-TRAINING-HISTORY-001` is implemented
 with human acceptance pending under `QA-SAVED-TRAINING-HISTORY-001`. Saved adds a
 "Saved items / Training history" toggle; Training history is a read-only, gated

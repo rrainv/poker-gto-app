@@ -9,7 +9,8 @@ import { deriveFeatureSurfaceRoles, contrastRatio, PRESENTATION_THEMES } from '.
 
 const logic = readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const renderer = readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
-const css = readFileSync(new URL('../app/src/ui/riverline-design.css', import.meta.url), 'utf8');
+// DS-FOUNDATION-001 retired riverline-design.css; its surface rules now live at the end of styles.css.
+const css = (() => { const all = readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8'); return all.slice(all.indexOf('Surface styles relocated from the retired')); })();
 const setup = (tableSize = 2) => ({ tableSize, gameMode: 'home', stackBb: 100, stackMode: 'hero', heroSeat: 0, buttonSeat: 0, anteType: 'none', anteBb: 0, straddleBb: 0 });
 
 test('reload with Players=2 reaches the table on renderer readiness; input previews 6/10 without creating a Hand', () => {

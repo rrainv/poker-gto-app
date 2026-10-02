@@ -12,6 +12,11 @@ const cardPresentation = fs.readFileSync(new URL('../app/src/application/card-pr
 const densityStart = css.indexOf('PRODUCT-UI-002: density, geometry, and component fit');
 assert.ok(densityStart >= 0, 'PRODUCT-UI-002 CSS section must exist');
 const density = css.slice(densityStart);
+// DS-FOUNDATION-001 moved every :root token into the single token block.
+const tokenBlock = css.slice(0, css.indexOf('\n}\n'));
+const badgeStart = css.indexOf('.status-badge,\n.badge,\n.ui-badge');
+const badgeRule = css.slice(badgeStart, css.indexOf('}', badgeStart));
+
 
 test('Action Path derives every node and connector from one local rail axis', () => {
   assert.match(html, /id="playbookDecisionPathPanel"/);
@@ -27,13 +32,12 @@ test('Action Path derives every node and connector from one local rail axis', ()
 });
 
 test('short status labels stay content-sized, centered, and on one line', () => {
-  assert.match(density, /\.status-badge,[\s\S]*\.theme-swatch-sharp \{/);
-  assert.match(density, /min-height: 26px/);
-  assert.match(density, /width: fit-content/);
-  assert.match(density, /justify-content: center/);
-  assert.match(density, /line-height: 1\.3/);
-  assert.match(density, /white-space: nowrap/);
-  assert.match(density, /overflow-wrap: normal/);
+  // DS-FOUNDATION-001: the Badge component owns the content-sized one-line box.
+  assert.ok(badgeStart > 0, 'Badge component rule exists');
+  assert.match(density, /\.training-curriculum-tag,\n\.theme-swatch-sharp \{/);
+  for (const rule of [/min-height: 26px/, /width: fit-content/, /justify-content: center/, /line-height: 1\.3/, /white-space: nowrap/, /overflow-wrap: normal/]) {
+    assert.match(badgeRule, rule);
+  }
 });
 
 test('recommendation provenance has a dedicated grid row outside Strategy Mix flow', () => {
@@ -92,9 +96,9 @@ test('table seats use one adaptive radial-felt player-unit anchor for cards and 
 
 test('Settings and collapsed table use viewport-safe responsive layout contracts', () => {
   assert.match(html, /class="modal overlay-surface settings-modal"/);
-  assert.match(density, /--z-mode-rail: 30/);
-  assert.match(density, /--z-toast: 60/);
-  assert.match(density, /--z-modal-backdrop: 100/);
+  assert.match(tokenBlock, /--z-mode-rail: 30/);
+  assert.match(tokenBlock, /--z-toast: 60/);
+  assert.match(tokenBlock, /--z-modal-backdrop: 100/);
   assert.match(density, /\.modal-backdrop \{[\s\S]*z-index: var\(--z-modal-backdrop\)/);
   assert.match(density, /\.modal-backdrop > \.modal \{[\s\S]*z-index: 1/);
   assert.match(density, /width: min\(940px, calc\(100vw - \(var\(--space-7\) \* 2\)\)\)/);

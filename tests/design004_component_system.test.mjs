@@ -10,8 +10,9 @@ const strategy = [
   '../app/src/strategy/postflop-heuristic.mjs',
 ].map((url) => fs.readFileSync(new URL(url, import.meta.url), 'utf8')).join('\n');
 
-const componentStart = css.indexOf('DESIGN-004: shared component system');
-assert.ok(componentStart >= 0, 'DESIGN-004 component section must exist');
+// DS-FOUNDATION-001 replaced the DESIGN-004 section with the owning component layer.
+const componentStart = css.indexOf('DS-FOUNDATION-001: component layer');
+assert.ok(componentStart >= 0, 'DS-FOUNDATION-001 component layer must exist');
 const components = css.slice(componentStart);
 
 test('the shared button system exposes all approved semantic variants', () => {
@@ -21,13 +22,15 @@ test('the shared button system exposes all approved semantic variants', () => {
   ]) {
     assert.match(components, new RegExp(`\\.ui-button--${variant}`), variant);
   }
-  assert.match(components, /--control-height:\s*40px/);
+  assert.match(css, /--control-height-md:\s*36px/);
+  assert.match(css, /--control-height:\s*var\(--control-height-md\)/);
   assert.match(components, /\.ui-button\.is-loading/);
   assert.match(components, /button:disabled/);
 });
 
 test('icon buttons have bounded targets and accessible names', () => {
-  assert.match(components, /\.ui-button--icon[\s\S]*?width:\s*42px/);
+  assert.match(components, /\.ui-button:where\(\[data-variant="icon"\], \.ui-button--icon, \.ui-button-icon\) \{\s*width:\s*var\(--control-height\)/);
+  assert.match(components, /\.close \{\s*width:\s*42px/);
   const iconButtons = [...html.matchAll(/<button\b[^>]*class="[^"]*ui-button--icon[^"]*"[^>]*>/g)];
   assert.ok(iconButtons.length >= 2);
   for (const [tag] of iconButtons) {
@@ -63,14 +66,14 @@ test('remaining switches expose labels and pressed states without replacing beha
     assert.match(tag, /aria-label="[^"]+"/);
     assert.match(tag, /aria-pressed="(?:true|false)"/);
   }
-  assert.match(components, /\.ui-switch\[aria-pressed="true"\]/);
+  assert.match(components, /\.ui-switch:is\(\.on, \[aria-pressed="true"\], \[aria-checked="true"\]\)/);
   assert.match(components, /transform:\s*translateX\(18px\)/);
 });
 
 test('tabs use structural selected semantics in markup and updates', () => {
   assert.match(html, /class="sub-tabs ui-segments" role="tablist"/);
   assert.match(html, /class="sub-tab ui-tab active"[^>]*role="tab"[^>]*aria-selected="true"/);
-  assert.match(components, /\.ui-tab\[aria-selected="true"\]/);
+  assert.match(components, /\.ui-tab:is\(\.active, \[aria-selected="true"\], \[aria-pressed="true"\]/);
   assert.match(components, /box-shadow:\s*inset 0 -2px 0 var\(--accent-primary\)/);
   assert.match(logic, /item\.setAttribute\('aria-selected', String\(isSelected\)\)/);
 });
@@ -100,7 +103,8 @@ test('modal, tooltip, and toast primitives share semantic surfaces', () => {
 test('comfortable and compact density share one token mechanism', () => {
   assert.match(html, /<html[^>]*data-density="comfortable"/);
   assert.match(components, /\[data-density="compact"\]/);
-  assert.match(components, /--control-height-compact:\s*34px/);
+  assert.match(css, /--control-height-compact:\s*var\(--control-height-sm\)/);
+  assert.match(css, /--control-height-sm:\s*32px/);
   assert.match(components, /--component-padding:/);
 });
 
@@ -124,9 +128,13 @@ test('poker actions retain stable semantics across Training and Hand Mode', () =
 });
 
 test('Daylight controls explicitly consume semantic surfaces', () => {
-  assert.match(components, /\[data-theme="daylight"\][\s\S]*?background-color:\s*var\(--surface-interactive\)/);
-  assert.match(components, /\[data-theme="daylight"\][\s\S]*?\.ui-switch:not\(\.on\)/);
-  assert.doesNotMatch(components.slice(components.indexOf('[data-theme="daylight"]')), /background(?:-color)?:\s*#0b1120/);
+  // DS-FOUNDATION-001: every theme (Daylight included) drives the same component
+  // rules through semantic primitives; no per-theme component overrides remain.
+  const layer = css.slice(componentStart, css.indexOf('/* Modal and settings'));
+  assert.doesNotMatch(layer, /\[data-theme=/);
+  assert.match(layer, /background-color:\s*var\(--surface-inset\)/);
+  assert.match(layer, /\.ui-switch,\n\.switch \{[\s\S]*?background:\s*var\(--surface-inset\)/);
+  assert.doesNotMatch(components, /background(?:-color)?:\s*#0b1120/);
 });
 
 test('mobile rules preserve touch targets, wrapping, and viewport-safe overlays', () => {

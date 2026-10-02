@@ -95,9 +95,12 @@ grants strategy authority. Explain, Personal understanding/node teaching,
 Opponent setup/review and Study Inbox consume this grammar without changing
 their evidence, actions or scheduling. Existing panel and button components
 remain the shared foundation. After human visual rejection of the first pass,
-`src/ui/riverline-design.css` adds the forest/jade/brass shell, contrasting study
-desk and felt stage, tactile controls and stronger insight hierarchy. Midnight's
-built-in palette/preview change together; custom theme values remain authoritative.
+the forest/jade/brass shell, contrasting study desk and felt stage, tactile controls
+and stronger insight hierarchy were added (originally as `src/ui/riverline-design.css`;
+since `DS-FOUNDATION-001` folded into tokens/components in `styles.css`, with
+[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) owning tokens, components and the cascade
+contract). Midnight's built-in palette/preview change together; custom theme values
+remain authoritative.
 
 Canonical tables share adaptive seat/card geometry and show projected actor and
 dealer context beneath the felt. Full Hand Training adds a collapsed **Table

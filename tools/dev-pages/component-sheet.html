@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" data-theme="midnight" data-card-face-style="minimal" data-card-style="minimal" data-card-back-style="riverline" data-card-rank-style="poker" data-four-color="true" data-density="comfortable">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Riverline DS component sheet (dev only)</title>
+  <!-- DS-FOUNDATION-001 dev-only review page. Served by tools/dev-web-server.mjs at
+       /__dev/component-sheet.html; not part of app/, not shipped, not in app navigation. -->
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/src/locales/product-translations.js"></script>
+  <script src="/src/locales/home-translations.js"></script>
+  <script src="/src/locales/home-game-translations.js"></script>
+  <script src="/src/locales/analysis-translations.js"></script>
+  <style>
+    /* Sheet scaffolding only; every component look comes from styles.css. */
+    body { margin: 0; color: var(--text-primary); background: var(--surface-canvas); font: var(--t-body)/var(--t-body-line) var(--font-ui); }
+    .sheet-bar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-8); background: var(--surface-shell); border-block-end: 1px solid var(--border-default); }
+    .sheet-bar h1 { margin: 0; font-size: var(--t-title); }
+    .sheet-bar p { margin: 0; color: var(--text-secondary); font-size: var(--t-small); }
+    .sheet-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-section); padding: var(--gutter-canvas); }
+    .sheet-column { display: grid; gap: var(--gap-section); align-content: start; min-width: 0; }
+    .sheet-section { display: grid; gap: var(--gap-group); padding: var(--pad-surface); }
+    .sheet-section > h2 { margin: 0; font-size: var(--t-heading); }
+    .sheet-section > h3 { margin: var(--space-2) 0 0; color: var(--text-secondary); font-size: var(--t-label); letter-spacing: var(--t-label-tracking); text-transform: uppercase; }
+    .sheet-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--gap-control); }
+    .sheet-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-group); }
+    .sheet-type > * { margin: 0; }
+    .sheet-contrast { padding: var(--pad-surface); }
+    .sheet-contrast table { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
+    .sheet-contrast td, .sheet-contrast th { padding: var(--space-2) var(--space-3); border-block-end: 1px solid var(--border-subtle); text-align: start; }
+    .sheet-contrast [data-pass="false"] { color: var(--status-danger); font-weight: var(--weight-bold); }
+    .sheet-preview { display: flex; flex-wrap: wrap; gap: var(--space-5); }
+  </style>
+</head>
+<body>
+  <header class="sheet-bar">
+    <div><h1>Component sheet</h1><p>DS-FOUNDATION-001 · docs/project/DESIGN_SYSTEM.md · dev only</p></div>
+    <label class="ui-field">Theme
+      <select id="sheetTheme">
+        <option value="midnight">Riverline Midnight</option>
+        <option value="graphite">Riverline Graphite</option>
+        <option value="daylight">Riverline Daylight</option>
+        <option value="custom">Custom sample (accent #e0a458 · surface #1b2230 · felt #5b3a6b)</option>
+      </select>
+    </label>
+    <label class="ui-check"><input id="sheetFourColor" type="checkbox" checked> 4-color cards</label>
+    <label class="ui-field">Card style
+      <select id="sheetCardStyle"><option value="minimal">Minimal</option><option value="classic">Classic</option><option value="high-contrast">High contrast</option></select>
+    </label>
+  </header>
+  <main class="sheet-columns">
+    <section class="sheet-column" lang="en" dir="ltr" data-sheet-locale="en"></section>
+    <section class="sheet-column" lang="he" dir="rtl" data-sheet-locale="he"></section>
+  </main>
+  <section class="sheet-contrast panel" aria-labelledby="sheetContrastTitle" style="margin: 0 var(--gutter-canvas) var(--gutter-canvas)">
+    <h2 id="sheetContrastTitle">Rendered contrast (active theme)</h2>
+    <div id="sheetContrast"></div>
+  </section>
+  <script type="module" src="component-sheet.mjs"></script>
+</body>
+</html>

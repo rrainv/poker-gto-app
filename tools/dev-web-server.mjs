@@ -9,6 +9,9 @@ export const DEFAULT_HOST = '127.0.0.1';
 export const DEFAULT_PORT = 3000;
 export const APP_DIRECTORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'app');
 export const SHARED_DIRECTORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'shared');
+// Development-only pages (e.g. the DS component sheet). Served only by this dev
+// server under /__dev/; never part of app/, so never shipped or navigable in-app.
+export const DEV_PAGES_DIRECTORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'dev-pages');
 
 export const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -83,8 +86,12 @@ function resolveSafeFile(rootPath, requestedPath) {
   return candidatePath;
 }
 
-function mapRequestPath(pathname, appPath, sharedPath) {
+function mapRequestPath(pathname, appPath, sharedPath, devPath) {
   if (pathname === '/') return path.resolve(appPath, 'index.html');
+
+  if (pathname.startsWith('/__dev/')) {
+    return resolveSafeFile(devPath, pathname.slice('/__dev/'.length));
+  }
 
   if (pathname === '/shared' || pathname === '/shared/') {
     return null;
@@ -154,13 +161,14 @@ function setResponseHeaders(response, headers = {}) {
   );
 }
 
-export function createDevWebServer({ appDirectory = APP_DIRECTORY, sharedDirectory = SHARED_DIRECTORY } = {}) {
+export function createDevWebServer({ appDirectory = APP_DIRECTORY, sharedDirectory = SHARED_DIRECTORY, devDirectory = DEV_PAGES_DIRECTORY } = {}) {
   const appPath = path.resolve(appDirectory);
   const sharedPath = path.resolve(sharedDirectory);
+  const devPath = path.resolve(devDirectory);
 
   return http.createServer(async (request, response) => {
     const url = new URL(request.url || '/', `http://${DEFAULT_HOST}`);
-    const filePath = mapRequestPath(url.pathname, appPath, sharedPath);
+    const filePath = mapRequestPath(url.pathname, appPath, sharedPath, devPath);
 
     if (!filePath) {
       setResponseHeaders(response, { status: 404 });

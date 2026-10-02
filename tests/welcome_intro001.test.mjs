@@ -269,7 +269,8 @@ test('Welcome uses semantic headings, native buttons and checkbox, visible focus
 });
 
 test('one primary Home entry accompanies four smaller paths and secondary Equity', async () => {
-  const refreshCss = await readFile(new URL('../app/src/ui/riverline-design.css', import.meta.url), 'utf8');
+  // DS-FOUNDATION-001 retired riverline-design.css; its surface rules now live at the end of styles.css.
+  const refreshCss = (await readFile(new URL('../app/styles.css', import.meta.url), 'utf8')).split('Surface styles relocated from the retired')[1];
   const welcome = html.slice(html.indexOf('id="welcomeOrientation"'), html.indexOf('class="shell workspace-canvas"'));
   assert.equal((welcome.match(/ui-button--primary/g) ?? []).length, 1);
   assert.match(welcome, /ui-button--primary welcome-enter[^>]*data-welcome-destination="home"/);

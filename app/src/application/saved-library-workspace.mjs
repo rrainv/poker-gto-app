@@ -98,12 +98,13 @@ export function mountSavedLibrary(container, deps = {}) {
   categories.setAttribute('role', 'group');
   const categoryButtons = new Map();
   for (const category of Object.keys(CATEGORY_LABELS)) {
-    const button = el('button', 'saved-library-category');
+    const button = el('button', 'saved-library-category ui-chip');
     button.type = 'button';
+    button.dataset.variant = 'filter';
     button.dataset.savedCategory = category;
     button.innerHTML = `<svg viewBox="0 0 20 20" aria-hidden="true">${CATEGORY_ICONS[category]}</svg>`;
     const label = el('span');
-    const count = el('strong', '', '0');
+    const count = el('strong', 'ui-chip-count', '0');
     count.dataset.savedCategoryCount = category;
     button.append(label, count);
     categories.appendChild(button);
@@ -124,7 +125,7 @@ export function mountSavedLibrary(container, deps = {}) {
   for (const [value] of Object.entries(REVIEW_LABELS)) review.select.appendChild(Object.assign(el('option'), { value }));
   for (const [value] of Object.entries(SORT_LABELS)) sort.select.appendChild(Object.assign(el('option'), { value }));
 
-  const mistakes = el('label', 'saved-library-toggle');
+  const mistakes = el('label', 'saved-library-toggle ui-check');
   const mistakesInput = el('input');
   mistakesInput.type = 'checkbox';
   mistakesInput.dataset.savedLibraryMistakes = '';

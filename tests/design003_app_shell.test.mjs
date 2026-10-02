@@ -93,7 +93,7 @@ test('mobile navigation and utilities remain visible and reachable', () => {
 test('the shell consumes semantic tokens and remains theme-independent', () => {
   const design003Css = css.slice(
     css.indexOf('DESIGN-003: Riverline application shell'),
-    css.indexOf('DESIGN-004: shared component system'),
+    css.indexOf('DS-FOUNDATION-001: component layer'),
   );
   assert.match(design003Css, /background: var\(--surface-shell\)/);
   assert.match(design003Css, /background: var\(--accent-primary\)/);

@@ -147,7 +147,10 @@ test('Settings expose clearer switches, aligned solver icon, and persisted T ver
   const state = controller.apply({ rankStyle: 'full-ten' });
   assert.equal(state.rankStyle, 'full-ten');
   assert.equal(JSON.parse(values.get(CARD_PRESENTATION_STORAGE_KEY)).rankStyle, 'full-ten');
-  assert.match(uiQaCss, /\.ui-switch b,[\s\S]*?background:\s*var\(--text-secondary\)/);
+  // DS-FOUNDATION-001: the Switch component owns the thumb. Off: the thumb paints
+  // the track's --text-secondary (currentColor); on: --text-on-accent on the accent.
+  assert.match(css, /\.ui-switch,\n\.switch \{[^}]*color: var\(--text-secondary\)/);
+  assert.match(css, /\.ui-switch b,\n\.switch b \{[^}]*background: currentColor/);
   assert.match(uiQaCss, /\.solver-import-btn \.button-icon\s*\{[^}]*width:\s*18px[^}]*display:\s*block/);
   assert.match(sound, /settingsBtn\.setAttribute\('aria-pressed', String\(soundEnabled\)\)/);
 });

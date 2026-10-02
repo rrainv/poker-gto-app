@@ -92,7 +92,8 @@ test('runout groups separate category improvement from Equity and preserve unava
 });
 
 test('Understanding reserves the second column only for a visible question and collapses on narrow screens', () => {
-  const css = readFileSync(new URL('../app/src/ui/riverline-design.css', import.meta.url), 'utf8');
+  // DS-FOUNDATION-001 retired riverline-design.css; its surface rules now live at the end of styles.css.
+  const css = (() => { const all = readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8'); return all.slice(all.indexOf('Surface styles relocated from the retired')); })();
   assert.match(css, /calibration-configured-state > \.calibration-personal-column\s*\{\s*grid-column: 1 \/ -1; grid-row: auto/);
   assert.match(css, /calibration-configured-state:has\(> \.calibration-question-view:not\(\[hidden\]\)\)\s*\{\s*grid-template-columns: minmax\(0, 1.05fr\) minmax\(0, 1fr\)/);
   assert.match(css, /@media \(max-width: 1100px\)[\s\S]*calibration-configured-state:has[\s\S]*grid-template-columns: minmax\(0, 1fr\)/);

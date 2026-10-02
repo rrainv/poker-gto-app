@@ -92,12 +92,12 @@ export function mountSavedTrainingHistory(container, deps = {}) {
     .filter(Boolean);
 
   // One two-option control: native radios give arrow-key selection and one tab stop.
-  const toggleGroup = el('div', 'saved-view-toggle-group');
+  const toggleGroup = el('div', 'saved-view-toggle-group ui-segments');
   toggleGroup.setAttribute('role', 'radiogroup');
   const radioName = `savedView-${Math.random().toString(36).slice(2, 10)}`;
   const toggleOptions = new Map();
   for (const option of SAVED_VIEWS) {
-    const label = el('label', 'saved-view-option');
+    const label = el('label', 'saved-view-option ui-tab');
     const input = el('input');
     input.type = 'radio';
     input.name = radioName;
@@ -116,18 +116,19 @@ export function mountSavedTrainingHistory(container, deps = {}) {
   modes.setAttribute('role', 'group');
   const modeButtons = new Map();
   for (const mode of Object.keys(MODE_LABELS)) {
-    const button = el('button', 'saved-library-category');
+    const button = el('button', 'saved-library-category ui-chip');
     button.type = 'button';
+    button.dataset.variant = 'filter';
     button.dataset.trainingHistoryMode = mode;
     const label = el('span');
-    const count = el('strong', '', '0');
+    const count = el('strong', 'ui-chip-count', '0');
     count.dataset.trainingHistoryCount = mode;
     button.append(label, count);
     modes.appendChild(button);
     modeButtons.set(mode, { button, label, count });
   }
   function checkbox(attribute) {
-    const label = el('label', 'saved-library-toggle');
+    const label = el('label', 'saved-library-toggle ui-check');
     const input = el('input');
     input.type = 'checkbox';
     input.dataset[attribute] = '';

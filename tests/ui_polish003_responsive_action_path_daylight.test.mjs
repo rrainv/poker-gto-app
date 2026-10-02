@@ -75,7 +75,8 @@ test('Daylight and Midnight tables keep the semantic felt-driven token grammar',
   assert.match(pokerDaylight, /--poker-table-seat: var\(--surface-elevated\)/);
   assert.match(pokerDaylight, /--poker-table-shadow-opacity: 0\.14/);
 
-  const rootPoker = css.slice(css.indexOf('/* DESIGN-005: poker visual system'), css.indexOf('[data-theme="graphite"]', css.indexOf('/* DESIGN-005: poker visual system')));
+  // DS-FOUNDATION-001 moved the root poker-table tokens into the single token block.
+  const rootPoker = css.slice(0, css.indexOf('\n}\n'));
   assert.match(rootPoker, /--poker-table-rail-start: color-mix\(in srgb, var\(--surface-elevated\)/);
   assert.match(rootPoker, /--poker-table-rail-end: color-mix\(in srgb, var\(--surface-inset\)/);
   assert.match(rootPoker, /--poker-table-surface-start: color-mix\(in srgb, var\(--poker-felt-accent\)/);

@@ -15,9 +15,12 @@ const cardPresentation = fs.readFileSync(new URL('../app/src/application/card-pr
 const designStart = css.indexOf('DESIGN-005: poker visual system');
 assert.ok(designStart >= 0, 'DESIGN-005 visual-system section must exist');
 const visualSystem = css.slice(designStart);
+// DS-FOUNDATION-001 moved every :root token into the single token block.
+const tokenBlock = css.slice(css.indexOf(':root {'), css.indexOf('\n}\n', css.indexOf(':root {')));
+
 
 test('playing cards share one ratio and all four stable suit classes', () => {
-  assert.match(visualSystem, /--poker-card-aspect:\s*0\.701754/);
+  assert.match(tokenBlock, /--poker-card-aspect:\s*0\.701754/);
   assert.match(visualSystem, /--riverline-card-face:\s*var\(--card-face\)/);
   assert.match(visualSystem, /background:\s*var\(--riverline-card-face,\s*var\(--card-face\)\)\s*!important/);
   for (const [suit, token] of [
@@ -56,8 +59,8 @@ test('the card picker renders four explicit suit rows with unchanged card identi
   assert.match(logic, /class="deck-ranks"/);
   assert.match(logic, /aria-pressed="\$\{isSelected\}"/);
   assert.match(logic, /data-deck-card="\$\{card\}" \$\{isUnavailable \? 'disabled' : ''\}/);
-  assert.match(visualSystem, /--card-size-picker-width:\s*42px/);
-  assert.match(visualSystem, /--card-size-picker-height:\s*60px/);
+  assert.match(tokenBlock, /--card-size-picker-width:\s*42px/);
+  assert.match(tokenBlock, /--card-size-picker-height:\s*60px/);
   assert.match(visualSystem, /grid-template-columns:\s*repeat\(13, minmax\(42px, 1fr\)\)/);
 });
 

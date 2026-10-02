@@ -6,6 +6,9 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const ticketCss = css.slice(css.indexOf('PRODUCT-UI-005: workspace composition'));
+// DS-FOUNDATION-001 moved every :root token into the single token block.
+const tokenBlock = css.slice(0, css.indexOf('\n}\n'));
+
 const renderChart = logic.slice(logic.indexOf('function renderChart()'), logic.indexOf('function matrixStrategyKey('));
 
 test('analysis navigation is a labeled part of the current-spot analytical workspace', () => {
@@ -39,7 +42,7 @@ test('preflop Matrix retains the provider-backed 13 by 13 model and readable loc
   assert.match(renderChart, /grid\.appendChild\(btn\)/);
   assert.match(renderChart, /const matrixCell = matrixModel\.cells\[row \* 13 \+ column\]/);
   assert.match(renderChart, /const actions = matrixCell\?\.actions \|\| \[\]/);
-  assert.match(ticketCss, /--range-matrix-cell:\s*clamp\(42px, 2\.75vw, 46px\)/);
+  assert.match(tokenBlock, /--range-matrix-cell:\s*clamp\(42px, 2\.75vw, 46px\)/);
   assert.match(css, /\.range-matrix-panel \.matrix-wrap\s*\{[^}]*overflow-x:\s*auto/);
   assert.match(ticketCss, /@container \(max-width: 900px\)/);
 });

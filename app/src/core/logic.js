@@ -1257,9 +1257,9 @@ function renderEquityPlayers() {
           ${mode === 'known'
             ? equityHandEditorMarkup(player, playerIndex, label)
             : `<div class="equity-unknown-hand" aria-label="${t('{player} unknown cards', { player: label })}"><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span class="poker-card-back riverline-card-back" data-card-size="standard" aria-hidden="true"></span><span>${t('Random legal hand')}</span></div>`}
-          <div class="equity-hand-mode" role="group" aria-label="${t('{player} hand type', { player: label })}">
-            <button type="button" data-equity-hand-mode="known" data-player-id="${player.id}" aria-pressed="${mode === 'known'}">${t('Known')}</button>
-            <button type="button" data-equity-hand-mode="unknown" data-player-id="${player.id}" aria-pressed="${mode === 'unknown'}">${t('Unknown')}</button>
+          <div class="equity-hand-mode ui-segments" data-size="sm" role="group" aria-label="${t('{player} hand type', { player: label })}">
+            <button class="ui-tab" type="button" data-equity-hand-mode="known" data-player-id="${player.id}" aria-pressed="${mode === 'known'}">${t('Known')}</button>
+            <button class="ui-tab" type="button" data-equity-hand-mode="unknown" data-player-id="${player.id}" aria-pressed="${mode === 'unknown'}">${t('Unknown')}</button>
           </div>
         </div>
         <div class="equity-hand-message" id="equityHandMessage-${playerIndex}">${status}</div>

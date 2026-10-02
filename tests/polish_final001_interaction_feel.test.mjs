@@ -24,7 +24,8 @@ test('shared analysis card notation has a compact explicit contrast surface', ()
 
 test('motion language is tokenized, event-scoped, and avoids large animated trees', () => {
   for (const token of ['--motion-micro', '--motion-standard', '--motion-emphasis']) {
-    assert.match(polishCss, new RegExp(`${token}:\\s*var\\(--duration-`));
+    // DS-FOUNDATION-001 moved every :root token into the single token block.
+    assert.match(css.slice(0, css.indexOf('\n}\n')), new RegExp(`${token}:\\s*var\\(--duration-`));
   }
   assert.match(logic, /classList\.toggle\('is-analysis-entering', isHidden\)/);
   assert.match(logic, /classList\.toggle\('is-view-entering', item === destination\)/);

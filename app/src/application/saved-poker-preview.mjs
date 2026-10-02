@@ -1,6 +1,7 @@
 // Shared Saved card-tile preview (Hero cards + board) used by the Saved library and
 // Saved Training history. Presentation only: it renders already-stored card strings
 // through card-presentation/v1 and computes no poker, strategy, or Equity.
+// Card rows are poker data islands: they read left-to-right in every locale.
 
 export const SAVED_POKER_PREVIEW_SCHEMA_VERSION = 'saved-poker-preview/v1';
 
@@ -8,6 +9,12 @@ function el(doc, tag, className, text) {
   const node = doc.createElement(tag);
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function pokerIsland(doc, className) {
+  const node = el(doc, 'span', `${className} poker-island`);
+  node.dir = 'ltr';
   return node;
 }
 
@@ -49,14 +56,14 @@ export function createSavedPokerPreview(doc, item, { variant = 'compact', ...opt
   const size = variant === 'detail' ? 'compact' : variant === 'quick' ? 'result' : 'mini';
   const cardOptions = { ...options, size };
   const hero = el(doc, 'span', 'saved-preview-group saved-preview-group--hero');
-  const heroCards = el(doc, 'span', 'saved-preview-cards');
+  const heroCards = pokerIsland(doc, 'saved-preview-cards');
   const knownHeroCards = Array.isArray(item.heroCards) ? item.heroCards : [];
   for (let index = 0; index < 2; index += 1) {
     heroCards.appendChild(createSavedPreviewCard(doc, knownHeroCards[index] || null, 'Unknown card', cardOptions));
   }
   hero.append(el(doc, 'span', '', t('Hero')), heroCards);
   const board = el(doc, 'span', 'saved-preview-group saved-preview-group--board');
-  const boardCards = el(doc, 'span', 'saved-preview-cards');
+  const boardCards = pokerIsland(doc, 'saved-preview-cards');
   (Array.isArray(item.board) ? item.board : []).forEach((card) => {
     boardCards.appendChild(createSavedPreviewCard(doc, card, 'Unknown card', cardOptions));
   });

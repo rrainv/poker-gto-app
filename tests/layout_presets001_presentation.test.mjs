@@ -18,7 +18,8 @@ const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const translations = fs.readFileSync(new URL('../app/src/locales/product-translations.js', import.meta.url), 'utf8');
 const bootstrap = fs.readFileSync(new URL('../app/src/application/presentation-density-bootstrap.mjs', import.meta.url), 'utf8');
-const presetCss = css.slice(css.indexOf('LAYOUT-PRESETS-001: first-class workspace composition'));
+// Bounded before the surface styles DS-FOUNDATION-001 relocated from riverline-design.css.
+const presetCss = css.slice(css.indexOf('LAYOUT-PRESETS-001: first-class workspace composition'), css.indexOf('Surface styles relocated from the retired'));
 
 class MemoryStorage {
   constructor(initial = {}) {

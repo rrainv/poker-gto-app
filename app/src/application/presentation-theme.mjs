@@ -52,7 +52,15 @@ const CUSTOM_PROPERTY_NAMES = Object.freeze([
   '--learning-secondary', '--learning-muted', '--support-text', '--analysis-support',
   '--learning-support', '--accent-text', '--status-warning', '--status-danger', '--status-info',
   '--status-positive', '--warning', '--danger', '--success',
+  '--action-fold-text', '--action-passive-text', '--action-aggressive-text', '--action-all-in-text',
 ]);
+
+// Poker-action hues are theme-independent data colors (mirrors the --action-* values
+// in styles.css). Text roles derived from them keep the hue but reach 4.5:1 on every
+// study surface, so an action-named verdict can carry its action color as text.
+export const POKER_ACTION_COLORS = Object.freeze({
+  fold: '#68716c', passive: '#4f8f99', aggressive: '#b27e4d', 'all-in': '#a85f70',
+});
 
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 const roundByte = (value) => Math.round(clamp(value, 0, 255));
@@ -508,6 +516,10 @@ function applyCustomProperties(root, theme, customization) {
     setCustomProperty(root, `--status-${name}`, semanticText(color));
   }
   for (const [alias, name] of Object.entries({ warning: 'warning', danger: 'danger', success: 'positive' })) setCustomProperty(root, `--${alias}`, `var(--status-${name})`);
+  const actionTextBackgrounds = [...textBackgrounds, roles['--analysis-primary-surface']];
+  for (const [name, color] of Object.entries(POKER_ACTION_COLORS)) {
+    setCustomProperty(root, `--action-${name}-text`, ensureContrastAcross(color, actionTextBackgrounds, 4.5, paletteForText.tone));
+  }
   if (!customization) return;
   const activeSurface = customization.surface ?? theme.preview.surface;
   const surfacePalette = deriveSurfacePalette(activeSurface);

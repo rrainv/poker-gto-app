@@ -7,7 +7,8 @@ const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.ur
 const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
 const i18n = fs.readFileSync(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8');
 const trainingMarkup = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('<!-- Equity workspace -->'));
-const ticketCss = css.slice(css.indexOf('TRAINING-COMPOSITION-001'));
+// Bounded before the surface styles DS-FOUNDATION-001 relocated from riverline-design.css.
+const ticketCss = css.slice(css.indexOf('TRAINING-COMPOSITION-001'), css.indexOf('Surface styles relocated from the retired'));
 
 function sourceBetween(start, end) {
   return logic.slice(logic.indexOf(start), logic.indexOf(end));

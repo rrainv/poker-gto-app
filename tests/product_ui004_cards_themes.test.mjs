@@ -77,7 +77,8 @@ test('four-color semantics and Daylight controls retain their semantic tokens', 
     assert.match(css, new RegExp(`--suit-${suit}:\\s*${color}`, 'i'));
   }
   assert.match(css, /html\[data-four-color="false"\][\s\S]*?--suit-diamond:\s*var\(--suit-heart\)/);
-  assert.match(css, /select, input\[type=number\] \{[\s\S]*?background:\s*var\(--surface-interactive\)[\s\S]*?color:\s*var\(--text-primary\)/);
+  // DS-FOUNDATION-001: the Field component owns native selects/number inputs in every theme.
+  assert.match(css, /\.control-select,\n:where\(input\[type="text"\], input\[type="number"\][^{]*select[^{]*\{[\s\S]*?color:\s*var\(--text-primary\);\s*background-color:\s*var\(--surface-inset\)/);
 });
 
 test('theme names remain curated and card identity tokens stay outside theme overrides', () => {

@@ -28,6 +28,9 @@ assert.ok(uiQaStart > 0, 'UI-QA-002B stylesheet section must exist');
 const uiQaEnd = css.indexOf('PRODUCT-UI-002: density, geometry, and component fit', uiQaStart);
 assert.ok(uiQaEnd > uiQaStart, 'UI-QA-002B stylesheet section must remain bounded');
 const uiQaCss = css.slice(uiQaStart, uiQaEnd);
+// DS-FOUNDATION-001 moved every :root token into the single token block.
+const tokenBlock = css.slice(0, css.indexOf('\n}\n'));
+
 const renderChart = logic.slice(logic.indexOf('function renderChart()'), logic.indexOf('function visualActionKind'));
 
 test('Range Matrix keeps the exact 13 by 13 hand-class mapping', () => {
@@ -45,7 +48,9 @@ test('Range Matrix keeps the exact 13 by 13 hand-class mapping', () => {
 test('matrix cells are compact, fixed, scroll-contained, LTR, and never zoom', () => {
   assert.match(matrixHtml, /class="matrix-wrap"[^>]+tabindex="0"/);
   assert.match(matrixHtml, /id="strategyGrid" role="grid"/);
-  assert.match(uiQaCss, /--range-matrix-cell:\s*clamp\(42px, 3\.2vw, 50px\)/);
+  // Effective cell token: a later PRODUCT-UI-005 value superseded 3.2vw/50px and
+  // DS-FOUNDATION-001 dropped that dead declaration when merging :root blocks.
+  assert.match(tokenBlock, /--range-matrix-cell:\s*clamp\(42px, 2\.75vw, 46px\)/);
   assert.match(uiQaCss, /grid-template-columns:\s*repeat\(13, var\(--range-matrix-cell\)\)/);
   assert.match(uiQaCss, /\.range-matrix-panel \.matrix-wrap\s*\{[^}]*overflow-x:\s*auto/);
   assert.match(uiQaCss, /\[dir="rtl"\][\s\S]*?\.strategy-grid\s*\{\s*direction:\s*ltr !important/);
@@ -96,7 +101,7 @@ test('one compact legend retains every stable semantic action mapping', () => {
 
 test('spades use face-dark and theme-aware UI contrast without changing suit compatibility', () => {
   assert.match(css, /--suit-spade:\s*#18201c/);
-  assert.match(uiQaCss, /--suit-spade-ui:\s*var\(--text-primary\)/);
+  assert.match(tokenBlock, /--suit-spade-ui:\s*var\(--text-primary\)/);
   assert.match(uiQaCss, /data-picker-suit="s"[^}]*var\(--suit-spade-ui\)/);
   assert.match(css, /html\[data-four-color="false"\][\s\S]*?--suit-diamond:\s*var\(--suit-heart\)[\s\S]*?--suit-club:\s*var\(--suit-spade\)/);
   for (const suit of ['h', 'd', 'c', 's']) assert.match(logic, new RegExp(`card--suit-\\$\\{suit\\.id\\}`));

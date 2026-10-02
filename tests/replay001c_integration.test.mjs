@@ -184,7 +184,7 @@ test('replay cues share the bounded semantic motion scale and stay restrained', 
   assert.match(css, /@keyframes replay-fold-cards-a[\s\S]*?translate: var\(--card-fold-to-x, 0\) var\(--card-fold-to-y, 12px\)/);
   assert.match(css, /\.table-hole-cards\.is-replay-card-motion/);
   assert.match(css, /@keyframes replay-next-actor-a[\s\S]*stroke-dashoffset: 80[\s\S]*stroke-dashoffset: 0/);
-  assert.doesNotMatch(css.slice(css.indexOf('/* REPLAY-001C:')), /infinite|alternate|rotate|bounce/i);
+  assert.doesNotMatch(css.slice(css.indexOf('/* REPLAY-001C:'), css.indexOf('Surface styles relocated from the retired')), /infinite|alternate|rotate|bounce/i);
 });
 
 test('one radial-felt seat/card unit supports deliberate geometry for every table size', () => {

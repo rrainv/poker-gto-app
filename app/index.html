@@ -20,7 +20,7 @@
   <script src="src/application/presentation-theme-prepaint.js"></script>
   <script type="module" src="src/application/presentation-theme-initial.mjs"></script>
 
-  <link rel="stylesheet" href="styles.css?v=27">
+  <link rel="stylesheet" href="styles.css?v=28">
 
   <link rel="icon" type="image/svg+xml" href="assets/riverline-brand-mark.svg">
 
@@ -332,7 +332,6 @@
 
   </style>
 
-  <link rel="stylesheet" href="src/ui/riverline-design.css?v=1">
 
 </head>
 
@@ -2803,7 +2802,7 @@
             <div id="equityEstimate" class="equity-estimate" aria-live="polite" data-i18n="Add complete known hands or mark them unknown to estimate the calculation.">Add complete known hands or mark them unknown to estimate the calculation.</div>
             <div id="equityReadiness" class="equity-readiness" data-state="blocked" role="status" aria-live="polite" data-i18n="Complete Hero's known hand or mark it unknown.">Complete Hero's known hand or mark it unknown.</div>
             <div id="equityStatus" class="equity-calculation-status muted" role="status" aria-live="polite" aria-atomic="true" data-i18n="Results update after calculation.">Results update after calculation.</div>
-            <div class="equity-calculate-row" data-tutorial-anchor="equity-calculate"><button id="calculate" class="primary equity-calculate" type="button" aria-describedby="equityReadiness equityEstimate" disabled data-i18n="Calculate equity">Calculate equity</button><button id="cancelEquity" class="ui-button ui-button-danger equity-cancel" type="button" hidden data-i18n="Cancel">Cancel</button></div>
+            <div class="equity-calculate-row" data-tutorial-anchor="equity-calculate"><button id="calculate" class="ui-button ui-button--primary equity-calculate" type="button" aria-describedby="equityReadiness equityEstimate" disabled data-i18n="Calculate equity">Calculate equity</button><button id="cancelEquity" class="ui-button ui-button--danger equity-cancel" type="button" hidden data-i18n="Cancel">Cancel</button></div>
             <div id="progress" class="progress-wrap" data-progress-mode="indeterminate" hidden aria-label="Equity calculation activity" data-i18n-aria-label="Equity calculation activity"><div class="progress-heading"><span class="progress-spinner" aria-hidden="true"></span><strong class="progress-method" data-i18n="Preparing calculation…">Preparing calculation…</strong><span class="progress-percent" hidden></span></div><div class="progress-track" role="progressbar" aria-label="Equity calculation progress" data-i18n-aria-label="Equity calculation progress"><div class="progress-fill"></div></div><div class="progress-copy"><span class="progress-status" data-i18n="Waiting for measurable work…">Waiting for measurable work…</span><span class="progress-telemetry poker-data-token" hidden></span></div></div>
             <details id="equityAdvanced" class="equity-advanced" data-tutorial-anchor="equity-advanced"><summary data-i18n="Advanced calculation settings">Advanced calculation settings</summary><div class="equity-advanced-body"><label class="ui-field"><span data-i18n="Monte Carlo seed">Monte Carlo seed</span><div class="equity-seed-row"><input id="equitySeed" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="Generated automatically" data-i18n-placeholder="Generated automatically"><button id="rerollEquitySeed" class="ui-button ui-button-ghost" type="button" data-i18n="New seed">New seed</button></div><small class="muted" data-i18n="Leave blank for a generated seed. Reuse a seed for reproducible simulation.">Leave blank for a generated seed. Reuse a seed for reproducible simulation.</small></label></div></details>
           </section>
