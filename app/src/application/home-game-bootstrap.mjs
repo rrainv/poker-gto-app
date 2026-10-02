@@ -960,6 +960,12 @@ export function installHomeGameWorkspace(browserWindow = window, bridge = browse
     seatDrafts.setOwnerScope(`${state.persistence}:${state.ownerId || ''}`);
     refs.persistence.textContent = translate(browserWindow, guest ? 'Guest · in-memory only' : 'Account · saved on this device');
     refs.persistence.className = `status-badge ${guest ? 'status-badge--warning' : 'status-badge--available'}`;
+    // SHELL-001: header context = persistence + the open session's title.
+    browserWindow.RiverlineWorkspaceHeader?.setContext('home-game', [refs.persistence.textContent, state.current?.session.title || '']);
+    // One accent action per view: with a session open, its own action
+    // (Complete session) is primary and the New Session form steps back.
+    refs.createButton?.classList?.toggle('ui-button--primary', !state.current);
+    refs.createButton?.classList?.toggle('ui-button--secondary', Boolean(state.current));
     refs.notice.hidden = false;
     refs.notice.textContent = translate(browserWindow, guest
       ? 'Guest sessions are not kept after reload. Sign in before starting a game you want to keep.'

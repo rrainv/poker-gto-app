@@ -10,7 +10,7 @@ Riverline is a serious personal poker learning workstation. Premium means consis
 
 ## 2. Current product surfaces
 
-- **Home:** account/Guest-aware study context, next action, Review, Recent, and a compact Destinations rail. Existing loaded evidence supplies the content; the dashboard adds no intelligence authority.
+- **Home:** account/Guest-aware study context, next action, Review (with a Review Mistakes link) and Recent; the Destinations rail was removed in `SHELL-001` because it duplicated the sidebar. Existing loaded evidence supplies the content; the dashboard adds no intelligence authority.
 - **Hand:** canonical legal full-hand play, Table Presence, action dock, timeline, completion, and Replay.
 - **Review:** shared decision-by-decision Hand and Full Hand Training review over canonical history.
 - **Analyze:** Scenario or Hand decision analysis, explanation, evidence, provenance, Matrix, ranges, and structural board/blocker facts.
@@ -25,7 +25,7 @@ Riverline is a serious personal poker learning workstation. Premium means consis
 ## 3. State-aware projection model
 
 September 10 presentation refinement (`BETA-REPAIR-SWEEP-B`, human acceptance
-pending): Home's main sections flow independently of its Destinations rail.
+pending): Home's main sections flow independently (one main column since `SHELL-001`).
 Hand keeps a stable major table footprint across 2–10 seats, with adaptive seat
 internals and a bottom-anchored Hero. Review gives the decision explanation most
 of the width, with context, navigation and Replay in one independently flowing

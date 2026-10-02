@@ -1075,6 +1075,8 @@ function createController(root, application, initialWorkspace, activationStarted
       return option;
     }));
     query('#calibrationProfileName').textContent = entry.profile.displayName;
+    // SHELL-001: the header context names the selected profile and Approach.
+    document.defaultView?.RiverlineWorkspaceHeader?.setContext('personal-strategy', [entry.profile.displayName, mode?.displayName || '']);
     query('#calibrationProfileDescriptionSummary').textContent = entry.profile.description
       || translated('Independent intended Approaches for a game you recognize.');
 
@@ -2286,6 +2288,7 @@ function createController(root, application, initialWorkspace, activationStarted
       selection = null;
       if (personalStrategyScopeLifecycle.capture()) activateCurrentPersonalStrategyScope();
       setState('empty');
+      document.defaultView?.RiverlineWorkspaceHeader?.setContext('personal-strategy', []);
       renderDecisionExample();
       return;
     }

@@ -233,7 +233,10 @@ test('major workspaces consume the shared semantic surface grammar', () => {
   assert.match(css, /\.riverline-shell\s*\{[\s\S]*?background:\s*var\(--surface-canvas\)/);
   assert.match(css, /\.mode-rail\s*\{[\s\S]*?background:\s*var\(--surface-shell\)/);
   assert.match(css, /\.panel\s*\{[\s\S]*?background:\s*var\(--surface-panel\)/);
-  assert.match(css, /#gtoMode \.playbook-state-source[\s\S]*?var\(--surface-panel\)/);
+  // SHELL-001: the Playbook strip is a quiet status line (its switch moved into
+  // the header bar, which uses the shell surface).
+  assert.match(css, /\.playbook-state-source \{[^}]*padding: 0;/);
+  assert.match(css, /SHELL-001: shell composition[\s\S]*?\.workspace-header \{[^}]*background: var\(--surface-shell\)/);
   assert.match(css, /#equityMode\s*\{[\s\S]*?background:\s*var\(--surface-base\)/);
   assert.match(css, /\.saved-study-viewer-banner\s*\{[\s\S]*?var\(--surface-inset\)/);
   assert.match(css, /\.home-game-player-card[\s\S]*?var\(--surface-subtle\)/);

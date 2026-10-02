@@ -10,9 +10,11 @@ const tokenBlock = css.slice(0, css.indexOf('\n}\n'));
 
 
 test('shared workspace primitives define bounded, readable, rail, and dense composition roles', () => {
-  assert.match(tokenBlock, /--workspace-frame-standard:\s*1380px/);
-  assert.match(tokenBlock, /--workspace-frame-wide:\s*1500px/);
-  assert.match(tokenBlock, /--workspace-frame-dense:\s*1680px/);
+  // SHELL-001: one canvas grid; every frame name aliases the shared --canvas-max.
+  assert.match(tokenBlock, /--canvas-max:\s*1680px/);
+  assert.match(tokenBlock, /--workspace-frame-standard:\s*var\(--canvas-max\)/);
+  assert.match(tokenBlock, /--workspace-frame-wide:\s*var\(--canvas-max\)/);
+  assert.match(tokenBlock, /--workspace-frame-dense:\s*var\(--canvas-max\)/);
   assert.match(tokenBlock, /--workspace-readable-max:\s*1120px/);
   assert.match(ticketCss, /\.workspace-frame\s*\{[\s\S]*?width:\s*min\(100%, var\(--workspace-frame-max/);
   assert.match(ticketCss, /:is\(\.workspace-layout, \.playbook-workspace, \.training-workspace, \.equity-workspace\)/);
@@ -38,9 +40,8 @@ test('Home, Saved, Training, Personal Strategy, and Equity consume the same fram
   assert.match(html, /id="rangeCalibrationMount" class="workspace-frame workspace-frame--wide workspace-dense-surface"/);
   assert.match(html, /id="trainingMode"[\s\S]*?class="workspace-frame workspace-frame--wide"[\s\S]*?id="trainingWorkspace"/);
   assert.match(html, /id="equityMode"[\s\S]*?class="workspace-frame workspace-frame--standard"[\s\S]*?class="equity-workspace"/);
-  assert.match(ticketCss, /\.home-workspace\s*\{\s*width:\s*min\(100%, var\(--workspace-frame-standard\)\)/);
-  assert.match(ticketCss, /\.range-calibration-workspace\s*\{\s*width:\s*min\(100%, var\(--workspace-frame-wide\)\)/);
-  assert.match(ticketCss, /\.training-workspace\s*\{\s*width:\s*min\(100%, var\(--workspace-frame-wide\)\)/);
+  // SHELL-001: workspaces fill the shared frame instead of setting their own widths.
+  assert.doesNotMatch(css, /\.(?:home|range-calibration|training|equity)-workspace\s*\{[^}]*\bwidth:\s*min\(/);
   assert.match(ticketCss, /\.equity-workspace\s*\{[\s\S]*?minmax\(var\(--workspace-rail-min\), var\(--workspace-rail-max\)\)/);
 });
 

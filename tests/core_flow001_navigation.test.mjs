@@ -101,7 +101,8 @@ test('Home and Saved resolve to distinct visible states over the same Home autho
   const homeAgain = resolveHomeDestination('home', { sessionMode: 'account', hasContinuation: true });
   assert.equal(home.destination, 'home');
   assert.equal(saved.destination, 'saved');
-  assert.deepEqual(Array.from(home.visibleSections), ['overview', 'continue', 'review', 'recent', 'quick']);
+  // SHELL-001: Home's Destinations ('quick') panel was removed; the sidebar holds those links.
+  assert.deepEqual(Array.from(home.visibleSections), ['overview', 'continue', 'review', 'recent']);
   // SAVED-LIBRARY-001: Saved owns an independent library section instead of reusing Home Recent.
   assert.deepEqual(Array.from(saved.visibleSections), ['saved-overview', 'library']);
   assert.deepEqual(Array.from(homeAgain.visibleSections), Array.from(home.visibleSections));
@@ -196,11 +197,16 @@ test('Personal Strategy is the umbrella while Calibration, Teacher, Matrix, and 
 });
 
 test('Home offers real workflow entries and the Core Flow shell has EN, RU, HE, and RTL coverage', () => {
+  // SHELL-001: Home's Destinations links duplicated the sidebar and were removed;
+  // the view model's quickStart destinations still gate the Review Mistakes link.
   for (const destination of ['hand', 'analyze', 'training', 'equity']) {
-    assert.match(html, new RegExp(`data-home-destination="${destination}"`));
+    assert.match(html, new RegExp(`class="mode-nav-item[^"]*"[^>]*data-navigation-id="${destination}"`));
     assert.match(homeModel, new RegExp(`['"]${destination}['"]`));
   }
+  assert.match(html, /id="homeReviewMistakesLink"[^>]*data-home-destination="review_mistakes"/);
   assert.match(logic, /action\.dataset\.homeDestination = 'personal-strategy'/);
+  // 'Hand workflow' / 'Analysis source' remain translated catalog keys (the strip
+  // kicker they labelled moved into the SHELL-001 header mode switch).
   for (const key of ['Core study', 'Hand', 'Analyze', 'Saved study', 'Saved Hands & Spots', 'Hand workflow', 'Analysis source', 'Opening Personal Strategy']) {
     const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     assert.match(translations, new RegExp(`'${escaped}'`, 'g'));

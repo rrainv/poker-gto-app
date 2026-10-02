@@ -347,10 +347,14 @@
   --motion-standard: var(--duration-normal);
   --motion-emphasis: var(--duration-slow);
 
-  /* formerly a separate :root block (old line 13316) */
-  --workspace-frame-standard: 1380px;
-  --workspace-frame-wide: 1500px;
-  --workspace-frame-dense: 1680px;
+  /* SHELL-001: one canvas grid. Every workspace frame shares --canvas-max and
+     the canvas owns the gutter (--gutter-canvas); workspaces pick column
+     templates, never their own margins. The frame names remain as aliases. */
+  --canvas-max: 1680px;
+  --header-bar-height: 56px;
+  --workspace-frame-standard: var(--canvas-max);
+  --workspace-frame-wide: var(--canvas-max);
+  --workspace-frame-dense: var(--canvas-max);
   --workspace-readable-max: 1120px;
   --workspace-readable-measure: 76ch;
   --workspace-rail-min: 300px;
@@ -369,14 +373,9 @@
 /* HOME-002A: account-aware personal study workspace ------------------- */
 
 #homeMode {
-  padding: var(--space-6);
+  padding-block: var(--space-6);
   overflow-y: auto;
   background: var(--surface-canvas);
-}
-
-.riverline-shell[data-active-mode="home"] .strategy-source-status,
-.riverline-shell[data-active-mode="homegame"] .strategy-source-status {
-  display: none;
 }
 
 .workspace-tutorial-button {
@@ -387,13 +386,12 @@
 .workspace-tutorial-button[hidden] { display: none !important; }
 
 .home-workspace {
-  width: min(1540px, 100%);
   margin-inline: auto;
 }
 
 /* HOME-GAME-001A: separate organizer domain and accounting workspace --- */
 .home-game-workspace {
-  width: min(1760px, 100%);
+  width: min(100%, var(--canvas-max));
   margin-inline: auto;
   display: grid;
   gap: var(--space-4);
@@ -727,10 +725,8 @@
 .home-section--review { grid-area: review; }
 .home-section--recent { grid-area: recent; }
 .home-section--strategy { grid-area: strategy; }
-.home-section--quick { grid-area: quick; }
 .home-section--other { grid-area: other; }
 .mode-nav-item[hidden],
-.home-quick-link[hidden],
 .home-section[hidden] { display: none !important; }
 .home-section--guest-account { grid-area: guest; }
 .home-dashboard-grid[data-session-mode="guest"] {
@@ -769,8 +765,6 @@
   margin-block-end: var(--space-4);
 }
 
-#homeMode[data-product-destination="saved"] .workspace-frame--standard { --workspace-frame-max: var(--workspace-frame-wide); }
-#homeMode[data-product-destination="saved"] .home-workspace { width: min(100%, var(--workspace-frame-wide)); }
 .saved-library-categories { display: none; }
 .home-dashboard-grid[data-product-destination="saved"] .saved-library-categories {
   display: flex;
@@ -1193,31 +1187,6 @@ div.home-empty-state .ui-button { justify-self: start; }
 
 .home-calibration-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
 
-.home-quick-links {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-}
-
-.home-quick-link {
-  min-width: 0;
-  min-height: 92px;
-  display: grid;
-  align-content: center;
-  gap: var(--space-1);
-  padding: var(--space-4);
-  color: var(--text-primary);
-  text-align: start;
-  background: var(--surface-inset);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-control);
-  cursor: pointer;
-}
-
-.home-quick-link:hover { background: var(--surface-interactive-hover); border-color: var(--border-strong); }
-.home-quick-link:focus-visible { outline: none; border-color: var(--border-focus); box-shadow: var(--focus-ring); }
-.home-quick-link span { color: var(--text-muted); font-size: var(--text-micro-size); }
-.home-quick-link--hand { background: color-mix(in srgb, var(--accent-primary) 6%, var(--surface-interactive)); border-color: color-mix(in srgb, var(--accent-primary) 28%, var(--border-default)); }
 
 .home-other-links { display: grid; gap: var(--space-2); }
 .home-other-link {
@@ -1279,15 +1248,13 @@ div.home-empty-state .ui-button { justify-self: start; }
       "continue quick quick"
       "strategy other other";
   }
-  .home-quick-links { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .home-section--continue,
-  .home-section--quick { min-height: 238px; }
+  .home-section--continue { min-height: 238px; }
   .home-section--strategy,
   .home-section--other { min-height: 224px; }
 }
 
 @media (max-width: 1120px) {
-  #homeMode { padding: var(--space-4); }
+  #homeMode { padding-block: var(--space-4); }
   .home-dashboard-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
@@ -1419,7 +1386,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 /* DESIGN-008: focused Training workspace ------------------------------- */
 
 #trainingMode {
-  padding: var(--space-6);
+  padding-block: var(--space-6);
   overflow-y: auto;
   background: var(--surface-canvas);
 }
@@ -1427,7 +1394,6 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 #trainingMode [hidden] { display: none !important; }
 
 .training-workspace {
-  width: min(1540px, 100%);
   margin-inline: auto;
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(270px, .72fr) minmax(280px, .7fr);
@@ -1669,7 +1635,6 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
   .training-workspace[data-training-full-hand-phase="live"],
   .training-workspace[data-training-full-hand-phase="complete"],
   .training-workspace[data-training-full-hand-phase="review"] {
-    width: min(1720px, 100%);
     grid-template-columns: minmax(230px, .62fr) minmax(620px, 1.8fr) minmax(220px, .55fr);
     grid-template-areas: "insight decision setup";
   }
@@ -1748,7 +1713,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 }
 
 @media (max-width: 1024px) {
-  #trainingMode { padding: var(--space-5); }
+  #trainingMode { padding-block: var(--space-5); }
   .training-workspace { grid-template-columns: minmax(0, 1.25fr) minmax(260px, .72fr); grid-template-areas: "decision insight" "setup setup"; gap: var(--space-4); }
   .training-context-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .training-context-strip > div:nth-child(odd) { border-inline-start: 0; }
@@ -1762,7 +1727,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 }
 
 @media (max-width: 768px) {
-  #trainingMode { padding: var(--space-4); }
+  #trainingMode { padding-block: var(--space-4); }
   .training-workspace { display: flex; flex-direction: column; }
   .training-decision-column { order: 1; width: 100%; }
   .training-insight-column { order: 2; width: 100%; }
@@ -1786,7 +1751,7 @@ body:has(#settingsModal.show) .tutorial-layer { z-index: calc(var(--z-modal-back
 }
 
 @media (max-width: 480px) {
-  #trainingMode { padding: var(--space-3); }
+  #trainingMode { padding-block: var(--space-3); }
   .training-decision-panel { padding: var(--space-4); }
   .training-table-summary { min-height: 230px; padding: var(--space-4); }
   .training-context-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -4871,7 +4836,9 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 
 }
 
-[dir="rtl"] header {
+/* SHELL-001: the workspace header bar mirrors by direction alone; reversing
+   it here double-mirrored it back to LTR order. Other headers: QA-SHELL-002. */
+[dir="rtl"] header:not(.workspace-header) {
 
     flex-direction: row-reverse;
 
@@ -5342,7 +5309,7 @@ label { display: block; color: var(--text-muted); font-size: var(--text-label-si
 }
 
 /* Live Dot Gentle Breathing Animation */
-.strategy-source-status-dot, .live-indicator .dot {
+.live-indicator .dot {
   animation: statusPulse 2s infinite ease-in-out;
 }
 
@@ -6097,56 +6064,8 @@ html[data-welcome-orientation="visible"] .mode-nav-item .mode-nav-icon { color: 
 
 .workspace-shell { min-width: 0; }
 
-.workspace-header {
-  position: sticky;
-  inset-block-start: 0;
-  min-height: 78px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-7);
-  margin: 0;
-  padding: var(--space-4) var(--space-8);
-  background: var(--surface-shell);
-  border: 0;
-  border-bottom: 1px solid var(--border-subtle);
-  border-radius: 0;
-  z-index: 20;
-}
-
-.workspace-heading {
-  min-width: 180px;
-  display: grid;
-  gap: 1px;
-}
-
-.workspace-eyebrow {
-  color: var(--accent-secondary);
-  font-size: var(--text-micro-size);
-  font-weight: 700;
-  letter-spacing: .08em;
-}
-
-.workspace-heading h1 {
-  color: var(--text-primary);
-  font-size: var(--t-title);
-  line-height: 1.2;
-}
-
-.workspace-heading p {
-  max-width: 520px;
-  color: var(--text-muted);
-  font-size: var(--text-label-size);
-  line-height: 1.35;
-}
-
-.workspace-utilities {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: var(--space-3);
-}
+/* Header bar, canvas grid and sidebar footer: see the SHELL-001 section at
+   the end of this file. */
 
 .account-header-control { position: relative; min-width: 0; flex: 0 1 auto; }
 .account-menu-button {
@@ -6234,7 +6153,6 @@ html[data-welcome-orientation="visible"] .mode-nav-item .mode-nav-icon { color: 
 .account-menu > button:hover,
 .account-menu > button:focus-visible { background: var(--surface-interactive-hover); outline: none; }
 
-.strategy-source-status,
 .utility-button,
 .utility-select {
   min-height: 38px;
@@ -6244,7 +6162,6 @@ html[data-welcome-orientation="visible"] .mode-nav-item .mode-nav-icon { color: 
   border-radius: var(--radius-control);
 }
 
-.strategy-source-status,
 .utility-button {
   display: inline-flex;
   align-items: center;
@@ -6254,43 +6171,11 @@ html[data-welcome-orientation="visible"] .mode-nav-item .mode-nav-icon { color: 
   cursor: pointer;
 }
 
-.strategy-source-status {
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-4);
-  text-align: start;
-}
-
 .utility-button:hover,
 .utility-select:hover {
   color: var(--text-primary);
   background: var(--surface-interactive);
   border-color: var(--border-subtle);
-}
-
-.strategy-source-status-dot {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 8px;
-  border-radius: 50%;
-  background: var(--status-info);
-}
-
-.strategy-source-status-copy {
-  display: grid;
-  gap: 0;
-}
-
-.strategy-source-status-label {
-  color: var(--text-muted);
-  font-size: 9px;
-  line-height: 1.1;
-}
-
-.strategy-source-status-copy strong {
-  color: var(--text-secondary);
-  font-size: var(--text-micro-size);
-  line-height: 1.25;
-  white-space: nowrap;
 }
 
 .utility-select {
@@ -6337,13 +6222,6 @@ html[data-welcome-orientation="visible"] .mode-nav-item .mode-nav-icon { color: 
 .utility-button:not(.muted) .utility-icon-muted,
 .utility-button:not(.is-unlocked) .utility-icon-unlock { display: none; }
 
-.workspace-canvas {
-  width: 100%;
-  max-width: 1600px;
-  margin-inline: auto;
-  padding: var(--space-7) var(--space-8) var(--space-9);
-}
-
 @media (max-width: 1180px) {
   .riverline-shell { grid-template-columns: 76px minmax(0, 1fr); }
   .mode-rail { padding-inline: var(--space-3); }
@@ -6351,10 +6229,8 @@ html[data-welcome-orientation="visible"] .mode-nav-item .mode-nav-icon { color: 
   .rail-brand-copy,
   .rail-footer,
   .mode-nav-item > span,
-  .utility-label,
-  .strategy-source-status-label { display: none; }
+  .utility-label { display: none; }
   .mode-nav-item { justify-content: center; padding-inline: 0; }
-  .workspace-header { padding-inline: var(--space-6); }
 }
 
 @media (max-width: 820px) {
@@ -6396,34 +6272,9 @@ html[data-welcome-orientation="visible"] .mode-nav-item .mode-nav-icon { color: 
     height: 3px;
   }
   .mode-nav-icon { width: 18px; height: 18px; }
-  .workspace-header {
-    position: relative;
-    min-height: 0;
-    padding: var(--space-4) var(--space-5);
-    flex-wrap: wrap;
-  }
-  .workspace-heading { flex: 1 1 260px; }
-  .workspace-utilities { flex: 1 1 auto; }
-  .workspace-canvas { padding: var(--space-5) var(--space-4) var(--space-9); }
 }
 
 @media (max-width: 560px) {
-  .workspace-header { display: grid; gap: var(--space-4); }
-  .workspace-heading p { max-width: 100%; }
-  .workspace-utilities {
-    width: 100%;
-    display: grid;
-    grid-template-columns: minmax(76px, 1fr) repeat(3, 42px);
-    gap: var(--space-2);
-  }
-  .strategy-source-status {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    padding-inline: var(--space-3);
-    background: var(--surface-interactive);
-    border-color: var(--border-subtle);
-  }
-  .strategy-source-status-label { display: block; }
   .utility-select,
   .utility-button {
     min-width: 0;
@@ -6436,8 +6287,7 @@ html[data-welcome-orientation="visible"] .mode-nav-item .mode-nav-icon { color: 
 }
 
 [dir="rtl"] .mode-rail { border-inline-end: 1px solid var(--border-subtle); }
-[dir="rtl"] .mode-nav-item,
-[dir="rtl"] .strategy-source-status { text-align: right; }
+[dir="rtl"] .mode-nav-item { text-align: right; }
 
 /* --------------------------------------------------------------------------
    DS-FOUNDATION-001: component layer. Owner: docs/project/DESIGN_SYSTEM.md.
@@ -8377,23 +8227,17 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 
 /* PLAYBOOK-001: explicit state-source contract -------------------------- */
 
+/* SHELL-001: the Hand/Scenario switch moved into the header bar. What stays
+   here is the authority/status line (and the narrow-screen context toggle),
+   shown as one quiet line, not a titled band. */
 .playbook-state-source {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-5);
-  margin: 0 0 var(--space-6);
-  padding: var(--space-4) var(--space-5);
+  gap: var(--space-2) var(--space-5);
+  margin: 0 0 var(--space-4);
+  padding: 0;
   color: var(--text-secondary);
-  background: var(--surface-panel);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-control);
-}
-
-.playbook-state-source .ui-segments { flex: 0 0 auto; }
-.playbook-state-source .ui-tab[aria-pressed="true"] {
-  color: var(--text-primary);
-  background: var(--surface-interactive-hover);
-  box-shadow: inset 0 -2px 0 var(--accent-primary);
 }
 
 .playbook-mode-status {
@@ -8449,10 +8293,6 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   cursor: default;
 }
 
-@media (max-width: 768px) {
-  .playbook-state-source { align-items: flex-start; flex-direction: column; }
-}
-
 /* DESIGN-006: Playbook analysis workspace ------------------------------ */
 
 #gtoMode {
@@ -8460,60 +8300,6 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
   --playbook-decision-glow: color-mix(in srgb, var(--accent-primary) 16%, transparent);
 }
 
-#gtoMode .playbook-state-source {
-  display: grid;
-  grid-template-columns: minmax(170px, 0.65fr) minmax(360px, 1.35fr);
-  gap: var(--space-4) var(--space-6);
-  margin-bottom: var(--space-5);
-  padding: var(--space-5) var(--space-6);
-  background:
-    linear-gradient(120deg, color-mix(in srgb, var(--accent-primary) 8%, transparent), transparent 42%),
-    var(--surface-panel);
-  box-shadow: var(--shadow-sm);
-}
-
-.playbook-workflow-copy {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-}
-
-.playbook-workflow-copy strong { color: var(--text-primary); font-size: var(--text-body-size); }
-.playbook-workflow-kicker {
-  color: var(--accent-primary);
-  font-size: var(--text-overline-size);
-  font-weight: 800;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-#playbookModeControl {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
-  padding: var(--space-1);
-}
-
-#playbookModeControl .ui-tab {
-  min-height: 56px;
-  padding: var(--space-3) var(--space-4);
-  text-align: start;
-  border-radius: calc(var(--radius-control) - 2px);
-}
-
-#playbookModeControl .ui-tab strong,
-#playbookModeControl .ui-tab small { display: block; }
-#playbookModeControl .ui-tab strong { color: inherit; font-size: var(--text-body-size); }
-#playbookModeControl .ui-tab small {
-  margin-top: 2px;
-  color: var(--text-muted);
-  font-size: var(--text-label-size);
-  font-weight: 500;
-}
-
-#playbookModeControl .ui-tab[aria-pressed="true"] small { color: var(--text-secondary); }
-.playbook-mode-status { grid-column: 1 / -1; }
 .playbook-context-toggle { display: none; }
 
 #gtoMode .playbook-workspace {
@@ -9291,9 +9077,6 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 }
 
 @media (max-width: 768px) {
-  #gtoMode .playbook-state-source { grid-template-columns: 1fr; }
-  #playbookModeControl { width: 100%; }
-  .playbook-mode-status { grid-column: auto; }
   .saved-study-source-actions { justify-content: flex-start; }
   .playbook-context-toggle { display: inline-flex; justify-self: start; }
   #gtoMode .playbook-workspace { display: flex; flex-direction: column; }
@@ -9310,9 +9093,6 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 }
 
 @media (max-width: 480px) {
-  #gtoMode .playbook-state-source { padding: var(--space-4); }
-  #playbookModeControl .ui-tab { min-height: 52px; padding: var(--space-2) var(--space-3); }
-  #playbookModeControl .ui-tab small { display: none; }
   .playbook-betting-context { padding: var(--space-4); }
   .playbook-betting-context > div:nth-of-type(2) { display: grid; grid-template-columns: 1fr 1fr; }
   .playbook-betting-context .button-push-end { grid-column: 1 / -1; width: 100%; margin: 0; }
@@ -9405,13 +9185,12 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 /* DESIGN-007: focused Equity workspace ---------------------------------- */
 
 #equityMode {
-  padding: var(--space-6);
+  padding-block: var(--space-6);
   overflow-y: auto;
   background: var(--surface-base);
 }
 
 .equity-workspace {
-  width: min(1440px, 100%);
   margin-inline: auto;
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(330px, .8fr);
@@ -9699,7 +9478,7 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 [dir="rtl"] .equity-detail-grid { direction: rtl; }
 
 @media (max-width: 1024px) {
-  #equityMode { padding: var(--space-5); }
+  #equityMode { padding-block: var(--space-5); }
   .equity-workspace { grid-template-columns: minmax(0, 1.2fr) minmax(310px, .8fr); gap: var(--space-4); }
   .equity-player-body { grid-template-columns: 1fr; }
   .equity-result-summary { grid-template-columns: 1fr; }
@@ -9724,7 +9503,7 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 }
 
 @media (max-width: 768px) {
-  #equityMode { padding: var(--space-4); }
+  #equityMode { padding-block: var(--space-4); }
   .equity-workspace { display: flex; flex-direction: column; }
   .equity-input-stack,
   .equity-output-stack { width: 100%; }
@@ -9734,7 +9513,7 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 }
 
 @media (max-width: 480px) {
-  #equityMode { padding: var(--space-3); }
+  #equityMode { padding-block: var(--space-3); }
   .equity-section-head,
   .equity-result-head,
   .equity-player-toolbar { flex-direction: column; align-items: stretch; }
@@ -9802,8 +9581,13 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 .rail-collapse-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--duration-normal) var(--ease-standard); }
 .is-sidebar-collapsed .rail-collapse-icon { transform: rotate(180deg); }
 
+/* SHELL-001: Language, Audio and Settings form one compact row of icon
+   buttons (existing icons). Names come from aria-labels and one translated
+   tooltip each; the collapsed rail stacks the same buttons. */
 .rail-utilities {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
   margin-top: auto;
   padding-top: var(--space-4);
@@ -9811,41 +9595,39 @@ html[data-card-back-style="geometric"] .table-card-back-geometric { display: blo
 }
 
 .rail-utility {
-  min-width: 0;
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  position: relative;
+  box-sizing: border-box;
+  margin: 0;
+  inline-size: var(--control-height);
+  min-inline-size: var(--control-height);
+  block-size: var(--control-height);
+  min-height: var(--control-height);
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
   color: var(--text-secondary);
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-control);
-  text-align: start;
+  cursor: pointer;
 }
 
-button.rail-utility { width: 100%; cursor: pointer; }
 .rail-utility:hover,
 .rail-utility:focus-within { color: var(--text-primary); background: var(--surface-interactive); border-color: var(--border-subtle); }
+.rail-language:has(select:focus-visible) { outline: 3px solid var(--border-focus); outline-offset: 3px; }
 .rail-utility-icon { width: 19px; height: 19px; flex: 0 0 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.rail-utility-label { min-width: 0; font-size: var(--text-label-size); font-weight: 680; }
 
-.rail-language {
-  display: grid;
-  grid-template-columns: 19px minmax(0, 1fr);
-  align-items: center;
-}
-
+/* The native select stays the control (keyboard and screen readers); it is
+   laid invisibly over the globe icon. */
 .rail-language select {
-  grid-column: 1 / -1;
-  width: 100%;
-  min-height: 34px;
-  padding-inline: var(--space-3);
-  color: var(--text-primary);
-  background: var(--surface-section);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-control);
-  font-size: var(--text-label-size);
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  min-height: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .rail-footer { margin-top: 0; padding: var(--space-3); }
@@ -9854,31 +9636,15 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .is-sidebar-collapsed .rail-brand-copy,
 .is-sidebar-collapsed .rail-footer,
 .is-sidebar-collapsed .mode-nav-group-label,
-.is-sidebar-collapsed .mode-nav-item > span,
-.is-sidebar-collapsed .rail-utility-label { display: none; }
+.is-sidebar-collapsed .mode-nav-item > span { display: none; }
 .is-sidebar-collapsed .mode-navigation { gap: var(--space-2); }
 .is-sidebar-collapsed .mode-nav-group { gap: var(--space-1); }
 .is-sidebar-collapsed .mode-nav-group + .mode-nav-group { padding-block-start: var(--space-2); }
 .is-sidebar-collapsed .rail-brand { flex-direction: column; gap: var(--space-2); }
 .is-sidebar-collapsed .rail-collapse-button { position: static; margin-inline-start: 0; }
-.is-sidebar-collapsed .mode-nav-item,
-.is-sidebar-collapsed .rail-utility { justify-content: center; padding-inline: 0; }
-.is-sidebar-collapsed .rail-language { position: relative; display: flex; justify-content: center; }
-.is-sidebar-collapsed .rail-language select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-.is-sidebar-collapsed .rail-utilities { padding-top: var(--space-3); }
+.is-sidebar-collapsed .mode-nav-item { justify-content: center; padding-inline: 0; }
+.is-sidebar-collapsed .rail-utilities { flex-direction: column; padding-top: var(--space-3); }
 
-.workspace-header {
-  min-height: 58px;
-  padding: var(--space-3) clamp(var(--space-5), 2vw, var(--space-8));
-  gap: var(--space-5);
-}
-.workspace-heading { gap: 0; }
-.workspace-eyebrow { font-size: 9px; }
-.workspace-heading h1 { font-size: 1.05rem; }
-.workspace-heading p { max-width: 62ch; font-size: var(--text-micro-size); }
-.workspace-utilities { flex: 0 1 auto; }
-.workspace-utilities .strategy-source-status { min-height: 36px; }
-.workspace-canvas { max-width: 1840px; padding: clamp(var(--space-4), 1.4vw, var(--space-7)) clamp(var(--space-4), 1.8vw, var(--space-8)) var(--space-9); }
 
 /* Surface hierarchy and affordances ------------------------------------- */
 
@@ -10048,19 +9814,6 @@ button.rail-utility { width: 100%; cursor: pointer; }
 
 /* Playbook stabilization ------------------------------------------------- */
 
-#gtoMode .playbook-state-source {
-  grid-template-columns: minmax(150px, .55fr) minmax(340px, 1.15fr) minmax(220px, .8fr);
-  align-items: center;
-  gap: var(--space-3) var(--space-5);
-  margin-bottom: var(--space-4);
-  padding: var(--space-3) var(--space-5);
-}
-
-.playbook-workflow-copy { gap: 0; }
-.playbook-workflow-copy strong { font-size: var(--text-label-size); }
-#playbookModeControl .ui-tab { min-height: 42px; padding: var(--space-2) var(--space-3); }
-#playbookModeControl .ui-tab strong { font-size: var(--text-label-size); }
-#playbookModeControl .ui-tab small { font-size: var(--text-micro-size); }
 .playbook-mode-status {
   grid-column: auto;
   min-width: 0;
@@ -10168,8 +9921,8 @@ button.rail-utility { width: 100%; cursor: pointer; }
 
 /* Equity stabilization --------------------------------------------------- */
 
-#equityMode { padding: clamp(var(--space-4), 1.5vw, var(--space-6)); }
-.equity-workspace { width: min(1660px, 100%); grid-template-columns: minmax(0, 1.55fr) minmax(340px, .72fr); gap: var(--space-4); }
+#equityMode { padding-block: clamp(var(--space-4), 1.5vw, var(--space-6)); }
+.equity-workspace { grid-template-columns: minmax(0, 1.55fr) minmax(340px, .72fr); gap: var(--space-4); }
 .equity-input-stack,
 .equity-output-stack { gap: var(--space-4); }
 .equity-shared-flow {
@@ -10223,8 +9976,7 @@ button.rail-utility { width: 100%; cursor: pointer; }
 
 /* Training stabilization ------------------------------------------------- */
 
-#trainingMode { padding: clamp(var(--space-4), 1.5vw, var(--space-6)); }
-.training-workspace { width: min(1700px, 100%); }
+#trainingMode { padding-block: clamp(var(--space-4), 1.5vw, var(--space-6)); }
 .training-decision-panel { min-height: 0; }
 .training-table-summary,
 .training-state-message { background: var(--surface-section); }
@@ -10740,8 +10492,8 @@ button.rail-utility { width: 100%; cursor: pointer; }
 .solver-import-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-3); line-height: 1.2; }
 .solver-import-btn .button-icon { width: 18px; height: 18px; flex: 0 0 18px; display: block; fill: none; stroke: currentColor; stroke-width: 1.7; }
 
-.guide-mode { padding: clamp(var(--space-4), 1.5vw, var(--space-7)); overflow-y: auto; }
-.guide-workspace--current { width: min(1440px, 100%); margin-inline: auto; display: grid; gap: var(--space-7); }
+.guide-mode { padding-block: clamp(var(--space-4), 1.5vw, var(--space-7)); overflow-y: auto; }
+.guide-workspace--current { width: min(100%, var(--canvas-max)); margin-inline: auto; display: grid; gap: var(--space-7); }
 .guide-intro { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(280px, .75fr); gap: var(--space-7); align-items: center; padding: clamp(var(--space-5), 2vw, var(--space-8)); background: linear-gradient(135deg, var(--surface-panel), var(--surface-section)); border: 1px solid var(--border-default); border-radius: var(--radius-panel); box-shadow: var(--shadow-panel); }
 .guide-intro h2 { max-width: 18ch; margin: var(--space-1) 0 var(--space-3); color: var(--text-primary); font-size: clamp(1.55rem, 2.1vw, 2.35rem); line-height: 1.08; }
 .guide-intro > div > p:last-child { max-width: 76ch; margin: 0; color: var(--text-secondary); line-height: 1.5; }
@@ -10786,14 +10538,11 @@ button.rail-utility { width: 100%; cursor: pointer; }
   .riverline-shell:not(.is-sidebar-collapsed) .rail-brand-copy,
   .riverline-shell:not(.is-sidebar-collapsed) .rail-footer,
   .riverline-shell:not(.is-sidebar-collapsed) .mode-nav-item > span,
-  .riverline-shell:not(.is-sidebar-collapsed) .rail-utility-label,
   .riverline-shell[data-sidebar-state="expanded"] .rail-brand-copy,
   .riverline-shell[data-sidebar-state="expanded"] .rail-footer,
-  .riverline-shell[data-sidebar-state="expanded"] .mode-nav-item > span,
-  .riverline-shell[data-sidebar-state="expanded"] .rail-utility-label { display: initial; }
+  .riverline-shell[data-sidebar-state="expanded"] .mode-nav-item > span { display: initial; }
   .riverline-shell:not(.is-sidebar-collapsed) .mode-nav-item,
   .riverline-shell[data-sidebar-state="expanded"] .mode-nav-item { justify-content: flex-start; padding-inline: var(--space-4); }
-  .workspace-header { padding-inline: var(--space-5); }
 }
 
 @media (max-width: 1100px) {
@@ -10802,8 +10551,6 @@ button.rail-utility { width: 100%; cursor: pointer; }
 }
 
 @media (max-width: 900px) {
-  #gtoMode .playbook-state-source { grid-template-columns: minmax(140px, .6fr) minmax(320px, 1.4fr); }
-  .playbook-mode-status { grid-column: 1 / -1; }
   #gtoMode .playbook-workspace { display: flex; flex-direction: column; }
   .playbook-decision-workspace { order: 1; width: 100%; }
   .playbook-context-rail { order: 2; width: 100%; }
@@ -10849,22 +10596,13 @@ button.rail-utility { width: 100%; cursor: pointer; }
   .mode-nav-item > span,
   .is-sidebar-collapsed .mode-nav-item > span { display: block; font-size: var(--text-micro-size); }
   .rail-utilities,
-  .is-sidebar-collapsed .rail-utilities { grid-template-columns: repeat(3, 42px); gap: var(--space-1); margin: 0; padding: 0; border: 0; }
+  .is-sidebar-collapsed .rail-utilities { flex-direction: row; gap: var(--space-1); margin: 0; padding: 0; border: 0; }
   .rail-utility,
-  .is-sidebar-collapsed .rail-utility { min-height: 42px; justify-content: center; padding: 0; background: var(--surface-interactive); border-color: var(--border-subtle); }
-  .rail-utility-label { display: none !important; }
-  .rail-language { position: relative; display: flex; }
-  .rail-language select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
-  .workspace-header { position: relative; min-height: 52px; }
-  .workspace-heading p { max-width: 48ch; }
-  .workspace-canvas { padding-inline: var(--space-4); }
+  .is-sidebar-collapsed .rail-utility { min-height: 42px; background: var(--surface-interactive); border-color: var(--border-subtle); }
   .guide-workspace { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 700px) {
-  #gtoMode .playbook-state-source { grid-template-columns: 1fr; }
-  #playbookModeControl { width: 100%; }
-  .playbook-mode-status { grid-column: auto; }
   .playbook-context-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .playbook-context-primary > * { grid-column: span 1; }
   .playbook-context-primary .button-push-end { grid-column: 1 / -1; }
@@ -10882,13 +10620,6 @@ button.rail-utility { width: 100%; cursor: pointer; }
   .mode-rail { grid-template-columns: 1fr; }
   .rail-utilities,
   .is-sidebar-collapsed .rail-utilities { justify-content: center; grid-template-columns: repeat(3, minmax(42px, 58px)); }
-  .workspace-header { display: flex; align-items: center; gap: var(--space-3); }
-  .workspace-eyebrow,
-  .workspace-heading p { display: none; }
-  .workspace-heading { min-width: 0; }
-  .workspace-utilities { margin-inline-start: auto; }
-  .strategy-source-status-label { display: none; }
-  .strategy-source-status { min-width: 0; padding-inline: var(--space-3); }
   .playbook-context-primary { grid-template-columns: 1fr; }
   .playbook-context-primary .button-push-end { grid-column: auto; }
   .equity-player-count-control { width: 100%; grid-template-columns: 42px minmax(0, 1fr) 42px; }
@@ -10990,11 +10721,10 @@ button.rail-utility { width: 100%; cursor: pointer; }
 
 /* RANGE-CAL-001A: isolated Range Calibration workspace ------------------ */
 
-.riverline-shell[data-active-mode="calibration"] .strategy-source-status { display: none; }
 
 #calibrationMode {
   min-width: 0;
-  padding: clamp(var(--space-4), 1.5vw, var(--space-7));
+  padding-block: clamp(var(--space-4), 1.5vw, var(--space-7));
   overflow-x: hidden;
 }
 
@@ -11002,7 +10732,6 @@ button.rail-utility { width: 100%; cursor: pointer; }
 #calibrationProfileModal [hidden] { display: none !important; }
 
 .range-calibration-workspace {
-  width: min(1540px, 100%);
   min-width: 0;
   margin-inline: auto;
 }
@@ -12232,13 +11961,6 @@ body.has-modal-open { overflow: hidden; }
   .playbook-context-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-/* Keep the selector visibly secondary to the decision without hiding status. */
-#gtoMode .playbook-state-source {
-  gap: var(--space-2) var(--space-4);
-  margin-bottom: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-}
-#playbookModeControl .ui-tab { min-height: 40px; }
 .playbook-mode-status {
   overflow: visible;
   text-overflow: clip;
@@ -12952,7 +12674,7 @@ body.has-modal-open { overflow: hidden; }
 .training-table-summary[data-board-state="empty"] .training-hero-zone { min-width: 0; }
 
 @media (min-width: 1320px) {
-  #trainingMode { padding: var(--space-3) var(--space-4) var(--space-4); }
+  #trainingMode { padding-block: var(--space-3) var(--space-4); }
   .training-workspace,
   .training-insight-column,
   .training-setup-column { gap: var(--space-3); }
@@ -13481,14 +13203,6 @@ body.has-modal-open { overflow: hidden; }
 }
 .workspace-readable :is(p, li) { max-inline-size: var(--workspace-readable-measure); }
 
-/* The compact header follows the same wide frame as the primary workspaces. */
-.workspace-header {
-  padding-inline: max(
-    var(--workspace-gutter),
-    calc((100% - var(--workspace-frame-wide)) / 2)
-  );
-}
-
 /* Hand and Analyze share one bounded canvas, with a deliberate stage and
    compact rails. The canonical table remains prominent but never viewport-sized. */
 #gtoMode .playbook-workspace { gap: var(--workspace-column-gap); }
@@ -13957,11 +13671,7 @@ body.has-modal-open { overflow: hidden; }
 
 /* Supporting workspaces use the same frames while retaining task-specific
    grids. Rails stop growing once their controls reach a comfortable measure. */
-.home-workspace { width: min(100%, var(--workspace-frame-standard)); }
-.range-calibration-workspace { width: min(100%, var(--workspace-frame-wide)); }
-.training-workspace { width: min(100%, var(--workspace-frame-wide)); }
 .equity-workspace {
-  width: min(100%, var(--workspace-frame-standard));
   grid-template-columns: minmax(0, 1fr) minmax(var(--workspace-rail-min), var(--workspace-rail-max));
 }
 .equity-output-stack { width: 100%; max-width: var(--workspace-rail-max); justify-self: end; }
@@ -13974,12 +13684,6 @@ body.has-modal-open { overflow: hidden; }
 }
 
 @media (max-width: 1100px) {
-  .workspace-header { padding-inline: var(--workspace-gutter); }
-
-  #gtoMode .playbook-state-source {
-    grid-template-columns: minmax(140px, .6fr) minmax(300px, 1.4fr);
-  }
-  #gtoMode .playbook-state-source .playbook-mode-status { grid-column: 1 / -1; }
   #gtoMode .playbook-workspace {
     display: flex;
     flex-direction: column;
@@ -14017,8 +13721,6 @@ body.has-modal-open { overflow: hidden; }
     --workspace-column-gap: var(--space-4);
     --workspace-section-gap: var(--space-4);
   }
-  #gtoMode .playbook-state-source { grid-template-columns: minmax(0, 1fr); }
-  #gtoMode .playbook-state-source .playbook-mode-status { grid-column: auto; }
   #gtoMode .playbook-support-rail,
   .training-setup-column { grid-template-columns: minmax(0, 1fr); }
 }
@@ -14032,7 +13734,6 @@ body.has-modal-open { overflow: hidden; }
 [data-density="comfortable"] {
   --density-canvas-block-start: var(--space-7);
   --density-canvas-block-end: var(--space-9);
-  --density-canvas-inline: var(--space-8);
   --density-panel-inline: 17px;
   --density-panel-head-block-start: 14px;
   --density-panel-head-block-end: 14px;
@@ -14043,8 +13744,6 @@ body.has-modal-open { overflow: hidden; }
   --density-row-block: var(--space-3);
   --density-row-inline: var(--space-4);
   --density-rail-gap: var(--space-8);
-  --density-header-height: 78px;
-  --density-header-block: var(--space-4);
 }
 
 [data-density="compact"] {
@@ -14059,7 +13758,6 @@ body.has-modal-open { overflow: hidden; }
   --workspace-section-gap: var(--space-4);
   --density-canvas-block-start: var(--space-5);
   --density-canvas-block-end: var(--space-7);
-  --density-canvas-inline: var(--workspace-gutter);
   --density-panel-inline: var(--space-4);
   --density-panel-head-block-start: var(--space-4);
   --density-panel-head-block-end: var(--space-4);
@@ -14070,17 +13768,10 @@ body.has-modal-open { overflow: hidden; }
   --density-row-block: var(--space-2);
   --density-row-inline: var(--space-4);
   --density-rail-gap: var(--space-6);
-  --density-header-height: 74px;
-  --density-header-block: var(--space-3);
 }
 
 .workspace-canvas {
   padding-block: var(--density-canvas-block-start) var(--density-canvas-block-end);
-  padding-inline: var(--density-canvas-inline);
-}
-.workspace-header {
-  min-height: var(--density-header-height);
-  padding-block: var(--density-header-block);
 }
 .mode-rail { gap: var(--density-rail-gap); }
 .panel-head {
@@ -14126,7 +13817,6 @@ body.has-modal-open { overflow: hidden; }
   .home-section-content,
   .home-review-groups,
   .home-saved-list,
-  .home-quick-links,
   .training-workspace,
   .training-insight-column,
   .training-setup-column,
@@ -14151,7 +13841,6 @@ body.has-modal-open { overflow: hidden; }
 ) { padding: var(--component-padding); }
 [data-density="compact"] :is(
   .home-saved-item,
-  .home-quick-link,
   .training-context-strip > div,
   .training-action-history li,
   .training-metadata-grid > div,
@@ -14181,8 +13870,6 @@ body.has-modal-open { overflow: hidden; }
 [data-density="compact"] :is(.home-section-head, .home-account-identity) > :is(div, p) > p,
 [data-density="compact"] .home-account-identity > p { display: none; }
 [data-density="compact"] .home-section-head { margin-block-end: var(--space-3); }
-[data-density="compact"] .home-quick-link span { display: none; }
-[data-density="compact"] .home-quick-link { min-height: 64px; }
 [data-density="compact"] .home-empty-state {
   display: flex;
   flex-wrap: wrap;
@@ -14193,8 +13880,6 @@ body.has-modal-open { overflow: hidden; }
 
 /* Hand and Analyze: remove repeated context labels and devote the saved row to
    the actual controls/status. Legal actions, sizing, cards, and Matrix stay put. */
-[data-density="compact"] .playbook-workflow-kicker,
-[data-density="compact"] #playbookModeControl .ui-tab small,
 [data-density="compact"] .playbook-analysis-switcher-copy,
 [data-density="compact"] .playbook-table-label small,
 [data-density="compact"] .hand-live-stage-copy > :is(.label, small),
@@ -14239,7 +13924,6 @@ body.has-modal-open { overflow: hidden; }
 [data-density="compact"] .equity-section-head .equity-eyebrow { display: none; }
 
 @media (min-width: 1101px) {
-  [data-density="compact"] .home-quick-links { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 1100px) {
@@ -14254,14 +13938,11 @@ body.has-modal-open { overflow: hidden; }
   /* Existing touch-oriented navigation targets stay at their larger size. */
   [data-density="comfortable"] {
     --density-canvas-block-start: var(--space-5);
-    --density-canvas-inline: var(--space-4);
   }
   [data-density="compact"] {
     --density-canvas-block-start: var(--space-4);
-    --density-canvas-inline: var(--space-4);
   }
   [data-density="compact"] .mode-nav-item { min-height: 48px; }
-  [data-density="compact"] .workspace-header { min-height: 0; }
 }
 
 /* LAYOUT-PRESETS-001: first-class workspace composition ----------------
@@ -14302,9 +13983,6 @@ body.has-modal-open { overflow: hidden; }
   /* Hand: Balanced keeps the setup rail beside the stage. Table Focus flips
      that relationship and brings the live facts, legal actions, and table to
      the start of the primary stage. */
-  html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .workspace-frame--wide {
-    --workspace-frame-max: var(--workspace-frame-dense);
-  }
   html[data-layout-preset="table-focus"] #gtoMode[data-product-destination="hand"] .playbook-workspace {
     grid-template-columns: minmax(0, 1fr) minmax(250px, 280px);
     grid-template-areas: "decision context";
@@ -14333,9 +14011,6 @@ body.has-modal-open { overflow: hidden; }
 @media (min-width: 1500px) {
   /* Analyze keeps one specialized topology. Analysis Focus makes analysis the
      leading spanning stage with both supporting rails stacked opposite. */
-  html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] .workspace-frame--wide {
-    --workspace-frame-max: var(--workspace-frame-dense);
-  }
   html[data-layout-preset="analysis-focus"] #gtoMode[data-product-destination="analyze"] .playbook-workspace {
     grid-template-columns: minmax(0, 1fr) minmax(245px, 280px);
     grid-template-areas:
@@ -14627,9 +14302,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"] .table-wrappe
 }
 
 /* EQUITY-COMPOSITION-001R: frozen Player Gallery / Board / Dossier model. */
-#equityMode .workspace-frame--standard { --workspace-frame-max: var(--workspace-frame-dense); }
 .equity-workspace {
-  width: min(100%, var(--workspace-frame-dense));
   display: grid;
   grid-template-columns: minmax(360px, 400px) minmax(400px, 448px) minmax(520px, 1fr);
   gap: var(--workspace-column-gap);
@@ -15432,10 +15105,6 @@ html[data-welcome-orientation="unseen"] #welcomeOrientation[hidden] { display: b
    Hand and Replay share one table-first composition. Canonical legality,
    replay frames, table anchors, and contribution values remain upstream. */
 
-#gtoMode[data-product-destination="hand"] .workspace-frame--wide {
-  --workspace-frame-max: 1840px;
-}
-
 html:has(#gtoMode.active[data-product-destination="hand"]) {
   scrollbar-gutter: stable;
 }
@@ -16040,11 +15709,10 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
    decision retains spatial priority while setup and longitudinal evidence
    progressively disclose without changing the workspace skeleton. */
 #trainingMode {
-  padding: clamp(var(--space-3), 1.25vw, var(--space-5));
+  padding-block: clamp(var(--space-3), 1.25vw, var(--space-5));
 }
 
 .training-workspace {
-  width: min(100%, 1680px);
   margin-inline: auto;
   align-items: start;
 }
@@ -16541,12 +16209,6 @@ html:has(#gtoMode.active[data-product-destination="hand"]) {
 }
 
 @media (min-width: 1101px) {
-  #trainingMode .workspace-frame--wide:has(.training-workspace[data-training-full-hand-phase="live"]),
-  #trainingMode .workspace-frame--wide:has(.training-workspace[data-training-full-hand-phase="complete"]),
-  #trainingMode .workspace-frame--wide:has(.training-workspace[data-training-full-hand-phase="review"]) {
-    --workspace-frame-max: 1740px;
-  }
-
   .training-workspace[data-training-full-hand-phase="live"],
   .training-workspace[data-training-full-hand-phase="review"] {
     grid-template-columns: minmax(0, 1fr) minmax(380px, 410px) !important;
@@ -17037,15 +16699,7 @@ html[data-theme="daylight"] { --elevation-feature: 0 10px 28px rgb(35 62 36 / .0
 body { background: radial-gradient(ellipse at 82% 0%, color-mix(in srgb, var(--accent-primary) 9%, transparent), transparent 58%), var(--surface-canvas); }
 .riverline-shell { background: transparent; }
 .workspace-shell { background: transparent; }
-.workspace-header {
-  background: linear-gradient(110deg, var(--surface-shell), color-mix(in srgb, var(--surface-panel) 80%, var(--surface-shell)));
-  border-block-end: 1px solid color-mix(in srgb, var(--provenance) 25%, var(--border-default));
-  box-shadow: 0 5px 22px rgb(0 0 0 / .07);
-  padding-block: 10px;
-}
-.workspace-heading h1 { font-size: clamp(1.35rem, 1.6vw, 1.9rem); letter-spacing: -.035em; font-weight: 750; line-height: 1.16; }
-.workspace-heading p { font-size: .78rem; line-height: 1.45; }
-.workspace-eyebrow, .equity-eyebrow { color: var(--provenance); letter-spacing: .11em; font-size: .65rem; font-weight: 750; }
+.equity-eyebrow { color: var(--provenance); letter-spacing: .11em; font-size: .65rem; font-weight: 750; }
 .workspace-canvas { padding-block-start: 18px; }
 .mode-rail {
   background: linear-gradient(165deg, color-mix(in srgb, var(--surface-shell) 84%, var(--poker-felt-accent)), var(--surface-canvas) 80%);
@@ -17209,8 +16863,6 @@ body { background: radial-gradient(ellipse at 82% 0%, color-mix(in srgb, var(--a
   .table-cast-seat:hover { translate: none; }
 }
 @media (max-width: 1400px) {
-  .workspace-header { padding-block: 7px; }
-  .workspace-heading h1 { font-size: 1.35rem; }
   .workspace-canvas { padding-block-start: var(--space-5); }
   .rail-brand { padding-block-end: 9px; }
   .mode-nav-item { min-height: 38px; margin-block: 1px; }
@@ -17219,7 +16871,6 @@ body { background: radial-gradient(ellipse at 82% 0%, color-mix(in srgb, var(--a
   .advanced-equity, .advanced-equity-explorer, .personal-coach-card--primary { padding: 14px; }
 }
 @media (max-width: 1050px) {
-  .workspace-heading p { max-width: 45ch; }
   .mode-rail { padding-block: var(--space-4); }
   .analysis-panel-content { padding: var(--space-5); }
   .advanced-equity-body { gap: 14px; }
@@ -17444,7 +17095,6 @@ body { background: radial-gradient(ellipse at 82% 0%, color-mix(in srgb, var(--a
 #homeWorkspaceContent[data-product-destination="home"] > .home-section { grid-area: auto; min-height: 0; }
 #homeWorkspaceContent[data-product-destination="home"] > :is(.home-section--overview, .home-section--guest-account) { grid-column: 1 / -1; }
 #homeWorkspaceContent[data-product-destination="home"] .home-section { background: var(--analysis-surface); color: var(--analysis-text); }
-#homeWorkspaceContent[data-product-destination="home"] .home-quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .welcome-job-card:hover { background: var(--analysis-surface-raised); color: var(--analysis-text); }
 .welcome-job-copy small, .welcome-job-action { color: var(--analysis-secondary); }
 .welcome-table-illustration figcaption { color: var(--text-secondary); }
@@ -17488,23 +17138,19 @@ html[data-theme-pending="true"] body { visibility: hidden; }
 .welcome-intro #welcomeDescription { font-size: .94rem; margin-block: 18px 24px; }
 .welcome-job-grid { margin-block-start: 18px; }
 
-#homeWorkspaceContent[data-product-destination="home"] { grid-template-columns: minmax(0, 1fr) minmax(250px, .32fr); gap: var(--space-6); }
-.home-main-flow, .home-destinations-rail { display: grid; align-content: start; gap: var(--space-6); min-inline-size: 0; }
-#homeWorkspaceContent .home-main-flow > .home-section, #homeWorkspaceContent .home-destinations-rail > .home-section { grid-area: auto; min-block-size: 0; }
+/* SHELL-001: Home is one main column (its Destinations rail was removed). */
+#homeWorkspaceContent[data-product-destination="home"] { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
+.home-main-flow { display: grid; align-content: start; gap: var(--space-6); min-inline-size: 0; }
+#homeWorkspaceContent .home-main-flow > .home-section { grid-area: auto; min-block-size: 0; }
 #homeWorkspaceContent[data-product-destination="home"] .home-section { --text-primary: var(--analysis-text); --text-secondary: var(--analysis-secondary); --text-muted: var(--analysis-muted); --provenance: var(--analysis-support); --surface-panel: var(--analysis-surface); --surface-inset: var(--evidence-surface); --surface-interactive: var(--analysis-surface-raised); padding: 18px; }
 #homeWorkspaceContent[data-product-destination="home"] :is(.home-section--guest-account, .home-section--overview) { padding: 10px 16px; background: var(--analysis-surface); box-shadow: none; border: 0; }
 #homeWorkspaceContent[data-product-destination="home"] .home-guest-account-copy { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4) var(--space-7); }
 #homeWorkspaceContent[data-product-destination="home"] .home-guest-account-copy > div, #homeWorkspaceContent[data-product-destination="home"] #homeGuestAccountPrimary { display: none; }
 #homeWorkspaceContent[data-product-destination="home"] #homeGuestAccountSecondary { flex: 1 1 400px; margin: 0; font-size: .8rem; }
-#homeWorkspaceContent[data-product-destination="home"] .home-quick-links { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
-#homeWorkspaceContent[data-product-destination="home"] .home-quick-link { min-height: 38px; padding: 8px 10px; background: transparent; border-color: transparent; box-shadow: none; }
-#homeWorkspaceContent[data-product-destination="home"] .home-quick-link span { display: none; }
-#homeWorkspaceContent[data-product-destination="home"] .home-quick-link:hover { background: var(--surface-interactive); }
 #homeWorkspaceContent[data-product-destination="home"] .home-section-head { padding: 0 0 var(--space-5); margin-block-end: var(--space-5); background: transparent; border: 0; border-block-end: 1px solid var(--border-default); border-radius: 0; }
 #homeWorkspaceContent[data-product-destination="home"] .home-review-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6); }
 #homeWorkspaceContent[data-product-destination="home"] .home-empty-state { min-height: 0; padding: var(--space-5); }
 #homeWorkspaceContent[data-product-destination="saved"] .home-main-flow { grid-column: 1 / -1; }
-#homeWorkspaceContent[data-product-destination="saved"] .home-destinations-rail { display: none; }
 
 #gtoMode[data-product-destination="hand"] #table-wrapper:not(.collapsed) { padding: 0; border: 0; box-shadow: none; background: var(--game-background); }
 #gtoMode[data-product-destination="hand"] #table-wrapper #visual-table-container { inline-size: 100%; width: 100%; max-inline-size: none; border: 0; border-radius: 16px; box-shadow: none; }
@@ -17589,7 +17235,6 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"].is-hand-revie
 }
 @media (max-width: 1100px) {
   #homeWorkspaceContent[data-product-destination="home"] { grid-template-columns: minmax(0, 1fr); }
-  #homeWorkspaceContent[data-product-destination="home"] .home-quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   #equityMode .equity-workspace { display: flex; flex-direction: column; }
   #equityMode .equity-workspace > * { inline-size: 100%; }
   #handReviewSurface.hand-review-surface,
@@ -17612,7 +17257,6 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"].is-hand-revie
 #homeWorkspaceContent[data-product-destination="home"] .home-section { border: 0; box-shadow: none; }
 #homeWorkspaceContent[data-product-destination="home"] .home-section--continue { padding: 26px; background: var(--analysis-primary-surface); border-inline-start: 3px solid var(--accent-primary); }
 #homeWorkspaceContent[data-product-destination="home"] .home-section--continue h2 { font-size: 1.5rem; }
-#homeWorkspaceContent[data-product-destination="home"] .home-destinations-rail .home-section { background: color-mix(in srgb, var(--analysis-surface) 60%, transparent); border: 1px solid var(--border-default); border-radius: var(--radius-control); }
 #homeWorkspaceContent[data-product-destination="home"] .home-section-head { border: 0; }
 #homeRecentContent[data-library-state="empty"] { display: block; }
 #homeRecentContent[data-library-state="empty"] .home-empty-state { padding: clamp(24px, 4vw, 60px); border: 0; background: transparent; text-align: start; }
@@ -17703,7 +17347,7 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"].is-hand-revie
 #equityMode .equity-workspace[data-equity-state="empty"] .equity-player-card { min-block-size: 0; grid-template-rows: 28px 152px; }
 #equityMode .equity-workspace[data-equity-state="empty"] .equity-player-footer { display: none; }
 #homeWorkspaceContent[data-product-destination="home"] .home-empty-state { background: transparent; border: 0; padding-inline: 0; }
-#homeWorkspaceContent[data-product-destination="home"] :is(.home-main-flow > .home-section:not(.home-section--continue), .home-destinations-rail > .home-section--quick) { background: var(--analysis-surface); border: 1px solid var(--border-default); border-radius: var(--radius-control); }
+#homeWorkspaceContent[data-product-destination="home"] .home-main-flow > .home-section:not(.home-section--continue) { background: var(--analysis-surface); border: 1px solid var(--border-default); border-radius: var(--radius-control); }
 .study-primary-roles [data-availability="unavailable"] > p:first-of-type { font-size: .9rem; font-weight: 400; }
 #handReviewSurface .hand-review-decision-cards > div { border: 0; background: transparent; box-shadow: none; }
 #handReviewSurface .hand-review-header, #handReviewSurface .hand-review-decision-head { background: transparent; border: 0; padding-inline: 0; }
@@ -17743,3 +17387,145 @@ html[data-layout-preset] #gtoMode[data-product-destination="hand"].is-hand-revie
 
 .surface-randomize-trigger.surface-randomize-labelled { display: inline-flex; align-items: center; }
 .personal-decision-context { padding: var(--space-5); border-inline-start: 3px solid var(--learning-support); background: var(--learning-surface); color: var(--learning-text); }
+
+/* ==========================================================================
+   SHELL-001: shell composition. Owner: docs/project/DESIGN_SYSTEM.md (Shell).
+   One 56px header bar per workspace, one canvas grid (same start edge and a
+   24px gutter everywhere; frames share --canvas-max), the sidebar footer icon
+   row and shell tooltips. Workspaces choose column templates inside the
+   frame; they never set their own page margins.
+   ========================================================================== */
+.workspace-shell { min-width: 0; }
+
+.workspace-header {
+  position: sticky;
+  inset-block-start: 0;
+  box-sizing: border-box;
+  block-size: var(--header-bar-height);
+  min-height: var(--header-bar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin: 0;
+  /* Header content starts where the canvas frame starts. */
+  padding-block: 0;
+  padding-inline: max(var(--gutter-canvas), calc((100% - var(--canvas-max)) / 2));
+  background: var(--surface-shell);
+  border: 0;
+  border-block-end: 1px solid var(--border-subtle);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.workspace-heading {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-5);
+}
+.workspace-heading h1 {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--t-title);
+  font-weight: var(--weight-bold);
+  line-height: 1.3;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+}
+.workspace-context {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--t-small);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace-context[hidden] { display: none; }
+
+.workspace-utilities {
+  flex: 0 0 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-4);
+}
+.workspace-utilities > [hidden] { display: none; }
+
+/* Hand/Scenario mode switch (Segmented control, sm). Captions stay for
+   assistive technology only. */
+.workspace-mode-switch #playbookModeControl { display: inline-flex; }
+.workspace-mode-switch #playbookModeControl .ui-tab {
+  min-height: var(--control-height-sm);
+  padding-block: 0;
+  padding-inline: var(--space-4);
+  white-space: nowrap;
+}
+.workspace-mode-switch #playbookModeControl .ui-tab strong {
+  color: inherit;
+  font-size: var(--t-small);
+  font-weight: var(--weight-strong);
+}
+
+/* The strategy source badge (Badge, source variant) keeps one position:
+   immediately before Learn Riverline. */
+.workspace-utilities .strategy-source-status { flex: 0 0 auto; }
+.workspace-utilities .strategy-source-status strong { font-weight: inherit; }
+
+.workspace-help-panel { inset-block-start: calc(var(--header-bar-height) + var(--space-3)); }
+.tutorial-chooser-section {
+  margin: var(--space-5) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--t-small);
+  font-weight: var(--weight-strong);
+}
+
+/* One canvas grid. */
+.workspace-canvas {
+  box-sizing: border-box;
+  inline-size: 100%;
+  max-inline-size: none;
+  margin-inline: 0;
+  padding-inline: var(--gutter-canvas);
+}
+
+/* Shell tooltips: footer icons name themselves above (the base
+   [data-tooltip] rule); the collapsed rail names items to the inline end.
+   RTL mirrors the horizontal centering. */
+[dir="rtl"] [data-tooltip]::after { transform: translate(50%, 3px); }
+[dir="rtl"] [data-tooltip]:is(:hover, :focus-visible)::after { transform: translate(50%, 0); }
+.is-sidebar-collapsed .mode-nav-item[data-tooltip]::after,
+.is-sidebar-collapsed .mode-nav-item[data-tooltip]:is(:hover, :focus-visible)::after {
+  inset-block-end: auto;
+  inset-block-start: 50%;
+  inset-inline-start: calc(100% + var(--space-3));
+  transform: translate(0, -50%);
+}
+
+/* Home: "Review Mistakes" sits in the Review section header. */
+.home-section-head:has(.home-section-link) {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.home-section-link { flex: 0 0 auto; }
+.home-section-link[hidden] { display: none; }
+[dir="rtl"] .home-section-link-arrow { display: inline-block; transform: scaleX(-1); }
+
+@media (max-width: 820px) {
+  .workspace-header {
+    position: relative;
+    block-size: auto;
+    flex-wrap: wrap;
+    padding-block: var(--space-3);
+  }
+  .workspace-canvas { padding-inline: var(--space-4); }
+  .workspace-header { padding-inline: var(--space-4); }
+}

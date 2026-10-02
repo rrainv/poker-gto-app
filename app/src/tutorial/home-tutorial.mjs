@@ -6,6 +6,7 @@ export const HOME_TUTORIAL_DEFINITION = createTutorialDefinition({
   id: HOME_TUTORIAL_ID,
   // The expanded Home tour remains the released v1 experience. Only an
   // intentional content migration may bump this and re-offer first use.
+  // SHELL-001 re-anchored steps without changing their content, so v1 stays.
   version: 1,
   workspace: 'home',
   titleKey: 'A quick tour of Home',
@@ -15,6 +16,7 @@ export const HOME_TUTORIAL_DEFINITION = createTutorialDefinition({
   steps: [
     {
       id: 'overview',
+      // The Guest or account panel (whichever is shown) carries this anchor.
       anchor: 'home-overview',
       titleKey: 'Your study starts with context',
       bodyKey: 'Saved study, Personal Strategy, and Training Memory stay on this device in Guest Mode. Guest data does not sync.',
@@ -29,17 +31,19 @@ export const HOME_TUTORIAL_DEFINITION = createTutorialDefinition({
     },
     {
       id: 'review',
-      anchor: 'home-review',
+      // The step teaches the Study Inbox, so it spotlights the Inbox itself.
+      anchor: 'home-study-inbox',
       titleKey: 'Build a focused review habit',
       bodyKey: 'Open Study Inbox for one next recommendation and an inspectable queue from Training Memory, Saved and selected Personal conflicts. Due and review reasons stay visible. The queue covers a bounded loaded selection and never changes your intended strategy.',
       placement: 'left',
     },
     {
       id: 'quick-start',
-      anchor: 'home-quick-start',
+      // Home's Destinations panel was removed; the sidebar holds the same links.
+      anchor: 'shell-navigation',
       titleKey: 'Move into the right tool',
       bodyKey: 'Choose a destination to play, analyze, train, or return to your saved study.',
-      placement: 'top',
+      placement: 'right',
     },
   ],
 });

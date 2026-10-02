@@ -432,6 +432,7 @@ export function mountSavedLibrary(container, deps = {}) {
         ? t('Showing {shown} of {total}', { shown: model.resultCount, total: model.totalCount })
         : t('Showing all {total}', { total: model.totalCount });
     list.dataset.libraryState = model.status;
+    deps.publishContext?.(statusLine.textContent ? [statusLine.textContent] : []);
 
     if (model.status !== 'results') {
       expandedId = null;
@@ -647,6 +648,17 @@ export function mountSavedLibrary(container, deps = {}) {
       hidePreview();
     },
     invalidate,
+    // SHELL-001: Home's "Review Mistakes" link opens the library showing only
+    // items marked as a mistake (an existing filter; other filters reset).
+    showMistakesOnly() {
+      if (disposed) return;
+      cancelSearchTimer();
+      searchInput.value = '';
+      query = createSavedLibraryQuery({ mistakesOnly: true });
+      expandedId = null;
+      hidePreview();
+      render();
+    },
     ownerChanged() {
       if (disposed) return;
       generation += 1;

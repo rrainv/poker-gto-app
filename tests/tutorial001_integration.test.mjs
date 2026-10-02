@@ -15,11 +15,18 @@ const [html, css, logic, bootstrap, controller, anchors, coach, translations] = 
 ]);
 
 test('Home exposes stable semantic anchors and one consistent manual restart action', () => {
-  for (const anchor of ['home-overview', 'home-recent', 'home-review', 'home-quick-start']) {
+  for (const anchor of ['home-overview', 'home-recent', 'home-review', 'home-study-inbox', 'shell-navigation']) {
     assert.match(html, new RegExp(`data-tutorial-anchor="${anchor}"`));
   }
+  // QA-SWEEP-013: step 1 spotlights the shown session panel, never the header.
+  assert.match(html, /id="homeGuestAccount"[^>]*data-tutorial-anchor="home-overview"/);
+  assert.match(logic, /overviewPanels\[guest \? 0 : 1\]\?\.setAttribute\('data-tutorial-anchor', 'home-overview'\)/);
+  assert.match(html, /id="studyInboxPanel"[^>]*data-tutorial-anchor="home-study-inbox"/);
+  assert.match(html, /class="mode-navigation"[^>]*data-tutorial-anchor="shell-navigation"/);
+  assert.doesNotMatch(html, /data-tutorial-anchor="home-quick-start"/);
   assert.match(anchors, /TUTORIAL_ANCHOR_ATTRIBUTE = 'data-tutorial-anchor'/);
-  assert.match(html, /id="workspaceTutorialButton"[^>]+aria-label="Restart tutorial"/);
+  // SHELL-001: the header control is Help (description + tutorials).
+  assert.match(html, /id="workspaceTutorialButton"[^>]+aria-label="Help"/);
   assert.match(logic, /RiverlineTutorials\?\.workspaceChanged/);
   assert.match(logic, /RiverlineTutorials\?\.offerForWorkspace/);
 });

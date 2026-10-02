@@ -103,7 +103,8 @@ test('Equity keeps a stable gallery, center Board, and global Hand Analysis rail
   assert.ok(equity.indexOf('equity-center-column') < equity.indexOf('equity-dossier-panel'));
   assert.match(logic, /function setEquityCompositionState\(state\)[\s\S]*?new Set\(\['empty', 'stale', 'running', 'complete', 'error'\]\)[\s\S]*?workspace\.dataset\.equityState = resolved/);
   assert.match(ticketCss, /\.equity-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(360px, 400px\) minmax\(400px, 448px\) minmax\(520px, 1fr\)/s);
-  assert.match(ticketCss, /#equityMode \.workspace-frame--standard\s*\{[^}]*--workspace-frame-max:\s*var\(--workspace-frame-dense\)/s);
+  // SHELL-001: Equity uses the shared canvas frame (every frame aliases --canvas-max).
+  assert.doesNotMatch(ticketCss, /#equityMode \.workspace-frame--standard\s*\{[^}]*--workspace-frame-max/s);
   assert.match(ticketCss, /\.equity-center-column\s*\{[^}]*display:\s*grid/s);
   assert.match(ticketCss, /\.equity-dossier-panel\s*\{[^}]*position:\s*sticky/s);
   assert.doesNotMatch(ticketCss, /data-equity-state="(?:running|complete)"\][^{]*\.equity-workspace\s*\{[^}]*grid-template-columns/s);

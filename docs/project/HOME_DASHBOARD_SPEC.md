@@ -23,6 +23,10 @@ current in-memory Playbook continuation
 
 The renderer does not inspect IndexedDB, resolve StrategyProvider results, run Equity, infer a 169-hand range, or create Training/Analysis history.
 
+## Destinations removed (SHELL-001)
+
+October 2, 2026 owner decision: Home's Destinations panel is removed because its links duplicated the sidebar navigation, which stays one click away on every workspace. "Review Mistakes" moves into the Review section header as a quiet link, shown under the unchanged rule (at least one item marked as a mistake; `HomeViewModel v2.sections.quickStart.destinations` still carries `review_mistakes`). Because the link now sits inside Review, it opens Saved with the existing "Mistakes only" filter (other filters cleared) instead of scrolling to Review. Home is one main column (next action, Review, Recent); the next-action focal card and two-column Review remain `HOME-HOMEGAME-002` (QA-SHELL-007). The Home description moved from the header into Help (SHELL-001); the header context names the session (Guest Mode, or display name · sync state).
+
 ## Recurring Home and optional orientation
 
 Home is the permanent recurring startup and study destination for first-time and returning use. Welcome is optional orientation presentation state layered separately from routing; it is not another route or workspace authority. While Welcome is visible, no sidebar destination is selected and hidden Home initialization intended for active Home does not run. Dismissing or finishing Welcome activates Home normally, while manually reopening Welcome does not reset or reinitialize the current workspace.
@@ -39,7 +43,7 @@ Slice B Guest Home loads current-owner bounded Saved/Review and Personal Strateg
 
 Every Home load captures one lifecycle generation, validates before domain queries, and validates before adoption. Owner transitions synchronously clear prior Saved previews/details, account overview, review/continuation/Personal Strategy presentation, and any Saved viewer; delayed results cannot populate the next owner. Returning to Guest restores the same local library and strategy.
 
-Quick Start and genuine runtime Hand continuation remain available. Training/Analysis history remains explicitly unsupported in the existing Home model; this slice does not invent a new dashboard integration or change Home Game persistence.
+Start (an empty next action offers Start a Hand) and genuine runtime Hand continuation remain available. Training/Analysis history remains explicitly unsupported in the existing Home model; this slice does not invent a new dashboard integration or change Home Game persistence.
 
 ## Continue contract
 
@@ -84,7 +88,7 @@ The dashboard uses semantic sections/headings, keyboard buttons, contextual acce
 
 The minimum supported desktop is 1366×768, with representative larger desktops through 2560×1600 and 4K. Existing 1024×768 behavior remains compact/mobile-responsive future evidence rather than a current blocker. The account overview is compact, important modules remain high in the grid, and the narrow fallback is a single column. Mobile remains deferred.
 
-`home.first-use` v2 teaches the account/sync overview, Saved reopen, Review, Personal Strategy truth, and Quick Start without creating another help system.
+`home.first-use` teaches the account/sync overview, Saved reopen, the Study Inbox, Personal Strategy truth, and where the workspaces live without creating another help system. Since `SHELL-001` its steps spotlight the shown Guest or account panel, Recent, the Study Inbox, and the sidebar navigation (definition version unchanged: only anchors moved).
 
 ## Preserved future work
 

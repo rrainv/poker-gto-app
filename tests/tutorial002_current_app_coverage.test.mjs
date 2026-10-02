@@ -128,10 +128,11 @@ test('first-use policy offers only contextual basics while advanced tours remain
 test('workspace discovery supports one direct restart or a compact accessible chooser', () => {
   assert.match(bootstrap, /getDefinitionsForWorkspace/);
   assert.match(bootstrap, /definitions\.length === 1/);
-  assert.match(bootstrap, /className = 'tutorial-chooser'/);
+  // SHELL-001: the header Help panel reuses the chooser surface.
+  assert.match(bootstrap, /className = help \? 'tutorial-chooser workspace-help-panel' : 'tutorial-chooser'/);
   assert.match(bootstrap, /setAttribute\('role', 'dialog'\)/);
   assert.match(bootstrap, /event\.key === 'Escape'/);
-  assert.match(bootstrap, /list\.querySelector\('button'\)\?\.focus/);
+  assert.match(bootstrap, /\(list\.querySelector\('button'\) \?\? close\)\.focus\?\.\(\)/);
   assert.match(bootstrap, /tutorialInvoker\?\.focus/);
   assert.match(html, /id="settingsTutorialButton"/);
   assert.match(css, /\.tutorial-chooser[\s\S]*?max-height: calc\(100dvh/);

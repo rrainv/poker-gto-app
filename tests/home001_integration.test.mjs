@@ -16,16 +16,15 @@ test('Home is the real landing workspace with bounded recurring study sections',
   assert.match(html, /data-active-mode="home"/);
   assert.match(html, /data-navigation-id="home"[^>]*aria-current="page"/);
   assert.match(html, /id="homeMode" class="mode-view active"/);
-  for (const id of ['homeContinueTitle', 'homeRecentTitle', 'homeReviewTitle', 'homeQuickStartTitle']) {
+  for (const id of ['homeContinueTitle', 'homeRecentTitle', 'homeReviewTitle']) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
   assert.match(html, /class="home-main-flow"/);
-  assert.match(html, /class="home-destinations-rail"/);
+  // SHELL-001 (owner decision): the Destinations rail duplicated the sidebar and
+  // was removed; "Review Mistakes" moved into the Review section header.
+  assert.doesNotMatch(html, /id="homeQuickStartTitle"|class="home-destinations-rail"/);
   assert.doesNotMatch(html, /id="homeStrategyTitle"|id="homeOtherTitle"/);
-  assert.match(html, /data-home-destination="hand"/);
-  assert.match(html, /data-home-destination="analyze"/);
-  assert.match(html, /data-home-destination="training"/);
-  assert.match(html, /data-home-destination="equity"/);
+  assert.match(html, /<h2 id="homeReviewTitle"[^>]*>Review<\/h2><\/div><button id="homeReviewMistakesLink"[^>]*data-home-destination="review_mistakes"/);
   assert.match(logic, /action\.dataset\.homeDestination = 'personal-strategy'/);
 });
 

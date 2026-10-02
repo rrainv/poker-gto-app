@@ -148,8 +148,8 @@ test('Compact uses structural hierarchy across representative workspaces', () =>
   assert.match(densityCss, /\.training-session-panel/);
   assert.match(densityCss, /\.calibration-inspector-empty[\s\S]*?min-height:\s*0/);
   assert.match(densityCss, /\.equity-section-head \.equity-eyebrow/);
-  assert.match(densityCss, /\.home-quick-link span[\s\S]*?display:\s*none/);
-  assert.match(densityCss, /\.home-quick-links[\s\S]*?repeat\(3/);
+  // SHELL-001: Home's Destinations quick links were removed (owner decision).
+  assert.doesNotMatch(densityCss, /\.home-quick-links?\b/);
 
   assert.match(html, /class="panel training-session-panel"[^>]+data-density-collapse-in-compact[^>]+open/);
   assert.match(html, /class="density-support-disclosure calibration-builder-shortcuts"[^>]+data-density-collapse-in-compact/);

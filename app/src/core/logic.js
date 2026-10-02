@@ -1283,6 +1283,7 @@ function renderEquityPlayers() {
 
   const playerCount = $('#equityPlayerCount');
   if (playerCount) playerCount.textContent = t('{count} players', { count: app.equity.players.length });
+  window.RiverlineWorkspaceHeader?.setContext('equity', [t('{count} players', { count: app.equity.players.length })]);
   const decrease = $('#equityDecreasePlayers');
   const increase = $('#equityIncreasePlayers');
   if (decrease) decrease.disabled = app.equity.players.length <= 2;
@@ -3698,9 +3699,9 @@ function renderCanonicalLegalActions(state, legalActionSpec = undefined) {
   options.forEach(([type, option]) => {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = type === 'bet' || type === 'raise'
-      ? 'ui-button ui-button--primary'
-      : 'ui-button ui-button--secondary';
+    // SHELL-001: legal actions are peers; no action is accent-filled (an
+    // accent Raise would read as a recommendation).
+    button.className = 'ui-button ui-button--secondary';
     button.dataset.canonicalAction = type;
     button.disabled = app.playbookHandDraft.actionSubmissionLocked;
     button.setAttribute('aria-pressed', 'false');
@@ -3793,6 +3794,13 @@ function setCanonicalTableExpanded(expanded) {
   if (expanded) playbookSurfaceInvalidator.renderIfNeeded('table');
 }
 
+// SHELL-001: the Hand header context line reuses the setup summary and the
+// shown street that the Hand renderers already produce.
+const handHeaderFacts = { summary: '', street: '' };
+function publishHandHeaderContext() {
+  window.RiverlineWorkspaceHeader?.setContext('hand', [handHeaderFacts.summary, handHeaderFacts.street]);
+}
+
 function renderCanonicalHandSetupState(state, stage, replayProjection) {
   const disclosure = $('#handSetupDisclosure');
   const workspace = $('#playbookHandWorkspace');
@@ -3818,6 +3826,8 @@ function renderCanonicalHandSetupState(state, stage, replayProjection) {
     })
     : t('Configure before the hand starts');
   if ($('#handSetupCompactSummary')) $('#handSetupCompactSummary').textContent = compactSummary;
+  handHeaderFacts.summary = compactSummary;
+  publishHandHeaderContext();
   if ($('#handSetupDisclosureState')) {
     $('#handSetupDisclosureState').textContent = t(immutable ? 'Locked for this hand' : 'Configure');
     $('#handSetupDisclosureState').className = `badge status-badge status-badge--${immutable ? 'neutral' : 'info'}`;
@@ -4593,6 +4603,8 @@ function renderCanonicalHandWorkspace() {
   if ($('#handStateStreet')) $('#handStateStreet').textContent = shownStreet
     ? t(`replay.street.${shownStreet}`)
     : '-';
+  handHeaderFacts.street = shownStreet ? t(`replay.street.${shownStreet}`) : '';
+  publishHandHeaderContext();
   const shownActorId = frameFacts ? frameFacts.actingPlayerId : state?.actingPlayerId;
   const actor = state?.players?.find((player) => player.playerId === shownActorId);
   if ($('#handStateActor')) $('#handStateActor').textContent = actor ? canonicalPlayerLabel(actor, heroPlayerId) : '-';
@@ -6054,6 +6066,13 @@ function updateMetrics() {
   Object.entries(metricValues).forEach(([id, value]) => {
     if ($('#' + id)) $('#' + id).textContent = value;
   });
+  // SHELL-001: Analyze header context reuses the decision facts shown above.
+  window.RiverlineWorkspaceHeader?.setContext('analyze', [
+    t(isHandMode() ? 'Hand' : 'Scenario'),
+    heroPos || '',
+    metricValues.mStack,
+    reviewStreetLabel(street),
+  ]);
 
   const facingSizeOut = $('#facingSizeOut');
   if (facingSizeOut) {
@@ -7896,24 +7915,13 @@ function activateNavigationItem(button) {
     shell.dataset.activeDestination = button.dataset.navigationId;
   }
 
-  const eyebrowKey = button.dataset.workspaceEyebrow || 'Riverline';
+  // SHELL-001: the header bar shows the title and a context line; the
+  // workspace description moved into the Help panel (workspace-header/v1).
   const titleKey = button.dataset.modeTitle || button.textContent.trim();
-  const subtitleKey = button.dataset.modeSubtitle || '';
-  const workspaceEyebrow = $('#workspaceEyebrow');
-  const workspaceTitle = $('#workspaceTitle');
-  const workspaceSubtitle = $('#workspaceSubtitle');
-  if (workspaceEyebrow) {
-    workspaceEyebrow.dataset.i18n = eyebrowKey;
-    workspaceEyebrow.textContent = t(eyebrowKey);
-  }
-  if (workspaceTitle) {
-    workspaceTitle.dataset.i18n = titleKey;
-    workspaceTitle.textContent = t(titleKey);
-  }
-  if (workspaceSubtitle) {
-    workspaceSubtitle.dataset.i18n = subtitleKey;
-    workspaceSubtitle.textContent = t(subtitleKey);
-  }
+  const descriptionKey = button.dataset.modeSubtitle || '';
+  const header = window.RiverlineWorkspaceHeader;
+  if (header) header.activate(button.dataset.navigationId, { titleKey, descriptionKey });
+  else if ($('#workspaceTitle')) setTranslatedElement($('#workspaceTitle'), titleKey);
   if (button.dataset.mode === 'home') applyHomeDestinationPresentation(button.dataset.navigationId);
   if (button.dataset.mode === 'gto') applyPlaybookDestinationPresentation(button.dataset.navigationId);
   return true;
@@ -7928,8 +7936,8 @@ function resolveHomeDestinationPresentation(destination, {
   const visibleSections = normalizedDestination === 'saved'
     ? ['saved-overview', 'library']
     : guest
-      ? ['guest', 'continue', 'review', 'recent', 'quick']
-      : ['overview', 'continue', 'review', 'recent', 'quick'];
+      ? ['guest', 'continue', 'review', 'recent']
+      : ['overview', 'continue', 'review', 'recent'];
   return Object.freeze({
     destination: normalizedDestination,
     visibleSections: Object.freeze(visibleSections),
@@ -7979,7 +7987,6 @@ function applyHomeDestinationPresentation(destination = activeNavigationDestinat
     recent: $('#homeRecentContent')?.closest('.home-section'),
     library: $('#savedLibrarySection'),
     strategy: $('#homeStrategyContent')?.closest('.home-section'),
-    quick: $('#homeQuickStartTitle')?.closest('.home-section'),
     other: $('#homeOtherTitle')?.closest('.home-section'),
   };
   const visible = new Set(state.visibleSections);
@@ -8022,12 +8029,8 @@ function applyPlaybookDestinationPresentation(destination = activeNavigationDest
     modeView.dataset.i18nAriaLabel = labelKey;
     modeView.setAttribute('aria-label', t(labelKey));
   }
-  const handDestination = state.destination === 'hand';
-  setTranslatedElement($('#playbookWorkflowKicker'), handDestination ? 'Hand workflow' : 'Analysis source');
-  setTranslatedElement(
-    $('#playbookWorkflowTitle'),
-    handDestination ? 'Play or continue the canonical Hand' : 'Analyze the current Hand or a study spot',
-  );
+  // SHELL-001: the Hand/Scenario switch lives in the header bar; the old
+  // workflow kicker/title duplicated the header title and Help description.
   return state;
 }
 
@@ -8245,6 +8248,7 @@ function mountSavedLibraryWorkspace() {
     getCardRankStyle: () => document.documentElement.dataset.cardRankStyle || 'poker',
     openItem: (id, control) => openHomeSavedItem(id, control),
     navigate: navigateToProductDestination,
+    publishContext: (parts) => window.RiverlineWorkspaceHeader?.setContext('saved', parts),
     reportError: (error) => console.error('[Riverline Saved library]', error),
   });
   savedTrainingHistoryController = window.RiverlineSavedTrainingHistory?.mount(section, {
@@ -8283,7 +8287,7 @@ function renderHomeContinue(section) {
   }
   const list = document.createElement('div');
   list.className = 'home-continue-list';
-  section.items.forEach((item) => {
+  section.items.forEach((item, index) => {
     const card = document.createElement('div');
     card.className = item.kind === 'live_hand'
       ? 'home-calibration-card home-live-hand-card'
@@ -8311,7 +8315,8 @@ function renderHomeContinue(section) {
     actions.className = 'home-calibration-actions';
     const resume = document.createElement('button');
     resume.type = 'button';
-    resume.className = 'ui-button ui-button--primary';
+    // One accent action per view: only the first continuation is primary.
+    resume.className = `ui-button ${index === 0 ? 'ui-button--primary' : 'ui-button--secondary'}`;
     if (item.kind === 'live_hand') resume.dataset.homeAction = 'return-live-hand';
     else resume.dataset.homeDestination = 'personal-strategy';
     resume.textContent = t(item.kind === 'live_hand' ? 'Return to live hand' : 'Resume calibration');
@@ -8471,21 +8476,13 @@ function renderHomeAccountOverview(model) {
   $('#homeSyncReview').hidden = !['conflict', 'error'].includes(model.sync?.state);
 }
 
-function renderHomeQuickStart(model) {
-  const allowed = new Set(model.sections.quickStart?.destinations || []);
-  document.querySelectorAll('[data-home-destination]').forEach((control) => {
-    const destination = control.dataset.homeDestination;
-    if (!['hand', 'analyze', 'training', 'equity', 'review_mistakes'].includes(destination)) return;
-    if (!control.closest('.home-quick-links')) return;
-    control.hidden = !allowed.has(destination);
-  });
-  const guest = model.sessionMode === 'guest';
-  const trainingLabel = document.querySelector('.home-quick-link[data-home-destination="training"] strong');
-  if (trainingLabel) {
-    const key = guest ? 'Training' : 'Train';
-    trainingLabel.dataset.i18n = key;
-    trainingLabel.textContent = t(key);
-  }
+// SHELL-001: Home's Destinations panel was removed (its links duplicated the
+// sidebar). "Review Mistakes" survives as a link in the Review section header,
+// shown under the same rule as before (at least one marked mistake).
+function renderHomeReviewMistakesLink(model) {
+  const link = $('#homeReviewMistakesLink');
+  if (!link) return;
+  link.hidden = !(model.sections.quickStart?.destinations || []).includes('review_mistakes');
 }
 
 function renderHomeWorkspace(model) {
@@ -8498,16 +8495,19 @@ function renderHomeWorkspace(model) {
   restricted.forEach((section) => { if (section) section.hidden = false; });
   const guestAccount = $('#homeGuestAccount');
   if (guestAccount) guestAccount.hidden = !guest;
+  // The Home tour's first step explains the session panel that is shown.
+  const overviewPanels = [guestAccount, $('#homeAccountOverview')];
+  overviewPanels.forEach((panel) => panel?.removeAttribute('data-tutorial-anchor'));
+  overviewPanels[guest ? 0 : 1]?.setAttribute('data-tutorial-anchor', 'home-overview');
   renderHomeAccountOverview(model);
-  const subtitle = $('#workspaceSubtitle');
-  if (activeNavigationDestination() === 'home' && subtitle) {
-    const subtitleKey = guest
-      ? 'Your learning workspace is saved on this device.'
-      : 'Your saved study, review queue, and next useful action.';
-    subtitle.dataset.i18n = subtitleKey;
-    subtitle.textContent = t(subtitleKey);
-  }
-  renderHomeQuickStart(model);
+  // The Home description lives in Help; the header context names the session.
+  window.RiverlineWorkspaceHeader?.setDescription('home', guest
+    ? 'Your learning workspace is saved on this device.'
+    : 'Your saved study, review queue, and next useful action.');
+  window.RiverlineWorkspaceHeader?.setContext('home', guest
+    ? [t('Guest Mode')]
+    : [model.identity?.profile?.displayName || t('Riverline player'), t(homeSyncCopy(model.sync)[0])]);
+  renderHomeReviewMistakesLink(model);
   renderHomeContinue(model.sections.continue);
   renderHomePersonalStrategy(model.sections.personalStrategy);
   renderHomeRecent(model.sections.recent);
@@ -8820,10 +8820,10 @@ function bindEvents() {
     if (homeDestination) {
       const destination = homeDestination.dataset.homeDestination;
       if (destination === 'review_mistakes') {
-        $('#homeReviewContent')?.closest('.home-section')?.scrollIntoView({
-          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-          block: 'start'
-        });
+        // The link sits in the Review section header, so it opens every
+        // marked mistake in Saved rather than scrolling to itself.
+        navigateToProductDestination('saved');
+        savedLibraryController?.showMistakesOnly?.();
       } else navigateToProductDestination(destination);
       return;
     }
@@ -10329,6 +10329,12 @@ function applySidebarState(collapsed) {
   button.setAttribute('aria-expanded', String(!collapsed));
   button.setAttribute('aria-label', t(collapsed ? 'Expand sidebar' : 'Collapse sidebar'));
   button.title = t(collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+  // QA-SWEEP-029: an expanded item already shows its name, so it carries no
+  // tooltip; the collapsed (icon-only) rail names each item on hover/focus.
+  $$('.mode-nav-item[data-navigation-id]').forEach((item) => {
+    if (collapsed) item.dataset.tooltip = t(item.dataset.i18nAriaLabel || item.dataset.modeTitle || '');
+    else delete item.dataset.tooltip;
+  });
 }
 
 function initSidebar() {
@@ -12317,11 +12323,24 @@ function clearTrainingSessionCompletion() {
   if (nextBtn) nextBtn.hidden = false;
 }
 
+// SHELL-001: the Training header context names the session mode and, for a
+// varied session, the progress line already shown in the workspace.
+// (A function-local map: init can run before later top-level consts exist.)
+function publishTrainingHeaderContext() {
+  const progress = $('#trainingSessionProgress');
+  const modeLabelKey = { varied: 'Varied Session', focused: 'Focused Drill', full_hand: 'Full Hand' }[trainingSessionMode()];
+  window.RiverlineWorkspaceHeader?.setContext('training', [
+    t(modeLabelKey),
+    progress && !progress.hidden ? progress.textContent : '',
+  ]);
+}
+
 function updateTrainingSessionProgress() {
   const progress = $('#trainingSessionProgress');
   const session = app.training.practiceSession;
   if (!progress || !session || session.mode !== 'varied' || session.isOpen) {
     if (progress) progress.hidden = true;
+    publishTrainingHeaderContext();
     return;
   }
   const plannerState = callTrainingServiceBridge('getPracticePlannerState');
@@ -12332,6 +12351,7 @@ function updateTrainingSessionProgress() {
     total: session.length,
   });
   progress.setAttribute('aria-label', progress.textContent);
+  publishTrainingHeaderContext();
 }
 
 function clearTrainingSessionState() {
@@ -12375,6 +12395,7 @@ function setTrainingSessionMode(mode, { reset = true } = {}) {
     button.classList.toggle('is-active', selected);
     button.setAttribute('aria-pressed', String(selected));
   });
+  publishTrainingHeaderContext();
   if ($('#trainingVariedControls')) $('#trainingVariedControls').hidden = nextMode !== 'varied';
   if ($('#trainingFocusedControls')) $('#trainingFocusedControls').hidden = nextMode === 'varied';
   const focusedOnlyHidden = nextMode !== 'focused';
@@ -12507,6 +12528,12 @@ function canonicalTrainingLegalActionTypes(exercise) {
   ));
 }
 
+function setTrainingButtonEmphasis(button, primary) {
+  if (!button) return;
+  button.classList.toggle('ui-button--primary', primary);
+  button.classList.toggle('ui-button--secondary', !primary);
+}
+
 function setTrainingWorkspaceState(state) {
   const workspace = document.querySelector('.training-workspace');
   if (!workspace) return;
@@ -12557,6 +12584,11 @@ function setTrainingWorkspaceState(state) {
       || Boolean(app.training.practiceSession?.completed)
       || trainingSameSpotIsActive();
   }
+  // SHELL-001 one accent action per view: Start Training leads only before a
+  // session; after an answer, Next exercise leads. While a question is open
+  // the legal answers are the decision, so Skip stays secondary.
+  setTrainingButtonEmphasis(nextButton, state === 'feedback');
+  setTrainingButtonEmphasis($('#trainingNewHand'), state === 'idle' || state === 'error');
   if ($('#trainingFullHandCompletion')) $('#trainingFullHandCompletion').hidden = state !== 'terminal';
   if (state === 'idle' || state === 'error') setTrainingSetupExpanded(true);
   const beforeSession = state === 'idle';

@@ -77,7 +77,8 @@ test('Training compacts only an actually empty board while retaining Hero cards'
   assert.match(logic, /tableSummary\.dataset\.boardState = boardCards\.length \? 'board' : 'empty'/);
   assert.match(ticketCss, /\.training-table-summary\[data-board-state="empty"\]\s*\{[\s\S]*?min-height:\s*148px/);
   assert.match(ticketCss, /@media \(min-width: 1320px\)[\s\S]*?\.training-table-summary\[data-board-state="empty"\]\s*\{[^}]*min-height:\s*140px/);
-  assert.match(ticketCss, /@media \(min-width: 1320px\)[\s\S]*?#trainingMode\s*\{[^}]*padding:\s*var\(--space-3\)/);
+  // SHELL-001: the workspace root keeps only block padding; the canvas owns the gutter.
+  assert.match(ticketCss, /@media \(min-width: 1320px\)[\s\S]*?#trainingMode\s*\{[^}]*padding-block:\s*var\(--space-3\)/);
   assert.match(ticketCss, /grid-template-columns:\s*minmax\(108px, \.55fr\) 1px minmax\(0, 1\.45fr\)/);
   assert.match(html, /id="trainingHeroCards"/);
   assert.match(logic, /heroTarget\.innerHTML = heroCards\.map\(readOnlyCard\)\.join\(''\)/);

@@ -73,14 +73,16 @@ and small 12px (not 12.5) snap to the most-used existing values.
 Legacy names map onto the scale: `--text-body-size`, `--text-label-size`,
 `--text-micro-size`, `--text-section-size`, `--text-display-size`,
 `--text-overline-size` (→ `--t-label`, raising the old 10px floor to 11px).
-`--text-page-title-size` (1.75rem) remains until SHELL-001's header bar.
+`--text-page-title-size` (1.75rem) is no longer used by the header bar (SHELL-001); it
+remains a legacy token.
 
 ### Spacing (4px base)
 
 Scale `--space-1…11` (2, 4, 6, 8, 12, 16, 20, 24, 32, 40, 48). Layout roles:
 `--gap-control` 8, `--gap-group` 12, `--gap-section` 24, `--pad-control-block` 8,
 `--pad-control-inline` 12, `--pad-surface` 16 (dense) / `--pad-surface-reading` 24,
-`--gutter-canvas` 24. `--space-1/3/7/10` are legacy steps for existing geometry.
+`--gutter-canvas` 24, `--canvas-max` 1680 (SHELL-001), `--header-bar-height` 56.
+`--space-1/3/7/10` are legacy steps for existing geometry.
 
 ### Radius
 
@@ -151,6 +153,66 @@ The component sheet measures the rendered pairs per theme.
 
 Text rule: a component never carries a static `data-i18n` attribute on text that code
 rewrites; dynamic writers set the text (or rebind the key) themselves.
+
+## Shell (SHELL-001)
+
+Owner since `SHELL-001` (October 2, 2026); human acceptance pending under
+`QA-SHELL-001`. CSS lives in the `SHELL-001: shell composition` section at the end
+of `styles.css`; behavior in `app/src/application/workspace-header.mjs`
+(`workspace-header/v1`).
+
+**Header bar.** One 56px bar (`--header-bar-height`) per workspace. Start side:
+`#workspaceTitle` (`--t-title`) and `#workspaceContext`, a one-line context of facts
+the workspace already rendered, joined with ` · `, each fact direction-isolated
+(`<bdi>`), muted when absent. End side, in this order: the Hand/Scenario mode switch
+(`#workspaceModeSwitch`, Hand and Analyze only; Segmented sm), the strategy source
+badge (Badge, `data-variant="source"`), Learn Riverline, Help, Account. No eyebrow
+and no description line: each workspace's description (`data-mode-subtitle`, or a
+workspace override such as Home's Guest/account sentence) opens from **Help**
+together with that workspace's tutorials. The header mirrors by `dir` alone.
+
+| Workspace | Context line (existing facts) |
+| --- | --- |
+| Home | `Guest Mode`, or display name · sync state |
+| Hand | setup summary (`6 players · Hero BTN · 100 bb`) · shown street |
+| Analyze | `Scenario` or `Hand` · Hero position · stack · street |
+| Training | session mode · `Exercise n of N` (Varied) |
+| Personal Strategy | Game Setup · Approach |
+| Equity | `n players` |
+| Saved | `Showing all n` / `Showing n of m` |
+| Home Game | persistence · open session title |
+| Guide | none |
+
+Contexts are published by the renderers that already produce those facts
+(`RiverlineWorkspaceHeader.setContext`); the header performs no strategy, Equity or
+state computation (PERF-001 counts unchanged).
+
+**Source badge placement.** Shown only where strategy content is shown: Analyze;
+Hand while the review surface is open (never during live play); Training once an
+answer's feedback or the Full Hand review is visible; Personal Strategy while a
+comparison surface is open. Hidden on Home, Saved, Equity, Home Game and Guide.
+The rule (`shouldShowSourceBadge`) reads presentation state only; it never changes
+*when* strategy information is revealed. In-surface source labels (Analyze result
+pill, Training rail source) remain and belong to their workspace batches.
+
+**Canvas grid.** `--canvas-max` 1680px; the canvas owns the 24px gutter
+(`--gutter-canvas`); every frame (`workspace-frame--standard/wide/dense`, Home Game,
+Guide) is `min(100%, --canvas-max)` centered, and the header pads to the same start
+edge. Workspace roots keep block padding only. Workspaces choose column templates
+inside the frame (rail + main + rail, list + inspector, main + rail, main); they never
+set page margins or their own max widths.
+
+**Sidebar footer.** Language, Audio and Settings are one row of 36px icon buttons with
+the existing icons (one column in the collapsed rail). Names: `aria-label` plus an
+`sr-only` label; one translated tooltip each (`data-tooltip` + `data-i18n-tooltip`;
+the audio tooltip is written by SoundFX). Expanded nav items carry no tooltip; the
+collapsed rail sets a translated tooltip to the inline end.
+
+**One accent action per view.** At most one accent-filled (`primary`) control is
+visible per state; legal poker actions are peers (none accent-filled); transport
+controls and tutorial offers are secondary; a list shows a primary only for its
+first continuation. Switch "on" tracks and selected segments are selection
+indicators, not actions.
 
 ## Component sheet (dev only)
 

@@ -231,7 +231,7 @@
     "Highest": "Наивысшая",
     "highest frequency": "наивысшая частота",
     "Highest frequency": "Наивысшая частота",
-    "Home": "Домашняя игра",
+    "Home": "Главная",
     "Clear": "Очистить",
     "Fold": "Фолд",
     "Hand mode does not support percentage or capped rake.": "Режим раздачи не поддерживает процентный или ограниченный рейк.",
@@ -763,7 +763,7 @@
     "Highest": "הגבוהה ביותר",
     "highest frequency": "התדירות הגבוהה ביותר",
     "Highest frequency": "התדירות הגבוהה ביותר",
-    "Home": "משחק ביתי",
+    "Home": "דף הבית",
     "Clear": "נקה",
     "Fold": "פולד",
     "Hand mode does not support percentage or capped rake.": "מצב יד אינו תומך ברייק באחוזים או ברייק מוגבל.",
@@ -2159,6 +2159,11 @@ Object.assign(he, {
     ['Understand Hero decisions here. Use Replay to see the action history.', 'Здесь можно разобраться в решениях Hero. Повтор показывает историю действий.', 'כאן אפשר להבין את החלטות Hero. צפייה חוזרת מציגה את היסטוריית הפעולות.'],
     ['No current question here. Map another range or select a hand in Matrix Edit.', 'Сейчас здесь нет вопроса. Постройте другой диапазон или выберите руку в редакторе матрицы.', 'אין כאן שאלה כרגע. מפו טווח אחר או בחרו יד בעריכת מטריצה.'],
     ['No direct evidence for this hand. Choose your intended action in Matrix Edit or map this range.', 'Для этой руки пока нет прямых ответов. Укажите задуманное действие в редакторе матрицы или постройте этот диапазон.', 'אין עדיין תשובות ישירות ליד הזו. בחרו את הפעולה הרצויה בעריכת מטריצה או מפו את הטווח הזה.'],
+  ]) { ru[key] = russian; he[key] = hebrew; }
+  // SHELL-001 header bar.
+  for (const [key, russian, hebrew] of [
+    ['Help', 'Справка', 'עזרה'],
+    ['Workspace tools', 'Инструменты раздела', 'כלי סביבת העבודה']
   ]) { ru[key] = russian; he[key] = hebrew; }
   const allProductKeys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineProductTranslations = {

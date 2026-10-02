@@ -25,13 +25,22 @@ Use the shared `strategy-truth/v1` presentation across Analyze, Training, Review
 ## Core rule
 
 Presentation refinement (`BETA-REPAIR-SWEEP-B`): Home's next-action, Review and
-Recent sections use independent main-column flow beside Destinations. Review's
+Recent sections use independent main-column flow (Destinations removed in `SHELL-001`). Review's
 explanation and context columns have stable grid ownership. Replay selection
 scrolls only its own bounded history list; opening disclosures and selecting
 events never seek or scroll the outer document as an incidental render effect.
 Equity player tiles retain the same header, cards, mode/edit and result order
 for known and unknown inputs, including keyboard order. Explain uses logical
 inner padding in EN/RU/HE.
+
+Shell (`SHELL-001`, human acceptance pending): the header bar's Help control opens
+a non-modal panel with the workspace description and its tutorials; focus moves into
+the panel, Escape or the Help control closes it and focus returns to Help
+(`aria-expanded` reflects the state). Header Tab order: mode switch (Hand/Analyze),
+Learn Riverline, Help, Account; the source badge is a non-interactive note. Sidebar
+footer Tab order: Language (native select), Audio, Settings, each with a translated
+tooltip on hover and keyboard focus. Expanded navigation items show no tooltip; the
+collapsed rail names items on hover/focus. See [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#shell-shell-001).
 
 Natural product copy uses Riverline / Риверлайн / ריברליין in EN/RU/HE. Product
 sentences use commas, colons, parentheses, periods or hyphens instead of em/en

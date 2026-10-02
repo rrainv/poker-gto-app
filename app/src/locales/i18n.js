@@ -3383,7 +3383,8 @@ function translateElement(element) {
     ['data-i18n-placeholder', 'placeholder'],
     ['data-i18n-title', 'title'],
     ['data-i18n-aria-label', 'aria-label'],
-    ['data-i18n-label', 'label']
+    ['data-i18n-label', 'label'],
+    ['data-i18n-tooltip', 'data-tooltip']
   ];
   attributes.forEach(([keyAttribute, targetAttribute]) => {
     if (!element.hasAttribute(keyAttribute)) return;
@@ -3396,7 +3397,7 @@ function translateNode(node) {
   if (!node || node.nodeType !== 1) return;
   const elements = [node];
   if (typeof node.querySelectorAll === 'function') {
-    elements.push(...node.querySelectorAll('[data-i18n], [data-i18n-placeholder], [data-i18n-title], [data-i18n-aria-label], [data-i18n-label]'));
+    elements.push(...node.querySelectorAll('[data-i18n], [data-i18n-placeholder], [data-i18n-title], [data-i18n-aria-label], [data-i18n-label], [data-i18n-tooltip]'));
   }
   elements.forEach(translateElement);
 }

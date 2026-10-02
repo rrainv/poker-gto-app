@@ -65,8 +65,11 @@ test('the production Home tour advances for the account-aware study dashboard', 
   assert.equal(HOME_TUTORIAL_DEFINITION.id, 'home.first-use');
   assert.equal(HOME_TUTORIAL_DEFINITION.version, 1);
   assert.equal(HOME_TUTORIAL_DEFINITION.steps.length, 4);
+  // QA-SWEEP-013 / SHELL-001: each step spotlights what its copy teaches. The
+  // Study Inbox step anchors the Inbox (not Review); the destinations step
+  // anchors the sidebar navigation after Home's Destinations panel was removed.
   assert.deepEqual(HOME_TUTORIAL_DEFINITION.steps.map((step) => step.anchor), [
-    'home-overview', 'home-recent', 'home-review', 'home-quick-start',
+    'home-overview', 'home-recent', 'home-study-inbox', 'shell-navigation',
   ]);
   const keys = [
     HOME_TUTORIAL_DEFINITION.titleKey,

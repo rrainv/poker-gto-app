@@ -74,14 +74,16 @@ test('Guest Home exposes truthful Start, core study, Personal, and supporting de
   assert.deepEqual(model.sections.quickStart.destinations, ['hand', 'analyze', 'training', 'equity']);
   assert.equal(model.sections.personalStrategy.status, 'unavailable');
 
+  // SHELL-001 (owner decision): Home's Destinations panel duplicated the sidebar
+  // and was removed. Every destination stays one click away in the sidebar,
+  // exactly once, and Home no longer repeats them.
   const home = html.slice(html.indexOf('id="homeMode"'), html.indexOf('id="homegameMode"'));
-  const core = home.slice(home.indexOf('class="home-quick-links"'), home.indexOf('class="panel home-section home-section--other"'));
-  for (const destination of ['hand', 'analyze', 'training', 'equity']) {
-    assert.equal((core.match(new RegExp(`data-home-destination="${destination}"`, 'g')) ?? []).length, 1);
+  const rail = html.slice(html.indexOf('id="modeRail"'), html.indexOf('class="workspace-shell"'));
+  for (const destination of ['hand', 'analyze', 'training', 'equity', 'saved', 'home-game', 'guide']) {
+    assert.equal((rail.match(new RegExp(`data-navigation-id="${destination}"`, 'g')) ?? []).length, 1);
+    assert.doesNotMatch(home, new RegExp(`data-home-destination="${destination}"`));
   }
-  for (const destination of ['saved', 'home-game', 'guide']) {
-    assert.match(home, new RegExp(`data-home-destination="${destination}"`));
-  }
+  assert.doesNotMatch(home, /home-quick-links|homeQuickStartTitle/);
   assert.match(logic, /homeEmptyAction\('Play or reconstruct a legal hand\.', 'Start a Hand', 'hand', \{ primary: true \}\)/);
   assert.match(logic, /Your learning workspace is saved on this device\./);
   assert.match(html, /Guest data does not sync\./);
@@ -140,9 +142,11 @@ test('Home routes every visible job through the existing navigation registry', (
 });
 
 test('1920 composition is top-packed and localized without equal-weight destination treatment', () => {
-  assert.match(css, /@media \(min-width: 1500px\)[\s\S]*?"continue quick quick"[\s\S]*?"strategy other other"/);
-  assert.match(css, /\.home-quick-links \{ grid-template-columns: repeat\(4/);
-  assert.match(css, /\.home-section--continue,[\s\S]*?\.home-section--quick \{ min-height: 238px/);
+  // SHELL-001: the Destinations quick-link grid is gone; Home is one main
+  // column and Continue keeps its top-packed minimum height at 1920.
+  assert.doesNotMatch(css, /\.home-quick-links?\b/);
+  assert.match(css, /#homeWorkspaceContent\[data-product-destination="home"\] \{ grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(css, /@media \(min-width: 1500px\)[\s\S]*?\.home-section--continue \{ min-height: 238px/);
   assert.match(css, /\.home-other-link[\s\S]*?min-height: 54px/);
   for (const key of ['Start study', 'Start a Hand', 'Choose a workspace', 'More destinations', 'Play or reconstruct a legal hand.']) {
     const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

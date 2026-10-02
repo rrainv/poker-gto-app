@@ -89,23 +89,27 @@ export function installTutorialBridge(browserWindow, options = {}) {
   function closeChooser({ restoreFocus = true } = {}) {
     chooser?.remove?.();
     chooser = null;
+    if (chooserInvoker?.id === 'workspaceTutorialButton') chooserInvoker.setAttribute?.('aria-expanded', 'false');
     if (restoreFocus) chooserInvoker?.focus?.({ preventScroll: true });
     chooserInvoker = null;
   }
 
-  function openChooser(workspace, invoker = document.querySelector('#workspaceTutorialButton')) {
+  // The header Help button (SHELL-001) always opens this panel: it carries the
+  // workspace description that left the header, then the workspace tutorials.
+  // Settings keeps the direct restart when it has a single tutorial.
+  function openChooser(workspace, invoker = document.querySelector('#workspaceTutorialButton'), { help = null } = {}) {
     closeChooser({ restoreFocus: false });
     const definitions = availableDefinitions(workspace)
       .filter((definition) => definition.restartPolicy !== 'never');
-    if (definitions.length === 0) return false;
-    if (definitions.length === 1) {
+    if (!help && definitions.length === 0) return false;
+    if (!help && definitions.length === 1) {
       removeOffer();
       controller.restart(definitions[0].id);
       return true;
     }
     chooserInvoker = invoker;
     const panel = document.createElement('section');
-    panel.className = 'tutorial-chooser';
+    panel.className = help ? 'tutorial-chooser workspace-help-panel' : 'tutorial-chooser';
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-modal', 'false');
     panel.setAttribute('aria-labelledby', 'tutorialChooserTitle');
@@ -114,14 +118,17 @@ export function installTutorialBridge(browserWindow, options = {}) {
     const heading = document.createElement('div');
     const title = document.createElement('h2');
     title.id = 'tutorialChooserTitle';
-    title.textContent = browserWindow.t?.('Tutorials') ?? 'Tutorials';
+    title.textContent = help?.title || (browserWindow.t?.('Tutorials') ?? 'Tutorials');
     const description = document.createElement('p');
-    description.textContent = browserWindow.t?.('Choose a tutorial for this workspace.') ?? 'Choose a tutorial for this workspace.';
-    heading.append(title, description);
+    description.textContent = help
+      ? help.description
+      : (browserWindow.t?.('Choose a tutorial for this workspace.') ?? 'Choose a tutorial for this workspace.');
+    heading.append(title);
+    if (description.textContent) heading.append(description);
     const close = document.createElement('button');
     close.type = 'button';
     close.className = 'ui-button ui-button--icon';
-    close.setAttribute('aria-label', browserWindow.t?.('Close tutorials') ?? 'Close tutorials');
+    close.setAttribute('aria-label', browserWindow.t?.(help ? 'Close' : 'Close tutorials') ?? 'Close tutorials');
     close.textContent = '×';
     close.addEventListener('click', () => closeChooser());
     header.append(heading, close);
@@ -145,7 +152,14 @@ export function installTutorialBridge(browserWindow, options = {}) {
       });
       list.append(button);
     });
-    panel.append(header, list);
+    panel.append(header);
+    if (help && definitions.length) {
+      const listTitle = document.createElement('h3');
+      listTitle.className = 'tutorial-chooser-section';
+      listTitle.textContent = browserWindow.t?.('Tutorials') ?? 'Tutorials';
+      panel.append(listTitle);
+    }
+    if (definitions.length) panel.append(list);
     panel.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -154,7 +168,8 @@ export function installTutorialBridge(browserWindow, options = {}) {
     });
     document.body.append(panel);
     chooser = panel;
-    list.querySelector('button')?.focus?.();
+    if (help) invoker?.setAttribute?.('aria-expanded', 'true');
+    (list.querySelector('button') ?? close).focus?.();
     return true;
   }
 
@@ -162,11 +177,12 @@ export function installTutorialBridge(browserWindow, options = {}) {
     const button = document.querySelector('#workspaceTutorialButton');
     if (!button) return;
     const definitions = availableDefinitions(workspace).filter((definition) => definition.restartPolicy !== 'never');
-    button.hidden = definitions.length === 0 || workspace === 'settings';
-    button.dataset.tutorialWorkspace = definitions.length ? workspace : '';
+    // Help stays available in every workspace (it holds the moved description).
+    button.hidden = workspace === 'settings';
+    button.dataset.tutorialWorkspace = workspace ?? '';
     button.dataset.tutorialId = definitions.length === 1 ? definitions[0].id : '';
-    button.setAttribute('aria-label', browserWindow.t?.('Restart tutorial') ?? 'Restart tutorial');
-    button.title = browserWindow.t?.('Tutorial') ?? 'Tutorial';
+    button.setAttribute('aria-label', browserWindow.t?.('Help') ?? 'Help');
+    button.title = browserWindow.t?.('Help') ?? 'Help';
     const settingsButton = document.querySelector('#settingsTutorialButton');
     if (settingsButton) {
       settingsButton.setAttribute('aria-label', browserWindow.t?.('Restart Settings tour') ?? 'Restart Settings tour');
@@ -200,7 +216,8 @@ export function installTutorialBridge(browserWindow, options = {}) {
     skip.textContent = browserWindow.t?.('Skip') ?? 'Skip';
     const start = document.createElement('button');
     start.type = 'button';
-    start.className = 'ui-button ui-button--primary';
+    // The offer never competes with the workspace's own primary action.
+    start.className = 'ui-button ui-button--secondary';
     const resume = record?.firstUseStatus === 'in_progress';
     start.textContent = browserWindow.t?.(resume ? 'Continue tutorial' : 'Start tutorial')
       ?? (resume ? 'Continue tutorial' : 'Start tutorial');
@@ -240,8 +257,21 @@ export function installTutorialBridge(browserWindow, options = {}) {
   }
 
   const manualButton = document.querySelector('#workspaceTutorialButton');
+  function helpContent() {
+    const header = browserWindow.RiverlineWorkspaceHeader;
+    const descriptionKey = header?.getDescription?.() ?? '';
+    return {
+      title: document.querySelector('#workspaceTitle')?.textContent?.trim() || (browserWindow.t?.('Help') ?? 'Help'),
+      description: descriptionKey ? (browserWindow.t?.(descriptionKey) ?? descriptionKey) : '',
+    };
+  }
+
   manualButton?.addEventListener('click', () => {
-    openChooser(manualButton.dataset.tutorialWorkspace, manualButton);
+    if (chooser && chooserInvoker === manualButton) {
+      closeChooser();
+      return;
+    }
+    openChooser(manualButton.dataset.tutorialWorkspace, manualButton, { help: helpContent() });
   });
 
   const settingsButton = document.querySelector('#settingsTutorialButton');

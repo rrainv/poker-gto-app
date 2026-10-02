@@ -148,7 +148,9 @@ test('Saved defaults to a compact width-filling collection and expands detail on
   assert.match(html, /id="savedLibrarySection"[\s\S]*?data-saved-library-body/);
   assert.match(library, /const layout = el\('div', 'saved-library-layout'\);[\s\S]*?const list = el\('div', 'home-saved-list'\);[\s\S]*?layout\.append\(list, detail\)/);
   assert.match(css, /home-saved-list[\s\S]*?repeat\(auto-fill, minmax\(min\(100%, 440px\), 1fr\)\)/);
-  assert.match(css, /#homeMode\[data-product-destination="saved"\][\s\S]*?--workspace-frame-max: var\(--workspace-frame-wide\)/);
+  // SHELL-001: Saved uses the one shared canvas frame (no per-workspace frame override).
+  assert.doesNotMatch(css, /#homeMode\[data-product-destination="saved"\][^{]*\{[^}]*--workspace-frame-max/);
+  assert.match(css, /--workspace-frame-standard:\s*var\(--canvas-max\)/);
   assert.match(library, /let expandedId = null/);
   assert.match(library, /if \(!model\.results\.some[\s\S]*?expandedId = null/);
   assert.doesNotMatch(library, /expandedId = (?:model\.results|items)\[0\]\.id/);

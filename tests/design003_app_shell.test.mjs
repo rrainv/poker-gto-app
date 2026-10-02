@@ -7,6 +7,7 @@ const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8
 const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
 const i18n = fs.readFileSync(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8');
+const headerModule = fs.readFileSync(new URL('../app/src/application/workspace-header.mjs', import.meta.url), 'utf8');
 
 function shellMarkup() {
   const start = html.indexOf('<div class="riverline-shell"');
@@ -40,11 +41,13 @@ test('the shell exposes a deliberate core and support hierarchy with structural 
 
 test('mode switching updates workspace context without touching poker state', () => {
   assert.match(html, /id="workspaceTitle"[^>]*>Home</);
-  assert.match(html, /id="workspaceSubtitle"/);
+  // SHELL-001: the header bar shows a context line; the description moved to Help.
+  assert.match(html, /id="workspaceContext"/);
+  assert.doesNotMatch(html, /id="workspaceSubtitle"|id="workspaceEyebrow"/);
   assert.match(logic, /shell\.dataset\.activeMode = button\.dataset\.mode/);
   assert.match(logic, /shell\.dataset\.activeDestination = button\.dataset\.navigationId/);
-  assert.match(logic, /workspaceTitle\.textContent = t\(titleKey\)/);
-  assert.match(logic, /workspaceSubtitle\.textContent = t\(subtitleKey\)/);
+  assert.match(logic, /header\.activate\(button\.dataset\.navigationId, \{ titleKey, descriptionKey \}\)/);
+  assert.match(headerModule, /title\.textContent = translate\(titleKey\)/);
   assert.doesNotMatch(logic.slice(logic.indexOf("$$('.mode-nav-item[data-mode]')"), logic.indexOf("$$('.sub-tab')")), /DecisionContext|StrategyResult|calculateEquity|calculatePreflop/);
 });
 
@@ -75,7 +78,8 @@ test('utility controls use coherent SVG icons and accessible flag-and-name langu
 });
 
 test('strategy source status is truthful, noninteractive fallback copy', () => {
-  assert.match(html, /<div id="strategySourceStatus" class="strategy-source-status"[^>]*>/);
+  // SHELL-001: the header badge is the Badge component (source variant).
+  assert.match(html, /<div id="strategySourceStatus" class="strategy-source-status ui-badge" data-variant="source"[^>]*>/);
   assert.match(html, /<strong[^>]*>Heuristic fallback<\/strong>/);
   assert.match(css, /\.strategy-source-status/);
   assert.doesNotMatch(html, /connectApiBtn|apiStatusText|data-status=/);

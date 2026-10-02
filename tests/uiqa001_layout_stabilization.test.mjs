@@ -47,12 +47,19 @@ test('global utilities live in the lower sidebar and not the workspace header', 
   }
   assert.match(headerHtml, /id="strategySourceStatus"[^>]+aria-label="Strategy source: Heuristic fallback"/);
   assert.doesNotMatch(headerHtml, /connectApiBtn|<button[^>]+strategySourceStatus/);
-  assert.match(railHtml, /data-tooltip="Audio"/);
-  assert.match(railHtml, /data-tooltip="Settings"/);
+  // SHELL-001: one translated tooltip per footer icon; the audio label is
+  // written by SoundFX (Mute/Enable sound). QA-SWEEP-029: expanded nav items
+  // carry no self-tooltip; the collapsed rail sets one at runtime.
+  assert.match(railHtml, /id="langToggle"/);
+  assert.match(railHtml, /data-tooltip="Settings" data-i18n-tooltip="Settings"/);
+  assert.match(railHtml, /id="audioToggleBtn"[^>]+data-tooltip="Mute sound"/);
+  assert.doesNotMatch(railHtml, /class="mode-nav-item[^>]+\s(?:title|data-tooltip|data-i18n-title)=/);
 });
 
 test('collapsed utility access and mobile navigation remain structural', () => {
-  assert.match(uiQaCss, /\.is-sidebar-collapsed \.rail-language select[^{]*\{[^}]*opacity:\s*0/);
+  // SHELL-001: the footer is an icon row in both rail states; the native
+  // language select overlays the globe icon.
+  assert.match(uiQaCss, /\.rail-language select\s*\{[^}]*opacity:\s*0/);
   assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.mode-navigation\s*\{[^}]*display:\s*flex[^}]*overflow-x:\s*auto/);
   assert.match(uiQaCss, /@media \(max-width: 820px\)[\s\S]*?\.rail-utilities[\s\S]*?grid-template-columns:\s*repeat\(3/);
   assert.doesNotMatch(uiQaCss, /@media \(max-width: (?:820|700|520)px\)[\s\S]*?\.mode-navigation\s*\{[^}]*display:\s*none/);
@@ -69,7 +76,9 @@ test('language selector presents flags with full accessible names', () => {
 test('responsive strategy is fluid rather than resolution-specific', () => {
   assert.match(uiQaCss, /minmax\(/);
   assert.match(uiQaCss, /clamp\(/);
-  assert.match(uiQaCss, /max-width:\s*1840px/);
+  // SHELL-001: one canvas width (--canvas-max) replaces the 1840px canvas cap.
+  assert.doesNotMatch(css, /max-width:\s*1840px/);
+  assert.match(css, /--canvas-max:\s*1680px/);
   for (const breakpoint of [1500, 1320, 1280, 1180, 1100, 900, 820, 700, 520]) {
     assert.match(uiQaCss, new RegExp(`(?:min|max)-width: ${breakpoint}px`), String(breakpoint));
   }
@@ -80,7 +89,9 @@ test('Playbook workflow and betting context use compact structural strips', () =
   assert.match(playbookHtml, /class="playbook-state-source"/);
   assert.match(playbookHtml, /class="playbook-context-primary"/);
   assert.match(playbookHtml, /class="fields playbook-context-sliders"/);
-  assert.match(uiQaCss, /#playbookModeControl \.ui-tab\s*\{[^}]*min-height:\s*42px/);
+  // SHELL-001: the Hand/Scenario switch is a small segmented control in the header bar.
+  assert.match(css, /\.workspace-mode-switch #playbookModeControl \.ui-tab \{[^}]*min-height: var\(--control-height-sm\)/);
+  assert.match(headerHtml, /id="workspaceModeSwitch"[\s\S]*?id="playbookModeControl"/);
   assert.match(uiQaCss, /\.playbook-context-primary\s*\{[^}]*grid-template-columns:/);
 });
 

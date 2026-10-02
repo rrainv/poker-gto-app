@@ -336,7 +336,9 @@ test('core-flow controls are discoverable, localized, keyboard-aware, and remain
     assert.match(html, new RegExp(`id="${id}"[^>]*type="button"`));
   }
   assert.match(html, /id="handCompletedReviewButton"[^>]*class="[^"]*ui-button--primary[^"]*"/);
-  assert.match(html, /id="handCompletedNewHandButton"[^>]*class="[^"]*ui-button--primary[^"]*"[^>]*data-i18n="Start new hand"/);
+  // SHELL-001 one accent action per view: Review hand (above) leads the
+  // completion card; Start new hand stays available as a secondary action.
+  assert.match(html, /id="handCompletedNewHandButton"[^>]*class="[^"]*ui-button--secondary[^"]*"[^>]*data-i18n="Start new hand"/);
   for (const id of ['handCompletedAnalysisButton', 'handCompletedReplayButton', 'handCompletedSaveButton']) {
     assert.match(html, new RegExp(`id="${id}"[^>]*class="[^"]*ui-button--secondary[^"]*"`));
   }

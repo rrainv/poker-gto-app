@@ -605,7 +605,9 @@ const SoundFX = (function() {
       btn.classList.toggle('muted', !soundEnabled);
       btn.setAttribute('aria-pressed', String(soundEnabled));
       btn.setAttribute('aria-label', label);
-      btn.title = label;
+      // The sidebar footer shows one tooltip (SHELL-001); no second native title.
+      btn.dataset.tooltip = label;
+      btn.removeAttribute('title');
     }
     if (settingsBtn) {
       settingsBtn.classList.toggle('on', soundEnabled);

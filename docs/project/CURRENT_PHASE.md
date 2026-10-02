@@ -1,5 +1,14 @@
 # Current Riverline phase
 
+October 2 explicit shell slice: `SHELL-001` is implemented with human acceptance
+pending under `QA-SHELL-001`. One 56px header bar (title + context line; mode
+switch, rule-placed source badge, Learn, Help, Account), one canvas grid (same
+start edge, 24px gutter, `--canvas-max` 1680), a compact sidebar footer icon row,
+one accent action per audited state, and Home without its Destinations panel. The
+shell contract lives in [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#shell-shell-001). No
+schema, strategy, Equity, reveal-timing or identity change. Next per review §F:
+`SAVED-COMPOSITION-002`; the sequencing below is otherwise unchanged.
+
 October 2 explicit design foundation: `DS-FOUNDATION-001` is implemented with human
 acceptance pending under `QA-DS-FOUNDATION-001`. [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)
 now owns tokens, the component layer and the cascade contract; `riverline-design.css`

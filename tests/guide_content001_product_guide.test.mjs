@@ -57,12 +57,15 @@ test('Guide states strategy, account, and current-capability boundaries truthful
 test('Guide clarifies reference, orientation, and existing contextual tutorial roles', () => {
   assert.match(guideHtml, /Guide is durable product reference/);
   assert.match(guideHtml, /Learn Riverline provides orientation/);
-  assert.match(guideHtml, /existing contextual teaching for that workspace/);
+  // SHELL-001: the header Help control (formerly the tutorial control) carries
+  // each workspace's description and its contextual tutorials.
+  assert.match(guideHtml, /Help in each workspace describes it and starts its contextual tutorials where available/);
   assert.doesNotMatch(guideHtml, /data-tutorial-progress|data-guide-tutorial-step/);
 });
 
 test('Guide uses the 1920 desktop canvas for several workflows without a second sidebar', () => {
-  assert.match(css, /\.guide-workspace--current\s*\{[^}]*width:\s*min\(1440px, 100%\)/);
+  // SHELL-001: the Guide uses the shared canvas frame width.
+  assert.match(css, /\.guide-workspace--current\s*\{[^}]*width:\s*min\(100%, var\(--canvas-max\)\)/);
   assert.match(css, /\.guide-workflow-grid\s*\{[^}]*grid-template-columns:\s*repeat\(6/);
   assert.match(css, /\.guide-workflow-card\s*\{[^}]*grid-column:\s*span 2/);
   assert.doesNotMatch(guideHtml, /guide-sidebar|guide-rail/);
