@@ -472,6 +472,32 @@
     'Decision example unavailable': 'דוגמת ההחלטה אינה זמינה',
   });
 
+  // SAVED-COMPOSITION-002 toolbar, inspector and auto-titles.
+  Object.assign(ru, {
+    'Search title, note, or tag': 'Поиск по названию, заметке или тегу',
+    'Select a saved item to inspect it.': 'Выберите сохранённый материал, чтобы посмотреть его.',
+    'Select an answered decision to inspect it.': 'Выберите решение из тренировки, чтобы посмотреть его.',
+    'Up and Down move the selection; Enter opens it.': 'Стрелки вверх и вниз меняют выбор, Enter открывает.',
+    'Review decisions': 'Разобрать решения',
+    'No note yet.': 'Заметки пока нет.',
+    'No tags': 'Тегов нет',
+    'Origin': 'Источник',
+    '{hero} vs {villain}': '{hero} против {villain}',
+    'Answered': 'Дата ответа',
+  });
+  Object.assign(he, {
+    'Search title, note, or tag': 'חיפוש לפי כותרת, הערה או תגית',
+    'Select a saved item to inspect it.': 'בחרו פריט שמור כדי לעיין בו.',
+    'Select an answered decision to inspect it.': 'בחרו החלטה מאימון כדי לעיין בה.',
+    'Up and Down move the selection; Enter opens it.': 'החצים למעלה ולמטה מעבירים את הבחירה; Enter פותח.',
+    'Review decisions': 'סקירת החלטות',
+    'No note yet.': 'עדיין אין הערה.',
+    'No tags': 'אין תגיות',
+    'Origin': 'מקור',
+    '{hero} vs {villain}': '{hero} מול {villain}',
+    'Answered': 'מועד המענה',
+  });
+
   const keys = new Set([...Object.keys(ru), ...Object.keys(he)]);
   global.riverlineHomeTranslations = {
     en: Object.fromEntries([...keys].map((key) => [key, {

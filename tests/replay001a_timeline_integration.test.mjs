@@ -127,7 +127,7 @@ test('action families use semantic accents while text stays high contrast', () =
   assert.match(actionRule, /color:\s*var\(--text-primary\)/);
   assert.match(css, /\.replay-current-marker[\s\S]*?color:\s*var\(--text-primary\)/);
   assert.doesNotMatch(bodyRule, /#[0-9a-f]{3,8}/i);
-  assert.match(css, /\.replay-action-entry\.is-hero \.replay-actor-name[^{]*\{[^}]*font-weight:\s*900[^}]*text-decoration:\s*underline/);
+  assert.match(css, /\.replay-action-entry\.is-hero \.replay-actor-name[^{]*\{[^}]*font-weight:\s*var\(--weight-title\)[^}]*text-decoration:\s*underline/); // SAVED-COMPOSITION-002 amendment: literal weights are role tokens
 });
 
 test('timeline accessibility uses explicit direct-seek controls without an empty numbered action row', () => {

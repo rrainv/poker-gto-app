@@ -200,7 +200,7 @@ test('frozen proportions favor the right dossier and player headers are compact 
   assert.match(equityCss, /\.equity-player-head\s*\{[\s\S]*?min-block-size:\s*28px[\s\S]*?align-items:\s*center/);
   assert.match(equityCss, /\.equity-player-identity\s*\{[^}]*min-block-size:\s*26px[^}]*display:\s*flex[^}]*align-items:\s*center[^}]*padding-block:\s*0/);
   assert.match(equityCss, /\.equity-player-identity \.series-marker\s*\{[^}]*align-self:\s*center/);
-  assert.match(equityCss, /\.equity-player-name\s*\{[^}]*height:\s*26px[^}]*padding:\s*0 var\(--space-2\)[^}]*font-weight:\s*800[^}]*line-height:\s*24px/s);
+  assert.match(equityCss, /\.equity-player-name\s*\{[^}]*height:\s*26px[^}]*padding:\s*0 var\(--space-2\)[^}]*font-weight:\s*var\(--weight-title\)[^}]*line-height:\s*24px/s); // SAVED-COMPOSITION-002 amendment: literal weights are role tokens
   assert.match(equityCss, /\.equity-player-head \.remove-player\s*\{[^}]*grid-column:\s*auto[^}]*min-height:\s*26px/s);
   assert.match(equityCss, /\.equity-player-body\s*\{[^}]*padding-block-start:\s*var\(--space-1\)/s);
   assert.doesNotMatch(equityCss, /data-equity-state="complete"[^}]*\.equity-overview-panel[^}]*display:\s*block/);

@@ -176,11 +176,15 @@ test('adopted families use the components: Saved chips, toggle, checkboxes; Equi
   const savedLibrary = read('../app/src/application/saved-library-workspace.mjs');
   const savedHistory = read('../app/src/application/saved-training-history-workspace.mjs');
   const logic = read('../app/src/core/logic.js');
-  assert.match(savedLibrary, /el\('button', 'saved-library-category ui-chip'\)/);
+  // Retargeted by SAVED-COMPOSITION-002: chips are built with the local button helper and
+  // "Mistakes only" is a toggle chip (aria-pressed) instead of a checkbox.
+  assert.match(savedLibrary, /button\('saved-library-category ui-chip', undefined, \{ variant: 'filter'/);
   assert.match(savedLibrary, /el\('strong', 'ui-chip-count', '0'\)/);
-  assert.match(savedLibrary, /el\('label', 'saved-library-toggle ui-check'\)/);
-  assert.match(savedHistory, /el\('div', 'saved-view-toggle-group ui-segments'\)/);
-  assert.match(savedHistory, /el\('label', 'saved-view-option ui-tab'\)/);
+  assert.match(savedLibrary, /button\('saved-library-toggle ui-chip', undefined, \{ variant: 'filter', savedLibraryMistakes: '' \}\)/);
+  // Retargeted by SAVED-COMPOSITION-002 (mockup fidelity): the view switch is underline Tabs
+  // with radio items (one tab stop, arrow keys), not a Segmented control.
+  assert.match(savedHistory, /el\('div', 'saved-view-toggle-group ui-tabs'\)/);
+  assert.match(savedHistory, /el\('label', 'saved-view-option ui-tabs-item'\)/);
   assert.match(logic, /class="equity-hand-mode ui-segments" data-size="sm"/);
   assert.match(html, /id="calculate" class="ui-button ui-button--primary equity-calculate"/);
   assert.match(html, /id="cancelEquity" class="ui-button ui-button--danger equity-cancel"/);

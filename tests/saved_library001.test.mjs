@@ -295,9 +295,10 @@ test('search is debounced client-side, combines with filters, reaches no results
   assert.equal(f.listIds().length, 6, 'tags are searchable');
   f.dom.dispatch(f.find('[data-saved-category="spots"]'), 'click');
   assert.deepEqual(f.listIds(), ['obj-03', 'obj-07', 'obj-11']);
+  // SAVED-COMPOSITION-002: "Mistakes only" is a toggle chip (aria-pressed), not a checkbox.
   const mistakes = f.find('[data-saved-library-mistakes]');
-  mistakes.checked = true;
-  f.dom.dispatch(mistakes, 'change');
+  f.dom.dispatch(mistakes, 'click');
+  assert.equal(mistakes.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(f.listIds(), []);
   const list = f.find('[data-saved-library-list]');
   assert.equal(list.dataset.libraryState, 'no_results');
@@ -310,7 +311,7 @@ test('search is debounced client-side, combines with filters, reaches no results
   assert.equal(search.value, '');
   assert.equal(f.dom.document.activeElement, search, 'focus returns to the search field');
   assert.equal(f.find('[data-saved-category="all"]').getAttribute('aria-pressed'), 'true');
-  assert.equal(f.find('[data-saved-library-mistakes]').checked, false);
+  assert.equal(f.find('[data-saved-library-mistakes]').getAttribute('aria-pressed'), 'false');
   assert.equal(f.find('[data-saved-library-clear]').disabled, true, 'toolbar Clear is inert once nothing is filtered');
 });
 
@@ -358,9 +359,11 @@ test('grid selection, shared preview, Escape, and open keep the accepted Saved i
   assert.equal(f.dom.dispatch(f.dom.document, 'keydown', { key: 'Escape' }).defaultPrevented, true);
   assert.equal(f.overlay.hidden, true, 'Escape dismisses the preview first');
 
+  // SAVED-COMPOSITION-002: the inspector is a reserved column; selection fills it.
   f.dom.dispatch(item, 'click');
-  const detail = f.find('[data-saved-library-open]').parentNode;
+  const detail = f.find('[data-saved-inspector-state]');
   assert.equal(detail.hidden, false);
+  assert.equal(detail.dataset.savedInspectorState, 'selected');
   assert.match(detail.textContent, /Study the sizing/);
   const selected = f.section.querySelector('[data-saved-select-id="h1"]');
   assert.equal(selected.getAttribute('aria-expanded'), 'true');

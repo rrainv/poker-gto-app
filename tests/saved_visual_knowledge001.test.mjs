@@ -144,24 +144,26 @@ test('unknown future Saved kinds remain unsupported and are never projected as S
   assert.doesNotMatch(JSON.stringify(facts), /spot/i);
 });
 
-test('Saved defaults to a compact width-filling collection and expands detail only on request', () => {
+// Retargeted by SAVED-COMPOSITION-002: the 440px card grid became dense rows beside a
+// reserved inspector column (the review §C list + inspector). Detail stays on request.
+test('Saved defaults to a dense list beside a reserved inspector and expands detail only on request', () => {
   assert.match(html, /id="savedLibrarySection"[\s\S]*?data-saved-library-body/);
-  assert.match(library, /const layout = el\('div', 'saved-library-layout'\);[\s\S]*?const list = el\('div', 'home-saved-list'\);[\s\S]*?layout\.append\(list, detail\)/);
-  assert.match(css, /home-saved-list[\s\S]*?repeat\(auto-fill, minmax\(min\(100%, 440px\), 1fr\)\)/);
+  assert.match(library, /const layout = el\('div', 'saved-library-layout saved-split'\);[\s\S]*?const list = el\('div', 'saved-list'\);[\s\S]*?layout\.append\(listSurface, detail\)/);
+  assert.match(css, /\.saved-split \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) var\(--saved-inspector-width\)/);
   // SHELL-001: Saved uses the one shared canvas frame (no per-workspace frame override).
   assert.doesNotMatch(css, /#homeMode\[data-product-destination="saved"\][^{]*\{[^}]*--workspace-frame-max/);
   assert.match(css, /--workspace-frame-standard:\s*var\(--canvas-max\)/);
   assert.match(library, /let expandedId = null/);
   assert.match(library, /if \(!model\.results\.some[\s\S]*?expandedId = null/);
   assert.doesNotMatch(library, /expandedId = (?:model\.results|items)\[0\]\.id/);
-  assert.match(library, /control\.setAttribute\('aria-expanded', String\(expanded\)\)/);
+  assert.match(library, /node\.setAttribute\('aria-expanded', String\(selected\)\)/);
 
   const detailStart = library.indexOf('function renderDetail');
   const detailEnd = library.indexOf('function libraryEmptyState', detailStart + 1);
   const detailRenderer = library.slice(detailStart, detailEnd);
-  assert.equal((detailRenderer.match(/dataset\.savedLibraryOpen/g) || []).length, 1);
-  assert.match(detailRenderer, /ui-button--primary saved-library-open/);
-  assert.match(detailRenderer, /dataset\.savedDetailClose/);
+  assert.equal((detailRenderer.match(/savedLibraryOpen: item\.id/g) || []).length, 1);
+  assert.match(detailRenderer, /'ui-button saved-library-open'[\s\S]*?variant: 'primary', savedLibraryOpen/);
+  assert.match(detailRenderer, /savedDetailClose: 'true'/);
   assert.doesNotMatch(detailRenderer, /openSavedItem|PokerState|evaluate|Equity|StrategyProvider/);
 });
 
@@ -176,9 +178,12 @@ test('hover and keyboard focus share a viewport-aware preview owned outside the 
   assert.match(library, /function onPreviewEnter[\s\S]*?showPreview\(owner\)[\s\S]*?'pointerover', onPreviewEnter[\s\S]*?'focusin', onPreviewEnter/);
   assert.match(library, /\[container, 'pointerout', handlePreviewExit\]/);
   assert.match(library, /\[container, 'focusout', handlePreviewExit\]/);
-  assert.match(library, /expandedId = expandedId === id \? null : id/);
-  assert.match(library, /event\.key !== 'Escape'[\s\S]*?hidePreview\(\)[\s\S]*?expandedId = null[\s\S]*?render\(\)/);
-  assert.match(library, /data-saved-detail-close[\s\S]*?expandedId = null/);
+  // SAVED-COMPOSITION-002: selecting a row selects (no toggle-off); Escape and Close
+  // close the inspector without rebuilding the list.
+  assert.match(library, /function select\(id[\s\S]*?expandedId = id;[\s\S]*?applySelection\(\)/);
+  assert.match(library, /function closeInspector\(\)[\s\S]*?expandedId = null;[\s\S]*?applySelection\(\)/);
+  assert.match(library, /event\.key !== 'Escape'[\s\S]*?hidePreview\(\)[\s\S]*?closeInspector\(\)/);
+  assert.match(library, /data-saved-detail-close[\s\S]*?closeInspector\(\)/);
   assert.match(`${library}\n${sharedPreview}`, /dataset\.savedPreviewDerivation = item\.derivation/);
   assert.match(css, /saved-preview-derivation="scenario"[\s\S]*?border-style: dashed/);
 });

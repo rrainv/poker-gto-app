@@ -38,7 +38,7 @@ export function installTutorialBridge(browserWindow, options = {}) {
     'calibration-empty': () => elementShown('#calibrationEmptyState'),
     'calibration-configured': () => elementShown('#calibrationConfiguredState'),
     'calibration-question-ready': () => elementShown('#calibrationQuestionView'),
-    'saved-library-ready': () => elementShown('#homeSavedOverview'),
+    'saved-library-ready': () => elementShown('#savedLibrarySection'),
   };
   const currentWorkspace = () => (
     document.querySelector('#settingsModal.show') ? 'settings'

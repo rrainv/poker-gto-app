@@ -7934,7 +7934,7 @@ function resolveHomeDestinationPresentation(destination, {
   const normalizedDestination = destination === 'saved' ? 'saved' : 'home';
   const guest = sessionMode === 'guest';
   const visibleSections = normalizedDestination === 'saved'
-    ? ['saved-overview', 'library']
+    ? ['library']
     : guest
       ? ['guest', 'continue', 'review', 'recent']
       : ['overview', 'continue', 'review', 'recent'];
@@ -7979,7 +7979,6 @@ function applyHomeDestinationPresentation(destination = activeNavigationDestinat
   if (content) content.dataset.productDestination = state.destination;
 
   const sections = {
-    'saved-overview': $('#homeSavedOverview'),
     overview: $('#homeAccountOverview'),
     guest: $('#homeGuestAccount'),
     continue: $('#homeContinueContent')?.closest('.home-section'),
@@ -8119,16 +8118,9 @@ function homeRecency(isoTimestamp) {
   }
 }
 
+// SAVED-COMPOSITION-002: a user title wins; otherwise the auto-title from stored facts.
 function homeSavedItemTitle(item) {
-  if (item.title) return item.title;
-  const kind = item.kind === 'hand'
-    ? t('Saved Hand')
-    : item.kind === 'spot'
-      ? t('Saved Spot')
-      : t('Saved item');
-  const facts = [item.heroPosition, item.street && t(item.street[0].toUpperCase() + item.street.slice(1))]
-    .filter(Boolean);
-  return facts.length ? `${kind} · ${facts.join(' · ')}` : kind;
+  return window.RiverlineSavedItemPresentation.title(item, t);
 }
 
 function homeSavedItemFacts(item) {
@@ -8213,6 +8205,8 @@ function createHomeSavedItemElement(item, { compact = false } = {}) {
 }
 
 function syncSavedLibraryVisibility() {
+  // The Saved bridge can install after init (QA-SAVED-COMPOSITION-003): mount on first need.
+  if (!savedLibraryController) mountSavedLibraryWorkspace();
   if (!savedLibraryController) return;
   const visible = activeWorkspaceMode() === 'home'
     && activeNavigationDestination() === 'saved'
@@ -8231,6 +8225,39 @@ function openSavedTrainingHistoryRedrill(recordId, kind) {
   return openTrainingMemoryRedrill(recordId, kind);
 }
 
+// Saved inspector Edit: the existing transactional editor (explicit Save changes / Cancel).
+async function editSavedLibraryItem(id, control) {
+  const ownerGeneration = window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration;
+  try {
+    const object = await window.RiverlineSavedStudyObjects.getById(id);
+    if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return;
+    if (!object?.annotations || object.lifecycle?.state === 'archived') throw new Error('Saved item is unavailable');
+    if (control?.isConnected) control.focus();
+    openSavedStudyEditor(object);
+  } catch (error) {
+    if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return;
+    console.error('[Riverline Saved library]', error);
+    toast(t('Saved item could not be opened.'), 'error', 'home');
+  }
+}
+
+// Saved inspector Archive (after the inspector's own confirmation). The app archives;
+// it never deletes. The Saved service's local-mutation signal refreshes the library.
+async function archiveSavedLibraryItem(id) {
+  const ownerGeneration = window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration;
+  const object = await window.RiverlineSavedStudyObjects.getById(id);
+  if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return;
+  if (!object) throw new Error('Saved item is unavailable');
+  await window.RiverlineSavedStudyObjects.archiveById(id, { expectedRevision: object.revision });
+  if (ownerGeneration !== window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration) return;
+  if (savedStudyCurrentObject?.id === id) {
+    ++savedStudyRefreshSequence;
+    savedStudyCurrentObject = null;
+    renderSavedStudySourceState('unsaved', null);
+  }
+  toast(t('Archived'), 'success', 'home');
+}
+
 function mountSavedLibraryWorkspace() {
   const section = $('#savedLibrarySection');
   if (!section || !window.RiverlineSavedLibrary || !window.RiverlineSavedStudyObjects) return;
@@ -8242,11 +8269,17 @@ function mountSavedLibraryWorkspace() {
     captureScope: () => window.RiverlineAccountIdentity?.captureLifecycleScope?.('saved_study_objects') ?? null,
     whenReady: () => window.RiverlineAuthentication?.ready?.(),
     translate: t,
-    presentation: { itemTitle: homeSavedItemTitle, itemFacts: homeSavedItemFacts },
+    presentation: {
+      itemTitle: homeSavedItemTitle,
+      itemFacts: (item) => window.RiverlineSavedItemPresentation.metaFacts(item, t),
+      recency: homeRecency,
+    },
     overlay: $('#savedQuickPreviewOverlay'),
     getCardPresentation: () => window.RiverlineCardPresentation,
     getCardRankStyle: () => document.documentElement.dataset.cardRankStyle || 'poker',
-    openItem: (id, control) => openHomeSavedItem(id, control),
+    openItem: (id, control, options) => openHomeSavedItem(id, control, options),
+    editItem: editSavedLibraryItem,
+    archiveItem: archiveSavedLibraryItem,
     navigate: navigateToProductDestination,
     publishContext: (parts) => window.RiverlineWorkspaceHeader?.setContext('saved', parts),
     reportError: (error) => console.error('[Riverline Saved library]', error),
@@ -8269,6 +8302,7 @@ function mountSavedLibraryWorkspace() {
     },
     openRedrill: openSavedTrainingHistoryRedrill,
     navigate: navigateToProductDestination,
+    publishContext: (parts) => window.RiverlineWorkspaceHeader?.setContext('saved', parts),
     reportError: (error) => console.error('[Riverline Saved Training history]', error),
   }) ?? null;
   syncSavedLibraryVisibility();
@@ -8688,7 +8722,9 @@ function renderSavedSpotViewer(result = activeSavedSpotContext) {
     : 'Hand-derived · canonical decision context; history unavailable');
 }
 
-async function openHomeSavedItem(id, control) {
+// handReview: 'auto' (Home: open the Hand review when the completed Hand has
+// decisions), 'none' (Saved "Open replay"), 'open' (Saved "Review decisions").
+async function openHomeSavedItem(id, control, { handReview = 'auto' } = {}) {
   const ownerGeneration = window.RiverlineAccountIdentity?.getLifecycleState?.().lifecycleGeneration;
   if (!id || control?.disabled) return;
   if (control) {
@@ -8718,8 +8754,11 @@ async function openHomeSavedItem(id, control) {
       renderUnavailableStrategy(app.playbookResolution);
       navigateToWorkspace('gto', 'hand');
       renderCanonicalHandWorkspace();
-      if (callPlaybookStateBridge('getHeroDecisionJournal')?.decisions?.length
-        && callPlaybookStateBridge('getCompletedHandResult')) openCanonicalHandReview();
+      const hasDecisions = Boolean(callPlaybookStateBridge('getHeroDecisionJournal')?.decisions?.length);
+      if (handReview === 'open'
+        || (handReview === 'auto' && hasDecisions && callPlaybookStateBridge('getCompletedHandResult'))) {
+        openCanonicalHandReview();
+      }
       return;
     }
 
@@ -9665,6 +9704,9 @@ function init() {
     });
     window.addEventListener('riverline:trainingmemoryready', () => {
       if ($('#trainingMemoryPanel')?.open) void refreshTrainingMemoryPanel();
+    });
+    window.addEventListener('riverline:savedstudybridgeready', () => {
+      if (!savedLibraryController) mountSavedLibraryWorkspace();
     });
     window.addEventListener('riverline:savedstudychange', () => {
       scheduleHomeRefresh();

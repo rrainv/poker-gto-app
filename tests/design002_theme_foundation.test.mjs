@@ -58,9 +58,11 @@ test('the three supported themes define distinct restrained semantic palettes', 
   assert.match(midnight, /--surface-canvas:\s*#101311/);
   assert.match(graphite, /color-scheme:\s*dark/);
   assert.match(graphite, /--surface-canvas:\s*#14171a/);
-  assert.match(graphite, /--accent-primary:\s*#7897c8/);
+  // SAVED-COMPOSITION-002 amendment 2: Graphite keeps its surfaces with the jade accent family.
+  assert.match(graphite, /--accent-primary:\s*#42ad7b/);
   assert.match(daylight, /color-scheme:\s*light/);
-  assert.match(daylight, /--surface-canvas:\s*#ebe7df/);
+  // TOKEN-TUNING (SAVED-COMPOSITION-002 Part 3): the owner's Final Daylight canvas.
+  assert.match(daylight, /--surface-canvas:\s*#e2ddd2/);
   assert.match(daylight, /--status-danger:\s*#a34049/);
 
   for (const block of [midnight, graphite, daylight]) {

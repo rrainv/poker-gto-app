@@ -1,5 +1,21 @@
 # Current Riverline phase
 
+October 2 explicit Saved slice: `SAVED-COMPOSITION-002` is implemented with human
+acceptance pending under `QA-SAVED-COMPOSITION-002`. Saved (both views) uses one
+toolbar row, dense rows and a reserved sticky inspector; Up/Down/Enter/Escape keyboard
+model; auto-titles from stored facts (user titles win); inspector actions Open replay /
+Open spot (primary), Review decisions (completed Hands), Edit (existing editor), Archive
+(tombstone, never delete); Training history keeps Same Spot primary. It closes
+QA-SWEEP-024 and the Saved part of QA-DECISION-INPUT-009. Contracts:
+[SAVED_STUDY_OBJECTS_SPEC.md](SAVED_STUDY_OBJECTS_SPEC.md#saved-composition-list-and-inspector)
+and [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#list-and-inspector-saved-composition-002). No
+schema, persistence, ownership, bound or load-path change. Visual tokens: Midnight is the mockup palette and weights follow the mockups
+(amendment 2, superseding the earlier token mix for Midnight; Graphite/Daylight keep their
+surfaces with jade accents). Earlier token tuning: the owner's mix is
+applied globally (B colors, slightly deeper preset accents, radius 10/7, C headings;
+[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#token-tuning-token-tuning-final-october-2-2026)), human acceptance pending. Next per review §F: `ANALYZE-COMPOSITION-003`; the sequencing below is
+otherwise unchanged.
+
 October 2 explicit shell slice: `SHELL-001` is implemented with human acceptance
 pending under `QA-SHELL-001`. One 56px header bar (title + context line; mode
 switch, rule-placed source badge, Learn, Help, Account), one canvas grid (same

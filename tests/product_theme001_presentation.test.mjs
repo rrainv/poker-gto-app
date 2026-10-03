@@ -117,7 +117,8 @@ test('reset and Cancel operate inside a draft without changing the saved custom 
   view.controller.reset();
   assert.equal(view.controller.getCustomization(), null);
   assert.equal(view.root.dataset.themeCustomized, 'false');
-  for (const [name, value] of Object.entries(deriveFeatureSurfaceRoles(PRESENTATION_THEMES[0].preview))) assert.equal(view.properties.get(name), value);
+  // SAVED-COMPOSITION-002 amendment 2: an uncustomized preset pins its designed roles over the derived ones.
+  for (const [name, value] of Object.entries({ ...deriveFeatureSurfaceRoles(PRESENTATION_THEMES[0].preview), ...PRESENTATION_THEMES[0].roles })) assert.equal(view.properties.get(name), value);
   assert.equal(view.properties.has('--surface-canvas'), false, 'no stale custom surface after reset');
   assert.equal(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY), persistedBefore);
   assert.equal(view.controller.cancelEdit(), true);
@@ -140,7 +141,8 @@ test('invalid and legacy storage values repair to Midnight without leaking raw C
   assert.equal(view.controller.getTheme(), 'midnight');
   assert.equal(JSON.parse(view.storage.getItem(PRESENTATION_THEME_STORAGE_KEY)).activeThemeId, 'midnight');
   assert.equal(view.controller.getCustomization(), null);
-  for (const [name, value] of Object.entries(deriveFeatureSurfaceRoles(PRESENTATION_THEMES[0].preview))) assert.equal(view.properties.get(name), value);
+  // SAVED-COMPOSITION-002 amendment 2: an uncustomized preset pins its designed roles over the derived ones.
+  for (const [name, value] of Object.entries({ ...deriveFeatureSurfaceRoles(PRESENTATION_THEMES[0].preview), ...PRESENTATION_THEMES[0].roles })) assert.equal(view.properties.get(name), value);
   assert.equal(view.properties.has('--surface-canvas'), false, 'no stale custom surface after reset');
 
   assert.equal(normalizeHexColor('red'), null);

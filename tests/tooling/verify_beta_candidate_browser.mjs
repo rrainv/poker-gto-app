@@ -203,11 +203,13 @@ try {
     await reload(); await nav('saved');
     assert.match(await text('#homeWorkspace'), /Beta smoke saved Hand/);
     await click('[data-saved-select-id]');
-    // Detail Open control is checked below against the real mounted library.
-    const buttons = await page.$$('button');
-    let open;
-    for (const button of buttons) if (await button.evaluate(e => e.getClientRects().length && /^Open hand$/i.test(e.textContent.trim()))) { open = button; break; }
-    assert.ok(open, 'Saved Hand detail has Open hand'); await open.click(); await settle(page);
+    // Inspector actions are checked against the real mounted library. SAVED-COMPOSITION-002:
+    // "Open replay" opens the Replay only; "Review decisions" (a completed Hand with Hero
+    // decisions) goes straight to the Hand review.
+    assert.ok(await visible('#savedLibraryDetail [data-saved-library-open]'), 'Saved Hand inspector has Open replay');
+    assert.match(await text('#savedLibraryDetail [data-saved-library-open]'), /^Open replay$/);
+    assert.match(await text('#savedLibraryDetail [data-saved-library-review]'), /^Review decisions$/);
+    await click('#savedLibraryDetail [data-saved-library-review]');
     assert.ok(await visible('#handReviewSurface'));
   });
 

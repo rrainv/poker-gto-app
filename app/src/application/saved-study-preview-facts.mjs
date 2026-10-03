@@ -1,5 +1,6 @@
 import {
   GAME_RULES_COLLECTION_TYPES,
+  PHASES,
   POKER_STATE_SCHEMA_VERSION,
   POKER_STATE_V2_SCHEMA_VERSION,
   POKER_STATE_V3_SCHEMA_VERSION,
@@ -35,6 +36,9 @@ function savedHandPreviewFacts(object) {
   const state = object.payload.pokerState;
   const hero = state.players.find((player) => player.playerId === object.payload.heroPlayerId);
   if (!hero) throw new RangeError('Saved Hand Hero is unavailable');
+  // A terminal Hand has already awarded its pot (potMilliBb is 0), so no pot is
+  // presented rather than a misleading "Pot 0 bb" (QA-SWEEP-024).
+  const handComplete = state.phase === PHASES.TERMINAL;
   return {
     supported: true,
     kind: 'hand',
@@ -56,7 +60,12 @@ function savedHandPreviewFacts(object) {
         cards: [...player.holeCards],
       })),
     stackBb: bbFromMilli(hero.currentStackMilliBb),
-    potBb: bbFromMilli(state.potMilliBb),
+    potBb: handComplete ? null : bbFromMilli(state.potMilliBb),
+    handComplete,
+    // Stored Hero actions; the Hand review route needs at least one.
+    heroDecisionCount: Array.isArray(state.actionHistory)
+      ? state.actionHistory.filter((record) => record?.playerId === hero.playerId).length
+      : 0,
     historyStatus: 'canonical_replay',
   };
 }
@@ -79,6 +88,9 @@ function savedSpotPreviewFacts(object) {
     potBb: context.potBb,
     facingSizeBb: context.facingSizeBb,
     callAmountBb: context.callAmountBb,
+    aggressorPosition: typeof context.priorActionSummary?.aggressorPosition === 'string'
+      ? context.priorActionSummary.aggressorPosition
+      : null,
     historyStatus: snapshot.truth.historyStatus,
   };
 }

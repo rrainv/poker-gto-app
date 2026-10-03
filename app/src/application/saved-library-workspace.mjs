@@ -1,8 +1,17 @@
 // SAVED-LIBRARY-001: the Saved destination's own bounded library query, state,
 // search/filter/sort and rendering. logic.js only mounts and routes it.
-// SavedStudyObject v1 remains the authority; nothing here is persisted.
+// SAVED-COMPOSITION-002: one toolbar row, dense list rows and a sticky inspector
+// beside the list (selection never moves the list). SavedStudyObject v1 remains
+// the authority; nothing here is persisted. The only writes are delegated:
+// Edit opens the existing transactional editor and Archive calls the Saved service.
 import { createHomeSavedItem } from './home-view-model.mjs';
 import { createSavedPokerPreview } from './saved-poker-preview.mjs';
+import {
+  savedItemFactGrid,
+  savedItemKindLabelKey,
+  savedItemMetaFacts,
+  savedItemTitle,
+} from './saved-item-presentation.mjs';
 import {
   SAVED_LIBRARY_LIMIT,
   clearSavedLibraryQuery,
@@ -20,7 +29,9 @@ const CATEGORY_ICONS = Object.freeze({
 });
 const CATEGORY_LABELS = Object.freeze({ all: 'All', hands: 'Hands', spots: 'Spots' });
 const REVIEW_LABELS = Object.freeze({ any: 'Any review state', review_later: 'Review later', resolved: 'Resolved' });
+const REVIEW_STATE_LABELS = Object.freeze({ none: 'None', review_later: 'Review later', resolved: 'Resolved' });
 const SORT_LABELS = Object.freeze({ updated: 'Recently updated', created: 'Recently created' });
+const ROW_KEYS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End']);
 
 function requireFunction(value, label) {
   if (typeof value !== 'function') throw new TypeError(`Saved library requires ${label}`);
@@ -30,15 +41,15 @@ export function mountSavedLibrary(container, deps = {}) {
   if (!container?.ownerDocument) throw new TypeError('Saved library requires a mounted container');
   requireFunction(deps.savedService?.listRecent, 'a bounded Saved listRecent query');
   requireFunction(deps.translate, 'a translate function');
-  requireFunction(deps.presentation?.itemTitle, 'an item title helper');
-  requireFunction(deps.presentation?.itemFacts, 'an item facts helper');
   requireFunction(deps.openItem, 'the Saved open controller');
 
   const doc = container.ownerDocument;
   const view = doc.defaultView;
   const t = (key, parameters) => deps.translate(key, parameters);
-  const itemTitle = (item) => deps.presentation.itemTitle(item);
-  const itemFacts = (item) => deps.presentation.itemFacts(item);
+  const presentation = deps.presentation ?? {};
+  const itemTitle = (item) => (presentation.itemTitle ?? ((value) => savedItemTitle(value, t)))(item);
+  const itemFacts = (item) => (presentation.itemFacts ?? ((value) => savedItemMetaFacts(value, t)))(item);
+  const recency = (iso) => presentation.recency?.(iso) ?? '';
   const setTimer = deps.timers?.set ?? ((callback, delay) => view.setTimeout(callback, delay));
   const clearTimer = deps.timers?.clear ?? ((id) => view.clearTimeout(id));
   const mapItem = deps.mapItem ?? createHomeSavedItem;
@@ -60,13 +71,23 @@ export function mountSavedLibrary(container, deps = {}) {
   let loadedCount = 0;
   let query = createSavedLibraryQuery();
   let expandedId = null;
+  let confirmingArchiveId = null;
+  let archivingId = null;
+  let actionMessage = null;
   let previewOwner = null;
   let currentView = null;
+  const rowNodes = new Map();
 
   const el = (tag, className, text) => {
     const node = doc.createElement(tag);
     if (className) node.className = className;
     if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const button = (className, text, data = {}) => {
+    const node = el('button', className, text);
+    node.type = 'button';
+    Object.assign(node.dataset, data);
     return node;
   };
 
@@ -83,9 +104,9 @@ export function mountSavedLibrary(container, deps = {}) {
   const controlsSlot = slot('data-saved-library-controls', 'saved-library-controls');
   const bodySlot = slot('data-saved-library-body', 'saved-library-body');
 
-  // Controls are built once so typing and filter focus survive re-rendering.
-  const searchLabel = el('label', 'saved-library-search');
-  const searchCaption = el('span');
+  // Toolbar controls are built once so typing and filter focus survive re-rendering.
+  const searchLabel = el('label', 'saved-library-search ui-field');
+  const searchCaption = el('span', 'sr-only');
   const searchInput = el('input');
   searchInput.type = 'search';
   searchInput.dir = 'auto';
@@ -98,23 +119,20 @@ export function mountSavedLibrary(container, deps = {}) {
   categories.setAttribute('role', 'group');
   const categoryButtons = new Map();
   for (const category of Object.keys(CATEGORY_LABELS)) {
-    const button = el('button', 'saved-library-category ui-chip');
-    button.type = 'button';
-    button.dataset.variant = 'filter';
-    button.dataset.savedCategory = category;
-    button.innerHTML = `<svg viewBox="0 0 20 20" aria-hidden="true">${CATEGORY_ICONS[category]}</svg>`;
+    const chip = button('saved-library-category ui-chip', undefined, { variant: 'filter', savedCategory: category });
+    chip.innerHTML = `<svg viewBox="0 0 20 20" aria-hidden="true">${CATEGORY_ICONS[category]}</svg>`;
     const label = el('span');
     const count = el('strong', 'ui-chip-count', '0');
     count.dataset.savedCategoryCount = category;
-    button.append(label, count);
-    categories.appendChild(button);
-    categoryButtons.set(category, { button, label, count });
+    chip.append(label, count);
+    categories.appendChild(chip);
+    categoryButtons.set(category, { button: chip, label, count });
   }
 
   function selectFilter(attribute) {
-    const label = el('label', 'saved-library-filter');
-    const caption = el('span');
-    const select = el('select');
+    const label = el('label', 'saved-library-filter ui-field');
+    const caption = el('span', 'sr-only');
+    const select = el('select', 'control-select');
     select.dataset[attribute] = '';
     label.append(caption, select);
     return { label, caption, select };
@@ -125,51 +143,63 @@ export function mountSavedLibrary(container, deps = {}) {
   for (const [value] of Object.entries(REVIEW_LABELS)) review.select.appendChild(Object.assign(el('option'), { value }));
   for (const [value] of Object.entries(SORT_LABELS)) sort.select.appendChild(Object.assign(el('option'), { value }));
 
-  const mistakes = el('label', 'saved-library-toggle ui-check');
-  const mistakesInput = el('input');
-  mistakesInput.type = 'checkbox';
-  mistakesInput.dataset.savedLibraryMistakes = '';
+  // "Mistakes only" is a toggle chip (aria-pressed), not a checkbox.
+  const mistakes = button('saved-library-toggle ui-chip', undefined, { variant: 'filter', savedLibraryMistakes: '' });
   const mistakesCaption = el('span');
-  mistakes.append(mistakesInput, mistakesCaption);
+  mistakes.appendChild(mistakesCaption);
 
-  const clearButton = el('button', 'ui-button ui-button--quiet saved-library-clear');
-  clearButton.type = 'button';
-  clearButton.dataset.savedLibraryClear = '';
+  const clearButton = button('ui-button saved-library-clear', undefined, { variant: 'quiet', size: 'sm', savedLibraryClear: '' });
 
-  const filters = el('div', 'saved-library-filters');
-  filters.setAttribute('role', 'group');
-  filters.append(review.label, mistakes, tag.label, sort.label, clearButton);
-  controlsSlot.append(searchLabel, categories, filters);
-
-  const boundNote = el('p', 'saved-library-bound-note');
-  boundNote.dataset.savedLibraryBound = '';
   const statusLine = el('p', 'saved-library-status');
   statusLine.setAttribute('role', 'status');
   statusLine.setAttribute('aria-live', 'polite');
-  const layout = el('div', 'saved-library-layout');
-  const list = el('div', 'home-saved-list');
+
+  const filters = el('div', 'saved-library-filters');
+  filters.setAttribute('role', 'group');
+  filters.append(review.label, tag.label, sort.label, mistakes, clearButton);
+  controlsSlot.append(searchLabel, categories, filters, statusLine);
+
+  const boundNote = el('p', 'saved-library-bound-note');
+  boundNote.dataset.savedLibraryBound = '';
+  const layout = el('div', 'saved-library-layout saved-split');
+  const listSurface = el('div', 'saved-list-surface panel');
+  const list = el('div', 'saved-list');
   list.dataset.savedLibraryList = '';
-  const detail = el('aside', 'saved-library-detail');
+  // Column header row, aligned with the row grid (visual only; rows carry their own labels).
+  const listHead = el('div', 'saved-list-head');
+  listHead.setAttribute('aria-hidden', 'true');
+  const headAside = el('span', 'saved-row-aside');
+  const headCells = { cards: el('span'), title: el('span'), review: el('span'), time: el('span') };
+  headAside.append(headCells.review, headCells.time);
+  listHead.append(headCells.cards, headCells.title, headAside);
+  const HEAD_KEYS = Object.freeze({ cards: 'Cards', title: 'Title', review: 'Review', time: 'Updated' });
+  listSurface.append(listHead, list);
+  const detail = el('aside', 'saved-library-detail saved-inspector panel');
   detail.id = 'savedLibraryDetail';
   detail.setAttribute('aria-labelledby', 'savedLibraryDetailTitle');
   detail.hidden = true;
-  layout.append(list, detail);
-  bodySlot.append(boundNote, statusLine, layout);
+  layout.append(listSurface, detail);
+  bodySlot.append(boundNote, layout);
 
   function localizeControls() {
     searchCaption.textContent = t('Search Saved');
-    searchInput.placeholder = t('Title, note, or tag');
+    searchInput.placeholder = t('Search title, note, or tag');
+    searchInput.setAttribute('aria-label', t('Search Saved'));
     categories.setAttribute('aria-label', t('Saved categories'));
     for (const [category, parts] of categoryButtons) parts.label.textContent = t(CATEGORY_LABELS[category]);
     review.caption.textContent = t('Review state');
+    review.select.setAttribute('aria-label', t('Review state'));
     [...review.select.options].forEach((option) => { option.textContent = t(REVIEW_LABELS[option.value]); });
     tag.caption.textContent = t('Tag');
+    tag.select.setAttribute('aria-label', t('Tag'));
     sort.caption.textContent = t('Sort');
+    sort.select.setAttribute('aria-label', t('Sort'));
     [...sort.select.options].forEach((option) => { option.textContent = t(SORT_LABELS[option.value]); });
     mistakesCaption.textContent = t('Mistakes only');
     filters.setAttribute('aria-label', t('Library filters'));
-    clearButton.textContent = t('Clear filters');
+    clearButton.textContent = t('Clear');
     clearButton.setAttribute('aria-label', t('Clear search and filters'));
+    for (const [key, cell] of Object.entries(headCells)) cell.textContent = t(HEAD_KEYS[key]);
   }
 
   // Card tiles come from the shared Saved preview builder (also used by Training history).
@@ -235,29 +265,49 @@ export function mountSavedLibrary(container, deps = {}) {
     if (owner && owner === previewOwner && !owner.contains(event.relatedTarget)) hidePreview();
   }
 
-  function createItemElement(item, expanded) {
-    const control = el('button', 'saved-library-item');
-    control.type = 'button';
-    control.dataset.savedSelectId = item.id;
-    control.dataset.savedKind = item.kind;
-    control.setAttribute('aria-expanded', String(expanded));
+  function stateBadges(item, { includeNote = true } = {}) {
+    const row = el('span', 'saved-row-states');
+    const badge = (key, tone) => {
+      const node = el('span', 'ui-badge', t(key));
+      if (tone) node.dataset.tone = tone;
+      row.appendChild(node);
+    };
+    if (includeNote && item.hasNote) badge('Note', 'neutral');
+    if (item.reviewState === 'review_later') badge('Review later', 'caution');
+    if (item.isMistake) badge('Marked as a mistake', 'danger');
+    return row;
+  }
+
+  function createItemElement(item) {
+    const control = button('saved-library-item ui-row', undefined, { savedSelectId: item.id, savedKind: item.kind });
     control.setAttribute('aria-controls', detail.id);
     control.setAttribute('aria-label', `${t('View details')}: ${itemTitle(item)}`);
-    if (expanded) control.dataset.expanded = 'true';
-    if (item.kind === 'hand' || item.kind === 'spot') control.appendChild(createPokerPreview(item));
+    const cards = el('span', 'saved-row-cards');
+    if (item.kind === 'hand' || item.kind === 'spot') cards.appendChild(createPokerPreview(item, { variant: 'row' }));
     const copy = el('span', 'saved-library-item-copy');
-    const identity = el('span', 'home-saved-item-title-row');
+    const identity = el('span', 'saved-row-title ui-row-title');
     const title = el('strong', '', itemTitle(item));
     title.dir = 'auto';
-    identity.append(el('span', 'home-saved-item-kind', t(item.kind === 'hand' ? 'Hand' : item.kind === 'spot' ? 'Spot' : 'Saved item')), title);
-    const meta = el('span', 'home-saved-item-meta poker-data-token');
-    meta.dir = 'ltr';
-    itemFacts(item).slice(0, 4).forEach((fact) => meta.appendChild(el('span', '', fact)));
+    identity.append(el('span', 'saved-row-kind', t(item.kind === 'hand' ? 'Hand' : item.kind === 'spot' ? 'Spot' : 'Saved item')), title);
+    // Facts are separate isolated spans so mixed labels and numbers read correctly in RTL;
+    // separators are their own items between them, so they follow the row direction.
+    const meta = el('span', 'saved-row-meta ui-row-meta');
+    itemFacts(item).forEach((fact, index) => {
+      if (index > 0) {
+        const separator = el('i', 'saved-fact-separator', '·');
+        separator.setAttribute('aria-hidden', 'true');
+        meta.appendChild(separator);
+      }
+      const part = el('span', 'saved-row-fact', fact);
+      part.dir = 'auto';
+      meta.appendChild(part);
+    });
     copy.append(identity, meta);
-    if (item.reviewState === 'review_later' || item.isMistake) {
-      copy.appendChild(el('span', 'saved-library-item-review', t(item.isMistake ? 'Marked as a mistake' : 'Review later')));
-    }
-    control.appendChild(copy);
+    // States and time share one end-aligned column, leaving the title room at 1366.
+    const aside = el('span', 'saved-row-aside');
+    aside.append(stateBadges(item), el('span', 'saved-row-time', recency(item.updatedAt)));
+    control.append(cards, copy, aside);
+    rowNodes.set(item.id, control);
     return control;
   }
 
@@ -268,69 +318,133 @@ export function mountSavedLibrary(container, deps = {}) {
     return 'This saved object type is unavailable in this Riverline version.';
   }
 
+  function reviewable(item) {
+    return item.kind === 'hand' && item.handComplete === true && item.heroDecisionCount > 0;
+  }
+
+  function inspectorSection(labelKey, content) {
+    const section = el('section', 'saved-inspector-section');
+    section.append(el('h3', 'saved-inspector-label', t(labelKey)), content);
+    return section;
+  }
+
+  function renderEmptyInspector() {
+    const empty = el('div', 'saved-inspector-empty');
+    empty.dataset.savedInspectorEmpty = '';
+    empty.append(
+      el('p', '', t('Select a saved item to inspect it.')),
+      el('p', 'saved-inspector-hint', t('Up and Down move the selection; Enter opens it.')),
+    );
+    detail.appendChild(empty);
+  }
+
   function renderDetail(item) {
     detail.replaceChildren();
-    if (!item) {
+    if (status !== 'ready' || currentView?.status !== 'results') {
       detail.hidden = true;
       return;
     }
     detail.hidden = false;
-    const head = el('header', 'saved-library-detail-head');
+    detail.dataset.savedInspectorState = item ? 'selected' : 'empty';
+    if (!item) {
+      renderEmptyInspector();
+      return;
+    }
+    const head = el('div', 'saved-library-detail-head saved-inspector-head');
     const headCopy = el('div');
-    const title = el('h3', '', itemTitle(item));
+    const kind = el('span', 'ui-badge saved-inspector-kind', t(savedItemKindLabelKey(item)));
+    kind.dataset.tone = 'neutral';
+    const title = el('h2', 'saved-inspector-title', itemTitle(item));
     title.id = 'savedLibraryDetailTitle';
     title.dir = 'auto';
-    headCopy.append(
-      el('span', 'home-saved-item-kind', t(item.kind === 'hand' ? 'Saved Hand' : item.kind === 'spot' ? 'Saved Spot' : 'Saved item')),
-      title,
-      el('p', 'saved-library-truth', t(itemTruth(item))),
-    );
-    const close = el('button', 'ui-button ui-button--quiet saved-library-detail-close', t('Close'));
-    close.type = 'button';
-    close.dataset.savedDetailClose = 'true';
+    headCopy.append(kind, title, el('p', 'saved-library-truth', t(itemTruth(item))));
+    const close = button('ui-button saved-library-detail-close', t('Close'), { variant: 'quiet', size: 'sm', savedDetailClose: 'true' });
     close.setAttribute('aria-label', t('Close details'));
     head.append(headCopy, close);
-    detail.appendChild(head);
-    if (item.kind === 'hand' || item.kind === 'spot') detail.appendChild(createPokerPreview(item, { variant: 'detail' }));
-    const facts = el('div', 'saved-library-detail-facts poker-data-token');
-    facts.dir = 'ltr';
-    itemFacts(item).forEach((fact) => facts.appendChild(el('span', '', fact)));
-    detail.appendChild(facts);
-    if (item.note) {
-      const note = el('section', 'saved-library-note');
-      const noteCopy = el('p', '', item.note);
-      noteCopy.dir = 'auto';
-      note.append(el('h4', '', t('Study note')), noteCopy);
-      detail.appendChild(note);
-    }
-    if (item.tags.length || item.reviewState === 'review_later' || item.isMistake) {
-      const annotations = el('div', 'home-saved-item-badges');
-      if (item.reviewState === 'review_later') annotations.appendChild(el('span', 'home-saved-badge home-saved-badge--review', t('Review later')));
-      if (item.isMistake) annotations.appendChild(el('span', 'home-saved-badge home-saved-badge--mistake', t('Marked as a mistake')));
-      item.tags.forEach((value) => {
-        const tagElement = el('span', 'home-saved-badge', value);
-        tagElement.dir = 'auto';
-        annotations.appendChild(tagElement);
+
+    const body = el('div', 'saved-inspector-body');
+    if (item.kind === 'hand' || item.kind === 'spot') body.appendChild(createPokerPreview(item, { variant: 'detail' }));
+    const facts = el('dl', 'ui-facts saved-inspector-facts');
+    (presentation.itemFactGrid?.(item) ?? savedItemFactGrid(item, t, { updated: recency(item.updatedAt) }))
+      .forEach((fact) => {
+        const row = el('div');
+        row.dataset.savedFact = fact.key;
+        const value = el('dd', '', fact.value);
+        value.dir = 'auto';
+        row.append(el('dt', '', fact.label), value);
+        facts.appendChild(row);
       });
-      detail.appendChild(annotations);
+    body.appendChild(facts);
+
+    const reviewLine = el('p', 'saved-inspector-value');
+    reviewLine.dataset.savedReviewState = item.reviewState;
+    reviewLine.textContent = t(REVIEW_STATE_LABELS[item.reviewState] ?? 'None');
+    const reviewGroup = el('div', 'saved-inspector-inline');
+    reviewGroup.append(reviewLine, stateBadges({ ...item, reviewState: 'none' }, { includeNote: false }));
+    body.appendChild(inspectorSection('Review state', reviewGroup));
+
+    const note = el('p', item.note ? 'saved-inspector-note' : 'saved-inspector-note saved-inspector-muted', item.note || t('No note yet.'));
+    note.dir = 'auto';
+    body.appendChild(inspectorSection('Study note', note));
+
+    const tags = el('div', 'saved-inspector-tags');
+    if (item.tags.length) {
+      item.tags.forEach((value) => {
+        const tagElement = el('span', 'ui-chip', value);
+        tagElement.dataset.variant = 'tag';
+        tagElement.dir = 'auto';
+        tags.appendChild(tagElement);
+      });
+    } else {
+      tags.appendChild(el('span', 'saved-inspector-muted', t('No tags')));
     }
+    body.appendChild(inspectorSection('Tags', tags));
+
+    const actions = el('div', 'saved-inspector-actions');
     const supported = item.kind === 'hand' || item.kind === 'spot';
-    const action = el('button', 'ui-button ui-button--primary saved-library-open',
-      t(item.kind === 'hand' ? 'Open Hand' : item.kind === 'spot' ? 'Open Spot' : 'Unavailable'));
-    action.type = 'button';
-    action.dataset.savedLibraryOpen = item.id;
-    action.disabled = !supported;
-    action.setAttribute('aria-label', `${action.textContent}: ${itemTitle(item)}`);
-    detail.appendChild(action);
+    const open = button('ui-button saved-library-open',
+      t(item.kind === 'hand' ? 'Open replay' : item.kind === 'spot' ? 'Open spot' : 'Unavailable'),
+      { variant: 'primary', savedLibraryOpen: item.id });
+    open.disabled = !supported;
+    open.setAttribute('aria-label', `${open.textContent}: ${itemTitle(item)}`);
+    actions.appendChild(open);
+    if (reviewable(item)) {
+      actions.appendChild(button('ui-button', t('Review decisions'), { variant: 'secondary', savedLibraryReview: item.id }));
+    }
+    if (deps.editItem) actions.appendChild(button('ui-button', t('Edit'), { variant: 'quiet', savedLibraryEdit: item.id }));
+    if (deps.archiveItem) {
+      const archive = button('ui-button saved-inspector-archive', t('Archive'), { variant: 'danger', savedLibraryArchive: item.id });
+      archive.dataset.emphasis = 'quiet';
+      archive.disabled = archivingId === item.id;
+      actions.appendChild(archive);
+    }
+
+    detail.append(head, body, actions);
+    if (confirmingArchiveId === item.id) {
+      const confirmation = el('div', 'saved-inspector-confirm ui-callout');
+      confirmation.dataset.tone = 'caution';
+      confirmation.dataset.savedArchiveConfirmation = item.id;
+      confirmation.setAttribute('role', 'alert');
+      const choices = el('div', 'saved-inspector-confirm-actions');
+      const confirm = button('ui-button', t('Confirm archive'), { variant: 'danger', size: 'sm', savedArchiveConfirm: item.id });
+      confirm.disabled = archivingId === item.id;
+      choices.append(confirm, button('ui-button', t('Keep saved item'), { variant: 'quiet', size: 'sm', savedArchiveKeep: item.id }));
+      confirmation.append(el('p', '', t('Archive this saved item? It will be removed from active saved items.')), choices);
+      detail.appendChild(confirmation);
+    }
+    if (actionMessage?.id === item.id) {
+      const message = el('p', 'home-error-state', t(actionMessage.key));
+      message.setAttribute('role', 'alert');
+      detail.appendChild(message);
+    }
   }
 
   function libraryEmptyState() {
-    const root = el('div', 'home-empty-state');
-    const action = el('button', 'ui-button ui-button--primary', t('Analyze a Hand'));
-    action.type = 'button';
-    action.dataset.savedLibraryNavigate = 'analyze';
+    const root = el('div', 'home-empty-state saved-empty-state');
+    const action = button('ui-button ui-button--primary', t('Analyze a Hand'), { savedLibraryNavigate: 'analyze' });
     root.append(
       el('h3', '', t('Keep a decision worth returning to')),
+      el('p', '', t('Choose something you intentionally kept, inspect its stored facts, and reopen it for study.')),
       el('p', '', t('Saved Hands and Spots you intentionally keep will appear here.')),
       action,
     );
@@ -349,9 +463,7 @@ export function mountSavedLibrary(container, deps = {}) {
 
   function noResultsState() {
     const empty = el('div', 'home-empty-state saved-library-category-empty saved-library-no-results');
-    const action = el('button', 'ui-button ui-button--secondary', t('Clear search and filters'));
-    action.type = 'button';
-    action.dataset.savedLibraryClear = '';
+    const action = button('ui-button ui-button--secondary', t('Clear search and filters'), { savedLibraryClear: '' });
     empty.append(
       el('strong', '', t('Nothing matches your search and filters.')),
       el('p', '', t('Every loaded Saved item was excluded by the current search or filters.')),
@@ -385,15 +497,64 @@ export function mountSavedLibrary(container, deps = {}) {
     if (model?.bounded) categories.setAttribute('aria-label', `${t('Saved categories')} · ${t('Counts cover shown items only.')}`);
   }
 
+  // Selection changes update row attributes and the inspector only; the list is
+  // never rebuilt, so the list does not move and focus stays on the row.
+  function applySelection() {
+    const results = currentView?.status === 'results' ? currentView.results : [];
+    const anchor = expandedId ?? results[0]?.id ?? null;
+    for (const [id, node] of rowNodes) {
+      const selected = id === expandedId;
+      node.setAttribute('aria-expanded', String(selected));
+      node.setAttribute('aria-current', String(selected));
+      if (selected) node.dataset.expanded = 'true';
+      else delete node.dataset.expanded;
+      node.tabIndex = id === anchor ? 0 : -1;
+    }
+    renderDetail(results.find((item) => item.id === expandedId));
+  }
+
+  // A re-render (reload after an edit, a save) replaces the focused row or inspector
+  // control; focus returns to its replacement so keyboard position is kept.
+  const FOCUS_KEYS = Object.freeze(['savedLibraryOpen', 'savedLibraryReview', 'savedLibraryEdit', 'savedLibraryArchive', 'savedDetailClose', 'savedArchiveConfirm', 'savedArchiveKeep']);
+  const kebab = (name) => name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+  function captureFocus() {
+    const active = doc.activeElement;
+    if (!active?.dataset || !container.contains(active)) return null;
+    if (active.dataset.savedSelectId !== undefined) return { row: active.dataset.savedSelectId };
+    const key = FOCUS_KEYS.find((name) => active.dataset[name] !== undefined);
+    return key ? { key } : null;
+  }
+  function restoreFocus(token) {
+    if (!token || (doc.activeElement?.isConnected && container.contains(doc.activeElement))) return;
+    const target = token.row ? rowNodes.get(token.row) : detail.querySelector(`[data-${kebab(token.key)}]`);
+    // A control that no longer exists (Save replaced by its saved state) yields to the row.
+    (target ?? rowNodes.get(expandedId))?.focus();
+  }
+
+  // The inspector fits the viewport from where the list starts (the toolbar may wrap),
+  // so its actions are visible without scrolling; measured on render and resize.
+  function syncInspectorBound() {
+    if (layout.dataset.savedLayout !== 'split' || typeof layout.getBoundingClientRect !== 'function') return;
+    const top = Math.max(0, Math.round(layout.getBoundingClientRect().top + (view.scrollY || 0)));
+    layout.style.setProperty?.('--saved-inspector-top', `${top}px`);
+  }
+
   function render() {
+    const focus = captureFocus();
+    renderView();
+    restoreFocus(focus);
+  }
+
+  function renderView() {
     if (disposed) return;
     localizeControls();
     review.select.value = query.review;
     sort.select.value = query.sort;
-    mistakesInput.checked = query.mistakesOnly;
+    mistakes.setAttribute('aria-pressed', String(query.mistakesOnly));
     clearButton.disabled = !savedLibraryQueryIsFiltered(query) && !searchInput.value.trim();
     list.setAttribute('aria-label', t('Saved study objects'));
     list.replaceChildren();
+    rowNodes.clear();
     container.dataset.libraryStatus = status;
 
     if (status !== 'ready') {
@@ -404,8 +565,10 @@ export function mountSavedLibrary(container, deps = {}) {
       boundNote.hidden = true;
       statusLine.textContent = '';
       expandedId = null;
+      confirmingArchiveId = null;
       renderDetail(null);
       list.dataset.libraryState = status;
+      layout.dataset.savedLayout = 'message';
       if (status === 'error') {
         list.appendChild(el('p', 'home-error-state', t('Saved items could not be loaded.')));
       } else {
@@ -436,20 +599,48 @@ export function mountSavedLibrary(container, deps = {}) {
 
     if (model.status !== 'results') {
       expandedId = null;
+      confirmingArchiveId = null;
+      layout.dataset.savedLayout = 'message';
       renderDetail(null);
       if (model.status === 'empty') list.appendChild(libraryEmptyState());
       else if (model.status === 'kind_empty') list.appendChild(kindEmptyState(query.kind));
       else list.appendChild(noResultsState());
       return;
     }
+    layout.dataset.savedLayout = 'split';
+    syncInspectorBound();
     if (!model.results.some((item) => item.id === expandedId)) expandedId = null;
-    model.results.forEach((item) => list.appendChild(createItemElement(item, item.id === expandedId)));
-    renderDetail(model.results.find((item) => item.id === expandedId));
+    if (confirmingArchiveId !== expandedId) confirmingArchiveId = null;
+    model.results.forEach((item) => list.appendChild(createItemElement(item)));
+    applySelection();
+  }
+
+  function rowFor(id) {
+    return id ? rowNodes.get(id) ?? null : null;
   }
 
   function focusItem(id) {
-    if (!id) return;
-    [...list.querySelectorAll('[data-saved-select-id]')].find((node) => node.dataset.savedSelectId === id)?.focus();
+    rowFor(id)?.focus();
+  }
+
+  function select(id, { focus = true } = {}) {
+    hidePreview();
+    if (expandedId !== id) {
+      confirmingArchiveId = null;
+      actionMessage = null;
+    }
+    expandedId = id;
+    applySelection();
+    if (focus) focusItem(id);
+  }
+
+  function closeInspector() {
+    const previousId = expandedId;
+    expandedId = null;
+    confirmingArchiveId = null;
+    actionMessage = null;
+    applySelection();
+    focusItem(previousId);
   }
 
   function cancelLoadTimer() {
@@ -552,46 +743,116 @@ export function mountSavedLibrary(container, deps = {}) {
     if (event.target === review.select) applyQuery({ review: review.select.value });
     else if (event.target === tag.select) applyQuery({ tag: tag.select.value || null });
     else if (event.target === sort.select) applyQuery({ sort: sort.select.value });
-    else if (event.target === mistakesInput) applyQuery({ mistakesOnly: mistakesInput.checked });
+  }
+
+  function openPrimary(id, control) {
+    return void deps.openItem(id, control, { handReview: 'none' });
+  }
+
+  async function archive(id) {
+    if (!deps.archiveItem || archivingId) return;
+    const owner = generation;
+    archivingId = id;
+    actionMessage = null;
+    applySelection();
+    try {
+      await deps.archiveItem(id);
+      if (owner !== generation) return;
+      archivingId = null;
+      confirmingArchiveId = null;
+      // The archived item leaves the list; focus moves to the neighbouring row.
+      const results = currentView?.results ?? [];
+      const index = results.findIndex((item) => item.id === id);
+      const neighbour = results[index + 1]?.id ?? results[index - 1]?.id ?? null;
+      items = items.filter((item) => item.id !== id);
+      loadedCount = Math.max(0, loadedCount - 1);
+      expandedId = null;
+      render();
+      if (neighbour && rowFor(neighbour)) focusItem(neighbour);
+      else searchInput.focus();
+      invalidate();
+    } catch (error) {
+      if (owner !== generation) return;
+      archivingId = null;
+      actionMessage = { id, key: 'Archive failed' };
+      applySelection();
+      deps.reportError?.(error);
+    }
   }
 
   function onClick(event) {
     const target = event.target;
     if (target.closest?.('[data-saved-library-clear]')) return clearQuery();
+    if (target.closest?.('[data-saved-library-mistakes]')) return applyQuery({ mistakesOnly: !query.mistakesOnly });
     const navigate = target.closest?.('[data-saved-library-navigate]');
     if (navigate) return deps.navigate?.(navigate.dataset.savedLibraryNavigate);
     const category = target.closest?.('[data-saved-category]');
     if (category) return applyQuery({ kind: category.dataset.savedCategory }, { resetExpanded: true });
-    if (target.closest?.('[data-saved-detail-close]')) {
-      const previousId = expandedId;
-      expandedId = null;
-      render();
-      return focusItem(previousId);
-    }
+    if (target.closest?.('[data-saved-detail-close]')) return closeInspector();
     const open = target.closest?.('[data-saved-library-open]');
-    if (open) return void deps.openItem(open.dataset.savedLibraryOpen, open);
-    const selection = target.closest?.('[data-saved-select-id]');
-    if (selection) {
-      const id = selection.dataset.savedSelectId;
-      hidePreview();
-      expandedId = expandedId === id ? null : id;
-      render();
-      return focusItem(id);
+    if (open) return openPrimary(open.dataset.savedLibraryOpen, open);
+    const reviewAction = target.closest?.('[data-saved-library-review]');
+    if (reviewAction) return void deps.openItem(reviewAction.dataset.savedLibraryReview, reviewAction, { handReview: 'open' });
+    const edit = target.closest?.('[data-saved-library-edit]');
+    if (edit) return void deps.editItem?.(edit.dataset.savedLibraryEdit, edit);
+    const archiveAction = target.closest?.('[data-saved-library-archive]');
+    if (archiveAction) {
+      confirmingArchiveId = archiveAction.dataset.savedLibraryArchive;
+      applySelection();
+      return detail.querySelector('[data-saved-archive-keep]')?.focus();
     }
+    if (target.closest?.('[data-saved-archive-keep]')) {
+      confirmingArchiveId = null;
+      applySelection();
+      return detail.querySelector('[data-saved-library-archive]')?.focus();
+    }
+    const confirm = target.closest?.('[data-saved-archive-confirm]');
+    if (confirm) return void archive(confirm.dataset.savedArchiveConfirm);
+    const selection = target.closest?.('[data-saved-select-id]');
+    if (selection) return select(selection.dataset.savedSelectId);
     return undefined;
+  }
+
+  // Rows: Up/Down/Home/End move the selection, Enter opens the row's item.
+  function onRowKeydown(event) {
+    const row = event.target?.closest?.('[data-saved-select-id]');
+    if (!row || !visible) return;
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const item = currentView?.results.find((candidate) => candidate.id === row.dataset.savedSelectId);
+      if (item && (item.kind === 'hand' || item.kind === 'spot')) openPrimary(item.id, row);
+      return;
+    }
+    if (!ROW_KEYS.has(event.key)) return;
+    const results = currentView?.status === 'results' ? currentView.results : [];
+    if (!results.length) return;
+    event.preventDefault();
+    const index = results.findIndex((item) => item.id === row.dataset.savedSelectId);
+    const next = event.key === 'Home' ? 0
+      : event.key === 'End' ? results.length - 1
+        : Math.min(results.length - 1, Math.max(0, index + (event.key === 'ArrowDown' ? 1 : -1)));
+    select(results[next].id);
   }
 
   function onKeydown(event) {
     if (event.key !== 'Escape' || !visible) return;
+    // Escape inside another surface (an open editor dialog) belongs to that surface.
+    const target = event.target;
+    if (target && target !== doc && target !== doc.body && !container.contains(target)) return;
     if (hidePreview()) {
       event.preventDefault();
       return;
     }
+    if (confirmingArchiveId) {
+      event.preventDefault();
+      confirmingArchiveId = null;
+      applySelection();
+      detail.querySelector('[data-saved-library-archive]')?.focus();
+      return;
+    }
     if (!expandedId) return;
-    const previousId = expandedId;
-    expandedId = null;
-    render();
-    focusItem(previousId);
+    event.preventDefault();
+    closeInspector();
   }
 
   function onPreviewEnter(event) {
@@ -603,12 +864,14 @@ export function mountSavedLibrary(container, deps = {}) {
     [container, 'click', onClick],
     [container, 'input', onInput],
     [container, 'change', onChange],
+    [container, 'keydown', onRowKeydown],
     [container, 'pointerover', onPreviewEnter],
     [container, 'focusin', onPreviewEnter],
     [container, 'pointerout', handlePreviewExit],
     [container, 'focusout', handlePreviewExit],
     [doc, 'keydown', onKeydown],
     [view, 'resize', hidePreview],
+    [view, 'resize', syncInspectorBound],
     [view, 'scroll', hidePreview, true],
   ];
   listeners.forEach(([target, type, listener, capture]) => target.addEventListener(type, listener, capture === true));
@@ -673,6 +936,9 @@ export function mountSavedLibrary(container, deps = {}) {
       query = createSavedLibraryQuery();
       searchInput.value = '';
       expandedId = null;
+      confirmingArchiveId = null;
+      archivingId = null;
+      actionMessage = null;
       hidePreview();
       render();
       if (visible) scheduleLoad();
@@ -689,6 +955,7 @@ export function mountSavedLibrary(container, deps = {}) {
       if (previewOwner) hidePreview();
       items = [];
       currentView = null;
+      rowNodes.clear();
       controlsSlot.replaceChildren();
       bodySlot.replaceChildren();
       createdSlots.forEach((node) => node.remove());

@@ -551,7 +551,9 @@ test('rendered history shows frozen facts, the local-only note and the Full Hand
   assert.doesNotMatch(text, /correct|accuracy|mastery|\bEV\b/i);
   const card = f.section.querySelectorAll('[data-training-history-id]')[0];
   assert.doesNotMatch(card.textContent, /heuristic_preflop|@riverline-/, 'no raw source id@version on cards');
-  const summary = trainingMemoryContextSummary(focused.answered.decisionContext, interpolate);
+  // SAVED-COMPOSITION-002 / QA-DECISION-INPUT-009: Saved words the price through the
+  // decision-facing summary instead of "Facing N bb".
+  const summary = trainingMemoryContextSummary(focused.answered.decisionContext, interpolate, { facing: 'summary' });
   const factSpans = descendants(card).filter((node) => node.className === 'saved-training-fact');
   const separators = descendants(card).filter((node) => node.className === 'saved-training-fact-separator');
   assert.equal(separators.length, summary.spotParts.length - 1);
@@ -559,8 +561,10 @@ test('rendered history shows frozen facts, the local-only note and the Full Hand
   assert.deepEqual(factSpans.map((node) => node.textContent), [...summary.spotParts], 'reuses the Memory row formatter facts');
   assert.ok(factSpans.every((node) => node.dir === 'auto'), 'each fact is its own bidi-isolated span');
   // Same shared card-tile component as Saved items: preview first (left), copy second.
-  const [preview, copy] = card.children;
-  assert.match(preview.className, /saved-poker-preview saved-poker-preview--compact/);
+  // Retargeted by SAVED-COMPOSITION-002: dense rows use the row variant inside a cards cell.
+  const [cardsCell, copy] = card.children;
+  const preview = cardsCell.children[0];
+  assert.match(preview.className, /saved-poker-preview saved-poker-preview--row/);
   assert.match(copy.className, /saved-library-item-copy/);
   assert.match(card.className, /saved-library-item/);
   const tiles = preview.querySelectorAll('[data-card-size]').map((node) => node.getAttribute('aria-label'));
@@ -585,13 +589,13 @@ test('filters narrow the view, no-results offers Clear, and Clear restores every
   f.dom.dispatch(f.find('[data-training-history-mode="varied"]'), 'click');
   assert.deepEqual(f.listIds(), [varied.answered.id]);
   f.dom.dispatch(f.find('[data-training-history-mode="all"]'), 'click');
+  // SAVED-COMPOSITION-002: Unsure and review-queue filters are toggle chips.
   const unsure = f.find('[data-training-history-unsure]');
-  unsure.checked = true;
-  f.dom.dispatch(unsure, 'change');
+  f.dom.dispatch(unsure, 'click');
+  assert.equal(unsure.getAttribute('aria-pressed'), 'true');
   assert.deepEqual(f.listIds(), [focused.answered.id]);
   const queued = f.find('[data-training-history-queued]');
-  queued.checked = true;
-  f.dom.dispatch(queued, 'change');
+  f.dom.dispatch(queued, 'click');
   assert.deepEqual(f.listIds(), []);
   assert.equal(f.find('[data-training-history-list]').dataset.trainingHistoryState, 'no_results');
   const clears = f.section.querySelectorAll('[data-training-history-clear]');

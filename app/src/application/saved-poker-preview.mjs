@@ -47,6 +47,8 @@ export function createSavedPreviewCard(doc, card, label, {
 }
 
 // `item` needs only { kind, derivation, heroCards, board }.
+// Variants: compact (labelled mini cards), row (dense list rows: mini cards, the
+// Hero/Board labels stay for assistive technology only), detail, quick.
 export function createSavedPokerPreview(doc, item, { variant = 'compact', ...options } = {}) {
   const t = options.translate ?? ((value) => value);
   const preview = el(doc, 'span', `saved-poker-preview saved-poker-preview--${variant}`);
@@ -61,14 +63,15 @@ export function createSavedPokerPreview(doc, item, { variant = 'compact', ...opt
   for (let index = 0; index < 2; index += 1) {
     heroCards.appendChild(createSavedPreviewCard(doc, knownHeroCards[index] || null, 'Unknown card', cardOptions));
   }
-  hero.append(el(doc, 'span', '', t('Hero')), heroCards);
+  const labelClass = variant === 'row' ? 'sr-only' : '';
+  hero.append(el(doc, 'span', labelClass, t('Hero')), heroCards);
   const board = el(doc, 'span', 'saved-preview-group saved-preview-group--board');
   const boardCards = pokerIsland(doc, 'saved-preview-cards');
   (Array.isArray(item.board) ? item.board : []).forEach((card) => {
     boardCards.appendChild(createSavedPreviewCard(doc, card, 'Unknown card', cardOptions));
   });
   if (boardCards.childElementCount === 0) boardCards.appendChild(el(doc, 'span', 'saved-preview-empty-board', t('No board cards')));
-  board.append(el(doc, 'span', '', t('Board')), boardCards);
+  board.append(el(doc, 'span', labelClass, t('Board')), boardCards);
   preview.append(hero, board);
   return preview;
 }

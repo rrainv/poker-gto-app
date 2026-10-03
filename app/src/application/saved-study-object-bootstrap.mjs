@@ -72,7 +72,7 @@ export function installSavedStudyObjectBridge(browserWindow, options = {}) {
       scope.assertCurrent();
       return result;
     },
-    ...Object.fromEntries(['getCurrentStatus', 'saveCurrent', 'updateAnnotations', 'archiveCurrent']
+    ...Object.fromEntries(['getCurrentStatus', 'saveCurrent', 'updateAnnotations', 'archiveCurrent', 'archiveById']
       .map((method) => [method, (...args) => invoke('controller', method, args)])),
     ...Object.fromEntries(['saveReviewedDecisionSpot', 'saveHandDerivedSpot', 'getById', 'listRecent', 'listForReview',
       'listMistakes', 'exportLibrary', 'importLibrary']
@@ -103,6 +103,11 @@ export function installSavedStudyObjectBridge(browserWindow, options = {}) {
   Object.defineProperty(browserWindow, 'RiverlineSavedStudyObjects', {
     configurable: true, enumerable: false, value: bridge, writable: false,
   });
+  // This module can finish after logic.js init (its import graph includes authentication);
+  // consumers that mount on the bridge wait for this signal instead of racing it.
+  if (typeof browserWindow.dispatchEvent === 'function' && typeof CustomEvent === 'function') {
+    browserWindow.dispatchEvent(new CustomEvent('riverline:savedstudybridgeready'));
+  }
   return bridge;
 }
 if (typeof window !== 'undefined') installSavedStudyObjectBridge(window);

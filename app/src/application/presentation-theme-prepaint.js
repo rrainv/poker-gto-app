@@ -3,7 +3,7 @@
   const root = document.documentElement;
   try {
     const cache = JSON.parse(localStorage.getItem('riverline_theme_prepaint'));
-    if (cache?.version === 'beta-b-1'
+    if (cache?.version === 'beta-b-2'
       && cache.library === localStorage.getItem('riverline_presentation_theme_customization')
       && ['midnight', 'graphite', 'daylight'].includes(cache.theme)
       && cache.properties && typeof cache.properties === 'object') {

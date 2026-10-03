@@ -300,6 +300,17 @@ export function createSavedStudyObjectSourceController({
       return result;
     },
 
+    // SAVED-COMPOSITION-002: archive a library item by id (Saved inspector). Any cached
+    // source binding to it is dropped, so its source reads as unsaved on next resolve.
+    async archiveById(id, { expectedRevision = null } = {}) {
+      const result = await application.archive(id, { expectedRevision });
+      lifecycleScope?.assertCurrent();
+      for (const [key, object] of objectCache) {
+        if (object.id === id) objectCache.delete(key);
+      }
+      return result;
+    },
+
     classificationsWithMistake: savedStudyClassificationsWithMistake,
   });
 }

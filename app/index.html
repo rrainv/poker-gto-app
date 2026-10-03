@@ -28,7 +28,7 @@
   <script src="src/locales/account-translations.js?v=1" defer></script>
   <script src="src/locales/analysis-translations.js?v=1" defer></script>
   <script src="src/locales/range-calibration-translations.js?v=1" defer></script>
-  <script src="src/locales/home-translations.js?v=3" defer></script>
+  <script src="src/locales/home-translations.js?v=4" defer></script>
   <script src="src/locales/home-game-translations.js?v=1" defer></script>
   <script src="src/locales/tutorial-translations.js?v=1" defer></script>
   <script src="src/locales/guide-translations.js?v=1" defer></script>
@@ -558,10 +558,6 @@
           <span data-i18n="Opening your study workspace">Opening your study workspace</span>
         </div>
         <div id="homeWorkspaceContent" class="home-dashboard-grid" data-product-destination="home" hidden>
-          <section id="homeSavedOverview" class="panel home-section home-section--saved-overview" aria-labelledby="homeSavedOverviewTitle" data-tutorial-anchor="saved-overview" hidden>
-            <header class="home-section-head"><div><p data-i18n="Saved study">Saved study</p><h2 id="homeSavedOverviewTitle" data-i18n="Saved Hands &amp; Spots">Saved Hands &amp; Spots</h2></div></header>
-            <p class="home-saved-overview-copy" data-i18n="Choose something you intentionally kept, inspect its stored facts, and reopen it for study.">Choose something you intentionally kept, inspect its stored facts, and reopen it for study.</p>
-          </section>
           <section id="homeAccountOverview" class="panel home-section home-section--overview" aria-labelledby="homeAccountOverviewTitle" hidden>
             <div class="home-account-overview">
               <div class="home-account-identity">
@@ -602,10 +598,12 @@
             <header class="home-section-head"><div><p id="homeRecentEyebrow" data-i18n="Your latest saved study items">Your latest saved study items</p><h2 id="homeRecentTitle" data-i18n="Recent">Recent</h2></div></header>
             <div id="homeRecentContent" class="home-saved-list"></div>
           </section>
-          <section id="savedLibrarySection" class="panel home-section home-section--library" aria-labelledby="savedLibraryTitle" data-tutorial-anchor="saved-library" hidden>
-            <header class="home-section-head"><div><p data-i18n="Saved study objects">Saved study objects</p><h2 id="savedLibraryTitle" data-i18n="Library">Library</h2></div></header>
-            <div class="saved-view-toggle" data-saved-view-toggle data-tutorial-anchor="saved-view-toggle"></div>
-            <div class="saved-library-controls" data-saved-library-controls data-tutorial-anchor="saved-library-find"></div>
+          <section id="savedLibrarySection" class="saved-workspace" aria-label="Saved study" data-i18n-aria-label="Saved study" data-tutorial-anchor="saved-library" hidden>
+            <div class="saved-toolbar panel" data-saved-toolbar>
+              <div class="saved-view-toggle" data-saved-view-toggle data-tutorial-anchor="saved-view-toggle"></div>
+              <div class="saved-library-controls" data-saved-library-controls data-tutorial-anchor="saved-library-find"></div>
+              <div class="saved-library-controls saved-training-controls" data-saved-training-controls hidden></div>
+            </div>
             <div class="saved-library-body" data-saved-library-body></div>
             <div class="saved-training-history" data-saved-training-history hidden></div>
           </section>
@@ -3533,6 +3531,7 @@
   <script type="module" src="src/application/hand-history-import-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-card-removal-bootstrap.mjs"></script>
   <script type="module" src="src/application/range-calibration-bootstrap.mjs"></script>
+  <script type="module" src="src/application/saved-item-presentation.mjs"></script>
   <script type="module" src="src/application/saved-library-workspace.mjs"></script>
   <script type="module" src="src/application/training-memory-row-format.mjs"></script>
   <script type="module" src="src/application/decision-facing-summary.mjs"></script>

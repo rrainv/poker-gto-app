@@ -9,19 +9,37 @@ export const PRESENTATION_THEMES = Object.freeze([
   Object.freeze({
     id: 'midnight',
     name: 'Riverline Midnight',
-    preview: Object.freeze({ accent: '#8ad7b0', surface: '#0b1a19', felt: '#287456' }),
+    preview: Object.freeze({ accent: '#42ad7b', surface: '#101311', felt: '#2f6c52' }),
+    // Mirrors html[data-theme="midnight"] in styles.css (resting surfaces).
+    surfaces: Object.freeze(['#101311', '#151a17', '#1a201d', '#202824', '#222a26', '#171c19']),
+    // The mockup palette's provenance (brass), status colors and table felt/rail.
+    status: Object.freeze({ warning: '#d5a34b', danger: '#d0646b', info: '#57a6b6', positive: '#58c18f' }),
+    roles: Object.freeze({
+      '--support-text': '#cdb67e', '--analysis-support': '#cdb67e', '--learning-support': '#cdb67e',
+      '--table-felt-start': '#2f6c52', '--table-felt-end': '#1d4636',
+      '--table-rail-start': '#b9a777', '--table-rail-end': '#6f6447',
+      // Analyze and evidence sit on the mockup's panel/elevated/inset with its text roles.
+      '--analysis-surface': '#1a201d', '--analysis-surface-raised': '#202824', '--analysis-primary-surface': '#202824',
+      '--analysis-text': '#f2f5f1', '--analysis-secondary': '#c1c8c3', '--analysis-muted': '#8f9a94',
+      '--evidence-surface': '#171c19', '--evidence-text': '#c1c8c3',
+      '--navigation-active-surface': '#222a26', '--navigation-active-text': '#f2f5f1',
+    }),
     tone: 'dark',
   }),
   Object.freeze({
     id: 'graphite',
     name: 'Riverline Graphite',
-    preview: Object.freeze({ accent: '#7897c8', surface: '#14171a', felt: '#3f5964' }),
+    preview: Object.freeze({ accent: '#42ad7b', surface: '#14171a', felt: '#3f5964' }),
+    // Mirrors [data-theme="graphite"] in styles.css (resting surfaces).
+    surfaces: Object.freeze(['#14171a', '#191d21', '#1e2328', '#252b31', '#293139', '#181c20']),
     tone: 'dark',
   }),
   Object.freeze({
     id: 'daylight',
     name: 'Riverline Daylight',
-    preview: Object.freeze({ accent: '#267457', surface: '#ebe7df', felt: '#477765' }),
+    preview: Object.freeze({ accent: '#256044', surface: '#e2ddd2', felt: '#477765' }),
+    // Mirrors [data-theme="daylight"] in styles.css (resting surfaces).
+    surfaces: Object.freeze(['#e2ddd2', '#d9d3c6', '#fbfaf6', '#fefdfb', '#ece7de', '#e5dfd3']),
     tone: 'light',
   }),
 ]);
@@ -207,26 +225,26 @@ function deriveSurfacePalette(surface) {
   const palette = tone === 'light'
     ? {
       canvas: surface,
-      shell: colorAt(hsl.l - 4),
-      panel: colorAt(hsl.l + 3, hsl.s * 0.78),
-      elevated: colorAt(hsl.l + 5, hsl.s * 0.68),
-      interactive: colorAt(hsl.l - 2),
-      hover: colorAt(hsl.l - 7),
-      inset: colorAt(hsl.l - 4),
-      borderDefault: colorAt(hsl.l - 18, hsl.s * 0.62),
-      borderStrong: colorAt(hsl.l - 30, hsl.s * 0.55),
+      shell: colorAt(hsl.l - 5),
+      panel: colorAt(hsl.l + 5, hsl.s * 0.78),
+      elevated: colorAt(hsl.l + 7, hsl.s * 0.68),
+      interactive: colorAt(hsl.l + 2),
+      hover: colorAt(hsl.l - 5),
+      inset: colorAt(hsl.l + 1),
+      borderDefault: colorAt(hsl.l - 22, hsl.s * 0.62),
+      borderStrong: colorAt(hsl.l - 34, hsl.s * 0.55),
       glow: colorAt(hsl.l - 3),
     }
     : {
       canvas: surface,
       shell: colorAt(hsl.l + 2),
-      panel: colorAt(hsl.l + 4),
-      elevated: colorAt(hsl.l + 7),
-      interactive: colorAt(hsl.l + 8),
-      hover: colorAt(hsl.l + 12),
-      inset: colorAt(hsl.l + 3),
-      borderDefault: colorAt(hsl.l + 18, hsl.s * 0.62),
-      borderStrong: colorAt(hsl.l + 28, hsl.s * 0.55),
+      panel: colorAt(hsl.l + 6),
+      elevated: colorAt(hsl.l + 10),
+      interactive: colorAt(hsl.l + 10),
+      hover: colorAt(hsl.l + 14),
+      inset: colorAt(hsl.l + 1.5),
+      borderDefault: colorAt(hsl.l + 22, hsl.s * 0.62),
+      borderStrong: colorAt(hsl.l + 32, hsl.s * 0.55),
       glow: colorAt(hsl.l + 9),
     };
   // Keep derived surfaces on the input canvas's readable side of midtone.
@@ -456,7 +474,7 @@ export function deriveFeatureSurfaceRoles({ surface, accent, felt }) {
   const palette = deriveSurfacePalette(surface);
   const hsl = rgbToHsl(hexToRgb(surface));
   // Neutral desks stay on one contrast side even for saturated midtone inputs.
-  const analysis = deriveSurfacePalette(hslToHex({ ...hsl, s: Math.min(hsl.s, 7), l: palette.tone === 'dark' ? clamp(hsl.l * .65 + 2, 6, 16) : Math.max(76, hsl.l - 2) }));
+  const analysis = deriveSurfacePalette(hslToHex({ ...hsl, s: Math.min(hsl.s, 10), l: palette.tone === 'dark' ? clamp(hsl.l * .65 + 2, 6, 16) : Math.min(92, Math.max(76, hsl.l + 3)) }));
   const analysisText = deriveTextPalette(analysis);
   const foreground = background => contrastRatio('#000000', background) >= contrastRatio('#ffffff', background) ? '#000000' : '#ffffff';
   const readableSurface = (color, text) => {
@@ -504,15 +522,20 @@ export function deriveFeatureSurfaceRoles({ surface, accent, felt }) {
 
 function applyCustomProperties(root, theme, customization) {
   clearCustomProperties(root);
-  const roles = deriveFeatureSurfaceRoles({ ...theme.preview, ...customization });
+  const roles = { ...deriveFeatureSurfaceRoles({ ...theme.preview, ...customization }) };
+  // A preset may pin designed role values (its mockup palette); any customization derives.
+  if (!customization && theme.roles) Object.assign(roles, theme.roles);
   Object.entries(roles).forEach(([name, value]) => setCustomProperty(root, name, value));
   const paletteForText = deriveSurfacePalette(customization?.surface ?? theme.preview.surface);
-  const textBackgrounds = ['canvas', 'shell', 'panel', 'elevated', 'interactive', 'hover', 'inset'].map(key => paletteForText[key]);
+  const textBackgrounds = !customization?.surface && Array.isArray(theme.surfaces)
+    ? [...theme.surfaces]
+    : ['canvas', 'shell', 'panel', 'elevated', 'interactive', 'hover', 'inset'].map(key => paletteForText[key]);
   textBackgrounds.push(roles['--analysis-surface'], roles['--analysis-surface-raised'], roles['--learning-surface'], roles['--evidence-surface']);
   const semanticText = (color) => ensureContrastAcross(color, textBackgrounds, 4.5, paletteForText.tone);
   setCustomProperty(root, '--accent-text', semanticText(customization?.accent ?? theme.preview.accent));
   setCustomProperty(root, '--text-disabled', semanticText(paletteForText.tone === 'dark' ? '#c1c5c0' : '#35433b'));
-  for (const [name, color] of Object.entries({ warning: '#c49439', danger: '#d46b71', info: '#729fd8', positive: '#61b78f' })) {
+  const statusBase = { warning: '#c49439', danger: '#d46b71', info: '#729fd8', positive: '#61b78f', ...(!customization?.surface ? theme.status : null) };
+  for (const [name, color] of Object.entries(statusBase)) {
     setCustomProperty(root, `--status-${name}`, semanticText(color));
   }
   for (const [alias, name] of Object.entries({ warning: 'warning', danger: 'danger', success: 'positive' })) setCustomProperty(root, `--${alias}`, `var(--status-${name})`);
@@ -533,7 +556,7 @@ function applyCustomProperties(root, theme, customization) {
     setCustomProperty(root, '--surface-interactive', palette.interactive);
     setCustomProperty(root, '--surface-interactive-hover', palette.hover);
     setCustomProperty(root, '--surface-inset', palette.inset);
-    setCustomProperty(root, '--border-subtle', `color-mix(in srgb, ${palette.borderDefault} 34%, transparent)`);
+    setCustomProperty(root, '--border-subtle', `color-mix(in srgb, ${palette.borderDefault} 45%, transparent)`);
     setCustomProperty(root, '--border-default', palette.borderDefault);
     setCustomProperty(root, '--border-strong', palette.borderStrong);
     setCustomProperty(root, '--bg', palette.canvas);
@@ -577,7 +600,7 @@ function applyCustomProperties(root, theme, customization) {
 function cacheInitialTheme(root, storage) {
   const properties = Object.fromEntries(CUSTOM_PROPERTY_NAMES.map(name => [name, root.style?.getPropertyValue?.(name) ?? '']).filter(([, value]) => value));
   writeStorage(storage, 'riverline_theme_prepaint', JSON.stringify({
-    version: 'beta-b-1', library: readStorage(storage, PRESENTATION_THEME_STORAGE_KEY),
+    version: 'beta-b-2', library: readStorage(storage, PRESENTATION_THEME_STORAGE_KEY),
     theme: root.dataset.theme, themeId: root.dataset.presentationThemeId,
     kind: root.dataset.themeKind, properties,
   }));
