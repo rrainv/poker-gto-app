@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { indexDocument, precedes, text } from './helpers/app-under-test.mjs';
 import { startFreshPersonalRangeMapping } from '../app/src/application/range-calibration-workspace.mjs';
 import { createRangeCalibrationApplication, createContextFromSelection } from '../app/src/application/range-calibration-service.mjs';
 import { createMemoryPersonalStrategyDatabase } from '../app/src/personal-strategy/indexeddb-storage.mjs';
@@ -33,19 +33,25 @@ test('fresh Approach opens one concrete mapping question, while pause/reload and
 });
 
 test('first-use composition puts concrete teaching before secondary understanding and keeps optional fields disclosed', () => {
-  const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-  const start = html.indexOf('id="rangeCalibrationTemplate"');
-  const workspace = html.slice(start, html.indexOf('</template>', start));
-  assert.ok(workspace.indexOf('id="calibrationQuestionView"') < workspace.indexOf('id="calibrationUnderstandingPanel"'));
-  assert.match(workspace, /<details id="personalContextInputDisclosure"><summary[^>]*>Add context or an exception/);
-  assert.match(workspace, /id="personalQuestionAddContext"/);
-  assert.doesNotMatch(workspace, /about five|5 questions|About 30 questions|Up to 75 questions|Question \d+ of \d+/i);
-  const modalStart = html.indexOf('id="calibrationProfileModalTemplate"');
-  const modal = html.slice(modalStart, html.indexOf('</template>', modalStart));
+  // TEST-HYGIENE-001: queries the parsed templates instead of slicing index.html.
+  // Protects: question view precedes the understanding panel; context input is
+  // a disclosed optional field; no fixed question-count promises; the profile
+  // modal shows name/table/stack before the advanced disclosure and keeps
+  // description/format/assumptions/approach names inside it.
+  const document = indexDocument();
+  const workspace = document.getElementById('rangeCalibrationTemplate').content;
+  assert.ok(precedes(workspace.getElementById('calibrationQuestionView'), workspace.getElementById('calibrationUnderstandingPanel')));
+  const disclosure = workspace.getElementById('personalContextInputDisclosure');
+  assert.equal(disclosure.tagName, 'details');
+  assert.match(text(disclosure.querySelector(':scope > summary')), /^Add context or an exception/);
+  assert.ok(workspace.getElementById('personalQuestionAddContext'));
+  assert.doesNotMatch(text(workspace), /about five|5 questions|About 30 questions|Up to 75 questions|Question \d+ of \d+/i);
+  const modal = document.getElementById('calibrationProfileModalTemplate').content;
+  const advanced = modal.getElementById('personalSetupAdvanced');
   for (const id of ['calibrationProfileDisplayName', 'personalSetupTable', 'personalSetupStack']) {
-    assert.ok(modal.indexOf(`id="${id}"`) < modal.indexOf('id="personalSetupAdvanced"'));
+    assert.ok(precedes(modal.getElementById(id), advanced), `${id} precedes the advanced fields`);
   }
   for (const id of ['calibrationProfileDescription', 'personalSetupFormat', 'personalSetupAssumptions', 'personalApproachNameFields']) {
-    assert.ok(modal.indexOf(`id="${id}"`) > modal.indexOf('id="personalSetupAdvanced"'));
+    assert.ok(precedes(advanced, modal.getElementById(id)), `${id} follows the advanced fields`);
   }
 });
