@@ -14,7 +14,15 @@ import {
   createPlaybookScenarioInputFromLegacyCompatibility, resolvePlaybookDecisionContext,
 } from '../app/src/application/playbook-state-source.mjs';
 import { validatePlaybookScenarioReadiness } from '../app/src/application/playbook-scenario-readiness.mjs';
-import { installStrategyProviderBridge } from '../app/src/application/strategy-provider-bootstrap.mjs';
+import { bootApp, indexDocument, strategyProviderProbe } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: the logic.js dice path runs in the booted app (bridge
+// wrapped, spies, a provider probe) and markup is parsed, instead of
+// vm-evaluating and regex-matching logic.js / index.html.
+const probe = strategyProviderProbe();
+const page = await bootApp({ beforeScripts: probe.beforeScripts });
+// Imported after boot: the bootstrap module graph self-installs page bridges.
+const { installStrategyProviderBridge } = await import('../app/src/application/strategy-provider-bootstrap.mjs');
 
 const EMPTY_KEEPS = Object.freeze({
   hero: false, board: false, position: false, stack: false, betting_context: false,
@@ -70,52 +78,35 @@ test('fresh empty Analyze becomes a complete spot and resolves strategy exactly 
 });
 
 test('empty Analyze dice adapter commits once and requests one normal resolution', async () => {
-  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const start = logic.indexOf('async function randomizeCurrentAnalyzeScenario(');
-  const end = logic.indexOf('async function copyScenarioRandomizationRecipe(', start);
-  const empty = scenario({ street: 'preflop', heroCards: [], board: [], deadCards: [] });
-  const controls = new Map([
-    ['#scenarioRandomizeButton', {
-      disabled: false, setAttribute() {}, removeAttribute() {},
-    }],
-    ['#scenarioRandomizationMenu', { open: true }],
-  ]);
-  const context = {
-    app: { gto: { randomizationKeeps: { ...EMPTY_KEEPS }, randomizationPending: false } },
-    controls,
-    bridgeCalls: 0,
-    commits: 0,
-    resolutions: 0,
-    generated: null,
-    console,
-  };
-  context.RiverlinePlaybookState = {
-    randomizationRequestVersion: ANALYZE_RANDOMIZATION_REQUEST_VERSION,
-    randomizeScenario(input) {
-      context.bridgeCalls += 1;
-      return randomizeAnalyzeScenario(input);
-    },
-  };
-  vm.runInNewContext(`
-    const $ = (selector) => controls.get(selector) || null;
-    const isHandMode = () => false;
-    const readPlaybookScenarioInput = () => empty;
-    const scenarioRandomizationSeed = () => 41;
-    const setScenarioRandomizationStatus = () => {};
-    const scenarioRandomizationFailureMessage = () => '';
-    const scenarioRandomizationSuccessMessage = () => '';
-    const applyRandomizedScenarioToControls = (scenario) => { commits += 1; generated = scenario; };
-    const renderScenarioRandomizationRecipe = () => {};
-    const renderScenarioRandomizationControls = () => {};
-    const updateContext = async () => { resolutions += 1; };
-    ${logic.slice(start, end)}
-    this.promise = randomizeCurrentAnalyzeScenario('spot');
-  `, Object.assign(context, { empty }));
-  assert.equal(await context.promise, true);
-  assert.equal(context.bridgeCalls, 1);
-  assert.equal(context.commits, 1);
-  assert.equal(context.resolutions, 1);
-  assertReadyUnique(context.generated);
+  await page.navigate('analyze');
+  await page.click('[data-card-clear-command="clear_hero"][data-card-clear-surface="scenario"]');
+  await page.click('[data-card-clear-command="clear_board"][data-card-clear-surface="scenario"]');
+  await page.click('[data-card-clear-command="clear_dead_set"][data-card-clear-surface="scenario"]');
+  await page.settle(200);
+  assert.equal(page.window.app.gto.hero.length + page.window.app.gto.board.length, 0);
+  const descriptor = Object.getOwnPropertyDescriptor(page.window, 'RiverlinePlaybookState');
+  const bridge = descriptor.value;
+  let bridgeCalls = 0;
+  Object.defineProperty(page.window, 'RiverlinePlaybookState', { ...descriptor, value: Object.freeze({
+    ...bridge,
+    randomizeScenario(input) { bridgeCalls += 1; return bridge.randomizeScenario(input); },
+  }) });
+  const spy = page.spy(['applyRandomizedScenarioToControls', 'updateContext', 'randomizeCurrentAnalyzeScenario']);
+  try {
+    const resolves = await probe.count(async () => {
+      await page.click('#scenarioRandomizeButton');
+      await page.settle(500);
+    });
+    assert.deepEqual(spy.calls.randomizeCurrentAnalyzeScenario, [['spot']]);
+    assert.equal(bridgeCalls, 1);
+    assert.equal(spy.count('applyRandomizedScenarioToControls'), 1);
+    assert.equal(spy.count('updateContext'), 1);
+    assert.equal(resolves.length, 1, 'one normal strategy resolution');
+  } finally {
+    spy.restore();
+    Object.defineProperty(page.window, 'RiverlinePlaybookState', descriptor);
+  }
+  assertReadyUnique(page.call('readPlaybookScenarioInput'));
 });
 
 test('repeated New Spot results are coherent, provider-ready, and card-unique', () => {
@@ -283,17 +274,24 @@ test('whole-spot recipe is versioned and replays deterministically', () => {
   assert.deepEqual(replay.recipe, first.recipe);
 });
 
-test('compact dice/settings UI replaces rejected permanent controls', () => {
-  const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  assert.equal((html.match(/id="scenarioRandomizeButton"/g) || []).length, 1);
-  assert.match(html, /id="scenarioRandomizeButton"[\s\S]*?aria-label="New random spot"/);
-  assert.match(html, /id="scenarioRandomizationMenu"[\s\S]*?<summary[\s\S]*?aria-label="Randomization settings"/);
-  assert.equal((html.match(/data-scenario-keep=/g) || []).length, 5);
-  assert.equal((html.match(/data-scenario-randomize-target=/g) || []).length, 5);
-  assert.doesNotMatch(html, /scenarioChangeOnlyMenu|data-scenario-lock|>Randomize<|>Change only\.\.\.<\/summary>/);
-  assert.match(logic, /event\.key !== 'Escape'[\s\S]*scenarioRandomizationMenu\.open = false[\s\S]*querySelector\('summary'\)\?\.focus/);
-  assert.match(logic, /randomizeCurrentAnalyzeScenario\('spot'\)/);
+test('compact dice/settings UI replaces rejected permanent controls', async () => {
+  const markup = indexDocument();
+  assert.equal(markup.querySelectorAll('#scenarioRandomizeButton').length, 1);
+  assert.equal(markup.getElementById('scenarioRandomizeButton').getAttribute('aria-label'), 'New random spot');
+  const menu = markup.getElementById('scenarioRandomizationMenu');
+  assert.equal(menu.querySelector('summary').getAttribute('aria-label'), 'Randomization settings');
+  assert.equal(markup.querySelectorAll('[data-scenario-keep]').length, 5);
+  assert.equal(markup.querySelectorAll('[data-scenario-randomize-target]').length, 5);
+  assert.equal(markup.getElementById('scenarioChangeOnlyMenu'), null);
+  assert.equal(markup.querySelector('[data-scenario-lock]'), null);
+  assert.ok(!markup.querySelectorAll('button, summary').some((node) => ['Randomize', 'Change only...'].includes(node.textContent.trim())));
+  // Escape closes the open settings menu and returns focus to its summary.
+  await page.navigate('analyze');
+  const live = page.byId('scenarioRandomizationMenu');
+  live.open = true;
+  await page.key(live.querySelector('summary'), 'Escape');
+  assert.equal(live.open, false);
+  assert.equal(page.document.activeElement, live.querySelector('summary'));
 });
 
 test('settings, feedback, and accessible names have EN/RU/HE entries', () => {

@@ -2,15 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import {
-  CARD_CLEAR_COMMANDS as COMMANDS,
-  applyEditableCardClear,
-} from '../app/src/application/card-clear-semantics.mjs';
-import { createProductionPickerHarness } from './uiqa001r_card_picker_adapter.mjs';
+import { appStyleSheet, bootApp, indexDocument, precedes } from './helpers/app-under-test.mjs';
 
-const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-const HTML = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const CSS = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: parsed markup, the cascade, and the picker in the booted app.
+const markup = indexDocument();
+const css = appStyleSheet();
+const page = await bootApp();
+// Imported after boot: these module graphs self-install page bridges.
+const { CARD_CLEAR_COMMANDS: COMMANDS, applyEditableCardClear } = await import('../app/src/application/card-clear-semantics.mjs');
+const { createProductionPickerHarness } = await import('./uiqa001r_card_picker_adapter.mjs');
 const TRANSLATIONS = fs.readFileSync(new URL('../app/src/locales/product-translations.js', import.meta.url), 'utf8');
 
 function editableCards() {
@@ -188,18 +189,32 @@ test('resting dead-card slots do not scroll and the overlay leaves their geometr
   assert.equal(picker.slotMarkup('eqdead'), before);
   picker.closePicker();
   assert.equal(picker.slotMarkup('eqdead'), before);
-  assert.ok(HTML.indexOf('id="cardModal"') > HTML.indexOf('data-slots="eqdead"'));
-  assert.match(CSS, /#cardModal\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*0;/s);
-  assert.match(CSS, /#cardModal\s*>\s*\.modal\s*\{[^}]*max-height:\s*calc\(100dvh[^}]*overflow:\s*auto;/s);
-  const restingRules = [
-    ...CSS.matchAll(/\.(?:equity-dead-cards|dead-card-set-editor)\s*\{([^}]*)\}/g),
-  ].map((match) => match[1]);
-  assert.ok(restingRules.length >= 3);
-  for (const rule of restingRules) {
-    assert.doesNotMatch(rule, /overflow(?:-y)?:\s*(?:auto|scroll)/);
-    assert.doesNotMatch(rule, /max-(?:block-)?height/);
+  // The picker is a fixed overlay after the slots; only its dialog scrolls.
+  const modal = markup.getElementById('cardModal');
+  assert.ok(precedes(markup.querySelector('[data-slots="eqdead"]'), modal));
+  assert.equal(css.cascaded(modal, 'position'), 'fixed');
+  assert.equal(css.cascaded(modal, 'inset'), '0');
+  const dialog = modal.querySelector(':scope > .modal');
+  assert.match(css.cascaded(dialog, 'max-height'), /^calc\(100dvh/);
+  assert.equal(css.cascaded(dialog, 'overflow'), 'auto');
+  // Resting dead-card containers never scroll or cap their height.
+  const editor = markup.createElement('div');
+  editor.className = 'dead-card-set-editor';
+  const editorCards = markup.createElement('div');
+  editorCards.className = 'dead-card-set-editor-cards';
+  editor.appendChild(editorCards);
+  markup.getElementById('gtoMode').appendChild(editor);
+  try {
+    for (const resting of [...markup.querySelectorAll('.equity-dead-cards'), editor]) {
+      for (const width of [1920, 1366, 700]) {
+        for (const property of ['overflow', 'overflow-y']) assert.doesNotMatch(css.cascaded(resting, property, { width }) || '', /auto|scroll/, `${resting.className} ${property}@${width}`);
+        for (const property of ['max-height', 'max-block-size']) assert.ok([undefined, 'none'].includes(css.cascaded(resting, property, { width })), `${resting.className} ${property}@${width}`);
+      }
+    }
+    assert.deepEqual(css.matchingRules(editorCards).filter((rule) => rule.selectors.some((selector) => selector.includes('dead-card-set-editor-cards'))), []);
+  } finally {
+    editor.remove();
   }
-  assert.doesNotMatch(CSS, /\.dead-card-set-editor-cards\s*\{/);
 });
 
 test('dead-card set-editor copy is localized for Russian and Hebrew', () => {
@@ -284,13 +299,29 @@ test('Hand clear mutates pending draft inputs without touching canonical history
   assert.deepEqual(canonicalState.players[0].holeCards, ['As', 'Kd']);
 });
 
-test('production controls carry explicit commands and Escape is cancel-only for the picker', () => {
-  assert.match(HTML, /data-card-clear-command="clear_hero" data-card-clear-surface="scenario"/);
-  assert.match(HTML, /data-card-clear-command="clear_board" data-card-clear-surface="equity"/);
-  assert.match(HTML, /data-card-clear-command="clear_dead_set" data-card-clear-surface="equity"/);
-  assert.doesNotMatch(HTML, /data-clear=/);
-  assert.match(LOGIC, /event\.key === 'Escape'[\s\S]*closePicker\(\)/);
-  assert.match(LOGIC, /#closeModal'[\s\S]*addEventListener\('click', closePicker\)/);
-  assert.match(LOGIC, /event\.target === \$\('#cardModal'\)\) closePicker\(\)/);
-  assert.doesNotMatch(LOGIC, /clearAllScenarioCards|Cleared all via Escape key/);
+test('production controls carry explicit commands and Escape is cancel-only for the picker', async () => {
+  assert.ok(markup.querySelector('[data-card-clear-command="clear_hero"][data-card-clear-surface="scenario"]'));
+  assert.ok(markup.querySelector('[data-card-clear-command="clear_board"][data-card-clear-surface="equity"]'));
+  assert.ok(markup.querySelector('[data-card-clear-command="clear_dead_set"][data-card-clear-surface="equity"]'));
+  assert.equal(markup.querySelector('[data-clear]'), null);
+  // Escape, the close button and the backdrop each only close the picker.
+  await page.navigate('analyze');
+  await page.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const hero = () => Array.from(page.window.app.gto.hero);
+  {
+    for (const close of [
+      () => page.key('#cardModal', 'Escape'),
+      () => page.click('#closeModal'),
+      () => page.click('#cardModal'),
+    ]) {
+      await page.click('#gtoMode [data-card-set-edit="hero"]');
+      assert.ok(page.window.app.picker, 'picker open');
+      await close();
+      await page.settle(100);
+      assert.equal(page.window.app.picker, null, 'picker closed');
+      assert.equal(page.byId('cardModal').classList.contains('show'), false);
+      assert.deepEqual(hero(), ['As', 'Kd'], 'cards are kept');
+    }
+  }
+  assert.equal(page.evaluate('typeof clearAllScenarioCards'), 'undefined');
 });

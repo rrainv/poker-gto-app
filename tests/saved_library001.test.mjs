@@ -13,15 +13,19 @@ import {
   savedLibraryTagOptions,
   sortSavedLibraryItems,
 } from '../app/src/application/saved-library-query.mjs';
-import { mountSavedLibrary } from '../app/src/application/saved-library-workspace.mjs';
 import { HOME_RECENT_LIMIT } from '../app/src/application/home-view-model.mjs';
 import { createFakeDom, descendants } from './fixtures/saved-library-fake-dom.mjs';
+import { bootApp, indexDocument, precedes } from './helpers/app-under-test.mjs';
 
-const [querySource, workspaceSource, logic, html] = await Promise.all([
+// TEST-HYGIENE-001: the logic.js wiring is observed in the booted app
+// (wrapped bridges and controller bindings, spies) and markup is parsed,
+// instead of regex-matching logic.js / index.html.
+const page = await bootApp();
+// Imported after boot: the workspace module self-installs its page bridge.
+const { mountSavedLibrary } = await import('../app/src/application/saved-library-workspace.mjs');
+const [querySource, workspaceSource] = await Promise.all([
   readFile(new URL('../app/src/application/saved-library-query.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/application/saved-library-workspace.mjs', import.meta.url), 'utf8'),
-  readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8'),
-  readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
 ]);
 
 function item(id, overrides = {}) {
@@ -570,18 +574,79 @@ test('dispose is idempotent, removes owned listeners, timers, and DOM, and ignor
   assert.equal(f.dom.pendingTimers(), 0);
 });
 
-test('logic.js keeps only wiring and routing; Home Recent keeps its own six-item rendering path', () => {
-  assert.doesNotMatch(logic, /function renderSavedLibrary|function createSavedPokerPreview|homeSavedExpandedId|homeSavedCategory|homeSavedQuickPreviewOwner/);
-  assert.match(logic, /window\.RiverlineSavedLibrary\.mount\(section, \{/);
-  assert.match(logic, /captureLifecycleScope\?\.\('saved_study_objects'\)/);
-  assert.match(logic, /riverline:savedstudychange[\s\S]*?savedLibraryController\?\.invalidate\(\)/);
-  assert.match(logic, /riverline:studysyncchange[\s\S]*?savedLibraryController\?\.invalidate\(\)/);
-  assert.match(logic, /function clearSavedOwnerPresentation[\s\S]*?savedLibraryController\?\.ownerChanged\(\)[\s\S]*?async function refreshHomeWorkspace/);
-  const renderRecent = logic.slice(logic.indexOf('function renderHomeRecent'), logic.indexOf('function renderHomeReviewGroup'));
-  assert.doesNotMatch(renderRecent, /activeNavigationDestination|renderSavedLibrary/);
-  assert.match(renderRecent, /createHomeSavedItemElement\(item\)/);
-  assert.match(html, /id="savedLibrarySection"[^>]*data-tutorial-anchor="saved-library"[^>]*hidden/);
-  assert.match(html, /data-saved-library-controls data-tutorial-anchor="saved-library-find"/);
-  assert.ok(html.indexOf('src/application/saved-library-workspace.mjs') < html.indexOf('src/core/logic.js'));
-  assert.match(logic, /studyInbox\.hidden = state\.destination === 'saved'/);
+test('logic.js keeps only wiring and routing; Home Recent keeps its own six-item rendering path', async () => {
+  // No page-level Saved library renderer or private library state.
+  for (const name of ['renderSavedLibrary', 'createSavedPokerPreview', 'homeSavedExpandedId', 'homeSavedCategory', 'homeSavedQuickPreviewOwner']) {
+    assert.equal(page.evaluate(`typeof ${name}`), 'undefined', name);
+  }
+  // The page mounts the shared library workspace on its section, scoped to the
+  // Saved-objects lifecycle.
+  const libraryDescriptor = Object.getOwnPropertyDescriptor(page.window, 'RiverlineSavedLibrary');
+  const identityDescriptor = Object.getOwnPropertyDescriptor(page.window, 'RiverlineAccountIdentity');
+  const mounts = [];
+  const scopes = [];
+  Object.defineProperty(page.window, 'RiverlineSavedLibrary', { ...libraryDescriptor, value: Object.freeze({
+    ...libraryDescriptor.value,
+    mount(section, options) { mounts.push({ section, options }); return libraryDescriptor.value.mount(section, options); },
+  }) });
+  Object.defineProperty(page.window, 'RiverlineAccountIdentity', { ...identityDescriptor, value: Object.freeze({
+    ...identityDescriptor.value,
+    captureLifecycleScope(name) { scopes.push(name); return identityDescriptor.value.captureLifecycleScope?.(name); },
+  }) });
+  try {
+    page.call('mountSavedLibraryWorkspace');
+    assert.equal(mounts.length, 1);
+    assert.equal(mounts[0].section, page.byId('savedLibrarySection'));
+    mounts[0].options.captureScope();
+    assert.deepEqual(scopes, ['saved_study_objects']);
+  } finally {
+    Object.defineProperty(page.window, 'RiverlineSavedLibrary', libraryDescriptor);
+    Object.defineProperty(page.window, 'RiverlineAccountIdentity', identityDescriptor);
+  }
+  // Saved and sync changes invalidate the library; an owner change resets it.
+  const controller = page.evaluate('savedLibraryController');
+  const counts = { invalidate: 0, ownerChanged: 0 };
+  page.window.__wrappedLibrary = Object.create(controller, {
+    invalidate: { value: (...args) => { counts.invalidate += 1; return controller.invalidate(...args); } },
+    ownerChanged: { value: (...args) => { counts.ownerChanged += 1; return controller.ownerChanged(...args); } },
+  });
+  page.evaluate('savedLibraryController = window.__wrappedLibrary');
+  try {
+    for (const type of ['riverline:savedstudychange', 'riverline:studysyncchange']) {
+      const before = counts.invalidate;
+      page.window.dispatchEvent(new page.window.CustomEvent(type, { detail: {} }));
+      await page.settle(50);
+      assert.equal(counts.invalidate, before + 1, type);
+    }
+    page.call('clearSavedOwnerPresentation');
+    assert.equal(counts.ownerChanged, 1);
+  } finally {
+    page.window.__wrappedLibrary = controller;
+    page.evaluate('savedLibraryController = window.__wrappedLibrary');
+    delete page.window.__wrappedLibrary;
+  }
+  // Home Recent renders each item through its own element factory and never
+  // routes into the Saved library.
+  const spy = page.spy(['createHomeSavedItemElement', 'activeNavigationDestination']);
+  try {
+    const item = { id: 'recent-1', kind: 'spot', title: 'Recent', tags: [], tableSize: 6, heroPosition: 'BTN', street: 'flop' };
+    page.call('renderHomeRecent', { status: 'ready', items: [item, { ...item, id: 'recent-2' }] });
+    assert.equal(spy.count('createHomeSavedItemElement'), 2);
+    assert.equal(page.byId('homeRecentContent').children.length, 2);
+    assert.equal(spy.count('activeNavigationDestination'), 0);
+  } finally {
+    spy.restore();
+  }
+  const markup = indexDocument();
+  const section = markup.getElementById('savedLibrarySection');
+  assert.equal(section.dataset.tutorialAnchor, 'saved-library');
+  assert.equal(section.hidden, true);
+  assert.equal(markup.querySelector('[data-saved-library-controls]').dataset.tutorialAnchor, 'saved-library-find');
+  const scripts = markup.querySelectorAll('script[src]');
+  const script = (path) => scripts.find((node) => node.getAttribute('src').split('?')[0] === path);
+  assert.ok(precedes(script('src/application/saved-library-workspace.mjs'), script('src/core/logic.js')));
+  // The Study Inbox belongs to Home, not the Saved destination.
+  await page.navigate('saved');
+  assert.equal(page.byId('studyInboxPanel').hidden, true);
+  await page.navigate('home');
 });

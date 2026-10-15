@@ -41,20 +41,43 @@ import {
   projectSavedTrainingHistoryItem,
   savedTrainingHistorySpotObjectId,
 } from '../app/src/application/saved-training-history.mjs';
-import {
+import { createFakeDom, descendants } from './fixtures/saved-library-fake-dom.mjs';
+import { bootApp, indexDocument, precedes } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: the logic.js wiring is observed in the booted app
+// (wrapped bridges and controller bindings, spies) and markup is parsed,
+// instead of regex-matching logic.js / index.html.
+// Booting installs the page's fake timers: keep Node's for the fake-DOM tests.
+const nodeTimers = { setTimeout: globalThis.setTimeout, setImmediate: globalThis.setImmediate };
+const page = await bootApp();
+// Imported after boot: these modules self-install page bridges.
+const {
   formatTrainingMemoryDate,
   trainingMemoryContextSummary,
   trainingMemoryModeLabelKey,
-} from '../app/src/application/training-memory-row-format.mjs';
-import { mountSavedTrainingHistory } from '../app/src/application/saved-training-history-workspace.mjs';
-import { createFakeDom, descendants } from './fixtures/saved-library-fake-dom.mjs';
+} = await import('../app/src/application/training-memory-row-format.mjs');
+const { mountSavedTrainingHistory } = await import('../app/src/application/saved-training-history-workspace.mjs');
 
-const [projectionSource, workspaceSource, formatSource, logic, html] = await Promise.all([
+/** Temporarily replace a frozen page bridge with an overriding copy. */
+function withBridge(name, overrides, callback) {
+  const descriptor = Object.getOwnPropertyDescriptor(page.window, name);
+  Object.defineProperty(page.window, name, { ...descriptor, value: Object.freeze({ ...descriptor.value, ...overrides(descriptor.value) }) });
+  const restore = () => Object.defineProperty(page.window, name, descriptor);
+  try {
+    const result = callback();
+    if (result?.then) return result.finally(restore);
+    restore();
+    return result;
+  } catch (error) {
+    restore();
+    throw error;
+  }
+}
+
+const [projectionSource, workspaceSource, formatSource] = await Promise.all([
   readFile(new URL('../app/src/application/saved-training-history.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/application/saved-training-history-workspace.mjs', import.meta.url), 'utf8'),
   readFile(new URL('../app/src/application/training-memory-row-format.mjs', import.meta.url), 'utf8'),
-  readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8'),
-  readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
 ]);
 
 // ---------------------------------------------------------------- fixtures
@@ -414,12 +437,12 @@ test('Save as Spot builds a valid Saved Spot from the canonical decision with Tr
 
 // ---------------------------------------------------------------- controller
 
-const settle = () => new Promise((resolve) => setImmediate(resolve));
+const settle = () => new Promise((resolve) => nodeTimers.setImmediate(resolve));
 // Web Crypto digests resolve off the microtask queue; wait for the observable state.
 async function until(predicate, label = 'condition') {
   for (let attempt = 0; attempt < 200; attempt += 1) {
     if (predicate()) return;
-    await new Promise((resolve) => setTimeout(resolve, 2));
+    await new Promise((resolve) => nodeTimers.setTimeout(resolve, 2));
   }
   assert.fail(`Timed out waiting for ${label}`);
 }
@@ -781,22 +804,85 @@ test('the extracted Memory row formatter keeps the existing Memory output', () =
   assert.equal(formatTrainingMemoryDate(undefined), '');
   assert.equal(formatTrainingMemoryDate('2026-09-20T10:00:00.000Z', 'en'),
     new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date('2026-09-20T10:00:00.000Z')));
-  assert.match(logic, /function trainingMemoryDecisionSummary\(record\)[\s\S]*?RiverlineTrainingMemoryFormat\.contextSummary\(context, t\)/);
-  assert.match(logic, /function trainingMemoryDate\(isoTimestamp\) \{\s*return window\.RiverlineTrainingMemoryFormat\.formatDate/);
+  // The page renders Memory rows through the shared format module.
+  const calls = [];
+  const element = withBridge('RiverlineTrainingMemoryFormat', (format) => ({
+    contextSummary(...args) { calls.push(['contextSummary', ...args]); return format.contextSummary(...args); },
+    formatDate(...args) { calls.push(['formatDate', ...args]); return format.formatDate(...args); },
+  }), () => {
+    const row = page.call('trainingMemoryDecisionSummary', { decisionContext: context });
+    page.call('trainingMemoryDate', '2026-09-20T10:00:00.000Z');
+    return row;
+  });
+  const summaryCall = calls.find(([name]) => name === 'contextSummary');
+  assert.equal(summaryCall[1], context);
+  assert.equal(summaryCall[2], page.window.t);
+  assert.deepEqual(calls.find(([name]) => name === 'formatDate').slice(1), ['2026-09-20T10:00:00.000Z', page.window.appLang || 'en']);
+  const expected = page.window.RiverlineTrainingMemoryFormat.contextSummary(context, page.window.t);
+  assert.equal(element.querySelector('.training-memory-cards').textContent, expected.cards);
 });
 
-test('modules stay DOM-free/pure where required and logic.js only wires and routes', () => {
+test('modules stay DOM-free/pure where required and logic.js only wires and routes', async () => {
   for (const source of [projectionSource, formatSource]) {
     assert.doesNotMatch(source, /document\.|indexedDB|localStorage|strategyProvider|\.resolve\(|calculateEquity|computeEquity/);
   }
   assert.doesNotMatch(workspaceSource, /indexedDB|localStorage|resolveStrategy|calculateEquity|updateStudyMetadata|markReviewed|snooze|requestUncertainRevisit/);
-  assert.match(logic, /window\.RiverlineSavedTrainingHistory\?\.mount\(section, \{/);
-  assert.match(logic, /captureLifecycleScope\?\.\('training_memory'\)/);
-  assert.match(logic, /function clearSavedOwnerPresentation[\s\S]*?savedLibraryController\?\.ownerChanged\(\);[\s\S]*?savedTrainingHistoryController\?\.ownerChanged\(\);/);
-  assert.match(logic, /function openSavedTrainingHistoryRedrill[\s\S]*?trainingSessionIsActive\(\) \|\| trainingSameSpotIsActive\(\)[\s\S]*?Finish or leave your current session before re-drilling this spot\.[\s\S]*?openTrainingMemoryRedrill\(recordId, kind\)/);
-  assert.doesNotMatch(logic, /function renderSavedTrainingHistory|listRecentAnsweredDecisions/);
-  assert.match(html, /data-saved-view-toggle data-tutorial-anchor="saved-view-toggle"/);
-  assert.match(html, /data-saved-training-history hidden/);
-  assert.ok(html.indexOf('src/application/saved-training-history-workspace.mjs') < html.indexOf('src/core/logic.js'));
-  assert.ok(html.indexOf('src/application/training-memory-row-format.mjs') < html.indexOf('src/core/logic.js'));
+  // The page mounts the shared Training-history workspace on the Saved
+  // section, scoped to the Training Memory lifecycle.
+  const mounts = [];
+  const scopes = [];
+  withBridge('RiverlineSavedTrainingHistory', (history) => ({
+    mount(section, options) { mounts.push({ section, options }); return history.mount(section, options); },
+  }), () => withBridge('RiverlineAccountIdentity', (identity) => ({
+    captureLifecycleScope(name) { scopes.push(name); return identity.captureLifecycleScope?.(name); },
+  }), () => {
+    page.call('mountSavedLibraryWorkspace');
+    mounts[0].options.captureScope();
+  }));
+  assert.equal(mounts.length, 1);
+  assert.equal(mounts[0].section, page.byId('savedLibrarySection'));
+  assert.deepEqual(scopes, ['training_memory']);
+  // Owner changes reset the library, then the history view.
+  const order = [];
+  const library = page.evaluate('savedLibraryController');
+  const history = page.evaluate('savedTrainingHistoryController');
+  const wrap = (controller, name) => Object.create(controller, { ownerChanged: { value: (...args) => { order.push(name); return controller.ownerChanged(...args); } } });
+  page.window.__controllers = [wrap(library, 'library'), wrap(history, 'history')];
+  page.evaluate('[savedLibraryController, savedTrainingHistoryController] = window.__controllers');
+  try {
+    page.call('clearSavedOwnerPresentation');
+  } finally {
+    page.window.__controllers = [library, history];
+    page.evaluate('[savedLibraryController, savedTrainingHistoryController] = window.__controllers');
+    delete page.window.__controllers;
+  }
+  assert.deepEqual(order, ['library', 'history']);
+  // A Saved re-drill routes to Training and is refused while a session runs.
+  const redrill = page.window.openTrainingMemoryRedrill;
+  const launches = [];
+  page.window.openTrainingMemoryRedrill = (...args) => { launches.push(args); return null; };
+  const spy = page.spy(['toast']);
+  try {
+    await page.training.start('focused');
+    page.call('openSavedTrainingHistoryRedrill', 'record-1', 'same_spot');
+    assert.deepEqual(launches, []);
+    assert.deepEqual(spy.calls.toast.at(-1), [page.call('t', 'Finish or leave your current session before re-drilling this spot.'), 'warning']);
+    page.call('clearTrainingSessionState');
+    await page.settle(300);
+    page.call('openSavedTrainingHistoryRedrill', 'record-1', 'same_spot');
+    assert.deepEqual(launches, [['record-1', 'same_spot']]);
+    assert.equal(page.$('.riverline-shell').dataset.activeMode, 'training');
+  } finally {
+    spy.restore();
+    page.window.openTrainingMemoryRedrill = redrill;
+  }
+  for (const name of ['renderSavedTrainingHistory', 'listRecentAnsweredDecisions']) assert.equal(page.evaluate(`typeof ${name}`), 'undefined', name);
+  const markup = indexDocument();
+  assert.equal(markup.querySelector('[data-saved-view-toggle]').dataset.tutorialAnchor, 'saved-view-toggle');
+  assert.equal(markup.querySelector('[data-saved-training-history]').hidden, true);
+  const scripts = markup.querySelectorAll('script[src]');
+  const script = (path) => scripts.find((node) => node.getAttribute('src').split('?')[0] === path);
+  for (const path of ['src/application/saved-training-history-workspace.mjs', 'src/application/training-memory-row-format.mjs']) {
+    assert.ok(precedes(script(path), script('src/core/logic.js')), path);
+  }
 });

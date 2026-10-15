@@ -1,7 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import vm from 'node:vm';
 
 import {
   ACTION_TYPES,
@@ -11,9 +9,6 @@ import {
   RIVERLINE_IDENTITY_KINDS,
   createRiverlineIdentity,
 } from '../app/src/account-identity/domain.mjs';
-import {
-  installTrainingMemoryBridge,
-} from '../app/src/application/training-memory-bootstrap.mjs';
 import {
   TrainingMemoryAuthorizationError,
   createTrainingMemoryOwnerResolver,
@@ -33,6 +28,15 @@ import { createTrainingMemoryRepository } from '../app/src/training-memory/repos
 import {
   createMemoryTrainingMemoryDatabase,
 } from '../app/src/training-memory/indexeddb-storage.mjs';
+import { bootApp } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: the logic.js Training Memory presentation functions run in
+// the booted app (real elements, stubbed bridge calls, spies) instead of
+// vm-evaluated slices of logic.js.
+const page = await bootApp();
+const training = () => page.window.app.training;
+// Imported after boot: the bootstrap module graph self-installs page bridges.
+const { installTrainingMemoryBridge } = await import('../app/src/application/training-memory-bootstrap.mjs');
 
 function identity(identityId) {
   return createRiverlineIdentity({
@@ -511,101 +515,68 @@ test('Same Spot and Similar Spot reject stale A results after owner transition',
   await rejectsAuthorization(delayedSimilar);
 });
 
-function extractFunction(source, name) {
-  let start = source.indexOf(`function ${name}(`);
-  assert.notEqual(start, -1, `${name} must exist`);
-  if (source.slice(start - 6, start) === 'async ') start -= 6;
-  const open = source.indexOf('{', start);
-  let depth = 0;
-  for (let index = open; index < source.length; index += 1) {
-    if (source[index] === '{') depth += 1;
-    if (source[index] === '}') depth -= 1;
-    if (depth === 0) return source.slice(start, index + 1);
-  }
-  throw new Error(`Could not extract ${name}`);
-}
-
 test('owner transition clears private Training Memory presentation synchronously', () => {
-  const source = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const clear = extractFunction(source, 'clearTrainingMemoryOwnerPresentation');
-  const elements = new Map([
-    ['trainingMemoryList', { children: ['private-row'], replaceChildren() { this.children = []; } }],
-    ['trainingMemoryPanel', { dataset: { memoryLoaded: 'true' } }],
-    ['trainingMemoryDueBadge', { textContent: '4', hidden: false }],
-  ]);
-  const app = { training: {
+  const list = page.byId('trainingMemoryList');
+  list.replaceChildren(page.document.createElement('li'));
+  page.byId('trainingMemoryPanel').dataset.memoryLoaded = 'true';
+  const badge = page.byId('trainingMemoryDueBadge');
+  badge.textContent = '4';
+  badge.hidden = false;
+  Object.assign(training(), {
     currentExercise: null,
-    memoryGeneration: 7,
     memorySessionPromise: Promise.resolve({ id: 'account-a-session' }),
-    memoryWritePromise: Promise.resolve(),
     memoryFullHandDecisionRecords: new Map([['private', Promise.resolve({})]]),
     memoryLastItems: [{ private: true }],
     memoryRedrillNote: 'Historical comparison',
-  } };
-  let resetCalls = 0;
-  let status = 'private status';
-  const sandbox = {
-    app,
-    window: { RiverlineTrainingMemory: {} },
-    $: (selector) => elements.get(selector.slice(1)) ?? null,
-    resetTrainingMemoryDecisionState() { resetCalls += 1; },
-    setTrainingMemoryStatus(value) { status = value; },
-    clearTrainingSessionState() { throw new Error('unrelated Training state must remain'); },
-  };
-  vm.runInNewContext(`${extractFunction(source, 'clearTrainingLearningPresentation')}; ${clear}; clearTrainingMemoryOwnerPresentation();`, sandbox);
-  assert.equal(app.training.memoryGeneration, 8);
-  assert.equal(app.training.memorySessionPromise, null);
-  assert.equal(app.training.memoryLastItems.length, 0);
-  assert.equal(app.training.memoryRedrillNote, '');
-  assert.equal(elements.get('trainingMemoryList').children.length, 0);
-  assert.equal(elements.get('trainingMemoryPanel').dataset.memoryLoaded, 'false');
-  assert.equal(elements.get('trainingMemoryDueBadge').hidden, true);
-  assert.equal(status, '');
-  assert.equal(resetCalls, 1);
+  });
+  const generation = training().memoryGeneration;
+  const spy = page.spy(['resetTrainingMemoryDecisionState', 'setTrainingMemoryStatus', 'clearTrainingSessionState']);
+  try {
+    page.call('clearTrainingMemoryOwnerPresentation');
+    assert.equal(training().memoryGeneration, generation + 1);
+    assert.equal(training().memorySessionPromise, null);
+    assert.equal(training().memoryLastItems.length, 0);
+    assert.equal(training().memoryRedrillNote, '');
+    assert.equal(list.children.length, 0);
+    assert.equal(page.byId('trainingMemoryPanel').dataset.memoryLoaded, 'false');
+    assert.equal(badge.hidden, true);
+    assert.deepEqual(spy.calls.setTrainingMemoryStatus.at(-1), ['']);
+    assert.equal(spy.count('resetTrainingMemoryDecisionState'), 1);
+    assert.equal(spy.count('clearTrainingSessionState'), 0, 'unrelated Training state must remain');
+  } finally {
+    spy.restore();
+  }
 });
 
 test('queued A write intent that has not started is discarded before owner resolution', async () => {
-  const source = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const queue = extractFunction(source, 'queueTrainingMemoryWrite');
   const prior = deferred();
-  const app = { training: { memoryGeneration: 3, memoryWritePromise: prior.wait } };
-  const sandbox = {
-    app,
-    calls: 0,
-    console,
-    setTrainingMemoryStatus() {},
-    t: (value) => value,
-  };
-  vm.runInNewContext(
-    `${queue}; this.result = queueTrainingMemoryWrite(() => { this.calls += 1; return 'written'; });`,
-    sandbox,
-  );
-  app.training.memoryGeneration += 1;
+  training().memoryWritePromise = prior.wait;
+  let calls = 0;
+  const result = page.call('queueTrainingMemoryWrite', () => { calls += 1; return 'written'; });
+  training().memoryGeneration += 1;
   prior.release();
-  assert.equal(await sandbox.result, null);
-  assert.equal(sandbox.calls, 0);
+  assert.equal(await result, null);
+  assert.equal(calls, 0);
 });
 
 test('a rejected write from an invalidated Memory epoch cannot publish unavailable status', async () => {
-  const source = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const queue = extractFunction(source, 'queueTrainingMemoryWrite');
   const operation = deferred();
-  const app = { training: { memoryGeneration: 5, memoryWritePromise: Promise.resolve() } };
-  const statuses = [];
-  const sandbox = {
-    app,
-    console: { error() {} },
-    setTrainingMemoryStatus(value) { statuses.push(value); },
-  };
-  vm.runInNewContext(
-    `${queue}; this.result = queueTrainingMemoryWrite(async () => { this.operation.enter(); await this.operation.wait; throw new Error('stale cleanup'); });`,
-    { ...sandbox, operation },
-  );
-  await operation.entered;
-  app.training.memoryGeneration += 1;
-  operation.release();
-  await app.training.memoryWritePromise;
-  assert.deepEqual(statuses, []);
+  training().memoryWritePromise = Promise.resolve();
+  const spy = page.spy(['setTrainingMemoryStatus']);
+  const error = console.error;
+  console.error = () => {};
+  try {
+    page.call('queueTrainingMemoryWrite', async () => { operation.enter(); await operation.wait; throw new Error('stale cleanup'); });
+    await operation.entered;
+    training().memoryGeneration += 1;
+    operation.release();
+    await training().memoryWritePromise;
+    await page.settle(50);
+    assert.deepEqual(spy.calls.setTrainingMemoryStatus, []);
+  } finally {
+    console.error = error;
+    spy.restore();
+  }
 });
 
 for (const answered of [false, true]) {
@@ -644,71 +615,46 @@ for (const answered of [false, true]) {
 }
 
 test('mixed sequential panel refresh cannot combine due rows from A with recent rows from B', async () => {
-  const source = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const refresh = extractFunction(source, 'refreshTrainingMemoryPanel');
   const recent = deferred();
-  const list = {
-    rows: [],
-    replaceChildren() { this.rows = []; },
-    appendChild(row) { this.rows.push(row); },
+  const list = page.byId('trainingMemoryList');
+  const bridge = page.window.callTrainingMemoryBridge;
+  page.window.callTrainingMemoryBridge = async (method) => {
+    if (method === 'listDueReview') return [{ record: { owner: 'A' } }];
+    recent.enter();
+    await recent.wait;
+    return [{ session: { owner: 'B' } }];
   };
-  const elements = new Map([
-    ['trainingMemoryList', list],
-    ['trainingMemoryPanel', { dataset: {} }],
-    ['trainingMemoryDueBadge', { textContent: '', hidden: true }],
-  ]);
-  const app = { training: {
-    memoryGeneration: 11,
-    memoryView: 'recent',
-    memoryLastItems: [],
-  } };
-  const sandbox = {
-    app,
-    window: { RiverlineTrainingMemory: {} },
-    $: (selector) => elements.get(selector.slice(1)) ?? null,
-    setTrainingMemoryStatus() {},
-    async callTrainingMemoryBridge(method) {
-      if (method === 'listDueReview') return [{ record: { owner: 'A' } }];
-      recent.enter();
-      await recent.wait;
-      return [{ session: { owner: 'B' } }];
-    },
-    renderTrainingMemorySessionItem(entry) { return entry; },
-    renderTrainingMemoryDecisionItem(entry) { return entry; },
-    console,
-  };
-  vm.runInNewContext(`${refresh}; this.result = refreshTrainingMemoryPanel();`, sandbox);
-  await recent.entered;
-  app.training.memoryGeneration += 1;
-  list.replaceChildren();
-  recent.release();
-  assert.equal(await sandbox.result, null);
-  assert.equal(list.rows.length, 0);
-  assert.equal(app.training.memoryLastItems.length, 0);
+  Object.assign(training(), { memoryView: 'recent', memoryLastItems: [] });
+  try {
+    const result = page.call('refreshTrainingMemoryPanel');
+    await recent.entered;
+    training().memoryGeneration += 1;
+    list.replaceChildren();
+    recent.release();
+    assert.equal(await result, null);
+    assert.equal(list.children.length, 0);
+    assert.equal(training().memoryLastItems.length, 0);
+  } finally {
+    page.window.callTrainingMemoryBridge = bridge;
+  }
 });
 
 test('panel failure preserves the concrete diagnostic code behind generic copy', async () => {
-  const source = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const refresh = extractFunction(source, 'refreshTrainingMemoryPanel');
-  const list = { replaceChildren() {} };
-  const app = { training: {
-    memoryGeneration: 2,
-    memoryView: 'review',
-    memoryLastItems: [],
-    memoryLastDiagnostic: null,
-  } };
-  const statuses = [];
-  const sandbox = {
-    app,
-    window: {},
-    $: (selector) => (selector === '#trainingMemoryList' ? list : null),
-    setTrainingMemoryStatus(value, variables, options) { statuses.push({ value, options }); },
-    console: { error() {} },
-  };
-  vm.runInNewContext(`${refresh}; this.result = refreshTrainingMemoryPanel();`, sandbox);
-  assert.equal(await sandbox.result, null);
-  assert.equal(app.training.memoryLastDiagnostic.code, 'training_memory_bridge_unavailable');
-  assert.equal(statuses.at(-1).options.error, true);
+  const descriptor = Object.getOwnPropertyDescriptor(page.window, 'RiverlineTrainingMemory');
+  Object.defineProperty(page.window, 'RiverlineTrainingMemory', { configurable: true, writable: true, value: undefined });
+  Object.assign(training(), { memoryView: 'review', memoryLastItems: [], memoryLastDiagnostic: null });
+  const spy = page.spy(['setTrainingMemoryStatus']);
+  const error = console.error;
+  console.error = () => {};
+  try {
+    assert.equal(await page.call('refreshTrainingMemoryPanel'), null);
+    assert.equal(training().memoryLastDiagnostic.code, 'training_memory_bridge_unavailable');
+    assert.equal(spy.calls.setTrainingMemoryStatus.at(-1)[2].error, true);
+  } finally {
+    console.error = error;
+    spy.restore();
+    Object.defineProperty(page.window, 'RiverlineTrainingMemory', descriptor);
+  }
 });
 
 test('owner resolver installs exactly one auth and one identity subscription', () => {

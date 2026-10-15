@@ -18,6 +18,13 @@ import {
   REPLAY_FRAME_OPERATIONS,
   createReplayProjectionController,
 } from '../app/src/application/replay-projection-controller.mjs';
+import { appStyleSheet, bootApp, indexDocument, strategyProviderProbe } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: the logic.js replay renderer and state-change listener
+// run in the booted app (spies, DOM-query counters, a provider probe) and the
+// RTL rule is read through the cascade, instead of regex-matching sources.
+const probe = strategyProviderProbe();
+const page = await bootApp({ beforeScripts: probe.beforeScripts });
 
 const HERO_CARDS = Object.freeze(['As', 'Ad']);
 const VILLAIN_CARDS = Object.freeze(['Kh', 'Kd']);
@@ -251,33 +258,61 @@ test('Replay projection and cursor operations never mutate canonical actionHisto
 });
 
 test('renderer consumes projected event facts without reconstructing transitions from raw state or DOM', () => {
-  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const start = logic.indexOf('function createReplayTransitionEntry(');
-  const end = logic.indexOf('function keepReplaySelectionVisible(', start);
-  const renderer = logic.slice(start, end);
-
-  assert.ok(start >= 0 && end > start);
-  assert.match(renderer, /event\.transitionKind/);
-  assert.match(renderer, /event\.cards/);
-  assert.match(renderer, /cardSuitPresentation\(card\.suit\)/);
-  assert.match(renderer, /dataset\.cardSuitId/);
-  assert.match(renderer, /displayCardRank\(card\.rank\)/);
-  assert.doesNotMatch(renderer, /actionHistory|\.board|querySelector|previousElementSibling|slice\(|filter\(/);
+  const event = {
+    transitionKind: 'flop_deal', presentationState: 'current', frameIndex: 3, labelKey: 'replay.transition.flopDeal',
+    cardVisibility: 'public_board', cards: [{ rank: 'T', suit: 's' }, { rank: '7', suit: 'h' }, { rank: '2', suit: 'd' }],
+  };
+  // Reads made by page code are limited to the projected event's own facts.
+  const reads = new Set();
+  const tracked = new Proxy(event, { get(target, key, receiver) {
+    if ((new Error().stack.split('\n')[2] || '').includes('core/logic.js')) reads.add(key);
+    return Reflect.get(target, key, receiver);
+  } });
+  const document = page.document;
+  const queries = { count: 0 };
+  const originals = [document.querySelector, document.querySelectorAll];
+  document.querySelector = function (...args) { queries.count += 1; return originals[0].apply(this, args); };
+  document.querySelectorAll = function (...args) { queries.count += 1; return originals[1].apply(this, args); };
+  const spy = page.spy(['callPlaybookStateBridge']);
+  let entry;
+  try {
+    entry = page.call('createReplayTransitionEntry', tracked);
+  } finally {
+    document.querySelector = originals[0];
+    document.querySelectorAll = originals[1];
+    spy.restore();
+  }
+  assert.equal(queries.count, 0, 'no DOM reconstruction');
+  assert.equal(spy.count('callPlaybookStateBridge'), 0, 'no raw state reads');
+  for (const key of reads) assert.ok(Object.hasOwn(event, key), `reads only event facts (${String(key)})`);
+  assert.ok(reads.has('transitionKind') && reads.has('cards'));
+  assert.equal(entry.dataset.transitionKind, 'flop_deal');
+  const tokens = [...entry.querySelectorAll('.replay-transition-card')];
+  assert.deepEqual(tokens.map((token) => token.dataset.cardSuitId), event.cards.map((card) => page.window.RiverlineCardPresentation.cardSuitPresentation(card.suit).id));
+  assert.equal(tokens[0].textContent, `${page.evaluate("displayCardRank('T')")}${page.window.RiverlineCardPresentation.cardSuitPresentation('s').symbol}`);
 });
 
-test('cursor rendering bypasses strategy and Equity, with localized Showdown and LTR card tokens', () => {
-  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+test('cursor rendering bypasses strategy and Equity, with localized Showdown and LTR card tokens', async () => {
   const translations = fs.readFileSync(
     new URL('../app/src/locales/analysis-translations.js', import.meta.url),
     'utf8',
   );
-  const listenerStart = logic.indexOf("window.addEventListener('riverline:playbook-state-change'");
-  const listenerEnd = logic.indexOf('function formatCanonicalBb(', listenerStart);
-  const listener = logic.slice(listenerStart, listenerEnd);
-
-  assert.match(listener, /operation\?\.startsWith\('replay_'\)[\s\S]*?operation\?\.startsWith\('saved_hand_'\)\) return/);
-  assert.doesNotMatch(listener, /calculateEquity|resolveStrategy|Training/);
+  // Replay and saved-hand state changes stop before any decision, Home or
+  // Hand-workspace refresh.
+  const spy = page.spy(['updateContext', 'scheduleHomeRefresh', 'renderCanonicalHandWorkspace']);
+  try {
+    const resolves = await probe.count(async () => {
+      for (const operation of ['replay_seek', 'replay_return', 'saved_hand_close']) {
+        page.window.dispatchEvent(new page.window.CustomEvent('riverline:playbook-state-change', { detail: { operation } }));
+        await page.settle(100);
+      }
+    });
+    assert.equal(resolves.length, 0);
+    assert.equal(spy.count('updateContext'), 0);
+    assert.equal(spy.count('scheduleHomeRefresh'), 0);
+  } finally {
+    spy.restore();
+  }
   for (const key of [
     'replay.street.showdown', 'replay.transition.flopDeal', 'replay.transition.turnDeal',
     'replay.transition.riverDeal', 'replay.transition.privateReveal',
@@ -289,6 +324,23 @@ test('cursor rendering bypasses strategy and Equity, with localized Showdown and
       `${key} must exist in EN/RU/HE`,
     );
   }
-  assert.match(css, /\[dir="rtl"\] \.replay-transition-cards,[\s\S]*?direction:\s*ltr/);
-  assert.match(logic, /cards\.dir = 'ltr'/);
+  // Board card tokens are an LTR island, also under RTL.
+  const entry = page.call('createReplayTransitionEntry', {
+    transitionKind: 'turn_deal', presentationState: 'past', frameIndex: 1, labelKey: 'replay.transition.turnDeal',
+    cardVisibility: 'public_board', cards: [{ rank: 'K', suit: 'c' }],
+  });
+  const cards = entry.querySelector('.replay-transition-cards');
+  assert.equal(cards.dir, 'ltr');
+  const markup = indexDocument();
+  const host = markup.getElementById('handActionHistory') || markup.body;
+  const probeCards = markup.createElement('span');
+  probeCards.className = 'replay-transition-cards';
+  host.appendChild(probeCards);
+  markup.documentElement.setAttribute('dir', 'rtl');
+  try {
+    assert.equal(appStyleSheet().cascaded(probeCards, 'direction'), 'ltr');
+  } finally {
+    markup.documentElement.removeAttribute('dir');
+    probeCards.remove();
+  }
 });

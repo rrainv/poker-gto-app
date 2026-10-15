@@ -488,25 +488,58 @@ test('browser bridge exposes canonical estimate, calculate, cancel, status, and 
   assert.deepEqual(calls.map(([operation]) => operation), ['estimate', 'cancel']);
 });
 
-test('Equity production path imports canonical semantics and contains no random evaluator copy', () => {
+test('Equity production path imports canonical semantics and contains no random evaluator copy', async () => {
   const service = fs.readFileSync(new URL('../shared/poker-domain/equity.js', import.meta.url), 'utf8');
   const worker = fs.readFileSync(new URL('../app/src/application/equity-worker.mjs', import.meta.url), 'utf8');
   const runtime = fs.readFileSync(new URL('../app/src/application/equity-worker-runtime.mjs', import.meta.url), 'utf8');
-  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-  const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
   assert.match(service, /import \{ evaluateSeven \} from '\.\/evaluator\.js'/);
   assert.doesNotMatch(service + worker + runtime, /Math\.random|function scoreFive|function evaluate5/);
-  assert.match(logic, /callEquityServiceBridge\('calculate', request/);
-  assert.match(logic, /const request = equityRequestFromCurrentInputs\(\)[\s\S]*?callEquityServiceBridge\('estimate', request\)/);
-  assert.doesNotMatch(logic.slice(
-    logic.indexOf('function equityRequestFromCurrentInputs'),
-    logic.indexOf('function renderEquityResult'),
-  ), /scoreSeven|Math\.random|PokerState|DecisionContext/);
-  assert.match(logic, /10 player maximum/);
-  assert.match(html, /id="progress"/);
-  assert.match(html, /id="cancelEquity"/);
-  assert.match(css, /--series-8:/);
-  assert.match(css, /--series-9:/);
+  // TEST-HYGIENE-001: the page's Equity path runs in the booted app (bridge
+  // calls spied, Math.random trapped) and markup/styles are parsed, instead
+  // of regex-matching logic.js / index.html / styles.css.
+  const { appStyleSheet, bootApp, indexDocument, strategyProviderProbe } = await import('./helpers/app-under-test.mjs');
+  const probe = strategyProviderProbe();
+  const app = await bootApp({ beforeScripts: probe.beforeScripts });
+  await app.navigate('equity');
+  const [hero] = app.evaluate('app.equity.players.map(({ id }) => id)');
+  await app.pickCards(`[data-equity-edit-hand="${hero}"]`, ['As', 'Kd']);
+  // The request is built from Equity inputs alone: no sampling, no strategy,
+  // no canonical Hand state.
+  const random = app.window.Math.random;
+  let sampled = 0;
+  app.window.Math.random = () => { sampled += 1; return random(); };
+  const spy = app.spy(['callEquityServiceBridge', 'callPlaybookStateBridge']);
+  let request;
+  try {
+    const resolves = await probe.count(() => { request = app.call('equityRequestFromCurrentInputs'); });
+    assert.equal(resolves.length, 0);
+    assert.equal(sampled, 0);
+    assert.equal(spy.count('callPlaybookStateBridge'), 0);
+    assert.ok(request);
+    assert.equal(Object.hasOwn(request, 'decisionContext'), false);
+    spy.reset();
+    await app.click('#calculate');
+    await app.settle(100);
+    const operations = spy.calls.callEquityServiceBridge.map(([operation]) => operation);
+    assert.ok(operations.includes('estimate'));
+    assert.ok(operations.includes('calculate'));
+    for (const operation of ['estimate', 'calculate']) {
+      assert.deepEqual(spy.calls.callEquityServiceBridge.find(([name]) => name === operation)[1], request, operation);
+    }
+  } finally {
+    app.window.Math.random = random;
+    spy.restore();
+    app.call('cancelEquityCalculation');
+  }
+  // Up to ten players; the add control then states the maximum.
+  for (let guard = 0; guard < 12 && !app.byId('equityAddPlayer').disabled; guard += 1) await app.click('#equityAddPlayer');
+  assert.equal(app.window.app.equity.players.length, 10);
+  assert.equal(app.byId('equityAddPlayer').dataset.i18n, '10 player maximum');
+  const markup = indexDocument();
+  assert.ok(markup.getElementById('progress'));
+  assert.ok(markup.getElementById('cancelEquity'));
+  // Series colours exist for all ten players.
+  const css = appStyleSheet();
+  for (const token of ['--series-8', '--series-9']) assert.ok(css.cascaded(markup.documentElement, token), token);
   assert.doesNotMatch(service + runtime, /Playbook|Training|PokerState/);
 });
