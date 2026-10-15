@@ -920,6 +920,8 @@ export class Document extends ParentMixin {
   get body() { return this.documentElement?.children.find((node) => node.localName === 'body') || null; }
   get activeElement() { return this._activeElement && this._activeElement.isConnected ? this._activeElement : this.body; }
   get dir() { return this.documentElement?.getAttribute('dir') || ''; }
+  get baseURI() { return this.defaultView?.location?.href || 'about:blank'; }
+  get URL() { return this.baseURI; }
   set dir(value) { this.documentElement?.setAttribute('dir', value); }
   createElement(tagName) { return new Element(tagName, this); }
   createElementNS(namespace, tagName) { return new Element(tagName, this, namespace || 'http://www.w3.org/1999/xhtml'); }

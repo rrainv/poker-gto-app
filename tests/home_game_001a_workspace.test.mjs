@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 import { createHomeGameApplication } from '../app/src/application/home-game-service.mjs';
 import { createMemoryHomeGameDatabase } from '../app/src/home-game/index.mjs';
+import { appStyleSheet, bootApp, indexDocument } from './helpers/app-under-test.mjs';
 
 const T0 = '2026-08-18T19:00:00.000Z';
 
@@ -108,23 +109,39 @@ test('workspace command flow exposes truthful balance, completion, settlement, a
 });
 
 test('Home Game proof surface is top-level, responsive, accessible, localized, and ledger-driven', async () => {
-  const [html, css, bootstrap, amountInput, service, translations, i18n] = await Promise.all([
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
-    readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
+  // TEST-HYGIENE-001: index.html / styles.css are queried as parsed markup and
+  // resolved through the cascade; module and locale sources keep their checks.
+  const markup = indexDocument();
+  const css = appStyleSheet();
+  const [bootstrap, amountInput, service, translations, i18n] = await Promise.all([
     readFile(new URL('../app/src/application/home-game-bootstrap.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/home-game-amount-input.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/home-game-service.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/home-game-translations.js', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8'),
   ]);
-  assert.match(html, /data-mode="homegame"/);
-  assert.match(html, /id="homegameMode"/);
-  assert.match(html, /id="homeGameNewSessionForm"[\s\S]*?<label[\s\S]*?id="homeGamePlayerNames"/);
-  assert.match(html, /id="homeGameError"[^>]*role="alert"[^>]*aria-live="assertive"/);
-  assert.match(html, /src="src\/application\/home-game-bootstrap\.mjs"/);
-  assert.match(css, /\.home-game-layout[\s\S]*?grid-template-columns/);
-  assert.match(css, /@media \(max-width: 1280px\)/);
-  assert.match(css, /border-inline-start|padding-inline-start/);
+  assert.ok(markup.querySelector('.mode-nav-item[data-mode="homegame"]'));
+  const mode = markup.getElementById('homegameMode');
+  assert.ok(mode);
+  const form = markup.getElementById('homeGameNewSessionForm');
+  const names = form.querySelector('#homeGamePlayerNames');
+  assert.ok(names, 'player names live in the new-session form');
+  assert.ok(names.closest('label') || form.querySelector('label[for="homeGamePlayerNames"]'), 'player names are labelled');
+  const error = markup.getElementById('homeGameError');
+  assert.equal(error.getAttribute('role'), 'alert');
+  assert.equal(error.getAttribute('aria-live'), 'assertive');
+  assert.ok(markup.querySelector('script[type="module"][src="src/application/home-game-bootstrap.mjs"]'));
+  const layout = mode.querySelector('.home-game-layout');
+  const wide = css.cascaded(layout, 'grid-template-columns', { width: 1920 });
+  assert.ok(wide, 'the Home Game layout is a grid');
+  assert.notEqual(css.cascaded(layout, 'grid-template-columns', { width: 1200 }), wide, 'it reflows at 1280px and below');
+  const app = await bootApp();
+  await app.navigate('home-game');
+  const rendered = app.byId('homegameMode');
+  assert.ok(rendered.classList.contains('active'));
+  const logical = rendered.querySelectorAll('*').some((node) => css.matchingRules(node)
+    .some((rule) => rule.declarations.some(({ property }) => /^(border|padding|margin)-inline(-start)?$/.test(property))));
+  assert.ok(logical, 'Home Game uses logical inline spacing');
   // Money fields are read only through the exact decimal parser (HOMEGAME-LEDGER-INPUT-001 moved it to one module).
   assert.match(bootstrap, /from '\.\/home-game-amount-input\.mjs'/);
   assert.match(amountInput, /parseMoneyToMinorUnits/);

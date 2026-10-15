@@ -374,10 +374,21 @@ export async function bootApp(options = {}) {
   // (modules and deferred classic scripts share document order).
   const immediate = sources.filter((script) => !script.module && !document.querySelector(`script[src^="${script.src}"]`).hasAttribute('defer'));
   const deferred = sources.filter((script) => !immediate.includes(script));
+  if (!process.emitWarning.__riverlineFiltered) {
+    // The harness's dynamic-import loader option is flagged experimental;
+    // keep that one warning out of the app's captured console output.
+    const emitWarning = process.emitWarning;
+    process.emitWarning = Object.assign(function filtered(warning, ...rest) {
+      if (String(warning?.message ?? warning).includes('USE_MAIN_CONTEXT_DEFAULT_LOADER')) return undefined;
+      return emitWarning.call(process, warning, ...rest);
+    }, { __riverlineFiltered: true });
+  }
   const runClassic = (src) => {
     const file = new URL(src, APP_ROOT);
     const code = fs.readFileSync(file, 'utf8');
-    vm.runInThisContext(code, { filename: file.pathname });
+    // Classic scripts' dynamic import() resolves through Node's default loader
+    // (the same module instances the page's module scripts use).
+    vm.runInThisContext(code, { filename: file.pathname, importModuleDynamically: vm.constants.USE_MAIN_CONTEXT_DEFAULT_LOADER });
   };
   for (const script of immediate) if (!skip.has(script.src)) runClassic(script.src);
   for (const script of deferred) {

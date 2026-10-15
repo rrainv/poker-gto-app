@@ -9,7 +9,10 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..');
 const require = createRequire(import.meta.url);
 const { loadTranslations } = require('./tooling/audit_i18n.cjs');
-const html = fs.readFileSync(path.join(repoRoot, 'app/index.html'), 'utf8');
+import { indexDocument } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html is queried as parsed markup.
+const markup = indexDocument();
 
 test('Russian and Hebrew use one resolved action terminology contract', () => {
   const translations = loadTranslations();
@@ -120,8 +123,9 @@ test('theme display names localize natural descriptors without changing canonica
 
 test('range comparison matrix accessibility labels use the localized catalog', () => {
   const translations = loadTranslations();
-  assert.match(html, /id="heroRangeGrid"[^>]*data-i18n-aria-label="13 by 13 starting hand matrix"/);
-  assert.match(html, /id="villainRangeGrid"[^>]*data-i18n-aria-label="13 by 13 starting hand matrix"/);
+  for (const id of ['heroRangeGrid', 'villainRangeGrid']) {
+    assert.equal(markup.getElementById(id)?.getAttribute('data-i18n-aria-label'), '13 by 13 starting hand matrix', id);
+  }
   assert.match(translations.ru['13 by 13 starting hand matrix'], /диапазон|стартов/iu);
   assert.match(translations.he['13 by 13 starting hand matrix'], /ריינג'/u);
 });

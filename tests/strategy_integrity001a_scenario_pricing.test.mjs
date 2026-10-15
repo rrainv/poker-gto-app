@@ -5,10 +5,10 @@ import fs from 'node:fs';
 
 import { createAnalysisExplanation } from '../app/src/application/analysis-explanation.mjs';
 import { deriveDecisionContextFromPlaybookScenario } from '../app/src/application/playbook-state-source.mjs';
+import { bootApp } from './helpers/app-under-test.mjs';
 
 const require = createRequire(import.meta.url);
 const qa = require('./qa002_adapters.js');
-const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const PREFLOP = fs.readFileSync(new URL('../app/src/strategy/preflop-heuristic.mjs', import.meta.url), 'utf8');
 const POSTFLOP = fs.readFileSync(new URL('../app/src/strategy/postflop-heuristic.mjs', import.meta.url), 'utf8');
 
@@ -140,7 +140,7 @@ test('Scenario facing a postflop raise abstains when exact call price is unavail
   assertUnavailablePostflopScenarioStrategy(context);
 });
 
-test('fallback price mathematics never defaults missing call price to nominal facing size', () => {
+test('fallback price mathematics never defaults missing call price to nominal facing size', async () => {
   const fallback = `${PREFLOP}\n${POSTFLOP}`;
   assert.doesNotMatch(fallback, /callAmountBb\s*=\s*facingSize/);
   assert.doesNotMatch(fallback, /trustedCallAmount\s*===\s*null\s*\?\s*0/);
@@ -151,5 +151,8 @@ test('fallback price mathematics never defaults missing call price to nominal fa
   assert.match(PREFLOP, /const potOdds = callAmountBb \/ priceDenominator/);
   assert.match(PREFLOP, /Legal bounds are used for projection, not as recommendations/);
   assert.doesNotMatch(PREFLOP, /facingSizeBb\s*\/\s*|const raiseAmount/);
-  assert.doesNotMatch(LOGIC, /cheapOddsDefenseBoost/);
+  // TEST-HYGIENE-001: the retired UI-side cheap-odds defense boost must not
+  // exist in the running page (was a logic.js source match).
+  const app = await bootApp();
+  assert.equal(app.evaluate('typeof cheapOddsDefenseBoost'), 'undefined');
 });
