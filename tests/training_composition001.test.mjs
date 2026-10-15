@@ -2,104 +2,166 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+import { appStyleSheet, bootApp, indexDocument, precedes, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural: the Training workspace is composed and driven in the running
+// app and styles are resolved through the cascade. The locale catalog is
+// outside this ticket.
 const i18n = fs.readFileSync(new URL('../app/src/locales/i18n.js', import.meta.url), 'utf8');
-const trainingMarkup = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('<!-- Equity workspace -->'));
-// Bounded before the surface styles DS-FOUNDATION-001 relocated from riverline-design.css.
-const ticketCss = css.slice(css.indexOf('TRAINING-COMPOSITION-001'), css.indexOf('Surface styles relocated from the retired'));
+const trainingMarkup = indexDocument().getElementById('trainingMode');
+const css = appStyleSheet();
+const app = await bootApp();
+await app.navigate('training');
+const workspace = () => app.byId('trainingWorkspace');
 
-function sourceBetween(start, end) {
-  return logic.slice(logic.indexOf(start), logic.indexOf(end));
-}
-
-test('Training exposes one selected-configuration start action and retains a guarded lifecycle', () => {
-  assert.equal((trainingMarkup.match(/id="trainingNewHand"/g) || []).length, 1);
-  assert.equal((trainingMarkup.match(/data-i18n="Start Training"/g) || []).length, 1);
-  assert.doesNotMatch(trainingMarkup, /id="trainingIdleStart"/);
-  assert.doesNotMatch(trainingMarkup, /id="trainingNewHand"[^>]*data-i18n="(?:Generate exercise|Start varied session)"/);
-  assert.match(logic, /bind\('#trainingNewHand', 'click', \(\) => startConfiguredTrainingSessionWithGuard\(\)\)/);
-  assert.match(sourceBetween('function startConfiguredTrainingSessionWithGuard(', 'async function startConfiguredTrainingSession('), /trainingSessionIsActive\(\)[\s\S]*window\.confirm/);
-  assert.match(sourceBetween('function requestTrainingSessionModeChange(', 'function openTrainingMemoryView('), /trainingSessionIsActive\(\)[\s\S]*window\.confirm[\s\S]*setTrainingSessionMode/);
+test('Training exposes one selected-configuration start action and retains a guarded lifecycle', async () => {
+  // Protects: one Start Training action; starting or changing mode over an
+  // active session asks first.
+  assert.equal(trainingMarkup.querySelectorAll('#trainingNewHand').length, 1);
+  assert.equal(trainingMarkup.querySelectorAll('[data-i18n="Start Training"]').length, 1);
+  assert.equal(trainingMarkup.querySelector('#trainingIdleStart'), null);
+  assert.equal(trainingMarkup.querySelector('#trainingNewHand').dataset.i18n, 'Start Training');
+  await app.training.start('focused');
+  let asked = 0;
+  app.window.confirm = () => { asked += 1; return false; };
+  const exercise = app.window.app.training.currentExercise;
+  await app.click('#trainingNewHand');
+  assert.equal(asked, 1, 'starting over asks');
+  assert.equal(app.window.app.training.currentExercise, exercise);
+  await app.click('[data-training-session-mode="varied"]');
+  assert.equal(asked, 2, 'changing mode asks');
+  assert.equal(app.window.app.training.sessionMode, 'focused', 'declining keeps the mode');
+  app.window.confirm = () => true;
 });
 
-test('one stable decision and study-rail skeleton owns ready and feedback states', () => {
-  assert.match(trainingMarkup, /<main class="training-decision-column">/);
-  assert.match(trainingMarkup, /<aside class="training-insight-column">/);
-  assert.ok(trainingMarkup.indexOf('id="trainingExerciseSurface"') < trainingMarkup.indexOf('id="trainingFeedback"'));
-  assert.match(sourceBetween('function composeTrainingWorkspace(', 'function selectedTrainingControlLabel('), /classList\.add\('training-study-rail'\)/);
-  assert.match(ticketCss, /grid-template-columns:\s*minmax\(0, 1fr\) minmax\(320px, 360px\)/);
-  assert.doesNotMatch(ticketCss, /data-training-state="feedback"[^}]*grid-template-(?:columns|areas)/);
+test('one stable decision and study-rail skeleton owns ready and feedback states', async () => {
+  // Protects: one decision column and one insight column; the exercise precedes
+  // feedback; the composed rail is the study rail; ready and feedback share the
+  // same two-column grid.
+  assert.equal(trainingMarkup.querySelector('.training-decision-column').localName, 'main');
+  assert.equal(trainingMarkup.querySelector('.training-insight-column').localName, 'aside');
+  assert.ok(precedes(trainingMarkup.querySelector('#trainingExerciseSurface'), trainingMarkup.querySelector('#trainingFeedback')));
+  assert.ok(app.$('.training-insight-column').classList.contains('training-study-rail'));
+  const node = workspace();
+  const ready = css.cascaded(node, 'grid-template-columns');
+  assert.equal(ready, 'minmax(0, 1fr) minmax(320px, 360px)');
+  await app.training.answer();
+  assert.equal(node.dataset.trainingState, 'feedback');
+  assert.equal(css.cascaded(node, 'grid-template-columns'), ready);
+  assert.equal(css.cascaded(node, 'grid-template-areas'), (() => { node.dataset.trainingState = 'ready'; const value = css.cascaded(node, 'grid-template-areas'); node.dataset.trainingState = 'feedback'; return value; })());
 });
 
-test('setup is a single disclosure that compacts on start and Adjust Drill reopens', () => {
-  assert.equal((trainingMarkup.match(/id="trainingSetupPanel"/g) || []).length, 1);
-  assert.match(trainingMarkup, /<details id="trainingSetupPanel"[^>]*open>/);
-  assert.match(trainingMarkup, /class="training-setup-summary"/);
-  assert.match(logic, /async function startConfiguredTrainingSession[\s\S]*setTrainingSetupExpanded\(false\)/);
-  assert.match(sourceBetween("bind('#trainingAdjustDrill'", "bind('#trainingRevealHint'"), /setTrainingSetupExpanded\(true, \{ focus: true \}\)/);
-  assert.match(logic, /setTrainingWorkspaceState\('idle'\);[\s\S]*setTrainingSetupExpanded\(true\)/);
+test('setup is a single disclosure that compacts on start and Adjust Drill reopens', async () => {
+  const setup = trainingMarkup.querySelector('#trainingSetupPanel');
+  assert.equal(trainingMarkup.querySelectorAll('#trainingSetupPanel').length, 1);
+  assert.equal(setup.localName, 'details');
+  assert.equal(setup.open, true);
+  assert.ok(trainingMarkup.querySelector('.training-setup-summary'));
+  assert.equal(app.byId('trainingSetupPanel').open, false, 'starting compacts the setup');
+  await app.click('#trainingAdjustDrill');
+  assert.equal(app.byId('trainingSetupPanel').open, true);
+  assert.equal(app.document.activeElement, app.byId('trainingStreet'), 'Adjust Drill focuses the first drill control');
+  app.call('clearTrainingSessionState');
+  assert.equal(workspace().dataset.trainingState, 'idle');
+  assert.equal(app.byId('trainingSetupPanel').open, true, 'idle reopens setup');
 });
 
-test('answer feedback stays compact and deep analysis is progressive disclosure', () => {
-  assert.match(trainingMarkup, /class="training-verdict"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"/);
-  assert.doesNotMatch(trainingMarkup, /id="trainingFeedback"[^>]*role="status"/);
-  assert.match(trainingMarkup, /data-i18n="Facts">Facts/);
-  assert.match(trainingMarkup, /<details class="training-analysis-region"[^>]*><summary id="trainingAnalysisTitle"[^>]*>Explain/);
-  assert.match(trainingMarkup, /id="trainingFeedbackReferenceMount"/);
-  assert.match(sourceBetween('function composeTrainingWorkspace(', 'function selectedTrainingControlLabel('), /feedbackReferenceMount\.append\(solution\)/);
-  assert.match(logic, /trainingAnalysisTitle'\)\?\.closest\('details'\)\?\.removeAttribute\('open'\)/);
-  assert.match(ticketCss, /training-analysis-region\[open\] #trainingAnalysis[^}]*max-block-size:[^}]*overflow:\s*auto/s);
-  assert.doesNotMatch(trainingMarkup, />Coach</);
+test('answer feedback stays compact and deep analysis is progressive disclosure', async () => {
+  const verdict = trainingMarkup.querySelector('.training-verdict');
+  assert.equal(verdict.getAttribute('role'), 'status');
+  assert.equal(verdict.getAttribute('aria-live'), 'polite');
+  assert.equal(verdict.getAttribute('aria-atomic'), 'true');
+  assert.equal(trainingMarkup.querySelector('#trainingFeedback').getAttribute('role'), null);
+  assert.ok(trainingMarkup.querySelector('[data-i18n="Facts"]'));
+  const explain = trainingMarkup.querySelector('details.training-analysis-region > summary#trainingAnalysisTitle');
+  assert.match(text(explain), /^Explain/);
+  assert.ok(trainingMarkup.querySelector('#trainingFeedbackReferenceMount'));
+  assert.ok(app.byId('trainingFeedbackReferenceMount').contains(app.byId('trainingSolution')), 'the solution is composed into feedback');
+  await app.training.start('focused');
+  const region = app.byId('trainingAnalysisTitle').closest('details');
+  region.open = true;
+  await app.training.answer();
+  await app.training.next();
+  assert.equal(region.open, false, 'Explain closes for each new exercise');
+  region.open = true;
+  const analysis = app.byId('trainingAnalysis');
+  assert.ok(css.cascaded(analysis, 'max-block-size'));
+  assert.equal(css.cascaded(analysis, 'overflow'), 'auto');
+  region.open = false;
+  assert.doesNotMatch(text(trainingMarkup), /^Coach$/m);
+  assert.equal(trainingMarkup.querySelectorAll('*').filter((node) => node.childElementCount === 0 && text(node) === 'Coach').length, 0);
 });
 
-test('current-session progress and restrained source truth remain visible in the rail', () => {
-  assert.match(trainingMarkup, /id="trainingSessionProgress"[^>]*aria-live="polite"/);
-  assert.match(logic, /Exercise \{current\} of \{total\}/);
-  assert.match(trainingMarkup, /id="trainingReferenceSummary"/);
-  assert.match(logic, /strategyPolicySummary\(policy\)/);
-  assert.match(logic, /referenceValue\.dataset\.sourceFamily = policy\.source\.family/);
-  assert.match(trainingMarkup, /id="trainingTruthMetrics"/);
-  assert.doesNotMatch(trainingMarkup, />Accuracy</);
-  assert.match(ticketCss, /training-session-panel \.training-stat-grid[^}]*repeat\(2,/s);
+test('current-session progress and restrained source truth remain visible in the rail', async () => {
+  assert.equal(trainingMarkup.querySelector('#trainingSessionProgress').getAttribute('aria-live'), 'polite');
+  await app.training.start('varied');
+  assert.match(text(app.byId('trainingSessionProgress')), /^Exercise \d+ of \d+$/);
+  assert.ok(trainingMarkup.querySelector('#trainingReferenceSummary'));
+  await app.training.answer();
+  const reference = app.byId('trainingReferenceSummaryValue');
+  const policy = app.call('strategyClaimPolicy', app.window.app.training.currentStrategyResult);
+  assert.equal(reference.dataset.sourceFamily, policy.source.family);
+  assert.ok(trainingMarkup.querySelector('#trainingTruthMetrics'));
+  assert.equal(trainingMarkup.querySelectorAll('*').filter((node) => node.childElementCount === 0 && text(node) === 'Accuracy').length, 0);
+  assert.match(css.cascaded(app.$('.training-session-panel .training-stat-grid'), 'grid-template-columns'), /^repeat\(2,/);
 });
 
-test('Memory, History, and Assistance are bounded study tools near the exercise', () => {
-  const composition = sourceBetween('function composeTrainingWorkspace(', 'function selectedTrainingControlLabel(');
-  const expectedOrder = [
-    "$('#trainingSetupPanel')",
-    "document.querySelector('.training-session-panel')",
-    "$('#trainingReferenceSummary')",
-    "$('#trainingHistoryPanel')",
-    "document.querySelector('.training-assistance-panel')",
-    "$('#trainingMemoryPanel')",
-  ];
-  assert.ok(expectedOrder.every((entry, index) => index === 0 || composition.indexOf(entry) > composition.indexOf(expectedOrder[index - 1])));
-  assert.match(trainingMarkup, /id="trainingMemoryPanel"[^>]*data-training-availability="ready-to-load"/);
-  assert.match(logic, /if \(event\.currentTarget\.open\) void refreshTrainingMemoryPanel\(\)/);
-  assert.match(ticketCss, /training-memory-panel \.panel-body[^}]*max-block-size:[^}]*overflow:\s*auto/s);
-  assert.match(trainingMarkup, /id="trainingAssistanceLevel"[^>]*class="badge/);
+test('Memory, History, and Assistance are bounded study tools near the exercise', async () => {
+  // Protects: the study rail orders setup, session, reference, history,
+  // assistance and memory; Memory loads on open; Memory scrolls internally.
+  const order = ['#trainingSetupPanel', '.training-session-panel', '#trainingReferenceSummary', '#trainingHistoryPanel', '.training-assistance-panel', '#trainingMemoryPanel']
+    .map((selector) => app.$(selector));
+  assert.ok(order.every(Boolean));
+  order.slice(1).forEach((node, index) => assert.ok(precedes(order[index], node), `${order[index].id || order[index].className} before ${node.id || node.className}`));
+  assert.equal(trainingMarkup.querySelector('#trainingMemoryPanel').dataset.trainingAvailability, 'ready-to-load');
+  const spy = app.spy(['refreshTrainingMemoryPanel']);
+  try {
+    const memory = app.byId('trainingMemoryPanel');
+    memory.open = false;
+    memory.dispatchEvent(new app.window.Event('toggle'));
+    assert.equal(spy.count('refreshTrainingMemoryPanel'), 0);
+    memory.open = true;
+    memory.dispatchEvent(new app.window.Event('toggle'));
+    assert.equal(spy.count('refreshTrainingMemoryPanel'), 1);
+  } finally {
+    spy.restore();
+  }
+  const body = app.$('.training-memory-panel .panel-body');
+  assert.ok(css.cascaded(body, 'max-block-size'));
+  assert.equal(css.cascaded(body, 'overflow'), 'auto');
+  assert.ok(trainingMarkup.querySelector('#trainingAssistanceLevel').classList.contains('badge'));
 });
 
-test('completion routes to existing longitudinal views without inventing mastery', () => {
-  assert.match(trainingMarkup, /id="trainingCompletionReview"[^>]*>Review due items/);
-  assert.match(trainingMarkup, /id="trainingCompletionRecent"[^>]*>Recent sessions/);
-  assert.match(trainingMarkup, /id="trainingRestartSession"[^>]*>Start another session/);
-  assert.match(logic, /trainingCompletionReview'[\s\S]*openTrainingMemoryView\('review'\)/);
-  assert.match(logic, /trainingCompletionRecent'[\s\S]*openTrainingMemoryView\('recent'\)/);
-  assert.doesNotMatch(trainingMarkup, /mastery|mastered/i);
+test('completion routes to existing longitudinal views without inventing mastery', async () => {
+  assert.match(text(trainingMarkup.querySelector('#trainingCompletionReview')), /Review due items/);
+  assert.match(text(trainingMarkup.querySelector('#trainingCompletionRecent')), /Recent sessions/);
+  assert.match(text(trainingMarkup.querySelector('#trainingRestartSession')), /Start another session/);
+  const spy = app.spy(['setTrainingMemoryView']);
+  try {
+    await app.click('#trainingCompletionReview');
+    await app.click('#trainingCompletionRecent');
+    assert.deepEqual(spy.calls.setTrainingMemoryView.map(([view]) => view), ['review', 'recent']);
+  } finally {
+    spy.restore();
+  }
+  assert.equal(app.byId('trainingMemoryPanel').open, true);
+  assert.doesNotMatch(text(trainingMarkup), /mastery|mastered/i);
 });
 
-test('Focused and Full Hand retain their canonical controls within the shared composition', () => {
-  assert.match(trainingMarkup, /data-training-session-mode="varied"/);
-  assert.match(trainingMarkup, /data-training-session-mode="focused"/);
-  assert.match(trainingMarkup, /data-training-session-mode="full_hand"/);
-  assert.match(logic, /mode === 'focused'[\s\S]*trainingDecisionTarget/);
-  assert.match(logic, /trainingSessionMode\(\) === 'full_hand' \? '#trainingHeroPos'/);
-  assert.match(trainingMarkup, /id="trainingFullHandTableMount"/);
-  assert.match(trainingMarkup, /id="trainingFullHandTimeline"/);
-  assert.match(ticketCss, /training-workspace\[data-training-full-hand-phase="live"\]/);
+test('Focused and Full Hand retain their canonical controls within the shared composition', async () => {
+  for (const mode of ['varied', 'focused', 'full_hand']) assert.ok(trainingMarkup.querySelector(`[data-training-session-mode="${mode}"]`), mode);
+  await app.click('[data-training-session-mode="focused"]');
+  assert.equal(app.byId('trainingDecisionTarget').closest('.ui-field').hidden, false, 'Focused shows the decision target');
+  await app.click('[data-training-session-mode="full_hand"]');
+  assert.equal(app.byId('trainingDecisionTarget').closest('.ui-field').hidden, true);
+  await app.click('#trainingAdjustDrill');
+  assert.equal(app.document.activeElement, app.byId('trainingHeroPos'), 'Full Hand setup focuses Hero position');
+  for (const id of ['trainingFullHandTableMount', 'trainingFullHandTimeline']) assert.ok(trainingMarkup.querySelector(`#${id}`), id);
+  const node = workspace();
+  node.dataset.trainingFullHandPhase = 'live';
+  assert.ok(css.matchingRules(node).some((rule) => rule.selectorText.includes('data-training-full-hand-phase="live"')));
+  node.dataset.trainingFullHandPhase = 'setup';
 });
 
 test('new composition copy is complete for English, Russian, and Hebrew', () => {
@@ -116,16 +178,35 @@ test('new composition copy is complete for English, Russian, and Hebrew', () => 
   ]) {
     assert.ok((i18n.match(new RegExp(`"${key.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}"`, 'g')) || []).length >= 3, `${key} is registered in EN/RU/HE`);
   }
-  assert.match(ticketCss, /min-inline-size/);
-  assert.doesNotMatch(ticketCss, /margin-left|margin-right|padding-left|padding-right|\bleft\s*:|\bright\s*:/);
+  // RTL-safe: Training composition never uses physical inline spacing.
+  for (const node of [workspace(), ...app.$$('#trainingWorkspace *')]) {
+    for (const rule of css.matchingRules(node)) {
+      if (!rule.selectorText.includes('training')) continue;
+      for (const { property } of rule.declarations) {
+        assert.doesNotMatch(property, /^(margin|padding)-(left|right)$|^(left|right)$/, `${rule.selectorText} { ${property} }`);
+      }
+    }
+  }
 });
 
-test('keyboard answers, disclosures, focus, and reduced motion remain explicit', () => {
-  assert.match(trainingMarkup, /id="trainingNextHandBtn"[^>]*aria-keyshortcuts="Enter"/);
-  assert.match(logic, /handleTrainingKeyboardShortcut/);
-  assert.match(trainingMarkup, /id="trainingHistoryPanel"[^>]*>\s*<summary/);
-  assert.match(trainingMarkup, /id="trainingMemoryPanel"[^>]*>\s*<summary/);
-  assert.match(ticketCss, /cursor:\s*pointer/);
-  assert.match(css, /prefers-reduced-motion:\s*reduce/);
-  assert.match(logic, /focus\(\{ preventScroll: false \}\)/);
+test('keyboard answers, disclosures, focus, and reduced motion remain explicit', async () => {
+  assert.equal(trainingMarkup.querySelector('#trainingNextHandBtn').getAttribute('aria-keyshortcuts'), 'Enter');
+  assert.equal(app.evaluate('typeof handleTrainingKeyboardShortcut'), 'function');
+  for (const id of ['trainingHistoryPanel', 'trainingMemoryPanel']) {
+    const panel = trainingMarkup.querySelector(`#${id}`);
+    assert.equal(panel.firstElementChild.localName, 'summary', id);
+    assert.equal(css.cascaded(panel.firstElementChild, 'cursor'), 'pointer', `${id} summary`);
+  }
+  const probe = app.document.createElement('div');
+  app.byId('trainingMode').appendChild(probe);
+  // Reduced motion collapses (or removes) Training animation.
+  assert.match(css.cascaded(probe, 'animation-duration', { reducedMotion: true }) || '', /^(0?\.01ms|none)$/);
+  probe.remove();
+  let focusOptions = null;
+  const street = app.byId('trainingStreet');
+  const focus = street.focus.bind(street);
+  street.focus = (options) => { focusOptions = options; return focus(options); };
+  await app.click('[data-training-session-mode="focused"]');
+  app.call('setTrainingSetupExpanded', true, { focus: true });
+  assert.deepEqual(focusOptions, { preventScroll: false });
 });

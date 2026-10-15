@@ -6,11 +6,16 @@ import {
   createTablePresentation,
   TABLE_VISUAL_STATES,
 } from '../app/src/application/table-presentation.mjs';
+import { appStyleSheet, bootApp, indexDocument, precedes } from './helpers/app-under-test.mjs';
 
-const HTML = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
 const RENDERER = fs.readFileSync(new URL('../app/src/ui/TableRenderer.js', import.meta.url), 'utf8');
-const CSS = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+
+// TEST-HYGIENE-001: index.html / logic.js / styles.css assertions are
+// behavioural (the running Hand workspace, parsed markup, the cascade).
+// TableRenderer.js is outside this ticket.
+const markup = indexDocument();
+const css = appStyleSheet();
+const app = await bootApp();
 
 function tablePresence(playerCount) {
   return {
@@ -109,30 +114,85 @@ test('contributions move outward, Dealer moves inward, and canonical values stay
   }
 });
 
-test('known-opponent expansion is internally scrollable and cannot resize the table rows', () => {
-  assert.match(CSS, /\.hand-known-opponent-list\s*\{[\s\S]*?max-block-size: min\(42dvh, 480px\)[\s\S]*?overflow-y: auto[\s\S]*?scrollbar-gutter: stable/);
-  assert.match(CSS, /\.hand-known-opponents\[open\] > summary\s*\{[^}]*position: sticky/);
-  assert.match(CSS, /grid-template-rows: max-content max-content minmax\(0, auto\)/);
-  assert.match(CSS, /#handInteractionRail:not\(\[hidden\]\)[\s\S]*?max-block-size: calc\(100dvh - \(2 \* var\(--space-3\)\)\)[\s\S]*?overflow-y: auto/);
+test('known-opponent expansion is internally scrollable and cannot resize the table rows', async () => {
+  // Protects: the known-opponent list scrolls inside a bounded block with a
+  // stable gutter and a sticky summary; the Hand workspace rows are content
+  // sized so the expansion cannot resize the table; the interaction rail
+  // scrolls within the viewport.
+  await app.navigate('hand');
+  if (app.call('callPlaybookStateBridge', 'getState')) {
+    await app.click('#handResetButton');
+    await app.settle(300);
+  }
+  await app.setValue('#handTableSize', '6', { events: ['input', 'change'] });
+  await app.click('#handStartButton');
+  await app.settle(300);
+  const known = app.$('.hand-known-opponents');
+  assert.ok(known, 'a six-handed deal offers known opponent cards');
+  known.open = true;
+  const list = known.querySelector('.hand-known-opponent-list');
+  assert.equal(css.cascaded(list, 'max-block-size'), 'min(42dvh, 480px)');
+  assert.equal(css.cascaded(list, 'overflow-y'), 'auto');
+  assert.equal(css.cascaded(list, 'scrollbar-gutter'), 'stable');
+  assert.equal(css.cascaded(known.querySelector(':scope > summary'), 'position'), 'sticky');
+  assert.equal(css.cascaded(app.$('#gtoMode .playbook-decision-workspace'), 'grid-template-rows', { width: 1920 }), 'max-content max-content minmax(0, auto)');
+  const rail = app.byId('handInteractionRail');
+  const hidden = rail.hidden;
+  rail.hidden = false;
+  assert.equal(css.cascaded(rail, 'max-block-size', { width: 1920 }), 'calc(100dvh - (2 * var(--space-3)))');
+  assert.equal(css.cascaded(rail, 'overflow-y', { width: 1920 }), 'auto');
+  rail.hidden = hidden;
 });
 
-test('Abort belongs to Current Hand and is derived only for a live nonterminal canonical hand', () => {
-  const setup = HTML.slice(HTML.indexOf('id="handSetupSection"'), HTML.indexOf('id="handStateSection"'));
-  const current = HTML.slice(HTML.indexOf('id="handStateSection"'), HTML.indexOf('id="handReviewMount"'));
-  assert.doesNotMatch(setup, /id="handResetButton"/);
-  assert.match(current, /class="hand-current-actions"[\s\S]*?id="handResetButton"[^>]*hidden/);
-  assert.match(LOGIC, /const abortable = Boolean\(state[\s\S]*?!savedViewer[\s\S]*?state\.phase !== 'terminal'[\s\S]*?state\.terminal\?\.isTerminal !== true\)/);
-  assert.match(LOGIC, /reset\.hidden = !abortable[\s\S]*?reset\.disabled = !abortable/);
+test('Abort belongs to Current Hand and is derived only for a live nonterminal canonical hand', async () => {
+  // Protects: Abort lives in Current Hand (not Setup), hidden by default, and
+  // is shown/enabled only for a live, non-terminal canonical hand.
+  const setup = markup.getElementById('handSetupSection');
+  const current = markup.getElementById('handStateSection');
+  assert.equal(setup.querySelector('#handResetButton'), null);
+  const reset = current.querySelector('.hand-current-actions #handResetButton');
+  assert.ok(reset);
+  assert.equal(reset.hidden, true);
+
+  await app.navigate('hand');
+  if (app.call('callPlaybookStateBridge', 'getState')) {
+    await app.click('#handResetButton');
+    await app.settle(300);
+  }
+  await app.setValue('#handTableSize', '2', { events: ['input', 'change'] });
+  await app.startHand(['As', 'Kd']);
+  const live = app.byId('handResetButton');
+  assert.equal(live.hidden, false);
+  assert.equal(live.disabled, false);
+  await app.handAction('fold');
+  const state = app.call('callPlaybookStateBridge', 'getState');
+  assert.ok(state.phase === 'terminal' || state.terminal?.isTerminal);
+  app.call('renderCanonicalHandWorkspace');
+  assert.equal(live.hidden, true, 'no Abort once the hand is terminal');
+  assert.equal(live.disabled, true);
 });
 
-test('Daylight contribution readability uses explicit semantic surface, text, halo, border, and chip roles', () => {
-  for (const token of [
-    '--poker-table-contribution-surface',
-    '--poker-table-contribution-border',
-    '--poker-table-contribution-text',
-    '--poker-table-contribution-text-halo',
-    '--poker-table-contribution-chip',
-  ]) assert.match(CSS, new RegExp(token));
-  assert.match(CSS, /\[data-theme="daylight"\]\s*\{[\s\S]*?--poker-table-contribution-surface:[\s\S]*?--poker-table-contribution-text: var\(--text-primary\)/);
-  assert.match(CSS, /\.poker-table-amount--contribution \.poker-table-amount-text\s*\{[\s\S]*?fill: var\(--poker-table-contribution-text\)[\s\S]*?stroke: var\(--poker-table-contribution-text-halo\)/);
+test('Daylight contribution readability uses explicit semantic surface, text, halo, border, and chip roles', async () => {
+  const root = app.document.documentElement;
+  const previous = root.dataset.theme;
+  root.dataset.theme = 'daylight';
+  try {
+    for (const token of [
+      '--poker-table-contribution-surface',
+      '--poker-table-contribution-border',
+      '--poker-table-contribution-text',
+      '--poker-table-contribution-text-halo',
+      '--poker-table-contribution-chip',
+    ]) assert.ok(css.cascaded(root, token), token);
+    assert.ok(css.matchingRules(root).some((rule) => rule.selectorText.includes('data-theme="daylight"')
+      && rule.declarations.some((declaration) => declaration.property === '--poker-table-contribution-surface')));
+    assert.equal(css.cascaded(root, '--poker-table-contribution-text'), 'var(--text-primary)');
+  } finally {
+    root.dataset.theme = previous;
+  }
+  await app.startHand(['As', 'Kd']);
+  const amount = app.$('#visual-table-container .poker-table-amount--contribution .poker-table-amount-text');
+  assert.ok(amount, 'blinds render as contributions');
+  assert.equal(css.cascaded(amount, 'fill'), 'var(--poker-table-contribution-text)');
+  assert.equal(css.cascaded(amount, 'stroke'), 'var(--poker-table-contribution-text-halo)');
 });

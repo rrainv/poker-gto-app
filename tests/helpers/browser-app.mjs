@@ -385,8 +385,14 @@ export async function bootApp(options = {}) {
     // Modules are singletons, as in the page. A test file that boots the app
     // must not import a self-installing bootstrap before bootApp() (it would
     // have run without a window); import it after booting instead.
-    if (script.module) await import(pathToFileURL(new URL(script.src, APP_ROOT).pathname).href);
-    else runClassic(script.src);
+    try {
+      if (script.module) await import(pathToFileURL(new URL(script.src, APP_ROOT).pathname).href);
+      else runClassic(script.src);
+    } catch (error) {
+      error.message = `${error.message}\n[bootApp] while loading ${script.src}. If a bridge is missing, the test file`
+        + ' probably imported a self-installing bootstrap module before bootApp(); import it after booting instead.';
+      throw error;
+    }
   }
   document.readyState = 'interactive';
   const harness = createHarness({ document, clock, errors, consoleErrors, storage, environment, realDate });
@@ -519,6 +525,53 @@ function createHarness({ document, clock, errors, consoleErrors, storage, enviro
     async handAction(type) {
       await harness.click(`[data-canonical-action="${type}"]`);
       await harness.settle(300);
+    },
+    /** Whether an element and its ancestors are shown (hidden attribute / inline display). */
+    isShown(node) {
+      for (let current = node; current?.nodeType === 1; current = current.parentNode) {
+        if (current.hidden || current.style.display === 'none') return false;
+      }
+      return Boolean(node);
+    },
+    training: {
+      /** Choose a Training mode and start a session (confirming over an active one). */
+      async start(mode = 'focused') {
+        if (harness.$('.riverline-shell').dataset.activeMode !== 'training') await harness.navigate('training');
+        await harness.click(`[data-training-session-mode="${mode}"]`);
+        await harness.click('#trainingNewHand');
+        await harness.settle(500);
+      },
+      answerButtons() {
+        return harness.$$('#trainingMode .training-action-button[data-action]')
+          .filter((button) => harness.isShown(button) && !button.disabled);
+      },
+      /** Answer with the given action type (or the first available one). */
+      async answer(type) {
+        const buttons = harness.training.answerButtons();
+        const button = (type && buttons.find((candidate) => candidate.dataset.action === type)) || buttons[0];
+        if (!button) throw new Error('No Training answer is available');
+        await harness.click(button);
+        await harness.settle(500);
+        return button.dataset.action;
+      },
+      async next() {
+        await harness.click('#trainingNextHandBtn');
+        await harness.settle(500);
+      },
+      /** Play a Full Hand to completion, checking/calling where possible. */
+      async playFullHand() {
+        await harness.training.start('full_hand');
+        const workspace = harness.$('.training-workspace');
+        for (let round = 0; round < 200 && workspace.dataset.trainingFullHandPhase === 'live'; round += 1) {
+          await harness.settle(1000);
+          if (workspace.dataset.trainingState !== 'ready') continue;
+          const buttons = harness.training.answerButtons();
+          const pick = buttons.find((button) => button.dataset.action === 'check')
+            || buttons.find((button) => button.dataset.action === 'call') || buttons[0];
+          if (pick) await harness.click(pick);
+        }
+        if (workspace.dataset.trainingFullHandPhase !== 'complete') throw new Error(`Full Hand did not complete (${workspace.dataset.trainingFullHandPhase})`);
+      },
     },
     async navigate(destination) {
       await harness.click(`.mode-nav-item[data-navigation-id="${destination}"]`);

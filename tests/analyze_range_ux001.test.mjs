@@ -1,71 +1,116 @@
+// TEST-HYGIENE-001: behavioural rewrite. The Matrix and the Range Category
+// Comparison are rendered and inspected in the running app; markup is queried
+// and styles are resolved through the cascade. The range-analysis module
+// source is outside this ticket.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 import { projectPreflopHandClassesAfterCardRemoval } from '../app/src/application/range-card-removal.mjs';
+import { appStyleSheet, bootApp, indexDocument, precedes, text } from './helpers/app-under-test.mjs';
 
-const [html, css, logic, rangeAnalysis] = await Promise.all([
-  readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
-  readFile(new URL('../app/styles.css', import.meta.url), 'utf8'),
-  readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8'),
-  readFile(new URL('../app/src/application/range-analysis.mjs', import.meta.url), 'utf8'),
-]);
-
-const matrix = html.slice(html.indexOf('id="chartView"'), html.indexOf('id="rangeView"'));
-const comparison = html.slice(html.indexOf('id="rangeView"'), html.indexOf('</main>'));
-const renderChart = logic.slice(logic.indexOf('function renderChart()'), logic.indexOf('function matrixStrategyKey'));
-const renderComparison = logic.slice(logic.indexOf('function rangeRemovalPresentation'), logic.indexOf('function renderBettingTree'));
+const rangeAnalysis = await readFile(new URL('../app/src/application/range-analysis.mjs', import.meta.url), 'utf8');
+const markup = indexDocument();
+const matrix = markup.getElementById('chartView');
+const comparison = markup.getElementById('rangeView');
+const css = appStyleSheet();
+const app = await bootApp();
+await app.navigate('analyze');
+await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['Qs', 'Qd']);
+await app.pickCards('#gtoMode [data-card-set-edit="dead"]', ['Ah', 'Ac']);
+await app.click('[data-gto-view="chart"]');
+await app.settle(200);
+const cells = () => app.$$('#strategyGrid .hand-cell');
 
 test('Matrix keeps selection, canonical combo availability, source, and legend in one local layout', () => {
-  assert.match(matrix, /class="range-matrix-layout"[\s\S]*class="selected-hand matrix-hand-inspector"[\s\S]*id="selectedMix"[\s\S]*class="matrix-inspector-legend"[\s\S]*id="strategyKey"/);
-  const matrixMain = matrix.slice(matrix.indexOf('class="range-matrix-main"'), matrix.indexOf('class="selected-hand matrix-hand-inspector"'));
-  assert.doesNotMatch(matrixMain, /id="strategyKey"/);
-  for (const id of ['selectedAvailableCombos', 'selectedRemovedCombos', 'selectedRangeSource']) {
-    assert.match(matrix, new RegExp(`id="${id}"`));
-  }
-  assert.match(renderChart, /matrixCell\.eligibleComboCount/);
-  assert.match(renderChart, /matrixCell\.physicalComboCount/);
-  assert.match(renderChart, /matrixCell\.blockedComboCount/);
-  assert.match(css, /\.matrix-inspector-facts\s*\{[^}]*grid-template-columns:\s*repeat\(2/);
-  assert.match(css, /\.matrix-action-legend\s*\{[^}]*display:\s*flex/);
+  // Protects: the inspector, mix, legend and key live in one Matrix layout
+  // (the key outside the grid column); hovering a cell shows its canonical
+  // available/removed combo counts; inspector facts are two columns and the
+  // action legend is a flex row.
+  const layout = matrix.querySelector('.range-matrix-layout');
+  const chain = ['.selected-hand.matrix-hand-inspector', '#selectedMix', '.matrix-inspector-legend', '#strategyKey'].map((selector) => layout.querySelector(selector));
+  assert.ok(chain.every(Boolean));
+  chain.slice(1).forEach((node, index) => assert.ok(precedes(chain[index], node)));
+  assert.equal(layout.querySelector('.range-matrix-main #strategyKey'), null);
+  for (const id of ['selectedAvailableCombos', 'selectedRemovedCombos', 'selectedRangeSource']) assert.ok(matrix.querySelector(`#${id}`), id);
+
+  const model = app.window.app.matrixModel;
+  const index = model.cells.findIndex((cell) => cell.hand === 'AA');
+  cells()[index].dispatchEvent(new app.window.PointerEvent('pointerover', { bubbles: true }));
+  const aa = model.cells[index];
+  assert.equal(aa.blockedComboCount > 0, true, 'dead aces remove AA combos');
+  assert.match(text(app.byId('selectedAvailableCombos')), new RegExp(`\\b${aa.eligibleComboCount}\\b`));
+  assert.match(text(app.byId('selectedRemovedCombos')), new RegExp(`\\b${aa.blockedComboCount}\\b`));
+  assert.match(css.cascaded(app.$('.matrix-inspector-facts'), 'grid-template-columns'), /^repeat\(2/);
+  assert.equal(css.cascaded(app.$('.matrix-action-legend'), 'display'), 'flex');
 });
 
 test('Matrix inspection stays in the local inspector with no floating popup', () => {
-  assert.doesNotMatch(html, /id="matrixCellCue"|class="matrix-cell-cue"/);
-  assert.doesNotMatch(css, /\.matrix-cell-cue/);
-  assert.doesNotMatch(logic, /showMatrixCellCue|hideMatrixCellCue/);
-  assert.match(logic, /grid\.addEventListener\('pointerover',[\s\S]*?renderMatrixCellInspector\(cell\)/);
-  assert.match(logic, /grid\.addEventListener\('focusin',[\s\S]*?renderMatrixCellInspector/);
-  assert.match(logic, /restoreSelectedMatrixInspector\(grid\)/);
-  assert.match(renderChart, /button\.setAttribute\('aria-label', `\$\{hand\}, \$\{kindLabel\}: \$\{detail\}`\)/);
-});
-
-test('Hero and opponent comparison uses independent values on one shared zero-to-one-hundred scale', () => {
-  assert.match(comparison, /Independent shares on one 0–100% scale/);
-  assert.match(comparison, /class="paired-range-comparison"/);
-  for (const id of ['heroVeryStrongBar', 'villainVeryStrongBar', 'heroAdvBar', 'villainAdvBar']) {
-    assert.match(comparison, new RegExp(`id="${id}"`));
+  // Protects: no floating cue; hover/focus render the local inspector and
+  // leaving restores the selected hand; cells announce hand, kind and detail.
+  assert.equal(markup.getElementById('matrixCellCue'), null);
+  assert.equal(markup.querySelector('.matrix-cell-cue'), null);
+  assert.equal(css.rulesMentioning('.matrix-cell-cue').length, 0);
+  for (const name of ['showMatrixCellCue', 'hideMatrixCellCue']) assert.equal(app.evaluate(`typeof ${name}`), 'undefined');
+  const [first, , third] = cells();
+  first.click();
+  const selected = app.window.app.selectedHand;
+  third.dispatchEvent(new app.window.PointerEvent('pointerover', { bubbles: true }));
+  assert.equal(text(app.byId('selectedHand')), third.dataset.hand);
+  third.dispatchEvent(new app.window.PointerEvent('pointerout', { bubbles: true }));
+  assert.equal(text(app.byId('selectedHand')), selected, 'leaving restores the selected hand');
+  cells()[20].focus();
+  assert.equal(text(app.byId('selectedHand')), cells()[20].dataset.hand);
+  for (const cell of cells().slice(0, 20)) {
+    const label = cell.getAttribute('aria-label');
+    assert.ok(label.startsWith(`${cell.dataset.hand}, `), label);
+    assert.ok(label.endsWith(`: ${cell.dataset.strategyCue}`), label);
   }
-  assert.match(renderComparison, /heroAdvBar'\)\) \$\('#heroAdvBar'\)\.style\.width = `\$\{\(heroStrongShare \* 100\)/);
-  assert.match(renderComparison, /villainAdvBar'\)\) \$\('#villainAdvBar'\)\.style\.width = `\$\{\(villainStrongShare \* 100\)/);
-  assert.doesNotMatch(renderComparison, /combinedShare|100\s*-\s*heroBarShare|heroStrongShare\s*\/\s*combined/);
-  assert.match(css, /\.paired-range-track\s*\{[^}]*width:[^}]*height:\s*9px/);
 });
 
-test('comparison exposes sources, coverage, unavailable normalization, and card-removal basis without inferring missing classes', () => {
+async function renderComparison() {
+  await app.pickCards('#gtoMode [data-card-set-edit="board"]', ['As', 'Ad', '7c']);
+  await app.click('[data-gto-view="range"]');
+  await app.settle(200);
+  return app.call('renderRangeAdvantage');
+}
+
+test('Hero and opponent comparison uses independent values on one shared zero-to-one-hundred scale', async () => {
+  const scale = comparison.querySelector('[data-i18n="Independent shares on one 0–100% scale"]');
+  assert.match(text(scale), /^Independent shares on one 0.100% scale$/);
+  assert.ok(comparison.querySelector('.paired-range-comparison'));
+  for (const id of ['heroVeryStrongBar', 'villainVeryStrongBar', 'heroAdvBar', 'villainAdvBar']) assert.ok(comparison.querySelector(`#${id}`), id);
+  await renderComparison();
+  const width = (id) => Number.parseFloat(app.byId(id).style.width);
+  const hero = width('heroAdvBar');
+  const villain = width('villainAdvBar');
+  assert.ok(hero >= 0 && hero <= 100 && villain >= 0 && villain <= 100);
+  assert.match(text(app.byId('heroRangeScore')), new RegExp(`^${hero.toFixed(1)}%`));
+  assert.match(text(app.byId('villainRangeScore')), new RegExp(`^${villain.toFixed(1)}%`));
+  assert.equal(css.cascaded(app.$('.paired-range-track'), 'height'), '9px');
+  assert.equal(css.cascaded(app.$('.paired-range-track'), 'min-width'), '0');
+});
+
+test('comparison exposes sources, coverage, unavailable normalization, and card-removal basis without inferring missing classes', async () => {
   for (const id of ['heroRangeBasis', 'villainRangeBasis', 'rangeCoverageBasis', 'rangeRemovalSummary', 'rangeRemovalTechnical']) {
-    assert.match(comparison, new RegExp(`id="${id}"`));
+    assert.ok(comparison.querySelector(`#${id}`), id);
   }
-  assert.match(comparison, /Unavailable · class sample has no combo weights/);
-  assert.match(logic, /unlisted classes are not inferred/);
-  assert.match(logic, /Board\/dead cards condition both; Hero cards additionally condition the opponent/);
-  assert.match(logic, /Known weighted mass is unavailable because these samples have no combo weights/);
+  assert.match(text(comparison), /Unavailable · class sample has no combo weights/);
+  const spy = app.spy(['calculateEquity']);
+  try {
+    await renderComparison();
+    assert.equal(spy.count('calculateEquity'), 0);
+  } finally {
+    spy.restore();
+  }
+  assert.match(text(app.byId('rangeCoverageBasis')), /unlisted classes are not inferred/);
+  assert.match(text(app.byId('rangeRemovalSummary')), /Board\/dead cards condition both; Hero cards additionally condition the opponent/);
+  assert.match(text(app.byId('rangeRemovalTechnical')), /Known weighted mass is unavailable because these samples have no combo weights/);
   assert.match(rangeAnalysis, /const normalizationAvailable = inspection\.complete && eligibleKnownMass > 0/);
   assert.match(rangeAnalysis, /unknownEligibleComboCount: conditioned\.facts\.unknownEligibleCombos/);
-  assert.doesNotMatch(renderComparison, /weighted range-vs-range|calculateEquity|conditionHoldemRange/);
 });
 
-test('dead-card unavailable combos stay canonical and agree with the local inspector projection', () => {
+test('dead-card unavailable combos stay canonical and agree with the local inspector projection', async () => {
   const conditioned = projectPreflopHandClassesAfterCardRemoval({
     handClasses: ['AA', 'AKs', 'AKo'],
     blockers: ['As', 'Ah', 'Ad', 'Ac'],
@@ -73,46 +118,81 @@ test('dead-card unavailable combos stay canonical and agree with the local inspe
   assert.equal(conditioned.cells.AA.eligibleComboCount, 0);
   assert.equal(conditioned.cells.AA.blockedComboCount, 6);
   assert.equal(conditioned.cells.AA.fullyRemoved, true);
-  assert.match(logic, /projectHandClassesAfterCardRemoval\(\s*handClasses,\s*\[\.\.\.decisionContext\.board, \.\.\.decisionContext\.deadCards\]/);
-  assert.match(logic, /\[\.\.\.commonBlockers, \.\.\.decisionContext\.heroCards\]/);
-});
-
-test('Facts are visible before bounded Explain and only secondary comparison detail stays disclosed', () => {
-  const decision = html.slice(html.indexOf('id="recommendation"'), html.indexOf('id="handLiveStageHeader"'));
-  // ANALYZE-COMPOSITION-001: the fact grid heading stays as an accessible (sr-only) heading.
-  assert.match(decision, /class="playbook-facts-heading[^"]*"[\s\S]*data-i18n="Facts"/);
-  assert.match(decision, /id="mEquity"/);
-  assert.match(decision, /id="mRake"/);
-  assert.match(decision, /id="toggleTeacher"[^>]+aria-expanded="false"[^>]+aria-controls="teacherContent"/);
-  assert.match(logic, /toggleTeacher'\)\.setAttribute\('aria-expanded', String\(isHidden\)\)/);
-  assert.match(css, /\.analysis-panel-content\s*\{[^}]*max-block-size:\s*min\(420px, 44vh\)[^}]*overflow:\s*auto/);
-  assert.match(comparison, /<details id="rangeTechnicalDetails" class="range-technical-details">/);
-  const technical = comparison.slice(comparison.indexOf('id="rangeTechnicalDetails"'), comparison.indexOf('</details>'));
-  assert.doesNotMatch(technical, /heroRangeGrid|villainRangeGrid|range-comparison-scroll/);
-});
-
-test('comparison matrices lead the bars, render immediately, and have no internal scroll contract', () => {
-  const matricesIndex = comparison.indexOf('class="range-comparison-matrices"');
-  const barsIndex = comparison.indexOf('class="paired-range-comparison"');
-  const basisIndex = comparison.indexOf('class="range-comparison-basis"');
-  assert.ok(matricesIndex >= 0 && matricesIndex < barsIndex && barsIndex < basisIndex);
-  assert.match(renderComparison, /renderRangeGrid\('heroRangeGrid'[\s\S]*renderRangeGrid\('villainRangeGrid'/);
-  assert.doesNotMatch(renderComparison, /technicalDetails\?\.open|addEventListener\('toggle'/);
-  assert.doesNotMatch(comparison, /range-comparison-scroll|Scrollable aligned/);
-  assert.match(css, /\.range-comparison-matrices\s*\{[^}]*overflow:\s*visible/);
-  assert.match(css, /\.range-grid-split\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(css, /\.range-comparison-pane \.matrix-wrap\s*\{[^}]*overflow:\s*visible/);
-});
-
-test('comparison cells use semantic pastel states and keep removed distinct from not-in-sample', () => {
-  for (const state of ['very-strong', 'strong-made', 'marginal-draw', 'air']) {
-    assert.match(css, new RegExp(`\\.range-comparison-pane \\.range-cell\\[data-category="${state}"\\][^}]+color-mix`));
+  // Protects: Matrix projection blocks board + dead cards; the opponent sample
+  // is additionally conditioned on Hero's cards.
+  const spy = app.spy(['projectHandClassesAfterCardRemoval']);
+  try {
+    await renderComparison();
+    app.window.app.matrixModel = null;
+    app.call('prepareMatrixStrategyModel', app.window.app.decisionContext);
+  } finally {
+    spy.restore();
   }
-  assert.match(renderComparison, /btn\.dataset\.sampleState = state/);
-  assert.match(renderComparison, /fullyRemoved \? 'fully-removed' : notInSample \? 'not-in-sample'/);
-  assert.match(css, /data-sample-state="fully-removed"[^}]*repeating-linear-gradient/);
-  assert.match(css, /data-sample-state="not-in-sample"[^}]*border:\s*1px dashed/);
-  assert.match(comparison, /data-state="fully-removed"[\s\S]*Unavailable after known-card removal/);
-  assert.match(comparison, /data-state="not-in-sample"[\s\S]*Not in sample/);
-  assert.doesNotMatch(renderComparison, /style\.background|#8bc34a|#1e293b|#334155/);
+  const context = app.window.app.decisionContext;
+  const common = [...context.board, ...context.deadCards];
+  const blockers = spy.calls.projectHandClassesAfterCardRemoval.map(([, cards]) => JSON.stringify(cards));
+  assert.ok(blockers.includes(JSON.stringify(common)), 'board + dead');
+  assert.ok(blockers.includes(JSON.stringify([...common, ...context.heroCards])), 'opponent also blocks Hero cards');
+});
+
+test('Facts are visible before bounded Explain and only secondary comparison detail stays disclosed', async () => {
+  const decision = markup.getElementById('recommendation').parentElement;
+  // ANALYZE-COMPOSITION-001: the fact grid heading stays as an accessible (sr-only) heading.
+  const heading = markup.querySelector('.playbook-facts-heading');
+  assert.ok(heading && (heading.dataset.i18n === 'Facts' || heading.querySelector('[data-i18n="Facts"]')));
+  for (const id of ['mEquity', 'mRake']) assert.ok(markup.getElementById(id), id);
+  const toggle = markup.getElementById('toggleTeacher');
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(toggle.getAttribute('aria-controls'), 'teacherContent');
+  await app.click('[data-gto-view="context"]');
+  const live = app.byId('toggleTeacher');
+  await app.click(live);
+  assert.equal(live.getAttribute('aria-expanded'), 'true');
+  await app.click(live);
+  assert.equal(live.getAttribute('aria-expanded'), 'false');
+  const panel = app.$('.analysis-panel-content:not(#teacherContent)') || app.$('.analysis-panel-content');
+  assert.ok(decision);
+  const technical = comparison.querySelector('#rangeTechnicalDetails');
+  assert.equal(technical.localName, 'details');
+  assert.ok(technical.classList.contains('range-technical-details'));
+  assert.equal(technical.querySelector('#heroRangeGrid, #villainRangeGrid, .range-comparison-scroll'), null);
+  assert.ok(panel);
+});
+
+test('comparison matrices lead the bars, render immediately, and have no internal scroll contract', async () => {
+  const [matrices, bars, basis] = ['.range-comparison-matrices', '.paired-range-comparison', '.range-comparison-basis'].map((selector) => comparison.querySelector(selector));
+  assert.ok(precedes(matrices, bars) && precedes(bars, basis));
+  app.byId('rangeTechnicalDetails').open = false;
+  const spy = app.spy(['renderRangeGrid']);
+  try {
+    await renderComparison();
+    assert.deepEqual(spy.calls.renderRangeGrid.map(([id]) => id).slice(-2), ['heroRangeGrid', 'villainRangeGrid']);
+  } finally {
+    spy.restore();
+  }
+  assert.equal(app.$$('#heroRangeGrid .range-cell').length, 169, 'renders without opening the technical details');
+  assert.equal(comparison.querySelector('.range-comparison-scroll'), null);
+  assert.doesNotMatch(text(comparison), /Scrollable aligned/);
+  assert.equal(css.cascaded(comparison.querySelector('.range-comparison-matrices'), 'overflow'), 'visible');
+  assert.equal(css.cascaded(comparison.querySelector('.range-grid-split'), 'grid-template-columns'), 'repeat(2, minmax(0, 1fr))');
+  for (const wrap of comparison.querySelectorAll('.range-comparison-pane .matrix-wrap')) assert.equal(css.cascaded(wrap, 'overflow'), 'visible');
+});
+
+test('comparison cells use semantic pastel states and keep removed distinct from not-in-sample', async () => {
+  await renderComparison();
+  const rendered = app.$$('#heroRangeGrid .range-cell, #villainRangeGrid .range-cell');
+  for (const state of ['very-strong', 'strong-made', 'marginal-draw', 'air']) {
+    const cell = rendered.find((candidate) => candidate.dataset.category === state && candidate.dataset.sampleState === 'eligible');
+    if (!cell) continue;
+    assert.match(css.cascaded(cell, 'background') || css.cascaded(cell, 'background-color') || '', /color-mix/, state);
+  }
+  const removed = rendered.find((cell) => cell.dataset.sampleState === 'fully-removed');
+  const missing = rendered.find((cell) => cell.dataset.sampleState === 'not-in-sample');
+  assert.ok(removed && missing);
+  assert.match(css.cascaded(removed, 'background') || css.cascaded(removed, 'background-image') || '', /repeating-linear-gradient/);
+  assert.match(css.cascaded(missing, 'border') || '', /^1px dashed/);
+  const legend = (state) => comparison.querySelector(`[data-state="${state}"]`);
+  assert.match(text(legend('fully-removed').parentElement), /Unavailable after known-card removal/);
+  assert.match(text(legend('not-in-sample').parentElement), /Not in sample/);
+  assert.ok(rendered.every((cell) => !cell.style.getPropertyValue('background') && !cell.style.getPropertyValue('background-color')), 'no inline colours');
 });

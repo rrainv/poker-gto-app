@@ -561,6 +561,21 @@ function expandShorthand(declaration, wanted) {
     const [start, end = start] = parts;
     return /-start$/.test(wanted) ? start : end;
   }
+  if (property === 'font' && ['font-weight', 'font-size', 'font-family', 'line-height', 'font-style'].includes(wanted)) {
+    const isWeight = (token) => /^(\d{3}|bold|bolder|lighter|normal|var\(--weight[^)]*\))$/.test(token);
+    const isStyle = (token) => /^(italic|oblique|normal)$/.test(token);
+    let index = 0;
+    let style = 'normal';
+    let weight = 'normal';
+    while (index < parts.length - 1 && (isStyle(parts[index]) || isWeight(parts[index]) || /^small-caps$/.test(parts[index]))) {
+      if (isWeight(parts[index]) && !(parts[index] === 'normal' && weight !== 'normal')) weight = parts[index];
+      else if (isStyle(parts[index])) style = parts[index];
+      index += 1;
+    }
+    const [size, lineHeight = 'normal'] = (parts[index] || '').split('/');
+    const family = parts.slice(index + 1).join(' ');
+    return { 'font-weight': weight, 'font-size': size, 'font-family': family, 'line-height': lineHeight, 'font-style': style }[wanted];
+  }
   if (property === 'flex') {
     const keyword = { none: ['0', '0', 'auto'], auto: ['1', '1', 'auto'], initial: ['0', '1', 'auto'] }[value];
     let [grow, shrink, basis] = keyword || [];

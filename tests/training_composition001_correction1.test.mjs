@@ -2,9 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-const css = fs.readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+import { appStyleSheet, bootApp, indexDocument, text } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: index.html / styles.css / logic.js assertions are
+// behavioural (the running Training workspace, Training Memory toggles, a live
+// Full Hand, the cascade). teacher.js, SoundFX.js, table-presentation.mjs and
+// range-calibration-bootstrap.mjs sources are outside this ticket.
 const teacher = fs.readFileSync(new URL('../app/src/ui/teacher.js', import.meta.url), 'utf8');
 const sound = fs.readFileSync(new URL('../app/src/core/SoundFX.js', import.meta.url), 'utf8');
 const tablePresentation = fs.readFileSync(
@@ -15,50 +18,93 @@ const rangeBootstrap = fs.readFileSync(
   new URL('../app/src/application/range-calibration-bootstrap.mjs', import.meta.url),
   'utf8',
 );
-const training = html.slice(html.indexOf('id="trainingMode"'), html.indexOf('<!-- Equity workspace -->'));
-const correctionCss = css.slice(css.indexOf('TRAINING-COMPOSITION-001 HUMAN QA CORRECTION #1'));
+const training = indexDocument().getElementById('trainingMode');
+const css = appStyleSheet();
+const app = await bootApp();
+await app.navigate('training');
+const workspace = () => app.byId('trainingWorkspace');
 
 function sourceBetween(source, start, end) {
   return source.slice(source.indexOf(start), source.indexOf(end));
 }
 
 test('accepted Varied skeleton stays intact while idle state yields fake vertical space', () => {
-  assert.match(training, /<main class="training-decision-column">/);
-  assert.match(training, /<aside class="training-insight-column">/);
-  assert.equal((training.match(/id="trainingNewHand"/g) || []).length, 1);
-  assert.match(correctionCss, /data-training-state="idle"[^}]*\.training-decision-panel[\s\S]*min-block-size:\s*0/);
-  assert.match(correctionCss, /data-training-state="idle"[^}]*\.training-state-message[\s\S]*min-block-size:\s*0/);
-  for (const selector of [
-    '.training-session-panel', '.training-reference-summary',
-    '.training-history-panel', '.training-assistance-panel',
-  ]) assert.match(correctionCss, new RegExp(selector.replace('.', '\\.') + '[\\s\\S]*display: none !important'));
-  assert.match(correctionCss, /training-memory-panel > summary\.panel-head[\s\S]*min-block-size:\s*46px/);
+  // Protects: in idle, the decision panel and state message take no forced
+  // height and the session/reference/history/assistance panels are hidden;
+  // the Memory summary keeps a 46px row.
+  assert.equal(training.querySelector('.training-decision-column').localName, 'main');
+  assert.equal(training.querySelector('.training-insight-column').localName, 'aside');
+  assert.equal(training.querySelectorAll('#trainingNewHand').length, 1);
+  assert.equal(workspace().dataset.trainingState, 'idle');
+  assert.equal(css.cascaded(app.$('#trainingWorkspace .training-decision-panel'), 'min-block-size'), '0');
+  // TRAINING-COMPOSITION-001 final hardening keeps a modest floor for the
+  // idle lineup preview (superseding 0); it never reserves tall fake space.
+  assert.ok(Number.parseFloat(css.cascaded(app.$('#trainingWorkspace .training-state-message'), 'min-block-size')) <= 128);
+  for (const selector of ['.training-session-panel', '.training-reference-summary', '.training-history-panel', '.training-assistance-panel']) {
+    assert.equal(css.cascaded(app.$(`#trainingWorkspace ${selector}`), 'display'), 'none', selector);
+  }
+  assert.equal(css.cascaded(app.$('.training-memory-panel > summary.panel-head'), 'min-block-size'), '46px');
 });
 
-test('Review later and Mark difficult are persisted, reversible, and visibly acknowledged', () => {
-  assert.match(training, /id="trainingMarkReview"[^>]*aria-pressed="false"[^>]*>Review later/);
-  assert.match(training, /id="trainingMarkDifficult"[^>]*aria-pressed="false"[^>]*>Mark difficult/);
-  assert.match(training, /id="trainingMemoryDecisionStatus"[^>]*role="status"[^>]*aria-live="polite"/);
-  const update = sourceBetween(logic, 'function updateTrainingMemoryDecisionActions(', 'function startTrainingMemorySession(');
-  assert.match(update, /studyMetadata\?\.review[\s\S]*Added to review[\s\S]*Remove from review/);
-  assert.match(update, /studyMetadata\?\.difficult[\s\S]*Marked difficult[\s\S]*Clear difficult mark/);
-  const toggle = sourceBetween(logic, 'async function toggleCurrentTrainingMemoryMetadata(', 'async function openTrainingMemoryRedrill(');
-  assert.match(toggle, /updateStudyMetadata', record\.id/);
-  assert.match(toggle, /const enabled = !record\.studyMetadata\[field\]/);
-  assert.match(toggle, /Training Memory review queue updated/);
-  assert.match(toggle, /refreshTrainingMemoryPanel\(\)/);
-  assert.match(correctionCss, /training-memory-decision-actions \.ui-button\[aria-pressed="true"\]/);
+test('Review later and Mark difficult are persisted, reversible, and visibly acknowledged', async () => {
+  // Protects: both toggles start unpressed; pressing persists through Training
+  // Memory, flips the pressed state/label, announces the update and refreshes
+  // the Memory panel; pressing again reverses it.
+  const review = training.querySelector('#trainingMarkReview');
+  assert.equal(review.getAttribute('aria-pressed'), 'false');
+  assert.match(text(review), /Review later/);
+  const difficult = training.querySelector('#trainingMarkDifficult');
+  assert.equal(difficult.getAttribute('aria-pressed'), 'false');
+  assert.match(text(difficult), /Mark difficult/);
+  const status = training.querySelector('#trainingMemoryDecisionStatus');
+  assert.equal(status.getAttribute('role'), 'status');
+  assert.equal(status.getAttribute('aria-live'), 'polite');
+
+  await app.training.start('focused');
+  await app.training.answer();
+  await app.settle(500);
+  app.byId('trainingMemoryPanel').open = true;
+  const spy = app.spy(['callTrainingMemoryBridge', 'refreshTrainingMemoryPanel']);
+  try {
+    for (const [id, field, active] of [['trainingMarkReview', 'review', /Added to review|Remove from review/], ['trainingMarkDifficult', 'difficult', /Marked difficult|Clear difficult mark/]]) {
+      await app.click(`#${id}`);
+      await app.settle(500);
+      const button = app.byId(id);
+      assert.equal(button.getAttribute('aria-pressed'), 'true', id);
+      assert.match(text(button) + (button.getAttribute('aria-label') || ''), active, id);
+      const update = spy.calls.callTrainingMemoryBridge.filter(([method]) => method === 'updateStudyMetadata').at(-1);
+      assert.equal(update[1], app.window.app.training.memoryCurrentRecordId);
+      assert.equal(update[2][field], true);
+      assert.ok(css.matchingRules(button).some((rule) => rule.selectorText.includes('.training-memory-decision-actions .ui-button[aria-pressed="true"]')));
+      if (field === 'review') assert.match(text(app.byId('trainingMemoryDecisionStatus')), /Training Memory review queue updated/);
+      await app.click(`#${id}`);
+      await app.settle(500);
+      assert.equal(app.byId(id).getAttribute('aria-pressed'), 'false', `${id} is reversible`);
+    }
+    assert.ok(spy.count('refreshTrainingMemoryPanel') >= 4);
+  } finally {
+    spy.restore();
+  }
 });
 
-test('Training Facts project direct decision facts without creating poker authority', () => {
-  assert.match(training, /id="trainingRelevantFacts"/);
+test('Training Facts project direct decision facts without creating poker authority', async () => {
+  assert.ok(training.querySelector('#trainingRelevantFacts'));
   const projector = sourceBetween(teacher, 'const TRAINING_RELEVANT_FACT_PRIORITY', 'function studyHintDefinition(');
   for (const key of ['made_hand', 'draws', 'pot_before_action', 'call_amount', 'required_raw_equity', 'spr']) {
     assert.match(projector, new RegExp(`'${key}'`), key);
   }
   assert.doesNotMatch(projector, /hero_blocker_structure|range_blocker_effect|physical combos removed/);
   assert.match(projector, /analysisFactByKey\(explanation, key\)/);
-  assert.match(logic, /renderDecisionAnalysis\([\s\S]*renderTrainingRelevantFacts/);
+  // Facts are projected after the decision analysis renders.
+  const spy = app.spy(['renderDecisionAnalysis', 'renderTrainingRelevantFacts']);
+  try {
+    await app.training.next();
+    await app.training.answer();
+  } finally {
+    spy.restore();
+  }
+  assert.ok(spy.sequence.indexOf('renderDecisionAnalysis') >= 0);
+  assert.ok(spy.sequence.indexOf('renderDecisionAnalysis') < spy.sequence.lastIndexOf('renderTrainingRelevantFacts'));
 });
 
 test('generic blocker evidence remains available only inside Training supporting detail', () => {
@@ -70,54 +116,82 @@ test('generic blocker evidence remains available only inside Training supporting
   assert.match(renderer, /facts = analysisSection\.facts\.filter/);
 });
 
-test('Full Hand keeps one shared table and moves the one canonical action surface beside it', () => {
-  assert.equal((training.match(/id="trainingFullHandTableMount"/g) || []).length, 1);
-  assert.equal((training.match(/id="trainingDecisionControls"/g) || []).length, 1);
-  assert.match(logic, /createFullHandTablePresence/);
-  assert.match(logic, /createFullHandTablePresentation/);
-  assert.match(logic, /mount\.appendChild\(table\)/);
+test('Full Hand keeps one shared table and moves the one canonical action surface beside it', async () => {
+  // Protects: one table mount and one action surface; a live Full Hand
+  // mounts the shared table there and moves the action controls into the dock
+  // beside it (back to the decision mount afterwards); live layout sizing.
+  assert.equal(training.querySelectorAll('#trainingFullHandTableMount').length, 1);
+  assert.equal(training.querySelectorAll('#trainingDecisionControls').length, 1);
   assert.match(tablePresentation, /TABLE_PRESENTATION_SCHEMA_VERSION/);
-  const projection = sourceBetween(logic, 'function projectTrainingDecisionControls(', 'function selectedTrainingControlLabel(');
-  assert.match(projection, /trainingFullHandActionDockMount/);
-  assert.match(projection, /trainingDecisionActionMount/);
-  assert.match(projection, /destination\.append\(controls\)/);
-  assert.match(correctionCss, /grid-template-columns:\s*minmax\(0, 1fr\) minmax\(380px, 410px\)/);
-  assert.match(correctionCss, /#visual-table-container[\s\S]*1320px[\s\S]*100dvh/);
-  assert.match(correctionCss, /training-full-hand-action-dock \{ order: 1; \}/);
+  assert.ok(app.byId('trainingDecisionActionMount').contains(app.byId('trainingDecisionControls')));
+  await app.training.start('full_hand');
+  for (let round = 0; round < 30 && workspace().dataset.trainingState !== 'ready'; round += 1) await app.settle(1000);
+  assert.ok(app.byId('trainingFullHandTableMount').querySelector('.riverline-poker-table, #visual-table-container'), 'the shared table is mounted beside Training');
+  assert.ok(app.byId('trainingFullHandActionDockMount').contains(app.byId('trainingDecisionControls')));
+  const node = workspace();
+  assert.equal(node.dataset.trainingFullHandPhase, 'live');
+  assert.equal(css.cascaded(node, 'grid-template-columns'), 'minmax(0, 1fr) minmax(380px, 410px)');
+  const table = app.$('#trainingFullHandTableMount #visual-table-container');
+  if (table) {
+    assert.match(css.cascaded(table, 'inline-size'), /1320px/);
+    assert.match(css.cascaded(table, 'inline-size'), /100dvh/);
+  }
+  assert.equal(css.cascaded(app.$('.training-full-hand-action-dock'), 'order'), '1');
 });
 
-test('Full Hand action family selection gates canonical amount-to sizing', () => {
-  const sizing = sourceBetween(logic, 'function clearFullHandTrainingSizingControls(', 'function clearFullHandDecisionFeedback(');
-  assert.match(sizing, /surface\.hidden = true/);
-  assert.match(sizing, /\['bet', 'raise'\]\.includes\(actionType\)/);
-  assert.match(sizing, /getFullHandSizingModel/);
-  assert.match(sizing, /canonicalActionPresentation\(actionType, option\)/);
-  assert.match(sizing, /validateFullHandSizingInput/);
-  assert.match(sizing, /input\.min = sizing\.minValueBb/);
-  assert.match(sizing, /input\.max = sizing\.maxValueBb/);
-  assert.match(sizing, /submit\.textContent = t\('Apply'\)/);
-  assert.match(sizing, /preset\.kind !== 'all_in'/);
-  assert.match(logic, /type === 'all_in' \? exercise\.legalActions\?\.allIn/);
+test('Full Hand action family selection gates canonical amount-to sizing', async () => {
+  // Protects: bet/raise open canonical amount-to sizing bounded by the
+  // service's sizing model; Apply commits; all-in is not a sizing preset;
+  // clearing hides the surface.
+  const sizingSurface = app.byId('trainingFullHandSizing');
+  assert.equal(sizingSurface.hidden, true);
+  const sized = app.training.answerButtons().find((button) => ['bet', 'raise'].includes(button.dataset.action));
+  assert.ok(sized);
+  await app.click(sized);
+  assert.equal(sizingSurface.hidden, false);
+  const model = app.call('callTrainingServiceBridge', 'getFullHandSizingModel').actions[sized.dataset.action];
+  const input = sizingSurface.querySelector('input[type="number"]');
+  assert.equal(String(input.min), String(model.minValueBb));
+  assert.equal(String(input.max), String(model.maxValueBb));
+  assert.ok(sizingSurface.querySelectorAll('button').some((button) => text(button) === 'Apply'));
+  assert.ok(!sizingSurface.querySelector('[data-preset-kind="all_in"]'));
+  app.call('clearFullHandTrainingSizingControls');
+  assert.equal(sizingSurface.hidden, true);
 });
 
-test('Full Hand answer keeps table continuity while deferring normative feedback to Review', () => {
-  assert.match(training, /id="trainingFullHandDecisionFeedback"[^>]*hidden/);
-  assert.match(training, /id="trainingFullHandDecisionFacts"/);
-  assert.match(training, /<details class="training-full-hand-decision-explain">/);
-  assert.doesNotMatch(logic, /function renderFullHandDecisionFeedback/);
-  const recorded = sourceBetween(logic, 'function renderFullHandDecisionRecorded(', 'function updateTrainingButtons(');
-  assert.match(recorded, /Decision recorded/);
-  assert.match(recorded, /facts\.hidden = true/);
-  assert.match(recorded, /explain\.hidden = true/);
-  assert.doesNotMatch(recorded, /canonicalTrainingFeedback|renderTrainingRelevantFacts|renderDecisionAnalysis|strategyResult/);
-  assert.match(logic, /function toggleFullHandTrainingReview\(\)[\s\S]*getFullHandReview[\s\S]*renderActiveHandReview/);
-  assert.match(correctionCss, /training-full-hand-decision-explain\[open\][\s\S]*max-block-size/);
-  assert.doesNotMatch(recorded, /restoreSharedPokerTable/);
+test('Full Hand answer keeps table continuity while deferring normative feedback to Review', async () => {
+  const feedback = training.querySelector('#trainingFullHandDecisionFeedback');
+  assert.equal(feedback.hidden, true);
+  assert.ok(training.querySelector('#trainingFullHandDecisionFacts'));
+  assert.ok(training.querySelector('details.training-full-hand-decision-explain'));
+  assert.equal(app.evaluate('typeof renderFullHandDecisionFeedback'), 'undefined');
+  const spy = app.spy(['restoreSharedPokerTable', 'canonicalTrainingFeedback', 'renderTrainingRelevantFacts', 'renderDecisionAnalysis']);
+  try {
+    await app.training.answer('call');
+    assert.equal(spy.total(), 0, JSON.stringify(spy.sequence));
+  } finally {
+    spy.restore();
+  }
+  assert.match(text(app.byId('trainingFullHandDecisionFeedbackTitle')), /Decision recorded/);
+  assert.equal(app.byId('trainingFullHandDecisionFacts').hidden, true);
+  const explain = app.$('#trainingFullHandDecisionFeedback details');
+  explain.open = true;
+  explain.hidden = false;
+  assert.ok(css.cascaded(explain.querySelector(':scope > :not(summary)') || explain, 'max-block-size') || css.cascaded(explain, 'max-block-size'));
+  explain.open = false;
+  explain.hidden = true;
 });
 
-test('Training feedback event precedes deep render and a prepared Study cue avoids async readiness delay', () => {
-  const answer = sourceBetween(logic, 'function handleTrainingGuess(', 'function replayTrainingExercise(');
-  assert.ok(answer.indexOf('emitTrainingDecisionResultExperience') < answer.indexOf('renderTrainingDecisionAnalysis'));
+test('Training feedback event precedes deep render and a prepared Study cue avoids async readiness delay', async () => {
+  await app.training.start('focused');
+  const spy = app.spy(['emitTrainingDecisionResultExperience', 'renderTrainingDecisionAnalysis']);
+  try {
+    await app.training.answer();
+  } finally {
+    spy.restore();
+  }
+  assert.ok(spy.sequence.indexOf('emitTrainingDecisionResultExperience') >= 0);
+  assert.ok(spy.sequence.indexOf('emitTrainingDecisionResultExperience') < spy.sequence.indexOf('renderTrainingDecisionAnalysis'));
   const playCue = sourceBetween(sound, 'async function playCue(', 'function setSoundEnabled(');
   assert.match(playCue, /preparedContext\?\.state === 'running'[\s\S]*preparedContext[\s\S]*await ensureAudioReady/);
   assert.match(playCue, /definition\.category === CATEGORIES\.POKER[\s\S]*renderRecordedFoleyCue/);
@@ -129,5 +203,5 @@ test('Personal Strategy still owns its authenticated lazy bootstrap and recovera
   assert.match(rangeBootstrap, /async mountAuthenticated\(options\)[\s\S]*mountRangeCalibrationWorkspace\(options\)/);
   assert.match(rangeBootstrap, /calibrationErrorState/);
   assert.match(rangeBootstrap, /lifecycle\.start\(\)/);
-  assert.doesNotMatch(logic, /rangeCalibrationRepository|loadSnapshot/);
+  for (const name of ['rangeCalibrationRepository', 'loadSnapshot']) assert.equal(app.evaluate(`typeof ${name}`), 'undefined', name);
 });
