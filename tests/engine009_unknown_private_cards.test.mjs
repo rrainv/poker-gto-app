@@ -21,8 +21,12 @@ import {
 } from '../shared/poker-domain/index.js';
 import { createCanonicalLiveController } from '../app/src/application/canonical-live-controller.mjs';
 import { deriveDecisionContextFromPokerState } from '../app/src/application/decision-context-from-poker-state.mjs';
-import { installPlaybookStateSourceBridge } from '../app/src/application/playbook-mode-bootstrap.mjs';
 import { resolvePlaybookDecisionContext } from '../app/src/application/playbook-state-source.mjs';
+import { bootApp } from './helpers/app-under-test.mjs';
+
+const app = await bootApp();
+// Imported after boot: the bootstrap module graph self-installs page bridges.
+const { installPlaybookStateSourceBridge } = await import('../app/src/application/playbook-mode-bootstrap.mjs');
 
 const BOARD_BY_CHANCE = Object.freeze({
   [CHANCE_TYPES.DEAL_FLOP]: Object.freeze(['2c', '3d', '4s']),
@@ -346,24 +350,58 @@ test('Playbook bridge exposes observed deal and explicit reveal without changing
   assert.equal(events.at(-1).detail.operation, 'deal_hole_observed');
 });
 
-test('Hand Mode source uses canonical partial deal/reveal APIs and does not sample hidden cards', () => {
-  const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+test('Hand Mode source uses canonical partial deal/reveal APIs and does not sample hidden cards', async () => {
+  // TEST-HYGIENE-001: the Hand flow runs in the booted app (bridge calls are
+  // spied and Math.random is trapped) instead of regex-matching logic.js.
   const bootstrap = fs.readFileSync(
     new URL('../app/src/application/playbook-mode-bootstrap.mjs', import.meta.url),
     'utf8',
   );
   const chance = fs.readFileSync(new URL('../shared/poker-domain/chance.js', import.meta.url), 'utf8');
   const reveal = fs.readFileSync(new URL('../shared/poker-domain/private-reveal.js', import.meta.url), 'utf8');
-  const handStart = logic.indexOf('function commitCanonicalHoleDeal');
-  const handEnd = logic.indexOf('function updatePositionSelect', handStart);
-  assert.ok(handStart >= 0 && handEnd > handStart, 'canonical Hand section must be present');
-  const canonicalHandLogic = logic.slice(handStart, handEnd);
-  assert.match(logic, /callPlaybookStateBridge\('dealObservedHoleCards', cardsByPlayer\)/);
-  assert.match(logic, /callPlaybookStateBridge\('revealHoleCards', playerId, cards\)/);
-  assert.match(logic, /t\('\{count\} opponents hidden by default', \{ count: opponents\.length \}\)/);
+  const random = app.window.Math.random;
+  const sampled = [];
+  app.window.Math.random = () => { sampled.push(new Error().stack); return random(); };
+  const spy = app.spy(['callPlaybookStateBridge']);
+  try {
+    await app.startHand(['As', 'Kd']);
+    const observed = spy.calls.callPlaybookStateBridge.filter(([name]) => name === 'dealObservedHoleCards');
+    assert.equal(observed.length, 1);
+    assert.deepEqual(Object.values(observed[0][1]), [['As', 'Kd']], 'only Hero is dealt');
+    const state = app.call('callPlaybookStateBridge', 'getState');
+    assert.equal(state.players.filter((player) => isHiddenHoleCards(player.holeCards)).length, state.players.length - 1);
+    // Play to showdown; the remaining hand is revealed explicitly.
+    await app.handAction('call');
+    await app.handAction('check');
+    for (const cards of [['2c', '3d', '4s'], ['9c'], ['Tc']]) {
+      await app.dealBoard(cards);
+      await app.handAction('check');
+      await app.handAction('check');
+    }
+    assert.match(app.byId('handDealTitle').textContent, /Reveal remaining hands/);
+    const villain = app.call('callPlaybookStateBridge', 'getState').players.find((player) => isHiddenHoleCards(player.holeCards));
+    const seatGroup = app.$$('[data-card-set-edit^="hand-seat-"]').map((node) => node.dataset.cardSetEdit).find((group) => group !== 'hand-seat-0');
+    await app.pickCards(`[data-card-set-edit="${seatGroup}"]`, ['Qh', 'Qd']);
+    spy.reset();
+    await app.click('#handDealHoleButton');
+    await app.settle(300);
+    const reveals = spy.calls.callPlaybookStateBridge.filter(([name]) => name === 'revealHoleCards');
+    assert.equal(reveals.length, 1);
+    assert.equal(reveals[0][1], villain.playerId);
+    assert.deepEqual(Array.from(reveals[0][2]), ['Qh', 'Qd']);
+  } finally {
+    spy.restore();
+    app.window.Math.random = random;
+  }
+  assert.deepEqual(sampled.filter((stack) => /logic\.js|playbook|poker-domain/.test(stack)), [], 'hidden cards are never sampled');
+  // Before dealing, the deal step states how many opponents stay hidden.
+  app.call('callPlaybookStateBridge', 'resetHand');
+  app.call('resetCanonicalHandDraft');
+  app.call('renderCanonicalHandWorkspace');
+  await app.click('#handStartButton');
+  await app.settle(300);
+  const opponents = app.call('callPlaybookStateBridge', 'getState').players.length - 1;
+  assert.match(app.$('.hand-hidden-summary').textContent, new RegExp(`${opponents} opponents hidden by default`));
   assert.match(bootstrap, /revealHoleCards\(playerId, cards\)/);
-  assert.doesNotMatch(
-    canonicalHandLogic + bootstrap + chance + reveal,
-    /Math\.random|sampleHidden|shuffle/,
-  );
+  assert.doesNotMatch(bootstrap + chance + reveal, /Math\.random|sampleHidden|shuffle/);
 });

@@ -31,6 +31,7 @@ import {
   createSyncRepository,
   validateRemotePersonalStrategyEntity,
 } from '../app/src/sync/index.mjs';
+import { indexDocument } from './helpers/app-under-test.mjs';
 
 const IDENTITY = 'account-002bb-identity';
 const CONTEXT = Object.freeze({
@@ -384,9 +385,8 @@ test('Guest/account switch cancellation and portable import keep account boundar
 });
 
 test('migration and account UX expose private relational/RLS sync without generic Training history', async () => {
-  const [sql, html, bootstrap, translations] = await Promise.all([
+  const [sql, bootstrap, translations] = await Promise.all([
     readFile(new URL('../supabase/migrations/202608170003_personal_strategy_sync.sql', import.meta.url), 'utf8'),
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/saved-study-sync-bootstrap.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/locales/account-translations.js', import.meta.url), 'utf8'),
   ]);
@@ -399,8 +399,10 @@ test('migration and account UX expose private relational/RLS sync without generi
   assert.match(sql, /owner_auth_user_id uuid not null default auth\.uid\(\)/i);
   assert.match(sql, /riverline_sync_owner_matches/);
   assert.doesNotMatch(sql, /service_role|for delete/i);
-  assert.match(html, /id="accountStrategySyncToggle"[^>]+role="switch"/);
-  assert.match(html, /Personal Strategy and Range Calibration/);
+  // TEST-HYGIENE-001: account markup is checked on the parsed document.
+  const markup = indexDocument();
+  assert.equal(markup.getElementById('accountStrategySyncToggle').getAttribute('role'), 'switch');
+  assert.match(markup.body.textContent, /Personal Strategy and Range Calibration/);
   assert.match(bootstrap, /createPersonalStrategySyncAdapter/);
   // Calibration entities share the coordinator's adapter. Eligibility/schema
   // handling at the mounted event boundary is covered by intelligence_sync.

@@ -51,6 +51,10 @@ const PROVIDER_SOURCE = fs.readFileSync(
   new URL('../app/src/application/strategy-provider.mjs', import.meta.url),
   'utf8',
 );
+// SOURCE-SHAPE (TEST-HYGIENE-001): "logic.js never branches on a reference
+// pack's id or source" is an architecture lint about the absence of consumer
+// special-casing; no runtime observable distinguishes a generic code path
+// from one that happens to special-case the synthetic pack.
 const LOGIC_SOURCE = fs.readFileSync(
   new URL('../app/src/core/logic.js', import.meta.url),
   'utf8',

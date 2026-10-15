@@ -30,10 +30,10 @@ const RESOLVER_SOURCE = fs.readFileSync(
   new URL('../app/src/strategy/heuristic-strategy.mjs', import.meta.url),
   'utf8',
 );
-const LOGIC_SOURCE = fs.readFileSync(
-  new URL('../app/src/core/logic.js', import.meta.url),
-  'utf8',
-);
+// TEST-HYGIENE-001: the retired page-level postflop evaluator is checked as
+// absent from the booted app's global scope instead of in logic.js text.
+const { bootApp } = await import('./helpers/app-under-test.mjs');
+const app = await bootApp();
 
 function context(overrides = {}) {
   const board = overrides.board ?? ['2c', '7d', 'Th'];
@@ -122,7 +122,7 @@ test('postflop fallback stays isolated from canonical Equity and labels its assu
   assert.match(POSTFLOP_SOURCE, /heuristic_conditional_sample/);
   assert.match(POSTFLOP_SOURCE, /1 \/ winnerIndexes\.length/);
   assert.doesNotMatch(POSTFLOP_SOURCE, /ties\s*\/\s*2|attempts\s*<\s*20/i);
-  assert.doesNotMatch(LOGIC_SOURCE, /function evaluatePostflopHand\(/);
+  assert.equal(app.evaluate('typeof evaluatePostflopHand'), 'undefined');
 });
 
 test('Hero receives exact heads-up, three-way, four-way, and larger split shares', () => {

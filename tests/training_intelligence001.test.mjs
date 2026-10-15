@@ -176,57 +176,85 @@ test('invalid evidence is rejected without altering the shown record', async () 
   assert.throws(() => validateTrainingDecisionRecord(forged), /Incompatible/);
 });
 
-const logic = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-function functionText(name) {
-  const start = logic.search(new RegExp(`(?:async )?function ${name}\\(`));
-  assert.notEqual(start, -1);
-  const rest = logic.slice(start);
-  const next = rest.slice(1).search(/\n(?:async )?function /);
-  return next < 0 ? rest : rest.slice(0, next + 1);
-}
+// TEST-HYGIENE-001: the Training page functions run in the booted app
+// instead of vm-evaluated slices of logic.js.
+const { bootApp } = await import('./helpers/app-under-test.mjs');
+const app = await bootApp();
+const page = () => app.window.app;
 
 test('earlier answer is absent from DOM until the new answer, then separately rendered', () => {
-  const nodes = new Map(['trainingSameSpotComparison', 'trainingSameSpotEarlierAnswer', 'trainingSameSpotThisTry']
-    .map((id) => [id, { textContent: 'stale answer', hidden: false }]));
-  const sandbox = { app: { training: { sameSpotHistoricalRecord: { userResponse: { action: { type: 'fold' } }, decisionContext: {} } } },
-    $: (selector) => nodes.get(selector.slice(1)), sameSpotActionLabel: (value) => value, t: (value) => value };
-  vm.runInNewContext(`${functionText('renderSameSpotComparison')}; renderSameSpotComparison();`, sandbox);
-  assert.equal(nodes.get('trainingSameSpotEarlierAnswer').textContent, '');
-  assert.equal(nodes.get('trainingSameSpotThisTry').textContent, '');
-  assert.equal(nodes.get('trainingSameSpotComparison').hidden, true);
-  vm.runInNewContext("renderSameSpotComparison({chosenAction:{type:'raise'}});", sandbox);
-  assert.equal(nodes.get('trainingSameSpotEarlierAnswer').textContent, 'fold');
-  assert.equal(nodes.get('trainingSameSpotThisTry').textContent, 'raise');
-  assert.equal(nodes.get('trainingSameSpotComparison').hidden, false);
+  const previous = page().training.sameSpotHistoricalRecord;
+  page().training.sameSpotHistoricalRecord = { userResponse: { action: { type: 'fold' } }, decisionContext: {} };
+  try {
+    for (const id of ['trainingSameSpotEarlierAnswer', 'trainingSameSpotThisTry']) app.byId(id).textContent = 'stale answer';
+    app.byId('trainingSameSpotComparison').hidden = false;
+    app.call('renderSameSpotComparison');
+    assert.equal(app.byId('trainingSameSpotEarlierAnswer').textContent, '');
+    assert.equal(app.byId('trainingSameSpotThisTry').textContent, '');
+    assert.equal(app.byId('trainingSameSpotComparison').hidden, true);
+    app.call('renderSameSpotComparison', { chosenAction: { type: 'raise' } });
+    assert.match(app.byId('trainingSameSpotEarlierAnswer').textContent, /fold/i);
+    assert.match(app.byId('trainingSameSpotThisTry').textContent, /raise/i);
+    assert.equal(app.byId('trainingSameSpotComparison').hidden, false);
+  } finally {
+    page().training.sameSpotHistoricalRecord = previous;
+    app.byId('trainingSameSpotComparison').hidden = true;
+  }
 });
 
 test('owner/session invalidation discards delayed recommendation reads and private UI', async () => {
   let release;
-  const region = { hidden: false, children: ['private'], replaceChildren() { this.children = []; } };
-  const checkbox = { checked: true };
-  const app = { training: { memoryGeneration: 1 } };
-  const sandbox = { app, $: (key) => key === '#trainingLearningNext' ? region : key === '#trainingUncertain' ? checkbox : null,
-    trainingSessionIsActive: () => false, trainingSameSpotIsActive: () => false, trainingSessionMode: () => 'focused',
-    callTrainingMemoryBridge: () => new Promise((resolve) => { release = resolve; }) };
-  vm.runInNewContext(`${functionText('clearTrainingLearningPresentation')}; ${functionText('refreshTrainingLearningNext')}; this.pending = refreshTrainingLearningNext(1);`, sandbox);
-  app.training.memoryGeneration += 1;
-  vm.runInNewContext('clearTrainingLearningPresentation();', sandbox);
-  release({ proposals: [{ private: true }] });
-  await sandbox.pending;
-  assert.equal(region.hidden, true);
-  assert.equal(region.children.length, 0);
-  assert.equal(checkbox.checked, false);
+  const bridge = app.window.callTrainingMemoryBridge;
+  app.window.callTrainingMemoryBridge = () => new Promise((resolve) => { release = resolve; });
+  try {
+    const region = app.byId('trainingLearningNext');
+    const generation = page().training.memoryGeneration;
+    const pending = app.call('refreshTrainingLearningNext', generation);
+    assert.equal(typeof release, 'function', 'the read is in flight');
+    app.byId('trainingUncertain').checked = true;
+    page().training.memoryGeneration = generation + 1;
+    app.call('clearTrainingLearningPresentation');
+    release({ proposals: [{ private: true, dueAt: '2026-09-02T00:00:00.000Z' }] });
+    await pending;
+    assert.equal(region.hidden, true);
+    assert.equal(region.children.length, 0);
+    assert.equal(app.byId('trainingUncertain').checked, false);
+  } finally {
+    app.window.callTrainingMemoryBridge = bridge;
+  }
 });
 
-test('delayed revisit cannot invoke hints through the hidden handler', () => {
-  const sandbox = { app: { training: { learningRevisitActive: true } } };
-  vm.runInNewContext(`${functionText('revealNextTrainingStudyHint')}; revealNextTrainingStudyHint();`, sandbox);
+test('delayed revisit cannot invoke hints through the hidden handler', async () => {
+  await app.training.start('focused');
+  const step = page().training.studyHintStep;
+  const spy = app.spy(['emitStudyExperience', 'renderAnalysisStudyHints']);
+  page().training.learningRevisitActive = true;
+  try {
+    app.call('revealNextTrainingStudyHint');
+    assert.equal(spy.total(), 0);
+    assert.equal(page().training.studyHintStep, step);
+  } finally {
+    page().training.learningRevisitActive = false;
+    spy.restore();
+  }
 });
 
-test('Same Spot keyboard replay entry points cannot replace historical evidence', () => {
-  const sandbox = { trainingSameSpotIsActive: () => true };
-  vm.runInNewContext(`${functionText('replayCurrentTrainingSeed')}; ${functionText('replayCurrentTrainingDecision')};
-    replayCurrentTrainingSeed(); replayCurrentTrainingDecision();`, sandbox);
+test('Same Spot keyboard replay entry points cannot replace historical evidence', async () => {
+  await app.training.start('focused');
+  const exercise = page().training.currentExercise;
+  assert.ok(exercise);
+  const active = app.window.trainingSameSpotIsActive;
+  const spy = app.spy(['replayTrainingExercise', 'startConfiguredTrainingSession', 'callTrainingServiceBridge', 'renderCanonicalTrainingExercise']);
+  app.window.trainingSameSpotIsActive = () => true;
+  try {
+    assert.equal(app.call('replayCurrentTrainingSeed'), null);
+    assert.equal(app.call('replayCurrentTrainingDecision'), null);
+    assert.equal(spy.total(), 0);
+    assert.equal(page().training.currentExercise, exercise);
+  } finally {
+    app.window.trainingSameSpotIsActive = active;
+    spy.restore();
+  }
 });
 
 test('unknown handoffs, mismatched exact exercises, and stale dismiss fail closed', async () => {
@@ -259,31 +287,26 @@ test('request changes immediately before child insertion cannot create a stale r
   assert.deepEqual((await repository.getSession(second.id)).decisionRecordIds, []);
 });
 
-test('uncertainty is captured before feedback and remains bound to the submitted action', () => {
+test('uncertainty is captured before feedback and remains bound to the submitted action', async () => {
   for (const [attemptKind, expectUncertain] of [['primary', true], ['replay', false], ['redrill', false]]) {
-    const checkbox = { checked: true };
-    const exercise = { id: 'served-exercise', strategyResult: {}, generationMetadata: {} };
-    const evaluation = { accepted: false, scoreDelta: 0, grade: 'mistake', truth: { state: 'heuristic_comparison', outcome: 'unassessed' } };
-    let persisted;
-    const sandbox = { app: { training: { currentExercise: exercise, currentAttemptKind: attemptKind,
-      lifecycle: 'ready', stats: { totalHands: 0, correct: 0, streak: 0 }, gradeStats: {} } },
-    $: (selector) => selector === '#trainingUncertain' ? checkbox : null,
-    trainingSessionMode: () => 'focused', trainingSameSpotIsActive: () => false,
-    callTrainingServiceBridge: () => ({ ok: true, evaluation }),
-    resetTrainingStudyHints() { checkbox.checked = false; },
-    strategyClaimPolicy: () => ({ trainingSemantics: 'unavailable' }),
-    truthPresentation: () => ({ tone: 'neutral' }),
-    recordTrainingExerciseAnswered: (value) => { persisted = value; },
-    t: (value) => value, canonicalTrainingFeedback: () => '',
-    };
-    for (const name of ['updateTrainingStats', 'renderTrainingEvaluationSummary', 'showTrainingFeedback',
-      'emitTrainingDecisionResultExperience', 'renderTrainingDecisionAnalysis', 'showTrainingSolution',
-      'setTrainingWorkspaceState', 'completeVariedTrainingSession']) sandbox[name] = () => {};
-    vm.runInNewContext(`${functionText('handleTrainingGuess')}; handleTrainingGuess('fold');`, sandbox);
-    assert.equal(persisted.actionType, 'fold');
-    assert.equal(persisted.exercise.id, exercise.id);
-    assert.equal(persisted.uncertainty?.value === 'uncertain', expectUncertain);
-    assert.equal(persisted.evaluation, evaluation);
+    await app.training.start('focused');
+    const exercise = page().training.currentExercise;
+    page().training.currentAttemptKind = attemptKind;
+    const action = app.training.answerButtons()[0].dataset.action;
+    app.byId('trainingUncertain').checked = true;
+    const spy = app.spy(['recordTrainingExerciseAnswered']);
+    try {
+      app.call('handleTrainingGuess', action);
+      await app.settle(200);
+      assert.equal(spy.count('recordTrainingExerciseAnswered'), 1, attemptKind);
+      const [persisted] = spy.calls.recordTrainingExerciseAnswered[0];
+      assert.equal(persisted.actionType, action);
+      assert.equal(persisted.exercise.id, exercise.id);
+      assert.equal(persisted.uncertainty?.value === 'uncertain', expectUncertain, attemptKind);
+      assert.equal(persisted.evaluation.chosenAction.type, action);
+    } finally {
+      spy.restore();
+    }
   }
 });
 

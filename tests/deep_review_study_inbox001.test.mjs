@@ -1,17 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import vm from 'node:vm';
 import { createSavedStudyObjectApplication } from '../app/src/application/saved-study-object-service.mjs';
 import { createMemorySavedStudyDatabase, createSavedStudyOwnerRef } from '../app/src/saved-study-objects/index.mjs';
 import { createHandReviewProjector } from '../app/src/application/hand-review.mjs';
-import { installPlaybookStateSourceBridge } from '../app/src/application/playbook-mode-bootstrap.mjs';
 import { createStrategyProvider } from '../app/src/application/strategy-provider.mjs';
 import { resolveHeuristicStrategy } from '../app/src/strategy/heuristic-strategy.mjs';
 import { projectDecisionDelta, selectImportantDecisions, projectReviewPatterns } from '../app/src/application/decision-delta.mjs';
 import { createStudyInboxReader, projectStudyInbox } from '../app/src/application/study-inbox.mjs';
 import { renderDeepReview, renderStudyInbox } from '../app/src/application/study-workspace.mjs';
-import { installStudyWorkspaceBridge } from '../app/src/application/study-workspace-bootstrap.mjs';
 import { STUDY_COPY } from '../app/src/application/study-language.mjs';
 import { createTrainingMemoryService } from '../app/src/application/training-memory-service.mjs';
 import { createMemoryTrainingMemoryDatabase } from '../app/src/training-memory/indexeddb-storage.mjs';
@@ -19,6 +16,14 @@ import { createRiverlineIdentity, riverlineOwnershipRefForIdentity } from '../ap
 import { createTrainingConfigFromLegacyCompatibility, generateTrainingExercise } from '../app/src/application/training-generator.mjs';
 import { evaluateTrainingAnswer } from '../app/src/application/training-answer-evaluation.mjs';
 import { importHandHistory } from '../app/src/application/hand-history-import.mjs';
+import { bootApp } from './helpers/app-under-test.mjs';
+
+// TEST-HYGIENE-001: the Saved annotation editor runs in the booted app
+// instead of vm-evaluated slices of logic.js.
+const app = await bootApp();
+// Imported after boot: the bootstrap module graphs self-install page bridges.
+const { installPlaybookStateSourceBridge } = await import('../app/src/application/playbook-mode-bootstrap.mjs');
+const { installStudyWorkspaceBridge } = await import('../app/src/application/study-workspace-bootstrap.mjs');
 
 const provider = () => createStrategyProvider({ fallbackResolver: resolveHeuristicStrategy });
 function hand() {
@@ -256,35 +261,43 @@ test('exact Personal mixtures render their canonical entries and frozen Training
 });
 
 test('shared Saved annotation editor binds the reviewed decision, not a changing current Hand or owner', async () => {
-  const source = await readFile(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
-  const functions = ['openSavedStudyEditor', 'saveSavedStudyAnnotations', 'archiveSavedStudyObjectFromEditor']
-    .map(name => source.match(new RegExp(`(?:async )?function ${name}\\([^]*?\\n}`))[0]).join('\n');
-  const nodes = new Map();
-  const $ = selector => {
-    if (!nodes.has(selector)) nodes.set(selector, { value: '', classList: { add() {} }, focus() {} });
-    return nodes.get(selector);
-  };
-  let owner = 1; const writes = [];
+  const identity = app.window.RiverlineAccountIdentity;
+  const descriptor = Object.getOwnPropertyDescriptor(app.window, 'RiverlineAccountIdentity');
+  const bridge = app.window.callSavedStudyBridge;
+  let owner = identity.getLifecycleState().lifecycleGeneration;
+  const writes = [];
   const object = { ...savedObject('review-decision', 'review_later'), revision: 3,
     annotations: { title: 'Decision', note: 'Keep note', tags: [], reviewState: 'review_later', classifications: [] } };
-  const context = vm.createContext({ $, document: { activeElement: null }, savedStudyCurrentObject: savedObject('current-hand'),
-    savedStudyEditorObject: null, savedStudyEditorOwnerGeneration: null, savedStudyDialogLastFocus: null,
-    window: { RiverlineAccountIdentity: { getLifecycleState: () => ({ lifecycleGeneration: owner }) },
-      RiverlineSavedStudyObjects: { classificationsWithMistake: value => value.annotations.classifications }, requestAnimationFrame: callback => callback() },
-    hideSavedStudyArchiveConfirmation() {}, setSavedStudyEditorBusy() {}, savedStudyTagsFromEditor: () => [],
-    t: value => value, toast() {}, console, app: { handReview: {} }, closeSavedStudyEditor() {},
-    callSavedStudyBridge: async (method, id, changes) => { writes.push({ method, id, changes }); return { object: { ...object, annotations: changes } }; },
-    renderSavedStudySourceState() { throw new Error('must not retarget the Hand bookmark'); } });
-  vm.runInContext(functions, context);
-  context.openSavedStudyEditor(object);
-  assert.equal($('#savedStudyArchiveButton').hidden, true);
-  context.savedStudyCurrentObject = savedObject('new-current-hand');
-  await context.saveSavedStudyAnnotations({ preventDefault() {} });
-  assert.equal(writes[0].id, object.id); assert.equal(writes[0].changes.note, 'Keep note');
-  assert.equal(writes[0].changes.reviewState, 'review_later');
-  await context.archiveSavedStudyObjectFromEditor(); assert.equal(writes.length, 1);
-  owner++;
-  await context.saveSavedStudyAnnotations({ preventDefault() {} }); assert.equal(writes.length, 1);
+  Object.defineProperty(app.window, 'RiverlineAccountIdentity', { ...descriptor,
+    value: Object.freeze({ ...identity, getLifecycleState: () => ({ ...identity.getLifecycleState(), lifecycleGeneration: owner }) }) });
+  app.window.callSavedStudyBridge = async (method, id, changes) => { writes.push({ method, id, changes }); return { object: { ...object, annotations: changes } }; };
+  const spy = app.spy(['renderSavedStudySourceState']);
+  const previousCurrent = app.evaluate('savedStudyCurrentObject');
+  try {
+    app.window.__hygieneCurrent = savedObject('current-hand');
+    app.evaluate('savedStudyCurrentObject = window.__hygieneCurrent');
+    app.call('openSavedStudyEditor', object);
+    // The reviewed decision is not the current Hand: it cannot be archived.
+    assert.equal(app.byId('savedStudyArchiveButton').hidden, true);
+    app.window.__hygieneCurrent = savedObject('new-current-hand');
+    app.evaluate('savedStudyCurrentObject = window.__hygieneCurrent');
+    await app.call('saveSavedStudyAnnotations', { preventDefault() {} });
+    assert.equal(writes[0].id, object.id); assert.equal(writes[0].changes.note, 'Keep note');
+    assert.equal(writes[0].changes.reviewState, 'review_later');
+    assert.equal(spy.count('renderSavedStudySourceState'), 0, 'must not retarget the Hand bookmark');
+    await app.call('archiveSavedStudyObjectFromEditor'); assert.equal(writes.length, 1);
+    app.call('openSavedStudyEditor', object);
+    owner++;
+    await app.call('saveSavedStudyAnnotations', { preventDefault() {} }); assert.equal(writes.length, 1);
+  } finally {
+    spy.restore();
+    app.window.callSavedStudyBridge = bridge;
+    Object.defineProperty(app.window, 'RiverlineAccountIdentity', descriptor);
+    app.window.__hygieneCurrent = previousCurrent;
+    app.evaluate('savedStudyCurrentObject = window.__hygieneCurrent');
+    delete app.window.__hygieneCurrent;
+    app.call('closeSavedStudyEditor');
+  }
 });
 
 test('Review primary intent stays qualitative; unavailable and reference roles never inherit heuristic permission', () => {

@@ -21,6 +21,7 @@ import {
   createFakeAuthProviderAdapter,
   createSupabaseAuthProviderAdapter,
 } from '../app/src/authentication/index.mjs';
+import { indexDocument } from './helpers/app-under-test.mjs';
 
 const T1 = '2026-08-17T10:00:00.000Z';
 const T2 = '2026-08-17T10:01:00.000Z';
@@ -326,9 +327,8 @@ test('Supabase signup sends profile metadata but never exposes password outside 
 });
 
 test('profile migration and account UI expose RLS, ordered bootstraps, RTL islands, and no username-email directory', async () => {
-  const [sql, html, bootstrap, savedBootstrap, homeBootstrap, profileRepository] = await Promise.all([
+  const [sql, bootstrap, savedBootstrap, homeBootstrap, profileRepository] = await Promise.all([
     readFile(new URL('../supabase/migrations/202608170001_account_profiles.sql', import.meta.url), 'utf8'),
-    readFile(new URL('../app/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/authentication-bootstrap.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/saved-study-object-bootstrap.mjs', import.meta.url), 'utf8'),
     readFile(new URL('../app/src/application/home-workspace-bootstrap.mjs', import.meta.url), 'utf8'),
@@ -339,11 +339,15 @@ test('profile migration and account UI expose RLS, ordered bootstraps, RTL islan
   assert.match(sql, /auth\.uid\(\)[\s\S]+auth_user_id/i);
   assert.match(sql, /security definer set search_path = ''/i);
   assert.match(sql, /revoke all[\s\S]+from public, anon/i);
-  assert.match(html, /id="accountMenuButton"[^>]+aria-expanded="false"/);
-  assert.match(html, /id="accountMenu"[^>]+role="menu"/);
-  assert.match(html, /id="accountProfileModal"[^>]+aria-modal="true"/);
-  assert.match(html, /id="accountProfileUsername"[^>]+dir="ltr"/);
-  assert.match(html, /id="accountSignInEmail"[^>]+dir="ltr"/);
+  // TEST-HYGIENE-001: account markup is checked on the parsed document.
+  const markup = indexDocument();
+  const byId = (id) => markup.getElementById(id)
+    ?? markup.querySelectorAll('template').map((template) => template.content.querySelector(`#${id}`)).find(Boolean);
+  assert.equal(byId('accountMenuButton').getAttribute('aria-expanded'), 'false');
+  assert.equal(byId('accountMenu').getAttribute('role'), 'menu');
+  assert.equal(byId('accountProfileModal').getAttribute('aria-modal'), 'true');
+  assert.equal(byId('accountProfileUsername').getAttribute('dir'), 'ltr');
+  assert.equal(byId('accountSignInEmail').getAttribute('dir'), 'ltr');
   assert.match(bootstrap, /event\.key === 'Escape'/);
   assert.match(bootstrap, /event\.key === 'Tab'/);
   assert.match(bootstrap, /import '\.\/account-identity-bootstrap\.mjs'/);

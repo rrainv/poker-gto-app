@@ -12,12 +12,31 @@ import {
 import {
   validatePlaybookScenarioReadiness,
 } from '../app/src/application/playbook-scenario-readiness.mjs';
-import * as RiverlineCardClearSemantics from '../app/src/application/card-clear-semantics.mjs';
-import { createProductionPickerHarness } from './uiqa001r_card_picker_adapter.mjs';
 
 const require = createRequire(import.meta.url);
 const qa = require('./qa002_adapters.js');
-const LOGIC = fs.readFileSync(new URL('../app/src/core/logic.js', import.meta.url), 'utf8');
+// TEST-HYGIENE-001: the scenario clear paths run in the booted app (real
+// clear controls and picker) instead of vm-evaluated slices of logic.js.
+const { bootApp } = await import('./helpers/app-under-test.mjs');
+const app = await bootApp();
+// Imported after boot: the adapter's module graph self-installs page bridges.
+const { createProductionPickerHarness } = await import('./uiqa001r_card_picker_adapter.mjs');
+async function riverScenario() {
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  await app.pickCards('#gtoMode [data-card-set-edit="board"]', ['2c', '7d', 'Th']);
+  for (const [id, value] of [['lastAction', 'bet'], ['facingSize', '8'], ['facingSizeNum', '8'], ['potSize', '18'], ['potSizeNum', '18']]) {
+    const control = app.byId(id);
+    if (control.localName === 'select' && ![...control.options].some((option) => option.value === value)) {
+      const option = app.document.createElement('option');
+      option.value = value;
+      control.appendChild(option);
+    }
+    control.value = value;
+  }
+}
+const scenarioControls = () => Object.fromEntries([['lastAction', 'lastAction'], ['facing', 'facingSize'], ['facingNumber', 'facingSizeNum'], ['pot', 'potSize'], ['potNumber', 'potSizeNum']]
+  .map(([key, id]) => [key, app.byId(id).value]));
 const TRANSLATIONS = fs.readFileSync(
   new URL('../app/src/locales/product-translations.js', import.meta.url),
   'utf8',
@@ -179,59 +198,41 @@ test('Analyze invokes StrategyProvider zero times for an invalid draft and once 
   assert.equal(valid.strategyResult.schemaVersion, 'strategy-result/v1');
 });
 
-test('clearing a postflop board transactionally resets action, facing, and preflop pot controls', () => {
-  const slice = (start, end) => LOGIC.slice(LOGIC.indexOf(start), LOGIC.indexOf(end));
-  const controls = new Map([
-    ['#lastAction', { value: 'bet' }],
-    ['#facingSize', { value: '8' }],
-    ['#facingSizeNum', { value: '8' }],
-    ['#potSize', { value: '18' }],
-    ['#potSizeNum', { value: '18' }],
-  ]);
-  const context = {
-    controls,
-    result: null,
-    RiverlineCardClearSemantics,
-  };
-  vm.runInNewContext(`
-    const app = { gto: { hero: ['As', 'Kd'], board: ['2c', '7d', 'Th'], dead: [] } };
-    const PLAYBOOK_DECISION_CARD_GROUPS = ['hero', 'board', 'dead'];
-    const $ = (selector) => controls.get(selector) || null;
-    const selectedValue = (selector) => $(selector)?.value;
-    const groupCards = (group) => app.gto[group];
-    const isHandMode = () => false;
-    const isEquityGroup = () => false;
-    const setEquityPending = () => {};
-    const renderCanonicalHandWorkspace = () => {};
-    const renderAllCards = () => {};
-    const updateContext = () => {};
-    const toast = () => {};
-    const preflopBasePot = () => 1.5;
-    const requireCardClearSemanticsBridge = () => ({
-      commands: RiverlineCardClearSemantics.CARD_CLEAR_COMMANDS,
-      applyEditableCardClear: RiverlineCardClearSemantics.applyEditableCardClear,
-    });
-    ${slice('function setScenarioControlPair(', 'function activeWorkspaceMode()')}
-    ${slice('function scenarioCardClearTargets()', 'function applyEquityCardClear(')}
-    ${slice('function currentStreet(board)', 'function handClass(cards)')}
-    applyScenarioCardClear(requireCardClearSemanticsBridge().commands.CLEAR_BOARD);
-    result = {
-      board: app.gto.board.slice(),
-      lastAction: $('#lastAction').value,
-      facing: $('#facingSize').value,
-      facingNumber: $('#facingSizeNum').value,
-      pot: $('#potSize').value,
-      potNumber: $('#potSizeNum').value,
-    };
-  `, context);
-  assert.deepEqual(JSON.parse(JSON.stringify(context.result)), {
-    board: [],
+test('clearing a postflop board transactionally resets action, facing, and preflop pot controls', async () => {
+  await riverScenario();
+  const spy = app.spy(['handleExplicitCardClear']);
+  try {
+    // The scenario board's Clear control dispatches the explicit clear.
+    await app.click('[data-card-clear-command="clear_board"][data-card-clear-surface="scenario"]');
+    await app.settle(200);
+    assert.equal(spy.count('handleExplicitCardClear'), 1);
+  } finally {
+    spy.restore();
+  }
+  assert.deepEqual(Array.from(app.window.app.gto.board), []);
+  assert.deepEqual(Array.from(app.window.app.gto.hero), ['As', 'Kd']);
+  assert.deepEqual(scenarioControls(), {
     lastAction: 'unopened',
     facing: '0',
     facingNumber: '0',
     pot: '1.5',
     potNumber: '1.5',
   });
+});
+
+test('the card-set picker Clear action clears the edited set', async () => {
+  await riverScenario();
+  await app.click('#gtoMode [data-card-set-edit="board"]');
+  const spy = app.spy(['clearCardSetPicker']);
+  try {
+    await app.click('#cardSetPickerClear');
+    await app.settle(200);
+    assert.equal(spy.count('clearCardSetPicker'), 1);
+  } finally {
+    spy.restore();
+  }
+  assert.deepEqual(Array.from(app.window.app.gto.board), []);
+  assert.deepEqual(Array.from(app.window.app.gto.hero), ['As', 'Kd']);
 });
 
 function riverClearHarness() {
@@ -262,10 +263,6 @@ test('A: Hero clear preserves the full board and dead cards', () => {
 });
 
 test('B: Flop clear removes the full board and restores coherent preflop state', () => {
-  assert.match(
-    LOGIC,
-    /cardSetAction\?\.dataset\.cardSetAction === 'clear'\) return clearCardSetPicker\(\)/,
-  );
   const picker = riverClearHarness();
   picker.openPicker('board', 0);
   picker.selectCard('2c');
@@ -334,7 +331,8 @@ test('E: Hero and every board-stage clear preserve dead cards', () => {
 
 test('F: dead-card clear preserves Hero and the full board', () => {
   const picker = riverClearHarness();
-  assert.match(LOGIC, /if \(clear\) return handleExplicitCardClear\(clear\)/);
+  // (The explicit-clear dispatch from a Clear control is exercised in the
+  // booted app above.)
 
   picker.clearGroup('dead');
 

@@ -19,10 +19,11 @@ const TRAINING_ADAPTER_SOURCE = fs.readFileSync(
   new URL('../app/src/application/training-answer-evaluation.mjs', import.meta.url),
   'utf8',
 );
-const MATRIX_SOURCE = fs.readFileSync(
-  new URL('../app/src/core/logic.js', import.meta.url),
-  'utf8',
-);
+// TEST-HYGIENE-001: the Matrix's per-cell provider resolution is observed
+// in the booted app instead of being regex-matched in logic.js.
+const { bootApp, strategyProviderProbe } = await import('./helpers/app-under-test.mjs');
+const probe = strategyProviderProbe();
+const app = await bootApp({ beforeScripts: probe.beforeScripts });
 
 const RANKS = Object.freeze(['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']);
 const NON_BLIND_POSITIONS = Object.freeze([
@@ -139,7 +140,7 @@ test('FALLBACK-MATH-001A removes per-hand MDF, fake preflop SPR, and threshold p
   assert.ok(cheapTrash.fold > 0.75);
 });
 
-test('all 169 Matrix classes resolve, normalize exactly, and remain deterministic', () => {
+test('all 169 Matrix classes resolve, normalize exactly, and remain deterministic', async () => {
   assert.equal(HAND_CLASSES.length, 169);
   assert.equal(new Set(HAND_CLASSES).size, 169);
   for (const handClass of HAND_CLASSES) {
@@ -149,7 +150,17 @@ test('all 169 Matrix classes resolve, normalize exactly, and remain deterministi
     assertNormalizedResult(first, handClass);
     assert.deepEqual(second, first, handClass);
   }
-  assert.match(MATRIX_SOURCE, /strategyProvider\.resolve\(cellDecisionContext\)/);
+  // The app's Matrix resolves every cell through the same provider with a
+  // per-cell decision context.
+  await app.navigate('analyze');
+  await app.pickCards('#gtoMode [data-card-set-edit="hero"]', ['As', 'Kd']);
+  const resolved = await probe.count(() => {
+    app.evaluate('app.matrixModel = null');
+    app.call('renderChart');
+  });
+  const cellHands = new Set(resolved.map((cellContext) => cellContext.heroCards?.join('')));
+  assert.ok(resolved.length >= 169, String(resolved.length));
+  assert.ok(cellHands.size >= 169, String(cellHands.size));
 });
 
 test('position, stack, facing-category, and price sweeps stay finite and normalized', () => {

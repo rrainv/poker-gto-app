@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 
 import { ACTION_TYPES, PREFLOP_HAND_CLASSES } from '../shared/poker-domain/index.js';
 import {
@@ -26,6 +25,7 @@ import {
   rfiCalibrationStructuralFamily,
 } from '../app/src/personal-strategy/rfi-question-selection.mjs';
 import { rangeCal002bFixtureById } from './fixtures/range_cal002b_synthetic_truth.mjs';
+import { indexDocument } from './helpers/app-under-test.mjs';
 
 const PROFILE_ID = 'playstyle-quick-profile';
 const MODE_ID = 'playstyle-quick-mode';
@@ -312,10 +312,14 @@ test('readiness is deterministic, derived-only, and exposes a compact clarificat
 });
 
 test('starter checkpoint copy has no 169-completion or remaining-cells semantics', () => {
-  const html = fs.readFileSync(new URL('../app/index.html', import.meta.url), 'utf8');
-  const start = html.indexOf('id="calibrationCompleteState"');
-  const end = html.indexOf('<div class="calibration-personal-column">', start);
-  const checkpoint = html.slice(start, end);
+  // TEST-HYGIENE-001: the checkpoint copy is read from the parsed Range
+  // Calibration template (the checkpoint and its following siblings up to the
+  // personal column), not from the raw source.
+  const template = indexDocument().getElementById('rangeCalibrationTemplate').content;
+  const state = template.querySelector('#calibrationCompleteState');
+  const parts = [];
+  for (let node = state; node && !node.classList?.contains('calibration-personal-column'); node = node.nextElementSibling) parts.push(node.textContent);
+  const checkpoint = parts.join(' ');
   assert.match(checkpoint, /Initial map/);
   assert.match(checkpoint, /Direct answers/);
   assert.match(checkpoint, /Modeled hands/);
